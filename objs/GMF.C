@@ -252,11 +252,17 @@ GMF::WritePdf(
   //---------------------------------------------//
   // Calculate and print out probabilities       //
   //---------------------------------------------//
+  float sum=0;
   for (int i = 0; i < _phiCount; i++)
-    { float prob=exp((_bestObj[i]-scale)/2);
-      fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
-	      prob);
+    { _bestObj[i]=exp((_bestObj[i]-scale)/2);
+      sum+=_bestObj[i];
     }
+  for (int i = 0; i < _phiCount; i++)
+    {
+      fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
+	      _bestObj[i]/sum);
+    }
+
   fprintf(ofp,"&\n");
   delete wvc;
   return(1);
