@@ -369,12 +369,18 @@ MiscTable::_MetToIndex(
 	case Meas::HH_MEAS_TYPE:
 		idx = 1;
 		break;
-    case Meas::VV_VH_CORR_MEAS_TYPE:
-        idx = 2;
-        break;
-    case Meas::HH_HV_CORR_MEAS_TYPE:
-        idx = 3;
-        break;
+	case Meas::VV_VH_CORR_MEAS_TYPE:
+	  idx = 2;
+	  break;
+	case Meas::HH_HV_CORR_MEAS_TYPE:
+	  idx = 3;
+	  break;
+	case Meas::HV_MEAS_TYPE:
+	  idx = 4;
+	  break;
+	case Meas::VH_MEAS_TYPE:
+	  idx = 4;
+	  break;
 	default:
 		fprintf(stderr,
 			"MiscTable::_MetToIndex: invalid measurement type %d\n", met);

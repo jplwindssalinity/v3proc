@@ -193,7 +193,7 @@ int GMF::ReadPolarimetric(
 	if (!ifp)
 		return(0);
 
-	_metCount = 4;
+	_metCount = 5;
 
 	_incCount = 26;
 	_incMin = 14.0 * dtr;
@@ -213,11 +213,13 @@ int GMF::ReadPolarimetric(
 
         while(!feof(ifp)){
 	  char string[40];
+          
           float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh, 
 	    phhvh;
        
           // Read ASCII line of ipnuts and outputs to model function.
           fscanf(ifp,"%s",string);
+          if(feof(ifp)) break;
 	  spd = atof(string);
           fscanf(ifp,"%s",string);
 	  theta = atof(string)*dtr;
@@ -259,6 +261,8 @@ int GMF::ReadPolarimetric(
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vv;
           imet=_MetToIndex(Meas::HH_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hh;
+          imet=_MetToIndex(Meas::HV_MEAS_TYPE);
+          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hv;
           imet=_MetToIndex(Meas::VV_VH_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
           imet=_MetToIndex(Meas::HH_HV_CORR_MEAS_TYPE);
