@@ -1,65 +1,59 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
-#ifndef WINDVECTOR_H
-#define WINDVECTOR_H
+#ifndef WIND_VECTOR_H
+#define WIND_VECTOR_H
 
-static const char rcs_id_windvector_h[] =
-	"@(#) $Id$";
+static const char rcs_id_wind_vector_h[] =
+    "@(#) $Id$";
 
 //======================================================================
 // CLASSES
-//		WindVector
+//    WindVector
 //======================================================================
 
 //======================================================================
 // CLASS
-//		WindVector
+//    WindVector
 //
 // DESCRIPTION
-//		The WindVector object hold wind vector information (namely
-//		speed and direction).
+//    The WindVector object represents a wind vector (speed and
+//    direction). The wind direction is counter-clockwise from East.
 //======================================================================
 
 class WindVector
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	WindVector();
-	~WindVector();
+    WindVector();
+    ~WindVector();
 
-	//--------------//
-	// input/output //
-	//--------------//
+    //---------//
+    // setting //
+    //---------//
 
-	int		WriteL20(FILE* fp);
+    int  SetSpdDir(float speed, float direction);
+    int  SetUV(float u, float v);
+    int  GetUV(float* u, float* v);
 
-	//-----------//
-	// operators //
-	//-----------//
+    //--------------//
+    // manipulation //
+    //--------------//
 
-	int		operator==(WindVector wv);
+    int  ScaleToSpeed(float scale);
 
-	//---------//
-	// setting //
-	//---------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	int		SetSpdDir(float speed, float direction);
-	int		SetUV(float u, float v);
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	float	spd;
-	float	dir;	// ccw from east
-	float	obj;	// objective function value
+    float  spd;
+    float  dir;
 };
 
 #endif
