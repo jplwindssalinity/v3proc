@@ -366,20 +366,25 @@ L1A::WriteGSCalPulseRec(void)
     (void)memcpy(ptr, &(frame.frame_time_secs), sizeof(double));
     ptr += sizeof(double);
 
+    int Esn;  // integer storage for floating point cal pulse data
     for (i=0; i < 12; i++)
     {
-        (void)memcpy(ptr, &(frame.loopbackSlices[i]), sizeof(int));
+        Esn = (int)frame.loopbackSlices[i];
+        (void)memcpy(ptr, &Esn, sizeof(int));
         ptr += sizeof(int);
     }
-    (void)memcpy(ptr, &(frame.loopbackNoise), sizeof(int));
+    Esn = (int)frame.loopbackNoise;
+    (void)memcpy(ptr, &Esn, sizeof(int));
     ptr += sizeof(int);
 
     for (i=0; i < 12; i++)
     {
-        (void)memcpy(ptr, &(frame.loadSlices[i]), sizeof(int));
+        Esn = (int)frame.loadSlices[i];
+        (void)memcpy(ptr, &Esn, sizeof(int));
         ptr += sizeof(int);
     }
-    (void)memcpy(ptr, &(frame.loadNoise), sizeof(int));
+    Esn = (int)frame.loadNoise;
+    (void)memcpy(ptr, &Esn, sizeof(int));
     ptr += sizeof(int);
     (void)memcpy(ptr, &(frame.in_eu.precision_coupler_temp_eu), sizeof(float));
     ptr += sizeof(float);
@@ -397,7 +402,8 @@ L1A::WriteGSCalPulseRec(void)
     ptr += sizeof(int);
     (void)memcpy(ptr, &(frame.frame_err_status), sizeof(int));
     ptr += sizeof(int);
-    (void)memcpy(ptr, &(frame.in_eu.true_cal_pulse_pos), sizeof(char));
+    unsigned char tpos = (unsigned char)frame.in_eu.true_cal_pulse_pos;
+    (void)memcpy(ptr, &tpos, sizeof(char));
     ptr += sizeof(char);
 
     // Set beam identifier based on true unit offset position and first pulse
