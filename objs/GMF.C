@@ -1454,7 +1454,7 @@ GMF::GetVariance(
 
     double vpc = 0.0;
     float s0_co, s0_x;
-    if (retrieveUsingKpcFlag)
+    if (retrieveUsingKpcFlag && meas->numSlices!=-1)
     {
         switch (meas->measType)
         {
@@ -1530,7 +1530,7 @@ GMF::GetVariance(
     //------//
 
     double kpri2 = 0.0;
-    if (retrieveUsingKpriFlag)
+    if (retrieveUsingKpriFlag && meas->numSlices!=-1)
     {
         if (! kp->GetKpri2(&kpri2))
         {
@@ -1544,7 +1544,7 @@ GMF::GetVariance(
     //------//
 
     double kprs2 = 0.0;
-    if (retrieveUsingKprsFlag)
+    if (retrieveUsingKprsFlag && meas->numSlices!=-1)
     {
         if (! kp->GetKprs2(meas, &kprs2))
         {
@@ -1556,6 +1556,9 @@ GMF::GetVariance(
     //------------------------//
     // calculate the variance //
     //------------------------//
+
+    if(meas->numSlices==-1) 
+      vpc=(meas->A*trial_sigma0 + meas->B)*trial_sigma0+meas->C;
 
     double var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1+kpri2) *
         (1+kprs2) - trial_sigma0*trial_sigma0;
