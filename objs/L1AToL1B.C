@@ -42,38 +42,38 @@ L1AToL1B::Convert(
     Ephemeris*   ephemeris,
     L1B*         l1b)
 {
-	//--------------//
-	// unpack frame //
-	//--------------//
+    //--------------//
+    // unpack frame //
+    //--------------//
 
-	l1a->frame.Unpack(l1a->buffer);
+    l1a->frame.Unpack(l1a->buffer);
 
-	//-------------------//
-	// set up check data //
-	//-------------------//
+    //-------------------//
+    // set up check data //
+    //-------------------//
 
-	CheckFrame cf;
-	if (simVs1BCheckfile)
-	{
-		if (!cf.Allocate(l1a->frame.slicesPerSpot))
+    CheckFrame cf;
+    if (simVs1BCheckfile)
+    {
+        if (! cf.Allocate(l1a->frame.slicesPerSpot))
         {
-			fprintf(stderr,"Error allocating a CheckFrame\n");
+            fprintf(stderr,"Error allocating a CheckFrame\n");
             return(0);
         }
-	}
+    }
 
-	//-------------------//
-	// set up spacecraft //
-	//-------------------//
+    //-------------------//
+    // set up spacecraft //
+    //-------------------//
 
-	float roll = l1a->frame.attitude.GetRoll();
-	float pitch = l1a->frame.attitude.GetPitch();
-	float yaw = l1a->frame.attitude.GetYaw();
-	spacecraft->attitude.SetRPY(roll, pitch, yaw);
+    float roll = l1a->frame.attitude.GetRoll();
+    float pitch = l1a->frame.attitude.GetPitch();
+    float yaw = l1a->frame.attitude.GetYaw();
+    spacecraft->attitude.SetRPY(roll, pitch, yaw);
 
-	//-------------------//
-	// set up instrument //
-	//-------------------//
+    //-------------------//
+    // set up instrument //
+    //-------------------//
 
 	qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
 	qscat->cds.orbitTime = l1a->frame.orbitTicks;
@@ -173,6 +173,10 @@ L1AToL1B::Convert(
         //----------------------------//
         // range and Doppler tracking //
         //----------------------------//
+
+        // set antenna to transmit pulse center for response calculations
+        qscat.sas.SetAzimuthWithEncoder(held_encoder);
+        qscat.RotateAntennaToTxCenter(1);
 
         // determine the CDS tracking azimuth angle
         unsigned short held_encoder = *(frame->antennaPosition + spot_idx);
@@ -293,8 +297,12 @@ L1AToL1B::Convert(
                     return(0);
                 }
 			}
-			else if(useBYUXfactor)
-			  {
+			else if (useBYUXfactor)
+            {
+                // set antenna to ground impact for calculating X
+                qscat.sas.SetAzimuthWithEncoder(held_encoder);
+                qscat.RotateAntennaToGroundImpact(&spacecraft, 1);
+
 			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
 			    //-----------------//
@@ -305,18 +313,21 @@ L1AToL1B::Convert(
 			    // sigma0 coming out.
 			    if (! compute_sigma0(qscat, meas, x_factor, Esn_slice,
 						 Esn_echo, Esn_noise, En_echo_load, En_noise_load))
-			      {
-				return(0);
-			      }
-			  }
-			else
-			  {
+                {
+                    return(0);
+                }
+
+                // set antenna back to transmit center
+                qscat->sas.SetAzimuthWithEncoder(held_encoder);
+                qscat->RotateAntennaToTxCenter(1);
+            }
+            else
+            {
 			    fprintf(stderr,
 				    "L1AToL1B::Convert:No X compuation algorithm set\n");
 			    exit(0);
-			  }
+            }
 			
-            // scan angle is at the center of the Tx pulse
 			meas->scanAngle = qscat->sas.antenna.azimuthAngle;
 			meas->beamIdx = qscat->cds.currentBeamIdx;
 			meas->txPulseWidth = qscat->ses.txPulseWidth;
@@ -326,13 +337,13 @@ L1AToL1B::Convert(
 			//------------------//
 
 			if (simVs1BCheckfile)
-			  {
+            {
 			    cf.sigma0[slice_i] = meas->value;
 			    cf.XK[slice_i] = meas->XK;
 			    cf.centroid[slice_i] = meas->centroid;
 			    cf.azimuth[slice_i] = meas->eastAzimuth;
 			    cf.incidence[slice_i] = meas->incidenceAngle;
-			  }
+            }
 
 			//----------------------------------//
 			// Print calculated sigma0 values	//
