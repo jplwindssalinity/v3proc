@@ -261,7 +261,7 @@ WVC::ReadL20(
 	// set selected pointer //
 	//----------------------//
 
-	selected = ambiguities.GetNodeWithIndex((int)selected_idx);
+	selected = ambiguities.GetByIndex((int)selected_idx);
 
 	return(1);
 }
@@ -279,7 +279,7 @@ WVC::WriteVctr(
 	if (rank == 0)
 		write_me = selected;
 	else
-		write_me = ambiguities.GetNodeWithIndex(rank - 1);
+		write_me = ambiguities.GetByIndex(rank - 1);
 
 	if (! write_me)
 		return(1);
@@ -1120,7 +1120,7 @@ WindSwath::InitWithRank(
 			WVC* wvc = swath[cti][ati];
 			if (! wvc)
 				continue;
-			wvc->selected = wvc->ambiguities.GetNodeWithIndex(rank-1);
+			wvc->selected = wvc->ambiguities.GetByIndex(rank-1);
 			count++;
 		}
 	}

@@ -37,6 +37,9 @@ static const char rcs_id_gmf_h[] =
 #define DEFAULT_MAX_SOLUTIONS	4
 #define DEFAULT_PHI_COUNT		360
 
+#define MINIMUM_WVC_MEASUREMENTS	4
+#define MINIMUM_AZIMUTH_DIVERSITY	20.0*dtr
+
 class GMF : public PiscTable
 {
 public:
@@ -73,6 +76,7 @@ public:
 	// wind retrieval //
 	//----------------//
 
+	int		CheckRetrieveCriteria(MeasList* meas_list);
 	int		RetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
 	int		SolutionCurve(MeasList* meas_list, Kp* kp);
 	int		Smooth();

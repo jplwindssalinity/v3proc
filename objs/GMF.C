@@ -287,6 +287,55 @@ GMF::WriteSolutionCurves(
 	return(1);
 }
 
+//----------------------------//
+// GMF::CheckRetrieveCriteria //
+//----------------------------//
+// Returns 1 if wind retrieval should be performed, Otherwise 0
+
+int
+GMF::CheckRetrieveCriteria(
+	MeasList*	meas_list)
+{
+	//------------------------------------------//
+	// check for minimum number of measurements //
+	//------------------------------------------//
+
+	if (meas_list->NodeCount() < MINIMUM_WVC_MEASUREMENTS)
+		return(0);
+
+	//-------------------------------------//
+	// check for minimum azimuth diversity //
+	//-------------------------------------//
+
+	Node<Meas>* current;
+
+	for (Meas* meas1 = meas_list->GetHead(); meas1;
+		meas1 = meas_list->GetNext())
+	{
+		// remember the current
+		current = meas_list->GetCurrentNode();
+
+		for (Meas* meas2 = meas_list->GetHead(); meas2;
+			meas2 = meas_list->GetNext())
+		{
+			float azdiv = ANGDIF(meas1->eastAzimuth, meas2->eastAzimuth);
+			if (azdiv > MINIMUM_AZIMUTH_DIVERSITY)
+			{
+				goto passed;
+				break;
+			}
+		}
+
+		// restore the current
+		meas_list->SetCurrentNode(current);
+	}
+	return(0);		// failed diversity check
+
+	passed:			// passed diversity check
+
+	return(1);
+}
+
 //--------------------//
 // GMF::RetrieveWinds //
 //--------------------//
@@ -619,11 +668,11 @@ GMF::_ObjectiveFunction(
 
 		double var;
 
-		if (! kp->GetVariance(meas, gmf_value, meas->pol, spd, 
-				      meas->beamIdx, meas->sliceIdx, 
-				      meas->scanAngle,
-				      &var))
+		if (! kp->GetVariance(meas, gmf_value, meas->pol, spd,
+				meas->beamIdx, meas->sliceIdx, meas->scanAngle, &var))
+		{
 			return(0);
+		}
 
 		fv += s*s / var + log(var);
 	}

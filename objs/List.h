@@ -87,17 +87,24 @@ public:
 	T*		GetCurrent();		// return T* of current
 	T*		GetNext();			// current = next, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
-	T*		GetNodeWithIndex(int index);	// current = node with given index
+	T*		GetByIndex(int index);	// current = node with given index
 
 	//--------//
 	// moving //
 	//--------//
 
-	void	GotoHead() { _current = _head; };
-	void	GotoTail() { _current = _tail; };
+	void	GotoHead() { _current = _head; return; };
+	void	GotoTail() { _current = _tail; return; };
 	int		GotoNext();
 	int		GotoPrev();
 	int		SwapCurrentAndNext();
+
+	//-------------------//
+	// hacking into list //
+	//-------------------//
+
+	Node<T>*	GetCurrentNode() { return(_current); };
+	void		SetCurrentNode(Node<T>* node) { _current = node; return; };
 
 	//-------------//
 	// information //

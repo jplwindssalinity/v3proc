@@ -193,15 +193,15 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
-//------------------------//
-// List::GetNodeWithIndex //
-//------------------------//
+//------------------//
+// List::GetByIndex //
+//------------------//
 // Returns the data from the node with the given index.  Returns
 // NULL on failure.
 
 template <class T>
 T*
-List<T>::GetNodeWithIndex(
+List<T>::GetByIndex(
 	int		index)
 {
 	GotoHead();

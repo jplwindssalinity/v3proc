@@ -72,6 +72,15 @@ L17ToL20::ConvertAndWrite(
 		return(3);
 	}
 
+	//-----------------------------------//
+	// check for wind retrieval criteria //
+	//-----------------------------------//
+
+	if (! gmf->CheckRetrieveCriteria(meas_list))
+	{
+		return(4);
+	}
+
 	//---------------//
 	// retrieve wind //
 	//---------------//
@@ -80,13 +89,13 @@ L17ToL20::ConvertAndWrite(
 	if (! gmf->RetrieveWinds(meas_list, kp, wvc))
 	{
 		delete wvc;
-		return(4);
+		return(5);
 	}
 
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
 		delete wvc;
-		return(5);
+		return(6);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
