@@ -438,8 +438,11 @@ main(
 
             param[SPD_IDX] = (double)spd_array[ati][cti] * 0.01;
             got_param[SPD_IDX] = 1;
-            param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
-            got_param[DIR_IDX] = 1;
+            if (dir_array[ati][cti] != MAX_SHORT)
+            {
+                param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
+                got_param[DIR_IDX] = 1;
+            }
             param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
             got_param[MLE_IDX] = 1;
 
