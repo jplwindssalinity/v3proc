@@ -103,24 +103,30 @@ template class TrackerBase<unsigned short>;
 #define WORST_PROB           -9e9
 #define HDF_NUM_AMBIGUITIES   4
 
-#define FIRST_BEST_VALUE   1.0
-#define FIRST_WORST_VALUE  0.0
-#define FIRST_INDICIES     100
+#define FIRST_MIN_VALUE  0.0
+#define FIRST_MAX_VALUE  1.0
+#define FIRST_INDICIES   100
 
-#define NEIGHBOR_BEST_VALUE   25
-#define NEIGHBOR_WORST_VALUE  0
-#define NEIGHBOR_INDICIES     25
+#define NEIGHBOR_MIN_VALUE  0
+#define NEIGHBOR_MAX_VALUE  25
+#define NEIGHBOR_INDICIES   25
 
-#define DIF_RATIO_BEST_VALUE   0.0
-#define DIF_RATIO_WORST_VALUE  1.0
-#define DIF_RATIO_INDICIES     10
+#define DIF_RATIO_MIN_VALUE  0.0
+#define DIF_RATIO_MAX_VALUE  1.0
+#define DIF_RATIO_INDICIES   10
 
-#define BALANCE_BEST_VALUE   0.0
-#define BALANCE_WORST_VALUE  1.0
-#define BALANCE_INDICIES     10
+#define BALANCE_MIN_VALUE  0.0
+#define BALANCE_MAX_VALUE  1.0
+#define BALANCE_INDICIES   10
+
+#define SPEED_MIN_VALUE  0.0
+#define SPEED_MAX_VALUE  30.0
+#define SPEED_INDICIES   30
 
 #define WINDOW_SIZE  5
 #define MIN_SAMPLES  4
+
+#define MEDIAN_FILTER_WINDOW_SIZE  7
 
 //--------//
 // MACROS //
@@ -154,14 +160,13 @@ float            first_obj_prob[CT_WIDTH][AT_WIDTH];
 unsigned char    neighbor_count[CT_WIDTH][AT_WIDTH];
 float            dif_ratio[CT_WIDTH][AT_WIDTH];
 float            balance[CT_WIDTH][AT_WIDTH];
+float            speed[CT_WIDTH][AT_WIDTH];
 
 unsigned int  first_count_array[FIRST_INDICIES];
 unsigned int  first_good_array[FIRST_INDICIES];
 
-unsigned int
- filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][BALANCE_INDICIES];
-unsigned int
- filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][BALANCE_INDICIES];
+unsigned int filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][BALANCE_INDICIES][SPEED_INDICIES];
+unsigned int filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][BALANCE_INDICIES][SPEED_INDICIES];
 
 int opt_hdf = 0;
 
@@ -218,9 +223,11 @@ main(
         fread(first_count_array, sizeof(unsigned int), FIRST_INDICIES, ifp);
         fread(first_good_array, sizeof(unsigned int), FIRST_INDICIES, ifp);
         fread(filter_count_array, sizeof(unsigned int),
-            NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES, ifp);
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
+          ifp);
         fread(filter_good_array, sizeof(unsigned int),
-            NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES, ifp);
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
+          ifp);
         fclose(ifp);
     }
 
@@ -436,20 +443,24 @@ main(
     //-----------------------------------//
 
     float first_idx_m = (float)(FIRST_INDICIES - 1) /
-        (FIRST_BEST_VALUE - FIRST_WORST_VALUE);
-    float first_idx_b = -first_idx_m * FIRST_WORST_VALUE;
+        (FIRST_MAX_VALUE - FIRST_MIN_VALUE);
+    float first_idx_b = -first_idx_m * FIRST_MIN_VALUE;
 
     float neighbor_idx_m = (float)(NEIGHBOR_INDICIES - 1) /
-        (NEIGHBOR_BEST_VALUE - NEIGHBOR_WORST_VALUE);
-    float neighbor_idx_b = -neighbor_idx_m * NEIGHBOR_WORST_VALUE;
+        (NEIGHBOR_MAX_VALUE - NEIGHBOR_MIN_VALUE);
+    float neighbor_idx_b = -neighbor_idx_m * NEIGHBOR_MIN_VALUE;
 
     float dif_ratio_idx_m = (float)(DIF_RATIO_INDICIES - 1) /
-        (DIF_RATIO_BEST_VALUE - DIF_RATIO_WORST_VALUE);
-    float dif_ratio_idx_b = -dif_ratio_idx_m * DIF_RATIO_WORST_VALUE;
+        (DIF_RATIO_MAX_VALUE - DIF_RATIO_MIN_VALUE);
+    float dif_ratio_idx_b = -dif_ratio_idx_m * DIF_RATIO_MIN_VALUE;
 
     float balance_idx_m = (float)(BALANCE_INDICIES - 1) /
-        (BALANCE_BEST_VALUE - BALANCE_WORST_VALUE);
-    float balance_idx_b = -balance_idx_m * BALANCE_WORST_VALUE;
+        (BALANCE_MAX_VALUE - BALANCE_MIN_VALUE);
+    float balance_idx_b = -balance_idx_m * BALANCE_MIN_VALUE;
+
+    float speed_idx_m = (float)(SPEED_INDICIES - 1) /
+        (SPEED_MAX_VALUE - SPEED_MIN_VALUE);
+    float speed_idx_b = -speed_idx_m * SPEED_MIN_VALUE;
 
     //----------------//
     // loop till done //
@@ -472,6 +483,7 @@ main(
         int best_neighbor_idx = 0;
         int best_dif_ratio_idx = 0;
         int best_balance_idx = 0;
+        int best_speed_idx = 0;
         int best_ati = -1;
         int best_cti = -1;
         for (int ati = 0; ati < AT_WIDTH; ati++)
@@ -538,18 +550,26 @@ main(
                 if (balance_idx >= BALANCE_INDICIES)
                     balance_idx = BALANCE_INDICIES - 1;
 
-            if (filter_count_array[neighbor_idx][dif_ratio_idx][balance_idx] >=
-                MIN_SAMPLES)
+                int speed_idx = (int)(speed_idx_m * speed[cti][ati] +
+                    speed_idx_b + 0.5);
+                if (speed_idx < 0) speed_idx = 0;
+                if (speed_idx >= SPEED_INDICIES)
+                    speed_idx = SPEED_INDICIES - 1;
+
+                if (filter_count_array[neighbor_idx][dif_ratio_idx][balance_idx][speed_idx] >= MIN_SAMPLES)
                 {
                     filter_prob =
-        (float)filter_good_array[neighbor_idx][dif_ratio_idx][balance_idx] /
-        (float)filter_count_array[neighbor_idx][dif_ratio_idx][balance_idx];
+(float)filter_good_array[neighbor_idx][dif_ratio_idx][balance_idx][speed_idx] /
+(float)filter_count_array[neighbor_idx][dif_ratio_idx][balance_idx][speed_idx];
                 }
                 else
                 {
                     // assign a probability randomly
-//                    filter_prob = (float)neighbor_count[cti][ati] / 25.0;
                     filter_prob = drand48();
+                    filter_prob *= drand48();  // to skew it lower
+                    // don't do something stupid
+                    if (neighbor_count[cti][ati] < 2)
+                        filter_prob *= drand48();    // make it lower
                 }
 
                 if (filter_prob > best_prob &&
@@ -559,6 +579,7 @@ main(
                     best_neighbor_idx = neighbor_idx;
                     best_dif_ratio_idx = dif_ratio_idx;
                     best_balance_idx = balance_idx;
+                    best_speed_idx = speed_idx;
                     best_choice = FILTER;
                     best_ati = ati;
                     best_cti = cti;
@@ -566,7 +587,10 @@ main(
             }
         }
         if (best_ati == -1 && best_cti == -1)
+        {
+            printf("No more bests\n");
             break;
+        }
 
         //-------//
         // do it //
@@ -603,9 +627,9 @@ main(
 
             if (wvc->selected == original_selected[best_cti][best_ati])
             {
-  filter_good_array[best_neighbor_idx][best_dif_ratio_idx][best_balance_idx]++;
+  filter_good_array[best_neighbor_idx][best_dif_ratio_idx][best_balance_idx][best_speed_idx]++;
             }
- filter_count_array[best_neighbor_idx][best_dif_ratio_idx][best_balance_idx]++;
+ filter_count_array[best_neighbor_idx][best_dif_ratio_idx][best_balance_idx][best_speed_idx]++;
 
             // don't let this WVC get initialized by first rank
             first_obj_prob[best_cti][best_ati] = WORST_PROB;  // done with it
@@ -781,18 +805,20 @@ main(
                 neighbor_count[cti][ati] = selected_count;
                 dif_ratio[cti][ati] = best_to_second_ratio;
                 balance[cti][ati] = balance_dist;
+                speed[cti][ati] = new_selected->spd;
                 filter_selection[cti][ati] = new_selected;
 // printf("%d %g %g\n", selected_count, best_to_second_ratio, balance_dist);
             }
         }
-        if (loop_idx % 5000 == 0 && loop_idx != 0)
+        if (loop_idx % 1000 == 0 && loop_idx != 0)
         {
             int total_count = first_count + filter_count;
             float first_percent = 100.0 * (float)first_count /
                 (float)total_count;
             float filter_percent = 100.0 * (float)filter_count /
                 (float)total_count;
-            printf("1st:%.2f  Fil:%.2f\n", first_percent, filter_percent);
+            printf("%d  1st:%.2f  Fil:%.2f\n", loop_idx, first_percent,
+                filter_percent);
             sprintf(filename, "%s.%06d", vctr_base, loop_idx);
             l2b.WriteVctr(filename, 0);
 
@@ -814,10 +840,10 @@ main(
                 fwrite(first_good_array, sizeof(unsigned int), FIRST_INDICIES,
                     ofp);
                 fwrite(filter_count_array, sizeof(unsigned int),
-                    NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES,
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
                     ofp);
                 fwrite(filter_good_array, sizeof(unsigned int),
-                    NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES,
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
                     ofp);
                 fclose(ofp);
             }
@@ -844,7 +870,6 @@ printf("Match = %.2f %%\n", 100.0 * (float)match_count /
 
         }
         loop_idx++;
-break;
     } while (1);
 
     sprintf(filename, "%s.done", vctr_base);
@@ -852,6 +877,38 @@ break;
 
     free_array(filter_selection, 2, CT_WIDTH, AT_WIDTH);
     free_array(change, 2, CT_WIDTH, AT_WIDTH);
+
+    //-----------------//
+    // write prob file //
+    //-----------------//
+
+    FILE* ofp = fopen(prob_file, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening prob file %s\n", command,
+            prob_file);
+        exit(1);
+    }
+    else
+    {
+        fwrite(first_count_array, sizeof(unsigned int), FIRST_INDICIES,
+            ofp);
+        fwrite(first_good_array, sizeof(unsigned int), FIRST_INDICIES,
+            ofp);
+        fwrite(filter_count_array, sizeof(unsigned int),
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
+          ofp);
+        fwrite(filter_good_array, sizeof(unsigned int),
+          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*BALANCE_INDICIES*SPEED_INDICIES,
+          ofp);
+        fclose(ofp);
+    }
+
+    //---------------------//
+    // final median filter //
+    //---------------------//
+
+    swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 200, 0, 0, 0);
 
 /*
     //----------------------//
