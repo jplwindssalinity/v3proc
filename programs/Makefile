@@ -191,13 +191,13 @@ GS_CHECK_PROGRAMS = \
     l1a_to_l1b \
     l1a_to_gs_l1a \
     l1b_hdf_to_l1b \
-    check_l1b \
     checkframe_extract \
     checkframe_to_ascii \
     gs_l1a_to_ascii \
     l1a_to_ascii \
     calpulse_to_ascii \
     l1b_to_ascii
+#   check_l1b 
 
 #----------------------------------------------------------------------
 # default: make all executable programs
