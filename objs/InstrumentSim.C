@@ -291,11 +291,81 @@ InstrumentSim::LocateSpot(
 	EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
 		rlook_gc);
 
+	//----------------------------//
+	// calculate the 3 dB outline //
+	//----------------------------//
+
+	Meas* meas = new Meas();	// need the outline to append to
+
+	double range = (spot_on_earth - orbit_state->rsat).Magnitude();
+	double flight_time = range/speed_light;
+
+	// get the max gain value.
+	float gp_max;
+	beam->GetPowerGainProduct(look,azimuth,flight_time,
+			instrument->antenna.spinRate,&gp_max);
+
+	// Align beam frame z-axis with the electrical boresight.
+    Attitude beam_frame;
+    beam_frame.Set(0.0,look,azimuth,3,2,1);
+    CoordinateSwitch ant_to_beam(beam_frame);
+    CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
+
+	//
+	// In the beam frame, for a set of azimuth angles, search for the
+	// theta angle that has the required gain product.
+	// Convert the results to the geocentric frame and find
+	// the earth intercepts.
+	//
+	
+	for (int i=0; i < 16; i++)
+	{
+		double phi = pi/8*i;
+
+		// Setup for bisection search for the half power product point.
+
+		double theta_max = 0.0;
+		double theta_min = 5.0*dtr;
+		double theta;
+		int NN = (int)(log((theta_min-theta_max)/(0.01*dtr))/log(2)) + 1;
+		Vector3 look_mid;
+		Vector3 look_mid_ant;
+		Vector3 look_mid_gc;
+
+		for (int j = 1; j <= NN; j++)
+		{	// Bisection search
+			theta = (theta_max + theta_min)/2.0;
+			look_mid.SphericalSet(1.0,theta,phi);
+			look_mid_ant = beam_to_ant.Forward(look_mid);
+			double r,look,azimuth;
+			look_mid_ant.SphericalGet(&r,&look,&azimuth);
+			float gp;
+			beam->GetPowerGainProduct(look,azimuth,flight_time,
+				instrument->antenna.spinRate,&gp);
+			if (gp > 0.5*gp_max)
+			{
+				theta_max = theta;
+			}
+			else
+			{
+				theta_min = theta;
+			}
+		}
+
+		look_mid_gc = antenna_frame_to_gc.Forward(look_mid_ant);
+		EarthPosition *r = new EarthPosition;
+		*r = earth_intercept(orbit_state->rsat,look_mid_gc);
+		if (! meas->outline.Append(r))
+		{
+			printf("Error appending to spot outline\n");
+			return(0);
+		}
+	}
+
 	//---------------------------//
 	// generate measurement data //
 	//---------------------------//
 
-	Meas* meas = new Meas();
 	meas->pol = beam->polarization;
 
 	// get local measurement azimuth
