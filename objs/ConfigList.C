@@ -354,6 +354,34 @@ ConfigList::GetInt(
 	return(1);
 }
 
+//----------------------------//
+// ConfigList::GetUnsignedInt //
+//----------------------------//
+// sets the value to the retrieved unsigned int
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetUnsignedInt(
+	const char*		keyword,
+	unsigned int*	value)
+{
+	char* string = Get(keyword);
+	if (! string)
+		return(0);
+
+	unsigned int tmp;
+	if (sscanf(string, "%u", &tmp) != 1)
+	{
+		fprintf(_errorFp, "Error converting value to unsigned int\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		fprintf(_errorFp, "    Value: %s\n", string);
+		exit(1);
+	}
+
+	*value = tmp;
+	return(1);
+}
+
 //-----------------------//
 // ConfigList::GetDouble //
 //-----------------------//
