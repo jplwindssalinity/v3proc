@@ -62,7 +62,7 @@ public:
              PscatEvent* pscat_event, MeasSpot* meas_spot,
              WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField);
     int  SetL1AScience(MeasSpot* meas_spot, Pscat* pscat,
-             PscatL1AFrame* pscat_l1a_frame);
+             PscatEvent* pscat_event, PscatL1AFrame* pscat_l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Pscat* pscat, Meas* meas,
              float* X);
 

@@ -33,8 +33,8 @@ public:
     // enums //
     //-------//
 
-    enum PscatEventE { NONE, VV_SCAT_EVENT, HH_SCAT_EVENT, VV_VH_SCAT_EVENT,
-        HH_HV_SCAT_EVENT };
+    enum PscatEventE { NONE, VV_SCAT_EVENT, HH_SCAT_EVENT, VV_HV_SCAT_EVENT,
+        HH_VH_SCAT_EVENT };
 
     //--------------//
     // construction //

@@ -72,35 +72,36 @@ GMF::~GMF()
 
 int
 GMF::SetPhiCount(
-	int		phi_count)
+    int  phi_count)
 {
-	if (!_bestSpd && _phiCount == phi_count)
-	{	// No adjustment needed
-		return(1);
-	}
+    if (!_bestSpd && _phiCount == phi_count)
+    {
+        // No adjustment needed
+        return(1);
+    }
 
-	_phiCount = phi_count;
-	_phiStepSize = two_pi / _phiCount;
+    _phiCount = phi_count;
+    _phiStepSize = two_pi / _phiCount;
 
-	if (_bestSpd)
-		free(_bestSpd);
-	_bestSpd = (float *)malloc(_phiCount * sizeof(float));
-	if (_bestSpd == NULL)
-		return(0);
+    if (_bestSpd)
+        free(_bestSpd);
+    _bestSpd = (float *)malloc(_phiCount * sizeof(float));
+    if (_bestSpd == NULL)
+        return(0);
 
-	if (_bestObj)
-		free(_bestObj);
-	_bestObj = (float *)malloc(_phiCount * sizeof(float));
-	if (_bestObj == NULL)
-		return(0);
+    if (_bestObj)
+        free(_bestObj);
+    _bestObj = (float *)malloc(_phiCount * sizeof(float));
+    if (_bestObj == NULL)
+        return(0);
 
-	if (_copyObj)
-		free(_copyObj);
-	_copyObj = (float *)malloc(_phiCount * sizeof(float));
-	if (_copyObj == NULL)
-		return(0);
+    if (_copyObj)
+        free(_copyObj);
+    _copyObj = (float *)malloc(_phiCount * sizeof(float));
+    if (_copyObj == NULL)
+        return(0);
 
-	return(1);
+    return(1);
 }
 
 //------------------//
@@ -108,79 +109,78 @@ GMF::SetPhiCount(
 //------------------//
 
 int GMF::ReadOldStyle(
-	const char*		filename)
+    const char*  filename)
 {
-	int fd = open(filename, O_RDONLY);
-	if (fd == -1)
-		return(0);
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
 
-	int dummy;
-	read(fd, &dummy, sizeof(int));
+    int dummy;
+    read(fd, &dummy, sizeof(int));
 
-	_metCount = 2;
+    _metCount = 2;
 
-	_incCount = 26;
-	_incMin = 16.0 * dtr;
-	_incMax = 66.0 * dtr;
-	_incStep = 2.0 * dtr;
+    _incCount = 26;
+    _incMin = 16.0 * dtr;
+    _incMax = 66.0 * dtr;
+    _incStep = 2.0 * dtr;
 
-	_spdCount = 51;
-	_spdMin = 0.0;
-	_spdMax = 50.0;
-	_spdStep = 1.0;
+    _spdCount = 51;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 1.0;
 
-	int file_chi_count = 37;
-	_chiCount = 72;
-	_chiStep = two_pi / _chiCount;		// 5 degrees
+    int file_chi_count = 37;
+    _chiCount = 72;
+    _chiStep = two_pi / _chiCount;    // 5 degrees
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	float value;
-	for (int met_idx = 0; met_idx < _metCount; met_idx++)
-	{
-		for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
-		{
-			for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
-			{
-				for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-				{
-					if (read(fd, &value, sizeof(float)) != sizeof(float))
-					{
-						close(fd);
-						return(0);
-					}
-					*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
-						(float)value;
+    float value;
+    for (int met_idx = 0; met_idx < _metCount; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
+        {
+            for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    if (read(fd, &value, sizeof(float)) != sizeof(float))
+                    {
+                        close(fd);
+                        return(0);
+                    }
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
+                        (float)value;
 
-					int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-					*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
-						(float)value;
-				}
-			}
-		}
-	}
+                    int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+                        (float)value;
+                }
+            }
+        }
+    }
 
-	//----------------------//
-	// zero the 0 m/s model //
-	//----------------------//
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
 
-	int spd_idx = 0;
-	for (int met_idx = 0; met_idx < _metCount; met_idx++)
-	{
-		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-		{
-			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-			{
-				*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
-			}
-		}
-	}
+    int spd_idx = 0;
+    for (int met_idx = 0; met_idx < _metCount; met_idx++)
+    {
+        for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+        {
+            for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+            {
+                *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+            }
+        }
+    }
 
-	close(fd);
-	return(1);
+    close(fd);
+    return(1);
 }
-
 
 //---------------------//
 // GMF:ReadPolarimetric//
@@ -213,10 +213,10 @@ int GMF::ReadPolarimetric(
 
         while(!feof(ifp)){
 	  char string[40];
-          
-          float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh, 
+
+          float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh,
 	    phhvh;
-       
+
           // Read ASCII line of ipnuts and outputs to model function.
           fscanf(ifp,"%s",string);
           if(feof(ifp)) break;
@@ -245,7 +245,7 @@ int GMF::ReadPolarimetric(
           ispd=_SpdToIndex(spd);
           itheta=_IncToIndex(theta);
           ichi=_ChiToIndex(chi);
-         
+
           // Compute table values
           s0vv=pow(10.0,0.1*s0vv);
           s0hv=pow(10.0,0.1*s0hv);
@@ -263,9 +263,9 @@ int GMF::ReadPolarimetric(
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hh;
           imet=_MetToIndex(Meas::HV_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hv;
-          imet=_MetToIndex(Meas::VV_VH_CORR_MEAS_TYPE);
+          imet=_MetToIndex(Meas::VV_HV_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
-          imet=_MetToIndex(Meas::HH_HV_CORR_MEAS_TYPE);
+          imet=_MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
 	}
 	//----------------------//
@@ -279,7 +279,8 @@ int GMF::ReadPolarimetric(
 		{
 			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
 			{
-			  float tmp= *(*(*(*(_value+met_idx)+inc_idx)+file_min_spd_idx)+chi_idx);
+			  float tmp =
+                  *(*(*(*(_value+met_idx)+inc_idx)+file_min_spd_idx)+chi_idx);
 			  tmp*=(float)spd_idx/(float)file_min_spd_idx;
 			  *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = tmp;
 			}
@@ -1426,116 +1427,144 @@ GMF::_ObjectiveFunction(
     float      phi,
     Kp*        kp)
 {
-	//-----------------------------------------//
-	// initialize the objective function value //
-	//-----------------------------------------//
+    //-----------------------------------------//
+    // initialize the objective function value //
+    //-----------------------------------------//
 
-	float fv = 0.0;
+    float fv = 0.0;
 
-	//-------------------------//
-	// for each measurement... //
-	//-------------------------//
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
 
-	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
-	{
-		//---------------------------------------//
-		// get sigma-0 for the trial wind vector //
-		//---------------------------------------//
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        //---------------------------------------//
+        // get sigma-0 for the trial wind vector //
+        //---------------------------------------//
 
-		float chi = phi - meas->eastAzimuth + pi;
-		float trial_value;
-		GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
-			&trial_value);
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
 
-		//------------------------------------------------------------//
-		// find the difference between the trial and measured sigma-0 //
-		//------------------------------------------------------------//
+        //------------------------------------------------------------//
+        // find the difference between the trial and measured sigma-0 //
+        //------------------------------------------------------------//
 
-		float s = trial_value - meas->value;
+        float s = trial_value - meas->value;
 
-		//-------------------------------------------------------//
-		// calculate the expected variance for the trial sigma-0 //
-		//-------------------------------------------------------//
+        //-------------------------------------------------------//
+        // calculate the expected variance for the trial sigma-0 //
+        //-------------------------------------------------------//
 
-		if (kp)
-		{
-			//--------------//
-			// Kpc variance //
-			//--------------//
+        if (kp)
+        {
+            //--------------//
+            // Kpc variance //
+            //--------------//
 
-			double vpc = 0.0;
-			if (retrieveUsingKpcFlag)
-			{
-				if (! kp->GetVpc(meas, trial_value, &vpc))
-					return(0);
-			}
+            double vpc = 0.0;
+            float s0_co, s0_x;
+            if (retrieveUsingKpcFlag)
+            {
+                switch (meas->measType)
+                {
+                case Meas::VV_MEAS_TYPE:
+                case Meas::HH_MEAS_TYPE:
+                case Meas::VH_MEAS_TYPE:
+                case Meas::HV_MEAS_TYPE:
+                    if (! kp->GetVpc(meas, trial_value, &vpc))
+                        return(0);
+                    break;
+                case Meas::VV_HV_CORR_MEAS_TYPE:
+                    GetInterpolatedValue(Meas::VV_MEAS_TYPE,
+                        meas->incidenceAngle, spd, chi, &s0_co);
+                    GetInterpolatedValue(Meas::HV_MEAS_TYPE,
+                        meas->incidenceAngle, spd, chi, &s0_x);
+                    if (! kp->GetVpc(meas, trial_value, s0_co, s0_x, &vpc))
+                        return(0);
+                    break;
+                case Meas::HH_VH_CORR_MEAS_TYPE:
+                    GetInterpolatedValue(Meas::HH_MEAS_TYPE,
+                        meas->incidenceAngle, spd, chi, &s0_co);
+                    GetInterpolatedValue(Meas::VH_MEAS_TYPE,
+                        meas->incidenceAngle, spd, chi, &s0_x);
+                    if (! kp->GetVpc(meas, trial_value, s0_co, s0_x, &vpc))
+                        return(0);
+                    break;
+                default:
+                    return(0);
+                    break;
+                }
+            }
 
-			//-----//
-			// Kpm //
-			//-----//
+            //-----//
+            // Kpm //
+            //-----//
 
-			double kpm2 = 0.0;
-			if (retrieveUsingKpmFlag)
-			{
-				if (! kp->GetKpm2(meas->measType, spd, &kpm2))
-					return(0);
-			}
+            double kpm2 = 0.0;
+            if (retrieveUsingKpmFlag)
+            {
+                if (! kp->GetKpm2(meas->measType, spd, &kpm2))
+                    return(0);
+            }
 
-			//------//
-			// Kpri //
-			//------//
+            //------//
+            // Kpri //
+            //------//
 
-			double kpri2 = 0.0;
-			if (retrieveUsingKpriFlag)
-			{
-				if (! kp->GetKpri2(&kpri2))
-					return(0);
-			}
+            double kpri2 = 0.0;
+            if (retrieveUsingKpriFlag)
+            {
+                if (! kp->GetKpri2(&kpri2))
+                    return(0);
+            }
 
-			//------//
-			// Kprs //
-			//------//
+            //------//
+            // Kprs //
+            //------//
 
-			double kprs2 = 0.0;
-			if (retrieveUsingKprsFlag)
-			{
-				if (! kp->GetKprs2(meas, &kprs2))
-					return(0);
-			}
+            double kprs2 = 0.0;
+            if (retrieveUsingKprsFlag)
+            {
+                if (! kp->GetKprs2(meas, &kprs2))
+                    return(0);
+            }
 
-			//------------------------//
-			// calculate the variance //
-			//------------------------//
+            //------------------------//
+            // calculate the variance //
+            //------------------------//
 
-//			double var = vpc +
-//				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
-			double var =
-				(trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
-				trial_value*trial_value;
+//            double var = vpc +
+//                (kpm2 + kpri2 + kprs2) * trial_value * trial_value;
+            double var =
+                (trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
+                trial_value*trial_value;
 
-			if (var == 0.0)
-			{	// variances all turned off, so use uniform weighting.
-				fv += s*s;
-			}
-			else if (retrieveUsingLogVar)
-			{
-				fv += s*s / var + log(var);
-			}
-			else
-			{
-				fv += s*s / var;
-			}
-		}
-		else
-		{
-			//--------------//
-			// no kp at all //
-			//--------------//
+            if (var == 0.0)
+            {    // variances all turned off, so use uniform weighting.
+                fv += s*s;
+            }
+            else if (retrieveUsingLogVar)
+            {
+                fv += s*s / var + log(var);
+            }
+            else
+            {
+                fv += s*s / var;
+            }
+        }
+        else
+        {
+            //--------------//
+            // no kp at all //
+            //--------------//
 
-			fv += s*s;
-		}
-	}
-	return(-fv);
+            fv += s*s;
+        }
+    }
+    return(-fv);
 }
 
 //-----------------------//
@@ -1798,7 +1827,7 @@ GMF::Calculate_Init_Wind_Solutions(
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
 
-#define GSFIXED	   
+#define GSFIXED
 #ifdef GSFIXED
 			// Re-evaluate objective function to avoid interpolation bumps
 			// that introduce artificial peaks.
@@ -3013,7 +3042,7 @@ GMF::RetrieveWinds_H1(
 
 #define H3_MIN_RAD_WIDTH  0.7854    // 45 degrees
 
-// h3_and_s1_flag 
+// h3_and_s1_flag
 // 0:=  H2
 // 1:=  H3
 // 2:=  S1
@@ -3050,7 +3079,7 @@ GMF::RetrieveWinds_H2(
     if(h3_and_s1_flag==2){    // S1 uses a peak-specific threshold
       min_obj=0;
       threshold_delta=1.0-H1_THRESH_FRACTION;
-    }  
+    }
     else threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
 
     //----------------//
@@ -3488,7 +3517,7 @@ GMF::RetrieveWinds_S2(
 
     int final_num_peaks=ambiguities;
 
-    // For now assume that extra ambiguities implies 
+    // For now assume that extra ambiguities implies
     // DeleteBadPeaks is not needed but only deleting the lowest obj.
     if (ambiguities > DEFAULT_MAX_SOLUTIONS){
         goto wrap_it_up_S2;
@@ -3519,7 +3548,7 @@ GMF::RetrieveWinds_S2(
     // Estimated Direction Mean Square Error   //
     //-----------------------------------------//
     if(S2_USE_BRUTE_FORCE){
-      if(!BruteForceGetMinEstimateMSE(peak_dir, ambiguities,&mse_est)) 
+      if(!BruteForceGetMinEstimateMSE(peak_dir, ambiguities,&mse_est))
                   return(0);
     }
     else{
@@ -3571,9 +3600,9 @@ GMF::RetrieveWinds_S2(
 	  wvp=wvc->ambiguities.GetNext()){
 	fprintf(ofpp,"%g %g\n",wvp->dir*rtd,_bestObj[int((wvp->dir)/_phiStepSize)]);
       }
-      fprintf(ofpp,"&\n"); 
+      fprintf(ofpp,"&\n");
       fprintf(ofpp,"%g 0\n&\n%g 0\n&\n%d\n&\n%d\n&\n",sqrt(mse_est*rtd*rtd),
-	      sqrt(mse_est_new*rtd*rtd),initial_num_peaks,ambiguities);   
+	      sqrt(mse_est_new*rtd*rtd),initial_num_peaks,ambiguities);
       fclose(ofpp);
       printf("%s ",file);
     }
@@ -3586,25 +3615,25 @@ GMF::RetrieveWinds_S2(
 // Method for determining the directions of extra ambiguities required
 // to minimize the estimated MSE
 // ConvertObjToPdf must have been previously run for this to work.
-int   
+int
 GMF::BruteForceGetMinEstimateMSE(
-       float* peak_dir, 
-       int    num_peaks, 
+       float* peak_dir,
+       int    num_peaks,
        float* mse,
        int    level=0,
        float* tmp_peak_dir=NULL){
-  // Check to see if we are at the bottom level 
+  // Check to see if we are at the bottom level
   if(level+num_peaks == DEFAULT_MAX_SOLUTIONS){
     // if so compute MSE and compare to input value
     float tmp=EstimateDirMSE(tmp_peak_dir,DEFAULT_MAX_SOLUTIONS);
     if(tmp<*mse){
-      *mse=tmp; 
+      *mse=tmp;
       for(int c=num_peaks;c<DEFAULT_MAX_SOLUTIONS;c++){
 	peak_dir[c]=tmp_peak_dir[c];
       }
     }
   }
-  
+
   else{
     // special case for top level
     if(level==0){
@@ -3623,10 +3652,10 @@ GMF::BruteForceGetMinEstimateMSE(
 // Method for determining the directions of extra ambiguities required
 // to minimize the estimated MSE
 // ConvertObjToPdf must have been previously run for this to work.
-int   
+int
 GMF::GetMinEstimateMSE(
-       float* peak_dir, 
-       int    num_peaks, 
+       float* peak_dir,
+       int    num_peaks,
        float* mse,
        int num=0){
   int finished=0;
@@ -3663,7 +3692,7 @@ GMF::GetMinEstimateMSE(
     if(!intervals.Append(interval)) return(0);
   }
   else{
-    // Sort Peaks 
+    // Sort Peaks
     sort_increasing(peak_dir,num_peaks);
     for(int p=0;p<num_peaks;p++){
       AngleInterval* interval = new AngleInterval;
@@ -3692,9 +3721,9 @@ GMF::GetMinEstimateMSE(
       fprintf(ofpp,"[%g,%g]\n",(interval->left)*rtd,(interval->right)*rtd);
     }
     fprintf(ofpp,"\n\n\n");
-  }  
-  
-  while(!finished){ 
+  }
+
+  while(!finished){
     //------------------------------------//
     // Compute trial ambiguity sets       //
     //------------------------------------//
@@ -3716,7 +3745,7 @@ GMF::GetMinEstimateMSE(
       }
       fprintf(ofpp,"\n\n");
     }
-    // Choose best among trial ambiguity sets 
+    // Choose best among trial ambiguity sets
     int min_idx=-1;
     *mse=two_pi*two_pi;
     for(int t=0;t<num_trials;t++){
@@ -3728,7 +3757,7 @@ GMF::GetMinEstimateMSE(
       int i=0;
       for(AngleInterval* interval=intervals.GetHead();interval;
             interval=intervals.GetNext()){
-	interval->GetEquallySpacedAngles(num_trial_ambigs[t][i], 
+	interval->GetEquallySpacedAngles(num_trial_ambigs[t][i],
 					 &tmp_peak_dir[offset]);
         offset+=num_trial_ambigs[t][i];
 	i++;
@@ -3753,10 +3782,10 @@ GMF::GetMinEstimateMSE(
     if(debug) fprintf(ofpp,"Best trial is %d, RSS=%g\n\n\n", min_idx,
 		      sqrt((*mse)*rtd*rtd));
 
-    //----------------------------------------// 
+    //----------------------------------------//
     // Compute new Search Intervals           //
     //----------------------------------------//
-  
+
     // Delete Unpromising Search Intervals
     AngleInterval* interval=intervals.GetHead();
     int i=0;
@@ -3809,7 +3838,7 @@ GMF::GetMinEstimateMSE(
 //----------------------------------//
 // DeleteBadPeaks                   //
 //----------------------------------//
-int 
+int
 GMF::DeleteBadPeaks(
      WVC* wvc,
      float* peak_dir,
@@ -3855,7 +3884,7 @@ GMF::DeleteBadPeaks(
     else{
       peak_dir[idx-num_removed]=peak_dir[idx];
       wvp=wvc->ambiguities.GetNext();
-    }									      
+    }
   }
   return(1);
 }
@@ -3875,7 +3904,7 @@ GMF::EstimateDirMSE(
    float tmp=ANGDIF(dir,dir2);
    MSE+=tmp*tmp*_bestObj[c];
  }
- 
+
  for(AngleInterval*ai=alp->GetHead();ai!=old;ai=alp->GetNext());
  return(MSE);
 }
@@ -3940,13 +3969,13 @@ GMF::RetrieveWinds_S3(
     //------//
 
     wvc->SortByObj();
-    
+
 
     //-------------------------------------------//
     // Determine Direction Intervals Comprising  //
     // (S3_PROB_THRESHOLD)*100% of the probability//
     //-------------------------------------------//
-  
+
     if(!s4_flag){
       if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
     }
@@ -3973,14 +4002,14 @@ GMF::RetrieveWinds_S3(
     return(1);
 }
 
-int 
+int
 GMF::BuildDirectionRangesByMSE(
      WVC*   wvc,
-     float threshold){     
+     float threshold){
 
      int num=wvc->ambiguities.NodeCount();
      if(num==0) return(1);
-     
+
      // Initialize Ranges to Width 0
      int offset=0, minoffset=-1;
      int right=0;
@@ -4027,7 +4056,7 @@ GMF::BuildDirectionRangesByMSE(
      return(1);
 }
 
-int 
+int
 GMF::BuildDirectionRanges(
      WVC*   wvc,
      float threshold){
@@ -4035,14 +4064,14 @@ GMF::BuildDirectionRanges(
      int num=wvc->ambiguities.NodeCount();
      if(num==0) return(1);
      AngleInterval* range=new AngleInterval[num];
-     
+
      // Initialize Ranges to Width 0
      int offset=0;
      for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
 	 wvp=wvc->ambiguities.GetNext(), offset++){
        range[offset].SetLeftRight(wvp->dir,wvp->dir);
      }
-    
+
      // Initialize intermediate variables
      float prob_sum=0;
      int* dir_include=new int[_phiCount];
@@ -4114,7 +4143,4 @@ GMF::BuildDirectionRanges(
      delete[] left_idx;
      delete[] right_idx;
      return(1);
-} 
-
-
-
+}

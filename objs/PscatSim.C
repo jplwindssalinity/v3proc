@@ -87,7 +87,7 @@ PscatSim::DetermineNextEvent(
     {
     case 0:
         // inner beam
-        pscat_event->eventId = PscatEvent::HH_HV_SCAT_EVENT;
+        pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
         break;
     case 1:
         // outer beam
@@ -276,7 +276,7 @@ PscatSim::ScatSim(
     // Add Spot Specific Info to Frame //
     //---------------------------------//
 
-    if (! SetL1AScience(&meas_spot, pscat, l1a_frame))
+    if (! SetL1AScience(&meas_spot, pscat, pscat_event, l1a_frame))
         return(0);
 
     //-------------------------------//
@@ -418,11 +418,11 @@ PscatSim::SetMeasTypes(
             meas->measType = Meas::HH_MEAS_TYPE;
         }
         break;
-    case PscatEvent::VV_VH_SCAT_EVENT:
+    case PscatEvent::VV_HV_SCAT_EVENT:
         for (PMeas* meas = (PMeas*)meas_spot->GetHead(); meas;
             meas = (PMeas*)meas_spot->GetNext())
         {
-            meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
+            meas->measType = Meas::VV_HV_CORR_MEAS_TYPE;
 
             //--------------------//
             // add VV measurement //
@@ -450,11 +450,11 @@ PscatSim::SetMeasTypes(
             meas_spot->GotoNext();
         }
         break;
-    case PscatEvent::HH_HV_SCAT_EVENT:
+    case PscatEvent::HH_VH_SCAT_EVENT:
         for (PMeas* meas = (PMeas*)meas_spot->GetHead(); meas;
             meas = (PMeas*)meas_spot->GetNext())
         {
-            meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
+            meas->measType = Meas::HH_VH_CORR_MEAS_TYPE;
 
             //--------------------//
             // add HH measurement //
@@ -544,8 +544,8 @@ PscatSim::SetMeasurements(
             case Meas::HV_MEAS_TYPE:
                 sigma0 = 0.001;   //  ???
                 break;
-            case Meas::VV_VH_CORR_MEAS_TYPE:
-            case Meas::HH_HV_CORR_MEAS_TYPE:
+            case Meas::VV_HV_CORR_MEAS_TYPE:
+            case Meas::HH_VH_CORR_MEAS_TYPE:
                 sigma0 = 0.001;
                 break;
             default:
@@ -658,8 +658,8 @@ PscatSim::SetMeasurements(
 	      pscat->cds.currentBeamIdx=real_beam_idx;              
             }
 
-            if (meas->measType == Meas::VV_VH_CORR_MEAS_TYPE || 
-                meas->measType == Meas::HH_HV_CORR_MEAS_TYPE)
+            if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE || 
+                meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
             {  // correlation measurements need extra info to compute Kpc
 		      PMeas* meas1 = (PMeas*)meas_spot->GetPrev();  // co-pol
 		      PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
@@ -733,6 +733,7 @@ int
 PscatSim::SetL1AScience(
     MeasSpot*       meas_spot,
     Pscat*          pscat,
+    PscatEvent*     pscat_event,
     PscatL1AFrame*  l1a_frame)
 {
     //----------------------//
@@ -761,6 +762,12 @@ PscatSim::SetL1AScience(
     float spot_noise;
     sigma0_to_Esn_noise(pscat, meas_spot, simKpcFlag, &spot_noise);
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
+
+    //---------------//
+    // set the event //
+    //---------------//
+
+    l1a_frame->event[_spotNumber] = (unsigned char)pscat_event;
 
     _spotNumber++;
 

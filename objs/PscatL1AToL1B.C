@@ -298,18 +298,18 @@ PscatL1AToL1B::Convert(
             case PscatEvent::HH_SCAT_EVENT:
                 meas->measType = Meas::HH_MEAS_TYPE;
                 break;
-            case PscatEvent::VV_VH_SCAT_EVENT:
+            case PscatEvent::VV_HV_SCAT_EVENT:
                 meas->measType = Meas::VV_MEAS_TYPE;
                 new_meas = new Meas();
                 *new_meas = *meas;
-                new_meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
+                new_meas->measType = Meas::VV_HV_CORR_MEAS_TYPE;
                 meas_spot->InsertAfter(new_meas);
                 break;
-            case PscatEvent::HH_HV_SCAT_EVENT:
+            case PscatEvent::HH_VH_SCAT_EVENT:
                 meas->measType = Meas::HH_MEAS_TYPE;
                 new_meas = new Meas();
                 *new_meas = *meas;
-                new_meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
+                new_meas->measType = Meas::HH_VH_CORR_MEAS_TYPE;
                 meas_spot->InsertAfter(new_meas);
                 break;
             default:
@@ -341,8 +341,8 @@ PscatL1AToL1B::Convert(
                     frame->science[spot_meas_offset + slice_meas_offset];
                 Esn_echo += meas->value;
                 break;
-            case Meas::VV_VH_CORR_MEAS_TYPE:
-            case Meas::HH_HV_CORR_MEAS_TYPE:
+            case Meas::VV_HV_CORR_MEAS_TYPE:
+            case Meas::HH_VH_CORR_MEAS_TYPE:
                 meas->value =
                     frame->science[spot_meas_offset + slice_meas_offset + 1];
                 break;
