@@ -134,6 +134,14 @@ LocateSlices(
 			return(0);
 	}
 
+	//------------------//
+	// find beam center //
+	//------------------//
+
+	double look, azim;
+	if (! beam->GetElectricalBoresight(&look, &azim))
+		return(0);
+
 	//-------------------//
 	// for each slice... //
 	//-------------------//
@@ -165,7 +173,6 @@ LocateSlices(
 		Vector3 look_vector;
 		// guess at a reasonable slice frequency tolerance of .1%
 		float ftol = bw / 1000.0;
-		double look, azim;
 		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
 			look, azim, f1, f2, ftol, &(meas->outline), &look_vector,
 			&centroid))
