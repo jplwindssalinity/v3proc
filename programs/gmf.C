@@ -67,6 +67,9 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
+#include "Tracking.h"
+#include "Tracking.C"
+#include "Qscat.h"
 
 //-----------//
 // TEMPLATES //
@@ -81,6 +84,8 @@ template class List<long>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class List<AngleInterval>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //
@@ -215,13 +220,14 @@ main(
 		for (int pol_idx = 0; pol_idx < POLS; pol_idx++)
 		{
 			PolE pol = (PolE) pol_idx;
+            Meas::MeasTypeE met = PolToMeasType(pol);
 			for (int inc = 16; inc < INCS; inc += INC_STEP)
 			{
 				for (int spd = 1; spd < SPDS; spd += 1)
 				{
 					double dspd = (double)spd;
 					float xa0, xa1, xa1p, xa2, xa2p, xa3, xa3p, xa4, xa4p;
-					gmf.GetCoefs(pol, (float)inc * dtr, dspd, &xa0, &xa1,
+					gmf.GetCoefs(met, (float)inc * dtr, dspd, &xa0, &xa1,
 						&xa1p, &xa2, &xa2p, &xa3, &xa3p, &xa4, &xa4p);
 					a0[pol][inc][spd] = xa0;
 					a1[pol][inc][spd] = xa1 / xa0;
@@ -426,7 +432,7 @@ term_vs_spd(
 			fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTES, name,
 				QUOTES);
 
-		int incs[] = { 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, -1 };
+		int incs[] = { 20, 24, 28, 32, 36, 40, 44, 48, 52, 54, 56, 60, 64, -1 };
 		int inc_idx = 0;
 		while (incs[inc_idx] > 0)
 		{
