@@ -53,7 +53,8 @@ OBJS = \
 
 INCS = \
 	*.h \
-	List.C
+	List.C \
+	BufferedList.C
 
 #----------------------------------------------------------------------
 # default: make library
