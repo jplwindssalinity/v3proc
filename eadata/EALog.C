@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.30   01 Mar 1999 11:26:34   sally
+// add NOPM flag
+// 
 //    Rev 1.29   22 Sep 1998 17:50:40   daffer
 // Corrected small problem in ~EALog::(stage_nonrtc_commands) section
 // 
@@ -177,6 +180,7 @@ EALog::EALog( char *program_name, char *logfile,
     groupd="EA";
     RunStatus_Start=EA_FAILURE;// The start of the enum, nothing more
     
+#ifndef NOPM
     char* tempP=0;
     if ((tempP = strrchr(program_name, '/')))
         (void) strcpy( ProgName, ++tempP);
@@ -285,6 +289,7 @@ EALog::EALog( char *program_name, char *logfile,
         
     } else 
         _Status=EA_SUCCESS;
+#endif
 }; // EALog Constructor
 
 //
@@ -582,6 +587,7 @@ void EALog::SetStatus(RunStatusE _status)
 void
 EALog::WriteMsg(  char *stringbuf ) 
 {
+#ifndef NOPM
   // Writes message to Log file
     if (LogFileStatus) {
         time_t now=time(NULL);
@@ -591,11 +597,12 @@ EALog::WriteMsg(  char *stringbuf )
         fprintf(LogFD,"<%s>: <%ld>: %s, %s",
                 ProgName, _pid, time, EALog::CheckBuf( stringbuf ));
     }
-    
+#endif
 };
 
 void EALog::WriteMsg( const char *stringbuf ) 
 {
+#ifndef NOPM
   // Writes message to Log file
     if (LogFileStatus)  {
         time_t now = time(NULL);
@@ -605,11 +612,13 @@ void EALog::WriteMsg( const char *stringbuf )
         EALog::VWriteMsg( "<%s>: <%d>: %s, %s",
                           ProgName, _pid,time, stringbuf );
     }
+#endif
 };
 
 void
 EALog::WriteMsg(RunStatusE status ) 
 {
+#ifndef NOPM
     // Writes message to Log file
     char * EARunStatusS[] = { "EA_FAILURE",//Strings for use with WriteMsg.
                               "EA_ERROR",     
@@ -630,7 +639,7 @@ EALog::WriteMsg(RunStatusE status )
         EALog::VWriteMsg("<%s>: <%d>: %s, %s",
                          ProgName, _pid, time, EARunStatusS[status-RunStatus_Start]);
     }
-    
+#endif
 };
 
 
@@ -641,6 +650,7 @@ EALog::VWriteMsg( const char * fmt, ... ) {
     char *msg;
     va_list args;
     
+#ifndef NOPM
     if (LogFileStatus) {
         
         if ((tmpFP=fopen("/dev/null","w")) == NULL ) {
@@ -661,6 +671,7 @@ EALog::VWriteMsg( const char * fmt, ... ) {
             va_end(args);
         }
     }
+#endif
 }; // end VWriteMsg.
 
 void
