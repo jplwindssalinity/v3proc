@@ -453,7 +453,7 @@ GMF::_FindSolutionCurve(
 				best_obj[phi_idx] = obj;
 				break;
 			}
-			else if (obj_plus > obj_minus)
+			else if (obj_plus >= obj && obj_plus >= obj_minus)
 			{
 				// move up
 				spd_idx++;
@@ -463,7 +463,7 @@ GMF::_FindSolutionCurve(
 				obj_plus = _ObjectiveFunction(meas_list, spd + dspd,
 					phi);
 			}
-			else if (obj_minus > obj_plus)
+			else if (obj_minus >= obj && obj_minus >= obj_plus)
 			{
 				// move down
 				spd_idx--;
