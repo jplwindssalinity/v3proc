@@ -59,15 +59,22 @@ static const char rcs_id[] =
 #include <fcntl.h>
 #include "List.h"
 #include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 
+//-----------//
+// TEMPLATES //
+//-----------//
+
 template class List<StringPair>;
 template class List<Meas>;
 template class List<LonLat>;
 template class List<MeasSpot>;
+template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<WindVector>;
 
@@ -239,8 +246,6 @@ main(
 	int need_spacecraft_event  = 1;
 	int need_instrument_event  = 1;
 
-	OrbitState* orbit_state;
-
 	while (instrument_event.time < 120.0)
 	{
 		//--------------------------------------//
@@ -293,10 +298,14 @@ main(
 			switch(instrument_event.eventId)
 			{
 			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
-				orbit_state = &(spacecraft.orbitState);
 				spacecraft_sim.UpdateOrbit(instrument_event.time,
 					&spacecraft);
-				instrument_sim.ScatSim(instrument_event.time, orbit_state,
+				spacecraft_sim.UpdateAttitude(instrument_event.time,
+					&spacecraft);
+				instrument_sim.UpdateAntennaPosition(instrument_event.time,
+					&instrument);
+				instrument_sim.ScatSim(instrument_event.time,
+					&(spacecraft.orbitState), &(spacecraft.attitude),
 					&instrument, instrument_event.beamIdx, &windfield, &gmf);
 				break;
 			default:

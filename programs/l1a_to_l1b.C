@@ -59,6 +59,8 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include "List.h"
 #include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L10.h"
@@ -70,11 +72,12 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
 template class List<StringPair>;
 template class List<Meas>;
 template class List<LonLat>;
 template class List<MeasSpot>;
-template class List<OrbitState>;
 template class List<WindVector>;
 
 //-----------//
@@ -154,6 +157,28 @@ main(
 		exit(1);
 	}
 
+	//------------------------------//
+	// create and configure antenna //
+	//------------------------------//
+
+	Antenna antenna;
+	if (! ConfigAntenna(&antenna, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring antenna\n", command);
+		exit(1);
+	}
+
+	//--------------------------------//
+	// create and configure ephemeris //
+	//--------------------------------//
+
+	Ephemeris ephemeris;
+	if (! ConfigEphemeris(&ephemeris, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring ephemeris\n", command);
+		exit(1);
+	}
+
 	//------------//
 	// open files //
 	//------------//
@@ -199,7 +224,7 @@ main(
 		// convert //
 		//---------//
 
-		if (! l10_to_l15.Convert(&l10, &l15))
+		if (! l10_to_l15.Convert(&l10, &antenna, &ephemeris, &l15))
 		{
 			fprintf(stderr, "%s: error converting Level 1.0 to Level 1.5\n",
 				command);
