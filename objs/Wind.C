@@ -127,6 +127,23 @@ WVC::~WVC()
 	return;
 }
 
+//-----------------------//
+// WVC::WriteAmbigsAscii //
+//-----------------------//
+
+int
+WVC::WriteAmbigsAscii(
+	FILE*		ofp)
+{
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		fprintf(ofp, "Spd:%g Dir:%g Obj:%g\n", wvp->spd, wvp->dir * rtd,
+			wvp->obj);
+	}
+	return(1);
+}
+
 //---------------//
 // WVC::WriteL20 //
 //---------------//
@@ -214,23 +231,6 @@ WVC::ReadL20(
 
 	selected = ambiguities.GetNodeWithIndex((int)selected_idx);
 
-	return(1);
-}
-
-//-----------------------//
-// WVC::WriteAmbigsAscii //
-//-----------------------//
-
-int
-WVC::WriteAmbigsAscii(
-	FILE*		ofp)
-{
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		fprintf(ofp, "Spd:%g Dir:%g Obj:%g\n", wvp->spd, wvp->dir * rtd,
-			wvp->obj);
-	}
 	return(1);
 }
 
@@ -507,6 +507,45 @@ WindSwath::~WindSwath()
 	return;
 }
 
+//----------------//
+// WindSwath::Add //
+//----------------//
+
+int
+WindSwath::Add(
+	int		cti,
+	int		ati,
+	WVC*	wvc)
+{
+	if (cti < 0 || cti >= _crossTrackSize ||
+		ati < 0 || ati >= _alongTrackSize)
+	{
+		return(0);
+	}
+
+	swath[cti][ati] = wvc;
+	return(1);
+}
+
+//-----------------------//
+// WindSwath::DeleteWVCs //
+//-----------------------//
+
+int
+WindSwath::DeleteWVCs()
+{
+	for (int i = 0; i < _alongTrackSize; i++)
+	{
+		for (int j = 0; j < _crossTrackSize; j++)
+		{
+			WVC* wvc = *(*(swath + i) + j);
+			delete wvc;
+			*(*(swath + i) + j) = NULL;
+		}
+	}
+	return(1);
+}
+
 //---------------------//
 // WindSwath::WriteL20 //
 //---------------------//
@@ -700,45 +739,6 @@ WindSwath::MedianFilterPass(
 	}
 
 	return(flips);
-}
-
-//----------------//
-// WindSwath::Add //
-//----------------//
-
-int
-WindSwath::Add(
-	int		cti,
-	int		ati,
-	WVC*	wvc)
-{
-	if (cti < 0 || cti >= _crossTrackSize ||
-		ati < 0 || ati >= _alongTrackSize)
-	{
-		return(0);
-	}
-
-	swath[cti][ati] = wvc;
-	return(1);
-}
-
-//-----------------------//
-// WindSwath::DeleteWVCs //
-//-----------------------//
-
-int
-WindSwath::DeleteWVCs()
-{
-	for (int i = 0; i < _alongTrackSize; i++)
-	{
-		for (int j = 0; j < _crossTrackSize; j++)
-		{
-			WVC* wvc = *(*(swath + i) + j);
-			delete wvc;
-			*(*(swath + i) + j) = NULL;
-		}
-	}
-	return(1);
 }
 
 //----------------------//

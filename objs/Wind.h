@@ -214,7 +214,7 @@ public:
 	WindSwath();
 	~WindSwath();
 
-	int		Allocate(int cross_track_size, int along_track_size);
+//	int		Allocate(int cross_track_size, int along_track_size);
 
 	//----------//
 	// building //

@@ -79,7 +79,8 @@ template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<WindVectorPlus>;
-template class Array<WindVectorPlus>;
+template class Array<char>;
+template class Array<WindVectorPlus*>;
 
 //-----------//
 // CONSTANTS //
