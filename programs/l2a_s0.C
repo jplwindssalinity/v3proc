@@ -155,24 +155,10 @@ main(
 		MeasList* ml = &(l2a.frame.measList);
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
 		{
-fprintf(output_fp, "%s %g %g %g\n", beam_map[m->pol], m->incidenceAngle * rtd,
-	m->eastAzimuth * rtd, m->value);
-/*
-			if (m->value < 1e-5)
-			{
-				fprintf(output_fp, "%d %g %g\n", l2a.frame.ati *
-					l2a.header.crossTrackBins + l2a.frame.cti, m->value,
-					0.0);
-			}
-			else
-			{
-				fprintf(output_fp, "%d %g %g\n", l2a.frame.ati *
-					l2a.header.crossTrackBins + l2a.frame.cti, m->value,
-					m->EstimatedKp(m->value));
-			}
-*/
+			fprintf(output_fp, "%s %g %g %g\n", beam_map[m->pol],
+				m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
 		}
-fprintf(output_fp, "---\n");
+		fprintf(output_fp, "#####\n");
 	}
 
 	//-----------------//
