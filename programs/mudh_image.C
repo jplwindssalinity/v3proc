@@ -15,6 +15,7 @@
 //    Reads in a set of MUDH files and generates an image file.
 //
 // OPTIONS
+//    [ -n ]         Need NBD (basically, eliminate outer beam only)
 //    [ -m thresh ]  Make the image for MUDH, using the specified
 //                     threshold to classify rain.
 //    [ -r thresh ]  Make the image for SSM/I integrated rain rate,
@@ -70,7 +71,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "m:r:"
+#define OPTSTRING  "nm:r:"
 
 #define LON_BINS  720
 #define LON_MIN   0.0
@@ -93,7 +94,7 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -m thresh ]", "[ -r thresh ]",
+const char* usage_array[] = { "[ -n ]", "[ -m thresh ]", "[ -r thresh ]",
     "<start_rev>", "<end_rev>", "<output_file>", 0 };
 
 static float           value_tab[AT_WIDTH][CT_WIDTH];
@@ -133,6 +134,7 @@ main(
     int opt_mudh_thresh = 0;
     float irr_thresh = 0.0;
     int opt_rain = 0;
+    int opt_need_nbd = 0;
 
     //------------------------//
     // parse the command line //
@@ -145,6 +147,9 @@ main(
     {
         switch(c)
         {
+        case 'n':
+            opt_need_nbd = 1;
+            break;
         case 'm':
             mudh_thresh = atof(optarg);
             opt_mudh_thresh = 1;
@@ -305,6 +310,10 @@ main(
                 for (int cti = 0; cti < CT_WIDTH; cti++)
                 {
                     if (flag_tab[ati][cti] == 2)
+                        continue;
+
+                    // check the "must have NBD" case
+                    if (opt_need_nbd && nbd_array[ati][cti] == MAX_SHORT)
                         continue;
 
                     //--------------------------------//

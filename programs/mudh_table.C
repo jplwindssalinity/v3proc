@@ -8,7 +8,7 @@
 //    mudh_table
 //
 // SYNOPSIS
-//    mudh_table [ -h ] [ -m minutes ] [ -r rain_rate ] <start_rev>
+//    mudh_table [ -h ] [ -m minutes ] [ -r irr_thresh ] <start_rev>
 //        <end_rev> <output_base>
 //
 // DESCRIPTION
@@ -17,7 +17,7 @@
 // OPTIONS
 //    [ -h ]            Make a sample histogram.
 //    [ -m minutes ]    Time difference maximum.
-//    [ -r rain_rate ]  The SSM/I rain rate to threshold.
+//    [ -r irr_thresh ]  The SSM/I rain rate to threshold.
 //
 // OPERANDS
 //    <start_rev>    Duh.
@@ -113,7 +113,7 @@ int opt_hist = 0;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r rain_rate ]",
+const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r irr_thresh ]",
     "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // last index: SSM/I class (0=all, 1=rainfree, 2=rain)
@@ -238,18 +238,27 @@ main(
         //----------------//
 
         char rain_file[1024];
-        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.rain", rev);
+        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.irain", rev);
         unsigned char rain_rate[AT_WIDTH][CT_WIDTH];
         unsigned char time_dif[AT_WIDTH][CT_WIDTH];
+        unsigned short integrated_rain_rate[AT_WIDTH][CT_WIDTH];
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
         {
-            fprintf(stderr, "%s: error opening rain file %s\n", command,
+            fprintf(stderr, "%s: error opening rain file %s (continuing)\n",
+                command, rain_file);
+            continue;
+        }
+        unsigned int size = CT_WIDTH * AT_WIDTH;
+        if (fread(rain_rate, sizeof(char), size, ifp) != size ||
+            fread(time_dif, sizeof(char), size, ifp) != size ||
+            fseek(ifp, size, SEEK_CUR) != 0 ||
+            fread(integrated_rain_rate, sizeof(short), size, ifp) != size)
+        {
+            fprintf(stderr, "%s: error reading rain file %s\n", command,
                 rain_file);
             exit(1);
         }
-        fread(rain_rate, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
-        fread(time_dif, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
         fclose(ifp);
 
         //---------------------------------------//
@@ -262,7 +271,7 @@ main(
             {
                 int co_time = time_dif[ati][cti] * 2 - 180;
                 if (abs(co_time) > minutes)
-                    rain_rate[ati][cti] = 255;
+                    integrated_rain_rate[ati][cti] = 2000;
             }
         }
 
@@ -275,7 +284,7 @@ main(
             for (int cti = 0; cti < CT_WIDTH; cti++)
             {
                 // need the following: SSM/I rain rate, speed, direction, MLE
-                if (rain_rate[ati][cti] >= 250 ||
+                if (integrated_rain_rate[ati][cti] >= 1000 ||
                     spd_array[ati][cti] == MAX_SHORT ||
                     dir_array[ati][cti] == MAX_SHORT ||
                     mle_array[ati][cti] == MAX_SHORT)
@@ -313,10 +322,10 @@ main(
                 if (imle < 0) imle = 0;
                 if (imle > max_imle) imle = max_imle;
 
-                float rr = (float)rain_rate[ati][cti] * 0.1;
-                if (rr == 0.0)
+                float irr = (float)integrated_rain_rate[ati][cti] * 0.1;
+                if (irr == 0.0)
                     counts[inbd][ispd][idir][imle][1]++;    // rainfree
-                if (rr > rain_threshold)
+                if (irr > rain_threshold)
                     counts[inbd][ispd][idir][imle][2]++;    // rain
                 counts[inbd][ispd][idir][imle][0]++;        // all
             }
