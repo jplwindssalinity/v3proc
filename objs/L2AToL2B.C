@@ -49,6 +49,7 @@ L17ToL20::ConvertAndWrite(
 	}
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
+fprintf(stderr, "deleting node count %d\n", wvc->ambiguities.NodeCount());
 		delete wvc;
 		return(1);
 	}
@@ -121,23 +122,6 @@ L17ToL20::WriteSolutionCurves(
 
 	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), phiStep, phiBuffer,
 		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS);
-
-	//--------------------//
-	// indicate solutions //
-	//--------------------//
-
-	WVC* wvc = new WVC();
-	gmf->RetrieveWinds(&(l17->frame.measList), wvc, phiStep, phiBuffer,
-		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS);
-
-	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
-		wvp = wvc->ambiguities.GetNext())
-	{
-		fprintf(ofp, "&\n");
-		fprintf(ofp, "%g %g\n", wvp->dir * rtd, wvp->spd);
-	}
-
-	delete wvc;
 
 	//-------------------//
 	// close output file //

@@ -173,7 +173,7 @@ GMF::WriteSolutionCurves(
 	float		phi_step_size,
 	float		phi_buffer,
 	float		phi_max_smoothing,
-	float		spd_tolerance,
+	float		spd_tol,
 	int			desired_solutions)
 {
 	//--------------------------//
@@ -199,7 +199,7 @@ GMF::WriteSolutionCurves(
 			meas = meas_list->GetNext())
 	{
 		new_list.Append(meas);
-		SolutionCurve(&new_list, phi_count, phi_step_size, spd_tolerance,
+		SolutionCurve(&new_list, phi_count, phi_step_size, spd_tol,
 			best_spd, best_obj);
 		for (int i = 0; i < phi_count; i++)
 		{
@@ -215,7 +215,7 @@ GMF::WriteSolutionCurves(
 	// generate combined solution curve //
 	//----------------------------------//
 
-	SolutionCurve(meas_list, phi_count, phi_step_size, spd_tolerance,
+	SolutionCurve(meas_list, phi_count, phi_step_size, spd_tol,
 		best_spd, best_obj);
 	float min_obj = best_obj[0];
 	float max_obj = best_obj[0];
@@ -237,7 +237,6 @@ GMF::WriteSolutionCurves(
 	// generate smoothed objective function //
 	//--------------------------------------//
 
-	WVC* wvc = new WVC();
 	Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing, best_obj,
 		desired_solutions);
 	fprintf(ofp, "&\n");
@@ -251,6 +250,9 @@ GMF::WriteSolutionCurves(
 	// write individual solutions //
 	//----------------------------//
 
+	WVC* wvc = new WVC();
+	RetrieveWinds(meas_list, wvc, phi_step_size, phi_buffer,
+		phi_max_smoothing, spd_tol, 4);
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
@@ -275,7 +277,7 @@ GMF::WriteSolutionCurves(
 // phi_step_size is the step size for slices in the phi/spd space
 // phi_buffer is the minimum angle between maxima and the widest
 //  the smooth operation will average
-// spd_tolerance is the tolerance for the speed maxima for each phi step
+// spd_tol is the tolerance for the speed maxima for each phi step
 // desired_solutions is the maximum number of desired solutions
 
 int
@@ -285,7 +287,7 @@ GMF::RetrieveWinds(
 	float		phi_step_size,
 	float		phi_buffer,
 	float		phi_max_smoothing,
-	float		spd_tolerance,
+	float		spd_tol,
 	int			desired_solutions)
 {
 	//--------------------------//
@@ -306,9 +308,10 @@ GMF::RetrieveWinds(
 	// find the solution curve //
 	//-------------------------//
 
-	if (! SolutionCurve(meas_list, phi_count, phi_step_size, spd_tolerance,
+	if (! SolutionCurve(meas_list, phi_count, phi_step_size, spd_tol,
 		best_spd, best_obj))
 	{
+		fprintf(stderr, "can't find solution curve\n");
 		return(0);
 	}
 
@@ -319,6 +322,7 @@ GMF::RetrieveWinds(
 	if (! Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing,
 		best_obj, desired_solutions))
 	{
+		fprintf(stderr, "can't smooth solution curve\n");
 		return(0);
 	}
 
@@ -327,7 +331,10 @@ GMF::RetrieveWinds(
 	//--------------------------------//
 
 	if (! FindMaxima(wvc, phi_count, phi_step_size, best_spd, best_obj))
+	{
+		fprintf(stderr, "can't find maxima\n");
 		return(0);
+	}
 
 	delete best_spd;
 	delete best_obj;
@@ -357,7 +364,7 @@ GMF::SolutionCurve(
 	MeasList*	meas_list,
 	int			phi_count,
 	float		phi_step_size,
-	float		spd_tolerance,
+	float		spd_tol,
 	float*		best_spd,
 	float*		best_obj)
 {
@@ -412,7 +419,7 @@ GMF::SolutionCurve(
 		float f1 = _ObjectiveFunction(meas_list, x1, phi);
 		float f2 = _ObjectiveFunction(meas_list, x2, phi);
 
-		while (x3 - x0 > spd_tolerance)
+		while (x3 - x0 > spd_tol)
 		{
 			if (f2 > f1)
 			{
