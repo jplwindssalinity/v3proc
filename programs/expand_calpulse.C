@@ -5,18 +5,21 @@
 
 //----------------------------------------------------------------------
 // NAME
-//      expand_calpulse
+//    expand_calpulse
 //
 // SYNOPSIS
-//        expand_calpulse <config_file> <input_file> <output_file>  <start_frame> <end_frame>
+//    expand_calpulse <config_file> <input_file> <output_file>
+//        <start_frame> <end_frame>
 //
 // DESCRIPTION
-//          Reads frames start_frame through end_frame from a L1b file and
-//          writes them to an ASCII file
-//      OPTIONS
-//          Last two arguments are optional
+//    Reads frames start_frame through end_frame from a L1b file and
+//    writes them to an ASCII file
+//
+// OPTIONS
+//    Last two arguments are optional
+//
 // AUTHOR
-//          Sally Chou
+//    Sally Chou
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -75,11 +78,8 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
 
-
-const char* usage_array[] = { "<cal_pulse_file>","<extra frames>",0};
+const char* usage_array[] = { "<cal_pulse_file>", "<extra frames>",0};
 
 //--------------//
 // MAIN PROGRAM //

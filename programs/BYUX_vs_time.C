@@ -94,15 +94,12 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
-
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>","<azimuth>","<beam>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<azimuth>", "<beam>", 0};
 
 //--------------//
 // MAIN PROGRAM //

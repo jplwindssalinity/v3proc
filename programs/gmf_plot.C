@@ -91,7 +91,6 @@ template class List<long>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class List<AngleInterval>;
-template class List<AngleInterval>;
 
 // these are needed because Meas (which this program needs) uses L2AHdf
 // (which this program doesn't need)
