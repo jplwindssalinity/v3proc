@@ -1222,11 +1222,13 @@ ConfigL2AToL2B(
 	    return(0);
 	  l2a_to_l2b->useNudgeThreshold = tmp_int;
 
-	  if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
-	    return(0);
-	  l2a_to_l2b->useNMF = tmp_int;
-
 	}
+
+	if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
+	  return(0);
+	l2a_to_l2b->useNMF = tmp_int;
+
+
 	
 	return(1);
 }
