@@ -1185,3 +1185,78 @@ sinfit(
 
     return(1);
 }
+
+//----------//
+// heapsort //
+//----------//
+// doesn't actually sort, but sets the index array for sorted access
+
+void
+heapsort(
+    int      n,
+    double*  data_array,
+    int*     idx_array)
+{
+    //----------------------------//
+    // initialize the index array //
+    //----------------------------//
+
+    int i, j;
+    for (i = 0; i < n; i++)
+    {
+        idx_array[i] = i;
+    }
+
+    //------//
+    // sort //
+    //------//
+
+    data_array--;
+    idx_array--;
+
+    int l = (n >> 1) + 1;
+    int ir = n;
+    int idx;
+    double q;
+
+    for (;;)
+    {
+        if (l > 1)
+        {
+            l--;
+            idx = idx_array[l];
+            q = data_array[idx];
+        }
+        else
+        {
+            idx = idx_array[ir];
+            q = data_array[idx];
+            idx_array[ir] = idx_array[1];
+            ir--;
+            if (ir == 1)
+            {
+                idx_array[1] = idx;
+                return;
+            }
+        }
+        i = l;
+        j = l << 1;
+        while (j <= ir)
+        {
+            if (j < ir &&
+                data_array[idx_array[j]] < data_array[idx_array[j+1]])
+            {
+                j++;
+            }
+            if (q < data_array[idx_array[j]])
+            {
+                idx_array[i] = idx_array[j];
+                j += (i=j);
+            }
+            else
+                j = ir + 1;
+        }
+        idx_array[i] = idx;
+    }
+    return;
+}

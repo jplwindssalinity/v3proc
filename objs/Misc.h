@@ -92,4 +92,11 @@ double asc2sec(char *asctime);
 int sec2asc(double sec, char *asctime);
 int sec2asc_month(double sec, char* asctime);
 
+// fit a sinusoid to data
+int sinfit(double* azimuth, double* value, double* variance, int count,
+        double* amplitude, double* phase, double* bias);
+
+// sort an array
+void  heapsort(int n, double* data_array, int* idx_array);
+
 #endif
