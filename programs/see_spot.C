@@ -240,11 +240,11 @@ main(
 	//---------------------//
 	// configure the times //
 	//---------------------//
- 
+
 	double grid_start_time, grid_end_time;
 	double instrument_start_time, instrument_end_time;
 	double spacecraft_start_time, spacecraft_end_time;
- 
+
 	if (! ConfigControl(&spacecraft_sim, &config_list,
 		&grid_start_time, &grid_end_time,
 		&instrument_start_time, &instrument_end_time,
@@ -265,6 +265,15 @@ main(
 			command);
 		exit(1);
 	}
+
+	//---------------------------//
+	// set the previous Eqx time //
+	//---------------------------//
+
+	double eqx_time =
+		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
+			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+	instrument.Eqx(eqx_time);
 
 	//----------------------//
 	// cycle through events //
