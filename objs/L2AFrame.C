@@ -1,6 +1,6 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l2aframe_c[] =
@@ -9,9 +9,8 @@ static const char rcs_id_l2aframe_c[] =
 #include <memory.h>
 #include <math.h>
 #include "L2AFrame.h"
-#include "Meas.h"
+#include "Constants.h"
 #include "Misc.h"
-
 
 //===========//
 // L2AHeader //
