@@ -49,6 +49,13 @@ public:
     int  FromCodeB(const char* code_b_string);
     int  ToCodeB(char* string);
 
+    //--------------//
+    // input/output //
+    //--------------//
+
+    int  Write(int fd);
+    int  Read(int fd);
+
     //-----------//
     // operators //
     //-----------//

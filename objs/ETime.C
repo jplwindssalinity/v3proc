@@ -8,6 +8,7 @@ static const char rcs_id_etime_c[] =
 
 #include <stdlib.h>
 #include <math.h>
+#include <unistd.h>
 #include "ETime.h"
 
 //=======//
@@ -109,6 +110,40 @@ ETime::ToCodeB(
     sprintf(string, CODE_B_SCANF_FORMAT, tm_time->tm_year + 1900,
         tm_time->tm_yday + 1, tm_time->tm_hour, tm_time->tm_min,
         tm_time->tm_sec, _ms);
+    return(1);
+}
+
+//--------------//
+// ETime::Write //
+//--------------//
+
+int
+ETime::Write(
+    int  fd)
+{
+    if (write(fd, (void *)&_sec, sizeof(time_t)) != sizeof(time_t) ||
+        write(fd, (void *)&_ms, sizeof(unsigned short)) !=
+          sizeof(unsigned short))
+    {
+        return(0);
+    }
+    return(1);
+}
+
+//-------------//
+// ETime::Read //
+//-------------//
+
+int
+ETime::Read(
+    int  fd)
+{
+    if (read(fd, (void *)&_sec, sizeof(time_t)) != sizeof(time_t) ||
+        read(fd, (void *)&_ms, sizeof(unsigned short)) !=
+            sizeof(unsigned short))
+    {
+        return(0);
+    }
     return(1);
 }
 
