@@ -268,7 +268,9 @@ compute_orbit_elements(
     double*  long_asc_node,
     double*  orb_inclination,
     double*  orb_smaj_axis,
-    double*  orb_eccen)
+    double*  orb_eccen,
+    double*  arg_of_per,    // optional
+    double*  mean_anom)     // optional
 {
     double pos[3];
     pos[0] = x_pos;
@@ -374,7 +376,6 @@ compute_orbit_elements(
     double dif10 = u[1] - w[0];
     double cosi = sqrt(sum01*sum01 + dif10*dif10) - 1.0;
     double tmp_orb_inclination = atan2(sini, cosi);
-    tmp_orb_inclination *= rtd;
 
     //------------------------------------------------------//
     // Compute the longitude of the ascending node crossing //
@@ -382,18 +383,16 @@ compute_orbit_elements(
  
     double tmp_long_asc_node = atan2((u[1]*w[2] - w[1]*u[2]),
         (u[0]*w[2] - w[0]*u[2]));
-    tmp_long_asc_node *= rtd;
     if (tmp_long_asc_node < 0.0)
-        tmp_long_asc_node += 360.0;
+        tmp_long_asc_node += two_pi;
 
     //--------------------------------------//
     // Compute the argument of the latitude //
     //--------------------------------------//
  
     double tmp_arg_lat = atan2(u[2], w[2]);
-    tmp_arg_lat *= rtd;
     if (tmp_arg_lat < 0.0)
-        tmp_arg_lat += 360.0;
+        tmp_arg_lat += two_pi;
 
     //--------------------------//
     // Compute the nodal period //
@@ -411,7 +410,7 @@ compute_orbit_elements(
         return(0);
     }
 
-    cosi = cos(tmp_orb_inclination * dtr);
+    cosi = cos(tmp_orb_inclination);
     double cosi2 = cosi*cosi;
     double sma2 = tmp_orb_smaj_axis * tmp_orb_smaj_axis;
     double sma3 = sma2 * tmp_orb_smaj_axis;
@@ -419,12 +418,43 @@ compute_orbit_elements(
         (1.0 + (0.75 * rj2 * r1_earth_2 / sma2) * ((1.0 - 3.0 * cosi2) *
         sqrt(ree2) + (1.0 - 5.0 * cosi2)) / (ree2*ree2));
 
+    //---------------------------------//
+    // compute the argument of perigee //
+    //---------------------------------//
+
+    double ecosv = param / r0 - 1.0;
+    double esinv = sqrt(param / EARTH_GRAVI_PARAM) * (rv / r0);
+    double true_anom = atan2(esinv, ecosv);
+    double tmp_arg_of_per = tmp_arg_lat - true_anom;
+    while (tmp_arg_of_per < 0.0)
+        tmp_arg_of_per += two_pi;
+    while (tmp_arg_of_per >= two_pi)
+        tmp_arg_of_per -= two_pi;
+
+    //--------------------------//
+    // compute the mean anomaly //
+    //--------------------------//
+
+    double ratio = (1.0 - tmp_orb_eccen) / (1.0 + tmp_orb_eccen);
+    double eccen_anom = 2.0 * atan(sqrt(ratio) * tan(0.5 * true_anom));
+    double tmp_mean_anom = eccen_anom - tmp_orb_eccen * sin(eccen_anom);
+    while (tmp_mean_anom < 0.0)
+        tmp_mean_anom += two_pi;
+
+    //-------------//
+    // copy values //
+    //-------------//
+
     *orb_smaj_axis = tmp_orb_smaj_axis;
     *orb_eccen = tmp_orb_eccen;
-    *orb_inclination = tmp_orb_inclination;
-    *long_asc_node = tmp_long_asc_node;
-    *arg_lat = tmp_arg_lat;
+    *orb_inclination = tmp_orb_inclination * rtd;
+    *long_asc_node = tmp_long_asc_node * rtd;
+    *arg_lat = tmp_arg_lat * rtd;
     *nodal_period = tmp_nodal_period;
+    if (arg_of_per != NULL)
+        *arg_of_per = tmp_arg_of_per * rtd;
+    if (mean_anom != NULL)
+        *mean_anom = tmp_mean_anom * rtd;
 
     return(1);
 }

@@ -16,7 +16,8 @@ int  ijbin(double orb_smaj_axis, double orb_eccen, double orb_inclination,
 int  compute_orbit_elements(double x_pos, double y_pos, double z_pos,
          double x_vel, double y_vel, double z_vel, double* nodal_period,
          double* arg_lat, double* long_asc_node, double* orb_inclination,
-         double* orb_smaj_axis, double* orb_eccen);
+         double* orb_smaj_axis, double* orb_eccen, double* arg_of_per = NULL,
+         double* mean_anomaly = NULL);
 
 #define LAND_SEA_LATITUDES   2160
 #define LAND_SEA_LONGITUDES  4320
