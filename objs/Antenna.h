@@ -54,7 +54,7 @@ public:
 	int				SetAzimuthWithEncoder(unsigned int encoder_value);
 
 	Beam*			GetCurrentBeam();
-	unsigned int	GetEarlyEncoderValue(double spin_rate, double time);
+	unsigned int	GetEarlyEncoderValue();
 	unsigned int	GetEncoderValue();
 	unsigned int	GetEncoderN() { return(_numberOfEncoderValues); };
 	double			GetAntennaFraction();
@@ -74,8 +74,8 @@ public:
 	Attitude		antennaFrame;	// relative to s/c
 	double			azimuthAngle;	// antenna azimuth angle
 
-	double			commandedSpinRateDnPerMs;	// dn/ms
-	double			actualSpinRate;				// radians per second
+	double			commandedSpinRate;		// rad/second
+	double			actualSpinRate;			// rad/second
 
 	unsigned int	encoderAOffsetDn;	// dn
 	double			encoderDelay;		// seconds

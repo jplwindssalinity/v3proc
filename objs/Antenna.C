@@ -17,7 +17,7 @@ static const char rcs_id_antenna_c[] =
 
 Antenna::Antenna()
 :	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0),
-	commandedSpinRateDnPerMs(0.0), actualSpinRate(0.0), encoderAOffsetDn(0),
+	commandedSpinRate(0.0), actualSpinRate(0.0), encoderAOffsetDn(0),
 	encoderDelay(0.0), currentBeamIdx(0), _numberOfEncoderValues(0)
 {
 	return;
@@ -112,11 +112,10 @@ Antenna::GetCurrentBeam()
 // simulates the early sampling of the CDS
 
 unsigned int
-Antenna::GetEarlyEncoderValue(
-	double	spin_rate,		// radians/second
-	double	time)			// seconds
+Antenna::GetEarlyEncoderValue()
 {
-	double azimuth_angle = azimuthAngle - spin_rate * time + two_pi;
+	double time_delay = priPerBeam / (double)numberOfBeams - encoderDelay;
+	double azimuth_angle = azimuthAngle - actualSpinRate * time_delay + two_pi;
 	unsigned int encoder = AngleToEncoder(azimuth_angle);
 	return(encoder);
 }

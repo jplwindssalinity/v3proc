@@ -31,6 +31,8 @@ float	Cosine(float angle);
 //		DopplerTracker objects.
 //======================================================================
 
+#define SPARE_WORDS		2
+
 template <class T>
 class TrackerBase
 {
@@ -51,7 +53,11 @@ public:
 	// input/output //
 	//--------------//
 
+	int		WriteBinary(const char* filename);
+	int		ReadBinary(const char* filename);
 	int		WriteHex(const char* filename);
+	int		ReadHex(const char* filename);
+	int		WriteCode(const char* filename);
 
 	//------------//
 	// algorithms //
@@ -59,7 +65,8 @@ public:
 
 	unsigned short	OrbitTicksToStep(unsigned int orbit_ticks,
 						unsigned int ticks_per_orbit);
-	unsigned int	AngleOffset(Antenna* antenna, Beam* beam);
+	unsigned int	AngleOffset(Antenna* antenna, Beam* beam,
+						double spin_rate);
 
 	//--------//
 	// access //
@@ -117,15 +124,6 @@ public:
 	float	QuantizeDelay(float delay, float* residual_delay);
 	int		SetInstrument(Instrument* instrument, float* residual_delay);
 	int		SetRoundTripTime(double** terms);
-
-	//--------------//
-	// input/output //
-	//--------------//
-
-	int		WriteBinary(const char* filename);
-	int		ReadBinary(const char* filename);
-	int		WriteHex(const char* filename);
-	int		ReadHex(const char* filename);
 };
 
 
@@ -165,15 +163,6 @@ public:
 	float		QuantizeFrequency(float frequency);
 	int			SetInstrument(Instrument* instrument, float residual_delay);
 	int			Set(double** terms);
-
-	//--------------//
-	// input/output //
-	//--------------//
-
-	int		WriteBinary(const char* filename);
-	int		ReadBinary(const char* filename);
-	int		WriteHex(const char* filename);
-	int		ReadHex(const char* filename);
 };
 
 int		azimuth_fit(int count, double* terms, double* a, double* p, double* c);

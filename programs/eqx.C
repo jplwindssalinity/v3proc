@@ -83,6 +83,8 @@ template class List<StringPair>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //

@@ -82,6 +82,8 @@ template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<WindVectorPlus>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //

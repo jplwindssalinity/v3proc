@@ -7,6 +7,7 @@ static const char rcs_id_tracking_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include <malloc.h>
 #include "Tracking.h"
 #include "Array.h"
 #include "Instrument.h"
@@ -184,8 +185,16 @@ template <class T>
 unsigned int
 TrackerBase<T>::AngleOffset(
 	Antenna*		antenna,
-	Beam*			beam)
+	Beam*			beam,
+	double			spin_rate)
 {
+	//----------------------------//
+	// convert spin rate to dn/ms //
+	//----------------------------//
+
+	double sr_dn_per_ms = spin_rate * MS_TO_S *
+		(antenna->GetEncoderN() / two_pi);
+
 	//-----------------//
 	// SAS beam offset //
 	//-----------------//
@@ -197,8 +206,7 @@ TrackerBase<T>::AngleOffset(
 	//------------------//
 
 	float half_time = (_previousDelay + beam->txPulseWidth) / 2.0;
-	unsigned int dc =
-		(int)(half_time * S_TO_MS * antenna->commandedSpinRateDnPerMs + 0.5);
+	unsigned int dc = (int)(half_time * S_TO_MS * sr_dn_per_ms + 0.5);
 
 	//--------------------//
 	// SAS encoder offset //
@@ -210,8 +218,9 @@ TrackerBase<T>::AngleOffset(
 	// internal (sampling) delay //
 	//---------------------------//
 
-	unsigned int di = (int)(antenna->encoderDelay * S_TO_MS *
-		antenna->commandedSpinRateDnPerMs + 0.5);
+	double time_delay = antenna->priPerBeam / (double)antenna->numberOfBeams -
+		antenna->encoderDelay;
+	unsigned int di = (int)(time_delay * S_TO_MS * sr_dn_per_ms + 0.5);
 
 	//----------------------------//
 	// total angle offset (in dn) //
@@ -220,6 +229,136 @@ TrackerBase<T>::AngleOffset(
 	unsigned int angle_offset = db + dc + de + di;
 
 	return(angle_offset);
+}
+
+//--------------------------//
+// TrackerBase::WriteBinary //
+//--------------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteBinary(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//-------//
+	// steps //
+	//-------//
+
+	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//---------------//
+	// scale factors //
+	//---------------//
+
+	for (unsigned int term = 0; term < 3; term++)
+	{
+		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
+		{
+			return(0);
+		}
+	}
+
+	//-------//
+	// terms //
+	//-------//
+
+	for (unsigned int step = 0; step < _steps; step++)
+	{
+		if (fwrite((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
+		{
+			return(0);
+		}
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
+
+	return(1);
+}
+
+//-------------------------//
+// TrackerBase::ReadBinary //
+//-------------------------//
+
+template <class T>
+int
+TrackerBase<T>::ReadBinary(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//-------//
+	// steps //
+	//-------//
+
+	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//----------//
+	// allocate //
+	//----------//
+
+	if (! Allocate(_steps))
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//---------------//
+	// scale factors //
+	//---------------//
+
+	for (unsigned int term = 0; term < 3; term++)
+	{
+		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
+		{
+			return(0);
+		}
+	}
+
+	//-------//
+	// terms //
+	//-------//
+
+	for (unsigned int step = 0; step < _steps; step++)
+	{
+		if (fread((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
+		{
+			return(0);
+		}
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
+
+	return(1);
 }
 
 //-----------------------//
@@ -256,8 +395,8 @@ TrackerBase<T>::WriteHex(
 	unsigned short dither_size = 4 * sizeof(unsigned short);
 	unsigned short terms_size = 3 * _steps * sizeof(T);
 	unsigned short scale_size = 6 * sizeof(float);
-	unsigned short file_size = terms_size + scale_size + spare_size +
-						dither_size;
+	unsigned short file_size = id_size + size_size + spare_size +
+		dither_size + terms_size + scale_size;
 	if (! write_hex(fp, (char *)&file_size, sizeof(unsigned short)))
 		return(0);
 
@@ -305,7 +444,7 @@ TrackerBase<T>::WriteHex(
 	//-------//
 
 	unsigned int array_size = 3 * DEFAULT_STEPS * sizeof(T);
-	unsigned char* term_array = malloc(array_size);
+	unsigned char* term_array = (unsigned char *)malloc(array_size);
 	if (term_array == NULL)
 		return(0);
 
@@ -326,6 +465,135 @@ TrackerBase<T>::WriteHex(
 	}
 
 	free(term_array);
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	return(1);
+}
+
+//----------------------//
+// TrackerBase::ReadHex //
+//----------------------//
+
+template <class T>
+int
+TrackerBase<T>::ReadHex(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//----------//
+	// table id //
+	//----------//
+
+	if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+		return(0);
+
+	//-----------//
+	// file size //
+	//-----------//
+
+	unsigned short file_size;
+	if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+		return(0);
+
+	//-------//
+	// spare //
+	//-------//
+
+	unsigned short spare[SPARE_WORDS];
+	if (! read_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+		return(0);
+
+	//--------//
+	// dither //
+	//--------//
+
+	if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+		return(0);
+
+	//-------//
+	// scale //
+	//-------//
+
+	if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+			sizeof(float)))
+	{
+		return(0);
+	}
+
+	//-------//
+	// terms //
+	//-------//
+
+	unsigned int array_size = 3 * DEFAULT_STEPS * sizeof(T);
+	unsigned char* term_array = (unsigned char *)malloc(array_size);
+	if (term_array == NULL)
+		return(0);
+
+	if (! read_hex(fp, (char *)term_array, array_size))
+	{
+		return(0);
+	}
+
+	unsigned int bytes = 0;
+	for (int term = 0; term < 3; term++)
+	{
+		for (int step = 0; step < DEFAULT_STEPS; step++)
+		{
+			memcpy((*(_termArray + step) + term), term_array + bytes,
+				sizeof(T));
+			bytes += sizeof(T);
+		}
+	}
+
+	free(term_array);
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	return(1);
+}
+
+//------------------------//
+// TrackerBase::WriteCode //
+//------------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteCode(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
 
 	//------------//
 	// close file //
@@ -458,14 +726,15 @@ RangeTracker::SetInstrument(
 	unsigned short range_step =
 		beam->rangeTracker.OrbitTicksToStep(instrument->orbitTicks,
 		instrument->orbitTicksPerOrbit);
-	unsigned int encoder = antenna->GetEncoderValue();
+	unsigned int encoder = antenna->GetEarlyEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
 
 	//-------------------//
 	// correct for angle //
 	//-------------------//
 
-	encoder += AngleOffset(antenna, beam);
+	// CDS uses the commanded spin rate to calculate offsets
+	encoder += AngleOffset(antenna, beam, antenna->commandedSpinRate);
 
 	//-----------------//
 	// calculate delay //
@@ -545,240 +814,6 @@ RangeTracker::SetRoundTripTime(
 				*(*(_scaleArray + term_idx) + 1) + 0.5);
 		}
 	}
-
-	return(1);
-}
-
-//---------------------------//
-// RangeTracker::WriteBinary //
-//---------------------------//
-
-int
-RangeTracker::WriteBinary(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
-
-	//-------------------------------------------//
-	// write the number of beams and range steps //
-	//-------------------------------------------//
-
-	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//-----------------------//
-	// write the scale terms //
-	//-----------------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
-
-	//-----------------//
-	// write the delay //
-	//-----------------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fwrite((void *) *(_termArray + step), sizeof(unsigned char),
-			3, fp) != 3)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
-	return(1);
-}
-
-//--------------------------//
-// RangeTracker::ReadBinary //
-//--------------------------//
-
-int
-RangeTracker::ReadBinary(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
-
-	//------------------------------------------//
-	// read the number of beams and range steps //
-	//------------------------------------------//
-
-	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//----------//
-	// allocate //
-	//----------//
-
-	if (! Allocate(_steps))
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//----------------------//
-	// read the scale terms //
-	//----------------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// read the delay //
-	//----------------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fread((void *) *(_termArray + step), sizeof(unsigned char),
-			3, fp) != 3)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
-	return(1);
-}
-
-//-----------------------//
-// RangeTracker::ReadHex //
-//-----------------------//
-
-int
-RangeTracker::ReadHex(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
-
-	//---------------//
-	// read table id //
-	//---------------//
-
-	if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
-		return(0);
-
-	//----------------//
-	// read file size //
-	//----------------//
-
-	unsigned short file_size;
-	if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
-		return(0);
-
-	//------------//
-	// read spare //
-	//------------//
-
-	unsigned short spare[2];
-	if (! read_hex(fp, (char *)spare, 2 * sizeof(unsigned short)))
-		return(0);
-
-	//-------------//
-	// read dither //
-	//-------------//
-
-	if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
-		return(0);
-
-	//----------//
-	// allocate //
-	//----------//
-
-	Allocate(DEFAULT_STEPS);
-
-	//-------------------//
-	// read coefficients //
-	//-------------------//
-
-	if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
-			sizeof(float)))
-	{
-		return(0);
-	}
-
-	//------------//
-	// read terms //
-	//------------//
-
-	unsigned char tmp[3][DEFAULT_STEPS];
-
-	if (! read_hex(fp, (char *)tmp[0], DEFAULT_STEPS * sizeof(unsigned char)) ||
-		! read_hex(fp, (char *)tmp[1], DEFAULT_STEPS * sizeof(unsigned char)) ||
-		! read_hex(fp, (char *)tmp[2], DEFAULT_STEPS * sizeof(unsigned char)))
-	{
-		return(0);
-	}
-
-	//----------------//
-	// transfer terms //
-	//----------------//
-
-	for (int term = 0; term < 3; term++)
-	{
-		for (int step = 0; step < DEFAULT_STEPS; step++)
-		{
-			*(*(_termArray + step) + term) = tmp[term][step];
-		}
-	}
-
-	//------------//
-	// close file //
-	//------------//
-
-	fclose(fp);
 
 	return(1);
 }
@@ -895,7 +930,7 @@ DopplerTracker::SetInstrument(
 	unsigned short doppler_step =
 		beam->dopplerTracker.OrbitTicksToStep(instrument->orbitTicks,
 		instrument->orbitTicksPerOrbit);
-	unsigned int encoder = antenna->GetEncoderValue();
+	unsigned int encoder = antenna->GetEarlyEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
 
 	float doppler;
@@ -977,193 +1012,6 @@ DopplerTracker::Set(
 		}
 	}
 
-	return(1);
-}
-
-//-----------------------------//
-// DopplerTracker::WriteBinary //
-//-----------------------------//
-
-int
-DopplerTracker::WriteBinary(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
-
-	//---------------------------------------------//
-	// write the number of beams and doppler steps //
-	//---------------------------------------------//
-
-	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//-----------------------//
-	// write the scale terms //
-	//-----------------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
-
-	//-----------------//
-	// write the terms //
-	//-----------------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fwrite((void *) *(_termArray + step), sizeof(unsigned short),
-			3, fp) != 3)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
-	return(1);
-}
-
-//----------------------------//
-// DopplerTracker::ReadBinary //
-//----------------------------//
-
-int
-DopplerTracker::ReadBinary(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
-
-	//--------------------------------------------//
-	// read the number of beams and doppler steps //
-	//--------------------------------------------//
-
-	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//----------//
-	// allocate //
-	//----------//
-
-	if (! Allocate(_steps))
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//----------------------//
-	// read the scale terms //
-	//----------------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// read the terms //
-	//----------------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fread((void *) *(_termArray + step), sizeof(unsigned short),
-			3, fp) != 3)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
-	return(1);
-}
-
-//--------------------------//
-// DopplerTracker::WriteHex //
-//--------------------------//
-
-#define SPARE_WORDS		2
-
-int
-DopplerTracker::WriteHex(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
-
-	//--------------//
-	// write header //
-	//--------------//
-
-	write_hex(fp, (char *)&_tableId, sizeof(_tableId));
-	unsigned short file_size = 3 * _steps * sizeof(unsigned short) +
-		6 * sizeof(float) + (4 + SPARE_WORDS) * sizeof(unsigned short);
-	write_hex(fp, (char *)&file_size, sizeof(unsigned short));
-	unsigned short zero = 0;
-	for (int i = 0; i < SPARE_WORDS; i++)
-	{
-		write_hex(fp, (char *)&zero, sizeof(unsigned short));
-	}
-	write_hex(fp, (char *)&_dither, 2 * sizeof(unsigned short));
-
-	//-----------------------//
-	// write the scale terms //
-	//-----------------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		write_hex(fp, (char *)*(_scaleArray + term), 2 * sizeof(float));
-	}
-
-	//-----------------//
-	// write the terms //
-	//-----------------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		write_hex(fp, (char *)*(_termArray + step), 3 * sizeof(unsigned short));
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
 	return(1);
 }
 

@@ -844,7 +844,7 @@ ConfigAntenna(
 
 	if (! config_list->GetDouble(COMMANDED_SPIN_RATE_KEYWORD, &tmp_double))
 		return(0);
-	antenna->commandedSpinRateDnPerMs = tmp_double;	// dn/ms
+	antenna->commandedSpinRate = tmp_double * rpm_to_radps;
 
 	if (! config_list->GetDouble(ACTUAL_SPIN_RATE_KEYWORD, &tmp_double))
 		return(0);
