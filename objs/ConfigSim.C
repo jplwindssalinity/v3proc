@@ -628,7 +628,8 @@ ConfigAntenna(
 	int encoder_bits;
 	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
 		return(0);
-	antenna->SetNumberOfEncoderBits(encoder_bits);
+	unsigned int values = 1 << encoder_bits;
+	antenna->SetNumberOfEncoderValues(values);
 
 	double roll, pitch, yaw;
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
