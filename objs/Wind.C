@@ -2396,6 +2396,7 @@ WindSwath::DeleteEntireSwath()
 int
 WindSwath::DeleteFlaggedData
 ( const char* flag_file,
+  int         use_thresh,
   float       threshold_both,
   float       threshold_outer)
 {
@@ -2430,11 +2431,15 @@ WindSwath::DeleteFlaggedData
 
       int offset=j*_crossTrackBins+i;
       int not_classified=0;
+      int rain_bit_set=0;
       float threshold=threshold_both;
       // outer beam only case
       if (flag[offset]>=3) threshold=threshold_outer;
       if (flag[offset]==2 || flag[offset]>=5) not_classified=1;
-      if ((flag_value[offset] > threshold) || not_classified)
+      if (use_thresh==0 && (flag[offset]==1 || flag[offset]==4)) 
+	rain_bit_set=1;
+      if ((use_thresh && (flag_value[offset] > threshold)) || 
+	  not_classified || rain_bit_set)
             {
           delete wvc;
           *(*(swath + i) + j) = NULL;
@@ -6012,6 +6017,191 @@ WindSwath::VectorCorrelationVsCti(
   delete(su2v1_array);
   delete(su2v2_array);
 
+  return(1);
+} 
+
+//--------------------------------//
+// WindSwath::Streamosity         //
+//--------------------------------//
+
+int    WindSwath::Streamosity(
+    WindField* truth, 
+    float* stream_array,
+    float* good_stream_array, 
+    float low_speed,
+    float high_speed){
+
+  for(int cti=0;cti<_crossTrackBins;cti++){
+    int count=0;
+    stream_array[cti]=0;
+    good_stream_array[cti]=0;
+    for(int ati=0;ati<_alongTrackBins;ati++){
+       WVC* wvc = swath[cti][ati];
+       if (! wvc)
+	 continue;
+
+       WindVector true_wv;
+       if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	 true_wv.dir=wvc->nudgeWV->dir;
+	 true_wv.spd=wvc->nudgeWV->spd;
+       } 
+       else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	 continue;
+       count++; // increment count of good wind vector cells
+       WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
+       WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
+       if( !wvp1 || !wvp2) continue;
+       float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
+       if(angdif < 120*dtr) continue;
+       stream_array[cti]++;
+       float dir_err1=fabs(ANGDIF(wvp1->dir,true_wv.dir));
+       float dir_err2=fabs(ANGDIF(wvp2->dir,true_wv.dir));
+       dir_err1=fabs(pi/2 - fabs(pi/2-dir_err1));
+       dir_err2=fabs(pi/2 - fabs(pi/2-dir_err2));
+       if(dir_err1<30*dtr && dir_err2<30*dtr) good_stream_array[cti]++;
+    }
+    if(count){
+      stream_array[cti]/=count;
+      good_stream_array[cti]/=count;
+    }
+  }
+  return(1);
+}
+int    
+WindSwath::FractionNAmbigs(
+    WindField* truth, 
+    float* frac_1amb_array,
+    float* frac_2amb_array, 
+    float* frac_3amb_array,
+    float* frac_4amb_array, 
+    float low_speed,
+    float high_speed)
+{
+
+  for(int cti=0;cti<_crossTrackBins;cti++){
+    int count=0;
+    frac_1amb_array[cti]=0;
+    frac_2amb_array[cti]=0;
+    frac_3amb_array[cti]=0;
+    frac_4amb_array[cti]=0;
+    for(int ati=0;ati<_alongTrackBins;ati++){
+       WVC* wvc = swath[cti][ati];
+       if (! wvc)
+	 continue;
+
+       WindVector true_wv;
+       if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	 true_wv.dir=wvc->nudgeWV->dir;
+	 true_wv.spd=wvc->nudgeWV->spd;
+       } 
+       else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	 continue;
+       count++; // increment count of good wind vector cells
+       int num=wvc->ambiguities.NodeCount();
+       switch(num){
+       case 1: 
+	 frac_1amb_array[cti]++;
+	 break;
+       case 2: 
+	 frac_2amb_array[cti]++;
+	 break;
+       case 3: 
+	 frac_3amb_array[cti]++;
+	 break;
+       case 4: 
+	 frac_4amb_array[cti]++;
+	 break;
+       default:
+	 fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",num);
+	 return(0);
+       }
+    }
+    if(count){
+      frac_1amb_array[cti]/=count;
+      frac_2amb_array[cti]/=count;
+      frac_3amb_array[cti]/=count;
+      frac_4amb_array[cti]/=count;
+    }
+  }
+  return(1);
+}
+//--------------------------------//
+// WindSwath::NudgeOverrideVsCti  //
+//--------------------------------//
+
+int   
+WindSwath::NudgeOverrideVsCti(
+     WindField* truth, 
+     float* correction_rate_array,
+     float* change_incorrect_rate_array, 
+     float* bad_nudge_rate_array,
+     float low_speed,
+     float high_speed)
+{
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      // Initialize counts and array
+      int count=0;
+      int total_count=0;
+      correction_rate_array[cti]=0;
+      change_incorrect_rate_array[cti]=0; 
+      bad_nudge_rate_array[cti]=0;
+      /// loop through along track bins
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+        { 
+           
+	  WVC* wvc = swath[cti][ati];
+
+          if (! wvc)
+	    continue; // skip bad wind vector cells
+
+	  WindVector true_wv;
+          // Error Message for useNudgeVectorsAsTruth==1 case
+          if (useNudgeVectorsAsTruth){
+	    fprintf(stderr,"NudgeOverride makes no sense with useNudgeVectorsAsTruth=1\n");
+	    return(0);
+	  }
+
+	  else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	    continue; // if no truth, skip
+
+	  if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+	    continue; // if out of speed range, skip
+
+          WindVector* nudge_wv=wvc->nudgeWV;
+	    if (!nudge_wv) continue;  // if no nudge vector, skip
+
+	  WindVectorPlus* sel=wvc->selected;
+          if (!sel) continue;  // if no selection skip
+
+          // compute closest ambiguities to truth and nudge field
+	  WindVectorPlus* nudge_near=wvc->GetNearestToDirection(nudge_wv->dir);
+	  WindVectorPlus* truth_near=wvc->GetNearestToDirection(true_wv.dir);
+	  
+	  total_count++;
+
+	  // if nudge and truth agree, then skip
+	  if(nudge_near==truth_near) continue;
+
+	  // increment count of nudge/truth disagreements;
+	  count++;  
+          
+	  // increment count of instrument corrections
+	  if(truth_near==sel) correction_rate_array[cti]++;
+	  // increment count of instrument incorrect changes
+	  else if(sel!=nudge_near) change_incorrect_rate_array[cti]++;	
+        }
+      // normalize by counts;
+      if(count!=0){
+	correction_rate_array[cti]/=count;
+	change_incorrect_rate_array[cti]/=count;
+      }
+      else{
+	correction_rate_array[cti]=-1;
+	change_incorrect_rate_array[cti]=-1;
+      }
+      bad_nudge_rate_array[cti]=(float)(count)/total_count;
+    }
   return(1);
 }
 
