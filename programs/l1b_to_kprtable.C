@@ -75,7 +75,7 @@ static const char rcs_id[] =
 #include "List.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
-#include "KprTable.h"
+#include "Kpr.h"
 #include "Meas.h"
 #include "L15.h"
 #include "Misc.h"
@@ -90,6 +90,7 @@ template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<long>;
+template class List<OffsetList>;
 
 //-----------//
 // CONSTANTS //
@@ -132,7 +133,7 @@ int main(int argc, char* argv[]){
 	// Create KprTable                     //
 	//-------------------------------------//
 
-	KprTable kpr(NUMBER_OF_BEAMS,SLICE_BANDWIDTH,SLICES_PER_SPOT,
+	Kprs kpr(NUMBER_OF_BEAMS,SLICE_BANDWIDTH,SLICES_PER_SPOT,
 		     NUMBER_OF_AZIMUTH_BINS, MIN_NUM_SAMPLES);
 
 	//------------//
