@@ -189,7 +189,7 @@ public:
 
 	int		ReadVap(const char* filename);
 	int		ReadEcmwfHiRes(const char* filename);
-	int		WriteEcmwfHiRes(const char* filename);
+	int		WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 

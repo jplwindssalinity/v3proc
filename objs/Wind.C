@@ -956,7 +956,8 @@ WindField::ReadEcmwfHiRes(
 
 int
 WindField::WriteEcmwfHiRes(
-	const char*		filename)
+    const char*  filename,
+    int          extra_time_flag)
 {
 	//-----------//
 	// open file //
@@ -993,22 +994,38 @@ WindField::WriteEcmwfHiRes(
 	int int_size = sizeof(int);
 	int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
 
-	if (fwrite((void *)&ymd, int_size, 1, fp) != 1 ||
-		fwrite((void *)&hms, int_size, 1, fp) != 1 ||
-		fwrite((void *)u, uv_size, 1, fp) != 1 ||
-		fwrite((void *)v, uv_size, 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
+    if (extra_time_flag)
+    {
+        if (fwrite((void *)&ymd, int_size, 1, fp) != 1 ||
+            fwrite((void *)&hms, int_size, 1, fp) != 1 ||
+            fwrite((void *)u, uv_size, 1, fp) != 1 ||
+            fwrite((void *)&ymd, int_size, 1, fp) != 1 ||
+            fwrite((void *)&hms, int_size, 1, fp) != 1 ||
+            fwrite((void *)v, uv_size, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    }
+    else
+    {
+        if (fwrite((void *)&ymd, int_size, 1, fp) != 1 ||
+            fwrite((void *)&hms, int_size, 1, fp) != 1 ||
+            fwrite((void *)u, uv_size, 1, fp) != 1 ||
+            fwrite((void *)v, uv_size, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    }
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
 }
 
 //---------------------//
@@ -1298,6 +1315,9 @@ WindField::FakeEcmwfHiRes(
 	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
 	{
         float dir = 8.0 * (float)lon_idx * two_pi / (float)ECMWF_HIRES_LON_DIM;
+        while (dir > two_pi)
+            dir -= two_pi;
+
 		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
 		{
 			WindVector* wv = new WindVector;
