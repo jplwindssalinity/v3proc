@@ -382,8 +382,8 @@ public:
     int  WriteL2B(FILE* fp);
     int  ReadL2B(FILE* fp);
     int  ReadL2B(const char* filename);
-    int  ReadHdfL2B(TlmHdfFile* tlmHdfFile);
-    int  ReadHdfL2B(const char* filename);
+    int  ReadHdfL2B(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
+    int  ReadHdfL2B(const char* filename, int unnormalize_mle = 1);
     int  ReadHdfDIRTH(const char* filename);
     int  ReadNudgeVectorsFromHdfL2B(const char* filename);
     int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);

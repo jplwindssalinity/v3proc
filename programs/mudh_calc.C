@@ -102,6 +102,8 @@ template class List<AngleInterval>;
 #define UNUSABLE         0x0001
 #define NEGATIVE         0x0004
 
+#define UNNORMALIZE_MLE_FLAG  0    // leave the mle alone
+
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -212,7 +214,7 @@ main(
 
     L2B l2b;
     l2b.SetInputFilename(l2b_hdf_file);
-    if (! l2b.ReadHDF())
+    if (! l2b.ReadHDF(UNNORMALIZE_MLE_FLAG))
     {
         fprintf(stderr, "%s: error reading L2B file %s\n", command,
             l2b_hdf_file);

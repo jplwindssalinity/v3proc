@@ -1,170 +1,174 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef SPACECRAFTSIM_H
 #define SPACECRAFTSIM_H
 
 static const char rcs_id_spacecraftsim_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Spacecraft.h"
 #include "Distributions.h"
 
 //======================================================================
 // CLASSES
-//		SpacecraftSim
+//    SpacecraftSim
 //======================================================================
 
 //======================================================================
 // CLASS
-//		SpacecraftSim
+//    SpacecraftSim
 //
 // DESCRIPTION
-//		The SpacecraftSim object contains the information necessary to
-//		simulate the orbit by operating on an Spacecraft object.  It is
-//		used to set members of the Spacecraft object as if the
-//		spacecraft were orbiting.
+//    The SpacecraftSim object contains the information necessary to
+//    simulate the orbit by operating on an Spacecraft object.  It is
+//    used to set members of the Spacecraft object as if the
+//    spacecraft were orbiting.
 //======================================================================
 
-#define EQX_TIME_TOLERANCE		0.1		// seconds
-#define EQX_ARG_OF_LAT			0.0
-#define SOUTH_ARG_OF_LAT		(1.5*pi)
+#define EQX_TIME_TOLERANCE  0.1    // seconds
+#define EQX_ARG_OF_LAT      0.0
+#define SOUTH_ARG_OF_LAT    (1.5*pi)
 
 class SpacecraftSim
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	SpacecraftSim();
-	~SpacecraftSim();
+    SpacecraftSim();
+    ~SpacecraftSim();
 
-	//----------------//
-	// initialization //
-	//----------------//
+    //----------------//
+    // initialization //
+    //----------------//
 
-	int		Initialize(double start_time);
+    int  Initialize(double start_time);
 
-	int		DefineOrbit(double epoch, double semi_major_axis,
-				double eccentricity, double inclination,
-				double longitude_of_asc_node, double argument_of_perigee,
-				double mean_anomaly_at_epoch);
+    int  DefineOrbit(double epoch, double semi_major_axis,
+             double eccentricity, double inclination,
+             double longitude_of_asc_node, double argument_of_perigee,
+             double mean_anomaly_at_epoch);
 
-	int		LocationToOrbit(double longitude, double latitude, int asc);
+    int  LocationToOrbit(double longitude, double latitude, int asc);
 
-	//-------------------//
-	// orbit propagation //
-	//-------------------//
+    //-------------------//
+    // orbit propagation //
+    //-------------------//
 
-	int		UpdateOrbit(double time, Spacecraft* spacecraft);
-	int		UpdateAttitude(double time, Spacecraft* spacecraft);
+    int  UpdateOrbit(double time, Spacecraft* spacecraft);
+    int  UpdateAttitude(double time, Spacecraft* spacecraft);
 
-	//---------------------//
-	// setting and getting //
-	//---------------------//
+    //---------------------//
+    // setting and getting //
+    //---------------------//
 
 
-	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
-	double		GetEphemerisPeriod() { return(_ephemerisPeriod); };
-	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
-	double		GetMeanAnomaly() { return (_l * rtd); };
-	double		GetPeriod() { return (_period); };
-	double		GetEpoch() { return (_epoch); };
-	double		GetArgOfLat(Spacecraft* spacecraft);
+    void    SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
+    double  GetEpoch() { return(_epoch); };
+    double  GetSemiMajorAxis() { return(_a); };
+    double  GetEccentricity() { return(_e); };
+    double  GetInclination() { return(_i * rtd); };
+    double  GetLongitudeOfAscendingNode() { return(_bigOmega * rtd); };
+    double  GetArgumentOfPerigee() { return(_littleOmega * rtd); };
+    double  GetMeanAnomaly() { return(_l * rtd); };
+    double  GetEphemerisPeriod() { return(_ephemerisPeriod); };
+    double  GetPeriod() { return(_period); };
+    double  GetArgOfLat(Spacecraft* spacecraft);
 
-	//--------//
-	// events //
-	//--------//
+    //--------//
+    // events //
+    //--------//
 
-	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
-	double	FindNextArgOfLatTime(double time, double target_arg_of_lat,
-				double time_tol);
-	double	FindPrevArgOfLatTime(double time, double target_arg_of_lat,
-				double time_tol);
+    int     DetermineNextEvent(SpacecraftEvent* spacecraft_event);
+    double  FindNextArgOfLatTime(double time, double target_arg_of_lat,
+                double time_tol);
+    double  FindPrevArgOfLatTime(double time, double target_arg_of_lat,
+                double time_tol);
 
-	//----------------------------//
-	// Attitude Reporting Routine //
-	//----------------------------//
+    //----------------------------//
+    // Attitude Reporting Routine //
+    //----------------------------//
 
-	void	ReportAttitude(double time, Spacecraft* spacecraft,
-				Attitude* attitude);
+    void    ReportAttitude(double time, Spacecraft* spacecraft,
+                Attitude* attitude);
 
-	//------------------//
-	// public variables //
-	//------------------//
+    //------------------//
+    // public variables //
+    //------------------//
 
-	AttDist attCntlDist;	// Attitude Control Distribution
-	AttDist attKnowDist;	// Attitude Knowledge Distribution
+    AttDist  attCntlDist;    // Attitude Control Distribution
+    AttDist  attKnowDist;    // Attitude Knowledge Distribution
 
-	float rollBias;			// Fixed bias to apply to the s/c attitude
-	float pitchBias;		// Fixed bias to apply to the s/c attitude
-	float yawBias;			// Fixed bias to apply to the s/c attitude
+    float    rollBias;       // Fixed bias to apply to the s/c attitude
+    float    pitchBias;      // Fixed bias to apply to the s/c attitude
+    float    yawBias;        // Fixed bias to apply to the s/c attitude
 
-	//-------//
-	// flags //
-	//-------//
+    //-------//
+    // flags //
+    //-------//
 
-	int		simKprsFlag;	// 0 = no knowledge error, 1 = knowledge error
+    int      simKprsFlag;    // 0 = no knowledge error, 1 = knowledge error
 
 protected:
 
-	//-------------------//
-	// orbit propagation //
-	//-------------------//
+    //-------------------//
+    // orbit propagation //
+    //-------------------//
 
-	double	_Ecan(double mean_anom);
+    double  _Ecan(double mean_anom);
 
-	//-----------//
-	// ephemeris //
-	//-----------//
+    //-----------//
+    // ephemeris //
+    //-----------//
 
-	double	_ephemerisPeriod;	// time between orbit state reports
+    double  _ephemerisPeriod;    // time between orbit state reports
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	double	_epoch;			// epoch (time for mean anomaly)
-	double	_a;				// semi-major axis (km)
-	double	_e;				// eccentricity
-	double	_i;				// inclination (radians)
-	double	_bigOmega;		// longitude of ascending node
-	double	_littleOmega;	// argument of perigee
-	double	_l;				// mean anomaly
+    double  _epoch;          // epoch (time for mean anomaly)
+    double  _a;              // semi-major axis (km)
+    double  _e;              // eccentricity
+    double  _i;              // inclination (radians)
+    double  _bigOmega;       // longitude of ascending node
+    double  _littleOmega;    // argument of perigee
+    double  _l;              // mean anomaly
 
-	double	_period;		// the orbit period
+    double  _period;         // the orbit period
 
-	//-----------------------//
-	// predigested variables //
-	//-----------------------//
+    //-----------------------//
+    // predigested variables //
+    //-----------------------//
 
-	double	_a_3;			// semi-major axis cubed
-	double	_e_2;			// eccentricity squared
+    double  _a_3;          // semi-major axis cubed
+    double  _e_2;          // eccentricity squared
 
-	double	_ascnodot;		// rate of regression of ascending node
-	double	_periasdot;		// rate of precession of perigee
-	double	_ameandot;		// perturbation of mean anomaly
-	double	_eta;
-	double	_pp;
-	double	_pp_2;
-	double	_cosi;
-	double	_cosi_2;
-	double	_sini_2;
-	double	_gama;
+    double  _ascnodot;     // rate of regression of ascending node
+    double  _periasdot;    // rate of precession of perigee
+    double  _ameandot;     // perturbation of mean anomaly
+    double  _eta;
+    double  _pp;
+    double  _pp_2;
+    double  _cosi;
+    double  _cosi_2;
+    double  _sini_2;
+    double  _gama;
 
-	double	_G;
-	double	_H;
+    double  _G;
+    double  _H;
 
-	//-----------------//
-	// event variables //
-	//-----------------//
+    //-----------------//
+    // event variables //
+    //-----------------//
 
-	double		_nextUpdateTime;		// time of next orbit state update
-	double		_nextEqxTime;			// time of next equator crossing
+    double  _nextUpdateTime;    // time of next orbit state update
+    double  _nextEqxTime;       // time of next equator crossing
 };
 
 #endif

@@ -561,7 +561,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         QUOTE, QUOTE);
     fprintf(ofp, "@ legend string 1 %cFalse Alarm%c\n",
         QUOTE, QUOTE);
-    fprintf(ofp, "@ legend string 2 %cThreshold%c\n", QUOTE, QUOTE);
+//    fprintf(ofp, "@ legend string 2 %cThreshold%c\n", QUOTE, QUOTE);
 
     for (int tidx = 0; tidx < 100; tidx++)
     {
@@ -622,10 +622,10 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
 /*
     fprintf(ofp, "@ title %cRain Means Integrated Rain > %g km*mm/hr%c\n",
         QUOTE, irr_thresh, QUOTE);
-*/
     fprintf(ofp, "@ title %cPercent flagged as rain = %.2f, %.2f, %.2f%c\n",
         QUOTE, percent_flagged_as_rain[0], percent_flagged_as_rain[1],
         percent_flagged_as_rain[2], QUOTE);
+*/
     fprintf(ofp, "@ subtitle %c%g percent classified%c\n", QUOTE,
         classified_percent, QUOTE);
 
@@ -633,8 +633,18 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         QUOTE, QUOTE);
     fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
     fprintf(ofp, "@ legend on\n");
-    fprintf(ofp, "@ legend string 0 %cMisclassification (unflagged rain)%c\n",
-        QUOTE, QUOTE);
+    fprintf(ofp, "@ legend string 0 %cMisclassification (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[0], QUOTE);
+    fprintf(ofp, "@ legend string 1 %cFalse Alarm (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[0],  QUOTE);
+    fprintf(ofp, "@ legend string 2 %cMisclassification (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[1], QUOTE);
+    fprintf(ofp, "@ legend string 3 %cFalse Alarm (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[1],  QUOTE);
+    fprintf(ofp, "@ legend string 4 %cMisclassification (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[2], QUOTE);
+    fprintf(ofp, "@ legend string 5 %cFalse Alarm (%.1f %% flagged)%c\n",
+        QUOTE, percent_flagged_as_rain[2],  QUOTE);
 /*
     fprintf(ofp, "@ legend string 1 %cFalse Alarm%c\n",
         QUOTE, QUOTE);

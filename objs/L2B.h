@@ -120,7 +120,7 @@ public:
     int  WriteHeader() { return(header.Write(_outputFp)); };
 
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
-    int  ReadHDF();
+    int  ReadHDF(int unnormalize_mle = 1);
     int  WriteDataRec() { return(frame.swath.WriteL2B(_outputFp)); };
 
     int  WriteVctr(const char* filename, const int rank);

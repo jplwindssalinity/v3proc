@@ -2666,10 +2666,10 @@ WindSwath::ReadL2B(
 
 int
 WindSwath::ReadHdfL2B(
-    TlmHdfFile*  tlmHdfFile)
+    TlmHdfFile*  tlmHdfFile,
+    int          unnormalize_mle)
 {
     DeleteEntireSwath();    // in case
-
     
     // along bin number comes from WVC_ROW
     const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
@@ -2811,7 +2811,15 @@ WindSwath::ReadHdfL2B(
                     edir += two_pi;
 
                 wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k], edir);
-                wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k]*numArray[j];
+                if (unnormalize_mle)
+                {
+                    wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k] *
+                        numArray[j];
+                }
+                else
+                {
+                    wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
+                }
                 wvc->ambiguities.Append(wvp);
             }
             if (selectArray[j] > 0 && numambigArray[j] > 0)
@@ -2851,7 +2859,8 @@ WindSwath::ReadHdfL2B(
 
 int
 WindSwath::ReadHdfL2B(
-    const char*  filename)
+    const char*  filename,
+    int          unnormalize_mle)
 {
     // open the L2B HDF file
     HdfFile::StatusE returnStatus = HdfFile::OK;
@@ -2859,7 +2868,7 @@ WindSwath::ReadHdfL2B(
     if (returnStatus != HdfFile::OK)
         return(0);
 
-    if (! ReadHdfL2B(&hdfL2BFile))
+    if (! ReadHdfL2B(&hdfL2BFile, unnormalize_mle))
         return(0);
 
     return(1);

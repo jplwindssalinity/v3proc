@@ -133,9 +133,10 @@ L2B::WriteAscii()
 //--------------//
 
 int
-L2B::ReadHDF()
+L2B::ReadHDF(
+    int  unnormalize_mle)
 {
-    if (frame.swath.ReadHdfL2B(_inputFilename) == 0)
+    if (frame.swath.ReadHdfL2B(_inputFilename, unnormalize_mle) == 0)
         return(0);
     header.crossTrackResolution = 25.0;
     header.alongTrackResolution = 25.0;
