@@ -6,8 +6,6 @@
 #ifndef BEAM_H
 #define BEAM_H
 
-#include "GenericFile.h"
-
 static const char rcs_id_beam_h[] =
 	"@(#) $Id$";
 
@@ -43,9 +41,12 @@ public:
 	~Beam();
 
 	int		SetBeamGeometry(double look_angle, double azimuth_angle);
+	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
+				double x_spacing, double y_spacing, float **power_gain);
 
-	int		LoadBeamPattern(GenericFile patternfile,
+	int		ReadBeamPattern(char* filename,
 			 double out_of_range_value);
+	int		WriteBeamPattern(char* filename);
 
 	//---------//
 	// getting //

@@ -63,6 +63,49 @@ Beam::SetBeamGeometry(
 	return(1);
 }
 
+//----------------------//
+// Beam::SetBeamPattern //
+//----------------------//
+
+// Note that a pointer to a previously allocated and filled pattern array
+// is passed in and stored.  This function does not allocate its own array
+// and copy the passed array.  Therefore, the caller should not explicitely
+// deallocate the array.
+ 
+int
+Beam::SetBeamPattern(
+	int	Nx, int Ny, int ix_zero, int iy_zero,
+	double x_spacing, double y_spacing, float **power_gain)
+{
+	//------------------------//
+	// copy passed parameters //
+	//------------------------//
+
+	_Nx = Nx;
+	_Ny = Ny;
+	_ix_zero = ix_zero;
+	_iy_zero = iy_zero;
+	_x_spacing = x_spacing;
+	_y_spacing = y_spacing;
+
+	// Some sanity checking.
+	if ((_Nx <= 0) ||
+		(_Ny <= 0) ||
+		(_ix_zero < 0) ||
+		(_iy_zero < 0) ||
+		(_ix_zero > _Nx-1) ||
+		(_iy_zero > _Ny-1))
+    {
+        return(0);
+    }
+
+	if (power_gain == NULL) return(0);
+	_power_gain = power_gain;
+
+	return(1);
+
+}
+
 //--------------------//
 // Beam::GetPowerGain //
 //--------------------//
@@ -125,18 +168,18 @@ Beam::GetPowerGain(
 }
 
 //-----------------------//
-// Beam::LoadBeamPattern //
+// Beam::ReadBeamPattern //
 //-----------------------//
 
 int
-Beam::LoadBeamPattern(GenericFile patternfile, double out_of_range_value)
+Beam::ReadBeamPattern(char* filename, double out_of_range_value)
 {
 
 	// Set the out of range value which is returned by GetPowerGain for any
 	// requested points that lie outside the range covered by the beam pattern.
 	_out_of_range_value = out_of_range_value;
 
-    FILE* fp = patternfile.GetFp();
+    FILE* fp = fopen(filename,"r");
     if (fp == NULL) return(0);
 
 	// Read header info which specifies the pattern size and spacing.
@@ -151,8 +194,8 @@ Beam::LoadBeamPattern(GenericFile patternfile, double out_of_range_value)
     }
 
 	// Some sanity checking.
-	if ((_Nx < 0) ||
-		(_Ny < 0) ||
+	if ((_Nx <= 0) ||
+		(_Ny <= 0) ||
 		(_ix_zero < 0) ||
 		(_iy_zero < 0) ||
 		(_ix_zero > _Nx-1) ||
@@ -176,6 +219,57 @@ Beam::LoadBeamPattern(GenericFile patternfile, double out_of_range_value)
     	{
 			free_array(_power_gain,2,_Nx,_Ny);
 			_power_gain = NULL;
+       		return(0);
+    	}
+	}
+
+    return(1);
+}
+
+//-----------------------//
+// Beam::WriteBeamPattern //
+//-----------------------//
+
+int
+Beam::WriteBeamPattern(char* filename)
+{
+
+    FILE* fp = fopen(filename,"w");
+    if (fp == NULL) return(0);
+
+	// Some sanity checking.
+	if ((_Nx <= 0) ||
+		(_Ny <= 0) ||
+		(_ix_zero < 0) ||
+		(_iy_zero < 0) ||
+		(_ix_zero > _Nx-1) ||
+		(_iy_zero > _Ny-1))
+    {
+        return(0);
+    }
+
+	if (_power_gain == NULL)
+	{
+		return(0);
+	}
+
+	// Write header info which specifies the pattern size and spacing.
+    if (fwrite(&_Nx, sizeof(int), 1, fp) != 1 ||
+        fwrite(&_Ny, sizeof(int), 1, fp) != 1 ||
+        fwrite(&_ix_zero, sizeof(int), 1, fp) != 1 ||
+        fwrite(&_iy_zero, sizeof(int), 1, fp) != 1 ||
+        fwrite(&_x_spacing, sizeof(double), 1, fp) != 1 ||
+        fwrite(&_y_spacing, sizeof(double), 1, fp) != 1)
+    {
+        return(0);
+    }
+
+	// Write out the pattern. (stored with x varying most rapidly)
+	for (int j=0; j < _Ny; j++)
+	for (int i=0; i < _Nx; i++)
+	{
+		if (fwrite(&(_power_gain[i][j]), sizeof(float), 1, fp) != 1)
+    	{
        		return(0);
     	}
 	}
