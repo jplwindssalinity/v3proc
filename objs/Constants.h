@@ -22,6 +22,8 @@ static const double dtr = 1.745329252e-2;
 static const double rtd = 5.729577951e1;
 static const double rpm_to_radps = M_PI / 30.0;
 static const double speed_light_kps = 2.99792458e5;
+// Boltzman Constant in J/K = W/Hz/K
+static const double bK = 1.3805e-23;
 
 // conversion factors
 #define KHZ_PER_MS_TO_HZ_PER_S	1.0E6
