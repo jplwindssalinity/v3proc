@@ -260,6 +260,7 @@ public:
 
     int  ReadVap(const char* filename);
     int  ReadEcmwfHiRes(const char* filename);
+    int  ReadHurricane(const char* filename);
     int  WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
     int  ReadEcmwfLoRes(const char* filename);
     int  ReadNSCAT(const char* filename);
@@ -401,7 +402,9 @@ public:
     int    InitRandom();
     int    UnInitSpeed(float min_speed, float max_speed);
     int    GetNudgeVectors(WindField* nudge_field);
+    int    GetHurricaneNudgeVectors(WindField* nudge_field, EarthPosition* center, float radius);
     int    Nudge(int min_rank);
+    int    HurricaneNudge(int min_rank, EarthPosition* center, float radius);
     int    S3Nudge();
     int    ThresNudge(int min_rank, float thres[2]);
     int    LoResNudge(WindVectorField* nudge_field, int min_rank);

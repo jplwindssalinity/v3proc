@@ -1624,7 +1624,96 @@ WindField::ReadNCEP2(
     _wrap = 1;
     return(1);
 }
+//---------------------------//
+// WindField::ReadHurricane //
+//---------------------------//
 
+
+int
+WindField::ReadHurricane(
+    const char*  filename)
+{
+    if (_field != NULL)
+        return(2);
+
+    //-----------//
+    // open file //
+    //-----------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    //------------------------------------//
+    // Read Boundaries                    //
+    //------------------------------------//
+    float latmin,latmax,lonmin,lonmax;
+    char string[80];
+    fscanf(fp,"%s",string);
+    latmin=atof(string)*dtr;
+    fscanf(fp,"%s",string);
+    latmax=atof(string)*dtr;
+    fscanf(fp,"%s",string);
+    lonmin=atof(string)*dtr;
+    fscanf(fp,"%s",string);
+    lonmax=atof(string)*dtr;
+
+    //----------------------------------//
+    // Read size of arrays, allocate //
+    //----------------------------------//
+    fscanf(fp,"%s",string);    
+    int num_lat_bins=atoi(string);
+    fscanf(fp,"%s",string);    
+    int num_lon_bins=atoi(string);
+
+    if(num_lon_bins<1 || num_lat_bins <1) return(0);
+
+    float** tmp_spd = (float**)make_array(sizeof(float),2,num_lat_bins,num_lon_bins);
+    float** tmp_dir = (float**)make_array(sizeof(float),2,num_lat_bins,num_lon_bins);
+
+    //-----------------//
+    // read field      //
+    //-----------------//
+    for(int c=0;c<num_lat_bins;c++){
+      for(int d=0;d<num_lon_bins;d++){
+	fscanf(fp,"%s",string);
+	fscanf(fp,"%s",string);
+	fscanf(fp,"%s",string);
+        tmp_spd[c][d]=atof(string);
+	fscanf(fp,"%s",string);
+        tmp_dir[c][d]=atof(string)*dtr;
+      }
+    }
+    fclose(fp);
+
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
+
+    _lon.SpecifyCenters(lonmin, lonmax, num_lon_bins);
+    _lat.SpecifyCenters(latmin, latmax, num_lat_bins);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < num_lon_bins; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < num_lat_bins; lat_idx++)
+        {
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
+
+            wv->spd=tmp_spd[lat_idx][lon_idx];
+            wv->dir=tmp_dir[lat_idx][lon_idx];
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
+    _wrap=0;
+    free_array((void*)tmp_spd,2,num_lat_bins,num_lon_bins);
+    free_array((void*)tmp_dir,2,num_lat_bins,num_lon_bins);
+    return(1);
+}
 //----------------------------//
 // WindField::WriteEcmwfHiRes //
 //----------------------------//
@@ -1739,6 +1828,7 @@ WindField::ReadType(
     else
       return(0);
 }
+
 
 //----------------------//
 // WindField::WriteVctr //
@@ -1907,7 +1997,9 @@ WindField::NearestWindVector(
 //-----------------------------------//
 // WindField::InterpolatedWindVector //
 //-----------------------------------//
-
+// Bryan Stiles changed Clipped to Strict Interpolation for _wrap=0 and
+// latitude, as he could not think of any case in which you would want
+// to extrapolate the wind field
 int
 WindField::InterpolatedWindVector(
     LonLat            lon_lat,
@@ -1918,7 +2010,7 @@ WindField::InterpolatedWindVector(
     int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
     float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
-    // find longitude indicies
+    // find longitude indices
     int lon_idx[2];
     float lon_coef[2];
     if (_wrap)
@@ -1928,14 +2020,14 @@ WindField::InterpolatedWindVector(
     }
     else
     {
-        if (! _lon.GetLinearCoefsClipped(lon, lon_idx, lon_coef))
+        if (! _lon.GetLinearCoefsStrict(lon, lon_idx, lon_coef))
             return(0);
     }
 
     // find latitude indicies
     int lat_idx[2];
     float lat_coef[2];
-    if (! _lat.GetLinearCoefsClipped(lon_lat.latitude, lat_idx, lat_coef))
+    if (! _lat.GetLinearCoefsStrict(lon_lat.latitude, lat_idx, lat_coef))
         return(0);
 
     WindVector* corner_wv[2][2];
@@ -1969,6 +2061,7 @@ WindField::InterpolatedWindVector(
 
     return(1);
 }
+
 
 //---------------------//
 // WindField::FixSpeed //
@@ -3276,25 +3369,60 @@ int
 WindSwath::GetNudgeVectors(
     WindField*  nudge_field)
 {
-    for (int cti = 0; cti < _crossTrackBins; cti++)
-      {
-        for (int ati = 0; ati < _alongTrackBins; ati++)
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
         {
           WVC* wvc = swath[cti][ati];
           if (! wvc)
             continue;
-                  wvc->nudgeWV=new WindVectorPlus;
-                  if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
-                                wvc->nudgeWV)){
+	  wvc->nudgeWV=new WindVectorPlus;
+	  if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
+						    wvc->nudgeWV)){
             delete wvc->nudgeWV;
             wvc->nudgeWV=NULL;
           }
         }
-      }
-    nudgeVectorsRead=1;
-    return(1);
+    }
+  nudgeVectorsRead=1;
+  return(1);
 }
 
+//----------------------------//
+// WindSwath::GetNudgeVectors //
+//----------------------------//
+int
+WindSwath::GetHurricaneNudgeVectors(
+     WindField*     nudge_field, 
+     EarthPosition* center,
+     float  radius){
+  if(!nudgeVectorsRead) {
+    fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed 1\n");
+    exit(0);
+  }
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+          WVC* wvc = swath[cti][ati];
+          if (! wvc)
+            continue;
+	  
+          EarthPosition cell_pos;
+          
+          cell_pos.SetAltLonGDLat(0.0,wvc->lonLat.longitude,wvc->lonLat.latitude);
+          if(center->SurfaceDistance(cell_pos)<radius){
+            if (! wvc->nudgeWV) wvc->nudgeWV=new WindVectorPlus;
+	    if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
+						    wvc->nudgeWV)){
+	      fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed\n");
+	      exit(0);
+	    }
+	  }
+	}
+    }
+    return(1);
+}
 //------------------//
 // WindSwath::Nudge //
 //------------------//
@@ -3318,6 +3446,45 @@ WindSwath::Nudge(
             wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
                 max_rank);
             count++;
+        }
+    }
+    return(count);
+}
+
+//---------------------------//
+// WindSwath::HurricaneNudge //
+//---------------------------//
+
+int
+WindSwath::HurricaneNudge(
+    int  min_rank,
+    EarthPosition* center,
+    float radius)
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            if (wvc->nudgeWV==NULL)
+                continue;
+	    EarthPosition cell_pos;
+          
+	    cell_pos.SetAltLonGDLat(0.0,wvc->lonLat.longitude,wvc->lonLat.latitude);
+	    if(center->SurfaceDistance(cell_pos)<radius){
+	      if (! wvc->nudgeWV ){
+		fprintf(stderr, "WindSwath::NudgeHurricane failed\n");
+		exit(0);
+	      }
+	    
+	      wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
+                min_rank);
+	      count++;
+	    }
         }
     }
     return(count);
@@ -4573,6 +4740,10 @@ WindSwath::SelectNudge()
 	      wvc->selected=NULL;
                 continue;
 	    }
+            if( wvc->nudgeWV->spd == 0 ){
+	      wvc->selected=NULL;
+              continue;
+	    }
             wvc->selected = wvc->nudgeWV;
             count++;
         }
@@ -4601,7 +4772,7 @@ WindSwath::MatchSelected(
             WindVectorPlus* wvp;
             if (! source->swath[cti][ati])
                 wvc->selected = NULL;
-            else if (source->swath[cti][ati]->selected)
+            else if (! source->swath[cti][ati]->selected)
                 wvc->selected = NULL;
             else
             {
