@@ -559,7 +559,7 @@ main(
             SDendaccess(frame_err_status_sds_id) == FAIL ||
             SDendaccess(frame_qual_flag_sds_id) == FAIL ||
             SDendaccess(frame_inst_status_sds_id) == FAIL ||
-            SDendaccess(true_cal_pulse_pos_sds_id))
+            SDendaccess(true_cal_pulse_pos_sds_id) == FAIL)
         {
             fprintf(stderr, "%s: error ending SD access\n", command);
             exit(1);
