@@ -171,7 +171,8 @@ main(
     MeasList meas_list;
     char line[1024];
     char typestring[1024];
-    float inc, azi, s0;
+    float inc, azi;
+    float s0 = 0.0;
     for (int file_idx = 1; ; file_idx++)
     {
         meas_list.FreeContents();
@@ -251,7 +252,7 @@ main(
         for (Meas* meas = meas_list.GetHead(); meas;
             meas = meas_list.GetNext())
         {
-            char* typestring;
+            char* typestring = NULL;
             switch(meas->measType)
             {
             case Meas::VV_MEAS_TYPE:
