@@ -7,6 +7,7 @@ static const char rcs_id_index_c[] =
 	"@(#) $Id$";
 
 #include <stdlib.h>
+#include <math.h>
 #include "Index.h"
 
 //=======//
@@ -310,6 +311,23 @@ Index::GetNearestIndex(
 	}
 
 	*idx = (int)((value - _min) / _step + 0.5);
+	return(1);
+}
+
+//-------------------------------//
+// Index::GetNearestWrappedIndex //
+//-------------------------------//
+
+int
+Index::GetNearestWrappedIndex(
+    float  value,
+    int*   idx)
+{
+    int index = (int)(floor((value - _min) / _step + 0.5) + 0.5);
+    while (index < 0)
+        index += _bins;
+    *idx = index % _bins;
+
 	return(1);
 }
 

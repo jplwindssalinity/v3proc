@@ -70,6 +70,7 @@ public:
 	int		GetLinearCoefsClipped(float value, int idx[2], float coef[2]);
 
 	int		GetNearestIndex(float value, int* idx);
+	int		GetNearestWrappedIndex(float value, int* idx);
 
 	int		IndexToValue(int idx, float* value);
 
