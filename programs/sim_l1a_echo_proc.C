@@ -334,7 +334,6 @@ main(
 
             // determine beam index and beam
             int beam_idx = spot_idx % NUMBER_OF_QSCAT_BEAMS;
-            echo_info.beamIdx[spot_idx] = (unsigned char)beam_idx;
             qscat.cds.currentBeamIdx = beam_idx;
             Beam* beam = qscat.GetCurrentBeam();
 

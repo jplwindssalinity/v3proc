@@ -450,7 +450,7 @@ main(
             //------------//
 
             // spot data
-            int beam_idx = echo_info.beamIdx[spot_idx];
+            int beam_idx = echo_info.SpotBeamIdx(spot_idx);
             int idx = g_count[beam_idx];
             if (idx >= MAX_SPOTS)
             {
