@@ -157,7 +157,7 @@ sigma0_to_Psn(
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double Tp = beam->pulseWidth;
-	double Tg = beam->receiverGateWidth;
+	double Tg = beam->rxGateWidth;
 	double Bs = meas->bandwidth;
 
 	//------------------------------------------------------------------------//
@@ -231,7 +231,7 @@ sigma0_to_Psn(
 
 	//double snr = Ps_slice/Pn_slice;
 	//double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
-	//double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
+	//double B = 2.0 / (meas->bandwidth * beam->rxGateWidth);
 	//double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
 	//float Kpc2 = A + B/snr + C/snr/snr;
 	//float var_psn_slice1 = A*Ps_slice*Ps_slice + B*Ps_slice*Pn_slice +
@@ -308,7 +308,7 @@ Pnoise(
 	//------------------------------------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tg = beam->receiverGateWidth;
+	double Tg = beam->rxGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
 	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
@@ -413,7 +413,7 @@ Pr_to_sigma0(
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double Tp = beam->pulseWidth;
-	double Tg = beam->receiverGateWidth;
+	double Tg = beam->rxGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Bs = meas->bandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
