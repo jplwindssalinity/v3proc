@@ -86,19 +86,19 @@ public:
 	double	FindPrevArgOfLatTime(double time, double target_arg_of_lat,
 				double time_tol);
 
-	//----------------------------------------------//
-	// Attitude Error Model Initialization Routines //
-	//----------------------------------------------//
-
-	void	SetAttCntlModel(AttDist* attdist);
-	void	SetAttKnowModel(AttDist* attdist);
-
 	//----------------------------//
 	// Attitude Reporting Routine //
 	//----------------------------//
 
 	void ReportAttitude(double time, Spacecraft* spacecraft, 
 				Attitude* attitude);
+
+        //--------------------------//
+        // public variables         //
+        //--------------------------//
+	AttDist attCntlDist;	// Attitude Control Distribution
+	AttDist attKnowDist;	// Attitude Knowledge Distribution
+
 
 protected:
 
@@ -128,8 +128,6 @@ protected:
 
 	double	_period;		// the orbit period
 
-	AttDist* _attcntl_dist;	// Attitude Control Distribution
-	AttDist* _attknow_dist;	// Attitude Knowledge Distribution
 
 	//-----------------------//
 	// predigested variables //
@@ -161,3 +159,10 @@ protected:
 };
 
 #endif
+
+
+
+
+
+
+

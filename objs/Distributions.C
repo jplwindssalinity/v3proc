@@ -138,16 +138,19 @@ float Gaussian::GetVariance(){
   return(_variance);
 }
 
-void Gaussian::SetVariance(float v){
+int Gaussian::SetVariance(float v){
+  if(v < 0.0) return(0);
   _variance=v;
+  return(1);
 }
 
 float Gaussian::GetMean(){
   return(_mean);
 }
 
-void Gaussian::SetMean(float m){
+int Gaussian::SetMean(float m){
   _mean=m;
+  return(1);
 }
 
 //==================================//
@@ -214,6 +217,64 @@ float RandomVelocity::GetNumber(double time){
 	return(_position+(time-_time)*_velocity);
 }
 
+//==================================================================//
+// Class                                                            //
+//  TimeCorrelatedGaussian                                          //
+//==================================================================//
+
+TimeCorrelatedGaussian::TimeCorrelatedGaussian()
+  : _previousTime(0.0), _previousOutput(0.0), _correlationLength(0.0)
+{
+  return;
+}
+
+TimeCorrelatedGaussian::~TimeCorrelatedGaussian(){
+  return;
+}
+
+int TimeCorrelatedGaussian::Initialize(){
+  _previousOutput=Uncorrelated.GetNumber();
+   return(1);
+}
+
+float TimeCorrelatedGaussian::GetNumber(double time){
+
+  /*******  BIAS ONLY CASE        *************/
+  if(Uncorrelated.GetVariance()==0.0){
+    return(Uncorrelated.GetMean());
+  }
+
+  /******** Error Condition ****************/
+  if(time < _previousTime){
+    fprintf(stderr,"TimeCorrelatedGaussian requires monotonically increasing time\n");
+    exit(1);
+  }
+  
+
+  /******* Normal Mode  *******************/
+
+  float retval=exp(-(time-_previousTime)/_correlationLength);
+  retval=retval*_previousOutput+sqrt(1-retval*retval)*Uncorrelated.GetNumber();
+  _previousTime=time;
+  _previousOutput=retval;
+  return(retval);
+}
+
+int TimeCorrelatedGaussian::SetVariance(float variance){
+  if(! Uncorrelated.SetVariance(variance)) return(0);
+  return(1);
+}
+
+int TimeCorrelatedGaussian::SetMean(float mean){
+  if(! Uncorrelated.SetMean(mean)) return(0);
+  return(1);
+}
+
+int TimeCorrelatedGaussian::SetCorrelationLength(float corrlength){
+  if(corrlength < 0.0) return(0);
+  _correlationLength=corrlength;
+  return(1);
+}
 
 //==================================//
 // AttDist                          //
@@ -224,13 +285,6 @@ AttDist::AttDist()
 	return;
 }
 
-AttDist::AttDist(GenericDist * r, GenericDist* p, GenericDist* y)
-{
-	roll=r;
-	pitch=p;
-	yaw=y;
-	return;
-}
 
 AttDist::~AttDist()
 {
@@ -247,5 +301,8 @@ SeedFromClock()
   gettimeofday(&now,NULL);
   srand48(now.tv_sec);
 }
+
+
+
 
 

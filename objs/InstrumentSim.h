@@ -71,7 +71,7 @@ public:
 	// variables //
 	//-----------//
 
-	Gaussian		ptgrNoise;
+	TimeCorrelatedGaussian	ptgrNoise;
 	double			startTime;
 	AntennaSim		antennaSim;		// the antenna simulator
 
@@ -115,5 +115,13 @@ protected:
 int		SetRangeAndDoppler(Spacecraft* spacecraft, Instrument* instrument);
 
 #endif
+
+
+
+
+
+
+
+
 
 

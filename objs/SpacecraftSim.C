@@ -24,7 +24,7 @@ static const double rm_2 = rm * rm;
 
 SpacecraftSim::SpacecraftSim()
 :	_epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0), _littleOmega(0.0),
-	_l(0.0), _period(0.0), _attcntl_dist(NULL), _attknow_dist(NULL),
+	_l(0.0), _period(0.0), 
 	_a_3(0.0), _e_2(0.0), _ascnodot(0.0), _periasdot(0.0), _ameandot(0.0),
 	_eta(0.0), _pp(0.0), _pp_2(0.0), _cosi(0.0), _cosi_2(0.0), _sini_2(0.0),
 	_gama(0.0), _G(0.0), _H(0.0), _nextUpdateTime(0.0), _nextEqxTime(0.0)
@@ -335,43 +335,15 @@ SpacecraftSim::UpdateAttitude(
 	double			time,
 	Spacecraft*		spacecraft)
 {
-	if(_attcntl_dist != NULL)
-	{
-		spacecraft->attitude.SetRoll(_attcntl_dist->roll->GetNumber(time));
-		spacecraft->attitude.SetPitch(_attcntl_dist->pitch->GetNumber(time));
-		spacecraft->attitude.SetYaw(_attcntl_dist->yaw->GetNumber(time));
-	}
-	else{
-		spacecraft->attitude.SetRoll(0.0);
-		spacecraft->attitude.SetPitch(0.0);
-		spacecraft->attitude.SetYaw(0.0);
-	}
+
+  spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time));
+  spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time));
+  spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time));
+
 	return(1);
 }
 
-//--------------------------------//
-// SpaceCraftSim::SetAttCntlModel //
-//--------------------------------//
 
-void
-SpacecraftSim::SetAttCntlModel(
-	AttDist*	attdist)
-{
-	_attcntl_dist=attdist;
-	return;
-}
-
-//--------------------------------//
-// SpaceCraftSim::SetAttKnowModel //
-//--------------------------------//
-
-void
-SpacecraftSim::SetAttKnowModel(
-	AttDist*	attdist)
-{
-	_attknow_dist=attdist;
-	return;
-}
 
 //-------------------------------//
 // SpacecraftSim::ReportAttitude //
@@ -386,16 +358,15 @@ SpacecraftSim::ReportAttitude(
 {
 	float roll,pitch,yaw;
 	unsigned char* order;
+
 	roll=spacecraft->attitude.GetRoll();
 	pitch=spacecraft->attitude.GetPitch();
 	yaw=spacecraft->attitude.GetYaw();
 
-	if( _attknow_dist != NULL)
-	{
-		roll+=_attknow_dist->roll->GetNumber(time);
-		pitch+=_attknow_dist->pitch->GetNumber(time);
-		yaw+=_attknow_dist->yaw->GetNumber(time);
-	}
+
+	roll+=attKnowDist.roll.GetNumber(time);
+	pitch+=attKnowDist.pitch.GetNumber(time);
+	yaw+=attKnowDist.yaw.GetNumber(time);
 
 	order=spacecraft->attitude.GetOrder();
 	attitude->Set(roll,pitch,yaw,order[0],order[1],order[2]);

@@ -71,6 +71,15 @@ ConfigSpacecraftSim(
 	// configure the spacecraft simulator //
 	//------------------------------------//
 
+
+        //------------------------------------//
+        // configure the attitude models      //
+        //------------------------------------//
+        if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
+					 config_list))  return(0);
+
+        if (! ConfigAttitudeKnowledgeModel(&(spacecraft_sim->attKnowDist),
+					 config_list))  return(0);
 	double epoch;
 	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
 		return(0);
@@ -122,11 +131,9 @@ ConfigSpacecraftSim(
 //----------------------------//
 
 int
-ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
+ConfigAttitudeControlModel(AttDist* attcntl,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* ACEM;
 
 	char* string;
 
@@ -135,94 +142,64 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 		return(0);
 
 	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0) return(1);
-
-
-	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
-			|| strcmp(string,"gaussian")==0)
-	{
-		roll=ConfigGaussian(ROLL_CONTROL_VARIANCE_KEYWORD,
-			ROLL_CONTROL_MEAN_KEYWORD, config_list);
-		if(roll==NULL)
-			return(0);
-		pitch=ConfigGaussian(PITCH_CONTROL_VARIANCE_KEYWORD,
-			PITCH_CONTROL_MEAN_KEYWORD, config_list);
-		if(pitch==NULL)
-			return(0);
-		yaw=ConfigGaussian(YAW_CONTROL_VARIANCE_KEYWORD,
-			YAW_CONTROL_MEAN_KEYWORD, config_list);
-		if(yaw==NULL)
-			return(0);
+		|| strcmp(string,"none")==0){
+	  // By default mean, variance, and correlation length   //
+	  //                                    are set to zero //
+	  				   
+	  return(1);
 	}
-	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
-			|| strcmp(string,"uniform")==0)
-	{
-		roll=ConfigUniform(ROLL_CONTROL_RADIUS_KEYWORD,
-			ROLL_CONTROL_MEAN_KEYWORD, config_list);
-		if(roll==NULL)
-			return(0);
-		pitch=ConfigUniform(PITCH_CONTROL_RADIUS_KEYWORD,
-			PITCH_CONTROL_MEAN_KEYWORD, config_list);
-		if(pitch==NULL)
-			return(0);
-		yaw=ConfigUniform(YAW_CONTROL_RADIUS_KEYWORD,
-			YAW_CONTROL_MEAN_KEYWORD, config_list);
-		if(yaw==NULL)
-			return(0);
-	}
-	else if(strcmp(string,"Gaussian_Random_Velocity")==0
-			|| strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
-			|| strcmp(string,"gaussian_random_velocity")==0)
-	{
-		roll=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
-			ROLL_CONTROL_BOUND_KEYWORD, ROLL_CONTROL_MEAN_KEYWORD,
-			ROLL_CONTROL_VARIANCE_KEYWORD, config_list);
-		if(roll==NULL)
-			return(0);
-		pitch=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
-			PITCH_CONTROL_BOUND_KEYWORD, PITCH_CONTROL_MEAN_KEYWORD,
-			PITCH_CONTROL_VARIANCE_KEYWORD, config_list);
-		if(pitch==NULL)
-			return(0);
-		yaw=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
-			YAW_CONTROL_BOUND_KEYWORD, YAW_CONTROL_MEAN_KEYWORD,
-			YAW_CONTROL_VARIANCE_KEYWORD, config_list);
-		if(yaw==NULL)
-			return(0);
-	}
-	else if(strcmp(string,"Uniform_Random_Velocity")==0
-			|| strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
-			|| strcmp(string,"uniform_random_velocity")==0)
-	{
-		roll=ConfigUniformRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
-		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_RADIUS_KEYWORD, config_list);
-		if(roll==NULL)
-			return(0);
-		pitch=ConfigUniformRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
-		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_RADIUS_KEYWORD,
-			config_list);
-		if(pitch==NULL)
-			return(0);
-		yaw=ConfigUniformRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
-		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_RADIUS_KEYWORD,
-			config_list);
-		if(yaw==NULL) return(0);
 
+	else if(strcmp(string,"Time_Correlated_Gaussian")==0 || 
+		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
+		|| strcmp(string,"time_correlated_gaussian")==0)
+	{
+ 
+	        float std, mean, corrlength;
+
+		if(! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attcntl->roll.SetVariance(std*std*dtr*dtr);
+		attcntl->roll.SetMean(mean*dtr);
+		attcntl->roll.SetCorrelationLength(corrlength);
+                attcntl->roll.Initialize();
+
+		if(! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attcntl->pitch.SetVariance(std*std*dtr*dtr);
+		attcntl->pitch.SetMean(mean*dtr);
+		attcntl->pitch.SetCorrelationLength(corrlength);
+                attcntl->pitch.Initialize();
+
+		if(! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attcntl->yaw.SetVariance(std*std*dtr*dtr);
+		attcntl->yaw.SetMean(mean*dtr);
+		attcntl->yaw.SetCorrelationLength(corrlength);
+                attcntl->yaw.Initialize();
 	}
 	else
 	{
 		fprintf(stderr,"No such Attitude Control Model. \n");
-		fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
-		fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
-		fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
+		fprintf(stderr,"Implemented models are:");
+		fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
 		return(0);
 	}
 
-	ACEM=new AttDist(roll,pitch,yaw);
-	spacecraft_sim->SetAttCntlModel(ACEM);
 
 	return(1);
 }
@@ -232,108 +209,80 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 //------------------------------//
 
 int
-ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
+ConfigAttitudeKnowledgeModel(AttDist* attknow,
 	ConfigList* config_list)
 {
-	GenericDist *roll, *pitch, *yaw;
-	AttDist* AKEM;
 
 	char* string;
 
 	string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
-	if(! string)
+	if (! string)
 		return(0);
 
-	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0)
-	{
-		return(1);
-	}
-	else if (strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
-			|| strcmp(string,"gaussian")==0)
-	{
-		roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
-			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (roll==NULL) return(0);
-		pitch=ConfigGaussian(PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
-			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (pitch==NULL) return(0);
-		yaw=ConfigGaussian(YAW_KNOWLEDGE_VARIANCE_KEYWORD,
-			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (yaw==NULL) return(0);
-
-	}
-	else if (strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
-	   || strcmp(string,"uniform")==0)
-	{
-	        roll=ConfigUniform(ROLL_KNOWLEDGE_RADIUS_KEYWORD,
-			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (roll==NULL) return(0);
-	        pitch=ConfigUniform(PITCH_KNOWLEDGE_RADIUS_KEYWORD,
-			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (pitch==NULL) return(0);
-	        yaw=ConfigUniform(YAW_KNOWLEDGE_RADIUS_KEYWORD,
-			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if (yaw==NULL) return(0);
-	}
-	else if (strcmp(string,"Gaussian_Random_Velocity")==0
-           || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
-	   || strcmp(string,"gaussian_random_velocity")==0)
-	{
-	        roll=ConfigGaussianRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
-		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list);
-		if (roll==NULL) return(0);
-	        pitch=ConfigGaussianRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
-		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list);
-		if (pitch==NULL) return(0);
-	        yaw=ConfigGaussianRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
-		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list);
-		if (yaw==NULL) return(0);
-
+	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+		|| strcmp(string,"none")==0){
+	  // By default mean, variance, and correlation length     //
+	  //                                       are set to zero //
+	  				   
+	  return(1);
 	}
 
-	else if (strcmp(string,"Uniform_Random_Velocity")==0
-           || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
-	   || strcmp(string,"uniform_random_velocity")==0)
+	else if(strcmp(string,"Time_Correlated_Gaussian")==0 || 
+		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
+		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
-	        roll=ConfigUniformRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
-		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list);
-		if (roll==NULL) return(0);
-	        pitch=ConfigUniformRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
-		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list);
-		if (pitch==NULL) return(0);
-	        yaw=ConfigUniformRandomVelocity(
-		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
-		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list);
-		if (yaw==NULL) return(0);
+ 
+	        float std, mean, corrlength;
 
+		if(! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attknow->roll.SetVariance(std*std*dtr*dtr);
+		attknow->roll.SetMean(mean*dtr);
+		attknow->roll.SetCorrelationLength(corrlength);
+                attknow->roll.Initialize();
+
+		if(! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attknow->pitch.SetVariance(std*std*dtr*dtr);
+		attknow->pitch.SetMean(mean*dtr);
+		attknow->pitch.SetCorrelationLength(corrlength);
+                attknow->pitch.Initialize();
+
+		if(! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
+		  return(0);
+		if(! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		  return(0);
+		if(! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+					   &corrlength)) return(0);
+
+		attknow->yaw.SetVariance(std*std*dtr*dtr);
+		attknow->yaw.SetMean(mean*dtr);
+		attknow->yaw.SetCorrelationLength(corrlength);
+                attknow->yaw.Initialize();
 	}
 	else
 	{
 		fprintf(stderr,"No such Attitude Control Model. \n");
-		fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
-		fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
-		fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
+		fprintf(stderr,"Implemented models are:");
+		fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
 		return(0);
 	}
-	AKEM=new AttDist(roll,pitch,yaw);
-	spacecraft_sim->SetAttKnowModel(AKEM);
+
 
 	return(1);
 }
 
-
+/****************************************
 //-------------------------------------//
 // Configuration Routines for Specific //
 // Noise Distributions                 //
@@ -446,6 +395,7 @@ ConfigUniformRandomVelocity(const char* samprate_keyword,
 		(float)bound, (float)mean);
 	return(new_rv);
 }
+********************************************/
 
 //------------------//
 // ConfigInstrument //
@@ -641,20 +591,29 @@ ConfigInstrumentSim(
 	// initialize PTGR noise //
 	//-----------------------//
 
-	float ptgr_var, ptgr_mean;
-	if (! config_list->GetFloat(PTGR_NOISE_VARIANCE_KEYWORD, &ptgr_var))
+	float ptgr_std, ptgr_mean, ptgr_corrlength;
+	if (! config_list->GetFloat(PTGR_NOISE_STD_KEYWORD, &ptgr_std))
 	{
-		printf("Could not find PtGr noise variance in config file\n");
+		fprintf(stderr,"Could not find PtGr noise variance in config file\n");
 		return(0);
 	}
 	if (! config_list->GetFloat(PTGR_NOISE_MEAN_KEYWORD, &ptgr_mean))
 	{
-		printf("Could not find PtGr noise mean in config file\n");
+		fprintf(stderr,"Could not find PtGr noise mean in config file\n");
 		return(0);
 	}
 
-	instrument_sim->ptgrNoise.SetVariance(ptgr_var);
+	if (! config_list->GetFloat(PTGR_NOISE_CORRLENGTH_KEYWORD, 
+				    &ptgr_corrlength))
+	{
+		fprintf(stderr,"Could not find PtGr noise correlation length in config file\n");
+		return(0);
+	}
+
+	instrument_sim->ptgrNoise.SetVariance(ptgr_std*ptgr_std);
 	instrument_sim->ptgrNoise.SetMean(ptgr_mean);
+        instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
+        instrument_sim->ptgrNoise.Initialize();
 
 	int uniform_sigma_field;
 

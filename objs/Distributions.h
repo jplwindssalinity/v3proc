@@ -108,9 +108,9 @@ public:
 	float GetNumber();	
 
 	float GetVariance();
-	void SetVariance(float v);
+	int SetVariance(float v);
 	float GetMean();
-        void SetMean(float m);
+        int SetMean(float m);
 
 
 protected:
@@ -143,6 +143,30 @@ protected:
 	float _velocity;
 };
 
+//==================================================================//
+// Class                                                            //
+//  TimeCorrelatedGaussian                                          //
+//==================================================================//
+
+class TimeCorrelatedGaussian : public GenericDist
+{
+public:
+
+TimeCorrelatedGaussian();
+~TimeCorrelatedGaussian();
+int Initialize();
+float GetNumber(double time);
+int SetVariance(float variance);
+int SetMean(float mean);
+int SetCorrelationLength(float corrlength);
+
+Gaussian Uncorrelated;
+
+protected:
+double _previousTime;
+float _previousOutput;
+float _correlationLength;
+};
 
 //==================================================================//
 // Class							    //
@@ -155,11 +179,10 @@ class AttDist
 {
 public:
 	AttDist();
-	AttDist(GenericDist* r, GenericDist* p, GenericDist* y);
 	~AttDist();
-	GenericDist* roll;
-	GenericDist* pitch;
-	GenericDist* yaw;
+	TimeCorrelatedGaussian roll;
+	TimeCorrelatedGaussian pitch;
+	TimeCorrelatedGaussian yaw;
 
 };
 
@@ -172,3 +195,4 @@ public:
 
 void SeedFromClock();
 #endif
+

@@ -44,39 +44,14 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 // Attitude Control Error Model //
 //------------------------------//
 
-int ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
+int ConfigAttitudeControlModel(AttDist* attctnl,
 	ConfigList* config_list);
 
 //--------------------------------//
 // Attitude Knowledge Error Model //
 //--------------------------------//
 
-int ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
-	ConfigList* config_list);
-
-//------------------------------//
-// Generic Noise Model Config	//
-// Routines						//
-//------------------------------//
-
-Gaussian*	ConfigGaussian(const char* variance_keyword,
-	const char* mean_keyword,
-	ConfigList* config_list);
-
-Uniform* ConfigUniform(const char* radius_keyword,
-	const char* mean_keyword,
-	ConfigList* config_list);
-
-RandomVelocity* ConfigGaussianRandomVelocity(const char*
-	samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword,
-	const char* variance_keyword,
-	ConfigList* config_list);
-
-RandomVelocity* ConfigUniformRandomVelocity(const char*
-	samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword,
-	const char* radius_keyword,
+int ConfigAttitudeKnowledgeModel(AttDist* attknow,
 	ConfigList* config_list);
 
 
