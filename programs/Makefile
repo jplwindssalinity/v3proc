@@ -116,6 +116,7 @@ PROGRAMS = \
 	make_timetlm \
 	l2b_extract_worst \
 	get_foff \
+    check_inst_tracking \
 	make_simple_land_map
 #	l00_to_l1a
 #   check_l1b 
