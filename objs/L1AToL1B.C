@@ -179,7 +179,7 @@ L1AToL1B::Convert(
 
         // set antenna to transmit pulse center for response calculations
         qscat->sas.SetAzimuthWithEncoder(held_encoder);
-        qscat->RotateAntennaToTxCenter(1);
+        qscat->SetAntennaToTxCenter(1);
 
         SetDelayAndFrequency(spacecraft, qscat);
 
@@ -221,7 +221,7 @@ L1AToL1B::Convert(
 
         // correctly locate antenna first
         qscat->sas.SetAzimuthWithEncoder(held_encoder);
-        qscat->RotateAntennaToTxCenter(1);
+        qscat->SetAntennaToTxCenter(1);
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
             if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))
@@ -301,7 +301,7 @@ L1AToL1B::Convert(
             {
                 // set antenna to ground impact for calculating X
                 qscat->sas.SetAzimuthWithEncoder(held_encoder);
-                qscat->RotateAntennaToGroundImpact(spacecraft, 1);
+                qscat->SetAntennaToGroundImpact(spacecraft, 1);
 
 			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
@@ -319,7 +319,7 @@ L1AToL1B::Convert(
 
                 // set antenna back to transmit center
                 qscat->sas.SetAzimuthWithEncoder(held_encoder);
-                qscat->RotateAntennaToTxCenter(1);
+                qscat->SetAntennaToTxCenter(1);
             }
             else
             {

@@ -798,7 +798,7 @@ SetDelayAndFrequency(
     // shift the antenna to the center of the tx pulse //
     //-------------------------------------------------//
 
-    qscat->RotateAntennaToTxCenter(0);
+    qscat->SetAntennaToTxCenter(0);
 
     //-----------------------------//
     // calculate the rx gate delay //
@@ -875,12 +875,12 @@ SetOrbitStepDelayAndFrequency(
     return(SetDelayAndFrequency(spacecraft, qscat));
 }
 
-//--------------------------------//
-// Qscat::RotateAntennaToTxCenter //
-//--------------------------------//
+//-----------------------------//
+// Qscat::SetAntennaToTxCenter //
+//-----------------------------//
 
 int
-Qscat::RotateAntennaToTxCenter(
+Qscat::SetAntennaToTxCenter(
     int  pri_delay)
 {
     double delta_t = (double)pri_delay * ses.pri + ses.txPulseWidth / 2.0 -
@@ -889,17 +889,17 @@ Qscat::RotateAntennaToTxCenter(
     return(1);
 }
 
-//------------------------------------//
-// Qscat::RotateAntennaToGroundImpact //
-//------------------------------------//
+//---------------------------------//
+// Qscat::SetAntennaToGroundImpact //
+//---------------------------------//
 
 int
-Qscat::RotateAntennaToGroundImpact(
+Qscat::SetAntennaToGroundImpact(
     Spacecraft*  spacecraft,
     int          pri_delay)
 {
     // first rotate to transmit pulse center
-    RotateAntennaToTxCenter(pri_delay);
+    SetAntennaToTxCenter(pri_delay);
 
     // then estimate the range to the surface
     CoordinateSwitch antenna_frame_to_gc =

@@ -10,6 +10,24 @@ static const char rcs_id_antenna_c[] =
 #include "Antenna.h"
 #include "Constants.h"
 
+//=======//
+// Angle //
+//=======//
+
+/*
+Angle
+Angle::operator=(
+    const Angle  angle)
+{
+    if (angle < 0.0)
+        return(fmod(angle, two_pi) + two_pi);
+    else if (angle >= two_pi)
+        return(fmod(angle, two_pi));
+    else
+        return(angle);
+}
+*/
+
 //=========//
 // Antenna //
 //=========//

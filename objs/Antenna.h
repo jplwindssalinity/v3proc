@@ -15,8 +15,24 @@ static const char rcs_id_antenna_h[] =
 
 //======================================================================
 // CLASSES
-//    Antenna
+//    Angle, Antenna
 //======================================================================
+
+//======================================================================
+// CLASS
+//    Angle
+//
+// DESCRIPTION
+//    The Angle object contains an angle between 0.0 and 2 * PI
+//======================================================================
+
+/*
+class Angle : public double
+{
+public:
+    Angle operator=(Angle angle);
+};
+*/
 
 //======================================================================
 // CLASS
@@ -24,7 +40,7 @@ static const char rcs_id_antenna_h[] =
 //
 // DESCRIPTION
 //    The Antenna object contains antenna information.  It represents
-//    the actual state of the antenna.
+//    the state of the antenna.
 //======================================================================
 
 class Antenna
@@ -59,6 +75,12 @@ public:
     double  startTime;      // the time of the starting azimuth
     double  startAzimuth;   // the initial azimuth angle
     double  spinRate;       // rad/second
+
+    //----------------//
+    // azimuth angles //
+    //----------------//
+    // all azimuth angles are in the range 0..two_pi
+
     double  azimuthAngle;   // antenna azimuth angle (0..two_pi)
 
 protected:
