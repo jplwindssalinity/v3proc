@@ -77,7 +77,6 @@ public:
 
 	int                     slicesPerSpot;
 	double			startTime;
-	double			endTime;
 	AntennaSim		antennaSim;		// the antenna simulator
 
 	//---------------------------//

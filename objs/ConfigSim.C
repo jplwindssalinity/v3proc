@@ -517,11 +517,6 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->startTime = start_time;
 
-	double end_time;
-	if (! config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD, &end_time))
-		return(0);
-	instrument_sim->endTime = end_time;
-
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
