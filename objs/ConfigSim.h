@@ -142,7 +142,7 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 // AntennaSim //
 //------------//
 
-#define START_AZIMUTH_KEYWORD			"START_AZIMUTH"
+#define ANTENNA_START_AZIMUTH_KEYWORD	"ANTENNA_START_AZIMUTH"
 #define ANTENNA_START_TIME_KEYWORD		"ANTENNA_START_TIME"
 
 int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);

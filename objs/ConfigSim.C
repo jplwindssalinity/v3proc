@@ -571,7 +571,7 @@ ConfigAntennaSim(
 		return(0);
 	antenna_sim->startTime = start_time;
 	double start_azi;
-	if (! config_list->GetDouble(START_AZIMUTH_KEYWORD, &start_azi))
+	if (! config_list->GetDouble(ANTENNA_START_AZIMUTH_KEYWORD, &start_azi))
 		return(0);
 	antenna_sim->startAzimuth = start_azi*dtr;
 	return(1);
