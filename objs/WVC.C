@@ -49,17 +49,27 @@ WVC::RemoveDuplicates()
 {
 	int count = 0;
 
-	//---------------------------------------//
-	// use a new list to identify duplicates //
-	//---------------------------------------//
+	//--------------------------------------//
+	// use a new WVC to identify duplicates //
+	//--------------------------------------//
 
 	WVC new_wvc;
 	WindVector* wv = ambiguities.GetHead();
 	while (wv)
 	{
-		if (new_wvc.ambiguities.Find(wv))
+		int match_found = 0;
+		for (WindVector* wv_tmp = new_wvc.ambiguities.GetHead();
+			wv_tmp && wv_tmp != wv; wv_tmp = new_wvc.ambiguities.GetNext())
 		{
-			wv = ambiguities.RemoveCurrent();
+			if (*wv_tmp == *wv)
+			{
+				match_found = 1;
+				break;
+			}
+		}
+		if (match_found)
+		{
+			wv = ambiguities.RemoveCurrent();	// next becomes current
 			delete wv;
 			wv = ambiguities.GetCurrent();
 			count++;
