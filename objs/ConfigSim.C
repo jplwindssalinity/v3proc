@@ -187,11 +187,11 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
-		float std, mean, corrlength;
+		float stdv, meanx, corrlength;
 
-		if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
 				&corrlength))
@@ -199,15 +199,15 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 			return(0);
 		}
 
-		attcntl->roll.SetVariance(std*std*dtr*dtr);
-		attcntl->roll.SetMean(mean*dtr);
+		attcntl->roll.SetVariance(stdv*stdv*dtr*dtr);
+		attcntl->roll.SetMean(meanx*dtr);
 		attcntl->roll.SetCorrelationLength(corrlength);
 		attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
 		attcntl->roll.Initialize();
 
-		if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
 				&corrlength))
@@ -215,15 +215,15 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 			return(0);
 		}
 
-		attcntl->pitch.SetVariance(std*std*dtr*dtr);
-		attcntl->pitch.SetMean(mean*dtr);
+		attcntl->pitch.SetVariance(stdv*stdv*dtr*dtr);
+		attcntl->pitch.SetMean(meanx*dtr);
 		attcntl->pitch.SetCorrelationLength(corrlength);
 		attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
 		attcntl->pitch.Initialize();
 
-		if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
 			&corrlength))
@@ -231,8 +231,8 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 			return(0);
 		}
 
-		attcntl->yaw.SetVariance(std*std*dtr*dtr);
-		attcntl->yaw.SetMean(mean*dtr);
+		attcntl->yaw.SetVariance(stdv*stdv*dtr*dtr);
+		attcntl->yaw.SetMean(meanx*dtr);
 		attcntl->yaw.SetCorrelationLength(corrlength);
 		attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
 		attcntl->yaw.Initialize();
@@ -277,11 +277,11 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
-		float std, mean, corrlength;
+		float stdv, meanx, corrlength;
 
-		if (! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
 			&corrlength))
@@ -289,15 +289,15 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 			return(0);
 		}
 
-		attknow->roll.SetVariance(std*std*dtr*dtr);
-		attknow->roll.SetMean(mean*dtr);
+		attknow->roll.SetVariance(stdv*stdv*dtr*dtr);
+		attknow->roll.SetMean(meanx*dtr);
 		attknow->roll.SetCorrelationLength(corrlength);
 		attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
 		attknow->roll.Initialize();
 
-		if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
 				&corrlength))
@@ -305,15 +305,15 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 			return(0);
 		}
 
-		attknow->pitch.SetVariance(std*std*dtr*dtr);
-		attknow->pitch.SetMean(mean*dtr);
+		attknow->pitch.SetVariance(stdv*stdv*dtr*dtr);
+		attknow->pitch.SetMean(meanx*dtr);
 		attknow->pitch.SetCorrelationLength(corrlength);
 		attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
 		attknow->pitch.Initialize();
 
-		if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &stdv))
 			return(0);
-		if (! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &meanx))
 			return(0);
 		if (! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
 				&corrlength))
@@ -321,8 +321,8 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 			return(0);
 		}
 
-		attknow->yaw.SetVariance(std*std*dtr*dtr);
-		attknow->yaw.SetMean(mean*dtr);
+		attknow->yaw.SetVariance(stdv*stdv*dtr*dtr);
+		attknow->yaw.SetMean(meanx*dtr);
 		attknow->yaw.SetCorrelationLength(corrlength);
 		attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
 		attknow->yaw.Initialize();
@@ -354,15 +354,15 @@ ConfigGaussian(const char* variance_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list)
 {
-	double variance, mean;
+	double variance, meanx;
 
 	if (! config_list->GetDouble(variance_keyword, &variance))
 		return(NULL);
 	variance*=dtr*dtr;
-	if (! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &meanx))
 		return(NULL);
-	mean*=dtr;
-	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
+	meanx*=dtr;
+	Gaussian* new_g = new Gaussian((float)variance,(float)meanx);
 	return(new_g);
 }
 
@@ -376,15 +376,15 @@ ConfigUniform(
 	const char*		mean_keyword,
 	ConfigList*		config_list)
 {
-	double radius, mean;
+	double radius, meanx;
 
 	if (! config_list->GetDouble(radius_keyword, &radius))
 		return(NULL);
 	radius*=dtr;
-	if (! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &meanx))
 		return(NULL);
-	mean*=dtr;
-	Uniform* new_u = new Uniform((float)radius,float(mean));
+	meanx*=dtr;
+	Uniform* new_u = new Uniform((float)radius,float(meanx));
 	return(new_u);
 }
 
@@ -400,7 +400,7 @@ ConfigGaussianRandomVelocity(
 	const char*		variance_keyword,
 	ConfigList*		config_list)
 {
-	double variance, mean, sample_rate, bound;
+	double variance, meanx, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
 	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
@@ -409,14 +409,14 @@ ConfigGaussianRandomVelocity(
 	if (! config_list->GetDouble(variance_keyword, &variance))
 		return(NULL);
 	variance*=dtr*dtr;
-	if (! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &meanx))
 		return(NULL);
-	mean*=dtr;
+	meanx*=dtr;
 	if (! config_list->GetDouble(bound_keyword, &bound))
 		return(NULL);
 	bound*=dtr;
 	velocity = new Gaussian((float)variance,0.0);
-	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
+	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)meanx);
 	return(new_rv);
 }
 
@@ -433,7 +433,7 @@ ConfigUniformRandomVelocity(
 	const char*		radius_keyword,
 	ConfigList*		config_list)
 {
-	double radius, mean, sample_rate, bound;
+	double radius, meanx, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
 	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
@@ -442,15 +442,15 @@ ConfigUniformRandomVelocity(
 	if (! config_list->GetDouble(radius_keyword, &radius))
 		return(NULL);
 	radius*=dtr;
-	if (! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &meanx))
 		return(NULL);
-	mean*=dtr;
+	meanx*=dtr;
 	if (! config_list->GetDouble(bound_keyword, &bound))
 		return(NULL);
 	bound*=dtr;
 	velocity=new Uniform((float)radius,0.0);
 	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)mean);
+		(float)bound, (float)meanx);
 	return(new_rv);
 }
 ********************************************/
@@ -666,11 +666,11 @@ ConfigXTable(
 	char*			read_write)
 {
 	/**** Find out if XTable is to be configured READ or WRITE ***/
-	int read=0;
+	int read_flag =0;
 	if (strcmp(read_write,"r") == 0)
-		read=1;
+		read_flag =1;
 	else if (strcmp(read_write,"w")==0)
-		read=0;
+		read_flag =0;
 	else
 	{
 		fprintf(stderr, "ConfigXTable: Bad read_write parameter");
@@ -738,7 +738,7 @@ ConfigXTable(
 	/**** If mode is READ, read in xTable and make sure its parameters match
 		those read from the config file *****/
 
-	if (read)
+	if (read_flag )
 	{
 		if (!xTable->Read())
 		{

@@ -52,7 +52,10 @@ public:
 // are independent of time.					    //
 //==================================================================//
 
-class GenericTimelessDist: public GenericDist
+// **** Put public GenericDist back in as a base class to allow
+//      generic distribution access
+//      It was commented out to shut the compiler up.
+class GenericTimelessDist // : public GenericDist
 {
 public:
 	virtual float GetNumber() = 0;
