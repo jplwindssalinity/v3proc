@@ -273,7 +273,7 @@ L10ToL15::Convert(
 			// commanded doppler
 			// commanded receiver gate delay
 
-			if(XMGROUT) printf("%g ",antenna->azimuthAngle);
+			if(XMGROUT) printf("%g ",antenna->azimuthAngle*dtr);
 
 			//----------------------------//
 			// generate coordinate switch //
