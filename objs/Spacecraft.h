@@ -12,6 +12,7 @@ static const char rcs_id_spacecraft_h[] =
 #include "Constants.h"
 #include "Matrix3.h"
 #include "Ephemeris.h"
+#include "Attitude.h"
 
 //======================================================================
 // CLASSES
@@ -77,6 +78,7 @@ public:
 	//-----------//
 
 	OrbitState		orbitState;
+	Attitude		attitude;
 };
 
 #endif
