@@ -1067,9 +1067,9 @@ WindSwath::WriteVctr(
 	// write vectors //
 	//---------------//
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
+	for (int ati = 0; ati < _alongTrackBins; ati++)
 	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
+		for (int cti = 0; cti < _crossTrackBins; cti++)
 		{
 			WVC* wvc = *(*(swath + cti) + ati);
 			if (wvc == NULL)

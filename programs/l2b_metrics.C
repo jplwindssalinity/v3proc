@@ -109,7 +109,7 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l20_file ]",
-	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low-high ]",
+	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
 	"[ -o output_base ]", 0 };
 
 //--------------//
