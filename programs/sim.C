@@ -223,6 +223,15 @@ main(
         exit(1);
     }
 
+    //----------------------------------------//
+    // select geodetic or geocentric attitude //
+    //----------------------------------------//
+
+    if (! ConfigAttitude(&config_list))
+    {
+        fprintf(stderr, "%s: using default attitude reference\n", command);
+    }
+
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
     //--------------------------------------//
