@@ -216,8 +216,6 @@ PscatSim::ScatSim(
     KpmField*       kpmField,
     PscatL1AFrame*  l1a_frame)
 {
-    MeasSpot meas_spot;
-
     //----------------------------------------//
     // compute frame header info if necessary //
     //----------------------------------------//
@@ -244,9 +242,10 @@ PscatSim::ScatSim(
     SetOrbitStepDelayAndFrequency(spacecraft, pscat);
 
     //---------------------//
-    // Create measurements //
+    // create measurements //
     //---------------------//
 
+    MeasSpot meas_spot;
     if (! pscat->MakeSlices(&meas_spot))
         return(0);
 
@@ -943,7 +942,7 @@ PscatSim::SetL1AScience(
         case Meas::HH_VH_CORR_MEAS_TYPE:
             meas_offset = 1;    // correlation offset
             fvalue = (float)meas->value;    // store value as float
-            ptr = (unsigned int)&fvalue;
+            ptr = (unsigned int *)&fvalue;
             break;
         default:
             return(0);
@@ -963,10 +962,22 @@ PscatSim::SetL1AScience(
             meas_offset] = *ptr;
     }
 
-    // Compute the spot noise measurement.
+    //----------------------------------------------------//
+    // compute the spot noise measurement for co-pol only //
+    //----------------------------------------------------//
+
+    MeasSpot copol_only;
+    for (Meas* meas = meas_spot->GetHead(); meas;
+        meas = meas_spot->GetNext())
+    {
+        copol_only.Append(meas);
+    }
     float spot_noise;
-    sigma0_to_Esn_noise(pscat, meas_spot, simKpcFlag, &spot_noise);
+    sigma0_to_Esn_noise(pscat, &copol_only, simKpcFlag, &spot_noise);
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
+    copol_only.GotoHead();
+    while (copol_only.RemoveCurrent() != NULL)
+        ;
 
     //---------------//
     // set the event //

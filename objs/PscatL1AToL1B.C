@@ -333,6 +333,7 @@ PscatL1AToL1B::Convert(
             int slice_idx;
             rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_idx);
             int slice_meas_offset = slice_idx * frame->measPerSlice;
+            float* ptr;
             switch(meas->measType)
             {
             case Meas::VV_MEAS_TYPE:
@@ -343,7 +344,7 @@ PscatL1AToL1B::Convert(
                 break;
             case Meas::VV_HV_CORR_MEAS_TYPE:
             case Meas::HH_VH_CORR_MEAS_TYPE:
-                float* ptr = (float *)&(frame->science[spot_meas_offset +
+                ptr = (float *)&(frame->science[spot_meas_offset +
                     slice_meas_offset + 1]);
                 meas->value = *ptr;
                 break;
