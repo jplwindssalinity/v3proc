@@ -121,9 +121,12 @@ int opt_hist = 0;
 const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r rain_rate ]",
     "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
-// Index 1: Parameter (0=NBD, 1=Spd, 2=Dir, 3=MLE, 4=Prob
-// Index 2: SSM/I class (0=all, 1=rainfree, 2=rain)
+// last index: SSM/I class (0=all, 1=rainfree, 2=rain)
 static unsigned long counts[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM][3];
+
+static double norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double all_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 
 //--------------//
 // MAIN PROGRAM //
@@ -327,11 +330,8 @@ main(
 
     //-------------//
     // write table //
-    //---------- --//
+    //-------------//
 
-    double norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-    double rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-    double all_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
     for (int i = 0; i < NBD_DIM; i++)
     {
         for (int j = 0; j < SPD_DIM; j++)

@@ -75,6 +75,8 @@ static const char rcs_id[] =
 #include "Interpolate.h"
 #include "SeaPac.h"
 
+#include "mudh.h"
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -128,8 +130,8 @@ static unsigned long counts[4][2][3][2][256];
 // just skip the data source
 double prob_sum[4][3][2][256];
 
-static double norain_tab[16][16][16][16];
-static double rain_tab[16][16][16][16];
+static double norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 
 unsigned long classifiable_count = 0;
 unsigned long with_nbd_count = 0;
@@ -187,6 +189,22 @@ main(
     int end_rev = atoi(argv[optind++]);
     const char* output_base = argv[optind++];
 
+    //--------------//
+    // simple calcs //
+    //--------------//
+
+    float nbd_spread = NBD_MAX - NBD_MIN;
+    int max_inbd = NBD_DIM - 2;    // save room for missing NBD index
+
+    float spd_spread = SPD_MAX - SPD_MIN;
+    int max_ispd = SPD_DIM - 1;
+
+    float dir_spread = DIR_MAX - DIR_MIN;
+    int max_idir = DIR_DIM - 1;
+
+    float mle_spread = MLE_MAX - MLE_MIN;
+    int max_imle = MLE_DIM - 1;
+
     //-------------------//
     // read mudhtab file //
     //-------------------//
@@ -198,7 +216,7 @@ main(
             mudhtab_file);
         exit(1);
     }
-    unsigned int size = 16 * 16 * 16 * 16;
+    unsigned int size = NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM;
     if (fread(norain_tab, sizeof(double), size, mudhtab_ifp) != size ||
         fread(rain_tab, sizeof(double), size, mudhtab_ifp) != size)
     {
@@ -381,34 +399,34 @@ main(
                 //--------------------------//
 
                 // convert back to real values
-                double nbd = (double)nbd_array[ati][cti] / 20.0 - 6.0;
-                double spd = (double)spd_array[ati][cti] / 5.0;
-                double dir = (double)dir_array[ati][cti] / 2.0;
-                double mle = (double)mle_array[ati][cti] / 8.0 - 30.0;
+                double nbd = (double)nbd_array[ati][cti] * 0.001 - 10.0;
+                double spd = (double)spd_array[ati][cti] * 0.01;
+                double dir = (double)dir_array[ati][cti] * 0.01;
+                double mle = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
                 // convert to tighter indicies
-                // nbd -4 to 6
-                // spd 0 to 30
-                // dir 0 to 90
-                // mle -10 to 0
-                int inbd = (int)((nbd +  4.0) * 14.0 / 10.0 + 0.5);
-                int ispd = (int)((spd +  0.0) * 15.0 / 30.0 + 0.5);
-                int idir = (int)((dir +  0.0) * 15.0 / 90.0 + 0.5);
-                int imle = (int)((mle + 10.0) * 15.0 / 10.0 + 0.5);
+                int inbd = (int)((nbd - NBD_MIN) * (float)max_inbd /
+                    nbd_spread + 0.5);
+                int ispd = (int)((spd - SPD_MIN) * (float)max_ispd /
+                    spd_spread + 0.5);
+                int idir = (int)((dir - DIR_MIN) * (float)max_idir /
+                    dir_spread + 0.5);
+                int imle = (int)((mle - MLE_MIN) * (float)max_imle /
+                    mle_spread + 0.5);
 
-                // nbd is scaled to 15 values so we can...
+                // nbd is scaled to fewer values so we can...
                 if (inbd < 0) inbd = 0;
-                if (inbd > 14) inbd = 14;
+                if (inbd > max_inbd) inbd = max_inbd;
 
                 // ...hack in a "missing nbd" index
-                if (nbd_array[ati][cti] == MAX_SHORT) inbd = 15;
+                if (nbd_array[ati][cti] == MAX_SHORT) inbd = max_inbd + 1;
 
                 if (ispd < 0) ispd = 0;
-                if (ispd > 15) ispd = 15;
+                if (ispd > max_ispd) ispd = max_ispd;
                 if (idir < 0) idir = 0;
-                if (idir > 15) idir = 15;
+                if (idir > max_idir) idir = max_idir;
                 if (imle < 0) imle = 0;
-                if (imle > 15) imle = 15;
+                if (imle > max_imle) imle = max_imle;
 
                 //----------------------//
                 // determine ssmi class //
@@ -517,8 +535,15 @@ main(
     const char* param_map[] = { "NBD", "Speed", "Direction", "MLE" };
     const char* rr_map[] = { "Rainfree", "Rain" };
 */
-    float param_b[] = { 6.0, 0.0, 0.0, 30.0 };
-    float param_m[] = { 20.0, 5.0, 2.0, 8.0 };
+    float param_m[4], param_b[4];
+    param_m[0] = nbd_spread / (float)max_inbd;
+    param_m[1] = spd_spread / (float)max_ispd;
+    param_m[2] = dir_spread / (float)max_idir;
+    param_m[3] = mle_spread / (float)max_imle;
+    param_b[0] = NBD_MIN;
+    param_b[1] = SPD_MIN;
+    param_b[2] = DIR_MIN;
+    param_b[3] = MLE_MIN;
 
     // from data
     for (int param_idx = 0; param_idx < 4; param_idx++)
@@ -539,7 +564,7 @@ main(
                 if (cell_total == 0)
                     continue;
 
-                float value = (float)idx / param_m[param_idx] -
+                float value = (float)idx * param_m[param_idx] +
                     param_b[param_idx];
                 double rainfree_prob =
                     (double)counts[param_idx][0][0][nbd_avail][idx] /
