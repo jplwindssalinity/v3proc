@@ -322,6 +322,36 @@ ConfigL17(
 	return(1);
 }
 
+//----------------//
+// ConfigL17ToL20 //
+//----------------//
+
+int
+ConfigL17ToL20(
+	L17ToL20*		l17_to_l20,
+	ConfigList*		config_list)
+{
+	double tmp;
+
+	if (! config_list->GetDouble(INIT_SPD_STEP_KEYWORD, &tmp))
+		return(0);
+	l17_to_l20->initSpdStep = (float)tmp;
+
+	if (! config_list->GetDouble(INIT_PHI_STEP_KEYWORD, &tmp))
+		return(0);
+	l17_to_l20->initPhiStep = (float)tmp;
+
+	if (! config_list->GetDouble(FINAL_SPD_STEP_KEYWORD, &tmp))
+		return(0);
+	l17_to_l20->finalSpdStep = (float)tmp;
+
+	if (! config_list->GetDouble(FINAL_PHI_STEP_KEYWORD, &tmp))
+		return(0);
+	l17_to_l20->finalPhiStep = (float)tmp;
+
+	return(1);
+}
+
 //-----------//
 // ConfigL20 //
 //-----------//

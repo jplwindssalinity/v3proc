@@ -16,6 +16,7 @@ static const char rcs_id_configsim_h[] =
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
+#include "L17ToL20.h"
 #include "Wind.h"
 #include "Grid.h"
 
@@ -109,6 +110,17 @@ int ConfigL15(L15* l15, ConfigList* config_list);
 #define L17_FILE_KEYWORD					"L17_FILE"
 
 int ConfigL17(L17* l17, ConfigList* config_list);
+
+//----------//
+// L17ToL20 //
+//----------//
+
+#define INIT_SPD_STEP_KEYWORD				"INIT_SPD_STEP"
+#define INIT_PHI_STEP_KEYWORD				"INIT_PHI_STEP"
+#define FINAL_SPD_STEP_KEYWORD				"FINAL_SPD_STEP"
+#define FINAL_PHI_STEP_KEYWORD				"FINAL_PHI_STEP"
+
+int ConfigL17ToL20(L17ToL20* l17_to_l20, ConfigList* config_list);
 
 //-----//
 // L20 //
