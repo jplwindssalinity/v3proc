@@ -140,114 +140,84 @@ main(
 		exit(1);
 	}
 
-    //-------------------------------------//
-    // create and configure level products //
-    //-------------------------------------//
+	//-------------------------------------//
+	// create and configure level products //
+	//-------------------------------------//
 
-    L15 l15;
-    if (! ConfigL15(&l15, &config_list))
-    {
-        fprintf(stderr, "%s: error configuring Level 1.5 Product\n", command);
-        exit(1);
-    }
+	L15 l15;
+	if (! ConfigL15(&l15, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Level 1.5 Product\n", command);
+		exit(1);
+	}
 
-    L17 l17;
-    if (! ConfigL17(&l17, &config_list))
-    {
-        fprintf(stderr, "%s: error configuring Level 1.7 Product\n", command);
-        exit(1);
-    }
-
-    //--------------------------------//
-    // create and configure ephemeris //
-    //--------------------------------//
-
-    Ephemeris ephemeris;
-    if (! ConfigEphemeris(&ephemeris, &config_list))
-    {
-        fprintf(stderr, "%s: error configuring ephemeris\n", command);
-        exit(1);
-    }
-    ephemeris.SetMaxNodes(50);      // this should be calculated
-
-    //---------------------------//
-    // create and configure Grid //
-    //---------------------------//
-
-	double alongtrack_res,crosstrack_res;
-	// alongtrack_size needs to be big enough to contain all the measurements
-	// that might be colocated.  (in km)
-	double alongtrack_size = 5000.0;
-	double crosstrack_size = 1400.0;
-    config_list.GetDouble("alongtrack_res",&alongtrack_res);
-    config_list.GetDouble("crosstrack_res",&crosstrack_res);
-	// start_time determines the start of the along track grid coordinates
-	double start_time;
-    config_list.GetDouble("ati_start_time",&start_time);
+	//---------------------------//
+	// create and configure Grid //
+	//---------------------------//
 
 	Grid grid;
-	grid.Allocate(crosstrack_res,alongtrack_res,
-				  crosstrack_size,alongtrack_size);
-	grid.l17 = &l17;
-	grid.SetEphemeris(&ephemeris);
-	grid.SetStartTime(start_time);
+	if (! ConfigGrid(&grid, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring grid\n", command);
+		exit(1);
+	}
 
-    //------------//
-    // open files //
-    //------------//
+	//------------//
+	// open files //
+	//------------//
 
-    l15.file.OpenForInput();
-    l17.file.OpenForOutput();
+	l15.file.OpenForInput();
+	grid.l17.file.OpenForOutput();
 
-    //-----------------//
-    // conversion loop //
-    //-----------------//
+	//-----------------//
+	// conversion loop //
+	//-----------------//
  
-    L15ToL17 l15_to_l17;
+	L15ToL17 l15_to_l17;
 
-    do
-    {
-        //------------------------------//
-        // read a level 1.5 data record //
-        //------------------------------//
+	do
+	{
+		//------------------------------//
+		// read a level 1.5 data record //
+		//------------------------------//
 
-        if (! l15.ReadDataRec())
-        {
-            switch (l15.GetStatus())
-            {
-            case L15::OK:       // end of file
-                break;
-            case L15::ERROR_READING_FRAME:
-                fprintf(stderr, "%s: error reading Level 1.5 data\n", command);
-                exit(1);
-                break;
-            case L15::ERROR_UNKNOWN:
-                fprintf(stderr, "%s: unknown error reading Level 1.5 data\n",
-                    command);
-                exit(1);
-                break;
-            default:
-                fprintf(stderr, "%s: unknown status (???)\n", command);
-                exit(1);
-            }
-            break;      // done, exit do loop
-        }
+		if (! l15.ReadDataRec())
+		{
+			switch (l15.GetStatus())
+			{
+			case L15::OK:	// end of file
+				break;
+			case L15::ERROR_READING_FRAME:
+				fprintf(stderr, "%s: error reading Level 1.5 data\n", command);
+				exit(1);
+				break;
+			case L15::ERROR_UNKNOWN:
+				fprintf(stderr, "%s: unknown error reading Level 1.5 data\n",
+					command);
+				exit(1);
+				break;
+			default:
+				fprintf(stderr, "%s: unknown status (???)\n", command);
+				exit(1);
+			}
+			break;	// done, exit do loop
+		}
 
-        //-------//
-        // Group //
-        //-------//
+		//-------//
+		// Group //
+		//-------//
 
-        if (! l15_to_l17.Group(&l15, &grid))
-        {
-            fprintf(stderr, "%s: error converting Level 1.0 to Level 1.5\n",
-                command);
-            exit(1);
-        }
+		if (! l15_to_l17.Group(&l15, &grid))
+		{
+			fprintf(stderr, "%s: error converting Level 1.5 to Level 1.7\n",
+				command);
+			exit(1);
+		}
 
-    } while (1);
+	} while (1);
 
-    l15.file.Close();
-    l17.file.Close();
+	l15.file.Close();
+	grid.l17.file.Close();
 
-    return (0);
+	return (0);
 }
