@@ -23,7 +23,6 @@ static const char rcs_id_wind_h[] =
 // CLASSES
 //		WindVector, WindVectorPlus, WVC, WindField, WindSwath
 //======================================================================
-
 //======================================================================
 // CLASS
 //		WindVector
@@ -230,6 +229,22 @@ protected:
 };
 
 //======================================================================
+// ENUM  COMPONENT_TYPE
+//
+// DESCRIPTION
+//              Used by the WindSwathClass to determine which set of
+//              wind vector component to correlate in the
+//              ComponentCovarianceVsCti routine.
+//======================================================================
+
+enum COMPONENT_TYPE{
+  UTRUE,  // u component of true wind vector
+  VTRUE,  // v component of true wind vector
+  UMEAS,   // u component of measured wind vector
+  VMEAS    // v component of measured wind vector
+};
+
+//======================================================================
 // CLASS
 //		WindSwath
 //
@@ -323,6 +338,11 @@ public:
 	int		WithinVsCti(WindField* truth, float* within_array,
 				int* count_array, float low_speed, float high_speed,
 				float within_angle);
+
+	int		VectorCorrelationVsCti(WindField* truth, float* vc_array,
+				int* count_array, float low_speed, float high_speed);
+	int             ComponentCovarianceVsCti(WindField* truth, float* cc_array,
+				int* count_array, float low_speed, float high_speed, COMPONENT_TYPE component1, COMPONENT_TYPE component2);
 
 	//-----------//
 	// variables //

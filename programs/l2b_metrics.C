@@ -432,6 +432,21 @@ main(
 		low_speed, high_speed);
 	plot_thing("within", title, "Cross Track Distance (km)", "Within",xylimits);
 
+	//----------------------------------------//
+	// Vector Correlation Coefficient vs. ctd //
+	//----------------------------------------//
+
+	if (! swath->VectorCorrelationVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
+	{
+		fprintf(stderr, "%s: error calculating vector correlation\n", command);
+		exit(1);
+	}
+	xylimits[2] = 0.0;
+	xylimits[3] = 2.0;
+	sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed, high_speed);
+	plot_thing("vector_correlation", title, "Cross Track Distance (km)", "Vector Correlation Coefficient",xylimits);
+
 	//--------------------//
 	// avg nambig vs. ctd //
 	//--------------------//
@@ -652,3 +667,4 @@ rad_to_deg(
 	}
 	return(1);
 }
+

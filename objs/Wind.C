@@ -2598,7 +2598,229 @@ WindSwath::WithinVsCti(
 
 	return(1);
 }
+int
+WindSwath::ComponentCovarianceVsCti(
+        WindField* truth,
+	float* cc_array,
+	int* count_array,
+	float low_speed,
+	float high_speed, 
+	COMPONENT_TYPE component1, 
+	COMPONENT_TYPE component2)
+{
+        // In all this:
+        // c1 is the value of component1
+        // c2 is the value of component2
+	// x is (c1*c2)
+       
+        //---------------------------------//
+        // Allocate Mean Arrays            //
+        //---------------------------------//
+ 
+        float* mean_c1_array= new float[_crossTrackBins];
+        float* mean_c2_array= new float[_crossTrackBins];
 
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		*(cc_array + cti) = 0.0;
+		*(count_array + cti) = 0;
+                *(mean_c1_array +cti)=0.0;
+                *(mean_c2_array +cti)=0.0;
+
+		//-------------------------//
+		// first pass calculations //
+		//-------------------------//
+
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+			//-------------------//
+			// Find Components   //
+			//-------------------//
+			float u=0,v=0;
+                        float c1=0,c2=0;
+			switch(component1){
+			case UTRUE:
+			  true_wv.GetUV(&u,&v);
+			  c1=u;
+			  break;
+			case VTRUE:
+			  true_wv.GetUV(&u,&v);
+			  c1=v;
+			  break;
+			case UMEAS:
+			  wvc->selected->GetUV(&u,&v);
+			  c1=u;
+			  break;
+			case VMEAS:
+			  wvc->selected->GetUV(&u,&v);
+			  c1=v;
+			  break;
+			default:
+			  fprintf(stderr,"ComponentCovariance: Bad component1\n");
+			  return(0);
+			}
+			switch(component2){
+			case UTRUE:
+			  true_wv.GetUV(&u,&v);
+			  c2=u;
+			  break;
+			case VTRUE:
+			  true_wv.GetUV(&u,&v);
+			  c2=v;
+			  break;
+			case UMEAS:
+			  wvc->selected->GetUV(&u,&v);
+			  c2=u;
+			  break;
+			case VMEAS:
+			  wvc->selected->GetUV(&u,&v);
+			  c2=v;
+			  break;
+			default:
+			  fprintf(stderr,"ComponentCovariance: Bad component2\n");
+			  return(0);
+			}
+                        //-------------------//
+			// Update Arrays     //
+			//-------------------//
+			float x = c1*c2;
+			*(cc_array + cti) += x;
+                        *(mean_c1_array +cti) +=c1;
+                        *(mean_c2_array +cti) +=c2;
+			(*(count_array + cti))++;
+		}
+
+		if (*(count_array + cti) < 2)
+			continue;
+
+		//----------------------------------//
+		// calculate the covariance         //
+		//----------------------------------//
+
+		*(mean_c1_array + cti) /= (float)*(count_array + cti);
+		*(mean_c2_array + cti) /= (float)*(count_array + cti);
+		*(cc_array + cti) /= (float)*(count_array + cti);
+                *(cc_array +cti) -= (*(mean_c1_array +cti))*(*(mean_c2_array +cti));
+
+	}
+
+	delete(mean_c1_array);
+        delete(mean_c2_array);
+	return(1);
+}
+int
+WindSwath::VectorCorrelationVsCti(
+        WindField* truth,
+	float* vc_array,
+	int* count_array,
+	float low_speed,
+	float high_speed){
+  //---------------------------------------------//
+  // Allocate Component Covariance  Arrays       //
+  // Nomenclature s[component_id][component_id]  //
+  // Component IDs                               //
+  // u1: u-component of true vector              //
+  // v1: v-component of true vector              //
+  // u2: u-component of selected vector          //
+  // v2: v-component of selected vector          //
+  //---------------------------------------------//
+
+  float* su1u1_array= new float[_crossTrackBins];
+  float* su2u2_array= new float[_crossTrackBins];
+  float* sv1v1_array= new float[_crossTrackBins];
+  float* sv2v2_array= new float[_crossTrackBins];
+  float* su1u2_array= new float[_crossTrackBins];
+  float* sv1v2_array= new float[_crossTrackBins];
+  float* su1v1_array= new float[_crossTrackBins];
+  float* su1v2_array= new float[_crossTrackBins];
+  float* su2v1_array= new float[_crossTrackBins];
+  float* su2v2_array= new float[_crossTrackBins];
+
+  //----------------------------------------------//
+  // Calculate Component Covariances              //
+  //----------------------------------------------//
+  if(! ComponentCovarianceVsCti(truth, su1u1_array, count_array, low_speed, 
+		      high_speed, UTRUE, UTRUE))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su2u2_array, count_array, low_speed, 
+		      high_speed, UMEAS, UMEAS))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, sv1v1_array, count_array, low_speed, 
+		      high_speed, VTRUE, VTRUE))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, sv2v2_array, count_array, low_speed, 
+		      high_speed, VMEAS, VMEAS))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su1u2_array, count_array, low_speed, 
+		      high_speed, UTRUE, UMEAS))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, sv1v2_array, count_array, low_speed, 
+		      high_speed, VTRUE, VMEAS))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su1v1_array, count_array, low_speed, 
+		      high_speed, UTRUE, VTRUE))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su1v2_array, count_array, low_speed, 
+		      high_speed, UTRUE, VMEAS))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su2v1_array, count_array, low_speed, 
+		      high_speed, UMEAS, VTRUE))
+    return(0);
+  if(! ComponentCovarianceVsCti(truth, su2v2_array, count_array, low_speed, 
+		      high_speed, UMEAS, VMEAS))
+    return(0);
+  
+  //-----------------------------------------------//
+  // Compute Vector Correlation Array              //
+  //-----------------------------------------------//
+
+  for(int cti=0;cti<_crossTrackBins;cti++){
+    float su1u1=*(su1u1_array +cti);
+    float su2u2=*(su2u2_array +cti);
+    float sv1v1=*(sv1v1_array +cti);
+    float sv2v2=*(sv2v2_array +cti);
+    float su1u2=*(su1u2_array +cti);
+    float sv1v2=*(sv1v2_array +cti);
+    float su1v1=*(su1v1_array +cti);
+    float su1v2=*(su1v2_array +cti);
+    float su2v1=*(su2v1_array +cti);
+    float su2v2=*(su2v2_array +cti);
+
+
+    *(vc_array +cti)= su1u1*(su2u2*sv1v2*sv1v2+sv2v2*su2v1*su2v1)+
+      sv1v1*(su2u2*su1v2*su1v2+sv2v2*su1u2*su1u2)+
+      2.0*(su1v1*su1v2*su2v1*su2v2)+2.0*(su1v1*su1u2*sv1v2*su2v2)-
+      2.0*(su1u1*su2v1*sv1v2*su2v2)-2.0*(su2u2*su1v1*su1v2*sv1v2)-
+      2.0*(sv2v2*su1v1*su1u2*su2v1)-2.0*(sv1v1*su1u2*su1v2*su2v2);
+
+    (*(vc_array +cti)) /=(su1u1*sv1v1-(su1v1*su1v1))*(su2u2*sv2v2-su2v2*su2v2);
+  }
+  //----------------------------------------------//
+  // deallocate arrays                            //
+  //----------------------------------------------//
+  delete(su1u1_array);
+  delete(su2u2_array);
+  delete(sv1v1_array);
+  delete(sv2v2_array);
+  delete(su1u2_array);
+  delete(sv1v2_array);
+  delete(su1v1_array);
+  delete(su1v2_array);
+  delete(su2v1_array);
+  delete(su2v2_array);
+
+  return(1);
+}
 //----------------------//
 // WindSwath::_Allocate //
 //----------------------//
