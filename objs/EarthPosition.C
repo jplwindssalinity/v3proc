@@ -369,9 +369,9 @@ return(normal);
 // system at the location specified by this EarthPosition.  The local
 // frame is defined with respect to the geocentric frame.
 // The local frame axes are:
-//	x - perpendicular to the local normal and directed to true north
-//	y - perpendicular to the local normal and directed to true east
-//	z - the local normal
+//	x - perpendicular to the local normal and directed to true east
+//	y - perpendicular to the local normal and directed to true north
+//	z - the local normal (away from earth's center)
 //
 
 CoordinateSwitch

@@ -21,7 +21,7 @@ CheckFrame::CheckFrame()
 :	time(0.0), rsat(Vector3(0.0,0.0,0.0)),
     vsat(0.0,0.0,0.0), attitude(), beamNumber(0),
     ptgr(0.0), orbitFrac(0.0), antennaAziTx(0.0), antennaAziGi(0.0),
-    EsCal(0.0), deltaFreq(0.0), spinRate(0.0), txDoppler(0.0),
+    EsCal(0.0), deltaFreq(0.0), spinRate(0.0), txDoppler(0.0), rxGateDelay(0.0),
     XdopplerFreq(0.0), XroundTripTime(0.0),
     idx(NULL), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
@@ -225,6 +225,7 @@ CheckFrame::AppendRecord(
         if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
 	return(1);
@@ -309,6 +310,7 @@ CheckFrame::WriteDataRec(
   if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
   return(1);
@@ -357,6 +359,7 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
@@ -391,6 +394,7 @@ CheckFrame::WriteDataRecAscii(
   fprintf(fptr,"deltaFreq (Hz): %g\n",deltaFreq);
   fprintf(fptr,"spinRate (rad/s): %g\n",spinRate);
   fprintf(fptr,"txDoppler (Hz): %g\n",txDoppler);
+  fprintf(fptr,"rxGateDelay (sec): %g\n",rxGateDelay);
   fprintf(fptr,"XdopplerFreq (Hz): %g\n",XdopplerFreq);
   fprintf(fptr,"XroundTripTime (sec): %g\n",XroundTripTime);
   fprintf(fptr,"**** Slices Data ****\n");

@@ -243,30 +243,30 @@ int
 Meas::WriteAscii(
 	FILE*	fp)
 {
-        double lon=0, lat=0, alt=0; 
-        centroid.GetAltLonGDLat(&alt,&lon,&lat);
-        lon*=rtd;
-        lat*=rtd;
-        fprintf(fp,"###########  Slice/Composite  Info  ###############\n");
-        fprintf(fp, "BeamIdx: %d ", beamIdx);
-        fprintf(fp, "StartSliceIdx: %d ", startSliceIdx);
-        fprintf(fp, "NumSlices: %d ", numSlices);
+    double lon=0, lat=0, alt=0; 
+    centroid.GetAltLonGDLat(&alt,&lon,&lat);
+    lon*=rtd;
+    lat*=rtd;
+    fprintf(fp,"\n###########  Slice/Composite  Info  ###############\n");
+    fprintf(fp, "BeamIdx: %d ", beamIdx);
+    fprintf(fp, "StartSliceIdx: %d ", startSliceIdx);
+    fprintf(fp, "NumSlices: %d ", numSlices);
 	fprintf(fp, "ScanAngle: %g ", scanAngle*rtd);
-        fprintf(fp, "XK: %g\n",XK);
+    fprintf(fp, "XK: %g ",XK);
+	fprintf(fp, "Value: %g ", value);
+    fprintf(fp, "EnSlice: %g ", EnSlice);
 	fprintf(fp, "Pol: %s ", beam_map[(int)pol]);
 	fprintf(fp, "IncAngle: %g ", incidenceAngle*rtd);
-        fprintf(fp, "Longitude: %g ",lon);
-        fprintf(fp, "Latitude: %g ",lat);
-	fprintf(fp, "Value: %g\n", value);
-        fprintf(fp, "Bandwidth: %g ", bandwidth);
-        fprintf(fp, "txPulseWidth: %g ", txPulseWidth);
-        fprintf(fp, "LandFlag: %d ", landFlag);
-        fprintf(fp, "A: %g ", A);
-        fprintf(fp, "B: %g ", B);
-        fprintf(fp, "C: %g ", C);
-        fprintf(fp, "EnSlice: %g\n", EnSlice);
+	fprintf(fp, "eastAzimuth: %g ", eastAzimuth*rtd);
+    fprintf(fp, "Longitude: %g ",lon);
+    fprintf(fp, "Latitude: %g ",lat);
+    fprintf(fp, "Bandwidth: %g ", bandwidth);
+    fprintf(fp, "txPulseWidth: %g ", txPulseWidth);
+    fprintf(fp, "LandFlag: %d ", landFlag);
+    fprintf(fp, "A: %g ", A);
+    fprintf(fp, "B: %g ", B);
+    fprintf(fp, "C: %g \n", C);
     
-
 	return(1);
 }
 
@@ -337,8 +337,18 @@ int32       sliceIndex)   // index in slices
     // outline: leave it alone
 
     //---------------------------------------------------
-    // centroid is from slice_lon and slice_lat
+    // centroid is from slice_lon and slice_lat.
+    // slice_lon,lat are deltas off of cell_lon,lat.
     //---------------------------------------------------
+
+    param = l1bHdf->GetParameter(CELL_LON, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    double cellLon = (double) *(floatP + pulseIndex);
+    param = l1bHdf->GetParameter(CELL_LAT, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    double cellLat = (double) *(floatP + pulseIndex);
     param = l1bHdf->GetParameter(SLICE_LON, UNIT_RADIANS);
     assert(param != 0);
     floatP = (float*)param->data;
@@ -349,7 +359,7 @@ int32       sliceIndex)   // index in slices
     floatP = (float*)param->data;
     double sliceLat = (double) *(floatP +
                         pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
-    centroid.SetAltLonGDLat(0.0, sliceLon, sliceLat);
+    centroid.SetAltLonGDLat(0.0, sliceLon+cellLon, sliceLat+cellLat);
 
     //---------------------------------------------------
     // get beamIdx and pol

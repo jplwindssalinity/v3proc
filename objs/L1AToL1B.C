@@ -467,6 +467,7 @@ L1AToL1B::Convert(
           cf.orbitFrac = qscat->cds.OrbitFraction();
           cf.spinRate = qscat->sas.antenna.spinRate;
           cf.txDoppler = qscat->ses.txDoppler;
+          cf.rxGateDelay = qscat->ses.rxGateDelay;
 		  cf.attitude = spacecraft->attitude;
           cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
           cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;

@@ -221,8 +221,8 @@ QscatSim::L1AFrameInit(
         {
           inst_flag = inst_flag | 0x00000004; // turn on bit 2
         }
-        float eff_gate_width = ses_beam_info->rxGateWidth -
-          qscat->ses.txPulseWidth;
+        float eff_gate_width = 1000*(ses_beam_info->rxGateWidth -
+          qscat->ses.txPulseWidth);
         unsigned int code = (int)(eff_gate_width / 0.1 + 0.5);
         if (code > 6)
         {
@@ -515,6 +515,7 @@ QscatSim::ScatSim(
         cf.orbitFrac = qscat->cds.OrbitFraction();
         cf.spinRate = qscat->sas.antenna.spinRate;
         cf.txDoppler = qscat->ses.txDoppler;
+        cf.rxGateDelay = qscat->ses.rxGateDelay;
         cf.attitude = spacecraft->attitude;
         cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
         cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;

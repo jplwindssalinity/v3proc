@@ -149,6 +149,17 @@ DIAGNOSTIC_PROGRAMS = \
     ephem_to_ascii \
 	l2a_to_ascii
 
+GS_CHECK_PROGRAMS = \
+	sim \
+    l1a_to_l1b \
+    l1a_to_gs_l1a \
+    l1b_hdf_to_l1b \
+    check_l1b \
+    checkframe_to_ascii \
+    gs_l1a_to_ascii \
+    l1a_to_ascii \
+    l1b_to_ascii
+
 #----------------------------------------------------------------------
 # default: make all executable programs
 #----------------------------------------------------------------------
@@ -157,6 +168,7 @@ default: $(PROGRAMS)
 hudd: $(HUDD_PROGRAMS)
 stiles: $(STILES_PROGRAMS)
 diag: $(DIAGNOSTIC_PROGRAMS)
+gschk: $(GS_CHECK_PROGRAMS)
 
 #----------------------------------------------------------------------
 # clean: remove all executable programs

@@ -576,6 +576,7 @@ QscatCds::EstimateIdealEncoder()
     //---------------------------------------//
 
     unsigned int int_encoder = (unsigned int)(heldEncoder & 0x7fff);
+//    printf("\ninitial encoder value = %d\n",int_encoder);
 
     //----------------------//
     // apply encoder offset //
@@ -593,6 +594,7 @@ QscatCds::EstimateIdealEncoder()
         encoder_offset = CDS_ENCODER_A_OFFSET;
     }
     int_encoder += encoder_offset;
+//   printf("plus encoder offset = %d\n",int_encoder);
 
     //-------------------//
     // apply beam offset //
@@ -610,20 +612,25 @@ QscatCds::EstimateIdealEncoder()
         beam_offset = BEAM_B_OFFSET;
     }
     int_encoder += beam_offset;
+//    printf("plus beam offset = %d\n",int_encoder);
 
     //-------------------------------------------//
     // apply internal delay and centering offset //
     //-------------------------------------------//
 
     float spin_rate = GetAssumedSpinRate();
+//    printf("priDn = %d\n",priDn);
     unsigned short ant_dn_per_pri = (unsigned short)
         ( ( ( ((float)priDn / 10.0) * 32768.0 * spin_rate) /
         (60.0 * 1000.0)) + 0.5);
+//    printf("ant_dn_per_pri = %d\n",ant_dn_per_pri);
     float rx_range_mem = range_tracker->rxRangeMem;
+//   printf("rx_range_mem = %g\n",rx_range_mem);
 
     int_encoder += (unsigned int)( (float)ant_dn_per_pri * (1.0 +
         (rx_range_mem + (float)txPulseWidthDn) /
         ((float)priDn * 4.0)) + 0.5);
+//    printf("plus delay and centering offset = %d\n",int_encoder);
 
     //-----------------//
     // mod the encoder //
@@ -937,6 +944,9 @@ Qscat::SetOtherAzimuths(
     if (! TxCenterToGroundImpactAzimuth(spacecraft))
         return(0);
 
+// Set all azimuths to ground impact
+//    sas.antenna.txCenterAzimuthAngle = sas.antenna.groundImpactAzimuthAngle;
+
     return(1);
 }
 
@@ -1029,10 +1039,12 @@ Qscat::LocateSlices(
         Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
         double r, theta, phi;
         rlook_surface.SphericalGet(&r, &theta, &phi);
-        meas->eastAzimuth = phi;
+        // Note that eastAzimuth is referenced to true East (not North).
+	    meas->eastAzimuth = phi;
 
         // get incidence angle
-        meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
+        meas->incidenceAngle = pi - theta;
+//        meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
         meas->centroid = centroid;
         meas->bandwidth = bw;
 
@@ -2303,10 +2315,11 @@ Qscat::LocateSliceCentroids(
         Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
         double r, theta, phi;
         rlook_surface.SphericalGet(&r, &theta, &phi);
-        meas->eastAzimuth = phi;
+	    meas->eastAzimuth = phi;
 
         // get incidence angle
-        meas->incidenceAngle = centroid.IncidenceAngle(rlook_gc);
+        meas->incidenceAngle = pi - theta;
+//        meas->incidenceAngle = centroid.IncidenceAngle(rlook_gc);
         meas->centroid = centroid;
         meas->bandwidth = bw;
 

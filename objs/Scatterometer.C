@@ -269,10 +269,11 @@ Scatterometer::LocateSpot(
     Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
     double r, theta, phi;
     rlook_surface.SphericalGet(&r, &theta, &phi);
-    meas->eastAzimuth = phi;
+	meas->eastAzimuth = phi;
 
     // get incidence angle
-    meas->incidenceAngle = sti.rTarget.IncidenceAngle(rlook_gc);
+    meas->incidenceAngle = pi - theta;
+//    meas->incidenceAngle = sti.rTarget.IncidenceAngle(rlook_gc);
     meas->centroid = sti.rTarget;
 
     // set energy measurement to be consistent with slice handling

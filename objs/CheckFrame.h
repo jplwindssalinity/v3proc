@@ -76,6 +76,7 @@ public:
     float           deltaFreq;
     float           spinRate;
     float           txDoppler;
+    float           rxGateDelay;
     float           XdopplerFreq;
     float           XroundTripTime;
 
