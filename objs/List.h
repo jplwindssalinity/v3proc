@@ -11,7 +11,7 @@ static const char rcs_id_list_h[] =
 
 //======================================================================
 // CLASSES
-//		Node, List
+//		Node, List, SortableList
 //======================================================================
 
 //======================================================================
@@ -71,7 +71,9 @@ public:
 	//----------------//
 
 	int		Append(T* new_data);			// append to end of list
+	int		Prepend(T* new_data);			// prepend to beginning of list
 	void	AppendList(List<T>* list);
+	int		InsertBefore(T* new_data);
 
 	//--------------------//
 	// removing from list //
@@ -99,6 +101,7 @@ public:
 	int		GotoNext();
 	int		GotoPrev();
 	int		SwapCurrentAndNext();
+	int		Find(T* data);
 
 	//-------------------//
 	// hacking into list //
@@ -124,64 +127,33 @@ protected:
 	Node<T>*		_current;
 };
 
-/*
+//======================================================================
+// CLASS
+//		SortableList
+//
+// DESCRIPTION
+//		The SortableList object is a List which has sorting methods.
+//		It requires the node object to have the following operators:
+//		<, >=
+//======================================================================
 
-	//----------------//
-	// accessing list //
-	//----------------//
-
-	void		AppendList(ListBase* added_list);
-	int			IsEmpty();		// 1 if the list is empty, 0 otherwise
-
-protected:
-	void		_Prepend(NodeBase* node);
-	void		_Append(NodeBase* node);
-	void		_InsertBefore(NodeBase* node);
-	void		_InsertAfter(NodeBase* node);
-	NodeBase*	_RemoveCurrent();
-
-	NodeBase*	_head;
-	NodeBase*	_tail;
-	NodeBase*	_current;
-};
-
-//======//
-// List //
-//======//
-
-template<class T>
-class List : public ListBase
+template <class T>
+class SortableList : public List
 {
 public:
-	List();
-	~List();
 
-	// query
-	//-----------
-	int		IsHead(T* data);	// return 1 if true, else 0
-	int		IsTail(T* data);	// return 1 if true, else 0
+	//----------------//
+	// adding to list //
+	//----------------//
 
-	// navigation
-	//-----------
-	T*		GetTail();			// current = tail, return T* of current
-	T*		GetPrev();			// current = prev, return T* of current
-	T*		GetIndex(int node_index);// current = index, return T* of current
+	int		AddSorted(T* new_data);
+	int		AddUniqueSorted(T* new_data);
 
-	// adding data
-	//------------
-	int		Prepend(T* newdata);			// prepend to front of list
-	int		InsertBefore(T* newdata);		// insert before the current node
-	int		InsertAfter(T* newdata);		// insert after the current node
-	int		InsertBeforeIndex(T* newdata, int node_index);
-	int		InsertAfterIndex(T* newdata, int node_index);
-	int		AddSorted(T* newdata);			// add to the list sorted
-	int		AddUniqueSorted(T* newdata);	// add if unique to the list sorted
+	//-----------------//
+	// organizing list //
+	//-----------------//
 
-	// operations
-	//-----------
-	T*		Find(T* data);		// return T* or NULL (current is set)
-	int		Sort();				// sort the list
+	int		Sort();
 };
-*/
 
 #endif

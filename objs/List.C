@@ -86,6 +86,43 @@ List<T>::Append(
 	return(1);
 }
 
+//---------------//
+// List::Prepend //
+//---------------//
+// Creates a node with data in it and prepends it to the beginning of the
+// list.  The new node becomes the current node.
+// Returns 1 on success, 0 on failure
+
+template <class T>
+int
+List<T>::Prepend(
+	T*	new_data)
+{
+	Node<T>* new_node = new Node<T>(new_data);
+	if (new_node == NULL)
+		return(0);
+
+	if (_head)
+	{
+		// beginning of list exists, just prepend
+		new_node->next = _head;
+		new_node->prev = NULL;
+		_head->prev = new_node;
+		_head = new_node;
+	}
+	else
+	{
+		// list is empty
+		new_node->prev = NULL;
+		new_node->next = NULL;
+		_head = _tail = new_node;
+	}
+
+	_current = new_node;
+
+	return(1);
+}
+
 //------------------//
 // List::AppendList //
 //------------------//
@@ -125,6 +162,55 @@ List<T>::AppendList(
 	list->_tail = NULL;
 
 	return;
+}
+
+//--------------------//
+// List::InsertBefore //
+//--------------------//
+// Creates a node with data in it and inserts it before the current node.
+// The new node becomes the current node.
+// Returns 1 on success, 0 on failure
+
+template <class T>
+int
+List<T>::InsertBefore(
+	T*	new_data)
+{
+	// create a new node
+	Node<T>* new_node = new Node<T>(new_data);
+	if (new_node == NULL)
+		return(0);
+
+	// define the current node
+	if (_current == NULL)
+		_current = _head;
+
+	if (_head == NULL)
+	{
+		// empty list
+		_head = new_node;
+		_tail = new_node;
+		new_node->prev = NULL;
+		new_node->next = NULL;
+	}
+	else if (_current == _head)
+	{
+		// node goes before head
+		new_node->prev = _current->prev;
+		new_node->next = _current;
+		_current->prev = new_node;
+		_head = new_node;
+	}
+	else
+	{
+		// node inserts
+		new_node->prev = _current->prev;
+		new_node->next = _current;
+		_current->prev->next = new_node;
+		_current->prev = new_node;
+	}
+	_current = new_node;
+	return(1);
 }
 
 //---------------------//
@@ -332,6 +418,123 @@ List<T>::NodeCount()
 }
 
 
+//==============//
+// SortableList //
+//==============//
+
+//-------------------------//
+// SortableList::AddSorted //
+//-------------------------//
+// Creates a node with data in it and inserts it into the list so that
+// the list is sorted.  Inserts the node after nodes containing equal
+// data so that equal nodes are sorted by insertion order.
+// Returns 1 on success, 0 on failure
+
+template <class T>
+int
+SortableList<T>::AddSorted(
+	T*	new_data)
+{
+	// make sure there is a current node
+	if (! _current)
+		_current = _head;
+
+	T* current_data = GetCurrent();
+
+	// search backwards
+	while (current_data && *new_data < *current_data)
+		current_data = GetPrev();
+
+	if (! current_data)
+		return(Prepend(new_data));
+
+	// search forward
+	while (current_data && *new_data >= *current_data)
+		current_data = GetNext();
+
+	if (! current_data)
+		return(Append(new_data));
+
+	// insert before
+	return(InsertBefore(new_data));
+}
+
+//-------------------------------//
+// SortableList::AddUniqueSorted //
+//-------------------------------//
+// Creates a node with data in it and inserts it into the list so that
+// the list is sorted.  Inserts the node after nodes containing equal
+// data so that equal nodes are sorted by insertion order.  If an == node
+// exists, the new data is deleted.
+// Returns 1 on success, 0 on failure
+
+template <class T>
+int
+SortableList<T>::AddUniqueSorted(
+	T*	new_data)
+{
+	// check for an == node
+	if (Find(new_data)
+	{
+		delete new_data;
+		return(1);
+	}
+	else
+	{
+		return(AddSorted(new_data));
+	}
+}
+
+//--------------------//
+// SortableList::Find //
+//--------------------//
+// Searches for the node containing data equal to the target data.
+// If such a node is found, returns 1 and sets the current node.
+// Otherwise, returns 0.
+
+template<class T>
+int
+SortableList<T>::Find(
+	T*	data)
+{
+	for (T* contents = GetHead(); contents; contents = GetNext())
+	{
+		if (*contents == *data)
+			return(1);
+	}
+	return(0);
+}
+
+//--------------------//
+// SortableList::Sort //
+//--------------------//
+
+template <class T>
+int
+SortableList<T>::Sort()
+{
+	if (! _head)
+		return;
+
+	for (Node<T>* node = _head->next; node; node->next)
+	{
+		T* node_data = ((Node<T>*)node)->data;
+		T* prev_data = ((Node<T>*)(node->prev))->data;
+		if (*node_data < *prev_data)
+		{
+			// node needs to be sorted
+			_current = node;	// go to the unsorted node
+			node = node->prev;	// back up before current
+			T* data = RemoveCurrent();
+			_current = _head;	// go to beginning of list
+			if (! AddSorted(data))
+				return(0);
+		}
+		GotoNext();
+	}
+	return(1);
+}
+
 
 /*
 //---------//
@@ -368,78 +571,6 @@ ListBase::GotoNodeIndex(
 		}
 	}
 	return(0);
-}
-
-//----------//
-// _Prepend //
-//----------//
-// add node to the front of the list
-// if the list is not empty, the current node remains unchanged
-// if the list is empty, the new node becomes the current node
-
-void
-ListBase::_Prepend(
-	NodeBase*	node)
-{
-	if (_head)
-	{
-		// front of list exists, just prepend
-		node->next = _head;
-		node->prev = 0;
-		_head->prev = node;
-		_head = node;
-	}
-	else
-	{
-		// list is empty
-		node->prev = NULL;
-		node->next = NULL;
-		_head = _tail = _current = node;
-	}
-	return;
-}
-
-//---------------//
-// _InsertBefore //
-//---------------//
-// insert node before the current node
-// the new node becomes the current node
-// if the current node is NULL, insert at the head and
-// set current to be the head node
-
-void
-ListBase::_InsertBefore(
-	NodeBase*	node)
-{
-	if (_current == NULL)
-		_current = _head;
-
-	if (_head == NULL)
-	{
-		// empty list
-		_head = node;
-		_tail = node;
-		node->prev = NULL;
-		node->next = NULL;
-	}
-	else if (_current == _head)
-	{
-		// node goes before head
-		node->prev = _current->prev;
-		node->next = _current;
-		_current->prev = node;
-		_head = node;
-	}
-	else
-	{
-		// node inserts
-		node->prev = _current->prev;
-		node->next = _current;
-		_current->prev->next = node;
-		_current->prev = node;
-	}
-	_current = node;
-	return;
 }
 
 //--------------//
@@ -585,27 +716,6 @@ List<T>::RemoveCurrent()
 	}
 }
 
-//---------//
-// Prepend //
-//---------//
-// create a node with data in it and prepend it to the front of the list
-// if the list is not empty, the current node remains unchanged
-// if the list is empty, the new node becomes the current node
-// return 1 on success, 0 on failure
-
-template <class T>
-int
-List<T>::Prepend(
-	T*	new_data)
-{
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
-	_Prepend((NodeBase*)new_node);
-	return(1);
-}
-
-
 //--------------//
 // InsertBefore //
 //--------------//
@@ -685,105 +795,6 @@ List<T>::InsertAfterIndex(
 	if (new_node == NULL)
 		return(0);
 	_InsertAfter((NodeBase*)new_node);
-	return(1);
-}
-
-//-----------//
-// AddSorted //
-//-----------//
-// create a node with data in it and insert it sorted
-// the new node becomes the current node
-// adds *after* equal nodes so that equal nodes are sorted by insertion
-// time
-
-template <class T>
-int
-List<T>::AddSorted(
-	T*	new_data)
-{
-	// make sure there is a current node
-	if (! _current)
-		_current = _head;
-
-	T* currentdata = GetCurrent();
-
-	// search backward
-	while (currentdata != 0 && *new_data < *currentdata)
-		currentdata = GetPrev();
-
-	if (currentdata == 0)	// went all the way back past the head
-	{						// or the list was empty
-		// prepend
-		return(Prepend(new_data));
-	}
-
-	// search forward
-	while (currentdata != 0 && *new_data >= *currentdata)
-		currentdata = GetNext();
-
-	if (currentdata == 0)	// went all the way past the tail
-	{
-		// append
-		return(Append(new_data));
-	}
-
-	// insert before
-	return(InsertBefore(new_data));
-}
-
-//-----------------//
-// AddUniqueSorted //
-//-----------------//
-// create a node with data in it and insert it sorted
-// the new node becomes the current node
-// if a node containing == date exists in the list, the new T is deleted
-//   and *not* added
-// returns 1 on success, 0 on failure
-// adds *after* equal nodes so that equal nodes are sorted by insertion time
-
-template <class T>
-int
-List<T>::AddUniqueSorted(
-	T*	new_data)
-{
-	// try to find the node (blind search -- boy, am I lazy!)
-	if (Find(new_data))
-	{
-		delete new_data;		// found, no need to add it
-		return(1);
-	}
-	else
-	{
-		return(AddSorted(new_data));	// not found, add it sorted
-	}
-}
-
-//------//
-// Sort //
-//------//
-
-template <class T>
-int
-List<T>::Sort()
-{
-	if (! _head)
-		return;
-
-	for (NodeBase* node = _head->next; node; node = node->next)
-	{
-		T* node_data = ((Node<T>*)node)->data;
-		T* prev_data = ((Node<T>*)(node->prev))->data;
-		if (*node_data < *prev_data)
-		{
-			// node needs to be sorted
-			_current = node;	// go to the unsorted node
-			node = node->prev;	// back up before current
-			T* data = RemoveCurrent();
-			_current = _head;	// go to beginning of list
-			if (! AddSorted(data))
-				return(0);
-		}
-	}
 	return(1);
 }
 */
