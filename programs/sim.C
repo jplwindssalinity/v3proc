@@ -39,7 +39,7 @@
 //    None.
 //
 // BROUGHT TO YOU BY
-//    QSCAT Sim Team
+//    The QSCAT Sim Team
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -71,13 +71,6 @@ static const char rcs_id[] =
 #include "List.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
-/*
-#include "Misc.h"
-#include "Array.h"
-#include "Ephemeris.h"
-#include "Kpm.h"
-#include "Qscat.h"
-*/
 
 //-----------//
 // TEMPLATES //
@@ -116,10 +109,6 @@ template class TrackerBase<unsigned short>;
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
-
-int  process_spacecraft_event(SpacecraftSim* spacecraft_sim,
-         SpacecraftEvent* spacecraft_event, Spacecraft* spacecraft,
-         Qscat* qscat, FILE* eph_fp, FILE* att_fp);
 
 //------------------//
 // OPTION VARIABLES //
@@ -417,9 +406,30 @@ main(
                 // process the spacecraft event //
                 //------------------------------//
 
-                sim_time=spacecraft_event.time;
-                process_spacecraft_event(&spacecraft_sim, &spacecraft_event,
-                                         &spacecraft, &qscat, eph_fp, att_fp);
+                sim_time = spacecraft_event.time;
+                Attitude attitude;  // for recording in att file only
+
+                switch(spacecraft_event.eventId)
+                {
+                case SpacecraftEvent::UPDATE_STATE:
+                    spacecraft_sim.UpdateOrbit(spacecraft_event.time,
+                        &spacecraft);
+                    spacecraft.orbitState.Write(eph_fp);
+                    spacecraft_sim.UpdateAttitude(spacecraft_event.time,
+                        &spacecraft);
+                    spacecraft_sim.ReportAttitude(spacecraft_event.time,
+                      &spacecraft, &attitude);
+                    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+                    break;
+                case SpacecraftEvent::EQUATOR_CROSSING:
+                    qscat.cds.SetEqxTime(spacecraft_event.time);
+                    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+                    break;
+                default:
+                    fprintf(stderr, "%s: unknown spacecraft event\n", command);
+                    exit(1);
+                    break;
+                }
             }
         }
 
@@ -514,15 +524,10 @@ main(
 
             if (qscat_sim.l1aFrameReady)
             {
-                if (spacecraft_event.time <= qscat_event.time)
-                {  // need this to preserve monotonic time increase.
-                  process_spacecraft_event(&spacecraft_sim, &spacecraft_event,
-                                           &spacecraft, &qscat, eph_fp, att_fp);
-                }
                 // Report Latest Attitude Measurement
                 // + Knowledge Error
-                spacecraft_sim.ReportAttitude(qscat_event.time,
-                    &spacecraft, &(l1a.frame.attitude));
+                spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
+                    &(l1a.frame.attitude));
 
                 int size = l1a.frame.Pack(l1a.buffer);
                 l1a.Write(l1a.buffer, size);
@@ -554,45 +559,4 @@ main(
     }
 
     return (0);
-}
-
-//--------------------------//
-// process_spacecraft_event //
-//--------------------------//
-
-int
-process_spacecraft_event(
-    SpacecraftSim*    spacecraft_sim,
-    SpacecraftEvent*  spacecraft_event,
-    Spacecraft*       spacecraft,
-    Qscat*            qscat,
-    FILE*             eph_fp,
-    FILE*             att_fp)
-{
-    Attitude attitude;    // for recording in att file only
-
-    switch(spacecraft_event->eventId)
-    {
-    case SpacecraftEvent::UPDATE_STATE:
-        spacecraft_sim->UpdateOrbit(spacecraft_event->time,
-          spacecraft);
-        spacecraft->orbitState.Write(eph_fp);
-        spacecraft_sim->UpdateAttitude(spacecraft_event->time,
-          spacecraft);
-        spacecraft_sim->ReportAttitude(spacecraft_event->time,
-          spacecraft, &attitude);
-        attitude.GSWrite(att_fp,spacecraft_event->time);
-        spacecraft_sim->DetermineNextEvent(spacecraft_event);
-        break;
-    case SpacecraftEvent::EQUATOR_CROSSING:
-        qscat->cds.SetEqxTime(spacecraft_event->time);
-        spacecraft_sim->DetermineNextEvent(spacecraft_event);
-        break;
-    default:
-        fprintf(stderr, "sim: unknown spacecraft event\n");
-        exit(1);
-        break;
-    }
-
-    return(1);
 }
