@@ -130,13 +130,13 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 		const char* x_label, const char* y_label);
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
-		const char* y_axis, float* xylimits,
+		const char* y_axis, float* xy_limits = NULL,
 		float* data = NULL, float* secondary = NULL);
 
 int rad_to_deg(float* data);
 
 int plot_density(const char* extension, const char* title,
-        const char* x_axis, const char* y_axis, float* xylimits);
+        const char* x_axis, const char* y_axis, float* xy_limits = NULL);
 
 
 //------------------//
@@ -197,7 +197,7 @@ main(
 	float high_speed = DEFAULT_HIGH_SPEED;
 	float within_angle = DEFAULT_WITHIN_ANGLE;
 	output_base = NULL;
-	float xylimits[4] = {DEFAULT_XMIN, DEFAULT_XMAX,
+	float xy_limits[4] = {DEFAULT_XMIN, DEFAULT_XMAX,
 						 DEFAULT_YMIN, DEFAULT_YMAX};
 
 	//------------------------//
@@ -410,23 +410,23 @@ main(
 			command);
 		exit(1);
 	}
-	xylimits[2] = RMS_SPD_MIN;
-	xylimits[3] = RMS_SPD_MAX;
+	xy_limits[2] = RMS_SPD_MIN;
+	xy_limits[3] = RMS_SPD_MAX;
 	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", xylimits, value_array, std_dev_array);
+		"RMS Speed Error (m/s)", xy_limits, value_array, std_dev_array);
 
 	//-----------------------------//
 	// selected speed bias vs. ctd //
 	//-----------------------------//
 
-	xylimits[2] = BIAS_SPD_MIN;
-	xylimits[3] = BIAS_SPD_MAX;
+	xy_limits[2] = BIAS_SPD_MIN;
+	xy_limits[3] = BIAS_SPD_MAX;
 	sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)", xylimits, value_2_array);
+		"Speed Bias (m/s)", xy_limits, value_2_array);
 
 	//--------------------------------------//
 	// selected rms direction error vs. ctd //
@@ -441,24 +441,24 @@ main(
 	}
 	rad_to_deg(value_array);
 	rad_to_deg(std_dev_array);
-	xylimits[2] = RMS_DIR_MIN;
-	xylimits[3] = RMS_DIR_MAX2;
+	xy_limits[2] = RMS_DIR_MIN;
+	xy_limits[3] = RMS_DIR_MAX2;
 	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", xylimits, value_array, std_dev_array);
+		"RMS Direction Error (deg)", xy_limits, value_array, std_dev_array);
 
 	//---------------------------------//
 	// selected direction bias vs. ctd //
 	//---------------------------------//
 
 	rad_to_deg(value_2_array);
-	xylimits[2] = BIAS_DIR_MIN2;
-	xylimits[3] = BIAS_DIR_MAX2;
+	xy_limits[2] = BIAS_DIR_MIN2;
+	xy_limits[3] = BIAS_DIR_MAX2;
 	sprintf(title, "Selected Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("sel_dir_bias", title, "Cross Track Distance (km)",
-		"Direction Bias (deg)", xylimits, value_2_array);
+		"Direction Bias (deg)", xy_limits, value_2_array);
 
 	//---------------//
 	// skill vs. ctd //
@@ -470,10 +470,10 @@ main(
 		fprintf(stderr, "%s: error calculating skill\n", command);
 		exit(1);
 	}
-	xylimits[2] = SKILL_MIN;
-	xylimits[3] = SKILL_MAX;
+	xy_limits[2] = SKILL_MIN;
+	xy_limits[3] = SKILL_MAX;
 	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	plot_thing("skill", title, "Cross Track Distance (km)", "Skill", xylimits);
+	plot_thing("skill", title, "Cross Track Distance (km)", "Skill", xy_limits);
 
 	//----------------//
 	// within vs. ctd //
@@ -485,12 +485,12 @@ main(
 		fprintf(stderr, "%s: error calculating within\n", command);
 		exit(1);
 	}
-	xylimits[2] = SKILL_MIN;
-	xylimits[3] = SKILL_MAX;
+	xy_limits[2] = SKILL_MIN;
+	xy_limits[3] = SKILL_MAX;
 	sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
 		low_speed, high_speed);
 	plot_thing("within", title, "Cross Track Distance (km)", "Within",
-        xylimits);
+        xy_limits);
 
 	//----------------------------------------//
 	// Vector Correlation Coefficient vs. ctd //
@@ -502,12 +502,12 @@ main(
 		fprintf(stderr, "%s: error calculating vector correlation\n", command);
 		exit(1);
 	}
-	xylimits[2] = 0.0;
-	xylimits[3] = 2.0;
+	xy_limits[2] = 0.0;
+	xy_limits[3] = 2.0;
 	sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed,
         high_speed);
 	plot_thing("vector_correlation", title, "Cross Track Distance (km)",
-        "Vector Correlation Coefficient", xylimits);
+        "Vector Correlation Coefficient", xy_limits);
 
 	//--------------------//
 	// avg nambig vs. ctd //
@@ -519,12 +519,25 @@ main(
 			command);
 		exit(1);
 	}
-	xylimits[2] = 0;
-	xylimits[3] = 5;
-	sprintf(title, "Average Number of Ambigs vs. CTD (%g - %g m/s)",
+	xy_limits[2] = 0;
+	xy_limits[3] = 5;
+	sprintf(title, "Average Number of Ambiguities vs. CTD (%g - %g m/s)",
         low_speed, high_speed);
 	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
-		"No. Ambigs",xylimits);
+		"Number of Ambiguities",xy_limits);
+
+	//---------------//
+	// number of WVC //
+	//---------------//
+
+	if (! swath->WvcVsCti(&truth, uint_array, low_speed, high_speed))
+	{
+		fprintf(stderr, "%s: error calculating number of WVC\n", command);
+		exit(1);
+	}
+	sprintf(title, "Number of WVC vs. CTD (%g - %g m/s)", low_speed,
+        high_speed);
+	plot_thing("wvc", title, "Cross Track Distance (km)", "Number of WVC");
 
 	//=========//
 	// NEAREST //
@@ -545,7 +558,7 @@ main(
 	}
     sprintf(title, "Direction Density (%g - %g m/s)", low_speed, high_speed);
     plot_density("dir_den", title, "Relative Wind Direction (deg)",
-        "Density", xylimits);
+        "Density", xy_limits);
 
 	//---------------------------------//
 	// nearest rms speed error vs. ctd //
@@ -558,23 +571,23 @@ main(
 			command);
 		exit(1);
 	}
-	xylimits[2] = RMS_SPD_MIN;
-	xylimits[3] = RMS_SPD_MAX;
+	xy_limits[2] = RMS_SPD_MIN;
+	xy_limits[3] = RMS_SPD_MAX;
 	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", xylimits, value_array, std_dev_array);
+		"RMS Speed Error (m/s)", xy_limits, value_array, std_dev_array);
 
 	//----------------------------//
 	// nearest speed bias vs. ctd //
 	//----------------------------//
 
-	xylimits[2] = BIAS_SPD_MIN;
-	xylimits[3] = BIAS_SPD_MAX;
+	xy_limits[2] = BIAS_SPD_MIN;
+	xy_limits[3] = BIAS_SPD_MAX;
 	sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)", xylimits, value_2_array);
+		"Speed Bias (m/s)", xy_limits, value_2_array);
 
 	//-------------------------------------//
 	// nearest rms direction error vs. ctd //
@@ -589,24 +602,24 @@ main(
 	}
 	rad_to_deg(value_array);
 	rad_to_deg(std_dev_array);
-	xylimits[2] = RMS_DIR_MIN;
-	xylimits[3] = RMS_DIR_MAX;
+	xy_limits[2] = RMS_DIR_MIN;
+	xy_limits[3] = RMS_DIR_MAX;
 	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", xylimits, value_array, std_dev_array);
+		"RMS Direction Error (deg)", xy_limits, value_array, std_dev_array);
 
 	//--------------------------------//
 	// nearest direction bias vs. ctd //
 	//--------------------------------//
 
 	rad_to_deg(value_2_array);
-	xylimits[2] = BIAS_DIR_MIN;
-	xylimits[3] = BIAS_DIR_MAX;
+	xy_limits[2] = BIAS_DIR_MIN;
+	xy_limits[3] = BIAS_DIR_MAX;
 	sprintf(title, "Nearest Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("near_dir_bias", title, "Cross Track Distance (km)",
-		"Direction Bias (deg)", xylimits, value_2_array);
+		"Direction Bias (deg)", xy_limits, value_2_array);
 
 	//-------------//
 	// free arrays //
@@ -637,22 +650,24 @@ xmgr_control(
 	const char*		subtitle,
 	const char*		x_label,
 	const char*		y_label,
-	float*			xylimits)
+	float*			xy_limits)
 {
 	fprintf(ofp, "@ title %c%s%c\n", QUOTE, title, QUOTE);
 	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
 	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
 	fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, y_label, QUOTE);
-	if (! autoscale)
+	if (! autoscale && xy_limits != NULL)
 	{
-		fprintf(ofp, "@ world xmin %f\n",xylimits[0]);
-		fprintf(ofp, "@ world xmax %f\n",xylimits[1]);
-		fprintf(ofp, "@ world ymin %f\n",xylimits[2]);
-		fprintf(ofp, "@ world ymax %f\n",xylimits[3]);
+		fprintf(ofp, "@ world xmin %f\n", xy_limits[0]);
+		fprintf(ofp, "@ world xmax %f\n", xy_limits[1]);
+		fprintf(ofp, "@ world ymin %f\n", xy_limits[2]);
+		fprintf(ofp, "@ world ymax %f\n", xy_limits[3]);
 		fprintf(ofp, "@ xaxis tick major 400\n");
 		fprintf(ofp, "@ xaxis tick minor 200\n");
-		fprintf(ofp, "@ yaxis tick major %f\n",(xylimits[3]-xylimits[2])/10);
-		fprintf(ofp, "@ yaxis tick minor %f\n",(xylimits[3]-xylimits[2])/20);
+		fprintf(ofp, "@ yaxis tick major %f\n",
+            (xy_limits[3] - xy_limits[2]) / 10);
+		fprintf(ofp, "@ yaxis tick minor %f\n",
+            (xy_limits[3] - xy_limits[2]) / 20);
 	}
 	fprintf(ofp, "@ xaxis tick major grid on\n");
 	fprintf(ofp, "@ xaxis tick minor grid on\n");
@@ -675,7 +690,7 @@ plot_thing(
 	const char*		title,
 	const char*		x_axis,
 	const char*		y_axis,
-	float*			xylimits,
+	float*			xy_limits,
 	float*			data,
 	float*			secondary)
 {
@@ -699,7 +714,7 @@ plot_thing(
 		sprintf(sub_title,"%s", l2b_file);
 	}
 
-	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xylimits);
+	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xy_limits);
 
 	//------//
 	// plot //
@@ -742,7 +757,7 @@ plot_density(
     const char*  title,
     const char*  x_axis,
     const char*  y_axis,
-    float*       xylimits)
+    float*       xy_limits)
 {
 	char filename[1024];
 	sprintf(filename, "%s.%s", output_base, extension);
@@ -764,7 +779,7 @@ plot_density(
 		sprintf(sub_title, "%s", l2b_file);
 	}
 
-	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xylimits);
+	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xy_limits);
 
     //-------//
     // count //

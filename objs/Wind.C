@@ -2798,6 +2798,44 @@ WindSwath::AvgNambigVsCti(
 	return(1);
 }
 
+//---------------------//
+// WindSwath::WvcVsCti //
+//---------------------//
+
+int
+WindSwath::WvcVsCti(
+    WindField*     truth,
+    unsigned int*  count,
+    float          low_speed,
+    float          high_speed)
+{
+	//--------------------------------//
+	// sum number of WVC for each cti //
+	//--------------------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+        *(count + cti) = 0;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
+
+			(*(count + cti))++;
+		}
+	}
+
+	return(1);
+}
+
 //---------------------------//
 // WindSwath::RmsSpdErrVsCti //
 //---------------------------//
