@@ -133,17 +133,6 @@ PscatL1AToL1B::Convert(
     Antenna* antenna = &(pscat->sas.antenna);
     PscatL1AFrame* frame = &(l1a->frame);
 
-    //--------------------//
-    // allocate workspace //
-    //--------------------//
-
-    float* Esn = (float*)malloc(sizeof(float)*frame->slicesPerSpot);
-    if (! Esn)
-    {
-        printf("Error allocating memory in PscatL1AToL1B\n");
-        return(0);
-    }
-
     //------------------//
     // for each spot... //
     //------------------//
@@ -152,18 +141,19 @@ PscatL1AToL1B::Convert(
     {
         if (simVs1BCheckfile)
         {
-          // cf.idx needs to start out zeroed for each spot
-          cf.Initialize();
+            // cf.idx needs to start out zeroed for each spot
+            cf.Initialize();
         }
 
         //--------------------------//
         // skip loopbacks and loads //
         //--------------------------//
 
-        if (spot_idx==frame->calPosition-2 || spot_idx==frame->calPosition-1)
+        if (spot_idx == frame->calPosition - 2 ||
+            spot_idx == frame->calPosition - 1)
         {
-          pulseCount++;
-          continue;
+            pulseCount++;
+            continue;
         }
 
         // determine the spot meas location offset
@@ -226,27 +216,9 @@ PscatL1AToL1B::Convert(
         MeasSpot* meas_spot = new MeasSpot();
         meas_spot->time = time;
 
-        //-------------------------------------------//
-        // Extract energy measurements for this spot //
-        //-------------------------------------------//
-
-        float Esn_echo = 0.0;
-        for (int slice_idx = 0; slice_idx < frame->slicesPerSpot;
-            slice_idx++)
-        {
-            int slice_meas_offset = slice_idx * frame->measPerSlice;
-            // co-pol measurements are first for the slice
-            Esn[slice_idx] = frame->science[spot_meas_offset +
-                slice_meas_offset];
-            Esn_echo += Esn[slice_idx];
-        }
-
-        // Fetch the noise measurement which applies to all the slices.
-        float Esn_noise = frame->spotNoise[spot_idx];
-
-        //---------------------//
-        // create measurements //
-        //---------------------//
+        //----------------------------------------//
+        // create slice measurements for the spot //
+        //----------------------------------------//
 
         if (! pscat->MakeSlices(meas_spot))
             return(0);
@@ -257,19 +229,23 @@ PscatL1AToL1B::Convert(
 
         if (frame->slicesPerSpot <= 1)
         {
-            if (! pscat->LocateSpot(spacecraft, meas_spot, Esn[0]))
+            if (! pscat->LocateSpot(spacecraft, meas_spot))
             {
                 return(0);
             }
         }
         else
         {
-            if (! pscat->LocateSliceCentroids(spacecraft, meas_spot, Esn,
-                sliceGainThreshold, processMaxSlices))
+            if (! pscat->LocateSliceCentroids(spacecraft, meas_spot,
+                 sliceGainThreshold, processMaxSlices))
             {
                 return(0);
             }
         }
+
+        //--------------------//
+        // set the land flags //
+        //--------------------//
 
         for (Meas* meas = meas_spot->GetHead(); meas;
             meas = meas_spot->GetNext())
@@ -337,10 +313,53 @@ PscatL1AToL1B::Convert(
                 meas_spot->InsertAfter(new_meas);
                 break;
             default:
+                fprintf(stderr,
+                    "PscatL1AToL1B::Convert: unknown event type %d\n",
+                    event);
                 return(0);
                 break;
             }
         }
+
+        //--------------------------------------------------//
+        // Extract energy measurements for the measurements //
+        //--------------------------------------------------//
+
+        float Esn_echo = 0.0;
+
+        for (Meas* meas = meas_spot->GetHead(); meas;
+            meas = meas_spot->GetNext())
+        {
+            int slice_idx;
+            rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_idx);
+            int slice_meas_offset = slice_idx * frame->measPerSlice;
+            switch(meas->measType)
+            {
+            case Meas::VV_MEAS_TYPE:
+            case Meas::HH_MEAS_TYPE:
+                meas->value =
+                    frame->science[spot_meas_offset + slice_meas_offset];
+                Esn_echo += meas->value;
+                break;
+            case Meas::VV_VH_CORR_MEAS_TYPE:
+            case Meas::HH_HV_CORR_MEAS_TYPE:
+                meas->value =
+                    frame->science[spot_meas_offset + slice_meas_offset + 1];
+                break;
+            default:
+                fprintf(stderr,
+                    "PscatL1AToL1B::Convert: unknown measurement type %d\n",
+                    meas->measType);
+                return(0);
+                break;
+            }
+        }
+
+        //-----------------------------------------------------------------//
+        // Extract the spot noise measurement which applies to all slices. //
+        //-----------------------------------------------------------------//
+
+        float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
         //-------------------------//
         // for each measurement... //
@@ -350,7 +369,7 @@ PscatL1AToL1B::Convert(
             meas = meas_spot->GetNext())
         {
             int slice_i;
-            if (!rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_i))
+            if (! rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_i))
             {
                 fprintf(stderr, "PscatL1AToL1B::Convert, Bad slice number\n");
                 exit(1);
@@ -532,9 +551,6 @@ PscatL1AToL1B::Convert(
         l1b->frame.spotList.Append(meas_spot);
         pulseCount++;
     }
-
-    free(Esn);
-    Esn = NULL;
 
     if (outputSigma0ToStdout)
     {
