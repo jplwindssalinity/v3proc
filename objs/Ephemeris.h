@@ -15,6 +15,7 @@ static const char rcs_id_ephemeris_h[] =
 #include "EarthPosition.h"
 
 #define EPHEMERIS_INTERP_ORDER	8
+#define RANGE_TIME_TOL			0.1
 
 //======================================================================
 // CLASSES

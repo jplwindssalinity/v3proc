@@ -399,163 +399,165 @@ Ephemeris::GetNextOrbitState(
 
 int
 Ephemeris::GetSubtrackCoordinates(
-EarthPosition rground,
-double start_time,
-double measurement_time,
-float *crosstrack,
-float *alongtrack)
-
+	EarthPosition	rground,
+	double			start_time,
+	double			measurement_time,
+	float*			crosstrack,
+	float*			alongtrack)
 {
+	double t1, t2, t3, t;
+	double r1, r2, r3, r;
 
-double t1,t2,t3,t;
-double r1,r2,r3,r;
+	// default returns
+	*crosstrack = 0.0;
+	*alongtrack = 0.0;
 
-// default returns
-*crosstrack = 0.0;
-*alongtrack = 0.0;
+	// Create an object which supplies the range function to be minimized by
+	// standard routines like brent() below.
+	RangeFunction rangefunc(this,&rground);
 
-// Create an object which supplies the range function to be minimized by
-// standard routines like brent() below.
-RangeFunction rangefunc(this,&rground);
+	//
+	// Initial guesses start at the measurement time and go out 40 sec's which
+	// is about the time it takes to cover 300 km.
+	//
 
-//
-// Initial guesses start at the measurement time and go out 40 sec's which
-// is about the time it takes to cover 300 km.
-//
+	t1 = measurement_time;
+	t2 = measurement_time + 40.0;
 
-t1 = measurement_time;
-t2 = measurement_time + 40.0;
+	//
+	// Bracket the minimum range between t1 and t3.
+	//
 
-//
-// Bracket the minimum range between t1 and t3.
-//
-
-r1 = rangefunc.Range(t1);
-r2 = rangefunc.Range(t2);
-if ((r1 < 0) || (r2 < 0)) return(0);	// t1 or t2 out of Ephemeris range
-
-if (r2 > r1)
-{	// switch t1 and t2 so that range decreases going from t1 to t2.
-	double tmp = t1;
-	t1 = t2;
-	t2 = tmp;
-	tmp = r1;
-	r1 = r2;
-	r2 = tmp;
-}
-
-//
-// Initial guess for t3 by stepping downhill a factor of 1.6.
-//
-
-t3 = t2 + 1.6*(t2 - t1);
-r3 = rangefunc.Range(t3);
-if (r3 < 0) return(0);	// t3 out of Ephemeris range
-
-while (r2 > r3)
-{	// step downhill until the range increases.
-	t = t3 + 1.6*(t3 - t2);
-	r = rangefunc.Range(t);
-	if (r < 0) return(0);	// t out of Ephemeris range
-	t1 = t2;
-	r1 = r2;
-	t2 = t3;
-	r2 = r3;
-	t3 = t;
-	r3 = r;
-}
-
-//
-// Locate the ephemeris position with minimum range to the EarthPosition
-// using a golden section search and the bracketing points t1,t2,t3.
-//
-
-double tol = 1e-6;
-double R = 0.61803399;
-double C = 1.0 - R;
-double t0 = t1;
-
-//
-// Put the smaller interval between t0 and t1 and setup for the search
-//
-
-if (fabs(t3-t2) > fabs(t2-t1))
-{
-	t1 = t2;
-	r1 = r2;
-	t2 = t2 + C*(t3-t2);	// first golden section step
-	r2 = rangefunc.Range(t2);
-	if (r2 < 0) return(0);	// t2 out of Ephemeris range
-}
-else
-{
-	t1 = t2 - C*(t2-t1);	// first golden section step
 	r1 = rangefunc.Range(t1);
-	if (r1 < 0) return(0);	// t1 out of Ephemeris range
-}
+	r2 = rangefunc.Range(t2);
+	if ((r1 < 0) || (r2 < 0))
+		return(0);		// t1 or t2 out of Ephemeris range
 
-//
-// Golden Section search loop
-//
-
-while (fabs(r2-r1)/r1 > tol)
-{
-	if (r2 < r1)
+	if (r2 > r1)
 	{
-		t0 = t1;
+		// switch t1 and t2 so that range decreases going from t1 to t2.
+		double tmp = t1;
 		t1 = t2;
-		t2 = R*t1 + C*t3;
+		t2 = tmp;
+		tmp = r1;
 		r1 = r2;
+		r2 = tmp;
+	}
+
+	//
+	// Initial guess for t3 by stepping downhill a factor of 1.6.
+	//
+
+	t3 = t2 + 1.6*(t2 - t1);
+	r3 = rangefunc.Range(t3);
+	if (r3 < 0)
+		return(0);		// t3 out of Ephemeris range
+
+	while (r2 > r3)
+	{
+		// step downhill until the range increases.
+		t = t3 + 1.6*(t3 - t2);
+		r = rangefunc.Range(t);
+		if (r < 0)
+			return(0);		// t out of Ephemeris range
+		t1 = t2;
+		r1 = r2;
+		t2 = t3;
+		r2 = r3;
+		t3 = t;
+		r3 = r;
+	}
+
+	//
+	// Locate the ephemeris position with minimum range to the EarthPosition
+	// using a golden section search and the bracketing points t1,t2,t3.
+	//
+
+	double R = 0.61803399;
+	double C = 1.0 - R;
+	double t0 = t1;
+
+	//
+	// Put the smaller interval between t0 and t1 and setup for the search
+	//
+
+	if (fabs(t3-t2) > fabs(t2-t1))
+	{
+		t1 = t2;
+		r1 = r2;
+		t2 = t2 + C*(t3-t2);	// first golden section step
 		r2 = rangefunc.Range(t2);
 		if (r2 < 0) return(0);	// t2 out of Ephemeris range
 	}
 	else
 	{
-		t3 = t2;
-		t2 = t1;
-		t1 = R*t2 + C*t0;
-		r2 = r1;
+		t1 = t2 - C*(t2-t1);	// first golden section step
 		r1 = rangefunc.Range(t1);
 		if (r1 < 0) return(0);	// t1 out of Ephemeris range
 	}
-}
 
-double min_time;
-if (r1 < r2) min_time = t1; else min_time = t2;
+	//
+	// Golden Section search loop
+	//
 
-// Compute the s/c position at the start of the subtrack grid, and at
-// the minimum range position.  Also get the s/c velocity vector at the
-// minimum range position.
-EarthPosition start_position;
-OrbitState min_state;
-if (GetOrbitState(min_time,EPHEMERIS_INTERP_ORDER,&min_state) == 0) return(0);
-//if (GetOrbitState_2pt(min_time,&min_state) == 0) return(0);
-if (GetPosition(start_time,EPHEMERIS_INTERP_ORDER,&start_position) == 0)
-	return(0);
+	while (fabs(t3-t0) > RANGE_TIME_TOL)
+	{
+		if (r2 < r1)
+		{
+			t0 = t1;
+			t1 = t2;
+			t2 = R*t1 + C*t3;
+			r1 = r2;
+			r2 = rangefunc.Range(t2);
+			if (r2 < 0) return(0);	// t2 out of Ephemeris range
+		}
+		else
+		{
+			t3 = t2;
+			t2 = t1;
+			t1 = R*t2 + C*t0;
+			r2 = r1;
+			r1 = rangefunc.Range(t1);
+			if (r1 < 0) return(0);	// t1 out of Ephemeris range
+		}
+	}
 
-// Compute the corresponding nadir points on the earth's surface.
-EarthPosition subtrack_min = min_state.rsat.Nadir();
-EarthPosition subtrack_start = start_position.Nadir();
+	double min_time;
+	if (r1 < r2) min_time = t1; else min_time = t2;
 
-// Compute surface distances in the crosstrack and alongtrack directions.
-*crosstrack = subtrack_min.surface_distance(rground);
-*alongtrack = subtrack_min.surface_distance(subtrack_start);
+	// Compute the s/c position at the start of the subtrack grid, and at
+	// the minimum range position.  Also get the s/c velocity vector at the
+	// minimum range position.
+	EarthPosition start_position;
+	OrbitState min_state;
+	if (GetOrbitState(min_time,EPHEMERIS_INTERP_ORDER,&min_state) == 0) return(0);
+	//if (GetOrbitState_2pt(min_time,&min_state) == 0) return(0);
+	if (GetPosition(start_time,EPHEMERIS_INTERP_ORDER,&start_position) == 0)
+		return(0);
 
-// Determine which side the surface point is on.
-Vector3 vec = subtrack_min & rground;	// cross product
-double test = vec % min_state.vsat;		// dot product
-if (test < 0.0)
-{	// vec is generally opposite to vsat, so rground is on the left.
-	*crosstrack = -(*crosstrack);	// left side is defined to be negative
-}
+	// Compute the corresponding nadir points on the earth's surface.
+	EarthPosition subtrack_min = min_state.rsat.Nadir();
+	EarthPosition subtrack_start = start_position.Nadir();
 
-// Do the same for the along track distance (negative before the start point).
-if (min_time < start_time)
-{
-	*alongtrack = -(*alongtrack);	// before start is negative.
-}
+	// Compute surface distances in the crosstrack and alongtrack directions.
+	*crosstrack = subtrack_min.surface_distance(rground);
+	*alongtrack = subtrack_min.surface_distance(subtrack_start);
 
-return(1);
+	// Determine which side the surface point is on.
+	Vector3 vec = subtrack_min & rground;	// cross product
+	double test = vec % min_state.vsat;		// dot product
+	if (test < 0.0)
+	{	// vec is generally opposite to vsat, so rground is on the left.
+		*crosstrack = -(*crosstrack);	// left side is defined to be negative
+	}
+
+	// Do the same for the along track distance (negative before the start point).
+	if (min_time < start_time)
+	{
+		*alongtrack = -(*alongtrack);	// before start is negative.
+	}
+
+	return(1);
 }
 
 //--------------------------------------//
