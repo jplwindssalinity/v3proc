@@ -39,6 +39,8 @@ public:
 
     int   Allocate(const int x_size, const int y_size);
     int   Allocate(Image* image);
+    int   AllocateMask(uchar fill_value);
+
     void  Free();
     void  FreeImage();
     void  FreeMask();
@@ -63,14 +65,13 @@ public:
     // input/output //
     //--------------//
 
-    int  WritePtim(const char* filename, Image* x_image, Image* y_image,
-             float x_min, float x_max, float x_res, float y_min, float y_max,
-             float y_res);
+    int  WritePltr(const char* filename, Image* x_image, Image* y_image);
 
     //--------------//
     // initializing //
     //--------------//
 
+    int  FillMask(uchar fill_value);
     int  Step(float angle);
 
     //------------//

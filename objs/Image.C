@@ -42,7 +42,7 @@ Image::Allocate(
     if (_xSize == x_size && _ySize == y_size)
         return(1);    // already allocated, do nothing
 
-    Free();
+    FreeImage();
 
     _image = (float **)make_array(sizeof(float), 2, x_size, y_size);
     if (_image == NULL)
@@ -59,6 +59,24 @@ Image::Allocate(
     Image*  image)
 {
     return(Allocate(image->_xSize, image->_ySize));
+}
+
+//---------------------//
+// Image::AllocateMask //
+//---------------------//
+
+int
+Image::AllocateMask(
+    uchar  fill_value)
+{
+    FreeMask();
+
+    _mask = (uchar **)make_array(sizeof(uchar), 2, _xSize, _ySize);
+    if (_mask == NULL)
+        return(0);
+
+    FillMask(fill_value);
+    return(1);
 }
 
 //-------------//
@@ -128,12 +146,12 @@ Image::MinMax(
     float*  max_value)
 {
     int count = 0;
-    for (int i = 0; i < _xSize; i++)
+    for (int x = 0; x < _xSize; x++)
     {
-        for (int j = 0; j < _ySize; j++)
+        for (int y = 0; y < _ySize; y++)
         {
             float value;
-            if (! Get(i, j, &value))
+            if (! Get(x, y, &value))
                 continue;
 
             if (count)
@@ -217,20 +235,14 @@ Image::Get(
 }
 
 //------------------//
-// Image::WritePtim //
+// Image::WritePltr //
 //------------------//
 
 int
-Image::WritePtim(
+Image::WritePltr(
     const char*  filename,
     Image*       x_image,
-    Image*       y_image,
-    float        x_min,
-    float        x_max,
-    float        x_res,
-    float        y_min,
-    float        y_max,
-    float        y_res)
+    Image*       y_image)
 {
     //-------------//
     // check sizes //
@@ -251,14 +263,8 @@ Image::WritePtim(
     // write header info //
     //-------------------//
 
-    char* ptim_string = PTIM_HEADER;
-    if (fwrite(&ptim_string, 4, 1, ofp) != 1 ||
-        fwrite(&x_min, sizeof(float), 1, ofp) != 1 ||
-        fwrite(&x_max, sizeof(float), 1, ofp) != 1 ||
-        fwrite(&x_res, sizeof(float), 1, ofp) != 1 ||
-        fwrite(&y_min, sizeof(float), 1, ofp) != 1 ||
-        fwrite(&y_max, sizeof(float), 1, ofp) != 1 ||
-        fwrite(&y_res, sizeof(float), 1, ofp) != 1)
+    char* pltr_string = PLTR_HEADER;
+    if (fwrite(pltr_string, 4, 1, ofp) != 1)
     {
         fclose(ofp);
         return(0);
@@ -268,20 +274,90 @@ Image::WritePtim(
     // write data //
     //------------//
 
-    for (int i = 0; i < _xSize; i++)
+    for (int x = 0; x < _xSize; x++)
     {
-        for (int j = 0; j < _ySize; j++)
+        for (int y = 0; y < _ySize; y++)
         {
-            float x, y, value;
-            if ( (! Get(i, j, &value)) ||
-                 (! x_image->Get(i, j, &x)) ||
-                 (! y_image->Get(i, j, &y)) )
+            // for each point...
+
+            // ...get its value
+            float value;
+            if (! Get(x, y, &value))
+                continue;
+
+            // ...clear the edge array
+            float edge_sum[2][2];    // [0=x, 1=y][0=lower, 1=upper]
+            float edge_count[2][2];
+            for (int i = 0; i < 2; i++)
+            {
+                for (int j = 0; j < 2; j++)
+                {
+                    edge_sum[i][j] = 0.0;
+                    edge_count[i][j] = 0;
+                }
+            }
+
+            // ...get its corners
+            for (int dx = -1; dx < 2; dx++)
+            {
+                int edge_x = x + dx;
+                for (int dy = -1; dy < 2; dy++)
+                {
+                    int edge_y = y + dy;
+                    float x1, y1;
+                    if ( (! x_image->Get(edge_x, edge_y, &x1)) ||
+                         (! y_image->Get(edge_x, edge_y, &y1)) )
+                    {
+                        continue;
+                    }
+                    if (dx == -1)
+                    {
+                        edge_sum[0][0] += x1;
+                        edge_count[0][0]++;
+                    }
+                    if (dx == 1)
+                    {
+                        edge_sum[0][1] += x1;
+                        edge_count[0][1]++;
+                    }
+                    if (dy == -1)
+                    {
+                        edge_sum[1][0] += y1;
+                        edge_count[1][0]++;
+                    }
+                    if (dy == 1)
+                    {
+                        edge_sum[1][1] += y1;
+                        edge_count[1][1]++;
+                    }
+                }
+            }
+            if (edge_count[0][0] == 0 || edge_count[0][1] == 0 ||
+                edge_count[1][0] == 0 || edge_count[1][1] == 0)
             {
                 continue;
             }
-            if (fwrite(&x, sizeof(float), 1, ofp) != 1 ||
-                fwrite(&y, sizeof(float), 1, ofp) != 1 ||
-                fwrite(&value, sizeof(float), 1, ofp) )
+            float buffer[12];
+
+            buffer[0] = edge_sum[0][0] / edge_count[0][0]; // low x
+            buffer[1] = edge_sum[1][0] / edge_count[1][0]; // low y
+
+            buffer[2] = edge_sum[0][1] / edge_count[0][1]; // high x
+            buffer[3] = edge_sum[1][0] / edge_count[1][0]; // low y
+            
+            buffer[4] = edge_sum[0][1] / edge_count[0][1]; // high x
+            buffer[5] = edge_sum[1][1] / edge_count[1][1]; // high y
+            
+            buffer[6] = edge_sum[0][0] / edge_count[0][0]; // low x
+            buffer[7] = edge_sum[1][1] / edge_count[1][1]; // high y
+
+            buffer[8] = value;
+            buffer[9] = 0.0;
+
+            buffer[10] = (float)HUGE_VAL;
+            buffer[11] = (float)HUGE_VAL;
+            
+            if (fwrite(&buffer, sizeof(float) * 12, 1, ofp) != 1)
             {
                 fclose(ofp);
                 return(0);
@@ -295,6 +371,27 @@ Image::WritePtim(
 
     fclose(ofp);
 
+    return(1);
+}
+
+//-----------------//
+// Image::FillMask //
+//-----------------//
+
+int
+Image::FillMask(
+    uchar  fill_value)
+{
+    if (_mask == NULL)
+        return(0);
+
+    for (int x = 0; x < _xSize; x++)
+    {
+        for (int y = 0; y < _ySize; y++)
+        {
+            *(*(_mask + x) + y) = fill_value;
+        }
+    }
     return(1);
 }
 
@@ -316,20 +413,20 @@ Image::Step(
     double min_angle = pi_over_two - delta_angle;
     double max_angle = pi_over_two + delta_angle;
 
-    for (int i = 0; i < _xSize; i++)
+    for (int x = 0; x < _xSize; x++)
     {
-        double dx = (double)i - x_center;
-        for (int j = 0; j < _ySize; j++)
+        double dx = (double)x - x_center;
+        for (int y = 0; y < _ySize; y++)
         {
-            double dy = (double)j - y_center;
+            double dy = (double)y - y_center;
             double pt_angle = atan2(dy, dx);
             double ang_dif = ANGDIF(target_angle, pt_angle);
             if (ang_dif < min_angle)
-                *(*(_image + i) + j) = 1.0;
+                *(*(_image + x) + y) = 1.0;
             else if (ang_dif > max_angle)
-                *(*(_image + i) + j) = -1.0;
+                *(*(_image + x) + y) = -1.0;
             else
-                *(*(_image + i) + j) = 0.0;
+                *(*(_image + x) + y) = 0.0;
         }
     }
     return(1);
@@ -350,6 +447,9 @@ Image::Convolve(
     //------------------------------------//
 
     if (! Allocate(image_1))
+        return(0);
+
+    if (! AllocateMask(0))
         return(0);
 
     //--------------------------------------//
@@ -469,20 +569,20 @@ Image::Magnitude(
     // calculate the magnitude //
     //-------------------------//
 
-    for (int i = 0; i < _xSize; i++)
+    for (int x = 0; x < _xSize; x++)
     {
-        for (int j = 0; j < _ySize; j++)
+        for (int y = 0; y < _ySize; y++)
         {
             float value_1, value_2;
-            if ( (! image_1->Get(i, j, &value_1)) ||
-                 (! image_2->Get(i, j, &value_2)) )
+            if ( (! image_1->Get(x, y, &value_1)) ||
+                 (! image_2->Get(x, y, &value_2)) )
             {
                 // no value, clear the mask
-                Set(i, j, 0.0, 0);
+                Set(x, y, 0.0, 0);
             }
             else
             {
-                Set(i, j, sqrt(value_1*value_1 + value_2*value_2), 1);
+                Set(x, y, sqrt(value_1*value_1 + value_2*value_2), 1);
             }
         }
     }
