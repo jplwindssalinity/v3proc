@@ -67,6 +67,7 @@ set cfg_file = $argv[1]
 echo "`date` : Logging configuration file"
 log_cfg $cfg_file $cfg_file.clog
 echo "`date` : Completed logging configuration file"
+echo ""
 
 #---------#
 # run sim #
