@@ -518,7 +518,7 @@ SortableList<T>::AddUniqueSorted(
 	T*	new_data)
 {
 	// check for an == node
-	if (Find(new_data)
+	if (Find(new_data))
 	{
 		delete new_data;
 		return(1);

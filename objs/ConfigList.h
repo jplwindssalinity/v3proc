@@ -119,6 +119,8 @@ public:
 	// interpreting values //
 	//---------------------//
 
+	int		SetInt(const char* keyword, const int value);
+
 	int		GetChar(const char* keyword, char* value);
 	int		GetInt(const char* keyword, int* value);
 	int		GetUnsignedInt(const char* keyword, unsigned int* value);

@@ -321,6 +321,20 @@ ConfigList::Get(
 		return(0);
 }
 
+//--------------------//
+// ConfigList::SetInt //
+//--------------------//
+
+int
+ConfigList::SetInt(
+	const char*		keyword,
+	const int		value)
+{
+	char string[32];
+	sprintf(string, "%d", value);
+	return (StompOrAppend(keyword, string));
+}
+
 //---------------------//
 // ConfigList::GetChar //
 //---------------------//
