@@ -15,7 +15,7 @@ typedef struct memblock
 
 extern MEMBLOCK *lastmemblock;
 
-void m_register(void* ptr, char *str);
+int m_register(void* ptr, char *str);
 void m_unregister(void *ptr, char *str);
 void memcheck();
 

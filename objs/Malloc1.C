@@ -23,15 +23,16 @@ int memblockcounter = 0;
  * INPUT: ptr = pointer to the allocated memory.
  *        str = identifying string (can be NULL)
  *
+ * RETURN VALUE = 0 always.
  */
 
-void m_register(void* ptr, char *str)
+int m_register(void* ptr, char *str)
 
 {
 MEMBLOCK *newmemblock = NULL;
 int n;
 
-if (ptr == NULL) return;
+if (ptr == NULL) return(0);
 
 newmemblock = (MEMBLOCK *)malloc(sizeof(MEMBLOCK));
 if (newmemblock == NULL)
@@ -82,7 +83,7 @@ else
 
 lastmemblock->mem = ptr;
 memblockcounter++;
-return;
+return(0);
 
 }
 
