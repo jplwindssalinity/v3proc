@@ -8,7 +8,7 @@
 //    see_probs
 //
 // SYNOPSIS
-//    see_probs <prob_file>
+//    see_probs [ -r ] [ -p # ] <prob_file>
 //
 // DESCRIPTION
 //    This program generates slices through the probability table.
@@ -18,6 +18,8 @@
 //
 // OPTIONS
 //    The following options are supported:
+//      [ -r ]    Show raw probabilities (don't sample subtract)
+//      [ -p # ]  Show # best picks
 //
 // OPERANDS
 //    The following operands are supported:
@@ -69,7 +71,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "h"
+#define OPTSTRING  "rp:"
 
 #define QUOTE      '"'
 
@@ -97,18 +99,16 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<prob_file>", 0 };
+const char* usage_array[] = { "[ -r ]", "[ -p # ]", "<prob_file>", 0 };
 
-float          first_obj_prob[CT_WIDTH][AT_WIDTH];
-unsigned char  neighbor_count[CT_WIDTH][AT_WIDTH];
-float          dif_ratio[CT_WIDTH][AT_WIDTH];
-float          speed[CT_WIDTH][AT_WIDTH];
-
-unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
-unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_count_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 
 unsigned short  filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 unsigned short  filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+
+int opt_raw = 0;
+int opt_picks = NUMBER_OF_PICKS;
 
 //--------------//
 // MAIN PROGRAM //
@@ -129,6 +129,12 @@ main(
     {
         switch(c)
         {
+        case 'r':
+            opt_raw = 1;
+            break;
+        case 'p':
+            opt_picks = atoi(optarg);
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -154,17 +160,17 @@ main(
     else
     {
         fread(first_count_array, sizeof(unsigned short),
-            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ifp);
+            FIRST_PROB_INDICIES*FIRST_REL_DIR_INDICIES*CTI_INDICIES*
+            SPEED_INDICIES, ifp);
         fread(first_good_array, sizeof(unsigned short),
-            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ifp);
+            FIRST_PROB_INDICIES*FIRST_REL_DIR_INDICIES*CTI_INDICIES*
+            SPEED_INDICIES, ifp);
         fread(filter_count_array, sizeof(unsigned short),
-          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
-          PROB_INDICIES,
-          ifp);
+            NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
+            PROB_INDICIES, ifp);
         fread(filter_good_array, sizeof(unsigned short),
-          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
-          PROB_INDICIES,
-          ifp);
+            NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
+            PROB_INDICIES, ifp);
         fclose(ifp);
     }
 
@@ -172,11 +178,13 @@ main(
     // initialize some index calculators //
     //-----------------------------------//
 
-    Index first_index, neighbor_index, dif_ratio_index, speed_index,
-        cti_index, prob_index;
+    Index first_index, rel_dir_index, neighbor_index, dif_ratio_index,
+        speed_index, cti_index, prob_index;
 
-    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
-        FIRST_INDICIES);
+    first_index.SpecifyCenters(FIRST_PROB_MIN_VALUE, FIRST_PROB_MAX_VALUE,
+        FIRST_PROB_INDICIES);
+    rel_dir_index.SpecifyCenters(FIRST_REL_DIR_MIN_VALUE,
+        FIRST_REL_DIR_MAX_VALUE, FIRST_REL_DIR_INDICIES);
     neighbor_index.SpecifyCenters(NEIGHBOR_MIN_VALUE, NEIGHBOR_MAX_VALUE,
         NEIGHBOR_INDICIES);
     dif_ratio_index.SpecifyCenters(DIF_RATIO_MIN_VALUE, DIF_RATIO_MAX_VALUE,
@@ -192,17 +200,20 @@ main(
 
     unsigned long sample_count = 0;
     unsigned long most_samples = 0;
-    for (int i = 0; i < FIRST_INDICIES; i++)
+    for (int i = 0; i < FIRST_PROB_INDICIES; i++)
     {
-        for (int j = 0; j < CTI_INDICIES; j++)
+      for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+      {
+        for (int k = 0; k < CTI_INDICIES; k++)
         {
-            for (int k = 0; k < SPEED_INDICIES; k++)
+            for (int l = 0; l < SPEED_INDICIES; l++)
             {
-                sample_count += first_count_array[i][j][k];
-                if (first_count_array[i][j][k] > most_samples)
-                    most_samples = first_count_array[i][j][k];
+                sample_count += first_count_array[i][j][k][l];
+                if (first_count_array[i][j][k][l] > most_samples)
+                    most_samples = first_count_array[i][j][k][l];
             }
         }
+      }
     }
     printf("First Ranked\n");
     printf("  Total : %ld\n", sample_count);
@@ -285,17 +296,20 @@ main(
     fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "MLE Probability", QUOTE);
     fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
         QUOTE);
-    for (int i = 0; i < FIRST_INDICIES; i++)
+    for (int i = 0; i < FIRST_PROB_INDICIES; i++)
     {
         unsigned long total_count = 0;
         unsigned long good_count = 0;
-        for (int j = 0; j < CTI_INDICIES; j++)
+        for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
         {
-            for (int k = 0; k < SPEED_INDICIES; k++)
+          for (int k = 0; k < CTI_INDICIES; k++)
+          {
+            for (int l = 0; l < SPEED_INDICIES; l++)
             {
-                total_count += first_count_array[i][j][k];
-                good_count += first_good_array[i][j][k];
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
             }
+          }
         }
         float fprob;
         first_index.IndexToValue(i, &fprob);
@@ -305,6 +319,103 @@ main(
         fprintf(ofp, "%g %g %ld\n", fprob, prob, total_count);
     }
     fclose(ofp);
+
+    //--------------------//
+    // relative direction //
+    //--------------------//
+
+    sprintf(filename, "%s.1rel", prob_file);
+	ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / Cross-swath Relative Direction", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "Cross-swath Relative Direction (deg)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+    {
+        unsigned long total_count = 0;
+        unsigned long good_count = 0;
+        for (int i = 0; i < FIRST_PROB_INDICIES; i++)
+        {
+          for (int k = 0; k < CTI_INDICIES; k++)
+          {
+            for (int l = 0; l < SPEED_INDICIES; l++)
+            {
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
+            }
+          }
+        }
+        float rel_dir;
+        rel_dir_index.IndexToValue(j, &rel_dir);
+        if (total_count < MIN_SAMPLES)
+            continue;
+        double prob = (double)good_count / (double)total_count;
+        fprintf(ofp, "%g %g %ld\n", rel_dir, prob, total_count);
+    }
+    fclose(ofp);
+
+    //-------------------------//
+    // relative direction cuts //
+    //-------------------------//
+
+    sprintf(filename, "%s.1rels", prob_file);
+    ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / Cross-swath Relative Direction (by MLE probability)",
+        QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "Cross-swath Relative Direction (deg)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    fprintf(ofp, "@ legend on\n");
+    int leg_idx = 0;
+
+    for (int i = 0; i < FIRST_PROB_INDICIES; i += 5)
+    {
+        float first_prob;
+        first_index.IndexToValue(i, &first_prob);
+        fprintf(ofp, "@ legend string %d %c%g%c\n", leg_idx++, QUOTE,
+            first_prob, QUOTE);
+        for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+        {
+            float rel_dir;
+            rel_dir_index.IndexToValue(j, &rel_dir);
+            unsigned long total_count = 0;
+            unsigned long good_count = 0;
+            for (int k = 0; k < CTI_INDICIES; k++)
+            {
+              for (int l = 0; l < SPEED_INDICIES; l++)
+              {
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
+              }
+            }
+            if (total_count < MIN_SAMPLES)
+                continue;
+            double prob = (double)good_count / (double)total_count;
+            fprintf(ofp, "%g %g %ld\n", rel_dir, prob, total_count);
+        }
+        fprintf(ofp, "&\n");
+    }
+    fclose(ofp);
+
+    //-------------//
+    // cross track //
+    //-------------//
 
     sprintf(filename, "%s.1cti", prob_file);
 	ofp = fopen(filename, "w");
@@ -321,18 +432,21 @@ main(
         QUOTE);
     for (int cti = 0; cti < 2 * CTI_INDICIES; cti++)
     {
-        int j = cti;
-        if (j > CTI_FOLD_MAX)
-            j = CTI_FOLDER - j;
+        int k = cti;
+        if (k > CTI_FOLD_MAX)
+            k = CTI_FOLDER - k;
         unsigned long total_count = 0;
         unsigned long good_count = 0;
-        for (int i = 0; i < FIRST_INDICIES; i++)
+        for (int i = 0; i < FIRST_PROB_INDICIES; i++)
         {
-            for (int k = 0; k < SPEED_INDICIES; k++)
+          for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+          {
+            for (int l = 0; l < SPEED_INDICIES; l++)
             {
-                total_count += first_count_array[i][j][k];
-                good_count += first_good_array[i][j][k];
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
             }
+          }
         }
 /*
         float cti;
@@ -340,10 +454,14 @@ main(
 */
         if (total_count < MIN_SAMPLES)
             continue;
-        float prob = (float)good_count / (float)total_count;
+        double prob = (double)good_count / (double)total_count;
         fprintf(ofp, "%d %g %ld\n", cti, prob, total_count);
     }
     fclose(ofp);
+
+    //--------------------//
+    // first ranked speed //
+    //--------------------//
 
     sprintf(filename, "%s.1spd", prob_file);
 	ofp = fopen(filename, "w");
@@ -359,23 +477,26 @@ main(
         "First Ranked Speed (m/s)", QUOTE);
     fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
         QUOTE);
-    for (int k = 0; k < SPEED_INDICIES; k++)
+    for (int l = 0; l < SPEED_INDICIES; l++)
     {
         unsigned long total_count = 0;
         unsigned long good_count = 0;
-        for (int i = 0; i < FIRST_INDICIES; i++)
+        for (int i = 0; i < FIRST_PROB_INDICIES; i++)
         {
-            for (int j = 0; j < CTI_INDICIES; j++)
+          for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+          {
+            for (int k = 0; k < CTI_INDICIES; k++)
             {
-                total_count += first_count_array[i][j][k];
-                good_count += first_good_array[i][j][k];
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
             }
+          }
         }
         float speed;
-        speed_index.IndexToValue(k, &speed);
+        speed_index.IndexToValue(l, &speed);
         if (total_count < MIN_SAMPLES)
             continue;
-        float prob = (float)good_count / (float)total_count;
+        double prob = (double)good_count / (double)total_count;
         fprintf(ofp, "%g %g %ld\n", speed, prob, total_count);
     }
     fclose(ofp);
@@ -399,26 +520,29 @@ main(
     fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
         QUOTE);
     fprintf(ofp, "@ legend on\n");
-    for (int k = 0; k < SPEED_INDICIES; k++)
+    for (int l = 0; l < SPEED_INDICIES; l++)
     {
         float speed;
-        speed_index.IndexToValue(k, &speed);
-        fprintf(ofp, "@ legend string %d %c%g m/s%c\n", k, QUOTE, speed,
+        speed_index.IndexToValue(l, &speed);
+        fprintf(ofp, "@ legend string %d %c%g m/s%c\n", l, QUOTE, speed,
             QUOTE);
-        for (int i = 0; i < FIRST_INDICIES; i++)
+        for (int i = 0; i < FIRST_PROB_INDICIES; i++)
         {
             float first;
             first_index.IndexToValue(i, &first);
             unsigned long total_count = 0;
             unsigned long good_count = 0;
-            for (int j = 0; j < CTI_INDICIES; j++)
+            for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
             {
-                total_count += first_count_array[i][j][k];
-                good_count += first_good_array[i][j][k];
+              for (int k = 0; k < CTI_INDICIES; k++)
+              {
+                total_count += first_count_array[i][j][k][l];
+                good_count += first_good_array[i][j][k][l];
+              }
             }
             if (total_count < MIN_SAMPLES)
                 continue;
-            float prob = (float)good_count / (float)total_count;
+            double prob = (double)good_count / (double)total_count;
             fprintf(ofp, "%g %g %ld\n", first, prob, total_count);
         }
         fprintf(ofp, "&\n");
@@ -465,7 +589,7 @@ main(
           continue;
       float neighbors;
       neighbor_index.IndexToValue(i, &neighbors);
-      float prob = (float)good_count / (float)total_count;
+      double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%g %g %ld\n", neighbors, prob, total_count);
     }
     fclose(ofp);
@@ -510,7 +634,7 @@ main(
           continue;
       float dif_ratio;
       dif_ratio_index.IndexToValue(j, &dif_ratio);
-      float prob = (float)good_count / (float)total_count;
+      double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%g %g %ld\n", dif_ratio, prob, total_count);
     }
     fclose(ofp);
@@ -555,7 +679,7 @@ main(
           continue;
       float speed;
       speed_index.IndexToValue(k, &speed);
-      float prob = (float)good_count / (float)total_count;
+      double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%g %g %ld\n", speed, prob, total_count);
     }
     fclose(ofp);
@@ -605,7 +729,7 @@ main(
       float cti;
       cti_index.IndexToValue(use_cti, &cti);
 */
-      float prob = (float)good_count / (float)total_count;
+      double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%d %g %ld\n", cti, prob, total_count);
     }
     fclose(ofp);
@@ -650,7 +774,7 @@ main(
           continue;
       float sprob;
       prob_index.IndexToValue(m, &sprob);
-      float prob = (float)good_count / (float)total_count;
+      double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%g %g %ld\n", sprob, prob, total_count);
     }
     fclose(ofp);
@@ -668,7 +792,7 @@ main(
         exit(1);
     }
 
-    for (int pick_idx = 0; pick_idx < NUMBER_OF_PICKS; pick_idx++)
+    for (int pick_idx = 0; pick_idx < opt_picks; pick_idx++)
     {
       double max_filter_prob = 0.0;
       int max_i = 0;
@@ -691,8 +815,11 @@ main(
                 double filter_prob =
                     (double)filter_good_array[i][j][k][l][m] /
                     (double)filter_count_array[i][j][k][l][m];
-                filter_prob -= sqrt(0.25 /
-                    (double)filter_count_array[i][j][k][l][m]);
+                if (! opt_raw)
+                {
+                    filter_prob -= sqrt(0.25 /
+                        (double)filter_count_array[i][j][k][l][m]);
+                }
                 if (filter_prob > max_filter_prob)
                 {
                     max_filter_prob = filter_prob;
