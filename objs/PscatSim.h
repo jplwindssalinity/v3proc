@@ -38,13 +38,14 @@ static const char rcs_id_pscatsim_h[] =
 #define INNER_POL_OUTER_COPOL_STRING  "INNER_POL_OUTER_COPOL"
 #define BOTH_POL_STRING               "BOTH_POL"
 #define BOTH_BEAM_HHVH_STRING         "BOTH_BEAM_HHVH"
+#define BOTH_BEAM_VVHV_STRING         "BOTH_BEAM_VVHV"
 
 class PscatSim
 {
 public:
 
     enum PscatConfiguration { NONE, INNER_POL_OUTER_COPOL, BOTH_POL,
-                              BOTH_BEAM_HHVH };
+                              BOTH_BEAM_HHVH, BOTH_BEAM_VVHV };
 
     //--------------//
     // construction //
