@@ -18,6 +18,7 @@ OBJS = \
 	Attitude.o \
 	Beam.o \
 	BeamSim.o \
+	BufferedList.o \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
@@ -106,10 +107,11 @@ AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h
 Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
+BufferedList.o: BufferedList.C BufferedList.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h WindVector.h List.h Antenna.h PiscTable.h WVC.h Meas.h Matrix3.h Constants.h Beam.h Attitude.h LonLat.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
-Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h
+Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h BufferedList.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h WVC.h Meas.h Attitude.h List.h WindVector.h LonLat.h Ephemeris.h Matrix3.h
 GenericFile.o: GenericFile.C GenericFile.h
 Grid.o: Grid.C Grid.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
