@@ -38,9 +38,9 @@ BufferedList<T>::~BufferedList()
     return;
 }
 
-//------------------------//
-// BufferedList::ReadNext //
-//------------------------//
+//-----------------------------//
+// BufferedList::GetOrReadNext //
+//-----------------------------//
 // The next node becomes the current node.
 // Returns the data from the current node on success, 0 on failure.
 // If the current node is the last node in memory, then another node
@@ -49,7 +49,7 @@ BufferedList<T>::~BufferedList()
 
 template <class T>
 T*
-BufferedList<T>::ReadNext()
+BufferedList<T>::GetOrReadNext()
 {
 	// make sure there is a current node
 	if (! _current)

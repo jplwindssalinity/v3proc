@@ -43,7 +43,7 @@ public:
 	// Buffered retrieval //
 	//--------------------//
 
-	T*		ReadNext();			// current = next, return T* of current
+	T*		GetOrReadNext();			// current = next, return T* of current
 
 protected:
 
