@@ -19,10 +19,11 @@ static const char rcs_id_pscatsim_c[] =
 //==========//
 
 PscatSim::PscatSim()
-:   epochTime(0.0), epochTimeString(NULL), startTime(0),
+:   pulseCount(0), epochTime(0.0), epochTimeString(NULL), startTime(0),
     lastEventType(PscatEvent::NONE), lastEventIdealEncoder(0),
     numLookStepsPerSlice(0), azimuthIntegrationRange(0.0),
     azimuthStepSize(0.0), dopplerBias(0.0), correlatedKpm(0.0),
+    simVs1BCheckfile(NULL),
     uniformSigmaField(0), outputXToStdout(0), useKfactor(0), createXtable(0),
     computeXfactor(0), useBYUXfactor(0), rangeGateClipping(0),
     l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
@@ -216,6 +217,16 @@ PscatSim::ScatSim(
     KpmField*       kpmField,
     PscatL1AFrame*  l1a_frame)
 {
+    CheckFrame cf;
+    if (simVs1BCheckfile)
+    {
+        if (!cf.Allocate(3*pscat->ses.GetTotalSliceCount()))
+        {
+            fprintf(stderr, "Error allocating a CheckFrame\n");
+            return(0);
+        }
+    }
+
     //----------------------------------------//
     // compute frame header info if necessary //
     //----------------------------------------//
@@ -275,7 +286,7 @@ PscatSim::ScatSim(
     // set measurement values //
     //------------------------//
 
-    if (! SetMeasurements(spacecraft, pscat, pscat_event, &meas_spot,
+    if (! SetMeasurements(spacecraft, pscat, pscat_event, &meas_spot, &cf,
         windfield, gmf, kp, kpmField))
     {
         return(0);
@@ -390,6 +401,39 @@ PscatSim::ScatSim(
     {
         l1aFrameReady = 0;  // indicate frame is not ready
     }
+
+    //------------------------//
+    // Output data if enabled //
+    //------------------------//
+
+    if (simVs1BCheckfile)
+    {
+        FILE* fptr = fopen(simVs1BCheckfile,"a");
+        if (fptr == NULL)
+        {
+            fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+            exit(-1);
+        }
+        cf.pulseCount = pulseCount;
+        cf.ptgr = pscat->ses.transmitPower * pscat->ses.rxGainEcho;
+        cf.time = pscat->cds.time;
+        cf.rsat = spacecraft->orbitState.rsat;
+        cf.vsat = spacecraft->orbitState.vsat;
+        cf.orbitFrac = pscat->cds.OrbitFraction();
+        cf.spinRate = pscat->sas.antenna.spinRate;
+        cf.txDoppler = pscat->ses.txDoppler;
+        cf.rxGateDelay = pscat->ses.rxGateDelay;
+        cf.attitude = spacecraft->attitude;
+        cf.antennaAziTx = pscat->sas.antenna.txCenterAzimuthAngle;
+        cf.antennaAziGi = pscat->sas.antenna.groundImpactAzimuthAngle;
+        cf.EsCal = true_Es_cal(pscat);
+        cf.alpha = pscat->ses.noiseBandwidth /
+                     pscat->ses.GetTotalSignalBandwidth();
+        cf.WriteDataRec(fptr);
+        fclose(fptr);
+    }
+
+    pulseCount++;
 
     return(1);
 }
@@ -662,6 +706,7 @@ PscatSim::SetMeasurements(
     Pscat*       pscat,
     PscatEvent*  pscat_event,
     MeasSpot*    meas_spot,
+    CheckFrame*  cf,
     WindField*   windfield,
     GMF*         gmf,
     Kp*          kp,
@@ -715,10 +760,22 @@ PscatSim::SetMeasurements(
                 return(0);
                 break;
             }
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = sigma0;
+                cf->wv[slice_i].spd = 0.0;
+                cf->wv[slice_i].dir = 0.0;
+            }
         }
         else if (uniformSigmaField)
         {
             sigma0 = 1.0;
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = 1.0;
+                cf->wv[slice_i].spd = 0.0;
+                cf->wv[slice_i].dir = 0.0;
+            }
         }
         else
         {
@@ -744,6 +801,13 @@ PscatSim::SetMeasurements(
             gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
                 wv.spd, chi, &sigma0);
 
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = sigma0;
+                cf->wv[slice_i].spd = wv.spd;
+                cf->wv[slice_i].dir = wv.dir;
+            }
+
             //-------------------------------------------------------------//
             // Fuzz the sigma0 by Kpm to simulate the effects of model
             // function error.  The resulting sigma0 is the 'true' value.
@@ -762,14 +826,25 @@ PscatSim::SetMeasurements(
                         "Error: Bad Kpm value in PscatSim::SetMeasurements\n");
                     exit(-1);
                 }
-                Gaussian gaussianRv(1.0, 0.0);
-                float rv1 = gaussianRv.GetNumber();
-                float RV = rv1*kpm_value + 1.0;
-                if (RV < 0.0)
-                {
-                    RV = 0.0;   // Do not allow negative sigma0's.
+
+                if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
+                    meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
+                {  // Correlation measurements use a constant variance
+                  double var_sig0 = kpm_value*kpm_value * 0.002*0.002;
+                  Gaussian gaussianRv(var_sig0, 0.0);
+                  sigma0 += gaussianRv.GetNumber();
                 }
-                sigma0 *= RV;
+                else
+                {
+                  Gaussian gaussianRv(1.0, 0.0);
+                  float rv1 = gaussianRv.GetNumber();
+                  float RV = rv1*kpm_value + 1.0;
+                  if (RV < 0.0)
+                  {
+                      RV = 0.0;   // Do not allow negative sigma0's.
+                  }
+                  sigma0 *= RV;
+                }
             }
 
             // Correlated component.
@@ -820,7 +895,17 @@ PscatSim::SetMeasurements(
                     pscat->cds.currentBeamIdx = 0;
                 else
                     pscat->cds.currentBeamIdx = 1;
-                Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+
+                if (simVs1BCheckfile)
+                {
+                  Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, cf);
+                  cf->beamNumber = pscat->cds.currentBeamIdx;
+                }
+                else
+                {
+                  Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+                }
+
                 pscat->cds.currentBeamIdx=real_beam_idx;
             }
 
@@ -886,6 +971,53 @@ PscatSim::SetMeasurements(
             }
         }
 
+		if (simVs1BCheckfile)
+		{
+            Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+            cf->R[slice_i] = (float)rlook.Magnitude();
+            if (computeXfactor || useBYUXfactor)
+            {
+                // Antenna gain is not computed when using BYU X factor
+                // because the X factor already includes the normalized
+                // patterns.  Thus, to see what it actually is, we need
+                // to do the geometry work here that is normally done
+                // in radar_X() when using the K-factor approach.
+                gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+                    &(spacecraft->attitude), &(pscat->sas.antenna),
+                    pscat->sas.antenna.txCenterAzimuthAngle);
+                gc_to_antenna=gc_to_antenna.ReverseDirection();
+                double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
+
+                Beam* beam = pscat->GetCurrentBeam();
+                Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+                double r, theta, phi;
+                rlook_antenna.SphericalGet(&r,&theta,&phi);
+                if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+                    pscat->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
+                {
+                    cf->GatGar[slice_i] = 1.0;	// set a dummy value.
+                }
+            }
+            else
+            {
+                double lambda = speed_light_kps / pscat->ses.txFrequency;
+                cf->GatGar[slice_i] = meas->XK / Kfactor * (64*pi*pi*pi *
+                    cf->R[slice_i] * cf->R[slice_i]*cf->R[slice_i]*
+                    cf->R[slice_i] * pscat->systemLoss) /
+                    (pscat->ses.transmitPower * pscat->ses.rxGainEcho *
+                    lambda * lambda);
+            }
+
+            cf->idx[slice_i] = meas->startSliceIdx;
+            cf->var_esn_slice[slice_i] = var_esn_slice;
+            cf->Es[slice_i] = Es;
+            cf->En[slice_i] = En;
+			cf->XK[slice_i] = meas->XK;
+			cf->centroid[slice_i] = meas->centroid;
+			cf->azimuth[slice_i] = meas->eastAzimuth;
+			cf->incidence[slice_i] = meas->incidenceAngle;
+		}
+
         slice_i++;
         meas = (PMeas*)meas_spot->GetNext();
     }
@@ -920,8 +1052,12 @@ PscatSim::SetL1AScience(
     for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
     {
         int slice_idx;
-        rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
-            &slice_idx);
+        if (! rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
+            &slice_idx))
+        {
+          fprintf(stderr,"Error: SetL1AScience can't convert index\n");
+          exit(1);
+        }
 
         switch (meas->measType)
         {
@@ -939,7 +1075,8 @@ PscatSim::SetL1AScience(
             l1a_frame->corr[spot_slice_offset + slice_idx] = meas->value;
             break;
         default:
-            return(0);
+            fprintf(stderr,"Error: SetL1AScience received invalid Meas Type\n");
+            exit(1);
             break;
         }
     }

@@ -66,6 +66,7 @@ public:
     int  SetMeasTypes(PscatEvent* pscat_event, MeasSpot* meas_spot);
     int  SetMeasurements(Spacecraft* spacecraft, Pscat* pscat,
              PscatEvent* pscat_event, MeasSpot* meas_spot,
+             CheckFrame* cf,
              WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField);
     int  SetL1AScience(MeasSpot* meas_spot, Pscat* pscat,
              PscatEvent* pscat_event, PscatL1AFrame* pscat_l1a_frame);
@@ -78,6 +79,7 @@ public:
     // variables //
     //-----------//
 
+    unsigned long            pulseCount; // cumulative counter
     double                   epochTime;  // used for setting time strings
     char*                    epochTimeString;
     double                   startTime;
@@ -96,6 +98,8 @@ public:
     XTable                   xTable;
     float                    dopplerBias;
     double                   correlatedKpm;
+
+    char*  simVs1BCheckfile;  // output data for cross check with 1B
 
     //-------//
     // flags //

@@ -152,11 +152,22 @@ ConfigPscatSim(
         apply_doppler_error = 0; // default value
     }
 
+    config_list->DoNothingForMissingKeywords();
+    pscat_sim->simVs1BCheckfile =
+        config_list->Get(SIM_CHECKFILE_KEYWORD);
+    // Remove any pre-existing check file
+    if (pscat_sim->simVs1BCheckfile != NULL)
+    {
+      FILE* fptr = fopen(pscat_sim->simVs1BCheckfile,"w");
+      if (fptr != NULL) fclose(fptr);
+    }
+    config_list->ExitForMissingKeywords();
+
     /****** Exactly one of these must be true ***/
     if (use_kfactor + compute_xfactor + use_BYU_xfactor != 1)
     {
         fprintf(stderr,
-            "ConfigQscatSim:X computation incorrectly specified.\n");
+            "ConfigPscatSim:X computation incorrectly specified.\n");
         return(0);
     }
     if (compute_xfactor)
