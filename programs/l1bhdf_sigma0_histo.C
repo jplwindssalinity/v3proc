@@ -111,9 +111,9 @@ main(
     {
 	  input_file = argv[clidx++];
 	  output_file = argv[clidx++];
-	  min = atof(argv[optind++]);
-	  max = atof(argv[optind++]);
-	  step = atof(argv[optind++]);
+	  min = atof(argv[clidx++]);
+	  max = atof(argv[clidx++]);
+	  step = atof(argv[clidx++]);
 //	  start_frame=atoi(argv[clidx++]);
 //	  end_frame=atoi(argv[clidx++]);
 	}
