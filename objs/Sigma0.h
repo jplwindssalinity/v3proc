@@ -104,7 +104,7 @@ int make_load_measurements(Qscat* qscat, float* En_echo_load,
                            float* En_noise_load);
 int compute_sigma0(Qscat* qscat, Meas* meas, float Xfactor, float Esn_slice,
                    float Esn_echo, float Esn_noise, float En_echo_load,
-                   float En_noise_load);
+                   float En_noise_load, float* Es_slice, float* En_slice);
 int Er_to_Es(float beta, float Esn_slice, float Esn_echo, float Esn_noise,
              float En_echo_load, float En_noise_load, float q_slice,
              float* Es_slice, float* En_slice);

@@ -22,7 +22,7 @@ CheckFrame::CheckFrame()
     ptgr(0.0), orbit_frac(0.0), antenna_azi(0.0),
     boresight_position(0.0,0.0,0.0), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
-    true_Es(NULL), true_En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
+    Es(NULL), En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
     slicesPerSpot(0)
 {
 	return;
@@ -95,13 +95,13 @@ CheckFrame::Allocate(
 	{
 		return(0);
 	}
-	true_Es = (float *)malloc(slicesPerSpot * sizeof(float));
-	if (true_Es == NULL)
+	Es = (float *)malloc(slicesPerSpot * sizeof(float));
+	if (Es == NULL)
 	{
 		return(0);
 	}
-	true_En = (float *)malloc(slicesPerSpot * sizeof(float));
-	if (true_En == NULL)
+	En = (float *)malloc(slicesPerSpot * sizeof(float));
+	if (En == NULL)
 	{
 		return(0);
 	}
@@ -139,8 +139,8 @@ CheckFrame::Deallocate()
 		if (centroid) free(centroid);
 		if (azimuth) free(azimuth);
 		if (incidence) free(incidence);
-		if (true_Es) free(true_Es);
-		if (true_En) free(true_En);
+		if (Es) free(Es);
+		if (En) free(En);
 		if (var_esn_slice) free(var_esn_slice);
 		if (R) free(R);
 		if (GatGar) free(GatGar);
@@ -153,8 +153,8 @@ CheckFrame::Deallocate()
 	centroid = NULL;
 	azimuth = NULL;
 	incidence = NULL;
-	true_Es = NULL;
-	true_En = NULL;
+	Es = NULL;
+	En = NULL;
 	var_esn_slice = NULL;
 	R = NULL;
 	GatGar = NULL;
@@ -203,9 +203,9 @@ CheckFrame::AppendSliceRecord(
         if (fwrite((void *)&lat,sizeof(double),1,fptr) != 1) return(0);
         if (fwrite((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
 			return(0);
-        if (fwrite((void *)&true_Es[slice_i],sizeof(float),1,fptr) != 1)
+        if (fwrite((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
 			return(0);
-        if (fwrite((void *)&true_En[slice_i],sizeof(float),1,fptr) != 1)
+        if (fwrite((void *)&En[slice_i],sizeof(float),1,fptr) != 1)
 			return(0);
         if (fwrite((void *)&R[slice_i],sizeof(float),1,fptr) != 1)
 			return(0);
@@ -233,9 +233,9 @@ CheckFrame::ReadDataRec(
     centroid[slice_i].SetAltLonGDLat(0.0,lon,lat);
     if (fread((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
-    if (fread((void *)&true_Es[slice_i],sizeof(float),1,fptr) != 1)
+    if (fread((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
-    if (fread((void *)&true_En[slice_i],sizeof(float),1,fptr) != 1)
+    if (fread((void *)&En[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
     if (fread((void *)&R[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
@@ -284,18 +284,18 @@ CheckFrame::WriteDataRecAscii(
       rtd*wv[i].dir);
     fprintf(fptr,"    sigma0: %g\n",sigma0[i]); 
     fprintf(fptr,"    XK: %8g\n",XK[i]); 
-    fprintf(fptr,"    true_Es (J): %g\n",true_Es[i]); 
-    fprintf(fptr,"    true_En (J): %g\n",true_En[i]); 
-    float true_snr = true_Es[i] / true_En[i];
-    float true_snrdB = 10.0*log(true_snr)/log(10.0);
-    fprintf(fptr,"    true SNR (dB): %g\n",true_snrdB); 
+    fprintf(fptr,"    Es (J): %g\n",Es[i]); 
+    fprintf(fptr,"    En (J): %g\n",En[i]); 
+    float snr = Es[i] / En[i];
+    float snrdB = 10.0*log(snr)/log(10.0);
+    fprintf(fptr,"    SNR (dB): %g\n",snrdB); 
     fprintf(fptr,"    variance of Es+n: %g\n",var_esn_slice[i]); 
-    float ekpc2 = var_esn_slice[i] / (true_Es[i]*true_Es[i]);
+    float ekpc2 = var_esn_slice[i] / (Es[i]*Es[i]);
     float ekpcdB = 10.0*log(sqrt(ekpc2)+1.0)/log(10.0);
 	float A = 1.0/(8314.0 * 0.0015);
 	float B = 2.0/(8314.0 * 0.0020);
 	float C = B/2.0 * (1.0 + 8314.0/1e6);
-	float kpc2 = A + B/true_snr + C/true_snr/true_snr;
+	float kpc2 = A + B/snr + C/snr/snr;
     float kpcdB = 10.0*log(sqrt(kpc2)+1.0)/log(10.0);
     fprintf(fptr,"    Kpc(A,B,C), est Kpc (dB): %g %g\n",kpcdB,ekpcdB); 
     fprintf(fptr,"    azimuth (deg): %g\n",rtd*azimuth[i]); 

@@ -675,7 +675,9 @@ compute_sigma0(
     float   Esn_echo,
     float   Esn_noise,
     float   En_echo_load,
-    float   En_noise_load)
+    float   En_noise_load,
+    float*  Es_slice,
+    float*  En_slice)
 {
 
 	//--------------------------------//
@@ -700,9 +702,8 @@ compute_sigma0(
     // Estimate slice signal and noise energies.
 	//-------------------------------------------//
 
-    float Es_slice,En_slice;
     if (! Er_to_Es(beta, Esn_slice, Esn_echo, Esn_noise, En_echo_load,
-                   En_noise_load, q_slice, &Es_slice, &En_slice))
+                   En_noise_load, q_slice, Es_slice, En_slice))
     {
       return(0);
     }
@@ -712,9 +713,10 @@ compute_sigma0(
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Es_slice.
 	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // Xfactor has units of energy because Xcal has units of Pt * Tp.
 	//------------------------------------------------------------------//
 
-	meas->value = Es_slice / Xfactor / Tp;
+	meas->value = *Es_slice / Xfactor;
 
 	//------------------------------------------------------------------//
 	// Store the total X factor.

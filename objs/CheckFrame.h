@@ -80,8 +80,8 @@ public:
 	EarthPosition*  centroid;
 	float*			azimuth;
 	float*			incidence;
-    float*          true_Es;
-    float*          true_En;
+    float*          Es;
+    float*          En;
     float*          var_esn_slice;
     float*          R;
     float*          GatGar;

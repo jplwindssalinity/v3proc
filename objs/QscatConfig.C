@@ -563,6 +563,9 @@ ConfigQscatSim(
     config_list->DoNothingForMissingKeywords();
     qscat_sim->simVs1BCheckfile =
         config_list->Get(SIM_CHECKFILE_KEYWORD);
+    // Remove any pre-existing check file
+    FILE* fptr = fopen(qscat_sim->simVs1BCheckfile,"w");
+    if (fptr != NULL) fclose(fptr);
 
     config_list->ExitForMissingKeywords();
 

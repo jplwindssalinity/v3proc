@@ -702,7 +702,7 @@ QscatSim::SetMeasurements(
         // directly
         float Xfactor=0;
         float Kfactor=1.0;
-        float true_Es,true_En,var_esn_slice;
+        float Es,En,var_esn_slice;
 		CoordinateSwitch gc_to_antenna;
 
 		if (computeXfactor || useBYUXfactor)
@@ -730,7 +730,7 @@ QscatSim::SetMeasurements(
                 Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas);
             }
             if (! sigma0_to_Esn_slice_given_X(qscat, meas, Xfactor, sigma0,
-                simKpcFlag, &(meas->value), &true_Es, &true_En,
+                simKpcFlag, &(meas->value), &Es, &En,
                 &var_esn_slice))
             {
                 return(0);
@@ -760,7 +760,7 @@ QscatSim::SetMeasurements(
 
             if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, qscat, meas,
                 Kfactor*Tp, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
-                &true_Es, &true_En, &var_esn_slice))
+                &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
@@ -810,8 +810,8 @@ QscatSim::SetMeasurements(
             }
 
             cf->var_esn_slice[slice_i] = var_esn_slice;
-            cf->true_Es[slice_i] = true_Es;
-            cf->true_En[slice_i] = true_En;
+            cf->Es[slice_i] = Es;
+            cf->En[slice_i] = En;
 			cf->XK[slice_i] = meas->XK;
 			cf->centroid[slice_i] = meas->centroid;
 			cf->azimuth[slice_i] = meas->eastAzimuth;

@@ -960,6 +960,9 @@ ConfigL1AToL1B(
 
 	l1a_to_l1b->simVs1BCheckfile =
 		config_list->Get(ONEB_CHECKFILE_KEYWORD);
+    // Remove any pre-existing check file
+    FILE* fptr = fopen(l1a_to_l1b->simVs1BCheckfile,"w");
+    if (fptr != NULL) fclose(fptr);
 
 	config_list->ExitForMissingKeywords();
 

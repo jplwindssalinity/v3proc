@@ -274,6 +274,7 @@ L1AToL1B::Convert(
 			// Kfactor: either 1.0 or taken from table
 			float k_factor=1.0;
 			float x_factor=1.0;
+            float Es_slice,En_slice;
 			float Esn_slice = meas->value;
 			float PtGr = l1a->frame.ptgr;
 
@@ -312,7 +313,8 @@ L1AToL1B::Convert(
 			    // meas->value is the Esn value going in
 			    // sigma0 coming out.
 			    if (! compute_sigma0(qscat, meas, x_factor, Esn_slice,
-						 Esn_echo, Esn_noise, En_echo_load, En_noise_load))
+						 Esn_echo, Esn_noise, En_echo_load, En_noise_load,
+                         &Es_slice, &En_slice))
                 {
                     return(0);
                 }
@@ -338,11 +340,28 @@ L1AToL1B::Convert(
 
 			if (simVs1BCheckfile)
             {
+                FILE* fptr = fopen(simVs1BCheckfile,"a");
+                if (fptr == NULL)
+                {
+                    fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+                    exit(1);
+                }
+		        double alt, lat, lon;
+		        if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+                {
+                    fprintf(stderr,"Error computing lon/lat for centroid\n");
+                    exit(1);
+                }
+                cf.var_esn_slice[slice_i] = 0;
+                cf.Es[slice_i] = Es_slice;
+                cf.En[slice_i] = En_slice;
 			    cf.sigma0[slice_i] = meas->value;
 			    cf.XK[slice_i] = meas->XK;
 			    cf.centroid[slice_i] = meas->centroid;
 			    cf.azimuth[slice_i] = meas->eastAzimuth;
 			    cf.incidence[slice_i] = meas->incidenceAngle;
+                cf.AppendSliceRecord(fptr, slice_i, lon, lat);
+                fclose(fptr);
             }
 
 			//----------------------------------//
