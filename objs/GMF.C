@@ -1130,10 +1130,7 @@ GMF::GSRetrieveWinds(
 	// keep only the 4 highest rank solutions //
 	//----------------------------------------//
 
-	// Keep all amiguities for testing purposes
-
-//	if (wvc->ambiguities.NodeCount() > 4)
-	if (wvc->ambiguities.NodeCount() > wind_max_solutions)
+	if (wvc->ambiguities.NodeCount() > 4)
 	{
 		wvp = NULL;
 		wvc->ambiguities.GotoHead();
