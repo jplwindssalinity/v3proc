@@ -6,6 +6,7 @@
 static const char rcs_id_gmf_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <malloc.h>
@@ -709,6 +710,18 @@ int
 GMF::FindMany(
 	WVC*		wvc)
 {
+	//---------------------------------------//
+	// find maximum objective function value //
+	//---------------------------------------//
+	// this is used to prevent overflow
+
+	double max_obj = _bestObj[0];
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+	{
+		if (_bestObj[phi_idx] > max_obj)
+			max_obj = _bestObj[phi_idx];
+	}
+
 	//-----------------------------------//
 	// convert objective function to pdf //
 	//-----------------------------------//
@@ -716,7 +729,8 @@ GMF::FindMany(
 	double sum = 0.0;
 	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 	{
-		_bestObj[phi_idx] = exp(-_bestObj[phi_idx]/2.0) / sqrt(two_pi);
+		double expo = (_bestObj[phi_idx] - max_obj) / 2.0;
+		_bestObj[phi_idx] = exp(expo);
 		sum += _bestObj[phi_idx];
 	}
 
@@ -748,6 +762,7 @@ GMF::FindMany(
 		wvp->spd = _bestSpd[phi_idx];
 		wvp->dir = (float)phi_idx * _phiStepSize;
 		wvp->obj = _bestObj[phi_idx];
+
 		if (! wvc->ambiguities.Append(wvp))
 		{
 			delete wvp;

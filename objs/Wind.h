@@ -120,6 +120,7 @@ public:
 	int		ReadL2B(FILE* fp);
 	int		WriteVctr(FILE* fp, const int rank);		// 0 = selected
 	int		WriteAscii(FILE* fp);
+	int		WriteFlower(FILE* fp);
 
 	//--------------//
 	// manipulation //

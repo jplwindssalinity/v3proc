@@ -12,6 +12,7 @@ static const char rcs_id_wind_c[] =
 #include "Constants.h"
 #include "Misc.h"
 #include "Array.h"
+#include "LonLat.h"
 
 
 //============//
@@ -308,6 +309,86 @@ WVC::WriteAscii(
 		if (! wvp->WriteAscii(fp))
 			return(0);
 	}
+	return(1);
+}
+
+//------------------//
+// WVC::WriteFlower //
+//------------------//
+
+int
+WVC::WriteFlower(
+	FILE*	fp)
+{
+	//------------------------//
+	// find maximum obj value //
+	//------------------------//
+
+	float max_obj = 0.0;
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		if (wvp->obj > max_obj)
+			max_obj = wvp->obj;
+	}
+
+	//-----------------//
+	// generate flower //
+	//-----------------//
+
+	float max_dist = 10.0;	// 10 km
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		float dlat = max_dist * sin(wvp->dir) / (r1_earth * max_obj);
+		float dlon = max_dist * cos(wvp->dir) /
+						(r1_earth * max_obj * cos(lonLat.latitude));
+		dlat *= wvp->obj;
+		dlon *= wvp->obj;
+
+		LonLat lon_lat;
+		lon_lat.latitude = lonLat.latitude + dlat;
+		lon_lat.longitude = lonLat.longitude + dlon;
+		if (! lon_lat.WriteOtln(fp))
+			return(0);
+	}
+
+	//------------//
+	// close path //
+	//------------//
+
+	WindVectorPlus* wvp2 = ambiguities.GetHead();
+	float dlat2 = max_dist * sin(wvp2->dir) / (r1_earth * max_obj);
+	float dlon2 = max_dist * cos(wvp2->dir) /
+					(r1_earth * max_obj * cos(lonLat.latitude));
+	dlat2 *= wvp2->obj;
+	dlon2 *= wvp2->obj;
+
+	LonLat lon_lat2;
+	lon_lat2.latitude = lonLat.latitude + dlat2;
+	lon_lat2.longitude = lonLat.longitude + dlon2;
+	if (! lon_lat2.WriteOtln(fp))
+		return(0);
+
+	//-------------//
+	// mark center //
+	//-------------//
+
+	lon_lat2.latitude = lonLat.latitude;
+	lon_lat2.longitude = lonLat.longitude;
+	if (! lon_lat2.WriteOtln(fp))
+		return(0);
+
+	//-----//
+	// end //
+	//-----//
+
+	LonLat inf;
+	inf.longitude = (float)HUGE_VAL;
+	inf.latitude = (float)HUGE_VAL;
+	if (! inf.WriteOtln(fp))
+		return(0);
+
 	return(1);
 }
 
@@ -1795,9 +1876,9 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-            float near_angle =
-                wrap_angle_near(wvc->selected->dir, true_wv.dir);
-            float dif = near_angle - true_wv.dir;
+			float near_angle =
+				wrap_angle_near(wvc->selected->dir, true_wv.dir);
+			float dif = near_angle - true_wv.dir;
 			float x = dif * dif;
 			*(rms_dir_err_array + cti) += x;
 			*(dir_bias_array + cti) += dif;
@@ -1836,9 +1917,9 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-            float near_angle =
-                wrap_angle_near(wvc->selected->dir, true_wv.dir);
-            float dif = near_angle - true_wv.dir;
+			float near_angle =
+				wrap_angle_near(wvc->selected->dir, true_wv.dir);
+			float dif = near_angle - true_wv.dir;
 			float x = dif * dif;
 			float dev = x - *(rms_dir_err_array + cti);
 			*(std_dev_array + cti) += (dev * dev);
