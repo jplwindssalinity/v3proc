@@ -1193,12 +1193,12 @@ linear_fit(
     double sx = 0.0;
     double sy = 0.0;
     double st2 = 0.0;
+    *m = 0.0;
 
-    double ss;
+    double ss = 0.0;
     if (std != NULL)
     {
         // with weights
-        ss = 0.0;
         for (int i = 0; i < count; i++)
         {
             double wt = 1.0 / (std[i] * std[i]);
@@ -1266,6 +1266,9 @@ linear_fit(
         {
             double val = y[i] - (*b) - (*m) * x[i];
             *chi2 += (val * val);
+            double sigdat = sqrt((*chi2) / (count - 2));
+            *sigb *= sigdat;
+            *sigm *= sigdat;
         }
     }
     return(1);
