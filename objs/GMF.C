@@ -11,7 +11,11 @@ static const char rcs_id_gmf_c[] =
 #include <unistd.h>
 #include <malloc.h>
 #include <math.h>
+#ifdef INTEL86
+#include <ieee754.h>
+#else
 #include <ieeefp.h>
+#endif
 #include "GMF.h"
 #include "GSparameters.h"
 #include "Meas.h"
