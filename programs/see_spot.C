@@ -219,18 +219,6 @@ main(
 		exit(1);
 	}
 
-	//----------------------------------------//
-	// create an attitude control error model //
-	//----------------------------------------//
-
-	if (! ConfigAttitudeControlModel(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring attitude control error model\n",
-			command);
-		fprintf(stderr, "    for spacecraft simulator\n");
-		exit(1);
-	}
-
 	//-----------------------------------------------//
 	// create an instrument and instrument simulator //
 	//-----------------------------------------------//
