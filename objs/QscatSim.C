@@ -1285,10 +1285,27 @@ QscatSim::MeasToEsnX(
 	// The wind retrieval has to estimate the variance using the model
 	// sigma0 rather than the measured sigma0 to avoid problems computing
 	// Kpc for weighting purposes.
+    // The Esn value itself, however, can never be negative because the
+    // instrument integrates a sum of squares.
 	//------------------------------------------------------------------------//
 
 	Gaussian rv(*var_esn_slice,0.0);
-	*Esn += rv.GetNumber();
+    int i;
+    for (i=0; i < 10; i++)
+    {
+      float rval = rv.GetNumber();
+      if (rval >= -*Esn)  break;
+    }
+    if (i >= 10)
+    {
+      fprintf(stderr,
+        "Warning: Esn distribution artificially inflated at zero\n");
+      *Esn = 0.0;
+    }
+    else
+    {
+      *Esn += rv.GetNumber();
+    }
 
 	return(1);
 }

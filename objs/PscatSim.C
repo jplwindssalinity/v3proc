@@ -1370,7 +1370,7 @@ PscatSim::MeasToEsnX(
         break;
     case Meas::VV_HV_CORR_MEAS_TYPE:
     case Meas::HH_VH_CORR_MEAS_TYPE:
-        // Put co-pol/x-pol thermal noise in *En for use in checkframes.
+        // Put co-pol/x-pol thermal noise in *En for use in variance calc.
         *En = En1 + En2;
         // The thermal noise in the correlation measurement is assumed to be 0.
         *Esn = *Es;
@@ -1420,9 +1420,20 @@ PscatSim::MeasToEsnX(
     }
     else if (meas1 != NULL && meas2 != NULL)
     {
-        // correlation measurement (ie., sigma0 = sigma_vvhv or sigma_hhvh)
-        double var_corr = (sigma0*sigma0 + meas1->Sigma0 * meas2->Sigma0 *
-            (1.0 + 1.0/meas1->Snr)*(1.0 + 1.0/meas2->Snr)) / (2*Bs*Tp);
+        //-------------------------------------------------------------------//
+        // Correlation measurement (ie., sigma0 = sigma_vvhv or sigma_hhvh).
+        // As in Kp.C, the variance is expressed in terms of En and X
+        // (which are assumed to be the same for copol, x-pol, and corr
+        // measurements except that En-corr = 0) so that division by zero
+        // is avoided when the true sigma0 is 0.
+        //-------------------------------------------------------------------//
+
+        double sigma0_over_snr = *En / X;
+        double var_corr = 0.5 / Bs / Tp *
+               (sigma0*sigma0 + meas1->Sigma0 * meas2->Sigma0 +
+                 (meas1->Sigma0 + meas2->Sigma0) * sigma0_over_snr +
+                 sigma0_over_snr*sigma0_over_snr
+               );
         if (Tg > Tp)
         {
             // since Es=X^2*sigma0, var(Es) = X^2*var(sigma0)
@@ -1451,10 +1462,41 @@ PscatSim::MeasToEsnX(
     // The wind retrieval has to estimate the variance using the model
     // sigma0 rather than the measured sigma0 to avoid problems computing
     // Kpc for weighting purposes.
+    // The Esn value, however, is not permitted to be negative.  Random
+    // numbers that cause this are tossed.  This has the effect of adding
+    // adding a speed bias because the mean is shifted from 0.  We need
+    // to use the true distribution (not a gaussian) to avoid this problem!
     //--------------------------------------------------------------------//
 
-    Gaussian rv(*var_Esn,0.0);
-    *Esn += rv.GetNumber();
+	Gaussian rv(*var_Esn,0.0);
+    if (meas->measType == Meas::VV_MEAS_TYPE ||
+        meas->measType == Meas::HH_MEAS_TYPE ||
+        meas->measType == Meas::VH_MEAS_TYPE ||
+        meas->measType == Meas::HV_MEAS_TYPE)
+    {
+      // co-pol or cross-pol measurement
+      int i;
+      for (i=0; i < 10; i++)
+      {
+        float rval = rv.GetNumber();
+        if (rval >= -*Esn)  break;
+      }
+      if (i >= 10)
+      {
+        fprintf(stderr,
+          "Warning: Esn distribution artificially inflated at zero\n");
+        *Esn = 0.0;
+      }
+      else
+      {
+        *Esn += rv.GetNumber();
+      }
+    }
+    else
+    {
+      // correlation measurement
+      *Esn += rv.GetNumber();
+    }
 
     return(1);
 }
