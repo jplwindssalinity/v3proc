@@ -11,6 +11,7 @@ static const char rcs_id_earthfield_c[] =
 #include "LonLat.h"
 #include "Constants.h"
 #include "Array.h"
+#include "Index.h"
 #include "EarthField.h"
 
 //============//
@@ -414,6 +415,57 @@ EarthField::Write(char* filename)
 			printf("Error writing data to %s in EarthField::Write\n",
 				filename);
 			exit(-1);
+		}
+	}
+
+	return(1);
+
+}
+
+//----------------------------//
+// EarthField::WriteAsciiCols
+//----------------------------//
+
+int
+EarthField::WriteAsciiCols(char* filename)
+{
+	if (! field)
+	{
+		printf("Error: Nothing to write in EarthField::WriteAsciiCols\n");
+		exit(-1);
+	}
+
+	//---------------------------------//
+	// Replace any pre-existing file
+	//---------------------------------//
+
+	FILE* fp = fopen(filename,"w");
+	if (fp == NULL)
+	{
+		printf("Error opening %s for writing in EarthField::WriteAsciiCols\n",
+			filename);
+		exit(-1);
+	}
+
+	Index lat_idx;
+	Index lon_idx;
+
+	lat_idx.SpecifyEdges(_latMin,_latMax,_latCount);
+	lon_idx.SpecifyEdges(_lonMin,_lonMax,_lonCount);
+ 
+	//---------------------------------//
+	// Write the field array
+	//---------------------------------//
+
+	float lat,lon;
+
+	for (int i=0; i < _lonCount; i++)
+	{
+		lon_idx.IndexToValue(i,&lon);
+		for (int j=0; j < _latCount; j++)
+		{
+			lat_idx.IndexToValue(j,&lat);
+			fprintf(fp,"%g %g %g\n",lon*rtd,lat*rtd,field[i][j]);
 		}
 	}
 

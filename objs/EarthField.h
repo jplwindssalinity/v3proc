@@ -52,6 +52,7 @@ public:
 
 	int Read(char *filename);
 	int Write(char *filename);
+	int	WriteAsciiCols(char *filename);
 
 	//--------------//
 	// access
