@@ -53,6 +53,7 @@ PROGRAMS = \
 	baseband_errors \
 	rgc_format \
 	dtc_format \
+    tc_info \
 	cds_tracking_check \
 	memfilter \
 	fake_vap \

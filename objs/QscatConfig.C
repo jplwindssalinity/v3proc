@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_qscatconfig_c[] =
     "@(#) $Id$";
@@ -261,27 +261,31 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useSpectralDop = use_spec_dop;
 
-    if((use_byu_dop + use_dtc + use_spec_dop) > 1){
-      fprintf(stderr,"ConfigQscatCds:: Doppler Tracking Technique Misspecified\n");
-      return(0);
+    if ((use_byu_dop + use_dtc + use_spec_dop) > 1)
+    {
+        fprintf(stderr,
+            "ConfigQscatCds:: Doppler Tracking Technique Misspecified\n");
+        return(0);
     }
 
-    if((use_byu_range + use_rgc + use_spec_range) > 1){
-      fprintf(stderr,"ConfigQscatCds:: Range Tracking Technique Misspecified\n");
-      return(0);
+    if ((use_byu_range + use_rgc + use_spec_range) > 1)
+    {
+        fprintf(stderr,
+            "ConfigQscatCds:: Range Tracking Technique Misspecified\n");
+        return(0);
     }
 
     float azimuth_integration_range;
     if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-				&azimuth_integration_range))
+                &azimuth_integration_range))
     {
-      return(0);
+        return(0);
     }
     qscat_cds->azimuthIntegrationRange=azimuth_integration_range*dtr;
 
     float azimuth_step_size;
     if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-				&azimuth_step_size))
+                &azimuth_step_size))
     {
       return(0);
     }
@@ -348,11 +352,17 @@ ConfigQscatCds(
             substitute_string(BEAM_x_RGC_FILE_KEYWORD, "x", number, keyword);
             char* rgc_file = config_list->Get(keyword);
             if (rgc_file == NULL)
+            {
+                fprintf(stderr,
+                "ConfigQscatCds: error determining RGC filename for beam %d\n",
+                    beam_number);
                 return(0);
+            }
 
             if (! qscat_cds->LoadRgc(beam_idx, rgc_file))
             {
-                fprintf(stderr, "Error loading RGC file %s\n", rgc_file);
+                fprintf(stderr, "ConfigQscatCds: error loading RGC file %s\n",
+                    rgc_file);
                 return(0);
             }
         }
@@ -366,11 +376,17 @@ ConfigQscatCds(
             substitute_string(BEAM_x_DTC_FILE_KEYWORD, "x", number, keyword);
             char* dtc_file = config_list->Get(keyword);
             if (dtc_file == NULL)
+            {
+                fprintf(stderr,
+                "ConfigQscatCds: error determining DTC filename for beam %d\n",
+                    beam_number);
                 return(0);
+            }
 
             if (! qscat_cds->LoadDtc(beam_idx, dtc_file))
             {
-                fprintf(stderr, "Error loading DTC file %s\n", dtc_file);
+                fprintf(stderr, "ConfigQscatCds: error loading DTC file %s\n",
+                    dtc_file);
                 return(0);
             }
         }
@@ -393,21 +409,30 @@ ConfigQscat(
     //-----//
 
     if (! ConfigQscatSas(&(qscat->sas), config_list))
+    {
+        fprintf(stderr, "ConfigQscat: error configuring SAS\n");
         return(0);
+    }
 
     //-----//
     // SES //
     //-----//
 
     if (! ConfigQscatSes(&(qscat->ses), config_list))
+    {
+        fprintf(stderr, "ConfigQscat: error configuring SES\n");
         return(0);
+    }
 
     //-----//
     // CDS //
     //-----//
 
     if (! ConfigQscatCds(&(qscat->cds), config_list))
+    {
+        fprintf(stderr, "ConfigQscat: error configuring CDS\n");
         return(0);
+    }
 
     //----------------------//
     // transmit pulse width //
@@ -520,8 +545,8 @@ ConfigQscatSim(
     // time references //
     //-----------------//
 
-	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &(qscat_sim->epochTime)))
-		return(0);
+    if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &(qscat_sim->epochTime)))
+        return(0);
     qscat_sim->epochTimeString = config_list->Get(EPOCH_TIME_STRING_KEYWORD);
 
     //----------//

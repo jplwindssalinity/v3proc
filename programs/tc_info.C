@@ -157,7 +157,11 @@ main(
     //-------------------------//
 
     struct stat buf;
-    stat(tc_file, &buf);
+    if (stat(tc_file, &buf) != 0)
+    {
+        fprintf(stderr, "%s: error stating file %s\n", command, tc_file);
+        exit(1);
+    }
     TcType type = UNKNOWN;
     switch (buf.st_size)
     {
@@ -203,12 +207,12 @@ main(
         sprintf(filename, "%s.ascii", info_base);
         range_tracker.WriteAscii(filename);
 
-        sprintf(filename, "%s.freq", info_base);
+        sprintf(filename, "%s.delay", info_base);
         delay_scan(filename, tc_file, &range_tracker);
 
         if (ref_tc_file != NULL)
         {
-            sprintf(filename, "%s.dfreq", info_base);
+            sprintf(filename, "%s.ddelay", info_base);
             ddelay_scan(filename, tc_file, &range_tracker, ref_tc_file,
                 &ref_range_tracker);
         }
@@ -257,6 +261,8 @@ main(
 // delay_scan //
 //------------//
 
+#define QUOTE  '"'
+
 int
 delay_scan(
     const char*    filename,
@@ -266,6 +272,10 @@ delay_scan(
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
         return(0);
+
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "RGC Delay", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Time (ms)", QUOTE);
 
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
@@ -278,7 +288,7 @@ delay_scan(
             range_tracker->GetRxGateDelay(orbit_step, azimuth_step, 0, 0,
                 &delay_dn, &dummy);
             float delay = RX_GATE_DELAY_CMD_RESOLUTION * delay_dn;
-            fprintf(ofp, "%g %g\n", x_value, delay);
+            fprintf(ofp, "%g %g\n", x_value, delay * 1000.0);
         }
     }
 
@@ -302,6 +312,10 @@ ddelay_scan(
     if (ofp == NULL)
         return(0);
 
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "RGC Delta Delay", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Time (ms)", QUOTE);
+
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
         for (unsigned short azimuth_step = 0; azimuth_step < 32768;
@@ -320,7 +334,7 @@ ddelay_scan(
                 &ref_delay_dn, &dummy);
             float ref_delay = RX_GATE_DELAY_CMD_RESOLUTION * ref_delay_dn;
 
-            fprintf(ofp, "%g %g\n", x_value, delay - ref_delay);
+            fprintf(ofp, "%g %g\n", x_value, (delay - ref_delay) * 1000.0);
         }
     }
 
