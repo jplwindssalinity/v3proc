@@ -266,12 +266,20 @@ int ConfigGrid(Grid* grid, ConfigList* config_list);
 // Control Stuff //
 //---------------//
 
-#define START_TIME_KEYWORD				"START_TIME"
-#define GRID_START_ARG_OF_LAT_KEYWORD	"GRID_START_ARG_OF_LAT"
-#define PASS_TIME_BUFFER_KEYWORD		"PASS_TIME_BUFFER"
-#define GRID_LATITUDE_EXTENT_KEYWORD	"GRID_LATITUDE_EXTENT"
+#define GRID_START_TIME_KEYWORD			"GRID_START_TIME"
+#define GRID_END_TIME_KEYWORD			"GRID_END_TIME"
+#define INSTRUMENT_START_TIME_KEYWORD	"INSTRUMENT_START_TIME"
+#define INSTRUMENT_END_TIME_KEYWORD		"INSTRUMENT_END_TIME"
+#define SPACECRAFT_START_TIME_KEYWORD	"SPACECRAFT_START_TIME"
+#define SPACECRAFT_END_TIME_KEYWORD		"SPACECRAFT_END_TIME"
 
-int		ConfigTimes(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
+#define APPROXIMATE_START_TIME_KEYWORD	"APPROXIMATE_START_TIME"
+#define GRID_START_ARG_OF_LAT_KEYWORD	"GRID_START_ARG_OF_LAT"
+#define GRID_LATITUDE_RANGE_KEYWORD		"GRID_LATITUDE_RANGE"
+#define GRID_TIME_RANGE_KEYWORD			"GRID_TIME_RANGE"
+#define INSTRUMENT_TIME_BUFFER_KEYWORD	"INSTRUMENT_TIME_BUFFER"
+
+int		ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
 			double* grid_start_time, double* grid_end_time,
 			double* instrument_start_time, double* instrument_end_time,
 			double* spacecraft_start_time, double* spacecraft_end_time);
