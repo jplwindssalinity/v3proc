@@ -14,6 +14,7 @@ CCC =			gcc
 OBJS = \
 	List.o \
 	BufferedList.o \
+        AccurateGeom.o \
 	Antenna.o \
 	AntennaSim.o \
 	Array.o \
@@ -33,6 +34,7 @@ OBJS = \
 	Grid.o \
 	Instrument.o \
 	InstrumentSim.o \
+        InstrumentSimAccurate.o \
 	InstrumentGeom.o \
 	Interpolate.o \
 	Kp.o \
@@ -117,6 +119,7 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
+AccurateGeom.o: AccurateGeom.C CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h Matrix3.h GenericGeom.h Spacecraft.h Instrument.h LonLat.h InstrumentGeom.h Interpolate.h Array.h Misc.h BufferedList.h EarthPosition.h Beam.h Constants.h List.h Meas.h AccurateGeom.h
 Antenna.o: Antenna.C Antenna.h Beam.h Constants.h CoordinateSwitch.h Attitude.h Matrix3.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Array.o: Array.C Array.h
@@ -138,6 +141,7 @@ Grid.o: Grid.C Grid.h Array.h L17.h Meas.h GenericFile.h L17Frame.h Beam.h LonLa
 Instrument.o: Instrument.C Instrument.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 InstrumentGeom.o: InstrumentGeom.C CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h Matrix3.h GenericGeom.h Spacecraft.h Instrument.h LonLat.h InstrumentGeom.h Interpolate.h Array.h Misc.h BufferedList.h EarthPosition.h Beam.h Constants.h List.h Meas.h
 InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Sigma0.h Constants.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h EarthPosition.h CoordinateSwitch.h LonLat.h Matrix3.h Meas.h BufferedList.h Beam.h Attitude.h Misc.h List.h PiscTable.h GenericFile.h L00Frame.h
+InstrumentSimAccurate.o: InstrumentSimAccurate.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Sigma0.h Constants.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h EarthPosition.h CoordinateSwitch.h LonLat.h Matrix3.h Meas.h BufferedList.h Beam.h Attitude.h Misc.h List.h PiscTable.h GenericFile.h L00Frame.h InstrumentSimAccurate.h AccurateGeom.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h
 L00.o: L00.C L00.h GenericFile.h L00Frame.h Attitude.h
