@@ -392,7 +392,7 @@ BYUXTable::GetDeltaFreq(
         int beam_idx = qscat->cds.currentBeamIdx;
         float orbit_fraction = qscat->cds.OrbitFraction();
         float antenna_azimuth = qscat->sas.antenna.groundImpactAzimuthAngle;
-        int mode_id = 6;   // oh!  what a hack!
+        int mode_id = 4;   // oh!  what a hack!
         double alt, lon_d, lat_d;
         if (! qti.rTarget.GetAltLonGCLat(&alt, &lon_d, &lat_d))
         {
