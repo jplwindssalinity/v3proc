@@ -99,6 +99,7 @@ PROGRAMS = \
 	l00_to_l1a \
     check_l1b \
     calpulse_to_ascii \
+    make_timetlm \
 	l2b_extract_worst
 #	sim_accurate
 #	generate_kfactor
