@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -152,109 +152,122 @@ BYUXTable::Read(
         return(0);
     }
 
-  //-------------------------------------------------//
-  // Create  Arrays                                  //
-  //-------------------------------------------------//
-  if(!Allocate()) return(0);
+    //---------------//
+    // Create Arrays //
+    //---------------//
 
-  //-------------------------------------------------//
-  //  Loop through beams                             //
-  //-------------------------------------------------//
-  for(int bm=0; bm<2;bm++){
-    //--------------------------------------------------//
-    //   Loop through Orbit Times                       //
-    //--------------------------------------------------//
-    for(int o=0;o<BYU_ORBIT_POSITION_BINS;o++){
-      //----------------------------------------------------//
-      // Loop through Azimuths                              //
-      //----------------------------------------------------//
-      for(int ah=0;ah<BYU_AZIMUTH_BINS;ah++){
-        char string[20];
+    if (! Allocate())
+        return(0);
 
-        // Sanity Check on Orbit and azimuth;
-    float orbit,azimuth;
-        fscanf(ifp[bm],"%s",string);
-    orbit=atof(string);
-        fscanf(ifp[bm],"%s",string);
-        azimuth=atof(string);
-    if(fabs(o*BYU_TIME_INTERVAL_BETWEEN_STEPS-orbit)>0.01 ||
-       fabs(ah*_azimuthStepSize -azimuth*dtr) > 0.0001){
-      fprintf(stderr,"BYUXTable::Read Error Sanity Check failed.\n");
-      return(0);
+    //--------------------//
+    // Loop through beams //
+    //--------------------//
+
+    for (int bm = 0; bm < 2; bm++)
+    {
+        //--------------------------//
+        // Loop through Orbit Times //
+        //--------------------------//
+
+        for (int o = 0; o < BYU_ORBIT_POSITION_BINS; o++)
+        {
+            //-----------------------//
+            // Loop through Azimuths //
+            //-----------------------//
+
+            for (int ah = 0; ah < BYU_AZIMUTH_BINS; ah++)
+            {
+                char string[20];
+
+                // Sanity Check on Orbit and azimuth;
+                float orbit, azimuth;
+                fscanf(ifp[bm], "%s", string);
+                orbit = atof(string);
+                fscanf(ifp[bm], "%s", string);
+                azimuth = atof(string);
+                if (fabs(o * BYU_TIME_INTERVAL_BETWEEN_STEPS - orbit) > 0.01
+                    || fabs(ah * _azimuthStepSize - azimuth * dtr) > 0.0001)
+                {
+                    fprintf(stderr,
+                        "BYUXTable::Read Error Sanity Check failed.\n");
+                    return(0);
+                }
+
+                // Read in slice Xnom,A,B,C,D values
+                for (int s = 0; s < _numSlices; s++)
+                {
+                    // Xnom
+                    fscanf(ifp[bm], "%s", string);
+                    xnom[bm][s][o][ah] = atof(string);
+
+                    // G skipped for now.
+                    fscanf(ifp[bm], "%s", string);
+
+                    // A
+                    fscanf(ifp[bm], "%s", string);
+                    a[bm][s][o][ah] = atof(string);
+
+                    // B
+                    fscanf(ifp[bm], "%s", string);
+                    b[bm][s][o][ah] = atof(string);
+
+                    // C
+                    fscanf(ifp[bm], "%s", string);
+                    c[bm][s][o][ah] = atof(string);
+
+                    // D
+                    fscanf(ifp[bm], "%s", string);
+                    d[bm][s][o][ah] = atof(string);
+
+                    // Skip A_az for now
+                    fscanf(ifp[bm], "%s", string);
+
+                    // Skip B_az for now
+                    fscanf(ifp[bm], "%s", string);
+
+                    // Skip A_el for now
+                    fscanf(ifp[bm], "%s", string);
+
+                    // Skip B_el for now
+                    fscanf(ifp[bm], "%s", string);
+                }
+
+                //-----------------------------------//
+                // Read Egg Xnom A B C, and D values //
+                //-----------------------------------//
+
+                // Xnom
+                fscanf(ifp[bm], "%s", string);
+                xnomEgg[bm][o][ah] = atof(string);
+
+
+                // A
+                fscanf(ifp[bm], "%s", string);
+                aEgg[bm][o][ah] = atof(string);
+
+                // B
+                fscanf(ifp[bm], "%s", string);
+                bEgg[bm][o][ah] = atof(string);
+
+                // C
+                fscanf(ifp[bm], "%s", string);
+                cEgg[bm][o][ah] = atof(string);
+
+                // D
+                fscanf(ifp[bm], "%s", string);
+                dEgg[bm][o][ah] = atof(string);
+
+                //-----------------------------------------//
+                // Skip over Doppler, Range, and S for now //
+                //-----------------------------------------//
+
+                fscanf(ifp[bm], "%s", string);
+                fscanf(ifp[bm], "%s", string);
+                fscanf(ifp[bm], "%s", string);
+            }
+        }
     }
-
-    // Read in slice Xnom,A,B,C,D values
-        for(int s=0;s<_numSlices;s++){
-
-          // Xnom
-      fscanf(ifp[bm],"%s",string);
-      xnom[bm][s][o][ah]=atof(string);
-
-          // G skipped for now.
-          fscanf(ifp[bm],"%s",string);
-
-          // A
-      fscanf(ifp[bm],"%s",string);
-      a[bm][s][o][ah]=atof(string);
-
-          // B
-      fscanf(ifp[bm],"%s",string);
-      b[bm][s][o][ah]=atof(string);
-
-          // C
-      fscanf(ifp[bm],"%s",string);
-      c[bm][s][o][ah]=atof(string);
-
-          // D
-      fscanf(ifp[bm],"%s",string);
-      d[bm][s][o][ah]=atof(string);
-
-          // Skip A_az for now
-          fscanf(ifp[bm],"%s",string);
-
-          // Skip B_az for now
-          fscanf(ifp[bm],"%s",string);
-
-          // Skip A_el for now
-          fscanf(ifp[bm],"%s",string);
-
-          // Skip B_el for now
-          fscanf(ifp[bm],"%s",string);
-    }
-        //-----------------------------------------//
-    // Read Egg Xnom A B C, and D values       //
-        //-----------------------------------------//
-          // Xnom
-      fscanf(ifp[bm],"%s",string);
-      xnomEgg[bm][o][ah]=atof(string);
-
-
-          // A
-      fscanf(ifp[bm],"%s",string);
-      aEgg[bm][o][ah]=atof(string);
-
-          // B
-      fscanf(ifp[bm],"%s",string);
-      bEgg[bm][o][ah]=atof(string);
-
-          // C
-      fscanf(ifp[bm],"%s",string);
-      cEgg[bm][o][ah]=atof(string);
-
-          // D
-      fscanf(ifp[bm],"%s",string);
-      dEgg[bm][o][ah]=atof(string);
-
-          //--------------------------------------//
-          // Skip over Doppler, Range, and S for now  //
-          //--------------------------------------//
-          fscanf(ifp[bm],"%s",string);
-          fscanf(ifp[bm],"%s",string);
-      fscanf(ifp[bm],"%s",string);
-      }
-    }
-  }
-  return(1);
+    return(1);
 }
 
 //----------------------//
@@ -266,12 +279,14 @@ BYUXTable::GetXTotal(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     Meas*        meas,
+    Topo*        topo,
+    Stable*      stable,
     CheckFrame*  cf)
 {
-  // true Es_cal based on true PtGr
-  float Es_cal = true_Es_cal(qscat);
-  float X = GetXTotal(spacecraft, qscat, meas, Es_cal, cf);
-  return(X);
+    // true Es_cal based on true PtGr
+    float Es_cal = true_Es_cal(qscat);
+    float X = GetXTotal(spacecraft, qscat, meas, Es_cal, topo, stable, cf);
+    return(X);
 }
 
 //----------------------//
@@ -284,19 +299,21 @@ BYUXTable::GetXTotal(
     Qscat*        qscat,
     Meas*         meas,
     float         Es_cal,
+    Topo*         topo,
+    Stable*       stable,
     CheckFrame*   cf)
 {
-  float X=GetX(spacecraft, qscat, meas, cf);
+    float X = GetX(spacecraft, qscat, meas, topo, stable, cf);
 
-  //--------------------------------------------------//
-  // Compute the Xcal portion of the overall X factor.
-  // Reference: IOM-3347-98-019.
-  //--------------------------------------------------//
+    //--------------------------------------------------//
+    // Compute the Xcal portion of the overall X factor //
+    // Reference: IOM-3347-98-019                       //
+    //--------------------------------------------------//
 
-  double Xcal;
-  radar_Xcal(qscat,Es_cal,&Xcal);
+    double Xcal;
+    radar_Xcal(qscat, Es_cal, &Xcal);
 
-  return(X*Xcal); // Total X
+    return(X * Xcal);    // Total X
 }
 
 //-----------------//
@@ -308,9 +325,11 @@ BYUXTable::GetX(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     Meas*        meas,
+    Topo*        topo,
+    Stable*      stable,
     CheckFrame*  cf)
 {
-    float delta_freq = GetDeltaFreq(spacecraft, qscat, cf);
+    float delta_freq = GetDeltaFreq(spacecraft, qscat, topo, stable, cf);
     float orbit_position = qscat->cds.OrbitFraction();
     int beam_number = qscat->cds.currentBeamIdx;
     float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
@@ -326,9 +345,9 @@ float
 BYUXTable::GetDeltaFreq(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    CheckFrame*  cf,
     Topo*        topo,
-    Stable*      stable)
+    Stable*      stable,
+    CheckFrame*  cf)
 {
     //-----------//
     // predigest //
@@ -474,22 +493,22 @@ BYUXTable::GetXegg(
     float  orbit_position,
     float  delta_freq)
 {
-  // Convert from orbit position to nominal orbit time
-  float orbit_time=BYU_NOMINAL_ORBIT_PERIOD*orbit_position;
+    // Convert from orbit position to nominal orbit time
+    float orbit_time = BYU_NOMINAL_ORBIT_PERIOD * orbit_position;
 
-  // Interpolate tables
-  float X=Interpolate(xnomEgg[beam_number],orbit_time, azimuth_angle);
-  float A=Interpolate(aEgg[beam_number],orbit_time,azimuth_angle);
-  float B=Interpolate(bEgg[beam_number],orbit_time,azimuth_angle);
-  float C=Interpolate(cEgg[beam_number],orbit_time,azimuth_angle);
-  float D=Interpolate(dEgg[beam_number],orbit_time,azimuth_angle);
+    // Interpolate tables
+    float X = Interpolate(xnomEgg[beam_number], orbit_time, azimuth_angle);
+    float A = Interpolate(aEgg[beam_number], orbit_time, azimuth_angle);
+    float B = Interpolate(bEgg[beam_number], orbit_time, azimuth_angle);
+    float C = Interpolate(cEgg[beam_number], orbit_time, azimuth_angle);
+    float D = Interpolate(dEgg[beam_number], orbit_time, azimuth_angle);
 
-
-  // Frequency Compensate
-  float delta_bin=delta_freq/FFT_BIN_SIZE;
-  X+=A+B*delta_bin+C*delta_bin*delta_bin+D*delta_bin*delta_bin*delta_bin;
-  X=pow(10.0,0.1*X);
-  return(X);
+    // Frequency Compensate
+    float delta_bin = delta_freq / FFT_BIN_SIZE;
+    X += A + B*delta_bin + C*delta_bin*delta_bin
+        + D*delta_bin*delta_bin*delta_bin;
+    X = pow(10.0, 0.1 * X);
+    return(X);
 }
 
 //------------------------//

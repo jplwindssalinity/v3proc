@@ -557,9 +557,24 @@ ConfigSigma0Maps(
     Sigma0Map*   outer_map,
     ConfigList*  config_list)
 {
-	//----------------//
+    //--------------------------//
+    // check if maps are wanted //
+    //--------------------------//
+
+    int use_maps;
+    config_list->ExitForMissingKeywords();
+    if (! config_list->GetInt(USE_SIGMA0_MAPS_KEYWORD, &use_maps))
+    {
+        return(0);    // missing keyword (this line never gets executed)
+    }
+    if (! use_maps)
+    {
+        return(0);    // don't use maps!
+    }
+
+    //----------------//
     // the inner beam //
-	//----------------//
+    //----------------//
 
     char* inner_file = config_list->Get(INNER_BEAM_SIGMA0_MAP_KEYWORD);
     if (! inner_map->Read(inner_file))
@@ -569,9 +584,9 @@ ConfigSigma0Maps(
         return(0);
     }
 
-	//----------------//
+    //----------------//
     // the outer beam //
-	//----------------//
+    //----------------//
 
     char* outer_file = config_list->Get(OUTER_BEAM_SIGMA0_MAP_KEYWORD);
     if (! outer_map->Read(outer_file))

@@ -53,14 +53,13 @@ public:
 
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               CheckFrame* cf);
+               Topo* topo, Stable* stable, CheckFrame* cf);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               float PtGr, CheckFrame* cf);
+               float PtGr, Topo* topo, Stable* stable, CheckFrame* cf);
     float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               CheckFrame* cf = NULL);
+               Topo* topo, Stable* stable, CheckFrame* cf);
     float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat,
-               CheckFrame* cf = NULL, Topo* topo = NULL,
-               Stable* stable = NULL);
+               Topo* topo, Stable* stable, CheckFrame* cf);
     float  GetX(int beam_number, float azimuth_angle, float orbit_position,
                int slice_number, float delta_freq);
     float  GetXegg(int beam_number, float azimuth_angle, float orbit_position,

@@ -82,6 +82,7 @@ static const char rcs_id_qscatconfigdefs_h[] =
 // Sigma0Maps //
 //------------//
 
+#define USE_SIGMA0_MAPS_KEYWORD        "USE_SIGMA0_MAPS"
 #define INNER_BEAM_SIGMA0_MAP_KEYWORD  "INNER_BEAM_SIGMA0_MAP"
 #define OUTER_BEAM_SIGMA0_MAP_KEYWORD  "OUTER_BEAM_SIGMA0_MAP"
 
