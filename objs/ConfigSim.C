@@ -1226,6 +1226,24 @@ ConfigL2AToL2B(
 	      return(0);
 	    l2a_to_l2b->nudgeThresholds[1]=tmp_float;
 	  }
+	  else{
+	    config_list->DoNothingForMissingKeywords();
+	    if (! config_list->GetInt(USE_STREAM_NUDGING_KEYWORD, &tmp_int))
+	      { 
+		l2a_to_l2b->useNudgeStream = 0;  // default
+	      }
+	    else{
+	      l2a_to_l2b->useNudgeStream = tmp_int;
+	      if (! config_list->GetFloat(STREAM_THRESHOLD_KEYWORD, 
+					  &tmp_float))
+		l2a_to_l2b->streamThreshold = 0.0; // default
+	      else { 
+		l2a_to_l2b->streamThreshold = tmp_float;
+	      }
+	    }
+	     
+	    config_list->ExitForMissingKeywords();
+	  }
 	}
 
 	if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))

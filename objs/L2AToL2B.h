@@ -95,6 +95,7 @@ public:
     int                   useNudgeThreshold;
     int                   useNMF;
     int                   useRandomInit;
+    int                   useNudgeStream;
 
     //-----------------------------------------//
     // Parameters for Peak Splitting Algorithm //
@@ -111,6 +112,7 @@ public:
     WindField        nudgeField;
     WindVectorField  nudgeVctrField;
     float            nudgeThresholds[2];
+    float            streamThreshold;
 
     //----------------------------------------------//
     // Auxiliary Variables For Hurricane Processing //

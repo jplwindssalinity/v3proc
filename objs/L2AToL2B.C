@@ -20,8 +20,10 @@ static const char rcs_id_l2atol2b_c[] =
 L2AToL2B::L2AToL2B()
 :   medianFilterWindowSize(0), medianFilterMaxPasses(0), maxRankForNudging(0),
     useManyAmbiguities(0), useAmbiguityWeights(0), useNudging(0),
-    smartNudgeFlag(0), wrMethod(GS), onePeakWidth(0.0), twoPeakSep(181.0),
-    probThreshold(0.0),useHurricaneNudgeField(0),hurricaneRadius(0)
+    smartNudgeFlag(0), wrMethod(GS), useNudgeThreshold(0), useNMF(0),
+    useRandomInit(0), useNudgeStream(0), onePeakWidth(0.0), twoPeakSep(181.0),
+    probThreshold(0.0), streamThreshold(0.0), useHurricaneNudgeField(0),
+    hurricaneRadius(0)
 {
     return;
 }
@@ -376,6 +378,10 @@ L2AToL2B::InitAndFilter(
             l2b->frame.swath.S3Nudge();
         else if (useNudgeThreshold)
             l2b->frame.swath.ThresNudge(maxRankForNudging, nudgeThresholds);
+	else if (useNudgeStream){
+	    printf("L2AToL2B::StreamT %g\n",streamThreshold);
+	    l2b->frame.swath.StreamNudge(streamThreshold);
+	}
         else
             l2b->frame.swath.Nudge(maxRankForNudging);
     }
@@ -419,6 +425,7 @@ L2AToL2B::InitAndFilter(
     int special_first_pass = special;
     if (special == 1 && ONE_STAGE_WITHOUT_RANGES)
         special_first_pass = 0;
+    int freeze=0;
     if (useNMF)
     {
         bound = 9;
@@ -427,8 +434,9 @@ L2AToL2B::InitAndFilter(
             special_first_pass);
     }
     bound = 0;
+    if (useNMF) freeze=9;
     l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-        medianFilterMaxPasses, bound, useAmbiguityWeights, special_first_pass);
+        medianFilterMaxPasses, bound, useAmbiguityWeights, special_first_pass,freeze);
 
     if (special == 1 && ONE_STAGE_WITHOUT_RANGES)
     {
