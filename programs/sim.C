@@ -541,7 +541,7 @@ main(
                     // save the true attitude
                     if (true_att_fp != NULL)
                     {
-                        fprintf(true_att_fp, "%.1f %g %g %g %ud\n",
+                        fprintf(true_att_fp, "%.1f %g %g %g %u\n",
                             spacecraft_event.time,
                             spacecraft.attitude.GetRoll() * rtd,
                             spacecraft.attitude.GetPitch() * rtd,
