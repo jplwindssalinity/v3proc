@@ -12,7 +12,7 @@ DEBUG =       NODEBUG
 
 INCDIR =      ../../include
 LIBDIR =      ../../lib
-HDFINCDIR =   /usr/local/hdf/include
+HDFINCDIR =   /sw/include
 
 INCFLAGS =    -I$(HDFINCDIR) -I.
 
