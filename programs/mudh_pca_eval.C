@@ -458,7 +458,6 @@ main(
 
                 for (int prob_idx = 0; prob_idx < PROB_BINS; prob_idx++)
                 {
-//                    float prob_thresh = (float)prob_idx * PROB_STEP;
                     float prob_thresh = pow(10.0,
                         (float)prob_idx * PROB_STEP + PROB_OFFSET);
 
@@ -603,7 +602,8 @@ main(
 
         for (int prob_idx = 1; prob_idx < PROB_BINS; prob_idx++)
         {
-//            float prob_thresh = (float)prob_idx * PROB_STEP;
+            float prob_thresh = pow(10.0,
+                (float)prob_idx * PROB_STEP + PROB_OFFSET);
 
             unsigned long mudh_r_count =
                 counts[swath_idx][SSMI_CLEAR][MUDH_RAIN][prob_idx] +
@@ -688,8 +688,9 @@ main(
                 ssmi_c_mudh_c_percent_m, ssmi_cm_mudh_c_percent_m,
                 ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s);
 */
-            fprintf(ofp, "%g %g %g\n", mudh_r_percent,
-                ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s);
+            fprintf(ofp, "%g %g %g %g\n", mudh_r_percent,
+                ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s,
+                prob_thresh);
         }
         fclose(ofp);
     }

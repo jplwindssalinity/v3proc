@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef MUDH_H
 #define MUDH_H
@@ -50,7 +50,7 @@ const double beta2 = 0.0;
 const double a0 = -0.6202;
 const double a1 = -0.0499;
 const double a2 = 0.3283;
-const double a3 = 0.0013;
+const double a3 = 0.00132;
 const double a4 = -0.4368;
 const double a5 = 0.2895;
 

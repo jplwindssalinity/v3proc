@@ -86,17 +86,6 @@ static const char rcs_id[] =
 
 #define OPTSTRING  ""
 
-const double alpha1 = 1.0;
-const double alpha2 = 1.0;
-const double beta1 = 0.0;
-const double beta2 = 0.0;
-const double a0 = -0.6202;
-const double a1 = -0.0499;
-const double a2 = 0.3283;
-const double a3 = 0.0013;
-const double a4 = -0.4368;
-const double a5 = 0.2895;
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//

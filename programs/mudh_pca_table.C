@@ -124,17 +124,6 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const double alpha1 = 1.0;
-const double alpha2 = 1.0;
-const double beta1 = 0.0;
-const double beta2 = 0.0;
-const double a0 = -0.6202;
-const double a1 = -0.0499;
-const double a2 = 0.3283;
-const double a3 = 0.0013;
-const double a4 = -0.4368;
-const double a5 = 0.2895;
-
 const char* usage_array[] = { "[ -m mudh_dir ]", "[ -e enof_dir ]",
     "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "<pca_file>",
     "<start_rev>", "<end_rev>", "<output_base>", 0 };
@@ -246,11 +235,12 @@ main(
                 command, pca_file);
             exit(1);
         }
+        printf("  Inner swath only\n");
     }
     else
     {
         opt_outer_swath = 1;
-        printf("  I am outer beam only capable.\n");
+        printf("  Full swath\n");
     }
     fclose(ifp);
 
@@ -263,6 +253,32 @@ main(
         {
             pc_index[1][pc_idx].SpecifyEdges(pca_min[1][pc_idx],
                 pca_max[1][pc_idx], DIM);
+        }
+    }
+
+    //----------------------//
+    // determine file needs //
+    //----------------------//
+
+    int need_enof_file = 0;
+    int need_tb_file = 0;
+    for (int swath_idx = 0; swath_idx < 2; swath_idx++)
+    {
+        for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
+        {
+            if (pca_weights[swath_idx][pc_idx][QUAL_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][ENOF_IDX] != 0.0)
+            {
+                need_enof_file = 1;
+            }
+            if (pca_weights[swath_idx][pc_idx][TBH_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TRANS_IDX] != 0.0)
+            {
+                need_tb_file = 1;
+            }
         }
     }
 
@@ -356,41 +372,47 @@ main(
         // read ENOF file //
         //----------------//
 
-        char enof_file[1024];
-        sprintf(enof_file, "%s/%0*d.nofq", enof_dir, REV_DIGITS, rev);
-        ifp = fopen(enof_file, "r");
-        if (ifp == NULL)
+        if (need_enof_file)
         {
-            fprintf(stderr, "%s: error opening ENOF file %s\n", command,
-                enof_file);
-            fprintf(stderr, "%s: continuing...\n", command);
-            continue;
+            char enof_file[1024];
+            sprintf(enof_file, "%s/%0*d.nofq", enof_dir, REV_DIGITS, rev);
+            ifp = fopen(enof_file, "r");
+            if (ifp == NULL)
+            {
+                fprintf(stderr, "%s: error opening ENOF file %s\n", command,
+                    enof_file);
+                fprintf(stderr, "%s: continuing...\n", command);
+                continue;
+            }
+            fread(qual_array, sizeof(float), array_size, ifp);
+            fread(enof_array, sizeof(float), array_size, ifp);
+            fclose(ifp);
         }
-        fread(qual_array, sizeof(float), array_size, ifp);
-        fread(enof_array, sizeof(float), array_size, ifp);
-        fclose(ifp);
 
         //--------------//
         // read Tb file //
         //--------------//
 
-        char tb_file[1024];
-        sprintf(tb_file, "%s/%0*d.tb", tb_dir, REV_DIGITS, rev);
-        ifp = fopen(tb_file, "r");
-        if (ifp == NULL)
+        if (need_tb_file)
         {
-            fprintf(stderr, "%s: error opening Tb file %s\n", command,
-                tb_file);
-            fprintf(stderr, "%s: continuing...\n", command);
-            continue;
+            char tb_file[1024];
+            sprintf(tb_file, "%s/%0*d.tb", tb_dir, REV_DIGITS, rev);
+            ifp = fopen(tb_file, "r");
+            if (ifp == NULL)
+            {
+                fprintf(stderr, "%s: error opening Tb file %s\n", command,
+                    tb_file);
+                fprintf(stderr, "%s: continuing...\n", command);
+                continue;
+            }
+            fread(tbh_array, sizeof(float), array_size, ifp);
+            fread(tbv_array, sizeof(float), array_size, ifp);
+            fread(tbh_std_array, sizeof(float), array_size, ifp);
+            fread(tbv_std_array, sizeof(float), array_size, ifp);
+            fread(tbh_cnt_array, sizeof(int), array_size, ifp);
+            fread(tbv_cnt_array, sizeof(int), array_size, ifp);
+            fclose(ifp);
         }
-        fread(tbh_array, sizeof(float), array_size, ifp);
-        fread(tbv_array, sizeof(float), array_size, ifp);
-        fread(tbh_std_array, sizeof(float), array_size, ifp);
-        fread(tbv_std_array, sizeof(float), array_size, ifp);
-        fread(tbh_cnt_array, sizeof(int), array_size, ifp);
-        fread(tbv_cnt_array, sizeof(int), array_size, ifp);
-        fclose(ifp);
 
         //---------------------------------------//
         // eliminate rain data out of time range //
@@ -411,6 +433,7 @@ main(
         //----------------//
 
         double param[PARAM_COUNT];
+        int got_param[PARAM_COUNT];
 
         for (int ati = 0; ati < AT_WIDTH; ati++)
         {
@@ -424,49 +447,61 @@ main(
                     continue;
                 double irr = (double)integrated_rain_rate[ati][cti] * 0.1;
 
-                //------//
-                // MUDH //
-                //------//
+                //------------//
+                // initialize //
+                //------------//
 
-                int got_nbd = 0;
+                for (int i = 0; i < PARAM_COUNT; i++)
+                    got_param[i] = 0;
 
-                // speed, direction, and mle are ALWAYS needed
+                //-----------------------------------//
+                // is this a valid wind vector cell? //
+                //-----------------------------------//
+
                 if (spd_array[ati][cti] == MAX_SHORT ||
-                    dir_array[ati][cti] == MAX_SHORT ||
                     mle_array[ati][cti] == MAX_SHORT)
                 {
                     continue;
                 }
-                param[SPD_IDX] = (double)spd_array[ati][cti] * 0.01;
-                param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
-                param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
-                // NBD is only for both beams
+                //------//
+                // MUDH //
+                //------//
+
+                param[SPD_IDX] = (double)spd_array[ati][cti] * 0.01;
+                got_param[SPD_IDX] = 1;
+                if (dir_array[ati][cti] != MAX_SHORT)
+                {
+                    param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
+                    got_param[DIR_IDX] = 1;
+                }
+                param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
+                got_param[MLE_IDX] = 1;
                 if (nbd_array[ati][cti] != MAX_SHORT)
                 {
                     param[NBD_IDX] = (double)nbd_array[ati][cti] * 0.001 -
                         10.0;
-                    got_nbd = 1;
+                    got_param[NBD_IDX] = 1;
                 }
 
                 //-----------//
                 // ENOF/Qual //
                 //-----------//
 
-                int got_enof = 0;
-
-                // qual is ALWAYS needed
-                if (qual_array[ati][cti] == -100.0)
-                    continue;
-                param[QUAL_IDX] = qual_array[ati][cti];
-
-                // ENOF is only needed for both beams
-                if (! finite((double)enof_array[ati][cti]))
-                    continue;    // bad value
-                if (enof_array[ati][cti] != -100.0)
+                if (need_enof_file)
                 {
-                    param[ENOF_IDX] = enof_array[ati][cti];
-                    got_enof = 1;
+                    if (qual_array[ati][cti] != -100.0)
+                    {
+                        param[QUAL_IDX] = qual_array[ati][cti];
+                        got_param[QUAL_IDX] = 1;
+                    }
+
+                    if (enof_array[ati][cti] != -100.0 &&
+                        finite((double)enof_array[ati][cti]))
+                    {
+                        param[ENOF_IDX] = enof_array[ati][cti];
+                        got_param[ENOF_IDX] = 1;
+                    }
                 }
 
                 //----//
@@ -475,51 +510,54 @@ main(
 
                 double tbv_cnt = 0.0;
                 double tbh_cnt = 0.0;
-                int got_tbh = 0;
 
-                // Tb v is always needed
-                if (tbv_cnt_array[ati][cti] == 0 ||
-                    tbv_array[ati][cti] >= 300.0)
+                if (need_tb_file)
                 {
-                    continue;
-                }
-                param[TBV_IDX] = tbv_array[ati][cti];
-                param[TBV_STD_IDX] = tbv_std_array[ati][cti];
-                tbv_cnt = (double)tbv_cnt_array[ati][cti];
-                
-                // Tb h is needed for both beams only
-                if (tbh_cnt_array[ati][cti] > 0 &&
-                    tbh_array[ati][cti] < 300.0)
-                {
-                    param[TBH_IDX] = tbh_array[ati][cti];
-                    param[TBH_STD_IDX] = tbh_std_array[ati][cti];
-                    tbh_cnt = (double)tbh_cnt_array[ati][cti];
-                    got_tbh = 1;
+                    if (tbv_cnt_array[ati][cti] > 0 &&
+                        tbv_array[ati][cti] < 300.0)
+                    {
+                        param[TBV_IDX] = tbv_array[ati][cti];
+                        got_param[TBV_IDX] = 1;
+                        param[TBV_STD_IDX] = tbv_std_array[ati][cti];
+                        got_param[TBV_STD_IDX] = 1;
+                        tbv_cnt = (double)tbv_cnt_array[ati][cti];
+                    }
+
+                    if (tbh_cnt_array[ati][cti] > 0 &&
+                        tbh_array[ati][cti] < 300.0)
+                    {
+                        param[TBH_IDX] = tbh_array[ati][cti];
+                        got_param[TBH_IDX] = 1;
+                        param[TBH_STD_IDX] = tbh_std_array[ati][cti];
+                        got_param[TBH_STD_IDX] = 1;
+                        tbh_cnt = (double)tbh_cnt_array[ati][cti];
+                    }
                 }
 
                 //---------------//
                 // transmittance //
                 //---------------//
 
-                // set these for convenience in writing eq's
-                double tbv = param[TBV_IDX];
-                double tbh = param[TBH_IDX];
-
-                double tbvc = tbv * alpha1 + beta1;
                 double tau = 0.0;
-                if (got_tbh)
+                if (got_param[TBV_IDX] && got_param[TBH_IDX])
                 {
-                    double tbhc = tbh * alpha2 + beta2;
+                    double tbvc = param[TBV_IDX] * alpha1 + beta1;
+                    double tbhc = param[TBH_IDX] * alpha2 + beta2;
                     tau = a0 + a1 * log(300.0 - tbvc) +
                         a2 * log(300.0 - tbhc) + a3 * (tbvc - tbhc);
+                    got_param[TRANS_IDX] = 1;
                 }
-                else
+                else if (got_param[TBV_IDX])
                 {
+                    double tbvc = param[TBV_IDX] * alpha1 + beta1;
                     tau = a4 + a5 * log(300.0 - tbvc);
+                    got_param[TRANS_IDX] = 1;
                 }
+
                 if (tau > 1.0) tau = 1.0;
                 if (tau < 0.0) tau = 0.0;
                 param[TRANS_IDX] = tau;
+
 /*
                 double alpha = -log(tau);    // one-way nadir optical depth
                 // 2-way att (dB)
@@ -529,23 +567,12 @@ main(
                 //--------------------------//
                 // determine swath location //
                 //--------------------------//
-                // all outer beam info is available (otherwise we woudn't
-                // have made it this far).  just check for inner beam
-                // info.
 
                 int swath_idx;
-                if (got_nbd && got_enof && got_tbh &&
-                    cti >= 8 && cti <= 67)
-                {
-                    swath_idx = 0;    // both beams
-                }
-                else if (! got_nbd && ! got_enof && ! got_tbh &&
-                    (cti <= 8 || cti >= 67) )
-                {
-                    swath_idx = 1;    // outer beam only
-                }
+                if (got_param[NBD_IDX])
+                    swath_idx = 0;    // inner swath (both beams)
                 else
-                    continue;    // i don't know what the hell is going on.
+                    swath_idx = 1;    // outer swath (single beam)
 
                 //-----------------------------------------------//
                 // don't do the outer swath unless PCA available //
@@ -561,11 +588,17 @@ main(
                 double norm_param[PARAM_COUNT];
                 for (int param_idx = 0; param_idx < PARAM_COUNT; param_idx++)
                 {
-                    norm_param[param_idx] =
-                        (param[param_idx] - pca_mean[swath_idx][param_idx]) /
-                        pca_std[swath_idx][param_idx];
+                    // only normalize if you have the parameter
+                    if (got_param[param_idx])
+                    {
+                        norm_param[param_idx] =
+                            (param[param_idx] -
+                            pca_mean[swath_idx][param_idx]) /
+                            pca_std[swath_idx][param_idx];
+                    }
                 }
 
+                int missing_info = 0;
                 double pc[PC_COUNT];
                 int pci[PC_COUNT];
                 for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
@@ -574,15 +607,34 @@ main(
                     for (int param_idx = 0; param_idx < PARAM_COUNT;
                         param_idx++)
                     {
-                        pc[pc_idx] +=
-                            pca_weights[swath_idx][pc_idx][param_idx] *
-                            norm_param[param_idx];
+                        if (pca_weights[swath_idx][pc_idx][param_idx] != 0.0)
+                        {
+                            // the parameter is needed
+                            if (got_param[param_idx])
+                            {
+                                pc[pc_idx] +=
+                                    pca_weights[swath_idx][pc_idx][param_idx] *
+                                    norm_param[param_idx];
+                            }
+                            else
+                            {
+                                missing_info = 1;
+                            }
+                        }
                     }
+
+                    if (missing_info)
+                        break;    // get out of this loop
 
                     // compute the index too
                     pc_index[swath_idx][pc_idx].GetNearestIndex(pc[pc_idx],
                         &(pci[pc_idx]));
+                    if (pci[pc_idx] >= DIM) pci[pc_idx] = DIM - 1;
+                    if (pci[pc_idx] < 0) pci[pc_idx] = 0;
                 }
+
+                if (missing_info)
+                    continue;    // go to the next WVC
 
                 // accumulate
                 if (irr == 0.0)
