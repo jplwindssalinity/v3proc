@@ -366,8 +366,8 @@ SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft,
 	float roll,pitch,yaw;
 	unsigned char* order;
 	roll=spacecraft->attitude.GetRoll();
-	pitch=spacecraft->attitude.GetRoll();
-	yaw=spacecraft->attitude.GetRoll();
+	pitch=spacecraft->attitude.GetPitch();
+	yaw=spacecraft->attitude.GetYaw();
 
 	if( _attknow_dist != NULL){
 	  roll+=_attknow_dist->roll->GetNumber(time);
