@@ -191,6 +191,7 @@ main(
 	// conversion loop //
 	//-----------------//
 
+	int data_record_number=1;
 	L10ToL15 l10_to_l15;
 
 	do
@@ -227,21 +228,21 @@ main(
 
 		if (! l10_to_l15.Convert(&l10, &instrument, &ephemeris, &l15))
 		{
-			fprintf(stderr, "%s: error converting Level 1.0 to Level 1.5\n",
-				command);
-			exit(1);
+			fprintf(stderr, "%s: data record %d\n",
+				command, data_record_number);
 		}
 
 		//-------------------------------//
 		// write a level 1.5 data record //
 		//-------------------------------//
 
-		if (! l15.WriteDataRec())
+		else if (! l15.WriteDataRec())
 		{
 			fprintf(stderr, "%s: error writing Level 1.5 data\n", command);
 			exit(1);
 		}
 
+		data_record_number++;
 	} while (1);
 
 	l10.file.Close();
