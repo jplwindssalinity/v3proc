@@ -30,14 +30,24 @@ class DistProb;
 //======================================================================
 
 #define DIR_BINS    72
-#define SPD_BINS    30
+#define SPD_BINS    60
 
 #define MAX_SPD     30.0
 
 #define PROB_SCALE  0.0001   // 0.0 - 6.5
 #define SPD_SCALE   0.001    // 0.0 - 65
 
+#define SPD_SUM_STEP_SIZE  0.1    // for summing up probability
+
+#define MIN_PROB    1E-5
+
 #define WVC_RESOLUTION  25.0    // km
+
+#define VECTOR_SPEED_SCALE  0.05
+#define VECTOR_HEAD_SCALE   0.1
+#define VECTOR_HEAD_ANGLE   15.0*dtr
+
+#define PROB_DIAMOND_SCALE  2.0
 
 class ObProb
 {
@@ -61,6 +71,7 @@ public:
     int  Read(FILE* fp);
 
     float  GetSpeed(int dir_idx);
+    float  GetAverageSpeed();
     float  GetDirection(int dir_idx);
     float  GetProbability(int dir_idx);
     float  SpeedIndexToSpeed(int spd_idx);
@@ -72,9 +83,12 @@ public:
     int    RetrieveProbabilities(GMF* gmf, MeasList* ml, Kp* kp);
     float  KmDistance(ObProb* other_op);
     void   Add(int dir_idx, float probability);
+    void   Add(ObProb* other_op);
     void   Multiply(ObProb* other_op);
     void   Normalize();
     int    WriteFlower(FILE* ofp, float scale = 2.0, float max_range = 0.0);
+    int    WriteBestVector(FILE* ofp);
+    int    WriteBestProb(FILE* ofp);
 
     //-----------//
     // variables //
@@ -118,7 +132,7 @@ public:
     //------------//
 
     ObProb*  LocalProb(DistProb* dp, int window_size, int center_cti,
-                 int center_ati);
+                 int center_ati, float gamma);
 
     //-----------//
     // variables //
@@ -152,7 +166,7 @@ public:
 #define MIN_DDIRECTION   0.0
 #define MAX_DDIRECTION   M_PI
 
-#define MINIMUM_SAMPLES  10000
+#define MINIMUM_SAMPLES  10
 
 class DistProb
 {

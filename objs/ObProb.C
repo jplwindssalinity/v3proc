@@ -379,16 +379,16 @@ ObProb::WriteFlower(
     if (max_range != 0.0)
     {
         // calculate the scale factor
-        double max_probability = 0.0;
+        double max_prob = 0.0;
         for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
         {
             double probability = GetProbability(dir_idx);
-            if (probability > max_probability)
-                max_probability = probability;
+            if (probability > max_prob)
+                max_prob = probability;
         }
-        if (max_probability == 0)
+        if (max_prob == 0)
             return(0);
-        scale = max_range / max_probability;
+        scale = max_range / max_prob;
     }
 
     fprintf(ofp, "#\n");
@@ -401,6 +401,98 @@ ObProb::WriteFlower(
         double dx = probability * scale * cos(direction);
         double dy = probability * scale * sin(direction);
         fprintf(ofp, "%g %g\n", (double)cti + dx, (double)ati + dy);
+    }
+    return(1);
+}
+
+//-------------------------//
+// ObProb::WriteBestVector //
+//-------------------------//
+
+int
+ObProb::WriteBestVector(
+    FILE*  ofp)
+{
+    fprintf(ofp, "#\n");
+    double max_prob = 0.0;
+    int max_dir_idx = 0;
+    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+    {
+        double probability = GetProbability(dir_idx);
+        if (probability > max_prob)
+        {
+            max_prob = probability;
+            max_dir_idx = dir_idx;
+        }
+    }
+    if (max_prob == 0.0)
+        return(0);
+
+    double x[6], y[6];
+    double direction = GetDirection(max_dir_idx);
+    double spd = GetSpeed(max_dir_idx);
+    x[0] = cti;
+    y[0] = ati;
+    x[1] = x[0] + VECTOR_SPEED_SCALE * spd * cos(direction);
+    y[1] = y[0] + VECTOR_SPEED_SCALE * spd * sin(direction);
+    x[2] = x[1] + VECTOR_HEAD_SCALE * cos(direction + M_PI
+        - VECTOR_HEAD_ANGLE);
+    y[2] = y[1] + VECTOR_HEAD_SCALE * sin(direction + M_PI
+        - VECTOR_HEAD_ANGLE);
+    x[3] = x[1] + VECTOR_HEAD_SCALE * cos(direction - M_PI
+        + VECTOR_HEAD_ANGLE);
+    y[3] = y[1] + VECTOR_HEAD_SCALE * sin(direction - M_PI
+        + VECTOR_HEAD_ANGLE);
+    x[4] = x[1];
+    y[4] = y[1];
+    x[5] = x[0];
+    y[5] = y[0];
+    for (int i = 0; i < 6; i++)
+    {
+        fprintf(ofp, "%g %g\n", x[i], y[i]);
+    }
+    return(1);
+}
+
+//-----------------------//
+// ObProb::WriteBestProb //
+//-----------------------//
+
+int
+ObProb::WriteBestProb(
+    FILE*  ofp)
+{
+    fprintf(ofp, "#\n");
+    double max_prob = 0.0;
+    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+    {
+        double probability = GetProbability(dir_idx);
+        if (probability > max_prob)
+        {
+            max_prob = probability;
+        }
+    }
+    if (max_prob == 0.0)
+        return(0);
+
+    double x[7], y[7];
+    x[0] = cti;
+    y[0] = ati;
+    x[1] = x[0] + PROB_DIAMOND_SCALE * max_prob;
+    y[1] = y[0];
+    x[2] = x[0];
+    y[2] = y[0] + PROB_DIAMOND_SCALE * max_prob;
+    x[3] = x[0] - PROB_DIAMOND_SCALE * max_prob;
+    y[3] = y[0];
+    x[4] = x[0];
+    y[4] = y[0] - PROB_DIAMOND_SCALE * max_prob;
+    x[5] = x[0] + PROB_DIAMOND_SCALE * max_prob;
+    y[5] = y[0];
+    x[6] = cti;
+    y[6] = ati;
+    for (int i = 0; i < 7; i++)
+    {
+        fprintf(ofp, "%g %g\n", x[i], y[i]);
     }
     return(1);
 }
