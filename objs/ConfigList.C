@@ -106,37 +106,12 @@ StringPair::SetValue(
 //============//
 
 ConfigList::ConfigList()
-:	_status(OK), _reportErrors(0), _badLine(0)
 {
-	return;
-}
-
-ConfigList::ConfigList(
-	const char*		filename)
-:	_status(OK), _reportErrors(0), _badLine(0)
-{
-	Read(filename);
 	return;
 }
 
 ConfigList::~ConfigList()
 {
-	free(_badLine);
-	return;
-}
-
-//--------------------------//
-// ConfigList::ReportErrors //
-//--------------------------//
-
-void
-ConfigList::ReportErrors(
-	int		flag)
-{
-	if (flag)
-		_reportErrors = 1;
-	else
-		_reportErrors = 0;
 	return;
 }
 
@@ -146,7 +121,7 @@ ConfigList::ReportErrors(
 
 #define LINE_SIZE		1024
 
-ConfigList::StatusE
+int
 ConfigList::Read(
 	const char*		filename)
 {
@@ -159,11 +134,7 @@ ConfigList::Read(
 	{
 		ifp = fopen(filename, "r");
 		if (ifp == NULL)
-		{
-			if (_reportErrors)
-				fprintf(stderr, "Error reading file: %s\n", filename);
-			return(_status = ERROR_OPENING_FILE);
-		}
+			return(0);
 	}
 
 	char line[LINE_SIZE], keyword[LINE_SIZE], value[LINE_SIZE];
@@ -176,23 +147,23 @@ ConfigList::Read(
 			if (feof(ifp))	// EOF
 				break;
 			else			// error
-				return (_status = ERROR_READING_CONFIG_ENTRY);
+				return(0);
 		}
 		num_read = sscanf(line, " %s %s", keyword, value);
 		switch (num_read)
 		{
 		case 1:	
 			if (isalnum(keyword[0]))
-			{	// looks like a valid keyword, but there is no value
-				_SetBadLine(line);
-				return (_status = ERROR_READING_CONFIG_ENTRY);
-			}
+				return(0);	// looks like a valid keyword, but no value
 			break;
 		case 2:
 			if (isalnum(keyword[0]))
 			{
 				if (strcmp(keyword, INSERT_FILE_KEYWORD) == 0)
-					Read(value);
+				{
+					if (! Read(value))
+						return(0);
+				}
 				else
 				{
 					StringPair* pair = new StringPair(keyword, value);
@@ -206,35 +177,37 @@ ConfigList::Read(
 	if (filename)
 		fclose(ifp);
 
-	return (_status);
+	return (1);
 }
 
 //-------------------//
 // ConfigList::Write //
 //-------------------//
 
-ConfigList::StatusE
+int
 ConfigList::Write(
 	const char*		filename)
 {
-	//===========================================//
-	// open the file for writing, write the whole//
-	// list into the file.                       //
-	//===========================================//
+	//--------------------------------------//
+	// open the file or use standard output //
+	//--------------------------------------//
+
 	FILE* ofp = fopen(filename, "w");
 	if (ofp == NULL)
-		return (_status = ERROR_OPENING_FILE);
+		return (0);
 
 	int num_chars = 0;
 	for (StringPair* pair = GetHead(); pair != NULL; pair = GetNext())
 	{
 		if ((num_chars = fprintf(ofp, "%s %s\n",
 				pair->GetKeyword(), pair->GetValue())) < 0)
-			return (_status = ERROR_WRITING_CONFIG_FILE);
+		{
+			return (0);
+		}
 	}
 	fclose(ofp);
 
-	return (_status);
+	return(1);
 }
 
 //------------------//
@@ -268,95 +241,6 @@ const char*		keyword)
 		return(0);
 }
 
-//-------------------------//
-// ConfigList::ReturnFloat //
-//-------------------------//
-// returns the float corresponding to the keyword
-// returns the default value if the float does not exist
-
-float
-ConfigList::ReturnFloat(
-	const char*		keyword,
-	float			default_value)
-{
-	char* string = Get(keyword);
-	float value = default_value;
-	if (string == 0)
-	{
-		_status = MISSING_KEYWORD;
-		if (_reportErrors)
-			fprintf(stderr, "Missing Keyword: %s\n", keyword);
-	}
-	else if (sscanf(string, "%f", &value) != 1)
-	{
-		_status = ERROR_CONVERTING_VALUE;
-		if (_reportErrors)
-			fprintf(stderr, "Error converting value for Keyword: %s\n",
-				keyword);
-	}
-	else
-		_status = OK;
-
-	return (value);
-}
-
-//-----------------------//
-// ConfigList::ReturnInt //
-//-----------------------//
-// returns the int corresponding to the keyword
-// returns the default value if the int does not exist
-
-int
-ConfigList::ReturnInt(
-	const char*		keyword,
-	int				default_value)
-{
-	char* string = Get(keyword);
-	int value = default_value;
-	if (string == 0)
-	{
-		_status = MISSING_KEYWORD;
-		if (_reportErrors)
-			fprintf(stderr, "Missing Keyword: %s\n", keyword);
-	}
-	else if (sscanf(string, "%i", &value) != 1)
-	{
-		_status = ERROR_CONVERTING_VALUE;
-		if (_reportErrors)
-			fprintf(stderr, "Error converting value for Keyword: %s\n",
-				keyword);
-	}
-	else
-		_status = OK;
-
-	return (value);
-}
-
-//--------------------------//
-// ConfigList::ReturnString //
-//--------------------------//
-// returns the string corresponding to the keyword
-// returns the default value if the string does not exist
-
-const char*
-ConfigList::ReturnString(
-	const char*		keyword,
-	const char*		default_value)
-{
-	char* string = Get(keyword);
-	const char* value = default_value;
-	if (string == 0)
-	{
-		_status = MISSING_KEYWORD;
-		if (_reportErrors)
-			fprintf(stderr, "Missing Keyword: %s\n", keyword);
-	}
-	else
-		_status = OK;
-
-	return (value);
-}
-
 //-----------------------//
 // ConfigList::GetDouble //
 //-----------------------//
@@ -370,38 +254,12 @@ ConfigList::GetDouble(
 {
 	char* string = Get(keyword);
 	if (! string)
-	{
-		_status = MISSING_KEYWORD;
-		if (_reportErrors)
-			fprintf(stderr, "Missing Keyword: %s\n", keyword);
 		return(0);
-	}
+
 	double tmp;
 	if (sscanf(string, "%lg", &tmp) != 1)
-	{
-		_status = ERROR_CONVERTING_VALUE;
-		if (_reportErrors)
-		{
-			fprintf(stderr, "Error converting value for keyword: %s\n",
-				keyword);
-		}
 		return(0);
-	}
+
 	*value = tmp;
 	return(1);
-}
-
-//-------------------------//
-// ConfigList::_SetBadLine //
-//-------------------------//
-
-ConfigList::StatusE
-ConfigList::_SetBadLine(
-	const char*		bad_line)
-{
-	free(_badLine);
-	_badLine = strdup(bad_line);
-	if (_badLine == NULL && bad_line != NULL)
-		return(_status = ERROR_SETTING_BADLINE);
-	return(_status);
 }

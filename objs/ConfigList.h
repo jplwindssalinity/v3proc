@@ -81,36 +81,19 @@ class ConfigList : public List<StringPair>
 {
 public:
 
-	//-------//
-	// enums //
-	//-------//
-
-	enum StatusE { OK, ERROR_OPENING_FILE, ERROR_READING_CONFIG_ENTRY,
-		ERROR_WRITING_CONFIG_FILE, MISSING_KEYWORD, ERROR_CONVERTING_VALUE,
-		ERROR_SETTING_BADLINE };
-
 	//--------------//
 	// construction //
 	//--------------//
 
 	ConfigList();
-	ConfigList(const char* filename);
 	~ConfigList();
-
-	//---------------------------//
-	// status and error handling //
-	//---------------------------//
-
-	StatusE			GetStatus() { return (_status); };
-	char*			GetBadLine() { return (_badLine); };
-	void			ReportErrors(int flag = 1);
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	StatusE			Read(const char* filename = NULL);
-	StatusE			Write(const char* filename);
+	int				Read(const char* filename = NULL);
+	int				Write(const char* filename = NULL);
 
 	//----------------//
 	// searching list //
@@ -123,27 +106,7 @@ public:
 	// interpreting values //
 	//---------------------//
 
-	float			ReturnFloat(const char* keyword, float default_value = 0.0);
-	int				ReturnInt(const char* keyword, int default_value = 0);
-	const char*		ReturnString(const char* keyword,
-						const char* default_value = NULL);
 	int				GetDouble(const char* keyword, double* value);
-
-protected:
-
-	//---------------------------//
-	// status and error handling //
-	//---------------------------//
-
-	StatusE			_SetBadLine(const char* bad_line);
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	StatusE			_status;
-	char			_reportErrors;
-	char*			_badLine;
 };
 
 #endif
