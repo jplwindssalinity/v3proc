@@ -1,17 +1,17 @@
-//=========================================================//
-// Copyright (C) 2001, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 2001-2003, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //    l1b_coverage
 //
 // SYNOPSIS
-//    l1b_coverage <land_map> <l1b_file> <output_array>
+//    l1b_coverage <land_map> <output_array> <l1b_file...>
 //
 // DESCRIPTION
-//    Reads in a land map and an L1B file and generates an array
+//    Reads in a land map and a bunch of L1B files and generates an array
 //    suitable for conversion into a jpeg. The values in the array
 //    are as follows:
 //      0 = missed ocean
@@ -26,12 +26,12 @@
 // OPERANDS
 //    The following operands are supported:
 //      <land_map>      A land map.
-//      <l1b_file>      An L1B file.
 //      <output_array>  The output array file
+//      <l1b_file...>   L1B files.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % l1b_coverage /home/sim/data/landmap.dat L1B.dat output.arr
+//      % l1b_coverage /home/sim/data/landmap.dat output.arr L1B*.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -106,7 +106,7 @@ int32 SDnametoid(int32 sd_id, char* sds_name);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<land_map>", "<l1b_file>", "<output_array>",
+const char* usage_array[] = { "<land_map>", "<output_array>", "<l1b_file...>", 
     0 };
 
 //--------------//
@@ -137,12 +137,13 @@ main(
         }
     }
 
-    if (argc != optind + 3)
+    if (argc < optind + 3)
         usage(command, usage_array, 1);
 
     const char* land_map_file = argv[optind++];
-    const char* l1b_file = argv[optind++];
     const char* output_file = argv[optind++];
+    int start_idx = optind;
+    int end_idx = argc;
 
     //-------------------//
     // read the land map //
@@ -191,155 +192,159 @@ main(
     // read the L1B file //
     //-------------------//
 
-    int32 sd_id = SDstart(l1b_file, DFACC_READ);
-    if (sd_id == FAIL)
-    {
-        fprintf(stderr, "%s: error opening HDF file %s for reading\n",
-            command, l1b_file);
-        exit(1);
-    }
+    for (int idx = start_idx; idx < end_idx; idx++) {
+        const char* l1b_file = argv[idx];
 
-    int32 attr_index_l1b_actual_frame = SDfindattr(sd_id, "l1b_actual_frames");
-
-    char data[1024];
-    if (SDreadattr(sd_id, attr_index_l1b_actual_frame, data) == FAIL)
-    {
-        fprintf(stderr,
-            "%s: error reading attribute for l1b_actual_frames\n", command);
-        exit(1);
-    }
-
-    int frame_count = 0;
-    if (sscanf(data, " %*[^\n] %*[^\n] %d", &frame_count) != 1)
-    {
-        fprintf(stderr, "%s: error parsing l1b_actual_frame attribute\n",
-            command);
-        fprintf(stderr, "%s\n", data);
-        exit(1);
-    }
-
-    int32 frame_err_status_sds_id = SDnametoid(sd_id, "frame_err_status");
-    int32 frame_qual_flag_sds_id = SDnametoid(sd_id, "frame_qual_flag");
-    int32 cell_lat_sds_id = SDnametoid(sd_id, "cell_lat");
-    int32 cell_lon_sds_id = SDnametoid(sd_id, "cell_lon");
-
-    int32 start[3] = { 0, 0 };
-    int32 edges[3] = { 1, 100 };
-
-    for (int frame_idx = 0; frame_idx < frame_count; frame_idx++)
-    {
-        start[0] = frame_idx;
-
-        uint32 frame_err_status;
-        if (SDreaddata(frame_err_status_sds_id, start,
-            NULL, edges, (VOIDP)&frame_err_status) == FAIL)
+        int32 sd_id = SDstart(l1b_file, DFACC_READ);
+        if (sd_id == FAIL)
         {
-            fprintf(stderr,
-                "%s: error reading SD data for frame_err_status (ID=%d)\n",
-                command, (int)frame_err_status_sds_id);
+            fprintf(stderr, "%s: error opening HDF file %s for reading\n",
+                command, l1b_file);
             exit(1);
         }
 
-        //--------------------
-        // good frames have a frame_err_status of zero
-        //--------------------
+        int32 attr_index_l1b_actual_frame = SDfindattr(sd_id, "l1b_actual_frames");
 
-        if (frame_err_status != 0)
+        char data[1024];
+        if (SDreadattr(sd_id, attr_index_l1b_actual_frame, data) == FAIL)
         {
-            //--------------------
-            // There is something evil in this frame. Tell the
-            // user and go on to the next frame.
-            //--------------------
-
             fprintf(stderr,
-                "%s: frame %d is evil. (error status = 0x%08x)\n",
-                command, frame_idx, (unsigned int)frame_err_status);
-            continue;
+                "%s: error reading attribute for l1b_actual_frames\n", command);
+            exit(1);
         }
 
-        //--------------------
-        // The frame quality flag is similar to the frame error
-        // status.
-        //--------------------
-
-        uint16 frame_qual_flag;
-        if (SDreaddata(frame_qual_flag_sds_id, start,
-            NULL, edges, (VOIDP)&frame_qual_flag) == FAIL)
+        int frame_count = 0;
+        if (sscanf(data, " %*[^\n] %*[^\n] %d", &frame_count) != 1)
         {
-            fprintf(stderr,
-                "%s: error reading SD data for frame_qual_flag\n",
+            fprintf(stderr, "%s: error parsing l1b_actual_frame attribute\n",
                 command);
+            fprintf(stderr, "%s\n", data);
             exit(1);
         }
 
-        if (frame_qual_flag != 0)
+        int32 frame_err_status_sds_id = SDnametoid(sd_id, "frame_err_status");
+        int32 frame_qual_flag_sds_id = SDnametoid(sd_id, "frame_qual_flag");
+        int32 cell_lat_sds_id = SDnametoid(sd_id, "cell_lat");
+        int32 cell_lon_sds_id = SDnametoid(sd_id, "cell_lon");
+
+        int32 start[3] = { 0, 0 };
+        int32 edges[3] = { 1, 100 };
+
+        for (int frame_idx = 0; frame_idx < frame_count; frame_idx++)
         {
+            start[0] = frame_idx;
+
+            uint32 frame_err_status;
+            if (SDreaddata(frame_err_status_sds_id, start,
+                NULL, edges, (VOIDP)&frame_err_status) == FAIL)
+            {
+                fprintf(stderr,
+                    "%s: error reading SD data for frame_err_status (ID=%d)\n",
+                    command, (int)frame_err_status_sds_id);
+                exit(1);
+            }
+
             //--------------------
-            // This frame it just not up to our high standards
-            // of "quality". No, I don't know what that means.
-            // Let's dump it anyway.
+            // good frames have a frame_err_status of zero
             //--------------------
 
-            fprintf(stderr,
-                "%s: frame %d is evil. (quality flag = %0x)\n", command,
-                frame_idx, frame_qual_flag);
-            continue;
+            if (frame_err_status != 0)
+            {
+                //--------------------
+                // There is something evil in this frame. Tell the
+                // user and go on to the next frame.
+                //--------------------
+    
+                fprintf(stderr,
+                    "%s: frame %d is evil. (error status = 0x%08x)\n",
+                    command, frame_idx, (unsigned int)frame_err_status);
+                continue;
+            }
+
+            //--------------------
+            // The frame quality flag is similar to the frame error
+            // status.
+            //--------------------
+
+            uint16 frame_qual_flag;
+            if (SDreaddata(frame_qual_flag_sds_id, start,
+                NULL, edges, (VOIDP)&frame_qual_flag) == FAIL)
+            {
+                fprintf(stderr,
+                    "%s: error reading SD data for frame_qual_flag\n",
+                    command);
+                exit(1);
+            }
+
+            if (frame_qual_flag != 0)
+            {
+                //--------------------
+                // This frame it just not up to our high standards
+                // of "quality". No, I don't know what that means.
+                // Let's dump it anyway.
+                //--------------------
+
+                fprintf(stderr,
+                    "%s: frame %d is evil. (quality flag = %0x)\n", command,
+                    frame_idx, frame_qual_flag);
+                continue;
+            }
+
+            float32 cell_lat[100];
+            if (SDreaddata(cell_lat_sds_id, start, NULL, edges,
+                (VOIDP)cell_lat) == FAIL)
+            {
+                fprintf(stderr, "%s: error reading SD data for cell_lat\n",
+                    command);
+                exit(1);
+            }
+
+            float32 cell_lon[100];
+            if (SDreaddata(cell_lon_sds_id, start, NULL, edges,
+                (VOIDP)cell_lon) == FAIL)
+            {
+                fprintf(stderr, "%s: error reading SD data for cell_lon\n",
+                    command);
+                exit(1);
+            }
+
+            for (int i = 0; i < 100; i++)
+            {
+                int lat_idx;
+                lat_index.GetNearestIndexClipped(cell_lat[i], &lat_idx);
+                int lon_idx;
+                lon_index.GetNearestIndexClipped(cell_lon[i], &lon_idx);
+
+                if (array[lon_idx][lat_idx] == 0)
+                    array[lon_idx][lat_idx] = 2;
+                else if (array[lon_idx][lat_idx] == 1)
+                    array[lon_idx][lat_idx] = 3;
+            }
         }
 
-        float32 cell_lat[100];
-        if (SDreaddata(cell_lat_sds_id, start, NULL, edges,
-            (VOIDP)cell_lat) == FAIL)
+        //--------------------
+        // We are almost done with this file. But first, we MUST
+        // end our access to all of the SDSs.
+        //--------------------
+
+        if (SDendaccess(frame_err_status_sds_id) == FAIL ||
+            SDendaccess(frame_qual_flag_sds_id) == FAIL ||
+            SDendaccess(cell_lat_sds_id) == FAIL ||
+            SDendaccess(cell_lon_sds_id) == FAIL)
         {
-            fprintf(stderr, "%s: error reading SD data for cell_lat\n",
-                command);
+            fprintf(stderr, "%s: error ending SD access\n", command);
             exit(1);
         }
 
-        float32 cell_lon[100];
-        if (SDreaddata(cell_lon_sds_id, start, NULL, edges,
-            (VOIDP)cell_lon) == FAIL)
+        //--------------------
+        // Finally, we can say goodbye to this file. Buh-bye!
+        //--------------------
+
+        if (SDend(sd_id) == FAIL)
         {
-            fprintf(stderr, "%s: error reading SD data for cell_lon\n",
-                command);
+            fprintf(stderr, "%s: error ending SD\n", command);
             exit(1);
         }
-
-        for (int i = 0; i < 100; i++)
-        {
-            int lat_idx;
-            lat_index.GetNearestIndexClipped(cell_lat[i], &lat_idx);
-            int lon_idx;
-            lon_index.GetNearestIndexClipped(cell_lon[i], &lon_idx);
-
-            if (array[lon_idx][lat_idx] == 0)
-                array[lon_idx][lat_idx] = 2;
-            else if (array[lon_idx][lat_idx] == 1)
-                array[lon_idx][lat_idx] = 3;
-        }
-    }
-
-    //--------------------
-    // We are almost done with this file. But first, we MUST
-    // end our access to all of the SDSs.
-    //--------------------
-
-    if (SDendaccess(frame_err_status_sds_id) == FAIL ||
-        SDendaccess(frame_qual_flag_sds_id) == FAIL ||
-        SDendaccess(cell_lat_sds_id) == FAIL ||
-        SDendaccess(cell_lon_sds_id) == FAIL)
-    {
-        fprintf(stderr, "%s: error ending SD access\n", command);
-        exit(1);
-    }
-
-    //--------------------
-    // Finally, we can say goodbye to this file. Buh-bye!
-    //--------------------
-
-    if (SDend(sd_id) == FAIL)
-    {
-        fprintf(stderr, "%s: error ending SD\n", command);
-        exit(1);
     }
 
     //-----------------//
