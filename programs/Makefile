@@ -116,9 +116,7 @@ PROGRAMS = \
     make_timetlm \
 	l2b_extract_worst \
 	get_foff \
-	make_simple_land_map \
-	estimate_kp
-
+	make_simple_land_map
 #	l00_to_l1a
 #   check_l1b 
 #   nof_and_qual
@@ -130,10 +128,13 @@ PROGRAMS = \
 #	sim_l1a_echo_proc
 #	echo_split
 
+SVT_PROGRAMS = \
+    l1a_hdf_energy_map
+
 STILES_PROGRAMS = \
 	l2b_25km_splice \
 	l1b_to_slicebal \
-	l2b_remove_extra 
+	l2b_remove_extra
 
 HUDD_PROGRAMS = \
 	sim \
@@ -207,6 +208,7 @@ GS_CHECK_PROGRAMS = \
 #----------------------------------------------------------------------
 
 default: $(PROGRAMS) $(GS_CHECK_PROGRAMS)
+svt: $(SVT_PROGRAMS)
 hudd: $(HUDD_PROGRAMS)
 stiles: $(STILES_PROGRAMS)
 diag: $(DIAGNOSTIC_PROGRAMS)
