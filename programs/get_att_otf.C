@@ -8,7 +8,7 @@
 //    get_att_otf
 //
 // SYNOPSIS
-//    get_att_otf [ -bitm ] [ -y yaw ] [ -f type:windfield ]
+//    get_att_otf [ -bimt ] [ -y yaw ] [ -f type:windfield ]
 //      [ -s step ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -101,7 +101,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "bitmf:s:y:"
+#define OPTSTRING    "bimtf:s:y:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -156,7 +156,7 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -bit ]", "[ -y yaw ]",
+const char* usage_array[] = { "[ -bimt ]", "[ -y yaw ]",
     "[ -f type:windfield ]", "[ -s step ] ", "<sim_config_file>",
     "<output_base>", "<echo_file...>", 0 };
 
