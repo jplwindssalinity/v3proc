@@ -410,3 +410,49 @@ ConfigGMF(
 		return(0);
 	return(1);
 }
+
+//------------//
+// ConfigGrid //
+//------------//
+
+int
+ConfigGrid(
+	Grid*			grid,
+	ConfigList*		config_list)
+{
+	//---------------//
+	// configure l17 //
+	//---------------//
+
+	if (! ConfigL17(&(grid->l17), config_list))
+		return(0);
+
+	//---------------------//
+	// configure ephemeris //
+	//---------------------//
+
+	if (! ConfigEphemeris(&(grid->ephemeris), config_list))
+		return(0);
+
+	//------------------------//
+	// configure rest of grid //
+	//------------------------//
+
+	double ct_res;
+	if (! config_list->GetDouble(CROSSTRACK_RESOLUTION_KEYWORD, &ct_res))
+		return(0);
+
+	double at_res;
+	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
+		return(0);
+
+	grid->Allocate(ct_res, at_res, 1400.0, 5000.0);
+
+	double start_time;
+	if (! config_list->GetDouble(ALONGTRACK_START_TIME_KEYWORD, &start_time))
+		return(0);
+
+	grid->SetStartTime(start_time);
+
+	return(1);
+}

@@ -17,6 +17,7 @@ static const char rcs_id_configsim_h[] =
 #include "L17.h"
 #include "L20.h"
 #include "Wind.h"
+#include "Grid.h"
 
 //======================================================================
 // DESCRIPTION
@@ -142,5 +143,15 @@ int ConfigWindField(WindField* windfield, ConfigList* config_list);
 #define GMF_FILE_KEYWORD					"GMF_FILE"
 
 int ConfigGMF(GMF* gmf, ConfigList* config_file);
+
+//------//
+// Grid //
+//------//
+
+#define ALONGTRACK_RESOLUTION_KEYWORD		"ALONGTRACK_RESOLUTION"
+#define CROSSTRACK_RESOLUTION_KEYWORD		"CROSSTRACK_RESOLUTION"
+#define ALONGTRACK_START_TIME_KEYWORD		"ALONGTRACK_START_TIME"
+
+int ConfigGrid(Grid* grid, ConfigList* config_list);
 
 #endif
