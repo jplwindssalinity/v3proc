@@ -37,6 +37,7 @@ PROGRAMS = \
 	sim_accurate \
 	make_kfactor \
 	generate_kfactor \
+	make_kpmfield \
 	log_cfg \
 	windfield_to_vctr \
 	l17_centroids \
