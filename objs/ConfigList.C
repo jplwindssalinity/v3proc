@@ -109,7 +109,7 @@ StringPair::SetValue(
 //============//
 
 ConfigList::ConfigList()
-:   _errorFp(stderr), _logFlag(EXIT)
+:   _errorFp(stderr), _logFlag(EXIT), _memLogFlag(EXIT)
 {
     return;
 }

@@ -99,6 +99,8 @@ public:
     void  ExitForMissingKeywords() { _logFlag = EXIT; };
     void  WarnForMissingKeywords() { _logFlag = WARN; };
     void  DoNothingForMissingKeywords() { _logFlag = NOTHING; };
+    void  MemorizeLogFlag() { _memLogFlag = _logFlag; };
+    void  RestoreLogFlag() { _logFlag = _memLogFlag; };
 
     //--------------//
     // input/output //
@@ -151,8 +153,9 @@ protected:
     // variables //
     //-----------//
 
-    FILE*  _errorFp;   // for error logging
-    LogE   _logFlag;   // what to do
+    FILE*  _errorFp;       // for error logging
+    LogE   _logFlag;       // what to do
+    LogE   _memLogFlag;    // remember the log flag for restoration
 };
 
 #endif
