@@ -15,7 +15,8 @@ OBJS = \
 	List.o \
 	ConfigList.o \
 	GMF.o \
-	OrbitSim.o
+	OrbitSim.o \
+	InSim.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -59,5 +60,7 @@ List.o:			List.h List.C
 Misc.o:			Misc.h Misc.C
 GMF.o:			GMF.C GMF.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h
+InSim.o:		InSim.C InSim.h ConfigList.h
 
 ConfigList.h:	List.h
+InSim.h:		ConfigList.h
