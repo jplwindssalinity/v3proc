@@ -151,13 +151,16 @@ const char* usage_array[] = { "[ -h ]", "[ -acijr ]", "[ -m fraction ]",
 WindVectorPlus*  original_selected[CT_WIDTH][AT_WIDTH];
 char             rain_contaminated[CT_WIDTH][AT_WIDTH];
 
+char             has_neighbors[CT_WIDTH][AT_WIDTH];
 float            first_obj_prob[CT_WIDTH][AT_WIDTH];
 float            first_actual_prob[CT_WIDTH][AT_WIDTH];
 float            first_speed[CT_WIDTH][AT_WIDTH];
-unsigned char    neighbor_count[CT_WIDTH][AT_WIDTH];
-float            dif_ratio[CT_WIDTH][AT_WIDTH];
-float            speed[CT_WIDTH][AT_WIDTH];
-float            prob[CT_WIDTH][AT_WIDTH];
+
+unsigned char  filter_neighbor_idx[CT_WIDTH][AT_WIDTH];
+unsigned char  filter_dif_ratio_idx[CT_WIDTH][AT_WIDTH];
+unsigned char  filter_speed_idx[CT_WIDTH][AT_WIDTH];
+unsigned char  filter_cti_idx[CT_WIDTH];
+unsigned char  filter_prob_idx[CT_WIDTH][AT_WIDTH];
 
 unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
@@ -377,6 +380,17 @@ main(
     cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE, CTI_INDICIES);
     prob_index.SpecifyCenters(PROB_MIN_VALUE, PROB_MAX_VALUE, PROB_INDICIES);
 
+    //----------------------------------//
+    // precalculate filter cti indicies //
+    //----------------------------------//
+
+    for (int cti = 0; cti < CT_WIDTH; cti++)
+    {
+        int cti_idx;
+        cti_index.GetNearestIndexClipped(cti, &cti_idx);
+        filter_cti_idx[cti] = (unsigned char)cti_idx;
+    }
+
     //--------------------//
     // open the eval file //
     //--------------------//
@@ -554,6 +568,7 @@ main(
         (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2, CT_WIDTH,
         AT_WIDTH);
 
+/*
     char** change = (char**)make_array(sizeof(char), 2, CT_WIDTH, AT_WIDTH);
     for (int ati = 0; ati < AT_WIDTH; ati++)
     {
@@ -563,6 +578,7 @@ main(
             change[cti][ati] = 0;
         }
     }
+*/
 
     //----------------//
     // loop till done //
@@ -583,561 +599,571 @@ main(
     float highest_filter = 0.0;
     do
     {
-        //----------------------------------------------------------------//
-        // find the WVC with the highest probability of being set "right" //
-        //----------------------------------------------------------------//
+      //----------------------------------------------------------------//
+      // find the WVC with the highest probability of being set "right" //
+      //----------------------------------------------------------------//
 
-        float best_prob = WORST_PROB;
-        ChoiceE best_choice = NO_CHOICE;
-        int best_first_idx = 0;
-        int bn_idx = 0;
-        int bdr_idx = 0;
-        int bs_idx = 0;
-        int bc_idx = 0;
-        int bp_idx = 0;
-        int best_ati = -1;
-        int best_cti = -1;
-        for (int ati = 0; ati < AT_WIDTH; ati++)
+      float best_prob = WORST_PROB;
+      ChoiceE best_choice = NO_CHOICE;
+      int best_first_idx = 0;
+      int bn_idx = 0;
+      int bdr_idx = 0;
+      int bs_idx = 0;
+      int bc_idx = 0;
+      int bp_idx = 0;
+      int best_ati = -1;
+      int best_cti = -1;
+      for (int ati = 0; ati < AT_WIDTH; ati++)
+      {
+        for (int cti = 0; cti < CT_WIDTH; cti++)
         {
-            for (int cti = 0; cti < CT_WIDTH; cti++)
+          WVC* wvc = swath->GetWVC(cti, ati);
+          if (wvc == NULL)
+            continue;
+
+          // ignore rain contaminated WVC
+          if (rain_contaminated[cti][ati])
+            continue;
+
+          //----------------------------------------//
+          // calculate the first ranked probability //
+          //----------------------------------------//
+
+          float first_prob = first_actual_prob[cti][ati];
+
+          //---------------------------------//
+          // see if the first ranked is best //
+          //---------------------------------//
+          // only use if to initialize
+
+          if (wvc->selected == NULL && first_prob > best_prob)
+          {
+            best_prob = first_prob;
+            first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
+              &best_first_idx);
+            best_choice = FIRST;
+            best_ati = ati;
+            best_cti = cti;
+          }
+
+          //----------------------------------//
+          // calculate the filter probability //
+          //----------------------------------//
+
+          float filter_prob = 0.0;    // default for no neighbors
+          if (has_neighbors[cti][ati])
+          {
+            int neighbor_idx = filter_neighbor_idx[cti][ati];
+            int dif_ratio_idx = filter_dif_ratio_idx[cti][ati];
+            int speed_idx = filter_speed_idx[cti][ati];
+            int cti_idx = filter_cti_idx[cti];
+            int prob_idx = filter_prob_idx[cti][ati];
+
+            double good_sum = (double)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
+            double total_sum = (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
+
+/*
+            if (opt_interpolate)
             {
-                WVC* wvc = swath->GetWVC(cti, ati);
-                if (wvc == NULL)
-                    continue;
+              int n_idx[2];
+              float n_coef[2];
+              neighbor_index.GetLinearCoefsClipped(neighbor_count[cti][ati],
+                n_idx, n_coef);
 
-                // ignore rain contaminated WVC
-                if (rain_contaminated[cti][ati])
-                    continue;
+              int dr_idx[2];
+              float dr_coef[2];
+              dif_ratio_index.GetLinearCoefsClipped(dif_ratio[cti][ati],
+                dr_idx, dr_coef);
 
-                //----------------------------------------//
-                // calculate the first ranked probability //
-                //----------------------------------------//
+              int s_idx[2];
+              float s_coef[2];
+              speed_index.GetLinearCoefsClipped(speed[cti][ati], s_idx,
+                s_coef);
 
-                float first_prob = first_actual_prob[cti][ati];
+              int c_idx[2];
+              float c_coef[2];
+              cti_index.GetLinearCoefsClipped(cti, c_idx, c_coef);
 
-                //---------------------------------//
-                // see if the first ranked is best //
-                //---------------------------------//
-                // only use if to initialize
+              int p_idx[2];
+              float p_coef[2];
+              prob_index.GetLinearCoefsClipped(prob[cti][ati], p_idx, p_coef);
 
-                if (wvc->selected == NULL && first_prob > best_prob)
+              for (int i = 0; i < 2; i++)
+              {
+                int n_i = n_idx[i];
+                float n_c = n_coef[i];
+                for (int j = 0; j < 2; j++)
                 {
-                    best_prob = first_prob;
-                    first_index.GetNearestIndexClipped(
-                        first_obj_prob[cti][ati], &best_first_idx);
-                    best_choice = FIRST;
-                    best_ati = ati;
-                    best_cti = cti;
-                }
-
-                //----------------------------------//
-                // calculate the filter probability //
-                //----------------------------------//
-
-                int neighbor_idx, dif_ratio_idx, speed_idx, cti_idx, prob_idx;
-                neighbor_index.GetNearestIndexClipped(neighbor_count[cti][ati],
-                    &neighbor_idx);
-                dif_ratio_index.GetNearestIndexClipped(dif_ratio[cti][ati],
-                    &dif_ratio_idx);
-                speed_index.GetNearestIndexClipped(speed[cti][ati],
-                    &speed_idx);
-                cti_index.GetNearestIndexClipped(cti, &cti_idx);
-                prob_index.GetNearestIndexClipped(prob[cti][ati], &prob_idx);
-
-                double good_sum = 0.0;
-                double total_sum = 0.0;
-
-                if (opt_interpolate)
-                {
-                  int n_idx[2];
-                  float n_coef[2];
-                  neighbor_index.GetLinearCoefsClipped(
-                    neighbor_count[cti][ati], n_idx, n_coef);
-
-                  int dr_idx[2];
-                  float dr_coef[2];
-                  dif_ratio_index.GetLinearCoefsClipped(dif_ratio[cti][ati],
-                    dr_idx, dr_coef);
-
-                  int s_idx[2];
-                  float s_coef[2];
-                  speed_index.GetLinearCoefsClipped(speed[cti][ati], s_idx,
-                    s_coef);
-
-                  int c_idx[2];
-                  float c_coef[2];
-                  cti_index.GetLinearCoefsClipped(cti, c_idx, c_coef);
-
-                  int p_idx[2];
-                  float p_coef[2];
-                  prob_index.GetLinearCoefsClipped(prob[cti][ati], p_idx,
-                    p_coef);
-
-                  for (int i = 0; i < 2; i++)
+                  int dr_i = dr_idx[j];
+                  float dr_c = dr_coef[j];
+                  for (int k = 0; k < 2; k++)
                   {
-                    int n_i = n_idx[i];
-                    float n_c = n_coef[i];
-                    for (int j = 0; j < 2; j++)
+                    int s_i = s_idx[k];
+                    float s_c = s_coef[k];
+                    for (int l = 0; l < 2; l++)
                     {
-                      int dr_i = dr_idx[j];
-                      float dr_c = dr_coef[j];
-                      for (int k = 0; k < 2; k++)
+                      int c_i = c_idx[l];
+                      float c_c = c_coef[l];
+                      for (int m = 0; m < 2; m++)
                       {
-                        int s_i = s_idx[k];
-                        float s_c = s_coef[k];
-                        for (int l = 0; l < 2; l++)
-                        {
-                          int c_i = c_idx[l];
-                          float c_c = c_coef[l];
-                          for (int m = 0; m < 2; m++)
-                          {
-                            int p_i = p_idx[m];
-                            float p_c = p_coef[m];
-                            double factor = n_c * dr_c * s_c * c_c * p_c;
-                            good_sum += factor *
-                           (double)filter_good_array[n_i][dr_i][s_i][c_i][p_i];
-                            total_sum += factor *
+                        int p_i = p_idx[m];
+                        float p_c = p_coef[m];
+                        double factor = n_c * dr_c * s_c * c_c * p_c;
+                        good_sum += factor *
+                          (double)filter_good_array[n_i][dr_i][s_i][c_i][p_i];
+                        total_sum += factor *
                           (double)filter_count_array[n_i][dr_i][s_i][c_i][p_i];
-                          }
-                        }
                       }
                     }
                   }
                 }
-                else
-                {
-                  good_sum = (double)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
-                  total_sum = (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
-                }
-
-                //-------------------------------//
-                // adjust the filter probability //
-                //-------------------------------//
-
-                float filter_prob = (float)(good_sum / total_sum);
-                if (opt_matic)
-                {
-                    float good_fraction = 1.0;
-
-                    if (did > 0)
-                        good_fraction = (float)did_good / (float)did;
-
-                    if (good_fraction > matic_fraction)
-                    {
-                        // doing well, don't correct
-                        if (opt_correct)
-                        {
-                            printf("  Correcting: disabled       ");
-                            fflush(stdout);
-                            printf("\r");
-                            opt_correct = 0;
-                            opt_jack = 0;
-                            opt_random = 0;
-                        }
-                    }
-                    else
-                    {
-                        // doing poorly, correct
-                        if (! opt_correct)
-                        {
-                            corrected_enabled_count++;
-                            printf("  Correcting: enabled (%d) ",
-                                corrected_enabled_count);
-                            fflush(stdout);
-                            printf("\r");
-                            opt_correct = 1;
-                            opt_jack = 1;
-                            opt_random = 1;
-                        }
-                    }
-                }
-
-                if (opt_jack)
-                {
-                    if (total_sum == 0.0)
-                    {
-                        // no samples
-                        if (opt_random)
-                            filter_prob = drand48();
-                        else
-                            filter_prob = 0.0;
-                    }
-                    else
-                    {
-                        // samples
-                        filter_prob += sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
-                    }
-                }
-                else
-                {
-                    filter_prob -= sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
-                }
-
-                //---------------------------//
-                // see if the filter is best //
-                //---------------------------//
-                // 1) filter is best
-                // 2) filter is better than the first ranked
-                // 3) filter does something useful
-                // 4) if correcting, filter is pure propagation
-
-                if (filter_prob > best_prob &&
-                    filter_prob > first_prob &&
-                    wvc->selected != filter_selection[cti][ati] &&
-                    (! opt_correct || wvc->selected == NULL))
-                {
-                    best_prob = filter_prob;
-                    bn_idx = neighbor_idx;
-                    bdr_idx = dif_ratio_idx;
-                    bs_idx = speed_idx;
-                    bc_idx = cti_idx;
-                    bp_idx = prob_idx;
-                    best_choice = FILTER;
-                    best_ati = ati;
-                    best_cti = cti;
-                }
-            }
-        }
-        if (best_ati == -1 && best_cti == -1)
-        {
-            break;
-        }
-
-        //-------//
-        // do it //
-        //-------//
-
-        WVC* wvc = swath->GetWVC(best_cti, best_ati);
-        if (wvc == NULL)
-        {
-            fprintf(stderr, "%s: missing WVC\n", command);
-            continue;
-        }
-        switch (best_choice)
-        {
-        case FIRST:
-            if (best_prob > highest_first)
-                highest_first = best_prob;
-            if (best_prob < lowest_first)
-                lowest_first = best_prob;
-
-            wvc->selected = wvc->ambiguities.GetByIndex(0);
-
-            change[best_cti][best_ati] = 1;
-            first_count++;
-            break;
-
-        case FILTER:
-            if (best_prob > highest_filter)
-                highest_filter = best_prob;
-            if (best_prob < lowest_filter)
-                lowest_filter = best_prob;
-
-            if (filter_selection[best_cti][best_ati] == NULL)
-            {
-                fprintf(stderr, "%s: no filter selection\n", command);
-                exit(1);
-            }
-            wvc->selected = filter_selection[best_cti][best_ati];
-
-            if (opt_adapt)
-            {
-              if (filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= MAX_SHORT)
-              {
-                printf("chopping %d %d\n",
-                  filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx],
-                  filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]);
-                double new_count =
-                  (double)filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
-                double new_good =
-                  (double)filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
-                filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
-                  (unsigned short)(new_count + 0.5);
-                filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
-                  (unsigned short)(new_good + 0.5);
-                if (filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx])
-                {
-                  filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
-                    filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx];
-                }
               }
-
-              if (wvc->selected == original_selected[best_cti][best_ati])
-              {
-                filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]++;
-              }
-              filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]++;
             }
-            if (eval_ofp)
+*/
+
+            //-------------------------------//
+            // adjust the filter probability //
+            //-------------------------------//
+
+            filter_prob = (float)(good_sum / total_sum);
+            if (opt_matic)
             {
-              if (wvc->selected == original_selected[best_cti][best_ati])
+              float good_fraction = 1.0;
+
+              if (did > 0)
+                good_fraction = (float)did_good / (float)did;
+
+              if (good_fraction > matic_fraction)
               {
-                write_eval(eval_ofp, bn_idx, bdr_idx, bs_idx, bc_idx, bp_idx,
-                  1);
+                // doing well, don't correct
+                if (opt_correct)
+                {
+                  printf("  Correcting: disabled       ");
+                  fflush(stdout);
+                  printf("\r");
+                  opt_correct = 0;
+                  opt_jack = 0;
+                  opt_random = 0;
+                }
               }
               else
               {
-                write_eval(eval_ofp, bn_idx, bdr_idx, bs_idx, bc_idx, bp_idx,
-                  0);
+                // doing poorly, correct
+                if (! opt_correct)
+                {
+                  corrected_enabled_count++;
+                  printf("  Correcting: enabled (%d) ",
+                    corrected_enabled_count);
+                  fflush(stdout);
+                  printf("\r");
+                  opt_correct = 1;
+                  opt_jack = 1;
+                  opt_random = 1;
+                }
               }
             }
-            change[best_cti][best_ati] = 1;
-            filter_count++;
-            break;
+
+            if (opt_jack)
+            {
+              if (total_sum == 0.0)
+              {
+                // no samples
+                if (opt_random)
+                  filter_prob = drand48();
+                else
+                  filter_prob = 0.0;
+              }
+              else
+              {
+                // samples
+                filter_prob += sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
+              }
+            }
+            else
+            {
+              filter_prob -= sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
+            }
+
+            //---------------------------//
+            // see if the filter is best //
+            //---------------------------//
+            // 1) filter is best
+            // 2) filter is better than the first ranked
+            // 3) filter does something useful
+            // 4) if correcting, filter is pure propagation
+
+            if (filter_prob > best_prob &&
+              filter_prob > first_prob &&
+              wvc->selected != filter_selection[cti][ati] &&
+              (! opt_correct || wvc->selected == NULL))
+            {
+              best_prob = filter_prob;
+              bn_idx = neighbor_idx;
+              bdr_idx = dif_ratio_idx;
+              bs_idx = speed_idx;
+              bc_idx = cti_idx;
+              bp_idx = prob_idx;
+              best_choice = FILTER;
+              best_ati = ati;
+              best_cti = cti;
+            }
+          }
+        }
+      }
+      if (best_ati == -1 && best_cti == -1)
+      {
+        break;
+      }
+
+      //-------//
+      // do it //
+      //-------//
+
+      WVC* wvc = swath->GetWVC(best_cti, best_ati);
+      if (wvc == NULL)
+      {
+        fprintf(stderr, "%s: missing WVC\n", command);
+        continue;
+      }
+      switch (best_choice)
+      {
+        case FIRST:
+          if (best_prob > highest_first)
+            highest_first = best_prob;
+          if (best_prob < lowest_first)
+            lowest_first = best_prob;
+
+          wvc->selected = wvc->ambiguities.GetByIndex(0);
+
+//          change[best_cti][best_ati] = 1;
+          first_count++;
+          break;
+
+        case FILTER:
+          if (best_prob > highest_filter)
+            highest_filter = best_prob;
+          if (best_prob < lowest_filter)
+            lowest_filter = best_prob;
+
+          if (filter_selection[best_cti][best_ati] == NULL)
+          {
+            fprintf(stderr, "%s: no filter selection\n", command);
+            exit(1);
+          }
+          wvc->selected = filter_selection[best_cti][best_ati];
+
+          if (opt_adapt)
+          {
+            if (filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= MAX_SHORT)
+            {
+              printf("chopping %d %d\n",
+                filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx],
+                filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]);
+              double new_count =
+                (double)filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
+              double new_good =
+                (double)filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
+              filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                (unsigned short)(new_count + 0.5);
+              filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                (unsigned short)(new_good + 0.5);
+              if (filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx])
+              {
+                filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                  filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx];
+              }
+            }
+
+            if (wvc->selected == original_selected[best_cti][best_ati])
+            {
+              filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]++;
+            }
+            filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]++;
+          }
+          if (eval_ofp)
+          {
+            if (wvc->selected == original_selected[best_cti][best_ati])
+            {
+              write_eval(eval_ofp, bn_idx, bdr_idx, bs_idx, bc_idx, bp_idx, 1);
+            }
+            else
+            {
+              write_eval(eval_ofp, bn_idx, bdr_idx, bs_idx, bc_idx, bp_idx, 0);
+            }
+          }
+//          change[best_cti][best_ati] = 1;
+          filter_count++;
+          break;
 
         default:
-            fprintf(stderr, "%s: some kind of weird error\n", command);
+          fprintf(stderr, "%s: some kind of weird error\n", command);
+          exit(1);
+          break;
+      }
+
+      //----------//
+      // evaluate //
+      //----------//
+
+      did++;
+      if (wvc->selected == original_selected[best_cti][best_ati])
+        did_good++;
+
+      //--------------------//
+      // correct if desired //
+      //--------------------//
+
+      if (opt_correct &&
+        wvc->selected != original_selected[best_cti][best_ati])
+      {
+        did_corrected++;
+        wvc->selected = original_selected[best_cti][best_ati];
+      }
+
+      //---------------------------------//
+      // evaluate stuff that has changed //
+      //---------------------------------//
+
+      int big_cti_min = best_cti - half_window;
+      int big_cti_max = best_cti + half_window + 1;
+      if (big_cti_min < 0)
+        big_cti_min = 0;
+      if (big_cti_max > CT_WIDTH)
+        big_cti_max = CT_WIDTH;
+
+      int big_ati_min = best_ati - half_window;
+      int big_ati_max = best_ati + half_window + 1;
+      if (big_ati_min < 0)
+        big_ati_min = 0;
+      if (big_ati_max > AT_WIDTH)
+        big_ati_max = AT_WIDTH;
+
+      for (int ati = big_ati_min; ati < big_ati_max; ati++)
+      {
+        int ati_min = ati - half_window;
+        int ati_max = ati + half_window + 1;
+        if (ati_min < 0)
+          ati_min = 0;
+        if (ati_max > AT_WIDTH)
+          ati_max = AT_WIDTH;
+        for (int cti = big_cti_min; cti < big_cti_max; cti++)
+        {
+          int cti_min = cti - half_window;
+          int cti_max = cti + half_window + 1;
+          if (cti_min < 0)
+            cti_min = 0;
+          if (cti_max > CT_WIDTH)
+            cti_max = CT_WIDTH;
+
+          //-----------------------------------//
+          // this is the WVC we are evaluating //
+          //-----------------------------------//
+
+          WVC* wvc = swath->GetWVC(cti, ati);
+          if (! wvc)
+            continue;
+
+          //-------------------------------------//
+          // quick get some of the values needed //
+          //-------------------------------------//
+
+          int selected_count = 0;
+          int available_count = 0;
+          for (int i = cti_min; i < cti_max; i++)
+          {
+            for (int j = ati_min; j < ati_max; j++)
+            {
+              if (i == cti && j == ati)
+                continue;
+
+              WVC* other_wvc = swath->GetWVC(i, j);
+              if (! other_wvc)
+                continue;
+
+              available_count++;    // other wvc exists
+
+              WindVectorPlus* other_wvp = other_wvc->selected;
+              if (! other_wvp)
+                continue;
+
+              selected_count++;   // wvc has a valid selection
+            }
+          }
+
+          //-------------------------//
+          // then, do the evaluation //
+          //-------------------------//
+
+          float min_vector_dif_sum = (float)HUGE_VAL;
+          float min_vector_dif_avg = (float)HUGE_VAL;
+          float second_vector_dif_sum = (float)HUGE_VAL;
+          WindVectorPlus* new_selected = NULL;
+
+          for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+            wvp = wvc->ambiguities.GetNext())
+          {
+            float vector_dif_sum = 0.0;
+            float x1 = wvp->spd * cos(wvp->dir);
+            float y1 = wvp->spd * sin(wvp->dir);
+
+            for (int i = cti_min; i < cti_max; i++)
+            {
+              for (int j = ati_min; j < ati_max; j++)
+              {
+                if (i == cti && j == ati)
+                  continue;      // don't check central vector
+
+                WVC* other_wvc = swath->GetWVC(i, j);
+                if (! other_wvc)
+                  continue;
+
+                WindVectorPlus* other_wvp = other_wvc->selected;
+                if (! other_wvp)
+                  continue;
+
+                float x2 = other_wvp->spd * cos(other_wvp->dir);
+                float y2 = other_wvp->spd * sin(other_wvp->dir);
+
+                float dx = x2 - x1;
+                float dy = y2 - y1;
+                vector_dif_sum += sqrt(dx*dx + dy*dy);
+              }
+            }
+            if (vector_dif_sum < min_vector_dif_sum)
+            {
+              second_vector_dif_sum = min_vector_dif_sum;
+              min_vector_dif_sum = vector_dif_sum;
+              min_vector_dif_avg = vector_dif_sum / (float)selected_count;
+              new_selected = wvp;
+            }
+            else if (vector_dif_sum < second_vector_dif_sum)
+            {
+              second_vector_dif_sum = vector_dif_sum;
+            }
+          }   // done with ambiguities
+
+          // how must does the best beat the second best?
+          float best_to_second_ratio = 1.0;
+          if (second_vector_dif_sum > 0.0 &&
+            second_vector_dif_sum != (float)HUGE_VAL)
+          {
+            best_to_second_ratio = min_vector_dif_sum /
+              second_vector_dif_sum;
+          }
+          float dif_to_speed_ratio = 1.0;
+          if (new_selected != NULL && selected_count > 0 &&
+            new_selected->spd > 0.0)
+          {
+            float avg_vector_dif = min_vector_dif_avg /
+              (float)selected_count;
+            dif_to_speed_ratio = avg_vector_dif /
+              new_selected->spd;
+          }
+
+          //----------------//
+          // store the info //
+          //----------------//
+
+          int neighbor_idx;
+          neighbor_index.GetNearestIndexClipped(selected_count,
+            &neighbor_idx);
+          filter_neighbor_idx[cti][ati] = (unsigned char)neighbor_idx;
+
+          int dif_ratio_idx;
+          dif_ratio_index.GetNearestIndexClipped(best_to_second_ratio,
+            &dif_ratio_idx);
+          filter_dif_ratio_idx[cti][ati] = (unsigned char)dif_ratio_idx;
+
+          int speed_idx;
+          speed_index.GetNearestIndexClipped(new_selected->spd,
+            &speed_idx);
+          filter_speed_idx[cti][ati] = (unsigned char)speed_idx;
+
+          int prob_idx;
+          prob_index.GetNearestIndexClipped(new_selected->obj,
+            &prob_idx);
+          filter_prob_idx[cti][ati] = (unsigned char)prob_idx;
+
+          filter_selection[cti][ati] = new_selected;
+          has_neighbors[cti][ati] = 1;
+        }
+      }
+      if (opt_dump && loop_idx % dump_loops == 0 && loop_idx != 0)
+      {
+        int total_count = first_count + filter_count;
+        float first_percent = 100.0 * (float)first_count /
+          (float)total_count;
+        float filter_percent = 100.0 * (float)filter_count /
+          (float)total_count;
+        printf("%d  1st:%.2f%%  Fil:%.2f%%\n", loop_idx, first_percent,
+          filter_percent);
+        first_count = 0;
+        filter_count = 0;
+
+        printf("  Corrected percent : %.2f%%\n",
+          100.0 * (float)did_corrected / (float)did);
+
+        printf("  1st: %g to %g   Fil: %g to %g\n", lowest_first,
+          highest_first, lowest_filter, highest_filter);
+        lowest_first = 2.0;
+        highest_first = 0.0;
+        lowest_filter = 2.0;
+        highest_filter = 0.0;
+
+        sprintf(filename, "%s.%06d", vctr_base, loop_idx);
+        l2b.WriteVctr(filename, 0);
+
+        //-----------------//
+        // write prob file //
+        //-----------------//
+
+        if (opt_adapt)
+        {
+          FILE* ofp = fopen(prob_file, "w");
+          if (ofp == NULL)
+          {
+            fprintf(stderr, "%s: error opening prob file %s\n", command,
+              prob_file);
             exit(1);
-            break;
+          }
+          else
+          {
+            fwrite(first_count_array, sizeof(unsigned short),
+              first_nitems, ofp);
+            fwrite(first_good_array, sizeof(unsigned short),
+              first_nitems, ofp);
+            fwrite(filter_count_array, sizeof(unsigned short),
+              filter_nitems, ofp);
+            fwrite(filter_good_array, sizeof(unsigned short),
+            filter_nitems, ofp);
+            fclose(ofp);
+          }
         }
 
-        //----------//
-        // evaluate //
-        //----------//
-
-        did++;
-        if (wvc->selected == original_selected[best_cti][best_ati])
-            did_good++;
-
-        //--------------------//
-        // correct if desired //
-        //--------------------//
-
-        if (opt_correct &&
-            wvc->selected != original_selected[best_cti][best_ati])
+        if (! opt_correct || opt_matic)
         {
-            did_corrected++;
-            wvc->selected = original_selected[best_cti][best_ati];
-        }
-
-        //---------------------------------//
-        // evaluate stuff that has changed //
-        //---------------------------------//
-
-        int big_cti_min = best_cti - half_window;
-        int big_cti_max = best_cti + half_window + 1;
-        if (big_cti_min < 0)
-            big_cti_min = 0;
-        if (big_cti_max > CT_WIDTH)
-            big_cti_max = CT_WIDTH;
-
-        int big_ati_min = best_ati - half_window;
-        int big_ati_max = best_ati + half_window + 1;
-        if (big_ati_min < 0)
-            big_ati_min = 0;
-        if (big_ati_max > AT_WIDTH)
-            big_ati_max = AT_WIDTH;
-
-        for (int ati = big_ati_min; ati < big_ati_max; ati++)
-        {
-            int ati_min = ati - half_window;
-            int ati_max = ati + half_window + 1;
-            if (ati_min < 0)
-                ati_min = 0;
-            if (ati_max > AT_WIDTH)
-                ati_max = AT_WIDTH;
-            for (int cti = big_cti_min; cti < big_cti_max; cti++)
+          // compare to original
+          unsigned long comp_total_count = 0;
+          unsigned long match_count = 0;
+          for (int ati = 0; ati < AT_WIDTH; ati++)
+          {
+            for (int cti = 0; cti < CT_WIDTH; cti++)
             {
-                int cti_min = cti - half_window;
-                int cti_max = cti + half_window + 1;
-                if (cti_min < 0)
-                    cti_min = 0;
-                if (cti_max > CT_WIDTH)
-                    cti_max = CT_WIDTH;
-
-                //-----------------------------------//
-                // this is the WVC we are evaluating //
-                //-----------------------------------//
-
-                WVC* wvc = swath->GetWVC(cti, ati);
-                if (! wvc)
-                    continue;
-
-                //-------------------------------------//
-                // quick get some of the values needed //
-                //-------------------------------------//
-
-                int selected_count = 0;
-                int available_count = 0;
-                for (int i = cti_min; i < cti_max; i++)
-                {
-                    for (int j = ati_min; j < ati_max; j++)
-                    {
-                        if (i == cti && j == ati)
-                            continue;
-
-                        WVC* other_wvc = swath->GetWVC(i, j);
-                        if (! other_wvc)
-                            continue;
-
-                        available_count++;    // other wvc exists
-
-                        WindVectorPlus* other_wvp = other_wvc->selected;
-                        if (! other_wvp)
-                            continue;
-
-                        selected_count++;   // wvc has a valid selection
-                    }
-                }
-
-                //-------------------------//
-                // then, do the evaluation //
-                //-------------------------//
-
-                float min_vector_dif_sum = (float)HUGE_VAL;
-                float min_vector_dif_avg = (float)HUGE_VAL;
-                float second_vector_dif_sum = (float)HUGE_VAL;
-                WindVectorPlus* new_selected = NULL;
-
-                for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
-                    wvp = wvc->ambiguities.GetNext())
-                {
-                    float vector_dif_sum = 0.0;
-                    float x1 = wvp->spd * cos(wvp->dir);
-                    float y1 = wvp->spd * sin(wvp->dir);
-
-                    for (int i = cti_min; i < cti_max; i++)
-                    {
-                        for (int j = ati_min; j < ati_max; j++)
-                        {
-                            if (i == cti && j == ati)
-                                continue;      // don't check central vector
-
-                            WVC* other_wvc = swath->GetWVC(i, j);
-                            if (! other_wvc)
-                                continue;
-
-                            WindVectorPlus* other_wvp = other_wvc->selected;
-                            if (! other_wvp)
-                                continue;
-
-                            float x2 = other_wvp->spd * cos(other_wvp->dir);
-                            float y2 = other_wvp->spd * sin(other_wvp->dir);
-
-                            float dx = x2 - x1;
-                            float dy = y2 - y1;
-                            vector_dif_sum += sqrt(dx*dx + dy*dy);
-                        }
-                    }
-                    if (vector_dif_sum < min_vector_dif_sum)
-                    {
-                        second_vector_dif_sum = min_vector_dif_sum;
-                        min_vector_dif_sum = vector_dif_sum;
-                        min_vector_dif_avg = vector_dif_sum /
-                            (float)selected_count;
-                        new_selected = wvp;
-                    }
-                    else if (vector_dif_sum < second_vector_dif_sum)
-                    {
-                        second_vector_dif_sum = vector_dif_sum;
-                    }
-                }   // done with ambiguities
-
-                // how must does the best beat the second best?
-                float best_to_second_ratio = 1.0;
-                if (second_vector_dif_sum > 0.0 &&
-                    second_vector_dif_sum != (float)HUGE_VAL)
-                {
-                    best_to_second_ratio = min_vector_dif_sum /
-                        second_vector_dif_sum;
-                }
-                float dif_to_speed_ratio = 1.0;
-                if (new_selected != NULL && selected_count > 0 &&
-                    new_selected->spd > 0.0)
-                {
-                    float avg_vector_dif = min_vector_dif_avg /
-                        (float)selected_count;
-                    dif_to_speed_ratio = avg_vector_dif /
-                        new_selected->spd;
-                }
-
-                //----------------//
-                // store the info //
-                //----------------//
-
-                neighbor_count[cti][ati] = selected_count;
-                dif_ratio[cti][ati] = best_to_second_ratio;
-                speed[cti][ati] = new_selected->spd;
-                filter_selection[cti][ati] = new_selected;
-                prob[cti][ati] = new_selected->obj;
+              WVC* wvc = swath->GetWVC(cti, ati);
+              if (wvc == NULL)
+                continue;
+              if (wvc->selected == NULL)
+                continue;
+              if (wvc->selected == original_selected[cti][ati])
+                match_count++;
+              comp_total_count++;
             }
+          }
+          printf("  Match = %.2f %%\n", 100.0 * (float)match_count /
+            (float)comp_total_count);
         }
-        if (opt_dump && loop_idx % dump_loops == 0 && loop_idx != 0)
-        {
-            int total_count = first_count + filter_count;
-            float first_percent = 100.0 * (float)first_count /
-                (float)total_count;
-            float filter_percent = 100.0 * (float)filter_count /
-                (float)total_count;
-            printf("%d  1st:%.2f%%  Fil:%.2f%%\n", loop_idx, first_percent,
-                filter_percent);
-            first_count = 0;
-            filter_count = 0;
-
-            printf("  Corrected percent : %.2f%%\n",
-                100.0 * (float)did_corrected / (float)did);
-
-            printf("  1st: %g to %g   Fil: %g to %g\n", lowest_first,
-                highest_first, lowest_filter, highest_filter);
-            lowest_first = 2.0;
-            highest_first = 0.0;
-            lowest_filter = 2.0;
-            highest_filter = 0.0;
-
-            sprintf(filename, "%s.%06d", vctr_base, loop_idx);
-            l2b.WriteVctr(filename, 0);
-
-            //-----------------//
-            // write prob file //
-            //-----------------//
-
-            if (opt_adapt)
-            {
-                FILE* ofp = fopen(prob_file, "w");
-                if (ofp == NULL)
-                {
-                    fprintf(stderr, "%s: error opening prob file %s\n", command,
-                        prob_file);
-                    exit(1);
-                }
-                else
-                {
-                    fwrite(first_count_array, sizeof(unsigned short),
-                        first_nitems, ofp);
-                    fwrite(first_good_array, sizeof(unsigned short),
-                        first_nitems, ofp);
-                    fwrite(filter_count_array, sizeof(unsigned short),
-                        filter_nitems, ofp);
-                    fwrite(filter_good_array, sizeof(unsigned short),
-                        filter_nitems, ofp);
-                    fclose(ofp);
-                }
-            }
-
-            if (! opt_correct || opt_matic)
-            {
-                // compare to original
-                unsigned long comp_total_count = 0;
-                unsigned long match_count = 0;
-                for (int ati = 0; ati < AT_WIDTH; ati++)
-                {
-                  for (int cti = 0; cti < CT_WIDTH; cti++)
-                  {
-                    WVC* wvc = swath->GetWVC(cti, ati);
-                    if (wvc == NULL)
-                        continue;
-                    if (wvc->selected == NULL)
-                        continue;
-                    if (wvc->selected == original_selected[cti][ati])
-                        match_count++;
-                    comp_total_count++;
-                  }
-                }
-                printf("  Match = %.2f %%\n", 100.0 * (float)match_count /
-                  (float)comp_total_count);
-            }
-        }
-        loop_idx++;
+      }
+      loop_idx++;
     } while (1);
 
     //----------------//
@@ -1155,7 +1181,7 @@ main(
     l2b.WriteVctr(filename, 0);
 
     free_array(filter_selection, 2, CT_WIDTH, AT_WIDTH);
-    free_array(change, 2, CT_WIDTH, AT_WIDTH);
+//    free_array(change, 2, CT_WIDTH, AT_WIDTH);
 
     //-----------------//
     // write prob file //
