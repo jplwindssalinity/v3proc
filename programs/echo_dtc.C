@@ -8,7 +8,7 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -mrl ] [ -f fit_base ] <config_file> <dtc_base>
+//    echo_dtc [ -mor ] [ -f fit_base ] <config_file> <dtc_base>
 //      <echo_file...>
 //
 // DESCRIPTION
@@ -23,7 +23,7 @@
 //    [ -m ]           Only use the fit to supply constants for orbit
 //                       steps with missing data.
 //    [ -r ]           Allow time regression.
-//    [ -l ]           Eliminate land.
+//    [ -o ]           Ocean only.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
 //
 // OPERANDS
@@ -100,7 +100,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:lmr"
+#define OPTSTRING  "f:mor"
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
@@ -137,7 +137,7 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -lmr ]", "[ -f fit_base ]",
+const char* usage_array[] = { "[ -mor ]", "[ -f fit_base ]",
     "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -165,7 +165,7 @@ main(
     //------------//
 
     int opt_regression = 1;    // default, check for regression
-    int opt_process_land = 1;    // default, process land
+    int opt_ocean_only = 0;    // default is to include land
     int opt_fit = 0;
     int opt_fit_for_missing_only = 0;
     const char* fit_base = NULL;
@@ -182,9 +182,9 @@ main(
     {
         switch(c)
         {
-        case 'l':
-            // this flag means eliminate land
-            opt_process_land = 0;
+        case 'o':
+            // this flag means ocean only
+            opt_ocean_only = 1;
             break;
         case 'm':
             opt_fit_for_missing_only = 1;
@@ -327,7 +327,7 @@ main(
 
                 if ((echo_info.flag[spot_idx] == EchoInfo::OK ||
                     (echo_info.flag[spot_idx] == EchoInfo::NOT_OCEAN &&
-                    opt_process_land)) &&
+                    ! opt_ocean_only)) &&
                     echo_info.totalSignalEnergy[spot_idx] >=
                     SIGNAL_ENERGY_THRESHOLD)
                 {
@@ -522,7 +522,7 @@ main(
                 {
                     if (echo_info.flag[spot_idx] != EchoInfo::OK &&
                         (echo_info.flag[spot_idx] != EchoInfo::NOT_OCEAN ||
-                        ! opt_process_land))
+                        opt_ocean_only))
                     {
                         continue;
                     }
