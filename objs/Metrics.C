@@ -84,6 +84,7 @@ Metrics::Clear()
         _selSumSqrDirErr[cti] = 0.0;
         _selSumSqrDirErrCount[cti] = 0;
     }
+    return;
 }
 
 //---------------------//
@@ -232,15 +233,11 @@ Metrics::WritePlotData(
 {
     FILE* ofp = NULL;
 
-    char bname[1024];
-    sprintf(bname, "%s.%03d-%03d", basename,
-        (int)(_lowWindSpeed * 10.0 + 0.5), (int)(_highWindSpeed * 10.0 + 0.5));
-
     //-------------------------//
     // nearest rms speed error //
     //-------------------------//
 
-    ofp = OpenPlotFile(bname, "near_rms_spd_err", "Nearest RMS Speed Error",
+    ofp = OpenPlotFile(basename, "near_rms_spd_err", "Nearest RMS Speed Error",
         "Cross Track Distance (km)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
@@ -259,7 +256,7 @@ Metrics::WritePlotData(
     // nearest rms direction error //
     //-----------------------------//
 
-    ofp = OpenPlotFile(bname, "near_rms_dir_err",
+    ofp = OpenPlotFile(basename, "near_rms_dir_err",
         "Nearest RMS Direction Error", "Cross Track Distance (km)",
         "RMS Direction Error (deg)");
     if (ofp == NULL)
@@ -279,7 +276,7 @@ Metrics::WritePlotData(
     // selected rms speed error //
     //--------------------------//
 
-    ofp = OpenPlotFile(bname, "sel_rms_spd_err", "Selected RMS Speed Error",
+    ofp = OpenPlotFile(basename, "sel_rms_spd_err", "Selected RMS Speed Error",
         "Cross Track Distance (km)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
@@ -298,7 +295,7 @@ Metrics::WritePlotData(
     // selected rms direction error //
     //------------------------------//
 
-    ofp = OpenPlotFile(bname, "sel_rms_dir_err",
+    ofp = OpenPlotFile(basename, "sel_rms_dir_err",
         "Selected RMS Direction Error", "Cross Track Distance (km)",
         "RMS Direction Error (deg)");
     if (ofp == NULL)
@@ -382,6 +379,7 @@ Metrics::Evaluate(
     float       resolution,
     WindField*  truth)
 {
+    Clear();    // clear the metrics first
     int cross_track_bins = swath->GetCrossTrackBins();
     if (! Initialize(cross_track_bins, resolution))
         return(0);

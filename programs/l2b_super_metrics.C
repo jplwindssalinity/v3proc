@@ -185,6 +185,22 @@ main(
     ConfigList config_list;
     Metrics total_metrics;
     Metrics metrics;
+
+    //-------------------//
+    // configure metrics //
+    //-------------------//
+
+    if (opt_speed)
+    {
+        if (! metrics.SetWindSpeedRange(low_speed, high_speed))
+        {
+            fprintf(stderr,
+                "%s: error setting wind speed range (%g - %g)\n",
+                command, low_speed, high_speed);
+            exit(1);
+        }
+    }
+
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
     {
         //-----------------------------------//
@@ -192,7 +208,6 @@ main(
         //-----------------------------------//
 
         char* input_file = argv[file_idx];
-printf("%s\n", input_file);
         if (metrics.Read(input_file))
         {
             //---------------------------------//
@@ -260,21 +275,6 @@ printf("%s\n", input_file);
                     fprintf(stderr,
                         "%s: error reading %s wind field from file %s\n",
                         command, truth_type, truth_file);
-                    exit(1);
-                }
-            }
-
-            //-------------------//
-            // configure metrics //
-            //-------------------//
-
-            if (opt_speed)
-            {
-                if (! metrics.SetWindSpeedRange(low_speed, high_speed))
-                {
-                    fprintf(stderr,
-                        "%s: error setting wind speed range (%g - %g)\n",
-                        command, low_speed, high_speed);
                     exit(1);
                 }
             }
