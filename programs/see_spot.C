@@ -402,6 +402,7 @@ main(
 //				exit(1);
 				break;
 			}
+            meas_spot.FreeContents();
             qscat_sim.DetermineNextEvent(100, &qscat, &qscat_event);
 		}
 
