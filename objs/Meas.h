@@ -78,9 +78,9 @@ public:
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
-        int             beamIdx;
-        int             sliceIdx;
-        float           scanAngle;
+	int			beamIdx;
+	int			sliceIdx;
+	float		scanAngle;
 	float		A, B, C;			// Kpc coefficients
 
 	//------------------------//
