@@ -79,6 +79,10 @@ public:
 	int		CheckRetrieveCriteria(MeasList* meas_list);
 	int		RetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
 	int		RetrieveManyWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int             RetrieveWindsWithPeakSplitting(MeasList* meas_list,
+                           Kp* kp, WVC* wvc, float one_peak_width, float
+			   two_peak_separation_threshold, 
+			   float threshold);
 	int		SolutionCurve(MeasList* meas_list, Kp* kp);
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
@@ -119,3 +123,10 @@ protected:
 };
 
 #endif
+
+
+
+
+
+
+

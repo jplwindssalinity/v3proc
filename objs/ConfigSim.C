@@ -1450,6 +1450,7 @@ ConfigL2AToL2B(
 	ConfigList*		config_list)
 {
 	int tmp_int;
+        float tmp_float;
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterWindowSize = tmp_int;
@@ -1466,6 +1467,25 @@ ConfigL2AToL2B(
 		return(0);
 	l2a_to_l2b->useAmbiguityWeights = tmp_int;
 
+	if (! config_list->GetInt(USE_PEAK_SPLITTING_KEYWORD, &tmp_int))
+		return(0);
+	l2a_to_l2b->usePeakSplitting = tmp_int;
+
+	if( l2a_to_l2b->usePeakSplitting && l2a_to_l2b->useManyAmbiguities){
+	  fprintf(stderr,"Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
+	  return(0);
+	}
+        if(l2a_to_l2b->usePeakSplitting){
+	  if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
+		return(0);
+	  l2a_to_l2b->onePeakWidth = tmp_float*dtr;
+	  if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD, &tmp_float))
+		return(0);
+	  l2a_to_l2b->twoPeakSep = tmp_float*dtr;
+	  if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD, &tmp_float))
+		return(0);
+	  l2a_to_l2b->probThreshold = tmp_float;
+	}
 	return(1);
 }
 

@@ -441,6 +441,157 @@ GMF::RetrieveManyWinds(
 	return(1);
 }
 
+//-------------------------------------//
+// GMF::RetrieveWindsWithPeakSplitting //
+//-------------------------------------//
+int             
+GMF::RetrieveWindsWithPeakSplitting(
+	MeasList*         meas_list,
+        Kp*                      kp, 
+        WVC*                    wvc, 
+        float                 one_peak_width, 
+        float                 two_peak_separation_threshold, 
+	float                 threshold)
+
+{
+        if(! RetrieveWinds(meas_list,kp,wvc)) return(0);
+        float two_peak_width=one_peak_width/3;
+        float one_peak_separation_threshold=2.0*two_peak_width;
+
+	//--------------------------------------//
+	// determine number of ambiguities with  //
+	// scaled probability values greater than //
+	// threshold                              //
+	//----------------------------------------//
+
+	int num_peaks=0;
+	float top_peaks_dir[2];
+	
+	float obj,scale=0;
+        WindVectorPlus* head=wvc->ambiguities.GetHead();
+        if(head!=NULL) scale=head->obj;
+	for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+	    wvp; wvp=wvc->ambiguities.GetNext()){
+	  obj=wvp->obj;
+	  float prob=exp((obj-scale)/2);
+	  if (prob > threshold){
+	    if(num_peaks<2) top_peaks_dir[num_peaks]=wvp->dir;
+	    num_peaks++;
+	  }
+	}
+
+	//-------------------------------------------------------------//
+        // Case 1: Two peaks closer together than one peak_separation_ //
+        // threshold. They are combined to form a single peak and Case //
+        // 2 is applied.                                               //
+        //-------------------------------------------------------------//
+
+	if(num_peaks==2 && fabs(ANGDIF(top_peaks_dir[0],top_peaks_dir[1]))<
+	   one_peak_separation_threshold){
+	  top_peaks_dir[0]=(top_peaks_dir[0]+top_peaks_dir[1])/2;
+	  if(fabs(ANGDIF(top_peaks_dir[1],top_peaks_dir[0])) > pi/2)
+	    top_peaks_dir[0]+=pi;
+	  if(top_peaks_dir[0]>two_pi) top_peaks_dir[0]-=two_pi;
+	  num_peaks=1;
+	}
+
+        //------------------------------------------------------------//
+        // Case 2: One Peak                                           //
+        //------------------------------------------------------------//
+	if(num_peaks==1){
+	  float dir_start= top_peaks_dir[0] - 0.5*one_peak_width;
+          float dir_step = one_peak_width/3.0;
+          WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+	  for(int c=0;c<4;c++){
+	    float dir=dir_start+dir_step*c;
+	    while(dir<0) dir+=two_pi;
+	    while(dir>two_pi) dir-=two_pi;
+            int phi_idx=(int)(dir/two_pi*_phiCount+0.5);
+            if(phi_idx==_phiCount) phi_idx=0;
+	    if(wvp){
+	      wvp->spd=_bestSpd[phi_idx];
+	      wvp->dir=dir;
+              wvp->obj=_bestObj[phi_idx];
+	      wvp=wvc->ambiguities.GetNext();
+	    }
+	    else{
+	      wvp= new WindVectorPlus();
+	      wvp->spd=_bestSpd[phi_idx];
+	      wvp->dir=dir;
+              wvp->obj=_bestObj[phi_idx];	     
+	      wvc->ambiguities.Append(wvp);
+	      wvp=NULL;
+	    }
+	  }
+	}
+
+	//-------------------------------------------------//
+        // Case 3: two peaks less than two peak separation //
+        // threshold apart which do not fit Case 1:        //
+        //-------------------------------------------------//
+		if(num_peaks==2 && 
+		   fabs(ANGDIF(top_peaks_dir[0],top_peaks_dir[1]))< 
+		   two_peak_separation_threshold){
+
+                  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+
+                  float dir_start= top_peaks_dir[0] - 0.5*two_peak_width;
+                  float dir_step = two_peak_width;
+		  for(int c=0;c<2;c++){
+		    float dir=dir_start+dir_step*c;
+                    while(dir<0) dir+=two_pi;
+                    while(dir>two_pi) dir-=two_pi;
+		    int phi_idx=(int)(dir/two_pi*_phiCount+0.5);
+		    if(phi_idx==_phiCount) phi_idx=0;
+                    if(wvp){
+		      wvp->spd=_bestSpd[phi_idx];
+		      wvp->dir=dir;
+		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp=wvc->ambiguities.GetNext();
+		    }
+		    else{
+		      wvp= new WindVectorPlus();
+		      wvp->spd=_bestSpd[phi_idx];
+		      wvp->dir=dir;
+		      wvp->obj=_bestObj[phi_idx];	     
+                      wvc->ambiguities.Append(wvp);
+                      wvp=NULL;
+		    }
+		  }
+
+                  dir_start= top_peaks_dir[1] - 0.5*two_peak_width;
+                  dir_step = two_peak_width;
+		  for(int c=0;c<2;c++){
+		    float dir=dir_start+dir_step*c;
+                    while(dir<0) dir+=two_pi;
+                    while(dir>two_pi) dir-=two_pi;
+		    int phi_idx=(int)(dir/two_pi*_phiCount+0.5);
+		    if(phi_idx==_phiCount) phi_idx=0;
+                    if(wvp){
+		      wvp->spd=_bestSpd[phi_idx];
+		      wvp->dir=dir;
+		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp=wvc->ambiguities.GetNext();
+		    }
+		    else{
+		      wvp= new WindVectorPlus();
+		      wvp->spd=_bestSpd[phi_idx];
+		      wvp->dir=dir;
+		      wvp->obj=_bestObj[phi_idx];	     
+                      wvc->ambiguities.Append(wvp);
+                      wvp=NULL;
+		    }
+		  }
+		}
+	
+		//----------------------------------//
+                // Case 4: Everything else          //
+                // Do not change ambiguities.       //
+                //----------------------------------//
+               	
+		return(1);
+}
+
 //--------------------//
 // GMF::SolutionCurve //
 //--------------------//
