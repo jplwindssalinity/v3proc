@@ -15,7 +15,7 @@ static const char rcs_id_lookgeom_h[] =
 // Functions
 //		velocity_frame
 //		velocity_frame_geodetic
-//		antenna_look
+//		beam_look
 //		earth_intercept
 //======================================================================
 
@@ -53,15 +53,15 @@ void velocity_frame(EarthPosition rsat, Vector3 vsat,
 
 //======================================================================
 // Function
-//		antenna_look
+//		beam_look
 //
 // DESCRIPTION
-//		The antenna_look function computes a unit vector in the
+//		The beam_look function computes a unit vector in the
 //		beam frame that is pointed at a particular ground target.
 //		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
-Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
+Vector3 beam_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 		     Attitude sc_att, Attitude ant_att, Attitude beam_att);
 
 //======================================================================
