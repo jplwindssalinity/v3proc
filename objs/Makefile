@@ -18,6 +18,7 @@ OBJS = \
 	AntennaSim.o \
 	Array.o \
 	Attitude.o \
+	BaseFile.o \
 	Beam.o \
 	BeamSim.o \
 	ConfigList.o \
@@ -120,6 +121,7 @@ Antenna.o: Antenna.C Antenna.h Beam.h Constants.h CoordinateSwitch.h Attitude.h 
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Array.o: Array.C Array.h
 Attitude.o: Attitude.C Attitude.h
+BaseFile.o: BaseFile.C BaseFile.h
 Beam.o: Beam.C Beam.h Array.h Constants.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h

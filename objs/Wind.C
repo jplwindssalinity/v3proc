@@ -1117,17 +1117,16 @@ WindSwath::MedianFilterPass(
 	return(flips);
 }
 
-//--------------------------//
-// WindSwath::RmsSpeedError //
-//--------------------------//
+//---------------------------//
+// WindSwath::RmsSpdErrVsCtd //
+//---------------------------//
 
 int
-WindSwath::RmsSpeedError(
+WindSwath::RmsSpdErrVsCtd(
 	WindField*	truth,
-	float*		rms_speed_error,
-	int*		count,
-	float*		ctd,
-	int*		max_idx)
+	float*		ctd_array,
+	float*		rms_spd_err_array,
+	int*		count_array)
 {
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{

@@ -9,7 +9,7 @@
 static const char rcs_id_l20_h[] =
 	"@(#) $Id$";
 
-#include "GenericFile.h"
+#include "BaseFile.h"
 #include "L20Frame.h"
 
 
@@ -27,7 +27,7 @@ static const char rcs_id_l20_h[] =
 //		manipulating of Level 2.0 data.
 //======================================================================
 
-class L20
+class L20 : public BaseFile
 {
 public:
 
@@ -48,22 +48,22 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			SetFilename(const char* filename);
 	StatusE		GetStatus() { return(_status); };
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	int		ReadDataRec();
-	int		WriteDataRec();
-	int		Close();
+	int		ReadHeader() { return(header.Read(_fp)); };
+	int		WriteHeader() { return(header.Write(_fp)); };
+
+	int		ReadDataRec() { return(frame.swath.ReadL20(_fp)); };
+	int		WriteDataRec() { return(frame.swath.WriteL20(_fp)); };
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	GenericFile		file;
 	L20Header		header;
 	L20Frame		frame;
 

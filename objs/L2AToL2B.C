@@ -134,8 +134,7 @@ L17ToL20::Flush(
 	l20->frame.swath.InitWithRank(1);
 	l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
 		l20->medianFilterMaxPasses);
-	FILE* fp = l20->file.GetFp();
-	if (! l20->header.Write(fp))
+	if (! l20->WriteHeader())
 		return(0);
 	if (! l20->WriteDataRec())
 		return(0);
