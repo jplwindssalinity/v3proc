@@ -914,16 +914,24 @@ PscatSim::SetL1AScience(
     // for each measurement... //
     //-------------------------//
 
-    int slice_number = _spotNumber * l1a_frame->slicesPerSpot;
+    // determine the spot meas location offset
+    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+
     for (Meas* meas = meas_spot->GetHead(); meas;
         meas = meas_spot->GetNext())
     {
-        //----------------------------//
-        // update the level 0.0 frame //
-        //----------------------------//
+        int slice_idx;
+        rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
+            &slice_idx);
+        
+        //--------------------------//
+        // update the level 1 frame //
+        //--------------------------//
 
-        l1a_frame->science[slice_number] = (unsigned int)(meas->value);
-        slice_number++;
+        int slice_meas_offset = slice_idx * l1a_frame->measPerSlice;
+
+        l1a_frame->science[spot_meas_offset + slice_meas_offset] =
+            (unsigned int)(meas->value);
     }
 
     // Compute the spot noise measurement.
@@ -1038,7 +1046,7 @@ PscatSim::SetL1ALoad(
 
     //-------------------------------------------//
     // Compute load noise measurements to assure //
-    // a (nearly) perfect retrieval of alpha.             //
+    // a (nearly) perfect retrieval of alpha.    //
     //-------------------------------------------//
 
     float En_echo_load;
