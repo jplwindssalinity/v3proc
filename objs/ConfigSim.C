@@ -687,7 +687,7 @@ ConfigInstrumentSim(
 	float system_temperature;
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
 	{
-		printf("Could not find system temperature in config file\n");
+		fprintf(stderr,"Could not find system temperature in config file\n");
 		return(0);
 	}
 
@@ -836,14 +836,14 @@ ConfigAntenna(
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
 	{
-		printf("Could not find number of beams in config file\n");
+		fprintf(stderr,"Could not find number of beams in config file\n");
 		return(0);
 	}
 	antenna->numberOfBeams = number_of_beams;
 
 	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &tmp_double))
 	{
-		printf("Could not find PRI per beam in config file\n");
+		fprintf(stderr,"Could not find PRI per beam in config file\n");
 		return(0);
 	}
 	antenna->priPerBeam = (float)number_of_beams *
@@ -859,17 +859,17 @@ ConfigAntenna(
 	double roll, pitch, yaw;
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
 	{
-		printf("Could not find antenna pedestal roll in config file\n");
+		fprintf(stderr,"Could not find antenna pedestal roll in config file\n");
 		return(0);
 	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
 	{
-		printf("Could not find antenna pedestal pitch in config file\n");
+		fprintf(stderr,"Could not find antenna pedestal pitch in config file\n");
 		return(0);
 	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
 	{
-		printf("Could not find antenna pedestal yaw in config file\n");
+		fprintf(stderr,"Could not find antenna pedestal yaw in config file\n");
 		return(0);
 	}
 	Attitude att;
@@ -936,7 +936,7 @@ ConfigBeam(
 	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
 	if (! config_list->GetChar(keyword, &tmp_char))
 	{
-		printf("Missing keyword %s in config file\n",keyword);
+		fprintf(stderr,"Missing keyword %s in config file\n",keyword);
 		return(0);
 	}
 	switch (tmp_char)
@@ -950,7 +950,7 @@ ConfigBeam(
 		beam->polarization = H_POL;
 		break;
 	default:
-		printf("Beam %d polarization (%c) not recognized\n",
+		fprintf(stderr,"Beam %d polarization (%c) not recognized\n",
 			beam_number,tmp_char);
 		return(0);
 	}
@@ -959,7 +959,7 @@ ConfigBeam(
 	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &pulse_width))
 	{
-		printf("Could not find beam pulse width in config file\n");
+		fprintf(stderr,"Could not find beam pulse width in config file\n");
 		return(0);
 	}
 	beam->txPulseWidth = quantize(pulse_width * MS_TO_S,
@@ -969,7 +969,7 @@ ConfigBeam(
 	substitute_string(BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &gate_width))
 	{
-		printf("Could not find beam receiver gate width in config file\n");
+		fprintf(stderr,"Could not find beam receiver gate width in config file\n");
 		return(0);
 	}
 	beam->rxGateWidth = quantize(gate_width * MS_TO_S,
@@ -979,12 +979,12 @@ ConfigBeam(
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
 	{
-		printf("Could not find beam pattern file in config file\n");
+		fprintf(stderr,"Could not find beam pattern file in config file\n");
 		return(0);
 	}
 	if (! beam->ReadBeamPattern(pattern_file))
 	{
-		printf("Error while reading beam %d pattern file\n",beam_number);
+		fprintf(stderr,"Error while reading beam %d pattern file\n",beam_number);
 		return(0);
 	}
 
@@ -1007,7 +1007,7 @@ ConfigBeam(
 		}
 		else
 		{
-			printf("Missing mechanical boresight azimuth in config file\n");
+			fprintf(stderr,"Missing mechanical boresight azimuth in config file\n");
 			return(0);
 		}
 	}
@@ -1016,7 +1016,7 @@ ConfigBeam(
 		substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 		if (! config_list->GetDouble(keyword, &look_angle))
 		{
-			printf("Could not find beam look angle in config file\n");
+			fprintf(stderr,"Could not find beam look angle in config file\n");
 			return(0);
 		}
 		look_angle *= dtr;
@@ -1024,7 +1024,7 @@ ConfigBeam(
 		substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 		if (! config_list->GetDouble(keyword, &azimuth_angle))
 		{
-			printf("Could not find beam azimuth angle in config file\n");
+			fprintf(stderr,"Could not find beam azimuth angle in config file\n");
 			return(0);
 		}
 		azimuth_angle *= dtr;
@@ -1038,7 +1038,7 @@ ConfigBeam(
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
 	{
-		printf("Could not find beam time offset in config file\n");
+		fprintf(stderr,"Could not find beam time offset in config file\n");
 		return(0);
 	}
 	beam->timeOffset = quantize(tmp_double * MS_TO_S, PRF_CLOCK_RESOLUTION);
@@ -1050,7 +1050,7 @@ ConfigBeam(
 	int use_rgc;
 	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
 	{
-		printf("Could not find use RGC flag in config file\n");
+		fprintf(stderr,"Could not find use RGC flag in config file\n");
 		return(0);
 	}
 	beam->useRangeTracker = use_rgc;
@@ -1060,7 +1060,7 @@ ConfigBeam(
 		char* rgc_file = config_list->Get(keyword);
 		if (rgc_file == NULL)
 		{
-			printf("Could not find RGC file name in config file\n");
+			fprintf(stderr,"Could not find RGC file name in config file\n");
 			return(0);
 		}
 
@@ -1080,7 +1080,7 @@ ConfigBeam(
 	int use_dtc;
 	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
 	{
-		printf("Could not find use DTC flag in config file\n");
+		fprintf(stderr,"Could not find use DTC flag in config file\n");
 		return(0);
 	}
 	beam->useDopplerTracker = use_dtc;
@@ -1090,7 +1090,7 @@ ConfigBeam(
 		char* dtc_file = config_list->Get(keyword);
 		if (dtc_file == NULL)
 		{
-			printf("Could not find DTC file name in config file\n");
+			fprintf(stderr,"Could not find DTC file name in config file\n");
 			return(0);
 		}
 
@@ -1184,7 +1184,7 @@ ConfigXTable(
 	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
 		&science_slice_bandwidth))
 	{
-		printf("Could not find slice bandwidth in config file\n");
+		fprintf(stderr,"Could not find slice bandwidth in config file\n");
 		return(0);
 	}
 	science_slice_bandwidth*=KHZ_TO_HZ;
@@ -1193,7 +1193,7 @@ ConfigXTable(
 	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,
 		&guard_slice_bandwidth))
 	{
-		printf("Could not find guard slice bandwidth in config file\n");
+		fprintf(stderr,"Could not find guard slice bandwidth in config file\n");
 		return(0);
 	}
 	guard_slice_bandwidth*=KHZ_TO_HZ;
@@ -1205,14 +1205,14 @@ ConfigXTable(
 	{
 		if (!xTable->Read())
 		{
-			printf("Error reading xTable in ConfigXTable\n");
+			fprintf(stderr,"Error reading xTable in ConfigXTable\n");
 			return(0);
 		}
 		if (!xTable->CheckHeader(num_beams, num_science_slices,
 				num_guard_slices_each_side, science_slice_bandwidth,
 				guard_slice_bandwidth))
 		{
-			printf("Header check failed in ConfigXTable\n");
+			fprintf(stderr,"Header check failed in ConfigXTable\n");
 			return(0);
 		}
 	}
@@ -1691,7 +1691,7 @@ ConfigKp(
 
 	if (! kp->kpm.ReadTable(kpm_filename))
 	{
-		printf("Error reading Kpm table from %s\n",kpm_filename);
+		fprintf(stderr,"Error reading Kpm table from %s\n",kpm_filename);
 		return(0);
 	}
 
@@ -1705,7 +1705,7 @@ ConfigKp(
 	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
 	if (! kp->kpri.SetKpPtGr(kp_ptgr))
 	{
-		printf("Error setting KpPtGr\n");
+		fprintf(stderr,"Error setting KpPtGr\n");
 		return(0);
 	}
 
@@ -1722,7 +1722,7 @@ ConfigKp(
 	{
 		if (! kp->kprs.Read(kprs_filename))
 		{
-			printf("Error reading Kprs from %s\n",kprs_filename);
+			fprintf(stderr,"Error reading Kprs from %s\n",kprs_filename);
 			return(0);
 		}
 	}
@@ -1751,14 +1751,14 @@ ConfigKpmField(
 	{
 		// No file specified, so use an uncorrelated field.
 		// KpmField is automatically initialized with _corrLength = 0.0.
-		printf("Using uncorrelated Kpm\n");
+		fprintf(stderr,"Using uncorrelated Kpm\n");
 	}
 	else if (! kpmField->corr.Read(kpm_filename))
 	{
 		// No file present (or wrong format) so build a field and write it
 		// to the indicated file name (overwriting anything in the file).
 
-		printf("Error reading KpmField from %s\n",kpm_filename);
+		fprintf(stderr,"Error reading KpmField from %s\n",kpm_filename);
 		return(0);
 	}
 
@@ -1919,7 +1919,7 @@ ConfigControl(
 		spacecraft_start_time))
 	{
 		// nothing to do -- woo hoo once more!
-		printf("Using explicit spacecraft start time\n");
+		fprintf(stderr,"Using explicit spacecraft start time\n");
 	}
 	else
 	{
@@ -1937,7 +1937,7 @@ ConfigControl(
 		spacecraft_end_time))
 	{
 		// nothing to do -- woo hoo once more!
-		printf("Using explicit spacecraft end time\n");
+		fprintf(stderr,"Using explicit spacecraft end time\n");
 	}
 	else
 	{
