@@ -1036,3 +1036,766 @@ GMF::_ObjectiveFunction(
 	}
 	return(-fv);
 }
+
+//----------------------//
+// GMF::GSRetrieveWinds //
+//----------------------//
+
+int
+GMF::GSRetrieveWinds(
+	MeasList*	meas_list,
+	Kp*			kp,
+	WVC*		wvc)
+{
+
+//
+//  Step 1:  Find an initial set of coarse wind solutions.
+//
+
+	Calculate_Init_Wind_Solutions(meas_list,kp,wvc);
+
+//
+//  Step 2:  Iterate to find an optimized set of wind solutions.
+//
+
+	Optimize_Wind_Solutions(meas_list,kp,wvc);
+
+//  Step 3:  Rank the optimized wind solutions for use in ambiguity
+//           removal.
+	//------------------------------------------//
+	// sort the solutions by objective function //
+	//------------------------------------------//
+
+	wvc->SortByObj();
+
+	return(1);
+}
+
+//------------------------------------//
+// GMF::Calculate_Init_Wind_Solutions //
+//------------------------------------//
+
+int
+GMF::Calculate_Init_Wind_Solutions(
+	MeasList*	meas_list,
+	Kp*			kp,
+	WVC*		wvc)
+{
+
+//
+//!Description:   	
+// 	        This routine calculates an initial set of wind solutions 
+//               using an iterative "coarse search" mechanism based on MLE 
+//               computations.   
+//                      	
+
+//
+// Local Declarations
+//
+  
+      int   i;
+      int   j;
+      int   k;
+      int   ii;
+      int   jj;
+      float      center_speed;
+      float      minus_speed;
+      float      plus_speed;
+      int   good_speed;
+      float      center_objective;
+      float      minus_objective;
+      float      plus_objective;
+      float      dir_spacing;
+      int   num_dir_samples;
+      float      angle;
+      float      diff_objective_1;
+      float      diff_objective_2;
+      float      current_objective;
+      int   num_mle_maxima;
+      float      speed_buffer [MAX_DIR_SAMPLES+1];
+      float      objective_buffer [MAX_DIR_SAMPLES+1] ;
+      int   dir_mle_maxima [MAX_DIR_SAMPLES+1];
+
+      center_speed = (int)(wind_start_speed);
+
+      if (center_speed < (lower_speed_bound + 2))
+         center_speed = (lower_speed_bound + 2);
+
+      if (center_speed > (upper_speed_bound - 1))
+         center_speed = (upper_speed_bound -1);
+
+//
+//   Calculate number of wind direction samples.    
+//
+
+      dir_spacing =  wind_dir_intv_init;
+      num_dir_samples = (int)(360. / dir_spacing) + 2 ;
+
+//
+//   Loop through directional space to find local MLE maximas.  
+//
+      
+	for (k=2; k <= num_dir_samples-1; k++)
+	{
+         angle = dir_spacing * (float)(k - 1) - dir_spacing; 
+         
+//
+//   Compute MLE at 3 points centered about center speed. 
+//
+
+         minus_speed  =  center_speed -  wind_speed_intv_init;
+         plus_speed   =  center_speed +  wind_speed_intv_init; 
+
+		minus_objective = _ObjectiveFunction(meas_list,minus_speed,angle,kp);
+		center_objective = _ObjectiveFunction(meas_list,center_speed,angle,kp);
+		plus_objective = _ObjectiveFunction(meas_list,plus_speed,angle,kp);
+
+//
+//   Move the triplet in the speed dimension until center_objective
+//   reaches maximum.   Clip search at 0 m/sec and 50 m/sec.  
+//
+
+         good_speed = 1;  
+
+         while (good_speed && 
+            (center_objective < minus_objective  ||
+             center_objective < plus_objective) )  
+		{
+
+//
+//  If "minus speed" has the largest objective value, shift the speed 
+//  "downward".      
+//
+
+            if (minus_objective > center_objective  &&
+               minus_objective > plus_objective    &&
+               good_speed )
+			{
+               center_speed = center_speed 
+                           - wind_speed_intv_init ;
+               plus_objective = center_objective;
+               center_objective = minus_objective;
+               minus_speed = center_speed 
+                          - wind_speed_intv_init;
+
+//
+//   Clip search at null (0) speed.
+//
+
+               if (minus_speed < (float)(lower_speed_bound))
+				{
+                  speed_buffer[k] = center_speed;
+                  objective_buffer [k] = center_objective;
+                  center_speed = center_speed + wind_speed_intv_init;
+                  good_speed = 0;
+				}
+
+//
+//   Re-Evaluate objective function with shifted minus speed.   
+//
+
+               if (good_speed)
+				{
+					minus_objective = _ObjectiveFunction(meas_list,
+										minus_speed,angle,kp);
+				}
+			}
+
+//
+//  If "plus speed" has the largest objective value, shift the speed
+//  "upward".
+//
+ 
+            if (plus_objective > center_objective  &&
+               plus_objective > minus_objective   && 
+               good_speed  )
+			{ 
+               center_speed = center_speed + wind_speed_intv_init;
+               minus_objective = center_objective;
+               center_objective = plus_objective;
+               plus_speed = center_speed + wind_speed_intv_init;
+ 
+//
+//   Clip search at maximum (50) speed.
+//
+ 
+               if  (plus_speed > (float)(upper_speed_bound))
+				{ 
+                  speed_buffer [k] = center_speed;
+                  objective_buffer [k] = center_objective;
+                  center_speed = center_speed - wind_speed_intv_init;
+                  good_speed = 0;
+				}
+
+//
+//   Re-Evaluate objective function with shifted plus speed.
+//
+ 
+               if   (good_speed)
+				{
+					plus_objective = _ObjectiveFunction(meas_list,
+										plus_speed,angle,kp);
+				}
+			}
+		}	// while loop
+
+
+         if (center_objective >= minus_objective  &&
+            center_objective >= plus_objective   &&
+            good_speed)
+		{ 
+            diff_objective_1 = plus_objective - minus_objective;
+            diff_objective_2 = (plus_objective + minus_objective)
+                            - 2.0 * center_objective;
+ 
+            speed_buffer [k] = center_speed  - 0.5
+                            * (diff_objective_1 / diff_objective_2)
+                            * wind_speed_intv_init;
+ 
+            objective_buffer [k] = center_objective
+                                - (diff_objective_1*diff_objective_1
+                                  /diff_objective_2) / 8.0;
+		}
+	}	// end of angular k loop
+
+
+//
+//   Make speed/objective buffers "circularly continuous".   
+//
+
+      speed_buffer [1] = speed_buffer [num_dir_samples - 1]; 
+      speed_buffer [num_dir_samples] = speed_buffer [2];
+
+      objective_buffer [1]  = objective_buffer [num_dir_samples - 1];
+      objective_buffer [num_dir_samples]  = objective_buffer [2];
+      
+//
+//   Find local MLE maximas over the angular intervals.  
+//                           
+
+      num_mle_maxima = 0;
+
+	for (k=2; k <= num_dir_samples-1; k++)
+	{
+		if (objective_buffer[k] > objective_buffer[k-1] &&
+			objective_buffer[k] > objective_buffer[k+1])
+		{
+            num_mle_maxima = num_mle_maxima + 1;
+            dir_mle_maxima [num_mle_maxima] = k;
+		}
+	}
+
+//
+//   If the number of local MLE maximas exceeds the desired maximum 
+//   wind solutions (= wind_max_solutions), sort and select the 
+//   (wind_max_solutions) highest.
+//  
+         
+    if (num_mle_maxima > wind_max_solutions)
+	{
+//		printf("number greater than 10 = %d\n",num_mle_maxima);
+//         write(99,*) objective_buffer 
+
+		for (i=1; i <= num_mle_maxima; i++)
+		{
+            k = 0;
+            current_objective = objective_buffer [dir_mle_maxima[i]];
+            ii = i + num_mle_maxima;
+			for (j=1; j <= num_mle_maxima; j++)
+			{
+               jj = dir_mle_maxima [j];
+               if (current_objective < objective_buffer [jj] )
+                  k = k + 1;
+			}
+
+//
+//    Tag current maxima index as -2 if it is not in the highest 
+//    "wind_max_solutions" rank.  Otherwise, tag as -1.  
+//
+
+            if (k >= wind_max_solutions)
+                dir_mle_maxima [ii] = -2;
+            else
+                dir_mle_maxima [ii] = -1;
+		}
+
+//
+//    Select and store "highest rank" directional indices into     
+//    "latter" dimensions of the array.        
+// 
+           
+        ii = 0;
+		for (i=1; i <= num_mle_maxima; i++)
+		{
+            if (dir_mle_maxima[i + num_mle_maxima] == -1)
+			{
+               ii = ii + 1;
+               dir_mle_maxima [ii + 2 * num_mle_maxima] = dir_mle_maxima [i];      
+			}
+		}
+          
+//
+//    Move "highest rank" directions back to the front.  
+//          
+
+		for (k=1; k <= wind_max_solutions; k++)
+		{
+            dir_mle_maxima [k] = dir_mle_maxima [k + 2 * num_mle_maxima];  
+		}
+        num_mle_maxima = wind_max_solutions;
+//		printf("dir_mle_maxima = %d\n",dir_mle_maxima);
+ 
+	}
+
+//
+//   Finally, fill in the output WR variables/arrays.
+//
+
+    int wr_num_ambigs = num_mle_maxima;
+	for (i=1; i <= wr_num_ambigs; i++)
+	{
+        jj = dir_mle_maxima [i]; 
+//        wr_wind_dir [i] = dir_spacing * (float)(jj - 1) - dir_spacing;
+//        wr_wind_speed [i] = speed_buffer [jj];
+//        wr_mle [i] = objective_buffer [jj];
+
+		WindVectorPlus* wvp = new WindVectorPlus();
+		if (! wvp)
+			return(0);
+		wvp->spd = speed_buffer [jj];
+		wvp->dir = dir_spacing * (float)(jj - 1) - dir_spacing;
+		wvp->obj = objective_buffer [jj];
+		if (! wvc->ambiguities.Append(wvp))
+		{
+			delete wvp;
+			return(0);
+		}
+	}
+
+
+	return(1);
+}
+
+//------------------------------//
+// GMF::Optimize_Wind_Solutions //
+//------------------------------//
+
+int
+GMF::Optimize_Wind_Solutions(
+	MeasList*	meas_list,
+	Kp*			kp,
+	WVC*		wvc)
+{
+
+//
+//!Description:   	
+// 	        This routine does optimization for the initial set of
+//               wind solutions.  It also computes the errors associated
+//               with optimized wind speeds and directions.    
+//                      	
+
+//
+// Local Declarations
+//
+  
+      int   i;
+      int   j;
+      int   ambig ;
+      int   i_spd;
+      int   i_spd_max;
+      int   i_spd_old;
+      int   ii_spd_old ;
+      int   i_dir;
+      int   i_dir_max;
+      int   i_dir_old;
+      int   ii_dir_old;
+      int   shift_pattern;
+      int   max_shift = 0;
+      int   coord_sum;
+      int   new_coord_sum;
+      int   old_coord_sum;
+
+      int   points_in_search;
+      float      current_objective[4][4];
+      float      saved_objective [4][4];
+      float      maximum_objective;
+      int   number_iterations;
+      float      center_speed;
+      float      center_dir;
+      float      speed;
+      float      direction;
+
+      float      q00;
+      float      q01;
+      float      q10;
+      float      q02;
+      float      q20;
+      float      q11;
+      float      determinant;
+      float      final_speed;
+      float      final_dir;
+
+	float	wr_wind_speed[wind_max_solutions];
+	float	wr_wind_dir[wind_max_solutions];
+	float	wr_mle[wind_max_solutions];
+
+	// Copy data into wr_ arrays.
+	i = 0;
+	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+		 wvp; wvp = wvc->ambiguities.GetNext())
+	{
+		wr_wind_speed[i] = wvp->spd;
+		wr_wind_dir[i] = wvp->dir;
+		wr_mle[i] = wvp->obj;
+		i++;
+	}
+
+//
+//  Initialization  
+//
+
+	for (ambig=0; ambig < wvc->ambiguities.NodeCount(); ambig++)
+	{
+//
+//   Initialization for each ambiguity.
+//
+
+         center_speed = wr_wind_speed [ambig];
+         center_dir = wr_wind_dir [ambig];
+         number_iterations =  0; 
+         maximum_objective = -1000000.;
+         points_in_search = 5;
+         i_spd_max = 0;
+         i_dir_max = 0;
+         shift_pattern = 0;
+
+//
+//   Compute initial objecitve function values at 5 non-corner grid 
+//   points.   Find maximum location and its shift vector.
+//       
+          
+
+		for (i=1; i <= 3; i++)
+		{
+            i_spd = i - 2;
+            speed = center_speed + (float)(i_spd) * wind_speed_intv_opti;
+			for (j=1; j <= 3; j++)
+			{
+               i_dir = j - 2;
+               direction = center_dir + (float)(i_dir) * wind_dir_intv_opti;
+               if (i_dir == 0  ||  i_spd == 0)
+				{
+					current_objective[i][j] = _ObjectiveFunction(meas_list,
+										speed,direction,kp);
+
+					if (current_objective [i][j] > maximum_objective)
+            		{ 
+                      maximum_objective = current_objective [i][j];
+                      i_spd_max = i_spd;
+                      i_dir_max = i_dir;
+					}
+				}
+			}
+		}
+
+//
+//   Check if the maximum point has shifted from the original center
+//   point.    
+//
+
+         shift_pattern = abs (i_spd_max) + abs (i_dir_max);
+         number_iterations = number_iterations + 1;
+
+//
+//   Continuous search until "9-points" AND "no shift" detected. 
+//
+
+
+		while (shift_pattern != 0  || points_in_search  != 9 )  
+		{
+//
+//    If "5-point" AND "no shift" is reached, turn on "9-point"
+//    search option and compute the 4 corners.   
+//
+
+            if (shift_pattern == 0  && points_in_search == 5)
+			{
+               points_in_search = 9;
+				for (i=1; i <= 3; i+=2)
+				{
+					speed = center_speed + (float)(i - 2) *
+						wind_speed_intv_opti;
+					for (j=1; j <= 3; j+=2)
+					{
+                    	direction = center_dir + (float)(j - 2) *
+							wind_dir_intv_opti;
+
+						current_objective[i][j] = _ObjectiveFunction(meas_list,
+											speed,direction,kp);
+
+                   		if (current_objective [i][j] > maximum_objective)
+						{             
+                   	    	maximum_objective = current_objective [i][j];
+                   	    	i_spd_max = i - 2; 
+                   	    	i_dir_max = j - 2;
+						}
+					}
+				}
+
+               shift_pattern = abs (i_spd_max) + abs (i_dir_max);
+               number_iterations = number_iterations + 1;
+			}
+
+//
+//   If center point is not the maximum point, do shift.      
+//
+
+            if (shift_pattern != 0)
+			{
+               center_speed = center_speed + (float)(i_spd_max)
+								* wind_speed_intv_opti;
+               center_dir = center_dir + (float)(i_dir_max)
+								* wind_dir_intv_opti;
+
+//
+//   Loop through  3 x 3  phase space. 
+//
+
+				for (i=1; i <= 3; i++)
+				{
+					i_spd = i - 2;
+					i_spd_old = i + i_spd_max;
+					ii_spd_old = i_spd_old - 2;
+					for (j=1; j <= 3; j++)
+					{
+						i_dir = j - 2;
+						i_dir_old = j + i_dir_max;
+						ii_dir_old = i_dir_old - 2;
+						new_coord_sum = abs (i_spd) + abs(i_dir);
+						old_coord_sum = abs (ii_spd_old) + abs(ii_dir_old);
+
+//
+//   Continue do-loop processing unless "points_in_search = 5" AND
+//   "coordinate sum = 2". 
+//      
+
+						if (points_in_search != 5  || new_coord_sum != 2)
+						{
+                        	if (points_in_search == 5)
+								max_shift = 1;
+
+	                        if (points_in_search == 9)
+								max_shift = 2;
+
+							if (abs(ii_spd_old) == 2  || abs(ii_dir_old) == 2)
+								max_shift = 1;
+
+//
+//    If "old" coordinate is outside the "new" boundary, then do shift
+//    and compute a new MLE. 
+//           
+
+							if (old_coord_sum > max_shift)
+							{
+								speed = center_speed + (float)(i_spd) * 
+                                  wind_speed_intv_opti;
+								direction = center_dir + (float)(i_dir) * 
+                                  wind_dir_intv_opti;
+								saved_objective[i][j] = _ObjectiveFunction(
+									meas_list,speed,direction,kp);
+							}
+                        	else
+                        	{
+								saved_objective [i][j] = 
+									current_objective [i_spd_old][i_dir_old]; 
+							}
+
+						}
+					}
+				}
+
+
+//
+//   Find maximum objective value and its shift vector.  
+//
+
+//
+//    Initialization: assume maximum is at new center point.  
+//
+
+               maximum_objective = saved_objective [2][2]; 
+               i_spd_max  = 0;
+               i_dir_max  = 0;
+ 
+				for (i=1; i <= 3; i++)
+				{
+					i_spd = i - 2;
+					for (j=1; j <= 3; j++)
+					{
+						i_dir = j - 2;
+						coord_sum = abs(i_spd) + abs(i_dir);
+
+//
+//    Skip corners for 5-points search. 
+//
+
+						if (points_in_search != 5  || coord_sum  != 2)
+						{
+							current_objective [i][j] =
+								saved_objective [i][j];
+
+                        	if (current_objective [i][j] > maximum_objective)
+							{
+								maximum_objective = current_objective [i][j];
+								i_spd_max = i_spd;
+								i_dir_max = i_dir;
+							}
+						}
+					}
+				}
+
+               shift_pattern = abs(i_spd_max) + abs (i_dir_max);
+               number_iterations = number_iterations + 1;
+              
+			}	// if (shift_pattern /= 0)   
+
+		}	// while loop
+
+//
+//   Now the 9-point search is complete, store "new" speed and
+//   direction back to WR array.     
+//
+
+         wr_wind_speed [ambig]  = center_speed;
+         wr_wind_dir [ambig] = center_dir;
+
+//
+//   Interpolate to find optimized wind solutions. 
+//
+
+//
+//    Compute various partial derivatives and Jacobian determinant.   
+//    
+//      q00:  constant term
+//      q10:  1st partial  w.r.t.  speed
+//      q01:  1st partial  w.r.t.  direction
+//      q20:  2nd parital  w.r.t.  speed
+//      q02:  2nd partial  w.r.t.  direction
+//      q11:  2nd partial  w.r.t.  speed and direction  
+//      determinant:  Jacobian determinant. 
+//
+
+         q00 =  - current_objective [2][2];
+         q10 =  - (current_objective [3][2] - 
+                  current_objective [1][2] ) / 2.;
+         q01 =  - (current_objective [2][3] - 
+                  current_objective [2][1] ) / 2.;
+         q20 =  - (current_objective [3][2] + 
+                  current_objective [1][2] -
+                  2.0 * current_objective [2][2] );
+         q02 =  - (current_objective [2][3] + 
+                  current_objective [2][1] -
+                  2.0 * current_objective [2][2] );
+         q11 =  - (current_objective [3][3] -
+                  current_objective [3][1] - 
+                  current_objective [1][3] +  
+                  current_objective [1][1] ) / 4.;
+        
+         determinant = q20 * q02 - q11 * q11;
+
+
+//
+//   Skip to next ambiguity if determinant happens to be 0. 
+//  
+
+        if (determinant == 0)
+		{
+            wr_mle [ambig] = - q00;
+//            wr_wind_speed_err [ambig] = 
+//				wind_speed_intv_opti / sqrt (float(wr_count));
+//            wr_wind_dir_err [ambig] =
+//				wind_dir_intv_opti /sqrt ((float)(wr_count));
+		}
+        else
+		{
+//
+//   Compute final wind speed solution.
+//
+              
+            final_speed = wr_wind_speed [ambig] -
+                         wind_speed_intv_opti *
+                        (q10 * q02 - q01 * q11) /
+                        determinant;
+
+            if (fabs (final_speed - wr_wind_speed [ambig]) 
+               > 2. * wind_speed_intv_opti   ||
+               final_speed < 0.0)
+			{
+                wr_mle [ambig] = -q00;
+//                wr_wind_speed_err [ambig] = wind_speed_intv_opti  
+//					* sqrt (fabs (0.5 * q20 / determinant));
+//                wr_wind_dir_err [ambig] = wind_dir_intv_opti  
+//					* sqrt (fabs (0.5 * q02 / determinant));
+			}           
+            else
+			{
+//
+//   Compute final wind direction.
+//
+               final_dir = wr_wind_dir [ambig] -
+                          wind_dir_intv_opti *
+                          (q20 * q01 - q10 * q11) /
+                          determinant;
+                
+               if (fabs (final_dir - wr_wind_dir [ambig]) 
+					> 2. * wind_dir_intv_opti)
+				{
+
+                  wr_mle [ambig] = -q00;
+//                  wr_wind_speed_err [ambig] 
+//					= wind_speed_intv_opti  
+//					* sqrt (fabs (0.5 * q20 / determinant));
+//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti  
+//					* sqrt (fabs (0.5 * q02 / determinant));
+				} 
+               else 
+      			{ 
+//
+//   Constrain final direction between 0 and 360 degrees. 
+//
+
+                  if  (final_dir < 0.)
+                     final_dir = final_dir + 360.;
+                  if  (final_dir > 360.)
+                     final_dir = final_dir - 360.;
+
+//
+//   Move interpolated speed & direction into WR arrays.
+//         
+
+                  wr_wind_speed [ambig] = final_speed;
+                  wr_wind_dir [ambig] = final_dir;
+
+//
+//   Estimate the final value of likelihood. 
+//
+				wr_mle[ambig] = _ObjectiveFunction(meas_list,
+					wr_wind_speed[ambig],wr_wind_dir[ambig],kp);
+
+//
+//   Estimate the RMS speed and direction errors. 
+//
+
+//                  wr_wind_speed_err [ambig] = wind_speed_intv_opti *
+//                    sqrt (fabs (0.5 * q20 / determinant));
+
+//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti *
+//                    sqrt (fabs (0.5 * q02 / determinant));
+				}
+			}
+		}
+	}	//  The big ambiguity loop
+
+	return(1);
+
+}

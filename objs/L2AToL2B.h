@@ -46,6 +46,7 @@ public:
 	//------------//
 
 	int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
+	int		GSConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
 	int		Flush(L2B* l2b);
 
 	//-----------//

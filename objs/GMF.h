@@ -40,6 +40,23 @@ static const char rcs_id_gmf_h[] =
 #define MINIMUM_WVC_MEASUREMENTS	4
 #define MINIMUM_AZIMUTH_DIVERSITY	20.0*dtr
 
+// Ground System parameters
+#define	wind_start_speed		8.0
+#define	lower_speed_bound		0
+#define	upper_speed_bound		50
+#define	min_incidence_index		40
+#define	max_incidence_index		59
+#define	lower_azimuth_bound		0
+#define	upper_azimuth_bound		90
+#define	wind_max_solutions		10
+#define	wind_speed_band			4
+#define	wind_speed_intv_init	0.5
+#define	wind_dir_intv_init		8.0
+#define wind_dir_intv_opti		2.5
+#define	wind_speed_intv_opti	0.25
+#define	wind_variance_limit		1.0e-9
+#define	MAX_DIR_SAMPLES 		400
+
 class GMF : public PiscTable
 {
 public:
@@ -87,6 +104,16 @@ public:
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
 	int		FindMany(WVC* wvc);
+
+	//-------------------//
+	// GS wind retrieval //
+	//-------------------//
+
+	int		GSRetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int		Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp,
+				WVC* wvc);
+	int		Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp,
+				WVC* wvc);
 
 	//-------//
 	// flags //
