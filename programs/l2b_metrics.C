@@ -87,6 +87,7 @@ template class List<WindVectorPlus>;
 #define DEFAULT_LOW_SPEED		0.0
 #define DEFAULT_HIGH_SPEED		30.0
 #define DEFAULT_WITHIN_ANGLE	45.0
+#define DEFAULT_OUTPUT_BASE		"metrics"
 
 //--------//
 // MACROS //
@@ -242,6 +243,9 @@ main(
 			exit(1);
 		}
 	}
+
+	if (! output_base)
+		output_base = DEFAULT_OUTPUT_BASE;
 
 	//-----------------------//
 	// read in level 2B file //

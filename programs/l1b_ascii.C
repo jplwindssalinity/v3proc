@@ -103,7 +103,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l1b_file>", "<output_file>", 0};
+const char* usage_array[] = { "<l1b_file>", "[ output_file ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -144,7 +144,7 @@ main(
 	// open output file //
 	//------------------//
 
-	FILE* output_fp;
+	FILE* output_fp = stdout;
 	if (output_file)
 	{
 		output_fp = fopen(output_file, "w");
@@ -154,10 +154,6 @@ main(
 				output_file);
 			exit(1);
 		}
-	}
-	else
-	{
-		output_fp = stdout;
 	}
 
 	//----------------//
@@ -178,7 +174,7 @@ main(
 	// close the files //
 	//-----------------//
 
-	if (output_file)
+	if (output_fp != stdout)
 		fclose(output_fp);
 	l1b.Close();
 
