@@ -441,10 +441,20 @@ main(
                 else
                 {
                     // use the file's flag
-                    if (flag_tab[ati][cti] == 0)
+                    switch(flag_tab[ati][cti])
+                    {
+                    case 0:    // inner no rain
+                    case 3:    // outer no rain
                         mudhflag = 1;
-                    else
+                        break;
+                    case 1:    // inner rain
+                    case 4:    // outer rain
                         mudhflag = 3;
+                        break;
+                    default:
+                        mudhflag = 5;
+                        break;
+                    }
                 }
                 fprintf(flag_ofp, "%g %g %d\n", lon, lat, mudhflag);
             }
