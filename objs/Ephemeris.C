@@ -84,3 +84,49 @@ double time2 = current_state->time;
 return(1);
 
 }
+
+//
+// OrbitStateList
+//
+
+//
+// Default constructor
+//
+
+OrbitStateList::OrbitStateList()
+{
+return;
+}
+
+//
+// Destructor
+//
+
+OrbitStateList::~OrbitStateList()
+{
+return;
+}
+
+
+//
+// OrbitState
+//
+
+//
+// Default constructor
+//
+
+OrbitState::OrbitState()
+{
+return;
+}
+
+//
+// Destructor
+//
+
+OrbitState::~OrbitState()
+{
+return;
+}
+
