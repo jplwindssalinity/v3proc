@@ -80,7 +80,8 @@ PROGRAMS = \
 	fix_dtc \
 	get_DopRan_scan \
 	get_X_scan \
-	sim_accurate
+	BYUX_vs_time 
+#	sim_accurate
 #	generate_kfactor
 
 HUDD_PROGRAMS = \
