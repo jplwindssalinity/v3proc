@@ -5,10 +5,10 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-HDFINCDIR =		/usr/local/HDF/include
+HDFINCDIR =		/usr/local/hdf/include
 
 EALIBS =		../../lib/libEAData.a /usr/local/lib/libtiff.a
-HDFLIBS =		-L/usr/local/HDF/lib -lmfhdf -ldf -lz -lnsl
+HDFLIBS =		-L/usr/local/hdf/lib -lmfhdf -ldf -lz -lnsl
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
