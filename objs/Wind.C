@@ -2706,7 +2706,7 @@ WindSwath::ThresNudge(
 			
 			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
 			     wvp; wvp = wvc->ambiguities.GetNext()) {
-			  if ( exp(0.5*(wvp->obj - head->obj)) > thres[w] )
+			  if ( exp(0.5*(wvp->obj - head->obj)) >= thres[w] )
 			    rank_idx++;
 			}
 
