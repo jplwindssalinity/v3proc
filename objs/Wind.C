@@ -1889,7 +1889,7 @@ WindSwath::SmartNudge(
             for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
                  wvp = wvc->ambiguities.GetNext())
             {
-                if (wvp->obj == 0.0)
+                if (wvp->obj != 1.0)
                     continue;
 
                 float dif = ANGDIF(wvp->dir, nudge_wv.dir);
