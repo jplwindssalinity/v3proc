@@ -37,7 +37,7 @@ OBJS = \
 	InstrumentSimAccurate.o \
 	InstrumentGeom.o \
 	Interpolate.o \
-	Kp.o \
+	KprTable.o \
 	L00.o \
 	L00Frame.o \
 	L00ToL10.o \
