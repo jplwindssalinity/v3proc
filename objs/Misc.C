@@ -334,3 +334,30 @@ amotry(
 	return(ytry);
 
 }
+
+float median(const float* array, int num_elements){
+  // copy array
+  float* buf= new float(num_elements);
+  for(int c=0;c<num_elements;c++) buf[c]=array[c];
+
+  // sort array
+  sort_increasing(buf,num_elements);
+  
+  // return median value;
+  float retval=buf[num_elements/2];
+  delete buf;
+  return(retval);
+}
+
+void sort_increasing(float* array, int num_elements){
+  int idx=0;
+  while(idx<num_elements-1){
+    if(array[idx]<=array[idx+1]) idx++;
+    else{
+      float tmp=array[idx+1];
+      array[idx+1]=array[idx];
+      array[idx]=tmp;
+      idx=0;
+    }
+  }
+}
