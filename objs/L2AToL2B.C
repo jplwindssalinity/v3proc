@@ -8,7 +8,6 @@ static const char rcs_id_l2atol2b_c[] =
 
 #include <stdio.h>
 #include <string.h>
-#include <iostream.h>
 #include "L2AToL2B.h"
 #include "Constants.h"
 #include "Misc.h"

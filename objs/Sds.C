@@ -270,6 +270,7 @@ Sds::SetMaxAndMin()
 {
     fprintf(stderr, "Calling the base SetMaxAndMin is evil.\n");
     exit(1);
+    return(0);
 }
 
 //==========//

@@ -191,11 +191,11 @@ SdsFloat32* y_vel = new SdsFloat32("y_vel", 1, dim_sizes_frame, "m/s",
 SdsFloat32* z_vel = new SdsFloat32("z_vel", 1, dim_sizes_frame, "m/s",
     1.0, 0.0, dim_names_frame, 8000.0, -8000.0);
 SdsInt16* roll = new SdsInt16("roll", 1, dim_sizes_frame, "deg", 0.001, 0.0,
-    dim_names_frame, 3.0, -3.0);
+    dim_names_frame, 3, -3);
 SdsInt16* pitch = new SdsInt16("pitch", 1, dim_sizes_frame, "deg", 0.001, 0.0,
-    dim_names_frame, 3.0, -3.0);
+    dim_names_frame, 3, -3);
 SdsInt16* yaw = new SdsInt16("yaw", 1, dim_sizes_frame, "deg", 0.001, 0.0,
-    dim_names_frame, 3.0, -3.0);
+    dim_names_frame, 3, -3);
 SdsUInt16* first_packet_header = new SdsUInt16("first_packet_header", 2,
     dim_sizes_frame_3, "n/a", 1.0, 0.0, dim_names_frame_packet_header,
     0xffff, 0x0000);

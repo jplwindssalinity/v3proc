@@ -10,6 +10,7 @@ static const char rcs_id_tracking_h[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <string.h>
 
 //======================================================================
 // CLASSES
