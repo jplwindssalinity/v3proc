@@ -68,7 +68,8 @@ struct GSL1AStatus
     unsigned char   prf_orbit_step_change;
     char            pad8[9];
     char            vtcw[8];
-    char            pad9[10];
+    char            corres_instr_time[8];
+    char            pad9[2];
 };
 
 struct GSL1AEngData

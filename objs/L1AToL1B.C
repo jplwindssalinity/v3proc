@@ -80,6 +80,7 @@ L1AToL1B::Convert(
 
 	//------------------------------------//
 	// Extract and prepare cal pulse data //
+    // Note 8 bit shift for loopback's    //
 	//------------------------------------//
 
     if (l1a->frame.calPosition != 255)
@@ -88,7 +89,7 @@ L1AToL1B::Convert(
         En_echo_load = 0.0;
         for (int i=0; i < l1a->frame.slicesPerSpot; i++)
         {
-            Esn_echo_cal += l1a->frame.loopbackSlices[i];
+            Esn_echo_cal += l1a->frame.loopbackSlices[i]*256.0;
             En_echo_load += l1a->frame.loadSlices[i];
         }
         Esn_noise_cal = l1a->frame.loopbackNoise;

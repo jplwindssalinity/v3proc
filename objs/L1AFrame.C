@@ -486,8 +486,8 @@ int L1AFrame::WriteAscii(FILE* ofp){
 	    (int)antennaPosition[c],spotNoise[c],c%2);
     fprintf(ofp,"E(S+N) Slices(1-%d): ",slicesPerSpot);
     for(int s=0;s<slicesPerSpot;s++){
-      offset++;
       fprintf(ofp,"%g ",science[offset]);
+      offset++;
     }
     fprintf(ofp,"\n");
   }

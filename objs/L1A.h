@@ -63,9 +63,11 @@ public:
     int  WriteDataRecAscii();
 
     int  WriteGSDataRec(void);
+    int  WriteGSDataRecAscii(void);
 
 	int  OpenCalPulseForWriting(const char* filename);
     int  WriteGSCalPulseRec(void);
+    int  WriteGSCalPulseRecAscii(void);
     int  CloseCalPulseFile(void);
 
 	//-----------//

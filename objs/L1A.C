@@ -107,6 +107,86 @@ L1A::WriteDataRecAscii()
   return(1);
 }
 
+//----------------------------//
+// L1A::WriteGSDataRecAscii   //
+//----------------------------//
+int
+L1A::WriteGSDataRecAscii()
+{
+  if(_outputFp==NULL) return(0);
+  if(!frame.WriteAscii(_outputFp)) return(0);
+
+  //--------------------------------------//
+  // Now write out the GS specific stuff. //
+  //--------------------------------------//
+
+  fprintf(_outputFp,"\n GS Status Block\n\n");
+  fprintf(_outputFp,"prf_count = %d\n",frame.status.prf_count);
+  fprintf(_outputFp,"prf_cycle_time = %d\n",frame.status.prf_cycle_time);
+  fprintf(_outputFp,"range_gate_a_delay = %d\n",
+    frame.status.range_gate_a_delay);
+  fprintf(_outputFp,"range_gate_a_width = %d\n",
+    frame.status.range_gate_a_width);
+  fprintf(_outputFp,"range_gate_b_delay = %d\n",
+    frame.status.range_gate_b_delay);
+  fprintf(_outputFp,"range_gate_b_width = %d\n",
+    frame.status.range_gate_b_width);
+  fprintf(_outputFp,"pulse_width = %d\n",frame.status.pulse_width);
+  fprintf(_outputFp,"pred_antenna_pos_count = %d\n",
+    frame.status.pred_antenna_pos_count);
+  fprintf(_outputFp,"doppler_orbit_step = %d\n",
+    frame.status.doppler_orbit_step);
+  fprintf(_outputFp,"prf_orbit_step_change = %d\n",
+    frame.status.prf_orbit_step_change);
+  double vtcw = 0.0;
+  (void)memcpy(&vtcw, frame.status.vtcw, sizeof(double));
+  fprintf(_outputFp,"vtcw = %g\n",vtcw);
+  double corres_instr_time = 0.0;
+  (void)memcpy(&corres_instr_time, frame.status.corres_instr_time,
+         sizeof(double));
+  fprintf(_outputFp,"corres_instr_time = %g\n",corres_instr_time);
+
+  fprintf(_outputFp,"\n GS Engineering Block\n\n");
+  fprintf(_outputFp,"precision_coupler_temp = %d\n",
+    frame.engdata.precision_coupler_temp);
+  fprintf(_outputFp,"rcv_protect_sw_temp = %d\n",
+    frame.engdata.rcv_protect_sw_temp);
+  fprintf(_outputFp,"beam_select_sw_temp = %d\n",
+    frame.engdata.beam_select_sw_temp);
+  fprintf(_outputFp,"receiver_temp = %d\n",
+    frame.engdata.receiver_temp);
+
+  fprintf(_outputFp,"\n GS EU Block\n\n");
+  fprintf(_outputFp,"prf_cycle_time_eu = %g\n",
+    frame.in_eu.prf_cycle_time_eu);
+  fprintf(_outputFp,"range_gate_delay_inner = %g\n",
+    frame.in_eu.range_gate_delay_inner);
+  fprintf(_outputFp,"range_gate_delay_outer = %g\n",
+    frame.in_eu.range_gate_delay_outer);
+  fprintf(_outputFp,"range_gate_width_inner = %g\n",
+    frame.in_eu.range_gate_width_inner);
+  fprintf(_outputFp,"range_gate_width_outer = %g\n",
+    frame.in_eu.range_gate_width_outer);
+  fprintf(_outputFp,"transmit_pulse_width = %g\n",
+    frame.in_eu.transmit_pulse_width);
+  fprintf(_outputFp,"true_cal_pulse_pos = %d\n",
+    frame.in_eu.true_cal_pulse_pos);
+  fprintf(_outputFp,"transmit_power_inner = %g\n",
+    frame.in_eu.transmit_power_inner);
+  fprintf(_outputFp,"transmit_power_outer = %g\n",
+    frame.in_eu.transmit_power_outer);
+  fprintf(_outputFp,"precision_coupler_temp_eu = %g\n",
+    frame.in_eu.precision_coupler_temp_eu);
+  fprintf(_outputFp,"rcv_protect_sw_temp_eu = %g\n",
+    frame.in_eu.rcv_protect_sw_temp_eu);
+  fprintf(_outputFp,"beam_select_sw_temp_eu = %g\n",
+    frame.in_eu.beam_select_sw_temp_eu);
+  fprintf(_outputFp,"receiver_temp_eu = %g\n",
+    frame.in_eu.receiver_temp_eu);
+
+  return(1);
+}
+
 //--------------------------//
 // L1A::WriteGSDataRec   //
 //--------------------------//
@@ -341,4 +421,72 @@ L1A::WriteGSCalPulseRec(void)
 //    printf("%d %d\n",frame.in_eu.true_cal_pulse_pos,*ptr);
 
     return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
+}
+
+//--------------------------//
+// L1A::WriteCalPulseAscii  //
+//--------------------------//
+int
+L1A::WriteGSCalPulseRecAscii(void)
+{
+    int i=0;  // loop counter
+
+    if (_calPulseFP == NULL) return(0);
+
+    fprintf(_calPulseFP,"Cal Pulse Record:\n");
+    fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.frame_time_secs);
+    for (i=0; i < 12; i++)
+    {
+      fprintf(_calPulseFP,"loopbackSlices[%d] = %g\n",
+        i,frame.loopbackSlices[i]);
+    }
+    fprintf(_calPulseFP,"loopbackNoise = %g\n",frame.loopbackNoise);
+
+    for (i=0; i < 12; i++)
+    {
+      fprintf(_calPulseFP,"loadSlices[%d] = %g\n",
+        i,frame.loadSlices[i]);
+    }
+    fprintf(_calPulseFP,"loadNoise = %g\n",frame.loadNoise);
+    fprintf(_calPulseFP,"precision_coupler_temp_eu = %g\n",
+      frame.in_eu.precision_coupler_temp_eu);
+    fprintf(_calPulseFP,"rcv_protect_sw_temp_eu = %g\n",
+      frame.in_eu.rcv_protect_sw_temp_eu);
+    fprintf(_calPulseFP,"beam_select_sw_temp_eu = %g\n",
+      frame.in_eu.beam_select_sw_temp_eu);
+    fprintf(_calPulseFP,"receiver_temp_eu = %g\n",
+      frame.in_eu.receiver_temp_eu);
+    fprintf(_calPulseFP,"transmit_power_inner = %g\n",
+      frame.in_eu.transmit_power_inner);
+    fprintf(_calPulseFP,"transmit_power_outer = %g\n",
+      frame.in_eu.transmit_power_outer);
+    fprintf(_calPulseFP,"frame_inst_status = %d\n",
+      frame.frame_inst_status);
+    fprintf(_calPulseFP,"frame_err_status = %d\n",
+      frame.frame_err_status);
+    fprintf(_calPulseFP,"true_cal_pulse_pos = %d\n",
+      frame.in_eu.true_cal_pulse_pos);
+
+    // Set beam identifier based on true unit offset position and first pulse
+    // identity.
+    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
+    {
+      // different
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        fprintf(_calPulseFP,"beam_identifier = %d\n",1);
+      else
+        fprintf(_calPulseFP,"beam_identifier = %d\n",0);
+    }
+    else
+    {
+      // same
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        fprintf(_calPulseFP,"beam_identifier = %d\n",0);
+      else
+        fprintf(_calPulseFP,"beam_identifier = %d\n",1);
+    }
+    fprintf(_calPulseFP,"\n");
+
+  return(1);
+
 }

@@ -235,13 +235,23 @@ QscatSim::L1AFrameInit(
         for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
 
         l1a_frame->frame_time_secs = qscat->cds.time;
+        // assume fractional part of instrumentTime is zero for now
         l1a_frame->instrument_time = qscat->cds.instrumentTime;
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
         l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
-        l1a_frame->status.vtcw[0] = 0; // needs to be filled
-        l1a_frame->status.vtcw[1] = 0; // needs to be filled
+
+        // transfer instrument time in microseconds into vtcw.
+        double vtcw_time = 1e6*qscat->cds.instrumentTime;
+        memcpy((void *)(l1a_frame->status.vtcw), (void *)(&vtcw_time),
+               sizeof(double));
+        // convert instrument time to double (with zero fractional part)
+        double inst_time = qscat->cds.instrumentTime;
+        memcpy((void *)(l1a_frame->status.corres_instr_time),
+               (void *)(&inst_time),
+               sizeof(double));
+
         l1a_frame->engdata.precision_coupler_temp =
           qscat->ses.tempToDn(qscat->ses.physicalTemperature);
         l1a_frame->engdata.rcv_protect_sw_temp =
@@ -1047,9 +1057,10 @@ QscatSim::SetL1ALoopback(
     }
 
     // Now set the single slice with loopback energy.
+    // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
     int icenter = l1a_frame->slicesPerSpot/2;
-    l1a_frame->loopbackSlices[icenter] = Esn_echo_cal;
-    l1a_frame->science[base_slice_number + icenter] = Esn_echo_cal;
+    l1a_frame->loopbackSlices[icenter] = Esn_echo_cal/256.0;
+    l1a_frame->science[base_slice_number + icenter] = Esn_echo_cal/256.0;
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
