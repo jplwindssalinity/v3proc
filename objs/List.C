@@ -186,6 +186,23 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
+//------//
+// Find //
+//------//
+
+template <class T>
+T*
+List<T>::Find(
+	T*	data)
+{
+	for (T* contents = GetHead(); contents; contents = GetNext())
+	{
+		if (*contents == *data)
+			return(contents);
+	}
+	return(NULL);
+}
+
 //-----------//
 // NodeCount //
 //-----------//
@@ -655,23 +672,6 @@ List<T>::AddUniqueSorted(
 	{
 		return(AddSorted(new_data));	// not found, add it sorted
 	}
-}
-
-//------//
-// Find //
-//------//
-
-template <class T>
-T*
-List<T>::Find(
-	T*	data)
-{
-	for (T* contents = GetHead(); contents; contents = GetNext())
-	{
-		if (*contents == *data)
-			return(contents);
-	}
-	return(NULL);
 }
 
 //------//
