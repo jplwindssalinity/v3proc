@@ -91,7 +91,6 @@ template class List<OffsetList>;
 // CONSTANTS //
 //-----------//
 
-#define EQX_TIME_TOLERANCE	0.1
 
 //--------//
 // MACROS //
@@ -360,7 +359,12 @@ main(
 						&spacecraft);
 					spacecraft.orbitState.Write(eph_fp);
 					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+					break;			
+				case SpacecraftEvent::EQUATOR_CROSSING:
+				        instrument.SetEqxTime(spacecraft_event.time);
+					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
 					break;
+
 				default:
 					fprintf(stderr, "%s: unknown spacecraft event\n", command);
 					exit(1);
