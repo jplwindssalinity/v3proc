@@ -58,9 +58,12 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "BufferedList.h"
+#include "BufferedList.C"
 #include "List.h"
 #include "List.C"
 #include "Misc.h"
+#include "Ephemeris.h"
 #include "ConfigList.h"
 #include "L00.h"
 #include "ConfigSim.h"
@@ -71,11 +74,12 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
 template class List<StringPair>;
 template class List<Meas>;
 template class List<LonLat>;
 template class List<MeasSpot>;
-template class List<OrbitState>;
 template class List<WindVector>;
 
 //-----------//

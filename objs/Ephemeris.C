@@ -12,6 +12,7 @@ static const char rcs_id_ephemeris_c[] =
 #include <string.h>
 #include "Ephemeris.h"
 #include "List.h"
+#include "List.C"
 
 //
 // OrbitState
