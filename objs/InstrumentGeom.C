@@ -330,10 +330,10 @@ LocateSliceCentroids(
 		double look = center_look;
 		double azim = center_azim;
 		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, instrument,
-        	centroid_freq, ftol, &look, &azim, &gain))
+			centroid_freq, ftol, &look, &azim, &gain))
 		{
 			fprintf(stderr,
-				"FindSliceCentroids: error finding peak gain for %g Hz\n",
+				"LocateSliceCentroids: error finding peak gain for %g Hz\n",
 				centroid_freq);
 			return(0);
 		}
