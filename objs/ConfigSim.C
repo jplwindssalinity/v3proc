@@ -579,7 +579,7 @@ ConfigInstrument(
 	char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
 	if (dtc_file)
 	{
-		if (! instrument->rangeTracker.ReadBinary(dtc_file))
+		if (! instrument->dopplerTracker.ReadBinary(dtc_file))
 		{
 			fprintf(stderr, "ConfigInstrument: error reading DTC file %s\n",
 				dtc_file);
