@@ -228,7 +228,8 @@ main(
 	config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
 	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
 	config_list.StompOrAppend(SIM_KPC_FLAG_KEYWORD, "0");
-	config_list.StompOrAppend(SIM_KPM_FLAG_KEYWORD, "0");
+	config_list.StompOrAppend(SIM_CORR_KPM_FLAG_KEYWORD, "0");
+	config_list.StompOrAppend(SIM_UNCORR_KPM_FLAG_KEYWORD, "0");
 	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
         config_list.StompOrAppend(ATTITUDE_CONTROL_MODEL_KEYWORD,"NONE");
 	config_list.StompOrAppend(CREATE_XTABLE_KEYWORD, "1");
