@@ -247,6 +247,38 @@ main(
 	}
 	fclose(ofp);
 
+	//---------------//
+	// skill vs. ctd //
+	//---------------//
+
+	if (! l20.frame.swath.SkillVsCtd(&truth, value_array, count_array))
+	{
+		fprintf(stderr, "%s: error calculating skil\n", command);
+		exit(1);
+	}
+
+	xmgr_control(ofp, "Skill vs. CTD", l20_file, "Cross Track Distance (km)",
+		"Skill");
+
+	sprintf(filename, "%s.skill", output_base);
+	ofp = fopen(filename, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			filename);
+		exit(1);
+	}
+
+	for (int i = 0; i < cross_track_bins; i++)
+	{
+		if (count_array[i] > 0)
+		{
+			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i] * rtd,
+				count_array[i]);
+		}
+	}
+	fclose(ofp);
+
 	//-------------//
 	// free arrays //
 	//-------------//

@@ -1123,7 +1123,7 @@ WindSwath::RmsSpdErr(
 	WindField*	truth)
 {
 	//----------------------------------//
-	// calculate the sum of the sqaures //
+	// calculate the sum of the squares //
 	//----------------------------------//
 
 	double sum = 0.0;
@@ -1147,7 +1147,7 @@ WindSwath::RmsSpdErr(
 	}
 
 	//-------------------------------//
-	// take the mean and sqaure root //
+	// take the mean and square root //
 	//-------------------------------//
 
 	float rms_spd_err = (float)sqrt(sum/(double)count);
@@ -1164,7 +1164,7 @@ WindSwath::RmsDirErr(
 	WindField*	truth)
 {
 	//----------------------------------//
-	// calculate the sum of the sqaures //
+	// calculate the sum of the squares //
 	//----------------------------------//
 
 	double sum = 0.0;
@@ -1188,7 +1188,7 @@ WindSwath::RmsDirErr(
 	}
 
 	//-------------------------------//
-	// take the mean and sqaure root //
+	// take the mean and square root //
 	//-------------------------------//
 
 	float rms_dir_err = (float)sqrt(sum/(double)count);
@@ -1231,6 +1231,47 @@ WindSwath::Skill(
 	return(skill);
 }
 
+//--------------------//
+// WindSwath::SpdBias //
+//--------------------//
+
+float
+WindSwath::SpdBias(
+	WindField*	truth)
+{
+	//---------------------------//
+	// calculate the summed bias //
+	//---------------------------//
+
+	double sum = 0.0;
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			double dif = wvc->selected->spd - true_wv.spd;
+			sum += dif;
+			count++;
+		}
+	}
+
+	//-----------//
+	// normalize //
+	//-----------//
+
+	float spd_bias = (float)(sum / (double)count);
+
+	return(spd_bias);
+}
+
 //---------------------//
 // WindSwath::CtdArray //
 //---------------------//
@@ -1259,7 +1300,7 @@ WindSwath::RmsSpdErrVsCtd(
 	int*		count_array)
 {
 	//----------------------------------//
-	// calculate the sum of the sqaures //
+	// calculate the sum of the squares //
 	//----------------------------------//
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -1281,7 +1322,7 @@ WindSwath::RmsSpdErrVsCtd(
 	}
 
 	//-------------------------------//
-	// take the mean and sqaure root //
+	// take the mean and square root //
 	//-------------------------------//
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -1304,7 +1345,7 @@ WindSwath::RmsDirErrVsCtd(
 	int*		count_array)
 {
 	//----------------------------------//
-	// calculate the sum of the sqaures //
+	// calculate the sum of the squares //
 	//----------------------------------//
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -1326,7 +1367,7 @@ WindSwath::RmsDirErrVsCtd(
 	}
 
 	//-------------------------------//
-	// take the mean and sqaure root //
+	// take the mean and square root //
 	//-------------------------------//
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -1375,6 +1416,42 @@ WindSwath::SkillVsCtd(
 
 		*(count_array + cti) = count;
 		*(skill_array + cti) = (float)good_count / (float)count;
+	}
+
+	return(1);
+}
+
+//-------------------------//
+// WindSwath::SpdBiasVsCtd //
+//-------------------------//
+
+int
+WindSwath::SpdBiasVsCtd(
+	WindField*	truth,
+	float*		spd_bias_array,
+	int*		count_array)
+{
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		double sum = 0.0;
+		int count = 0;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+            double dif = wvc->selected->spd - true_wv.spd;
+            sum += dif;
+            count++;
+		}
+
+		*(count_array + cti) = count;
+		*(spd_bias_array + cti) = (float)(sum / (double)count);
 	}
 
 	return(1);

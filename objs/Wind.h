@@ -271,6 +271,7 @@ public:
 	float	RmsSpdErr(WindField* truth);
 	float	RmsDirErr(WindField* truth);
 	float	Skill(WindField* truth);
+	float	SpdBias(WindField* truth);
 
 	int		CtdArray(float* ctd_array);
 	int		RmsSpdErrVsCtd(WindField* truth, float* rms_spd_err_array,
@@ -278,6 +279,8 @@ public:
 	int		RmsDirErrVsCtd(WindField* truth, float* rms_dir_err_array,
 				int* count_array);
 	int		SkillVsCtd(WindField* truth, float* skill_array,
+				int* count_array);
+	int		SpdBiasVsCtd(WindField* truth, float* spd_bias_array,
 				int* count_array);
 
 	//-----------//
