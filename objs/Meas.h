@@ -13,6 +13,8 @@ static const char rcs_id_meas_h[] =
 #include "LonLat.h"
 #include "Ephemeris.h"
 #include "Attitude.h"
+#include "List.h"
+#include "List.C"
 
 
 //======================================================================
