@@ -20,11 +20,11 @@ static const char rcs_id_beam_c[] =
 const char* beam_map[] = { "None", "V", "H" };
 
 Beam::Beam()
-:	polarization(NONE), pulseWidth(0.0), receiverGateWidth(0.0),
-	timeOffset(0.0), _elecBoresightLook(0.0), _elecBoresightAzim(0.0),
-	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0),
-	_Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
-	_x_spacing(0.0), _y_spacing(0.0),
+:	polarization(NONE), pulseWidth(0.0), rxGateWidth(0.0),
+	timeOffset(0.0), useRangeTracker(0), useDopplerTracker(0),
+	_elecBoresightLook(0.0), _elecBoresightAzim(0.0),
+	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
+	_Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
 	_power_gain(NULL)
 {
 	return;
@@ -36,7 +36,7 @@ Beam::~Beam()
 	{
 		free_array(_power_gain,2,_Nx,_Ny);
 	}
-		
+
 	return;
 }
 
@@ -160,7 +160,7 @@ Beam::SetMechanicalBoresight(
 // is passed in and stored.  This function does not allocate its own array
 // and copy the passed array.  Therefore, the caller should not explicitely
 // deallocate the array.
- 
+
 int
 Beam::SetBeamPattern(
 	int	Nx, int Ny, int ix_zero, int iy_zero,

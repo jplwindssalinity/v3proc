@@ -10,6 +10,7 @@ static const char rcs_id_beam_h[] =
 	"@(#) $Id$";
 
 #include "CoordinateSwitch.h"
+#include "Tracking.h"
 
 //======================================================================
 // CLASSES
@@ -77,10 +78,15 @@ public:
 	// variables //
 	//-----------//
 
-	PolE	polarization;
-	float	pulseWidth;			// pulse width in seconds
-	float	receiverGateWidth;	// receiver gate width in seconds
-	float	timeOffset;			// seconds after prf for beam index 0
+	PolE			polarization;
+	float			pulseWidth;			// pulse width in seconds
+	float			rxGateWidth;		// receiver gate width in seconds
+	float			timeOffset;			// seconds after prf for beam index 0
+
+	int				useRangeTracker;
+	int				useDopplerTracker;
+	RangeTracker	rangeTracker;
+	DopplerTracker	dopplerTracker;
 
 //protected:
 
