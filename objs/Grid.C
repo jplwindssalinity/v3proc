@@ -50,6 +50,7 @@ Grid::SetStartTime(double start_time)
 		exit(-1);
 	}
 
+	_start_position = _start_position.Nadir();
 	return(1);
 }
 
@@ -329,7 +330,12 @@ Grid::ShiftForward(int do_composite)
         	{   // each sublist is composited before output
             	offsetlist->MakeMeasList(fp, &spot_measList);
 				Meas* meas = new Meas;
-				composite(&spot_measList,meas);
+				if (! meas->Composite(&spot_measList))
+				{
+					printf("Error compositing in Grid::ShiftForward\n");
+					delete meas;
+					return(0);
+				}
 				spot_measList.FreeContents();
 				if (! l17.frame.measList.Append(meas))
 				{
