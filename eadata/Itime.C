@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.10  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.11   03 Jun 1999 12:08:22   sally
 // fix ItimeTotm(), opposite logic
@@ -132,7 +135,12 @@ int
 Itime::tmToItime(
     struct tm*  tm_time)
 {
-#ifdef INTEL86
+// forcing the issue for MACOS X
+// by defining MACHACK 
+# define MACHACK
+// and replacing INTEL86 check with MACHACK
+#ifdef MACHACK
+// #ifdef INTEL86
     time_t second = timegm(tm_time);
     if (second == (time_t)-1)
         return 0;
