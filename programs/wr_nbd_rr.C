@@ -439,6 +439,7 @@ main(
 
     if (opt_class && spd_file != NULL)
     {
+/*
         for (int ati = 0; ati < ATI_SIZE; ati++)
         {
             for (int cti = 0; cti < CTI_SIZE; cti++)
@@ -456,6 +457,23 @@ main(
                 if (rr > rain_threshold)
                     flag = 1;
                 fprintf(class_ofp, "%g %g %d\n", spd, nbd, flag);
+            }
+        }
+*/
+        for (int ati = 0; ati < ATI_SIZE; ati++)
+        {
+            for (int cti = 0; cti < CTI_SIZE; cti++)
+            {
+                // check data
+                if (rain_rate[ati][cti] > 250 ||
+                    nbd_array[ati][cti] == -128)
+                {
+                    continue;
+                }
+                float rr = rain_rate[ati][cti] * 0.1;
+                float nbd = nbd_array[ati][cti] * 0.1;
+                float spd = spd_array[ati][cti] * 0.2;
+                fprintf(class_ofp, "%g %g %d\n", spd, nbd, rain_rate[ati][cti]);
             }
         }
     }
