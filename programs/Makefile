@@ -28,6 +28,7 @@ PROGRAMS = \
 	rgc_delay_errors \
 	baseband_errors \
 	rgc_format \
+	dtc_format \
 	reformat_pattern \
 	memfilter \
 	make_pattern \
@@ -73,6 +74,7 @@ HUDD_PROGRAMS = \
 	rgc_delay_errors \
 	baseband_errors \
 	rgc_format \
+	dtc_format \
 	fake_vap \
 	plot_solution_curves \
 	windfield_to_vctr \
