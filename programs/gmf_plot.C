@@ -8,7 +8,7 @@
 //    gmf_plot
 //
 // SYNOPSIS
-//    gmf_plot [ -ip ] <gmf_file> [output_base]
+//    gmf_plot [ -ips ] <gmf_file> [output_base]
 //
 // DESCRIPTION
 //    Generates plots about a geophysical model function.
@@ -17,6 +17,7 @@
 //    The following options are supported:
 //      [ -i ]  Interactive.
 //      [ -p ]  Indicates the gmf file is polarimetric.
+//      [ -s ]  Don't show query for interactive (silent).
 //
 // OPERANDS
 //    The following operands are supported:
@@ -29,6 +30,7 @@
 //    An example of a command line is:
 //      % gmf_plot -p pkmod.dat pkmod.plot
 //      % gmf_plot -i nscat2.dat
+//      % gmf_plot -is nscat2.dat < data.in > data.out
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -88,7 +90,7 @@ template class List<AngleInterval>;
 //-----------//
 
 #define QUOTES     '"'
-#define OPTSTRING  "ip"
+#define OPTSTRING  "ips"
 
 #define POLS  2
 #define INCS  67
@@ -110,10 +112,10 @@ template class List<AngleInterval>;
 
 int  gen_plot(const char* output_base, GMF* gmf, Meas::MeasTypeE meas_type,
          float inc, int use_log);
-int  interact(GMF* gmf);
+int  interact(GMF* gmf, int silent);
 int  string_query(FILE* fp, char* query, const char* choices[],
-         int* current_idx);
-int  float_query(FILE* fp, char* query, float* current_value);
+         int* current_idx, int silent);
+int  float_query(FILE* fp, char* query, float* current_value, int silent);
 
 //------------------//
 // OPTION VARIABLES //
@@ -140,6 +142,7 @@ main(
 
     int opt_pol = 0;
     int opt_interactive = 0;
+    int opt_silent = 0;
 
     //------------------------//
     // parse the command line //
@@ -158,6 +161,9 @@ main(
             break;
         case 'p':
             opt_pol = 1;
+            break;
+        case 's':
+            opt_silent = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -211,7 +217,7 @@ main(
         // do the interactive thing //
         //--------------------------//
 
-        interact(&gmf);
+        interact(&gmf, opt_silent);
         printf("\n");
     }
     else
@@ -316,7 +322,8 @@ gen_plot(
 
 int
 interact(
-    GMF*  gmf)
+    GMF*  gmf,
+    int   silent)
 {
     int meas_type = (int)Meas::VV_MEAS_TYPE;
     float incidence_angle = 50.0;
@@ -326,23 +333,24 @@ interact(
     do
     {
         if (! string_query(stdin, "Measurement type", meas_type_map,
-            &meas_type))
+            &meas_type, silent))
         {
             return(1);
         }
-        if (! float_query(stdin, "Incidence angle", &incidence_angle))
+        if (! float_query(stdin, "Incidence angle", &incidence_angle, silent))
         {
             return(1);
         }
-        if (! float_query(stdin, "Wind speed", &speed))
+        if (! float_query(stdin, "Wind speed", &speed, silent))
         {
             return(1);
         }
-        if (! float_query(stdin, "Wind direction CCW from E", &dir))
+        if (! float_query(stdin, "Wind direction CCW from E", &dir, silent))
         {
             return(1);
         }
-        if (! float_query(stdin, "Measurement direction CW from N", &mdir))
+        if (! float_query(stdin, "Measurement direction CCW from E", &mdir,
+            silent))
         {
             return(1);
         }
@@ -383,12 +391,15 @@ string_query(
     FILE*        fp,
     char*        query,
     const char*  choices[],
-    int*         current_idx)
+    int*         current_idx,
+    int          silent)
 {
     char string[MAX_STRING_LENGTH];
     do
     {
-        printf("%s (%s): ", query, choices[*current_idx]);
+        if (! silent)
+            printf("%s (%s): ", query, choices[*current_idx]);
+
         if (fgets(string, MAX_STRING_LENGTH, fp) == NULL)
             return(0);    // ctrl D ?
 
@@ -424,12 +435,15 @@ int
 float_query(
     FILE*   fp,
     char*   query,
-    float*  current_value)
+    float*  current_value,
+    int     silent)
 {
     char string[MAX_STRING_LENGTH];
     do
     {
-        printf("%s (%g): ", query, *current_value);
+        if (! silent)
+            printf("%s (%g): ", query, *current_value);
+
         if (fgets(string, MAX_STRING_LENGTH, fp) == NULL)
             return(0);    // ctrl D ?
 
