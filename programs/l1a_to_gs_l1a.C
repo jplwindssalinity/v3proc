@@ -179,11 +179,14 @@ main(
                        "%s: error writing GS data record\n", command);
                 exit(1);
             }
-            if (l1a.WriteGSCalPulseRec() == 0)
+            if (l1a.frame.calPosition != 255)
             {
-                fprintf(stderr,
-                       "%s: error writing Cal Pulse record\n", command);
-                exit(1);
+              if (l1a.WriteGSCalPulseRec() == 0)
+              {
+                  fprintf(stderr,
+                         "%s: error writing Cal Pulse record\n", command);
+                  exit(1);
+              }
             }
         }
         if (start_frame>=0) frame_number++;
