@@ -2394,64 +2394,73 @@ WindSwath::DeleteEntireSwath()
 //------------------------------//
 
 int
-WindSwath::DeleteFlaggedData
-( const char* flag_file,
-  int         use_thresh,
-  float       threshold_both,
-  float       threshold_outer)
+WindSwath::DeleteFlaggedData(
+    const char*  flag_file,
+    int          use_thresh,
+    float        threshold_both,
+    float        threshold_outer)
 {
-  FILE* ifp=fopen(flag_file,"r");
-  if(ifp==NULL){
-    fprintf(stderr,"Fatal Error: Flag file %s cannot be opened\n",flag_file);
-    exit(1);
-  }
-  unsigned int size = _alongTrackBins*_crossTrackBins;
-  float* flag_value=(float*)malloc(sizeof(float)*size);
-  char* flag=(char*)malloc(sizeof(char)*size);
-  if(flag_value==NULL || flag==NULL){
-    fprintf(stderr,"Fatal Error: Error allocating memory for flag_value\n");
-    exit(1);
-  }
-
-  if((fread(flag_value,sizeof(float),size,ifp)!=size) ||
-     (fread(flag,sizeof(char),size,ifp)!=size)){
-    fprintf(stderr,"Fatal Error: Flag file %s cannot be read\n",flag_file);
-    exit(1);
-  }
-  fclose(ifp);
-
-  int count = 0;
-  for (int i = 0; i < _crossTrackBins; i++)
+    FILE* ifp = fopen(flag_file, "r");
+    if (ifp == NULL)
     {
-      for (int j = 0; j < _alongTrackBins; j++)
-        {
-      WVC* wvc = *(*(swath + i) + j);
-      if (wvc == NULL)
-        continue;
+        fprintf(stderr, "Fatal Error: Flag file %s cannot be opened\n",
+            flag_file);
+        exit(1);
+    }
+    unsigned int size = _alongTrackBins * _crossTrackBins;
+    float* flag_value = (float*)malloc(sizeof(float) * size);
+    char* flag = (char*)malloc(sizeof(char) * size);
+    if (flag_value == NULL || flag == NULL)
+    {
+        fprintf(stderr,
+            "Fatal Error: Error allocating memory for flag_value\n");
+        exit(1);
+    }
 
-      int offset=j*_crossTrackBins+i;
-      int not_classified=0;
-      int rain_bit_set=0;
-      float threshold=threshold_both;
-      // outer beam only case
-      if (flag[offset]>=3) threshold=threshold_outer;
-      if (flag[offset]==2 || flag[offset]>=5) not_classified=1;
-      if (use_thresh==0 && (flag[offset]==1 || flag[offset]==4))
-          rain_bit_set=1;
-      if ((use_thresh && (flag_value[offset] > threshold)) ||
-          not_classified || rain_bit_set)
+    if ((fread(flag_value, sizeof(float), size, ifp) != size) ||
+        (fread(flag, sizeof(char), size, ifp) != size))
+    {
+        fprintf(stderr, "Fatal Error: Flag file %s cannot be read\n",
+            flag_file);
+        exit(1);
+    }
+    fclose(ifp);
+
+    int count = 0;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
+
+            int offset = j * _crossTrackBins + i;
+            int not_classified = 0;
+            int rain_bit_set = 0;
+            float threshold = threshold_both;
+
+            // outer beam only case
+            if (flag[offset] >= 3)
+                threshold = threshold_outer;
+            if (flag[offset] == 2 || flag[offset] >= 5)
+                not_classified = 1;
+            if (use_thresh == 0 && (flag[offset] == 1 || flag[offset] == 4))
+                rain_bit_set = 1;
+            if ((use_thresh && (flag_value[offset] > threshold)) ||
+                not_classified || rain_bit_set)
             {
-          delete wvc;
-          *(*(swath + i) + j) = NULL;
-          count++;
-          _validCells--;
+                delete wvc;
+                *(*(swath + i) + j) = NULL;
+                count++;
+                _validCells--;
             }
         }
     }
 
-  free(flag_value);
-  free(flag);
-  return(count);
+    free(flag_value);
+    free(flag);
+    return(count);
 }
 
 //-----------------------------------//
@@ -3731,6 +3740,9 @@ WindSwath::BestKFilter(
     return(1);
 }
 
+// need this fraction of the available wvc's in order to select
+#define AVAILABLE_FRACTION  0.15
+
 //-----------------------------//
 // WindSwath::MedianFilterPass //
 //-----------------------------//
@@ -3822,6 +3834,8 @@ WindSwath::MedianFilterPass(
                     float x1 = wvp->spd * cos(wvp->dir);
                     float y1 = wvp->spd * sin(wvp->dir);
 
+                    int selected_count = 0;
+                    int available_count = 0;
                     for (int i = cti_min; i < cti_max; i++)
                     {
                         for (int j = ati_min; j < ati_max; j++)
@@ -3833,9 +3847,13 @@ WindSwath::MedianFilterPass(
                             if (! other_wvc)
                                 continue;
 
+                            available_count++;    // other wvc exists
+
                             WindVectorPlus* other_wvp = other_wvc->selected;
                             if (! other_wvp)
                                 continue;
+
+                            selected_count++;    // other wvc has a selection
 
                             float x2 = other_wvp->spd * cos(other_wvp->dir);
                             float y2 = other_wvp->spd * sin(other_wvp->dir);
@@ -3858,12 +3876,16 @@ WindSwath::MedianFilterPass(
                             vector_dif_sum /= wvp->obj;
                     }
 
-                    if (vector_dif_sum < min_vector_dif_sum)
+                    int target_count = (int)((float)available_count *
+                        AVAILABLE_FRACTION);
+// printf("%d %d %d\n", available_count, selected_count, target_count);
+                    if (vector_dif_sum < min_vector_dif_sum &&
+                        selected_count >= target_count)
                     {
                         min_vector_dif_sum = vector_dif_sum;
                         new_selected[cti][ati] = wvp;
                     }
-                }    // done with ambiguities
+                }   // done with ambiguities
             }
             else if (special == 1)
             {
@@ -3905,10 +3927,10 @@ WindSwath::MedianFilterPass(
             else if (special == 2)
             {
                 // Spatial Probability Search (special==2)
-                 WindVectorPlus* wvp = new WindVectorPlus;
-                 energy += GetMostProbableDir(wvp, cti, ati, cti_min,
-                     cti_max, ati_min, ati_max);
-                 new_selected[cti][ati] = wvp;
+                WindVectorPlus* wvp = new WindVectorPlus;
+                energy += GetMostProbableDir(wvp, cti, ati, cti_min,
+                    cti_max, ati_min, ati_max);
+                new_selected[cti][ati] = wvp;
             }
             else
             {
