@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -53,7 +53,7 @@ public:
     Matrix3 operator+(Matrix3 m2);
     Matrix3 operator-(Matrix3 m2);
     Matrix3 operator-();
-    Matrix3 operator*(Matrix3 m2);
+    Matrix3 operator*(const Matrix3 m2) const;
     Vector3 operator*(Vector3 v2);
 
     //

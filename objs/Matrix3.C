@@ -158,7 +158,7 @@ Matrix3::operator-()
 
 Matrix3
 Matrix3::operator*(
-    Matrix3  m2)
+    const Matrix3  m2) const
 {
     int i, j, k;
     Matrix3 result(0.0);
