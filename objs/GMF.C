@@ -399,8 +399,9 @@ GMF::_ObjectiveFunction(
 	{
 		double chi = phi - (meas->eastAzimuth + pi);
 		double gmf_value;
-		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
-			&gmf_value);
+		GetNearestValue(meas->pol, meas->incidenceAngle, spd, chi, &gmf_value);
+//		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
+//			&gmf_value);
 		double s = gmf_value - meas->value;
 		fv += s*s / meas->estimatedKp + log10(meas->estimatedKp);
 	}
