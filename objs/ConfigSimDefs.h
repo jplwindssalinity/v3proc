@@ -1,13 +1,13 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef CONFIGSIMDEFS_H
 #define CONFIGSIMDEFS_H
 
 static const char rcs_id_configsimdefs_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //------------//
 // Spacecraft //
@@ -76,15 +76,12 @@ static const char rcs_id_configsimdefs_h[] =
 #define CHIRP_START_M_KEYWORD			"CHIRP_START_M"
 #define CHIRP_START_B_KEYWORD			"CHIRP_START_B"
 #define SYSTEM_TEMPERATURE_KEYWORD		"SYSTEM_TEMPERATURE"
-#define BASE_TRANSMIT_FREQUENCY_KEYWORD	"BASE_TRANSMIT_FREQUENCY"
 #define SCIENCE_SLICES_PER_SPOT_KEYWORD	"SCIENCE_SLICES_PER_SPOT"
 #define SCIENCE_SLICE_BANDWIDTH_KEYWORD	"SCIENCE_SLICE_BANDWIDTH"
 #define GUARD_SLICES_PER_SIDE_KEYWORD	"GUARD_SLICES_PER_SIDE"
 #define GUARD_SLICE_BANDWIDTH_KEYWORD	"GUARD_SLICE_BANDWIDTH"
 #define NOISE_BANDWIDTH_KEYWORD			"NOISE_BANDWIDTH"
 #define TRANSMIT_POWER_KEYWORD			"TRANSMIT_POWER"
-#define ECHO_RECEIVER_GAIN_KEYWORD		"ECHO_RECEIVER_GAIN"
-#define NOISE_RECEIVER_GAIN_KEYWORD		"NOISE_RECEIVER_GAIN"
 #define SYSTEM_LOSS_KEYWORD				"SYSTEM_LOSS"
 #define PTGR_NOISE_KP_KEYWORD			"PTGR_NOISE_KP"
 #define PTGR_NOISE_BIAS_KEYWORD			"PTGR_BIAS"
@@ -139,15 +136,9 @@ static const char rcs_id_configsimdefs_h[] =
 //---------//
 
 #define NUMBER_OF_BEAMS_KEYWORD			"NUMBER_OF_BEAMS"
-#define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
-#define NUMBER_OF_ENCODER_BITS_KEYWORD	"NUMBER_OF_ENCODER_BITS"
 #define ANTENNA_PEDESTAL_ROLL_KEYWORD	"ANTENNA_PEDESTAL_ROLL"
 #define ANTENNA_PEDESTAL_PITCH_KEYWORD	"ANTENNA_PEDESTAL_PITCH"
 #define ANTENNA_PEDESTAL_YAW_KEYWORD	"ANTENNA_PEDESTAL_YAW"
-#define COMMANDED_SPIN_RATE_KEYWORD		"COMMANDED_SPIN_RATE"
-#define ACTUAL_SPIN_RATE_KEYWORD		"ACTUAL_SPIN_RATE"
-#define ENCODER_A_OFFSET_KEYWORD		"ENCODER_A_OFFSET"
-#define ENCODER_DELAY_KEYWORD			"ENCODER_DELAY"
 #define ANTENNA_START_AZIMUTH_KEYWORD   "ANTENNA_START_AZIMUTH"
 #define ANTENNA_START_TIME_KEYWORD      "ANTENNA_START_TIME"
 
@@ -163,15 +154,9 @@ static const char rcs_id_configsimdefs_h[] =
 #define BEAM_x_LOOK_ANGLE_KEYWORD			"BEAM_x_LOOK_ANGLE"
 #define BEAM_x_AZIMUTH_ANGLE_KEYWORD		"BEAM_x_AZIMUTH_ANGLE"
 #define BEAM_x_POLARIZATION_KEYWORD			"BEAM_x_POLARIZATION"
-#define BEAM_x_PULSE_WIDTH_KEYWORD			"BEAM_x_PULSE_WIDTH"
-#define BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD	"BEAM_x_RECEIVER_GATE_WIDTH"
-#define BEAM_x_TIME_OFFSET_KEYWORD			"BEAM_x_TIME_OFFSET"
 #define BEAM_x_PATTERN_FILE_KEYWORD			"BEAM_x_PATTERN_FILE"
 #define BEAM_x_RGC_FILE_KEYWORD				"BEAM_x_RGC_FILE"
 #define BEAM_x_DTC_FILE_KEYWORD				"BEAM_x_DTC_FILE"
-
-// Tracking
-#define BEAM_x_PEAK_OFFSET_DN_KEYWORD		"BEAM_x_PEAK_OFFSET_DN"
 
 //--------//
 // XTable //
