@@ -9,6 +9,7 @@
 static const char rcs_id_meas_h[] =
 	"@(#) $Id$";
 
+#include "Beam.h"
 #include "LonLat.h"
 #include "Ephemeris.h"
 #include "Attitude.h"
@@ -46,6 +47,12 @@ public:
 	float		value;
 	Outline		outline;
 	LonLat		center;
+
+	PolE		pol;
+	float		eastAzimuth;		// azimuth angle ccw from east
+	float		scAzimuth;			// azimuth angle ccw from s/c velocity
+	float		incidenceAngle;
+	float		estimatedKp;
 };
 
 //======================================================================

@@ -152,10 +152,10 @@ GMF::GetCoefs(
 
 int
 GMF::FindSolutions(
-	MeasurementList*	measurement_list,
-	WVC*				wvc,
-	double				spd_step,
-	double				phi_step)		// in radians
+	MeasList*	meas_list,
+	WVC*		wvc,
+	double		spd_step,
+	double		phi_step)		// in radians
 {
 	//---------------------------------------//
 	// determine index ranges and step sizes //
@@ -178,7 +178,7 @@ GMF::FindSolutions(
 	// find the solution curve //
 	//-------------------------//
 
-	_FindSolutionCurve(measurement_list, dspd, dphi, phi_count, best_spd_idx,
+	_FindSolutionCurve(meas_list, dspd, dphi, phi_count, best_spd_idx,
 		best_obj);
 
 	//--------------------------------//
@@ -221,12 +221,12 @@ enum { DOWN = 0, UP };
 
 int
 GMF::RefineSolutions(
-	MeasurementList*	measurement_list,
-	WVC*				wvc,
-	double				initial_spd_step,
-	double				initial_phi_step,
-	double				final_spd_step,
-	double				final_phi_step)
+	MeasList*	meas_list,
+	WVC*		wvc,
+	double		initial_spd_step,
+	double		initial_phi_step,
+	double		final_spd_step,
+	double		final_phi_step)
 {
 	//----------------------//
 	// for each solution... //
@@ -269,7 +269,7 @@ GMF::RefineSolutions(
 			{
 				for (int dphi = -1; dphi <= 1; dphi++)
 				{
-					double obj = _ObjectiveFunction(measurement_list,
+					double obj = _ObjectiveFunction(meas_list,
 						wv->spd + dspd * spd_step, wv->dir + dphi * phi_step);
 					if (obj > max_obj)
 					{
@@ -318,10 +318,10 @@ GMF::RefineSolutions(
 
 int
 GMF::ModCurves(
-	FILE*				ofp,
-	MeasurementList*	measurement_list,
-	double				spd_step,
-	double				phi_step)
+	FILE*		ofp,
+	MeasList*	meas_list,
+	double		spd_step,
+	double		phi_step)
 {
 	//---------------------------------------//
 	// determine index ranges and step sizes //
@@ -344,9 +344,9 @@ GMF::ModCurves(
 	// generate each solution curve //
 	//------------------------------//
 
-	MeasurementList new_list;
-	for (Measurement* meas = measurement_list->GetHead(); meas;
-			meas = measurement_list->GetNext())
+	MeasList new_list;
+	for (Meas* meas = meas_list->GetHead(); meas;
+			meas = meas_list->GetNext())
 	{
 		new_list.Append(meas);
 		_FindSolutionCurve(&new_list, dspd, dphi, phi_count,
@@ -365,7 +365,7 @@ GMF::ModCurves(
 	// generate combined solution curve //
 	//----------------------------------//
 
-	_FindSolutionCurve(measurement_list, dspd, dphi, phi_count,
+	_FindSolutionCurve(meas_list, dspd, dphi, phi_count,
             best_spd_idx, best_obj);
 	for (int i = 0; i < phi_count; i++)
 	{
@@ -386,13 +386,13 @@ GMF::ModCurves(
 
 double
 GMF::_ObjectiveFunction(
-	MeasurementList*	measurement_list,
-	double				spd,
-	double				phi)
+	MeasList*	meas_list,
+	double		spd,
+	double		phi)
 {
 	double fv = 0.0;
-	for (Measurement* meas = measurement_list->GetHead(); meas;
-			meas = measurement_list->GetNext())
+	for (Meas* meas = meas_list->GetHead(); meas;
+			meas = meas_list->GetNext())
 	{
 		double chi = phi - (meas->eastAzimuth + pi);
 		double gmf_value;
@@ -412,12 +412,12 @@ GMF::_ObjectiveFunction(
 
 int
 GMF::_FindSolutionCurve(
-	MeasurementList*	measurement_list,
-	double				dspd,
-	double				dphi,
-	int					phi_count,
-	int*				best_spd_idx,
-	double*				best_obj)
+	MeasList*	meas_list,
+	double		dspd,
+	double		dphi,
+	int			phi_count,
+	int*		best_spd_idx,
+	double*		best_obj)
 {
 	int spd_idx = (int)(INITIAL_SPEED / dspd + 0.5);
 	double spd = (double)spd_idx * dspd;
@@ -430,10 +430,10 @@ GMF::_FindSolutionCurve(
 
 		double phi = (double)phi_idx * dphi;
 
-		double obj = _ObjectiveFunction(measurement_list, spd, phi);
-		double obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+		double obj = _ObjectiveFunction(meas_list, spd, phi);
+		double obj_minus = _ObjectiveFunction(meas_list, spd - dspd,
 			phi);
-		double obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+		double obj_plus = _ObjectiveFunction(meas_list, spd + dspd,
 			phi);
 		do
 		{
@@ -451,7 +451,7 @@ GMF::_FindSolutionCurve(
 				spd = (double)spd_idx * dspd;
 				obj_minus = obj;
 				obj = obj_plus;
-				obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+				obj_plus = _ObjectiveFunction(meas_list, spd + dspd,
 					phi);
 			}
 			else if (obj_minus > obj && obj > obj_plus)
@@ -461,7 +461,7 @@ GMF::_FindSolutionCurve(
 				spd = (double)spd_idx * dspd;
 				obj_plus = obj;
 				obj = obj_minus;
-				obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+				obj_minus = _ObjectiveFunction(meas_list, spd - dspd,
 					phi);
 			}
 		} while (1);

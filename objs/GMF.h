@@ -10,8 +10,8 @@ static const char rcs_id_gmf_h[] =
 	"@(#) $Id$";
 
 #include "PiscTable.h"
-#include "Measurement.h"
 #include "WVC.h"
+#include "Meas.h"
 
 
 //======================================================================
@@ -58,13 +58,13 @@ public:
 	// wind retrieval //
 	//----------------//
 
-	int		FindSolutions(MeasurementList* measurement_list, WVC* wvc,
+	int		FindSolutions(MeasList* meas_list, WVC* wvc,
 				double spd_step, double phi_step);
-	int		RefineSolutions(MeasurementList* measurement_list, WVC* wvc,
+	int		RefineSolutions(MeasList* meas_list, WVC* wvc,
 				double initial_spd_step, double initial_phi_step,
 				double final_spd_step, double final_phi_step);
 
-	int		ModCurves(FILE* ofp, MeasurementList* measurement_list,
+	int		ModCurves(FILE* ofp, MeasList* meas_list,
 				double spd_step, double phi_step);
 
 protected:
@@ -73,9 +73,9 @@ protected:
 	// wind retrieval //
 	//----------------//
 
-	double	_ObjectiveFunction(MeasurementList* measurement_list, double u,
+	double	_ObjectiveFunction(MeasList* meas_list, double u,
 				double phi);
-	int		_FindSolutionCurve(MeasurementList* measurement_list, double dspd,
+	int		_FindSolutionCurve(MeasList* meas_list, double dspd,
 				double dphi, int phi_count, int* best_spd_idx,
 				double* best_obj);
 };

@@ -164,7 +164,7 @@ InstrumentSim::ScatSim(
 	alt_lat_lon.Get(0, &lat);
 	alt_lat_lon.Get(1, &lon);
 //	WindVector* wv = wf->NearestWindVector(lon, lat);
-	Measurement meas;
+	Meas meas;
 	meas.pol = beam->polarization;
 	meas.incidenceAngle = 0.0;		// how to calculate?
 	meas.scAzimuth = total_beam_azimuth;

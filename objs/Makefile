@@ -96,14 +96,14 @@ Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00File.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h Spacecraft.h GenericFile.h WindVector.h List.h Antenna.h PiscTable.h Measurement.h WVC.h Matrix3.h Constants.h Beam.h Attitude.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00File.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h Spacecraft.h GenericFile.h WindVector.h List.h Antenna.h PiscTable.h WVC.h Meas.h Matrix3.h Constants.h Beam.h Attitude.h LonLat.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h
-GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Measurement.h WVC.h Attitude.h List.h WindVector.h
+GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h WVC.h Meas.h Attitude.h List.h WindVector.h LonLat.h Ephemeris.h Matrix3.h
 GenericFile.o: GenericFile.C GenericFile.h
-Grid.o: Grid.C Grid.h Meas.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
+Grid.o: Grid.C Grid.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Beam.h Attitude.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h Ephemeris.h ConfigList.h AntennaSim.h L00Frame.h WindField.h GMF.h Antenna.h CoordinateSwitch.h Matrix3.h List.h WindVector.h PiscTable.h Measurement.h WVC.h Beam.h Attitude.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h Ephemeris.h ConfigList.h AntennaSim.h L00Frame.h WindField.h GMF.h Antenna.h CoordinateSwitch.h Matrix3.h List.h WindVector.h PiscTable.h WVC.h Meas.h Beam.h Attitude.h LonLat.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h Attitude.h
 L00File.o: L00File.C L00File.h GenericFile.h
@@ -112,9 +112,10 @@ List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h List.h
 LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
 Matrix3.o: Matrix3.C Constants.h Matrix3.h
-Meas.o: Meas.C Measurement.h Beam.h List.h Attitude.h
+Meas.o: Meas.C Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
+Product.o: Product.C Product.h List.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h List.h
 WVC.o: WVC.C WVC.h Constants.h List.h WindVector.h
