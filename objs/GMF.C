@@ -456,105 +456,81 @@ GMF::RefineSolutions(
 	double				final_spd_step,
 	double				final_phi_step)
 {
+	//----------------------//
+	// for each solution... //
+	//----------------------//
+
 	for (WindVector* wv = wvc->ambiguities.GetHead(); wv;
 		wv = wvc->ambiguities.GetNext())
 	{
+		//--------------------------------------//
+		// start with initial search resolution //
+		//--------------------------------------//
+
 		double spd_step = initial_spd_step;
 		double phi_step = initial_phi_step;
 
-		//-------------------//
-		// quantize to steps //
-		//-------------------//
+		//--------------------------------------------//
+		// quantize speed and direction to step sizes //
+		//--------------------------------------------//
 
 		int spd_idx = (int)(wv->spd / spd_step + 0.5);
-		int phi_idx = (int)(wv->dir / phi_step + 0.5);
-
 		wv->spd = (double)spd_idx * spd_step;
+
+		int phi_idx = (int)(wv->dir / phi_step + 0.5);
 		wv->dir = (double)phi_idx * phi_step;
+
+		//-----------------------------------------------------//
+		// search until both step sizes are sufficiently small //
+		//-----------------------------------------------------//
 
 		while (spd_step > final_spd_step || phi_step > final_phi_step)
 		{
-			//----------------------------//
-			// nine point quadrant search //
-			//----------------------------//
+			//-------------------------------------------------//
+			// find maximum objective function for 9-neighbors //
+			//-------------------------------------------------//
 
-			double use_spd = wv->spd;
-			double use_spd_lo = wv->spd - spd_step;
-			double use_spd_hi = wv->spd + spd_step;
-			double use_phi = wv->dir;
-			double use_phi_lo = wv->dir - phi_step;
-			double use_phi_hi = wv->dir + phi_step;
-
-			double obj_a = _ObjectiveFunction(measurement_list, use_spd_lo,
-				use_phi_lo);
-			double obj_b = _ObjectiveFunction(measurement_list, use_spd,
-				use_phi_lo);
-			double obj_c = _ObjectiveFunction(measurement_list, use_spd_hi,
-				use_phi_lo);
-			double obj_d = _ObjectiveFunction(measurement_list, use_spd_lo,
-				use_phi);
-			double obj_e = _ObjectiveFunction(measurement_list, use_spd,
-				use_phi);
-			double obj_f = _ObjectiveFunction(measurement_list, use_spd_hi,
-				use_phi);
-			double obj_g = _ObjectiveFunction(measurement_list, use_spd_lo,
-				use_phi_hi);
-			double obj_h = _ObjectiveFunction(measurement_list, use_spd,
-				use_phi_hi);
-			double obj_i = _ObjectiveFunction(measurement_list, use_spd_hi,
-				use_phi_hi);
-
-			double spd_phi_obj[2][2];
-			spd_phi_obj[DOWN][DOWN] = obj_a + obj_b + obj_d;
-			spd_phi_obj[DOWN][UP] = obj_d + obj_g + obj_h;
-			spd_phi_obj[UP][DOWN] = obj_b + obj_c + obj_f;
-			spd_phi_obj[UP][UP] = obj_f + obj_h + obj_i;
-
-			//------------------------//
-			// pick the best quadrant //
-			//------------------------//
-
-			int spd_dir = 0;
-			int phi_dir = 0;
-			double max_spd_phi_obj = spd_phi_obj[DOWN][DOWN];
-			for (int i = 0; i < 2; i++)
+			int max_dspd = 0;
+			int max_dphi = 0;
+			double max_obj = -9e99;		// I hope this is low enough <g>
+			for (int dspd = -1; dspd <= 1; dspd++)
 			{
-				for (int j = 0; j < 2; j++)
+				for (int dphi = -1; dphi <= 1; dphi++)
 				{
-					if (spd_phi_obj[i][j] > max_spd_phi_obj)
+					double obj = _ObjectiveFunction(measurement_list,
+						wv->spd + dspd * spd_step, wv->dir + dphi * phi_step);
+					if (obj > max_obj)
 					{
-						max_spd_phi_obj = spd_phi_obj[i][j];
-						spd_dir = i;
-						phi_dir = j;
+						max_obj = obj;
+						max_dspd = dspd;
+						max_dphi = dphi;
 					}
 				}
 			}
 
-			//----------------------//
-			// move to new quadrant //
-			//----------------------//
+			//--------------------------------//
+			// reduce step sizes if necessary //
+			//--------------------------------//
 
-			if (spd_dir == 0)
-				spd_dir = -1;
-			if (phi_dir == 0)
-				phi_dir = -1;
+			if (max_dspd == 0 && max_dphi == 0)
+			{
+				if (spd_step > final_spd_step)
+					spd_step /= 2.0;
+				if (spd_step < final_spd_step)
+					spd_step = final_spd_step;
 
-			if (spd_step > final_spd_step)
-				spd_step /= 2.0;
-			if (spd_step < final_spd_step)
-				spd_step = final_spd_step;
-
-			if (phi_step > final_phi_step)
-				phi_step /= 2.0;
-			if (phi_step < final_phi_step)
-				phi_step = final_phi_step;
+				if (phi_step > final_phi_step)
+					phi_step /= 2.0;
+				if (phi_step < final_phi_step)
+					phi_step = final_phi_step;
+			}
 
 			//-----------------------------------------//
 			// update speed and direction for solution //
 			//-----------------------------------------//
 
-			spd_idx = (int)(wv->spd / spd_step + 0.5) + spd_dir;
-			phi_idx = (int)(wv->dir / phi_step + 0.5) + phi_dir;
+			spd_idx = (int)(wv->spd / spd_step + 0.5) + max_dspd;
+			phi_idx = (int)(wv->dir / phi_step + 0.5) + max_dphi;
 
 			wv->spd = (double)spd_idx * spd_step;
 			wv->dir = (double)phi_idx * phi_step;
