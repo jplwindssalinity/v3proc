@@ -205,8 +205,13 @@ sigma0_to_Esn_slice(
 	// The variance of the power is derived from the variance of the energy.
 	//------------------------------------------------------------------------//
 
+/*
 	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
 		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
+*/
+	// the above equation reduces to the following...
+	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Esn value by adding a random number drawn from
