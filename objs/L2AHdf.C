@@ -250,6 +250,10 @@ L2AHdf::ConvertRow(){
 	assert(param != 0);
 	float* C = (float*)param->data;
 
+        param = ExtractParameter(SIGMA0_ATTN_MAP, UNIT_DB, i);
+        assert(param !=0);
+        float* attn= (float*)param->data;
+        
         /**********************************************************/
         /* Loop through arrays constructing new measurements      */
         /**********************************************************/
@@ -269,9 +273,12 @@ L2AHdf::ConvertRow(){
           // construct measurement from L2AHDF arrays       //
           //------------------------------------------------//
 
-          // value
+          // incidenceAngle
+          new_meas->incidenceAngle=incidence_angle[j];
 
-          new_meas->value=(float) pow( 10.0, (double)sigma0db[j]/10.0);
+          // value
+          new_meas->value=sigma0db[j]+attn[j]/(cos(new_meas->incidenceAngle));
+          new_meas->value=(float) pow( 10.0, (double)new_meas->value/10.0);
 	  if ( QualFlags[j] & 0x0004 )
 	    new_meas->value = -(new_meas->value); 
     
@@ -299,8 +306,6 @@ L2AHdf::ConvertRow(){
 	  new_meas->eastAzimuth = (450.0 - northazimuth_degrees[j]) * dtr;
 	  if (new_meas->eastAzimuth >= two_pi) new_meas->eastAzimuth -= two_pi;
 
-          // incidenceAngle
-          new_meas->incidenceAngle=incidence_angle[j];
 
           // numSlices
           new_meas->numSlices=-1;
