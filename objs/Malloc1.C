@@ -142,7 +142,7 @@ while (memblockptr != NULL)
 
 printf("Error: Attempted to free invalid pointer = %p\n",ptr);
 printf("       id string = %s\n",str);
-exit(-1);
+return;
 
 }
 
