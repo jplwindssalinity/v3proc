@@ -20,6 +20,8 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Array.h"
 #include "Misc.h"
 
+
+
 //------------------//
 // AntennaFrameToGC //
 //------------------//
@@ -76,7 +78,9 @@ LocateSlices(
 	Antenna* antenna = &(instrument->antenna);
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Attitude* attitude = &(spacecraft->attitude);
+	Attitude* attitude = &(spacecraft->attitude);      
+	Attitude zero_rpy; // Constructor set rpy to zero
+
 
 	//------------------//
 	// set up meas spot //
@@ -93,6 +97,10 @@ LocateSlices(
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
+
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc = 
+	  AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
+
 
 	//------------------------//
 	// determine slicing info //
@@ -113,7 +121,7 @@ LocateSlices(
 
 	vector.SphericalSet(1.0, look, azimuth);
 	TargetInfoPackage tip;
-	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+	RangeAndRoundTrip(&zero_rpy_antenna_frame_to_gc, spacecraft, vector, &tip);
 
 	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
 		instrument->antenna.spinRate,&look, &azimuth))
@@ -122,7 +130,7 @@ LocateSlices(
 	}
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
+	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument, vector);
 
 	//-------------------//
 	// for each slice... //
@@ -203,6 +211,7 @@ LocateSpot(
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
+
 
 	//------------------//
 	// set up meas spot //
@@ -668,7 +677,7 @@ return(1);
 #define LOOK_OFFSET			0.005
 #define AZIMUTH_OFFSET		0.005
 #define ANGLE_OFFSET		0.01		// start delta for golden section
-#define ANGLE_TOL			0.0001		// within this of peak gain
+#define ANGLE_TOL			0.00001		// within this of peak gain
 
 int
 FindPeakGainAtFreq(
@@ -1472,6 +1481,8 @@ RangeAndRoundTrip(
 // the scattering geometry.
 //
 
+#define TWO_WAY_BORESIGHT_ANGLE_TOLERANCE  1e-5
+
 int
 Get2WayElectricalBoresight(
 	Beam*	beam,
@@ -1504,7 +1515,7 @@ Get2WayElectricalBoresight(
 		p[i][3] = azimuth_rate;
 	}
 
-	double ftol = 1e-3;
+	double ftol = TWO_WAY_BORESIGHT_ANGLE_TOLERANCE;
 	downhill_simplex((double**)p,ndim,ndim+2,ftol,
 		ReciprocalPowerGainProduct,beam);
 
