@@ -56,7 +56,7 @@ public:
 	// composited.										//
 	//--------------------------------------------------//
 
-	int		Composite(MeasList* meas_list, int n=0);
+	int		Composite(MeasList* meas_list, int n = 0);
 
 	//--------------//
 	// input/output //

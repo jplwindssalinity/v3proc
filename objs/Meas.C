@@ -44,7 +44,7 @@ Meas::~Meas()
 int
 Meas::Composite(
 	MeasList*	meas_list,
-	int n=0)
+	int			n)
 {
 	float sum_Ps = 0.0;
 	float sum_XK = 0.0;
@@ -65,22 +65,27 @@ Meas::Composite(
 	// We actually use XK which subsumes the K-factor with X.
 	//
 
-	Meas* meas, *meas_start;
-       
-        if(n==0) meas_start = meas_list->GetHead();
-        else if (n>0) meas_start=meas_list->GetCurrent();
-        else return(0);
+	Meas* meas;
+	Meas* meas_start;
 
-        int min_slice_idx=meas_start->startSliceIdx;
+	if (n == 0)
+		meas_start = meas_list->GetHead();
+	else if (n > 0)
+		meas_start = meas_list->GetCurrent();
+	else
+		return(0);
 
+	int min_slice_idx = meas_start->startSliceIdx;
 
 	for (meas = meas_start; meas; meas = meas_list->GetNext())
 	{
-	  //==================================================//
-          // Only composites n consecutive objects if default //
-          // parameter n is nonzero                           //
-          //==================================================//
-	        if(n!=0 && N>=n) break; 
+		//==================================================//
+		// Only composites n consecutive objects if default //
+		// parameter n is nonzero							//
+		//==================================================//
+		if(n != 0 && N >= n)
+			break;
+
 		sum_Ps += meas->value * meas->XK;
 		sum_XK += meas->XK;
 		sum_EnSlice += meas->EnSlice;
@@ -94,10 +99,17 @@ Meas::Composite(
 		N++;
 	}
 
-        // If n!=0 meas_list->current is not changed by this routine //
-	if(n==0 || !meas) meas = meas_list->GetHead();
-	else{
-	  for(int c=0;c < N; c++) meas = meas_list->GetPrev();
+	// If n != 0 meas_list->current is not changed by this routine
+	if(n==0 || !meas)
+	{
+		meas = meas_list->GetHead();
+	}
+	else
+	{
+		for(int c = 0; c < N; c++)
+		{
+			meas = meas_list->GetPrev();
+		}
 	}
 
 	//---------------------------------------------------------------------//
@@ -107,7 +119,6 @@ Meas::Composite(
 
 	value = sum_Ps / sum_XK;
 
- 
 	XK = sum_XK;
 	EnSlice = sum_EnSlice;
 	bandwidth = sum_bandwidth;
@@ -122,10 +133,9 @@ Meas::Composite(
 	eastAzimuth = meas->eastAzimuth;	// same for all slices
 	incidenceAngle = sum_incidenceAngle / N;
 	beamIdx = meas->beamIdx;			// same for all slices
-	startSliceIdx = min_slice_idx;			
+	startSliceIdx = min_slice_idx;
 	scanAngle = meas->scanAngle;		// same for all slices
-        numSlices = N;
-
+	numSlices = N;
 
 	//----------------------------//
 	// composite Kpc coefficients //
@@ -172,7 +182,7 @@ Meas::Write(
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&beamIdx,  sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
@@ -207,7 +217,7 @@ Meas::Read(
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
 		fread((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
-	        fread((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
 		fread((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&A, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&B, sizeof(float), 1, fp) != 1 ||
