@@ -42,17 +42,17 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 	double A3db = meas->outline.Area();
 	Vector3 rlook = meas->center - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
+	double roundTripTime = 2.0 * R / speed_light_kps;
 
 	int ib = instrument->antenna.currentBeamIdx;
 	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
 	double r,theta,phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
-	float Gat;
-	instrument->antenna.beam[ib].GetPowerGain(theta,phi,&Gat);
-	// Assume no beam blurring for the moment.
-	float Gar = Gat;
+	float GatGar;
+	instrument->antenna.beam[ib].GetPowerGainProduct(theta,phi,roundTripTime,
+		instrument->antenna.spinRate,&GatGar);
 
-	*X = instrument->transmitPower * instrument->receiverGain * Gar * Gat *
+	*X = instrument->transmitPower * instrument->receiverGain * GatGar *
 		 A3db * lambda*lambda /
 		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
 	return(1);
