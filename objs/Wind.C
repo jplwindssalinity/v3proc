@@ -479,7 +479,7 @@ WVC::ReadL2B(
         //-----------------------//
         // read nudge vector     //
         //-----------------------//
-
+        
 	char nudgeWV_allocated;
 	if (fread((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
 		return(0);	  
@@ -487,7 +487,7 @@ WVC::ReadL2B(
 	  nudgeWV=new WindVectorPlus;
 	  if(!nudgeWV->ReadL2B(fp)) return(0);
 	}
-
+        
 	//----------------------//
         // Read directionRanges //
         //----------------------//
@@ -1021,6 +1021,39 @@ WVC::Rank_Wind_Solutions()
 
     return(1);
 
+}
+
+float
+WVC::GetEstimatedSquareError(){
+  float* prob=new float[ambiguities.NodeCount()];
+  WindVectorPlus* wvp=ambiguities.GetHead();
+  float scale=wvp->obj;
+  int idx=0;
+  float sum=0;
+  while(wvp){
+    prob[idx]=exp((wvp->obj-scale)/2);
+    sum+=prob[idx];
+    idx++;
+    wvp=ambiguities.GetNext();    
+  }
+  for(int c=0;c<ambiguities.NodeCount();c++) prob[c]/=sum;
+  wvp=ambiguities.GetHead();
+  idx=0;
+  float SE=0;
+  while(wvp){
+    if(selected!=wvp) {
+      float x1,x2,y1,y2;
+      selected->GetUV(&x1,&y1);
+      wvp->GetUV(&x2,&y2);
+      float dx=x1-x2;
+      float dy=y1-y2;
+      SE+=(dx*dx+dy*dy)*prob[idx];
+    }
+    idx++;
+    wvp=ambiguities.GetNext();
+  }
+  delete[] prob;
+  return(SE);
 }
 int
 WVC::RedistributeObjs(){
@@ -2843,7 +2876,6 @@ WindSwath::BestKFilter(
         //----------------------------//
 	// create a new selection map //
 	//----------------------------//
-
 	WindVectorPlus*** new_selected =
 		(WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
 			_crossTrackBins, _alongTrackBins);
@@ -2887,12 +2919,11 @@ WindSwath::BestKFilter(
         int pass=0;
 	while (!finished && pass<BK_NUM_PASS)
 	{
+		pass++;
+		printf("Pass=%d ",pass);
 		finished = BestKFilterPass(half_window,k,new_selected, prob,
 						best_prob);
-		pass++;
-		printf(" pass=%d\n",pass);
 	} 
-
         int count=0;
         // Remove unselected WVCs and and count them
         for(int cti=0;cti<_crossTrackBins;cti++){
@@ -3133,6 +3164,7 @@ WindSwath::MedianFilterPass(
 	return(flips);
 }
 
+#define NUM_BK_SUB_PASSES 100
 //-----------------------------//
 // WindSwath::BestKFilterPass //
 //-----------------------------//
@@ -3182,26 +3214,146 @@ WindSwath::BestKFilterPass(
     }
    int finished=1;
    int num_added=0;
+   static int num_wrong=0;
    for (int cti = 0; cti < _crossTrackBins; cti++)
     {
       for (int ati = 0; ati < _alongTrackBins; ati++)
 	{
 	  if(swath[cti][ati]==NULL) continue;
           if(swath[cti][ati]->selected!=NULL) continue;
-          
+
+	  int wrong=0;
+          WindVectorPlus* closest=NULL;
+	  if(swath[cti][ati]->nudgeWV){
+	    closest=
+	      swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);}
+	  
+	  if(closest && closest!=new_selected[cti][ati])
+	    wrong=1;
           num_added++;
+          
           if(prob[cti][ati]!=1){
            if(prob[cti][ati]<best_prob[0]){
 	     num_added--;
 	     new_selected[cti][ati]=NULL;
 	     finished=0;
+	     wrong=0;
 	   } 
 	  }
+	  num_wrong+=wrong;
 	  swath[cti][ati]->selected=new_selected[cti][ati];
 	}   
     }
-   printf("Minim Prob. %g Num Added %d",best_prob[0],num_added);
+   int subfinished=0;
+   int subpass=0;
+   printf("Minim Prob. %g Num Added %d Num Wrong %d\n",best_prob[0],num_added,num_wrong);
+
+   //-------------------------//
+   // create a new change map //
+   //-------------------------//
+
+   char** change = (char**)make_array(sizeof(char), 2,
+				      _crossTrackBins, _alongTrackBins);	  //--------------------//
+   // prep for subpass filtering //
+   //--------------------//
+
+   for (int cti = 0; cti < _crossTrackBins; cti++)
+     {
+       for (int ati = 0; ati < _alongTrackBins; ati++)
+	 {
+	   change[cti][ati] = 1;
+	 }
+     }
+
+
+   while(subpass<NUM_BK_SUB_PASSES && !subfinished){
+     subpass++;
+     printf("Subpass %d:",subpass);
+     subfinished=BestKFilterSubPass(half_window, new_selected, 
+				    &num_wrong, change);
+   }
    if(num_added==0) finished=1;
+   free_array(change, 2, _crossTrackBins, _alongTrackBins);
+   return(finished);
+}
+
+//-----------------------------//
+// WindSwath::BestKFilterSubPass //
+//-----------------------------//
+// Returns 1 if finished 0 otherwise.
+int
+WindSwath::BestKFilterSubPass(
+	int			half_window,
+	WindVectorPlus***	new_selected,
+        int*                   num_wrong,
+        char**                  change)
+{
+
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+	  if(swath[cti][ati]==NULL) continue;
+          if(swath[cti][ati]->selected==NULL) continue;
+
+
+	  int cti_min=MAX(0,cti-half_window);
+	  int cti_max=MIN(_crossTrackBins-1,cti+half_window);
+	  int ati_min=MAX(0,ati-half_window);
+	  int ati_max=MIN(_alongTrackBins,ati+half_window);
+	  //-------------------//
+	  // check for changes //
+	  //-------------------//
+
+	  for (int i = cti_min; i < cti_max; i++)
+	    {
+	      for (int j = ati_min; j < ati_max; j++)
+		{
+		  if (change[i][j])
+		    {
+		      goto change;
+		      break;
+		    }
+		}
+	    }
+	  continue;
+          // Get Best Ambiguity
+change:	  GetMostProbableAmbiguity(&(new_selected[cti][ati]),
+						  cti,ati,cti_min,cti_max,
+						  ati_min,ati_max);
+        
+	}
+    }
+   int finished=1;
+   int flips=0;
+   for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+          change[cti][ati]=0;
+	  if(swath[cti][ati]==NULL) continue;
+          if(swath[cti][ati]->selected==NULL) continue;
+          if(new_selected[cti][ati]!=swath[cti][ati]->selected){
+            int new_wrong=0, old_wrong=0;
+	    WindVectorPlus* closest=NULL;
+	    if(swath[cti][ati]->nudgeWV){
+	      closest=swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);
+	    }
+	    if(closest && closest!=swath[cti][ati]->selected)
+	      old_wrong=1;	  
+	    if(closest && closest!=new_selected[cti][ati])
+	      new_wrong=1;
+            *num_wrong+=(new_wrong-old_wrong);
+	    swath[cti][ati]->selected=new_selected[cti][ati];
+	    finished=0;
+	    flips++;
+	    change[cti][ati]=1;
+	  }
+          
+          
+	}  
+    }
+   printf(" Num_flipped %d Num_wrong %d\n",flips, *num_wrong);
    return(finished);
 }
 
@@ -3251,8 +3403,8 @@ WindSwath::GetWindowMean(
 
 #define CORRELATION_WIDTH  1.0  // Currently in units of Cross Track Index
                                 // Should be km!!!!
-#define CW_DEVIATION_AMB        1.0  //  1.0 X speed
-#define CW_DEVIATION            0.25  //  1.0 X speed
+#define CW_DEVIATION_AMB        1.0  // 1.0 times wind speed
+#define CW_DEVIATION            0.25 // 0.25  times speed
 #define NUM_DIRECTION_STEPS    45
 float
 WindSwath::GetMostProbableDir(
@@ -3362,8 +3514,12 @@ WindSwath::GetMostProbableAmbiguity(
           //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
 	  // Add likelihood due to difference between selected and trial value
           float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
-          float k=CW_DEVIATION_AMB*spd/CORRELATION_WIDTH;
-          float sigma=k*dist;
+          // k1: part of sigma due to width of peak and distance
+          float k1=CW_DEVIATION_AMB*spd/CORRELATION_WIDTH;
+          
+          // Part of sigma due to possible error in neighboring selection
+          float k2=other_wvc->GetEstimatedSquareError();
+          float sigma=sqrt(k1*k1*dist*dist+k2*k2);
           float x2,y2;
           other_wvp->GetUV(&x2,&y2);
           float dx=x1-x2;

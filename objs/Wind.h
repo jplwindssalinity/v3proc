@@ -172,6 +172,7 @@ public:
 
 	int					RemoveDuplicates();
         int                                     RedistributeObjs();
+	float                                   GetEstimatedSquareError();
 	int					SortByObj();
 	int					SortByDir();
 	WindVectorPlus*		GetNearestToDirection(float dir, int max_rank = 0);
@@ -390,8 +391,11 @@ public:
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 					 char** change, int bound, int weight_flag = 0, int special=0);
         int             BestKFilterPass(int half_window, int k, 
-					WindVectorPlus*** new_selcted,
-					float** prob, float* berst_prob);
+					WindVectorPlus*** new_selected,
+					float** prob, float* best_prob);
+        int             BestKFilterSubPass(int half_window, 
+					WindVectorPlus*** new_selected,
+					int* num_wrong, char** change);
         int             GetMedianBySorting(WindVectorPlus* wvp, int cti_min,
 					   int cti_max, int ati_min, int ati_max);
         float             GetMostProbableDir(WindVectorPlus* wvp, 
