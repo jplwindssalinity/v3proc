@@ -658,7 +658,7 @@ GMF::AppendSolutions(
 
 int
 GMF::CheckRetrieveCriteria(
-    MeasList*    meas_list)
+    MeasList*  meas_list)
 {
     //------------------------------------------//
     // check for minimum number of measurements //
@@ -667,14 +667,17 @@ GMF::CheckRetrieveCriteria(
     if (meas_list->NodeCount() < MINIMUM_WVC_MEASUREMENTS)
         return(0);
 
-    //-------------------------------------//
-    // check for land contamination        //
-    //-------------------------------------//
-        for (Meas* meas=meas_list->GetHead(); meas;
-             meas=meas_list->GetNext()){
-      if(!retrieveOverIce && meas->landFlag!=0) return(0);
-          else if(meas->landFlag==1 || meas->landFlag==3) return(0);
-          // For SeaIce landFlag=2
+    //------------------------------//
+    // check for land contamination //
+    //------------------------------//
+
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        if (! retrieveOverIce && meas->landFlag != 0)
+            return(0);
+        else if (meas->landFlag == 1 || meas->landFlag == 3)
+            return(0);
+        // For SeaIce landFlag=2
     }
 
     Node<Meas>* current;

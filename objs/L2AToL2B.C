@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.    //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -110,10 +110,10 @@ L2AToL2B::SetWindRetrievalMethod(
 
 int
 L2AToL2B::ConvertAndWrite(
-    L2A*    l2a,
-    GMF*    gmf,
-    Kp*     kp,
-    L2B*    l2b)
+    L2A*  l2a,
+    GMF*  gmf,
+    Kp*   kp,
+    L2B*  l2b)
 {
     static int last_rev_number = 0;
 
@@ -157,117 +157,117 @@ L2AToL2B::ConvertAndWrite(
     static num = 1;
     switch (wrMethod)
     {
-        case GS:
-            if (! gmf->RetrieveWinds_GS(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(5);
-            }
-            break;
+    case GS:
+        if (! gmf->RetrieveWinds_GS(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(5);
+        }
+        break;
 /*
-        case GS_FIXED:
-            if (! gmf->RetrieveWinds_GSFixed(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(6);
-            }
-            break;
+    case GS_FIXED:
+        if (! gmf->RetrieveWinds_GSFixed(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(6);
+        }
+        break;
 */
-        case H1:
-            if (! gmf->RetrieveWinds_H1(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(7);
-            }
-            break;
-        case H2:
-            if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(7);
-            }
-            break;
-        case H3:
-            if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc, 1))
-            {
-                delete wvc;
-                return(8);
-            }
-            break;
-        case S1:
-            if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc, 2))
-            {
-                delete wvc;
-                return(9);
-            }
-            break;
-        case S2:
-            if (! gmf->RetrieveWinds_S2(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(10);
-            }
+    case H1:
+        if (! gmf->RetrieveWinds_H1(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(7);
+        }
+        break;
+    case H2:
+        if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(7);
+        }
+        break;
+    case H3:
+        if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc, 1))
+        {
+            delete wvc;
+            return(8);
+        }
+        break;
+    case S1:
+        if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc, 2))
+        {
+            delete wvc;
+            return(9);
+        }
+        break;
+    case S2:
+        if (! gmf->RetrieveWinds_S2(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(10);
+        }
 
 #ifdef S2_DEBUG_INTERVAL
-            if (num % S2_DEBUG_INTERVAL == 0)
-            {
-                ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
-                    l2a->header.crossTrackResolution;
-                wvp = wvc->ambiguities.GetHead();
-                speed = wvp->spd;
-                printf("CTD %g Speed First Rank %g\n", ctd, speed);
-                fflush(stdout);
-            }
-#endif
-            num++;
-            break;
-
-        case S3:
-            if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc))
-            {
-                delete wvc;
-                return(11);
-            }
-        break;
-
-        case S4:
-            if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc,1))
-            {
-                delete wvc;
-                return(12);
-            }
-        break;
-
-        case POLAR_SPECIAL:
-            if (! gmf->RetrieveWinds_GS(meas_list, kp, wvc,1))
-            {
-                delete wvc;
-                return(13);
-            }
+        if (num % S2_DEBUG_INTERVAL == 0)
+        {
             ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
                 l2a->header.crossTrackResolution;
-            wvp = NULL;
-            if (wvc)
-                wvp = wvc->ambiguities.GetHead();
-            if (wvp)
-            {
-                speed = wvp->spd;
-                dir = wvp->dir*rtd;
-                printf("%g %g %g %d %d\n", ctd, speed, dir, l2a->frame.cti,
-                    l2a->frame.ati);
-                fflush(stdout);
-            }
-            break;
+            wvp = wvc->ambiguities.GetHead();
+            speed = wvp->spd;
+            printf("CTD %g Speed First Rank %g\n", ctd, speed);
+            fflush(stdout);
+        }
+#endif
+        num++;
+        break;
 
-        case CHEAT:
-            if (! Cheat(meas_list, wvc))
-            {
-                return(14);
-            }
-            break;
+    case S3:
+        if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(11);
+        }
+        break;
 
-        default:
-            return(15);
+    case S4:
+        if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc,1))
+        {
+            delete wvc;
+            return(12);
+        }
+        break;
+
+    case POLAR_SPECIAL:
+        if (! gmf->RetrieveWinds_GS(meas_list, kp, wvc,1))
+        {
+            delete wvc;
+            return(13);
+        }
+        ctd = (l2a->frame.cti - l2a->header.zeroIndex) *
+            l2a->header.crossTrackResolution;
+        wvp = NULL;
+        if (wvc)
+            wvp = wvc->ambiguities.GetHead();
+        if (wvp)
+        {
+            speed = wvp->spd;
+            dir = wvp->dir*rtd;
+            printf("%g %g %g %d %d\n", ctd, speed, dir, l2a->frame.cti,
+                l2a->frame.ati);
+            fflush(stdout);
+        }
+        break;
+
+    case CHEAT:
+        if (! Cheat(meas_list, wvc))
+        {
+            return(14);
+        }
+        break;
+
+    default:
+        return(15);
     }
 
     if (wvc->ambiguities.NodeCount() == 0)
@@ -469,10 +469,10 @@ L2AToL2B::InitFilterAndFlush(
 
 int
 L2AToL2B::WriteSolutionCurves(
-    L2A*            l2a,
-    GMF*            gmf,
-    Kp*                kp,
-    const char*        output_file)
+    L2A*         l2a,
+    GMF*         gmf,
+    Kp*          kp,
+    const char*  output_file)
 {
     //------------------//
     // open output file //
