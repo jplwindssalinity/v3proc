@@ -23,10 +23,10 @@
 #include "CheckFrame.h"
 
 static const char rcs_id_BYUXTable_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //=====================================================
-// CLASSES                     
+// CLASSES
 //             BYUXTable
 //=====================================================
 
@@ -38,46 +38,45 @@ static const char rcs_id_BYUXTable_h[] =
 //    A class for manipulating tables of X and frequency compensation
 //    parameters.
 //
-//		
+//
 //======================================================================
 
 class BYUXTable{
- public:
-  
-  BYUXTable();
-  ~BYUXTable();
+public:
 
-  int Deallocate();
-  int Allocate();
+    BYUXTable();
+    ~BYUXTable();
 
-  int    Read(const char* ibeam_file, const char* obeam_file);
-  float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-                   CheckFrame* cf);
-  float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-                   float PtGr, CheckFrame* cf);
-  float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas, CheckFrame* cf);
-  float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat, CheckFrame* cf);
-  float  GetX(int beam_number, float azimuth_angle, float orbit_position, 
-            int slice_number, float delta_freq);
-  float Interpolate(float** table, float orbit_time, float azimuth_angle);
+    int  Deallocate();
+    int  Allocate();
 
-  float**** xnom;
-  float**** a;
-  float**** b;
-  float**** c;
-  float**** d;
+    int    Read(const char* ibeam_file, const char* obeam_file);
+    float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+               CheckFrame* cf);
+    float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+               float PtGr, CheckFrame* cf);
+    float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+               CheckFrame* cf = NULL);
+    float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat, CheckFrame* cf);
+    float  GetX(int beam_number, float azimuth_angle, float orbit_position,
+               int slice_number, float delta_freq);
+    float  Interpolate(float** table, float orbit_time, float azimuth_angle);
 
-  float*** xnomEgg;
-  float*** aEgg;
-  float*** bEgg;
-  float*** cEgg;
-  float*** dEgg;
+    float****  xnom;
+    float****  a;
+    float****  b;
+    float****  c;
+    float****  d;
 
- protected:
-  float _azimuthStepSize;
-  int _numSlices;
+    float***  xnomEgg;
+    float***  aEgg;
+    float***  bEgg;
+    float***  cEgg;
+    float***  dEgg;
 
-
+protected:
+    float  _azimuthStepSize;
+    int    _numSlices;
 };
 
 //------------------//
