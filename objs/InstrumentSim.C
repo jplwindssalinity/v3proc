@@ -672,6 +672,28 @@ InstrumentSim::ScatSim(
 		cf.attitude = spacecraft->attitude;
         cf.orbit_frac = instrument->OrbitFraction();
         cf.antenna_azi = instrument->antenna.azimuthAngle;
+
+        // Compute earth intercept of electrical boresight (one-way).
+	    Antenna* antenna = &(instrument->antenna);
+	    Beam* beam = antenna->GetCurrentBeam();
+        CoordinateSwitch antenna_to_gc = AntennaFrameToGC(
+					      &(spacecraft->orbitState),
+					      &(spacecraft->attitude),
+					      antenna);
+        double look,azim;
+        beam->GetElectricalBoresight(&look,&azim);
+        Vector3 boresight;
+        boresight.SphericalSet(1.0, look, azim);
+        Vector3 boresight_gc = antenna_to_gc.Forward(boresight);
+        EarthPosition r_boresight;
+        if (earth_intercept(spacecraft->orbitState.rsat, boresight_gc,
+                       &r_boresight) != 1)
+        {
+          fprintf(stderr,"Error computing boresight position for checkframe\n");
+          return(0);
+        }
+        cf.boresight_position = r_boresight;
+
 		cf.AppendRecord(fptr);
         fclose(fptr);
     }

@@ -529,6 +529,34 @@ Vector3::operator==(Vector3 m2)
        return(1);
 }
 
+//---------------//
+// Vector3::Read //
+//---------------//
+
+int
+Vector3::Read(FILE* fptr)
+{
+  for (int i=0; i < 3; i++)
+    if (fread((void *)&_v[i],sizeof(double),1,fptr) != 1) return(0);
+
+  return(1);
+
+}
+
+//----------------//
+// Vector3::Write //
+//----------------//
+
+int
+Vector3::Write(FILE* fptr)
+{
+  for (int i=0; i < 3; i++)
+    if (fwrite((void *)&_v[i],sizeof(double),1,fptr) != 1) return(0);
+
+  return(1);
+
+}
+
 //
 // Scale the vector to have the specifed magnitude.
 //

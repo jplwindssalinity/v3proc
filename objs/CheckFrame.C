@@ -178,6 +178,7 @@ CheckFrame::AppendRecord(
         if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+        if (! boresight_position.Write(fptr)) return(0);
 	return(1);
 }
 
@@ -245,6 +246,7 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+  if (! boresight_position.Read(fptr)) return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -255,6 +257,7 @@ CheckFrame::WriteDataRecAscii(
 	FILE*	fptr)
 {
 
+  double alt,lon,lat;
   fprintf(fptr,"**** Spot Data ****\n");
   fprintf(fptr,"time (sec): %g\n",time);
   fprintf(fptr,"PtGr: %6g\n",ptgr);
@@ -265,8 +268,9 @@ CheckFrame::WriteDataRecAscii(
   fprintf(fptr,"orbit fraction (from ascending node): %g\n",orbit_frac);
   fprintf(fptr,"antenna azimuth (rel to s/c y-axis. (deg)): %g\n",
     rtd*antenna_azi);
+  boresight_position.GetAltLonGDLat(&alt,&lon,&lat);
+  fprintf(fptr,"lon,lat of boresight position (deg): %g %g\n",rtd*lon,rtd*lat); 
   fprintf(fptr,"**** Slices Data ****\n");
-  double alt,lon,lat;
   int sliceno = -5;
   for (int i=0; i < 10; i++)
   {

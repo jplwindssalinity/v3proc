@@ -117,6 +117,13 @@ Vector3(double init);
 	Vector3		operator/(double s);	// divide by scalar
 	int             operator==(Vector3 m2); 		     
 
+//-----//
+// I/O //
+//-----//
+
+int Read(FILE* fptr);    // Binary read
+int Write(FILE* fptr);   // Binary write
+
 //
 // Other access methods
 //

@@ -96,6 +96,24 @@ ConfigSpacecraftSim(
 	{
 		return(0);
 	}
+
+	if (! config_list->GetFloat(SIM_ROLL_BIAS_KEYWORD,
+        &(spacecraft_sim->rollBias)))
+		return(0);
+
+	if (! config_list->GetFloat(SIM_PITCH_BIAS_KEYWORD,
+        &(spacecraft_sim->pitchBias)))
+		return(0);
+
+	if (! config_list->GetFloat(SIM_YAW_BIAS_KEYWORD,
+        &(spacecraft_sim->yawBias)))
+		return(0);
+
+	// Biases are specifed in degrees, but stored in radians.
+    spacecraft_sim->rollBias *= dtr;
+    spacecraft_sim->pitchBias *= dtr;
+    spacecraft_sim->yawBias *= dtr;
+
 	double epoch;
 	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
 		return(0);

@@ -23,7 +23,8 @@ static const double rm_2 = rm * rm;
 //===============//
 
 SpacecraftSim::SpacecraftSim()
-:	simKprsFlag(1), _epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0),
+:	rollBias(0.0), pitchBias(0.0), yawBias(0.0), simKprsFlag(1),
+    _epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0),
 	_littleOmega(0.0), _l(0.0), _period(0.0), _a_3(0.0), _e_2(0.0),
 	_ascnodot(0.0), _periasdot(0.0), _ameandot(0.0), _eta(0.0), _pp(0.0),
 	_pp_2(0.0), _cosi(0.0), _cosi_2(0.0), _sini_2(0.0), _gama(0.0), _G(0.0),
@@ -335,11 +336,10 @@ SpacecraftSim::UpdateAttitude(
 	double			time,
 	Spacecraft*		spacecraft)
 {
-	spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time));
-	spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time));
-	spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time));
-
-	return(1);
+  spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time) + rollBias);
+  spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time) + pitchBias);
+  spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time) + yawBias);
+  return(1);
 }
 
 //-------------------------------//

@@ -46,6 +46,10 @@ static const char rcs_id_configsimdefs_h[] =
 #define PITCH_CONTROL_CORRLENGTH_KEYWORD	"PITCH_CONTROL_CORRLENGTH"
 #define YAW_CONTROL_CORRLENGTH_KEYWORD		"YAW_CONTROL_CORRLENGTH"
 
+#define SIM_ROLL_BIAS_KEYWORD				"SIM_ROLL_BIAS"
+#define SIM_PITCH_BIAS_KEYWORD				"SIM_PITCH_BIAS"
+#define SIM_YAW_BIAS_KEYWORD				"SIM_YAW_BIAS"
+
 //--------------------------------//
 // Attitude Knowledge Error Model //
 //--------------------------------//

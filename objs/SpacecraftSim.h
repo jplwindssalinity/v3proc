@@ -100,6 +100,10 @@ public:
 	AttDist attCntlDist;	// Attitude Control Distribution
 	AttDist attKnowDist;	// Attitude Knowledge Distribution
 
+	float rollBias;			// Fixed bias to apply to the s/c attitude
+	float pitchBias;		// Fixed bias to apply to the s/c attitude
+	float yawBias;			// Fixed bias to apply to the s/c attitude
+
 	//-------//
 	// flags //
 	//-------//
