@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   06 May 1998 15:17:02   sally
+// took out exit()
+// 
 //    Rev 1.3   20 Apr 1998 15:18:16   sally
 // change List to EAList
 // 
@@ -40,6 +43,7 @@
 
 static const char rcs_id_Filter_C[] = "@(#) $Header$";
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
@@ -83,11 +87,7 @@ Filter::Filter(
                                             paramEntry->sourceId,
                                             paramEntry->paramId,
                                             paramEntry->unitId);
-                if (parametersP[i] == 0)
-                {
-                    fprintf(stderr, "Error creating Filter '%s'\n", filterName);
-                    exit(1);
-                }
+                assert(parametersP[i] != 0);
 
             }
             _filterIndex = filter_index;

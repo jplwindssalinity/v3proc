@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.11   13 Oct 1998 15:34:20   sally
+// added L1B file
+// 
+//    Rev 1.10   03 Jun 1998 10:10:12   sally
+// change parameter names and types due to LP's changes
+// 
+//    Rev 1.9   01 May 1998 14:46:56   sally
+// add HK2 file
+// 
 //    Rev 1.8   20 Apr 1998 10:22:44   sally
 // change for WindSwatch
 // 
@@ -74,6 +83,8 @@ ParTabAccess::GetSourceId(
         sourceId = SOURCE_L1AP;
     else if (strcasecmp((char *)source_string, SOURCE_L1A_DERIVED_STRING) == 0)
         sourceId = SOURCE_L1A_DERIVED;
+    else if (strcasecmp((char *)source_string, SOURCE_L1B_STRING) == 0)
+        sourceId = SOURCE_L1B;
     else if (strcasecmp((char *)source_string, SOURCE_L2A_STRING) == 0)
         sourceId = SOURCE_L2A;
     else if (strcasecmp((char *)source_string, SOURCE_L2B_STRING) == 0)
@@ -400,9 +411,13 @@ Parameter
     case DATA_UINT4_4:
         param->byteSize = 16;
         break;
+    case DATA_UINT2_12:
+        param->byteSize = 24;
+        break;
     case DATA_CHAR28:
         param->byteSize = 28;
         break;
+    case DATA_CHAR32:
     case DATA_UINT2_2_8:
         param->byteSize = 32;
         break;
@@ -420,6 +435,7 @@ Parameter
         param->byteSize = 100;
         break;
     case DATA_UINT2_100:
+    case DATA_INT2_100:
         param->byteSize = 200;
         break;
     case DATA_FLOAT4_76:
@@ -438,11 +454,15 @@ Parameter
     case DATA_UINT2_100_12:
         param->byteSize = 2400;
         break;
+    case DATA_FLOAT4_100_8:
+        param->byteSize = 3200;
+        break;
     case DATA_FLOAT4_810:
         param->byteSize = 3240;
         break;
     default:
-        param->byteSize = 0;
+        delete param;
+        return 0;
         break;
     }
     param->extractFunc = tableEntry->unitEntries[unit_index].extractFunc;
@@ -509,12 +529,10 @@ int&            tableSize)      // RETURN: size of parameter table
 {
     switch (sourceId)
     {
-#if 0
         case SOURCE_HK2:
-            paramTable = (ParTabEntry *)HkdtParTab;
-            tableSize = HkdtParTabSize;
+            paramTable = (ParTabEntry *)HK2ParTab;
+            tableSize = HK2ParTabSize;
             return (TRUE);
-#endif
         case SOURCE_L1A:
         case SOURCE_L1AP:
             paramTable = (ParTabEntry *)L1AParTab;
@@ -524,6 +542,11 @@ int&            tableSize)      // RETURN: size of parameter table
         case SOURCE_L1A_DERIVED:
             paramTable = (ParTabEntry *)L1ADerivedParTab;
             tableSize = L1ADerivedTabSize;
+            return (TRUE);
+
+        case SOURCE_L1B:
+            paramTable = (ParTabEntry *)L1BParTab;
+            tableSize = L1BParTabSize;
             return (TRUE);
 
         case SOURCE_L2A:

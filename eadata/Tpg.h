@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   26 May 1998 16:43:58   sally
+// change MAX_PATH from 585 to 57
+// 
 //    Rev 1.1   12 Mar 1998 17:16:00   sally
 // adapt to the new QSCAT REQI format
 // 
@@ -36,7 +39,7 @@ static const char rcs_id_tpg_h[] = "@(#) $Header$";
 
 #define INVALID_TPG     Tpg(Itime(0,0),0,0)
 #define INVALID_PATH    0
-#define MAX_PATH        585
+#define MAX_PATH        57
 #define MAX_GAMMA       360.0
 #define TPG_LEN         64
 

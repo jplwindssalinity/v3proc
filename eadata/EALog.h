@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   29 May 1998 14:23:30   daffer
+// Changed GetInputFileList to GetTlmFileList
+// 
+//    Rev 1.8   27 May 1998 09:57:24   sally
+// have AddOutputFilenames and AddInputFilenames call a common function
+// 
+//    Rev 1.7   19 May 1998 14:34:44   daffer
+// Changed GetUTC method
+// 
 //    Rev 1.6   20 Apr 1998 10:21:14   sally
 // change for WindSwatch
 // 
@@ -57,6 +66,7 @@
 //#include <fstream.h>
 
 static const char rcsid_EALog_h[] = "@(#) $Header$";
+
 #define MAX_EALOG_STRING_LEN 1024
 #define MAX_EAFILENAME_LEN 256
 #define MAXVARARGS 31
@@ -86,17 +96,12 @@ static const char rcsid_EALog_h[] = "@(#) $Header$";
 //#include <iostream.h>
 //#include <fstream.h>
 
-class EALog {
+class EALog
+{
 
 public:
 
-  // Run Status of EA Programs being logged by EALog.
-    //    enum RunStatusE { 
-    //  EA_FAILURE=-3,
-    //  EA_ERROR,     
-    //  EA_WARNING,
-    //  EA_SUCCESS 
-    // };
+    // Run Status of EA Programs being logged by EALog.
     // Have to use PM's error status'
     enum RunStatusE {
         EA_FAILURE=-3,
@@ -119,11 +124,12 @@ public:
     
     
     
-    //Methods
     
     EALog( char *program_name, char *logfile, 
            int argc, char** argv) ; //constructor
-    ~EALog();                                    //destructor
+    virtual ~EALog();                                    //destructor
+
+    //Methods
     RunStatusE GetStatus();                    
     RunStatusE Init_PM();
     void       SetStatus( RunStatusE status );                       
@@ -135,7 +141,7 @@ public:
                             char *stringbuf );    
     void       SetWriteAndExit( RunStatusE status, 
                                 char *stringbuf );
-    void       GetInputFileList( TlmFileList* );
+    void       GetTlmFileList( TlmFileList* );
     void       AppendToInputFileList(const char* filename);
     void       AppendToOutputFileList(const char* filename);
     
@@ -153,11 +159,10 @@ private:
     static LogFileStatusE   LogFileStatus;
     static EA_PM_StatusE    EA_PM_Connectivity;
     static struct utsname   uname_info;
-    static char             *OutputFilename;
     
     
     char                    *CheckBuf(char *stringbuf);
-    char                    *GetUTC();
+    int                     GetUTC(char * time_str);
     char                    *groupd;
     char*                   _blank;
     char                    _CheckedBuf[MAX_EALOG_STRING_LEN+1];
@@ -174,7 +179,12 @@ private:
     int                     nInputFiles;
     char **                 OutputFiles;
     int                     nOutputFiles;
-    
+
+                            // return 0 (FALSE), if fails
+    int                     _addOneFilename(
+                                   const char*    filename,     // IN
+                                   int            currentNum,   // IN
+                                   char**&        filenamesPtr);// IN/OUT
 #ifndef NOPM
     StatusStruct            logStatusData; // PM Status structure
 #endif

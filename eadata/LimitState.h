@@ -10,6 +10,9 @@
 
 static const char rcs_id_limit_state_h[] = "@(#) $Id$";
 
+//----------------------------------------------------------------------
+// ATTENTION: don't change order without changing limitStatusStrings[]
+//----------------------------------------------------------------------
 enum LimitStatusE
 {
     LIMIT_OK,
@@ -17,9 +20,17 @@ enum LimitStatusE
     CAUTION_HIGH,
     ACTION_LOW,
     ACTION_HIGH,
+    LIMIT_CHECK_OK,  // this includes above
     INVALID_PARAMETER,
-    WRONG_TYPE
+    WRONG_TYPE,
+    LIMIT_MISSING_SDS_NAME,
+    LIMIT_APPLY_POLYNOMIAL_TO_NON_FLOAT,
+    LIMIT_POLYNOMIAL_NOT_IN_TABLE,
+    LIMIT_NO_POLYNOMIAL_TABLE
 };
+
+// get the corresponding string for LimitStatusE
+const char* GetLimitStatusString(LimitStatusE);
 
 //*******************************************************//
 // _____LimitState represents a state for one frame      //
@@ -31,52 +42,49 @@ enum LimitStatusE
 struct L1ALimitState
 {
     // constructor
-    L1ALimitState(int amode, int ahvps, int aframe) :
-            mode(amode), hvps(ahvps), frame(aframe) {};
+    L1ALimitState(int amode, int atwt, int atwta, int aframe) :
+            mode(amode), twt(atwt), twta(atwta), frame(aframe) {};
 
     // default constructor
-    L1ALimitState() : mode(0), hvps(0), frame(0) {};
+    L1ALimitState() : mode(0), twt(0), twta(0), frame(0) {};
 
     // copy constructor
     L1ALimitState(const L1ALimitState& old)
-            : mode(old.mode), hvps(old.hvps), frame(old.frame) {};
+            : mode(old.mode), twt(old.twt), twta(old.twta), frame(old.frame) {};
 
     virtual ~L1ALimitState() {};
 
     int     mode;
-    int     hvps;
+    int     twt;
+    int     twta;
     int     frame;
 
 };//L1ALimitState
 
-#if 0
 //*******************************************************//
-//      HkdtLimitState                                   //
+//      HK2LimitState                                   //
 //*******************************************************//
-struct HkdtLimitState
+struct HK2LimitState
 {
     // constructor
-    HkdtLimitState(int amode, int ahvps, int adss, int atwta) :
-            mode(amode), hvps(ahvps), dss(adss), twta(atwta) {};
+    HK2LimitState(int amode, int atwt, int atwta) :
+            mode(amode), twt(atwt), twta(atwta) {};
 
     // default constructor
-    HkdtLimitState() : mode(0), hvps(0), dss(0), twta(0) {};
+    HK2LimitState() : mode(0), twt(0), twta(0) {};
 
     // copy constructor
-    HkdtLimitState(const HkdtLimitState& old)
-            : mode(old.mode), hvps(old.hvps),
-            dss(old.dss), twta(old.twta) {};
+    HK2LimitState(const HK2LimitState& old)
+            : mode(old.mode), twt(old.twt), twta(old.twta) {};
 
-    virtual ~HkdtLimitState() {};
+    virtual ~HK2LimitState() {};
 
     int     mode;
-    int     hvps;
-    int     dss;
+    int     twt;
     int     twta;
 
-};//HkdtLimitState
+};//HK2LimitState
 
-#endif
 
 //*******************************************************//
 // _____LimitStatePair manages the states for two frames://
@@ -118,7 +126,7 @@ protected:
 struct L1ALimitStatePair : public LimitStatePair
 {
     // constructor
-    L1ALimitStatePair(int mode, int hvps, int frame);
+    L1ALimitStatePair(int mode, int twt, int twta, int frame);
             
     // default constructor
     L1ALimitStatePair();
@@ -146,33 +154,29 @@ struct L1ALimitStatePair : public LimitStatePair
     L1ALimitState    *oldState, *newState;
 
     Parameter*      modeParamP;
-    Parameter*      hvpsParamP;
+    Parameter*      k9ParamP;
+    Parameter*      k10ParamP;
+    Parameter*      k11ParamP;
+    Parameter*      k12ParamP;
     Parameter*      frameParamP;
 
 };//L1ALimitStatePair
 
-#if 0
 //*******************************************************//
-//      HkdtLimitStatePair                               //
+//      HK2LimitStatePair                               //
 //*******************************************************//
-struct HkdtLimitStatePair : public LimitStatePair
+struct HK2LimitStatePair : public LimitStatePair
 {
     // constructor
-    HkdtLimitStatePair(int mode, int hvps, int dss, int twta) :
-            LimitStatePair(),
-            stateA(mode, hvps, dss, twta), stateB(mode, hvps, dss, twta),
-            oldState(&stateA), newState(&stateB) {};
+    HK2LimitStatePair(int mode, int twt, int twta);
             
     // default constructor
-    HkdtLimitStatePair() : LimitStatePair(),
-                            oldState(&stateA), newState(&stateB) {};
+    HK2LimitStatePair();
 
     // copy constructor
-    HkdtLimitStatePair(const HkdtLimitStatePair& old) :
-            LimitStatePair(old), stateA(old.stateA), stateB(old.stateB),
-            oldState(old.oldState), newState(old.newState) {};
+    HK2LimitStatePair(const HK2LimitStatePair& old);
 
-    virtual ~HkdtLimitStatePair() {};
+    virtual ~HK2LimitStatePair();
 
     virtual IotBoolean      OpenParamDataSets(TlmHdfFile*);
     virtual IotBoolean      CloseParamDataSets(TlmHdfFile*);
@@ -182,30 +186,31 @@ struct HkdtLimitStatePair : public LimitStatePair
     virtual int     offset(void);
     virtual void    PrintNewState(FILE* fp);
     virtual void    PrintChange(FILE* fp);
-    inline void     _printState(FILE* fp, HkdtLimitState*);
+    inline void     _printState(FILE* fp, HK2LimitState*);
 
                     // return 1 if state changed, 0 if not
     virtual char    ApplyNewFrame(TlmHdfFile* tlmFile, int32 startIndex);
 
-    HkdtLimitState  stateA;
-    HkdtLimitState  stateB;
-    HkdtLimitState  *oldState, *newState;
+    HK2LimitState  stateA;
+    HK2LimitState  stateB;
+    HK2LimitState  *oldState, *newState;
 
-};//HkdtLimitStatePair
-#endif
+    Parameter*     modeParamP;
+    Parameter*     k9ParamP;
+    Parameter*     k10ParamP;
+    Parameter*     k11ParamP;
+    Parameter*     k12ParamP;
+
+};//HK2LimitStatePair
 
 int operator== (const L1ALimitState& a, const L1ALimitState& b);
 int operator!= (const L1ALimitState& a, const L1ALimitState& b);
-#if 0
-int operator== (const HkdtLimitState& a, const HkdtLimitState& b);
-int operator!= (const HkdtLimitState& a, const HkdtLimitState& b);
-#endif
+int operator== (const HK2LimitState& a, const HK2LimitState& b);
+int operator!= (const HK2LimitState& a, const HK2LimitState& b);
 
 int operator== (const L1ALimitStatePair& a, const L1ALimitStatePair& b);
 int operator!= (const L1ALimitStatePair& a, const L1ALimitStatePair& b);
-#if 0
-int operator== (const HkdtLimitStatePair& a, const HkdtLimitStatePair& b);
-int operator!= (const HkdtLimitStatePair& a, const HkdtLimitStatePair& b);
-#endif
+int operator== (const HK2LimitStatePair& a, const HK2LimitStatePair& b);
+int operator!= (const HK2LimitStatePair& a, const HK2LimitStatePair& b);
 
 #endif //LIMIT_STATE_H

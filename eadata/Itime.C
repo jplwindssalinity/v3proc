@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   18 Aug 1998 10:55:48   sally
+// make L1ADrvExtract return any number of values
+// 
+//    Rev 1.6   28 May 1998 11:23:06   daffer
+// Fixed L1ToItime2
+// 
+//    Rev 1.5   22 May 1998 16:45:00   daffer
+// Added L1ToItime2 method
+// 
 //    Rev 1.4   01 Apr 1998 13:36:04   sally
 // for L1A Derived table
 // 
@@ -81,6 +90,7 @@ Itime::Itime(
     ms = (unsigned short)(1000*(seconds - (double)sec));
     return;
 }
+
 
 //-----------
 // tmToItime 
@@ -363,6 +373,34 @@ Itime::L1ToItime(
     return (1);
 }
 
+//-----------------------
+//
+// L1ToItime2, Two arguments, 
+// I would overload L1ToItime, but I had problems 
+// when I tried to do this with a constructor. 
+// The first argument has the form 'YYYY-DDD' 
+// and the second of the form 'HH:MM:SS.CCC'
+//
+//------------------------
+int 
+Itime::L1ToItime2( const char *yyyyddd,
+                   const char *hhmmssccc )
+{
+
+    char time_string[L1_TIME_LEN];
+    for (int i=0;i<L1_TIME_LEN;i++) time_string[i]='\0';
+    int l=strlen(yyyyddd);
+    strncpy(time_string, yyyyddd, l);
+    strncat( time_string, "T",1);
+    l=strlen( hhmmssccc );
+    strncat( time_string, hhmmssccc,l );
+    time_string[L1_TIME_LEN-1] = '\0';
+    L1ToItime( time_string );
+    return (1);
+}
+
+
+
 //-----------
 // ItimeToL1 
 //-----------
@@ -526,6 +564,19 @@ int             i)
     unsigned short newMs = (remainder * 1000 + time1.ms) / i;
 
     return (Itime(newSec, newMs));
+}
+
+Itime
+operator*(
+const Itime&    time1,
+int             i)
+{
+    unsigned long newMs = time1.ms * i;
+    time_t regroup_sec = (time_t)(newMs / 1000);
+    time_t newSec = time1.sec + regroup_sec;
+    newMs -= regroup_sec * 1000;
+
+    return (Itime(newSec, (unsigned short)newMs));
 }
 
 Itime
@@ -694,7 +745,7 @@ void pr_itime_s(FILE *ofp, char *dataP)
     // this is "time since...", so don't adjust it with ITIME_DEFAULT_SEC
     Itime it;
     it.Char6ToItime(dataP);
-    fprintf(ofp, "%.2f", it.Seconds());
+    fprintf(ofp, "%.3f", it.Seconds());
     return;
 }
 

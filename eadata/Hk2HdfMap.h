@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   20 Jul 1998 14:14:58   sally
+// pass file descriptor to read function, instead of frame buffer
+// 
+//    Rev 1.1   01 May 1998 14:45:06   sally
+// added HK2 file
+// 
 //    Rev 1.0   14 Apr 1998 15:09:12   sally
 // Initial revision.
 // 
@@ -26,10 +32,11 @@ static const char Hk2HdfMap_h_id[] =
 
 #include "Parameter.h"
 
-#define EA_HK2_FRAME_SIZE    390
+#define EA_HK2_FRAME_SIZE    398
+#define EA_HK2_TIME_SIZE     8
 
 
-typedef int (*Hk2ReadFunc) (char* frame, int byteOffset, char* data);
+typedef int (*Hk2ReadFunc) (int infd, char* data);
 
 struct Hk2HdfMapEntry
 {

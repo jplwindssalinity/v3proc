@@ -49,6 +49,9 @@ typedef void (*assignBtoAFunc) (void* a, void* b);
 //        Each instance of LimitChecker represents an entry in
 //        the limits file.
 //*****************************************************************
+
+class PolynomialTable;
+
 class LimitChecker
 {
 public:
@@ -90,10 +93,11 @@ public:
                                 void* cl, void* ch, void* al, void* ah);
 
     LimitStatusE        CheckFrame(
-                            TlmHdfFile*     tlmFile,
-                            int32           startIndex,
-                            FILE*           fp,         // output file pointer
-                            LimitStatePair* limitState);
+                            PolynomialTable*  polyTable,
+                            TlmHdfFile*       tlmFile,
+                            int32             startIndex,
+                            FILE*             fp,    // output file pointer
+                            LimitStatePair*   limitState);
 
     virtual char        PrintText(char* destString)=0;
 
@@ -139,25 +143,23 @@ public:
 
 }; //class LimitChecker
 
-#if 0
-class HkdtLimitChecker : public LimitChecker
+class HK2LimitChecker : public LimitChecker
 {
 public:
-    HkdtLimitChecker(           Parameter*      parameter,
+    HK2LimitChecker(           Parameter*      parameter,
                                 char            enable=1);
 
     // copy constructor
-    HkdtLimitChecker(const HkdtLimitChecker&);
+    HK2LimitChecker(const HK2LimitChecker&);
 
-    virtual ~HkdtLimitChecker() {};
+    virtual ~HK2LimitChecker() {};
 
     virtual char        PrintText(char* destString);
 
 protected:
     virtual char        _initialize(void);
 
-};//HkdtLimitChecker
-#endif
+};//HK2LimitChecker
 
 class L1ALimitChecker : public LimitChecker
 {
@@ -192,9 +194,7 @@ inline int operator==(const LimitChecker& a, const LimitChecker& b)
 int operator!=(const LimitChecker& a, const LimitChecker& b);
 int operator==(const L1ALimitChecker& a, const L1ALimitChecker& b);
 int operator!=(const L1ALimitChecker& a, const L1ALimitChecker& b);
-#if 0
-int operator==(const HkdtLimitChecker& a, const HkdtLimitChecker& b);
-int operator!=(const HkdtLimitChecker& a, const HkdtLimitChecker& b);
-#endif
+int operator==(const HK2LimitChecker& a, const HK2LimitChecker& b);
+int operator!=(const HK2LimitChecker& a, const HK2LimitChecker& b);
 
 #endif //LIMITCHECKER_H

@@ -7,6 +7,24 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   09 Sep 1998 15:05:04   sally
+// fixed frame count bits
+// 
+//    Rev 1.6   08 Sep 1998 16:24:36   sally
+// added HK2 FSW subcoms
+// 
+//    Rev 1.5   20 Jul 1998 14:13:56   sally
+// pass file descriptor to read function, instead of frame buffer
+// 
+//    Rev 1.4   21 May 1998 10:12:18   sally
+// fixed comments
+// 
+//    Rev 1.3   01 May 1998 14:44:54   sally
+// added HK2 file
+// 
+//    Rev 1.2   28 Apr 1998 15:56:42   sally
+// added scatterometer housekeeping (1553) data for HK2
+// 
 //    Rev 1.1   20 Apr 1998 10:21:20   sally
 // change for WindSwatch
 // 
@@ -20,217 +38,75 @@ static const char Hk2Read_C_id[] =
     "@(#) $Header$";
 
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "CommonDefs.h"
 
-
-//---------------------------------------------------------
-// bit order: from left to right, i.e. 0 1 2 3 4 5 6 7
-//---------------------------------------------------------
-
-int
-FrameReadBits0_1(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 1, 2);
-    return 1;
-} // FrameReadBits0_1
-
-int
-FrameReadBits0_3(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 3, 4);
-    return 1;
-} // FrameReadBits0_3
-
-int
-FrameReadBits4_6(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 6, 3);
-    return 1;
-} // FrameReadBits4_6
-
-int
-FrameReadBits1_7(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 7, 7);
-    return 1;
-} // FrameReadBits1_7
-
-int
-FrameReadBits6_7(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 7, 2);
-    return 1;
-} // FrameReadBits6_7
-
-int
-FrameReadBits4_5(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 5, 2);
-    return 1;
-} // FrameReadBits4_5
-
-int
-FrameReadBits2_3(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 3, 2);
-    return 1;
-} // FrameReadBits2_3
-
-int
-FrameReadBits1_2(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBits(*(frame + byteOffset), 2, 2);
-    return 1;
-} // FrameReadBits1_2
-
-int
-FrameReadBit7(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 7);
-    return 1;
-} // FrameReadBit7
-
-int
-FrameReadBit6(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 6);
-    return 1;
-} // FrameReadBit6
-
-int
-FrameReadBit5(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 5);
-    return 1;
-} // FrameReadBit5
-
-int
-FrameReadBit4(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 4);
-    return 1;
-} // FrameReadBit4
-
-int
-FrameReadBit3(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 3);
-    return 1;
-} // FrameReadBit3
-
-int
-FrameReadBit2(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 2);
-    return 1;
-} // FrameReadBit2
-
-int
-FrameReadBit1(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 1);
-    return 1;
-} // FrameReadBit1
-
-int
-FrameReadBit0(
-char*   frame,
-int     byteOffset,
-char*   data)
-{
-    *data = GetBit(*(frame + byteOffset), 0);
-    return 1;
-} // FrameReadBit0
-
 int
 FrameRead1Byte(
-char*   frame,
-int     byteOffset,
+int     infd,
 char*   data)
 {
-    (void)memcpy(data, frame + byteOffset, 1);
-    return(data != 0 ? 1 : 0);
+    return(read(infd, data, 1) == 1 ? 1 : 0);
 
 } // FrameRead1Byte
 
 int
 FrameRead2Bytes(
-char*   frame,
-int     byteOffset,
+int     infd,
 char*   data)
 {
-    (void)memcpy(data, frame + byteOffset, 2);
-    return(data != 0 ? 1 : 0);
+    return(read(infd, data, 2) == 2 ? 1 : 0);
 
 } // FrameRead2Bytes
 
 int
 FrameRead3Bytes(
-char*   frame,
-int     byteOffset,
+int     infd,
 char*   data)          // a 4-byte data
 {
-    char* ptr = data;
-    ptr++;   // go to the 2nd byte
-    (void)memcpy(ptr, frame + byteOffset, 3);
-    return(data != 0 ? 1 : 0);
+    char buf[3];
+    if (read(infd, buf, 3) != 3)
+        return 0;
+    char* ptr = (char*)data;
+    ptr++;
+    (void)memcpy(ptr, buf, 3);
+    return 1;
 
 } // FrameRead3Bytes
 
 int
 FrameRead4Bytes(
-char*   frame,
-int     byteOffset,
+int     infd,
 char*   data)
 {
-    (void)memcpy(data, frame + byteOffset, 4);
-    return(data != 0 ? 1 : 0);
+    return(read(infd, data, 4) == 4 ? 1 : 0);
 
 } // FrameRead4Bytes
+
+int
+FrameRead8Bytes(
+int     infd,
+char*   data)
+{
+    return(read(infd, data, 8) == 8 ? 1 : 0);
+
+} // FrameRead8Bytes
+
+int
+FrameReadFrameNo(
+int     infd,
+char*   data)
+{
+    char byte;
+    if (read(infd, &byte, 1) == 1)
+    {
+        // bits 0-3
+        *data = GetBits(byte, 3, 4);
+        return 1;
+    }
+    else return 0;
+
+} // FrameReadFrameNo
+

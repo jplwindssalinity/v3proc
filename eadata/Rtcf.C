@@ -7,6 +7,33 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.13   01 Sep 1998 10:03:58   sally
+//  separate CmdHex from CmdId
+// 
+//    Rev 1.12   16 Jul 1998 13:32:18   sally
+// added "QS_" in the filename
+// 
+//    Rev 1.11   08 Jun 1998 13:37:58   sally
+// added EraseFile()
+// 
+//    Rev 1.10   03 Jun 1998 17:20:36   daffer
+// Added _last_msg variable, GetLastMsg and error message throughout
+// 
+//    Rev 1.9   01 Jun 1998 11:08:58   sally
+// fixed some GNU CC compiler warnings
+// 
+//    Rev 1.8   29 May 1998 15:27:00   sally
+// adapted to the new REQI datafile format, per Lee's memo
+// 
+//    Rev 1.7   28 May 1998 09:27:06   sally
+// update the formats for REQQ, QPF and RTCF
+// 
+//    Rev 1.6   19 May 1998 14:52:26   daffer
+// Robustified write methods, changed some return status'
+// 
+//    Rev 1.5   30 Apr 1998 14:30:12   daffer
+// Added status returns
+// 
 //    Rev 1.4   13 Apr 1998 14:30:52   sally
 // allocate space for _directory and _filename
 // 
@@ -37,6 +64,7 @@ static const char rcs_id_Rtcf_C[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -53,6 +81,16 @@ static const char rcs_id_Rtcf_C[] =
 #define RTCF_COMMAND_WIDTH  9
 #define RTCF_COMMAND_LABEL  "Command"
 
+const char* RtcfStatusStrings[] =
+{
+    "RTCF OK",
+    "RTCF Error",
+    "RTCF Out of Memory",
+    "RTCF Open Failsure",
+    "RTCF Empty File",
+    "RTCF Chmod Failed",
+    "RTCF Unlink File Failed"
+};
 
 //==============
 // Rtcf Methods 
@@ -62,20 +100,20 @@ Rtcf::Rtcf(
     const char* rtcf_directory,
     int         file_number)
 :   _directory(0), _filename(0),
-    _fileNumber(file_number), _recordCount(0),
-    _ofp(0)
+    _firstFileNumber(file_number), _fileNumber(file_number),
+    _recordCount(0), _status(RTCF_OK), _ofp(0)
 {
     if ((_directory = strdup(rtcf_directory)) == 0)
     {
         fprintf(stderr, "Rtcf: Out of memory\n");
-        exit(1);
+        _status=RTCF_OUT_OF_MEMORY;
     }
     char filename[BIG_SIZE];
-    (void)sprintf(filename, "%s/RTCF%06d", _directory, _fileNumber);
+    (void)sprintf(filename, "%s/QS_RTCF%06d", _directory, _fileNumber);
     if ((_filename = strdup(filename)) == 0)
     {
         fprintf(stderr, "Rtcf: Out of memory\n");
-        exit(1);
+        _status=RTCF_OUT_OF_MEMORY;
     }
     return;
 }
@@ -92,24 +130,25 @@ Rtcf::~Rtcf()
 //-------
 // pass through a command list and write out RTCF commands
 
-int
+Rtcf::RtcfStatusE
 Rtcf::Write(
-    CmdList*    cmd_list)
+CmdList*    cmd_list)
 {
     Command* cmd = cmd_list->GetHead();
     for (int cmd_index = 0; cmd; cmd_index++)
     {
-        int numWordsInParamFile = cmd->GetNumWordsInParamFile();
-        if (cmd->GetCommandType() == Command::REALTIME_COMMAND &&
-                    numWordsInParamFile >= 0 && numWordsInParamFile <= 2)
+        if (Command::GetFileFormat(cmd) == Command::FILE_RTCF)
         {
             if (! _ofp)
             {
-                _OpenFile();
-                _WriteHeader();
+                if (_OpenFile() != RTCF_OK) 
+                    return (RTCF_OPEN_FAILURE);
+                if (_WriteHeader() != RTCF_OK)
+                    return( RTCF_ERROR );
                 _fileNumber++;
             }
-            _WriteRecord(cmd);
+            if (_WriteRecord(cmd) != RTCF_OK )
+                return (RTCF_ERROR);
         }
         cmd = cmd_list->GetNext();
     }
@@ -118,10 +157,13 @@ Rtcf::Write(
     {
         fchmod(fileno(_ofp), RTCF_MODE);
         fclose(_ofp);
+        return(_status = RTCF_OK);
+    }
+    else {
+        return(_status = RTCF_EMPTY_FILE);
     }
 
-    return(1);
-}
+} // Rtcf::Write
 
 //--------------
 // RtcfMnemonic 
@@ -131,7 +173,7 @@ const char*
 Rtcf::RtcfMnemonic(
     Command*    cmd)
 {
-    return(cmd->CmdString());
+    return(cmd->mnemonic);
 }
 
 //--------------
@@ -139,12 +181,12 @@ Rtcf::RtcfMnemonic(
 //--------------
 // write the RTCF header record
 
-int
+Rtcf::RtcfStatusE
 Rtcf::_WriteHeader()
 {
     fprintf(_ofp, "%*s %*s %*s\n", STEP_NUMBER_WIDTH, STEP_NUMBER_LABEL,
         DATE_WIDTH, DATE_LABEL, RTCF_COMMAND_WIDTH, RTCF_COMMAND_LABEL);
-    return(1);
+    return(RTCF_OK);
 }
 
 //--------------
@@ -153,14 +195,10 @@ Rtcf::_WriteHeader()
 // writes an RTCF record to the appropriate file
 // opens the file if it is not already opened
 
-int
+Rtcf::RtcfStatusE
 Rtcf::_WriteRecord(
-Command*    )
-#if 0
 Command*    cmd)
-#endif
 {
-#if 0
     //------------------------
     // determine the mnemonic 
     //------------------------
@@ -179,197 +217,58 @@ Command*    cmd)
     //----------------------
 
     _recordCount++;
-    char ascii_string[32];
-    char hex_string[32];
-    if (cmd->commandId == CMD_ANT)
-    {
-        ReadAntennaSequence(cmd->dataFilename, ascii_string, hex_string);
-        sprintf(cmd->dataFilename, "%s", ascii_string);
-        fprintf(_ofp, "%*d %+*s %+*s (%s, %s)\n", STEP_NUMBER_WIDTH,
-            _recordCount, DATE_WIDTH, date_string, RTCF_COMMAND_WIDTH,
-            mnemonic, hex_string, ascii_string);
-    }
-    else if (cmd->commandId == CMD_MON)
-    {
-        ReadMonitorData(cmd->dataFilename, ascii_string, hex_string);
-        sprintf(cmd->dataFilename, "%s", ascii_string);
-        fprintf(_ofp, "%*d %+*s %+*s (%s, %s)\n", STEP_NUMBER_WIDTH,
-            _recordCount, DATE_WIDTH, date_string, RTCF_COMMAND_WIDTH,
-            mnemonic, hex_string, ascii_string);
-    }
-    else
-        fprintf(_ofp, "%*d %+*s %+*s\n", STEP_NUMBER_WIDTH, _recordCount,
+        fprintf(_ofp, "%*d %*s %*s\n", STEP_NUMBER_WIDTH, _recordCount,
             DATE_WIDTH, date_string, RTCF_COMMAND_WIDTH, mnemonic);
-#endif
-    return(1);
+    return(RTCF_OK);
 }
 
 //-----------
 // _OpenFile 
 //-----------
 // open file with the proper name
-// return 1 on success, 0 on failure
+// return RTCF_OK on success, RTCF_OPEN_FAILURE on failure
 
-int
+Rtcf::RtcfStatusE
 Rtcf::_OpenFile()
 {
     _ofp = fopen(_filename, "w");
     if (! _ofp)
     {
-        fprintf(stderr, "RTCF: error opening output file\n");
-        fprintf(stderr, "  Filename: %s\n", _filename);
-        fprintf(stderr, "Program aborting.\n");
-        exit(1);
+        return (RTCF_OPEN_FAILURE);
     }
-    return(1);
+    _status=Rtcf::RTCF_OK;
+    return(_status);
 }
 
-//-----------------
-// ReadMonitorData 
-//-----------------
- 
-int
-ReadMonitorData(
-    const char* filename,
-    char*       ascii_string,
-    char*       hex_string)
+
+Rtcf::RtcfStatusE
+Rtcf::EraseFile(void)
 {
-    //---------------
-    // open the file 
-    //---------------
- 
-    FILE* ifp = fopen(filename, "r");
-    if (! ifp)
-    {
-        fprintf(stderr, "Error opening trip monitor data file\n");
-        fprintf(stderr, "  Trip Monitor Data Filename:\n    %s\n", filename);
-        fprintf(stderr, "Program aborting.\n");
-        exit(1);
-    }
- 
-    //------------------
-    // read in the data 
-    //------------------
- 
-    int monitor_enable, shutdown_enable, trip_duration;
-    if (fscanf(ifp, "%d %d %d", &monitor_enable, &shutdown_enable,
-        &trip_duration) != 3)
-    {
-        fclose(ifp);
-        fprintf(stderr, "Error reading trip monitor data file\n");
-        fprintf(stderr, "  Trip Monitor Data Filename:\n    %s\n", filename);
-        fprintf(stderr, "Program aborting.\n");
-        exit(1);
-    }
-    fclose(ifp);
- 
-    //----------------------------
-    // determine the command word 
-    //----------------------------
+    char filename[BIG_SIZE];
+    (void)sprintf(filename, "%s/RTCF%06d", _directory, _firstFileNumber);
+    // no file created, done
+    if (access(filename, F_OK) != 0)
+        return(RTCF_OK);
 
-    union
+    if (chmod(filename, 0600) == 0)
     {
-        unsigned int    int_cmd;
-        unsigned char   char_cmd[4];
-    } cmd_word;
-    cmd_word.int_cmd = 0;
+        if (unlink(filename) == 0)
+            return(RTCF_OK);
+        else
+            return(RTCF_UNLINK_FILE_FAILED);
+    }
+    else
+        return(RTCF_CHMOD_FAILED);
 
-    switch (monitor_enable)
-    {
-    case 1:
-        cmd_word.char_cmd[0] |= 0x80;
-        break;
-    case 0:
-        break;
-    default:
-        fprintf(stderr, "Error interpreting monitor enable flag: %d\n",
-            monitor_enable);
-        fprintf(stderr, "  Trip Monitor Data Filename:\n    %s\n", filename);
-        fprintf(stderr, "Program aborting.\n");
-        exit(1);
-    }
+} // Rtcf::EraseFile
 
-    switch (shutdown_enable)
-    {
-    case 1:
-        cmd_word.char_cmd[0] |= 0x40;
-        break;
-    case 0:
-        break;
-    default:
-        fprintf(stderr, "Error interpreting shutdown enable flag: %d\n",
-            shutdown_enable);
-        fprintf(stderr, "  Trip Monitor Data Filename:\n    %s\n", filename);
-        fprintf(stderr, "Program aborting.\n");
-    }
-
-    if (trip_duration < 0 || trip_duration > 4095)
-    {
-        fprintf(stderr, "Trip duration not between 0 and 4095: %d\n",
-            trip_duration);
-        fprintf(stderr, "  Trip Monitor Data Filename:\n    %s\n", filename);
-        fprintf(stderr, "Program aborting.\n");
-    }
-    cmd_word.int_cmd += (trip_duration << 16);
+const char*
+Rtcf::GetStatusString(
+RtcfStatusE     status)
+{
+    if (status < RTCF_OK || status >= RTCF_STATUS_LAST)
+        return("Unknown");
+    else
+        return(RtcfStatusStrings[(int)status]);
  
-    //------------------------
-    // calculate the checksum 
-    //------------------------
- 
-    unsigned long sum = 0xaa;
-    for (int i = 1; i < 2; i++)
-    {
-        sum += cmd_word.char_cmd[i];
-        if (sum & 0x100)
-        {
-            // do the end around carry thing
-            sum &= 0xff;    // take out the carry bit
-            sum += 1;      // add it at the end
-        }
-    }
-    cmd_word.char_cmd[3] = sum;
- 
-    //-----------------------------
-    // check for embedded commands 
-    //-----------------------------
- 
-    char check_array[6];
-    check_array[0] = 0x6e;  // the rfs trip monitor command
-    check_array[1] = 0x11;
-    memcpy(check_array + 2, cmd_word.char_cmd, 4);
- 
-    int byte1, bit1, byte2, bit2;
-    unsigned short cmd_code;
-    char* cmd_name;
-    if (CheckForCmds(check_array, 6, &byte1, &bit1, &byte2, &bit2,
-        &cmd_code, &cmd_name))
-    {
-        fprintf(stderr, "\n********** WARNING **********\n");
-        fprintf(stderr, "NPF: Embedded command in RFS Trip Monitor Command\n");
-        fprintf(stderr, "  RFS Trip Monitor Data File:\n    %s\n",
-            filename);
-        fprintf(stderr, "  Embedded Command: %s (%hx)\n", cmd_name, cmd_code);
-        fprintf(stderr,
-            "  Command Range: byte %d, bit %d to byte %d, bit %d\n",
-            byte1, bit1, byte2, bit2);
-        fprintf(stderr,
-            "  (Bytes start at 0 and include the command word.)\n");
-        fprintf(stderr, "Program Continuing.\n");
-        fprintf(stderr, "*****************************\n");
-    }
- 
-    //----------------------
-    // set the ascii string 
-    //----------------------
- 
-    sprintf(ascii_string, "%d %d %d", monitor_enable, shutdown_enable,
-        trip_duration);
- 
-    //--------------------
-    // set the hex string 
-    //--------------------
-
-    sprintf(hex_string, "%08.8X", cmd_word.int_cmd);
- 
-    return(1);
-}
+} // Rtcf::GetStatusString

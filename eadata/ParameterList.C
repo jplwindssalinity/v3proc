@@ -7,6 +7,26 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.13   09 Sep 1998 15:06:52   sally
+// take care of return value of -1 from extractFunc()
+// 
+//    Rev 1.12   04 Aug 1998 16:29:40   deliver
+// pass polynomial table to ParameterList's HoldExtract
+// 
+//    Rev 1.11   27 Jul 1998 14:00:44   sally
+// passing polynomial table to extraction function
+// 
+//    Rev 1.10   23 Jul 1998 16:14:52   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.9   08 Jun 1998 13:37:12   sally
+// 
+//    Rev 1.8   03 Jun 1998 10:10:34   sally
+// change parameter names and types due to LP's changes
+// 
+//    Rev 1.7   01 May 1998 14:47:50   sally
+// added HK2 file
+// 
 //    Rev 1.6   14 Apr 1998 16:43:54   sally
 // move back to EA's old list
 // 
@@ -78,9 +98,10 @@ TlmHdfFile*    tlmFile)
         (void)strncpy(tempString, param_ptr->sdsNames, BIG_SIZE);
         char* oneSdsName=0;
         int i=0;
-        for (oneSdsName = (char*)strtok(tempString, ",");
-                           oneSdsName;
-                           oneSdsName = (char*)strtok(0, ","), i++)
+        char* lasts = 0;
+        for (oneSdsName = (char*)safe_strtok(tempString, ",", &lasts);
+                       oneSdsName;
+                       oneSdsName = (char*)safe_strtok(0, ",", &lasts), i++)
         {
             param_ptr->sdsIDs[i] = HDF_FAIL;
             param_ptr->sdsIDs[i] = tlmFile->SelectDataset(
@@ -133,9 +154,9 @@ int32          startIndex)
     {
         if ( ! param_ptr->extractFunc(tlmFile, param_ptr->sdsIDs,
                  startIndex, 1, 1,
-                 param_ptr->data + _numPairs * param_ptr->byteSize))
+                 param_ptr->data + _numPairs * param_ptr->byteSize, 0))
         {
-            return (_status);
+            return (_status=ERROR_EXTRACTING_PARAMETER);
         }
     }
 
@@ -151,8 +172,9 @@ int32          startIndex)
 //-------------
 ParameterList::StatusE
 ParameterList::HoldExtract(
-TlmHdfFile*    tlmFile,
-int32          startIndex)
+TlmHdfFile*       tlmFile,
+int32             startIndex,
+PolynomialTable*  polyTable)           // not used
 {
     assert (tlmFile != 0);
     //--------------------------------------
@@ -177,13 +199,20 @@ int32          startIndex)
     Parameter* param_ptr=0;
     for (param_ptr = GetHead(); param_ptr; param_ptr = GetNext())
     {
-        if ( param_ptr->extractFunc(tlmFile, param_ptr->sdsIDs,
-                 startIndex, 1, 1,
-                 param_ptr->data + _numPairs * param_ptr->byteSize))
+        int rc = param_ptr->extractFunc(tlmFile,
+                 param_ptr->sdsIDs, startIndex, 1, 1,
+                 param_ptr->data + _numPairs * param_ptr->byteSize, polyTable);
+        switch(rc)
         {
-            param_ptr->held = 1;
-            if (param_ptr->paramId != UTC_TIME)
-                new_param_count++;  // only count non-time parameters
+            case -1:
+                return(_status = ERROR_EXTRACTING_PARAMETER);
+            case 0:
+                break;
+            default:
+                param_ptr->held = 1;
+                if (param_ptr->paramId != UTC_TIME)
+                    new_param_count++;  // only count non-time parameters
+                break;
         }
     }
 
@@ -423,6 +452,7 @@ ParameterList::_SetTimeUnits(
     SourceIdE sourceId = target_param->sourceId;
     Parameter *time_param = ParTabAccess::GetParameter(sourceId,
         UTC_TIME, unitId);
+    assert(time_param != 0);
  
     // copy the print function, unit name, and unit id
     target_param->printFunc = time_param->printFunc;
@@ -502,10 +532,13 @@ PolynomialTable*    polyTable)
 
     for (Parameter* param_ptr = GetHead(); param_ptr; param_ptr = GetNext())
     {
+        if ( ! param_ptr->needPolynomial)
+            continue;
+
         char tempString[BIG_SIZE];
         (void)strncpy(tempString, param_ptr->sdsNames, BIG_SIZE);
-        char* oneSdsName=0;
-        oneSdsName = (char*)strtok(tempString, ",");
+        char *oneSdsName=0, *lasts = 0;
+        oneSdsName = (char*)safe_strtok(tempString, ",", &lasts);
         if (oneSdsName == 0)
         {
             fprintf(stderr, "Missing SDS name\n");
@@ -535,12 +568,9 @@ PolynomialTable*    polyTable)
         }
         else
         {
-            if (param_ptr->needPolynomial)
-            {
-                fprintf(stderr, "%s[%s] needs polynomial\n",
-                                    param_ptr->paramName, param_ptr->unitName);
-                return(_status = ERROR_PARAMETER_NEED_POLYNOMIAL);
-            }
+            fprintf(stderr, "%s[%s] needs polynomial\n",
+                                param_ptr->paramName, param_ptr->unitName);
+            return(_status = ERROR_PARAMETER_NEED_POLYNOMIAL);
         }
     }
     return(_status = OK);

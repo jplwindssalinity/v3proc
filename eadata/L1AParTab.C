@@ -7,6 +7,61 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.24   02 Oct 1998 14:23:04   sally
+// correct unit type for exciter temp
+// 
+//    Rev 1.23   18 Aug 1998 15:06:34   sally
+// mv mWatts for transmit power to L1ADrvTab.C
+// 
+//    Rev 1.22   18 Aug 1998 09:17:58   sally
+// corrected spelling TRAMSMIT -> TRANSMIT
+// 
+//    Rev 1.21   18 Aug 1998 08:05:58   daffer
+// Corrected mispelled TRANSMIT_PULSE_CHANGE
+// 
+//    Rev 1.20   13 Aug 1998 16:26:54   sally
+// for transmit power: dBm comes from polynomial table, mWatts is derived
+// 
+//    Rev 1.19   04 Aug 1998 15:59:54   sally
+// fixe L1AParTab so that dBm comes from polynomial table and
+// mWatts will be calculated
+// 
+//    Rev 1.18   03 Aug 1998 14:34:26   deliver
+// fix yank and put error
+// 
+//    Rev 1.17   03 Aug 1998 14:20:58   deliver
+// fix some units
+// 
+//    Rev 1.16   03 Aug 1998 14:07:30   sally
+// added some units for Barry
+// 
+//    Rev 1.15   27 Jul 1998 14:00:16   sally
+// passing polynomial table to extraction function
+// 
+//    Rev 1.14   24 Jun 1998 09:46:46   sally
+// took out extract Blank
+// 
+//    Rev 1.13   22 Jun 1998 15:26:02   sally
+// change to incorporate Barry's update
+// 
+//    Rev 1.12   03 Jun 1998 10:09:58   sally
+// change parameter names and types due to LP's changes
+// 
+//    Rev 1.11   28 May 1998 15:51:28   sally
+// changed some L1A parameter names
+// 
+//    Rev 1.10   26 May 1998 16:35:02   daffer
+// Changed cmdArgsTable to reflect changes in L1A SIS
+// 
+//    Rev 1.9   19 May 1998 14:44:02   sally
+// updated some parameters according to the new TLM dictionary
+// 
+//    Rev 1.8   13 May 1998 16:26:56   sally
+// changed "time" to "frame_time_secs"
+// 
+//    Rev 1.7   27 Apr 1998 15:49:44   sally
+// .
+// 
 //    Rev 1.6   06 Apr 1998 16:28:08   sally
 // merged with SVT
 // 
@@ -66,7 +121,7 @@ const ParTabEntry L1AParTab[] =
     }
   },
 #endif
-  { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "time", 6, {
+  { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 6, {
       { UNIT_AUTOTIME, "(auto)",DATA_ITIME, 0, ExtractTaiTime, 0 },
       { UNIT_CODE_A, "Code A",  DATA_ITIME, 0, ExtractTaiTime, pr_itime_codea },
       { UNIT_DAYS,   "days",    DATA_ITIME, 0, ExtractTaiTime, pr_itime_d },
@@ -75,7 +130,7 @@ const ParTabEntry L1AParTab[] =
       { UNIT_SECONDS,"seconds", DATA_ITIME, 0, ExtractTaiTime, pr_itime_s }
     }
   },
-  { TAI_TIME, "TAI Time", SOURCE_L1A, MEAS_TIME, "time", 1, {
+  { TAI_TIME, "TAI Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 1, {
       { UNIT_TAI_SECONDS, "seconds after TAI", DATA_FLOAT8, 0,
                                                ExtractData1D, pr_float8_10 },
     }
@@ -178,7 +233,7 @@ const ParTabEntry L1AParTab[] =
       { UNIT_MAP, "1=Event, 0=normal", DATA_UINT1, 0, Extract8Bit5, pr_bit }
     }
   },
-  { ERROR_FLAGS_06, "Error Flag - spare", SOURCE_L1A,
+  { ERROR_FLAGS_06, "Error Flag - Stale Data Toggle (STLM only)", SOURCE_L1A,
                 MEAS_STATUS, "status_error_flags", 1, {
        { UNIT_MAP, "1=Event, 0=normal", DATA_UINT1, 0, Extract8Bit6, pr_bit }
     }
@@ -245,19 +300,20 @@ const ParTabEntry L1AParTab[] =
   },
   { STATUS_TABLE_CHANGE_FLAGS_04, "Change Flags - Internal PRF Clock",
             SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit4, pr_bit }
+      { UNIT_MAP, "1=from CDS, 0=from SES", DATA_UINT1, 0,
+                                     Extract16Bit4, pr_bit }
     }
   },
   { STATUS_TABLE_CHANGE_FLAGS_05,
             "Change Flags - Multi SES Data Loss Fault Detection En/Dis",
             SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit5, pr_bit }
+      { UNIT_MAP, "1=Enabled, 0=Disabled", DATA_UINT1, 0, Extract16Bit5, pr_bit }
     }
   },
   { STATUS_TABLE_CHANGE_FLAGS_06,
             "Change Flags - Multi SAS Data Loss Fault Detection En/Dis",
             SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit6, pr_bit }
+      { UNIT_MAP, "1=Enabled, 0=Disabled", DATA_UINT1, 0, Extract16Bit6, pr_bit }
     }
   },
   { STATUS_TABLE_CHANGE_FLAGS_07, "Change Flags - Hard Reset",
@@ -268,17 +324,18 @@ const ParTabEntry L1AParTab[] =
   { STATUS_TABLE_CHANGE_FLAGS_08,
                 "Change Flags - SES Suppl Htr Mode Chg Ctrl En/Dis",
             SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit8, pr_bit }
+      { UNIT_MAP, "1=Enabled, 0=Disabled", DATA_UINT1, 0, Extract16Bit8, pr_bit }
     }
   },
-  { STATUS_TABLE_CHANGE_FLAGS_09, "Change Flags - spare",
+  { STATUS_TABLE_CHANGE_FLAGS_09,
+          "Change Flags - TWTA Low Drive Power Fault Protection En/Dis",
       SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit9, pr_bit }
+      { UNIT_MAP, "1=Enabled, 0=Disabled", DATA_UINT1, 0, Extract16Bit9, pr_bit }
     }
   },
   { STATUS_TABLE_CHANGE_FLAGS_10, "Change Flags - TWTA monitor En/Dis",
             SOURCE_L1A, MEAS_STATUS, "status_change_flags", 1, {
-      { UNIT_MAP, "1=Changed, 0=Same", DATA_UINT1, 0, Extract16Bit10, pr_bit }
+      { UNIT_MAP, "1=Enabled, 0=Disabled", DATA_UINT1, 0, Extract16Bit10, pr_bit }
     }
   },
   { STATUS_TABLE_CHANGE_FLAGS_11, "Change Flags - SES Param tables",
@@ -337,44 +394,60 @@ const ParTabEntry L1AParTab[] =
     }
   },
   { PRF_CYCLE_TIME, "PRF Cycle Time", SOURCE_L1A, MEAS_QUANTITY,
-            "prf_cycle_time", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "prf_cycle_time", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RANGE_GATE_A_DELAY, "Range Gate A Delay", SOURCE_L1A, MEAS_QUANTITY,
-            "range_gate_a_delay", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "range_gate_a_delay", 3, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 },
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1,
+                       ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RANGE_GATE_A_WIDTH, "Range Gate A Width", SOURCE_L1A, MEAS_QUANTITY,
-            "range_gate_a_width", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "range_gate_a_width", 3, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 },
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1,
+                       ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RANGE_GATE_B_DELAY, "Range Gate B Delay", SOURCE_L1A, MEAS_QUANTITY,
-            "range_gate_b_delay", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "range_gate_b_delay", 3, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 },
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1,
+                       ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RANGE_GATE_B_WIDTH, "Range Gate B Width", SOURCE_L1A, MEAS_QUANTITY,
-            "range_gate_b_width", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "range_gate_b_width", 3, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 },
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1,
+                       ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { DOPPLER_SHIFT_CMD_PRF1, "Doppler Shift Cmd PRF 1", SOURCE_L1A,
-            MEAS_ADDRESS, "doppler_shift_command_1", 2, {
-      { UNIT_DN, "decimal", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
-      { UNIT_HEX_BYTES, "hex", DATA_UINT4, 0, ExtractData1D, pr_char4x },
+            MEAS_FREQUENCY, "doppler_shift_command_1", 2, {
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
+      { UNIT_KHZ, "khz", DATA_FLOAT4, 1, ExtractData1D_uint4_float,pr_float4_6 }
     }
   },
   { DOPPLER_SHIFT_CMD_PRF2, "Doppler Shift Cmd PRF 2", SOURCE_L1A,
-            MEAS_ADDRESS, "doppler_shift_command_2", 2, {
+            MEAS_FREQUENCY, "doppler_shift_command_2", 2, {
       { UNIT_DN, "decimal", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
-      { UNIT_HEX_BYTES, "hex", DATA_UINT4, 0, ExtractData1D, pr_char4x },
+      { UNIT_KHZ, "khz", DATA_FLOAT4, 1, ExtractData1D_uint4_float,pr_float4_6 }
     }
   },
-  { PULSE_WIDTH, "Pulse Width", SOURCE_L1A, MEAS_QUANTITY, "pulse_width", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+  { PULSE_WIDTH, "Pulse Width", SOURCE_L1A, MEAS_QUANTITY, "pulse_width", 3, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MS, "ms", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 },
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1,
+                       ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RECEIVER_GAIN, "Receiver Gain", SOURCE_L1A, MEAS_QUANTITY,
@@ -474,15 +547,13 @@ const ParTabEntry L1AParTab[] =
       { UNIT_COUNTS, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
     }
   },
-  { ADEOS_TIME, "ADEOS Time", SOURCE_L1A, MEAS_TIME, "adeos_time", 1, {
-      { UNIT_TICKS, "ticks", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
-#if 0
-  { ADEOS_TIME, "ADEOS Time", SOURCE_L1A, MEAS_TIME, "adeos_time", 3, {
-      { UNIT_MINUTES, "minutes", DATA_FLOAT4, 1, ExtractData1D_uint4_float,
-                                                pr_float4_8 },
-      { UNIT_SECONDS, "seconds", DATA_FLOAT4, 1, ExtractData1D_uint4_float,
-                                                pr_float4_8 }
-#endif
+  { ADEOS_TIME, "VTCW", SOURCE_L1A, MEAS_QUANTITY, "vtcw", 1, {
+      { UNIT_TICKS, "ticks", DATA_FLOAT8, 0, ExtractData1D, pr_float8_10 }
+    }
+  },
+  { CORRES_INSTR_TIME, "Corres Instr Time", SOURCE_L1A, MEAS_TIME,
+                     "corres_instr_time", 1, {
+      { UNIT_TICKS, "ticks", DATA_FLOAT8, 0, ExtractData1D, pr_float8_10 }
     }
   },
   { FSW_MISSION_NO, "FSW Mission No", SOURCE_L1A,
@@ -501,6 +572,14 @@ const ParTabEntry L1AParTab[] =
             MEAS_QUANTITY, "fsw_build_number", 1, {
       { UNIT_COUNTS, "0=initial, 1=A, 2=B,...", DATA_UINT1,
                                     0, ExtractData1D, pr_uint1 }
+    }
+  },
+  { PBI_FLAG, "PBI Flag", SOURCE_L1A, MEAS_STATUS, "pbi_flag", 1, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+    }
+  },
+  { FILL_DATA, "Fill Data", SOURCE_L1A, MEAS_QUANTITY, "fill", 1, {
+      { UNIT_DN, "dn", DATA_CHAR32, 0, ExtractData2D_8, pr_char32x }
     }
   },
   { PSU_ELEC_BUS_VOLT, "PSU Elec Bus Volt", SOURCE_L1A, MEAS_VOLTAGE,
@@ -587,7 +666,7 @@ const ParTabEntry L1AParTab[] =
                                            pr_float4_6 }
     }
   },
-  { PCU_ELEC_BUS_VOLT_P5_ISO, "PCU Elec Bus Volt +5 ISO ", SOURCE_L1A,
+  { PCU_ELEC_BUS_VOLT_P5_ISO, "PCU Elec Bus Volt +5 ISO", SOURCE_L1A,
             MEAS_VOLTAGE, "pcu_elec_bus_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4, 1, ExtractData1D_uint1_float,
@@ -595,18 +674,24 @@ const ParTabEntry L1AParTab[] =
     }
   },
   { IDP_A_TEMP, "IDP-A Temperature", SOURCE_L1A, MEAS_TEMPERATURE,
-            "idp_a_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "idp_a_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
+                           ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { IDP_B_TEMP, "IDP-B Temperature", SOURCE_L1A, MEAS_TEMPERATURE,
-            "idp_b_temp", 1, {
+            "idp_b_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
+                           ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { PSU_TEMP, "PSU Temperature", SOURCE_L1A, MEAS_TEMPERATURE,
-            "psu_temp", 1, {
+            "psu_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
+                           ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RELAY_STATUS, "Relay Status", SOURCE_L1A, MEAS_STATUS, "relay_status", 1, {
@@ -810,138 +895,164 @@ const ParTabEntry L1AParTab[] =
     }
   },
   { TWT_1_BODY_REG_VOLT, "TWT 1 Body Reg Volt", SOURCE_L1A,
-        MEAS_VOLTAGE, "twt1_body_reg_volt", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+        MEAS_VOLTAGE, "twt1_body_reg_volt", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_VOLTS, "volts", DATA_FLOAT4, 1, ExtractData1D_uint1_float,
+                                          pr_float4_6 }
     }
   },
   { TWT_1_ION_PUMP_CURRENT, "TWT 1 Ion Pump Current", SOURCE_L1A,
-            MEAS_CURRENT, "twt1_ion_pump_current", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_CURRENT, "twt1_ion_pump_current", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_UA, "uA", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_1_BODY_CURRENT, "TWT 1 Body Current", SOURCE_L1A,
-            MEAS_CURRENT, "twt1_body_current", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_CURRENT, "twt1_body_current", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MA, "mA", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_1_DRIVE_PWR, "TWT 1 Drive Power", SOURCE_L1A,
-            MEAS_POWER, "twt1_drive_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_POWER, "twt1_drive_power", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DBM, "dBm", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6}
     }
   },
   { TWT_2_BODY_REG_VOLT, "TWT 2 Body Reg Volt", SOURCE_L1A,
-        MEAS_VOLTAGE, "twt2_body_reg_volt", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+        MEAS_VOLTAGE, "twt2_body_reg_volt", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_VOLTS, "volts", DATA_FLOAT4, 1, ExtractData1D_uint1_float,
+                                          pr_float4_6 }
     }
   },
   { TWT_2_ION_PUMP_CURRENT, "TWT 2 Ion Pump Current", SOURCE_L1A,
-            MEAS_CURRENT, "twt2_ion_pump_current", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_CURRENT, "twt2_ion_pump_current", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_UA, "uA", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_2_BODY_CURRENT, "TWT 2 Body Current", SOURCE_L1A,
-            MEAS_CURRENT, "twt2_body_current", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_CURRENT, "twt2_body_current", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_MA, "mA", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_2_DRIVE_PWR, "TWT 2 Drive Power", SOURCE_L1A, MEAS_POWER,
-            "twt2_drive_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "twt2_drive_power", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DBM, "dBm", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6}
     }
   },
-  { TRANSMIT_PWR_A, "Transmit Power A", SOURCE_L1A, MEAS_POWER,
+  { TRANSMIT_PWR_A, "Transmit Power A", SOURCE_L1A_DERIVED, MEAS_POWER,
             "transmit_power_a", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
-      { UNIT_MWATTS, "mWatts", DATA_FLOAT4, 1,
-                          ExtractData1D_uint1_float, pr_float4_6 },
-#if 0
-      // this won't be in polynomial directly, but it needs
-      // the polynomial applied to wWatts first
-      { UNIT_DBM, "dBm", DATA_FLOAT4, 0,
-                          ExtractXmitPowerAdBm, pr_float4_6 }
-#endif
+      { UNIT_DBM, "dBm", DATA_FLOAT4, 1,
+                                ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
-  { TRANSMIT_PWR_B, "Transmit Power B", SOURCE_L1A, MEAS_POWER,
+  { TRANSMIT_PWR_B, "Transmit Power B", SOURCE_L1A_DERIVED, MEAS_POWER,
             "transmit_power_b", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
-      { UNIT_MWATTS, "mWatts", DATA_FLOAT4, 1,
-                          ExtractData1D_uint1_float, pr_float4_6 },
-#if 0
-      // this won't be in polynomial directly, but it needs
-      // the polynomial applied to wWatts first
-      { UNIT_DBM, "dBm", DATA_FLOAT4, 0,
-                          ExtractXmitPowerBdBm, pr_float4_6 }
-#endif
+      { UNIT_DBM, "dBm", DATA_FLOAT4, 1,
+                                ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { PWR_CONVERT_CURRENT, "PWR Convert Current", SOURCE_L1A,
-            MEAS_CURRENT, "power_convert_current", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_CURRENT, "power_convert_current", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DBM, "dBm", DATA_FLOAT4, 1,
+                          ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { PRECISION_COUPLER_TEMP, "Precision Coupler Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "precision_coupler_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "precision_coupler_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_1_HVPS_CHASSIS_TEMP, "TWT 1 HVPS Chassis Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "twt1_hvps_chassis_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "twt1_hvps_chassis_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_1_BASE_TEMP, "TWT 1 Base Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "twt1_base_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "twt1_base_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_2_HVPS_CHASSIS_TEMP, "TWT 2 HVPS Chassis Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "twt2_hvps_chassis_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "twt2_hvps_chassis_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { TWT_2_BASE_TEMP, "TWT 2 Base Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "twt2_base_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "twt2_base_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RCV_PROTECT_SW_TEMP, "RCV Protect SW Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "rcv_protect_sw_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "rcv_protect_sw_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { POWER_CONVERTER_TEMP, "Power Converter Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "power_converter_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "power_converter_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { GAIN_ATTEN_TEMP, "Gain Atten Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "gain_atten_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "gain_atten_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { BEAM_SELECT_SW_TEMP, "Beam Select SW Temp", SOURCE_L1A,
-            MEAS_TEMPERATURE, "beam_select_sw_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            MEAS_TEMPERATURE, "beam_select_sw_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
-  { SCP_TEMP, "SCP Temp", SOURCE_L1A, MEAS_TEMPERATURE, "scp_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+  { SCP_TEMP, "SCP Temp", SOURCE_L1A, MEAS_TEMPERATURE, "scp_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { RECEIVER_TEMP, "Receiver Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "receiver_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "receiver_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { EXCITER_A_TEMP, "Exciter A Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "exciter_a_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "exciter_a_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { EXCITER_B_TEMP, "Exciter B Temp", SOURCE_L1A, MEAS_TEMPERATURE,
-            "exciter_b_temp", 1, {
-      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 }
+            "exciter_b_temp", 2, {
+      { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
+                               1, ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
   { DISCRETE_STATUS_1, "Discrete Status 1", SOURCE_L1A, MEAS_STATUS,
@@ -1091,10 +1202,10 @@ const ParTabEntry L1AParTab[] =
                                0, ExtractData3D_2_8, pr_char2x_2_8 },
     }
   },
-  { PULSE_REP_INTERVAL, "Pulse Rep Interval", SOURCE_L1A,
-            MEAS_TIME, "pulse_rep_interval", 1, {
+  { PRF_CYCLE_TIME_EU, "PRF Cycle Time EU", SOURCE_L1A,
+            MEAS_TIME, "prf_cycle_time_eu", 1, {
       { UNIT_SECONDS, "seconds", DATA_FLOAT4,
-                               0, ExtractData1D_uint2_float, pr_float4_6 }
+                               0, ExtractData1D_int2_float, pr_float4_6 }
     }
   },
   { RANGE_GATE_DELAY_INNER, "Range Gate Delay Inner", SOURCE_L1A,
@@ -1121,9 +1232,27 @@ const ParTabEntry L1AParTab[] =
                                0, ExtractData1D_int2_float, pr_float4_6 }
     }
   },
+  { TRANSMIT_PULSE_WIDTH, "Transmit Pulse Width", SOURCE_L1A,
+            MEAS_TIME, "transmit_pulse_width", 1, {
+      { UNIT_SECONDS, "seconds", DATA_FLOAT4,
+                               0, ExtractData1D_int2_float, pr_float4_6 }
+    }
+  },
   { TRUE_CAL_PULSE_POS, "True Cal Pulse Pos", SOURCE_L1A,
             MEAS_STATUS, "true_cal_pulse_pos", 1, {
       { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D, pr_int1 }
+    }
+  },
+  { TRANSMIT_POWER_INNER, "Transmit Power Inner", SOURCE_L1A,
+            MEAS_POWER, "transmit_power_inner", 1, {
+      { UNIT_DBM, "dBm", DATA_FLOAT4,
+                               0, ExtractData1D_int2_float, pr_float4_6 }
+    }
+  },
+  { TRANSMIT_POWER_OUTER, "Transmit Power Outer", SOURCE_L1A,
+            MEAS_POWER, "transmit_power_outer", 1, {
+      { UNIT_DBM, "dBm", DATA_FLOAT4,
+                               0, ExtractData1D_int2_float, pr_float4_6 }
     }
   },
   { PRECISION_COUPLER_TEMP_EU, "Precision Coupler Temp EU", SOURCE_L1A,
@@ -1135,12 +1264,6 @@ const ParTabEntry L1AParTab[] =
   { RCV_PROTECT_SW_TEMP_EU, "RCV Protect SW Temp EU", SOURCE_L1A,
             MEAS_TEMPERATURE, "rcv_protect_sw_temp_eu", 1, {
             { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
-                               0, ExtractData1D_int2_float, pr_float4_6 }
-    }
-  },
-  { GAIN_ATTEN_TEMP_EU, "Gain Atten Temp EU", SOURCE_L1A,
-            MEAS_TEMPERATURE, "gain_atten_temp_eu", 1, {
-      { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
                                0, ExtractData1D_int2_float, pr_float4_6 }
     }
   },
@@ -1156,40 +1279,21 @@ const ParTabEntry L1AParTab[] =
                                0, ExtractData1D_int2_float, pr_float4_6 }
     }
   },
-  { ANTENNA_POS_1_DN, "Antenna Pos 1 DN", SOURCE_L1A, MEAS_DATA,
-                "antenna_pos_1_dn", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
+  { ANTENNA_POS, "Antenna Pos 1 DN", SOURCE_L1A, MEAS_DATA,
+                "antenna_position", 1, {
+      { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractData2D_100, pr_uint2_100 }
     }
   },
-  { ANTENNA_POS_2_50_DN, "Antenna Pos Diff 2-50 DN", SOURCE_L1A, MEAS_DATA,
-                "antenna_pos_2_50_dn", 1, {
-      { UNIT_DN, "dn", DATA_UINT1_49, 0, ExtractData2D_49, pr_uint1_49 }
+  { LOOP_BACK_CAL_A_POWER, "Most Recent Loop Cal Pulse A Power", SOURCE_L1A,
+            MEAS_QUANTITY, "loop_back_cal_A_power", 1, {
+      { UNIT_DN, "dn", DATA_UINT2_12,
+                           0, ExtractData2D_12, pr_uint2_12 }
     }
   },
-  { ANTENNA_POS_51_DN, "Antenna Pos 51 DN", SOURCE_L1A, MEAS_DATA,
-                "antenna_pos_51_dn", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
-    }
-  },
-  { ANTENNA_POS_52_100_DN, "Antenna Pos Diff 52-100 DN", SOURCE_L1A,
-            MEAS_DATA, "antenna_pos_52_100_dn", 1, {
-      { UNIT_DN, "dn", DATA_UINT1_49, 0, ExtractData2D_49, pr_uint1_49 }
-    }
-  },
-  { ANTENNA_AZIMUTH, "Antenna Azimuth", SOURCE_L1A,
-            MEAS_DATA, "antenna_azimuth", 1, {
-      { UNIT_DEGREES, "degrees", DATA_FLOAT4_100,
-                          0, ExtractData2D_100_uint2_float, pr_float4_6_100 }
-    }
-  },
-  { LOOP_BACK_CAL_POWER, "Most Recent Loop Cal Pulse Power", SOURCE_L1A,
-            MEAS_QUANTITY, "loop_back_cal_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
-    }
-  },
-  { REP_LOOP_BACK_CAL_POWER, "Splined Loop Cal Power", SOURCE_L1A,
-            MEAS_QUANTITY, "rep_loop_back_cal_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
+  { LOOP_BACK_CAL_B_POWER, "Most Recent Loop Cal Pulse B Power", SOURCE_L1A,
+            MEAS_QUANTITY, "loop_back_cal_B_power", 1, {
+      { UNIT_DN, "dn", DATA_UINT2_12,
+                           0, ExtractData2D_12, pr_uint2_12 }
     }
   },
   { LOOP_BACK_CAL_NOISE, "Most Recent Loop Cal Pulse Noise", SOURCE_L1A,
@@ -1197,28 +1301,20 @@ const ParTabEntry L1AParTab[] =
       { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
     }
   },
-  { REP_LOOP_BACK_CAL_NOISE, "Splined Loop Cal Noise", SOURCE_L1A,
-            MEAS_QUANTITY, "rep_loop_back_cal_noise", 1, {
-      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
+  { LOAD_CAL_A_POWER, "Most Recent Cold Load Cal Pulse A Power", SOURCE_L1A,
+            MEAS_QUANTITY, "load_cal_A_power", 1, {
+      { UNIT_DN, "dn", DATA_UINT2_12,
+                           0, ExtractData2D_12, pr_uint2_12 }
     }
   },
-  { LOAD_CAL_POWER, "Most Recent Cold Load Cal Pulse Power", SOURCE_L1A,
-            MEAS_QUANTITY, "load_cal_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
-    }
-  },
-  { REP_LOAD_CAL_POWER, "Splined Cold Load Cal Power", SOURCE_L1A,
-            MEAS_QUANTITY, "rep_load_cal_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 }
+  { LOAD_CAL_B_POWER, "Most Recent Cold Load Cal Pulse B Power", SOURCE_L1A,
+            MEAS_QUANTITY, "load_cal_B_power", 1, {
+      { UNIT_DN, "dn", DATA_UINT2_12,
+                           0, ExtractData2D_12, pr_uint2_12 }
     }
   },
   { LOAD_CAL_NOISE, "Most Recent Cold Load Cal Pulse Noise", SOURCE_L1A,
             MEAS_QUANTITY, "load_cal_noise", 1, {
-      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
-    }
-  },
-  { REP_LOAD_CAL_NOISE, "Splined Cold Load Noise", SOURCE_L1A,
-            MEAS_QUANTITY, "rep_load_cal_noise", 1, {
       { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
     }
   },
@@ -1247,68 +1343,324 @@ const ParTabEntry L1AParTab[] =
     }
   },
 #endif
-  { L1A_FRAME_INST_STATUS, "L1A frame Inst Status Flags", SOURCE_L1A,
-            MEAS_QUANTITY, "l1a_frame_inst_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_binchar4 }
+
+  //-----------------------
+  // Frame Inst Status
+  //-----------------------
+  { FRAME_INST_STATUS, "Frame Inst Status Flags", SOURCE_L1A,
+            MEAS_QUANTITY, "frame_inst_status", 2, {
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
+      { UNIT_MAP, "binary", DATA_UINT4, 0, ExtractData1D, pr_binchar4 }
     }
   },
-  { L1A_FRAME_INST_STATUS_00_01, "Current Mode (L1A Status)",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
+  { FRAME_INST_STATUS_00_01, "Current Mode (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
       { UNIT_MAP, "0=WOM, 1=CBM, 2=SBM, 3=ROM", DATA_UINT1,
                                   0, Extract32Bit0_1, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_02, "First Pulse Count",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
-      { UNIT_MAP, "0=Pulse A first, 1=Pulse B first", DATA_UINT1,
+  { FRAME_INST_STATUS_02, "First Pulse (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Inner Beam first, 1=Outer Beam first", DATA_UINT1,
                                   0, Extract32Bit2, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_03, "Antenna Spin Rate",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
+  { FRAME_INST_STATUS_03, "Antenna Spin Rate (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
       { UNIT_MAP, "0=Nominal(18 RPM), 1=Alternate(19.8 RPM)", DATA_UINT1,
                                   0, Extract32Bit3, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_04_06, "Effective Gate Width",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
+  { FRAME_INST_STATUS_04_06, "Effective Gate Width (Slice Resolution)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
       { UNIT_MAP, "0=0.0 msec, 1=0.1 msec, ... 6=0.6 msec, 7=N/A", DATA_UINT1,
                                   0, Extract32Bit4_6, pr_uint1 }
     }
   },
-  { L1A_FRAME_INST_STATUS_07, "TWTA 1/2",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
-      { UNIT_MAP, "0=1, 1=2", DATA_UINT1, 0, Extract32Bit7, pr_bit }
+  { FRAME_INST_STATUS_07, "Data Acquisition Mode (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=High Res, chirp Mode on, 1=Low Res, chirp Mod Off",
+                                  DATA_UINT1, 0, Extract32Bit7, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_08, "HVPS on/off",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
-      { UNIT_MAP, "0=on, 1=off", DATA_UINT1, 0, Extract32Bit8, pr_bit }
+  { FRAME_INST_STATUS_08, "Cal Pulse Sequence (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0 = Has Cal Pulse, 1 = No Cal Pulse",
+                                  DATA_UINT1, 0, Extract32Bit8, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_09, "IDP A/B",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
+  { FRAME_INST_STATUS_09, "SES A/B (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
       { UNIT_MAP, "0=A, 1=B", DATA_UINT1, 0, Extract32Bit9, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_10, "PCU A/B",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
+  { FRAME_INST_STATUS_10, "SAS A/B (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
       { UNIT_MAP, "0=A, 1=B", DATA_UINT1, 0, Extract32Bit10, pr_bit }
     }
   },
-  { L1A_FRAME_INST_STATUS_11, "Trip Override Enable",
-            SOURCE_L1A, MEAS_STATUS, "l1a_frame_inst_status", 1, {
-      { UNIT_MAP, "0=Disabled, 1=Enabled", DATA_UINT1,
-                                             0, Extract32Bit11, pr_bit }
+  { FRAME_INST_STATUS_11, "TWTA 1/2 (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=1, 1=2", DATA_UINT1, 0, Extract32Bit11, pr_bit }
     }
   },
-  { L1A_FRAME_ERR_STATUS, "L1A Software Error Status Flags", SOURCE_L1A,
-            MEAS_QUANTITY, "l1a_frame_err_status", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_binchar2 }
+  { FRAME_INST_STATUS_12, "TWTA Power (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=on, 1=off", DATA_UINT1, 0, Extract32Bit12, pr_bit }
     }
   },
+  { FRAME_INST_STATUS_13, "Grid Disable (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Normal, 1=Disabled", DATA_UINT1, 0,Extract32Bit13, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_14, "Receive Protect On/Normal (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Normal, 1=On", DATA_UINT1, 0,Extract32Bit14, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_15, "TWT Trip Override (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Off, 1=On", DATA_UINT1, 0,Extract32Bit15, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_16, "TWT Body Oc Trip (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Enabled, 1=Disabled", DATA_UINT1, 0,Extract32Bit16, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_17, "Receiver Protect (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=Not Protected, 1=Protected",
+                                DATA_UINT1, 0,Extract32Bit17, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_18, "Mode Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit18, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_19, "Soft Reset (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Reset, 1=Reset", DATA_UINT1, 0,Extract32Bit19, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_20, "Relay Set/Reset (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit20, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_21, "PRF Clock Reset (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Reset, 1=Reset", DATA_UINT1, 0,Extract32Bit21, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_22, "Hard Reset (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Reset, 1=Reset", DATA_UINT1, 0,Extract32Bit22, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_23, "TWTA Mon Ena/Dis (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit23, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_24, "SES Param Table Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit24, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_25, "Range Gate Table Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit25, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_26, "Doppler Binning Table Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit26, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_27, "Serial TLM Table Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit27, pr_bit}
+    }
+  },
+  { FRAME_INST_STATUS_28, "Mission TLM Table Change (Frame Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_inst_status", 1, {
+      { UNIT_MAP, "0=No Change, 1=Change", DATA_UINT1, 0,Extract32Bit28, pr_bit}
+    }
+  },
+
+  //-----------------------
+  // Frame Error Status
+  //-----------------------
+  { FRAME_ERR_STATUS, "L1A Software Error Status Flags", SOURCE_L1A,
+            MEAS_QUANTITY, "frame_err_status", 2, {
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
+      { UNIT_MAP, "binary", DATA_UINT4, 0, ExtractData1D, pr_binchar4 }
+    }
+  },
+  { FRAME_ERR_STATUS_00, "Current Error (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=No Error, 1=Error", DATA_UINT1, 0,Extract32Bit0, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_01, "Equator Crossing Missed (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=No Miss, 1=Miss", DATA_UINT1, 0,Extract32Bit1, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_02, "Misalligned Cal Pulse (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=misalligned", DATA_UINT1, 0,Extract32Bit2, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_03, "Power On Reset (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=No Reset, 1=Reset", DATA_UINT1, 0,Extract32Bit3, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_04, "CDS Watchdog Timout Reset (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Timeout(Reset Missed)",
+                              DATA_UINT1, 0,Extract32Bit4, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_05, "SES Watchdog Timer Event (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit5, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_06, "Fault Protection Event (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit6, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_07, "TLM Error (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit7, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_08, "Missing SC Time (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit8, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_09, "Discrete A2D Timeout (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit9, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_10, "CDS Reset (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Reset", DATA_UINT1, 0,Extract32Bit10, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_11, "PLL Out of Lock (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Out of Lock", DATA_UINT1, 0,Extract32Bit11, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_12, "TWT2 OC Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit12, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_13, "TWT2 UV Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit13, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_14, "TWT2 Converter OC Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit14, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_15, "TWT1 OC Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit15, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_16, "TWT1 UV Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit16, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_17, "TWT1 Converter OC Trip (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Tripped", DATA_UINT1, 0,Extract32Bit17, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_18, "Serial Port Parity Error (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit18, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_19, "Reset Event (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Event", DATA_UINT1, 0,Extract32Bit19, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_20, "ROM Startup Error (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit20, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_21, "RAM Startup Error (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit21, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_22, "TRS Cmd Success (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=Succeed, 1=Failed", DATA_UINT1, 0,Extract32Bit22, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_23, "SES Data Loss Detection (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=detected", DATA_UINT1, 0,Extract32Bit23, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_24, "SAS Data Loss Detection (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=detected", DATA_UINT1, 0,Extract32Bit24, pr_bit}
+    }
+  },
+  { FRAME_ERR_STATUS_25, "Payload Bus Interface (Error Status)",
+            SOURCE_L1A, MEAS_STATUS, "frame_err_status", 1, {
+      { UNIT_MAP, "0=OK, 1=Error", DATA_UINT1, 0,Extract32Bit25, pr_bit}
+    }
+  },
+
+  //---------------------------
+  // Frame Quality Flag
+  //---------------------------
+  { FRAME_QUALITY_FLAG, "Frame Quality", SOURCE_L1A,
+            MEAS_STATUS, "frame_qual_flag", 2, {
+      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D, pr_uint2 },
+      { UNIT_MAP, "binary", DATA_UINT2, 0, ExtractData1D, pr_binchar2 }
+    }
+  },
+  { FRAME_QUALITY_FLAG_00_01, "Frame Filler (Frame Quality)", SOURCE_L1A,
+            MEAS_STATUS, "frame_qual_flag", 1, {
+      { UNIT_MAP, "0=No filler, 1=in Pckt 2, 2=in Pckt 3, 3=in Pckts 2&3",
+                       DATA_UINT1, 0, Extract16Bit0_1, pr_uint1 }
+    }
+  },
+  { FRAME_QUALITY_FLAG_02_03, "Frame CRC Error (Frame Quality)", SOURCE_L1A,
+            MEAS_STATUS, "frame_qual_flag", 1, {
+      { UNIT_MAP, "0=No Error, 1=in Pckt 2, 2=in Pckt 3, 3=in Pckts 2&3",
+                       DATA_UINT1, 0, Extract16Bit2_3, pr_uint1 }
+    }
+  },
+  { FRAME_QUALITY_FLAG_04, "Data Quality (Frame Quality)",
+            SOURCE_L1A, MEAS_STATUS, "frame_qual_flag", 1, {
+      { UNIT_MAP, "0=Good, 1=Bad", DATA_UINT1, 0, Extract16Bit4, pr_bit}
+    }
+  },
+
   { PULSE_QUALITY_FLAG, "Pulse Quality for each PRI", SOURCE_L1A,
-            MEAS_QUANTITY, "pulse_quality_flag", 1, {
+            MEAS_QUANTITY, "pulse_qual_flag", 1, {
       { UNIT_HEX_BYTES, "hex bytes - 0=OK, 1=unreliable",
             DATA_CHAR13, 0, ExtractData2D_13, pr_char13x }
     }

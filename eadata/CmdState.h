@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   22 May 1998 16:41:32   daffer
+// Changed EFF_ enum
+// 
 //    Rev 1.0   04 Feb 1998 14:14:54   daffer
 // Initial checking
 // Revision 1.2  1998/01/30 22:28:10  daffer
@@ -41,7 +44,7 @@ static const char rcsid_CmdState_h[] =
 
 #define RELAY_COUNT                 15      // relay 0 is wasted
 #define RELAY_STATE_COUNT           2       // set and reset
-#define WTS_STATE_COUNT             2       // 1 and 2
+#define TRS_STATE_COUNT             2       // 1 and 2
 #define HVPS_COUNT                  2       // corresponds to the TWTA's
 #define HVPS_STATE_COUNT            2       // on and off
 
@@ -50,12 +53,12 @@ static const char rcsid_CmdState_h[] =
 //===========
 
 extern const char* mode_state_map[];
-extern const char* dss_state_map[];
+extern const char* cds_state_map[];
 extern const char* twta_state_map[];
 extern const char* hvps_state_map[];
 extern const char* rh_state_map[];
 extern const char* sh_state_map[];
-extern const char* wts_state_map[];
+extern const char* trs_state_map[];
 extern const char* twta_trip_ovr_state_map[];
 extern const char* twt_mon_state_map[];
 extern const char* hvps_shutdown_state_map[];
@@ -83,7 +86,7 @@ extern const char* hvps_shutdown_state_map[];
 #define INITIAL_TWT_MON             TWT_MON_NA
 #define INITIAL_HVPS_SHUTDOWN       HVPS_SHUTDOWN_NA
 #define INITIAL_TRIP_DURATION_LIMIT TRIP_DURATION_LIMIT_NA
-#define INITIAL_WTS                 WTS_TWTA1
+#define INITIAL_TRS                 TRS_TWTA1
 
 //---------------------------------------------------------
 // The CmdState class contains the state of the instrument as it
@@ -104,7 +107,7 @@ public:
         SPARE_HEATER_UNKNOWN };
     enum ModeE { MODE_SBM, MODE_ROM, MODE_CCM, MODE_DBM, MODE_WOM,
         MODE_UNKNOWN, MODE_NA };
-    enum DssE { DSS_A, DSS_B, DSS_UNKNOWN };
+    enum CdsE { CDS_A, CDS_B, CDS_UNKNOWN };
     enum HvpsE { HVPS_ON, HVPS_OFF, HVPS_UNKNOWN };
     enum TwtaE { TWTA_1, TWTA_2, TWTA_UNKNOWN };
     enum RelayE { RELAY_SET, RELAY_RESET, RELAY_UNKNOWN };
@@ -114,7 +117,7 @@ public:
         TWT_MON_UNKNOWN, TWT_MON_NA };
     enum HvpsShutdownE { HVPS_SHUTDOWN_DISABLED, HVPS_SHUTDOWN_ENABLED,
         HVPS_SHUTDOWN_UNKNOWN, HVPS_SHUTDOWN_NA };
-    enum WtsE { WTS_TWTA1, WTS_TWTA2, WTS_UNKNOWN };
+    enum TrsE { TRS_TWTA1, TRS_TWTA2, TRS_UNKNOWN };
 
     CmdState();
     ~CmdState();
@@ -128,8 +131,8 @@ public:
     void            ClearCounters();
     unsigned int    GetRelayCount(int relay_index, RelayE relay_state)
                         { return (k_counter[relay_index][relay_state]); };
-    unsigned int    GetWtsCount(WtsE wts_state)
-                        { return (wts_counter[wts_state]); };
+    unsigned int    GetTrsCount(TrsE trs_state)
+                        { return (trs_counter[trs_state]); };
     unsigned int    GetHvpsCount(TwtaE hvps_index, HvpsE hvps_state)
                         { return (hvps_counter[hvps_index][hvps_state]); };
 
@@ -137,12 +140,12 @@ public:
 
     ElectronicsE            ElectronicsState();
     ReplacementHeaterE      ReplacementHeaterState();
-    DssE                    DssState();
+    CdsE                    CdsState();
     ModeE                   ModeState();
     TwtaE                   TwtaState();
     HvpsE                   HvpsState();
     SpareHeaterE            SpareHeaterState();
-    WtsE                    WtsState();
+    TrsE                    TrsState();
 
     CmdState&   operator=(const CmdState& other);
 
@@ -150,16 +153,16 @@ private:
     int         _SetAntennaSequence(const char* string);
     int         _SetBinningConstants(const char* string);
     void        _ModRelay(int relay_index, RelayE relay_state);
-    void        _ModWts(WtsE wts_state);
+    void        _ModTrs(TrsE trs_state);
 
     EffectE     _PowerEffect(CmdState *oldCmdState);
     EffectE     _HeaterEffect(CmdState *oldCmdState);
-    EffectE     _DssEffect(CmdState *oldCmdState);
+    EffectE     _CdsEffect(CmdState *oldCmdState);
     EffectE     _ModeEffect(CmdState *oldCmdState);
     EffectE     _TwtaEffect(CmdState *oldCmdState);
     EffectE     _HvpsEffect(CmdState *oldCmdState);
     EffectE     _SpareHeaterEffect(CmdState *oldCmdState);
-    EffectE     _WtsEffect(CmdState *oldCmdState);
+    EffectE     _TrsEffect(CmdState *oldCmdState);
 
     //----------------------
     // the instrument state 
@@ -171,7 +174,7 @@ private:
     TwtMonE         twtMonEnable;
     HvpsShutdownE   hvpsShutdownEnable;
     int             tripDurationLimit;
-    WtsE            wts;
+    TrsE            trs;
     char*           antennaSequence;
     char*           binningConstants;
 
@@ -180,7 +183,7 @@ private:
     //----------
 
     unsigned int    k_counter[RELAY_COUNT][RELAY_STATE_COUNT];
-    unsigned int    wts_counter[WTS_STATE_COUNT];
+    unsigned int    trs_counter[TRS_STATE_COUNT];
     unsigned int    hvps_counter[HVPS_COUNT][HVPS_STATE_COUNT];
 };
 
@@ -198,7 +201,7 @@ int     Eval_2k(const int relay1, const int relay2,
 //===============
 
 extern const CmdState::ReplacementHeaterE replacement_heater_state_k4_k5_k6[];
-extern const CmdState::DssE dss_state_k7_k8[];
+extern const CmdState::CdsE cds_state_k7_k8[];
 extern const CmdState::SpareHeaterE spare_heater_state_k13_k14[];
 extern const CmdState::TwtaE twta_state_k9_k10[];
 extern const CmdState::HvpsE hvps_state_k11_k12[];

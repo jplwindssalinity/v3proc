@@ -8,6 +8,7 @@
 
 static const char rcsidLimitList_h[]="(@)# $Id$";
 
+class PolynomialTable;
 class TlmHdfFile;
 
 //*******************************************************************
@@ -59,7 +60,9 @@ public:
     StatusE             GetStatus(void) { return _status; }
     const char*         GetFilename(void) { return _limitFilename; }
     WorstE              GetWorst(void) { return _worst; }
-    StatusE             CheckFrame(TlmHdfFile* tlmFile, int32 startIndex);
+    LimitStatusE        CheckFrame(PolynomialTable*  polyTable,
+                                   TlmHdfFile*       tlmFile,
+                                   int32             startIndex);
 
     StatusE             WriteLimitText(void);
 
@@ -70,9 +73,7 @@ public:
 
 protected:
     static LimitChecker*        L1ATxtToLim(LimitList&, FILE* limitFP);
-#if 0
     static LimitChecker*        HkTxtToLim(LimitList&, FILE* limitFP);
-#endif
 
     SourceIdE                   _source;
     char                        _limitFilename[BUFSIZ];

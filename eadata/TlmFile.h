@@ -1,6 +1,18 @@
 //=========================================================//
 // Copyright  (C)1996, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.               //
+//
+// CM Log
+//
+// $Log$
+// 
+//    Rev 1.2   01 May 1998 13:18:12   daffer
+// Added pvcs keywords
+//
+// $Date$
+// $Revision$
+// $Author$
+//
 //=========================================================//
 
 #ifndef TLMFILE_H

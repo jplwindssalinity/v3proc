@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   28 May 1998 13:18:34   daffer
+// worked on HdfGlobalAttr and ParseGlobalAttr
+// 
+//    Rev 1.5   22 May 1998 16:51:28   daffer
+// Added ParseGlobalAttr
+// 
+//    Rev 1.4   08 May 1998 10:47:38   sally
+// added global attribute methods
+// 
 //    Rev 1.3   20 Apr 1998 15:19:18   sally
 // change List to EAList
 // 
@@ -38,7 +47,28 @@ static const char rcs_id_HdfFile_h[] =
 
 #include <mfhdf.h>
 
+#include "Parameter.h"
 #include "EAList.h"
+#include "SafeString.h"
+
+
+//------------------------------------------
+//
+//  HdfGlobalAttr
+//  Used in parsing Global Attributes from HDF files
+//
+//------------------------------------------
+class HdfGlobalAttr 
+{
+ public:
+    HdfGlobalAttr();
+    ~HdfGlobalAttr();
+    char *name;
+    DataTypeE type;
+    int dims[2];
+    VOIDP data;
+}; 
+
 
 //-------------------------------------------------------------------
 // HdfFile:
@@ -54,6 +84,8 @@ static const char rcs_id_HdfFile_h[] =
 #define HDF_SUCCEED SUCCEED
 #endif
 
+
+
 class HdfFile
 {
 public:
@@ -65,12 +97,20 @@ public:
         //---------//
 
         OK,
+        ERROR_OUT_OF_MEMORY,
         ERROR_ALLOCATING_FILENAME,
         ERROR_OPENING_FILE,
         ERROR_INVALID_DATASET_NAME,
         ERROR_INVALID_DATASET_ID,
         ERROR_SELECTING_DATASET,
         ERROR_CLOSING_DATASET,
+        ERROR_GET_FILE_INFO,
+        ERROR_GET_ATTR_INFO,
+        ERROR_GLOBAL_ATTR_NOT_FOUND,
+        ERROR_INVALID_GLOBAL_ATTR_INDEX,
+        ERROR_PARSE_GLOBAL_ATTR,
+        ERROR_GET_ATTR,
+        ERROR_BAD_DATATYPE,
         ERROR_GET_DATASET_INFO,
         ERROR_EMPTY_DATASET,
         ERROR_ACCESS_BEFORE_START,
@@ -78,20 +118,17 @@ public:
         ERROR_READING_1D_DATA,
         ERROR_READING_MD_DATA,
         ERROR_UNEVEN_DATASET_LENGTH,
-
         ERROR_SEEKING_TIME_PARAM,
         ERROR_EXTRACT_TIME_PARAM,
         ERROR_EXTRACT_DATA,
         ERROR_USER_STARTTIME_AFTER_ENDTIME,
         ERROR_FILE_STARTTIME_AFTER_ENDTIME,
-
         ERROR_SEEKING_TIMESEARCH,
         ERROR_ALLOCATING_TIMESEARCH,
         ERROR_READING_TIMESEARCH,
         ERROR_EXTRACTING_TIMESEARCH,
         ERROR_EXTRACTING_BEFORE_START_TIME,
         ERROR_EXTRACTING_AFTER_END_TIME,
-
         UNKNOWN_CONDITION,
         NO_MORE_DATA 
     };
@@ -100,6 +137,26 @@ public:
             StatusE&       returnStatus);       // OUT
 
     virtual ~HdfFile();
+
+    //----------------------------------------------------------------
+    // get the info about the global attributes
+    // then get the global attributes themselves
+    //----------------------------------------------------------------
+    virtual StatusE GetGlobalAttrInfo(
+                                const char*   attrName,      // IN
+                                int32&        attrIndex,     // OUT
+                                DataTypeE&    eaType,        // OUT
+                                int32&        numValues);    // OUT
+
+    virtual StatusE GetGlobalAttr(
+                                int32         attrIndex,     // IN
+                                DataTypeE     eaType,        // IN
+                                VOIDP         attrBuf,       // IN/OUT
+                                int32         numValues = 1);// IN
+
+    virtual StatusE ParseGlobalAttr( char   *attrName,       // IN
+                                     VOIDP  attrBuf,         // IN
+                                     HdfGlobalAttr *);         // IN/OUT
 
     //----------------------------------------------------------------
     // select dataset, return dataset index ID or HDF_FAIL
@@ -148,12 +205,19 @@ public:
     void            ClearStatus(void) { _status = HdfFile::OK; }
     int             GetDataLength(void) { return _dataLength; }
 
+                    // return 1 if ok, else 0
+    static int      HdfTypeToEaType(int32       hdfType,   // IN
+                                    DataTypeE&  eaType);   // OUT
+    static int      EaTypeToHdfType(DataTypeE   eaType,    // IN
+                                    int32&      hdfType);  // OUT
+
 protected:
     StatusE         _DupFilename(const char* filename);
 
     EAList<int32>   _datasetIDs;
 
     int32           _SDfileID;
+    int32           _numGlobAttr;
     StatusE         _status;
     char*           _filename;
     int32           _dataLength;
@@ -162,5 +226,4 @@ protected:
     int32           _endIndex;
 
 };
-
 #endif

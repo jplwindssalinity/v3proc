@@ -6,6 +6,37 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.13   11 Sep 1998 10:28:54   sally
+// add mWatts for all dBm units
+// 
+//    Rev 1.12   18 Aug 1998 15:06:02   sally
+// mv mWatts for transmit power to L1ADrvTab.C
+// 
+//    Rev 1.11   18 Aug 1998 10:56:36   sally
+// make L1ADrvExtract return any number of values
+// 
+//    Rev 1.10   28 Jul 1998 10:48:34   sally
+// added pulse pattern for CBM
+// 
+//    Rev 1.9   27 Jul 1998 13:59:30   sally
+// passing polynomial table to extraction function
+// 
+//    Rev 1.8   23 Jul 1998 16:13:46   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.7   22 Jun 1998 09:25:00   sally
+// took out some compile errors and warnings for GNU GCC
+// 
+//    Rev 1.6   19 Jun 1998 16:53:46   sally
+// added "Orbit Period" in L1A Derived Data 
+// 
+//    Rev 1.5   15 Jun 1998 11:28:50   sally
+// ExtractTotalLoadPowerdB() should call ExtractTotalLoadPowerDN()
+// instead of ExtractBeamAPowerDN()
+// 
+//    Rev 1.4   06 May 1998 15:17:08   sally
+// took out exit()
+// 
 //    Rev 1.3   06 Apr 1998 16:27:12   sally
 // merged with SVT
 // 
@@ -35,15 +66,181 @@
 #include "L1ADrvExtract.h"
 #include "Parameter.h"
 #include "Itime.h"
-#include "ArgsPlus.h"
 #include "PolyTable.h"
 #include "Polynomial.h"
 
 static const char rcs_id_L1ADrvExtract_C[] = "@(#) $Header$";
 
+unsigned short *_prevAntPos=0;   // holds address one of the following
+unsigned short _prevAntPos_dn=0;
+unsigned short _prevAntPos_deg=0;
+unsigned short _prevAntPos_deg_sec=0;
+unsigned short _prevAntPos_rot_min=0;
+
+unsigned char _onlyOneMap[] =
+{
+// 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+ 
+   1,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+};
+
+unsigned char _beamAMap[] =
+{
+// 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+ 
+   0,  1,  0,  0,  0,  1,  0,  0,  0,  1,
+   0,  0,  0,  1,  0,  0,  0,  1,  0,  0,
+   0,  1,  0,  0,  0,  1,  0,  0,  0,  1,
+   0,  0,  0,  1,  0,  0,  0,  1,  0,  0,
+   0,  1,  0,  0,  0,  1,  0,  0,  0,  1,
+   0,  0,  0,  1,  0,  0,  0,  1,  0,  0,
+   0,  1,  0,  0,  0,  1,  0,  0,  0,  1,
+   0,  0,  0,  1,  0,  0,  0,  1,  0,  0,
+   0,  1,  0,  0,  0,  1,  0,  0,  0,  0,
+   0,  0,  0,  1,  0,  0,  0,  0,  0,  0
+};
+
+unsigned char _beamBMap[] =
+{
+// 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+
+   0,  0,  1,  0,  0,  0,  1,  0,  0,  0,
+   1,  0,  0,  0,  1,  0,  0,  0,  1,  0,
+   0,  0,  1,  0,  0,  0,  1,  0,  0,  0,
+   1,  0,  0,  0,  1,  0,  0,  0,  1,  0,
+   0,  0,  1,  0,  0,  0,  1,  0,  0,  0,
+   1,  0,  0,  0,  1,  0,  0,  0,  1,  0,
+   0,  0,  1,  0,  0,  0,  1,  0,  0,  0,
+   1,  0,  0,  0,  1,  0,  0,  0,  1,  0,
+   0,  0,  1,  0,  0,  0,  1,  0,  0,  0,
+   0,  0,  0,  0,  1,  0,  0,  0,  0,  0
+};
+
+unsigned char _noiseLoadMap[] =
+{
+// 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+ 
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+   0,  1,  1,  0,  0,  1,  1,  0,  0,  1,
+   1,  0,  0,  1,  1,  0,  0,  1,  1,  0,
+   0,  1,  1,  0,  0,  1,  1,  0,  0,  1,
+   1,  0,  0,  1,  1,  0,  0,  1,  1,  0,
+   0,  1,  1,  0,  0,  1,  1,  1,  1,  0
+};
+
+#define EA_MIN_BANDWIDTH_FRAMES    400
+
+#define EA_DN_TO_DB(x)  ( 10 * log10((double) x) )
+
+inline int
+_oneUint2TodB(
+unsigned short*         uint2P,
+DerivedExtractResult*   extractResults)
+{
+    float* floatP = (float*)extractResults->dataBuf;
+    *floatP = (float) EA_DN_TO_DB(*uint2P);
+    return 1;
+} // _oneUint2TodB
+
+static int
+_allUint2TodB(
+unsigned short*         uint2P,
+DerivedExtractResult*   extractResults)
+{
+    unsigned short*  tempUint2P;
+    float*           floatP;
+    int              numValidValues = 0;
+
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (extractResults->validDataMap[i])
+        {
+            tempUint2P = uint2P + i;
+            floatP = (float*)(extractResults->dataBuf + i * sizeof(float));
+            *floatP = (float)EA_DN_TO_DB(*tempUint2P);
+            numValidValues++;
+        }
+    }
+    return (numValidValues);
+} // _allUint2TodB
+
+inline int
+_oneUint4TodB(
+DerivedExtractResult*   extractResults)
+{
+    float* floatP = (float*)extractResults->dataBuf;
+    *floatP = (float)EA_DN_TO_DB(*((unsigned int*)extractResults->dataBuf));
+    return 1;
+} // _oneUint4TodB
+
+static int
+_allUint4TodB(
+DerivedExtractResult*   extractResults)
+{
+    unsigned int*   uintP;
+    float*          floatP;
+    int             numValidValues = 0;
+
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (extractResults->validDataMap[i])
+        {
+            uintP = (unsigned int*)(extractResults->dataBuf +
+                                       i * sizeof(unsigned int));
+            floatP = (float*)(extractResults->dataBuf + i * sizeof(float));
+            *floatP = (float)EA_DN_TO_DB(*uintP);
+            numValidValues++;
+        }
+    }
+    return (numValidValues);
+} // _allUint4TodB
+
+inline int
+_oneFloat4TodB(
+DerivedExtractResult*   extractResults)
+{
+    float* floatP = (float*)extractResults->dataBuf;
+    *floatP = (float) EA_DN_TO_DB(*((float*)extractResults->dataBuf));
+    return 1;
+} // _oneFloat4TodB
+
+static int
+_allFloat4TodB(
+DerivedExtractResult*   extractResults)
+{
+    float*          floatP;
+    int             numValidValues = 0;
+ 
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (extractResults->validDataMap[i])
+        {
+            floatP = (float*)extractResults->dataBuf + i;
+            *floatP = (float)EA_DN_TO_DB(*floatP);
+            numValidValues++;
+        }
+ 
+    }
+    return (numValidValues);
+} // _allFloat4TodB
+
+
 //----------------------------------------------------------------------
 // Function:    ExtractBeamANoiseDN
-// Extracts:    UINT4[][25]
+// Extracts:    UINT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamANoiseDN(
@@ -52,13 +249,16 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
+    assert(l1File != 0 && p_extractResults != 0);
 
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
     // find out the mode first
     unsigned char mode;
     if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
@@ -69,18 +269,15 @@ VOIDP       buffer)
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from noise_dn
-        unsigned int allBuffer[100];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
+                          1, 1, (VOIDP)(extractResults->dataBuf)))
             return (-1);
 
-        // now just pick the [1], [5], [9] ...
-        unsigned int* uintP = (unsigned int*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *uintP++ = allBuffer[i];
-        return (25);
+        (void)memcpy(extractResults->validDataMap,
+                           _beamAMap, MAX_NUM_DERIVED_VALUES);
+        return (23);
     }
     else if (mode == L1_MODE_WOM)
     {
@@ -94,25 +291,29 @@ VOIDP       buffer)
             return(-1);
         // true cal pulse pos has to be >0 and odd
         if (status <= 0 || status % 2 == 0)
+        {
+            (void)memset(extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
             return 0;
+        }
 
         // get it from loop_back_cal_noise
-        unsigned int tempBuffer=0;
         if (l1File->GetDatasetData1D(sdsIDs[3], start, 1, 1,
-                        (VOIDP)&tempBuffer) != HDF_SUCCEED)
+                        (VOIDP)(extractResults->dataBuf)) != HDF_SUCCEED)
             return (-1);
    
-        unsigned int* uintP = (unsigned int*) buffer;
-        *uintP = tempBuffer;
+        (void)memcpy(extractResults->validDataMap, _onlyOneMap,
+                                             MAX_NUM_DERIVED_VALUES);
         return 1;
     }
+    (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
     return 0;
 
 } //ExtractBeamANoiseDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamANoisedB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamANoisedB(
@@ -121,34 +322,20 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff[25];
     int rc = ExtractBeamANoiseDN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
-    switch(rc)
+                           start, stride, length, p_extractResults);
+    switch (rc)
     {
-        case 25:
-        {
-            float* floatP = (float*)buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -156,7 +343,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBNoiseDN
-// Extracts:    UINT4[][25]
+// Extracts:    UINT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBNoiseDN(
@@ -165,12 +352,16 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
+    assert(l1File != 0 && p_extractResults != 0);
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     // find out the mode first
     unsigned char mode;
@@ -182,18 +373,15 @@ VOIDP       buffer)
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from noise_dn
-        unsigned int allBuffer[100];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
+                            1, 1, (VOIDP)(extractResults->dataBuf)))
             return (-1);
 
-        // now just pick the 2, 6, 10
-        unsigned int* uintP = (unsigned int*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *uintP++ = allBuffer[i];
-        return (25);
+        (void)memcpy(extractResults->validDataMap,
+                           _beamBMap, MAX_NUM_DERIVED_VALUES);
+        return (23);
     }
     else if (mode == L1_MODE_WOM)
     {
@@ -207,25 +395,29 @@ VOIDP       buffer)
             return(-1);
         // true cal pulse pos has to be >0 and even
         if (status <= 0 || status % 2 != 0)
+        {
+            (void)memset((void*)extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
             return 0;
+        }
 
         // get it from loop_back_cal_noise
-        unsigned int tempBuffer=0;
         if (l1File->GetDatasetData1D(sdsIDs[3], start, 1, 1,
-                        (VOIDP)&tempBuffer) != HDF_SUCCEED)
+                        (VOIDP)(extractResults->dataBuf)) != HDF_SUCCEED)
             return (-1);
    
-        unsigned int* uintP = (unsigned int*) buffer;
-        *uintP = tempBuffer;
+        (void)memcpy((void*)extractResults->validDataMap, (void*)_onlyOneMap,
+                                             MAX_NUM_DERIVED_VALUES);
         return 1;
     }
+    (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
     return 0;
 
 } //ExtractBeamBNoiseDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBNoisedB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBNoisedB(
@@ -234,42 +426,104 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff[25];
     int rc = ExtractBeamBNoiseDN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
-    switch(rc)
+                           start, stride, length, p_extractResults);
+   
+    switch (rc)
     {
-        case 25:
-        {
-            float* floatP = (float*)buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
 } // ExtractBeamBNoisedB
 
 //----------------------------------------------------------------------
+// Function:    _extractBeamAOneSliceDN
+// Extracts:    UINT2[][100]
+//----------------------------------------------------------------------
+static int
+_extractBeamAOneSliceDN(
+TlmHdfFile*         l1File,
+int32*              sdsIDs,
+int32               start,
+int32               sliceIndex,  // slice no, start from 0
+unsigned short*     dnValues,
+unsigned char*      validDataMap)
+{
+    assert(l1File != 0);
+
+    // find out the mode first
+    unsigned char mode;
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
+                         != HDF_SUCCEED)
+        return(-1);
+
+    // CBM: extract all 100 pulses
+    if (mode == L1_MODE_CBM)
+    {
+        // CBM: get all 100 pulses from power_dn
+        unsigned short allBuffer[100][12];
+        int32 tempsdsIDs[1];
+        tempsdsIDs[0] = sdsIDs[1];
+        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
+                                   1, 1, (VOIDP)allBuffer))
+            return (-1);
+
+        unsigned short* ushortP = dnValues;
+        for (int i=0; i < 100; i++)
+            *ushortP++ = allBuffer[i][sliceIndex];
+
+        // copy the beam A valid data map
+        (void)memcpy(validDataMap, _beamAMap, MAX_NUM_DERIVED_VALUES);
+        return (23);
+    }
+    else if (mode == L1_MODE_WOM)
+    {
+        //---------------------------------------------------------
+        // WOM: true cal pulse pos must be odd number (Beam A)
+        // and > 0 (Cal Frame)
+        //---------------------------------------------------------
+        char status=0;
+        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
+                                               != HDF_SUCCEED)
+            return(-1);
+
+        // true cal pulse pos has to be >0 and odd
+        if (status <= 0 || status % 2 == 0)
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+            return 0;
+        }
+
+        // get it from loop_back_cal_power
+        int32 tempsdsIDs[1];
+        tempsdsIDs[0] = sdsIDs[3];
+        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
+                                      (VOIDP)dnValues) != TRUE)
+            return (-1);
+
+        // copy the one valid data map
+        (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+
+        return 1;
+    }
+    (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+    return 0;
+
+} //_extractBeamAOneSliceDN
+
+//----------------------------------------------------------------------
 // Function:    ExtractBeamASlice1DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice1DN(
@@ -278,105 +532,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][0];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[0];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice1DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice1dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice1dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice1DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -384,7 +586,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice2DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice2DN(
@@ -393,105 +595,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][1];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[1];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 1,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice2DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice2dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice2dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice2DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 1,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -499,7 +649,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice3DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice3DN(
@@ -508,105 +658,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][2];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[2];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 2,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice3DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice3dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice3dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice3DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 2,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -614,7 +712,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice4DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice4DN(
@@ -623,105 +721,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][3];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[3];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 3,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice4DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice4dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice4dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice4DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 3,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -729,7 +775,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice5DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice5DN(
@@ -738,105 +784,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][4];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[4];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 4,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice5DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice5dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice5dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice5DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 4,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -844,7 +838,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice6DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice6DN(
@@ -853,105 +847,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][5];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[5];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 5,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice6DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice6dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice6dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice6DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 5,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -959,7 +901,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice7DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice7DN(
@@ -968,105 +910,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][6];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[6];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 6,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice7DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice7dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice7dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice7DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 6,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1074,7 +964,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice8DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice8DN(
@@ -1083,105 +973,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][7];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[7];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 7,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice8DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice8dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice8dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice8DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 7,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1189,7 +1027,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice9DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice9DN(
@@ -1198,105 +1036,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][8];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[8];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 8,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice9DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice9dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice9dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice9DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 8,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1304,7 +1090,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice10DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice10DN(
@@ -1313,105 +1099,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][9];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[9];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 9,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice10DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice10dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice10dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice10DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 9,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1419,7 +1153,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice11DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice11DN(
@@ -1428,105 +1162,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 1, 5, 9, ....
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][10];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
-            return 0;
-
-        // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[10];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 10,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamASlice11DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice11dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice11dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice11DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 10,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1534,7 +1216,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamASlice12DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamASlice12DN(
@@ -1543,11 +1225,71 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 11,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
+} //ExtractBeamASlice12DN
+
+//----------------------------------------------------------------------
+// Function:    ExtractBeamASlice12dB
+// Extracts:    FLOAT4[][100]
+//----------------------------------------------------------------------
+int
+ExtractBeamASlice12dB(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       ,
+int32       length,
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 11,
+                                      dnValues,
+                                      extractResults->validDataMap);
+    switch(rc)
+    {
+        case 1:
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
+        case 0:
+        case -1:
+            return (rc);
+        default:
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
+    }
+    return -1;
+
+} // ExtractBeamASlice12dB
+
+//----------------------------------------------------------------------
+// Function:    ExtractBeamBOneSliceDN
+// Extracts:    UINT2[][100]
+//----------------------------------------------------------------------
+static int
+_extractBeamBOneSliceDN(
+TlmHdfFile*         l1File,
+int32*              sdsIDs,
+int32               start,
+int32               sliceIndex,  // slice no, start from 0
+unsigned short*     dnValues,
+unsigned char*      validDataMap)
+{
     assert(l1File != 0);
 
     // find out the mode first
@@ -1556,7 +1298,7 @@ VOIDP       buffer)
                          != HDF_SUCCEED)
         return(-1);
 
-    // CBM: extract pulse 1, 5, 9, ....
+    // CBM: extract all 100 pulses
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from power_dn
@@ -1567,89 +1309,52 @@ VOIDP       buffer)
                                    1, 1, (VOIDP)allBuffer))
             return (-1);
 
-        // now just pick the [1], [5], [9] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=1; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][11];
-        return (25);
+        unsigned short* ushortP = dnValues;
+        for (int i=0; i < 100; i++)
+            *ushortP++ = allBuffer[i][sliceIndex];
+
+        // copy the beam B valid data map
+        (void)memcpy(validDataMap, _beamBMap, MAX_NUM_DERIVED_VALUES);
+        return (23);
     }
     else if (mode == L1_MODE_WOM)
     {
         //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
+        // WOM: true cal pulse pos must be even number (Beam B)
         // and > 0 (Cal Frame)
         //---------------------------------------------------------
         char status=0;
         if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
+                                               != HDF_SUCCEED)
             return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
+
+        // true cal pulse pos has to be >0 and even
+        if (status <= 0 || status % 2 != 0)
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
             return 0;
+        }
 
         // get it from loop_back_cal_power
-        unsigned short tempBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
+                                      (VOIDP)dnValues) != TRUE)
             return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[11];
+
+        // copy the one valid data map
+        (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+
         return 1;
     }
+    (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
     return 0;
 
-} //ExtractBeamASlice12DN
-
-//----------------------------------------------------------------------
-// Function:    ExtractBeamASlice12dB
-// Extracts:    FLOAT4[][25]
-//----------------------------------------------------------------------
-int
-ExtractBeamASlice12dB(
-TlmHdfFile* l1File,
-int32*      sdsIDs,
-int32       start,
-int32       stride,
-int32       length,
-VOIDP       buffer)
-{
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice12DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
-    switch(rc)
-    {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
-        case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
-        case 0:
-            return 0;
-        default:
-            return -1;
-    }
-    return -1;
-
-} // ExtractBeamASlice12dB
+} //_extractBeamBOneSliceDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice1DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice1DN(
@@ -1658,105 +1363,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][0];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[0];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice1DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice1dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice1dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice1DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1764,7 +1417,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice2DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice2DN(
@@ -1773,105 +1426,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][1];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[1];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 1,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice2DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice2dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice2dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice2DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 1,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1879,7 +1480,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice3DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice3DN(
@@ -1888,105 +1489,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][2];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[2];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 2,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice3DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice3dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice3dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice3DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 2,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1994,7 +1543,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice4DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice4DN(
@@ -2003,105 +1552,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][3];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[3];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 3,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice4DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice4dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice4dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice4DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 3,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2109,7 +1606,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice5DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice5DN(
@@ -2118,105 +1615,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][4];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[4];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 4,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice5DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice5dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice5dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice5DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 4,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2224,7 +1669,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice6DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice6DN(
@@ -2233,105 +1678,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][5];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[5];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 5,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice6DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice6dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice6dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice6DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 5,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2339,7 +1732,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice7DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice7DN(
@@ -2348,105 +1741,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][6];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[6];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 6,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice7DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice7dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice7dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice7DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 6,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2454,7 +1795,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice8DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice8DN(
@@ -2463,105 +1804,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][7];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[7];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 7,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice8DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice8dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice8dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice8DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 7,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2569,7 +1858,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice9DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice9DN(
@@ -2578,105 +1867,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][8];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[8];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 8,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice9DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice9dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice9dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice9DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 8,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2684,7 +1921,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice10DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice10DN(
@@ -2693,105 +1930,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][9];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[9];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 9,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice10DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice10dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice10dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice10DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 9,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2799,7 +1984,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice11DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice11DN(
@@ -2808,105 +1993,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][10];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[10];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 10,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice11DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice11dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice11dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice11DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 10,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2914,7 +2047,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice12DN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice12DN(
@@ -2923,105 +2056,53 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse 2, 6, 10...
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [2], [6], [10] ...
-        unsigned short* ushortP = (unsigned short*) buffer;
-        for (int i=2; i < 100; i+= 4)
-            *ushortP++ = allBuffer[i][11];
-        return (25);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam B)
-        // and > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
-            return 0;
-
-        // get it from loop_back_cal_B_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        unsigned short* ushortP = (unsigned short*) buffer;
-        *ushortP = tempBuffer[11];
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 11,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractBeamBSlice12DN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBSlice12dB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBSlice12dB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice12DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 11,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*) buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3029,131 +2110,90 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamAPowerDN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamAPowerDN(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,           // stride is ignored, getting one at a time only
+int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamASlice1DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    unsigned short uint2P[100];
+
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+
+    // get the first slice to find out number of values is returned
+    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
+                                  uint2P, extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            int i=0;
-            // every slice should contain 25 values
-            unsigned int *uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ = (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice2DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice3DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice4DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice5DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice6DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice7DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice8DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice9DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice10DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice11DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamASlice12DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-
-            return 25;
-        }
+        case 0:
+        case -1:
+            return rc;
         case 1:
         {
             // every slice should only contain 1 value
-            unsigned int *uintP = (unsigned int*)buffer;
-            *uintP = (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice2DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice3DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice4DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice5DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice6DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice7DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice8DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice9DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice10DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice11DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamASlice12DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            return 1;
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            *uint4P = (unsigned int) uint2P[0];
+            int nextrc;
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc == 1)
+                    *uint4P += (unsigned int) uint2P[0];
+            }
+            return rc;
         }
-        case 0:
-            return 0;
         default:
-            return -1;
+        {
+            // every slice contains more than 1 value
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P;
+            unsigned short* tempUint2P;
+            int i;
+            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+            {
+                if (extractResults->validDataMap[i])
+                {
+                    tempUint4P = uint4P + i;
+                    tempUint2P = uint2P + i;
+                    *tempUint4P = (unsigned int) *tempUint2P;
+                }
+            }
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                int nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc > 1)
+                {
+                    for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+                    {
+                        if (extractResults->validDataMap[i])
+                        {
+                            tempUint4P = uint4P + i;
+                            tempUint2P = uint2P + i;
+                            *tempUint4P += (unsigned int) *tempUint2P;
+                        }
+                    }
+                }
+                else
+                {
+                    (void)memset(extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
+                    return -1;
+                }
+            }
+            return rc;
+        }
     }
     return -1;
 
@@ -3161,7 +2201,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamAPowerdB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamAPowerdB(
@@ -3170,35 +2210,20 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff[25];
     int rc = ExtractBeamAPowerDN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+                           start, stride, length, p_extractResults);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*)buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float* floatP = (float*)buffer;
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(floatP, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3206,131 +2231,90 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBPowerDN
-// Extracts:    UINT2[][25]
+// Extracts:    UINT2[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBPowerDN(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,           // stride is ignored, getting one at a time only
+int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff[25];
-    int rc = ExtractBeamBSlice1DN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+    unsigned short uint2P[100];
+
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+
+    // get the first slice to find out number of values is returned
+    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
+                                  uint2P, extractResults->validDataMap);
     switch(rc)
     {
-        case 25:
-        {
-            int i=0;
-            // every slice should contain 25 values
-            unsigned int *uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ = (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice2DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice3DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice4DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice5DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice6DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice7DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice8DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice9DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice10DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice11DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-            (void)ExtractBeamBSlice12DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            uintP = (unsigned int*)buffer;
-            for (i=0; i < 25; i++)
-                *uintP++ += (unsigned int)tempBuff[i];
-
-            return 25;
-        }
+        case 0:
+        case -1:
+            return rc;
         case 1:
         {
             // every slice should only contain 1 value
-            unsigned int *uintP = (unsigned int*)buffer;
-            *uintP = (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice2DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice3DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice4DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice5DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice6DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice7DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice8DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice9DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice10DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice11DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            (void)ExtractBeamBSlice12DN(l1File, sdsIDs,
-                                start, stride, length, tempBuff);
-            *uintP += (unsigned int)tempBuff[0];
-            return 1;
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            *uint4P = (unsigned int) uint2P[0];
+            int nextrc;
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                nextrc = _extractBeamBOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc == 1)
+                    *uint4P += (unsigned int) uint2P[0];
+            }
+            return rc;
         }
-        case 0:
-            return 0;
         default:
-            return -1;
+        {
+            // every slice contains more than 1 value
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P;
+            unsigned short* tempUint2P;
+            int i;
+            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+            {
+                if (extractResults->validDataMap[i])
+                {
+                    tempUint4P = uint4P + i;
+                    tempUint2P = uint2P + i;
+                    *tempUint4P = (unsigned int) *tempUint2P;
+                }
+            }
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                int nextrc = _extractBeamBOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc > 1)
+                {
+                    for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+                    {
+                        if (extractResults->validDataMap[i])
+                        {
+                            tempUint4P = uint4P + i;
+                            tempUint2P = uint2P + i;
+                            *tempUint4P += (unsigned int) *tempUint2P;
+                        }
+                    }
+                }
+                else
+                {
+                    (void)memset(extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
+                    return -1;
+                }
+            }
+            return rc;
+        }
     }
     return -1;
 
@@ -3338,7 +2322,7 @@ VOIDP       buffer)
 
 //----------------------------------------------------------------------
 // Function:    ExtractBeamBPowerdB
-// Extracts:    FLOAT4[][25]
+// Extracts:    FLOAT4[][100]
 //----------------------------------------------------------------------
 int
 ExtractBeamBPowerdB(
@@ -3347,35 +2331,20 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff[25];
     int rc = ExtractBeamBPowerDN(l1File, sdsIDs,
-                           start, stride, length, tempBuff);
+                           start, stride, length, p_extractResults);
     switch(rc)
     {
-        case 25:
-        {
-            float* floatP = (float*)buffer;
-            for (int i=0; i < 25; i++)
-            {
-                float dBValue = (float) 10 * log10((double)tempBuff[i]);
-                (void)memcpy(floatP, &dBValue, sizeof(float));
-                floatP++;
-            }
-            return 25;
-        }
         case 1:
-        {
-            float* floatP = (float*)buffer;
-            float dBValue = (float) 10 * log10((double)tempBuff[0]);
-            (void)memcpy(floatP, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3392,12 +2361,15 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
+    assert(l1File != 0 && p_extractResults != 0);
 
-    assert(l1File != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     // find out the mode first
     unsigned char mode;
@@ -3405,20 +2377,18 @@ VOIDP       buffer)
                          != HDF_SUCCEED)
         return(-1);
 
-    // CBM: extract pulse [90]
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from noise_dn
-        unsigned int allBuffer[100];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
+                                   1, 1, (VOIDP)(extractResults->dataBuf)))
             return (-1);
 
-        // [90] is what we want
-        memcpy(buffer, &(allBuffer[90]), sizeof(unsigned int));
-        return (1);
+        (void)memcpy(extractResults->validDataMap,
+                           _noiseLoadMap, MAX_NUM_DERIVED_VALUES);
+        return(26);
     }
     else if (mode == L1_MODE_WOM)
     {
@@ -3431,17 +2401,22 @@ VOIDP       buffer)
             return(-1);
         // true cal pulse pos has to be >0
         if (status <= 0)
+        {
+            (void)memset(extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
             return 0;
+        }
 
         // get it from load_cal_noise
-        unsigned int tempBuffer=0;
         if (l1File->GetDatasetData1D(sdsIDs[3], start, 1, 1,
-                        (VOIDP)&tempBuffer) != HDF_SUCCEED)
+                        (VOIDP)(extractResults->dataBuf)) != HDF_SUCCEED)
             return (-1);
    
-        memcpy(buffer, &tempBuffer, sizeof(unsigned int));
+        (void)memcpy(extractResults->validDataMap, _onlyOneMap,
+                                             MAX_NUM_DERIVED_VALUES);
         return 1;
     }
+    (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
     return 0;
 
 } //ExtractNoiseLoadDN
@@ -3457,27 +2432,107 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff = 0;
     int rc = ExtractNoiseLoadDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
-    switch(rc)
+                           start, stride, length, p_extractResults);
+    switch (rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
-
 } // ExtractNoiseLoaddB
+
+//----------------------------------------------------------------------
+// Function:    ExtractSlice1LoadPowerDN
+// Extracts:    UINT2[]
+//----------------------------------------------------------------------
+static int
+_extractLoadPowerOneSliceDN(
+TlmHdfFile*         l1File,
+int32*              sdsIDs,
+int32               start,
+int32               sliceIndex,  // slice no, start from 0
+unsigned short*     dnValues,
+unsigned char*      validDataMap)
+{
+    assert(l1File != 0);
+
+    // find out the mode first
+    unsigned char mode;
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
+                         != HDF_SUCCEED)
+    {
+        (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return -1;
+    }
+
+    // CBM: extract all 100 pulses
+    if (mode == L1_MODE_CBM)
+    {
+        // CBM: get all 100 pulses from power_dn
+        unsigned short allBuffer[100][12];
+        int32 tempsdsIDs[1];
+        tempsdsIDs[0] = sdsIDs[1];
+        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
+                                   1, 1, (VOIDP)allBuffer))
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+            return -1;
+        }
+
+        unsigned short* ushortP = dnValues;
+        for (int i=0; i < 100; i++)
+            *ushortP++ = allBuffer[i][sliceIndex];
+
+        // copy the noise load valid data map
+        (void)memcpy(validDataMap, _noiseLoadMap, MAX_NUM_DERIVED_VALUES);
+        return (26);
+    }
+    else if (mode == L1_MODE_WOM)
+    {
+        //---------------------------------------------------------
+        // WOM: true cal pulse pos must be > 0 (Cal Frame)
+        //---------------------------------------------------------
+        char status=0;
+        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
+                        != HDF_SUCCEED)
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+            return -1;
+        }
+        // true cal pulse pos has to be >0
+        if (status <= 0)
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+            return 0;
+        }
+
+        // get it from load_cal_power
+        int32 tempsdsIDs[1];
+        tempsdsIDs[0] = sdsIDs[3];
+        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
+                        (VOIDP)dnValues) != TRUE)
+        {
+            (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+            return -1;
+        }
+   
+        // copy the one valid data map
+        (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+        return 1;
+    }
+    (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+    return 0;
+
+} // _extractLoadPowerOneSliceDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractSlice1LoadPowerDN
@@ -3490,60 +2545,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][0]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice1LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -3555,25 +2567,31 @@ ExtractSlice1LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice1LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3590,60 +2608,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][1]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 1,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice2LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -3655,25 +2630,31 @@ ExtractSlice2LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice2LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 1,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3690,60 +2671,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][2]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 2,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice3LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -3755,25 +2693,31 @@ ExtractSlice3LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice3LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 2,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3790,60 +2734,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][3]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 3,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice4LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -3855,25 +2756,31 @@ ExtractSlice4LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice4LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 3,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3890,60 +2797,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][4]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 4,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice5LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -3955,25 +2819,31 @@ ExtractSlice5LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice5LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 4,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3990,60 +2860,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][5]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 5,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice6LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4055,25 +2882,31 @@ ExtractSlice6LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice6LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 5,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4090,60 +2923,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][6]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 6,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice7LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4155,25 +2945,31 @@ ExtractSlice7LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice7LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 6,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4190,60 +2986,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][7]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 7,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice8LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4255,25 +3008,31 @@ ExtractSlice8LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice8LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 7,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4290,60 +3049,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][8]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 8,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice9LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4355,25 +3071,31 @@ ExtractSlice9LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice9LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 8,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4390,60 +3112,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][9]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 9,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice10LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4455,25 +3134,31 @@ ExtractSlice10LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice10LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 9,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4490,60 +3175,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][10]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 10,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice11LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4555,25 +3197,31 @@ ExtractSlice11LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice11LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 10,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4590,60 +3238,17 @@ int32*      sdsIDs,
 int32       start,
 int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
-
-    // find out the mode first
-    unsigned char mode;
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &mode)
-                         != HDF_SUCCEED)
-        return(-1);
-
-    // CBM: extract pulse [90]
-    if (mode == L1_MODE_CBM)
-    {
-        // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
-
-        // now just pick the [90]
-        memcpy(buffer, &(allBuffer[90][11]), sizeof(unsigned short));
-        return (1);
-    }
-    else if (mode == L1_MODE_WOM)
-    {
-        //---------------------------------------------------------
-        // WOM: true cal pulse pos must be > 0 (Cal Frame)
-        //---------------------------------------------------------
-        char status=0;
-        if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
-                        != HDF_SUCCEED)
-            return(-1);
-        // true cal pulse pos has to be >0
-        if (status <= 0)
-            return 0;
-
-        // get it from load_cal_power
-        unsigned short tempBuffer[12];
-        int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)tempBuffer) != TRUE)
-            return (-1);
-   
-        memcpy(buffer, &(tempBuffer[0]), sizeof(unsigned short));
-        return 1;
-    }
-    return 0;
-
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 11,
+                                  (unsigned short*)extractResults->dataBuf,
+                                  extractResults->validDataMap));
 } //ExtractSlice12LoadPowerDN
 
 //----------------------------------------------------------------------
@@ -4655,25 +3260,31 @@ ExtractSlice12LoadPowerdB(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,
+int32       ,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff;
-    int rc = ExtractSlice12LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    unsigned short dnValues[100];
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 11,
+                                      dnValues,
+                                      extractResults->validDataMap);
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint2TodB(dnValues,
+                                 (DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -4688,59 +3299,83 @@ ExtractTotalLoadPowerDN(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
-int32       stride,           // stride is ignored, getting one at a time only
+int32       ,           // stride is ignored, getting one at a time only
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned short tempBuff=0;
-    int rc = ExtractSlice1LoadPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    unsigned short uint2P[100];
+
+    // extract one at a time
+    if (length != 1) return -1;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+
+    // get the first slice to find out number of values is returned
+    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
+                                  uint2P, extractResults->validDataMap);
     switch(rc)
     {
+        case 0:
+        case -1:
+            return rc;
         case 1:
         {
             // every slice should only contain 1 value
-            unsigned int *uintP = (unsigned int*)buffer;
-            *uintP = (unsigned int)tempBuff;
-            (void)ExtractSlice2LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice3LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice4LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice5LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice6LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice7LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice8LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice9LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice10LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice11LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            (void)ExtractSlice12LoadPowerDN(l1File, sdsIDs,
-                                start, stride, length, &tempBuff);
-            *uintP += (unsigned int)tempBuff;
-            return 1;
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            *uint4P = (unsigned int) uint2P[0];
+            int nextrc;
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc == 1)
+                    *uint4P += (unsigned int) uint2P[0];
+            }
+            return rc;
         }
-        case 0:
-            return 0;
         default:
-            return -1;
+        {
+            // every slice contains more than 1 value
+            unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P;
+            unsigned short* tempUint2P;
+            int i;
+            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+            {
+                if (extractResults->validDataMap[i])
+                {
+                    tempUint4P = uint4P + i;
+                    tempUint2P = uint2P + i;
+                    *tempUint4P = (unsigned int) *tempUint2P;
+                }
+            }
+            for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
+            {
+                int nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
+                            sliceIndex, uint2P, extractResults->validDataMap);
+                if (nextrc > 1)
+                {
+                    for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+                    {
+                        if (extractResults->validDataMap[i])
+                        {
+                            tempUint4P = uint4P + i;
+                            tempUint2P = uint2P + i;
+                            *tempUint4P += (unsigned int) *tempUint2P;
+                        }
+                    }
+                }
+                else
+                {
+                    (void)memset(extractResults->validDataMap, 0,
+                                             MAX_NUM_DERIVED_VALUES);
+                    return -1;
+                }
+            }
+            return rc;
+        }
     }
     return -1;
 
@@ -4757,45 +3392,44 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    unsigned int tempBuff;
-    int rc = ExtractBeamAPowerDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+    int rc = ExtractTotalLoadPowerDN(l1File, sdsIDs,
+                           start, stride, length, p_extractResults);
     switch(rc)
     {
         case 1:
-        {
-            float* floatP = (float*)buffer;
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(floatP, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
-            return 0;
+        case -1:
+            return (rc);
         default:
-            return -1;
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
 } // ExtractTotalLoadPowerdB
 
 //----------------------------------------------------------------------
-// Function:    ExtractAverageNoiseLoadDN
+// Function:    _extractAverageNoiseLoadDN
 // Extracts:    FLOAT4
 //----------------------------------------------------------------------
 int
-ExtractAverageNoiseLoadDN(
+_extractAverageNoiseLoadDN(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    // these two values are accumulative
+    // these values are accumulative
     static int frameNo = 0;
-    static float prevNoiseDN = 0.0;
+    static float prevAvgNoiseDN = 0.0;      // <P>(n-1)
+    // running total for frameNo < EA_MIN_BANDWIDTH_FRAMES
+    static unsigned int runningTotalNoiseDN = 0;
 
     // extract one at a time
     if (length != 1) return -1;
@@ -4803,26 +3437,135 @@ VOIDP       buffer)
     assert(l1File != 0);
 
     // get noise load first, return if fails
-    unsigned int noiseDN;
     int rc = ExtractNoiseLoadDN(l1File, sdsIDs, start,
-                                       stride, length, &noiseDN);
+                                       stride, length, p_extractResults);
     if (rc <= 0)
         return(rc);
 
-    float newNoiseDN;
-    if (frameNo > 0)
-        newNoiseDN = 0.9975 * prevNoiseDN + 0.0025 * noiseDN;
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    int numValidValues = 0;
+    unsigned int* uintP = (unsigned int*) extractResults->dataBuf;
+    unsigned int noiseSumThisFrame = 0;
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (extractResults->validDataMap[i])
+        {
+            // get the sum for all the noise values in this frame
+            frameNo++;
+            if (frameNo > EA_MIN_BANDWIDTH_FRAMES)
+            {
+                noiseSumThisFrame += *(uintP + i);
+                numValidValues++;
+            }
+            // just accumulate the noise when frameNo is < min
+            else if (frameNo < EA_MIN_BANDWIDTH_FRAMES)
+                runningTotalNoiseDN += *(uintP + i);
+            // get the first running average when frameNo hits the min
+            else // frameNo == EA_MIN_BANDWIDTH_FRAMES
+                prevAvgNoiseDN = (runningTotalNoiseDN + *(uintP + i)) /
+                                             EA_MIN_BANDWIDTH_FRAMES;
+        }
+    }
+
+    if (frameNo >= EA_MIN_BANDWIDTH_FRAMES)
+    {
+        // got more than minimum number of frames, do the average algo
+        // return one value only
+        double newAvgNoiseDN = (double)noiseSumThisFrame /
+                                   EA_MIN_BANDWIDTH_FRAMES +
+                    ( 1 - (double) numValidValues / EA_MIN_BANDWIDTH_FRAMES) *
+                                   prevAvgNoiseDN;
+
+        prevAvgNoiseDN = (float)newAvgNoiseDN;
+        memcpy(extractResults->dataBuf, &prevAvgNoiseDN, sizeof(float));
+        return 1;
+    }
     else
-        newNoiseDN = 0.0025 * noiseDN;
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return 0;
+    }
 
-    frameNo++;
-    prevNoiseDN = newNoiseDN;
+} // _extractAverageNoiseLoadDN
 
-    memcpy(buffer, &newNoiseDN, sizeof(float));
+//----------------------------------------------------------------------
+// Function:    _extractAverageEchoLoadDN
+// Extracts:    FLOAT4
+//----------------------------------------------------------------------
+int
+_extractAverageEchoLoadDN(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
+{
+    // these values are accumulative
+    static int frameNo = 0;
+    static float prevAvgEchoDN = 0.0;      // <P>(n-1)
+    // running total for frameNo < EA_MIN_BANDWIDTH_FRAMES
+    static unsigned int runningTotalEchoDN = 0;
 
-    return 1;
+    // extract one at a time
+    if (length != 1) return -1;
 
-} // ExtractAverageNoiseLoadDN
+    assert(l1File != 0);
+
+    // get noise load first, return if fails
+    int rc = ExtractTotalLoadPowerDN(l1File, sdsIDs, start,
+                                       stride, length, p_extractResults);
+    if (rc <= 0)
+        return(rc);
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+    int numValidValues = 0;
+    unsigned int* uintP = (unsigned int*) extractResults->dataBuf;
+    unsigned int echoSumThisFrame = 0;
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (extractResults->validDataMap[i])
+        {
+            // get the sum for all the echo values in this frame
+            frameNo++;
+            if (frameNo > EA_MIN_BANDWIDTH_FRAMES)
+            {
+                echoSumThisFrame += *(uintP + i);
+                numValidValues++;
+            }
+            // just accumulate the echo when frameNo is < min
+            else if (frameNo < EA_MIN_BANDWIDTH_FRAMES)
+                runningTotalEchoDN += *(uintP + i);
+            // get the first running average when frameNo hits the min
+            else // frameNo == EA_MIN_BANDWIDTH_FRAMES
+                prevAvgEchoDN = (runningTotalEchoDN + *(uintP + i)) /
+                                             EA_MIN_BANDWIDTH_FRAMES;
+        }
+    }
+
+    if (frameNo >= EA_MIN_BANDWIDTH_FRAMES)
+    {
+        // got more than minimum number of frames, do the average algo
+        // return one value only
+        double newAvgEchoDN = (double)echoSumThisFrame /
+                                   EA_MIN_BANDWIDTH_FRAMES +
+                    ( 1 - (double) numValidValues / EA_MIN_BANDWIDTH_FRAMES) *
+                                   prevAvgEchoDN;
+
+        prevAvgEchoDN = (float)newAvgEchoDN;
+        memcpy(extractResults->dataBuf, &prevAvgEchoDN, sizeof(float));
+        return 1;
+    }
+    else
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return 0;
+    }
+
+} // _extractAverageEchoLoadDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractBandwidthRatioDN
@@ -4835,16 +3578,16 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    // these two values are accumulative
-    static int frameNo = 0;
-    static float prevEchoDN = 0.0;
+    assert(l1File != 0);
 
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     // get noise load first, return if fails
     int32 tempsdsIDs[4];
@@ -4852,38 +3595,42 @@ VOIDP       buffer)
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // load_cal_noise
-    float newNoiseDN=0.0;
-    int rc = ExtractAverageNoiseLoadDN(l1File, tempsdsIDs, start,
-                                       stride, length, &newNoiseDN);
+    int rc = _extractAverageNoiseLoadDN(l1File, tempsdsIDs, start,
+                                       stride, length, p_extractResults, 0);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
+    float avgNoiseDN=0.0;
+    memcpy(&avgNoiseDN, extractResults->dataBuf, sizeof(float));
 
     // now get echo load, return if fails
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[5];  // load_cal_power
-    unsigned int echoDN;
-    rc = ExtractTotalLoadPowerDN(l1File, tempsdsIDs, start,
-                                       stride, length, &echoDN);
+    rc = _extractAverageEchoLoadDN(l1File, tempsdsIDs, start,
+                                       stride, length, p_extractResults, 0);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
-
-    float newEchoDN;
-    if (frameNo > 0)
-    {
-        newEchoDN = 0.9975 * prevEchoDN + 0.0025 * echoDN;
     }
-    else
+    float avgEchoDN = 0.0;
+    memcpy(&avgEchoDN, extractResults->dataBuf, sizeof(float));
+    if (avgEchoDN == 0.0)
     {
-        newEchoDN = 0.0025 * echoDN;
+        fprintf(stderr, "Band Width Ratio: average Echo Filter = 0\n");
+        return -1;
     }
-    float newValue = 1 / 2.9034 * (newNoiseDN / newEchoDN);
-    memcpy(buffer, &newValue, sizeof(float));
 
-    frameNo++;
-    prevEchoDN = newEchoDN;
+    double doubleTemp = 1.0 / 2.9034 * ((double)avgNoiseDN / (double)avgEchoDN);
+    float bandWidthRatio = (float) doubleTemp;
+    memcpy(extractResults->dataBuf, &bandWidthRatio, sizeof(float));
 
+    (void)memcpy(extractResults->validDataMap, _onlyOneMap,
+                                             MAX_NUM_DERIVED_VALUES);
     return 1;
 
 } //ExtractBandwidthRatioDN
@@ -4899,20 +3646,20 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    float tempBuff;
     int rc = ExtractBandwidthRatioDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+                           start, stride, length, p_extractResults);
+    DerivedExtractResult* extractResults =
+                             (DerivedExtractResult*) p_extractResults;
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneFloat4TodB(extractResults));
         case 0:
+            (void)memset(extractResults->validDataMap,
+                                0, MAX_NUM_DERIVED_VALUES);
             return 0;
         default:
             return -1;
@@ -4932,40 +3679,63 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
+    assert(l1File != 0);
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     // get noise load first, return if fails
+    DerivedExtractResult noiseExRes;
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // loop_back_cal_noise
-    unsigned int noiseDN;
     int rc = ExtractBeamANoiseDN(l1File, tempsdsIDs, start,
-                                       stride, length, &noiseDN);
+                                       stride, length, &noiseExRes);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
 
     // now get echo load, return if fails
+    DerivedExtractResult echoExRes;
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[5];  // loop_back_cal_A_power
-    unsigned int echoDN;
     rc = ExtractBeamAPowerDN(l1File, tempsdsIDs, start,
-                                       stride, length, &echoDN);
+                                       stride, length, &echoExRes);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
 
-    float gainRatio = (float)noiseDN / (float)echoDN;
-    (void)memcpy(buffer, &gainRatio, sizeof(float));
-
-    return 1;
+    unsigned int noiseDN=0;
+    float        echoDN=0.0;
+    float        gainRatio;
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (echoExRes.validDataMap[i])
+        {
+            if (echoDN == 0.0)
+            {
+                fprintf(stderr, "Gain Ratio: Echo Filter = 0\n");
+                return -1;
+            }
+            gainRatio = (float)noiseDN / (float)echoDN;
+            (void)memcpy(extractResults->dataBuf + i * sizeof(float),
+                               &gainRatio, sizeof(float));
+        }
+    }
+    return rc;
 
 } //ExtractGainRatioBeamADN
 
@@ -4980,23 +3750,20 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    float tempBuff;
     int rc = ExtractGainRatioBeamADN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+                           start, stride, length, p_extractResults);
     switch(rc)
     {
-        case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
         case 0:
-            return 0;
+        case -1:
+            return rc;
+        case 1:
+            return(_oneFloat4TodB((DerivedExtractResult*) p_extractResults));
         default:
-            return -1;
+            return(_allFloat4TodB((DerivedExtractResult*) p_extractResults));
     }
     return -1;
 
@@ -5013,40 +3780,63 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
+    assert(l1File != 0);
     // extract one at a time
     if (length != 1) return -1;
 
-    assert(l1File != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     // get noise load first, return if fails
+    DerivedExtractResult noiseExRes;
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // loop_back_cal_noise
-    unsigned int noiseDN;
     int rc = ExtractBeamBNoiseDN(l1File, tempsdsIDs, start,
-                                       stride, length, &noiseDN);
+                                       stride, length, &noiseExRes);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
 
     // now get echo load, return if fails
+    DerivedExtractResult echoExRes;
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[5];  // loop_back_cal_B_power
-    unsigned int echoDN;
     rc = ExtractBeamBPowerDN(l1File, tempsdsIDs, start,
-                                       stride, length, &echoDN);
+                                       stride, length, &echoExRes);
     if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
 
-    float gainRatio = (float)noiseDN / (float)echoDN;
-    (void)memcpy(buffer, &gainRatio, sizeof(float));
-
-    return 1;
+    unsigned int noiseDN=0;
+    float        echoDN=0.0;
+    float        gainRatio;
+    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+    {
+        if (echoExRes.validDataMap[i])
+        {
+            if (echoDN == 0.0)
+            {
+                fprintf(stderr, "Gain Ratio: Echo Filter = 0\n");
+                return -1;
+            }
+            gainRatio = (float)noiseDN / (float)echoDN;
+            (void)memcpy(extractResults->dataBuf + i * sizeof(float),
+                               &gainRatio, sizeof(float));
+        }
+    }
+    return rc;
 
 } //ExtractGainRatioBeamBDN
 
@@ -5061,93 +3851,106 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable*)     // unused
 {
-    float tempBuff;
     int rc = ExtractGainRatioBeamBDN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+                           start, stride, length, p_extractResults);
     switch(rc)
     {
-        case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
         case 0:
-            return 0;
+        case -1:
+            return rc;
+        case 1:
+            return(_oneFloat4TodB((DerivedExtractResult*) p_extractResults));
         default:
-            return -1;
+            return(_allFloat4TodB((DerivedExtractResult*) p_extractResults));
     }
     return -1;
 } // ExtractGainRatioBeamBdB
 
 //----------------------------------------------------------------------
-// Function:    ExtractOneReceiverGainADN
+// Function:    _extractOneReceiverGainADN
 // Extracts:    FLOAT4
 //----------------------------------------------------------------------
 int
-ExtractOneReceiverGainADN(
-TlmHdfFile* l1File,
-int32*      sdsIDs,
-int32       start,
-int32       stride,
-int32       length,
-VOIDP       buffer)
+_extractOneReceiverGainADN(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+float&           gainDN,
+PolynomialTable* polyTable)
 {
-
-
     // extract one at a time
     if (length != 1) return -1;
 
     assert(l1File != 0);
 
-    // get the polynomial table from the ugly global var
-    if (ArgsPlus::PolyTable == 0)
+    if (polyTable == 0)
     {
         fprintf(stderr, "Receiver Gain A: No polynomial table\n");
-        exit(1);
+        return -1;
     }
     static const Polynomial* xmitPowerPoly=0;
     if (xmitPowerPoly == 0)
     {
-        xmitPowerPoly = ArgsPlus::PolyTable->SelectPolynomial(
+        xmitPowerPoly = polyTable->SelectPolynomial(
                                  "transmit_power_a", "mWatts");
     }
     if (xmitPowerPoly == 0)
     {
         fprintf(stderr, "Receiver Gain A: No polynomial for trasmit power\n");
-        exit(1);
+        return -1;
     }
 
+    DerivedExtractResult extractResults;
     // get noise load first, return if fails
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[3];  // loop_back_cal_noise
-    unsigned int noiseDN;
-    int rc = ExtractBeamANoiseDN(l1File, tempsdsIDs, start,
-                                       stride, length, &noiseDN);
-    if (rc <= 0)
-        return(rc);
+    int numNoises = ExtractBeamANoiseDN(l1File, tempsdsIDs, start,
+                                       stride, length, &extractResults);
+    if (numNoises <= 0) return(numNoises);
 
+    unsigned int dnSum=0;
+    if (numNoises > 1)
+    {
+        unsigned int* uintP;
+        for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+        {
+            if (extractResults.validDataMap[i])
+            {
+                uintP = (unsigned int*) extractResults.dataBuf + i;
+                dnSum += *uintP;
+            }
+        }
+    }
     // now get transmit power a, return if fails
     tempsdsIDs[0] = sdsIDs[4];  // transmit power a
     float xmitPowerDN;
-    rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
+    int rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
                                        stride, length, &xmitPowerDN);
-    if (rc <= 0)
-        return(rc);
+    if (rc <= 0) return(rc);
 
     float xmitPowerMWatts = xmitPowerPoly->Apply(xmitPowerDN);
+    if (xmitPowerMWatts == 0.0)
+    {
+        fprintf(stderr, "Tranmit power (denominator) == 0.0\n");
+        return -1;
+    }
 
-    float rcvGain =  ((float)noiseDN) * pow(10.0, 14.79) / xmitPowerMWatts;
+    gainDN =  ((float)dnSum) * pow(10.0, 14.79) / xmitPowerMWatts;
 
-    (void)memcpy(buffer, &rcvGain, sizeof(float));
+    // CBM: average over all 23 pulses
+    if (numNoises > 1) gainDN /= (float)numNoises;
+
     return 1;
 
-} //ExtractOneReceiverGainADN
+} // _extractOneReceiverGainADN
 
 
 //----------------------------------------------------------------------
@@ -5161,7 +3964,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
 {
     static int32 currentIndex=0;
     static float rcvGainBuf[10];
@@ -5171,17 +3975,26 @@ VOIDP       buffer)
 
     assert(l1File != 0);
 
-    float rcvGain;
-    int rc = ExtractOneReceiverGainADN(l1File, sdsIDs, start,
-                                             stride, length, &rcvGain);
-    if (rc <= 0) return rc;
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
+    float rcvGain=0.0;
+    int rc = _extractOneReceiverGainADN(l1File, sdsIDs, start,
+                                  stride, length, rcvGain, polyTable);
+    if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return rc;
+    }
+
+    // WOM: need to get running average of 10 values
     int i=0;
     // for the first 4 measurements, save and return
     if (currentIndex < 4)
     {
         rcvGainBuf[currentIndex] = rcvGain;
         currentIndex++;
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return 0;
     }
     else if (currentIndex == 4)
@@ -5190,18 +4003,28 @@ VOIDP       buffer)
         // extract 5 more measurements: [5],[6],[7],[8],[9]
         for (i=1; i < 6; i++)
         {
-            rc = ExtractOneReceiverGainADN(l1File, sdsIDs, start+i,
-                                                 stride, length, &rcvGain);
-            if (rc != 1) return rc;
+            rc = _extractOneReceiverGainADN(l1File, sdsIDs, start+i,
+                                        stride, length, rcvGain, polyTable);
+            if (rc != 1)
+            {
+                (void)memset(extractResults->validDataMap, 0,
+                                              MAX_NUM_DERIVED_VALUES);
+                return rc;
+            }
             rcvGainBuf[4+i] = rcvGain;
         }
     }
     else
     {
         // extract the [9]
-        rc = ExtractOneReceiverGainADN(l1File, sdsIDs, start+5,
-                                                 stride, length, &rcvGain);
-        if (rc != 1) return rc;
+        rc = _extractOneReceiverGainADN(l1File, sdsIDs, start+5,
+                                       stride, length, rcvGain, polyTable);
+        if (rc != 1)
+        {
+            (void)memset(extractResults->validDataMap, 0,
+                                              MAX_NUM_DERIVED_VALUES);
+            return rc;
+        }
         rcvGainBuf[9] = rcvGain;
     }
 
@@ -5209,8 +4032,10 @@ VOIDP       buffer)
     float totalRcvGain = 0.0;
     for (i=0; i < 9; i++)
         totalRcvGain += rcvGainBuf[i];
-    float avgRcvGain = totalRcvGain / 10;
-    (void)memcpy(buffer, &avgRcvGain, sizeof(float));
+    float avgRcvGain = totalRcvGain / 10.0;
+    (void)memcpy(extractResults->dataBuf, &avgRcvGain, sizeof(float));
+    (void)memcpy(extractResults->validDataMap,
+                           _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
     // save the first 9 rcv gains in the buffer for the next run
     for (i=0; i < 8; i++)
@@ -5222,69 +4047,87 @@ VOIDP       buffer)
 } //ExtractReceiverGainADN
 
 //----------------------------------------------------------------------
-// Function:    ExtractOneReceiverGainBDN
+// Function:    _extractOneReceiverGainBDN
 // Extracts:    FLOAT4
 //----------------------------------------------------------------------
 int
-ExtractOneReceiverGainBDN(
-TlmHdfFile* l1File,
-int32*      sdsIDs,
-int32       start,
-int32       stride,
-int32       length,
-VOIDP       buffer)
+_extractOneReceiverGainBDN(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+float&           gainDN,
+PolynomialTable* polyTable)
 {
     // extract one at a time
     if (length != 1) return -1;
 
     assert(l1File != 0);
 
-    // get the polynomial table from the ugly global var
-    if (ArgsPlus::PolyTable == 0)
+    if (polyTable == 0)
     {
         fprintf(stderr, "Receiver Gain B: No polynomial table\n");
-        exit(1);
+        return -1;
     }
     static const Polynomial* xmitPowerPoly=0;
     if (xmitPowerPoly == 0)
     {
-        xmitPowerPoly = ArgsPlus::PolyTable->SelectPolynomial(
+        xmitPowerPoly = polyTable->SelectPolynomial(
                                  "transmit_power_b", "mWatts");
     }
     if (xmitPowerPoly == 0)
     {
         fprintf(stderr, "Receiver Gain B: No polynomial for trasmit power\n");
-        exit(1);
+        return -1;
     }
 
+    DerivedExtractResult extractResults;
     // get noise load first, return if fails
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[3];  // loop_back_cal_noise
-    unsigned int noiseDN;
-    int rc = ExtractBeamBNoiseDN(l1File, tempsdsIDs, start,
-                                       stride, length, &noiseDN);
-    if (rc <= 0)
-        return(rc);
+    int numNoises = ExtractBeamBNoiseDN(l1File, tempsdsIDs, start,
+                                       stride, length, &extractResults);
+    if (numNoises <= 0) return(numNoises);
 
+    unsigned int dnSum=0;
+    if (numNoises > 1)
+    {
+        unsigned int* uintP;
+        for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+        {
+            if (extractResults.validDataMap[i])
+            {
+                uintP = (unsigned int*) extractResults.dataBuf + i;
+                dnSum += *uintP;
+            }
+        }
+    }
     // now get transmit power a, return if fails
-    tempsdsIDs[0] = sdsIDs[4];  // transmit power b
+    tempsdsIDs[0] = sdsIDs[4];  // transmit power a
     float xmitPowerDN;
-    rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
+    int rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
                                        stride, length, &xmitPowerDN);
-    if (rc <= 0)
-        return(rc);
+    if (rc <= 0) return(rc);
 
     float xmitPowerMWatts = xmitPowerPoly->Apply(xmitPowerDN);
+    if (xmitPowerMWatts == 0.0)
+    {
+        fprintf(stderr, "Tranmit power (denominator) == 0.0\n");
+        return -1;
+    }
 
-    float rcvGain =  (float)noiseDN  * pow(10.0, 14.825)/ xmitPowerMWatts;
+    gainDN =  ((float)dnSum) * pow(10.0, 14.825) / xmitPowerMWatts;
 
-    (void)memcpy(buffer, &rcvGain, sizeof(float));
+    // CBM: average over all 23 pulses
+    if (numNoises > 1) gainDN /= (float)numNoises;
+
     return 1;
 
-} //ExtractOneReceiverGainBDN
+} // _extractOneReceiverGainBDN
 
 //----------------------------------------------------------------------
 // Function:    ExtractReceiverGainBDN
@@ -5297,7 +4140,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
 {
     static int32 currentIndex=0;
     static float rcvGainBuf[10];
@@ -5306,11 +4150,17 @@ VOIDP       buffer)
     if (length != 1) return -1;
 
     assert(l1File != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
 
     float rcvGain;
-    int rc = ExtractOneReceiverGainBDN(l1File, sdsIDs, start,
-                                             stride, length, &rcvGain);
-    if (rc <= 0) return rc;
+    int rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start,
+                                stride, length, rcvGain, polyTable);
+    if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return rc;
+    }
 
     // for the first 4 measurements, save and return
     int i=0;
@@ -5318,6 +4168,7 @@ VOIDP       buffer)
     {
         rcvGainBuf[currentIndex] = rcvGain;
         currentIndex++;
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return 0;
     }
     else if (currentIndex == 4)
@@ -5326,18 +4177,28 @@ VOIDP       buffer)
         // extract 5 more measurements: [5],[6],[7],[8],[9]
         for (i=1; i < 6; i++)
         {
-            rc = ExtractOneReceiverGainBDN(l1File, sdsIDs, start+i,
-                                                 stride, length, &rcvGain);
-            if (rc != 1) return rc;
+            rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start+i,
+                                       stride, length, rcvGain, polyTable);
+            if (rc != 1)
+            {
+                (void)memset(extractResults->validDataMap, 0,
+                                              MAX_NUM_DERIVED_VALUES);
+                return rc;
+            }
             rcvGainBuf[4+i] = rcvGain;
         }
     }
     else
     {
         // extract the [9]
-        rc = ExtractOneReceiverGainBDN(l1File, sdsIDs, start+5,
-                                                 stride, length, &rcvGain);
-        if (rc != 1) return rc;
+        rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start+5,
+                                     stride, length, rcvGain, polyTable);
+        if (rc != 1)
+        {
+            (void)memset(extractResults->validDataMap, 0,
+                                              MAX_NUM_DERIVED_VALUES);
+            return rc;
+        }
         rcvGainBuf[9] = rcvGain;
     }
 
@@ -5346,7 +4207,9 @@ VOIDP       buffer)
     for (i=0; i < 9; i++)
         totalRcvGain += rcvGainBuf[i];
     float avgRcvGain = totalRcvGain / 10;
-    (void)memcpy(buffer, &avgRcvGain, sizeof(float));
+    (void)memcpy(extractResults->dataBuf, &avgRcvGain, sizeof(float));
+    (void)memcpy(extractResults->validDataMap,
+                           _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
     // save the first 9 rcv gains in the buffer for the next run
     for (i=0; i < 8; i++)
@@ -5368,26 +4231,60 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
 {
-    float tempBuff;
     int rc = ExtractReceiverGainADN(l1File, sdsIDs,
-                           start, stride, length, &tempBuff);
+                           start, stride, length, p_extractResults, polyTable);
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
     switch(rc)
     {
         case 1:
-        {
-            float dBValue = (float) 10 * log10((double)tempBuff);
-            (void)memcpy(buffer, &dBValue, sizeof(float));
-            return 1;
-        }
+            return(_oneFloat4TodB(extractResults));
         case 0:
+            (void)memset(extractResults->validDataMap,
+                                0, MAX_NUM_DERIVED_VALUES);
             return 0;
         default:
             return -1;
     }
     return -1;
+
 } // ExtractReceiverGainAdB
+
+//----------------------------------------------------------------------
+// Function:    ExtractReceiverGainBdB
+// Extracts:    FLOAT4[]
+//----------------------------------------------------------------------
+int
+ExtractReceiverGainBdB(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
+{
+    int rc = ExtractReceiverGainBDN(l1File, sdsIDs,
+                           start, stride, length, p_extractResults, polyTable);
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
+    switch(rc)
+    {
+        case 1:
+            return(_oneFloat4TodB(extractResults));
+        case 0:
+            (void)memset(extractResults->validDataMap,
+                                0, MAX_NUM_DERIVED_VALUES);
+            return 0;
+        default:
+            return -1;
+    }
+    return -1;
+
+} // ExtractReceiverGainBdB
 
 
 #ifndef NOISE_FIGURE_CONST
@@ -5405,34 +4302,79 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
 {
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
+    DerivedExtractResult privExtRes;
     int rc=0;
     int32 tempsdsIDs[5];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[3];  // load_cal_noise
-    float avgNoiseLoadDN;
-    if ((rc = ExtractAverageNoiseLoadDN(l1File, sdsIDs,
-                           start, stride, length, &avgNoiseLoadDN)) != 1)
+    if ((rc = _extractAverageNoiseLoadDN(l1File, sdsIDs,
+                           start, stride, length, &privExtRes, 0)) != 1)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
+    float avgNoiseLoadDN = *((float*)privExtRes.dataBuf);
 
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // loop_back_cal_noise
     tempsdsIDs[4] = sdsIDs[5];  // transmit_power_a
-    float rcvGainDN;
     if ((rc = ExtractReceiverGainADN(l1File, sdsIDs,
-                 start, stride, length, &rcvGainDN)) != 1)
+                 start, stride, length, &privExtRes, polyTable)) != 1)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
+    float rcvGainDN = *((float*)privExtRes.dataBuf);
 
     float noiseFigDN = avgNoiseLoadDN / (rcvGainDN * NOISE_FIGURE_CONST);
-    memcpy(buffer, &noiseFigDN, sizeof(float));
+    (void)memcpy(extractResults->dataBuf, &noiseFigDN, sizeof(float));
+    (void)memcpy(extractResults->validDataMap,
+                           _onlyOneMap, MAX_NUM_DERIVED_VALUES);
     return 1;
 
 } // ExtractNoiseFigureADN
+
+//----------------------------------------------------------------------
+// Function:    ExtractNoiseFigureAdB
+// Extracts:    FLOAT4[]
+//----------------------------------------------------------------------
+int
+ExtractNoiseFigureAdB(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
+{
+    int rc = ExtractNoiseFigureADN(l1File, sdsIDs,
+                           start, stride, length, p_extractResults, polyTable);
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
+    switch(rc)
+    {
+        case 1:
+            return(_oneFloat4TodB(extractResults));
+        case 0:
+            (void)memset(extractResults->validDataMap,
+                                0, MAX_NUM_DERIVED_VALUES);
+            return 0;
+        default:
+            return -1;
+    }
+    return -1;
+
+} // ExtractNoiseFigureAdB
 
 //----------------------------------------------------------------------
 // Function:    ExtractNoiseFigureBDN
@@ -5445,31 +4387,481 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       p_extractResults,
+PolynomialTable* polyTable)
 {
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
+    DerivedExtractResult privExtRes;
     int rc=0;
     int32 tempsdsIDs[5];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[3];  // load_cal_noise
-    float avgNoiseLoadDN;
-    if ((rc = ExtractAverageNoiseLoadDN(l1File, sdsIDs,
-                           start, stride, length, &avgNoiseLoadDN)) != 1)
+    if ((rc = _extractAverageNoiseLoadDN(l1File, sdsIDs,
+                           start, stride, length, &privExtRes, 0)) != 1)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
+    float avgNoiseLoadDN = *((float*)privExtRes.dataBuf);
 
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[2];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // loop_back_cal_noise
     tempsdsIDs[4] = sdsIDs[5];  // transmit_power_a
-    float rcvGainDN;
     if ((rc = ExtractReceiverGainBDN(l1File, sdsIDs,
-                 start, stride, length, &rcvGainDN)) != 1)
+                 start, stride, length, &privExtRes, polyTable)) != 1)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
+    }
+    float rcvGainDN = *((float*)privExtRes.dataBuf);
 
     float noiseFigDN = avgNoiseLoadDN / (rcvGainDN * NOISE_FIGURE_CONST);
-    memcpy(buffer, &noiseFigDN, sizeof(float));
+    (void)memcpy(extractResults->dataBuf, &noiseFigDN, sizeof(float));
+    (void)memcpy(extractResults->validDataMap,
+                           _onlyOneMap, MAX_NUM_DERIVED_VALUES);
     return 1;
 
 } // ExtractNoiseFigureBDN
+
+//----------------------------------------------------------------------
+// Function:    ExtractNoiseFigureBdB
+// Extracts:    FLOAT4[]
+//----------------------------------------------------------------------
+int
+ExtractNoiseFigureBdB(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       p_extractResults,
+PolynomialTable*  polyTable)
+{
+    int rc = ExtractNoiseFigureBDN(l1File, sdsIDs,
+                           start, stride, length, p_extractResults, polyTable);
+    DerivedExtractResult* extractResults =
+                           (DerivedExtractResult*) p_extractResults;
+    switch(rc)
+    {
+        case 1:
+            return(_oneFloat4TodB(extractResults));
+        case 0:
+            (void)memset(extractResults->validDataMap,
+                                0, MAX_NUM_DERIVED_VALUES);
+            return 0;
+        default:
+            return -1;
+    }
+    return -1;
+
+} // ExtractNoiseFigureBdB
+
+//----------------------------------------------------------------------
+// Function:    ExtractOrbitPeriod
+// Extracts:    UINT4[]
+//----------------------------------------------------------------------
+int
+ExtractOrbitPeriod(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       ,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // this holds the orbit time extracted previously
+    static unsigned long prevOrbitTime=0;
+
+    // extract one at a time
+    if (length != 1) return -1;
+ 
+    assert(l1File != 0);
+ 
+    // find out the current orbit time
+    unsigned long orbitTime;
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &orbitTime)
+                         != HDF_SUCCEED)
+        return(-1);
+
+    // orbit time is reset, this is the beginning of a new orbit
+    // we want the previous ticks
+    if (orbitTime <= prevOrbitTime)
+    {
+        memcpy(buffer, &prevOrbitTime, sizeof(unsigned long));
+        prevOrbitTime = orbitTime;
+        return 1;
+    }
+    else
+    {
+        prevOrbitTime = orbitTime;
+        return 0;
+    }
+
+} // ExtractOrbitPeriod
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDN
+// Extracts:    UINT2[][100]
+//----------------------------------------------------------------------
+int
+ExtractAntSpinRateDN(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       ,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // this holds the antenna position extracted previously
+    // if _prevAntPos is not set then it is not called from one 
+    // of the EU extraction function
+    if (_prevAntPos == 0)
+        _prevAntPos = &_prevAntPos_dn;
+
+    // extract one at a time
+    if (length != 1)
+    {
+        _prevAntPos = 0;
+        return -1;
+    }
+ 
+    assert(l1File != 0);
+ 
+    // find out the raw antenna position
+    unsigned short antPos[100];;
+    int32 antposSdsIds[1];
+    antposSdsIds[0] = sdsIDs[0];
+    int rc = ExtractData2D_100(l1File, antposSdsIds, start, 0, 1, antPos);
+    if (rc <= 0)
+    {
+        _prevAntPos = 0;
+        return rc;
+    }
+
+    // spin rate is the delta antenna position
+    unsigned short * tempBuf = (unsigned short *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = antPos[i] - *_prevAntPos;
+        *_prevAntPos = antPos[i];
+        tempBuf++;
+    }
+    _prevAntPos = 0;
+    return 1;
+
+} // ExtractAntSpinRateDN
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDegree
+// Extracts:    FLOAT4[][100]
+//----------------------------------------------------------------------
+int
+ExtractAntSpinRateDegree(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    if (length != 1) return -1;
+
+    if (polyTable == 0)
+    {
+        fprintf(stderr, "Antenna Spin Rate degrees: No polynomial table\n");
+        return -1;
+    }
+
+    // get polynomial for antenna position/degrees
+    static const Polynomial* antPosPoly=0;
+    if (antPosPoly == 0)
+    {
+        antPosPoly = polyTable->SelectPolynomial(
+                                 "antenna_position", "degrees");
+    }
+    if (antPosPoly == 0)
+    {
+        fprintf(stderr, "Antenna Spin Rate deg/sec: "
+                        "No polynomial for antenna position\n");
+        return -1;
+    }
+    unsigned short spinRateDN[100];
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_deg;
+    int rc = ExtractAntSpinRateDN(l1File, sdsIDs, start, stride,
+                                  1, spinRateDN);
+    if (rc <= 0) return rc;
+
+    // apply polynomial to the float array
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf++ = antPosPoly->Apply((float)spinRateDN[i]);
+    }
+    return 1;
+
+} // ExtractAntSpinRateDegree
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDegSec
+// Extracts:    FLOAT4[][100]
+//---------------------------------------------------------------------- 
+int
+ExtractAntSpinRateDegSec(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       ,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    // get the antenna position dn in floats
+    // polynomial has been applied
+    float spinRateFloat[100];
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_deg_sec;
+    int rc = ExtractAntSpinRateDegree(l1File, sdsIDs, start, stride,
+                                  1, spinRateFloat, polyTable);
+    if (rc <= 0) return rc;
+
+    // now, get prf cycle time
+    unsigned char prfCycleTime=0;
+    int32 prfSdsIDs[1];
+    prfSdsIDs[0] = sdsIDs[1];
+    if (l1File->GetDatasetData1D(prfSdsIDs[0], start, 1, 1, &prfCycleTime)
+                         != HDF_SUCCEED)
+        return(-1);
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = spinRateFloat[i] * 1000.0 / (float) prfCycleTime;
+        tempBuf++;
+    }
+    return 1;
+
+} // ExtractAntSpinRateDegSec
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateRotMin
+// Extracts:    FLOAT4[][100]
+//---------------------------------------------------------------------- 
+int
+ExtractAntSpinRateRotMin(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_rot_min;
+    int rc = ExtractAntSpinRateDegSec(l1File, sdsIDs, start, stride,
+                                  length, buffer, polyTable);
+    if (rc <= 0) return rc;
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = *tempBuf / 6.0;
+        tempBuf++;
+    }
+    return 1;
+
+} // ExtractAntSpinRateRotMin
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPowerAmWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPowerAmWatts(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "transmit_power_a", "dBm",
+                          polyTable));
+} // ExtractXmitPowerAmWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPowerBmWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPowerBmWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "transmit_power_b", "dBm",
+                          polyTable));
+} // ExtractXmitPowerBmWatts
+
+//----------------------------------------------------------------------
+// Function:    Extract_uint1_eu_mWatts
+// Extracts:    uint1, apply polynomial to DN to EU, then do pow(10,dBm/10)
+//----------------------------------------------------------------------
+int
+Extract_uint1_eu_mWatts(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+const char*      sdsName,
+const char*      euUnitName,
+PolynomialTable* polyTable)
+{
+    assert(l1File != 0);
+
+    if (length != 1) return -1;
+    if (polyTable == 0) return -1;
+
+    // alloc space to hold floats
+    float dBmValue;
+
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+
+    int rc = ExtractData1D_uint1_float(l1File, sdsIDs, start, stride,
+                          1, &dBmValue);
+    if (rc <= 0)
+    {
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return rc;
+    }
+
+    const Polynomial* polynomial = polyTable->SelectPolynomial(
+                                       sdsName, euUnitName);
+    if (polynomial == 0)
+    {
+        fprintf(stderr, "Tranmit Power (mWatts): need polynomial for dBm\n");
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        return -1;
+    }
+    dBmValue = polynomial->Apply(dBmValue);
+    float mWattsValue = (float) pow( (double) 10.0,
+                                      (double) dBmValue / 10.0 );
+
+    (void)memcpy(extractResults->dataBuf, &mWattsValue, sizeof(float));
+    (void)memcpy(extractResults->validDataMap,
+                                _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+    return 1;
+
+} // Extract_uint1_eu_mWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractTwt1PowermWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractTwt1PowermWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "twt1_drive_power", "dBm",
+                          polyTable));
+} // ExtractTwt1PowermWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractTwt2PowermWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractTwt2PowermWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "twt2_drive_power", "dBm",
+                          polyTable));
+} // ExtractTwt2PowermWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerCnvtCurrmWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractPowerCnvtCurrmWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "power_convert_current", "dBm",
+                          polyTable));
+} // ExtractPowerCnvtCurrmWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPwrInnermWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPwrInnermWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "transmit_power_inner", "dBm",
+                          polyTable));
+} // ExtractXmitPwrInnermWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPwrOutermWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPwrOutermWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            p_extractResults,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          p_extractResults, "transmit_power_outer", "dBm",
+                          polyTable));
+} // ExtractXmitPwrOutermWatts

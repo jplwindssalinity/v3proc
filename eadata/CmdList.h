@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   19 Aug 1998 13:14:26   daffer
+// More CMDLP/Effects work.
+// 
+//    Rev 1.7   22 May 1998 16:29:36   daffer
+// Added/modified code for cmdlp/effect processing
+// 
 //    Rev 1.6   20 Apr 1998 15:18:04   sally
 // change List to EAList
 // 
@@ -50,6 +56,7 @@ static const char rcsid_cmdlist_h[] =
 
 #include "EAList.h"
 #include "Command.h"
+#include "CmdEffect.h"
 #include "Eqx.h"
 #include "Itime.h"
 #include "Parameter.h"
@@ -66,7 +73,8 @@ public:
         ERROR_CREATING_CMD,
         ERROR_READING_CMD,
         ERROR_APPENDING_CMD,
-        ERROR_WRITING_CMD
+        ERROR_WRITING_CMD,
+        ERROR_READING_DATAFILE
     };
 
     CmdList();
@@ -90,21 +98,19 @@ public:
     StatusE         AddSortedCmds(CmdList* cmds);
     Command*        FindNearestMatchable(Command* effect, int* index);
     Command*        MissingL1AVerify(int* index);
-    Command*        MissingHkdtVerify(int* index);
+    Command*        MissingHk2Verify(int* index);
     Command*        MissingL1ApVerify(int* index);
 
-/*
+    /*
     StatusE         Update(CmdList* detectedCmdList, EqxList* eqxList);
     StatusE         ApplyCmds(CmdList* detectedCmds);
     StatusE         ReportAnomalies(FILE* ofp, Itime start_time,
                         Itime end_time, int* anomaly_count);
-*/
+    */
     StatusE         GetStatus() { return _status; };
 
 protected:
-/*
-    Command*        _MatchingCmd(Command* cmd);
-*/
+    // Command*        _MatchingCmd(Command* cmd);
 
     StatusE         _status;
 };

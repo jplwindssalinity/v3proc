@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   12 Aug 1998 09:17:40   deliver
+// change coefficients from floats to doubles
+// 
 //    Rev 1.1   12 Feb 1998 16:49:36   sally
 // add wrappers for "C" functions
 // 
@@ -43,7 +46,7 @@ public:
 
     Polynomial(const char*   varName,    // IN
                const char*   unitName,   // IN
-               const float*  array,      // IN: array of numbers
+               const double* array,      // IN: array of numbers
                int           num);       // IN: number of elements in array
     virtual ~Polynomial();
 
@@ -75,7 +78,7 @@ public:
 protected:
     char       _varName[STRING_LEN];
     char       _unitName[STRING_LEN];
-    float*     _factors;
+    double*    _factors;
     int        _order;
 };
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   01 May 1998 14:47:54   sally
+// added HK2 file
+// 
 //    Rev 1.3   17 Apr 1998 16:51:24   sally
 // add L2A and L2B file formats
 // 
@@ -42,13 +45,9 @@ static const char rcs_id[] =
 
 TlmHdfFile::TlmHdfFile(
 const char*     filename,
-SourceIdE       dataType,
-StatusE&        returnStatus,
-const Itime     startTime,
-const Itime     endTime)
-:   HdfFile(filename, returnStatus), _dataType(dataType),
-    _userStartTime(startTime), _userEndTime(endTime),
-    _firstDataRecTime(INVALID_TIME), _lastDataRecTime(INVALID_TIME),
+SourceIdE       sourceType,
+StatusE&        returnStatus)
+:   HdfFile(filename, returnStatus), _sourceType(sourceType),
     _userNextIndex(HDF_FAIL), _userStartIndex(HDF_FAIL),
     _userEndIndex(HDF_FAIL)
 {

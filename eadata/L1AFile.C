@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   01 May 1998 14:46:34   sally
+// add HK2 file
+// 
 //    Rev 1.7   17 Apr 1998 16:48:50   sally
 // add L2A and L2B parameter tables
 // 
@@ -61,9 +64,9 @@ const char*     filename,
 StatusE&        returnStatus,
 const Itime     startTime,
 const Itime     endTime)
-:   TlmHdfFile(filename, SOURCE_L1A, returnStatus, startTime, endTime)
+:   TimeTlmFile(filename, SOURCE_L1A, returnStatus, startTime, endTime)
 {
-    // check TlmHdfFile construction
+    // check TimeTlmFile construction
     if (_status != HdfFile::OK)
         return;
 
@@ -158,21 +161,6 @@ L1AFile::~L1AFile()
 
 } //L1AFile::~L1AFile
 
-TlmHdfFile::StatusE
-L1AFile::Range(
-    FILE*   ofp)
-{
-    fprintf(ofp, "%s : %s\n", source_id_map[_dataType], _filename);
-    char start_time_string[CODEA_TIME_LEN];
-    _firstDataRecTime.ItimeToCodeA(start_time_string);
-    char end_time_string[CODEA_TIME_LEN];
-    _lastDataRecTime.ItimeToCodeA(end_time_string);
-    fprintf(ofp, "  %s - %s\n", start_time_string, end_time_string);
-    fprintf(ofp, "  %ld Data Records\n", _dataLength);
-    return(_status);
-
-}//L1AFile::Range
-
 L1AFile::StatusE
 L1AFile::_getTime(
 int32     index,    // dataset index
@@ -186,37 +174,6 @@ Itime*    recTime)  // OUT: record time
     return (_status = OK);
 
 } //L1AFile::_getTime
-
-//-----------------//
-// _setFileIndices //
-//-----------------//
-// set the first and last data records offsets.
-// if either offset cannot be set, both offsets are set to -1.
-
-L1AFile::StatusE
-L1AFile::_setFileIndices(void)
-{
-    _status = OK;
-
-    // find the effective start index
-    _userStartIndex = 0;
-    if (_userStartTime != INVALID_TIME)
-        _userStartIndex = _binarySearchStart(_userStartTime,
-                                               0, _dataLength - 1);
-    if (_userStartIndex == HDF_FAIL)
-        return(_status = ERROR_SEEKING_TIME_PARAM);
-
-    // find the effective end index
-    _userEndIndex = _dataLength - 1;
-    if (_userEndTime != INVALID_TIME)
-        _userEndIndex = _binarySearchEnd(_userEndTime,
-                                               0, _dataLength - 1);
-    if (_userEndIndex == HDF_FAIL)
-        return(_status = ERROR_SEEKING_TIME_PARAM);
-
-    return(_status = OK);
-
-}//L1AFile::_setFileIndices
 
 int32
 L1AFile::_binarySearchStart(

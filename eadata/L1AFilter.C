@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   23 Jul 1998 16:14:42   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.3   01 May 1998 16:45:20   sally
+// add some more filters, and changed some names, per Lee Poulsen
+// 
 //    Rev 1.2   23 Mar 1998 15:36:02   sally
 // adapt to derived science data
 // 
@@ -50,7 +56,7 @@ int32          startIndex)
 
     unsigned char mode;
     if (param1->extractFunc(tlmFile, param1->sdsIDs,
-           startIndex, 1, 1, &mode) && mode == L1_MODE_SBM)
+           startIndex, 1, 1, &mode, 0) && mode == L1_MODE_SBM)
         return (1);
     else
         return (0);
@@ -75,7 +81,7 @@ int32          startIndex)
  
     unsigned char mode;
     if (param1->extractFunc(tlmFile, param1->sdsIDs,
-           startIndex, 1, 1, &mode) && mode == L1_MODE_ROM)
+           startIndex, 1, 1, &mode, 0) && mode == L1_MODE_ROM)
         return (1);
     else
         return (0);
@@ -99,7 +105,7 @@ int32          startIndex)
  
     unsigned char mode;
     if (param1->extractFunc(tlmFile, param1->sdsIDs,
-           startIndex, 1, 1, &mode) && mode == L1_MODE_CBM)
+           startIndex, 1, 1, &mode, 0) && mode == L1_MODE_CBM)
         return (1);
     else
         return (0);
@@ -123,7 +129,7 @@ int32          startIndex)
  
     unsigned char mode;
     if (param1->extractFunc(tlmFile, param1->sdsIDs,
-           startIndex, 1, 1, &mode) && mode == L1_MODE_WOM)
+           startIndex, 1, 1, &mode, 0) && mode == L1_MODE_WOM)
         return (1);
     else
         return (0);
@@ -136,7 +142,7 @@ int32          startIndex)
 //============================================================
 
 char
-L1AF_Sci_Frame(
+L1AF_NonCal_Frame(
 Filter*        filterP,
 TlmHdfFile*    tlmFile,
 int32          startIndex)
@@ -147,12 +153,12 @@ int32          startIndex)
 
     char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status <= 0)
+               1, 1, &status, 0) && status <= 0)
         return (1);
     else
         return (0);
 
-}//L1AF_Sci_Frame
+}//L1AF_NonCal_Frame
 
 //============================================================
 // L1AF_Cal_Frame
@@ -171,7 +177,7 @@ int32          startIndex)
 
     char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status > 0)
+               1, 1, &status, 0) && status > 0)
         return (1);
     else
         return (0);
@@ -179,12 +185,12 @@ int32          startIndex)
 }//L1AF_Cal_Frame
 
 //============================================================
-// L1AF_HVPS_On
+// L1AF_TWT_On
 // TRUE when the HVPS is on
 //============================================================
 
 char
-L1AF_HVPS_On(
+L1AF_TWT_On(
 Filter*        filterP,
 TlmHdfFile*    tlmFile,
 int32          startIndex)
@@ -195,20 +201,20 @@ int32          startIndex)
 
     unsigned char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status == L1_HVPS_ON)
+               1, 1, &status, 0) && status == L1_TWT_ON)
         return (1);
     else
         return (0);
 
-}//L1AF_HVPS_On
+}//L1AF_TWT_On
 
 //============================================================
-// L1AF_HVPS_Off
-// TRUE when the HVPS is off
+// L1AF_TWT_Off
+// TRUE when the TWT is off
 //============================================================
 
 char
-L1AF_HVPS_Off(
+L1AF_TWT_Off(
 Filter*        filterP,
 TlmHdfFile*    tlmFile,
 int32          startIndex)
@@ -219,21 +225,21 @@ int32          startIndex)
 
     unsigned char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status == L1_HVPS_OFF)
+               1, 1, &status, 0) && status == L1_TWT_OFF)
         return (1);
     else
         return (0);
 
-}//L1AF_HVPS_Off
+}//L1AF_TWT_Off
 
 
 //============================================================
-// L1AF_Ant_A
-// TRUE when the antenna A is selected
+// L1AF_Beam_A
+// TRUE when the Beam A is selected
 //============================================================
 
 char
-L1AF_Ant_A(
+L1AF_Beam_A(
 Filter*        filterP,
 TlmHdfFile*    tlmFile,
 int32          startIndex)
@@ -244,20 +250,20 @@ int32          startIndex)
 
     unsigned char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status == L1_ANT_A)
+               1, 1, &status, 0) && status == L1_BEAM_A)
         return (1);
     else
         return (0);
 
-}//L1AF_Ant_A
+}//L1AF_Beam_A
 
 //============================================================
-// L1AF_Ant_B
-// TRUE when the antenna B is selected
+// L1AF_Beam_B
+// TRUE when the Beam B is selected
 //============================================================
 
 char
-L1AF_Ant_B(
+L1AF_Beam_B(
 Filter*        filterP,
 TlmHdfFile*    tlmFile,
 int32          startIndex)
@@ -268,12 +274,12 @@ int32          startIndex)
 
     unsigned char status=0;
     if (param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &status) && status == L1_ANT_B)
+               1, 1, &status, 0) && status == L1_BEAM_B)
         return (1);
     else
         return (0);
 
-}//L1AF_Ant_B
+}//L1AF_Beam_B
 
 //============================================================
 // L1AF_TWTA_1
@@ -295,11 +301,11 @@ int32          startIndex)
 
     unsigned char k11, k12;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k11))
+               1, 1, &k11, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k12))
+               1, 1, &k12, 0))
         return 0;
 
     return(k11 == k12 ? 1 : 0);
@@ -326,11 +332,11 @@ int32          startIndex)
 
     unsigned char k11, k12;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k11))
+               1, 1, &k11, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k12))
+               1, 1, &k12, 0))
         return 0;
 
     return(k11 != k12 ? 1 : 0);
@@ -357,11 +363,11 @@ int32          startIndex)
 
     unsigned char k19, k20;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k19))
+               1, 1, &k19, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k20))
+               1, 1, &k20, 0))
         return 0;
 
     return(k19 == k20 ? 1 : 0);
@@ -388,11 +394,11 @@ int32          startIndex)
 
     unsigned char k19, k20;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k19))
+               1, 1, &k19, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k20))
+               1, 1, &k20, 0))
         return 0;
 
     return(k19 != k20 ? 1 : 0);
@@ -419,11 +425,11 @@ int32          startIndex)
 
     unsigned char k15, k16;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k15))
+               1, 1, &k15, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k16))
+               1, 1, &k16, 0))
         return 0;
 
     return(k15 == k16 ? 1 : 0);
@@ -450,13 +456,253 @@ int32          startIndex)
 
     unsigned char k15, k16;
     if ( ! param1->extractFunc(tlmFile, param1->sdsIDs, startIndex,
-               1, 1, &k15))
+               1, 1, &k15, 0))
         return 0;
 
     if ( ! param2->extractFunc(tlmFile, param2->sdsIDs, startIndex,
-               1, 1, &k16))
+               1, 1, &k16, 0))
         return 0;
 
     return(k15 != k16 ? 1 : 0);
 
 }//L1AF_SES_B
+
+//============================================================
+// L1AF_Modulation_On
+// TRUE when the Modulation is on
+//============================================================
+
+char
+L1AF_Modulation_On(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char modulation;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &modulation, 0) && modulation == L1_MODULATION_ON)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Modulation_On
+
+//============================================================
+// L1AF_Modulation_Off
+// TRUE when the Modulation is off
+//============================================================
+
+char
+L1AF_Modulation_Off(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char modulation;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &modulation, 0) && modulation == L1_MODULATION_OFF)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Modulation_Off
+
+//============================================================
+// L1AF_Rx_Protect_On
+// TRUE when the Receive Protect is on
+//============================================================
+
+char
+L1AF_Rx_Protect_On(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_RX_PROTECT_ON)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Rx_Protect_On
+
+//============================================================
+// L1AF_Rx_Protect_Off
+// TRUE when the Receive Protect is off
+//============================================================
+
+char
+L1AF_Rx_Protect_Off(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_RX_PROTECT_OFF)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Rx_Protect_Off
+
+//============================================================
+// L1AF_Grid_Normal
+// TRUE when the Grid is normal
+//============================================================
+
+char
+L1AF_Grid_Normal(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_GRID_NORMAL)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Grid_Normal
+
+//============================================================
+// L1AF_Grid_Dsbl
+// TRUE when the Grid is disabled
+//============================================================
+
+char
+L1AF_Grid_Dsbl(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_GRID_DISABLE)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_Grid_Dsbl
+
+//============================================================
+// L1AF_SAS_A_Spin19_8
+// TRUE when the SAS A spin rate is 19.8 rpm
+//============================================================
+
+char
+L1AF_SAS_A_Spin19_8(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_SAS_A_SPIN_19_8)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_SAS_A_Spin19_8
+
+//============================================================
+// L1AF_SAS_A_Spin18_0
+// TRUE when the SAS A spin rate is 18.0 rpm
+//============================================================
+
+char
+L1AF_SAS_A_Spin18_0(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_SAS_A_SPIN_18_0)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_SAS_A_Spin18_0
+
+//============================================================
+// L1AF_SAS_B_Spin19_8
+// TRUE when the SAS B spin rate is 19.8 rpm
+//============================================================
+
+char
+L1AF_SAS_B_Spin19_8(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_SAS_B_SPIN_19_8)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_SAS_B_Spin19_8
+
+//============================================================
+// L1AF_SAS_B_Spin18_0
+// TRUE when the SAS B spin rate is 18.0 rpm
+//============================================================
+
+char
+L1AF_SAS_B_Spin18_0(
+Filter*        filterP,
+TlmHdfFile*    tlmFile,
+int32          startIndex)
+{
+    assert(filterP != 0);
+    Parameter* param1 = filterP->parametersP[0];
+    assert(param1 != 0 && param1->sdsIDs != 0 && param1->sdsIDs[0] != HDF_FAIL);
+
+    unsigned char flag;
+    if (param1->extractFunc(tlmFile, param1->sdsIDs,
+           startIndex, 1, 1, &flag, 0) && flag == L1_SAS_B_SPIN_18_0)
+        return (1);
+    else
+        return (0);
+
+}//L1AF_SAS_B_Spin18_0

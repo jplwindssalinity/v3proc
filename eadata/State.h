@@ -1,15 +1,35 @@
-//=========================================================//
-// Copyright  (C)1995, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//=========================================================
+// Copyright  (C)1995, California Institute of Technology.
+// U.S. Government sponsorship under
+// NASA Contract NAS7-1260 is acknowledged
+//
+// CM Log
+// $Log$
+// 
+//    Rev 1.3   19 May 1998 15:48:58   sally
+// took out comparison function
+// 
+//    Rev 1.2   18 May 1998 14:48:08   sally
+// added error checker for L1A
+// 
+//    Rev 1.1   13 May 1998 16:27:36   sally
+ 
+// $Date$
+// $Revision$
+// $Author$
+//
+//=========================================================
+
 
 #ifndef STATE_H
 #define STATE_H
 
-static const char rcs_id_state_h[]="@(#) $Id$";
+static const char rcs_id_state_h[]=
+    "@(#) $Header$";
 
 #include "Parameter.h"
 #include "Itime.h"
+#include "TlmHdfFile.h"
 
 //==============//
 // StateElement //
@@ -20,33 +40,48 @@ class StateElement
 public:
     enum ConditionE
     {
+        ERROR = -1,
         UNINITIALIZED = 0,
         CURRENT,
         HELD
     };
 
     StateElement();
-    ~StateElement();
+    StateElement(const StateElement&);
+    StateElement&   operator=(const StateElement& other);
+
+    virtual ~StateElement();
+
+    void            AllocValue(int pbyteSize);
 
     ConditionE      condition;
-};
+    void*           value;
+    int             byteSize;
 
-class StateElement_uc : public StateElement
-{
-public:
-    unsigned char   value;
-};
+protected:
+    void            CleanUp(void);
 
-class StateElement_int : public StateElement
-{
-public:
-    unsigned int    value;
-};
+};//StateElement
 
-class StateElement_it : public StateElement
+// return 1 if same, 0 if different.  for checking "TRANSITION"
+typedef int (*StateCompareFunc) (const StateElement&    stateElementA,
+                                 const StateElement&    stateElementB,
+                                 size_t                 byteSize);
+
+inline int
+DefaultStateCompareFunc(
+const StateElement&    stateElementA,
+const StateElement&    stateElementB,
+size_t                 byteSize)
 {
-public:
-    Itime           value;
+    return(memcmp(stateElementA.value, stateElementB.value, byteSize)
+                      == 0 ? 1 : 0);
+}
+
+struct StateTabEntry
+{
+    ParamIdE           paramId;
+    UnitIdE            unitId;
 };
 
 //=======//
@@ -57,73 +92,30 @@ class State
 {
 public:
 
-    State();
-    ~State();
+    State(int numStateElements);
+    State(const State& otherState);
+    State&   operator=(const State& other);
 
-    StateElement::ConditionE    StateExtract(
-                            const char*                 dataRec,
-                            ExtractFunc                 function,
-                            char*                       data,
-                            StateElement::ConditionE    prev_condition);
+    virtual ~State();
+
+    virtual StateElement::ConditionE
+            StateExtract(
+                    ExtractFunc             extractFunc,     // IN
+                    TlmHdfFile*             tlmFile,         // IN
+                    int32*                  sdsIds,          // IN
+                    int32                   startIndex,      // IN
+                    const StateElement&     oldStateElement, // IN
+                    StateElement&           newStateElement, // IN/OUT
+                    VOIDP                   data);           // IN/OUT
 
     char            time_string[CODEA_TIME_LEN];
 
-    StateElement_it time;
+    StateElement*   stateElements;   // array of StateElement
+    int             _numStateElements;
 
-    StateElement_uc twta;
-    StateElement_uc hvps;
-    StateElement_uc dss;
-    StateElement_uc twta_trip_override;
-    StateElement_uc cmf_fix;
-    StateElement_uc nscat_mode;
-    StateElement_uc hvps_shut_en;
-    StateElement_uc twt_mon_en;
-    StateElement_uc fault_counter;
-    StateElement_uc cmd_counter;
-    StateElement_uc new_bc;
-    StateElement_uc new_ant_seq;
-    StateElement_uc cur_beam;
-    StateElement_uc csb_3;
-    StateElement_uc csb_2;
-    StateElement_uc csb_1;
-    StateElement_uc rx_pro;
-    StateElement_uc error_msg;
-    StateElement_uc lack_start_reqs;
-    StateElement_uc err_queue_full;
-    StateElement_uc bin_param_err;
-    StateElement_uc def_bin_const;
-    StateElement_uc twta_body_oc_trip;
-    StateElement_uc twta_oc_trip;
-    StateElement_uc twta_uv_trip;
-    StateElement_uc slm_lock;
-    StateElement_uc ulm_lock;
-    StateElement_uc hvps_backup_off;
-    StateElement_uc meas_cycle;
-    StateElement_uc ant_cycle;
-    StateElement_uc beam_cycle;
-    StateElement_uc ant_2_deploy;
-    StateElement_uc ant_5_deploy;
-    StateElement_uc ant_14_deploy;
-    StateElement_uc ant_36_deploy;
-    StateElement_uc wts_1;
-    StateElement_uc wts_2;
-    StateElement_uc k01;
-    StateElement_uc k02;
-    StateElement_uc k03;
-    StateElement_uc k04;
-    StateElement_uc k05;
-    StateElement_uc k06;
-    StateElement_uc k07;
-    StateElement_uc k08;
-    StateElement_uc k09;
-    StateElement_uc k10;
-    StateElement_uc k11;
-    StateElement_uc k12;
-    StateElement_uc k13;
-    StateElement_uc k14;
-    StateElement_uc diu_15v;
+private:
+    State() { printf("State default constructor\n");} // NULL default constructor
 
-    StateElement_int    inst_time;
-};
+};//State
 
 #endif // STATE_H

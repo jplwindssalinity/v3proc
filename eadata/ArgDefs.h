@@ -7,6 +7,27 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.12   13 Oct 1998 15:32:42   sally
+// added L1B file
+// 
+//    Rev 1.11   02 Oct 1998 14:22:18   sally
+// add UNIT_TYPE arg
+// 
+//    Rev 1.10   21 Sep 1998 15:06:00   sally
+// added Qpa
+// 
+//    Rev 1.9   28 Aug 1998 16:30:08   sally
+// add REQA directory and filename args
+// 
+//    Rev 1.8   09 Jul 1998 09:28:48   sally
+// change format per Lee's memo
+// 
+//    Rev 1.7   29 Jun 1998 16:51:24   sally
+// added embedded commands checking
+// 
+//    Rev 1.6   26 May 1998 10:54:44   sally
+// added QPF
+// 
 //    Rev 1.5   13 Apr 1998 15:04:22   daffer
 // Took out mail_drn args
 // 
@@ -129,6 +150,10 @@ static const char rcs_argdefs_h[] =
 #define L1A_DERIVED_LIMIT_FILE_OPTION      "-l1adrvlim"
 #define L1A_DERIVED_LIMIT_FILE_ARGUMENT    "L1A_drv_limit_file"
 
+#define L1B_FILES_KEYWORD           "L1B_FILES"
+#define L1B_FILES_OPTION            "-l1b"
+#define L1B_FILES_ARGUMENT          "L1B_file..."
+ 
 #define L2A_FILES_KEYWORD           "L2A_FILES"
 #define L2A_FILES_OPTION            "-l2a"
 #define L2A_FILES_ARGUMENT          "L2A_file..."
@@ -153,9 +178,21 @@ static const char rcs_argdefs_h[] =
 #define MEMORY_FILE_OPTION          "-mem"
 #define MEMORY_FILE_ARGUMENT        "memory_file"
 
-#define NPF_DIRECTORY_KEYWORD       "NPF_DIRECTORY"
-#define NPF_DIRECTORY_OPTION        "-npfdir"
-#define NPF_DIRECTORY_ARGUMENT      "NPF_directory"
+#define QPF_DIRECTORY_KEYWORD       "QPF_DIRECTORY"
+#define QPF_DIRECTORY_OPTION        "-qpfdir"
+#define QPF_DIRECTORY_ARGUMENT      "QPF_directory"
+
+#define QPF_FILE_KEYWORD            "QPF_FILE"
+#define QPF_FILE_OPTION             "-qpf"
+#define QPF_FILE_ARGUMENT           "QPF_file"
+
+#define QPA_DIRECTORY_KEYWORD       "QPA_DIRECTORY"
+#define QPA_DIRECTORY_OPTION        "-qpadir"
+#define QPA_DIRECTORY_ARGUMENT      "QPA_directory"
+
+#define QPA_FILE_KEYWORD            "QPA_FILE"
+#define QPA_FILE_OPTION             "-qpa"
+#define QPA_FILE_ARGUMENT           "QPA_file"
 
 #define OUTPUT_FILE_KEYWORD         "OUTPUT_FILE"
 #define OUTPUT_FILE_OPTION          "-o"
@@ -164,6 +201,14 @@ static const char rcs_argdefs_h[] =
 #define POLY_TABLE_KEYWORD          "POLY_TABLE"
 #define POLY_TABLE_OPTION           "-polytable"
 #define POLY_TABLE_ARGUMENT         "polytable"
+
+#define REQA_FILE_KEYWORD           "REQA_FILE"
+#define REQA_FILE_OPTION            "-reqa"
+#define REQA_FILE_ARGUMENT          "REQA_file"
+
+#define REQA_DIRECTORY_KEYWORD      "REQA_DIRECTORY"
+#define REQA_DIRECTORY_OPTION       "-reqadir"
+#define REQA_DIRECTORY_ARGUMENT     "REQA_directory"
 
 #define REQI_DIRECTORY_KEYWORD      "REQI_DIRECTORY"
 #define REQI_DIRECTORY_OPTION       "-reqidir"
@@ -213,6 +258,10 @@ static const char rcs_argdefs_h[] =
 #define TODO_FILE_OPTION            "-todo"
 #define TODO_FILE_ARGUMENT          "todo_file"
 
+#define UNIT_TYPE_KEYWORD            "UNIT_TYPE"
+#define UNIT_TYPE_OPTION             "-unit"
+#define UNIT_TYPE_ARGUMENT           "unit_type"
+
 #define X_PARAMETER_KEYWORD         "X_PARAMETER"
 #define X_PARAMETER_OPTION          "-x"
 #define X_PARAMETER_ARGUMENT        "x_param"
@@ -227,6 +276,10 @@ static const char rcs_argdefs_h[] =
 
 #define ALERT_MAIL_ENABLE_KEYWORD   "ALERT_MAIL_ENABLE"
 #define ALERT_MAIL_ENABLE_OPTION    "-am"
+#define CHECK_EMBEDDED_KEYWORD      "CHECK_EMBEDDED"
+#define CHECK_EMBEDDED_OPTION       "-ckembed"
+#define USE_CURR_REQQ_NUM_KEYWORD   "USE_CURR_REQQ_NUM"
+#define USE_CURR_REQQ_NUM_OPTION    "-useCurrReqqNum"
 
 //============
 // Structures 
@@ -265,6 +318,8 @@ static const char rcs_argdefs_h[] =
     {L1A_DERIVED_FILES_KEYWORD, L1A_DERIVED_FILES_OPTION, L1A_DERIVED_FILES_ARGUMENT}
 #define L1A_DERIVED_LIMIT_FILE_ARG   \
     {L1A_DERIVED_LIMIT_FILE_KEYWORD, L1A_DERIVED_LIMIT_FILE_OPTION, L1A_DERIVED_LIMIT_FILE_ARGUMENT}
+#define L1B_FILES_ARG    \
+    {L1B_FILES_KEYWORD, L1B_FILES_OPTION, L1B_FILES_ARGUMENT}
 #define L2A_FILES_ARG    \
     {L2A_FILES_KEYWORD, L2A_FILES_OPTION, L2A_FILES_ARGUMENT}
 #define L2A_LIMIT_FILE_ARG   \
@@ -280,8 +335,14 @@ static const char rcs_argdefs_h[] =
 #define ALERT_MAIL_ADDRESS_ARG  \
     {ALERT_MAIL_ADDRESS_KEYWORD, ALERT_MAIL_ADDRESS_OPTION, \
      ALERT_MAIL_ADDRESS_ARGUMENT}
-#define NPF_DIRECTORY_ARG   \
-    {NPF_DIRECTORY_KEYWORD, NPF_DIRECTORY_OPTION, NPF_DIRECTORY_ARGUMENT}
+#define QPA_FILE_ARG   \
+    {QPA_FILE_KEYWORD, QPA_FILE_OPTION, QPA_FILE_ARGUMENT}
+#define QPA_DIRECTORY_ARG   \
+    {QPA_DIRECTORY_KEYWORD, QPA_DIRECTORY_OPTION, QPA_DIRECTORY_ARGUMENT}
+#define QPF_FILE_ARG   \
+    {QPF_FILE_KEYWORD, QPF_FILE_OPTION, QPF_FILE_ARGUMENT}
+#define QPF_DIRECTORY_ARG   \
+    {QPF_DIRECTORY_KEYWORD, QPF_DIRECTORY_OPTION, QPF_DIRECTORY_ARGUMENT}
 #define L1AP_FILES_ARG   \
     {L1AP_FILES_KEYWORD, L1AP_FILES_OPTION, L1AP_FILES_ARGUMENT}
 #define L1AP_LIMIT_FILE_ARG  \
@@ -290,6 +351,10 @@ static const char rcs_argdefs_h[] =
     {OUTPUT_FILE_KEYWORD, OUTPUT_FILE_OPTION, OUTPUT_FILE_ARGUMENT}
 #define POLY_TABLE_ARG  \
     {POLY_TABLE_KEYWORD, POLY_TABLE_OPTION, POLY_TABLE_ARGUMENT}
+#define REQA_DIRECTORY_ARG  \
+    {REQA_DIRECTORY_KEYWORD, REQA_DIRECTORY_OPTION, REQA_DIRECTORY_ARGUMENT}
+#define REQA_FILE_ARG   \
+    {REQA_FILE_KEYWORD, REQA_FILE_OPTION, REQA_FILE_ARGUMENT}
 #define REQI_DIRECTORY_ARG  \
     {REQI_DIRECTORY_KEYWORD, REQI_DIRECTORY_OPTION, REQI_DIRECTORY_ARGUMENT}
 #define REQI_FILE_ARG   \
@@ -317,12 +382,18 @@ static const char rcs_argdefs_h[] =
     TODO_CMD_DIRECTORY_ARGUMENT}
 #define TODO_FILE_ARG   \
     {TODO_FILE_KEYWORD, TODO_FILE_OPTION, TODO_FILE_ARGUMENT}
+#define UNIT_TYPE_ARG    \
+    {UNIT_TYPE_KEYWORD, UNIT_TYPE_OPTION, UNIT_TYPE_ARGUMENT}
 #define X_PARAMETER_ARG \
     {X_PARAMETER_KEYWORD, X_PARAMETER_OPTION, X_PARAMETER_ARGUMENT}
 #define Y_PARAMETERS_ARG    \
     {Y_PARAMETERS_KEYWORD, Y_PARAMETERS_OPTION, Y_PARAMETERS_ARGUMENT}
 
 #define ALERT_MAIL_ENABLE_ARG   \
-    {ALERT_MAIL_ENABLE_KEYWORD, ALERT_MAIL_ENABLE_OPTION, 0}
+    {ALERT_MAIL_ENABLE_KEYWORD, ALERT_MAIL_ENABLE_OPTION, "0"}
+#define CHECK_EMBEDDED_ARG   \
+    {CHECK_EMBEDDED_KEYWORD, CHECK_EMBEDDED_OPTION, "0"}
+#define USE_CURR_REQQ_NUM_ARG   \
+    {USE_CURR_REQQ_NUM_KEYWORD, USE_CURR_REQQ_NUM_OPTION, "0"}
 
 #endif

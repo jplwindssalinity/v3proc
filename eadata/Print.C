@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   13 Oct 1998 15:34:28   sally
+// added L1B file
+// 
+//    Rev 1.6   29 Sep 1998 16:43:08   sally
+// .
+// 
+//    Rev 1.5   03 Jun 1998 10:10:40   sally
+// change parameter names and types due to LP's changes
+// 
 //    Rev 1.4   20 Apr 1998 10:22:52   sally
 // change for WindSwatch
 // 
@@ -140,6 +149,15 @@ void pr_char28x(FILE *ofp, char *dataP)
     return;
 }
 
+void pr_char32x(FILE *ofp, char *dataP)
+{
+    int i;
+    for (i = 0; i < 32; i++) {
+        fprintf(ofp, "%02x", *(unsigned char *)(dataP + i));
+    }
+    return;
+}
+
 void pr_uint1_76(FILE *ofp, char *dataP)
 {
     unsigned char *ptr = (unsigned char *)dataP;
@@ -201,6 +219,14 @@ void pr_uint2_5(FILE *ofp, char *dataP)
     return;
 }
 
+void pr_uint2_12(FILE *ofp, char *dataP)
+{
+    unsigned short *ptr = (unsigned short *)dataP;
+    for (int i = 0; i < 12; i++)
+        fprintf(ofp, "%6u ", *(ptr + i));
+    return;
+}
+
 void pr_uint2_25(FILE *ofp, char *dataP)
 {
     unsigned short *ptr = (unsigned short *)dataP;
@@ -213,6 +239,14 @@ void pr_uint2_76(FILE *ofp, char *dataP)
 {
     unsigned short *ptr = (unsigned short *)dataP;
     for (int i = 0; i < 76; i++)
+        fprintf(ofp, "%6u ", *(ptr + i));
+    return;
+}
+
+void pr_uint2_100(FILE *ofp, char *dataP)
+{
+    unsigned short *ptr = (unsigned short *)dataP;
+    for (int i = 0; i < 100; i++)
         fprintf(ofp, "%6u ", *(ptr + i));
     return;
 }
@@ -230,7 +264,7 @@ void pr_uint2_100_linesep(FILE *ofp, char *dataP)
     unsigned short *ptr = (unsigned short *)dataP;
     for (int i = 0; i < 10; i++)
     {
-        fprintf(ofp, "          ");
+        fprintf(ofp, "      ");
         for (int j = 0; j < 10; j++, ptr++)
             fprintf(ofp, "%6u ", *ptr);
         fprintf(ofp, "\n");
@@ -247,6 +281,14 @@ void pr_uint2_100_12(FILE *ofp, char *dataP)
         for (int j = 0; j < 12; j++)
             fprintf(ofp, "%6u ", secondPtr[j]);
     }
+    return;
+}
+
+void pr_int2_100(FILE *ofp, char *dataP)
+{
+    signed short *ptr = (signed short *)dataP;
+    for (int i = 0; i < 100; i++)
+        fprintf(ofp, "%6d ", *(ptr + i));
     return;
 }
 
@@ -335,7 +377,18 @@ void pr_76_4_float4_6(FILE *ofp, char *dataP)
             fprintf(ofp, "%.6g ", *ptr);
     return;
 }
+
+void pr_100_8_float4_6(FILE *ofp, char *dataP)
+{
+    float* ptr = (float *)dataP;
+    for (int i = 0; i < 100; i++)
+        for (int j = 0; j < 8; j++, ptr++)
+            fprintf(ofp, "%.6g ", *ptr);
+    return;
+}
 void pr_bit(FILE *ofp, char *dataP)
+
+
 {
     fprintf(ofp, "%u", *((unsigned char *)dataP));
     return;

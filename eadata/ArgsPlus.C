@@ -7,6 +7,23 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   13 Oct 1998 15:32:50   sally
+// 
+// added L1B file
+// 
+//    Rev 1.16   27 Jul 1998 13:58:30   sally
+// took out static polynomial table
+// .
+// 
+//    Rev 1.15   29 May 1998 14:20:38   daffer
+// Changed GetEALogOrExit to GetEALog.
+// 
+//    Rev 1.14   04 May 1998 10:52:24   sally
+// added HK2 filters
+// 
+//    Rev 1.13   01 May 1998 14:44:42   sally
+// added HK2 file
+// 
 //    Rev 1.12   21 Apr 1998 16:39:08   sally
 // for L2B
 // 
@@ -81,8 +98,6 @@ static const char rcs_id_argsplus_c[] =
 #include "CmdList.h"
 #include "Eqx.h"
 #include "PolyTable.h"
-
-PolynomialTable*  ArgsPlus::PolyTable=0;
 
 //==================
 // ArgsPlus methods 
@@ -315,13 +330,11 @@ char*
 ArgsPlus::GetTlmFilesOrExit(
     char*       tlm_files_string,
     SourceIdE   tlm_type,
-    char*       ,
-#if 0
-    char*       hkdt_files_string,
-#endif
+    char*       hk2_files_string,
     char*       l1a_files_string,
     char*       l1ap_files_string,
-    char*       l1adrv_files_string)
+    char*       l1adrv_files_string,
+    char*       l1b_files_string)
 {
     char* tlm_files=0;
 
@@ -350,10 +363,9 @@ ArgsPlus::GetTlmFilesOrExit(
             }
             break;
 
-#if 0
         case SOURCE_HK2:
-            if (hkdt_files_string)
-                tlm_files = hkdt_files_string;
+            if (hk2_files_string)
+                tlm_files = hk2_files_string;
             else
             {
                 fprintf(stderr, 
@@ -364,7 +376,6 @@ ArgsPlus::GetTlmFilesOrExit(
                 Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
             }
           break;
-#endif
 
         case SOURCE_L1AP:
             if (l1ap_files_string)
@@ -385,13 +396,24 @@ ArgsPlus::GetTlmFilesOrExit(
                 tlm_files = l1adrv_files_string;
             else
             {
-                fprintf(stderr, "%s: unspecified L1A Telemetry Files\n",
+                fprintf(stderr, "%s: unspecified L1A Derived Telemetry Files\n",
                                         _programName);
                 Log.WriteMsg(" unspecified L1A Derived Telemetry Files\n");
                 Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
             }
             break;
 
+        case SOURCE_L1B:
+            if (l1b_files_string)
+                tlm_files = l1b_files_string;
+            else
+            {
+                fprintf(stderr, "%s: unspecified L1B Telemetry Files\n",
+                      _programName);
+                Log.WriteMsg(" unspecified L1B Telemetry Files\n");
+                Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
+            }
+            break;
         default:
             Log.WriteMsg(" unknown telemetry type\n");
             Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
@@ -428,7 +450,7 @@ ArgsPlus::TlmFileListOrExit(
     switch (fileListStatus)
     {
     case TlmFileList::OK:
-        Log.GetInputFileList(tlm_file_list);  
+        Log.GetTlmFileList(tlm_file_list);  
         return (tlm_file_list);
         break;
 
@@ -497,10 +519,8 @@ ArgsPlus::FilterSetOrNull(
     case SOURCE_L1A_DERIVED:
         filter_table = L1AFilTab;
         break;
-#if 0
     case SOURCE_HK2:
-        filter_table = HkdtFilTab;
-#endif
+        filter_table = HK2FilTab;
         break;
     default:
         Log.VWriteMsg(" Filter table unavailable for this filetype\n");
@@ -634,10 +654,7 @@ char*
 ArgsPlus::GetLimitFileOrExit(
 char*       tlm_limit_file_string,
 SourceIdE   tlm_type,
-char*       ,
-#if 0
-char*       hkdt_limit_file_string,
-#endif
+char*       hk2_limit_file_string,
 char*       l1a_limit_file_string,
 char*       l1ap_limit_file_string,
 char*       l1adrv_limit_file_string)
@@ -668,10 +685,9 @@ char*       l1adrv_limit_file_string)
             }
             break;
 
-#if 0
         case SOURCE_HK2:
-            if (hkdt_limit_file_string)
-                limit_file = hkdt_limit_file_string;
+            if (hk2_limit_file_string)
+                limit_file = hk2_limit_file_string;
             else
             {
                 fprintf(stderr, "%s: unspecified HK Limit File\n",
@@ -680,7 +696,6 @@ char*       l1adrv_limit_file_string)
                 Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
             }
             break;
-#endif
 
         case SOURCE_L1AP:
             if (l1ap_limit_file_string)
@@ -949,24 +964,9 @@ ArgsPlus::PolynomialTableOrNull(
         Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
     }
 
-    PolyTable = polyTableP;
-
     return(polyTableP);
 
 }//ArgsPlus:PolynomialTableOrNull
-
-EALog* 
-ArgsPlus::GetEALogOrExit() 
-{
-  EALog::RunStatusE status;
-  if ( (status=Log.Init_PM( )) != EALog::EA_SUCCESS) {
-    fprintf(stderr, "ArgsPlus: Unable to initialize PM system\n");
-    Log.WriteMsg( "ArgsPlus: Unable to initialize PM system\n");
-    Log.SetWriteAndExit(Log.GetStatus(),"-- Aborting --\n");
-  }
-  return( &Log );
-}
-
 void 
 ArgsPlus::Usage() {
   Args::Usage();

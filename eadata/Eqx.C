@@ -7,6 +7,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   01 Jun 1998 15:45:08   daffer
+// Changed r+ to a+ in EqxList::Reqd
+// 
+//    Rev 1.3   29 May 1998 14:24:30   daffer
+// Changed a+ to r+ in EqxList::Read
+// 
+//    Rev 1.2   28 May 1998 13:18:02   daffer
+// modifed EqxList::Reqd so that it'll create the eqx file
+// 
+//    Rev 1.1   26 May 1998 16:35:36   daffer
+// Changed old NSCAT orbit macros
+// 
 //    Rev 1.0   04 Feb 1998 14:15:16   daffer
 // Initial checking
 // Revision 1.2  1998/01/30 22:29:02  daffer
@@ -23,9 +35,11 @@
 #define EXQ_C_INCLUDED
 
 static const char eqx_c_rcsid[] = "@(#) $Header$";
-
+#include <errno.h>
 #include "Eqx.h"
 #include "Itime.h"
+
+int errno;
 
 //=============
 // Eqx methods 
@@ -51,7 +65,7 @@ Eqx::Eqx(
 :   time(new_time)
 {
     // convert eqx_lon to path
-    float lon_dif = LON_ASC_NODE_PATH_585 - eqx_lon;
+    float lon_dif = LON_ASC_NODE_LAST_PATH - eqx_lon;
     while (lon_dif < 0)
         lon_dif += 360.0;
     while (lon_dif > 360.0)
@@ -237,8 +251,14 @@ EqxList::Read(
     FILE* ifp = fopen(filename, "r");
     if (ifp == NULL)
     {
-        _status = ERROR_OPENING_FILE;
-        return (_status);
+        if (errno == ENOENT) {
+            // File may not exist, try to create it
+            ifp = fopen(filename, "a+");
+            if (ifp == NULL) {
+                _status = ERROR_OPENING_FILE;
+                return (_status);
+            }
+        }
     }
 
     //-------------------------------

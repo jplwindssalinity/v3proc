@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.5   22 May 1998 16:41:34   daffer
+// Changed EFF_ enum
+// 
 //    Rev 1.4   24 Mar 1998 15:56:52   sally
 // de-warn for GNU
 // 
@@ -65,8 +68,8 @@ const CmdState::ReplacementHeaterE replacement_heater_state_k4_k5_k6[] =
     CmdState::REPLACEMENT_HEATER_DISABLED,
     CmdState::REPLACEMENT_HEATER_UNKNOWN };
 
-const CmdState::DssE dss_state_k7_k8[] =
-    { CmdState::DSS_A, CmdState::DSS_B, CmdState::DSS_UNKNOWN };
+const CmdState::CdsE cds_state_k7_k8[] =
+    { CmdState::CDS_A, CmdState::CDS_B, CmdState::CDS_UNKNOWN };
 
 const CmdState::TwtaE twta_state_k9_k10[] =
     { CmdState::TWTA_1, CmdState::TWTA_2, CmdState::TWTA_UNKNOWN };
@@ -80,12 +83,12 @@ const CmdState::SpareHeaterE spare_heater_state_k13_k14[] =
 
 const char* mode_state_map[] = { "SBM", "ROM", "CCM", "DBM", "WOM", "?",
     "N/A" };
-const char* dss_state_map[] = { "DSS A", "DSS B", "?" };
+const char* cds_state_map[] = { "CDS A", "CDS B", "?" };
 const char* twta_state_map[] = { "TWTA #1", "TWTA #2", "?" };
 const char* hvps_state_map[] = { "HVPS On", "HVPS Off", "?" };
 const char* rh_state_map[] = { "Enabled", "Disabled", "?" };
 const char* sh_state_map[] = { "Enabled", "Disabled", "?" };
-const char* wts_state_map[] = { "TWTA #1",  "TWTA #2", "?" };
+const char* trs_state_map[] = { "TWTA #1",  "TWTA #2", "?" };
 const char* twta_trip_ovr_state_map[] = { "Disabled", "Enabled", "?" };
 const char* twt_mon_state_map[] = { "Disabled", "Enabled", "?" };
 const char* hvps_shutdown_state_map[] = { "Disabled", "Enabled", "?" };
@@ -98,7 +101,7 @@ CmdState::CmdState()
 :   mode(INITIAL_MODE), twtaTripOvrEnable(INITIAL_TWTA_TRIP_OVR),
     twtMonEnable(INITIAL_TWT_MON),
     hvpsShutdownEnable(INITIAL_HVPS_SHUTDOWN),
-    tripDurationLimit(INITIAL_TRIP_DURATION_LIMIT), wts(INITIAL_WTS),
+    tripDurationLimit(INITIAL_TRIP_DURATION_LIMIT), trs(INITIAL_TRS),
     antennaSequence(NULL), binningConstants(NULL)
 {
     k[1] = INITIAL_K1;
@@ -137,8 +140,8 @@ CmdState::ClearCounters()
         for (int rs = 0; rs < RELAY_STATE_COUNT; rs++)
             k_counter[r][rs] = 0;
 
-    for (int w = 0; w < WTS_STATE_COUNT; w++)
-        wts_counter[w] = 0;
+    for (int w = 0; w < TRS_STATE_COUNT; w++)
+        trs_counter[w] = 0;
 
     for (int h = 0; h < HVPS_COUNT; h++)
         for (int hs = 0; hs < HVPS_STATE_COUNT; hs++)
@@ -239,24 +242,24 @@ Command     *command)
             break;
 
         //------------
-        // dss relays 
+        // cds relays 
         //------------
 
         case CMD_K7S:
             _ModRelay(7, RELAY_SET);
-            return(_DssEffect(&oldCmdState));
+            return(_CdsEffect(&oldCmdState));
             break;
         case CMD_K7R:
             _ModRelay(7, RELAY_RESET);
-            return(_DssEffect(&oldCmdState));
+            return(_CdsEffect(&oldCmdState));
             break;
         case CMD_K8S:
             _ModRelay(8, RELAY_SET);
-            return(_DssEffect(&oldCmdState));
+            return(_CdsEffect(&oldCmdState));
             break;
         case CMD_K8R:
             _ModRelay(8, RELAY_RESET);
-            return(_DssEffect(&oldCmdState));
+            return(_CdsEffect(&oldCmdState));
             break;
 
         //---------------------
@@ -389,16 +392,16 @@ Command     *command)
             break;
 
         //-----
-        // wts 
+        // trs 
         //-----
-        case CMD_WTS1:
-            _ModWts(WTS_TWTA1);
-            wts = WTS_TWTA1;
-            return(_WtsEffect(&oldCmdState));
+        case CMD_TRS1:
+            _ModTrs(TRS_TWTA1);
+            trs = TRS_TWTA1;
+            return(_TrsEffect(&oldCmdState));
             break;
-        case CMD_WTS2:
-            wts = WTS_TWTA1;
-            return(_WtsEffect(&oldCmdState));
+        case CMD_TRS2:
+            trs = TRS_TWTA1;
+            return(_TrsEffect(&oldCmdState));
             break;
 
         //------------------
@@ -437,13 +440,13 @@ CmdState::ReplacementHeaterState()
 }
 
 //----------
-// DssState 
+// CdsState 
 //----------
 
-CmdState::DssE
-CmdState::DssState()
+CmdState::CdsE
+CmdState::CdsState()
 {
-    return((DssE)Eval_2k(k[7], k[8], (int *)dss_state_k7_k8));
+    return((CdsE)Eval_2k(k[7], k[8], (int *)cds_state_k7_k8));
 }
 
 //-----------
@@ -488,13 +491,13 @@ CmdState::SpareHeaterState()
 }
 
 //----------
-// WtsState 
+// TrsState 
 //----------
 
-CmdState::WtsE
-CmdState::WtsState()
+CmdState::TrsE
+CmdState::TrsState()
 {
-    return(wts);
+    return(trs);
 }
 
 //-----------
@@ -513,7 +516,7 @@ CmdState::operator=(
     twtMonEnable = other.twtMonEnable;
     hvpsShutdownEnable = other.hvpsShutdownEnable;
     tripDurationLimit = other.tripDurationLimit;
-    wts = other.wts;
+    trs = other.trs;
     _SetAntennaSequence(other.antennaSequence);
     _SetBinningConstants(other.binningConstants);
     return(*this);
@@ -588,18 +591,18 @@ CmdState::_ModRelay(
 }
 
 //---------
-// _ModWts 
+// _ModTrs 
 //---------
-// sets the WTS (keeps track of the count)
+// sets the TRS (keeps track of the count)
 
 void
-CmdState::_ModWts(
-    WtsE    wts_state)
+CmdState::_ModTrs(
+    TrsE    trs_state)
 {
-    if (wts != wts_state)
+    if (trs != trs_state)
     {
-        wts = wts_state;
-        wts_counter[wts_state]++;
+        trs = trs_state;
+        trs_counter[trs_state]++;
     }
     return;
 }
@@ -733,23 +736,23 @@ CmdState::_HeaterEffect(
 }
 
 //------------
-// _DssEffect 
+// _CdsEffect 
 //------------
-// returns the effect of changing one of the dss relays (k7, k8)
+// returns the effect of changing one of the cds relays (k7, k8)
 
 EffectE
-CmdState::_DssEffect(
+CmdState::_CdsEffect(
     CmdState    *oldCmdState)
 {
-    DssE old_dss_state = oldCmdState->DssState();
-    DssE new_dss_state = DssState();
-    if (old_dss_state == new_dss_state)
+    CdsE old_cds_state = oldCmdState->CdsState();
+    CdsE new_cds_state = CdsState();
+    if (old_cds_state == new_cds_state)
     {
         return(EFF_NONE);       // must not have changed a relay
     }
     else
     {
-        // set the effect of dss switching (if electronics are on)
+        // set the effect of cds switching (if electronics are on)
         ElectronicsE elec_state = ElectronicsState();
         if (elec_state == ELECTRONICS_ON)
         {
@@ -761,13 +764,13 @@ CmdState::_DssEffect(
             _SetAntennaSequence(DEFAULT_ANTENNA_SEQUENCE);
             _SetBinningConstants(DEFAULT_BINNING_CONSTANTS);
         }
-        switch(new_dss_state)
+        switch(new_cds_state)
         {
-            case DSS_A:
-                return(EFF_DSS_A);
+            case CDS_A:
+                return(EFF_CDS_A);
                 break;
-            case DSS_B:
-                return(EFF_DSS_A);
+            case CDS_B:
+                return(EFF_CDS_A);
                 break;
             default:
                 break;
@@ -798,16 +801,13 @@ CmdState::_ModeEffect(
             case MODE_SBM:
                 _ModRelay(11, RELAY_SET);   // turn the hvps off
                 _ModRelay(12, RELAY_RESET);
-                return(EFF_SBM);
+                return(EFF_STB);
                 break;
             case MODE_ROM:
-                return(EFF_ROM);
+                return(EFF_RCV);
                 break;
             case MODE_CCM:
-                return(EFF_CCM);
-                break;
-            case MODE_DBM:
-                return(EFF_DBM);
+                return(EFF_CAL);
                 break;
             case MODE_WOM:
                 return(EFF_WOM);
@@ -921,34 +921,36 @@ CmdState::_SpareHeaterEffect(
 }
 
 //------------
-// _WtsEffect 
+// _TrsEffect 
 //------------
-// returns the effect of commanding the WTS position
+// returns the effect of commanding the TRS position
 // assumes the electronics are on
 
 EffectE
-CmdState::_WtsEffect(
+CmdState::_TrsEffect(
     CmdState    *oldCmdState)
 {
-    WtsE old_wts_state = oldCmdState->WtsState();
-    WtsE new_wts_state = WtsState();
+    /*
+    TrsE old_trs_state = oldCmdState->TrsState();
+    TrsE new_trs_state = TrsState();
 
-    if (old_wts_state == new_wts_state)
+    if (old_trs_state == new_trs_state)
         return(EFF_NONE);       // must not have changed state
     else
     {
-        switch(new_wts_state)
+        switch(new_trs_state)
         {
-            case WTS_TWTA1:
-                return(EFF_WTS_1);
+            case TRS_TWTA1:
+                return(EFF_TRS_1);
                 break;
-            case WTS_TWTA2:
-                return(EFF_WTS_2);
+            case TRS_TWTA2:
+                return(EFF_TRS_2);
                 break;
             default:
                 break;
         }
     }
+    */
     return(EFF_UNKNOWN);
 }
 

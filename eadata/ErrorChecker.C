@@ -1,11 +1,32 @@
-//=========================================================//
-// Copyright  (C)1996, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//=========================================================
+// Copyright  (C)1995, California Institute of Technology.
+// U.S. Government sponsorship under
+// NASA Contract NAS7-1260 is acknowledged
+//
+// CM Log
+// $Log$
+// 
+//    Rev 1.5   20 May 1998 11:19:28   sally
+// handles dummy error checker (place holders)
+// 
+//    Rev 1.4   19 May 1998 15:49:18   sally
+// move some function from L1AErrorChecker to ErrorChecker
+// 
+//    Rev 1.3   18 May 1998 14:47:44   sally
+// added error checker for L1A
+// 
+//    Rev 1.2   13 May 1998 16:28:04   sally
+ 
+// $Date$
+// $Revision$
+// $Author$
+//
+//=========================================================
 
 static const char rcs_id[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
+#include <assert.h>
 #include <stdio.h>
 
 #include "Parameter.h"
@@ -17,66 +38,105 @@ static const char rcs_id[] =
 //======================//
 
 ErrorChecker::ErrorChecker()
+:	prev(0), current(0), _errorStateTableSize(0)
 {
-    current = new State;
-    prev = new State;
     dataRecCount = 0;
     return;
 };
 
 ErrorChecker::~ErrorChecker()
 {
-    delete current;
-    delete prev;
+    if (current) delete current;
+    if (prev) delete prev;
     return;
 };
 
-//-----------------//
-// ReportBasicInfo //
-//-----------------//
+int
+ErrorChecker::OpenParamDataSets(
+TlmHdfFile*    tlmFile)
+{
+    assert(_errorStateTableSize > 0);
+
+    for (int i=0; i < _errorStateTableSize; i++)
+    {
+        // skip the NULL error checkers
+        if (parametersP[i] == NONE_ERROR_CHECKER)
+            continue;
+
+        int32 dataType, dataStartIndex, dataLength, numDimensions;
+        char tempString[BIG_SIZE];
+        assert(parametersP[i] != 0 && parametersP[i]->sdsNames != 0);
+        (void)strncpy(tempString, parametersP[i]->sdsNames, BIG_SIZE);
+        char* oneSdsName=0;
+        int j=0;
+        for (oneSdsName = (char*)strtok(tempString, ",");
+                           oneSdsName;
+                           oneSdsName = (char*)strtok(0, ","), j++)
+        {
+            parametersP[i]->sdsIDs[j] = HDF_FAIL;
+            parametersP[i]->sdsIDs[j] = tlmFile->SelectDataset(
+                                         oneSdsName, dataType, dataStartIndex,
+                                         dataLength, numDimensions);
+            if (parametersP[i]->sdsIDs[j] == HDF_FAIL)
+                return 0;
+        }
+    }
+    return 1;
+ 
+}//ErrorChecker::OpenParamDataSets
 
 void
-ReportBasicInfo(
-    FILE*   ofp,
-    State*  state)
+ErrorChecker::CloseParamDataSets(
+TlmHdfFile*    tlmFile)
 {
-    if (state->time.condition == StateElement::UNINITIALIZED)
-        return;
+    assert(_errorStateTableSize > 0);
+ 
+    for (int i=0; i < _errorStateTableSize; i++)
+    {
+        // skip the NULL error checkers
+        if (parametersP[i] == NONE_ERROR_CHECKER)
+            continue;
 
-//  fprintf(ofp, "  %s", state->time_string);
-
-    fprintf(ofp, "    Mode = ");
-    if (state->nscat_mode.condition == StateElement::UNINITIALIZED)
-        fprintf(ofp, "?");
-    else
-        fprintf(ofp, "%d (%s)", state->nscat_mode.value,
-            mode_map[state->nscat_mode.value]);
-
-    fprintf(ofp, ", DSS = ");
-    if (state->dss.condition == StateElement::UNINITIALIZED)
-        fprintf(ofp, "?");
-    else
-        fprintf(ofp, "%d (%s)", state->dss.value,
-            dss_map[state->dss.value]);
-
-    fprintf(ofp, ", TWTA = ");
-    if (state->twta.condition == StateElement::UNINITIALIZED)
-        fprintf(ofp, "?");
-    else
-        fprintf(ofp, "%d (%s)", state->twta.value,
-            twta_map[state->twta.value]);
-
-    fprintf(ofp, ", Fault Counter = ");
-    if (state->fault_counter.condition == StateElement::UNINITIALIZED)
-        fprintf(ofp, "?");
-    else
-        fprintf(ofp, "%d", state->fault_counter.value);
-
-    fprintf(ofp, "\n");
-
+        assert(parametersP[i] != 0);
+        for (int j=0; j < parametersP[i]->numSDSs; j++)
+        {
+            (void)tlmFile->CloseDataset(parametersP[i]->sdsIDs[j]);
+            parametersP[i]->sdsIDs[j] = HDF_FAIL;
+        }
+    }
     return;
-}
+ 
+}//ErrorChecker::CloseParamDataSets
 
+int
+ErrorChecker::SetState(
+TlmHdfFile*     tlmFile,
+int32           startIndex,
+State*          lastState,
+State*          newState)
+{
+    assert(_errorStateTableSize > 0);
+    for (int i=0; i < _errorStateTableSize; i++)
+    {
+        // skip the NULL error checkers
+        if (parametersP[i] == NONE_ERROR_CHECKER)
+            continue;
+
+        assert(parametersP[i] != 0);
+        if (newState->StateExtract(parametersP[i]->extractFunc,
+                      tlmFile, parametersP[i]->sdsIDs,
+                      startIndex,
+                      lastState->stateElements[i],
+                      newState->stateElements[i],
+                      newState->stateElements[i].value)
+                                     == StateElement::ERROR)
+            return 0;
+    }
+    return 1;
+
+} // ErrorChecker::SetState
+
+#if 0
 //-----------------------//
 // Error_Flag_Transition //
 //-----------------------//
@@ -90,9 +150,9 @@ Error_Flag_Transition(
     char*               parameter_name,
     char*               label_format,
     State*              current_state,
-    StateElement_uc*    current_elem,
+    StateElement*       current_elem,
     State*              prev_state,
-    StateElement_uc*    prev_elem,
+    StateElement*       prev_elem,
     const char*         map[],
     unsigned char       ok_value)
 {
@@ -165,952 +225,815 @@ Error_Flag_Transition(
     }
     return(0);      // should never get here, but let's be safe
 }
-
-//-----------------//
-// Relay2_Mismatch //
-//-----------------//
+#endif
 
 int
-Relay2_Mismatch(
-    FILE*               ofp,
-    char*               error_name,
-    char*               parameter_name,
-    char*               relay1_name,
-    char*               relay2_name,
-    char*               label_format,
-    State*              state,
-    StateElement_uc*    parameter,
-    StateElement_uc*    relay1,
-    StateElement_uc*    relay2,
-    const char*         map[],
-    const char*         relay1_map[],
-    const char*         relay2_map[],
-    const unsigned char decode_map[2][2])
+ErrorCheckMode(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
 {
-    // make sure that the parameter is current (it's from sd, anyhow)
-    if (parameter->condition != StateElement::CURRENT)
-        return(0);
-
-    // make sure that the relays are initialized
-    if (relay1->condition == StateElement::UNINITIALIZED ||
-        relay2->condition == StateElement::UNINITIALIZED)
-    {
-        return (0);
-    }
-
-    // parameters are valid
-    unsigned char expected_value = decode_map[relay1->value][relay2->value];
-
-    if (parameter->value == expected_value)
-    {
-        return (0);
-    }
-
-    // error
-    fprintf(ofp, label_format, error_name);
-    fprintf(ofp, "  %s  %s = %d (%s)\n",
-        state->time_string, parameter_name,
-        parameter->value, map[parameter->value]);
-    fprintf(ofp, "  %s = %d (%s), %s = %d (%s)\n",
-        relay1_name, relay1->value, relay1_map[relay1->value],
-        relay2_name, relay2->value, relay2_map[relay2->value]);
-    ReportBasicInfo(ofp, state);
-    return (1);
-}
-
-
-//=============================//
-// L1 and HK Error Functions //
-//=============================//
-
-//---------------------//
-// Err_HVPS_Backup_Off //
-//---------------------//
-
-int
-Err_HVPS_Backup_Off(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "HVPS in Backup Off Configuration", label_format,
-        obj->current,
-        &(obj->current->hvps_backup_off),
-        obj->prev,
-        &(obj->prev->hvps_backup_off),
-        hvps_backup_off_map, 0);
-}
-
-//------------------//
-// Err_TWTA_UV_Trip //
-//------------------//
-
-int
-Err_TWTA_UV_Trip(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWTA Undervoltage Trip", label_format,
-        obj->current, &(obj->current->twta_uv_trip),
-        obj->prev, &(obj->prev->twta_uv_trip),
-        twta_trip_map, 0);
-}
-
-//------------------//
-// Err_TWTA_OC_Trip //
-//------------------//
-
-int
-Err_TWTA_OC_Trip(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWTA Overcurrent Trip", label_format,
-        obj->current, &(obj->current->twta_oc_trip),
-        obj->prev, &(obj->prev->twta_oc_trip),
-        twta_trip_map, 0);
-}
-
-//-----------------------//
-// Err_TWTA_Body_OC_Trip //
-//-----------------------//
-
-int
-Err_TWTA_Body_OC_Trip(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWTA Body Overcurrent Trip", label_format,
-        obj->current, &(obj->current->twta_body_oc_trip),
-        obj->prev, &(obj->prev->twta_body_oc_trip),
-        twta_trip_map, 0);
-}
-
-//---------------//
-// Err_Bin_Param //
-//---------------//
-
-int
-Err_Bin_Param(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Binning Parameter Error", label_format,
-        obj->current, &(obj->current->bin_param_err),
-        obj->prev, &(obj->prev->bin_param_err),
-        bin_param_err_map, 0);
-}
-
-//-------------------//
-// Err_Def_Bin_Const //
-//-------------------//
-
-int
-Err_Def_Bin_Const(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Default Binning Constants", label_format,
-        obj->current, &(obj->current->def_bin_const),
-        obj->prev, &(obj->prev->def_bin_const),
-        def_bin_const_map, 0);
-}
-
-//---------------------//
-// Err_Lack_Start_Reqs //
-//---------------------//
-
-int
-Err_Lack_Start_Reqs(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Lack Startup Requirements", label_format,
-        obj->current, &(obj->current->lack_start_reqs),
-        obj->prev, &(obj->prev->lack_start_reqs),
-        lack_start_reqs_map, 0);
-}
-
-//----------------------//
-// Err_Error_Queue_Full //
-//----------------------//
-
-int
-Err_Error_Queue_Full(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Error Queue Full", label_format,
-        obj->current, &(obj->current->err_queue_full),
-        obj->prev, &(obj->prev->err_queue_full),
-        err_queue_full_map, 0);
-}
-
-//-------------------//
-// Err_Fault_Counter //
-//-------------------//
-
-int
-Err_Fault_Counter(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    static char* parameter_name = "Fault Counter";
-    char* current_time_string = obj->current->time_string;
-    StateElement::ConditionE current_condition =
-            obj->current->fault_counter.condition;
-    unsigned char current_value = obj->current->fault_counter.value;
-    char* prev_time_string = obj->prev->time_string;
-    StateElement::ConditionE prev_condition =
-            obj->prev->fault_counter.condition;
-    unsigned char prev_value = obj->prev->fault_counter.value;
-
-    if (current_condition != StateElement::UNINITIALIZED &&
-        prev_condition != StateElement::UNINITIALIZED &&
-        current_value != prev_value)
-    {
-        // current and previous are both valid yet different
-        fprintf(ofp, label_format, error_name);
-        fprintf(ofp, "  %s  %s = %d\n",
-            prev_time_string, parameter_name, prev_value);
-        fprintf(ofp, "  %s  %s = %d\n",
-            current_time_string, parameter_name, current_value);
-        ReportBasicInfo(ofp, obj->current);
-        fflush(ofp);
-        return(1);
-    }
-    return (0);
-}
-
-//----------//
-// Err_Mode //
-//----------//
-
-int
-Err_Mode(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    static char* parameter_name = "Mode";
-    StateElement::ConditionE current_condition =
-            obj->current->nscat_mode.condition;
-
-    // mode must be current
-    if (current_condition != StateElement::CURRENT)
-        return(0);
-
-    char* current_time_string = obj->current->time_string;
-    unsigned char current_value = obj->current->nscat_mode.value;
-
-    if (current_value > TLM_MODE_WOM)
+    unsigned char mode = 
+          *(unsigned char*)obj->current->stateElements[ERROR_MODE].value;
+    if (mode == 0x0e || mode == 0xe0 || mode == 0x70 || mode == 0x07)
+        // pass
+        return 1;
+    else
     {
         // value out of range
-        fprintf(ofp, label_format, error_name);
-        fprintf(ofp, "  %s  %s = %d (%s)\n",
-            current_time_string, parameter_name,
-            current_value, mode_map[current_value]);
-        ReportBasicInfo(ofp, obj->current);
+        const char* modeString;
+        int eaModeNo = L1ModeToTlmMode(mode);
+        if (eaModeNo < 0)
+            modeString = "unknown mode";
+        else
+            modeString = mode_map[eaModeNo];
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s  Mode = %d (%s)\n",
+            obj->current->time_string, mode, modeString);
+        obj->ReportBasicInfo(ofp);
         fflush(ofp);
-        return(1);
+        return 0;
     }
-    return (0);
-}
-
-//------------------//
-// Err_ULM_Unlocked //
-//------------------//
+    
+} //ErrorCheckMode
 
 int
-Err_ULM_Unlocked(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
+ErrorRxProtect(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
 {
-    return Error_Flag_Transition(ofp, error_name,
-        "ULM Unlocked Status (Freq. Synth. #1)", label_format,
-        obj->current, &(obj->current->ulm_lock),
-        obj->prev, &(obj->prev->ulm_lock),
-        lock_map, 0);
-}
+    unsigned char mode = 
+        *(unsigned char*)obj->current->stateElements[ERROR_MODE].value;
+    unsigned char rxProtect = 
+        *(unsigned char*)obj->current->stateElements[ERROR_RX_PROTECT].value;
 
-//------------------//
-// Err_SLM_Unlocked //
-//------------------//
-
-int
-Err_SLM_Unlocked(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "SLM Unlocked Status (Freq. Synth. #2)", label_format,
-        obj->current, &(obj->current->slm_lock),
-        obj->prev, &(obj->prev->slm_lock),
-        lock_map, 0);
-}
-
-//----------------------//
-// Err_Trip_Override_En //
-//----------------------//
-
-int
-Err_Trip_Override_En(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWTA Trip Override Enabled", label_format,
-        obj->current, &(obj->current->twta_trip_override),
-        obj->prev, &(obj->prev->twta_trip_override),
-        twta_trip_override_map, 0);
-}
-
-//-----------------//
-// Err_TWT_Mon_Dis //
-//-----------------//
-
-int
-Err_TWT_Mon_Dis(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWT Monitor Enabled", label_format,
-        obj->current, &(obj->current->twt_mon_en),
-        obj->prev, &(obj->prev->twt_mon_en),
-        twt_mon_en_map, 1);
-}
-
-//-----------------------//
-// Err_HVPS_Shutdown_Dis //
-//-----------------------//
-
-int
-Err_HVPS_Shutdown_Dis(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "TWT Monitor HVPS Shutdown Enabled", label_format,
-        obj->current, &(obj->current->hvps_shut_en),
-        obj->prev, &(obj->prev->hvps_shut_en),
-        hvps_shut_en_map, 1);
-}
-
-//====================//
-// L1 Error Functions //
-//====================//
-
-//------------//
-// Err_Rx_Pro //
-//------------//
-
-int
-Err_Rx_Pro(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    int retval;
-    if (obj->prev->rx_pro.condition != StateElement::UNINITIALIZED &&
-        obj->prev->nscat_mode.condition != StateElement::UNINITIALIZED &&
-        obj->prev->cmf_fix.condition != StateElement::UNINITIALIZED)
+    // if SBM then rx protect must be 1, 0 all other modes
+    if ( (mode == L1_MODE_SBM && rxProtect != L1_RX_PROTECT_ON) ||
+               (mode != L1_MODE_SBM && rxProtect == L1_RX_PROTECT_ON) )
     {
-        // both states are valid (if prev is good, so is current)
-        // check receiver protect in the previous frame
-        // because it toggles one frame too early
-
-        unsigned char expected_rx_pro;
-        switch(obj->current->nscat_mode.value)
-        {
-        case TLM_MODE_SBM: case TLM_MODE_DBM: case TLM_MODE_CCM:
-            expected_rx_pro = 1;
-            break;
-        case TLM_MODE_ROM: case TLM_MODE_WOM:
-            if (obj->current->cmf_fix.value == TLM_FRAME_SCI)
-                expected_rx_pro = 0;
-            else
-                expected_rx_pro = 1;
-            break;
-        default:
-            expected_rx_pro = 1;
-            break;
-        } // end switch
-
-        if (obj->prev->rx_pro.value == expected_rx_pro)
-            retval = 0;
+        // value out of range
+        const char* modeString;
+        int eaModeNo = L1ModeToTlmMode(mode);
+        if (eaModeNo < 0)
+            modeString = "unknown mode";
         else
-        {
-            fprintf(ofp, label_format, error_name);
-            fprintf(ofp,
-                "  %s  Rx Pro = %d (%s), Mode = %d (%s), Frame = %d (%s)\n",
-                obj->prev->time_string,
-                obj->prev->rx_pro.value,
-                rx_pro_map[obj->prev->rx_pro.value],
-                obj->prev->nscat_mode.value,
-                mode_map[obj->prev->nscat_mode.value],
-                obj->prev->cmf_fix.value,
-                cmf_map[obj->prev->cmf_fix.value]);
-            ReportBasicInfo(ofp, obj->prev);
-            fprintf(ofp, "  Expected Receiver Protect = %d (%s)\n",
-                expected_rx_pro, rx_pro_map[expected_rx_pro]);
-            fprintf(ofp,
-                "  %s  Next Frame: Mode = %d (%s), Frame = %d (%s)\n",
-                obj->current->time_string,
-                obj->current->nscat_mode.value,
-                mode_map[obj->current->nscat_mode.value],
-                obj->current->cmf_fix.value,
-                cmf_map[obj->current->cmf_fix.value]);
-            ReportBasicInfo(ofp, obj->current);
-            retval = 1;
-        }
-    }
-    else
-    {
-        retval = 0;
-    }
-    return (retval);
-}
-
-//---------//
-// Err_CSB //
-//---------//
-
-int
-Err_CSB(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-
-    if (obj->current->nscat_mode.condition == StateElement::UNINITIALIZED ||
-        obj->current->csb_1.condition == StateElement::UNINITIALIZED ||
-        obj->current->csb_2.condition == StateElement::UNINITIALIZED ||
-        obj->current->csb_3.condition == StateElement::UNINITIALIZED)
-    {
-        return (0); // can't check csbs
-    }
-
-    // both state are valid
-    unsigned char expected_csb_1, expected_csb_2, expected_csb_3;
-    switch (obj->current->nscat_mode.value)
-    {
-    case TLM_MODE_SBM: case TLM_MODE_DBM:
-        expected_csb_1 = 0;
-        expected_csb_2 = 0;
-        expected_csb_3 = 0;
-        break;
-    case TLM_MODE_ROM: case TLM_MODE_WOM:
-        if (obj->current->cmf_fix.condition == StateElement::UNINITIALIZED) {
-            return (0); // can't check csbs
-        }
-        if (obj->current->cmf_fix.value == 1)
-        {
-            expected_csb_1 = 0;
-            expected_csb_2 = 0;
-            expected_csb_3 = 0;
-        }
-        else
-        {
-            unsigned char inv_cur_beam = ~obj->current->cur_beam.value;
-            expected_csb_1 = (inv_cur_beam) & 0x1;
-            expected_csb_2 = (inv_cur_beam >> 1) & 0x1;
-            expected_csb_3 = (inv_cur_beam >> 2) & 0x1;
-        }
-        break;
-    case TLM_MODE_CCM:
-        expected_csb_1 = 1;
-        expected_csb_2 = 1;
-        expected_csb_3 = 0;
-        break;
-    default:
-        expected_csb_1 = 0;
-        expected_csb_2 = 0;
-        expected_csb_3 = 0;
-        break;
-    } // end switch
-
-    if (obj->current->csb_1.value == expected_csb_1 &&
-        obj->current->csb_2.value == expected_csb_2 &&
-        obj->current->csb_3.value == expected_csb_3)
-    {
-        return (0); // csbs ok
-    }
-
-    // error with csbs
-    fprintf(ofp, label_format, error_name);
-    fprintf(ofp, "  %s  CSB3 = %d, CSB2 = %d, CSB1 = %d\n",
-        obj->current->time_string, obj->current->csb_3.value,
-        obj->current->csb_2.value, obj->current->csb_1.value);
-    fprintf(ofp,
-        "  Beam = %2s (%1d),  Expected  CSB3 = %d, CSB2 = %d, CSB1 = %d\n",
-        cur_beam_map[obj->current->cur_beam.value],
-        obj->current->cur_beam.value,
-        expected_csb_3, expected_csb_2, expected_csb_1);
-    ReportBasicInfo(ofp, obj->current);
-    fflush(ofp);
-    return (1);
-}
-
-//--------------------//
-// Err_Cycle_Counters //
-//--------------------//
-
-int
-Err_Cycle_Counters(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    if (obj->current->beam_cycle.condition != StateElement::UNINITIALIZED &&
-        obj->current->ant_cycle.condition != StateElement::UNINITIALIZED &&
-        obj->current->meas_cycle.condition != StateElement::UNINITIALIZED &&
-        obj->current->nscat_mode.condition != StateElement::UNINITIALIZED)
-    {
-        // current is valid
-        if (obj->prev->beam_cycle.condition == StateElement::UNINITIALIZED ||
-            obj->prev->ant_cycle.condition == StateElement::UNINITIALIZED ||
-            obj->prev->meas_cycle.condition == StateElement::UNINITIALIZED ||
-            obj->prev->nscat_mode.condition == StateElement::UNINITIALIZED)
-        {
-            return (0);     // previous is invalid
-        }
-
-        // both current and prev are valid
-        // the rest of this code attempt to return (0) as soon as possible
-        // if execution continues, an error is reported
-        unsigned char expected_beam_cycle, expected_ant_cycle,
-            expected_meas_cycle;
-        char* message;
-        if (obj->prev->nscat_mode.value != obj->current->nscat_mode.value)
-        {
-            // cycle counters should be reset for a mode change //
-            expected_beam_cycle = 0;
-            expected_ant_cycle = 0;
-            expected_meas_cycle = 0;
-
-            if (obj->current->beam_cycle.value == expected_beam_cycle &&
-                obj->current->ant_cycle.value == expected_ant_cycle &&
-                obj->current->meas_cycle.value == expected_meas_cycle)
-            {
-                return (0);
-            }
-
-            message = "Cycle Counter not 00/000/0 after Mode change";
-        }
-        else
-        {
-            // cycle counters should increment for same mode
-            expected_beam_cycle = obj->prev->beam_cycle.value + 1;
-            expected_ant_cycle = obj->prev->ant_cycle.value +
-                (expected_beam_cycle / 8);
-            expected_beam_cycle %= 8;
-            expected_meas_cycle = obj->prev->meas_cycle.value +
-                (expected_ant_cycle / 128);
-            expected_ant_cycle %= 128;
-            expected_meas_cycle %= 64;
-
-            if (obj->current->beam_cycle.value == expected_beam_cycle &&
-                obj->current->ant_cycle.value == expected_ant_cycle &&
-                obj->current->meas_cycle.value == expected_meas_cycle)
-            {
-                return (0);
-            }
-
-            if (obj->current->beam_cycle.value == 0 &&
-                obj->current->ant_cycle.value == 0 &&
-                obj->current->meas_cycle.value == 0)
-            {
-                message = "Cycle Counter reset for unknown reason";
-            }
-            else
-            {
-                message = "Cycle Counter not sequential";
-            }
-        }
-        fprintf(ofp, label_format, error_name);
-        fprintf(ofp, "  %s  Cycle Counter = %02d/%03d/%01d, Mode = %s\n",
-            obj->prev->time_string, obj->prev->meas_cycle.value,
-            obj->prev->ant_cycle.value, obj->prev->beam_cycle.value,
-            mode_map[obj->prev->nscat_mode.value]);
-        ReportBasicInfo(ofp, obj->prev);
-        fprintf(ofp, "  %s  Cycle Counter = %02d/%03d/%01d, Mode = %s\n",
-            obj->current->time_string, obj->current->meas_cycle.value,
-            obj->current->ant_cycle.value, obj->current->beam_cycle.value,
-            mode_map[obj->current->nscat_mode.value]);
-        fprintf(ofp, "  %s\n", message);
-        ReportBasicInfo(ofp, obj->current);
+            modeString = mode_map[eaModeNo];
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Rx Protect = %d, Mode = %d (%s)\n",
+            obj->current->time_string, rxProtect, mode, modeString);
+        obj->ReportBasicInfo(ofp);
         fflush(ofp);
-        return (1);
+        return 0;
     }
-}
 
-//======================//
-// HK Error Functions //
-//======================//
+    return 1;
 
-//-----------------//
-// Err_Ant_2_Undep //
-//-----------------//
+} // ErrorRxProtect
 
 int
-Err_Ant_2_Undep(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
+ErrorGridDisable(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
 {
-    return Error_Flag_Transition(ofp, error_name,
-        "Antenna 2 Deployment Status", label_format,
-        obj->current, &(obj->current->ant_2_deploy),
-        obj->prev, &(obj->prev->ant_2_deploy),
-        ant_deploy_map, 1);
-}
+    unsigned char mode = 
+        *(unsigned char*)obj->current->stateElements[ERROR_MODE].value;
+    unsigned char gridDisable = 
+        *(unsigned char*)obj->current->stateElements[ERROR_GRID].value;
 
-//-----------------//
-// Err_Ant_5_Undep //
-//-----------------//
-
-int
-Err_Ant_5_Undep(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Antenna 5 Deployment Status", label_format,
-        obj->current, &(obj->current->ant_5_deploy),
-        obj->prev, &(obj->prev->ant_5_deploy),
-        ant_deploy_map, 1);
-}
-
-//------------------//
-// Err_Ant_14_Undep //
-//------------------//
-
-int
-Err_Ant_14_Undep(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Antenna 1 & 4 Deployment Status", label_format,
-        obj->current, &(obj->current->ant_14_deploy),
-        obj->prev, &(obj->prev->ant_14_deploy),
-        ant_deploy_map, 1);
-}
-
-//------------------//
-// Err_Ant_36_Undep //
-//------------------//
-
-int
-Err_Ant_36_Undep(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return Error_Flag_Transition(ofp, error_name,
-        "Antenna 3 & 6 Deployment Status", label_format,
-        obj->current, &(obj->current->ant_36_deploy),
-        obj->prev, &(obj->prev->ant_36_deploy),
-        ant_deploy_map, 1);
-}
-
-//----------------//
-// Err_Relay_HVPS //
-//----------------//
-
-int
-Err_Relay_HVPS(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return (Relay2_Mismatch(ofp, error_name,
-        "HVPS", "K11", "K12",
-        label_format,
-        obj->current, &(obj->current->hvps),
-        &(obj->current->k11), &(obj->current->k12),
-        hvps_map, relay_map, relay_map, k11_k12_map));
-}
-
-//--------------//
-// Err_WTS_TWTA //
-//--------------//
-
-int
-Err_WTS_TWTA(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return (Relay2_Mismatch(ofp, error_name,
-        "TWTA", "WTS 1", "WTS 2",
-        label_format,
-        obj->current, &(obj->current->twta),
-        &(obj->current->wts_1), &(obj->current->wts_2),
-        twta_map, wts_1_map, wts_2_map, wts1_wts2_map));
-}
-
-//----------------//
-// Err_Relay_TWTA //
-//----------------//
-
-int
-Err_Relay_TWTA(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return (Relay2_Mismatch(ofp, error_name,
-        "TWTA", "K09", "K10",
-        label_format,
-        obj->current, &(obj->current->twta),
-        &(obj->current->k09), &(obj->current->k10),
-        twta_map, relay_map, relay_map, k9_k10_map));
-}
-
-//---------------//
-// Err_Relay_DSS //
-//---------------//
-
-int
-Err_Relay_DSS(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    return (Relay2_Mismatch(ofp, error_name,
-        "DSS", "K07", "K08",
-        label_format,
-        obj->current, &(obj->current->dss),
-        &(obj->current->k07), &(obj->current->k08),
-        dss_map, relay_map, relay_map, k7_k8_map));
-}
-
-//------------------//
-// Err_Rep_Heat_Dis //
-//------------------//
-
-int
-Err_Rep_Heat_Dis(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    if (obj->current->k04.condition == StateElement::UNINITIALIZED ||
-        obj->current->k05.condition == StateElement::UNINITIALIZED ||
-        obj->current->k06.condition == StateElement::UNINITIALIZED)
+    // if SBM or ROM then grid disable must be 1, 0 all other modes
+    if ( ((mode == L1_MODE_SBM || mode == L1_MODE_ROM) &&
+                            gridDisable != L1_GRID_DISABLE) ||
+               ((mode == L1_MODE_WOM || mode == L1_MODE_CBM) &&
+                            gridDisable != L1_GRID_NORMAL) )
     {
-        return(0);
+        // value out of range
+        const char* modeString;
+        int eaModeNo = L1ModeToTlmMode(mode);
+        if (eaModeNo < 0)
+            modeString = "unknown mode";
+        else
+            modeString = mode_map[eaModeNo];
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Grid Disable = %d, Mode = %d (%s)\n",
+            obj->current->time_string, gridDisable, mode, modeString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
     }
 
-    // current is valid
-    unsigned char rep_heat = k4_k5_k6_map[obj->current->k04.value][obj->current->k05.value][obj->current->k06.value];
-    unsigned char prev_valid =
-        (obj->prev->k04.condition != StateElement::UNINITIALIZED &&
-        obj->prev->k05.condition != StateElement::UNINITIALIZED &&
-        obj->prev->k06.condition != StateElement::UNINITIALIZED);
-    unsigned char prev_rep_heat = k4_k5_k6_map[obj->prev->k04.value][obj->prev->k05.value][obj->prev->k06.value];
+    return 1;
 
-    if (rep_heat == SPARE_HEATER_ENABLED)
-    {
-        // current is ok
-        if (prev_valid && prev_rep_heat != SPARE_HEATER_ENABLED)
-        {
-            // previous is valid but bad - error cleared
-            fprintf(ofp, CLEAR_FORMAT, error_name);
-            fprintf(ofp, "  %s  Replacement Heater was %s\n",
-                obj->prev->time_string, heater_map[prev_rep_heat]);
-            fprintf(ofp, "  K04 = %d (%s), K05 = %d (%s), K06 = %d (%s)\n",
-                obj->prev->k04.value, relay_map[obj->prev->k04.value],
-                obj->prev->k05.value, relay_map[obj->prev->k05.value],
-                obj->prev->k06.value, relay_map[obj->prev->k06.value]);
-            ReportBasicInfo(ofp, obj->prev);
-            fprintf(ofp, "  %s  Replacement Heater is %s\n",
-                obj->current->time_string, heater_map[rep_heat]);
-            fprintf(ofp, "  K04 = %d (%s), K05 = %d (%s), K06 = %d (%s)\n",
-                obj->current->k04.value, relay_map[obj->current->k04.value],
-                obj->current->k05.value, relay_map[obj->current->k05.value],
-                obj->current->k06.value, relay_map[obj->current->k06.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        return(0);  // current is ok
-    }
-    else
-    {
-        // current is bad
-        if (! prev_valid)
-        {
-            // previous is invalid - bad initialization
-            fprintf(ofp, INITIALIZE_FORMAT, error_name);
-            fprintf(ofp, "  %s  Replacement Heater is %s\n",
-                obj->current->time_string, heater_map[rep_heat]);
-            fprintf(ofp, "  K04 = %d (%s), K05 = %d (%s), K06 = %d (%s)\n",
-                obj->current->k04.value, relay_map[obj->current->k04.value],
-                obj->current->k05.value, relay_map[obj->current->k05.value],
-                obj->current->k06.value, relay_map[obj->current->k06.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        else if (prev_rep_heat == SPARE_HEATER_ENABLED)
-        {
-            // previous is ok - transition to bad
-            fprintf(ofp, label_format, error_name);
-            fprintf(ofp, "  %s  Replacement Heater was %s\n",
-                obj->prev->time_string, heater_map[prev_rep_heat]);
-            fprintf(ofp, "  K04 = %d (%s), K05 = %d (%s), K06 = %d (%s)\n",
-                obj->prev->k04.value, relay_map[obj->prev->k04.value],
-                obj->prev->k05.value, relay_map[obj->prev->k05.value],
-                obj->prev->k06.value, relay_map[obj->prev->k06.value]);
-            ReportBasicInfo(ofp, obj->prev);
-            fprintf(ofp, "  %s  Replacement Heater is %s\n",
-                obj->current->time_string, heater_map[rep_heat]);
-            fprintf(ofp, "  K04 = %d (%s), K05 = %d (%s), K06 = %d (%s)\n",
-                obj->current->k04.value, relay_map[obj->current->k04.value],
-                obj->current->k05.value, relay_map[obj->current->k05.value],
-                obj->current->k06.value, relay_map[obj->current->k06.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        return(1);
-    }
-    return (0);     // should never get here, but let's be safe
-}
-
-//--------------------//
-// Err_Spare_Heat_Dis //
-//--------------------//
+} // ErrorGridDisable
 
 int
-Err_Spare_Heat_Dis(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
+ErrorTwta1BodyOcTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
 {
-    if (obj->current->k13.condition == StateElement::UNINITIALIZED ||
-        obj->current->k14.condition == StateElement::UNINITIALIZED)
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_1_BODY_OC_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_1_BODY_OC_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
     {
-        return(0);
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 1 Body OC = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
     }
 
-    // current is valid
-    unsigned char spare_heat =
-        k13_k14_map[obj->current->k13.value][obj->current->k14.value];
-    unsigned char prev_valid =
-        (obj->prev->k13.condition != StateElement::UNINITIALIZED &&
-        obj->prev->k14.condition != StateElement::UNINITIALIZED);
-    unsigned char prev_spare_heat =
-        k13_k14_map[obj->prev->k13.value][obj->prev->k14.value];
+    return 1;
 
-    if (spare_heat == SPARE_HEATER_ENABLED)
+} // ErrorTwta1BodyOcTrip
+
+int
+ErrorTwta2BodyOcTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_2_BODY_OC_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_2_BODY_OC_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
     {
-        // current is ok
-        if (prev_valid && prev_spare_heat != SPARE_HEATER_ENABLED)
-        {
-            // previous is valid but bad - error cleared
-            fprintf(ofp, CLEAR_FORMAT, error_name);
-            fprintf(ofp, "  %s  Spare Heater was %s\n",
-                obj->prev->time_string, heater_map[prev_spare_heat]);
-            fprintf(ofp, "  K13 = %d (%s), K14 = %d (%s)\n",
-                obj->prev->k13.value, relay_map[obj->prev->k13.value],
-                obj->prev->k14.value, relay_map[obj->prev->k14.value]);
-            ReportBasicInfo(ofp, obj->prev);
-            fprintf(ofp, "  %s  Spare Heater is %s\n",
-                obj->current->time_string, heater_map[spare_heat]);
-            fprintf(ofp, "  K13 = %d (%s), K14 = %d (%s)\n",
-                obj->current->k13.value, relay_map[obj->current->k13.value],
-                obj->current->k14.value, relay_map[obj->current->k14.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        return(0);  // current is ok
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 2 Body OC = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
     }
-    else
+
+    return 1;
+
+} // ErrorTwta2BodyOcTrip
+
+int
+ErrorTwta1CnvrtOcTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_1_CNVRT_OC_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_1_CNVRT_OC_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
     {
-        // current is bad
-        if (! prev_valid)
-        {
-            // bad initialization
-            fprintf(ofp, INITIALIZE_FORMAT, error_name);
-            fprintf(ofp, "  %s  Spare Heater is %s\n",
-                obj->current->time_string, heater_map[spare_heat]);
-            fprintf(ofp, "  K13 = %d (%s), K14 = %d (%s)\n",
-                obj->current->k13.value, relay_map[obj->current->k13.value],
-                obj->current->k14.value, relay_map[obj->current->k14.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        else if (prev_spare_heat == SPARE_HEATER_ENABLED)
-        {
-            // previous is ok - transition to bad
-            fprintf(ofp, label_format, error_name);
-            fprintf(ofp, "  %s  Spare Heater was %s\n",
-                obj->prev->time_string, heater_map[prev_spare_heat]);
-            fprintf(ofp, "  K13 = %d (%s), K14 = %d (%s)\n",
-                obj->prev->k13.value, relay_map[obj->prev->k13.value],
-                obj->prev->k14.value, relay_map[obj->prev->k14.value]);
-            ReportBasicInfo(ofp, obj->prev);
-            fprintf(ofp, "  %s  Spare Heater is %s\n",
-                obj->current->time_string, heater_map[spare_heat]);
-            fprintf(ofp, "  K13 = %d (%s), K14 = %d (%s)\n",
-                obj->current->k13.value, relay_map[obj->current->k13.value],
-                obj->current->k14.value, relay_map[obj->current->k14.value]);
-            ReportBasicInfo(ofp, obj->current);
-            fflush(ofp);
-        }
-        return(1);
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 1 Converter OC = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
     }
-    return (0);     // should never get here, but let's be safe
-}
+
+    return 1;
+
+} // ErrorTwta1CnvrtOcTrip
+
+int
+ErrorTwta2CnvrtOcTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_2_CNVRT_OC_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_2_CNVRT_OC_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 2 Converter OC = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwta2CnvrtOcTrip
+
+int
+ErrorTwta1UvTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_1_UV_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_1_UV_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 1 Undervoltage = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwta1UvTrip
+
+int
+ErrorTwta2UvTrip(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_2_UV_TRIP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_2_UV_TRIP]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWTA 2 Undervoltage = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwta2UvTrip
+
+int
+ErrorRomStartError(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_ROM_START_ERROR]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_ROM_START_ERROR]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   ROM Start Up Error = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorRomStartError
+
+int
+ErrorRamStartError(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_RAM_START_ERROR]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_RAM_START_ERROR]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   RAM Start Up Error = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorRamStartError
+
+int
+ErrorRunningErrors(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_RUNNING_ERROR_COUNT]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_RUNNING_ERROR_COUNT]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned short currentCnt = *(unsigned char*) currentElement->value;
+    unsigned short prevCnt = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevCnt != currentCnt ||
+            (currentCnt != 0 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Error Count = %d\n",
+            obj->current->time_string, currentCnt);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorRunningErrors
+
+int
+ErrorTwtTripOvrd(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_TRIP_OVERRIDE]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_TRIP_OVERRIDE]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWT Trip Override Enabled = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwtTripOvrd
+
+int
+ErrorTwtaMonitor(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWTA_MONITOR_DISABLE]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWTA_MONITOR_DISABLE]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWT Monitor Disabled = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwtaMonitor
+
+int
+ErrorTwtShutdown(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TWT_SHUTDOWN_DISABLE]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TWT_SHUTDOWN_DISABLE]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "tripped";
+        else
+            tripString = "cleared";
+        fprintf(ofp, "  %s   TWT Shutdown Disabled = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTwtShutdown
+
+int
+ErrorUnexpectedCycle(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_DOPPLER_ORBIT_STEP]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_DOPPLER_ORBIT_STEP]);
+
+    if (currentElement->condition != StateElement::CURRENT ||
+                 prevElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentCycle = *(unsigned char*) currentElement->value;
+    unsigned char prevCycle = *(unsigned char*) prevElement->value;
+
+    // changed (the orbit step is btwn 0 and 255)
+    if ( ! (prevCycle == 255 && currentCycle == 0 ) &&
+                              currentCycle != prevCycle + 1)
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Unexpected Cycle = %d, previous was = %d\n",
+            obj->current->time_string, currentCycle, prevCycle);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorUnexpectedCycle
+
+int
+ErrorModeChange(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_MODE_CHANGE]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_MODE_CHANGE]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentTrip = *(unsigned char*) currentElement->value;
+    unsigned char prevTrip = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevTrip != currentTrip ||
+            (currentTrip == 1 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* tripString;
+        if (currentTrip == 1)
+            tripString = "changed";
+        else
+            tripString = "same";
+        fprintf(ofp, "  %s   Mode Change = %d (%s)\n",
+            obj->current->time_string, currentTrip, tripString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorModeChange
+
+int
+ErrorValidCmdCnt(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_VALID_COMMAND_COUNT]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_VALID_COMMAND_COUNT]);
+
+    if (prevElement->condition != StateElement::CURRENT || 
+           currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentCnt = *(unsigned char*) currentElement->value;
+    unsigned char prevCnt = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevCnt != currentCnt)
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Valid Command Count = %d (was %d)\n",
+            obj->current->time_string, currentCnt, prevCnt);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorValidCmdCnt
+
+int
+ErrorInvalidCmdCnt(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_INVALID_COMMAND_COUNT]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_INVALID_COMMAND_COUNT]);
+
+    if (prevElement->condition != StateElement::CURRENT || 
+           currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentCnt = *(unsigned char*) currentElement->value;
+    unsigned char prevCnt = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevCnt != currentCnt)
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Invalid Command Count = %d (was %d)\n",
+            obj->current->time_string, currentCnt, prevCnt);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorInvalidCmdCnt
+
+int
+ErrorModeChangeMismatch(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* changeCurrentElement =
+            &(obj->current->stateElements[ERROR_MODE_CHANGE]);
+    StateElement* modeCurrentElement =
+            &(obj->current->stateElements[ERROR_MODE]);
+    if (changeCurrentElement->condition != StateElement::CURRENT || 
+               modeCurrentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    StateElement* modePrevElement =
+            &(obj->prev->stateElements[ERROR_MODE]);
+    int modeChanged = DefaultStateCompareFunc(*modePrevElement,
+            *modeCurrentElement, modeCurrentElement->byteSize);
+
+    unsigned char changeBit = *(unsigned char*) changeCurrentElement->value;
+
+    // if two condition don't agree, error
+    if (modeChanged && ! changeBit)
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s   Mode Changed from %d to %d, "
+                     "but Mode Change bit is 0\n",
+                     obj->current->time_string,
+                     *(unsigned char*) modePrevElement->value,
+                     *(unsigned char*) modeCurrentElement->value);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+    else if ( ! modeChanged && changeBit)
+    {
+        fprintf(ofp, format, name);
+        fprintf(ofp, "  %s  Mode Change bit is 1, but Mode (%d) is unchanged\n",
+                     obj->current->time_string,
+                     *(unsigned char*) modeCurrentElement->value);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorModeChange
+
+int
+ErrorTrsCmdSucc(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    StateElement* prevElement =
+            &(obj->prev->stateElements[ERROR_TRS_CMD_SUCCESS]);
+    StateElement* currentElement =
+            &(obj->current->stateElements[ERROR_TRS_CMD_SUCCESS]);
+
+    if (currentElement->condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned char currentValue = *(unsigned char*) currentElement->value;
+    unsigned char prevValue = *(unsigned char*) prevElement->value;
+
+    // changed
+    if (prevValue != currentValue ||
+            (currentValue == 0 &&
+                   prevElement->condition == StateElement::UNINITIALIZED))
+    {
+        fprintf(ofp, format, name);
+        char* valueString;
+        if (currentValue == 1)
+            valueString = "normal";
+        else
+            valueString = "failure";
+        fprintf(ofp, "  %s   TRS Command = %d (%s)\n",
+            obj->current->time_string, currentValue, valueString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+
+    return 1;
+
+} // ErrorTrsCmdSucc

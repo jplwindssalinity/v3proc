@@ -7,6 +7,21 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   20 Oct 1998 10:52:42   sally
+// add static QPF commands (table macro commands)
+// 
+//    Rev 1.6   08 Sep 1998 16:24:24   sally
+// added HK2 FSW subcoms
+// 
+//    Rev 1.5   22 May 1998 16:21:48   sally
+// added cds error message tables
+// 
+//    Rev 1.4   19 May 1998 15:48:44   sally
+// rename error message map
+// 
+//    Rev 1.3   04 May 1998 17:20:18   sally
+// added setup HK2 Limits
+// 
 //    Rev 1.2   01 Apr 1998 13:35:50   sally
 // for L1A Derived table
 // 
@@ -47,6 +62,10 @@ static const char rcs_id_common_defs_h[] = "@(#) $Header$";
 #define BIG_SIZE            1024
 #endif
 
+#ifndef BIG_4K_SIZE
+#define BIG_4K_SIZE         4096
+#endif
+
 #ifndef SHORT_STRING_LEN
 #define SHORT_STRING_LEN    40
 #endif
@@ -61,6 +80,9 @@ static const char rcs_id_common_defs_h[] = "@(#) $Header$";
 #define RED_BACKGROUND      system("xsetroot -solid red")
 
 #define ElementNumber(arr) ((unsigned int) (sizeof(arr) / sizeof(arr[0])))
+
+#define EA_IS_ODD(x)  (x % 2 == 0 ? 0 : 1)
+#define EA_IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
 
 #ifndef MAX_OF_TWO
 #define MAX_OF_TWO(x,y) ((x) > (y) ? (x) : (y))
@@ -96,7 +118,7 @@ extern const char *analog_cur_map[];
 //------------------------
 
 extern const char *twta_map[];
-extern const char *hvps_map[];
+extern const char *twt_map[];
 extern const char *dss_map[];
 extern const char *twta_trip_override_map[];
 extern const char *cmf_map[];
@@ -113,7 +135,18 @@ extern const char *rx_pro_map[];
 // Error Engineering Maps 
 //------------------------
 
-extern const char *error_msg_map[];
+extern const char *type1_error_msg_map[];
+extern const int Type1ErrMsgMapSize;
+
+extern const char *type2_error_msg_map[];
+extern const int Type2ErrMsgMapSize;
+
+extern const char *cds_fsw_crit_var_obj_id[];
+extern const int CdsFswCritVarObjIdSize;
+
+extern const char *cds_fsw_obj_id[];
+extern const int CdsFswObjIdSize;
+
 extern const char *lack_start_reqs_map[];
 extern const char *err_queue_full_map[];
 extern const char *bin_param_err_map[];
@@ -173,12 +206,15 @@ int     pos)    // bit position (0-7)
     return ((byte>>pos) & 0x01);
 }//GetBit
 
+//-------------------------------------------------------------
+// bit order: from right to left , i.e. 7 6 5 4 3 2 1 0
+//-------------------------------------------------------------
 inline
 char
 GetBits(
 char    byte,   // the byte to be extracted from
-int     pos,    // starting bit position (0-7)
-int     numBits)// number of bits
+int     pos,    // leftmost bit position (0-7)
+int     numBits)// number of bits to the right
 {
     // gets numBits from position(left) pos from byte
     // move the desired field to the right.
@@ -188,5 +224,24 @@ int     numBits)// number of bits
     // with 1's in the rightmost numBits
     return ( (byte>>(pos+1-numBits)) & ~(~0<<numBits) );
 }//GetBits
+
+#ifdef TESTBITS
+
+#include <stdio.h>
+#include "CommonDefs.h"
+ 
+main(
+int,
+char*[])
+{
+    unsigned char num = 0x6a;  // 01101010
+    for (int i=1; i < 7; i++)
+    {
+        printf("%d: Get 2 Bits starting from bit #%d = %d\n",
+                       num, i, GetBits(num, i, 2));
+    }
+} // main
+
+#endif // TESTBITS
 
 #endif // COMMONDEFS_H

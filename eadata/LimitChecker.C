@@ -10,12 +10,11 @@
 
 #include "LimitChecker.h"
 #include "LimitState.h"
-#if 0
-#include "HkdtExtract.h"
-#endif
 
 #include "L1AExtract.h"
 #include "ParTab.h"
+#include "Polynomial.h"
+#include "PolyTable.h"
 
 static const char rcs_id_limit_checker_c[] = "@(#) $Id$";
 
@@ -783,20 +782,62 @@ FILE*       fp)
 // else return FALSE, and the error msg is writen to fp (if any)
 LimitStatusE
 LimitChecker::CheckFrame(
-TlmHdfFile*     tlmFile,
-int32           startIndex,
-FILE*           fp,         // output file pointer
-LimitStatePair* limitState)
+PolynomialTable*  polyTable,
+TlmHdfFile*       tlmFile,
+int32             startIndex,
+FILE*             fp,         // output file pointer
+LimitStatePair*   limitState)
 {
     // if is disabled, skip this
     if (! _enable)
         return (LIMIT_OK);
 
     // extract the value first
-    char buffer[4];
+    char buffer[8];
     if (_parameter->extractFunc(tlmFile, _parameter->sdsIDs,
-                  startIndex, 1, 1, &buffer) == FALSE)
+                  startIndex, 1, 1, &buffer, 0) == FALSE)
         return (LIMIT_OK);
+
+    // apply polynomial if this parameter requires it
+    if (_parameter->needPolynomial)
+    {
+        if (polyTable == 0) return (LIMIT_NO_POLYNOMIAL_TABLE);
+
+        char tempString[BIG_SIZE];
+        (void)strncpy(tempString, _parameter->sdsNames, BIG_SIZE);
+        char* oneSdsName=0;
+        oneSdsName = (char*)strtok(tempString, ",");
+        if (oneSdsName == 0)
+        {
+            fprintf(stderr, "Missing SDS name\n");
+            return(LIMIT_MISSING_SDS_NAME);
+        }
+        // is this parameter in the polynomial table?
+        const Polynomial* polynomial = polyTable->SelectPolynomial(
+                                 oneSdsName, _parameter->unitName);
+        // it is in the polynomial table. need to apply to the data
+        if (polynomial)
+        {
+            switch(_parameter->dataType)
+            {
+                case DATA_FLOAT4:
+                {
+                    float result = polynomial->Apply(*(float*)&buffer);
+                    (void)memcpy(&buffer, &result, sizeof(float));
+                    break;
+                }
+                case DATA_FLOAT8:
+                {
+                    double result = polynomial->Apply(*(double*)&buffer);
+                    (void)memcpy(&buffer, &result, sizeof(double));
+                    break;
+                }
+                default:
+                    return(_status = LIMIT_APPLY_POLYNOMIAL_TO_NON_FLOAT);
+            }
+        }
+        else return (LIMIT_POLYNOMIAL_NOT_IN_TABLE);
+    }
 
     LimitStatusE newStatus = _checkValue(limitState, (void*)buffer);
     _statePair = limitState;
@@ -805,36 +846,40 @@ LimitStatePair* limitState)
 
 }//LimitChecker::CheckFrame
 
-#if 0
 //*******************************************************//
-//              HkdtLimitChecker                         //
+//              HK2LimitChecker                         //
 //*******************************************************//
-HkdtLimitChecker::HkdtLimitChecker(
+HK2LimitChecker::HK2LimitChecker(
 Parameter*  parameter,
 char        enable) // enable
 :   LimitChecker(parameter, enable)
 {
-    (void)HkdtLimitChecker::_initialize();
+    (void)HK2LimitChecker::_initialize();
 
-}//HkdtLimitChecker::HkdtLimitChecker
+}//HK2LimitChecker::HK2LimitChecker
 
 // copy constructor
-HkdtLimitChecker::HkdtLimitChecker(
-const HkdtLimitChecker&     other)
+HK2LimitChecker::HK2LimitChecker(
+const HK2LimitChecker&     other)
 :   LimitChecker(other)
 {
-    (void)HkdtLimitChecker::_initialize();
+    (void)HK2LimitChecker::_initialize();
     (void)memcpy(_limits, other._limits,
-        EXT_MODE_COUNT * HVPS_STATE_COUNT * DSS_COUNT * TWTA_COUNT *
+        EXT_MODE_COUNT * HVPS_STATE_COUNT * TWTA_COUNT *
         4 * _bytes);
 
-}//HkdtLimitChecker::HkdtLimitChecker
+}//HK2LimitChecker::HK2LimitChecker
 
 char
-HkdtLimitChecker::_initialize(void)
+HK2LimitChecker::_initialize(void)
 {
-    int numElements = HkdtLimitStatePair::numStates();
-    _extractTime = HK_Time;
+    int numElements = HK2LimitStatePair::numStates();
+    _timeParamP = ParTabAccess::GetParameter(SOURCE_HK2, UTC_TIME, UNIT_CODE_A);
+    if (_timeParamP == 0)
+    {
+       fprintf(stderr, "HK2LimitChecker: cannot get time parameter\n");
+       return 0;
+    }
     switch (_parameter->dataType)
     {
         case DATA_UINT1:
@@ -871,12 +916,12 @@ HkdtLimitChecker::_initialize(void)
     }
     return 1;
 
-}//HkdtLimitChecker::_initialize
+}//HK2LimitChecker::_initialize
 
 // print the limits as a long string
 // user needs to provide the space
 char
-HkdtLimitChecker::PrintText(
+HK2LimitChecker::PrintText(
 char*       destString)
 {
     if (destString == 0)
@@ -884,8 +929,8 @@ char*       destString)
 
     char temp_string[BUFSIZ];
     int unique_count = 0;
-    int mode, hvps, dss, twta, match, i;
-    const int maxIndex = EXT_MODE_COUNT*HVPS_STATE_COUNT*DSS_COUNT*TWTA_COUNT;
+    int mode, twt, twta, match, i;
+    const int maxIndex = EXT_MODE_COUNT*HVPS_STATE_COUNT*TWTA_COUNT;
 
     *destString = '\0';
 
@@ -905,17 +950,13 @@ char*       destString)
     // identify all the unique limits first
     //=============================================
     for (mode = 0; mode < EXT_MODE_COUNT; mode++)
-        for (hvps = 0; hvps < HVPS_STATE_COUNT; hvps++)
-            for (dss = 0; dss < DSS_COUNT; dss++)
-                for (twta = 0; twta < TWTA_COUNT; twta++)
+        for (twt = 0; twt < HVPS_STATE_COUNT; twt++)
+            for (twta = 0; twta < TWTA_COUNT; twta++)
                 {
                     match = 0;
                     const char* offset = (char*)_limits +
-                                            (mode * HVPS_STATE_COUNT *
-                                            DSS_COUNT * TWTA_COUNT +
-                                            hvps * DSS_COUNT * TWTA_COUNT +
-                                            dss * TWTA_COUNT + twta)
-                                            * 4 * _bytes;
+                                 (mode * HVPS_STATE_COUNT * TWTA_COUNT +
+                                  twt * TWTA_COUNT + twta) * 4 * _bytes;
                     for (i = 0; i < unique_count; i++)
                     {
                         if ( (*_aEQb) (unique_4pack[i][0],
@@ -979,16 +1020,12 @@ char*       destString)
         //================================================
 
         for (mode = 0; mode < EXT_MODE_COUNT; mode++)
-          for (hvps = 0; hvps < HVPS_STATE_COUNT; hvps++)
-            for (dss = 0; dss < DSS_COUNT; dss++)
+          for (twt = 0; twt < HVPS_STATE_COUNT; twt++)
               for (twta = 0; twta < TWTA_COUNT; twta++)
               {
                     const char* offset = (char*)_limits +
-                                (mode * HVPS_STATE_COUNT *
-                                DSS_COUNT * TWTA_COUNT +
-                                hvps * DSS_COUNT * TWTA_COUNT +
-                                dss * TWTA_COUNT + twta)
-                                * 4 * _bytes;
+                          (mode * HVPS_STATE_COUNT * TWTA_COUNT +
+                                twt * TWTA_COUNT + twta) * 4 * _bytes;
                     if ((*_aEQb)(unique_4pack[i][0],
                                     (void*)CL_OFFSET(offset)) &&
                         (*_aEQb)(unique_4pack[i][1],
@@ -999,9 +1036,8 @@ char*       destString)
                                     (void*)AH_OFFSET(offset)) )
                     {
                         sprintf(temp_string,
-                            "\nMode:%-3s  HVPS:%-3s  DSS:%-1s  TWTA:%s",
-                            ext_mode_map[mode], hvps_map[hvps],
-                            dss_map[dss], twta_map[twta]);
+                            "\nMode:%-3s  TWT:%-3s  TWTA:%s",
+                            ext_mode_map[mode], twt_map[twt], twta_map[twta]);
                         strcat(destString, temp_string);
                     }
               }
@@ -1014,9 +1050,8 @@ char*       destString)
         free(unique_4pack[i][3]);
     }
     return 1;
-}//HkdtLimitChecker::PrintText
+}//HK2LimitChecker::PrintText
 
-#endif
 
 //*******************************************************//
 //                 L1ALimitChecker                        //
@@ -1037,7 +1072,8 @@ const L1ALimitChecker&       other)
 {
     (void)L1ALimitChecker::_initialize();
     (void)memcpy(_limits, other._limits,
-        NSCAT_MODE_COUNT * HVPS_STATE_COUNT * FRAME_TYPE_COUNT * 4 * _bytes);
+        NSCAT_MODE_COUNT * HVPS_STATE_COUNT * TWTA_COUNT * 
+        FRAME_TYPE_COUNT * 4 * _bytes);
 
 }//L1ALimitChecker::L1ALimitChecker
 
@@ -1130,8 +1166,9 @@ char*       destString)
 
     char temp_string[BUFSIZ];
     int unique_count = 0;
-    int mode, hvps, frame, match, i;
-    const int maxIndex = NSCAT_MODE_COUNT*HVPS_STATE_COUNT*FRAME_TYPE_COUNT;
+    int mode, twt, twta, frame, match, i;
+    const int maxIndex = NSCAT_MODE_COUNT * HVPS_STATE_COUNT *
+                                    TWTA_COUNT * FRAME_TYPE_COUNT;
 
     *destString = '\0';
 
@@ -1151,13 +1188,15 @@ char*       destString)
     // identify all the unique limits first
     //=============================================
     for (mode = 0; mode < NSCAT_MODE_COUNT; mode++)
-        for (hvps = 0; hvps < HVPS_STATE_COUNT; hvps++)
+        for (twt = 0; twt < HVPS_STATE_COUNT; twt++)
+            for (twta = 0; twta < TWTA_COUNT; twta++)
                 for (frame = 0; frame < FRAME_TYPE_COUNT; frame++)
                 {
                     match = 0;
                     const char* offset = (char*)_limits +
-                                (mode * HVPS_STATE_COUNT * FRAME_TYPE_COUNT+
-                                hvps * FRAME_TYPE_COUNT+ frame) * 4 * _bytes;
+                      (mode * HVPS_STATE_COUNT * TWTA_COUNT * FRAME_TYPE_COUNT+
+                      twt * TWTA_COUNT * FRAME_TYPE_COUNT +
+                      twta * FRAME_TYPE_COUNT + frame) * 4 * _bytes;
 
                     for (i = 0; i < unique_count; i++)
                     {
@@ -1222,13 +1261,15 @@ char*       destString)
         //================================================
 
         for (mode = 0; mode < NSCAT_MODE_COUNT; mode++)
-          for (hvps = 0; hvps < HVPS_STATE_COUNT; hvps++)
-            for (frame = 0; frame < FRAME_TYPE_COUNT; frame++)
+          for (twt = 0; twt < HVPS_STATE_COUNT; twt++)
+            for (twta = 0; twta < TWTA_COUNT; twta++)
+              for (frame = 0; frame < FRAME_TYPE_COUNT; frame++)
               {
-                    const char* offset = (char*)_limits +
-                                (mode * HVPS_STATE_COUNT * FRAME_TYPE_COUNT+
-                                hvps * FRAME_TYPE_COUNT+ frame) * 4 * _bytes;
-                    if ((*_aEQb)(unique_4pack[i][0],
+                  const char* offset = (char*)_limits +
+                    (mode * HVPS_STATE_COUNT * TWTA_COUNT * FRAME_TYPE_COUNT +
+                     twt * TWTA_COUNT * FRAME_TYPE_COUNT +
+                     twta * FRAME_TYPE_COUNT + frame) * 4 * _bytes;
+                  if ((*_aEQb)(unique_4pack[i][0],
                                             (void*)CL_OFFSET(offset)) &&
                         (*_aEQb)(unique_4pack[i][1],
                                             (void*)CH_OFFSET(offset)) &&
@@ -1236,12 +1277,13 @@ char*       destString)
                                             (void*)AL_OFFSET(offset)) &&
                         (*_aEQb)(unique_4pack[i][3],
                                             (void*)AH_OFFSET(offset)) )
-                    {
-                        sprintf(temp_string,
-                            "\nMode:%-3s  HVPS:%-3s  Frame:%-3s",
-                            mode_map[mode], hvps_map[hvps], cmf_map[frame]);
-                        strcat(destString, temp_string);
-                    }
+                  {
+                      sprintf(temp_string,
+                            "\nMode:%-3s  TWT:%-3s  TWTA:%-3s  Frame:%-3s",
+                            mode_map[mode], twt_map[twt],
+                            twta_map[twta], cmf_map[frame]);
+                      strcat(destString, temp_string);
+                  }
               }
     }
     for (i=0; i < maxIndex; i++)
@@ -1280,7 +1322,7 @@ operator==(const L1ALimitChecker& a, const L1ALimitChecker& b)
 {
     return ((const LimitChecker&)a == (const LimitChecker&)b &&
                 memcmp(a._limits, b._limits, NSCAT_MODE_COUNT *
-                        HVPS_STATE_COUNT * FRAME_TYPE_COUNT *
+                        HVPS_STATE_COUNT * TWTA_COUNT * FRAME_TYPE_COUNT *
                         4 * a._bytes) == 0 ? 1 : 0);
 
 }//operator==(const L1ALimitChecker& a, const L1ALimitChecker& b)
@@ -1290,24 +1332,22 @@ int operator!=(const L1ALimitChecker& a, const L1ALimitChecker& b)
     return(a == b ? 0 : 1);
 }//operator!=(const L1ALimitChecker& a, const L1ALimitChecker& b)
 
-#if 0
 
 int
-operator==(const HkdtLimitChecker& a, const HkdtLimitChecker& b)
+operator==(const HK2LimitChecker& a, const HK2LimitChecker& b)
 {
     return ((const LimitChecker&)a == (const LimitChecker&)b &&
                 memcmp(a._limits, b._limits, EXT_MODE_COUNT *
-                        HVPS_STATE_COUNT * DSS_COUNT * TWTA_COUNT *
+                        HVPS_STATE_COUNT * TWTA_COUNT *
                         4 * a._bytes) == 0 ? 1 : 0);
 
-}//operator==(const HkdtLimitChecker& a, const HkdtLimitChecker& b)
+}//operator==(const HK2LimitChecker& a, const HK2LimitChecker& b)
 
-int operator!=(const HkdtLimitChecker& a, const HkdtLimitChecker& b)
+int operator!=(const HK2LimitChecker& a, const HK2LimitChecker& b)
 {
     return(a == b ? 0 : 1);
-}//operator!=(const HkdtLimitChecker& a, const HkdtLimitChecker& b)
+}//operator!=(const HK2LimitChecker& a, const HK2LimitChecker& b)
 
-#endif
 
 
 //*******************************************************************//
@@ -1735,7 +1775,7 @@ void*               value)
 
     BYTE6 buffer;
     if (_timeParamP->extractFunc(tlmFile, _timeParamP->sdsIDs,
-                  startIndex, 1, 1, &buffer) == FALSE)
+                  startIndex, 1, 1, &buffer, 0) == FALSE)
     {
         printf("Cannot extract time\n");
         return;

@@ -7,6 +7,24 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   10 Jun 1998 16:24:22   sally
+// delete the dataset id after RemoveCurrent()
+// 
+//    Rev 1.5   01 Jun 1998 10:59:20   sally
+// add polynomial table to limit checking
+// 
+//    Rev 1.4   28 May 1998 13:18:36   daffer
+// worked on HdfGlobalAttr and ParseGlobalAttr
+// 
+//    Rev 1.3   22 May 1998 16:51:28   daffer
+// Added ParseGlobalAttr
+// 
+//    Rev 1.2   08 May 1998 15:18:48   sally
+// improved testHdf
+// 
+//    Rev 1.1   08 May 1998 10:47:24   sally
+// added global attribute methods
+// 
 //    Rev 1.0   04 Feb 1998 14:15:28   daffer
 // Initial checking
 // Revision 1.3  1998/01/31 00:36:39  sally
@@ -21,9 +39,6 @@
 //
 //
 //=========================================================
-
-#ifndef HDFFILE_C_INCLUDED
-#define HDFFILE_C_INCLUDED
 
 static const char HdfFile_c_rcs_id[] =
     "@(#) $Header$";
@@ -43,7 +58,8 @@ static const char HdfFile_c_rcs_id[] =
 HdfFile::HdfFile(
 const char*     filename,
 StatusE&        returnStatus)
-:   _SDfileID(FAIL), _status(OK), _filename(0), _dataLength(0)
+:   _SDfileID(FAIL), _numGlobAttr(-1),
+    _status(OK), _filename(0), _dataLength(0)
 {
     // save the filename
     if ((returnStatus = _DupFilename(filename)) != OK)
@@ -53,6 +69,14 @@ StatusE&        returnStatus)
     if ((_SDfileID = SDstart(filename, DFACC_RDONLY)) == FAIL)
     {
         returnStatus = _status = ERROR_OPENING_FILE;
+        return;
+    }
+
+    // find out info about global attributes and datasets
+    int32 numDatasets=0;
+    if (SDfileinfo(_SDfileID, &numDatasets, &_numGlobAttr) == FAIL)
+    {
+        returnStatus = _status = ERROR_GET_FILE_INFO;
         return;
     }
 
@@ -116,6 +140,76 @@ HdfFile::~HdfFile()
 
     return;
 }
+
+HdfFile::StatusE
+HdfFile::GetGlobalAttrInfo(
+const char*   attrName,      // IN
+int32&        attrIndex,     // OUT
+DataTypeE&    eaType,        // OUT
+int32&        numValues)     // OUT
+{
+    assert(_status == OK);
+    char globAttrName[MAX_NC_NAME];
+    int found=0;
+    int32 hdfType=0;
+    for (int i=0; i < _numGlobAttr; i++)
+    {
+        // read each global attribute from the input HDF
+        if (SDattrinfo(_SDfileID, i, globAttrName, &hdfType, &numValues)
+                        == FAIL)
+        {
+            return(ERROR_GET_ATTR_INFO);
+        }
+
+        // is this the target global attribute name?
+        if (strcmp(globAttrName, attrName) != 0)
+            continue;
+
+        if ( ! HdfTypeToEaType(hdfType, eaType))
+            return(ERROR_BAD_DATATYPE);
+        attrIndex = i;
+        found = 1;
+#ifdef TESTHDF_C
+printf("eaType = %d, numValues = %d\n", eaType, numValues);
+#endif //TESTHDF_C
+        break;
+    }
+
+    if (found)
+        return(OK);
+    else
+        return(ERROR_GLOBAL_ATTR_NOT_FOUND);
+
+} //HdfFile::GetGlobalAttrInfo
+
+HdfFile::StatusE
+HdfFile::GetGlobalAttr(
+int32         attrIndex,     // IN
+DataTypeE     eaType,        // IN
+VOIDP         attrBuf,       // IN/OUT
+int32         numValues)     // IN
+{
+    if (attrIndex < 0 || attrIndex >= _numGlobAttr)
+        return(ERROR_INVALID_GLOBAL_ATTR_INDEX);
+    int32 hdfType=0;
+    if ( ! EaTypeToHdfType(eaType, hdfType))
+        return(ERROR_BAD_DATATYPE);
+
+    int hdfAttrBufSiz = DFKNTsize(hdfType) * numValues;
+    VOIDP hdfAttrBuf = (VOIDP) HDmalloc(hdfAttrBufSiz);
+    if (hdfAttrBuf == 0)
+        return(_status = ERROR_OUT_OF_MEMORY);
+
+    if (SDreadattr(_SDfileID, attrIndex, hdfAttrBuf) == FAIL)
+        return(ERROR_GET_ATTR);
+
+    memcpy(attrBuf, hdfAttrBuf, hdfAttrBufSiz);
+
+    HDfree(hdfAttrBuf);
+
+    return(OK);
+
+} //HdfFile::GetGlobalAttr
 
 int32                        // dataset id if successful, else HDF_FAIL
 HdfFile::SelectDataset(
@@ -208,15 +302,17 @@ int32      datasetID)
     {
         if (*idP == datasetID)
         {
-            _datasetIDs.RemoveCurrent();
+            long int* matchidP = _datasetIDs.RemoveCurrent();
             // close the dataset
             if (SDendaccess(datasetID) == FAIL)
             {
+                delete matchidP;
                 _status = ERROR_CLOSING_DATASET;
                 return HDF_FAIL;
             }
             else
             {
+                delete matchidP;
                 _status = OK;
                 return HDF_SUCCEED;
             }
@@ -332,4 +428,235 @@ const char*     filename)
 
 }//HdfFile::_DupFilename
 
-#endif
+// static
+int
+HdfFile::HdfTypeToEaType(
+int32         hdfType,  // IN
+DataTypeE&    eaType)   // OUT
+{
+    switch(hdfType)
+    {
+        case DFNT_FLOAT32:
+            eaType = DATA_FLOAT4;
+            break;
+        case DFNT_FLOAT64:
+            eaType = DATA_FLOAT8;
+            break;
+        case DFNT_INT8:
+        case DFNT_CHAR8:
+            eaType = DATA_INT1;
+            break;
+        case DFNT_UINT8:
+        case DFNT_UCHAR8:
+            eaType = DATA_UINT1;
+            break;
+        case DFNT_INT16:
+            eaType = DATA_INT2;
+            break;
+        case DFNT_UINT16:
+            eaType = DATA_UINT2;
+            break;
+        case DFNT_INT32:
+            eaType = DATA_INT4;
+            break;
+        case DFNT_UINT32:
+            eaType = DATA_UINT4;
+            break;
+        default:
+            eaType = DATA_UNKNOWN;
+            return 0;
+            break;
+    }
+    return 1;
+
+}//HdfFile::HdfTypeToEaType
+
+// static
+int
+HdfFile::EaTypeToHdfType(
+DataTypeE    eaType,   // IN
+int32&       hdfType)  // OUT
+{
+    switch(eaType)
+    {
+        case DATA_FLOAT4:
+            hdfType = DFNT_FLOAT32;
+            break;
+        case DATA_FLOAT8:
+            hdfType = DFNT_FLOAT64;
+            break;
+        case DATA_INT1:
+            hdfType = DFNT_INT8;
+            break;
+        case DATA_UINT1:
+            hdfType = DFNT_UINT8;
+            break;
+        case DATA_INT2:
+            hdfType = DFNT_INT16;
+            break;
+        case DATA_UINT2:
+            hdfType = DFNT_UINT16;
+            break;
+        case DATA_INT4:
+            hdfType = DFNT_INT32;
+            break;
+        case DATA_UINT4:
+            hdfType = DFNT_UINT32;
+            break;
+        default:
+            eaType = DATA_UNKNOWN;
+            return 0;
+            break;
+    }
+    return 1;
+
+}//HdfFile::EaTypeToHdfType
+
+HdfFile::StatusE 
+HdfFile::ParseGlobalAttr( char *attrName, 
+                          VOIDP attrBuf, 
+                          HdfGlobalAttr * GlobalAttr ) {
+
+    int l;
+    int *d;
+    char *buf_ptr;
+    char ** char_data_ptr=0;
+    double *double_data_ptr=0;
+
+    GlobalAttr->dims[0]=0;
+    GlobalAttr->dims[1]=1;
+    d= &GlobalAttr->dims[0];
+
+    // Get the attribute name 
+    GlobalAttr->name = strdup( attrName );
+    
+    
+    // Now parse the attribute buffer.
+
+    char *lasts=0;
+    l=strlen( (char *) attrBuf );
+    char * buf= new char[l+1];
+    buf_ptr=buf;
+    strncpy( buf, (char *) attrBuf, l );
+    char *retstring = safe_strtok( buf, "\n", &lasts );
+    if (!retstring) 
+        return (ERROR_PARSE_GLOBAL_ATTR);
+    char *type_string = new char[20];
+    sscanf( retstring, "%s", type_string );
+    if (strcmp( type_string,"char") == 0) 
+        GlobalAttr->type = DATA_INT1; // 8 bit characters, phah
+    else 
+        GlobalAttr->type = DATA_FLOAT8;
+
+    retstring = safe_strtok( 0, "\n", &lasts );
+    if (!retstring) 
+        return (ERROR_PARSE_GLOBAL_ATTR);
+
+    int ndims=-1, dim1, dim2=1;
+    ndims = sscanf( retstring, "%d,%d", &dim1, &dim2 );
+
+    GlobalAttr->dims[0]=dim1;
+    GlobalAttr->dims[1]=dim2;
+    if ( GlobalAttr->type == DATA_INT1) {
+        char_data_ptr = new char *[ dim1*dim2 ];
+    } else {
+        double_data_ptr = new double [ dim1*dim2 ];
+    }
+    retstring=safe_strtok( 0, "\n", &lasts );    
+    if (!retstring) 
+        return (ERROR_PARSE_GLOBAL_ATTR);
+    int i=0;
+    do {    
+        if (GlobalAttr->type == DATA_FLOAT8 ) {
+            *(double_data_ptr+i) = atof(retstring);
+        } else {
+            l = strlen(retstring);
+            // char *p =  new char [ l+1 ];
+            char *p = strdup( retstring );
+            //            (void) strncpy( p, retstring, l );
+            *(char_data_ptr+i) = p;
+                
+            
+        }
+        retstring=safe_strtok( 0, "\n", &lasts );    
+        i++;
+    }  while (retstring);
+    
+    if (GlobalAttr->type == DATA_FLOAT8 ) 
+        GlobalAttr->data = (VOIDP) double_data_ptr;
+    else
+        GlobalAttr->data = (VOIDP) char_data_ptr;
+
+
+    delete type_string;
+    delete buf_ptr;
+    return (OK);
+} // ParseGlobalAttr
+
+
+// -----------------------
+// HdfGlobalAttr Methods
+//-------------------------
+
+HdfGlobalAttr::HdfGlobalAttr() {
+    return;
+}
+
+HdfGlobalAttr::~HdfGlobalAttr() {
+    delete name;
+    if (type == DATA_FLOAT8)
+        delete data;
+    else {
+        char **p= (char**) data;
+        for (int i=0;i<dims[0]*dims[1];i++)
+            delete *(p+i);
+        delete data;
+    }
+    return;
+}
+
+
+#ifdef TESTHDF_C
+
+main(
+int     argc,
+char**  argv)
+{
+    if (argc != 3)
+    {
+        fprintf(stderr, "Usage: %s HdfFile GlobalAttribute\n", argv[0]);
+        exit(0);
+    }
+    HdfFile::StatusE status = HdfFile::OK;
+    HdfFile hdfFile(argv[1], status);
+    if (status != HdfFile::OK)
+    {
+        fprintf(stderr, "HdfFile creation failed\n");
+        exit(1);
+    }
+
+    int32 attrIndex=0, numValues=0;
+    DataTypeE eaType=DATA_UNKNOWN;
+    if ((status = hdfFile.GetGlobalAttrInfo(argv[2], attrIndex,
+                                eaType, numValues)) != HdfFile::OK)
+    {
+        fprintf(stderr, "GetGlobalAttrInfo(%s) failed (%d)\n",
+                                      argv[2], status);
+        exit(1);
+    }
+    VOIDP attrBuf = (VOIDP) new char[100];
+    if ((status = hdfFile.GetGlobalAttr(attrIndex, eaType, attrBuf, numValues))
+                                != HdfFile::OK)
+    {
+        fprintf(stderr, "GetGlobalAttr(%s) failed (%d)\n",
+                                      argv[2], status);
+        exit(1);
+    }
+
+    fprintf(stderr, "%s attribute = [%s]\n", argv[2], (char*)attrBuf);
+             
+    exit(0);
+
+}//main
+
+#endif // TESTHDF_C

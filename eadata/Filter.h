@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   04 May 1998 10:52:38   sally
+// added HK2 filters
+// 
+//    Rev 1.3   01 May 1998 16:44:54   sally
+// add some more filters, and changed some names, per Lee Poulsen
+// 
 //    Rev 1.2   20 Apr 1998 15:18:18   sally
 // change List to EAList
 // 
@@ -36,7 +42,7 @@ static const char rcs_id_filter_h[] = "@(#) $Header$";
 #include "EAList.h"
 #include "TlmHdfFile.h"
 
-#define FILTER_ABBR_LENGTH          8
+#define FILTER_ABBR_LENGTH          20
 #define FILTER_NAME_LENGTH          64
 #define FILTER_LIST_STRING_LENGTH   64
 #define FILTER_SET_STRING_LENGTH    128
@@ -153,7 +159,7 @@ public:
     char         setString[FILTER_SET_STRING_LENGTH];
 };
 
-extern const FilTabEntry HkdtFilTab[];
+extern const FilTabEntry HK2FilTab[];
  
 extern const FilTabEntry L1AFilTab[];
 

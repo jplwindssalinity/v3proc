@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.5   04 Aug 1998 16:29:44   deliver
+// pass polynomial table to ParameterList's HoldExtract
+// 
+//    Rev 1.4   23 Jul 1998 16:14:54   sally
+// pass polynomial table to extractFunc()
+// 
 //    Rev 1.3   20 Apr 1998 15:19:46   sally
 // change List to EAList
 // 
@@ -84,8 +90,9 @@ public:
     virtual StatusE    Extract(    TlmHdfFile* tlmFile,
                                    int32       startIndex);
 
-    virtual StatusE    HoldExtract(TlmHdfFile* tlmFile,
-                                   int32       startIndex);
+    virtual StatusE    HoldExtract(TlmHdfFile*       tlmFile,
+                                   int32             startIndex,
+                                   PolynomialTable*  polyTable=0);
     virtual StatusE    PrePrint();
     virtual StatusE    Print(FILE* fp);
     virtual StatusE    PrintACEgr(FILE* fp,

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   26 May 1998 16:35:34   daffer
+// Changed old NSCAT orbit macros
+// 
 //    Rev 1.3   20 Apr 1998 15:18:14   sally
 // change List to EAList
 // 
@@ -44,9 +47,9 @@ static const char rcs_id_eqx_h[] = "@(#) $Header$";
 #include "EAList.h"
 #include "Tpg.h"
 
-#define SEC_PER_ORBIT           3542400.0/585.0
-#define LON_ASC_NODE_PATH_585   0.030
-#define ORBITS                  585.0
+#define SEC_PER_ORBIT            345600.00/MAX_PATH
+#define LON_ASC_NODE_LAST_PATH   0.030
+#define ORBITS                  MAX_PATH
 
 //=====
 // Eqx 

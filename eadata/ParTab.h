@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   13 Oct 1998 15:34:22   sally
+// added L1B file
+// 
+//    Rev 1.7   01 May 1998 14:47:00   sally
+// add HK2 file
+// 
 //    Rev 1.6   17 Apr 1998 16:51:08   sally
 // add L2A and L2B file formats
 // 
@@ -69,14 +75,17 @@ struct ParTabEntry
     UnitEntry       unitEntries[NUM_MAX_UNIT_ENTRIES];
 };
 
-extern const ParTabEntry HkdtParTab[];
-extern const int HkdtParTabSize;
+extern const ParTabEntry HK2ParTab[];
+extern const int HK2ParTabSize;
  
 extern const ParTabEntry L1AParTab[];
 extern const int L1AParTabSize;
  
 extern const ParTabEntry L1ADerivedParTab[];
 extern const int L1ADerivedTabSize;
+ 
+extern const ParTabEntry L1BParTab[];
+extern const int L1BParTabSize;
  
 extern const ParTabEntry L2AParTab[];
 extern const int L2AParTabSize;

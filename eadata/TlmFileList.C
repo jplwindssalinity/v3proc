@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   13 Oct 1998 15:34:34   sally
+// added L1B file
+// 
+//    Rev 1.13   10 Jun 1998 16:25:10   sally
+// look for " " not ": "
+// 
+//    Rev 1.12   01 May 1998 14:47:52   sally
+// added HK2 file
+// 
 //    Rev 1.11   20 Apr 1998 15:19:52   sally
 // change List to EAList
 // 
@@ -61,12 +70,9 @@
 #include <stdlib.h>
 
 #include "TlmFileList.h"
+#include "Hk2File.h"
 #include "L1AFile.h"
 #include "NoTimeTlmFile.h"
-
-#if 0
-#include "HkdtFile.h"
-#endif
 
 static const char TlmFileList_c_rcs_id[] =
     "@(#) $Header$";
@@ -88,12 +94,10 @@ const Itime     endTime)        // IN
     //----------------------------------------------------
 
     char* tlm_filenames_copy = strdup(tlm_filenames);
-    char* ptr = tlm_filenames_copy;
-    char* string;
-    while ((string = strtok(ptr, ": ")))
+    char* lasts = 0;
+    for (char* string = safe_strtok(tlm_filenames_copy, " ", &lasts);
+            string; string = safe_strtok(0, " ", &lasts))
     {
-        ptr = NULL;     // for repeat calls to strtok
-
         DIR* dir = opendir(string);
         if (dir)
         {
@@ -265,16 +269,15 @@ const char*     filename)
     TlmHdfFile::StatusE     returnStatus;
     switch(tlm_type)
     {
-#if 0
     case SOURCE_HK2:
-        file = new HkdtFile(fullname, startTime, endTime, 1);
+        file = new HK2File(fullname, returnStatus, startTime, endTime);
         break;
-#endif
     case SOURCE_L1A:
     case SOURCE_L1AP:
     case SOURCE_L1A_DERIVED:
         file = new L1AFile(fullname, returnStatus, startTime, endTime);
         break;
+    case SOURCE_L1B:
     case SOURCE_L2A:
     case SOURCE_L2B:
         file = new NoTimeTlmFile(fullname, returnStatus);
@@ -308,22 +311,31 @@ TlmFileList::_InsertSortedFile(
 TlmHdfFile &newFile)
 {
     Itime newStartTime = newFile.GetFirstDataTime();
-    TlmHdfFile* fileInList;
-    Itime itemStartTime;
-    for (fileInList = GetHead(); fileInList != NULL; fileInList = GetNext())
+    if (newStartTime == INVALID_TIME)
     {
-        // if the file in the file is older than the new one,
-        // insert the new file in front of the old file
-        itemStartTime = fileInList->GetFirstDataTime();
-        if (newStartTime < itemStartTime)
+        // this file has no "time" parameter, just append
+        Append(&newFile);
+    }
+    else
+    {
+        // this file has "time" parameter, insert in "time" order
+        Itime itemStartTime;
+        TlmHdfFile* fileInList;
+        for (fileInList = GetHead(); fileInList != NULL; fileInList = GetNext())
         {
-            InsertBefore(&newFile);
-            return;
+            // if the file in the file is older than the new one,
+            // insert the new file in front of the old file
+            itemStartTime = fileInList->GetFirstDataTime();
+            if (newStartTime < itemStartTime)
+            {
+                InsertBefore(&newFile);
+                return;
+            }
         }
+        // every file is older than the new one, just append at the end
+        Append(&newFile);
     }
 
-    // every file is older than the new one, just append at the end
-    Append(&newFile);
-
     return;
+
 }//TlmFileList::_InsertSortedFile

@@ -7,6 +7,39 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   16 Oct 1998 09:04:46   sally
+// added ExtractL1Time
+// 
+//    Rev 1.16   13 Oct 1998 15:33:02   sally
+// added L1B file
+// 
+//    Rev 1.15   24 Sep 1998 15:54:58   sally
+// add one extract function for full_frame
+// 
+//    Rev 1.14   08 Sep 1998 16:25:10   sally
+// added HK2 FSW subcoms
+// 
+//    Rev 1.13   13 Aug 1998 16:26:22   sally
+// 
+//    Rev 1.12   04 Aug 1998 15:59:44   sally
+// fixe L1AParTab so that dBm comes from polynomial table and
+// mWatts will be calculated
+// 
+//    Rev 1.11   27 Jul 1998 14:00:14   sally
+// passing polynomial table to extraction function
+// 
+//    Rev 1.10   23 Jul 1998 16:14:04   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.9   22 Jun 1998 15:26:00   sally
+// change to incorporate Barry's update
+// 
+//    Rev 1.8   19 Jun 1998 14:02:34   sally
+// add some bit extraction functions needed by HK2
+// 
+//    Rev 1.7   03 Jun 1998 10:09:56   sally
+// change parameter names and types due to LP's changes
+// 
 //    Rev 1.6   20 Apr 1998 10:21:28   sally
 // change for WindSwatch
 // 
@@ -113,87 +146,269 @@ char    L1A_BC_Accumulate(char* binning_constants, char* flag,
 //------------------------------------------
 // L1A DATA RECORD Functions: Basic Elements 
 // parameters:
-//    TlmHdfFile*       l1file   IN
-//    int32(long int)   sdsID    IN
-//    int32             start    IN
-//    int32             stride   IN
-//    int32             length   IN
-//    VOIDP(void*)      buffer   OUT
+//    TlmHdfFile*       l1file    IN
+//    int32(long int)   sdsID     IN
+//    int32             start     IN
+//    int32             stride    IN
+//    int32             length    IN
+//    VOIDP(void*)      buffer    OUT
+//    PolynomialTable*  polyTable IN
 //------------------------------------------
 
-int ExtractData1D        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData1D        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 
-int ExtractData1D_uint1_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData1D_int2_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData1D_uint2_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData1D_uint4_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData1D_uint1_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData1D_int2_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData1D_uint2_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData1D_uint4_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 
-int ExtractData1D_int_char3  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_4      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_4      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_5      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData3D_2_8    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_12     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_13     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_16     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_76     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_49     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_100    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_810    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData2D_76_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData2D_76_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData2D_810_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData2D_810_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData2D_100_uint2_float (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int ExtractData3D_76_4_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData3D_76_4_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP);
-int ExtractData3D_100_12 (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit0         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit1         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit2         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit3         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit4         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit5         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit6         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit7         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit0        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit1        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit2        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit3        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit4        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit5        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit6        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit7        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit8        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit9        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit10       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit11       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit12       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit13       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit14       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract16Bit15       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData1D_int_char3  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 
-int Extract8Bit0_4       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract8Bit5_7       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
 
-int Extract32Bit2        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit3        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit7        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit8        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit9        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit10       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit11       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData2D_4      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_5      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_8      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_12     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_13     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_16     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_76     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_49     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_100    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_810    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_76_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_76_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_100_uint2_float (TlmHdfFile*, int32*, int32, int32, int32,
+                                          VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_100_int2_float (TlmHdfFile*, int32*, int32, int32, int32,
+                                          VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_810_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_810_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
 
-int Extract32Bit0_1      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
-int Extract32Bit4_6      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
 
-int ExtractTaiTime       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData3D_2_8    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData3D_76_4_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData3D_76_4_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData3D_100_12 (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData3D_100_8_int2_float (TlmHdfFile*, int32*, int32, int32,
+                                  int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData3D_100_8_uint2_float (TlmHdfFile*, int32*, int32, int32,
+                                  int32, VOIDP, PolynomialTable* polyTable=0);
 
-int ExtractXmitPowerdBm  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int Extract1of8Bits(TlmHdfFile*,
+                    int32* sdsIDs,
+                    int32           start,
+                    int32           stride,
+                    int32           length,
+                    unsigned char   whichBit,   // which bit to extract
+                    VOIDP           buffer,
+                    PolynomialTable*);
+
+int ExtractSomeOf8Bits(
+                    TlmHdfFile*,
+                    int32*          sdsIDs,
+                    int32           start,
+                    int32           stride,
+                    int32           length,
+                    unsigned char   leftMostBit,
+                    unsigned char   numBits,
+                    VOIDP           buffer,
+                    PolynomialTable*);
+
+int Extract8Bit0         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit1         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit2         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit3         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit4         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit5         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit6         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit7         (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit0_1       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit0_3       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit0_4       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit0_6       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit1_2       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit2_3       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit3_7       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit4_5       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit4_6       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit5_6       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit5_7       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract8Bit6_7       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int Extract16Bit0        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit1        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit2        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit3        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit4        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit5        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit6        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit7        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit8        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit9        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit10       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit11       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit12       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit13       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit14       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit15       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit0_1      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit2_3      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int Extract32Bit0        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit1        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit2        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit3        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit4        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit5        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit6        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit7        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit8        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit9        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit10       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit11       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit12       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit13       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit14       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit15       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit16       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit17       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit18       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit19       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit20       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit21       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit22       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit23       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit24       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit25       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit26       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit27       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit28       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int Extract32Bit0_1      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit4_6      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractTaiTime       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractL1Time        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractXmitPowerAdBm (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractXmitPowerBdBm (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int Extract_uint1_eu_dB  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          const char* sdsName,
+                                          const char* unitName,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractXmitPowerAmWatts (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractXmitPowerBmWatts (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract_uint1_eu_mWatts  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          const char* sdsName,
+                                          const char* unitName,
+                                          PolynomialTable* polyTable=0);
 
 //--------------------------------------------
 // some general extract+converson functions
 //--------------------------------------------
-int ExtractData1D_m_km   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP);
+int ExtractData1D_m_km   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 
 #endif //L1AEXTRACT_H

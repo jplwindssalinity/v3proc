@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   12 Aug 1998 09:17:14   deliver
+// change coefficients from floats to doubles
+// 
 //    Rev 1.1   12 Feb 1998 16:48:58   sally
 // add wrappers for "C" functions
 // 
@@ -70,7 +73,7 @@ EA_PolynomialErrorNo&   status)     // OUT: return status
         {
             num++;
         }
-        float* array = new float[num];
+        double* array = new double[num];
         if (array == 0)
         {
             status = EA_POLY_OUT_OF_MEMORY;
@@ -83,7 +86,7 @@ EA_PolynomialErrorNo&   status)     // OUT: return status
         for (subString = (char*)strtok(tmpString, ","); subString;
                     subString = (char*)strtok(0, ","), i++)
         {
-            if (sscanf(subString, " %g", &(array[i])) != 1)
+            if (sscanf(subString, " %lg", &(array[i])) != 1)
             {
                 fprintf(stderr, "Error reading polynomial: %s\n", subString);
                 status = EA_POLY_ERR_READ_COEFFICIENTS;

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   13 Oct 1998 15:34:30   sally
+// added L1B file
+// 
+//    Rev 1.7   03 Jun 1998 10:10:44   sally
+// change parameter names and types due to LP's changes
+// 
 //    Rev 1.6   20 Apr 1998 10:22:54   sally
 // change for WindSwatch
 // 
@@ -63,6 +69,7 @@ extern void pr_char4x(FILE* ofp, char* dataP);
 extern void pr_char4x_4(FILE* ofp, char* dataP);
 extern void pr_char13x(FILE* ofp, char* dataP);
 extern void pr_char28x(FILE* ofp, char* dataP);
+extern void pr_char32x(FILE* ofp, char* dataP);
 
 extern void pr_uint1_76(FILE* ofp, char* dataP);
 extern void pr_uint1_49(FILE* ofp, char* dataP);
@@ -72,11 +79,14 @@ extern void pr_int1_810(FILE* ofp, char* dataP);
 
 extern void pr_uint2_4(FILE* ofp, char* dataP);
 extern void pr_uint2_5(FILE* ofp, char* dataP);
+extern void pr_uint2_12(FILE* ofp, char* dataP);
 extern void pr_uint2_25(FILE* ofp, char* dataP);
 extern void pr_uint2_76(FILE* ofp, char* dataP);
+extern void pr_uint2_100(FILE* ofp, char* dataP);
 extern void pr_uint2_810(FILE* ofp, char* dataP);
 extern void pr_uint2_100_linesep(FILE* ofp, char* dataP);
 extern void pr_uint2_100_12(FILE* ofp, char* dataP);
+extern void pr_int2_100(FILE* ofp, char* dataP);
 
 extern void pr_uint3(FILE* ofp, char* dataP);
 extern void pr_uint4_4(FILE* ofp, char* dataP);
@@ -94,6 +104,7 @@ extern void pr_float4_6_100_linesep(FILE* ofp, char* dataP);
 extern void pr_76float4_6(FILE* ofp, char* dataP);
 extern void pr_810float4_6(FILE* ofp, char* dataP);
 extern void pr_76_4_float4_6(FILE* ofp, char* dataP);
+extern void pr_100_8_float4_6(FILE* ofp, char* dataP);
 
 extern void pr_bit(FILE* ofp, char* dataP);
 

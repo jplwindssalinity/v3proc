@@ -7,6 +7,34 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   20 Oct 1998 10:52:02   sally
+// add static QPF commands (table macro commands)
+// 
+//    Rev 1.16   14 Oct 1998 16:06:46   sally
+// fix type for checksum, should be unsigned short
+// 
+//    Rev 1.15   28 Aug 1998 11:22:20   sally
+// moved ReqqStatusE out of Reqq class
+// 
+//    Rev 1.14   19 Aug 1998 13:46:12   daffer
+// more Cmdlp/effect work
+// 
+//    Rev 1.13   01 Jul 1998 16:51:14   sally
+// added table upload repetition
+// 
+//    Rev 1.12   05 Jun 1998 09:17:44   daffer
+// Worked on 'FindNearestMatchable'
+// 
+//    Rev 1.11   01 Jun 1998 15:44:48   daffer
+// Changed r+ to a+ in Read
+// 
+//    Rev 1.10   29 May 1998 14:21:00   daffer
+// Modified Read method so it'll create the input file
+// if none is there.
+// 
+//    Rev 1.9   22 May 1998 16:29:38   daffer
+// Added/modified code for cmdlp/effect processing
+// 
 //    Rev 1.8   20 Apr 1998 15:17:54   sally
 // change List to EAList
 // 
@@ -52,11 +80,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include "Command.h"
+#include <errno.h>
+#include "Reqq.h"
 #include "CmdList.h"
-#include "CmdState.h"
-#include "Eqx.h"
-#include "Itime.h"
+
+int errno;
  
 static const char rcs_cmd_list_id[] =
     "@(#) $Header$";
@@ -106,8 +134,14 @@ CmdList::Read(
     FILE* ifp = fopen(cmdlpFilename, "r");
     if (ifp == NULL)
     {
-        _status = ERROR_OPENING_FILE;
-        return (_status);
+        if (errno == ENOENT) {
+            // File may not exist, try to create it
+            ifp = fopen(cmdlpFilename, "a+");
+            if (ifp == NULL) {
+                _status = ERROR_OPENING_FILE;
+                return (_status);
+            }
+        }
     }
 
     //-----------------
@@ -234,6 +268,26 @@ CmdList::ReadReqi(
                 fprintf(stderr, "\nLine %d: missing command line\n", lineNo);
                 _status = ERROR_READING_CMD;
                 break;
+            }
+        }
+
+        // If this command doesn't generate a QPF file and it takes
+        // parameters, get them and store them in the cmdParams
+        // string.
+        
+        if (newCmd->GetFileFormat(newCmd) != Command::FILE_QPF &&
+              newCmd->GetFileFormat(newCmd) != Command::FILE_QPF_STATIC) {
+            // If there is a parameter file, read it.
+            if (newCmd->dataFilename != 0) {
+                unsigned short checksum;
+                char paramString[10];
+                if ( Reqq::ReadParamWords( newCmd->dataFilename,
+                                           newCmd->GetNumWordsInParamFile(),
+                                           newCmd->GetDatafileFormat(),
+                                           checksum, paramString, 0) == REQQ_OK)
+                    (void) newCmd->SetCmdParams(paramString);
+                else 
+                    _status = ERROR_READING_DATAFILE;
             }
         }
         lineNo++;
@@ -370,9 +424,9 @@ CmdList::ExpandBC()
 #if 0
     for (Command* cmd = GetHead(); cmd; cmd = GetNext())
     {
-        if (cmd->commandId == CMD_BIN && cmd->binRepetition > 1)
+        if (cmd->commandId == CMD_BIN && cmd->tableRepetition > 1)
         {
-            cmd->binRepetition = 1;
+            cmd->tableRepetition = 1;
             Command* new_cmd = new Command;
             *new_cmd = *cmd;
             InsertAfter(new_cmd);
@@ -390,12 +444,12 @@ CmdList::ExpandBC()
 CmdList::StatusE
 CmdList::SetCmdEffects()
 {
-    CmdState cmd_state;
+    CmdEffect cmd_effect;
     for (Command* cmd = GetHead(); cmd; cmd = GetNext())
     {
         if (cmd->commandId == EA_CMD_UNKNOWN || cmd->commandId == EA_CMD_NONE)
             continue;
-        cmd->effectId = cmd_state.ApplyCmd(cmd);
+        cmd->effectId = cmd_effect.ApplyCmd(cmd);
     }
     return (_status);
 }
@@ -404,7 +458,9 @@ CmdList::SetCmdEffects()
 // SetCmdExpectedTimes 
 //---------------------
 // pass through the command list and update the expected times based
-// on the eqx list (only for commands with a path and gamma)
+// on the eqx list, or the planned time of the command, if the path 
+// isn't valid.
+//
 
 CmdList::StatusE
 CmdList::SetCmdExpectedTimes(
@@ -414,13 +470,15 @@ CmdList::SetCmdExpectedTimes(
     for (Command* cmd = GetHead(); cmd; cmd = GetNext())
     {
         if (cmd->plannedTpg.path != INVALID_PATH &&
-            eqxList->TpgToItime(cmd->plannedTpg, &itime))
+            eqxList->TpgToItime(cmd->plannedTpg, &itime)) {
             cmd->expectedTime = itime;
+        } 
     }
     return (_status);
 }
 
-/*
+/*  comment out Update and ApplyCmds 
+
 //--------
 // Update 
 //--------
@@ -456,10 +514,10 @@ CmdList::ApplyCmds(
         if (matchingCmd)
         {
             // set time of original command
-            if (cmd->l1Time != INVALID_TIME)
-                matchingCmd->l1Time = cmd->l1Time;
-            if (cmd->hkdtTime != INVALID_TIME)
-                matchingCmd->hkdtTime = cmd->hkdtTime;
+            if (cmd->l1aTime != INVALID_TIME)
+                matchingCmd->l1aTime = cmd->l1aTime;
+            if (cmd->hk2Time != INVALID_TIME)
+                matchingCmd->hk2Time = cmd->hk2Time;
             if (cmd->l1apTime != INVALID_TIME)
                 matchingCmd->l1apTime = cmd->l1apTime;
         }
@@ -472,7 +530,9 @@ CmdList::ApplyCmds(
 
     return (_status);
 }
-*/
+
+*/ 
+
 
 //---------------
 // AddSortedCmds 
@@ -503,41 +563,70 @@ CmdList::FindNearestMatchable(
     Command* match_command = NULL;
     Itime min_time_dif = MAX_TIME;
 
+    Itime effect_time = effect->BestTime();
+    EffectE effect_id = effect->effectId;
+
+    Itime time_dif;
+
     int try_index = 0;
-    for (Command* cmd = GetHead(); cmd; cmd = GetNext())
-    {
+
+    for (Command* cmd = GetHead(); cmd; cmd = GetNext()) {
         //-------------------------------
         // determine the time difference 
         //-------------------------------
 
-        Itime effect_time = effect->BestTime();
-        Itime time_dif;
         if (cmd->expectedTime > effect_time)
             time_dif = cmd->expectedTime - effect_time;
         else
             time_dif = effect_time - cmd->expectedTime;
-
-        //-----------------------------
-        // check for closest matchable 
-        //-----------------------------
-
-        EffectE effect_id = effect->effectId;
-        if (time_dif < min_time_dif &&
-                cmd->Matchable(cmd->commandId, effect_id))
-        {
-            if ((cmd->l1Time == INVALID_TIME ||
-                effect->l1Time == INVALID_TIME) &&
-                (cmd->l1apTime == INVALID_TIME ||
-                effect->l1apTime == INVALID_TIME) &&
-                (cmd->hkdtTime == INVALID_TIME ||
-                effect->hkdtTime == INVALID_TIME))
-            {
-                match_index = try_index;
-                match_command = cmd;
-                min_time_dif = time_dif;
+        if (cmd->effectId == EFF_COMMAND_HISTORY_CHANGE) {
+            if (time_dif < min_time_dif && 
+                effect->commandId == (EACommandE) cmd->effect_value) {
+                if ((cmd->l1aTime == INVALID_TIME ||
+                     effect->l1aTime == INVALID_TIME) &&
+                    (cmd->l1apTime == INVALID_TIME ||
+                     effect->l1apTime == INVALID_TIME) &&
+                    (cmd->hk2Time == INVALID_TIME ||
+                     effect->hk2Time == INVALID_TIME)) {
+                    match_index = try_index;
+                    match_command = cmd;
+                    min_time_dif = time_dif;
+                }
             }
-        }
+        } else if (effect->effectId == EFF_COMMAND_HISTORY_CHANGE) {
+            if (time_dif < min_time_dif && 
+                cmd->commandId == (EACommandE) effect->effect_value) {
+                if ((cmd->l1aTime == INVALID_TIME ||
+                     effect->l1aTime == INVALID_TIME) &&
+                    (cmd->l1apTime == INVALID_TIME ||
+                     effect->l1apTime == INVALID_TIME) &&
+                    (cmd->hk2Time == INVALID_TIME ||
+                     effect->hk2Time == INVALID_TIME)) {
+                    match_index = try_index;
+                    match_command = cmd;
+                    min_time_dif = time_dif;
+                }
+            }
+        } else {
 
+          //-----------------------------
+          // check for closest matchable 
+          //-----------------------------
+
+          if (time_dif < min_time_dif &&
+                  cmd->Matchable(cmd->commandId, effect_id)) {
+              if ((cmd->l1aTime == INVALID_TIME ||
+                   effect->l1aTime == INVALID_TIME) &&
+                  (cmd->l1apTime == INVALID_TIME ||
+                   effect->l1apTime == INVALID_TIME) &&
+                  (cmd->hk2Time == INVALID_TIME ||
+                   effect->hk2Time == INVALID_TIME)) {
+                  match_index = try_index;
+                  match_command = cmd;
+                  min_time_dif = time_dif;
+              }
+          }
+        }
         try_index++;
     }
 
@@ -564,8 +653,8 @@ CmdList::MissingL1AVerify(
     int try_index = 0;
     for (Command* cmd = GetTail(); cmd; cmd = GetPrev())
     {
-        if (cmd->l1Verify == VER_YES || cmd->l1Verify == VER_NA ||
-        cmd->l1Verify == VER_OK)
+        if (cmd->l1aVerify == VER_YES || cmd->l1aVerify == VER_NA ||
+        cmd->l1aVerify == VER_OK)
             been_verified = 1;
         else if (been_verified)
         {
@@ -578,22 +667,22 @@ CmdList::MissingL1AVerify(
 }
 
 //-------------------
-// MissingHkdtVerify 
+// MissingHk2Verify 
 //-------------------
 // returns the last hkdt unverified command prior to the last
 // block of verified hkdt commands
 // returns 0 is no such hkdt unverified command exists
 
 Command*
-CmdList::MissingHkdtVerify(
+CmdList::MissingHk2Verify(
     int*    index)
 {
     int been_verified = 0;
     int try_index = 0;
     for (Command* cmd = GetTail(); cmd; cmd = GetPrev())
     {
-        if (cmd->hkdtVerify == VER_YES || cmd->hkdtVerify == VER_NA ||
-        cmd->hkdtVerify == VER_OK)
+        if (cmd->hk2Verify == VER_YES || cmd->hk2Verify == VER_NA ||
+        cmd->hk2Verify == VER_OK)
             been_verified = 1;
         else if (been_verified)
         {
@@ -707,6 +796,7 @@ CmdList::ReportAnomalies(
     return (_status);
 }
 
+
 //--------------
 // _MatchingCmd 
 //--------------
@@ -782,5 +872,6 @@ CmdList::_MatchingCmd(
     return (0);
 }
 */
+
 
 #endif

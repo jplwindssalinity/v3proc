@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   22 May 1998 16:24:36   daffer
+// Added GetStatus method
+// 
 //    Rev 1.1   10 Apr 1998 14:04:08   daffer
 //   Changed ConfigList to EAConfigList throughout
 // 
@@ -68,6 +71,7 @@ public:
     char*       GetLogFileName(int, char**);
     void        Usage(ArgInfo* arg_info_array[]);
     void        Usage();
+    StatusE     GetStatus() { return (_status);};
 
 protected:
     int         _IsBadOption(const char* option);

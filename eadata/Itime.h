@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   18 Aug 1998 10:56:30   sally
+// make L1ADrvExtract return any number of values
+// 
+//    Rev 1.5   22 May 1998 16:44:38   daffer
+// Added L1ToItime2 method
+// 
 //    Rev 1.4   01 Apr 1998 13:36:10   sally
 // for L1A Derived table
 // 
@@ -104,8 +110,8 @@ struct Itime
     friend int      operator>=(const Itime&, const Itime&);
     friend int      operator<(const Itime&, const Itime&);
     friend int      operator<=(const Itime&, const Itime&);
-    friend int      operator/(const Itime&, const Itime&);
-    friend int      operator*(const Itime&, const Itime&);
+    friend Itime    operator/(const Itime&, const Itime&);
+    friend Itime    operator*(const Itime&, int num);
 
     //--------------
     // constructors 
@@ -119,6 +125,7 @@ struct Itime
     Itime(const char* codea);
     Itime(struct tm*);
     Itime(double seconds);
+    // Itime(const char* yyyyddd, const char* hhmmssccc);
 
     int             tmToItime(struct tm* tm_time);
                     // user need not allocate space for tm_time
@@ -134,6 +141,7 @@ struct Itime
     int             BDateToItime(const char* string);
     int             ItimeToBDate(char* string);
     int             L1ToItime(const char* string);
+    int             L1ToItime2(const char* yyyyddd, const char* hhmmssccc);
     int             ItimeToL1(char* string);
     int             BCDToItime(const char* string);
     int             ItimeToHMS(char* string) const;
@@ -193,6 +201,7 @@ struct Itime
 extern Itime operator+(const Itime& time1, const Itime& time2);
 extern Itime operator-(const Itime& time1, const Itime& time2);
 extern Itime operator/(const Itime& time1, int i);
+extern Itime operator*(const Itime& time1, int i);
 
 inline int      operator==(const Itime& a, const Itime& b)
                 {

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.5   13 Oct 1998 15:34:24   sally
+// added L1B file
+// 
 //    Rev 1.4   17 Apr 1998 16:51:12   sally
 // add L2A and L2B file formats
 // 
@@ -48,6 +51,7 @@ const char *source_id_map[] =
     SOURCE_L1AP_STRING,
     SOURCE_L1A_DERIVED_STRING,
     SOURCE_HK2_STRING,
+    SOURCE_L1B_STRING,
     SOURCE_L2A_STRING,
     SOURCE_L2B_STRING
 };

@@ -22,8 +22,10 @@ static const char TempInstances_C_rcsid[] =
 #include "Eqx.h"
 #include "Filter.h"
 #include "LimitChecker.h"
+#include "L1AErrorChecker.h"
 #include "Parameter.h"
 #include "Polynomial.h"
+#include "ReqaqList.h"
 #include "TlmHdfFile.h"
 #include "ToDo.h"
 
@@ -55,6 +57,12 @@ template class SortedList<Eqx>;
 template class EANode<TlmHdfFile>;
 template class EAList<TlmHdfFile>;
 template class SortedList<TlmHdfFile>;
+
+template class EANode<ErrorMsgT>;
+template class EAList<ErrorMsgT>;
+template class EANode<ReqqRecord>;
+template class EAList<ReqqRecord>;
+template class SortedList<ReqqRecord>;
 
 #endif //__SCAT_GNUCPP__
 

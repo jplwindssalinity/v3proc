@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   01 May 1998 14:46:42   sally
+// add HK2 file
+// 
 //    Rev 1.5   17 Apr 1998 16:48:52   sally
 // add L2A and L2B parameter tables
 // 
@@ -36,15 +39,13 @@
 
 static const char rcs_id_L1AFile_h[] = "@(#) $Id$";
 
-#include "TlmHdfFile.h"
-#include "Itime.h"
-#include "Parameter.h"
+#include "TimeTlmFile.h"
 
 //=========//
 // L1AFile //
 //=========//
 
-class L1AFile : public TlmHdfFile
+class L1AFile : public TimeTlmFile
 {
 public:
 
@@ -55,14 +56,9 @@ public:
 
     virtual ~L1AFile();
 
-    TlmHdfFile::StatusE    Range(FILE* ofp);
-
 protected:
 
-    int32               _timeSdsID[1];
-
     virtual StatusE     _getTime(int32 index, Itime* recTime);
-    virtual StatusE     _setFileIndices(void);
 
     virtual int32       _binarySearchStart(
                              Itime  userTime,    // user's start time

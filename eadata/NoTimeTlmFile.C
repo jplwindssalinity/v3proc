@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   01 May 1998 14:46:54   sally
+// add HK2 file
+// 
 //    Rev 1.1   20 Apr 1998 10:22:14   sally
 // change for WindSwatch
 // 
@@ -60,7 +63,7 @@ TlmHdfFile::StatusE
 NoTimeTlmFile::Range(
     FILE*   ofp)
 {
-    fprintf(ofp, "%s : %s\n", source_id_map[_dataType], _filename);
+    fprintf(ofp, "%s : %s\n", source_id_map[_sourceType], _filename);
     fprintf(ofp, "  %ld Data Records\n", _dataLength);
     return(_status);
 

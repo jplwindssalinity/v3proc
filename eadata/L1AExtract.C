@@ -7,6 +7,45 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.21   16 Oct 1998 09:04:36   sally
+// added ExtractL1Time
+// 
+//    Rev 1.20   13 Oct 1998 15:32:58   sally
+// added L1B file
+// 
+//    Rev 1.19   24 Sep 1998 15:54:40   sally
+// add one extract function for full_frame
+// 
+//    Rev 1.18   18 Aug 1998 15:06:30   sally
+// mv mWatts for transmit power to L1ADrvTab.C
+// 
+//    Rev 1.17   13 Aug 1998 16:26:28   sally
+// 
+//    Rev 1.16   04 Aug 1998 16:29:20   deliver
+// pass polynomial table to ParameterList's HoldExtract
+// 
+//    Rev 1.15   04 Aug 1998 15:58:58   sally
+// fixe L1AParTab so that dBm comes from polynomial table and
+// mWatts will be calculated
+// 
+//    Rev 1.14   27 Jul 1998 14:00:10   sally
+// passing polynomial table to extraction function
+// 
+//    Rev 1.13   23 Jul 1998 16:14:00   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.12   22 Jun 1998 15:25:22   sally
+// change to incorporate Barry's update
+// 
+//    Rev 1.11   19 Jun 1998 14:02:18   sally
+// add some bit extraction functions needed by HK2
+// 
+//    Rev 1.10   03 Jun 1998 10:09:46   sally
+// change parameter names and types due to LP's changes
+// 
+//    Rev 1.9   06 May 1998 15:17:14   sally
+// took out exit()
+// 
 //    Rev 1.8   21 Apr 1998 16:39:46   sally
 //  for L2B
 // 
@@ -58,6 +97,7 @@
 
 #include "L1AExtract.h"
 #include "Parameter.h"
+#include "PolyTable.h"
 #include "Itime.h"
 
 static const char rcs_id_L1AExtract_C[] = "@(#) $Header$";
@@ -78,10 +118,13 @@ static const float chBandwidth[]={ 194645.28, 105719.20, 54478.76, 49192.80 };
 //======================================================================
 // L1A DATA HEADER Functions
 //
-//   Input:     frame       pointer to a L1A DATA HEADER
-//  Output:     data        pointer to the data destination
-// Returns:     TRUE if the parameter has been extracted
-//              FALSE otherwise
+//  Input:     frame       pointer to a L1A DATA HEADER
+//  Output:    data        pointer to the data destination
+//  return:
+//            num: num == length which user requests
+//              1: 1 value
+//              0: no value
+//             -1: error occured
 //======================================================================
 
 #define LINE_LENGTH     80
@@ -106,7 +149,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     return (l1File->GetDatasetData1D(sdsIDs[0], start,
@@ -125,17 +169,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     unsigned int* tempBuffer =
              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D_uint4_float: Out of memory\n");
-        exit(1);
-    }
+    assert (tempBuffer != 0);
 
     // get the array of unsigned int
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -169,17 +210,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold unsigned short integers
     unsigned short* tempBuffer =
              (unsigned short*) calloc(length, sizeof(unsigned short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     // get the array of short integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -213,16 +251,13 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     short* tempBuffer = (short*) calloc(length, sizeof(short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     // get the array of short integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -256,27 +291,24 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     unsigned char* tmpBuffer =
              (unsigned char*) calloc(length, sizeof(unsigned char));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D: Out of memory\n");
-        exit(1);
-    }
+    assert( tmpBuffer != 0);
 
     // get the array of short integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -285,7 +317,7 @@ VOIDP      buffer)
         *floatP = (float) (scaleFactor * tmpBuffer[i]);
     }
     free((void*) tmpBuffer);
-    return(TRUE);
+    return(length);
 
 }//ExtractData1D_uint1_float
 
@@ -300,17 +332,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     unsigned int* tempBuffer =
              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D_int_char3: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     // get the array of integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -342,7 +371,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -373,7 +403,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -394,6 +425,38 @@ VOIDP       buffer)
 }//ExtractData2D_5
 
 //----------------------------------------------------------------------
+// Function:    ExtractData2D_8 ([][8])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_8(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 8;
+
+    if (stride == 1 || stride == 0)
+        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    else
+        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+
+}//ExtractData2D_8
+
+//----------------------------------------------------------------------
 // Function:    ExtractData3D_2_8 ([][2][8])
 // Extracts:    three dimensional data
 //----------------------------------------------------------------------
@@ -404,7 +467,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[3], sdStride[3], sdEdge[3];
@@ -438,7 +502,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -469,7 +534,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -500,7 +566,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -531,7 +598,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -562,7 +630,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -593,7 +662,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -624,17 +694,15 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold unsigned short integers
     unsigned short* tempBuffer =
              (unsigned short*) calloc(length * 76, sizeof(unsigned short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData2D_76_uint2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[2], sdStride[2], sdEdge[2];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -689,16 +757,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     short* tempBuffer = (short*) calloc(length * 76, sizeof(short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData2D_76_int2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[2], sdStride[2], sdEdge[2];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -743,6 +809,132 @@ VOIDP       buffer)
 }//ExtractData2D_76_int2_float
 
 //----------------------------------------------------------------------
+// Function:    ExtractData2D_100_uint2_float ([][100])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_100_uint2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold unsigned short integers
+    unsigned short* tempBuffer =
+             (unsigned short*) calloc(length * 100, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 100;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return FALSE;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    unsigned short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 100; j++, floatP++, ushortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*ushortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return TRUE;
+
+}//ExtractData2D_100_uint2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_100_int2_float ([][100])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_100_int2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold signed short integers
+    signed short* tempBuffer =
+             (signed short*) calloc(length * 100, sizeof(signed short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 100;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return FALSE;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    signed short* shortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 100; j++, floatP++, shortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*shortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return TRUE;
+
+}//ExtractData2D_100_int2_float
+
+//----------------------------------------------------------------------
 // Function:    ExtractData2D_810_uint2_float ([][810])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
@@ -753,17 +945,15 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold unsigned short integers
     unsigned short* tempBuffer =
              (unsigned short*) calloc(length * 810, sizeof(unsigned short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData2D_810_uint2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[2], sdStride[2], sdEdge[2];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -818,16 +1008,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     short* tempBuffer = (short*) calloc(length * 810, sizeof(short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData2D_810_int2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[2], sdStride[2], sdEdge[2];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -872,71 +1060,6 @@ VOIDP       buffer)
 }//ExtractData2D_810_int2_float
 
 //----------------------------------------------------------------------
-// Function:    ExtractData2D_100_uint2_float ([][100])
-// Extracts:    two dimensional data
-//----------------------------------------------------------------------
-int
-ExtractData2D_100_uint2_float(
-TlmHdfFile* l1File,
-int32*      sdsIDs,
-int32       start,
-int32       stride,
-int32       length,
-VOIDP       buffer)
-{
-    assert(l1File != 0);
-    // alloc space to hold unsigned short integers
-    unsigned short* tempBuffer =
-             (unsigned short*) calloc(length * 100, sizeof(unsigned short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData2D_100_uint2_float: Out of memory\n");
-        exit(1);
-    }
-    int32 sdStart[2], sdStride[2], sdEdge[2];
-    sdStart[0] = start;
-    sdStart[1] = 0;
-    sdStride[0] = stride;
-    sdStride[1] = 1;
-    sdEdge[0] = length;
-    sdEdge[1] = 100;
-
-    if (stride == 1 || stride == 0)
-    {
-        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
-    }
-    else
-    {
-        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
-    }
-
-    // get the scale factor
-    float64  scaleFactor;
-    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
-
-    // convert the short integers to floats, and return
-    float* floatP = (float*)buffer;
-    unsigned short* ushortP = tempBuffer;
-    for (int i=0; i < length; i++)
-    {
-        for (int j=0; j < 100; j++, floatP++, ushortP++)
-        {
-            
-            *floatP = (float) (scaleFactor * (*ushortP));
-        }
-    }
-    free((void*) tempBuffer);
-
-    return TRUE;
-
-}//ExtractData2D_100_uint2_float
-
-//----------------------------------------------------------------------
 // Function:    ExtractData3D_76_4_uint2_float ([][76][4])
 // Extracts:    3 dimensional data
 //----------------------------------------------------------------------
@@ -947,17 +1070,15 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold unsigned short integers
     unsigned short* tempBuffer =
              (unsigned short*) calloc(length * 304, sizeof(unsigned short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData3D_76_4_uint2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[3], sdStride[3], sdEdge[3];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -1012,16 +1133,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     short* tempBuffer = (short*) calloc(length * 304, sizeof(short));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData3D_76_4_int2_float: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
+
     int32 sdStart[3], sdStride[3], sdEdge[3];
     sdStart[0] = start;
     sdStart[1] = 0;
@@ -1076,7 +1195,8 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     int32 sdStart[3], sdStride[3], sdEdge[3];
@@ -1099,6 +1219,159 @@ VOIDP       buffer)
 
 }//ExtractData3D_100_12
 
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_100_8_uint2_float ([][100][8])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_100_8_uint2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold unsigned short integers
+    unsigned short* tempBuffer =
+             (unsigned short*) calloc(length * 800, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[3], sdStride[3], sdEdge[3];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStart[2] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdStride[2] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 100;
+    sdEdge[2] = 8;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return FALSE;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    unsigned short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 800; j++, floatP++, ushortP++)
+                *floatP = (float) (scaleFactor * (*ushortP));
+    }
+    free((void*) tempBuffer);
+
+    return TRUE;
+
+}//ExtractData3D_100_8_uint2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_100_8_int2_float ([][100][8])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_100_8_int2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    short* tempBuffer = (short*) calloc(length * 800, sizeof(short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[3], sdStride[3], sdEdge[3];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStart[2] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdStride[2] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 100;
+    sdEdge[2] = 8;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return FALSE;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return FALSE;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    short* shortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 800; j++, floatP++, shortP++)
+            *floatP = (float) (scaleFactor * (*shortP));
+    }
+    free((void*) tempBuffer);
+
+    return TRUE;
+
+}//ExtractData3D_100_8_int2_float
+
+//----------------------------------------------------------------------
+// Function:    Extract1of8Bits ([])
+// Extracts:    one dimensional data (1 of 8 bits)
+//----------------------------------------------------------------------
+int
+Extract1of8Bits(
+TlmHdfFile*     l1File,
+int32*          sdsIDs,
+int32           start,
+int32           stride,
+int32           length,
+unsigned char   whichBit,   // which bit to extract
+VOIDP           buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0 && whichBit < 8);
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                   length, buffer) != HDF_SUCCEED)
+        return(-1);
+
+    unsigned char* charP = (unsigned char*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        charP[i] = EXTRACT_GET_BIT(charP[i], whichBit);
+    }
+    return 1;
+
+}//Extract1of8Bits
 
 //----------------------------------------------------------------------
 // Function:    Extract8Bit0 ([])
@@ -1111,19 +1384,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 0);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 0, buffer, 0));
 
 }//Extract8Bit0
 
@@ -1138,19 +1402,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 1);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 1, buffer, 0));
 
 }//Extract8Bit1
 
@@ -1165,19 +1420,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 2);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 2, buffer, 0));
 
 }//Extract8Bit2
 
@@ -1192,19 +1438,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 3);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 3, buffer, 0));
 
 }//Extract8Bit3
 
@@ -1219,19 +1456,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 4);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 4, buffer, 0));
 
 }//Extract8Bit4
 
@@ -1246,19 +1474,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 5);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 5, buffer, 0));
 
 }//Extract8Bit5
 
@@ -1273,19 +1492,10 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
-
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 6);
-    }
-    return TRUE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 6, buffer, 0));
 
 }//Extract8Bit6
 
@@ -1300,21 +1510,48 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, buffer) != HDF_SUCCEED)
-        return FALSE;
+    return(Extract1of8Bits(l1File,sdsIDs,start,stride,length, 7, buffer, 0));
 
+}//Extract8Bit7
+
+//----------------------------------------------------------------------
+// Function:    Extract1of16Bits ([])
+// Extracts:    one dimensional data (1 out of 16 bits)
+//----------------------------------------------------------------------
+int
+Extract1of16Bits(
+TlmHdfFile*    l1File,
+int32*         sdsIDs,
+int32          start,
+int32          stride,
+int32          length,
+unsigned char  whichBit,
+VOIDP          buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0 && whichBit < 16);
+    // alloc space to hold long integers
+    unsigned short* tmpBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tmpBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                              length, tmpBuffer) != HDF_SUCCEED)
+        return(-1);
+
+    // extract 1 bit only and return the buffer
     unsigned char* charP = (unsigned char*)buffer;
     for (int i=0; i < length; i++)
     {
-        charP[i] = EXTRACT_GET_BIT(charP[i], 7);
+        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], whichBit);
     }
-    return TRUE;
+    free((void*) tmpBuffer);
+    return 1;
 
-}//Extract8Bit7
+}//Extract1of16Bits
 
 //----------------------------------------------------------------------
 // Function:    Extract16Bit0 ([])
@@ -1327,30 +1564,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit0: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 0 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 0);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                           0, buffer, 0));
 
 }//Extract16Bit0
 
@@ -1365,30 +1583,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit1: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 1 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 1);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                           1, buffer, 0));
 
 }//Extract16Bit1
 
@@ -1403,30 +1602,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit2: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 2 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 2);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                          2, buffer, 0));
 
 }//Extract16Bit2
 
@@ -1441,30 +1621,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit3: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 3 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 3);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                         3, buffer, 0));
 
 }//Extract16Bit3
 
@@ -1479,30 +1640,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit4: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 4 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 4);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                        4, buffer, 0));
 
 }//Extract16Bit4
 
@@ -1517,30 +1659,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit5: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 5 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 5);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                             5, buffer, 0));
 
 }//Extract16Bit5
 
@@ -1555,30 +1678,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit6: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 6 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 6);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                             6, buffer, 0));
 
 }//Extract16Bit6
 
@@ -1593,30 +1697,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit7: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 7 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 7);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                               7, buffer, 0));
 
 }//Extract16Bit7
 
@@ -1631,30 +1716,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit8: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 8 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 8);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                             8, buffer, 0));
 
 }//Extract16Bit8
 
@@ -1669,30 +1735,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit9: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 9 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 9);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                        9, buffer, 0));
 
 }//Extract16Bit9
 
@@ -1707,30 +1754,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit10: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 10 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 10);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                               10, buffer, 0));
 
 }//Extract16Bit10
 
@@ -1745,30 +1773,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit11: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 11 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 11);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                               11, buffer, 0));
 
 }//Extract16Bit11
 
@@ -1783,30 +1792,11 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit12: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 12 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 12);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                             12, buffer, 0));
 
 }//Extract16Bit12
 
@@ -1821,30 +1811,11 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit13: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 13 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 13);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                                 13, buffer, 0));
 
 }//Extract16Bit13
 
@@ -1859,31 +1830,11 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit14: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 14 only and return the buffer
-    (void)memset(buffer, 0, length);
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 14);
-    }
-    free((void*) shortBuffer);
-    return TRUE;
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                                 14, buffer, 0));
 
 }//Extract16Bit14
 
@@ -1898,33 +1849,161 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of16Bits(l1File, sdsIDs, start, stride, length,
+                                15, buffer, 0));
+
+}//Extract16Bit15
+
+//----------------------------------------------------------------------
+// Function:    Extract16Bit0_1 ([])
+// Extracts:    one dimensional data (Bit 0-1 only)
+//----------------------------------------------------------------------
+int
+Extract16Bit0_1(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
-    unsigned short* shortBuffer =
-              (unsigned short*) calloc(length, sizeof(short));
-    if (shortBuffer == NULL)
-    {
-        fprintf(stderr, "Extract16Bit15: Out of memory\n");
-        exit(1);
-    }
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tempBuffer != 0);
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, shortBuffer) != HDF_SUCCEED)
+                              length, tempBuffer) != HDF_SUCCEED)
         return FALSE;
 
-    // extract bit 15 only and return the buffer
+    // extract bit 0_1 only and return the buffer
     (void)memset(buffer, 0, length);
     unsigned char* charP = (unsigned char*)buffer;
     for (int i=0; i < length; i++)
     {
-        charP[i] = EXTRACT_GET_BIT(shortBuffer[i], 15);
+        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 1, 2);
     }
-    free((void*) shortBuffer);
+    free((void*) tempBuffer);
     return TRUE;
 
-}//Extract16Bit15
+}//Extract16Bit0_1
+
+//----------------------------------------------------------------------
+// Function:    Extract16Bit2_3 ([])
+// Extracts:    one dimensional data (Bit 0-1 only)
+//----------------------------------------------------------------------
+int
+Extract16Bit2_3(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                              length, tempBuffer) != HDF_SUCCEED)
+        return FALSE;
+
+    // extract bit 2_3 only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned char* charP = (unsigned char*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 3, 2);
+    }
+    free((void*) tempBuffer);
+    return TRUE;
+
+}//Extract16Bit2_3
+
+//----------------------------------------------------------------------
+// Function:    ExtractSomeOf8Bits ([])
+// Extracts:    one dimensional data (Bit 0-1 only)
+//----------------------------------------------------------------------
+int
+ExtractSomeOf8Bits(
+TlmHdfFile*     l1File,
+int32*          sdsIDs,
+int32           start,
+int32           stride,
+int32           length,
+unsigned char   leftMostBit,
+unsigned char   numBits,
+VOIDP           buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    unsigned char* tempBuffer =
+              (unsigned char*) calloc(length, sizeof(unsigned char));
+    assert(tempBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                   length, tempBuffer) != HDF_SUCCEED)
+        return(-1);
+
+    // extract bits (leftMostBit + numBits) only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned char* charP = (unsigned char*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], leftMostBit, numBits);
+    }
+    free((void*) tempBuffer);
+    return 1;
+
+}//ExtractSomeOf8Bits
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit0_1 ([])
+// Extracts:    one dimensional data (Bit 0-1 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit0_1(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,1,
+                                 2,buffer, 0));
+
+}//Extract8Bit0_1
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit0_3 ([])
+// Extracts:    one dimensional data (Bit 0-3 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit0_3(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,3,
+                                 4,buffer, 0));
+
+}//Extract8Bit0_3
 
 //----------------------------------------------------------------------
 // Function:    Extract8Bit0_4 ([])
@@ -1937,33 +2016,146 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned char* tempBuffer =
-              (unsigned char*) calloc(length, sizeof(unsigned char));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "Extract8Bit0_4: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 0_4 only and return the buffer
-    (void)memset(buffer, 0, length);
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 4, 5);
-    }
-    free((void*) tempBuffer);
-    return TRUE;
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,4,
+                               5,buffer, 0));
 
 }//Extract8Bit0_4
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit0_6 ([])
+// Extracts:    one dimensional data (Bit 0-6 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit0_6(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,6,
+                               7,buffer, 0));
+
+}//Extract8Bit0_6
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit1_2 ([])
+// Extracts:    one dimensional data (Bit 1-2 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit1_2(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,2,
+                                  2,buffer, 0));
+
+}//Extract8Bit1_2
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit2_3 ([])
+// Extracts:    one dimensional data (Bit 2-3 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit2_3(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,3,
+                                 2,buffer, 0));
+
+}//Extract8Bit2_3
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit3_7 ([])
+// Extracts:    one dimensional data (Bit 4-5 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit3_7(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,7,
+                                   5,buffer, 0));
+
+}//Extract8Bit3_7
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit4_5 ([])
+// Extracts:    one dimensional data (Bit 4-5 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit4_5(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,5,
+                                   2,buffer, 0));
+
+}//Extract8Bit4_5
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit4_6 ([])
+// Extracts:    one dimensional data (Bit 4-6 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit4_6(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,6,
+                                   3,buffer, 0));
+
+}//Extract8Bit4_6
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit5_6 ([])
+// Extracts:    one dimensional data (Bit 5-6 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit5_6(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,6,
+                                  2,buffer, 0));
+
+}//Extract8Bit5_6
 
 //----------------------------------------------------------------------
 // Function:    Extract8Bit5_7 ([])
@@ -1976,33 +2168,105 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold short integers
-    unsigned char* tempBuffer =
-              (unsigned char*) calloc(length, sizeof(unsigned char));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "Extract8Bit5_7: Out of memory\n");
-        exit(1);
-    }
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,7,3,buffer,0));
+
+}//Extract8Bit5_7
+
+//----------------------------------------------------------------------
+// Function:    Extract8Bit6_7 ([])
+// Extracts:    one dimensional data (Bit 6-7 only)
+//----------------------------------------------------------------------
+int
+Extract8Bit6_7(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    return(ExtractSomeOf8Bits(l1File,sdsIDs,start,stride,length,
+                           7, 2,buffer, 0));
+
+}//Extract8Bit6_7
+
+//----------------------------------------------------------------------
+// Function:    Extract1of32Bits ([])
+// Extracts:    one dimensional data (1 out of 32 bits)
+//----------------------------------------------------------------------
+int
+Extract1of32Bits(
+TlmHdfFile*    l1File,
+int32*         sdsIDs,
+int32          start,
+int32          stride,
+int32          length,
+unsigned char  whichBit,
+VOIDP          buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0 && whichBit < 32);
+    // alloc space to hold long integers
+    unsigned int* tmpBuffer =
+              (unsigned int*) calloc(length, sizeof(unsigned int));
+    assert(tmpBuffer != 0);
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                   length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+                              length, tmpBuffer) != HDF_SUCCEED)
+        return(-1);
 
-    // extract bit 5_7 only and return the buffer
-    (void)memset(buffer, 0, length);
+    // extract 1 bit only and return the buffer
     unsigned char* charP = (unsigned char*)buffer;
     for (int i=0; i < length; i++)
     {
-        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 7, 3);
+        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], whichBit);
     }
-    free((void*) tempBuffer);
-    return TRUE;
+    free((void*) tmpBuffer);
+    return 1;
 
-}//Extract8Bit5_7
+}//Extract1of32Bits
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit0 ([])
+// Extracts:    one dimensional data (Bit 0 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit0(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 0, buffer, 0));
+
+}//Extract32Bit0
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit1 ([])
+// Extracts:    one dimensional data (Bit 1 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit1(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                     1, buffer, 0));
+
+}//Extract32Bit1
 
 //----------------------------------------------------------------------
 // Function:    Extract32Bit2 ([])
@@ -2015,30 +2279,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit2: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 2 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 2);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 2, buffer, 0));
 
 }//Extract32Bit2
 
@@ -2053,32 +2298,70 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit3: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 3 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 3);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                3, buffer, 0));
 
 }//Extract32Bit3
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit4 ([])
+// Extracts:    one dimensional data (Bit 4 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit4(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 4, buffer, 0));
+ 
+}//Extract32Bit4
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit5 ([])
+// Extracts:    one dimensional data (Bit 5 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit5(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                  5, buffer, 0));
+ 
+}//Extract32Bit5
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit6 ([])
+// Extracts:    one dimensional data (Bit 6 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit6(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                   6, buffer, 0));
+ 
+}//Extract32Bit6
 
 //----------------------------------------------------------------------
 // Function:    Extract32Bit7 ([])
@@ -2091,30 +2374,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit7: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 7 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 7);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 7, buffer, 0));
 
 }//Extract32Bit7
 
@@ -2129,30 +2393,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit8: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 8 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 8);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                  8, buffer, 0));
 
 }//Extract32Bit8
 
@@ -2167,30 +2412,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit9: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 9 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 9);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                       9, buffer, 0));
 
 }//Extract32Bit9
 
@@ -2205,30 +2431,11 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit10: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 10 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 10);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                      10, buffer, 0));
 
 }//Extract32Bit10
 
@@ -2243,32 +2450,336 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
-    assert(l1File != 0);
-    // alloc space to hold long integers
-    unsigned int* tmpBuffer =
-              (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tmpBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit11: Out of memory\n");
-        exit(1);
-    }
-
-    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
-                              length, tmpBuffer) != HDF_SUCCEED)
-        return FALSE;
-
-    // extract bit 11 only and return the buffer
-    unsigned char* charP = (unsigned char*)buffer;
-    for (int i=0; i < length; i++)
-    {
-        charP[i] = EXTRACT_GET_BIT(tmpBuffer[i], 11);
-    }
-    free((void*) tmpBuffer);
-    return TRUE;
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                        11, buffer, 0));
 
 }//Extract32Bit11
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit12 ([])
+// Extracts:    one dimensional data (Bit 12 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit12(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                           12, buffer, 0));
+
+}//Extract32Bit12
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit13 ([])
+// Extracts:    one dimensional data (Bit 13 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit13(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                13, buffer, 0));
+ 
+}//Extract32Bit13
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit14 ([])
+// Extracts:    one dimensional data (Bit 14 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit14(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                               14, buffer, 0));
+ 
+}//Extract32Bit14
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit15 ([])
+// Extracts:    one dimensional data (Bit 15 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit15(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 15, buffer, 0));
+ 
+}//Extract32Bit15
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit16 ([])
+// Extracts:    one dimensional data (Bit 16 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit16(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 16, buffer, 0));
+ 
+}//Extract32Bit16
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit17 ([])
+// Extracts:    one dimensional data (Bit 17 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit17(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 17, buffer, 0));
+ 
+}//Extract32Bit17
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit18 ([])
+// Extracts:    one dimensional data (Bit 18 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit18(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                  18, buffer, 0));
+ 
+}//Extract32Bit18
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit19 ([])
+// Extracts:    one dimensional data (Bit 19 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit19(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                  19, buffer, 0));
+ 
+}//Extract32Bit19
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit20 ([])
+// Extracts:    one dimensional data (Bit 20 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit20(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 20, buffer, 0));
+ 
+}//Extract32Bit20
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit21 ([])
+// Extracts:    one dimensional data (Bit 21 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit21(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                    21, buffer, 0));
+ 
+}//Extract32Bit21
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit22 ([])
+// Extracts:    one dimensional data (Bit 22 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit22(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                              22, buffer, 0));
+ 
+}//Extract32Bit22
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit23 ([])
+// Extracts:    one dimensional data (Bit 23 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit23(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                 23, buffer, 0));
+ 
+}//Extract32Bit23
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit24 ([])
+// Extracts:    one dimensional data (Bit 24 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit24(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                24, buffer, 0));
+ 
+}//Extract32Bit24
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit25 ([])
+// Extracts:    one dimensional data (Bit 25 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit25(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                  25, buffer, 0));
+ 
+}//Extract32Bit25
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit26 ([])
+// Extracts:    one dimensional data (Bit 26 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit26(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                                26, buffer, 0));
+ 
+}//Extract32Bit26
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit27 ([])
+// Extracts:    one dimensional data (Bit 27 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit27(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                             27, buffer, 0));
+ 
+}//Extract32Bit27
+
+//----------------------------------------------------------------------
+// Function:    Extract32Bit28 ([])
+// Extracts:    one dimensional data (Bit 28 only)
+//----------------------------------------------------------------------
+int
+Extract32Bit28(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    return(Extract1of32Bits(l1File, sdsIDs, start, stride, length,
+                             28, buffer, 0));
+ 
+}//Extract32Bit28
 
 //----------------------------------------------------------------------
 // Function:    Extract32Bit0_1 ([])
@@ -2281,17 +2792,14 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     unsigned int* tempBuffer =
               (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit0_1: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
@@ -2320,17 +2828,14 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
     unsigned int* tempBuffer =
               (unsigned int*) calloc(length, sizeof(unsigned int));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "Extract32Bit5_7: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                    length, tempBuffer) != HDF_SUCCEED)
@@ -2349,8 +2854,8 @@ VOIDP      buffer)
 }//Extract32Bit4_6
 
 //----------------------------------------------------------------------
-// Function:    ExtractCodaATime ([])
-// Extracts:    Coda A time string
+// Function:    ExtractTaiTime ([])
+// Extracts:    Coda A TAI time string
 //----------------------------------------------------------------------
 int
 ExtractTaiTime(
@@ -2359,17 +2864,14 @@ int32*     sdsIDs,
 int32      start,
 int32      stride,
 int32      length,
-VOIDP      buffer)
+VOIDP      buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
 
     // alloc space to hold short integers
     double* tempBuffer = (double*) calloc(length, sizeof(double));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractTaiTime: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     // get the array of double
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -2405,6 +2907,52 @@ fprintf(stdout, "%s\n", output_string);
 }//ExtractTaiTime
 
 //----------------------------------------------------------------------
+// Function:    ExtractL1Time ([])
+// Extracts:    Coda A time string
+//----------------------------------------------------------------------
+int
+ExtractL1Time(
+TlmHdfFile*,
+int32*     vdIDs,
+int32,
+int32,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    // alloc space to hold short integers
+    char* tempBuffer =(char*) calloc(L1_TIME_LEN * length, sizeof(char));
+    assert(tempBuffer != 0);
+
+    // get the L1 time strings
+    if (VSread(vdIDs[0], (unsigned char*)tempBuffer,
+                       length, FULL_INTERLACE) == FAIL)
+        return FALSE;
+
+    //----------------------------------------------------
+    // convert the L1 time string to Itime, add to the base,
+    // then convert to Char6 and return
+    //----------------------------------------------------
+    char* ptr = (char*) buffer;
+    char* l1TimeString = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        Itime itime;
+        if ( ! itime.L1ToItime(l1TimeString))
+            return FALSE;
+//printf("l1TimeString = %s\n", l1TimeString);
+        l1TimeString += L1_TIME_LEN;
+        memcpy(ptr,     (char *)&(itime.sec), sizeof(int));
+        memcpy(ptr + 4, (char *)&(itime.ms), sizeof(short));
+        ptr += 6;
+    }
+    free((void*) tempBuffer);
+
+    return TRUE;
+
+}//ExtractL1Time
+
+//----------------------------------------------------------------------
 // Function:    ExtractData1D_m_km
 // Extracts:    float: meter => kilometer
 //----------------------------------------------------------------------
@@ -2415,17 +2963,14 @@ int32*      sdsIDs,
 int32       start,
 int32       stride,
 int32       length,
-VOIDP       buffer)
+VOIDP       buffer,
+PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold floats
     float* tempBuffer =
              (float*) calloc(length, sizeof(float));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D_m_km: Out of memory\n");
-        exit(1);
-    }
+    assert(tempBuffer != 0);
 
     // get the array of unsigned int
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
@@ -2443,56 +2988,174 @@ VOIDP       buffer)
 
 } //ExtractData1D_m_km
 
+//----------------------------------------------------------------------
+// Function:    ExtractEuTodB
+// Extracts:    uint1, apply polynomial to DN to EU, then do 10 * log10
+//----------------------------------------------------------------------
+int
+Extract_uint1_eu_dB(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+const char*      sdsName,
+const char*      euUnitName,
+PolynomialTable* polyTable)
+{
+    assert(l1File != 0 && length > 0);
+    if (polyTable == 0) return -1;
+
+    // alloc space to hold floats
+    float* tempBuffer = (float*) calloc(length, sizeof(float));
+    assert(tempBuffer != 0);
+
+    int rc = ExtractData1D_uint1_float(l1File, sdsIDs, start, stride,
+                          length, tempBuffer);
+    if (rc <= 0)
+        return rc;
+
+    const Polynomial* polynomial = polyTable->SelectPolynomial(
+                                       sdsName, euUnitName);
+    if (polynomial == 0) return -1;
+    polynomial->ApplyReplaceArray(tempBuffer, length);
+
+    // now convert it to dB
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        float dBValue = (float) 10 * log10((double)tempBuffer[i]);
+        (void)memcpy(floatP, &dBValue, sizeof(float));
+        floatP++;
+    }
+
+    free((void*) tempBuffer);
+    return(length);
+
+} // Extract_uint1_eu_dB
 #if 0
 //----------------------------------------------------------------------
-// Function:    ExtractXmitPowerdBm
+// Function:    ExtractXmitPowerAdBm
 // Extracts:    float
 //----------------------------------------------------------------------
 int
 ExtractXmitPowerAdBm(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_dB(l1File, sdsIDs, start, stride, length,
+                          buffer, "transmit_power_a", "mWatts",
+                          polyTable));
+} // ExtractXmitPowerAdBm
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPowerBdBm
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPowerBdBm(
 TlmHdfFile* l1File,
-int32*      sdsIDs,
-int32       start,
-int32       stride,
-int32       length,
-VOIDP       buffer)
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_dB(l1File, sdsIDs, start, stride, length,
+                          buffer, "transmit_power_b", "mWatts",
+                          polyTable));
+} // ExtractXmitPowerBdBm
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPowerAmWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPowerAmWatts(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          buffer, "transmit_power_a", "dBm",
+                          polyTable));
+} // ExtractXmitPowerAmWatts
+
+//----------------------------------------------------------------------
+// Function:    ExtractXmitPowerBmWatts
+// Extracts:    float
+//----------------------------------------------------------------------
+int
+ExtractXmitPowerBmWatts(
+TlmHdfFile* l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable* polyTable)
+{
+    return(Extract_uint1_eu_mWatts(l1File, sdsIDs, start, stride, length,
+                          buffer, "transmit_power_b", "dBm",
+                          polyTable));
+} // ExtractXmitPowerBmWatts
+
+//----------------------------------------------------------------------
+// Function:    Extract_uint1_eu_mWatts
+// Extracts:    uint1, apply polynomial to DN to EU, then do pow(10,dBm/10)
+//----------------------------------------------------------------------
+int
+Extract_uint1_eu_mWatts(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+const char*      sdsName,
+const char*      euUnitName,
+PolynomialTable* polyTable)
 {
     assert(l1File != 0 && length > 0);
+    if (polyTable == 0) return -1;
 
     // alloc space to hold floats
-    float* tempBuffer =
-             (float*) calloc(length, sizeof(float));
-    if (tempBuffer == NULL)
-    {
-        fprintf(stderr, "ExtractData1D_m_km: Out of memory\n");
-        exit(1);
-    }
+    float* tempBuffer = (float*) calloc(length, sizeof(float));
+    assert(tempBuffer != 0);
 
-    if (ExtractData1D_uint1_float(l1File, sdsIDs, start, stride,
-                          length, tempBuffer) == 0)
-        return 0;
-
-    // need to manually apply the polynomial here
-    // too complicated to get it from polynomial table
-
-#if 0
-    // create a polynomial table and keep it
-    static PolynomialTable* polyTable=0;
-    if (polyTable == 0)
-    {
-    }
+    int rc = ExtractData1D_uint1_float(l1File, sdsIDs, start, stride,
+                          length, tempBuffer);
+    if (rc <= 0)
+        return rc;
 
     const Polynomial* polynomial = polyTable->SelectPolynomial(
-                                 "transmit_power_a", "mWatts");
-    if (polynomial == 0) return 0;
+                                       sdsName, euUnitName);
+    if (polynomial == 0) return -1;
     polynomial->ApplyReplaceArray(tempBuffer, length);
-#endif
 
-
-    memcpy(buffer, tempBuffer, length * sizeof(float));
+    // now convert it to mWatts
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        float mWattsValue = (float) pow( (double) 10.0,
+                                      (double) tempBuffer[i] / 10.0 );
+        (void)memcpy(floatP, &mWattsValue, sizeof(float));
+        floatP++;
+    }
 
     free((void*) tempBuffer);
-    return(TRUE);
+    return(length);
 
-} //ExtractXmitPowerdBm
+} // Extract_uint1_eu_mWatts
 #endif

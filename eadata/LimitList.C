@@ -11,11 +11,9 @@
 #include "CommonDefs.h"
 #include "LimitList.h"
 #include "ParTab.h"
+#include "PolyTable.h"
 #include "LimitChecker.h"
 #include "LimitState.h"
-#if 0
-#include "HkdtExtract.h"
-#endif
 #include "L1AExtract.h"
 
 static const char LimitList_c_rcsid[]="(@)# $Id$";
@@ -49,8 +47,8 @@ FILE *          ifp)
     char paramName[PARAM_NAME_LEN], unitName[PARAM_NAME_LEN];
     char enable_string[PARAM_NAME_LEN];
     char line[LINE_LENGTH];
-    char mode_string[PARAM_NAME_LEN], hvps_string[PARAM_NAME_LEN];
-    char frame_string[PARAM_NAME_LEN];
+    char mode_string[PARAM_NAME_LEN], twt_string[PARAM_NAME_LEN];
+    char twta_string[PARAM_NAME_LEN], frame_string[PARAM_NAME_LEN];
     char *ptr;
     int retval, match_index;
 
@@ -165,23 +163,25 @@ FILE *          ifp)
             }
 
             // save this line's value
-            retval = sscanf(line, " Mode:%s HVPS:%s Frame:%s",
-                    mode_string, hvps_string, frame_string);
+            retval = sscanf(line, " Mode:%s TWT:%s TWTA:%s Frame:%s",
+                    mode_string, twt_string, twta_string, frame_string);
             // if the line is not "Mode ...", then it must be "Caution..."
-            if (retval != 3)
+            if (retval != 4)
                 break;
             int mode = find_match(mode_string,
                                         (char **) mode_map, NSCAT_MODE_COUNT);
-            int hvps = find_match(hvps_string,
-                                        (char **) hvps_map, HVPS_STATE_COUNT);
+            int twt = find_match(twt_string,
+                                        (char **) twt_map, HVPS_STATE_COUNT);
+            int twta = find_match(twta_string,
+                                        (char **) twta_map, TWTA_COUNT);
             int frame = find_match(frame_string,
                                         (char **) cmf_map, FRAME_TYPE_COUNT);
-            if (mode == -1 || hvps == -1 || frame == -1)
+            if (mode == -1 || twt == -1 || twta == -1 || frame == -1)
             {
-                fprintf(stderr, "%s: Invalid mode, hvps or frame.\n", line);
+                fprintf(stderr, "%s: Invalid mode, twt or frame.\n", line);
                 return 0;
             }
-            L1ALimitStatePair l1State(mode, hvps, frame);
+            L1ALimitStatePair l1State(mode, twt, twta, frame);
             checker->SetLimits(&l1State, cl, ch, al, ah);
 
         } while (1);
@@ -190,7 +190,6 @@ FILE *          ifp)
 
 }//LimitList::L1ATxtToLim
 
-#if 0
 LimitChecker*
 LimitList::HkTxtToLim(
 LimitList&      obj,        // LimitList object
@@ -200,8 +199,8 @@ FILE *          ifp)
     char paramName[PARAM_NAME_LEN], unitName[PARAM_NAME_LEN];
     char enable_string[PARAM_NAME_LEN];
     char line[LINE_LENGTH];
-    char mode_string[PARAM_NAME_LEN], hvps_string[PARAM_NAME_LEN];
-    char dss_string[PARAM_NAME_LEN], twta_string[PARAM_NAME_LEN];
+    char mode_string[PARAM_NAME_LEN], twt_string[PARAM_NAME_LEN];
+    char twta_string[PARAM_NAME_LEN];
     char *ptr;
     int retval, match_index;
 
@@ -260,7 +259,7 @@ FILE *          ifp)
     //****************************************
     // create a HK limit checker first
     //****************************************
-    HkdtLimitChecker* checker = new HkdtLimitChecker(parameter, enable);
+    HK2LimitChecker* checker = new HK2LimitChecker(parameter, enable);
     if (checker == 0)
         return 0;
     else if (checker->GetStatus() != LIMIT_OK)
@@ -316,25 +315,23 @@ FILE *          ifp)
             }
 
             // save this line's value
-            retval = sscanf(line, " Mode:%s HVPS:%s DSS:%s TWTA:%s",
-                    mode_string, hvps_string, dss_string, twta_string);
+            retval = sscanf(line, " Mode:%s TWT:%s TWTA:%s",
+                    mode_string, twt_string, twta_string);
             // if the line is not "Mode ...", then it must be "Caution..."
-            if (retval != 4)
+            if (retval != 3)
                 break;
             int mode = find_match(mode_string,
                                         (char **) ext_mode_map, EXT_MODE_COUNT);
-            int hvps = find_match(hvps_string,
-                                        (char **) hvps_map, HVPS_STATE_COUNT);
-            int dss = find_match(dss_string,
-                                        (char **) dss_map, DSS_COUNT);
+            int twt = find_match(twt_string,
+                                        (char **) twt_map, HVPS_STATE_COUNT);
             int twta = find_match(twta_string,
                                         (char **) twta_map, TWTA_COUNT);
-            if (mode == -1 || hvps == -1 || dss == -1 || twta == -1)
+            if (mode == -1 || twt == -1 ||  twta == -1)
             {
-                fprintf(stderr, "%s: Invalid mode, hvps, dss or twta.\n", line);
+                fprintf(stderr, "%s: Invalid mode, twt or twta.\n", line);
                 return 0;
             }
-            HkdtLimitStatePair hkdtState(mode, hvps, dss, twta);
+            HK2LimitStatePair hkdtState(mode, twt, twta);
             checker->SetLimits(&hkdtState, cl, ch, al, ah);
 
         } while (1);
@@ -342,7 +339,6 @@ FILE *          ifp)
     } while (1);
 
 }//LimitList::HkTxtToLim
-#endif
 
 /* auxilliary function */
 
@@ -383,12 +379,10 @@ const int       keepDisabled)
 
     switch (source)
     {
-#if 0
         case SOURCE_HK2:
             _readOneParamLimit = LimitList::HkTxtToLim;
-            _limitState = new HkdtLimitStatePair;
+            _limitState = new HK2LimitStatePair;
             break;
-#endif
         case SOURCE_L1A:
         case SOURCE_L1AP:
         case SOURCE_L1A_DERIVED:
@@ -448,7 +442,7 @@ TlmHdfFile*    tlmFile)
             return(_status = ERROR_OPEN_DATASETS);
     }
 
-    // open datasets for mode, hvps ...
+    // open datasets for mode, twt ...
     if ( ! _limitState->OpenParamDataSets(tlmFile))
         return(_status = BAD_PARAM_IN_LIMIT_CHECKER);
 
@@ -469,7 +463,7 @@ TlmHdfFile*      tlmFile)
             closeOK = 0;
     }
 
-    // close datasets for mode, hvps ...
+    // close datasets for mode, twt ...
     if ( ! _limitState->CloseParamDataSets(tlmFile))
         closeOK = 0;
 
@@ -480,10 +474,11 @@ TlmHdfFile*      tlmFile)
 
 }//LimitList::CloseParamDataSets
 
-LimitList::StatusE
+LimitStatusE
 LimitList::CheckFrame(
-TlmHdfFile*     tlmFile,
-int32           startIndex)
+PolynomialTable*  polyTable,
+TlmHdfFile*       tlmFile,
+int32             startIndex)
 {
     LimitChecker* limit;
     limit = GetHead();
@@ -491,25 +486,35 @@ int32           startIndex)
     while (limit)
     {
         (void) _limitState->ApplyNewFrame(tlmFile, startIndex);
-        LimitStatusE frameStatus =
-            limit->CheckFrame(tlmFile, startIndex, _logFP, _limitState);
-        if (frameStatus != LIMIT_OK)
+        LimitStatusE frameStatus = limit->CheckFrame(polyTable, tlmFile,
+                                 startIndex, _logFP, _limitState);
+        switch(frameStatus)
         {
-            if ((frameStatus == CAUTION_LOW ||
-                frameStatus == CAUTION_HIGH) &&
-                _worst == OK)
-            {
-                _worst = CAUTION;
-            }
-            if (frameStatus == ACTION_LOW ||
-                frameStatus == ACTION_HIGH)
-            {
-                _worst = ACTION;
-            }
+            case LIMIT_OK:
+                break;
+            case CAUTION_LOW:
+            case CAUTION_HIGH:
+            case ACTION_LOW:
+            case ACTION_HIGH:
+                if ((frameStatus == CAUTION_LOW ||
+                           frameStatus == CAUTION_HIGH) && _worst == OK)
+                {
+                    _worst = CAUTION;
+                }
+                if (frameStatus == ACTION_LOW || frameStatus == ACTION_HIGH)
+                {
+                    _worst = ACTION;
+                }
+                break;
+            default:
+                fprintf(stderr, "Limit Check for '%s' (%s) failed\n",
+                         limit->GetParamName(), limit->GetUnitName());
+                return(frameStatus);
         }
         limit = GetNext();
     }
-    return(_status);
+    return(LIMIT_CHECK_OK);
+
 }//LimitList::CheckFrame
 
 LimitList::StatusE
@@ -524,7 +529,7 @@ LimitList::WriteLimitText(void)
 
     // allocate the space for the limit report text
     char limitText[STRING_LEN * EXT_MODE_COUNT * HVPS_STATE_COUNT *
-                            DSS_COUNT * TWTA_COUNT];
+                            TWTA_COUNT];
     limitText[0] = '\0';
 
     // write out all the limit checker entries

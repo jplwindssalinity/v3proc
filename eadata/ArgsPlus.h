@@ -7,6 +7,19 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   13 Oct 1998 15:32:56   sally
+// added L1B file
+// 
+//    Rev 1.6   27 Jul 1998 13:58:50   sally
+// took out static polynomial table
+// 
+//    Rev 1.5   29 May 1998 14:19:42   daffer
+// Changed GetEALogOrExit to GetEALog and changed the way 
+// it returned the EALog object.
+// 
+//    Rev 1.4   01 May 1998 14:44:50   sally
+//  added HK2 file
+// 
 //    Rev 1.3   06 Apr 1998 16:26:34   sally
 // merged with SVT
 // 
@@ -71,10 +84,11 @@ public:
   char*           GetTlmFilesOrExit(
 				    char*           tlm_files_string,
 				    SourceIdE       tlm_type,
-				    char*           hkdt_files_string,
-				    char*           l1_files_string,
+				    char*           hk2_files_string,
+				    char*           l1a_files_string,
 				    char*           l1ap_files_string,
-				    char*           l1adrv_files_string);
+				    char*           l1adrv_files_string,
+				    char*           l1b_files_string);
   TlmFileList*    TlmFileListOrExit(
 			  SourceIdE tlm_type,
 			  char*     tlm_files,
@@ -89,7 +103,7 @@ public:
   char*           GetLimitFileOrExit(
 		       char*     limit_file_string,
 		       SourceIdE limit_type,
-		       char*      hkdt_limit_file_string,
+		       char*      hk2_limit_file_string,
 		       char*      l1_limit_file_string,
 		       char*      l1ap_limit_file_string,
 		       char*      l1adrv_limit_file_string);
@@ -109,10 +123,8 @@ public:
 				 const char* mail_address);
   
   PolynomialTable*  PolynomialTableOrNull(char*   polynomialFilename);
-  EALog*            GetEALogOrExit(); 
+  EALog*            GetEALog(){ return (&Log); };
   void              Usage();
-
-  static PolynomialTable*  PolyTable;
 
 private:
 

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   12 Aug 1998 09:17:38   deliver
+// change coefficients from floats to doubles
+// 
+//    Rev 1.2   06 May 1998 15:17:18   sally
+// took out exit()
+// 
 //    Rev 1.1   12 Feb 1998 16:49:34   sally
 // add wrappers for "C" functions
 // 
@@ -34,8 +40,8 @@
 Polynomial::Polynomial(
 const char*   varName,     // IN
 const char*   unitName,    // IN
-const float*  array,       // IN: array of floats
-int           num)         // IN: number of floats in array
+const double* array,       // IN: array of doubles
+int           num)         // IN: number of doubles in array
 : _factors(0), _order(-1)
 {
     assert(varName!= 0 && unitName != 0 && array != 0 && num > 0);
@@ -44,13 +50,9 @@ int           num)         // IN: number of floats in array
     (void)strcpy(_unitName, unitName);
 
     // save the polynomial
-    _factors = new float[num];
-    if (_factors == 0)
-    {
-        fprintf(stderr, "Out of memory\n");
-        exit(1);
-    }
-    memcpy(_factors, array, num * sizeof(float));
+    _factors = new double[num];
+    assert(_factors != 0);
+    memcpy(_factors, array, num * sizeof(double));
     _order = num - 1;
 
 }//Polynomial::Polynomial

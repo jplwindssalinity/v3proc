@@ -1,289 +1,576 @@
-//=========================================================//
-// Copyright  (C)1996, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//=========================================================
+// Copyright  (C)1995, California Institute of Technology.
+// U.S. Government sponsorship under
+// NASA Contract NAS7-1260 is acknowledged
+//
+// CM Log
+// $Log$
+// 
+//    Rev 1.8   23 Jul 1998 16:13:58   sally
+// pass polynomial table to extractFunc()
+// 
+//    Rev 1.7   22 May 1998 16:23:12   sally
+// added error message handling
+// 
+//    Rev 1.6   20 May 1998 11:18:42   sally
+// checks everything but error messages
+// 
+//    Rev 1.5   19 May 1998 15:49:54   sally
+// move some function from L1AErrorChecker to ErrorChecker
+// took out comparison function
+// 
+//    Rev 1.4   19 May 1998 14:44:50   sally
+// 
+//    Rev 1.3   18 May 1998 14:48:28   sally
+// added error checker for L1A
+// 
+//    Rev 1.2   13 May 1998 16:28:12   sally
+ 
+// $Date$
+// $Revision$
+// $Author$
+//
+//=========================================================
 
 static const char rcs_id[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
+#include <assert.h>
 #include <stdio.h>
 #include "L1AErrorChecker.h"
-#include "L1Extract.h.old"
+#include "L1AExtract.h"
 #include "Parameter.h"
+#include "ParTab.h"
 #include "State.h"
 
-//==============//
-// Error Tables //
-//==============//
-
-ErrorEntry  l1_error_table_1[] =
+//------------------------------------------
+// Error State Table for L1A
+//------------------------------------------
+ErrorTabEntry L1aStateTable[] =
 {
-    {"CSB/Beam Mismatch", ERROR_FORMAT, Err_CSB},
-    {"Invalid Mode", ERROR_FORMAT, Err_Mode},
-    {NULL, NULL, NULL}
+    // ERROR_MODE
+    { "Invalid Mode", ERROR_FORMAT, ErrorCheckMode,
+             { OPERATIONAL_MODE, UNIT_HEX_BYTES } },
+
+    // ERROR_RX_PROTECT
+    { "RX Protect in wrong mode", ERROR_FORMAT, ErrorRxProtect,
+             { SES_CONFIG_FLAGS_01, UNIT_MAP } },
+
+    // ERROR_GRID
+    { "Grid Disable in wrong mode", ERROR_FORMAT, ErrorGridDisable,
+             { SES_CONFIG_FLAGS_00, UNIT_MAP } },
+
+    // ERROR_TWT_1_BODY_OC_TRIP
+    { "TWTA 1 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta1BodyOcTrip,
+             { DISCRETE_STATUS_1_05, UNIT_MAP } },
+
+    // ERROR_TWT_2_BODY_OC_TRIP
+    { "TWTA 2 Body Overcurrent Trip", ERROR_FORMAT, ErrorTwta2BodyOcTrip,
+             { DISCRETE_STATUS_1_02, UNIT_MAP } },
+
+    // ERROR_TWT_1_CNVRT_OC_TRIP
+    { "TWTA 1 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta1CnvrtOcTrip,
+             { DISCRETE_STATUS_1_07, UNIT_MAP } },
+
+    // ERROR_TWT_2_CNVRT_OC_TRIP
+    { "TWTA 2 Converter Overcurrent Trip", ERROR_FORMAT, ErrorTwta2CnvrtOcTrip,
+             { DISCRETE_STATUS_1_04, UNIT_MAP } },
+
+    // ERROR_TWT_1_UV_TRIP
+    { "TWTA 1 Undervoltage Trip", ERROR_FORMAT, ErrorTwta1UvTrip,
+             { DISCRETE_STATUS_1_06, UNIT_MAP } },
+
+    // ERROR_TWT_2_UV_TRIP
+    { "TWTA 2 Undervoltage Trip", ERROR_FORMAT, ErrorTwta2UvTrip,
+             { DISCRETE_STATUS_1_03, UNIT_MAP } },
+
+    // ERROR_ROM_START_ERROR
+    { "ROM Start Up Error", ERROR_FORMAT, ErrorRomStartError,
+             { DISCRETE_STATUS_3_02, UNIT_MAP } },
+
+    // ERROR_RAM_START_ERROR
+    { "RAM Start Up Error", ERROR_FORMAT, ErrorRamStartError,
+             { DISCRETE_STATUS_3_03, UNIT_MAP } },
+
+    // ERROR_RUNNING_ERROR_COUNT
+    { "Error Count Changed", ERROR_FORMAT, ErrorRunningErrors,
+             { RUNNING_ERROR_COUNT, UNIT_COUNTS } },
+
+    // ERROR_TWT_TRIP_OVERRIDE
+    { "TWT Trip Override", WARNING_FORMAT, ErrorTwtTripOvrd,
+             { SES_CONFIG_FLAGS_02, UNIT_MAP } },
+
+    // ERROR_TWTA_MONITOR_DISABLE
+    { "TWTA Monitor", WARNING_FORMAT, ErrorTwtaMonitor,
+             { STATUS_TABLE_CHANGE_FLAGS_10, UNIT_MAP } },
+
+    // ERROR_TWT_SHUTDOWN_DISABLE
+    { "TWT Shutdown", WARNING_FORMAT, ErrorTwtShutdown,
+             { STATUS_TABLE_CHANGE_FLAGS_09, UNIT_MAP } },
+
+    // ERROR_DOPPLER_ORBIT_STEP
+    { "Unexpected Cycle Count", WARNING_FORMAT, ErrorUnexpectedCycle,
+             { DOPPLER_ORBIT_STEP, UNIT_COUNTS } },
+
+    // ERROR_MODE_CHANGE
+    { "Mode Change", NOTIFY_FORMAT, ErrorModeChange,
+             { STATUS_TABLE_CHANGE_FLAGS_00, UNIT_MAP } },
+
+    // ERROR_VALID_COMMAND_COUNT
+    { "Valid Command Count", NOTIFY_FORMAT, ErrorValidCmdCnt,
+             { VALID_COMMAND_COUNT, UNIT_COUNTS } },
+
+    // ERROR_INVALID_COMMAND_COUNT
+    { "Invalid Command Count", ERROR_FORMAT, ErrorInvalidCmdCnt,
+             { INVALID_COMMAND_COUNT, UNIT_COUNTS } },
+
+    // ERROR_MODE_CHANGE_MISMATCHED
+    { 0, 0, 0,
+             { PARAM_UNKNOWN, UNIT_UNKNOWN } },
+ 
+    // ERROR_TRS_CMD_SUCCESS
+    { "TRS Cmd Success", ERROR_FORMAT, ErrorTrsCmdSucc,
+             { DISCRETE_STATUS_2_04, UNIT_MAP } },
+
+    // ERROR_SAS_ANT_RELEASE_INTERLOCK
+    { 0, 0, 0,
+             { PARAM_UNKNOWN, UNIT_UNKNOWN } }
 };
 
-ErrorEntry  l1_error_table_2[] =
-{
-    {"Receiver Protect in Wrong State", ERROR_FORMAT, Err_Rx_Pro},
-    {"HVPS Backup Commanded", ERROR_FORMAT, Err_HVPS_Backup_Off},
-    {"TWTA Undervoltage Trip", ERROR_FORMAT, Err_TWTA_UV_Trip},
-    {"TWTA Overcurrent Trip", ERROR_FORMAT, Err_TWTA_OC_Trip},
-    {"TWTA Body Overcurrent Trip", ERROR_FORMAT, Err_TWTA_Body_OC_Trip},
-//  {"Binning Parameter Error (Regressive)", WARNING_FORMAT, Err_Bin_Param},
-    {"Default Binning Constants in Use", WARNING_FORMAT, Err_Def_Bin_Const},
-    {"Lack Startup Requirements", WARNING_FORMAT, Err_Lack_Start_Reqs},
-    {"Error Queue Full", ERROR_FORMAT, Err_Error_Queue_Full},
-    {"Fault Counter Change", ERROR_FORMAT, Err_Fault_Counter},
-    {"ULM Unlocked", ERROR_FORMAT, Err_ULM_Unlocked},
-    {"SLM Unlocked", ERROR_FORMAT, Err_SLM_Unlocked},
-    {"TWT Trip Override Enabled", WARNING_FORMAT, Err_Trip_Override_En},
-    {"TWT Monitor Disabled", WARNING_FORMAT, Err_TWT_Mon_Dis},
-    {"TWT Monitor HVPS Shutdown Disabled", WARNING_FORMAT,
-        Err_HVPS_Shutdown_Dis},
-    {"Unexpected Cycle Counter", WARNING_FORMAT, Err_Cycle_Counters},
-    {NULL, NULL, NULL}
-};
+const int L1aStateTableSize = ElementNumber(L1aStateTable);
 
 //========================//
 // L1AErrorChecker methods //
 //========================//
 
 L1AErrorChecker::L1AErrorChecker()
+:   _timeParamP(0),
+    _sasK19ParamP(0), _sasK20ParamP(0),
+    _sesK15ParamP(0), _sesK16ParamP(0),
+    _twtaK11ParamP(0), _twtaK12ParamP(0),
+    _modeParamP(0), _errorCounterP(0), _errorMsgP(0)
 {
-    errorTable1 = l1_error_table_1;
-    errorTable2 = l1_error_table_2;
+    // get parameters for current states
+    _timeParamP = ParTabAccess::GetParameter(SOURCE_L1A, UTC_TIME, UNIT_CODE_A);
+    assert(_timeParamP != 0);
+    _sasK19ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K19_SAS_SELECT, UNIT_MAP);
+    assert(_sasK19ParamP != 0);
+    _sasK20ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K20_SAS_SELECT, UNIT_MAP);
+    assert(_sasK20ParamP != 0);
+    _sesK15ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K15_SES_SELECT, UNIT_MAP);
+    assert(_sesK15ParamP != 0);
+    _sesK16ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K16_SES_SELECT, UNIT_MAP);
+    assert(_sesK16ParamP != 0);
+    _twtaK11ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K11_TWTA_SELECT, UNIT_MAP);
+    assert(_twtaK11ParamP != 0);
+    _twtaK12ParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      K12_TWTA_SELECT, UNIT_MAP);
+    assert(_twtaK12ParamP != 0);
+    _modeParamP = ParTabAccess::GetParameter(SOURCE_L1A,
+                          OPERATIONAL_MODE, UNIT_HEX_BYTES);
+    assert(_modeParamP != 0);
+    _errorCounterP = ParTabAccess::GetParameter(SOURCE_L1A,
+                                      RUNNING_ERROR_COUNT, UNIT_COUNTS);
+    assert(_errorCounterP != 0);
+    _errorMsgP = ParTabAccess::GetParameter(SOURCE_L1A, ERROR_MSG, UNIT_DN);
+    assert(_errorMsgP != 0);
 
-    for (int i = 0; i < 32; i++)
-        errorMessageCount[i] = 0;
+    _timeStateElement.AllocValue(_timeParamP->byteSize);
+    _sasK19StateElement.AllocValue(_sasK19ParamP->byteSize);
+    _sasK20StateElement.AllocValue(_sasK20ParamP->byteSize);
+    _sesK15StateElement.AllocValue(_sesK15ParamP->byteSize);
+    _sesK16StateElement.AllocValue(_sesK16ParamP->byteSize);
+    _twtaK11StateElement.AllocValue(_twtaK11ParamP->byteSize);
+    _twtaK12StateElement.AllocValue(_twtaK12ParamP->byteSize);
+    _modeStateElement.AllocValue(_modeParamP->byteSize);
+    _errorStateElement.AllocValue(_errorCounterP->byteSize);
+    _errorMsgStateElement.AllocValue(_errorMsgP->byteSize);
+    assert(_timeStateElement.value != 0 && _sasK19StateElement.value != 0
+        && _sasK20StateElement.value != 0 && _sesK15StateElement.value != 0
+        && _sesK16StateElement.value != 0 && _twtaK11StateElement.value != 0
+        && _twtaK12StateElement.value != 0 && _modeStateElement.value != 0
+        && _errorStateElement.value != 0 && _errorMsgStateElement.value != 0 );
+
+    // get parameters for error table
+    parametersP = new Parameter*[L1aStateTableSize];
+    int i=0;
+    for (i=0; i < L1aStateTableSize; i++)
+    {
+        if (L1aStateTable[i].stateEntry.paramId == PARAM_UNKNOWN)
+            parametersP[i] = NONE_ERROR_CHECKER;
+        else
+            parametersP[i] = ParTabAccess::GetParameter(SOURCE_L1A,
+                                L1aStateTable[i].stateEntry.paramId,
+                                L1aStateTable[i].stateEntry.unitId);
+        assert(parametersP[i] != 0);
+    }
+
+    prev = new State(L1aStateTableSize);
+    current = new State(L1aStateTableSize);
+    for (i=0; i < L1aStateTableSize; i++)
+    {
+        if (parametersP[i] != NONE_ERROR_CHECKER)
+        {
+            prev->stateElements[i].AllocValue(parametersP[i]->byteSize);
+            current->stateElements[i].AllocValue(parametersP[i]->byteSize);
+            assert(prev->stateElements[i].value != 0 &&
+                   current->stateElements[i].value != 0);
+        }
+    }
+
+    _errorStateTableSize = L1aStateTableSize;
 
     return;
 }
 
 L1AErrorChecker::~L1AErrorChecker()
 {
+    if (_timeParamP) delete _timeParamP;
+    if (_sasK19ParamP) delete _sasK19ParamP;
+    if (_sasK20ParamP) delete _sasK20ParamP;
+    if (_sesK15ParamP) delete _sesK15ParamP;
+    if (_sesK16ParamP) delete _sesK16ParamP;
+    if (_twtaK11ParamP) delete _twtaK11ParamP;
+    if (_twtaK12ParamP) delete _twtaK12ParamP;
+    if (_modeParamP) delete _modeParamP;
+    if (_errorCounterP) delete _errorCounterP;
+    if (_errorMsgP) delete _errorMsgP;
+
+    int i=0;
+    for (i=0; i < L1aStateTableSize; i++)
+    {
+        if (parametersP[i] != NONE_ERROR_CHECKER && parametersP[i])
+            delete parametersP[i];
+        parametersP[i] = 0;
+    }
+    delete parametersP;
+    parametersP = 0;
+
+    if (prev)
+    {
+        delete prev;
+        prev = 0;
+    }
+
+    if (current)
+    {
+        delete current;
+        current = 0;
+    }
+
     return;
 }
+
+int
+L1AErrorChecker::OpenParamDataSets(
+TlmHdfFile*    tlmFile)
+{
+    // open the parameters needs by basic reporting first
+    if (OpenInternalStateDataSets(tlmFile) == 0)
+        return 0;
+
+    return(ErrorChecker::OpenParamDataSets(tlmFile));
+
+}//L1AErrorChecker::OpenParamDataSets
+
+void
+L1AErrorChecker::CloseParamDataSets(
+TlmHdfFile*    tlmFile)
+{
+    // close the parameters needs by basic reporting first
+    CloseInternalStateDataSets(tlmFile);
+
+    ErrorChecker::CloseParamDataSets(tlmFile);
+
+    return;
+ 
+}//L1AErrorChecker::CloseParamDataSets
+
+int
+L1AErrorChecker::OpenInternalStateDataSets(
+TlmHdfFile*    tlmFile)
+{
+    Parameter** internalParameters= new Parameter*[10];
+    internalParameters[0] = _timeParamP;
+    internalParameters[1] = _sasK19ParamP;
+    internalParameters[2] = _sasK20ParamP;
+    internalParameters[3] = _sesK15ParamP;
+    internalParameters[4] = _sesK16ParamP;
+    internalParameters[5] = _twtaK11ParamP;
+    internalParameters[6] = _twtaK12ParamP;
+    internalParameters[7] = _modeParamP;
+    internalParameters[8] = _errorCounterP;
+    internalParameters[9] = _errorMsgP;
+    
+    for (int i=0; i < 10; i++)
+    {
+        int32 dataType, dataStartIndex, dataLength, numDimensions;
+        char tempString[BIG_SIZE];
+        (void)strncpy(tempString, internalParameters[i]->sdsNames, BIG_SIZE);
+        char* oneSdsName=0;
+        int j=0;
+        for (oneSdsName = (char*)strtok(tempString, ",");
+                           oneSdsName;
+                           oneSdsName = (char*)strtok(0, ","), j++)
+        {
+            internalParameters[i]->sdsIDs[j] = HDF_FAIL;
+            internalParameters[i]->sdsIDs[j] = tlmFile->SelectDataset(
+                                         oneSdsName, dataType, dataStartIndex,
+                                         dataLength, numDimensions);
+            if (internalParameters[i]->sdsIDs[j] == HDF_FAIL)
+                return 0;
+        }
+    }
+    delete [] internalParameters;
+
+    return 1;
+
+} // OpenInternalStateDataSets
+
+void
+L1AErrorChecker::CloseInternalStateDataSets(
+TlmHdfFile*    tlmFile)
+{
+    Parameter** internalParameters= new Parameter*[10];
+    internalParameters[0] = _timeParamP;
+    internalParameters[1] = _sasK19ParamP;
+    internalParameters[2] = _sasK20ParamP;
+    internalParameters[3] = _sesK15ParamP;
+    internalParameters[4] = _sesK16ParamP;
+    internalParameters[5] = _twtaK11ParamP;
+    internalParameters[6] = _twtaK12ParamP;
+    internalParameters[7] = _modeParamP;
+    internalParameters[8] = _errorCounterP;
+    internalParameters[9] = _errorMsgP;
+    for (int i=0; i < 10; i++)
+    {
+        for (int j=0; j < internalParameters[i]->numSDSs; j++)
+        {
+            (void)tlmFile->CloseDataset(internalParameters[i]->sdsIDs[j]);
+            internalParameters[i]->sdsIDs[j] = HDF_FAIL;
+        }
+    }
+    delete [] internalParameters;
+    return;
+ 
+}//L1AErrorChecker::CloseParamDataSets
 
 //----------//
 // SetState //
 //----------//
 
-void
+int
 L1AErrorChecker::SetState(
-    State*      state,
-    State*      last_state,
-    char*       dataRec)
+TlmHdfFile*     tlmFile,
+int32           startIndex,
+State*          lastState,
+State*          newState)
 {
-    state->time.value = L1A_Itime(dataRec);
-    state->time.value.ItimeToCodeA(state->time_string);
-    state->time.condition = StateElement::CURRENT;
+    if (SetInternalState(tlmFile, startIndex) == 0)
+        return 0;
 
-    state->hvps_backup_off.condition =
-        state->StateExtract(dataRec, L1A_HVPS_Backup_Off,
-        (char *)&(state->hvps_backup_off.value),
-        last_state->hvps_backup_off.condition);
+    if (ErrorChecker::SetState(tlmFile, startIndex, lastState, newState) == 0)
+        return 0;
 
-    state->twta_uv_trip.condition =
-        state->StateExtract(dataRec, L1A_Valid_TWTA_UV_Trip,
-        (char *)&(state->twta_uv_trip.value),
-        last_state->twta_uv_trip.condition);
+    Itime* iTimeP = (Itime*)_timeStateElement.value;
+    (void)iTimeP->ItimeToCodeA(newState->time_string);
 
-    state->twta_oc_trip.condition =
-        state->StateExtract(dataRec, L1A_Valid_TWTA_OC_Trip,
-        (char *)&(state->twta_oc_trip.value),
-        last_state->twta_oc_trip.condition);
+    return 1;
+}
 
-    state->twta_body_oc_trip.condition =
-        state->StateExtract(dataRec, L1A_Valid_TWTA_Body_OC_Trip,
-        (char *)&(state->twta_body_oc_trip.value),
-        last_state->twta_body_oc_trip.condition);
+int
+L1AErrorChecker::SetInternalState(
+TlmHdfFile*     tlmFile,
+int32           startIndex)
+{
+    Parameter** internalParameters= new Parameter*[10];
+    internalParameters[0] = _timeParamP;
+    internalParameters[1] = _sasK19ParamP;
+    internalParameters[2] = _sasK20ParamP;
+    internalParameters[3] = _sesK15ParamP;
+    internalParameters[4] = _sesK16ParamP;
+    internalParameters[5] = _twtaK11ParamP;
+    internalParameters[6] = _twtaK12ParamP;
+    internalParameters[7] = _modeParamP;
+    internalParameters[8] = _errorCounterP;
+    internalParameters[9] = _errorMsgP;
 
-    state->bin_param_err.condition =
-        state->StateExtract(dataRec, L1A_Bin_Param_Err,
-        (char *)&(state->bin_param_err.value),
-        last_state->bin_param_err.condition);
+    StateElement** stateElements = new StateElement*[10];
+    stateElements[0] = &_timeStateElement;
+    stateElements[1] = &_sasK19StateElement;
+    stateElements[2] = &_sasK20StateElement;
+    stateElements[3] = &_sesK15StateElement;
+    stateElements[4] = &_sesK16StateElement;
+    stateElements[5] = &_twtaK11StateElement;
+    stateElements[6] = &_twtaK12StateElement;
+    stateElements[7] = &_modeStateElement;
+    stateElements[8] = &_errorStateElement;
+    stateElements[9] = &_errorMsgStateElement;
 
-    state->def_bin_const.condition =
-        state->StateExtract(dataRec, L1A_Def_Bin_Const,
-        (char *)&(state->def_bin_const.value),
-        last_state->def_bin_const.condition);
+    for (int i=0; i < 10; i++)
+    {
+        int rc = internalParameters[i]->extractFunc(tlmFile,
+                      internalParameters[i]->sdsIDs,
+                      startIndex, 1, 1, stateElements[i]->value, 0);
+        if (rc > 0)
+            stateElements[i]->condition = StateElement::CURRENT;
+        else if (rc < 0)
+        {
+            stateElements[i]->condition = StateElement::ERROR;
+            delete [] internalParameters;
+            delete [] stateElements;
+            return 0;
+        }
+        else
+            stateElements[i]->condition = StateElement::HELD;
+    }
 
-    state->lack_start_reqs.condition =
-        state->StateExtract(dataRec, L1A_Lack_Start_Reqs,
-        (char *)&(state->lack_start_reqs.value),
-        last_state->lack_start_reqs.condition);
+    delete [] internalParameters;
+    delete [] stateElements;
+    return 1;
 
-    state->err_queue_full.condition =
-        state->StateExtract(dataRec, L1A_Err_Queue_Full,
-        (char *)&(state->err_queue_full.value),
-        last_state->err_queue_full.condition);
+} // L1AErrorChecker::SetInternalState
 
-    state->fault_counter.condition =
-        state->StateExtract(dataRec, L1A_Fault_Counter,
-        (char *)&(state->fault_counter.value),
-        last_state->fault_counter.condition);
+void
+L1AErrorChecker::ReportBasicInfo(
+FILE*           ofp)
+{
+    if (_timeStateElement.condition == StateElement::UNINITIALIZED)
+        return;
 
-    state->nscat_mode.condition =
-        state->StateExtract(dataRec, L1A_NSCAT_Mode,
-        (char *)&(state->nscat_mode.value),
-        last_state->nscat_mode.condition);
+    fprintf(ofp, "    Mode = ");
+    if (_modeStateElement.condition == StateElement::UNINITIALIZED)
+        fprintf(ofp, "?");
+    else
+    {
+        const char* modeString;
+        unsigned char tlmMode = *(unsigned char*)_modeStateElement.value;
+        int eaModeNo = L1ModeToTlmMode(tlmMode);
+        if (eaModeNo < 0)
+            modeString = "unknown mode";
+        else
+            modeString = mode_map[eaModeNo];
+        fprintf(ofp, "%d (%s)", tlmMode, modeString);
+    }
 
-    state->twta.condition =
-        state->StateExtract(dataRec, L1A_Valid_TWTA,
-        (char *)&(state->twta.value),
-        last_state->twta.condition);
+    fprintf(ofp, ", SAS = ");
+    if (_sasK19StateElement.condition == StateElement::UNINITIALIZED ||
+              _sasK20StateElement.condition == StateElement::UNINITIALIZED)
+        fprintf(ofp, "?");
+    else
+    {
+        char aOrb;
+        if (DefaultStateCompareFunc(_sasK19StateElement, _sasK20StateElement,
+                                       _sasK19ParamP->byteSize))
+            aOrb = 'A';
+        else
+            aOrb = 'B';
+        fprintf(ofp, "%c", aOrb);
+    }
 
-    state->dss.condition =
-        state->StateExtract(dataRec, L1A_DSS,
-        (char *)&(state->dss.value),
-        last_state->dss.condition);
+    fprintf(ofp, ", SES = ");
+    if (_sesK15StateElement.condition == StateElement::UNINITIALIZED ||
+              _sesK16StateElement.condition == StateElement::UNINITIALIZED)
+        fprintf(ofp, "?");
+    else
+    {
+        char aOrb;
+        if (DefaultStateCompareFunc(_sesK15StateElement, _sesK16StateElement,
+                                       _sesK15ParamP->byteSize))
+            aOrb = 'A';
+        else
+            aOrb = 'B';
+        fprintf(ofp, "%c", aOrb);
+    }
 
-    state->ulm_lock.condition =
-        state->StateExtract(dataRec, L1A_ULM_Lock,
-        (char *)&(state->ulm_lock.value),
-        last_state->ulm_lock.condition);
+    fprintf(ofp, ", TWTA = ");
+    if (_twtaK11StateElement.condition == StateElement::UNINITIALIZED ||
+              _twtaK12StateElement.condition == StateElement::UNINITIALIZED)
+        fprintf(ofp, "?");
+    else
+    {
+        char aOrb;
+        if (DefaultStateCompareFunc(_twtaK11StateElement, _twtaK12StateElement,
+                                       _twtaK11ParamP->byteSize))
+            aOrb = '1';
+        else
+            aOrb = '2';
+        fprintf(ofp, "%c", aOrb);
+    }
 
-    state->slm_lock.condition =
-        state->StateExtract(dataRec, L1A_SLM_Lock,
-        (char *)&(state->slm_lock.value),
-        last_state->slm_lock.condition);
+    fprintf(ofp, ", Error Count = ");
+    if (_errorStateElement.condition == StateElement::UNINITIALIZED)
+        fprintf(ofp, "?");
+    else
+    {
+        _errorCounterP->printFunc(ofp, (char*)_errorStateElement.value);
+    }
 
-    state->twta_trip_override.condition =
-        state->StateExtract(dataRec, L1A_TWTA_Trip_Override_Enable,
-        (char *)&(state->twta_trip_override.value),
-        last_state->twta_trip_override.condition);
-
-    state->twt_mon_en.condition =
-        state->StateExtract(dataRec, L1A_TWT_Mon_En,
-        (char *)&(state->twt_mon_en.value),
-        last_state->twt_mon_en.condition);
-
-    state->hvps_shut_en.condition =
-        state->StateExtract(dataRec, L1A_HVPS_Shut_En,
-        (char *)&(state->hvps_shut_en.value),
-        last_state->hvps_shut_en.condition);
-
-    state->rx_pro.condition =
-        state->StateExtract(dataRec, L1A_Rx_Pro,
-        (char *)&(state->rx_pro.value),
-        last_state->rx_pro.condition);
-
-    state->cmf_fix.condition =
-        state->StateExtract(dataRec, L1A_CMF_Fix,
-        (char *)&(state->cmf_fix.value),
-        last_state->cmf_fix.condition);
-
-    state->cur_beam.condition =
-        state->StateExtract(dataRec, L1A_Cur_Beam,
-        (char *)&(state->cur_beam.value),
-        last_state->cur_beam.condition);
-
-    state->csb_3.condition =
-        state->StateExtract(dataRec, L1A_CSB_3,
-        (char *)&(state->csb_3.value),
-        last_state->csb_3.condition);
-
-    state->csb_2.condition =
-        state->StateExtract(dataRec, L1A_CSB_2,
-        (char *)&(state->csb_2.value),
-        last_state->csb_2.condition);
-
-    state->csb_1.condition =
-        state->StateExtract(dataRec, L1A_CSB_1,
-        (char *)&(state->csb_1.value),
-        last_state->csb_1.condition);
-
-    state->error_msg.condition =
-        state->StateExtract(dataRec, L1A_Error_Msg,
-        (char *)&(state->error_msg.value),
-        last_state->error_msg.condition);
-
-    state->meas_cycle.condition =
-        state->StateExtract(dataRec, L1A_Meas_Cycle,
-        (char *)&(state->meas_cycle.value),
-        last_state->meas_cycle.condition);
-
-    state->ant_cycle.condition =
-        state->StateExtract(dataRec, L1A_Ant_Cycle,
-        (char *)&(state->ant_cycle.value),
-        last_state->ant_cycle.condition);
-
-    state->beam_cycle.condition =
-        state->StateExtract(dataRec, L1A_Beam_Cycle,
-        (char *)&(state->beam_cycle.value),
-        last_state->beam_cycle.condition);
+    fprintf(ofp, "\n");
 
     return;
-}
+
+} // L1AErrorChecker::ReportBasicInfo
 
 //-------//
 // Check //
 //-------//
 
-void
+int
 L1AErrorChecker::Check(
-    FILE*   ofp,
-    char*   dataRec)
+TlmHdfFile*     tlmFile,
+int32           startIndex,
+FILE*           ofp)
 {
     //-----------------------//
     // set the current state //
     //-----------------------//
+    if (SetState(tlmFile, startIndex, prev, current) == 0)
+        return 0;
  
-    SetState(current, prev, dataRec);
- 
-    //------------------------------//
-    // perform each two state check //
-    //------------------------------//
- 
-    int index = 0;
-    do
+    for (int i=0; i < L1aStateTableSize; i++)
     {
-        ErrorEntry* entry = errorTable2 + index;
-        if (entry->name == NULL)
-            break;
-        else
-            entry->count += entry->function(this, ofp,
-                                entry->name, entry->format);
-        index++;
-    } while (1);
+        ErrorTabEntry* errorTabEntry = &(L1aStateTable[i]);
 
-    //------------------------------//
-    // perform each one state check //
-    //------------------------------//
- 
-    index = 0;
-    do
-    {
-        ErrorEntry* entry = errorTable1 + index;
-        if (entry->name == NULL)
-            break;
-        else
-            entry->count += entry->function(this, ofp,
-                                entry->name, entry->format);
-        index++;
-    } while (1);
+        //-------------------------------------------------------
+        // if the result of error checking is good (no change)
+        // then no need to do anything.
+        //-------------------------------------------------------
+        if (errorTabEntry->errorFunc)
+        {
+            if ((*errorTabEntry->errorFunc) (this,
+                        errorTabEntry->name,
+                        errorTabEntry->format,
+                        ofp))
+                continue;
+        }
+
+        //-------------------------------------------------------
+        // at this point, there is an error
+        //-------------------------------------------------------
+        errorTabEntry->count++;
+    }
  
     //-------------------------//
     // check the error message //
     //-------------------------//
-
-    unsigned char msg = Err_Error_Msg(this, ofp, ERROR_MSG_NAME,
-        ERROR_FORMAT);
-    errorMessageCount[msg]++;
+    (void) ErrorMessageCode(this, ERROR_MSG_NAME, ERROR_FORMAT, ofp);
 
     //-------------------------//
     // save the previous state //
     //-------------------------//
- 
     *prev = *current;
  
     //------------------------//
     // count the data records //
     //------------------------//
- 
     dataRecCount++;
-    return;
+    return 1;
 }
 
 //-----------//
@@ -294,7 +581,7 @@ L1AErrorChecker::Check(
 
 void
 L1AErrorChecker::Summarize(
-    FILE*   ofp)
+FILE*   ofp)
 {
     //------------//
     // basic info //
@@ -307,15 +594,16 @@ L1AErrorChecker::Summarize(
     //----------------//
 
     fprintf(ofp, "\nERROR MESSAGES\n");
-    fprintf(ofp, "    Frames   Percentage   Error #   Error Message\n");
-    int i;
-    for (i = 0; i < 32; i++)
+    fprintf(ofp, "    Frames   Percentage   Error Message\n");
+    char msgString[BIG_SIZE];
+    ErrorMsgT* errMsgP;
+    for (errMsgP = _errorMsgCodes.GetHead(); errMsgP != 0;
+                            errMsgP = _errorMsgCodes.GetNext())
     {
-        if (errorMessageCount[i])
-        {
-            fprintf(ofp, "%10u   %10.4f   %7d   %s\n", errorMessageCount[i],
-                PERCENT(errorMessageCount[i]), i, error_msg_map[i]);
-        }
+        (void)CodeToErrorMsg(errMsgP->errorMsgCode, msgString);
+        fprintf(ofp, "%10u   %10.4f   %s\n",
+                              errMsgP->num, PERCENT(errMsgP->num),
+                              msgString);
     }
 
     //--------------//
@@ -325,49 +613,21 @@ L1AErrorChecker::Summarize(
     fprintf(ofp, "\nERROR SUMMARY\n");
     fprintf(ofp, "    Frames   Percentage   Error Description\n");
 
-    ErrorEntry* entry;
-    for (i = 0; ; i++)
+    for (int i=0; i < L1aStateTableSize; i++)
     {
-        entry = errorTable1 + i;
-        if (! entry->name)
-            break;
-        fprintf(ofp, "%10d   %10.4f   %s\n", entry->count,
-            PERCENT(entry->count), entry->name);
-    }
-
-    for (i = 0; ; i++)
-    {
-        entry = errorTable2 + i;
-        if (! entry->name)
-            break;
-        fprintf(ofp, "%10d   %10.4f   %s\n", entry->count,
-            PERCENT(entry->count), entry->name);
+        ErrorTabEntry* errorTabEntry = &(L1aStateTable[i]);
+        if (! errorTabEntry->name)
+            continue;
+        fprintf(ofp, "%10d   %10.4f   %s\n", errorTabEntry->count,
+            PERCENT(errorTabEntry->count), errorTabEntry->name);
     }
 
     if (! AnyErrors())
         fprintf(ofp, "\nNo errors detected.\n");
 
     return;
-}
 
-//---------------//
-// Err_Error_Msg //
-//---------------//
-
-int
-Err_Error_Msg(
-    ErrorChecker*   obj,
-    FILE*           ofp,
-    char*           error_name,
-    char*           label_format)
-{
-    Error_Flag_Transition(ofp, error_name,
-        "Error Message", label_format,
-        obj->current, &(obj->current->error_msg),
-        obj->prev, &(obj->prev->error_msg),
-        error_msg_map, 0);
-    return (obj->current->error_msg.value);
-}
+}//L1AErrorChecker::Summarize
 
 //-----------//
 // AnyErrors //
@@ -377,23 +637,177 @@ Err_Error_Msg(
 int
 L1AErrorChecker::AnyErrors()
 {
-    int i;
-    ErrorEntry* entry;
-    for (i = 0; ; i++)
+    for (int i=0; i < L1aStateTableSize; i++)
     {
-        entry = errorTable1 + i;
-        if (! entry->name)
-            break;
-        if (entry->count > 0)
+        ErrorTabEntry* errorTabEntry = &(L1aStateTable[i]);
+        if (! errorTabEntry->name)
+            continue;
+        if (errorTabEntry->count > 0)
             return(1);
     }
-    for (i = 0; ; i++)
-    {
-        entry = errorTable2 + i;
-        if (! entry->name)
-            break;
-        if (entry->count > 0)
-            return(1);
-    }
-}
+    return 0;
 
+}//L1AErrorChecker::AnyErrors
+
+int
+L1AErrorChecker::ErrorMessageCode(
+ErrorChecker*   obj,
+char*           name,
+char*           format,
+FILE*           ofp)
+{
+    if (_errorMsgStateElement.condition != StateElement::CURRENT)
+        return 1;
+
+    unsigned short errorMsgCode =
+                  *(unsigned short*) _errorMsgStateElement.value;
+
+    // not 0
+    AddErrorMessageCode(errorMsgCode);
+    if (errorMsgCode != 0)
+    {
+        fprintf(ofp, format, name);
+        char msgString[BIG_SIZE];
+        (void)CodeToErrorMsg(errorMsgCode, msgString);
+        fprintf(ofp, "  %s   Error Message = 0x%x (%s)\n",
+                obj->current->time_string, errorMsgCode, msgString);
+        obj->ReportBasicInfo(ofp);
+        fflush(ofp);
+        return 0;
+    }
+    else
+        return 1;
+
+} // L1AErrorChecker::ErrorMessageCode
+
+int
+L1AErrorChecker::CodeToErrorMsg(
+unsigned short        errorCode,      // IN
+char*                 msgString)      // IN/OUT
+{
+    //----------------------------------------------------
+    // if the MSB is clear, then this is type 1 error
+    //----------------------------------------------------
+    if ((errorCode & 0x8000) == 0)
+    {
+        //------------------------------------------
+        // the error code is in the most sig byte
+        //------------------------------------------
+        unsigned char type1ErrorCode=0;
+        (void)memcpy(&type1ErrorCode, &errorCode, 1);
+        if (type1ErrorCode >= Type1ErrMsgMapSize)
+        {
+            (void)sprintf(msgString,
+                         "Unknown Type 1 Error (%d)", errorCode);
+            return 0;
+        }
+        else
+        {
+            (void)strcpy(msgString, type1_error_msg_map[(int)type1ErrorCode]);
+            return 1;
+        }
+    }
+    //----------------------------------------------------
+    // the MSB is set, this is type 2 error
+    //----------------------------------------------------
+    else
+    {
+        //------------------------------------------------------------
+        // get the most sig byte, this contains the type 2 error code
+        //------------------------------------------------------------
+        unsigned char* ucharP = (unsigned char*) &errorCode;
+        unsigned char type2ErrorCode=0;
+        (void)memcpy(&type2ErrorCode, ucharP, 1);
+
+        //-----------------------------------------------
+        // strip the leftmost bit for type 2 error code
+        //-----------------------------------------------
+        type2ErrorCode = (unsigned char) GetBits(type2ErrorCode, 6, 7);
+        if (type2ErrorCode >= Type2ErrMsgMapSize)
+        {
+            (void)sprintf(msgString,
+                         "Unknown Type 2 Error (%d)", type2ErrorCode);
+            return 0;
+        }
+
+        //------------------------------------------------------------
+        // get the least sig byte, this contains the further info
+        //------------------------------------------------------------
+        ucharP++;
+        unsigned char idOrCount=0;
+        (void)memcpy(&idOrCount, ucharP, 1);
+
+        //------------------------------------------------
+        // error code 0-3, the least sig byte contains
+        // CDS FSW critical variable object ID
+        //------------------------------------------------
+        if (type2ErrorCode <= 3)
+        {
+            if (idOrCount >= CdsFswCritVarObjIdSize)
+            {
+                (void)sprintf(msgString,
+                         "Unknown FSW Critical Var Object ID(%d)", idOrCount);
+                return 0;
+            }
+            else
+            {
+                (void)sprintf(msgString, "%s: %s",
+                         type2_error_msg_map[(int)type2ErrorCode],
+                         cds_fsw_crit_var_obj_id[(int)idOrCount]);
+                return 1;
+            }
+        }
+        //------------------------------------------------
+        // error code =4, the least sig byte contains
+        // CDS FSW Tables object ID
+        //------------------------------------------------
+        else if (type2ErrorCode == 4)
+        {
+            if (idOrCount >= CdsFswObjIdSize)
+            {
+                (void)sprintf(msgString,
+                         "Unknown FSW Tables Object ID(%d)", idOrCount);
+                return 0;
+            }
+            else
+            {
+                (void)sprintf(msgString, "%s: %s",
+                         type2_error_msg_map[(int)type2ErrorCode],
+                         cds_fsw_obj_id[(int)idOrCount]);
+                return 1;
+            }
+        }
+        //------------------------------------------------
+        // error code > 4, the least sig byte contains
+        // PRF number in which the error occurred
+        //------------------------------------------------
+        else
+        {
+            (void)sprintf(msgString, "%s: PRF %d",
+                         type2_error_msg_map[(int)type2ErrorCode], idOrCount);
+            return 1;
+        }
+    }
+} // L1AErrorChecker::CodeToErrorMsg
+
+void
+L1AErrorChecker::AddErrorMessageCode(
+unsigned short        errorCode)
+{
+    //--------------------------------------------------
+    // if the error msg code is already in the list,
+    // just increment the number, else append the new one
+    // in the list
+    //--------------------------------------------------
+    ErrorMsgT* errMsgP = new ErrorMsgT(errorCode);
+    if (_errorMsgCodes.Find(errMsgP))
+    {
+        ErrorMsgT* currentMsgP = _errorMsgCodes.GetCurrent();
+        currentMsgP->num++;
+        delete errMsgP;
+    }
+    else
+    {
+        _errorMsgCodes.Append(errMsgP);
+    }
+} // L1AErrorChecker::AddErrorMessageCode

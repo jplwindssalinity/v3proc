@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.5   01 May 1998 14:47:56   sally
+// added HK2 file
+// 
 //    Rev 1.4   17 Apr 1998 16:51:26   sally
 // add L2A and L2B file formats
 // 
@@ -57,31 +60,30 @@ public:
 
     TlmHdfFile(
            const char*  filename,                 // IN
-           SourceIdE    dataType,                 // IN
-           StatusE&     returnStatus,             // OUT
-           const Itime  startTime = INVALID_TIME, // IN: BOF if invalid
-           const Itime  endTime = INVALID_TIME);  // IN: EOF if invalid
+           SourceIdE    sourceType,               // IN
+           StatusE&     returnStatus);            // OUT
 
 
     virtual ~TlmHdfFile();
 
-    const Itime         GetFirstDataTime(void) { return(_firstDataRecTime); }
-    const Itime         GetLastDataTime(void) { return(_lastDataRecTime); }
+    SourceIdE           GetSource() { return _sourceType; }
 
+    virtual Itime       GetFirstDataTime(void) { return(INVALID_TIME); }
+    virtual Itime       GetLastDataTime(void) { return(INVALID_TIME); }
+
+                        //----------------------------------------
                         // return TRUE if more data,
                         // and nextIndex contains the next index
+                        //----------------------------------------
     virtual StatusE     GetNextIndex(int32& nextIndex);  // IN/OUT
+
     virtual StatusE     Range(FILE* ofp)= 0;
 
 protected:
 
     virtual StatusE     _setFileIndices(void)=0;
 
-    SourceIdE   _dataType;
-    Itime       _userStartTime;    // user's start time
-    Itime       _userEndTime;      // user's end time
-    Itime       _firstDataRecTime; // time of the first data(subclass fills in)
-    Itime       _lastDataRecTime;  // time of the last data(subclass fills in)
+    SourceIdE   _sourceType;
 
     int32       _userNextIndex;    // next index in the file(subclass fills in)
     int32       _userStartIndex;   // user's start index (subclass fills in)
