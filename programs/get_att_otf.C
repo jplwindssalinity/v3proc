@@ -162,6 +162,7 @@ EchoInfo*  g_echo_info;
 double     g_ref_look[NUMBER_OF_QSCAT_BEAMS];
 double     g_att[3];
 double     g_time;
+double     g_first_time = -1.0;
 int        g_opt_windfield = 0;
 char*      g_windfield_type = NULL;
 char*      g_windfield_file = NULL;
@@ -536,6 +537,8 @@ main(
                 {
                     g_time = sum_time / (double)g_frame_count;
                     printf("Process %d\n", starting_orbit_step);
+                    if (g_first_time == -1.0)
+                        g_first_time = g_time;
                     process_orbit_step(output_base, &spacecraft, &qscat,
                         &fbb_table, starting_orbit_step, att_fp);
                 }
@@ -613,7 +616,8 @@ process_orbit_step(
     // add roll, pitch, yaw to attitude file //
     //---------------------------------------//
 
-    fprintf(att_fp, "%g %g %g %g\n", g_time, att[0] * rtd,
+    double delta_time = (g_time - g_first_time) / 60.0;
+    fprintf(att_fp, "%g %g %g %g\n", delta_time, att[0] * rtd,
         att[1] * rtd, att[2] * rtd);
     fflush(att_fp);
 
@@ -738,6 +742,8 @@ evaluate(
             g_echo_info[frame_idx].gcY, g_echo_info[frame_idx].gcZ);
         spacecraft->orbitState.vsat.Set(g_echo_info[frame_idx].velX,
             g_echo_info[frame_idx].velY, g_echo_info[frame_idx].velZ);
+
+// this would be used to estimate the attitude biases
 /*
         spacecraft->attitude.SetRPY(g_echo_info[frame_idx].roll + att[0],
             g_echo_info[frame_idx].pitch + att[1],
