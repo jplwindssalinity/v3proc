@@ -111,11 +111,11 @@ $(LIBDIR)/libEAData.a: $(OBJS)
 	(set incs=(*.h EAList.C); cd $(INCDIR); /bin/rm -f $$incs)
 	cp *.h $(INCDIR); cp EAList.C $(INCDIR)
 
-%.C: $(IO_CENTRAL_TREE)/src/data/RCS/%.C,v
-	co $(IO_CENTRAL_TREE)/src/data/RCS/$@,v
+%.C: $(SIM_CENTRAL_TREE)/src/data/RCS/%.C,v
+	co $(SIM_CENTRAL_TREE)/src/data/RCS/$@,v
  
-%.h: $(IO_CENTRAL_TREE)/src/data/RCS/%.h,v
-	co $(IO_CENTRAL_TREE)/src/data/RCS/$@,v
+%.h: $(SIM_CENTRAL_TREE)/src/data/RCS/%.h,v
+	co $(SIM_CENTRAL_TREE)/src/data/RCS/$@,v
 
 Args.o:			Args.C Args.h EAConfigList.h EAList.h
 
