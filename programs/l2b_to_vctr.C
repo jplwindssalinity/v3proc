@@ -8,12 +8,13 @@
 //		l2b_to_vctr
 //
 // SYNOPSIS
-//		l2b_to_vctr <l2b_file> <Vctr_base>
+//		l2b_to_vctr <l2b_file> [ vctr_base ]
 //
 // DESCRIPTION
-//		Converts a Level 2B file into multiple Vctr (vector)
+//		Converts a Level 2B file into multiple vctr (vector)
 //		files for plotting in IDL.  Output filenames are created by
 //		adding the rank number (0 for selected) to the base name.
+//		If vctr_base is not provided, l2b_file is used as the base name.
 //
 // OPTIONS
 //		None.
@@ -21,11 +22,11 @@
 // OPERANDS
 //		The following operands are supported:
 //		<l2b_file>		The input Level 2B wind field
-//		<vctr_base>		The output vctr file basename
+//		[ vctr_base ]	The output vctr file basename
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l2b_to_vctr 96interp.bin output.vctr
+//			% l2b_to_vctr l2b.dat l2b.vctr
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -92,7 +93,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2b_file>", "<Vctr_base>", 0};
+const char* usage_array[] = { "<l2b_file>", "[ vctr_base ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -108,12 +109,16 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc < 2 || argc > 3)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* l2b_file = argv[clidx++];
-	const char* vctr_base = argv[clidx++];
+	const char* vctr_base;
+	if (argc == 3)
+		vctr_base = argv[clidx++];
+	else
+		vctr_base = l2b_file;
 
 	//------------------//
 	// read in l2b file //
@@ -134,14 +139,14 @@ main(
 
 	if (! l2b.ReadDataRec())
 	{
-		fprintf(stderr, "%s: error reading L2B data record from file  %s\n",
+		fprintf(stderr, "%s: error reading L2B data record from file %s\n",
 			command, l2b_file);
 		exit(1);
 	}
 
-	//---------------------//
+	//----------------------//
 	// write out vctr files //
-	//---------------------//
+	//----------------------//
 
 	for (int i = 0; i < 5; i++)
 	{
@@ -149,7 +154,7 @@ main(
 		sprintf(filename, "%s.%d", vctr_base, i);
 		if (! l2b.WriteVctr(filename, i))
 		{
-			fprintf(stderr, "%s: error writing Vctr file %s\n", command,
+			fprintf(stderr, "%s: error writing vctr file %s\n", command,
 				filename);
 			exit(1);
 		}
