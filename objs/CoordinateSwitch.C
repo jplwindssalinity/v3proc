@@ -38,30 +38,27 @@ _trans.Rowset(x2,y2,z2);
 // of ordered rotations about the coordinate axes of frame 1.
 // The coordinate transformation matrix changes a vector represented
 // in frame 1 into the same vector represented in frame 2.
+// The ordered rotations are stored in an Attitude object.
 // Roll, pitch, and yaw are rotations about the x-axis, y-axis, and z-axis
 // respectively (also called axes 1, 2, and 3).
 // The names of the axes and angles are arbitrary -- what really matters is the
-// order that they appear in the attitude vector argument.
-// The order of definition for the rotations is specified by the last three
-// integer arguments.  Thus, if the rotation about the 1-axis (ie., roll)
-// is the first to be applied, then order1 = 1, if the second to be applied
-// then order1 = 2, and so forth.
+// order that they are applied in.
+// The order of definition for the rotations is specified by the _order
+// member of the Attitude object.
+// If the rotation about the 1-axis (ie., roll)
+// is the first to be applied, then order[0] = 1, if the second to be applied
+// then order[0] = 2, and so forth.
 // The origin of frame 2 represented in frame 1 is stored in _o2.
 //
 
-CoordinateSwitch::CoordinateSwitch(Vector3 o2, Vector3 att,
-                                   int order1, int order2, int order3)
+CoordinateSwitch::CoordinateSwitch(Vector3 o2, Attitude att)
 {
 
 _o2 = o2;
 
-double roll;
-double pitch;
-double yaw;
-
-att.Get(0,&roll);
-att.Get(1,&pitch);
-att.Get(2,&yaw);
+double roll = att.GetRoll();
+double pitch = att.GetPitch();
+double yaw = att.GetYaw();
 
 double cr = cos(roll);
 double sr = sin(roll);
@@ -73,21 +70,16 @@ double sy = sin(yaw);
 Matrix3 rollmatrix(1,0,0,0,cr,sr,0,-sr,cr);
 Matrix3 pitchmatrix(cp,0,-sp,0,1,0,sp,0,cp);
 Matrix3 yawmatrix(1,0,0,0,cr,sr,0,-sr,cr);
+int *order = att.GetOrderIndicies();
 
 _trans.Identity();
 
-int order[3] = {order1-1, order2-1, order3-1};
-Matrix3 rot[3] = {rollmatrix, pitchmatrix, yawmatrix};
-
-int i,j;
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  // find the correct rotation matrix for each ordered rotation
-  if (order[j] == i)
-    {	// apply rotation matrix indicated by order[j]
-    _trans = rot[j] * _trans;
-    }
+int i;
+for (i=1; i <= 3; i++)
+  {	// Apply rotation matrices in specifed order
+  if (order[0] == i) _trans = rollmatrix * _trans;
+  if (order[1] == i) _trans = pitchmatrix * _trans;
+  if (order[2] == i) _trans = yawmatrix * _trans;
   }
 
 }

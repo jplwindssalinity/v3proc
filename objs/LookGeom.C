@@ -20,14 +20,12 @@ static const char rcs_id_lookgeom_c[] =
 //
 // This function determines the spacecraft velocity frame (also called
 // the local coordinate system) given the s/c position and velocity.
-// Two different reference conventions can be selected with the last argument.
+// The attitude uses a GEOCENTRIC reference meaning that the z-axis intercepts
+// the center of the earth.
 //
 // Inputs:
 //  rsat = geocentric position of the spacecraft (km)
 //  vsat = geocentric inertial velocity of the spacecraft (km/s)
-//  attref = GEOCENTRIC or GEODETIC - enum flag which determines the definition
-//           of the z-axis in the velocity frame.
-//  
 //  xscvel_geo = pointer to a Vector3 object to hold the x-axis unit vector of
 //               the velocity coordinate frame represented in the geocentric
 //               frame.
@@ -40,26 +38,60 @@ static const char rcs_id_lookgeom_c[] =
 //
 
 void velocity_frame(EarthPosition rsat, Vector3 vsat,
-                    attitude_referenceE attref,
 					Vector3 *xscvel_geo,
 					Vector3 *yscvel_geo,
 					Vector3 *zscvel_geo)
 
 {
 
-if (attref == GEOCENTRIC)
-  {	// Geocentric definition of the z-axis
-  *zscvel_geo = -rsat;
-  }
-else if (attref == GEODETIC)
-  {	// Geodetic definition of the z-axis
-  Vector3 rsat_geodetic = rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
-  double nadir_lat = rsat_geodetic.get(1);
-  double nadir_lon = rsat_geodetic.get(2);
-  EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
-  *zscvel_geo = rnadir - rsat;
-  } 
+// Geocentric definition of the z-axis
+*zscvel_geo = -rsat;
+// y-axis is perpendicular to the orbit plane
 *yscvel_geo = *zscvel_geo & vsat;
+// x-axis close to, but not the same as the velocity vector
+*xscvel_geo = *yscvel_geo & *zscvel_geo;
+
+}
+
+//
+// velocity_frame_geodetic
+//
+// This function determines the spacecraft velocity frame (also called
+// the local coordinate system) given the s/c position and velocity.
+// The attitude uses a GEODETIC reference meaning that the z-axis intercepts
+// the earth's surface perpendicular to the local tangent plane.
+//
+// Inputs:
+//  rsat = geocentric position of the spacecraft (km)
+//  vsat = geocentric inertial velocity of the spacecraft (km/s)
+//  xscvel_geo = pointer to a Vector3 object to hold the x-axis unit vector of
+//               the velocity coordinate frame represented in the geocentric
+//               frame.
+//  yscvel_geo = same thing for the y-axis.
+//  zscvel_geo = same thing for the z-axis.
+//
+// Action:
+//  The Vector3 objects pointed to by x,y,zscvel_geo are filled with the
+//  corresponding unit vectors.
+//
+
+void velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
+							 Vector3 *xscvel_geo,
+							 Vector3 *yscvel_geo,
+							 Vector3 *zscvel_geo)
+
+{
+
+// Geodetic definition of the z-axis
+Vector3 rsat_geodetic = rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
+double nadir_lat = rsat_geodetic.get(1);
+double nadir_lon = rsat_geodetic.get(2);
+EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
+*zscvel_geo = rnadir - rsat;
+
+// y-axis is perpendicular to the orbit plane
+*yscvel_geo = *zscvel_geo & vsat;
+// x-axis close to, but not the same as the velocity vector
 *xscvel_geo = *yscvel_geo & *zscvel_geo;
 
 }
@@ -69,22 +101,18 @@ else if (attref == GEODETIC)
 //
 // This function computes the look direction in the antenna coordinate system
 // for a given s/c state and ground target.
+// Spacecraft attitude is assumed to use a GEOCENTRIC reference.
 //
 // Inputs:
 //   rsat = s/c position vector (rotating geocentric frame)
 //   vsat = s/c intertial velocity (rotating geocentric frame)
 //   rground = ground target position vector (rotating geocentric frame)
 //             Note that rsat and rground must have the same units (eg., km).
-//   sc_att = s/c body attitude vector (roll,pitch,yaw) with respect to the
+//   sc_att = s/c body attitude (roll,pitch,yaw) with respect to the
 //            frame defined by the orbit plane (just like NSCAT)
 //   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
 //             s/c body frame
 //        All angle inputs are in radians.
-//   attref = flag indicating the attitude reference convention to use:
-//     GEOCENTRIC - s/c velocity frame z-axis points toward the center of the
-//                  earth.
-//     GEODETIC - s/c velocity frame z-axis points straight down to the surface,
-//                intercepting perpendicular to the surface (local normal).
 //
 // Return Value:
 //   A unit vector in the antenna coordinate system pointed at the
@@ -92,7 +120,7 @@ else if (attref == GEODETIC)
 //
 
 Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
-		     Vector3 sc_att, Vector3 ant_att, attitude_referenceE attref)
+		     Attitude sc_att, Attitude ant_att)
 
 {
 
@@ -103,7 +131,7 @@ Vector3 null_vector(0.0);
 Vector3 xscvel_geo;
 Vector3 yscvel_geo;
 Vector3 zscvel_geo;
-velocity_frame(rsat,vsat,attref,&xscvel_geo,&yscvel_geo,&zscvel_geo);
+velocity_frame(rsat,vsat,&xscvel_geo,&yscvel_geo,&zscvel_geo);
 
 // Coordinate transformation from geocentric to s/c velocity
 // Note that no translation is used because we are dealing only with
@@ -112,11 +140,11 @@ CoordinateSwitch geo_to_scvel(null_vector,xscvel_geo,yscvel_geo,zscvel_geo);
 //geo_to_scvel.Show("antenna_look: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(null_vector,sc_att,1,2,3);
+CoordinateSwitch scvel_to_scbody(null_vector,sc_att);
 //scvel_to_scbody.Show("antenna_look: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(null_vector,ant_att,1,2,3);
+CoordinateSwitch scbody_to_ant(null_vector,ant_att);
 //scbody_to_ant.Show("antenna_look: scbody_to_ant");
 
 // rlook is a vector from the s/c to the ground target (in geocentric frame)
@@ -144,23 +172,18 @@ return(rlook_ant);
 // This function computes the ground intercept point for a given s/c
 // and antenna state.
 // The algorithm is the same as that used by the NSCAT ATB routine Locate.
+// Spacecraft attitude is assumed to use a GEOCENTRIC reference.
 //
 // Inputs:
-//  
 //   rsat = s/c position vector (rotating geocentric frame)
 //   vsat = s/c intertial velocity (rotating geocentric frame)
-//   sc_att = s/c body attitude vector (roll,pitch,yaw) with respect to the
+//   sc_att = s/c body attitude (roll,pitch,yaw) with respect to the
 //            frame defined by the orbit plane (just like NSCAT)
 //   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
 //             s/c body frame
 //   rlook_ant = unit vector in antenna frame pointed in the desired
 //               look direction.
 //        All angle inputs are in radians.
-//   attref = flag indicating the attitude reference convention to use:
-//     GEOCENTRIC - s/c velocity frame z-axis points toward the center of the
-//                  earth.
-//     GEODETIC - s/c velocity frame z-axis points straight down to the surface,
-//                intercepting perpendicular to the surface (local normal).
 //
 // Return Value:
 //   The position vector of the ground intercept point in geocentric
@@ -168,8 +191,8 @@ return(rlook_ant);
 //
 
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
-	              Vector3 sc_att, Vector3 ant_att,
-			      Vector3 rlook_ant, attitude_referenceE attref)
+	              Attitude sc_att, Attitude ant_att,
+			      Vector3 rlook_ant)
 
 {
 
@@ -185,7 +208,7 @@ Vector3 null_vector(0.0);
 Vector3 xscvel_geo;
 Vector3 yscvel_geo;
 Vector3 zscvel_geo;
-velocity_frame(rsat,vsat,attref,&xscvel_geo,&yscvel_geo,&zscvel_geo);
+velocity_frame(rsat,vsat,&xscvel_geo,&yscvel_geo,&zscvel_geo);
 
 // Coordinate transformation from geocentric to s/c velocity
 // Note that no translation is used because we are dealing only with
@@ -194,11 +217,11 @@ CoordinateSwitch geo_to_scvel(null_vector,xscvel_geo,yscvel_geo,zscvel_geo);
 //geo_to_scvel.Show("earth_intercept: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(null_vector,sc_att,1,2,3);
+CoordinateSwitch scvel_to_scbody(null_vector,sc_att);
 //scvel_to_scbody.Show("earth_intercept: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(null_vector,ant_att,1,2,3);
+CoordinateSwitch scbody_to_ant(null_vector,ant_att);
 //scbody_to_ant.Show("earth_intercept: scbody_to_ant");
 
 // Apply coordinate transformations to put rlook_ant in the geocentric

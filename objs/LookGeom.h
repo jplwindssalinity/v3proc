@@ -14,21 +14,10 @@ static const char rcs_id_lookgeom_h[] =
 //======================================================================
 // Functions
 //		velocity_frame
+//		velocity_frame_geodetic
 //		antenna_look
 //		earth_intercept
 //======================================================================
-
-//
-// enum attitude_referenceE is used to specify how the spacecraft attitude
-// is defined with respect to the geocentric frame.  There are two
-// possibilities:
-//   GEOCENTRIC - s/c velocity frame z-axis points toward the center of the
-//                earth.
-//   GEODETIC - s/c velocity frame z-axis points straight down to the surface,
-//              intercepting perpendicular to the surface (local normal).
-//
-
-enum attitude_referenceE {GEOCENTRIC, GEODETIC};
 
 //======================================================================
 // Function
@@ -38,10 +27,26 @@ enum attitude_referenceE {GEOCENTRIC, GEODETIC};
 //		The velocity_frame function computes the axial unit vectors that
 //		define the s/c velocity frame (or local coordinate system) from
 //		the s/c position and velocity.
+//		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
 void velocity_frame(EarthPosition rsat, Vector3 vsat,
-                    attitude_referenceE attref,
+					Vector3 *xscvel_geo,
+					Vector3 *yscvel_geo,
+					Vector3 *zscvel_geo);
+
+//======================================================================
+// Function
+//		velocity_frame_geodetic
+//
+// DESCRIPTION
+//		The velocity_frame_geodetic function computes the axial unit vectors
+//		that define the s/c velocity frame (or local coordinate system) from
+//		the s/c position and velocity.
+//		A GEODETIC convention for the attitude reference is used.
+//======================================================================
+
+void velocity_frame(EarthPosition rsat, Vector3 vsat,
 					Vector3 *xscvel_geo,
 					Vector3 *yscvel_geo,
 					Vector3 *zscvel_geo);
@@ -53,10 +58,11 @@ void velocity_frame(EarthPosition rsat, Vector3 vsat,
 // DESCRIPTION
 //		The antenna_look function computes a unit vector in the
 //		antenna frame that is pointed at a particular ground target.
+//		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
 Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
-		     Vector3 sc_att, Vector3 ant_att, attitude_referenceE attref);
+		     Attitude sc_att, Attitude ant_att);
 
 //======================================================================
 // Function
@@ -66,9 +72,10 @@ Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 //		The earth_intercept function computes a position vector for
 //		the intercept point on the earth's surface for a particular
 //		look vector (specified in the antenna frame).
+//		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
-	              Vector3 sc_att, Vector3 ant_att,
-			      Vector3 rlook_ant, attitude_referenceE attref);
+	              Attitude sc_att, Attitude ant_att,
+			      Vector3 rlook_ant);
 #endif

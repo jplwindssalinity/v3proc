@@ -7,6 +7,7 @@
 #define COORDINATESWITCH_H
 
 #include "Matrix3.h"
+#include "Attitude.h"
 
 static const char rcs_id_coordinateswitch_h[] =
 	"@(#) $Id$";
@@ -38,8 +39,7 @@ public:
 // Build from unit axial vectors
 CoordinateSwitch(Vector3 o2, Vector3 x2, Vector3 y2, Vector3 z2);
 // Build from a set of ordered rotations
-CoordinateSwitch(Vector3 o2, Vector3 att,
-                 int order1, int order2, int order3);
+CoordinateSwitch(Vector3 o2, Attitude att);
 // Translation only
 CoordinateSwitch(Vector3 o2);
 ~CoordinateSwitch();
