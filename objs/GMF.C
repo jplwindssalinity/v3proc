@@ -1735,7 +1735,6 @@ GMF::Calculate_Init_Wind_Solutions(
     WVC*       wvc,
     int        polar_special=0)
 {
-//
 //!Description:
 // 	        This routine calculates an initial set of wind solutions
 //               using an iterative "coarse search" mechanism based on MLE
@@ -1743,9 +1742,14 @@ GMF::Calculate_Init_Wind_Solutions(
 //
 
 //
+//        Remove Bad Copol Measurements
+//
+      RemoveBadCopol(meas_list,kp);
+//
 // Local Declarations
 //
 
+       
       int   i;
       int   j;
       int   k;
@@ -1967,8 +1971,10 @@ GMF::Calculate_Init_Wind_Solutions(
 
 	for (k=2; k <= num_dir_samples-1; k++)
 	{
+
+	  // Added >= to eliminate missed peaks
 		if (_objective_buffer[k] > _objective_buffer[k-1] &&
-			_objective_buffer[k] > _objective_buffer[k+1])
+			_objective_buffer[k] >= _objective_buffer[k+1])
 		{
             num_mle_maxima = num_mle_maxima + 1;
             _dir_mle_maxima [num_mle_maxima] = k;
@@ -4354,7 +4360,11 @@ GMF::BuildDirectionRanges(
        }
        if(max==0.0){
 	 fprintf(stderr,"GMF::BuildDirectionRanges() Max=0.0?????\n");
-         exit(1);
+         fprintf(stderr,"max=%g prob_sum=%g thresh=%g\n",max,prob_sum,threshold);
+         for(int c=0;c<num;c++) 
+	   fprintf(stderr,"%d left %d right %d\n",c,left_idx[c],right_idx[c]);
+         
+         break;
        }
        // Add maximum to total included probability
        prob_sum+=max;
@@ -4393,3 +4403,67 @@ GMF::BuildDirectionRanges(
      delete[] right_idx;
      return(1);
 }
+
+//-----------------------------//
+// GMF::RemoveBadCopol         //
+//-----------------------------//
+int
+GMF::RemoveBadCopol(
+     MeasList* meas_list,
+     Kp* kp){
+  
+  // Compute look_indices, sums, and counts
+
+  float sum[4]={0.0,0.0,0.0,0.0};
+  int count[4]={0,0,0,0};
+  int nc=meas_list->NodeCount();
+  int* look_idx=new int[nc];
+  Meas* meas=meas_list->GetHead();
+  for(int c=0;c<nc;c++){
+    switch (meas->measType){
+    case Meas::HH_MEAS_TYPE:
+      if(meas->scanAngle<pi/2 || meas->scanAngle>3*pi/2) look_idx[c]=0;
+      else look_idx[c]=1;
+      break;
+    case Meas::VV_MEAS_TYPE:
+      if(meas->scanAngle<pi/2 || meas->scanAngle>3*pi/2) look_idx[c]=2;
+      else look_idx[c]=3;
+      break;
+    default:
+      look_idx[c]=-1;
+      break;
+    }
+    if(look_idx[c]>=0){
+      sum[look_idx[c]]+=meas->value;
+      count[look_idx[c]]++;
+    }
+    meas=meas_list->GetNext();
+  }
+
+
+  // Remove Bad Measurements
+  meas=meas_list->GetHead();
+  for(int c=0;c<nc;c++){
+    int d=look_idx[c];
+    if(d<0) meas=meas_list->GetNext();
+    else if(count[d]<3)  meas=meas_list->GetNext();
+    else{
+      double s0_ave=(sum[d]-meas->value)/(count[d]-1);
+      double vpc;
+      kp->GetVpc(meas,s0_ave,&vpc);
+      float std=sqrt(vpc);
+      if(fabs(s0_ave-meas->value)>10.0*std){
+	meas=meas_list->RemoveCurrent();
+        delete meas;
+        meas=meas_list->GetCurrent();
+      }
+      else meas=meas_list->GetNext();
+    }
+  }  
+  delete[] look_idx;
+  return(1);
+}
+
+
+
+
