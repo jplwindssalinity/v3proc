@@ -1168,16 +1168,19 @@ GMF::RetrieveWindsWithPeakSplitting(
     float      threshold,
     int        max_num_ambigs)
 {
-        if(! RetrieveWinds_PE(meas_list,kp,wvc)) return(0);
-        int one_peak_radius=(int)(one_peak_width/(2*_phiStepSize) +0.5);
+    if (! RetrieveWinds_PE(meas_list,kp,wvc))
+        return(0);
+    int one_peak_radius = (int)(one_peak_width / (2 * _phiStepSize) + 0.5);
 
-        //----------------------------------------------------------------//
-        // Convert Objective Function Values to Scaled Probability Values //
     //----------------------------------------------------------------//
-    float scale=0;
-        WindVectorPlus* head=wvc->ambiguities.GetHead();
-        if(head!=NULL) scale=head->obj;
-    _ObjectiveToProbability(scale,one_peak_radius);
+    // Convert Objective Function Values to Scaled Probability Values //
+    //----------------------------------------------------------------//
+
+    float scale = 0.0;
+    WindVectorPlus* head = wvc->ambiguities.GetHead();
+    if (head != NULL)
+        scale = head->obj;
+    _ObjectiveToProbability(scale, one_peak_radius);
 
     //--------------------------------------//
     // determine number of ambiguities with  //
@@ -1186,23 +1189,22 @@ GMF::RetrieveWindsWithPeakSplitting(
     // are below the threshold                //
     //----------------------------------------//
 
-    int num_peaks=0;
+    int num_peaks = 0;
 
+    WindVectorPlus* wvp = wvc->ambiguities.GetHead();
 
-        WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-
-    while(wvp){
-      int phi_idx=(int)(wvp->dir/_phiStepSize +0.5);
+    while (wvp) {
+        int phi_idx = (int)(wvp->dir/_phiStepSize +0.5);
       float prob=*(_bestObj+phi_idx);
       if (prob > threshold){
         num_peaks++;
-        wvp->obj=prob;
-        wvp=wvc->ambiguities.GetNext();
+        wvp->obj = prob;
+        wvp = wvc->ambiguities.GetNext();
       }
       else{
-        wvp=wvc->ambiguities.RemoveCurrent();
+        wvp = wvc->ambiguities.RemoveCurrent();
         delete wvp;
-        wvp=wvc->ambiguities.GetCurrent();
+        wvp = wvc->ambiguities.GetCurrent();
       }
     }
 
@@ -1212,24 +1214,24 @@ GMF::RetrieveWindsWithPeakSplitting(
         //------------------------------------------//
 
         while(num_peaks<max_num_ambigs){
-      float max_prob=0;
-          int max_offset=0;
-          for(int c=0;c<_phiCount;c++){
+      float max_prob = 0;
+          int max_offset = 0;
+          for(int c = 0;c<_phiCount;c++){
 
             // check to see if the direction is already represented by
             // a peak
-        int available=1;
-            float dir=(float)c*_phiStepSize;
-        for(wvp=wvc->ambiguities.GetHead();wvp;
-        wvp=wvc->ambiguities.GetNext()){
+        int available = 1;
+            float dir = (float)c*_phiStepSize;
+        for(wvp = wvc->ambiguities.GetHead();wvp;
+        wvp = wvc->ambiguities.GetNext()){
           if(fabs(ANGDIF(wvp->dir,dir))<two_peak_separation_threshold){
-        available=0;
+        available = 0;
           }
         }
             // determine the available direction with the maximum probability
         if(available==1 && *(_bestObj+c)>max_prob){
           max_prob=*(_bestObj+c);
-          max_offset=c;
+          max_offset = c;
         }
       }
       //------------//
@@ -1700,7 +1702,7 @@ GMF::GetVariance(
         if (! kp->GetKpri2(&kpri2))
         {
             fprintf(stderr,"GMF::GetVariance: Error computing Kpri2\n");
-            kpri2=0.0;
+            kpri2 = 0.0;
         }
     }
 
@@ -1818,7 +1820,7 @@ GMF::RetrieveWinds_GS(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        polar_special = 0)
+    int        polar_special)
 {
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
@@ -1890,7 +1892,7 @@ GMF::Calculate_Init_Wind_Solutions(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        polar_special=0)
+    int        polar_special)
 {
 //!Description:
 //             This routine calculates an initial set of wind solutions
@@ -4033,11 +4035,11 @@ GMF::RetrieveWinds_S2(
 // ConvertObjToPdf must have been previously run for this to work.
 int
 GMF::BruteForceGetMinEstimateMSE(
-       float* peak_dir,
-       int    num_peaks,
-       float* mse,
-       int    level=0,
-       float* tmp_peak_dir=NULL){
+    float*  peak_dir,
+    int     num_peaks,
+    float*  mse,
+    int     level,
+    float*  tmp_peak_dir) {
   // Check to see if we are at the bottom level
   if(level+num_peaks == DEFAULT_MAX_SOLUTIONS){
     // if so compute MSE and compare to input value
@@ -4070,10 +4072,10 @@ GMF::BruteForceGetMinEstimateMSE(
 // ConvertObjToPdf must have been previously run for this to work.
 int
 GMF::GetMinEstimateMSE(
-       float* peak_dir,
-       int    num_peaks,
-       float* mse,
-       int num=0){
+    float*  peak_dir,
+    int     num_peaks,
+    float*  mse,
+    int     num) {
   int finished=0;
   int debug=0;
     FILE* ofpp = NULL;
@@ -4350,14 +4352,15 @@ GMF::EstimateDirMSE(
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
 
-#define S3_PROB_THRESHOLD 0.8
-#define S3_MSE_THRESHOLD 100.0*dtr*dtr
+#define S3_PROB_THRESHOLD  0.8
+#define S3_MSE_THRESHOLD   100.0*dtr*dtr
+
 int
 GMF::RetrieveWinds_S3(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        s4_flag=0)
+    int        s4_flag)
 {
     //--------------------------------//
     // generate coarse solution curve //
@@ -4365,17 +4368,20 @@ GMF::RetrieveWinds_S3(
 
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
-    Calculate_Init_Wind_Solutions(meas_list,kp,wvc);
-    Optimize_Wind_Solutions(meas_list,kp,wvc);
-    if(!CopyBuffersGSToPE()) return(0);
+    Calculate_Init_Wind_Solutions(meas_list, kp, wvc);
+    Optimize_Wind_Solutions(meas_list, kp, wvc);
+    if (! CopyBuffersGSToPE())
+        return(0);
     wvc->Rank_Wind_Solutions();
 
     // Copy arrays to wvc
-    wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0,two_pi,_phiCount);
-    wvc->directionRanges.bestObj=(float*)malloc(sizeof(float)*_phiCount);
-    for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestObj[c]=_bestObj[c];
-    wvc->directionRanges.bestSpd=(float*)malloc(sizeof(float)*_phiCount);
-    for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestSpd[c]=_bestSpd[c];
+    wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0, two_pi, _phiCount);
+    wvc->directionRanges.bestObj = (float*)malloc(sizeof(float)*_phiCount);
+    for(int c = 0; c < _phiCount; c++)
+        wvc->directionRanges.bestObj[c] = _bestObj[c];
+    wvc->directionRanges.bestSpd = (float*)malloc(sizeof(float)*_phiCount);
+    for(int c = 0; c < _phiCount; c++)
+        wvc->directionRanges.bestSpd[c] = _bestSpd[c];
 
     ConvertObjToPdf();
 
@@ -4385,14 +4391,14 @@ GMF::RetrieveWinds_S3(
 
     wvc->SortByObj();
 
-
     //-------------------------------------------//
     // Determine Direction Intervals Comprising  //
     // (S3_PROB_THRESHOLD)*100% of the probability//
     //-------------------------------------------//
 
-    if(!s4_flag){
-      if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
+    if (! s4_flag) {
+        if (! BuildDirectionRanges(wvc, S3_PROB_THRESHOLD))
+            return(0);
     }
 
     //------------------------------------------//

@@ -21,20 +21,22 @@ KpStatistics::KpStatistics()
   return;
 }
 
-KpStatistics::~KpStatistics(){
-  if(numMeas!=NULL) Deallocate();
-  numMeas=NULL;
-  return;
+KpStatistics::~KpStatistics() {
+    if (numMeas != NULL)
+        Deallocate();
+    numMeas = NULL;
+    return;
 }
 
-//------------------------------//
-// KpStatistics::Allocate       //
-//------------------------------//
+//------------------------//
+// KpStatistics::Allocate //
+//------------------------//
 
-int KpStatistics::Allocate(){
-  if(numMeas!=NULL){
-    return(0);
-  }
+int
+KpStatistics::Allocate() {
+    if (numMeas != NULL) {
+        return(0);
+    }
   numMeas=(int******)make_array(sizeof(int),6,beamIdx.GetBins(),
 				aTIdx.GetBins(),cTIdx.GetBins(),
 				scanAngleIdx.GetBins(),spdIdx.GetBins(),
@@ -507,18 +509,20 @@ KpStatistics::WriteAscii(const char* filename){
 
 
 #define DEBUG 0
+
 //----------------------//
 // KpStatistics::Update //
 //----------------------//
 
 int
-KpStatistics::Update( int ati,
-	     int cti,
-	     MeasList* meas_list,
-	     WVC* wvc,
-	     WGC* wgc,
-	     GMF* gmf,
-	     windTypeE wind_type=DIRTH)
+KpStatistics::Update(
+    int        ati,
+    int        cti,
+    MeasList*  meas_list,
+	WVC*       wvc,
+	WGC*       wgc,
+	GMF*       gmf,
+	windTypeE  wind_type)
 {
   //--------------------------------------------------------//
   // Initialize look set dependent arrays                   //
@@ -551,8 +555,6 @@ KpStatistics::Update( int ati,
   //--------------------------------------------//
 
   int ispd,ict,iat;
-
-
 
   WindVector* wv=NULL;  
   switch(wind_type){

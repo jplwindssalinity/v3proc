@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -218,7 +218,7 @@ downhill_simplex(
     double    ftol,
     double    (*funk)(double*,void*),
     void*     ptr,
-    double    xtol=0.0)
+    double    xtol)
 {
     int i,j;
 //    if (DEBUG_DOWNHILL && ndim == 1)
