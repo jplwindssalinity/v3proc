@@ -2395,7 +2395,27 @@ WindSwath::DeleteEntireSwath()
 //------------------------------//
 // WindSwath::DeleteFlaggedData //
 //------------------------------//
-
+int
+WindSwath::DeleteFlaggedData(){
+  int count = 0;
+  for (int i = 0; i < _crossTrackBins; i++)
+    {
+      for (int j = 0; j < _alongTrackBins; j++)
+        {
+	  WVC* wvc = *(*(swath + i) + j);
+	  if (wvc == NULL)
+	    continue;
+	  if ((RAIN_FLAG_UNUSABLE | RAIN_FLAG_RAIN) 
+	      & wvc->rainFlagBits){
+	    delete wvc;
+	    *(*(swath + i) + j) = NULL;
+	    count++;
+	    _validCells--;
+	  }
+	}
+    }
+  return(count);
+}
 int
 WindSwath::DeleteFlaggedData(
     const char*  flag_file,
@@ -2403,6 +2423,13 @@ WindSwath::DeleteFlaggedData(
     float        threshold_both,
     float        threshold_outer)
 {
+    if(strcasecmp(flag_file,"l2b")==0){
+      if(use_thresh!=0){
+	fprintf(stderr,"DeleteFlaggedData using threshold in L2B file not implemented!\n");
+	  exit(0);
+      }
+      return(DeleteFlaggedData());
+    }
     FILE* ifp = fopen(flag_file, "r");
     if (ifp == NULL)
     {
@@ -2743,67 +2770,7 @@ WindSwath::GetSpdDirNumSel(
     return(1);
 }
 
-//-------------------------//
-// WindSwath::ReadHdfDIRTH //
-//-------------------------//
 
-int
-WindSwath::ReadHdfDIRTH(
-    const char* filename)
-{
-  float* speed, *dir;
-  HDF_update_file hdf_struct;
-  if (hdf_struct.open(filename)){
-    SD_attributes attr;
-    //---- Allocate arrays ---------------//
-   hdf_struct.get_dataset_attributes("wind_speed_selection",attr);
-   if(attr.dimensions[0]!=_alongTrackBins
-      || attr.dimensions[1]!=_crossTrackBins)
-     {
-       hdf_struct.close();
-       return(0);
-     }
-   hdf_struct.get_dataset_attributes("wind_dir_selection",attr);
-   if(attr.dimensions[0]!=_alongTrackBins
-      || attr.dimensions[1]!=_crossTrackBins)
-     {
-       hdf_struct.close();
-       return(0);
-     }
-   speed=(float*)malloc(sizeof(float)*_crossTrackBins*_alongTrackBins);
-   dir=(float*)malloc(sizeof(float)*_crossTrackBins*_alongTrackBins);
-   //----------Read Data Sets -------/
-   if (! hdf_struct.get_data("wind_speed_selection",speed)  ||
-       ! hdf_struct.get_data("wind_speed_selection",dir)){
-     hdf_struct.close();
-     free(speed);
-     free(dir);
-     return(0);
-   }
-   for(int i=0;i<_alongTrackBins;i++){
-     int offset=_crossTrackBins*i;
-     for(int j=0;j<_crossTrackBins;j++){
-       WVC* wvc=swath[i][j];
-       if(!wvc) continue;
-       if(!wvc->selected) continue;
-       wvc->selected->spd=speed[offset+j];
-       float edir = (450.0 - dir[offset+j])*dtr;
-       while (edir > two_pi)
-     edir -= two_pi;
-
-       while (edir < 0)
-     edir += two_pi;
-       wvc->selected->dir=edir;
-     }
-   }
-   hdf_struct.close();
-   free(speed);
-   free(dir);
-   return(1);
-  }
-  else return(0);
-
-}
 
 //----------------------//
 // WindSwath::UpdateHdf //
