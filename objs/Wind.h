@@ -409,16 +409,18 @@ public:
     int    GetHurricaneNudgeVectors(WindField* nudge_field,
                EarthPosition* center, float radius);
     int    Nudge(int min_rank);
+    int    StreamNudge(float stream_thresh);
     int    HurricaneNudge(int min_rank, EarthPosition* center, float radius);
     int    S3Nudge();
     int    ThresNudge(int min_rank, float thres[2]);
     int    LoResNudge(WindVectorField* nudge_field, int min_rank);
     int    SmartNudge(WindField* nudge_field);
     int    MedianFilter(int window_size, int max_passes, int bound,
-               int weight_flag = 0, int special=0);
+               int weight_flag = 0, int special=0, int freeze=0);
     int    BestKFilter(int window_size, int k);
     int    MedianFilterPass(int half_window, WindVectorPlus*** selected,
-               char** change, int bound, int weight_flag = 0, int special=0);
+               char** change, int bound, int weight_flag = 0, int special=0,
+			    int freeze=0);
     int    BestKFilterPass(int half_window, int k,
                WindVectorPlus*** new_selected, float** prob, float* best_prob);
     int    BestKFilterSubPass(int half_window, WindVectorPlus*** new_selected,

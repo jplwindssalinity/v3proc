@@ -3351,6 +3351,43 @@ WindSwath::Nudge(
     return(count);
 }
 
+//------------------//
+// WindSwath::StreamNudge //
+//------------------//
+
+int
+WindSwath::StreamNudge(float stream_thresh)
+{
+    printf("WindSwath::StreamT %g\n",stream_thresh);
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            if (wvc->nudgeWV==NULL)
+                continue;
+	    WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
+	    WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
+	    if( !wvp2 )
+	      wvc->selected=wvp1;
+	    else{
+	      float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
+	      if(angdif < stream_thresh*dtr) wvc->selected=wvp1;
+	      else{
+		wvc->selected = 
+		  wvc->GetNearestToDirection(wvc->nudgeWV->dir,2);
+		count++;
+	      }
+	    }
+        }
+    }
+    return(count);
+}
+
 //---------------------------//
 // WindSwath::HurricaneNudge //
 //---------------------------//
@@ -3554,7 +3591,8 @@ WindSwath::MedianFilter(
     int  max_passes,
     int  bound,
     int  weight_flag,
-    int  special = 0)
+    int  special = 0,
+    int  freeze = 0)
 {
     //----------------------------//
     // create a new selection map //
@@ -3580,7 +3618,9 @@ WindSwath::MedianFilter(
     {
         for (int ati = 0; ati < _alongTrackBins; ati++)
         {
+	  if(freeze==0 || cti<freeze || cti>_crossTrackBins-freeze)
             change[cti][ati] = 1;
+	  else change[cti][ati] =0;
         }
     }
 
@@ -3592,7 +3632,7 @@ WindSwath::MedianFilter(
     while (pass < max_passes)
     {
         int flips = MedianFilterPass(half_window, new_selected, change,
-                        bound, weight_flag, special);
+                        bound, weight_flag, special, freeze);
         pass++;
         if (flips == 0)
             break;
@@ -3698,7 +3738,8 @@ WindSwath::MedianFilterPass(
     char**             change,
     int                bound,
     int                weight_flag,
-    int                special = 0)
+    int                special = 0,
+    int                freeze = 0)
 {
     int flips = 0;
     float energy = 0.0;
@@ -3731,6 +3772,13 @@ WindSwath::MedianFilterPass(
             WVC* wvc = swath[cti][ati];
             if (! wvc)
                 continue;
+
+            //-------------------//
+            // check for freeze  //
+            // state             //
+            //-------------------//
+	    if (freeze !=0 & cti>=freeze & cti<=_crossTrackBins-freeze)
+	      continue; 
 
             //-------------------//
             // check for changes //
