@@ -716,7 +716,7 @@ RangeTracker::WriteBinary(
 	// write the duration //
 	//--------------------//
 
-	if (fwrite((void *) *_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fwrite((void *)_duration, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);
