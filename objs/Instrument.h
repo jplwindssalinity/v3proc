@@ -84,7 +84,6 @@ public:
 	// variables //
 	//-----------//
 
-
 	double		time;
 	Antenna		antenna;
 
@@ -113,8 +112,8 @@ public:
 	float		chirpStartB;		// Hz
 	float		systemDelay;		// sec
 	float		systemTemperature;	// K
-	float		xmitPulsewidth;		// sec
-	float		receiverGateWidth;	// sec
+//	float		xmitPulsewidth;		// sec
+//	float		receiverGateWidth;	// sec
 	float		baseTransmitFreq;	// Hz
 	float		sliceBandwidth;		// Hz
 	float		noiseBandwidth;		// Hz

@@ -490,6 +490,7 @@ ConfigInstrument(
 		return(0);
 	instrument->systemTemperature = system_temperature;
 
+/*
 	float xmit_pulse_width;	// ms
 	if (! config_list->GetFloat(XMIT_PULSE_WIDTH_KEYWORD,
 		&xmit_pulse_width))
@@ -501,6 +502,7 @@ ConfigInstrument(
 		&receiver_gate_width))
 		return(0);
 	instrument->receiverGateWidth = receiver_gate_width * MS_TO_S;
+*/
 
 	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
@@ -700,6 +702,12 @@ ConfigBeam(
 	if (! config_list->GetDouble(keyword, &pulse_width))
 		return(0);
 	beam->pulseWidth = pulse_width * MS_TO_S;
+
+	double gate_width;		// ms
+	substitute_string(BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &gate_width))
+		return(0);
+	beam->receiverGateWidth = gate_width * MS_TO_S;
 
 	double look_angle;		// deg
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);

@@ -129,9 +129,11 @@ sigma0_to_Psn(
 	// Estimate Kpc using the true value of snr (known here!) and the
 	// approximate equations in Mike Spencer's Kpc memos.
 
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+
 	double snr = Ps_slice/Pn_slice;
-	double A = 1.0/(instrument->sliceBandwidth * instrument->xmitPulsewidth);
-	double B = 2.0/(instrument->sliceBandwidth * instrument->receiverGateWidth);
+	double A = 1.0/(instrument->sliceBandwidth * beam->pulseWidth);
+	double B = 2.0/(instrument->sliceBandwidth * beam->receiverGateWidth);
 	double C = B/2.0 *
 		(1.0 + instrument->sliceBandwidth/instrument->noiseBandwidth);
 	float Kpc = A + B/snr + C/snr/snr;

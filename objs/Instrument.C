@@ -30,13 +30,11 @@ InstrumentEvent::~InstrumentEvent()
 //============//
 
 Instrument::Instrument()
-:	time(0.0), commandedDoppler(0.0), receiverGateDelay(0.0),
+:	time(0.0), orbitTime(0), commandedDoppler(0.0), receiverGateDelay(0.0),
 	systemLoss(0.0), transmitPower(0.0), receiverGain(0.0), chirpRate(0.0),
 	chirpStartM(0.0), chirpStartB(0.0), systemDelay(0.0),
-	systemTemperature(0.0), xmitPulsewidth(0.0),
-	receiverGateWidth(0.0), baseTransmitFreq(0.0), sliceBandwidth(0.0),
-	noiseBandwidth(0.0), signalBandwidth(0.0), useKpc(1),
-	_eqxTime(0)
+	systemTemperature(0.0), baseTransmitFreq(0.0), sliceBandwidth(0.0),
+	noiseBandwidth(0.0), signalBandwidth(0.0), useKpc(1), _eqxTime(0)
 {
 	return;
 }

@@ -19,8 +19,8 @@ static const char rcs_id_beam_c[] =
 const char* beam_map[] = { "None", "V", "H" };
 
 Beam::Beam()
-:	polarization(NONE), pulseWidth(0.0), timeOffset(0.0),
-	_reference_lookAngle(0.0), _reference_azimuthAngle(0.0),
+:	polarization(NONE), pulseWidth(0.0), receiverGateWidth(0.0),
+	timeOffset(0.0), _reference_lookAngle(0.0), _reference_azimuthAngle(0.0),
 	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0),
 	_Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
 	_x_spacing(0.0), _y_spacing(0.0),
