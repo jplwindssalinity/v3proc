@@ -139,6 +139,12 @@ public:
 
     int  StompOrAppend(const char* keyword, const char* value);
 
+    //---------//
+    // freeing //
+    //---------//
+
+    void  FreeContents();
+
 protected:
 
     enum LogE { EXIT, WARN, NOTHING };

@@ -578,6 +578,20 @@ ConfigList::StompOrAppend(
     return(1);
 }
 
+//--------------------------//
+// ConfigList::FreeContents //
+//--------------------------//
+
+void
+ConfigList::FreeContents()
+{
+    StringPair* sp;
+    GotoHead();
+    while ((sp = RemoveCurrent()) != NULL)
+        delete sp;
+    return;
+}
+
 //-------------------//
 // ConfigList::_Find //
 //-------------------//
