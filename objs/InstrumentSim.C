@@ -90,7 +90,7 @@ InstrumentSim::DetermineNextEvent(
 	else
 	{
 		_scatBeamTime[min_idx] = (double)(int)(min_time /
-			antenna->priPerBeam + 1.0) * antenna->priPerBeam +
+			antenna->priPerBeam + 1.5) * antenna->priPerBeam +
 			antenna->beam[min_idx].timeOffset;
 	}
 

@@ -395,7 +395,7 @@ SpacecraftSim::DetermineNextEvent(
 
 	spacecraft_event->eventId = SpacecraftEvent::UPDATE_STATE;
 
-	int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod) + 1;
+	int sample_number = (int)(0.5+spacecraft_event->time / _ephemerisPeriod) + 1;
 	double update_state_time = (double)sample_number * _ephemerisPeriod;
 
 	spacecraft_event->time = update_state_time;
