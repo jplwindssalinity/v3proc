@@ -455,14 +455,14 @@ WindField::ReadVap(
 	//-------------------------------//
 
 	_lonCount = VAP_LON_DIM;
-	_lonMin = 0.0;
-	_lonMax = 359.0;
-	_lonStep = 1.0;
+	_lonMin = 0.0 * dtr;
+	_lonMax = 359.0 * dtr;
+	_lonStep = 1.0 * dtr;
 
 	_latCount = VAP_LAT_DIM;
-	_latMin = -60.0;
-	_latMax = 60.0;
-	_latStep = 1.0;
+	_latMin = -60.0 * dtr;
+	_latMax = 60.0 * dtr;
+	_latStep = 1.0 * dtr;
 
 	if (! _Allocate())
 		return(0);
