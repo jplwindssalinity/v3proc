@@ -19,7 +19,8 @@ static const char rcs_id_l2atol2b_c[] =
 L2AToL2B::L2AToL2B()
 :   medianFilterWindowSize(0), medianFilterMaxPasses(0), maxRankForNudging(0),
     useManyAmbiguities(0), useAmbiguityWeights(0), useNudging(0),
-    smartNudgeFlag(0), onePeakWidth(0.0), twoPeakSep(181.0), probThreshold(0.0)
+    smartNudgeFlag(0), wrMethod(GS), onePeakWidth(0.0), twoPeakSep(181.0),
+    probThreshold(0.0)
 {
 	return;
 }
