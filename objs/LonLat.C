@@ -1,10 +1,10 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_lonlat_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <math.h>
@@ -13,21 +13,21 @@ static const char rcs_id_lonlat_c[] =
 #include "EarthPosition.h"
 #include "List.h"
 
-#define WARN_COUNT	100
+#define WARN_COUNT  100
 
 //========//
 // LonLat //
 //========//
 
 LonLat::LonLat()
-:	longitude(0.0), latitude(0.0)
+:   longitude(0.0), latitude(0.0)
 {
-	return;
+    return;
 }
 
 LonLat::~LonLat()
 {
-	return;
+    return;
 }
 
 //-------------//
@@ -35,13 +35,44 @@ LonLat::~LonLat()
 //-------------//
 
 int
-LonLat::Set(EarthPosition r)
+LonLat::Set(
+    EarthPosition  r)
 {
-	double alt, lat, lon;
-	r.GetAltLonGDLat(&alt, &lon, &lat);
-	longitude = (float)lon;
-	latitude = (float)lat;
-	return(1);
+    double alt, lat, lon;
+    r.GetAltLonGDLat(&alt, &lon, &lat);
+    longitude = (float)lon;
+    latitude = (float)lat;
+    return(1);
+}
+
+//-------------//
+// LonLat::Set //
+//-------------//
+
+int
+LonLat::Set(
+    float  lon,
+    float  lat)
+{
+    longitude = lon;
+    latitude = lat;
+    return(1);
+}
+
+//--------------------------//
+// LonLat::ApproxApplyDelta //
+//--------------------------//
+
+int
+LonLat::ApproxApplyDelta(
+    float  dlon_km,
+    float  dlat_km)
+{
+    float dlon = dlon_km / (r1_earth * cos(latitude));
+    float dlat = dlat_km / r1_earth;
+    longitude += dlon;
+    latitude += dlat;
+    return(1);
 }
 
 //---------------//
@@ -50,14 +81,14 @@ LonLat::Set(EarthPosition r)
 
 int
 LonLat::Write(
-	FILE*	fp)
+    FILE*  fp)
 {
-	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //--------------//
@@ -66,14 +97,14 @@ LonLat::Write(
 
 int
 LonLat::Read(
-	FILE*	fp)
+    FILE*  fp)
 {
-	if (fread((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&latitude, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fread((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&latitude, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //--------------------//
@@ -82,11 +113,11 @@ LonLat::Read(
 
 int
 LonLat::WriteAscii(
-	FILE*	fp)
+    FILE*  fp)
 {
-	fprintf(fp, "Lon=%g(%g), Lat=%g(%g)\n",
-                longitude * rtd, longitude, latitude * rtd, latitude);
-	return(1);
+    fprintf(fp, "Lon = %g (%g), Lat = %g (%g)\n", longitude * rtd,
+        longitude, latitude * rtd, latitude);
+    return(1);
 }
 
 //-------------------//
@@ -95,14 +126,14 @@ LonLat::WriteAscii(
 
 int
 LonLat::WriteOtln(
-	FILE*	fp)
+    FILE*  fp)
 {
-	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //=========//

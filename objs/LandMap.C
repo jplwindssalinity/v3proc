@@ -1,25 +1,26 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.			//	
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_landmap_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
-#include<math.h>
-#include"Array.h"
-#include"Constants.h"
-#include"LandMap.h"
-//=========================//
-// LandMap                //
-//=========================//
+#include <math.h>
+#include "Array.h"
+#include "Constants.h"
+#include "LandMap.h"
+
+//==========//
+// LandMap  //
+//==========//
 
 LandMap::LandMap()
-  : _map(NULL), _pixelsPerDegree(12)
+:   _map(NULL), _pixelsPerDegree(12)
 {
-  _mapLatDim=180*_pixelsPerDegree;
-  _mapLonDim=45*_pixelsPerDegree;
-  return;
+    _mapLatDim = 180*_pixelsPerDegree;
+    _mapLonDim = 45*_pixelsPerDegree;
+    return;
 }
 
 LandMap::~LandMap(){
@@ -39,6 +40,7 @@ int LandMap::Initialize(char* filename, int use_map){
   }
   return(1);
 }
+
 //===================//
 // LandMap::Read    //
 //===================//
@@ -62,8 +64,11 @@ int LandMap::Read(char* filename){
 // LandMap::IsLand        //
 //=========================//
 
-int LandMap::IsLand(float lon, float lat){
-
+int
+LandMap::IsLand(
+    float  lon,
+    float  lat)
+{
       if(_usemap==0) return(0);
 
       while(lon < 0) lon+=two_pi;
@@ -82,6 +87,18 @@ int LandMap::IsLand(float lon, float lat){
       if(bit!=0) bit=1;
       return(bit);
 }
+
+//-----------------//
+// LandMap::IsLand //
+//-----------------//
+
+int
+LandMap::IsLand(
+    LonLat*  lon_lat)
+{
+    return(IsLand(lon_lat->longitude, lon_lat->latitude));
+}
+
 //=========================//
 // LandMap::_Allocate     //
 //=========================//

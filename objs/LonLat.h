@@ -1,13 +1,13 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef LONLAT_H
 #define LONLAT_H
 
 static const char rcs_id_lonlat_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include "List.h"
@@ -16,29 +16,33 @@ static const char rcs_id_lonlat_h[] =
 
 //======================================================================
 // CLASSES
-//		LonLat, Outline
+//    LonLat, Outline
 //======================================================================
 
 //======================================================================
 // CLASS
-//		LonLat
+//    LonLat
 //
 // DESCRIPTION
-//		The LonLat object contains a longitude and a latitude.
+//    The LonLat object contains a longitude and a latitude.
 //======================================================================
 
 class LonLat
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	LonLat();
-	~LonLat();
+    LonLat();
+    ~LonLat();
 
-	Set(EarthPosition r);
+    Set(EarthPosition r);
+    Set(float lon, float lat);
+
+    // this is only an approximation
+    int  ApproxApplyDelta(float dlon_km, float dlat_km);
 
 	//--------------//
 	// input/output //
