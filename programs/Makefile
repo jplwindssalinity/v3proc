@@ -74,7 +74,7 @@ PROGRAMS = \
 	l2a_to_ascii \
 	reformat_pattern \
 	test_pattern \
-	get_X_scan
+	get_X_scan \
         get_DopRan_scan
 #	generate_kfactor
 
