@@ -153,7 +153,7 @@ public:
     // input/output //
     //--------------//
 
-    int  Read(const char* pattern_file, const char* target_type, FILE* err_fp);
+    int  Read(const char* locator_file, const char* target_type, FILE* err_fp);
 
     //--------------//
     // manipulation //
@@ -546,6 +546,10 @@ PatternList::FreeContents()
 //-------------------//
 // PatternList::Read //
 //-------------------//
+// return codes:
+// 0 success
+// 1 error
+// 2 no matching type
 
 #define LINE_SIZE     2048
 #define TYPE_SIZE     16
@@ -554,7 +558,7 @@ PatternList::FreeContents()
 
 int
 PatternList::Read(
-    const char*  pattern_file,
+    const char*  locator_file,
     const char*  target_type,
     FILE*        err_fp)
 {
@@ -562,21 +566,22 @@ PatternList::Read(
     // open the pattern file //
     //-----------------------//
 
-    FILE* ifp = fopen(pattern_file, "r");
+    FILE* ifp = fopen(locator_file, "r");
     if (ifp == NULL)
     {
         if (err_fp != NULL)
         {
             fprintf(err_fp, "PatternList::Read: error opening locator file\n");
-            fprintf(err_fp, "    Locator file: %s\n", pattern_file);
+            fprintf(err_fp, "    Locator file: %s\n", locator_file);
         }
-        return(0);
+        return(1);
     }
 
     //--------------------------//
     // read and parse each line //
     //--------------------------//
 
+    int type_match = 0;
     char line[LINE_SIZE];
     while (fgets(line, LINE_SIZE, ifp) == line)
     {
@@ -587,7 +592,7 @@ PatternList::Read(
         if (sscanf(line, " %s %s %s", type, directory, pattern) == 3)
         {
             // check the type
-            if (strcmp(type, target_type) != 0)
+            if (strcasecmp(type, target_type) != 0)
                 continue;
 
             if (! Add(directory, pattern, err_fp))
@@ -600,17 +605,28 @@ PatternList::Read(
                     fprintf(err_fp, "      Pattern: %s\n", pattern);
                 }
                 fclose(ifp);
-                return(0);
+                return(1);
             }
         }
         else if (sscanf(line, "%s %d\n", type, &age) == 2)
         {
             // check the type
-            if (strcmp(type, target_type) != 0)
+            if (strcasecmp(type, target_type) != 0)
                 continue;
 
             _maturity = age;
+            type_match = 1;
         }
+    }
+
+    //-------------------------//
+    // check if type was found //
+    //-------------------------//
+
+    if (! type_match)
+    {
+        fclose(ifp);
+        return(2);
     }
 
     //-----------------------------------//
@@ -620,16 +636,17 @@ PatternList::Read(
     if (feof(ifp))
     {
         fclose(ifp);
-        return(1);
+        return(0);
     }
 
     if (err_fp != NULL)
     {
         fprintf(err_fp, "PatternList::Read: error reading locator file\n");
-        fprintf(err_fp, "    Filename: %s\n", pattern_file);
+        fprintf(err_fp, "    Filename: %s\n", locator_file);
     }
     fclose(ifp);
-    return(0);
+
+    return(1);
 }
 
 //------------------//

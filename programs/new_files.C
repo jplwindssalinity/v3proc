@@ -140,11 +140,25 @@ main(
     //----------------------------//
 
     PatternList pattern_list;
-    if (! pattern_list.Read(locator_file, type, stderr))
+    int retval = pattern_list.Read(locator_file, type, stderr);
+    switch (retval)
     {
+    case 0:    // OK
+        break;
+    case 1:    // error
         fprintf(stderr, "%s: error reading pattern list %s\n", command,
             locator_file);
         exit(1);
+        break;
+    case 2:    // no type match
+        fprintf(stderr, "%s: unknown type %s\n", command, type);
+        exit(1);
+        break;
+    default:    // huh?
+        fprintf(stderr, "%s: unknown return code (%d).  Yikes!\n", command,
+            retval);
+        exit(1);
+        break;
     }
 
     //---------------//
