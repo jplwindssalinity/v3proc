@@ -674,7 +674,7 @@ GMF::WriteObjectiveCurve(
     float  max_obj)
 {
 
-    float scale;
+    float scale = 0.0;
     if (min_obj == 0.0 && max_obj == 0.0)
     {
         scale = 1.0;
@@ -711,7 +711,7 @@ GMF::WriteGSObjectiveCurve(
     float dir_spacing =  wind_dir_intv_init;
     int num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
-    float scale;
+    float scale = 0.0;
     if (min_obj == 0.0 && max_obj == 0.0)
     {
         scale = 1.0;
@@ -747,7 +747,7 @@ GMF::AppendSolutions(
     float  min_obj,
     float  max_obj)
 {
-    float scale;
+    float scale = 0.0;
     if (min_obj == 0.0 && max_obj == 0.0)
     {
         scale = 1.0;
