@@ -1508,8 +1508,8 @@ GMF::GetVariance(
         case Meas::VV_HV_CORR_MEAS_TYPE:
         case Meas::HH_VH_CORR_MEAS_TYPE:
             float kpm_sig0;
-            gmf->GetMaxValueForSpeed(meas->measType, meas->incidenceAngle,
-                spd, &kpm_sig0);
+            GetMaxValueForSpeed(meas->measType, meas->incidenceAngle, spd,
+                &kpm_sig0);
             vpm = kpm2 * kpm_sig0*kpm_sig0;
             break;
         default:
