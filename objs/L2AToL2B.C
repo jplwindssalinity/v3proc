@@ -55,6 +55,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = H1;
         return(1);
     }
+    else if (strcasecmp(wr_method, "H2") == 0)
+    {
+        wrMethod = H2;
+        return(1);
+    }
     else if (strcasecmp(wr_method, "PEAK_SPLITTING") == 0)
     {
         wrMethod = PEAK_SPLITTING;
@@ -135,6 +140,13 @@ L2AToL2B::ConvertAndWrite(
 */
         case H1:
             if (! gmf->RetrieveWinds_H1(meas_list, kp, wvc))
+            {
+                delete wvc;
+                return(7);
+            }
+            break;
+        case H2:
+            if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc))
             {
                 delete wvc;
                 return(7);

@@ -2412,7 +2412,6 @@ GMF::FindBestSpeed(
     return(1);
 }
 
-
 //-----------------------//
 // GMF::RetrieveWinds_H1 //
 //-----------------------//
@@ -2838,6 +2837,417 @@ GMF::RetrieveWinds_H1(
     if (delete_count > 0)
     {
 //		WriteObjXmgr("toomany",10,wvc);
+        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        for (int i = 0; i < delete_count; i++)
+        {
+            wvc->ambiguities.GotoTail();
+            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
+            delete wvp;
+        }
+    }
+
+	return(1);
+}
+
+//-----------------------//
+// GMF::RetrieveWinds_H2 //
+//-----------------------//
+
+#define H2_PHI_COUNT	45
+#define H2_RANGES	    45			// way more than needed (unless buggy)
+
+int
+GMF::RetrieveWinds_H2(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+    //--------------------------------//
+    // generate coarse solution curve //
+    //--------------------------------//
+
+    if (_phiCount != H2_PHI_COUNT)
+        SetPhiCount(H2_PHI_COUNT);
+    SolutionCurve_H1(meas_list, kp);
+
+    //----------------------------//
+    // determine maxima threshold //
+    //----------------------------//
+
+    float min_obj = _bestObj[0];
+    float max_obj = _bestObj[0];
+    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > max_obj)
+            max_obj = _bestObj[phi_idx];
+        if (_bestObj[phi_idx] < min_obj)
+            min_obj = _bestObj[phi_idx];
+    }
+    float threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
+
+    //----------------//
+    // initialize map //
+    //----------------//
+
+    enum MapE { NOTHING, EXTENT, PEAK };
+    MapE map[H2_PHI_COUNT];
+    for (int i = 0; i < H2_PHI_COUNT; i++)
+    {
+        map[i] = NOTHING;
+    }
+
+    //------------------------//
+    // find peaks and extents //
+    //------------------------//
+
+    float refined_peak_direction[H2_PHI_COUNT];
+    float refined_peak_obj[H2_PHI_COUNT];
+    WVC tmp_wvc;
+    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % H2_PHI_COUNT] &&
+            _bestObj[phi_idx] > _bestObj[(phi_idx + H2_PHI_COUNT - 1) %
+                H2_PHI_COUNT])
+        {
+            //-----------------------//
+            // maxima found...map it //
+            //-----------------------//
+
+            map[phi_idx] = PEAK;    // mark as peak
+
+            //--------------//
+            // ...refine it //
+            //--------------//
+
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = _bestSpd[phi_idx];
+            wvp->dir = (float)phi_idx * _phiStepSize;
+            wvp->obj = _bestObj[phi_idx];
+
+            // put in temporary wvc
+            if (! tmp_wvc.ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+
+            // refine
+            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
+
+            // transfer to real wvc
+            tmp_wvc.ambiguities.GotoHead();
+            wvp = tmp_wvc.ambiguities.RemoveCurrent();
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+            while (wvp->dir < 0.0)
+                wvp->dir += two_pi;
+            while (wvp->dir > two_pi)
+                wvp->dir -= two_pi;
+
+            //------------------------//
+            // remember the direction //
+            //------------------------//
+
+            refined_peak_direction[phi_idx] = wvp->dir;
+            refined_peak_obj[phi_idx] = _bestObj[phi_idx];
+
+            //--------------------//
+            // ...map peak extent //
+            //--------------------//
+
+            float thresh = _bestObj[phi_idx] - threshold_delta;
+            int left_idx = (phi_idx + H2_PHI_COUNT - 1) % H2_PHI_COUNT;
+            while (_bestObj[left_idx] < _bestObj[phi_idx] &&
+                   _bestObj[left_idx] > thresh)
+            {
+                if (map[left_idx] == NOTHING)
+                {
+                    map[left_idx] = EXTENT;
+                    refined_peak_obj[left_idx] = _bestObj[phi_idx];
+                }
+
+                left_idx = (left_idx + H2_PHI_COUNT - 1) % H2_PHI_COUNT;
+                if (left_idx == phi_idx)    // full loop
+                    break;
+            }
+
+            int right_idx = (phi_idx + 1) % H2_PHI_COUNT;
+            while (_bestObj[right_idx] < _bestObj[phi_idx] &&
+                   _bestObj[right_idx] > thresh)
+            {
+                if (map[right_idx] == NOTHING)
+                {
+                    map[right_idx] = EXTENT;
+                    refined_peak_obj[right_idx] = _bestObj[phi_idx];
+                }
+
+                right_idx = (right_idx + 1) % H2_PHI_COUNT;
+                if (right_idx == phi_idx)    // full loop
+                    break;
+            }
+        }
+    }
+    int range_idx = 0;
+    int range_count = 0;
+    int range_status = 0;    // 0 = outside extent, 1 = inside extent
+    int start_idx = 0;
+    int phi_idx = 0;
+
+    int ambiguities = wvc->ambiguities.NodeCount();
+    if (ambiguities >= DEFAULT_MAX_SOLUTIONS)
+        goto wrap_it_up;
+
+    //----------------------//
+    // determine the ranges //
+    //----------------------//
+
+    float left_edge[H2_RANGES];
+    int left_edge_type[H2_RANGES];
+    float right_edge[H2_RANGES];
+    int right_edge_type[H2_RANGES];
+
+    //----------------------------//
+    // move to empty place in map //
+    //----------------------------//
+
+    while (map[start_idx] != NOTHING)
+    {
+        start_idx = (start_idx + 1) % H2_PHI_COUNT;
+        if (start_idx == 0)
+        {
+            fprintf(stderr, "RetrieveWinds_H2: it's all peak!\n");
+            return(0);
+        }
+        continue;
+    }
+
+    //-------------//
+    // search loop //
+    //-------------//
+
+    phi_idx = start_idx;
+    do
+    {
+        int next_idx = (phi_idx + 1) % H2_PHI_COUNT;
+        if (range_status == 0)
+        {
+            //---------------------------------------//
+            // outside of extent, look for left edge //
+            //---------------------------------------//
+
+            if (map[phi_idx] == NOTHING && map[next_idx] != NOTHING)
+            {
+                //-------------------------------------------------------//
+                // found left edge, calculate interpolation coefficients //
+                //-------------------------------------------------------//
+
+                float m = _bestObj[next_idx] - _bestObj[phi_idx];
+                float b = _bestObj[phi_idx] - m * (float)phi_idx;
+
+                // try extent
+                float thresh = refined_peak_obj[next_idx] - threshold_delta;
+                left_edge[range_idx] = _phiStepSize * (thresh - b) / m;
+                if (left_edge[range_idx] < phi_idx * _phiStepSize ||
+                    left_edge[range_idx] > (phi_idx + 1) * _phiStepSize)
+                {
+                    // extent is extrapolating, try rise
+                    left_edge[range_idx] = _phiStepSize *
+                        (refined_peak_obj[next_idx] - b) / m;
+                    if (left_edge[range_idx] < phi_idx * _phiStepSize ||
+                        left_edge[range_idx] > (phi_idx + 1) * _phiStepSize)
+                    {
+                        // give up
+                        fprintf(stderr, "RetrieveWinds_H2: giving up!\n");
+                        left_edge[range_idx] = _phiStepSize * phi_idx;
+                    }
+                }
+
+                left_edge_type[range_idx] = 1;
+                range_status = 1;    // inside extent now
+            }
+        }
+        else
+        {
+            //---------------------------------------//
+            // inside of extent, look for right edge //
+            //---------------------------------------//
+
+            if (map[phi_idx] != NOTHING && map[next_idx] == NOTHING)
+            {
+                //-------------------------//
+                // found extent right edge //
+                //-------------------------//
+
+                float m = _bestObj[next_idx] - _bestObj[phi_idx];
+                float b = _bestObj[phi_idx] - m * (float)phi_idx;
+                float thresh = refined_peak_obj[phi_idx] - threshold_delta;
+                // try extent
+                right_edge[range_idx] = _phiStepSize * (thresh - b) / m;
+                if (right_edge[range_idx] < phi_idx * _phiStepSize ||
+                    right_edge[range_idx] > (phi_idx + 1) * _phiStepSize)
+                {
+                    // extent is extrapolating, try rise
+                    right_edge[range_idx] = _phiStepSize *
+                        (refined_peak_obj[phi_idx] - b) / m;
+                    if (right_edge[range_idx] < phi_idx * _phiStepSize ||
+                        right_edge[range_idx] > (phi_idx + 1) * _phiStepSize)
+                    {
+                        // give up
+                        fprintf(stderr, "RetrieveWinds_H2: giving up!\n");
+                        right_edge[range_idx] = _phiStepSize * phi_idx;
+                    }
+                }
+                range_idx++;
+                range_status = 0;    // outside extent now
+            }
+            else if (map[phi_idx] == PEAK)
+            {
+                //-----------------//
+                // found peak edge //
+                //-----------------//
+
+                right_edge[range_idx] = refined_peak_direction[phi_idx];
+                right_edge_type[range_idx] = 2;
+                range_idx++;
+
+                left_edge[range_idx] = refined_peak_direction[phi_idx];
+                left_edge_type[range_idx] = 2;
+            }
+        }
+        phi_idx = (phi_idx + 1) % H2_PHI_COUNT;
+        if (phi_idx == start_idx)
+            break;
+    } while (1);
+
+    range_count = range_idx;
+
+    //------------------//
+    // calculate widths //
+    //------------------//
+
+    float width[H2_RANGES];
+    int number_of_peaks[H2_RANGES];
+    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    {
+        while (right_edge[range_idx] < left_edge[range_idx])
+            right_edge[range_idx] += two_pi;
+        width[range_idx] = right_edge[range_idx] - left_edge[range_idx];
+
+        // ...and number of peaks
+        number_of_peaks[range_idx] = 0;
+
+        if (left_edge_type[range_idx] == 2)
+            number_of_peaks[range_idx]++;
+
+        if (right_edge_type[range_idx] == 2)
+            number_of_peaks[range_idx]++;
+    }
+
+    //--------------------------//
+    // assign extra ambiguities //
+    //--------------------------//
+
+    int ambigs[H2_RANGES];
+    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    {
+        ambigs[range_idx] = 0;
+    }
+
+    while (ambiguities < DEFAULT_MAX_SOLUTIONS)
+    {
+        int max_idx = -1;
+        float max_width = 0.0;
+        for (int range_idx = 0; range_idx < range_count; range_idx++)
+        {
+            float use_width, use_ambigs;
+            use_ambigs = 0.5 * (float)number_of_peaks[range_idx] +
+                ambigs[range_idx] + 1;    // + 1 is for potential added ambig
+            use_width = width[range_idx] / use_ambigs;
+            if (use_width > max_width)
+            {
+                max_width = use_width;
+                max_idx = range_idx;
+            }
+        }
+
+        if (max_idx != -1)
+        {
+            ambigs[max_idx]++;
+            ambiguities++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    //---------------------------//
+    // put ambiguities in ranges //
+    //---------------------------//
+
+    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    {
+        if (! ambigs[range_idx])
+            continue;
+
+        for (int i = 0; i < ambigs[range_idx]; i++)
+        {
+            float use_width, use_ambigs;
+            use_ambigs = 0.5 * (float)number_of_peaks[range_idx] +
+                ambigs[range_idx];
+            use_width = width[range_idx] / use_ambigs;
+
+            float dir;
+            if (left_edge_type[range_idx] == 2)
+                dir = left_edge[range_idx] + (float)(i + 1) * use_width;
+            else
+                dir = left_edge[range_idx] + ((float)i + 0.5) * use_width;
+
+            dir = fmod(dir, two_pi);
+
+            float spd, obj;
+            FindBestSpeed(meas_list, kp, dir, 0.0, 50.0, &spd, &obj);
+
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = spd;
+            wvp->dir = dir;
+            wvp->obj = min_obj;    // for nudging reasons
+
+            // put in wvc
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+        }
+    }
+
+    //------------//
+    // goto label //
+    //------------//
+
+    wrap_it_up:
+
+    //------//
+    // sort //
+    //------//
+
+    wvc->SortByObj();
+
+    //-------------------------//
+    // limit to four solutions //
+    //-------------------------//
+
+    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
+    if (delete_count > 0)
+    {
         fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
