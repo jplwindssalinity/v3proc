@@ -277,7 +277,21 @@ main(
                         command, truth_type, truth_file);
                     exit(1);
                 }
+		//----------------------------------------//
+		// Scale Wind Speeds?                     //
+		//----------------------------------------//
+		config_list.DoNothingForMissingKeywords();
+		float scale;
+		if (config_list.GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD, 
+					  &scale))
+		  {
+		    truth.ScaleSpeed(scale);
+		    fprintf(stderr,"Warning: scaling all wind speeds by %g\n",scale);
+		  }
+		config_list.ExitForMissingKeywords();
             }
+	    
+
 
             //------------------//
             // generate metrics //
