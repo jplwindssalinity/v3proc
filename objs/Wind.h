@@ -17,8 +17,8 @@ static const char rcs_id_wind_h[] =
 #include "Index.h"
 #include "AngleInterval.h"
 #include "Matrix.h"
-#include "Parameter.h"
-#include "TlmHdfFile.h"
+// #include "Parameter.h"
+// #include "TlmHdfFile.h"
 
 #define NWP_SPEED_CORRECTION  0.84
 
