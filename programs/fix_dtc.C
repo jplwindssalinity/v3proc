@@ -92,6 +92,7 @@ template class TrackerBase<unsigned short>;
 #define ORBIT_STEPS      256
 #define EPHEMERIS_CHAR   'E'
 #define ORBIT_STEP_CHAR  'O'
+#define ORBIT_TIME_CHAR  'T'
 #define LINE_SIZE        2048
 
 //--------//
@@ -230,6 +231,9 @@ main(
         case EPHEMERIS_CHAR:
             // ephemerities are not needed
             break;
+        case ORBIT_TIME_CHAR:
+            // orbit time is not needed
+            break;
         case ORBIT_STEP_CHAR:
             if (sscanf(line, " %*c %d", &orbit_step) != 1)
             {
@@ -252,19 +256,18 @@ main(
             }
             break;
         default:
-            int beam_idx, encoder, raw_encoder;
+            int beam_idx, ideal_encoder, raw_encoder;
             float tx_doppler, rx_gate_delay, baseband_freq;
             if (sscanf(line, " %d %f %f %d %d %f", &beam_idx, &tx_doppler,
-                &rx_gate_delay, &encoder, &raw_encoder, &baseband_freq)
+                &rx_gate_delay, &ideal_encoder, &raw_encoder, &baseband_freq)
                 != 6)
             {
                 fprintf(stderr, "%s: error parsing line\n", command);
                 fprintf(stderr, "  Line: %s\n", line);
                 exit(1);
             }
-            qscat.sas.SetAzimuthWithEncoder((unsigned short)encoder);
-            accumulate(beam_idx, qscat.sas.antenna.azimuthAngle,
-                baseband_freq);
+            float azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
+            accumulate(beam_idx, azimuth, baseband_freq);
             break;
         }
 	} while (1);
@@ -309,7 +312,7 @@ process_orbit_step(
     //-----------------//
 
     char filename[1024];
-    sprintf(filename, "diag.beam.%1d.step.%3d", beam_idx+1, orbit_step);
+    sprintf(filename, "diag.beam.%1d.step.%03d", beam_idx+1, orbit_step);
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
