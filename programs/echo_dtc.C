@@ -8,11 +8,11 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -r ] [ -d diagnostic_base ] <config_file>
-//      <echo_data_file> <dtc_base>
+//    echo_dtc [ -r ] [ -f fit_base ] <config_file> <dtc_base>
+//      <echo_file...>
 //
 // DESCRIPTION
-//    Reads the echo data file and generates corrected Doppler
+//    Reads the echo data files and generates corrected Doppler
 //    tracking constants which should center the echo.  It gets
 //    a bit more complicated than that.  Once the coefficients
 //    are calculated for each orbit step (if the orbit step has
@@ -20,19 +20,18 @@
 //    coefficients and fill in missing gaps.
 //
 // OPTIONS
-//    [ -r ]                  Allow time regression.
-//    [ -d diagnostic_base ]  Generate diagnostic output with the given
-//                              filename base.
+//    [ -r ]           Allow time regression.
+//    [ -f fit_base ]  Generate fit output with the given filename base.
 //
 // OPERANDS
 //    The following operands are supported:
-//      <config_file>     The simulation configuration file.
-//      <echo_data_file>  The echo data file.
-//      <dtc_base>        The base name of the output DTC files.
+//      <config_file>   The simulation configuration file.
+//      <dtc_base>      The base name of the output DTC files.
+//      <echo_file...>  The echo data files.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % echo_dtc -d qscat.diag qscat.cfg echo.dat dtc
+//      % echo_dtc -f fit qscat.cfg newdtc echo1.dat echo2.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -46,8 +45,7 @@
 //    None.
 //
 // AUTHOR
-//    James N. Huddleston
-//    hudd@casket.jpl.nasa.gov
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -99,7 +97,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "rd:"
+#define OPTSTRING  "f:r"
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
@@ -120,9 +118,9 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int     process_orbit_step(int beam_idx, int orbit_step,
-            const char* diag_base);
+            const char* fit_base);
 int     accumulate(int beam_idx, double azimuth, double meas_spec_peak);
-int     fit_terms(const char* diag_base, int beam_idx, double** terms);
+int     fit_terms(const char* fit_base, int beam_idx, double** terms);
 int     plot_fit(const char* base, int beam_idx, int term_idx, double** terms,
             double** p, int term_count);
 double  ds_evaluate_3(double* x, void* ptr);
@@ -137,15 +135,17 @@ double  evaluate_35(int* good, double* coef, double* x, int count);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -r ]", "[ -d diagnostic_base ]",
-    "<config_file>", "<echo_data_file>", "<dtc_base>", 0};
+const char* usage_array[] = { "[ -r ]", "[ -f fit_base ]",
+    "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 int       g_sector_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
-// these are allocated dynamically
+
+// the following are allocated dynamically
 double**  g_azimuth;
 double**  g_meas_spec_peak;
+off_t***  g_offsets;
 
 //--------------//
 // MAIN PROGRAM //
@@ -161,8 +161,8 @@ main(
     //------------//
 
     int opt_regression = 1;    // default, check for regression
-    int opt_diag = 0;
-    const char* diag_base = NULL;
+    int opt_fit = 0;
+    const char* fit_base = NULL;
 
     //------------------------//
     // parse the command line //
@@ -180,9 +180,9 @@ main(
             // this flag means *don't* check for regression
             opt_regression = 0;
             break;
-        case 'd':
-            opt_diag = 1;
-            diag_base = optarg;
+        case 'f':
+            opt_fit = 1;
+            fit_base = optarg;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -190,12 +190,14 @@ main(
         }
     }
 
-    if (argc != optind + 3)
+    if (argc < optind + 3)
         usage(command, usage_array, 1);
 
     const char* config_file = argv[optind++];
-    const char* echo_data_file = argv[optind++];
     const char* dtc_base = argv[optind++];
+    int start_idx = optind;
+    int end_idx = argc;
+    int file_count = end_idx - start_idx;
 
     //---------------------//
     // read in config file //
@@ -234,69 +236,129 @@ main(
     }
     int spots_per_frame = l1a.frame.spotsPerFrame;
 
-    //---------------------------------//
-    // open echo data file for reading //
-    //---------------------------------//
+    //-----------------------//
+    // allocate offset table //
+    //-----------------------//
 
-    int ifd = open(echo_data_file, O_RDONLY);
-    if (ifd == -1)
+    g_offsets = (off_t ***)make_array(sizeof(off_t), 3, file_count,
+        ORBIT_STEPS, 2);
+    if (g_offsets == NULL)
     {
-        fprintf(stderr, "%s: error opening echo data file %s\n", command,
-            echo_data_file);
+        fprintf(stderr,
+            "%s: error allocating offset table array (%d x %d x %d)\n",
+            command, file_count, ORBIT_STEPS, 2);
         exit(1);
     }
-
-    //--------------------------------------------------//
-    // determine largest number of spots per orbit step //
-    //--------------------------------------------------//
-
-    int max_count = 0;
-    int count = 0;
-    int last_orbit_step = -1;
-    do
+    for (int i = 0; i < file_count; i++)
     {
-        EchoInfo echo_info;
-        int retval = echo_info.Read(ifd);
-        if (retval != 1)
+        for (int j = 0; j < ORBIT_STEPS; j++)
         {
-            if (retval == -1)    // EOF
-                break;
-            else
+            for (int k = 0; k < 2; k++)
             {
-                fprintf(stderr, "%s: error reading echo file %s\n", command,
-                    echo_data_file);
-                exit(1);
+                g_offsets[i][j][k] = 1;  // why 1?  it's an invalid offset
             }
         }
-        int orbit_step = echo_info.orbitStep;
-        if (orbit_step != last_orbit_step)
-        {
-            if (count > max_count)
-            {
-                max_count = count;
-            }
-            last_orbit_step = orbit_step;
-            count = 0;
-        }
-        for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
-        {
-            if (echo_info.flag[spot_idx] == EchoInfo::OK ||
-              echo_info.totalSignalEnergy[spot_idx] >= SIGNAL_ENERGY_THRESHOLD)
-            {
-                count++;
-            }
-        }
-    } while (1);
-    if (count > max_count)
-    {
-        max_count = count;
     }
 
-    //------------//
-    // initialize //
-    //------------//
+    //--------------------------------------------//
+    // set up offset table and max spots per step //
+    //--------------------------------------------//
 
-    lseek(ifd, 0, SEEK_SET);
+    printf("Setting up offset table\n");
+    for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
+    {
+        int file_idx_zero = file_idx - start_idx;
+
+        //----------------//
+        // open each file //
+        //----------------//
+
+        char* echo_file = argv[file_idx];
+        printf("  %s\n", echo_file);
+
+        int ifd = open(echo_file, O_RDONLY);
+        if (ifd == -1)
+        {
+            fprintf(stderr, "%s: error opening echo data file %s\n", command,
+                echo_file);
+            exit(1);
+        }
+
+        //---------------------------------------//
+        // read and accumulate orbit step counts //
+        //---------------------------------------//
+        // use the sector count array temporarily
+
+        do
+        {
+            // get the offset before reading
+            off_t current_offset = lseek(ifd, 0, SEEK_CUR);
+
+            EchoInfo echo_info;
+            int retval = echo_info.Read(ifd);
+            if (retval != 1)
+            {
+                if (retval == -1)    // EOF
+                    break;
+                else
+                {
+                    fprintf(stderr, "%s: error reading echo file %s\n", command,
+                        echo_file);
+                    exit(1);
+                }
+            }
+            for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
+            {
+                int beam_idx = echo_info.SpotBeamIdx(spot_idx);
+                int orbit_step = echo_info.SpotOrbitStep(spot_idx);
+
+                if (echo_info.flag[spot_idx] == EchoInfo::OK ||
+                    echo_info.totalSignalEnergy[spot_idx] >=
+                    SIGNAL_ENERGY_THRESHOLD)
+                {
+                    if (g_offsets[file_idx_zero][orbit_step][0] == 1)
+                    {
+                        // start offset not set yet...so set it!
+                        g_offsets[file_idx_zero][orbit_step][0] =
+                            current_offset;
+                    }
+                    // might as well always set the ending offset
+                    g_offsets[file_idx_zero][orbit_step][1] = current_offset;
+                    g_sector_count[beam_idx][orbit_step]++;
+                }
+            }
+        } while (1);
+
+        //----------------//
+        // close the file //
+        //----------------//
+
+        close(ifd);
+
+    }
+
+    //-----------------------------------------------//
+    // find the max and clear the sector count array //
+    //-----------------------------------------------//
+
+    int max_count = 0;
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            if (g_sector_count[beam_idx][orbit_step] > max_count)
+            {
+                max_count = g_sector_count[beam_idx][orbit_step];
+            }
+            g_sector_count[beam_idx][orbit_step] = 0;
+        }
+    }
+
+    printf("Maximum spots per orbit step = %d\n", max_count);
+
+    //-----------------//
+    // make the arrays //
+    //-----------------//
 
     g_azimuth = (double **)make_array(sizeof(double), 2,
         NUMBER_OF_QSCAT_BEAMS, max_count);
@@ -304,6 +366,7 @@ main(
     {
         fprintf(stderr, "%s: error allocating azimuth array (%d x %d)\n",
             command, NUMBER_OF_QSCAT_BEAMS, max_count);
+        exit(1);
     }
 
     g_meas_spec_peak = (double **)make_array(sizeof(double), 2,
@@ -313,122 +376,167 @@ main(
         fprintf(stderr,
             "%s: error allocating meas_spec_peak array (%d x %d)\n", command,
             NUMBER_OF_QSCAT_BEAMS, max_count);
+        exit(1);
     }
 
-    last_orbit_step = -1;
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         // terms are [0] = amplitude, [1] = phase, [2] = bias
         g_terms[beam_idx] = (double **)make_array(sizeof(double), 2,
             ORBIT_STEPS, 3);
+        if (g_terms[beam_idx] == NULL)
+        {
+            fprintf(stderr, "%s: error allocating DTC term arrays\n", command);
+            exit(1);
+        }
         g_count[beam_idx] = 0;
         qscat.cds.beamInfo[beam_idx].dopplerTracker.GetTerms(
             g_terms[beam_idx]);
     }
 
-    //-----------------------//
-    // read and process data //
-    //-----------------------//
+    //------------------------------------------------//
+    // read and process data orbit step by orbit step //
+    //------------------------------------------------//
 
     ETime last_time, regression_start;
     int regression = 0;
-    do
-    {
-        //------//
-        // read //
-        //------//
 
-        EchoInfo echo_info;
-        int retval = echo_info.Read(ifd);
-        if (retval != 1)
+    for (int target_orbit_step = 0; target_orbit_step < ORBIT_STEPS;
+        target_orbit_step++)
+    {
+        printf("Processing orbit step %d...\n", target_orbit_step);
+        for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
         {
-            if (retval == -1)    // EOF
-                break;
-            else
+            int file_idx_zero = file_idx - start_idx;
+
+            //----------------//
+            // open each file //
+            //----------------//
+
+            char* echo_file = argv[file_idx];
+            printf("  %s\n", echo_file);
+
+            int ifd = open(echo_file, O_RDONLY);
+            if (ifd == -1)
             {
-                fprintf(stderr, "%s: error reading echo file %s\n", command,
-                    echo_data_file);
+                fprintf(stderr, "%s: error opening echo data file %s\n",
+                    command, echo_file);
                 exit(1);
             }
-        }
 
-        //----------------------//
-        // check for regression //
-        //----------------------//
+            //-------------------------//
+            // seek to starting offset //
+            //-------------------------//
 
-        if (opt_regression)
-        {
-            if (echo_info.frameTime <= last_time)
+            lseek(ifd, g_offsets[file_idx_zero][target_orbit_step][0],
+                SEEK_SET);
+
+            //--------------------------------------------------//
+            // read and process data from the target orbit step //
+            //--------------------------------------------------//
+
+            do
             {
-                regression = 1;
-                regression_start = echo_info.frameTime;
-                continue;
-            }
-            else
-            {
-                // check for end of regression
-                if (regression)
+                EchoInfo echo_info;
+                int retval = echo_info.Read(ifd);
+                if (retval != 1)
                 {
-                    char regression_start_code_b[CODE_B_TIME_LENGTH];
-                    char regression_end_code_b[CODE_B_TIME_LENGTH];
-                    regression_start.ToCodeB(regression_start_code_b);
-                    last_time.ToCodeB(regression_end_code_b);
-                    fprintf(stderr, "%s: regressive data omitted (%s to %s)\n",
-                        command, regression_start_code_b,
-                        regression_end_code_b);
-                    regression = 0;
-                }
-            }
-            last_time = echo_info.frameTime;
-        }
-
-        //---------------//
-        // for each spot //
-        //---------------//
-
-        for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
-        {
-            //-----------------------------//
-            // check for end of orbit step //
-            //-----------------------------//
-
-            int orbit_step = echo_info.SpotOrbitStep(spot_idx);
-            if (orbit_step != last_orbit_step)
-            {
-                if (last_orbit_step != -1)
-                {
-                    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
-                        beam_idx++)
+                    if (retval == -1)    // EOF
+                        break;
+                    else
                     {
-                        process_orbit_step(beam_idx, last_orbit_step,
-                            diag_base);
+                        fprintf(stderr, "%s: error reading echo file %s\n",
+                            command, echo_file);
+                        exit(1);
                     }
                 }
-                last_orbit_step = orbit_step;
-            }
 
-            //-----------------------//
-            // accumulation decision //
-            //-----------------------//
+                //------------------//
+                // check orbit step //
+                //------------------//
 
-            if (echo_info.flag[spot_idx] != EchoInfo::OK)
-            {
-                continue;
-            }
+                int first_orbit_step = echo_info.SpotOrbitStep(0);
+                int last_orbit_step = echo_info.SpotOrbitStep(99);
+                if (first_orbit_step != target_orbit_step &&
+                    last_orbit_step != target_orbit_step)
+                {
+                    continue;
+                }
 
-            if (echo_info.totalSignalEnergy[spot_idx] <
-                SIGNAL_ENERGY_THRESHOLD)
-            {
-                continue;
-            }
+                //----------------------//
+                // check for regression //
+                //----------------------//
 
-            double azimuth = two_pi *
-                (double)echo_info.idealEncoder[spot_idx] / (double)ENCODER_N;
-            int beam_idx = echo_info.SpotBeamIdx(spot_idx);
-            accumulate(beam_idx, azimuth,
-                echo_info.measSpecPeakFreq[spot_idx]);
+                if (opt_regression)
+                {
+                    if (echo_info.frameTime <= last_time)
+                    {
+                        regression = 1;
+                        regression_start = echo_info.frameTime;
+                        continue;
+                    }
+                    else
+                    {
+                        // check for end of regression
+                        if (regression)
+                        {
+                            char regression_start_code_b[CODE_B_TIME_LENGTH];
+                            char regression_end_code_b[CODE_B_TIME_LENGTH];
+                            regression_start.ToCodeB(regression_start_code_b);
+                            last_time.ToCodeB(regression_end_code_b);
+                            fprintf(stderr,
+                                "%s: regressive data omitted (%s to %s)\n",
+                                command, regression_start_code_b,
+                                regression_end_code_b);
+                            regression = 0;
+                        }
+                    }
+                    last_time = echo_info.frameTime;
+                }
+
+                //------------------------------------------//
+                // accumulate pulses with target orbit step //
+                //------------------------------------------//
+                // pulses must be OK and have a minimum energy
+
+                for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
+                {
+                    if (echo_info.flag[spot_idx] != EchoInfo::OK)
+                        continue;
+
+                    if (echo_info.totalSignalEnergy[spot_idx] <
+                        SIGNAL_ENERGY_THRESHOLD)
+                    {
+                        continue;
+                    }
+
+                    int orbit_step = echo_info.SpotOrbitStep(spot_idx);
+                    if (orbit_step != target_orbit_step)
+                        continue;
+
+                    double azimuth = two_pi *
+                        (double)echo_info.idealEncoder[spot_idx] /
+                        (double)ENCODER_N;
+                    int beam_idx = echo_info.SpotBeamIdx(spot_idx);
+                    accumulate(beam_idx, azimuth,
+                        echo_info.measSpecPeakFreq[spot_idx]);
+                }
+
+            } while (lseek(ifd, 0, SEEK_CUR) <=
+                g_offsets[file_idx_zero][target_orbit_step][1]);
+
+            //----------------//
+            // close the file //
+            //----------------//
+
+            close(ifd);
         }
-    } while (1);
+
+        for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+        {
+            process_orbit_step(beam_idx, target_orbit_step, fit_base);
+        }
+    }
 
     //--------------//
     // fit to terms //
@@ -436,7 +544,7 @@ main(
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        fit_terms(diag_base, beam_idx, g_terms[beam_idx]);
+        fit_terms(fit_base, beam_idx, g_terms[beam_idx]);
     }
 
     //-------------//
@@ -475,7 +583,7 @@ int
 process_orbit_step(
     int          beam_idx,
     int          orbit_step,
-    const char*  diag_base)
+    const char*  fit_base)
 {
     //----------------------------//
     // fit a sinusoid to the data //
@@ -532,7 +640,7 @@ process_orbit_step(
     // output diagnostics //
     //--------------------//
 
-    if (diag_base)
+    if (fit_base)
     {
         //---------------------------------------------//
         // determine if orbit step will be used in fit //
@@ -545,7 +653,7 @@ process_orbit_step(
         }
 
         char filename[1024];
-        sprintf(filename, "%s.b%1d.s%03d", diag_base, beam_idx + 1,
+        sprintf(filename, "%s.b%1d.s%03d", fit_base, beam_idx + 1,
             orbit_step);
         FILE* ofp = fopen(filename, "w");
         if (ofp == NULL)
@@ -623,7 +731,7 @@ accumulate(
 
 int
 fit_terms(
-    const char*  diag_base,
+    const char*  fit_base,
     int          beam_idx,
     double**     terms)
 {
@@ -726,11 +834,11 @@ fit_terms(
     // generate fit plots //
     //--------------------//
 
-    if (diag_base)
+    if (fit_base)
     {
-        plot_fit(diag_base, beam_idx, 0, terms, amp_p, 5);
-        plot_fit(diag_base, beam_idx, 1, terms, phase_p, 3);
-        plot_fit(diag_base, beam_idx, 2, terms, bias_p, 5);
+        plot_fit(fit_base, beam_idx, 0, terms, amp_p, 5);
+        plot_fit(fit_base, beam_idx, 1, terms, phase_p, 3);
+        plot_fit(fit_base, beam_idx, 2, terms, bias_p, 5);
     }
 
     //---------------//
