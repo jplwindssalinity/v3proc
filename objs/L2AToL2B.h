@@ -68,18 +68,22 @@ public:
 
 	int		useManyAmbiguities;
 	int		useAmbiguityWeights;
-	int             usePeakSplitting;
-        
-        //-------------------------------------------//
-        // Parameters for Peak Splitting Algorithm   //
-	//-------------------------------------------//
-				 
-        float onePeakWidth;
-        float twoPeakSep;
-        float probThreshold;
+	int		usePeakSplitting;
+	int		useNudging;
+
+	//-----------------------------------------//
+	// Parameters for Peak Splitting Algorithm //
+	//-----------------------------------------//
+
+	float	onePeakWidth;
+	float	twoPeakSep;
+	float	probThreshold;
+
+	//-------------------//
+	// nudging variables //
+	//-------------------//
+
+	WindField	nudgeField;
 };
 
 #endif
-
-
-

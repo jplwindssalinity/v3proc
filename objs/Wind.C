@@ -509,16 +509,27 @@ WVC::SortByDir()
 //----------------------------//
 // WVC::GetNearestToDirection //
 //----------------------------//
+// if max_rank is zero it is ignored
 
 WindVectorPlus*
 WVC::GetNearestToDirection(
-	float	dir)
+	float	dir,
+	int		max_rank)
 {
 	WindVectorPlus* nearest = NULL;
 	float min_dif = two_pi;
+
+	int rank = 0;
 	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
 		wvp = ambiguities.GetNext())
 	{
+		if (max_rank)
+		{
+			rank++;
+			if (rank > max_rank)
+				break;
+		}
+
 		float dif = ANGDIF(wvp->dir, dir);
 		if (dif < min_dif)
 		{
@@ -1395,6 +1406,34 @@ WindSwath::InitWithRank(
 			if (! wvc)
 				continue;
 			wvc->selected = wvc->ambiguities.GetByIndex(rank-1);
+			count++;
+		}
+	}
+	return(count);
+}
+
+//------------------//
+// WindSwath::Nudge //
+//------------------//
+
+int
+WindSwath::Nudge(
+	WindField*	nudge_field)
+{
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+			WindVector nudge_wv;
+			if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
+				continue;
+
+			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, 2);
 			count++;
 		}
 	}

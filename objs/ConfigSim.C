@@ -661,7 +661,6 @@ ConfigInstrumentSim(
 		use_kfactor=0; // default value
 	instrument_sim->useKfactor=use_kfactor;
 
-
 	int create_xtable;
 	if (! config_list->GetInt(CREATE_XTABLE_KEYWORD, &create_xtable))
 		create_xtable=0; // default value
@@ -1455,7 +1454,7 @@ ConfigL2AToL2B(
 	ConfigList*		config_list)
 {
 	int tmp_int;
-        float tmp_float;
+	float tmp_float;
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterWindowSize = tmp_int;
@@ -1476,21 +1475,54 @@ ConfigL2AToL2B(
 		return(0);
 	l2a_to_l2b->usePeakSplitting = tmp_int;
 
-	if( l2a_to_l2b->usePeakSplitting && l2a_to_l2b->useManyAmbiguities){
-	  fprintf(stderr,"Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
-	  return(0);
+	if( l2a_to_l2b->usePeakSplitting && l2a_to_l2b->useManyAmbiguities)
+	{
+		fprintf(stderr,
+			"Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
+		return(0);
 	}
-        if(l2a_to_l2b->usePeakSplitting){
-	  if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
-		return(0);
-	  l2a_to_l2b->onePeakWidth = tmp_float*dtr;
-	  if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD, &tmp_float))
-		return(0);
-	  l2a_to_l2b->twoPeakSep = tmp_float*dtr;
-	  if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD, &tmp_float))
-		return(0);
-	  l2a_to_l2b->probThreshold = tmp_float;
+	if(l2a_to_l2b->usePeakSplitting)
+	{
+		if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
+			return(0);
+		l2a_to_l2b->onePeakWidth = tmp_float*dtr;
+		if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD,
+			&tmp_float))
+		{
+			return(0);
+		}
+		l2a_to_l2b->twoPeakSep = tmp_float*dtr;
+		if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD,
+			&tmp_float))
+		{
+			return(0);
+		}
+		l2a_to_l2b->probThreshold = tmp_float;
 	}
+
+	//---------//
+	// nudging //
+	//---------//
+
+	int use_nudging;
+	if (! config_list->GetInt(USE_NUDGING_KEYWORD, &use_nudging))
+		return(0);
+
+	l2a_to_l2b->useNudging = use_nudging;
+	if (use_nudging)
+	{
+		char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
+		if (nudge_type == NULL)
+			return(0);
+ 
+		char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_KEYWORD);
+		if (nudge_windfield == NULL)
+			return(0);
+
+		if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
+			return(0);
+	}
+
 	return(1);
 }
 
@@ -1564,9 +1596,9 @@ ConfigGMF(
 	//--------------------------------//
 
 	int tmp_int;
-    if (! config_list->GetInt(GMF_PHI_COUNT_KEYWORD, &tmp_int))
-        return(0);
-    if (! gmf->SetPhiCount(tmp_int))
+	if (! config_list->GetInt(GMF_PHI_COUNT_KEYWORD, &tmp_int))
+		return(0);
+	if (! gmf->SetPhiCount(tmp_int))
 		return(0);
 
 	//---------------------------//

@@ -16,8 +16,8 @@ static const char rcs_id_l2atol2b_c[] =
 
 L2AToL2B::L2AToL2B()
 :	medianFilterWindowSize(0), medianFilterMaxPasses(0), useManyAmbiguities(0),
-	useAmbiguityWeights(0), usePeakSplitting(0), onePeakWidth(0.0), 
-	twoPeakSep(181.0),probThreshold(0.0)
+	useAmbiguityWeights(0), usePeakSplitting(0), useNudging(0),
+	onePeakWidth(0.0), twoPeakSep(181.0),probThreshold(0.0)
 {
 	return;
 }
@@ -152,15 +152,36 @@ int
 L2AToL2B::Flush(
 	L2B*	l2b)
 {
-	// median filter
-	l2b->frame.swath.InitWithRank(1);
+	//------------//
+	// initialize //
+	//------------//
+
+	if (useNudging)
+	{
+		l2b->frame.swath.Nudge(&nudgeField);
+	}
+	else
+	{
+		l2b->frame.swath.InitWithRank(1);
+	}
+
+	//---------------//
+	// median filter //
+	//---------------//
+
 	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
 		medianFilterMaxPasses, useAmbiguityWeights);
+
+	//------------//
+	// output l2b //
+	//------------//
+
 	if (! l2b->WriteHeader())
 		return(0);
 	if (! l2b->WriteDataRec())
 		return(0);
 	l2b->frame.swath.DeleteWVCs();
+
 	return(1);
 }
 

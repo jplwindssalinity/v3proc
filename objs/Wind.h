@@ -129,7 +129,7 @@ public:
 	int					RemoveDuplicates();
 	int					SortByObj();
 	int					SortByDir();
-	WindVectorPlus*		GetNearestToDirection(float dir);
+	WindVectorPlus*		GetNearestToDirection(float dir, int max_rank = 0);
 
 	//---------//
 	// freeing //
@@ -277,6 +277,7 @@ public:
 	//-----------//
 
 	int		InitWithRank(int rank);
+	int		Nudge(WindField* nudge_field);
 	int		MedianFilter(int window_size, int max_passes, int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 				char** change, int weight_flag = 0);
