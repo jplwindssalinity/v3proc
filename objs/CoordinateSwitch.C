@@ -131,7 +131,7 @@ return(new_r);
 // Show the transformation matrix that defines this coordinate transformation.
 //
 
-void CoordinateSwitch::show()
+void CoordinateSwitch::show(char *name)
 {
-_trans.show();
+_trans.show(name);
 }

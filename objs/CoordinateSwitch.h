@@ -47,7 +47,7 @@ CoordinateSwitch(Vector3 att,
 
 Vector3 forward(Vector3 r);
 Vector3 backward(Vector3 r);
-void show();
+void show(char *name = NULL);
 
 private:
 
