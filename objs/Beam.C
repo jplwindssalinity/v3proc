@@ -73,14 +73,15 @@ Beam::SetElectricalBoresight(
 	_elecBoresightLook = desired_electrical_look_angle;
 	_elecBoresightAzim = desired_electrical_azimuth_angle;
 
-	CoordinateSwitch total;
-
+	// Rotate so the x-axis of the antenna frame points along the boresight.
 	Attitude attitude;
 	attitude.Set(0.0, _elecBoresightLook - pi / 2.0, _elecBoresightAzim,
 		1, 2, 3);
 	CoordinateSwitch antennaFrameToBoreFrame;
 	antennaFrameToBoreFrame.SetRotation(attitude);
 
+	// Remember that positive Em deflections go from the x-axis towards
+	// the z-axis of the bore frame.
 	CoordinateSwitch boreFrameToBeamFrame;
 	attitude.Set(0.0, _electrical_boresight_Em, -_electrical_boresight_Am,
 		1, 2, 3);
@@ -126,7 +127,8 @@ Beam::GetElectricalBoresight(
 // This method orients the beam (already loaded with ReadBeamPattern) so that
 // the mechanical boresight points at the indicated look angle and azimuth
 // angle in the antenna frame.  The electrical boresight is then determined
-// by the beam pattern which was measured in the mechanical boresight frame.
+// by the beam pattern which was measured in the mechanical boresight frame
+// (ie., the beam frame).
 // With this method, the two SeaWinds beams can be placed consistently by
 // using the same mechanical boresight direction for each beam.
 //
@@ -143,11 +145,29 @@ Beam::SetMechanicalBoresight(
  		return(0);
 	}
 
-	// dummy line
-	look_angle = azimuth_angle;
+	//--------------------------//
+	// create coordinate switch //
+	//--------------------------//
 
-	fprintf(stderr, "Beam::SetMechanicalBoresight is not available yet!\n");
-	exit(1);
+	// Rotate so the x-axis of the antenna frame points along the boresight.
+	Attitude attitude;
+	attitude.Set(0.0, look_angle - pi / 2.0, azimuth_angle,
+		1, 2, 3);
+	_antennaFrameToBeamFrame.SetRotation(attitude);
+
+	//--------------------------------//
+	// Determine electrical boresight //
+	//--------------------------------//
+
+	// Point a vector along the electrical boresight in the beam frame
+	Vector3 vector;
+	vector.SphericalSet(1.0, pi/2.0 - _electrical_boresight_Em,
+		_electrical_boresight_Am);
+
+	// Transform to the antenna frame and get the spherical angles.
+	vector = _antennaFrameToBeamFrame.Backward(vector);
+	double r;
+	vector.SphericalGet(&r, &_elecBoresightLook, &_elecBoresightAzim);
 
 	return(1);
 }
