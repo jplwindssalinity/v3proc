@@ -145,7 +145,6 @@ double  ds_evaluate(double* x, void* ptr);
 double  evaluate(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
             double att[3], FILE* ofp = NULL, int or_flag = 0);
 int     prune();
-float   est_sigma0(int beam_idx, float incidence_angle);
 
 //------------------//
 // OPTION VARIABLES //
@@ -928,36 +927,4 @@ prune()
     }
 printf("%d data points\n", data_count);
     return(data_count);
-}
-
-//------------//
-// est_sigma0 //
-//------------//
-
-float
-est_sigma0(
-    int    beam_idx,
-    float  incidence_angle)
-{
-    float s0_table[2][11] = {
-      { 0.0255338, 0.0220457, 0.0193465, 0.0171857, 0.0153964, 0.0138646,
-        0.0125171, 0.0113071, 0.010215, 0.00923337, 0.00837293 },
-      { 0.0147139, 0.01166, 0.00936597, 0.00758692, 0.00617038, 0.00502344,
-        0.00409095, 0.00333365, 0.00271822, 0.00221762, 0.00181041 }
-    };
-
-    Index index;
-    index.SpecifyCenters(40.0 * dtr, 60.0 * dtr, 11);
-
-    int idx[2];
-    float coef[2];
-    if (! index.GetLinearCoefsStrict(incidence_angle, idx, coef))
-    {
-        fprintf(stderr, "Incidence angle out of range\n");
-        return(0);
-    }
-
-    float sigma0 = s0_table[beam_idx][idx[0]] * coef[0] +
-        s0_table[beam_idx][idx[1]] * coef[1];
-    return(sigma0);
 }
