@@ -168,15 +168,16 @@ main(
         FILE* ifp = fopen(flag_file, "r");
         if (ifp == NULL)
         {
-            fprintf(stderr, "%s: error opening input flag file %s\n", command,
-                flag_file);
-            exit(1);
+            fprintf(stderr,
+                "%s: error opening input flag file %s (continuing)\n",
+                command, flag_file);
+            continue;
         }
         if (fread(value_tab, sizeof(float), size, ifp) != size ||
             fread(flag_tab,   sizeof(char), size, ifp) != size)
         {
-            fprintf(stderr, "%s: error reading input flag file %s\n", command,
-                flag_file);
+            fprintf(stderr,
+                "%s: error reading input flag file %s\n", command, flag_file);
             exit(1);
         }
         fclose(ifp);
@@ -191,9 +192,9 @@ main(
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
         {
-            fprintf(stderr, "%s: error opening rain file %s\n", command,
-                rain_file);
-            exit(1);
+            fprintf(stderr, "%s: error opening rain file %s (continuing)\n",
+                command, rain_file);
+            continue;
         }
         if (fread(rain_rate, sizeof(char), size, ifp) != size ||
             fread(time_dif,  sizeof(char), size, ifp) != size ||
@@ -215,9 +216,8 @@ main(
         ifp = fopen(mudh_file, "r");
         if (ifp == NULL)
         {
-            fprintf(stderr, "%s: error opening MUDH file %s\n", command,
-                mudh_file);
-            fprintf(stderr, "%s: continuing...\n", command);
+            fprintf(stderr, "%s: error opening MUDH file %s (continuing)\n",
+                command, mudh_file);
             continue;
         }
         if (fread(nbd_array, sizeof(short), size, ifp) != size ||
@@ -227,10 +227,9 @@ main(
             fread(lon_array, sizeof(short), size, ifp) != size ||
             fread(lat_array, sizeof(short), size, ifp) != size)
         {
-            fclose(ifp);
-            fprintf(stderr, "%s: error reading MUDH file %s (continuing)\n",
-                command, mudh_file);
-            continue;
+            fprintf(stderr, "%s: error reading MUDH file %s\n", command,
+                mudh_file);
+            exit(1);
         }
         fclose(ifp);
 
@@ -260,7 +259,7 @@ main(
                 // wind vector or a collocated SSM/I measurement
 
                 if (spd_array[ati][cti] == MAX_SHORT ||
-                    integrated_rain_rate[AT_WIDTH][CT_WIDTH] >= 1000)
+                    integrated_rain_rate[ati][cti] >= 1000)
                 {
                     continue;
                 }
@@ -339,16 +338,18 @@ main(
         double ssmi_rain_mudh_clear_count =
             (double)ssmi_mudh_rain_wvc[1][tidx][0];
         double ssmi_rain_count =
-            (double)ssmi_mudh_rain_wvc[0][tidx][0] +
             (double)ssmi_mudh_rain_wvc[1][tidx][0] +
-            (double)ssmi_mudh_rain_wvc[2][tidx][0];
+            (double)ssmi_mudh_rain_wvc[1][tidx][1];
         double ssmi_rain_mudh_clear_percent = 100.0 *
             ssmi_rain_mudh_clear_count / ssmi_rain_count;
 
         double ssmi_clear_mudh_rain_count =
             (double)ssmi_mudh_rain_wvc[0][tidx][1];
+        double ssmi_clear_count =
+            (double)ssmi_mudh_rain_wvc[0][tidx][0] +
+            (double)ssmi_mudh_rain_wvc[0][tidx][1];
         double ssmi_clear_mudh_rain_percent = 100.0 *
-            ssmi_clear_mudh_rain_count / mudh_rain_count;
+            ssmi_clear_mudh_rain_count / ssmi_clear_count;
 
         fprintf(ofp, "%g %g %g %g\n", t_thresh, mudh_rain_percent,
             ssmi_rain_mudh_clear_percent, ssmi_clear_mudh_rain_percent);

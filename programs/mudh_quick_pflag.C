@@ -248,7 +248,7 @@ main(
             //---------------------------//
 
             int inbd = max_inbd + 1;    // index for "No NBD available"
-            if (nbd != MAX_SHORT)
+            if (nbd_array[ati][cti] != MAX_SHORT)
             {
                 inbd = (int)((nbd - NBD_MIN) * (float)max_inbd /
                     nbd_spread + 0.5);
