@@ -382,8 +382,8 @@ GMF::GetCoefs(
 	double		inc,
 	double		spd,
 	double*		A0,
-	double*		a1,
-	double*		a2)
+	double*		A1,
+	double*		A2)
 {
 	double real[3], imag[3];
 	int n = _chiCount - 1;
@@ -409,8 +409,8 @@ GMF::GetCoefs(
 	}
 
 	*A0 = real[0] / (double)n;
-	*a1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
-	*a2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
+	*A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
+	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
 
 	return(1);
 }
