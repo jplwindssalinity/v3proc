@@ -144,17 +144,18 @@ InstrumentSim::SetMeasurements(
 		{
 			sigma0=1;
 		}
-		else{
-		        //-----------------//
-		        // get wind vector //
-		        //-----------------//
+		else
+		{
+			//-----------------//
+			// get wind vector //
+			//-----------------//
 
-		        WindVector wv;
+			WindVector wv;
 			if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-			  {
-			    wv.spd = 0.0;
-			    wv.dir = 0.0;
-			  }
+			{
+				wv.spd = 0.0;
+				wv.dir = 0.0;
+			}
 
 			//--------------------------------//
 			// convert wind vector to sigma-0 //
