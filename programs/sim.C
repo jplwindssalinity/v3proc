@@ -59,11 +59,7 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "ConfigList.h"
 #include "InstrumentSim.h"
-/*
-#include <string.h>
-#include "SimControl.h"
-#include "SimConfig.h"
-*/
+#include "ConfigSim.h"
 
 //-----------//
 // CONSTANTS //
@@ -129,7 +125,7 @@ main(
 	//-----------------------------------------------//
 
 	InstrumentSim sim;
-	if (! sim.InitByConfig(&config_list))
+	if (! ConfigInstrumentSim(&sim, &config_list))
 	{
 		fprintf(stderr, "%s: error configuring instrument simulation\n",
 			command);
@@ -140,14 +136,19 @@ main(
 	// cycle through events //
 	//----------------------//
 
+	Instrument instrument;
 	double time = 0.0;
-	while (time < 12120.0)
+	while (time < 120.0)
 	{
-		sim.SimulateNextEvent(&time);
-		Orbit *os = &(sim.instrument.orbit);
-		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector[0],
-			os->gc_vector[1], os->gc_vector[2], os->velocity_vector[0],
-			os->velocity_vector[1], os->velocity_vector[2]);
+		sim.SimulateNextEvent(&instrument);
+		Orbit *os = &(instrument.orbit);
+printf("%g %g\n", time, instrument.antenna.azimuthAngle);
+/*
+		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector.get(0),
+			os->gc_vector.get(1), os->gc_vector.get(2),
+			os->velocity_vector.get(0), os->velocity_vector.get(1),
+			os->velocity_vector.get(2));
+*/
 	}
 
 	return (0);
