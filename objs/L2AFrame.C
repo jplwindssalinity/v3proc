@@ -133,11 +133,13 @@ L2AFrame::ReadGS(
 	FILE*	fp)
 {
 	static int at_valid_row = 0;
+	static int min_row_number = 0;
 
 	static int sigma0_in_row = 0;
 	static int current_col = 0;
+	static int row_number = 0;
 
-	int row_number, col_number;
+	int col_number;
 	int dummy;
 
 	unsigned int sigma0_in_cell;
@@ -189,7 +191,10 @@ L2AFrame::ReadGS(
 			at_valid_row = 0;
 	} while (! done);
 
-	ati = row_number;
+	if (min_row_number == 0)
+		min_row_number = row_number;
+
+	ati = row_number - min_row_number;
 	cti = col_number;
 
 	//---------------//
@@ -263,6 +268,8 @@ L2AFrame::ReadGS(
 	//------------------//
 	// transfer to Meas //
 	//------------------//
+
+	measList.FreeContents();
 
 	for (unsigned int i = 1; i < sigma0_in_cell - 1; i++)
 	{
