@@ -311,7 +311,7 @@ for (l=n-1;l>=0;l--) {
 }
 
 #undef SWAP
-    return;
+    return(1);
 }
 
 //---------------//
