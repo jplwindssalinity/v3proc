@@ -234,6 +234,18 @@ Stable::Read(
     return(1);
 }
 
+//-------------------//
+// Stable::SetModeId //
+//-------------------//
+
+void
+Stable::SetModeId(
+    int mode_id)
+{
+    _modeId = mode_id;
+    return;
+}
+
 //------------------//
 // Stable::GetValue //
 //------------------//
@@ -241,7 +253,20 @@ Stable::Read(
 float
 Stable::GetValue(
     int    beam_idx,
-    float  antenna_azimuth,
+    float  angle,
+    float  orbit_fraction)
+{
+    return(GetValue(beam_idx, angle, orbit_fraction, _modeId);
+}
+
+//------------------//
+// Stable::GetValue //
+//------------------//
+
+float
+Stable::GetValue(
+    int    beam_idx,
+    float  angle,
     float  orbit_fraction,
     int    mode_id)
 {
@@ -265,8 +290,8 @@ Stable::GetValue(
     float b = 1.0 - a;
     int next_orbit_step = (int_orbit_step + 1) % GS_NUM_ORBIT_STEPS;
 
-    antenna_azimuth = fmod(antenna_azimuth, two_pi);
-    float angle = (float)GS_NUM_AZIMUTHS * antenna_azimuth / two_pi;
+    angle = fmod(angle, two_pi);
+    float angle = (float)GS_NUM_AZIMUTHS * angle / two_pi;
     int int_angle = (int)angle;
     float c = angle - int_angle;
     float d = 1.0 - c;
@@ -340,13 +365,12 @@ topo_delta_f(
     int      beam_idx,
     float    orbit_fraction,
     float    antenna_azimuth,
-    int      mode_id,
     float    longitude,
     float    latitude)
 {
     float height = topo->Height(longitude, latitude);
     float s_factor = stable->GetValue(beam_idx, antenna_azimuth,
-        orbit_fraction, mode_id);
+        orbit_fraction);
     float delta_f = s_factor * height * FFT_BIN_SIZE;
     return(delta_f);
 }

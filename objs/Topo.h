@@ -6,7 +6,7 @@
 #ifndef TOPO_H
 #define TOPO_H
 
-static const char rcs_id_pod_h[] =
+static const char rcs_id_topo_h[] =
     "@(#) $Id$";
 
 #include <stdio.h>
@@ -85,12 +85,14 @@ public:
     // input/output //
     //--------------//
 
-    int  Read(const char* filename);
+    int   Read(const char* filename);
+    void  SetModeId(int mode_id);
 
     //--------//
     // access //
     //--------//
 
+    float  GetValue(int beam_idx, float angle, float orbit_fraction);
     float  GetValue(int beam_idx, float angle, float orbit_fraction,
                int mode_id);
 
@@ -104,6 +106,7 @@ protected:
     //-----------//
 
     float****  _table;
+    int        _modeId;
 };
 
 //==================//
@@ -111,7 +114,7 @@ protected:
 //==================//
 
 float  topo_delta_f(Topo* topo, Stable* stable, int beam_idx,
-           float orbit_fraction, float antenna_azimuth, int mode_id,
-           float longitude, float latitude);
+           float orbit_fraction, float antenna_azimuth, float longitude,
+           float latitude);
 
 #endif

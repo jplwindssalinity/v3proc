@@ -392,7 +392,6 @@ BYUXTable::GetDeltaFreq(
         int beam_idx = qscat->cds.currentBeamIdx;
         float orbit_fraction = qscat->cds.OrbitFraction();
         float antenna_azimuth = qscat->sas.antenna.groundImpactAzimuthAngle;
-        int mode_id = 4;   // oh!  what a hack!
         double alt, lon_d, lat_d;
         if (! qti.rTarget.GetAltLonGCLat(&alt, &lon_d, &lat_d))
         {
@@ -402,7 +401,7 @@ BYUXTable::GetDeltaFreq(
         float longitude = (float)lon_d;
         float latitude = (float)lat_d;
         float tdf = topo_delta_f(topo, stable, beam_idx, orbit_fraction,
-            antenna_azimuth, mode_id, longitude, latitude);
+            antenna_azimuth, longitude, latitude);
         qti.basebandFreq += tdf;
     }
 

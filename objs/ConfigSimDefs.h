@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -113,8 +113,9 @@ static const char rcs_id_configsimdefs_h[] =
 // Topography map //
 //----------------//
 
-#define TOPOMAP_FILE_KEYWORD  "TOPOMAP_FILE"
-#define STABLE_FILE_KEYWORD   "STABLE_FILE"
+#define TOPOMAP_FILE_KEYWORD    "TOPOMAP_FILE"
+#define STABLE_FILE_KEYWORD     "STABLE_FILE"
+#define STABLE_MODE_ID_KEYWORD  "STABLE_MODE_ID"
 
 //-----------//
 // Fbb Table //
