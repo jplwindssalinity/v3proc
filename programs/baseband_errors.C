@@ -349,7 +349,7 @@ main(
 
                     qscat.cds.useRgc = 1;
                     qscat.cds.useDtc = 1;
-                    qscat_sim.SetDelayAndFrequency(&spacecraft, &qscat);
+                    SetDelayAndFrequency(&spacecraft, &qscat);
 
                     //----------------------------------//
                     // calculate the baseband frequency //
@@ -362,8 +362,14 @@ main(
                         attitude, antenna);
  
                     double look, azimuth;
-                    GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-                        beam, antenna->spinRate, &look, &azimuth);
+                    if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
+                        &spacecraft, beam, antenna->spinRate, &look, &azimuth))
+                    {
+                        fprintf(stderr,
+                          "%s: error calculating the peak spatial response\n",
+                          command);
+                        exit(1);
+                    }
  
                     rlook_antenna.SphericalSet(1.0, look, azimuth);
                     TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,

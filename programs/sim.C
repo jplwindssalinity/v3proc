@@ -5,41 +5,41 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		sim
+//    sim
 //
 // SYNOPSIS
-//		sim <sim_config_file>
+//    sim <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b instrument based on the parameters
-//		in the simulation configuration file.
+//    Simulates the SeaWinds 1b instrument based on the parameters
+//    in the simulation configuration file.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>		The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operand is supported:
+//      <sim_config_file>  The sim_config_file needed listing all
+//                           input parameters, input files, and
+//                           output files.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% sim sws1b.cfg
+//    An example of a command line is:
+//      % sim sws1b.cfg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // BROUGHT TO YOU BY
-//		QSCAT Sim Team
+//    QSCAT Sim Team
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -47,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -128,73 +128,75 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 // recieved.          //
 //--------------------//
 
-float sim_time=0.0;
-
-void report(int sig_num){
-  sig_num=sig_num;
-  fprintf(stderr,"sim:  Current simulation time %g\n",
-	  sim_time); 
-  return;
+float sim_time = 0.0;
+void
+report(
+    int  sig_num)
+{
+    sig_num = sig_num;
+    fprintf(stderr, "sim: Current simulation time %g\n", sim_time); 
+    return;
 }
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 2)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc != 2)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
 
-        //------------------------//
-        // tell how far you have  //
-        // gotten if you recieve  //
-        // the siguser1 signal    //
-        //------------------------//
+    //-----------------------//
+    // tell how far you have //
+    // gotten if you recieve //
+    // the siguser1 signal   //
+    //-----------------------//
 
-        sigset(SIGUSR1,&report);
+    sigset(SIGUSR1,&report);
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //--------------------------------//
+    // read in simulation config file //
+    //--------------------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//----------------------------------------------//
-	// create a spacecraft and spacecraft simulator //
-	//----------------------------------------------//
+    //----------------------------------------------//
+    // create a spacecraft and spacecraft simulator //
+    //----------------------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	SpacecraftSim spacecraft_sim;
-	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    SpacecraftSim spacecraft_sim;
+    if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
@@ -207,88 +209,88 @@ main(
         exit(1);
     }
 
-	QscatSim qscat_sim;
-	if (! ConfigQscatSim(&qscat_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring instrument simulator\n",
+            command);
+        exit(1);
+    }
 
-	//----------------------------//
-	// create a Level 0.0 product //
-	//----------------------------//
+    //----------------------------//
+    // create a Level 0.0 product //
+    //----------------------------//
 
-	L00 l00;
-	if (! ConfigL00(&l00, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 0.0\n", command);
-		exit(1);
-	}
-	l00.OpenForWriting();
+    L00 l00;
+    if (! ConfigL00(&l00, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 0\n", command);
+        exit(1);
+    }
+    l00.OpenForWriting();
 
-	//--------------------------//
-	// create an ephemeris file //
-	//--------------------------//
+    //--------------------------//
+    // create an ephemeris file //
+    //--------------------------//
 
-	char* epehemeris_filename;
-	epehemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-	if (! epehemeris_filename)
-	{
-		fprintf(stderr, "%s: error getting ephemeris filename\n", command);
-		exit(1);
-	}
-	FILE* eph_fp = fopen(epehemeris_filename, "w");
-	if (eph_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening ephemeris file %s\n", command,
-			epehemeris_filename);
-		exit(1);
-	}
+    char* epehemeris_filename;
+    epehemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+    if (! epehemeris_filename)
+    {
+        fprintf(stderr, "%s: error getting ephemeris filename\n", command);
+        exit(1);
+    }
+    FILE* eph_fp = fopen(epehemeris_filename, "w");
+    if (eph_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening ephemeris file %s\n", command,
+            epehemeris_filename);
+        exit(1);
+    }
 
-	//--------------------//
-	// read the windfield //
-	//--------------------//
+    //--------------------//
+    // read the windfield //
+    //--------------------//
 
-	WindField windfield;
-	if (! ConfigWindField(&windfield, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring wind field\n", command);
-		exit(1);
-	}
+    WindField windfield;
+    if (! ConfigWindField(&windfield, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring wind field\n", command);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// read the geophysical model function //
-	//-------------------------------------//
+    //-------------------------------------//
+    // read the geophysical model function //
+    //-------------------------------------//
 
-	GMF gmf;
-	if (! ConfigGMF(&gmf, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring GMF\n", command);
-		exit(1);
-	}
+    GMF gmf;
+    if (! ConfigGMF(&gmf, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring GMF\n", command);
+        exit(1);
+    }
 
-	//--------------//
-	// configure Kp //
-	//--------------//
+    //--------------//
+    // configure Kp //
+    //--------------//
  
-	Kp kp;
-	if (! ConfigKp(&kp, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Kp\n", command);
-		exit(1);
-	}
+    Kp kp;
+    if (! ConfigKp(&kp, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Kp\n", command);
+        exit(1);
+    }
 
-	//------------------//
-	// Setup a KpmField //
-	//------------------//
+    //------------------//
+    // Setup a KpmField //
+    //------------------//
 
-	KpmField kpmField;
-	if (! ConfigKpmField(&kpmField, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring KpmField\n", command);
-		exit(1);
-	}
+    KpmField kpmField;
+    if (! ConfigKpmField(&kpmField, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring KpmField\n", command);
+        exit(1);
+    }
 
 	//---------------------//
 	// configure the times //
@@ -323,6 +325,12 @@ main(
 	{
 		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
 			command);
+		exit(1);
+	}
+
+	if (! qscat.sas.antenna.Initialize(instrument_start_time))
+	{
+		fprintf(stderr, "%s: error initializing antenna\n", command);
 		exit(1);
 	}
 
@@ -378,7 +386,9 @@ main(
 				//------------------------------//
 				// process the spacecraft event //
 				//------------------------------//
-                                sim_time=spacecraft_event.time;
+
+                sim_time = spacecraft_event.time;
+
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::UPDATE_STATE:
@@ -416,7 +426,9 @@ main(
 				//------------------------------//
 				// process the instrument event //
 				//------------------------------//
-                                sim_time=qscat_event.time;
+
+                sim_time=qscat_event.time;
+
 				switch(qscat_event.eventId)
 				{
 				case QscatEvent::SCATTEROMETER_MEASUREMENT:

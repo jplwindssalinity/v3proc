@@ -374,8 +374,8 @@ main(
                 CoordinateSwitch antenna_frame_to_gc =
                     AntennaFrameToGC(orbit_state, attitude, antenna);
                 double look, az;
-                GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft, beam,
-                    antenna->spinRate, &look, &az);
+                GetPeakSpatialResponse2(&antenna_frame_to_gc, &spacecraft,
+                    beam, antenna->spinRate, &look, &az);
                 Vector3 vector;
                 vector.SphericalSet(1.0, look, az);
                 TargetInfoPackage tip;

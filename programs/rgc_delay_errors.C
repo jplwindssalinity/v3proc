@@ -366,8 +366,14 @@ main(
 
 					double look, azim;
                     beam = qscat.GetCurrentBeam();
-					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->spinRate, &look, &azim);
+					if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
+                        &spacecraft, beam, antenna->spinRate, &look, &azim))
+                    {
+                        fprintf(stderr,
+                          "%s: error calculating the peak spatial response\n",
+                          command);
+                        exit(1);
+                    }
 					vector.SphericalSet(1.0, look, azim);
 					TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
 						vector, &tip);
