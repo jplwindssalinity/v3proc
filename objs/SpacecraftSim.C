@@ -394,6 +394,39 @@ SpacecraftSim::GetPeriod()
 	return(period);
 }
 
+//----------------------------//
+// SpacecraftSim::GetArgOfLat //
+//----------------------------//
+
+double
+SpacecraftSim::GetArgOfLat(
+	Spacecraft*		spacecraft)
+{
+	double alt, lon, gc_lat;
+	spacecraft->orbitState.rsat.GetAltLonGCLat(&alt, &lon, &gc_lat);
+
+	double vz = spacecraft->orbitState.vsat.Get(2);
+	int asc = (vz > 0.0 ? 1 : 0);
+
+	double gamma;
+	if (asc)
+	{
+		if (gc_lat >= 0.0)
+			gamma = asin(sin(gc_lat) / sin(_i));
+		else
+			gamma = two_pi - fabs(asin(sin(gc_lat) / sin(_i)));
+	}
+	else
+	{
+		if (gc_lat >= 0.0)
+			gamma = pi - asin(sin(gc_lat) / sin(_i));
+		else
+			gamma = pi + fabs(asin(sin(gc_lat) / sin(_i)));
+	}
+
+	return(gamma);
+}
+
 //-----------------------------------//
 // SpacecraftSim::DetermineNextEvent //
 //-----------------------------------//

@@ -555,25 +555,6 @@ double Vector3::Magnitude()
 return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
 }
 
-//
-// Extract one element.
-//
-
-double Vector3::get(int i)
-
-{
-
-if ((i >= 0) && (i < 3))
-  {
-  return(_v[i]);
-  }
-else
-  {
-  printf("Error: attempted to get out of range element from Vector3 object\n");
-  exit(-1);
-  }
-}
-
 void Vector3::Show(char *name)
 
 {
@@ -742,14 +723,23 @@ _v[2] = x3;
 // Vector3::Get //
 //--------------//
 
+double
+Vector3::Get(
+	int		idx)
+{
+	if (idx < 0 || idx > 2)
+		return(0.0);
+	return(_v[idx]);
+}
+
 int
 Vector3::Get(
-	int			index,
+	int			idx,
 	double*		value)
 {
-	if (index < 0 || index > 2)
+	if (idx < 0 || idx > 2)
 		return(0);
-	*value = _v[index];
+	*value = _v[idx];
 	return(1);
 }
 

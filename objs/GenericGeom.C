@@ -195,9 +195,9 @@ earth_intercept(
 	Vector3 v3 = rsat * rsat;
 
 	double efactor = 1.0 - e2;
-	double c1 = v1.get(0) + v1.get(1) + v1.get(2) / efactor;
-	double c2 = v2.get(0) + v2.get(1) + v2.get(2) / efactor;
-	double c3 = v3.get(0) + v3.get(1) + v3.get(2) / efactor - r1_earth_2;
+	double c1 = v1.Get(0) + v1.Get(1) + v1.Get(2) / efactor;
+	double c2 = v2.Get(0) + v2.Get(1) + v2.Get(2) / efactor;
+	double c3 = v3.Get(0) + v3.Get(1) + v3.Get(2) / efactor - r1_earth_2;
 
 	//------------------------------//
 	// solve for the slant range, s //

@@ -591,7 +591,7 @@ DopplerAndDelay(
 	double range_freq = instrument->chirpRate *
 		(instrument->receiverGateDelay - echo_center);
 
-	Vector3 vspot(-w_earth * r_target.get(1), w_earth * r_target.get(0), 0);
+	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 
 	instrument->commandedDoppler = 0.0;
@@ -637,7 +637,7 @@ TargetInfo(
 	// Compute doppler shift for the earth intercept point.
 	double actual_xmit_frequency = instrument->baseTransmitFreq +
 		instrument->commandedDoppler;
-	Vector3 vspot(-w_earth * rspot->get(1), w_earth * rspot->get(0), 0);
+	Vector3 vspot(-w_earth * rspot->Get(1), w_earth * rspot->Get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light_kps / actual_xmit_frequency;
 	tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;

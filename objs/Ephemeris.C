@@ -165,9 +165,9 @@ Ephemeris::FindSouthPole()
 		return(NULL);
 	}
 
-	if (os1->rsat.get(2) > os2->rsat.get(2))
+	if (os1->rsat.Get(2) > os2->rsat.Get(2))
 	{	// z-values are decreasing, so we're going south as desired.
-		while (os1->rsat.get(2) > os2->rsat.get(2))
+		while (os1->rsat.Get(2) > os2->rsat.Get(2))
 		{	// keep going south until the track turns north.
 			os1 = os2;
 			os2 = GetNext();
@@ -183,7 +183,7 @@ Ephemeris::FindSouthPole()
 	{	// z-value are increasing, so we're going north - need to turn around.
 		os1 = GetCurrent();
 		os2 = GetPrev();
-		while (os1->rsat.get(2) > os2->rsat.get(2))
+		while (os1->rsat.Get(2) > os2->rsat.Get(2))
 		{	// keep going south until the track turns north.
 			os1 = os2;
 			os2 = GetPrev();
@@ -282,12 +282,12 @@ Ephemeris::GetOrbitState(
 		{	// Load the interpolating set.
 			if (os == NULL) return(0);	// Ephemeris not long enough
 			_interp_time[i] = os->time;
-			_interp_x[i] = os->rsat.get(0);
-			_interp_y[i] = os->rsat.get(1);
-			_interp_z[i] = os->rsat.get(2);
-			_interp_vx[i] = os->vsat.get(0);
-			_interp_vy[i] = os->vsat.get(1);
-			_interp_vz[i] = os->vsat.get(2);
+			_interp_x[i] = os->rsat.Get(0);
+			_interp_y[i] = os->rsat.Get(1);
+			_interp_z[i] = os->rsat.Get(2);
+			_interp_vx[i] = os->vsat.Get(0);
+			_interp_vy[i] = os->vsat.Get(1);
+			_interp_vz[i] = os->vsat.Get(2);
 			os = GetOrReadNext();
 		}
 	}

@@ -123,7 +123,6 @@ Vector3(double init);
 
 void Scale(double r);		// set magnitude
 double Magnitude();		// get vector magnitude
-double get(int i);		// extract one element
 void Show(char *name = NULL);
 
 	int		SphericalSet(double r, double theta, double phi);
@@ -132,7 +131,8 @@ void Show(char *name = NULL);
 	int		AzimuthElevationGet(double *r, double *az, double *el);
 	int		Set(int index, double value);
 	void	Set(double x1, double x2, double x3);
-	int		Get(int index, double* value);
+	double	Get(int idx);
+	int		Get(int idx, double* value);
 	void	Zero();
 
 protected:

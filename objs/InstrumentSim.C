@@ -202,12 +202,12 @@ InstrumentSim::SetL00Spacecraft(
 	l00_frame->gcAltitude = alt;
 	l00_frame->gcLongitude = lon;
 	l00_frame->gcLatitude = lat;
-	l00_frame->gcX = orbit_state->rsat.get(0);
-	l00_frame->gcY = orbit_state->rsat.get(1);
-	l00_frame->gcZ = orbit_state->rsat.get(2);
-	l00_frame->velX = orbit_state->vsat.get(0);
-	l00_frame->velY = orbit_state->vsat.get(1);
-	l00_frame->velZ = orbit_state->vsat.get(2);
+	l00_frame->gcX = orbit_state->rsat.Get(0);
+	l00_frame->gcY = orbit_state->rsat.Get(1);
+	l00_frame->gcZ = orbit_state->rsat.Get(2);
+	l00_frame->velX = orbit_state->vsat.Get(0);
+	l00_frame->velY = orbit_state->vsat.Get(1);
+	l00_frame->velZ = orbit_state->vsat.Get(2);
 
 	return(1);
 }

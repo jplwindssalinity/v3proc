@@ -63,9 +63,11 @@ public:
 
 
 	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
+	double		GetEphemerisPeriod() { return(_ephemerisPeriod); };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
-	double	GetPeriod();
+	double		GetPeriod();
+	double		GetArgOfLat(Spacecraft* spacecraft);
 
 	//--------//
 	// events //

@@ -102,9 +102,9 @@ EarthPosition::SetAltLonGCLat(
 		_v[2]/(r2_earth*r2_earth));
 	normal.Scale(altitude);
 
-	_v[0] += normal.get(0);
-	_v[1] += normal.get(1);
-	_v[2] += normal.get(2);
+	_v[0] += normal.Get(0);
+	_v[1] += normal.Get(1);
+	_v[2] += normal.Get(2);
 
 	return(1);
 }
@@ -284,9 +284,9 @@ void EarthPosition::operator=(Vector3 vec)
 {
 
 // transfer data straight across
-_v[0] = vec.get(0);
-_v[1] = vec.get(1);
-_v[2] = vec.get(2);
+_v[0] = vec.Get(0);
+_v[1] = vec.Get(1);
+_v[2] = vec.Get(2);
 	return;
 }
 
