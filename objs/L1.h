@@ -90,6 +90,7 @@ public:
 
 	double		antennaPosition;
 	L1BeamE		beam;
+	double		sigma_0;
 };
 
 #endif

@@ -43,6 +43,7 @@ L0ToL1::Convert(
 	l1->velZ = l0->velZ;
 	l1->antennaPosition = l0->antennaPosition;
 	l1->beam = (L1::L1BeamE)l0->beam;
+	l1->sigma_0 = l0->sigma_0;
 
 	return(1);
 }

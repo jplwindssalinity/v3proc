@@ -34,7 +34,7 @@ L0File::~L0File()
 L0::L0()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0),
-	antennaPosition(0.0), beam(NONE)
+	antennaPosition(0.0), beam(NONE), sigma_0(0.0)
 {
 	AllocateFrame(L0_DATA_REC_SIZE);
 	return;
@@ -90,6 +90,9 @@ L0::PackFrame()
 	memcpy((void *)(_frame + idx), (void *)&beam, sizeof(L0BeamE));
 	idx += sizeof(L0BeamE);
 
+	memcpy((void *)(_frame + idx), (void *)&sigma_0, sizeof(double));
+	idx += sizeof(double);
+
 	return(1);
 }
 
@@ -137,6 +140,9 @@ L0::UnpackFrame()
 
 	memcpy((void *)&beam, (void *)(_frame + idx), sizeof(L0BeamE));
 	idx += sizeof(L0BeamE);
+
+	memcpy((void *)&sigma_0, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
 
 	return(1);
 }
