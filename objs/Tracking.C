@@ -410,7 +410,7 @@ TrackerBase<T>::WriteHex(
 	unsigned short id_size = sizeof(unsigned short);
 	unsigned short size_size = sizeof(unsigned short);
 	unsigned short spare_size = SPARE_WORDS * sizeof(unsigned short);
-	unsigned short dither_size = 4 * sizeof(unsigned short);
+	unsigned short dither_size = 2 * sizeof(unsigned short);
 	unsigned short terms_size = 3 * _steps * sizeof(T);
 	unsigned short scale_size = 6 * sizeof(float);
 	unsigned short file_size = id_size + size_size + spare_size +
@@ -1101,7 +1101,7 @@ write_hex(
 	unsigned short* ptr = (unsigned short *)buffer;
 	for (int i = 0; i < words; i++)
 	{
-		fprintf(fp, "%0hx\n", *(ptr + i));
+		fprintf(fp, "%04hx\n", *(ptr + i));
 	}
 	return(1);
 }
