@@ -653,6 +653,17 @@ main(
                 qscat.cds.EstimateIdealEncoder();
             echo_info.idealEncoder[spot_idx] = ideal_encoder;
 
+            //------------------------------//
+            // eliminate bad ephemeris data //
+            //------------------------------//
+
+            if (xpos == 0.0 && ypos == 0.0 && zpos == 0.0)
+            {
+                echo_info.flag[spot_idx] = EchoInfo::BAD_EPHEMERIS;
+                wom_frame = 0;   // spin up again
+                continue;
+            }
+
             //-------------------------------//
             // do range and Doppler tracking //
             //-------------------------------//
@@ -666,16 +677,6 @@ main(
 
             echo_info.txDoppler[spot_idx] = qscat.ses.txDoppler;
             echo_info.rxGateDelay[spot_idx] = qscat.ses.rxGateDelay;
-
-            //------------------------------//
-            // eliminate bad ephemeris data //
-            //------------------------------//
-
-            if (xpos == 0.0 && ypos == 0.0 && zpos == 0.0)
-            {
-                echo_info.flag[spot_idx] = EchoInfo::BAD_EPHEMERIS;
-                continue;
-            }
 
             //---------------------------------------//
             // skip pulses from first two WOM frames //
