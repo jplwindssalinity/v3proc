@@ -615,7 +615,8 @@ GMF::_ObjectiveFunction(
 		float s = gmf_value - meas->value;
 
 		float ekp = meas->EstimatedKp(gmf_value);
-		fv += s*s / ekp + log(ekp);
+                float var = ekp*ekp*gmf_value*gmf_value;
+		fv += s*s / var + log(var);
 	}
 	return(-fv);
 }

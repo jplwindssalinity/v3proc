@@ -126,11 +126,13 @@ float
 Meas::EstimatedKp(float sigma0)
 {
 	float Tp = 0.0015;		// transmit pulse length (need to handle better!)
-	float Kpr2 = 1.1482;	// 0.3 dB
-	float Kpm2 = 1.3804;	// 0.7 dB
+	float Kpr2 = 0.00512;	// 0.3 dB
+	float Kpm2 = 0.03059;	// 0.7 dB
 
 	// if measurement is nonsense, return a Kp of 1.0
-	if (EnSlice == 0.0)
+        // Since A is set to zero by Er_to_sigma0 if useKpc is zero
+        // this should handle that case as well.
+	if (A == 0.0 || EnSlice==0)
 		return(1.0);
 
 	float snr = sigma0 * XK * Tp/EnSlice;
