@@ -52,6 +52,17 @@ static const double flat = 1.0 - sqrt(1.0 - e2);
 // sidereal rotation rate (rad/sec)
 static const double w_earth = M_PI / 180 * 4.1780746e-3;
 
+
+//----------------------//
+// more Earth constants //
+//----------------------//
+
+static const double xmu = 3.986032e5;	// earth mass (GM) km3/sec2
+static const double rj2 = 1.08260e-3;	// earth gravitational harmonic
+static const double rm = 6.3781778e3;	// equatorial radius of earth
+static const double wa_deg = 4.1780746e-3;	// earth rotation rate
+static const double wa = wa_deg * dtr;	// rot. rate in radians
+
 //---------------------------------//
 // golden section search constants //
 //---------------------------------//
@@ -60,3 +71,8 @@ static const double golden_c = (3.0 - sqrt(5.0)) / 2.0;
 static const double golden_r = 1.0 - golden_c;
 
 #endif
+
+
+
+
+
