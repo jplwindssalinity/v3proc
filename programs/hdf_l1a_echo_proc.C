@@ -138,6 +138,7 @@ ArgInfo method_arg = { "ECHO_METHOD", "-m", "gauss|cent" };
 ArgInfo* arg_info_array[] =
 {
     &tlm_files_arg,
+    &l1a_files_arg,
     &output_base_arg,
     &poly_table_arg,
     &ins_config_arg,
@@ -519,7 +520,7 @@ main(
 
                 // determine orbit step
                 qscat.cds.orbitTime = orbit_time;
-                
+
                 unsigned char orbit_step = base_orbit_step;
                 if (pri_of_orbit_step_change != 255 &&
                     spot_idx < pri_of_orbit_step_change)
