@@ -446,21 +446,21 @@ main(
 
                 if (opt_class)
                 {
-                    float lon = (float)lon_array[ati][cti] * 0.01;
-                    float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
+//                    float lon = (float)lon_array[ati][cti] * 0.01;
+//                    float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
                     if (inbd == 15)
                     {
                         fprintf(class_without_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d %g %g\n", nbd, spd,
+                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
                             dir, mle, norain_prob, rain_prob, irr, rev, ati,
-                            cti, lon, lat);
+                            cti);
                     }
                     else
                     {
                         fprintf(class_with_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d %g %g\n", nbd, spd,
+                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
                             dir, mle, norain_prob, rain_prob, irr, rev, ati,
-                            cti, lon, lat);
+                            cti);
                     }
                 }
 
