@@ -73,16 +73,3 @@ Misc.o:			Misc.C Misc.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h
 SimConfig.o:	SimConfig.C SimConfig.h SimControl.h ConfigList.h
 SimControl.o:	SimControl.C SimControl.h ConfigList.h
-
-#----------------------------------------------------------------------
-# Include file dependancies
-#----------------------------------------------------------------------
-
-ConfigList.h:	List.h
-	touch $@
-
-SimConfig.h:	ConfigList.h SimControl.h Instrument.h OrbitSim.h
-	touch $@
-
-SimControl.h:	Instrument.h OrbitSim.h
-	touch $@
