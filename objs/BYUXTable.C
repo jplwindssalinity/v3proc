@@ -36,10 +36,12 @@ BYUXTable::Read(
   FILE * ibeam_fp=fopen(ibeam_file,"r");
   if(ibeam_fp==NULL){
     fprintf(stderr,"Cannot open BYU X Factor file %s\n",ibeam_file);
+    return(0);
   }
   FILE * obeam_fp=fopen(obeam_file,"r");
   if(obeam_fp==NULL){
     fprintf(stderr,"Cannot open BYU X Factor file %s\n",obeam_file);
+    return(0);
   }
   if(!(xnom.ReadBYU(ibeam_fp,obeam_fp)))  return(0);
   if(!(a.ReadBYU(ibeam_fp,obeam_fp))) return(0);
