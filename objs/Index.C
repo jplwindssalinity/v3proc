@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -314,14 +314,14 @@ Index::GetLinearCoefsClipped(
     return(1);
 }
 
-//------------------------//
-// Index::GetNearestIndex //
-//------------------------//
+//------------------------------//
+// Index::GetNearestIndexStrict //
+//------------------------------//
 // IF value is between _min - _step/2 and _max + _step/2
 //   returns nearest index
 
 int
-Index::GetNearestIndex(
+Index::GetNearestIndexStrict(
     float  value,
     int*   idx)
 {
@@ -336,11 +336,30 @@ Index::GetNearestIndex(
 }
 
 //-------------------------------//
-// Index::GetNearestWrappedIndex //
+// Index::GetNearestIndexClipped //
+//-------------------------------//
+// returns nearest index
+
+void
+Index::GetNearestIndexClipped(
+    float  value,
+    int*   idx)
+{
+    if (value < _min)
+        *idx = 0;
+    else if (value > _max)
+        *idx = _bins - 1;
+    else
+        *idx = (int)((value - _min) / _step + 0.5);
+    return;
+}
+
+//-------------------------------//
+// Index::GetNearestIndexWrapped //
 //-------------------------------//
 
 int
-Index::GetNearestWrappedIndex(
+Index::GetNearestIndexWrapped(
     float  value,
     int*   idx)
 {

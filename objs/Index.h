@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -71,8 +71,9 @@ public:
     int  GetLinearCoefsWrapped(float value, int idx[2], float coef[2]);
     int  GetLinearCoefsClipped(float value, int idx[2], float coef[2]);
 
-    int  GetNearestIndex(float value, int* idx);
-    int  GetNearestWrappedIndex(float value, int* idx);
+    int   GetNearestIndexStrict(float value, int* idx);
+    int   GetNearestIndexWrapped(float value, int* idx);
+    void  GetNearestIndexClipped(float value, int* idx);
 
     int  IndexToValue(int idx, float* value);
 
