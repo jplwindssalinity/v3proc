@@ -98,7 +98,7 @@ public:
     //------------------------//
     // special wind retrieval //
     //------------------------//
-
+    int  GetHHBiasUsingVV(MeasList* meas_list, Kp* kp, float* bias);
     int    RetrieveWinds_H1(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc,
                int h3_and_s1_flag = 0);
