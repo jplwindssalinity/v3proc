@@ -308,7 +308,7 @@ main(
             //------------------------------//
 
             qscat.cds.orbitStep = echo_info.SpotOrbitStep(spot_idx);
-            qscat.cds.currentBeamIdx = echo_info.beamIdx[spot_idx];
+            qscat.cds.currentBeamIdx = echo_info.SpotBeamIdx(spot_idx);
 
             qscat.sas.antenna.txCenterAzimuthAngle =
                 echo_info.txCenterAzimuthAngle[spot_idx];
