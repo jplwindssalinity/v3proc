@@ -168,6 +168,7 @@ static const char rcs_id_configsimdefs_h[] =
 //----------//
 
 #define OUTPUT_SIGMA0_TO_STDOUT_KEYWORD		"OUTPUT_SIGMA0_TO_STDOUT"
+#define USE_SPOT_COMPOSITES_KEYWORD			"USE_SPOT_COMPOSITES"
 
 //-----//
 // L2A //

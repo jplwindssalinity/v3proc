@@ -17,7 +17,7 @@ static const char rcs_id_l1atol1b_c[] =
 //==========//
 
 L1AToL1B::L1AToL1B()
-:	useKfactor(0), outputSigma0ToStdout(0)
+:	useKfactor(0), useSpotCompositing(0), outputSigma0ToStdout(0)
 {
 	return;
 }
@@ -172,7 +172,7 @@ L1AToL1B::Convert(
 			// for each slice... //
 			//-------------------//
 
-			int sliceno=-(l1a->frame.slicesPerSpot/2);
+			int sliceno = -(l1a->frame.slicesPerSpot / 2);
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
@@ -182,11 +182,10 @@ L1AToL1B::Convert(
 				{
 					float orbit_position = instrument->OrbitFraction();
 
-					k_factor=kfactorTable.RetrieveByRelativeSliceNumber(
+					k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
 						instrument->antenna.currentBeamIdx,
-						instrument->antenna.azimuthAngle,
-
-						orbit_position, sliceno);
+						instrument->antenna.azimuthAngle, orbit_position,
+						sliceno);
 				}
 
 				float Esn = l1a->frame.science[total_slice_idx];
@@ -222,6 +221,28 @@ L1AToL1B::Convert(
 				if (l1a->frame.slicesPerSpot % 2 == 0 && sliceno == 0)
 					sliceno++;
 			}
+
+			//-----------------------------------------------------//
+			// composite into single spot measurement if necessary //
+			//-----------------------------------------------------//
+
+			if (useSpotCompositing)
+			{
+				Meas* comp = new Meas();
+				if (comp == NULL)
+					return(0);
+
+				if (! comp->Composite(meas_spot))
+					return(0);
+
+				meas_spot->FreeContents();
+				if (! meas_spot->Append(comp))
+					return(0);
+			}
+
+			//----------------------//
+			// add to list of spots //
+			//----------------------//
 
 			l1b->frame.spotList.Append(meas_spot);
 			spot_idx++;

@@ -151,7 +151,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 	if (! string)
 		return(0);
 
-	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
 		|| strcmp(string,"none")==0)
 	{
 		// By default mean, variance, and correlation length
@@ -159,18 +159,18 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		return(1);
 	}
 
-	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
+	else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
 		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
 		float std, mean, corrlength;
 
-		if(! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
 				&corrlength))
 		{
 			return(0);
@@ -182,11 +182,11 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
 		attcntl->roll.Initialize();
 
-		if(! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
 				&corrlength))
 		{
 			return(0);
@@ -198,11 +198,11 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
 		attcntl->pitch.Initialize();
 
-		if(! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
 			&corrlength))
 		{
 			return(0);
@@ -241,7 +241,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 	if (! string)
 		return(0);
 
-	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
 		|| strcmp(string,"none")==0)
 	{
 		// By default mean, variance, and correlation length
@@ -249,18 +249,18 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		return(1);
 	}
 
-	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
+	else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
 		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
 		float std, mean, corrlength;
 
-		if(! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
 			&corrlength))
 		{
 			return(0);
@@ -272,11 +272,11 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
 		attknow->roll.Initialize();
 
-		if(! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
 				&corrlength))
 		{
 			return(0);
@@ -288,11 +288,11 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
 		attknow->pitch.Initialize();
 
-		if(! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
+		if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
 			return(0);
-		if(! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
+		if (! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
 			return(0);
-		if(! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
+		if (! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
 				&corrlength))
 		{
 			return(0);
@@ -333,10 +333,10 @@ ConfigGaussian(const char* variance_keyword,
 {
 	double variance, mean;
 
-	if(! config_list->GetDouble(variance_keyword, &variance))
+	if (! config_list->GetDouble(variance_keyword, &variance))
 		return(NULL);
 	variance*=dtr*dtr;
-	if(! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &mean))
 		return(NULL);
 	mean*=dtr;
 	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
@@ -355,10 +355,10 @@ ConfigUniform(
 {
 	double radius, mean;
 
-	if(! config_list->GetDouble(radius_keyword, &radius))
+	if (! config_list->GetDouble(radius_keyword, &radius))
 		return(NULL);
 	radius*=dtr;
-	if(! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &mean))
 		return(NULL);
 	mean*=dtr;
 	Uniform* new_u = new Uniform((float)radius,float(mean));
@@ -380,16 +380,16 @@ ConfigGaussianRandomVelocity(
 	double variance, mean, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
-	if(! config_list->GetDouble(samprate_keyword, &sample_rate))
+	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
 		return(NULL);
 
-	if(! config_list->GetDouble(variance_keyword, &variance))
+	if (! config_list->GetDouble(variance_keyword, &variance))
 		return(NULL);
 	variance*=dtr*dtr;
-	if(! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &mean))
 		return(NULL);
 	mean*=dtr;
-	if(! config_list->GetDouble(bound_keyword, &bound))
+	if (! config_list->GetDouble(bound_keyword, &bound))
 		return(NULL);
 	bound*=dtr;
 	velocity = new Gaussian((float)variance,0.0);
@@ -413,16 +413,16 @@ ConfigUniformRandomVelocity(
 	double radius, mean, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
-	if(! config_list->GetDouble(samprate_keyword, &sample_rate))
+	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
 		return(NULL);
 
-	if(! config_list->GetDouble(radius_keyword, &radius))
+	if (! config_list->GetDouble(radius_keyword, &radius))
 		return(NULL);
 	radius*=dtr;
-	if(! config_list->GetDouble(mean_keyword, &mean))
+	if (! config_list->GetDouble(mean_keyword, &mean))
 		return(NULL);
 	mean*=dtr;
-	if(! config_list->GetDouble(bound_keyword, &bound))
+	if (! config_list->GetDouble(bound_keyword, &bound))
 		return(NULL);
 	bound*=dtr;
 	velocity=new Uniform((float)radius,0.0);
@@ -692,7 +692,7 @@ ConfigInstrumentSim(
 	}
 
 	/****** You cannot use and create the XTable simultaneously. ***/
-	if(create_xtable && use_kfactor)
+	if (create_xtable && use_kfactor)
 	{
 		fprintf(stderr,
 			"ConfigInstrumentSim: Cannot use kfactor AND create Xtable\n");
@@ -700,7 +700,7 @@ ConfigInstrumentSim(
 	}
 
 	/*** To create an X table you NEED a uniform sigma0 field. ***/
-	if(create_xtable && !uniform_sigma_field)
+	if (create_xtable && !uniform_sigma_field)
 	{
 		fprintf(stderr,
 			"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
@@ -709,22 +709,21 @@ ConfigInstrumentSim(
 
 	/*** To create an X table SYSTEM_TEMPERATURE MUST be zero so that **/
 	/*** Pn_slice will be zero and will NOT corrupt the X table **/
-	if(create_xtable && system_temperature!=0.0)
+	if (create_xtable && system_temperature!=0.0)
 	{
 		fprintf(stderr,
-			"ConfigInstrumentSim: Cannot create an Xtable with a
-nonzero system temperature! \n");
+			"ConfigInstrumentSim: Cannot create an Xtable with a nonzero system temperature! \n");
 		return(0);
 	}
 
-	if(create_xtable)
+	if (create_xtable)
 	{
-		if(!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
+		if (!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
 			return(0);
 	}
-	else if(use_kfactor)
+	else if (use_kfactor)
 	{
-		if(!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
+		if (!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
 			return(0);
 	}
 
@@ -773,8 +772,8 @@ ConfigInstrumentSimAccurate(
 
 int
 ConfigAntennaSim(
-	 AntennaSim* antenna_sim,
-	 ConfigList* config_list)
+	AntennaSim*		antenna_sim,
+	ConfigList*		config_list)
 {
 	double start_time;
 	if (! config_list->GetDouble(ANTENNA_START_TIME_KEYWORD, &start_time))
@@ -1068,102 +1067,115 @@ ConfigXTable(
 	ConfigList*		config_list,
 	char*			read_write)
 {
-  /**** Find out if XTable is to be configured READ or WRITE ***/
-  int read=0;
-  if(strcmp(read_write,"r") == 0)  read=1;
-  else if(strcmp(read_write,"w")==0) read=0;
-  else{
-    fprintf(stderr, "ConfigXTable: Bad read_write parameter");
-    return(0);
-  }
-
-  /**** Get XTable Filename  *****/
-
-  char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
-  if (xtable_filename == NULL)
-	  return(0);
-
-  xTable->SetFilename(xtable_filename);
-
-
-  /**** Read header parameters for XTable object ****/
-
-  int num_beams;
-  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
-    return(0);
-
-  int num_science_slices;
-  if(! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,&num_science_slices))
-    return(0);
-
-
-  int num_guard_slices_each_side;
-  if(! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,&num_guard_slices_each_side))
-    return(0);
-
-
-  int num_azimuths;
-  if(! config_list->GetInt(XTABLE_NUM_AZIMUTHS_KEYWORD,&num_azimuths))
-    return(0);
-
-  int num_orbit_positions;
-  if(! config_list->GetInt(XTABLE_NUM_ORBIT_STEPS_KEYWORD,&num_orbit_positions))
-    return(0);
-
-
-  float science_slice_bandwidth;
-  if(! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,&science_slice_bandwidth))
+	/**** Find out if XTable is to be configured READ or WRITE ***/
+	int read=0;
+	if (strcmp(read_write,"r") == 0)
+		read=1;
+	else if (strcmp(read_write,"w")==0)
+		read=0;
+	else
 	{
-	printf("Could not find slice bandwidth in config file\n");
-    return(0);
-	}
-  science_slice_bandwidth*=KHZ_TO_HZ;
-
-  float guard_slice_bandwidth;
-  if(! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,&guard_slice_bandwidth))
-	{
-	printf("Could not find guard slice bandwidth in config file\n");
-    return(0);
-	}
-  guard_slice_bandwidth*=KHZ_TO_HZ;
-
-
-  /**** If mode is READ, read in xTable and make sure its parameters match
-        those read from the config file                               *****/
-
-  if(read){
-    if(!xTable->Read())
-	{
-		printf("Error reading xTable in ConfigXTable\n");
+		fprintf(stderr, "ConfigXTable: Bad read_write parameter");
 		return(0);
 	}
-    if(!xTable->CheckHeader(num_beams, num_science_slices,
-			   num_guard_slices_each_side, science_slice_bandwidth,
-			   guard_slice_bandwidth))
+
+	/**** Get XTable Filename *****/
+
+	char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
+	if (xtable_filename == NULL)
+		return(0);
+
+	xTable->SetFilename(xtable_filename);
+
+
+	/**** Read header parameters for XTable object ****/
+
+	int num_beams;
+	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
+		return(0);
+
+	int num_science_slices;
+	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,
+		&num_science_slices))
 	{
-		printf("Header check failed in ConfigXTable\n");
-    	return(0);
+		return(0);
 	}
-  }
 
-  /***** If mode is WRITE, asign xTable parameters from parameters read from
-         config file, and allocate it the arrays                         ****/
+	int num_guard_slices_each_side;
+	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,
+		&num_guard_slices_each_side))
+	{
+		return(0);
+	}
 
-  else{
-    xTable->numBeams=num_beams;
-    xTable->numAzimuthBins=num_azimuths;
-    xTable->numOrbitPositionBins=num_orbit_positions;
-    xTable->numScienceSlices=num_science_slices;
-    xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
-    xTable->scienceSliceBandwidth=science_slice_bandwidth;
-    xTable->guardSliceBandwidth=guard_slice_bandwidth;
-    xTable->numSlices=xTable->numScienceSlices+2*xTable->numGuardSlicesEachSide;
-    if (!xTable->Allocate()){
-      fprintf(stderr,"ConfigXTable:Error allocating XTable object.\n");
-      return(0);
-    }
+	int num_azimuths;
+	if (! config_list->GetInt(XTABLE_NUM_AZIMUTHS_KEYWORD,&num_azimuths))
+		return(0);
 
-  }
+	int num_orbit_positions;
+	if (! config_list->GetInt(XTABLE_NUM_ORBIT_STEPS_KEYWORD,
+		&num_orbit_positions))
+	{
+		return(0);
+	}
+
+	float science_slice_bandwidth;
+	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
+		&science_slice_bandwidth))
+	{
+		printf("Could not find slice bandwidth in config file\n");
+		return(0);
+	}
+	science_slice_bandwidth*=KHZ_TO_HZ;
+
+	float guard_slice_bandwidth;
+	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,
+		&guard_slice_bandwidth))
+	{
+		printf("Could not find guard slice bandwidth in config file\n");
+		return(0);
+	}
+	guard_slice_bandwidth*=KHZ_TO_HZ;
+
+	/**** If mode is READ, read in xTable and make sure its parameters match
+		those read from the config file *****/
+
+	if (read)
+	{
+		if (!xTable->Read())
+		{
+			printf("Error reading xTable in ConfigXTable\n");
+			return(0);
+		}
+		if (!xTable->CheckHeader(num_beams, num_science_slices,
+				num_guard_slices_each_side, science_slice_bandwidth,
+				guard_slice_bandwidth))
+		{
+			printf("Header check failed in ConfigXTable\n");
+			return(0);
+		}
+	}
+
+	/***** If mode is WRITE, asign xTable parameters from parameters read from
+		config file, and allocate it the arrays ****/
+
+	else
+	{
+		xTable->numBeams=num_beams;
+		xTable->numAzimuthBins=num_azimuths;
+		xTable->numOrbitPositionBins=num_orbit_positions;
+		xTable->numScienceSlices=num_science_slices;
+		xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
+		xTable->scienceSliceBandwidth=science_slice_bandwidth;
+		xTable->guardSliceBandwidth=guard_slice_bandwidth;
+		xTable->numSlices=xTable->numScienceSlices +
+			2 * xTable->numGuardSlicesEachSide;
+		if (!xTable->Allocate())
+		{
+			fprintf(stderr,"ConfigXTable:Error allocating XTable object.\n");
+			return(0);
+		}
+	}
 
 	return(1);
 }
@@ -1311,7 +1323,7 @@ ConfigL1B(
 
 int
 ConfigL1AToL1B(
-	L1AToL1B*		l1atol1b,
+	L1AToL1B*		l1a_to_l1b,
 	ConfigList*		config_list)
 {
 	config_list->WarnForMissingKeywords();
@@ -1321,23 +1333,37 @@ ConfigL1AToL1B(
 	{
 		output_sigma0_to_stdout=0; // default value
 	}
-	l1atol1b->outputSigma0ToStdout=output_sigma0_to_stdout;
+	l1a_to_l1b->outputSigma0ToStdout=output_sigma0_to_stdout;
+
+	//----------//
+	// k-factor //
+	//----------//
 
 	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
 		use_kfactor=0; // default value
-	l1atol1b->useKfactor=use_kfactor;
+	l1a_to_l1b->useKfactor=use_kfactor;
 
-	if(use_kfactor)
+	if (use_kfactor)
 	{
-		if(!ConfigXTable(&(l1atol1b->kfactorTable),config_list,"r"))
+		if (!ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
 			return(0);
 	}
+
+	//------------------//
+	// spot compositing //
+	//------------------//
+
+	int spot_comp;
+	if (! config_list->GetInt(USE_SPOT_COMPOSITES_KEYWORD, &spot_comp))
+		spot_comp = 0;
+	l1a_to_l1b->useSpotCompositing = spot_comp;
 
 	config_list->ExitForMissingKeywords();
 
 	return(1);
 }
+
 //-----------//
 // ConfigL2A //
 //-----------//
@@ -1484,10 +1510,10 @@ ConfigKp(
 	//----------------//
 
 	double kp_ptgr;
-	if(! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
+	if (! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
 		return(0);
 	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
-	if(! kp->kpri.SetKpPtGr(kp_ptgr))
+	if (! kp->kpri.SetKpPtGr(kp_ptgr))
 	{
 		printf("Error setting KpPtGr\n");
 		return(0);
@@ -1500,11 +1526,11 @@ ConfigKp(
 	char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
 	if (kprs_filename == NULL)
 		return(0);
-	if(strcmp(kprs_filename,"NONE") != 0
+	if (strcmp(kprs_filename,"NONE") != 0
 		&& strcmp(kprs_filename,"none") != 0
 		&& strcmp(kprs_filename,"None") != 0)
 	{
-		if(! kp->kprs.Read(kprs_filename))
+		if (! kp->kprs.Read(kprs_filename))
 		{
 			printf("Error reading Kprs from %s\n",kprs_filename);
 			return(0);

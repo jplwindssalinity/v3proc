@@ -56,11 +56,9 @@ public:
 
 	XTable	kfactorTable;
 
-	// If this is nonzero the kfactor table is read in and used.
-	int		useKfactor;
-
-	// Output sigma0 values to stdout? 1/0=YES/NO (format readable by xmgr)
-	int		outputSigma0ToStdout;
+	int		useKfactor;				// read and use kfactor table
+	int		useSpotCompositing;		// make spots by compositing slices
+	int		outputSigma0ToStdout;	// output s0 values to stdout
 };
 
 #endif
