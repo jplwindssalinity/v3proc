@@ -41,11 +41,7 @@ public:
     // configuration //
     //---------------//
 
-    int  Initialize(WindSwath* swath, float resolution);
-/*
-    void  SetDirectionBins(int direction_bins)
-              { _directionBins = direction_bins; };
-*/
+    int  Initialize(int cross_track_bins, float cross_track_resolution);
 
     //--------------//
     // input/output //
@@ -73,14 +69,15 @@ protected:
     // variables //
     //-----------//
 
-    int      _crossTrackBins;
-    int      _alongTrackBins;
-    float*   _ctd;
+    int             _crossTrackBins;
+    float           _crossTrackResolution;
+    float*          _ctd;
 
-    double*  _selectedSumSqrSpdErr;
-    double*  _selectedSumSqrSpdErrCount;
+    double*         _selectedSumSqrSpdErr;
+    unsigned long*  _selectedSumSqrSpdErrCount;
 
-//    int  _directionBins;
+    double*         _selectedSumSqrDirErr;
+    unsigned long*  _selectedSumSqrDirErrCount;
 };
 
 #endif

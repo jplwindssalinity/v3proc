@@ -68,11 +68,6 @@ static const char rcs_id[] =
 #include "L2B.h"
 #include "List.h"
 #include "List.C"
-/*
-#include "Constants.h"
-#include "Array.h"
-#include "AngleInterval.h"
-*/
 
 //-----------//
 // TEMPLATES //
@@ -169,11 +164,14 @@ main(
         usage(command, usage_array, 1);
     }
 
-    //-----------------------------//
-    // read the configuration file //
-    //-----------------------------//
+    //---------------------------------------//
+    // read and parse the configuration file //
+    //---------------------------------------//
 
     ConfigList config_list;
+    char* l2b_file = NULL;
+    char* truth_type = NULL;
+    char* truth_file = NULL;
     if (config_file != NULL)
     {
         if (! config_list.Read(config_file))
@@ -182,36 +180,28 @@ main(
                 command, config_file);
             exit(1);
         }
-    }
 
-    //----------------------------//
-    // determine the l2b filename //
-    //----------------------------//
+        l2b_file = config_list.Get(L2B_FILE_KEYWORD);
+        if (l2b_file == NULL)
+        {
+            fprintf(stderr, "%s: missing L2B file in config file %s\n",
+                command, config_file);
+            exit(1);
+        }
 
-    char* l2b_file = config_list.Get(L2B_FILE_KEYWORD);
-    if (l2b_file == NULL)
-    {
-        fprintf(stderr, "%s: missing L2B file in config file %s\n",
-            command, config_file);
-        exit(1);
-    }
+        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+        if (truth_type == NULL)
+        {
+            fprintf(stderr, "%s: must specify truth windfield type\n", command);
+            exit(1);
+        }
 
-    //---------------------------------------//
-    // determine the truth type and filename //
-    //---------------------------------------//
-
-    char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
-    if (truth_type == NULL)
-    {
-        fprintf(stderr, "%s: must specify truth windfield type\n", command);
-        exit(1);
-    }
-
-    char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-    if (truth_file == NULL)
-    {
-        fprintf(stderr, "%s: must specify truth windfield file\n", command);
-        exit(1);
+        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+        if (truth_file == NULL)
+        {
+            fprintf(stderr, "%s: must specify truth windfield file\n", command);
+            exit(1);
+        }
     }
 
     //--------------------------------------//
@@ -224,7 +214,7 @@ main(
         char* metric_file = argv[file_idx];
         if (! metrics.Read(metric_file))
         {
-            fprintf(stderr, "%s: error reading metrics files %s\n", command,
+            fprintf(stderr, "%s: error reading metrics file %s\n", command,
                 metric_file);
             exit(1);
         }
@@ -235,31 +225,45 @@ main(
     //-----------------------//
 
     L2B l2b;
-    if (! l2b.Read(l2b_file))
+    WindSwath* swath = NULL;
+    if (l2b_file != NULL)
     {
-        fprintf(stderr, "%s: error reading L2B file %s\n", command,
-            l2b_file);
-        exit(1);
+        if (! l2b.Read(l2b_file))
+        {
+            fprintf(stderr, "%s: error reading L2B file %s\n", command,
+                l2b_file);
+            exit(1);
+        }
+        swath = &(l2b.frame.swath);
     }
-    WindSwath* swath = &(l2b.frame.swath);
 
     //----------------------------//
     // read in "truth" wind field //
     //----------------------------//
 
     WindField truth;
-    if (! truth.ReadType(truth_file, truth_type))
+    if (truth_file != NULL && truth_type != NULL)
     {
-        fprintf(stderr,
-            "%s: error reading truth wind field of type %s from file %s\n",
-            command, truth_type, truth_file);
-        exit(1);
+        if (! truth.ReadType(truth_file, truth_type))
+        {
+            fprintf(stderr,
+                "%s: error reading truth wind field of type %s from file %s\n",
+                command, truth_type, truth_file);
+            exit(1);
+        }
     }
 
-    if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution, &truth))
+    //------------------//
+    // generate metrics //
+    //------------------//
+
+    if (swath != NULL)
     {
-        fprintf(stderr, "%s: error evaluating wind field\n", command);
-        exit(1);
+        if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution, &truth))
+        {
+            fprintf(stderr, "%s: error evaluating wind field\n", command);
+            exit(1);
+        }
     }
 
     //--------------------//

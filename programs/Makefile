@@ -20,25 +20,26 @@ CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
-	echo_dtc \
-	fit_dtc \
-	get_att \
-	get_look_att \
 	sim \
-	sim_overlay \
-	modu \
 	l1a_to_l1b \
 	l1b_to_l2a \
+	l2a_to_l2b \
+	l2b_metrics \
+	l2b_super_metrics \
 	l1b_coverage \
 	l2a_hdf_to_l2a \
 	l2ax_hdf_to_l2a \
-	l2a_to_l2b \
 	l2b_medianfilter \
-	l2b_metrics \
 	l2a_filter \
 	l1b_ascii \
 	l2a_s0 \
 	l2b_to_vctr \
+	sim_overlay \
+	modu \
+	echo_dtc \
+	fit_dtc \
+	get_att \
+	get_look_att \
 	echo_proc \
 	psim \
 	pl1a_to_l1b \
@@ -139,7 +140,7 @@ HUDD_PROGRAMS = \
 	l1b_to_l2a \
 	l2a_to_l2b \
 	l2b_to_vctr \
-	l2b_metrics \
+	l2b_super_metrics \
 	l1b_ascii \
 	see_spot \
 	eqx \
