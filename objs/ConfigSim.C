@@ -555,6 +555,26 @@ ConfigInstrumentSim(
 	return(1);
 }
 
+//---------------------//
+// ConfigAntennaSim    //
+//---------------------//
+
+int 
+ConfigAntennaSim(
+	 AntennaSim* antenna_sim,
+	 ConfigList* config_list)
+{
+	double start_time;
+	if (! config_list->GetDouble(ANTENNA_START_TIME_KEYWORD, &start_time))
+		return(0);
+	antenna_sim->startTime = start_time;
+	double start_azi;
+	if (! config_list->GetDouble(START_AZIMUTH_KEYWORD, &start_azi))
+		return(0);
+	antenna_sim->startAzimuth = start_azi*dtr;
+	return(1);
+}
+
 //---------------//
 // ConfigAntenna //
 //---------------//

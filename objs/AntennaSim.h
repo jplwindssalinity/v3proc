@@ -44,6 +44,15 @@ public:
 	//------------------//
 
 	int		UpdatePosition(double time, Antenna* antenna);
+
+        //-------------------//
+        // variables         //
+        //-------------------//
+
+	double startTime;
+	double startAzimuth;
 };
 
 #endif
+
+

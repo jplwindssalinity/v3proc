@@ -142,6 +142,16 @@ int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
 
+//------------//
+// AntennaSim //
+//------------//
+
+#define START_AZIMUTH_KEYWORD           "START_AZIMUTH"
+#define ANTENNA_START_TIME_KEYWORD      "INSTRUMENT_START_TIME"
+
+int ConfigAntennaSim(AntennaSim* antenna_sim,
+	ConfigList* config_list);
+
 //---------//
 // Antenna //
 //---------//
@@ -153,6 +163,7 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 #define ANTENNA_PEDESTAL_PITCH_KEYWORD	"ANTENNA_PEDESTAL_PITCH"
 #define ANTENNA_PEDESTAL_YAW_KEYWORD	"ANTENNA_PEDESTAL_YAW"
 #define SPIN_RATE_KEYWORD				"ANTENNA_SPIN_RATE"
+
 
 int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
 

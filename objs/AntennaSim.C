@@ -16,6 +16,7 @@ static const char rcs_id_antennasim_c[] =
 //============//
 
 AntennaSim::AntennaSim()
+  : startTime(0.0), startAzimuth(0.0)
 {
 	return;
 }
@@ -34,7 +35,7 @@ AntennaSim::UpdatePosition(
 	double		time,
 	Antenna*	antenna)
 {
-	double angle = time * antenna->spinRate;
+	double angle = startAzimuth + (time-startTime) * antenna->spinRate;
 	angle = fmod(angle, two_pi);
 	antenna->azimuthAngle = angle;
 
