@@ -9,7 +9,7 @@
 
 //==================================================================//
 // CLASSES							    //
-//		Generic_Dist, Uniform, Gaussian, GTC	            //
+//		GenericDist, Uniform, Gaussian, GTC	            //
 //==================================================================//
 
 //==================================================================//
@@ -34,17 +34,17 @@ static const char rcs_id_distributions_h[] =
 
 //==================================================================//
 // CLASS 							    //
-//		Generic_Dist					    //
+//		GenericDist					    //
 // 								    //
 // Description: Base class for Probability Distributions            //
 //==================================================================//
 
-class Generic_Dist
+class GenericDist
 {
 public:
 	virtual float GetNumber()=0;
         virtual float GetNumber(double time);
-	virtual ~Generic_Dist();
+	virtual ~GenericDist();
 };		
 
 //==================================================================//
@@ -59,7 +59,7 @@ public:
 // number extracted from the distribution.                          //
 //==================================================================//
 
-class Uniform : public Generic_Dist
+class Uniform : public GenericDist
 {
 public:
 	Uniform();
@@ -78,7 +78,7 @@ protected:
 // Description: Gaussian Distribution                               //
 //==================================================================//
 
-class Gaussian : public Generic_Dist
+class Gaussian : public GenericDist
 {
 public:
 	Gaussian();
@@ -125,11 +125,11 @@ class AttDist
 {
 public:
 	AttDist();
-	AttDist(Generic_Dist* r, Generic_Dist* p, Generic_Dist* y);
+	AttDist(GenericDist* r, GenericDist* p, GenericDist* y);
 	~AttDist();
-	Generic_Dist* roll;
-	Generic_Dist* pitch;
-	Generic_Dist* yaw;
+	GenericDist* roll;
+	GenericDist* pitch;
+	GenericDist* yaw;
 
 };
 

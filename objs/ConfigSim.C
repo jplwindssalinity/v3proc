@@ -86,7 +86,7 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
 	char* string;
-        Generic_Dist *roll, *pitch, *yaw;
+        GenericDist *roll, *pitch, *yaw;
         AttDist* ACEM;
         string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
         if(! string)

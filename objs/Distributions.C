@@ -9,7 +9,7 @@
 
 //==================================================================//
 // CLASSES							    //
-//		Generic_Dist, Uniform, Gaussian, GTC, AttDist	    //
+//		GenericDist, Uniform, Gaussian, GTC, AttDist	    //
 //==================================================================//
 
 //==================================================================//
@@ -22,18 +22,18 @@ static const char rcs_id_distributions_c[] =
 #include"Distributions.h"
 
 //============================//
-// Generic_Dist               //
+// GenericDist               //
 //============================//
 
-Generic_Dist::~Generic_Dist(){
+GenericDist::~GenericDist(){
 	return;
 }
 
 //============================//
-// Generic_Dist::GetNumber   //
+// GenericDist::GetNumber   //
 //============================//
 
-float Generic_Dist::GetNumber(double time){
+float GenericDist::GetNumber(double time){
 	if(time<0.0) //bogus check to keep compiler quiet
 		return(0.0);
 	else return(GetNumber());
@@ -155,7 +155,7 @@ AttDist::AttDist()
 	return;
 }
 
-AttDist::AttDist(Generic_Dist * r, Generic_Dist* p, Generic_Dist* y)
+AttDist::AttDist(GenericDist * r, GenericDist* p, GenericDist* y)
 {
 	roll=r;
 	pitch=p;
