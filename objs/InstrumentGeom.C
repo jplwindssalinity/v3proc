@@ -181,7 +181,7 @@ FindSlice(
 	//------------------------------------------------------//
 
 	// just solve the quadratic for the desired gain
-	float target_gain = gain - 3.0;
+	float target_gain = gain / pow(10.0, 0.3);
 	float q = sqrt(c_f1[1]*c_f1[1] - 4.0 * c_f1[2] * (c_f1[0] - target_gain));
 	float twoa = 2.0 * c_f1[2];
 	float s1 = (-c_f1[1] + q) / twoa;
