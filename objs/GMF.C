@@ -4005,9 +4005,9 @@ GMF::BuildDirectionRanges(
        }
      }
      for(int c=0;c<num;c++) wvc->directionRanges.Append(&range[c]);
-     delete dir_include;
-     delete left_idx;
-     delete right_idx;
+     delete[] dir_include;
+     delete[] left_idx;
+     delete[] right_idx;
      return(1);
 } 
 
