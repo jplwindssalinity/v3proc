@@ -373,10 +373,10 @@ main(
                 // subtract an estimate of the centering offset
                 // uses an estimate of the round trip time as
                 // the previous pulses round trip time
-                qscat.sas.antenna.SetAzimuthAngle(cds_azimuth);
+                qscat.sas.antenna.SetEncoderAzimuthAngle(cds_azimuth);
                 Antenna* antenna = &(qscat.sas.antenna);
                 CoordinateSwitch antenna_frame_to_gc =
-                    AntennaFrameToGC(orbit_state, attitude, antenna);
+                    AntennaFrameToGC(orbit_state, attitude, antenna, azimuth);
                 double look, az;
                 if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
                     &spacecraft, beam, antenna->spinRate, &look, &az))
@@ -423,7 +423,7 @@ main(
                 // set the antenna azimuth //
                 //-------------------------//
 
-                qscat.sas.antenna.SetAzimuthAngle(azimuth);
+                qscat.sas.antenna.SetEncoderAzimuthAngle(azimuth);
 
                 //-----------------------------------------------------//
                 // determine the encoder value to use in the algorithm //
@@ -450,7 +450,7 @@ main(
 				//-------------------//
 
 				antenna_frame_to_gc = AntennaFrameToGC(orbit_state, attitude,
-                    antenna);
+                    antenna, qscat.sas.antenna.txCenterAzimuthAngle);
 
 				if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
                     &spacecraft, beam, antenna->spinRate, &look, &azimuth))

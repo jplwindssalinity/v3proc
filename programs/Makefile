@@ -44,11 +44,10 @@ PROGRAMS = \
 	memfilter \
 	fake_vap \
 	l1b_ascii \
-        l1b_to_slicebal \
+	l1b_to_slicebal \
 	l1b_outlines \
 	l1b_to_kprtable \
 	plot_solution_curves \
-	sim_accurate \
 	make_kfactor \
 	make_kpmfield \
 	windfield_to_vctr \
@@ -76,10 +75,11 @@ PROGRAMS = \
 	l2a_to_ascii \
 	reformat_pattern \
 	test_pattern \
-	get_X_scan \
-	get_DopRan_scan \
 	est_freq_offset \
-	fix_dtc
+	fix_dtc \
+	get_DopRan_scan \
+	get_X_scan \
+	sim_accurate
 #	generate_kfactor
 
 HUDD_PROGRAMS = \

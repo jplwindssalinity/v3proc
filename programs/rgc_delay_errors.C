@@ -342,6 +342,8 @@ main(
 					// process QSCAT stuff
 					qscat.cds.SetTime(qscat_event.time);
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    qscat.SetOtherAzimuths(&spacecraft);
+
 					qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 
 					//-------------------------//
@@ -359,12 +361,8 @@ main(
 					orbit_state = &(spacecraft.orbitState);
 					attitude = &(spacecraft.attitude);
 
-                    // center on the transmit pulse
-                    qscat.sas.antenna.TimeRotation(qscat.ses.txPulseWidth /
-                        2.0);
-
 					antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-						attitude, antenna);
+						attitude, antenna, antenna->txCenterAzimuthAngle);
 
 					double look, azim;
                     beam = qscat.GetCurrentBeam();
