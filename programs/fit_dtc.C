@@ -99,7 +99,8 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -fhi ]", "<raw_dtc_file>", "<dtc_base>", 0 };
+const char* usage_array[] = { "[ -fi ]", "[ -h terms ]", "<raw_dtc_file>",
+    "<dtc_base>", 0 };
 
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
@@ -150,7 +151,7 @@ main(
         }
     }
 
-    if (argc < optind + 2)
+    if (argc != optind + 2)
         usage(command, usage_array, 1);
 
     const char* raw_dtc_file = argv[optind++];

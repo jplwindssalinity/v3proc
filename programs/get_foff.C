@@ -489,6 +489,10 @@ main(
                     if (orbit_step != target_orbit_step)
                         continue;
 
+                    // I must track down how this could happen!
+                    if (echo_info.idealEncoder[spot_idx] >= ENCODER_N)
+                        continue;
+
                     double azimuth = two_pi *
                         (double)echo_info.idealEncoder[spot_idx] /
                         (double)ENCODER_N;
