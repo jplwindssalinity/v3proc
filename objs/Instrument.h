@@ -39,8 +39,8 @@ public:
 	// construction //
 	//--------------//
 
-	InstrumentEvent::InstrumentEvent();
-	InstrumentEvent::~InstrumentEvent();
+	InstrumentEvent();
+	InstrumentEvent();
 
 	//-----------//
 	// variables //
