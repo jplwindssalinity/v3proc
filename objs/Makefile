@@ -17,11 +17,13 @@ OBJS = \
 	Beam.o \
 	BeamSim.o \
 	ConfigList.o \
+	ConfigSim.o \
 	CoordinateSwitch.o \
 	GMF.o \
 	Instrument.o \
 	InstrumentSim.o \
 	Interpolate.o \
+	L0.o \
 	LookGeom.o \
 	Matrix3.o \
 	Misc.o \
@@ -74,6 +76,7 @@ AntennaSim.o:	AntennaSim.C AntennaSim.h Constants.h
 Beam.o:			Beam.C Beam.h
 BeamSim.o:		BeamSim.C BeamSim.h
 ConfigList.o:	ConfigList.C ConfigList.h List.h
+ConfigSim.o:	ConfigSim.C ConfigSim.h InstrumentSim.h OrbitSim.h
 CoordinateSwitch.o:	CoordinateSwitch.C CoordinateSwitch.h Matrix3.h \
 			Constants.h
 GMF.o:			GMF.C GMF.h Interpolate.h
@@ -83,6 +86,7 @@ InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
 				Instrument.h AntennaSim.h OrbitSim.h List.h Antenna.h \
 				Orbit.h Beam.h Constants.h Matrix3.h
 Interpolate.o:	Interpolate.C Interpolate.h
+L0.o:			L0.C L0.h
 List.o:			List.C List.h
 LookGeom.o:		LookGeom.C LookGeom.h CoordinateSwitch.h \
 			Matrix3.h Constants.h
