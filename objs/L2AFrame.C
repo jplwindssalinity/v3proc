@@ -113,7 +113,6 @@ L17Frame::Write(
         fwrite((void *)&ati, sizeof(int), 1, fp) != 1 ||
         fwrite((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
 		measList.Write(fp) != 1)
-
     {
         return(0);
 	}
