@@ -10,7 +10,7 @@
 // SYNOPSIS
 //		l2b_metrics [ -c config_file ] [ -l l2b_file ]
 //			[ -t truth_type ] [ -f truth_file ] [ -s low:high ]
-//			[ -o output_base ]
+//			[ -o output_base ] [ -w within ]
 //
 // DESCRIPTION
 //		Generates output files containing wind retrieval metrics
@@ -24,6 +24,7 @@
 //		[ -f truth_file ]	This is the truth file.
 //		[ -s low:high ]		The range of wind speeds.
 //		[ -o output_base ]	The base name to use for output files.
+//		[ -w within ]		The angle to use for within.
 //
 // OPERANDS
 //		None.
@@ -80,10 +81,12 @@ template class List<WindVectorPlus>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING			"c:l:t:f:s:o:"
-#define ARRAY_SIZE			1024
-#define DEFAULT_LOW_SPEED	0.0
-#define DEFAULT_HIGH_SPEED	30.0
+#define OPTSTRING				"c:l:t:f:s:o:w:"
+#define ARRAY_SIZE				1024
+
+#define DEFAULT_LOW_SPEED		0.0
+#define DEFAULT_HIGH_SPEED		30.0
+#define DEFAULT_WITHIN_ANGLE	45.0
 
 //--------//
 // MACROS //
@@ -115,7 +118,7 @@ int rad_to_deg();
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
-	"[ -o output_base ]", 0 };
+	"[ -o output_base ]", "[ -w within ]", 0 };
 
 // not always evil...
 float*			ctd_array = NULL;
@@ -146,6 +149,7 @@ main(
 	char* truth_file = NULL;
 	float low_speed = DEFAULT_LOW_SPEED;
 	float high_speed = DEFAULT_HIGH_SPEED;
+	float within_angle = DEFAULT_WITHIN_ANGLE;
 	output_base = NULL;
 
 	//------------------------//
@@ -190,6 +194,9 @@ main(
 			break;
 		case 'o':
 			output_base = optarg;
+			break;
+		case 'w':
+			within_angle = atof(optarg);
 			break;
 		case '?':
 			usage(command, usage_array, 1);
@@ -353,6 +360,20 @@ main(
 	}
 	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
 	plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
+
+	//----------------//
+	// within vs. ctd //
+	//----------------//
+
+	if (! swath->WithinVsCti(&truth, value_array, count_array, low_speed,
+		high_speed, within_angle * dtr))
+	{
+		fprintf(stderr, "%s: error calculating within\n", command);
+		exit(1);
+	}
+	sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
+		low_speed, high_speed);
+	plot_thing("within", title, "Cross Track Distance (km)", "Within");
 
 	//=========//
 	// NEAREST //
