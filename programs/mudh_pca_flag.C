@@ -8,8 +8,9 @@
 //    mudh_pca_flag
 //
 // SYNOPSIS
-//    mudh_pca_flag <pca_file> <pcatab_file> <threshold> <mudh_file>
-//        <enof_file> <tb_file> <output_flag_file>
+//    mudh_pca_flag <pca_file> <pcatab_file> <inner_threshold>
+//        <outer_threshold> <mudh_file> <enof_file> <tb_file>
+//        <output_flag_file>
 //
 // DESCRIPTION
 //    Performs MUDH PCA classification and writes out two arrays:
@@ -29,7 +30,8 @@
 // OPERANDS
 //    <pca_file>          The PCA file for PC coefficients.
 //    <pcatab_file>       The PCA classification table.
-//    <threshold>         The threshold for rain determination.
+//    <inner_threshold>   The threshold for rain (inner swath).
+//    <outer_threshold>   The threshold for rain (outer swath).
 //    <mudh_file>         The input MUDH file.
 //    <enof_file>         The input ENOF file.
 //    <tb_file>           The input Tb file.
@@ -37,7 +39,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % mudh_pca_flag pcs.021100 zzz.pcatab 0.015 1550.mudh
+//      % mudh_pca_flag pcs.021100 zzz.pcatab 0.13 0.12 1550.mudh
 //          1550.enof 1550.tb 1550.flag
 //
 // ENVIRONMENT
@@ -107,8 +109,9 @@ const double a5 = 0.2895;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<pca_file>", "<pcatab_file>", "<threshold>",
-    "<mudh_file>", "<enof_file>", "<tb_file>", "<output_flag_file>", 0 };
+const char* usage_array[] = { "<pca_file>", "<pcatab_file>",
+    "<inner_threshold>", "<outer_threshold>", "<mudh_file>", "<enof_file>",
+    "<tb_file>", "<output_flag_file>", 0 };
 
 static double  rain_tab[2][DIM][DIM][DIM][DIM];
 static double  clear_tab[2][DIM][DIM][DIM][DIM];
@@ -162,12 +165,14 @@ main(
         }
     }
 
-    if (argc < optind + 7)
+    if (argc < optind + 8)
         usage(command, usage_array, 1);
 
+    float threshold[2];
     const char* pca_file = argv[optind++];
     const char* pcatab_file = argv[optind++];
-    float threshold = atof(argv[optind++]);
+    threshold[0] = atof(argv[optind++]);
+    threshold[1] = atof(argv[optind++]);
     const char* mudh_file = argv[optind++];
     const char* enof_file = argv[optind++];
     const char* tb_file = argv[optind++];
@@ -538,7 +543,7 @@ main(
             {
                 // do nothing, already set to unknown
             }
-            else if (prob_value <= threshold)
+            else if (prob_value <= threshold[swath_idx])
             {
                 if (swath_idx == 0)
                     flag_tab[ati][cti] = INNER_CLEAR;

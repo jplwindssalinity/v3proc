@@ -76,7 +76,7 @@ static const char rcs_id[] =
 
 #define DEFAULT_FLAG_DIR          "/export/svt11/hudd/pca"
 #define DEFAULT_RAIN_DIR          "/export/svt11/hudd/ssmi"
-#define DEFAULT_ECMWF_DIR         "/seapac/disk12/RAIN/ecmwf_coll_wind"
+#define DEFAULT_ECMWF_DIR         "/seapac/disk11/ECMWF"
 
 #define DEFAULT_IRR_THRESHOLD     2.0
 #define DEFAULT_COLLOCATION_TIME  30
