@@ -51,6 +51,7 @@ public:
     float  crossTrackResolution;
     float  alongTrackResolution;
     int    zeroIndex;
+    float  inclination;
 };
 
 //======================================================================
@@ -157,7 +158,8 @@ protected:
     int   _OpenHdfDataSets(TlmHdfFile* tlmHdfFile);
     int   _OpenOneHdfDataSet(TlmHdfFile* tlmHdfFile, SourceIdE source,
               ParamIdE param);
-    int   _OpenOneHdfDataSetCorrectly(TlmHdfFile* tlmHdfFile, const char* sdsName);
+    int   _OpenOneHdfDataSetCorrectly(TlmHdfFile* tlmHdfFile,
+              const char* sdsName);
     void  _CloseHdfDataSets();
 
     int32  _lonSdsId;

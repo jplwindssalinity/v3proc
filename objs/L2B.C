@@ -7,6 +7,7 @@ static const char rcs_id_l2b_c[] =
     "@(#) $Id$";
 
 #include <memory.h>
+#include <string.h>
 #include "L2B.h"
 #include "TlmHdfFile.h"
 #include "NoTimeTlmFile.h"
@@ -22,7 +23,8 @@ static const char rcs_id_l2b_c[] =
 //===========//
 
 L2BHeader::L2BHeader()
-:   crossTrackResolution(0.0), alongTrackResolution(0.0), zeroIndex(0)
+:   crossTrackResolution(0.0), alongTrackResolution(0.0), zeroIndex(0),
+    inclination(0.0)
 {
     return;
 }
@@ -74,11 +76,11 @@ int
 L2BHeader::WriteAscii(
     FILE*  fp)
 {
-        fprintf(fp, "############################################\n");
-        fprintf(fp, "##                L2B DataFile            ##\n");
-        fprintf(fp, "############################################\n");
-        fprintf(fp,"\n\nCrossTrackRes %g AlongTrackRes %g ZeroIndex %d\n\n",
-        crossTrackResolution,alongTrackResolution,zeroIndex);
+    fprintf(fp, "############################################\n");
+    fprintf(fp, "##                L2B DataFile            ##\n");
+    fprintf(fp, "############################################\n");
+    fprintf(fp,"\n\nCrossTrackRes %g AlongTrackRes %g ZeroIndex %d\n\n",
+    crossTrackResolution,alongTrackResolution,zeroIndex);
     return(1);
 }
 
@@ -199,6 +201,22 @@ L2B::ReadHDF(
     if (rowSdsName == 0)
         return(0);
 
+    // determine the inclination from the header (this is such a hack!)
+    const char* filename = tlmHdfFile->GetFileName();
+    int32 sd_id = SDstart(filename, DFACC_RDONLY);
+    int32 attr_index = SDfindattr(sd_id, "orbit_inclination");
+    char attr_name[512];
+    int32 adata_type, count;
+    SDattrinfo(sd_id, attr_index, attr_name, &adata_type, &count);
+    char inc[32];
+    SDreadattr(sd_id, attr_index, inc);
+    float inclination;
+    char* ptr = strchr(inc, (int)'\n');
+    ptr = strchr(ptr+1, (int)'\n');
+    sscanf(ptr, " %f", &inclination);
+    header.inclination = inclination;
+
+    // continue on with whatever...
     int32 dataType = 0;
     int32 dataStartIndex = 0;
     int32 dataLength = 0;
@@ -209,7 +227,7 @@ L2B::ReadHDF(
         return(0);
 
     // open all needed datasets
-    if ( ! _OpenHdfDataSets(tlmHdfFile))
+    if (! _OpenHdfDataSets(tlmHdfFile))
         return(0);
 
     //--------------//
@@ -246,7 +264,8 @@ L2B::ReadHDF(
     float*          modelDirArray = (float *) new float[cross_track_bins];
     char*           tmpArray = new char[cross_track_bins];
     int*            numArray = (int *) new int[cross_track_bins];
-    unsigned short int*  qualArray = (unsigned short int *) new int[cross_track_bins];
+    unsigned short int*  qualArray =
+                      (unsigned short int *) new int[cross_track_bins];
     int32           sdsIds[1];
 
     for (int32 ati = 0; ati < along_track_bins; ati++)
@@ -354,8 +373,8 @@ L2B::ReadHDF(
         for (int cti = 0; cti < cross_track_bins; cti++)
         {
             WVC* wvc = new WVC();
-	    wvc->rainProb=rainArray[cti];
-	    wvc->rainFlagBits=char((0x7000 & qualArray[cti])>>12);
+            wvc->rainProb=rainArray[cti];
+            wvc->rainFlagBits=char((0x7000 & qualArray[cti])>>12);
             wvc->lonLat.longitude = lonArray[cti] * dtr;
             wvc->lonLat.latitude = latArray[cti] * dtr;
             wvc->nudgeWV = new WindVectorPlus();
@@ -670,14 +689,16 @@ L2B::_OpenHdfDataSets(
     {
         return(0);
     }
-    if ((_mpRainProbSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile, "mp_rain_probability"))==0)
+    if ((_mpRainProbSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile,
+        "mp_rain_probability")) == 0)
     {
-      return(0);
+        return(0);
     }
 
-    if ((_qualSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile, "wvc_quality_flag"))==0)
+    if ((_qualSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile,
+        "wvc_quality_flag")) == 0)
     {
-      return(0);
+        return(0);
     }
     return(1);
 }
@@ -708,14 +729,14 @@ L2B::_OpenOneHdfDataSet(
         return(sdsId);
 }
 
-//-------------------------//
-// L2B::ReadHDFDIRTH       //
-//-------------------------//
+//-------------------//
+// L2B::ReadHDFDIRTH //
+//-------------------//
 
 int
 L2B::ReadHDFDIRTH(
-    const char* filename)
-{ 
+    const char*  filename)
+{
     //--------------------------------//
     // convert filename to TlmHdfFile //
     //--------------------------------//
@@ -728,61 +749,74 @@ L2B::ReadHDFDIRTH(
     // Open Data Sets
     int32 dirId;
     int32 spdId;
-    if ((dirId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file, "wind_dir_selection"))==0)
+    if ((dirId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file,
+        "wind_dir_selection")) == 0)
     {
-      return(0);
-    }    
-    if ((spdId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file, "wind_speed_selection"))==0)
-    {
-      return(0);
+        return(0);
     }
-    
+    if ((spdId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file,
+        "wind_speed_selection")) == 0)
+    {
+        return(0);
+    }
+
     int along_track_bins=frame.swath.GetAlongTrackBins();
     int cross_track_bins=frame.swath.GetCrossTrackBins();
 
-    
     // create arrays
-    float*          speed = new float[cross_track_bins];
-    float*          dir = new float[cross_track_bins];
+    float* speed = new float[cross_track_bins];
+    float* dir = new float[cross_track_bins];
 
-   for(int32 i=0;i<along_track_bins;i++){
+    for (int32 i = 0; i < along_track_bins; i++)
+    {
         if (ExtractData2D_76_int2_float(&l2b_hdf_file, &spdId, i, 1, 1,
             speed) == 0)
-	  return(0);
+        {
+            return(0);
+        }
         if (ExtractData2D_76_uint2_float(&l2b_hdf_file, &dirId, i, 1, 1,
             dir) == 0)
-	  return(0);
-     for(int j=0;j<cross_track_bins;j++){
-       
-       WVC* wvc= frame.swath.GetWVC(j,i);
-       if(!wvc) continue;
-       if(!wvc->selected) continue;
-       wvc->selected->spd=speed[j];
-       float edir = (450.0 - dir[j])*dtr;
-       while (edir > two_pi)
-	 edir -= two_pi;
-       while (edir < 0)
-	 edir += two_pi;
-       wvc->selected->dir=edir;
-     }
-   }
-   delete [] speed;
-   delete [] dir;
-   (void)SDendaccess(dirId);
-   (void)SDendaccess(spdId);
-   return(1);
+        {
+            return(0);
+        }
+        for (int j = 0; j < cross_track_bins; j++)
+        {
+            WVC* wvc= frame.swath.GetWVC(j, i);
+            if (! wvc)
+                continue;
+            if (! wvc->selected)
+                continue;
+            wvc->selected->spd = speed[j];
+            float edir = (450.0 - dir[j]) * dtr;
+            while (edir > two_pi)
+                edir -= two_pi;
+            while (edir < 0)
+                edir += two_pi;
+            wvc->selected->dir = edir;
+        }
+    }
+    delete [] speed;
+    delete [] dir;
+    (void)SDendaccess(dirId);
+    (void)SDendaccess(spdId);
+    return(1);
 }
+
+//----------------------------------//
+// L2B::_OpenOneHdfDataSetCorrectly //
+//----------------------------------//
 
 int
 L2B::_OpenOneHdfDataSetCorrectly(
     TlmHdfFile*  tlmHdfFile,
-    const char* sdsName){
+    const char*  sdsName)
+{
     int32 dataType = 0;
     int32 dataStartIndex = 0;
     int32 dataLength = 0;
     int32 numDimensions = 0;
-    int32 sdsId = tlmHdfFile->SelectDataset(sdsName, dataType,
-              dataStartIndex, dataLength, numDimensions);
+    int32 sdsId = tlmHdfFile->SelectDataset(sdsName, dataType, dataStartIndex,
+        dataLength, numDimensions);
     if (sdsId == HDF_FAIL)
         return(0);
     else
@@ -809,7 +843,7 @@ L2B::_CloseHdfDataSets(void)
     (void)SDendaccess(_numOutAftSdsId); _numOutAftSdsId = HDF_FAIL;
     (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
     (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
-    (void)SDendaccess(_mpRainProbSdsId); _mpRainProbSdsId = HDF_FAIL;    
-    (void)SDendaccess(_qualSdsId); _qualSdsId = HDF_FAIL;    
+    (void)SDendaccess(_mpRainProbSdsId); _mpRainProbSdsId = HDF_FAIL;
+    (void)SDendaccess(_qualSdsId); _qualSdsId = HDF_FAIL;
     return;
 }
