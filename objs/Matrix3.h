@@ -113,13 +113,14 @@ Vector3 operator-();
 Vector3 operator*(Vector3 m2); // element by element multiply
 Vector3 operator*(double s);   // multiply by scalar
 Vector3 operator&(Vector3 m2); // cross product
+double operator%(Vector3 m2); // dot product
 
 //
 // Other access methods
 //
 
 void Scale(double r);		// set magnitude
-double Vector3::Magnitude();	// get vector magnitude
+double Magnitude();		// get vector magnitude
 double get(int i);		// extract one element
 void Show(char *name = NULL);
 
@@ -180,6 +181,7 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 // Other access methods
 //
 
+double surface_distance(EarthPosition r);
 // lat,lon access
 Vector3 get_alt_lat_lon(earthposition_typeE etype);
 //double get_alt();	// extract the height above the earth's surface

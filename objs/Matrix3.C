@@ -486,6 +486,18 @@ return(result);
 }
 
 //
+// Dot product of two vectors.
+//
+
+double Vector3::operator%(Vector3 v2)
+
+{
+
+return(_v[0]*v2._v[0] + _v[1]*v2._v[1] + _v[2]*v2._v[2]);
+
+}
+
+//
 // Scale the vector to have the specifed magnitude.
 //
 
@@ -755,6 +767,26 @@ _v[2] = vec.get(2);
 //
 // Other access methods
 //
+
+//
+// Compute the distance along the surface of the earth between the position
+// specified in the calling object and the position specified by the argument.
+// This function assumes that both positions are actually on the surface
+// (ie., altitude = 0), but does not check.  If one is not on the surface,
+// then the result is nonsense.
+// Right now, this routine uses a simple spherical approximation of the earth.
+//
+
+double EarthPosition::surface_distance(EarthPosition r)
+
+{
+
+double mag = this->Magnitude();
+//double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+double theta = acos((*this % r) / (mag * r.Magnitude()));
+return(mag * theta);
+
+}
 
 //
 // Convert the rectangular vector stored in this object into the
