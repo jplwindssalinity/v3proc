@@ -736,8 +736,8 @@ FindPeakGainForSlice(
 // FindSliceCorners //
 //------------------//
 
-#define PEAK_ANGLE_OFFSET		0.00875		// about 0.5 degree
-#define LOCAL_ANGLE_OFFSET		0.001		// about 0.06 degree
+#define PEAK_ANGLE_OFFSET		0.00875		// about 0.50 degree
+#define LOCAL_ANGLE_OFFSET		0.001		// about 0.057 degree
 
 int
 FindSliceCorners(
@@ -776,15 +776,18 @@ FindSliceCorners(
 	// fit a quadratic //
 	//-----------------//
 
+	double peak_look_step = PEAK_ANGLE_OFFSET * delta_look;
+	double peak_azim_step = PEAK_ANGLE_OFFSET * delta_azim;
+
 	double look_array[3];
-	look_array[0] = look - PEAK_ANGLE_OFFSET * delta_look;
+	look_array[0] = look - peak_look_step;
 	look_array[1] = look;
-	look_array[2] = look + PEAK_ANGLE_OFFSET * delta_look;
+	look_array[2] = look + peak_look_step;
 
 	double azim_array[3];
-	azim_array[0] = azim - PEAK_ANGLE_OFFSET * delta_azim;
+	azim_array[0] = azim - peak_azim_step;
 	azim_array[1] = azim;
-	azim_array[2] = azim + PEAK_ANGLE_OFFSET * delta_azim;
+	azim_array[2] = azim + peak_azim_step;
 
 	double s[3], c[3];
 	if (! QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
@@ -815,6 +818,9 @@ FindSliceCorners(
 	double q = sqrt(qr);
 	double twoa = 2.0 * c[2];
 
+	double local_look_step = LOCAL_ANGLE_OFFSET * delta_look;
+	double local_azim_step = LOCAL_ANGLE_OFFSET * delta_azim;
+
 	static const double coef[2] = { -1.0, 1.0 };
 	for (int i = 0; i < 2; i++)
 	{
@@ -826,19 +832,64 @@ FindSliceCorners(
 		double local_look = look + target_s * delta_look;
 		double local_azim = azim + target_s * delta_azim;
 
-		//-----------------------//
-		// fit a local quadratic //
-		//-----------------------//
+		//-------------------//
+		// initialize points //
+		//-------------------//
 
 		double local_look_array[3];
-		local_look_array[0] = local_look - LOCAL_ANGLE_OFFSET * delta_look;
+		local_look_array[0] = local_look - local_look_step;
 		local_look_array[1] = local_look;
-		local_look_array[2] = local_look + LOCAL_ANGLE_OFFSET * delta_look;
+		local_look_array[2] = local_look + local_look_step;
 
 		double local_azim_array[3];
-		local_azim_array[0] = local_azim - LOCAL_ANGLE_OFFSET * delta_azim;
+		local_azim_array[0] = local_azim - local_azim_step;
 		local_azim_array[1] = local_azim;
-		local_azim_array[2] = local_azim + LOCAL_ANGLE_OFFSET * delta_azim;
+		local_azim_array[2] = local_azim + local_azim_step;
+
+		float local_gain_array[3];
+		for (int j = 0; j < 3; j++)
+		{
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft,
+				instrument, local_look_array[j], local_azim_array[j],
+				&(local_gain_array[j])))
+			{
+				return(0);
+			}
+		}
+
+		//-------------//
+		// step search //
+		//-------------//
+
+		while (target_gain > local_gain_array[0] &&
+				local_gain_array[0] > local_gain_array[2])
+		{
+			for (int j = 2; j > 0; j--)
+			{
+				local_look_array[j] = local_look_array[j-1];
+				local_azim_array[j] = local_azim_array[j-1];
+				local_gain_array[j] = local_gain_array[j-1];
+			}
+			local_look_array[0] -= local_look_step;
+			local_azim_array[0] -= local_azim_step;
+		}
+
+		while (target_gain > local_gain_array[2] &&
+				local_gain_array[2] > local_gain_array[0])
+		{
+			for (int j = 0; j < 2; j++)
+			{
+				local_look_array[j] = local_look_array[j+1];
+				local_azim_array[j] = local_azim_array[j+1];
+				local_gain_array[j] = local_gain_array[j+1];
+			}
+			local_look_array[2] += local_look_step;
+			local_azim_array[2] += local_azim_step;
+		}
+
+		//-----------------//
+		// fit a quadratic //
+		//-----------------//
 
 		double local_s[3], local_c[3];
 		if (! QuadFit(antenna_frame_to_gc, spacecraft, instrument,
@@ -939,29 +990,6 @@ QuadFit(
 	if (! polcoe(s, dgain, 2, c))
 		return(0);
 
-/*
-static int count = 0;
-count++;
-if (count >= 1696)
-{
-dl = (look[2] - look[0]);
-da = (azim[2] - azim[0]);
-double sr = sqrt(dl*dl + da*da);
-dl /= sr;
-da /= sr;
-for (double xs = -0.03; xs < 0.03; xs += 0.001)
-{
-double xlook = look[1] + xs * dl;
-double xazim = azim[1] + xs * da;
-float xgain;
-PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-	xlook, xazim, &xgain);
-printf("%g %g %g\n", xs, xgain, ((c[2] * xs) + c[1]) * xs + c[0]);
-}
-printf("&\n");
-}
-*/
- 
 	return(1);
 }
 
