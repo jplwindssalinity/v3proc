@@ -245,18 +245,18 @@ OrbitSim::GetOrbitState(
 	double slongdot = _H / (rnew * rnew * coslat * coslat);
 
 	// compute ascending lon longitude at start of current rev
-	double ff = -_littleOmega;
-	double E_node = atan2(_eta * sin(ff), cos(ff) + _e);
-	double amean_node = E_node - _e * sin(E_node);
-	double dt = (amean_node - _l) / _ameandot;
+//	double ff = -_littleOmega;
+//	double E_node = atan2(_eta * sin(ff), cos(ff) + _e);
+//	double amean_node = E_node - _e * sin(E_node);
+//	double dt = (amean_node - _l) / _ameandot;
 
 	// get GMT of lat node crossing, the compute long_asc_node
-	double pnode = two_pi / (_ameandot + _periasdot);
-	int node_num = (int)((time - dt) / pnode) * pnode;
+//	double pnode = two_pi / (_ameandot + _periasdot);
+//	int node_num = (int)((time - dt) / pnode) * pnode;
 
 	// long_asc_node
-	double lnode = _bigOmega - (_ascnodot + wa) * (node_num + dt);
-	lnode = fmod(lnode + two_pi, two_pi);
+//	double lnode = _bigOmega - (_ascnodot + wa) * (node_num + dt);
+//	lnode = fmod(lnode + two_pi, two_pi);
 
 	// calculate s/c location and velocity vectors
 	double c1 = cos(satlat);
