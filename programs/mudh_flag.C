@@ -684,6 +684,12 @@ main(
             float class_value = classtab[inbd][ispd][idir][imle];
             index_tab[ati][cti] = class_value;
 
+            if (class_value < -2.5)
+            {
+                // -3 is used as a flag
+                flag_tab[ati][cti] = 2;
+            }
+
             // threshold
             if (class_value > threshold)
                 flag_tab[ati][cti] = 1;
