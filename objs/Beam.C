@@ -274,9 +274,9 @@ Beam::ReadBeamPattern(char* filename)
     return(1);
 }
 
-//-----------------------//
+//------------------------//
 // Beam::WriteBeamPattern //
-//-----------------------//
+//------------------------//
 
 int
 Beam::WriteBeamPattern(char* filename)
@@ -426,42 +426,39 @@ int
 Beam::GetPowerGainProduct(
 	double	look_angle,
 	double	azimuth_angle,
-	double	range,
+	double	round_trip_time,
 	double	azimuth_rate,
-	float	*gainproduct)
+	double	*gain_product)
 {
 	float xmit_gain;
 	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
 		return(0);
-	double flight_time = 2.0*range/speed_light;
-	azimuth_angle += azimuth_rate*flight_time;
+	azimuth_angle += azimuth_rate * round_trip_time;
 	float recv_gain;
 	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
 		return(0);
-	*gainproduct = xmit_gain * recv_gain;
+	*gain_product = (double)(xmit_gain * recv_gain);
 	return(1);
 }
 
 //
-// Same as above, but returns a double
+// Same as above, but returns a float
 //
 
 int
 Beam::GetPowerGainProduct(
 	double	look_angle,
 	double	azimuth_angle,
-	double	range,
+	double	round_trip_time,
 	double	azimuth_rate,
-	double	*gainproduct)
+	float	*gain_product)
 {
-	float xmit_gain;
-	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
+	double tmp;
+	if (! GetPowerGainProduct(look_angle, azimuth_angle, round_trip_time,
+		azimuth_rate, &tmp))
+	{
 		return(0);
-	double flight_time = 2.0*range/speed_light;
-	azimuth_angle += azimuth_rate*flight_time;
-	float recv_gain;
-	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
-		return(0);
-	*gainproduct = (double)(xmit_gain * recv_gain);
+	}
+	*gain_product = (float)tmp;
 	return(1);
 }

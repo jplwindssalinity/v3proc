@@ -70,6 +70,7 @@ public:
 	Beam		beam[MAX_NUMBER_OF_BEAMS];
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle
+	double		spinRate;		// radians per second
 
 	int			currentBeamIdx;	// index of current beam
 

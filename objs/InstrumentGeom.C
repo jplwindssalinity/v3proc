@@ -142,7 +142,8 @@ FindSlice(
 		&azimuth_1, FREQ_GRADIENT_ANGLE, &angle_f1);
 	SetPoints(look_1, azimuth_1, QUADRATIC_ANGLE, angle_f1, look_array,
 		azimuth_array);
-	GainSlice(instrument, look_array, azimuth_array, s, c_f1);
+	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
+		azimuth_array, s, c_f1);
 	s_peak = -c_f1[1] / (2.0 * c_f1[2]);
 	look_1 = look_array[1] + s_peak * sin(angle_f1);
 	azimuth_1 = azimuth_array[1] + s_peak * cos(angle_f1);
@@ -161,7 +162,8 @@ FindSlice(
 		&azimuth_2, FREQ_GRADIENT_ANGLE, &angle_f2);
 	SetPoints(look_2, azimuth_2, QUADRATIC_ANGLE, angle_f2, look_array,
 		azimuth_array);
-	GainSlice(instrument, look_array, azimuth_array, s, c_f2);
+	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
+		azimuth_array, s, c_f2);
 	s_peak = -c_f2[1] / (2.0 * c_f2[2]);
 	look_2 = look_array[1] + s_peak * sin(angle_f2);
 	azimuth_2 = azimuth_array[1] + s_peak * cos(angle_f2);
@@ -175,7 +177,8 @@ FindSlice(
 	look_array[2] = look_2;
 	azimuth_array[2] = azimuth_2;
 	double c[3];
-	GainSlice(instrument, look_array, azimuth_array, s, c);
+	GainSlice(antenna_frame_to_gc, spacecraft, instrument, look_array,
+		azimuth_array, s, c);
 	s_peak = -c[1] / (2.0 * c[2]);
 
 	float gain;
@@ -447,6 +450,30 @@ FreqGradient(
 	return(1);
 }
 
+//-------------------//
+// RangeAndRoundTrip //
+//-------------------//
+// Calculates the range and round trip time
+
+int
+RangeAndRoundTrip(
+	Vector3				vector,
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	TargetInfoPackage*	tip)
+{
+	// dereference
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+
+	// Compute earth intercept point and range.
+	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
+	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	tip->slantRange = (sc_orbit_state->rsat - tip->rTarget).Magnitude();
+	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
+
+	return(1);
+}
+
 //-----------------//
 // DopplerAndDelay //
 //-----------------//
@@ -625,6 +652,8 @@ SetPoints(
 
 int
 GainSlice(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
 	Instrument*			instrument,
 	float				look[3],
 	float				azim[3],
@@ -651,20 +680,34 @@ GainSlice(
 	da = (azim[2] - azim[1]);
 	s[2] = sqrt(dl*dl + da*da);
 
-	//---------------------------------//
-	// get gain for those three points //
-	//---------------------------------//
+	//-------------------//
+	// for each point... //
+	//-------------------//
 
+	TargetInfoPackage tip;
+	Vector3 vector;
 	double gain[3];
 	int idx = instrument->antenna.currentBeamIdx;
-	if (! instrument->antenna.beam[idx].GetPowerGain(look[0], azim[0],
-			&gain[0]) ||
-		! instrument->antenna.beam[idx].GetPowerGain(look[1], azim[1],
-			&gain[1]) ||
-		! instrument->antenna.beam[idx].GetPowerGain(look[2], azim[2],
-			&gain[2]))
+	for (int i = 0; i < 3; i++)
 	{
-		return(0);
+		vector.SphericalSet(1.0, look[i], azim[i]);
+
+		//---------------------------//
+		// calculate round trip time //
+		//---------------------------//
+
+		RangeAndRoundTrip(vector, antenna_frame_to_gc, spacecraft, &tip);
+
+		//----------------//
+		// calculate gain //
+		//----------------//
+
+		if (! instrument->antenna.beam[idx].GetPowerGainProduct(look[i],
+			azim[i], tip.roundTripTime, instrument->antenna.spinRate,
+			&(gain[i])))
+		{
+			return(0);
+		}
 	}
 
 	//-----------------//

@@ -39,25 +39,11 @@ public:
 	AntennaSim();
 	~AntennaSim();
 
-	//---------------------//
-	// setting and getting //
-	//---------------------//
-
-	int		SetSpinRate(double spin_rate);
-
 	//------------------//
 	// antenna position //
 	//------------------//
 
 	int		UpdatePosition(double time, Antenna* antenna);
-
-protected:
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	double	_spinRate;			// radians per second
 };
 
 #endif

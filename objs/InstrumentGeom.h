@@ -57,6 +57,9 @@ int		FreqGradient(CoordinateSwitch* beam_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float az, float el,
 				float grad_angle, float* df_daz, float* df_del);
 
+int		RangeAndRoundTrip(Vector3 vector, CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, TargetInfoPackage* tip);
+
 int		DopplerAndDelay(Vector3 vector, CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument);
 
@@ -71,8 +74,9 @@ int		IsoFreqAngle(CoordinateSwitch* beam_frame_to_gc,
 int		SetPoints(float az_0, float el_0, float distance, float angle,
 			float az[3], float el[3]);
 
-int		GainSlice(Instrument* instrument, float az[3], float el[3],
-			double s[3], double c[3]);
+int		GainSlice(CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Instrument* instrument, float az[3],
+			float el[3], double s[3], double c[3]);
 
 int		DetailedGainSlice(Instrument* instrument, float az[3], float el[3],
 			double s[3], double c[3]);

@@ -97,12 +97,9 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 #define ANTENNA_PEDESTAL_ROLL_KEYWORD	"ANTENNA_PEDESTAL_ROLL"
 #define ANTENNA_PEDESTAL_PITCH_KEYWORD	"ANTENNA_PEDESTAL_PITCH"
 #define ANTENNA_PEDESTAL_YAW_KEYWORD	"ANTENNA_PEDESTAL_YAW"
-
-int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
-
 #define SPIN_RATE_KEYWORD				"ANTENNA_SPIN_RATE"
 
-int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
+int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
 
 //------//
 // Beam //

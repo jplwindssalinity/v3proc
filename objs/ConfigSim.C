@@ -85,6 +85,7 @@ int
 ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
+/*
 	char* string;
         GenericDist *roll, *pitch, *yaw;
         AttDist* ACEM;
@@ -239,6 +240,7 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	}
         ACEM=new AttDist(roll,pitch,yaw);
         spacecraft_sim->SetAttCntlModel(ACEM);
+*/
 	return(1);
 }
 
@@ -333,13 +335,6 @@ ConfigInstrumentSim(
 	InstrumentSim*	instrument_sim,
 	ConfigList*		config_list)
 {
-	//---------------------------------//
-	// configure the antenna simulator //
-	//---------------------------------//
-
-	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
-		return(0);
-
 	//--------------------------------//
 	// initialize start and end times //
 	//--------------------------------//
@@ -421,6 +416,11 @@ ConfigAntenna(
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
 
+	double spin_rate;
+	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
+		return(0);
+	antenna->spinRate = spin_rate * rpm_to_radps;
+
 	//---------------------//
 	// configure each beam //
 	//---------------------//
@@ -433,27 +433,6 @@ ConfigAntenna(
 			return(0);
 		}
 	}
-
-	return(1);
-}
-
-//------------------//
-// ConfigAntennaSim //
-//------------------//
-
-int
-ConfigAntennaSim(
-	AntennaSim*		antenna_sim,
-	ConfigList*		config_list)
-{
-	//---------------------------------//
-	// configure the antenna simulator //
-	//---------------------------------//
-
-	double spin_rate;
-	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
-		return(0);
-	antenna_sim->SetSpinRate(spin_rate);
 
 	return(1);
 }

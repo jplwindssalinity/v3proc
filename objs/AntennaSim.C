@@ -16,7 +16,6 @@ static const char rcs_id_antennasim_c[] =
 //============//
 
 AntennaSim::AntennaSim()
-:	_spinRate(0.0)
 {
 	return;
 }
@@ -24,19 +23,6 @@ AntennaSim::AntennaSim()
 AntennaSim::~AntennaSim()
 {
 	return;
-}
-
-//-------------------------//
-// AntennaSim::SetSpinRate //
-//-------------------------//
-
-int
-AntennaSim::SetSpinRate(
-	double		spin_rate)
-{
-	// convert to radians per second
-	_spinRate = spin_rate * rpm_to_radps;
-	return(1);
 }
 
 //----------------------------//
@@ -48,7 +34,7 @@ AntennaSim::UpdatePosition(
 	double		time,
 	Antenna*	antenna)
 {
-	double angle = time * _spinRate;
+	double angle = time * antenna->spinRate;
 	angle = fmod(angle, two_pi);
 	antenna->azimuthAngle = angle;
 
