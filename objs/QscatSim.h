@@ -102,6 +102,7 @@ public:
     unsigned long            pulseCount; // cumulative counter
     double                   epochTime;  // used for setting time strings
     char*                    epochTimeString;
+    double                   epochOffset; //epochtimestring, added to epoch time
     double                   startTime;
     QscatSimBeamInfo         beamInfo[NUMBER_OF_QSCAT_BEAMS];
     QscatEvent::QscatEventE  lastEventType;

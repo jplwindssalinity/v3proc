@@ -629,7 +629,7 @@ L1AH::L1AH()
     _sdsInputFileId(0), _sdsOutputFileId(0), _currentRecordIdx(0)
 {
     ETime ref;
-    ref.FromCodeA("2005-01-01");
+    ref.FromCodeA("1993-01-01");
     _referenceTime = ref.GetSec();
     return;
 }
@@ -926,8 +926,9 @@ L1AH::WriteSDSs()
     // frame qual flag
     frame_qual_flag->SetWithUnsignedShort(&(frame.frame_qual_flag));
 
-/*
+    // instrument time
     instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
+/*
 
     // convert km to m
     frame.gcX *= 1000.0;

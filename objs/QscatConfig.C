@@ -18,6 +18,7 @@ static const char rcs_id_qscatconfig_c[] =
 #include "Constants.h"
 #include "ConfigSim.h"
 #include "Interpolate.h"
+#include "ETime.h"
 
 //----------------//
 // ConfigQscatSas //
@@ -616,6 +617,9 @@ ConfigQscatSim(
     if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &(qscat_sim->epochTime)))
         return(0);
     qscat_sim->epochTimeString = config_list->Get(EPOCH_TIME_STRING_KEYWORD);
+    ETime tmp_time;
+    tmp_time.FromCodeA(qscat_sim->epochTimeString);
+    qscat_sim->epochOffset = tmp_time.GetTime();
 
     //----------//
     // land map //
@@ -631,8 +635,10 @@ ConfigQscatSim(
             fprintf(stderr, "Cannot Initialize Land Map\n");
             return(0);
         }
-        config_list->GetFloat(LAND_SIGMA0_INNER_BEAM_KEYWORD,&(qscat_sim->landSigma0[0]));
-        config_list->GetFloat(LAND_SIGMA0_OUTER_BEAM_KEYWORD,&(qscat_sim->landSigma0[1]));
+        config_list->GetFloat(LAND_SIGMA0_INNER_BEAM_KEYWORD,
+            &(qscat_sim->landSigma0[0]));
+        config_list->GetFloat(LAND_SIGMA0_OUTER_BEAM_KEYWORD,
+            &(qscat_sim->landSigma0[1]));
     }
     else
     {

@@ -103,9 +103,10 @@ L1A::WriteDataRec()
     return(Write(buffer, bufferSize));
 }
 
-//--------------------------//
-// L1A::WriteDataRecAscii   //
-//--------------------------//
+//------------------------//
+// L1A::WriteDataRecAscii //
+//------------------------//
+
 int
 L1A::WriteDataRecAscii()
 {
@@ -114,8 +115,12 @@ L1A::WriteDataRecAscii()
   return(1);
 }
 
+//--------------------//
+// L1A::ReadGSDataRec //
+//--------------------//
+
 int
-L1A::ReadGSDataRec(void)
+L1A::ReadGSDataRec()
 {
     if (! Read(gsBuffer, GS_L1A_FRAME_SIZE))
     {
@@ -134,9 +139,9 @@ L1A::ReadGSDataRec(void)
     return(1);
 }
 
-//----------------------------//
-// L1A::WriteGSDataRecAscii   //
-//----------------------------//
+//--------------------------//
+// L1A::WriteGSDataRecAscii //
+//--------------------------//
 
 int
 L1A::WriteGSDataRecAscii()
@@ -147,9 +152,9 @@ L1A::WriteGSDataRecAscii()
 
 }
 
-//-----------------------//
-// L1A::WriteGSDataRec   //
-//-----------------------//
+//---------------------//
+// L1A::WriteGSDataRec //
+//---------------------//
 
 int
 L1A::WriteGSDataRec()
@@ -161,12 +166,12 @@ L1A::WriteGSDataRec()
 
 }
 
-//--------------------//
-// L1A::FillGSFrame   //
-//--------------------//
+//------------------//
+// L1A::FillGSFrame //
+//------------------//
 
 int
-L1A::FillGSFrame(void)
+L1A::FillGSFrame()
 {
     //----------------------------------------------//
     // Transfer data from standard frame to gsFrame //
@@ -296,115 +301,75 @@ L1A::CloseCalPulseFile()
     }
 }
 
-//--------------------//
-// L1A::WriteCalPulse //
-//--------------------//
+//-------------------------//
+// L1A::WriteGSCalPulseRec //
+//-------------------------//
+// totally rewritten by JNH 2001.03.29 (untested too!)
 
 int
 L1A::WriteGSCalPulseRec()
 {
-//    int i=0;  // loop counter
-
     if (_calPulseFP == NULL)
         return(0);
 
-    //------------------------------------------------------------------
-    // The record size of the cal pulse file is now 150 bytes, without
-    // any leading or trailing words (i.e. not F77-unformatted).
-    //------------------------------------------------------------------
+    L1A_Calibration_Pulse_Type cpr;
 
-    // zero out the cal pulse buffer
-    char calPulseBuffer[GS_CAL_PULSE_FRAME_SIZE];
-    (void)memset(calPulseBuffer, 0, GS_CAL_PULSE_FRAME_SIZE);
+    // frame time
+    cpr.frame_time_cal_secs = frame.time;
 
-    char* ptr = calPulseBuffer;
-    (void)memcpy(ptr, &(frame.time), sizeof(double));
-    ptr += sizeof(double);
+    // true cal pulse position
+    cpr.true_cal_pulse_pos = (char)frame.in_eu.true_cal_pulse_pos;
 
-    unsigned char tpos = (unsigned char)frame.in_eu.true_cal_pulse_pos;
-    (void)memcpy(ptr, &tpos, sizeof(char));
-    ptr += sizeof(char);
-
-    // Set beam identifier based on true unit offset position and first pulse
-    // identity.
-    unsigned char beam_num;
+    // beam identifier (I don't quite understand the code that follows)
     if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
     {
         // different
         if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-            beam_num = 1;
+            cpr.beam_identifier = 1;
         else
-            beam_num = 0;
+            cpr.beam_identifier = 0;
     }
     else
     {
         // same
         if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-            beam_num = 0;
+            cpr.beam_identifier = 0;
         else
-            beam_num = 1;
+            cpr.beam_identifier = 1;
     }
-    (void)memcpy(ptr, &beam_num, sizeof(char));
-    ptr += sizeof(char);
 
-    (void)memcpy(ptr, frame.loopbackSlices,
-                 frame.slicesPerSpot * sizeof(unsigned int));
-    ptr += frame.slicesPerSpot * sizeof(unsigned int);
-    (void)memcpy(ptr, &(frame.loopbackNoise), sizeof(int));
-    ptr += sizeof(int);
-
-    (void)memcpy(ptr, frame.loadSlices,
-                 frame.slicesPerSpot * sizeof(unsigned int));
-    ptr += frame.slicesPerSpot * sizeof(unsigned int);
-    (void)memcpy(ptr, &(frame.loadNoise), sizeof(int));
-    ptr += sizeof(int);
-
-/*
-    int Esn;  // integer storage for floating point cal pulse data
-    for (i=0; i < 12; i++)
+    // loop back cal slice powers
+    // load cal slice powers
+    for (int i = 0; i < SLICES_PER_PULSE; i++)
     {
-        Esn = (int)frame.loopbackSlices[i];
-        (void)memcpy(ptr, &Esn, sizeof(int));
-        ptr += sizeof(int);
+        cpr.loop_back_cal_power[i] = *(frame.loopbackSlices + i);
+        cpr.loop_back_cal_power[i] = *(frame.loadSlices + i);
     }
-    Esn = (int)frame.loopbackNoise;
-    (void)memcpy(ptr, &Esn, sizeof(int));
-    ptr += sizeof(int);
 
-    for (i=0; i < 12; i++)
-    {
-        Esn = (int)frame.loadSlices[i];
-        (void)memcpy(ptr, &Esn, sizeof(int));
-        ptr += sizeof(int);
-    }
-    Esn = (int)frame.loadNoise;
-    (void)memcpy(ptr, &Esn, sizeof(int));
-    ptr += sizeof(int);
-*/
+    // loop back cal noise
+    // load cal noise
+    cpr.loop_back_cal_noise = frame.loopbackNoise;
+    cpr.load_cal_noise = frame.loadNoise;
 
-    (void)memcpy(ptr, &(frame.in_eu.precision_coupler_temp_eu), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.in_eu.rcv_protect_sw_temp_eu), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.in_eu.beam_select_sw_temp_eu), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.in_eu.receiver_temp_eu), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.in_eu.transmit_power_inner), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.in_eu.transmit_power_outer), sizeof(float));
-    ptr += sizeof(float);
-    (void)memcpy(ptr, &(frame.frame_inst_status), sizeof(int));
-    ptr += sizeof(int);
-    (void)memcpy(ptr, &(frame.frame_err_status), sizeof(int));
-    ptr += sizeof(int);
+    // we don't have the rotary joint temp, i'll just use the coupler
+    cpr.rj_temp_eu = frame.in_eu.precision_coupler_temp_eu;
+    cpr.precision_coupler_temp_eu = frame.in_eu.precision_coupler_temp_eu;
+    cpr.rcv_protect_sw_temp_eu = frame.in_eu.rcv_protect_sw_temp_eu;
+    cpr.beam_select_sw_temp_eu = frame.in_eu.beam_select_sw_temp_eu;
+    cpr.receiver_temp_eu = frame.in_eu.receiver_temp_eu;
+    cpr.transmit_power_inner = frame.in_eu.transmit_power_inner;
+    cpr.transmit_power_outer = frame.in_eu.transmit_power_outer;
+    cpr.frame_inst_status = frame.frame_inst_status;
+    cpr.frame_err_status = frame.frame_err_status;
+    cpr.frame_qual_flag = frame.frame_inst_status;
 
-    return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
+    return(fwrite(&cpr, sizeof(L1A_Calibration_Pulse_Type), 1, _calPulseFP));
 }
 
-//-------------------//
-// L1A::ReadCalPulse //
-//-------------------//
+//------------------------//
+// L1A::ReadGSCalPulseRec //
+//------------------------//
+// This poor method is now broken. :-(
 
 int
 L1A::ReadGSCalPulseRec(
@@ -530,9 +495,9 @@ L1A::ReadGSCalPulseRec(
     return(1);
 }
 
-//-------------------------//
-// L1A::WriteCalPulseAscii //
-//-------------------------//
+//------------------------------//
+// L1A::WriteGSCalPulseRecAscii //
+//------------------------------//
 
 int
 L1A::WriteGSCalPulseRecAscii()

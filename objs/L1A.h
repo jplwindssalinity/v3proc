@@ -96,4 +96,31 @@ protected:
     FILE*       _calPulseFP;
 };
 
+//-------------------------------------//
+// this is for calibration pulse files //
+//-------------------------------------//
+
+#define SLICES_PER_PULSE  12
+
+typedef struct l1a_calibration_pulse_type
+{
+    double        frame_time_cal_secs;
+    char          true_cal_pulse_pos;
+    char          beam_identifier;
+    unsigned int  loop_back_cal_power[SLICES_PER_PULSE];
+    unsigned int  loop_back_cal_noise;
+    unsigned int  load_cal_power[SLICES_PER_PULSE];
+    unsigned int  load_cal_noise;
+    float         rj_temp_eu;
+    float         precision_coupler_temp_eu;
+    float         rcv_protect_sw_temp_eu;
+    float         beam_select_sw_temp_eu;
+    float         receiver_temp_eu;
+    float         transmit_power_inner;
+    float         transmit_power_outer;
+    unsigned int  frame_inst_status;
+    unsigned int  frame_err_status;
+    short         frame_qual_flag;
+} L1A_Calibration_Pulse_Type;
+
 #endif

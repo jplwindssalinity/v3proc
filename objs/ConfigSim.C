@@ -27,6 +27,7 @@ static const char rcs_id_configsim_c[] =
 #include "EarthField.h"
 #include "Kp.h"
 #include "GenericGeom.h"
+#include "ETime.h"
 
 //------------------//
 // ConfigSpacecraft //
@@ -483,7 +484,8 @@ ConfigAntenna(
     }
     if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
     {
-        fprintf(stderr,"Could not find antenna pedestal pitch in config file\n");
+        fprintf(stderr,
+            "Could not find antenna pedestal pitch in config file\n");
         return(0);
     }
     if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
@@ -641,7 +643,8 @@ ConfigBeam(
         substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
         if (! config_list->GetDouble(keyword, &azimuth_angle))
         {
-            fprintf(stderr,"Could not find beam azimuth angle in config file\n");
+            fprintf(stderr,
+                "Could not find beam azimuth angle in config file\n");
             return(0);
         }
         azimuth_angle *= dtr;
@@ -1020,15 +1023,17 @@ ConfigL1AToL1B(
 
     config_list->ExitForMissingKeywords();
 
-        //--------------------------------------//
-        // Read in the land map file            //
-        //--------------------------------------//
+    //--------------------------------------//
+    // Read in the land map file            //
+    //--------------------------------------//
+
     char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-        int use_land;
-        config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
-        if(! l1a_to_l1b->landMap.Initialize(landfile,use_land)){
-      fprintf(stderr,"Cannot Initialize Land Map\n");
-          exit(0);
+    int use_land;
+    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+    if (! l1a_to_l1b->landMap.Initialize(landfile,use_land))
+    {
+        fprintf(stderr, "Cannot Initialize Land Map\n");
+        exit(0);
     }
 
     //-------------------//
@@ -1608,9 +1613,17 @@ ConfigControl(
     // grid start time //
     //-----------------//
 
-    double time_in_rev;
-    if (config_list->GetDouble(TIME_IN_REV_KEYWORD, &time_in_rev))
+    char* time_in_rev_string = config_list->Get(TIME_IN_REV_KEYWORD);
+    if (time_in_rev_string != NULL)
     {
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(time_in_rev_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                TIME_IN_REV_KEYWORD, time_in_rev_string);
+            exit(1);
+        }
+        double time_in_rev = tmp_time.GetTime();
         *grid_start_time = spacecraft_sim->FindPrevArgOfLatTime(time_in_rev,
             SOUTH_ARG_OF_LAT, EQX_TIME_TOLERANCE);
     }
@@ -1645,10 +1658,18 @@ ConfigControl(
     //-----------------------//
 
     double ins_buf;
-    if (config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD,
-        instrument_start_time))
+    char* instrument_start_time_string =
+        config_list->Get(INSTRUMENT_START_TIME_KEYWORD);
+    if (instrument_start_time_string != NULL)
     {
-        // nothing to do -- woo hoo!
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(instrument_start_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                INSTRUMENT_START_TIME_KEYWORD, instrument_start_time_string);
+            exit(1);
+        }
+        *instrument_start_time = tmp_time.GetTime();
     }
     else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
     {
@@ -1665,10 +1686,18 @@ ConfigControl(
     // instrument end time //
     //---------------------//
 
-    if (config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD,
-        instrument_end_time))
+    char* instrument_end_time_string =
+        config_list->Get(INSTRUMENT_END_TIME_KEYWORD);
+    if (instrument_end_time_string != NULL)
     {
-        // nothing to do -- woo hoo again!
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(instrument_end_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                INSTRUMENT_END_TIME_KEYWORD, instrument_end_time_string);
+            exit(1);
+        }
+        *instrument_end_time = tmp_time.GetTime();
     }
     else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
     {
@@ -1685,10 +1714,18 @@ ConfigControl(
     // spacecraft start time //
     //-----------------------//
 
-    if (config_list->GetDouble(SPACECRAFT_START_TIME_KEYWORD,
-        spacecraft_start_time))
+    char* spacecraft_start_time_string =
+        config_list->Get(SPACECRAFT_START_TIME_KEYWORD);
+    if (spacecraft_start_time_string != NULL)
     {
-        // nothing to do -- woo hoo once more!
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(spacecraft_start_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                SPACECRAFT_START_TIME_KEYWORD, spacecraft_start_time_string);
+            exit(1);
+        }
+        *spacecraft_start_time = tmp_time.GetTime();
         fprintf(stderr,"Using explicit spacecraft start time\n");
     }
     else
@@ -1703,10 +1740,18 @@ ConfigControl(
     // spacecraft end time //
     //---------------------//
 
-    if (config_list->GetDouble(SPACECRAFT_END_TIME_KEYWORD,
-        spacecraft_end_time))
+    char* spacecraft_end_time_string =
+        config_list->Get(SPACECRAFT_END_TIME_KEYWORD);
+    if (spacecraft_end_time_string != NULL)
     {
-        // nothing to do -- woo hoo once more!
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(spacecraft_end_time_string))
+        {
+            fprintf(stderr, "ConfigControl: error parsing CodeA for %s (%s)\n",
+                SPACECRAFT_END_TIME_KEYWORD, spacecraft_end_time_string);
+            exit(1);
+        }
+        *spacecraft_end_time = tmp_time.GetTime();
         fprintf(stderr,"Using explicit spacecraft end time\n");
     }
     else

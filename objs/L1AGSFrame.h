@@ -28,7 +28,8 @@ static const char rcs_id_l1a_gs_frame_h[] =
 // frame 5972 + 4 + 4 (fortran records header and trailer paddings)
 #define GS_L1A_FRAME_SIZE    5980
 
-#define GS_CAL_PULSE_FRAME_SIZE  150
+// changed from 150, 2001.03.29 (JNH)
+#define GS_CAL_PULSE_FRAME_SIZE  154
 
 struct GSL1APcd
 {
