@@ -118,7 +118,8 @@ int XTable::CheckHeader(int num_beams,
 
   if((int)(scienceSliceBandwidth + 0.5) != (int)(science_bandwidth + 0.5))
     return(0);
-  if((int)(guardSliceBandwidth + 0.5) != (int)(guard_bandwidth + 0.5))
+  if((int)(guardSliceBandwidth + 0.5) != (int)(guard_bandwidth + 0.5)
+     && numGuardSlicesEachSide!=0 )
     return(0);
   return(1);
 }
