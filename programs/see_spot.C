@@ -78,6 +78,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 #include "Qscat.h"
 #include "QscatConfig.h"
+#include "QscatConfigDefs.h"
 
 //-----------//
 // TEMPLATES //
@@ -240,6 +241,13 @@ main(
         fprintf(stderr, "%s: error configuring QSCAT\n", command);
         exit(1);
     }
+
+    // hack in the pri because the simulated CDS puts restrictions
+    // on the range of available pri's
+    float pri;
+    if (! config_list.GetFloat(PRI_KEYWORD, &pri))
+        return(0);
+    qscat.ses.pri = pri;
 
     QscatSim qscat_sim;
     if (! ConfigQscatSim(&qscat_sim, &config_list))
