@@ -271,8 +271,8 @@ L1AToL1B::Convert(
 		{
 			// Kfactor: either 1.0 or taken from table
 			float k_factor=1.0;
-            float x_factor=1.0;
-            float Esn_slice = meas->value;
+			float x_factor=1.0;
+			float Esn_slice = meas->value;
 			float PtGr = l1a->frame.ptgr;
 
 			if (useKfactor)
@@ -290,35 +290,35 @@ L1AToL1B::Convert(
 
 				// meas->value is the Esn value going in, sigma0 coming out.
 				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat,
-                    meas, k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
-                {
-                    return(0);
-                }
+						   meas, k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
+				  {
+				    return(0);
+				  }
 
 			}
 			else if(useBYUXfactor)
-            {
-                x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
+			  {
+			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
 			    //-----------------//
 			    // set measurement //
 			    //-----------------//
-
-                // meas->value is the Esn value going in
-                // sigma0 coming out.
-                if (! compute_sigma0(qscat, meas, x_factor, Esn_slice,
-                    Esn_echo, Esn_noise, En_echo_load, En_noise_load))
-                {
-                    return(0);
-                }
-			}
+			    
+			    // meas->value is the Esn value going in
+			    // sigma0 coming out.
+			    if (! compute_sigma0(qscat, meas, x_factor, Esn_slice,
+						 Esn_echo, Esn_noise, En_echo_load, En_noise_load))
+			      {
+				return(0);
+			      }
+			  }
 			else
-            {
-                fprintf(stderr,
-                    "L1AToL1B::Convert:No X compuation algorithm set\n");
-                exit(0);
-            }
-
+			  {
+			    fprintf(stderr,
+				    "L1AToL1B::Convert:No X compuation algorithm set\n");
+			    exit(0);
+			  }
+			
 			meas->scanAngle = qscat->sas.antenna.azimuthAngle;
 			meas->beamIdx = qscat->cds.currentBeamIdx;
 			meas->txPulseWidth = qscat->ses.txPulseWidth;
@@ -327,14 +327,14 @@ L1AToL1B::Convert(
 			// store check data //
 			//------------------//
 
-            if (simVs1BCheckfile)
-            {
-				cf.sigma0[slice_i] = meas->value;
-                cf.XK[slice_i] = meas->XK;
-                cf.centroid[slice_i] = meas->centroid;
-                cf.azimuth[slice_i] = meas->eastAzimuth;
-                cf.incidence[slice_i] = meas->incidenceAngle;
-            }
+			if (simVs1BCheckfile)
+			  {
+			    cf.sigma0[slice_i] = meas->value;
+			    cf.XK[slice_i] = meas->XK;
+			    cf.centroid[slice_i] = meas->centroid;
+			    cf.azimuth[slice_i] = meas->eastAzimuth;
+			    cf.incidence[slice_i] = meas->incidenceAngle;
+			  }
 
 			//----------------------------------//
 			// Print calculated sigma0 values	//
@@ -364,36 +364,36 @@ L1AToL1B::Convert(
 					return(0);
 			}
 
-            //------------------------//
-            // Output data if enabled //
-            //------------------------//
+			//------------------------//
+			// Output data if enabled //
+			//------------------------//
 
-	    	if (simVs1BCheckfile)
-   	 		{
-   	    		FILE* fptr = fopen(simVs1BCheckfile,"a");
-   	    		if (fptr == NULL)
-        		{
-            		fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
-            		exit(-1);
-        		}
-				cf.ptgr = l1a->frame.ptgr;
-        		cf.time = time;
-        		cf.rsat = spacecraft->orbitState.rsat;
-        		cf.vsat = spacecraft->orbitState.vsat;
-        		cf.attitude = spacecraft->attitude;
-        		cf.AppendRecord(fptr);
-        		fclose(fptr);
-    		}
-
-			//----------------------//
-			// add to list of spots //
-			//----------------------//
-
-			l1b->frame.spotList.Append(meas_spot);
+			if (simVs1BCheckfile)
+			  {
+			    FILE* fptr = fopen(simVs1BCheckfile,"a");
+			    if (fptr == NULL)
+			      {
+				fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+				exit(-1);
+			      }
+			    cf.ptgr = l1a->frame.ptgr;
+			    cf.time = time;
+			    cf.rsat = spacecraft->orbitState.rsat;
+			    cf.vsat = spacecraft->orbitState.vsat;
+			    cf.attitude = spacecraft->attitude;
+			    cf.AppendRecord(fptr);
+			    fclose(fptr);
+			  }
 		}
-		if (outputSigma0ToStdout)
-            printf("\n");
-	}
+		//----------------------//
+		// add to list of spots //
+		//----------------------//
 
-	return(1);
+		l1b->frame.spotList.Append(meas_spot);
+    }
+    if (outputSigma0ToStdout){
+      printf("\n");
+    }
+
+    return(1);
 }
