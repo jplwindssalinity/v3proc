@@ -118,7 +118,7 @@ template class List<AngleInterval>;
 #define LAT_MAX   90.0
 
 #define IRR_THRESH  2.0    // must be GREATER then (but not equal to)
-#define MIN_POINTS  100    // need this many points to estimate a %
+#define MIN_POINTS  50    // need this many points to estimate a %
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -129,6 +129,7 @@ template class List<AngleInterval>;
 //------------------//
 
 int opt_spd = 0;
+int opt_collocate = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -138,7 +139,7 @@ const char* usage_array[] = { "[ -c min ]", "[ -m mudh_dir ]",
     "[ -p spd:spd ]", "[ -s ssmi_dir ]", "<flag_dir>", "<start_rev>",
     "<end_rev>", "<output_base>", 0 };
 
-unsigned long total_count[LON_BINS][LAT_BINS];
+unsigned long total_qscat_count[LON_BINS][LAT_BINS];
 unsigned long qscat_rain_count[LON_BINS][LAT_BINS];
 
 unsigned long qscat_inner_total_count[LON_BINS][LAT_BINS];
@@ -146,6 +147,7 @@ unsigned long qscat_inner_rain_count[LON_BINS][LAT_BINS];
 unsigned long qscat_outer_total_count[LON_BINS][LAT_BINS];
 unsigned long qscat_outer_rain_count[LON_BINS][LAT_BINS];
 
+unsigned long total_ssmi_count[LON_BINS][LAT_BINS];
 unsigned long ssmi_rain_count[LON_BINS][LAT_BINS];
 
 //--------------//
@@ -161,7 +163,7 @@ main(
     // initialize //
     //------------//
 
-    int collocation_time = 30;   // default 30 minutes
+    int collocation_time = 0;
 
     char* mudh_dir = DEFAULT_MUDH_DIR;
     char* irr_dir = DEFAULT_IRR_DIR;
@@ -183,7 +185,7 @@ main(
             mudh_dir = optarg;
             break;
         case 'p':
-            if (scanf(optarg, " %f:%f", &min_spd, &max_spd) != 2)
+            if (sscanf(optarg, " %f:%f", &min_spd, &max_spd) != 2)
             {
                 fprintf(stderr, "%s: error parsing speed range %s\n", command,
                     optarg);
@@ -193,6 +195,10 @@ main(
             break;
         case 'c':
             collocation_time = atoi(optarg);
+            opt_collocate = 1;
+            break;
+        case 's':
+            irr_dir = optarg;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -309,7 +315,7 @@ main(
             for (int cti = 0; cti < CT_WIDTH; cti++)
             {
                 int co_time = time_dif[ati][cti] * 2 - 180;
-                if (abs(co_time) > collocation_time)
+                if (opt_collocate && abs(co_time) > collocation_time)
                     integrated_rain_rate[ati][cti] = 2000;
             }
         }
@@ -322,11 +328,11 @@ main(
         {
             for (int cti = 0; cti < CT_WIDTH; cti++)
             {
-                //-----------//
-                // rain rate //
-                //-----------//
+                //-------------------------------------//
+                // if collocating, SSM/I must be valid //
+                //-------------------------------------//
 
-                if (integrated_rain_rate[ati][cti] >= 1000)
+                if (opt_collocate && integrated_rain_rate[ati][cti] >= 1000)
                     continue;
                 double irr = (double)integrated_rain_rate[ati][cti] * 0.1;
 
@@ -379,10 +385,18 @@ main(
                 case 7: // ???
                     continue;
                 }
+                total_qscat_count[lon_idx][lat_idx]++;
+
+                //----------------------------//
+                // accumulate valid ssmi data //
+                //----------------------------//
+
+                if (integrated_rain_rate[ati][cti] >= 1000)
+                    continue;
 
                 if (irr > IRR_THRESH)
                     ssmi_rain_count[lon_idx][lat_idx]++;
-                total_count[lon_idx][lat_idx]++;
+                total_ssmi_count[lon_idx][lat_idx]++;
             }
         }
     }
@@ -404,14 +418,21 @@ main(
             qscat_out_array[lon_idx][lat_idx] = 0.0;
             qscat_array[lon_idx][lat_idx] = 0.0;
             ssmi_array[lon_idx][lat_idx] = 0.0;
-            if (total_count[lon_idx][lat_idx] > MIN_POINTS)
+            if (total_qscat_count[lon_idx][lat_idx] > MIN_POINTS)
             {
                 qscat_array[lon_idx][lat_idx] =
                     (float)qscat_rain_count[lon_idx][lat_idx] /
-                    (float)total_count[lon_idx][lat_idx];
+                    (float)total_qscat_count[lon_idx][lat_idx];
+            }
+            if (total_ssmi_count[lon_idx][lat_idx] > MIN_POINTS)
+            {
                 ssmi_array[lon_idx][lat_idx] =
                     (float)ssmi_rain_count[lon_idx][lat_idx] /
-                    (float)total_count[lon_idx][lat_idx];
+                    (float)total_ssmi_count[lon_idx][lat_idx];
+            }
+            if (total_qscat_count[lon_idx][lat_idx] > MIN_POINTS &&
+                total_ssmi_count[lon_idx][lat_idx] > MIN_POINTS)
+            {
                 dif_array[lon_idx][lat_idx] = qscat_array[lon_idx][lat_idx] -
                     ssmi_array[lon_idx][lat_idx];
             }

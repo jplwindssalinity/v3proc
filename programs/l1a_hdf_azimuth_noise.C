@@ -8,13 +8,14 @@
 //    l1a_hdf_azimuth_noise
 //
 // SYNOPSIS
-//    l1a_hdf_azimuth_noise [ -e ] <output_base> <L1A_file...>
+//    l1a_hdf_azimuth_noise [ -de ] <output_base> <L1A_file...>
 //
 // DESCRIPTION
 //    This program generates an output array of average/max/min noise
 //    versus antenna encoder.
 //
 // OPTIONS
+//    [ -d ]  Output in dB.
 //    [ -e ]  Allow frames with errors.
 //
 // OPERANDS
@@ -56,6 +57,7 @@ static const char rcs_id[] =
 #include <string.h>
 #include <hdf.h>
 #include <mfhdf.h>
+#include <math.h>
 #include "Misc.h"
 #include "Sds.h"
 #include "BitMasks.h"
@@ -66,7 +68,7 @@ static const char rcs_id[] =
 
 #define NUMBER_OF_QSCAT_BEAMS  2
 #define AZIMUTH_BINS           65536
-#define OPTSTRING              "e"
+#define OPTSTRING              "de"
 #define QUOTE                  '"'
 
 //--------//
@@ -86,12 +88,13 @@ static const char rcs_id[] =
 //------------------//
 
 int opt_error = 0;
+int opt_db = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -e ]", "<output_base>", "<L1A_file...>", 0 };
+const char* usage_array[] = { "[ -de ]", "<output_base>", "<L1A_file...>", 0 };
 
 unsigned int  min_noise[NUMBER_OF_QSCAT_BEAMS][AZIMUTH_BINS];
 unsigned int  max_noise[NUMBER_OF_QSCAT_BEAMS][AZIMUTH_BINS];
@@ -120,6 +123,9 @@ main(
     {
         switch(c)
         {
+        case 'd':
+            opt_db = 1;
+            break;
         case 'e':
             opt_error = 1;
             break;
@@ -395,7 +401,11 @@ main(
             beam_idx + 1, QUOTE);
         fprintf(avg_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
             QUOTE);
-        fprintf(avg_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        if (opt_db) {
+            fprintf(avg_ofp, "@ yaxis label %cEnergy (dB)%c\n", QUOTE, QUOTE);
+        } else {
+            fprintf(avg_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        }
 
         sprintf(filename, "%s.min.%d", output_base, beam_idx + 1);
         FILE* min_ofp = fopen_or_exit(filename, "w", command,
@@ -405,7 +415,11 @@ main(
             beam_idx + 1, QUOTE);
         fprintf(min_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
             QUOTE);
-        fprintf(min_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        if (opt_db) {
+            fprintf(min_ofp, "@ yaxis label %cEnergy (dB)%c\n", QUOTE, QUOTE);
+        } else {
+            fprintf(min_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        }
 
         sprintf(filename, "%s.max.%d", output_base, beam_idx + 1);
         FILE* max_ofp = fopen_or_exit(filename, "w", command,
@@ -415,7 +429,11 @@ main(
             beam_idx + 1, QUOTE);
         fprintf(max_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
             QUOTE);
-        fprintf(max_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        if (opt_db) {
+            fprintf(max_ofp, "@ yaxis label %cEnergy (dB)%c\n", QUOTE, QUOTE);
+        } else {
+            fprintf(max_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        }
 
         sprintf(filename, "%s.n.%d", output_base, beam_idx + 1);
         FILE* n_ofp = fopen_or_exit(filename, "w", command,
@@ -425,14 +443,23 @@ main(
             beam_idx + 1, QUOTE);
         fprintf(n_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
             QUOTE);
-        fprintf(n_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+        fprintf(n_ofp, "@ yaxis label %cNumber%c\n", QUOTE, QUOTE);
 
         for (int i = 0; i < AZIMUTH_BINS; i++) {
             if (count_noise[beam_idx][i] > 0) {
-                fprintf(avg_ofp, "%d %g\n", i, sum_noise[beam_idx][i]
-                    / (double)count_noise[beam_idx][i]);
-                fprintf(min_ofp, "%d %d\n", i, min_noise[beam_idx][i]);
-                fprintf(max_ofp, "%d %d\n", i, max_noise[beam_idx][i]);
+                double avg = sum_noise[beam_idx][i]
+                    / (double)count_noise[beam_idx][i];
+                if (opt_db) {
+                    fprintf(avg_ofp, "%d %g\n", i, 10.0 * log10(avg));
+                    fprintf(min_ofp, "%d %g\n", i,
+                        10.0 * log10((double)min_noise[beam_idx][i]));
+                    fprintf(max_ofp, "%d %g\n", i,
+                        10.0 * log10((double)max_noise[beam_idx][i]));
+                } else {
+                    fprintf(avg_ofp, "%d %g\n", i, avg);
+                    fprintf(min_ofp, "%d %d\n", i, min_noise[beam_idx][i]);
+                    fprintf(max_ofp, "%d %d\n", i, max_noise[beam_idx][i]);
+                }
                 fprintf(n_ofp, "%d %d\n", i, count_noise[beam_idx][i]);
             }
         }

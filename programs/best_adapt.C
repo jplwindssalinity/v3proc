@@ -8,9 +8,9 @@
 //    best_adapt
 //
 // SYNOPSIS
-//    best_adapt [ -h ] [ -acijrw ] [ -m fraction ] [ -d # ] <cfg_file>
-//        <prob_file> <l2b_input_file> <vctr_base> <l2b_output_file>
-//        [ eval_file ]
+//    best_adapt [ -h ] [ -acijrw ] [ -z # ] [ -m fraction ] [ -d # ]
+//        <cfg_file> <prob_file> <l2b_input_file> <vctr_base>
+//        <l2b_output_file> [ eval_file ]
 //
 // DESCRIPTION
 //    This filter attempts to set the best vector, ONE WIND VECTOR
@@ -26,7 +26,8 @@
 //      [ -c ]  Correct. Fix bad selections before proceeding.
 //      [ -i ]  Interpolate. Interpolate filter probabilities. Slow.
 //      [ -j ]  Jack. Jack up probabilities based on N.
-//      [ -r ]  Random. Use random probabilities for low sample events.
+//      [ -r ]  Random. Use random probabilities for zero sample events.
+//      [ -z # ]  Zero. Prefer zero sample events that happen > # times.
 //      [ -w ]  Raw. Use raw probabilities (don't adjust)
 //      [ -m fraction ]  Auto(M)atic. Correct while the good fraction
 //        is below fraction.  Don't correct otherwise, plus lower
@@ -112,7 +113,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "hacijrwd:m:"
+#define OPTSTRING  "hacijrwz:d:m:"
 
 #define WORST_PROB           -9e9
 #define HDF_NUM_AMBIGUITIES   4
@@ -145,7 +146,7 @@ int write_eval(FILE* ofp, int bn_idx, int bdr_idx, int bs_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -h ]", "[ -acijrw ]", "[ -m fraction ]",
+const char* usage_array[] = { "[ -h ]", "[ -acijrwz ]", "[ -m fraction ]",
     "[ -d # ]", "<cfg_file>", "<prob_file>", "<l2b_input_file>",
     "<vctr_base>", "<l2b_output_file>", "<eval_file>", 0 };
 
@@ -169,6 +170,8 @@ unsigned short  first_good_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CT
 unsigned short  filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 unsigned short  filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 
+unsigned char seen_count[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+
 int opt_hdf = 0;
 int opt_adapt = 0;
 int opt_correct = 0;
@@ -176,10 +179,12 @@ int opt_interpolate = 0;
 int opt_jack = 0;
 int opt_random = 0;
 int opt_raw = 0;
+int opt_zero = 0;
 int opt_dump = 0;
 int dump_loops = 0;
 int opt_matic = 0;
 float matic_fraction = 0.0;
+int zero_rare = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -217,6 +222,10 @@ main(
             break;
         case 'r':
             opt_random = 1;
+            break;
+        case 'z':
+            opt_zero = 1;
+            zero_rare = atoi(optarg);
             break;
         case 'm':
             opt_matic = 1;
@@ -655,9 +664,9 @@ main(
     int did_corrected = 0;
     int did = 0;
     int corrected_enabled_count = 0;
-    float lowest_first = 2.0;
+    float lowest_first = 10.0;
     float highest_first = 0.0;
-    float lowest_filter = 2.0;
+    float lowest_filter = 10.0;
     float highest_filter = 0.0;
     do
     {
@@ -713,8 +722,8 @@ main(
           //----------------------------------//
           // calculate the filter probability //
           //----------------------------------//
+          // only necessary when there are neighbors
 
-          float filter_prob = 0.0;    // default for no neighbors
           if (has_neighbors[cti][ati])
           {
             int neighbor_idx = filter_neighbor_idx[cti][ati];
@@ -785,11 +794,38 @@ main(
             }
 */
 
-            //-------------------------------//
-            // adjust the filter probability //
-            //-------------------------------//
+            //---------------------------------//
+            // get the base filter probability //
+            //---------------------------------//
 
-            filter_prob = (float)(good_sum / total_sum);
+            float filter_prob = 0.0;
+            if (total_sum == 0.0)
+            {
+              // if there are no samples
+              if (opt_zero)
+              {
+                if (seen_count[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][
+prob_idx] < zero_rare)
+                {
+                  // haven't seen this much, who cares
+                  filter_prob = 0.0;
+                }
+                else
+                {
+                  // seen this before, still can't evaluate, give it a chance
+                  filter_prob = 2.0;
+                }
+              }
+              else if (opt_random)
+                filter_prob = drand48();
+              else
+                filter_prob = 0.0;
+            }
+            else
+            {
+              // have samples, fraction is valid
+              filter_prob = (float)(good_sum / total_sum);
+            }
             if (opt_matic)
             {
               float good_fraction = 1.0;
@@ -802,7 +838,7 @@ main(
                 // doing well, don't correct
                 if (opt_correct)
                 {
-                  printf("  Correcting: disabled       ");
+                  printf("  Correcting: disabled        ");
                   fflush(stdout);
                   printf("\r");
                   opt_correct = 0;
@@ -816,7 +852,7 @@ main(
                 if (! opt_correct)
                 {
                   corrected_enabled_count++;
-                  printf("  Correcting: enabled (%d) ",
+                  printf("  Correcting: enabled (%d)  ",
                     corrected_enabled_count);
                   fflush(stdout);
                   printf("\r");
@@ -827,25 +863,21 @@ main(
               }
             }
 
-            if (opt_jack)
+            //-------------------------------//
+            // adjust the filter probability //
+            //-------------------------------//
+
+            if (total_sum > 0.0)
             {
-              if (total_sum == 0.0)
+              // it only makes sense to jack/reduce if there are samples
+              if (opt_jack)
               {
-                // no samples
-                if (opt_random)
-                  filter_prob = drand48();
-                else
-                  filter_prob = 0.0;
-              }
-              else
-              {
-                // samples
                 filter_prob += sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
               }
-            }
-            else if (! opt_raw)
-            {
-              filter_prob -= sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
+              else if (! opt_raw)
+              {
+                filter_prob -= sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
+              }
             }
 
             //---------------------------//
@@ -918,11 +950,13 @@ main(
 
           if (opt_adapt)
           {
-            if (filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= MAX_SHORT)
+            if (filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >=
+              MAX_SHORT)
             {
               printf("chopping %d %d\n",
                 filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx],
                 filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]);
+              fflush(stdout);
               double new_count =
                 (double)filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
               double new_good =
@@ -931,7 +965,8 @@ main(
                 (unsigned short)(new_count + 0.5);
               filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
                 (unsigned short)(new_good + 0.5);
-              if (filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx])
+              if (filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >=
+                filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx])
               {
                 filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
                   filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx];
@@ -1151,6 +1186,10 @@ main(
 
           filter_selection[cti][ati] = new_selected;
           has_neighbors[cti][ati] = 1;
+
+          // note what's been seen
+          int cti_idx = filter_cti_idx[cti];
+       seen_count[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]++;
         }
       }
       if (opt_dump && loop_idx % dump_loops == 0 && loop_idx != 0)
@@ -1165,14 +1204,15 @@ main(
         first_count = 0;
         filter_count = 0;
 
-        printf("  Corrected percent : %.2f%%\n",
+        printf("  Corrected percent : %.2f%%   \n",
           100.0 * (float)did_corrected / (float)did);
 
         printf("  1st: %g to %g   Fil: %g to %g\n", lowest_first,
           highest_first, lowest_filter, highest_filter);
-        lowest_first = 2.0;
+        fflush(stdout);
+        lowest_first = 10.0;
         highest_first = 0.0;
-        lowest_filter = 2.0;
+        lowest_filter = 10.0;
         highest_filter = 0.0;
 
         sprintf(filename, "%s.%06d", vctr_base, loop_idx);
@@ -1226,6 +1266,7 @@ main(
           }
           printf("  Match = %.2f %%\n", 100.0 * (float)match_count /
             (float)comp_total_count);
+          fflush(stdout);
         }
       }
       loop_idx++;

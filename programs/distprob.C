@@ -68,7 +68,7 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 #include "PointList.h"
-#include "ObProb.h"
+#include "Flower.h"
 #include "mudh.h"
 
 //-----------//
@@ -153,6 +153,10 @@ main(
 
     DistProb dp;
 
+    // this will cause the probabilities to start off equal
+    // and slowly converge
+    dp.Fill(1);
+
     //---------------------------//
     // determine the window size //
     //---------------------------//
@@ -171,10 +175,12 @@ main(
         exit(1);
     }
 
+printf("%d files\n", end_idx - start_idx);
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
     {
         const char* hdf_l2b_file = argv[file_idx];
 printf("%s\n", hdf_l2b_file);
+fflush(stdout);
 
         //-------------------//
         // read the l2b file //
@@ -185,7 +191,7 @@ printf("%s\n", hdf_l2b_file);
         {
             fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
                 hdf_l2b_file);
-            exit(1);
+            continue;
         }
         WindSwath* swath = &(l2b.frame.swath);
 
@@ -201,7 +207,8 @@ printf("%s\n", hdf_l2b_file);
                 if (wvc == NULL)
                     continue;
 
-                WindVectorPlus* wvc_nudge = wvc->nudgeWV;
+//                WindVectorPlus* this_wv = wvc->nudgeWV;
+                WindVectorPlus* this_wv = wvc->selected;
 
                 //------------------------------------//
                 // construct a list of neighbor WVC's //
@@ -230,7 +237,8 @@ printf("%s\n", hdf_l2b_file);
                     if (other_wvc == wvc)
                         continue;
 
-                    WindVectorPlus* other_wvc_nudge = other_wvc->nudgeWV;
+//                    WindVectorPlus* other_wv = other_wvc->nudgeWV;
+                    WindVectorPlus* other_wv = other_wvc->selected;
 
                     //--------------------------//
                     // calculate the parameters //
@@ -243,12 +251,11 @@ printf("%s\n", hdf_l2b_file);
                     if (distance > MAX_DISTANCE)
                         continue;
 
-                    float speed = wvc_nudge->spd;
+                    float speed = this_wv->spd;
 
-                    float dspeed = other_wvc_nudge->spd - wvc_nudge->spd;
+                    float dspeed = other_wv->spd - this_wv->spd;
 
-                    float ddirection = ANGDIF(other_wvc_nudge->dir,
-                        wvc_nudge->dir);
+                    float ddirection = ANGDIF(other_wv->dir, this_wv->dir);
 
                     //-----------------------//
                     // calculate the indices //
@@ -267,6 +274,8 @@ printf("%s\n", hdf_l2b_file);
                 }
             }
         }
+
+        swath->DeleteEntireSwath();
         if (! dp.Write(output_file))
         {
             fprintf(stderr, "%s: error opening output file %s\n", command,

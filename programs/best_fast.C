@@ -8,7 +8,7 @@
 //    best_fast
 //
 // SYNOPSIS
-//    best_fast [ -h ] [ -iw ] [ -d # ] <cfg_file> <prob_file>
+//    best_fast [ -h ] [ -ir ] [ -d # ] <cfg_file> <prob_file>
 //        <l2b_input_file> <vctr_base> <l2b_output_file> [ eval_file ]
 //
 // DESCRIPTION
@@ -22,7 +22,7 @@
 //    The following options are supported:
 //      [ -h ]  Input and output files are HDF
 //      [ -i ]  Interpolate. Interpolate filter probabilities. Slow.
-//      [ -w ]  Raw. Use raw probabilities (don't adjust)
+//      [ -r ]  Raw. Use raw probabilities (don't adjust)
 //      [ -d # ]  Dump. Spit out info every # loops.
 //
 // OPERANDS
@@ -104,7 +104,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "hiwd:"
+#define OPTSTRING  "hird:"
 
 #define WORST_PROB           -9e9
 #define HDF_NUM_AMBIGUITIES   4
@@ -138,7 +138,7 @@ void  choices();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -h ]", "[ -iw ]", "[ -d # ]", "<cfg_file>",
+const char* usage_array[] = { "[ -h ]", "[ -ir ]", "[ -d # ]", "<cfg_file>",
     "<prob_file>", "<l2b_input_file>", "<vctr_base>", "<l2b_output_file>",
     "<eval_file>", 0 };
 
@@ -197,7 +197,7 @@ main(
         case 'i':
             opt_interpolate = 1;
             break;
-        case 'w':
+        case 'r':
             opt_raw = 1;
             break;
         case 'd':
@@ -601,6 +601,10 @@ main(
     float highest_first = 0.0;
     float lowest_filter = 2.0;
     float highest_filter = 0.0;
+
+    unsigned long filter_eval_count = 0;
+    unsigned long failed_filter_eval_count = 0;
+
     do
     {
       //----------------------------------------------------------------//
@@ -926,11 +930,23 @@ main(
 
           double good_sum = (double)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
           double total_sum = (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
-          double filter_prob = good_sum / total_sum;
-          if (! opt_raw)
+
+          double filter_prob;
+          if (total_sum > 0.0)
           {
-            filter_prob -= sqrt(0.25 / total_sum);
+              filter_prob = good_sum / total_sum;
+              if (! opt_raw)
+              {
+                  filter_prob -= sqrt(0.25 / total_sum);
+              }
           }
+          else
+          {
+              // not enough samples
+              filter_prob = -1.0;
+              failed_filter_eval_count++;
+          }
+          filter_eval_count++;
           filter_actual_prob[cti][ati] = filter_prob;
 
           if (eval_ofp)
@@ -989,6 +1005,16 @@ main(
         choices();
         printf("  Rainfree Match = %.2f %%\n", 100.0 * (float)match_count /
           (float)comp_total_count);
+
+        if (filter_eval_count > 0)
+        {
+          printf("  Failed Filter Evaluations : %.2f %% (%ld/%ld)\n",
+            100.0 * (double)failed_filter_eval_count /
+            (double)filter_eval_count, failed_filter_eval_count,
+            filter_eval_count);
+        }
+        filter_eval_count = 0;
+        failed_filter_eval_count = 0;
       }
       loop_idx++;
     } while (1);

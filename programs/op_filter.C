@@ -195,14 +195,24 @@ main(
     // open the output files //
     //-----------------------//
 
+    int gamma_int = (int)(gamma * 100.0 + 0.5);
+
     char filename[2048];
-    sprintf(filename, "%s.%03d", output_base, (int)(gamma * 100.0 + 0.5));
+    sprintf(filename, "%s.%03d.flw", output_base, gamma_int);
     FILE* add_ofp = fopen_or_exit(filename, "w", command,
         "flower output file", 1);
 
     sprintf(filename, "%s.mle", output_base);
     FILE* mle_ofp = fopen_or_exit(filename, "w", command,
         "flower mle output file", 1);
+
+    sprintf(filename, "%s.%03d.wnd", output_base, gamma_int);
+    FILE* wnd_ofp = fopen_or_exit(filename, "w", command, "wind output file",
+        1);
+
+    sprintf(filename, "%s.%03d.prb", output_base, gamma_int);
+    FILE* prb_ofp = fopen_or_exit(filename, "w", command,
+        "probability output file", 1);
 
     //--------//
     // filter //
@@ -237,20 +247,16 @@ main(
                     ns->WriteFlower(mle_ofp, 3.0);
                     fprintf(mle_ofp, "%d %d\n", cti, ati);
 
-/*
-                    float avg_spd = ns->GetAverageSpeed();
-                    if (avg_spd < 6.5 || avg_spd > 7.5)
-                        continue;
-*/
-
                     ns = opa.LocalProb(&dp, WINDOW_SIZE, cti, ati, gamma);
                     if (ns == NULL)
                         continue;
 
+                    ns->WriteBestVector(wnd_ofp);
+                    ns->WriteBestProb(prb_ofp);
+
                     ns->WriteFlower(add_ofp, 0.0, 0.75);
                     fprintf(add_ofp, "%d %d\n", cti, ati);
                     delete ns;
-
 
 //                    opa2.array[cti][ati] = ns;
                 }           
@@ -260,6 +266,8 @@ main(
 
     fclose(mle_ofp);
     fclose(add_ofp);
+    fclose(wnd_ofp);
+    fclose(prb_ofp);
 
     //------------------------//
     // generate a flower plot //

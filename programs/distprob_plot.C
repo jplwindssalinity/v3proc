@@ -148,24 +148,6 @@ main(
         exit(0);
     }
 
-// ======
-int speed_idx = dp.SpeedToIndex(7.0);
-int dspeed_idx = dp.DeltaSpeedToIndex(1.0);
-for (int distance_idx = 0; distance_idx < DISTANCE_BINS; distance_idx++)
-{
-    for (int ddirection_idx = 0; ddirection_idx < DDIRECTION_BINS;
-        ddirection_idx++)
-    {
-        printf("%g %g\n", dp.IndexToDeltaDirection(ddirection_idx),
-            dp.Probability(distance_idx, speed_idx, dspeed_idx, 
-            ddirection_idx));
-    }
-    printf("&\n");
-}
-exit(0);
-
-//=======
-
     //---------------------------//
     // generate the output files //
     //---------------------------//
@@ -205,7 +187,7 @@ exit(0);
                         dspeed_idx, ddirection_idx);
                 }
                 fprintf(ofp, "%g %g\n",
-                    dp.IndexToDeltaDirection(ddirection_idx), prob_sum);
+                    dp.IndexToDeltaDirection(ddirection_idx) * rtd, prob_sum);
             }
             fclose(ofp);
 
@@ -228,14 +210,25 @@ exit(0);
             for (int dspeed_idx = 0; dspeed_idx < DSPEED_BINS; dspeed_idx++)
             {
                 double prob_sum = 0.0;
+                int good = 1;
                 for (int ddirection_idx = 0; ddirection_idx < DDIRECTION_BINS;
                     ddirection_idx++)
                 {
+                    double prob = dp.Probability(distance_idx, speed_idx,
+                        dspeed_idx, ddirection_idx);
+                    if (prob < 0.0)
+                    {
+                        good = 0;
+                        break;
+                    }
                     prob_sum += dp.Probability(distance_idx, speed_idx,
                         dspeed_idx, ddirection_idx);
                 }
-                fprintf(ofp, "%g %g\n", dp.IndexToDeltaSpeed(dspeed_idx),
-                    prob_sum);
+                if (good)
+                {
+                    fprintf(ofp, "%g %g\n", dp.IndexToDeltaSpeed(dspeed_idx),
+                        prob_sum);
+                }
             }
             fclose(ofp);
         }
