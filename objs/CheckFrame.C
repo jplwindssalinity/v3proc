@@ -230,7 +230,6 @@ CheckFrame::WriteDataRec(
 	FILE*	fptr)
 {
 
-  double lon,lat;
   for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
   {
     if (fwrite((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
@@ -240,7 +239,7 @@ CheckFrame::WriteDataRec(
     if (fwrite((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fwrite((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fwrite((void *)&incidence[slice_i],sizeof(float),1,fptr)!=1) return(0);
-    if (! centroid[slice_i].WriteLonLat()) return(0);
+    if (! centroid[slice_i].WriteLonLat(fptr)) return(0);
     if (fwrite((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
 	  return(0);
     if (fwrite((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
@@ -273,7 +272,6 @@ CheckFrame::ReadDataRec(
 	FILE*	fptr)
 {
 
-  double lon,lat;
   for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
   {
     if (fread((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
@@ -283,7 +281,7 @@ CheckFrame::ReadDataRec(
     if (fread((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
-    if (! centroid[slice_i].ReadLonLat()) return(0);
+    if (! centroid[slice_i].ReadLonLat(fptr)) return(0);
     if (fread((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
     if (fread((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
