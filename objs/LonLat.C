@@ -9,6 +9,7 @@ static const char rcs_id_lonlat_c[] =
 #include <stdio.h>
 #include <math.h>
 #include "LonLat.h"
+#include "Constants.h"
 
 
 //========//
@@ -199,6 +200,81 @@ Outline::WriteBvg(
 		return(0);
 
 	return(1);
+}
+
+//---------------//
+// Outline::Area //
+//---------------//
+
+//
+// Find the area enclosed by the trapezoidal area on a spherical surface.
+// This method assumes (but does not check) that the area is trapezoidal,
+// and the points are stored in order going around the perimeter.
+//
+
+double
+Outline::Area()
+{
+	
+	EarthPosition* p1 = GetHead();
+	EarthPosition* p2 = GetNext();
+	EarthPosition* p3 = GetNext();
+	EarthPosition* p4 = GetNext();
+
+	double mag_p1 = p1->Magnitude();
+	double mag_p2 = p2->Magnitude();
+	double mag_p3 = p3->Magnitude();
+	double mag_p4 = p4->Magnitude();
+
+	// Divide into two spherical triangles and compute their areas.
+
+	// Average spherical radius to use in each spherical triangle.
+	double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
+	double R2 = (mag_p1 + mag_p3 + mag_p4)/3.0;
+
+	// Side lengths expressed as the cosine,sine of the earth center angle.
+	double cos_s12 = (*p1 % *p2) / mag_p1 / mag_p2;
+	double cos_s23 = (*p2 % *p3) / mag_p2 / mag_p3;
+	double cos_s31 = (*p3 % *p1) / mag_p3 / mag_p1;
+	double cos_s34 = (*p3 % *p4) / mag_p3 / mag_p4;
+	double cos_s41 = (*p4 % *p1) / mag_p4 / mag_p1;
+
+	double sin_s12 = sqrt(1.0 - cos_s12*cos_s12);
+	double sin_s23 = sqrt(1.0 - cos_s23*cos_s23);
+	double sin_s31 = sqrt(1.0 - cos_s31*cos_s31);
+	double sin_s34 = sqrt(1.0 - cos_s34*cos_s34);
+	double sin_s41 = sqrt(1.0 - cos_s41*cos_s41);
+
+	// Triangle 1 between points 1,2,3.
+	// (Angles A1 and A3 for this triangle only)
+
+	// Cosine law for spherical triangles
+	// A1 is the angle of vertex 1 of the spherical triangle on the surface
+	double cos_A1 = (cos_s23 - cos_s12*cos_s31) / (sin_s12 * sin_s31);
+	double A1 = acos(cos_A1);
+	double sin_A1 = sin(A1);
+	// Sine Law to get the other angles.
+	double A2 = asin(sin_s31 * sin_A1 / sin_s23);
+	double A3 = asin(sin_s12 * sin_A1 / sin_s23);
+
+	double area1 = (A1 + A2 + A3 - pi)*R1*R1;
+
+	// Triangle 2 between points 1,3,4.
+	// (Angles A1 and A3 for this triangle only)
+
+	// Cosine law for spherical triangles
+	// A1 is the angle of vertex 1 of the spherical triangle on the surface
+	cos_A1 = (cos_s34 - cos_s41*cos_s31) / (sin_s41 * sin_s31);
+	A1 = acos(cos_A1);
+	sin_A1 = sin(A1);
+	// Sine Law to get the other angles.
+	A3 = asin(sin_s41 * sin_A1 / sin_s34);
+	double A4 = asin(sin_s31 * sin_A1 / sin_s34);
+
+	double area2 = (A1 + A3 + A4 - pi)*R2*R2;
+
+	return(area1 + area2);
+
 }
 
 //-----------------------//
