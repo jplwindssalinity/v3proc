@@ -83,7 +83,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define MAX_SPOTS  100000
+#define MAX_SPOTS  10000
 #define SEARCH_WINDOW 1000
 
 //--------//
@@ -134,17 +134,29 @@ plot4(char* filename,
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING               "sfpo:r:"
+#define OPTSTRING               "scfpo:r:"
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -s ]", "[ -f ]", "[ -p (print to stdout) ]",
-  " [-o output_base] ", "[ -r low:hi (pulse count) ]",
+const char* usage_array[] = { "[ -s (generate statistics)]",
+  "[ -f (read fortran binary onebcheckfile)]",
+  "[ -p (print to stdout) ]",
+  "[ -c (correlate by time and azimuth, otherwise by pulseCount after 1st pulse)] ",
+  "[ -o output_base] ",
+  "[ -r low:hi (pulse count) ]",
   "<cfg file>", "<simcheckfile>",
   "<onebcheckfile>", 0};
 extern int optind;
+int land_count = 0;
+
+//------------------------------------------//
+// Debugging flag turns on print statements //
+//------------------------------------------//
+
+int debug_flag = 0;
+int c_flag = 0;  // correlate by time and azimuth flag
 
 //--------------//
 // MAIN PROGRAM //
@@ -171,12 +183,14 @@ main(
     int f_flag = 0;
     int s_flag = 0;
     int p_flag = 0;
+    c_flag = 0;
     while (1)
     {
       int c = getopt(argc, argv, OPTSTRING);
       if (c == 'f') f_flag = 1;
       else if (c == 's') s_flag = 1;
       else if (c == 'p') p_flag = 1;
+      else if (c == 'c') c_flag = 1;
       else if (c == 'o')
       {
         output_base = optarg;
@@ -442,13 +456,14 @@ main(
   int cf_frame_count = 0; // counts all spots (cf frames).
   int count = 0;
   int subcount = 0;
+  land_count = 0;
   MeasSpot* meas_spot = NULL;
   MeasSpotList* meas_spot_list = NULL;
 
   while(1)
   {
     subcount++;  // step through the subsampled spots
-    if (cf_frame_count > range_hi) break;
+    if (cf_frame_count >= range_hi) break;
     cf_frame_count++;  // count all spots
 
     if (onebcheckfile == NULL) 
@@ -483,75 +498,80 @@ main(
 		}
 
         meas_spot_list = &(l1b.frame.spotList);
+        if (meas_spot_list == NULL) continue;  // empty frame, go to next.
         meas_spot = meas_spot_list->GetHead();  // Get first spot
+        if (meas_spot == NULL) continue;  // empty frame, go to next.
       }
-      else
-      {  // Load this spot, and then get next meas_spot
-        double meas_time = meas_spot->scOrbitState.time;
-        Meas* first_meas = meas_spot->GetHead();
-        double meas_azi = first_meas->scanAngle;
 
-        //-------------------------------------//
-        // Load spot data into cf1b CheckFrame //
-        //-------------------------------------//
+      // Load this spot, and then get next meas_spot
+      Meas* first_meas = meas_spot->GetHead();
+      if (first_meas == NULL)
+      {
+        fprintf(stderr,"Error: found meas_spot with no slices\n");
+        exit(-1);
+      }
 
-        cf1b.pulseCount = cf_frame_count-1;
-        cf1b.time = meas_spot->time;
-        cf1b.beamNumber = first_meas->beamIdx;
-        cf1b.antennaAziTx = 0.0;
-        cf1b.antennaAziGi = first_meas->scanAngle;
-        cf1b.orbitFrac = 0.0;
-        cf1b.spinRate = 0.0;
-        cf1b.txDoppler = 0.0;
-        cf1b.XdopplerFreq = 0.0;
-        cf1b.XroundTripTime = 0.0;
-        cf1b.EsCal = 0.0;
-        cf1b.deltaFreq = 0.0;
-        cf1b.EsnEcho = 0.0;
-        cf1b.EsnNoise = 0.0;
-        cf1b.rxGateDelay = 0.0;
-        cf1b.alpha = 0.0;
-        cf1b.rsat = meas_spot->scOrbitState.rsat;
-        cf1b.vsat = meas_spot->scOrbitState.vsat;
+      //-------------------------------------//
+      // Load spot data into cf1b CheckFrame //
+      //-------------------------------------//
 
-        //------------------//
-        // for each Meas... //
-        //------------------//
+      cf1b.pulseCount = cf_frame_count-1;
+      cf1b.time = meas_spot->time;
+      cf1b.beamNumber = first_meas->beamIdx;
+      cf1b.antennaAziTx = 0.0;
+      cf1b.antennaAziGi = first_meas->scanAngle;
+      cf1b.orbitFrac = 0.0;
+      cf1b.spinRate = 0.0;
+      cf1b.txDoppler = 0.0;
+      cf1b.XdopplerFreq = 0.0;
+      cf1b.XroundTripTime = 0.0;
+      cf1b.EsCal = 0.0;
+      cf1b.deltaFreq = 0.0;
+      cf1b.EsnEcho = 0.0;
+      cf1b.EsnNoise = 0.0;
+      cf1b.rxGateDelay = 0.0;
+      cf1b.alpha = 0.0;
+      cf1b.rsat = meas_spot->scOrbitState.rsat;
+      cf1b.vsat = meas_spot->scOrbitState.vsat;
+
+      //------------------//
+      // for each Meas... //
+      //------------------//
  
-        int j = 0;
-        for (Meas* meas = meas_spot->GetHead(); meas;
-             meas = meas_spot->GetNext())
+      int j = 0;
+      for (Meas* meas = meas_spot->GetHead(); meas;
+           meas = meas_spot->GetNext())
+      {
+        //-------------------------------------------//
+        // ...load Meas slice data into CheckFrame   //
+        //-------------------------------------------//
+
+        if (j >= cf.slicesPerSpot)
         {
-          //-------------------------------------------//
-          // ...load Meas slice data into CheckFrame   //
-          //-------------------------------------------//
-
-          if (j >= cf.slicesPerSpot)
-          {
-            fprintf(stderr,"Error, Too many measurements in a spot\n");
-            exit(1);
-          }
-
-          double alt1b,lon1b,lat1b;
-          meas->centroid.GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
-          double measR =
-            (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
-
-          cf1b.idx[j] = meas->startSliceIdx;
-          cf1b.measType[j] = meas->measType;
-          cf1b.sigma0[j] = meas->value;
-          cf1b.XK[j] = meas->XK;
-          cf1b.Es[j] = meas->value*meas->XK;
-          cf1b.En[j] = meas->EnSlice;
-          cf1b.centroid[j] = meas->centroid;
-          cf1b.azimuth[j] = meas->eastAzimuth;
-          cf1b.incidence[j] = meas->incidenceAngle;
-          cf1b.R[j] = measR;
-          cf1b.GatGar[j] = 0.0;
-          j++;
+          fprintf(stderr,"Error, Too many measurements in a spot\n");
+          exit(1);
         }
-        meas_spot = meas_spot_list->GetNext();
+
+        double alt1b,lon1b,lat1b;
+        meas->centroid.GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
+        double measR =
+          (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
+
+        cf1b.idx[j] = meas->startSliceIdx;
+        cf1b.measType[j] = meas->measType;
+        cf1b.sigma0[j] = meas->value;
+        cf1b.XK[j] = meas->XK;
+        cf1b.Es[j] = meas->value*meas->XK;
+        cf1b.En[j] = meas->EnSlice;
+        cf1b.centroid[j] = meas->centroid;
+        cf1b.azimuth[j] = meas->eastAzimuth;
+        cf1b.incidence[j] = meas->incidenceAngle;
+        cf1b.R[j] = measR;
+        cf1b.GatGar[j] = 0.0;
+        j++;
       }
+
+      meas_spot = meas_spot_list->GetNext();
     }
     else
     {  // A 2nd checkfile is provided.
@@ -761,6 +781,7 @@ main(
     }
   }
 
+  fprintf(stderr,"land_count = %d\n",land_count);
   if (output_base != NULL) 
   {
     fprintf(stderr,"total_slices = %ld, total_spots = %ld, file_size = %ld\n",
@@ -887,19 +908,48 @@ match_cf_frame(
 
   if (call_count < 3) search_win = 10000000; // look hard at the beginning
   float adiff = 0.0;
+  float tdiff = 0.0;
   double rr = 0.0;
   float minadiff = 100.0;
+  float mintdiff = 100.0;
   double minrr = 10000.0;
 
   if (cf_source->ReadDataRec(source_fp))
   {  // check next frame first
+
+    if (c_flag == 0 && call_count > 0)
+    {  // match pulse by pulse after 1st pulse
+      if ((cf_source->sigma0[0] > 0.0999 && cf_source->sigma0[0] < 0.10001) ||
+          (cf_source->sigma0[0] > 0.084999 && cf_source->sigma0[0] < 0.085001))
+      {
+        land_count++;
+        return(0);
+      }
+      else
+      {
+        return(1);
+      }
+    }
+
     int rv = match_frame(cf_target,cf_source,&rr);
     if (rv == 1)
     {
 //      fprintf(stderr,"%g %g %d\n",rr,
 //          fabs(cf_source->antennaAziGi - cf_target->antennaAziGi),
 //          cf_source->beamNumber);
-      return(1);
+      call_count++;
+      if ((cf_source->sigma0[0] > 0.0999 && cf_source->sigma0[0] < 0.10001) ||
+          (cf_source->sigma0[0] > 0.084999 && cf_source->sigma0[0] < 0.085001))
+      {
+//        fprintf(stderr,"Rejected match due to landflag at index = %d\n",
+//          cf_target->pulseCount);
+        land_count++;
+        return(0);
+      }
+      else
+      {
+        return(1);
+      }
     }
   }
 
@@ -927,12 +977,25 @@ match_cf_frame(
 //      fprintf(stderr,"%g %g %d\n",rr,
 //        fabs(cf_source->antennaAziGi - cf_target->antennaAziGi),
 //        cf_source->beamNumber);
-      found = 1;
+      if ((cf_source->sigma0[0] > 0.0999 && cf_source->sigma0[0] < 0.10001) ||
+          (cf_source->sigma0[0] > 0.084999 && cf_source->sigma0[0] < 0.085001))
+      {
+//        fprintf(stderr,"Rejected match due to landflag at index = %d\n",
+//          cf_target->pulseCount);
+        land_count++;
+        return(0);
+      }
+      else
+      {
+        found = 1;
+      }
       break;
     }
 
     adiff = fabs(cf_source->antennaAziGi - cf_target->antennaAziGi);
     if (adiff < minadiff) minadiff = adiff;
+    tdiff = fabs(cf_source->time - cf_target->time);
+    if (tdiff < mintdiff) mintdiff = tdiff;
     if (rr < minrr) minrr = rr;
 
     count++;
@@ -943,7 +1006,8 @@ match_cf_frame(
   {
     fprintf(stderr,"Can't match a target checkframe at index = %d\n",
     cf_target->pulseCount);
-    fprintf(stderr,"minadiff = %g, minrr = %g\n",minadiff,minrr);
+    fprintf(stderr,"minadiff = %g, mintdiff = %g, minrr = %g\n",
+      minadiff,mintdiff,minrr);
     if (fseek(source_fp,position,SEEK_SET) != 0)
     {
       fprintf(stderr,
@@ -964,7 +1028,6 @@ match_frame(
   double *rr)
 
 {
-  int i;
 
 //  if (fabs(cf_source->antennaAziGi - cf_target->antennaAziGi) < 0.005 &&
 //      cf_source->beamNumber == cf_target->beamNumber )
@@ -1096,7 +1159,7 @@ plot4(char* filename,
   fprintf(fptr,"&\n");
   fprintf(fptr,"@with g0\n@g0 on\n");
   fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
-  fprintf(fptr,"@view ymin 0.1\n@view ymax 0.22\n");
+  fprintf(fptr,"@view ymin 0.1\n@view ymax 0.24\n");
   fprintf(fptr,"@autoscale xaxes\n");
   fprintf(fptr,"@autoscale yaxes\n");
   fprintf(fptr,"@s0 linestyle 0\n");
@@ -1106,7 +1169,7 @@ plot4(char* filename,
   fprintf(fptr,"@xaxis label \"%s\"\n",xlabel);
   fprintf(fptr,"@with g1\n@g1 on\n");
   fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
-  fprintf(fptr,"@view ymin 0.28\n@view ymax 0.40\n");
+  fprintf(fptr,"@view ymin 0.30\n@view ymax 0.44\n");
   fprintf(fptr,"@autoscale xaxes\n");
   fprintf(fptr,"@autoscale yaxes\n");
   fprintf(fptr,"@s0 linestyle 0\n");
@@ -1115,7 +1178,7 @@ plot4(char* filename,
   fprintf(fptr,"@subtitle \"%s\"\n",y3label);
   fprintf(fptr,"@with g2\n@g2 on\n");
   fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
-  fprintf(fptr,"@view ymin 0.46\n@view ymax 0.58\n");
+  fprintf(fptr,"@view ymin 0.50\n@view ymax 0.64\n");
   fprintf(fptr,"@autoscale xaxes\n");
   fprintf(fptr,"@autoscale yaxes\n");
   fprintf(fptr,"@s0 linestyle 0\n");
@@ -1124,7 +1187,7 @@ plot4(char* filename,
   fprintf(fptr,"@subtitle \"%s\"\n",y2label);
   fprintf(fptr,"@with g3\n@g3 on\n");
   fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
-  fprintf(fptr,"@view ymin 0.64\n@view ymax 0.76\n");
+  fprintf(fptr,"@view ymin 0.70\n@view ymax 0.84\n");
   fprintf(fptr,"@autoscale xaxes\n");
   fprintf(fptr,"@autoscale yaxes\n");
   fprintf(fptr,"@s0 linestyle 0\n");
