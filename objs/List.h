@@ -88,6 +88,13 @@ public:
 	T*		GetNext();			// current = next, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
 
+	//--------//
+	// moving //
+	//--------//
+
+	void	GotoHead() { _current = _head };
+	void	GotoTail() { _current = _tail };
+
 	//-------------//
 	// information //
 	//-------------//
