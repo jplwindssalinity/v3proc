@@ -3132,7 +3132,7 @@ GMF::RetrieveWinds_H2(
 
     float width[H2_RANGES];
     int number_of_peaks[H2_RANGES];
-    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    for (range_idx = 0; range_idx < range_count; range_idx++)
     {
         while (right_edge[range_idx] < left_edge[range_idx])
             right_edge[range_idx] += two_pi;
