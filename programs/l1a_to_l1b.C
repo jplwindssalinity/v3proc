@@ -158,12 +158,12 @@ main(
 		exit(1);
 	}
 
-	//------------------------------//
-	// create and configure antenna //
-	//------------------------------//
+	//---------------------------------//
+	// create and configure instrument //
+	//---------------------------------//
 
 	Instrument instrument;
-	if (! ConfigAntenna(&instrument.antenna, &config_list))
+	if (! ConfigInstrument(&instrument, &config_list))
 	{
 		fprintf(stderr, "%s: error configuring antenna\n", command);
 		exit(1);
@@ -228,7 +228,7 @@ main(
 
 		if (! l10_to_l15.Convert(&l10, &instrument, &ephemeris, &l15))
 		{
-			fprintf(stderr, "%s: data record %d\n",
+		       fprintf(stderr, "%s: error converting data record %d\n",
 				command, data_record_number);
 		}
 
