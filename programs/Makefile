@@ -86,6 +86,7 @@ PROGRAMS = \
 	get_X_scan \
     expand_calpulse \
     ephem_to_ascii \
+	psim \
 	generate_foff_table \
 	BYUX_vs_time \
         l2b_extract_worst
