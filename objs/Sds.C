@@ -650,3 +650,19 @@ SdsFloat64::SetFromUnsignedInt(unsigned int* value)
     }
     return;
 }
+
+//------------//
+// SDnametoid //
+//------------//
+
+int32
+SDnametoid(
+    int32  sd_id,
+    char*  sds_name)
+{
+    int32 sds_index = SDnametoindex(sd_id, sds_name);
+    if (sds_index == FAIL)
+        return(FAIL);
+    int32 sds_id = SDselect(sd_id, sds_index);
+    return (sds_id);
+}

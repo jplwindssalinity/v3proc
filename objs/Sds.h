@@ -250,4 +250,10 @@ protected:
     float64  _min;
 };
 
+//------------------//
+// helper functions //
+//------------------//
+
+int32 SDnametoid(int32 sd_id, char* sds_name);
+
 #endif
