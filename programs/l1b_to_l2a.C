@@ -191,6 +191,7 @@ main(
 		exit(1);
 	}
 	grid.SetStartTime(grid_start_time);
+	grid.SetEndTime(grid_end_time);
 
 	//------------//
 	// open files //
