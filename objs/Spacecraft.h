@@ -72,13 +72,27 @@ public:
 
 	Spacecraft();
 	~Spacecraft();
+        int   SetOrbitPeriod( double semi_major_axis, double eccentricity,
+			      double inclination);
 
 	//-----------//
 	// variables //
 	//-----------//
 
+	double                  orbitPeriod;
 	OrbitState		orbitState;
 	Attitude		attitude;
 };
 
 #endif
+
+
+
+
+
+
+
+
+
+
+
