@@ -439,6 +439,7 @@ Beam::GetPowerGain(
 
 	// The interpolated power gain.
 	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
+        *gain*=peakGain;
 	return(1);
 }
 
@@ -521,3 +522,7 @@ Beam::GetPowerGainProduct(
 	*gain_product = (float)tmp;
 	return(retval);
 }
+
+
+
+

@@ -509,7 +509,7 @@ IntegrateSlice(
               double gp2;
               int beam_number=qscat->cds.currentBeamIdx;
 	      float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
-              gp2=pow(10.0,2.0 * 0.1 * peak_gain);
+              gp2=peak_gain*peak_gain;
 	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g %d\n",
 	          (look1+look2)/2.0*rtd,(azi1+azi2)/2.0*rtd,
 	           lat*rtd,lon*rtd,gatgar/gp2, range, tip.dopplerFreq,
