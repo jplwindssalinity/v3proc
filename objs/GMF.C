@@ -708,7 +708,7 @@ GMF::WriteGSObjectiveCurve(
     float        max_obj)
 {
 
-    float dir_spacing =  wind_dir_intv_init;
+    float dir_spacing =  WIND_DIR_INTV_INIT;
     int num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
     float scale = 0.0;
@@ -1939,18 +1939,18 @@ GMF::Calculate_Init_Wind_Solutions(
         _dir_mle_maxima[i] = 0;
     }
 
-    center_speed = (int)(wind_start_speed);
-    if (center_speed < (lower_speed_bound + 2))
-        center_speed = (lower_speed_bound + 2);
+    center_speed = (int)(WIND_START_SPEED);
+    if (center_speed < (LOWER_SPEED_BOUND + 2))
+        center_speed = (LOWER_SPEED_BOUND + 2);
 
-    if (center_speed > (upper_speed_bound - 1))
-        center_speed = (upper_speed_bound -1);
+    if (center_speed > (UPPER_SPEED_BOUND - 1))
+        center_speed = (UPPER_SPEED_BOUND -1);
 
     //
     // Calculate number of wind direction samples.
     //
 
-    dir_spacing =  wind_dir_intv_init;
+    dir_spacing =  WIND_DIR_INTV_INIT;
     num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
     //
@@ -1982,8 +1982,8 @@ GMF::Calculate_Init_Wind_Solutions(
         //
         // Compute MLE at 3 points centered about center speed.
         //
-        minus_speed = center_speed - wind_speed_intv_init;
-        plus_speed  = center_speed + wind_speed_intv_init;
+        minus_speed = center_speed - WIND_SPEED_INTV_INIT;
+        plus_speed  = center_speed + WIND_SPEED_INTV_INIT;
 
         minus_objective = _ObjectiveFunction(meas_list, minus_speed,
             dtr * angle, kp);
@@ -2014,21 +2014,21 @@ GMF::Calculate_Init_Wind_Solutions(
                good_speed )
             {
                center_speed = center_speed
-                           - wind_speed_intv_init ;
+                           - WIND_SPEED_INTV_INIT ;
                plus_objective = center_objective;
                center_objective = minus_objective;
                minus_speed = center_speed
-                          - wind_speed_intv_init;
+                          - WIND_SPEED_INTV_INIT;
 
 //
 //   Clip search at null (0) speed.
 //
 
-               if (minus_speed < (float)(lower_speed_bound))
+               if (minus_speed < (float)(LOWER_SPEED_BOUND))
                 {
                   _speed_buffer[k] = center_speed;
                  _objective_buffer [k] = center_objective;
-                  center_speed = center_speed + wind_speed_intv_init;
+                  center_speed = center_speed + WIND_SPEED_INTV_INIT;
                   good_speed = 0;
                 }
 
@@ -2052,20 +2052,20 @@ GMF::Calculate_Init_Wind_Solutions(
                plus_objective > minus_objective   &&
                good_speed  )
             {
-               center_speed = center_speed + wind_speed_intv_init;
+               center_speed = center_speed + WIND_SPEED_INTV_INIT;
                minus_objective = center_objective;
                center_objective = plus_objective;
-               plus_speed = center_speed + wind_speed_intv_init;
+               plus_speed = center_speed + WIND_SPEED_INTV_INIT;
 
 //
 //   Clip search at maximum (50) speed.
 //
 
-               if  (plus_speed > (float)(upper_speed_bound))
+               if  (plus_speed > (float)(UPPER_SPEED_BOUND))
                 {
                   _speed_buffer [k] = center_speed;
                   _objective_buffer [k] = center_objective;
-                  center_speed = center_speed - wind_speed_intv_init;
+                  center_speed = center_speed - WIND_SPEED_INTV_INIT;
                   good_speed = 0;
                 }
 
@@ -2093,7 +2093,7 @@ GMF::Calculate_Init_Wind_Solutions(
             if(diff_objective_2==0) _speed_buffer[k]=center_speed;
             else _speed_buffer [k] = center_speed  - 0.5
                             * (diff_objective_1 / diff_objective_2)
-                            * wind_speed_intv_init;
+                            * WIND_SPEED_INTV_INIT;
 
 #define GSFIXED
 #ifdef GSFIXED
@@ -2146,11 +2146,11 @@ GMF::Calculate_Init_Wind_Solutions(
 
 //
 //   If the number of local MLE maximas exceeds the desired maximum
-//   wind solutions (= wind_max_solutions), sort and select the
-//   (wind_max_solutions) highest.
+//   wind solutions (= WIND_MAX_SOLUTIONS), sort and select the
+//   (WIND_MAX_SOLUTIONS) highest.
 //
 
-    if (num_mle_maxima > wind_max_solutions)
+    if (num_mle_maxima > WIND_MAX_SOLUTIONS)
     {
 //        printf("number greater than 10 = %d\n",num_mle_maxima);
 //         write(99,*) objective_buffer
@@ -2169,10 +2169,10 @@ GMF::Calculate_Init_Wind_Solutions(
 
 //
 //    Tag current maxima index as -2 if it is not in the highest
-//    "wind_max_solutions" rank.  Otherwise, tag as -1.
+//    "WIND_MAX_SOLUTIONS" rank.  Otherwise, tag as -1.
 //
 
-            if (k >= wind_max_solutions)
+            if (k >= WIND_MAX_SOLUTIONS)
                 _dir_mle_maxima [ii] = -2;
             else
                 _dir_mle_maxima [ii] = -1;
@@ -2197,11 +2197,11 @@ GMF::Calculate_Init_Wind_Solutions(
 //    Move "highest rank" directions back to the front.
 //
 
-        for (k=1; k <= wind_max_solutions; k++)
+        for (k=1; k <= WIND_MAX_SOLUTIONS; k++)
         {
             _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima];
         }
-        num_mle_maxima = wind_max_solutions;
+        num_mle_maxima = WIND_MAX_SOLUTIONS;
 //        printf("dir_mle_maxima = %d\n",dir_mle_maxima);
 
     }
@@ -2274,7 +2274,7 @@ GMF::FindMultiSpeedRidge(
     //
     // compute angle
     //
-    dir_spacing =  wind_dir_intv_init;
+    dir_spacing =  WIND_DIR_INTV_INIT;
     angle = dir_spacing * (float)(dir_idx - 1) - dir_spacing;
     angle=angle*dtr;
 
@@ -2282,10 +2282,10 @@ GMF::FindMultiSpeedRidge(
     // check for peak at lower speed bound
     //
 
-    minus_speed = lower_speed_bound;
-    spd_spacing = wind_speed_intv_init;
-    center_speed = lower_speed_bound + spd_spacing;
-    plus_speed=lower_speed_bound + 2*spd_spacing;
+    minus_speed = LOWER_SPEED_BOUND;
+    spd_spacing = WIND_SPEED_INTV_INIT;
+    center_speed = LOWER_SPEED_BOUND + spd_spacing;
+    plus_speed=LOWER_SPEED_BOUND + 2*spd_spacing;
     minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp);
     center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp);
 
@@ -2298,7 +2298,7 @@ GMF::FindMultiSpeedRidge(
         best_center_objective=minus_objective;
     }
       int offset=1;
-      while(plus_speed <= upper_speed_bound){
+      while(plus_speed <= UPPER_SPEED_BOUND){
     plus_objective=_ObjectiveFunction(meas_list,plus_speed,angle,kp);
     if(plus_objective <= center_objective &&
            minus_objective <= center_objective){
@@ -2319,7 +2319,7 @@ GMF::FindMultiSpeedRidge(
       }
     }
     offset++;
-        center_speed = offset*spd_spacing+lower_speed_bound;
+        center_speed = offset*spd_spacing+LOWER_SPEED_BOUND;
     minus_speed = center_speed - spd_spacing;
         plus_speed =  center_speed + spd_spacing;
     minus_objective=center_objective;
@@ -2330,13 +2330,14 @@ GMF::FindMultiSpeedRidge(
       // Check for peak at upper speed bound;
       //
       if(center_objective>minus_objective){
-    speed_peaks[ridge_count]=upper_speed_bound;
+    speed_peaks[ridge_count]=UPPER_SPEED_BOUND;
     ridge_count++;
         // recompute exactly at boundary
-        center_objective=_ObjectiveFunction(meas_list,upper_speed_bound,angle,kp);
+        center_objective = _ObjectiveFunction(meas_list, UPPER_SPEED_BOUND,
+            angle, kp);
     if(center_objective >= best_center_objective){
       best_center_objective=center_objective;
-          best_center_speed=upper_speed_bound;
+          best_center_speed=UPPER_SPEED_BOUND;
       max_speed_best=1;
           min_speed_best=0;
     }
@@ -2425,9 +2426,9 @@ GMF::Optimize_Wind_Solutions(
       float      final_speed;
       float      final_dir;
 
-    float    wr_wind_speed[wind_max_solutions];
-    float    wr_wind_dir[wind_max_solutions];
-    float    wr_mle[wind_max_solutions];
+    float    wr_wind_speed[WIND_MAX_SOLUTIONS];
+    float    wr_wind_dir[WIND_MAX_SOLUTIONS];
+    float    wr_mle[WIND_MAX_SOLUTIONS];
 
     // Copy data into wr_ arrays. (convert radians to degrees)
     i = 0;
@@ -2438,7 +2439,7 @@ GMF::Optimize_Wind_Solutions(
         wr_wind_dir[i] = rtd*wvp->dir;
         wr_mle[i] = wvp->obj;
         i++;
-        if (i >= wind_max_solutions) break;
+        if (i >= WIND_MAX_SOLUTIONS) break;
     }
 
 //
@@ -2468,11 +2469,11 @@ GMF::Optimize_Wind_Solutions(
         for (i=1; i <= 3; i++)
         {
             i_spd = i - 2;
-            speed = center_speed + (float)(i_spd) * wind_speed_intv_opti;
+            speed = center_speed + (float)(i_spd) * WIND_SPEED_INTV_OPTI;
             for (j=1; j <= 3; j++)
             {
                i_dir = j - 2;
-               direction = center_dir + (float)(i_dir) * wind_dir_intv_opti;
+               direction = center_dir + (float)(i_dir) * WIND_DIR_INTV_OPTI;
                if (i_dir == 0  ||  i_spd == 0)
                 {
                     current_objective[i][j] = _ObjectiveFunction(meas_list,
@@ -2513,11 +2514,11 @@ GMF::Optimize_Wind_Solutions(
                 for (i=1; i <= 3; i+=2)
                 {
                     speed = center_speed + (float)(i - 2) *
-                        wind_speed_intv_opti;
+                        WIND_SPEED_INTV_OPTI;
                     for (j=1; j <= 3; j+=2)
                     {
                         direction = center_dir + (float)(j - 2) *
-                            wind_dir_intv_opti;
+                            WIND_DIR_INTV_OPTI;
 
                         current_objective[i][j] = _ObjectiveFunction(meas_list,
                                             speed,dtr*direction,kp);
@@ -2542,9 +2543,9 @@ GMF::Optimize_Wind_Solutions(
             if (shift_pattern != 0)
             {
                center_speed = center_speed + (float)(i_spd_max)
-                                * wind_speed_intv_opti;
+                                * WIND_SPEED_INTV_OPTI;
                center_dir = center_dir + (float)(i_dir_max)
-                                * wind_dir_intv_opti;
+                                * WIND_DIR_INTV_OPTI;
 
 //
 //   Loop through  3 x 3  phase space.
@@ -2587,9 +2588,9 @@ GMF::Optimize_Wind_Solutions(
                             if (old_coord_sum > max_shift)
                             {
                                 speed = center_speed + (float)(i_spd) *
-                                  wind_speed_intv_opti;
+                                  WIND_SPEED_INTV_OPTI;
                                 direction = center_dir + (float)(i_dir) *
-                                  wind_dir_intv_opti;
+                                  WIND_DIR_INTV_OPTI;
                                 saved_objective[i][j] = _ObjectiveFunction(
                                     meas_list,speed,dtr*direction,kp);
                             }
@@ -2701,9 +2702,9 @@ GMF::Optimize_Wind_Solutions(
         {
             wr_mle [ambig] = - q00;
 //            wr_wind_speed_err [ambig] =
-//                wind_speed_intv_opti / sqrt (float(wr_count));
+//                WIND_SPEED_INTV_OPTI / sqrt (float(wr_count));
 //            wr_wind_dir_err [ambig] =
-//                wind_dir_intv_opti /sqrt ((float)(wr_count));
+//                WIND_DIR_INTV_OPTI /sqrt ((float)(wr_count));
         }
         else
         {
@@ -2712,18 +2713,18 @@ GMF::Optimize_Wind_Solutions(
 //
 
             final_speed = wr_wind_speed [ambig] -
-                         wind_speed_intv_opti *
+                         WIND_SPEED_INTV_OPTI *
                         (q10 * q02 - q01 * q11) /
                         determinant;
 
             if (fabs (final_speed - wr_wind_speed [ambig])
-               > 2. * wind_speed_intv_opti   ||
+               > 2. * WIND_SPEED_INTV_OPTI   ||
                final_speed < 0.0)
             {
                 wr_mle [ambig] = -q00;
-//                wr_wind_speed_err [ambig] = wind_speed_intv_opti
+//                wr_wind_speed_err [ambig] = WIND_SPEED_INTV_OPTI
 //                    * sqrt (fabs (0.5 * q20 / determinant));
-//                wr_wind_dir_err [ambig] = wind_dir_intv_opti
+//                wr_wind_dir_err [ambig] = WIND_DIR_INTV_OPTI
 //                    * sqrt (fabs (0.5 * q02 / determinant));
             }
             else
@@ -2732,19 +2733,19 @@ GMF::Optimize_Wind_Solutions(
 //   Compute final wind direction.
 //
                final_dir = wr_wind_dir [ambig] -
-                          wind_dir_intv_opti *
+                          WIND_DIR_INTV_OPTI *
                           (q20 * q01 - q10 * q11) /
                           determinant;
 
                if (fabs (final_dir - wr_wind_dir [ambig])
-                    > 2. * wind_dir_intv_opti)
+                    > 2. * WIND_DIR_INTV_OPTI)
                 {
 
                   wr_mle [ambig] = -q00;
 //                  wr_wind_speed_err [ambig]
-//                    = wind_speed_intv_opti
+//                    = WIND_SPEED_INTV_OPTI
 //                    * sqrt (fabs (0.5 * q20 / determinant));
-//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti
+//                  wr_wind_dir_err [ambig] = WIND_DIR_INTV_OPTI
 //                    * sqrt (fabs (0.5 * q02 / determinant));
                 }
                else
@@ -2775,10 +2776,10 @@ GMF::Optimize_Wind_Solutions(
 //   Estimate the RMS speed and direction errors.
 //
 
-//                  wr_wind_speed_err [ambig] = wind_speed_intv_opti *
+//                  wr_wind_speed_err [ambig] = WIND_SPEED_INTV_OPTI *
 //                    sqrt (fabs (0.5 * q20 / determinant));
 
-//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti *
+//                  wr_wind_dir_err [ambig] = WIND_DIR_INTV_OPTI *
 //                    sqrt (fabs (0.5 * q02 / determinant));
             }
             }
@@ -2812,7 +2813,7 @@ GMF::Optimize_Wind_Solutions(
         }
                   global_debug=0;
 #endif
-        if (i >= wind_max_solutions) break;
+        if (i >= WIND_MAX_SOLUTIONS) break;
     }
 
 
@@ -2826,7 +2827,7 @@ GMF::Optimize_Wind_Solutions(
 
 int
 GMF::CopyBuffersGSToPE(){
-  if(wind_dir_intv_init!=360.0/_phiCount) return(0);
+  if(WIND_DIR_INTV_INIT!=360.0/_phiCount) return(0);
   for(int c=0;c<_phiCount;c++){
     _bestObj[c]=_objective_buffer[c+2];
     _bestSpd[c]=_speed_buffer[c+2];
