@@ -8,12 +8,14 @@
 //		gmf
 //
 // SYNOPSIS
-//		gmf [ -g gmf_file ] [ -r coef_file ] [ -w coef_file ]
+//		gmf [ -d ] [ -g gmf_file ] [ -r coef_file ] [ -w coef_file ]
 //
 // DESCRIPTION
 //		Generates plots about a geophysical model function.
 //
 // OPTIONS
+//		[ -d ]
+//			Write terms in dB.
 //		[ -g gmf_file ]
 //			Gets the GMF information from a gmf table.
 //		[ -r coef_file ]
@@ -67,7 +69,7 @@ static const char rcs_id[] =
 //-----------//
 
 #define QUOTES	'"'
-#define OPTSTRING	"g:r:w:"
+#define OPTSTRING	"dg:r:w:"
 
 #define POLS		2
 #define INCS		67
@@ -90,19 +92,21 @@ static const char rcs_id[] =
 //-----------------------//
 
 int term_vs_inc(const char* command, const char* gmf_file,
-	double term[POLS][INCS][SPDS], char* name);
+	double term[POLS][INCS][SPDS], char* name, unsigned char flag);
 int term_vs_spd(const char* command, const char* gmf_file,
-	double term[POLS][INCS][SPDS], char* name);
+	double term[POLS][INCS][SPDS], char* name, unsigned char flag);
 
 //------------------//
 // OPTION VARIABLES //
 //------------------//
 
+unsigned char db_flag = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -g gmf_file ]", "[ -r coef_file ]",
+const char* usage_array[] = { "[ -d ]", "[ -g gmf_file ]", "[ -r coef_file ]",
 	"[ -w coef_file ]", 0 };
 
 const char* pol_map[] = { "V", "H" };
@@ -133,6 +137,9 @@ main(
 	{
 		switch(c)
 		{
+		case 'd':
+			db_flag = 1;
+			break;
 		case 'g':
 			read_gmf = optarg;
 			break;
@@ -269,17 +276,17 @@ main(
 		close(ofd);
 	}
 
-	term_vs_inc(command, base, a0, "a0");
-	term_vs_inc(command, base, a1, "a1");
-	term_vs_inc(command, base, a1_phase, "a1p");
-	term_vs_inc(command, base, a2, "a2");
-	term_vs_inc(command, base, a2_phase, "a2p");
+	term_vs_inc(command, base, a0, "a0", db_flag);
+	term_vs_inc(command, base, a1, "a1", db_flag);
+	term_vs_inc(command, base, a1_phase, "a1p", 0);
+	term_vs_inc(command, base, a2, "a2", db_flag);
+	term_vs_inc(command, base, a2_phase, "a2p", 0);
 
-	term_vs_spd(command, base, a0, "a0");
-	term_vs_spd(command, base, a1, "a1");
-	term_vs_spd(command, base, a1_phase, "a1p");
-	term_vs_spd(command, base, a2, "a2");
-	term_vs_spd(command, base, a2_phase, "a2p");
+	term_vs_spd(command, base, a0, "a0", db_flag);
+	term_vs_spd(command, base, a1, "a1", db_flag);
+	term_vs_spd(command, base, a1_phase, "a1p", 0);
+	term_vs_spd(command, base, a2, "a2", db_flag);
+	term_vs_spd(command, base, a2_phase, "a2p", 0);
 
 	return (0);
 }
@@ -293,7 +300,8 @@ term_vs_inc(
 	const char*	command,
 	const char*	gmf_file,
 	double	term[POLS][INCS][SPDS],
-	char*	name)
+	char*	name,
+	unsigned char	flag)
 {
 	char filename[1024];
 	FILE* ofp;
@@ -310,11 +318,14 @@ term_vs_inc(
 		}
 		fprintf(ofp, "@ title %c%s, %s pol%c\n", QUOTES, name, pol_map[pol],
 			QUOTES);
-//		fprintf(ofp, "@ legend on\n");
 		fprintf(ofp, "@ xaxis label %cIncidence Angle (deg)%c\n", QUOTES,
 			QUOTES);
-		fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTES, name,
-			QUOTES);
+		if (flag)
+			fprintf(ofp, "@ yaxis label %c%s (dB)%c\n", QUOTES, name,
+				QUOTES);
+		else
+			fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTES, name,
+				QUOTES);
 
 		int spds[] = { 1, 3, 5, 8, 15, 20, 30, 40, -1 };
 		int spd_idx = 0;
@@ -324,7 +335,12 @@ term_vs_inc(
 				spds[spd_idx], QUOTES);
 			for (int inc = 20; inc <= 60; inc += INC_STEP)
 			{
-				fprintf(ofp, "%d %g\n", inc, term[pol][inc][spds[spd_idx]]);
+				if (flag)
+					fprintf(ofp, "%d %g\n", inc,
+						10.0 * log10(term[pol][inc][spds[spd_idx]]));
+				else
+					fprintf(ofp, "%d %g\n", inc,
+						term[pol][inc][spds[spd_idx]]);
 			}
 			spd_idx++;
 			if (spds[spd_idx] > 0)
@@ -344,7 +360,8 @@ term_vs_spd(
 	const char*	command,
 	const char*	gmf_file,
 	double	term[POLS][INCS][SPDS],
-	char*	name)
+	char*	name,
+	unsigned char	flag)
 {
 	char filename[1024];
 	FILE* ofp;
@@ -361,11 +378,14 @@ term_vs_spd(
 		}
 		fprintf(ofp, "@ title %c%s, %s pol%c\n", QUOTES, name, pol_map[pol],
 			QUOTES);
-//		fprintf(ofp, "@ legend on\n");
 		fprintf(ofp, "@ xaxis label %cWind Speed (m/s)%c\n", QUOTES,
 			QUOTES);
-		fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTES, name,
-			QUOTES);
+		if (flag)
+			fprintf(ofp, "@ yaxis label %c%s (dB)%c\n", QUOTES, name,
+				QUOTES);
+		else
+			fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTES, name,
+				QUOTES);
 
 		int incs[] = { 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60, 64, -1 };
 		int inc_idx = 0;
@@ -375,7 +395,11 @@ term_vs_spd(
 				incs[inc_idx], QUOTES);
 			for (int spd = 1; spd < SPDS; spd++)
 			{
-				fprintf(ofp, "%d %g\n", spd, term[pol][incs[inc_idx]][spd]);
+				if (flag)
+					fprintf(ofp, "%d %g\n", spd,
+						10.0 * log10(term[pol][incs[inc_idx]][spd]));
+				else
+					fprintf(ofp, "%d %g\n", spd, term[pol][incs[inc_idx]][spd]);
 			}
 			inc_idx++;
 			if (incs[inc_idx] > 0)
