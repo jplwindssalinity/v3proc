@@ -15,18 +15,6 @@ default: objs/Makefile programs/Makefile scripts/Makefile
 	done
 
 #----------------------------------------------------------------------
-# tree: make a level of the tree
-#----------------------------------------------------------------------
- 
-tree:
-	@ for dir in objs programs scripts; \
-	do if (test ! -d $$dir); \
-			then echo "Creating $$dir"; \
-			mkdir $$dir; \
-		fi; \
-	done
-
-#----------------------------------------------------------------------
 # clean: remove all object, executable and make files
 #----------------------------------------------------------------------
 
