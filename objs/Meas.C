@@ -313,6 +313,7 @@ int
 MeasList::WriteAscii(
 	FILE*	fp)
 {
+	fprintf(fp, "Count: %d\n", NodeCount());
 	for (Meas* meas = GetHead(); meas; meas = GetNext())
 	{
 		if (! meas->WriteAscii(fp))
