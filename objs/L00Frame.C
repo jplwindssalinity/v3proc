@@ -19,7 +19,9 @@ L00Frame::L00Frame()
 :   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), ptgr(0.0), antennaPosition(NULL), science(NULL),
+    velZ(0.0), ptgr(0.0), calPosition(255),
+    loopbackSlices(NULL), loopbackNoise(0.0),
+    loadSlices(NULL), loadNoise(0.0), antennaPosition(NULL), science(NULL),
     spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
 {
     return;
@@ -54,6 +56,21 @@ L00Frame::Allocate(
 	if (antennaPosition == NULL)
 		return(0);
 
+	//---------------------------//
+	// allocate cal measurements //
+	//---------------------------//
+
+	loopbackSlices = (float *)malloc(slicesPerSpot * sizeof(float));
+	if (loopbackSlices == NULL)
+	{
+		return(0);
+	}
+	loadSlices = (float *)malloc(slicesPerSpot * sizeof(float));
+	if (loadSlices == NULL)
+	{
+		return(0);
+	}
+
 	//-------------------------------//
 	// allocate science measurements //
 	//-------------------------------//
@@ -81,10 +98,19 @@ L00Frame::Deallocate()
 {
 	if (antennaPosition)
 		free(antennaPosition);
+	if (loopbackSlices)
+		free(loopbackSlices);
+	if (loadSlices)
+		free(loadSlices);
 	if (science)
 		free(science);
 	if (spotNoise)
 		free(spotNoise);
+    antennaPosition = NULL;
+    loopbackSlices = NULL;
+    loadSlices = NULL;
+    science = NULL;
+    spotNoise = NULL;
 	spotsPerFrame = 0;
 	slicesPerSpot = 0;
 	slicesPerFrame = 0;
@@ -162,6 +188,26 @@ L00Frame::Pack(
 	idx += size;
 
 	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&calPosition, size);
+	idx += size;
+
+	size = sizeof(float) * slicesPerSpot;
+	memcpy((void *)(buffer + idx), (void *)loopbackSlices, size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)(buffer + idx), (void *)&loopbackNoise, size);
+	idx += size;
+
+	size = sizeof(float) * slicesPerSpot;
+	memcpy((void *)(buffer + idx), (void *)loadSlices, size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)(buffer + idx), (void *)&loadNoise, size);
 	idx += size;
 
 	size = sizeof(unsigned short) * spotsPerFrame;
@@ -252,12 +298,36 @@ L00Frame::Unpack(
 	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
 	idx += size;
 
+	size = sizeof(unsigned short);
+	memcpy((void *)&calPosition, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * slicesPerSpot;
+	memcpy((void *)loopbackSlices, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)&loopbackNoise, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * slicesPerSpot;
+	memcpy((void *)loadSlices, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)&loadNoise, (void *)(buffer + idx), size);
+	idx += size;
+
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(float) * slicesPerFrame;
 	memcpy((void *)science, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * spotsPerFrame;
+	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

@@ -15,9 +15,9 @@ static const char rcs_id_qscatconfigdefs_h[] =
 
 #define FFT_BIN_BANDWIDTH_KEYWORD  "FFT_BIN_BANDWIDTH"
 
-#define BASE_TX_FREQUENCY_KEYWORD  "BASE_TX_FREQUENCY"
-#define RX_GAIN_ECHO_KEYWORD       "RX_GAIN_ECHO"
-#define RX_GAIN_NOISE_KEYWORD      "RX_GAIN_NOISE"
+#define BASE_TRANSMIT_FREQUENCY_KEYWORD  "BASE_TRANSMIT_FREQUENCY"
+#define RX_GAIN_ECHO_KEYWORD             "ECHO_RECEIVER_GAIN"
+#define RX_GAIN_NOISE_KEYWORD            "NOISE_RECEIVER_GAIN"
 
 #define A0_L13_KEYWORD             "A0_L13"
 #define A1_L13_KEYWORD             "A1_L13"
@@ -43,6 +43,8 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define A3_LCALOP_KEYWORD             "A3_LCALOP"
 #define A4_LCALOP_KEYWORD             "A4_LCALOP"
 
+#define PHYSICAL_TEMPERATURE_KEYWORD  "PHYSICAL_TEMPERATURE"
+
 //----------//
 // QscatCds //
 //----------//
@@ -51,7 +53,7 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define PRI_KEYWORD                "PRI"
 #define ANTENNA_SPIN_RATE_KEYWORD  "ANTENNA_SPIN_RATE"
 
-#define BEAM_x_RX_GATE_WIDTH_KEYWORD  "BEAM_x_RX_GATE_WIDTH"
+#define BEAM_x_RX_GATE_WIDTH_KEYWORD  "BEAM_x_RECEIVER_GATE_WIDTH"
 #define BEAM_x_RGC_FILE_KEYWORD       "BEAM_x_RGC_FILE"
 #define BEAM_x_DTC_FILE_KEYWORD       "BEAM_x_DTC_FILE"
 

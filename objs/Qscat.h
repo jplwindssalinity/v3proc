@@ -79,6 +79,7 @@ public:
     float        baseTxFrequency; // the base transmitter frequency (Hz)
     float        pri;             // the pulse repetition interval (s)
     float        transmitPower;   // the transmit power (W)
+                                  // - Not including transmitPathLoss
     float        rxGainEcho;      // dimensionless multiplicative factor
     float        rxGainNoise;     // dimensionless multiplicative factor
     float        chirpRate;       // chirp rate (Hz/s)
@@ -90,6 +91,16 @@ public:
     float        guardSliceBandwidth;    // Hz
     int          guardSlicesPerSide;     // count
     float        noiseBandwidth;         // Hz
+
+    float        receivePathLoss;        // dimensionless divisive factor
+    float        transmitPathLoss;       // dimensionless divisive factor
+    float        loopbackLoss;           // dimensionless divisive factor
+    float        loopbackLossRatio;      // dimensionless ratio
+    float        L13Coef[5];             // polynomial fit coef's
+    float        L21Coef[5];             // polynomial fit coef's
+    float        L23Coef[5];             // polynomial fit coef's
+    float        LcalopCoef[5];          // polynomial fit coef's
+    float        physicalTemperature;    // deg. C
 
     SesBeamInfo  beamInfo[NUMBER_OF_QSCAT_BEAMS];
 };

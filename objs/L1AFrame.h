@@ -74,10 +74,15 @@ public:
 	float			velX;
 	float			velY;
 	float			velZ;
-
 	Attitude		attitude;
-
 	float			ptgr;
+    unsigned short  calPosition;
+
+    // cal data
+    float*              loopbackSlices;
+    float               loopbackNoise;
+    float*              loadSlices;
+    float               loadNoise;
 
 	// antenna position
 	unsigned short*		antennaPosition;

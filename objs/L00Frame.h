@@ -70,11 +70,16 @@ public:
 	float			velZ;
 	Attitude		attitude;
 	float			ptgr;
+    unsigned short  calPosition;
 
 	//------------//
 	// frame data //
 	//------------//
 
+    float*              loopbackSlices;
+    float               loopbackNoise;
+    float*              loadSlices;
+    float               loadNoise;
 	unsigned short*		antennaPosition;
 	float*				science;
 	float*				spotNoise;

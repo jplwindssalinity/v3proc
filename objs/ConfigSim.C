@@ -590,10 +590,20 @@ ConfigBeam(
     //-----------//
 
     substitute_string(BEAM_x_PEAK_GAIN_KEYWORD, "x", number, keyword);
-    double peak_gain;    // dB (including one-way waveguide loss)
+    double peak_gain;    // dB
     if (! config_list->GetDouble(keyword, &peak_gain))
         return(0);
-    beam->peakGain = pow(10.0, 0.1*peak_gain);
+
+    //----------------------------------------------------//
+    // waveguide loss - subtract from peak gain (in dB's) //
+    //----------------------------------------------------//
+
+    substitute_string(BEAM_x_WAVEGUIDE_LOSS_KEYWORD, "x", number, keyword);
+    double waveguide_loss;    // dB (divisive factor - positive means loss)
+    if (! config_list->GetDouble(keyword, &waveguide_loss))
+        return(0);
+
+    beam->peakGain = pow(10.0, 0.1*(peak_gain - waveguide_loss));
 
 	//-----------------------------------------------------------------//
 	// Setup one mechanical boresight, or two electrical boresights.

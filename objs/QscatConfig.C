@@ -52,7 +52,7 @@ ConfigQscatSes(
     //-------------------------//
 
     float base_tx_frequency;   // GHz
-    if (! config_list->GetFloat(BASE_TX_FREQUENCY_KEYWORD,
+    if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
         &base_tx_frequency))
     {
         return(0);

@@ -173,12 +173,12 @@ polcoe(
 // a must be a vector of length N+1.
 //--------------------------------------------------------//
  
-double polyval(double x, double a[], int N)
+float polyval(float x, float a[], int N)
  
 {
 
 int i;
-double value;
+float value;
  
 value = a[N];
 for (i=N-1; i >= 0; i--)
