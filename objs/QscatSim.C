@@ -367,7 +367,7 @@ QscatSim::ScatSim(
     }
     else
     {
-        if (! LocateSliceCentroids(spacecraft, qscat, &meas_spot))
+        if (! qscat->LocateSliceCentroids(spacecraft, &meas_spot))
             return(0);
     }
 

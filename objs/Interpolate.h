@@ -24,4 +24,9 @@ int polcoe( double x[], double y[], int	n, double* cof);
 // for polyval, N is the order
 float polyval(float x, float a[], int N);
 
+int  find_target(double x[2], double y[2], float z[2], double target_z,
+         double* target_x, double* target_y);
+
+int  get_quad_peak(double c[3], double* peak_location, double* peak_value);
+
 #endif

@@ -13,6 +13,7 @@ static const char rcs_id_accurategeom_c[] =
 #include "Qscat.h"
 #include "Misc.h"
 #include "Array.h"
+#include "BYUXTable.h"
 
 #define OUTPUT_DETAILED_INFO 0
 
@@ -220,15 +221,15 @@ IntegrateFrequencyInterval(
 	      Vector3 box_center;
 	      box_center.SphericalSet(1.0, (look1+look2)/2.0,
 					    (azi1+azi2)/2.0);
-	      TargetInfoPackage tip;
-	      if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat,
-              box_center, &tip))
+	      QscatTargetInfo qti;
+	      if (! qscat->TargetInfo(&antenna_frame_to_gc, spacecraft,
+              box_center, &qti))
           {
               fprintf(stderr,"IntegrateSlice: Cannot find box range\n");
               fprintf(stderr,"Probably means earth_intercept not found\n");
               return(0);
 	      }
-	      range=tip.slantRange;
+	      range=qti.slantRange;
 
 	      /******************************/
 	      /** Calculate Box Area        */
@@ -239,7 +240,7 @@ IntegrateFrequencyInterval(
 	      /* Calculate two-way gain     */
 	      /******************************/
 
-            if (! SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
+            if (! qscat->SpatialResponse(&antenna_frame_to_gc, spacecraft,
                 (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar, 1))
             {
                 fprintf(stderr, "IntegrateSlice: Cannot find box gain\n");
@@ -257,22 +258,22 @@ IntegrateFrequencyInterval(
                 Pf = GetPulseFractionReceived(qscat, range);
 
 
-	    if(OUTPUT_DETAILED_INFO){
-	      double alt, lon, lat;
-	      tip.rTarget.GetAltLonGDLat(&alt,&lon,&lat);
-	      double report_azim=antenna->groundImpactAzimuthAngle;
-	      double rtt=IdealRtt(spacecraft,qscat);
-              report_azim += rtt * antenna->spinRate/2.0;
-              double gp2;
-              int beam_number=qscat->cds.currentBeamIdx;
-	      double peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
-              gp2=peak_gain*peak_gain;
-	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g\n",
-	          (look1+look2)/2.0*rtd,(azi1+azi2)/2.0*rtd,
-	           lat*rtd,lon*rtd,gatgar/gp2, range, tip.dopplerFreq,
-	          tip.basebandFreq, report_azim*rtd);
- 
-	    }
+        if (OUTPUT_DETAILED_INFO)
+        {
+            double alt, lon, lat;
+            qti.rTarget.GetAltLonGDLat(&alt,&lon,&lat);
+            double report_azim=antenna->groundImpactAzimuthAngle;
+            double rtt = qscat->IdealRtt(spacecraft);
+            report_azim += rtt * antenna->spinRate/2.0;
+            double gp2;
+            int beam_number=qscat->cds.currentBeamIdx;
+            double peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
+            gp2=peak_gain*peak_gain;
+            printf("\nDetailed Info %g %g %g %g %g %g %g %g %g\n",
+                (look1+look2)/2.0*rtd, (azi1+azi2)/2.0*rtd, lat*rtd, lon*rtd,
+                gatgar/gp2, range, qti.dopplerFreq, qti.basebandFreq,
+                report_azim*rtd);
+        }
 	      /*********************************/
 	      /*** Add AGPf/R^4 to sum         */
 	      /*********************************/
@@ -374,7 +375,7 @@ FindBoxCorners(
 {
   Vector3 vector;
   EarthPosition* corner;
-  TargetInfoPackage tip;
+  QscatTargetInfo qti;
 
   //----------------------------//
   // Deallocate old box         //
@@ -386,11 +387,11 @@ FindBoxCorners(
     //----------------------------------------//
 
     vector.SphericalSet(1.0,look1,azi1);
-    if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+    if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
         return(0);
 
   corner=new EarthPosition;
-  *corner=tip.rTarget;
+  *corner=qti.rTarget;
   box->Append(corner);
 
     //-----------------------------------------//
@@ -398,11 +399,11 @@ FindBoxCorners(
     //-----------------------------------------//
 
     vector.SphericalSet(1.0,look1,azi2);
-    if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+    if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
         return(0);
 
     corner=new EarthPosition;
-    *corner=tip.rTarget;
+    *corner=qti.rTarget;
     box->Append(corner);
 
   //---------------------------------------------//
@@ -410,23 +411,23 @@ FindBoxCorners(
   //---------------------------------------------//
 
     vector.SphericalSet(1.0,look2,azi2);
-    if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+    if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
         return(0);
 
     corner=new EarthPosition;
-    *corner=tip.rTarget;
+    *corner=qti.rTarget;
     box->Append(corner);
 
-  //---------------------------------------------//
-  // Calculate fourth corner, add to Outline      //
-  //---------------------------------------------//
+    //-----------------------------------------//
+    // Calculate fourth corner, add to Outline //
+    //-----------------------------------------//
 
     vector.SphericalSet(1.0,look2,azi1);
-    if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+    if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
         return(0);
 
   corner=new EarthPosition;
-  *corner=tip.rTarget;
+  *corner=qti.rTarget;
   box->Append(corner);
 
   return(1);
@@ -447,7 +448,7 @@ FindLookAtFreq(
     double              azimuth)
 {
   Vector3 vector;
-  TargetInfoPackage tip;
+  QscatTargetInfo qti;
 
   /**** Choose look angles on either side of the target frequency ***/
   double start_look=*look-2*dtr;
@@ -458,16 +459,16 @@ FindLookAtFreq(
     while(1)
     {
         vector.SphericalSet(1.0,start_look,azimuth);
-        if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+        if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
             return(0);
 
-        start_freq=tip.basebandFreq;
+        start_freq=qti.basebandFreq;
 
         vector.SphericalSet(1.0,end_look,azimuth);
-        if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+        if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
             return(0);
 
-        end_freq=tip.basebandFreq;
+        end_freq=qti.basebandFreq;
 
         if (target_freq < start_freq && target_freq > end_freq) break;
 
@@ -480,10 +481,10 @@ FindLookAtFreq(
         dlookdfreq=(end_look-start_look)/(end_freq-start_freq);
         mid_look=start_look + dlookdfreq*(target_freq-start_freq);
         vector.SphericalSet(1.0,mid_look,azimuth);
-        if (! TargetInfo(antenna_frame_to_gc, spacecraft, qscat, vector, &tip))
+        if (! qscat->TargetInfo(antenna_frame_to_gc, spacecraft, vector, &qti))
             return(0);
 
-        actual_freq=tip.basebandFreq;
+        actual_freq=qti.basebandFreq;
         if (actual_freq < target_freq){
           end_look=mid_look;
           end_freq=actual_freq;
@@ -559,10 +560,11 @@ GetPeakSpectralResponse(
   SetDelayAndFrequency(spacecraft,&qscopy);
 
 
-  /***** Initialize look and azim to BYU Boresight value **/
-  if(! GetBYUBoresight(spacecraft,&qscopy,look,azim)){
-	    return(0);
-  }
+    /***** Initialize look and azim to BYU Boresight value **/
+    if (! GetBYUBoresight(spacecraft, &qscopy, look, azim))
+    {
+        return(0);
+    }
 
   /***** Set up arrays to use in NegativeSpectralResponse ***/     
   int ndim = 1;
@@ -590,10 +592,13 @@ GetPeakSpectralResponse(
   downhill_simplex((double**)p, ndim, ndim+2, rtol,
 		   NegativeSpectralResponse, ptr,ftol);
 
-  freq = p[0][0];
-  float dummy;
-  if(!FindPeakResponseAtFreq(antenna_frame_to_gc,spacecraft,&qscopy,freq,
-			     ftol,look,azim,&dummy)) return(0);
+    freq = p[0][0];
+    float dummy;
+    if (! qscopy.FindPeakResponseAtFreq(antenna_frame_to_gc, spacecraft, freq,
+        ftol, look, azim, &dummy))
+    {
+        return(0);
+    }
   
   free_array(p,2,ndim+1,ndim+2);
 

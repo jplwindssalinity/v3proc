@@ -84,10 +84,11 @@ class BYUXTable{
 
 };
 
+//------------------//
+// helper functions //
+//------------------//
 
+int  GetBYUBoresight(Spacecraft* spacecraft, Qscat* qscat, double* look,
+         double* azim);
 
 #endif
-
-
-
-

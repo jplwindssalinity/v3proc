@@ -79,4 +79,5 @@ int earth_intercept(EarthPosition rsat, Vector3 rlook_geo,
 
 int elem(EarthPosition	r, Vector3 v, double* a, double* e, double* i,
 	double* w, double* RA, double* M, double* P);
+
 #endif

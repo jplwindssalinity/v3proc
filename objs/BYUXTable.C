@@ -331,17 +331,17 @@ BYUXTable::GetDeltaFreq(
   CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		      attitude, antenna, antenna->txCenterAzimuthAngle);
 
-  //--------------------------------//
-  // Determine Delta Frequency      //
-  //--------------------------------//
+    //---------------------------//
+    // Determine Delta Frequency //
+    //---------------------------//
 
-  TargetInfoPackage tip;
-  if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat,
-        nominal_boresight, &tip))
+    QscatTargetInfo qti;
+    if (! qscat->TargetInfo(&antenna_frame_to_gc, spacecraft,
+        nominal_boresight, &qti))
     {
         fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
         fprintf(stderr,"Probably means earth_intercept not found\n");
-	exit(1);		
+        exit(1);		
     }
 
     //--------------------------------//
@@ -350,12 +350,12 @@ BYUXTable::GetDeltaFreq(
 
     if (cf)
     {
-      cf->XdopplerFreq = tip.dopplerFreq;
-      cf->XroundTripTime = tip.roundTripTime;
-      cf->deltaFreq = tip.basebandFreq;
+      cf->XdopplerFreq = qti.dopplerFreq;
+      cf->XroundTripTime = qti.roundTripTime;
+      cf->deltaFreq = qti.basebandFreq;
     }
 
-    return(tip.basebandFreq);
+    return(qti.basebandFreq);
 }
 
 
@@ -437,5 +437,35 @@ BYUXTable::Interpolate(
 	return(retval);
 }
 
+//-----------------//
+// GetBYUBoresight //
+//-----------------//
 
+int
+GetBYUBoresight(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    double*      look,
+    double*      azim)
+{
+    //-------------------------------------------//
+    // Compute the BYU nominal boresight         //
+    //-------------------------------------------//
 
+    *azim = qscat->sas.antenna.groundImpactAzimuthAngle -
+        qscat->sas.antenna.txCenterAzimuthAngle;
+
+    if(qscat->cds.currentBeamIdx==0)
+    {
+      *look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+      *azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+    }
+    else
+    {
+      *look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+      *azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+    }
+    while(*azim<-pi)*azim+=two_pi;
+    while(*azim> pi)*azim-=two_pi;
+        return(1);
+}

@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_interpolate_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <math.h>
 #include <malloc.h>
@@ -173,19 +173,62 @@ polcoe(
 // a must be a vector of length N+1.
 //--------------------------------------------------------//
  
-float polyval(float x, float a[], int N)
- 
+float
+polyval(
+    float  x,
+    float  a[],
+    int    N)
 {
-
-int i;
-float value;
+    float value;
  
-value = a[N];
-for (i=N-1; i >= 0; i--)
-  {
-  value = value*x + a[i];
-  }
- 
-return(value);
+    value = a[N];
+    for (int i= N-1; i >= 0; i--)
+    {
+        value = value*x + a[i];
+    }
+    return(value);
+}
 
+//-------------//
+// find_target //
+//-------------//
+// Takes two (x, y, z) pairs and a z target value.  Returns the values
+// of x and y that would correspond to the target z value.  Assumes
+// linear relationship among all axes.
+
+int
+find_target(
+    double   x[2],
+    double   y[2],
+    float    z[2],
+    double   target_z,
+    double*  target_x,
+    double*  target_y)
+{
+    double delta_x = x[1] - x[0];
+    double delta_y = y[1] - y[0];
+    double delta_z = z[1] - z[0];
+
+    double z_frac = (target_z - z[0]) / delta_z;
+    *target_x = x[0] + z_frac * delta_x;
+    *target_y = y[0] + z_frac * delta_y;
+    return(1);
+}
+
+//---------------//
+// get_quad_peak //
+//---------------//
+// finds the peak of a quadratic
+
+int
+get_quad_peak(
+    double   c[3],
+    double*  peak_location,
+    double*  peak_value)
+{
+    if (c[2] == 0.0)
+        return(0);
+    *peak_location = -c[1] / (2.0 * c[2]);
+    *peak_value = ((c[2] * (*peak_location)) + c[1]) * (*peak_location) + c[0];
+    return(1);
 }

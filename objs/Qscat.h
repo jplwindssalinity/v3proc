@@ -13,15 +13,14 @@ static const char rcs_id_qscat_h[] =
 #include "Tracking.h"
 #include "Spacecraft.h"
 #include "Scatterometer.h"
-
-class TargetInfoPackage;
+#include "Meas.h"
 
 #define NUMBER_OF_QSCAT_BEAMS     2
 #define ENCODER_N                 32768
 
 //======================================================================
 // CLASSES
-//      QscatSes, QscatSas, QscatCds, Qscat
+//      QscatTargetInfo, QscatSes, QscatSas, QscatCds, Qscat
 //======================================================================
 
 #define F_PROC  -1.06E3    // Hz
@@ -31,6 +30,21 @@ class TargetInfoPackage;
 #define T_GRID  19.87E-6
 #define T_RC    9.968E-6
 #define T_EXC   1E-6
+
+//======================================================================
+// CLASS
+//      QscatTargetInfo
+//
+// DESCRIPTION
+//      The QscatTargetInfo class holds target information.
+//======================================================================
+
+class QscatTargetInfo : public ScatTargetInfo
+{
+public:
+    float  dopplerFreq;      // Hz
+    float  basebandFreq;     // Hz
+};
 
 //======================================================================
 // CLASS
@@ -164,7 +178,6 @@ public:
     //-----------//
 
     double    sampledAzimuth;    // the antenna azimuth angle when sampled
-    Antenna   antenna;
     EncoderE  encoderElectronics;
 };
 
@@ -268,7 +281,6 @@ public:
     unsigned short  orbitStep;
     unsigned int    instrumentTime;
 
-    double          time;
     double          eqxTime;
 
     unsigned short  rawEncoder;   // used for the current pulse (ex-held)
@@ -297,7 +309,6 @@ public:
     // setting/getting //
     //-----------------//
 
-    Beam*         GetCurrentBeam();
     CdsBeamInfo*  GetCurrentCdsBeamInfo();
     SesBeamInfo*  GetCurrentSesBeamInfo();
 
@@ -314,6 +325,54 @@ public:
     int  SetOtherAzimuths(Spacecraft* spacecraft);
 
     double  GetEncoderToTxCenterDelay();
+
+    //----------//
+    // geometry //
+    //----------//
+
+    int  LocateSlices(Spacecraft* spacecraft, MeasSpot* meas_spot);
+    int  FindSlice(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look, double azim, float freq_1,
+             float freq_2, float freq_tol, Outline* outline,
+             Vector3* look_vector, EarthPosition* centroid);
+    int  FindPeakResponseAtFreq(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, float target_freq, float freq_tol,
+             double* look, double* azim, float* response,
+             int ignore_range = 0);
+    int  FindFreq(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, float target_freq, float freq_tol,
+             double* look, double* azim);
+    int  FindSliceCorners(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look, double azim,
+             float target_gain, double corner_look[2], double corner_azim[2]);
+    int  FindPeakResponseForSlice(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look[2], double azim[2],
+             float response[2], float* peak_response, int ignore_range = 0);
+    int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look, double azim,
+             double* response, int ignore_range = 0);
+    int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look, double azim,
+             float* response, int ignore_range = 0);
+    int  FreqGradient(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look, double look_offset,
+             double azim, double azim_offset, double* df_dlook,
+             double* df_dazim);
+    int  FindPeakResponseUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double delta_look, double delta_azim,
+             double angle_offset, double angle_tol, double* look,
+             double* azim, float* response, int ignore_range = 0);
+    int  TargetInfo(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, Vector3 vector, QscatTargetInfo* qti);
+    int  SpatialResponseQuadFit(CoordinateSwitch* antenna_frame_to_gc,
+             Spacecraft* spacecraft, double look[3], double azim[3],
+             double s[3], double c[3]);
+    int  LocateSliceCentroids(Spacecraft* spacecraft, MeasSpot* meas_spot,
+             float* Esn = NULL, float gain_threshold = 0.0,
+             int max_slices = 0);
+    double  IdealRtt(Spacecraft* spacecraft, int use_flags = 0);
+    int     IdealCommandedDoppler(Spacecraft* spacecraft,
+                QscatTargetInfo* qti_out = NULL);
 
 /*
     int  SetAntennaToTxCenter(int pri_delay = 0);
@@ -338,7 +397,7 @@ public:
 //------------------//
 
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
-         TargetInfoPackage* tip = NULL);
+         QscatTargetInfo* qti = NULL);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
 #endif

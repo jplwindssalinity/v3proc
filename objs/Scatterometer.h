@@ -9,28 +9,35 @@
 static const char rcs_id_scatterometer_h[] =
     "@(#) $Id$";
 
+#include "CoordinateSwitch.h"
+#include "EarthPosition.h"
+#include "Matrix3.h"
+#include "Spacecraft.h"
+#include "Meas.h"
+#include "Antenna.h"
+
 //======================================================================
 // CLASSES
-//    Scatterometer, ScatRF, ScatDig, ScatAnt
+//    ScatTargetInfo, ScatRF, ScatDig, ScatAnt, Scatterometer
 //======================================================================
 
 //======================================================================
 // CLASS
-//    Scatterometer
+//    ScatTargetInfo
 //
 // DESCRIPTION
-//    The Scatterometer class is a base class for scatterometers.
+//    The ScatTargetInfo class is a base class for target information.
 //======================================================================
 
-class Scatterometer
+class ScatTargetInfo
 {
 public:
-    //--------------//
-    // construction //
-    //--------------//
+    EarthPosition  rTarget;
+    float          slantRange;       // km
+    float          roundTripTime;    // ms
 
-    Scatterometer();
-    ~Scatterometer();
+    int  GetScatTargetInfo(CoordinateSwitch* antenna_frame_to_gc,
+             EarthPosition rsat, Vector3 vector);
 };
 
 //======================================================================
@@ -81,6 +88,8 @@ public:
     // variables //
     //-----------//
 
+    int     currentBeamIdx;
+    double  time;
 };
 
 //======================================================================
@@ -106,6 +115,58 @@ public:
     // variables //
     //-----------//
 
+    Antenna  antenna;
 };
+
+//======================================================================
+// CLASS
+//    Scatterometer
+//
+// DESCRIPTION
+//    The Scatterometer class is a base class for scatterometers.
+//======================================================================
+
+#define POINTS_PER_SPOT_OUTLINE  18
+#define DEFAULT_CONTOUR_LEVEL    0.5
+
+class Scatterometer
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+
+    Scatterometer();
+    ~Scatterometer();
+
+    //-----------------//
+    // getting/setting //
+    //-----------------//
+
+    Beam*  GetCurrentBeam();
+
+    //----------//
+    // geometry //
+    //----------//
+
+    int  LocateSpot(Spacecraft* spacecraft, MeasSpot* meas_spot, float Esn,
+             float contour_level);
+
+    //-----------//
+    // variables //
+    //-----------//
+
+    ScatRF*   scatRf;
+    ScatDig*  scatDig;
+    ScatAnt*  scatAnt;
+};
+
+//------------------//
+// helper functions //
+//------------------//
+
+int  GetPeakSpatialResponse2(CoordinateSwitch* antenna_frame_to_gc,
+         Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
+         double* look, double* azim, int ignore_range = 0);
 
 #endif

@@ -250,7 +250,7 @@ L1AToL1B::Convert(
 		}
 		else
         {
-            if (! LocateSliceCentroids(spacecraft, qscat, meas_spot, Esn,
+            if (! qscat->LocateSliceCentroids(spacecraft, meas_spot, Esn,
                 sliceGainThreshold, processMaxSlices))
             {
                 return(0);

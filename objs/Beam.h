@@ -18,21 +18,22 @@ static const char rcs_id_beam_h[] =
 
 //======================================================================
 // CLASS
-//		Beam
+//    Beam
 //
 // DESCRIPTION
-//		The Beam object contains beam state information and fixed
-//		coordinate transforms related to the beam "mounting" on the
-//		antenna.  The beam antenna pattern is also held by this object.
-//		The beam pattern has to be loaded from an external file.
+//    The Beam object contains beam state information and fixed
+//    coordinate transforms related to the beam "mounting" on the
+//    antenna.  The beam antenna pattern is also held by this object.
+//    The beam pattern has to be loaded from an external file.
 //
 // NAME CONVENTIONS
-//		To aid in identifying the reference frame an angle is defined in,
-//		the following conventions are followed in here and in Beam.C:
-//		look_angle and azimuth_angle pairs refer to standard spherical angles
-//		in the antenna frame.
-//		elevation or Em and azimuth or Am pairs refer to the modifed spherical
-//		angles used to access the beam pattern in the beam reference frame.
+//    To aid in identifying the reference frame an angle is defined in,
+//    the following conventions are followed in here and in Beam.C:
+//    look_angle and azimuth_angle pairs refer to standard spherical
+//    angles in the antenna frame.
+//    elevation or Em and azimuth or Am pairs refer to the modifed
+//    spherical angles used to access the beam pattern in the beam
+//    reference frame.
 //======================================================================
 
 enum PolE { V_POL=0, H_POL=1, NONE };
@@ -43,76 +44,71 @@ class Beam
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	Beam();
-	Beam(const Beam& from);
-	~Beam();
-        
-	// Get and Set Beams separately.
-	int		GetElectricalBoresight(double* look_angle, double* azimuth_angle);
-	int		SetElectricalBoresight(double look_angle, double azimuth_angle);
+    Beam();
+    Beam(const Beam& from);
+    ~Beam();
 
-	// Set mechanical reference (beam directions determined by pattern data)
-	// Use the same inputs for each beam to have a consistent reference.
-	int		SetMechanicalBoresight(double look_angle, double azimuth_angle);
+    // Get and Set Beams separately.
+    int  GetElectricalBoresight(double* look_angle, double* azimuth_angle);
+    int  SetElectricalBoresight(double look_angle, double azimuth_angle);
 
-	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
-				double x_spacing, double y_spacing,
-				double electrical_boresight_Em, double electrical_boresight_Am,
-				float** power_gain);
+    // Set mechanical reference (beam directions determined by pattern data)
+    // Use the same inputs for each beam to have a consistent reference.
+    int  SetMechanicalBoresight(double look_angle, double azimuth_angle);
 
-	int		ReadBeamPattern(char* filename);
-	int		WriteBeamPattern(char* filename);
+    int  SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
+             double x_spacing, double y_spacing,
+             double electrical_boresight_Em, double electrical_boresight_Am,
+             float** power_gain);
 
-	int		GetPowerGain(double look_angle, double azimuth_angle, float* gain);
-	int		GetPowerGain(double look_angle, double azimuth_angle,
-				double* gain);
-	int		GetPowerGainProduct(double look_angle, double azimuth_angle,
-				double round_trip_time, double azimuth_rate,
-				float* gain_product);
-	int		GetPowerGainProduct(double look_angle, double azimuth_angle,
-				double round_trip_time, double azimuth_rate,
-				double* gain_product);
+    int  ReadBeamPattern(char* filename);
+    int  WriteBeamPattern(char* filename);
 
-	int		GetSpatialResponse(double look_angle, double azimuth_angle,
-				double round_trip_time, double azimuth_rate,
-				float* response);
-	int		GetSpatialResponse(double look_angle, double azimuth_angle,
-				double round_trip_time, double azimuth_rate,
-				double* response);
+    int  GetPowerGain(double look_angle, double azimuth_angle, float* gain);
+    int  GetPowerGain(double look_angle, double azimuth_angle, double* gain);
+    int  GetPowerGainProduct(double look_angle, double azimuth_angle,
+             double round_trip_time, double azimuth_rate, float* gain_product);
+    int  GetPowerGainProduct(double look_angle, double azimuth_angle,
+             double round_trip_time, double azimuth_rate,
+             double* gain_product);
 
-        //------------------//
-        // Operators        //
-        //------------------//
-        Beam& operator=(const Beam& from);
+    int  GetSpatialResponse(double look_angle, double azimuth_angle,
+              double round_trip_time, double azimuth_rate, float* response);
+    int  GetSpatialResponse(double look_angle, double azimuth_angle,
+              double round_trip_time, double azimuth_rate, double* response);
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // Operators //
+    //-----------//
 
-	PolE			polarization;
-	double			_elecBoresightLook;		// in the antenna frame
-	double			_elecBoresightAzim;
+    Beam& operator=(const Beam& from);
 
-	// coordinate swith from antenna frame to beam measurement frame
-	CoordinateSwitch	_antennaFrameToBeamFrame;
+    //-----------//
+    // variables //
+    //-----------//
 
-	// Beam pattern info
-	double		_electrical_boresight_Em;
-	double		_electrical_boresight_Am;
-	int			_Nx;
-	int			_Ny;
-	int			_ix_zero;
-	int			_iy_zero;
-	double		_x_spacing;
-	double		_y_spacing;
-	float**		_power_gain;
-	float       peakGain;
+    PolE    polarization;
+    double  _elecBoresightLook;    // in the antenna frame
+    double  _elecBoresightAzim;
+
+    // coordinate swith from antenna frame to beam measurement frame
+    CoordinateSwitch  _antennaFrameToBeamFrame;
+
+    // Beam pattern info
+    double   _electrical_boresight_Em;
+    double   _electrical_boresight_Am;
+    int      _Nx;
+    int      _Ny;
+    int      _ix_zero;
+    int      _iy_zero;
+    double   _x_spacing;
+    double   _y_spacing;
+    float**  _power_gain;
+    float    peakGain;
 };
+
 #endif
-
-
-

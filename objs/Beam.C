@@ -11,6 +11,7 @@ static const char rcs_id_beam_c[] =
 #include "Beam.h"
 #include "Array.h"
 #include "Constants.h"
+#include "Misc.h"
 
 //======//
 // Beam //
@@ -39,12 +40,12 @@ Beam::Beam(const Beam& from)
 
 Beam::~Beam()
 {
-	if (_power_gain != NULL)
-	{
-		free_array(_power_gain,2,_Nx,_Ny);
-	}
+    if (_power_gain != NULL)
+    {
+        free_array(_power_gain, 2, _Nx, _Ny);
+    }
 
-	return;
+    return;
 }
 
 //------------------------------//
@@ -576,7 +577,6 @@ Beam::GetSpatialResponse(
 	return(retval);
 }
 
-
         //------------------//
         // Operators        //
         //------------------//
@@ -614,4 +614,3 @@ Beam::operator=(
 	}
 	return(*this);
 }
-
