@@ -42,6 +42,34 @@ Antenna::SetPedestalAttitude(
 	return(1);
 }
 
+//-------------------------//
+// Antenna::EncoderToAngle //
+//-------------------------//
+
+double
+Antenna::EncoderToAngle(
+	unsigned int	encoder_value)
+{
+	// the 0.5 is to center the azimuth on the given encoder value
+	double angle = two_pi *
+		((double)(encoder_value + 0.5) / (double)_numberOfEncoderValues);
+	return(angle);
+}
+
+//-------------------------//
+// Antenna::AngleToEncoder //
+//-------------------------//
+
+unsigned int
+Antenna::AngleToEncoder(
+	double	angle)
+{
+	unsigned int encoder_value = (unsigned int)((angle / two_pi) *
+		(double)_numberOfEncoderValues);
+	encoder_value %= _numberOfEncoderValues;
+	return(encoder_value);
+}
+
 //-----------------------------------//
 // Antenna::SetNumberOfEncoderValues //
 //-----------------------------------//
@@ -60,11 +88,9 @@ Antenna::SetNumberOfEncoderValues(
 
 int
 Antenna::SetAzimuthWithEncoder(
-	unsigned int	encoder)
+	unsigned int	encoder_value)
 {
-	// the 0.5 is to center the azimuth on the given encoder value
-	azimuthAngle = two_pi *
-		((double)(encoder + 0.5) / (double)_numberOfEncoderValues);
+	azimuthAngle = EncoderToAngle(encoder_value);
 	return(1);
 }
 
@@ -91,9 +117,7 @@ Antenna::GetEarlyEncoderValue(
 	double	time)			// seconds
 {
 	double azimuth_angle = azimuthAngle - spin_rate * time + two_pi;
-	unsigned int encoder = (unsigned int)((azimuth_angle / two_pi) *
-		(double)_numberOfEncoderValues);
-	encoder %= _numberOfEncoderValues;
+	unsigned int encoder = AngleToEncoder(azimuth_angle);
 	return(encoder);
 }
 
@@ -104,9 +128,7 @@ Antenna::GetEarlyEncoderValue(
 unsigned int
 Antenna::GetEncoderValue()
 {
-	unsigned int encoder = (unsigned int)((azimuthAngle / two_pi) *
-		(double)_numberOfEncoderValues);
-	encoder %= _numberOfEncoderValues;
+	unsigned int encoder = AngleToEncoder(azimuthAngle);
 	return(encoder);
 }
 

@@ -47,6 +47,9 @@ public:
 	// setting/getting //
 	//-----------------//
 
+	double			EncoderToAngle(unsigned int encoder_value);
+	unsigned int	AngleToEncoder(double angle);
+
 	int				SetNumberOfEncoderValues(unsigned int number);
 	int				SetAzimuthWithEncoder(unsigned int encoder_value);
 
