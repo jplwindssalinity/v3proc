@@ -1,0 +1,114 @@
+#!/bin/csh
+#-----------------------------------------------------------#
+# Copyright (C) 1998, California Institute of Technology.	#
+# U.S. Government sponsorship acknowledged.					#
+#-----------------------------------------------------------#
+
+#----------------------------------------------------------------------
+# NAME
+#		grid_script
+#
+# SYNOPSIS
+#		grid_script <cfg_file>
+#
+# DESCRIPTION
+#		Executes the processing chain starting at l1b (gridding and wind ret.)
+#			l1b_to_l2a, l2a_to_l2b
+#
+# OPTIONS
+#		None.
+#
+# OPERANDS
+#		The following operand is supported:
+#		<cfg_file>		Specifies the configuration file.
+#
+# EXAMPLES
+#		An example of a command line is:
+#			% grid_script qscat.cfg
+#
+# ENVIRONMENT
+#		Not environment dependent
+#
+# EXIT STATUS
+#		The following exit values are returned:
+#		0	Program executed successfully
+#		>0	Program had an error
+#
+# NOTES
+#		None.
+#
+# AUTHOR
+#		James N. Huddleston
+#		hudd@acid.jpl.nasa.gov
+#
+# CONFIGURATION CONTROL
+#		"@(#) $Id$"
+#----------------------------------------------------------------------
+
+#------------------------#
+# Parse the command line #
+#------------------------#
+
+set command_name = $0
+set command_name = $command_name:t
+set opt_string = ""
+
+if ($#argv != 1) then
+  goto usage
+  exit(1)
+endif
+
+set cfg_file = $argv[1]
+
+#------------------#
+# log the cfg file #
+#------------------#
+
+echo "`date` : Logging configuration file"
+log_cfg $cfg_file $cfg_file.clog
+echo "`date` : Completed logging configuration file"
+echo ""
+
+#----------------#
+# run l1b_to_l2a #
+#----------------#
+
+echo "`date` : Starting l1b_to_l2a"
+l1b_to_l2a $cfg_file
+echo "`date` : Completed l1b_to_l2a"
+echo ""
+
+#----------------#
+# run l2a_to_l2b #
+#----------------#
+
+echo "`date` : Starting l2a_to_l2b"
+l2a_to_l2b $cfg_file
+echo "`date` : Completed l2a_to_l2b"
+echo ""
+
+#----------------------------#
+# verifying the cfg log file #
+#----------------------------#
+
+echo "`date` : Verifying configuration file"
+log_cfg $cfg_file $cfg_file.clog2
+diff $cfg_file.clog $cfg_file.clog2
+rm $cfg_file.clog2
+echo "`date` : Completed verifying configuration file"
+
+
+exit(0)
+
+end
+
+
+#---------------------------#
+# LABEL: usage				#
+#	Explain command usage	#
+#---------------------------#
+
+usage:
+  echo "usage: $command_name <cfg_file>"
+  exit(1)
+end
