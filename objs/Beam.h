@@ -57,9 +57,9 @@ public:
 	int		SetMechanicalBoresight(double look_angle, double azimuth_angle);
 
 	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
-			    double x_spacing, double y_spacing,
-    			double electrical_boresight_Em, double electrical_boresight_Am,
-    			float **power_gain);
+				double x_spacing, double y_spacing,
+				double electrical_boresight_Em, double electrical_boresight_Am,
+				float **power_gain);
 
 	int		ReadBeamPattern(char* filename);
 	int		WriteBeamPattern(char* filename);
@@ -94,8 +94,8 @@ protected:
 	double	_reference_azimuthAngle;
 
 	// Beam pattern info
-	double _electrical_boresight_Em;
-	double _electrical_boresight_Am;
+	double	_electrical_boresight_Em;
+	double	_electrical_boresight_Am;
 	int		_Nx;
 	int		_Ny;
 	int		_ix_zero;
