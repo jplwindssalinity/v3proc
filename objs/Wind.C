@@ -28,7 +28,6 @@ static const char rcs_id_wind_c[] =
 #define USE_MEDIAN_FOR_RANGE 1   // Otherwise uses mean filter
 
 #define FLIPPING_WITHIN_RANGE_THRESHOLD (5.0*dtr)
-
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
 
