@@ -99,7 +99,6 @@ template class List<AngleInterval>;
 #define OPTSTRING    "cs:m:r:"
 #define ATI_SIZE     1624
 #define CTI_SIZE     76
-#define MIN_SAMPLES  20
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -131,6 +130,7 @@ static unsigned short mudhtab[16][16][16][16];
 unsigned long classifiable_count = 0;
 unsigned long with_nbd_count = 0;
 unsigned long without_nbd_count = 0;
+unsigned long missing_prob_count = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -240,18 +240,18 @@ main(
                 filename);
             exit(1);
         }
+    }
 
-        const char* param_map[] = { "NBD", "Spd", "Dir", "MLE" };
-        for (int i = 0; i < 4; i++)
+    const char* param_map[] = { "NBD", "Spd", "Dir", "MLE" };
+    for (int i = 0; i < 4; i++)
+    {
+        sprintf(filename, "%s.%s", output_base, param_map[i]);
+        param_ofp[i] = fopen(filename, "w");
+        if (param_ofp[i] == NULL)
         {
-            sprintf(filename, "%s.%s", output_base, param_map[i]);
-            param_ofp[i] = fopen(filename, "w");
-            if (param_ofp[i] == NULL)
-            {
-                fprintf(stderr, "%s: error opening output file %s\n", command,
-                    filename);
-                exit(1);
-            }
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
         }
     }
 
@@ -413,78 +413,85 @@ main(
                 // look up probabilities from the mudhtable //
                 //------------------------------------------//
 
+                int irain = mudhtab[inbd][ispd][idir][imle];
+                irain /= 256;
+                float frain = (float)irain * 0.5;
+
+                int irainfree = mudhtab[inbd][ispd][idir][imle];
+                irainfree &= 0x00ff;
+                float frainfree = (float)irainfree * 0.5;
+
+                //----------------------------------------------------//
+                // if there is insufficient probability info, skip it //
+                //----------------------------------------------------//
+
+                if (frain > 100.1 || frainfree > 100.1)
+                {
+                    missing_prob_count++;
+                    continue;
+                }
+
+                //----------------------//
+                // write to class files //
+                //----------------------//
+
                 if (opt_class)
                 {
-                    int irain = mudhtab[inbd][ispd][idir][imle];
-                    irain /= 256;
-                    float frain = (float)irain * 0.5;
-
-                    int irainfree = mudhtab[inbd][ispd][idir][imle];
-                    irainfree &= 0x00ff;
-                    float frainfree = (float)irainfree * 0.5;
-
-                    //----------------------//
-                    // write to class files //
-                    //----------------------//
-
-                    int got_nbd;
                     if (inbd == 15)
                     {
-                        got_nbd = 0;
                         fprintf(class_without_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd, dir,
-                            mle, frainfree, frain, rr, rev, ati, cti);
+                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
+                            dir, mle, frainfree, frain, rr, rev, ati, cti);
                     }
                     else
                     {
-                        got_nbd = 1;
                         fprintf(class_with_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd, dir,
-                            mle, frainfree, frain, rr, rev, ati, cti);
+                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
+                            dir, mle, frainfree, frain, rr, rev, ati, cti);
                     }
-
-                    //----------------------//
-                    // accumulate from data //
-                    //----------------------//
-
-                    int nbd_idx = nbd_array[ati][cti];
-                    int spd_idx = spd_array[ati][cti];
-                    int dir_idx = dir_array[ati][cti];
-                    int mle_idx = mle_array[ati][cti];
-
-                    int nbd_avail = 1;
-                    if (nbd_idx == 255)
-                        nbd_avail = 0;
-
-                    counts[0][0][ssmi_flag][nbd_avail][nbd_idx]++;
-                    counts[1][0][ssmi_flag][nbd_avail][spd_idx]++;
-                    counts[2][0][ssmi_flag][nbd_avail][dir_idx]++;
-                    counts[3][0][ssmi_flag][nbd_avail][mle_idx]++;
-
-                    //-----------------------//
-                    // accumulate from table //
-                    //-----------------------//
-
-                    counts[0][1][0][nbd_avail][nbd_idx]++;
-                    counts[0][1][1][nbd_avail][nbd_idx]++;
-                    prob_sum[0][0][nbd_avail][nbd_idx] += frainfree;
-                    prob_sum[0][1][nbd_avail][nbd_idx] += frain;
-
-                    counts[1][1][0][nbd_avail][spd_idx]++;
-                    counts[1][1][1][nbd_avail][spd_idx]++;
-                    prob_sum[1][0][nbd_avail][spd_idx] += frainfree;
-                    prob_sum[1][1][nbd_avail][spd_idx] += frain;
-
-                    counts[2][1][0][nbd_avail][dir_idx]++;
-                    counts[2][1][1][nbd_avail][dir_idx]++;
-                    prob_sum[2][0][nbd_avail][dir_idx] += frainfree;
-                    prob_sum[2][1][nbd_avail][dir_idx] += frain;
-
-                    counts[3][1][0][nbd_avail][mle_idx]++;
-                    counts[3][1][1][nbd_avail][mle_idx]++;
-                    prob_sum[3][0][nbd_avail][mle_idx] += frainfree;
-                    prob_sum[3][1][nbd_avail][mle_idx] += frain;
                 }
+
+                //----------------------//
+                // accumulate from data //
+                //----------------------//
+
+                int nbd_idx = nbd_array[ati][cti];
+                int spd_idx = spd_array[ati][cti];
+                int dir_idx = dir_array[ati][cti];
+                int mle_idx = mle_array[ati][cti];
+
+                int nbd_avail = 1;
+                if (nbd_idx == 255)
+                    nbd_avail = 0;
+
+                counts[0][0][ssmi_flag][nbd_avail][nbd_idx]++;
+                counts[1][0][ssmi_flag][nbd_avail][spd_idx]++;
+                counts[2][0][ssmi_flag][nbd_avail][dir_idx]++;
+                counts[3][0][ssmi_flag][nbd_avail][mle_idx]++;
+
+                //-----------------------//
+                // accumulate from table //
+                //-----------------------//
+
+                counts[0][1][0][nbd_avail][nbd_idx]++;
+                counts[0][1][1][nbd_avail][nbd_idx]++;
+                prob_sum[0][0][nbd_avail][nbd_idx] += frainfree;
+                prob_sum[0][1][nbd_avail][nbd_idx] += frain;
+
+                counts[1][1][0][nbd_avail][spd_idx]++;
+                counts[1][1][1][nbd_avail][spd_idx]++;
+                prob_sum[1][0][nbd_avail][spd_idx] += frainfree;
+                prob_sum[1][1][nbd_avail][spd_idx] += frain;
+
+                counts[2][1][0][nbd_avail][dir_idx]++;
+                counts[2][1][1][nbd_avail][dir_idx]++;
+                prob_sum[2][0][nbd_avail][dir_idx] += frainfree;
+                prob_sum[2][1][nbd_avail][dir_idx] += frain;
+
+                counts[3][1][0][nbd_avail][mle_idx]++;
+                counts[3][1][1][nbd_avail][mle_idx]++;
+                prob_sum[3][0][nbd_avail][mle_idx] += frainfree;
+                prob_sum[3][1][nbd_avail][mle_idx] += frain;
             }
         }
     }
@@ -575,6 +582,8 @@ main(
         100.0 * (double)with_nbd_count / (double)classifiable_count);
     printf("Without NBD: %8ld (%2.2f %%)\n", without_nbd_count,
         100.0 * (double)without_nbd_count / (double)classifiable_count);
+    printf("Missing P's: %8ld (%2.2f %%)\n", missing_prob_count,
+        100.0 * (double)missing_prob_count / (double)classifiable_count);
 
     //-------------//
     // close files //

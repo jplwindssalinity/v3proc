@@ -8,13 +8,14 @@
 //    mudh_table
 //
 // SYNOPSIS
-//    mudh_table [ -m minutes ] [ -r rain_rate ] <start_rev>
+//    mudh_table [ -h ] [ -m minutes ] [ -r rain_rate ] <start_rev>
 //        <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generates a mudh table for classification.
 //
 // OPTIONS
+//    [ -h ]            Make a sample histogram.
 //    [ -m minutes ]    Time difference maximum.
 //    [ -r rain_rate ]  The SSM/I rain rate to threshold.
 //
@@ -94,10 +95,10 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "m:r:"
+#define OPTSTRING    "hm:r:"
 #define AT_WIDTH     1624
 #define CT_WIDTH     76
-#define MIN_SAMPLES  20
+#define MIN_SAMPLES  100
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -107,11 +108,13 @@ template class List<AngleInterval>;
 // OPTION VARIABLES //
 //------------------//
 
+int opt_hist = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -m minutes ]", "[ -r rain_rate ]",
+const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r rain_rate ]",
     "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // Index 1: Parameter (0=NBD, 1=Spd, 2=Dir, 3=MLE, 4=Prob
@@ -145,6 +148,9 @@ main(
     {
         switch(c)
         {
+        case 'h':
+            opt_hist = 1;
+            break;
         case 'm':
             minutes = atoi(optarg);
             break;
@@ -312,7 +318,7 @@ main(
                 for (int l = 0; l < 16; l++)
                 {
                     mudhtab[i][j][k][l] = 0;
-                    if (counts[i][j][k][l][0] > 0)
+                    if (counts[i][j][k][l][0] > MIN_SAMPLES)
                     {
                         double rainfree_prob = (double)counts[i][j][k][l][1] /
                             (double)counts[i][j][k][l][0];
@@ -327,6 +333,12 @@ main(
                         int iprob = irain * 256 + irainfree;
                         mudhtab[i][j][k][l] = (unsigned short)iprob;
                     }
+                    else
+                    {
+                        // mark as uncalculatable (100.5 %)
+                        int iprob = 201 * 256 + 201;
+                        mudhtab[i][j][k][l] = (unsigned short)iprob;
+                    }
                 }
             }
         }
@@ -338,6 +350,72 @@ main(
     //-------------//
 
     fclose(mudhtab_ofp);
+
+    //-----------------------//
+    // make a histogram file //
+    //-----------------------//
+
+    if (opt_hist)
+    {
+        sprintf(filename, "%s.hist", output_base);
+        FILE* hist_ofp = fopen(filename, "w");
+        if (hist_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening histogram file %s\n", command,
+                filename);
+            exit(1);
+        }
+
+        // find max count
+        unsigned long max_count = 0;
+        unsigned long total_count = 0;
+        for (int i = 0; i < 16; i++)
+        {
+            for (int j = 0; j < 16; j++)
+            {
+                for (int k = 0; k < 16; k++)
+                {
+                    for (int l = 0; l < 16; l++)
+                    {
+                        total_count += counts[i][j][k][l][0];
+                        if (counts[i][j][k][l][0] > max_count)
+                            max_count = counts[i][j][k][l][0];
+                    }
+                }
+            }
+        }
+
+        unsigned long cell_PDF_sum = 0;
+        unsigned long data_sum = 0;
+        unsigned long data_PDF_sum = 0;
+        for (unsigned long target = 0; target <= max_count; target++)
+        {
+            unsigned long target_count = 0;
+            for (int i = 0; i < 16; i++)
+            {
+                for (int j = 0; j < 16; j++)
+                {
+                    for (int k = 0; k < 16; k++)
+                    {
+                        for (int l = 0; l < 16; l++)
+                        {
+                            if (counts[i][j][k][l][0] == target)
+                            {
+                                target_count++;
+                            }
+                        }
+                    }
+                }
+            }
+            cell_PDF_sum += target_count;
+            data_sum = (target_count * target);
+            data_PDF_sum += data_sum;
+            double cell_PDF = (double)cell_PDF_sum / (double)(16*16*16*16);
+            double data_PDF = (double)data_PDF_sum / (double)(total_count);
+            fprintf(hist_ofp, "%ld %g %g\n", target, cell_PDF, data_PDF);
+        }
+        fclose(hist_ofp);
+    }
 
     return (0);
 }
