@@ -269,16 +269,14 @@ OrbitSim::UpdateOrbit(
 	double s2 = sin(slonginer);
 
 	// x, y, z to center of earth
-	orbit->gc_vector[0] = rnew * c1 * c2;
-	orbit->gc_vector[1] = rnew * c1 * s2;
-	orbit->gc_vector[2] = rnew * s1;
+	double gc_x = rnew * c1 * c2;
+	double gc_y = rnew * c1 * s2;
+	double gc_z = rnew * s1;
 
 	// S/C velocity vector
-	orbit->velocity_vector[0] = rdotnew*c1*c2 - rnew*s1*c2*slatdot -
-		rnew*c1*s2*slongdot;
-	orbit->velocity_vector[1] = rdotnew*c1*s2 - rnew*s1*s2*slatdot +
-		rnew*c1*c2*slongdot;
-	orbit->velocity_vector[2] = rdotnew*s1 + rnew*c1*slatdot;
+	double vx = rdotnew*c1*c2 - rnew*s1*c2*slatdot - rnew*c1*s2*slongdot;
+	double vy = rdotnew*c1*s2 - rnew*s1*s2*slatdot + rnew*c1*c2*slongdot;
+	double vz = rdotnew*s1 + rnew*c1*slatdot;
 
 	// rotate the x-y axis by the earth's motion to get final
 	// inertial state vector {x, y, z, xdot, ydot, zdot}
@@ -287,41 +285,40 @@ OrbitSim::UpdateOrbit(
 	b = sin(earthmove);
 
 	double rss[2];
-	rss[0] = orbit->gc_vector[0] * a + orbit->gc_vector[1] * b;
-	rss[1] = -orbit->gc_vector[0] * b + orbit->gc_vector[1] * a;
+	rss[0] = gc_x * a + gc_y * b;
+	rss[1] = -gc_x * b + gc_y * a;
 
 	double vss[2];
-	vss[0] = orbit->velocity_vector[0] * a +
-		orbit->velocity_vector[1] * b;
-	vss[1] = -orbit->velocity_vector[0] * b +
-		orbit->velocity_vector[1] * a;
+	vss[0] = vx * a + vy * b;
+	vss[1] = -vx * b + vy * a;
 
-	orbit->gc_vector[0] = rss[0];
-	orbit->gc_vector[1] = rss[1];
-	orbit->velocity_vector[0] = vss[0];
-	orbit->velocity_vector[1] = vss[1];
+	gc_x = rss[0];
+	gc_y = rss[1];
+	vx = vss[0];
+	vy = vss[1];
 
 	// satellite radial distance from center of earth
-	double rsmag = sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
-		orbit->gc_vector[1]*orbit->gc_vector[1] +
-		orbit->gc_vector[2]*orbit->gc_vector[2]);
+	double rsmag = sqrt(gc_x*gc_x + gc_y*gc_y + gc_z*gc_z);
 
 	// satellite latitude
-	satlat = asin(orbit->gc_vector[2] / rsmag);
+	satlat = asin(gc_z / rsmag);
 
 	// satellite longitude
-	double sinl = orbit->gc_vector[1] /
-		sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
-		orbit->gc_vector[1]*orbit->gc_vector[1]);
-	double cosl = orbit->gc_vector[0] /
-		sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
-		orbit->gc_vector[1]*orbit->gc_vector[1]);
+	double xy_dist = sqrt(gc_x*gc_x + gc_y*gc_y);
+	double sinl = gc_y / xy_dist;
+	double cosl = gc_x / xy_dist;
 	double satlon = atan2(sinl, cosl);
 	satlon = fmod(satlon + two_pi, two_pi);
 
 	orbit->gc_altitude = rsmag;
 	orbit->gc_longitude = satlon;
 	orbit->gc_latitude = satlat;
+	orbit->gc_vector.Set(0, gc_x);
+	orbit->gc_vector.Set(1, gc_y);
+	orbit->gc_vector.Set(2, gc_z);
+	orbit->velocity_vector.Set(0, vx);
+	orbit->velocity_vector.Set(1, vy);
+	orbit->velocity_vector.Set(2, vz);
 
 	return(1);
 }

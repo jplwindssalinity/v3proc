@@ -18,8 +18,8 @@ Orbit::Orbit()
 {
 	for (int i = 0; i < 3; i++)
 	{
-		gc_vector[i] = 0.0;
-		velocity_vector[i] = 0.0;
+		gc_vector.Set(i, 0.0);
+		velocity_vector.Set(i, 0.0);
 	}
 	return;
 }

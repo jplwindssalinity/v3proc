@@ -10,6 +10,7 @@ static const char rcs_id_orbit_h[] =
 	"@(#) $Id$";
 
 #include "Constants.h"
+#include "Matrix3.h"
 
 //======================================================================
 // CLASSES
@@ -40,11 +41,11 @@ public:
 	// variables //
 	//-----------//
 
-	double	gc_altitude;
-	double	gc_longitude;
-	double	gc_latitude;
-	double	gc_vector[3];
-    double  velocity_vector[3];
+	double		gc_altitude;
+	double		gc_longitude;
+	double		gc_latitude;
+	Vector3		gc_vector;
+    Vector3		velocity_vector;
 };
 
 #endif
