@@ -41,6 +41,7 @@ OBJS = \
 	L10ToL15.o \
 	L15.o \
 	L15Frame.o \
+	L15ToL17.o \
 	L17.o \
 	L17Frame.o \
 	L17ToL20.o \
@@ -136,6 +137,7 @@ L10Frame.o: L10Frame.C L10Frame.h Attitude.h
 L10ToL15.o: L10ToL15.C L10ToL15.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L10.h L15.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L10Frame.h L15Frame.h List.h Meas.h LonLat.h
 L15.o: L15.C L15.h GenericFile.h L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L15Frame.o: L15Frame.C L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
+L15ToL17.o: L15ToL17.C L15ToL17.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L15.h Grid.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L15Frame.h Array.h L17.h Meas.h List.h L17Frame.h LonLat.h
 L17.o: L17.C L17.h GenericFile.h L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17Frame.o: L17Frame.C L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17ToL20.o: L17ToL20.C L17ToL20.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L17.h L20.h GMF.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L17Frame.h L20Frame.h PiscTable.h Wind.h Meas.h List.h LonLat.h
