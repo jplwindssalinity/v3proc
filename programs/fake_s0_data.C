@@ -13,8 +13,8 @@
 // DESCRIPTION
 //    Generates measurements for a given wind speed and direction and
 //    sets of viewing geometries.  Input values are prompted from
-//    standard input and are measurement type (VV, HH, VH, HV, VVVH,
-//    HHHV), incidence angle (deg.), azimuth angle (deg), and sigma-0
+//    standard input and are measurement type (VV, HH, VH, HV, VVHV,
+//    HHVH), incidence angle (deg.), azimuth angle (deg), and sigma-0
 //    (dB).  The sequence of input parameters is terminated by a line
 //    that fails to conform to format.
 //
@@ -207,13 +207,13 @@ main(
             {
                 new_meas->measType = Meas::HV_MEAS_TYPE;
             }
-            else if (strcasecmp(typestring, "VVVH") == 0)
+            else if (strcasecmp(typestring, "VVHV") == 0)
             {
-                new_meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
+                new_meas->measType = Meas::VV_HV_CORR_MEAS_TYPE;
             }
-            else if (strcasecmp(typestring, "HHHV") == 0)
+            else if (strcasecmp(typestring, "HHVH") == 0)
             {
-                new_meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
+                new_meas->measType = Meas::HH_VH_CORR_MEAS_TYPE;
             }
             else
             {
@@ -266,11 +266,11 @@ main(
             case Meas::HV_MEAS_TYPE:
                 typestring = "HV";
                 break;
-            case Meas::VV_VH_CORR_MEAS_TYPE:
-                typestring = "VVVH";
+            case Meas::VV_HV_CORR_MEAS_TYPE:
+                typestring = "VVHV";
                 break;
-            case Meas::HH_HV_CORR_MEAS_TYPE:
-                typestring = "HHHV";
+            case Meas::HH_VH_CORR_MEAS_TYPE:
+                typestring = "HHVH";
                 break;
             default:
                 break;

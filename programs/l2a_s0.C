@@ -1,47 +1,45 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l2a_s0
+//    l2a_s0
 //
 // SYNOPSIS
-//		l2a_s0 <l2a_file> <output_file>
+//    l2a_s0 [ -c cti ] [ -a ati ] <l2a_file> <output_file>
 //
 // DESCRIPTION
-//		Reads in a Level 2A file and writes out the following
-//		linear_idx  sigma-0
-//
-//		where linear_idx = ati * ctwidth + cti
+//    Reads in a Level 2A file and writes out the following
+//    Measurement Type  Incidence Angle  East Azimuth  Sigma-0
 //
 // OPTIONS
-//		None.
+//    [ -c cti ]  Restrict output to the given cross track index.
+//    [ -a ati ]  Restrict output to the given along track index.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<l2a_file>		The Level 2A input file.
-//		<output_file>	The output file.
+//    The following operand is supported:
+//    <l2a_file>     The Level 2A input file.
+//    <output_file>  The output file.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% l2a_s0 l2a.dat l2a.s0
+//    An example of a command line is:
+//      % l2a_s0 -c 5 l2a.dat l2a.s0
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		1	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
-// AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+// AUTHORS
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -49,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -85,6 +83,8 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "c:a:"
+
 //--------//
 // MACROS //
 //--------//
@@ -101,12 +101,15 @@ template class TrackerBase<unsigned short>;
 // OPTION VARIABLES //
 //------------------//
 
+int g_ati_opt = 0;
+int g_cti_opt = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2a_file>", "<output_file>",
-	"<cti>", "<ati>", 0};
+const char* usage_array[] = { "[ -c cti ]", "[ -a ati ]", "<l2a_file>",
+    "<output_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -114,91 +117,102 @@ const char* usage_array[] = { "<l2a_file>", "<output_file>",
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 3 && argc != 5)
-		usage(command, usage_array, 1);
+    int cti = 0;
+    int ati = 0;
 
-	int clidx = 1;
-	const char* l2a_file = argv[clidx++];
-	const char* output_file = argv[clidx++];
+    const char* command = no_path(argv[0]);
+    extern int optind;
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'a':
+            g_ati_opt = 1;
+            ati = atoi(optarg);
+            break;
+        case 'c':
+            g_cti_opt = 1;
+            cti = atoi(optarg);
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
 
-	int cti = -1;
-    int ati = -1;
-	if (argc == 5)
-	{
-		cti = atoi(argv[clidx++]);
-		ati = atoi(argv[clidx++]);
-	}
+    if (argc != optind + 2)
+        usage(command, usage_array, 1);
 
-	//------------------------//
-	// open the Level 2A file //
-	//------------------------//
+    const char* l2a_file = argv[optind++];
+    const char* output_file = argv[optind++];
 
-	L2A l2a;
-	if (! l2a.OpenForReading(l2a_file))
-	{
-		fprintf(stderr, "%s: error opening Level 2A file %s\n", command,
-			l2a_file);
-		exit(1);
-	}
+    //------------------------//
+    // open the Level 2A file //
+    //------------------------//
 
-	//------------------//
-	// open output file //
-	//------------------//
+    L2A l2a;
+    if (! l2a.OpenForReading(l2a_file))
+    {
+        fprintf(stderr, "%s: error opening Level 2A file %s\n", command,
+            l2a_file);
+        exit(1);
+    }
 
-	FILE* output_fp = fopen(output_file, "w");
-	if (output_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			output_file);
-		exit(1);
-	}
+    //------------------//
+    // open output file //
+    //------------------//
 
-	//----------------//
-	// loop and write //
-	//----------------//
+    FILE* output_fp = fopen(output_file, "w");
+    if (output_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            output_file);
+        exit(1);
+    }
 
-	while (l2a.ReadDataRec())
-	{
-		if (argc == 5 &&
-			(cti != l2a.frame.cti || ati != l2a.frame.ati)) continue;
+    //----------------//
+    // loop and write //
+    //----------------//
 
-		MeasList* ml = &(l2a.frame.measList);
-		LonLat lonlat = ml->AverageLonLat();
-//                Meas* mhead=ml->GetHead();
-//                double lat, lon, alt;
-//                mhead->centroid.GetAltLonGCLat(&alt,&lon,&lat);
-        fprintf(output_fp, "# Lon=%g Lat=%g\n",lonlat.longitude*rtd,
-			lonlat.latitude*rtd);
-		fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
-		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
-		{
-            PolE pol = MeasTypeToPol(m->measType);
-			fprintf(output_fp, "%s %g %g %g\n", beam_map[pol],
-				m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
-		}
-		fprintf(output_fp, "#####\n");
-	}
+    while (l2a.ReadDataRec())
+    {
+        if (g_ati_opt && l2a.frame.ati != ati)
+            continue;
 
-	//-----------------//
-	// close the files //
-	//-----------------//
+        if (g_cti_opt && l2a.frame.cti != cti)
+            continue;
 
-	fclose(output_fp);
-	l2a.Close();
+        MeasList* ml = &(l2a.frame.measList);
+        LonLat lonlat = ml->AverageLonLat();
+//      Meas* mhead=ml->GetHead();
+//      double lat, lon, alt;
+//      mhead->centroid.GetAltLonGCLat(&alt,&lon,&lat);
+        fprintf(output_fp, "# Lon = %g, Lat = %g\n",lonlat.longitude * rtd,
+            lonlat.latitude * rtd);
+        fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
+        for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+        {
+            fprintf(output_fp, "%s %g %g %g\n", meas_type_map[m->measType],
+                m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
+        }
+        fprintf(output_fp, "#####\n");
+    }
 
-	return (0);
+    //-----------------//
+    // close the files //
+    //-----------------//
+
+    fclose(output_fp);
+    l2a.Close();
+
+    return (0);
 }
-
-
-
-
-
-

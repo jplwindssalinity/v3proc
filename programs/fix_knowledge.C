@@ -8,23 +8,26 @@
 //    fix_knowledge
 //
 // SYNOPSIS
-//    fix_knowledge <sim_config_file> <echo_data_file>
+//    fix_knowledge [ -f ] [ -r start:stop:step ] <sim_config_file>
+//    <echo_data_file> <output_base>
 //
 // DESCRIPTION
 //    Reads the echo data file and estimates the roll, pitch, and yaw
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
-//    None.
+//    -f   Use the config file windfield for energy profile correction
+//    -r start:stop:step  Step organization.
 //
 // OPERANDS
 //    The following operands are supported:
 //      <sim_config_file>  The simulation configuration file.
 //      <echo_data_file>   The echo data input file.
+//      <output_base>      The output file base name.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % fix_knowledge qscat.cfg echo.dat
+//      % fix_knowledge -r 200:210:2 qscat.cfg echo.dat qscat.know
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -91,8 +94,11 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING    "fr:"
+
 #define PLOT_OFFSET  80000
-#define SIMPLEX  1
+#define DIR_STEPS    36    // for data reduction
+#define MIN_DATA_COUNT      36
 
 #define QUOTES    '"'
 
@@ -101,7 +107,8 @@ template class List<AngleInterval>;
 #define MAX_SPOTS_PER_ORBIT_STEP  10000
 #define MAX_EPHEM_PER_ORBIT_STEP  200
 
-#define SIGNAL_ENERGY_THRESHOLD       1.0E-8
+//#define SIGNAL_ENERGY_THRESHOLD       5E4
+#define SIGNAL_ENERGY_THRESHOLD       0E4
 
 #define EPHEMERIS_CHAR   'E'
 #define ORBIT_STEP_CHAR  'O'
@@ -114,8 +121,7 @@ template class List<AngleInterval>;
 #define END_STEP          0.001
 
 #define VAR_ANGLE_RANGE     2.0    // degrees
-#define MIN_VAR_DATA_COUNT  5
-#define MIN_DATA_COUNT      100
+#define MIN_VAR_DATA_COUNT  2
 
 // simplex search parameters
 #define LAMBDA_1  0.1
@@ -137,17 +143,13 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int     initialize();
-int     large_slope(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
-            double c[3], double step[3], int* idx);
-int     process_orbit_step(Spacecraft* spacecraft, Qscat* qscat,
-            BYUXTable* byux, int orbit_step, FILE* att_fp);
+int     process_orbit_step(const char* output_base, Spacecraft* spacecraft,
+            Qscat* qscat, BYUXTable* byux, int orbit_step, FILE* att_fp);
 int     ds_optimize(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
             double att[3], double lambda, double xtol);
-int     optimize(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
-            double att[3], double step[3]);
 double  ds_evaluate(double* x, void* ptr);
 double  evaluate(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
-            double att[3], FILE* ofp = NULL);
+            double att[3], FILE* ofp = NULL, int all_flag = 0);
 int     est_var();
 
 //------------------//
@@ -158,7 +160,8 @@ int     est_var();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>", 0};
+const char* usage_array[] = { "[ -f ]", "[ -r start:stop:step ]",
+    "<sim_config_file>", "<echo_data_file>", "<output_base>", 0};
 
 struct Ephem
 {
@@ -184,6 +187,14 @@ float   g_tx_doppler[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 float   g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 int     g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 
+int        g_windfield_opt = 0;
+WindField  g_windfield;
+GMF        g_gmf;
+int        g_range_opt = 0;
+int        g_start_orbit_step = 0;
+int        g_stop_orbit_step = 0;
+int        g_step_orbit_step = 1;
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -198,12 +209,39 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 3)
+
+    extern int optind;
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'f':
+            g_windfield_opt = 1;
+            break;
+        case 'r':
+            if (sscanf(optarg, "%d:%d:%d", &g_start_orbit_step,
+                &g_stop_orbit_step, &g_step_orbit_step) != 3)
+            {
+                fprintf(stderr, "%s: error parsing range %s\n", command,
+                    optarg);
+                exit(1);
+            }
+            g_range_opt = 1;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 3)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* config_file = argv[clidx++];
-    const char* echo_data_file = argv[clidx++];
+    const char* config_file = argv[optind++];
+    const char* echo_data_file = argv[optind++];
+    const char* output_base = argv[optind++];
 
     //---------------------//
     // read in config file //
@@ -258,15 +296,40 @@ main(
         exit(1);
     }
 
+    //-------------------//
+    // read in windfield //
+    //-------------------//
+
+    if (g_windfield_opt)
+    {
+        char* windfield_filename =
+            config_list.Get(NUDGE_WINDFIELD_FILE_KEYWORD);
+        char* windfield_type = config_list.Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
+
+        if (! g_windfield.ReadType(windfield_filename, windfield_type))
+        {
+            fprintf(stderr, "%s: error reading nudge field\n", command);
+            exit(1);
+        }
+
+        if (! ConfigGMF(&g_gmf, &config_list))
+        {
+            fprintf(stderr, "%s: error configuring GMF\n", command);
+            exit(1);
+        }
+    }
+
     //---------------------------//
     // open attitude output file //
     //---------------------------//
 
-    FILE* att_fp = fopen("attitude.dat", "w");
+    char filename[1024];
+    sprintf(filename, "%s.att", output_base);
+    FILE* att_fp = fopen(filename, "w");
     if (att_fp == NULL)
     {
         fprintf(stderr, "%s: error opening attitude output file %s\n", command,
-            "attitude.dat");
+            filename);
         exit(1);
     }
 
@@ -330,6 +393,7 @@ main(
                     command, echo_data_file);
                 exit(1);
             }
+//printf("%g %g\n", total_signal_energy, meas_spec_peak_freq);
 
             //-----------------------//
             // accumulation decision //
@@ -385,10 +449,13 @@ main(
             read_orbit_step(ifd, &orbit_step);
             if (orbit_step != last_orbit_step)
             {
-                if (last_orbit_step != -1)
+                if (last_orbit_step != -1 &&
+                    (! g_range_opt || (g_range_opt &&
+                    (orbit_step - g_start_orbit_step) % g_step_orbit_step ==
+                    0)))
                 {
-                    process_orbit_step(&spacecraft, &qscat, &byux,
-                        last_orbit_step, att_fp);
+                    process_orbit_step(output_base, &spacecraft, &qscat,
+                        &byux, last_orbit_step, att_fp);
 
                     // transfer ephemeris
                     g_ephem[0] = g_ephem[g_ephem_count - 1];
@@ -410,6 +477,13 @@ main(
         }
     } while (1);
 
+    //-----------------------------//
+    // process the last orbit step //
+    //-----------------------------//
+
+    process_orbit_step(output_base, &spacecraft, &qscat, &byux,
+        orbit_step, att_fp);
+
     fclose(att_fp);
     close(ifd);
 
@@ -430,116 +504,21 @@ initialize()
     return(1);
 }
 
-//-------------//
-// large slope //
-//-------------//
-
-int
-large_slope(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat,
-    BYUXTable*   byux,
-    double       c[3],
-    double       step[3],
-    int*         idx)
-{
-    double try_c_low[3];
-    double try_c_high[3];
-
-    double max_dif = 0.0;
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            try_c_low[j] = c[j];
-            try_c_high[j] = c[j];
-        }
-        try_c_low[i] -= step[i] / 2.0;
-        try_c_high[i] += step[i] / 2.0;
-        double low_sse = evaluate(spacecraft, qscat, byux, try_c_low, NULL);
-        double high_sse = evaluate(spacecraft, qscat, byux, try_c_high, NULL);
-        double dif = fabs(low_sse - high_sse);
-        if (dif > max_dif)
-        {
-            max_dif = dif;
-            *idx = i;
-        }
-    }
-    return(1);
-}
-
 //--------------------//
 // process_orbit_step //
 //--------------------//
 
 int
 process_orbit_step(
+    const char*  output_base,
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     BYUXTable*   byux,
     int          orbit_step,
     FILE*        att_fp)
 {
-    //--------------------//
-    // estimate variances //
-    //--------------------//
-
-    int var_count = est_var();
-
-    if (var_count < MIN_DATA_COUNT)
+    if (est_var() < MIN_DATA_COUNT)
         return(0);
-
-    //----------------------------//
-    // fit a sinusoid to the data //
-    //----------------------------//
-
-    double a[2], p[2], c[2];
-    for (int i = 0; i < 2; i++)
-    {
-        // fit each beam separately
-        sinfit(g_tx_center_azimuth[i], g_meas_spec_peak_freq[i], g_freq_var[i],
-            g_count[i], &(a[i]), &(p[i]), &(c[i]));
-    }
-
-    //-----------------------------------------------------------------//
-    // first, just keep a few points near the sinusoid for a rough fit //
-    //-----------------------------------------------------------------//
-
-    int use_idx[PLEX_STEPS];
-    double min_dif[PLEX_STEPS];
-
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
-    {
-        for (int i = 0; i < PLEX_STEPS; i++)
-        {
-            use_idx[i] = -1;
-            min_dif[i] = 1E9;
-        }
-
-        for (int idx = 0; idx < g_count[beam_idx]; idx++)
-        {
-            int idx2 = (int)(PLEX_STEPS * g_tx_center_azimuth[beam_idx][idx] /
-                two_pi + 0.5);
-            idx2 %= PLEX_STEPS;
-
-            double fitval = a[beam_idx] *
-                cos(g_tx_center_azimuth[beam_idx][idx] + p[beam_idx]) +
-                c[beam_idx];
-
-            double dif = fabs(fitval - g_meas_spec_peak_freq[beam_idx][idx]);
-            if (dif < min_dif[idx2])
-            {
-                min_dif[idx2] = dif;
-                use_idx[idx2] = idx;
-            }
-            g_freq_var[beam_idx][idx] = -1.0;    // flag to not use point
-        }
-        for (int i = 0; i < PLEX_STEPS; i++)
-        {
-            if (use_idx[i] != -1)
-                g_freq_var[beam_idx][use_idx[i]] = 1.0;   // flag to use
-        }
-    }
 
     //--------------------------//
     // search for best attitude //
@@ -551,62 +530,40 @@ process_orbit_step(
     att[2] = 0.0;
     ds_optimize(spacecraft, qscat, byux, att, LAMBDA_1 * dtr, XTOL_1 * dtr);
 
-    //--------------------------//
-    // search for best attitude //
-    //--------------------------//
-
-/*
-    if (SIMPLEX)
-    {
-        ds_optimize(spacecraft, qscat, byux, att, LAMBDA_2 * dtr,
-            XTOL_2 * dtr);
-    }
-    else
-    {
-        double att[3] = {0.0, 0.0, 0.0};
-        double step[3] = {ROLL_START_STEP * dtr, PITCH_START_STEP * dtr,
-            YAW_START_STEP * dtr};
-        double use_step[3] = {0.0, 0.0, 0.0};
-
-        do
-        {
-            int idx;
-            large_slope(spacecraft, qscat, byux, att, step, &idx);
-            use_step[idx] = step[idx];
-            optimize(spacecraft, qscat, byux, att, use_step);
-            use_step[idx] = 0.0;
-            if (step[idx] < END_STEP * dtr)
-                break;
-
-            step[idx] /= 2.0;
-        } while (1);
-    }
-*/
-
     //---------------------------//
     // generate a knowledge plot //
     //---------------------------//
 
     char filename[1024];
-    sprintf(filename, "knowledge.%03d.out", orbit_step);
+    if (g_range_opt)
+    {
+        sprintf(filename, "%s.k%03d-%03d.out", output_base,
+            orbit_step - g_step_orbit_step + 1, orbit_step);
+    }
+    else
+    {
+        sprintf(filename, "%s.k%03d.out", output_base, orbit_step);
+    }
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
         return(0);
 
-    fprintf(ofp, "@ title %cOrbit Step = %03d%c\n", QUOTES, orbit_step,
-        QUOTES);
+    if (g_range_opt)
+    {
+        fprintf(ofp, "@ title %cOrbit Step = %03d-%03d%c\n", QUOTES,
+            orbit_step - g_step_orbit_step + 1, orbit_step, QUOTES);
+    }
+    else
+    {
+        fprintf(ofp, "@ title %cOrbit Step = %03d%c\n", QUOTES, orbit_step,
+            QUOTES);
+    }
     fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
         att[0] * rtd, att[1] * rtd, att[2] * rtd, QUOTES);
 
-    evaluate(spacecraft, qscat, byux, att, ofp);
-
-/*
-fprintf(ofp, "&\n");
-att[0] = -0.1 * dtr;
-att[1] = 0.2 * dtr;
-att[2] = 0.0 * dtr;
-evaluate(spacecraft, qscat, byux, att, ofp);
-*/
+    evaluate(spacecraft, qscat, byux, att, ofp, 1);
+    fprintf(ofp, "&\n");
+    evaluate(spacecraft, qscat, byux, att, ofp, 0);
 
     fclose(ofp);
 
@@ -614,8 +571,20 @@ evaluate(spacecraft, qscat, byux, att, ofp);
     // add roll, pitch, yaw to attitude file //
     //---------------------------------------//
 
-    fprintf(att_fp, "%d %g %g %g\n", orbit_step, att[0] * rtd, att[1] * rtd,
-        att[2] * rtd);
+    if (g_range_opt)
+    {
+        for (int step = orbit_step - g_step_orbit_step + 1; step <= orbit_step;
+            step++)
+        {
+            fprintf(att_fp, "%d %g %g %g\n", step, att[0] * rtd, att[1] * rtd,
+                att[2] * rtd);
+        }
+    }
+    else
+    {
+        fprintf(att_fp, "%d %g %g %g\n", orbit_step, att[0] * rtd, att[1] * rtd,
+            att[2] * rtd);
+    }
 
     return(1);
 }
@@ -669,78 +638,6 @@ ds_optimize(
     return(1);
 }
 
-//----------//
-// optimize //
-//----------//
-
-#define SWAP(a,b)  { swap = (a); (a) = (b); (b) = swap; }
-
-int
-optimize(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat,
-    BYUXTable*   byux,
-    double       att[3],
-    double       step[3])
-{
-    //---------------------//
-    // determine direction //
-    //---------------------//
-
-    // assume going forward
-    double old_att[3], new_att[3];
-    for (int i = 0; i < 3; i++)
-    {
-        old_att[i] = att[i] - step[i] / 2.0;
-        new_att[i] = att[i] + step[i] / 2.0;
-    }
-    double old_mse = evaluate(spacecraft, qscat, byux, old_att);
-    double new_mse = evaluate(spacecraft, qscat, byux, new_att);
-
-    float delta_sign = 1.0;
-
-    double swap;
-    if (old_mse < new_mse)
-    {
-        // reverse direction
-        delta_sign = -1.0;
-        for (int i = 0; i < 3; i++)
-        {
-            SWAP(new_att[i], old_att[i]);
-        }
-        SWAP(new_mse, old_mse);
-    }
-
-    //------------------------------//
-    // search until minima is found //
-    //------------------------------//
-
-    for (;;)
-    {
-        if (new_mse < old_mse)
-        {
-            // continue moving forward
-            for (int i = 0; i < 3; i++)
-            {
-                old_att[i] = new_att[i];
-                new_att[i] += delta_sign * step[i];
-            }
-            old_mse = new_mse;
-            new_mse = evaluate(spacecraft, qscat, byux, new_att);
-        }
-        else
-        {
-            // stop (new value is worse than the old)
-            for (int i = 0; i < 3; i++)
-            {
-                att[i] = old_att[i];
-            }
-            break;
-        }
-    }
-    return(1);
-}
-
 //-------------//
 // ds_evaluate //
 //-------------//
@@ -768,19 +665,21 @@ evaluate(
     Qscat*       qscat,
     BYUXTable*   byux,
     double       att[3],
-    FILE*        ofp)
+    FILE*        ofp,
+    int          all_flag)
 {
     double mse = 0.0;
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         qscat->cds.currentBeamIdx = beam_idx;
+        Beam* beam = qscat->GetCurrentBeam();
+        Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
 
         for (int idx = 0; idx < g_count[beam_idx]; idx++)
         {
             // skip data that doesn't have a variance estimate
-            if (g_freq_var[beam_idx][idx] < 0.0 && ofp == NULL)
-//            if (g_freq_var[beam_idx][idx] < 0.0)
+            if (g_freq_var[beam_idx][idx] == -1.0 && ! all_flag)
                 continue;
 
             // set the spacecraft
@@ -801,10 +700,19 @@ evaluate(
             qscat->ses.CmdRxGateDelayEu(g_rx_gate_delay[beam_idx][idx]);
             qscat->ses.CmdTxDopplerEu(g_tx_doppler[beam_idx][idx]);
 
-            //-------------------------------------------//
-            // calculate BYU reference vector frequency  //
-            // and calculate the peak spectral frequency //
-            //-------------------------------------------//
+            //------------------------------//
+            // locate slices (if necessary) //
+            //------------------------------//
+
+            MeasSpot meas_spot;
+            if (g_windfield_opt)
+            {
+                qscat->LocateSliceCentroids(spacecraft, &meas_spot);
+            }
+
+            //-------------------------------//
+            // calculate X*s0 for each slice //
+            //-------------------------------//
 
             float calc_byu_freq = byux->GetDeltaFreq(spacecraft, qscat, NULL);
             float orbit_position = qscat->cds.OrbitFraction();
@@ -819,6 +727,32 @@ evaluate(
                 abs_to_rel_idx(slice_idx, slices_per_spot, &rel_slice);
                 x[slice_idx] = byux->GetX(beam_idx, gi_azim, orbit_position,
                     rel_slice, calc_byu_freq);
+
+                if (g_windfield_opt)
+                {
+                    //---------//
+                    // sigma-0 //
+                    //---------//
+
+                    Meas* meas = meas_spot.GetByIndex(slice_idx);
+                    double alt, lat, lon;
+                    if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+                        return(0);
+                    LonLat lon_lat;
+                    lon_lat.longitude = lon;
+                    lon_lat.latitude = lat;
+                    WindVector wv;
+                    if (! g_windfield.InterpolatedWindVector(lon_lat, &wv))
+                    {
+                        wv.spd = 0.0;
+                        wv.dir = 0.0;
+                    }
+                    float chi = wv.dir - meas->eastAzimuth + pi;
+                    float sigma0;
+                    g_gmf.GetInterpolatedValue(meas_type,
+                        meas->incidenceAngle, wv.spd, chi, &sigma0);
+                    x[slice_idx] *= sigma0;
+                }
             }
 
             float calc_spec_peak_slice, calc_spec_peak_freq;
@@ -849,7 +783,8 @@ evaluate(
                         calc_spec_peak_freq);
                 }
             }
-            dif = dif * dif / g_freq_var[beam_idx][idx];
+//            dif = dif * dif / g_freq_var[beam_idx][idx];
+            dif = dif * dif;
             mse += dif;
         }
         if (ofp && beam_idx != NUMBER_OF_QSCAT_BEAMS - 1)
@@ -866,131 +801,113 @@ printf("%g %g %g %g\n", att[0] * rtd, att[1] * rtd, att[2] * rtd, mse);
 int
 est_var()
 {
-    int var_count = 0;
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    int point_count = 0;
+    double delta = pi / DIR_STEPS;
+    for (int dir_idx = 0; dir_idx < DIR_STEPS; dir_idx++)
     {
-        //-----------------//
-        // sort by azimuth //
-        //-----------------//
-
-        int idx_array[MAX_SPOTS_PER_ORBIT_STEP];
-        heapsort(g_count[beam_idx], g_tx_center_azimuth[beam_idx], idx_array);
-
-        //-----------------------------//
-        // do the variance calculation //
-        //-----------------------------//
-
-        int start_idx = 0;
-        int end_idx = 0;
-        for (int idx = 0; idx < g_count[beam_idx]; idx++)
+        double target_dir = two_pi * dir_idx / (double)DIR_STEPS;
+        for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
         {
-            int use_idx = idx_array[idx];
-            double azim = g_tx_center_azimuth[beam_idx][use_idx];
+            //---------------------------------//
+            // calculate the mean and variance //
+            //---------------------------------//
+
             double meanf = 0.0;
             double varf = 0.0;
-            unsigned int count = 0;
-
-            //------------------//
-            // find start index //
-            //------------------//
-
-            // move forward until in range
-            do
-            {
-                start_idx = start_idx % g_count[beam_idx];
-                int use_start_idx = idx_array[start_idx];
-                if (ANGDIF(azim,
-                    g_tx_center_azimuth[beam_idx][use_start_idx]) <
-                    VAR_ANGLE_RANGE * dtr)
-                {
-                    break;
-                }
-                start_idx++;
-            } while (1);
-            // back up until out of range
-            do
-            {
-                start_idx = (start_idx + g_count[beam_idx]) % g_count[beam_idx];
-                int use_start_idx = idx_array[start_idx];
-                if (ANGDIF(azim,
-                    g_tx_center_azimuth[beam_idx][use_start_idx]) >
-                    VAR_ANGLE_RANGE * dtr)
-                {
-                    break;
-                }
-                start_idx--;
-            } while (1);
-            start_idx = (start_idx + 1) % g_count[beam_idx];
-
-            //----------------//
-            // find end index //
-            //----------------//
-
-            // back up until in range
-            do
-            {
-                end_idx = (end_idx + g_count[beam_idx]) % g_count[beam_idx];
-                int use_end_idx = idx_array[end_idx];
-                if (ANGDIF(azim,
-                    g_tx_center_azimuth[beam_idx][use_end_idx]) <
-                    VAR_ANGLE_RANGE * dtr)
-                {
-                    break;
-                }
-                end_idx--;
-            } while (1);
-
-            // move forward until out of range
-            do
-            {
-                end_idx = end_idx % g_count[beam_idx];
-                int use_end_idx = idx_array[end_idx];
-                if (ANGDIF(azim,
-                    g_tx_center_azimuth[beam_idx][use_end_idx]) >
-                    VAR_ANGLE_RANGE * dtr)
-                {
-                    break;
-                }
-                end_idx++;
-            } while (1);
-
-            //-----------//
-            // calculate //
-            //-----------//
-
+            int count = 0;
             for (int pass_flag = 0; pass_flag < 2; pass_flag++)
             {
-                for (int oidx = start_idx; oidx < end_idx; oidx++)
+                for (int idx = 0; idx < g_count[beam_idx]; idx++)
                 {
-                    int use_oidx = idx_array[oidx];
+                    double azim = g_tx_center_azimuth[beam_idx][idx];
+                    double dif = ANGDIF(azim, target_dir);
+                    if (dif > delta)
+                        continue;
+
                     if (pass_flag == 0)    // mean pass
                     {
-                        meanf += g_meas_spec_peak_freq[beam_idx][use_oidx];
+                        meanf += g_meas_spec_peak_freq[beam_idx][idx];
                         count++;
                     }
                     else if (pass_flag == 1)    // variance pass
                     {
                         double dif =
-                            g_meas_spec_peak_freq[beam_idx][use_oidx] - meanf;
+                            g_meas_spec_peak_freq[beam_idx][idx] - meanf;
                         varf += (dif * dif);
                     }
                 }
 
-                if (pass_flag == 0)
+                if (pass_flag == 0 && count > 0)    // mean pass
+                {
                     meanf /= (double)count;
-                else if (pass_flag == 1)
+                }
+                else if (pass_flag == 1)    // variance pass
                 {
                     if (count > MIN_VAR_DATA_COUNT)
                     {
                         varf /= (double)(count - 1);
-                        var_count++;
+/*
+if (beam_idx == 0)
+printf("%g %g\n", target_dir * rtd, varf);
+*/
                     }
                     else
-                        varf = -1.0;    // flag as don't use
+                    {
+//                        varf = -1.0;    // flag as don't use
+                        varf = 1.0;    // put something here
+                    }
                 }
             }
-            g_freq_var[beam_idx][use_idx] = varf;
+
+            //---------------------------------//
+            // find the point nearest the mean //
+            //---------------------------------//
+
+            int best_idx = -1;
+            double best_dif = 9e50;
+
+            if (count >= MIN_VAR_DATA_COUNT)
+            {
+                for (int idx = 0; idx < g_count[beam_idx]; idx++)
+                {
+                    if (g_freq_var[beam_idx][idx] == -1.0)
+                        continue;
+
+                    double azim = g_tx_center_azimuth[beam_idx][idx];
+                    double dif = ANGDIF(azim, target_dir);
+                    if (dif > delta)
+                        continue;
+
+                    dif = g_meas_spec_peak_freq[beam_idx][idx] - meanf;
+                    dif *= dif;
+                    if (dif < best_dif)
+                    {
+                        best_idx = idx;
+                        best_dif = dif;
+                    }
+                }
+            }
+
+            if (best_idx != -1)
+                point_count++;
+
+            //-------------------------//
+            // remove all other points //
+            //-------------------------//
+
+            for (int idx = 0; idx < g_count[beam_idx]; idx++)
+            {
+                double azim = g_tx_center_azimuth[beam_idx][idx];
+                double dif = ANGDIF(azim, target_dir);
+                if (dif > delta)
+                    continue;
+
+                if (idx != best_idx)
+                {
+                    g_freq_var[beam_idx][idx] = -1.0;
+                }
+            }
         }
     }
-    return(var_count);
+    return(point_count);
 }

@@ -26,6 +26,7 @@ PROGRAMS = \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_to_l2b \
+	plot_wr_curves \
 	l2ab_25to50 \
 	l2b_medianfilter \
 	l2b_to_vctr \
@@ -50,7 +51,6 @@ PROGRAMS = \
 	l1b_to_slicebal \
 	l1b_outlines \
 	l1b_to_kprtable \
-	plot_solution_curves \
 	make_kfactor \
 	make_kpmfield \
 	windfield_to_vctr \
@@ -88,6 +88,7 @@ PROGRAMS = \
     expand_calpulse \
     ephem_to_ascii \
 	psim \
+	fake_s0_data \
 	generate_foff_table \
 	BYUX_vs_time \
         l2b_extract_worst

@@ -8,7 +8,7 @@
 //    fix_dtc
 //
 // SYNOPSIS
-//    fix_dtc <sim_config_file> <echo_data_file> <dtc_base>
+//    fix_dtc <config_file> <echo_data_file> <dtc_base>
 //
 // DESCRIPTION
 //    Reads the echo data file and generates corrected Doppler
@@ -19,9 +19,9 @@
 //
 // OPERANDS
 //    The following operands are supported:
-//      <sim_config_file>   The simulation configuration file.
-//      <echo_data_file>    The echo data file.
-//      <dtc_base>          The base name of the output DTC files.
+//      <config_file>     The simulation configuration file.
+//      <echo_data_file>  The echo data file.
+//      <dtc_base>        The base name of the output DTC files.
 //
 // EXAMPLES
 //    An example of a command line is:
@@ -120,7 +120,7 @@ int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>",
+const char* usage_array[] = { "<config_file>", "<echo_data_file>",
     "<dtc_base>", 0};
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -175,6 +175,18 @@ main(
         exit(1);
     }
 
+    //---------------------------------------//
+    // create and configure Level 1A product //
+    //---------------------------------------//
+
+    L1A l1a;
+    if (! ConfigL1A(&l1a, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
+        exit(1);
+    }
+    int spots_per_frame = l1a.frame.spotsPerFrame
+
     //---------------------------------//
     // open echo data file for reading //
     //---------------------------------//
@@ -209,69 +221,49 @@ main(
 
     do
     {
-        //--------------------//
-        // read the record id //
-        //--------------------//
+        //------//
+        // read //
+        //------//
 
-        int id;
-        int size = sizeof(int);
-        int retval = read(ifd, &id, size);
-        if (retval != size)
+        EchoInfo echo_info;
+        int retval = echo_info.Read(ifd);
+        if (retval != 1)
         {
-            if (retval == 0)
-                break;    // EOF
+            if (retval == 0)    // EOF
+                break;
             else
             {
-                fprintf(stderr, "%s: error reading echo data file %s\n",
-                    command, echo_data_file);
+                fprintf(stderr, "%s: error reading echo file %s\n", command,
+                    echo_data_file);
                 exit(1);
             }
         }
 
-        //-------//
-        // parse //
-        //-------//
+        //---------------//
+        // for each spot //
+        //---------------//
 
-        double azimuth;
-
-        switch (id)
+        for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
         {
-        case SPOT_ID:
+            //-----------------------------//
+            // check for end of orbit step //
+            //-----------------------------//
 
-            //-----------------------//
-            // read in the spot data //
-            //-----------------------//
-
-            int beam_idx, ideal_encoder, land_flag;
-            float tx_doppler, rx_gate_delay, tx_center_azimuth,
-                meas_spec_peak_freq, total_signal_energy;
-            if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
-                &ideal_encoder, &tx_center_azimuth, &meas_spec_peak_freq,
-                &total_signal_energy, &land_flag))
-            {
-                fprintf(stderr,
-                    "%s: error reading spot from echo data file %s\n",
-                    command, echo_data_file);
-                exit(1);
-            }
+            int orbit_step = 
 
             //-----------------------//
             // accumulation decision //
             //-----------------------//
 
-            if (land_flag)
+            if (echo_info.flag[spot_idx] != EchoInfo::OK)
                 continue;
 
-            if (total_signal_energy < SIGNAL_ENERGY_THRESHOLD)
+            if (echo_info.totalSignalEnergy[spot_idx] < SIGNAL_ENERGY_THRESHOLD)
                 continue;
 
-            azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
+            double azimuth = two_pi *
+                (double)echo_info.idealEncoder[spot_idx] / (double)ENCODER_N;
             accumulate(beam_idx, azimuth, meas_spec_peak_freq);
-            break;
-        case EPHEMERIS_ID:
-            float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;
-            read_ephemeris(ifd, &gcx, &gcy, &gcz, &velx, &vely, &velz, &roll,
-                &pitch, &yaw);
             break;
         case ORBIT_STEP_ID:
             read_orbit_step(ifd, &orbit_step);

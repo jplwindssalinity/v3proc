@@ -470,8 +470,8 @@ main(
 				{
 				case PscatEvent::VV_SCAT_EVENT:
 				case PscatEvent::HH_SCAT_EVENT:
-				case PscatEvent::VV_VH_SCAT_EVENT:
-				case PscatEvent::HH_HV_SCAT_EVENT:
+				case PscatEvent::VV_HV_SCAT_EVENT:
+				case PscatEvent::HH_VH_SCAT_EVENT:
 
 					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(mid_tx_pulse_time,
