@@ -384,6 +384,7 @@ public:
 
     int  DeleteWVCs();
     int  DeleteEntireSwath();
+    int  DeleteFlaggedData();
     int  DeleteFlaggedData(const char* flag_file, int use_thresh,
 			   float threshold_both, float threshold_outer);
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
@@ -398,7 +399,6 @@ public:
     int  WriteL2B(FILE* fp);
     int  ReadL2B(FILE* fp);
     int  ReadL2B(const char* filename);
-    int  ReadHdfDIRTH(const char* filename);
     int  ReadNscatSwv25(const char* filename);
     int  GetSpdDirNumSel(float** spd, float** dir, int** num_ambig,
              int** selected);

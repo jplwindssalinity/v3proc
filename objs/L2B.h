@@ -122,6 +122,7 @@ public:
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
     int  ReadHDF(int unnormalize_mle = 1);
     int  ReadHDF(const char* filename, int unnormalize_mle = 1);
+    int  ReadHDFDIRTH(const char* filename);
     int  ReadHDF(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
     int  ReadNudgeVectorsFromHdfL2B(const char* filename);
     int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);

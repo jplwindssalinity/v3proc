@@ -708,6 +708,71 @@ L2B::_OpenOneHdfDataSet(
         return(sdsId);
 }
 
+//-------------------------//
+// L2B::ReadHDFDIRTH       //
+//-------------------------//
+
+int
+L2B::ReadHDFDIRTH(
+    const char* filename)
+{ 
+    //--------------------------------//
+    // convert filename to TlmHdfFile //
+    //--------------------------------//
+
+    HdfFile::StatusE returnStatus = HdfFile::OK;
+    NoTimeTlmFile l2b_hdf_file(filename, SOURCE_L2B, returnStatus);
+    if (returnStatus != HdfFile::OK)
+        return(0);
+
+    // Open Data Sets
+    int32 dirId;
+    int32 spdId;
+    if ((dirId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file, "wind_dir_selection"))==0)
+    {
+      return(0);
+    }    
+    if ((spdId = _OpenOneHdfDataSetCorrectly(&l2b_hdf_file, "wind_speed_selection"))==0)
+    {
+      return(0);
+    }
+    
+    int along_track_bins=frame.swath.GetAlongTrackBins();
+    int cross_track_bins=frame.swath.GetCrossTrackBins();
+
+    
+    // create arrays
+    float*          speed = new float[cross_track_bins];
+    float*          dir = new float[cross_track_bins];
+
+   for(int32 i=0;i<along_track_bins;i++){
+        if (ExtractData2D_76_int2_float(&l2b_hdf_file, &spdId, i, 1, 1,
+            speed) == 0)
+	  return(0);
+        if (ExtractData2D_76_uint2_float(&l2b_hdf_file, &dirId, i, 1, 1,
+            dir) == 0)
+	  return(0);
+     for(int j=0;j<cross_track_bins;j++){
+       
+       WVC* wvc= frame.swath.GetWVC(j,i);
+       if(!wvc) continue;
+       if(!wvc->selected) continue;
+       wvc->selected->spd=speed[j];
+       float edir = (450.0 - dir[j])*dtr;
+       while (edir > two_pi)
+	 edir -= two_pi;
+       while (edir < 0)
+	 edir += two_pi;
+       wvc->selected->dir=edir;
+     }
+   }
+   delete [] speed;
+   delete [] dir;
+   (void)SDendaccess(dirId);
+   (void)SDendaccess(spdId);
+   return(1);
+}
+
 int
 L2B::_OpenOneHdfDataSetCorrectly(
     TlmHdfFile*  tlmHdfFile,

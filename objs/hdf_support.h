@@ -61,7 +61,7 @@ int    UpdateDataSet(const char* filename, char *name, int32 index,
 class HDF_update_file
 {
 public:
-    int  open(const char *filename);
+    int  open(const char *filename, int access=DFACC_RDWR);
     int  get_dataset_attributes(char *dataset_name, SD_attributes &attr);
     int  get_data(char *dataset_name,int *array);
     int  get_data(char *dataset_name,float *array);

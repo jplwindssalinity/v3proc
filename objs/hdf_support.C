@@ -214,9 +214,10 @@ UpdateDataSet(
 
 int
 HDF_update_file::open(
-    const char*  filename)
+    const char*  filename,
+    int access = DFACC_RDWR)
 {
-    sd_id = SDstart(filename, DFACC_RDWR);
+    sd_id = SDstart(filename, access);
     if (sd_id == FAIL)
     {
         fprintf(stderr, "Unable to open file for access 'ALL'\n");
