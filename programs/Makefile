@@ -72,6 +72,7 @@ PROGRAMS = \
 	l1b_to_half_egg \
 	l1a_to_ascii\
 	l1b_to_ascii \
+    checkframe_to_ascii \
 	l2a_to_ascii
 
 HUDD_PROGRAMS = \
@@ -108,6 +109,7 @@ DIAGNOSTIC_PROGRAMS = \
 	l1b_outlines \
 	plot_solution_curves \
 	windfield_to_vctr \
+    checkframe_to_ascii \
 	l2a_centroids \
 	l2a_maps \
 	l2_kp \
