@@ -568,6 +568,27 @@ WindField::ReadEcmwfHiRes(
 }
 
 //---------------------//
+// WindField::ReadType //
+//---------------------//
+
+int
+WindField::ReadType(
+	const char*		filename,
+	const char*		type)
+{
+	if (strcasecmp(type, VAP_TYPE) == 0)
+	{
+		return(ReadVap(filename));
+	}
+	else if (strcasecmp(type, ECMWF_HIRES_TYPE) == 0)
+	{
+		return(ReadEcmwfHiRes(filename));
+	}
+	else
+		return(0);
+}
+
+//---------------------//
 // WindField::WriteBev //
 //---------------------//
 

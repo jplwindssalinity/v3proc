@@ -151,9 +151,11 @@ public:
 
 #define VAP_LON_DIM				360
 #define VAP_LAT_DIM				121
+#define VAP_TYPE				"VAP"
 
 #define ECMWF_HIRES_LON_DIM		640
 #define ECMWF_HIRES_LAT_DIM		321
+#define ECMWF_HIRES_TYPE		"ECMWF"
 
 class WindField
 {
@@ -172,6 +174,7 @@ public:
 
 	int		ReadVap(const char* filename);
 	int		ReadEcmwfHiRes(const char* filename);
+	int		ReadType(const char* filename, const char* type);
 	int		WriteBev(const char* filename);
 
 	//--------//
