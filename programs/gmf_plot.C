@@ -221,8 +221,10 @@ gen_plot(
     float            inc,
     int              use_log)
 {
-    float speed_table[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 15.0,
-        20.0, 30.0, 40.0, 50.0, -1.0 };
+    float c_speed_table[] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0,
+        15.0, 20.0, 30.0, 40.0, 50.0, -1.0 };
+    float r_speed_table[] = { 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0,
+        20.0, 22.0, 24.0, 26.0, 28.0, 30.0, -1.0 };
 
     char filename[1024];
     int inc_int = (int)(inc + 0.5);
@@ -237,6 +239,18 @@ gen_plot(
     fprintf(ofp, "@ title %c%s,  %d degree incidence angle%c\n",
         QUOTES, meas_type_map[(int)meas_type], inc_int, QUOTES);
     int legend_string = 0;
+
+    float* speed_table;
+    switch (meas_type)
+    {
+    case Meas::VV_HV_CORR_MEAS_TYPE:
+    case Meas::HH_VH_CORR_MEAS_TYPE:
+        speed_table = r_speed_table;
+        break;
+    default:
+        speed_table = c_speed_table;
+        break;
+    }
 
     for (int spd_idx = 0; speed_table[spd_idx] > 0; spd_idx++)
     {
