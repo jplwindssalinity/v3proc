@@ -239,8 +239,7 @@ main(
         sprintf(filename, "%s.freq", info_base);
         freq_scan(filename, tc_file, &doppler_tracker);
 
-        sprintf(filename, "%s.coef", info_base);
-        dtc_coef_step(filename, tc_file, &doppler_tracker);
+        dtc_coef_step(info_base, tc_file, &doppler_tracker);
 
         if (ref_tc_file != NULL)
         {
@@ -394,27 +393,42 @@ freq_scan(
 
 int
 dtc_coef_step(
-    const char*      filename,
+    const char*      basename,
     const char*      dtc_file,
     DopplerTracker*  doppler_tracker)
 {
-    FILE* ofp = fopen(filename, "w");
-    if (ofp == NULL)
-        return(0);
+    static char* term_string[3] = { "amp", "phase", "bias" };
+    static char* title_string[3] = { "Amplitude", "Phase", "Bias" };
+    static char* unit_string[3] = { "Frequency (Hz)", "Angle (radians)",
+        "Frequency (Hz)" };
 
     double** terms = (double **)make_array(sizeof(double), 2, ORBIT_STEPS, 3);
     doppler_tracker->GetTerms(terms);
 
-    for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+    for (int term_idx = 0; term_idx < 3; term_idx++)
     {
-        double amplitude = *(*(terms + orbit_step) + 0);
-        double phase = *(*(terms + orbit_step) + 1) * rtd;
-        double bias = *(*(terms + orbit_step) + 2);
+        char filename[1024];
+        sprintf(filename, "%s.%s", basename, term_string[term_idx]);
+        FILE* ofp = fopen(filename, "w");
+        if (ofp == NULL)
+            return(0);
 
-        fprintf(ofp, "%d %g %g %g\n", orbit_step, amplitude, phase, bias);
+        fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, title_string[term_idx],
+            QUOTE);
+        fprintf(ofp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
+        fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, unit_string[term_idx],
+            QUOTE);
+
+        for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS;
+            orbit_step++)
+        {
+            fprintf(ofp, "%d %g\n", orbit_step,
+                *(*(terms + orbit_step) + term_idx));
+        }
+
+        fclose(ofp);
     }
-
-    fclose(ofp);
+    free_array(terms, 2, ORBIT_STEPS, 3);
 
     return(1);
 }

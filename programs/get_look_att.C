@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    get_look_att [ -a roll:pitch:yaw ] [ -f type:windfield ]
-//      [ -s step_size ] <sim_config_file> <output_base>
+//      [ -s start:end ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
 // DESCRIPTION
@@ -20,8 +20,8 @@
 //    [ -a roll:pitch:yaw ]  Fix the attitude.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
-//    [ -s step_size ]       The number of orbit steps to combine.
-//                             Otherwise all data is combined.
+//    [ -s start:end ]       The range of orbit steps to calculate.  The
+//                             end is really end+1.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -31,7 +31,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % get_look_att -s 2 qscat.cfg qscat.know qscat.echo1 qscat.echo2
+//      % get_look_att -s 2:5 qscat.cfg qscat.know qscat.echo1 qscat.echo2
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -113,7 +113,6 @@ template class List<AngleInterval>;
 #define MAX_SPOTS  1200000
 #define MAX_EPHEM  15000
 
-//#define SIGNAL_ENERGY_THRESHOLD       5E4
 #define SIGNAL_ENERGY_THRESHOLD       0E4
 
 #define MIN_VAR_DATA_COUNT  2
@@ -153,7 +152,7 @@ int     prune();
 //------------------//
 
 const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]", "[ -l ]",
-    "[ -s step_size ] ", "<sim_config_file>", "<output_base>",
+    "[ -s start:end ] ", "<sim_config_file>", "<output_base>",
     "<echo_file...>", 0 };
 
 off_t***   g_offsets;
@@ -169,8 +168,8 @@ char*      g_windfield_type = NULL;
 char*      g_windfield_file = NULL;
 WindField  g_windfield;
 GMF        g_gmf;
-int        g_step_size_opt = 0;
-int        g_step_size = 0;
+int        g_start_step = 0;
+int        g_end_step = ORBIT_STEPS;
 int        g_range_opt = 0;
 int        g_fix_att_opt = 0;
 int        g_start_orbit_step = 0;
@@ -222,8 +221,12 @@ main(
             g_att[2] *= dtr;
             break;
         case 's':
-            g_step_size = atoi(optarg);
-            g_step_size_opt = 1;
+            if (sscanf(optarg, "%d:%d", &g_start_step, &g_end_step) != 2)
+            {
+                fprintf(stderr, "%s: error parsing step range %s\n", command,
+                    optarg);
+                exit(1);
+            }
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -479,7 +482,7 @@ main(
 
     ETime last_time;
 
-    for (int target_orbit_step = 0; target_orbit_step < ORBIT_STEPS;
+    for (int target_orbit_step = g_start_step; target_orbit_step < g_end_step;
         target_orbit_step++)
     {
         printf("Processing orbit step %d...\n", target_orbit_step);
