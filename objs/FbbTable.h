@@ -36,8 +36,8 @@ public:
 
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetFbb(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               CheckFrame* cf = NULL, Topo* topo = NULL,
-               Stable* stable = NULL);
+               Topo* topo = NULL, Stable* stable = NULL,
+               CheckFrame* cf = NULL);
     float  GetFbb(int beam_number, float azimuth_angle, float orbit_position,
                float delta_freq);
     float  Interpolate(float** table, float orbit_time, float azimuth_angle);

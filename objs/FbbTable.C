@@ -174,12 +174,12 @@ FbbTable::GetFbb(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     Meas*        meas,
-    CheckFrame*  cf,
     Topo*        topo,
-    Stable*      stable)
+    Stable*      stable,
+    CheckFrame*  cf)
 {
     BYUXTable hack;
-    float delta_freq = hack.GetDeltaFreq(spacecraft, qscat, cf, topo, stable);
+    float delta_freq = hack.GetDeltaFreq(spacecraft, qscat, topo, stable, cf);
     float orbit_position = qscat->cds.OrbitFraction();
     int beam_number = qscat->cds.currentBeamIdx;
     float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
