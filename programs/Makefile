@@ -25,6 +25,7 @@ PROGRAMS = \
 	get_att \
 	get_look_att \
 	sim \
+        sim_overlay \
 	modu \
 	l1a_to_l1b \
 	l1b_to_l2a \
