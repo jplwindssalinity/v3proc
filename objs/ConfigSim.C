@@ -1515,7 +1515,7 @@ ConfigL2AToL2B(
 		if (nudge_type == NULL)
 			return(0);
  
-		char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_KEYWORD);
+		char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
 		if (nudge_windfield == NULL)
 			return(0);
 
