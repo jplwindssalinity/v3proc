@@ -81,6 +81,7 @@ template class List<Meas>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
 template class List<long>;
+template class List<OffsetList>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
 
