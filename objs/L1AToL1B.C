@@ -187,6 +187,7 @@ L1AToL1B::Convert(
         //---------------------------//
 
 		MeasSpot* meas_spot = new MeasSpot();
+        meas_spot->time = time;
 
 		//-------------------------------------------//
 		// Extract energy measurements for this spot //
