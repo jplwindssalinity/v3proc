@@ -368,10 +368,10 @@ ConfigGaussianRandomVelocity(const char* samprate_keyword,
 	   &mean)) return(NULL);
  	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(NULL);
-	velocity=new Gaussian((float)variance,0.0);
-	return(new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)mean));
-
+	velocity = new Gaussian((float)variance,0.0);
+	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
+		(float)bound, (float)mean);
+	return(new_rv);
 }
 
 
@@ -399,9 +399,9 @@ ConfigUniformRandomVelocity(const char* samprate_keyword,
  	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(NULL);
 	velocity=new Uniform((float)radius,0.0);
-	return(new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)mean));
-
+	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
+		(float)bound, (float)mean);
+	return(new_rv);
 }
 
 
