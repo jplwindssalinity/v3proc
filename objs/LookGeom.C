@@ -162,7 +162,7 @@ double discriminate = 4*C2*C2 - 4*C1*C3;
 if (discriminate < 0)
   {
   printf("Warning: earth_intercept did not find an intercept\n");
-  EarthPosition rground(0,0,0,RECTANGULAR);
+  EarthPosition rground(0,0,0,EarthPosition::RECTANGULAR);
   return(rground);
   }
 
