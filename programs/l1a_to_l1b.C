@@ -199,6 +199,7 @@ main(
 	l10.OpenForReading();
 	l15.OpenForWriting();
 
+
 	//-----------------//
 	// conversion loop //
 	//-----------------//
@@ -213,8 +214,11 @@ main(
 		exit(1);
 	}
 
+        int top_of_file=1;
 	do
 	{
+
+
 		//------------------------------//
 		// read a level 1.0 data record //
 		//------------------------------//
@@ -239,6 +243,37 @@ main(
 				exit(1);
 			}
 			break;		// done, exit do loop
+		}
+
+                //=======================//
+                // FOR FIRST RECORD ONLY // 
+		//=======================//
+                //===========================================================//
+		// This part may be omitted if the prev_eqx_time is included //
+                // in the l10 file                                           //
+		//===========================================================//
+	        if(top_of_file==1){
+		  top_of_file=0;
+		  //----------------------------------//
+		  // Quickly simulate the spacecraft  //
+		  // to get previous equator crossing //
+		  // time.                            //
+		  //----------------------------------//
+		  SpacecraftSim spacecraft_sim;
+		  if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list)){
+		      fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+			command);
+		      exit(1);
+		  }
+		  //---------------------------//
+		  // set the previous Eqx time //
+		  //---------------------------//
+                  l10.frame.Unpack(l10.buffer);
+		  
+		  double eqx_time =
+		    spacecraft_sim.FindPrevArgOfLatTime(l10.frame.time,
+				      EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+		    instrument.SetEqxTime(eqx_time);
 		}
 
 		//---------//
