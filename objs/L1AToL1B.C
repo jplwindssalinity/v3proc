@@ -35,6 +35,7 @@ L10ToL15::~L10ToL15()
 int
 L10ToL15::Convert(
 	L10*		l10,
+	Spacecraft*     spacecraft,
 	Instrument*	instrument,
 	Ephemeris*	ephemeris,
 	L15*		l15)
@@ -55,11 +56,10 @@ L10ToL15::Convert(
 	// predigest //
 	//-----------//
 
-	Spacecraft spacecraft;
 
 	Antenna* antenna = &(instrument->antenna);
-	OrbitState* orbit_state = &(spacecraft.orbitState);
-	Attitude* attitude = &(spacecraft.attitude);
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
 
 	//---------------------------//
 	// determine slice frequency //
@@ -143,7 +143,7 @@ L10ToL15::Convert(
  
 			Vector3 vector;
 			vector.SphericalSet(1.0, look, azimuth);  //boresight
-			DopplerAndDelay(&antenna_frame_to_gc, &spacecraft, instrument, vector);
+			DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
 
 			//-------------------------//
 			// make a measurement spot //
@@ -183,7 +183,7 @@ L10ToL15::Convert(
 				Vector3 look_vector;
 				// guess at a reasonable slice frequency tolerance of 1%
 				float ftol = fabs(f1 - f2) / 100.0;
-				if (! FindSlice(&antenna_frame_to_gc, &spacecraft, instrument,
+				if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
 					look, azimuth, f1, f2, ftol, &(meas->outline),
 					&look_vector, &centroid))
 				{
@@ -215,7 +215,7 @@ L10ToL15::Convert(
 				CoordinateSwitch gc_to_antenna=
 				  antenna_frame_to_gc.ReverseDirection();
 
-				if(! Pr_to_sigma0(&spacecraft, instrument,
+				if(! Pr_to_sigma0(spacecraft, instrument,
 					meas, Kfactor, &gc_to_antenna,
 					Pr, &sigma0)) return(0);	
 			
