@@ -345,7 +345,7 @@ main(
 				// command the range delay and Doppler frequency //
 				//-----------------------------------------------//
 
-                qscat_sim.SetDelayAndFrequency(&spacecraft, &qscat);
+                SetDelayAndFrequency(&spacecraft, &qscat);
 
 				if (slice_opt)
 				{
