@@ -70,13 +70,15 @@ public:
 
 	Kprs();
 	Kprs(int num_beams, float science_bandwidth, 
-	     float guard_bandwidth, int num_science_slices,
+	     int num_science_slices,
              int num_guard_slices_each_side,
 	     int number_of_azimuth_bins, int min_num_samples);
 	~Kprs();
 
 	int		Accumulate(MeasSpotList* quiet, MeasSpotList* noisy);
-	int		Accumulate(Meas* quiet, Meas* noisy); 
+        int             GetSliceShift(MeasSpot* spot);
+	int		Accumulate(Meas* quiet, Meas* noisy, 
+				   int start_slice_idx); 
 	int		Smooth(int filter_width);
 	float	        Interpolate(int beam_number, int num_slices_in_comp,
 				    int start_slice_rel_idx, float azimuth);
@@ -101,7 +103,6 @@ public:
 	int		GetNumGuardSlicesEachSide() 
 	                { return(_numGuardSlicesEachSide); };
 	float	        GetScienceBandwidth() {return(_scienceBandwidth); };
-	float	        GetGuardBandwidth() {return(_guardBandwidth); };
 	int		GetNumAzimuths() {return(_numAzimuths); };
 
 protected:
@@ -120,7 +121,6 @@ protected:
 	int		_numAzimuths;
 	int		_minNumSamples;
 	float	        _scienceBandwidth;
-        float           _guardBandwidth;
 
 	int****		_numSamples;
 	float****	_value;

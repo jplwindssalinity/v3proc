@@ -60,13 +60,12 @@ Kpri::SetKpPtGr(
 Kprs::Kprs()
 :  _numBeams(0), _numScienceSlices(0), _numGuardSlicesEachSide(0),
    _numSlices(0), _numAzimuths(0), _minNumSamples(1),
-   _scienceBandwidth(0.0),_guardBandwidth(0.0), _numSamples(NULL), _value(NULL)
+   _scienceBandwidth(0.0), _numSamples(NULL), _value(NULL)
 {
   return;
 }
 
 Kprs::Kprs(int num_beams, float science_bandwidth,
-	   float guard_bandwidth,
 	   int num_science_slices, 
            int num_guard_slices_each_side,
 	   int number_of_azimuth_bins,
@@ -75,7 +74,6 @@ Kprs::Kprs(int num_beams, float science_bandwidth,
   _numBeams=num_beams;
   _minNumSamples=min_num_samples;
   _scienceBandwidth=science_bandwidth;
-  _guardBandwidth=guard_bandwidth;
   _numScienceSlices=num_science_slices;
   _numGuardSlicesEachSide=num_guard_slices_each_side;
   _numAzimuths=number_of_azimuth_bins;
@@ -93,10 +91,10 @@ Kprs::~Kprs()
 	if (_value == NULL)
 		return;
 
-	free_array((void *)_value, 4, _numBeams, _numSlices,
-		   _numSlices, _numAzimuths);
-	free_array((void *)_numSamples, 4, _numBeams, _numSlices,
-		   _numSlices, _numAzimuths);
+	free_array((void *)_value, 4, _numBeams, _numScienceSlices,
+		   _numScienceSlices, _numAzimuths);
+	free_array((void *)_numSamples, 4, _numBeams, _numScienceSlices,
+		   _numScienceSlices, _numAzimuths);
 
 	_value = NULL;
 	_numSamples = NULL;
@@ -123,54 +121,34 @@ Kprs::Accumulate(MeasSpotList* quiet, MeasSpotList* noisy)
   while(noisy_spot && quiet_spot){
 
 
-    Meas* noisy_slice=noisy_spot->GetHead();
-    Meas* quiet_slice=quiet_spot->GetHead();
-
-
-    int slice_number=0;
-    
-
     //----------------------//
     // For each Slice       //
     //----------------------//
-    while(noisy_slice && quiet_slice){
 
-      if( slice_number >= _numSlices){   
-	fprintf(stderr,"Kprs::Accumulate-- Too many slices.\n");
-	return(0);
-      }
+    int shift=GetSliceShift(quiet_spot); 
+    int first_slice_no=_numGuardSlicesEachSide+shift;
+    int last_slice_no=MIN((first_slice_no+_numScienceSlices-1),(_numSlices-_numGuardSlicesEachSide));
+    first_slice_no=MAX(_numGuardSlicesEachSide,first_slice_no);
+    
+    for(int slice_number=first_slice_no;slice_number<=last_slice_no;slice_number++){
 
-      for(int n=1; n<= _numSlices - slice_number; n++){
+
+      for(int n=1; n<= _numScienceSlices - slice_number; n++){
             Meas comp_quiet, comp_noise;
 
-            Node<Meas> *quiet_node, *noisy_node;
-
-            quiet_node=quiet_spot->GetCurrentNode();
-            noisy_node=noisy_spot->GetCurrentNode();
+            
+            quiet_spot->GetByIndex(slice_number);
+            noisy_spot->GetByIndex(slice_number);
 
             if(!comp_quiet.Composite(quiet_spot,n)) return(0);
             if(!comp_noise.Composite(noisy_spot,n)) return(0);
 
-            quiet_spot->SetCurrentNode(quiet_node);
-            noisy_spot->SetCurrentNode(noisy_node);
-
-            if(!Accumulate(&comp_quiet,&comp_noise))  return(0);
+	    int startidx=slice_number-_numGuardSlicesEachSide-shift;
+            if(!Accumulate(&comp_quiet,&comp_noise,startidx))  return(0);
       }
-      noisy_slice=noisy_spot->GetNext();
-      quiet_slice=quiet_spot->GetNext();
-      slice_number++;
     }
     
 
-    if(slice_number < _numSlices){   
-      fprintf(stderr,"Kprs::Accumulate-- Too few slices.\n");
-      return(0);
-    }
-
-    if(noisy_slice || quiet_slice){
-      fprintf(stderr,"Kprs::Accumulate-- SlicesPerSpot don't match\n");
-      return(0);
-    }  
     noisy_spot=noisy->GetNext();
     quiet_spot=quiet->GetNext();
     spot_number++;
@@ -186,7 +164,7 @@ Kprs::Accumulate(MeasSpotList* quiet, MeasSpotList* noisy)
 }
 
 int
-Kprs::Accumulate(Meas* quiet, Meas* noisy){
+Kprs::Accumulate(Meas* quiet, Meas* noisy, int start_slice_idx){
   float azi, sqrdif;
   int azi_idx;
   
@@ -205,19 +183,14 @@ Kprs::Accumulate(Meas* quiet, Meas* noisy){
   azi_idx%=_numAzimuths;
 
   int beam_idx = (int)(quiet->beamIdx);
-  int start_slice_rel_idx = (int)(quiet->startSliceIdx);
-  int start_slice_abs_idx;
-  if(!rel_to_abs_idx(start_slice_rel_idx,_numSlices,&start_slice_abs_idx)){
-   fprintf(stderr,"Kprs::Accumulate: rel_to_abs_idx failed.\n");
-    return(0);
-  }
+
   int num_slices_per_comp = (int)(quiet->numSlices);
 
   //-------------------------------------//
   // Increments number of samples in bin //
   //-------------------------------------//
 
-  _numSamples[beam_idx][num_slices_per_comp-1][start_slice_abs_idx][azi_idx]++;
+  _numSamples[beam_idx][num_slices_per_comp-1][start_slice_idx][azi_idx]++;
 
   //---------------------------------//
   // Add square of normalized Sigma0 //
@@ -225,7 +198,7 @@ Kprs::Accumulate(Meas* quiet, Meas* noisy){
   //---------------------------------//
   sqrdif=(quiet->value - noisy->value)/(quiet->value);
   sqrdif*=sqrdif;
-  _value[beam_idx][num_slices_per_comp-1][start_slice_abs_idx][azi_idx]+=
+  _value[beam_idx][num_slices_per_comp-1][start_slice_idx][azi_idx]+=
     sqrdif;
   return(1);
 }
@@ -239,8 +212,8 @@ int Kprs::Smooth(int filter_size){
   // Allocate buffer for mean filtering
   float* buffer=new float(_numAzimuths+filter_size-1);
   for(int b=0;b<_numBeams;b++){
-   for(int n=0;n<_numSlices;n++){
-    for(int s=0;s<_numSlices;s++){
+   for(int n=0;n<_numScienceSlices;n++){
+    for(int s=0;s<_numScienceSlices;s++){
  
 
       //-------------------------------------------//
@@ -300,7 +273,7 @@ float Kprs::Interpolate(
     exit(1);
   }  
 
-  if(start_slice_abs_idx < 0 || start_slice_abs_idx >= _numSlices){
+  if(start_slice_abs_idx < 0 || start_slice_abs_idx >= _numScienceSlices){
     fprintf(stderr,"Error Kprs::Interpolate: Bad slice number\n");
     exit(1);
   }
@@ -320,8 +293,8 @@ float Kprs::Interpolate(
 //-------------------------------//   
 int Kprs::Normalize(){
   for(int b=0;b<_numBeams;b++){
-    for(int n=0;n<_numSlices;n++){
-      for(int s=0;s<_numSlices-n;s++){
+    for(int n=0;n<_numScienceSlices;n++){
+      for(int s=0;s<_numScienceSlices-n;s++){
 	for(int a=0;a<_numAzimuths;a++){
 	  if(_numSamples[b][n][s][a] < _minNumSamples){
 	    fprintf(stderr,"Too few samples per bin.\n");
@@ -382,8 +355,9 @@ int Kprs::WriteXmgr(const char* filename, int num_slices_per_comp){
 	float azi=360.0*(float(a)/(float)_numAzimuths);
 	for(int b=0; b<_numBeams; b++){
 	  fprintf(fp,"%g ", azi);
-	  for(int s=0; s<_numSlices; s++){
+	  for(int s=0; s<_numScienceSlices; s++){
 	    float db=10*log10(1+_value[b][num_slices_per_comp-1][s][a]);
+            // int num=_numSamples[b][num_slices_per_comp-1][s][a];
 	    fprintf(fp,"%g ",db);
 	  }
 	}
@@ -426,14 +400,14 @@ Kprs::_Allocate()
 	//------------------------------------//
 
 	_value = (float****)make_array(sizeof(float), 4, _numBeams,
-		_numSlices, _numSlices, _numAzimuths);
+		_numScienceSlices, _numScienceSlices, _numAzimuths);
 
 	if (_value == NULL)
 		return(0);
 
 
 	_numSamples = (int****)make_array(sizeof(int), 4, _numBeams,
-		_numSlices, _numSlices, _numAzimuths);
+		_numScienceSlices, _numScienceSlices, _numAzimuths);
 
 	if (_numSamples == NULL)
 		return(0);
@@ -442,8 +416,8 @@ Kprs::_Allocate()
         // Initialize values to zero           //
         //-------------------------------------//
 	for(int b=0; b<_numBeams; b++){
-	  for(int n=0; n<_numSlices; n++){
-	    for(int s=0; s<_numSlices; s++){
+	  for(int n=0; n<_numScienceSlices; n++){
+	    for(int s=0; s<_numScienceSlices; s++){
 	      for(int a=0;a<_numAzimuths; a++){
 		_numSamples[b][n][s][a]=0;
 		_value[b][n][s][a]=0.0;
@@ -467,10 +441,9 @@ Kprs::_ReadHeader(FILE* ifp)
   if (fread((void*)&_numScienceSlices, sizeof(int),1,ifp)!=1) return(0); 
   if (fread((void*)&_numGuardSlicesEachSide, sizeof(int),1,ifp)!=1) return(0); 
   if (fread((void*)&_scienceBandwidth, sizeof(float),1,ifp)!=1) return(0); 
-  if (fread((void*)&_guardBandwidth, sizeof(float),1,ifp)!=1) return(0); 
   if (fread((void*)&_numAzimuths, sizeof(int),1,ifp)!=1) return(0);
 
-  _numSlices=2*_numGuardSlicesEachSide + _numScienceSlices;
+  _numScienceSlices=2*_numGuardSlicesEachSide + _numScienceSlices;
   return(1);     
 }
 
@@ -482,13 +455,25 @@ int
 Kprs::_ReadTable(FILE* ifp)
 {
   for(int b=0;b<_numBeams;b++){
-    for(int n=0;n<_numSlices;n++){
-      for(int s=0;s<_numSlices;s++){
+    for(int n=0;n<_numScienceSlices;n++){
+      for(int s=0;s<_numScienceSlices;s++){
 	if(fread((void*)&_value[b][n][s][0], sizeof(float), _numAzimuths,ifp)
 	   != (unsigned int)_numAzimuths) return(0);
       }
     }
   }
+
+  /****** Code to read number of samples for use in debugging.
+  for(int b=0;b<_numBeams;b++){
+    for(int n=0;n<_numScienceSlices;n++){
+      for(int s=0;s<_numScienceSlices;s++){
+	if(fread((void*)&_numSamples[b][n][s][0], sizeof(int), 
+		 _numAzimuths,ifp)
+	   != (unsigned int)_numAzimuths) return(0);
+      }
+    }
+  }
+  ******/
   return(1);
 }
 //----------------------------------//
@@ -503,7 +488,6 @@ Kprs::_WriteHeader(FILE* ofp)
   if (fwrite((void*)&_numGuardSlicesEachSide, sizeof(int),1,ofp)!=1) 
     return(0);  
   if (fwrite((void*)&_scienceBandwidth, sizeof(float),1,ofp)!=1) return(0); 
-  if (fwrite((void*)&_guardBandwidth, sizeof(float),1,ofp)!=1) return(0); 
   if (fwrite((void*)&_numAzimuths, sizeof(int),1,ofp)!=1) return(0);  
   return(1);   
 }
@@ -516,15 +500,47 @@ int
 Kprs::_WriteTable(FILE* ofp)
 {
   for(int b=0;b<_numBeams;b++){
-    for(int n=0;n<_numSlices;n++){
-      for(int s=0;s<_numSlices;s++){
+    for(int n=0;n<_numScienceSlices;n++){
+      for(int s=0;s<_numScienceSlices;s++){
 	if(fwrite((void*)&_value[b][n][s][0], sizeof(float), _numAzimuths,ofp)
 	   != (unsigned int)_numAzimuths) return(0);
       }
     }
   }
+
+  /****** Code to write number of samples for use in debugging.
+  for(int b=0;b<_numBeams;b++){
+    for(int n=0;n<_numScienceSlices;n++){
+      for(int s=0;s<_numScienceSlices;s++){
+	if(fwrite((void*)&_numSamples[b][n][s][0], sizeof(int), 
+		  _numAzimuths,ofp)
+	   != (unsigned int)_numAzimuths) return(0);
+      }
+    }
+  }
+  ****/
   return(1);
 }
 
+int Kprs::GetSliceShift(MeasSpot* spot){
+  int start_slice=_numGuardSlicesEachSide;
+  int end_slice=start_slice+_numScienceSlices-1;
 
+  Meas* slice=spot->GetByIndex(start_slice);
+  float X1=slice->XK;
+
+  slice=spot->GetByIndex(start_slice+1);
+  float X2=slice->XK;
+
+  slice=spot->GetByIndex(end_slice-1);
+  float X3=slice->XK;
+
+  slice=spot->GetByIndex(end_slice);
+  float X4=slice->XK;
+
+  int offset=0;
+  if(X1>X3) offset=-1;
+  if(X4>X2) offset=1;
+  return(offset);
+}
 
