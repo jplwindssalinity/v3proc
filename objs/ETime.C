@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1999-2000, California Institute of Technology. //
+// Copyright (C) 1999-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -287,7 +287,7 @@ ETime::SetTime(
     double  seconds)
 {
     _sec = (time_t)seconds;
-    _ms = (unsigned short)(1E6 * (seconds - (double)_sec));
+    _ms = (unsigned short)(1E3 * (seconds - (double)_sec));
     return;
 }
 
