@@ -49,9 +49,9 @@ CoordinateSwitch::CoordinateSwitch(Vector3 att,
                                    int order1, int order2, int order3)
 {
 
-double roll = att.get(1);
-double pitch = att.get(2);
-double yaw = att.get(3);
+double roll = att.get(0);
+double pitch = att.get(1);
+double yaw = att.get(2);
 
 double cr = cos(roll);
 double sr = sin(roll);
