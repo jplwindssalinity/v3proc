@@ -14,6 +14,7 @@ OBJS = \
 	List.o \
 	Antenna.o \
 	AntennaSim.o \
+	Attitude.o \
 	Beam.o \
 	BeamSim.o \
 	ConfigList.o \
@@ -79,39 +80,38 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
-Antenna.o:		Antenna.C Antenna.h Beam.h
-AntennaSim.o:	AntennaSim.C AntennaSim.h Constants.h
-Beam.o:			Beam.C Beam.h
-BeamSim.o:		BeamSim.C BeamSim.h
-ConfigList.o:	ConfigList.C ConfigList.h List.h
-ConfigSim.o:	ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h \
-				ConfigList.h Instrument.h AntennaSim.h L0.h Spacecraft.h \
-				List.h Antenna.h Constants.h Matrix3.h Beam.h Misc.h \
-				Product.h L1.h
-CoordinateSwitch.o:	CoordinateSwitch.C CoordinateSwitch.h Matrix3.h \
-				Constants.h
-GMF.o:			GMF.C GMF.h Interpolate.h Constants.h Measurement.h WVC.h \
-				List.h WindVector.h
-Instrument.o:	Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
-				Constants.h Matrix3.h
-InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
-				Instrument.h AntennaSim.h SpacecraftSim.h List.h Antenna.h \
-				Spacecraft.h Beam.h Constants.h Matrix3.h
-Interpolate.o:	Interpolate.C Interpolate.h
-L0.o:			L0.C L0.h Product.h
-L0ToL1.o:		L0ToL1.C L0ToL1.h
-L1.o:			L1.C L1.h
-L15.o:			L15.C L15.h
-List.o:			List.C List.h
-LookGeom.o:		LookGeom.C LookGeom.h CoordinateSwitch.h \
-				Matrix3.h Constants.h
-Matrix3.o:		Matrix3.C Matrix3.h Constants.h
-Measurement.o:	Measurement.C Measurement.h
-Misc.o:			Misc.C Misc.h
-SpacecraftSim.o:	SpacecraftSim.C SpacecraftSim.h Constants.h \
-				Spacecraft.h Matrix3.h
-Product.o:		Product.C Product.h
-Spacecraft.o:	Spacecraft.C Spacecraft.h Constants.h Matrix3.h
-WindField.o:	WindField.C WindField.h
-WindVector.o:	WindVector.C WindVector.h
-WVC.o:			WVC.C WVC.h
+Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h
+AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h \
+	Attitude.h
+Attitude.o: Attitude.C Attitude.h
+Beam.o: Beam.C Beam.h
+BeamSim.o: BeamSim.C BeamSim.h
+ConfigList.o: ConfigList.C ConfigList.h List.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h \
+	Misc.h L0.h L1.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h \
+	Product.h List.h Antenna.h Constants.h Matrix3.h Beam.h Attitude.h
+CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h
+GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h Measurement.h WVC.h \
+	List.h WindVector.h
+Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
+	Attitude.h Constants.h Matrix3.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h \
+	ConfigList.h AntennaSim.h SpacecraftSim.h L0.h Antenna.h Spacecraft.h \
+	List.h Product.h Beam.h Attitude.h Constants.h Matrix3.h
+Interpolate.o: Interpolate.C 
+L0.o: L0.C L0.h Product.h List.h
+L0ToL1.o: L0ToL1.C L0ToL1.h L0.h L1.h Product.h List.h
+L1.o: L1.C L1.h Product.h List.h
+L15.o: L15.C L15.h Product.h List.h
+List.o: List.C List.h
+LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h
+Matrix3.o: Matrix3.C Matrix3.h Constants.h
+Measurement.o: Measurement.C Measurement.h Beam.h List.h
+Misc.o: Misc.C Misc.h
+Product.o: Product.C Product.h List.h
+Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h
+SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h \
+	Matrix3.h
+WVC.o: WVC.C WVC.h List.h WindVector.h
+WindField.o: WindField.C WindField.h WindVector.h
+WindVector.o: WindVector.C WindVector.h
