@@ -143,7 +143,10 @@ PiscTable::GetInterpolatedValue(
 	while (chi >= two_pi) chi -= two_pi;
 	float chi_ridx = CHI_TO_REAL_IDX(chi);
         /***** FIX to Floating point bug ******/
-        while(chi_ridx >= _chiCount) chi_ridx -= _chiCount;
+        while(chi_ridx >= _chiCount){
+	  chi_ridx -= _chiCount;
+	  chi -= two_pi;
+	}
 
 	//------------------------------------//
 	// calculate upper and lower indicies //
