@@ -101,18 +101,19 @@ radar_X_PtGr(
 
 
 //
-// sigma0_to_Psn
+// sigma0_to_Esn_slice
 //
-// This function computes the power received for a
+// This function computes the energy received for a
 // given instrument state and average sigma0.
-// The received power is the sum of the signal power and the noise power
+// The received energy is the sum of the signal energy the noise energy
 // that falls within the appropriate bandwidth.  This assumes that the
 // geometry related factors such as range and antenna gain can be replaced
 // by effective values (instead of integrating over the bandwidth).
 // K-factor should remove any error introduced by this assumption.
 // The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
-// See also the Pnoise function which computes the total signal (all slices)
-// plus noise power over a much larger noise measurement bandwidth.
+// See also the sigma0_to_Esn_Enoise function which computes the total
+// signal (all slices)
+// plus noise energy over a much larger noise measurement bandwidth.
 //
 // Inputs:
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
@@ -122,19 +123,20 @@ radar_X_PtGr(
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
 //	Kfactor = Radar equation correction factor for this cell.
 //	sigma0 = true sigma0 to assume.
-//	Pr = pointer to return variable
-//
+//	Esn_slice = pointer to signal+noise energy in a slice.
+//  XK = pointer to true X * Kfactor.
 //
 
 int
-sigma0_to_Psn(
+sigma0_to_Esn_slice(
 	CoordinateSwitch*	gc_to_antenna,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
 	Meas*				meas,
 	float				Kfactor,
 	float				sigma0,
-	float*				Esn_slice)
+	float*				Esn_slice,
+	float*				XK)
 {
 	//------------------------//
 	// Sanity check on sigma0 //
@@ -154,6 +156,7 @@ sigma0_to_Psn(
 
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
+	*XK = X*Kfactor;
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double Tp = beam->pulseWidth;
@@ -273,10 +276,10 @@ sigma0_to_Psn(
 }
 
 //
-// Pnoise
+// sigma0_to_Esn_noise
 //
-// This function computes the power returned by the noise channel measurement.
-// The resulting power is mostly noise power over the noise bandwidth.
+// This function computes the energy returned by the noise channel measurement.
+// The resulting energy is mostly noise energy over the noise bandwidth.
 // The result also contains all of the signal (echo) power which lies within
 // the much smaller echo bandwidth (contained within the noise bandwidth).
 //
@@ -286,12 +289,12 @@ sigma0_to_Psn(
 //		Note: the measurements in this spot must ALREADY have Psn values
 //			stored in the value member in the same units that this method
 //			uses.
-//	Pn = pointer to return variable
+//	Esn_noise = pointer to return variable
 //
 //
 
 int
-Pnoise(
+sigma0_to_Esn_noise(
 	Instrument*			instrument,
 	MeasSpot*			spot,
 	float*				Esn_noise)
@@ -369,12 +372,12 @@ Pnoise(
 }
 
 //
-// Pr_to_sigma0
+// Er_to_sigma0
 //
-// The Pr_to_sigma0 function estimates sigma0 from two signal+noise
+// The Er_to_sigma0 function estimates sigma0 from two signal+noise
 // measurements. One is the slice measurement Esn value.  The other is
 // the noise channel measurement which includes all of the slice energies.
-// See sigma0_to_Psn and Pnoise above.
+// See sigma0_to_Esn and sigma0_to_Esn_noise above.
 // Various outputs are put in the Meas object passed in.
 //
 // Inputs:
@@ -384,14 +387,14 @@ Pnoise(
 //	instrument = pointer to current instrument object
 //	meas = pointer to current measurement (for radar_X: cell center, area etc.)
 //	Kfactor = Radar equation correction factor for this cell.
-//	Esn = the received slice power.
-//	sumPsn = the sum of all the slice powers for this spot.
-//	Pn = the noise bandwidth measured power.
+//	Esn_slice = the received slice energy.
+//	Esn_echo = the sum of all the slice energies for this spot.
+//	Esn_noise = the noise channel measured energy.
 //	PtGr = power gain product to use (includes any Kpr fuzzing).
 //
 
 int
-Pr_to_sigma0(
+Er_to_sigma0(
 	CoordinateSwitch*	gc_to_antenna,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
@@ -422,10 +425,10 @@ Pr_to_sigma0(
 	double rho = 1.0;
 
 	// Estimate the noise energy in the slice. (exact for simulated data)
-	meas->Pn_slice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
+	meas->En_slice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
 
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
-	double Es_slice = Esn_slice - meas->Pn_slice;
+	double Es_slice = Esn_slice - meas->En_slice;
 
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Es_slice.
@@ -568,7 +571,7 @@ composite(
 
 	output_meas->value = sum_Ps / sum_XK;
 	output_meas->XK = sum_XK;
-	output_meas->Pn_slice = meas->Pn_slice;		// same for all slices.
+	output_meas->En_slice = meas->En_slice;		// same for all slices.
 	output_meas->bandwidth = meas->bandwidth;	// assumed same for all slices.
 
 	output_meas->outline.FreeContents();	// merged outlines not done yet.

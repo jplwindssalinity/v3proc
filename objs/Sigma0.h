@@ -36,38 +36,38 @@ int radar_X(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 
 //======================================================================
 // Function
-//		sigma0_to_Psn
+//		sigma0_to_Esn_slice
 //
 // DESCRIPTION
 //		This function computes the signal + noise power received in
 //		a slice.
 //======================================================================
 
-int sigma0_to_Psn(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
+int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float sigma0,
-		float* Pr);
+		float* Esn, float* XK);
 
 //======================================================================
 // Function
-//		Pnoise
+//		sigma0_to_Esn_noise
 //
 // DESCRIPTION
 //		This function computes the signal + noise power received in
 //		the noise measurement.
 //======================================================================
 
-int Pnoise(Instrument* instrument, MeasSpot* spot, float* Pn);
+int sigma0_to_Esn_noise(Instrument* instrument, MeasSpot* spot, float* Pn);
 
 //=========================================================================
 // Function
-//		Pr_to_sigma0
+//		Er_to_sigma0
 //
-// The Pr_to_sigma0 function computes sigma0 from a signal+noise and noise power
+// The Er_to_sigma0 function computes sigma0 from a signal+noise and noise power
 // measurement for a given instrument state.
 //
 //=========================================================================
 
-int Pr_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
+int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
 		float sumPsn, float Pn, float PtGr);
 

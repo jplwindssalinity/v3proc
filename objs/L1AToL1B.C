@@ -159,14 +159,14 @@ L10ToL15::Convert(
 				antenna_frame_to_gc.ReverseDirection();
 
 			// Sum up the signal+noise measurements
-			float sumPsn = 0.0;
+			float sumEsn = 0.0;
 			for (int i=0; i < l10->frame.slicesPerSpot; i++)
 			{
-				sumPsn += l10->frame.science[total_slice_idx + i];
+				sumEsn += l10->frame.science[total_slice_idx + i];
 			}
 
 			// Fetch the noise measurement which applies to all the slices.
-			float Pn = l10->frame.spotNoise[spot_idx];
+			float En = l10->frame.spotNoise[spot_idx];
 
 			//-------------------//
 			// for each slice... //
@@ -192,7 +192,7 @@ L10ToL15::Convert(
 						orbit_position, sliceno);
 				}
 
-				float Psn = l10->frame.science[total_slice_idx];
+				float Esn = l10->frame.science[total_slice_idx];
 				float PtGr = l10->frame.ptgr;
 
 				//-----------------//
@@ -200,8 +200,8 @@ L10ToL15::Convert(
 				//-----------------//
 
 				// should we have separate entries for Kpc,Kpr,Kpm ?
-				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Psn, sumPsn, Pn, PtGr))
+				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, instrument,
+					meas, k_factor, Esn, sumEsn, En, PtGr))
 				{
 					return(0);
 				}

@@ -224,8 +224,8 @@ InstrumentSim::SetMeasurements(
 				orbit_position, sliceno);
 		}
 
-		if (! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
-				Kfactor, sigma0, &(meas->value)))
+		if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, instrument, meas,
+				Kfactor, sigma0, &(meas->value), &(meas->XK)))
 		{
 			return(0);
 		}
@@ -306,7 +306,8 @@ InstrumentSim::SetL00Science(
 	}
 
 	// Compute the spot noise measurement.
-	Pnoise(instrument,meas_spot,&(l00_frame->spotNoise[_spotNumber]));
+	sigma0_to_Esn_noise(instrument,meas_spot,
+		&(l00_frame->spotNoise[_spotNumber]));
 
 	_spotNumber++;
 

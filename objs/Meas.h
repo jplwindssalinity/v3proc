@@ -68,7 +68,7 @@ public:
 
 	float				value;
 	float				XK;
-	float				Pn_slice;
+	float				En_slice;
 	float				bandwidth;
 	Outline				outline;
 	EarthPosition		centroid;
