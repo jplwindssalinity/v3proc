@@ -58,12 +58,15 @@ public:
              float* value);
     int  GetMaxValueForSpeed(Meas::MeasTypeE met, float inc, float spd,
              float* value);
+    int  GetAvgValueForSpeed(Meas::MeasTypeE met, float inc, float spd,
+             float* value);
 
 protected:
 
     //--------------//
     // construction //
     //--------------//
+
     int  _GetMaxValueForSpeed(int met_idx, int inc_idx, int spd_idx,
              float* value);
     int  _Allocate();
@@ -115,7 +118,7 @@ protected:
     float  _chiStep;      // the relative azimuth angle step size
 
     float****  _value;    // the array of values
-    float*** _maxValueForSpeed; 
+    float***   _maxValueForSpeed;
 };
 
 #endif
