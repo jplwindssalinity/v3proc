@@ -96,7 +96,9 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -f ]", "<checkfile>", "<output_file>", 0};
+const char* usage_array[] = { "[ -f ]", "<checkfile>", "<output_file>", 
+			      "<start_frame>(OPT)",
+			      "<end_frame>(OPT)",0};
 extern int optind;
 
 //--------------//
@@ -118,12 +120,18 @@ main(
     int c = getopt(argc, argv, OPTSTRING);
     if (c == 'f') f_flag = 1;
 
-	if (argc-optind != 2)
+	if (argc-optind != 4 && argc-optind != 2)
 		usage(command, usage_array, 1);
 
 	int clidx = optind;
 	const char* checkfile = argv[clidx++];
 	const char* output_file = argv[clidx++];
+    int start_frame=-1, end_frame=2;
+    if (argc-optind == 4)
+    {
+	  start_frame=atoi(argv[clidx++]);
+	  end_frame=atoi(argv[clidx++]);
+	}
 
 	//---------------------//
 	// open the check file //
@@ -203,20 +211,29 @@ main(
 	// loop and write //
 	//----------------//
 
+    int frame_count = 1;
     if (f_flag == 0)
     {
-	  while (cf.ReadDataRec(check_fp))
+	  while (cf.ReadDataRec(check_fp) && frame_count < end_frame)
 	  {
-		  cf.WriteDataRecAscii(output_fp);
-		  fprintf(output_fp,"\n");
+          if (frame_count > start_frame)
+          {
+		    cf.WriteDataRecAscii(output_fp);
+		    fprintf(output_fp,"\n");
+          }
+          if (start_frame >= 0) frame_count++;
 	  }
 	}
     else
     {
-	  while (cf.ReadDataRecFortran(check_fp))
+	  while (cf.ReadFortranStructure(check_fp) && frame_count < end_frame)
 	  {
-		  cf.WriteDataRecAscii(output_fp);
-		  fprintf(output_fp,"\n");
+          if (frame_count > start_frame)
+          {
+		    cf.WriteDataRecAscii(output_fp);
+		    fprintf(output_fp,"\n");
+          }
+          if (start_frame >= 0) frame_count++;
 	  }
 	}
 

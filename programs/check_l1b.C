@@ -560,7 +560,7 @@ main(
       }
       else
       {
-        ret = cf1b.ReadDataRecFortran(oneb_fp);
+        ret = cf1b.ReadFortranStructure(oneb_fp);
       }
       if (! ret) break; // end of oneb_fp file
 
