@@ -1,19 +1,19 @@
-//==================================================================//
-// Copyright (C) 1997, California Institute of Technology.          //
-// U.S. Goverment sponsorship acknowledged                          //
-//==================================================================//
+//==============================================================//
+// Copyright (C) 1997-2001, California Institute of Technology. //
+// U.S. Goverment sponsorship acknowledged                      //
+//==============================================================//
 
 //==================================================================//
 // Author:  Bryan Stiles   Created 9/22/97                          //
 //==================================================================/
 
 //==================================================================//
-// CLASSES							    //
-//		GenericDist, Uniform, Gaussian, GTC, AttDist	    //
+// CLASSES                                                          //
+//    GenericDist, Uniform, Gaussian, GTC, AttDist                  //
 //==================================================================//
 
 //==================================================================//
-// Functions: 					SeedFromClock	    //
+// Functions: SeedFromClock                                         //
 //==================================================================//
 
 static const char rcs_id_distributions_c[] =
@@ -22,46 +22,53 @@ static const char rcs_id_distributions_c[] =
 #include"Distributions.h"
 #include "Constants.h"
 
-//================================//
-// GenericDist                    //
-//================================//
-GenericDist::~GenericDist(){
-	return;
+//=============//
+// GenericDist //
+//=============//
+
+GenericDist::~GenericDist()
+{
+    return;
 }
 
-//===================================//
-// GenericTimelessDist               //
-//===================================//
+//=====================//
+// GenericTimelessDist //
+//=====================//
 
-GenericTimelessDist::~GenericTimelessDist(){
-	return;
+GenericTimelessDist::~GenericTimelessDist()
+{
+    return;
 }
 
-//==================================//
-// GenericTimelessDist::GetNumber   //
-//==================================//
+//--------------------------------//
+// GenericTimelessDist::GetNumber //
+//--------------------------------//
 
-float GenericTimelessDist::GetNumber(double timex){
-	if(timex<0.0) //bogus check to keep compiler quiet
-		return(0.0);
-	else return(GetNumber());
+float
+GenericTimelessDist::GetNumber(
+    double  timex)
+{
+    if (timex < 0.0)    //bogus check to keep compiler quiet
+        return(0.0);
+    else
+        return(GetNumber());
 }
 
-//=============================//
-// RNG                         //
-//=============================//
+//=====//
+// RNG //
+//=====//
 
 RNG::RNG(
-	long int	seed)
+    long int  seed)
 {
-	SetSeed(seed);
-	return;
+    SetSeed(seed);
+    return;
 }
 
 RNG::RNG()
 {
-	SetRandomSeed();
-	return;
+    SetRandomSeed();
+    return;
 }
 
 RNG::~RNG()
@@ -69,82 +76,86 @@ RNG::~RNG()
   return;
 }
 
+//--------------//
+// RNG::SetSeed //
+//--------------//
+
 void
 RNG::SetSeed(
-	long int	seed)
+    long int  seed)
 {
-	if (seed > 0)
-		_seed = -seed;
-	else if (seed == 0)
-		_seed = -1;
-	else
-		_seed = seed;
-	_Init();
+    if (seed > 0)
+        _seed = -seed;
+    else if (seed == 0)
+        _seed = -1;
+    else
+        _seed = seed;
+    _Init();
 }
 
 void
 RNG::SetRandomSeed()
 {
-	SetSeed(lrand48() * lrand48());
-	return;
+    SetSeed(lrand48() * lrand48());
+    return;
 }
 
 double
 RNG::GetDouble()
 {
-	int j = (int)(97.0 * _output / RNG_M);
-	_output = _tab[j];
-	_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
-	_tab[j] = _seed;
-	return((double)(_output)/RNG_M);
+    int j = (int)(97.0 * _output / RNG_M);
+    _output = _tab[j];
+    _seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+    _tab[j] = _seed;
+    return((double)(_output)/RNG_M);
 }
 
 void
 RNG::_Init()
 {
-	if((_seed=(RNG_IC - _seed) % RNG_M) < 0)
-		_seed = -_seed;
-	for(int j = 0; j < 97; j++)
-	{
-		_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
-		_tab[j] = _seed;
-	}
-	_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
-	_output = _seed;
-	return;
+    if((_seed=(RNG_IC - _seed) % RNG_M) < 0)
+        _seed = -_seed;
+    for(int j = 0; j < 97; j++)
+    {
+        _seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+        _tab[j] = _seed;
+    }
+    _seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+    _output = _seed;
+    return;
 }
 
-//============================//
-// Uniform                    //
-//============================//
+//=========//
+// Uniform //
+//=========//
 
 Uniform::Uniform()
-:	_radius(0.0), _mean(0.0)
+:    _radius(0.0), _mean(0.0)
 {
-	return;
+    return;
 }
 
 Uniform::Uniform(float radius, float mean)
 {
-	_radius=radius;
-	_mean=mean;
-	return;
+    _radius=radius;
+    _mean=mean;
+    return;
 }
 
 Uniform::~Uniform(){
-	return;
+    return;
 }
 
-//================================//
-// Uniform::GetNumber            //
-//================================//
+//====================//
+// Uniform::GetNumber //
+//====================//
 
 float
 Uniform::GetNumber()
 {
-	float num;
-	num=(float)(2*_radius*(_rng.GetDouble()-0.5)+_mean);
-	return(num);
+    float num;
+    num=(float)(2*_radius*(_rng.GetDouble()-0.5)+_mean);
+    return(num);
 }
 
 float Uniform::GetRadius(){
@@ -172,29 +183,29 @@ void Uniform::SetSeed(long int seed){
 //============================//
 
 Gaussian::Gaussian()
-:	_variance(0.0), _mean(0.0)
+:    _variance(0.0), _mean(0.0)
 {
-	return;
+    return;
 }
 
 Gaussian::Gaussian(float variance, float mean)
 {
-	_variance=variance;
-	_mean=mean;
-	return;
+    _variance=variance;
+    _mean=mean;
+    return;
 }
 
 
 Gaussian::~Gaussian()
 {
-	return;
+    return;
 }
 
 float
 Gaussian::GetNumber()
 {
-	float num;
-	double v1, v2, r, fac;
+    float num;
+    double v1, v2, r, fac;
         do {
              v1=2.0*_rng.GetDouble()-1.0;
              v2=2.0*_rng.GetDouble()-1.0;
@@ -203,7 +214,7 @@ Gaussian::GetNumber()
         fac=sqrt((float) -2.0*log(r)/r);
         num=(float)v2*fac;
         num=num*sqrt(_variance) + _mean;
-	return(num);
+    return(num);
 }
 
 float Gaussian::GetVariance(){
@@ -234,22 +245,22 @@ void Gaussian::SetSeed(long int seed){
 //============================//
 
 Gamma::Gamma()
-:	_variance(0.0), _mean(0.0)
+:    _variance(0.0), _mean(0.0)
 {
-	return;
+    return;
 }
 
 Gamma::Gamma(float variance, float mean)
 {
-	_variance=variance;
-	_mean=mean;
-	return;
+    _variance=variance;
+    _mean=mean;
+    return;
 }
 
 
 Gamma::~Gamma()
 {
-	return;
+    return;
 }
 
 float
@@ -326,62 +337,62 @@ void Gamma::SetSeed(long int seed){
 
 RandomVelocity::RandomVelocity()
 {
-	_sample_period=1.0;
-	_radius=1.0;
+    _sample_period=1.0;
+    _radius=1.0;
         _mean=0.0;
-	_noise= NULL;
-	_position=0.0;
-	_time=0.0;
-	_velocity=0.0;
- 	return;
+    _noise= NULL;
+    _position=0.0;
+    _time=0.0;
+    _velocity=0.0;
+     return;
 }
 
 RandomVelocity::RandomVelocity(GenericTimelessDist* noise, float sample_period,
-	float radius, float mean)
+    float radius, float mean)
 {
-	_noise=noise;
-	_sample_period=sample_period;
-   	_radius=radius;
-	_mean=mean;
-	_position=mean;
-	_time=0.0;
-	_velocity=noise->GetNumber();
-	while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
-		_velocity=noise->GetNumber();
-	}
-	return;
+    _noise=noise;
+    _sample_period=sample_period;
+       _radius=radius;
+    _mean=mean;
+    _position=mean;
+    _time=0.0;
+    _velocity=noise->GetNumber();
+    while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
+        _velocity=noise->GetNumber();
+    }
+    return;
 }
 
 RandomVelocity::~RandomVelocity(){
-	return;
+    return;
 }
 
 //================================//
-// RandomVelocity::GetNumber	  //
+// RandomVelocity::GetNumber      //
 //================================//
 
 float RandomVelocity::GetNumber(double timex){
-	if (timex < 0.0){
-	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
-	 fprintf(stderr,"Parameter time may not be negative.\n");
-	 exit(1);
-	}
-	if (timex < _time){
-	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
-	 fprintf(stderr,"Parameter time may not decrease between \n");
-	 fprintf(stderr,"consecutive calls to the method. \n");
-	 exit(1);
-	}
-	while (timex >= _time + _sample_period){
-	  _position+=_velocity*_sample_period;
-	  _time+=_sample_period;
- 	  _velocity=_noise->GetNumber();
-	  while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
-		_velocity=_noise->GetNumber();
-	  }
+    if (timex < 0.0){
+     fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
+     fprintf(stderr,"Parameter time may not be negative.\n");
+     exit(1);
+    }
+    if (timex < _time){
+     fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
+     fprintf(stderr,"Parameter time may not decrease between \n");
+     fprintf(stderr,"consecutive calls to the method. \n");
+     exit(1);
+    }
+    while (timex >= _time + _sample_period){
+      _position+=_velocity*_sample_period;
+      _time+=_sample_period;
+       _velocity=_noise->GetNumber();
+      while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
+        _velocity=_noise->GetNumber();
+      }
 
-	}
-	return(_position+(timex-_time)*_velocity);
+    }
+    return(_position+(timex-_time)*_velocity);
 }
 
 //==================================================================//
@@ -404,31 +415,42 @@ int TimeCorrelatedGaussian::Initialize(){
    return(1);
 }
 
-float TimeCorrelatedGaussian::GetNumber(double timex){
+//-----------------------------------//
+// TimeCorrelatedGaussian::GetNumber //
+//-----------------------------------//
 
-  /*******  BIAS ONLY CASE        *************/
-  if(Uncorrelated.GetVariance()==0.0){
-    return(_mean);
-  }
+float
+TimeCorrelatedGaussian::GetNumber(
+    double  timex)
+{
+    /******* BIAS ONLY CASE *************/
+    if (Uncorrelated.GetVariance() == 0.0)
+    {
+        return(_mean);
+    }
 
-  /******** Error Condition ****************/
-  if(timex < _previousTime){
-    fprintf(stderr,"TimeCorrelatedGaussian requires monotonically increasing time\n");
-    exit(1);
-  }
+    /******** Error Condition ****************/
+    if (timex < _previousTime)
+    {
+        fprintf(stderr,
+            "TimeCorrelatedGaussian requires monotonically increasing time\n");
+        fprintf(stderr, "  (%.3f -> %.3f)\n", _previousTime, timex);
+        exit(1);
+    }
 
-  /********** Uncorrelated case *************/
-  if(_correlationLength == 0.0){
-    return(Uncorrelated.GetNumber()+_mean);
-  }
+    /********** Uncorrelated case *************/
+    if (_correlationLength == 0.0)
+    {
+        return(Uncorrelated.GetNumber() + _mean);
+    }
 
-  /******* Normal Mode  *******************/
-
-  float retval=exp(-(timex-_previousTime)/_correlationLength);
-  retval=retval*_previousOutput+sqrt(1-retval*retval)*Uncorrelated.GetNumber();
-  _previousTime=timex;
-  _previousOutput=retval;
-  return(retval+_mean);
+    /******* Normal Mode *******************/
+    float retval = exp( -(timex - _previousTime) / _correlationLength);
+    retval = retval * _previousOutput + sqrt(1 - retval*retval)
+        * Uncorrelated.GetNumber();
+    _previousTime = timex;
+    _previousOutput = retval;
+    return(retval + _mean);
 }
 
 int TimeCorrelatedGaussian::SetVariance(float variance){
@@ -457,13 +479,13 @@ int TimeCorrelatedGaussian::SetCorrelationLength(float corrlength){
 
 AttDist::AttDist()
 {
-	return;
+    return;
 }
 
 
 AttDist::~AttDist()
 {
-	return;
+    return;
 }
 
 //==================================//
@@ -484,16 +506,16 @@ SeedFromClock()
 
 double gammln(double xx)
 {
-	double x,y,tmp,ser;
-	static double cof[6]={76.18009172947146,-86.50532032941677,
-		24.01409824083091,-1.231739572450155,
-		0.1208650973866179e-2,-0.5395239384953e-5};
-	int j;
+    double x,y,tmp,ser;
+    static double cof[6]={76.18009172947146,-86.50532032941677,
+        24.01409824083091,-1.231739572450155,
+        0.1208650973866179e-2,-0.5395239384953e-5};
+    int j;
 
-	y=x=xx;
-	tmp=x+5.5;
-	tmp -= (x+0.5)*log(tmp);
-	ser=1.000000000190015;
-	for (j=0;j<=5;j++) ser += cof[j]/++y;
-	return -tmp+log(2.5066282746310005*ser/x);
+    y=x=xx;
+    tmp=x+5.5;
+    tmp -= (x+0.5)*log(tmp);
+    ser=1.000000000190015;
+    for (j=0;j<=5;j++) ser += cof[j]/++y;
+    return -tmp+log(2.5066282746310005*ser/x);
 }
