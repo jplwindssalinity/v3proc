@@ -44,7 +44,7 @@ Attribute* qa_percent_missing_data = new Attribute("QAPercentMissingData",
 Attribute* build_id = new Attribute("build_id", "char", "1", "1.0/Sim");
 Attribute* hdf_version_id = new Attribute("HDF_version_id", "char", "1",
     "4.1r3");
-Attribute* production_date_time = new Attribute("production_date_time",
+Attribute* production_date_time = new Attribute("ProductionDateTime",
     "char", "1", "<missing>");
 Attribute* sis_id = new Attribute("sis_id", "char", "1",
     "686-644-5/2000-04-01");
@@ -144,6 +144,7 @@ int32 dim_sizes_frame_3[] = { SD_UNLIMITED, 3 };
 int32 dim_sizes_frame_4[] = { SD_UNLIMITED, 4 };
 int32 dim_sizes_frame_5[] = { SD_UNLIMITED, 5 };
 int32 dim_sizes_frame_8[] = { SD_UNLIMITED, 8 };
+int32 dim_sizes_frame_12[] = { SD_UNLIMITED, 12 };
 int32 dim_sizes_frame_13[] = { SD_UNLIMITED, 13 };
 int32 dim_sizes_frame_100[] = { SD_UNLIMITED, 100 };
 int32 dim_sizes_frame_2_8[] = { SD_UNLIMITED, 2, 8 };
@@ -154,11 +155,14 @@ const char* dim_names_frame_packet_header[] = { "Telemetry_Frame",
 const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame", "Message" };
 const char* dim_names_frame_cmd_history[] = { "Telemetry_Frame", "Command" };
 const char* dim_names_frame_fill[] = { "Telemetry_Frame", "Fill_Entries" };
+const char* dim_names_frame_flag[] = { "Telemetry_Frame", "Flag" };
 const char* dim_names_frame_word[] = { "Telemetry_Frame", "Word" };
 const char* dim_names_frame_pcd[] = { "Telemetry_Frame", "PCD_Group",
     "Entry" };
 const char* dim_names_frame_pulse[] = { "Telemetry_Frame",
     "Scatterometer_Pulse" };
+const char* dim_names_frame_cal[] = { "Telemetry_Frame",
+    "Slice_Calibrations" };
 const char* dim_names_frame_byte[] = { "Telemetry_Frame", "Byte" };
 const char* dim_names_frame_pulse_slice[] = { "Telemetry_Frame",
     "Scatterometer_Pulse", "Chirp" };
@@ -209,8 +213,8 @@ SdsUInt8* operational_mode = new SdsUInt8("operational_mode", 1,
     dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xe0, 0x00);
 SdsUInt8* prf_count = new SdsUInt8("prf_count", 1, dim_sizes_frame, "counts",
     1.0, 0.0, dim_names_frame, 255, 0);
-SdsUInt16* status_change_flags = new SdsUInt16("prf_count", 1, dim_sizes_frame,
-    "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
+SdsUInt16* status_change_flags = new SdsUInt16("status_change_flags", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
 SdsUInt16* error_message = new SdsUInt16("error_message", 1, dim_sizes_frame,
     "n/a", 1.0, 0.0, dim_names_frame, 65535, 0);
 SdsUInt16* error_message_history = new SdsUInt16("error_message_history", 2,
@@ -272,7 +276,7 @@ SdsUInt8* fsw_build_number = new SdsUInt8("fsw_build_number", 1,
     dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 255, 0);
 SdsUInt8* pbi_flag = new SdsUInt8("pbi_flag", 1, dim_sizes_frame, "n/a",
     1.0, 0.0, dim_names_frame, 0x3f, 0);
-SdsFloat32* fill = new SdsFloat32("fill", 1, dim_sizes_frame_8, "n/a", 1.0,
+SdsFloat32* fill = new SdsFloat32("fill", 2, dim_sizes_frame_8, "n/a", 1.0,
     0.0, dim_names_frame_fill, 0.0, 0.0);
 SdsUInt8* psu_elec_bus_volt = new SdsUInt8("psu_elec_bus_volt", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
@@ -396,8 +400,8 @@ SdsUInt8* eng_status_c2 = new SdsUInt8("eng_status_c2", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
 SdsUInt8* eng_status_c3 = new SdsUInt8("eng_status_c3", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
-SdsUInt8* ses_data_error_flags = new SdsUInt8("ses_data_error_flags", 1,
-    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ses_data_error_flags = new SdsUInt8("ses_data_error_flags", 2,
+    dim_sizes_frame_13, "DN", 1.0, 0.0, dim_names_frame_flag, 255, 0);
 SdsUInt32* cds_memory_dump_addr = new SdsUInt32("cds_memory_dump_addr", 1,
     dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffffffff, 0x00000000);
 SdsUInt32* cds_memory_dump_data = new SdsUInt32("cds_memory_dump_data", 2,
@@ -439,14 +443,14 @@ SdsInt16* beam_select_sw_temp_eu = new SdsInt16("beam_select_sw_temp_eu", 1,
     dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
 SdsInt16* receiver_temp_eu = new SdsInt16("receiver_temp_eu", 1,
     dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
-SdsUInt32* loop_back_cal_A_power = new SdsUInt32("loop_back_cal_A_power", 1,
-    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
-SdsUInt32* loop_back_cal_B_power = new SdsUInt32("loop_back_cal_B_power", 1,
-    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
-SdsUInt32* load_cal_A_power = new SdsUInt32("load_cal_A_power", 1,
-    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
-SdsUInt32* load_cal_B_power = new SdsUInt32("load_cal_B_power", 1,
-    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
+SdsUInt32* loop_back_cal_A_power = new SdsUInt32("loop_back_cal_A_power", 2,
+    dim_sizes_frame_12, "DN", 1.0, 0.0, dim_names_frame_cal, 8355840, 0);
+SdsUInt32* loop_back_cal_B_power = new SdsUInt32("loop_back_cal_B_power", 2,
+    dim_sizes_frame_12, "DN", 1.0, 0.0, dim_names_frame_cal, 8355840, 0);
+SdsUInt32* load_cal_A_power = new SdsUInt32("load_cal_A_power", 2,
+    dim_sizes_frame_12, "DN", 1.0, 0.0, dim_names_frame_cal, 8355840, 0);
+SdsUInt32* load_cal_B_power = new SdsUInt32("load_cal_B_power", 2,
+    dim_sizes_frame_12, "DN", 1.0, 0.0, dim_names_frame_cal, 8355840, 0);
 SdsUInt32* loop_back_cal_noise = new SdsUInt32("loop_back_cal_noise", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 4294967295, 0);
 SdsUInt32* load_cal_noise = new SdsUInt32("load_cal_noise", 1,
@@ -583,6 +587,8 @@ Sds* g_sds_table[] =
     ses_data_error_flags,
     cds_memory_dump_addr,
     cds_memory_dump_data,
+    ses_memory_dump_addr,
+    ses_memory_dump_data,
     pcd_entry,
     range_gate_delay_inner,
     range_gate_delay_outer,
@@ -1281,7 +1287,7 @@ L1AH::WriteHDFHeader(
     orbit_semi_major_axis->ReplaceContents(buffer);
 
     // orbit eccentricity
-    sprintf(buffer, "%.8f", eccentricity);
+    sprintf(buffer, "%.9f", eccentricity);
     orbit_eccentricity->ReplaceContents(buffer);
 
     // range beginning date
