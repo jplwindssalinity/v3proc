@@ -203,6 +203,11 @@ int
 Outline::WriteBvg(
 	FILE*	fp)
 {
+	int count = NodeCount();
+
+	if (count < 1)
+		return(1);
+
 	// write the points
 	EarthPosition* r;
 	LonLat lon_lat;
