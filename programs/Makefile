@@ -7,14 +7,14 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
+CCC =			gcc
 
-CPPFLAGS =		-g -ptr. -ptr../objs +w -I$(INCDIR)
+CPPFLAGS =		-g -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
-	l0_to_l1 \
-	l1_to_l15 \
+	l00_to_l10 \
 	sim
 
 #----------------------------------------------------------------------
@@ -29,7 +29,6 @@ default: $(PROGRAMS)
 
 clean:
 	- rm -f $(PROGRAMS)
-	- rm -rf Templates.DB
 
 #----------------------------------------------------------------------
 # install: make all object and executable programs and install
@@ -54,8 +53,5 @@ install: $(PROGRAMS)
 sim: sim.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
-l0_to_l1: l0_to_l1.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l1_to_l15: l1_to_l15.C $(LIBS)
+l00_to_l10: l00_to_l10.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
