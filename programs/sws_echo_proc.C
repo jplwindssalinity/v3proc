@@ -271,6 +271,19 @@ main(
               "specified_cal_pulse_pos");
     int32 power_dn_sds_id = SDnametoid(l1a_sd_id, "power_dn");
     int32 noise_dn_sds_id = SDnametoid(l1a_sd_id, "noise_dn");
+    int32 range_gate_a_delay_sds_id = SDnametoid(l1a_sd_id,
+              "range_gate_a_delay");
+    int32 range_gate_a_width_sds_id = SDnametoid(l1a_sd_id,
+              "range_gate_a_width");
+    int32 range_gate_b_delay_sds_id = SDnametoid(l1a_sd_id,
+              "range_gate_b_delay");
+    int32 range_gate_b_width_sds_id = SDnametoid(l1a_sd_id,
+              "range_gate_b_width");
+    int32 doppler_shift_command_1_sds_id = SDnametoid(l1a_sd_id,
+              "doppler_shift_command_1");
+    int32 doppler_shift_command_2_sds_id = SDnametoid(l1a_sd_id,
+              "doppler_shift_command_2");
+//    int32 pulse_width_sds_id = SDnametoid(l1a_sd_id, "pulse_width");
 
     //--------------------------//
     // initiate level 1b access //
@@ -477,6 +490,38 @@ main(
         SDreaddata_or_exit("noise_dn", noise_dn_sds_id, start, edges,
             (VOIDP)noise_dn);
 
+        uint8 range_gate_a_delay;
+        SDreaddata_or_exit("range_gate_a_delay", range_gate_a_delay_sds_id,
+            start, edges, (VOIDP)&range_gate_a_delay);
+
+        uint8 range_gate_a_width;
+        SDreaddata_or_exit("range_gate_a_width", range_gate_a_width_sds_id,
+            start, edges, (VOIDP)&range_gate_a_width);
+
+        uint8 range_gate_b_delay;
+        SDreaddata_or_exit("range_gate_b_delay", range_gate_b_delay_sds_id,
+            start, edges, (VOIDP)&range_gate_b_delay);
+
+        uint8 range_gate_b_width;
+        SDreaddata_or_exit("range_gate_b_width", range_gate_b_width_sds_id,
+            start, edges, (VOIDP)&range_gate_b_width);
+
+        uint32 doppler_shift_command_1;
+        SDreaddata_or_exit("doppler_shift_command_1",
+            doppler_shift_command_1_sds_id, start, edges,
+            (VOIDP)&doppler_shift_command_1);
+
+        uint32 doppler_shift_command_2;
+        SDreaddata_or_exit("doppler_shift_command_2",
+            doppler_shift_command_2_sds_id, start, edges,
+            (VOIDP)&doppler_shift_command_2);
+
+/*
+        uint8 pulse_width;
+        SDreaddata_or_exit("pulse_width", pulse_width_sds_id, start, edges,
+            (VOIDP)&pulse_width);
+*/
+
         //-----------------------------------------------//
         // set the ephemeris, orbit time, and orbit step //
         //-----------------------------------------------//
@@ -674,7 +719,9 @@ main(
                     sum += tofour;
                 }
                 centroid /= sum;
-                echo_info.measSpecPeakFreq[spot_idx] = f1 +  centroid * bw;
+
+                echo_info.measSpecPeakFreq[spot_idx] = f1 +
+                    bw * (centroid + 0.5);
             }
         }
 
@@ -713,7 +760,13 @@ main(
         SDendaccess(prf_orbit_step_change_sds_id) == FAIL ||
         SDendaccess(specified_cal_pulse_pos_sds_id) == FAIL ||
         SDendaccess(power_dn_sds_id) == FAIL ||
-        SDendaccess(noise_dn_sds_id) == FAIL)
+        SDendaccess(noise_dn_sds_id) == FAIL ||
+        SDendaccess(range_gate_a_delay_sds_id) == FAIL ||
+        SDendaccess(range_gate_a_width_sds_id) == FAIL ||
+        SDendaccess(range_gate_b_delay_sds_id) == FAIL ||
+        SDendaccess(range_gate_b_width_sds_id) == FAIL ||
+        SDendaccess(doppler_shift_command_1_sds_id) == FAIL ||
+        SDendaccess(doppler_shift_command_2_sds_id) == FAIL)
     {
         fprintf(stderr, "%s: error ending L1A SD access\n", command);
         exit(1);

@@ -938,7 +938,6 @@ L1AH::WriteSDSs(
 
     // instrument time
     instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
-/*
 
     // convert km to m
     frame.gcX *= 1000.0;
@@ -956,6 +955,7 @@ L1AH::WriteSDSs(
     y_vel->SetFromFloat(&(frame.velY));
     z_vel->SetFromFloat(&(frame.velZ));
 
+/*
     // convert radians to degrees
     float r, p, y;
     frame.attitude.GetRPY(&r, &p, &y);
