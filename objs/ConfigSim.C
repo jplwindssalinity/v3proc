@@ -208,65 +208,23 @@ ConfigAntennaSim(
 	return(1);
 }
 
-//----------//
-// ConfigL0 //
-//----------//
+//---------------//
+// ConfigL00File //
+//---------------//
 
 int
-ConfigL0(
-	L0*				l0,
+ConfigL00File(
+	L00File*		l00_file,
 	ConfigList*		config_list)
 {
-	//-------------------------//
-	// configure the l0 object //
-	//-------------------------//
+	//------------------------//
+	// configure the l00 file //
+	//------------------------//
 
-	char* l0_file = config_list->Get(L0_FILE_KEYWORD);
-	if (l0_file == NULL)
+	char* l00_filename = config_list->Get(L00_FILE_KEYWORD);
+	if (l00_filename == NULL)
 		return(0);
-	l0->AddFile(l0_file);
-
-	return(1);
-}
-
-//----------//
-// ConfigL1 //
-//----------//
-
-int
-ConfigL1(
-	L1*				l1,
-	ConfigList*		config_list)
-{
-	//-------------------------//
-	// configure the l1 object //
-	//-------------------------//
-
-	char* l1_file = config_list->Get(L1_FILE_KEYWORD);
-	if (l1_file == NULL)
-		return(0);
-	l1->AddFile(l1_file);
-
-	return(1);
-}
-
-//-----------//
-// ConfigL15 //
-//-----------//
-
-int
-ConfigL15(
-	L15*			l15,
-	ConfigList*		config_list)
-{
-	//--------------------------//
-	// configure the l15 object //
-	//--------------------------//
-
-	char* l15_file = config_list->Get(L15_FILE_KEYWORD);
-	if (l15_file == NULL)
-		return(0);
-	l15->AddFile(l15_file);
+	l00_file->SetFilename(l00_filename);
 
 	return(1);
 }

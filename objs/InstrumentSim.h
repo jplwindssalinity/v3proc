@@ -13,7 +13,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Instrument.h"
 #include "AntennaSim.h"
 #include "SpacecraftSim.h"
-#include "L0.h"
+#include "L00Frame.h"
 #include "WindField.h"
 #include "GMF.h"
 
@@ -51,6 +51,7 @@ public:
 
 	int		SetPriPerBeam(double pri_per_beam);
 	int		SetBeamBTimeOffset(double beam_b_time_offset);
+	int		GetL00Frame(L00Frame* l00_frame);
 
 	//--------------------//
 	// simulation control //
@@ -59,7 +60,6 @@ public:
 	int		DetermineNextEvent(Event* event);
 	int		SimulateEvent(Instrument* instrument, Event* event, WindField* wf,
 				GMF* gmf);
-	int		GenerateL0(Instrument* instrument, L0* l0);
 
 	//-----------//
 	// variables //
@@ -76,6 +76,9 @@ protected:
 
 	double		_priPerBeam;			// seconds
 	double		_beamBTimeOffset;		// seconds
+
+	L00Frame	_l00Frame;
+	int			_l00FrameReady;
 };
 
 #endif

@@ -9,64 +9,24 @@
 static const char rcs_id_grid_h[] =
 	"@(#) $Id$";
 
-#include "Measurement.h"
+#include "Meas.h"
 
 
 //======================================================================
 // CLASSES
-//		GridRow, Grid
+//		Grid
 //======================================================================
-
-//======================================================================
-// CLASS
-//		GridRow
-//
-// DESCRIPTION
-//		The GridRow object holds a row of MeasurementLists.
-//======================================================================
-
-class GridRow
-{
-public:
-
-	//--------------//
-	// construction //
-	//--------------//
-
-	GridRow();
-	~GridRow();
-
-	Allocate(int size);
-
-	//---------------------//
-	// adding measurements //
-	//---------------------//
-
-	int		Add(Measurement* measurement, int cti);
-
-	//--------------//
-	// input/output //
-	//--------------//
-
-	int		Write(int ofd);
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	int					ati;		// the along track index for the row
-	MeasurementList*	row;
-};
 
 //======================================================================
 // CLASS
 //		Grid
 //
 // DESCRIPTION
-//		The Grid object is a list of GridRow.
+//		The Grid object is a grid (or subgrid) of co-located
+//		measurements.  It can be used as a circular buffer.
 //======================================================================
 
-class Grid : public List<GridRow>
+class Grid
 {
 public:
 
@@ -77,30 +37,23 @@ public:
 	Grid();
 	~Grid();
 
+	int		Allocate(int cross_track_bins, int along_track_bins);
+
 	//---------------------//
 	// adding measurements //
 	//---------------------//
-
-	int			Add(Measurement* measurement);
-
-	GridRow*	FindRow(int ati);
-	GridRow*	AddRow(int ati);
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	GetCoordinates(double time, float longitude, float latitude, float* ctd,
-		float* atd);
+protected:
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	float	crossTrackResolution;
-	float	alongTrackResolution;
-	int		bufferRows;				// the number of rows to buffer
-	int		outputFd;				// the output file
+	MeasList***		_grid;
 };
 
 #endif

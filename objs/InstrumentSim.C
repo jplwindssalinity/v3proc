@@ -16,7 +16,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	_priPerBeam(0.0), _beamBTimeOffset(0.0)
+:	_priPerBeam(0.0), _beamBTimeOffset(0.0), _l00FrameReady(0)
 {
 	return;
 }
@@ -40,6 +40,19 @@ int InstrumentSim::SetBeamBTimeOffset(double beam_b_time_offset)
 {
 	_beamBTimeOffset = beam_b_time_offset;
 	return(1);
+}
+
+int
+InstrumentSim::GetL00Frame(
+	L00Frame*	l00_frame)
+{
+	if (_l00FrameReady)
+	{
+		l00_frame = &_l00Frame;
+		return(1);
+	}
+	else
+		return(0);
 }
 
 //-----------------------------------//
@@ -180,51 +193,6 @@ InstrumentSim::SimulateEvent(
 
 		break;
 	}
-
-	return(1);
-}
-
-//---------------------------//
-// InstrumentSim::GenerateL0 //
-//---------------------------//
-
-int
-InstrumentSim::GenerateL0(
-	Instrument*		instrument,
-	L0*				l0)
-{
-	//-----------------------------//
-	// update telemetry parameters //
-	//-----------------------------//
-
-    l0->time = instrument->time;
- 
-    l0->gcAltitude = instrument->spacecraft.gcAltitude;
-    l0->gcLongitude = instrument->spacecraft.gcLongitude;
-    l0->gcLatitude = instrument->spacecraft.gcLatitude;
-    instrument->spacecraft.gcVector.Get(0, &(l0->gcX));
-    instrument->spacecraft.gcVector.Get(1, &(l0->gcY));
-    instrument->spacecraft.gcVector.Get(2, &(l0->gcZ));
-    instrument->spacecraft.velocityVector.Get(0, &(l0->velX));
-    instrument->spacecraft.velocityVector.Get(1, &(l0->velY));
-    instrument->spacecraft.velocityVector.Get(2, &(l0->velZ));
- 
-    l0->antennaPosition = instrument->antenna.azimuthAngle;
-	switch(instrument->event.eventId)
-	{
-		case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
-			l0->beam = L0::SCATTEROMETER_BEAM_A;
-			break;
-		case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
-			l0->beam = L0::SCATTEROMETER_BEAM_B;
-			break;
-	}
-
-	//------------------------------//
-	// write telemetry if necessary //
-	//------------------------------//
-
-	l0->WriteDataRec();
 
 	return(1);
 }

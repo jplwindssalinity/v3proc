@@ -10,9 +10,7 @@ static const char rcs_id_configsim_h[] =
 	"@(#) $Id$";
 
 #include "InstrumentSim.h"
-#include "L0.h"
-#include "L1.h"
-#include "L15.h"
+#include "L00File.h"
 
 //======================================================================
 // DESCRIPTION
@@ -75,28 +73,12 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 
 int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 
-//----//
-// L0 //
-//----//
+//---------//
+// L00File //
+//---------//
 
-#define L0_FILE_KEYWORD					"L0_FILE"
+#define L00_FILE_KEYWORD					"L00_FILE"
 
-int ConfigL0(L0* l0, ConfigList* config_list);
-
-//----//
-// L1 //
-//----//
-
-#define L1_FILE_KEYWORD					"L1_FILE"
-
-int ConfigL1(L1* l1, ConfigList* config_list);
-
-//-----//
-// L15 //
-//-----//
-
-#define L15_FILE_KEYWORD				"L15_FILE"
-
-int ConfigL15(L15* l15, ConfigList* config_list);
+int ConfigL00File(L00File* l00_file, ConfigList* config_list);
 
 #endif

@@ -58,8 +58,10 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include "Misc.h"
 #include "ConfigList.h"
-#include "InstrumentSim.h"
+#include "Instrument.h"
 #include "ConfigSim.h"
+#include "L00File.h"
+#include "L00Frame.h"
 
 //-----------//
 // CONSTANTS //
@@ -144,18 +146,16 @@ main(
 	}
 
 	//----------------------------------------//
-	// create a Level 0 object and initialize //
+	// create a Level 0.0 file and initialize //
 	//----------------------------------------//
 
-	L0 l0;
-	if (! ConfigL0(&l0, &config_list))
+	L00File l00_file;
+	if (! ConfigL00File(&l00_file, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 0 telemetry\n",
-			command);
+		fprintf(stderr, "%s: error configuring Level 0.0\n", command);
 		exit(1);
 	}
-	l0.GotoFirstFile();
-	l0.OpenCurrentForOutput();
+	l00_file.OpenForOutput();
 
 	//----------------------//
 	// cycle through events //
@@ -163,15 +163,21 @@ main(
 
 	WindField windfield;
 	GMF gmf;
+	L00Frame l00_frame;
+	char l00_buffer[MAX_L00_BUFFER_SIZE];
 
 	Event event;
 	while (event.time < 120.0)
 	{
 		sim.DetermineNextEvent(&event);
 		sim.SimulateEvent(&instrument, &event, &windfield, &gmf);
-		sim.GenerateL0(&instrument, &l0);
+		if (sim.GetL00Frame(&l00_frame))
+		{
+			int size = l00_frame.Pack(l00_buffer);
+			l00_file.Write(l00_buffer, size);
+		}
 	}
-	l0.CloseCurrentFile();
+	l00_file.Close();
 
 	return (0);
 }

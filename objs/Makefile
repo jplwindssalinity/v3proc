@@ -22,33 +22,39 @@ OBJS = \
 	CoordinateSwitch.o \
 	Ephemeris.o \
 	GMF.o \
+	GenericFile.o \
 	Grid.o \
 	Instrument.o \
 	InstrumentSim.o \
 	Interpolate.o \
 	Kp.o \
-	L0.o \
-	L0ToL1.o \
-	L1.o \
-	L1ToL15.o \
-	L15.o \
+	L00File.o \
+	L00Frame.o \
+	LonLat.o \
 	LookGeom.o \
 	Matrix3.o \
-	Measurement.o \
+	Meas.o \
 	Misc.o \
 	PiscTable.o \
 	Product.o \
 	Spacecraft.o \
 	SpacecraftSim.o \
+	WVC.o \
 	WindField.o \
-	WindVector.o \
-	WVC.o
+	WindVector.o
 
 #----------------------------------------------------------------------
 # default: make library
 #----------------------------------------------------------------------
 
 default: $(TARGET_LIB)
+
+#----------------------------------------------------------------------
+# depend: list dependencies
+#----------------------------------------------------------------------
+
+depend:
+	@ inclist `echo $(OBJS) | sed -e 's/[.]o/.C/g'`
 
 #----------------------------------------------------------------------
 # clean: remove all object code and library
@@ -85,45 +91,34 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
+List.o: List.C List.h
 Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h
 Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h \
-	L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h WindField.h GMF.h \
-	Spacecraft.h Product.h List.h Antenna.h WindVector.h PiscTable.h \
-	Measurement.h WVC.h Constants.h Matrix3.h Attitude.h Beam.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00File.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h WindField.h GMF.h Spacecraft.h GenericFile.h List.h Antenna.h WindVector.h PiscTable.h Measurement.h WVC.h Constants.h Matrix3.h Attitude.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h
-GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h \
-	Measurement.h WVC.h Attitude.h List.h WindVector.h
-Grid.o: Grid.C Grid.h Measurement.h List.h Beam.h Attitude.h
-Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
-	Attitude.h Constants.h Matrix3.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h \
-	ConfigList.h AntennaSim.h SpacecraftSim.h L0.h WindField.h GMF.h \
-	Antenna.h Spacecraft.h CoordinateSwitch.h List.h Product.h WindVector.h \
-	PiscTable.h Measurement.h WVC.h Beam.h Attitude.h Constants.h Matrix3.h
+GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Measurement.h WVC.h Attitude.h List.h WindVector.h
+GenericFile.o: GenericFile.C GenericFile.h
+Grid.o: Grid.C Grid.h Meas.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
+Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h Attitude.h Constants.h Matrix3.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h ConfigList.h AntennaSim.h SpacecraftSim.h L00Frame.h WindField.h GMF.h Antenna.h Spacecraft.h CoordinateSwitch.h List.h WindVector.h PiscTable.h Measurement.h WVC.h Beam.h Attitude.h Constants.h Matrix3.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h Attitude.h
-L0.o: L0.C L0.h Product.h List.h
-L0ToL1.o: L0ToL1.C L0ToL1.h L0.h L1.h Product.h List.h
-L1.o: L1.C L1.h Product.h List.h
-L15.o: L15.C L15.h Product.h List.h
-L1ToL15.o: L1ToL15.C L1ToL15.h L1.h L15.h Product.h List.h
-List.o: List.C List.h
-LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h \
-	Attitude.h
-Matrix3.o: Matrix3.C Matrix3.h Constants.h
-Measurement.o: Measurement.C Measurement.h Beam.h List.h Attitude.h
+L00File.o: L00File.C L0.h Product.h List.h
+L00Frame.o: L00Frame.C 
+LonLat.o: LonLat.C LonLat.h List.h
+LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
+Matrix3.o: Matrix3.C Ephemeris.h Constants.h Matrix3.h List.h
+Meas.o: Meas.C Measurement.h Beam.h List.h Attitude.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
 Product.o: Product.C Product.h List.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Attitude.h
-SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h \
-	Matrix3.h Attitude.h
+SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h Matrix3.h Attitude.h
 WVC.o: WVC.C WVC.h Constants.h List.h WindVector.h
 WindField.o: WindField.C WindField.h WindVector.h
 WindVector.o: WindVector.C WindVector.h

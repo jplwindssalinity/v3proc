@@ -7,22 +7,9 @@ static const char rcs_id_grid_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include <malloc.h>
 #include "Grid.h"
 
-
-//=========//
-// GridRow //
-//=========//
-
-GridRow::GridRow()
-{
-	return;
-}
-
-GridRow::~GridRow()
-{
-	return;
-}
 
 //======//
 // Grid //
@@ -38,74 +25,33 @@ Grid::~Grid()
 	return;
 }
 
-//-----------//
-// Grid::Add //
-//-----------//
+//----------------//
+// Grid::Allocate //
+//----------------//
 
 int
-Grid::Add(
-	Measurement*	measurement)
+Grid::Allocate(
+	int		cross_track_bins,
+	int		along_track_bins)
 {
-	//-----------------------------------------------------//
-	// determine the cross track and along track distances //
-	//-----------------------------------------------------//
+	_grid = (MeasList ***)malloc(cross_track_bins * sizeof(MeasList **));
+	if (_grid == NULL)
+		return(0);
 
-	float ctd, atd;
-	GetCoordinates(measurement->time, measurement->centerLongitude,
-		measurement->centerLatitude, &ctd, &atd);
-
-	//--------------------------------//
-	// determine the grid coordinates //
-	//--------------------------------//
-
-	int cti = (int)(ctd / crossTrackResolution);
-	int ati = (int)(atd / alongTrackResolution);
-
-	//----------------------//
-	// find appropriate row //
-	//----------------------//
-
-	GridRow* row = FindRow(ati);
-
-	//-------------------------------//
-	// allocate new row if necessary //
-	//-------------------------------//
-
-	if (! row)
+	for (int i = 0; i < cross_track_bins; i++)
 	{
-		row = AddRow(ati);
-		if (row == NULL)
+		MeasList** ptr =
+			(MeasList **)malloc(along_track_bins * sizeof(MeasList *));
+		if (ptr == NULL)
 			return(0);
-	}
-
-	//------------------------//
-	// add measurement to row //
-	//------------------------//
-
-	row->Add(measurement, cti);
-
-	//----------------------------------------//
-	// write and deallocate rows if necessary //
-	//----------------------------------------//
-
-	do
-	{
-		row = GetTail();
-		if (row->ati <= ati - bufferRows)
+		*(_grid + i) = ptr;
+		for (int j = 0; j < along_track_bins; j++)
 		{
-			if (! row->Write(outputFd))
+			MeasList* ml = new MeasList();
+			if (ml == NULL)
 				return(0);
-			RemoveCurrent();
+			*(*(_grid + i) + j) = ml;
 		}
-		else
-			break;
-	} while (1);
-
-	//--------------------------------------//
-	// deallocate ephemerities if necessary //
-	//--------------------------------------//
-
-//	ephemeris.FreeBefore(measurement->time - bufferTime);
-
+	}
 	return(1);
 }
