@@ -118,13 +118,13 @@ const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -o output_base ]", 0 };
 
 // not always evil...
-float*		ctd_array = NULL;
-float*		value_array = NULL;
-int*		count_array = NULL;
-int			cross_track_bins = 0;
-const char*	command = NULL;
-char*		l2b_file = NULL;
-char*		output_base = NULL;
+float*			ctd_array = NULL;
+float*			value_array = NULL;
+int*			count_array = NULL;
+int				cross_track_bins = 0;
+const char*		command = NULL;
+char*			l2b_file = NULL;
+char*			output_base = NULL;
 
 //--------------//
 // MAIN PROGRAM //
@@ -157,11 +157,11 @@ main(
 	if (argc == 1)
 		usage(command, usage_array, 1);
 
-    int c;
-    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
-    {
-        switch(c)
-        {
+	int c;
+	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+	{
+		switch(c)
+		{
 		case 'c':
 			config_file = optarg;
 			if (! config_list.Read(config_file))
@@ -191,11 +191,11 @@ main(
 		case 'o':
 			output_base = optarg;
 			break;
-        case '?':
-            usage(command, usage_array, 1);
-            break;
-        }
-    }
+		case '?':
+			usage(command, usage_array, 1);
+			break;
+		}
+	}
 
 	//---------------------//
 	// check for arguments //
@@ -259,6 +259,8 @@ main(
 		exit(1);
 	}
 
+	WindSwath* swath = &(l2b.frame.swath);
+
 	//----------------------------//
 	// read in "truth" wind field //
 	//----------------------------//
@@ -270,7 +272,7 @@ main(
 	// create arrays //
 	//---------------//
 
-	cross_track_bins = l2b.frame.swath.GetCrossTrackBins();
+	cross_track_bins = swath->GetCrossTrackBins();
 	ctd_array = new float[cross_track_bins];
 	value_array = new float[cross_track_bins];
 	count_array = new int[cross_track_bins];
@@ -281,73 +283,129 @@ main(
 	// generate ctd array //
 	//--------------------//
 
-	if (! l2b.frame.swath.CtdArray(l2b.header.crossTrackResolution, ctd_array))
+	if (! swath->CtdArray(l2b.header.crossTrackResolution, ctd_array))
 	{
 		fprintf(stderr, "%s: error generating CTD array\n", command);
 		exit(1);
 	}
 
-	//-------------------------//
-	// rms speed error vs. ctd //
-	//-------------------------//
+	//==========//
+	// SELECTED //
+	//==========//
 
-	if (! l2b.frame.swath.RmsSpdErrVsCti(&truth, value_array, count_array,
-		low_speed, high_speed))
+	//----------------------------------//
+	// selected rms speed error vs. ctd //
+	//----------------------------------//
+
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
 	{
-		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
+		fprintf(stderr, "%s: error calculating selected RMS speed error\n",
+			command);
 		exit(1);
 	}
-
-	sprintf(title, "RMS Speed Error vs. CTD (%g - %g m/s)", low_speed,
-		high_speed);
-	plot_thing("rms_spd_err", title, "Cross Track Distance (km)",
+	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
 		"RMS Speed Error (m/s)");
 
-	//-----------------------------//
-	// rms direction error vs. ctd //
-	//-----------------------------//
+	//--------------------------------------//
+	// selected rms direction error vs. ctd //
+	//--------------------------------------//
 
-	if (! l2b.frame.swath.RmsDirErrVsCti(&truth, value_array, count_array,
-		low_speed, high_speed))
+	if (! swath->RmsDirErrVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
 	{
-		fprintf(stderr, "%s: error calculating RMS direction error\n",
+		fprintf(stderr, "%s: error calculating selected RMS direction error\n",
 			command);
 		exit(1);
 	}
 	rad_to_deg();
-
-	sprintf(title, "RMS Direction Error vs. CTD (%g - %g m/s)", low_speed,
-		high_speed);
-	plot_thing("rms_dir_err", title, "Cross Track Distance (km)",
+	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
 		"RMS Direction Error (deg)");
+
+	//-----------------------------//
+	// selected speed bias vs. ctd //
+	//-----------------------------//
+
+	if (! swath->SpdBiasVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
+	{
+		fprintf(stderr, "%s: error calculating selected speed bias\n", command);
+		exit(1);
+	}
+	sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
+		"Speed Bias (m/s)");
 
 	//---------------//
 	// skill vs. ctd //
 	//---------------//
 
-	if (! l2b.frame.swath.SkillVsCti(&truth, value_array, count_array,
-		low_speed, high_speed))
+	if (! swath->SkillVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
 	{
-		fprintf(stderr, "%s: error calculating skil\n", command);
+		fprintf(stderr, "%s: error calculating skill\n", command);
 		exit(1);
 	}
-
 	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
 	plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
 
-	//--------------------//
-	// speed bias vs. ctd //
-	//--------------------//
+	//=========//
+	// NEAREST //
+	//=========//
 
-	if (! l2b.frame.swath.SpdBiasVsCti(&truth, value_array, count_array,
-		low_speed, high_speed))
+	swath->SelectNearest(&truth);
+
+	//---------------------------------//
+	// nearest rms speed error vs. ctd //
+	//---------------------------------//
+
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
 	{
-		fprintf(stderr, "%s: error calculating speed bias\n", command);
+		fprintf(stderr, "%s: error calculating nearest RMS speed error\n",
+			command);
 		exit(1);
 	}
+	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
+		"RMS Speed Error (m/s)");
 
-	sprintf(title, "Speed Bias vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	plot_thing("spd_bias", title, "Cross Track Distance (km)",
+	//-------------------------------------//
+	// nearest rms direction error vs. ctd //
+	//-------------------------------------//
+
+	if (! swath->RmsDirErrVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
+	{
+		fprintf(stderr, "%s: error calculating nearest RMS direction error\n",
+			command);
+		exit(1);
+	}
+	rad_to_deg();
+	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
+		"RMS Direction Error (deg)");
+
+	//----------------------------//
+	// nearest speed bias vs. ctd //
+	//----------------------------//
+
+	if (! swath->SpdBiasVsCti(&truth, value_array, count_array, low_speed,
+		high_speed))
+	{
+		fprintf(stderr, "%s: error calculating nearest speed bias\n", command);
+		exit(1);
+	}
+	sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
 		"Speed Bias (m/s)");
 
 	//-------------//
