@@ -692,7 +692,7 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     Itime itime;
     if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
     {
-        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
+        fprintf(stderr, "Fail to get time on HDF index %ld\n", hdfIndex);
         return 0;
     }
     time = (double) itime.sec - ITIME_DEFAULT_SEC;

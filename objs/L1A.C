@@ -171,7 +171,6 @@ L1A::WriteGSDataRec()
 int
 L1A::FillGSFrame(void)
 {
-
     //----------------------------------------------//
     // Transfer data from standard frame to gsFrame //
     //----------------------------------------------//
@@ -241,6 +240,7 @@ L1A::FillGSFrame(void)
     // l1a_pulse_qual_flag[13]
     (void)memcpy(&(gsFrame.l1a_pulse_qual_flag), &(frame.pulse_qual_flag), 13);
 
+    return(1);
 } // L1A::FillGSFrame
 
 
