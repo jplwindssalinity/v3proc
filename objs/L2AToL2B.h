@@ -41,71 +41,75 @@ public:
     enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, H3, S1, S2, 
 				PEAK_SPLITTING, CHEAT };
 
-	//--------------//
-	// construction //
-	//--------------//
-
-	L2AToL2B();
-	~L2AToL2B();
-
+    //--------------//
+    // construction //
+    //--------------//
+    
+    L2AToL2B();
+    ~L2AToL2B();
+    
     //---------//
     // setting //
     //---------//
 
     int    SetWindRetrievalMethod(const char* wr_method);
-
-	//------------//
-	// conversion //
-	//------------//
-
-	int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
-	int		Flush(L2B* l2b);
-
-        //------------------------------------------//
-        // Routine for outputting the Nudge Field   //
-        // wind vector                              //
-        //------------------------------------------//
+    
+    //------------//
+    // conversion //
+    //------------//
+    
+    int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
+    int		Flush(L2B* l2b);
+    
+    //------------------------------------------//
+    // Routine for outputting the Nudge Field   //
+    // wind vector                              //
+    //------------------------------------------//
 	
-	int             Cheat(MeasList* meas_list, WVC* wvc);
-	//-----------//
-	// debugging //
-	//-----------//
+    int             Cheat(MeasList* meas_list, WVC* wvc);
 
-	int		WriteSolutionCurves(L2A* l2a, GMF* gmf, Kp* kp,
-				const char* output_file);
+    //-----------//
+    // debugging //
+    //-----------//
 
-	//----------------------//
-	// processing variables //
-	//----------------------//
+    int		WriteSolutionCurves(L2A* l2a, GMF* gmf, Kp* kp,
+				    const char* output_file);
 
+    //----------------------//
+    // processing variables //
+    //----------------------//
+    
     int  medianFilterWindowSize;
     int  medianFilterMaxPasses;
     int  maxRankForNudging;
 
-	//-------//
-	// flags //
-	//-------//
+    //-------//
+    // flags //
+    //-------//
 
     int                   useManyAmbiguities;
     int                   useAmbiguityWeights;
     int                   useNudging;
     int                   smartNudgeFlag;
     WindRetrievalMethodE  wrMethod;
+    int                   useNudgeThreshold;
+    int                   useNMF;
 
-	//-----------------------------------------//
-	// Parameters for Peak Splitting Algorithm //
-	//-----------------------------------------//
+    //-----------------------------------------//
+    // Parameters for Peak Splitting Algorithm //
+    //-----------------------------------------//
+    
+    float	onePeakWidth;
+    float	twoPeakSep;
+    float	probThreshold;
+    
+    //-------------------//
+    // nudging variables //
+    //-------------------//
+    
+    WindField	nudgeField;
+    WindVectorField nudgeVctrField;
 
-	float	onePeakWidth;
-	float	twoPeakSep;
-	float	probThreshold;
-
-	//-------------------//
-	// nudging variables //
-	//-------------------//
-
-	WindField	nudgeField;
-	WindVectorField nudgeVctrField;
 };
 
 #endif
