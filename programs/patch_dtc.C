@@ -73,6 +73,10 @@ static const char rcs_id[] =
 #define ORBIT_STEPS            256
 #define NUMBER_OF_QSCAT_BEAMS  2
 
+#define SOUTH_POLE_MIN_ORBIT_STEP    169
+#define SOUTH_POLE_MAX_ORBIT_STEP    215
+#define SOUTH_POLE_FADE_ORBIT_STEPS  2
+
 //--------//
 // MACROS //
 //--------//
@@ -186,24 +190,40 @@ main(
     // combine //
     //---------//
 
-    double** source_terms;
+    double ocean_factor, land_factor;
     for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
         for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
         {
-            if (orbit_step >= 169 && orbit_step <= 215)
+            if (orbit_step >= SOUTH_POLE_MIN_ORBIT_STEP &&
+                orbit_step <= SOUTH_POLE_MAX_ORBIT_STEP)
             {
-                source_terms = land_terms;
+                int dist1 = orbit_step - SOUTH_POLE_MIN_ORBIT_STEP;
+                int dist2 = SOUTH_POLE_MAX_ORBIT_STEP - orbit_step;
+                int min_dist = MIN(dist1, dist2);
+                if (min_dist <= SOUTH_POLE_FADE_ORBIT_STEPS)
+                {
+                    land_factor = (double)min_dist /
+                        (double)SOUTH_POLE_FADE_ORBIT_STEPS;
+                    ocean_factor = 1.0 - land_factor;
+                }
+                else
+                {
+                    ocean_factor = 0.0;
+                    land_factor = 1.0;
+                }
             }
             else
             {
-                source_terms = ocean_terms;
+                ocean_factor = 1.0;
+                land_factor = 0.0;
             }
 
             for (int coef_idx = 0; coef_idx < 3; coef_idx++)
             {
                 *(*(hybrid_terms + orbit_step) + coef_idx) =
-                    *(*(source_terms + orbit_step) + coef_idx);
+                    ocean_factor * *(*(ocean_terms + orbit_step) + coef_idx) +
+                    land_factor * *(*(land_terms + orbit_step) + coef_idx);
             }
         }
     }
