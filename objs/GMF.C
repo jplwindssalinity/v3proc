@@ -3162,7 +3162,7 @@ GMF::RetrieveWinds_H2(
     {
         int max_idx = -1;
         float max_width = 0.0;
-        for (int range_idx = 0; range_idx < range_count; range_idx++)
+        for (range_idx = 0; range_idx < range_count; range_idx++)
         {
             float use_width, use_ambigs;
             use_ambigs = 0.5 * (float)number_of_peaks[range_idx] +
