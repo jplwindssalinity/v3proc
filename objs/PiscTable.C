@@ -306,6 +306,9 @@ PiscTable::_Allocate()
 int
 PiscTable::_Deallocate()
 {
+	if (_value == NULL)
+		return(1);
+
 	for (int i = 0; i < _polCount; i++)
 	{
 		for (int j = 0; j < _incCount; j++)
