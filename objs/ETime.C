@@ -188,6 +188,20 @@ ETime::ToCodeB(
     return(1);
 }
 
+//-----------------//
+// ETime::ToBlockB //
+//-----------------//
+
+int
+ETime::ToBlockB(
+    char*  string)
+{
+    struct tm* tm_time = gmtime(&_sec);
+    sprintf(string, BLOCK_B_PRINTF_FORMAT, tm_time->tm_year + 1900,
+        tm_time->tm_yday + 1, tm_time->tm_hour, tm_time->tm_min);
+    return(1);
+}
+
 //------------------//
 // ETime::FromChar6 //
 //------------------//

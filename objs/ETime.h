@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1999-2000, California Institute of Technology. //
+// Copyright (C) 1999-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -34,6 +34,11 @@ static const char rcs_id_etime_h[] =
 #define CODE_B_TIME_LENGTH      22
 #define CODE_B_STRPTIME_FORMAT  "%Y-%jT%H:%M:%S"
 #define CODE_B_PRINTF_FORMAT    "%04d-%03dT%02d:%02d:%02d.%03d"
+
+#define BLOCK_B_DEFAULT_TIME     "19930010000\0"
+#define BLOCK_B_TIME_LENGTH      12
+#define BLOCK_B_STRPTIME_FORMAT  "%Y%j%H%M"
+#define BLOCK_B_PRINTF_FORMAT    "%04d%03d%02d%02d"
 
 #define BLOCKDATE_DEFAULT_TIME     "19930101\0"
 #define BLOCKDATE_LENGTH           9
@@ -72,6 +77,7 @@ public:
     int  ToCodeA(char* string);
     int  FromCodeB(const char* code_b_string);
     int  ToCodeB(char* string);
+    int  ToBlockB(char* string);
     int  FromChar6(char* string);
     int  ToBlockDate(char* string);
     int  ToJustTime(char* string);
