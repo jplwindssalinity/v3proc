@@ -354,6 +354,18 @@ main(
         exit(1);
     }
 
+    //--------------------------//
+    // use as fixed wind speed? //
+    //--------------------------//
+
+    config_list.DoNothingForMissingKeywords();
+    float fixed_speed;
+    if (config_list.GetFloat(WINDFIELD_FIXED_SPEED_KEYWORD, &fixed_speed))
+    {
+        truth.FixSpeed(fixed_speed);
+    }
+    config_list.ExitForMissingKeywords();
+
     //---------------------//
     // clear bad latitudes //
     //---------------------//

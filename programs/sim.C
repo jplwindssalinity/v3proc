@@ -420,6 +420,7 @@ main(
                     spacecraft_sim.ReportAttitude(spacecraft_event.time,
                       &spacecraft, &attitude);
                     spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+                    attitude.GSWrite(att_fp,spacecraft_event.time);
                     break;
                 case SpacecraftEvent::EQUATOR_CROSSING:
                     qscat.cds.SetEqxTime(spacecraft_event.time);
