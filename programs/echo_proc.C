@@ -725,9 +725,10 @@ main(
                 lat = (float)lat_d;
             }
 
-            if (land_map.IsLand(lon, lat))
+            int type = land_map.GetType(lon, lat);
+            if (type != 0)    // not ocean
             {
-                echo_info.flag[spot_idx] = EchoInfo::LAND;
+                echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
                 continue;
             }
 
