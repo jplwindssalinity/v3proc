@@ -22,8 +22,9 @@ static const char rcs_id_mat_h[] =
 
 class Mat
 {
-
     friend class Vect;
+    friend class Quat;
+
 public:
 
     Mat();

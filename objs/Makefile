@@ -106,6 +106,7 @@ OBJS = \
 	Qscat.o \
 	QscatConfig.o \
 	QscatSim.o \
+	Quat.o \
 	RainHeightTable.o \
 	Scatterometer.o \
 	Sds.o \
@@ -270,6 +271,7 @@ Pulser.o: Pulser.C Pulser.h Misc.h List.h Constants.h ConfigList.h
 Qscat.o: Qscat.C Qscat.h Constants.h InstrumentGeom.h GenericGeom.h Interpolate.h Misc.h BYUXTable.h AccurateGeom.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h EarthPosition.h CoordinateSwitch.h Ephemeris.h LonLat.h Matrix3.h Array.h CheckFrame.h Topo.h Beam.h Attitude.h List.h BufferedList.h Wind.h Matrix.h AngleInterval.h LonLatWind.h Index.h WindVector.h
 QscatConfig.o: QscatConfig.C Qscat.h ConfigList.h QscatConfig.h QscatConfigDefs.h Misc.h QscatSim.h ConfigSimDefs.h Constants.h ConfigSim.h Interpolate.h ETime.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h List.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h CheckFrame.h L1AFrame.h Sigma0Map.h SpacecraftSim.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Grid.h Kp.h FbbTable.h Beam.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h Array.h Topo.h Matrix.h AngleInterval.h LonLatWind.h Index.h MiscTable.h L1AGSFrame.h BaseFile.h L00Frame.h WindSwath.h Kpm.h Kpr.h BufferedList.h WindVector.h EarthField.h
 QscatSim.o: QscatSim.C QscatSim.h CheckFrame.h InstrumentGeom.h Sigma0.h AccurateGeom.h Beam.h Sigma0Map.h Qscat.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h Meas.h L1AFrame.h Attitude.h Matrix3.h EarthPosition.h CoordinateSwitch.h Ephemeris.h Spacecraft.h LonLat.h Antenna.h Tracking.h Scatterometer.h Array.h Topo.h Matrix.h AngleInterval.h LonLatWind.h Misc.h List.h Index.h MiscTable.h Constants.h Kp.h L1AGSFrame.h BufferedList.h WindVector.h Kpm.h Kpr.h EarthField.h L00Frame.h
+Quat.o: Quat.C Quat.h Vect.h Mat.h
 RainHeightTable.o: RainHeightTable.C Array.h RainHeightTable.h Constants.h Index.h
 Scatterometer.o: Scatterometer.C Scatterometer.h InstrumentGeom.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Spacecraft.h Meas.h Antenna.h Ephemeris.h LonLat.h Qscat.h Attitude.h Constants.h Beam.h List.h BufferedList.h Tracking.h
 Sds.o: Sds.C Sds.h
