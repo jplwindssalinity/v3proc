@@ -36,6 +36,7 @@ OBJS = \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
+	Index.o \
 	Instrument.o \
 	InstrumentSim.o \
 	InstrumentSimAccurate.o \
