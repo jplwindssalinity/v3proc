@@ -68,6 +68,18 @@ public:
 
 	int		useManyAmbiguities;
 	int		useAmbiguityWeights;
+	int             usePeakSplitting;
+        
+        //-------------------------------------------//
+        // Parameters for Peak Splitting Algorithm   //
+	//-------------------------------------------//
+				 
+        float onePeakWidth;
+        float twoPeakSep;
+        float probThreshold;
 };
 
 #endif
+
+
+

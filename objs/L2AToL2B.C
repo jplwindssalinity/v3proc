@@ -16,7 +16,8 @@ static const char rcs_id_l2atol2b_c[] =
 
 L2AToL2B::L2AToL2B()
 :	medianFilterWindowSize(0), medianFilterMaxPasses(0), useManyAmbiguities(0),
-	useAmbiguityWeights(0)
+	useAmbiguityWeights(0), usePeakSplitting(0), onePeakWidth(0.0), 
+	twoPeakSep(181.0),probThreshold(0.0)
 {
 	return;
 }
@@ -93,19 +94,28 @@ L2AToL2B::ConvertAndWrite(
 			return(5);
 		}
 	}
-	else
+	else if(usePeakSplitting)
+	{
+		if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
+			onePeakWidth, twoPeakSep, probThreshold))
+		{
+			delete wvc;
+			return(6);
+		}
+	}
+	else 
 	{
 		if (! gmf->RetrieveWinds(meas_list, kp, wvc))
 		{
 			delete wvc;
-			return(6);
+			return(7);
 		}
 	}
 
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
 		delete wvc;
-		return(7);
+		return(8);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
