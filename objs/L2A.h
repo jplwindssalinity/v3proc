@@ -57,7 +57,9 @@ public:
 	// input/output //
 	//--------------//
 
+	int		ReadHeader();
 	int		ReadDataRec();
+	int		WriteHeader();
 	int		WriteDataRec();
 
 	//-----------//
@@ -67,18 +69,13 @@ public:
 	GenericFile		file;
 	L17Frame		frame;
 
-	// resolutions are in km
-	double crosstrack_res;
-	double alongtrack_res;
+	double			crossTrackResolution;		// km
+	double			alongTrackResolution;		// km
+	int				crossTrackBins;
+	int				alongTrackBins;
 
-	int crosstrack_bins;
-	int alongtrack_bins;
-
-	// zero_index gives the crosstrack index of the cell centered at
-	// zero crosstrack distance.
-	double zero_index;
-	// start_time specifies the zero point of the along track axis.
-	double start_time;
+	int				zeroIndex;	// cti of 0 km ctd bin
+	double			startTime;	// zero point of along track axis
 
 protected:
 
@@ -86,9 +83,8 @@ protected:
 	// variables //
 	//-----------//
 
-	int			_firstread;		// set to 1 for the 1st call to ReadDataRec.
-	int			_firstwrite;	// set to 1 for the 1st call to WriteDataRec.
 	StatusE		_status;
+	int			_headerTransferred;
 };
 
 #endif
