@@ -844,7 +844,9 @@ WVC::FreeContents()
 //--------------------------//
 // WVC::Rank_Wind_Solutions //
 //--------------------------//
+
 #define MAXIMUM_ACCEPTABLE_SPEED 100
+
 int
 WVC::Rank_Wind_Solutions()
 {
@@ -2010,10 +2012,11 @@ WindField::NearestWindVector(
 // Bryan Stiles changed Clipped to Strict Interpolation for _wrap=0 and
 // latitude, as he could not think of any case in which you would want
 // to extrapolate the wind field
+
 int
 WindField::InterpolatedWindVector(
-    LonLat            lon_lat,
-    WindVector*        wv)
+    LonLat       lon_lat,
+    WindVector*  wv)
 {
     // put longitude in range (hopefully)
     float lon_min = _lon.GetMin();
@@ -2072,7 +2075,6 @@ WindField::InterpolatedWindVector(
     return(1);
 }
 
-
 //---------------------//
 // WindField::FixSpeed //
 //---------------------//
@@ -2092,7 +2094,7 @@ WindField::FixSpeed(
 
 int
 WindField::SetAllSpeeds(
-    float    speed)
+    float  speed)
 {
     int count = 0;
     int lon_count = _lon.GetBins();
@@ -2218,6 +2220,7 @@ WindField::_Deallocate()
 #define ExtractData3D_76_4_uint2_float ExtractData3D_152_4_uint2_float
 #define ExtractData3D_76_4_int2_float ExtractData3D_152_4_int2_float
 #endif
+
 WindSwath::WindSwath()
 :   swath(0), useNudgeVectorsAsTruth(0), nudgeVectorsRead(0),
     _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
@@ -2389,26 +2392,32 @@ WindSwath::DeleteEntireSwath()
 // WindSwath::DeleteFlaggedData //
 //------------------------------//
 int
-WindSwath::DeleteFlaggedData(){
-  int count = 0;
-  for (int i = 0; i < _crossTrackBins; i++)
+WindSwath::DeleteFlaggedData()
+{
+    int count = 0;
+    for (int i = 0; i < _crossTrackBins; i++)
     {
-      for (int j = 0; j < _alongTrackBins; j++)
+        for (int j = 0; j < _alongTrackBins; j++)
         {
-	  WVC* wvc = *(*(swath + i) + j);
-	  if (wvc == NULL)
-	    continue;
-	  if ((RAIN_FLAG_UNUSABLE | RAIN_FLAG_RAIN) 
-	      & wvc->rainFlagBits){
-	    delete wvc;
-	    *(*(swath + i) + j) = NULL;
-	    count++;
-	    _validCells--;
-	  }
-	}
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
+            if ((RAIN_FLAG_UNUSABLE | RAIN_FLAG_RAIN) & wvc->rainFlagBits)
+            {
+                delete wvc;
+                *(*(swath + i) + j) = NULL;
+                count++;
+                _validCells--;
+            }
+        }
     }
-  return(count);
+    return(count);
 }
+
+//------------------------------//
+// WindSwath::DeleteFlaggedData //
+//------------------------------//
+
 int
 WindSwath::DeleteFlaggedData(
     const char*  flag_file,
@@ -2416,12 +2425,15 @@ WindSwath::DeleteFlaggedData(
     float        threshold_both,
     float        threshold_outer)
 {
-    if(strcasecmp(flag_file,"l2b")==0){
-      if(use_thresh!=0){
-	fprintf(stderr,"DeleteFlaggedData using threshold in L2B file not implemented!\n");
-	  exit(0);
-      }
-      return(DeleteFlaggedData());
+    if (strcasecmp(flag_file, "l2b") == 0)
+    {
+        if (use_thresh != 0)
+        {
+            fprintf(stderr,
+           "DeleteFlaggedData using threshold in L2B file not implemented!\n");
+            exit(0);
+        }
+        return(DeleteFlaggedData());
     }
     FILE* ifp = fopen(flag_file, "r");
     if (ifp == NULL)
@@ -2763,8 +2775,6 @@ WindSwath::GetSpdDirNumSel(
     return(1);
 }
 
-
-
 //----------------------//
 // WindSwath::UpdateHdf //
 //----------------------//
@@ -2777,7 +2787,7 @@ int WindSwath::UpdateHdf(
    int **       selected)
 {
     //  Fix Directions
-printf("%d %d\n", _alongTrackBins, _crossTrackBins);
+    printf("%d %d\n", _alongTrackBins, _crossTrackBins);
     for (int i = 0; i < _alongTrackBins; i++)
     {
         for (int j = 0; j < _crossTrackBins * HDF_NUM_AMBIGUITIES; j++)
@@ -3241,23 +3251,24 @@ int
 WindSwath::GetNudgeVectors(
     WindField*  nudge_field)
 {
-  for (int cti = 0; cti < _crossTrackBins; cti++)
+    for (int cti = 0; cti < _crossTrackBins; cti++)
     {
-      for (int ati = 0; ati < _alongTrackBins; ati++)
+        for (int ati = 0; ati < _alongTrackBins; ati++)
         {
-          WVC* wvc = swath[cti][ati];
-          if (! wvc)
-            continue;
-      wvc->nudgeWV=new WindVectorPlus;
-      if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
-                            wvc->nudgeWV)){
-            delete wvc->nudgeWV;
-            wvc->nudgeWV=NULL;
-          }
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+            wvc->nudgeWV = new WindVectorPlus;
+            if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
+                wvc->nudgeWV))
+            {
+                delete wvc->nudgeWV;
+                wvc->nudgeWV=NULL;
+            }
         }
     }
-  nudgeVectorsRead=1;
-  return(1);
+    nudgeVectorsRead = 1;
+    return(1);
 }
 
 //----------------------------//
@@ -3270,31 +3281,36 @@ WindSwath::GetHurricaneNudgeVectors(
     EarthPosition*  center,
     float           radius)
 {
-  if(!nudgeVectorsRead) {
-    fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed 1\n");
-    exit(0);
-  }
-  for (int cti = 0; cti < _crossTrackBins; cti++)
+    if (! nudgeVectorsRead)
     {
-      for (int ati = 0; ati < _alongTrackBins; ati++)
-        {
-          WVC* wvc = swath[cti][ati];
-          if (! wvc)
-            continue;
-
-          EarthPosition cell_pos;
-
-        cell_pos.SetAltLonGDLat(0.0, wvc->lonLat.longitude,
-            wvc->lonLat.latitude);
-          if(center->SurfaceDistance(cell_pos)<radius){
-            if (! wvc->nudgeWV) wvc->nudgeWV=new WindVectorPlus;
-        if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
-                            wvc->nudgeWV)){
-          fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed\n");
-          exit(0);
-        }
-      }
+        fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed 1\n");
+        exit(0);
     }
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            EarthPosition cell_pos;
+
+            cell_pos.SetAltLonGDLat(0.0, wvc->lonLat.longitude,
+                wvc->lonLat.latitude);
+            if (center->SurfaceDistance(cell_pos) < radius)
+            {
+                if (! wvc->nudgeWV)
+                    wvc->nudgeWV = new WindVectorPlus;
+                if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
+                    wvc->nudgeWV))
+                {
+                    fprintf(stderr,
+                        "WindSwath::GetHurricaneNudgeVectors failed\n");
+                    exit(0);
+                }
+            }
+        }
     }
     return(1);
 }
@@ -3335,7 +3351,7 @@ int
 WindSwath::StreamNudge(
     float  stream_thresh)
 {
-    printf("WindSwath::StreamT %g\n",stream_thresh);
+    printf("WindSwath::StreamT %g\n", stream_thresh);
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
@@ -3345,21 +3361,24 @@ WindSwath::StreamNudge(
             if (! wvc)
                 continue;
 
-            if (wvc->nudgeWV==NULL)
+            if (wvc->nudgeWV == NULL)
                 continue;
-            WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
-            WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
+            WindVectorPlus* wvp1 = wvc->ambiguities.GetHead();
+            WindVectorPlus* wvp2 = wvc->ambiguities.GetNext();
             if (! wvp2)
-                wvc->selected=wvp1;
-        else{
-          float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
-          if(angdif < stream_thresh*dtr) wvc->selected=wvp1;
-          else{
-        wvc->selected =
-          wvc->GetNearestToDirection(wvc->nudgeWV->dir,2);
-        count++;
-          }
-        }
+                wvc->selected = wvp1;
+            else
+            {
+                float angdif = fabs(ANGDIF(wvp1->dir, wvp2->dir));
+                if (angdif < stream_thresh * dtr)
+                    wvc->selected = wvp1;
+                else
+                {
+                    wvc->selected =
+                        wvc->GetNearestToDirection(wvc->nudgeWV->dir, 2);
+                    count++;
+                }
+            }
         }
     }
     return(count);
@@ -3384,21 +3403,23 @@ WindSwath::HurricaneNudge(
             if (! wvc)
                 continue;
 
-            if (wvc->nudgeWV==NULL)
+            if (wvc->nudgeWV == NULL)
                 continue;
-        EarthPosition cell_pos;
 
-        cell_pos.SetAltLonGDLat(0.0,wvc->lonLat.longitude,wvc->lonLat.latitude);
-        if(center->SurfaceDistance(cell_pos)<radius){
-          if (! wvc->nudgeWV ){
-        fprintf(stderr, "WindSwath::NudgeHurricane failed\n");
-        exit(0);
-          }
-
-          wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
-                min_rank);
-          count++;
-        }
+            EarthPosition cell_pos;
+            cell_pos.SetAltLonGDLat(0.0, wvc->lonLat.longitude,
+                wvc->lonLat.latitude);
+            if (center->SurfaceDistance(cell_pos) < radius)
+            {
+                if (! wvc->nudgeWV)
+                {
+                    fprintf(stderr, "WindSwath::NudgeHurricane failed\n");
+                    exit(0);
+                }
+                wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
+                    min_rank);
+                count++;
+            }
         }
     }
     return(count);
@@ -3436,10 +3457,9 @@ WindSwath::S3Nudge()
 
 int
 WindSwath::ThresNudge(
-    int max_rank,
-        float thres[2])
+    int    max_rank,
+    float  thres[2])
 {
-
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
@@ -3577,14 +3597,14 @@ WindSwath::MedianFilter(
 
     WindVectorPlus*** new_selected =
         (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
-            _crossTrackBins, _alongTrackBins);
+        _crossTrackBins, _alongTrackBins);
 
     //-------------------------//
     // create a new change map //
     //-------------------------//
 
-    char** change = (char**)make_array(sizeof(char), 2,
-        _crossTrackBins, _alongTrackBins);
+    char** change = (char**)make_array(sizeof(char), 2, _crossTrackBins,
+        _alongTrackBins);
 
     //--------------------//
     // prep for filtering //
@@ -3595,9 +3615,10 @@ WindSwath::MedianFilter(
     {
         for (int ati = 0; ati < _alongTrackBins; ati++)
         {
-      if(freeze==0 || cti<freeze || cti>_crossTrackBins-freeze)
-            change[cti][ati] = 1;
-      else change[cti][ati] =0;
+            if (freeze == 0 || cti < freeze || cti > _crossTrackBins - freeze)
+                change[cti][ati] = 1;
+            else
+                change[cti][ati] =0;
         }
     }
 
@@ -5604,24 +5625,27 @@ WindSwath::operator-=(
             if (wvc1 == NULL)
                 continue;
             WVC* wvc2 = *(*(w.swath + i) + j);
-            if (wvc2 == NULL){
-	        wvc1->selected=NULL;
+            if (wvc2 == NULL)
+            {
+                wvc1->selected = NULL;
                 continue;
-	    }
-	    float u1, v1, u2, v2;
-	    if(wvc1->selected && wvc2->selected){
-	      WindVectorPlus* wvp_sel=new WindVectorPlus;
-	      wvc1->selected->GetUV(&u1,&v1);
-	      wvc2->selected->GetUV(&u2,&v2);
-	      wvp_sel->SetUV(u1-u2,v1-v2);
-	      wvc1->selected=wvp_sel;
-	      wvc1->selected_allocated=1;
-	    }
-	    else{
-	      wvc1->selected=NULL;
-	    }
-	    WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
-            WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
+            }
+            float u1, v1, u2, v2;
+            if (wvc1->selected && wvc2->selected)
+            {
+                WindVectorPlus* wvp_sel = new WindVectorPlus;
+                wvc1->selected->GetUV(&u1, &v1);
+                wvc2->selected->GetUV(&u2, &v2);
+                wvp_sel->SetUV(u1-u2, v1-v2);
+                wvc1->selected = wvp_sel;
+                wvc1->selected_allocated = 1;
+            }
+            else
+            {
+                wvc1->selected = NULL;
+            }
+            WindVectorPlus* wvp1 = wvc1->ambiguities.GetHead();
+            WindVectorPlus* wvp2 = wvc2->ambiguities.GetHead();
               while(wvp1 && wvp2){
                             wvp1->GetUV(&u1,&v1);
                             wvp2->GetUV(&u2,&v2);
