@@ -589,6 +589,11 @@ GMF::RetrieveWindsWithPeakSplitting(
                 // Do not change ambiguities.       //
                 //----------------------------------//
                	
+		//------------------------------------------//
+		// sort the solutions by objective function //
+		//------------------------------------------//
+
+		wvc->SortByObj();
 		return(1);
 }
 
