@@ -376,6 +376,7 @@ gaussian_fit(
 
 #define MIN_CENTER     -1.0
 #define MAX_CENTER     12.0
+#define MIN_WIDTH      1.0
 #define MAX_WIDTH      12.0
 
 double
@@ -399,6 +400,8 @@ gfit_eval(
 
     if (c[1] > MAX_WIDTH)
         c[1] = MAX_WIDTH;
+    if (c[1] < MIN_WIDTH)
+        c[1] = MIN_WIDTH;
 
     //---------------------------------//
     // estimate the amplitude and bias //
@@ -483,6 +486,8 @@ gfit_eval_precalc(
 
     if (c[1] > MAX_WIDTH)
         c[1] = MAX_WIDTH;
+    if (c[1] < MIN_WIDTH)
+        c[1] = MIN_WIDTH;
 
     //---------------------------------//
     // estimate the amplitude and bias //
@@ -500,6 +505,10 @@ gfit_eval_precalc(
     {
         double ex = (x[i] - c[0]) / c[1];
         int idx = (int)(fabs(ex) * 100.0 + 0.5);
+        if (idx < 0)
+            idx = 0;
+        if (idx >= 1100)
+            idx = 1100 - 1;
         double val = precalc_exp[idx];
         hold[i] = val;
         f_sum += val;
