@@ -13,7 +13,7 @@ LIBS =			../../lib/libSim.a /opt/local/lib/libjpeg.a
 LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
 
-CCC =			$(PURE) gcc
+CCC =			$(PURE) g++
 DEBUGFLAGS =	-O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
