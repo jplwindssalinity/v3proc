@@ -101,6 +101,8 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "p"
+
 //--------//
 // MACROS //
 //--------//
