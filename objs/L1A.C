@@ -361,7 +361,7 @@ L1A::WriteGSCalPulseRec()
     cpr.transmit_power_outer = frame.in_eu.transmit_power_outer;
     cpr.frame_inst_status = frame.frame_inst_status;
     cpr.frame_err_status = frame.frame_err_status;
-    cpr.frame_qual_flag = frame.frame_inst_status;
+    cpr.frame_qual_flag = frame.frame_qual_flag;
 
     return(fwrite(&cpr, sizeof(L1A_Calibration_Pulse_Type), 1, _calPulseFP));
 }
