@@ -443,6 +443,7 @@ main(
     FILE* val_apts_ofp = NULL;
     FILE* bad_flag_ofp = NULL;
     FILE* bad_apts_ofp = NULL;
+
     if (opt_classify || opt_classify_func)
     {
         // val
@@ -456,51 +457,50 @@ main(
         }
 
         if (! opt_val_only)
-{
-
-        // class.apts
-        sprintf(filename, "%s.class.apts", output_base);
-        class_apts_ofp = fopen(filename, "w");
-        if (class_apts_ofp == NULL)
         {
-            fprintf(stderr, "%s: error opening output file %s\n", command,
-                filename);
-            exit(1);
-        }
-        fprintf(class_apts_ofp, "apts\n");
+            // class.apts
+            sprintf(filename, "%s.class.apts", output_base);
+            class_apts_ofp = fopen(filename, "w");
+            if (class_apts_ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
+            fprintf(class_apts_ofp, "apts\n");
 
-        // val.apts
-        sprintf(filename, "%s.val.apts", output_base);
-        val_apts_ofp = fopen(filename, "w");
-        if (val_apts_ofp == NULL)
-        {
-            fprintf(stderr, "%s: error opening output file %s\n", command,
-                filename);
-            exit(1);
-        }
-        fprintf(val_apts_ofp, "apts\n");
+            // val.apts
+            sprintf(filename, "%s.val.apts", output_base);
+            val_apts_ofp = fopen(filename, "w");
+            if (val_apts_ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
+            fprintf(val_apts_ofp, "apts\n");
 
-        // bad.flag
-        sprintf(filename, "%s.bad.flag", output_base);
-        bad_flag_ofp = fopen(filename, "w");
-        if (bad_flag_ofp == NULL)
-        {
-            fprintf(stderr, "%s: error opening output file %s\n", command,
-                filename);
-            exit(1);
-        }
+            // bad.flag
+            sprintf(filename, "%s.bad.flag", output_base);
+            bad_flag_ofp = fopen(filename, "w");
+            if (bad_flag_ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
 
-        // bad.apts
-        sprintf(filename, "%s.bad.apts", output_base);
-        bad_apts_ofp = fopen(filename, "w");
-        if (bad_apts_ofp == NULL)
-        {
-            fprintf(stderr, "%s: error opening output file %s\n", command,
-                filename);
-            exit(1);
+            // bad.apts
+            sprintf(filename, "%s.bad.apts", output_base);
+            bad_apts_ofp = fopen(filename, "w");
+            if (bad_apts_ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
+            fprintf(bad_apts_ofp, "apts\n");
         }
-        fprintf(bad_apts_ofp, "apts\n");
-}
     }
 
     //---------------//
@@ -885,6 +885,10 @@ main(
                 }
 
                 // val
+                short short_target_idx = (short)target_idx;
+                short short_cell_idx = (short)cell_idx;
+                fwrite((void *)&short_target_idx, sizeof(short), 1, val_ofp);
+                fwrite((void *)&short_cell_idx, sizeof(short), 1, val_ofp);
                 fwrite((void *)&lon_deg, sizeof(float), 1, val_ofp);
                 fwrite((void *)&lat_deg, sizeof(float), 1, val_ofp);
                 fwrite((void *)&metric_val, sizeof(float), 1, val_ofp);
