@@ -39,4 +39,19 @@ enum { NBD_IDX = 0, SPD_IDX, DIR_IDX, MLE_IDX, ENOF_IDX, QUAL_IDX, TBH_IDX,
 enum { INNER_CLEAR = 0, INNER_RAIN, INNER_UNKNOWN, OUTER_CLEAR, OUTER_RAIN,
     OUTER_UNKNOWN, NO_WIND, UNKNOWN, MUDH_CLASS_COUNT };
 
+//-------------------//
+// for transmittance //
+//-------------------//
+
+const double alpha1 = 1.0;
+const double alpha2 = 1.0;
+const double beta1 = 0.0;
+const double beta2 = 0.0;
+const double a0 = -0.6202;
+const double a1 = -0.0499;
+const double a2 = 0.3283;
+const double a3 = 0.0013;
+const double a4 = -0.4368;
+const double a5 = 0.2895;
+
 #endif
