@@ -173,6 +173,7 @@ FbbTable.o: FbbTable.C FbbTable.h Qscat.h Sigma0.h InstrumentGeom.h CheckFrame.h
 GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 GMF.o: GMF.C GMF.h GSparameters.h Meas.h Misc.h Interpolate.h Constants.h Beam.h List.h AngleInterval.h Array.h MiscTable.h Wind.h Kp.h LonLat.h Ephemeris.h Attitude.h CoordinateSwitch.h Index.h Matrix.h Kpm.h Kpr.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
 Grid.o: Grid.C Grid.h Meas.h Sigma0.h Array.h L1B.h L2A.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Spacecraft.h Distributions.h Qscat.h BaseFile.h EarthPosition.h Matrix3.h BufferedList.h Constants.h Antenna.h Tracking.h Scatterometer.h
+Image.o: Array.h Misc.h Constants.h Image.C Image.h
 Index.o: Index.C Index.h
 InstrumentGeom.o: InstrumentGeom.C Ephemeris.h Attitude.h Antenna.h GenericGeom.h Spacecraft.h Meas.h InstrumentGeom.h Misc.h Qscat.h Interpolate.h Array.h BYUXTable.h Matrix3.h BufferedList.h EarthPosition.h Beam.h CoordinateSwitch.h Constants.h LonLat.h List.h Tracking.h Scatterometer.h CheckFrame.h Wind.h Index.h AngleInterval.h Matrix.h
 Interpolate.o: Interpolate.C 
