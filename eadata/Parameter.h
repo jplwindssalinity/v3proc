@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.33   10 Nov 1998 08:52:00   sally
+// add delta instrument time because the instrument seems to skip cycle
+// 
+//    Rev 1.32   03 Nov 1998 16:01:48   sally
+// add source sequence count
+// 
 //    Rev 1.31   28 Oct 1998 15:04:48   sally
 // add new units for L1B Hdf
 // 
@@ -978,7 +984,10 @@ enum ParamIdE
     SLICE_AZIMUTH,
     SLICE_INCIDENCE,
     SLICE_SNR,
-    SLICE_KPC_A
+    SLICE_KPC_A,
+    HK2_SRC_SEQ_COUNT,
+    HK2_DELTA_SRC_SEQ_COUNT,
+    DELTA_INSTRUMENT_TIME
 };
 
 enum UnitIdE

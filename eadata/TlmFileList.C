@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.15   03 Nov 1998 16:02:06   sally
+// adapt to Vdata
+// 
 //    Rev 1.14   13 Oct 1998 15:34:34   sally
 // added L1B file
 // 
@@ -72,6 +75,7 @@
 #include "TlmFileList.h"
 #include "Hk2File.h"
 #include "L1AFile.h"
+#include "L1BHdfFile.h"
 #include "NoTimeTlmFile.h"
 
 static const char TlmFileList_c_rcs_id[] =
@@ -278,6 +282,8 @@ const char*     filename)
         file = new L1AFile(fullname, returnStatus, startTime, endTime);
         break;
     case SOURCE_L1B:
+        file = new L1BHdfFile(fullname, returnStatus, startTime, endTime);
+        break;
     case SOURCE_L2A:
     case SOURCE_L2B:
         file = new NoTimeTlmFile(fullname, returnStatus);

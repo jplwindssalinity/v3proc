@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   03 Nov 1998 16:01:12   sally
+// adapt to Vdata
+// 
 //    Rev 1.2   28 Oct 1998 15:03:18   sally
 // add GetTime()
 // Revision 1.1  1998/10/20 21:26:17  sally
@@ -60,7 +63,6 @@ protected:
                              int32  startIndex,  // start index of search
                              int32  endIndex);   // end index of search
 
-    int32       _hFileID;
     int32       _timeVdID[1];
 };
 

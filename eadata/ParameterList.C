@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   03 Nov 1998 16:02:00   sally
+// adapt to Vdata
+// 
 //    Rev 1.13   09 Sep 1998 15:06:52   sally
 // take care of return value of -1 from extractFunc()
 // 
@@ -93,23 +96,8 @@ TlmHdfFile*    tlmFile)
 {
     for (Parameter* param_ptr = GetHead(); param_ptr; param_ptr = GetNext())
     {
-        int32 dataType, dataStartIndex, dataLength, numDimensions;
-        char tempString[BIG_SIZE];
-        (void)strncpy(tempString, param_ptr->sdsNames, BIG_SIZE);
-        char* oneSdsName=0;
-        int i=0;
-        char* lasts = 0;
-        for (oneSdsName = (char*)safe_strtok(tempString, ",", &lasts);
-                       oneSdsName;
-                       oneSdsName = (char*)safe_strtok(0, ",", &lasts), i++)
-        {
-            param_ptr->sdsIDs[i] = HDF_FAIL;
-            param_ptr->sdsIDs[i] = tlmFile->SelectDataset(
-                                         oneSdsName, dataType, dataStartIndex,
-                                         dataLength, numDimensions);
-            if (param_ptr->sdsIDs[i] == HDF_FAIL)
-                return(_status = ERROR_SELECTING_PARAMETER);
-        }
+        if (tlmFile->OpenParamDatasets(param_ptr) != HdfFile::OK)
+            return(_status = ERROR_SELECTING_PARAMETER);
     }
     return(_status = OK);
 
@@ -121,12 +109,8 @@ TlmHdfFile*    tlmFile)
 {
     for (Parameter* param_ptr = GetHead(); param_ptr; param_ptr = GetNext())
     {
-        for (int i=0; i < param_ptr->numSDSs; i++)
-        {
-            if (tlmFile->CloseDataset(param_ptr->sdsIDs[i]) == HDF_FAIL)
-                return(_status = ERROR_DESELECTING_PARAMETER);
-            param_ptr->sdsIDs[i] = HDF_FAIL;
-        }
+        if (tlmFile->CloseParamDatasets(param_ptr) != HdfFile::OK)
+            return(_status = ERROR_SELECTING_PARAMETER);
     }
     return(_status = OK);
 

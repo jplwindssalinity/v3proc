@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   03 Nov 1998 16:01:00   sally
+// adapt to Vdata
+// 
 //    Rev 1.1   28 Oct 1998 15:03:52   sally
 // Revision 1.1  1998/10/20 21:26:17  sally
 // Initial revision
@@ -89,12 +92,6 @@ const Itime     endTime)
     //--------------------------------------------
     // get the first and last data record time
     //--------------------------------------------
-    if ((_hFileID = Hopen(_filename, DFACC_READ, 0)) == HDF_FAIL)
-    {
-        returnStatus = _status = ERROR_OPENING_FILE;
-        return;
-    }
-    Vstart(_hFileID);
     int32 vDataRefNo = VSfind(_hFileID, vDataName);
     if (vDataRefNo == 0)
     {
@@ -155,8 +152,6 @@ L1BHdfFile::~L1BHdfFile()
     if (_timeVdID[0] != HDF_FAIL)
     {
         (void)VSdetach(_timeVdID[0]);
-        (void)Vend(_hFileID);
-        (void)Hclose(_hFileID);
         _timeVdID[0] = HDF_FAIL;
     }
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   03 Nov 1998 15:59:48   sally
+// add source sequence count
+// 
 //    Rev 1.7   06 Oct 1998 15:50:26   sally
 // separate odd frame parameters from even frame
 // 
@@ -51,7 +54,7 @@ static const char Hk2HdfMap_C_id[] =
 const Hk2HdfMapEntry Hk2HdfMapTable[] =
 {
     { "hk2_time", "TAITIME", DATA_FLOAT8, 1.0, 0, FrameRead8Bytes },
-    { "hk2_minor_frame_count","FRAMECNT",DATA_UINT1, 1.0, 11,FrameReadFrameNo},
+    { "hk2_pckt_seq_cntl","PACKETSEQ", DATA_UINT2, 1.0, 10, FrameRead2Bytes},
     { "torque_rod_status", "SBW13", DATA_UINT1, 1.0, 14, FrameRead1Byte },
     { "SBW05", "SBW05", DATA_UINT1, 1.0, 15, FrameRead1Byte },
     { "fltsw_cmd_acc_cnt", "SWACPT", DATA_UINT1, 1.0, 16, FrameRead1Byte },

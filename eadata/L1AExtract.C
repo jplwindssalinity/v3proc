@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.25   10 Nov 1998 08:51:14   sally
+// add delta instrument time because the instrument seems to skip cycle
+// 
+//    Rev 1.24   03 Nov 1998 16:00:10   sally
+// add source sequence count
+// 
 //    Rev 1.23   29 Oct 1998 15:11:46   sally
 // do a VSseek() before VSread()
 // 
@@ -1904,7 +1910,7 @@ PolynomialTable*)     // unused
 
 //----------------------------------------------------------------------
 // Function:    Extract16Bit2_3 ([])
-// Extracts:    one dimensional data (Bit 0-1 only)
+// Extracts:    one dimensional data (Bit 2-3 only)
 //----------------------------------------------------------------------
 int
 Extract16Bit2_3(
@@ -1937,6 +1943,106 @@ PolynomialTable*)     // unused
     return TRUE;
 
 }//Extract16Bit2_3
+
+//----------------------------------------------------------------------
+// Function:    Extract16Bit0_3 ([])
+// Extracts:    one dimensional data (Bit 0-3 only)
+//----------------------------------------------------------------------
+int
+Extract16Bit0_3(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                              length, tempBuffer) != HDF_SUCCEED)
+        return FALSE;
+
+    // extract bit 0_3 only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned char* charP = (unsigned char*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 3, 4);
+    }
+    free((void*) tempBuffer);
+    return TRUE;
+
+}//Extract16Bit0_3
+
+//----------------------------------------------------------------------
+// Function:    Extract16Bit0_13 ([])
+// Extracts:    one dimensional data (Bit 0-13 only)
+//----------------------------------------------------------------------
+int
+Extract16Bit0_13(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      stride,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    unsigned short* tempBuffer =
+              (unsigned short*) calloc(length, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
+                              length, tempBuffer) != HDF_SUCCEED)
+        return FALSE;
+
+    // extract bit 0_14 only and return the buffer
+    (void)memset(buffer, 0, length);
+    unsigned short* shortP = (unsigned short*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        shortP[i] = EXTRACT_GET_BITS(tempBuffer[i], 13, 14);
+    }
+    free((void*) tempBuffer);
+    return TRUE;
+
+}//Extract16Bit0_13
+
+//----------------------------------------------------------------------
+// Function:    ExtractDeltaSrcSeqCnt ([])
+// Extracts:    one dimensional data
+//----------------------------------------------------------------------
+int
+ExtractDeltaSrcSeqCnt(
+TlmHdfFile* l1File,
+int32*     sdsIDs,
+int32      start,
+int32      ,
+int32      length,
+VOIDP      buffer,
+PolynomialTable*)     // unused
+{
+    static unsigned short lastSrcSequenceCnt=0;
+    if (length != 1) return 0;
+    unsigned short newSrcSequenceCnt;
+    if (Extract16Bit0_13(l1File, sdsIDs, start, 1, 1, &newSrcSequenceCnt) == 0)
+        return 0;
+    
+    short* delta = (short*) buffer;
+    *delta = newSrcSequenceCnt - lastSrcSequenceCnt;
+    lastSrcSequenceCnt = newSrcSequenceCnt;
+
+    return 1;
+
+} // ExtractDeltaSrcSeqCnt
 
 //----------------------------------------------------------------------
 // Function:    ExtractSomeOf8Bits ([])
@@ -3364,3 +3470,34 @@ PolynomialTable*)     // unused
     return TRUE;
 
 }//ExtractData3D_100_8_uint2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractDeltaInstTime
+//              get the Delta of instrument time, this is to check if
+//              any skipping in the instrument data
+// Extracts:    double[]
+//----------------------------------------------------------------------
+int
+ExtractDeltaInstTime(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    static double lastInstTime=0.0;
+    if (length != 1) return 0;
+    double newInstTime;
+
+    if (ExtractData1D(l1File, sdsIDs, start, 1, 1, &newInstTime) == 0)
+        return 0;
+
+    double* delta = (double*) buffer;
+    *delta = newInstTime - lastInstTime;
+    lastInstTime = newInstTime;
+
+    return TRUE;
+
+}//ExtractDeltaInstTime

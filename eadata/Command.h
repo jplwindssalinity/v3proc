@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.24   20 Oct 1998 15:47:18   sally
+// change some relay commands to be realtime only
+// 
 //    Rev 1.23   20 Oct 1998 10:52:40   sally
 // add static QPF commands (table macro commands)
 // 
@@ -623,6 +626,7 @@ struct EACommandArgsEntry
     unsigned short    cmdHex;
     char*             mnemonic;
     char*             description;
+    int               realtimeOnly;
     int               numWordsInParamFile; // 0=no datafile, -1=variable length
     EADataFileFormat  datafileFormat;
     int               numStaticParams;  // 0-3= static args, -1=non-static args

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.20   10 Nov 1998 08:51:52   sally
+// add delta instrument time because the instrument seems to skip cycle
+// 
+//    Rev 1.19   03 Nov 1998 16:00:58   sally
+// add source sequence count
+// 
 //    Rev 1.18   28 Oct 1998 15:02:32   sally
 // add functions for L1B Hdf
 // Revision 1.2  1998/10/20 21:26:17  sally
@@ -321,6 +327,12 @@ int Extract16Bit0_1      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int Extract16Bit2_3      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
+int Extract16Bit0_3      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract16Bit0_13      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractDeltaSrcSeqCnt (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 
 int Extract32Bit0        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
@@ -409,6 +421,9 @@ int ExtractXmitPowerBmWatts (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
 int Extract_uint1_eu_mWatts  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           const char* sdsName,
                                           const char* unitName,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractDeltaInstTime  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 
 //--------------------------------------------

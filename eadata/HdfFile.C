@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   03 Nov 1998 15:59:08   sally
+// adapt to Vdata
+// 
 //    Rev 1.6   10 Jun 1998 16:24:22   sally
 // delete the dataset id after RemoveCurrent()
 // 
@@ -58,7 +61,7 @@ static const char HdfFile_c_rcs_id[] =
 HdfFile::HdfFile(
 const char*     filename,
 StatusE&        returnStatus)
-:   _SDfileID(FAIL), _numGlobAttr(-1),
+:   _SDfileID(FAIL), _hFileID(FAIL), _numGlobAttr(-1),
     _status(OK), _filename(0), _dataLength(0)
 {
     // save the filename
@@ -114,6 +117,10 @@ StatusE&        returnStatus)
     _startIndex = 0;
     _endIndex = dimSizes[0] - 1;
 
+    if ((_hFileID = Hopen(_filename, DFACC_READ, 0)) == HDF_FAIL)
+        returnStatus = _status = ERROR_OPENING_FILE;
+    Vstart(_hFileID);
+
     returnStatus = _status;
 
     return;
@@ -136,7 +143,18 @@ HdfFile::~HdfFile()
 
     // close the HDF
     if (_SDfileID != FAIL)
+    {
         SDend(_SDfileID);
+        _SDfileID = FAIL;
+    }
+
+    // close the VD HDF
+    if (_hFileID != FAIL)
+    {
+        (void)Vend(_hFileID);
+        (void)Hclose(_hFileID);
+        _hFileID = FAIL;
+    }
 
     return;
 }
@@ -275,6 +293,70 @@ printf("new ID = %d\n", *idP);
 
 } //HdfFile::SelectDataset
 
+HdfFile::StatusE
+HdfFile::OpenParamDatasets(
+Parameter*     paramP)
+{
+    assert(paramP != 0);
+
+    int32 dataType, dataStartIndex, dataLength, numDimensions;
+    char tempString[BIG_SIZE];
+    (void)strncpy(tempString, paramP->sdsNames, BIG_SIZE);
+    char* oneSdsName=0;
+    int i=0;
+    char* lasts = 0;
+    for (oneSdsName = (char*)safe_strtok(tempString, ",", &lasts);
+                       oneSdsName;
+                       oneSdsName = (char*)safe_strtok(0, ",", &lasts), i++)
+    {
+        // hold SDS or VD id
+        paramP->sdsIDs[i] = HDF_FAIL;
+
+        char vDataName[SHORT_STRING_LEN];
+        // look for "v:", open H file, attach VD
+        if (sscanf(oneSdsName, "v:%s", vDataName) == 1)
+        {
+            int32 vDataRefNo = VSfind(_hFileID, vDataName);
+            if (vDataRefNo == 0)
+                return(_status = ERROR_SELECTING_DATASET);
+            paramP->sdsIDs[i] = VSattach(_hFileID, vDataRefNo, "r");
+        }
+        else
+        {
+            paramP->sdsIDs[i] = SelectDataset(
+                                     oneSdsName, dataType, dataStartIndex,
+                                     dataLength, numDimensions);
+        }
+        if (paramP->sdsIDs[i] == HDF_FAIL)
+            return(_status = ERROR_SELECTING_PARAMETER);
+    }
+
+    return(_status = OK);
+
+} // HdfFile::OpenParamDatasets
+
+HdfFile::StatusE
+HdfFile::CloseParamDatasets(
+Parameter*     paramP)
+{
+    assert(paramP != 0);
+    for (int i=0; i < paramP->numSDSs; i++)
+    {
+        if (paramP->sdsIDs[i] != HDF_FAIL)
+        {
+            // close it as SDS first, if fails, close it as Vdata
+            if (CloseDataset(paramP->sdsIDs[i]) == HDF_FAIL)
+            {
+                if (VSdetach(paramP->sdsIDs[i]) == HDF_FAIL)
+                    return(_status = ERROR_DESELECTING_PARAMETER);
+            }
+            paramP->sdsIDs[i] = HDF_FAIL;
+        }
+    }
+    return(_status = OK);
+
+} // HdfFile::CloseParamDatasets
+
 int
 HdfFile::GetScaleFactor(
 int32    sdsId,          // IN: sds ID
@@ -354,6 +436,7 @@ VOIDP     data)         // OUT
     intn hdfStatus;
     if (stride == 1)
         // more efficient
+        // close it as SDS first, if fails, close it as Vdata
         hdfStatus = SDreaddata(datasetID, sdStart, NULL, sdEdge, data);
     else
         hdfStatus = SDreaddata(datasetID, sdStart, sdStride, sdEdge, data);

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   03 Nov 1998 16:01:16   sally
+// adapt to Vdata
+// 
 //    Rev 1.3   28 Oct 1998 15:04:22   sally
 // add units for radians
 // 

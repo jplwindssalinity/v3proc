@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   03 Nov 1998 15:59:44   sally
+// adapt to Vdata
+// 
 //    Rev 1.6   28 May 1998 13:18:34   daffer
 // worked on HdfGlobalAttr and ParseGlobalAttr
 // 
@@ -129,6 +132,8 @@ public:
         ERROR_EXTRACTING_TIMESEARCH,
         ERROR_EXTRACTING_BEFORE_START_TIME,
         ERROR_EXTRACTING_AFTER_END_TIME,
+        ERROR_SELECTING_PARAMETER,
+        ERROR_DESELECTING_PARAMETER,
         UNKNOWN_CONDITION,
         NO_MORE_DATA 
     };
@@ -138,10 +143,10 @@ public:
 
     virtual ~HdfFile();
 
-    //----------------------------------------------------------------
+    //------------------------------------------------------
     // get the info about the global attributes
     // then get the global attributes themselves
-    //----------------------------------------------------------------
+    //------------------------------------------------------
     virtual StatusE GetGlobalAttrInfo(
                                 const char*   attrName,      // IN
                                 int32&        attrIndex,     // OUT
@@ -158,10 +163,10 @@ public:
                                      VOIDP  attrBuf,         // IN
                                      HdfGlobalAttr *);         // IN/OUT
 
-    //----------------------------------------------------------------
+    //------------------------------------------------------
     // select dataset, return dataset index ID or HDF_FAIL
     // use GetStatus() to get detailed error status
-    //----------------------------------------------------------------
+    //------------------------------------------------------
     virtual int32   SelectDataset(
                                 const char*   datasetName,    // IN
                                 int32&        dataType,       // OUT
@@ -176,10 +181,16 @@ public:
     // close dataset, return HDF_SUCCEED or HDF_FAIL
     virtual int     CloseDataset(int32    datasetID);    // IN
 
-    //----------------------------------------------------------------
+    //------------------------------------------------------
+    // open or close all the datasets that are related to this parameter
+    //------------------------------------------------------
+    StatusE         OpenParamDatasets(Parameter* paramP);
+    StatusE         CloseParamDatasets(Parameter* paramP);
+
+    //------------------------------------------------------
     // read one dimensional dataset, return HDF_SUCCEED or HDF_FAIL
     // use GetStatus() to get detailed error status
-    //----------------------------------------------------------------
+    //------------------------------------------------------
     virtual int     GetDatasetData1D(
                                 int32   datasetID,     // IN
                                 int32   start,         // IN
@@ -217,6 +228,7 @@ protected:
     EAList<int32>   _datasetIDs;
 
     int32           _SDfileID;
+    int32           _hFileID;
     int32           _numGlobAttr;
     StatusE         _status;
     char*           _filename;

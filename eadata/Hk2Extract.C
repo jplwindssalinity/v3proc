@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   04 Nov 1998 10:09:50   sally
+// add "packet sequence count" parameter
+// 
 //    Rev 1.1   09 Sep 1998 15:06:14   sally
 // add minor_frame_count as the first SDS ID
 // 
@@ -41,8 +44,7 @@ int32*          sdsIDs,
 int32           start,
 unsigned char&  frameNo)
 {
-    if (hk2File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &frameNo)
-                    == HDF_SUCCEED)
+    if (Extract16Bit0_3(hk2File, sdsIDs, start, 1, 1, &frameNo))
         return 1;
     else return(-1);
 

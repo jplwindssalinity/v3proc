@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.30   04 Nov 1998 14:45:40   sally
+// take REQQ out of data file error message, because REQI use this method
+// 
 //    Rev 1.29   13 Oct 1998 15:34:32   sally
 // added L1B file
 // 
@@ -550,8 +553,8 @@ FILE*               output_fp)
     FILE* ifp = fopen(filename, "r");
     if (! ifp)
     {
-        fprintf(outputFP, "REQQ: error opening REQQ data file\n");
-        fprintf(outputFP, "  REQQ Data Filename: %s\n", filename);
+        fprintf(outputFP, "Error opening data file\n");
+        fprintf(outputFP, "  Data Filename: %s\n", filename);
         return (REQQ_OPEN_FAILURE);
     }
 

@@ -6,6 +6,8 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   09 Nov 1998 11:24:36   sally
+// 
 //    Rev 1.13   11 Sep 1998 10:28:54   sally
 // add mWatts for all dBm units
 // 
@@ -505,12 +507,15 @@ unsigned char*      validDataMap)
         }
 
         // get it from loop_back_cal_power
+        unsigned short allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                                      (VOIDP)dnValues) != TRUE)
+                                      (VOIDP)allBuffer) != TRUE)
             return (-1);
 
+        unsigned short* ushortP = dnValues;
+        *ushortP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
@@ -1336,12 +1341,15 @@ unsigned char*      validDataMap)
         }
 
         // get it from loop_back_cal_power
+        unsigned short allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                                      (VOIDP)dnValues) != TRUE)
+                                      (VOIDP)allBuffer) != TRUE)
             return (-1);
 
+        unsigned short* ushortP = dnValues;
+        *ushortP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
@@ -2516,15 +2524,18 @@ unsigned char*      validDataMap)
         }
 
         // get it from load_cal_power
+        unsigned short allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)dnValues) != TRUE)
+                        (VOIDP)allBuffer) != TRUE)
         {
             (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
             return -1;
         }
    
+        unsigned short* ushortP = dnValues;
+        *ushortP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
         return 1;
@@ -3691,6 +3702,8 @@ PolynomialTable*)     // unused
 
     // get noise load first, return if fails
     DerivedExtractResult noiseExRes;
+    noiseExRes.dataBuf = (char*)malloc(100 * sizeof(unsigned int));
+    assert(noiseExRes.dataBuf != 0);
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
@@ -3700,12 +3713,15 @@ PolynomialTable*)     // unused
                                        stride, length, &noiseExRes);
     if (rc <= 0)
     {
+        (void)free(noiseExRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
 
     // now get echo load, return if fails
     DerivedExtractResult echoExRes;
+    echoExRes.dataBuf = (char*)malloc(100 * sizeof(unsigned int));
+    assert(echoExRes.dataBuf != 0);
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
@@ -3714,6 +3730,7 @@ PolynomialTable*)     // unused
                                        stride, length, &echoExRes);
     if (rc <= 0)
     {
+        (void)free(echoExRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -3819,23 +3836,27 @@ PolynomialTable*)     // unused
         return(rc);
     }
 
-    unsigned int noiseDN=0;
-    float        echoDN=0.0;
+    unsigned int* noiseDN = (unsigned int*) (noiseExRes.dataBuf);
+    unsigned int* echoDN = (unsigned int*) (echoExRes.dataBuf);
     float        gainRatio;
     for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
     {
         if (echoExRes.validDataMap[i])
         {
-            if (echoDN == 0.0)
+            if (*echoDN == 0)
             {
                 fprintf(stderr, "Gain Ratio: Echo Filter = 0\n");
                 return -1;
             }
-            gainRatio = (float)noiseDN / (float)echoDN;
+            gainRatio = (float)*noiseDN / (float)*echoDN;
             (void)memcpy(extractResults->dataBuf + i * sizeof(float),
                                &gainRatio, sizeof(float));
         }
+        noiseDN++;
+        echoDN++;
     }
+    (void)memcpy(extractResults->validDataMap, echoExRes.validDataMap,
+                            MAX_NUM_DERIVED_VALUES);
     return rc;
 
 } //ExtractGainRatioBeamBDN

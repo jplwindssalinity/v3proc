@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   09 Nov 1998 11:24:40   sally
+// took out duplicated entries and fixed some unit names
+// 
 //    Rev 1.13   11 Sep 1998 10:29:20   sally
 // add mWatts for all dBm units
 // 
@@ -442,15 +445,6 @@ const ParTabEntry L1ADerivedParTab[] =
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractGainRatioBeamBdB, pr_float4_6 }
     }
   },
-  { GAIN_RATIO_NOISE_ECHO_BEAM_B_BETA,
-         "Gain ratio of Noise to Echo in Beam B - Beta", SOURCE_L1A_DERIVED,
-         MEAS_QUANTITY,
-         "operational_mode,noise_dn,power_dn,true_cal_pulse_pos,loop_back_cal_noise,loop_back_cal_B_power",
-         2, {
-      { UNIT_DN, "dn", DATA_FLOAT4, 0, ExtractGainRatioBeamBDN, pr_float4_6 },
-      { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractGainRatioBeamBdB, pr_float4_6 }
-    }
-  },
   { TRANSMIT_PWR_A, "Transmit Power A", SOURCE_L1A_DERIVED, MEAS_POWER,
             "transmit_power_a", 1, {
       // this won't be in polynomial directly, but it needs
@@ -538,13 +532,14 @@ const ParTabEntry L1ADerivedParTab[] =
 
   { ORBIT_PERIOD, "Orbit Period", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
                "orbit_time", 1, {
-      { UNIT_COUNTS, "counts", DATA_UINT4, 0, ExtractOrbitPeriod, pr_uint4 }
+      { UNIT_COUNTS, "ticks", DATA_UINT4, 0, ExtractOrbitPeriod, pr_uint4 }
     }
   },
   { ANT_SPIN_RATE, "Antenna Spin Rate", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
                "antenna_position,prf_cycle_time", 4, {
-      { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractAntSpinRateDN, pr_uint2_100 },
-      { UNIT_DEGREES, "degrees", DATA_FLOAT4_100, 0,
+      { UNIT_DN, "dn/pri", DATA_UINT2_100, 0,
+                             ExtractAntSpinRateDN, pr_uint2_100 },
+      { UNIT_DEGREES, "degrees/pri", DATA_FLOAT4_100, 0,
                              ExtractAntSpinRateDegree, pr_float4_6_100 },
       { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4_100, 0,
                              ExtractAntSpinRateDegSec, pr_float4_6_100 },

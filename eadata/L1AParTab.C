@@ -7,6 +7,11 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.26   10 Nov 1998 08:51:56   sally
+// add delta instrument time because the instrument seems to skip cycle
+// 
+//    Rev 1.25   09 Nov 1998 11:24:58   sally
+// 
 //    Rev 1.24   02 Oct 1998 14:23:04   sally
 // correct unit type for exciter temp
 // 
@@ -110,17 +115,16 @@ static const char rcs_id_L1AParTab_C[] = "@(#) $Header$";
 
 const ParTabEntry L1AParTab[] =
 {
-#if 0
-  { FRAME_TIME, "Frame Time", SOURCE_L1A, MEAS_TIME, "frame_time", 6, {
-      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, ExtractCodaATime, NULL },
-      { UNIT_CODE_A,   "Code A", DATA_ITIME, ExtractCodaATime, pr_itime_codea },
-      { UNIT_DAYS,     "days", DATA_ITIME, ExtractCodaATime, pr_itime_d },
-      { UNIT_HOURS,    "hours", DATA_ITIME, ExtractCodaATime, pr_itime_h },
-      { UNIT_MINUTES,  "minutes", DATA_ITIME, ExtractCodaATime, pr_itime_m },
-      { UNIT_SECONDS,  "seconds", DATA_ITIME, ExtractCodaATime, pr_itime_s }
+  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
+      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A", DATA_ITIME, 0, ExtractL1Time, pr_itime_codea },
+      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
+      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
+      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
     }
   },
-#endif
   { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 6, {
       { UNIT_AUTOTIME, "(auto)",DATA_ITIME, 0, ExtractTaiTime, 0 },
       { UNIT_CODE_A, "Code A",  DATA_ITIME, 0, ExtractTaiTime, pr_itime_codea },
@@ -138,6 +142,12 @@ const ParTabEntry L1AParTab[] =
   { INSTRUMENT_TIME, "Instrument Time", SOURCE_L1A,
                                   MEAS_TIME, "instrument_time", 1, {
       { UNIT_COUNTS, "counts", DATA_FLOAT8, 0, ExtractData1D, pr_float8_10 }
+    }
+  },
+  { DELTA_INSTRUMENT_TIME, "Delta Instrument Time", SOURCE_L1A,
+                                  MEAS_TIME, "instrument_time", 1, {
+      { UNIT_COUNTS, "counts", DATA_FLOAT8, 0,
+                                  ExtractDeltaInstTime, pr_float8_10 }
     }
   },
   { ORBIT_TIME, "Orbit Time", SOURCE_L1A, MEAS_TIME, "orbit_time", 1, {
@@ -163,34 +173,43 @@ const ParTabEntry L1AParTab[] =
     }
   },
   { X_VEL, "X Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "x_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "x_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
   { Y_VEL, "Y Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "y_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "y_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
   { Z_VEL, "Z Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "z_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "z_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
-  { ROLL, "S/C Roll", SOURCE_L1A, MEAS_ORIENTATION, "roll", 1, {
+  { ROLL, "S/C Roll", SOURCE_L1A, MEAS_ORIENTATION, "roll", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
-  { PITCH, "S/C Pitch", SOURCE_L1A, MEAS_ORIENTATION, "pitch", 1, {
+  { PITCH, "S/C Pitch", SOURCE_L1A, MEAS_ORIENTATION, "pitch", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
   { YAW, "S/C Yaw", SOURCE_L1A, MEAS_ORIENTATION,
-                "yaw", 1, {
+                "yaw", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
   { CURRENT_MTLM_TABLE_ID, "Mission TLM Table ID", SOURCE_L1A, MEAS_ID,

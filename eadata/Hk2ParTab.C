@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.13   04 Nov 1998 10:10:16   sally
+// add "packet sequence count" parameter
+// 
+//    Rev 1.12   03 Nov 1998 16:00:04   sally
+// add source sequence count
+// 
 //    Rev 1.11   06 Oct 1998 15:50:48   sally
 // separate odd frame parameters from even frame
 // 
@@ -81,8 +87,18 @@ const ParTabEntry HK2ParTab[] =
     }
   },
   { HK2_FRAME_COUNT, "Hk2 Minor Frame Count", SOURCE_HK2,
-                              MEAS_TIME, "hk2_minor_frame_count", 1, {
-      { UNIT_COUNTS, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
+                              MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
+      { UNIT_COUNTS, "dn", DATA_UINT1, 0, Extract16Bit0_3, pr_uint1 },
+    }
+  },
+  { HK2_SRC_SEQ_COUNT, "Source Sequence Count", SOURCE_HK2,
+                              MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
+      { UNIT_COUNTS, "dn", DATA_UINT2, 0, Extract16Bit0_13, pr_uint2 },
+    }
+  },
+  { HK2_DELTA_SRC_SEQ_COUNT, "Delta Source Sequence Count", SOURCE_HK2,
+                              MEAS_TIME, "hk2_pckt_seq_cntl", 1, {
+      { UNIT_COUNTS, "dn", DATA_INT2, 0, ExtractDeltaSrcSeqCnt, pr_int2 },
     }
   },
   { TORQUE_ROD_1_STATUS, "Torque Rod 1 Status", SOURCE_HK2,
@@ -1410,49 +1426,49 @@ const ParTabEntry HK2ParTab[] =
 
   // FSW Subcoms
   { ATT_UPDATE_RATE_X, "Attitude Update Rate Vector X", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,att_update_rate_x", 2, {
+         "hk2_pckt_seq_cntl,att_update_rate_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
     }
   },
   { CONTROL_TORQUE_X, "Control Torque X", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,control_torque_x", 2, {
+         "hk2_pckt_seq_cntl,control_torque_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Odd, pr_float4_6 },
     }
   },
   { ATT_UPDATE_RATE_Y, "Attitude Update Rate Vector Y", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,att_update_rate_y", 2, {
+          "hk2_pckt_seq_cntl,att_update_rate_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
     }
   },
   { CONTROL_TORQUE_Y, "Control Torque Y", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,control_torque_y", 2, {
+          "hk2_pckt_seq_cntl,control_torque_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Odd, pr_float4_6 },
     }
   },
   { ATT_UPDATE_RATE_Z, "Attitude Update Rate Vector Z", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,att_update_rate_z", 2, {
+          "hk2_pckt_seq_cntl,att_update_rate_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
     }
   },
   { CONTROL_TORQUE_Z, "Control Torque Z", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,control_torque_z", 2, {
+          "hk2_pckt_seq_cntl,control_torque_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Odd, pr_float4_6 },
     }
   },
   { MAX_RESIDUAL, "Maximum residual", SOURCE_HK2, MEAS_QUANTITY,
-          "hk2_minor_frame_count,max_residual", 2, {
+          "hk2_pckt_seq_cntl,max_residual", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
@@ -1460,13 +1476,13 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR1_INTENSITY, "Sun Sensor 1 Raw Intensity",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,sun_sensor1_intensity", 1, {
+                  "hk2_pckt_seq_cntl,sun_sensor1_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
 
   { WHEEL_1_TORQUE_CMD, "Wheel 1 Torque Command", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,wheel_1_torque_cmd", 2, {
+           "hk2_pckt_seq_cntl,wheel_1_torque_cmd", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
@@ -1474,12 +1490,12 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR2_INTENSITY, "Sun Sensor 2 Raw Intensity",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,sun_sensor2_intensity", 1, {
+                  "hk2_pckt_seq_cntl,sun_sensor2_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { WHEEL_2_TORQUE_CMD, "Wheel 2 Torque Command", SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,wheel_2_torque_cmd", 2, {
+                  "hk2_pckt_seq_cntl,wheel_2_torque_cmd", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
@@ -1487,12 +1503,12 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR3_INTENSITY, "Sun Sensor 3 Raw Intensity",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,sun_sensor3_intensity", 1, {
+                  "hk2_pckt_seq_cntl,sun_sensor3_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { WHEEL_3_TORQUE_CMD, "Wheel 3 Torque Command", SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,wheel_3_torque_cmd", 2, {
+                  "hk2_pckt_seq_cntl,wheel_3_torque_cmd", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
@@ -1500,12 +1516,12 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR4_INTENSITY, "Sun Sensor 4 Raw Intensity",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,sun_sensor4_intensity", 1, {
+                  "hk2_pckt_seq_cntl,sun_sensor4_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { WHEEL_4_TORQUE_CMD, "Wheel 4 Torque Command", SOURCE_HK2, MEAS_QUANTITY,
-                 "hk2_minor_frame_count,wheel_4_torque_cmd", 2, {
+                 "hk2_pckt_seq_cntl,wheel_4_torque_cmd", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                            ExtractData1D_int2_float_Even, pr_float4_6 },
@@ -1513,84 +1529,84 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR5_INTENSITY, "Sun Sensor 5 Raw Intensity",
               SOURCE_HK2, MEAS_QUANTITY,
-              "hk2_minor_frame_count,sun_sensor5_intensity", 1, {
+              "hk2_pckt_seq_cntl,sun_sensor5_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { CURRENT_ADCS_STATE, "Current ADCS State", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=Wait,1=Detumble,2=AcqSun,3=Point,4=DeltaV", DATA_UINT1,
                                   0, Extract8Bit5_7_Even, pr_uint1 }
     }
   },
   { ACT_CNTL_ENB_DSB, "Actuator Control Enbl/Dsbl", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=Off,1=Auto", DATA_UINT1, 0, Extract8Bit4_Even, pr_bit }
     }
   },
   { WHELL_1_OVERSPEED, "Wheel 1 Overspeed", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=OK,1=Fault", DATA_UINT1, 0, Extract8Bit3_Even, pr_bit }
     }
   },
   { WHELL_2_OVERSPEED, "Wheel 2 Overspeed", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=OK,1=Fault", DATA_UINT1, 0, Extract8Bit2_Even, pr_bit }
     }
   },
   { WHELL_3_OVERSPEED, "Wheel 3 Overspeed", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=OK,1=Fault", DATA_UINT1, 0, Extract8Bit1_Even, pr_bit }
     }
   },
   { WHELL_4_OVERSPEED, "Wheel 4 Overspeed", SOURCE_HK2,
-                   MEAS_STATUS, "hk2_minor_frame_count,SBW03", 1, {
+                   MEAS_STATUS, "hk2_pckt_seq_cntl,SBW03", 1, {
       { UNIT_MAP, "0=OK,1=Fault", DATA_UINT1, 0, Extract8Bit0_Even, pr_bit }
     }
   },
   { SUN_SENSOR6_INTENSITY, "Sun Sensor 6 Raw Intensity",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,sun_sensor6_intensity", 1, {
+                  "hk2_pckt_seq_cntl,sun_sensor6_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_TRACK_1_DATA_REQ_ENB, "Star Tracker #1 Data Requests Enabled",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Dsbl,1=Enbl", DATA_UINT1, 0, Extract8Bit7_Even, pr_bit }
     }
   },
   { STAR_TRACK_2_DATA_REQ_ENB, "Star Tracker #2 Data Requests Enabled",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Dsbl,1=Enbl", DATA_UINT1, 0, Extract8Bit6_Even, pr_bit }
     }
   },
   { ATT_UPDATE_RATE_STATUS, "Attitude Update Rate Status",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Good,1=Coarse,2=Bad", DATA_UINT1,
                                   0, Extract8Bit4_5_Even, pr_uint1 }
     }
   },
   { INT_PROPAGATOR_VALID, "Internal Propagator Valid",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Invalid,1=Valid", DATA_UINT1,
                                    0, Extract8Bit2_Even, pr_bit }
     }
   },
   { GPS_DATA_VALID_FLAG, "GPS Data Valid Flag",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Invalid,1=Valid", DATA_UINT1,
                                    0, Extract8Bit1_Even, pr_bit }
     }
   },
   { START_GPS_CARRIER_DATA, "Start of GPS Carrier Phase Data",
-               SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW04", 1, {
+               SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW04", 1, {
       { UNIT_MAP, "0=Mid,1=Start", DATA_UINT1,
                                    0, Extract8Bit0_Even, pr_bit }
     }
   },
   { STAR_TRACK_1_CCD_TEMP, "Star Tracker #1 CCD Temperature",
           SOURCE_HK2, MEAS_TEMPERATURE, 
-          "hk2_minor_frame_count,star_1_ccd_temp", 2, {
+          "hk2_pckt_seq_cntl,star_1_ccd_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
                              1, ExtractData1D_uint2_float_Even, pr_float4_6 }
@@ -1598,13 +1614,13 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR7_INTENSITY, "Sun Sensor 7 Raw Intensity",
           SOURCE_HK2, MEAS_TEMPERATURE,
-          "hk2_minor_frame_count,sun_sensor7_intensity", 1, {
+          "hk2_pckt_seq_cntl,sun_sensor7_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_TRACK_1_BASE_TEMP, "Star Tracker #1 Baseplate Temperature",
           SOURCE_HK2, MEAS_TEMPERATURE,
-          "hk2_minor_frame_count,star_1_base_temp", 2, {
+          "hk2_pckt_seq_cntl,star_1_base_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
                              1, ExtractData1D_uint2_float_Even, pr_float4_6 }
@@ -1612,13 +1628,13 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR8_INTENSITY, "Sun Sensor 8 Raw Intensity",
           SOURCE_HK2, MEAS_TEMPERATURE,
-          "hk2_minor_frame_count,sun_sensor8_intensity", 1, {
+          "hk2_pckt_seq_cntl,sun_sensor8_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_TRACK_1_LENS_TEMP, "Star Tracker #1 Lens Temperature",
          SOURCE_HK2, MEAS_TEMPERATURE,
-         "hk2_minor_frame_count,star_1_lens_temp", 2, {
+         "hk2_pckt_seq_cntl,star_1_lens_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4,
                              1, ExtractData1D_uint2_float_Even, pr_float4_6 }
@@ -1626,13 +1642,13 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR9_INTENSITY, "Sun Sensor 9 Raw Intensity",
          SOURCE_HK2, MEAS_TEMPERATURE,
-         "hk2_minor_frame_count,sun_sensor9_intensity", 1, {
+         "hk2_pckt_seq_cntl,sun_sensor9_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_1_P2_VOLT, "Star Tracker #1 +2 Volt Supply",
           SOURCE_HK2, MEAS_VOLTAGE,
-          "hk2_minor_frame_count,star_1_p2_volt", 2, {
+          "hk2_pckt_seq_cntl,star_1_p2_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
@@ -1640,19 +1656,19 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR10_INTENSITY, "Sun Sensor 10 Raw Intensity",
                SOURCE_HK2, MEAS_QUANTITY,
-               "hk2_minor_frame_count,sun_sensor10_intensity", 1, {
+               "hk2_pckt_seq_cntl,sun_sensor10_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_1_M8_VOLT, "Star Tracker #1 -8 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-               "hk2_minor_frame_count,star_1_m8_volt", 2, {
+               "hk2_pckt_seq_cntl,star_1_m8_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
     }
   },
   { STAR_1_P5_VOLT, "Star Tracker #1 +5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-               "hk2_minor_frame_count,star_1_p5_volt", 2, {
+               "hk2_pckt_seq_cntl,star_1_p5_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
@@ -1660,12 +1676,12 @@ const ParTabEntry HK2ParTab[] =
   },
   { SUN_SENSOR11_INTENSITY, "Sun Sensor 11 Raw Intensity",
                SOURCE_HK2, MEAS_QUANTITY,
-               "hk2_minor_frame_count,sun_sensor11_intensity", 1, {
+               "hk2_pckt_seq_cntl,sun_sensor11_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_1_M5_VOLT, "Star Tracker #1 -5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-               "hk2_minor_frame_count,star_1_m5_volt", 2, {
+               "hk2_pckt_seq_cntl,star_1_m5_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
@@ -1673,56 +1689,56 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_1_BG_READ, "Star Tracker #1 Background Reading",
           SOURCE_HK2, MEAS_QUANTITY,
-          "hk2_minor_frame_count,star_1_bg_read", 1, {
+          "hk2_pckt_seq_cntl,star_1_bg_read", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
     }
   },
   { SUN_SENSOR12_INTENSITY, "Sun Sensor 12 Raw Intensity",
            SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,sun_sensor12_intensity", 1, {
+           "hk2_pckt_seq_cntl,sun_sensor12_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_1_FF_CNT, "Star Tracker #1 Full Field Search Count",
            SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,star_1_ff_cnt", 1, {
+           "hk2_pckt_seq_cntl,star_1_ff_cnt", 1, {
       { UNIT_COUNTS, "counts", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
     }
   },
   { STAR_1_FALALRM_CNT, "Star Tracker #1 False Alarms Count",
             SOURCE_HK2, MEAS_QUANTITY,
-            "hk2_minor_frame_count,star_1_falalrm_cnt", 1, {
+            "hk2_pckt_seq_cntl,star_1_falalrm_cnt", 1, {
       { UNIT_COUNTS, "counts", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
     }
   },
   { SUN_SENSOR13_INTENSITY, "Sun Sensor 13 Raw Intensity",
             SOURCE_HK2, MEAS_QUANTITY,
-            "hk2_minor_frame_count,sun_sensor13_intensity", 1, {
+            "hk2_pckt_seq_cntl,sun_sensor13_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_1_TLM_OFFSET, "Star Tracker #1 Telemetry Table Offset",
         SOURCE_HK2, MEAS_QUANTITY,
-        "hk2_minor_frame_count,star_1_tlm_offset", 1, {
+        "hk2_pckt_seq_cntl,star_1_tlm_offset", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
     }
   },
   { SUN_SENSOR14_INTENSITY, "Sun Sensor 14 Raw Intensity",
         SOURCE_HK2, MEAS_QUANTITY,
-        "hk2_minor_frame_count,sun_sensor14_intensity", 1, {
+        "hk2_pckt_seq_cntl,sun_sensor14_intensity", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_2_CCD_TEMP, "Star Tracker #2 CCD Temperature",
                 SOURCE_HK2, MEAS_TEMPERATURE,
-                "hk2_minor_frame_count,star_2_ccd_temp", 2, {
+                "hk2_pckt_seq_cntl,star_2_ccd_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
                                ExtractData1D_uint2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_X, "Measured Mag Field X", SOURCE_HK2, MEAS_QUANTITY,
-                    "hk2_minor_frame_count,measured_mag_field_x", 2, {
+                    "hk2_pckt_seq_cntl,measured_mag_field_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_TELSA, "Tesla", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1730,14 +1746,14 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_2_BASE_TEMP, "Star Tracker #2 Baseplate Temperature",
                      SOURCE_HK2, MEAS_TEMPERATURE,
-                     "hk2_minor_frame_count,star_2_base_temp", 2, {
+                     "hk2_pckt_seq_cntl,star_2_base_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
                                ExtractData1D_uint2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_Y, "Measured Mag Field Y", SOURCE_HK2, MEAS_QUANTITY,
-                     "hk2_minor_frame_count,measured_mag_field_y", 2, {
+                     "hk2_pckt_seq_cntl,measured_mag_field_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_TELSA, "Tesla", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1745,68 +1761,68 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_2_LENS_TEMP, "Star Tracker #2 Lens Temperature",
                  SOURCE_HK2, MEAS_TEMPERATURE,
-                 "hk2_minor_frame_count,star_2_lens_temp", 2, {
+                 "hk2_pckt_seq_cntl,star_2_lens_temp", 2, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
       { UNIT_DEGREES_C, "degC", DATA_FLOAT4, 1,
                                ExtractData1D_uint2_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_MAG_FIELD_Z, "Measured Mag Field Z", SOURCE_HK2, MEAS_QUANTITY,
-                 "hk2_minor_frame_count,measured_mag_field_z", 2, {
+                 "hk2_pckt_seq_cntl,measured_mag_field_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_TELSA, "Tesla", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { STAR_2_P2_VOLT, "Star Tracker #2 +2 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-                 "hk2_minor_frame_count,star_2_p2_volt", 2, {
+                 "hk2_pckt_seq_cntl,star_2_p2_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
     }
   },
   { STAR_2_M8_VOLT, "Star Tracker #2 -8 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-                  "hk2_minor_frame_count,star_2_m8_volt", 2, {
+                  "hk2_pckt_seq_cntl,star_2_m8_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_SUN_VECTOR_X, "Measured Sun Vector X", SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,measured_sun_vector_x", 2, {
+                  "hk2_pckt_seq_cntl,measured_sun_vector_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { STAR_2_P5_VOLT, "Star Tracker #2 +5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-                  "hk2_minor_frame_count,star_2_p5_volt", 2, {
+                  "hk2_pckt_seq_cntl,star_2_p5_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
     }
   },
   { STAR_2_M5_VOLT, "Star Tracker #2 -5 Volt Supply", SOURCE_HK2, MEAS_VOLTAGE,
-                  "hk2_minor_frame_count,star_2_m5_volt", 2, {
+                  "hk2_pckt_seq_cntl,star_2_m5_volt", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4,
                              1, ExtractData1D_uint1_float_Even, pr_float4_6 }
     }
   },
   { MEASURED_SUN_VECTOR_Y, "Measured Sun Vector Y", SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,measured_sun_vector_y", 2, {
+                  "hk2_pckt_seq_cntl,measured_sun_vector_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { STAR_2_BG_READ, "Tracker #2 Background Reading", SOURCE_HK2, MEAS_QUANTITY,
-                   "hk2_minor_frame_count,star_2_bg_read", 1, {
+                   "hk2_pckt_seq_cntl,star_2_bg_read", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
     }
   },
   { MEASURED_SUN_VECTOR_Z, "Measured Sun Vector Z", SOURCE_HK2, MEAS_QUANTITY,
-                   "hk2_minor_frame_count,measured_sun_vector_z", 2, {
+                   "hk2_pckt_seq_cntl,measured_sun_vector_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1814,84 +1830,84 @@ const ParTabEntry HK2ParTab[] =
   },
   { STAR_2_FF_CNT, "Star Tracker #2 Full Field Search Count",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,star_2_ff_cnt", 1, {
+                  "hk2_pckt_seq_cntl,star_2_ff_cnt", 1, {
       { UNIT_COUNTS, "counts", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
     }
   },
   { STAR_2_FALARM_CNT, "Star Tracker #2 False Alarms Count",
                   SOURCE_HK2, MEAS_QUANTITY,
-                  "hk2_minor_frame_count,star_2_falarm_cnt", 1, {
+                  "hk2_pckt_seq_cntl,star_2_falarm_cnt", 1, {
       { UNIT_COUNTS, "counts", DATA_UINT1, 0, ExtractData1D_Even, pr_uint1 },
     }
   },
   { ECFF_TARGET_ID, "ECEF Target Id", SOURCE_HK2, MEAS_ID,
-                  "hk2_minor_frame_count,ecff_target_id", 1, {
+                  "hk2_pckt_seq_cntl,ecff_target_id", 1, {
       { UNIT_ID, "id", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { STAR_2_TLM_OFFSET, "Star Tracker #2 Telemetry Table Offset",
              SOURCE_HK2, MEAS_QUANTITY,
-             "hk2_minor_frame_count,star_2_tlm_offset", 1, {
+             "hk2_pckt_seq_cntl,star_2_tlm_offset", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Even, pr_uint2 },
     }
   },
   { FFT_TARGET_ID, "FFT (Fixed Frame Table) Target Id",
              SOURCE_HK2, MEAS_QUANTITY,
-             "hk2_minor_frame_count,fft_target_id", 1, {
+             "hk2_pckt_seq_cntl,fft_target_id", 1, {
       { UNIT_ID, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { RATE_SEN_ATT_Q1, "Rate Sensor Attitude Q1", SOURCE_HK2, MEAS_QUANTITY,
-             "hk2_minor_frame_count,rate_sen_att_q1", 2, {
+             "hk2_pckt_seq_cntl,rate_sen_att_q1", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { DESIRED_ATT_Q1, "Desired Attitude Q1", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,desired_att_q1", 2, {
+           "hk2_pckt_seq_cntl,desired_att_q1", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { RATE_SEN_ATT_Q2, "Rate Sensor Attitude Q2", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,rate_sen_att_q2", 2, {
+           "hk2_pckt_seq_cntl,rate_sen_att_q2", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { DESIRED_ATT_Q2, "Desired Attitude Q2", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,desired_att_q2", 2, {
+           "hk2_pckt_seq_cntl,desired_att_q2", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { RATE_SEN_ATT_Q3, "Rate Sensor Attitude Q3", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,rate_sen_att_q3", 2, {
+           "hk2_pckt_seq_cntl,rate_sen_att_q3", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { DESIRED_ATT_Q3, "Desired Attitude Q3", SOURCE_HK2, MEAS_QUANTITY, 
-           "hk2_minor_frame_count,desired_att_q3", 2, {
+           "hk2_pckt_seq_cntl,desired_att_q3", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { RATE_SEN_ATT_Q4, "Rate Sensor Attitude Q4", SOURCE_HK2, MEAS_QUANTITY,
-           "hk2_minor_frame_count,rate_sen_att_q4", 2, {
+           "hk2_pckt_seq_cntl,rate_sen_att_q4", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { DESIRED_ATT_Q4, "Desired Attitude Q4", SOURCE_HK2, MEAS_QUANTITY,
-          "hk2_minor_frame_count,desired_att_q4", 2, {
+          "hk2_pckt_seq_cntl,desired_att_q4", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1899,14 +1915,14 @@ const ParTabEntry HK2ParTab[] =
   },
   { CONTROL_FRAME_ATT_Q1, "Control Frame Attitude Q1",
          SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,control_frame_att_q1", 2, {
+         "hk2_pckt_seq_cntl,control_frame_att_q1", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_POS_X, "Next Orbital Position X", SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,next_orbit_pos_x", 2, {
+         "hk2_pckt_seq_cntl,next_orbit_pos_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KILOMETERS, "km", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1914,14 +1930,14 @@ const ParTabEntry HK2ParTab[] =
   },
   { CONTROL_FRAME_ATT_Q2, "Control Frame Attitude Q2",
          SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,control_frame_att_q2", 2, {
+         "hk2_pckt_seq_cntl,control_frame_att_q2", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_POS_Y, "Next Orbital Position Y", SOURCE_HK2, MEAS_QUANTITY,
-       "hk2_minor_frame_count,next_orbit_pos_y", 2, {
+       "hk2_pckt_seq_cntl,next_orbit_pos_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KILOMETERS, "km", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1929,14 +1945,14 @@ const ParTabEntry HK2ParTab[] =
   },
   { CONTROL_FRAME_ATT_Q3, "Control Frame Attitude Q3",
          SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,control_frame_att_q3", 2, {
+         "hk2_pckt_seq_cntl,control_frame_att_q3", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_POS_Z, "Next Orbital Position Z", SOURCE_HK2, MEAS_QUANTITY,
-          "hk2_minor_frame_count,next_orbit_pos_z", 2, {
+          "hk2_pckt_seq_cntl,next_orbit_pos_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KILOMETERS, "km", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
@@ -1944,133 +1960,133 @@ const ParTabEntry HK2ParTab[] =
   },
   { CONTROL_FRAME_ATT_Q4, "Control Frame Attitude Q4",
          SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,control_frame_att_q4", 2, {
+         "hk2_pckt_seq_cntl,control_frame_att_q4", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_VEL_X, "Next Orbital Velocity X", SOURCE_HK2, MEAS_QUANTITY,
-         "hk2_minor_frame_count,next_orbit_vel_x", 2, {
+         "hk2_pckt_seq_cntl,next_orbit_vel_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KM_SEC, "km/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { CONTROL_FRAME_RATE_X, "Control Frame Rate X", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,control_frame_rate_x", 2, {
+         "hk2_pckt_seq_cntl,control_frame_rate_x", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_VEL_Y, "Next Orbital Velocity Y", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,next_orbit_vel_y", 2, {
+          "hk2_pckt_seq_cntl,next_orbit_vel_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KM_SEC, "km/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { CONTROL_FRAME_RATE_Y, "Control Frame Rate Y", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,control_frame_rate_y", 2, {
+          "hk2_pckt_seq_cntl,control_frame_rate_y", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { NEXT_ORBIT_VEL_Z, "Next Orbital Velocity Z", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,next_orbit_vel_z", 2, {
+         "hk2_pckt_seq_cntl,next_orbit_vel_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_KM_SEC, "km/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { CONTROL_FRAME_RATE_Z, "Control Frame Rate Z", SOURCE_HK2, MEAS_RATE,
-        "hk2_minor_frame_count,control_frame_rate_z", 2, {
+        "hk2_pckt_seq_cntl,control_frame_rate_z", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_RAD_SEC, "radians/sec", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_MAG_FIELD_VX, "Modeled Mag Field Vx", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,model_mag_field_vx", 2, {
+         "hk2_pckt_seq_cntl,model_mag_field_vx", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "mGauss", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { MEASURED_ATT_Q1, "Measured Attitude Q1", SOURCE_HK2, MEAS_RATE,
-           "hk2_minor_frame_count,measured_att_q1", 2, {
+           "hk2_pckt_seq_cntl,measured_att_q1", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_MAG_FIELD_VY, "Modeled Mag Field Vy", SOURCE_HK2, MEAS_RATE,
-            "hk2_minor_frame_count,model_mag_field_vy", 2, {
+            "hk2_pckt_seq_cntl,model_mag_field_vy", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "mGauss", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { MEASURED_ATT_Q2, "Measured Attitude Q2", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,measured_att_q2", 2, {
+          "hk2_pckt_seq_cntl,measured_att_q2", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_MAG_FIELD_VZ, "Modeled Mag Field Vz", SOURCE_HK2, MEAS_RATE,
-             "hk2_minor_frame_count,model_mag_field_vz", 2, {
+             "hk2_pckt_seq_cntl,model_mag_field_vz", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "mGauss", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { MEASURED_ATT_Q3, "Measured Attitude Q3", SOURCE_HK2, MEAS_RATE,
-              "hk2_minor_frame_count,measured_att_q3", 2, {
+              "hk2_pckt_seq_cntl,measured_att_q3", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_SUN_VX, "Modeled Sun Vx", SOURCE_HK2, MEAS_RATE,
-              "hk2_minor_frame_count,model_sun_vx", 2, {
+              "hk2_pckt_seq_cntl,model_sun_vx", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { MEASURED_ATT_Q4, "Measured Attitude Q4", SOURCE_HK2, MEAS_RATE,
-            "hk2_minor_frame_count,measured_att_q4", 2, {
+            "hk2_pckt_seq_cntl,measured_att_q4", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_SUN_VY, "Modeled Sun Vy", SOURCE_HK2, MEAS_RATE,
-             "hk2_minor_frame_count,model_sun_vy", 2, {
+             "hk2_pckt_seq_cntl,model_sun_vy", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { TOTAL_MOMENTUM_1, "Total System Momentum 1", SOURCE_HK2, MEAS_RATE,
-               "hk2_minor_frame_count,total_momentum_1", 2, {
+               "hk2_pckt_seq_cntl,total_momentum_1", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
     }
   },
   { MODEL_SUN_VZ, "Modeled Sun Vz", SOURCE_HK2, MEAS_RATE,
-             "hk2_minor_frame_count,model_sun_vz", 2, {
+             "hk2_pckt_seq_cntl,model_sun_vz", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { TOTAL_MOMENTUM_2, "Total System Momentum 2", SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,total_momentum_2", 2, {
+          "hk2_pckt_seq_cntl,total_momentum_2", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
@@ -2078,14 +2094,14 @@ const ParTabEntry HK2ParTab[] =
   },
   { CALC_SOLAR_ARRAY1_POS, "Calculated Solar Array 1 Position",
           SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,calc_solar_array1_pos", 2, {
+          "hk2_pckt_seq_cntl,calc_solar_array1_pos", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { TOTAL_MOMENTUM_3, "Total System Momentum 3", SOURCE_HK2, MEAS_RATE,
-         "hk2_minor_frame_count,total_momentum_3", 2, {
+         "hk2_pckt_seq_cntl,total_momentum_3", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Even, pr_int2 },
       { UNIT_NM, "Nm", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Even, pr_float4_6 }
@@ -2093,163 +2109,163 @@ const ParTabEntry HK2ParTab[] =
   },
   { CALC_SOLAR_ARRAY2_POS, "Calculated Solar Array 2 Position",
           SOURCE_HK2, MEAS_RATE,
-          "hk2_minor_frame_count,calc_solar_array2_pos", 2, {
+          "hk2_pckt_seq_cntl,calc_solar_array2_pos", 2, {
       { UNIT_DN, "dn", DATA_INT2, 0, ExtractData1D_Odd, pr_int2 },
       { UNIT_EU, "eu", DATA_FLOAT4, 1,
                                ExtractData1D_int2_float_Odd, pr_float4_6 }
     }
   },
   { PRI_SEC_ANG_STATUS, "Primary_Secondary Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit7_Even, pr_bit }
     }
   },
   { PRI_TER_ANG_STATUS, "Primary_Tertiary Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit6_Even, pr_bit }
     }
   },
   { PRI_FOUR_ANG_STATUS, "Primary_Fourth Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit5_Even, pr_bit }
     }
   },
   { PRI_ORBIT_ANG_STATUS, "Primary_Orbit Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit4_Even, pr_bit }
     }
   },
   { SEC_TER_ANG_STATUS, "Secondary_Tertiary Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit3_Even, pr_bit }
     }
   },
   { SEC_FOUR_ANG_STATUS, "Secondary_Fourth Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit2_Even, pr_bit }
     }
   },
   { SEC_ORBIT_ANG_STATUS, "Secondary_Orbit Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit1_Even, pr_bit }
     }
   },
   { TER_FOUR_ANG_STATUS, "Tertiary_Fourth Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW08", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW08", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit0_Even, pr_bit }
     }
   },
   { TER_ORBIT_ANG_STATUS, "Tertiary_Orbit Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW09", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW09", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit7_Even, pr_bit }
     }
   },
   { FOUR_ORBIT_ANG_STATUS, "Fourth_Orbit Angle Status",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW09", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW09", 1, {
       { UNIT_MAP, "0=Invalid, 1=Valid", DATA_UINT1, 0,
                                Extract8Bit6_Even, pr_bit }
     }
   },
   { ORBIT_INTERP_METHOD, "Orbit Interpolation Method Used",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW09", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW09", 1, {
       { UNIT_MAP, "0=Internal, 1=GPS, 2=LAP", DATA_UINT1, 
                                   0, Extract8Bit4_5_Even, pr_uint1 }
     }
   },
   { VECTOR_PAIR_SELECTION, "Vector Pair Selection",
-           SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW09", 1, {
+           SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW09", 1, {
       { UNIT_MAP, "0=V12, 1=V13,...", DATA_UINT1, 
                                   0, Extract8Bit0_3_Even, pr_uint1 }
     }
   },
   { SOLAR_ARRAY1_POT_READING, "Solar Array 1 Potentiometer Reading",
                  SOURCE_HK2, MEAS_QUANTITY,
-                 "hk2_minor_frame_count,solar_array1_pot_reading", 1, {
+                 "hk2_pckt_seq_cntl,solar_array1_pot_reading", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { ATT_DERTERM_METHOD, "Attitude Determination Method",
-                SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW10", 1, {
+                SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW10", 1, {
       { UNIT_MAP, "0=A3RA, 1=A3R, 2=A2R, 3=None", DATA_UINT1, 0,
                                Extract8Bit6_7_Even, pr_uint1 }
     }
   },
   { ATT_UPDATE_METHOD, "Attitude Update Method",
-                SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW10", 1, {
+                SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW10", 1, {
       { UNIT_MAP, "0=A3RA, 1=A3R, 2=A2R, 3=None", DATA_UINT1, 0,
                                Extract8Bit4_5_Even, pr_uint1 }
     }
   },
   { SOLUTION_STATUS, "Solution Status",
-                SOURCE_HK2, MEAS_STATUS, "hk2_minor_frame_count,SBW200", 1, {
+                SOURCE_HK2, MEAS_STATUS, "hk2_pckt_seq_cntl,SBW200", 1, {
       { UNIT_MAP, "0=Both, 1=OneEach, 2=V12R, 3=V14R,...", DATA_UINT1, 0,
                                Extract8Bit3_7_Even, pr_uint1 }
     }
   },
   { SOLAR_ARRAY2_POT_READING, "Solar Array 2 Potentiometer Reading",
                  SOURCE_HK2, MEAS_QUANTITY,
-                 "hk2_minor_frame_count,solar_array2_pot_reading", 1, {
+                 "hk2_pckt_seq_cntl,solar_array2_pot_reading", 1, {
       { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData1D_Odd, pr_uint2 },
     }
   },
   { ACTIVE_CDU, "Active CDU", SOURCE_HK2, MEAS_STATUS,
-                 "hk2_minor_frame_count,active_cdu", 1, {
+                 "hk2_pckt_seq_cntl,active_cdu", 1, {
       { UNIT_MAP, "24=CDU1, 25=CDU2", DATA_UINT1, 0,
                                Extract8Bit3_7_Even, pr_uint1 }
     }
   },
   { CMD_ORBIT_INTERP_METHOD, "Commanded Orbit Interpolation Method",
                           SOURCE_HK2, MEAS_STATUS,
-                          "hk2_minor_frame_count,SBW12", 1, {
+                          "hk2_pckt_seq_cntl,SBW12", 1, {
       { UNIT_MAP, "0=Internal, 1=GPS, 2=LAP", DATA_UINT1, 0,
                                Extract8Bit5_6_Odd, pr_uint1 }
     }
   },
   { RADIUS_VIOLATION, "Radius Violation",
                           SOURCE_HK2, MEAS_STATUS,
-                          "hk2_minor_frame_count,SBW12", 1, {
+                          "hk2_pckt_seq_cntl,SBW12", 1, {
       { UNIT_MAP, "0=OK, 1=Fault", DATA_UINT1, 0,
                                Extract8Bit4_Odd, pr_bit }
     }
   },
   { SPEED_VIOLATION, "Speed Violation",
                           SOURCE_HK2, MEAS_STATUS,
-                          "hk2_minor_frame_count,SBW12", 1, {
+                          "hk2_pckt_seq_cntl,SBW12", 1, {
       { UNIT_MAP, "0=OK, 1=Fault", DATA_UINT1, 0,
                                Extract8Bit3_Odd, pr_bit }
     }
   },
   { ORBIT_STATE_VALID, "Orbital State Valid",
                           SOURCE_HK2, MEAS_STATUS,
-                          "hk2_minor_frame_count,SBW12", 1, {
+                          "hk2_pckt_seq_cntl,SBW12", 1, {
       { UNIT_MAP, "0=OK, 1=Fault", DATA_UINT1, 0,
                                Extract8Bit2_Odd, pr_bit }
     }
   },
   { TARGET_TABLE_SELECT, "Target Table Selection",
                           SOURCE_HK2, MEAS_STATUS,
-                          "hk2_minor_frame_count,SBW12", 1, {
+                          "hk2_pckt_seq_cntl,SBW12", 1, {
       { UNIT_MAP, "0=ECEF, 1=Fixed, 2=STBY", DATA_UINT1, 0,
                                Extract8Bit0_1_Odd, pr_uint1 }
     }
   },
   { MEAS_MAG_FIELD, "Measured Mag Field Status", SOURCE_HK2, MEAS_STATUS,
-               "hk2_minor_frame_count,meas_mag_field+meas_sun_vector", 1, {
+               "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
       { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
                                Extract8Bit6_7_Odd, pr_uint1 }
     }
   },
   { MEAS_SUN_VECTOR, "Measured Sun Vector Status", SOURCE_HK2, MEAS_STATUS,
-               "hk2_minor_frame_count,meas_mag_field+meas_sun_vector", 1, {
+               "hk2_pckt_seq_cntl,meas_mag_field+meas_sun_vector", 1, {
       { UNIT_MAP, "0=Good, 1=Coarse, 2=Bad", DATA_UINT1, 0,
                                Extract8Bit4_5_Odd, pr_uint1 }
     }
