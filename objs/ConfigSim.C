@@ -1109,36 +1109,36 @@ ConfigL2AToL2B(
 		return(0);
 	l2a_to_l2b->useAmbiguityWeights = tmp_int;
 
-    char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
-    if (wr_method == NULL)
-        return(0);
-    if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
-        return(0);
+	char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
+	if (wr_method == NULL)
+	  return(0);
+	if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
+	  return(0);
 
 	if( l2a_to_l2b->wrMethod == L2AToL2B::PEAK_SPLITTING &&
         l2a_to_l2b->useManyAmbiguities)
 	{
-		fprintf(stderr,
-			"Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
-		return(0);
+	  fprintf(stderr,
+		  "Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
+	  return(0);
 	}
 	if(l2a_to_l2b->wrMethod == L2AToL2B::PEAK_SPLITTING)
-	{
-		if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
-			return(0);
-		l2a_to_l2b->onePeakWidth = tmp_float*dtr;
-		if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD,
-			&tmp_float))
-		{
-			return(0);
-		}
-		l2a_to_l2b->twoPeakSep = tmp_float*dtr;
-		if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD,
-			&tmp_float))
-		{
-			return(0);
-		}
-		l2a_to_l2b->probThreshold = tmp_float;
+	  {
+	    if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
+	      return(0);
+	    l2a_to_l2b->onePeakWidth = tmp_float*dtr;
+	    if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD,
+					&tmp_float))
+	      {
+		return(0);
+	      }
+	    l2a_to_l2b->twoPeakSep = tmp_float*dtr;
+	    if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD,
+					&tmp_float))
+	      {
+		return(0);
+	      }
+	    l2a_to_l2b->probThreshold = tmp_float;
 	}
 
 	//---------//
@@ -1159,7 +1159,7 @@ ConfigL2AToL2B(
 	  if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
             return(0);
 	  l2a_to_l2b->smartNudgeFlag = tmp_int;
-	  
+
 	  //-----------------------//
 	  // configure nudge field //
 	  //-----------------------//
@@ -1179,6 +1179,19 @@ ConfigL2AToL2B(
 	    if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
 	      return(0);
 	  }
+
+	  //----------------//
+	  // threshold flag //
+	  //----------------//
+
+	  if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
+	    return(0);
+	  l2a_to_l2b->useNudgeThreshold = tmp_int;
+
+	  if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
+	    return(0);
+	  l2a_to_l2b->useNMF = tmp_int;
+
 	}
 	
 	return(1);
