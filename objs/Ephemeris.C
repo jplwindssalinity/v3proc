@@ -450,7 +450,9 @@ Ephemeris::GetOrbitState_2pt(
 	Matrix3 a;
 	a.Rowset(rsat1, rsat2, rsat1 & rsat2);
 	Vector3 b(range*range*cos(theta1), range*range*cos(theta-theta1), 0);
-	a.Inverse();
+	if (! a.Inverse())
+        return(0);
+
 	orbit_state->rsat = a * b;
 
 	// Linearly interpolate the components of the velocity vector.

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1999, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_coordinateswitch_c[] =
 	"@(#) $Id$";
@@ -172,7 +172,8 @@ CoordinateSwitch::Append(
 	Matrix3 A = _trans;
 	Vector3 a = _o2;
 	_trans = next->_trans * A;
-	A.Inverse();
+	if (! A.Inverse())
+        return(0);
 	_o2 = a + A * next->_o2;
 	return(1);
 }
@@ -189,7 +190,11 @@ CoordinateSwitch::ReverseDirection()
 	CoordinateSwitch x;
 
 	x._trans = _trans;
-	x._trans.Inverse();
+	if (! x._trans.Inverse())
+    {
+        fprintf(stderr, "...in CoordinateSwitch::ReverseDirection\n");
+        exit(1);
+    }
 	x._o2 = -_trans * _o2;
 	return(x);
 }
@@ -224,12 +229,18 @@ return(new_r);
 //  the input vector represented in frame 2.
 //
 
-Vector3 CoordinateSwitch::Backward(Vector3 r)
+Vector3
+CoordinateSwitch::Backward(
+    Vector3  r)
 {
-Matrix3 rev_trans = _trans;
-rev_trans.Inverse();
-Vector3 new_r = rev_trans * r + _o2;
-return(new_r);
+    Matrix3 rev_trans = _trans;
+    if (! rev_trans.Inverse())
+    {
+        fprintf(stderr, "...in CoordinateSwitch::Backward\n");
+        exit(1);
+    }
+    Vector3 new_r = rev_trans * r + _o2;
+    return(new_r);
 }
 
 //

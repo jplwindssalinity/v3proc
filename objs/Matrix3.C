@@ -243,13 +243,14 @@ Matrix3::Identity()
     return;
 }
 
-//
+//------------------//
+// Matrix3::Inverse //
+//------------------//
 // Method inverse sets the calling Matrix3 object to its inverse.
 // The gaussj routine from Numerical Recipes is adapted for 3x3 matrices here.
-//
 
-void Matrix3::Inverse()
-
+int
+Matrix3::Inverse()
 {
 
 #define SWAP(a,b) {temp=(a);(a)=(b);(b)=temp;}
@@ -273,11 +274,13 @@ for (i=0;i<n;i++) {
                         irow=j;
                         icol=k;
                     }
-                } else if (ipiv[k] > 1)
-                    {
-    printf("Error: Matrix3 object tried to invert singular matrix\n");
-    exit(-1);
-                    }
+                }
+                else if (ipiv[k] > 1)
+                {
+                    fprintf(stderr,
+                    "Error: Matrix3 object tried to invert singular matrix\n");
+                    return(0);
+                }
             }
     ++(ipiv[icol]);
     if (irow != icol) {
@@ -286,10 +289,11 @@ for (i=0;i<n;i++) {
     indxr[i]=irow;
     indxc[i]=icol;
     if (_m[icol][icol] == 0.0)
-        {
-    printf("Error: Matrix3 object tried to invert singular matrix\n");
-    exit(-1);
-        }
+    {
+        fprintf(stderr,
+            "Error: Matrix3 object tried to invert singular matrix\n");
+        return(0);
+    }
     pivinv=1.0/_m[icol][icol];
     _m[icol][icol]=1.0;
     for (l=0;l<n;l++) _m[icol][l] *= pivinv;

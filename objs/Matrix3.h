@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -62,7 +62,7 @@ public:
 
     void Rowset(Vector3 r1, Vector3 r2, Vector3 r3);
     void Identity();
-    void Inverse();
+    int  Inverse();
     void Show(char *name = (char*)NULL);
 
 protected:
