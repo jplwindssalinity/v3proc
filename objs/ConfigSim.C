@@ -8,7 +8,6 @@ static const char rcs_id_configsim_c[] =
 
 #include "ConfigSim.h"
 #include "ConfigSimDefs.h"
-#include "QscatSimAccurate.h"
 #include "SpacecraftSim.h"
 #include "XTable.h"
 #include "BYUXTable.h"

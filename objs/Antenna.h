@@ -15,24 +15,8 @@ static const char rcs_id_antenna_h[] =
 
 //======================================================================
 // CLASSES
-//    Angle, Antenna
+//    Antenna
 //======================================================================
-
-//======================================================================
-// CLASS
-//    Angle
-//
-// DESCRIPTION
-//    The Angle object contains an angle between 0.0 and 2 * PI
-//======================================================================
-
-/*
-class Angle : public double
-{
-public:
-    Angle operator=(Angle angle);
-};
-*/
 
 //======================================================================
 // CLASS
@@ -58,11 +42,14 @@ public:
     // setting/getting //
     //-----------------//
 
-    int               SetAzimuthAngle(double angle);
-    int               TimeRotation(double time);
-    int               SetPedestalAttitude(Attitude* attitude);
-    int               UpdatePosition(double time);
-    int               Initialize(double time);
+    int  SetEncoderAzimuthAngle(double angle);
+    int  SetTxCenterAzimuthAngle(double angle);
+    int  SetGroundImpactAzimuthAngle(double angle);
+
+    int  UpdatePosition(double time);
+    int  SetPedestalAttitude(Attitude* attitude);
+    int  Initialize(double time);
+
     CoordinateSwitch  GetAntPedToScBody() { return(_antPedToScBody); };
     CoordinateSwitch  GetScBodyToAntPed() { return(_scBodyToAntPed); };
 
@@ -81,7 +68,9 @@ public:
     //----------------//
     // all azimuth angles are in the range 0..two_pi
 
-    double  azimuthAngle;   // antenna azimuth angle (0..two_pi)
+    double  encoderAzimuthAngle;         // at an encoder sample time
+    double  txCenterAzimuthAngle;        // at the center of the Tx pulse
+    double  groundImpactAzimuthAngle;    // at ground impact of Tx center
 
 protected:
 
@@ -92,5 +81,11 @@ protected:
     CoordinateSwitch  _antPedToScBody;
     CoordinateSwitch  _scBodyToAntPed;
 };
+
+//==================//
+// Helper Functions //
+//==================//
+
+double  InRange(double angle);
 
 #endif

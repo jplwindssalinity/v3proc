@@ -673,38 +673,3 @@ ConfigQscatSim(
 
     return(1);
 }
-
-//------------------------//
-// ConfigQscatSimAccurate //
-//------------------------//
-
-int
-ConfigQscatSimAccurate(
-    QscatSimAccurate*  qscat_sim,
-    ConfigList*        config_list)
-{
-    if (! ConfigQscatSim(qscat_sim, config_list))
-        return(0);
-    int num_look_steps;
-    if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
-        return(0);
-    qscat_sim->numLookStepsPerSlice=num_look_steps;
-
-    float azimuth_integration_range;
-    if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-            &azimuth_integration_range))
-    {
-        return(0);
-    }
-    qscat_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
-
-    float azimuth_step_size;
-    if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-            &azimuth_step_size))
-    {
-        return(0);
-    }
-    qscat_sim->azimuthStepSize=azimuth_step_size*dtr;
-
-    return(1);
-}

@@ -7,7 +7,7 @@
 #define INSTRUMENTGEOM_H
 
 static const char rcs_id_instrumentgeom_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "EarthPosition.h"
 #include "CoordinateSwitch.h"
@@ -19,29 +19,30 @@ static const char rcs_id_instrumentgeom_h[] =
 #include "Meas.h"
 #include "Qscat.h"
 
-#define POINTS_PER_SPOT_OUTLINE		18
-#define DEFAULT_CONTOUR_LEVEL		0.5
+#define POINTS_PER_SPOT_OUTLINE  18
+#define DEFAULT_CONTOUR_LEVEL    0.5
 
 //======================================================================
 // STRUCTURE
-//		Used to package target info
+//    Used to package target info
 //======================================================================
 
 struct TargetInfoPackage {
-	EarthPosition	rTarget;
-	float			slantRange;		// km
-	float			roundTripTime;	// ms
-	float			dopplerFreq;	// Hz
-	float			basebandFreq;	// Hz
+    EarthPosition  rTarget;
+    float          slantRange;       // km
+    float          roundTripTime;    // ms
+    float          dopplerFreq;      // Hz
+    float          basebandFreq;     // Hz
 };
 
 //======================================================================
 // DESCRIPTION
-//		Higher level geometry functions.  Typically instrument related.
+//    Higher level geometry functions.  Typically instrument related.
 //======================================================================
 
 CoordinateSwitch  AntennaFrameToGC(OrbitState* orbit_state,
-                      Attitude* attitude, Antenna* antenna);
+                      Attitude* attitude, Antenna* antenna,
+                      double azimuth_angle);
 
 int  LocateSlices(Spacecraft* spacecraft, Qscat* qscat, MeasSpot* meas_spot);
 
@@ -57,14 +58,15 @@ int  FindSlice(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          float freq_tol, Outline* outline, Vector3* look_vector,
          EarthPosition* centroid);
 
-double	IdealRtt(Spacecraft* spacecraft, Qscat* qscat, int use_flags=0);
-int	GetBYUBoresight(Spacecraft* spacecraft, Qscat* qscat,double* look,
-			double* azim);
+double  IdealRtt(Spacecraft* spacecraft, Qscat* qscat, int use_flags=0);
+
+int  GetBYUBoresight(Spacecraft* spacecraft, Qscat* qscat,double* look,
+         double* azim);
 
 int  RttToIdealRxDelay(Qscat* qscat, double rtt);
 
 int  IdealCommandedDoppler(Spacecraft* spacecraft, Qscat* qscat, 
-			   TargetInfoPackage* tip_out=NULL);
+         TargetInfoPackage* tip_out=NULL);
 
 
 //int  IdealCommandedDopplerForRange(Spacecraft* spacecraft, float offset);
@@ -75,7 +77,7 @@ int  TargetInfo(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
 int  FindPeakResponseAtFreq(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, float target_freq,
          float freq_tol, double* look, double* azim, float* response,
-			       int ignore_range = 0);
+         int ignore_range = 0);
 
 int  FindFreq(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          Qscat* qscat, float target_freq, float freq_tol, double* look,
@@ -96,8 +98,8 @@ int  FindPeakResponseForSlice(CoordinateSwitch* antenna_frame_to_gc,
          float response[2], float* peak_response, int ignore_range = 0);
 
 int  FindResponseBetween(double f_look[2], double f_azim[2], 
-			float f_response[2], float target_response, 
-			double* tc_look, double* tc_azim);
+         float f_response[2], float target_response, double* tc_look,
+         double* tc_azim);
 
 int  FindSliceCorners(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
@@ -124,6 +126,6 @@ int  GetPeakSpatialResponse2(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
          double* look, double* azimuth, int ignore_range = 0);
 
-double	NegativeSpatialResponse(double* x, void* ptr);
+double  NegativeSpatialResponse(double* x, void* ptr);
 
 #endif

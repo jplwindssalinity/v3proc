@@ -296,7 +296,7 @@ QscatSas::SetAzimuthWithEncoder(
     double angle = two_pi * (double)use_encoder / (double)ENCODER_N +
         encoder_offset;
 
-    antenna.SetAzimuthAngle(angle);
+    antenna.SetEncoderAzimuthAngle(angle);
 
     return(1);
 }
@@ -311,7 +311,7 @@ QscatSas::SetAzimuthWithEncoder(
 unsigned short
 QscatSas::GetEncoder()
 {
-    unsigned short encoder = AzimuthToEncoder(antenna.azimuthAngle);
+    unsigned short encoder = AzimuthToEncoder(antenna.encoderAzimuthAngle);
     return(encoder);
 }
 
@@ -794,12 +794,6 @@ SetDelayAndFrequency(
 
     qscat->cds.heldEncoder = qscat->sas.GetEncoder();
 
-    //-------------------------------------------------//
-    // shift the antenna to the center of the tx pulse //
-    //-------------------------------------------------//
-
-    qscat->SetAntennaToTxCenter(0);
-
     //-----------------------------//
     // calculate the rx gate delay //
     //-----------------------------//
@@ -822,7 +816,7 @@ SetDelayAndFrequency(
     else
     {
         // ideal delay
-        float rtt= IdealRtt(spacecraft, qscat,1);
+        float rtt= IdealRtt(spacecraft, qscat, 1);
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
         float delay = rtt +
             (qscat->ses.txPulseWidth - ses_beam_info->rxGateWidth) / 2.0;
@@ -846,7 +840,7 @@ SetDelayAndFrequency(
     else
     {
         // ideal frequency
-        IdealCommandedDoppler(spacecraft, qscat,tip);
+        IdealCommandedDoppler(spacecraft, qscat, tip);
     }
 
     return(1);
@@ -875,36 +869,51 @@ SetOrbitStepDelayAndFrequency(
     return(SetDelayAndFrequency(spacecraft, qscat));
 }
 
-//-----------------------------//
-// Qscat::SetAntennaToTxCenter //
-//-----------------------------//
+//--------------------------//
+// Qscat::SetEncoderAzimuth //
+//--------------------------//
 
 int
-Qscat::SetAntennaToTxCenter(
-    int  pri_delay)
+Qscat::SetEncoderAzimuth(
+    unsigned short  encoder,
+    int             pri_delay)
 {
-    double delta_t = (double)pri_delay * ses.pri + ses.txPulseWidth / 2.0 -
-        T_ENC + T_GRID + T_RC + T_EXC;
-    sas.antenna.TimeRotation(delta_t); 
+    // set azimuth using encoder
+    sas.SetAzimuthWithEncoder(encoder);
+
+    // rotate by pri sampled delay
+    double delta_t = (double)pri_delay * ses.pri;
+    sas.antenna.SetEncoderAzimuthAngle(sas.antenna.encoderAzimuthAngle +
+        delta_t * sas.antenna.spinRate);
+
     return(1);
 }
 
-//---------------------------------//
-// Qscat::SetAntennaToGroundImpact //
-//---------------------------------//
+//-------------------------//
+// Qscat::SetOtherAzimuths //
+//-------------------------//
+// this assumes the encoder azimuth has been set
 
 int
-Qscat::SetAntennaToGroundImpact(
-    Spacecraft*  spacecraft,
-    int          pri_delay)
+Qscat::SetOtherAzimuths(
+    Spacecraft*  spacecraft)
 {
-    // first rotate to transmit pulse center
-    SetAntennaToTxCenter(pri_delay);
+    //-----------//
+    // Tx center //
+    //-----------//
 
-    // then estimate the range to the surface
+    double delta_t = ses.txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC;
+    sas.antenna.SetTxCenterAzimuthAngle(sas.antenna.encoderAzimuthAngle +
+        delta_t * sas.antenna.spinRate);
+
+    //---------------//
+    // ground impact //
+    //---------------//
+
+    // estimate the range to the surface using tx center
     CoordinateSwitch antenna_frame_to_gc =
         AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
-        &(sas.antenna));
+        &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
     double look, azim;
     Beam* beam = GetCurrentBeam();
     if (! beam->GetElectricalBoresight(&look, &azim))
@@ -916,8 +925,9 @@ Qscat::SetAntennaToGroundImpact(
         return(0);
 
     // rotate to the antenna to the ground impact azimuth
-    double delta_t = tip.roundTripTime / 2.0;
-    sas.antenna.TimeRotation(delta_t); 
+    delta_t = tip.roundTripTime / 2.0;
+    sas.antenna.SetGroundImpactAzimuthAngle(sas.antenna.txCenterAzimuthAngle +
+        delta_t * sas.antenna.spinRate);
 
     return(1);
 }

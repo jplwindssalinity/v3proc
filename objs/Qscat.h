@@ -292,9 +292,14 @@ public:
     CdsBeamInfo*  GetCurrentCdsBeamInfo();
     SesBeamInfo*  GetCurrentSesBeamInfo();
 
+    int  SetEncoderAzimuth(unsigned short encoder, int pri_delay);
+    int  SetOtherAzimuths(Spacecraft* spacecraft);
+
+/*
     int  SetAntennaToTxCenter(int pri_delay = 0);
     int  SetAntennaToGroundImpact(Spacecraft* spacecraft, int pri_delay = 0);
     int  SetAntennaFromHeldEncoder(unsigned short encoder);
+*/
 
     //-----------//
     // variables //

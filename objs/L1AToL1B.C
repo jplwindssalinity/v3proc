@@ -170,21 +170,26 @@ L1AToL1B::Convert(
         }
         qscat->cds.orbitStep = orbit_step;
 
+        //-------------//
+        // set antenna //
+        //-------------//
+
+        unsigned short held_encoder = *(frame->antennaPosition + spot_idx);
+        qscat->cds.heldEncoder = held_encoder;
+        qscat->SetEncoderAzimuth(held_encoder, 1);
+        qscat->SetOtherAzimuths(spacecraft);
+
         //----------------------------//
         // range and Doppler tracking //
         //----------------------------//
 
-        unsigned short held_encoder = *(frame->antennaPosition + spot_idx);
-        qscat->cds.heldEncoder = held_encoder;
-
-        // set antenna to transmit pulse center for response calculations
-        qscat->sas.SetAzimuthWithEncoder(held_encoder);
-        qscat->SetAntennaToTxCenter(1);
+//        qscat->sas.SetAzimuthWithEncoder(held_encoder);
+//        qscat->SetAntennaToTxCenter(1);
 
         SetDelayAndFrequency(spacecraft, qscat);
 
         if (outputSigma0ToStdout)
-            printf("%g ", antenna->azimuthAngle * rtd);
+            printf("%g ", antenna->txCenterAzimuthAngle * rtd);
 
         //---------------------------//
         // create a measurement spot //
@@ -220,8 +225,8 @@ L1AToL1B::Convert(
 		//---------------------//
 
         // correctly locate antenna first
-        qscat->sas.SetAzimuthWithEncoder(held_encoder);
-        qscat->SetAntennaToTxCenter(1);
+//        qscat->sas.SetAzimuthWithEncoder(held_encoder);
+//        qscat->SetAntennaToTxCenter(1);
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
             if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))
@@ -259,7 +264,7 @@ L1AToL1B::Convert(
 
 		CoordinateSwitch antenna_frame_to_gc =
 			AntennaFrameToGC(orbit_state, &(spacecraft->attitude),
-			antenna);
+			antenna, antenna->txCenterAzimuthAngle);
 		CoordinateSwitch gc_to_antenna =
 			antenna_frame_to_gc.ReverseDirection();
 
@@ -284,7 +289,7 @@ L1AToL1B::Convert(
 
 				k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
 					qscat->cds.currentBeamIdx,
-					qscat->sas.antenna.azimuthAngle, orbit_position,
+                    qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
 					meas->startSliceIdx);
 
 				//-----------------//
@@ -301,8 +306,8 @@ L1AToL1B::Convert(
 			else if (useBYUXfactor)
             {
                 // set antenna to ground impact for calculating X
-                qscat->sas.SetAzimuthWithEncoder(held_encoder);
-                qscat->SetAntennaToGroundImpact(spacecraft, 1);
+//                qscat->sas.SetAzimuthWithEncoder(held_encoder);
+//                qscat->SetAntennaToGroundImpact(spacecraft, 1);
 
 			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
@@ -320,8 +325,8 @@ L1AToL1B::Convert(
                 }
 
                 // set antenna back to transmit center
-                qscat->sas.SetAzimuthWithEncoder(held_encoder);
-                qscat->SetAntennaToTxCenter(1);
+//                qscat->sas.SetAzimuthWithEncoder(held_encoder);
+//                qscat->SetAntennaToTxCenter(1);
             }
             else
             {
@@ -330,7 +335,7 @@ L1AToL1B::Convert(
 			    exit(0);
             }
 			
-			meas->scanAngle = qscat->sas.antenna.azimuthAngle;
+			meas->scanAngle = qscat->sas.antenna.txCenterAzimuthAngle;
 			meas->beamIdx = qscat->cds.currentBeamIdx;
 			meas->txPulseWidth = qscat->ses.txPulseWidth;
 

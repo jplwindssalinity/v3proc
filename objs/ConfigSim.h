@@ -10,7 +10,6 @@ static const char rcs_id_configsim_h[] =
 	"@(#) $Id$";
 
 #include "SpacecraftSim.h"
-#include "QscatSimAccurate.h"
 #include "XTable.h"
 #include "L00.h"
 #include "L1A.h"

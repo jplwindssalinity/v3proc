@@ -252,7 +252,8 @@ QscatSim::ScatSim(
             float orbit_position = qscat->cds.OrbitFraction();
 
             if (! xTable.AddEntry(slice->XK, qscat->cds.currentBeamIdx,
-                qscat->sas.antenna.azimuthAngle, orbit_position, sliceno))
+                qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
+                sliceno))
             {
                 return(0);
             }
@@ -746,7 +747,8 @@ QscatSim::SetMeasurements(
 
                 Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
                     qscat->cds.currentBeamIdx,
-                    qscat->sas.antenna.azimuthAngle, orbit_position, sliceno);
+                    qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
+                    sliceno);
             }
 
             //--------------------------------//
@@ -754,7 +756,8 @@ QscatSim::SetMeasurements(
             //--------------------------------//
 
             gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                &(spacecraft->attitude), &(qscat->sas.antenna));
+                &(spacecraft->attitude), &(qscat->sas.antenna),
+                qscat->sas.antenna.txCenterAzimuthAngle);
             gc_to_antenna=gc_to_antenna.ReverseDirection();
             double Tp = qscat->ses.txPulseWidth;
 
@@ -786,7 +789,8 @@ QscatSim::SetMeasurements(
                 // to do the geometry work here that is normally done
                 // in radar_X() when using the K-factor approach.
                 gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                    &(spacecraft->attitude), &(qscat->sas.antenna));
+                    &(spacecraft->attitude), &(qscat->sas.antenna),
+                    qscat->sas.antenna.txCenterAzimuthAngle);
                 gc_to_antenna=gc_to_antenna.ReverseDirection();
                 double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
 

@@ -12,6 +12,7 @@ static const char rcs_id_accurategeom_c[] =
 #include "AccurateGeom.h"
 #include "Qscat.h"
 #include "Misc.h"
+
 #define OUTPUT_DETAILED_INFO 0
 
 //-----------------//
@@ -50,26 +51,11 @@ IntegrateSlices(
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
+		attitude, antenna, antenna->txCenterAzimuthAngle);
 
 	//-----------------------------------------------//
 	// command the range delay and Doppler frequency //
 	//-----------------------------------------------//
-
-/*
-    if (qscat->cds.useTracking)
-    {
-        // normal range and Doppler tracking
-        qscat->cds.CmdRangeAndDoppler(&(qscat->sas), &(qscat->ses));
-    }
-    else
-    {
-        // ideal range and Doppler tracking
-        fprintf(stderr,
-            "Need to implement ideal range and Doppler tracking\n");
-        exit(1);
-    }
-*/
 
 	//------------------//
 	// find beam center //
@@ -342,7 +328,7 @@ IntegrateSlice(
      //--------------------------------//
 
      CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-				                        attitude, antenna);
+        attitude, antenna, antenna->txCenterAzimuthAngle);
 
      //---------------------------------------------//
      // Determine look vector to centroid of slice  //
@@ -359,6 +345,11 @@ IntegrateSlice(
 				azimuth_step_size,range_gate_clipping, X);
      return(retval);
 }
+
+//----------------------------//
+// IntegrateFrequencyInterval //
+//----------------------------//
+
 int
 IntegrateFrequencyInterval(
     Spacecraft*  spacecraft,
@@ -387,7 +378,7 @@ IntegrateFrequencyInterval(
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
+		attitude, antenna, antenna->txCenterAzimuthAngle);
 
 
         //-------------------------------//
@@ -554,7 +545,7 @@ IntegrateFrequencyInterval(
 	    if(OUTPUT_DETAILED_INFO){
 	      double alt, lon, lat;
 	      tip.rTarget.GetAltLonGDLat(&alt,&lon,&lat);
-	      double report_azim=antenna->azimuthAngle;
+	      double report_azim=antenna->groundImpactAzimuthAngle;
 	      double rtt=IdealRtt(spacecraft,qscat);
               report_azim += rtt * antenna->spinRate/2.0;
               double gp2;

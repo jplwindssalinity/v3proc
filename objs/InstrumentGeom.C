@@ -34,7 +34,8 @@ CoordinateSwitch
 AntennaFrameToGC(
     OrbitState*  sc_orbit_state,
     Attitude*    sc_attitude,
-    Antenna*     antenna)
+    Antenna*     antenna,
+    double       azimuth_angle)
 {
     CoordinateSwitch total;
 
@@ -55,7 +56,7 @@ AntennaFrameToGC(
 
     // antenna pedestal to antenna frame
     Attitude att;
-    att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
+    att.Set(0.0, 0.0, azimuth_angle, 1, 2, 3);
     CoordinateSwitch ant_ped_to_ant_frame(att);
     total.Append(&ant_ped_to_ant_frame);
 
@@ -96,7 +97,7 @@ LocateSlices(
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
+		attitude, antenna, antenna->txCenterAzimuthAngle);
 
 	//------------------//
 	// find beam center //
@@ -206,7 +207,7 @@ LocateSliceCentroids(
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
+		attitude, antenna, antenna->txCenterAzimuthAngle);
 
 	//------------------//
 	// find beam center //
@@ -458,7 +459,7 @@ LocateSpot(
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
+		attitude, antenna, antenna->txCenterAzimuthAngle);
 
 	//---------------------------------------------------//
 	// calculate the look vector in the geocentric frame //
@@ -820,7 +821,8 @@ IdealRtt(
 	Attitude zero_rpy;
 	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
 	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
+        AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna),
+        qscat->sas.antenna.txCenterAzimuthAngle);
 
 	//-------------------------------------------//
 	// find the current beam's two-way peak gain //
@@ -829,7 +831,8 @@ IdealRtt(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if(qscat->cds.useBYURange && use_flags){
+	if(qscat->cds.useBYURange && use_flags)
+    {
 	  if(! GetBYUBoresight(spacecraft,qscat,&look,&azim)){
 	    return(0);
 	  }
@@ -906,7 +909,8 @@ IdealCommandedDoppler(
 	Attitude zero_rpy;
 	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
 	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
+        AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna),
+        qscat->sas.antenna.txCenterAzimuthAngle);
 
 	//-------------------------------------------//
 	// find the current beam's two-way peak gain //
@@ -966,16 +970,16 @@ GetBYUBoresight(
 	// Compute the BYU nominal boresight         //
 	//-------------------------------------------//
 
-	double azimuth_rate = qscat->sas.antenna.spinRate;
-        double rtt=IdealRtt(spacecraft,qscat);
-	*azim=azimuth_rate;
-	*azim*=0.5*rtt;
+    *azim = qscat->sas.antenna.groundImpactAzimuthAngle -
+        qscat->sas.antenna.txCenterAzimuthAngle;
 	
-        if(qscat->cds.currentBeamIdx==0){
+    if(qscat->cds.currentBeamIdx==0)
+    {
 	  *look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
 	  *azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
-        }
-	else{
+    }
+	else
+    {
 	  *look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
 	  *azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
 	}
@@ -1017,8 +1021,8 @@ IdealCommandedDopplerForRange(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
-		azimuth_rate, &look, &azim))
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+        beam, azimuth_rate, &look, &azim))
 	{
 		return(0);
 	}
@@ -1263,7 +1267,7 @@ FindPeakResponseAtFreq(
           "Error: FindPeakResponseAtFreq could not meet required freq_tol=%g Hz\n",
                 freq_tol);
             fprintf(stderr,"for target_freq=%g and scan_angle=%g.\n",
-                target_freq, qscat->sas.antenna.azimuthAngle*rtd);
+                target_freq, qscat->sas.antenna.txCenterAzimuthAngle*rtd);
             fprintf(stderr, "Actual frequency error was %g Hz.\n", min_dif);
             *look=best_look;
             *azim=best_azim;

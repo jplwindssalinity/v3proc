@@ -12,7 +12,6 @@ static const char rcs_id_qscatconfig_h[] =
 #include "Qscat.h"
 #include "ConfigList.h"
 #include "QscatSim.h"
-#include "QscatSimAccurate.h"
 
 //======================================================================
 // DESCRIPTION
@@ -48,12 +47,5 @@ int ConfigQscat(Qscat* qscat, ConfigList* config_list);
 //----------//
 
 int ConfigQscatSim(QscatSim* qscat_sim, ConfigList* config_list);
-
-//------------------//
-// QscatSimAccurate //
-//------------------//
-
-int ConfigQscatSimAccurate(QscatSimAccurate* qscat_sim,
-    ConfigList* config_list);
 
 #endif

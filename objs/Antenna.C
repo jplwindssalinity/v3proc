@@ -10,31 +10,14 @@ static const char rcs_id_antenna_c[] =
 #include "Antenna.h"
 #include "Constants.h"
 
-//=======//
-// Angle //
-//=======//
-
-/*
-Angle
-Angle::operator=(
-    const Angle  angle)
-{
-    if (angle < 0.0)
-        return(fmod(angle, two_pi) + two_pi);
-    else if (angle >= two_pi)
-        return(fmod(angle, two_pi));
-    else
-        return(angle);
-}
-*/
-
 //=========//
 // Antenna //
 //=========//
 
 Antenna::Antenna()
 :   numberOfBeams(0), startTime(0.0), startAzimuth(0.0), spinRate(0.0),
-    azimuthAngle(0.0)
+    encoderAzimuthAngle(0.0), txCenterAzimuthAngle(0.0),
+    groundImpactAzimuthAngle(0.0)
 {
     return;
 }
@@ -44,38 +27,39 @@ Antenna::~Antenna()
     return;
 }
 
-//--------------------------//
-// Antenna::SetAzimuthAngle //
-//--------------------------//
+//---------------------------------//
+// Antenna::SetEncoderAzimuthAngle //
+//---------------------------------//
 
 int
-Antenna::SetAzimuthAngle(
+Antenna::SetEncoderAzimuthAngle(
     double  angle)
 {
-    if (angle < 0.0)
-    {
-        azimuthAngle = fmod(angle, two_pi) + two_pi;
-    }
-    else if (angle >= two_pi)
-    {
-        azimuthAngle = fmod(angle, two_pi);
-    }
-    else
-    {
-        azimuthAngle = angle;
-    }
+    encoderAzimuthAngle = InRange(angle);
     return(1);
 }
 
-//-----------------------//
-// Antenna::TimeRotation //
-//-----------------------//
+//----------------------------------//
+// Antenna::SetTxCenterAzimuthAngle //
+//----------------------------------//
 
 int
-Antenna::TimeRotation(
-    double  time)
+Antenna::SetTxCenterAzimuthAngle(
+    double  angle)
 {
-    SetAzimuthAngle(azimuthAngle + time * spinRate);
+    txCenterAzimuthAngle = InRange(angle);
+    return(1);
+}
+
+//--------------------------------------//
+// Antenna::SetGroundImpactAzimuthAngle //
+//--------------------------------------//
+
+int
+Antenna::SetGroundImpactAzimuthAngle(
+    double  angle)
+{
+    groundImpactAzimuthAngle = InRange(angle);
     return(1);
 }
 
@@ -102,7 +86,7 @@ Antenna::UpdatePosition(
     double  time)
 {
     double angle = startAzimuth + (time - startTime) * spinRate;
-    SetAzimuthAngle(angle);
+    SetEncoderAzimuthAngle(angle);
 
     // The antenna frame is rotated away from the s/c body in yaw only.
 //    antennaFrame.Set(0, 0, angle, 3, 2, 1);
@@ -120,4 +104,24 @@ Antenna::Initialize(
 {
     startTime = time;
     return(1);
+}
+
+//==================//
+// Helper Functions //
+//==================//
+
+//---------//
+// InRange //
+//---------//
+
+double
+InRange(
+    double  angle)
+{
+    if (angle < 0.0)
+        return(fmod(angle, two_pi) + two_pi);
+    else if (angle >= two_pi)
+        return(fmod(angle, two_pi));
+    else
+        return(angle);
 }

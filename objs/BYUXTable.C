@@ -100,11 +100,14 @@ BYUXTable::GetX(
   float delta_freq = GetDeltaFreq(spacecraft, qscat);
   float orbit_position = qscat->cds.OrbitFraction();
   int beam_number = qscat->cds.currentBeamIdx;
-  float azim = qscat->sas.antenna.azimuthAngle;
+  float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
   int sliceno = meas->startSliceIdx;
   return(GetX(beam_number,azim,orbit_position,sliceno,delta_freq));
 }
 
+//-------------------------//
+// BYUXTable::GetDeltaFreq //
+//-------------------------//
 
 float
 BYUXTable::GetDeltaFreq(
@@ -124,9 +127,8 @@ BYUXTable::GetDeltaFreq(
         // Determine Nominal Look and Azimuth Angles //
 	//-------------------------------------------//
 
-	float look, azim;
-	azim = 0.5 * IdealRtt(spacecraft, qscat) * qscat->sas.antenna.spinRate +
-        qscat->sas.antenna.azimuthAngle;
+	float look;
+    float azim = 0.0;
 
 	switch(beam_number){
 	case 0:
@@ -145,19 +147,13 @@ BYUXTable::GetDeltaFreq(
         
 	Vector3 nominal_boresight;
     nominal_boresight.SphericalSet(1.0,look,azim);
-    Attitude att;
-    att.Set(0.0, 0.0, qscat->sas.antenna.azimuthAngle, 1, 2, 3);
-    CoordinateSwitch antennaPedestalToAntennaFrame(att);
-    nominal_boresight =
-        antennaPedestalToAntennaFrame.Forward(nominal_boresight);
 
 	//--------------------------------//
 	// generate the coordinate switch //
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
-
+		attitude, antenna, antenna->groundImpactAzimuthAngle);
 
         //--------------------------------//
         // Determine Delta Frequency      //
