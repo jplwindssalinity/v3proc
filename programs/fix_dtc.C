@@ -228,7 +228,7 @@ main(
         int retval = echo_info.Read(ifd);
         if (retval != 1)
         {
-            if (retval == 0)    // EOF
+            if (retval == -1)    // EOF
                 break;
             else
             {

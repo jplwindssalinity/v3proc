@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef ECHO_FUNCS_H
 #define ECHO_FUNCS_H
@@ -9,8 +9,10 @@
 static const char rcs_id_echo_funcs_h[] =
     "@(#) $Id$";
 
+#include <stdio.h>
 #include "Qscat.h"
 #include "Array.h"
+#include "Index.h"
 
 #define SPOTS_PER_FRAME  100
 
