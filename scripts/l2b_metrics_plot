@@ -1,0 +1,108 @@
+#!/bin/csh
+#-----------------------------------------------------------#
+# Copyright (C) 1998, California Institute of Technology.	#
+# U.S. Government sponsorship acknowledged.					#
+#-----------------------------------------------------------#
+
+#----------------------------------------------------------------------
+# NAME
+#		l2b_metrics_plot
+#
+# SYNOPSIS
+#		l2b_metrics_plot <base>
+#
+# DESCRIPTION
+#		Uses xmgr to generate PostScript plots of l2b metrics.
+#
+# OPTIONS
+#		None.
+#
+# OPERANDS
+#		The following operand is supported:
+#		<base>		Indicates the base name for metric files.
+#
+# EXAMPLES
+#		An example of a command line is:
+#			% l2b_metrics_plot l2b.dat.03-07
+#
+# ENVIRONMENT
+#		Not environment dependent
+#
+# EXIT STATUS
+#		The following exit values are returned:
+#		0	Program executed successfully
+#		>0	Program had an error
+#
+# NOTES
+#		None.
+#
+# AUTHOR
+#		James N. Huddleston
+#		hudd@acid.jpl.nasa.gov
+#
+# CONFIGURATION CONTROL
+#		"@(#) $Id$"
+#----------------------------------------------------------------------
+
+#------------------------#
+# Parse the command line #
+#------------------------#
+
+set command_name = $0
+set command_name = $command_name:t
+set opt_string = ""
+
+if ($#argv != 1) then
+  goto usage
+  exit(1)
+endif
+
+set base = $argv[1]
+
+#---------------#
+# get filenames #
+#---------------#
+
+set nspd = *$base*near_rms_spd*
+set ndir = *$base*near_rms_dir*
+set nbia = *$base*near_spd_bias*
+
+set sspd = *$base*sel_rms_spd*
+set sdir = *$base*sel_rms_dir*
+set sbia = *$base*sel_spd_bias*
+
+set skl = *$base*skill*
+
+#-----------------#
+# generate titles #
+#-----------------#
+
+set tspd = `grep '^@ title ' $nspd | sed -e s/'@ '//g -e s/'Nearest '//g`
+set tdir = `grep '^@ title ' $ndir | sed -e s/'@ '//g -e s/'Nearest '//g`
+set tbia = `grep '^@ title ' $nbia | sed -e s/'@ '//g -e s/'Nearest '//g`
+
+#------#
+# plot #
+#------#
+
+grbatch -device 2 -p /base1/sim/xmgrp/l2b_metrics_plot.p \
+  -graph 3 $sspd $nspd -autoscale xy -pexec "$tspd" \
+  -graph 2 $sdir $ndir -autoscale xy -pexec "$tdir" \
+  -graph 1 $sbia $nbia -autoscale xy -pexec "$tbia" \
+  -graph 0 $skl -autoscale xy \
+  -printfile $base.ps
+
+exit(0)
+
+end
+
+
+#---------------------------#
+# LABEL: usage				#
+#	Explain command usage	#
+#---------------------------#
+
+usage:
+  echo "usage: $command_name <base>"
+  exit(1)
+end
