@@ -52,6 +52,13 @@ public:
 
 	int		Close();
 
+	//--------//
+	// status //
+	//--------//
+
+	int		EndOfFile() { return(feof(_fp)); };
+	int		Error() { return(ferror(_fp)); };
+
 protected:
 
 	//-----------//
