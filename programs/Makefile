@@ -45,7 +45,9 @@ PROGRAMS = \
 	l2_kp \
 	l2a_s0 \
 	l1b_s0 \
-        kprtable_to_xmgr
+        kprtable_to_xmgr \
+        l2ags_s0
+
 
 #----------------------------------------------------------------------
 # default: make all executable programs
