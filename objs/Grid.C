@@ -29,7 +29,7 @@ Grid::~Grid()
 {
 	if (_grid != NULL)
 	{
-		free_array(_grid,2,_alongtrack_bins,_crosstrack_bins);
+		free_array(_grid,2,_crosstrack_bins,_alongtrack_bins);
 	}
 	return;
 }
@@ -38,6 +38,7 @@ int
 Grid::SetStartTime(double start_time)
 {
 	_start_time = start_time;
+	l17.start_time = _start_time;
 	return(1);
 }
 
@@ -59,6 +60,13 @@ double	alongtrack_size)
     _alongtrack_bins = (int) (_alongtrack_size / _alongtrack_res);
     _crosstrack_bins = (int) (_crosstrack_size / _crosstrack_res);
 
+	// Put data into L17 object for use in header.
+	l17.crosstrack_res = _crosstrack_res;
+	l17.alongtrack_res = _alongtrack_res;
+	l17.crosstrack_bins = _crosstrack_bins;
+	l17.alongtrack_bins = _alongtrack_bins;
+	l17.zero_index = (int) (_crosstrack_size/2.0/_crosstrack_res + 0.5);
+
 	//
 	// Set circular buffer tracking parameters to the beginning of the
 	// virtual grid.
@@ -68,13 +76,13 @@ double	alongtrack_size)
 	_ati_offset = 0;
 
 	_grid = (MeasList**)make_array(sizeof(MeasList),2,
-		_alongtrack_bins,_crosstrack_bins);
+		_crosstrack_bins,_alongtrack_bins);
 	if (_grid == NULL) return(0);
 
 	// Make an empty MeasList object, and copy it into each grid list.
 	MeasList empty_meas_list;
 
-	for (int i=0; i < _alongtrack_bins; i++)
+	for (int i=0; i < _crosstrack_bins; i++)
 	for (int j=0; j < _alongtrack_bins; j++)
 	{
 		_grid[i][j] = empty_meas_list;
@@ -110,7 +118,7 @@ if (ephemeris.GetSubtrackCoordinates(rground,_start_time,
 // side at cti = 0.
 //
 
-int cti = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res);
+int cti = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
 int vati = (int) (atd/_alongtrack_res);	// virtual along track index.
 
 if ((cti >= _crosstrack_bins) || (cti < 0))
@@ -151,7 +159,7 @@ int ati = vati - _ati_offset + _ati_start;
 if (ati >= _alongtrack_bins) ati -= _alongtrack_bins;
 
 // Add the measurement to the appropriate grid cell measurement list.
-_grid[ati][cti].Append(meas);
+_grid[cti][ati].Append(meas);
 
 return(1);
 
@@ -160,7 +168,7 @@ return(1);
 //
 // Grid::ShiftForward
 //
-// Shift the grid of measurements by one row.
+// Shift the grid of measurements by one alongtrack row.
 // The earliest row is written out to the output file and its storage
 // is reset to receive another row.  The circular buffer tracking indices
 // are updated appropriately so that the newly freed row is mapped to
@@ -176,12 +184,15 @@ Grid::ShiftForward()
 // Write out the earliest row of measurement lists.
 for (int i=0; i < _crosstrack_bins; i++)
 {
-	l17.frame.measList = _grid[_ati_start][i];
+	l17.frame.measList = _grid[i][_ati_start];
+	l17.frame.rev = 0;
+	l17.frame.cti = i;
+	l17.frame.ati = _ati_start;
 	if (l17.frame.measList.GetHead() != NULL)
 	{	// only write a L1.7 frame if it contains some measurements
 		l17.WriteDataRec();
 	}
-	_grid[_ati_start][i].FreeContents();	// prepare for new data
+	_grid[i][_ati_start].FreeContents();	// prepare for new data
 }
 
 // Update buffer indices.

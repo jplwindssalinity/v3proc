@@ -67,12 +67,27 @@ public:
 	GenericFile		file;
 	L17Frame		frame;
 
+	// resolutions are in km
+	double crosstrack_res;
+	double alongtrack_res;
+
+	int crosstrack_bins;
+	int alongtrack_bins;
+
+	// zero_index gives the crosstrack index of the cell centered at
+	// zero crosstrack distance.
+	double zero_index;
+	// start_time specifies the zero point of the along track axis.
+	double start_time;
+
 protected:
 
 	//-----------//
 	// variables //
 	//-----------//
 
+	int			_firstread;		// set to 1 for the 1st call to ReadDataRec.
+	int			_firstwrite;	// set to 1 for the 1st call to WriteDataRec.
 	StatusE		_status;
 };
 
