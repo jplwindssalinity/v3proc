@@ -15,12 +15,10 @@ static const char rcs_id_ephemeris_h[] =
 //======================================================================
 // CLASSES
 //		Ephemeris
-//		OrbitStateList
 //		OrbitState
 //======================================================================
 
 class Ephemeris;
-class OrbitStateList;
 class OrbitState;
 
 //======================================================================
@@ -41,7 +39,10 @@ public:
 OrbitState();
 ~OrbitState();
 
-// Setup
+// I/O
+
+int Write(int output_fd);
+int Read(int input_fd);
 
 //-----------//
 // variables //
@@ -55,43 +56,16 @@ Vector3 vsat;
 
 //======================================================================
 // CLASS
-//		OrbitStateList
-//
-// DESCRIPTION
-//		The OrbitStateList is a List (see List.[C,h]) of OrbitState objects.
-//======================================================================
-
-class OrbitStateList : public List<OrbitState>
-{
-public:
-
-//--------------//
-// construction //
-//--------------//
-
-OrbitStateList();
-~OrbitStateList();
-
-// Setup
-
-//-----------//
-// variables //
-//-----------//
-
-};
-
-//======================================================================
-// CLASS
 //		Ephemeris
 //
 // DESCRIPTION
 //		The Ephemeris object specifies the position of a spacecraft at a
-//		given time.  The orbit is stored as a list of time,EarthPosition
-//		pairs.  They can be computed using an orbit propagator, or read in
-//		from an external file.
+//		given time.  The orbit is stored as a list of OrbitState objects
+//		that define the position and velocity for a set of times.
+//		This data is read in from an external file.
 //======================================================================
 
-class Ephemeris
+class Ephemeris : public List<OrbitState>
 {
 public:
 
@@ -102,16 +76,18 @@ public:
 Ephemeris();
 ~Ephemeris();
 
-// Setup
+// I/O
 
-void Read(char *filename);
+int Write(int output_fd);
+int Read(int input_fd);
+
+// Interpolation and extraction.
+
 int GetPosition(double time, EarthPosition *rsat);
 
 //-----------//
 // variables //
 //-----------//
-
-OrbitStateList orbit_state_list;
 
 };
 

@@ -37,7 +37,8 @@ return;
 //
 // Ephemeris::GetPosition
 //
-// Interpolate an OrbitStateList to the desired time and return the position.
+// Interpolate this OrbitState List (ie., Ephemeris) to the desired time
+// and return the position.
 //
 
 int
@@ -47,7 +48,7 @@ EarthPosition *rsat)
 
 {
 
-OrbitState *current_state = orbit_state_list.GetCurrent();
+OrbitState *current_state = GetCurrent();
 
 //
 // Bracket the desired time in the ephemeris.
@@ -56,14 +57,14 @@ OrbitState *current_state = orbit_state_list.GetCurrent();
 while (current_state != NULL)
 {
 if (current_state->time < time)
-	current_state = orbit_state_list.GetNext();
+	current_state = GetNext();
 else
 	break;
 }
 while (current_state != NULL)
 {
 if (current_state->time > time)
-	current_state = orbit_state_list.GetPrev();
+	current_state = GetPrev();
 else
 	break;
 }
@@ -76,37 +77,14 @@ if (current_state == NULL)
 
 EarthPosition rsat1 = current_state->rsat;
 double time1 = current_state->time;
-current_state = orbit_state_list.GetNext();
+current_state = GetNext();
 EarthPosition rsat2 = current_state->rsat;
 double time2 = current_state->time;
 
-//*rsat = (time-time1)/(time2-time1)*(rsat2-rsat1) + rsat1;
+*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
 return(1);
 
 }
-
-//
-// OrbitStateList
-//
-
-//
-// Default constructor
-//
-
-OrbitStateList::OrbitStateList()
-{
-return;
-}
-
-//
-// Destructor
-//
-
-OrbitStateList::~OrbitStateList()
-{
-return;
-}
-
 
 //
 // OrbitState
