@@ -282,7 +282,7 @@ main(
 	//-----------------------//
 
 	L2B l2b;
-	l2b.SetFilename(l2b_file);
+	l2b.SetInputFilename(l2b_file);
 	if (! l2b.OpenForReading())
 	{
 		fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);

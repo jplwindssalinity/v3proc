@@ -32,10 +32,10 @@ L2A::~L2A()
 int
 L2A::WriteHeader()
 {
-	if (_fp == NULL)
+	if (_outputFp == NULL)
 		return(0);
 
-	if (! header.Write(_fp))
+	if (! header.Write(_outputFp))
 		return(0);
 
 	_headerTransferred = 1;
@@ -49,10 +49,10 @@ L2A::WriteHeader()
 int
 L2A::ReadHeader()
 {
-	if (_fp == NULL)
+	if (_inputFp == NULL)
 		return(0);
 
-	if (! header.Read(_fp))
+	if (! header.Read(_inputFp))
 		return(0);
 
 	_headerTransferred = 1;
@@ -66,15 +66,15 @@ L2A::ReadHeader()
 int
 L2A::ReadDataRec()
 {
-	if (_fp == NULL) return(0);
+	if (_inputFp == NULL) return(0);
 
 	if (! _headerTransferred)
 	{
-		if (! header.Read(_fp))
+		if (! header.Read(_inputFp))
 			return(0);
 		_headerTransferred = 1;
 	}
-	if (! frame.Read(_fp))
+	if (! frame.Read(_inputFp))
 		return(0);
 
 	return(1);
@@ -87,16 +87,16 @@ L2A::ReadDataRec()
 int
 L2A::WriteDataRec()
 {
-	if (_fp == NULL) return(0);
+	if (_outputFp == NULL) return(0);
 
 	if (! _headerTransferred)
 	{
-		if (! header.Write(_fp))
+		if (! header.Write(_outputFp))
 			return(0);
 		_headerTransferred = 1;
 	}
 
-	if (! frame.Write(_fp))
+	if (! frame.Write(_outputFp))
 		return(0);
 
 	return(1);
@@ -109,9 +109,9 @@ L2A::WriteDataRec()
 int
 L2A::ReadGSDataRec()
 {
-	if (_fp == NULL) return(0);
+	if (_inputFp == NULL) return(0);
 
-	if (! frame.ReadGS(_fp))
+	if (! frame.ReadGS(_inputFp))
 		return(0);
 
 	return(1);

@@ -308,7 +308,7 @@ Grid::ShiftForward(int do_composite)
 	// remember the L1B location //
 	//---------------------------//
 
-	FILE* fp = l1b.GetFp();
+	FILE* fp = l1b.GetInputFp();
 	long offset = ftell(fp);
 	if (offset == -1)
 		return(0);

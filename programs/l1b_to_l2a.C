@@ -261,8 +261,8 @@ main(
 
 	grid.Flush(use_compositing);
 
-	grid.l1b.Close();
-	grid.l2a.Close();
+	grid.l1b.CloseInputFile();
+	grid.l2a.CloseOutputFile();
 
 	return (0);
 }

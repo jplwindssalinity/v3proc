@@ -54,8 +54,8 @@ public:
 	// input/output //
 	//--------------//
 
-	int		ReadDataRec() { return(frame.spotList.Read(_fp)); };
-	int		WriteDataRec() { return(frame.spotList.Write(_fp)); };
+	int		ReadDataRec() { return(frame.spotList.Read(_inputFp)); };
+	int		WriteDataRec() { return(frame.spotList.Write(_outputFp)); };
 
 	//-----------//
 	// variables //

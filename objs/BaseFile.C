@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_basefile_c[] =
 	"@(#) $Id$";
@@ -16,30 +16,49 @@ static const char rcs_id_basefile_c[] =
 //==========//
 
 BaseFile::BaseFile()
-:	_filename(NULL), _fp(NULL)
+:	_inputFilename(NULL), _outputFilename(NULL), _inputFp(NULL),
+	_outputFp(NULL)
 {
 	return;
 }
 
 BaseFile::~BaseFile()
 {
-	Close();
-	free(_filename);
+	CloseInputFile();
+	CloseOutputFile();
+	free(_inputFilename);
+	free(_outputFilename);
 	return;
 }
 
-//-----------------------//
-// BaseFile::SetFilename //
-//-----------------------//
+//----------------------------//
+// BaseFile::SetInputFilename //
+//----------------------------//
 
 int
-BaseFile::SetFilename(
+BaseFile::SetInputFilename(
 	const char*		filename)
 {
-	if (_filename != NULL)
-		free(_filename);
-	_filename = strdup(filename);
-	if (_filename == NULL)
+	if (_inputFilename != NULL)
+		free(_inputFilename);
+	_inputFilename = strdup(filename);
+	if (_inputFilename == NULL)
+		return(0);
+	return(1);
+}
+
+//-----------------------------//
+// BaseFile::SetOutputFilename //
+//-----------------------------//
+
+int
+BaseFile::SetOutputFilename(
+	const char*		filename)
+{
+	if (_outputFilename != NULL)
+		free(_outputFilename);
+	_outputFilename = strdup(filename);
+	if (_outputFilename == NULL)
 		return(0);
 	return(1);
 }
@@ -51,18 +70,12 @@ BaseFile::SetFilename(
 int
 BaseFile::OpenForReading()
 {
-	if (_filename == NULL)
-	{
-		printf("Error: No filename specified for BaseFile::OpenForReading\n");
+	if (_inputFilename == NULL)
 		return(0);
-	}
 
-	_fp = fopen(_filename, "r");
-	if (_fp == NULL)
-	{
-		printf("Error: Can't open %s in BaseFile::OpenForReading\n",_filename);
+	_inputFp = fopen(_inputFilename, "r");
+	if (_inputFp == NULL)
 		return(0);
-	}
 
 	return(1);
 }
@@ -71,11 +84,8 @@ int
 BaseFile::OpenForReading(
 	const char*		filename)
 {
-	if (! SetFilename(filename))
-	{
-		printf("Error: No filename specified for BaseFile::OpenForReading\n");
+	if (! SetInputFilename(filename))
 		return(0);
-	}
 
 	if (! OpenForReading())
 		return(0);
@@ -90,18 +100,12 @@ BaseFile::OpenForReading(
 int
 BaseFile::OpenForWriting()
 {
-	if (_filename == NULL)
-	{
-		printf("Error: No filename specified for BaseFile::OpenForWriting\n");
+	if (_outputFilename == NULL)
 		return(0);
-	}
 
-	_fp = fopen(_filename, "w");
-	if (_fp == NULL)
-	{
-		printf("Error: Can't open %s in BaseFile::OpenForWriting\n",_filename);
+	_outputFp = fopen(_outputFilename, "w");
+	if (_outputFp == NULL)
 		return(0);
-	}
 
 	return(1);
 }
@@ -110,11 +114,8 @@ int
 BaseFile::OpenForWriting(
 	const char*		filename)
 {
-	if (! SetFilename(filename))
-	{
-		printf("Error: No filename specified for BaseFile::OpenForWriting\n");
+	if (! SetOutputFilename(filename))
 		return(0);
-	}
 
 	if (! OpenForWriting())
 		return(0);
@@ -122,14 +123,14 @@ BaseFile::OpenForWriting(
 	return(1);
 }
 
-//----------------------//
-// BaseFile::RewindFile //
-//----------------------//
+//---------------------------//
+// BaseFile::RewindInputFile //
+//---------------------------//
 
 int
-BaseFile::RewindFile()
+BaseFile::RewindInputFile()
 {
-	rewind(_fp);
+	rewind(_inputFp);
 	return(1);
 }
 
@@ -142,7 +143,7 @@ BaseFile::Read(
 	char*		buffer,
 	size_t		bytes)
 {
-	if (fread(buffer, bytes, 1, _fp) != 1)
+	if (fread(buffer, bytes, 1, _inputFp) != 1)
 		return(0);
 	return(1);
 }
@@ -156,22 +157,37 @@ BaseFile::Write(
 	char*		buffer,
 	size_t		bytes)
 {
-	if (fwrite(buffer, bytes, 1, _fp) != 1)
+	if (fwrite(buffer, bytes, 1, _outputFp) != 1)
 		return(0);
 	return(1);
 }
 
-//-----------------//
-// BaseFile::Close //
-//-----------------//
+//--------------------------//
+// BaseFile::CloseInputFile //
+//--------------------------//
 
 int
-BaseFile::Close()
+BaseFile::CloseInputFile()
 {
-	if (_fp != NULL)
+	if (_inputFp != NULL)
 	{
-		fclose(_fp);
-		_fp = NULL;
+		fclose(_inputFp);
+		_inputFp = NULL;
+	}
+	return(1);
+}
+
+//---------------------------//
+// BaseFile::CloseOutputFile //
+//---------------------------//
+
+int
+BaseFile::CloseOutputFile()
+{
+	if (_outputFp != NULL)
+	{
+		fclose(_outputFp);
+		_outputFp = NULL;
 	}
 	return(1);
 }

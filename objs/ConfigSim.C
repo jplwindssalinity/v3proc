@@ -1210,7 +1210,8 @@ ConfigL00(
 	char* l00_filename = config_list->Get(L00_FILE_KEYWORD);
 	if (l00_filename == NULL)
 		return(0);
-	l00->SetFilename(l00_filename);
+	l00->SetInputFilename(l00_filename);
+	l00->SetOutputFilename(l00_filename);
 
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
@@ -1268,7 +1269,8 @@ ConfigL1A(
 	char* l1a_filename = config_list->Get(L1A_FILE_KEYWORD);
 	if (l1a_filename == NULL)
 		return(0);
-	l1a->SetFilename(l1a_filename);
+	l1a->SetInputFilename(l1a_filename);
+	l1a->SetOutputFilename(l1a_filename);
 
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
@@ -1326,7 +1328,8 @@ ConfigL1B(
 	char* l1b_filename = config_list->Get(L1B_FILE_KEYWORD);
 	if (l1b_filename == NULL)
 		return(0);
-	l1b->SetFilename(l1b_filename);
+	l1b->SetInputFilename(l1b_filename);
+	l1b->SetOutputFilename(l1b_filename);
 
 	return(1);
 }
@@ -1414,7 +1417,8 @@ ConfigL2A(
 	char* l2a_filename = config_list->Get(L2A_FILE_KEYWORD);
 	if (l2a_filename == NULL)
 		return(0);
-	l2a->SetFilename(l2a_filename);
+	l2a->SetInputFilename(l2a_filename);
+	l2a->SetOutputFilename(l2a_filename);
 
 	return(1);
 }
@@ -1435,7 +1439,8 @@ ConfigL2B(
 	char* l2b_filename = config_list->Get(L2B_FILE_KEYWORD);
 	if (l2b_filename == NULL)
 		return(0);
-	l2b->SetFilename(l2b_filename);
+	l2b->SetInputFilename(l2b_filename);
+	l2b->SetOutputFilename(l2b_filename);
 
 	return(1);
 }

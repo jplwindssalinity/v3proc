@@ -54,11 +54,11 @@ public:
 	// input/output //
 	//--------------//
 
-	int		ReadHeader() { return(header.Read(_fp)); };
-	int		WriteHeader() { return(header.Write(_fp)); };
+	int		ReadHeader() { return(header.Read(_inputFp)); };
+	int		WriteHeader() { return(header.Write(_outputFp)); };
 
-	int		ReadDataRec() { return(frame.swath.ReadL2B(_fp)); };
-	int		WriteDataRec() { return(frame.swath.WriteL2B(_fp)); };
+	int		ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
+	int		WriteDataRec() { return(frame.swath.WriteL2B(_outputFp)); };
 
 	int		WriteVctr(const char* filename, const int rank);
 
