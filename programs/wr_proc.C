@@ -858,8 +858,8 @@ main(
                 }
                 if (opt_classify_func)
                 {
-                    metric_val = 0.06836 * mem_spd - 0.0166 * dir_val +
-                        1.0377 * dif;
+                    metric_val = 0.0428 * mem_spd + 0.0010 * dir_val +
+                        0.2492 * dif;
                 }
                 fprintf(val_apts_ofp, "%g %g %g\n", lon_deg, lat_deg,
                     metric_val);
@@ -905,7 +905,7 @@ main(
                     if (metric_val > 1)
                         max_ctype_idx = 2;
                     else
-                        max_ctype_idx = 1;
+                        max_ctype_idx = 0;
                 }
                 fprintf(class_apts_ofp, "%g %g %d\n", lon_deg, lat_deg,
                     max_ctype_idx);
