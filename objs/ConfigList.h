@@ -119,6 +119,7 @@ public:
 	int		GetChar(const char* keyword, char* value);
 	int		GetInt(const char* keyword, int* value);
 	int		GetDouble(const char* keyword, double* value);
+	int		GetFloat(const char* keyword, float* value);
 
 protected:
 

@@ -403,3 +403,34 @@ ConfigList::GetDouble(
 	*value = tmp;
 	return(1);
 }
+
+//----------------------//
+// ConfigList::GetFloat //
+//----------------------//
+// sets the value to the retrieved float
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetFloat(
+	const char*		keyword,
+	float*			value)
+{
+	char* string = Get(keyword);
+	if (! string)
+		return(0);
+
+	float tmp;
+	if (sscanf(string, "%g", &tmp) != 1)
+	{
+		if (_logFlag)
+		{
+			fprintf(_errorFp, "Error converting value to float\n");
+			fprintf(_errorFp, "  Keyword: %s\n", keyword);
+			fprintf(_errorFp, "    Value: %s\n", string);
+		}
+		return(0);
+	}
+
+	*value = tmp;
+	return(1);
+}
