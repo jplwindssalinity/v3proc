@@ -70,7 +70,7 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
-
+#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
@@ -87,6 +87,7 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //

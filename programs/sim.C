@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include "List.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
+#include "AngleInterval.h"
 /*
 #include "Misc.h"
 #include "Array.h"
@@ -91,6 +92,7 @@ template class List<OrbitState>;
 template class List<WindVectorPlus>;
 template class List<long>;
 template class List<OffsetList>;
+template class List<AngleInterval>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 template class TrackerBase<unsigned char>;
