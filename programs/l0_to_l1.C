@@ -158,7 +158,7 @@ main(
 		{
 			switch (l0.GetStatus())
 			{
-			case Product::ERROR_READING_BUFFER:
+			case Product::ERROR_READING_FRAME:
 				fprintf(stderr, "%s: error reading Level 0 data\n", command);
 				exit(1);
 				break;
