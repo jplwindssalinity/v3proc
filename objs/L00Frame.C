@@ -27,6 +27,7 @@ L00Frame::L00Frame()
 
 L00Frame::~L00Frame()
 {
+	Deallocate();
 	return;
 }
 

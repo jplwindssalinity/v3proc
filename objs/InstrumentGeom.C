@@ -356,6 +356,11 @@ LocateSliceCentroids(
 		}
 	}
 					
+	if (gains)
+	{
+		free(gains);
+	}
+
 	return(1);
 }
 
