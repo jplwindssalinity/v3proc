@@ -62,6 +62,7 @@ public:
     //--------------//
 
     int  ReadOldStyle(const char* filename);
+    int  ReadPolarimetric(const char* filename);
 
     //---------//
     // analyze //
@@ -175,3 +176,4 @@ protected:
 };
 
 #endif
+

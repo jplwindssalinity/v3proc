@@ -14,6 +14,7 @@ static const char rcs_id_gmf_c[] =
 #include "GMF.h"
 #include "GSparameters.h"
 #include "Meas.h"
+#include "Misc.h"
 #include "Interpolate.h"
 #include "Constants.h"
 #include "Beam.h"
@@ -177,6 +178,111 @@ int GMF::ReadOldStyle(
 	}
 
 	close(fd);
+	return(1);
+}
+
+
+//---------------------//
+// GMF:ReadPolarimetric//
+//---------------------//
+
+int GMF::ReadPolarimetric(
+	const char*		filename)
+{
+	FILE* ifp = fopen(filename, "r");
+	if (!ifp)
+		return(0);
+
+	_metCount = 4;
+
+	_incCount = 26;
+	_incMin = 14.0 * dtr;
+	_incMax = 64.0 * dtr;
+	_incStep = 2.0 * dtr;
+
+	_spdCount = 51;
+	_spdMin = 0.0;
+	_spdMax = 50.0;
+	_spdStep = 1.0;
+        int file_min_spd_idx = 4;
+	_chiCount = 72;
+	_chiStep = two_pi / _chiCount;		// 5 degrees
+
+	if (! _Allocate())
+		return(0);
+
+        while(!feof(ifp)){
+	  char string[40];
+          float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh, 
+	    phhvh;
+       
+          // Read ASCII line of ipnuts and outputs to model function.
+          fscanf(ifp,"%s",string);
+	  spd = atof(string);
+          fscanf(ifp,"%s",string);
+	  theta = atof(string)*dtr;
+          fscanf(ifp,"%s",string);
+	  chi = atof(string)*dtr;
+          fscanf(ifp,"%s",string);
+	  s0hh = atof(string);
+          fscanf(ifp,"%s",string);
+	  s0vv = atof(string);
+          fscanf(ifp,"%s",string);
+	  s0hv = atof(string);
+          fscanf(ifp,"%s",string);
+	  s0vvhv = atof(string);
+          fscanf(ifp,"%s",string);
+	  pvvhv = atof(string);
+          fscanf(ifp,"%s",string);
+	  s0hhvh = atof(string);
+          fscanf(ifp,"%s",string);
+	  phhvh = atof(string);
+
+	  // Compute indexes into table
+          int ispd, ichi, itheta;
+          ispd=_SpdToIndex(spd);
+          itheta=_IncToIndex(theta);
+          ichi=_ChiToIndex(chi);
+         
+          // Compute table values
+          s0vv=pow(10.0,0.1*s0vv);
+          s0hv=pow(10.0,0.1*s0hv);
+	  s0hh=pow(10.0,0.1*s0hh);
+	  if(s0vvhv==-99.0) s0vvhv=0.0;
+          else s0vvhv=pow(10.0,0.1*s0vvhv)*SGN(pvvhv);
+	  if(s0hhvh==-99.0) s0hhvh=0.0;
+          else s0hhvh=pow(10.0,0.1*s0hhvh)*SGN(phhvh);
+
+          // Store values in table
+          int imet;
+          imet=_MetToIndex(Meas::VV_MEAS_TYPE);
+          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vv;
+          imet=_MetToIndex(Meas::HH_MEAS_TYPE);
+          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hh;
+          imet=_MetToIndex(Meas::VV_VH_CORR_MEAS_TYPE);
+          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
+          imet=_MetToIndex(Meas::HH_HV_CORR_MEAS_TYPE);
+          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
+	}
+	//----------------------//
+	// zero the 0 m/s model //
+	//----------------------//
+
+	for (int spd_idx =0; spd_idx < file_min_spd_idx; spd_idx++){
+	  for (int met_idx = 0; met_idx < _metCount; met_idx++)
+	    {
+		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+		{
+			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+			{
+			  float tmp= *(*(*(*(_value+met_idx)+inc_idx)+file_min_spd_idx)+chi_idx);
+			  tmp*=(float)spd_idx/(float)file_min_spd_idx;
+			  *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = tmp;
+			}
+		}
+	    }
+	}
+	fclose(ifp);
 	return(1);
 }
 
