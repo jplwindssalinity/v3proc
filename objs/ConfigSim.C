@@ -1,15 +1,14 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_configsim_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "ConfigSim.h"
 #include "ConfigSimDefs.h"
-#include "InstrumentSim.h"
-#include "InstrumentSimAccurate.h"
+#include "QscatSimAccurate.h"
 #include "SpacecraftSim.h"
 #include "XTable.h"
 #include "BYUXTable.h"
@@ -456,388 +455,6 @@ ConfigUniformRandomVelocity(
 }
 ********************************************/
 
-//------------------//
-// ConfigInstrument //
-//------------------//
-
-int
-ConfigInstrument(
-	Instrument*		instrument,
-	ConfigList*		config_list)
-{
-	//-----------------------//
-	// configure the antenna //
-	//-----------------------//
-
-	if (! ConfigAntenna(&(instrument->antenna), config_list))
-		return(0);
-
-	//--------------------//
-	// configure RF stuff //
-	//--------------------//
-
-	float chirp_rate;	// kHz/ms
-	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
-		return(0);
-	instrument->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
-
-	float chirp_start_m;	// kHz/ms
-	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
-		return(0);
-	instrument->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
-
-	float chirp_rate_b;		// kHz
-	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
-		return(0);
-	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
-
-	float system_temperature;		// K
-	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
-		return(0);
-	instrument->systemTemperature = system_temperature;
-
-	float base_transmit_freq;	// GHz
-	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
-		&base_transmit_freq))
-	{
-		return(0);
-	}
-	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
-
-	float s_bw;
-	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
-		return(0);
-	instrument->scienceSliceBandwidth = s_bw * KHZ_TO_HZ;
-
-	int s_count;
-	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
-		return(0);
-	instrument->scienceSlicesPerSpot = s_count;
-
-	float g_bw;
-	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD, &g_bw))
-		return(0);
-	instrument->guardSliceBandwidth = g_bw * KHZ_TO_HZ;
-
-	int g_count;
-	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
-		return(0);
-	instrument->guardSlicesPerSide = g_count;
-
-	float noise_bandwidth;
-	if (! config_list->GetFloat(NOISE_BANDWIDTH_KEYWORD, &noise_bandwidth))
-		return(0);
-	instrument->noiseBandwidth = noise_bandwidth * KHZ_TO_HZ;
-
-	float transmit_power;
-	/**** parameter in config file should be in Watts ***/
-	if (! config_list->GetFloat(TRANSMIT_POWER_KEYWORD, &transmit_power))
-		return(0);
-	instrument->transmitPower = transmit_power;
-
-	float echo_receiver_gain;
-	/**** parameter in config file should be in dB ***/
-	if (! config_list->GetFloat(ECHO_RECEIVER_GAIN_KEYWORD,
-		&echo_receiver_gain))
-	{
-		return(0);
-	}
-	echo_receiver_gain=(float)pow(10.0,0.1*echo_receiver_gain);
-	instrument->echo_receiverGain = echo_receiver_gain;
-
-	float noise_receiver_gain;
-	/**** parameter in config file should be in dB ***/
-	if (! config_list->GetFloat(NOISE_RECEIVER_GAIN_KEYWORD,
-		&noise_receiver_gain))
-	{
-		return(0);
-	}
-	noise_receiver_gain=(float)pow(10.0,0.1*noise_receiver_gain);
-	instrument->noise_receiverGain = noise_receiver_gain;
-
-	float system_loss;
-	/**** parameter in config file should be in dB ***/
-	if (! config_list->GetFloat(SYSTEM_LOSS_KEYWORD, &system_loss))
-		return(0);
-	system_loss=(float)pow(10.0,0.1*system_loss);
-	instrument->systemLoss = system_loss;
-
-	//--------------//
-	// orbit period //
-	//--------------//
-
-	unsigned int orbit_ticks;
-	if (! config_list->GetUnsignedInt(ORBIT_TICKS_PER_ORBIT_KEYWORD,
-		&orbit_ticks))
-	{
-		return(0);
-	}
-	instrument->orbitTicksPerOrbit = orbit_ticks;
-
-	//-------//
-	// FLAGS //
-	//-------//
-
-	int sim_kpc_flag;
-	if (! config_list->GetInt(SIM_KPC_FLAG_KEYWORD, &sim_kpc_flag))
-		return(0);
-	instrument->simKpcFlag = sim_kpc_flag;
-
-	int sim_corr_kpm_flag;
-	if (! config_list->GetInt(SIM_CORR_KPM_FLAG_KEYWORD, &sim_corr_kpm_flag))
-		return(0);
-	instrument->simCorrKpmFlag = sim_corr_kpm_flag;
-
-	int sim_uncorr_kpm_flag;
-	if (! config_list->GetInt(SIM_UNCORR_KPM_FLAG_KEYWORD,&sim_uncorr_kpm_flag))
-		return(0);
-	instrument->simUncorrKpmFlag = sim_uncorr_kpm_flag;
-
-	int sim_kpri_flag;
-	if (! config_list->GetInt(SIM_KPRI_FLAG_KEYWORD, &sim_kpri_flag))
-		return(0);
-	instrument->simKpriFlag = sim_kpri_flag;
-
-	double corr_kpmdB;
-	if (! config_list->GetDouble(CORR_KPM_KEYWORD, &corr_kpmdB))
-		return(0);
-	// convert to real units and un-normalize
-	instrument->corrKpm = pow(10.0,0.1*corr_kpmdB) - 1.0;
-
-	// don't waste time generating zero variance rv's
-	if (corr_kpmdB == 0.0) instrument->simCorrKpmFlag = 0;
-
-	return(1);
-}
-
-//---------------------//
-// ConfigInstrumentSim //
-//---------------------//
-
-int
-ConfigInstrumentSim(
-	InstrumentSim*	instrument_sim,
-	ConfigList*		config_list)
-{
-	//--------------------------------//
-	// Configure the Antenna Simulator//
-	//--------------------------------//
-
-	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
-		return(0);
-
-
-        //--------------------------------------//
-        // Read in the land map file            //
-        //--------------------------------------//
-	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-        int use_land;
-        config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
-        if(! instrument_sim->landMap.Initialize(landfile, use_land)){
-	  fprintf(stderr,"Cannot Initialize Land Map\n");
-          exit(0);
-	} 
-	
-	//-----------------------//
-	// initialize PTGR noise //
-	//-----------------------//
-
-	float kp_ptgr, ptgr_bias, ptgr_corrlength;
-	if (! config_list->GetFloat(PTGR_NOISE_KP_KEYWORD, &kp_ptgr))
-	{
-		fprintf(stderr,"Could not find PtGr noise variance in config file\n");
-		return(0);
-	}
-	if (! config_list->GetFloat(PTGR_NOISE_BIAS_KEYWORD, &ptgr_bias))
-	{
-		fprintf(stderr,"Could not find PtGr noise mean in config file\n");
-		return(0);
-	}
-
-	if (! config_list->GetFloat(PTGR_NOISE_CORRLENGTH_KEYWORD,
-		&ptgr_corrlength))
-	{
-		fprintf(stderr,
-			"Could not find PtGr noise correlation length in config file\n");
-		return(0);
-	}
-	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
-	instrument_sim->ptgrNoise.SetVariance(kp_ptgr*kp_ptgr);
-	ptgr_bias=pow(10,0.1*ptgr_bias)-1.0;
-	instrument_sim->ptgrNoise.SetMean(ptgr_bias);
-	instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
-	instrument_sim->ptgrNoise.SetSeed(PTGR_SEED);
-	instrument_sim->ptgrNoise.Initialize();
-
-	int uniform_sigma_field;
-
-	config_list->WarnForMissingKeywords();
-	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD,
-		&uniform_sigma_field))
-	{
-		uniform_sigma_field=0;		// default value
-	}
-	instrument_sim->uniformSigmaField=uniform_sigma_field;
-
-	int output_X_to_stdout;
-	if (! config_list->GetInt(OUTPUT_X_TO_STDOUT_KEYWORD,
-		&output_X_to_stdout))
-	{
-		output_X_to_stdout=0; // default value
-	}
-	instrument_sim->outputXToStdout=output_X_to_stdout;
-
-	int use_kfactor;
-	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
-		use_kfactor=0; // default value
-	instrument_sim->useKfactor=use_kfactor;
-
-	int create_xtable;
-	if (! config_list->GetInt(CREATE_XTABLE_KEYWORD, &create_xtable))
-		create_xtable=0; // default value
-	instrument_sim->createXtable=create_xtable;
-
-	int compute_xfactor;
-	if (! config_list->GetInt(COMPUTE_XFACTOR_KEYWORD, &compute_xfactor))
-		compute_xfactor=0; // default value
-	instrument_sim->computeXfactor=compute_xfactor;
-
-	int use_BYU_xfactor;
-	if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
-		use_BYU_xfactor=0; // default value
-	instrument_sim->useBYUXfactor=use_BYU_xfactor;
-
-	int range_gate_clipping;
-	if (! config_list->GetInt(RANGE_GATE_CLIPPING_KEYWORD, &range_gate_clipping))
-		range_gate_clipping=0; // default value
-	instrument_sim->rangeGateClipping=range_gate_clipping;
-
-	int apply_doppler_error;
-	if (! config_list->GetInt(APPLY_DOPPLER_ERROR_KEYWORD, &apply_doppler_error))
-		apply_doppler_error=0; // default value
-	instrument_sim->applyDopplerError=apply_doppler_error;
-
-	config_list->DoNothingForMissingKeywords();
-	instrument_sim->simVs1BCheckfile =
-		config_list->Get(SIM_CHECKFILE_KEYWORD);
-
-	config_list->ExitForMissingKeywords();
-
-        
-	/****** Exactly one of these must be true ***/
-	if (use_kfactor + compute_xfactor + use_BYU_xfactor != 1){
-	        fprintf(stderr,"ConfigInstrumentSim:X computation incorrectly specified.\n");
-		return(0);
-	}
-	if (compute_xfactor){
-	  int num_look_steps;
-	  if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
-		return(0);
-	  instrument_sim->numLookStepsPerSlice=num_look_steps;
-	  
-	  float azimuth_integration_range;
-	  if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-				      &azimuth_integration_range))
-	    {
-	      return(0);
-	    }
-	  instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
-
-	  float azimuth_step_size;
-	  if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-				      &azimuth_step_size))
-	    {
-	      return(0);
-	    }
-	  instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
-	}
-
-	else if (use_kfactor){
-	  if (!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
-	    return(0);
-	}
-        else if (use_BYU_xfactor){
-	  if (!ConfigBYUXTable(&(instrument_sim->BYUX),config_list))
-	    return(0);
-	}
-	if (create_xtable){
-	  if (!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
-	    return(0);
-	}
-        if(range_gate_clipping){
-	  if (!compute_xfactor){
-		fprintf(stderr,"ConfigInstrumentSim::Range Gate Clipping requires computed X factor.\n");
-		return(0);
-	  }
-	}
-        if(apply_doppler_error){
-          float doppler_bias;
-	  if (! config_list->GetFloat(DOPPLER_BIAS_KEYWORD,
-				      &doppler_bias))
-	    {
-	      return(0);
-	    }
-	  instrument_sim->dopplerBias=doppler_bias*KHZ_TO_HZ;
-	}
-	return(1);
-}
-
-//-----------------------------//
-// ConfigInstrumentSimAccurate //
-//-----------------------------//
-
-int
-ConfigInstrumentSimAccurate(
-	InstrumentSimAccurate*	instrument_sim,
-	ConfigList*				config_list)
-{
-	if (! ConfigInstrumentSim(instrument_sim, config_list))
-		return(0);
-	int num_look_steps;
-	if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
-		return(0);
-	instrument_sim->numLookStepsPerSlice=num_look_steps;
-
-	float azimuth_integration_range;
-	if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-			&azimuth_integration_range))
-	{
-		return(0);
-	}
-	instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
-
-	float azimuth_step_size;
-	if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-			&azimuth_step_size))
-	{
-		return(0);
-	}
-	instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
-
-
-	return(1);
-}
-
-//------------------//
-// ConfigAntennaSim //
-//------------------//
-
-int
-ConfigAntennaSim(
-	AntennaSim*		antenna_sim,
-	ConfigList*		config_list)
-{
-	double start_time;
-	if (! config_list->GetDouble(ANTENNA_START_TIME_KEYWORD, &start_time))
-		return(0);
-	antenna_sim->startTime = start_time;
-	double start_azi;
-	if (! config_list->GetDouble(ANTENNA_START_AZIMUTH_KEYWORD, &start_azi))
-		return(0);
-	antenna_sim->startAzimuth = start_azi*dtr;
-	return(1);
-}
-
 //---------------//
 // ConfigAntenna //
 //---------------//
@@ -847,8 +464,6 @@ ConfigAntenna(
 	Antenna*		antenna,
 	ConfigList*		config_list)
 {
-	double tmp_double;
-
 	//-----------------------//
 	// configure the antenna //
 	//-----------------------//
@@ -860,21 +475,6 @@ ConfigAntenna(
 		return(0);
 	}
 	antenna->numberOfBeams = number_of_beams;
-
-	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &tmp_double))
-	{
-		fprintf(stderr,"Could not find PRI per beam in config file\n");
-		return(0);
-	}
-	antenna->priPerBeam = (float)number_of_beams *
-		quantize(tmp_double / (float)number_of_beams, PRF_CLOCK_RESOLUTION);
-
-	int tmp_int;
-	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &tmp_int))
-		return(0);
-
-	unsigned int values = 1 << tmp_int;
-	antenna->SetNumberOfEncoderValues(values);
 
 	double roll, pitch, yaw;
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
@@ -903,29 +503,19 @@ ConfigAntenna(
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
 
-	//---------//
-	// encoder //
-	//---------//
+    //----------------//
+    // initialization //
+    //----------------//
 
-	if (! config_list->GetInt(ENCODER_A_OFFSET_KEYWORD, &tmp_int))
-		return(0);
-	antenna->encoderAOffsetDn = tmp_int;
+    double start_time;
+    if (! config_list->GetDouble(ANTENNA_START_TIME_KEYWORD, &start_time))
+        return(0);
+    antenna->startTime = start_time;
 
-	if (! config_list->GetDouble(ENCODER_DELAY_KEYWORD, &tmp_double))
-		return(0);
-	antenna->encoderDelay = tmp_double;
-
-	//------------//
-	// spin rates //
-	//------------//
-
-	if (! config_list->GetDouble(COMMANDED_SPIN_RATE_KEYWORD, &tmp_double))
-		return(0);
-	antenna->commandedSpinRate = tmp_double * rpm_to_radps;
-
-	if (! config_list->GetDouble(ACTUAL_SPIN_RATE_KEYWORD, &tmp_double))
-		return(0);
-	antenna->actualSpinRate = tmp_double * rpm_to_radps;
+    double start_azi;
+    if (! config_list->GetDouble(ANTENNA_START_AZIMUTH_KEYWORD, &start_azi))
+        return(0);
+    antenna->startAzimuth = start_azi*dtr;
 
 	//---------------------//
 	// configure each beam //
@@ -955,7 +545,6 @@ ConfigBeam(
 {
 	char keyword[1024];
 	char number[8];
-	double tmp_double;
 	char tmp_char;
 
 	sprintf(number, "%d", beam_number);
@@ -982,26 +571,6 @@ ConfigBeam(
 		return(0);
 	}
 
-	double pulse_width;		// ms
-	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &pulse_width))
-	{
-		fprintf(stderr,"Could not find beam pulse width in config file\n");
-		return(0);
-	}
-	beam->txPulseWidth = quantize(pulse_width * MS_TO_S,
-		TX_PULSE_WIDTH_RESOLUTION);
-
-	double gate_width;		// ms
-	substitute_string(BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &gate_width))
-	{
-		fprintf(stderr,"Could not find beam receiver gate width in config file\n");
-		return(0);
-	}
-	beam->rxGateWidth = quantize(gate_width * MS_TO_S,
-		RX_GATE_WIDTH_RESOLUTION);
-
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
@@ -1011,9 +580,20 @@ ConfigBeam(
 	}
 	if (! beam->ReadBeamPattern(pattern_file))
 	{
-		fprintf(stderr,"Error while reading beam %d pattern file\n",beam_number);
+        fprintf(stderr,
+            "Error while reading beam %d pattern file\n",beam_number);
 		return(0);
 	}
+
+    //-----------//
+    // peak gain //
+    //-----------//
+
+    substitute_string(BEAM_x_PEAK_GAIN_KEYWORD, "x", number, keyword);
+    double peak_gain;    // dB (including one-way waveguide loss)
+    if (! config_list->GetDouble(keyword, &peak_gain))
+        return(0);
+    beam->peakGain = peak_gain;
 
 	//-----------------------------------------------------------------//
 	// Setup one mechanical boresight, or two electrical boresights.
@@ -1034,7 +614,8 @@ ConfigBeam(
 		}
 		else
 		{
-			fprintf(stderr,"Missing mechanical boresight azimuth in config file\n");
+			fprintf(stderr,
+                "Missing mechanical boresight azimuth in config file\n");
 			return(0);
 		}
 	}
@@ -1060,87 +641,6 @@ ConfigBeam(
 	}
 
 	config_list->ExitForMissingKeywords();
-
-	// ms
-	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &tmp_double))
-	{
-		fprintf(stderr,"Could not find beam time offset in config file\n");
-		return(0);
-	}
-	beam->timeOffset = quantize(tmp_double * MS_TO_S, PRF_CLOCK_RESOLUTION);
-
-	//----------------//
-	// Range Tracking //
-	//----------------//
-
-	int use_rgc;
-	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
-	{
-		fprintf(stderr,"Could not find use RGC flag in config file\n");
-		return(0);
-	}
-	beam->useRangeTracker = use_rgc;
-	if (use_rgc)
-	{
-		substitute_string(BEAM_x_RGC_FILE_KEYWORD, "x", number, keyword);
-		char* rgc_file = config_list->Get(keyword);
-		if (rgc_file == NULL)
-		{
-			fprintf(stderr,"Could not find RGC file name in config file\n");
-			return(0);
-		}
-
-		if (! beam->rangeTracker.ReadBinary(rgc_file))
-		{
-			fprintf(stderr, "ConfigBeam: error reading RGC file %s\n",
-				rgc_file);
-			return(0);
-		}
-
-	}
-
-	//------------------//
-	// Doppler Tracking //
-	//------------------//
-
-	int use_dtc;
-	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
-	{
-		fprintf(stderr,"Could not find use DTC flag in config file\n");
-		return(0);
-	}
-	beam->useDopplerTracker = use_dtc;
-	if (use_dtc)
-	{
-		substitute_string(BEAM_x_DTC_FILE_KEYWORD, "x", number, keyword);
-		char* dtc_file = config_list->Get(keyword);
-		if (dtc_file == NULL)
-		{
-			fprintf(stderr,"Could not find DTC file name in config file\n");
-			return(0);
-		}
-
-		if (! beam->dopplerTracker.ReadBinary(dtc_file))
-		{
-			fprintf(stderr, "ConfigBeam: error reading DTC file %s\n",
-				dtc_file);
-			return(0);
-		}
-	}
-
-	//-------------------------//
-	// parameters for tracking //
-	//-------------------------//
-
-	if (use_rgc || use_dtc)
-	{
-		substitute_string(BEAM_x_PEAK_OFFSET_DN_KEYWORD, "x", number, keyword);
-		int tmp_int;
-		if (! config_list->GetInt(keyword, &tmp_int))
-			return(0);
-		beam->sasBeamOffsetDn = (unsigned int)tmp_int;
-	}
 
 	return(1);
 }

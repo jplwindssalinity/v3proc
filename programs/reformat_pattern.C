@@ -68,7 +68,6 @@ static const char rcs_id[] =
 #include "Array.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
-#include "Instrument.h"
 #include "Antenna.h"
 #include "Tracking.h"
 #include "Tracking.C"

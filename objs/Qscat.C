@@ -29,7 +29,11 @@ SesBeamInfo::~SesBeamInfo()
 //==========//
 
 QscatSes::QscatSes()
-:    txPulseWidth(0.0)
+:   txPulseWidth(0.0), txDoppler(0.0), txFrequency(0.0), rxGateDelay(0.0),
+    baseTxFrequency(0.0), pri(0.0), transmitPower(0.0), rxGainEcho(0.0),
+    rxGainNoise(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
+    scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
+    guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0)
 {
     return;
 }
@@ -158,16 +162,51 @@ QscatSes::CmdRxGateWidthDn(
 }
 
 //----------------------------//
+// QscatSes::CmdRxGateWidthEu //
+//----------------------------//
+
+int
+QscatSes::CmdRxGateWidthEu(
+    int    beam_idx,
+    float  rx_gate_width_eu)
+{
+    beamInfo[beam_idx].rxGateWidth = rx_gate_width_eu;
+    return(1);
+}
+
+//----------------------------//
 // QscatSes::CmdRxGateDelayDn //
 //----------------------------//
 
 int
 QscatSes::CmdRxGateDelayDn(
-    int            beam_idx,
     unsigned char  rx_gate_delay_dn)
 {
-    beamInfo[beam_idx].rxGateDelay = (float)rx_gate_delay_dn *
-        RX_GATE_DELAY_CMD_RESOLUTION;
+    rxGateDelay = (float)rx_gate_delay_dn * RX_GATE_DELAY_CMD_RESOLUTION;
+    return(1);
+}
+
+//-----------------------------//
+// QscatSes::CmdRxGateDelayFdn //
+//-----------------------------//
+
+int
+QscatSes::CmdRxGateDelayFdn(
+    float  rx_gate_delay_fdn)
+{
+    rxGateDelay = rx_gate_delay_fdn * RX_GATE_DELAY_CMD_RESOLUTION;
+    return(1);
+}
+
+//----------------------------//
+// QscatSes::CmdRxGateDelayEu //
+//----------------------------//
+
+int
+QscatSes::CmdRxGateDelayEu(
+    float  rx_gate_delay_eu)
+{
+    rxGateDelay = rx_gate_delay_eu;
     return(1);
 }
 
@@ -180,6 +219,19 @@ QscatSes::CmdTxDopplerDn(
     short  tx_doppler_dn)
 {
     txDoppler = (float)tx_doppler_dn * TX_FREQUENCY_CMD_RESOLUTION;
+    txFrequency = baseTxFrequency + txDoppler;
+    return(1);
+}
+
+//--------------------------//
+// QscatSes::CmdTxDopplerEu //
+//--------------------------//
+
+int
+QscatSes::CmdTxDopplerEu(
+    float  tx_doppler_eu)
+{
+    txDoppler = tx_doppler_eu;
     txFrequency = baseTxFrequency + txDoppler;
     return(1);
 }
@@ -277,6 +329,18 @@ QscatSas::ApplyAzimuthShift(
 unsigned short
 QscatSas::GetEncoder()
 {
+    unsigned short encoder = AzimuthToEncoder(antenna.azimuthAngle);
+    return(encoder);
+}
+
+//----------------------------//
+// QscatSas::AzimuthToEncoder //
+//----------------------------//
+
+unsigned short
+QscatSas::AzimuthToEncoder(
+    double  azimuth)
+{
     //------------------------------------------//
     // determine the encoder and encoder offset //
     //------------------------------------------//
@@ -300,7 +364,7 @@ QscatSas::GetEncoder()
     // calculate the encoder //
     //-----------------------//
 
-    double angle = antenna.azimuthAngle - encoder_offset;
+    double angle = azimuth - encoder_offset;
     if (angle < 0.0)
         angle += two_pi;
 
@@ -342,6 +406,7 @@ QscatSas::CmdSpinRate(
 //=============//
 
 CdsBeamInfo::CdsBeamInfo()
+:   rxGateWidthDn(0)
 {
     return;
 }
@@ -356,9 +421,9 @@ CdsBeamInfo::~CdsBeamInfo()
 //==========//
 
 QscatCds::QscatCds()
-:   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useTracking(0),
+:   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
     orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), time(0.0),
-    eqxTime(0.0)
+    eqxTime(0.0), previousEncoder(0)
 {
     return;
 }
@@ -422,6 +487,23 @@ QscatCds::OrbitFraction()
     return(frac);
 }
 
+//--------------------------------//
+// QscatCds::GetTrackingOrbitStep //
+//--------------------------------//
+
+unsigned short
+QscatCds::GetTrackingOrbitStep()
+{
+    float ticks_per_orbit_step = (float)orbitTicksPerOrbit /
+        (float)DOPPLER_ORBIT_STEPS;
+    unsigned short orbit_step =
+        (unsigned short)((float)(orbitTime % orbitTicksPerOrbit) /
+        ticks_per_orbit_step);
+    orbit_step %= DOPPLER_ORBIT_STEPS;
+
+    return(orbit_step);
+}
+
 //------------------------------//
 // QscatCds::GetCurrentBeamInfo //
 //------------------------------//
@@ -430,6 +512,106 @@ CdsBeamInfo*
 QscatCds::GetCurrentBeamInfo()
 {
     return(&(beamInfo[currentBeamIdx]));
+}
+
+//------------------------------//
+// QscatCds::GetAssumedSpinRate //
+//------------------------------//
+// returns the assumed spin rate in rpm
+
+double
+QscatCds::GetAssumedSpinRate()
+{
+    switch(spinRate)
+    {
+        case LOW_SPIN_RATE:
+            return(18.0);
+            break;
+        case HIGH_SPIN_RATE:
+            return(19.8);
+            break;
+        default:
+            return(0.0);
+            break;
+    }
+    return(0.0);
+}
+
+//---------------------------//
+// QscatCds::EstimateEncoder //
+//---------------------------//
+
+unsigned short
+QscatCds::EstimateEncoder()
+{
+    //-------------//
+    // dereference //
+    //-------------//
+
+    CdsBeamInfo* cds_beam_info = GetCurrentBeamInfo();
+    RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
+
+    //---------------------------------------//
+    // get previous pulses raw encoder value //
+    //---------------------------------------//
+
+    unsigned int int_encoder = (unsigned int)(previousEncoder & 0x7fff);
+
+    //----------------------//
+    // apply encoder offset //
+    //----------------------//
+
+    unsigned int encoder_offset;
+    if (previousEncoder & 0x8000)
+    {
+        // encoder B
+        encoder_offset = ENCODER_B_OFFSET;
+    }
+    else
+    {
+        // encoder A
+        encoder_offset = ENCODER_A_OFFSET;
+    }
+    int_encoder += encoder_offset;
+
+    //-------------------//
+    // apply beam offset //
+    //-------------------//
+
+    unsigned int beam_offset;
+    if (currentBeamIdx == 0)
+    {
+        // beam A
+        beam_offset = BEAM_A_OFFSET;
+    }
+    else
+    {
+        // beam B
+        beam_offset = BEAM_B_OFFSET;
+    }
+    int_encoder += beam_offset;
+
+    //-------------------------------------------//
+    // apply internal delay and centering offset //
+    //-------------------------------------------//
+
+    float spin_rate = GetAssumedSpinRate();
+    unsigned short ant_dn_per_pri = (unsigned short)
+        ( ( ( ((float)priDn / 10.0) * 32768.0 * spin_rate) /
+        (60.0 * 1000.0)) + 0.5);
+    float rx_range_mem = range_tracker->rxRangeMem;
+
+    int_encoder += (unsigned int)( (float)ant_dn_per_pri * (1.0 +
+        (rx_range_mem + (float)txPulseWidthDn) /
+        ((float)priDn * 4.0)) + 0.5);
+
+    //-----------------//
+    // mod the encoder //
+    //-----------------//
+
+    unsigned short encoder = (unsigned short)(int_encoder % ENCODER_N);
+
+    return(encoder);
 }
 
 //-------------------//
@@ -489,7 +671,7 @@ QscatCds::CmdPriEu(
 {
     priDn = (unsigned char)(pri / PRI_CMD_RESOLUTION + 0.5);
 
-    if (! qscat_ses->CmdTxPulseWidthDn(priDn))
+    if (! qscat_ses->CmdPriDn(priDn))
         return(0);
 
     return(1);
@@ -555,6 +737,12 @@ QscatCds::CmdRangeAndDoppler(
     QscatSas*  qscat_sas,
     QscatSes*  qscat_ses)
 {
+    //-------------------------------//
+    // estimate the encoder position //
+    //-------------------------------//
+
+    unsigned short encoder = EstimateEncoder();
+
     //-------------//
     // dereference //
     //-------------//
@@ -574,93 +762,23 @@ QscatCds::CmdRangeAndDoppler(
         ticks_per_orbit_step);
     orbit_step = orbit_step % DOPPLER_ORBIT_STEPS;
 
-    //------------------------------------//
-    // get raw encoder value from antenna //
-    //------------------------------------//
-
-    unsigned short encoder = qscat_sas->GetEncoder();
-
-    //----------------------//
-    // apply encoder offset //
-    //----------------------//
-
-    unsigned int sas_ant_pos = encoder & 0x7fff;
-
-    unsigned int encoder_offset;
-    if (encoder & 0x8000)
-    {
-        // encoder B
-        encoder_offset = ENCODER_B_OFFSET;
-    }
-    else
-    {
-        // encoder A
-        encoder_offset = ENCODER_A_OFFSET;
-    }
-    sas_ant_pos += encoder_offset;
-
-    //-------------------//
-    // apply beam offset //
-    //-------------------//
-
-    unsigned int beam_offset;
-    if (currentBeamIdx == 0)
-    {
-        // beam A
-        beam_offset = BEAM_A_OFFSET;
-    }
-    else
-    {
-        // beam B
-        beam_offset = BEAM_B_OFFSET;
-    }
-    sas_ant_pos += beam_offset;
-
-    //-------------------------------------------//
-    // apply internal delay and centering offset //
-    //-------------------------------------------//
-   
-    float spin_rate;
-    switch(spinRate)
-    {
-        case LOW_SPIN_RATE:
-            spin_rate = 18.0;
-            break;
-        case HIGH_SPIN_RATE:
-            spin_rate = 19.8;
-            break;
-        default:
-            return(0);
-            break;
-    }
-    unsigned short ant_dn_per_pri = (unsigned short)
-        ( ( ( ((float)priDn / 10.0) * 32768.0 * spin_rate) /
-        (60.0 * 1000.0)) + 0.5);
-    unsigned char prev_rx_delay_dn = range_tracker->prevRxDelayDn;
-
-    sas_ant_pos += (unsigned int)(
-        (float)ant_dn_per_pri * (1.0 +
-        ((float)prev_rx_delay_dn + (float)txPulseWidthDn) /
-        ((float)priDn * 4.0)) + 0.5);
-
     //---------------------------//
     // command the rx gate delay //
     //---------------------------//
 
-    unsigned short azimuth_step = (unsigned short)(sas_ant_pos % ENCODER_N);
     unsigned char rx_gate_delay_dn;
     float rx_gate_delay_fdn;
-    range_tracker->GetRxGateDelay(orbit_step, azimuth_step,
+    range_tracker->GetRxGateDelay(orbit_step, encoder,
         cds_beam_info->rxGateWidthDn, txPulseWidthDn, &rx_gate_delay_dn,
         &rx_gate_delay_fdn);
-    qscat_ses->CmdRxGateDelayDn(currentBeamIdx, rx_gate_delay_dn);
+    qscat_ses->CmdRxGateDelayDn(rx_gate_delay_dn);
 
     //-------------------------------//
     // command the Doppler frequency //
     //-------------------------------//
 
     short doppler_dn;
-    doppler_tracker->GetCommandedDoppler(orbit_step, azimuth_step,
+    doppler_tracker->GetCommandedDoppler(orbit_step, encoder,
         rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
     qscat_ses->CmdTxDopplerDn(doppler_dn);
 
@@ -672,6 +790,7 @@ QscatCds::CmdRangeAndDoppler(
 //=======//
 
 Qscat::Qscat()
+:   systemLoss(0.0), systemTemperature(0.0)
 {
     return;
 }

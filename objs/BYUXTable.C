@@ -1,22 +1,14 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.  //
-// U.S. Government sponsorship acknowledged.		    //
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_accurategeom_c[] =
 	"@(#) $Id$";
 
-#include "CoordinateSwitch.h"
-#include "Ephemeris.h"
-#include "Attitude.h"
-#include "Antenna.h"
-#include "InstrumentGeom.h"
-#include "Spacecraft.h"
-#include "Instrument.h"
-#include "LonLat.h"
-#include "Meas.h"
-#include "XTable.h"
 #include "BYUXTable.h"
+#include "Qscat.h"
+#include "InstrumentGeom.h"
 
 BYUXTable::BYUXTable()
 {
@@ -51,45 +43,58 @@ BYUXTable::Read(
   return(1);
 }
 
-float
-BYUXTable::GetXTotal(
-     Spacecraft*         spacecraft,
-     Instrument*         instrument,
-     Meas*               meas)
-{
-  float X=GetXTotal(spacecraft,instrument,meas,instrument->transmitPower*
-		     instrument->echo_receiverGain);
-  return(X);
-}
+//----------------------//
+// BYUXTable::GetXTotal //
+//----------------------//
 
 float
 BYUXTable::GetXTotal(
-     Spacecraft*         spacecraft,
-     Instrument*         instrument,
-     Meas*               meas,
-     float               PtGr)
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    Meas*        meas)
 {
-  float X=GetX(spacecraft,instrument,meas);
-  int beam_number = instrument->antenna.currentBeamIdx;  
-  float Gp2;
-  if(beam_number==0) Gp2=pow(10.0,2*0.1*G0H);
-  else Gp2=pow(10.0,2*0.1*G0V);
-  float lambda = speed_light_kps / instrument->transmitFreq;
+    float X = GetXTotal(spacecraft, qscat, meas,
+        qscat->ses.transmitPower * qscat->ses.rxGainEcho);
+    return(X);
+}
+
+//----------------------//
+// BYUXTable::GetXTotal //
+//----------------------//
+
+float
+BYUXTable::GetXTotal(
+    Spacecraft*   spacecraft,
+    Qscat*        qscat,
+    Meas*         meas,
+    float         PtGr)
+{
+  float X=GetX(spacecraft, qscat, meas);
+  int beam_number = qscat->cds.currentBeamIdx;  
+
+  float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
+  float Gp2 = pow(10.0, 2.0 * 0.1 * peak_gain);
+
+  float lambda = speed_light_kps / qscat->ses.txFrequency;
   X*=PtGr*lambda*lambda*Gp2;
-  X/=64*pi*pi*pi*instrument->systemLoss;
+  X /= 64.0*pi*pi*pi*qscat->systemLoss;
   return(X);
 }
+
+//-----------------//
+// BYUXTable::GetX //
+//-----------------//
 
 float
 BYUXTable::GetX(
-     Spacecraft*         spacecraft,
-     Instrument*         instrument,
-     Meas*               meas)
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    Meas*        meas)
 {
-  float delta_freq = GetDeltaFreq(spacecraft,instrument);
-  float orbit_position = instrument->OrbitFraction();
-  int beam_number = instrument->antenna.currentBeamIdx;
-  float azim = instrument->antenna.azimuthAngle;
+  float delta_freq = GetDeltaFreq(spacecraft, qscat);
+  float orbit_position = qscat->cds.OrbitFraction();
+  int beam_number = qscat->cds.currentBeamIdx;
+  float azim = qscat->sas.antenna.azimuthAngle;
   int sliceno = meas->startSliceIdx;
   return(GetX(beam_number,azim,orbit_position,sliceno,delta_freq));
 }
@@ -97,22 +102,20 @@ BYUXTable::GetX(
 
 float
 BYUXTable::GetDeltaFreq(
-     Spacecraft*         spacecraft,
-     Instrument*         instrument)
+    Spacecraft*  spacecraft,
+    Qscat*       qscat)
 {
-
-        //-----------//
+    //-----------//
 	// predigest //
 	//-----------//
 
-	Antenna* antenna = &(instrument->antenna);
+	Antenna* antenna = &(qscat->sas.antenna);
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
-	int beam_number = antenna->currentBeamIdx;
-  
+	int beam_number = qscat->cds.currentBeamIdx;
 
 	//-------------------------------------------//
-        // Determine Nominal Look and Azimuth Angles //
+    // Determine Nominal Look and Azimuth Angles //
 	//-------------------------------------------//
 
 	float look, azim;
@@ -128,14 +131,16 @@ BYUXTable::GetDeltaFreq(
 	  exit(0);
 	}
 
-	azim=0.5*IdealRtt(spacecraft,instrument)*instrument->antenna.actualSpinRate+ instrument->antenna.azimuthAngle;
+	azim = 0.5 * IdealRtt(spacecraft, qscat) * qscat->sas.antenna.spinRate +
+        qscat->sas.antenna.azimuthAngle;
         
 	Vector3 nominal_boresight;
-        nominal_boresight.SphericalSet(1.0,look,azim);
-        Attitude att;
-	att.Set(0.0, 0.0, instrument->antenna.azimuthAngle, 1, 2, 3);
-        CoordinateSwitch antennaPedestalToAntennaFrame(att);
-        nominal_boresight=antennaPedestalToAntennaFrame.Forward(nominal_boresight);
+    nominal_boresight.SphericalSet(1.0,look,azim);
+    Attitude att;
+    att.Set(0.0, 0.0, qscat->sas.antenna.azimuthAngle, 1, 2, 3);
+    CoordinateSwitch antennaPedestalToAntennaFrame(att);
+    nominal_boresight =
+        antennaPedestalToAntennaFrame.Forward(nominal_boresight);
 
 	//--------------------------------//
 	// generate the coordinate switch //
@@ -150,10 +155,11 @@ BYUXTable::GetDeltaFreq(
         //--------------------------------//
 
 	TargetInfoPackage tip;
-	if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
-			     nominal_boresight, &tip)){
+	if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat,
+        nominal_boresight, &tip))
+    {
 		fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
-                fprintf(stderr,"Probably means earth_intercept not found\n");
+        fprintf(stderr,"Probably means earth_intercept not found\n");
 		exit(1);		
 	}
 	return(tip.basebandFreq);

@@ -145,13 +145,19 @@ ConfigQscatCds(
     QscatCds*    qscat_cds,
     ConfigList*  config_list)
 {
-    //-------------------//
-    // use tracking flag //
-    //-------------------//
+    //----------------//
+    // tracking flags //
+    //----------------//
 
-    int use_tracking;
-    if (! config_list->GetInt(USE_TRACKING_KEYWORD, &use_tracking))
+    int use_rgc;
+    if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
         return(0);
+    qscat_cds->useRgc = use_rgc;
+
+    int use_dtc;
+    if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
+        return(0);
+    qscat_cds->useDtc = use_dtc;
 
     //--------------//
     // orbit period //
@@ -180,7 +186,7 @@ ConfigQscatCds(
         sprintf(number, "%d", beam_number);
 
         char keyword[1024];
-        if (use_tracking)
+        if (use_rgc)
         {
             //----------------//
             // range tracking //
@@ -192,8 +198,14 @@ ConfigQscatCds(
                 return(0);
 
             if (! qscat_cds->LoadRgc(beam_idx, rgc_file))
+            {
+                fprintf(stderr, "Error loading RGC file %s\n", rgc_file);
                 return(0);
+            }
+        }
 
+        if (use_dtc)
+        {
             //------------------//
             // Doppler tracking //
             //------------------//
@@ -204,7 +216,10 @@ ConfigQscatCds(
                 return(0);
 
             if (! qscat_cds->LoadDtc(beam_idx, dtc_file))
+            {
+                fprintf(stderr, "Error loading DTC file %s\n", dtc_file);
                 return(0);
+            }
         }
     }
 
@@ -245,9 +260,10 @@ ConfigQscat(
     // transmit pulse width //
     //----------------------//
 
-    float tx_pulse_width;
+    float tx_pulse_width;    // ms
     if (! config_list->GetFloat(TX_PULSE_WIDTH_KEYWORD, &tx_pulse_width))
         return(0);
+    tx_pulse_width *= MS_TO_S;
     qscat->cds.CmdTxPulseWidthEu(tx_pulse_width, &(qscat->ses));
 
     //-----//
@@ -290,7 +306,7 @@ ConfigQscat(
     //-----------//
 
     float spin_rate;
-    if (! config_list->GetFloat(SPIN_RATE_KEYWORD, &spin_rate))
+    if (! config_list->GetFloat(ANTENNA_SPIN_RATE_KEYWORD, &spin_rate))
         return(0);
     if (spin_rate == 18.0)
     {
@@ -327,9 +343,10 @@ ConfigQscat(
 
         char keyword[1024];
         substitute_string(BEAM_x_RX_GATE_WIDTH_KEYWORD, "x", number, keyword);
-        float rx_gate_width;
+        float rx_gate_width;    // ms
         if (! config_list->GetFloat(keyword, &rx_gate_width))
             return(0);
+        rx_gate_width *= MS_TO_S;
         qscat->cds.CmdRxGateWidthEu(beam_idx, rx_gate_width, &(qscat->ses));
     }
 
@@ -349,13 +366,20 @@ ConfigQscatSim(
     // land map //
     //----------//
 
-    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-    int use_land;
-    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
-    if(! qscat_sim->landMap.Initialize(landfile, use_land))
+    int use_land_map;
+    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land_map);
+    if (use_land_map)
     {
-        fprintf(stderr,"Cannot Initialize Land Map\n");
-        exit(0);
+        char* landfile = config_list->Get(LANDMAP_FILE_KEYWORD);
+        if (! qscat_sim->landMap.Initialize(landfile, use_land_map))
+        {
+            fprintf(stderr, "Cannot Initialize Land Map\n");
+            return(0);
+        }
+    }
+    else
+    {
+        qscat_sim->landMap.Initialize(NULL, use_land_map);
     }
 
     //-----------------------//

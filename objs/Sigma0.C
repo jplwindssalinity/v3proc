@@ -1,6 +1,6 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //
@@ -10,17 +10,12 @@
 static const char rcs_id_sigma0_c[] =
 	"@(#) $Id$";
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include "Sigma0.h"
+#include "CoordinateSwitch.h"
 #include "Spacecraft.h"
-#include "Instrument.h"
 #include "Meas.h"
+#include "Sigma0.h"
+#include "Qscat.h"
 #include "Distributions.h"
-#include "Constants.h"
-#include "Wind.h"
 
 //
 // radar_X
@@ -33,7 +28,7 @@ static const char rcs_id_sigma0_c[] =
 //
 // Inputs:
 //	spacecraft = pointer to current spacecraft object
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
@@ -43,62 +38,65 @@ static const char rcs_id_sigma0_c[] =
 
 int
 radar_X(
-	CoordinateSwitch*	gc_to_antenna,
-	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	Meas*				meas,
-	double*				X)
+    CoordinateSwitch*  gc_to_antenna,
+    Spacecraft*        spacecraft,
+    Qscat*             qscat,
+    Meas*              meas,
+    double*            X)
 {
-	double lambda = speed_light_kps / instrument->transmitFreq;
+	double lambda = speed_light_kps / qscat->ses.txFrequency;
 	double A3db = 1.0;
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
 	double roundTripTime = 2.0 * R / speed_light_kps;
 
-	int ib = instrument->antenna.currentBeamIdx;
+    Beam* beam = qscat->GetCurrentBeam();
 	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
 
-	if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi,
-             roundTripTime,instrument->antenna.actualSpinRate, &GatGar))
-	  return(0);
+	if(! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+        qscat->sas.antenna.spinRate, &GatGar))
+    {
+        return(0);
+    }
 
-	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
-		A3db * lambda*lambda /
-		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
+	*X = qscat->ses.transmitPower * qscat->ses.rxGainEcho * GatGar *
+		A3db * lambda*lambda / (64*pi*pi*pi * R*R*R*R * qscat->systemLoss);
 	return(1);
 }
 
 // Same as above, but takes a value of PtGr
 int
 radar_X_PtGr(
-	CoordinateSwitch*	gc_to_antenna,
-	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	Meas*				meas,
-	float				PtGr,
-	double*				X)
+    CoordinateSwitch*  gc_to_antenna,
+    Spacecraft*        spacecraft,
+    Qscat*             qscat,
+    Meas*              meas,
+    float              PtGr,
+    double*            X)
 {
-	double lambda = speed_light_kps / instrument->transmitFreq;
+	double lambda = speed_light_kps / qscat->ses.txFrequency;
 	double A3db = 1.0;
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
 	double roundTripTime = 2.0 * R / speed_light_kps;
 
-	int ib = instrument->antenna.currentBeamIdx;
+    Beam* beam = qscat->GetCurrentBeam();
 	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	if( ! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-		instrument->antenna.actualSpinRate,&GatGar))
-	return(0);
+	if( ! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+        qscat->sas.antenna.spinRate, &GatGar))
+    {
+        return(0);
+    }
 
-	*X = PtGr * GatGar *
-		A3db * lambda*lambda /
-		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
+	*X = PtGr * GatGar * A3db * lambda*lambda /
+        (64*pi*pi*pi * R*R*R*R * qscat->systemLoss);
+
 	return(1);
 }
 
@@ -122,7 +120,7 @@ radar_X_PtGr(
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
 //	spacecraft = pointer to current spacecraft object
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
 //	Kfactor = Radar equation correction factor for this cell.
 //	sigma0 = true sigma0 to assume.
@@ -132,18 +130,18 @@ radar_X_PtGr(
 
 int
 sigma0_to_Esn_slice(
-	CoordinateSwitch*	gc_to_antenna,
-	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	Meas*				meas,
-	float				Kfactor,
-	float				sigma0,
-	float*				Esn_slice,
-	float*				XK,
-    float*              true_Es,
-    float*              true_En,
-    float*              var_esn_slice)
-
+    CoordinateSwitch*  gc_to_antenna,
+    Spacecraft*        spacecraft,
+    Qscat*             qscat,
+    Meas*              meas,
+    float              Kfactor,
+    float              sigma0,
+    int                sim_kpc_flag,
+    float*             Esn_slice,
+    float*             XK,
+    float*             true_Es,
+    float*             true_En,
+    float*             var_esn_slice)
 {
 	//----------------------------------------------------------------------//
 	// Compute the radar parameter X which includes gain, loss, and geometry
@@ -152,10 +150,10 @@ sigma0_to_Esn_slice(
 	//----------------------------------------------------------------------//
 
 	double X;
-	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
+	radar_X(gc_to_antenna, spacecraft, qscat, meas, &X);
 	*XK = X*Kfactor;
-    return(sigma0_to_Esn_slice_given_X(instrument,meas,*XK,sigma0,Esn_slice,
-           true_Es,true_En,var_esn_slice));
+    return(sigma0_to_Esn_slice_given_X(qscat, meas, *XK, sigma0, sim_kpc_flag,
+        Esn_slice, true_Es, true_En, var_esn_slice));
 }
 
 //
@@ -177,7 +175,7 @@ sigma0_to_Esn_slice(
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
 //	spacecraft = pointer to current spacecraft object
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
 //	Xfactor = Radar equation X value for this cell.
 //	sigma0 = true sigma0 to assume.
@@ -186,14 +184,15 @@ sigma0_to_Esn_slice(
 
 int
 sigma0_to_Esn_slice_given_X(
-	Instrument*			instrument,
-	Meas*				meas,
-	float				X,
-	float				sigma0,
-	float*				Esn_slice,
-    float*              true_Es,
-    float*              true_En,
-    float*              var_esn_slice)
+    Qscat*       qscat,
+    Meas*        meas,
+    float        X,
+    float        sigma0,
+    int          sim_kpc_flag,
+    float*       Esn_slice,
+    float*       true_Es,
+    float*       true_En,
+    float*       var_esn_slice)
 {
 	//------------------------//
 	// Sanity check on sigma0 //
@@ -206,9 +205,9 @@ sigma0_to_Esn_slice_given_X(
 		exit(-1);
 	}
 
-	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->txPulseWidth;
-	double Tg = beam->rxGateWidth;
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tp = qscat->ses.txPulseWidth;
+	double Tg = ses_beam_info->rxGateWidth;
 	double Bs = meas->bandwidth;
 
 	//------------------------------------------------------------------------//
@@ -222,8 +221,8 @@ sigma0_to_Esn_slice_given_X(
 	// Noise power spectral densities referenced the same way as the signal.
 	//------------------------------------------------------------------------//
 
-	double N0_echo = bK * instrument->systemTemperature *
-		instrument->echo_receiverGain / instrument->systemLoss;
+	double N0_echo = bK * qscat->systemTemperature *
+        qscat->ses.rxGainEcho / qscat->systemLoss;
 
 	//------------------------------------------------------------------------//
 	// Noise energy within one slice referenced like the signal energy.
@@ -244,7 +243,7 @@ sigma0_to_Esn_slice_given_X(
     *true_Es = (float)Es_slice;
     *true_En = (float)En_slice;
 
-	if (instrument->simKpcFlag == 0)
+	if (sim_kpc_flag == 0)
 	{
         *var_esn_slice = 0.0;
 		return(1);
@@ -295,7 +294,7 @@ sigma0_to_Esn_slice_given_X(
 // the much smaller echo bandwidth (contained within the noise bandwidth).
 //
 // Inputs:
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	spot = pointer to current spot (Psn)
 //		Note: the measurements in this spot must ALREADY have Psn values
 //			stored in the value member in the same units that this method
@@ -306,26 +305,27 @@ sigma0_to_Esn_slice_given_X(
 
 int
 sigma0_to_Esn_noise(
-	Instrument*			instrument,
-	MeasSpot*			spot,
-	float*				Esn_noise)
+    Qscat*       qscat,
+    MeasSpot*    spot,
+    int          sim_kpc_flag,
+    float*       Esn_noise)
 {
 	//------------------------------------------------------------------------//
 	// Noise power spectral densities referenced the same way as the signal.
 	//------------------------------------------------------------------------//
 
-	double N0_noise = bK * instrument->systemTemperature *
-		instrument->noise_receiverGain / instrument->systemLoss;
+	double N0_noise = bK * qscat->systemTemperature *
+        qscat->ses.rxGainNoise / qscat->systemLoss;
 
 	//------------------------------------------------------------------------//
 	// Useful quantities.
 	//------------------------------------------------------------------------//
 
-	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tg = beam->rxGateWidth;
-	double Bn = instrument->noiseBandwidth;
-	double Be = instrument->GetTotalSignalBandwidth();
-	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bn = qscat->ses.noiseBandwidth;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 
 	//------------------------------------------------------------------------//
 	// Start with the noise contribution to the noise energy measurement
@@ -353,7 +353,7 @@ sigma0_to_Esn_noise(
 		meas = spot->GetNext();
 	}
 
-	if (instrument->simKpcFlag == 0)
+	if (sim_kpc_flag == 0)
 	{
 		return(1);
 	}
@@ -395,7 +395,7 @@ sigma0_to_Esn_noise(
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
 //	spacecraft = pointer to current spacecraft object
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	meas = pointer to current measurement (for radar_X: cell center, area etc.)
 //	Kfactor = Radar equation correction factor for this cell.
 //	Esn_slice = the received slice energy.
@@ -406,22 +406,22 @@ sigma0_to_Esn_noise(
 
 int
 Er_to_sigma0(
-    CoordinateSwitch*   gc_to_antenna,
-	Spacecraft*         spacecraft,
-	Instrument*			instrument,
-	Meas*				meas,
-	float				Kfactor,
-	float				Esn_slice,
-	float				Esn_echo,
-	float				Esn_noise,
-	float				PtGr)
+    CoordinateSwitch*  gc_to_antenna,
+    Spacecraft*        spacecraft,
+    Qscat*             qscat,
+    Meas*              meas,
+    float              Kfactor,
+    float              Esn_slice,
+    float              Esn_echo,
+    float              Esn_noise,
+    float              PtGr)
 {
 	// Compute radar parameter using telemetry values etc that may have been
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
 	double X;
-	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
-	return(Er_to_sigma0_given_X(instrument,meas,X*Kfactor,Esn_slice,
-				    Esn_echo,Esn_noise));
+	radar_X_PtGr(gc_to_antenna, spacecraft, qscat, meas, PtGr, &X);
+    return(Er_to_sigma0_given_X(qscat, meas, X * Kfactor, Esn_slice, Esn_echo,
+        Esn_noise));
 }
 
 //
@@ -434,7 +434,7 @@ Er_to_sigma0(
 // Various outputs are put in the Meas object passed in.
 //
 // Inputs:
-//	instrument = pointer to current instrument object
+//	qscat = pointer to current Qscat object
 //	meas = pointer to current measurement (for radar_X: cell center, area etc.)
 //	Xfactor = Radar equation parameter for this cell.
 //
@@ -446,25 +446,24 @@ Er_to_sigma0(
 
 int
 Er_to_sigma0_given_X(
-	Instrument*			instrument,
-	Meas*				meas,
-	float				Xfactor,
-	float				Esn_slice,
-	float				Esn_echo,
-	float				Esn_noise)
+    Qscat*       qscat,
+    Meas*        meas,
+    float        Xfactor,
+    float        Esn_slice,
+    float        Esn_echo,
+    float        Esn_noise)
 {
-
-        meas->XK=Xfactor;
+    meas->XK = Xfactor;
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
 
-	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->txPulseWidth;
-	double Tg = beam->rxGateWidth;
-	double Bn = instrument->noiseBandwidth;
+	double Tp = qscat->ses.txPulseWidth;
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bn = qscat->ses.noiseBandwidth;
 	double Bs = meas->bandwidth;
-	double Be = instrument->GetTotalSignalBandwidth();
-	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 	double alpha = Bn/Be*beta;
 	double rho = 1.0;
 
@@ -479,23 +478,14 @@ Er_to_sigma0_given_X(
 	// Kpr comes from 1/X
 	meas->value = (float)(Es_slice / Xfactor / Tp);
 
-	if (instrument->simKpcFlag == 0)
-	{
-		meas->A = 0.0;
-		meas->B = 0.0;
-		meas->C = 0.0;
-	}
-	else
-	{
-		//------------------------------------------------------------------//
-		// Estimate Kpc coefficients using the
-		// approximate equations in Mike Spencer's Kpc memos.
-		//------------------------------------------------------------------//
+	//------------------------------------------------------------------//
+	// Estimate Kpc coefficients using the
+	// approximate equations in Mike Spencer's Kpc memos.
+	//------------------------------------------------------------------//
 
-		meas->A = 1.0 / (Bs * Tp);
-		meas->B = 2.0 / (Bs * Tg);
-		meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
-	}
+	meas->A = 1.0 / (Bs * Tp);
+	meas->B = 2.0 / (Bs * Tg);
+	meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
 
 	return(1);
 }

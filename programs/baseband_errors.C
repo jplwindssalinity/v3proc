@@ -1,49 +1,49 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		baseband_errors
+//    baseband_errors
 //
 // SYNOPSIS
-//		baseband_errors <sim_config_file> <error_file>
+//    baseband_errors <sim_config_file> <error_file>
 //
 // DESCRIPTION
-//		Generates plottable error file showing the baseband frequency
-//		error between the actual peak 2-way gain baseband frequency
-//		and the algorithmic frequency.
+//    Generates plottable error file showing the baseband frequency
+//    error between the actual peak 2-way gain baseband frequency and
+//    the algorithmic frequency.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<sim_config_file>	The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operands are supported:
+//      <sim_config_file>    The sim_config_file needed listing all
+//                             input parameters, input files, and
+//                             output files.
 //
-//		<error_file>		A plottable error file.
+//      <error_file>         A plottable error file.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% baseband_errors qscat.cfg baseband.err
+//    An example of a command line is:
+//      % baseband_errors qscat.cfg baseband.err
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston
+//    hudd@casket.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -51,7 +51,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "QscatConfig.h"
 
 //-----------//
 // TEMPLATES //
@@ -91,7 +92,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define EQX_TIME_TOLERANCE	0.1
+#define EQX_TIME_TOLERANCE  0.1
 
 //--------//
 // MACROS //
@@ -121,37 +122,37 @@ const char* usage_array[] = { "<sim_config_file>", "<error_file>", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
 
-	if (argc != 3)
-		usage(command, usage_array, 1);
+    if (argc != 3)
+        usage(command, usage_array, 1);
 
-	int arg_idx = 1;
-	const char* config_file = argv[arg_idx++];
-	const char* error_file = argv[arg_idx++];
+    int arg_idx = 1;
+    const char* config_file = argv[arg_idx++];
+    const char* error_file = argv[arg_idx++];
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //--------------------------------//
+    // read in simulation config file //
+    //--------------------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n", command,
+            config_file);
+        exit(1);
+    }
 
-	//----------------------------------------------//
-	// create a spacecraft and spacecraft simulator //
-	//----------------------------------------------//
+    //----------------------------------------------//
+    // create a spacecraft and spacecraft simulator //
+    //----------------------------------------------//
 
 	Spacecraft spacecraft;
 	if (! ConfigSpacecraft(&spacecraft, &config_list))
@@ -169,24 +170,23 @@ main(
 		exit(1);
 	}
 
-	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
-	//-----------------------------------------------//
+    //--------------------------------------//
+    // create a QSCAT and a QSCAT simulator //
+    //--------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+    }
 
-	InstrumentSim instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT simulator\n", command);
+        exit(1);
+    }
 
 	//---------------------//
 	// configure the times //
@@ -204,7 +204,7 @@ main(
 		fprintf(stderr, "%s: error configuring simulation times\n", command);
 		exit(1);
 	}
-	instrument_sim.startTime = instrument_start_time;
+	qscat_sim.startTime = instrument_start_time;
 
 	//------------------//
 	// set the eqx time //
@@ -213,15 +213,15 @@ main(
 	double eqx_time =
 		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(eqx_time);
+	qscat.cds.SetEqxTime(eqx_time);
 
 	//------------//
 	// initialize //
 	//------------//
 
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
+	if (! qscat_sim.Initialize(&qscat))
 	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
+		fprintf(stderr, "%s: error initializing QSCAT simulator\n",
 			command);
 		exit(1);
 	}
@@ -252,8 +252,8 @@ main(
 	SpacecraftEvent spacecraft_event;
 	spacecraft_event.time = spacecraft_start_time;
 
-	InstrumentEvent instrument_event;
-	instrument_event.time = instrument_start_time;
+	QscatEvent qscat_event;
+	qscat_event.time = instrument_start_time;
 
 	int spacecraft_done = 0;
 	int instrument_done = 0;
@@ -263,8 +263,7 @@ main(
 	//-------------------------//
 
 	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-	instrument_sim.DetermineNextEvent(&(instrument.antenna),
-		&instrument_event);
+	qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 
 	//---------------------//
 	// loop through events //
@@ -283,7 +282,7 @@ main(
 				spacecraft_done = 1;
 				continue;
 			}
-			if (spacecraft_event.time <= instrument_event.time ||
+			if (spacecraft_event.time <= qscat_event.time ||
 				instrument_done)
 			{
 				//------------------------------//
@@ -293,7 +292,7 @@ main(
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::EQUATOR_CROSSING:
-					instrument.SetEqxTime(spacecraft_event.time);
+					qscat.cds.SetEqxTime(spacecraft_event.time);
 					break;
 				default:
 					break;
@@ -308,102 +307,81 @@ main(
 
 		if (! instrument_done)
 		{
-			if (instrument_event.time > instrument_end_time)
+			if (qscat_event.time > instrument_end_time)
 			{
 				instrument_done = 1;
 				continue;
 			}
-			if (instrument_event.time <= spacecraft_event.time ||
+			if (qscat_event.time <= spacecraft_event.time ||
 				spacecraft_done)
 			{
 				//------------------------------//
 				// process the instrument event //
 				//------------------------------//
 
-				Antenna* antenna;
+				Antenna* antenna = &(qscat.sas.antenna);
 				Beam* beam;
 				OrbitState* orbit_state;
 				Attitude* attitude;
 				CoordinateSwitch antenna_frame_to_gc;
 				Vector3 rlook_antenna;
 				TargetInfoPackage tip;
-				double ideal_dopcom;
-				float residual_delay;
 
-				switch(instrument_event.eventId)
+				switch(qscat_event.eventId)
 				{
-				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+				case QscatEvent::SCATTEROMETER_MEASUREMENT:
 
 					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(instrument_event.time,
+					spacecraft_sim.UpdateOrbit(qscat_event.time,
 						&spacecraft);
-					spacecraft_sim.UpdateAttitude(instrument_event.time,
+					spacecraft_sim.UpdateAttitude(qscat_event.time,
 						&spacecraft);
 
 					// process instrument stuff
-					instrument.SetTime(instrument_event.time);
-					instrument_sim.UpdateAntennaPosition(&instrument);
-					instrument.antenna.currentBeamIdx =
-						instrument_event.beamIdx;
+					qscat.cds.SetTime(qscat_event.time);
+					qscat.sas.antenna.UpdatePosition(qscat_event.time);
+					qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+                    beam = qscat.GetCurrentBeam();
 
-					//---------------------------//
-					// set up the range tracking //
-					//---------------------------//
+					//-------------------------------//
+					// do range and Doppler tracking //
+					//-------------------------------//
 
-					antenna = &(instrument.antenna);
-					beam = antenna->GetCurrentBeam();
+                    qscat.cds.useRgc = 1;
+                    qscat.cds.useDtc = 1;
+                    qscat_sim.SetDelayAndFrequency(&spacecraft, &qscat);
 
-					residual_delay = 0.0;
-					beam->rangeTracker.SetInstrument(&instrument,
-						&residual_delay);
+                    //----------------------------------//
+                    // calculate the baseband frequency //
+                    //----------------------------------//
 
-					//---------------------------------------//
-					// determine the ideal commanded doppler //
-					//---------------------------------------//
-
-					IdealCommandedDoppler(&spacecraft, &instrument);
-					ideal_dopcom = instrument.commandedDoppler;
-
-					//-----------------------------//
-					// set up the doppler tracking //
-					//-----------------------------//
-
-					beam->dopplerTracker.SetInstrument(&instrument,
-						residual_delay);
-
-					//----------------------------------------//
-					// get the beam center baseband frequency //
-					//----------------------------------------//
-
-					orbit_state = &(spacecraft.orbitState);
-					attitude = &(spacecraft.attitude);
-
-					antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-						attitude, antenna);
-
-					double look, azimuth;
-					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->actualSpinRate, &look, &azimuth);
-
-					rlook_antenna.SphericalSet(1.0, look, azimuth);
-					TargetInfo(&antenna_frame_to_gc, &spacecraft, &instrument,
-						rlook_antenna, &tip);
+                    orbit_state = &(spacecraft.orbitState);
+                    attitude = &(spacecraft.attitude);
+ 
+                    antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+                        attitude, antenna);
+ 
+                    double look, azimuth;
+                    GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
+                        beam, antenna->spinRate, &look, &azimuth);
+ 
+                    rlook_antenna.SphericalSet(1.0, look, azimuth);
+                    TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
+                        rlook_antenna, &tip);
 
 					//------------------------------//
 					// calculate the baseband error //
 					//------------------------------//
 
-					// actually, any deviation from zero Hz is undesirable
-					fprintf(error_fp, "%.6f %.6f %.6f %.6f\n",
-						instrument_event.time, tip.basebandFreq,
-						instrument.commandedDoppler, ideal_dopcom);
+					// any deviation from zero Hz is undesirable
+					fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
+                        tip.basebandFreq, qscat.ses.txFrequency);
 
-					instrument_sim.DetermineNextEvent(&(instrument.antenna),
-						&instrument_event);
+					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
 
 				default:
-					fprintf(stderr, "%s: unknown instrument event\n", command);
+					fprintf(stderr, "%s: unknown QSCAT event\n", command);
 					exit(1);
 					break;
 				}

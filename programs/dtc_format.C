@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -20,10 +20,11 @@
 // OPERANDS
 //		The following operands are supported:
 //		<input_format>		Used to indicate the format of the input DTC file.
-//								Can be h (hex), b (binary)
+//								Can be h (hex), b (binary), o (old binary)
 //		<input_dtc_file>	The DTC input file.
 //		<output_format>		Used to indicate the format of the output DTC file.
-//								Can be h (hex), b (binary), c (code)
+//								Can be h (hex), b (binary), o (old binary),
+//                              c (code)
 //		<output_dtc_file>	The DTC input file.
 //
 // EXAMPLES
@@ -43,7 +44,7 @@
 //
 // AUTHOR
 //		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//		hudd@casket.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -65,10 +66,6 @@ static const char rcs_id[] =
 //-----------//
 // TEMPLATES //
 //-----------//
-
-/*
-template class List<EarthPosition>;
-*/
 
 //-----------//
 // CONSTANTS //
@@ -94,8 +91,8 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<input_format (h,b)>", "<input_dtc_file>",
-	"<output_format (h,b)>", "<output_dtc_file>", 0 };
+const char* usage_array[] = { "<input_format (h,b,o)>", "<input_dtc_file>",
+	"<output_format (h,b,o,c)>", "<output_dtc_file>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -144,6 +141,14 @@ main(
 			exit(1);
 		}
 		break;
+	case 'o':
+		if (! doppler_tracker.ReadOldBinary(input_file))
+		{
+			fprintf(stderr, "%s: error reading old binary DTC file %s\n",
+                command, input_file);
+			exit(1);
+		}
+		break;
 	}
 
 	//--------------------//
@@ -165,6 +170,14 @@ main(
 		{
 			fprintf(stderr, "%s: error writing binary DTC file %s\n", command,
 				output_file);
+			exit(1);
+		}
+		break;
+	case 'o':
+		if (! doppler_tracker.WriteOldBinary(output_file))
+		{
+			fprintf(stderr, "%s: error writing old binary DTC file %s\n",
+                command, output_file);
 			exit(1);
 		}
 		break;

@@ -8,10 +8,9 @@ static const char rcs_id_l1atol1b_c[] =
 
 #include <stdio.h>
 #include "L1AToL1B.h"
+#include "CheckFrame.h"
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
-#include "InstrumentSim.h"
-#include "CheckFrame.h"
 
 //==========//
 // L1AToL1B //
@@ -38,7 +37,7 @@ int
 L1AToL1B::Convert(
 	L1A*			l1a,
 	Spacecraft*		spacecraft,
-	Instrument*		instrument,
+    Qscat*          qscat,
 	Ephemeris*		ephemeris,
 	L1B*			l1b)
 {
@@ -75,8 +74,8 @@ L1AToL1B::Convert(
 	// set up instrument //
 	//-------------------//
 
-	instrument->SetTimeWithInstrumentTicks(l1a->frame.instrumentTicks);
-	instrument->orbitTicks = l1a->frame.orbitTicks;
+	qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
+	qscat->cds.orbitTime = l1a->frame.orbitTicks;
 
 	//----------------------------//
 	// ...free residual MeasSpots //
@@ -89,7 +88,7 @@ L1AToL1B::Convert(
 	//-----------//
 
 	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Antenna* antenna = &(instrument->antenna);
+	Antenna* antenna = &(qscat->sas.antenna);
 
 	//------------------------//
 	// for each beam cycle... //
@@ -112,10 +111,10 @@ L1AToL1B::Convert(
 			// calculate the time //
 			//--------------------//
 
-			antenna->currentBeamIdx = beam_idx;
-			Beam* beam = antenna->GetCurrentBeam();
-			double time = l1a->frame.time + beam_cycle * antenna->priPerBeam +
-				beam->timeOffset;
+			qscat->cds.currentBeamIdx = beam_idx;
+			double time = l1a->frame.time +
+                (beam_cycle * antenna->numberOfBeams + beam_idx) *
+                qscat->ses.pri;
 
 			//-------------------//
 			// set up spacecraft //
@@ -132,10 +131,11 @@ L1AToL1B::Convert(
 			//-------------------//
 
 			if (spot_idx == l1a->frame.priOfOrbitTickChange)
-				instrument->orbitTicks++;
+				qscat->cds.orbitTime++;
 
-			antenna->SetAzimuthWithEncoder(
-				l1a->frame.antennaPosition[spot_idx]);
+            unsigned short encoder = l1a->frame.antennaPosition[spot_idx];
+			qscat->sas.SetAzimuthWithEncoder(encoder);
+            qscat->sas.ApplyAzimuthShift(qscat->ses.pri);
 
 			if (outputSigma0ToStdout)
 				printf("%g ",antenna->azimuthAngle/dtr);
@@ -146,11 +146,24 @@ L1AToL1B::Convert(
 
 			MeasSpot* meas_spot = new MeasSpot();
 
-			//-------------------------------------------------------------//
-			// command the range delay, range width, and Doppler frequency //
-			//-------------------------------------------------------------//
+			//-----------------------------------------------//
+			// command the range delay and Doppler frequency //
+			//-----------------------------------------------//
 
-			SetRangeAndDoppler(spacecraft, instrument);
+/*
+            if (qscat->cds.useTracking)
+            {
+                // normal range and Doppler tracking
+                qscat->cds.CmdRangeAndDoppler(&(qscat->sas), &(qscat->ses));
+            }
+            else
+            {
+                // ideal range and Doppler tracking
+                fprintf(stderr,
+                    "Need to implement ideal range and Doppler tracking\n");
+                exit(1);
+            }
+*/
 
 			//-------------------------------------------//
 			// Extract energy measurements for this spot //
@@ -180,13 +193,15 @@ L1AToL1B::Convert(
 
 			if (l1a->frame.slicesPerSpot <= 1)
 			{
-				if (! LocateSpot(spacecraft, instrument, meas_spot, Esn[0]))
+				if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))
+                {
 					return(0);
+                }
 			}
 			else
 			{
-				if (! LocateSliceCentroids(spacecraft, instrument, meas_spot,
-					Esn, sliceGainThreshold, processMaxSlices))
+				if (! LocateSliceCentroids(spacecraft, qscat, meas_spot, Esn,
+                    sliceGainThreshold, processMaxSlices))
 				{
 					return(0);
 				}
@@ -195,7 +210,9 @@ L1AToL1B::Convert(
 			free(Esn);
 			Esn = NULL;
 
-                        for(Meas* meas=meas_spot->GetHead();meas;meas=meas_spot->GetNext()){  
+            for(Meas* meas = meas_spot->GetHead(); meas;
+                meas = meas_spot->GetNext())
+            {  
 			  double alt,lat,lon;
 			  if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
 			    return(0);
@@ -233,11 +250,11 @@ L1AToL1B::Convert(
 				float PtGr = l1a->frame.ptgr;
 				if (useKfactor)
 				{
-					float orbit_position = instrument->OrbitFraction();
+					float orbit_position = qscat->cds.OrbitFraction();
 
 					k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
-						instrument->antenna.currentBeamIdx,
-						instrument->antenna.azimuthAngle, orbit_position,
+						qscat->cds.currentBeamIdx,
+						qscat->sas.antenna.azimuthAngle, orbit_position,
 						meas->startSliceIdx);
 
 					//-----------------//
@@ -245,35 +262,38 @@ L1AToL1B::Convert(
 					//-----------------//
 
 					// meas->value is the Esn value going in, sigma0 coming out.
-					if (! Er_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-							   meas, k_factor, meas->value, sumEsn, En, PtGr))
-					  {
+					if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat,
+                        meas, k_factor, meas->value, sumEsn, En, PtGr))
+                    {
 					    return(0);
-					  }
+                    }
 				}
-				else if(useBYUXfactor){
-				  x_factor=BYUX.GetXTotal(spacecraft,instrument,meas,PtGr);
+				else if(useBYUXfactor)
+                {
+                    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, PtGr);
+
 				  //-----------------//
 				  // set measurement //
 				  //-----------------//
 
-				  // meas->value is the Esn value going in, sigma0 coming out.
-				  if (! Er_to_sigma0_given_X(instrument, meas, x_factor, meas->value, 
-							     sumEsn, En))
-				    {
-				      return(0);
-				    }
+                     // meas->value is the Esn value going in
+                     // sigma0 coming out.
+                     if (! Er_to_sigma0_given_X(qscat, meas, x_factor,
+                         meas->value, sumEsn, En))
+                     {
+                         return(0);
+                     }
 				}
-				else{
-				  fprintf(stderr,"L1AToL1B::Convert:No X compuation algorithm set\n");
+				else
+                {
+				  fprintf(stderr,
+                      "L1AToL1B::Convert:No X compuation algorithm set\n");
 				  exit(0);
 				}
 
-
-
-				meas->scanAngle = instrument->antenna.azimuthAngle;
-				meas->beamIdx = instrument->antenna.currentBeamIdx;
-				meas->txPulseWidth = beam->txPulseWidth;
+				meas->scanAngle = qscat->sas.antenna.azimuthAngle;
+				meas->beamIdx = qscat->cds.currentBeamIdx;
+				meas->txPulseWidth = qscat->ses.txPulseWidth;
 
 				//------------------//
 				// store check data //

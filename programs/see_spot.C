@@ -76,6 +76,8 @@ static const char rcs_id[] =
 #include "InstrumentGeom.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Qscat.h"
+#include "QscatConfig.h"
 
 //-----------//
 // TEMPLATES //
@@ -223,24 +225,24 @@ main(
 		exit(1);
 	}
 
-	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
-	//-----------------------------------------------//
+    //--------------------------------------//
+    // create a QSCAT and a QSCAT simulator //
+    //--------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+    }
 
-	InstrumentSim instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring instrument simulator\n",
+            command);
+        exit(1);
+    }
 
 	//---------------------//
 	// configure the times //
@@ -258,15 +260,15 @@ main(
 		fprintf(stderr, "%s: error configuring simulation times\n", command);
 		exit(1);
 	}
-	instrument_sim.startTime = instrument_start_time;
+	qscat_sim.startTime = instrument_start_time;
 
 	//------------//
 	// initialize //
 	//------------//
 
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
+	if (! qscat_sim.Initialize(&qscat))
 	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
+		fprintf(stderr, "%s: error initializing QSCAT simulator\n",
 			command);
 		exit(1);
 	}
@@ -285,7 +287,7 @@ main(
 	double eqx_time =
 		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(eqx_time);
+	qscat.cds.SetEqxTime(eqx_time);
 
 	//----------------------//
 	// cycle through events //
@@ -293,15 +295,14 @@ main(
 
 	MeasSpot meas_spot;
 
-	InstrumentEvent instrument_event;
+	QscatEvent qscat_event;
 	int instrument_done = 0;
 
 	//-------------------------//
 	// start with first events //
 	//-------------------------//
 
-	instrument_sim.DetermineNextEvent(&(instrument.antenna),
-		&instrument_event);
+	qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 
 	//---------------------//
 	// loop through events //
@@ -315,7 +316,7 @@ main(
 
 		if (! instrument_done)
 		{
-			if (instrument_event.time > instrument_end_time)
+			if (qscat_event.time > instrument_end_time)
 			{
 				instrument_done = 1;
 				continue;
@@ -325,26 +326,26 @@ main(
 			// process the instrument event //
 			//------------------------------//
 
-			switch(instrument_event.eventId)
+			switch(qscat_event.eventId)
 			{
-			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+			case QscatEvent::SCATTEROMETER_MEASUREMENT:
 
 				// process spacecraft stuff
-				spacecraft_sim.UpdateOrbit(instrument_event.time,
+				spacecraft_sim.UpdateOrbit(qscat_event.time,
 					&spacecraft);
-				spacecraft_sim.UpdateAttitude(instrument_event.time,
+				spacecraft_sim.UpdateAttitude(qscat_event.time,
 					&spacecraft);
 
 				// process instrument stuff
-				instrument.SetTime(instrument_event.time);
-				instrument_sim.UpdateAntennaPosition(&instrument);
-				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
+				qscat.cds.SetTime(qscat_event.time);
+                qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 
-				//-------------------------------------------------------//
-				// command the range delay, width, and Doppler frequency //
-				//-------------------------------------------------------//
+				//-----------------------------------------------//
+				// command the range delay and Doppler frequency //
+				//-----------------------------------------------//
 
-				SetRangeAndDoppler(&spacecraft, &instrument);
+                qscat_sim.SetDelayAndFrequency(&spacecraft, &qscat);
 
 				if (slice_opt)
 				{
@@ -352,7 +353,7 @@ main(
 					// slices //
 					//--------//
 
-					LocateSlices(&spacecraft, &instrument, &meas_spot);
+					LocateSlices(&spacecraft, &qscat, &meas_spot);
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{
@@ -374,8 +375,7 @@ main(
 					// spot //
 					//------//
 
-					LocateSpot(&spacecraft, &instrument, &meas_spot,
-						contour_level);
+					LocateSpot(&spacecraft, &qscat, &meas_spot, contour_level);
 					Meas* meas = meas_spot.GetHead();
 					if (centroid_opt)
 					{
@@ -388,8 +388,7 @@ main(
 					}
 					meas->outline.WriteOtln(output_fp);
 				}
-				instrument_sim.DetermineNextEvent(&(instrument.antenna),
-					&instrument_event);
+				qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);

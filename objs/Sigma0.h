@@ -9,10 +9,9 @@
 static const char rcs_id_sigma0_h[] =
 	"@(#) $Id$";
 
+#include "CoordinateSwitch.h"
 #include "Spacecraft.h"
-#include "Instrument.h"
-#include "Meas.h"
-#include "Wind.h"
+#include "Qscat.h"
 
 //=======================================================================
 // Function
@@ -26,8 +25,9 @@ static const char rcs_id_sigma0_h[] =
 //=======================================================================
 
 int radar_X(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
-		Instrument* instrument, Meas* meas, double* X);
-
+        Qscat* qscat, Meas* meas, double* X);
+int radar_X_PtGr(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
+        Qscat* qscat, Meas* meas, float PtGr, double* X);
 
 //======================================================================
 // Function
@@ -38,12 +38,10 @@ int radar_X(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 //		a slice.
 //======================================================================
 
-int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
-		Instrument* instrument, Meas* meas, float Kfactor, float sigma0,
-		float* Esn, float* XK, float* true_Es, float* true_En,
-        float* var_esn_slice);
-
-
+int  sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna,
+         Spacecraft* spacecraft, Qscat* qscat, Meas* meas, float Kfactor,
+         float sigma0, int sim_kpc_flag, float* Esn, float* XK,
+         float* true_Es, float* true_En, float* var_esn_slice);
 
 //======================================================================
 // Function
@@ -54,9 +52,9 @@ int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 //		a slice. It uses X instead of K.
 //======================================================================
 
-int sigma0_to_Esn_slice_given_X(Instrument* instrument, Meas* meas,
-  float X, float sigma0, float* Esn, float* true_Es, float* true_En,
-  float* var_esn_slice);
+int  sigma0_to_Esn_slice_given_X(Qscat* qscat, Meas* meas, float X,
+         float sigma0, int sim_kpc_flag, float* Esn, float* true_Es,
+         float* true_En, float* var_esn_slice);
 
 //======================================================================
 // Function
@@ -67,7 +65,8 @@ int sigma0_to_Esn_slice_given_X(Instrument* instrument, Meas* meas,
 //		the noise measurement.
 //======================================================================
 
-int sigma0_to_Esn_noise(Instrument* instrument, MeasSpot* spot, float* Pn);
+int  sigma0_to_Esn_noise(Qscat* qscat, MeasSpot* spot, int sim_kpc_flag,
+         float* Pn);
 
 //=========================================================================
 // Function
@@ -78,9 +77,9 @@ int sigma0_to_Esn_noise(Instrument* instrument, MeasSpot* spot, float* Pn);
 //
 //=========================================================================
 
-int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
-		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
-		float sumPsn, float Pn, float PtGr);
+int  Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
+         Qscat* qscat, Meas* meas, float Kfactor, float Psn, float sumPsn,
+         float Pn, float PtGr);
 
 //=========================================================================
 // Function
@@ -92,7 +91,7 @@ int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 //
 //=========================================================================
 
-int Er_to_sigma0_given_X(Instrument* instrument, Meas* meas,
-  float Xfactor, float Psn, float sumPsn, float Pn);
+int  Er_to_sigma0_given_X(Qscat* qscat, Meas* meas, float Xfactor, float Psn,
+         float sumPsn, float Pn);
 
 #endif

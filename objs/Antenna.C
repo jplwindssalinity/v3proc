@@ -1,6 +1,6 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_antenna_c[] =
@@ -8,7 +8,6 @@ static const char rcs_id_antenna_c[] =
 
 #include <stdio.h>
 #include "Antenna.h"
-#include "Beam.h"
 #include "Constants.h"
 
 //=========//
@@ -16,9 +15,8 @@ static const char rcs_id_antenna_c[] =
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0),
-	commandedSpinRate(0.0), actualSpinRate(0.0), encoderAOffsetDn(0),
-	encoderDelay(0.0), currentBeamIdx(0), _numberOfEncoderValues(0)
+:	numberOfBeams(0), startTime(0.0), startAzimuth(0.0), spinRate(0.0),
+    azimuthAngle(0.0)
 {
 	return;
 }
@@ -26,6 +24,41 @@ Antenna::Antenna()
 Antenna::~Antenna()
 {
 	return;
+}
+
+//--------------------------//
+// Antenna::SetAzimuthAngle //
+//--------------------------//
+
+int
+Antenna::SetAzimuthAngle(
+    double  angle)
+{
+    if (angle < 0.0)
+    {
+        azimuthAngle = fmod(angle, two_pi) + two_pi;
+    }
+    else if (angle >= two_pi)
+    {
+        azimuthAngle = fmod(angle, two_pi);
+    }
+    else
+    {
+        azimuthAngle = angle;
+    }
+    return(1);
+}
+
+//-----------------------//
+// Antenna::TimeRotation //
+//-----------------------//
+
+int
+Antenna::TimeRotation(
+    double  time)
+{
+    SetAzimuthAngle(azimuthAngle + time * spinRate);
+    return(1);
 }
 
 //------------------------------//
@@ -43,113 +76,18 @@ Antenna::SetPedestalAttitude(
 }
 
 //-------------------------//
-// Antenna::EncoderToAngle //
+// Antenna::UpdatePosition //
 //-------------------------//
-
-double
-Antenna::EncoderToAngle(
-	unsigned int	encoder_value)
-{
-	// the 0.5 is to center the azimuth on the given encoder value
-	double angle = two_pi *
-		((double)(encoder_value + 0.5) / (double)_numberOfEncoderValues);
-	return(angle);
-}
-
-//-------------------------//
-// Antenna::AngleToEncoder //
-//-------------------------//
-
-unsigned int
-Antenna::AngleToEncoder(
-	double	angle)
-{
-	unsigned int encoder_value = (unsigned int)((angle / two_pi) *
-		(double)_numberOfEncoderValues);
-	encoder_value %= _numberOfEncoderValues;
-	return(encoder_value);
-}
-
-//-----------------------------------//
-// Antenna::SetNumberOfEncoderValues //
-//-----------------------------------//
 
 int
-Antenna::SetNumberOfEncoderValues(
-	unsigned int	number)
+Antenna::UpdatePosition(
+    double  time)
 {
-	_numberOfEncoderValues = number;
-	return(1);
-}
+    double angle = startAzimuth + (time - startTime) * spinRate;
+    SetAzimuthAngle(angle);
 
-//--------------------------------//
-// Antenna::SetAzimuthWithEncoder //
-//--------------------------------//
+    // The antenna frame is rotated away from the s/c body in yaw only.
+//    antennaFrame.Set(0, 0, angle, 3, 2, 1);
 
-int
-Antenna::SetAzimuthWithEncoder(
-	unsigned int	encoder_value)
-{
-	azimuthAngle = EncoderToAngle(encoder_value);
-	return(1);
-}
-
-//-------------------------//
-// Antenna::GetCurrentBeam //
-//-------------------------//
-
-Beam*
-Antenna::GetCurrentBeam()
-{
-	if (currentBeamIdx < 0 || currentBeamIdx >= numberOfBeams)
-		return(NULL);
-	return(&(beam[currentBeamIdx]));
-}
-
-//-------------------------------//
-// Antenna::GetEarlyEncoderValue //
-//-------------------------------//
-// simulates the early sampling of the CDS
-
-unsigned int
-Antenna::GetEarlyEncoderValue()
-{
-	double delta_azimuth = GetEarlyDeltaAzimuth();
-	double azimuth_angle = azimuthAngle - delta_azimuth + two_pi;
-	unsigned int encoder = AngleToEncoder(azimuth_angle);
-	return(encoder);
-}
-
-//--------------------------//
-// Antenna::GetEncoderValue //
-//--------------------------//
-
-unsigned int
-Antenna::GetEncoderValue()
-{
-	unsigned int encoder = AngleToEncoder(azimuthAngle);
-	return(encoder);
-}
-
-//-------------------------------//
-// Antenna::GetEarlyDeltaAzimuth //
-//-------------------------------//
-
-double
-Antenna::GetEarlyDeltaAzimuth()
-{
-	double time_delay = priPerBeam / (double)numberOfBeams - encoderDelay;
-	double delta_azimuth = actualSpinRate * time_delay;
-	return(delta_azimuth);
-}
-
-//-----------------------------//
-// Antenna::GetAntennaFraction //
-//-----------------------------//
-
-double
-Antenna::GetAntennaFraction()
-{
-	double fraction = azimuthAngle / two_pi;
-	return(fraction);
+    return(1);
 }

@@ -1,48 +1,48 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		rgc_delay_errors
+//    rgc_delay_errors
 //
 // SYNOPSIS
-//		rgc_delay_errors <sim_config_file> <RGC_errs>
+//    rgc_delay_errors <sim_config_file> <RGC_errs>
 //
 // DESCRIPTION
-//		Generates plottable error files between the actual delay and
-//		the delay calculated by the RGC.
+//    Generates plottable error files between the actual delay and the
+//    delay calculated by the RGC.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<sim_config_file>	The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operands are supported:
+//      <sim_config_file>  The sim_config_file needed listing all
+//                           input parameters, input files, and output
+//                           files.
 //
-//		<RGC_errs>			A plottable error file for the RGC.
+//      <RGC_errs>         A plottable error file for the RGC.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% constant_errors sws1b.cfg rgc.dat rgc.errs
+//    An example of a command line is:
+//      % constant_errors sws1b.cfg rgc.dat rgc.errs
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston
+//    hudd@casket.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -50,7 +50,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -59,13 +59,14 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include "Misc.h"
 #include "ConfigList.h"
-#include "List.h"
-#include "List.C"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
+#include "QscatConfig.h"
+#include "InstrumentGeom.h"
+#include "List.h"
+#include "List.C"
 #include "Tracking.h"
 #include "Tracking.C"
-#include "InstrumentGeom.h"
 #include "BufferedList.h"
 #include "BufferedList.C"
 
@@ -73,23 +74,23 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
-template class List<EarthPosition>;
-template class List<StringPair>;
 template class List<Meas>;
+template class List<long>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
-template class List<long>;
 template class List<OffsetList>;
+template class List<StringPair>;
+template class TrackerBase<unsigned char>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
-template class TrackerBase<unsigned char>;
+template class List<EarthPosition>;
 template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define EQX_TIME_TOLERANCE	0.1
+#define EQX_TIME_TOLERANCE  0.1
 
 //--------//
 // MACROS //
@@ -119,129 +120,127 @@ const char* usage_array[] = { "<sim_config_file>", "<RGC_errs>", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
 
-	if (argc != 3)
-		usage(command, usage_array, 1);
+    if (argc != 3)
+        usage(command, usage_array, 1);
 
-	int arg_idx = 1;
-	const char* config_file = argv[arg_idx++];
-	const char* rgc_err_file = argv[arg_idx++];
+    int arg_idx = 1;
+    const char* config_file = argv[arg_idx++];
+    const char* rgc_err_file = argv[arg_idx++];
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //--------------------------------//
+    // read in simulation config file //
+    //--------------------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n", command,
+            config_file);
+        exit(1);
+    }
 
-	//----------------------------------------------//
-	// create a spacecraft and spacecraft simulator //
-	//----------------------------------------------//
+    //----------------------------------------------//
+    // create a spacecraft and spacecraft simulator //
+    //----------------------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	SpacecraftSim spacecraft_sim;
-	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    SpacecraftSim spacecraft_sim;
+    if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
-	//-----------------------------------------------//
+    //--------------------------------------//
+    // create a QSCAT and a QSCAT simulator //
+    //--------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+    }
 
-	InstrumentSim instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring instrument simulator\n",
+            command);
+        exit(1);
+    }
 
-	//---------------------//
-	// configure the times //
-	//---------------------//
+    //---------------------//
+    // configure the times //
+    //---------------------//
 
-	double grid_start_time, grid_end_time;
-	double instrument_start_time, instrument_end_time;
-	double spacecraft_start_time, spacecraft_end_time;
+    double grid_start_time, grid_end_time;
+    double instrument_start_time, instrument_end_time;
+    double spacecraft_start_time, spacecraft_end_time;
 
-	if (! ConfigControl(&spacecraft_sim, &config_list,
-		&grid_start_time, &grid_end_time,
-		&instrument_start_time, &instrument_end_time,
-		&spacecraft_start_time, &spacecraft_end_time))
-	{
-		fprintf(stderr, "%s: error configuring simulation times\n", command);
-		exit(1);
-	}
-	instrument_sim.startTime = instrument_start_time;
+    if (! ConfigControl(&spacecraft_sim, &config_list, &grid_start_time,
+        &grid_end_time, &instrument_start_time, &instrument_end_time,
+        &spacecraft_start_time, &spacecraft_end_time))
+    {
+        fprintf(stderr, "%s: error configuring simulation times\n", command);
+        exit(1);
+    }
+    qscat_sim.startTime = instrument_start_time;
 
-	//------------------//
-	// set the eqx time //
-	//------------------//
+    //------------------//
+    // set the eqx time //
+    //------------------//
 
-	double eqx_time =
-		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
-			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(eqx_time);
+    double eqx_time =
+        spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
+        EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+    qscat.cds.SetEqxTime(eqx_time);
 
-	//------------//
-	// initialize //
-	//------------//
+    //------------//
+    // initialize //
+    //------------//
 
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
-	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
-			command);
-		exit(1);
-	}
+    if (! qscat_sim.Initialize(&qscat))
+    {
+        fprintf(stderr, "%s: error initializing QSCAT simulator\n", command);
+        exit(1);
+    }
 
-	if (! spacecraft_sim.Initialize(spacecraft_start_time))
-	{
-		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    if (! spacecraft_sim.Initialize(spacecraft_start_time))
+    {
+        fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	//----------------------//
-	// open the output file //
-	//----------------------//
+    //----------------------//
+    // open the output file //
+    //----------------------//
 
-	FILE* rgc_err_fp = fopen(rgc_err_file, "w");
-	if (rgc_err_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening RGC error file %s\n", command,
-			rgc_err_file);
-		exit(1);
-	}
+    FILE* rgc_err_fp = fopen(rgc_err_file, "w");
+    if (rgc_err_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening RGC error file %s\n", command,
+            rgc_err_file);
+        exit(1);
+    }
 
 	//----------------------//
 	// cycle through events //
@@ -250,8 +249,8 @@ main(
 	SpacecraftEvent spacecraft_event;
 	spacecraft_event.time = spacecraft_start_time;
 
-	InstrumentEvent instrument_event;
-	instrument_event.time = instrument_start_time;
+	QscatEvent qscat_event;
+	qscat_event.time = instrument_start_time;
 
 	int spacecraft_done = 0;
 	int instrument_done = 0;
@@ -261,8 +260,7 @@ main(
 	//-------------------------//
 
 	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-	instrument_sim.DetermineNextEvent(&(instrument.antenna),
-		&instrument_event);
+	qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 
 	//---------------------//
 	// loop through events //
@@ -281,7 +279,7 @@ main(
 				spacecraft_done = 1;
 				continue;
 			}
-			if (spacecraft_event.time <= instrument_event.time ||
+			if (spacecraft_event.time <= qscat_event.time ||
 				instrument_done)
 			{
 				//------------------------------//
@@ -291,7 +289,7 @@ main(
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::EQUATOR_CROSSING:
-					instrument.SetEqxTime(spacecraft_event.time);
+					qscat.cds.SetEqxTime(spacecraft_event.time);
 					break;
 				default:
 					break;
@@ -300,23 +298,23 @@ main(
 			}
 		}
 
-		//---------------------------------------//
-		// process instrument event if necessary //
-		//---------------------------------------//
+		//----------------------------------//
+		// process QSCAT event if necessary //
+		//----------------------------------//
 
 		if (! instrument_done)
 		{
-			if (instrument_event.time > instrument_end_time)
+			if (qscat_event.time > instrument_end_time)
 			{
 				instrument_done = 1;
 				continue;
 			}
-			if (instrument_event.time <= spacecraft_event.time ||
+			if (qscat_event.time <= spacecraft_event.time ||
 				spacecraft_done)
 			{
-				//------------------------------//
-				// process the instrument event //
-				//------------------------------//
+				//-------------------------//
+				// process the QSCAT event //
+				//-------------------------//
 
 				Antenna* antenna;
 				Beam* beam;
@@ -326,57 +324,62 @@ main(
 				CoordinateSwitch antenna_frame_to_gc;
 				TargetInfoPackage tip;
 				Vector3 vector;
-				float delay, residual_delay_error;
+				float delay;
+                SesBeamInfo* ses_beam_info;
 
-				switch(instrument_event.eventId)
+				switch(qscat_event.eventId)
 				{
-				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+				case QscatEvent::SCATTEROMETER_MEASUREMENT:
 
 					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(instrument_event.time,
+					spacecraft_sim.UpdateOrbit(qscat_event.time,
 						&spacecraft);
-					spacecraft_sim.UpdateAttitude(instrument_event.time,
+					spacecraft_sim.UpdateAttitude(qscat_event.time,
 						&spacecraft);
 
-					// process instrument stuff
-					instrument.SetTime(instrument_event.time);
-					instrument_sim.UpdateAntennaPosition(&instrument);
-					instrument.antenna.currentBeamIdx =
-						instrument_event.beamIdx;
+					// process QSCAT stuff
+					qscat.cds.SetTime(qscat_event.time);
+                    qscat.sas.antenna.UpdatePosition(qscat_event.time);
+					qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+
+					//-------------------------//
+					// calculate the RGC delay //
+					//-------------------------//
+
+                    qscat.cds.CmdRangeAndDoppler(&(qscat.sas), &(qscat.ses));
+                    delay = qscat.ses.rxGateDelay;
 
 					//------------------------------//
 					// get the true round trip time //
 					//------------------------------//
 
-					antenna = &(instrument.antenna);
-					beam = antenna->GetCurrentBeam();
+					antenna = &(qscat.sas.antenna);
 					orbit_state = &(spacecraft.orbitState);
 					attitude = &(spacecraft.attitude);
+
+                    // center on the transmit pulse
+                    qscat.sas.antenna.TimeRotation(qscat.ses.txPulseWidth /
+                        2.0);
 
 					antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 						attitude, antenna);
 
 					double look, azim;
+                    beam = qscat.GetCurrentBeam();
 					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->actualSpinRate, &look, &azim);
+						beam, antenna->spinRate, &look, &azim);
 					vector.SphericalSet(1.0, look, azim);
-					TargetInfo(&antenna_frame_to_gc, &spacecraft, &instrument,
+					TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
 						vector, &tip);
 
 					//---------------------------//
 					// calculate the ideal delay //
 					//---------------------------//
 
+                    ses_beam_info = qscat.GetCurrentSesBeamInfo();
 					ideal_delay = tip.roundTripTime +
-						(beam->txPulseWidth - beam->rxGateWidth) / 2.0;
-
-					//-------------------------//
-					// calculate the RGC delay //
-					//-------------------------//
-
-					beam->rangeTracker.SetInstrument(&instrument,
-						&residual_delay_error);
-					delay = instrument.commandedRxGateDelay;
+						(qscat.ses.txPulseWidth -
+                        ses_beam_info->rxGateWidth) / 2.0;
 
 					//---------------------------//
 					// calculate the delay error //
@@ -384,15 +387,15 @@ main(
 
 					delay_error = delay - ideal_delay;
 					fprintf(rgc_err_fp, "%.6f %.6f %.6f %.6f %d\n",
-						instrument_event.time, delay_error * 1000.0,
-						ideal_delay * 1000.0, delay * 1000.0,antenna->currentBeamIdx);
+						qscat_event.time, delay_error * 1000.0,
+						ideal_delay * 1000.0, delay * 1000.0,
+                        qscat.cds.currentBeamIdx);
 
-					instrument_sim.DetermineNextEvent(&(instrument.antenna),
-						&instrument_event);
+					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
 
 				default:
-					fprintf(stderr, "%s: unknown instrument event\n", command);
+					fprintf(stderr, "%s: unknown QSCAT event\n", command);
 					exit(1);
 					break;
 				}

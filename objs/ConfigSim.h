@@ -10,8 +10,7 @@ static const char rcs_id_configsim_h[] =
 	"@(#) $Id$";
 
 #include "SpacecraftSim.h"
-#include "InstrumentSim.h"
-#include "InstrumentSimAccurate.h"
+#include "QscatSimAccurate.h"
 #include "XTable.h"
 #include "L00.h"
 #include "L1A.h"
@@ -55,28 +54,6 @@ int ConfigAttitudeControlModel(AttDist* attctnl,
 int ConfigAttitudeKnowledgeModel(AttDist* attknow,
 	ConfigList* config_list);
 
-
-//------------//
-// Instrument //
-//------------//
-
-int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
-int ConfigInstrumentSim(InstrumentSim* instrument_sim,
-		ConfigList* config_list);
-
-//-----------------------//
-// InstrumentSimAccurate //
-//-----------------------//
-
-int ConfigInstrumentSimAccurate(InstrumentSimAccurate* instrument_sim,
-	ConfigList* config_list);
-
-//------------//
-// AntennaSim //
-//------------//
-
-int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
-
 //---------//
 // Antenna //
 //---------//
@@ -95,6 +72,7 @@ int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 
 int ConfigXTable(XTable* xTable, ConfigList* config_list, char* read_write);
 int ConfigBYUXTable(BYUXTable* BYUX,ConfigList* config_list);
+
 //-----//
 // L00 //
 //-----//

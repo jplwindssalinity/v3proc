@@ -136,8 +136,8 @@ QscatSimAccurate::ScatSim(
 	else
 	{
 
-		if (! IntegrateSlices(spacecraft, &meas_spot, numLookStepsPerSlice,
-            azimuthIntegrationRange, azimuthStepSize))
+		if (! IntegrateSlices(spacecraft, qscat, &meas_spot,
+            numLookStepsPerSlice, azimuthIntegrationRange, azimuthStepSize))
 		{
 			return(0);
 		}

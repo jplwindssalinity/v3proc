@@ -21,14 +21,15 @@ static const char rcs_id_qscatconfigdefs_h[] =
 // QscatCds //
 //----------//
 
-#define TX_PULSE_WIDTH_KEYWORD  "TX_PULSE_WIDTH"
-#define PRI_KEYWORD             "PRI"
-#define SPIN_RATE_KEYWORD       "SPIN_RATE"
+#define TX_PULSE_WIDTH_KEYWORD     "TX_PULSE_WIDTH"
+#define PRI_KEYWORD                "PRI"
+#define ANTENNA_SPIN_RATE_KEYWORD  "ANTENNA_SPIN_RATE"
 
 #define BEAM_x_RX_GATE_WIDTH_KEYWORD  "BEAM_x_RX_GATE_WIDTH"
 #define BEAM_x_RGC_FILE_KEYWORD       "BEAM_x_RGC_FILE"
 #define BEAM_x_DTC_FILE_KEYWORD       "BEAM_x_DTC_FILE"
 
-#define USE_TRACKING_KEYWORD    "USE_TRACKING"
+#define USE_RGC_KEYWORD    "USE_RGC"
+#define USE_DTC_KEYWORD    "USE_DTC"
 
 #endif

@@ -116,6 +116,7 @@ static const char rcs_id_configsimdefs_h[] =
 //---------------//
 // LandMap       //
 //---------------//
+
 #define LANDMAP_FILE_KEYWORD                           "LANDMAP_FILE"
 #define USE_LANDMAP_KEYWORD                            "USE_LANDMAP"
 
@@ -133,13 +134,6 @@ static const char rcs_id_configsimdefs_h[] =
 #define AZIMUTH_INTEGRATION_RANGE_KEYWORD	"AZIMUTH_INTEGRATION_RANGE"
 #define AZIMUTH_STEP_SIZE_KEYWORD			"AZIMUTH_INTEGRATION_STEP_SIZE"
 
-//------------//
-// AntennaSim //
-//------------//
-
-#define ANTENNA_START_AZIMUTH_KEYWORD	"ANTENNA_START_AZIMUTH"
-#define ANTENNA_START_TIME_KEYWORD		"ANTENNA_START_TIME"
-
 //---------//
 // Antenna //
 //---------//
@@ -154,6 +148,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define ACTUAL_SPIN_RATE_KEYWORD		"ACTUAL_SPIN_RATE"
 #define ENCODER_A_OFFSET_KEYWORD		"ENCODER_A_OFFSET"
 #define ENCODER_DELAY_KEYWORD			"ENCODER_DELAY"
+#define ANTENNA_START_AZIMUTH_KEYWORD   "ANTENNA_START_AZIMUTH"
+#define ANTENNA_START_TIME_KEYWORD      "ANTENNA_START_TIME"
 
 //------//
 // Beam //
@@ -163,6 +159,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_DTC_KEYWORD						"USE_DTC"
 #define MECH_LOOK_ANGLE_KEYWORD				"MECH_LOOK_ANGLE"
 #define MECH_AZIMUTH_ANGLE_KEYWORD			"MECH_AZIMUTH_ANGLE"
+#define BEAM_x_PEAK_GAIN_KEYWORD			"BEAM_x_PEAK_GAIN"
 #define BEAM_x_LOOK_ANGLE_KEYWORD			"BEAM_x_LOOK_ANGLE"
 #define BEAM_x_AZIMUTH_ANGLE_KEYWORD		"BEAM_x_AZIMUTH_ANGLE"
 #define BEAM_x_POLARIZATION_KEYWORD			"BEAM_x_POLARIZATION"

@@ -40,10 +40,7 @@ PROGRAMS = \
 	baseband_errors \
 	rgc_format \
 	dtc_format \
-	reformat_pattern \
 	memfilter \
-	make_pattern \
-	test_pattern \
 	fake_vap \
 	l1b_ascii \
 	l1b_outlines \
@@ -51,7 +48,6 @@ PROGRAMS = \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
-	generate_kfactor \
 	make_kpmfield \
 	windfield_to_vctr \
 	l2a_centroids \
@@ -75,6 +71,10 @@ PROGRAMS = \
 	l1b_to_ascii \
 	checkframe_to_ascii \
 	l2a_to_ascii
+#	reformat_pattern
+#	make_pattern
+#	test_pattern
+#	generate_kfactor
 
 HUDD_PROGRAMS = \
 	sim \

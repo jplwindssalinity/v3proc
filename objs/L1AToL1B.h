@@ -10,13 +10,12 @@ static const char rcs_id_l1atol1b_h[] =
 	"@(#) $Id$";
 
 #include "L1A.h"
-#include "L1B.h"
 #include "Spacecraft.h"
-#include "Instrument.h"
-#include "LandMap.h"
 #include "Ephemeris.h"
+#include "L1B.h"
 #include "XTable.h"
 #include "BYUXTable.h"
+#include "LandMap.h"
 
 
 //======================================================================
@@ -49,17 +48,17 @@ public:
 	// conversion //
 	//------------//
 
-	int		Convert(L1A* l1a, Spacecraft* spacecraft, Instrument* instrument,
-				Ephemeris* ephemeris, L1B* l1b);
+    int  Convert(L1A* l1a, Spacecraft* spacecraft, Qscat* qscat,
+             Ephemeris* ephemeris, L1B* l1b);
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	XTable	kfactorTable;
-	XTable  xTable;
-        BYUXTable  BYUX;
-        LandMap landMap;
+    XTable     kfactorTable;
+    XTable     xTable;
+    BYUXTable  BYUX;
+    LandMap    landMap;
 
 	int		useKfactor;		 // read and use kfactor table
 	int		useBYUXfactor;		 // read and use Xfactor table

@@ -111,6 +111,7 @@ public:
              L00Frame* l00_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
              float* X);
+    int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
     //-----------//
     // variables //

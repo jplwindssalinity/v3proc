@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include "L1AToL1B.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "QscatConfig.h"
 
 //-----------//
 // TEMPLATES //
@@ -174,16 +175,16 @@ main(
 		exit(1);
 	}
 
-	//---------------------------------//
-	// create and configure instrument //
-	//---------------------------------//
+    //----------------------------//
+    // create and configure QSCAT //
+    //----------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+    }
 
 	//--------------------------------//
 	// create and configure ephemeris //
@@ -249,54 +250,59 @@ main(
 			break;		// done, exit do loop
 		}
 
-                //=======================//
-                // FOR FIRST RECORD ONLY // 
-		//=======================//
-                //===========================================================//
-		// This part may be omitted if the prev_eqx_time is included //
-                // in the l1a file                                           //
-		//===========================================================//
-	        if(top_of_file==1){
-		  top_of_file=0;
-		  //----------------------------------//
-		  // Quickly simulate the spacecraft  //
-		  // to get previous equator crossing //
-		  // time.                            //
-		  //----------------------------------//
-		  SpacecraftSim spacecraft_sim;
-		  if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list)){
-		      fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		      exit(1);
-		  }
-		  //---------------------------//
-		  // set the previous Eqx time //
-		  //---------------------------//
-                  l1a.frame.Unpack(l1a.buffer);
+        //=======================//
+        // FOR FIRST RECORD ONLY // 
+        //=======================//
+        //===========================================================//
+        // This part may be omitted if the prev_eqx_time is included //
+        // in the l1a file                                           //
+        //===========================================================//
+
+        if (top_of_file == 1)
+        {
+            top_of_file = 0;
+
+            //----------------------------------//
+            // Quickly simulate the spacecraft  //
+            // to get previous equator crossing //
+            // time.                            //
+            //----------------------------------//
+
+            SpacecraftSim spacecraft_sim;
+            if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+            {
+                fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+                    command);
+                exit(1);
+            }
+
+            //---------------------------//
+            // set the previous Eqx time //
+            //---------------------------//
+
+            l1a.frame.Unpack(l1a.buffer);
 		  
-		  double eqx_time =
-		    spacecraft_sim.FindPrevArgOfLatTime(l1a.frame.time,
-				      EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-		    instrument.SetEqxTime(eqx_time);
+            double eqx_time =
+                spacecraft_sim.FindPrevArgOfLatTime(l1a.frame.time,
+                EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+		    qscat.cds.SetEqxTime(eqx_time);
 		}
 
 		//---------//
 		// convert //
 		//---------//
 
-		if (! l1a_to_l1b.Convert(&l1a, &spacecraft, &instrument,
-			&ephemeris, &l1b))
+		if (! l1a_to_l1b.Convert(&l1a, &spacecraft, &qscat, &ephemeris, &l1b))
 		{
-		       fprintf(stderr, "%s: error converting data record %d\n",
-				command, data_record_number);
+            fprintf(stderr, "%s: error converting data record %d\n", command,
+                data_record_number);
 		}
-
-		//------------------------------//
-		// write a level 1B data record //
-		//------------------------------//
-
 		else if (! l1b.WriteDataRec())
 		{
+            //------------------------------//
+            // write a level 1B data record //
+            //------------------------------//
+
 			fprintf(stderr, "%s: error writing Level 1B data\n", command);
 			exit(1);
 		}

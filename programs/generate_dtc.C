@@ -1,6 +1,6 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
@@ -60,32 +60,34 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include "Misc.h"
 #include "ConfigList.h"
-#include "List.h"
-#include "List.C"
+#include "QscatConfigDefs.h"
+#include "ConfigSimDefs.h"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
-#include "Tracking.h"
+#include "QscatConfig.h"
 #include "InstrumentGeom.h"
-#include "BufferedList.h"
-#include "BufferedList.C"
+#include "List.h"
+#include "List.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
 
 //-----------//
 // TEMPLATES //
 //-----------//
 
-template class List<EarthPosition>;
-template class List<StringPair>;
 template class List<Meas>;
 template class List<WindVectorPlus>;
-template class List<MeasSpot>;
 template class List<long>;
+template class TrackerBase<unsigned short>;
+template class List<MeasSpot>;
 template class List<OffsetList>;
+template class List<StringPair>;
+template class TrackerBase<unsigned char>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
+template class List<EarthPosition>;
 
 //-----------//
 // CONSTANTS //
@@ -150,9 +152,9 @@ main(
 		exit(1);
 	}
 
-	//-----------------------------------//
-	// force RGC to be read, but not DTC //
-	//-----------------------------------//
+	//--------------------------//
+	// force RGC and to be read //
+	//--------------------------//
 
 	config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
 	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
@@ -179,25 +181,24 @@ main(
 	}
 	spacecraft_sim.LocationToOrbit(0.0, 0.0, 1);
 
-	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
-	//-----------------------------------------------//
+    //--------------------------------------//
+    // create a QSCAT and a QSCAT simulator //
+    //--------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
-	Antenna* antenna = &(instrument.antenna);
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+    }
 
-	InstrumentSim instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring instrument simulator\n",
+            command);
+        exit(1);
+    }
 
 	//----------------//
 	// allocate terms //
@@ -219,19 +220,72 @@ main(
 	double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
 	double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
 
+    //----------------------------//
+    // select encoder information //
+    //----------------------------//
+
+    unsigned int encoder_offset_dn;
+    switch (qscat.sas.encoderElectronics)
+    {
+        case ENCODER_A:
+            encoder_offset_dn = ENCODER_A_OFFSET;
+            break;
+        case ENCODER_B:
+            encoder_offset_dn = ENCODER_B_OFFSET;
+            break;
+        default:
+            fprintf(stderr, "%s: unknown encoder electronics\n", command);
+            exit(1);
+    }
+    double encoder_offset = (double)encoder_offset_dn * two_pi /
+        (double)ENCODER_N;
+
+    //-------------------------------------------//
+    // determine spin rate in radians per second //
+    //-------------------------------------------//
+
+    double assumed_spin_rate = qscat.cds.GetAssumedSpinRate();
+    assumed_spin_rate *= rpm_to_radps;
+
 	//-----------------//
 	// loop over beams //
 	//-----------------//
 
-	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
+	for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
 	{
+        //---------------------------//
+        // get the beam offset angle //
+        //---------------------------//
+
+        unsigned int cds_beam_offset_dn;
+        switch (beam_idx)
+        {
+            case 0:
+                cds_beam_offset_dn = BEAM_A_OFFSET;
+                break;
+            case 1:
+                cds_beam_offset_dn = BEAM_B_OFFSET;
+                break;
+            default:
+                fprintf(stderr, "%s: too many beams\n", command);
+                exit(1);
+                break;
+        }
+        double cds_beam_offset = (double)cds_beam_offset_dn * two_pi /
+            (double)ENCODER_N;
+
 		//--------------------------//
 		// allocate Doppler tracker //
 		//--------------------------//
 
-		antenna->currentBeamIdx = beam_idx;
-		Beam* beam = antenna->GetCurrentBeam();
-		if (! beam->dopplerTracker.Allocate(DOPPLER_ORBIT_STEPS))
+		qscat.cds.currentBeamIdx = beam_idx;
+		Beam* beam = qscat.GetCurrentBeam();
+
+        CdsBeamInfo* cds_beam_info = qscat.GetCurrentCdsBeamInfo();
+        DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
+        RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
+
+		if (! doppler_tracker->Allocate(DOPPLER_ORBIT_STEPS))
 		{
 			fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
 			exit(1);
@@ -244,15 +298,15 @@ main(
 		double start_time =
 			spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
 				EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-		instrument.SetEqxTime(start_time);
+		qscat.cds.SetEqxTime(start_time);
 
 		//------------//
 		// initialize //
 		//------------//
 
-		if (! instrument_sim.Initialize(&(instrument.antenna)))
+		if (! qscat_sim.Initialize(&qscat))
 		{
-			fprintf(stderr, "%s: error initializing instrument simulator\n",
+			fprintf(stderr, "%s: error initializing the QSCAT simulator\n",
 				command);
 			exit(1);
 		}
@@ -284,69 +338,111 @@ main(
 
 			spacecraft_sim.UpdateOrbit(time, &spacecraft);
 
-			//-------------------------//
-			// set the instrument time //
-			//-------------------------//
-
-			instrument.SetTime(time);
-
-			//--------------------------------//
-			// calculate baseband frequencies //
-			//--------------------------------//
+			//----------------------//
+			// step through azimuth //
+			//----------------------//
 
 			double dop_com[DOPPLER_AZIMUTH_STEPS];
-
 			for (int azimuth_step = 0; azimuth_step < DOPPLER_AZIMUTH_STEPS;
 				azimuth_step++)
 			{
-				//--------------------------------//
-				// calculate azimuth angle to use //
-				//--------------------------------//
+                //--------------------------------//
+                // calculate azimuth angle to use //
+                //--------------------------------//
 
-				// starting azimuth angle
-				antenna->azimuthAngle = azimuth_step_size *
-					(double)azimuth_step;
+                // The table needs to be built for the CDS algorithm,
+                // but we need to determine the actual antenna azimuth
+                // angle.  The following code starts from the CDS azimuth,
+                // backtracks to the original sampled encoder and then
+                // calculates the actual antenna azimuth at the ground
+                // impact time.  This method of doing the calculation will
+                // allow for things like changes in the antenna spin rate
+                // which will affect the actual antenna azimuth but not
+                // the CDS estimation (which uses hardcoded spin rates).
+
+                // start with the azimuth angle to be used by the CDS
+                double cds_azimuth = azimuth_step_size * (double)azimuth_step;
+                double azimuth = cds_azimuth;
+
+                // subtract the beam offset
+                azimuth -= cds_beam_offset;
+
+                // subtract an estimate of the centering offset
+                // uses an estimate of the round trip time as
+                // the previous pulses round trip time
+                qscat.sas.antenna.SetAzimuthAngle(cds_azimuth);
+                Antenna* antenna = &(qscat.sas.antenna);
+                CoordinateSwitch antenna_frame_to_gc =
+                    AntennaFrameToGC(orbit_state, attitude, antenna);
+                double look, az;
+                GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft, beam,
+                    antenna->spinRate, &look, &az);
+                Vector3 vector;
+                vector.SphericalSet(1.0, look, az);
+                TargetInfoPackage tip;
+                if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
+                    vector, &tip))
+                {
+                    fprintf(stderr, "%s: error finding round trip time\n",
+                        command);
+                    exit(1);
+                }
+
+                // then apply to the azimuth angle
+                double delay = (tip.roundTripTime + qscat.ses.txPulseWidth) /
+                    2.0;
+                azimuth -= (delay * assumed_spin_rate);
+
+                // subtract the encoder offset
+                azimuth -= encoder_offset;
+
+                // subtract the internal (sampling) delay angle
+                double cds_pri = (double)qscat.cds.priDn / 10.0;
+                azimuth -= (cds_pri * assumed_spin_rate);
+
+                // add the actual sampling delay angle
+                azimuth += (qscat.ses.pri * qscat.sas.antenna.spinRate);
+
+                // and get to the center of the transmit pulse so that
+                // the two-way gain product is formed correctly
+                azimuth += (qscat.ses.txPulseWidth *
+                    qscat.sas.antenna.spinRate / 2.0);
+
+                //-------------------------//
+                // set the antenna azimuth //
+                //-------------------------//
+
+                qscat.sas.antenna.SetAzimuthAngle(azimuth);
+
+                //-----------------------------------------------------//
+                // determine the encoder value to use in the algorithm //
+                //-----------------------------------------------------//
+
+                unsigned short encoder =
+                    qscat.sas.AzimuthToEncoder(cds_azimuth);
 
 				//------------------------------//
 				// calculate receiver gate info //
 				//------------------------------//
 
-				float residual_delay_error = 0.0;
-				beam->rangeTracker.SetInstrument(&instrument,
-					&residual_delay_error);
-
-				//--------------------------------------------------------//
-				// hack in ideal delay by removing the quantization error //
-				//--------------------------------------------------------//
-
-				instrument.commandedRxGateDelay += residual_delay_error;
-
-				//----------------------------------------------//
-				// modify azimuth angle for Doppler calculation //
-				//----------------------------------------------//
-
-				// determine sampling delay azimuth offset
-				double azimuth_offset = antenna->GetEarlyDeltaAzimuth();
- 
-				// determine encoder offset applied by CDS
-				unsigned int encoder_offset =
-					beam->rangeTracker.AngleOffset(antenna, beam,
-					antenna->actualSpinRate);
- 
-				// calculate new azimuth angle
-				antenna->azimuthAngle = antenna->azimuthAngle -
-					antenna->EncoderToAngle(encoder_offset) + azimuth_offset;
+                CdsBeamInfo* cds_beam_info = qscat.GetCurrentCdsBeamInfo();
+                unsigned char rx_gate_delay_dn;
+                float rx_gate_delay_fdn;
+                range_tracker->GetRxGateDelay(orbit_step, encoder,
+                    cds_beam_info->rxGateWidthDn, qscat.cds.txPulseWidthDn,
+                    &rx_gate_delay_dn, &rx_gate_delay_fdn);
+                // set it with the exact value to eliminate quant. effects
+                qscat.ses.CmdRxGateDelayFdn(rx_gate_delay_fdn);
 
 				//-------------------//
 				// coordinate system //
 				//-------------------//
 
-				CoordinateSwitch antenna_frame_to_gc =
-					AntennaFrameToGC(orbit_state, attitude, antenna);
+				antenna_frame_to_gc = AntennaFrameToGC(orbit_state, attitude,
+                    antenna);
 
-				double look, azimuth;
 				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-					beam, antenna->actualSpinRate, &look, &azimuth))
+					beam, antenna->spinRate, &look, &azimuth))
 				{
 					fprintf(stderr, "%s: error finding two-way peak gain\n",
 						command);
@@ -358,10 +454,10 @@ main(
 				// calculate corrective frequency //
 				//--------------------------------//
 
-				IdealCommandedDoppler(&spacecraft, &instrument);
+				IdealCommandedDoppler(&spacecraft, &qscat);
 
 				// constants store Doppler to correct for (ergo -)
-				dop_com[azimuth_step] = -instrument.commandedDoppler;
+				dop_com[azimuth_step] = -qscat.ses.txDoppler;
 			}
 
 			//------------------------//
@@ -379,7 +475,7 @@ main(
 		// set Doppler //
 		//-------------//
 
-		beam->dopplerTracker.Set(terms);
+		doppler_tracker->Set(terms);
 
 		//------------------------------------------//
 		// write out the doppler tracking constants //
@@ -387,7 +483,7 @@ main(
 
 		char filename[1024];
 		sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
-		if (! beam->dopplerTracker.WriteBinary(filename))
+		if (! doppler_tracker->WriteBinary(filename))
 		{
 			fprintf(stderr, "%s: error writing DTC file %s\n", command,
 				filename);

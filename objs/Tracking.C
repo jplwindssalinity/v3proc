@@ -1,106 +1,63 @@
-//==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
-//==============================================================//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
-static const char rcs_id_tracking_c[] =
-	"@(#) $Id$";
+static const char rcs_id_qtracking_c[] =
+    "@(#) $Id$";
 
-#include <stdio.h>
+#include <math.h>
 #include <malloc.h>
 #include "Tracking.h"
+#include "Constants.h"
 #include "Array.h"
-#include "Instrument.h"
 
-//--------//
-// Cosine //
-//--------//
+#define COS_TABLE_SIZE         256
+#define COS_TABLE_SIZE_MOD(A)  ((A) & 0xFF)
 
-float
-Cosine(
-	float	angle)
+const float cos_table[COS_TABLE_SIZE] =
 {
-	//------------------//
-	// the cosine table //
-	//------------------//
-
-	static const int _cosTableSize = 256;
-	static const float _cosTable[] = {
-		1.000000, 0.999699, 0.998795, 0.997290, 0.995185, 0.992480,
-		0.989177, 0.985278, 0.980785, 0.975702, 0.970031, 0.963776,
-		0.956940, 0.949528, 0.941544, 0.932993, 0.923880, 0.914210,
-		0.903989, 0.893224, 0.881921, 0.870087, 0.857729, 0.844854,
-		0.831470, 0.817585, 0.803207, 0.788346, 0.773010, 0.757209,
-		0.740951, 0.724247, 0.707107, 0.689540, 0.671559, 0.653173,
-		0.634393, 0.615231, 0.595699, 0.575808, 0.555570, 0.534997,
-		0.514103, 0.492898, 0.471397, 0.449611, 0.427555, 0.405241,
-		0.382684, 0.359895, 0.336890, 0.313682, 0.290285, 0.266713,
-		0.242981, 0.219102, 0.195091, 0.170962, 0.146731, 0.122411,
-		0.098018, 0.073565, 0.049068, 0.024542, 0.000001, -0.024540,
-		-0.049067, -0.073564, -0.098016, -0.122410, -0.146729, -0.170961,
-		-0.195089, -0.219100, -0.242979, -0.266711, -0.290283, -0.313680,
-		-0.336888, -0.359894, -0.382682, -0.405240, -0.427554, -0.449610,
-		-0.471395, -0.492897, -0.514102, -0.534997, -0.555569, -0.575807,
-		-0.595698, -0.615231, -0.634392, -0.653172, -0.671558, -0.689540,
-		-0.707106, -0.724247, -0.740951, -0.757209, -0.773010, -0.788346,
-		-0.803207, -0.817585, -0.831470, -0.844854, -0.857729, -0.870087,
-		-0.881921, -0.893224, -0.903989, -0.914210, -0.923880, -0.932993,
-		-0.941544, -0.949528, -0.956941, -0.963776, -0.970031, -0.975702,
-		-0.980785, -0.985278, -0.989177, -0.992480, -0.995185, -0.997291,
-		-0.998796, -0.999699, -1.000000, -0.999699, -0.998795, -0.997290,
-		-0.995185, -0.992479, -0.989176, -0.985277, -0.980785, -0.975702,
-		-0.970031, -0.963775, -0.956940, -0.949527, -0.941543, -0.932992,
-		-0.923879, -0.914209, -0.903988, -0.893223, -0.881920, -0.870086,
-		-0.857727, -0.844852, -0.831468, -0.817583, -0.803206, -0.788344,
-		-0.773008, -0.757207, -0.740949, -0.724245, -0.707104, -0.689538,
-		-0.671556, -0.653170, -0.634390, -0.615229, -0.595696, -0.575805,
-		-0.555567, -0.534994, -0.514099, -0.492894, -0.471393, -0.449607,
-		-0.427551, -0.405237, -0.382679, -0.359891, -0.336885, -0.313677,
-		-0.290280, -0.266708, -0.242975, -0.219096, -0.195085, -0.170957,
-		-0.146725, -0.122405, -0.098012, -0.073559, -0.049062, -0.024536,
-		0.000006, 0.024547, 0.049074, 0.073570, 0.098023, 0.122417,
-		0.146737, 0.170968, 0.195096, 0.219107, 0.242986, 0.266719,
-		0.290291, 0.313688, 0.336896, 0.359901, 0.382690, 0.405248,
-		0.427561, 0.449618, 0.471403, 0.492904, 0.514109, 0.535004,
-		0.555576, 0.575814, 0.595705, 0.615238, 0.634399, 0.653179,
-		0.671565, 0.689546, 0.707112, 0.724253, 0.740957, 0.757214,
-		0.773016, 0.788352, 0.803213, 0.817590, 0.831474, 0.844858,
-		0.857733, 0.870091, 0.881925, 0.893228, 0.903993, 0.914213,
-		0.923883, 0.932996, 0.941547, 0.949531, 0.956943, 0.963779,
-		0.970034, 0.975704, 0.980787, 0.985279, 0.989178, 0.992481,
-		0.995186, 0.997291, 0.998796, 0.999699 };
-
-	//-----------------------------//
-	// make sure angle is positive //
-	//-----------------------------//
-
-	if (angle < 0.0)
-	{
-		int times = (int)(-angle / two_pi) + 1;
-		angle += (float)times * two_pi;
-	}
-
-	//---------------------------------//
-	// convert angle to floating index //
-	//---------------------------------//
-
-	float f_idx = angle * 256.0 / two_pi;
-	unsigned int idx = (int)f_idx;
-
-	//-----------------------//
-	// get bracketing values //
-	//-----------------------//
-
-	float cos_1 = _cosTable[idx % _cosTableSize];
-	float cos_2 = _cosTable[(idx + 1) % _cosTableSize];
-
-	//-------------//
-	// interpolate //
-	//-------------//
-
-	float cos_3 = cos_1 + (f_idx - (float)idx) * (cos_2 - cos_1);
-	return(cos_3);
-}
+    1.000000, 0.999699, 0.998795, 0.997290, 0.995185, 0.992480, 0.989177,
+    0.985278, 0.980785, 0.975702, 0.970031, 0.963776, 0.956940, 0.949528,
+    0.941544, 0.932993, 0.923880, 0.914210, 0.903989, 0.893224, 0.881921,
+    0.870087, 0.857729, 0.844854, 0.831470, 0.817585, 0.803207, 0.788346,
+    0.773010, 0.757209, 0.740951, 0.724247, 0.707107, 0.689540, 0.671559,
+    0.653173, 0.634393, 0.615231, 0.595699, 0.575808, 0.555570, 0.534997,
+    0.514103, 0.492898, 0.471397, 0.449611, 0.427555, 0.405241, 0.382684,
+    0.359895, 0.336890, 0.313682, 0.290285, 0.266713, 0.242981, 0.219102,
+    0.195091, 0.170962, 0.146731, 0.122411, 0.098018, 0.073565, 0.049068,
+    0.024542, 0.000001, -0.024540, -0.049067, -0.073564, -0.098016,
+    -0.122410, -0.146729, -0.170961, -0.195089, -0.219100, -0.242979,
+    -0.266711, -0.290283, -0.313680, -0.336888, -0.359894, -0.382682,
+    -0.405240, -0.427554, -0.449610, -0.471395, -0.492897, -0.514102,
+    -0.534997, -0.555569, -0.575807, -0.595698, -0.615231, -0.634392,
+    -0.653172, -0.671558, -0.689540, -0.707106, -0.724247, -0.740951,
+    -0.757209, -0.773010, -0.788346, -0.803207, -0.817585, -0.831470,
+    -0.844854, -0.857729, -0.870087, -0.881921, -0.893224, -0.903989,
+    -0.914210, -0.923880, -0.932993, -0.941544, -0.949528, -0.956941,
+    -0.963776, -0.970031, -0.975702, -0.980785, -0.985278, -0.989177,
+    -0.992480, -0.995185, -0.997291, -0.998796, -0.999699, -1.000000,
+    -0.999699, -0.998795, -0.997290, -0.995185, -0.992479, -0.989176,
+    -0.985277, -0.980785, -0.975702, -0.970031, -0.963775, -0.956940,
+    -0.949527, -0.941543, -0.932992, -0.923879, -0.914209, -0.903988,
+    -0.893223, -0.881920, -0.870086, -0.857727, -0.844852, -0.831468,
+    -0.817583, -0.803206, -0.788344, -0.773008, -0.757207, -0.740949,
+    -0.724245, -0.707104, -0.689538, -0.671556, -0.653170, -0.634390,
+    -0.615229, -0.595696, -0.575805, -0.555567, -0.534994, -0.514099,
+    -0.492894, -0.471393, -0.449607, -0.427551, -0.405237, -0.382679,
+    -0.359891, -0.336885, -0.313677, -0.290280, -0.266708, -0.242975,
+    -0.219096, -0.195085, -0.170957, -0.146725, -0.122405, -0.098012,
+    -0.073559, -0.049062, -0.024536, 0.000006, 0.024547, 0.049074,
+    0.073570, 0.098023, 0.122417, 0.146737, 0.170968, 0.195096, 0.219107,
+    0.242986, 0.266719, 0.290291, 0.313688, 0.336896, 0.359901, 0.382690,
+    0.405248, 0.427561, 0.449618, 0.471403, 0.492904, 0.514109, 0.535004,
+    0.555576, 0.575814, 0.595705, 0.615238, 0.634399, 0.653179, 0.671565,
+    0.689546, 0.707112, 0.724253, 0.740957, 0.757214, 0.773016, 0.788352,
+    0.803213, 0.817590, 0.831474, 0.844858, 0.857733, 0.870091, 0.881925,
+    0.893228, 0.903993, 0.914213, 0.923883, 0.932996, 0.941547, 0.949531,
+    0.956943, 0.963779, 0.970034, 0.975704, 0.980787, 0.985279, 0.989178,
+    0.992481, 0.995186, 0.997291, 0.998796, 0.999699
+};
 
 //=============//
 // TrackerBase //
@@ -108,22 +65,18 @@ Cosine(
 
 template <class T>
 TrackerBase<T>::TrackerBase()
-:	_tableId(0), _scaleArray(NULL), _termArray(NULL), _steps(256),
-	_previousDelay(0.0)
+:   _tableId(0), _scaleArray(NULL), _termArray(NULL), _steps(256)
 {
-	for (int i = 0; i < 2; i++)
-		_dither[i] = 0;
+    for (int i = 0; i < 2; i++)
+        _dither[i] = 0;
 
-	return;
+    return;
 }
 
 template <class T>
 TrackerBase<T>::~TrackerBase()
 {
-	free_array(_scaleArray, 2, 3, 2);
-	free_array(_termArray, 2, _steps, 3);
-
-	return;
+    return;
 }
 
 //-----------------------//
@@ -133,180 +86,30 @@ TrackerBase<T>::~TrackerBase()
 template <class T>
 int
 TrackerBase<T>::Allocate(
-	unsigned int	steps)
+    unsigned int    steps)
 {
-	//-------------------------------//
-	// check for previous allocation //
-	//-------------------------------//
+    //-------------------------------//
+    // check for previous allocation //
+    //-------------------------------//
 
-	if (_scaleArray || _termArray)
-		return(0);
+    if (_scaleArray || _termArray)
+        return(0);
 
-	//----------//
-	// allocate //
-	//----------//
+    //----------//
+    // allocate //
+    //----------//
 
-	_scaleArray = (float **)make_array(sizeof(float), 2, 3, 2);
-	if (_scaleArray == NULL)
-		return(0);
+    _scaleArray = (float **)make_array(sizeof(float), 2, 3, 2);
+    if (_scaleArray == NULL)
+        return(0);
 
-	_termArray = (T **)make_array(sizeof(T), 2, steps, 3);
-	if (_termArray == NULL)
-		return(0);
+    _termArray = (T **)make_array(sizeof(T), 2, steps, 3);
+    if (_termArray == NULL)
+        return(0);
 
-	_steps = steps;
+    _steps = steps;
 
-	return(1);
-}
-
-//-------------------------------//
-// TrackerBase::OrbitTicksToStep //
-//-------------------------------//
-
-template <class T>
-unsigned short
-TrackerBase<T>::OrbitTicksToStep(
-	unsigned int	orbit_ticks,
-	unsigned int	ticks_per_orbit)
-{
-	float ticks_per_step = (float)ticks_per_orbit / (float)_steps;
-	float f_step = (float)(orbit_ticks % ticks_per_orbit) /
-		ticks_per_step;
-	unsigned short step = (unsigned short)f_step;
-	step %= _steps;
-	return(step);
-}
-
-//-------------------------------//
-// TrackerBase::OrbitStepToTicks //
-//-------------------------------//
-// just a convenient way to set orbit ticks for a know orbit step
-// sets the orbit ticks to the center of the orbit step
-
-template <class T>
-unsigned int
-TrackerBase<T>::OrbitStepToTicks(
-	unsigned short	orbit_step,
-	unsigned int	ticks_per_orbit)
-{
-	float ticks_per_step = (float)ticks_per_orbit / (float)_steps;
-	float fticks = ticks_per_step * ((float)orbit_step + 0.5);
-	unsigned int ticks = (int)(fticks + 0.5);
-	return(ticks);
-}
-
-//--------------------------//
-// TrackerBase::AngleOffset //
-//--------------------------//
- 
-template <class T>
-unsigned int
-TrackerBase<T>::AngleOffset(
-	Antenna*		antenna,
-	Beam*			beam,
-	double			spin_rate)
-{
-	//----------------------------//
-	// convert spin rate to dn/ms //
-	//----------------------------//
-
-	double sr_dn_per_ms = spin_rate * MS_TO_S *
-		(antenna->GetEncoderN() / two_pi);
-
-	//-----------------//
-	// SAS beam offset //
-	//-----------------//
-
-	unsigned int db = beam->sasBeamOffsetDn;
-
-	//------------------//
-	// centering offset //
-	//------------------//
-
-	float half_time = (_previousDelay + beam->txPulseWidth) / 2.0;
-	unsigned int dc = (int)(half_time * S_TO_MS * sr_dn_per_ms + 0.5);
-
-	//--------------------//
-	// SAS encoder offset //
-	//--------------------//
-
-	unsigned int de = antenna->encoderAOffsetDn;
-
-	//---------------------------//
-	// internal (sampling) delay //
-	//---------------------------//
-
-	double time_delay = antenna->priPerBeam / (double)antenna->numberOfBeams -
-		antenna->encoderDelay;
-	unsigned int di = (int)(time_delay * S_TO_MS * sr_dn_per_ms + 0.5);
-
-	//----------------------------//
-	// total angle offset (in dn) //
-	//----------------------------//
- 
-	unsigned int angle_offset = db + dc + de + di;
-
-	return(angle_offset);
-}
-
-//--------------------------//
-// TrackerBase::WriteBinary //
-//--------------------------//
-
-template <class T>
-int
-TrackerBase<T>::WriteBinary(
-	const char*		filename)
-{
-	//---------------//
-	// open the file //
-	//---------------//
-
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
-
-	//-------//
-	// steps //
-	//-------//
-
-	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
-
-	//---------------//
-	// scale factors //
-	//---------------//
-
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
-
-	//-------//
-	// terms //
-	//-------//
-
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fwrite((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
-		{
-			return(0);
-		}
-	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	fclose(fp);
-
-	return(1);
+    return(1);
 }
 
 //-------------------------//
@@ -316,67 +119,266 @@ TrackerBase<T>::WriteBinary(
 template <class T>
 int
 TrackerBase<T>::ReadBinary(
-	const char*		filename)
+    const char*     filename)
 {
-	//---------------//
-	// open the file //
-	//---------------//
+    //---------------//
+    // open the file //
+    //---------------//
 
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-	//-------//
-	// steps //
-	//-------//
+    //-------//
+    // steps //
+    //-------//
 
-	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
+    if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
 
-	//----------//
-	// allocate //
-	//----------//
+    //----------//
+    // allocate //
+    //----------//
 
-	if (! Allocate(_steps))
-	{
-		fclose(fp);
-		return(0);
-	}
+    if (! Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
 
-	//---------------//
-	// scale factors //
-	//---------------//
+    //---------------//
+    // scale factors //
+    //---------------//
 
-	for (unsigned int term = 0; term < 3; term++)
-	{
-		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
-		{
-			return(0);
-		}
-	}
+    for (unsigned int term = 0; term < 3; term++)
+    {
+        if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
+        {
+            return(0);
+        }
+    }
 
-	//-------//
-	// terms //
-	//-------//
+    //-------//
+    // terms //
+    //-------//
 
-	for (unsigned int step = 0; step < _steps; step++)
-	{
-		if (fread((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
-		{
-			return(0);
-		}
-	}
+    for (unsigned int step = 0; step < _steps; step++)
+    {
+        if (fread((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
+        {
+            return(0);
+        }
+    }
 
-	//----------------//
-	// close the file //
-	//----------------//
+    //----------------//
+    // close the file //
+    //----------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
+}
+
+//--------------------------//
+// TrackerBase::WriteBinary //
+//--------------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteBinary(
+    const char*     filename)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    for (unsigned int term = 0; term < 3; term++)
+    {
+        if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
+        {
+            return(0);
+        }
+    }
+
+    //-------//
+    // terms //
+    //-------//
+
+    for (unsigned int step = 0; step < _steps; step++)
+    {
+        if (fwrite((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
+        {
+            return(0);
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
+//----------------------------//
+// TrackerBase::ReadOldBinary //
+//----------------------------//
+
+template <class T>
+int
+TrackerBase<T>::ReadOldBinary(
+    const char*     filename)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    unsigned short steps;
+    if (fread((void *)&steps, sizeof(unsigned short), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+    _steps = (unsigned int)steps;
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------------------------------------------------------//
+    // read the terms in the following order: bias, amplitude, phase //
+    //---------------------------------------------------------------//
+
+    unsigned int term[3] = { 2, 0, 1 };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        if (fread((void *) ( *(_scaleArray + term[term_idx]) + 1 ),
+                sizeof(float), 1, fp) != 1 ||
+            fread((void *) ( *(_scaleArray + term[term_idx]) ),
+                sizeof(float), 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
+                sizeof(T), 1, fp) != 1)
+            {
+                fclose(fp);
+                return(0);
+            }
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
+//-----------------------------//
+// TrackerBase::WriteOldBinary //
+//-----------------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteOldBinary(
+    const char*     filename)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    unsigned short steps = (unsigned short)_steps;
+    if (fwrite((void *)&steps, sizeof(unsigned short), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //----------------------------------------------------------------//
+    // write the terms in the following order: bias, amplitude, phase //
+    //----------------------------------------------------------------//
+
+    unsigned int term[3] = { 2, 0, 1 };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        if (fwrite((void *) ( *(_scaleArray + term[term_idx]) + 1 ),
+                sizeof(float), 1, fp) != 1 ||
+            fwrite((void *) ( *(_scaleArray + term[term_idx]) ),
+                sizeof(float), 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            if (fwrite((void *) ( *(_termArray + step) + term[term_idx] ),
+                sizeof(T), 1, fp) != 1)
+            {
+                fclose(fp);
+                return(0);
+            }
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
 }
 
 //-----------------------//
@@ -386,111 +388,111 @@ TrackerBase<T>::ReadBinary(
 template <class T>
 int
 TrackerBase<T>::WriteHex(
-	const char*		filename)
+    const char*  filename)
 {
-	//---------------//
-	// open the file //
-	//---------------//
+    //---------------//
+    // open the file //
+    //---------------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//----------//
-	// table id //
-	//----------//
+    //----------//
+    // table id //
+    //----------//
 
-	if (! write_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
-		return(0);
+    if (! write_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+        return(0);
 
-	//-----------//
-	// file size //
-	//-----------//
+    //-----------//
+    // file size //
+    //-----------//
 
-	unsigned short id_size = sizeof(unsigned short);
-	unsigned short size_size = sizeof(unsigned short);
-	unsigned short spare_size = SPARE_WORDS * sizeof(unsigned short);
-	unsigned short dither_size = 2 * sizeof(unsigned short);
-	unsigned short terms_size = 3 * _steps * sizeof(T);
-	unsigned short scale_size = 6 * sizeof(float);
-	unsigned short file_size = id_size + size_size + spare_size +
-		dither_size + terms_size + scale_size;
-	if (! write_hex(fp, (char *)&file_size, sizeof(unsigned short)))
-		return(0);
+    unsigned short id_size = sizeof(unsigned short);
+    unsigned short size_size = sizeof(unsigned short);
+    unsigned short spare_size = SPARE_WORDS * sizeof(unsigned short);
+    unsigned short dither_size = 2 * sizeof(unsigned short);
+    unsigned short terms_size = 3 * _steps * sizeof(T);
+    unsigned short scale_size = 6 * sizeof(float);
+    unsigned short file_size = id_size + size_size + spare_size +
+        dither_size + terms_size + scale_size;
+    if (! write_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+        return(0);
 
-	//-------//
-	// spare //
-	//-------//
+    //-------//
+    // spare //
+    //-------//
 
-	unsigned short spare[SPARE_WORDS];
-	for (int i = 0; i < SPARE_WORDS; i++)
-	{
-		spare[i] = 0;
-	}
-	if (! write_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
-		return(0);
+    unsigned short spare[SPARE_WORDS];
+    for (int i = 0; i < SPARE_WORDS; i++)
+    {
+        spare[i] = 0;
+    }
+    if (! write_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+        return(0);
 
-	//--------//
-	// dither //
-	//--------//
+    //--------//
+    // dither //
+    //--------//
 
-	if (! write_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
-		return(0);
+    if (! write_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+        return(0);
 
-	//-------//
-	// scale //
-	//-------//
+    //-------//
+    // scale //
+    //-------//
 
-	if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
-			sizeof(float)) ||
-		! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
-			sizeof(float)) ||
-		! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
-			sizeof(float)) ||
-		! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
-			sizeof(float)) ||
-		! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
-			sizeof(float)) ||
-		! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
-			sizeof(float)))
-	{
-		return(0);
-	}
+    if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float)) ||
+        ! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float)) ||
+        ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float)) ||
+        ! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float)) ||
+        ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float)) ||
+        ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float)))
+    {
+        return(0);
+    }
 
-	//-------//
-	// terms //
-	//-------//
+    //-------//
+    // terms //
+    //-------//
 
-	unsigned int array_size = 3 * _steps * sizeof(T);
-	unsigned char* term_array = (unsigned char *)malloc(array_size);
-	if (term_array == NULL)
-		return(0);
+    unsigned int array_size = 3 * _steps * sizeof(T);
+    unsigned char* term_array = (unsigned char *)malloc(array_size);
+    if (term_array == NULL)
+        return(0);
 
-	unsigned int bytes = 0;
-	for (int term = 0; term < 3; term++)
-	{
-		for (unsigned int step = 0; step < _steps; step++)
-		{
-			memcpy(term_array + bytes, (*(_termArray + step) + term),
-				sizeof(T));
-			bytes += sizeof(T);
-		}
-	}
+    unsigned int bytes = 0;
+    for (int term = 0; term < 3; term++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            memcpy(term_array + bytes, (*(_termArray + step) + term),
+                sizeof(T));
+            bytes += sizeof(T);
+        }
+    }
 
-	if (! write_hex(fp, (char *)term_array, array_size))
-	{
-		return(0);
-	}
+    if (! write_hex(fp, (char *)term_array, array_size))
+    {
+        return(0);
+    }
 
-	free(term_array);
+    free(term_array);
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
 }
 
 //----------------------//
@@ -500,111 +502,111 @@ TrackerBase<T>::WriteHex(
 template <class T>
 int
 TrackerBase<T>::ReadHex(
-	const char*		filename)
+    const char*  filename)
 {
-	//---------------//
-	// open the file //
-	//---------------//
+    //---------------//
+    // open the file //
+    //---------------//
 
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-	//----------//
-	// table id //
-	//----------//
+    //----------//
+    // table id //
+    //----------//
 
-	if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
-		return(0);
+    if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+        return(0);
 
-	//-----------//
-	// file size //
-	//-----------//
+    //-----------//
+    // file size //
+    //-----------//
 
-	unsigned short file_size;
-	if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
-		return(0);
+    unsigned short file_size;
+    if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+        return(0);
 
-	//-------//
-	// spare //
-	//-------//
+    //-------//
+    // spare //
+    //-------//
 
-	unsigned short spare[SPARE_WORDS];
-	if (! read_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
-		return(0);
+    unsigned short spare[SPARE_WORDS];
+    if (! read_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+        return(0);
 
-	//--------//
-	// dither //
-	//--------//
+    //--------//
+    // dither //
+    //--------//
 
-	if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
-		return(0);
+    if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+        return(0);
 
-	//----------//
-	// allocate //
-	//----------//
+    //----------//
+    // allocate //
+    //----------//
 
-	_steps = DEFAULT_STEPS;
-	if (! Allocate(_steps))
-	{
-		fclose(fp);
-		return(0);
-	}
+    _steps = DEFAULT_STEPS;
+    if (! Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
 
-	//-------//
-	// scale //
-	//-------//
+    //-------//
+    // scale //
+    //-------//
 
-	if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
-			sizeof(float)) ||
-		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
-			sizeof(float)))
-	{
-		return(0);
-	}
+    if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float)) ||
+        ! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float)) ||
+        ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float)) ||
+        ! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float)) ||
+        ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float)) ||
+        ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float)))
+    {
+        return(0);
+    }
 
-	//-------//
-	// terms //
-	//-------//
+    //-------//
+    // terms //
+    //-------//
 
-	unsigned int array_size = 3 * _steps * sizeof(T);
-	unsigned char* term_array = (unsigned char *)malloc(array_size);
-	if (term_array == NULL)
-		return(0);
+    unsigned int array_size = 3 * _steps * sizeof(T);
+    unsigned char* term_array = (unsigned char *)malloc(array_size);
+    if (term_array == NULL)
+        return(0);
 
-	if (! read_hex(fp, (char *)term_array, array_size))
-	{
-		return(0);
-	}
+    if (! read_hex(fp, (char *)term_array, array_size))
+    {
+        return(0);
+    }
 
-	unsigned int bytes = 0;
-	for (int term = 0; term < 3; term++)
-	{
-		for (unsigned int step = 0; step < _steps; step++)
-		{
-			memcpy((*(_termArray + step) + term), term_array + bytes,
-				sizeof(T));
-			bytes += sizeof(T);
-		}
-	}
+    unsigned int bytes = 0;
+    for (int term = 0; term < 3; term++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            memcpy((*(_termArray + step) + term), term_array + bytes,
+                sizeof(T));
+            bytes += sizeof(T);
+        }
+    }
 
-	free(term_array);
+    free(term_array);
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
 }
 
 //------------------------//
@@ -614,23 +616,23 @@ TrackerBase<T>::ReadHex(
 template <class T>
 int
 TrackerBase<T>::WriteCode(
-	const char*		filename)
+    const char*  filename)
 {
-	//---------------//
-	// open the file //
-	//---------------//
+    //---------------//
+    // open the file //
+    //---------------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
 }
 
 //==============//
@@ -638,148 +640,72 @@ TrackerBase<T>::WriteCode(
 //==============//
 
 RangeTracker::RangeTracker()
+:   rxRangeMem(0.0)
 {
-	return;
+    return;
 }
 
 RangeTracker::~RangeTracker()
 {
-	return;
+    return;
 }
 
 //------------------------------//
 // RangeTracker::GetRxGateDelay //
 //------------------------------//
 
+#define RANGE_GATE_NORMALIZER  0.049903
+
 int
 RangeTracker::GetRxGateDelay(
-	unsigned int	range_step,
-	float			xmit_pulse_width,	// seconds
-	float			rx_gate_width,		// seconds
-	unsigned int	antenna_dn,
-	unsigned int	antenna_n,
-	float*			delay)
+    unsigned short  range_step,
+    unsigned short  azimuth_step,
+    unsigned char   rx_gate_width_dn,
+    unsigned char   tx_pulse_width_dn,
+    unsigned char*  rx_gate_delay_dn,
+    float*          rx_gate_delay_fdn)
 {
-	//-------------------------//
-	// get the dn coefficients //
-	//-------------------------//
+    unsigned char* char_ptr = *(_termArray + range_step);
 
-	unsigned char* char_ptr = *(_termArray + range_step);
-	unsigned char a_dn = *(char_ptr + AMPLITUDE_INDEX);
-	unsigned char p_dn = *(char_ptr + PHASE_INDEX);
-	unsigned char c_dn = *(char_ptr + BIAS_INDEX);
+    unsigned char a_dn = *(char_ptr + AMPLITUDE_INDEX);
+    unsigned char c_dn = *(char_ptr + BIAS_INDEX);
+    unsigned char p_dn = *(char_ptr + PHASE_INDEX);
 
-	//-------------------------------//
-	// calculate the scaling factors //
-	//-------------------------------//
+    float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
+    float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
+    float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
+    float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
+    float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
+    float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
 
-	float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
-	float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
-	float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
-	float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
-	float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
-	float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
+    float A = am * (float)a_dn + ab;
+    float C = cm * (float)c_dn + cb;
+    float P = pm * (float)p_dn + pb;
 
-	double a_term = (double)am * (double)a_dn + (double)ab;
-	double p_term = (double)pm * (double)p_dn + (double)pb;
-	double c_term = (double)cm * (double)c_dn + (double)cb;
+    float ttf = (2.0 * M_PI * (float)azimuth_step) / 32768.0 + P;
+    ttf = fabs(ttf);
+    ttf *= (256.0 / (2.0 * M_PI));
 
-	float table_delay = c_term + a_term * Cosine((two_pi/(double)antenna_n) *
-		(double)antenna_dn + p_term);
-	table_delay *= MS_TO_S;		// convert ms to seconds
+    unsigned short tindex = (unsigned short)ttf;
 
-	*delay = table_delay + (xmit_pulse_width - rx_gate_width) / 2.0;
+    float cos1 = cos_table[COS_TABLE_SIZE_MOD(tindex)];
+    float cos2 = cos_table[COS_TABLE_SIZE_MOD(tindex + 1)];
 
-	//----------------------------------//
-	// remember the delay for next time //
-	//----------------------------------//
+    float range_predict = C + A * ((ttf - (long)ttf) * (cos2 - cos1) + cos1);
+    float rx_range_mem = range_predict / RANGE_GATE_NORMALIZER;
+    float rx_gate_width_fdn = (float)rx_gate_width_dn;
+    float tx_pulse_width_fdn = (float)tx_pulse_width_dn;
+    *rx_gate_delay_fdn = rx_range_mem - 
+        (rx_gate_width_fdn - tx_pulse_width_fdn) / 2.0;
+    *rx_gate_delay_dn = (unsigned char)(*rx_gate_delay_fdn + 0.5);
 
-	_previousDelay = *delay;
+    //------------------------------//
+    // remember the rx range number //
+    //------------------------------//
 
-	return(1);
-}
+    rxRangeMem = rx_range_mem;
 
-//-----------------------------//
-// RangeTracker::QuantizeWidth //
-//-----------------------------//
-
-float
-RangeTracker::QuantizeWidth(
-	float		width)
-{
-	unsigned int width_dn =
-		(unsigned int)(width / RX_GATE_WIDTH_RESOLUTION + 0.5);
-	float qwidth = (float)width_dn * RX_GATE_WIDTH_RESOLUTION;
-	return(qwidth);
-}
-
-//-----------------------------//
-// RangeTracker::QuantizeDelay //
-//-----------------------------//
-
-float
-RangeTracker::QuantizeDelay(
-	float		delay,
-	float*		residual_delay)
-{
-	unsigned int delay_dn =
-		(unsigned int)(delay / RX_GATE_DELAY_RESOLUTION + 0.5);
-	float qdelay = (float)delay_dn * RX_GATE_DELAY_RESOLUTION;
-	*residual_delay = delay - qdelay;
-	return(qdelay);
-}
-
-//-----------------------------//
-// RangeTracker::SetInstrument //
-//-----------------------------//
-
-int
-RangeTracker::SetInstrument(
-	Instrument*		instrument,
-	float*			residual_delay)
-{
-	Antenna* antenna = &(instrument->antenna);
-	Beam* beam = antenna->GetCurrentBeam();
-
-	//-------//
-	// width //
-	//-------//
-
-	instrument->commandedRxGateWidth =
-		beam->rangeTracker.QuantizeWidth(beam->rxGateWidth);
-
-	//-------//
-	// delay //
-	//-------//
-
-	unsigned short range_step =
-		beam->rangeTracker.OrbitTicksToStep(instrument->orbitTicks,
-		instrument->orbitTicksPerOrbit);
-	unsigned int encoder = antenna->GetEarlyEncoderValue();
-	unsigned int encoder_n = antenna->GetEncoderN();
-
-	//-------------------//
-	// correct for angle //
-	//-------------------//
-
-	// CDS uses the commanded spin rate to calculate offsets
-	encoder += AngleOffset(antenna, beam, antenna->commandedSpinRate);
-
-	//-----------------//
-	// calculate delay //
-	//-----------------//
-
-	float delay;
-	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->txPulseWidth,
-		instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
-	{
-		fprintf(stderr, "RangeTracker::SetInstrument: error using RGC\n");
-		return(0);
-	}
-	instrument->commandedRxGateDelay =
-		beam->rangeTracker.QuantizeDelay(delay, residual_delay);
-
-	return(1);
+    return(1);
 }
 
 //--------------------------------//
@@ -788,63 +714,63 @@ RangeTracker::SetInstrument(
 
 int
 RangeTracker::SetRoundTripTime(
-	double**	terms)
+    double**  terms)
 {
-	double mins[3];
-	double maxs[3];
+    double mins[3];
+    double maxs[3];
 
-	//-----------------------------------------//
-	// calculate the minimum and maximum terms //
-	//-----------------------------------------//
+    //-----------------------------------------//
+    // calculate the minimum and maximum terms //
+    //-----------------------------------------//
 
-	for (int term_idx = 0; term_idx < 3; term_idx++)
-	{
-		mins[term_idx] = *(*(terms + 0) + term_idx);
-		maxs[term_idx] = mins[term_idx];
-	}
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        mins[term_idx] = *(*(terms + 0) + term_idx);
+        maxs[term_idx] = mins[term_idx];
+    }
 
-	for (unsigned int range_step = 0; range_step < _steps;
-		range_step++)
-	{
-		for (int term_idx = 0; term_idx < 3; term_idx++)
-		{
-			if (*(*(terms + range_step) + term_idx) < mins[term_idx])
-				mins[term_idx] = *(*(terms + range_step) + term_idx);
+    for (unsigned int range_step = 0; range_step < _steps;
+        range_step++)
+    {
+        for (int term_idx = 0; term_idx < 3; term_idx++)
+        {
+            if (*(*(terms + range_step) + term_idx) < mins[term_idx])
+                mins[term_idx] = *(*(terms + range_step) + term_idx);
 
-			if (*(*(terms + range_step) + term_idx) > maxs[term_idx])
-				maxs[term_idx] = *(*(terms + range_step) + term_idx);
-		}
-	}
+            if (*(*(terms + range_step) + term_idx) > maxs[term_idx])
+                maxs[term_idx] = *(*(terms + range_step) + term_idx);
+        }
+    }
 
-	//------------------------//
-	// generate scale factors //
-	//------------------------//
+    //------------------------//
+    // generate scale factors //
+    //------------------------//
 
-	for (int term_idx = 0; term_idx < 3; term_idx++)
-	{
-		*(*(_scaleArray + term_idx) + 0) = mins[term_idx];
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        *(*(_scaleArray + term_idx) + 0) = mins[term_idx];
 
-		*(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
-			255.0;
-	}
+        *(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
+            255.0;
+    }
 
-	//------------------------//
-	// calculate scaled terms //
-	//------------------------//
+    //------------------------//
+    // calculate scaled terms //
+    //------------------------//
 
-	for (unsigned int range_step = 0; range_step < _steps;
-		range_step++)
-	{
-		for (int term_idx = 0; term_idx < 3; term_idx++)
-		{
-			*(*(_termArray + range_step) + term_idx) =
-				(unsigned char)(( *(*(terms + range_step) +
-				term_idx) - *(*(_scaleArray + term_idx) + 0)) /
-				*(*(_scaleArray + term_idx) + 1) + 0.5);
-		}
-	}
+    for (unsigned int range_step = 0; range_step < _steps;
+        range_step++)
+    {
+        for (int term_idx = 0; term_idx < 3; term_idx++)
+        {
+            *(*(_termArray + range_step) + term_idx) =
+                (unsigned char)(( *(*(terms + range_step) +
+                term_idx) - *(*(_scaleArray + term_idx) + 0)) /
+                *(*(_scaleArray + term_idx) + 1) + 0.5);
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //================//
@@ -853,135 +779,68 @@ RangeTracker::SetRoundTripTime(
 
 DopplerTracker::DopplerTracker()
 {
-	for (int i = 0; i < 2; i++)
-		_dither[i] = 0;
-
-	return;
+    return;
 }
 
 DopplerTracker::~DopplerTracker()
 {
-	return;
+    return;
 }
 
 //-------------------------------------//
 // DopplerTracker::GetCommandedDoppler //
 //-------------------------------------//
 
+#define MU          250.73
+#define HZ_PER_KHZ  1000
+
 int
 DopplerTracker::GetCommandedDoppler(
-	unsigned int	doppler_step,
-	float			rx_gate_delay,		// ms
-	unsigned int	antenna_dn,
-	unsigned int	antenna_n,
-	float*			doppler,
-	float			chirp_rate,
-	float			residual_delay_error)
+    unsigned short  doppler_step,
+    unsigned short  azimuth_step,
+    unsigned char   rx_gate_delay_dn,
+    float           rx_gate_delay_fdn,
+    short*          commanded_doppler_dn)
 {
-	//----------------//
-	// check the step //
-	//----------------//
+    unsigned short* short_ptr = *(_termArray + doppler_step);
 
-	if (doppler_step >= _steps)
-		return(0);
+    unsigned short a_dn = *(short_ptr + AMPLITUDE_INDEX);
+    unsigned short c_dn = *(short_ptr + BIAS_INDEX);
+    unsigned short p_dn = *(short_ptr + PHASE_INDEX);
 
-	//-------------------------//
-	// get the dn coefficients //
-	//-------------------------//
+    float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
+    float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
+    float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
+    float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
+    float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
+    float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
 
-	unsigned short* short_ptr = *(_termArray + doppler_step);
-	unsigned short a_dn = *(short_ptr + AMPLITUDE_INDEX);
-	unsigned short p_dn = *(short_ptr + PHASE_INDEX);
-	unsigned short c_dn = *(short_ptr + BIAS_INDEX);
+    float A = am * (float)a_dn + ab;
+    float C = cm * (float)c_dn + cb;
+    float P = pm * (float)p_dn + pb;
 
-	//-------------------------------//
-	// calculate the scaling factors //
-	//-------------------------------//
+    float ttf = (2.0 * M_PI * (float)azimuth_step) / 32768.0 + P;
+    ttf = fabs(ttf);
+    ttf *= (256.0 / (2.0 * M_PI));
 
-	float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
-	float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
-	float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
-	float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
-	float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
-	float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
+    unsigned short tindex = (unsigned short)ttf;
 
-	double a_term = (double)am * (double)a_dn + (double)ab;
-	double p_term = (double)pm * (double)p_dn + (double)pb;
-	double c_term = (double)cm * (double)c_dn + (double)cb;
+    float cos1 = cos_table[COS_TABLE_SIZE_MOD(tindex)];
+    float cos2 = cos_table[COS_TABLE_SIZE_MOD(tindex + 1)];
 
-	double raw_doppler = c_term + a_term *
-		Cosine(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
+    float doppler_predict = C + A * ((ttf - (long)ttf) * (cos2 - cos1) + cos1);
 
-	double residual_range_freq = residual_delay_error * chirp_rate;
-	double xmit_freq = raw_doppler + residual_range_freq;
+    float rx_gate_error = (rx_gate_delay_fdn - (float)rx_gate_delay_dn) *
+        RANGE_GATE_NORMALIZER * MU * HZ_PER_KHZ;
+    float cmd_doppler_fdn = (doppler_predict + rx_gate_error) / 2000.0;
 
-	// negative sign converts doppler to additive xmit freq
-	*doppler = -xmit_freq;
-
-	//--------------------//
-	// remember the delay //
-	//--------------------//
-
-	_previousDelay = rx_gate_delay;
-
-	return(1);
-}
-
-//-----------------------------------//
-// DopplerTracker::QuantizeFrequency //
-//-----------------------------------//
-
-float
-DopplerTracker::QuantizeFrequency(
-	float		frequency)
-{
-	// must do it this way because Doppler frequency is signed!
-	double doppler_dn = rint(frequency / DOPPLER_TRACKING_RESOLUTION);
-
-	// negative sign to convert "true" Doppler to additive xmit freq
-	float qdoppler = (float)doppler_dn * DOPPLER_TRACKING_RESOLUTION;
-
-	return(qdoppler);
-}
-
-//-------------------------------//
-// DopplerTracker::SetInstrument //
-//-------------------------------//
-
-int
-DopplerTracker::SetInstrument(
-	Instrument*		instrument,
-	float			residual_delay)
-{
-	Antenna* antenna = &(instrument->antenna);
-	Beam* beam = antenna->GetCurrentBeam();
-
-	unsigned short doppler_step =
-		beam->dopplerTracker.OrbitTicksToStep(instrument->orbitTicks,
-		instrument->orbitTicksPerOrbit);
-	unsigned int encoder = antenna->GetEarlyEncoderValue();
-	unsigned int encoder_n = antenna->GetEncoderN();
-
-	//-------------------//
-	// correct for angle //
-	//-------------------//
-
-	// CDS uses the commanded spin rate to calculate offsets
-	encoder += AngleOffset(antenna, beam, antenna->commandedSpinRate);
-
-	float doppler;
-
-	if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step,
-		instrument->commandedRxGateDelay, encoder, encoder_n, &doppler,
-		instrument->chirpRate, residual_delay))
-	{
-		fprintf(stderr, "SetInstrument: error using DTC\n");
-		return(0);
-	}
-	float dopcom = beam->dopplerTracker.QuantizeFrequency(doppler);
-	instrument->SetCommandedDoppler(dopcom);
-
-	return(1);
+    short cmd_doppler_dn;
+    if (cmd_doppler_fdn > 0.0)
+        cmd_doppler_dn = (short)(cmd_doppler_fdn + 0.5);
+    else
+        cmd_doppler_dn = (short)(cmd_doppler_fdn - 0.5);
+    *commanded_doppler_dn = -1 * cmd_doppler_dn;
+    return(1);
 }
 
 //---------------------//
@@ -990,66 +849,68 @@ DopplerTracker::SetInstrument(
 
 int
 DopplerTracker::Set(
-	double**	terms)
+    double**    terms)
 {
-	double mins[3];
-	double maxs[3];
+    double mins[3];
+    double maxs[3];
 
-	//-----------------------------------------//
-	// calculate the minimum and maximum terms //
-	//-----------------------------------------//
+    //-----------------------------------------//
+    // calculate the minimum and maximum terms //
+    //-----------------------------------------//
 
-	for (int term_idx = 0; term_idx < 3; term_idx++)
-	{
-		mins[term_idx] = *(*(terms + 0) + term_idx);
-		maxs[term_idx] = mins[term_idx];
-	}
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        mins[term_idx] = *(*(terms + 0) + term_idx);
+        maxs[term_idx] = mins[term_idx];
+    }
 
-	for (unsigned int orbit_step = 0; orbit_step < _steps;
-		orbit_step++)
-	{
-		for (int term_idx = 0; term_idx < 3; term_idx++)
-		{
-			double value = *(*(terms + orbit_step) + term_idx);
+    for (unsigned int orbit_step = 0; orbit_step < _steps; orbit_step++)
+    {
+        for (int term_idx = 0; term_idx < 3; term_idx++)
+        {
+            double value = *(*(terms + orbit_step) + term_idx);
 
-			if (value < mins[term_idx])
-				mins[term_idx] = value;
+            if (value < mins[term_idx])
+                mins[term_idx] = value;
 
-			if (value > maxs[term_idx])
-				maxs[term_idx] = value;
-		}
-	}
+            if (value > maxs[term_idx])
+                maxs[term_idx] = value;
+        }
+    }
 
-	//------------------------//
-	// generate scale factors //
-	//------------------------//
+    //------------------------//
+    // generate scale factors //
+    //------------------------//
 
-	for (int term_idx = 0; term_idx < 3; term_idx++)
-	{
-		*(*(_scaleArray + term_idx) + 0) = mins[term_idx];
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        *(*(_scaleArray + term_idx) + 0) = mins[term_idx];
 
-		*(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
-			65535.0;
-	}
+        *(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
+            65535.0;
+    }
 
-	//------------------------//
-	// calculate scaled terms //
-	//------------------------//
+    //------------------------//
+    // calculate scaled terms //
+    //------------------------//
 
-	for (unsigned int orbit_step = 0; orbit_step < _steps;
-		orbit_step++)
-	{
-		for (int term_idx = 0; term_idx < 3; term_idx++)
-		{
-			*(*(_termArray + orbit_step) + term_idx) =
-				(unsigned short)( (*(*(terms + orbit_step) + term_idx) -
-				*(*(_scaleArray + term_idx) + 0)) / *(*(_scaleArray + term_idx) + 1) +
-				0.5);
-		}
-	}
+    for (unsigned int orbit_step = 0; orbit_step < _steps; orbit_step++)
+    {
+        for (int term_idx = 0; term_idx < 3; term_idx++)
+        {
+            *(*(_termArray + orbit_step) + term_idx) =
+                (unsigned short)( (*(*(terms + orbit_step) + term_idx) -
+                *(*(_scaleArray + term_idx) + 0)) /
+                *(*(_scaleArray + term_idx) + 1) + 0.5);
+        }
+    }
 
-	return(1);
+    return(1);
 }
+
+//==================//
+// Helper Functions //
+//==================//
 
 //-------------//
 // azimuth_fit //
@@ -1057,34 +918,34 @@ DopplerTracker::Set(
 
 int
 azimuth_fit(
-	int			count,
-	double*		terms,
-	double*		a,
-	double*		p,
-	double*		c)
+    int         count,
+    double*     terms,
+    double*     a,
+    double*     p,
+    double*     c)
 {
-	double wn = two_pi / (double) count;
-	double real[2], imag[2];
+    double wn = two_pi / (double) count;
+    double real[2], imag[2];
 
-	for (int i = 0; i < 2; i++)
-	{
-		real[i] = 0.0;
-		imag[i] = 0.0;
-		for (int j = 0; j < count; j++)
-		{
-			double arg = wn * (double)i * (double)j;
-			double c = cos(arg);
-			double s = sin(arg);
-			real[i] += terms[j] * c;
-			imag[i] += terms[j] * s;
-		}
-	}
+    for (int i = 0; i < 2; i++)
+    {
+        real[i] = 0.0;
+        imag[i] = 0.0;
+        for (int j = 0; j < count; j++)
+        {
+            double arg = wn * (double)i * (double)j;
+            double c = cos(arg);
+            double s = sin(arg);
+            real[i] += terms[j] * c;
+            imag[i] += terms[j] * s;
+        }
+    }
 
-	*a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
-	*p = -atan2(imag[1], real[1]);
-	*c = real[0] / (double)count;
+    *a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
+    *p = -atan2(imag[1], real[1]);
+    *c = real[0] / (double)count;
 
-	return(1);
+    return(1);
 }
 
 //-----------//
@@ -1093,17 +954,17 @@ azimuth_fit(
 
 int
 write_hex(
-	FILE*	fp,
-	char*	buffer,
-	int		bytes)
+    FILE*  fp,
+    char*  buffer,
+    int    bytes)
 {
-	int words = bytes / 2;
-	unsigned short* ptr = (unsigned short *)buffer;
-	for (int i = 0; i < words; i++)
-	{
-		fprintf(fp, "%04hx\n", *(ptr + i));
-	}
-	return(1);
+    int words = bytes / 2;
+    unsigned short* ptr = (unsigned short *)buffer;
+    for (int i = 0; i < words; i++)
+    {
+        fprintf(fp, "%04hx\n", *(ptr + i));
+    }
+    return(1);
 }
 
 //----------//
@@ -1112,16 +973,16 @@ write_hex(
 
 int
 read_hex(
-	FILE*	fp,
-	char*	buffer,
-	int		bytes)
+    FILE*  fp,
+    char*  buffer,
+    int    bytes)
 {
-	int words = bytes / 2;
-	unsigned short* ptr = (unsigned short *)buffer;
-	for (int i = 0; i < words; i++)
-	{
-		if (fscanf(fp, " %hx", ptr + i) != 1)
-			return(0);
-	}
-	return(1);
+    int words = bytes / 2;
+    unsigned short* ptr = (unsigned short *)buffer;
+    for (int i = 0; i < words; i++)
+    {
+        if (fscanf(fp, " %hx", ptr + i) != 1)
+            return(0);
+    }
+    return(1);
 }

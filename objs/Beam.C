@@ -1,17 +1,16 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_beam_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <math.h>
 #include "Beam.h"
 #include "Array.h"
 #include "Constants.h"
-#include "Attitude.h"
 
 //======//
 // Beam //
@@ -20,14 +19,12 @@ static const char rcs_id_beam_c[] =
 const char* beam_map[] = { "V", "H", "None" };
 
 Beam::Beam()
-:	polarization(NONE), txPulseWidth(0.0), rxGateWidth(0.0), timeOffset(0.0),
-	sasBeamOffsetDn(0), useRangeTracker(0), useDopplerTracker(0),
-	_elecBoresightLook(0.0), _elecBoresightAzim(0.0),
-	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
-	_Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
-	_power_gain(NULL)
+:   polarization(NONE), _elecBoresightLook(0.0), _elecBoresightAzim(0.0),
+    _electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
+    _Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
+    _power_gain(NULL), peakGain(0.0)
 {
-	return;
+    return;
 }
 
 Beam::~Beam()
@@ -62,7 +59,8 @@ Beam::SetElectricalBoresight(
 
 	if (_power_gain == NULL)
 	{
-		fprintf(stderr,"Error: SetElectricalBoresight found no loaded beam pattern\n");
+        fprintf(stderr,
+            "Error: SetElectricalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -110,7 +108,8 @@ Beam::GetElectricalBoresight(
 	// Check to see if a beam pattern has been loaded.
 	if (_power_gain == NULL)
 	{
-		fprintf(stderr,"Error: GetElectricalBoresight found no loaded beam pattern\n");
+        fprintf(stderr,
+            "Error: GetElectricalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -141,7 +140,8 @@ Beam::SetMechanicalBoresight(
 	// Check to see if a beam pattern has been loaded.
 	if (_power_gain == NULL)
 	{
-		fprintf(stderr,"Error: SetMechanicalBoresight found no loaded beam pattern\n");
+		fprintf(stderr,
+            "Error: SetMechanicalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -521,9 +521,3 @@ Beam::GetPowerGainProduct(
 	*gain_product = (float)tmp;
 	return(retval);
 }
-
-
-
-
-
-

@@ -35,7 +35,6 @@ public:
     ~SesBeamInfo();
 
     float  rxGateWidth;    // the receiver gate width (s)
-    float  rxGateDelay;    // the gate delay (s)
 };
 
 class QscatSes
@@ -60,9 +59,12 @@ public:
     int  CmdTxPulseWidthDn(unsigned char tx_pulse_width_dn);
     int  CmdPriDn(unsigned char pri_dn);
     int  CmdRxGateWidthDn(int beam_idx, unsigned char rx_gate_width_dn);
-    int  CmdRxGateDelayDn(int beam_idx, unsigned char rx_gate_delay_dn);
+    int  CmdRxGateWidthEu(int beam_idx, float rx_gate_width_eu);
+    int  CmdRxGateDelayDn(unsigned char rx_gate_delay_dn);
+    int  CmdRxGateDelayFdn(float rx_gate_delay_fdn);
+    int  CmdRxGateDelayEu(float rx_gate_delay_eu);
     int  CmdTxDopplerDn(short tx_doppler_dn);
-
+    int  CmdTxDopplerEu(float tx_doppler_eu);
 
     //-----------//
     // variables //
@@ -71,6 +73,7 @@ public:
     float        txPulseWidth;    // the transmit pulse width (s)
     float        txDoppler;       // the Doppler frequency shift (Hz)
     float        txFrequency;     // the transmit frequency (Hz)
+    float        rxGateDelay;     // the gate delay (s)
 
     float        baseTxFrequency; // the base transmitter frequency (Hz)
     float        pri;             // the pulse repetition interval (s)
@@ -118,6 +121,7 @@ public:
     //-----------------//
 
     int             SetAzimuthWithEncoder(unsigned short encoder_value);
+    unsigned short  AzimuthToEncoder(double azimuth);
     int             ApplyAzimuthShift(double sample_delay);
     unsigned short  GetEncoder();
 
@@ -184,8 +188,11 @@ public:
     int           SetEqxTime(double eqx_time);
     int           SetTimeWithInstrumentTime(unsigned int ticks);
 
-    double        OrbitFraction();
-    CdsBeamInfo*  GetCurrentBeamInfo();
+    double          OrbitFraction();
+    unsigned short  GetTrackingOrbitStep();
+    CdsBeamInfo*    GetCurrentBeamInfo();
+    double          GetAssumedSpinRate();
+    unsigned short  EstimateEncoder();
 
     int  LoadRgc(int beam_idx, const char* file);
     int  LoadDtc(int beam_idx, const char* file);
@@ -205,7 +212,8 @@ public:
     unsigned char  priDn;
     unsigned char  txPulseWidthDn;
     SpinRateE      spinRate;
-    int            useTracking;
+    int            useRgc;
+    int            useDtc;
     unsigned int   orbitTicksPerOrbit;
     CdsBeamInfo    beamInfo[NUMBER_OF_QSCAT_BEAMS];
 
@@ -215,6 +223,8 @@ public:
 
     double         time;
     double         eqxTime;
+
+    unsigned short  previousEncoder;
 };
 
 //======================================================================

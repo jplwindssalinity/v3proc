@@ -1,27 +1,19 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef BEAM_H
 #define BEAM_H
 
 static const char rcs_id_beam_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "CoordinateSwitch.h"
-#include "Tracking.h"
-
-// The following values are the latest antenna peak gain measurements
-// (see IOM-3347-98-037) with an adjustment to include the one-way loss
-// of the waveguide that connects the antenna system to the SES.
-//   G0V = 40.9 dB - 0.2 dB,  G0H = 39.5 dB - 0.2 dB
-#define G0V		40.7
-#define G0H		39.3
 
 //======================================================================
 // CLASSES
-//		Beam
+//    Beam
 //======================================================================
 
 //======================================================================
@@ -89,28 +81,6 @@ public:
 	//-----------//
 
 	PolE			polarization;
-	float			txPulseWidth;		// pulse width in seconds
-	float			rxGateWidth;		// receiver gate width in seconds
-	float			timeOffset;			// seconds after prf for beam index 0
-
-	unsigned int	sasBeamOffsetDn;	// from ant. center to elec. bore (dn)
-
-	int				useRangeTracker;
-	int				useDopplerTracker;
-	RangeTracker	rangeTracker;
-	DopplerTracker	dopplerTracker;
-
-
-
-	//---------//
-	// methods //
-	//---------//
-
-	//-----------//
-	// variables //
-	//-----------//
-
-
 	double				_elecBoresightLook;		// in the antenna frame
 	double				_elecBoresightAzim;
 
@@ -127,8 +97,7 @@ public:
 	double		_x_spacing;
 	double		_y_spacing;
 	float**		_power_gain;
+    float       peakGain;
 };
 
 #endif
-
-

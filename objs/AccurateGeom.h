@@ -1,19 +1,18 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef ACCURATEGEOM_H
 #define ACCURATEGEOM_H
 
 static const char rcs_id_accurategeom_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "EarthPosition.h"
 #include "CoordinateSwitch.h"
 #include "Ephemeris.h"
 #include "Spacecraft.h"
-#include "Instrument.h"
 #include "InstrumentGeom.h"
 #include "LonLat.h"
 #include "Matrix3.h"
@@ -25,31 +24,22 @@ static const char rcs_id_accurategeom_h[] =
 //======================================================================
 
 
-int		IntegrateSlices(Spacecraft* spacecraft, Instrument* instrument,
-			MeasSpot* meas_spot, int num_look_steps_per_slice,
-			float azimuth_integration_range, float azimuth_step_size);
+int		IntegrateSlices(Spacecraft* spacecraft, Qscat* qscat,
+            MeasSpot* meas_spot, int num_look_steps_per_slice,
+            float azimuth_integration_range, float azimuth_step_size);
 
-int		IntegrateSlice(Spacecraft* spacecraft, Instrument* instrument,
-			Meas* meas, int num_look_steps_per_slice,
-			float azimuth_integration_range, 
-			float azimuth_step_size, int range_gate_clipping,
-			float *X);
+int		IntegrateSlice(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+            int num_look_steps_per_slice, float azimuth_integration_range,
+            float azimuth_step_size, int range_gate_clipping, float *X);
 
-float           GetPulseFractionReceived(Instrument* instrument, float range);
+float   GetPulseFractionReceived(Qscat* qscat, float range);
 
 int		FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look1,
-			float look2, float azi1, float azi2, Outline* box);
+            Spacecraft* spacecraft, Qscat* qscat, float look1, float look2,
+            float azi1, float azi2, Outline* box);
 
 int		FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument,
-			float target_freq, float freq_tol, float* look, float azimuth);
+			Spacecraft* spacecraft, Qscat* qscat, float target_freq,
+            float freq_tol, float* look, float azimuth);
 
 #endif
-
-
-
-
-
-
-
