@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -8,7 +8,7 @@
 //
 
 static const char rcs_id_sigma0_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "CoordinateSwitch.h"
 #include "Spacecraft.h"
@@ -107,11 +107,10 @@ radar_X_PtGr(
 
 int
 radar_Xcal(
-    Qscat*             qscat,
-    float              Es_cal,
-    double*            Xcal)
+    Qscat*   qscat,
+    float    Es_cal,
+    double*  Xcal)
 {
-
     double L13 = qscat->ses.receivePathLoss;
     double L21 = qscat->ses.transmitPathLoss;
     double L23 = qscat->ses.loopbackLoss;
@@ -131,9 +130,9 @@ radar_Xcal(
 //------------------------------------------------------//
 
 double
-true_Es_cal(Qscat* qscat)
+true_Es_cal(
+    Qscat*  qscat)
 {
-
     double Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho *
                  qscat->ses.transmitPathLoss / qscat->ses.calibrationBias /
                  qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
