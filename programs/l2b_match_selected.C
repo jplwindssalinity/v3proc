@@ -117,7 +117,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "selected_source_file", "<target_selected_file>", 
-                              "<output_file>"};
+                              "<output_file>", "[hdf_source_flag 1=HDF 0= default]",0};
 
 
 //--------------//
@@ -134,14 +134,15 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 4)
+	if (argc != 4 && argc!=5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* source_file = argv[clidx++];
 	const char* target_file = argv[clidx++];
         const char* output_file = argv[clidx++];
-
+        int hdf_source_flag=0;
+        if(argc==5) hdf_source_flag=atoi(argv[clidx++]);
 
 	//-------------------------------------//
 	// create and configure level products //
@@ -160,22 +161,41 @@ main(
 	// open files //
 	//------------//
 
+        // Open Target Files
 	if(!l2b_target.OpenForReading() ||
-	   !l2b_target.OpenForWriting() ||
-	   !l2b_source.OpenForReading()){
-	  fprintf(stderr,"%s: Error opening file\n",command);
+	   !l2b_target.OpenForWriting()){ 
+		  fprintf(stderr,"%s: Error opening file\n",command);
 	  exit(1);
 	}
+        // Read Source File
+	if(hdf_source_flag){
+	  if(l2b_source.ReadHDF()==0){	    
+	    fprintf(stderr, "%s: error opening HDF L2B file \n", command);
+	     exit(1);
+	  }
+	}
+        else{
+	  if(! l2b_source.OpenForReading()){
+	    fprintf(stderr, "%s: error opening PE Source L2B file \n", command);
+	     exit(1);
+	  }
+	  if (! l2b_source.ReadHeader())
+	    {
+	      fprintf(stderr, "%s: error reading Level 2B header\n", command); 
+	      exit(1);
+	    }
+	  if (! l2b_source.ReadDataRec())
+	    {
+	      fprintf(stderr, "%s: error reading Level 2B data\n", command);
+	      exit(1);
+	    }
 
+
+	}
 	//---------------------------------//
 	// read the headers to set up swath //
 	//---------------------------------//
 
-	if (! l2b_source.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading Level 2B header\n", command); 
-		exit(1);
-	}
 
 	if (! l2b_target.ReadHeader())
 	{
@@ -187,12 +207,6 @@ main(
 	//--------------------------------//
 	// read the level 2B data records //
 	//--------------------------------//
-
-	if (! l2b_source.ReadDataRec())
-	  {
-		fprintf(stderr, "%s: error reading Level 2B data\n", command);
-		exit(1);
-	  }
 
 	if (! l2b_target.ReadDataRec())
 	  {

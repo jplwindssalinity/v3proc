@@ -29,7 +29,7 @@ static const char rcs_id_wind_c[] =
 #define FLIPPING_WITHIN_RANGE_THRESHOLD  (5.0*dtr)
 #define HDF_ACROSS_BIN_NO                76
 #define HDF_NUM_AMBIGUITIES              4
-
+#define NWP_SPEED_CORRECTION             0.84
 //============//
 // WindVector //
 //============//
@@ -2525,7 +2525,7 @@ WindSwath::ReadHdfL2B(
             float nudge_edir=(450.0-modelDirArray[j])*dtr;
 	    while(nudge_edir>two_pi) nudge_edir-=two_pi;
 	    while(nudge_edir<0) nudge_edir+=two_pi;
-            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j],nudge_edir);
+            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j]*NWP_SPEED_CORRECTION,nudge_edir);
 
             for (int k=0; k < numambigArray[j]; k++)
             {
@@ -2673,7 +2673,7 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
 	  float nudge_edir=(450.0-modelDirArray[j])*dtr;
 	  while(nudge_edir>two_pi) nudge_edir-=two_pi;
 	  while(nudge_edir<0) nudge_edir+=two_pi;
-	  wvc->nudgeWV->SetSpdDir(modelSpeedArray[j],nudge_edir);
+	  wvc->nudgeWV->SetSpdDir(modelSpeedArray[j]*NWP_SPEED_CORRECTION,nudge_edir);
 	}
     }        
     delete [] modelDirArray;

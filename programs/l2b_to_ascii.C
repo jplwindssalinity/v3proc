@@ -145,7 +145,13 @@ main(
 	}
 	else{
 	  FILE* ofp=fopen(output_file,"w");
-          l2b.frame.swath.swath[cti][ati]->WriteAscii(ofp);
+          WVC* wvc=l2b.frame.swath.swath[cti][ati];
+          if(!wvc){
+	    fprintf(stderr,"No wind vector cell available at cti=%d, ati=%d\n",
+		    cti,ati);
+            exit(0);
+	  }
+          wvc->WriteAscii(ofp);
           fclose(ofp);
 	}
 

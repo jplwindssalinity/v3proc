@@ -8,7 +8,7 @@
 //    l2a_filter
 //
 // SYNOPSIS
-//    l2a_filter [ -f filter ] [ -hl ] <input_file> <output_file>
+//    l2a_filter [ -f filter ] [ -hl12 ] <input_file> <output_file>
 //
 // DESCRIPTION
 //    Filters a l2a file based on the filters specified.
@@ -17,6 +17,8 @@
 //    [ - filter ]  Use the specified filter.
 //    [ -h ]        Help. Displays the list of filters.
 //    [ -l ]        Land Map to use to filter land (default is use landflag)
+//    [ -1 ]        Beam 1 Sigma0 Correction in dB
+//    [ -2 ]        Beam 2 Sigma0 Correction in dB
 //
 // OPERANDS
 //    The following operands are supported:
@@ -83,7 +85,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:hl:"
+#define OPTSTRING  "f:hl:1:2:"
 
 #define NO_COPOL_STRING         "copol0"
 #define NO_START_FRAMES_STRING  "start0"
@@ -117,6 +119,9 @@ main(
     int opt_no_HHVH=0;
     int opt_no_VVHV=0;
     int opt_no_land=0;
+    int opt_beam_balance=0;
+    float beam1_multiplier=1;
+    float beam2_multiplier=1;
 
     SimpleLandMap* land=NULL;
 
@@ -202,6 +207,16 @@ main(
             land=new SimpleLandMap;
             land->Read(optarg);
             break;
+        case '1':
+            opt_beam_balance=1;
+            beam1_multiplier=atof(optarg);
+            beam1_multiplier=pow(10.0,0.1*beam1_multiplier);
+            break;   
+        case '2':
+            opt_beam_balance=1;
+            beam2_multiplier=atof(optarg);
+            beam2_multiplier=pow(10.0,0.1*beam2_multiplier);
+            break;   
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -297,6 +312,16 @@ main(
             }
             else
             {
+		if(opt_beam_balance){
+		  switch(meas->beamIdx){
+		  case 0:
+		    meas->value*=beam1_multiplier;
+		    break;
+		  case 1:
+		    meas->value*=beam2_multiplier;
+		    break;
+		  }
+		}
                 meas = frame->measList.GetNext();
                 wvc_out++;
             }
@@ -313,3 +338,8 @@ main(
 
     return(0);
 }
+
+
+
+
+
