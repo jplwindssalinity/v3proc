@@ -7,7 +7,7 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-CPPFLAGS =		-g -Wall
+CPPFLAGS =		-g -fno-implicit-templates -Wall
 SYSLIBS =		-lm
 CCC =			gcc
 
@@ -43,6 +43,10 @@ OBJS = \
 	WindField.o \
 	WindVector.o
 
+INCS = \
+	*.h \
+	List.C
+
 #----------------------------------------------------------------------
 # default: make library
 #----------------------------------------------------------------------
@@ -63,6 +67,7 @@ depend:
 clean:
 	- rm -f $(TARGET_LIB)
 	- rm -f $(OBJS)
+	- rm -f $(INCDIR)/*
 
 #----------------------------------------------------------------------
 # install: same as default
@@ -77,8 +82,8 @@ install: $(TARGET_LIB)
 $(TARGET_LIB):	$(OBJS)
 	- rm -f $(TARGET_LIB)
 	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS)
-	(set incs = (*.h); cd $(INCDIR); rm -f $$incs)
-	cp *.h $(INCDIR)
+	- (cd $(INCDIR); rm -f $(INCS))
+	cp $(INCS) $(INCDIR)
 
 %.C: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.C,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v
