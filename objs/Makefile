@@ -23,6 +23,7 @@ OBJS = \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
+	Distributions.o \
 	EarthPosition.o \
 	Ephemeris.o \
 	GMF.o \
@@ -125,6 +126,7 @@ BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Constants.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h Beam.h Attitude.h PiscTable.h Matrix3.h Ephemeris.h EarthPosition.h CoordinateSwitch.h BufferedList.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
+Distributions.o: Distributions.C Distributions.h
 EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Matrix3.h BufferedList.h EarthPosition.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h EarthPosition.h BufferedList.h
@@ -159,5 +161,5 @@ Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Sigma0.o: Sigma0.C Sigma0.h Spacecraft.h Instrument.h Meas.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
-SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
+SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h Distributions.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
