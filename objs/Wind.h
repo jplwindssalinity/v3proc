@@ -251,6 +251,7 @@ public:
 
 	int		GetCrossTrackBins()		{ return(_crossTrackBins); };
 	int		GetAlongTrackBins()		{ return(_alongTrackBins); };
+	int		GetMaxAmbiguityCount();
 
 	//---------//
 	// freeing //

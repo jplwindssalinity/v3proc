@@ -1021,6 +1021,30 @@ WindSwath::Add(
 	return(1);
 }
 
+//---------------------------------//
+// WindSwath::GetMaxAmbiguityCount //
+//---------------------------------//
+
+int
+WindSwath::GetMaxAmbiguityCount()
+{
+	int max_count = 0;
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		for (int j = 0; j < _alongTrackBins; j++)
+		{
+			WVC* wvc = *(*(swath + i) + j);
+			if (wvc == NULL)
+				continue;
+
+			int count = wvc->ambiguities.NodeCount();
+			if (count > max_count)
+				max_count = count;
+		}
+	}
+	return(max_count);
+}
+
 //-----------------------//
 // WindSwath::DeleteWVCs //
 //-----------------------//

@@ -183,11 +183,16 @@ main(
 		exit(1);
 	}
 
-	//----------------------//
-	// create the converter //
-	//----------------------//
+	//------------------------------------//
+	// create and configure the converter //
+	//------------------------------------//
 
 	L2AToL2B l2a_to_l2b;
+	if (! ConfigL2AToL2B(&l2a_to_l2b, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring L2AToL2B\n", command);
+		exit(1);
+	}
 
 	//------------//
 	// open files //

@@ -148,7 +148,8 @@ main(
 	// write out vctr files //
 	//----------------------//
 
-	for (int i = 0; i < 5; i++)
+	int max_rank = l2b.frame.swath.GetMaxAmbiguityCount();
+	for (int i = 0; i <= max_rank; i++)
 	{
 		char filename[1024];
 		sprintf(filename, "%s.%d", vctr_base, i);
