@@ -69,9 +69,19 @@ Cosine(
 		0.970034, 0.975704, 0.980787, 0.985279, 0.989178, 0.992481,
 		0.995186, 0.997291, 0.998796, 0.999699 };
 
-	//-------------------------------------//
-	// convert angle from radians to index //
-	//-------------------------------------//
+	//-----------------------------//
+	// make sure angle is positive //
+	//-----------------------------//
+
+	if (angle < 0.0)
+	{
+		int times = (int)(-angle / two_pi) + 1;
+		angle += (float)times * two_pi;
+	}
+
+	//---------------------------------//
+	// convert angle to floating index //
+	//---------------------------------//
 
 	float f_idx = angle * 256.0 / two_pi;
 	unsigned int idx = (int)f_idx;
