@@ -1297,7 +1297,7 @@ WindField::FakeEcmwfHiRes(
 
 	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
 	{
-        float dir = (float)lon_idx * two_pi / (float)ECMWF_HIRES_LON_DIM;
+        float dir = 8.0 * (float)lon_idx * two_pi / (float)ECMWF_HIRES_LON_DIM;
 		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
 		{
 			WindVector* wv = new WindVector;
