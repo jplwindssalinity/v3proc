@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.32   26 Apr 1999 15:46:02   sally
+// wrap NOPM flag
+// 
+//    Rev 1.31   25 Mar 1999 14:10:32   daffer
+// Added pm_getFileSpec and related code
+// 
 //    Rev 1.30   01 Mar 1999 11:26:34   sally
 // add NOPM flag
 // 
@@ -135,6 +141,10 @@
 #include <errno.h>
 
 #include "EALog.h"
+
+#ifndef NOPM
+#include "pm_getFileSpec.h"
+#endif
 
 #if 0
 #define EA_PM_LOG_DEST_DIR  "./"
@@ -862,9 +872,10 @@ EALog::Init_PM()
                 REQIFileStruct *reqi;
                 filePtr = InputFiles;
                 // Process_reqi always puts reqi file FIRST in list!
-                char *PtrToReqiFilename=*filePtr; 
+                char *PtrToReqiFilename=strdup(*filePtr); 
                 filePtr++; // increment filePtr
                 char *ptr = strstr(PtrToReqiFilename, "reqi");
+
                 if (ptr == NULL) {
                     fprintf(stderr,
                             "Misnamed REQI file? (%s - no 'reqi' in name)\n", 
@@ -873,6 +884,10 @@ EALog::Init_PM()
                             PtrToReqiFilename );                              
                     SetWriteAndExit(EA_FAILURE," -- Aborting --\n");
                 } else {
+                    // This step registers the reqi file as an input to 
+                    // qs_ea_process_reqi.
+                    VWriteMsg("Trying to register %s with PM Server\n",
+                              PtrToReqiFilename);
                     StatusStruct logStatusData2;
                     reqi              = &logStatusData2.reqiFileStatus;
                     reqi->task_id     = -1;
@@ -907,21 +922,40 @@ EALog::Init_PM()
                 // When PM registers the REQI file, it copies it to a save
                 // directory. It is the saved file which is registered,
                 // not the original input file. So, we have to get the
-                // path to that file. Soon PM will have a function that
-                // will return that path, but in the mean time, we'll
-                // construct it ourselves.
+                // name of that file from PM.
 
-                // char path[1024],name[1024];
-                char savedReqiName[1024];
-                savedReqiName[0]='\0';
+                char *savedReqiName;
                 char *pp =strrchr( PtrToReqiFilename, (int) '/');
                 if (pp == NULL)
                     pp=PtrToReqiFilename;
                 else
                     pp++;
-                (void) strcpy( savedReqiName, "/pm/save/REQI/");
-                (void) strcat( savedReqiName, pp );
+                int latest= (int) PM_TRUE;
+                VWriteMsg("Trying to get name for file %s\n", pp);
+                int tmp_status=
+                    pm_getFileSpec(msgDesc, pp, &savedReqiName, latest );
+
+                if (tmp_status != SPAC_OK) {
+                    VWriteMsg("Bad return from pm_getFileSpec, status=%d --- continuing\n",
+                             tmp_status);
+                    // Just do what we did before, and disregard PM
+                    char tmp[MAX_FILENAME_LEN+1];
+                    (void) strncpy( tmp, "/pm/save/REQI/",
+                                    MAX_FILENAME_LEN);
+                    (void) strncat( tmp, pp,
+                                    MAX_FILENAME_LEN-strlen(pp));
+                    savedReqiName=strdup(tmp);
+                } else if (tmp_status == SPAC_OK && savedReqiName == (char*) NULL) {
+                    // This means that PM_INTERFACE == OFF, and it
+                    // really dosen't matter what we put in the
+                    // start/stop/whatever structs. But we have to put
+                    // something
+                    savedReqiName=strdup(PtrToReqiFilename);
+                } 
                 (void)strcpy(startstruct->input_file_specs[0], savedReqiName);
+                free(savedReqiName);
+
+
                 for (i=1; i < nInputFiles && filePtr && *filePtr; i++, filePtr++){
                     (void)strcpy(startstruct->input_file_specs[i], *filePtr);
                 }

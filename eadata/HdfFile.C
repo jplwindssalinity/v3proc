@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   15 Mar 1999 14:19:00   sally
+// add some methods for getting user's start and end indexes
+// 
 //    Rev 1.7   03 Nov 1998 15:59:08   sally
 // adapt to Vdata
 // 
@@ -59,13 +62,13 @@ static const char HdfFile_c_rcs_id[] =
 //=========
 
 HdfFile::HdfFile(
-const char*     filename,
-StatusE&        returnStatus)
-:   _SDfileID(FAIL), _hFileID(FAIL), _numGlobAttr(-1),
-    _status(OK), _filename(0), _dataLength(0)
+const char*         filename,
+HdfFile::StatusE&   returnStatus)
+:   _SDfileID(FAIL), _hFileID(FAIL), _numDatasets(-1),
+    _numGlobAttr(-1), _status(HdfFile::OK), _filename(0), _dataLength(0)
 {
     // save the filename
-    if ((returnStatus = _DupFilename(filename)) != OK)
+    if ((returnStatus = _DupFilename(filename)) != HdfFile::OK)
         return;
 
     // open the HDF file
@@ -76,8 +79,7 @@ StatusE&        returnStatus)
     }
 
     // find out info about global attributes and datasets
-    int32 numDatasets=0;
-    if (SDfileinfo(_SDfileID, &numDatasets, &_numGlobAttr) == FAIL)
+    if (SDfileinfo(_SDfileID, &_numDatasets, &_numGlobAttr) == FAIL)
     {
         returnStatus = _status = ERROR_GET_FILE_INFO;
         return;
@@ -166,7 +168,7 @@ int32&        attrIndex,     // OUT
 DataTypeE&    eaType,        // OUT
 int32&        numValues)     // OUT
 {
-    assert(_status == OK);
+    assert(_status == HdfFile::OK);
     char globAttrName[MAX_NC_NAME];
     int found=0;
     int32 hdfType=0;
@@ -194,7 +196,7 @@ printf("eaType = %d, numValues = %d\n", eaType, numValues);
     }
 
     if (found)
-        return(OK);
+        return(HdfFile::OK);
     else
         return(ERROR_GLOBAL_ATTR_NOT_FOUND);
 
@@ -225,7 +227,7 @@ int32         numValues)     // IN
 
     HDfree(hdfAttrBuf);
 
-    return(OK);
+    return(HdfFile::OK);
 
 } //HdfFile::GetGlobalAttr
 
@@ -331,7 +333,7 @@ Parameter*     paramP)
             return(_status = ERROR_SELECTING_PARAMETER);
     }
 
-    return(_status = OK);
+    return(_status = HdfFile::OK);
 
 } // HdfFile::OpenParamDatasets
 
@@ -353,7 +355,7 @@ Parameter*     paramP)
             paramP->sdsIDs[i] = HDF_FAIL;
         }
     }
-    return(_status = OK);
+    return(_status = HdfFile::OK);
 
 } // HdfFile::CloseParamDatasets
 
@@ -395,7 +397,7 @@ int32      datasetID)
             else
             {
                 delete matchidP;
-                _status = OK;
+                _status = HdfFile::OK;
                 return HDF_SUCCEED;
             }
         }
@@ -443,7 +445,7 @@ VOIDP     data)         // OUT
 
     if (hdfStatus == SUCCEED)
     {
-        _status = OK;
+        _status = HdfFile::OK;
         return HDF_SUCCEED;
     }
     else
@@ -485,7 +487,7 @@ VOIDP     data)         // OUT
     
     if (hdfStatus == SUCCEED)
     {
-        _status = OK;
+        _status = HdfFile::OK;
         return HDF_SUCCEED;
     }
     else
@@ -673,7 +675,7 @@ HdfFile::ParseGlobalAttr( char *attrName,
 
     delete type_string;
     delete buf_ptr;
-    return (OK);
+    return (HdfFile::OK);
 } // ParseGlobalAttr
 
 

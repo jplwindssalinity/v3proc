@@ -7,6 +7,11 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   25 Mar 1999 14:40:24   daffer
+// Rewrote some code to 
+// reflect Uploadabl tables
+// support
+// 
 //    Rev 1.2   29 Jan 1999 15:03:24   sally
 // added LASP commands
 // 
@@ -521,28 +526,46 @@ CmdEffect::ApplyCmd(
         
         
     case EA_CMD_SCSSTTBL:
+        return( EFF_SES_ALL_TABLE_UPDATE );
+        break;
     case EA_CMD_SCSCLTBL:
+        return(EFF_SES_CAL_TABLE_UPDATE);
+        break;
     case EA_CMD_SCSRCTBL:
+        return( EFF_SES_RCV_TABLE_UPDATE );
+        break;
     case EA_CMD_SCSWOTBL:
+        return(EFF_SES_WOM_TABLE_UPDATE);
+        break;
     case EA_CMD_SCSALLTBL:
-        return(EFF_SES_PARAMS_TABLE_UPDATE);
+        return(EFF_SES_ALL_TABLE_UPDATE);
         break;
         
     case EA_CMD_SCPSTTBL:
+        return( EFF_PRF_STANDBY_TABLE_UPDATE );
+        break;
     case EA_CMD_SCPCLTBL:
+        return(EFF_PRF_CAL_TABLE_UPDATE);
+        break;
     case EA_CMD_SCPRCTBL:
+        return(EFF_PRF_RCV_TABLE_UPDATE);
+        break;
     case EA_CMD_SCPWOTBL:
-        return(EFF_PRF_TABLE_UPDATE);
+        return(EFF_PRF_WOM_TABLE_UPDATE);
         break;
         
     case EA_CMD_SCBDATBL:
+        return (EFF_DOPPLER_A_TABLE_UPDATE);
+        break;
     case EA_CMD_SCBDBTBL:
-        return (EFF_DOPPLER_TABLE_UPDATE);
+        return (EFF_DOPPLER_B_TABLE_UPDATE);
         break;
         
     case EA_CMD_SCBRATBL:
+        return (EFF_RANGEGATE_A_TABLE_UPDATE);
+        break;
     case EA_CMD_SCBRBTBL:
-        return (EFF_RANGEGATE_TABLE_UPDATE);
+        return (EFF_RANGEGATE_B_TABLE_UPDATE);
         break;
         
         // Serial Digital Engineering Telmetry Table Update
@@ -559,32 +582,54 @@ CmdEffect::ApplyCmd(
         // Union of Parameter Table CHANGEs.
         // -----------------------------------
         
-        
+        //SES Parameter Tables
     case EA_CMD_SCSSTSW:
+        return(EFF_SES_STANDBY_TABLE_CHANGE);
+        break;
     case EA_CMD_SCSCLSW:
+        return(EFF_SES_CAL_TABLE_CHANGE);
+        break;
     case EA_CMD_SCSRCSW:
+        return(EFF_SES_RCV_TABLE_CHANGE);
+        break;
     case EA_CMD_SCSWOSW:
+        return(EFF_SES_WOM_TABLE_CHANGE);
+        break;
     case EA_CMD_SCSALLSW:
-        return(EFF_SES_PARAMS_TABLE_CHANGE);
+        return(EFF_SES_ALL_TABLE_CHANGE);
         break;
         
+        //PRF Tables
     case EA_CMD_SCPSTSW:
+        return(EFF_PRF_STANDBY_TABLE_CHANGE);
+        break;
     case EA_CMD_SCPCLSW:
+        return(EFF_PRF_CAL_TABLE_CHANGE);
+        break;
     case EA_CMD_SCPRCSW:
+        return(EFF_PRF_RCV_TABLE_CHANGE);
+        break;
     case EA_CMD_SCPWOSW:
-        return(EFF_PRF_TABLE_CHANGE);
+        return(EFF_PRF_WOM_TABLE_CHANGE);
         break;
 
+        // RangeGate Tables
     case EA_CMD_SCBRASW:
+        return (EFF_RANGEGATE_A_TABLE_CHANGE);
+        break;
     case EA_CMD_SCBRBSW:
-        return (EFF_RANGEGATE_TABLE_CHANGE);
+        return (EFF_RANGEGATE_B_TABLE_CHANGE);
         break;
 
+        // Doppler Tables
     case EA_CMD_SCBDASW:
+        return (EFF_DOPPLER_A_TABLE_CHANGE);
+        break;
     case EA_CMD_SCBDBSW:
-        return (EFF_DOPPLER_TABLE_CHANGE);
+        return (EFF_DOPPLER_B_TABLE_CHANGE);
         break;
         
+
     case EA_CMD_SCENGSW:
         return(EFF_SER_DIG_ENG_TLM_TABLE_CHANGE);
         break;
@@ -677,7 +722,7 @@ CmdEffect::ApplyCmd(
         //-----
         // Modulation on
         //-----
-    case EA_CMD_SCTMDONN:
+    case EA_CMD_SCTMDON:
         return(EFF_MODULATION_ON);
         break;
         

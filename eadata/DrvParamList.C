@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   05 Apr 1999 13:46:10   sally
+// fix for receiver gain
+// 
 //    Rev 1.6   18 Aug 1998 10:57:10   sally
 // make L1ADrvExtract return any number of values
 // 
@@ -223,18 +226,12 @@ PolynomialTable*  polyTable)
                                        startIndex, 1, 1,
                                        (void*)&(extractResults[index]),
                                        polyTable);
+int k = extractResults[index].numExtracted;
         // if nothing is extracted with any parameter, stop
         if (extractResults[index].numExtracted < 0)
         {
-#if 0
-            if (extractResults[index].numExtracted < 0)
-#endif
                 fprintf(stderr, "Extracting Parameter %s[%s] failed\n",
                              param_ptr->paramName, param_ptr->unitName);
-#if 0
-            maxNumExtracted = extractResults[index].numExtracted;
-            break;
-#endif
         }
 
         if (param_ptr->paramId != UTC_TIME)

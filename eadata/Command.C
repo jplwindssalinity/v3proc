@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.35   09 Apr 1999 13:57:54   sally
+// read number of words from files if the table length is variable
+// 
+//    Rev 1.34   25 Mar 1999 14:06:16   daffer
+// Incorporated Uploadable table support
+// 
 //    Rev 1.33   29 Jan 1999 15:04:04   sally
 // added LASP proc commands
 // 
@@ -301,7 +307,7 @@ const EACommandArgsEntry Command::cmdArgsTable[] =
                                   0, 0, 0, EA_DATAFILE_NONE, -1, "" },
   { EA_CMD_SCTWTMEN, 0X0FFD, "SCTWTMEN", "TWTA Trip Monitor Enable",
                                   0, 0, 1, EA_DATAFILE_UDEC2_ASCII, -1, "" },
-  { EA_CMD_SCTMDONN, 0X0F10, "SCTMDONN", "TWT Modulation On",
+  { EA_CMD_SCTMDON, 0X0F10, "SCTMDON", "TWT Modulation On",
                                   0, 0, 0, EA_DATAFILE_NONE, -1, "" },
   { EA_CMD_SCTMDOFF, 0X0F11, "SCTMDOFF", "TWT Modulation Off",
                                   0, 0, 0, EA_DATAFILE_NONE, -1, "" },
@@ -929,32 +935,76 @@ const EffectMnemonics Command::effect_mnemonics[] =
     { EFF_WOM, "WOM" },
     { EFF_TWTA_1, "TWTA #1" },
     { EFF_TWTA_2, "TWTA #2" },
-    //    { EFF_HVPS_ON, "HVPS On" },
-    //    { EFF_HVPS_OFF, "HVPS Off" },
-    //    { EFF_NEW_BINNING_CONSTANTS, "New Bin Const" },
-    //    { EFF_NEW_ANTENNA_SEQUENCE, "New Ant Seq" },
     { EFF_TRS_CHANGE, "TRS Change" },
     { EFF_TWT_TRIP_OVERRIDE_ENABLE, "TWT Trip Ovr Enable" },
     { EFF_TWT_TRIP_OVERRIDE_DISABLE, "TWT Trip Ovr Disable" },
     { EFF_TWTA_MONITOR_CHANGE, "TWTA Trip Mon Change" },
     { EFF_TWTA_LOWDRIVE_POWER_FP_ON,"TWTA Low Drive Power FP On"},
     { EFF_TWTA_LOWDRIVE_POWER_FP_OFF,"TWTA Low Drive Power FP Off"},
-    { EFF_SES_PARAMS_TABLE_UPDATE,"SES Parameter Table Update"},
-    { EFF_PRF_TABLE_UPDATE,"PRF Table Update" },
-    { EFF_RANGEGATE_TABLE_UPDATE,"Range Gate Table Update"},
-    { EFF_DOPPLER_TABLE_UPDATE,"Dopler Table Update"},
-    { EFF_SERIAL_TELEM_TABLE_UPDATE,"Serial Telemetry Table Update"},
-    { EFF_MISSION_TELEM_TABLE_UPDATE,"Mission Telemetry Table Update"},
-    { EFF_SER_DIG_ENG_TLM_TABLE_UPDATE,"Ser Dig Eng Tlm Table Update"},
-    { EFF_SER_DIG_ST_TLM_TABLE_UPDATE,"Ser Dig Status Tlm Table Update"},
-    { EFF_SES_PARAMS_TABLE_CHANGE,"SES Parameter Table Change"},
-    { EFF_PRF_TABLE_CHANGE,"PRF Table Change"},
-    { EFF_RANGEGATE_TABLE_CHANGE,"Range Gate Table Change"},
-    { EFF_DOPPLER_TABLE_CHANGE,"Dopler Table Change"},
-    { EFF_SERIAL_TELEM_TABLE_CHANGE,"Serial Telemetry Table Change"},
-    { EFF_MISSION_TELEM_TABLE_CHANGE,"Mission Telemetry Table Change"},
-    { EFF_SER_DIG_ENG_TLM_TABLE_CHANGE,"Serial Dig Eng Tlm Table Change"},
-    { EFF_SER_DIG_ST_TLM_TABLE_CHANGE,"Serial Dig Status Tlm Table Change" },
+    // These effects are seen in the command history queue
+    { EFF_UNKNOWABLE_QPX,    "CH: Table changed before readback" } ,
+    { EFF_PRF_STANDBY_TABLE_UPDATE, "CH: Prf Standby Table Update"},    
+    { EFF_PRF_WOM_TABLE_UPDATE,     "CH: Prf WOM Table Update"},        
+    { EFF_PRF_CAL_TABLE_UPDATE,     "CH: Prf Cal Table Update"},        
+    { EFF_PRF_RCV_TABLE_UPDATE,     "CH: SES Recv Table Update"},        
+    { EFF_SES_ALL_TABLE_UPDATE,     "CH: SES All Modes Update"},      
+    { EFF_SES_WOM_TABLE_UPDATE,     "CH: SES WOM Table Update"},        
+    { EFF_SES_CAL_TABLE_UPDATE,     "CH: SES Cal Table Update"},        
+    { EFF_SES_RCV_TABLE_UPDATE,     "CH: SES Recv Table Update"},        
+    { EFF_SES_STANDBY_TABLE_UPDATE, "CH: SES Standby Table Update"},    
+    { EFF_RANGEGATE_A_TABLE_UPDATE, "CH: RangeGate A Table Update"},  
+    { EFF_RANGEGATE_B_TABLE_UPDATE, "CH: RangeGate A Table Update"},  
+    { EFF_DOPPLER_A_TABLE_UPDATE,   "CH: RangeGate A Table Update"},  
+    { EFF_DOPPLER_B_TABLE_UPDATE,   "CH: RangeGate A Table Update"},  
+    { EFF_SER_DIG_ENG_TLM_TABLE_UPDATE, "CH: SerDig Eng Tlm Tbl Update"},   
+    { EFF_SER_DIG_ST_TLM_TABLE_UPDATE,  "CH: SerDig Status Tlm Tbl Update"},
+    // TABLE CHANGE EFFECTS (via command history queue)
+    { EFF_PRF_STANDBY_TABLE_CHANGE, "CH: Prf Standby Table Change"},  
+    { EFF_PRF_WOM_TABLE_CHANGE,     "CH: Prf WOM Table Change"},      
+    { EFF_PRF_CAL_TABLE_CHANGE,     "CH: Prf Cal Table Change"},      
+    { EFF_PRF_RCV_TABLE_CHANGE,     "CH: SES Recv Table Change"},     
+    { EFF_SES_ALL_TABLE_CHANGE,     "CH: SES All Modes Change"},      
+    { EFF_SES_WOM_TABLE_CHANGE,     "CH: SES WOM Table Change"},      
+    { EFF_SES_CAL_TABLE_CHANGE,     "CH: SES Cal Table Change"},      
+    { EFF_SES_RCV_TABLE_CHANGE,     "CH: SES Recv Table Change"},     
+    { EFF_SES_STANDBY_TABLE_CHANGE, "CH: SES Standby Table Change"},  
+    { EFF_RANGEGATE_A_TABLE_CHANGE, "CH: RangeGate A Table Change"},  
+    { EFF_RANGEGATE_B_TABLE_CHANGE, "CH: RangeGate A Table Change"},  
+    { EFF_DOPPLER_A_TABLE_CHANGE,   "CH: Doppler A Table Change"},  
+    { EFF_DOPPLER_B_TABLE_CHANGE,   "CH: Doppler A Table Change"},  
+    { EFF_SER_DIG_ENG_TLM_TABLE_CHANGE, "CH: SerDig Eng Tlm Tbl Change"},   
+    { EFF_SER_DIG_ST_TLM_TABLE_CHANGE,  "CH: SerDig Status Tlm Tbl Change"},
+    // Status flag changes (table updates)
+    //{ EFF_SES_PARAMS_TABLE_UPDATE, "ST: SES Params Table Update"},
+    //{ EFF_PRF_TABLE_UPDATE,       "ST: PRF Params Table Update"},
+    //{ EFF_RANGEGATE_TABLE_UPDATE, "ST: RangeGate Params Table Update"},
+    //{ EFF_DOPPLER_TABLE_UPDATE,   "ST: Doppler Params Table Update"},
+    // Status flag changes (table changes)
+    { EFF_SES_PARAMS_TABLE_CHANGE, "ST: SES Params Table Change"},
+    { EFF_PRF_TABLE_CHANGE,       "ST: PRF Params Table Change"},
+    { EFF_RANGEGATE_TABLE_CHANGE, "ST: RangeGate Params Table Change"},
+    { EFF_DOPPLER_TABLE_CHANGE,   "ST: Doppler Params Table Change"},
+    { EFF_SER_DIG_ENG_TLM_TABLE_CHANGE, "ST: SerDig Eng Tlm Tbl Change"},
+    { EFF_SER_DIG_ST_TLM_TABLE_CHANGE,  "ST: SerDig Status Tlm Tbl Change"},
+    // Quasi Effect for reporting final status.
+    { EFF_PRF_STANDBY_TABLE_FINAL, "PRF Standby table Final" },
+    { EFF_PRF_WOM_TABLE_FINAL,     "PRF WOM table Final" },
+    { EFF_PRF_CAL_TABLE_FINAL,     "PRF CAL table Final" },
+    { EFF_PRF_RCV_TABLE_FINAL,     "PRF RCV table Final" },
+    { EFF_SES_ALL_TABLE_FINAL,     "SES ALL table Final" },
+    { EFF_SES_WOM_TABLE_FINAL,     "SES WOM table Final" },
+    { EFF_SES_CAL_TABLE_FINAL,     "SES CAL table Final" },
+    { EFF_SES_RCV_TABLE_FINAL,     "SES ReCV table Final" },
+    { EFF_SES_STANDBY_TABLE_FINAL, "SES Standby table Final" },
+    { EFF_RANGEGATE_A_TABLE_FINAL,  "RangeGate A table Final" },
+    { EFF_RANGEGATE_B_TABLE_FINAL,   "Rangegate B table Final" },
+    { EFF_DOPPLER_A_TABLE_FINAL,     "Doppler A table Final" },
+    { EFF_DOPPLER_B_TABLE_FINAL,     "Doppler B table Final" },
+    { EFF_SER_DIG_ENG_TLM_TABLE_FINAL, "Serial Digital Eng Tlm table Final" },
+    { EFF_SER_DIG_ST_TLM_TABLE_FINAL,  "Serial Digital Status Tlm table Final" },
+
+    //
+
     { EFF_VALID_COMMAND_CNTR_CHANGE,"Valid Command Counter Change" },
     { EFF_INVALID_COMMAND_CNTR_CHANGE,"Invalid Command Counter Change" },
     { EFF_COMMAND_HISTORY_CHANGE, "Command History Queue Change" },
@@ -1037,15 +1087,20 @@ int         lineNo,              // line number
 const char* reqiCommandString)   // REQI command string
 :   commandId(EA_CMD_UNKNOWN), cmdHex(0),
     plannedTpg(INVALID_TPG), dataFilename(NULL),
-    cmdParams(NULL),originator(NULL), comments(NULL), effectId(EFF_UNKNOWN),
-    effect_value(0),statusId(STA_OK), expectedTime(INVALID_TIME), 
-    l1aTime(INVALID_TIME),hk2Time(INVALID_TIME), l1apTime(INVALID_TIME), 
-    l1aVerify(VER_NO),hk2Verify(VER_NO), l1apVerify(VER_NO), tableRepetition(0),
-    _status(OK), _commandType(COMMAND_TYPE_UNKNOWN), _format(FORMAT_UNKNOWN)
+    cmdParams(NULL),originator(NULL), comments(NULL), 
+    qpx_filename(NULL),
+    effectId(EFF_UNKNOWN),effect_value(0),statusId(STA_OK),
+    table_type(EA_TBLTYPE_UNKNOWN), tableid( EA_TBL_UNKNOWN),
+    expectedTime(INVALID_TIME), l1aTime(INVALID_TIME),
+    hk2Time(INVALID_TIME), l1apTime(INVALID_TIME), l1aVerify(VER_NO),
+    hk2Verify(VER_NO), l1apVerify(VER_NO), tableRepetition(0),
+    _status(OK), _commandType(COMMAND_TYPE_UNKNOWN), 
+    _format(FORMAT_UNKNOWN), tbl(NULL), uqpx_filename(NULL)
     
 {
     if ( ! ReadReqiCommandString(lineNo, reqiCommandString))
         _status = ERROR_READING_CMD;
+    tbl= new UpldTbl();
 
 } // Command::Command
 
@@ -1059,7 +1114,7 @@ EACommandE     cmdID)
     hk2Time(INVALID_TIME), l1apTime(INVALID_TIME), l1aVerify(VER_NO),
     hk2Verify(VER_NO), l1apVerify(VER_NO), tableRepetition(0),
     _status(OK), _commandType(COMMAND_TYPE_UNKNOWN),
-    _format(FORMAT_UNKNOWN)
+    _format(FORMAT_UNKNOWN), tbl(NULL),uqpx_filename(NULL)
 
 {
     cmdHex = CmdIdToCmdHex(cmdID);
@@ -1070,15 +1125,20 @@ EACommandE     cmdID)
 Command::Command()
 :   commandId(EA_CMD_UNKNOWN), cmdHex(0),
     plannedTpg(INVALID_TPG), dataFilename(NULL),
-    cmdParams(NULL),originator(NULL), comments(NULL), effectId(EFF_UNKNOWN),
-    effect_value(0), statusId(STA_OK),
-    expectedTime(INVALID_TIME), l1aTime(INVALID_TIME),
-    hk2Time(INVALID_TIME), l1apTime(INVALID_TIME), l1aVerify(VER_NO),
+    cmdParams(NULL),originator(NULL), comments(NULL), 
+    qpx_filename(NULL), 
+    effectId(EFF_UNKNOWN), effect_value(0), 
+    statusId(STA_OK),expectedTime(INVALID_TIME), 
+    l1aTime(INVALID_TIME),hk2Time(INVALID_TIME), 
+    l1apTime(INVALID_TIME), l1aVerify(VER_NO),
     hk2Verify(VER_NO), l1apVerify(VER_NO), tableRepetition(0),
-    _status(OK), _commandType(COMMAND_TYPE_UNKNOWN),
-    _format(FORMAT_UNKNOWN)
+    _status(OK),     table_type(EA_TBLTYPE_UNKNOWN), 
+    tableid( EA_TBL_UNKNOWN),
+    _commandType(COMMAND_TYPE_UNKNOWN),
+    _format(FORMAT_UNKNOWN), tbl(NULL), uqpx_filename(NULL)
 
 {
+    tbl= new UpldTbl();
 }
 
 Command::~Command()
@@ -1087,6 +1147,12 @@ Command::~Command()
     free(cmdParams);
     free(originator);
     free(comments);
+    free(qpx_filename);
+    //    if (table != NULL)
+    //        free (table);
+    if (tbl)
+        delete tbl;
+
     return;
 }
 
@@ -1119,6 +1185,10 @@ Command::Read(
         _ReadInt(ifp, HK2_VERIFY_LABEL, (int *)&hk2Verify) &&
         _ReadInt(ifp, L1AP_VERIFY_LABEL, (int *)&l1apVerify) &&
         _ReadShort(ifp, EFFECT_VALUE_LABEL, (short int *)&effect_value) &&
+        _ReadInt(ifp, TABLE_TYPE_LABEL, (int *) &table_type) &&
+        _ReadInt(ifp, TABLE_ID_LABEL, (int *) &tableid) &&
+        _ReadString(ifp, QPX_FILENAME_LABEL, &qpx_filename) &&
+        _ReadString(ifp, UQPX_LABEL, &uqpx_filename) &&
         _ReadMarker(ifp, CMD_END_MARKER) )
     {
         _status = OK;
@@ -1200,9 +1270,6 @@ const char*   line)      // REQI command line
     // set isQPF
     SetIsQPF(IsQPF(commandId));
 
-    // set the number of words in param file, if any
-    SetNumWordsInParamFile(NumWordsInParamFile(commandId));
-
     // set the datafile format
     SetDatafileFormat(DatafileFormat(commandId));
 
@@ -1275,6 +1342,10 @@ const char*   line)      // REQI command line
         ptr += bytes;
     }
 
+    // set the number of words in param file, if any
+    // this must be done after data filename is set
+    SetNumWordsInParamFile(NumWordsInParamFile(commandId));
+
     // should know the command type and format by now
     if (_commandType != COMMAND_TYPE_UNKNOWN && _format != FORMAT_UNKNOWN)
     {
@@ -1301,6 +1372,24 @@ Command::StatusE
 Command::Write(
     FILE*   ofp)
 {
+    if (tbl) {
+        if (table_type == EA_TBL_UNKNOWN)
+            table_type=tbl->GetTableType();
+        if (tableid == EA_TBL_UNKNOWN)
+            tableid=tbl->GetTableId();
+        if (qpx_filename == NULL && 
+            tbl->GetDirectory() != NULL &&
+            tbl->GetFilename() != NULL ) {
+            char file_string[MAX_FILENAME_LEN+1];
+            snprintf(file_string,
+                     MAX_FILENAME_LEN ,
+                     "%s/%s",
+                     tbl->GetDirectory(),
+                     tbl->GetFilename());
+            qpx_filename =strdup( file_string );
+        }
+    } 
+
     _WriteMarker(ofp, CMD_START_MARKER);
 
     _WriteInt(ofp, COMMAND_ID_LABEL, commandId);
@@ -1323,6 +1412,10 @@ Command::Write(
     _WriteInt(ofp, L1AP_VERIFY_LABEL, l1apVerify);
 
     _WriteInt(ofp, EFFECT_VALUE_LABEL, (int) effect_value);
+    _WriteInt(ofp, TABLE_TYPE_LABEL, (int) table_type);
+    _WriteInt(ofp, TABLE_ID_LABEL, (int) tableid);
+    _WriteString(ofp, QPX_FILENAME_LABEL, qpx_filename);
+    _WriteString(ofp, UQPX_LABEL, uqpx_filename);
 
     _WriteMarker(ofp, CMD_END_MARKER);
 
@@ -2223,7 +2316,7 @@ Command::Matchable(
         //---------------
         
 
-    case EA_CMD_SCTMDONN:
+    case EA_CMD_SCTMDON:
     case EA_CMD_SCTMDOFF:
         effect_array=modulation;
         break;
@@ -2764,13 +2857,17 @@ operator==(
     // convert to strings
     char* adf = CONVERT_TO_STRING(a.dataFilename);
     char* bdf = CONVERT_TO_STRING(b.dataFilename);
+    char* aqx = CONVERT_TO_STRING(a.qpx_filename);
+    char* bqx = CONVERT_TO_STRING(b.qpx_filename);
     char* ao = CONVERT_TO_STRING(a.originator);
     char* bo = CONVERT_TO_STRING(b.originator);
     char* ac = CONVERT_TO_STRING(a.comments);
     char* bc = CONVERT_TO_STRING(b.comments);
-    return(a.commandId == b.commandId &&
+    return(
+        a.commandId == b.commandId &&
         a.plannedTpg == b.plannedTpg &&
         strcmp(adf, bdf) == 0 &&
+        strcmp(aqx,bqx) == 0 &&
         strcmp(ao, bo) == 0 &&
         strcmp(ac, bc) == 0 &&
         a.effectId == b.effectId &&
@@ -2782,7 +2879,9 @@ operator==(
         a.l1aVerify == b.l1aVerify &&
         a.hk2Verify == b.hk2Verify &&
         a.l1apVerify == b.l1apVerify &&
-        a.tableRepetition == b.tableRepetition);
+        a.effect_value==b.effect_value &&
+        a.table_type==b.table_type &&
+        a.tableid==b.tableid);
 }
 
 const char*
@@ -3168,7 +3267,31 @@ Command::CmdIdToMnemonic ( EACommandE cmdId)
     return("");
 } // Command::CmdIdToMnemonic
 
-
+void
+Command::SetNumWordsInParamFile(
+int numWords)
+{
+    if (numWords >= 0)
+    {
+        _numWordsInParamFile = numWords;
+        return;
+    }
+    if (dataFilename == 0)
+    {
+    }
+    FILE* inFP = fopen(dataFilename, "r");
+    if (inFP == NULL)
+    {
+        fprintf(stderr, "Cannot open data filename (%s)\n", dataFilename);
+        return;
+    }
+    unsigned short data;
+    int wordsInDataFile=0;
+    while (fscanf(inFP, "%hx", &data) == 1)
+        wordsInDataFile++;
+    _numWordsInParamFile = wordsInDataFile;
+    return;
+} // Command::SetNumWordsInParamFile
 
 //-----------------
 // SetCmdParams

@@ -7,6 +7,10 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.20   25 Mar 1999 14:16:58   daffer
+// changed EA_CMD_SCTMDONN to
+// EA_CMD_SCTMDON
+// 
 //    Rev 1.19   23 Feb 1999 10:57:28   sally
 // change AddSorted to AddSortedWithArgs
 // so it won't mask SortedList<Command>::AddSorted
@@ -1172,7 +1176,7 @@ const char*  args)     // arguments string
         }
         case EA_CMD_SCAT_MOD_ON:
         {
-             EACommandE trigCmdIds[] = { EA_CMD_SCTMDONN };
+             EACommandE trigCmdIds[] = { EA_CMD_SCTMDON };
              for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
              {
                  newCmd = new Command(trigCmdIds[i]);
