@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -53,13 +53,13 @@ public:
 
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               Topo* topo, Stable* stable, CheckFrame* cf);
+               Topo* topo, Stable* stable, CheckFrame* cf = NULL);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               float PtGr, Topo* topo, Stable* stable, CheckFrame* cf);
+               float PtGr, Topo* topo, Stable* stable, CheckFrame* cf = NULL);
     float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               Topo* topo, Stable* stable, CheckFrame* cf);
+               Topo* topo, Stable* stable, CheckFrame* cf = NULL);
     float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat,
-               Topo* topo, Stable* stable, CheckFrame* cf);
+               Topo* topo, Stable* stable, CheckFrame* cf = NULL);
     float  GetX(int beam_number, float azimuth_angle, float orbit_position,
                int slice_number, float delta_freq);
     float  GetXegg(int beam_number, float azimuth_angle, float orbit_position,
