@@ -776,7 +776,9 @@ main(
         //----------------------------------------------------------//
 
         if (wom_frame < 2) {
-            printf("  Drop frame %d\n", record_idx);
+            if (opt_verbose) {
+                printf("  Drop frame %d\n", record_idx);
+            }
             continue;
         }
 
