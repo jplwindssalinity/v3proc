@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -283,6 +283,8 @@ PscatSim::ScatSim(
     GMF*            gmf,
     Kp*             kp,
     KpmField*       kpmField,
+    Topo*           topo,
+    Stable*         stable,
     PscatL1AFrame*  l1a_frame)
 {
     CheckFrame cf;
@@ -354,8 +356,8 @@ PscatSim::ScatSim(
     // set measurement values //
     //------------------------//
 
-    if (! SetMeasurements(spacecraft, pscat, pscat_event, &meas_spot, &cf,
-        windfield, gmf, kp, kpmField))
+    if (! SetMeasurements(spacecraft, pscat, pscat_event, &meas_spot,
+        windfield, gmf, kp, kpmField, topo, stable, &cf))
     {
         return(0);
     }
@@ -776,11 +778,13 @@ PscatSim::SetMeasurements(
     Pscat*       pscat,
     PscatEvent*  pscat_event,
     MeasSpot*    meas_spot,
-    CheckFrame*  cf,
     WindField*   windfield,
     GMF*         gmf,
     Kp*          kp,
-    KpmField*    kpmField)
+    KpmField*    kpmField,
+    Topo*        topo,
+    Stable*      stable,
+    CheckFrame*  cf)
 {
     //-------------------------//
     // for each measurement... //
@@ -991,13 +995,15 @@ PscatSim::SetMeasurements(
 
                 if (simVs1BCheckfile)
                 {
-                  Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, cf);
-                  // Note: beamNumber is the same for all slices.
-                  cf->beamNumber = pscat->cds.currentBeamIdx;
+                    Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, topo,
+                        stable, cf);
+                    // Note: beamNumber is the same for all slices.
+                    cf->beamNumber = pscat->cds.currentBeamIdx;
                 }
                 else
                 {
-                  Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+                    Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, topo,
+                        stable, NULL);
                 }
 
                 pscat->cds.currentBeamIdx=real_beam_idx;

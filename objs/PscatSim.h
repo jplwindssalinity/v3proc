@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef PSCATSIM_H
 #define PSCATSIM_H
@@ -65,7 +65,8 @@ public:
              PscatL1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Pscat* pscat,
              PscatEvent* pscat_event, WindField* windfield, GMF* gmf, Kp* kp,
-             KpmField* kpmField, PscatL1AFrame* pscat_l1a_frame);
+             KpmField* kpmField, Topo* topo, Stable* stable,
+             PscatL1AFrame* pscat_l1a_frame);
     int  LoopbackSim(Spacecraft* spacecraft, Pscat* pscat,
              PscatL1AFrame* l1a_frame);
     int  LoadSim(Spacecraft* spacecraft, Pscat* pscat,
@@ -76,8 +77,8 @@ public:
     int  SetMeasTypes(PscatEvent* pscat_event, MeasSpot* meas_spot);
     int  SetMeasurements(Spacecraft* spacecraft, Pscat* pscat,
              PscatEvent* pscat_event, MeasSpot* meas_spot,
-             CheckFrame* cf,
-             WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField);
+             WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField,
+             Topo* topo, Stable* stable, CheckFrame* cf);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Pscat* pscat,
              PscatEvent* pscat_event, PscatL1AFrame* pscat_l1a_frame);
     int  SetL1ALoopback(Pscat* pscat, PscatL1AFrame* l1a_frame);
