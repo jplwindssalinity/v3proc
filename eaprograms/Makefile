@@ -1,6 +1,6 @@
 #======================================================================
 # @(#) $Id$
-# Makefile for all SIM programs
+# Makefile for EA programs
 #======================================================================
 
 SHELL =			/bin/csh
@@ -49,16 +49,16 @@ install: $(PROGRAMS)
 
 .PRECIOUS: %.C
 
-%.C: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.C,v
-	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
+%.C: $(SIM_CENTRAL_TREE)/src/eaprograms/RCS/%.C,v
+	co $(SIM_CENTRAL_TREE)/src/eaprograms/RCS/$@,v
 
-%.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
-	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
+%.h: $(SIM_CENTRAL_TREE)/src/eaprograms/RCS/%.h,v
+	co $(SIM_CENTRAL_TREE)/src/eaprograms/RCS/$@,v
 
 %: %.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
-qs_ea_extract: extract.C
+qs_ea_extract: extract.C Application.h
 	$(CCC) $(CPPFLAGS) -o $@ extract.C $(LDLIBS)
 
 qs_ea_list_parameters: list_parameters.C
