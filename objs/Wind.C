@@ -2261,6 +2261,38 @@ WindSwath::CtdArray(
 }
 
 //---------------------------//
+// WindSwath::AvgNambigVsCti //
+//---------------------------//
+
+int
+WindSwath::AvgNambigVsCti(
+	float*		avg_nambig)
+{
+	//----------------------------------------//
+	// sum number of ambiguities for each cti //
+	//----------------------------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		int count = 0;
+		long sum = 0;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+			sum += wvc->ambiguities.NodeCount();
+			count++;
+		}
+
+		avg_nambig[cti] = (double)sum / (double)count;
+	}
+
+	return(1);
+}
+
+//---------------------------//
 // WindSwath::RmsSpdErrVsCti //
 //---------------------------//
 
