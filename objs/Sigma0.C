@@ -472,6 +472,8 @@ Er_to_sigma0(
 //	The value of Kpm to use.
 //
 
+/***
+
 float
 GetKpm(
 	Instrument* instrument,
@@ -511,6 +513,8 @@ GetKpm(
 
 	return(Kpm);
 }
+
+***/
 
 //
 // composite
