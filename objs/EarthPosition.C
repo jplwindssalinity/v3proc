@@ -307,10 +307,9 @@ double EarthPosition::surface_distance(EarthPosition r)
 
 {
 
-double mag = Magnitude();
-//double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
-double theta = acos((*this % r) / (mag * r.Magnitude()));
-return(mag * theta);
+double mag2 = Magnitude()*r.Magnitude();
+double theta = acos((*this % r) / mag2);
+return(sqrt(mag2) * theta);
 
 }
 
