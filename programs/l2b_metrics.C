@@ -176,7 +176,7 @@ main(
 	// generate ctd array //
 	//--------------------//
 
-	if (! l20.frame.swath.CtdArray(ctd_array))
+	if (! l20.frame.swath.CtdArray(l20.header.crossTrackResolution, ctd_array))
 	{
 		fprintf(stderr, "%s: error generating CTD array\n", command);
 		exit(1);
@@ -186,7 +186,7 @@ main(
 	// rms speed error vs. ctd //
 	//-------------------------//
 
-	if (! l20.frame.swath.RmsSpdErrVsCtd(&truth, value_array, count_array))
+	if (! l20.frame.swath.RmsSpdErrVsCti(&truth, value_array, count_array))
 	{
 		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
 		exit(1);
@@ -218,7 +218,7 @@ main(
 	// rms direction error vs. ctd //
 	//-----------------------------//
 
-	if (! l20.frame.swath.RmsDirErrVsCtd(&truth, value_array, count_array))
+	if (! l20.frame.swath.RmsDirErrVsCti(&truth, value_array, count_array))
 	{
 		fprintf(stderr, "%s: error calculating RMS direction error\n",
 			command);
@@ -251,7 +251,7 @@ main(
 	// skill vs. ctd //
 	//---------------//
 
-	if (! l20.frame.swath.SkillVsCtd(&truth, value_array, count_array))
+	if (! l20.frame.swath.SkillVsCti(&truth, value_array, count_array))
 	{
 		fprintf(stderr, "%s: error calculating skil\n", command);
 		exit(1);
@@ -273,7 +273,7 @@ main(
 	{
 		if (count_array[i] > 0)
 		{
-			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i] * rtd,
+			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
 				count_array[i]);
 		}
 	}
