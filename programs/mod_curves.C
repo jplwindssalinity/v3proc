@@ -70,10 +70,10 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define LINE_SIZE	1024
+#define LINE_SIZE		1024
 
-#define DSPD	0.01
-#define DPHI	1.0*dtr
+#define DSPD			0.01
+#define DPHI			1.0*dtr
 
 //--------//
 // MACROS //
