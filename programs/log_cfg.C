@@ -112,7 +112,7 @@ main(
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
-	const char* output_file == NULL;
+	const char* output_file = NULL;
 	if (argc == 3)
 		output_file = argv[clidx++];
 
