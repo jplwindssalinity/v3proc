@@ -13,7 +13,8 @@
 //
 // DESCRIPTION
 //    Calculates the following parameters and stores them in an array:
-//      NBD, direction_from_alongtrack, retrieved_speed, avg_mle
+//      NBD, direction_from_alongtrack, retrieved_speed, avg_mle,
+//      longitude, latitude.
 //
 // OPTIONS
 //
@@ -119,10 +120,12 @@ void  check_status(HdfFile::StatusE status);
 const char* usage_array[] = { "<ins_config_file>", "<hdf_l2a_file>",
     "<hdf_l2b_file>", "<output_mudh_file>", 0 };
 
-unsigned char nbd_array[AT_WIDTH][CT_WIDTH];
-unsigned char spd_array[AT_WIDTH][CT_WIDTH];
-unsigned char dir_array[AT_WIDTH][CT_WIDTH];
-unsigned char mle_array[AT_WIDTH][CT_WIDTH];
+unsigned char  nbd_array[AT_WIDTH][CT_WIDTH];
+unsigned char  spd_array[AT_WIDTH][CT_WIDTH];
+unsigned char  dir_array[AT_WIDTH][CT_WIDTH];
+unsigned char  mle_array[AT_WIDTH][CT_WIDTH];
+unsigned short lon_array[AT_WIDTH][CT_WIDTH];
+unsigned short lat_array[AT_WIDTH][CT_WIDTH];
 
 //--------------//
 // MAIN PROGRAM //
@@ -322,6 +325,8 @@ main(
             spd_array[i][j] = 255;
             dir_array[i][j] = 255;
             mle_array[i][j] = 255;
+            lon_array[i][j] = 65535;
+            lat_array[i][j] = 65535;
         }
     }
 
@@ -520,6 +525,17 @@ main(
             if (imle > 240) imle = 240;
             mle_array[ati][cti] = (unsigned char)imle;
 
+            //------------------------//
+            // set lon and lat arrays //
+            //------------------------//
+            // integer lon at 0.01 degree resolution (0 - 360 deg)
+            // integer lat at 0.01 degree resolution (-90 - 90 deg)
+
+            int ilon = (int)(wvc->lonLat.longitude * 100.0 + 0.5);
+            lon_array[ati][cti] = (unsigned short)ilon;
+            int ilat = (int)((wvc->lonLat.latitude + 90.0) * 100.0 + 0.5);
+            lat_array[ati][cti] = (unsigned short)ilat;
+
             //--------------//
             // clear arrays //
             //--------------//
@@ -662,10 +678,12 @@ main(
     // write arrays //
     //--------------//
 
-    fwrite(nbd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(spd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(dir_array, sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(mle_array, sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(nbd_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(spd_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(dir_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(mle_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(lon_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(lat_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
     fclose(ofp);
 
     return (0);
