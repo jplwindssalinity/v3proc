@@ -71,17 +71,6 @@ static const char rcs_id[] =
 #include "PscatL1A.h"
 #include "BufferedList.h"
 #include "BufferedList.C"
-/*
-#include <stdlib.h>
-#include <fcntl.h>
-#include "Wind.h"
-#include "PscatSim.h"
-#include "Misc.h"
-#include "Array.h"
-#include "Ephemeris.h"
-#include "Kpm.h"
-#include "Pscat.h"
-*/
 
 //-----------//
 // TEMPLATES //
@@ -144,7 +133,7 @@ report(
     int  sig_num)
 {
     sig_num = sig_num;
-    fprintf(stderr, "psim: Current simulation time %g\n", sim_time); 
+    fprintf(stderr, "psim: Current simulation time %g\n", sim_time);
     return;
 }
 
@@ -301,7 +290,7 @@ main(
     //--------------//
     // configure Kp //
     //--------------//
- 
+
     Kp kp;
     if (! ConfigKp(&kp, &config_list))
     {
@@ -339,7 +328,6 @@ main(
     // Set spacecraft start time to an integer multiple of ephemeris period.
     spacecraft_start_time = spacecraft_sim.GetEphemerisPeriod() *
       ((int)(spacecraft_start_time / spacecraft_sim.GetEphemerisPeriod()));
- 
 
     //------------//
     // initialize //
@@ -425,119 +413,149 @@ main(
                 case SpacecraftEvent::UPDATE_STATE:
                     spacecraft_sim.UpdateOrbit(spacecraft_event.time,
                         &spacecraft);
-					spacecraft.orbitState.Write(eph_fp);
-					spacecraft_sim.UpdateAttitude(spacecraft_event.time,
-						&spacecraft);
-				    spacecraft_sim.ReportAttitude(spacecraft_event.time,
-					  &spacecraft, &attitude);
-					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-					break;
-				case SpacecraftEvent::EQUATOR_CROSSING:
-					pscat.cds.SetEqxTime(spacecraft_event.time);
-					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-					break;
-				default:
-					fprintf(stderr, "%s: unknown spacecraft event\n", command);
-					exit(1);
-					break;
-				}
-			}
-		}
+                    spacecraft.orbitState.Write(eph_fp);
+                    spacecraft_sim.UpdateAttitude(spacecraft_event.time,
+                        &spacecraft);
+                    spacecraft_sim.ReportAttitude(spacecraft_event.time,
+                      &spacecraft, &attitude);
+                    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+                    break;
+                case SpacecraftEvent::EQUATOR_CROSSING:
+                    pscat.cds.SetEqxTime(spacecraft_event.time);
+                    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+                    break;
+                default:
+                    fprintf(stderr, "%s: unknown spacecraft event\n", command);
+                    exit(1);
+                    break;
+                }
+            }
+        }
 
-		//---------------------------------------//
-		// process instrument event if necessary //
-		//---------------------------------------//
+        //---------------------------------------//
+        // process instrument event if necessary //
+        //---------------------------------------//
 
-		if (! instrument_done)
-		{
-			if (pscat_event.eventTime > instrument_end_time)
-			{
-				instrument_done = 1;
-				continue;
-			}
-			if (pscat_event.eventTime <= spacecraft_event.time ||
-				spacecraft_done)
-			{
-				//------------------------------//
-				// process the instrument event //
-				//------------------------------//
+        if (! instrument_done)
+        {
+            if (pscat_event.eventTime > instrument_end_time)
+            {
+                instrument_done = 1;
+                continue;
+            }
+            if (pscat_event.eventTime <= spacecraft_event.time ||
+                spacecraft_done)
+            {
+                //------------------------------//
+                // process the instrument event //
+                //------------------------------//
 
                 sim_time = pscat_event.eventTime;
-                double mid_tx_pulse_time = pscat_event.eventTime +
-                   0.5*pscat.ses.txPulseWidth;
 
-				switch(pscat_event.eventId)
-				{
-				case PscatEvent::VV_SCAT_EVENT:
-				case PscatEvent::HH_SCAT_EVENT:
-				case PscatEvent::VV_HV_SCAT_EVENT:
-				case PscatEvent::HH_VH_SCAT_EVENT:
+                switch(pscat_event.eventId)
+                {
+                case PscatEvent::VV_SCAT_EVENT:
+                case PscatEvent::HH_SCAT_EVENT:
+                case PscatEvent::VV_HV_SCAT_EVENT:
+                case PscatEvent::HH_VH_SCAT_EVENT:
 
-					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(mid_tx_pulse_time,
-						&spacecraft);
-					spacecraft_sim.UpdateAttitude(mid_tx_pulse_time,
-						&spacecraft);
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(pscat_event.eventTime,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(pscat_event.eventTime,
+                        &spacecraft);
 
-					// process instrument stuff
-					pscat.cds.SetTime(pscat_event.eventTime);
+                    // process instrument stuff
+                    pscat.cds.SetTime(pscat_event.eventTime);
                     pscat.cds.currentBeamIdx = pscat_event.beamIdx;
 
                     // antenna
                     pscat.sas.antenna.UpdatePosition(pscat_event.eventTime);
                     pscat.SetOtherAzimuths(&spacecraft);
 
-					pscat_sim.ScatSim(&spacecraft, &pscat, &pscat_event,
+                    pscat_sim.ScatSim(&spacecraft, &pscat, &pscat_event,
                         &windfield, &gmf, &kp, &kpmField, &(l1a.frame));
-					pscat_sim.DetermineNextEvent(&pscat, &pscat_event);
-					break;
+                    pscat_sim.DetermineNextEvent(&pscat, &pscat_event);
+                    break;
+                case PscatEvent::LOOPBACK_EVENT:
 
-				default:
-					fprintf(stderr, "%s: unknown instrument event\n", command);
-					exit(1);
-					break;
-				}
-			}
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(pscat_event.eventTime,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(pscat_event.eventTime,
+                        &spacecraft);
 
-			//-----------------------------------//
-			// write Level 1A data if necessary //
-			//-----------------------------------//
+                    // process instrument stuff
+                    pscat.cds.SetTime(pscat_event.eventTime);
+                    pscat.cds.currentBeamIdx = pscat_event.beamIdx;
+                    pscat.sas.antenna.UpdatePosition(pscat_event.eventTime);
+                    pscat.SetOtherAzimuths(&spacecraft);
+                    pscat_sim.LoopbackSim(&spacecraft, &pscat, &(l1a.frame));
+                    pscat_sim.DetermineNextEvent(&pscat, &pscat_event);
+                    break;
+                case PscatEvent::LOAD_EVENT:
 
-			if (pscat_sim.l1aFrameReady)
-			{
-				// Report Latest Attitude Measurement
-				// + Knowledge Error
-				spacecraft_sim.ReportAttitude(pscat_event.eventTime,
-					&spacecraft, &(l1a.frame.attitude));
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(pscat_event.eventTime,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(pscat_event.eventTime,
+                        &spacecraft);
 
-				int size = l1a.frame.Pack(l1a.buffer);
-				l1a.Write(l1a.buffer, size);
-			}
-		}
+                    // process instrument stuff
+                    pscat.cds.SetTime(pscat_event.eventTime);
+                    pscat.cds.currentBeamIdx = pscat_event.beamIdx;
+                    pscat.sas.antenna.UpdatePosition(pscat_event.eventTime);
+                    pscat.SetOtherAzimuths(&spacecraft);
+                    pscat_sim.LoadSim(&spacecraft, &pscat, &(l1a.frame));
+                    pscat_sim.DetermineNextEvent(&pscat, &pscat_event);
+                    break;
+                default:
+                    fprintf(stderr, "%s: unknown instrument event (%d)\n",
+                        command, pscat_event.eventId);
+                    exit(1);
+                    break;
+                }
+            }
 
-		//---------------//
-		// check if done //
-		//---------------//
+            //-----------------------------------//
+            // write Level 1A data if necessary //
+            //-----------------------------------//
 
-		if (instrument_done && spacecraft_done)
-			break;
-	}
+            if (pscat_sim.l1aFrameReady)
+            {
+                // Report Latest Attitude Measurement
+                // + Knowledge Error
+                spacecraft_sim.ReportAttitude(pscat_event.eventTime,
+                    &spacecraft, &(l1a.frame.attitude));
 
-	//----------------------//
-	// close Level 1A file //
-	//----------------------//
+                int size = l1a.frame.Pack(l1a.buffer);
+                l1a.Write(l1a.buffer, size);
+            }
+        }
 
-	l1a.Close();
+        //---------------//
+        // check if done //
+        //---------------//
 
-	//--------------------------//
-	// If createXtable is set	//
-	// write XTABLE file		//
-	//--------------------------//
+        if (instrument_done && spacecraft_done)
+            break;
+    }
 
-	if(pscat_sim.createXtable)
-	{
-		pscat_sim.xTable.Write();
-	}
+    //----------------------//
+    // close Level 1A file //
+    //----------------------//
 
-	return (0);
+    l1a.Close();
+
+    //--------------------------//
+    // If createXtable is set    //
+    // write XTABLE file        //
+    //--------------------------//
+
+    if(pscat_sim.createXtable)
+    {
+        pscat_sim.xTable.Write();
+    }
+
+    return (0);
 }

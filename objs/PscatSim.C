@@ -168,6 +168,7 @@ PscatSim::L1AFrameInit(
         l1a_frame->orbitStep = pscat->cds.SetAndGetOrbitStep();
         l1a_frame->instrumentTicks = pscat->cds.instrumentTime;
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
+        l1a_frame->calPosition = 255;    // no cal pulses yet
 
         // extra data needed by GS for first pulse
         SesBeamInfo* ses_beam_info = pscat->GetCurrentSesBeamInfo();
