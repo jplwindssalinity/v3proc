@@ -13,7 +13,9 @@ SYSLIBS =		-lm
 OBJS = \
 	Misc.o \
 	List.o \
-	ConfigList.o
+	ConfigList.o \
+	GMF.o \
+	OrbitSim.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -55,5 +57,7 @@ $(TARGET_LIB):	$(OBJS)
 ConfigList.o:	ConfigList.h ConfigList.C
 List.o:			List.h List.C
 Misc.o:			Misc.h Misc.C
+GMF.o:			GMF.C GMF.h
+OrbitSim.o:		OrbitSim.C OrbitSim.h
 
 ConfigList.h:	List.h
