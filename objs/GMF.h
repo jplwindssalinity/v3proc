@@ -58,7 +58,7 @@ public:
 	//---------//
 
 	int		GetCoefs(int pol, double inc, double spd, double* A0, double* A1,
-				double* A2);
+				double* A1_phase, double* A2, double* A2_phase);
 
 protected:
 

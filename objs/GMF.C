@@ -383,7 +383,9 @@ GMF::GetCoefs(
 	double		spd,
 	double*		A0,
 	double*		A1,
-	double*		A2)
+	double*		A1_phase,
+	double*		A2,
+	double*		A2_phase)
 {
 	double real[3], imag[3];
 	int n = _chiCount - 1;
@@ -410,7 +412,9 @@ GMF::GetCoefs(
 
 	*A0 = real[0] / (double)n;
 	*A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
+	*A1_phase = -atan2(imag[1], real[1]);
 	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
+	*A2_phase = -atan2(imag[2], real[2]);
 
 	return(1);
 }

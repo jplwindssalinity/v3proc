@@ -61,6 +61,22 @@ L0::WriteDataRec()
 	return(1);
 }
 
+//-----------------//
+// L0::ReadDataRec //
+//-----------------//
+
+int
+L0::ReadDataRec()
+{
+	if (! ReadBuffer())
+		return(0);
+
+	if (! ExtractAll())
+		return(0);
+
+	return(1);
+}
+
 //---------------//
 // L0::InsertAll //
 //---------------//
@@ -104,6 +120,53 @@ L0::InsertAll()
 	idx += sizeof(double);
 
 	memcpy(_frame + idx, &beam, sizeof(L0BeamE));
+	idx += sizeof(L0BeamE);
+
+	return(1);
+}
+//----------------//
+// L0::ExtractAll //
+//----------------//
+
+int
+L0::ExtractAll()
+{
+	int idx = 0;
+
+	memcpy(&time, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcAltitude, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcLongitude, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcLatitude, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcX, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcY, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&gcZ, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&velX, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&velY, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&velZ, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&antennaPosition, _frame + idx, sizeof(double));
+	idx += sizeof(double);
+
+	memcpy(&beam, _frame + idx, sizeof(L0BeamE));
 	idx += sizeof(L0BeamE);
 
 	return(1);

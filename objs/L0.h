@@ -70,12 +70,14 @@ public:
 	//--------------//
 
 	int		WriteDataRec();
+	int		ReadDataRec();
 
 	//-----------//
 	// insertion //
 	//-----------//
 
 	int		InsertAll();
+	int		ExtractAll();
 
 	//-------------------//
 	// product variables //
