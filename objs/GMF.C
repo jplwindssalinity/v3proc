@@ -668,8 +668,7 @@ GMF::_ObjectiveFunction(
 
 		double var;
 
-		if (! kp->GetVp(meas, gmf_value, meas->pol, spd, meas->beamIdx,
-			meas->sliceIdx, meas->scanAngle, &var))
+		if (! kp->GetVp(meas, gmf_value, meas->pol, spd, &var))
 		{
 			return(0);
 		}
