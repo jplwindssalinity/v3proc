@@ -14,9 +14,10 @@ CPPFLAGS =		-g -Wall -I$(INCDIR)
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
+	sim \
 	l00_to_l10 \
 	l10_to_l15 \
-	sim
+	l17_to_l20
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -58,4 +59,7 @@ l00_to_l10: l00_to_l10.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 l10_to_l15: l10_to_l15.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+l17_to_l20: l17_to_l20.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
