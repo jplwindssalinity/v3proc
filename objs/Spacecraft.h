@@ -11,6 +11,7 @@ static const char rcs_id_spacecraft_h[] =
 
 #include "Constants.h"
 #include "Matrix3.h"
+#include "Attitude.h"
 
 //======================================================================
 // CLASSES
@@ -45,7 +46,7 @@ public:
 	double			gcLongitude;
 	double			gcLatitude;
 	EarthPosition	gcVector;
-	Vector3		attitude;			// change to new object type!!!
+	Attitude		attitude;
     Vector3			velocityVector;
 };
 
