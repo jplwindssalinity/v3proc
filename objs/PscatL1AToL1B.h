@@ -51,8 +51,8 @@ public:
 
     int  Convert(PscatL1A* pscat_l1a, Spacecraft* spacecraft, Pscat* pscat,
              Ephemeris* ephemeris, L1B* l1b);
-    int PscatL1AToL1B::ComputeSigma0Corr(Qscat*  qscat, Meas*   meas,
-      float   Xfactor, float   Esn_slice, float*  Es_slice, float*  En_slice);
+    int  ComputeSigma0Corr(Pscat* qscat, Meas* meas, float Xfactor,
+             float Esn_slice, float* Es_slice, float* En_slice);
 
     //-----------//
     // variables //

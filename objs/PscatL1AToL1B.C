@@ -610,60 +610,74 @@ PscatL1AToL1B::Convert(
 // all of the signal power falls in the slices.
 //
 // Inputs:
-//	qscat = pointer to current Qscat object
-//	meas = pointer to current measurement (holds results)
-//	Xfactor = Total radar equation parameter for this slice.
-//	Esn_slice = the received slice energy.
-//	Esn_echo = the sum of all the slice energies for this spot.
-//	Esn_noise = the noise channel measured energy.
+//  qscat = pointer to current Qscat object
+//  meas = pointer to current measurement (holds results)
+//  Xfactor = Total radar equation parameter for this slice.
+//  Esn_slice = the received slice energy.
+//  Esn_echo = the sum of all the slice energies for this spot.
+//  Esn_noise = the noise channel measured energy.
 //  En_echo_load = reference load echo channel measurement
 //  En_noise_load = reference load noise channel measurement
 //
 
 int
 PscatL1AToL1B::ComputeSigma0Corr(
-    Qscat*  qscat,
+    Pscat*  pscat,
     Meas*   meas,
     float   Xfactor,
     float   Esn_slice,
     float*  Es_slice,
     float*  En_slice)
 {
-
-	//-------------------------------------------------------//
+    //-------------------------------------------------------//
     // Mean noise energy is assumed to be zero, so Es = Esn. //
-	//-------------------------------------------------------//
+    //-------------------------------------------------------//
 
     *Es_slice = Esn_slice;
-    *En_slice = 0.0;
 
-	//------------------------------------------------------------------//
+    //-------------------------//
+    // estimate copol En_slice //
+    //-------------------------//
+    // HACK ALERT!!!
+    // This is ultimately used in l2a_to_l2b for estimating Vpc.
+    // This is an estimation of the copol En_slice.  Why estimate it?
+    // Well, in case we don't have an actual copol measurement to
+    // calculate it from, we can still process data.  Once "the design"
+    // of the instrument in known, this can be done right.
+
+    QscatSes* ses = &(pscat->ses);
+    double N0_echo = bK * pscat->systemTemperature * ses->rxGainEcho /
+        ses->receivePathLoss;
+    SesBeamInfo* ses_beam_info = ses->GetCurrentBeamInfo(meas->beamIdx);
+    *En_slice = N0_echo * meas->bandwidth * ses_beam_info->rxGateWidth;
+
+    //------------------------------------------------------------------//
     // Compute sigma0 from estimated signal energy and X factors.
-	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
-	// Kpc comes from Es_slice.
-	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+    // Kpc comes from Es_slice.
+    // Kpr comes from 1/X (ie., from Es_cal when computing X)
     // Xfactor has units of energy because Xcal has units of Pt * Tp.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
 
-	meas->value = *Es_slice / Xfactor;
-    meas->EnSlice = 0.0;
+    meas->value = *Es_slice / Xfactor;
+    meas->EnSlice = *En_slice;
 
-	//------------------------------------------------------------------//
-	// Store the total X factor.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
+    // Store the total X factor.
+    //------------------------------------------------------------------//
 
     meas->XK = Xfactor;
 
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
     // Correlation measurements already carry Tp and Bs in the Meas
     // object, so no additional information is needed.
     // See Kp.C, method Kp::GetVpc for more details.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
 
-	meas->A = 0.0;
-	meas->B = 0.0;
-	meas->C = 0.0;
+    meas->A = 0.0;
+    meas->B = 0.0;
+    meas->C = 0.0;
 
-	return(1);
+    return(1);
 }
 
