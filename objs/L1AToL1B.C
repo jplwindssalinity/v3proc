@@ -194,6 +194,19 @@ L1AToL1B::Convert(
 			free(Esn);
 			Esn = NULL;
 
+                        for(Meas* meas=meas_spot->GetHead();meas;meas=meas_spot->GetNext()){  
+			  double alt,lat,lon;
+			  if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+			    return(0);
+			  
+			  LonLat lon_lat;
+			  lon_lat.longitude = lon;
+			  lon_lat.latitude = lat;
+			
+			  // Compute Land Flag
+			  meas->landFlag=landMap.IsLand(lon,lat);
+			}
+
 			//----------------------------------------//
 			// generate the reverse coordinate switch //
 			//----------------------------------------//

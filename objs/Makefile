@@ -47,6 +47,7 @@ OBJS = \
 	Kp.o \
 	Kpm.o \
 	Kpr.o \
+	LandMap.o \
 	L00.o \
 	L00Frame.o \
 	L00ToL1A.o \
@@ -165,6 +166,7 @@ Interpolate.o: Interpolate.C
 Kp.o: Kp.C Kp.h Kpm.h Kpr.h Index.h EarthField.h Distributions.h Meas.h L00Frame.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Tracking.h Matrix3.h BufferedList.h Constants.h
 Kpm.o: Kpm.C Kpm.h Constants.h Array.h Index.h EarthField.h Distributions.h LonLat.h List.h EarthPosition.h Matrix3.h
 Kpr.o: Kpr.C Kpr.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h Tracking.h BufferedList.h
+LandMap.o: LandMap.C LandMap.h Constants.h
 L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
 L00ToL1A.o: L00ToL1A.C L00ToL1A.h L00.h L1A.h BaseFile.h L00Frame.h L1AFrame.h Attitude.h
@@ -193,3 +195,5 @@ SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix
 Tracking.o: Tracking.C Tracking.h Array.h Instrument.h Constants.h Antenna.h InstConsts.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Wind.o: Wind.C Wind.h Constants.h GSparameters.h Misc.h Array.h LonLat.h List.h Index.h EarthPosition.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
+
+

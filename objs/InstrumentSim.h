@@ -11,6 +11,7 @@ static const char rcs_id_instrumentsim_h[] =
 
 #include "Antenna.h"
 #include "Instrument.h"
+#include "LandMap.h"
 #include "Wind.h"
 #include "GMF.h"
 #include "AntennaSim.h"
@@ -87,6 +88,7 @@ public:
 
 	XTable			kfactorTable;
 	XTable			xTable;
+        LandMap                 landMap;
 	int numLookStepsPerSlice;
 
 	float azimuthIntegrationRange; 

@@ -519,8 +519,12 @@ GMF::CheckRetrieveCriteria(
 		return(0);
 
 	//-------------------------------------//
-	// check for minimum azimuth diversity //
+	// check for land contamination        //
 	//-------------------------------------//
+        for (Meas* meas=meas_list->GetHead(); meas;
+             meas=meas_list->GetNext()){
+	  if(meas->landFlag!=0) return(0);
+	}
 
 	Node<Meas>* current;
 

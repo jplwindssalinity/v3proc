@@ -607,6 +607,13 @@ ConfigInstrumentSim(
 	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
 		return(0);
 
+
+        //--------------------------------------//
+        // Read in the land map file            //
+        //--------------------------------------//
+	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
+        instrument_sim->landMap.Read(landfile);  
+	
 	//-----------------------//
 	// initialize PTGR noise //
 	//-----------------------//
@@ -1417,6 +1424,12 @@ ConfigL1AToL1B(
 		config_list->Get(ONEB_CHECKFILE_KEYWORD);
 
 	config_list->ExitForMissingKeywords();
+
+        //--------------------------------------//
+        // Read in the land map file            //
+        //--------------------------------------//
+	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
+        l1a_to_l1b->landMap.Read(landfile);  
 
 	//----------//
 	// k-factor //

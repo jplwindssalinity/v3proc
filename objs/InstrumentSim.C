@@ -148,6 +148,9 @@ InstrumentSim::SetMeasurements(
 		lon_lat.longitude = lon;
 		lon_lat.latitude = lat;
 
+                // Compute Land Flag
+                meas->landFlag=landMap.IsLand(lon,lat);
+
 		float sigma0;
 		if (uniformSigmaField)
 		{

@@ -88,6 +88,7 @@ public:
 	float				EnSlice;
 	float				bandwidth;
 	float				txPulseWidth;
+        int                             landFlag;
 	Outline				outline;
 	EarthPosition		centroid;
 

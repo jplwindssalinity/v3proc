@@ -101,6 +101,11 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_UNCORR_KPM_FLAG_KEYWORD		"SIM_UNCORR_KPM_FLAG"
 #define SIM_KPRI_FLAG_KEYWORD			"SIM_KPRI_FLAG"
 
+
+//---------------//
+// LandMap       //
+//---------------//
+#define LANDMAP_FILE_KEYWORD                           "LANDMAP_FILE"
 //---------------//
 // InstrumentSim //
 //---------------//

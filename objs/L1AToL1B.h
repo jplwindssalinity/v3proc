@@ -13,6 +13,7 @@ static const char rcs_id_l1atol1b_h[] =
 #include "L1B.h"
 #include "Spacecraft.h"
 #include "Instrument.h"
+#include "LandMap.h"
 #include "Ephemeris.h"
 #include "XTable.h"
 
@@ -55,6 +56,7 @@ public:
 	//-----------//
 
 	XTable	kfactorTable;
+        LandMap landMap;
 
 	int		useKfactor;				// read and use kfactor table
 	int		useSpotCompositing;		// make spots by compositing slices

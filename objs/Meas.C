@@ -21,7 +21,8 @@ static const char rcs_id_measurement_c[] =
 
 Meas::Meas()
 :	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0),
-	txPulseWidth(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
+	txPulseWidth(0.0), landFlag(0), pol(NONE), 
+        eastAzimuth(0.0), incidenceAngle(0.0),
 	beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0),
 	A(0.0), B(0.0), C(0.0), offset(0)
 {
@@ -76,7 +77,7 @@ Meas::Composite(
 		return(0);
 
 	int min_slice_idx = meas_start->startSliceIdx;
-
+        landFlag=0;
 	for (meas = meas_start; meas; meas = meas_list->GetNext())
 	{
 		//==================================================//
@@ -85,7 +86,7 @@ Meas::Composite(
 		//==================================================//
 		if(n != 0 && N >= n)
 			break;
-
+                if(meas->landFlag!=0) landFlag=1;
 		sum_Ps += meas->value * meas->XK;
 		sum_XK += meas->XK;
 		sum_EnSlice += meas->EnSlice;
@@ -169,6 +170,7 @@ Meas::Write(
 		fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -202,6 +204,7 @@ Meas::Read(
 		fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -245,6 +248,7 @@ Meas::WriteAscii(
 	fprintf(fp, "Value: %g\n", value);
         fprintf(fp, "Bandwidth: %g ", bandwidth);
         fprintf(fp, "txPulseWidth: %g ", txPulseWidth);
+        fprintf(fp, "LandFlag: %d ", landFlag);
         fprintf(fp, "A: %g ", A);
         fprintf(fp, "B: %g ", B);
         fprintf(fp, "C: %g ", C);
