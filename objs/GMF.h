@@ -73,6 +73,9 @@ public:
 				double initial_spd_step, double initial_phi_step,
 				double final_spd_step, double final_phi_step);
 
+	int		ModCurves(FILE* ofp, MeasurementList* measurement_list,
+				double spd_step, double phi_step);
+
 protected:
 
 	//--------------//
@@ -116,6 +119,9 @@ protected:
 
 	double	_ObjectiveFunction(MeasurementList* measurement_list, double u,
 				double phi);
+	int		_FindSolutionCurve(MeasurementList* measurement_list, double dspd,
+				double dphi, int phi_count, int* best_spd_idx,
+				double* best_obj);
 
 	//-----------//
 	// variables //

@@ -330,8 +330,6 @@ GMF::GetCoefs(
 // GMF::FindSolutions //
 //--------------------//
 
-#define INITIAL_SPEED		8.0
-
 int
 GMF::FindSolutions(
 	MeasurementList*	measurement_list,
@@ -356,65 +354,19 @@ GMF::FindSolutions(
 	int* best_spd_idx = new int[phi_count];
 	double* best_obj = new double[phi_count];
 
-	//-----------------//
-	// for each phi... //
-	//-----------------//
+	//-------------------------//
+	// find the solution curve //
+	//-------------------------//
 
-	int spd_idx = (int)(INITIAL_SPEED / dspd + 0.5);
-	double spd = (double)spd_idx * dspd;
-
-	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
-	{
-		//------------------------//
-		// ...find the best speed //
-		//------------------------//
-
-		double phi = (double)phi_idx * dphi;
-
-		double obj = _ObjectiveFunction(measurement_list, spd, phi);
-		double obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
-			phi);
-		double obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
-			phi);
-		do
-		{
-			if (obj > obj_minus && obj > obj_plus)
-			{
-				// peak
-				best_spd_idx[phi_idx] = spd_idx;
-				best_obj[phi_idx] = obj;
-				break;
-			}
-			else if (obj_plus > obj && obj > obj_minus)
-			{
-				// move up
-				spd_idx++;
-				spd = (double)spd_idx * dspd;
-				obj_minus = obj;
-				obj = obj_plus;
-				obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
-					phi);
-			}
-			else if (obj_minus > obj && obj > obj_plus)
-			{
-				// move down
-				spd_idx--;
-				spd = (double)spd_idx * dspd;
-				obj_plus = obj;
-				obj = obj_minus;
-				obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
-					phi);
-			}
-		} while (1);
-// printf("%g %g\n", phi * rtd, spd);
-	}
+	_FindSolutionCurve(measurement_list, dspd, dphi, phi_count, best_spd_idx,
+		best_obj);
 
 	//--------------------------------//
 	// find local maxima in phi strip //
 	//--------------------------------//
 
 	int count = 0;
-	for (phi_idx = 0; phi_idx < phi_count; phi_idx++)
+	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
 	{
 		int phi_idx_plus = (phi_idx + 1) % phi_count;
 		int phi_idx_minus = (phi_idx - 1 + phi_count) % phi_count;
@@ -536,6 +488,74 @@ GMF::RefineSolutions(
 			wv->dir = (double)phi_idx * phi_step;
 		}
 	}
+
+	return(1);
+}
+
+//----------------//
+// GMF::ModCurves //
+//----------------//
+
+int
+GMF::ModCurves(
+	FILE*				ofp,
+	MeasurementList*	measurement_list,
+	double				spd_step,
+	double				phi_step)
+{
+	//---------------------------------------//
+	// determine index ranges and step sizes //
+	//---------------------------------------//
+
+	int phi_count = (int)(two_pi / phi_step);
+	double dphi = two_pi / (double)phi_count;
+
+	int spd_count = (int)(_spdMax / spd_step);
+	double dspd = _spdMax / (double)spd_count;
+
+	//-------------------------//
+	// allocate storage arrays //
+	//-------------------------//
+
+	int* best_spd_idx = new int[phi_count];
+	double* best_obj = new double[phi_count];
+
+	//------------------------------//
+	// generate each solution curve //
+	//------------------------------//
+
+	MeasurementList new_list;
+	for (Measurement* meas = measurement_list->GetHead(); meas;
+			meas = measurement_list->GetNext())
+	{
+		new_list.Append(meas);
+		_FindSolutionCurve(&new_list, dspd, dphi, phi_count,
+			best_spd_idx, best_obj);
+		for (int i = 0; i < phi_count; i++)
+		{
+			fprintf(ofp, "%g %g\n", (double)i * dphi * rtd,
+				(double)best_spd_idx[i] * dspd);
+		}
+		fprintf(ofp, "&\n");
+		new_list.GetHead();
+		new_list.RemoveCurrent();
+	}
+
+	//----------------------------------//
+	// generate combined solution curve //
+	//----------------------------------//
+
+	_FindSolutionCurve(measurement_list, dspd, dphi, phi_count,
+            best_spd_idx, best_obj);
+	for (int i = 0; i < phi_count; i++)
+	{
+		fprintf(ofp, "%g %g %g\n", (double)i * dphi * rtd,
+			(double)best_spd_idx[i] * dspd, best_obj[i]);
+	}
+
+	//-----------------------//
+	// delete storage arrays //
+	//-----------------------//
 
 	return(1);
 }
@@ -859,7 +879,6 @@ GMF::_ObjectiveFunction(
 	for (Measurement* meas = measurement_list->GetHead(); meas;
 			meas = measurement_list->GetNext())
 	{
-//		double chi = meas->eastAzimuth - phi;
 		double chi = phi - (meas->eastAzimuth + pi);
 		double gmf_value;
 		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
@@ -868,4 +887,69 @@ GMF::_ObjectiveFunction(
 		fv += s*s / meas->estimatedKp + log10(meas->estimatedKp);
 	}
 	return(-fv);
+}
+
+//-------------------------//
+// GMF::_FindSolutionCurve //
+//-------------------------//
+
+#define INITIAL_SPEED		8.0
+
+int
+GMF::_FindSolutionCurve(
+	MeasurementList*	measurement_list,
+	double				dspd,
+	double				dphi,
+	int					phi_count,
+	int*				best_spd_idx,
+	double*				best_obj)
+{
+	int spd_idx = (int)(INITIAL_SPEED / dspd + 0.5);
+	double spd = (double)spd_idx * dspd;
+
+	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+	{
+		//------------------------//
+		// ...find the best speed //
+		//------------------------//
+
+		double phi = (double)phi_idx * dphi;
+
+		double obj = _ObjectiveFunction(measurement_list, spd, phi);
+		double obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+			phi);
+		double obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+			phi);
+		do
+		{
+			if (obj > obj_minus && obj > obj_plus)
+			{
+				// peak
+				best_spd_idx[phi_idx] = spd_idx;
+				best_obj[phi_idx] = obj;
+				break;
+			}
+			else if (obj_plus > obj && obj > obj_minus)
+			{
+				// move up
+				spd_idx++;
+				spd = (double)spd_idx * dspd;
+				obj_minus = obj;
+				obj = obj_plus;
+				obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+					phi);
+			}
+			else if (obj_minus > obj && obj > obj_plus)
+			{
+				// move down
+				spd_idx--;
+				spd = (double)spd_idx * dspd;
+				obj_plus = obj;
+				obj = obj_minus;
+				obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+					phi);
+			}
+		} while (1);
+	}
+	return(1);
 }
