@@ -64,6 +64,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <ieeefp.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -106,9 +107,9 @@ template class List<AngleInterval>;
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
-#define SECTOR_COUNT             2
+#define SECTOR_COUNT             4
 #define MIN_POINTS_PER_SECTOR    20
-#define MIN_SECTORS              4
+#define MIN_SECTORS              8
 
 //--------//
 // MACROS //
@@ -635,7 +636,8 @@ main(
     {
         for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
         {
-            if (fabs(g_min_offset[beam_idx][orbit_step]) < 80000.0 &&
+            if (g_good[beam_idx][orbit_step] &&
+                fabs(g_min_offset[beam_idx][orbit_step]) < 80000.0 &&
                 fabs(g_max_offset[beam_idx][orbit_step]) < 80000.0)
             {
                 fprintf(offset_fp, "%d %g %g\n", orbit_step,
@@ -732,6 +734,9 @@ exit(0);
     //-------------------------//
     // check for resonableness //
     //-------------------------//
+
+    if (isnand(newA) || isnand(newC) || isnand(newP))
+        g_sector_count[beam_idx][orbit_step] = 0;
 
     if (fabs(newA) > 600000.0)
         g_sector_count[beam_idx][orbit_step] = 0;

@@ -8,15 +8,15 @@
 //    fit_dtc
 //
 // SYNOPSIS
-//    fit_dtc [ -fhi ] <raw_dtc_file> <dtc_base>
+//    fit_dtc [ -fi ] [ -h terms ] <raw_dtc_file> <dtc_base>
 //
 // DESCRIPTION
 //    Reads the raw DTC file and generates a fit to the data.
 //
 // OPTIONS
-//    [ -f ]  Filter out outliers.
-//    [ -h ]  Use more terms (higher order).
-//    [ -i ]  Filter out ice.
+//    [ -f ]        Filter out outliers.
+//    [ -h terms ]  Use more terms (higher order).
+//    [ -i ]        Filter out ice.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -54,6 +54,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include "Misc.h"
 #include "Array.h"
@@ -68,7 +69,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "fhi"
+#define OPTSTRING  "fh:i"
 #define QUOTE      '"'
 
 #define ORBIT_STEPS            256
@@ -103,6 +104,7 @@ const char* usage_array[] = { "[ -fhi ]", "<raw_dtc_file>", "<dtc_base>", 0 };
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 char      g_good_too[ORBIT_STEPS];
+int       g_high_terms;
 
 int       g_opt_filter = 0;
 int       g_opt_ice = 0;
@@ -123,7 +125,7 @@ main(
 
     const char* command = no_path(argv[0]);
     extern int optind;
-//  extern char *optarg;
+    extern char *optarg;
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
@@ -135,6 +137,7 @@ main(
             break;
         case 'h':
             g_opt_high = 1;
+            g_high_terms = atoi(optarg);
             printf("High order fit\n");
             break;
         case 'i':
@@ -273,8 +276,9 @@ fit_terms_plus(
     double* azimuth = (double *)make_array(sizeof(double), 1, good_count);
     double* data = (double *)make_array(sizeof(double), 1, good_count);
 
-    int high_order_max_term[3] = { 32, 32, 32 };
-    double high_order_threshold[3] = { 100.0, 0.0002, 100.0 };
+    int high_order_max_term[3];    // gets filled in later
+//    double high_order_threshold[3] = { 100.0, 0.0002, 100.0 };
+    double high_order_threshold[3] = { 0.0, 0.0, 0.0 };
 
     int low_order_max_term[3] = { 3, 2, 2 };    // amp, phase, bias
     double low_order_threshold[3] = { 0.0, 0.0, 0.0 };
@@ -283,6 +287,9 @@ fit_terms_plus(
     double* threshold;
     if (g_opt_high)
     {
+        for (int i = 0; i < 3; i++)
+            high_order_max_term[i] = g_high_terms;
+
         max_term = high_order_max_term;
         threshold = high_order_threshold;
     }
