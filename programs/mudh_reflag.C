@@ -56,6 +56,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "Misc.h"
 #include "mudh.h"
 
@@ -598,9 +599,14 @@ main(
                     x_outer_comp_sum[i] /= (double)count[1][i];
                     y_outer_comp_sum[i] /= (double)count[1][i];
                 }
+/*
                 float target_angle =
                     atan2(y_outer_comp_sum[0] + y_outer_comp_sum[1],
                     x_outer_comp_sum[0] + x_outer_comp_sum[1]);
+*/
+                float target_angle =
+                    (atan2(y_outer_comp_sum[0], x_outer_comp_sum[0]) +
+                     atan2(y_outer_comp_sum[1], x_outer_comp_sum[1])) / 2.0;
 
                 float dir_val = ANGDIF(target_angle, dir);
 
