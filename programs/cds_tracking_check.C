@@ -245,8 +245,8 @@ main(
             // calculate the RGC delay //
             //-------------------------//
 
-            qscat.cds.previousEncoder = encoder[i];
-            unsigned short use_encoder = qscat.cds.EstimateEncoder();
+            qscat.cds.heldEncoder = encoder[i];
+            unsigned short use_encoder = qscat.cds.EstimateIdealEncoder();
 
             unsigned char rx_gate_delay_dn;
             float rx_gate_delay_fdn;

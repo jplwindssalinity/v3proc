@@ -32,25 +32,16 @@ L00::~L00()
 //---------------------//
 
 int
-L00::AllocateBuffer(
-	int		number_of_beams,
-	int		antenna_cycles_per_frame,
-	int		slices_per_spot)
+L00::AllocateBuffer()
 {
-	// antenna position and sigma-0 and noise powers
-	int power_bytes = sizeof(float) * number_of_beams *
-		antenna_cycles_per_frame * slices_per_spot;
-	int noise_bytes = sizeof(float) * number_of_beams *
-		antenna_cycles_per_frame;
-	int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
-    int cal_bytes = sizeof(float)*2*(slices_per_spot + 1);
-	int buffer_size = L00_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
-		noise_bytes + cal_bytes;
-	buffer = (char *)malloc(buffer_size);
-	if (buffer == NULL)
-		return(0);
-	bufferSize = buffer_size;
-	return(1);
+    bufferSize = frame.FrameSize();
+    buffer = (char *)malloc(bufferSize);
+    if (buffer == NULL)
+    {
+        bufferSize = 0;
+        return(0);
+    }
+    return(1);
 }
 
 //-----------------------//

@@ -19,10 +19,10 @@ L1AFrame::L1AFrame()
 :   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), ptgr(0.0), calPosition(255),
-    loopbackSlices(NULL), loopbackNoise(0.0),
-    loadSlices(NULL), loadNoise(0.0), antennaPosition(NULL), science(NULL),
-    spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
+    velZ(0.0), ptgr(0.0), calPosition(255), loopbackSlices(NULL),
+    loopbackNoise(0.0), loadSlices(NULL), loadNoise(0.0),
+    antennaPosition(NULL), science(NULL), spotNoise(NULL), spotsPerFrame(0),
+    slicesPerSpot(0), slicesPerFrame(0)
 {
 	return;
 }
@@ -119,6 +119,44 @@ L1AFrame::Deallocate()
 	return(1);
 }
 
+//---------------------//
+// L1AFrame::FrameSize //
+//---------------------//
+
+int
+L1AFrame::FrameSize()
+{
+    int size = 0;
+    size += sizeof(double);         // time
+    size += sizeof(unsigned int);   // instrument ticks
+    size += sizeof(unsigned int);   // orbit ticks
+    size += sizeof(unsigned char);  // orbit step
+    size += sizeof(unsigned char);  // pri of orbit step change
+    size += sizeof(float);          // altitude
+    size += sizeof(float);          // longitude
+    size += sizeof(float);          // latitude
+    size += sizeof(float);          // x
+    size += sizeof(float);          // y
+    size += sizeof(float);          // z
+    size += sizeof(float);          // vx
+    size += sizeof(float);          // vy
+    size += sizeof(float);          // vz
+    size += sizeof(float);          // roll
+    size += sizeof(float);          // pitch
+    size += sizeof(float);          // yaw
+    size += sizeof(float);          // PtGr
+    size += sizeof(unsigned char);  // cal position
+    size += sizeof(float) * slicesPerSpot;  // loopback slices
+    size += sizeof(float);          // loopback noise
+    size += sizeof(float) * slicesPerSpot;  // load slices
+    size += sizeof(float);          // load noise
+    size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
+    size += sizeof(float) * slicesPerFrame;  // science data
+    size += sizeof(float) * spotsPerFrame;   // spot noise
+
+    return(size);
+}
+
 //----------------//
 // L1AFrame::Pack //
 //----------------//
@@ -192,7 +230,7 @@ L1AFrame::Pack(
 	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
 	idx += size;
 
-    size = sizeof(unsigned short);
+    size = sizeof(unsigned char);
     memcpy((void *)(buffer + idx), (void *)&calPosition, size);
     idx += size;
 
@@ -300,7 +338,7 @@ L1AFrame::Unpack(
 	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
 	idx += size;
 
-    size = sizeof(unsigned short);
+    size = sizeof(unsigned char);
     memcpy((void *)&calPosition, (void *)(buffer + idx), size);
     idx += size;
 

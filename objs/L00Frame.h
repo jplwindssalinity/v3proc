@@ -1,23 +1,21 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef L00FRAME_H
 #define L00FRAME_H
 
 static const char rcs_id_l00frame_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Attitude.h"
 
 
 //======================================================================
 // CLASSES
-//		L00Frame
+//    L00Frame
 //======================================================================
-
-#define L00_FRAME_HEADER_SIZE	72
 
 //======================================================================
 // CLASS
@@ -42,6 +40,7 @@ public:
 	int		Allocate(int number_of_beams, int antenna_cycles_per_frame,
 				int slices_per_spot);
 	int		Deallocate();
+    int     FrameSize();
 
 	//-------------------//
 	// data manipulation //
@@ -70,7 +69,7 @@ public:
 	float			velZ;
 	Attitude		attitude;
 	float			ptgr;
-    unsigned short  calPosition;
+    unsigned char   calPosition;
 
 	//------------//
 	// frame data //

@@ -44,8 +44,7 @@ public:
 	L1A();
 	~L1A();
 
-	int		AllocateBuffer(int number_of_beams, int antenna_cycles_per_frame,
-				int slices_per_spot);
+	int		AllocateBuffer();
 	int		DeallocateBuffer();
 
 	//---------------------//
@@ -58,9 +57,9 @@ public:
 	// input/output //
 	//--------------//
 
-	int			ReadDataRec();
-	int			WriteDataRec();
-        int                     WriteDataRecAscii();
+    int  ReadDataRec();
+    int  WriteDataRec();
+    int  WriteDataRecAscii();
 
 	//-----------//
 	// variables //

@@ -351,7 +351,7 @@ main(
 
                     qscat.cds.useRgc = 1;
                     qscat.cds.useDtc = 1;
-                    SetDelayAndFrequency(&spacecraft, &qscat);
+                    SetOrbitStepDelayAndFrequency(&spacecraft, &qscat);
 
                     //----------------------------------//
                     // calculate the baseband frequency //

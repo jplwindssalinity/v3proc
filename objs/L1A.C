@@ -31,25 +31,16 @@ L1A::~L1A()
 //---------------------//
 
 int
-L1A::AllocateBuffer(
-	int		number_of_beams,
-	int		antenna_cycles_per_frame,
-	int		slices_per_spot)
+L1A::AllocateBuffer()
 {
-	// antenna position and sigma-0
-	int power_bytes = sizeof(float) * number_of_beams *
-			antenna_cycles_per_frame * slices_per_spot;
-	int noise_bytes = sizeof(float) * number_of_beams *
-		antenna_cycles_per_frame;
-	int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
-    int cal_bytes = sizeof(float)*2*(slices_per_spot + 1);
-	int buffer_size = L1A_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
-		noise_bytes + cal_bytes;
-	buffer = (char *)malloc(buffer_size);
-	if (buffer == NULL)
-		return(0);
-	bufferSize = buffer_size;
-	return(1);
+    bufferSize = frame.FrameSize();
+    buffer = (char *)malloc(bufferSize);
+    if (buffer == NULL)
+    {
+        bufferSize = 0;
+        return(0);
+    }
+    return(1);
 }
 
 //-----------------------//
@@ -108,4 +99,3 @@ L1A::WriteDataRecAscii(){
   if(!frame.WriteAscii(_outputFp)) return(0);
   return(1);
 }
-

@@ -830,18 +830,21 @@ ConfigL00(
 
 	int total_slices = s_count + 2 * g_count;
 
-	if (! l00->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
-		total_slices))
-	{
-		return(0);
-	}
-
 	//-------------------------//
 	// configure the l00 frame //
 	//-------------------------//
 
 	if (! l00->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
 		total_slices))
+	{
+		return(0);
+	}
+
+    //-----------------------------------------//
+    // use the frame size to allocate a buffer //
+    //-----------------------------------------//
+
+	if (! l00->AllocateBuffer())
 	{
 		return(0);
 	}
@@ -889,18 +892,21 @@ ConfigL1A(
 
 	int total_slices = s_count + 2 * g_count;
 
-	if (! l1a->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
-		total_slices))
-	{
-		return(0);
-	}
-
 	//-------------------------//
 	// configure the l1a frame //
 	//-------------------------//
 
 	if (! l1a->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
 		total_slices))
+	{
+		return(0);
+	}
+
+    //-----------------------------------------//
+    // use the frame size to allocate a buffer //
+    //-----------------------------------------//
+
+	if (! l1a->AllocateBuffer())
 	{
 		return(0);
 	}

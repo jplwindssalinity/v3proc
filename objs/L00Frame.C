@@ -117,6 +117,45 @@ L00Frame::Deallocate()
 	return(1);
 }
 
+//---------------------//
+// L00Frame::FrameSize //
+//---------------------//
+// this function returns the number of bytes per frame
+
+int
+L00Frame::FrameSize()
+{
+    int size = 0;
+    size += sizeof(double);         // time
+    size += sizeof(unsigned int);   // instrument ticks
+    size += sizeof(unsigned int);   // orbit ticks
+    size += sizeof(unsigned char);  // orbit step
+    size += sizeof(unsigned char);  // pri of orbit step change
+    size += sizeof(float);          // altitude
+    size += sizeof(float);          // longitude
+    size += sizeof(float);          // latitude
+    size += sizeof(float);          // x
+    size += sizeof(float);          // y
+    size += sizeof(float);          // z
+    size += sizeof(float);          // vx
+    size += sizeof(float);          // vy
+    size += sizeof(float);          // vz
+    size += sizeof(float);          // roll
+    size += sizeof(float);          // pitch
+    size += sizeof(float);          // yaw
+    size += sizeof(float);          // PtGr
+    size += sizeof(unsigned char);  // cal position
+    size += sizeof(float) * slicesPerSpot;  // loopback slices
+    size += sizeof(float);          // loopback noise
+    size += sizeof(float) * slicesPerSpot;  // load slices
+    size += sizeof(float);          // load noise
+    size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
+    size += sizeof(float) * slicesPerFrame;  // science data
+    size += sizeof(float) * spotsPerFrame;   // spot noise
+
+    return(size);
+}
+
 //----------------//
 // L00Frame::Pack //
 //----------------//
@@ -190,7 +229,7 @@ L00Frame::Pack(
 	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
 	idx += size;
 
-	size = sizeof(unsigned short);
+	size = sizeof(unsigned char);
 	memcpy((void *)(buffer + idx), (void *)&calPosition, size);
 	idx += size;
 
@@ -298,7 +337,7 @@ L00Frame::Unpack(
 	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(unsigned short);
+	size = sizeof(unsigned char);
 	memcpy((void *)&calPosition, (void *)(buffer + idx), size);
 	idx += size;
 

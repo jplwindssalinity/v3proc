@@ -345,7 +345,7 @@ main(
 				// command the range delay and Doppler frequency //
 				//-----------------------------------------------//
 
-                SetDelayAndFrequency(&spacecraft, &qscat);
+                SetOrbitStepDelayAndFrequency(&spacecraft, &qscat);
 
 				if (slice_opt)
 				{

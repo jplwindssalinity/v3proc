@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef L00_H
 #define L00_H
@@ -44,9 +44,8 @@ public:
 	L00();
 	~L00();
 
-	int		AllocateBuffer(int number_of_beams, int antenna_cycles_per_frame,
-				int slices_per_spot);
-	int		DeallocateBuffer();
+    int  AllocateBuffer();
+    int  DeallocateBuffer();
 
 	//---------------------//
 	// setting and getting //

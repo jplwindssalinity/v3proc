@@ -17,43 +17,42 @@ static const char rcs_id_l1aframe_h[] =
 //    L1AFrame
 //======================================================================
 
-#define L1A_FRAME_HEADER_SIZE	72
-
 //======================================================================
 // CLASS
-//		L1AFrame
+//    L1AFrame
 //
 // DESCRIPTION
-//		The L1AFrame object contains the contents of a Level 1A frame
-//		as a structure.
+//    The L1AFrame object contains the contents of a Level 1A frame
+//    as a structure.
 //======================================================================
 
 class L1AFrame
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	L1AFrame();
-	~L1AFrame();
+    L1AFrame();
+    ~L1AFrame();
 
-	int		Allocate(int number_of_beams, int antenna_cycles_per_frame,
-				int slices_per_spot);
-	int		Deallocate();
+    int  Allocate(int number_of_beams, int antenna_cycles_per_frame,
+             int slices_per_spot);
+    int  Deallocate();
+    int  FrameSize();
 
-	//-------------------//
-	// data manipulation //
-	//-------------------//
+    //-------------------//
+    // data manipulation //
+    //-------------------//
 
-	int		Pack(char* buffer);
-	int		Unpack(char* buffer);
-        int             WriteAscii(FILE* ofp);
+    int  Pack(char* buffer);
+    int  Unpack(char* buffer);
+    int  WriteAscii(FILE* ofp);
 
-	//-------------------//
-	// product variables //
-	//-------------------//
+    //-------------------//
+    // product variables //
+    //-------------------//
 
     double         time;
     unsigned int   instrumentTicks;
@@ -76,7 +75,7 @@ public:
 	float			velZ;
 	Attitude		attitude;
 	float			ptgr;
-    unsigned short  calPosition;
+    unsigned char   calPosition;
 
     // cal data
     float*              loopbackSlices;

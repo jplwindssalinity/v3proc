@@ -346,7 +346,7 @@ main(
 					// calculate the RGC delay //
 					//-------------------------//
 
-                    qscat.cds.CmdRangeAndDoppler(&(qscat.sas), &(qscat.ses));
+                    SetOrbitStepDelayAndFrequency(&spacecraft, &qscat);
                     delay = qscat.ses.rxGateDelay;
 
 					//------------------------------//
