@@ -28,8 +28,24 @@ static const char rcs_id_instrument_h[] =
 class Event
 {
 public:
+
+	//-------//
+	// enums //
+	//-------//
+
     enum EventE { NONE, UNKNOWN, UPDATE_ORBIT,
         SCATTEROMETER_BEAM_A_MEASUREMENT, SCATTEROMETER_BEAM_B_MEASUREMENT };
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	Event::Event();
+	Event::~Event();
+
+	//-----------//
+	// variables //
+	//-----------//
  
     EventE      eventId;
     double      time;
