@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -188,72 +188,74 @@ int GMF::ReadOldStyle(
 //---------------------//
 
 int GMF::ReadPolarimetric(
-	const char*		filename)
+    const char*  filename)
 {
-	FILE* ifp = fopen(filename, "r");
-	if (!ifp)
-		return(0);
+    FILE* ifp = fopen(filename, "r");
+    if (!ifp)
+        return(0);
 
-	_metCount = 5;
+    _metCount = 5;
 
-	_incCount = 26;
-	_incMin = 14.0 * dtr;
-	_incMax = 64.0 * dtr;
-	_incStep = 2.0 * dtr;
+    _incCount = 26;
+    _incMin = 14.0 * dtr;
+    _incMax = 64.0 * dtr;
+    _incStep = 2.0 * dtr;
 
-	_spdCount = 51;
-	_spdMin = 0.0;
-	_spdMax = 50.0;
-	_spdStep = 1.0;
-        int file_min_spd_idx = 4;
-	_chiCount = 72;
-	_chiStep = two_pi / _chiCount;		// 5 degrees
+    _spdCount = 51;
+    _spdMin = 0.0;
+    _spdMax = 50.0;
+    _spdStep = 1.0;
 
-	if (! _Allocate())
-		return(0);
+    int file_min_spd_idx = 4;
+    _chiCount = 72;
+    _chiStep = two_pi / _chiCount;    // 5 degrees
 
-        while(!feof(ifp)){
-	  char string[40];
+    if (! _Allocate())
+        return(0);
 
-          float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh,
-	    phhvh;
+    while(!feof(ifp))
+    {
+        char string[40];
 
-          // Read ASCII line of ipnuts and outputs to model function.
-          fscanf(ifp,"%s",string);
-          if(feof(ifp)) break;
-	  spd = atof(string);
-          fscanf(ifp,"%s",string);
-	  theta = atof(string)*dtr;
-          fscanf(ifp,"%s",string);
-	  chi = atof(string)*dtr;
-          fscanf(ifp,"%s",string);
-	  s0hh = atof(string);
-          fscanf(ifp,"%s",string);
-	  s0vv = atof(string);
-          fscanf(ifp,"%s",string);
-	  s0hv = atof(string);
-          fscanf(ifp,"%s",string);
-	  s0vvhv = atof(string);
-          fscanf(ifp,"%s",string);
-	  pvvhv = atof(string);
-          fscanf(ifp,"%s",string);
-	  s0hhvh = atof(string);
-          fscanf(ifp,"%s",string);
-	  phhvh = atof(string);
+        float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh, phhvh;
 
-	  // Compute indexes into table
-          int ispd, ichi, itheta;
-          ispd=_SpdToIndex(spd);
-          itheta=_IncToIndex(theta);
-          ichi=_ChiToIndex(chi);
+        // Read ASCII line of ipnuts and outputs to model function.
+        fscanf(ifp,"%s",string);
+        if (feof(ifp))
+            break;
+        spd = atof(string);
+        fscanf(ifp,"%s",string);
+        theta = atof(string)*dtr;
+        fscanf(ifp,"%s",string);
+        chi = atof(string)*dtr;
+        fscanf(ifp,"%s",string);
+        s0hh = atof(string);
+        fscanf(ifp,"%s",string);
+        s0vv = atof(string);
+        fscanf(ifp,"%s",string);
+        s0hv = atof(string);
+        fscanf(ifp,"%s",string);
+        s0vvhv = atof(string);
+        fscanf(ifp,"%s",string);
+        pvvhv = atof(string);
+        fscanf(ifp,"%s",string);
+        s0hhvh = atof(string);
+        fscanf(ifp,"%s",string);
+        phhvh = atof(string);
 
-          // Compute table values
-          s0vv=pow(10.0,0.1*s0vv);
-          s0hv=pow(10.0,0.1*s0hv);
-	  s0hh=pow(10.0,0.1*s0hh);
-	  if(s0vvhv==-99.0) s0vvhv=0.0;
+        // Compute indexes into table
+        int ispd, ichi, itheta;
+        ispd=_SpdToIndex(spd);
+        itheta=_IncToIndex(theta);
+        ichi=_ChiToIndex(chi);
+
+        // Compute table values
+        s0vv=pow(10.0,0.1*s0vv);
+        s0hv=pow(10.0,0.1*s0hv);
+        s0hh=pow(10.0,0.1*s0hh);
+        if(s0vvhv==-99.0) s0vvhv=0.0;
           else s0vvhv=pow(10.0,0.1*s0vvhv)*SGN(pvvhv);
-	  if(s0hhvh==-99.0) s0hhvh=0.0;
+        if(s0hhvh==-99.0) s0hhvh=0.0;
           else s0hhvh=pow(10.0,0.1*s0hhvh)*SGN(phhvh);
 
           // Store values in table
@@ -269,6 +271,7 @@ int GMF::ReadPolarimetric(
           imet=_MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
 	}
+
 	//----------------------//
 	// zero the 0 m/s model //
 	//----------------------//
@@ -1416,26 +1419,30 @@ GMF::FindMany(
 	}
 	return(1);
 }
-//-------------------------------//
-// GMF::GetVariance              //
-//-------------------------------//
+//------------------//
+// GMF::GetVariance //
+//------------------//
+
 int global_debug=0;  // GLOBAL DEBUG FLAG
+
 float
 GMF::GetVariance(
-    Meas* meas,
-    float spd,
-    float chi,
-    float trial_sigma0,
-    Kp* kp){
+    Meas*  meas,
+    float  spd,
+    float  chi,
+    float  trial_sigma0,
+    Kp*    kp)
+{
+    //-------------------------------------------------------//
+    // calculate the expected variance for the trial sigma-0 //
+    //-------------------------------------------------------//
 
-  //-------------------------------------------------------//
-  // calculate the expected variance for the trial sigma-0 //
-  //-------------------------------------------------------//
+    if (!kp)
+        return(0.0); // If kp is NULL returns 0.0
 
-  if (!kp) return(0.0); // If kp is NULL returns 0.0
-  //--------------//
-  // Kpc variance //
-  //--------------//
+    //--------------//
+    // Kpc variance //
+    //--------------//
 
   double vpc = 0.0;
   float s0_co, s0_x;
@@ -1479,63 +1486,78 @@ GMF::GetVariance(
 	}
     }
 
-  //-----//
-  // Kpm //
-  //-----//
+    //-----//
+    // Kpm //
+    //-----//
 
-  double kpm2 = 0.0;
-  if (retrieveUsingKpmFlag)
+    double vpm = 0.0;
+    if (retrieveUsingKpmFlag)
     {
-      if (! kp->GetKpm2(meas->measType, spd, &kpm2)){
-	fprintf(stderr,"GMF::GetVariance: Error computing Kpm\n");
-	kpm2=0.0;
-      } 
+        double kpm2 = 0.0;
+        if (! kp->GetKpm2(meas->measType, spd, &kpm2))
+        {
+            fprintf(stderr,"GMF::GetVariance: Error computing Kpm\n");
+            kpm2 = 0.0;
+        }
+        switch(meas->measType)
+        {
+        case Meas::VV_HV_CORR_MEAS_TYPE:
+        case Meas::HH_VH_CORR_MEAS_TYPE:
+            // 0.002 is an assumed value for correlation sigma-0
+            // this *MUST* be consistent with PscatSim kpm calculations
+            vpm = kpm2 * 0.002 * 0.002;
+            break;
+        default:
+            vpm = kpm2 * trial_sigma0 * trial_sigma0;
+            break;
+        }
     }
 
-  //------//
-  // Kpri //
-  //------//
+    //------//
+    // Kpri //
+    //------//
 
-  double kpri2 = 0.0;
-  if (retrieveUsingKpriFlag)
+    double kpri2 = 0.0;
+    if (retrieveUsingKpriFlag)
     {
-      if (! kp->GetKpri2(&kpri2)){
-	fprintf(stderr,"GMF::GetVariance: Error computing Kpri2\n");
-	kpri2=0.0;
-      }
-    }
-  
-  //------//
-  // Kprs //
-  //------//
-
-  double kprs2 = 0.0;
-  if (retrieveUsingKprsFlag)
-    {
-      if (! kp->GetKprs2(meas, &kprs2)){
-	fprintf(stderr,"GMF::GetVariance: Error computing Kprs2\n");
-	kprs2=0.0;
-      }
+        if (! kp->GetKpri2(&kpri2))
+        {
+            fprintf(stderr,"GMF::GetVariance: Error computing Kpri2\n");
+            kpri2=0.0;
+        }
     }
 
-  //------------------------//
-  // calculate the variance //
-  //------------------------//
+    //------//
+    // Kprs //
+    //------//
 
-  //            double var = vpc +
-  //                (kpm2 + kpri2 + kprs2) * trial_sigma0 * trial_sigma0;
-  double var =
-    (trial_sigma0*trial_sigma0+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
-    trial_sigma0*trial_sigma0;
-  if(global_debug) printf("%g %g %g %g %g %g ",trial_sigma0,vpc,kpri2,
-			  kprs2,kpm2,var);
-  return(var);
+    double kprs2 = 0.0;
+    if (retrieveUsingKprsFlag)
+    {
+        if (! kp->GetKprs2(meas, &kprs2))
+        {
+            fprintf(stderr, "GMF::GetVariance: Error computing Kprs2\n");
+            kprs2 = 0.0;
+        }
+    }
+
+    //------------------------//
+    // calculate the variance //
+    //------------------------//
+
+    double var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1+kpri2) *
+        (1+kprs2) - trial_sigma0*trial_sigma0;
+    if (global_debug)
+    {
+        printf("%g %g %g %g %g %g ", trial_sigma0, vpc, kpri2, kprs2, vpm,
+            var);
+    }
+    return(var);
 }
 
 //-------------------------//
 // GMF::_ObjectiveFunction //
 //-------------------------//
-
 
 float
 GMF::_ObjectiveFunction(
@@ -1578,7 +1600,7 @@ GMF::_ObjectiveFunction(
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
         //-------------------------------------------------------//
-        float var=GetVariance(meas,spd,chi,trial_value,kp); 
+        float var=GetVariance(meas,spd,chi,trial_value,kp);
 	// returns 0 if kp is NULL
 	
 
@@ -1594,7 +1616,7 @@ GMF::_ObjectiveFunction(
 	  {
 	    fv += s*s / var;
 	  }
-    
+
     }
     return(-fv);
 }
@@ -1608,9 +1630,8 @@ GMF::RetrieveWinds_GS(
 	MeasList*	meas_list,
 	Kp*			kp,
 	WVC*		wvc,
-	int             polar_special=0)
+	int         polar_special=0)
 {
-
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
 //
@@ -1756,7 +1777,7 @@ GMF::Calculate_Init_Wind_Solutions(
 	      multiridge_width+=dir_spacing;
 	      ave_multiridge_sep+=tmp2;
 	      if(tmp2>max_multiridge_sep) max_multiridge_sep=tmp2;	
-              if(tmp3<min_multiridge_sep) min_multiridge_sep=tmp3;     
+              if(tmp3<min_multiridge_sep) min_multiridge_sep=tmp3;
 	    }
             continue;
 	  }
@@ -2084,15 +2105,15 @@ GMF::FindMultiSpeedRidge(
 
 	    best_center_objective=center_objective;
             best_center_speed=center_speed;
-            
-            best_plus_objective=plus_objective;            
+
+            best_plus_objective=plus_objective;
             best_plus_speed=plus_speed;
 
             best_minus_objective=minus_objective;
             best_minus_speed=minus_speed;
 
             min_speed_best=0;
-	  }	  
+	  }
 	}
 	offset++;
         center_speed = offset*spd_spacing+lower_speed_bound;
