@@ -341,10 +341,10 @@ GMF::FindSolutions(
 	// determine index ranges and step sizes //
 	//---------------------------------------//
 
-	int phi_count = (int)(two_pi / phi_step);
+	int phi_count = (int)(two_pi / phi_step + 0.5);
 	double dphi = two_pi / (double)phi_count;
 
-	int spd_count = (int)(_spdMax / spd_step);
+	int spd_count = (int)(_spdMax / spd_step + 0.5);
 	double dspd = _spdMax / (double)spd_count;
 
 	//-------------------------//
@@ -507,10 +507,10 @@ GMF::ModCurves(
 	// determine index ranges and step sizes //
 	//---------------------------------------//
 
-	int phi_count = (int)(two_pi / phi_step);
+	int phi_count = (int)(two_pi / phi_step + 0.5);
 	double dphi = two_pi / (double)phi_count;
 
-	int spd_count = (int)(_spdMax / spd_step);
+	int spd_count = (int)(_spdMax / spd_step + 0.5);
 	double dspd = _spdMax / (double)spd_count;
 
 	//-------------------------//
