@@ -603,6 +603,19 @@ Vector3::Get(
 	return(1);
 }
 
+//---------------//
+// Vector3::Zero //
+//---------------//
+
+void
+Vector3::Zero()
+{
+	_v[0] = 0.0;
+	_v[1] = 0.0;
+	_v[2] = 0.0;
+	return;
+}
+
 //
 // EarthPosition
 //

@@ -124,6 +124,7 @@ void Show(char *name = NULL);
 	int		SphericalSet(double r, double theta, double phi);
 	int		Set(int index, double value);
 	int		Get(int index, double* value);
+	void	Zero();		// zero all elements
 
 protected:
 
