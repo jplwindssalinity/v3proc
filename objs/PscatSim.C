@@ -75,6 +75,11 @@ PscatSim::SetConfiguration(
         _configuration = BOTH_BEAM_HHVH;
         return(1);
     }
+    else if (strcasecmp(string, BOTH_BEAM_VVHV_STRING) == 0)
+    {
+        _configuration = BOTH_BEAM_VVHV;
+        return(1);
+    }
     else
     {
         _configuration = NONE;
