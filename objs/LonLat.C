@@ -239,9 +239,9 @@ Outline::WriteBvg(
 //---------------//
 
 //
-// Find the area enclosed by the trapezoidal area on a spherical surface.
-// This method assumes (but does not check) that the area is trapezoidal,
-// and the points are stored in order going around the perimeter.
+// Find the area enclosed by the outline on a locally flat surface.
+// This method assumes (but does not check) that the points are stored
+// in order going around the perimeter.
 //
 
 double
@@ -250,93 +250,44 @@ Outline::Area()
 	
 	int num = NodeCount();
 
-	if (num == 3)
-	{
-		EarthPosition* p1 = GetHead();
-		EarthPosition* p2 = GetNext();
-		EarthPosition* p3 = GetNext();
-
-		double mag_p1 = p1->Magnitude();
-		double mag_p2 = p2->Magnitude();
-		double mag_p3 = p3->Magnitude();
-		double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
-
-		// Side lengths from the earth center angle.
-		double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
-		double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
-		double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
-	
-		double area;
-		if (s12 == 0.0 | s23 == 0.0 | s31 == 0.0)
-		{	// 2 points are the same, so no area
-			area = 0.0;
-		}
-		else
-		{
-			// Cosine law
-			double A1 = acos(-(s23*s23 - s12*s12 - s31*s31)/s12/s31/2.0);
-			area = 0.5*s12*s31*sin(A1);
-		}
-		return(area);
-	}
-	else if (num == 4)
-	{
-		// Triangle 1 between points 1,2,3.
-	
-		EarthPosition* p1 = GetHead();
-		EarthPosition* p2 = GetNext();
-		EarthPosition* p3 = GetNext();
-		EarthPosition* p4 = GetNext();
-
-		double mag_p1 = p1->Magnitude();
-		double mag_p2 = p2->Magnitude();
-		double mag_p3 = p3->Magnitude();
-		double mag_p4 = p4->Magnitude();
-		double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
-		double R2 = (mag_p1 + mag_p3 + mag_p4)/3.0;
-
-		// Side lengths from the earth center angle.
-		double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
-		double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
-		double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
-	
-		double area1;
-		if (s12 == 0.0 | s23 == 0.0 | s31 == 0.0)
-		{	// 2 points are the same, so no area
-			area1 = 0.0;
-		}
-		else
-		{
-			// Cosine law
-			double A1 = acos(-(s23*s23 - s12*s12 - s31*s31)/s12/s31/2.0);
-			area1 = 0.5*s12*s31*sin(A1);
-		}
-	
-		// Triangle 2 between points 1,3,4.
-
-		// Side lengths from the earth center angle.
-		s31 = R2*acos((*p3 % *p1) / mag_p3 / mag_p1);
-		double s34 = R2*acos((*p3 % *p4) / mag_p3 / mag_p4);
-		double s14 = R2*acos((*p4 % *p1) / mag_p4 / mag_p1);
-
-		double area2;
-		if (s34 == 0.0 | s14 == 0.0 | s31 == 0.0)
-		{	// 2 points are the same, so no area
-			area2 = 0.0;
-		}
-		else
-		{
-			// Cosine law
-			double A1 = acos(-(s34*s34 - s14*s14 - s31*s31)/s14/s31/2.0);
-			area2 = 0.5*s14*s31*sin(A1);
-		}
-
-		return(area1 + area2);
+	if (num <= 2)
+	{	// points and lines have no area!
+		return(0.0);
 	}
 	else
 	{
-		printf("Error: Outline areas require triangles or quadrilaterals\n");
-		return(0.0);
+		EarthPosition* p1 = GetHead();
+		double mag_p1 = p1->Magnitude();
+
+		EarthPosition* p2;
+		EarthPosition* p3 = GetNext();
+		double area = 0.0;
+
+		for (int i=3; i <= num; i++)
+		{	// sum area from all the sub-triangles.
+
+			// move to next triangle (always keeping p1 the same)
+			p2 = p3;
+			p3 = GetNext();
+
+			// compute position magnitudes (some inefficiency here)
+			double mag_p2 = p2->Magnitude();
+			double mag_p3 = p3->Magnitude();
+			double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
+
+			// Side lengths from the earth center angle.
+			double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
+			double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
+			double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
+	
+			if (s12 != 0.0 & s23 != 0.0 & s31 != 0.0)
+			{	// 3 points are distinct, so add area contribution
+				// Cosine law
+				double A1 = acos(-(s23*s23 - s12*s12 - s31*s31)/s12/s31/2.0);
+				area += 0.5*s12*s31*sin(A1);
+			}
+		}
+		return(area);
 	}
 
 }
