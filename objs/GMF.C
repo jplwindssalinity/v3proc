@@ -3175,17 +3175,21 @@ GMF::RetrieveWinds_H2(
             use_width = width[range_idx] / use_ambigs;
             if (use_width > max_width)
             {
-                max_width = use_width;
-                max_idx = range_idx;
+                // if using h3, don't split narrow peaks
+                if (h3_flag && width[range_idx] < H3_MIN_RAD_WIDTH)
+                {
+                    continue;
+                }
+                else
+                {
+                    max_width = use_width;
+                    max_idx = range_idx;
+                }
             }
         }
 
         if (max_idx != -1)
         {
-            // if peaks are too small, don't split 'em
-            if (h3_flag && max_width < H3_MIN_RAD_WIDTH)
-                break;
-
             ambigs[max_idx]++;
             ambiguities++;
         }
