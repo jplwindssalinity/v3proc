@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.23   29 Oct 1998 15:11:46   sally
+// do a VSseek() before VSread()
+// 
 //    Rev 1.22   28 Oct 1998 15:01:58   sally
 // add function for L1B Hdf
 // Revision 1.2  1998/10/20 21:26:17  sally
@@ -2920,7 +2923,7 @@ int
 ExtractL1Time(
 TlmHdfFile*,
 int32*     vdIDs,
-int32,
+int32      start,
 int32,
 int32      length,
 VOIDP      buffer,
@@ -2929,6 +2932,9 @@ PolynomialTable*)     // unused
     // alloc space to hold short integers
     char* tempBuffer =(char*) calloc(L1_TIME_LEN * length, sizeof(char));
     assert(tempBuffer != 0);
+
+    if (VSseek(vdIDs[0], start) == FAIL)
+        return FALSE;
 
     // get the L1 time strings
     if (VSread(vdIDs[0], (unsigned char*)tempBuffer,
