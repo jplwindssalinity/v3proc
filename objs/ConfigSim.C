@@ -31,9 +31,9 @@ ConfigSpacecraft(
 	Spacecraft* spacecraft,
 	ConfigList* config_list)
 {
-	//-------------------------------//
-	//Read in Attitude Order Indices //
-	//-------------------------------//
+	//--------------------------------//
+	// Read in Attitude Order Indices //
+	//--------------------------------//
 
 	int order1, order2, order3;
 	if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
@@ -43,9 +43,9 @@ ConfigSpacecraft(
 	if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
 		return(0);
 
-  //------------------------------//
-  // Initialize Attitude          //
-  //------------------------------//
+	//---------------------//
+	// Initialize Attitude //
+	//---------------------//
 
 	if (! spacecraft->attitude.SetOrder(order1, order2, order3))
 	{
@@ -138,61 +138,60 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 
 
 	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
-	   || strcmp(string,"gaussian")==0)
+			|| strcmp(string,"gaussian")==0)
 	{
-	        roll=ConfigGaussian(ROLL_CONTROL_VARIANCE_KEYWORD,
+		roll=ConfigGaussian(ROLL_CONTROL_VARIANCE_KEYWORD,
 			ROLL_CONTROL_MEAN_KEYWORD, config_list);
-		if(roll==NULL)  return(0);
-	        pitch=ConfigGaussian(PITCH_CONTROL_VARIANCE_KEYWORD,
+		if(roll==NULL)
+			return(0);
+		pitch=ConfigGaussian(PITCH_CONTROL_VARIANCE_KEYWORD,
 			PITCH_CONTROL_MEAN_KEYWORD, config_list);
-		if(pitch==NULL)   return(0);
-	        yaw=ConfigGaussian(YAW_CONTROL_VARIANCE_KEYWORD,
+		if(pitch==NULL)
+			return(0);
+		yaw=ConfigGaussian(YAW_CONTROL_VARIANCE_KEYWORD,
 			YAW_CONTROL_MEAN_KEYWORD, config_list);
-		if(yaw==NULL)  return(0);
-
+		if(yaw==NULL)
+			return(0);
 	}
-
-
 	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
-	   || strcmp(string,"uniform")==0)
+			|| strcmp(string,"uniform")==0)
 	{
-	        roll=ConfigUniform(ROLL_CONTROL_RADIUS_KEYWORD,
+		roll=ConfigUniform(ROLL_CONTROL_RADIUS_KEYWORD,
 			ROLL_CONTROL_MEAN_KEYWORD, config_list);
-		   if(roll==NULL) return(0);
-	        pitch=ConfigUniform(PITCH_CONTROL_RADIUS_KEYWORD,
+		if(roll==NULL)
+			return(0);
+		pitch=ConfigUniform(PITCH_CONTROL_RADIUS_KEYWORD,
 			PITCH_CONTROL_MEAN_KEYWORD, config_list);
-		   if(pitch==NULL) return(0);
-	        yaw=ConfigUniform(YAW_CONTROL_RADIUS_KEYWORD,
+		if(pitch==NULL)
+			return(0);
+		yaw=ConfigUniform(YAW_CONTROL_RADIUS_KEYWORD,
 			YAW_CONTROL_MEAN_KEYWORD, config_list);
-		   if(yaw==NULL)return(0);
+		if(yaw==NULL)
+			return(0);
 	}
-
-
 	else if(strcmp(string,"Gaussian_Random_Velocity")==0
-           || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
-	   || strcmp(string,"gaussian_random_velocity")==0)
+			|| strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
+			|| strcmp(string,"gaussian_random_velocity")==0)
 	{
-	        roll=ConfigGaussianRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
-		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_VARIANCE_KEYWORD,
-			config_list);
-		if(roll==NULL) return(0);
-	        pitch=ConfigGaussianRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
-		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_VARIANCE_KEYWORD,
-			config_list);
-		if(pitch==NULL) return(0);
-	        yaw=ConfigGaussianRandomVelocity(
-		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
-		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_VARIANCE_KEYWORD,
-			config_list);
-		if(yaw==NULL) return(0);
-
+		roll=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
+			ROLL_CONTROL_BOUND_KEYWORD, ROLL_CONTROL_MEAN_KEYWORD,
+			ROLL_CONTROL_VARIANCE_KEYWORD, config_list);
+		if(roll==NULL)
+			return(0);
+		pitch=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
+			PITCH_CONTROL_BOUND_KEYWORD, PITCH_CONTROL_MEAN_KEYWORD,
+			PITCH_CONTROL_VARIANCE_KEYWORD, config_list);
+		if(pitch==NULL)
+			return(0);
+		yaw=ConfigGaussianRandomVelocity(CONTROL_SAMPLE_RATE_KEYWORD,
+			YAW_CONTROL_BOUND_KEYWORD, YAW_CONTROL_MEAN_KEYWORD,
+			YAW_CONTROL_VARIANCE_KEYWORD, config_list);
+		if(yaw==NULL)
+			return(0);
 	}
-
 	else if(strcmp(string,"Uniform_Random_Velocity")==0
-           || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
-	   || strcmp(string,"uniform_random_velocity")==0)
+			|| strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
+			|| strcmp(string,"uniform_random_velocity")==0)
 	{
 	        roll=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
@@ -249,7 +248,7 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 		return(1);
 	}
 	else if (strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
-	   || strcmp(string,"gaussian")==0)
+			|| strcmp(string,"gaussian")==0)
 	{
 	        roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
 			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
@@ -262,8 +261,6 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 		if (yaw==NULL) return(0);
 
 	}
-
-
 	else if (strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
 	   || strcmp(string,"uniform")==0)
 	{
@@ -277,7 +274,6 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
 		if (yaw==NULL) return(0);
 	}
-
 	else if (strcmp(string,"Gaussian_Random_Velocity")==0
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
@@ -444,10 +440,10 @@ ConfigUniformRandomVelocity(const char* samprate_keyword,
 		return(NULL);
 	bound*=dtr;
 	velocity=new Uniform((float)radius,0.0);
-	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
+	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
+		(float)bound, (float)mean);
 	return(new_rv);
 }
-
 
 //------------------//
 // ConfigInstrument //
@@ -566,6 +562,34 @@ ConfigInstrument(
 		return(0);
 	instrument->useKpc = use_kpc;
 
+	config_list->LogErrors(0);
+
+	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
+	if (rgc_file)
+	{
+		if (! instrument->rangeTracker.ReadBinary(rgc_file))
+		{
+			fprintf(stderr, "ConfigInstrument: error reading RGC file %s\n",
+				rgc_file);
+			return(0);
+		}
+		instrument->useRgc = 1;
+	}
+
+	char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
+	if (dtc_file)
+	{
+		if (! instrument->rangeTracker.ReadBinary(dtc_file))
+		{
+			fprintf(stderr, "ConfigInstrument: error reading DTC file %s\n",
+				dtc_file);
+			return(0);
+		}
+		instrument->useDtc = 1;
+	}
+
+	config_list->LogErrors(1);
+
 	return(1);
 }
 
@@ -585,74 +609,88 @@ ConfigInstrumentSim(
 	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
 		return(0);
 
-	//----------------------------//
-        // initialize PTGR noise      //
-        //----------------------------//
+	//-----------------------//
+	// initialize PTGR noise //
+	//-----------------------//
+
 	float ptgr_var, ptgr_mean;
 	if (! config_list->GetFloat(PTGR_NOISE_VARIANCE_KEYWORD, &ptgr_var))
 		return(0);
 	if (! config_list->GetFloat(PTGR_NOISE_MEAN_KEYWORD, &ptgr_mean))
 		return(0);
 
-        instrument_sim->ptgrNoise.SetVariance(ptgr_var);
-        instrument_sim->ptgrNoise.SetMean(ptgr_mean);
+	instrument_sim->ptgrNoise.SetVariance(ptgr_var);
+	instrument_sim->ptgrNoise.SetMean(ptgr_mean);
 
-        int uniform_sigma_field;
+	int uniform_sigma_field;
 
-        config_list->LogErrors(0);
-	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD, &uniform_sigma_field))
-	        uniform_sigma_field=0;  // default value
+	config_list->LogErrors(0);
+	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD,
+		&uniform_sigma_field))
+	{
+		uniform_sigma_field=0;		// default value
+	}
 	instrument_sim->uniformSigmaField=uniform_sigma_field;
 
-        int output_Pr_to_stdout;
-	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD, &output_Pr_to_stdout))
-	        output_Pr_to_stdout=0; // default value
+	int output_Pr_to_stdout;
+	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD,
+		&output_Pr_to_stdout))
+	{
+		output_Pr_to_stdout=0; // default value
+	}
 	instrument_sim->outputPrToStdout=output_Pr_to_stdout;
 
-        int use_kfactor;
+	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
-	        use_kfactor=0; // default value
+		use_kfactor=0; // default value
 	instrument_sim->useKfactor=use_kfactor;
 
-        int create_xtable;
+	int create_xtable;
 	if (! config_list->GetInt(CREATE_XTABLE_KEYWORD, &create_xtable))
-	        create_xtable=0; // default value
+		create_xtable=0; // default value
 	instrument_sim->createXtable=create_xtable;
 
-        config_list->LogErrors(1);
+	config_list->LogErrors(1);
 
 	/****** You cannot use and create the XTable simultaneously. ***/
-        if(create_xtable && use_kfactor){
-	  fprintf(stderr,"ConfigInstrumentSim: Cannot use kfactor AND create Xtable\n");
-          return(0);
+	if(create_xtable && use_kfactor)
+	{
+		fprintf(stderr,
+			"ConfigInstrumentSim: Cannot use kfactor AND create Xtable\n");
+		return(0);
 	}
 
-        /*** To create an X table you NEED a uniform sigma0 field. ***/
-        if(create_xtable && !uniform_sigma_field){
-	  fprintf(stderr,"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
-	  return(0);
+	/*** To create an X table you NEED a uniform sigma0 field. ***/
+	if(create_xtable && !uniform_sigma_field)
+	{
+		fprintf(stderr,
+			"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
+		return(0);
 	} 
-    
-        if(create_xtable){
-	  if(!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
-	    return(0);
-	}
 
-        else if(use_kfactor){
-	  if(!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
-	    return(0);
+	if(create_xtable)
+	{
+		if(!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
+			return(0);
+	}
+	else if(use_kfactor)
+	{
+		if(!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
+			return(0);
 	}
 
 	return(1);
 }
-//-------------------------------//
-// ConfigInstrumentSimAccurate   //
-//-------------------------------//
+
+//-----------------------------//
+// ConfigInstrumentSimAccurate //
+//-----------------------------//
+
 int
 ConfigInstrumentSimAccurate(
-	 InstrumentSimAccurate* instrument_sim,
-	 ConfigList* config_list){
-  
+	InstrumentSimAccurate*	instrument_sim,
+	ConfigList*				config_list)
+{
         if (! ConfigInstrumentSim(instrument_sim, config_list))
 	        return(0);
         
@@ -676,6 +714,7 @@ ConfigInstrumentSimAccurate(
 
         return(1);
 }
+
 //------------------//
 // ConfigAntennaSim //
 //------------------//
@@ -1067,23 +1106,26 @@ ConfigL15(
 int
 ConfigL10ToL15(
 	L10ToL15*			l10tol15,
-	ConfigList*		config_list){
-
-        config_list->LogErrors(0);
-        int output_sigma0_to_stdout;
-	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD, &output_sigma0_to_stdout))
-	        output_sigma0_to_stdout=0; // default value
+	ConfigList*		config_list)
+{
+	config_list->LogErrors(0);
+	int output_sigma0_to_stdout;
+	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
+		&output_sigma0_to_stdout))
+	{
+		output_sigma0_to_stdout=0; // default value
+	}
 	l10tol15->outputSigma0ToStdout=output_sigma0_to_stdout;
 
-        int use_kfactor;
+	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
-	        use_kfactor=0; // default value
+		use_kfactor=0; // default value
 	l10tol15->useKfactor=use_kfactor;
 
-
-        if(use_kfactor){
-	  if(!ConfigXTable(&(l10tol15->kfactorTable),config_list,"r"))
-	    return(0);
+	if(use_kfactor)
+	{
+		if(!ConfigXTable(&(l10tol15->kfactorTable),config_list,"r"))
+			return(0);
 	}
 
 	config_list->LogErrors(1);
