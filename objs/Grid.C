@@ -161,6 +161,7 @@ if (ati >= _alongtrack_bins) ati -= _alongtrack_bins;
 // Add the measurement to the appropriate grid cell measurement list.
 _grid[cti][ati].Append(meas);
 
+printf("%d %d %f %f\n",cti,vati,ctd,atd);
 return(1);
 
 }
