@@ -69,9 +69,10 @@ int  IdealCommandedDopplerForRange(Spacecraft* spacecraft, float offset);
 int  TargetInfo(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          Qscat* qscat, Vector3 vector, TargetInfoPackage* tip);
 
-int  FindPeakGainAtFreq(CoordinateSwitch* antenna_frame_to_gc,
+int  FindPeakResponseAtFreq(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, float target_freq,
-         float freq_tol, double* look, double* azim, float* gain);
+         float freq_tol, double* look, double* azim, float* response,
+			       int use_range=1);
 
 int  FindFreq(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          Qscat* qscat, float target_freq, float freq_tol, double* look,
@@ -82,17 +83,18 @@ int  FreqGradient(CoordinateSwitch* antenna_frame_to_gc,
          double look_offset, double azim, double azim_offset,
          double* df_dlook, double* df_dazim);
 
-int  FindPeakGainUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
+int  FindPeakResponseUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double delta_look,
          double delta_azim, double offset, double angle_tol, double* look,
-         double* azim, float* gain);
+         double* azim, float* response, int use_range=1);
 
-int  FindPeakGainForSlice(CoordinateSwitch* antenna_frame_to_gc,
+int  FindPeakResponseForSlice(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look[2], double azim[2],
-         float gain[2], float* peak_gain);
+         float response[2], float* peak_response, int use_range=1);
 
-int  FindGainBetween(double f_look[2], double f_azim[2], float f_gain[2],
-         float target_gain, double* tc_look, double* tc_azim);
+int  FindResponseBetween(double f_look[2], double f_azim[2], 
+			float f_response[2], float target_response, 
+			double* tc_look, double* tc_azim);
 
 int  FindSliceCorners(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
@@ -104,22 +106,21 @@ int  QuadFit(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
 
 int  PeakFit(double c[3], float* peak_gain);
 
-int  PowerGainProduct(CoordinateSwitch* antenna_frame_to_gc,
+int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
-         float* gain);
+         float* response, int use_range=1);
 
 int  RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
-int  GetTwoWayPeakGain(Beam* beam, double round_trip_time,
+int  GetPeakSpatialResponse(Beam* beam, double round_trip_time,
          double azimuth_rate, double* look, double* azimuth,
-         CoordinateSwitch* antenna_frame_to_gc=NULL,
-         Spacecraft* spacecraft=NULL);
+	 int use_range=1);
 
-int  GetTwoWayPeakGain2(CoordinateSwitch* antenna_frame_to_gc,
+int  GetPeakSpatialResponse2(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
-         double* look, double* azimuth);
+         double* look, double* azimuth, int use_range=1);
 
-double	NegativePowerGainProduct(double*, void*);
+double	NegativeSpatialResponse(double*, void*);
 
 #endif

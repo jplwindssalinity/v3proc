@@ -213,7 +213,7 @@ LocateSliceCentroids(
 	//------------------//
 
 	double center_look, center_azim;
-	if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
+	if (! GetPeakSpatialResponse2(&antenna_frame_to_gc, spacecraft, beam,
 		qscat->sas.antenna.spinRate, &center_look, &center_azim))
 	{
 		return(0);
@@ -244,10 +244,10 @@ LocateSliceCentroids(
 	float dummy_gain;
         float freq_offset=5000;
         double ftol_center_line=8;
-	if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
+	if (! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
             spot_center_freq + freq_offset, ftol_center_line, &pos_look,
             &pos_azim, &dummy_gain) ||
-	    ! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
+	    ! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
             spot_center_freq - freq_offset, ftol_center_line, &neg_look,
             &neg_azim, &dummy_gain))
     {
@@ -267,7 +267,7 @@ LocateSliceCentroids(
 	float peak_two_way_gain;
 	if (gain_threshold)
 	{
-		if (PowerGainProduct(&antenna_frame_to_gc, spacecraft, qscat,
+		if (SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
             center_look, center_azim, &peak_two_way_gain) != 1)
 		{
 			return(0);
@@ -307,7 +307,7 @@ LocateSliceCentroids(
 		float gain;
 		double look = center_look;
 		double azim = center_azim;
-		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
+		if (! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
             centroid_freq, ftol, &look, &azim, &gain))
 		{
             // If all else fails
@@ -316,7 +316,7 @@ LocateSliceCentroids(
 
             look=center_look+(centroid_freq-spot_center_freq)*dlookdfreq;
             azim=center_azim+(centroid_freq-spot_center_freq)*dazimdfreq;
-            if (! PowerGainProduct(&antenna_frame_to_gc, spacecraft, qscat,
+            if (! SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
                 look, azim, &gain))
             {
                 return(0);
@@ -484,7 +484,7 @@ LocateSpot(
 	// but the round trip time difference should be very small.
 	//
 
-	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
+	if (! GetPeakSpatialResponse(beam, tip.roundTripTime,
 		qscat->sas.antenna.spinRate, &look, &azim))
 	{
 		printf("Error determining 2 way electrical boresight\n");
@@ -506,7 +506,7 @@ LocateSpot(
 
 	// get the max gain value.
 	float gp_max;
-    if (beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+    if (beam->GetSpatialResponse(look, azim, tip.roundTripTime,
         qscat->sas.antenna.spinRate, &gp_max)!=1)
     {
         fprintf(stderr,"Locate Spot: Cannot compute max gain.\n");
@@ -548,7 +548,7 @@ LocateSpot(
 			double r, look, azim;
 			look_mid_ant.SphericalGet(&r,&look,&azim);
 			float gp;
-			if (! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+			if (! beam->GetSpatialResponse(look, azim, tip.roundTripTime,
 				qscat->sas.antenna.spinRate, &gp))
             {
                 return(0);
@@ -630,7 +630,7 @@ FindSlice(
 
 	f_look[0] = look;
 	f_azim[0] = azim;
-	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, qscat, freq_1,
+	if (! FindPeakResponseAtFreq(antenna_frame_to_gc, spacecraft, qscat, freq_1,
         freq_tol, &(f_look[0]), &(f_azim[0]), &(f_gain[0])))
 	{
 		fprintf(stderr,
@@ -644,7 +644,7 @@ FindSlice(
 
 	f_look[1] = look;
 	f_azim[1] = azim;
-	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, qscat, freq_2,
+	if (! FindPeakResponseAtFreq(antenna_frame_to_gc, spacecraft, qscat, freq_2,
         freq_tol, &(f_look[1]), &(f_azim[1]), &(f_gain[1])))
 	{
 		fprintf(stderr,
@@ -657,7 +657,7 @@ FindSlice(
 	//--------------------------//
 
 	float peak_gain;
-	if (! FindPeakGainForSlice(antenna_frame_to_gc, spacecraft, qscat, f_look,
+	if (! FindPeakResponseForSlice(antenna_frame_to_gc, spacecraft, qscat, f_look,
         f_azim, f_gain, &peak_gain))
 	{
 		fprintf(stderr, "FindSlice: error finding peak gain for slice\n");
@@ -701,7 +701,7 @@ FindSlice(
 	{
 		// you've got a triangle
 		double tc_look, tc_azim;
-		if (! FindGainBetween(f_look, f_azim, f_gain, target_gain,
+		if (! FindResponseBetween(f_look, f_azim, f_gain, target_gain,
 			&tc_look, &tc_azim))
 		{
 			fprintf(stderr, "FindSlice: error finding triangle corner\n");
@@ -738,7 +738,7 @@ FindSlice(
 	{
 		// you've got a triangle
 		double tc_look, tc_azim;
-		if (! FindGainBetween(f_look, f_azim, f_gain, target_gain,
+		if (! FindResponseBetween(f_look, f_azim, f_gain, target_gain,
 			&tc_look, &tc_azim))
 		{
 			fprintf(stderr, "FindSlice: error finding triangle corner\n");
@@ -769,7 +769,7 @@ FindSlice(
 		if (! outline->Append(spot_on_earth))
 			return(0);
 
-		if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
+		if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
             c_look[i], c_azim[i], &gain))
 		{
 			return(0);
@@ -886,7 +886,7 @@ IdealRtt(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
 	{
 		exit(1);
@@ -957,7 +957,7 @@ IdealCommandedDoppler(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
 	{
 		return(0);
@@ -982,6 +982,7 @@ IdealCommandedDoppler(
 	return(1);
 }
 
+/**********************************************************************
 //-------------------------------//
 // IdealCommandedDopplerForRange //
 //-------------------------------//
@@ -991,6 +992,7 @@ IdealCommandedDoppler(
 // of the range gate.
 
 #define DOPPLER_ACCURACY	1.0		// 1 Hz
+
 
 int
 IdealCommandedDopplerForRange(
@@ -1015,7 +1017,7 @@ IdealCommandedDopplerForRange(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
 	{
 		return(0);
@@ -1084,7 +1086,7 @@ IdealCommandedDopplerForRange(
 	// calculate commanded Doppler //
 	//----------------------------//
 
-/*
+
 	vector.SphericalSet(1.0, look, azim);
 	instrument->SetCommandedDoppler(0.0);
 	do
@@ -1101,10 +1103,10 @@ IdealCommandedDopplerForRange(
         //---------------------------------------//
         float freq = instrument->commandedDoppler + offset;
         instrument->SetCommandedDoppler(freq);
-*/
+
 	return(1);
 }
-
+************************************************************/
 //------------//
 // TargetInfo //
 //------------//
@@ -1153,10 +1155,10 @@ TargetInfo(
 	return(1);
 }
 
-//--------------------//
-// FindPeakGainAtFreq //
-//--------------------//
-// Finds the look, azimuth, and gain value for the peak gain at
+//------------------------//
+// FindPeakResponseAtFreq //
+//------------------------//
+// Finds the look, azimuth, and response value for the peak spatial response at
 // a given baseband frequency
 
 #define LOOK_OFFSET			0.005
@@ -1166,7 +1168,7 @@ TargetInfo(
 #define MAX_PASSES          10  // Maximum  number of passes through main loop
 
 int
-FindPeakGainAtFreq(
+FindPeakResponseAtFreq(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
@@ -1174,11 +1176,12 @@ FindPeakGainAtFreq(
     float              freq_tol,
     double*            look,
     double*            azim,
-    float*             gain)
+    float*             response,
+    int                use_range=1)
 {
 	float dif;
     float min_dif = 0.0;
-    float best_gain = 0.0;
+    float best_response = 0.0;
     double best_look = 0.0;
 	double best_azim = 0.0;
 	Vector3 vector;
@@ -1212,12 +1215,12 @@ FindPeakGainAtFreq(
 		double delta_look = df_dazim;
 		double delta_azim = -df_dlook;
 
-		//----------------------//
-		// locate the peak gain //
-		//----------------------//
+		//--------------------------//
+		// locate the peak response //
+		//--------------------------//
 
-		if (! FindPeakGainUsingDeltas(antenna_frame_to_gc, spacecraft, qscat,
-			delta_look, delta_azim, ANGLE_OFFSET, ANGLE_TOL, look, azim, gain))
+		if (! FindPeakResponseUsingDeltas(antenna_frame_to_gc, spacecraft, qscat,
+			delta_look, delta_azim, ANGLE_OFFSET, ANGLE_TOL, look, azim, response, use_range))
 		{
 			return(0);
 		}
@@ -1241,7 +1244,7 @@ FindPeakGainAtFreq(
             min_dif=dif;
             best_look=*look;
                   best_azim=*azim;
-                  best_gain=*gain;
+                  best_response=*response;
 		}
 
                 //-----------------------------------------//
@@ -1252,14 +1255,14 @@ FindPeakGainAtFreq(
         if(num_passes >= MAX_PASSES && dif > freq_tol)
         {
             fprintf(stderr,
-          "Error: FindPeakGainAtFreq could not meet required freq_tol=%g Hz\n",
+          "Error: FindPeakResponseAtFreq could not meet required freq_tol=%g Hz\n",
                 freq_tol);
             fprintf(stderr,"for target_freq=%g and scan_angle=%g.\n",
                 target_freq, qscat->sas.antenna.azimuthAngle*rtd);
             fprintf(stderr, "Actual frequency error was %g Hz.\n", min_dif);
             *look=best_look;
             *azim=best_azim;
-            *gain=best_gain;
+            *response=best_response;
 		  break;
 		}
 	} while (dif > freq_tol);
@@ -1424,12 +1427,12 @@ FreqGradient(
 	return(1);
 }
 
-//-------------------------//
-// FindPeakGainUsingDeltas //
-//-------------------------//
+//-----------------------------//
+// FindPeakResponseUsingDeltas //
+//-----------------------------//
 
 int
-FindPeakGainUsingDeltas(
+FindPeakResponseUsingDeltas(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
@@ -1439,7 +1442,8 @@ FindPeakGainUsingDeltas(
     double             angle_tol,
     double*            look,
     double*            azim,
-    float*             gain)
+    float*             response,
+    int                use_range=1)
 {
 	//------------------------//
 	// scale to radian deltas //
@@ -1463,12 +1467,15 @@ FindPeakGainUsingDeltas(
 
 	float again, bgain, cgain;
 
-	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-            *look + ax * delta_look, *azim + ax * delta_azim, &again) ||
-		! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-			*look + bx * delta_look, *azim + bx * delta_azim, &bgain) ||
-		! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-		*look + cx * delta_look, *azim + cx * delta_azim, &cgain))
+	if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+            *look + ax * delta_look, *azim + ax * delta_azim, &again,
+	    use_range ) ||
+	    ! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+	    *look + bx * delta_look, *azim + bx * delta_azim, &bgain,
+	    use_range ) ||
+	    ! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+	    *look + cx * delta_look, *azim + cx * delta_azim, &cgain,
+	    use_range))
 	{
 		return(0);
 	}
@@ -1478,8 +1485,8 @@ FindPeakGainUsingDeltas(
 		if (again > bgain)
 		{
 			ax -= angle_offset;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-                *look + ax * delta_look, *azim + ax * delta_azim, &again))
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+                *look + ax * delta_look, *azim + ax * delta_azim, &again, use_range))
 			{
 				return(0);
 			}
@@ -1489,8 +1496,8 @@ FindPeakGainUsingDeltas(
 		if (cgain > bgain)
 		{
 			cx += angle_offset;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-                *look + cx * delta_look, *azim + cx * delta_azim, &cgain))
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+                *look + cx * delta_look, *azim + cx * delta_azim, &cgain, use_range))
 			{
 				return(0);
 			}
@@ -1519,10 +1526,10 @@ FindPeakGainUsingDeltas(
 	}
 
 	float f1, f2;
-	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-			*look + x1 * delta_look, *azim + x1 * delta_azim, &f1) ||
-		! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-			*look + x2 * delta_look, *azim + x2 * delta_azim, &f2))
+	if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+			*look + x1 * delta_look, *azim + x1 * delta_azim, &f1, use_range) ||
+		! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+			*look + x2 * delta_look, *azim + x2 * delta_azim, &f2, use_range))
 	{
 		return(0);
 	}
@@ -1535,8 +1542,8 @@ FindPeakGainUsingDeltas(
 			x1 = x2;
 			x2 = x2 + golden_c * (x3 - x2);
 			f1 = f2;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-                *look + x2 * delta_look, *azim + x2 * delta_azim, &f2))
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+                *look + x2 * delta_look, *azim + x2 * delta_azim, &f2, use_range))
 			{
 				return(0);
 			}
@@ -1547,8 +1554,8 @@ FindPeakGainUsingDeltas(
 			x2 = x1;
 			x1 = x1 - golden_c * (x1 - x0);
 			f2 = f1;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
-                *look + x1 * delta_look, *azim + x1 * delta_azim, &f1))
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
+                *look + x1 * delta_look, *azim + x1 * delta_azim, &f1, use_range))
 			{
 				return(0);
 			}
@@ -1559,54 +1566,55 @@ FindPeakGainUsingDeltas(
 	{
 		*look += x1 * delta_look;
 		*azim += x1 * delta_azim;
-		*gain = f1;
+		*response = f1;
 	}
 	else
 	{
 		*look += x2 * delta_look;
 		*azim += x2 * delta_azim;
-		*gain = f2;
+		*response = f2;
 	}
 
 	return(1);
 }
 
-//----------------------//
-// FindPeakGainForSlice //
-//----------------------//
-// Finds the peak gain in a slice
+//--------------------------//
+// FindPeakResponseForSlice //
+//--------------------------//
+// Finds the peak response in a slice
 
 int
-FindPeakGainForSlice(
+FindPeakResponseForSlice(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
     double             look[2],
     double             azim[2],
-    float              gain[2],
-    float*             peak_gain)
+    float              response[2],
+    float*             peak_response,
+    int                use_range=1)
 {
 	double mid_look = (look[0] + look[1]) / 2.0;
 	double mid_azim = (azim[0] + azim[1]) / 2.0;
 
-	float mid_gain;
-	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat, mid_look,
-        mid_azim, &mid_gain))
+	float mid_response;
+	if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat, mid_look,
+        mid_azim, &mid_response, use_range))
 	{
 		return(0);
 	}
 
-	if (gain[0] >= mid_gain && gain[0] >= gain[1])
+	if (response[0] >= mid_response && response[0] >= response[1])
 	{
-		*peak_gain = gain[0];
+		*peak_response = response[0];
 		return(1);
 	}
-	else if (gain[1] >= mid_gain && gain[1] >= gain[0])
+	else if (response[1] >= mid_response && response[1] >= response[0])
 	{
-		*peak_gain = gain[1];
+		*peak_response = response[1];
 		return(1);
 	}
-	else if (mid_gain >= gain[0] && mid_gain >= gain[1])
+	else if (mid_response >= response[0] && mid_response >= response[1])
 	{
 		double look_array[3], azim_array[3];
 		look_array[0] = look[0];
@@ -1622,7 +1630,7 @@ FindPeakGainForSlice(
 		{
 			return(0);
 		}
-		if (! PeakFit(c, peak_gain))
+		if (! PeakFit(c, peak_response))
 			return(0);
 
 		return(1);
@@ -1630,28 +1638,28 @@ FindPeakGainForSlice(
 	return(0);
 }
 
-//-----------------//
-// FindGainBetween //
-//-----------------//
-// Finds the target gain along the line connecting the provided look and
+//---------------------//
+// FindResponseBetween //
+//---------------------//
+// Finds the target response along the line connecting the provided look and
 // azimuth points
 
 int
-FindGainBetween(
+FindResponseBetween(
 	double				f_look[2],
 	double				f_azim[2],
-	float				f_gain[2],
-	float				target_gain,
+	float				f_response[2],
+	float				target_response,
 	double*				tc_look,
 	double*				tc_azim)
 {
 	double delta_look = f_look[1] - f_look[0];
 	double delta_azim = f_azim[1] - f_azim[0];
-	float delta_gain = f_gain[1] - f_gain[0];
+	float delta_response = f_response[1] - f_response[0];
 
-	float gain_frac = (target_gain - f_gain[0]) / delta_gain;
-	*tc_look = f_look[0] + gain_frac * delta_look;
-	*tc_azim = f_azim[0] + gain_frac * delta_azim;
+	float response_frac = (target_response - f_response[0]) / delta_response;
+	*tc_look = f_look[0] + response_frac * delta_look;
+	*tc_azim = f_azim[0] + response_frac * delta_azim;
 	return(1);
 }
 
@@ -1772,7 +1780,7 @@ FindSliceCorners(
 		float local_gain_array[3];
 		for (int j = 0; j < 3; j++)
 		{
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
                 local_look_array[j], local_azim_array[j],
                 &(local_gain_array[j])))
 			{
@@ -1796,7 +1804,7 @@ FindSliceCorners(
 			}
 			local_look_array[0] -= local_look_step;
 			local_azim_array[0] -= local_azim_step;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
 				local_look_array[0], local_azim_array[0],
                 &(local_gain_array[0])))
 			{
@@ -1816,7 +1824,7 @@ FindSliceCorners(
 			}
 			local_look_array[2] += local_look_step;
 			local_azim_array[2] += local_azim_step;
-			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
+			if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
 				local_look_array[2], local_azim_array[2],
 				&(local_gain_array[2])))
 			{
@@ -1916,7 +1924,7 @@ QuadFit(
 	double dgain[3];
 	for (int i = 0; i < 3; i++)
 	{
-		if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, qscat,
+		if (! SpatialResponse(antenna_frame_to_gc, spacecraft, qscat,
             look[i], azim[i], &(gain[i])))
 		{
 			return(0);
@@ -1959,17 +1967,18 @@ PeakFit(
 }
 
 //------------------//
-// PowerGainProduct //
+// SpatialResponse //
 //------------------//
 
 int
-PowerGainProduct(
+SpatialResponse(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
     double             look,
     double             azim,
-    float*             gain)
+    float*             response,
+    int                use_range=1)
 {
 	Vector3 vector;
 	vector.SphericalSet(1.0, look, azim);
@@ -1977,9 +1986,21 @@ PowerGainProduct(
 	if(!RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip))
 	  return(0);
     Beam* beam = qscat->GetCurrentBeam();
-	int retval = beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-        qscat->sas.antenna.spinRate, gain);
-	return(retval);
+
+    //-------------------------------------------------//
+    // Calculate Two-way Gain Only if use_range=0      //
+    //-------------------------------------------------//
+
+    int retval;
+    if(use_range){
+	retval = beam->GetSpatialResponse(look, azim, tip.roundTripTime,
+        qscat->sas.antenna.spinRate, response);
+    }
+    else {
+        retval = beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+        qscat->sas.antenna.spinRate, response);
+    }
+    return(retval);
 }
 
 //-------------------//
@@ -2007,34 +2028,33 @@ RangeAndRoundTrip(
 	return(1);
 }
 
-//-------------------//
-// GetTwoWayPeakGain //
-//-------------------//
+//------------------------//
+// GetPeakSpatialResponse //
+//------------------------//
 
 //
-// This function locates the maximum 2-way gain of a beam in the antenna frame,
+// This function locates the maximum spatial response of a beam in the antenna frame,
 // and returns the apparent direction. (look,azimuth (rads)).
 // NOTE: This is NOT the direction of the transmitted pulse which determines
 // the scattering geometry.
 //
 
-#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE	1e-6
+#define SPATIAL_RESPONSE_ANGLE_TOLERANCE	1e-6
 
 int
-GetTwoWayPeakGain(
+GetPeakSpatialResponse(
 	Beam*	beam,
 	double	round_trip_time,
 	double	azimuth_rate,
 	double*	look,
 	double*	azim,
-	CoordinateSwitch* antenna_frame_to_gc=NULL,
-        Spacecraft* spacecraft=NULL)
+        int     use_range)
 {
 	int ndim = 2;
 	double** p = (double**)make_array(sizeof(double),2,3,4);
 	if (p == NULL)
 	{
-		printf("Error allocating memory in GetTwoWayPeakGain\n");
+		printf("Error allocating memory in GetPeakSpatialResponse\n");
 		return(0);
 	}
 
@@ -2051,34 +2071,34 @@ GetTwoWayPeakGain(
 		p[i][3] = azimuth_rate;
 	}
 
-        char* ptr[3];
+        char* ptr[2];
         ptr[0]=(char*)beam;
-        ptr[1]=(char*)antenna_frame_to_gc;
-        ptr[2]=(char*)spacecraft;
-	double ftol = TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE;
+        int* flag_ptr= &use_range;
+        ptr[1]=(char*)flag_ptr;
+	double ftol = SPATIAL_RESPONSE_ANGLE_TOLERANCE;
 	downhill_simplex((double**)p, ndim, ndim+2, ftol,
-		NegativePowerGainProduct, ptr);
+		NegativeSpatialResponse, ptr);
 
 	*look = p[0][0];
 	*azim = p[0][1];
 
 	free_array(p,2,3,4);
-
 	return(1);
 }
 
-//--------------------//
-// GetTwoWayPeakGain2 //
-//--------------------//
+//-------------------------//
+// GetPeakSpatialResponse2 //
+//-------------------------//
 
 int
-GetTwoWayPeakGain2(
+GetPeakSpatialResponse2(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Beam*				beam,
 	double				azimuth_rate,
 	double*				look,
-	double*				azim)
+	double*				azim,
+	int                             use_range=1)
 {
 	//---------------------------------------------//
 	// start with the one-way electrical boresight //
@@ -2097,8 +2117,8 @@ GetTwoWayPeakGain2(
 	// get the two-way peak gain //
 	//---------------------------//
 
-	if (! GetTwoWayPeakGain(beam, tip.roundTripTime, azimuth_rate,
-		look, azim, antenna_frame_to_gc, spacecraft))
+	if (! GetPeakSpatialResponse(beam, tip.roundTripTime, azimuth_rate,
+		look, azim, use_range))
 	{
 		return(0);
 	}
@@ -2107,13 +2127,13 @@ GetTwoWayPeakGain2(
 }
 
 //--------------------------//
-// NegativePowerGainProduct //
+// NegativeSpatialResponse //
 //--------------------------//
 
 //
-// NegativePowerGainProduct is the function to be minimized by
-// GetTwoWayPeakGain.
-// It computes the negative of the PowerGainProduct for the inputs given
+// NegativeSpatialResponse is the function to be minimized by
+// GetPeakSpatialResponse.
+// It computes the negative of the SpatialResponse for the inputs given
 // in the input vector.  The elements of the input vector are:
 //
 // x[0] = look angle (rad)
@@ -2121,37 +2141,35 @@ GetTwoWayPeakGain2(
 // x[2] = round trip time (sec)
 // x[3] = spin rate (rad/sec)
 // beam = pointer to a beam object containing the pattern to use.
-//
+// use_range = flag which when set to zero commands routine to compute
+//             the PowerGainProduct instead of the SpatialResponse
 
 double
-NegativePowerGainProduct(
+NegativeSpatialResponse(
 	double*		x,
 	void*		ptr)
 {
-        double gp;
+        double response;
 	char** ptr2=(char**)ptr;
         Beam* beam=(Beam*)ptr2[0];
-        CoordinateSwitch* antenna_frame_to_gc=(CoordinateSwitch*)ptr2[1];
-        Spacecraft* spacecraft = (Spacecraft*)ptr2[2];
+        int use_range=*(int*)(ptr2[1]);
 
-	if(beam->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp)!=1){
-	  fprintf(stderr,"Error:NegativePowerGainProduct function failed\n");
-	  exit(1);
-	}	
+	//-------------------------------------------------//
+	// Calculate Two-way Gain Only if use_range=0      //
+	//-------------------------------------------------//
 
-        if(spacecraft!=NULL){
-	  Vector3 rlook_antenna;
-	  rlook_antenna.SphericalSet(1.0, x[0], x[1]);
-	  TargetInfoPackage tip;
-	  if(!RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna,
-			      &tip)) {
-
-	    fprintf(stderr,"Error:NegativePowerGainProduct function failed\n");
+        if(use_range){
+	  if(beam->GetSpatialResponse(x[0],x[1],x[2],x[3],&response)!=1){
+	    fprintf(stderr,"Error:NegativeSpatialResponse function failed\n");
 	    exit(1);
-	  }
-
-
-	  return(-gp/(tip.slantRange*tip.slantRange*tip.slantRange*tip.slantRange));
+	  }	
 	}
-	else return(-gp);
+        else{
+	  if(beam->GetPowerGainProduct(x[0],x[1],x[2],x[3],&response)!=1){
+	    fprintf(stderr,"Error:NegativeSpatialResponse function failed\n");
+	    exit(1);
+	  }	
+	}
+
+	return(-response);
 }

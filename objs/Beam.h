@@ -76,6 +76,13 @@ public:
 				double round_trip_time, double azimuth_rate,
 				double* gain_product);
 
+	int		GetSpatialResponse(double look_angle, double azimuth_angle,
+				double round_trip_time, double azimuth_rate,
+				float* response);
+	int		GetSpatialResponse(double look_angle, double azimuth_angle,
+				double round_trip_time, double azimuth_rate,
+				double* response);
+
 	//-----------//
 	// variables //
 	//-----------//

@@ -523,6 +523,48 @@ Beam::GetPowerGainProduct(
 	return(retval);
 }
 
+// Computes the Spatial Response
+int
+Beam::GetSpatialResponse(
+	double	look_angle,
+	double	azimuth_angle,
+	double	round_trip_time,
+	double	azimuth_rate,
+	double	*response)
+{
+	double tmp;
+        int retval;
+        retval=GetPowerGainProduct(look_angle, azimuth_angle, round_trip_time,
+		azimuth_rate, &tmp);
+
+        // Calculate the range to spot on the ground.
+	// This should be iterative but using the range
+        // at the transmitted azimuth angle should be sufficient
+
+        float range=round_trip_time*speed_light_kps*0.5;
+	*response = (float)tmp/(range*range*range*range);
+	return(retval);
+}
+
+//
+// Same as above, but returns a float
+//
+
+int
+Beam::GetSpatialResponse(
+	double	look_angle,
+	double	azimuth_angle,
+	double	round_trip_time,
+	double	azimuth_rate,
+	float	*response)
+{
+	double tmp;
+        int retval;
+        retval=GetSpatialResponse(look_angle, azimuth_angle, round_trip_time,
+		azimuth_rate, &tmp);
+	*response = (float)tmp;
+	return(retval);
+}
 
 
 
