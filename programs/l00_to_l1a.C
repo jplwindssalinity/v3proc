@@ -70,7 +70,6 @@ static const char rcs_id[] =
 #include "L10.h"
 #include "L00ToL10.h"
 #include "Array.h"
-#include "Array.C"
 
 //-----------//
 // TEMPLATES //
@@ -83,8 +82,6 @@ template class List<Meas>;
 template class List<LonLat>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
-template class Array<WindVectorPlus*>;
-template class Array<char>;
 
 //-----------//
 // CONSTANTS //
