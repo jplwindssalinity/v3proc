@@ -22,6 +22,7 @@ INSTALLDIR =	../../bin
 PROGRAMS = \
 	sim \
 	l00_to_l1a \
+	l1a_hdf_to_l1a \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_to_l2b \
