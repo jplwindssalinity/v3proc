@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   07 Sep 1999 13:32:46   sally
+// add interface for Global Attributes
+// 
 //    Rev 1.1   21 Apr 1998 16:39:34   sally
 // for L2B
 // 
@@ -192,7 +195,7 @@ EAList<T>::RemoveCurrent()
     }
     else
     {
-        return (NULL);
+        return (0);
     }
 }
 

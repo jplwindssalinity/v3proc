@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   20 Aug 1999 14:12:08   sally
+// ignore bad HDF files and continue processing
+// 
+//    Rev 1.1   04 Aug 1999 11:07:22   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.0   01 May 1998 14:45:46   sally
 // Initial revision.
 // 
@@ -43,89 +49,16 @@ const Itime     startTime,
 const Itime     endTime)
 :   TimeTlmFile(filename, SOURCE_HK2, returnStatus, startTime, endTime)
 {
-    // check TimeTlmFile construction
     if (_status != HdfFile::OK)
         return;
 
-    _firstDataRecTime = INVALID_TIME;
-    _lastDataRecTime = INVALID_TIME;
-
-    if (startTime != INVALID_TIME && endTime != INVALID_TIME &&
-                     startTime > endTime)
-    {
-        _status = returnStatus = ERROR_USER_STARTTIME_AFTER_ENDTIME;
-        return;
-    }
-
-    const char* sdsNames = ParTabAccess::GetSdsNames(SOURCE_HK2, TAI_TIME);
-    if (sdsNames == 0)
-    {
-        _status = returnStatus = ERROR_SEEKING_TIME_PARAM;
-        return;
-    }
-
-    char tempString[BIG_SIZE];
-    (void)strncpy(tempString, sdsNames, BIG_SIZE);
-    int32 dataType, dataStartIndex, dataLength, numDimensions;
-    char *oneSdsName = (char*)strtok(tempString, ",");
-    if (oneSdsName == 0)
-    {
-        _status = returnStatus = ERROR_SEEKING_TIME_PARAM;
-        return;
-    }
-    //--------------------------------------------
-    // get the first and last data record time
-    //--------------------------------------------
-    _timeSdsID[0] = SelectDataset(oneSdsName, dataType,
-                         dataStartIndex, dataLength, numDimensions);
-    if (_timeSdsID[0] == HDF_FAIL)
-    {
-        _status = returnStatus = ERROR_SELECTING_DATASET;
-        return;
-    }
-    if (_getTime(0, &_firstDataRecTime) != OK)
-    {
-        _status = returnStatus = ERROR_EXTRACT_DATA;
-        return;
-    }
-
-    if (_getTime(_dataLength - 1, &_lastDataRecTime) != OK)
-    {
-        _status = returnStatus = ERROR_EXTRACT_DATA;
-        return;
-    }
-
-    // check the time parameter in the file
-    if (_firstDataRecTime > _lastDataRecTime)
-    {
-        fprintf(stderr, "%s: first data time is later than last\n", _filename);
-        _status = returnStatus = ERROR_FILE_STARTTIME_AFTER_ENDTIME;
-        return;
-    }
-
-    // if data is out of range, then return "no more data"
-    if ((_userStartTime != INVALID_TIME && _userStartTime > _lastDataRecTime)
-      || (_userEndTime != INVALID_TIME && _userEndTime < _firstDataRecTime))
-    {
-        returnStatus = _status = NO_MORE_DATA;
-        return;
-    }
-
-    // set the start and end indices according to user's start and end time
-    if (_setFileIndices() != OK)
-    {
-        returnStatus = _status;
-        return;
-    }
-
-    _userNextIndex = _userStartIndex;
-
-    returnStatus = _status;
-    return;
+    _status = _setTimeParam();
+    _CloseFile();
 
 }//HK2File::HK2File
 
-HK2File::~HK2File()
+void
+HK2File::_closeTimeDataset(void)
 {
     // close "time" data set
     if (_timeSdsID[0] != HDF_FAIL)
@@ -133,10 +66,41 @@ HK2File::~HK2File()
         (void)CloseDataset(_timeSdsID[0]);
         _timeSdsID[0] = HDF_FAIL;
     }
+    return;
+} // HK2File::_closeTimeDataset
 
+HK2File::~HK2File()
+{
+    _closeTimeDataset();
     return;
 
 } //HK2File::~HK2File
+
+HdfFile::StatusE
+HK2File::_selectTimeDataset(void)
+{
+    const char* sdsNames = ParTabAccess::GetSdsNames(SOURCE_HK2, TAI_TIME);
+    if (sdsNames == 0)
+        return(_status = ERROR_SEEKING_TIME_PARAM);
+
+    char tempString[BIG_SIZE];
+    (void)strncpy(tempString, sdsNames, BIG_SIZE);
+    int32 dataType, dataStartIndex, dataLength, numDimensions;
+    char *oneSdsName = (char*)strtok(tempString, ",");
+    if (oneSdsName == 0)
+        return(_status = ERROR_SEEKING_TIME_PARAM);
+
+    //--------------------------------------------
+    // get the first and last data record time
+    //--------------------------------------------
+    _timeSdsID[0] = SelectDataset(oneSdsName, dataType,
+                         dataStartIndex, dataLength, numDimensions);
+    if (_timeSdsID[0] == HDF_FAIL)
+        return(_status = ERROR_SELECTING_DATASET);
+
+    return(HdfFile::OK);
+
+} // HK2File::_selectTimeDataset
 
 HK2File::StatusE
 HK2File::_getTime(
@@ -145,10 +109,13 @@ Itime*    recTime)  // OUT: record time
 {
     assert(_timeSdsID[0] != HDF_FAIL);
 
+    //if (_timeSdsID[0] == HDF_FAIL);
+    //    _selectTimeDataset();
+
     if ( ! ExtractTaiTime(this, _timeSdsID, index, 1, 1, recTime))
         return (_status = ERROR_EXTRACT_TIME_PARAM);
 
-    return (_status = OK);
+    return (_status = HdfFile::OK);
 
 } //HK2File::_getTime
 
@@ -159,9 +126,9 @@ int32      startIndex,
 int32      endIndex)
 {
     Itime startTime, endTime;
-    if (_getTime(startIndex, &startTime) != OK)
+    if (_getTime(startIndex, &startTime) != HdfFile::OK)
         return(HDF_FAIL);
-    if (_getTime(endIndex, &endTime) != OK)
+    if (_getTime(endIndex, &endTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     // Is userTime after the endTime
@@ -178,7 +145,7 @@ int32      endIndex)
     // divide the data indices into two parts, and search
     int32 midIndex = startIndex + (endIndex - startIndex) / 2;
     Itime midTime;
-    if (_getTime(midIndex, &midTime) != OK)
+    if (_getTime(midIndex, &midTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     if (midTime >= userTime)
@@ -197,9 +164,9 @@ int32      startIndex,
 int32      endIndex)
 {
     Itime startTime, endTime;
-    if (_getTime(startIndex, &startTime) != OK)
+    if (_getTime(startIndex, &startTime) != HdfFile::OK)
         return(HDF_FAIL);
-    if (_getTime(endIndex, &endTime) != OK)
+    if (_getTime(endIndex, &endTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     // Is userTime after the endTime
@@ -216,7 +183,7 @@ int32      endIndex)
     // divide the data indices into two parts, and search
     int32 midIndex = startIndex + (endIndex - startIndex) / 2;
     Itime midTime;
-    if (_getTime(midIndex, &midTime) != OK)
+    if (_getTime(midIndex, &midTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     if (midTime >= userTime)

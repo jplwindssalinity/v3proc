@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.15   15 Sep 1999 15:18:52   sally
+// change some default values, fix logic
+// 
 //    Rev 1.14   26 Jul 1999 16:49:38   sally
 // Group flag for L1A is 1, Hk2 is 3
 // 
@@ -313,8 +316,7 @@ ErrorTabEntry L1aStateTable[] =
              { RUNNING_ERROR_COUNT, UNIT_COUNTS } },
 
     // ERROR_TWT_SHUTDOWN_DISABLE
-    { "TWT Shutdown", WARNING_FORMAT, ErrorTwtShutdown,
-             { STATUS_TABLE_CHANGE_FLAGS_09, UNIT_MAP } },
+    { 0, 0, 0, { PARAM_UNKNOWN, UNIT_UNKNOWN } },
 
 
     // ERROR_VALID_COMMAND_COUNT

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.10   07 Sep 1999 13:33:06   sally
+//  add interface for Global Attributes
+// 
+//    Rev 1.9   04 Aug 1999 11:07:20   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.8   15 Mar 1999 14:19:34   sally
 // add some methods for getting user's start and end indexes
 // 
@@ -52,6 +58,7 @@ static const char rcs_id_HdfFile_h[] =
     "@(#) $Header$";
 
 #include <mfhdf.h>
+#include <string.h>
 
 #include "Parameter.h"
 #include "EAList.h"
@@ -69,12 +76,17 @@ class HdfGlobalAttr
  public:
     HdfGlobalAttr();
     ~HdfGlobalAttr();
-    char *name;
-    DataTypeE type;
-    int dims[2];
-    VOIDP data;
+
+    char       *name;
+    DataTypeE  type;
+    int        dims[2];
+    VOIDP      data;
 }; 
 
+inline int operator==(const HdfGlobalAttr& a, const HdfGlobalAttr& b)
+{
+    return(strcmp(a.name, b.name) == 0 && a.type == b.type ? 1 : 0);
+}
 
 //-------------------------------------------------------------------
 // HdfFile:
@@ -147,6 +159,14 @@ public:
     virtual ~HdfFile();
 
     //------------------------------------------------------
+    // constructor closes the file at the end.
+    // so if application uses its member methods,
+    // it doesn't have to call OpenFile().
+    // Otherwise, it must be called before anything could be done.
+    //------------------------------------------------------
+    StatusE         OpenFile(void);
+
+    //------------------------------------------------------
     // get the info about the global attributes
     // then get the global attributes themselves
     //------------------------------------------------------
@@ -163,9 +183,18 @@ public:
                                 VOIDP         attrBuf,       // IN/OUT
                                 int32         numValues = 1);// IN
 
-    virtual StatusE ParseGlobalAttr( char   *attrName,       // IN
-                                     VOIDP  attrBuf,         // IN
-                                     HdfGlobalAttr *);         // IN/OUT
+    virtual StatusE ParseGlobalAttr(
+                                char*           attrName,       // IN
+                                VOIDP           attrBuf,        // IN
+                                HdfGlobalAttr*  globalAttr);    // IN/OUT
+
+    virtual StatusE ParseGlobalAttr(
+                                char*           attrName,       // IN
+                                HdfGlobalAttr&  globalAttr);    // IN/OUT
+
+    virtual StatusE ParseGlobalAttr(
+                                int32           attrIndex,      // IN
+                                HdfGlobalAttr&  globalAttr);    // IN/OUT
 
     //------------------------------------------------------
     // select dataset, return dataset index ID or HDF_FAIL
@@ -230,6 +259,7 @@ public:
 
 protected:
     StatusE         _DupFilename(const char* filename);
+    void            _CloseFile(void);
 
     EAList<int32>   _datasetIDs;
 

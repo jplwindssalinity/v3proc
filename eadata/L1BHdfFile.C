@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   04 Aug 1999 11:07:30   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.2   03 Nov 1998 16:01:00   sally
 // adapt to Vdata
 // 
@@ -51,102 +54,13 @@ const Itime     startTime,
 const Itime     endTime)
 :   TimeTlmFile(filename, SOURCE_L1B, returnStatus, startTime, endTime)
 {
-    // check TimeTlmFile construction
-    if (_status != HdfFile::OK)
-        return;
-
-    _firstDataRecTime = INVALID_TIME;
-    _lastDataRecTime = INVALID_TIME;
-
-    if (startTime != INVALID_TIME && endTime != INVALID_TIME &&
-                     startTime > endTime)
-    {
-        _status = returnStatus = ERROR_USER_STARTTIME_AFTER_ENDTIME;
-        return;
-    }
-
-    //-------------------------------------------
-    // get the start and end time from V data
-    //-------------------------------------------
-    const char* sdsNames = ParTabAccess::GetSdsNames(SOURCE_L1B, FRAME_TIME);
-    if (sdsNames == 0)
-    {
-        _status = returnStatus = ERROR_SEEKING_TIME_PARAM;
-        return;
-    }
-
-    char tempString[BIG_SIZE];
-    (void)strncpy(tempString, sdsNames, BIG_SIZE);
-    char *oneSdsName = (char*)strtok(tempString, ",");
-    if (oneSdsName == 0)
-    {
-        _status = returnStatus = ERROR_SEEKING_TIME_PARAM;
-        return;
-    }
-    char vDataName[SHORT_STRING_LEN];
-    if (sscanf(oneSdsName, "%*c:%s", vDataName) != 1)
-    {
-        _status = returnStatus = ERROR_SEEKING_TIME_PARAM;
-        return;
-    }
-    //--------------------------------------------
-    // get the first and last data record time
-    //--------------------------------------------
-    int32 vDataRefNo = VSfind(_hFileID, vDataName);
-    if (vDataRefNo == 0)
-    {
-        _status = returnStatus = ERROR_SELECTING_DATASET;
-        return;
-    }
-
-    if ((_timeVdID[0] = VSattach(_hFileID, vDataRefNo, "r"))== HDF_FAIL)
-    {
-        _status = returnStatus = ERROR_SELECTING_DATASET;
-        return;
-    }
-    if (_getTime(0, &_firstDataRecTime) != OK)
-    {
-        _status = returnStatus = ERROR_EXTRACT_DATA;
-        return;
-    }
-
-    if (_getTime(_dataLength - 1, &_lastDataRecTime) != OK)
-    {
-        _status = returnStatus = ERROR_EXTRACT_DATA;
-        return;
-    }
-
-    // check the time parameter in the file
-    if (_firstDataRecTime > _lastDataRecTime)
-    {
-        fprintf(stderr, "%s: first data time is later than last\n", _filename);
-        _status = returnStatus = ERROR_FILE_STARTTIME_AFTER_ENDTIME;
-        return;
-    }
-
-    // if data is out of range, then return "no more data"
-    if ((_userStartTime != INVALID_TIME && _userStartTime > _lastDataRecTime)
-      || (_userEndTime != INVALID_TIME && _userEndTime < _firstDataRecTime))
-    {
-        returnStatus = _status = NO_MORE_DATA;
-        return;
-    }
-
-    // set the start and end indices according to user's start and end time
-    if (_setFileIndices() != OK)
-    {
-        returnStatus = _status;
-        return;
-    }
-
-    _userNextIndex = _userStartIndex;
-
-    returnStatus = _status;
-    return;
+    _status = _setTimeParam();
+    _CloseFile();
 
 }//L1BHdfFile::L1BHdfFile
 
-L1BHdfFile::~L1BHdfFile()
+void
+L1BHdfFile::_closeTimeDataset(void)
 {
     // close "time" V data
     if (_timeVdID[0] != HDF_FAIL)
@@ -157,19 +71,64 @@ L1BHdfFile::~L1BHdfFile()
 
     return;
 
+} //L1BHdfFile::_closeTimeDataset
+
+L1BHdfFile::~L1BHdfFile()
+{
+    _closeTimeDataset();
+    return;
+
 } //L1BHdfFile::~L1BHdfFile
+
+HdfFile::StatusE
+L1BHdfFile::_selectTimeDataset(void)
+{
+    if (_timeVdID[0] != HDF_FAIL)
+        return(HdfFile::OK);
+
+    //-------------------------------------------
+    // get the start and end time from V data
+    //-------------------------------------------
+    const char* sdsNames = ParTabAccess::GetSdsNames(SOURCE_L1B, FRAME_TIME);
+    if (sdsNames == 0)
+        return(_status = ERROR_SEEKING_TIME_PARAM);
+
+    char tempString[BIG_SIZE];
+    (void)strncpy(tempString, sdsNames, BIG_SIZE);
+    char *oneSdsName = (char*)strtok(tempString, ",");
+    if (oneSdsName == 0)
+        return(_status = ERROR_SEEKING_TIME_PARAM);
+
+    char vDataName[SHORT_STRING_LEN];
+    if (sscanf(oneSdsName, "%*c:%s", vDataName) != 1)
+        return(_status = ERROR_SEEKING_TIME_PARAM);
+
+    //--------------------------------------------
+    // get the first and last data record time
+    //--------------------------------------------
+    int32 vDataRefNo = VSfind(_hFileID, vDataName);
+    if (vDataRefNo == 0)
+        return(_status = ERROR_SELECTING_DATASET);
+
+    if ((_timeVdID[0] = VSattach(_hFileID, vDataRefNo, "r"))== HDF_FAIL)
+        return(_status = ERROR_SELECTING_DATASET);
+
+    return(HdfFile::OK);
+
+} // L1BHdfFile::_selectTimeDataset
 
 L1BHdfFile::StatusE
 L1BHdfFile::_getTime(
 int32     index,    // dataset index
 Itime*    recTime)  // OUT: record time
 {
-    assert(_timeVdID[0] != HDF_FAIL);
+    if (_timeVdID[0] == HDF_FAIL);
+        _selectTimeDataset();
 
     if ( ! ExtractL1Time(this, _timeVdID, index, 1, 1, recTime))
         return (_status = ERROR_EXTRACT_TIME_PARAM);
 
-    return (_status = OK);
+    return (_status = HdfFile::OK);
 
 } //L1BHdfFile::_getTime
 
@@ -180,9 +139,9 @@ int32      startIndex,
 int32      endIndex)
 {
     Itime startTime, endTime;
-    if (_getTime(startIndex, &startTime) != OK)
+    if (_getTime(startIndex, &startTime) != HdfFile::OK)
         return(HDF_FAIL);
-    if (_getTime(endIndex, &endTime) != OK)
+    if (_getTime(endIndex, &endTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     // Is userTime after the endTime
@@ -199,7 +158,7 @@ int32      endIndex)
     // divide the data indices into two parts, and search
     int32 midIndex = startIndex + (endIndex - startIndex) / 2;
     Itime midTime;
-    if (_getTime(midIndex, &midTime) != OK)
+    if (_getTime(midIndex, &midTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     if (midTime >= userTime)
@@ -218,9 +177,9 @@ int32      startIndex,
 int32      endIndex)
 {
     Itime startTime, endTime;
-    if (_getTime(startIndex, &startTime) != OK)
+    if (_getTime(startIndex, &startTime) != HdfFile::OK)
         return(HDF_FAIL);
-    if (_getTime(endIndex, &endTime) != OK)
+    if (_getTime(endIndex, &endTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     // Is userTime after the endTime
@@ -237,7 +196,7 @@ int32      endIndex)
     // divide the data indices into two parts, and search
     int32 midIndex = startIndex + (endIndex - startIndex) / 2;
     Itime midTime;
-    if (_getTime(midIndex, &midTime) != OK)
+    if (_getTime(midIndex, &midTime) != HdfFile::OK)
         return(HDF_FAIL);
 
     if (midTime >= userTime)

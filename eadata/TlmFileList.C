@@ -7,6 +7,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.21   27 Aug 1999 14:49:16   sally
+// need to change status to OK if the tlm file list is not empty in constructor
+// 
+//    Rev 1.20   20 Aug 1999 14:12:18   sally
+// ignore bad HDF files and continue processing
+// 
+//    Rev 1.19   11 Aug 1999 13:23:10   sally
+// fix NO_MORE_DATA logic
+// 
+//    Rev 1.18   04 Aug 1999 11:07:40   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.17   21 Jul 1999 11:11:02   sally
 // need to check error and pass it on
 // 
@@ -119,13 +131,10 @@ const Itime     endTime)        // IN
             while ((dirEntry = readdir(dir)))
             {
                 // add each file in the directory
+                // errors are reported but ignored and continue
                 if (*(dirEntry->d_name) != '.')
-                    if (_AddFileIfNeeded(tlm_type, startTime, endTime,
-                        string, dirEntry->d_name) != OK)
-                {
-                    returnStatus =_status =TlmFileList::ERROR_CREATING_TLM_FILE;
-                    return;
-                }
+                    (void) _AddFileIfNeeded(tlm_type, startTime, endTime,
+                        string, dirEntry->d_name);
             }
             closedir(dir);
         }
@@ -134,12 +143,8 @@ const Itime     endTime)        // IN
             //------------------
             // string is a file 
             //------------------
-
-            if (_AddFileIfNeeded(tlm_type, startTime, endTime, 0, string)!= OK)
-            {
-                returnStatus =_status =TlmFileList::ERROR_CREATING_TLM_FILE;
-                return;
-            }
+            // errors are reported but ignored and continue
+            (void)_AddFileIfNeeded(tlm_type, startTime, endTime, 0, string);
         }
     }
     free(tlm_filenames_copy);
@@ -151,7 +156,7 @@ const Itime     endTime)        // IN
         returnStatus = _status = TlmFileList::NO_MORE_FILES;
         return;
     }
-    returnStatus = _status;
+    returnStatus = TlmFileList::OK;
     return;
 } // TlmFileList::TlmFileList
 
@@ -313,9 +318,11 @@ const char*     filename)
         return (_status = ERROR_CREATING_TLM_FILE);
 
     HdfFile::StatusE fileStatus  = file->GetStatus();
-    if (fileStatus != HdfFile::OK && fileStatus != HdfFile::NO_MORE_DATA)
+    if (fileStatus != HdfFile::OK)
     {
             delete file;
+
+        // this file is outside of the range, discard but return OK
         if (fileStatus == HdfFile::NO_MORE_DATA)
             return (_status = OK);
         else

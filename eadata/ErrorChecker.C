@@ -6,6 +6,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.11   16 Sep 1999 08:59:16   sally
+// check TWT errors only when that TWT is selected
+// 
+//    Rev 1.10   15 Sep 1999 15:18:26   sally
+// change some default values, fix logic
+// 
 //    Rev 1.9   26 Jul 1999 16:49:16   sally
 // Group flag for L1A is 1, Hk2 is 3
 // 
@@ -357,13 +363,12 @@ FILE*           ofp)
     if (currentElement->condition != StateElement::CURRENT)
         return 1;
 
-    unsigned short currentCnt = *(unsigned char*) currentElement->value;
-    unsigned short prevCnt = *(unsigned char*) prevElement->value;
+    unsigned short currentCnt = *(unsigned short*) currentElement->value;
+    unsigned short prevCnt = *(unsigned short*) prevElement->value;
 
     // changed
-    if (prevCnt != currentCnt ||
-            (currentCnt != 0 &&
-                   prevElement->condition == StateElement::UNINITIALIZED))
+    if (prevElement->condition == StateElement::CURRENT &&
+                                   prevCnt != currentCnt) 
     {
         fprintf(ofp, format, name);
         fprintf(ofp, "  %s   Error Count = %d\n",
@@ -817,7 +822,8 @@ const char*          badString)
     unsigned char prevTrip = *(unsigned char*) prevElement->value;
 
     // changed or initial value is the default
-    if (prevTrip != currentTrip ||
+    if ((prevElement->condition == StateElement::CURRENT &&
+         prevTrip != currentTrip) ||
             (prevElement->condition == StateElement::UNINITIALIZED &&
                                     currentTrip != defaultValue))
     {
@@ -844,11 +850,11 @@ int ErrorTwtaMonEnDis(ErrorChecker* obj, char* name, char* format, FILE* ofp)
 
 int ErrorPwrMonFPEndis(ErrorChecker* obj, char* name, char* format, FILE* ofp)
     { return(ErrorValueChanged(obj, name, format, ofp,
-                      ERROR_TWTA_MON_EN_DIS, 0, "Enabled", "Disabled")); }
+                      ERROR_TWTA_MON_EN_DIS, 1, "Enabled", "Disabled")); }
 
 int ErrorSesSuppHtrMode(ErrorChecker* obj, char* name, char* format, FILE* ofp)
     { return(ErrorValueChanged(obj, name, format, ofp,
-                      ERROR_SUPP_HTR_MODE_CHANGE, 0, "Disabled", "Enabled")); }
+                      ERROR_SUPP_HTR_MODE_CHANGE, 1, "Enabled", "Disabled")); }
 
 int ErrorSasMultiDataLoss(ErrorChecker* obj, char* name, char* format,FILE* ofp)
     { return(ErrorValueChanged(obj, name, format, ofp,
@@ -887,28 +893,78 @@ int ErrorWatchDogTimerExpired(ErrorChecker* obj, char* name,
     { return(ErrorValueChanged(obj, name, format, ofp,
                   ERROR_WATCH_DOG_TIMER_EXPIRED, 0, "Not Expired","Expired"));}
 
-int ErrorTwt1CnvrtOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+ErrorTwt1ValueChanged(
+ErrorChecker*        obj,
+char*                name,
+char*                format,
+FILE*                ofp,
+ERROR_CHECK_PARAM_E  errorIndex,
+unsigned char        defaultValue,
+const char*          defaultString,
+const char*          badString)
+{
+    StateElement* k11Element =
+                &(obj->current->stateElements[ERROR_K11_TWTA_1_2]);
+    unsigned char k11 = *(unsigned char*) k11Element->value;
+    StateElement* k12Element =
+                &(obj->current->stateElements[ERROR_K12_TWTA_1_2]);
+    unsigned char k12 = *(unsigned char*) k12Element->value;
+
+    // if k11 != k12, then TWT 1 is not selected
+    if (k11 != k12) return 1;
+
+    return(ErrorValueChanged(obj, name, format, ofp,
+                      errorIndex, defaultValue, defaultString, badString));
+
+} // ErrorTwt1ValueChanged
+
+int ErrorTwt1CnvrtOcTrip(ErrorChecker* obj, char* name, char* format, FILE* ofp)
+    { return(ErrorTwt1ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_1_CNVRT_OC_TRIP, 0, "Not Tripped","Tripped"));}
 
 int ErrorTwt1UvTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+    { return(ErrorTwt1ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_1_UV_TRIP, 0, "Not Tripped","Tripped"));}
 
 int ErrorTwt1BodyOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+    { return(ErrorTwt1ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_1_BODY_OC_TRIP, 0, "Not Tripped","Tripped"));}
 
+ErrorTwt2ValueChanged(
+ErrorChecker*        obj,
+char*                name,
+char*                format,
+FILE*                ofp,
+ERROR_CHECK_PARAM_E  errorIndex,
+unsigned char        defaultValue,
+const char*          defaultString,
+const char*          badString)
+{
+    StateElement* k11Element =
+                &(obj->current->stateElements[ERROR_K11_TWTA_1_2]);
+    unsigned char k11 = *(unsigned char*) k11Element->value;
+    StateElement* k12Element =
+                &(obj->current->stateElements[ERROR_K12_TWTA_1_2]);
+    unsigned char k12 = *(unsigned char*) k12Element->value;
+
+    // if k11 == k12, then TWT 2 is not selected
+    if (k11 == k12) return 1;
+
+    return(ErrorValueChanged(obj, name, format, ofp,
+                      errorIndex, defaultValue, defaultString, badString));
+
+} // ErrorTwt1ValueChanged
+
 int ErrorTwt2CnvrtOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+    { return(ErrorTwt2ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_2_CNVRT_OC_TRIP, 0, "Not Tripped","Tripped"));}
 
 int ErrorTwt2UvTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+    { return(ErrorTwt2ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_2_UV_TRIP, 0, "Not Tripped","Tripped"));}
 
 int ErrorTwt2BodyOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
-    { return(ErrorValueChanged(obj, name, format, ofp,
+    { return(ErrorTwt2ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_2_BODY_OC_TRIP, 0, "Not Tripped","Tripped"));}
 
 int ErrorPllOutOfLock(ErrorChecker* obj, char* name, char* format,FILE* ofp)

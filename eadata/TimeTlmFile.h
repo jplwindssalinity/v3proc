@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   04 Aug 1999 11:07:38   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.0   01 May 1998 14:45:54   sally
 // Initial revision.
 // 
@@ -57,8 +60,15 @@ public:
 
 protected:
 
+    virtual StatusE     _setTimeParam(void);
+
     virtual StatusE     _setFileIndices(void);
+
+    // these need to be called by constructor so they can't be pure virtual
+    virtual StatusE     _selectTimeDataset(void)=0;
+    virtual void        _closeTimeDataset(void)=0;
     virtual StatusE     _getTime(int32 index, Itime* recTime)=0;
+
     virtual int32       _binarySearchStart(
                              Itime  userTime,    // user's start time
                              int32  startIndex,  // start index of search

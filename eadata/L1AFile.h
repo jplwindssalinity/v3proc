@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   04 Aug 1999 11:07:28   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.6   01 May 1998 14:46:42   sally
 // add HK2 file
 // 
@@ -58,6 +61,8 @@ public:
 
 protected:
 
+    virtual StatusE     _selectTimeDataset(void);
+    virtual void        _closeTimeDataset(void);
     virtual StatusE     _getTime(int32 index, Itime* recTime);
 
     virtual int32       _binarySearchStart(

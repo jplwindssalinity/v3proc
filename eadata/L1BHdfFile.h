@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   04 Aug 1999 11:07:32   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.3   03 Nov 1998 16:01:12   sally
 // adapt to Vdata
 // 
@@ -52,6 +55,8 @@ public:
              { return(_getTime(index, recTime)); }
 protected:
 
+    virtual StatusE     _selectTimeDataset(void);
+    virtual void        _closeTimeDataset(void);
     virtual StatusE     _getTime(int32 index, Itime* recTime);
 
     virtual int32       _binarySearchStart(

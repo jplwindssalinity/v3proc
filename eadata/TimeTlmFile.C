@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   04 Aug 1999 11:07:34   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.0   01 May 1998 14:45:50   sally
 // Initial revision.
 // 
@@ -41,14 +44,59 @@ const Itime     endTime)
     _userStartTime(startTime), _userEndTime(endTime),
     _firstDataRecTime(INVALID_TIME), _lastDataRecTime(INVALID_TIME)
 {
+
+    // check TimeTlmFile construction
     if (_status != HdfFile::OK)
+        return;
+
+    if (startTime != INVALID_TIME && endTime != INVALID_TIME &&
+                     startTime > endTime)
     {
-        returnStatus = _status;
+        _status = returnStatus = ERROR_USER_STARTTIME_AFTER_ENDTIME;
         return;
     }
 
-    returnStatus = _status;
-    return;
+}//TimeTlmFile::TimeTlmFile
+
+HdfFile::StatusE
+TimeTlmFile::_setTimeParam(void)
+{
+    _firstDataRecTime = INVALID_TIME;
+    _lastDataRecTime = INVALID_TIME;
+
+    if ((_status = _selectTimeDataset()) != HdfFile::OK)
+        return(_status);
+
+    if (_getTime(0, &_firstDataRecTime) != HdfFile::OK)
+        return(_status = ERROR_EXTRACT_DATA);
+
+    if (_getTime(_dataLength - 1, &_lastDataRecTime) != HdfFile::OK)
+        return(_status = ERROR_EXTRACT_DATA);
+
+    // check the time parameter in the file
+    if (_firstDataRecTime > _lastDataRecTime)
+    {
+        fprintf(stderr, "%s: first data time is later than last\n", _filename);
+
+        //--------------------------------------
+        // Lee said: report but continue
+        // _status = returnStatus = ERROR_FILE_STARTTIME_AFTER_ENDTIME;
+        // return;
+        //--------------------------------------
+    }
+
+    // if data is out of range, then return "no more data"
+    if ((_userStartTime != INVALID_TIME && _userStartTime > _lastDataRecTime)
+      || (_userEndTime != INVALID_TIME && _userEndTime < _firstDataRecTime))
+        return(_status = NO_MORE_DATA);
+
+    // set the start and end indices according to user's start and end time
+    if (_setFileIndices() != HdfFile::OK)
+        return(_status);
+
+    _userNextIndex = _userStartIndex;
+
+    return(_status = HdfFile::OK);
 
 }//TimeTlmFile::TimeTlmFile
 
