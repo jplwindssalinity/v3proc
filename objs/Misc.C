@@ -47,7 +47,7 @@ usage(
     int position = 7 + strlen(command);
     for (int i = 0; option_array[i]; i++)
     {
-        int length = strlen(option_array[i]);
+        int length = 1 + strlen(option_array[i]);
         position += length;
         if (position > LINE_LENGTH)
         {
