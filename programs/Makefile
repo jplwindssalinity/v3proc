@@ -102,26 +102,27 @@ PROGRAMS = \
 	l2b_to_ascii \
 	reformat_pattern \
 	test_pattern \
-	sim_l1a_echo_proc \
-	fix_knowledge \
 	get_DopRan_scan \
 	get_X_scan \
     expand_calpulse \
     ephem_to_ascii \
 	fake_s0_data \
 	gmf_plot \
-	echo_split \
-	gen_foff \
 	BYUX_vs_time \
 	l00_to_l1a \
     check_l1b \
     calpulse_to_ascii \
     make_timetlm \
 	l2b_extract_worst \
+	get_foff \
 	make_simple_land_map
+#	gen_foff
 #	sim_accurate
 #	generate_kfactor
 #	hdf_l1a_echo_proc
+#	fix_knowledge
+#	sim_l1a_echo_proc
+#	echo_split
 
 STILES_PROGRAMS = \
 	l2b_25km_splice \

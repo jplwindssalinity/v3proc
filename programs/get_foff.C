@@ -328,7 +328,7 @@ main(
                 int beam_idx = echo_info.SpotBeamIdx(spot_idx);
                 int orbit_step = echo_info.SpotOrbitStep(spot_idx);
 
-                if (echo_info.flag[spot_idx] == EchoInfo::OK &&
+                if (echo_info.quality_flag[spot_idx] == EchoInfo::OK &&
                     echo_info.totalSignalEnergy[spot_idx] >=
                     SIGNAL_ENERGY_THRESHOLD)
                 {
@@ -474,7 +474,7 @@ main(
 
                 for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
                 {
-                    if (echo_info.flag[spot_idx] != EchoInfo::OK)
+                    if (echo_info.quality_flag[spot_idx] != EchoInfo::OK)
                     {
                         continue;
                     }
