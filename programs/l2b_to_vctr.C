@@ -94,7 +94,7 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "<l2b_file>", "[ vctr_base ]",
-    "[ hdf_flag (1=HDF, 0=default) ]", 0};
+    "[ hdf_flag (1=HDF, 0=default) ] [flag_file]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -110,17 +110,21 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc < 2 || argc > 4)
+    if (argc < 2 || argc > 5)
         usage(command, usage_array, 1);
 
     int clidx = 1;
     const char* l2b_file = argv[clidx++];
     const char* vctr_base = l2b_file;
+    char* flag_file=NULL;
     int hdf_flag = 0;
+    int rm_rain = 0;
     if (argc >= 3)
         vctr_base = argv[clidx++];
-    if (argc == 4)
+    if (argc >= 4)
         hdf_flag = atoi(argv[clidx++]);
+    if (argc == 5)
+        flag_file=argv[clidx++];
 
     //------------------//
     // read in l2b file //
@@ -158,6 +162,11 @@ main(
             exit(1);
         }
     }
+    //-----------------------------------------//
+    // use extrenal rain flag file  if desired //
+    //-----------------------------------------//
+
+    if(flag_file) l2b.frame.swath.ReadFlagFile(flag_file);
 
     //----------------------//
     // write out vctr files //

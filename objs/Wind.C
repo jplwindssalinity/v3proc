@@ -2349,6 +2349,80 @@ WindSwath::GetWVC(
     return( *(*(swath + cti) + ati) );
 }
 
+//-------------------------//
+// WindSwath::ReadFlagFile //
+//-------------------------//
+int WindSwath::ReadFlagFile(
+     const char* flag_file)
+{
+    FILE* ifp = fopen(flag_file, "r");
+    if (ifp == NULL)
+    {
+        fprintf(stderr, "Fatal Error: Flag file %s cannot be opened\n",
+            flag_file);
+        exit(1);
+    } 
+    unsigned int size = _alongTrackBins * _crossTrackBins;
+    float* flag_value = (float*)malloc(sizeof(float) * size);
+    char* flag = (char*)malloc(sizeof(char) * size);
+    if (flag_value == NULL || flag == NULL)
+    {
+        fprintf(stderr,
+            "Fatal Error: Error allocating memory for flag_value\n");
+        exit(1);
+    }
+
+    if ((fread(flag_value, sizeof(float), size, ifp) != size) ||
+        (fread(flag, sizeof(char), size, ifp) != size))
+    {
+        fprintf(stderr, "Fatal Error: Flag file %s cannot be read\n",
+            flag_file);
+        exit(1);
+    }
+    fclose(ifp);  
+    for (int ati = 0; ati < _alongTrackBins; ati++)
+    {
+      for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+	    int offset= ati*_crossTrackBins + cti;
+	    WVC* wvc = GetWVC(cti, ati);
+	    if(wvc!=NULL){
+		wvc->rainProb=flag_value[offset];
+		switch((int)(flag[offset])){
+		case 0:
+		  wvc->rainFlagBits=0;
+		  break;
+		case 1:
+                  wvc->rainFlagBits=2;
+		  break;
+		case 2:
+		  wvc->rainFlagBits=3;
+		  break;
+		case 3:
+                  wvc->rainFlagBits=4;
+                  break;
+		case 4:
+                  wvc->rainFlagBits=6;
+		  break;
+		case 5:
+                  wvc->rainFlagBits=7;
+                  break;
+                case 6:
+		  wvc->rainFlagBits=7;
+		  break;
+                default:
+		  fprintf(stderr,"Error:ReadFlagFile:Bad Flag\n");
+		  exit(1);
+		}
+	    }
+	}
+    }
+    free(flag);
+    free(flag_value);
+    return(1);
+}
+
+//------------------------
 //-----------------------//
 // WindSwath::DeleteWVCs //
 //-----------------------//
