@@ -190,7 +190,8 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 double surface_distance(EarthPosition r);
 EarthPosition Nadir();
 Vector3 Normal();
-Vector3 get_alt_lat_lon(earthposition_typeE etype);
+int GetAltLatLon(earthposition_typeE etype, double* alt,
+	double* lat, double* elon);
 
 CoordinateSwitch SurfaceCoordinateSystem();
 double IncidenceAngle(Vector3 rlook);
