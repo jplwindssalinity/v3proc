@@ -1134,30 +1134,35 @@ ConfigL2AToL2B(
 	l2a_to_l2b->useNudging = use_nudging;
 	if (use_nudging)
 	{
-        //------------------------//
-        // configure nudging flag //
-        //------------------------//
-
-        if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
+	  //------------------------//
+	  // configure nudging flag //
+	  //------------------------//
+	  
+	  if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
             return(0);
-        l2a_to_l2b->smartNudgeFlag = tmp_int;
-
-        //-----------------------//
-        // configure nudge field //
-        //-----------------------//
-
-		char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
-		if (nudge_type == NULL)
-			return(0);
- 
-		char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
-		if (nudge_windfield == NULL)
-			return(0);
-
-		if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
-			return(0);
+	  l2a_to_l2b->smartNudgeFlag = tmp_int;
+	  
+	  //-----------------------//
+	  // configure nudge field //
+	  //-----------------------//
+	  
+	  char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
+	  if (nudge_type == NULL)
+	    return(0);
+	  
+	  char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
+	  if (nudge_windfield == NULL)
+	    return(0);
+	  
+	  if (tmp_int) {
+	    if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
+	      return(0);
+	  } else {
+	    if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
+	      return(0);
+	  }
 	}
-
+	
 	return(1);
 }
 
