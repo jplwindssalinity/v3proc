@@ -393,7 +393,7 @@ main(
 
 		// addition of 0.5 centers on orbit_step
 		double time = start_time +
-			orbit_step_size * ((double)orbit_step + 0.5);
+			orbit_step_size * ((double)orbit_step);
 
 		//-----------------------//
 		// locate the spacecraft //
@@ -429,12 +429,12 @@ main(
 
 				if(read_trueX_file == NULL){
 				  instrument_sim_acc.ScatSim(&spacecraft,
-					       &instrument,NULL,NULL,
+					       &instrument,NULL,NULL,NULL
 					       &(l00_dummy.frame));
 				}
 				if(trueX_only == NULL){
 				  instrument_sim.ScatSim(&spacecraft,
-					       &instrument,NULL,NULL,
+					       &instrument,NULL,NULL,NULL
 					       &(l00_dummy.frame));
 				}			
 			}
