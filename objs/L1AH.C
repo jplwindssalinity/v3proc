@@ -883,6 +883,18 @@ L1AH::WriteSDSs(
     // range gate b width
     range_gate_b_width->SetWithUnsignedChar(&(status->range_gate_b_width));
 
+    // range gate width inner
+    float rgw_inner = (float)status->range_gate_a_width * 5.0E-5;
+    range_gate_width_inner->SetFromFloat(&rgw_inner);
+
+    // range gate width outer
+    float rgw_outer = (float)status->range_gate_b_width * 5.0E-5;
+    range_gate_width_outer->SetFromFloat(&rgw_outer);
+
+    // pulse width
+    float tpw = (float)status->pulse_width * 5.0E-5;
+    transmit_pulse_width->SetFromFloat(&tpw);
+
     // pulse width
     pulse_width->SetWithUnsignedChar(&(status->pulse_width));
 
