@@ -60,6 +60,7 @@ static const char rcs_id[] =
 #include "AngleInterval.h"
 #include "ConfigList.h"
 #include "Meas.h"
+#include "PMeas.h"
 #include "Tracking.h"
 #include "Tracking.C"
 #include "Spacecraft.h"
@@ -92,6 +93,7 @@ static const char rcs_id[] =
 template class List<AngleInterval>;
 template class List<StringPair>;
 template class List<Meas>;
+template class List<PMeas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
