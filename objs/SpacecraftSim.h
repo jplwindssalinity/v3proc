@@ -61,8 +61,15 @@ public:
 	// setting and getting //
 	//---------------------//
 
+	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
+
+	//--------//
+	// events //
+	//--------//
+
+	int			DetermineNextEvent(SpacecraftEvent* spacecraft_event);
 
 protected:
 
@@ -71,6 +78,12 @@ protected:
 	//-------------------//
 
 	double	_Ecan(double mean_anom);
+
+	//-----------//
+	// ephemeris //
+	//-----------//
+
+	double	_ephemerisPeriod;	// time between orbit state reports
 
 	//-----------//
 	// variables //

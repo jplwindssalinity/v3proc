@@ -56,16 +56,24 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "Misc.h"
 #include "ConfigList.h"
-#include "Instrument.h"
+#include "Spacecraft.h"
 #include "ConfigSim.h"
+/*
+#include "Instrument.h"
 #include "L00File.h"
 #include "L00Frame.h"
+*/
 
 //-----------//
 // CONSTANTS //
 //-----------//
+
+// these probably belong somewhere else
+#define SCATTEROMETER_BEAM_A_INDEX		0
+#define SCATTEROMETER_BEAM_B_INDEX		1
 
 //--------//
 // MACROS //
@@ -122,32 +130,47 @@ main(
 		exit(1);
 	}
 
-	//-------------------------------------//
-	// create an instrument and initialize //
-	//-------------------------------------//
+	//----------------------------------------------//
+	// create a spacecraft and spacecraft simulator //
+	//----------------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
+	Spacecraft spacecraft;
+	if (! ConfigSpacecraft(&spacecraft, &config_list))
 	{
-		fprintf(stderr, "%s: error configuration instrument\n", command);
+		fprintf(stderr, "%s: error configuring spacecraft\n", command);
 		exit(1);
 	}
 
-	//-----------------------------------------------//
-	// create an instrument simulator and initialize //
-	//-----------------------------------------------//
-
-	InstrumentSim sim;
-	if (! ConfigInstrumentSim(&sim, &config_list))
+	SpacecraftSim spacecraft_sim;
+	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring instrument simulation\n",
+		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
 			command);
 		exit(1);
 	}
 
-	//----------------------------------------//
-	// create a Level 0.0 file and initialize //
-	//----------------------------------------//
+	//-----------------------------------------------//
+	// create an instrument and instrument simulator //
+	//-----------------------------------------------//
+
+	Instrument instrument;
+	if (! ConfigInstrument(&instrument, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring instrument\n", command);
+		exit(1);
+	}
+
+	InstrumentSim instrument_sim;
+	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring instrument simulator\n",
+			command);
+		exit(1);
+	}
+
+	//-------------------------//
+	// create a Level 0.0 file //
+	//-------------------------//
 
 	L00File l00_file;
 	if (! ConfigL00File(&l00_file, &config_list))
@@ -157,26 +180,151 @@ main(
 	}
 	l00_file.OpenForOutput();
 
+	//--------------------------//
+	// create an ephemeris file //
+	//--------------------------//
+
+	char* epehemeris_filename;
+	epehemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+	if (! epehemeris_filename)
+	{
+		fprintf(stderr, "%s: error getting ephemeris filename\n", command);
+		exit(1);
+	}
+	FILE* eph_fp = fopen(epehemeris_filename, "w");
+	if (eph_fp == NULL)
+	{
+		fprintf(stderr, "%s: error opening ephemeris file %s\n", command,
+			epehemeris_filename);
+		exit(1);
+	}
+
+	//--------------------//
+	// read the windfield //
+	//--------------------//
+
+	WindField windfield;
+	if (! ConfigWindField(&windfield, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring wind field\n", command);
+		exit(1);
+	}
+
+	//-------------------------------------//
+	// read the geophysical model function //
+	//-------------------------------------//
+
+	GMF gmf;
+	if (! ConfigGMF(&gmf, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring GMF\n", command);
+		exit(1);
+	}
+
 	//----------------------//
 	// cycle through events //
 	//----------------------//
 
-	WindField windfield;
-	GMF gmf;
 	L00Frame l00_frame;
 	char l00_buffer[MAX_L00_BUFFER_SIZE];
 
-	Event event;
-	while (event.time < 120.0)
+	SpacecraftEvent spacecraft_event;
+	InstrumentEvent instrument_event;
+	int need_spacecraft_event  = 1;
+	int need_instrument_event  = 1;
+
+	OrbitState* orbit_state;
+
+	while (instrument_event.time < 120.0)
 	{
-		sim.DetermineNextEvent(&event);
-		sim.SimulateEvent(&instrument, &event, &windfield, &gmf);
-		if (sim.GetL00Frame(&l00_frame))
+		//--------------------------------------//
+		// determine the next appropriate event //
+		//--------------------------------------//
+
+		if (need_spacecraft_event)
 		{
-			int size = l00_frame.Pack(l00_buffer);
-			l00_file.Write(l00_buffer, size);
+			spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+			need_spacecraft_event = 0;
+		}
+		if (need_instrument_event)
+		{
+			instrument_sim.DetermineNextEvent(&instrument_event);
+			need_instrument_event = 0;
+		}
+
+		//--------------------------------------//
+		// select earliest event for processing //
+		//--------------------------------------//
+
+		if (spacecraft_event.time <= instrument_event.time)
+		{
+			//------------------------------//
+			// process the spacecraft event //
+			//------------------------------//
+
+			switch(spacecraft_event.eventId)
+			{
+			case SpacecraftEvent::UPDATE_STATE:
+				spacecraft_sim.UpdateOrbit(instrument_event.time,
+					&spacecraft);
+				spacecraft.orbitState.Write(eph_fp);
+				break;
+			default:
+				fprintf(stderr, "%s: unknown spacecraft event\n", command);
+				exit(1);
+				break;
+			}
+
+			need_spacecraft_event = 1;
+		}
+		else
+		{
+			//------------------------------//
+			// process the instrument event //
+			//------------------------------//
+
+			switch(instrument_event.eventId)
+			{
+			case InstrumentEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+				orbit_state = &(spacecraft.orbitState);
+				spacecraft_sim.UpdateOrbit(instrument_event.time,
+					&spacecraft);
+				instrument_sim.ScatSim(instrument_event.time, orbit_state,
+					&instrument_sim, &instrument, SCATTEROMETER_BEAM_A_INDEX,
+					&windfield, &gmf);
+				break;
+			case InstrumentEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+				orbit_state = &(spacecraft.orbitState);
+				spacecraft_sim.UpdateOrbit(instrument_event.time,
+					&spacecraft);
+				instrument_sim.ScatSim(instrument_event.time, orbit_state,
+					&instrument_sim, &instrument, SCATTEROMETER_BEAM_A_INDEX,
+					&windfield, &gmf);
+				break;
+			default:
+				fprintf(stderr, "%s: unknown instrument event\n", command);
+				exit(1);
+				break;
+			}
+
+			//----------------------//
+			// write Level 0.0 data //
+			//----------------------//
+
+			if (instrument_sim.l00FrameReady)
+			{
+				int size = instrument_sim.l00Frame.Pack(l00_buffer);
+				l00_file.Write(l00_buffer, size);
+			}
+
+			need_instrument_event = 1;
 		}
 	}
+
+	//----------------------//
+	// close Level 0.0 file //
+	//----------------------//
+
 	l00_file.Close();
 
 	return (0);

@@ -9,18 +9,28 @@ static const char rcs_id_spacecraft_c[] =
 #include "Spacecraft.h"
 
 
+//=================//
+// SpacecraftEvent //
+//=================//
+
+SpacecraftEvent::SpacecraftEvent()
+:	eventId(NONE), time(0.0)
+{
+	return;
+}
+
+SpacecraftEvent::~SpacecraftEvent()
+{
+	return;
+}
+
+
 //============//
 // Spacecraft //
 //============//
 
 Spacecraft::Spacecraft()
-:	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0)
 {
-	for (int i = 0; i < 3; i++)
-	{
-		gcVector.Set(i, 0.0);
-		velocityVector.Set(i, 0.0);
-	}
 	return;
 }
 

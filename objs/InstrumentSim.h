@@ -15,6 +15,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "L00Frame.h"
 #include "WindField.h"
 #include "GMF.h"
+#include "Ephemeris.h"
 
 //======================================================================
 // CLASSES
@@ -50,21 +51,33 @@ public:
 
 	int		SetPriPerBeam(double pri_per_beam);
 	int		SetBeamBTimeOffset(double beam_b_time_offset);
-	int		GetL00Frame(L00Frame* l00_frame);
 
 	//--------------------//
 	// simulation control //
 	//--------------------//
 
 	int		DetermineNextEvent(InstrumentEvent* instrument_event);
-	int		SimulateEvent(Instrument* instrument,
-				InstrumentEvent* instrument_event, WindField* wf, GMF* gmf);
+
+	//--------------------------//
+	// scatterometer simulation //
+	//--------------------------//
+
+	int		ScatSim(double time, OrbitState* orbit_state,
+				InstrumentSim* instrument_sim, Instrument* instrument,
+				int beam_idx, WindField* windfield, GMF* gmf);
 
 	//-----------//
 	// variables //
 	//-----------//
 
 	AntennaSim		antennaSim;		// the antenna simulator
+
+	//---------------------------//
+	// level 0 frame information //
+	//---------------------------//
+
+	L00Frame		l00Frame;
+	int				l00FrameReady;
 
 protected:
 
@@ -75,8 +88,11 @@ protected:
 	double		_priPerBeam;			// seconds
 	double		_beamBTimeOffset;		// seconds
 
-	L00Frame	_l00Frame;
-	int			_l00FrameReady;
+	//---------------------------//
+	// level 0 frame information //
+	//---------------------------//
+
+	int			_pulseNumber;
 };
 
 #endif

@@ -7,6 +7,7 @@ static const char rcs_id_spacecraftsim_c[] =
 	"@(#) $Id$";
 
 #include <math.h>
+#include "Spacecraft.h"
 #include "SpacecraftSim.h"
 #include "Constants.h"
 
@@ -310,15 +311,49 @@ SpacecraftSim::UpdateOrbit(
 	double satlon = atan2(sinl, cosl);
 	satlon = fmod(satlon + two_pi, two_pi);
 
-	spacecraft->gcAltitude = rsmag;
-	spacecraft->gcLongitude = satlon;
-	spacecraft->gcLatitude = satlat;
-	spacecraft->gcVector.Set(0, gc_x);
-	spacecraft->gcVector.Set(1, gc_y);
-	spacecraft->gcVector.Set(2, gc_z);
-	spacecraft->velocityVector.Set(0, vx);
-	spacecraft->velocityVector.Set(1, vy);
-	spacecraft->velocityVector.Set(2, vz);
+	spacecraft->orbitState.time = time;
+	Vector3 rsat(gc_x, gc_y, gc_z);
+	spacecraft->orbitState.rsat = rsat;
+	Vector3 vsat(vx, vy, vz);
+	spacecraft->orbitState.vsat = vsat;
+
+//	spacecraft->gcAltitude = rsmag;
+//	spacecraft->gcLongitude = satlon;
+//	spacecraft->gcLatitude = satlat;
+//	spacecraft->gcVector.Set(0, gc_x);
+//	spacecraft->gcVector.Set(1, gc_y);
+//	spacecraft->gcVector.Set(2, gc_z);
+//	spacecraft->velocityVector.Set(0, vx);
+//	spacecraft->velocityVector.Set(1, vy);
+//	spacecraft->velocityVector.Set(2, vz);
+
+	return(1);
+}
+
+//-----------------------------------//
+// SpacecraftSim::DetermineNextEvent //
+//-----------------------------------//
+
+int
+SpacecraftSim::DetermineNextEvent(
+	SpacecraftEvent*    spacecraft_event)
+{
+	//------------------------------------//
+	// initialize next time of each event //
+	//------------------------------------//
+
+	static double update_state_time = 0.0;
+
+	//----------------------------------------//
+	// find minimum time from possible events //
+	//----------------------------------------//
+	// easy, since there is only one
+
+	spacecraft_event->eventId = SpacecraftEvent::UPDATE_STATE;
+	spacecraft_event->time = update_state_time;
+
+	int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod + 1.5);
+	update_state_time = (double)sample_number * _ephemerisPeriod;
 
 	return(1);
 }

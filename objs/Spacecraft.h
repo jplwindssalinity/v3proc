@@ -11,12 +11,46 @@ static const char rcs_id_spacecraft_h[] =
 
 #include "Constants.h"
 #include "Matrix3.h"
-#include "Attitude.h"
+#include "Ephemeris.h"
 
 //======================================================================
 // CLASSES
-//		Spacecraft
+//		SpacecraftEvent, Spacecraft
 //======================================================================
+
+//======================================================================
+// CLASS
+//		SpacecraftEvent
+//
+// DESCRIPTION
+//		The SpacecraftEvent object contains an spacecraft event time
+//		and event ID.
+//======================================================================
+ 
+class SpacecraftEvent
+{
+public:
+ 
+	//-------//
+	// enums //
+	//-------//
+ 
+	enum SpacecraftEventE { NONE, UNKNOWN, UPDATE_STATE };
+ 
+	//--------------//
+	// construction //
+	//--------------//
+ 
+	SpacecraftEvent::SpacecraftEvent();
+	SpacecraftEvent::~SpacecraftEvent();
+ 
+	//-----------//
+	// variables //
+	//-----------//
+ 
+	SpacecraftEventE	eventId;
+	double				time;
+};
 
 
 //======================================================================
@@ -42,12 +76,7 @@ public:
 	// variables //
 	//-----------//
 
-	double			gcAltitude;
-	double			gcLongitude;
-	double			gcLatitude;
-	EarthPosition	gcVector;
-	Attitude		attitude;
-    Vector3			velocityVector;
+	OrbitState		orbitState;
 };
 
 #endif
