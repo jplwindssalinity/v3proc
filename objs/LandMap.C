@@ -96,10 +96,8 @@ LandMap::IsLand(
     int lat_idx = int((90.0 + lat * rtd) * _pixelsPerDegree + 0.5);
     int lon_byte_idx = lon_idx / 8;
     int lon_bit_idx = lon_idx % 8;
-    if (lon_bit_idx == 0)
-        lon_bit_idx = 8;
 
-    lon_bit_idx = 8 - lon_bit_idx;
+    lon_bit_idx = 7 - lon_bit_idx;
     if (lat_idx == _mapLatDim)
         return(0);
 
