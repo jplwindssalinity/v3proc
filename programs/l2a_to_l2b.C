@@ -96,6 +96,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
+#define MAX_ALONG_TRACK_BINS 1624
 //--------//
 // MACROS //
 //--------//
@@ -240,8 +241,9 @@ main(
 		exit(1);
 	}
 
-	int along_track_bins =
-		(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
+	//	int along_track_bins =
+	//	(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
+        int along_track_bins=MAX_ALONG_TRACK_BINS;
 
 	if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
 		along_track_bins))

@@ -20,6 +20,7 @@ static const char rcs_id_wind_c[] =
 #include "L1AExtract.h"
 #include "ParTab.h"
 #include "NoTimeTlmFile.h"
+#include "hdf_support.h"
 
 // S3 DEFINES
 #define USE_CLOSEST_VECTOR    0   // Otherwise uses closest direction
@@ -2108,7 +2109,7 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:   swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
+:   swath(0), useNudgeVectorsAsTruth(0), nudgeVectorsRead(0), _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
     return;
 }
@@ -2522,12 +2523,16 @@ WindSwath::ReadHdfL2B(
             wvc->lonLat.latitude = latArray[j]*dtr;
             wvc->nudgeWV = new WindVectorPlus();
             float nudge_edir=(450.0-modelDirArray[j])*dtr;
+	    while(nudge_edir>two_pi) nudge_edir-=two_pi;
+	    while(nudge_edir<0) nudge_edir+=two_pi;
             wvc->nudgeWV->SetSpdDir(modelSpeedArray[j],nudge_edir);
 
             for (int k=0; k < numambigArray[j]; k++)
             {
                 WindVectorPlus* wvp = new WindVectorPlus();
                 float edir=(450.0-dirArray[j * HDF_NUM_AMBIGUITIES + k])*dtr;
+		while(edir>two_pi) edir-=two_pi;
+		while(edir<0) edir+=two_pi;
                 wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k],edir);
                 wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
                 wvc->ambiguities.Append(wvp);
@@ -2555,7 +2560,7 @@ WindSwath::ReadHdfL2B(
 
     // close all needed datasets
     _CloseHdfDataSets();
-
+    nudgeVectorsRead=1;
     return(1);
 }
 
@@ -2579,6 +2584,166 @@ WindSwath::ReadHdfL2B(
     return(1);
 
 }//WindSwath::ReadHdfL2B
+
+
+//---------------------------------------//
+// WindSwath::ReadNudgeVectorsFromHdfL2B //
+//---------------------------------------//
+
+int
+WindSwath::ReadNudgeVectorsFromHdfL2B(
+    const char*        filename)
+{
+    // open the L2B HDF file
+    HdfFile::StatusE returnStatus = HdfFile::OK;
+    NoTimeTlmFile hdfL2BFile(filename, SOURCE_L2B, returnStatus);
+    if (returnStatus != HdfFile::OK)
+        return(0);
+
+    if (! ReadNudgeVectorsFromHdfL2B(&hdfL2BFile))
+        return(0);
+    
+    return(1);
+
+}//WindSwath::ReadNudgeVectorsFromHdfL2B
+
+
+//---------------------------------------//
+// WindSwath::ReadNudgeVectorsFromHdfL2B //
+//---------------------------------------//
+int
+WindSwath::ReadNudgeVectorsFromHdfL2B(
+    TlmHdfFile*    tlmHdfFile)
+{
+    // cross bin number is fixed
+    int crossTrackBins = HDF_ACROSS_BIN_NO;
+
+    if(crossTrackBins!=_crossTrackBins){
+      fprintf(stderr,"Bad number of cross track bins!\n");
+      return(0);
+    }
+
+    // along bin number comes from WVC_ROW
+    const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
+    if (rowSdsName == 0)
+        return(0);
+
+    int32 dataType=0, dataStartIndex=0, dataLength=0, numDimensions=0;
+    int32 rowSdsId = tlmHdfFile->SelectDataset(rowSdsName, dataType,
+                             dataStartIndex, dataLength, numDimensions);
+    if (rowSdsId == HDF_FAIL)
+        return(0);
+
+    int alongTrackBins = dataLength;
+
+    // For now do not handle case in which WVC rows are missing
+    if (alongTrackBins!=_alongTrackBins){
+          fprintf(stderr,"Unable to process missing WVC rows in HDF file\n");
+          return(0);
+    }
+
+    /**** Open Nudge Vector Data Sets ***/
+    if ((_modelSpeedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     MODEL_SPEED)) == 0)
+      return(0);
+    if ((_modelDirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, 
+					     MODEL_DIR)) == 0)
+      return(0);
+
+    float* modelSpeedArray=(float*) new float [crossTrackBins];
+    float* modelDirArray=(float*) new float [crossTrackBins];
+
+    int32 sdsIds[1];
+    for (int32 i = 0; i < _alongTrackBins; i++)
+    {
+	sdsIds[0] = _modelSpeedSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1,
+					modelSpeedArray) == 0)
+	    return(0);
+
+	sdsIds[0] = _modelDirSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, 
+					modelDirArray) == 0)
+	    return(0);
+	for (int j = 0; j < crossTrackBins; j++)
+        {
+	  WVC* wvc = swath[j][i];
+          if(!wvc) continue;
+          wvc->nudgeWV = new WindVectorPlus();
+	  float nudge_edir=(450.0-modelDirArray[j])*dtr;
+	  while(nudge_edir>two_pi) nudge_edir-=two_pi;
+	  while(nudge_edir<0) nudge_edir+=two_pi;
+	  wvc->nudgeWV->SetSpdDir(modelSpeedArray[j],nudge_edir);
+	}
+    }        
+    delete [] modelDirArray;
+    delete [] modelSpeedArray;
+
+    // close datasets
+    (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
+    (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
+    nudgeVectorsRead=1;
+    return(1);
+
+}//WindSwath::ReadNudgeVectorsFromHdfL2B
+
+//-------------------------------------//
+// WindSwath::GetArraysForUpdating Hdf //
+//-------------------------------------//
+int WindSwath::GetArraysForUpdatingHdf(
+      float** spd,
+      float** dir,
+      int**    num_ambig){
+  for(int j=0;j<_crossTrackBins;j++){
+    for(int i=0;i<_alongTrackBins;i++){
+      WVC* wvc=swath[j][i];
+      if(!wvc){
+	num_ambig[i][j]=0;
+      }
+      else{
+	int k=0;
+        num_ambig[i][j]=wvc->ambiguities.NodeCount()+1;
+        if(num_ambig[i][j]>HDF_NUM_AMBIGUITIES) 
+	  num_ambig[i][j]=HDF_NUM_AMBIGUITIES;
+	for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
+	    wvp=wvc->ambiguities.GetNext()){
+	  spd[i][j*HDF_NUM_AMBIGUITIES+k]=wvp->spd;
+	  dir[i][j*HDF_NUM_AMBIGUITIES+k]=wvp->dir;
+	  k++;
+	}
+      }
+    }
+  }
+  return(1);
+} //WindSwath::GetArraysForUpdatingHDF
+
+//------------------------------------//
+// WindSwath::UpdateHdf               //
+//------------------------------------//
+int WindSwath::UpdateHdf(
+   const char* filename,
+   float **    spd,
+   float **    dir,
+   int **      num_ambigs,
+   int **      selected)
+{
+  //  Fix Directions 
+  for(int i=0;i<_alongTrackBins;i++){
+    for(int j=0;j<_crossTrackBins*HDF_NUM_AMBIGUITIES;j++){
+      dir[i][j]=(450-rtd*dir[i][j]);
+      if(dir[i][j]>360) dir[i][j]-=360;
+    }
+  }
+  
+  // Update DataSets
+  for(int32 i=0;i<_alongTrackBins;i++){
+    if(! UpdateDataSet(filename,"wind_speed",i,&spd[i][0])) return(0);
+    if(! UpdateDataSet(filename,"wind_dir",i,&dir[i][0])) return(0);
+    if(! UpdateDataSet(filename,"num_ambigs",i,&(num_ambigs[i][0]))) return(0);
+    if(! UpdateDataSet(filename,"wvc_selection",i,&(selected[i][0]))) return(0);
+  }
+  return(1);
+}
 
 //---------------------------//
 // WindSwath::ReadNscatSwv25 //
@@ -2975,6 +3140,7 @@ WindSwath::GetNudgeVectors(
           }
         }
       }
+    nudgeVectorsRead=1;
     return(1);
 }
 
@@ -4047,7 +4213,11 @@ WindSwath::SelectNearest(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
@@ -4114,7 +4284,11 @@ WindSwath::RmsSpdErr(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             double dif = wvc->selected->spd - true_wv.spd;
@@ -4155,7 +4329,11 @@ WindSwath::RmsDirErr(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             double dif = ANGDIF(wvc->selected->dir, true_wv.dir);
@@ -4191,7 +4369,11 @@ WindSwath::WriteDirErrMap(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             float dif = fabs(ANGDIF(wvc->selected->dir,
@@ -4228,7 +4410,11 @@ WindSwath::WriteMaxDirErrIndices(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             float dif = fabs(ANGDIF(wvc->selected->dir, true_wv.dir)) * rtd;
@@ -4263,7 +4449,11 @@ WindSwath::Skill(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
@@ -4306,7 +4496,11 @@ WindSwath::SpdBias(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             double dif = wvc->selected->spd - true_wv.spd;
@@ -4363,7 +4557,11 @@ WindSwath::DirectionDensity(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4510,7 +4708,11 @@ WindSwath::AvgNambigVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4565,7 +4767,11 @@ WindSwath::RmsSpdErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4604,7 +4810,11 @@ WindSwath::RmsSpdErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4669,7 +4879,11 @@ WindSwath::RmsDirErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4710,7 +4924,11 @@ WindSwath::RmsDirErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4785,7 +5003,11 @@ WindSwath::GetProbabilityArray(
     continue;
 
       WindVector true_wv;
-      if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+      if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	true_wv.dir=wvc->nudgeWV->dir;
+	true_wv.spd=wvc->nudgeWV->spd;
+      }
+      else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
     continue;
       while(true_wv.dir<0) true_wv.dir+=two_pi;
       while(true_wv.dir>two_pi) true_wv.dir-=two_pi;
@@ -4880,7 +5102,11 @@ WindSwath::DifferenceFromTruth(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
                         WindVectorPlus* wvp=wvc->ambiguities.GetHead();
@@ -4924,7 +5150,11 @@ WindSwath::SkillVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -4975,7 +5205,11 @@ WindSwath::WithinVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -5037,7 +5271,11 @@ WindSwath::DirectionDensityVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -5155,7 +5393,11 @@ WindSwath::ComponentCovarianceVsCti(
                 continue;
 
             WindVector true_wv;
-            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
@@ -5464,12 +5706,15 @@ WindSwath::_OpenHdfDataSets(
 void
 WindSwath::_CloseHdfDataSets(void)
 {
+    (void)SDendaccess(_numambigSdsId); _numambigSdsId = HDF_FAIL;
     (void)SDendaccess(_lonSdsId); _lonSdsId = HDF_FAIL;
     (void)SDendaccess(_latSdsId); _latSdsId = HDF_FAIL;
     (void)SDendaccess(_speedSdsId); _speedSdsId = HDF_FAIL;
     (void)SDendaccess(_dirSdsId); _dirSdsId = HDF_FAIL;
     (void)SDendaccess(_mleSdsId); _mleSdsId = HDF_FAIL;
     (void)SDendaccess(_selectSdsId); _selectSdsId = HDF_FAIL;
+    (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
+    (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
     return;
 
-} // WindSwath::_OpenHdfDataSets
+} // WindSwath::_CloseHdfDataSets

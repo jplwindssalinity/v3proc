@@ -380,7 +380,12 @@ public:
     int  ReadL2B(const char* filename);
     int  ReadHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadHdfL2B(const char* filename);
+    int  ReadNudgeVectorsFromHdfL2B(const char* filename);
+    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadNscatSwv25(const char* filename);
+    int  GetArraysForUpdatingHdf(float** spd, float** dir, int** num_ambig);
+    int  UpdateHdf(const char* filename, float** spd, float** dir, 
+		   int** num_ambig, int** selected);
     int  WriteVctr(const char* filename, const int rank);
     int  WriteFlower(const char* filename);
     int  WriteAscii(const char* filename);
@@ -474,6 +479,8 @@ public:
     //-----------//
 
     WVC***  swath;
+    int     useNudgeVectorsAsTruth;
+    int     nudgeVectorsRead;
 
 protected:
 
@@ -516,4 +523,8 @@ protected:
 };
 
 #endif
+
+
+
+
 

@@ -8,7 +8,7 @@
 //		l2b_diff_from_truth
 //
 // SYNOPSIS
-//		l2b_diff_from_truth <config_file> [ vctr_base ]
+//		l2b_diff_from_truth <config_file> [ vctr_base ] 
 //
 // DESCRIPTION
 //	        Computes difference between wind vectors in two l2b files and
@@ -122,7 +122,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<vctr_base>", 0};
+const char* usage_array[] = { "<config_file>", "<vctr_base>", "[ -h (read HDF format) ]" "[ -n (use nudge field as truth)]",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -138,13 +138,21 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc <3 || argc > 5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
+ 
 	const char* config_file = argv[clidx++];
 	const char* vctr_base = argv[clidx++];
-
+        int hdf_flag=0;
+        int use_nudge_as_truth=0;
+        
+        if(argc>3){
+           hdf_flag=atoi(argv[clidx++]);
+           if(argc==5)
+             use_nudge_as_truth=atoi(argv[clidx++]);
+	}
 	//---------------------//
 	// read in config file //
 	//---------------------//
@@ -171,24 +179,29 @@ main(
 	//--------------------------------------//
 	// read in  truth windfield             //
 	//--------------------------------------//
-	char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
-	if (truth_type == NULL)
-	  {
-	    fprintf(stderr, "%s: must specify truth windfield type\n",
-				command);
-	    exit(1);
-	  }
-	
-        char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-	if (truth_file == NULL)
-	  {
-	    fprintf(stderr, "%s: must specify truth windfield file\n",
-		    command);
-	    exit(1);
-	  }
+	char* truth_type = NULL;
+        char* truth_file = NULL;
 	WindField truth;
-	truth.ReadType(truth_file, truth_type);
+        if(!use_nudge_as_truth){
+	  config_list.Get(WINDFIELD_TYPE_KEYWORD);
+	  if (truth_type == NULL)
+	    {
+	      fprintf(stderr, "%s: must specify truth windfield type\n",
+		      command);
+	      exit(1);
+	    }
+	
+	  truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+	  if (truth_file == NULL)
+	    {
+	      fprintf(stderr, "%s: must specify truth windfield file\n",
+		      command);
+	      exit(1);
+	    }
 
+	
+	  truth.ReadType(truth_file, truth_type);
+        }
 
 	//------------------//
 	// read in l2b file //
@@ -199,20 +212,31 @@ main(
 		fprintf(stderr, "%s: error opening L2B file\n",command);
 		exit(1);
 	}
-	if (! l2b.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading L2B header from file \n",
-			command);
-		exit(1);
-	}
 
-	if (! l2b.ReadDataRec())
-	{
-		fprintf(stderr, "%s: error reading L2B data record from file \n",
-			command);
-		exit(1);
-	}
+        if (hdf_flag){
+	  if(! l2b.ReadHDF()){
+          fprintf(stderr, "%s: cannot open HDF file for input\n",command);
+          exit(1);
+	  }
+	} 
+        else{
+ 
+	  if (! l2b.ReadHeader())
+	    {
+	      fprintf(stderr, "%s: error reading L2B header from file \n",
+		      command);
+	      exit(1);
+	    }
 
+	  if (! l2b.ReadDataRec())
+	    {
+	      fprintf(stderr, "%s: error reading L2B data record from file \n",
+		      command);
+	      exit(1);
+	    }
+	}
+	WindSwath* swath = &(l2b.frame.swath);
+        swath->useNudgeVectorsAsTruth=use_nudge_as_truth;
 	//----------------------//
         // compute difference & //
 	// write out vctr files //

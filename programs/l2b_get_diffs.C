@@ -118,7 +118,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)", 0};
+const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)","<compare_nudge_flag (1=compare to nudge, 0=default)>",  0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -134,13 +134,19 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2 && argc !=3)
+	if (argc != 2 && argc !=3 && argc!=4)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
         int use_hdf=0;
-        if(argc==3) use_hdf=atoi(argv[clidx++]);
+        int compare_nudge=0;
+        if(argc>=3){
+	  use_hdf=atoi(argv[clidx++]);
+	  if(argc==4){
+	    compare_nudge=atoi(argv[clidx++]);
+	  }
+	}
 
 	//---------------------//
 	// read in config file //
@@ -168,24 +174,26 @@ main(
 	//--------------------------------------//
 	// read in  truth windfield             //
 	//--------------------------------------//
-	char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
-	if (truth_type == NULL)
-	  {
-	    fprintf(stderr, "%s: must specify truth windfield type\n",
-				command);
-	    exit(1);
-	  }
-	
-        char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-	if (truth_file == NULL)
-	  {
-	    fprintf(stderr, "%s: must specify truth windfield file\n",
-		    command);
-	    exit(1);
-	  }
 	WindField truth;
-	truth.ReadType(truth_file, truth_type);
-
+        if(!compare_nudge){
+	  char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+	  if (truth_type == NULL)
+	    {
+	      fprintf(stderr, "%s: must specify truth windfield type\n",
+				command);
+	      exit(1);
+	    }
+	
+	  char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+	  if (truth_file == NULL)
+	    {
+	      fprintf(stderr, "%s: must specify truth windfield file\n",
+		      command);
+	      exit(1);
+	    }
+	
+	  truth.ReadType(truth_file, truth_type);
+	}
 
 	//------------------//
 	// read in l2b file //
@@ -230,11 +238,24 @@ main(
 	  for(int ati=0;ati<atbins;ati++){
 	    WVC* wvc=l2b.frame.swath.swath[cti][ati];
 	    if(!wvc) continue;
+            if (compare_nudge){
+	      if(! wvc->nudgeWV) continue;
+              true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+	    else if (! truth.InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+            while(true_wv.dir>two_pi) true_wv.dir=true_wv.dir-two_pi;
+            while(true_wv.dir<0) true_wv.dir=true_wv.dir+two_pi;
+
 	    WindVectorPlus* wvp=wvc->selected;
             WindVectorPlus* nearest=wvc->GetNearestToDirection(true_wv.dir);
 	    if(!wvp) continue;
-	    if (! truth.InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            while(wvp->dir>two_pi) wvp->dir=wvp->dir-two_pi;
+            while(wvp->dir<0) wvp->dir=wvp->dir+two_pi;
+            while(nearest->dir>two_pi) nearest->dir=nearest->dir-two_pi;
+            while(nearest->dir<0) nearest->dir=nearest->dir+two_pi;
+
             float dirdif=ANGDIF(wvp->dir,true_wv.dir);
             float neardif=ANGDIF(nearest->dir,true_wv.dir);
             int nambig=wvc->ambiguities.NodeCount();

@@ -327,7 +327,7 @@ L2AToL2B::Flush(
         //-----------------------------------------------------//
         // Copy Interpolated NudgeVectors to Wind Vector Cells //
         //-----------------------------------------------------//
-        if(useNudging) l2b->frame.swath.GetNudgeVectors(&nudgeField);
+        if(useNudging && !l2b->frame.swath.nudgeVectorsRead) l2b->frame.swath.GetNudgeVectors(&nudgeField);
 
 	//------------//
 	// initialize //
@@ -409,7 +409,7 @@ L2AToL2B::Flush(
 		return(0);
 	if (! l2b->WriteDataRec())
 		return(0);
-	l2b->frame.swath.DeleteWVCs();
+	// l2b->frame.swath.DeleteWVCs();
 
 	return(1);
 }

@@ -87,7 +87,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"hc:l:t:f:r:s:o:w:a:i:"
+#define OPTSTRING				"hnc:l:t:f:r:s:o:w:a:i:"
 #define ARRAY_SIZE				1024
 
 #define DEFAULT_LOW_LAT         -90.0
@@ -150,6 +150,7 @@ int plot_density(const char* extension, const char* title,
 int lat_range_opt = 0;
 int autoscale_opt = 0;
 int hdf_opt = 0;
+int nudge_as_truth_opt = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -158,7 +159,7 @@ int hdf_opt = 0;
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
-    "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]", 0 };
+    "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]" "[ -n (use nudge field as truth)]", 0 };
 
 // not always evil...
 float*         ctd_array = NULL;
@@ -273,6 +274,9 @@ main(
 		case 'h':
 			hdf_opt = 1;
 			break;
+                case 'n':
+                        nudge_as_truth_opt=1;
+                        break;
 		case '?':
 			usage(command, usage_array, 1);
 			break;
@@ -293,7 +297,7 @@ main(
 		}
 	}
 
-	if (! truth_type)
+	if (! truth_type && ! nudge_as_truth_opt )
 	{
 		truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
 		if (truth_type == NULL)
@@ -304,7 +308,7 @@ main(
 		}
 	}
 
-	if (! truth_file)
+	if (! truth_file && ! nudge_as_truth_opt )
 	{
 		truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
 		if (truth_file == NULL)
@@ -361,18 +365,20 @@ main(
     }
 
 	WindSwath* swath = &(l2b.frame.swath);
-
+        swath->useNudgeVectorsAsTruth=nudge_as_truth_opt;
 	//----------------------------//
 	// read in "truth" wind field //
 	//----------------------------//
 
 	WindField truth;
-	if (! truth.ReadType(truth_file, truth_type))
-    {
-        fprintf(stderr, "%s: error reading true wind field from file %s\n",
-            command, truth_file);
-        exit(1);
-    }
+        if(!nudge_as_truth_opt){
+	  if (! truth.ReadType(truth_file, truth_type))
+	    {
+	      fprintf(stderr, "%s: error reading true wind field from file %s\n",
+		      command, truth_file);
+	      exit(1);
+	    }
+	}
 
     //--------------------------//
     // use as fixed wind speed? //

@@ -1851,8 +1851,8 @@ GMF::Calculate_Init_Wind_Solutions(
 //  "downward".
 //
 
-            if (minus_objective > center_objective  &&
-               minus_objective > plus_objective    &&
+            if (minus_objective >= center_objective  &&
+               minus_objective >= plus_objective    &&
                good_speed )
 			{
                center_speed = center_speed
@@ -1932,7 +1932,8 @@ GMF::Calculate_Init_Wind_Solutions(
             diff_objective_2 = (plus_objective + minus_objective)
                             - 2.0 * center_objective;
 
-            _speed_buffer [k] = center_speed  - 0.5
+            if(diff_objective_2==0) _speed_buffer[k]=center_speed;
+            else _speed_buffer [k] = center_speed  - 0.5
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
 

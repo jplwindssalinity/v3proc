@@ -97,6 +97,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
+#define HDF_NUM_AMBIGUITIES 4
 //--------//
 // MACROS //
 //--------//
@@ -117,7 +118,8 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>", 
+"[hdf_flag 1=hdf 0=default]", "[l2b_hdf_file (for updating)]",0};
 
 //--------------------//
 // Report handler     //
@@ -133,6 +135,7 @@ void report(int sig_num){
   return;
 }
 
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -147,16 +150,23 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc != 3 && argc !=5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
 	const char* l2b_output_file = argv[clidx++];
 
+        int hdf_flag=0;
+        char* hdf_file=NULL;
+        if (argc==5){
+	  hdf_flag=atoi(argv[clidx++]);
+          hdf_file=argv[clidx++];
+	}
+
         //------------------------//
         // tell how far you have  //
-        // gotten if you recieve  //
+        // gotten if you receive  //
         // the siguser1 signal    //
         //------------------------//
 
@@ -229,6 +239,11 @@ main(
 	//-----------------//
 	// conversion loop //
 	//-----------------//
+	int ctibins=0;
+	int atibins=0;
+
+	float** spd=NULL, **dir=NULL;
+	int** num_ambigs=NULL;
 
 	for (;;)
 	{
@@ -259,7 +274,37 @@ main(
 			}
 			break;		// done, exit do loop
 		}
+                //------------------------------------//
+                // HDF I/O CASE                       //
+                //------------------------------------//
+                if (hdf_flag){
 
+		  //------------------------------//
+		  // Read Nudge Vectors           //
+		  //------------------------------//
+		  if (!l2b.frame.swath.ReadNudgeVectorsFromHdfL2B(hdf_file)){
+		    fprintf(stderr,"%s: Cannot Read Nudge Vectors from HDF L2b\n",command);
+		    exit(1);
+		  }
+
+		  //-----------------------------//
+                  // Create Arrays               //
+                  //-----------------------------//
+                  ctibins=l2b.frame.swath.GetCrossTrackBins();
+		  atibins=l2b.frame.swath.GetAlongTrackBins();
+                  spd = (float**) make_array(sizeof(float),2,atibins,
+					      ctibins*HDF_NUM_AMBIGUITIES);
+                  dir = (float**) make_array(sizeof(float),2,atibins,
+					      ctibins*HDF_NUM_AMBIGUITIES);
+
+                  num_ambigs = (int**) make_array(sizeof(int),2,atibins,
+							ctibins);
+                  if(! l2b.frame.swath.GetArraysForUpdatingHdf(spd,dir,
+							       num_ambigs)){
+		    fprintf(stderr,"%s: Failure to create array for updating hdf file\n",command);
+		    exit(1);
+		  }
+		}
 		//------------------------//
 		// Just Ambiguity Removal //
 		//------------------------//
@@ -280,9 +325,46 @@ main(
 			exit(1);
 			break;
 		}
+		//-------------------------------------//
+		// HDF I/O CASE                        //
+		//-------------------------------------//
+		if(hdf_flag){
+		  //---------------------------------------------//
+		  // First Update Arrays with selected vectors   //
+		  //---------------------------------------------//
+		  for(int i=0;i<atibins;i++){
+		    for(int j=0;j<ctibins;j++){
+		      WVC* wvc=l2b.frame.swath.swath[j][i];
+		      if(!wvc){
+			num_ambigs[i][j]=0;
+			continue;
+		      }
+		      else if (! (wvc->selected)){
+			num_ambigs[i][j]=0;
+			continue;		
+		      }
+		      else{
+			int k=num_ambigs[i][j]-1;
+			spd[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->spd;
+			dir[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->dir;
+		      }
+		    }
+		  }
+		  //----------------------------------//
+		  // Update HDF file                  //
+		  //----------------------------------//
+		  if(! l2b.frame.swath.UpdateHdf(hdf_file,spd,dir,num_ambigs, num_ambigs)){
+		    fprintf(stderr,"%s: Unable to update hdf file\n",command);
+		    exit(1);
+		  }
+		  
+		}
 	}
 
 	l2b.Close();
-
+	free_array((void*)spd,2,atibins,ctibins*HDF_NUM_AMBIGUITIES);
+	free_array((void*)dir,2,atibins,ctibins*HDF_NUM_AMBIGUITIES);
+	free_array((void*)num_ambigs,2,atibins,ctibins);
 	return (0);
 }
+

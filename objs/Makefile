@@ -42,6 +42,7 @@ OBJS = \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
+        hdf_support.o \
 	Image.o \
 	Index.o \
 	InstrumentGeom.o \
