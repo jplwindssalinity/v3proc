@@ -15,6 +15,8 @@ static const char rcs_id_interpolate_h[] =
 //		Polynomial fitting
 //======================================================================
 
+// for polint, n is the order+1
+
 int polint(double xa[], double ya[], int n, double x, double* y);
 int polcoe( double x[], double y[], int	n, double* cof);
 

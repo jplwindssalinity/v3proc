@@ -590,12 +590,12 @@ DopplerAndDelay(
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 
 	instrument->commandedDoppler = 0.0;
-	double xmit_freq, lambda, doppler_freq, new_commanded_doppler, dif;
+	double lambda, doppler_freq, new_commanded_doppler, dif;
 	do
 	{
-		xmit_freq = instrument->baseTransmitFreq +
+		instrument->transmitFreq = instrument->baseTransmitFreq +
 			instrument->commandedDoppler;
-		lambda = speed_light_kps / xmit_freq;
+		lambda = speed_light_kps / instrument->transmitFreq;
 		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
 		new_commanded_doppler = range_freq - doppler_freq;
 		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
@@ -649,12 +649,12 @@ IdealCommandedDoppler(
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 
 	instrument->commandedDoppler = 0.0;
-	double xmit_freq, lambda, doppler_freq, new_commanded_doppler, dif;
+	double lambda, doppler_freq, new_commanded_doppler, dif;
 	do
 	{
-		xmit_freq = instrument->baseTransmitFreq +
+		instrument->transmitFreq = instrument->baseTransmitFreq +
 			instrument->commandedDoppler;
-		lambda = speed_light_kps / xmit_freq;
+		lambda = speed_light_kps / instrument->transmitFreq;
 		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
 		new_commanded_doppler = range_freq - doppler_freq;
 		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
@@ -668,7 +668,7 @@ IdealCommandedDoppler(
 // TargetInfo //
 //------------//
 // Compute some useful numbers for the target on the earth's surface
-// intercepted by a particular direciton in the antenna frame.
+// intercepted by a particular direction in the antenna frame.
 // The vector is a directional vector specified in the antenna frame.
 
 int
@@ -689,11 +689,9 @@ TargetInfo(
 	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
 
 	// Compute doppler shift for the earth intercept point.
-	double actual_xmit_frequency = instrument->baseTransmitFreq +
-		instrument->commandedDoppler;
 	Vector3 vspot(-w_earth * rspot->Get(1), w_earth * rspot->Get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
-	double lambda = speed_light_kps / actual_xmit_frequency;
+	double lambda = speed_light_kps / instrument->transmitFreq;
 	tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
 
 	// Compute baseband frequency shift due to range

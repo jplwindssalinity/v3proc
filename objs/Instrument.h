@@ -120,7 +120,8 @@ public:
 	float		systemDelay;		// sec
 	float		systemTemperature;	// K
 //	float		xmitPulsewidth;		// sec
-	float		baseTransmitFreq;	// Hz
+	float		baseTransmitFreq;	// Hz, starting frequency
+	float		transmitFreq;		// Hz, actual center transmit frequency
 	float		sliceBandwidth;		// Hz
 	float		noiseBandwidth;		// Hz
 	float		signalBandwidth;	// Hz
