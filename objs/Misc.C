@@ -107,3 +107,16 @@ fopen_or_exit(
 	}
 	return(fp);
 }
+
+//----------//
+// get_bits //
+//----------//
+
+char
+get_bits(
+	char	byte,
+	int		position,
+	int		bit_count)
+{
+	return( (byte >> (position + 1 - bit_count)) & ~(~0 << bit_count) );
+}

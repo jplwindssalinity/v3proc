@@ -31,5 +31,6 @@ int				look_up(const char* string, const char* table[],
 FILE*			fopen_or_exit(const char* filename, const char* type,
 					const char* command, const char* description,
 					const int exit_value);
+char			get_bits(char byte, int position, int bit_count);
 
 #endif
