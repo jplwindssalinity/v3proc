@@ -1,24 +1,25 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
-#include<stdio.h>
-#include<stdlib.h>
-#include"AngleInterval.h"
-#include"List.h"
-#include"Array.h"
-#include"Misc.h"
-#include"Wind.h"
-#include"Constants.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "AngleInterval.h"
+#include "List.h"
+#include "Array.h"
+#include "Misc.h"
+#include "Wind.h"
+#include "Constants.h"
 
-//------------------------------------//
-// AngleInterval Methods              //
-//------------------------------------//
+//===============//
+// AngleInterval //
+//===============//
 
-//-------------------------------//
-// Constructor and Destructor    //
-//-------------------------------//
+//----------------------------//
+// Constructor and Destructor //
+//----------------------------//
 
 AngleInterval::AngleInterval()
 :   left(0.0),right(0.0)
@@ -59,24 +60,40 @@ AngleInterval::SetLeftRight(
 
 int
 AngleInterval::GetEquallySpacedAngles(
-       int num_angles,
-       float* angles){
-  float width=GetWidth();
-  float spacing=width/(num_angles+1);
-  for(int c=0;c<num_angles;c++){
-    angles[c]=left+(c+1)*spacing;
-    while(angles[c]<0) angles[c]+=two_pi;
-    while(angles[c]>two_pi) angles[c]-=two_pi;
-  }
-  return(1);
+    int     num_angles,
+    float*  angles)
+{
+    float width = GetWidth();
+    float spacing = width / (num_angles + 1);
+    for (int c = 0; c < num_angles; c++) {
+        angles[c] = left + (c+1) * spacing;
+        while(angles[c] < 0) {
+            angles[c] += two_pi;
+        }
+        while(angles[c] > two_pi) {
+            angles[c] -= two_pi;
+        }
+    }
+    return(1);
 }
 
+//---------------------//
+// AngleInterval::Read //
+//---------------------//
+
 int
-AngleInterval::Read(FILE* fp){
- if(fread((void*)&left,sizeof(float),1,fp)!=1) return(0);
- if(fread((void*)&right,sizeof(float),1,fp)!=1) return(0);
- return(1);
+AngleInterval::Read(
+    FILE*  fp)
+{
+    if (fread((void*)&left, sizeof(float), 1, fp) != 1) {
+        return(0);
+    }
+    if (fread((void*)&right, sizeof(float), 1, fp) != 1) {
+        return(0);
+    }
+    return(1);
 }
+
 int
 AngleInterval::Write(FILE* fp){
  if(fwrite((void*)&left,sizeof(float),1,fp)!=1) return(0);
@@ -282,7 +299,7 @@ AngleIntervalList::_GetPossiblePlacings(
     for(int j=0;j<=num_angles_left;j++){
       tmp_placings[interval_idx]=j;
       _GetPossiblePlacings(num_angles_left-j,num_permutations,num_placings,
-			   interval_idx+1,tmp_placings);
+               interval_idx+1,tmp_placings);
     }
   }
   if(interval_idx==0) delete tmp_placings;
@@ -342,10 +359,10 @@ AngleIntervalListPlus::Write(FILE* fp){
     else{
       char magic[21]="Angle_Interval_Magic";
       if(fwrite((void *)&magic[0], sizeof(char), 21, fp) != 21)
-		return(0);
+        return(0);
       int node_count=0;
       if(fwrite((void *)&node_count, sizeof(int),1, fp) != 1)
-		return(0);
+        return(0);
     }
   }
   if(!dirIdx.Write(fp)) return(0);
@@ -406,7 +423,7 @@ AngleIntervalListPlus::GetNearestVector(WindVectorPlus* wvp){
       dy=y-trial_spd*sin(trial_dir);
       sqrdist=dx*dx+dy*dy;
       if(sqrdist<min_sqrdist){
-	dirclose=trial_dir;
+    dirclose=trial_dir;
         min_sqrdist=sqrdist;
       }
       sample_number++;

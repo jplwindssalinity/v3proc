@@ -7,6 +7,7 @@ static const char rcs_id_metrics_c[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "Metrics.h"
 #include "Wind.h"
