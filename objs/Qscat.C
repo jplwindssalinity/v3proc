@@ -797,9 +797,9 @@ Qscat::GetCurrentSesBeamInfo()
 
 int
 SetDelayAndFrequency(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat,
-    TargetInfoPackage* tip=NULL)
+    Spacecraft*         spacecraft,
+    Qscat*              qscat,
+    TargetInfoPackage*  tip)
 {
     //------------------------------------------------------//
     // calculate the encoder value to use for the algorithm //
@@ -822,13 +822,6 @@ SetDelayAndFrequency(
     //-------------------------------------------------//
 
     qscat->sas.antenna.TimeRotation(qscat->ses.txPulseWidth / 2.0);
-
-    //---------------------------------//
-    // calculate orbit step, if needed //
-    //---------------------------------//
-
-    if (qscat->cds.useRgc || qscat->cds.useDtc)
-        qscat->cds.SetAndGetOrbitStep();
 
     //-----------------------------//
     // calculate the rx gate delay //

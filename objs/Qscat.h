@@ -293,7 +293,7 @@ public:
 //------------------//
 
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
-			  TargetInfoPackage* tip=NULL);
+         TargetInfoPackage* tip = NULL);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
 #endif

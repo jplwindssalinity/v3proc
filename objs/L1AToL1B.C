@@ -176,6 +176,13 @@ L1AToL1B::Convert(
 
         // determine the CDS tracking azimuth angle
         qscat->cds.heldEncoder = *(frame->antennaPosition + spot_idx);
+
+        // locate the antenna (not needed for tracking, but need to do
+        // it before losing the encoder position)
+        qscat->sas.SetAzimuthWithEncoder(qscat->cds.heldEncoder);
+        qscat->sas.ApplyAzimuthShift(qscat->ses.pri);
+        qscat->sas.ApplyAzimuthShift(qscat->ses.txPulseWidth / 2.0);
+
         SetDelayAndFrequency(spacecraft, qscat);
 
         if (outputSigma0ToStdout)
