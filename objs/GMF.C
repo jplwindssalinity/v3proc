@@ -1464,7 +1464,7 @@ GMF::GetVariance(
     // calculate the expected variance for the trial sigma-0 //
     //-------------------------------------------------------//
 
-    if (!kp)
+    if ( !kp)
         return(0.0); // If kp is NULL returns 0.0
 
     //--------------//
@@ -1473,7 +1473,7 @@ GMF::GetVariance(
 
     double vpc = 0.0;
     float s0_co, s0_x;
-    if (retrieveUsingKpcFlag && meas->numSlices!=-1)
+    if (retrieveUsingKpcFlag && meas->numSlices != -1)
     {
         switch (meas->measType)
         {
@@ -1575,15 +1575,18 @@ GMF::GetVariance(
     //------------------------//
     // calculate the variance //
     //------------------------//
+
     double var;
-    if(meas->numSlices==-1){ 
-      float kpm=0.16;
-      float alpha=(1+kpm*kpm)*meas->A -1;
-      var = (alpha*trial_sigma0 + meas->B)*trial_sigma0+meas->C;
+    if (meas->numSlices == -1)
+    { 
+        float kpm = 0.16;
+        float alpha = (1.0 + kpm*kpm) * meas->A - 1.0;
+        var = (alpha*trial_sigma0 + meas->B) * trial_sigma0 + meas->C;
     }
-    else{
-      var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1+kpri2) *
-        (1+kprs2) - trial_sigma0*trial_sigma0;
+    else
+    {
+        var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1.0 + kpri2) *
+            (1.0 + kprs2) - trial_sigma0*trial_sigma0;
     }
     if (global_debug)
     {
@@ -1630,31 +1633,32 @@ GMF::_ObjectiveFunction(
         //------------------------------------------------------------//
 
         // Sanity check on measurement
-	double tmp=meas->value;
-        if(!finite(tmp)) continue;
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
 
         float s = trial_value - meas->value;
 
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
         //-------------------------------------------------------//
-        float var=GetVariance(meas,spd,chi,trial_value,kp);
-	// returns 0 if kp is NULL
-	
 
-	if (var == 0.0)
-	  {    // variances all turned off, so use uniform weighting.
-	    fv += s*s;
-	  }
-	else if (retrieveUsingLogVar)
-	  {
-	    fv += s*s / var + log(var);
-	  }
-	else
-	  {
-	    fv += s*s / var;
-	  }
+        float var = GetVariance(meas, spd, chi, trial_value, kp);
+        // returns 0 if kp is NULL
 
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += s*s / var + log(var);
+        }
+        else
+        {
+            fv += s*s / var;
+        }
     }
     return(-fv);
 }
