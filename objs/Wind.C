@@ -453,7 +453,8 @@ WindField::ReadVap(
 	_latMax = 60.0;
 	_latStep = 1.0;
 
-	_Allocate();
+	if (! _Allocate())
+		return(0);
 
 	for (int lon_idx = 0; lon_idx < VAP_LON_DIM; lon_idx++)
 	{
@@ -494,6 +495,9 @@ WindField::NearestWindVector(
 int
 WindField::_Allocate()
 {
+	if (_field == NULL)
+		return(0);
+
 	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, _lonCount,
 		_latCount);
 
@@ -519,6 +523,7 @@ int
 WindField::_Deallocate()
 {
 	free_array((void *)_field, 2, _lonCount, _latCount);
+	_field = NULL;
 	return(1);
 }
 
@@ -528,14 +533,14 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:	swath(0), _crossTrackSize(0), _alongTrackSize(0)
+:	swath(0), _crossTrackSize(0), _alongTrackSize(0), _validCells(0)
 {
 	return;
 }
 
 WindSwath::~WindSwath()
 {
-	_Deallocate();
+	DeleteEntireSwath();
 	return;
 }
 
@@ -552,10 +557,14 @@ WindSwath::Add(
 	if (cti < 0 || cti >= _crossTrackSize ||
 		ati < 0 || ati >= _alongTrackSize)
 	{
-		return(0);
+		return(0);	// out of range
 	}
 
+	if (swath[cti][ati])
+		return(0);	// already a cell there
+
 	swath[cti][ati] = wvc;
+	_validCells++;
 	return(1);
 }
 
@@ -571,10 +580,30 @@ WindSwath::DeleteWVCs()
 		for (int j = 0; j < _crossTrackSize; j++)
 		{
 			WVC* wvc = *(*(swath + i) + j);
+			if (wvc == NULL)
+				continue;
+
 			delete wvc;
 			*(*(swath + i) + j) = NULL;
 		}
 	}
+	_validCells = 0;
+	return(1);
+}
+
+//------------------------------//
+// WindSwath::DeleteEntireSwath //
+//------------------------------//
+
+int
+WindSwath::DeleteEntireSwath()
+{
+	if (! DeleteWVCs())
+		return(0);
+
+	if (! _Deallocate())
+		return(0);
+
 	return(1);
 }
 
@@ -586,17 +615,68 @@ int
 WindSwath::WriteL20(
 	FILE*	fp)
 {
-	for (int i = 0; i < _alongTrackSize; i++)
+	if (fwrite((void *)&_alongTrackSize, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_crossTrackSize, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_validCells, sizeof(int), 1, fp) != 1)
 	{
-		for (int j = 0; j < _crossTrackSize; j++)
+		return(0);
+	}
+
+	for (int cti = 0; cti < _crossTrackSize; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackSize; ati++)
 		{
-			WVC* wvc = *(*(swath + i) + j);
-			if (wvc)
+			WVC* wvc = *(*(swath + cti) + ati);
+			if (wvc == NULL)
+				continue;
+
+			if (fwrite((void *)&cti, sizeof(int), 1, fp) != 1 ||
+				fwrite((void *)&ati, sizeof(int), 1, fp) != 1)
 			{
-				if (! wvc->WriteL20(fp))
-					return(0);
+				return(0);
 			}
+
+			if (! wvc->WriteL20(fp))
+				return(0);
 		}
+	}
+	return(1);
+}
+
+//--------------------//
+// WindSwath::ReadL20 //
+//--------------------//
+
+int
+WindSwath::ReadL20(
+	FILE*	fp)
+{
+	DeleteEntireSwath();		// in case
+
+	if (fread((void *)&_alongTrackSize, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&_crossTrackSize, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&_validCells, sizeof(int), 1, fp) != 1)
+	{
+		return(0);
+	}
+
+	_Allocate();
+
+	for (int i = 0; i < _validCells; i++)
+	{
+		int cti, ati;
+		if (fread((void *)&cti, sizeof(int), 1, fp) != 1 ||
+			fread((void *)&ati, sizeof(int), 1, fp) != 1)
+		{
+			return(0);
+		}
+
+		WVC* wvc = new WVC();
+
+		if (! wvc->ReadL20(fp))
+			return(0);
+
+		*(*(swath + cti) + ati) = wvc;
 	}
 	return(1);
 }
@@ -816,6 +896,9 @@ WindSwath::Skill(
 int
 WindSwath::_Allocate()
 {
+	if (swath == NULL)
+		return(0);
+
 	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackSize,
 		_alongTrackSize);
 
@@ -840,6 +923,12 @@ WindSwath::_Allocate()
 int
 WindSwath::_Deallocate()
 {
+	if (swath == NULL)
+		return(1);
+
 	free_array((void *)swath, 2, _crossTrackSize, _alongTrackSize);
+	swath = NULL;
+	_crossTrackSize = 0;
+	_alongTrackSize = 0;
 	return(1);
 }
