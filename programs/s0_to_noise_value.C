@@ -157,7 +157,7 @@ main(
         var=var/num_s0;
         double std;
         std=sqrt(var);
-        //printf("%g %g %g\n",wv.spd,bias,std);
+        fprintf(ofp, "Tot: %g %g %g\n",wv.spd,bias,std);
         int offset=(int)floor(wv.spd);
 	if(offset<20){
 	  ave_std[offset]+=fabs(std);
@@ -166,7 +166,7 @@ main(
 	}
       }
       else if(num_s0>0){
-	// printf("Too few s0s to calculate grid bias\n\n");
+	//printf("Too few s0s to calculate grid bias\n\n");
       }
       bias=0;
       num_s0=0;
@@ -195,24 +195,41 @@ main(
       eastAzimuth=atof(value)*dtr;    
       value=strtok(NULL," \t\n");
       sigma0=atof(value);    
-      
+      value=strtok(NULL," \t\n");
+      lon=atof(value)*dtr;
+      value=strtok(NULL," \t\n");
+      lat=atof(value)*dtr;   
+ 
+      //--------------------------------//
+      // compute wind vector            //
+      //--------------------------------//
+      LonLat lon_lat;
+      lon_lat.longitude=lon;
+      lon_lat.latitude=lat;
+      WindVector wvs;
+      if (! windfield.InterpolatedWindVector(lon_lat, &wvs))
+	{
+	  wvs.spd = 0.0;
+	  wvs.dir = 0.0;
+	}
+
       //--------------------------------//
       // convert wind vector to sigma-0 //
       //--------------------------------//
-
+      
       // chi is defined so that 0.0 means the wind is blowing towards
       // the s/c (the opposite direction as the look vector)
-      float chi = wv.dir - eastAzimuth  + pi;
+      float chi = wvs.dir - eastAzimuth  + pi;
 
-      gmf.GetInterpolatedValue(pol, incidenceAngle, wv.spd,
+      gmf.GetInterpolatedValue(pol, incidenceAngle, wvs.spd,
 				chi, &sigma0_true);
 
       noise_val=(sigma0-sigma0_true)/sigma0_true;
       num_s0++;
       bias+=noise_val;
       var+=noise_val*noise_val;
-      //      printf("%g %g %g\n",sigma0,sigma0_true,noise_val);
-      fprintf(ofp,"%c %g %g %g\n",polc,incidenceAngle*rtd,eastAzimuth*rtd,noise_val);
+      fprintf(ofp,"%g %g %g\n",sigma0,sigma0_true,noise_val);
+      //fprintf(ofp,"%c %g %g %g\n",polc,incidenceAngle*rtd,eastAzimuth*rtd,noise_val);
     }
   }
   if(num_s0 > 20){
@@ -230,7 +247,7 @@ main(
     ave_bias[c]=ave_bias[c]/num_grids[c];
     ave_bias[c]=10*log10(1.0+ave_bias[c]);
     ave_std[c]=ave_std[c]/num_grids[c];
-    ave_std[c]=10*log10(1.0+ave_bias[c]);
+    ave_std[c]=10*log10(1.0+ave_std[c]);
     printf("%g %g %g\n",(float)(c+c+1)/2.0,ave_bias[c],ave_std[c]);
   }
  fclose(ifp);
