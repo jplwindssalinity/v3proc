@@ -782,7 +782,7 @@ evaluate(
             float calc_spec_peak_slice, calc_spec_peak_freq, width;
             double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
                 7.0, 8.0, 9.0 };
-            if (! gaussian_fit2(qscat, slice_number, x, slices_per_spot,
+            if (! gaussian_fit(qscat, slice_number, x, slices_per_spot,
                 &calc_spec_peak_slice, &calc_spec_peak_freq, &width))
             {
                 continue;
