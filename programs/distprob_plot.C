@@ -148,6 +148,24 @@ main(
         exit(0);
     }
 
+// ======
+int speed_idx = dp.SpeedToIndex(7.0);
+int dspeed_idx = dp.DeltaSpeedToIndex(1.0);
+for (int distance_idx = 0; distance_idx < DISTANCE_BINS; distance_idx++)
+{
+    for (int ddirection_idx = 0; ddirection_idx < DDIRECTION_BINS;
+        ddirection_idx++)
+    {
+        printf("%g %g\n", dp.IndexToDeltaDirection(ddirection_idx),
+            dp.Probability(distance_idx, speed_idx, dspeed_idx, 
+            ddirection_idx));
+    }
+    printf("&\n");
+}
+exit(0);
+
+//=======
+
     //---------------------------//
     // generate the output files //
     //---------------------------//
@@ -159,7 +177,12 @@ main(
         for (int speed_idx = 0; speed_idx < SPEED_BINS; speed_idx++)
         {
             float speed = dp.IndexToSpeed(speed_idx);
-            sprintf(filename, "%s.%02d.%02d.dspd", output_base, distance_idx,
+
+            //-----------------//
+            // delta direction //
+            //-----------------//
+
+            sprintf(filename, "%s.%02d.%02d.ddir", output_base, distance_idx,
                 speed_idx);
             FILE* ofp = fopen(filename, "w");
             if (ofp == NULL)
@@ -171,17 +194,48 @@ main(
             fprintf(ofp, "# distance = %g\n", distance);
             fprintf(ofp, "# speed = %g\n", speed);
 
+            for (int ddirection_idx = 0; ddirection_idx < DDIRECTION_BINS;
+                ddirection_idx++)
+            {
+                double prob_sum = 0.0;
+                for (int dspeed_idx = 0; dspeed_idx < DSPEED_BINS;
+                    dspeed_idx++)
+                {
+                    prob_sum += dp.Probability(distance_idx, speed_idx,
+                        dspeed_idx, ddirection_idx);
+                }
+                fprintf(ofp, "%g %g\n",
+                    dp.IndexToDeltaDirection(ddirection_idx), prob_sum);
+            }
+            fclose(ofp);
+
+            //-------------//
+            // delta speed //
+            //-------------//
+
+            sprintf(filename, "%s.%02d.%02d.dspd", output_base, distance_idx,
+                speed_idx);
+            ofp = fopen(filename, "w");
+            if (ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
+            fprintf(ofp, "# distance = %g\n", distance);
+            fprintf(ofp, "# speed = %g\n", speed);
+
             for (int dspeed_idx = 0; dspeed_idx < DSPEED_BINS; dspeed_idx++)
             {
-                unsigned long sum = 0;
+                double prob_sum = 0.0;
                 for (int ddirection_idx = 0; ddirection_idx < DDIRECTION_BINS;
-                     ddirection_idx++)
+                    ddirection_idx++)
                 {
-                sum +=
-                 dp.count[distance_idx][speed_idx][dspeed_idx][ddirection_idx];
+                    prob_sum += dp.Probability(distance_idx, speed_idx,
+                        dspeed_idx, ddirection_idx);
                 }
                 fprintf(ofp, "%g %g\n", dp.IndexToDeltaSpeed(dspeed_idx),
-                    (double)sum / dp.sum);
+                    prob_sum);
             }
             fclose(ofp);
         }

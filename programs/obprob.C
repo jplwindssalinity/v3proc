@@ -221,7 +221,7 @@ main(
             MeasList* ml = l2ah.GetWVC(cti, ati, L2AH::OCEAN_ONLY);
             if (ml == NULL)
                 continue;
-            if (ml->NodeCount() < 10)
+            if (ml->NodeCount() < 4)
                 continue;
 
             //-----------------------------//
@@ -245,6 +245,8 @@ main(
             // write the obprob out //
             //----------------------//
 
+            op.cti = cti;
+            op.ati = ati;
             if (! op.Write(ofp))
             {
                 fprintf(stderr, "%s: error writing obprob to file %s\n",

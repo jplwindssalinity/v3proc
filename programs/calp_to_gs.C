@@ -48,6 +48,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ETime.h"
@@ -213,7 +214,18 @@ main(
 
         double gs_time = cpr.frame_time_cal_secs - gs_epoch
             + (double)leap_seconds;
-printf("%.2f %.2f\n", cpr.frame_time_cal_secs, gs_epoch);
+
+        //------------------------------------//
+        // convert the transmit powers to dBm //
+        //------------------------------------//
+
+        double dummy = cpr.transmit_power_inner;
+        dummy = 10.0 * log10(dummy * 1000.0);
+        cpr.transmit_power_inner = (float)dummy;
+
+        dummy = cpr.transmit_power_outer;
+        dummy = 10.0 * log10(dummy * 1000.0);
+        cpr.transmit_power_outer = (float)dummy;
 
         //--------------------//
         // transfer to buffer //

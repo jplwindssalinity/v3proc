@@ -22,10 +22,11 @@
 //            there to get the data.
 //
 //    [ -a true_attitude_file ]  Writes a true attitude file containing
-//                                 time, roll, pitch, yaw, orbit_time
+//                                 frame_index, roll, pitch, yaw
 //
 //    [ -d true_delta_f_file ]   Writes a true delta f file containing
-//                                 orbit_step, az_ang, delta_f
+//                                 frame_index, pulse_index, land_flag,
+//                                 delta_f, sigma-0, orbit_time
 //
 // OPERANDS
 //    The following operand is supported:
@@ -604,6 +605,7 @@ main(
                    0.5*qscat.ses.txPulseWidth;
 */
 
+                int pulse_index = 0;    // this will get used later
                 switch(qscat_event.eventId)
                 {
                 case QscatEvent::SCAT_EVENT:
@@ -622,6 +624,10 @@ main(
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
 
+                    // remember the pulse index
+                    pulse_index = qscat_sim.GetSpotNumber();
+
+                    // simulate
                     qscat_sim.ScatSim(&spacecraft, &qscat, &windfield,
                         inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
                         topo_ptr, stable_ptr, frame);
@@ -629,12 +635,14 @@ main(
                     // save the delta f
                     if (true_delta_f_fp != NULL)
                     {
-                        float df = qscat_sim.BYUX.GetDeltaFreq(&spacecraft,
-                            &qscat, topo_ptr, stable_ptr);
-                        fprintf(true_delta_f_fp, "%u %.4f %.0f %d\n",
-                            frame->orbitTicks,
-                            qscat.sas.antenna.encoderAzimuthAngle, df,
-                            qscat.cds.currentBeamIdx);
+                        int land_flag = qscat_sim.spotLandFlag;
+                        float delta_f = qscat_sim.BYUX.GetDeltaFreq(
+                            &spacecraft, &qscat, topo_ptr, stable_ptr);
+                        float sigma0 = qscat_sim.maxSigma0;
+                        unsigned int orbit_time = qscat.cds.orbitTime;
+                        fprintf(true_delta_f_fp, "%d %d %d %.2f %g %u\n",
+                            frame_count, pulse_index, land_flag, delta_f,
+                            sigma0, orbit_time);
                     }
                     qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);

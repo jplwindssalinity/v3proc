@@ -65,8 +65,7 @@ ObProb::Write(
 {
     if (fwrite(&cti, sizeof(short), 1, fp) == 1 &&
         fwrite(&ati, sizeof(short), 1, fp) == 1 &&
-        fwrite(probabilityArray, sizeof(unsigned short), DIR_BINS, fp)
-          == DIR_BINS &&
+        fwrite(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fwrite(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
         return(1);
@@ -84,8 +83,7 @@ ObProb::Read(
 {
     if (fread(&cti, sizeof(short), 1, fp) == 1 &&
         fread(&ati, sizeof(short), 1, fp) == 1 &&
-        fread(probabilityArray, sizeof(unsigned short), DIR_BINS, fp)
-          == DIR_BINS &&
+        fread(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fread(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
         return(1);
@@ -124,7 +122,7 @@ float
 ObProb::GetProbability(
     int  dir_idx)
 {
-    return(probabilityArray[dir_idx] * PROB_SCALE);
+    return(probabilityArray[dir_idx]);
 }
 
 //---------------------------//
@@ -138,9 +136,9 @@ ObProb::SpeedIndexToSpeed(
     return((float)((double)MAX_SPD * (double)spd_idx / (double)SPD_BINS));
 }
 
-//--------------------------------//
+//-------------------------------//
 // ObProb::RetrieveProbabilities //
-//--------------------------------//
+//-------------------------------//
 
 int
 ObProb::RetrieveProbabilities(
@@ -201,10 +199,16 @@ ObProb::RetrieveProbabilities(
             }
         }
         dir_prob_sum /= total_prob_sum;    // normalize total prob to 1.0
-        probabilityArray[dir_idx] = (int)(dir_prob_sum / PROB_SCALE + 0.5);
+        probabilityArray[dir_idx] = dir_prob_sum;
         float spd = MAX_SPD * (float)best_spd_idx / (float)SPD_BINS;
         speedArray[dir_idx] = (int)(spd / SPD_SCALE + 0.5);
     }
+
+    //-----------//
+    // normalize //
+    //-----------//
+
+    Normalize();
 
     return(1);
 }
@@ -268,7 +272,7 @@ ObProb::Normalize()
         return;
     for (int i = 0; i < DIR_BINS; i++)
     {
-        probabilityArray[i] /= (sum);
+        probabilityArray[i] /= sum;
     }
     return;
 }
@@ -279,22 +283,40 @@ ObProb::Normalize()
 
 int
 ObProb::WriteFlower(
-    FILE*  ofp)
+    FILE*  ofp,
+    float  scale,
+    float  max_range)  // ignore the scale and make this the maximum distance
 {
     //-----------------//
     // generate flower //
     //-----------------//
 
-    float max_dist = 1.0;    // this corresponds to probability 1.0
+    if (max_range != 0.0)
+    {
+        // calculate the scale factor
+        double max_probability = 0.0;
+        for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+        {
+            int use_dir_idx = dir_idx % DIR_BINS;
+            double probability = GetProbability(use_dir_idx);
+            if (probability > max_probability)
+                max_probability = probability;
+        }
+        if (max_probability == 0)
+            return(0);
+        scale = max_range / max_probability;
+    }
+
     fprintf(ofp, "#\n");
     fprintf(ofp, "%d %d\n", cti, ati);
-    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+    for (int dir_idx = 0; dir_idx <= DIR_BINS; dir_idx++)
     {
-        float direction = GetDirection(dir_idx);
-        float probability = GetProbability(dir_idx);
-        float dx = max_dist * cos(direction);
-        float dy = max_dist * sin(direction);
-        fprintf(ofp, "%g %g\n", (float)cti + dx, (float)ati + dy);
+        int use_dir_idx = dir_idx % DIR_BINS;
+        double direction = GetDirection(use_dir_idx);
+        double probability = GetProbability(use_dir_idx);
+        double dx = probability * scale * cos(direction);
+        double dy = probability * scale * sin(direction);
+        fprintf(ofp, "%g %g\n", (double)cti + dx, (double)ati + dy);
     }
     return(1);
 }
@@ -400,10 +422,10 @@ ObProbArray::GetObProb(
 
 ObProb*
 ObProbArray::LocalProb(
-    DistProb*     dp,
-    int           window_size,
-    int           center_cti,
-    int           center_ati)
+    DistProb*  dp,
+    int        window_size,
+    int        center_cti,
+    int        center_ati)
 {
     //----------------//
     // get the center //
@@ -451,10 +473,16 @@ ObProbArray::LocalProb(
     if (max_ati > AT_WIDTH)
         max_ati = AT_WIDTH;
 
+    //----------------------------------------------//
+    // calculate the probability for each direction //
+    //----------------------------------------------//
+
     for (int cti = min_cti; cti < max_cti; cti++)
     {
         for (int ati = min_ati; ati < max_ati; ati++)
         {
+if (cti != 23 || ati != 150)
+  continue;
             ObProb* op1 = GetObProb(cti, ati);
             if (op1 == NULL)
                 continue;
@@ -467,14 +495,14 @@ ObProbArray::LocalProb(
 
             tmp_op.FillProbabilities(0.0);
 
-            //------------//
-            // accumulate //
-            //------------//
-
             for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
             {
                 float speed0 = op0->GetSpeed(dir_idx);
                 float direction0 = op0->GetDirection(dir_idx);
+
+                //------------//
+                // accumulate //
+                //------------//
 
                 for (int other_dir_idx = 0; other_dir_idx < DIR_BINS;
                     other_dir_idx++)
@@ -493,19 +521,15 @@ ObProbArray::LocalProb(
                 }
             }
 
-            //-------------------------------------------------//
-            // normalize, just to keep the values large enough //
-            //-------------------------------------------------//
-
-            tmp_op.Normalize();
-
             //----------------------------------//
             // multiply it into the destination //
             //----------------------------------//
 
             dest_op->Multiply(&tmp_op);
+            dest_op->Normalize();    // keep everything in range
         }
     }
+    dest_op->Normalize();    // keep everything in range
     return(dest_op);
 }
 
@@ -514,16 +538,16 @@ ObProbArray::LocalProb(
 //==========//
 
 DistProb::DistProb()
-:   sum(0)
 {
-    //-----------------------//
-    // clear the count array //
-    //-----------------------//
+    //-------------------------------//
+    // clear the count and sum array //
+    //-------------------------------//
 
     for (int i = 0; i < DISTANCE_BINS; i++)
     {
         for (int j = 0; j < SPEED_BINS; j++)
         {
+            sum[i][j] = 0;
             for (int k = 0; k < DSPEED_BINS; k++)
             {
                 for (int l = 0; l < DDIRECTION_BINS; l++)
@@ -624,7 +648,7 @@ DistProb::SetSum()
             {
                 for (int l = 0; l < DDIRECTION_BINS; l++)
                 {
-                    sum += count[i][j][k][l];
+                    sum[i][j] += count[i][j][k][l];
                 }
             }
         }
@@ -652,9 +676,35 @@ DistProb::Probability(
     int dspeed_idx = DeltaSpeedToIndex(dspeed);
     int ddirection_idx = DeltaDirectionToIndex(ddirection);
 
-    double probability =
-        (double)count[distance_idx][speed_idx][dspeed_idx][ddirection_idx] /
-        (double)sum;
+    return(Probability(distance_idx, speed_idx, dspeed_idx, ddirection_idx));
+}
+
+//-----------------------//
+// DistProb::Probability //
+//-----------------------//
+
+float
+DistProb::Probability(
+    int  distance_idx,
+    int  speed_idx,
+    int  dspeed_idx,
+    int  ddirection_idx)
+{
+    double probability;
+    if (sum[distance_idx][speed_idx] < MINIMUM_SAMPLES)
+        probability = 0.0;
+    else
+        probability =
+          (double)count[distance_idx][speed_idx][dspeed_idx][ddirection_idx] /
+          (double)sum[distance_idx][speed_idx];
+
+    // since the absolute value of the angular difference was calculated,
+    // the probability in the table represents the probability of + and -
+    // the delta direction. since we only have the + OR - case, the
+    // probability needs to be cut in half. this doesn't affect the zero
+    // bin or the 180 bin. symmetry is assumed.
+    if (ddirection_idx != 0 && ddirection_idx != DDIRECTION_BINS - 1)
+        probability /= 2.0;
 
     return((float)probability);
 }
@@ -748,4 +798,17 @@ DistProb::IndexToDeltaSpeed(
     float dspeed;
     _dspeedIndex.IndexToValue(dspeed_idx, &dspeed);
     return(dspeed);
+}
+
+//---------------------------------//
+// DistProb::IndexToDeltaDirection //
+//---------------------------------//
+
+float
+DistProb::IndexToDeltaDirection(
+    int  ddirection_idx)
+{
+    float ddirection;
+    _ddirectionIndex.IndexToValue(ddirection_idx, &ddirection);
+    return(ddirection);
 }

@@ -74,7 +74,7 @@ public:
     void   Add(int dir_idx, float probability);
     void   Multiply(ObProb* other_op);
     void   Normalize();
-    int    WriteFlower(FILE* ofp);
+    int    WriteFlower(FILE* ofp, float scale = 2.0, float max_range = 0.0);
 
     //-----------//
     // variables //
@@ -136,9 +136,9 @@ public:
 //    of wind speed and direction deltas given distance and speed.
 //======================================================================
 
-#define DISTANCE_BINS    41
+#define DISTANCE_BINS    26
 #define MIN_DISTANCE     0.0
-#define MAX_DISTANCE     1000.0
+#define MAX_DISTANCE     250.0
 
 #define SPEED_BINS       31
 #define MIN_SPEED        0.0
@@ -151,6 +151,8 @@ public:
 #define DDIRECTION_BINS  37
 #define MIN_DDIRECTION   0.0
 #define MAX_DDIRECTION   M_PI
+
+#define MINIMUM_SAMPLES  10000
 
 class DistProb
 {
@@ -175,8 +177,10 @@ public:
     //-----//
 
     void   SetSum();
-    float  Probability(float distance, float speed0, float dspeed,
+    float  Probability(float distance, float speed, float dspeed,
                float ddirection);
+    float  Probability(int distance_idx, int speed_idx, int dspeed_idx,
+               int ddirection_idx);
 
     int    DistanceToIndex(float distance);
     int    SpeedToIndex(float speed);
@@ -186,6 +190,7 @@ public:
     float  IndexToDistance(int distance_idx);
     float  IndexToSpeed(int speed_idx);
     float  IndexToDeltaSpeed(int dspeed_idx);
+    float  IndexToDeltaDirection(int ddirection_idx);
 
     //-----------//
     // variables //
@@ -198,7 +203,8 @@ public:
 
     unsigned long
         count[DISTANCE_BINS][SPEED_BINS][DSPEED_BINS][DDIRECTION_BINS];
-    unsigned long  sum;    // the normalization factor
+    unsigned long
+        sum[DISTANCE_BINS][SPEED_BINS];
 };
 
 #endif

@@ -247,21 +247,8 @@ printf("%s\n", hdf_l2b_file);
 
                     float dspeed = other_wvc_nudge->spd - wvc_nudge->spd;
 
-                    float ddirection = ANGDIF(other_wvc_nudge->spd,
-                        wvc_nudge->spd);
-/*
-                    float d2 = other_wvc_nudge->dir;
-                    float d1 = wvc_nudge->dir;
-                    while (d2 > d1)
-                        d2 -= two_pi;
-                    while (d2 < d1)
-                        d2 += two_pi;
-                    float ddirection = d2 - d1;
-                    if (ddirection > pi)
-                        ddirection = two_pi - ddirection;
-                    else
-                        ddirection = -ddirection;
-*/
+                    float ddirection = ANGDIF(other_wvc_nudge->dir,
+                        wvc_nudge->dir);
 
                     //-----------------------//
                     // calculate the indices //
@@ -279,6 +266,12 @@ printf("%s\n", hdf_l2b_file);
                     dp.count[dist_idx][speed_idx][dspeed_idx][ddir_idx]++;
                 }
             }
+        }
+        if (! dp.Write(output_file))
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                output_file);
+            exit(0);
         }
     }
 

@@ -8,7 +8,7 @@
 //    op_filter
 //
 // SYNOPSIS
-//    op_filter <change_file> <obprob_file> <output_base>
+//    op_filter <distprob_file> <obprob_file> <output_base>
 //
 // DESCRIPTION
 //    Performs ambiguity removal using probabilities.
@@ -16,13 +16,13 @@
 // OPTIONS
 //
 // OPERANDS
-//    <change_file>   A file containing delta speed and direction probs.
-//    <obprob_file>   The input probability file.
-//    <output_base>   The usual.
+//    <distprob_file>   A file containing delta speed and direction probs.
+//    <obprob_file>     The input probability file.
+//    <output_base>     The usual.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % op_filter $cfg change.dat 203.obprob 203
+//      % op_filter $cfg distprob.dat 203.obprob 203
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -108,6 +108,8 @@ template class TrackerBase<unsigned short>;
 
 #define MAX_LOOPS    1
 #define WINDOW_SIZE  7
+
+#define START_ATI  120
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -201,19 +203,45 @@ main(
     ObProbArray opa2;
     for (int loop_idx = 0; loop_idx < MAX_LOOPS; loop_idx++)
     {
-        for (int ati = 0; ati < AT_WIDTH; ati++)
+        for (int ati = START_ATI; ati < AT_WIDTH; ati++)
         {
-            for (int cti = 0; cti < CT_WIDTH; cti++)
+            int cti1, cti2, cti_step;
+            if (ati % 2 == 0)
+            {
+                cti1 = 0;
+                cti2 = CT_WIDTH;
+                cti_step = 1;
+            }
+            else
+            {
+                cti1 = CT_WIDTH - 1;
+                cti2 = -1;
+                cti_step = -1;
+            }
+            for (int cti = cti1; cti != cti2; cti += cti_step)
             {
                 if (loop_idx == 0)
                 {
                     ObProb* ns = opa.GetObProb(cti, ati);
-                    ns->WriteFlower(ofp);
+                    if (ns == NULL)
+                        continue;
+
+if (cti == 23 && ati == 150)
+                    ns->WriteFlower(ofp, 3.0);
+                    fprintf(ofp, "%d %d\n", cti, ati);
 
 /*
-                    ns = opa.LocalProb(&dp, WINDOW_SIZE, cti, ati);
-                    opa2.array[cti][ati] = ns;
+                    ns->WriteFlower(ofp, 3.0);
+                    fprintf(ofp, "%d %d\n", cti, ati);
 */
+
+                    ns = opa.LocalProb(&dp, WINDOW_SIZE, cti, ati);
+                    ns->WriteFlower(ofp, 0.0, 0.75);
+                    fprintf(ofp, "%d %d\n", cti, ati);
+                    delete ns;
+
+
+//                    opa2.array[cti][ati] = ns;
                 }           
             }
         }

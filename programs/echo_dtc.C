@@ -1,15 +1,15 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -mor ] [ -f fit_base ] <config_file> <dtc_base>
-//      <echo_file...>
+//    echo_dtc [ -mor ] [ -f fit_base ] [ -s scale ] <config_file>
+//      <dtc_base> <echo_file...>
 //
 // DESCRIPTION
 //    Reads the echo data files and generates corrected Doppler
@@ -25,6 +25,9 @@
 //    [ -r ]           Allow time regression.
 //    [ -o ]           Ocean only.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
+//    [ -s scale ]     Scale the frequency offset by this factor.
+//                       This allows constants to "predict" the future
+//                       (assuming the current trend). The default is 1.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -101,7 +104,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:mor"
+#define OPTSTRING  "morf:s:"
 
 #define QUOTE  '"'
 
@@ -140,7 +143,7 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -mor ]", "[ -f fit_base ]",
+const char* usage_array[] = { "[ -mor ]", "[ -f fit_base ]", "[ -s scale ]",
     "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -155,6 +158,9 @@ double    g_max_offset[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 double**  g_azimuth;
 double**  g_meas_spec_peak;
 off_t***  g_offsets;
+
+int    g_opt_scale = 0;
+double g_scale_factor = 1.0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -201,6 +207,10 @@ main(
         case 'f':
             opt_fit = 1;
             fit_base = optarg;
+            break;
+        case 's':
+            g_opt_scale = 1;
+            g_scale_factor = atof(optarg);
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -671,6 +681,18 @@ process_orbit_step(
     int          orbit_step,
     const char*  fit_base)
 {
+    //-------------------------//
+    // first, scale the offset //
+    //-------------------------//
+
+    if (g_opt_scale)
+    {
+        for (int i = 0; i < g_count[beam_idx]; i++)
+        {
+            g_meas_spec_peak[beam_idx][i] *= g_scale_factor;
+        }
+    }
+
     //----------------------------//
     // fit a sinusoid to the data //
     //----------------------------//
