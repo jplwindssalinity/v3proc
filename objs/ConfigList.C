@@ -357,6 +357,40 @@ ConfigList::ReturnString(
 	return (value);
 }
 
+//-----------------------//
+// ConfigList::GetDouble //
+//-----------------------//
+// sets the value to the retrieved double
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetDouble(
+	const char*		keyword,
+	double*			value)
+{
+	char* string = Get(keyword);
+	if (! string)
+	{
+		_status = MISSING_KEYWORD;
+		if (_reportErrors)
+			fprintf(stderr, "Missing Keyword: %s\n", keyword);
+		return(0);
+	}
+	double tmp;
+	if (sscanf(string, "%lg", &tmp) != 1)
+	{
+		_status = ERROR_CONVERTING_VALUE;
+		if (_reportErrors)
+		{
+			fprintf(stderr, "Error converting value for keyword: %s\n",
+				keyword);
+		}
+		return(0);
+	}
+	*value = tmp;
+	return(1);
+}
+
 //-------------------------//
 // ConfigList::_SetBadLine //
 //-------------------------//

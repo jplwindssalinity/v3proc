@@ -103,7 +103,7 @@ public:
 
 	StatusE			GetStatus() { return (_status); };
 	char*			GetBadLine() { return (_badLine); };
-	void			ReportErrors(int flag);
+	void			ReportErrors(int flag = 1);
 
 	//--------------//
 	// input/output //
@@ -127,6 +127,7 @@ public:
 	int				ReturnInt(const char* keyword, int default_value = 0);
 	const char*		ReturnString(const char* keyword,
 						const char* default_value = NULL);
+	int				GetDouble(const char* keyword, double* value);
 
 protected:
 
