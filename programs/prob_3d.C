@@ -110,7 +110,7 @@ template class TrackerBase<unsigned short>;
 #define SPD_RES  0.1 // m/s
 #define DIR_RES    1.0 // Degrees
 #define OPTSTRING "f:hsig"
-
+#define MAX_SPEED 50 // m/s
 
 //--------//
 // MACROS //
@@ -559,12 +559,21 @@ main(
 
 
         int num_dirs=int(360.0/DIR_RES+0.5);
-        int num_spds=int(50/SPD_RES+0.5);
+        int num_spds=int(MAX_SPEED/SPD_RES+0.5);
         
         /********* Filter Measurement List **************/
         /*********  and write logfile      **************/
         int meas_idx=1;
         int remove=0;
+
+        /**** Determine fore/aft boundaries in EastAzimuth ***/
+        float sin_midazi=0.0;
+        int num=0;
+        for (Meas* meas = meas_list.GetHead(); meas; meas=meas_list.GetNext()){
+           sin_midazi=sin_midazi+sin(meas->eastAzimuth);
+	   num++;
+	}
+        sin_midazi=sin_midazi/num;
         for (Meas* meas = meas_list.GetHead(); meas; )
         {
             remove = opt_no_correlation &&
@@ -575,11 +584,11 @@ main(
                 (meas->measType == Meas::VV_MEAS_TYPE ||
                 meas->measType == Meas::HH_MEAS_TYPE));
 
-	    /****** HACK ALERT using eastAzimuth as a substitute for scanAngle
+	    /****** Using eastAzimuth as a substitute for scanAngle
                     in determining fore or aft look *************/
-            remove = remove || (opt_no_aft_look && meas->eastAzimuth>pi);
+            remove = remove || (opt_no_aft_look && sin(meas->eastAzimuth)<sin_midazi);
 
-            remove = remove || (opt_no_fore_look && meas->eastAzimuth<pi);
+            remove = remove || (opt_no_fore_look && sin(meas->eastAzimuth)>sin_midazi);
 
             remove = remove || (opt_no_inner_beam && meas->incidenceAngle<50*dtr);
 

@@ -175,7 +175,14 @@ main(
             exit(1);
         }
     }
-
+    l2b.frame.swath.DeleteFlaggedData();
+    sprintf(filename, "%s.norain", vctr_base);
+    if (! l2b.WriteVctr(filename, 0))
+    {
+        fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
+        exit(1);
+    }
+      
     l2b.frame.swath.SelectNudge();
     sprintf(filename, "%s.nudge", vctr_base);
     if (! l2b.WriteVctr(filename, 0))
@@ -183,6 +190,16 @@ main(
         fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
         exit(1);
     }
-
+    int c=170;
+      l2b.frame.swath.StreamNudge(c);
+      sprintf(filename, "%s.init.%d", vctr_base,c);
+      if (! l2b.WriteVctr(filename, 0))
+	{
+	  fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
+	  exit(1);
+	}
+    
     return (0);
 }
+
+

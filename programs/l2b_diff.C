@@ -8,7 +8,8 @@
 //    l2b_diff
 //
 // SYNOPSIS
-//    l2b_diff <l2b_file1> <l2b_file2> [ vctr_base ] [hdfflag]
+//    l2b_diff <l2b_file1> <l2b_file2> [ vctr_base ] [hdfflag] [dirth1flag] 
+//    [dirth2flag]
 //
 // DESCRIPTION
 //    Computes difference between wind vectors in two l2b files and
@@ -95,7 +96,8 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "<l2b_file1>", "<l2b_file2>", "[ vctr_base ]",
-    "[ hdf_flag (1=HDF, 0=default) ]", 0};
+    "[ hdf_flag (1=HDF, 0=default) ]", "[ dir1_flag (1=DIRTH, 0=default) ]", 
+			      "[ dir2_flag (1=DIRTH, 0=default) ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -111,7 +113,7 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 4 && argc != 5 )
+    if (argc < 4 || argc > 7  )
         usage(command, usage_array, 1);
 
     int clidx = 1;
@@ -119,8 +121,13 @@ main(
     const char* l2b_file2 = argv[clidx++];
     const char* vctr_base = argv[clidx++];
     int hdf_flag = 0;
-    if (argc == 5)
+    int dir1_flag=0,dir2_flag=0;
+    if (argc > 4)
         hdf_flag = atoi(argv[clidx++]);
+    if (argc > 5)
+        dir1_flag = atoi(argv[clidx++]);
+    if (argc > 6)
+        dir2_flag = atoi(argv[clidx++]);
 
     //------------------//
     // read in l2b file //
@@ -141,6 +148,23 @@ main(
                 l2b_file2);
             exit(1);
         }
+	if (dir1_flag){
+	  if (l2b1.ReadHDFDIRTH(l2b_file1) == 0)
+	    {        
+	      fprintf(stderr, "%s: error reading DIRTH from HDF L2B file %s\n", command,
+		      l2b_file1);
+	      exit(1);
+	    }
+	}
+	if (dir2_flag){
+	  if (l2b2.ReadHDFDIRTH(l2b_file2) == 0)
+	    {        
+	      fprintf(stderr, "%s: error reading DIRTH from HDF L2B file %s\n", command,
+		      l2b_file2);
+	      exit(1);
+	    }
+	}
+
     }
     else
     {
@@ -185,7 +209,7 @@ main(
             exit(1);
         }
     }
-
+    
     //----------------------//
     // write out vctr files //
     //----------------------//
@@ -206,3 +230,4 @@ main(
 
     return (0);
 }
+
