@@ -290,6 +290,7 @@ L1A::CloseCalPulseFile(void)
 //--------------------------//
 // L1A::WriteCalPulse       //
 //--------------------------//
+
 int
 L1A::WriteGSCalPulseRec(void)
 {
@@ -389,6 +390,131 @@ L1A::WriteGSCalPulseRec(void)
     ptr += sizeof(int);
 
     return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
+}
+
+//--------------------------//
+// L1A::ReadCalPulse        //
+//--------------------------//
+
+int
+L1A::ReadGSCalPulseRec(FILE* calfile)
+{
+    if (calfile == NULL) return(0);
+
+    //------------------------------------------------------------------
+    // The record size of the cal pulse file is now 150 bytes, without
+    // any leading or trailing words (i.e. not F77-unformatted).
+    //------------------------------------------------------------------
+
+    int s;
+    if ((s = fread(&(frame.time), sizeof(double), 1, calfile)) != 1)
+    {
+      if (feof(calfile)) return(0);
+      fprintf(stderr,"Error reading calpulse frame time\n");
+      return(0);
+    }
+
+    unsigned char tpos;
+    if (fread(&tpos, sizeof(char), 1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse true_cal_pulse_pos \n");
+      return(0);
+    }
+    frame.in_eu.true_cal_pulse_pos = tpos;
+
+    unsigned char beam_num;
+    if (fread(&beam_num, sizeof(char), 1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse beam_num\n");
+      return(0);
+    }
+//    frame.frame_inst_status = need to set correct bit for first pulse;
+
+
+    if ((s=fread((frame.loopbackSlices), sizeof(unsigned int),
+              frame.slicesPerSpot, calfile)) != frame.slicesPerSpot)
+    {
+      fprintf(stderr,"Error reading calpulse loopbackSlices\n");
+      return(0);
+    }
+
+    if (fread(&(frame.loopbackNoise), sizeof(int), 1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse loopbackNoise\n");
+      return(0);
+    }
+
+    if ((s=fread((frame.loadSlices), sizeof(unsigned int),
+              frame.slicesPerSpot, calfile)) != frame.slicesPerSpot)
+    {
+      fprintf(stderr,"Error reading calpulse loadSlices\n");
+      return(0);
+    }
+
+    if (fread(&(frame.loadNoise), sizeof(int), 1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse loadNoise\n");
+      return(0);
+    }
+
+    if (fread(&(frame.in_eu.precision_coupler_temp_eu), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse frame precision_coupler_temp\n");
+      return(0);
+    }
+    if (fread(&(frame.in_eu.rcv_protect_sw_temp_eu), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse rcv_protect_sw_temp\n");
+      return(0);
+    }
+    if (fread(&(frame.in_eu.beam_select_sw_temp_eu), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse beam_select_sw_temp\n");
+      return(0);
+    }
+    if (fread(&(frame.in_eu.receiver_temp_eu), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse receiver_temp\n");
+      return(0);
+    }
+    if (fread(&(frame.in_eu.transmit_power_inner), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse transmit_power_inner\n");
+      return(0);
+    }
+    if (fread(&(frame.in_eu.transmit_power_outer), sizeof(float),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse transmit_power_outer\n");
+      return(0);
+    }
+    if (fread(&(frame.frame_inst_status), sizeof(int),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse frame_inst_status\n");
+      return(0);
+    }
+    if (fread(&(frame.frame_err_status), sizeof(int),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse frame_err_status\n");
+      return(0);
+    }
+    int dummy; // 4 bytes at end are not used.
+    if (fread(&(dummy), sizeof(int),
+              1, calfile) != 1)
+    {
+      fprintf(stderr,"Error reading calpulse dummy\n");
+      return(0);
+    }
+
+    return(1);
+
 }
 
 //--------------------------//

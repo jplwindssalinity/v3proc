@@ -68,6 +68,7 @@ public:
     int  WriteGSDataRecAscii(void);
 
 	int  OpenCalPulseForWriting(const char* filename);
+    int  ReadGSCalPulseRec(FILE* calfile);
     int  WriteGSCalPulseRec(void);
     int  WriteGSCalPulseRecAscii(void);
     int  CloseCalPulseFile(void);
@@ -82,7 +83,7 @@ public:
 
 	char*		gsBuffer;
     L1AGSFrame  gsFrame;
-    GSCalPulse  calPulse;
+//    GSCalPulse  calPulse;
 
 protected:
 
