@@ -3740,13 +3740,13 @@ WindSwath::BestKFilter(
     return(1);
 }
 
-// need this fraction of the available wvc's in order to select
-#define AVAILABLE_FRACTION  0.15
-
 //-----------------------------//
 // WindSwath::MedianFilterPass //
 //-----------------------------//
 // Returns the number of vector changes.
+
+float g_available_fraction = 0.0;
+float g_speed_stopper = 0.0;
 
 int
 WindSwath::MedianFilterPass(
@@ -3877,8 +3877,7 @@ WindSwath::MedianFilterPass(
                     }
 
                     int target_count = (int)((float)available_count *
-                        AVAILABLE_FRACTION);
-// printf("%d %d %d\n", available_count, selected_count, target_count);
+                        g_available_fraction);
                     if (vector_dif_sum < min_vector_dif_sum &&
                         selected_count >= target_count)
                     {
@@ -3989,6 +3988,11 @@ WindSwath::MedianFilterPass(
                     //------------------------//
                     // IF RANGE INFO NOT USED //
                     //------------------------//
+
+                    if (new_selected[cti][ati]->spd < g_speed_stopper)
+                    {
+                        continue;
+                    }
 
                     change[cti][ati] = 1;
                     swath[cti][ati]->selected = new_selected[cti][ati];
