@@ -235,10 +235,19 @@ public:
     unsigned char   priDn;
     unsigned char   txPulseWidthDn;
     SpinRateE       spinRate;
+
+// Flags and Parameters which are convenient to put here in order
+// to perform Ideal Doppler tracking to BYU ref Vector, Spatial Response Peak
+// and Spectral Response Peak, but which do not really belong here.
     int             useRgc;
     int             useDtc;
     int             useBYUDop;
     int             useBYURange;
+    float           azimuthIntegrationRange;
+    float           azimuthStepSize;
+    int             rangeGateClipping;
+
+
     unsigned int    orbitTicksPerOrbit;
     CdsBeamInfo     beamInfo[NUMBER_OF_QSCAT_BEAMS];
 
