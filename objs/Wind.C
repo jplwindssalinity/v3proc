@@ -8,11 +8,10 @@ static const char rcs_id_wind_c[] =
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <malloc.h>
 #include "Wind.h"
 #include "Constants.h"
-#include "Array.h"
 #include "Misc.h"
+#include "Array.h"
 
 
 //============//
@@ -495,23 +494,20 @@ WindField::NearestWindVector(
 int
 WindField::_Allocate()
 {
-	_field = (WindVector ***)malloc(_lonCount * sizeof(WindVector **));
+	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, _lonCount,
+		_latCount);
+
 	if (_field == NULL)
 		return(0);
 
 	for (int i = 0; i < _lonCount; i++)
 	{
-		WindVector** ptr =
-			(WindVector **)malloc(_latCount * sizeof(WindVector *));
-		if (ptr == NULL)
-			return(0);
-
-		*(_field + i) = ptr;
 		for (int j = 0; j < _latCount; j++)
 		{
-			*(*(_field + i) + j) = NULL;
+			_field[i][j] = NULL;
 		}
 	}
+
 	return(1);
 }
 
@@ -522,17 +518,7 @@ WindField::_Allocate()
 int
 WindField::_Deallocate()
 {
-	for (int i = 0; i < _lonCount; i++)
-	{
-		for (int j = 0; j < _latCount; j++)
-		{
-			WindVector* ptr = *(*(_field + i) + j);
-			if (ptr)
-				delete *(*(_field + i) + j);
-		}
-		free(*(_field + i));
-	}
-	free(_field);
+	free_array((void *)_field, 2, _lonCount, _latCount);
 	return(1);
 }
 
@@ -830,23 +816,20 @@ WindSwath::Skill(
 int
 WindSwath::_Allocate()
 {
-	swath = (WVC ***)malloc(_alongTrackSize * sizeof(WVC **));
+	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackSize,
+		_alongTrackSize);
+
 	if (swath == NULL)
 		return(0);
 
-	for (int i = 0; i < _alongTrackSize; i++)
+	for (int i = 0; i < _crossTrackSize; i++)
 	{
-		WVC** ptr =
-			(WVC **)malloc(_crossTrackSize * sizeof(WVC *));
-		if (ptr == NULL)
-			return(0);
-
-		*(swath + i) = ptr;
-		for (int j = 0; j < _crossTrackSize; j++)
+		for (int j = 0; j < _alongTrackSize; j++)
 		{
-			*(*(swath + i) + j) = NULL;
+			swath[i][j] = NULL;
 		}
 	}
+
 	return(1);
 }
 
@@ -857,16 +840,6 @@ WindSwath::_Allocate()
 int
 WindSwath::_Deallocate()
 {
-	for (int i = 0; i < _alongTrackSize; i++)
-	{
-		for (int j = 0; j < _crossTrackSize; j++)
-		{
-			WVC* ptr = *(*(swath + i) + j);
-			if (ptr)
-				delete *(*(swath + i) + j);
-		}
-		free(*(swath + i));
-	}
-	free(swath);
+	free_array((void *)swath, 2, _crossTrackSize, _alongTrackSize);
 	return(1);
 }
