@@ -26,6 +26,7 @@ PROGRAMS = \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_to_l2b \
+	l2a_filter \
 	plot_wr_curves \
 	l2ab_25to50 \
 	l2b_medianfilter \
