@@ -292,10 +292,19 @@ InstrumentSim::SetMeasurements(
 
 		if (simVs1BCheckfile)
 		{
+		        FILE* fptr = fopen(simVs1BCheckfile,"a");
+                        if (fptr == NULL)
+                        {
+	                 fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+                         exit(-1);
+                        }
+
 			cf->XK[slice_i] = meas->XK;
 			cf->centroid[slice_i] = meas->centroid;
 			cf->azimuth[slice_i] = meas->eastAzimuth;
 			cf->incidence[slice_i] = meas->incidenceAngle;
+			cf->AppendSliceRecord(fptr, slice_i, lon, lat);
+                fclose(fptr);
 		}
 
 		sliceno++;
