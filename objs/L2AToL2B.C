@@ -50,7 +50,7 @@ L17ToL20::ConvertAndWrite(
 	MeasList* meas_list = &(l17->frame.measList);
 	if (meas_list->NodeCount() < 2)
 	{
-		fprintf(stderr, "too few measurements\n");
+//		fprintf(stderr, "too few measurements\n");
 		return(2);
 	}
 
@@ -70,7 +70,7 @@ L17ToL20::ConvertAndWrite(
 	}
 	if (any_zero)
 	{
-		fprintf(stderr, "insuffient wind data\n");
+//		fprintf(stderr, "insuffient wind data\n");
 		return(3);
 	}
 
@@ -82,7 +82,7 @@ L17ToL20::ConvertAndWrite(
 	if (! gmf->RetrieveWinds(meas_list, wvc, phiStep, phiBuffer,
 		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS))
 	{
-		fprintf(stderr, "wind retrieval failed\n");
+//		fprintf(stderr, "wind retrieval failed\n");
 //		meas_list->WriteAscii(stdout);
 		delete wvc;
 		return(5);
@@ -90,8 +90,8 @@ L17ToL20::ConvertAndWrite(
 
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
-		fprintf(stderr, "deleting node count %d\n",
-			wvc->ambiguities.NodeCount());
+//		fprintf(stderr, "deleting node count %d\n",
+//			wvc->ambiguities.NodeCount());
 		delete wvc;
 		return(6);
 	}
