@@ -537,7 +537,7 @@ CdsBeamInfo::~CdsBeamInfo()
 //==========//
 
 QscatCds::QscatCds()
-:   turnOnTime(0.0), priDn(0), txPulseWidthDn(0), rxGateDelayDn(0),
+:   turnOnTime(-1.0), priDn(0), txPulseWidthDn(0), rxGateDelayDn(0),
     txDopplerDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
     useBYUDop(0), useBYURange(0), useSpectralDop(0), useSpectralRange(0),
     azimuthIntegrationRange(0), azimuthStepSize(0), orbitTicksPerOrbit(0),
