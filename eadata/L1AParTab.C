@@ -6,9 +6,12 @@
 //
 // CM Log
 // $Log$
-// Revision 1.5  1999/02/24 03:24:55  sally
-// add L2AHdf
-//
+// 
+//    Rev 1.32   12 Apr 1999 11:10:18   sally
+// fix typo
+// 
+//    Rev 1.31   26 Mar 1999 15:40:38   sally
+// added "L1 Time" unit
 // 
 //    Rev 1.30   23 Dec 1998 16:32:40   sally
 // move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
@@ -130,9 +133,10 @@ static const char rcs_id_L1AParTab_C[] = "@(#) $Header$";
 
 const ParTabEntry L1AParTab[] =
 {
-  { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 6, {
+  { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 7, {
       { UNIT_AUTOTIME, "(auto)",DATA_ITIME, 0, ExtractTaiTime, 0 },
       { UNIT_CODE_A, "Code A",  DATA_ITIME, 0, ExtractTaiTime, pr_itime_codea },
+      { UNIT_L1ATIME,"L1 Time", DATA_ITIME, 0, ExtractTaiTime, pr_itime_L1 },
       { UNIT_DAYS,   "days",    DATA_ITIME, 0, ExtractTaiTime, pr_itime_d },
       { UNIT_HOURS,  "hours",   DATA_ITIME, 0, ExtractTaiTime, pr_itime_h },
       { UNIT_MINUTES,"minutes", DATA_ITIME, 0, ExtractTaiTime, pr_itime_m },
@@ -144,12 +148,12 @@ const ParTabEntry L1AParTab[] =
                                                ExtractData1D, pr_float8_10 },
     }
   },
-  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
-      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
-      { UNIT_CODE_A,   "Code A", DATA_ITIME,0,ExtractL1Time,pr_itime_codea},
-      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
-      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
-      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+  { FRAME_TIME, "Frame Time", SOURCE_L1A, MEAS_TIME, "v:frame_time", 7, {
+      { UNIT_AUTOTIME, "(auto)",  DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A",  DATA_ITIME, 0, ExtractL1Time, pr_itime_codea},
+      { UNIT_L1ATIME,  "L1Time",  DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
+      { UNIT_DAYS,     "days",    DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours",   DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
       { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
       { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
     }
@@ -169,18 +173,6 @@ const ParTabEntry L1AParTab[] =
       { UNIT_COUNTS, "counts", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
     }
   },
-#if 0
-  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
-      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
-      { UNIT_CODE_A,   "Code A", DATA_ITIME, 0, ExtractL1Time, pr_itime_codea },
-      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
-      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
-      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
-      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
-      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
-    }
-  },
-#endif
   { X_POS, "X Component of S/C Position", SOURCE_L1A, MEAS_DISTANCE,
                 "x_pos", 2, {
       { UNIT_METERS, "meters", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
@@ -838,7 +830,7 @@ const ParTabEntry L1AParTab[] =
                                           pr_float4_6 }
     }
   },
-  { EA_A_SEC_VOLT_P14, "EA-A DSS Sec Volt +14 VDC", SOURCE_L1A, MEAS_VOLTAGE,
+  { EA_A_SEC_VOLT_P14, "EA-A SAA Sec Volt +14 VDC", SOURCE_L1A, MEAS_VOLTAGE,
             "ea_a_sec_volt_p14", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_VOLTS, "volts", DATA_FLOAT4, 1, ExtractData1D_uint1_float,
@@ -990,14 +982,14 @@ const ParTabEntry L1AParTab[] =
       { UNIT_DBM, "dBm", DATA_FLOAT4, 1, ExtractData1D_uint1_float, pr_float4_6}
     }
   },
-  { TRANSMIT_PWR_A, "Transmit Power A", SOURCE_L1A_DERIVED, MEAS_POWER,
+  { TRANSMIT_PWR_A, "Transmit Power A", SOURCE_L1A, MEAS_POWER,
             "transmit_power_a", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_DBM, "dBm", DATA_FLOAT4, 1,
                                 ExtractData1D_uint1_float, pr_float4_6 }
     }
   },
-  { TRANSMIT_PWR_B, "Transmit Power B", SOURCE_L1A_DERIVED, MEAS_POWER,
+  { TRANSMIT_PWR_B, "Transmit Power B", SOURCE_L1A, MEAS_POWER,
             "transmit_power_b", 2, {
       { UNIT_DN, "dn", DATA_UINT1, 0, ExtractData1D, pr_uint1 },
       { UNIT_DBM, "dBm", DATA_FLOAT4, 1,
@@ -1780,12 +1772,12 @@ const ParTabEntry L1AParTab[] =
             DATA_CHAR13, 0, ExtractData2D_13, pr_char13x }
     }
   },
-  { ORBIT_PERIOD, "Orbit Period", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
+  { ORBIT_PERIOD, "Orbit Period", SOURCE_L1A, MEAS_QUANTITY,
                "orbit_time", 1, {
       { UNIT_COUNTS, "ticks", DATA_UINT4, 0, ExtractOrbitPeriod, pr_uint4 }
     }
   },
-  { ANT_SPIN_RATE, "Antenna Spin Rate", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
+  { ANT_SPIN_RATE, "Antenna Spin Rate", SOURCE_L1A, MEAS_QUANTITY,
                "antenna_position,prf_cycle_time", 4, {
       { UNIT_DN, "dn/pri", DATA_UINT2_100, 0,
                              ExtractAntSpinRateDN, pr_uint2_100 },

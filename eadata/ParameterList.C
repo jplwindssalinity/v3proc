@@ -7,6 +7,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.18   26 Apr 1999 15:46:30   sally
+// use doubles instead of floats in DoStatistics
+// 
+//    Rev 1.17   14 Apr 1999 13:16:16   sally
+// change pow(x,2) to x * x, Lee says it is faster, for ForTran anyways
+// 
+//    Rev 1.16   12 Apr 1999 15:49:54   sally
+// add average deviation calculation
+// 
+//    Rev 1.15   12 Apr 1999 11:10:26   sally
+// add methods for statistics extraction
+// 
 //    Rev 1.14   03 Nov 1998 16:02:00   sally
 // adapt to Vdata
 // 
@@ -62,6 +74,7 @@
 #include <assert.h>
 #include <malloc.h>
 #include <string.h>
+#include <math.h>
 
 #include "ParameterList.h"
 #include "Itime.h"
@@ -576,3 +589,192 @@ ParameterList::NeedPolynomial(void)
     return(rc);
 
 }//ParameterList::NeedPolynomial
+
+ParameterList::StatusE
+ParameterList::PrintStatisticsACEgr(
+FILE*            fp,
+unsigned long    statFrameNo,
+int              useAvgDeviation,
+Itime            start,
+Itime            end,
+char*            comments,
+int              noHeader)
+{
+    if ( ! noHeader)
+    {
+        // --- title ---
+        Parameter* xaxis_param = GetHead();
+        Parameter* y1_param = GetNext();
+        fprintf(fp, "@ title \"%s", y1_param->paramName);
+        Parameter* param_ptr=0;
+        for (param_ptr = GetNext(); param_ptr; param_ptr = GetNext())
+            fprintf(fp, ", %s", param_ptr->paramName);
+        fprintf(fp, " vs. %s from %s", xaxis_param->paramName,
+            source_id_map[xaxis_param->sourceId]);
+        if (comments)
+            fprintf(fp, "  {%s}", comments);
+        fprintf(fp, "\"\n");
+ 
+        // --- subtitle ---
+        char codea_1[CODEA_TIME_LEN], codea_2[CODEA_TIME_LEN];
+        start.ItimeToCodeA(codea_1);
+        end.ItimeToCodeA(codea_2);
+        fprintf(fp, "@ subtitle \"From %s to %s\"\n", codea_1, codea_2);
+ 
+        // --- x axis label ---
+        fprintf(fp, "@ xaxis label \"%s (%s)\"\n", xaxis_param->measurable,
+            xaxis_param->unitName);
+ 
+        // --- y axis label ---
+        fprintf(fp, "@ yaxis label \"Mean, Mean+D, Mean-D, Max, Min: %s (%s)",
+            y1_param->measurable, y1_param->unitName);
+        for (param_ptr = GetIndex(2); param_ptr; param_ptr = GetNext())
+            fprintf(fp, ", %s (%s)",
+                            param_ptr->measurable, param_ptr->unitName);
+        fprintf(fp, "\"\n");
+     
+        // --- delimeter line ---
+        fprintf(fp, "#--------------------------------------------------\n");
+    }
+
+    // --- print the data ---
+    PrintStatistics(fp, statFrameNo, useAvgDeviation);
+
+    return (_status);
+}
+
+template<class T>
+void
+DoStatistics(
+T*               dataStart,
+unsigned long    statFrameNo,
+int              useAvgDeviation,
+float&           mean,
+float&           meanPlusD,
+float&           meanMinusD,
+float&           max,
+float&           min)
+{
+    float sum = 0.0;
+    T* ptr = dataStart;
+    min = max = (float) *ptr;
+    unsigned long j;
+    for (j=0; j < statFrameNo; j++, ptr++)
+    {
+        sum += (float)*ptr;
+        max = ((float)*ptr > max ? (float)*ptr : max);
+        min = ((float)*ptr < min ? (float)*ptr : min);
+    }
+
+    mean = sum / statFrameNo;
+
+    double avgDeviationSum = 0.0;
+    double variance = 0.0;
+    ptr = dataStart;
+    for (j=0; j < statFrameNo; j++, ptr++)
+    {
+        double temp = (float)*ptr - mean;
+        avgDeviationSum += fabs(temp);
+        variance += temp * temp;
+    }
+
+    float sd = (float) sqrt(variance / (statFrameNo - 1));
+    float avgDeviation = (float)(avgDeviationSum / statFrameNo);
+
+
+    float deviation = (useAvgDeviation ? avgDeviation : sd);
+    meanPlusD = mean + deviation;
+    meanMinusD = mean - deviation;
+#ifdef DEBUG
+printf("mean = %f, sum = %f, dev = %f\n", mean, sum, deviation);
+#endif
+
+} // ParameterList::DoStatistics
+
+ParameterList::StatusE
+ParameterList::PrintStatistics(
+FILE*            fp,
+unsigned long    statFrameNo,
+int              useAvgDeviation)
+{
+    unsigned long index = 0;
+    unsigned long midPoint=0;
+    while (index < _numPairs)
+    {
+        if (index + statFrameNo > _numPairs)
+            statFrameNo = _numPairs - index;
+
+        // X parameter: print value of midpoint
+        midPoint = index + (unsigned long) (statFrameNo / 2);
+        Parameter* first_param = GetHead();
+        first_param->printFunc(fp,
+            first_param->data + midPoint * first_param->byteSize);
+
+        float mean=0, meanPlusD=0, meanMinusD=0, max=0, min=0;
+        for (Parameter* param_ptr = GetNext(); param_ptr;
+                                   param_ptr = GetNext())
+        {
+            switch(param_ptr->dataType)
+            {
+            case DATA_UINT1:
+                DoStatistics((unsigned char*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_INT1:
+                DoStatistics((signed char*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_UINT2:
+                DoStatistics((unsigned short*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_INT2:
+                DoStatistics((signed short*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_UINT4:
+                DoStatistics((unsigned int*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_INT4:
+                DoStatistics((signed int*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_FLOAT4:
+                DoStatistics((float*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            case DATA_FLOAT8:
+                DoStatistics((double*)(param_ptr->data +
+                                    index * param_ptr->byteSize), 
+                                    statFrameNo, useAvgDeviation,
+                                    mean, meanPlusD, meanMinusD, max, min);
+                break;
+            default:
+                fprintf(stderr, "Wrong Type for Statistis Extraction\n");
+                return(_status = ERROR_WRONG_TYPE_FOR_STATISTICS);
+            }
+            fprintf(fp, "   %g   %g   %g   %g   %g",
+                  mean, meanPlusD, meanMinusD, max, min);
+        }
+        fprintf(fp, "\n");
+        index += statFrameNo;
+    }
+
+    return(_status = ParameterList::OK);
+
+} // ParameterList::PrintStatistics

@@ -8,7 +8,7 @@
 // use "-fno-implicit-templates"
 
 static const char TempInstances_C_rcsid[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
 #ifdef __SCAT_GNUCPP__
 
@@ -23,6 +23,8 @@ static const char TempInstances_C_rcsid[] =
 #include "Filter.h"
 #include "LimitChecker.h"
 #include "L1AErrorChecker.h"
+#include "MemoryFromFile.h"
+#include "MemoryFromTlm.h"
 #include "Parameter.h"
 #include "Polynomial.h"
 #include "ReqaqList.h"
@@ -63,6 +65,17 @@ template class EAList<ErrorMsgT>;
 template class EANode<ReqqRecord>;
 template class EAList<ReqqRecord>;
 template class SortedList<ReqqRecord>;
+
+template class EANode<UpldTbl>;
+template class EAList<UpldTbl>;
+template class SortedList<UpldTbl>;
+
+template class EANode<MemoryFromTlmBlock>;
+template class EAList<MemoryFromTlmBlock>;
+template class SortedList<MemoryFromTlmBlock>;
+template class EANode<MemoryFromFileBlock>;
+template class EAList<MemoryFromFileBlock>;
+template class SortedList<MemoryFromFileBlock>;
 
 #endif //__SCAT_GNUCPP__
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   26 Feb 1999 14:35:06   sally
+// if the ending char is not a delimeter, it continues...  Bad!
+// 
 //    Rev 1.0   27 Mar 1998 09:55:20   sally
 // Initial revision.
 // $Date$
@@ -35,29 +38,30 @@ char**         lasts)   // holds next string
         return 0;
 
     char* returnString=0;
-//printf("mainString = [%s], delim = [%s]\n", mainString, delim);
+    unsigned int oldLen = strlen(mainString);
     returnString = strtok(mainString, delim);
 
     // found the token, now adjust the "lasts" pointer
     if (returnString != 0)
     {
-//printf("returnString = [%s]\n", returnString);
-
-        *lasts = mainString + strlen(mainString) + strlen(delim);
-//printf("lasts = [%s]\n", *lasts);
+        *lasts = mainString + strlen(mainString);
+        if (oldLen > strlen(mainString))
+            *lasts += strlen(delim);
     }
 
     return returnString;
 
 } // safe_strtok
 
+
 #if 0
+#include <stdlib.h>
 
 main(
-int     agrc,
-char**  argv)
+int     ,
+char**  )
 {
-    char* constString = "Hello work world sally chou ";
+    char* constString = "Hello work world sally chou";
     char string[1024];
     strcpy(string, constString);
     char* lasts=0;
@@ -77,5 +81,4 @@ char**  argv)
     }
     exit(0);
 } // main
-
 #endif

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   26 Mar 1999 15:40:12   sally
+// added "L1 Time" unit
+// 
 //    Rev 1.13   04 Nov 1998 10:10:16   sally
 // add "packet sequence count" parameter
 // 
@@ -72,9 +75,10 @@ static const char rcs_id_HK2ParTab_C[] = "@(#) $Header$";
 
 const ParTabEntry HK2ParTab[] =
 {
-  { UTC_TIME, "UTC Time", SOURCE_HK2, MEAS_TIME, "hk2_time", 6, {
+  { UTC_TIME, "UTC Time", SOURCE_HK2, MEAS_TIME, "hk2_time", 7, {
       { UNIT_AUTOTIME, "(auto)",DATA_ITIME, 0, ExtractTaiTime, 0 },
       { UNIT_CODE_A, "Code A",  DATA_ITIME, 0, ExtractTaiTime, pr_itime_codea },
+      { UNIT_L1ATIME,"L1 Time", DATA_ITIME, 0, ExtractTaiTime, pr_itime_L1 },
       { UNIT_DAYS,   "days",    DATA_ITIME, 0, ExtractTaiTime, pr_itime_d },
       { UNIT_HOURS,  "hours",   DATA_ITIME, 0, ExtractTaiTime, pr_itime_h },
       { UNIT_MINUTES,"minutes", DATA_ITIME, 0, ExtractTaiTime, pr_itime_m },

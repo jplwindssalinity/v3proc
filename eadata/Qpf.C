@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.24   09 Apr 1999 13:58:42   sally
+// read number of words from files if the table length is variable
+// 
 //    Rev 1.23   23 Feb 1999 11:14:36   sally
 // change type to satisfy GCC
 // 
@@ -509,7 +512,17 @@ FILE*       output_fp)
         }
         wordsInThisLine = 0;
     }
-    if (fprintf(ofp, " %04X", checksum) != 5)
+    if (wordsInThisLine > 0)
+    {
+        if (fprintf(ofp, " ") != 1)
+        {
+            (void)fclose(inFP);
+            (void)fclose(ofp);
+            unlink(filename);
+            return(_status = Qpf::QPF_WRITE_FAIL);
+        }
+    }
+    if (fprintf(ofp, "%04X", checksum) != 4)
     {
         (void)fclose(inFP);
         (void)fclose(ofp);

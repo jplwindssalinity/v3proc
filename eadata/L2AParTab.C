@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   26 Mar 1999 15:40:50   sally
+// added "L1 Time" unit
+// 
 //    Rev 1.3   23 Feb 1999 11:13:16   sally
 // L2A array size chaned from 810 to 3240
 // 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.5   15 Mar 1999 14:19:42   sally
+// add some methods for getting user's start and end indexes
+// 
 //    Rev 1.4   01 May 1998 14:47:54   sally
 // added HK2 file
 // 
@@ -29,7 +32,7 @@
 //=========================================================
 
 static const char rcs_id[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
 #include <assert.h>
 #include <stdlib.h>
@@ -44,9 +47,9 @@ static const char rcs_id[] =
 //=========//
 
 TlmHdfFile::TlmHdfFile(
-const char*     filename,
-SourceIdE       sourceType,
-StatusE&        returnStatus)
+const char*              filename,
+SourceIdE                sourceType,
+HdfFile::StatusE&        returnStatus)
 :   HdfFile(filename, returnStatus), _sourceType(sourceType),
     _userNextIndex(HDF_FAIL), _userStartIndex(HDF_FAIL),
     _userEndIndex(HDF_FAIL)
