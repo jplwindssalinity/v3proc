@@ -80,6 +80,17 @@ public:
 
 	int			l00FrameReady;
 
+
+
+        
+	int uniformSigmaField;
+        // if uniformSigmaField is nonzero then all sigma0 values used in the 
+        // simulation are 1.
+
+        int outputPrToStdout;
+        // If outputPrToStdout is nonzero then a table of Pr values is written
+        // to stdout.
+
 protected:
 
 	//-----------//

@@ -22,8 +22,7 @@ static const char rcs_id_instrumentsimaccurate_c[] =
 //=======================//
 
 InstrumentSimAccurate::InstrumentSimAccurate()
-  : numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0),
-    uniformSigmaField(0), outputPrToStdout(0)
+  : numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0)
 {
 	return;
 }
@@ -154,6 +153,11 @@ InstrumentSimAccurate::ScatSim(
 
 	if (! SetMeasurements(instrument, &meas_spot, windfield, gmf))
 		return(0);
+
+
+        //-----------------------------------------------//
+        //-------- Output Pr to Stdout if enabled--------//
+        //-----------------------------------------------//
 
 	if(outputPrToStdout)
 	{

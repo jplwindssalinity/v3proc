@@ -14,14 +14,13 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Sigma0.h"
 #include "Constants.h"
 
-#define UNIFORM_SIGMA 0 // (If 1 then all sigma0s=1)
 
 //===============//
 // InstrumentSim //
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	startTime(0.0), l00FrameReady(0), _spotNumber(0)
+:	startTime(0.0), l00FrameReady(0), uniformSigmaField(0), outputPrToStdout(0), _spotNumber(0)
 {
 	return;
 }
@@ -155,10 +154,11 @@ InstrumentSim::SetMeasurements(
 		// the s/c (the opposite direction as the look vector)
 		float chi = wv.dir - meas->eastAzimuth + pi;
 		float sigma0;
-		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
+		if (uniformSigmaField) sigma0=1;
+                else {
+		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 			chi, &sigma0);
-
-		if (UNIFORM_SIGMA) sigma0=1;
+		}
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
@@ -300,6 +300,7 @@ InstrumentSim::ScatSim(
 	{
 		if (! LocateSlices(spacecraft, instrument, &meas_spot))
 			return(0);
+		if(outputPrToStdout) printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
 	//------------------------//
@@ -308,6 +309,21 @@ InstrumentSim::ScatSim(
 
 	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, gmf))
 		return(0);
+
+        //-----------------------------------------------//
+        //-------- Output Pr to Stdout if enabled--------//
+        //-----------------------------------------------//
+
+	if(outputPrToStdout)
+	{
+		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		{
+			printf("%g ",slice->value);
+		}
+		if(instrument->antenna.currentBeamIdx==1)
+			printf("\n");
+	}
+
 
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
