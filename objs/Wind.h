@@ -389,6 +389,8 @@ public:
     int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadNscatSwv25(const char* filename);
     int  GetArraysForUpdatingHdf(float** spd, float** dir, int** num_ambig);
+    int  GetSpdDirNumSel(float** spd, float** dir, int** num_ambig,
+             int** selected);
     int  UpdateHdf(const char* filename, float** spd, float** dir,
              int** num_ambig, int** selected);
     int  WriteVctr(const char* filename, const int rank);
