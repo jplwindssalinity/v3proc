@@ -25,6 +25,20 @@ WindVector::~WindVector()
 	return;
 }
 
+//------------------------//
+// WindVector::operator== //
+//------------------------//
+
+int
+WindVector::operator==(
+	WindVector	wv)
+{
+	if (spd == wv.spd && dir == wv.dir)
+		return(1);
+	else
+		return(0);
+}
+
 //-----------------------//
 // WindVector::SetSpdDir //
 //-----------------------//

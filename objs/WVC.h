@@ -45,6 +45,12 @@ public:
 
 	int		WriteAmbigsAscii(FILE* ofp);
 
+	//--------------//
+	// manipulation //
+	//--------------//
+
+	int		RemoveDuplicates();
+
 	//-----------//
 	// variables //
 	//-----------//

@@ -34,6 +34,12 @@ public:
 	WindVector();
 	~WindVector();
 
+	//-----------//
+	// operators //
+	//-----------//
+
+	int		operator==(WindVector wv);
+
 	//---------//
 	// setting //
 	//---------//
@@ -46,7 +52,8 @@ public:
 	//-----------//
 
 	double		spd;
-	double		dir;		// ccw from east
+	double		dir;	// ccw from east
+	double		obj;	// objective function value
 };
 
 #endif
