@@ -594,6 +594,8 @@ ConfigInstrumentSim(
         instrument_sim->ptgrNoise.SetMean(ptgr_mean);
 
         int uniform_sigma_field;
+
+        config_list->LogErrors(0);
 	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD, &uniform_sigma_field))
 	        uniform_sigma_field=0;  // default value
 	instrument_sim->uniformSigmaField=uniform_sigma_field;
@@ -602,7 +604,7 @@ ConfigInstrumentSim(
 	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD, &output_Pr_to_stdout))
 	        output_Pr_to_stdout=0; // default value
 	instrument_sim->outputPrToStdout=output_Pr_to_stdout;
-
+        config_list->LogErrors(1);
 
 	return(1);
 }
