@@ -213,6 +213,55 @@ List<T>::InsertBefore(
 	return(1);
 }
 
+//-------------------//
+// List::InsertAfter //
+//-------------------//
+// Creates a node with data in it and inserts it after the current node.
+// The new node becomes the current node.
+// Returns 1 on success, 0 on failure
+
+template <class T>
+int
+List<T>::InsertAfter(
+	T*	new_data)
+{
+	// create a new node
+	Node<T>* new_node = new Node<T>(new_data);
+	if (new_node == NULL)
+		return(0);
+
+	// define the current node
+	if (_current == NULL)
+		_current = _tail;
+
+	if (_head == NULL)
+	{
+		// empty list
+		_head = new_node;
+		_tail = new_node;
+		new_node->prev = NULL;
+		new_node->next = NULL;
+	}
+	else if (_current == _tail)
+	{
+		// node goes after tail
+        new_node->prev = _tail;
+        new_node->next = NULL;
+        _tail->next = new_node;
+        _tail = new_node;
+	}
+	else
+	{
+		// node inserts
+        new_node->prev = _current;
+        new_node->next = _current->next;
+        _current->next->prev = new_node;
+        _current->next = new_node;
+	}
+	_current = new_node;
+	return(1);
+}
+
 //---------------------//
 // List::RemoveCurrent //
 //---------------------//

@@ -74,6 +74,7 @@ public:
 	int		Prepend(T* new_data);			// prepend to beginning of list
 	void	AppendList(List<T>* list);
 	int		InsertBefore(T* new_data);
+	int		InsertAfter(T* new_data);
 
 	//--------------------//
 	// removing from list //
