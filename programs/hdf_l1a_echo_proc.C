@@ -363,7 +363,6 @@ main(
         for (int record_idx = 0; record_idx < tlmFile->GetDataLength();
             record_idx++)
         {
-printf("%d\n", record_idx);
             //--------------//
             // get the time //
             //--------------//
