@@ -161,6 +161,7 @@ FilterFunc.o: FilterFunc.C Filter.h L1AExtract.h Parameter.h ParTab.h EAList.h T
 Filter.o: Filter.C Filter.h ParTab.h EAList.h TlmHdfFile.h CommonDefs.h Parameter.h ListBase.h HdfFile.h Itime.h SafeString.h
 HdfFile.o: HdfFile.C HdfFile.h Parameter.h EAList.h SafeString.h CommonDefs.h ListBase.h
 Headers.o: Headers.C Headers.h Parameter.h Itime.h CommonDefs.h
+Hk2EffDetector.o: Hk2EffDetector.C Hk2EffDetector.h Itime.h EALog.h Parameter.h ParTab.h State.h TlmHdfFile.h ErrorChecker.h
 Hk2ErrorChecker.o: Hk2ErrorChecker.C Hk2ErrorChecker.h L1AExtract.h Parameter.h ParTab.h State.h Itime.h ErrorChecker.h CommonDefs.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 Hk2Extract.o: Hk2Extract.C CommonDefs.h L1AExtract.h Parameter.h PolyTable.h Itime.h TlmHdfFile.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 Hk2File.o: Hk2File.C Hk2File.h L1AExtract.h ParTab.h TimeTlmFile.h CommonDefs.h Itime.h TlmHdfFile.h Parameter.h HdfFile.h EAList.h SafeString.h ListBase.h
@@ -188,6 +189,8 @@ LimitList.o: LimitList.C CommonDefs.h LimitList.h ParTab.h PolyTable.h LimitChec
 LimitState.o: LimitState.C LimitState.h L1AExtract.h ParTab.h TlmHdfFile.h Parameter.h CommonDefs.h Itime.h HdfFile.h EAList.h SafeString.h ListBase.h
 ListBase.o: ListBase.C ListBase.h
 Mail.o: Mail.C Mail.h EAConfigList.h EAList.h ListBase.h
+MemoryFromFile.o: MemoryFromFile.C MemoryFromFile.h SafeString.h EAList.h CommonDefs.h
+MemoryFromTlm.o: MemoryFromTlm.C MemoryFromTlm.h ParTab.h Parameter.h TlmHdfFile.h EAList.h
 Qpa.o: Qpa.C Qpf.h Qpa.h CommonDefs.h Itime.h CmdList.h EAList.h Command.h CmdEffect.h Eqx.h Parameter.h ListBase.h Tpg.h
 Qpf.o: Qpf.C Qpf.h Itime.h Command.h CmdList.h Binning.h CommonDefs.h Tpg.h EAList.h CmdEffect.h Eqx.h Parameter.h ListBase.h
 ParTab.o: ParTab.C Parameter.h ParTab.h Itime.h HdfFile.h CommonDefs.h EAList.h SafeString.h ListBase.h
