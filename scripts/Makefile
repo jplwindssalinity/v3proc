@@ -10,7 +10,8 @@ SCRIPTS = \
 	sim_script_update \
 	process_script \
 	grid_script \
-	l2b_rms_plot
+	l2b_rms_plot \
+	generate_kprtable
 
 #----------------------------------------------------------------------
 # default: make sure all scripts are checked out
