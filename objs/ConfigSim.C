@@ -75,8 +75,8 @@ ConfigSpacecraftSim(
 	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
 		return(0);
 
-	double altitude;
-	if (! config_list->GetDouble(ALTITUDE_KEYWORD, &altitude))
+	double semi_major_axis;
+	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
 		return(0);
 
 	double eccentricity;
@@ -102,7 +102,6 @@ ConfigSpacecraftSim(
 		return(0);
 	}
 
-	double semi_major_axis = altitude + r1_earth;
 	spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
 		inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
 
