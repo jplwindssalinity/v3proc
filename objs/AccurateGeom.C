@@ -41,6 +41,7 @@ IntegrateSlices(
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
+        Attitude zero_rpy; // Constructor set rpy to zero
 
 	//------------------//
 	// set up meas spot //
@@ -52,11 +53,14 @@ IntegrateSlices(
 	meas_spot->scAttitude = *attitude;
 
 	//--------------------------------//
-	// generate the coordinate switch //
+	// generate the coordinate switch // 
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
+
+        CoordinateSwitch zero_rpy_antenna_frame_to_gc = 
+	  AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
 
 	//------------------------//
 	// determine slicing info //
@@ -80,7 +84,7 @@ IntegrateSlices(
 
 	vector.SphericalSet(1.0, look, azimuth);
 	TargetInfoPackage tip;
-	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+	RangeAndRoundTrip(&zero_rpy_antenna_frame_to_gc, spacecraft, vector, &tip);
 
         double round_trip=tip.roundTripTime;
 
@@ -94,7 +98,7 @@ IntegrateSlices(
         double azimuthb=azimuth;
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
+	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument, vector);
 
 	//-------------------//
 	// for each slice... //
@@ -152,9 +156,10 @@ IntegrateSlices(
 		  return(0);
 		centroid=tip.rTarget;
 		
-                /**** for now use looktol .01  and azitol of .05 degrees ***/
-		float looktol=0.01*dtr;
-                float azitol=0.05*dtr;
+         /**** for now use looktol .1cellwidth  and azitol of .1 degrees ***/
+		float looktol;
+                int numlooks=10;
+                float azitol=0.1*dtr;
 		float xarray[40*80];
                 for(int c=0;c<40*80;c++)xarray[c]=0.0;
 
@@ -191,6 +196,7 @@ IntegrateSlices(
 		  float azi=a*azitol+azimin;
 		  if(debug) printf("For Azimuth %g ....\n",azi);
 		  float start_look=centroid_look;
+		  float end_look=centroid_look;
 
 		  /*******************************/
                   /** find starting look angle ***/
@@ -199,7 +205,15 @@ IntegrateSlices(
 				 high_gain_freq,ftol,&start_look,azi))
 		    return(0);
 
+		  /*******************************/
+                  /** find ending look angle ***/
+                  /*******************************/
+		  if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
+				 low_gain_freq,ftol,&end_look,azi))
+		    return(0);
+
 		  float lk=start_look;
+                  looktol=fabs(end_look-start_look)/(float)numlooks;
                   int look_num=0;
 		  while(1){
                    
