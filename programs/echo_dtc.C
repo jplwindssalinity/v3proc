@@ -102,6 +102,8 @@ template class List<AngleInterval>;
 
 #define OPTSTRING  "f:mor"
 
+#define QUOTE  '"'
+
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
 #define SECTOR_COUNT             2
@@ -145,6 +147,8 @@ double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 int       g_good_count;
 int       g_sector_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+double    g_min_offset[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+double    g_max_offset[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 
 // the following are allocated dynamically
 double**  g_azimuth;
@@ -610,14 +614,45 @@ main(
     }
     fclose(term_fp);
 
+    //---------------------------//
+    // write out min/max offsets //
+    //---------------------------//
+
+    sprintf(filename, "%s.maxoff", dtc_base);
+    FILE* offset_fp = fopen(filename, "w");
+    if (offset_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening offsets file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(offset_fp, "@ subtitle %c%s%c\n", QUOTE, "Min and Max Offsets",
+        QUOTE);
+    fprintf(offset_fp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
+    fprintf(offset_fp, "@ yaxis label %cBaseband Frequency (kHz)%c\n", QUOTE,
+        QUOTE);
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            if (fabs(g_min_offset[beam_idx][orbit_step]) < 80000.0 &&
+                fabs(g_max_offset[beam_idx][orbit_step]) < 80000.0)
+            {
+                fprintf(offset_fp, "%d %g %g\n", orbit_step,
+                    g_min_offset[beam_idx][orbit_step] / 1000.0,
+                    g_max_offset[beam_idx][orbit_step] / 1000.0);
+            }
+        }
+        fprintf(offset_fp, "&\n");
+    }
+    fclose(offset_fp);
+
     return(0);
 }
 
 //--------------------//
 // process_orbit_step //
 //--------------------//
-
-#define QUOTE  '"'
 
 int
 process_orbit_step(
@@ -770,6 +805,15 @@ exit(0);
 
         fclose(ofp);
     }
+
+    //-----------------------------------------------------//
+    // calcaulte the worse case errors (bias +- amplitude) //
+    //-----------------------------------------------------//
+
+    double plus = c + a;
+    double minus = c - a;
+    g_max_offset[beam_idx][orbit_step] = MAX(plus, minus);
+    g_min_offset[beam_idx][orbit_step] = MIN(plus, minus);
 
     g_count[beam_idx] = 0;
 
