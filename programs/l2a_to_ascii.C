@@ -186,6 +186,8 @@ main(
 	// output loop //
 	//-------------//
 
+	long count = 0;
+
 	for (;;)
 	{
 		//------------------------------//
@@ -226,11 +228,17 @@ main(
 			 meas = l17.frame.measList.GetNext()
 			)
 		{
-			fprintf(ascii_file,"%d %d %d %g %g %g %g %g %g\n",Nmeas,ati,cti,
-				meas->value,meas->XK,meas->bandwidth,meas->eastAzimuth,
-				meas->incidenceAngle,meas->estimatedKp);
+			float sigma0_dB = 10*log(meas->value)/log(10);
+			float XK_dB = 10*log(meas->XK)/log(10);
+			fprintf(ascii_file,"%d %d %d %g %g %g %g %g %g %g %g %g\n",
+				Nmeas,ati,cti,
+				meas->value,meas->XK,meas->Pn_slice,meas->bandwidth,
+				meas->eastAzimuth,
+				meas->incidenceAngle,meas->A,meas->B,meas->C);
+			count++;
 		}
-		
+	
+		if (count > 10000) break;	
 	}
 
 	l17.file.Close();
