@@ -8,14 +8,14 @@
 //    generate_rgc
 //
 // SYNOPSIS
-//    generate_rgc <sim_config_file> <RGC_base>
+//    generate_rgc [ -f ] <sim_config_file> <RGC_base>
 //
 // DESCRIPTION
 //    Generates a set of Receiver Gate Constants for each beam based
 //    upon the parameters in the simulation configuration file.
 //
 // OPTIONS
-//    None.
+//      [ -f ]  Make the range fixed over azimuth.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -97,6 +97,8 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "f"
+
 #define RANGE_ORBIT_STEPS    256
 #define RANGE_AZIMUTH_STEPS  90    // used for fitting
 
@@ -122,7 +124,10 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<RGC_base>", 0 };
+const char* usage_array[] = { "[ -f ]", "<sim_config_file>", "<RGC_base>",
+    0 };
+
+int opt_fixed = 0;     // by default, delay can change as a function of azimuth
 
 //--------------//
 // MAIN PROGRAM //
@@ -138,13 +143,27 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
+    extern int optind;
 
-    if (argc != 3)
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'f':
+            opt_fixed = 1;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 2)
         usage(command, usage_array, 1);
 
-    int arg_idx = 1;
-    const char* config_file = argv[arg_idx++];
-    const char* rgc_base = argv[arg_idx++];
+    const char* config_file = argv[optind++];
+    const char* rgc_base = argv[optind++];
 
     //--------------------------------//
     // read in simulation config file //
@@ -446,6 +465,14 @@ main(
 
             double a, p, c;
             azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
+
+            if (opt_fixed)
+            {
+                // zero the amplitude and the phase
+                a = 0.0;
+                p = 0.0;
+            }
+
             *(*(terms + orbit_step) + 0) = a;
             *(*(terms + orbit_step) + 1) = p;
             *(*(terms + orbit_step) + 2) = c;
