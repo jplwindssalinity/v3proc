@@ -2427,15 +2427,18 @@ WindSwath::GetGoodWVC(
 //-------------------------//
 // WindSwath::ReadFlagFile //
 //-------------------------//
-int WindSwath::ReadFlagFile(
-     const char* flag_file)
+
+int
+WindSwath::ReadFlagFile(
+    const char*  flag_file)
 {
     FILE* ifp = fopen(flag_file, "r");
     if (ifp == NULL)
     {
-        fprintf(stderr, "Fatal Error: Flag file %s cannot be opened\n",
+        fprintf(stderr,
+            "WindSwath::ReadFlagFile: error opening flag file %s\n",
             flag_file);
-        exit(1);
+        return(0);
     }
     unsigned int size = _alongTrackBins * _crossTrackBins;
     float* flag_value = (float*)malloc(sizeof(float) * size);
@@ -2443,8 +2446,9 @@ int WindSwath::ReadFlagFile(
     if (flag_value == NULL || flag == NULL)
     {
         fprintf(stderr,
-            "Fatal Error: Error allocating memory for flag_value\n");
-        exit(1);
+          "WindSwath::ReadFlagFile: error allocating memory for flag_value\n");
+        fclose(ifp);
+        return(0);
     }
 
     if ((fread(flag_value, sizeof(float), size, ifp) != size) ||
@@ -2457,47 +2461,48 @@ int WindSwath::ReadFlagFile(
     fclose(ifp);
     for (int ati = 0; ati < _alongTrackBins; ati++)
     {
-      for (int cti = 0; cti < _crossTrackBins; cti++)
-    {
-        int offset= ati*_crossTrackBins + cti;
-        WVC* wvc = GetWVC(cti, ati);
-        if(wvc!=NULL){
-        wvc->rainProb=flag_value[offset];
-        switch((int)(flag[offset])){
-        case 0:
-          wvc->rainFlagBits=0;
-          break;
-        case 1:
-                  wvc->rainFlagBits=2;
-          break;
-        case 2:
-          wvc->rainFlagBits=3;
-          break;
-        case 3:
-                  wvc->rainFlagBits=4;
-                  break;
-        case 4:
-                  wvc->rainFlagBits=6;
-          break;
-        case 5:
-                  wvc->rainFlagBits=7;
-                  break;
+        for (int cti = 0; cti < _crossTrackBins; cti++)
+        {
+            int offset= ati * _crossTrackBins + cti;
+            WVC* wvc = GetWVC(cti, ati);
+            if (wvc != NULL)
+            {
+                wvc->rainProb = flag_value[offset];
+                switch ((int)(flag[offset]))
+                {
+                case 0:
+                    wvc->rainFlagBits=0;
+                    break;
+                case 1:
+                    wvc->rainFlagBits=2;
+                    break;
+                case 2:
+                    wvc->rainFlagBits=3;
+                    break;
+                case 3:
+                    wvc->rainFlagBits=4;
+                    break;
+                case 4:
+                    wvc->rainFlagBits=6;
+                    break;
+                case 5:
+                    wvc->rainFlagBits=7;
+                    break;
                 case 6:
-          wvc->rainFlagBits=7;
-          break;
+                    wvc->rainFlagBits=7;
+                    break;
                 default:
-          fprintf(stderr,"Error:ReadFlagFile:Bad Flag\n");
-          exit(1);
+                    fprintf(stderr,"Error:ReadFlagFile:Bad Flag\n");
+                    exit(1);
+                }
+            }
         }
-        }
-    }
     }
     free(flag);
     free(flag_value);
     return(1);
 }
 
-//------------------------
 //-----------------------//
 // WindSwath::DeleteWVCs //
 //-----------------------//
@@ -2540,6 +2545,7 @@ WindSwath::DeleteEntireSwath()
 //------------------------------//
 // WindSwath::DeleteFlaggedData //
 //------------------------------//
+
 int
 WindSwath::DeleteFlaggedData()
 {
@@ -4205,11 +4211,12 @@ WindSwath::MedianFilterPass(
     return(flips);
 }
 
-#define NUM_BK_SUB_PASSES 100
 //----------------------------//
 // WindSwath::BestKFilterPass //
 //----------------------------//
 // Returns 1 if finished 0 otherwise.
+
+#define NUM_BK_SUB_PASSES 100
 
 int
 WindSwath::BestKFilterPass(
@@ -4429,6 +4436,7 @@ int WindSwath::GetNumCellsWithAmbiguities(){
   }
   return(retval);
 }
+
 //--------------------------//
 // WindSwath::GetWindowMean //
 //--------------------------//
@@ -6192,19 +6200,19 @@ WindSwath::ComponentCovarianceVsCti(
     // c2 is the value of component2
     // x is (c1*c2)
 
-        //---------------------------------//
-        // Allocate Mean Arrays            //
-        //---------------------------------//
+    //----------------------//
+    // Allocate Mean Arrays //
+    //----------------------//
 
-        float* mean_c1_array= new float[_crossTrackBins];
-        float* mean_c2_array= new float[_crossTrackBins];
+    float* mean_c1_array= new float[_crossTrackBins];
+    float* mean_c2_array= new float[_crossTrackBins];
 
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
         *(cc_array + cti) = 0.0;
         *(count_array + cti) = 0;
-                *(mean_c1_array +cti)=0.0;
-                *(mean_c2_array +cti)=0.0;
+        *(mean_c1_array +cti) = 0.0;
+        *(mean_c2_array +cti) = 0.0;
 
         //-------------------------//
         // first pass calculations //
@@ -6217,60 +6225,66 @@ WindSwath::ComponentCovarianceVsCti(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
                 continue;
+
             //-------------------//
             // Find Components   //
             //-------------------//
-            float u=0,v=0;
-                        float c1=0,c2=0;
-            switch(component1){
+
+            float u = 0;
+            float v = 0;
+            float c1 = 0;
+            float c2 = 0;
+            switch(component1)
+            {
             case UTRUE:
-              true_wv.GetUV(&u,&v);
-              c1=u;
-              break;
+                true_wv.GetUV(&u, &v);
+                c1=u;
+                break;
             case VTRUE:
-              true_wv.GetUV(&u,&v);
-              c1=v;
-              break;
+                true_wv.GetUV(&u, &v);
+                c1=v;
+                break;
             case UMEAS:
-              wvc->selected->GetUV(&u,&v);
-              c1=u;
-              break;
+                wvc->selected->GetUV(&u, &v);
+                c1=u;
+                break;
             case VMEAS:
-              wvc->selected->GetUV(&u,&v);
-              c1=v;
-              break;
+                wvc->selected->GetUV(&u, &v);
+                c1=v;
+                break;
             default:
-              fprintf(stderr,"ComponentCovariance: Bad component1\n");
-              return(0);
+                fprintf(stderr, "ComponentCovariance: Bad component1\n");
+                return(0);
             }
             switch(component2){
             case UTRUE:
-              true_wv.GetUV(&u,&v);
+              true_wv.GetUV(&u, &v);
               c2=u;
               break;
             case VTRUE:
-              true_wv.GetUV(&u,&v);
+              true_wv.GetUV(&u, &v);
               c2=v;
               break;
             case UMEAS:
-              wvc->selected->GetUV(&u,&v);
+              wvc->selected->GetUV(&u, &v);
               c2=u;
               break;
             case VMEAS:
-              wvc->selected->GetUV(&u,&v);
+              wvc->selected->GetUV(&u, &v);
               c2=v;
               break;
             default:
-              fprintf(stderr,"ComponentCovariance: Bad component2\n");
+              fprintf(stderr, "ComponentCovariance: Bad component2\n");
               return(0);
             }
 
@@ -6454,11 +6468,11 @@ int    WindSwath::Streamosity(
        WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
        WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
        if( !wvp1 || !wvp2) continue;
-       float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
+       float angdif=fabs(ANGDIF(wvp1->dir, wvp2->dir));
        if(angdif < 120*dtr) continue;
        stream_array[cti]++;
-       float dir_err1=fabs(ANGDIF(wvp1->dir,true_wv.dir));
-       float dir_err2=fabs(ANGDIF(wvp2->dir,true_wv.dir));
+       float dir_err1=fabs(ANGDIF(wvp1->dir, true_wv.dir));
+       float dir_err2=fabs(ANGDIF(wvp2->dir, true_wv.dir));
        dir_err1=fabs(pi/2 - fabs(pi/2-dir_err1));
        dir_err2=fabs(pi/2 - fabs(pi/2-dir_err2));
        if(dir_err1<30*dtr && dir_err2<30*dtr) good_stream_array[cti]++;
@@ -6523,7 +6537,7 @@ WindSwath::FractionNAmbigs(
                 frac_4amb_array[cti]++;
                 break;
             default:
-                fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",
+                fprintf(stderr, "Frac_N_Ambigs:: Bad number of ambigs %d\n",
                     num);
                 return(0);
             }

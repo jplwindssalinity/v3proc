@@ -5,6 +5,7 @@
 
 #ifndef WIND_H
 #define WIND_H
+
 static const char rcs_id_wind_h[] =
     "@(#) $Id$";
 
@@ -26,6 +27,7 @@ static const char rcs_id_wind_h[] =
 //    WindVector, WindVectorPlus, WindVectorField, WVC, WindField,
 //    WindSwath
 //======================================================================
+
 //======================================================================
 // CLASS
 //    WindVector
@@ -498,12 +500,10 @@ public:
     int    WithinVsCti(WindField* truth, float* within_array,
                int* count_array, float low_speed, float high_speed,
                float within_angle);
-
     int    DirectionDensityVsCti(WindField* truth,
                unsigned int** swath_density_array,
                unsigned int** field_density_array, float low_speed,
                float high_speed, int direction_count);
-
     int    VectorCorrelationVsCti(WindField* truth, float* vc_array,
                int* count_array, float low_speed, float high_speed);
     int    ComponentCovarianceVsCti(WindField* truth, float* cc_array,
@@ -518,6 +518,7 @@ public:
                float* change_incorrect_rate_array,
                float* bad_nudge_rate_array, float low_speed,
                float high_speed);
+
     //-----------//
     // variables //
     //-----------//
