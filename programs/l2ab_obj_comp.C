@@ -149,6 +149,9 @@ main(
 	const char* output_base = NULL;
 	const char* l2b1_file = NULL;
 	const char* l2b2_file = NULL;
+    const char* truth_type = NULL;
+    const char* truth_file = NULL;
+ 
 
 	if (argc == 3)
 	{
@@ -189,6 +192,39 @@ main(
 			command, config_file);
 		exit(1);
 	}
+
+	//------------------//
+	// setup truth file //
+	//------------------//
+
+    if (! truth_type)
+    {
+        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+        if (truth_type == NULL)
+        {
+            fprintf(stderr, "%s: must specify truth windfield type\n",
+                command);
+            exit(1);
+        }
+    }
+
+    if (! truth_file)
+    {
+        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+        if (truth_file == NULL)
+        {
+            fprintf(stderr, "%s: must specify truth windfield file\n",
+                command);
+            exit(1);
+        }
+    }
+
+    //----------------------------//
+    // read in "truth" wind field //
+    //----------------------------//
+
+    WindField truth;
+    truth.ReadType(truth_file, truth_type);
 
 	//-------------------------------------//
 	// create and configure level products //
@@ -308,8 +344,12 @@ main(
 	int total_pe_2 = 0;
 	int total_pe_3 = 0;
 	int total_pe_4 = 0;
+	int total_missed_pe = 0;
+	int total_missed_gs = 0;
+	int total_missed_both = 0;
 	float frac_gs_1,frac_gs_2,frac_gs_3,frac_gs_4;
 	float frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4;
+	float frac_missed_pe,frac_missed_gs,frac_missed_both;
 	int cti = 0;
 	int ati = 0;
 	WVC* wvc1 = NULL;
@@ -422,6 +462,8 @@ main(
 
 			wvc1 = l2b1.frame.swath.swath[cti][ati];
 			wvc2 = l2b2.frame.swath.swath[cti][ati];
+
+			if (wvc1 == NULL || wvc2 == NULL) continue;
 		}
  
 		total_wvc++;
@@ -489,36 +531,96 @@ main(
 		frac_pe_3 = (float)total_pe_3 / (float)total_wvc;
 		frac_pe_4 = (float)total_pe_4 / (float)total_wvc;
 
-		if (total_wvc % 100 == 0)
+    	//----------------------------------//
+    	// Compute number of missed truth's //
+    	//----------------------------------//
+
+		WindVector true_wv;
+        if (! truth.InterpolatedWindVector(wvc1->lonLat, &true_wv))
 		{
-			printf("%d %g %g %g %g   %g %g %g %g\n",total_wvc,
+			fprintf(stderr,"Error interpolating true wind field\n");
+			exit(1);
+		}
+		int missed_pe = 1;
+		for (wvp1 = wvc1->ambiguities.GetHead(); wvp1;
+			 wvp1 = wvc1->ambiguities.GetNext())
+		{
+			if (fabs(wrap_angle_near(wvp1->dir - true_wv.dir, 0.0)) <
+			 	dtr*ANGTOL)
+			{
+				missed_pe = 0;
+			}
+		}
+		if (missed_pe)
+		{
+			total_missed_pe++;
+		}
+
+        if (! truth.InterpolatedWindVector(wvc2->lonLat, &true_wv))
+		{
+			fprintf(stderr,"Error interpolating true wind field\n");
+			exit(1);
+		}
+		int missed_gs = 1;
+		for (wvp2 = wvc2->ambiguities.GetHead(); wvp2;
+			 wvp2 = wvc2->ambiguities.GetNext())
+		{
+			if (fabs(wrap_angle_near(wvp2->dir - true_wv.dir, 0.0)) <
+			 	dtr*ANGTOL)
+			{
+				missed_gs = 0;
+			}
+		}
+		if (missed_gs)
+		{
+			total_missed_gs++;
+		}
+
+		if (missed_gs && missed_pe)
+		{
+			total_missed_both++;
+		}
+
+		frac_missed_pe = (float)total_missed_pe / (float)total_wvc;
+		frac_missed_gs = (float)total_missed_gs / (float)total_wvc;
+		frac_missed_both = (float)total_missed_both / (float)total_wvc;
+
+		if (total_wvc % 1000 == 0)
+		{
+			printf("%d %g %g %g %g   %g %g %g %g   %g %g %g\n",total_wvc,
 					frac_gs_1,frac_gs_2,frac_gs_3,frac_gs_4,
-					frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4);
+					frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4,
+					frac_missed_pe,frac_missed_gs,frac_missed_both);
 		}
 
 		int output = 0;
-		if (wvc1->ambiguities.NodeCount() == wvc2->ambiguities.NodeCount())
+		if (missed_gs || missed_pe)
 		{
-			for (wvp1 = wvc1->ambiguities.GetHead(),
-				 wvp2 = wvc2->ambiguities.GetHead(); wvp1;
-				 wvp1 = wvc1->ambiguities.GetNext(),
-				 wvp2 = wvc2->ambiguities.GetNext())
-			{
-				if (fabs(wrap_angle_near(wvp1->dir - wvp2->dir, 0.0)) >
-					 dtr*ANGTOL)
-				{
-					output = 1;
-				}
-			}
-		}
-		else
-		{
-			num_mismatched++;
 			output = 1;
 		}
 
+//		if (wvc1->ambiguities.NodeCount() == wvc2->ambiguities.NodeCount())
+//		{
+//			for (wvp1 = wvc1->ambiguities.GetHead(),
+//				 wvp2 = wvc2->ambiguities.GetHead(); wvp1;
+//				 wvp1 = wvc1->ambiguities.GetNext(),
+//				 wvp2 = wvc2->ambiguities.GetNext())
+//			{
+//				if (fabs(wrap_angle_near(wvp1->dir - wvp2->dir, 0.0)) >
+//					 dtr*ANGTOL)
+//				{
+//					output = 1;
+//				}
+//			}
+//		}
+//		else
+//		{
+//			num_mismatched++;
+//			output = 1;
+//		}
+
 		output = 0;	// turn off output for now
-		if (output == 1)
+		if (output == 1 && use_l2a)
 		{
 			if (graphnumber == 1)
 			{
@@ -561,10 +663,10 @@ main(
 		}
 	}
 
-	printf("%d %g %g %g %g   %g %g %g %g\n",total_wvc,
+	printf("%d %g %g %g %g   %g %g %g %g   %g %g %g\n",total_wvc,
 			frac_gs_1,frac_gs_2,frac_gs_3,frac_gs_4,
-			frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4);
-	printf("ambig mismatches: %d\n",num_mismatched);
+			frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4,
+			frac_missed_pe,frac_missed_gs,frac_missed_both);
 
 	l2a.Close();
 
