@@ -176,10 +176,29 @@ InstrumentSim::SetMeasurements(
 			// not perfect.
 			//---------------------------------------------------------------//
 
-			if (instrument->simKpmFlag == 1)
+			// Uncorrelated component.
+			if (instrument->simUncorrKpmFlag == 1)
 			{
-				sigma0 *= kpmField->GetRV(&(kp->kpm), meas->pol, wv.spd,
-					lon_lat);
+				double kpm_value;
+				if (! kp->kpm.GetKpm(meas->pol,wv.spd,&kpm_value))
+				{
+					printf("Error: Bad Kpm value in InstrumentSim::SetMeas\n");
+					exit(-1);
+				}
+				Gaussian gaussianRv(1.0,0.0);
+				float rv1 = gaussianRv.GetNumber();
+				float RV = rv1*kpm_value + 1.0;
+			    if (RV < 0.0)
+    			{
+        			RV = 0.0;   // Do not allow negative sigma0's.
+    			}
+				sigma0 *= RV;
+			}
+
+			// Correlated component.
+			if (instrument->simCorrKpmFlag == 1)
+			{
+				sigma0 *= kpmField->GetRV(instrument->corrKpm, lon_lat);
 			}
 		}
 

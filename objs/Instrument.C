@@ -37,7 +37,8 @@ Instrument::Instrument()
 	systemTemperature(0.0), baseTransmitFreq(0.0), transmitFreq(0.0),
 	scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
 	guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
-	simKpcFlag(1), simKpmFlag(1), simKpriFlag(1), _eqxTime(0)
+	simKpcFlag(1), simCorrKpmFlag(1), simUncorrKpmFlag(1), simKpriFlag(1),
+	corrKpm(0.0), _eqxTime(0)
 {
 	return;
 }

@@ -601,15 +601,26 @@ ConfigInstrument(
 		return(0);
 	instrument->simKpcFlag = sim_kpc_flag;
 
-	int sim_kpm_flag;
-	if (! config_list->GetInt(SIM_KPM_FLAG_KEYWORD, &sim_kpm_flag))
+	int sim_corr_kpm_flag;
+	if (! config_list->GetInt(SIM_CORR_KPM_FLAG_KEYWORD, &sim_corr_kpm_flag))
 		return(0);
-	instrument->simKpmFlag = sim_kpm_flag;
+	instrument->simCorrKpmFlag = sim_corr_kpm_flag;
+
+	int sim_uncorr_kpm_flag;
+	if (! config_list->GetInt(SIM_UNCORR_KPM_FLAG_KEYWORD,&sim_uncorr_kpm_flag))
+		return(0);
+	instrument->simUncorrKpmFlag = sim_uncorr_kpm_flag;
 
 	int sim_kpri_flag;
 	if (! config_list->GetInt(SIM_KPRI_FLAG_KEYWORD, &sim_kpri_flag))
 		return(0);
 	instrument->simKpriFlag = sim_kpri_flag;
+
+	double corr_kpmdB;
+	if (! config_list->GetDouble(CORR_KPM_KEYWORD, &corr_kpmdB))
+		return(0);
+	// convert to real units and un-normalize
+	instrument->corrKpm = pow(10.0,0.1*corr_kpmdB) - 1.0;
 
 	return(1);
 }

@@ -344,6 +344,10 @@ KpmField::Build(float corr_length)
 
 }
 
+//----------------------//
+// KpmField::GetRV
+//----------------------//
+
 float
 KpmField::GetRV(
 	Kpm*	kpm,
@@ -351,9 +355,6 @@ KpmField::GetRV(
 	float	wspd,
 	LonLat	lon_lat)
 {
-	float RV;
-	float rv1;
-
 	double kpm_value;
 	if (! kpm->GetKpm(polarization, wspd, &kpm_value))
 	{
@@ -361,7 +362,19 @@ KpmField::GetRV(
 		exit(1);
 	}
 
-	if (_corrLength == 0.0)
+	return(GetRV(kpm_value,lon_lat));
+
+}
+
+float
+KpmField::GetRV(
+	double	kpm_value,
+	LonLat	lon_lat)
+{
+	float RV;
+	float rv1;
+
+	if (! corr.field)
 	{	// no spatial correlation, so just draw a gaussian random number
 		rv1 = _gaussianRv.GetNumber();
 	}
@@ -375,6 +388,7 @@ KpmField::GetRV(
 	}
 
 	// Scale for unit mean, variance = Kpm^2.
+	// Note that kpm_value is unnormalized standard deviation.
 	RV = rv1*kpm_value + 1.0;
 
 	if (RV < 0.0)

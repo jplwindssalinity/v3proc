@@ -112,6 +112,7 @@ public:
 	//--------------//
 
 	float GetRV(Kpm* kpm, int polarization, float wspd, LonLat lon_lat);
+	float GetRV(double kpm_value, LonLat lon_lat);
 
     //-----------//
     // variables //

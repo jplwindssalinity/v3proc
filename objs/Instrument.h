@@ -143,10 +143,12 @@ public:
 	// flags //
 	//-------//
 
-	int			simKpcFlag;		// 0 = no Kpc, 1 = with Kpc
-	int			simKpmFlag;		// 0 = no Kpm, 1 = with Kpm
-	int			simKpriFlag;	// 0 = no Kpri, 1 = with Kpri
+	int			simKpcFlag;			// 0 = no Kpc, 1 = with Kpc
+	int			simCorrKpmFlag;		// 0 = no correlated Kpm, 1 = with Kpm
+	int			simUncorrKpmFlag;	// 0 = no uncorrelated Kpm, 1 = with Kpm
+	int			simKpriFlag;		// 0 = no Kpri, 1 = with Kpri
 
+	double		corrKpm;		// dB
 protected:
 	double			_eqxTime;
 };
