@@ -262,23 +262,22 @@ ConfigQscatCds(
       return(0);
     }
 
-    if(use_spec_range || use_spec_dop){
-        float azimuth_integration_range;
-        if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-            &azimuth_integration_range))
-        {
-            return(0);
-        }
-        qscat_cds->azimuthIntegrationRange=azimuth_integration_range*dtr;
+    float azimuth_integration_range;
+    if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
+				&azimuth_integration_range))
+      {
+	return(0);
+      }
+    qscat_cds->azimuthIntegrationRange=azimuth_integration_range*dtr;
 
-        float azimuth_step_size;
-        if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-            &azimuth_step_size))
-        {
-            return(0);
-        }
-        qscat_cds->azimuthStepSize=azimuth_step_size*dtr;      
-    }
+    float azimuth_step_size;
+    if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
+				&azimuth_step_size))
+      {
+	return(0);
+      }
+    qscat_cds->azimuthStepSize=azimuth_step_size*dtr;      
+
 
     //--------------//
     // orbit period //
