@@ -238,7 +238,6 @@ Sds::Create(
 
 int
 Sds::Write(
-    int32  sd_id,
     int32  record_idx)
 {
     // fill in the first dimension of start with the record index

@@ -64,7 +64,7 @@ public:
     int FrameSize();
     int SetFrameCluster(int32 frames);
     int Create(int32 sds_id);
-    int Write(int32 sd_id, int32 record_idx);
+    int Write(int32 record_idx);
     int EndAccess();
 
     virtual int SetMaxAndMin();

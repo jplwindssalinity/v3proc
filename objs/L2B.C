@@ -865,7 +865,7 @@ L2B::WriteHdf(
         for (int idx = 0; g_l2b_sds_table[idx] != NULL; idx++)
         {
             Sds* sds = g_l2b_sds_table[idx];
-            if (! sds->Write(sds_output_file_id, ati))
+            if (! sds->Write(ati))
             {
                 fprintf(stderr, "L1AH::WriteSDSs: error writing SDS %s\n",
                     sds->GetName());

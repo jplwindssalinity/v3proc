@@ -1181,7 +1181,7 @@ L1AH::WriteSDSs(
     for (int idx = 0; g_sds_table[idx] != NULL; idx++)
     {
         Sds* sds = g_sds_table[idx];
-        if (! sds->Write(_sdsOutputFileId, _currentRecordIdx))
+        if (! sds->Write(_currentRecordIdx))
         {
             fprintf(stderr, "L1AH::WriteSDSs: error writing SDS %s\n",
                 sds->GetName());
