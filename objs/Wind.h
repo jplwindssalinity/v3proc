@@ -399,6 +399,7 @@ public:
 
     int    InitWithRank(int rank);
     int    InitRandom();
+    int    UnInitSpeed(float min_speed, float max_speed);
     int    GetNudgeVectors(WindField* nudge_field);
     int    Nudge(int min_rank);
     int    S3Nudge();

@@ -3239,6 +3239,35 @@ WindSwath::InitRandom()
     return(count);
 }
 
+//------------------------//
+// WindSwath::UnInitSpeed //
+//------------------------//
+
+int
+WindSwath::UnInitSpeed(
+    float  min_speed,
+    float  max_speed)
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            WindVectorPlus* wvp = wvc->selected;
+            if (wvp->spd > min_speed && wvp->spd < max_speed)
+            {
+                wvc->selected = NULL;
+                count++;
+            }
+        }
+    }
+    return(count);
+}
+
 //----------------------------//
 // WindSwath::GetNudgeVectors //
 //----------------------------//
@@ -3286,7 +3315,8 @@ WindSwath::Nudge(
             if (wvc->nudgeWV==NULL)
                 continue;
 
-            wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, max_rank);
+            wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir,
+                max_rank);
             count++;
         }
     }
