@@ -146,7 +146,7 @@ main(
 	//-------------------//
 
 	CheckFrame cf;
-	if (! cf.Allocate(10))
+	if (! cf.Allocate(12))
 	{
 		fprintf(stderr, "%s: error allocating check frame\n", command);
 		exit(1);

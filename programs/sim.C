@@ -237,18 +237,37 @@ main(
     // create an ephemeris file //
     //--------------------------//
 
-    char* epehemeris_filename;
-    epehemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
-    if (! epehemeris_filename)
+    char* ephemeris_filename;
+    ephemeris_filename = config_list.Get(EPHEMERIS_FILE_KEYWORD);
+    if (! ephemeris_filename)
     {
         fprintf(stderr, "%s: error getting ephemeris filename\n", command);
         exit(1);
     }
-    FILE* eph_fp = fopen(epehemeris_filename, "w");
+    FILE* eph_fp = fopen(ephemeris_filename, "w");
     if (eph_fp == NULL)
     {
         fprintf(stderr, "%s: error opening ephemeris file %s\n", command,
-            epehemeris_filename);
+            ephemeris_filename);
+        exit(1);
+    }
+
+    //-------------------------//
+    // create an attitude file //
+    //-------------------------//
+
+    char* att_filename;
+    att_filename = config_list.Get(ATTITUDE_FILE_KEYWORD);
+    if (! att_filename)
+    {
+        fprintf(stderr, "%s: error getting attitude filename\n", command);
+        exit(1);
+    }
+    FILE* att_fp = fopen(att_filename, "w");
+    if (att_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening attitude file %s\n", command,
+            att_filename);
         exit(1);
     }
 
@@ -388,7 +407,8 @@ main(
                 // process the spacecraft event //
                 //------------------------------//
 
-                sim_time=qscat_event.time;
+                sim_time=spacecraft_event.time;
+                Attitude attitude;  // for recording in att file only
 
                 switch(spacecraft_event.eventId)
                 {
@@ -396,6 +416,11 @@ main(
                     spacecraft_sim.UpdateOrbit(spacecraft_event.time,
                         &spacecraft);
 					spacecraft.orbitState.Write(eph_fp);
+					spacecraft_sim.UpdateAttitude(spacecraft_event.time,
+						&spacecraft);
+				    spacecraft_sim.ReportAttitude(spacecraft_event.time,
+					  &spacecraft, &attitude);
+					attitude.GSWrite(att_fp,spacecraft_event.time);
 					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
 					break;
 				case SpacecraftEvent::EQUATOR_CROSSING:
