@@ -175,10 +175,6 @@ FindSlice(
 	azimuth_array[2] = azimuth_2;
 	double c[3];
 	GainSlice(instrument, look_array, azimuth_array, s, c);
-	if (c[2] > 0.0)
-	{
-		fprintf(stderr, "upside down\n");
-	}
 	s_peak = -c[1] / (2.0 * c[2]);
 
 	float gain;
