@@ -30,7 +30,8 @@ InstrumentEvent::~InstrumentEvent()
 //============//
 
 Instrument::Instrument()
-:	time(0.0), commandedDoppler(0.0), receiverGateDelay(0.0), chirpRate(0.0),
+:	time(0.0), commandedDoppler(0.0), receiverGateDelay(0.0),
+	systemLoss(0.0), transmitPower(0.0), receiverGain(0.0), chirpRate(0.0),
 	chirpStartM(0.0), chirpStartB(0.0), systemDelay(0.0),
 	receiverGateWidth(0.0), baseTransmitFreq(0.0), sliceBandwidth(0.0)
 {

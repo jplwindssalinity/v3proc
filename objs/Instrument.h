@@ -85,6 +85,14 @@ public:
 	float		commandedDoppler;	// Hz
 	float		receiverGateDelay;	// sec
 
+	//-------------------------------------//
+	// affected by noise, temperature etc. //
+	//-------------------------------------//
+
+	float		systemLoss;			// dimensionless multiplicative factor
+	float		transmitPower;		// Watts
+	float		receiverGain;		// dimensionless multiplicative factor
+
 	//-----------------//
 	// generally fixed //
 	//-----------------//
