@@ -678,7 +678,10 @@ process_orbit_step(
     // check for resonableness //
     //-------------------------//
 
-    if (newA > 600000.0)
+    if (fabs(newA) > 600000.0)
+        g_sector_count[beam_idx][orbit_step] = 0;
+
+    if (fabs(newC) > 600000.0)
         g_sector_count[beam_idx][orbit_step] = 0;
 
     //--------------------//

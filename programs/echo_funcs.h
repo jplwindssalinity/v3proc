@@ -361,7 +361,7 @@ gaussian_fit(
     //------------------------//
 
     float fslice = p[0][0];
-    if (fslice < 0.0 || fslice > points)
+    if (fslice < 0.0 || fslice > points + 0.5)
     {
         free_p(p, ndim);
         return(0);
@@ -379,8 +379,9 @@ gaussian_fit(
     //----------------------//
 
     int near_slice_idx = (int)(fslice + 0.5);
-    float f1, bw;
-    qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
+    float f1, bw, dummy;
+    qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &dummy);
+    qscat->ses.GetSliceFreqBw(5, &dummy, &bw);
     *peak_slice = fslice;
     *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
     *width_freq = bw * width;
