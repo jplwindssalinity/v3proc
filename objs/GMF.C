@@ -1340,8 +1340,11 @@ GMF::_ObjectiveFunction(
 			// calculate the variance //
 			//------------------------//
 
-			double var = vpc +
-				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
+//			double var = vpc +
+//				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
+			double var = 
+				(trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
+				trial_value*trial_value;
 
 			if (var == 0.0)
 			{	// variances all turned off, so use uniform weighting.
