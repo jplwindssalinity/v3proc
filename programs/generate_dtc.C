@@ -219,7 +219,6 @@ main(
 
 	OrbitState* orbit_state = &(spacecraft.orbitState);
 	Attitude* attitude = &(spacecraft.attitude);
-	Vector3 vector;
 
 	double orbit_period = spacecraft_sim.GetPeriod();
 	double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
