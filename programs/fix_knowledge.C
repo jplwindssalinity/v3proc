@@ -98,10 +98,10 @@ template class List<AngleInterval>;
 
 #define OPTSTRING    "f:is:"
 
-#define PLOT_OFFSET  40000
-#define DIR_STEPS    36    // for data reduction
-#define MIN_POINTS_PER_DIR_STEP    10
-#define MIN_DIR_STEP_DATA_POINTS   36
+#define PLOT_OFFSET               40000
+#define DIR_STEPS                 36    // for data reduction
+#define MIN_POINTS_PER_DIR_STEP   10
+#define MIN_DIR_STEP_DATA_POINTS  36
 
 #define QUOTES    '"'
 
@@ -116,10 +116,8 @@ template class List<AngleInterval>;
 #define MIN_VAR_DATA_COUNT  2
 
 // simplex search parameters
-#define LAMBDA_1  0.1
-#define XTOL_1    0.001
-#define LAMBDA_2  0.01
-#define XTOL_2    0.001
+#define LAMBDA      0.1
+#define XTOL        0.001
 #define PLEX_STEPS  36
 
 //--------//
@@ -515,7 +513,7 @@ process_orbit_step(
     att[0] = 0.0;
     att[1] = 0.0;
     att[2] = 0.0;
-    ds_optimize(spacecraft, qscat, byux, att, LAMBDA_1 * dtr, XTOL_1 * dtr);
+    ds_optimize(spacecraft, qscat, byux, att, LAMBDA * dtr, XTOL * dtr);
 
     //----------------------------//
     // determine orbit step range //
@@ -768,7 +766,7 @@ evaluate(
             float calc_spec_peak_slice, calc_spec_peak_freq;
             double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
                 7.0, 8.0, 9.0 };
-            if (! gaussian_fit(qscat, slice_number, x, slices_per_spot,
+            if (! gaussian_fit2(qscat, slice_number, x, slices_per_spot,
                 &calc_spec_peak_slice, &calc_spec_peak_freq))
             {
                 continue;
