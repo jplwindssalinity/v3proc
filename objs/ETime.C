@@ -149,7 +149,7 @@ ETime::FromCodeB(
     //----------------------//
 
     unsigned short ms;
-    int retval = sscanf(time_string, "%*19c.%hd", &ms);
+    int retval = sscanf(time_string, "%*17c.%hd", &ms);
     if (retval != 1)
         return(0);
 
