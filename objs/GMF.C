@@ -195,6 +195,7 @@ GMF::GetInterpolatedValue(
 	// interpolate out incidence angle //
 	//---------------------------------//
 
+	// offsets transform the index to the starting index
 	int inc_offset = inc_idx - (ORDER_PLUS_ONE / 2) + 1;
 	if (inc_offset < 0)
 		inc_offset = 0;
@@ -210,22 +211,25 @@ GMF::GetInterpolatedValue(
 	double spd_subtable_ridx = spd_ridx - (double)spd_offset;
 
 	int chi_offset = chi_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (chi_offset < 0)
-		chi_offset = 0;
-	if (chi_offset > _chiCount - ORDER_PLUS_ONE)
-		chi_offset = _chiCount - ORDER_PLUS_ONE;
 	double chi_subtable_ridx = chi_ridx - (double)chi_offset;
+	if (chi_subtable_ridx < 0.0)
+		chi_subtable_ridx += (double)_chiCount;		// keep chi in array
 
 	int sidx, cidx, iidx;
+	int use_sidx, use_cidx, use_iidx;
 	for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
 	{
+		use_sidx = sidx + spd_offset;
 		for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
 		{
+			use_cidx = cidx + chi_offset;
+			use_cidx = (use_cidx + _chiCount) % _chiCount;
 			for (iidx = 0; iidx < ORDER_PLUS_ONE; iidx++)
 			{
+				use_iidx = iidx + inc_offset;
 				val_x[iidx] = (double)iidx;
-				val_y[iidx] = *(*(*(*(_value + pol_idx) + iidx + inc_offset) +
-					sidx + spd_offset) + cidx + chi_offset);
+				val_y[iidx] = *(*(*(*(_value + pol_idx) + use_iidx) +
+					use_sidx) + use_cidx);
 			}
 			polint(val_x, val_y, ORDER_PLUS_ONE, inc_subtable_ridx,
 				&(val_spd_chi[sidx][cidx]));
