@@ -549,45 +549,76 @@ WindField::WriteBev(
 // WindField::NearestWindVector //
 //------------------------------//
 
-WindVector
+int
 WindField::NearestWindVector(
-	LonLat	lon_lat)
+	LonLat			lon_lat,
+	WindVector*		wv)
 {
-	int lon_idx = (int)((lon_lat.longitude - _lonMin) / _lonStep + 0.5);
-	if (lon_idx < 0) lon_idx = 0;
-	if (lon_idx >= _lonCount) lon_idx = _lonCount - 1;
+	// put longitude in range (hopefully)
+	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / 360.0);
+	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
+	// convert to longitude index
+	int lon_idx = (int)((lon - _lonMin) / _lonStep + 0.5);
+	if (lon_idx < 0 || lon_idx >= _lonCount)
+		return(0);
+
+	// convert to latitude index
 	int lat_idx = (int)((lon_lat.latitude - _latMin) / _latStep + 0.5);
-	if (lat_idx < 0) lat_idx = 0;
-	if (lat_idx >= _latCount) lat_idx = _latCount - 1;
+	if (lat_idx < 0 || lat_idx >= _latCount)
+		return(0);
 
-	WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+	*wv = *(*(*(_field + lon_idx) + lat_idx));
 
-	return(*wv);
+	return(1);
 }
 
 //-----------------------------------//
 // WindField::InterpolatedWindVector //
 //-----------------------------------//
 
-WindVector
+int
 WindField::InterpolatedWindVector(
-	LonLat	lon_lat)
+	LonLat			lon_lat,
+	WindVector*		wv)
 {
-	int lon_idx_1 = (int)((lon_lat.longitude - _lonMin) / _lonStep);
-	if (lon_idx_1 < 0) lon_idx_1 = 0;
-	if (lon_idx_1 >= _lonCount) lon_idx_1 = _lonCount - 1;
+	// put longitude in range (hopefully)
+	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / 360.0);
+	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
+
+	// find lower longitude index
+	int lon_idx_1 = (int)((lon - _lonMin) / _lonStep);
+	if (lon_idx_1 < 0 || lon_idx_1 >= _lonCount)
+		return(0);
 	float lon_1 = _lonMin + lon_idx_1 * _lonStep;
-	int lon_idx_2 = lon_idx_1 + 1;
-	if (lon_idx_2 >= _lonCount) lon_idx_2 = _lonCount - 1;
+
+	// find upper longitude index
+	int lon_idx_2 = lon_idx_1 + 1;		// try the quick easy way
+	if (lon_idx_2 >= _lonCount)
+	{
+		// must do the long hard way
+		lon = lon_lat.longitude + _lonStep;
+		wrap_factor = (int)ceil((_lonMin - lon) / 360.0);
+		lon += (float)wrap_factor * two_pi;
+
+		lon_idx_2 = (int)((lon - _lonMin) / _lonStep);
+		if (lon_idx_2 >= _lonCount)
+			return(0);
+	}
+	if (lon_idx_2 < 0)
+		return(0);
 	float lon_2 = _lonMin + lon_idx_2 * _lonStep;
 
+	// find lower latitude index
 	int lat_idx_1 = (int)((lon_lat.latitude - _latMin) / _latStep);
-	if (lat_idx_1 < 0) lat_idx_1 = 0;
-	if (lat_idx_1 >= _latCount) lat_idx_1 = _latCount - 1;
+	if (lat_idx_1 < 0 || lat_idx_1 >= _latCount)
+		return(0);
 	float lat_1 = _latMin + lat_idx_1 * _latStep;
+
+	// find upper latitude index
 	int lat_idx_2 = lat_idx_1 + 1;
-	if (lat_idx_2 >= _latCount) lat_idx_2 = _latCount - 1;
+	if (lat_idx_2 >= _latCount)
+		return(0);
 	float lat_2 = _latMin + lat_idx_2 * _latStep;
 
 	float p;
@@ -618,9 +649,8 @@ WindField::InterpolatedWindVector(
 	float u = pn * qn * u1 + p * qn * u2 + p * q * u3 + pn * q * u4;
 	float v = pn * qn * v1 + p * qn * v2 + p * q * v3 + pn * q * v4;
 
-	WindVector wv;
-	wv.SetUV(u, v);
-	return(wv);
+	wv->SetUV(u, v);
+	return(1);
 }
 
 //----------------------//
@@ -1104,8 +1134,9 @@ WindSwath::Skill(
 			if (! wvc || ! wvc->selected)
 				continue;
 
-			WindVector true_wv =
-				truth->InterpolatedWindVector(wvc->lonLat);
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
 
 			WindVectorPlus* nearest =
 				wvc->GetNearestToDirection(true_wv.dir);

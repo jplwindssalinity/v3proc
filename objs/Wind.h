@@ -172,8 +172,8 @@ public:
 	// access //
 	//--------//
 
-	WindVector		NearestWindVector(LonLat lon_lat);
-	WindVector		InterpolatedWindVector(LonLat lon_lat);
+	int		NearestWindVector(LonLat lon_lat, WindVector* wv);
+	int		InterpolatedWindVector(LonLat lon_lat, WindVector* wv);
 
 protected:
 

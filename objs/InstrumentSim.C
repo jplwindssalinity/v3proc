@@ -175,7 +175,12 @@ if (l00.frame.slicesPerSpot <= 1)
 	LonLat lon_lat;
 	lon_lat.longitude = lon;
 	lon_lat.latitude = lat;
-	WindVector wv = windfield->InterpolatedWindVector(lon_lat);
+	WindVector wv;
+	if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+	{
+		wv.spd = 0.0;
+		wv.dir = 0.0;
+	}
 
 	//---------------------------//
 	// generate measurement data //
