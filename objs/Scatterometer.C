@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_scatterometer_c[] =
     "@(#) $Id$";
@@ -13,6 +13,19 @@ static const char rcs_id_scatterometer_c[] =
 //================//
 // ScatTargetInfo //
 //================//
+
+//----------------------------//
+// ScatTargetInfo::WriteAscii //
+//----------------------------//
+
+int
+ScatTargetInfo::WriteAscii()
+{
+    gcLook.Show("Look");
+    printf("Range = %g\n", slantRange);
+    printf("Rtt = %g\n", roundTripTime);
+    return(1);
+}
 
 //-----------------------------------//
 // ScatTargetInfo::GetScatTargetInfo //

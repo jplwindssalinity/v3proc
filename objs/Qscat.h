@@ -42,6 +42,8 @@ static const char rcs_id_qscat_h[] =
 class QscatTargetInfo : public ScatTargetInfo
 {
 public:
+    int    WriteAscii();
+
     float  dopplerFreq;      // Hz
     float  basebandFreq;     // Hz
 };

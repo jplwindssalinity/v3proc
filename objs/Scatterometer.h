@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef SCATTEROMETER_H
 #define SCATTEROMETER_H
@@ -37,6 +37,7 @@ public:
     float          slantRange;       // km
     float          roundTripTime;    // ms
 
+    int  WriteAscii();
     int  GetScatTargetInfo(CoordinateSwitch* antenna_frame_to_gc,
              EarthPosition rsat, Vector3 vector);
 };

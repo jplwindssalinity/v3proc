@@ -16,6 +16,19 @@ static const char rcs_id_qscat_c[] =
 #include "BYUXTable.h"
 #include "AccurateGeom.h"
 
+//=================//
+// QscatTargetInfo //
+//=================//
+
+int
+QscatTargetInfo::WriteAscii()
+{
+    ScatTargetInfo::WriteAscii();
+    printf("Doppler = %g\n", dopplerFreq);
+    printf("Baseband = %g\n", basebandFreq);
+    return(1);
+}
+
 //=============//
 // SesBeamInfo //
 //=============//
