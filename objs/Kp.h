@@ -1,13 +1,13 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef KP_H
 #define KP_H
 
 static const char rcs_id_kp_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Kpm.h"
 #include "Kpr.h"
@@ -15,29 +15,29 @@ static const char rcs_id_kp_h[] =
 
 //======================================================================
 // CLASSES
-//		Kp
+//    Kp
 //======================================================================
 
 //======================================================================
 // CLASS
-//		Kp
+//    Kp
 //
 // DESCRIPTION
-//		The Kp object holds estimates of Kpc, Kpm, instrument Kpr,
-//		and spacecraft Kpr.
+//    The Kp object holds estimates of Kpc, Kpm, instrument Kpr,
+//    and spacecraft Kpr.
 //======================================================================
 
 class Kp
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	Kp();
-        Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val);
-	~Kp();
+    Kp();
+    Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val);
+    ~Kp();
 
     //--------------//
     // accessing Kp //
@@ -50,30 +50,28 @@ public:
     int  GetKp2(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type,
              float speed, double* kp2);
 
-	//---------------------//
-	// accessing variances //
-	//---------------------//
+    //---------------------//
+    // accessing variances //
+    //---------------------//
 
-	int		GetVpc(Meas* meas, double sigma_0, double* vpc);
-	int		GetVpc(Meas* meas, double sigma0_corr, double sigma0_copol,
-                   double sigma0_xpol, double* vpc);
-	int		GetVp(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type, 
-			      float speed, double* vp);
+    int  GetVpc(Meas* meas, double sigma_0, double* vpc);
+    int  GetVpc(Meas* meas, double sigma0_corr, double sigma0_copol,
+             double sigma0_xpol, double* vpc);
+    int  GetVp(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type,
+             float speed, double* vp);
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	Kpm		kpm;
-	Kpri	kpri;
-	Kprs	kprs;
-        float   kpc2Constant;
-        float   kpm2Constant;
-        float   kpri2Constant;
-        float   kprs2Constant;
-	int useConstantValues;
+    Kpm    kpm;
+    Kpri   kpri;
+    Kprs   kprs;
+    float  kpc2Constant;
+    float  kpm2Constant;
+    float  kpri2Constant;
+    float  kprs2Constant;
+    int    useConstantValues;
 };
 
 #endif
-
-
