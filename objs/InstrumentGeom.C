@@ -17,6 +17,7 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Beam.h"
 #include "Matrix3.h"
 #include "Interpolate.h"
+#include "Misc.h"
 
 /*
 //---------------//
@@ -128,7 +129,7 @@ FindSlice(
 
 	//-----------------------//
 	// get frequency 1 slice //
-	//-----------------r-----//
+	//-----------------------//
 
 	float angle_f1;
 	double c_f1[3];
@@ -142,8 +143,8 @@ FindSlice(
 		azimuth_array);
 	GainSlice(instrument, look_array, azimuth_array, s, c_f1);
 	s_peak = -c_f1[1] / (2.0 * c_f1[2]);
-	look_1 = look_array[0] + s_peak * sin(angle_f1);
-	azimuth_1 = azimuth_array[0] + s_peak * cos(angle_f1);
+	look_1 = look_array[1] + s_peak * sin(angle_f1);
+	azimuth_1 = azimuth_array[1] + s_peak * cos(angle_f1);
 
 	//-----------------------//
 	// get frequency 2 slice //
@@ -161,8 +162,8 @@ FindSlice(
 		azimuth_array);
 	GainSlice(instrument, look_array, azimuth_array, s, c_f2);
 	s_peak = -c_f2[1] / (2.0 * c_f2[2]);
-	look_2 = look_array[0] + s_peak * sin(angle_f2);
-	azimuth_2 = azimuth_array[0] + s_peak * cos(angle_f2);
+	look_2 = look_array[1] + s_peak * sin(angle_f2);
+	azimuth_2 = azimuth_array[1] + s_peak * cos(angle_f2);
 
 	//----------------------------------------//
 	// determine absolute peak gain for slice //
@@ -172,16 +173,32 @@ FindSlice(
 	azimuth_array[0] = azimuth_1;
 	look_array[2] = look_2;
 	azimuth_array[2] = azimuth_2;
-//	double angle = atan2(look_2 - look_1, azimuth_2 - azimuth_1);
 	double c[3];
 	GainSlice(instrument, look_array, azimuth_array, s, c);
+	if (c[2] > 0.0)
+	{
+		fprintf(stderr, "upside down\n");
+	}
 	s_peak = -c[1] / (2.0 * c[2]);
-//	float peak_look = look_array[0] + s_peak * sin(angle);
-//	float peak_azimuth = azimuth_array[0] + s_peak * cos(angle);
-	float gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
+
+	float gain;
+	if (s_peak < s[0] || s_peak > s[2])
+	{
+		// peak of pattern is out of slice, choose highest gain in slice
+		float gain1 = ((c[2] * s[0]) + c[1]) * s[0] + c[0];
+		float gain2 = ((c[2] * s[2]) + c[1]) * s[2] + c[0];
+		gain = MAX(gain1, gain2);
+	}
+	else
+	{
+		// peak of pattern is in slice, use peak
+		gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
+	}
 
 	float outline_look[2][2];
 	float outline_azimuth[2][2];
+	double qr;
+	float q, twoa, s1, s2;
 
 	//------------------------------------------------------//
 	// determine target -3 db gain location for frequency 1 //
@@ -189,30 +206,56 @@ FindSlice(
 
 	// just solve the quadratic for the desired gain
 	float target_gain = gain / pow(10.0, 0.3);
-	float q = sqrt(c_f1[1]*c_f1[1] - 4.0 * c_f1[2] * (c_f1[0] - target_gain));
-	float twoa = 2.0 * c_f1[2];
-	float s1 = (-c_f1[1] + q) / twoa;
-	float s2 = (-c_f1[1] - q) / twoa;
+	qr = c_f1[1]*c_f1[1] - 4.0 * c_f1[2] * (c_f1[0] - target_gain);
 
-	outline_look[0][0] = look_array[0] + s1 * sin(angle_f1);
-	outline_azimuth[0][0] = azimuth_array[0] + s1 * cos(angle_f1);
-	outline_look[0][1] = look_array[0] + s2 * sin(angle_f1);
-	outline_azimuth[0][1] = azimuth_array[0] + s2 * cos(angle_f1);
+	if (qr < 0.0)
+	{
+		// desired gain not on pattern, use best point
+		outline_look[0][0] = look_array[0];
+		outline_azimuth[0][0] = azimuth_array[0];
+		outline_look[0][1] = look_array[0];
+		outline_azimuth[0][1] = azimuth_array[0];
+	}
+	else
+	{
+		q = sqrt(qr);
+		twoa = 2.0 * c_f1[2];
+		s1 = (-c_f1[1] + q) / twoa;
+		s2 = (-c_f1[1] - q) / twoa;
+
+		outline_look[0][0] = look_array[0] + s1 * sin(angle_f1);
+		outline_azimuth[0][0] = azimuth_array[0] + s1 * cos(angle_f1);
+		outline_look[0][1] = look_array[0] + s2 * sin(angle_f1);
+		outline_azimuth[0][1] = azimuth_array[0] + s2 * cos(angle_f1);
+	}
 
 	//------------------------------------------------------//
 	// determine target -3 db gain location for frequency 2 //
 	//------------------------------------------------------//
 
 	// just solve the quadratic for the desired gain
-	q = sqrt(c_f2[1]*c_f2[1] - 4.0 * c_f2[2] * (c_f2[0] - target_gain));
-	twoa = 2.0 * c_f2[2];
-	s1 = (-c_f2[1] + q) / twoa;
-	s2 = (-c_f2[1] - q) / twoa;
+	qr = c_f2[1]*c_f2[1] - 4.0 * c_f2[2] * (c_f2[0] - target_gain);
 
-	outline_look[1][0] = look_array[2] + s1 * sin(angle_f2);
-	outline_azimuth[1][0] = azimuth_array[2] + s1 * cos(angle_f2);
-	outline_look[1][1] = look_array[2] + s2 * sin(angle_f2);
-	outline_azimuth[1][1] = azimuth_array[2] + s2 * cos(angle_f2);
+	if (qr < 0.0)
+	{
+		// desired gain not on pattern, use best point
+		outline_look[1][0] = look_array[2];
+		outline_azimuth[1][0] = azimuth_array[2];
+		outline_look[1][1] = look_array[2];
+		outline_azimuth[1][1] = azimuth_array[2];
+	}
+	else
+	{
+		q = sqrt(qr);
+		twoa = 2.0 * c_f2[2];
+		s1 = (-c_f2[1] + q) / twoa;
+		s2 = (-c_f2[1] - q) / twoa;
+
+		outline_look[1][0] = look_array[2] + s1 * sin(angle_f2);
+		outline_azimuth[1][0] = azimuth_array[2] + s1 * cos(angle_f2);
+		outline_look[1][1] = look_array[2] + s2 * sin(angle_f2);
+		outline_azimuth[1][1] = azimuth_array[2] + s2 * cos(angle_f2);
+	}
 
 	//--------------------//
 	// create the outline //
