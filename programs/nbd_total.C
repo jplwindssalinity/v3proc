@@ -544,19 +544,16 @@ main(
 
             double norm_dif_sum[2];       // beam
             int count[2];
-            double x_comp_sum[2][2];    // beam, fore/aft
-            double y_comp_sum[2][2];    // beam, fore/aft
-            double comp_count[2][2];    // beam, fore/aft
+            double x_outer_comp_sum[2];    // fore/aft
+            double y_outer_comp_sum[2];    // fore/aft
+            int outer_comp_count[2];    // fore/aft
             for (int i = 0; i < 2; i++)
             {
                 norm_dif_sum[i] = 0.0;
                 count[i] = 0;
-                for (int j = 0; j < 2; j++)
-                {
-                    x_comp_sum[i][j] = 0.0;
-                    y_comp_sum[i][j] = 0.0;
-                    comp_count[i][j] = 0;
-                }
+                x_outer_comp_sum[i] = 0.0;
+                y_outer_comp_sum[i] = 0.0;
+                outer_comp_count[i] = 0;
             }
 
             for (Meas* meas = meas_list->GetHead(); meas;
@@ -581,11 +578,12 @@ main(
                 count[meas->beamIdx]++;
 
                 int foreaft_idx = (int)(meas->scanAngle + 0.5);
-                x_comp_sum[meas->beamIdx][foreaft_idx] += 
-                    cos(meas->eastAzimuth);
-                y_comp_sum[meas->beamIdx][foreaft_idx] += 
-                    sin(meas->eastAzimuth);
-                comp_count[meas->beamIdx][foreaft_idx]++;
+                if (meas->beamIdx == 1)    // outer beam
+                {
+                    x_outer_comp_sum[foreaft_idx] += cos(meas->eastAzimuth);
+                    y_outer_comp_sum[foreaft_idx] += sin(meas->eastAzimuth);
+                    outer_comp_count[foreaft_idx]++;
+                }
             }
 //            wvc.FreeContents();
 
@@ -593,24 +591,19 @@ main(
             // set direction array //
             //---------------------//
 
-            if (comp_count[0][0] > 0 && comp_count[0][1] > 0 &&
-                comp_count[1][0] > 0 && comp_count[1][1] > 0)
+            if (outer_comp_count[0] > 0 && outer_comp_count[1] > 0)
             {
-                // calculate target angles
-                float target_angle[2];
-                for (int i = 0; i < 2; i++)    // beam
+                // calculate target angle
+                for (int i = 0; i < 2; i++)    // fore/aft
                 {
-                    for (int j = 0; j < 2; j++)    // fore/aft
-                    {
-                        x_comp_sum[i][j] /= comp_count[i][j];
-                        y_comp_sum[i][j] /= comp_count[i][j];
-                    }
-                    target_angle[i] =
-                        atan2(y_comp_sum[i][0] + y_comp_sum[i][1],
-                        x_comp_sum[i][0] + x_comp_sum[0][1]);
+                    x_outer_comp_sum[i] /= outer_comp_count[i];
+                    y_outer_comp_sum[i] /= outer_comp_count[i];
                 }
+                float target_angle =
+                    atan2(y_outer_comp_sum[0] + y_outer_comp_sum[1],
+                    x_outer_comp_sum[0] + x_outer_comp_sum[1]);
 
-                float dir_val = ANGDIF(target_angle[1], dir);
+                float dir_val = ANGDIF(target_angle, dir);
 
                 // make it with respect to along track angle
                 if (dir_val > pi_over_two)
