@@ -67,7 +67,9 @@ PROGRAMS = \
 	fix_ecmwf_speed \
 	l2b_to_flower \
         l2a_dissect \
-        l1b_to_half_egg
+        l1b_to_half_egg \
+        l1b_to_ascii \
+        l2a_to_ascii
 
 HUDD_PROGRAMS = \
 	sim \
