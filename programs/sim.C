@@ -60,16 +60,13 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "ConfigList.h"
 #include "OrbitSim.h"
+#include "SimControl.h"
+#include "Config.h"
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
-#define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
-#define INCLINATION_KEYWORD				"INCLINATION"
-#define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
- 
 //--------//
 // MACROS //
 //--------//
@@ -124,35 +121,28 @@ main(
 		exit(1);
 	}
 
-	//-------------------------//
-	// set up orbit parameters //
-	//-------------------------//
+	//--------------------------------------------------//
+	// create a simulation control object               //
+	// use the simulation control list to initialize it //
+	//--------------------------------------------------//
 
-	double semi_major_axis;
-	sim_control_list.GetDouble(SEMI_MAJOR_AXIS_KEYWORD,
-		&semi_major_axis);
-
-	double eccentricity;
-	sim_control_list.GetDouble(ECCENTRICITY_KEYWORD,
-		&eccentricity);
-
-	double inclination;
-	sim_control_list.GetDouble(INCLINATION_KEYWORD,
-		&inclination);
-
-	double argument_of_perigee;
-	sim_control_list.GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD,
-		&argument_of_perigee);
-
-	OrbitSim orbit_sim(semi_major_axis, eccentricity, inclination,
-		argument_of_perigee);
-
-	orbit_sim.Initialize(0.0, 0.0, 0);
-
-	for (int itime = 0; itime < 30300; itime += 10)
+	SimControl sim_control;
+	if (! ConfigSimControl(&sim_control, &sim_control_list))
 	{
-		OrbitState os = orbit_sim.GetOrbitState((double)itime);
-		printf("%d %g %g\n", itime, os.gc_longitude * RTD, os.gc_latitude * RTD);
+		fprintf(stderr, "%s: error configuring simulation\n", command);
+		exit(1);
+	}
+
+	//----------------------//
+	// cycle through events //
+	//----------------------//
+
+	for (int itime = 0; itime < 12120; itime += 60)
+	{
+		OrbitState os = sim_control.orbit.GetOrbitState((double)itime);
+		printf("%d %g %g %g %g %g %g\n", itime, os.gc_vector[0],
+			os.gc_vector[1], os.gc_vector[2], os.velocity_vector[0],
+			os.velocity_vector[1], os.velocity_vector[2]);
 	}
 
 	return (0);
