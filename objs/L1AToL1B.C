@@ -80,11 +80,12 @@ L10ToL15::Convert(
 		// ...determine the spacecraft orbit state and attitude //
 		//------------------------------------------------------//
 
-		OrbitState sc_orbit_state;
-		if (! ephemeris->GetOrbitState(l10->frame.time, &sc_orbit_state))
+		if (! ephemeris->GetOrbitState(l10->frame.time,
+			&(meas_spot->scOrbitState)))
+		{
 			return(0);
-		Attitude sc_attitude;
-		sc_attitude = l10->frame.attitude;
+		}
+		meas_spot->scAttitude = l10->frame.attitude;
 
 		//-----------------------------//
 		// ...do geometry for the spot //
@@ -92,8 +93,9 @@ L10ToL15::Convert(
 
 		antenna->SetAzimuthWithEncoder(l10->frame.antennaPosition[i]);
 
-		CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(&sc_orbit_state,
-			&sc_attitude, antenna, beam);
+		CoordinateSwitch beam_frame_to_gc =
+			BeamFrameToGC(&(meas_spot->scOrbitState), &(meas_spot->scAttitude),
+			antenna, beam);
 
 		//----------------------------------//
 		// ...add measurements to spot list //
@@ -104,7 +106,7 @@ L10ToL15::Convert(
 		Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
 
 		EarthPosition spot_on_earth = earth_intercept(rlook_gc,
-			sc_orbit_state.rsat);
+			meas_spot->scOrbitState.rsat);
 
 		Vector3 alt_lat_lon =
 			spot_on_earth.get_alt_lat_lon(EarthPosition::GEODETIC);
