@@ -208,7 +208,7 @@ public:
     int  SetTimeWithInstrumentTime(unsigned int ticks);
 
     double          OrbitFraction();
-    unsigned short  GetTrackingOrbitStep();
+    unsigned short  SetAndGetOrbitStep();
     CdsBeamInfo*    GetCurrentBeamInfo();
     double          GetAssumedSpinRate();
     unsigned short  EstimateIdealEncoder();
@@ -227,21 +227,22 @@ public:
     // variables //
     //-----------//
 
-    unsigned char  priDn;
-    unsigned char  txPulseWidthDn;
-    SpinRateE      spinRate;
-    int            useRgc;
-    int            useDtc;
-    int            useBYUDop;
-    unsigned int   orbitTicksPerOrbit;
-    CdsBeamInfo    beamInfo[NUMBER_OF_QSCAT_BEAMS];
+    unsigned char   priDn;
+    unsigned char   txPulseWidthDn;
+    SpinRateE       spinRate;
+    int             useRgc;
+    int             useDtc;
+    int             useBYUDop;
+    unsigned int    orbitTicksPerOrbit;
+    CdsBeamInfo     beamInfo[NUMBER_OF_QSCAT_BEAMS];
 
-    int            currentBeamIdx;
-    unsigned int   orbitTime;
-    unsigned int   instrumentTime;
+    int             currentBeamIdx;
+    unsigned int    orbitTime;
+    unsigned short  orbitStep;
+    unsigned int    instrumentTime;
 
-    double         time;
-    double         eqxTime;
+    double          time;
+    double          eqxTime;
 
     unsigned short  rawEncoder;   // used for the current pulse (ex-held)
     unsigned short  heldEncoder;  // sampled for the next pulse
@@ -290,5 +291,6 @@ public:
 //------------------//
 
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
+int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
 #endif

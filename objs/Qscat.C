@@ -432,8 +432,8 @@ CdsBeamInfo::~CdsBeamInfo()
 
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
-    useBYUDop(0), orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), 
-    time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
+    useBYUDop(0), orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0),
+    orbitStep(0), time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
 {
     return;
 }
@@ -497,21 +497,19 @@ QscatCds::OrbitFraction()
     return(frac);
 }
 
-//--------------------------------//
-// QscatCds::GetTrackingOrbitStep //
-//--------------------------------//
+//------------------------------//
+// QscatCds::SetAndGetOrbitStep //
+//------------------------------//
 
 unsigned short
-QscatCds::GetTrackingOrbitStep()
+QscatCds::SetAndGetOrbitStep()
 {
     float ticks_per_orbit_step = (float)orbitTicksPerOrbit /
         (float)ORBIT_STEPS;
-    unsigned short orbit_step =
-        (unsigned short)((float)(orbitTime % orbitTicksPerOrbit) /
+    orbitStep = (unsigned short)((float)(orbitTime % orbitTicksPerOrbit) /
         ticks_per_orbit_step);
-    orbit_step %= ORBIT_STEPS;
-
-    return(orbit_step);
+    orbitStep %= ORBIT_STEPS;
+    return(orbitStep);
 }
 
 //------------------------------//
@@ -791,6 +789,11 @@ Qscat::GetCurrentSesBeamInfo()
 // This function probably belongs somewhere else, but it is so convenient
 // to put it here.
 
+//----------------------//
+// SetDelayAndFrequency //
+//----------------------//
+// the orbit step must be set prior to calling this function
+
 int
 SetDelayAndFrequency(
     Spacecraft*  spacecraft,
@@ -822,9 +825,8 @@ SetDelayAndFrequency(
     // calculate orbit step, if needed //
     //---------------------------------//
 
-    unsigned short orbit_step = 0;
     if (qscat->cds.useRgc || qscat->cds.useDtc)
-        orbit_step = qscat->cds.GetTrackingOrbitStep();
+        qscat->cds.SetAndGetOrbitStep();
 
     //-----------------------------//
     // calculate the rx gate delay //
@@ -840,7 +842,7 @@ SetDelayAndFrequency(
         // tracking algorithm
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
-        range_tracker->GetRxGateDelay(orbit_step, ideal_encoder,
+        range_tracker->GetRxGateDelay(qscat->cds.orbitStep, ideal_encoder,
             cds_beam_info->rxGateWidthDn, qscat->cds.txPulseWidthDn,
             &rx_gate_delay_dn, &rx_gate_delay_fdn);
         qscat->ses.CmdRxGateDelayDn(rx_gate_delay_dn);
@@ -865,8 +867,8 @@ SetDelayAndFrequency(
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
         short doppler_dn;
-        doppler_tracker->GetCommandedDoppler(orbit_step, ideal_encoder,
-            rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
+        doppler_tracker->GetCommandedDoppler(qscat->cds.orbitStep,
+            ideal_encoder, rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
         qscat->ses.CmdTxDopplerDn(doppler_dn);
     }
     else if (qscat->cds.useBYUDop)
@@ -874,11 +876,34 @@ SetDelayAndFrequency(
         // ideal frequency
         BYUCommandedDoppler(spacecraft, qscat);
     }
-    else 
+    else
     {
         // ideal frequency
         IdealCommandedDoppler(spacecraft, qscat);
     }
 
     return(1);
+}
+
+//-------------------------------//
+// SetOrbitStepDelayAndFrequency //
+//-------------------------------//
+
+int
+SetOrbitStepDelayAndFrequency(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat)
+{
+    //---------------------------------//
+    // calculate orbit step, if needed //
+    //---------------------------------//
+
+    if (qscat->cds.useRgc || qscat->cds.useDtc)
+        qscat->cds.SetAndGetOrbitStep();
+
+    //-------------------------------//
+    // calculate delay and frequency //
+    //-------------------------------//
+
+    return(SetDelayAndFrequency(spacecraft, qscat));
 }

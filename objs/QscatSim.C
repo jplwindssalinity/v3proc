@@ -182,9 +182,9 @@ QscatSim::ScatSim(
         // if this is the first or second pulse, "spin up" the //
         // Doppler and range tracking calculations //
 
-        if (_spinUpPulses)
+        if (_spinUpPulses && (qscat->cds.useRgc || qscat->cds.useDtc))
         {
-            SetDelayAndFrequency(spacecraft, qscat);
+            SetOrbitStepDelayAndFrequency(spacecraft, qscat);
             _spinUpPulses--;    // one less spinup pulse
             return(2);    // indicate spin up
         }
@@ -197,7 +197,7 @@ QscatSim::ScatSim(
             return(0);
         l00_frame->time = qscat->cds.time;
         l00_frame->orbitTicks = qscat->cds.orbitTime;
-        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
+        l00_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
         l00_frame->instrumentTicks = qscat->cds.instrumentTime;
         l00_frame->priOfOrbitStepChange = 255;      // flag value
         l00_frame->calPosition = 255;	// no cal pulses yet
@@ -207,7 +207,7 @@ QscatSim::ScatSim(
     // command the range delay and Doppler frequency //
     //-----------------------------------------------//
 
-    SetDelayAndFrequency(spacecraft, qscat);
+    SetOrbitStepDelayAndFrequency(spacecraft, qscat);
 
     if (applyDopplerError)
     {
@@ -337,7 +337,7 @@ QscatSim::ScatSim(
     // set orbit step change indicator //
     //---------------------------------//
 
-    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    unsigned short orbit_step = qscat->cds.SetAndGetOrbitStep();
     if (orbit_step != l00_frame->orbitStep)
     {
         l00_frame->priOfOrbitStepChange = _spotNumber;
@@ -408,7 +408,7 @@ QscatSim::LoopbackSim(
             return(0);
         l00_frame->time = qscat->cds.time;
         l00_frame->orbitTicks = qscat->cds.orbitTime;
-        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
+        l00_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
         l00_frame->instrumentTicks = qscat->cds.instrumentTime;
         l00_frame->priOfOrbitStepChange = 255;      // flag value
     }
@@ -417,7 +417,7 @@ QscatSim::LoopbackSim(
     // tracking must be done to update state variables //
     //-------------------------------------------------//
 
-    SetDelayAndFrequency(spacecraft, qscat);
+    SetOrbitStepDelayAndFrequency(spacecraft, qscat);
 
     //--------------------------------------//
     // Add Cal-pulse Specific Info to Frame //
@@ -430,7 +430,7 @@ QscatSim::LoopbackSim(
     // set orbit step change indicator //
     //---------------------------------//
 
-    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    unsigned short orbit_step = qscat->cds.SetAndGetOrbitStep();
     if (orbit_step != l00_frame->orbitStep)
     {
         l00_frame->priOfOrbitStepChange = _spotNumber;
@@ -483,7 +483,7 @@ QscatSim::LoadSim(
             return(0);
         l00_frame->time = qscat->cds.time;
         l00_frame->orbitTicks = qscat->cds.orbitTime;
-        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
+        l00_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
         l00_frame->instrumentTicks = qscat->cds.instrumentTime;
         l00_frame->priOfOrbitStepChange = 255;      // flag value
         l00_frame->calPosition = 255;	// no loopback cal pulses yet
@@ -493,7 +493,7 @@ QscatSim::LoadSim(
     // tracking must be done to update state variables //
     //-------------------------------------------------//
 
-    SetDelayAndFrequency(spacecraft, qscat);
+    SetOrbitStepDelayAndFrequency(spacecraft, qscat);
 
     //--------------------------------------//
     // Add Cal-pulse Specific Info to Frame //
@@ -506,7 +506,7 @@ QscatSim::LoadSim(
     // set orbit step change indicator //
     //---------------------------------//
 
-    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    unsigned short orbit_step = qscat->cds.SetAndGetOrbitStep();
     if (orbit_step != l00_frame->orbitStep)
     {
         l00_frame->priOfOrbitStepChange = _spotNumber;

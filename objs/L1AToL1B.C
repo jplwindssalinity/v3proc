@@ -158,8 +158,12 @@ L1AToL1B::Convert(
 			// set up instrument //
 			//-------------------//
 
-			if (spot_idx == l1a->frame.priOfOrbitStepChange)
-				qscat->cds.orbitTime++;
+            qscat->cds.orbitStep = l1a->frame.orbitStep;
+            if (l1a->frame.priOfOrbitStepChange != 255 &&
+                spot_idx < l1a->frame.priOfOrbitStepChange)
+            {
+                qscat->cds.orbitStep--;
+            }
 
             unsigned short encoder = l1a->frame.antennaPosition[spot_idx];
 			qscat->sas.SetAzimuthWithEncoder(encoder);
