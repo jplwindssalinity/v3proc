@@ -166,7 +166,7 @@ main(
 	// open files //
 	//------------//
 
-	l15.OpenForWriting();
+	l15.OpenForReading();
 	grid.l17.file.OpenForOutput();
 
 	//-----------------//
