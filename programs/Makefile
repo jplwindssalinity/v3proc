@@ -75,7 +75,9 @@ PROGRAMS = \
 	reformat_pattern \
 	test_pattern \
 	get_X_scan \
-        get_DopRan_scan
+	get_DopRan_scan \
+	est_freq_offset \
+	fix_dtc
 #	generate_kfactor
 
 HUDD_PROGRAMS = \
