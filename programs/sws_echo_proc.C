@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1999-2001, California Institute of Technology. //
+// Copyright (C) 1999-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -367,11 +367,8 @@ main(
         uint8 operational_mode;
         SDreaddata_or_exit("operational_mode", operational_mode_sds_id, start,
             edges, (VOIDP)&operational_mode);
-// this should get un-commented for the real thing
-/*
         if (operational_mode != WOM)
             continue;
-*/
 
         //-------------------------//
         // ses configuration flags //
@@ -382,11 +379,8 @@ main(
             ses_configuration_flags_sds_id, start, edges,
             (VOIDP)&ses_configuration_flags);
         unsigned char modulation = ses_configuration_flags & MODULATION_ON;
-// this should get un-commented for the real thing
-/*
         if (! modulation)
             continue;
-*/
 
         wom_frame++;
 
