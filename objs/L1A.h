@@ -11,6 +11,7 @@ static const char rcs_id_l1a_h[] =
 
 #include "BaseFile.h"
 #include "L1AFrame.h"
+#include "L1AGSFrame.h"
 
 
 //======================================================================
@@ -61,6 +62,8 @@ public:
     int  WriteDataRec();
     int  WriteDataRecAscii();
 
+    int  WriteGSDataRec(void);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -68,6 +71,8 @@ public:
 	char*		buffer;
 	int			bufferSize;
 	L1AFrame	frame;
+
+    L1AGSFrame  gsFrame;
 
 protected:
 
