@@ -330,6 +330,7 @@ main(
     float enof_array[AT_WIDTH][CT_WIDTH];
 
     unsigned int array_size = CT_WIDTH * AT_WIDTH;
+    int rev_count = 0;
 
     for (int rev = start_rev; rev <= end_rev; rev++)
     {
@@ -442,6 +443,7 @@ main(
         // generate table //
         //----------------//
 
+        rev_count++;
         double param[PARAM_COUNT];
         int got_param[PARAM_COUNT];
 
@@ -637,8 +639,8 @@ main(
                         break;    // get out of this loop
 
                     // compute the index too
-                    pc_index[swath_idx][pc_idx].GetNearestIndex(pc[pc_idx],
-                        &(pci[pc_idx]));
+                    pc_index[swath_idx][pc_idx].GetNearestIndexClipped(
+                        pc[pc_idx], &(pci[pc_idx]));
                     if (pci[pc_idx] >= DIM) pci[pc_idx] = DIM - 1;
                     if (pci[pc_idx] < 0) pci[pc_idx] = 0;
                 }
@@ -715,6 +717,8 @@ main(
     //-------------//
 
     fclose(pcatab_ofp);
+
+    printf("%d revs\n", rev_count);
 
     return (0);
 }
