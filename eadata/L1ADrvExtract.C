@@ -458,7 +458,7 @@ TlmHdfFile*         l1File,
 int32*              sdsIDs,
 int32               start,
 int32               sliceIndex,  // slice no, start from 0
-unsigned short*     dnValues,
+unsigned int*       dnValues,
 unsigned char*      validDataMap)
 {
     assert(l1File != 0);
@@ -473,16 +473,16 @@ unsigned char*      validDataMap)
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
+        unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
                                    1, 1, (VOIDP)allBuffer))
             return (-1);
 
-        unsigned short* ushortP = dnValues;
+        unsigned int* uintP = dnValues;
         for (int i=0; i < 100; i++)
-            *ushortP++ = allBuffer[i][sliceIndex];
+            *uintP++ = allBuffer[i][sliceIndex];
 
         // copy the beam A valid data map
         (void)memcpy(validDataMap, _beamAMap, MAX_NUM_DERIVED_VALUES);
@@ -507,15 +507,15 @@ unsigned char*      validDataMap)
         }
 
         // get it from loop_back_cal_power
-        unsigned short allBuffer[12];
+        unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
                                       (VOIDP)allBuffer) != TRUE)
             return (-1);
 
-        unsigned short* ushortP = dnValues;
-        *ushortP = allBuffer[sliceIndex];
+        unsigned int* uintP = dnValues;
+        *uintP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
@@ -546,7 +546,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice1DN
 
@@ -567,23 +567,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice1DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -609,7 +603,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 1,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice2DN
 
@@ -630,23 +624,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 1,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice2DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -672,7 +660,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 2,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice3DN
 
@@ -693,23 +681,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 2,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice3DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -735,7 +717,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 3,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice4DN
 
@@ -756,23 +738,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 3,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice4DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -798,7 +774,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 4,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice5DN
 
@@ -819,23 +795,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 4,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice5DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -861,7 +831,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 5,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice6DN
 
@@ -882,23 +852,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 5,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice6DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -924,7 +888,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 6,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice7DN
 
@@ -945,23 +909,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 6,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice7DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -987,7 +945,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 7,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice8DN
 
@@ -1008,23 +966,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 7,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice8DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1050,7 +1002,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 8,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice9DN
 
@@ -1071,23 +1023,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 8,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice9DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1113,7 +1059,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 9,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice10DN
 
@@ -1134,23 +1080,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 9,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice10DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1176,7 +1116,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 10,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice11DN
 
@@ -1197,23 +1137,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 10,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice11DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1239,7 +1173,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamAOneSliceDN(l1File, sdsIDs, start, 11,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamASlice12DN
 
@@ -1260,23 +1194,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 11,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamASlice12DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1292,7 +1220,7 @@ TlmHdfFile*         l1File,
 int32*              sdsIDs,
 int32               start,
 int32               sliceIndex,  // slice no, start from 0
-unsigned short*     dnValues,
+unsigned int*       dnValues,
 unsigned char*      validDataMap)
 {
     assert(l1File != 0);
@@ -1307,16 +1235,16 @@ unsigned char*      validDataMap)
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
+        unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
                                    1, 1, (VOIDP)allBuffer))
             return (-1);
 
-        unsigned short* ushortP = dnValues;
+        unsigned int* uintP = dnValues;
         for (int i=0; i < 100; i++)
-            *ushortP++ = allBuffer[i][sliceIndex];
+            *uintP++ = allBuffer[i][sliceIndex];
 
         // copy the beam B valid data map
         (void)memcpy(validDataMap, _beamBMap, MAX_NUM_DERIVED_VALUES);
@@ -1341,15 +1269,15 @@ unsigned char*      validDataMap)
         }
 
         // get it from loop_back_cal_power
-        unsigned short allBuffer[12];
+        unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
                                       (VOIDP)allBuffer) != TRUE)
             return (-1);
 
-        unsigned short* ushortP = dnValues;
-        *ushortP = allBuffer[sliceIndex];
+        unsigned int* uintP = dnValues;
+        *uintP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
 
@@ -1380,7 +1308,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice1DN
 
@@ -1401,23 +1329,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice1DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1443,7 +1365,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 1,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice2DN
 
@@ -1464,23 +1386,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 1,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice2DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1506,7 +1422,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 2,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice3DN
 
@@ -1527,23 +1443,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 2,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice3DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1569,7 +1479,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 3,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice4DN
 
@@ -1590,23 +1500,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 3,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice4DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1632,7 +1536,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 4,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice5DN
 
@@ -1653,23 +1557,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 4,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice5DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1695,7 +1593,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 5,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice6DN
 
@@ -1716,23 +1614,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 5,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice6DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1758,7 +1650,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 6,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice7DN
 
@@ -1779,23 +1671,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 6,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice7DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1821,7 +1707,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 7,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice8DN
 
@@ -1842,23 +1728,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 7,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice8DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1884,7 +1764,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 8,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice9DN
 
@@ -1905,23 +1785,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 8,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice9DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -1947,7 +1821,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 9,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice10DN
 
@@ -1968,23 +1842,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 9,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice10DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2010,7 +1878,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 10,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice11DN
 
@@ -2031,23 +1899,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 10,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice11DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2073,7 +1935,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractBeamBOneSliceDN(l1File, sdsIDs, start, 11,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractBeamBSlice12DN
 
@@ -2094,23 +1956,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 11,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractBeamBSlice12DN(l1File, sdsIDs,
+                           start, 0, 1, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2130,7 +1986,7 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable*)     // unused
 {
-    unsigned short uint2P[100];
+    unsigned int uintBuffer[100];
 
     // extract one at a time
     if (length != 1) return -1;
@@ -2140,7 +1996,7 @@ PolynomialTable*)     // unused
 
     // get the first slice to find out number of values is returned
     int rc = _extractBeamAOneSliceDN(l1File, sdsIDs, start, 0,
-                                  uint2P, extractResults->validDataMap);
+                                  uintBuffer, extractResults->validDataMap);
     switch(rc)
     {
         case 0:
@@ -2150,14 +2006,15 @@ PolynomialTable*)     // unused
         {
             // every slice should only contain 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            *uint4P = (unsigned int) uint2P[0];
+            *uint4P = uintBuffer[0];
             int nextrc;
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
                 nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                                  sliceIndex, uintBuffer,
+                                  extractResults->validDataMap);
                 if (nextrc == 1)
-                    *uint4P += (unsigned int) uint2P[0];
+                    *uint4P += uintBuffer[0];
             }
             return rc;
         }
@@ -2165,31 +2022,21 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            unsigned int* tempUint4P;
-            unsigned short* tempUint2P;
             int i;
-            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
-            {
-                if (extractResults->validDataMap[i])
-                {
-                    tempUint4P = uint4P + i;
-                    tempUint2P = uint2P + i;
-                    *tempUint4P = (unsigned int) *tempUint2P;
-                }
-            }
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
                 int nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                                          sliceIndex, uintBuffer,
+                                          extractResults->validDataMap);
                 if (nextrc > 1)
                 {
+                    unsigned int* tempUint4P = uint4P;
                     for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
                         {
                             tempUint4P = uint4P + i;
-                            tempUint2P = uint2P + i;
-                            *tempUint4P += (unsigned int) *tempUint2P;
+                            *tempUint4P += uintBuffer[i];
                         }
                     }
                 }
@@ -2251,7 +2098,7 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable*)     // unused
 {
-    unsigned short uint2P[100];
+    unsigned int uintBuffer[100];
 
     // extract one at a time
     if (length != 1) return -1;
@@ -2261,7 +2108,7 @@ PolynomialTable*)     // unused
 
     // get the first slice to find out number of values is returned
     int rc = _extractBeamBOneSliceDN(l1File, sdsIDs, start, 0,
-                                  uint2P, extractResults->validDataMap);
+                                  uintBuffer, extractResults->validDataMap);
     switch(rc)
     {
         case 0:
@@ -2271,14 +2118,15 @@ PolynomialTable*)     // unused
         {
             // every slice should only contain 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            *uint4P = (unsigned int) uint2P[0];
+            *uint4P = uintBuffer[0];
             int nextrc;
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
                 nextrc = _extractBeamBOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                                        sliceIndex, uintBuffer,
+                                        extractResults->validDataMap);
                 if (nextrc == 1)
-                    *uint4P += (unsigned int) uint2P[0];
+                    *uint4P += uintBuffer[0];
             }
             return rc;
         }
@@ -2286,31 +2134,21 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            unsigned int* tempUint4P;
-            unsigned short* tempUint2P;
             int i;
-            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
-            {
-                if (extractResults->validDataMap[i])
-                {
-                    tempUint4P = uint4P + i;
-                    tempUint2P = uint2P + i;
-                    *tempUint4P = (unsigned int) *tempUint2P;
-                }
-            }
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
                 int nextrc = _extractBeamBOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                                            sliceIndex, uintBuffer,
+                                            extractResults->validDataMap);
                 if (nextrc > 1)
                 {
+                    unsigned int* tempUint4P = uint4P;
                     for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
                         {
                             tempUint4P = uint4P + i;
-                            tempUint2P = uint2P + i;
-                            *tempUint4P += (unsigned int) *tempUint2P;
+                            *tempUint4P += uintBuffer[i];
                         }
                     }
                 }
@@ -2468,7 +2306,7 @@ TlmHdfFile*         l1File,
 int32*              sdsIDs,
 int32               start,
 int32               sliceIndex,  // slice no, start from 0
-unsigned short*     dnValues,
+unsigned int*       dnValues,
 unsigned char*      validDataMap)
 {
     assert(l1File != 0);
@@ -2486,7 +2324,7 @@ unsigned char*      validDataMap)
     if (mode == L1_MODE_CBM)
     {
         // CBM: get all 100 pulses from power_dn
-        unsigned short allBuffer[100][12];
+        unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
         if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
@@ -2496,9 +2334,9 @@ unsigned char*      validDataMap)
             return -1;
         }
 
-        unsigned short* ushortP = dnValues;
+        unsigned int* uintP = dnValues;
         for (int i=0; i < 100; i++)
-            *ushortP++ = allBuffer[i][sliceIndex];
+            *uintP++ = allBuffer[i][sliceIndex];
 
         // copy the noise load valid data map
         (void)memcpy(validDataMap, _noiseLoadMap, MAX_NUM_DERIVED_VALUES);
@@ -2524,9 +2362,14 @@ unsigned char*      validDataMap)
         }
 
         // get it from load_cal_power
-        unsigned short allBuffer[12];
+        unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
-        tempsdsIDs[0] = sdsIDs[3];
+
+        // odd => A, even => B
+        if (status % 2 != 0)
+            tempsdsIDs[0] = sdsIDs[3];
+        else
+            tempsdsIDs[0] = sdsIDs[4];
         if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
                         (VOIDP)allBuffer) != TRUE)
         {
@@ -2534,8 +2377,8 @@ unsigned char*      validDataMap)
             return -1;
         }
    
-        unsigned short* ushortP = dnValues;
-        *ushortP = allBuffer[sliceIndex];
+        unsigned int* uintP = dnValues;
+        *uintP = allBuffer[sliceIndex];
         // copy the one valid data map
         (void)memcpy(validDataMap, _onlyOneMap, MAX_NUM_DERIVED_VALUES);
         return 1;
@@ -2565,7 +2408,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice1LoadPowerDN
 
@@ -2586,23 +2429,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice1LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2628,7 +2465,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 1,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice2LoadPowerDN
 
@@ -2649,23 +2486,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 1,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice2LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2691,7 +2522,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 2,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice3LoadPowerDN
 
@@ -2712,23 +2543,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 2,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice3LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2754,7 +2579,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 3,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice4LoadPowerDN
 
@@ -2775,23 +2600,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 3,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice4LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2817,7 +2636,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 4,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice5LoadPowerDN
 
@@ -2838,23 +2657,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 4,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice5LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2880,7 +2693,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 5,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice6LoadPowerDN
 
@@ -2901,23 +2714,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 5,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice6LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -2943,7 +2750,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 6,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice7LoadPowerDN
 
@@ -2964,23 +2771,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 6,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice7LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3006,7 +2807,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 7,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice8LoadPowerDN
 
@@ -3027,23 +2828,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 7,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice8LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3069,7 +2864,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 8,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice9LoadPowerDN
 
@@ -3090,23 +2885,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 8,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice9LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3132,7 +2921,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 9,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice10LoadPowerDN
 
@@ -3153,23 +2942,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 9,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice10LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3195,7 +2978,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 10,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice11LoadPowerDN
 
@@ -3216,23 +2999,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 10,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice11LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3258,7 +3035,7 @@ PolynomialTable*)     // unused
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
     return(_extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 11,
-                                  (unsigned short*)extractResults->dataBuf,
+                                  (unsigned int*)extractResults->dataBuf,
                                   extractResults->validDataMap));
 } //ExtractSlice12LoadPowerDN
 
@@ -3279,23 +3056,17 @@ PolynomialTable*)     // unused
     // extract one at a time
     if (length != 1) return -1;
 
-    DerivedExtractResult* extractResults =
-                 (DerivedExtractResult*) p_extractResults;
-    unsigned short dnValues[100];
-    int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 11,
-                                      dnValues,
-                                      extractResults->validDataMap);
+    int rc = ExtractSlice12LoadPowerDN(l1File, sdsIDs,
+                           start, 0, length, p_extractResults);
     switch(rc)
     {
         case 1:
-            return(_oneUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_oneUint4TodB((DerivedExtractResult*)p_extractResults));
         case 0:
         case -1:
             return (rc);
         default:
-            return(_allUint2TodB(dnValues,
-                                 (DerivedExtractResult*)p_extractResults));
+            return(_allUint4TodB((DerivedExtractResult*)p_extractResults));
     }
     return -1;
 
@@ -3315,7 +3086,7 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable*)     // unused
 {
-    unsigned short uint2P[100];
+    unsigned int uintBuffer[100];
 
     // extract one at a time
     if (length != 1) return -1;
@@ -3325,7 +3096,7 @@ PolynomialTable*)     // unused
 
     // get the first slice to find out number of values is returned
     int rc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start, 0,
-                                  uint2P, extractResults->validDataMap);
+                                  uintBuffer, extractResults->validDataMap);
     switch(rc)
     {
         case 0:
@@ -3335,14 +3106,15 @@ PolynomialTable*)     // unused
         {
             // every slice should only contain 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            *uint4P = (unsigned int) uint2P[0];
+            *uint4P = uintBuffer[0];
             int nextrc;
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
-                nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                nextrc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start,
+                                         sliceIndex, uintBuffer,
+                                         extractResults->validDataMap);
                 if (nextrc == 1)
-                    *uint4P += (unsigned int) uint2P[0];
+                    *uint4P += uintBuffer[0];
             }
             return rc;
         }
@@ -3350,31 +3122,20 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
-            unsigned int* tempUint4P;
-            unsigned short* tempUint2P;
-            int i;
-            for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
-            {
-                if (extractResults->validDataMap[i])
-                {
-                    tempUint4P = uint4P + i;
-                    tempUint2P = uint2P + i;
-                    *tempUint4P = (unsigned int) *tempUint2P;
-                }
-            }
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
-                int nextrc = _extractBeamAOneSliceDN(l1File, sdsIDs, start,
-                            sliceIndex, uint2P, extractResults->validDataMap);
+                int nextrc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start,
+                                         sliceIndex, uintBuffer,
+                                         extractResults->validDataMap);
                 if (nextrc > 1)
                 {
-                    for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
+                    unsigned int* tempUint4P = uint4P;
+                    for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
                         {
                             tempUint4P = uint4P + i;
-                            tempUint2P = uint2P + i;
-                            *tempUint4P += (unsigned int) *tempUint2P;
+                            *tempUint4P += uintBuffer[i];
                         }
                     }
                 }
@@ -3620,7 +3381,8 @@ PolynomialTable*)     // unused
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
-    tempsdsIDs[3] = sdsIDs[5];  // load_cal_power
+    tempsdsIDs[3] = sdsIDs[5];  // load_cal_A_power
+    tempsdsIDs[3] = sdsIDs[5];  // load_cal_B_power
     rc = _extractAverageEchoLoadDN(l1File, tempsdsIDs, start,
                                        stride, length, p_extractResults, 0);
     if (rc <= 0)

@@ -1305,14 +1305,14 @@ const ParTabEntry L1AParTab[] =
   },
   { LOOP_BACK_CAL_A_POWER, "Most Recent Loop Cal Pulse A Power", SOURCE_L1A,
             MEAS_QUANTITY, "loop_back_cal_A_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2_12,
-                           0, ExtractData2D_12, pr_uint2_12 }
+      { UNIT_DN, "dn", DATA_UINT4_12,
+                           0, ExtractData2D_12, pr_uint4_12 }
     }
   },
   { LOOP_BACK_CAL_B_POWER, "Most Recent Loop Cal Pulse B Power", SOURCE_L1A,
             MEAS_QUANTITY, "loop_back_cal_B_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2_12,
-                           0, ExtractData2D_12, pr_uint2_12 }
+      { UNIT_DN, "dn", DATA_UINT4_12,
+                           0, ExtractData2D_12, pr_uint4_12 }
     }
   },
   { LOOP_BACK_CAL_NOISE, "Most Recent Loop Cal Pulse Noise", SOURCE_L1A,
@@ -1322,14 +1322,14 @@ const ParTabEntry L1AParTab[] =
   },
   { LOAD_CAL_A_POWER, "Most Recent Cold Load Cal Pulse A Power", SOURCE_L1A,
             MEAS_QUANTITY, "load_cal_A_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2_12,
-                           0, ExtractData2D_12, pr_uint2_12 }
+      { UNIT_DN, "dn", DATA_UINT4_12,
+                           0, ExtractData2D_12, pr_uint4_12 }
     }
   },
   { LOAD_CAL_B_POWER, "Most Recent Cold Load Cal Pulse B Power", SOURCE_L1A,
             MEAS_QUANTITY, "load_cal_B_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT2_12,
-                           0, ExtractData2D_12, pr_uint2_12 }
+      { UNIT_DN, "dn", DATA_UINT4_12,
+                           0, ExtractData2D_12, pr_uint4_12 }
     }
   },
   { LOAD_CAL_NOISE, "Most Recent Cold Load Cal Pulse Noise", SOURCE_L1A,
@@ -1339,8 +1339,8 @@ const ParTabEntry L1AParTab[] =
   },
   { POWER_DN, "Sliced Power Data", SOURCE_L1A,
             MEAS_QUANTITY, "power_dn", 1, {
-      { UNIT_DN, "dn", DATA_UINT2_100_12,
-                                0, ExtractData3D_100_12, pr_uint2_100_12 }
+      { UNIT_DN, "dn", DATA_UINT4_100_12,
+                                0, ExtractData3D_100_12, pr_uint4_100_12 }
     }
   },
   { NOISE_DN, "Noise Measurements", SOURCE_L1A,

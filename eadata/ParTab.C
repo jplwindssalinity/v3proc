@@ -421,6 +421,9 @@ Parameter
     case DATA_UINT2_2_8:
         param->byteSize = 32;
         break;
+    case DATA_UINT4_12:
+        param->byteSize = 48;
+        break;
     case DATA_UINT1_49:
         param->byteSize = 49;
         break;
@@ -459,6 +462,9 @@ Parameter
         break;
     case DATA_FLOAT4_810:
         param->byteSize = 3240;
+        break;
+    case DATA_UINT4_100_12:
+        param->byteSize = 4800;
         break;
     default:
         delete param;

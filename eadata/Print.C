@@ -300,6 +300,14 @@ void pr_uint4_4(FILE *ofp, char *dataP)
     return;
 }
 
+void pr_uint4_12(FILE *ofp, char *dataP)
+{
+    unsigned int *ptr = (unsigned int *)dataP;
+    for (int i = 0; i < 12; i++)
+        fprintf(ofp, "%11u ", *(ptr + i));
+    return;
+}
+
 void pr_uint4_25(FILE *ofp, char *dataP)
 {
     unsigned int *ptr = (unsigned int *)dataP;
@@ -315,6 +323,19 @@ void pr_uint4_100(FILE *ofp, char *dataP)
         fprintf(ofp, "%11u ", *(ptr + i));
     return;
 }
+
+void pr_uint4_100_12(FILE *ofp, char *dataP)
+{
+    unsigned int *ptr = (unsigned int *)dataP;
+    for (int i = 0; i < 100; i++, ptr += 12)
+    {
+        unsigned int * secondPtr = ptr;
+        for (int j = 0; j < 12; j++)
+            fprintf(ofp, "%11u ", secondPtr[j]);
+    }
+    return;
+}
+
 
 void pr_float4_6_25(FILE *ofp, char *dataP)
 {

@@ -103,7 +103,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice1DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice1DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice1dB, pr_float4_6 }
     }
   },
@@ -111,7 +111,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice2DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice2DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice2dB, pr_float4_6 }
     }
   },
@@ -119,7 +119,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice3DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice3DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice3dB, pr_float4_6 }
     }
   },
@@ -127,7 +127,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice4DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice4DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice4dB, pr_float4_6 }
     }
   },
@@ -135,7 +135,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice5DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice5DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice5dB, pr_float4_6 }
     }
   },
@@ -143,7 +143,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice6DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice6DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice6dB, pr_float4_6 }
     }
   },
@@ -151,7 +151,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice7DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice7DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice7dB, pr_float4_6 }
     }
   },
@@ -159,7 +159,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice8DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice8DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice8dB, pr_float4_6 }
     }
   },
@@ -167,7 +167,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice9DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice9DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice9dB, pr_float4_6 }
     }
   },
@@ -175,7 +175,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice10DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice10DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice10dB, pr_float4_6 }
     }
   },
@@ -183,7 +183,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice11DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice11DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice11dB, pr_float4_6 }
     }
   },
@@ -191,7 +191,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_A_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamASlice12DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamASlice12DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamASlice12dB, pr_float4_6 }
     }
   },
@@ -199,7 +199,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice1DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice1DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice1dB, pr_float4_6 }
     }
   },
@@ -207,7 +207,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice2DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice2DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice2dB, pr_float4_6 }
     }
   },
@@ -215,7 +215,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice3DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice3DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice3dB, pr_float4_6 }
     }
   },
@@ -223,7 +223,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice4DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice4DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice4dB, pr_float4_6 }
     }
   },
@@ -231,7 +231,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice5DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice5DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice5dB, pr_float4_6 }
     }
   },
@@ -239,7 +239,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice6DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice6DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice6dB, pr_float4_6 }
     }
   },
@@ -247,7 +247,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice7DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice7DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice7dB, pr_float4_6 }
     }
   },
@@ -255,7 +255,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice8DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice8DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice8dB, pr_float4_6 }
     }
   },
@@ -263,7 +263,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice9DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice9DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice9dB, pr_float4_6 }
     }
   },
@@ -271,7 +271,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice10DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice10DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice10dB, pr_float4_6 }
     }
   },
@@ -279,7 +279,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice11DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice11DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice11dB, pr_float4_6 }
     }
   },
@@ -287,7 +287,7 @@ const ParTabEntry L1ADerivedParTab[] =
          MEAS_QUANTITY,
          "operational_mode,power_dn,true_cal_pulse_pos,loop_back_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractBeamBSlice12DN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractBeamBSlice12DN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBeamBSlice12dB, pr_float4_6 }
     }
   },
@@ -316,103 +316,103 @@ const ParTabEntry L1ADerivedParTab[] =
   },
   { SLICE_1_LOAD_POWER, "Slice 1 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice1LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice1LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice1LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_2_LOAD_POWER, "Slice 2 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice2LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice2LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice2LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_3_LOAD_POWER, "Slice 3 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice3LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice3LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice3LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_4_LOAD_POWER, "Slice 4 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice4LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice4LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice4LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_5_LOAD_POWER, "Slice 5 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice5LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice5LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice5LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_6_LOAD_POWER, "Slice 6 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice6LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice6LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice6LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_7_LOAD_POWER, "Slice 7 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice7LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice7LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice7LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_8_LOAD_POWER, "Slice 8 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice8LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice8LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice8LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_9_LOAD_POWER, "Slice 9 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice9LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice9LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice9LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_10_LOAD_POWER, "Slice 10 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice10LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice10LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice10LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_11_LOAD_POWER, "Slice 11 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice11LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice11LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice11LoadPowerdB,pr_float4_6}
     }
   },
   { SLICE_12_LOAD_POWER, "Slice 12 Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractSlice12LoadPowerDN, pr_uint2 },
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractSlice12LoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractSlice12LoadPowerdB,pr_float4_6}
     }
   },
   { TOTAL_LOAD_POWER, "Total Echo Load Power", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power",
+         "operational_mode,power_dn,true_cal_pulse_pos,load_cal_A_power,load_cal_B_power",
          2, {
       { UNIT_DN, "dn", DATA_UINT4, 0, ExtractTotalLoadPowerDN, pr_uint4 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractTotalLoadPowerdB,pr_float4_6}
@@ -421,7 +421,7 @@ const ParTabEntry L1ADerivedParTab[] =
   { BANDWIDTH_RATIO_NOISE_ECHO_ALPHA,
          "Bandwidth ratio of Noise to Echo - Alpha", SOURCE_L1A_DERIVED,
          MEAS_QUANTITY,
-         "operational_mode,noise_dn,power_dn,true_cal_pulse_pos,load_cal_noise,load_cal_power",
+         "operational_mode,noise_dn,power_dn,true_cal_pulse_pos,load_cal_noise,load_cal_A_power,load_cal_B_power",
          2, {
       { UNIT_DN, "dn", DATA_FLOAT4, 0, ExtractBandwidthRatioDN, pr_float4_6 },
       { UNIT_DB, "dB", DATA_FLOAT4, 0, ExtractBandwidthRatiodB, pr_float4_6 }

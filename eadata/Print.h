@@ -90,12 +90,14 @@ extern void pr_int2_100(FILE* ofp, char* dataP);
 
 extern void pr_uint3(FILE* ofp, char* dataP);
 extern void pr_uint4_4(FILE* ofp, char* dataP);
+extern void pr_uint4_12(FILE* ofp, char* dataP);
 extern void pr_uint4_25(FILE* ofp, char* dataP);
 
 extern void pr_uint3(FILE* ofp, char* dataP);
 extern void pr_uint4_4(FILE* ofp, char* dataP);
 extern void pr_uint4_25(FILE* ofp, char* dataP);
 extern void pr_uint4_100(FILE* ofp, char* dataP);
+extern void pr_uint4_100_12(FILE* ofp, char* dataP);
 
 extern void pr_float4_6_25(FILE* ofp, char* dataP);
 extern void pr_float4_6_100(FILE* ofp, char* dataP);
