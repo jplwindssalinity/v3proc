@@ -127,7 +127,7 @@ GenericFile.o: GenericFile.C GenericFile.h
 GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 Grid.o: Grid.C Grid.h Array.h L17.h Meas.h GenericFile.h L17Frame.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Beam.h Attitude.h CoordinateSwitch.h Matrix3.h
-InstrumentGeom.o: InstrumentGeom.C InstrumentGeom.h CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h GenericGeom.h Constants.h LonLat.h Beam.h Matrix3.h Interpolate.h Spacecraft.h Instrument.h BufferedList.h EarthPosition.h List.h
+InstrumentGeom.o: InstrumentGeom.C InstrumentGeom.h CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h GenericGeom.h Constants.h LonLat.h Beam.h Matrix3.h Interpolate.h Misc.h Spacecraft.h Instrument.h BufferedList.h EarthPosition.h List.h
 InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Constants.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h EarthPosition.h CoordinateSwitch.h Attitude.h Beam.h LonLat.h Matrix3.h BufferedList.h List.h PiscTable.h Meas.h GenericFile.h L00Frame.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
@@ -146,8 +146,8 @@ L17ToL20.o: L17ToL20.C L17ToL20.h Constants.h Misc.h L17.h L20.h GMF.h GenericFi
 L20.o: L20.C L20.h GenericFile.h L20Frame.h Wind.h List.h LonLat.h EarthPosition.h Matrix3.h
 L20Frame.o: L20Frame.C L20Frame.h Wind.h List.h LonLat.h EarthPosition.h Matrix3.h
 List.o: List.C List.h
-LonLat.o: LonLat.C LonLat.h List.h EarthPosition.h Matrix3.h
-Matrix3.o: Matrix3.C Constants.h Matrix3.h CoordinateSwitch.h Attitude.h
+LonLat.o: LonLat.C LonLat.h Constants.h List.h EarthPosition.h Matrix3.h
+Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C Meas.h Beam.h Constants.h LonLat.h GenericGeom.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h

@@ -10,7 +10,6 @@ static const char rcs_id_matrix3_h[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
-class CoordinateSwitch;
 
 //======================================================================
 // CLASSES
@@ -40,12 +39,12 @@ enum matrixtypeE {GENERAL, IDENTITY};
 // construction //
 //--------------//
 
+Matrix3();
 Matrix3(double x11, double x12, double x13,
 double x21, double x22, double x23,
 double x31, double x32, double x33);
 Matrix3(double init);
 Matrix3(matrixtypeE mtype);
-Matrix3();
 ~Matrix3();
 
 
@@ -97,9 +96,9 @@ public:
 // construction //
 //--------------//
 
+Vector3();
 Vector3(double x1, double x2, double x3);
 Vector3(double init);
-Vector3();
 ~Vector3();
 
 
@@ -107,14 +106,14 @@ Vector3();
 // Vector/Matrix operators //
 //-------------------------//
 
-Vector3 operator+(Vector3 m2);
-Vector3 operator-(Vector3 m2);
-Vector3 operator-();
-Vector3 operator*(Vector3 m2); // element by element multiply
-Vector3 operator*(double s);   // multiply by scalar
-void operator+=(Vector3 m2);
-Vector3 operator&(Vector3 m2); // cross product
-double operator%(Vector3 m2); // dot product
+	Vector3		operator+(Vector3 m2);
+	Vector3		operator-(Vector3 m2);
+	Vector3		operator-();
+	Vector3		operator*(Vector3 m2); // element by element multiply
+	Vector3		operator*(double s);   // multiply by scalar
+	void		operator+=(Vector3 m2);
+	Vector3		operator&(Vector3 m2); // cross product
+	double		operator%(Vector3 m2); // dot product
 	Vector3		operator/(double s);		// divide by scalar
 
 //

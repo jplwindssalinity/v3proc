@@ -8,15 +8,23 @@ static const char rcs_id_matrix3_c[] =
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
-#include "Constants.h"
+#include <math.h>
 #include "Matrix3.h"
-#include "CoordinateSwitch.h"
+#include "Constants.h"
+
+//=========//
+// Matrix3 //
+//=========//
 
 //
-// Matrix3
+// Default constructor which does no initialization.
 //
+
+Matrix3::Matrix3()
+{
+	return;
+}
 
 //
 // Initialize with a complete set of 9 user-specified elements.
@@ -84,15 +92,6 @@ else
   exit(-1);
   }
 	return;
-}
-
-//
-// Default constructor which does no initialization.
-//
-
-Matrix3::Matrix3()
-{
-return;
 }
 
 //
@@ -344,9 +343,18 @@ else
 	return;
 }
 
+//=========//
+// Vector3 //
+//=========//
+
 //
-// Vector3
+// Create, but don't initialize.
 //
+
+Vector3::Vector3()
+{
+	return;
+}
 
 //
 // Initialize with a complete set of 3 user-specified elements.
@@ -367,7 +375,6 @@ _v[2] = x3;
 //
 
 Vector3::Vector3(double init)
-
 {
 
 int i;
@@ -378,23 +385,12 @@ for (i=0; i < 3; i++)
 	return;
 }
 	
-//
-// Create, but don't initialize.
-//
-
-Vector3::Vector3()
-
-{
-return;
-}
-
 Vector3::~Vector3()
 {
 return;
 }
 
 Vector3 Vector3::operator+(Vector3 v2)
-
 {
 int i;
 Vector3 result;
@@ -408,7 +404,6 @@ return(result);
 }
 
 Vector3 Vector3::operator-(Vector3 v2)
-
 {
 int i;
 Vector3 result;
@@ -422,7 +417,6 @@ return(result);
 }
 
 Vector3 Vector3::operator-()
-
 {
 int i;
 Vector3 result;
@@ -440,7 +434,6 @@ return(result);
 //
 
 Vector3 Vector3::operator*(Vector3 v2)
-
 {
 int i;
 Vector3 result;
@@ -458,7 +451,6 @@ return(result);
 //
 
 Vector3 Vector3::operator*(double s)
-
 {
 int i;
 Vector3 result;
