@@ -88,6 +88,20 @@ Vector::SetElement(
   return(1);
 }
 
+//-----------------//
+// Vector::SetSize //
+//-----------------//
+
+int 
+Vector::SetSize(
+	int m_size)
+{
+  if (m_size > _mSize)
+    return(0);
+
+  _mSize = m_size;
+  return(1);
+}
 
 //========//
 // Matrix //

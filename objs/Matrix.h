@@ -48,6 +48,7 @@ public:
 	int		GetElement(int index, double* value);
 	int             SetElement(int index, double  value);
 	int             GetSize()             { return(_mSize); };
+	int             SetSize(int m_size);
 
 	//---------//
 	// friends //
