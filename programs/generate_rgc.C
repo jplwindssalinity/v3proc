@@ -146,6 +146,13 @@ main(
 		exit(1);
 	}
 
+	//----------------------------------//
+	// force RGC and DTC to not be read //
+	//----------------------------------//
+
+	config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
+	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
 	//----------------------------------------------//
