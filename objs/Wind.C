@@ -1222,7 +1222,8 @@ WindSwath::InitWithRank(
 int
 WindSwath::MedianFilter(
 	int		window_size,
-	int		max_passes)
+	int		max_passes,
+	int		weight_flag)
 {
 	//----------------------------//
 	// create a new selection map //
@@ -1259,7 +1260,8 @@ WindSwath::MedianFilter(
 	int pass = 0;
 	do
 	{
-		int flips = MedianFilterPass(half_window, new_selected, change);
+		int flips = MedianFilterPass(half_window, new_selected, change,
+						weight_flag);
 		pass++;
 		if (flips == 0)
 			break;
@@ -1277,7 +1279,8 @@ int
 WindSwath::MedianFilterPass(
 	int					half_window,
 	WindVectorPlus***	new_selected,
-	char**				change)
+	char**				change,
+	int					weight_flag)
 {
 	//-------------//
 	// filter loop //
@@ -1361,6 +1364,13 @@ WindSwath::MedianFilterPass(
 						vector_dif_sum += sqrt(dx*dx + dy*dy);
 					}
 				}
+
+				//------------------------------//
+				// apply weighting if necessary //
+				//------------------------------//
+
+				if (weight_flag)
+					vector_dif_sum *= wvp->obj;
 
 				if (vector_dif_sum < min_vector_dif_sum)
 				{

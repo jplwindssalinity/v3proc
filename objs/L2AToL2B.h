@@ -67,6 +67,7 @@ public:
 	//-------//
 
 	int		useManyAmbiguities;
+	int		useAmbiguityWeights;
 };
 
 #endif

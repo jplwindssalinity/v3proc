@@ -273,9 +273,9 @@ public:
 	//-----------//
 
 	int		InitWithRank(int rank);
-	int		MedianFilter(int window_size, int max_passes);
+	int		MedianFilter(int window_size, int max_passes, int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
-				char** change);
+				char** change, int weight_flag = 0);
 
 	//------------//
 	// evaluation //
