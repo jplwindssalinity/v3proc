@@ -171,6 +171,7 @@ public:
 	//--------------//
 
 	int					RemoveDuplicates();
+        int                                     RedistributeObjs();
 	int					SortByObj();
 	int					SortByDir();
 	WindVectorPlus*		GetNearestToDirection(float dir, int max_rank = 0);
@@ -192,6 +193,7 @@ public:
 	//-----------//
 
 	LonLat					lonLat;
+        WindVectorPlus*                     nudgeWV;
 	WindVectorPlus*			selected;
 	int                             selected_allocated;
 	List<WindVectorPlus>	ambiguities;
@@ -377,18 +379,25 @@ public:
 
 	int		InitWithRank(int rank);
         int             InitRandom();
-	int		Nudge(WindField* nudge_field, int min_rank);
-	int		ThresNudge(WindField* nudge_field, int min_rank, 
-				   float thres[2]);
+        int             GetNudgeVectors(WindField* nudge_field);
+	int		Nudge(int min_rank);
+	int		ThresNudge(int min_rank, float thres[2]);
 	int             LoResNudge(WindVectorField* nudge_field, int min_rank);
-	int		SmartNudge(WindField* nudge_field);
+	int		SmartNudge(WindField* nudge_field);     
 	int		MedianFilter(int window_size, int max_passes, int bound,
 				     int weight_flag = 0, int special=0);
+	int             BestKFilter(int window_size, int k);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 					 char** change, int bound, int weight_flag = 0, int special=0);
+        int             BestKFilterPass(int half_window, int k, 
+					WindVectorPlus*** new_selcted,
+					float** prob, float* berst_prob);
         int             GetMedianBySorting(WindVectorPlus* wvp, int cti_min,
 					   int cti_max, int ati_min, int ati_max);
         float             GetMostProbableDir(WindVectorPlus* wvp, 
+					   int cti, int ati, int cti_min,
+					   int cti_max, int ati_min, int ati_max);
+        float             GetMostProbableAmbiguity(WindVectorPlus** wvp, 
 					   int cti, int ati, int cti_min,
 					   int cti_max, int ati_min, int ati_max);
         int             GetWindowMean(WindVectorPlus* wvp, int cti_min,

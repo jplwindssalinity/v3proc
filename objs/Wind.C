@@ -323,7 +323,7 @@ WindVectorField::InterpolateVectorField(
 //=====//
 
 WVC::WVC()
-:	selected(NULL), selected_allocated(0)
+:	nudgeWV(NULL), selected(NULL), selected_allocated(0)
 {
 	return;
 }
@@ -339,6 +339,10 @@ WVC::~WVC()
 		if (wvp==selected) selected_allocated=0;
 	  }
 	  if(selected_allocated) delete selected;
+          if(nudgeWV){
+	    delete nudgeWV;
+	    nudgeWV=NULL;
+	  }
 	return;
 }
 
@@ -398,6 +402,17 @@ WVC::WriteL2B(
         
 	if (fwrite((void *)&selected_idx, sizeof(char), 1, fp) != 1)
 		return(0);
+
+        //-----------------------//
+        // write nudge vector    //
+        //-----------------------//
+
+	char nudgeWV_allocated= nudgeWV ? 1 : 0;
+	if (fwrite((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
+		return(0);	  
+	if(nudgeWV_allocated){
+	  if(!nudgeWV->WriteL2B(fp)) return(0);
+	}
 
 	//----------------------//
         // Write directionRanges//
@@ -460,6 +475,18 @@ WVC::ReadL2B(
 	//----------------------//
 
 	selected = ambiguities.GetByIndex((int)selected_idx);
+
+        //-----------------------//
+        // read nudge vector     //
+        //-----------------------//
+
+	char nudgeWV_allocated;
+	if (fread((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
+		return(0);	  
+	if(nudgeWV_allocated){
+	  nudgeWV=new WindVectorPlus;
+	  if(!nudgeWV->ReadL2B(fp)) return(0);
+	}
 
 	//----------------------//
         // Read directionRanges //
@@ -995,7 +1022,44 @@ WVC::Rank_Wind_Solutions()
     return(1);
 
 }
-
+int
+WVC::RedistributeObjs(){
+  if(directionRanges.bestObj==NULL) return(0);
+  int nd=directionRanges.dirIdx.GetBins();
+  float step=directionRanges.dirIdx.GetStep();
+  int nc=ambiguities.NodeCount();
+  float* new_obj= new float[nc];
+  for(int c=0;c<nc;c++){
+    new_obj[c]=0.0;
+  }
+  for(int c=0;c<nd;c++){
+    float dir=c*step;
+    // Find Closest Ambiguity
+    WindVectorPlus* closest=GetNearestToDirection(dir);
+    WindVectorPlus* wvp=ambiguities.GetHead();
+    int idx=0;
+    while(wvp!=closest){
+      wvp=ambiguities.GetNext();
+      idx++;
+    }
+    float tmp=directionRanges.bestObj[c]-closest->obj;
+    tmp/=2;
+    tmp=exp(tmp);
+    new_obj[idx]+=tmp;
+  }
+  WindVectorPlus* wvp=ambiguities.GetHead();
+  float old_sum=0, new_sum=0;
+  for(int c=0;c<nc;c++,wvp=ambiguities.GetNext()){
+    old_sum+=wvp->obj;
+    wvp->obj+=2*log(new_obj[c]);
+    new_sum+=wvp->obj;
+  }
+  float scale=old_sum/new_sum;
+  for(wvp=ambiguities.GetHead();wvp;wvp=ambiguities.GetNext()) wvp->obj*=scale;
+  delete[] new_obj;
+  SortByObj();
+  return(1);
+}
 //===========//
 // WindField //
 //===========//
@@ -2531,13 +2595,32 @@ WindSwath::InitRandom()
 	return(count);
 }
 
+int
+WindSwath::GetNudgeVectors(
+	 WindField* nudge_field){
+        for (int cti = 0; cti < _crossTrackBins; cti++)
+	  {
+	    for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+		  WVC* wvc = swath[cti][ati];
+		  if (! wvc)
+		    continue;
+                  wvc->nudgeWV=new WindVectorPlus;
+                  if (! nudge_field->InterpolatedWindVector(wvc->lonLat, 
+							    wvc->nudgeWV)){
+		    delete wvc->nudgeWV;
+		    wvc->nudgeWV=NULL;
+		  }
+		}
+	  }
+	return(1);
+}
 //------------------//
 // WindSwath::Nudge //
 //------------------//
 
 int
 WindSwath::Nudge(
-	WindField*	nudge_field,
 	int max_rank)
 {
 	int count = 0;
@@ -2549,11 +2632,10 @@ WindSwath::Nudge(
 			if (! wvc)
 				continue;
 
-			WindVector nudge_wv;
-			if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
+			if (wvc->nudgeWV==NULL)
 				continue;
 
-			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, max_rank);
+			wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, max_rank);
 			count++;
 		}
 	}
@@ -2566,7 +2648,6 @@ WindSwath::Nudge(
 
 int
 WindSwath::ThresNudge(
-	WindField*	nudge_field,
 	int max_rank,
         float thres[2])
 {
@@ -2590,17 +2671,17 @@ WindSwath::ThresNudge(
 			
 			WindVectorPlus* head = wvc->ambiguities.GetHead();
 			
-			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp; 
-			     wvp = wvc->ambiguities.GetNext()) {
+			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+			     wvp; wvp = wvc->ambiguities.GetNext()) {
 			  if ( exp(0.5*(wvp->obj - head->obj)) > thres[w] )
 			    rank_idx++;
 			}
 
 			WindVector nudge_wv;
-			if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
+			if (wvc->nudgeWV==NULL)
 			  continue;
 			
-			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, rank_idx);
+			wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, rank_idx);
 			count++;
 		}
 	}
@@ -2748,6 +2829,89 @@ WindSwath::MedianFilter(
 	return(pass);
 }
 
+#define BK_NUM_PASS 200
+#define BK_NUDGE 0
+#define NUDGE_DEVIATION 1.0
+//-------------------------//
+// WindSwath::BestKFilter  //
+//-------------------------//
+int
+WindSwath::BestKFilter(
+     
+     int            window_size,
+     int            k){
+        //----------------------------//
+	// create a new selection map //
+	//----------------------------//
+
+	WindVectorPlus*** new_selected =
+		(WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
+			_crossTrackBins, _alongTrackBins);
+
+	//-------------------------//
+	// create a probability map//
+	//-------------------------//
+
+	float** prob = (float**)make_array(sizeof(float), 2,
+		_crossTrackBins, _alongTrackBins);
+
+        //-------------------------//
+        // create best prob array  //
+        //-------------------------//
+        float* best_prob=new float[k];
+
+	//--------------------//
+	// prep for filtering //
+	//--------------------//
+
+	int half_window = window_size / 2;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			if(swath[cti][ati]){
+			  swath[cti][ati]->selected = NULL;
+			  if(!swath[cti][ati]->RedistributeObjs())
+			    fprintf(stderr,"BestKFilter RedistributeObjs failed.\n");
+			}
+			new_selected[cti][ati]=NULL;
+			
+		}
+	}
+
+	//--------//
+	// filter //
+	//--------//
+
+	int finished=0;
+        int pass=0;
+	while (!finished && pass<BK_NUM_PASS)
+	{
+		finished = BestKFilterPass(half_window,k,new_selected, prob,
+						best_prob);
+		pass++;
+		printf(" pass=%d\n",pass);
+	} 
+
+        int count=0;
+        // Remove unselected WVCs and and count them
+        for(int cti=0;cti<_crossTrackBins;cti++){
+	  for(int ati=0; ati<_alongTrackBins;ati++){
+	    if(swath[cti][ati]==NULL) continue;
+            if(swath[cti][ati]->selected==NULL){
+	      count++;
+	      WVC* wvc=Remove(cti,ati);
+              delete wvc;
+	    }
+	  }
+	}
+        printf("Unselected count=%d\n",count);
+	free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+	free_array(prob, 2, _crossTrackBins, _alongTrackBins);
+        delete[] best_prob;
+	return(1);
+}
+     
 //-----------------------------//
 // WindSwath::MedianFilterPass //
 //-----------------------------//
@@ -2968,6 +3132,79 @@ WindSwath::MedianFilterPass(
         fflush(stdout);
 	return(flips);
 }
+
+//-----------------------------//
+// WindSwath::BestKFilterPass //
+//-----------------------------//
+// Returns 1 if finished 0 otherwise.
+int
+WindSwath::BestKFilterPass(
+	int			half_window,
+        int                     k,
+	WindVectorPlus***	new_selected,
+	float**			prob,
+        float*                  best_prob)
+{
+  // Initialize best probability array
+  for(int c=0;c<k;c++) best_prob[c]=0.0;
+
+  for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+	  if(swath[cti][ati]==NULL) continue;
+          if(swath[cti][ati]->selected!=NULL) continue;
+
+
+	  int cti_min=MAX(0,cti-half_window);
+	  int cti_max=MIN(_crossTrackBins-1,cti+half_window);
+	  int ati_min=MAX(0,ati-half_window);
+	  int ati_max=MIN(_alongTrackBins,ati+half_window);
+       
+          // Calculate probabilities
+	  prob[cti][ati]=GetMostProbableAmbiguity(&(new_selected[cti][ati]),
+						  cti,ati,cti_min,cti_max,
+						  ati_min,ati_max);
+
+          // Update best probability array
+	  if(prob[cti][ati]>best_prob[0]){
+	    best_prob[0]=prob[cti][ati];
+            int c=1;
+            while(best_prob[c]<best_prob[c-1]){
+	      float tmp=best_prob[c];
+              best_prob[c]=best_prob[c-1];
+              best_prob[c-1]=tmp;
+	      c++;
+              if(c==k)break;
+	    }
+	  }          
+	}
+    }
+   int finished=1;
+   int num_added=0;
+   for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+      for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+	  if(swath[cti][ati]==NULL) continue;
+          if(swath[cti][ati]->selected!=NULL) continue;
+          
+          num_added++;
+          if(prob[cti][ati]!=1){
+           if(prob[cti][ati]<best_prob[0]){
+	     num_added--;
+	     new_selected[cti][ati]=NULL;
+	     finished=0;
+	   } 
+	  }
+	  swath[cti][ati]->selected=new_selected[cti][ati];
+	}   
+    }
+   printf("Minim Prob. %g Num Added %d",best_prob[0],num_added);
+   if(num_added==0) finished=1;
+   return(finished);
+}
+
 //-----------------------------------------//
 // WindSwath::GetWindowMean                //
 //-----------------------------------------//
@@ -3014,7 +3251,8 @@ WindSwath::GetWindowMean(
 
 #define CORRELATION_WIDTH  1.0  // Currently in units of Cross Track Index
                                 // Should be km!!!!
-#define CW_DEVIATION        1.0  //  m/s
+#define CW_DEVIATION_AMB        1.0  //  1.0 X speed
+#define CW_DEVIATION            0.25  //  1.0 X speed
 #define NUM_DIRECTION_STEPS    45
 float
 WindSwath::GetMostProbableDir(
@@ -3056,7 +3294,7 @@ WindSwath::GetMostProbableDir(
           //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
 	  // Add likelihood due to difference between selected and trial value
           float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
-          float k=CW_DEVIATION/CORRELATION_WIDTH;
+          float k=CW_DEVIATION*spd/CORRELATION_WIDTH;
           float sigma=k*dist;
           float x2=other_wvp->spd*cos(other_wvp->dir);
           float y2=other_wvp->spd*sin(other_wvp->dir);  
@@ -3076,6 +3314,91 @@ WindSwath::GetMostProbableDir(
   wvp->spd=wvc->directionRanges.GetBestSpeed(max_dir);
   wvp->obj=wvc->directionRanges.GetBestObj(max_dir);
   return(max_prob);
+}
+
+float
+WindSwath::GetMostProbableAmbiguity(
+      WindVectorPlus** wvp, 
+      int             cti,
+      int             ati,
+      int             cti_min,
+      int             cti_max, 
+      int             ati_min, 
+      int             ati_max){
+  float max_prob=-HUGE_VAL;
+  int max_prob_num=-1;
+
+
+  WVC* wvc=swath[cti][ati];
+
+  float* prob= new float[wvc->ambiguities.NodeCount()];
+
+  int amb_num=0;
+  for(WindVectorPlus* amb=wvc->ambiguities.GetHead(); amb; 
+      amb=wvc->ambiguities.GetNext(),amb_num++){
+
+    float x1,y1;
+    float spd=amb->spd;
+    float likelihood=0.0;
+    amb->GetUV(&x1,&y1);
+
+    for (int i = cti_min; i < cti_max; i++)
+    {
+      for (int j = ati_min; j < ati_max; j++)
+	{
+	  WVC* other_wvc = swath[i][j];
+	  if (! other_wvc)
+	    continue;
+	  
+	  WindVectorPlus* other_wvp = other_wvc->selected;
+	  if (! other_wvp)
+	    continue;
+          if(i==cti && j==ati) continue;
+          // Add likelihood due to probability of selected being correct
+          // Commented out because it is not necessary unless other possible
+          // directions for the neighboring vectors are considered.
+          // As it is now it just adds a constant value to likelihood for
+          // all possible dir values.
+          //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
+	  // Add likelihood due to difference between selected and trial value
+          float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
+          float k=CW_DEVIATION_AMB*spd/CORRELATION_WIDTH;
+          float sigma=k*dist;
+          float x2,y2;
+          other_wvp->GetUV(&x2,&y2);
+          float dx=x1-x2;
+          float dy=y1-y2;
+	  float diff=(dx*dx+dy*dy)/(sigma*sigma);
+	  likelihood-=diff;
+	}
+    }
+    likelihood+=amb->obj;
+    if(BK_NUDGE){
+      float sigma=NUDGE_DEVIATION*spd;
+      float x2,y2;
+      wvc->nudgeWV->GetUV(&x2,&y2);
+      float dx=x1-x2;
+      float dy=y1-y2;
+      likelihood-=(dx*dx+dy*dy)/(sigma*sigma);
+    }
+    if(likelihood>max_prob){
+      max_prob=likelihood;
+      max_prob_num=amb_num;
+      *wvp=amb;
+    }
+    prob[amb_num]=likelihood;
+  }
+
+  //Normalize
+  float sum=0.0;
+  for(int c=0;c<wvc->ambiguities.NodeCount();c++){
+    prob[c]-=max_prob;
+    prob[c]/=2.0;
+    prob[c]=exp(prob[c]);
+    sum+=prob[c];
+  }
+  delete[] prob;
+  return(prob[max_prob_num]/sum);
 }
 
 //-----------------------------------------//
@@ -3115,6 +3438,7 @@ WindSwath::DiscardUnselectedRanges(){
     } 
    return(1);
 }
+
 
 //-----------------------------------------//
 // WindSwath::GetMedianBySorting           //

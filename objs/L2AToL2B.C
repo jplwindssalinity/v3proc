@@ -301,17 +301,33 @@ int
 L2AToL2B::Flush(
 	L2B*	l2b)
 {
+        //-----------------------------------------------------//
+        // Copy Interpolated NudgeVectors to Wind Vector Cells //
+        //-----------------------------------------------------//
+        if(useNudging) l2b->frame.swath.GetNudgeVectors(&nudgeField);
+
 	//------------//
 	// initialize //
 	//------------//
 
-	if (useNudging)
+#define ALREADY_INITD 0
+#define USEBESTK 0
+#define BESTKPARAMETER  1000
+#define BESTKWINDOWSIZE 15
+        if(ALREADY_INITD){
+	  // Do Nothing 
+        }
+        else if (USEBESTK){
+	  l2b->frame.swath.BestKFilter(BESTKWINDOWSIZE,
+		BESTKPARAMETER);
+	}
+	else if (useNudging)
 	{
 	  if (useNudgeThreshold) 
-	    l2b->frame.swath.ThresNudge(&nudgeField, maxRankForNudging,
+	    l2b->frame.swath.ThresNudge(maxRankForNudging,
 					nudgeThresholds);
 	  else 
-            l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
+            l2b->frame.swath.Nudge(maxRankForNudging);
 	}
         else if(useRandomInit){
 	  l2b->frame.swath.InitRandom();
@@ -405,3 +421,14 @@ L2AToL2B::WriteSolutionCurves(
 
 	return(1);
 }
+
+
+
+
+
+
+
+
+
+
+
