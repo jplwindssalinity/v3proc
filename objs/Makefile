@@ -195,5 +195,5 @@ Sigma0.o: Sigma0.C CoordinateSwitch.h Spacecraft.h Meas.h Sigma0.h Qscat.h Distr
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
 Tracking.o: Tracking.C Tracking.h Constants.h
-Wind.o: Wind.C Wind.h Constants.h GSparameters.h Misc.h Array.h LonLat.h List.h Index.h EarthPosition.h Matrix3.h
+Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h LonLat.h List.h Index.h Matrix.h EarthPosition.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
