@@ -5,6 +5,9 @@
 // 
 // CM Log
 // $Log$
+// Revision 1.1  1999/01/28 20:41:13  sally
+// Initial revision
+//
 // 
 //    Rev 1.0   23 Jun 1998 16:04:40   sally
 // Initial revision.
@@ -89,6 +92,9 @@ char *argv[])
 
 	printf("\nL1A Derived\n--------\n");
 	print_table(L1ADerivedParTab, L1ADerivedTabSize);
+
+    printf("\nL1B\n--------\n");
+    print_table(L1BParTab, L1BParTabSize);
 
 	printf("\nL2A\n--------\n");
 	print_table(L2AParTab, L2AParTabSize);
