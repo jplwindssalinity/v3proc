@@ -87,6 +87,7 @@ public:
 	T*		GetCurrent();		// return T* of current
 	T*		GetNext();			// current = next, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
+	T*		GetNodeWithIndex(int index);	// current = node with given index
 
 	//--------//
 	// moving //
@@ -94,6 +95,7 @@ public:
 
 	void	GotoHead() { _current = _head; };
 	void	GotoTail() { _current = _tail; };
+	int		GotoNext();
 	int		SwapCurrentAndNext();
 
 	//-------------//
@@ -121,7 +123,6 @@ protected:
 
 	void		AppendList(ListBase* added_list);
 	int			IsEmpty();		// 1 if the list is empty, 0 otherwise
-	int			GotoNodeIndex(int node_index);
 
 protected:
 	void		_Prepend(NodeBase* node);

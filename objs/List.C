@@ -193,6 +193,44 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
+//------------------------//
+// List::GetNodeWithIndex //
+//------------------------//
+// Returns the data from the node with the given index.  Returns
+// NULL on failure.
+
+template <class T>
+T*
+List<T>::GetNodeWithIndex(
+	int		index)
+{
+	GotoHead();
+	for (int i = 0; i < index; i++)
+		GotoNext();
+
+	return(GetCurrent());
+}
+
+//----------------//
+// List::GotoNext //
+//----------------//
+// Sets the current node to be the next node.
+// Returns 1 on success.  If the current node or the node following
+// the current node does not exist (is NULL), GotoNext fails and
+// returns 0.
+
+template <class T>
+int
+List<T>::GotoNext()
+{
+	if (! _current)
+		return(0);
+	_current = _current->next;
+	if (! _current)
+		return(0);
+	return(1);
+}
+
 //--------------------------//
 // List::SwapCurrentAndNext //
 //--------------------------//
