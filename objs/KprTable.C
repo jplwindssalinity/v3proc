@@ -160,7 +160,7 @@ KprTable::Accumulate(Meas* quiet, Meas* noisy, int beam_idx, int slice_idx,
   //---------------------------------//
 
   azi=azimuth;
-  if(azi< -(2*M_PI)){
+  if(azimuth < -(2*M_PI)){
     fprintf(stderr,"KprTable::Accumulate: Azimuth < -2PI\n");
     return(0);
   }
