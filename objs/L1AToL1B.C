@@ -180,21 +180,6 @@ L1AToL1B::Convert(
 
             SetDelayAndFrequency(spacecraft, qscat);
 
-/*
-            if (qscat->cds.useTracking)
-            {
-                // normal range and Doppler tracking
-                qscat->cds.CmdRangeAndDoppler(&(qscat->sas), &(qscat->ses));
-            }
-            else
-            {
-                // ideal range and Doppler tracking
-                fprintf(stderr,
-                    "Need to implement ideal range and Doppler tracking\n");
-                exit(1);
-            }
-*/
-
 			//-------------------------------------------//
 			// Extract energy measurements for this spot //
 			//-------------------------------------------//

@@ -433,7 +433,7 @@ CdsBeamInfo::~CdsBeamInfo()
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
     useBYUDop(0), orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), 
-    time(0.0), eqxTime(0.0), previousEncoder(0)
+    time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
 {
     return;
 }
@@ -547,12 +547,13 @@ QscatCds::GetAssumedSpinRate()
     return(0.0);
 }
 
-//---------------------------//
-// QscatCds::EstimateEncoder //
-//---------------------------//
+//--------------------------------//
+// QscatCds::EstimateIdealEncoder //
+//--------------------------------//
+// This returns an ideal encoder estimate.  Basically, a quantized azimuth.
 
 unsigned short
-QscatCds::EstimateEncoder()
+QscatCds::EstimateIdealEncoder()
 {
     //-------------//
     // dereference //
@@ -565,14 +566,14 @@ QscatCds::EstimateEncoder()
     // get previous pulses raw encoder value //
     //---------------------------------------//
 
-    unsigned int int_encoder = (unsigned int)(previousEncoder & 0x7fff);
+    unsigned int int_encoder = (unsigned int)(heldEncoder & 0x7fff);
 
     //----------------------//
     // apply encoder offset //
     //----------------------//
 
     unsigned int encoder_offset;
-    if (previousEncoder & 0x8000)
+    if (heldEncoder & 0x8000)
     {
         // encoder B
         encoder_offset = CDS_ENCODER_B_OFFSET;
@@ -738,63 +739,6 @@ QscatCds::CmdOrbitTicksPerOrbit(
     return(1);
 }
 
-//------------------------------//
-// QscatCds::CmdRangeAndDoppler //
-//------------------------------//
-
-int
-QscatCds::CmdRangeAndDoppler(
-    QscatSas*  qscat_sas,
-    QscatSes*  qscat_ses)
-{
-    //-------------------------------//
-    // estimate the encoder position //
-    //-------------------------------//
-
-    unsigned short encoder = EstimateEncoder();
-
-    //-------------//
-    // dereference //
-    //-------------//
-
-    CdsBeamInfo* cds_beam_info = GetCurrentBeamInfo();
-    DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
-    RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
-
-    //--------------------------------------//
-    // determine the range and Doppler step //
-    //--------------------------------------//
-
-    float ticks_per_orbit_step = (float)orbitTicksPerOrbit /
-        (float)ORBIT_STEPS;
-    unsigned short orbit_step =
-        (unsigned short)((float)(orbitTime % orbitTicksPerOrbit) /
-        ticks_per_orbit_step);
-    orbit_step = orbit_step % ORBIT_STEPS;
-
-    //---------------------------//
-    // command the rx gate delay //
-    //---------------------------//
-
-    unsigned char rx_gate_delay_dn;
-    float rx_gate_delay_fdn;
-    range_tracker->GetRxGateDelay(orbit_step, encoder,
-        cds_beam_info->rxGateWidthDn, txPulseWidthDn, &rx_gate_delay_dn,
-        &rx_gate_delay_fdn);
-    qscat_ses->CmdRxGateDelayDn(rx_gate_delay_dn);
-
-    //-------------------------------//
-    // command the Doppler frequency //
-    //-------------------------------//
-
-    short doppler_dn;
-    doppler_tracker->GetCommandedDoppler(orbit_step, encoder,
-        rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
-    qscat_ses->CmdTxDopplerDn(doppler_dn);
-
-    return(1);
-}
-
 //=======//
 // Qscat //
 //=======//
@@ -856,13 +800,17 @@ SetDelayAndFrequency(
     // calculate the encoder value to use for the algorithm //
     //------------------------------------------------------//
 
-    unsigned short encoder = qscat->cds.EstimateEncoder();
+    // remember the raw encoder for putting it in telemetry
+    qscat->cds.rawEncoder = qscat->cds.heldEncoder;
+
+    // estimate current encoder from the held encoder
+    unsigned short ideal_encoder = qscat->cds.EstimateIdealEncoder();
 
     //---------------------------------------------//
     // sample the encoder for the next calculation //
     //---------------------------------------------//
 
-    qscat->cds.previousEncoder = qscat->sas.GetEncoder();
+    qscat->cds.heldEncoder = qscat->sas.GetEncoder();
 
     //-------------------------------------------------//
     // shift the antenna to the center of the tx pulse //
@@ -892,7 +840,7 @@ SetDelayAndFrequency(
         // tracking algorithm
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
-        range_tracker->GetRxGateDelay(orbit_step, encoder,
+        range_tracker->GetRxGateDelay(orbit_step, ideal_encoder,
             cds_beam_info->rxGateWidthDn, qscat->cds.txPulseWidthDn,
             &rx_gate_delay_dn, &rx_gate_delay_fdn);
         qscat->ses.CmdRxGateDelayDn(rx_gate_delay_dn);
@@ -917,7 +865,7 @@ SetDelayAndFrequency(
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
         short doppler_dn;
-        doppler_tracker->GetCommandedDoppler(orbit_step, encoder,
+        doppler_tracker->GetCommandedDoppler(orbit_step, ideal_encoder,
             rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
         qscat->ses.CmdTxDopplerDn(doppler_dn);
     }

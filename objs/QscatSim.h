@@ -124,7 +124,7 @@ public:
     double                   startTime;
     QscatSimBeamInfo         beamInfo[NUMBER_OF_QSCAT_BEAMS];
     QscatEvent::QscatEventE  lastEventType;
-    unsigned short           lastEventEncoder;
+    unsigned short           lastEventIdealEncoder;
     LandMap                  landMap;
     TimeCorrelatedGaussian   ptgrNoise;
     int                      numLookStepsPerSlice;

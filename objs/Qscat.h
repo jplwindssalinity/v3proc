@@ -211,7 +211,7 @@ public:
     unsigned short  GetTrackingOrbitStep();
     CdsBeamInfo*    GetCurrentBeamInfo();
     double          GetAssumedSpinRate();
-    unsigned short  EstimateEncoder();
+    unsigned short  EstimateIdealEncoder();
 
     int  LoadRgc(int beam_idx, const char* file);
     int  LoadDtc(int beam_idx, const char* file);
@@ -222,7 +222,6 @@ public:
              QscatSes* qscat_ses);
     int  CmdSpinRate(SpinRateE spin_rate, QscatSas* qscat_sas);
     int  CmdOrbitTicksPerOrbit(unsigned int orbit_ticks);
-    int  CmdRangeAndDoppler(QscatSas* qscat_sas, QscatSes* qscat_ses);
 
     //-----------//
     // variables //
@@ -244,7 +243,8 @@ public:
     double         time;
     double         eqxTime;
 
-    unsigned short  previousEncoder;
+    unsigned short  rawEncoder;   // used for the current pulse (ex-held)
+    unsigned short  heldEncoder;  // sampled for the next pulse
 };
 
 //======================================================================

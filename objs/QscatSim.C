@@ -111,12 +111,12 @@ QscatSim::DetermineNextEvent(
     qscat_event->time = min_time;
     qscat_event->beamIdx = min_idx;
 
-    unsigned short encoder = qscat->cds.EstimateEncoder();
+    unsigned short ideal_encoder = qscat->cds.EstimateIdealEncoder();
     switch (lastEventType)
     {
     case QscatEvent::SCATTEROMETER_MEASUREMENT:
-        if (encoder > NINETY_DEGREE_ENCODER &&
-            lastEventEncoder <= NINETY_DEGREE_ENCODER)
+        if (ideal_encoder > NINETY_DEGREE_ENCODER &&
+            lastEventIdealEncoder <= NINETY_DEGREE_ENCODER)
         {
             qscat_event->eventId = QscatEvent::LOOPBACK_MEASUREMENT;
         }
@@ -141,7 +141,7 @@ QscatSim::DetermineNextEvent(
     beamInfo[min_idx].txTime = startTime +
         (double)(cycle_idx + NUMBER_OF_QSCAT_BEAMS) * qscat->ses.pri;
 
-    lastEventEncoder = encoder;
+    lastEventIdealEncoder = ideal_encoder;
     lastEventType = qscat_event->eventId;
 
     return(1);
@@ -858,7 +858,7 @@ QscatSim::SetL00Science(
     // set antenna position //
     //----------------------//
 
-    l00_frame->antennaPosition[_spotNumber] = qscat->sas.GetEncoder();
+    l00_frame->antennaPosition[_spotNumber] = qscat->cds.rawEncoder;
 
     //-------------------------//
     // for each measurement... //
