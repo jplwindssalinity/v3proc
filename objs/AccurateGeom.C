@@ -310,6 +310,279 @@ IntegrateSlices(
 	return(1);
 }
 
+//-----------------//
+// IntegrateSlice  //
+//-----------------//
+
+float
+IntegrateSlice(
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	Meas*		        meas,
+	int			num_look_steps_per_slice,
+	float			azimuth_integration_range,
+	float			azimuth_step_size,
+	int                     range_gate_clipping)
+{	
+
+        float retval=0.0; 
+
+        //-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//----------------------------------------//
+	// determine the baseband frequency range //
+	//----------------------------------------//
+	
+	float f1, bw, f2;
+
+	int slice_count = instrument->GetTotalSliceCount();
+        int slice_idx;
+	if(!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx)){
+		    fprintf(stderr,"IntegrateSlice: Bad slice number\n");
+		    exit(1);
+	}
+	instrument->GetSliceFreqBw(slice_idx, &f1, &bw);
+	f2 = f1 + bw;	
+
+	//------------------------------------------//
+	// Choose high gain side of slice			//
+	// and direction of look angle increment	//
+	//------------------------------------------//
+
+	float high_gain_freq, low_gain_freq;
+	int look_scan_dir;
+	if(fabs(f2)>fabs(f1))
+	  {
+	    high_gain_freq=f1;
+	    low_gain_freq=f2;
+	    if(f1<f2) look_scan_dir=-1;
+	    else look_scan_dir=+1;
+	  }
+	else
+	  {
+	    high_gain_freq=f2;
+	    low_gain_freq=f1;
+	    if(f1>f2) look_scan_dir=-1;
+	    else look_scan_dir=+1;
+	  }
+	
+	//---------------------------------------------//
+	// Determine look vector to centroid of slice  //
+	//---------------------------------------------//
+
+	Vector3 look_vector=meas->centroid - spacecraft->orbitState.rsat;
+	look_vector=antenna_frame_to_gc.Backward(look_vector);
+	double centroid_look, centroid_azimuth, dummy;	
+	look_vector.SphericalGet(&dummy, &centroid_look, &centroid_azimuth);
+		
+	//-------------------------------------//
+	// loop through azimuths and integrate //
+	//-------------------------------------//
+	        
+	float azimin=centroid_azimuth-azimuth_integration_range/2.0;
+	int numazi=(int)(azimuth_integration_range/azimuth_step_size);
+	for(int a=0; a<numazi;a++)
+	  {
+	    float azi=a*azimuth_step_size+azimin;
+	    
+	    float start_look=centroid_look;
+	    float end_look=centroid_look;
+	    
+	    
+	    /*******************************/
+	    /** find starting look angle ***/
+	    /*******************************/	
+	    
+	    // guess at a reasonable slice frequency tolerance of 8 Hz
+	    float ftol = 8.0;
+	    
+	    if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
+				high_gain_freq,ftol,&start_look,azi)){
+	      fprintf(stderr,"IntegrateSlice: Cannot find starting look angle\n");
+	      exit(1);
+	    }
+	    /*******************************/
+	    /** find ending look angle ***/
+	    /*******************************/
+	    if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
+				low_gain_freq,ftol,&end_look,azi)){
+	      fprintf(stderr,"IntegrateSlice: Cannot find ending look angle\n");
+	      exit(1);
+	    }
+	    
+	    
+	    float lk=start_look;
+	    float looktol=fabs(end_look-start_look)/(float)num_look_steps_per_slice;
+	    int look_num=0;
+	    while(1){
+	      
+	      float range, gatgar, area, Pf;
+	      /******************************/
+	      /** Check to see if look angle */
+	      /** scan is finished          */
+	      /******************************/
+	      if(look_num>=num_look_steps_per_slice)
+		break;
+	      
+
+	      //*******************************//
+	      //* Determine box corners in look*//
+	      //* and azimuth.                 *//
+	      //********************************//
+
+	      float look1=lk;
+	      float look2=lk+looktol*look_scan_dir;
+	      float azi1=azi;
+	      float azi2=azi+azimuth_step_size;
+	      
+	      
+	      //*******************************//
+	      //* find location of box corners *//
+	      //* on the ground.               *//
+	      //********************************//
+	      Outline box;
+	      
+	      if (! FindBoxCorners(&antenna_frame_to_gc,spacecraft,instrument,
+				   look1,look2,azi1,azi2, &box)){
+		fprintf(stderr,"IntegrateSlice: Cannot find box corners\n");
+		      exit(1);
+	      }
+	      
+	      
+	      
+	      //*******************************************//
+	      //**** Determine Center of box and range ****//
+	      //*******************************************//
+	      Vector3 box_center;
+	      box_center.SphericalSet(1.0, (look1+look2)/2.0,
+					    (azi1+azi2)/2.0);
+	      TargetInfoPackage tip;
+	      if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
+			     box_center, &tip)){
+		fprintf(stderr,"IntegrateSlice: Cannot find box range\n");
+		exit(1);
+	      }
+	      range=tip.slantRange;
+	      
+
+	      /******************************/
+	      /** Calculate Box Area        */
+	      /******************************/
+	      area=box.Area();
+
+
+
+
+	      /******************************/
+	      /* Calculate two-way gain     */
+	      /******************************/
+
+	      if(! PowerGainProduct(&antenna_frame_to_gc, spacecraft,
+					    instrument, (look1+look2)/2.0,
+				    (azi1+azi2)/2.0, &gatgar)){
+		fprintf(stderr,"IntegrateSlice: Cannot find box gain\n");
+		exit(1);
+	      }
+	      /*********************************/
+	      /** Calculate portion of pulse   */
+              /** received                     */
+              /*********************************/
+         
+              Pf=1.0;
+              if(range_gate_clipping) 
+		Pf=GetPulseFractionReceived(instrument, range);
+              
+	      /*********************************/
+	      /*** Add AGPf/R^4 to sum         */
+	      /*********************************/
+	      
+	      retval+=area*gatgar/(range*range*range*range)*Pf;
+		    
+	      /*********************************/
+	      /* Goto next box                  */
+	      /*********************************/
+
+	      lk+=look_scan_dir*looktol;
+	      look_num++;
+	    }
+	  }
+	return(retval);
+}
+
+float
+GetPulseFractionReceived(Instrument* instrument, float range){
+	
+  Beam* beam = instrument->antenna.GetCurrentBeam();
+  double pulse_width = beam->txPulseWidth;
+  float retval=0.0;
+  double round_trip_time = 2.0 * range / speed_light_kps;
+  
+  double leading_edge_return_time=round_trip_time;
+  double lagging_edge_return_time=round_trip_time+pulse_width;
+  double start_gate_time=instrument->commandedRxGateDelay;
+  double end_gate_time=instrument->commandedRxGateDelay+
+    instrument->commandedRxGateWidth;
+
+  //*************************//
+  // Case 1: Whole pulse is  //
+  // in the gate.            //
+  //*************************//
+
+  if(leading_edge_return_time>start_gate_time){
+    if(lagging_edge_return_time < end_gate_time) retval=1.0;
+
+    //*************************//
+    // Case 2: Pulse overlaps  //
+    // end of gate.            //
+    //*************************//
+    else if(leading_edge_return_time<end_gate_time)
+      retval=(end_gate_time-leading_edge_return_time)/pulse_width;
+
+    //*************************//
+    // Case 3: Whole Pulse is  //
+    // past end of gate.       //
+    //*************************//
+
+    else retval=0;
+  }
+
+  //*************************//
+  // Case 4: Pulse overlaps  //
+  // start of gate.          //
+  //*************************//
+  else if(lagging_edge_return_time>start_gate_time){
+    if(lagging_edge_return_time<end_gate_time)
+      retval=(lagging_edge_return_time-start_gate_time)/pulse_width;
+
+    //**************************//
+    // Case 5: Whole range gate //
+    // is within the pulse      //
+    //**************************//    
+    else retval=(end_gate_time-start_gate_time)/pulse_width;
+  }
+
+  //*************************//
+  // Case 6: Whole Pulse is  //
+  // before start of gate.   //
+  //*************************//
+  else retval=0.0;
+
+  return(retval);
+}
+
 int
 FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
 	       Spacecraft* spacecraft, Instrument* instrument,

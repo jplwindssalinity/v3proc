@@ -9,6 +9,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "InstrumentSim.h"
 #include "Instrument.h"
 #include "GenericGeom.h"
+#include "AccurateGeom.h"
 #include "InstrumentGeom.h"
 #include "Ephemeris.h"
 #include "Sigma0.h"
@@ -218,10 +219,14 @@ InstrumentSim::SetMeasurements(
 		// convert Sigma0 to Power //
 		//-------------------------//
 
-		// Kfactor: either 1.0 or taken from table
+		// Kfactor: either 1.0, taken from table, or computed
 		float Kfactor=1.0;
 
-		if (useKfactor)
+		if (computeKfactor){
+		  Kfactor=ComputeKfactor(spacecraft, instrument, meas);
+		}
+
+		else if (useKfactor)
 		{
 			float orbit_position = instrument->OrbitFraction();
 
@@ -456,6 +461,39 @@ InstrumentSim::ScatSim(
 	}
 
 	return(1);
+}
+
+//---------------------------------//
+// InstrumentSim::ComputeKfactor   //
+//---------------------------------//
+float
+InstrumentSim::ComputeKfactor(
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+        Meas*                   meas){
+  
+        float retval=0.0;
+        retval=IntegrateSlice(spacecraft,instrument,meas,
+			      numLookStepsPerSlice,azimuthIntegrationRange,
+			      azimuthStepSize, rangeGateClipping);	
+	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+        CoordinateSwitch gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState), 
+							  &(spacecraft->attitude), &(instrument->antenna));
+        gc_to_antenna=gc_to_antenna.ReverseDirection();
+	double R = rlook.Magnitude();
+	double roundTripTime = 2.0 * R / speed_light_kps;
+
+	int ib = instrument->antenna.currentBeamIdx;
+	Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+	double r, theta, phi;
+	rlook_antenna.SphericalGet(&r,&theta,&phi);
+	float GatGar;
+	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+			     instrument->antenna.actualSpinRate, &GatGar);
+
+
+        retval*=R*R*R*R/GatGar;
+        return(retval);
 }
 
 //--------------------//

@@ -22,7 +22,6 @@ static const char rcs_id_instrumentsimaccurate_c[] =
 //=======================//
 
 InstrumentSimAccurate::InstrumentSimAccurate()
-:	numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0)
 {
 	return;
 }

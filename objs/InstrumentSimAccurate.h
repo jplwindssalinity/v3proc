@@ -48,17 +48,6 @@ public:
 	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
 				WindField* windfield, GMF* gmf, L00Frame* l00_frame);
 
-	// integration parameters and other constants
-
-	int numLookStepsPerSlice;
-
-	float azimuthIntegrationRange; 
-	// Width in azimuth angle (radians) of area used in
-	// integration.
-
-	float azimuthStepSize;
-
-	
 };
 
 

@@ -29,6 +29,13 @@ int		IntegrateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot, int num_look_steps_per_slice,
 			float azimuth_integration_range, float azimuth_step_size);
 
+float		IntegrateSlice(Spacecraft* spacecraft, Instrument* instrument,
+			Meas* meas, int num_look_steps_per_slice,
+			float azimuth_integration_range, 
+			float azimuth_step_size, int range_gate_clipping);
+
+float           GetPulseFractionReceived(Instrument* instrument, float range);
+
 int		FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float look1,
 			float look2, float azi1, float azi2, Outline* box);
@@ -38,3 +45,10 @@ int		FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
 			float target_freq, float freq_tol, float* look, float azimuth);
 
 #endif
+
+
+
+
+
+
+

@@ -70,6 +70,8 @@ public:
 				WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField,
 				L00Frame* l00_frame);
 
+	float           ComputeKfactor(Spacecraft* spacecraft, Instrument* instrument,
+				       Meas* meas);
 	//-----------//
 	// variables //
 	//-----------//
@@ -80,6 +82,13 @@ public:
 
 	XTable			kfactorTable;
 	XTable			xTable;
+	int numLookStepsPerSlice;
+
+	float azimuthIntegrationRange; 
+	// Width in azimuth angle (radians) of area used in
+	// integration.
+
+        float azimuthStepSize;
 
 	//---------------------------//
 	// level 0 frame information //
@@ -93,9 +102,14 @@ public:
 
 	int			uniformSigmaField;	// set all sigma0 values to 1.0
 	int			outputXToStdout;	// write X value to stdout
-	int			useKfactor;			// read and use K-factor table
+	int			useKfactor;		// read and use K-factor table
+				      
+        int                     computeKfactor;         // compute K-factor
+
 	int			createXtable;		// create an X table
 
+        int                     rangeGateClipping;      // simulate range gate
+							// clipping
 protected:
 
 	//-----------//
@@ -103,6 +117,7 @@ protected:
 	//-----------//
 
 	double		_scatBeamTime[MAX_NUMBER_OF_BEAMS];
+
 
 	//---------------------------//
 	// level 0 frame information //
