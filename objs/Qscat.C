@@ -565,12 +565,12 @@ QscatCds::EstimateEncoder()
     if (previousEncoder & 0x8000)
     {
         // encoder B
-        encoder_offset = ENCODER_B_OFFSET;
+        encoder_offset = CDS_ENCODER_B_OFFSET;
     }
     else
     {
         // encoder A
-        encoder_offset = ENCODER_A_OFFSET;
+        encoder_offset = CDS_ENCODER_A_OFFSET;
     }
     int_encoder += encoder_offset;
 

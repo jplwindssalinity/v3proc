@@ -100,8 +100,13 @@ public:
 //      The QscatSas acts like the QSCAT SAS.
 //======================================================================
 
+// rpm
 #define SAS_LOW_SPIN_RATE   18.0
 #define SAS_HIGH_SPIN_RATE  19.8
+
+// degrees
+#define SAS_ENCODER_A_OFFSET     180.2646
+#define SAS_ENCODER_B_OFFSET     0.3044
 
 enum EncoderE { ENCODER_A, ENCODER_B };
 enum SpinRateE { LOW_SPIN_RATE, HIGH_SPIN_RATE };
@@ -153,8 +158,8 @@ public:
 #define PRI_CMD_RESOLUTION             9.9806E-5
 
 #define DOPPLER_ORBIT_STEPS  256
-#define ENCODER_A_OFFSET     16408
-#define ENCODER_B_OFFSET     28
+#define CDS_ENCODER_A_OFFSET     16408
+#define CDS_ENCODER_B_OFFSET     28
 #define BEAM_A_OFFSET        0
 #define BEAM_B_OFFSET        0
 
