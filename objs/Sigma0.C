@@ -86,7 +86,7 @@ radar_X(
 
 int
 sigma0_to_Pr(
-	CoordinateSwitch*	gc_to_antenna, 
+	CoordinateSwitch*	gc_to_antenna,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
 	Meas*				meas,
