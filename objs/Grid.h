@@ -49,7 +49,7 @@ public:
 	// adding measurements //
 	//---------------------//
 
-	int		Add(Meas *meas, double meas_time);
+	int		Add(Meas *meas, double meas_time, long spot_id);
 
 	//--------------//
 	// input/output //
@@ -99,7 +99,7 @@ protected:
 	int				_ati_start;
 	int				_ati_offset;
 
-	OffsetList**	_grid;			// the grid of offset lists
+	OffsetListList**	_grid;			// the grid of lists of offset lists
 };
 
 #endif

@@ -20,7 +20,7 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 Meas::Meas()
-:	value(0.0), bandwidth(0.0), pol(NONE), eastAzimuth(0.0),
+:	value(0.0), XK(0.0), bandwidth(0.0), pol(NONE), eastAzimuth(0.0),
 	incidenceAngle(0.0), estimatedKp(1.0), offset(0)
 {
 	return;
@@ -40,6 +40,7 @@ Meas::Write(
 	FILE*	fp)
 {
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -63,6 +64,7 @@ Meas::Read(
 	FreeContents();
 	offset = ftell(fp);
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -275,7 +277,34 @@ OffsetList::FreeContents()
 	return;
 }
 
+//================//
+// OffsetListList //
+//================//
 
+OffsetListList::OffsetListList()
+{
+	return;
+}
+
+OffsetListList::~OffsetListList()
+{
+	FreeContents();
+	return;
+}
+
+//------------------------------//
+// OffsetListList::FreeContents //
+//------------------------------//
+
+void
+OffsetListList::FreeContents()
+{
+	OffsetList* offsetlist;
+	GotoHead();
+	while ((offsetlist = RemoveCurrent()) != NULL)
+		delete offsetlist;
+	return;
+}
 
 //==========//
 // MeasSpot //

@@ -10,6 +10,7 @@ static const char rcs_id_grid_c[] =
 #include <malloc.h>
 #include "Grid.h"
 #include "Meas.h"
+#include "Sigma0.h"
 
 
 //======//
@@ -76,13 +77,14 @@ Grid::Allocate(
 	_ati_start = 0;
 	_ati_offset = 0;
 
-	_grid = (OffsetList**)make_array(sizeof(OffsetList), 2,
+	_grid = (OffsetListList**)make_array(sizeof(OffsetListList), 2,
 		_crosstrack_bins, _alongtrack_bins);
 	if (_grid == NULL)
 		return(0);
 
-	// Make an empty OffsetList object, and use to initialize each grid element
-	OffsetList empty_list;
+	// Make an empty OffsetListList object,
+	// and use to initialize each grid element
+	OffsetListList empty_list;
 	for (int i=0; i < _crosstrack_bins; i++)
 	{
 		for (int j=0; j < _alongtrack_bins; j++)
@@ -97,14 +99,15 @@ Grid::Allocate(
 //-----------//
 // Grid::Add //
 //-----------//
-// Add the measurement to the grad using an offset list.
+// Add the measurement to the grid using an offset list.
 // meas = pointer to the Meas object to grid
 // meas_time = time at which the measurement was made
 
 int
 Grid::Add(
 	Meas*		meas,
-	double		meas_time)
+	double		meas_time,
+	long		spot_id)
 {
 	//----------------------------------//
 	// calculate the subtrack distances //
@@ -181,8 +184,31 @@ Grid::Add(
 	long* offset = new long;
 	*offset = meas->offset;
 
-	// Add the offset to the appropriate grid cell list.
-	_grid[cti][ati].Append(offset);
+    // Scan for an offset list with the same spot id.
+
+    OffsetList* offsetlist = _grid[cti][ati].GetHead();
+    while (offsetlist != NULL)
+    {
+        if (offsetlist->spotId == spot_id)
+        {
+            break;
+        }
+        offsetlist = _grid[cti][ati].GetNext();
+    }
+
+    if (offsetlist == NULL)
+    {
+        // Append a new offsetlist (with the new offset) for the new spot
+		offsetlist = new OffsetList;
+		offsetlist->Append(offset);
+		offsetlist->spotId = spot_id;
+		_grid[cti][ati].Append(offsetlist);
+    }
+	else
+	{
+		// Append the offset in the list with the matching spot id.
+		offsetlist->Append(offset);
+	}
 
 	//printf("%d %d %f %f\n",cti,vati,ctd,atd);
 	return(1);
@@ -210,15 +236,32 @@ Grid::ShiftForward()
 	if (offset == -1)
 		return(0);
 
+	MeasList spot_measList;
+
 	// Write out the earliest row of measurement lists.
 	for (int i=0; i < _crosstrack_bins; i++)
 	{
-		//-----------------------------------//
-		// convert offset list to a MeasList //
-		//-----------------------------------//
+		//----------------------------------------//
+		// convert each offset list to a MeasList //
+		//----------------------------------------//
 
 		l17.frame.measList.FreeContents();
-		_grid[i][_ati_start].MakeMeasList(fp, &(l17.frame.measList));
+        for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
+             offsetlist;
+             offsetlist = _grid[i][_ati_start].GetNext())
+        {   // each sublist is composited before output
+            offsetlist->MakeMeasList(fp, &spot_measList);
+			Meas* meas = new Meas;
+			composite(&spot_measList,meas);
+			spot_measList.FreeContents();
+			if (! l17.frame.measList.Append(meas))
+			{
+				printf("Error forming list for output in Grid::ShiftForward\n");
+				delete meas;
+				return(0);
+			}
+//            offsetlist->MakeMeasList(fp, &(l17.frame.measList));
+        }
 
 		//----------------------------------//
 		// complete and write the l17 frame //

@@ -171,8 +171,10 @@ L10ToL15::Convert(
 				float Psn = l10->frame.science[total_slice_idx];
 				float PtGr = l10->frame.ptgr;
 				float sigma0;
+				double X;
+				float Kpc;
 				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Psn, sumPsn, Pn, PtGr, &sigma0))
+					meas, k_factor, Psn, sumPsn, Pn, PtGr, &sigma0, &X, &Kpc))
 				{
 					return(0);
 				}
@@ -189,6 +191,9 @@ L10ToL15::Convert(
 				//-----------------//
 
 				meas->value = sigma0;
+				meas->XK = (float)(X*k_factor);
+				// should we have separate entries for Kpc,Kpr,Kpm ?
+				meas->estimatedKp = Kpc;
 				total_slice_idx++;
 				sliceno++;
 			}

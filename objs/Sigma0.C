@@ -297,12 +297,13 @@ Pr_to_sigma0(
 	float				sumPsn,
 	float				Pn,
 	float				PtGr,
-	float*				sigma0)
+	float*				sigma0,
+	double*				X,
+	float*				Kpc)
 {
 	// Compute radar parameter using telemetry values etc that may have been
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
-	double X;
-	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
+	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, X);
 
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
@@ -320,7 +321,26 @@ Pr_to_sigma0(
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Ps_slice.
 	// Kpr comes from 1/X
-	*sigma0 = (float)(Ps_slice / (X*Kfactor));
+	*sigma0 = (float)(Ps_slice / (*X*Kfactor));
+
+	if (instrument->useKpc == 0)
+	{
+		*Kpc = 0.0;
+	}
+	else
+	{
+		//------------------------------------------------------------------//
+		// Estimate Kpc using the estimated value of snr and the
+		// approximate equations in Mike Spencer's Kpc memos.
+		//------------------------------------------------------------------//
+
+		Beam* beam = instrument->antenna.GetCurrentBeam();
+		double snr = Ps_slice/Pn_slice;
+		double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
+		double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
+		double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
+		*Kpc = A + B/snr + C/snr/snr;
+	}
 
 	return(1);
 }
@@ -382,3 +402,90 @@ GetKpm(
 
 }
 
+//
+// composite
+//
+// Combine measurments into one composite sigma0 and Kpc.
+// The input measurement list should all come from one spot, but this
+// routine does not (and can not) check for this.
+// The final composite measurement is put in a single measurement.
+//
+// Inputs:
+//	input_measList = pointer to list of measurements to be composited.
+//	output_meas = pointer to the Meas structure to put results in.
+//
+
+int
+composite(
+	MeasList*	input_measList,
+	Meas*		output_meas)
+
+{
+
+	float sum_Ps = 0.0;
+	float sum_XK = 0.0;
+	Vector3 sum_centroid(0.0,0.0,0.0);
+	float sum_inc_angle = 0.0;
+	float sum_azi_angle = 0.0;
+	float sum_X2Kpc2 = 0.0;
+	output_meas->bandwidth = 0.0;
+	int N = 0;
+
+	//
+	// Using X in place of Ps when compositing Kpc assumes that sigma0 is
+	// uniform across the composite cell area.  This assumption is used
+	// below because we sum X^2*Kpc^2 instead of Ps^2*Kpc^2.
+	// We actually use XK which subsumes the K-factor with X.
+	//
+
+	Meas* meas;
+	for (meas = input_measList->GetHead();
+		meas;
+		meas = input_measList->GetNext())
+	{
+		sum_Ps += meas->value * meas->XK;
+		sum_XK += meas->XK;
+		sum_centroid += meas->centroid;
+		sum_inc_angle += meas->incidenceAngle;
+		sum_azi_angle += meas->eastAzimuth;
+		sum_X2Kpc2 += meas->XK*meas->XK * meas->estimatedKp*meas->estimatedKp;
+		output_meas->bandwidth += meas->bandwidth;
+		N++;
+	}
+
+	meas = input_measList->GetHead();
+
+	//---------------------------------------------------------------------//
+	// Form the composite measurement from appropriate combinations of the
+	// elements of each slice measurement in this composite cell.
+	//---------------------------------------------------------------------//
+
+	output_meas->value = sum_Ps / sum_XK;
+	output_meas->XK = sum_XK;
+
+	output_meas->outline.FreeContents();	// merged outlines not done yet.
+	output_meas->centroid = sum_centroid / N;
+	// Make sure centroid is on the surface.
+	double alt,lat,lon;
+	output_meas->centroid.GetAltLonGDLat(&alt,&lat,&lon);
+	output_meas->centroid.SetAltLonGDLat(0.0,lat,lon);
+
+	output_meas->pol = meas->pol;
+
+	// Approx incidence and azimuth angles.
+	// These should really be done using the satellite
+	// position, but that would mean putting the sat. position in Meas.
+	output_meas->incidenceAngle = sum_inc_angle / N;
+	output_meas->eastAzimuth = sum_azi_angle / N;
+
+	// Composite Kpc.
+	output_meas->estimatedKp = sum_X2Kpc2 / (sum_XK * sum_XK);
+	if (output_meas->estimatedKp == 0.0)
+	{	// assume that this means that Kpc is not being used in this run.
+		// Set to 1.0 so that GMF::_ObjectiveFunction works.
+		output_meas->estimatedKp = 1.0;
+	}
+
+	return(1);
+
+}

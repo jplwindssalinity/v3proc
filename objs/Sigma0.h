@@ -16,7 +16,7 @@ static const char rcs_id_sigma0_h[] =
 
 //======================================================================
 // Functions
-//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm
+//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm, composite
 //======================================================================
 
 //=======================================================================
@@ -69,9 +69,12 @@ int Pnoise(Instrument* instrument, MeasSpot* spot, float* Pn);
 
 int Pr_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
-		float sumPsn, float Pn, float PtGr, float* sigma0);
+		float sumPsn, float Pn, float PtGr,
+		float* sigma0, double* X, float* Kpc);
 
 float GetKpm(Instrument* instrument, WindVector* wv);
+
+int composite(MeasList* input_measList, Meas* output_meas);
 
 #endif
 

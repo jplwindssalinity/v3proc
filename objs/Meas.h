@@ -18,7 +18,7 @@ static const char rcs_id_meas_h[] =
 
 //======================================================================
 // CLASSES
-//		Meas, MeasList, MeasSpot, MeasSpotList
+//		Meas, MeasList, MeasSpot, MeasSpotList, OffsetList, OffsetListList
 //======================================================================
 
 //======================================================================
@@ -61,6 +61,7 @@ public:
 	//-----------//
 
 	float				value;
+	float				XK;
 	float				bandwidth;
 	Outline				outline;
 	EarthPosition		centroid;
@@ -139,6 +140,38 @@ public:
 	~OffsetList();
 
 	int		MakeMeasList(FILE* fp, MeasList* meas_list);
+
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	long	spotId;
+};
+
+//======================================================================
+// CLASS
+//		OffsetListList
+//
+// DESCRIPTION
+//		The OffsetListList object is a list of offset lists.
+//======================================================================
+
+class OffsetListList : public List<OffsetList>
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	OffsetListList();
+	~OffsetListList();
 
 	//---------//
 	// freeing //

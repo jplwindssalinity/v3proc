@@ -35,6 +35,8 @@ int
 L15ToL17::Group(
 	Grid*		grid)
 {
+	static long spot_id = 0;
+
 	MeasSpotList* meas_spot_list = &(grid->l15.frame.spotList);
 
 	//----------------------//
@@ -57,8 +59,9 @@ L15ToL17::Group(
 			// ...add Meas to Grid //
 			//---------------------//
 
-			grid->Add(meas, meas_time);
+			grid->Add(meas, meas_time, spot_id);
 		}
+		spot_id++;
 	}
 
 	return(1);
