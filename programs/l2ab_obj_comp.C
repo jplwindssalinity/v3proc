@@ -66,8 +66,11 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "L2B.h"
 #include "L2AToL2B.h"
+#include "GMF.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Meas.h"
+#include "LonLat.h"
 
 
 //-----------//
@@ -346,13 +349,22 @@ main(
 	int total_missed_pe = 0;
 	int total_missed_gs = 0;
 	int total_missed_both = 0;
-	float frac_gs_1,frac_gs_2,frac_gs_3,frac_gs_4;
-	float frac_pe_1,frac_pe_2,frac_pe_3,frac_pe_4;
-	float frac_missed_pe,frac_missed_gs,frac_missed_both;
+	float frac_gs_1 = 0;
+	float frac_gs_2 = 0;
+	float frac_gs_3 = 0;
+	float frac_gs_4 = 0;
+	float frac_pe_1 = 0;
+	float frac_pe_2 = 0;
+	float frac_pe_3 = 0;
+	float frac_pe_4 = 0;
+	float frac_missed_pe = 0;
+	float frac_missed_gs = 0;
+	float frac_missed_both = 0;
 	int cti = 0;
 	int ati = 0;
 	WVC* wvc1 = NULL;
 	WVC* wvc2 = NULL;
+	WVC* wvc3 = NULL;
 
 	//---------------//
 	// scanning loop //
@@ -391,7 +403,7 @@ main(
 				break;		// done, exit do loop
 			}
 
-//			if (l2a.frame.cti < 60 || l2a.frame.cti > 70) continue;
+			if (l2a.frame.cti < 59 || l2a.frame.cti > 63) continue;
 
 			//---------//
 			// process //
@@ -431,14 +443,20 @@ main(
     		// retrieve wind //
     		//---------------//
 
+			gmf.SetPhiCount(DEFAULT_PHI_COUNT);
 	    	wvc1 = new WVC();
-			if (! gmf.RetrieveWinds(meas_list, &kp, wvc1))
+			if (! gmf.RetrieveWindsH1(meas_list, &kp, wvc1))
        		{
            		delete wvc1;
            		continue;
        		}
  
 	    	wvc2 = new WVC();
+//			gmf.Calculate_Init_Wind_Solutions(meas_list,&kp,wvc2);
+//			gmf.Optimize_Wind_Solutions(meas_list,&kp,wvc2);
+//			wvc2->Rank_Wind_Solutions();
+//			wvc2->SortByObj();
+
 			if (! gmf.GSRetrieveWinds(meas_list, &kp, wvc2))
        		{
            		delete wvc1;
@@ -557,6 +575,7 @@ main(
 			total_missed_pe++;
 		}
 
+		int amb_count = 1;
 		int missed_gs = 1;
 		for (wvp2 = wvc2->ambiguities.GetHead(); wvp2;
 			 wvp2 = wvc2->ambiguities.GetNext())
@@ -565,6 +584,9 @@ main(
 			{
 				missed_gs = 0;
 			}
+			amb_count++;
+			// Only look at the top four (just like the GS algorithm)
+			if (amb_count > 4) break;
 		}
 		if (missed_gs)
 		{
@@ -580,7 +602,7 @@ main(
 		frac_missed_gs = (float)total_missed_gs / (float)total_wvc;
 		frac_missed_both = (float)total_missed_both / (float)total_wvc;
 
-		if (total_wvc % 1000 == 0)
+		if (total_wvc % 10000 == 0)
 		{
 			printf("%d %g %g %g %g   %g %g %g %g   %g %g %g\n",total_wvc,
 					frac_gs_1,frac_gs_2,frac_gs_3,frac_gs_4,
@@ -589,30 +611,10 @@ main(
 		}
 
 		int output = 0;
-		if ((missed_gs) && (!missed_pe))
+		if ((!missed_gs) && (missed_pe))
 		{
 			output = 1;
 		}
-
-//		if (wvc1->ambiguities.NodeCount() == wvc2->ambiguities.NodeCount())
-//		{
-//			for (wvp1 = wvc1->ambiguities.GetHead(),
-//				 wvp2 = wvc2->ambiguities.GetHead(); wvp1;
-//				 wvp1 = wvc1->ambiguities.GetNext(),
-//				 wvp2 = wvc2->ambiguities.GetNext())
-//			{
-//				if (fabs(wrap_angle_near(wvp1->dir - wvp2->dir, 0.0)) >
-//					 dtr*ANGTOL)
-//				{
-//					output = 1;
-//				}
-//			}
-//		}
-//		else
-//		{
-//			num_mismatched++;
-//			output = 1;
-//		}
 
 		if (output == 1 && use_l2a)
 		{
@@ -633,13 +635,51 @@ main(
 
 			fprintf(ofp,"@WITH G%d\n",graphnumber-1);
 			fprintf(ofp,"@G%d ON\n",graphnumber-1);
+			fprintf(ofp,"# cti = %d, ati = %d\n",l2a.frame.cti,l2a.frame.ati);
 
-			gmf.WriteObjectiveCurve(ofp);
-			gmf.AppendSolutions(ofp,wvc1);
-			gmf.AppendSolutions(ofp,wvc2);
+//			if (l2a.frame.cti == 16 && l2a.frame.ati == 100)
+//			{
+//				FILE* sdata = fopen("sdata.dat","w");
+//			    MeasList* ml = &(l2a.frame.measList);
+//		        LonLat lonlat = ml->AverageLonLat();
+//       		fprintf(sdata, "# Lon=%g Lat=%g\n",lonlat.longitude*rtd,
+//          		lonlat.latitude*rtd);
+//		        fprintf(sdata, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
+//	       		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+//        		{
+//            		fprintf(sdata, "%s %g %g %g\n", beam_map[m->pol],
+//                		m->incidenceAngle*rtd, m->eastAzimuth*rtd, m->value);
+//        		}
+//        		fprintf(sdata, "#####\n");
+//			}
+
+			float min_obj = 0.0;
+			float max_obj = 1.0;
+			gmf.GetObjLimits(&min_obj,&max_obj);
+			gmf.WriteObjectiveCurve(ofp,min_obj,max_obj);
+			gmf.AppendSolutions(ofp,wvc1,min_obj,max_obj);
+			gmf.AppendSolutions(ofp,wvc2,min_obj,max_obj);
 		    fprintf(ofp, "&\n");
 	        fprintf(ofp, "%g %g\n", true_wv.dir * rtd, 0.5);
-//	        printf("%g %g\n", true_wv.dir * rtd, 0.0);
+		    fprintf(ofp, "&\n");
+			gmf.WriteGSObjectiveCurve(ofp,min_obj,max_obj);
+
+			// Try out the H1 algorithm.
+			// No, actually go back to the PE algorithm.
+	    	wvc3 = new WVC();
+	    	MeasList* meas_list = &(l2a.frame.measList);
+			if (! gmf.RetrieveWinds(meas_list, &kp, wvc3))
+       		{
+           		delete wvc3;
+				fprintf(ofp,"&\n0 0\n&0 0\n");
+       		}
+			else
+			{
+		    	wvc3->lonLat = meas_list->AverageLonLat();
+		    	fprintf(ofp, "&\n");
+				gmf.WriteObjectiveCurve(ofp,min_obj,max_obj);
+				gmf.AppendSolutions(ofp,wvc3,min_obj,max_obj);
+			}
 
 			if (graphnumber == 10)
 			{
@@ -655,8 +695,9 @@ main(
 
 		if (use_l2a)
 		{
-			delete wvc1;
-			delete wvc2;
+			if (wvc1) delete wvc1;
+			if (wvc2) delete wvc2;
+			if (wvc3) delete wvc3;
 		}
 	}
 

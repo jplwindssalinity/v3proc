@@ -160,6 +160,8 @@ main(
 	// configure Kp //
 	//--------------//
 
+	// Kp is NOT USED because the data needed is not available in this program.
+
 	Kp kp;
 	if (! ConfigKp(&kp, &config_list))
 	{

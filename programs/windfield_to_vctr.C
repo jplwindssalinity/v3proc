@@ -160,6 +160,7 @@ main(
 		if (! new_wf.NewRes(&windfield, resolution, resolution))
 		{
 			fprintf(stderr, "%s: error creating new windfield\n", command);
+			fprintf(stderr, "    requested resolution = %g\n",resolution);
 			exit(1);
 		}
 		if (! new_wf.WriteVctr(vctr_file))
