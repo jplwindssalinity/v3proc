@@ -388,11 +388,11 @@ QscatSas::CmdSpinRate(
     switch (spin_rate)
     {
         case LOW_SPIN_RATE:
-            antenna.spinRate = SAS_LOW_SPIN_RATE;
+            antenna.spinRate = SAS_LOW_SPIN_RATE * rpm_to_radps;
             return(1);
             break;
         case HIGH_SPIN_RATE:
-            antenna.spinRate = SAS_HIGH_SPIN_RATE;
+            antenna.spinRate = SAS_HIGH_SPIN_RATE * rpm_to_radps;
             return(1);
             break;
         default:
