@@ -152,7 +152,19 @@ InstrumentSim::SetMeasurements(
                 meas->landFlag=landMap.IsLand(lon,lat);
 
 		float sigma0;
-		if (uniformSigmaField)
+                if(meas->landFlag==1){
+		  // Set sigma0 to average NSCAT land sigma0 for appropriate
+                  // incidence angle and polarization
+		        if (meas->pol==H_POL) sigma0=0.085;
+			else sigma0=0.1;
+			if (simVs1BCheckfile)
+			{
+				cf->sigma0[slice_i] = sigma0;
+				cf->wv[slice_i].spd = 0.0;
+				cf->wv[slice_i].dir = 0.0;
+			}		  
+		}
+		else if (uniformSigmaField)
 		{
 			sigma0=1;
 			if (simVs1BCheckfile)
