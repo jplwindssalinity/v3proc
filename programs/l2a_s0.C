@@ -56,6 +56,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "Misc.h"
 #include "L2A.h"
 #include "List.h"
@@ -103,7 +104,8 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2a_file>", "<output_file>", 0};
+const char* usage_array[] = { "<l2a_file>", "<output_file>",
+	"<cti>", "<ati>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -119,12 +121,20 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc != 3 && argc != 5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* l2a_file = argv[clidx++];
 	const char* output_file = argv[clidx++];
+
+	int cti = -1;
+    int ati = -1;
+	if (argc == 5)
+	{
+		cti = atoi(argv[clidx++]);
+		ati = atoi(argv[clidx++]);
+	}
 
 	//------------------------//
 	// open the Level 2A file //
@@ -156,6 +166,9 @@ main(
 
 	while (l2a.ReadDataRec())
 	{
+		if (argc == 5 &&
+			(cti != l2a.frame.cti || ati != l2a.frame.ati)) continue;
+
 		MeasList* ml = &(l2a.frame.measList);
 		LonLat lonlat = ml->AverageLonLat();
 //                Meas* mhead=ml->GetHead();
