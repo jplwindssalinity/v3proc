@@ -187,7 +187,7 @@ sigma0_to_Psn(
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Ps value by multiplying by a random number drawn from
-	// a gaussian distribution with a variance of Kpc.  This includes both
+	// a gaussian distribution with a variance of Kpc^2.  This includes both
 	// thermal noise effects, and fading due to the random nature of the 
 	// surface target.
 	// Kpc is applied to Ps instead of Psn because sigma0 is proportional
@@ -198,7 +198,7 @@ sigma0_to_Psn(
 	// will give the final sigma0's the correct variance.
 	//------------------------------------------------------------------------//
 
-	Gaussian rv(Kpc,1.0);
+	Gaussian rv(Kpc*Kpc,1.0);
 	Ps_slice *= rv.GetNumber();
 
 	*Psn = (float)(Ps_slice + Pn_slice);
@@ -249,7 +249,7 @@ Pnoise(
 	// will then have the correct variance (Kpc).  Real data is different
 	// because some of the variance in sigma0 comes from uncertainty in
 	// estimating the noise in a slice.  The end result is the same.
-	// Sigma0 (and Ps) will have a variance equal to Kpc.
+	// Sigma0 (and Ps) will have a variance equal to Kpc^2.
 	// To be strictly correct, the simulator should separate Kpc into
 	// a thermal noise contribution, and a fading contribution (which only
 	// affects the signal power), and apply them separately.
@@ -317,7 +317,7 @@ Pr_to_sigma0(
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
 	double Ps_slice = Psn - Pn_slice;
 
-	// The resulting sigma0 should have a variance equal to Kpc+Kpr.
+	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Ps_slice.
 	// Kpr comes from 1/X
 	*sigma0 = (float)(Ps_slice / (X*Kfactor));
