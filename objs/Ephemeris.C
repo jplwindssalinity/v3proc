@@ -203,23 +203,109 @@ float *alongtrack)
 
 {
 
-float ax,bx;
-ax = start_time - 1;
-bx = measurement_time;
+double t1,t2,t3,t;
+double r1,r2,r3,r;
 
 // Create an object which supplies the range function to be minimized by
 // standard routines like brent() below.
 RangeFunction rangefunc(this,&rground);
 
-// Bracket the minimum range.
-void mnbrak(float*,float*,float*,float*,float*,float*,float (*f)(float));
-//mnbrak(&ax,&bx,&cx,&fa,&fb,&fc,rangefunc.Range);
+//
+// Initial guesses start at the measurement time and go out 40 sec's which
+// is about the time it takes to cover 300 km.
+//
 
-// Locate the ephemeris position with minimum range to the EarthPosition.
-float brent(float,float,float,float (*f)(float),float,float*);
-// float tol = 1e-4;
+t1 = measurement_time;
+t2 = measurement_time + 40.0;
+
+//
+// Bracket the minimum range between t1 and t3.
+//
+
+r1 = rangefunc.Range(t1);
+r2 = rangefunc.Range(t2);
+if (r2 > r1)
+{	// switch t1 and t2 so that range decreases going from t1 to t2.
+	double tmp = t1;
+	t1 = t2;
+	t2 = tmp;
+	tmp = r1;
+	r1 = r2;
+	r2 = tmp;
+}
+
+//
+// Initial guess for t3 by stepping downhill a factor of 1.6.
+//
+
+t3 = t2 + 1.6*(t2 - t1);
+r3 = rangefunc.Range(t3);
+
+while (r2 > r3)
+{	// step downhill until the range increases.
+	t = t3 + 1.6*(t3 - t2);
+	r = rangefunc.Range(t);
+	t1 = t2;
+	r1 = r2;
+	t2 = t3;
+	r2 = r3;
+	t3 = t;
+	r3 = r;
+}
+
+//
+// Locate the ephemeris position with minimum range to the EarthPosition
+// using a golden section search and the bracketing points t1,t2,t3.
+//
+
+double tol = 1e-6;
+double R = 0.61803399;
+double C = 1.0 - R;
+double t0 = t1;
+
+//
+// Put the smaller interval between t0 and t1 and setup for the search
+//
+
+if (fabs(t3-t2) > fabs(t2-t1))
+{
+	t1 = t2;
+	r1 = r2;
+	t2 = t2 + C*(t3-t2);	// first golden section step
+	r2 = rangefunc.Range(t2);
+}
+else
+{
+	t1 = t2 - C*(t2-t1);	// first golden section step
+	r1 = rangefunc.Range(t1);
+}
+
+//
+// Golden Section search loop
+//
+
+while (fabs(r2-r1)/r1 > tol)
+{
+	if (r2 < r1)
+	{
+		t0 = t1;
+		t1 = t2;
+		t2 = R*t1 + C*t3;
+		r1 = r2;
+		r2 = rangefunc.Range(t2);
+	}
+	else
+	{
+		t3 = t2;
+		t2 = t1;
+		t1 = R*t2 + C*t0;
+		r2 = r1;
+		r1 = rangefunc.Range(t1);
+	}
+}
+
 double min_time;
-//float minrange = brent(ax,bx,cx,rangefunc.Range,tol,&min_time);
+if (r1 < r2) min_time = t1; else min_time = t2;
 
 // Compute the s/c position at the start of the subtrack grid, and at
 // the minimum range position.
@@ -305,7 +391,7 @@ return;
 // Compute range between s/c location at indicated time and the surface point.
 //
 
-float
+double
 RangeFunction::Range(double time)
 
 {

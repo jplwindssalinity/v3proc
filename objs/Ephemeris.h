@@ -137,7 +137,7 @@ RangeFunction();
 // Distance from s/c to surface point at a particular time.
 //
 
-float Range(double time);
+double Range(double time);
 
 //
 // Pointers that indicate which ephemeris object and surface point to use.
