@@ -2675,8 +2675,8 @@ GMF::WriteObjXmgr(
 
   static FILE* objxmgr_file = NULL;
   static char filename[256];
-  static count = 0;
-  static graphnum = 0;
+  static int count = 0;
+  static int graphnum = 0;
 
   sprintf(filename,"%s.%d",basename,count);
   objxmgr_file = fopen(filename,"a");
