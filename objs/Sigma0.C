@@ -60,9 +60,10 @@ radar_X(
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
+
 	if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
 		instrument->antenna.actualSpinRate, &GatGar))
-	  GatGar=0;
+	  return(0);
 
 	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
 		A3db * lambda*lambda /
@@ -93,7 +94,7 @@ radar_X_PtGr(
 	float GatGar;
 	if( ! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
 		instrument->antenna.actualSpinRate,&GatGar))
-	  GatGar=0;
+	return(0);
 
 	*X = PtGr * GatGar *
 		A3db * lambda*lambda /
@@ -172,6 +173,135 @@ sigma0_to_Esn_slice(
 	//------------------------------------------------------------------------//
 
 	double Es_slice = Kfactor*X*sigma0*Tp;
+
+	//------------------------------------------------------------------------//
+	// Noise power spectral densities referenced the same way as the signal.
+	//------------------------------------------------------------------------//
+
+	double N0_echo = bK * instrument->systemTemperature *
+		instrument->echo_receiverGain / instrument->systemLoss;
+
+	//------------------------------------------------------------------------//
+	// Noise energy within one slice referenced like the signal energy.
+	//------------------------------------------------------------------------//
+
+	double En1_slice = N0_echo * Bs * Tp;		// noise with signal
+	double En2_slice = N0_echo * Bs * (Tg-Tp);	// noise without signal
+	double En_slice = En1_slice + En2_slice;
+
+	//double true_snr = Es_slice / En_slice;
+	//printf("%d %g\n", meas->startSliceIdx, true_snr);
+
+	//------------------------------------------------------------------------//
+	// Signal + Noise Energy within one slice referenced like the signal energy.
+	//------------------------------------------------------------------------//
+
+	*Esn_slice = (float)(Es_slice + En_slice);
+
+	if (instrument->simKpcFlag == 0)
+	{
+		return(1);
+	}
+
+	//------------------------------------------------------------------------//
+	// Estimate the variance of the slice signal + noise energy measurements.
+	// The variance is simply the sum of the variance when the signal
+	// (and noise) are present together and the variance when only noise
+	// is present.  These variances come from radiometer theory, ie.,
+	// the reciprocal of the time bandwidth product is the normalized variance.
+	// The variance of the power is derived from the variance of the energy.
+	//------------------------------------------------------------------------//
+
+/*
+	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
+*/
+	// the above equation reduces to the following...
+	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
+
+	//------------------------------------------------------------------------//
+	// Fuzz the Esn value by adding a random number drawn from
+	// a gaussian distribution with the variance just computed and zero mean.
+	// This includes both thermal noise effects, and fading due to the
+	// random nature of the surface target.
+	// When the snr is low, the Kpc fuzzing can be large enough that
+	// the processing step will estimate a negative sigma0 from the
+	// fuzzed power.  This is normal, and will occur in real data also.
+	// The wind retrieval has to estimate the variance using the model
+	// sigma0 rather than the measured sigma0 to avoid problems computing
+	// Kpc for weighting purposes.
+	//------------------------------------------------------------------------//
+
+	Gaussian rv(var_esn_slice,0.0);
+	*Esn_slice += rv.GetNumber();
+
+	return(1);
+}
+
+//
+// sigma0_to_Esn_slice_given_X
+//
+// This function computes the energy received for a
+// given instrument state and average sigma0.
+// The received energy is the sum of the signal energy the noise energy
+// that falls within the appropriate bandwidth.  This assumes that the
+// geometry related factors such as range and antenna gain can be replaced
+// by effective values (instead of integrating over the bandwidth).
+// K-factor should remove any error introduced by this assumption.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
+// See also the sigma0_to_Esn_Enoise function which computes the total
+// signal (all slices)
+// plus noise energy over a much larger noise measurement bandwidth.
+//
+// Inputs:
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//		to the antenna frame for the prevailing geometry.
+//	spacecraft = pointer to current spacecraft object
+//	instrument = pointer to current instrument object
+//	meas = pointer to current measurement (sigma0, cell center, area etc.)
+//	Xfactor = Radar equation X value for this cell.
+//	sigma0 = true sigma0 to assume.
+//	Esn_slice = pointer to signal+noise energy in a slice.
+//
+
+int
+sigma0_to_Esn_slice_given_X(
+	Instrument*			instrument,
+	Meas*				meas,
+	float				X,
+	float				sigma0,
+	float*				Esn_slice)
+{
+	//------------------------//
+	// Sanity check on sigma0 //
+	//------------------------//
+
+	if (fabs(sigma0) > 1.0e5)
+	{
+		printf("Error: sigma0_to_Psn encountered invalid sigma0 = %g\n",
+			sigma0);
+		exit(-1);
+	}
+
+	//----------------------------------------------------------------------//
+	// Compute the radar parameter X which includes gain, loss, and geometry
+	// factors in the received power.  This is the true value.  Processing
+	// uses a modified value that includes fuzzing by Kpr.
+	//----------------------------------------------------------------------//
+
+
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double Tp = beam->txPulseWidth;
+	double Tg = beam->rxGateWidth;
+	double Bs = meas->bandwidth;
+
+	//------------------------------------------------------------------------//
+	// Signal (ie., echo) energy referenced to the point just before the
+	// I-Q detection occurs (ie., including the receiver gain and system loss).
+	//------------------------------------------------------------------------//
+
+	double Es_slice = X*sigma0*Tp;
 
 	//------------------------------------------------------------------------//
 	// Noise power spectral densities referenced the same way as the signal.

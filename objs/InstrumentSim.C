@@ -237,27 +237,40 @@ InstrumentSim::SetMeasurements(
 		// convert Sigma0 to Power //
 		//-------------------------//
 
-		// Kfactor: either 1.0, taken from table, or computed
-		float Kfactor=1.0;
+		// Kfactor: either 1.0, taken from table, or X is computed
+                // directly
+                float Xfactor=0;
+		if (computeXfactor){
+		  Xfactor=ComputeXfactor(spacecraft,instrument,meas);	
 
-		if (computeKfactor){
-		  Kfactor=ComputeKfactor(spacecraft, instrument, meas);
+		  if (! sigma0_to_Esn_slice_given_X(instrument, meas,
+				Xfactor, sigma0, &(meas->value)))
+		    {
+		      return(0);
+		    }
+		  meas->XK=Xfactor;
 		}
 
-		else if (useKfactor)
-		{
-			float orbit_position = instrument->OrbitFraction();
+                else{
 
-			Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
-				instrument->antenna.currentBeamIdx,
-				instrument->antenna.azimuthAngle,
-				orbit_position, sliceno);
-		}
+		  float Kfactor=1.0;
 
-		if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, instrument, meas,
+
+		  if (useKfactor)
+		    {
+		      float orbit_position = instrument->OrbitFraction();
+
+		      Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
+				 instrument->antenna.currentBeamIdx,
+				 instrument->antenna.azimuthAngle,
+				 orbit_position, sliceno);
+		    }
+
+		  if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, instrument, meas,
 				Kfactor, sigma0, &(meas->value), &(meas->XK)))
-		{
-			return(0);
+		    {
+		      return(0);
+		    }
 		}
 
 		if (simVs1BCheckfile)
@@ -555,11 +568,33 @@ InstrumentSim::ComputeKfactor(
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
 	if(!instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-			     instrument->antenna.actualSpinRate, &GatGar))
-	  GatGar=0;
+	  instrument->antenna.actualSpinRate, &GatGar)){
+	  fprintf(stderr,"ComputeKfactor: Cannot calculate GatGar at centroid\n");
+	  exit(1);
+	}
 
 
         retval*=R*R*R*R/GatGar;
+        return(retval);
+}
+
+//---------------------------------//
+// InstrumentSim::ComputeXfactor   //
+//---------------------------------//
+float
+InstrumentSim::ComputeXfactor(
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+        Meas*                   meas){
+
+  	double lambda = speed_light_kps / instrument->transmitFreq;
+        float retval=0.0;
+        retval=IntegrateSlice(spacecraft,instrument,meas,
+			      numLookStepsPerSlice,azimuthIntegrationRange,
+			      azimuthStepSize, rangeGateClipping);	
+
+        retval*=instrument->transmitPower * instrument->echo_receiverGain 
+	        * lambda*lambda /(64*pi*pi*pi * instrument->systemLoss);
         return(retval);
 }
 

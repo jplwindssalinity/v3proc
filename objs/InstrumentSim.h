@@ -75,6 +75,8 @@ public:
 
 	float           ComputeKfactor(Spacecraft* spacecraft, Instrument* instrument,
 				       Meas* meas);
+	float           ComputeXfactor(Spacecraft* spacecraft, Instrument* instrument,
+				       Meas* meas);
 	//-----------//
 	// variables //
 	//-----------//
@@ -108,7 +110,7 @@ public:
 	int			uniformSigmaField;	// set all sigma0 values to 1.0
 	int			outputXToStdout;	// write X value to stdout
 	int			useKfactor;			// read and use K-factor table
-	int			computeKfactor;     // compute K-factor
+	int			computeXfactor;     // compute X-factor
 	int			createXtable;		// create an X table
 	int			rangeGateClipping;  // simulate range gate clipping
 	int			applyDopplerError;  // simulate doppler tracking error

@@ -447,8 +447,11 @@ LocateSpot(
 	// get the max gain value.
 	float gp_max;
 	if(! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-			instrument->antenna.actualSpinRate, &gp_max))
-	  gp_max=0;
+			    instrument->antenna.actualSpinRate, &gp_max)){
+	  fprintf(stderr,"Locate Spot: Cannot compute max gain.\n");
+	  return(0);
+	}
+	  
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
@@ -1084,7 +1087,7 @@ TargetInfo(
 #define AZIMUTH_OFFSET		0.005
 #define ANGLE_OFFSET		0.002		// start delta for golden section
 #define ANGLE_TOL			0.00001		// within this of peak gain
-
+#define MAX_PASSES              10  // Maximum  number of passes through main loop
 int
 FindPeakGainAtFreq(
 	CoordinateSwitch*	antenna_frame_to_gc,
@@ -1096,11 +1099,14 @@ FindPeakGainAtFreq(
 	double*				azim,
 	float*				gain)
 {
-	float dif;
+	float dif, min_dif=0, best_gain;
+	double best_look, best_azim;
 	Vector3 vector;
+        int num_passes=0;
 	TargetInfoPackage tip;
 	do
 	{
+	        num_passes++;
 		//--------------------//
 		// find the frequency //
 		//--------------------//
@@ -1147,6 +1153,35 @@ FindPeakGainAtFreq(
 			return(0);
 		}
 		dif = fabs(tip.basebandFreq - target_freq);
+
+
+                //----------------------------------------//
+                //  Keep track of best answer so far      //
+                //----------------------------------------//
+
+		if(num_passes==1 || dif<min_dif){
+		  min_dif=dif;
+		  best_look=*look;
+                  best_azim=*azim;
+                  best_gain=*gain;
+		}
+
+                //-----------------------------------------//
+                // If maximum number of passes is reached  //
+                // without meeting frequency tolerance use //
+                // best so far and exit loop.              //
+		//-----------------------------------------//
+		if(num_passes >= MAX_PASSES && dif > freq_tol){
+		  fprintf(stderr,"Error: FindPeakGainAtFreq could not meet required freq_tol=%g Hz\n",freq_tol);
+		  fprintf(stderr,"for target_freq=%g and scan_angle=%g.\n",
+			  target_freq,instrument->antenna.azimuthAngle*rtd);
+		  fprintf(stderr,"Actual frequency error was %g Hz.\n",
+			  min_dif);
+		  *look=best_look;
+                  *azim=best_azim;
+                  *gain=best_gain;
+		  break;
+		}
 	} while (dif > freq_tol);
 
 	return(1);

@@ -62,7 +62,7 @@ Beam::SetElectricalBoresight(
 
 	if (_power_gain == NULL)
 	{
-		printf("Error: SetElectricalBoresight found no loaded beam pattern\n");
+		fprintf(stderr,"Error: SetElectricalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -110,7 +110,7 @@ Beam::GetElectricalBoresight(
 	// Check to see if a beam pattern has been loaded.
 	if (_power_gain == NULL)
 	{
-		printf("Error: GetElectricalBoresight found no loaded beam pattern\n");
+		fprintf(stderr,"Error: GetElectricalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -141,7 +141,7 @@ Beam::SetMechanicalBoresight(
 	// Check to see if a beam pattern has been loaded.
 	if (_power_gain == NULL)
 	{
-		printf("Error: SetMechanicalBoresight found no loaded beam pattern\n");
+		fprintf(stderr,"Error: SetMechanicalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
@@ -209,7 +209,7 @@ Beam::SetBeamPattern(
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
-		printf("Invalid beam pattern header info in SetBeamPattern\n");
+		fprintf(stderr,"Invalid beam pattern header info in SetBeamPattern\n");
         return(0);
     }
 
@@ -246,7 +246,7 @@ Beam::ReadBeamPattern(char* filename)
 		fread(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
 		fread(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
-		printf("Error reading beam pattern header info from %s\n",filename);
+		fprintf(stderr,"Error reading beam pattern header info from %s\n",filename);
 		fclose(fp);
         return(0);
     }
@@ -259,7 +259,7 @@ Beam::ReadBeamPattern(char* filename)
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
-		printf("Invalid beam pattern header info in %s\n",filename);
+		fprintf(stderr,"Invalid beam pattern header info in %s\n",filename);
 		fclose(fp);
         return(0);
     }
@@ -268,7 +268,7 @@ Beam::ReadBeamPattern(char* filename)
 	_power_gain = (float**)make_array(sizeof(float),2,_Nx,_Ny);
 	if (_power_gain == NULL)
 	{
-		printf("Can't allocate a pattern array\n");
+		fprintf(stderr,"Can't allocate a pattern array\n");
 		fclose(fp);
 		return(0);
 	}
@@ -281,7 +281,7 @@ Beam::ReadBeamPattern(char* filename)
     	{
 			free_array(_power_gain,2,_Nx,_Ny);
 			_power_gain = NULL;
-			printf("Error reading pattern data from %s\n",filename);
+			fprintf(stderr,"Error reading pattern data from %s\n",filename);
 			fclose(fp);
        		return(0);
     	}
@@ -310,14 +310,14 @@ Beam::WriteBeamPattern(char* filename)
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
-		printf("Error in header parameters to be written to %s\n",filename);
+		fprintf(stderr,"Error in header parameters to be written to %s\n",filename);
 		fclose(fp);
         return(0);
     }
 
 	if (_power_gain == NULL)
 	{
-		printf("No pattern data to write to %s\n",filename);
+		fprintf(stderr,"No pattern data to write to %s\n",filename);
 		fclose(fp);
 		return(0);
 	}
@@ -332,7 +332,7 @@ Beam::WriteBeamPattern(char* filename)
 		fwrite(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
 		fwrite(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
-		printf("Error writing header data to %s\n",filename);
+		fprintf(stderr,"Error writing header data to %s\n",filename);
 		fclose(fp);
         return(0);
     }
@@ -343,7 +343,7 @@ Beam::WriteBeamPattern(char* filename)
 	{
 		if (fwrite(&(_power_gain[i][j]), sizeof(float), 1, fp) != 1)
     	{
-			printf("Error writing pattern data to %s\n",filename);
+			fprintf(stderr,"Error writing pattern data to %s\n",filename);
 			fclose(fp);
        		return(0);
     	}
@@ -379,7 +379,7 @@ Beam::GetPowerGain(
 	// Check for loaded pattern data.
 	if (_power_gain == NULL)
 	{	// show stopper
-		printf("Error: No pattern data loaded for interpolation\n");
+		fprintf(stderr,"Error: No pattern data loaded for interpolation\n");
 		exit(-1);
 	}
 
@@ -402,7 +402,7 @@ Beam::GetPowerGain(
     	(iy1 < 0) ||
     	(iy1 > _Ny - 2))
 	{
-		printf("GetPowerGain: requested point out of range (%g, %g)\n",
+		fprintf(stderr,"GetPowerGain: requested point out of range (%g, %g)\n",
 			look_angle, azimuth_angle);
 		return(0);
 	}

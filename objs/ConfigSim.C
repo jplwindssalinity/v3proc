@@ -666,10 +666,10 @@ ConfigInstrumentSim(
 		create_xtable=0; // default value
 	instrument_sim->createXtable=create_xtable;
 
-	int compute_kfactor;
-	if (! config_list->GetInt(COMPUTE_KFACTOR_KEYWORD, &compute_kfactor))
-		compute_kfactor=0; // default value
-	instrument_sim->computeKfactor=compute_kfactor;
+	int compute_xfactor;
+	if (! config_list->GetInt(COMPUTE_XFACTOR_KEYWORD, &compute_xfactor))
+		compute_xfactor=0; // default value
+	instrument_sim->computeXfactor=compute_xfactor;
 
 	int range_gate_clipping;
 	if (! config_list->GetInt(RANGE_GATE_CLIPPING_KEYWORD, &range_gate_clipping))
@@ -730,7 +730,7 @@ ConfigInstrumentSim(
 			return(0);
 	}
         
-	if (compute_kfactor){
+	if (compute_xfactor){
 	  int num_look_steps;
 	  if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
 		return(0);

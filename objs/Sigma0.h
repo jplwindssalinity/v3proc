@@ -47,6 +47,20 @@ int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float sigma0,
 		float* Esn, float* XK);
 
+
+
+//======================================================================
+// Function
+//		sigma0_to_Esn_slice_given_X
+//
+// DESCRIPTION
+//		This function computes the signal + noise power received in
+//		a slice. It uses X instead of K.
+//======================================================================
+
+int sigma0_to_Esn_slice_given_X(Instrument* instrument, Meas* meas, float X, float sigma0,
+		float* Esn);
+
 //======================================================================
 // Function
 //		sigma0_to_Esn_noise
