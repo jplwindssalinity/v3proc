@@ -233,6 +233,7 @@ public:
     SpinRateE      spinRate;
     int            useRgc;
     int            useDtc;
+    int            useBYUDop;
     unsigned int   orbitTicksPerOrbit;
     CdsBeamInfo    beamInfo[NUMBER_OF_QSCAT_BEAMS];
 

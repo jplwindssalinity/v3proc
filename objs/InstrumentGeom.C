@@ -19,6 +19,7 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Qscat.h"
 #include "Interpolate.h"
 #include "Array.h"
+#include "BYUXTable.h"
 /*
 #include "CoordinateSwitch.h"
 #include "Matrix3.h"
@@ -982,6 +983,61 @@ IdealCommandedDoppler(
 	return(1);
 }
 
+// Calculate Ideal Commanded Doppler in order to set the BYU nominal
+// boresight to 0 Hz baseband
+int
+BYUCommandedDoppler(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat)
+{
+	//------------------------------//
+	// zero the spacecraft attitude //
+	//------------------------------//
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Attitude zero_rpy;
+	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
+
+	//-------------------------------------------//
+	// find the current beam's two-way peak gain //
+	//-------------------------------------------//
+
+	Beam* beam = qscat->GetCurrentBeam();
+	double azimuth_rate = qscat->sas.antenna.spinRate;
+	double look, azim;
+
+	//----------------------------//
+	// calculate commanded Doppler //
+	//----------------------------//
+        double rtt=IdealRtt(spacecraft,qscat);
+	azim=azimuth_rate;
+	azim=azim*0.5*rtt;
+	
+        if(qscat->cds.currentBeamIdx==0){
+	  look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+        }
+	else{
+	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+	}
+	
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	TargetInfoPackage tip;
+	qscat->ses.CmdTxDopplerEu(0.0);
+	do
+	{
+		TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, qscat, vector,
+            &tip);
+		float freq = qscat->ses.txDoppler + tip.basebandFreq;
+		qscat->ses.CmdTxDopplerEu(freq);
+	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
+
+	return(1);
+}
 /**********************************************************************
 //-------------------------------//
 // IdealCommandedDopplerForRange //

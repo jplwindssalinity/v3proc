@@ -64,7 +64,9 @@ int  RttToIdealRxDelay(Qscat* qscat, double rtt);
 
 int  IdealCommandedDoppler(Spacecraft* spacecraft, Qscat* qscat);
 
-int  IdealCommandedDopplerForRange(Spacecraft* spacecraft, float offset);
+int  BYUCommandedDoppler(Spacecraft* spacecraft, Qscat* qscat);
+
+//int  IdealCommandedDopplerForRange(Spacecraft* spacecraft, float offset);
 
 int  TargetInfo(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          Qscat* qscat, Vector3 vector, TargetInfoPackage* tip);

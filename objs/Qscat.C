@@ -430,8 +430,8 @@ CdsBeamInfo::~CdsBeamInfo()
 
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
-    orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), time(0.0),
-    eqxTime(0.0), previousEncoder(0)
+    useBYUDop(0), orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), 
+    time(0.0), eqxTime(0.0), previousEncoder(0)
 {
     return;
 }
@@ -919,7 +919,12 @@ SetDelayAndFrequency(
             rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
         qscat->ses.CmdTxDopplerDn(doppler_dn);
     }
-    else
+    else if (qscat->cds.useBYUDop)
+    {
+        // ideal frequency
+        BYUCommandedDoppler(spacecraft, qscat);
+    }
+    else 
     {
         // ideal frequency
         IdealCommandedDoppler(spacecraft, qscat);

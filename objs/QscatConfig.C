@@ -242,6 +242,16 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useDtc = use_dtc;
 
+    int use_byu_dop;
+    if (! config_list->GetInt(USE_BYU_DOPPLER_KEYWORD, &use_byu_dop))
+        return(0);
+    qscat_cds->useBYUDop = use_byu_dop;
+
+    if(use_byu_dop && use_dtc){
+      fprintf(stderr,"ConfigQscatCds:: Cannot use both Tabular and BYU Commanded Dopplers\n");
+      return(0);
+    }
+
     //--------------//
     // orbit period //
     //--------------//
