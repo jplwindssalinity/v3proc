@@ -157,12 +157,17 @@ sigma0_to_Psn(
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double Tp = beam->pulseWidth;
+	double Tg = beam->receiverGateWidth;
+	double Bs = meas->bandwidth;
+
 	//------------------------------------------------------------------------//
-	// Signal (ie., echo) power referenced to the point just before the
+	// Signal (ie., echo) energy referenced to the point just before the
 	// I-Q detection occurs (ie., including the receiver gain and system loss).
 	//------------------------------------------------------------------------//
 
-	double Ps_slice = Kfactor*X*sigma0;
+	double Es_slice = Kfactor*X*sigma0*Tp;
 
 	//------------------------------------------------------------------------//
 	// Noise power spectral densities referenced the same way as the signal.
@@ -172,16 +177,18 @@ sigma0_to_Psn(
 		instrument->echo_receiverGain / instrument->systemLoss;
 
 	//------------------------------------------------------------------------//
-	// Noise power within one slice referenced like the signal power.
+	// Noise energy within one slice referenced like the signal energy.
 	//------------------------------------------------------------------------//
 
-	double Pn_slice = N0_echo * meas->bandwidth;
+	double En1_slice = N0_echo * Bs * Tp;		// noise with signal
+	double En2_slice = N0_echo * Bs * (Tg-Tp);	// noise without signal
+	double En_slice = En1_slice + En2_slice;
 
 	//------------------------------------------------------------------------//
-	// Signal + Noise power within one slice referenced like the signal power.
+	// Signal + Noise POWER within one slice referenced like the signal power.
 	//------------------------------------------------------------------------//
 
-	*Psn_slice = (float)(Ps_slice + Pn_slice);
+	*Psn_slice = (float)((Es_slice + En_slice) / Tg);
 
 	if (instrument->useKpc == 0)
 	{
@@ -189,19 +196,17 @@ sigma0_to_Psn(
 	}
 
 	//------------------------------------------------------------------------//
-	// Estimate the variance of the slice signal + noise measurements.
+	// Estimate the variance of the slice signal + noise energy measurements.
 	// The variance is simply the sum of the variance when the signal
 	// (and noise) are present together and the variance when only noise
 	// is present.  These variances come from radiometer theory, ie.,
 	// the reciprocal of the time bandwidth product is the normalized variance.
+	// The variance of the power is derived from the variance of the energy.
 	//------------------------------------------------------------------------//
 
-	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->pulseWidth;
-	double Tg = beam->receiverGateWidth;
-	double Bs = meas->bandwidth;
-	float var_psn_slice = (*Psn_slice)*(*Psn_slice) / (Bs * Tp) +
-		Pn_slice*Pn_slice / (Bs*(Tg - Tp));
+	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
+	float var_psn_slice = var_esn_slice / (Tg*Tg);
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Psn value by adding a random number drawn from
@@ -314,27 +319,27 @@ Pnoise(
 	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
 
 	//------------------------------------------------------------------------//
-	// Start with the noise contribution to the noise measurement.  This is
-	// simply the noise spectral density (using the noise channel gain)
-	// multiplied by the noise bandwidth.
+	// Start with the noise contribution to the noise energy measurement.
+	// This is simply the noise spectral density (using the noise channel gain)
+	// multiplied by the noise bandwidth and the receiver gate width.
 	//------------------------------------------------------------------------//
 
-	*Psn_noise = N0_noise*Bn;
+	double Esn_noise = N0_noise*Bn*Tg;
 
 	//------------------------------------------------------------------------//
-	// Add in the signal powers within the measurement spot.
-	// These signal powers will include Kpc variance (if selected) that
+	// Add in the signal energies within the measurement spot.
+	// These signal energies will include Kpc variance (if selected) that
 	// incorporates both signal variation due to fading, and thermal noise
 	// variation from the receiver front end.
 	//------------------------------------------------------------------------//
 
-	double Pn_slice,Ps_slice;
+	double En_slice,Es_slice;
 	Meas* meas = spot->GetHead();
 	while (meas != NULL)
 	{
-		Pn_slice = N0_echo * meas->bandwidth;
-		Ps_slice = meas->value - Pn_slice;
-		*Psn_noise += Ps_slice*beta;
+		En_slice = N0_echo * meas->bandwidth * Tg;
+		Es_slice = meas->value*Tg - En_slice;
+		Esn_noise += Es_slice*beta;
 		meas = spot->GetNext();
 	}
 
@@ -344,14 +349,14 @@ Pnoise(
 	}
 
 	//------------------------------------------------------------------------//
-	// Compute the variance of the portion of the noise channel
+	// Compute the variance of the portion of the noise channel energy
 	// measurement which falls outside of the echo bandwidth.
 	//------------------------------------------------------------------------//
 
-	float var_noise = (Bn - Be)*N0_noise*N0_noise/Tg;
+	float var_noise = (Bn - Be)*N0_noise*N0_noise*Tg;
 
 	//------------------------------------------------------------------------//
-	// Fuzz the Psn_noise value by adding a random number drawn from
+	// Fuzz the Esn_noise value by adding a random number drawn from
 	// a gaussian distribution with the variance just computed and zero mean.
 	// This adds a small amount of additional variance on top of the variance
 	// already present in the slice measurements.  The extra variance is due
@@ -362,7 +367,9 @@ Pnoise(
 	//------------------------------------------------------------------------//
 
 	Gaussian rv(var_noise,0.0);
-	*Psn_noise += rv.GetNumber();
+	Esn_noise += rv.GetNumber();
+
+	*Psn_noise = Esn_noise / Tg;
 
 	return(1);
 }
