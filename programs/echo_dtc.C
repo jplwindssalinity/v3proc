@@ -8,7 +8,7 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -or ] [ -f fit_base ] [ -s scale ] <config_file>
+//    echo_dtc [ -o ] [ -f fit_base ] [ -s scale ] <config_file>
 //      <dtc_base> <echo_file...>
 //
 // DESCRIPTION
@@ -20,7 +20,6 @@
 //    coefficients and fill in missing gaps.
 //
 // OPTIONS
-//    [ -r ]           Allow time regression.
 //    [ -o ]           Ocean only.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
 //    [ -s scale ]     Scale the frequency offset by this factor.
@@ -173,7 +172,6 @@ main(
     // initialize //
     //------------//
 
-    int opt_regression = 1;    // default, check for regression
     int opt_ocean_only = 0;    // default is to include land
     int opt_fit = 0;
     const char* fit_base = NULL;
@@ -193,10 +191,6 @@ main(
         case 'o':
             // this flag means ocean only
             opt_ocean_only = 1;
-            break;
-        case 'r':
-            // this flag means *don't* check for regression
-            opt_regression = 0;
             break;
         case 'f':
             opt_fit = 1;
@@ -431,14 +425,6 @@ main(
     for (int target_orbit_step = 0; target_orbit_step < ORBIT_STEPS;
         target_orbit_step++)
     {
-        //---------------------------------------------//
-        // fresh regression for each target orbit step //
-        //---------------------------------------------//
-
-        ETime last_time, regression_start;
-        last_time.Zero();
-        int regression = 0;
-
         printf("Processing orbit step %d...\n", target_orbit_step);
         for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
         {
@@ -505,38 +491,6 @@ main(
                     last_orbit_step != target_orbit_step)
                 {
                     continue;
-                }
-
-                //----------------------//
-                // check for regression //
-                //----------------------//
-
-                if (opt_regression)
-                {
-                    if (! regression && echo_info.frameTime <= last_time)
-                    {
-                        // first regressive frame
-                        regression = 1;
-                        regression_start = echo_info.frameTime;
-                        continue;
-                    }
-                    else
-                    {
-                        // check for end of regression
-                        if (regression)
-                        {
-                            char regression_start_code_b[CODE_B_TIME_LENGTH];
-                            char regression_end_code_b[CODE_B_TIME_LENGTH];
-                            regression_start.ToCodeB(regression_start_code_b);
-                            last_time.ToCodeB(regression_end_code_b);
-                            fprintf(stderr,
-                                "%s: regressive data omitted (%s to %s)\n",
-                                command, regression_start_code_b,
-                                regression_end_code_b);
-                            regression = 0;
-                        }
-                    }
-                    last_time = echo_info.frameTime;
                 }
 
                 //------------------------------------------//

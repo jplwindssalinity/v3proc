@@ -260,6 +260,9 @@ main(
     int32 x_vel_sds_id = SDnametoid(l1a_sd_id, "x_vel");
     int32 y_vel_sds_id = SDnametoid(l1a_sd_id, "y_vel");
     int32 z_vel_sds_id = SDnametoid(l1a_sd_id, "z_vel");
+    int32 frame_err_status_sds_id = SDnametoid(l1a_sd_id, "frame_err_status");
+    int32 frame_qual_flag_sds_id = SDnametoid(l1a_sd_id, "frame_qual_flag");
+    int32 pulse_qual_flag_sds_id = SDnametoid(l1a_sd_id, "pulse_qual_flag");
     int32 prf_cycle_time_sds_id = SDnametoid(l1a_sd_id, "prf_cycle_time");
     int32 antenna_position_sds_id = SDnametoid(l1a_sd_id, "antenna_position");
     int32 orbit_time_sds_id = SDnametoid(l1a_sd_id, "orbit_time");
@@ -352,6 +355,7 @@ main(
 
     int32 start[] = { 0, 0, 0 };
     int32 edges[] = { 1, 100, 12 };
+    int32 edges_13[] = { 1, 13 };
 
     int wom_frame = 0;
 
@@ -367,8 +371,34 @@ main(
         uint8 operational_mode;
         SDreaddata_or_exit("operational_mode", operational_mode_sds_id, start,
             edges, (VOIDP)&operational_mode);
-        if (operational_mode != WOM)
+        if (operational_mode != WOM) {
+            wom_frame = 0;
             continue;
+        }
+
+        //------------------//
+        // check for errors //
+        //------------------//
+
+        uint32 frame_err_status;
+        SDreaddata_or_exit("frame_err_status", frame_err_status_sds_id, start,
+            edges, (VOIDP)&frame_err_status);
+        uint16 frame_qual_flag;
+        SDreaddata_or_exit("frame_qual_flag", frame_qual_flag_sds_id, start,
+            edges, (VOIDP)&frame_qual_flag);
+        uint8 pulse_qual_flag[13];
+        SDreaddata_or_exit("pulse_qual_flag", pulse_qual_flag_sds_id, start,
+            edges_13, (VOIDP)&pulse_qual_flag);
+        int bad_pulses = 0;
+        for (int i = 0; i < 13; i++) {
+            if (pulse_qual_flag[i] != 0) {
+                bad_pulses = 1;
+            }
+        }
+        if (frame_err_status != 0 || frame_qual_flag != 0 || bad_pulses) {
+            wom_frame = 0;   // spin up again
+            continue;
+        }
 
         //-------------------------//
         // ses configuration flags //
@@ -379,8 +409,10 @@ main(
             ses_configuration_flags_sds_id, start, edges,
             (VOIDP)&ses_configuration_flags);
         unsigned char modulation = ses_configuration_flags & MODULATION_ON;
-        if (! modulation)
+        if (! modulation) {
+            wom_frame = 0;
             continue;
+        }
 
         wom_frame++;
 
