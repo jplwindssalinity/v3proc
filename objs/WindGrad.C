@@ -45,14 +45,14 @@ WindGrad::WindGrad()
   return;
 };
 
-WindGrad::WindGrad(WindSwath* windswath, int use_dirth=0)
+WindGrad::WindGrad(WindSwath* windswath, windTypeE wind_type=SELECTED)
 : swath(NULL),_crossTrackBins(0),_alongTrackBins(0),_validCells(0)
 {
   _crossTrackBins=windswath->GetCrossTrackBins();
   _alongTrackBins=windswath->GetAlongTrackBins();
   _validCells=0;
   _Allocate();
-  _ComputeDerivatives(windswath,use_dirth);
+  _ComputeDerivatives(windswath,wind_type);
   return;
 }
 
@@ -157,7 +157,7 @@ WindGrad::_Allocate()
 int
 WindGrad::_ComputeDerivatives(
 			      WindSwath* windswath,
-			      int use_dirth){
+			      windTypeE wind_type){
 
 #define DEBUG 0
 
@@ -171,9 +171,22 @@ WindGrad::_ComputeDerivatives(
 	  // Extract central wind vector
 	  WVC* wvc=windswath->GetWVC(i,j);
 	  if(!wvc) continue;
-	  WindVector* wv;
-	  if(use_dirth) wv=wvc->specialVector;
-	  else wv=wvc->selected;
+
+	  WindVector* wv=NULL;
+          switch(wind_type){
+	  case NCEP:
+	    wv=wvc->nudgeWV;
+	    break;
+	  case DIRTH:
+	    wv=wvc->specialVector;
+	    break;
+	  case SELECTED:
+	    wv=wvc->selected;
+	    break;
+	  case FIRSTRANK:
+	    wv=wvc->ambiguities.GetHead();
+	    break;
+	  }
 	  if(!wv) continue;
 	  
 	  // compute u, v, lat ,lon
@@ -206,9 +219,22 @@ WindGrad::_ComputeDerivatives(
 	      // Extract neighboring wind vector
 	      WVC* wvc2=windswath->GetWVC(i2,j2);
 	      if(!wvc2) continue;
-	      WindVector* wv2;
-	      if(use_dirth) wv2=wvc2->specialVector;
-	      else wv2=wvc2->selected;
+
+	      WindVector* wv2=NULL;
+	      switch(wind_type){
+	      case NCEP:
+		wv2=wvc2->nudgeWV;
+		break;
+	      case DIRTH:
+		wv2=wvc2->specialVector;
+		break;
+	      case SELECTED:
+		wv2=wvc2->selected;
+		break;
+	      case FIRSTRANK:
+		wv2=wvc2->ambiguities.GetHead();
+		break;
+	      }
 	      if(!wv2) continue;
 	      
 	      // compute ddir, dspd, dlat ,dlon

@@ -12,6 +12,8 @@ static const char rcs_id_wind_grad_h[] =
 #include"Wind.h"
 #include"Array.h"
 
+enum windTypeE {NCEP, DIRTH, SELECTED, FIRSTRANK};
+
 //======================================================================
 // CLASSES
 //    WGC, WindGrad
@@ -70,7 +72,7 @@ class WindGrad{
   //--------------//
 
   WindGrad();
-  WindGrad(WindSwath* windswath, int use_dirth=0);
+  WindGrad(WindSwath* windswath, windTypeE wind_type=SELECTED);
   ~WindGrad();
 
   //---------//
@@ -96,7 +98,7 @@ class WindGrad{
    // Compute derivatives //
    //---------------------//
 
-   int _ComputeDerivatives(WindSwath* windswath, int use_dirth);
+   int _ComputeDerivatives(WindSwath* windswath, windTypeE wind_type);
 
 
     //--------------//
