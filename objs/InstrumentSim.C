@@ -283,14 +283,10 @@ InstrumentSim::LocateSpot(
 		return(0);
 
 	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	TargetInfoPackage  tip;
+	RangeAndRoundTrip(rlook_antenna,&antenna_frame_to_gc,spacecraft,&tip);
+
 	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
-
-	//-------------------------------//
-	// calculate the earth intercept //
-	//-------------------------------//
-
-	EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
-		rlook_gc);
 
 	//----------------------------//
 	// calculate the 3 dB outline //
@@ -298,12 +294,9 @@ InstrumentSim::LocateSpot(
 
 	Meas* meas = new Meas();	// need the outline to append to
 
-	double range = (spot_on_earth - orbit_state->rsat).Magnitude();
-	double flight_time = range/speed_light;
-
 	// get the max gain value.
 	float gp_max;
-	beam->GetPowerGainProduct(look,azimuth,flight_time,
+	beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
 			instrument->antenna.spinRate,&gp_max);
 
 	// Align beam frame z-axis with the electrical boresight.
@@ -341,7 +334,7 @@ InstrumentSim::LocateSpot(
 			double r,look,azimuth;
 			look_mid_ant.SphericalGet(&r,&look,&azimuth);
 			float gp;
-			beam->GetPowerGainProduct(look,azimuth,flight_time,
+			beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
 				instrument->antenna.spinRate,&gp);
 			if (gp > 0.5*gp_max)
 			{
@@ -370,15 +363,15 @@ InstrumentSim::LocateSpot(
 	meas->pol = beam->polarization;
 
 	// get local measurement azimuth
-	CoordinateSwitch gc_to_surface = spot_on_earth.SurfaceCoordinateSystem();
+	CoordinateSwitch gc_to_surface = tip.rTarget.SurfaceCoordinateSystem();
 	Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
 	double r, theta, phi;
 	rlook_surface.SphericalGet(&r, &theta, &phi);
 	meas->eastAzimuth = phi;
 
 	// get incidence angle
-	meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
-	meas->center = spot_on_earth;
+	meas->incidenceAngle = tip.rTarget.IncidenceAngle(rlook_gc);
+	meas->center = tip.rTarget;
 
 	//-----------------------------//
 	// add measurment to meas spot //
