@@ -31,7 +31,7 @@ WindVector::~WindVector()
 //-----------------------//
 // WindVector::SetSpdDir //
 //-----------------------//
- 
+
 int
 WindVector::SetSpdDir(
 	float	speed,
@@ -45,7 +45,7 @@ WindVector::SetSpdDir(
 //-------------------//
 // WindVector::SetUV //
 //-------------------//
- 
+
 int
 WindVector::SetUV(
 	float	u,
@@ -491,7 +491,7 @@ WindField::WriteBev(
 	//-----------//
 	// open file //
 	//-----------//
- 
+
 	FILE* fp = fopen(filename, "w");
 	if (fp == NULL)
 		return(0);
@@ -851,7 +851,7 @@ WindSwath::MedianFilter(
 
 	char** change = (char**)make_array(sizeof(char), 2,
 		_crossTrackBins, _alongTrackBins);
-		
+
 	//--------------------//
 	// prep for filtering //
 	//--------------------//
