@@ -68,6 +68,36 @@ radar_X(
 	return(1);
 }
 
+// Same as above, but takes a value of PtGr
+int
+radar_X_PtGr(
+	CoordinateSwitch*	gc_to_antenna,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	Meas*				meas,
+        float                           PtGr,
+	double*				X)
+{
+	double lambda = speed_light_kps / instrument->baseTransmitFreq;
+	double A3db = meas->outline.Area();
+	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+	double R = rlook.Magnitude();
+	double roundTripTime = 2.0 * R / speed_light_kps;
+
+	int ib = instrument->antenna.currentBeamIdx;
+	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
+	double r,theta,phi;
+	rlook_antenna.SphericalGet(&r,&theta,&phi);
+	float GatGar;
+	instrument->antenna.beam[ib].GetPowerGainProduct(theta,phi,roundTripTime,
+		instrument->antenna.spinRate,&GatGar);
+
+	*X = PtGr * GatGar *
+		 A3db * lambda*lambda /
+		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
+	return(1);
+}
+
 
 //
 // sigma0_to_Psn
@@ -247,12 +277,14 @@ Pr_to_sigma0(
 	float				Psn,
 	float				sumPsn,
 	float				Pn,
+	float                           PtGr,
 	float*				sigma0)
 {
 	// Compute radar parameter using telemetry values etc that may have been
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
 	double X;
-	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
+	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
+      
 
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
@@ -274,3 +306,5 @@ Pr_to_sigma0(
 
 	return(1);
 }
+
+

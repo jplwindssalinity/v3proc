@@ -17,7 +17,7 @@ static const char rcs_id_l10frame_c[] =
 
 L10Frame::L10Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
+	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL),
 	science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
 	slicesPerSpot(0), slicesPerFrame(0)
 {
@@ -146,6 +146,9 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
+        memcpy((void *)(buffer +idx),(void *)&ptgr, size);
+        idx += size;
+
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
@@ -215,6 +218,9 @@ L10Frame::Unpack(
 
 	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
 	attitude.SetYaw(tmp_float);
+	idx += size;
+
+	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(unsigned short) * spotsPerFrame;

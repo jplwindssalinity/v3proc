@@ -17,7 +17,7 @@ static const char rcs_id_l10frame_h[] =
 //		L10Frame
 //======================================================================
 
-#define L10_FRAME_HEADER_SIZE	56
+#define L10_FRAME_HEADER_SIZE	60
 
 //======================================================================
 // CLASS
@@ -70,6 +70,8 @@ public:
 
 	Attitude	attitude;
 
+        float ptgr;
+
 	// antenna position
 	unsigned short*		antennaPosition;
 
@@ -88,3 +90,5 @@ public:
 };
 
 #endif
+
+

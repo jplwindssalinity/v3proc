@@ -16,6 +16,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "AntennaSim.h"
 #include "L00.h"
 #include "Spacecraft.h"
+#include "Distributions.h"
 
 //======================================================================
 // CLASSES
@@ -71,6 +72,7 @@ public:
 	// variables //
 	//-----------//
 
+	Gaussian                        ptgrNoise;
 	int				slicesPerSpot;
 	double			startTime;
 	AntennaSim		antennaSim;		// the antenna simulator

@@ -224,6 +224,13 @@ InstrumentSim::SetL00Science(
 {
 	Antenna* antenna = &(instrument->antenna);
 
+
+	//----------------------//
+	// set PtGr             //
+	//----------------------// 
+        l00_frame->ptgr= instrument->transmitPower*instrument->receiverGain;
+        l00_frame->ptgr*=(1+ptgrNoise.GetNumber());
+       
 	//----------------------//
 	// set antenna position //
 	//----------------------//

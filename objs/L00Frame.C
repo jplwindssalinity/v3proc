@@ -17,7 +17,7 @@ static const char rcs_id_l00frame_c[] =
 
 L00Frame::L00Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
+	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL), 
 	science(NULL), spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0),
 	slicesPerFrame(0)
 {
@@ -144,6 +144,10 @@ L00Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
+
+        memcpy((void *)(buffer +idx),(void *)&ptgr, size);
+        idx += size;
+
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
@@ -154,6 +158,78 @@ L00Frame::Pack(
 
 	size = sizeof(float) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+	idx += size;
+
+	return(idx);
+}
+
+
+//---------------------------//
+// L00Frame::Unpack          //
+//---------------------------//
+
+
+int
+L00Frame::Unpack(
+	char*	buffer)
+{
+	int idx = 0;
+	int size;
+
+	size = sizeof(double);
+	memcpy((void *)&time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcX, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcY, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcZ, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velX, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velY, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velZ, (void *)(buffer + idx), size);
+	idx += size;
+
+	float tmp_float;
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetRoll(tmp_float);
+	idx += size;
+
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetPitch(tmp_float);
+	idx += size;
+
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetYaw(tmp_float);
+	idx += size;
+
+	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short) * spotsPerFrame;
+	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * slicesPerFrame;
+	memcpy((void *)science, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

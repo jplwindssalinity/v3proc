@@ -68,7 +68,8 @@ int Pnoise(Instrument* instrument, MeasSpot* spot, float* Pn);
 
 int Pr_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
-		float sumPsn, float Pn, float* sigma0);
+		float sumPsn, float Pn, float PtGr, float* sigma0);
 
 
 #endif
+

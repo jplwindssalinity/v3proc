@@ -164,9 +164,10 @@ L10ToL15::Convert(
 			{
 				float k_factor = 1.0;
 				float Psn = l10->frame.science[total_slice_idx];
+				float PtGr = l10->frame.ptgr;
 				float sigma0;
 				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Psn, sumPsn, Pn, &sigma0))
+					meas, k_factor, Psn, sumPsn, Pn, PtGr, &sigma0))
 				{
 					return(0);
 				}				

@@ -579,6 +579,17 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->slicesPerSpot = slices_per_spot;
 
+	//----------------------------//
+        // initialize PTGR noise      //
+        //----------------------------//
+	float ptgr_var, ptgr_mean;
+	if (! config_list->GetFloat(PTGR_VARIANCE_KEYWORD, &ptgr_var))
+		return(0);
+	if (! config_list->GetFloat(PTGR_MEAN_KEYWORD, &ptgr_mean))
+		return(0);
+
+        instrument_sim->ptgrNoise.SetVariance(ptgr_var);
+        instrument_sim->ptgrNoise.SetMean(ptgr_mean);
 	return(1);
 }
 

@@ -17,7 +17,7 @@ static const char rcs_id_l00frame_h[] =
 //		L00Frame
 //======================================================================
 
-#define L00_FRAME_HEADER_SIZE	56
+#define L00_FRAME_HEADER_SIZE	60
 
 //======================================================================
 // CLASS
@@ -48,6 +48,7 @@ public:
 	//-------------------//
 
 	int		Pack(char* buffer);
+	int             Unpack(char* buffer);
 
 	//-------------------//
 	// product variables //
@@ -69,8 +70,12 @@ public:
 
 	Attitude	attitude;
 
+        // Transmitted Power and Receiver Gain Product
+        float           ptgr;
+
 	// antenna position
 	unsigned short*		antennaPosition;
+
 
 	// science measurements
 	float*				science;
