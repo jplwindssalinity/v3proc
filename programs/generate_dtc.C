@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -124,7 +124,7 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<DTC_base>", 0};
+const char* usage_array[] = { "[ -b ]", "<sim_config_file>", "<DTC_base>", 0};
 
 int opt_bias = 0;
 
@@ -265,8 +265,8 @@ main(
     // select encoder information //
     //----------------------------//
 
-    unsigned int cds_encoder_offset_dn;
-    double sas_encoder_offset;
+    unsigned int cds_encoder_offset_dn = 0;
+    double sas_encoder_offset = 0.0;
     switch (qscat.sas.encoderElectronics)
     {
         case ENCODER_A:
@@ -301,7 +301,7 @@ main(
         // get the beam offset angle //
         //---------------------------//
 
-        unsigned int cds_beam_offset_dn;
+        unsigned int cds_beam_offset_dn = 0;
         switch (beam_idx)
         {
             case 0:
@@ -522,7 +522,7 @@ main(
                 // calculate corrective frequency //
                 //--------------------------------//
 
-                qscat.IdealCommandedDoppler(&spacecraft);
+                qscat.IdealCommandedDoppler(&spacecraft, NULL, opt_bias);
 
                 // constants are used to calculate the actual Doppler
                 // frequency to correct for, but IdealCommandedDoppler

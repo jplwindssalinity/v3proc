@@ -305,9 +305,9 @@ main(
             exit(1);
         }
         float antenna_azimuth[100];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            antenna_azimuth[i] = antenna_azimuth_dn[i] * antenna_azimuth_sf;
+            antenna_azimuth[spot_idx] = antenna_azimuth_dn[spot_idx] * antenna_azimuth_sf;
         }
 
         //----------//
@@ -323,9 +323,9 @@ main(
             exit(1);
         }
         float cell_snr[100];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            cell_snr[i] = pow(10.0, 0.1 * cell_snr_dn[i] * cell_snr_sf);
+            cell_snr[spot_idx] = pow(10.0, 0.1 * cell_snr_dn[spot_idx] * cell_snr_sf);
         }
 
         //------------//
@@ -341,9 +341,9 @@ main(
             exit(1);
         }
         float cell_kpc_a[100];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            cell_kpc_a[i] = cell_kpc_a_dn[i] * cell_kpc_a_sf;
+            cell_kpc_a[spot_idx] = cell_kpc_a_dn[spot_idx] * cell_kpc_a_sf;
         }
 
         //-----------//
@@ -362,22 +362,22 @@ main(
             exit(1);
         }
         float slice_snr[100][8];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
             for (int j = 0; j < 8; j++)
             {
-                slice_snr[i][j] = pow(10.0,
-                    0.1 * slice_snr_dn[i][j] * slice_snr_sf);
+                slice_snr[spot_idx][j] = pow(10.0,
+                    0.1 * slice_snr_dn[spot_idx][j] * slice_snr_sf);
             }
 
-            min_slice_snr[i] = slice_snr[i][0];
-            max_slice_snr[i] = slice_snr[i][0];
+            min_slice_snr[spot_idx] = slice_snr[spot_idx][0];
+            max_slice_snr[spot_idx] = slice_snr[spot_idx][0];
             for (int j = 1; j < 8; j++)
             {
-                if (slice_snr[i][j] < min_slice_snr[i])
-                    min_slice_snr[i] = slice_snr[i][j];
-                if (slice_snr[i][j] > max_slice_snr[i])
-                    max_slice_snr[i] = slice_snr[i][j];
+                if (slice_snr[spot_idx][j] < min_slice_snr[spot_idx])
+                    min_slice_snr[spot_idx] = slice_snr[spot_idx][j];
+                if (slice_snr[spot_idx][j] > max_slice_snr[spot_idx])
+                    max_slice_snr[spot_idx] = slice_snr[spot_idx][j];
             }
         }
 
@@ -394,11 +394,11 @@ main(
             exit(1);
         }
         float slice_kpc_a[100][8];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
             for (int j = 0; j < 8; j++)
             {
-                slice_kpc_a[i][j] = slice_kpc_a_dn[i][j] * slice_kpc_a_sf;
+                slice_kpc_a[spot_idx][j] = slice_kpc_a_dn[spot_idx][j] * slice_kpc_a_sf;
             }
         }
 
@@ -415,12 +415,12 @@ main(
             exit(1);
         }
         float x_factor[100][8];
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
             for (int j = 0; j < 8; j++)
             {
-                x_factor[i][j] = pow(10.0,
-                    0.1 * x_factor_dn[i][j] * x_factor_sf);
+                x_factor[spot_idx][j] = pow(10.0,
+                    0.1 * x_factor_dn[spot_idx][j] * x_factor_sf);
             }
         }
 
@@ -482,25 +482,25 @@ main(
                 command);
             exit(1);
         }
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            frequency_shift[i] = frequency_shift_dn[i] * frequency_shift_sf;
+            frequency_shift[spot_idx] = frequency_shift_dn[spot_idx] * frequency_shift_sf;
         }
 
         //---------------//
         // calculate kpc //
         //---------------//
 
-        for (int i = 0; i < 100; i++)
+        for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            float x_val = frame_idx + (float)i / 100.0;
+            float x_val = frame_idx + (float)spot_idx / 100.0;
 
             // skip cals
-            if (sigma0_mode_flag[i] & 0x0003 != 0)
+            if (sigma0_mode_flag[spot_idx] & 0x0003 != 0)
                 continue;
 
             // skip bad data
-            if (sigma0_qual_flag[i] & 0x0001 != 0)
+            if (sigma0_qual_flag[spot_idx] & 0x0001 != 0)
                 continue;
 
             //--------------------//
@@ -509,8 +509,8 @@ main(
 
             if (land_map_file != NULL)
             {
-                double lon = cell_lon[i] * dtr;
-                double lat = cell_lat[i] * dtr;
+                double lon = cell_lon[spot_idx] * dtr;
+                double lat = cell_lat[spot_idx] * dtr;
                 int type = land_map.GetType(lon, lat);
                 if (type != 0)
                     continue;
@@ -520,52 +520,82 @@ main(
             // calculate kpc egg //
             //-------------------//
 
-            int beam_idx = i % 2;
+            int beam_idx = spot_idx % 2;
             if (beam_idx != only_beam)
                 continue;
 
-            float egg_kpc = cell_kpc_a[i];
-//                + cell_kpc_b[3][beam_idx] / cell_snr[i]
-//                + cell_kpc_c[3][beam_idx] / (cell_snr[i] * cell_snr[i]);
+            float egg_kpc = cell_kpc_a[spot_idx];
+//                + cell_kpc_b[3][beam_idx] / cell_snr[spot_idx]
+//                + cell_kpc_c[3][beam_idx] / (cell_snr[spot_idx] * cell_snr[spot_idx]);
             egg_kpc = sqrt(egg_kpc);
+
+            //---------------------------------//
+            // estimate missing slice xfactors //
+            //---------------------------------//
+
+            float x_factor_10[10];
+            for (int i = 0; i < 10; i++)
+            {
+                if (i == 0)
+                {
+                    double h = 10.0 * log10(x_factor[spot_idx][1]);
+                    double b = 10.0 * log10(x_factor[spot_idx][0]);
+                    x_factor_10[i] = pow(10.0, 0.1 * (2.0 * b - h));
+                }
+                else if (i == 9)
+                {
+                    double h = 10.0 * log10(x_factor[spot_idx][6]);
+                    double b = 10.0 * log10(x_factor[spot_idx][7]);
+                    x_factor_10[i] = pow(10.0, 0.1 * (2.0 * b - h));
+                }
+                else
+                {
+                    x_factor_10[i] = x_factor[spot_idx][i-1];
+                }
+            }
 
             //-----------------------------//
             // calculate kpc composite egg //
             //-----------------------------//
 
-            double top_sum = 0.0;
-            double bottom_sum = 0.0;
+            double sum_of_x_2 = 0.0;
+            double sum_of_x = 0.0;
 
-double sum_of_x_2 = 0.0;
-double sum_of_x = 0.0;
-
-            for (int j = -1; j < 9; j++)
+            for (int j = 0; j < 10; j++)
             {
                 int use_j = j;
-                if (j == -1)
-                    use_j = 0;
-                if (j == 8)
-                    use_j = 7;
-                float slice_kpc_2 = slice_kpc_a[i][use_j]
-                    + slice_kpc_b[3][beam_idx] / slice_snr[i][use_j]
+                if (j >= 1 && j <= 8) use_j = j - 1;
+                if (j == 9) use_j = 7;
+                float slice_kpc_2 = slice_kpc_a[spot_idx][use_j]
+                    + slice_kpc_b[3][beam_idx] / slice_snr[spot_idx][use_j]
                     + slice_kpc_c[3][beam_idx]
-                        / (slice_snr[i][use_j] * slice_snr[i][use_j]);
-                top_sum += (x_factor[i][use_j] * x_factor[i][use_j]
+                        / (slice_snr[spot_idx][use_j] * slice_snr[spot_idx][use_j]);
+/*
+                top_sum += (x_factor_10[j] * x_factor_10[j]
                     * slice_kpc_2);
-                bottom_sum += x_factor[i][use_j];
-sum_of_x_2 += x_factor[i][use_j] * x_factor[i][use_j];
-sum_of_x += x_factor[i][use_j];
+                bottom_sum += x_factor_10[j];
+*/
+
+                sum_of_x_2 += x_factor_10[j] * x_factor_10[j];
+                sum_of_x += x_factor_10[j];
             }
+/*
             bottom_sum *= bottom_sum;
             float comp_kpc = sqrt(top_sum / bottom_sum);
+*/
 
-double slice_a = slice_kpc_a[i][0] * (sum_of_x_2 / (sum_of_x * sum_of_x));
-double slice_b = slice_kpc_b[3][beam_idx] / 10;
-double slice_c = slice_kpc_c[3][beam_idx] / 10;
+double comp_a = slice_kpc_a[spot_idx][0] * (sum_of_x_2 / (sum_of_x * sum_of_x));
+double comp_b = slice_kpc_b[3][beam_idx] / 10;
+double comp_c = slice_kpc_c[3][beam_idx] / 10;
 
-            fprintf(ofp, "%g %g %g %g\n", antenna_azimuth[i],
-                10.0 * log10(1.0 + egg_kpc), 1.0 / (egg_kpc * egg_kpc * 1.5),
-                frequency_shift[i]);
+            double comp_kpc = comp_a;
+//                + comp_b / cell_snr[spot_idx]
+//                + comp_c / (cell_snr[spot_idx] * cell_snr[spot_idx]);
+            comp_kpc = sqrt(comp_kpc);
+
+            double eff_bandwidth = 1.0 / (egg_kpc * egg_kpc * 1.5);
+            fprintf(ofp, "%g %g %g\n", antenna_azimuth[spot_idx],
+                10.0 * log10(1.0 + egg_kpc), 10.0 * log10(1.0 + comp_kpc));
         }
     }
 
