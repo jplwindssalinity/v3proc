@@ -256,7 +256,7 @@ Stable::GetValue(
     float  angle,
     float  orbit_fraction)
 {
-    return(GetValue(beam_idx, angle, orbit_fraction, _modeId);
+    return(GetValue(beam_idx, angle, orbit_fraction, _modeId));
 }
 
 //------------------//
@@ -266,7 +266,7 @@ Stable::GetValue(
 float
 Stable::GetValue(
     int    beam_idx,
-    float  angle,
+    float  ant_az,
     float  orbit_fraction,
     int    mode_id)
 {
@@ -290,8 +290,8 @@ Stable::GetValue(
     float b = 1.0 - a;
     int next_orbit_step = (int_orbit_step + 1) % GS_NUM_ORBIT_STEPS;
 
-    angle = fmod(angle, two_pi);
-    float angle = (float)GS_NUM_AZIMUTHS * angle / two_pi;
+    ant_az = fmod(ant_az, two_pi);
+    float angle = (float)GS_NUM_AZIMUTHS * ant_az / two_pi;
     int int_angle = (int)angle;
     float c = angle - int_angle;
     float d = 1.0 - c;
