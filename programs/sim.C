@@ -629,9 +629,10 @@ main(
                     {
                         float df = qscat_sim.BYUX.GetDeltaFreq(&spacecraft,
                             &qscat, topo_ptr, stable_ptr);
-                        fprintf(true_delta_f_fp, "%u %g %g\n",
+                        fprintf(true_delta_f_fp, "%u %.4f %.0f %d\n",
                             frame->orbitTicks,
-                            qscat.sas.antenna.encoderAzimuthAngle, df);
+                            qscat.sas.antenna.encoderAzimuthAngle, df,
+                            qscat.cds.currentBeamIdx);
                     }
                     qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);
