@@ -24,9 +24,6 @@ static const char rcs_id_accurategeom_h[] =
 //======================================================================
 
 
-int		IntegrateSlices(Spacecraft* spacecraft, Qscat* qscat,
-            MeasSpot* meas_spot, int num_look_steps_per_slice,
-            float azimuth_integration_range, float azimuth_step_size);
 
 int		IntegrateSlice(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
             int num_look_steps_per_slice, float azimuth_integration_range,
@@ -48,7 +45,8 @@ double      SpectralResponse(Spacecraft* spacecraft, Qscat* qscat,
                 int range_gate_clipping);
 
 int IntegrateFrequencyInterval( Spacecraft* spacecraft, Qscat* qscat,
-				float f1, float centroid_azimuth, float bw,
+				float f1, float centroid_look,
+				float centroid_azimuth, float bw,
 				int num_look_steps_per_slice,
 				float azimuth_integration_range,
 				float azimuth_step_size, int range_gate_clipping,

@@ -15,274 +15,6 @@ static const char rcs_id_accurategeom_c[] =
 
 #define OUTPUT_DETAILED_INFO 0
 
-//-----------------//
-// IntegrateSlices //
-//-----------------//
-
-int
-IntegrateSlices(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat,
-    MeasSpot*    meas_spot,
-    int          num_look_steps_per_slice,
-    float        azimuth_integration_range,
-    float        azimuth_step_size)
-{
-	//-----------//
-	// predigest //
-	//-----------//
-
-	Antenna* antenna = &(qscat->sas.antenna);
-	Beam* beam = qscat->GetCurrentBeam();
-	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Attitude* attitude = &(spacecraft->attitude);
-
-	//------------------//
-	// set up meas spot //
-	//------------------//
-
-	meas_spot->FreeContents();
-	meas_spot->time = qscat->cds.time;
-	meas_spot->scOrbitState = *orbit_state;
-	meas_spot->scAttitude = *attitude;
-
-	//--------------------------------//
-	// generate the coordinate switch //
-	//--------------------------------//
-
-	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna, antenna->txCenterAzimuthAngle);
-
-	//-----------------------------------------------//
-	// command the range delay and Doppler frequency //
-	//-----------------------------------------------//
-
-	//------------------//
-	// find beam center //
-	//------------------//
-
-	double look, azimuth;
-
-	if (! beam->GetElectricalBoresight(&look, &azimuth))
-		return(0);
-
-
-	//-------------------//
-	// for each slice... //
-	//-------------------//
-
-	int total_slices = qscat->ses.GetTotalSliceCount();
-	for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
-	{
-		//-------------------------//
-		// create a new measurment //
-		//-------------------------//
-
-		Meas* meas = new Meas();
-		meas->pol = beam->polarization;
-
-//		int debug=0, debug2=0;
-//		if (slice_idx==0 && beam->polarization==H_POL) debug2=0;
-//		if (debug) printf("\n\nAntennaAzimuth %g\n",
-//		 antenna->azimuthAngle/dtr);
-
-		//----------------------------------------//
-		// determine the baseband frequency range //
-		//----------------------------------------//
-
-		float f1, bw, f2;
-		qscat->ses.GetSliceFreqBw(slice_idx, &f1, &bw);
-		f2 = f1 + bw;
-
-		//----------------------------------//
-		// find the centroid of the slice	//
-		// We'll simply use the peak gain	//
-		// point at the central frequency	//
-		//----------------------------------//
-
-		EarthPosition centroid;
-		Vector3 look_vector;
-
-		float centroid_freq=(f1+f2)/2.0;
-
-		// guess at a reasonable slice frequency tolerance of 8 Hz
-		float ftol = 8.0;
-		double centroid_look=look;
-		double centroid_azimuth=azimuth;
-		float dummy;
-
-		if (! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-            centroid_freq, ftol, &centroid_look, &centroid_azimuth, &dummy))
-        {
-            return(0);
-        }
-
-		look_vector.SphericalSet(1.0, centroid_look, centroid_azimuth);
-
-		TargetInfoPackage tip;
-		if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat, look_vector,
-            &tip))
-		{
-			return(0);
-		}
-		centroid=tip.rTarget;
-
-
-		float looktol;
-//		float xarray[40*80];
-//		for(int c=0;c<40*80;c++)xarray[c]=0.0;
-
-		/*** for now use azimuth range of 2 degrees ***/
-		float azimin=centroid_azimuth-azimuth_integration_range/2.0;
-		int numazi=(int)(azimuth_integration_range/azimuth_step_size);
-
-		meas->value=0.0;
-
-		//------------------------------------------//
-		// Choose high gain side of slice			//
-		// and direction of look angle increment	//
-		//------------------------------------------//
-
-		float high_gain_freq, low_gain_freq;
-		int look_scan_dir;
-		if (fabs(f2)>fabs(f1))
-		{
-			high_gain_freq=f1;
-			low_gain_freq=f2;
-			if (f1<f2) look_scan_dir=-1;
-			else look_scan_dir=+1;
-		}
-		else
-		{
-			high_gain_freq=f2;
-			low_gain_freq=f1;
-			if (f1>f2) look_scan_dir=-1;
-			else look_scan_dir=+1;
-		}
-
-		//-------------------------------------//
-		// loop through azimuths and integrate //
-		//-------------------------------------//
-
-		for(int a=0; a<numazi;a++)
-		{
-            float azi=a*azimuth_step_size+azimin;
-
-            float start_look=centroid_look;
-            float end_look=centroid_look;
-
-//		    if (debug) printf("For Azimuth %g ....\n",azi);
-
-            //--------------------------//
-            // find starting look angle //
-            //--------------------------//
-
-            if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-                high_gain_freq, ftol, &start_look,azi))
-            {
-                return(0);
-            }
-
-            //------------------------//
-            // find ending look angle //
-            //------------------------//
-
-            if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-                low_gain_freq, ftol, &end_look,azi))
-            {
-                return(0);
-            }
-
-            float lk=start_look;
-            looktol=fabs(end_look-start_look)/(float)num_look_steps_per_slice;
-            int look_num=0;
-
-            while(1)
-            {
-                // get integration box corners
-                Outline box;
-                float look1=lk;
-                float look2=lk+looktol*look_scan_dir;
-                float azi1=azi;
-                float azi2=azi+azimuth_step_size;
-
-                if (! FindBoxCorners(&antenna_frame_to_gc, spacecraft, qscat,
-                    look1, look2, azi1, azi2, &box))
-                {
-                    return(0);
-                }
-
-		    //**************************//
-		    //**** Determine Center of box ****//
-		    //**************************//
-		    Vector3 box_center;
-                    box_center.SphericalSet(1.0, (look1+look2)/2.0,
-					    (azi1+azi2)/2.0);
-
-            //---------------------------------------------//
-            // check to see if look angle scan is finished //
-            //---------------------------------------------//
-
-		    if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat,
-                box_center, &tip))
-            {
-                return(0);
-            }
-
-		    if (look_num>=num_look_steps_per_slice)
-		      break;
-
-		    float gatgar, range, area;
-
-		    /******************************/
-                    /** Calculate Box Area        */
-                    /******************************/
-		    area=box.Area();
-		    range=tip.slantRange;
-            if (! SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
-                (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar, 1))
-            {
-                return(0);
-            }
-
-		    /*********************************/
-		    /*** Add AG/R^4 to sum           */
-                    /*********************************/
-
-		    meas->value+=area*gatgar/(range*range*range*range);
-
-                    /*********************************/
-		    /* Goto next box                  */
-		    /*********************************/
-		    lk+=look_scan_dir*looktol;
-		    look_num++;
-		  }
-		}
-
-		//---------------------------//
-		// generate measurement data //
-		//---------------------------//
-
-		// get local measurement azimuth
-		CoordinateSwitch gc_to_surface =
-			centroid.SurfaceCoordinateSystem();
-		Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
-		double r, theta, phi;
-		rlook_surface.SphericalGet(&r, &theta, &phi);
-		meas->eastAzimuth = phi;
-
-		// get incidence angle
-		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
-		meas->centroid = centroid;
-
-		//-----------------------------//
-		// add measurement to meas spot //
-		//-----------------------------//
-
-		meas_spot->Append(meas);
-	}
-	return(1);
-}
 
 //----------------//
 // IntegrateSlice //
@@ -339,7 +71,8 @@ IntegrateSlice(
      double centroid_look, centroid_azimuth, dummy;
      look_vector.SphericalGet(&dummy, &centroid_look, &centroid_azimuth);
 
-     retval=IntegrateFrequencyInterval(spacecraft,qscat,f1,centroid_azimuth,
+     retval=IntegrateFrequencyInterval(spacecraft,qscat,f1,centroid_look,
+				centroid_azimuth,
 				bw,num_look_steps_per_slice,
 				azimuth_integration_range,
 				azimuth_step_size,range_gate_clipping, X);
@@ -355,6 +88,7 @@ IntegrateFrequencyInterval(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     float        f1,
+    float        centroid_look,
     float        centroid_azimuth,
     float        bw,
     int          num_look_steps_per_slice,
@@ -387,13 +121,9 @@ IntegrateFrequencyInterval(
 
         float f2 = f1 + bw;
 
-	//---------------------------------------//
-        // Get centroid look                     //
-        //---------------------------------------//
 
 	// guess at a reasonable slice frequency tolerance of 8 Hz
 	float ftol = 8.0;
-        float centroid_look;
 	if(! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
 			    (f1+f2)/2.0,ftol,&centroid_look,centroid_azimuth))
 	  return(0);
@@ -796,7 +526,17 @@ SpectralResponse(
      float retval;
      float f1;
      f1=freq-bandwidth/2; 
-     IntegrateFrequencyInterval(spacecraft,qscat,f1,azim,bandwidth,1,
+     // Guess at centroid look using electrical boresight look angle.
+     // Integrate FrequencyInterval refines the guess.
+     double look_doub, dummy;
+     float look;
+     int beam_idx= qscat->cds.currentBeamIdx;
+     if(!qscat->sas.antenna.beam[beam_idx].GetElectricalBoresight(&look_doub,&dummy)){
+       fprintf(stderr, "SpectralResponse: Cannot get electrical boresight\n");
+       exit(0);
+     }
+     look=(float)look_doub;
+     IntegrateFrequencyInterval(spacecraft,qscat,f1,look,azim,bandwidth,1,
 				azimuth_integration_range,
 				azimuth_step_size,range_gate_clipping,
                                 &retval);
