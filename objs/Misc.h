@@ -74,6 +74,9 @@ char         get_bits(char byte, int position, int bit_count);
 int          substitute_string(const char* string, const char* find,
                  const char* replace, char* result);
 
+float        lat_fix(float latitude);
+float        lon_fix(float longitude);
+
 int          downhill_simplex(double** p, int ndim, int totdim, double ftol,
                  double (*funk)(double*, void*), void* ptr, double xtol=0.0);
 double       amotry(double** p, double* y, double* psum, int ndim, int totdim,

@@ -148,6 +148,36 @@ substitute_string(
     return(1);
 }
 
+//---------//
+// lat_fix //
+//---------//
+
+float
+lat_fix(
+    float  latitude)
+{
+    if (latitude < -pi_over_two)
+        latitude = -pi_over_two;
+    if (latitude > pi_over_two)
+        latitude = pi_over_two;
+    return(latitude);
+}
+
+//---------//
+// lon_fix //
+//---------//
+
+float
+lon_fix(
+    float  longitude)
+{
+    while (longitude < 0.0)
+        longitude += two_pi;
+    while (longitude >= two_pi)
+        longitude -= two_pi;
+    return(longitude);
+}
+
 //------------------//
 // downhill_simplex //
 //------------------//
