@@ -582,7 +582,7 @@ main(
                 }
                 if (land_map.IsLand(lon, lat))
                 {
-                    echo_info.flag[spot_idx] = EchoInfo::LAND;
+                    echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
                     continue;
                 }
 

@@ -426,7 +426,7 @@ main(
                 use_lon_lat.ApproxApplyDelta(dlon_km[i], dlat_km[i]);
                 if (qscat_sim.landMap.IsLand(&use_lon_lat))
                 {
-                    echo_info.flag[spot_idx] = EchoInfo::LAND;
+                    echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
                     break;
                 }
             }
