@@ -215,6 +215,15 @@ FILE*   ofp)
             fprintf(ofp, "\n");
         }
     }
+    fprintf(ofp,"\nl1a_frame_inst_status: 0x%08x\n", l1a_frame_inst_status);
+    fprintf(ofp,"l1a_frame_err_status: 0x%08x\n", l1a_frame_err_status);
+    fprintf(ofp,"l1a_frame_qual_flag: 0x%08x\n", l1a_frame_qual_flag);
+    fprintf(ofp, "l1a_pulse_qual_flag:\n");
+    for (int i=0; i < 13; i++)
+    {
+        fprintf(ofp, "%02x", l1a_pulse_qual_flag[i]);
+    }
+    fprintf(ofp, "\n");
     return 1;
 
 } // L1AGSFrame::WriteAscii
