@@ -203,9 +203,11 @@ L10ToL15::Convert(
 					return(0);
 				}
 
-				meas->scanAngle=instrument->antenna.azimuthAngle;
-                                meas->sliceIdx=sliceno;
-                                meas->beamIdx=instrument->antenna.currentBeamIdx;
+				meas->scanAngle = instrument->antenna.azimuthAngle;
+				meas->sliceIdx = sliceno;
+				meas->beamIdx = instrument->antenna.currentBeamIdx;
+				meas->transmitPulseWidth = beam->pulseWidth;
+
 				//----------------------------------//
 				// Print calculated sigma0 values	//
 				// to stdout.						//

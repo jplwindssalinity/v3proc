@@ -236,9 +236,20 @@ main(
 		exit(1);
 	}
 
-	//-------------------------------------//
-	// Setup a KpmField
-	//-------------------------------------//
+	//--------------//
+	// configure Kp //
+	//--------------//
+ 
+	Kp kp;
+	if (! ConfigKp(&kp, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Kp\n", command);
+		exit(1);
+	}
+
+	//------------------//
+	// Setup a KpmField //
+	//------------------//
 
 	KpmField kpmField;
 	if (! ConfigKpmField(&kpmField, &config_list))
@@ -391,7 +402,7 @@ main(
 					instrument.antenna.currentBeamIdx =
 						instrument_event.beamIdx;
 					instrument_sim.ScatSim(&spacecraft, &instrument,
-						&windfield, &gmf, &kpmField, &(l00.frame));
+						&windfield, &gmf, &kp, &kpmField, &(l00.frame));
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);
 					break;

@@ -439,9 +439,7 @@ WVC::FreeContents()
 //===========//
 
 WindField::WindField()
-:	_lonCount(0), _lonMin(0.0), _lonMax(0.0), _lonStep(0.0),
-	_latCount(0), _latMin(0.0), _latMax(0.0), _latStep(0.0),
-	_field(0)
+:	_wrap(0), _field(0)
 {
 	return;
 }
@@ -493,15 +491,8 @@ WindField::ReadVap(
 	// transfer to wind field format //
 	//-------------------------------//
 
-	_lonCount = VAP_LON_DIM;
-	_lonMin = 0.0 * dtr;
-	_lonMax = 359.0 * dtr;
-	_lonStep = 1.0 * dtr;
-
-	_latCount = VAP_LAT_DIM;
-	_latMin = -60.0 * dtr;
-	_latMax = 60.0 * dtr;
-	_latStep = 1.0 * dtr;
+	_lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, VAP_LON_DIM);
+	_lat.SpecifyCenters(-60.0 * dtr, 60.0 * dtr, VAP_LON_DIM);
 
 	if (! _Allocate())
 		return(0);
@@ -518,6 +509,8 @@ WindField::ReadVap(
 			*(*(_field + lon_idx) + lat_idx) = wv;
 		}
 	}
+
+	_wrap = 1;
 
 	return(1);
 }
@@ -568,15 +561,8 @@ WindField::ReadEcmwfHiRes(
 	// transfer to wind field format //
 	//-------------------------------//
 
-	_lonCount = ECMWF_HIRES_LON_DIM;
-	_lonMin = -180.0 * dtr;
-	_lonMax = 179.4375 * dtr;
-	_lonStep = 0.5625 * dtr;
-
-	_latCount = ECMWF_HIRES_LAT_DIM;
-	_latMin = -90.0 * dtr;
-	_latMax = 90.0 * dtr;
-	_latStep = 0.5625 * dtr;
+	_lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
+	_lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
 
 	if (! _Allocate())
 		return(0);
@@ -594,6 +580,7 @@ WindField::ReadEcmwfHiRes(
 		}
 	}
 
+	_wrap = 1;
 	return(1);
 }
 
@@ -646,16 +633,20 @@ WindField::WriteVctr(
 	// write //
 	//-------//
 
-	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
+	int lon_count = _lon.GetBins();
+	int lat_count = _lat.GetBins();
+	for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
 	{
-		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
+		float longitude;
+		_lon.IndexToValue(lon_idx, &longitude);
+		for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
 		{
+			float latitude;
+			_lat.IndexToValue(lat_idx, &latitude);
 			WindVector* wv = _field[lon_idx][lat_idx];
 			if (wv)
 			{
 				// calculate longitude and latitude
-				float longitude = _lonMin + lon_idx * _lonStep;
-				float latitude = _latMin + lat_idx * _latStep;
 				if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
 					fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
 					fwrite((void *)&(wv->spd), sizeof(float), 1, fp) != 1 ||
@@ -686,21 +677,26 @@ WindField::NewRes(
 	float		lon_res,
 	float		lat_res)
 {
-	//----------------//
-	// determine size //
-	//----------------//
+	//----------//
+	// re-index //
+	//----------//
 
-	float lon_range = windfield->_lonCount * windfield->_lonStep;
-	_lonCount = (int)(lon_range / lon_res + 0.5);
-	_lonMin = windfield->_lonMin;
-	_lonStep = lon_range / _lonCount;
-	_lonMax = _lonMin + (_lonCount - 1) * _lonStep;
+	int old_bins, new_bins;
+	float old_step;
 
-	float lat_range = windfield->_latCount * windfield->_latStep;
-	_latCount = (int)(lat_range / lat_res + 0.5);
-	_latMin = windfield->_latMin;
-	_latStep = lat_range / _latCount;
-	_latMax = _latMin + (_latCount - 1) * _latStep;
+	old_bins = windfield->_lon.GetBins();
+	old_step = windfield->_lon.GetStep();
+	new_bins = (int)((float)old_bins * old_step / lon_res + 0.5);
+	_lon.SpecifyNewBins(&(windfield->_lon), new_bins);
+
+	old_bins = windfield->_lat.GetBins();
+	old_step = windfield->_lat.GetStep();
+	new_bins = (int)((float)old_bins * old_step / lat_res + 0.5);
+	_lat.SpecifyNewBins(&(windfield->_lat), new_bins);
+
+	//----------//
+	// allocate //
+	//----------//
 
 	if (! _Allocate())
 		return(0);
@@ -710,12 +706,22 @@ WindField::NewRes(
 	//--------------------//
 
 	LonLat lon_lat;
-	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
+	int lon_bins = _lon.GetBins();
+	int lat_bins = _lat.GetBins();
+	for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
 	{
-		lon_lat.longitude = _lonMin + lon_idx * _lonStep;
-		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
+		float value;
+		if (! _lon.IndexToValue(lon_idx, &value))
+			return(0);
+
+		lon_lat.longitude = value;
+		for (int lat_idx = 0; lat_idx < lat_bins; lat_idx++)
 		{
-			lon_lat.latitude = _latMin + lat_idx * _latStep;
+			if (! _lat.IndexToValue(lat_idx, &value))
+				return(0);
+
+			lon_lat.latitude = value;
+
 			WindVector* wv = new WindVector;
 			if (! wv)
 				return(0);
@@ -739,17 +745,18 @@ WindField::NearestWindVector(
 	WindVector*		wv)
 {
 	// put longitude in range (hopefully)
-	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
+	float lon_min = _lon.GetMin();
+	int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
 	// convert to longitude index
-	int lon_idx = (int)((lon - _lonMin) / _lonStep + 0.5);
-	if (lon_idx < 0 || lon_idx >= _lonCount)
+	int lon_idx;
+	if (! _lon.GetNearestIndex(lon, &lon_idx))
 		return(0);
 
 	// convert to latitude index
-	int lat_idx = (int)((lon_lat.latitude - _latMin) / _latStep + 0.5);
-	if (lat_idx < 0 || lat_idx >= _latCount)
+	int lat_idx;
+	if (! _lat.GetNearestIndex(lon_lat.latitude, &lat_idx))
 		return(0);
 
 	*wv = *(*(*(_field + lon_idx) + lat_idx));
@@ -767,72 +774,52 @@ WindField::InterpolatedWindVector(
 	WindVector*		wv)
 {
 	// put longitude in range (hopefully)
-	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
+	float lon_min = _lon.GetMin();
+	int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
-	// find lower longitude index
-	int lon_idx_1 = (int)((lon - _lonMin) / _lonStep);
-	if (lon_idx_1 < 0 || lon_idx_1 >= _lonCount)
-		return(0);
-	float lon_1 = _lonMin + lon_idx_1 * _lonStep;
-
-	// find upper longitude index
-	int lon_idx_2 = lon_idx_1 + 1;		// try the quick easy way
-	if (lon_idx_2 >= _lonCount)
+	// find longitude indicies
+	int lon_idx[2];
+	float lon_coef[2];
+	if (_wrap)
 	{
-		// must do the long hard way
-		lon = lon_lat.longitude + _lonStep;
-		wrap_factor = (int)ceil((_lonMin - lon) / two_pi);
-		lon += (float)wrap_factor * two_pi;
-
-		lon_idx_2 = (int)((lon - _lonMin) / _lonStep);
-		if (lon_idx_2 >= _lonCount)
+		if (! _lon.GetLinearCoefsWrapped(lon, lon_idx, lon_coef))
 			return(0);
 	}
-	if (lon_idx_2 < 0)
-		return(0);
-	float lon_2 = _lonMin + lon_idx_2 * _lonStep;
-
-	// find lower latitude index
-	int lat_idx_1 = (int)((lon_lat.latitude - _latMin) / _latStep);
-	if (lat_idx_1 < 0 || lat_idx_1 >= _latCount)
-		return(0);
-	float lat_1 = _latMin + lat_idx_1 * _latStep;
-
-	// find upper latitude index
-	int lat_idx_2 = lat_idx_1 + 1;
-	if (lat_idx_2 >= _latCount)
-		return(0);
-	float lat_2 = _latMin + lat_idx_2 * _latStep;
-
-	float p;
-	if (lon_idx_1 == lon_idx_2)
-		p = 1.0;
 	else
-		p = (lon - lon_1) / (lon_2 - lon_1);
-	float pn = 1.0 - p;
+	{
+		if (! _lon.GetLinearCoefsStrict(lon, lon_idx, lon_coef))
+			return(0);
+	}
 
-	float q;
-	if (lat_idx_1 == lat_idx_2)
-		q = 1.0;
-	else
-		q = (lon_lat.latitude - lat_1) / (lat_2 - lat_1);
-	float qn = 1.0 - q;
+	// find latitude indicies
+	int lat_idx[2];
+	float lat_coef[2];
+	if (! _lat.GetLinearCoefsStrict(lon_lat.latitude, lat_idx, lat_coef))
+		return(0);
 
-	WindVector* wv1 = *(*(_field + lon_idx_1) + lat_idx_1);
-	WindVector* wv2 = *(*(_field + lon_idx_2) + lat_idx_1);
-	WindVector* wv3 = *(*(_field + lon_idx_1) + lat_idx_2);
-	WindVector* wv4 = *(*(_field + lon_idx_2) + lat_idx_2);
+	WindVector* corner_wv[2][2];
+	corner_wv[0][0] = *(*(_field + lon_idx[0]) + lat_idx[0]);
+	corner_wv[0][1] = *(*(_field + lon_idx[0]) + lat_idx[1]);
+	corner_wv[1][0] = *(*(_field + lon_idx[1]) + lat_idx[0]);
+	corner_wv[1][1] = *(*(_field + lon_idx[1]) + lat_idx[1]);
 
-	float u1, u2, u3, u4, v1, v2, v3, v4;
-	wv1->GetUV(&u1, &v1);
-	wv2->GetUV(&u2, &v2);
-	wv3->GetUV(&u3, &v3);
-	wv4->GetUV(&u4, &v4);
+	float corner_u[2][2], corner_v[2][2];
+	corner_wv[0][0]->GetUV(&corner_u[0][0], &corner_v[0][0]);
+	corner_wv[0][1]->GetUV(&corner_u[0][1], &corner_v[0][1]);
+	corner_wv[1][0]->GetUV(&corner_u[1][0], &corner_v[1][0]);
+	corner_wv[1][1]->GetUV(&corner_u[1][1], &corner_v[1][1]);
 
-	float u = pn * qn * u1 + p * qn * u2 + p * q * u3 + pn * q * u4;
-	float v = pn * qn * v1 + p * qn * v2 + p * q * v3 + pn * q * v4;
+	float u =	lon_coef[0] * lat_coef[0] * corner_u[0][0] +
+				lon_coef[0] * lat_coef[1] * corner_u[0][1] +
+				lon_coef[1] * lat_coef[0] * corner_u[1][0] +
+				lon_coef[1] * lat_coef[1] * corner_u[1][1];
 
+	float v =	lon_coef[0] * lat_coef[0] * corner_v[0][0] +
+				lon_coef[0] * lat_coef[1] * corner_v[0][1] +
+				lon_coef[1] * lat_coef[0] * corner_v[1][0] +
+				lon_coef[1] * lat_coef[1] * corner_v[1][1];
+		
 	wv->SetUV(u, v);
 	return(1);
 }
@@ -847,15 +834,17 @@ WindField::_Allocate()
 	if (_field != NULL)
 		return(0);
 
-	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, _lonCount,
-		_latCount);
+	int lon_count = _lon.GetBins();
+	int lat_count = _lat.GetBins();
+	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, lon_count,
+		lat_count);
 
 	if (_field == NULL)
 		return(0);
 
-	for (int i = 0; i < _lonCount; i++)
+	for (int i = 0; i < lon_count; i++)
 	{
-		for (int j = 0; j < _latCount; j++)
+		for (int j = 0; j < lat_count; j++)
 		{
 			_field[i][j] = NULL;
 		}
@@ -874,7 +863,9 @@ WindField::_Deallocate()
 	if (_field == NULL)
 		return(1);
 
-	free_array((void *)_field, 2, _lonCount, _latCount);
+	int lon_count = _lon.GetBins();
+	int lat_count = _lat.GetBins();
+	free_array((void *)_field, 2, lon_count, lat_count);
 
 	_field = NULL;
 	return(1);

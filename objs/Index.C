@@ -74,6 +74,24 @@ Index::SpecifyWrappedCenters(
 	return(1);
 }
 
+//-----------------------//
+// Index::SpecifyNewBins //
+//-----------------------//
+
+int
+Index::SpecifyNewBins(
+	Index*	index,
+	int		bins)
+{
+	float edge_min = index->_min - index->_step / 2.0;
+	float edge_max = index->_max + index->_step / 2.0;
+
+	if (! SpecifyEdges(edge_min, edge_max, bins))
+		return(0);
+
+	return(1);
+}
+
 //-------------//
 // Index::Read //
 //-------------//
@@ -232,5 +250,42 @@ Index::GetLinearCoefsClipped(
 	coef[0] = (float)idx[1] - fidx;
 	coef[1] = fidx - (float)idx[0];
 
+	return(1);
+}
+
+//------------------------//
+// Index::GetNearestIndex //
+//------------------------//
+// IF value is between _min - _step/2 and _max + _step/2
+//   returns nearest index
+
+int
+Index::GetNearestIndex(
+	float	value,
+	int*	idx)
+{
+	if (value < _min - _step / 2.0 ||
+		value > _max + _step / 2.0)
+	{
+		return(0);
+	}
+
+	*idx = (int)((value - _min) / _step + 0.5);
+	return(1);
+}
+
+//---------------------//
+// Index::IndexToValue //
+//---------------------//
+
+int
+Index::IndexToValue(
+	int		idx,
+	float*	value)
+{
+	if (idx < 0 || idx >= _bins)
+		return(0);
+
+	*value = _min + (float)idx * _step;
 	return(1);
 }

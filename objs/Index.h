@@ -44,8 +44,12 @@ public:
 	int		SpecifyEdges(float min, float max, int bins);
 	int		SpecifyCenters(float min, float max, int bins);
 	int		SpecifyWrappedCenters(float min, float max, int bins);
+	int		SpecifyNewBins(Index* index, int bins);
 
+	float	GetMin() { return(_min); };
+	float	GetMax() { return(_max); };
 	int		GetBins() { return(_bins); };
+	float	GetStep() { return(_step); };
 
 	//--------------//
 	// input/output //
@@ -61,6 +65,10 @@ public:
 	int		GetLinearCoefsStrict(float value, int idx[2], float coef[2]);
 	int		GetLinearCoefsWrapped(float value, int idx[2], float coef[2]);
 	int		GetLinearCoefsClipped(float value, int idx[2], float coef[2]);
+
+	int		GetNearestIndex(float value, int* idx);
+
+	int		IndexToValue(int idx, float* value);
 
 protected:
 

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef WIND_H
 #define WIND_H
@@ -13,6 +13,7 @@ static const char rcs_id_wind_h[] =
 #include "Misc.h"
 #include "List.h"
 #include "LonLat.h"
+#include "Index.h"
 
 //======================================================================
 // CLASSES
@@ -201,15 +202,10 @@ protected:
 	// variables //
 	//-----------//
 
-	int			_lonCount;
-	float		_lonMin;
-	float		_lonMax;
-	float		_lonStep;
+	Index		_lon;
+	Index		_lat;
 
-	int			_latCount;
-	float		_latMin;
-	float		_latMax;
-	float		_latStep;
+	int			_wrap;		// flag for longitude wrapping
 
 	WindVector***	_field;
 };
