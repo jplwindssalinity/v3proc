@@ -466,9 +466,9 @@ main(
 				case QscatEvent::SCATTEROMETER_MEASUREMENT:
 
 					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(mid_tx_pulse_time,
+					spacecraft_sim.UpdateOrbit(qscat_event.time,
 						&spacecraft);
-					spacecraft_sim.UpdateAttitude(mid_tx_pulse_time,
+					spacecraft_sim.UpdateAttitude(qscat_event.time,
 						&spacecraft);
 
 					// process instrument stuff
