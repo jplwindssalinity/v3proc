@@ -612,7 +612,12 @@ ConfigInstrumentSim(
         // Read in the land map file            //
         //--------------------------------------//
 	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-        instrument_sim->landMap.Read(landfile);  
+        int use_land;
+        config_list->GetInt(USE_LANDMAP_KEYWORD, use_land);
+        if(! instrument_sim->landMap.Initialize(landfile)){
+	  fprintf(stderr,"Cannot Initialize Land Map\n");
+          exit(0);
+	} 
 	
 	//-----------------------//
 	// initialize PTGR noise //
@@ -1429,7 +1434,12 @@ ConfigL1AToL1B(
         // Read in the land map file            //
         //--------------------------------------//
 	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
-        l1a_to_l1b->landMap.Read(landfile);  
+        int use_land;
+        config_list->GetInt(USE_LANDMAP_KEYWORD, use_land);
+        if(! l1a_to_l1b->landMap.Initialize(landfile)){
+	  fprintf(stderr,"Cannot Initialize Land Map\n");
+          exit(0);
+	} 
 
 	//----------//
 	// k-factor //

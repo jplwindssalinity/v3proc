@@ -106,6 +106,8 @@ static const char rcs_id_configsimdefs_h[] =
 // LandMap       //
 //---------------//
 #define LANDMAP_FILE_KEYWORD                           "LANDMAP_FILE"
+#define USE_LANDMAP_KEYWORD                            "USE_LANDMAP"
+
 //---------------//
 // InstrumentSim //
 //---------------//
