@@ -67,6 +67,7 @@ public:
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
 	double		GetPeriod();
+	double		GetEpoch() { return (_epoch); };
 	double		GetArgOfLat(Spacecraft* spacecraft);
 
 	//--------//
