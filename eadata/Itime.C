@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   04 Nov 1998 15:06:26   sally
+// change shadow var names such as time, remainder
+// 
 //    Rev 1.7   18 Aug 1998 10:55:48   sally
 // make L1ADrvExtract return any number of values
 // 
@@ -560,8 +563,8 @@ const Itime&    time1,
 int             i)
 {
     time_t newSec = time1.sec / i;
-    time_t remainder = time1.sec - (newSec * i);
-    unsigned short newMs = (remainder * 1000 + time1.ms) / i;
+    time_t remainderSec = time1.sec - (newSec * i);
+    unsigned short newMs = (remainderSec * 1000 + time1.ms) / i;
 
     return (Itime(newSec, newMs));
 }

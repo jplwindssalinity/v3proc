@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   04 Nov 1998 15:05:56   sally
+// change shadow var names such as time, remainder
+// 
 //    Rev 1.6   18 Aug 1998 10:56:30   sally
 // make L1ADrvExtract return any number of values
 // 
@@ -176,16 +179,16 @@ struct Itime
     // operators 
     //-----------
 
-    Itime& operator=(const Itime& time)
-                    { sec = time.sec; ms = time.ms; return *this; }
-    Itime& operator+=(const Itime& time)
+    Itime& operator=(const Itime& other)
+                    { sec = other.sec; ms = other.ms; return *this; }
+    Itime& operator+=(const Itime& other)
                 {
-                    *this = *this + time;
+                    *this = *this + other;
                     return (*this);
                 };
-    Itime& operator-=(const Itime& time)
+    Itime& operator-=(const Itime& other)
                 {
-                    *this = *this - time;
+                    *this = *this - other;
                     return (*this);
                 };
 
