@@ -8,7 +8,7 @@
 //		l2a_diagnositics
 //
 // SYNOPSIS
-//		l2a_diagnositics <cfg file> <l2a_file> <output_file_base_name>
+//		l2a_diagnositics <cfg file> <l2A_file> <output_file_base_name>
 //
 // DESCRIPTION
 //		Reads in a Level 2a file and writes out diagnositic data files
@@ -20,12 +20,12 @@
 // OPERANDS
 //		The following operand is supported:
 //		<cfg file>		The simulation configuration file.
-//		<l2a_file>		The Level 2a input file.
+//		<l2A_file>		The Level 2a input file.
 //		<output_file_base_name>	Output file name to append suffixes to.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l2a_diagnostics qscat.cfg l2a.dat l2a
+//			% l2a_diagnostics qscat.cfg l2A.dat l2A
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -53,7 +53,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "Misc.h"
-#include "L2a.h"
+#include "L2A.h"
 #include "ConfigList.h"
 #include "Ephemeris.h"
 #include "ConfigSim.h"
@@ -100,7 +100,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<cfg_file>", "<l2a_file>",
+const char* usage_array[] = { "<cfg_file>", "<l2A_file>",
 	"<output_file_base>", 0};
 
 //--------------//
@@ -141,7 +141,7 @@ main(
 	// open the Level 2a file //
 	//-------------------------//
 
-	L2a l2a;
+	L2A l2a;
 	if (! l2a.OpenForReading(l2a_file))
 	{
 		fprintf(stderr, "%s: error opening Level 2a file %s\n", command,

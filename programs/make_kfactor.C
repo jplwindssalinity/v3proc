@@ -61,10 +61,10 @@ static const char rcs_id[] =
 #include "List.C"
 #include "Misc.h"
 #include "Ephemeris.h"
-#include "L10.h"
+#include "L1A.h"
 #include "ConfigSim.h"
-#include "L15.h"
-#include "L10ToL15.h"
+#include "L1B.h"
+#include "L1AToL1B.h"
 #include "ConfigList.h"
 #include "XTable.h"
 
