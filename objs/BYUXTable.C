@@ -105,7 +105,7 @@ BYUXTable::GetDeltaFreq(
     Spacecraft*  spacecraft,
     Qscat*       qscat)
 {
-    //-----------//
+        //-----------//
 	// predigest //
 	//-----------//
 
@@ -115,24 +115,27 @@ BYUXTable::GetDeltaFreq(
 	int beam_number = qscat->cds.currentBeamIdx;
 
 	//-------------------------------------------//
-    // Determine Nominal Look and Azimuth Angles //
+        // Determine Nominal Look and Azimuth Angles //
 	//-------------------------------------------//
 
 	float look, azim;
+	azim = 0.5 * IdealRtt(spacecraft, qscat) * qscat->sas.antenna.spinRate +
+        qscat->sas.antenna.azimuthAngle;
+
 	switch(beam_number){
 	case 0:
 	  look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
 	  break;
 	case 1:
 	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
 	  break;
 	default:
 	  fprintf(stderr,"BYUXTable:GetDeltaFreq: Bad Beam Number\n");
 	  exit(0);
 	}
 
-	azim = 0.5 * IdealRtt(spacecraft, qscat) * qscat->sas.antenna.spinRate +
-        qscat->sas.antenna.azimuthAngle;
         
 	Vector3 nominal_boresight;
     nominal_boresight.SphericalSet(1.0,look,azim);
