@@ -36,6 +36,13 @@ public:
 	LonLat();
 	~LonLat();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -63,6 +70,13 @@ public:
 
 	Outline();
 	~Outline();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
 };
 
 #endif
