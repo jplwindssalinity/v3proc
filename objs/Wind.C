@@ -21,6 +21,7 @@ static const char rcs_id_wind_c[] =
 #include "ParTab.h"
 #include "NoTimeTlmFile.h"
 
+#define FLIPPING_WITHIN_RANGE_THRESHOLD (5.0*dtr)
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
 
@@ -357,6 +358,7 @@ WVC::WriteL2B(
 	//---------------------------//
 
 	unsigned char count = ambiguities.NodeCount();
+        if(selected_allocated) count++;
 	if (fwrite((void *)&count, sizeof(unsigned char), 1, fp) != 1)
 		return(0);
 
@@ -381,7 +383,7 @@ WVC::WriteL2B(
          
 	if(selected_allocated){
 	  selected_idx=ambiguities.NodeCount();
-	  selected->WriteL2B(fp);
+	  if(!selected->WriteL2B(fp)) return(0);
 	}
 	//----------------------//
 	// write selected index //
@@ -2671,13 +2673,6 @@ WindSwath::MedianFilterPass(
 				  // used
 				  
 				  if(swath[cti][ati]->directionRanges.NodeCount()!=0){
-				    // if selected already allocated
-                                    // delete it
-				    if(swath[cti][ati]->selected_allocated){ 
-				      delete swath[cti][ati]->selected;
-				      swath[cti][ati]->selected_allocated=0;
-				    }
-
 				    // Is the selected one of the original
 				    // ambiguities?
                                     int found=0;
@@ -2688,14 +2683,43 @@ WindSwath::MedianFilterPass(
 					break;
 				      } 
 				    }
-				    // if it is not then allocate selected
-                                    if(!found){
-				      swath[cti][ati]->selected_allocated=1;
+                                    // If it is then deallocate selected
+                                    // if necessary
+                                    if(found){ 
+				      // if selected already allocated
+				      // delete it
+				      if(swath[cti][ati]->selected_allocated){ 
+					delete swath[cti][ati]->selected;
+					swath[cti][ati]->selected_allocated=0;
+				      }
+				      change[cti][ati]= 1;
+				    }
+				    // if it is not then replace selected
+                                    // and set change only if the direction
+                                    // changes substantially
+                                    else{				  
+				      if(swath[cti][ati]->selected_allocated){
+					double dif=ANGDIF(swath[cti][ati]->selected->dir, 
+							  new_selected[ati][cti]->dir);
+					if(dif>FLIPPING_WITHIN_RANGE_THRESHOLD)
+					  change[cti][ati]=1;
+
+					else change[cti][ati]=0;
+
+					delete swath[cti][ati]->selected;
+				      }
+				      else{
+					swath[cti][ati]->selected_allocated=1;
+					change[cti][ati]=1;
+				      }
 				    }
 				  }
+
+				  // IF RANGE INFO NOT USED
+				  else change[cti][ati]=1;
+
 				  swath[cti][ati]->selected = new_selected[cti][ati];
-				  change[cti][ati] = 1;
-				  flips++;
+				  flips+=change[cti][ati];
 				}
 			}
 		}
