@@ -43,7 +43,8 @@ L20::SetFilename(
 int
 L20::ReadDataRec()
 {
-	return(0);
+	FILE* fp = file.GetFp();
+	return(frame.swath.ReadL20(fp));
 }
 
 //-------------------//
