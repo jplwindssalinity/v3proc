@@ -45,7 +45,6 @@ public:
 	double  crosstrack_size,
 	double  alongtrack_size);
 
-	int SetEphemeris(Ephemeris *ephemeris);
 	int SetStartTime(double start_time);
 
 	//---------------------//
@@ -58,18 +57,17 @@ public:
 	// input/output //
 	//--------------//
 
-	int Grid::ShiftForward();
+	int		ShiftForward();
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	L17* l17;	// handles output to a level 1.7 data file.
+	L17			l17;	// handles output to a level 1.7 data file.
+	// The ephemeris object that defines the grid location.
+	Ephemeris	ephemeris;
 
 protected:
-
-	// Pointer to the ephemeris object that defines the grid location.
-	Ephemeris *_ephemeris;
 
 	// resolution and sizes are in km
 	double _crosstrack_res;

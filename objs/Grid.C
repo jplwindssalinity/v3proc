@@ -16,9 +16,12 @@ static const char rcs_id_grid_c[] =
 //======//
 
 Grid::Grid()
+:	_crosstrack_res(0.0), _alongtrack_res(0.0),
+	_crosstrack_size(0.0), _alongtrack_size(0.0),
+	_crosstrack_bins(0), _alongtrack_bins(0),
+	_start_time(0.0), _ati_start(0), _ati_offset(0),
+	_grid(NULL)
 {
-	_grid = NULL;
-	_ephemeris = NULL;
 	return;
 }
 
@@ -29,13 +32,6 @@ Grid::~Grid()
 		free_array(_grid,2,_alongtrack_bins,_crosstrack_bins);
 	}
 	return;
-}
-
-int
-Grid::SetEphemeris(Ephemeris *ephemeris)
-{
-	_ephemeris = ephemeris;
-	return(1);
 }
 
 int
@@ -94,7 +90,7 @@ Grid::Add(Meas *meas, double meas_time)
 EarthPosition rground(meas->center.latitude,meas->center.longitude,
                       EarthPosition::GEODETIC);
 float ctd,atd;
-_ephemeris->GetSubtrackCoordinates(rground,_start_time,meas_time,&ctd,&atd);
+ephemeris.GetSubtrackCoordinates(rground,_start_time,meas_time,&ctd,&atd);
 
 //
 // Compute grid indices, noting that the cross track grid starts on the left
@@ -167,8 +163,8 @@ Grid::ShiftForward()
 // Write out the earliest row of measurement lists.
 for (int i=0; i < _crosstrack_bins; i++)
 {
-l17->frame.measList = _grid[_ati_start][i];
-l17->WriteDataRec();
+l17.frame.measList = _grid[_ati_start][i];
+l17.WriteDataRec();
 _grid[_ati_start][i].FreeContents();	// prepare for new data
 }
 
