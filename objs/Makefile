@@ -83,9 +83,9 @@ depend:
 #----------------------------------------------------------------------
 
 clean:
-	- rm -f $(TARGET_LIB)
-	- rm -f $(OBJS)
-	- rm -f $(INCDIR)/*
+	- /bin/rm -f $(TARGET_LIB)
+	- /bin/rm -f $(OBJS)
+	- /bin/rm -f $(INCDIR)/*
 
 #----------------------------------------------------------------------
 # install: same as default
@@ -98,9 +98,9 @@ install: $(TARGET_LIB)
 #----------------------------------------------------------------------
 
 $(TARGET_LIB):	$(OBJS)
-	- rm -f $(TARGET_LIB)
+	- /bin/rm -f $(TARGET_LIB)
 	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS)
-	- (cd $(INCDIR); rm -f $(INCS))
+	- (cd $(INCDIR); /bin/rm -f $(INCS))
 	cp $(INCS) $(INCDIR)
 
 %.C: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.C,v

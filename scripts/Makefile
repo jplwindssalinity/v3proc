@@ -16,7 +16,7 @@ default: $(SCRIPTS)
 #----------------------------------------------------------------------
 
 clean:
-	- rm -f $(SCRIPTS)
+	- /bin/rm -f $(SCRIPTS)
 
 #----------------------------------------------------------------------
 # install: same as default (nothing to install)

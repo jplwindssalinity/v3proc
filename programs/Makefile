@@ -35,7 +35,7 @@ default: $(PROGRAMS)
 #----------------------------------------------------------------------
 
 clean:
-	- rm -f $(PROGRAMS)
+	- /bin/rm -f $(PROGRAMS)
 
 #----------------------------------------------------------------------
 # install: make all object and executable programs and install

@@ -23,7 +23,7 @@ clean:
 		do (cd $$dir; \
 			echo "Making clean in `pwd`"; \
 			make clean; \
-			rm -f Makefile); \
+			/bin/rm -f Makefile); \
 	done
 
 #----------------------------------------------------------------------
