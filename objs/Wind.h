@@ -362,11 +362,13 @@ public:
 
 	int		InitWithRank(int rank);
 	int		Nudge(WindField* nudge_field, int min_rank);
+	int		ThresNudge(WindField* nudge_field, int min_rank);
 	int             LoResNudge(WindVectorField* nudge_field, int min_rank);
 	int		SmartNudge(WindField* nudge_field);
-	int		MedianFilter(int window_size, int max_passes, int weight_flag = 0);
+	int		MedianFilter(int window_size, int max_passes, int bound,
+				     int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
-				char** change, int weight_flag = 0);
+					 char** change, int bound, int weight_flag = 0);
 
 	//------------//
 	// evaluation //
