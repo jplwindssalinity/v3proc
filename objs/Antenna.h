@@ -40,6 +40,19 @@ public:
 	Antenna();
 	~Antenna();
 
+	//-----------------//
+	// setting/getting //
+	//-----------------//
+
+	int		SetNumberOfEncoderBits(int number);
+
+	//-------------//
+	// conversions //
+	//-------------//
+
+	int		GetEncoderValue();
+	int		SetAzimuthWithEncoder(int encoder);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -48,6 +61,15 @@ public:
 	Beam		beam[MAX_NUMBER_OF_BEAMS];
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle
+
+private:
+
+	//---------------//
+	// configuration //
+	//---------------//
+
+	int			_numberOfEncoderBits;
+	double		_angularResolution;
 };
 
 #endif

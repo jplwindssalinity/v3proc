@@ -10,13 +10,15 @@ static const char rcs_id_antenna_c[] =
 #include <malloc.h>
 #include "Antenna.h"
 #include "Beam.h"
+#include "Constants.h"
 
 //=========//
 // Antenna //
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), azimuthAngle(0.0)
+:	numberOfBeams(0), azimuthAngle(0.0), _numberOfEncoderBits(0),
+	_angularResolution(0.0)
 {
 	return;
 }
@@ -25,4 +27,40 @@ Antenna::~Antenna()
 {
 	free(beam);
 	return;
+}
+
+//---------------------------------//
+// Antenna::SetNumberOfEncoderBits //
+//---------------------------------//
+
+int
+Antenna::SetNumberOfEncoderBits(
+	int		number)
+{
+	_numberOfEncoderBits = number;
+	_angularResolution = two_pi / pow(2.0, (double)_numberOfEncoderBits);
+	return(1);
+}
+
+//--------------------------//
+// Antenna::GetEncoderValue //
+//--------------------------//
+
+int
+Antenna::GetEncoderValue()
+{
+	int value = (int)(azimuthAngle / _angularResolution + 0.5);
+	return(value);
+}
+
+//--------------------------------//
+// Antenna::SetAzimuthWithEncoder //
+//--------------------------------//
+
+int
+Antenna::SetAzimuthWithEncoder(
+	int		encoder)
+{
+	azimuthAngle = (double)encoder * _angularResolution;
+	return(1);
 }
