@@ -535,6 +535,16 @@ InstrumentSim::ScatSim(
 {
 	MeasSpot meas_spot;
 
+	//-----------------------------//
+        // If at the start of a frame  //
+	// Compute Frame header info   //
+	//-----------------------------//
+	if(_spotNumber==0){	
+	  if (! SetL00Spacecraft(spacecraft))
+	      return(0);
+	  l00.frame.time=time;
+	  
+	}
 	//---------------------//
 	// locate measurements //
 	//---------------------//
@@ -558,21 +568,19 @@ InstrumentSim::ScatSim(
 			      gmf))
 		return(0);
 
+
+	//--------------------------------//
+	// Add Spot Specific Info to Frame //
+	//--------------------------------//
+
+	if (! SetL00Science(&meas_spot, instrument))
+		return(0);
+
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
 	Antenna* antenna = &(instrument->antenna);
-
-	//---------------------//
-	// fill in other stuff //
-	//---------------------//
-
-	if (! SetL00Spacecraft(spacecraft))
-		return(0);
-
-	if (! SetL00Science(&meas_spot, instrument))
-		return(0);
 
 	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
 	{
