@@ -64,22 +64,37 @@ public:
     // S/C information //
     //-----------------//
 
-    float     gcAltitude;
-    float     gcLongitude;
-    float     gcLatitude;
-    float     gcX;
-    float     gcY;
-    float     gcZ;
-    float     velX;
-    float     velY;
-    float     velZ;
-    Attitude  attitude;
+    float          gcAltitude;
+    float          gcLongitude;
+    float          gcLatitude;
+    float          gcX;
+    float          gcY;
+    float          gcZ;
+    float          velX;
+    float          velY;
+    float          velZ;
+    Attitude       attitude;
+    unsigned char  calPosition;
+
+    //------------------//
+    // calibration data //
+    //------------------//
+
+    unsigned int*  loopbackSlices;
+    unsigned int   loopbackNoise;
+    unsigned int*  loadSlices;
+    unsigned int   loadNoise;
+
+    //------------------//
+    // antenna position //
+    //------------------//
+
+    unsigned short*  antennaPosition;
 
     //----------------------//
     // science measurements //
     //----------------------//
 
-    unsigned short*  antennaPosition;
     unsigned char*   event;
     unsigned int*    science;
     unsigned int*    spotNoise;

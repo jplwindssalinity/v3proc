@@ -49,7 +49,7 @@ public:
     // conversion //
     //------------//
 
-    int  Convert(PscatL1A* pscat_l1a, Spacecraft* spacecraft, Qscat* qscat,
+    int  Convert(PscatL1A* pscat_l1a, Spacecraft* spacecraft, Pscat* pscat,
              Ephemeris* ephemeris, L1B* l1b);
 
     //-----------//
@@ -68,14 +68,12 @@ public:
     int    outputSigma0ToStdout;  // output s0 values to stdout
     float  sliceGainThreshold;    // use to decide which slices to process
     int    processMaxSlices;      // maximum number of slices/spot to use
-/*
     char*  simVs1BCheckfile;      // holds cross check data
 
     float   Esn_echo_cal;    // Cal pulse data to be used.
     float   Esn_noise_cal;
     float   En_echo_load;
     float   En_noise_load;
-*/
 };
 
 #endif
