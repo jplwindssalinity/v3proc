@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -115,6 +115,36 @@ L2B::L2B()
 L2B::~L2B()
 {
     return;
+}
+
+//-----------//
+// L2B::Read //
+//-----------//
+
+int
+L2B::Read(
+    const char*  filename)
+{
+    SetInputFilename(filename);
+    if (! OpenForReading())
+    {
+        fprintf(stderr, "L2B::Read: error opening file %s for reading\n",
+            filename);
+        return(0);
+    }
+    if (! ReadHeader())
+    {
+        fprintf(stderr, "L2B::Read: error reading header from file %s\n",
+            filename);
+        return(0);
+    }
+    if (! ReadDataRec())
+    {
+        fprintf(stderr, "L2B::Read: error reading data record from file %s\n",
+            filename);
+        return(0);
+    }
+    return(1);
 }
 
 //------------------//
@@ -1432,7 +1462,7 @@ L2B::ReadNudgeVectorsFromHdfL2B(
         return(0);
     }
 
-    /**** Open Nudge Vector Data Sets ***/
+    // Open Nudge Vector Data Sets
     if ((_modelSpeedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
         MODEL_SPEED)) == 0)
     {
@@ -1752,10 +1782,22 @@ L2B::_CloseHdfDataSets(void)
     return;
 }
 
-int L2B::GetNumCellsSelected(){
-  return(frame.swath.GetNumCellsSelected());
+//--------------------------//
+// L2B::GetNumCellsSelected //
+//--------------------------//
+
+int
+L2B::GetNumCellsSelected()
+{
+    return(frame.swath.GetNumCellsSelected());
 }
 
-int L2B::GetNumCellsWithAmbiguities(){
-  return(frame.swath.GetNumCellsWithAmbiguities());
+//---------------------------------//
+// L2B::GetNumCellsWithAmbiguities //
+//---------------------------------//
+
+int
+L2B::GetNumCellsWithAmbiguities()
+{
+    return(frame.swath.GetNumCellsWithAmbiguities());
 }

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -133,6 +133,8 @@ public:
 
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
 
+    int  Read(const char* filename);
+
     int  ReadPureHdf(const char* filename, int unnormalize_mle_flag = 1);
     int  WriteHdf(const char* filename, int unnormalize_mle_flag = 1);
     int  InsertPureHdf(const char* input_filename,
@@ -154,6 +156,7 @@ public:
     int  WriteAscii();
     int  GetNumCellsSelected();
     int  GetNumCellsWithAmbiguities();
+
     //-----------//
     // variables //
     //-----------//
