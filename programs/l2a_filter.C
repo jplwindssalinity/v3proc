@@ -108,6 +108,8 @@ main(
     int opt_no_fore_look = 0;
     int opt_no_inner_beam = 0;
     int opt_no_outer_beam = 0;
+    int opt_no_HHVH=0;
+    int opt_no_VVHV=0;
 
     //------------------------//
     // parse the command line //
@@ -143,6 +145,14 @@ main(
             {
                 opt_no_inner_beam = 1;
             }
+            else if (strcasecmp(optarg, "HHVH0") == 0)
+            {
+                opt_no_HHVH = 1;
+            }
+            else if (strcasecmp(optarg, "VVHV0") == 0)
+            {
+                opt_no_VVHV = 1;
+            }
             else
             {
                 fprintf(stderr, "%s: error parsing filter %s\n", command,
@@ -157,6 +167,8 @@ main(
             printf("  fore0  : Remove fore look measurements\n");
             printf("  inner0 : Remove inner beam measurements\n");
             printf("  outer0 : Remove outer beam  measurements\n");
+            printf("  HHVH0 : Remove HHVH  measurements\n");
+            printf("  VVHV0 : Remove VVHV  measurements\n");
             exit(0);
             break;
         case '?':
@@ -224,6 +236,10 @@ main(
 						  meas->scanAngle>3*pi/2));
           remove= remove || (opt_no_inner_beam && meas->beamIdx==0);
           remove= remove || (opt_no_outer_beam && meas->beamIdx==1);
+          remove= remove || ( opt_no_HHVH &&
+              (meas->measType == Meas::HH_VH_CORR_MEAS_TYPE));
+          remove= remove || ( opt_no_VVHV &&
+              (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE));
 	  if(remove)
 	    {
 	      meas = frame->measList.RemoveCurrent();
