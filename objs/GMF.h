@@ -67,7 +67,8 @@ public:
 	// wind retrieval //
 	//----------------//
 
-	int		FindSolutions(MeasurementList* measurement_list, WVC* wvc);
+	int		FindSolutions(MeasurementList* measurement_list, WVC* wvc,
+				double initial_spd, double spd_step, double phi_step);
 
 protected:
 
@@ -129,8 +130,6 @@ protected:
 	double	_spdStep;		// the wind speed step size
 
 	int		_chiCount;		// the number of relative azimuth angles
-	double	_chiMin;		// the minimum relative azimuth angle
-	double	_chiMax;		// the maximum relative azimuth angle
 	double	_chiStep;		// the relative azimuth angle step size
 
 	double****	_value;		// the array of model function values

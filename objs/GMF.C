@@ -21,7 +21,7 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :	_polCount(0), _incCount(0), _incMin(0.0), _incMax(0.0), _incStep(0.0),
 	_spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0), _chiCount(0),
-	_chiMin(0.0), _chiMax(0.0), _chiStep(0.0), _value(0)
+	_chiStep(0.0), _value(0)
 {
 	return;
 }
@@ -83,10 +83,8 @@ int GMF::ReadOldStyle(
 	_spdStep = 1.0;
 
 	int file_chi_count = 37;
-	_chiCount = 73;
-	_chiMin = 0.0;
-	_chiMax = 360.0;
-	_chiStep = 5.0;
+	_chiCount = 72;
+	_chiStep = two_pi / _chiCount;		// 5 degrees
 
 	if (! _Allocate())
 		return(0);
@@ -108,7 +106,7 @@ int GMF::ReadOldStyle(
 					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
 						(double)value;
 
-					int chi_idx_2 = (_chiCount - 1) - chi_idx;
+					int chi_idx_2 = _chiCount - chi_idx;
 					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(double)value;
 				}
@@ -126,11 +124,11 @@ int GMF::ReadOldStyle(
 
 int
 GMF::GetNearestValue(
-	PolE	pol,
-	double	inc,
-	double	spd,
-	double	chi,
-	double*	value)
+	PolE		pol,
+	double		inc,
+	double		spd,
+	double		chi,
+	double*		value)
 {
 	//-------------------//
 	// round to indicies //
@@ -165,11 +163,11 @@ GMF::GetNearestValue(
 
 int
 GMF::GetInterpolatedValue(
-	PolE	pol,
-	double	inc,
-	double	spd,
-	double	chi,
-	double*	value)
+	PolE		pol,
+	double		inc,
+	double		spd,
+	double		chi,
+	double*		value)
 {
 	//---------------------------------------//
 	// determine real and truncated indicies //
@@ -301,7 +299,7 @@ GMF::GetCoefs(
 			double arg = wn * (double)i * (double)chi_idx;
 			double c = cos(arg);
 			double s = sin(arg);
-			double chi = ((double)chi_idx - _chiMin) * _chiStep;
+			double chi = (double)chi_idx * _chiStep;
 			double val;
 			GetInterpolatedValue(pol, inc, spd, chi, &val);
 			real[i] += val * c;
@@ -326,63 +324,79 @@ GMF::GetCoefs(
 // GMF::FindSolutions //
 //--------------------//
 
-#define STARTING_SPEED		10.0
-
 int
 GMF::FindSolutions(
 	MeasurementList*	measurement_list,
-	WVC*				wvc)
+	WVC*				wvc,
+	double				initial_spd,
+	double				spd_step,
+	double				phi_step)		// in degrees
 {
-	int* best_idx = new int[_chiCount];
-	double* best_obj = new double[_chiCount];
+	//---------------------------------------//
+	// determine index ranges and step sizes //
+	//---------------------------------------//
 
-	//--------------------------//
-	// determine starting index //
-	//--------------------------//
+	int phi_count = (int)(360.0 / phi_step);
+	double dphi = two_pi / (double)phi_count;		// in radians
 
-	int u_idx = _SpdToIndex(STARTING_SPEED);
+	int spd_count = (int)(_spdMax / spd_step);
+	double dspd = _spdMax / (double)spd_count;
+
+	//-------------------------//
+	// allocate storage arrays //
+	//-------------------------//
+
+	int* best_spd_idx = new int[phi_count];
+	double* best_obj = new double[phi_count];
 
 	//-----------------//
-	// for each chi... //
+	// for each phi... //
 	//-----------------//
 
-	for (int phi_idx = 0; phi_idx < _chiCount; phi_idx++)
+	int spd_idx = (int)(initial_spd / dspd + 0.5);
+	double spd = (double)spd_idx * dspd;
+
+	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
 	{
 		//------------------------//
 		// ...find the best speed //
 		//------------------------//
 
-		double obj = _ObjectiveFunction(measurement_list, u_idx, phi_idx);
-		double obj_minus = _ObjectiveFunction(measurement_list, u_idx - 1,
-			phi_idx);
-		double obj_plus = _ObjectiveFunction(measurement_list, u_idx + 1,
-			phi_idx);
+		double phi = (double)phi_idx * dphi;
+
+		double obj = _ObjectiveFunction(measurement_list, spd, phi);
+		double obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+			phi);
+		double obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+			phi);
 		do
 		{
 			if (obj > obj_minus && obj > obj_plus)
 			{
 				// peak
-				best_idx[phi_idx] = u_idx;
+				best_spd_idx[phi_idx] = spd_idx;
 				best_obj[phi_idx] = obj;
 				break;
 			}
 			else if (obj_plus > obj && obj > obj_minus)
 			{
 				// move up
-				u_idx++;
+				spd_idx++;
+				spd = (double)spd_idx * dspd;
 				obj_minus = obj;
 				obj = obj_plus;
-				obj_plus = _ObjectiveFunction(measurement_list,
-					u_idx + 1, phi_idx);
+				obj_plus = _ObjectiveFunction(measurement_list, spd + dspd,
+					phi);
 			}
 			else if (obj_minus > obj && obj > obj_plus)
 			{
 				// move down
-				u_idx--;
+				spd_idx--;
+				spd = (double)spd_idx * dspd;
 				obj_plus = obj;
 				obj = obj_minus;
-				obj_minus = _ObjectiveFunction(measurement_list,
-					u_idx - 1, phi_idx);
+				obj_minus = _ObjectiveFunction(measurement_list, spd - dspd,
+					phi);
 			}
 		} while (1);
 	}
@@ -392,10 +406,10 @@ GMF::FindSolutions(
 	//--------------------------------//
 
 	int count = 0;
-	for (phi_idx = 0; phi_idx < _chiCount; phi_idx++)
+	for (phi_idx = 0; phi_idx < phi_count; phi_idx++)
 	{
-		int phi_idx_plus = (phi_idx + 1) % _chiCount;
-		int phi_idx_minus = (phi_idx - 1 + _chiCount) % _chiCount;
+		int phi_idx_plus = (phi_idx + 1) % phi_count;
+		int phi_idx_minus = (phi_idx - 1 + phi_count) % phi_count;
 		if (best_obj[phi_idx] > best_obj[phi_idx_plus] &&
 			best_obj[phi_idx] > best_obj[phi_idx_minus])
 		{
@@ -403,8 +417,8 @@ GMF::FindSolutions(
 			WindVector* new_wv = new WindVector();
 			if (! new_wv)
 				return(0);
-			new_wv->speed = _IndexToSpd(best_idx[phi_idx]);
-			new_wv->direction = _IndexToChi(phi_idx);
+			new_wv->speed = best_spd_idx[phi_idx] * dspd;
+			new_wv->direction = phi_idx * dphi;
 			if (! wvc->ambiguities.Append(new_wv))
 				return(0);
 			count++;
@@ -469,8 +483,6 @@ GMF::_ReadHeader(
 	read(fd, &_spdMax, sizeof(double));
 
 	read(fd, &_chiCount, sizeof(int));
-	read(fd, &_chiMin, sizeof(double));
-	read(fd, &_chiMax, sizeof(double));
 
 	return(1);
 }
@@ -505,7 +517,7 @@ GMF::_ReadTable(
 
 	_incStep = (_incMax - _incMin) / (double)(_incCount - 1);
 	_spdStep = (_spdMax - _spdMin) / (double)(_spdCount - 1);
-	_chiStep = (_chiMax - _chiMin) / (double)(_chiCount - 1);
+	_chiStep = two_pi / (double)_chiCount;
 
 	return(1);
 }
@@ -596,7 +608,7 @@ GMF::_ChiToRealIndex(
 		chi += chi_idx * two_pi;
 	}
 	chi = fmod(chi, two_pi);
-	return((chi - _chiMin) / _chiStep);
+	return(chi / _chiStep);
 }
 
 //--------------------//
@@ -682,7 +694,7 @@ double
 GMF::_IndexToChi(
 	int		chi_idx)
 {
-	return((double)chi_idx * _chiStep + _chiMin);
+	return((double)chi_idx * _chiStep);
 }
 
 //-------------------------//
@@ -692,7 +704,7 @@ GMF::_IndexToChi(
 double
 GMF::_ObjectiveFunction(
 	MeasurementList*	measurement_list,
-	double				u,
+	double				spd,
 	double				phi)
 {
 	double fv = 0.0;
@@ -701,7 +713,7 @@ GMF::_ObjectiveFunction(
 	{
 		double chi = meas->northAzimuth - phi;
 		double gmf_value;
-		GetInterpolatedValue(meas->pol, meas->incidenceAngle, u, chi,
+		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
 			&gmf_value);
 		double s = gmf_value - meas->value;
 		fv += s*s / meas->estimatedKp + log10(meas->estimatedKp);
