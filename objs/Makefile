@@ -89,22 +89,24 @@ BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h \
 	Misc.h L0.h L1.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h \
-	Product.h List.h Antenna.h Constants.h Matrix3.h Beam.h Attitude.h
-CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h
+	Product.h List.h Antenna.h Constants.h Matrix3.h Attitude.h Beam.h
+CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h Measurement.h WVC.h \
 	List.h WindVector.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
 	Attitude.h Constants.h Matrix3.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h \
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h \
 	ConfigList.h AntennaSim.h SpacecraftSim.h L0.h Antenna.h Spacecraft.h \
-	List.h Product.h Beam.h Attitude.h Constants.h Matrix3.h
+	CoordinateSwitch.h List.h Product.h Beam.h Attitude.h Constants.h Matrix3.h
 Interpolate.o: Interpolate.C 
 L0.o: L0.C L0.h Product.h List.h
 L0ToL1.o: L0ToL1.C L0ToL1.h L0.h L1.h Product.h List.h
 L1.o: L1.C L1.h Product.h List.h
 L15.o: L15.C L15.h Product.h List.h
+L1ToL15.o: L1ToL15.C L1ToL15.h L1.h L15.h Product.h List.h
 List.o: List.C List.h
-LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h
+LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h \
+	Attitude.h
 Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Measurement.o: Measurement.C Measurement.h Beam.h List.h
 Misc.o: Misc.C Misc.h
