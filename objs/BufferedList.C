@@ -72,7 +72,7 @@ if (_current)
 	else
 	{	// At the tail, so try to read in another node.
 		T* new_data = new T;		// make a new data space
-		if (new_data.Read(_nodefile))
+		if (new_data->Read(_nodefile))
 		{	// successful read, so Append the new data.
 			Append(new_data);
 			_num_nodes++;
@@ -94,6 +94,5 @@ if (_current)
 	}
 
 }
-
+return(NULL);
 }
-
