@@ -115,8 +115,8 @@ PROGRAMS = \
     make_timetlm \
 	l2b_extract_worst \
 	get_foff \
-	make_simple_land_map\
-        nof_and_qual
+	make_simple_land_map
+#   nof_and_qual
 #	gen_foff
 #	sim_accurate
 #	generate_kfactor
