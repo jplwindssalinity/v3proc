@@ -72,10 +72,13 @@ private:
 //
 // DESCRIPTION
 //		The ConfigList object contains a list of StringPair objects.
-//		It represents a list of configuration file entries.
+//		It represents a list of configuration file entries.  The
+//		ConfigList object is typically used at the program level and
+//		therefore it contains error logging capabilities.
 //======================================================================
 
 #define INSERT_FILE_KEYWORD		"INSERT_FILE"
+#define CONFIG_FILE_LINE_SIZE	1024
 
 class ConfigList : public List<StringPair>
 {
@@ -88,12 +91,19 @@ public:
 	ConfigList();
 	~ConfigList();
 
+	//---------------//
+	// error logging //
+	//---------------//
+
+	void	LogErrors(FILE* error_fp, int log_flag = 1);
+	void	LogErrors(int log_flag = 1);
+
 	//--------------//
 	// input/output //
 	//--------------//
 
-	int				Read(const char* filename = NULL);
-	int				Write(const char* filename = NULL);
+	int		Read(const char* filename = NULL);
+	int		Write(const char* filename = NULL);
 
 	//----------------//
 	// searching list //
@@ -107,6 +117,15 @@ public:
 	//---------------------//
 
 	int				GetDouble(const char* keyword, double* value);
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	FILE*	_errorFp;		// for error logging
+	int		_logFlag;		// for error logging (non-zero = log)
 };
 
 #endif

@@ -6,6 +6,7 @@
 static const char rcs_id_configlist_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include <malloc.h>
 #include <string.h>
 #include <ctype.h>
@@ -106,6 +107,7 @@ StringPair::SetValue(
 //============//
 
 ConfigList::ConfigList()
+:	_errorFp(stderr), _logFlag(0)
 {
 	return;
 }
@@ -115,11 +117,31 @@ ConfigList::~ConfigList()
 	return;
 }
 
+//-----------------------//
+// ConfigList::LogErrors //
+//-----------------------//
+
+void
+ConfigList::LogErrors(
+	FILE*			error_fp,
+	int				log_flag)
+{
+	_errorFp = error_fp;
+	_logFlag = log_flag;
+	return;
+}
+
+void
+ConfigList::LogErrors(
+	int		log_flag)
+{
+	_logFlag = log_flag;
+	return;
+}
+
 //------------------//
 // ConfigList::Read //
 //------------------//
-
-#define LINE_SIZE		1024
 
 int
 ConfigList::Read(
@@ -134,27 +156,57 @@ ConfigList::Read(
 	{
 		ifp = fopen(filename, "r");
 		if (ifp == NULL)
+		{
+			if (_logFlag)
+			{
+				fprintf(_errorFp, "Error opening config file\n");
+				fprintf(_errorFp, "  Config File: %s\n", filename);
+			}
 			return(0);
+		}
 	}
 
-	char line[LINE_SIZE], keyword[LINE_SIZE], value[LINE_SIZE];
+	char line[CONFIG_FILE_LINE_SIZE];
+	char keyword[CONFIG_FILE_LINE_SIZE];
+	char value[CONFIG_FILE_LINE_SIZE];
+
 	int num_read = 0;
+	int line_number = 0;
 	do
 	{
-		char* ptr = fgets(line, LINE_SIZE, ifp);
+		char* ptr = fgets(line, CONFIG_FILE_LINE_SIZE, ifp);
+		line_number++;
 		if (ptr != line)
 		{
 			if (feof(ifp))	// EOF
 				break;
 			else			// error
+			{
+				if (_logFlag)
+				{
+					fprintf(_errorFp, "Error reading line from config file\n");
+					fprintf(_errorFp, "  Config File: %s\n", filename);
+					fprintf(_errorFp, "  Line Number: %d\n", line_number);
+				}
 				return(0);
+			}
 		}
 		num_read = sscanf(line, " %s %s", keyword, value);
 		switch (num_read)
 		{
 		case 1:	
 			if (isalnum(keyword[0]))
-				return(0);	// looks like a valid keyword, but no value
+			{
+				// looks like a valid keyword, but no corresponding value
+				if (_logFlag)
+				{
+					fprintf(_errorFp, "Missing value for keyword\n");
+					fprintf(_errorFp, "  Config File: %s\n", filename);
+					fprintf(_errorFp, "  Line Number: %d\n", line_number);
+					fprintf(_errorFp, "         Line: %s\n", line);
+				}
+				return(0);
+			}
 			break;
 		case 2:
 			if (isalnum(keyword[0]))
@@ -162,7 +214,15 @@ ConfigList::Read(
 				if (strcmp(keyword, INSERT_FILE_KEYWORD) == 0)
 				{
 					if (! Read(value))
+					{
+						if (_logFlag)
+						{
+							fprintf(_errorFp, "Error reading inserted file\n");
+							fprintf(_errorFp, "  Config File: %s\n", filename);
+							fprintf(_errorFp, "  Insert File: %s\n", value);
+						}
 						return(0);
+					}
 				}
 				else
 				{
@@ -254,11 +314,23 @@ ConfigList::GetDouble(
 {
 	char* string = Get(keyword);
 	if (! string)
+	{
+		fprintf(_errorFp, "Can't find requested keyword\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
 		return(0);
+	}
 
 	double tmp;
 	if (sscanf(string, "%lg", &tmp) != 1)
+	{
+		if (_logFlag)
+		{
+			fprintf(_errorFp, "Error converting value to double\n");
+			fprintf(_errorFp, "  Keyword: %s\n", keyword);
+			fprintf(_errorFp, "    Value: %s\n", string);
+		}
 		return(0);
+	}
 
 	*value = tmp;
 	return(1);
