@@ -51,5 +51,9 @@ AntennaSim::UpdatePosition(
 	double angle = time * _spinRate;
 	angle = fmod(angle, two_pi);
 	antenna->azimuthAngle = angle;
+
+	// The antenna frame is rotated away from the s/c body in yaw only.
+	antenna->antennaFrame.Set(0,0,antenna->azimuthAngle,3,2,1);
+
 	return(1);
 }
