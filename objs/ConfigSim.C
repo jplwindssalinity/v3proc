@@ -1344,7 +1344,7 @@ ConfigL1AToL1B(
 	// output simga0 to stdout //
 	//-------------------------//
 
-	config_list->WarnForMissingKeywords();
+	config_list->DoNothingForMissingKeywords();
 	int output_sigma0_to_stdout;
 	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
 		&output_sigma0_to_stdout))
@@ -1687,7 +1687,7 @@ ConfigControl(
 	double*			spacecraft_start_time,
 	double*			spacecraft_end_time)
 {
-	config_list->WarnForMissingKeywords();
+	config_list->DoNothingForMissingKeywords();
 	double orbit_period = spacecraft_sim->GetPeriod();
 
 	//-----------------//
@@ -1775,6 +1775,7 @@ ConfigControl(
 		spacecraft_start_time))
 	{
 		// nothing to do -- woo hoo once more!
+		printf("Using explicit spacecraft start time\n");
 	}
 	else
 	{
@@ -1792,6 +1793,7 @@ ConfigControl(
 		spacecraft_end_time))
 	{
 		// nothing to do -- woo hoo once more!
+		printf("Using explicit spacecraft end time\n");
 	}
 	else
 	{
