@@ -90,29 +90,31 @@ protected:
 	float _mean;
 };
 
-
 //==================================================================//
 // Class 							    //
-//	 GTC							    //
-// Description: Gaussian with Time Constant                         //
-// X(t) is a sequence of samples chosen from a gaussian             //
-// distribution. The sequence Y(t) of samples from the              //
-// GTC distribution depends on X and discrete time t in the         //
-// following manner: Y(t)=(1-tau)(Y(t-1)) + (tau)X(t).              //
-// Tau is a time constant between 0 and 1. Y(0)=0 inital condition  //
+//	 RandomVelocity						    //
+// Description:		Velocity varies in a random manner          //
+//  with position kept within bounds (_radius)		            //
 //==================================================================//
 
-class GTC : public Gaussian
+class RandomVelocity : public GenericDist
 {
 public:
-	GTC();
-	GTC(float variance, float mean, float tau);
-	~GTC();
-	float GetNumber();
+	RandomVelocity();
+	RandomVelocity(GenericDist* noise, float sample_period, float radius,
+		    float mean);
+	~RandomVelocity();
+	float GetNumber(double time);
 protected:
-	float _tau;
-        float _prev;
+	float _sample_period;
+        float _radius;
+	float _mean;
+        GenericDist* _noise;
+	float _position;
+	float _time;
+	float _velocity;
 };
+
 
 //==================================================================//
 // Class							    //

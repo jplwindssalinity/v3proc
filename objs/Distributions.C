@@ -113,37 +113,67 @@ Gaussian::GetNumber()
 
 
 //==================================//
-// GTC                              //
+// Random Velocity                  //
 //==================================//
 
-GTC::GTC()
-:	_tau(1.0), _prev(1.0), Gaussian()
+RandomVelocity::RandomVelocity()
 {
+	_sample_period=1.0;
+	_radius=1.0;
+        _mean=0.0;
+	_noise=new Uniform(0,0);
+	_position=0.0;
+	_time=0.0;
+	_velocity=0.0;
  	return;
 }
 
-GTC::GTC(float variance, float mean, float tau)
+RandomVelocity::RandomVelocity(GenericDist* noise, float sample_period,
+	float radius, float mean)
 {
-	_variance=variance;
+	_noise=noise;
+	_sample_period=sample_period;
+   	_radius=radius;
 	_mean=mean;
-	_prev=0.0;
-	_tau=tau;
+	_position=mean;
+	_time=0.0;
+	_velocity=noise->GetNumber();
+	while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
+		_velocity=noise->GetNumber();	
+	}
 	return;
 }
 
-GTC::~GTC(){
+RandomVelocity::~RandomVelocity(){
 	return;
 }
 
 //================================//
-// GTC::GetNumber	          //
+// RandomVelocity::GetNumber	  //
 //================================//
 
-float GTC::GetNumber(){
+float RandomVelocity::GetNumber(double time){
+	if (time < 0.0){
+	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
+	 fprintf(stderr,"Parameter time may not be negative.\n");
+	 exit(1);
+	} 
+	if (time < _time){
+	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
+	 fprintf(stderr,"Parameter time may not decrease between \n");
+	 fprintf(stderr,"consecutive calls to the method. \n");
+	 exit(1);
+	}
+	while (time >= _time + _sample_period){
+	  _position+=_velocity*_sample_period;
+	  _time+=_sample_period;
+ 	  _velocity=_noise->GetNumber();
+	  while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
+		_velocity=_noise->GetNumber();	
+	  }
 
-	_prev*=(1-_tau);
-	_prev+=_tau*Gaussian::GetNumber();	
-	return(_prev);
+	}	
+	return(_position+(time-_time)*_velocity);
 }
 
 //==================================//
