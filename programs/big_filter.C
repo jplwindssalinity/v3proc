@@ -91,19 +91,31 @@ template class TrackerBase<unsigned short>;
 #define RSPD_DIM          8
 #define MAX_SPD           20.0
 #define RANK_DIM          4
-#define MIN_COUNT         10
-#define WINDOW_SIZE       7
+
+//--------------------------//
+// local probability filter //
+//--------------------------//
+
+#define LOCAL_PROBABILITY_WINDOW_SIZE  7
+#define MIN_COUNT                      40
+#define MIN_CTI_FOR_LOCAL_PROB         12
+#define MAX_CTI_FOR_LOCAL_PROB         68
+
+#define MEDIAN_FILTER_WINDOW_SIZE  5
+#define MAX_RETRIEVED_ANGLE_DIF  30.0
 
 #define CT_WIDTH  78
 
-#define MAX_NUDGE_ANGLE_DIF      20.0
-#define MAX_RETRIEVED_ANGLE_DIF  30.0
-#define NUDGE_MATCH_ANGLE        20.0
-
 #define HDF_NUM_AMBIGUITIES   4
 
-#define MIN_CTI_FOR_FIRST_RANK   12
-#define MAX_CTI_FOR_FIRST_RANK   68
+#define SOLO_VECTOR_PROB    0.5
+
+//---------//
+// nudging //
+//---------//
+
+#define MAX_NUDGE_ANGLE_DIF      20.0
+#define NUDGE_MATCH_ANGLE        30.0    // nudge only when this close
 
 #define MIN_CTI_FOR_NUDGE   0
 #define MAX_CTI_FOR_NUDGE   0
@@ -111,6 +123,8 @@ template class TrackerBase<unsigned short>;
 #define MIN_CTI_FOR_NUDGE   12
 #define MAX_CTI_FOR_NUDGE   68
 */
+
+#define BORDER  13
 
 //--------//
 // MACROS //
@@ -138,7 +152,10 @@ const char* usage_array[] = { "<sim_cfg_file>", "<l2b_input_file>",
 
 extern float g_available_fraction;
 extern float g_speed_stopper;
-extern float g_angle_check;
+extern float g_no_ambig_within;
+extern int g_number_needed;
+extern float g_too_different;
+extern float g_second_choice_fraction;
 
 //--------------//
 // MAIN PROGRAM //
@@ -297,13 +314,63 @@ main(
         }
     }
 
+    //----------------------------//
+    // clear all selected vectors //
+    //----------------------------//
+
+    WindSwath* swath = &(l2b.frame.swath);
+    for (int ati = 0; ati < AT_WIDTH; ati++)
+    {
+        for (int cti = 0; cti < CT_WIDTH; cti++)
+        {
+            WVC* wvc = swath->GetWVC(cti, ati);
+            if (wvc == NULL)
+                continue;
+            wvc->selected = NULL;    // initialize
+        }
+    }
+
+    //-------------------------------------------//
+    // replace mle values with mle probabilities //
+    //-------------------------------------------//
+
+    for (int ati = 0; ati < AT_WIDTH; ati++)
+    {
+        for (int cti = 0; cti < CT_WIDTH; cti++)
+        {
+            WVC* wvc = swath->GetWVC(cti, ati);
+            if (wvc == NULL)
+                continue;
+
+            WindVectorPlus* wvp1 = wvc->ambiguities.GetHead();
+            if (wvp1 == NULL)
+                continue;
+
+            float wvc_prob_sum = 0.0;
+            float scale = wvp1->obj;
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext())
+            {
+                wvp->obj = exp((wvp->obj - scale)/2.0);
+                wvc_prob_sum += wvp->obj;
+            }
+
+            if (wvc_prob_sum == 0.0)
+                continue;
+
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext())
+            {
+                wvp->obj /= wvc_prob_sum;
+            }
+        }
+    }
+
     //--------------------------------------------------//
     // calculate the average probability for the window //
     //--------------------------------------------------//
 
-    int half_window = WINDOW_SIZE / 2;
-
-    WindSwath* swath = &(l2b.frame.swath);
+    int half_window = LOCAL_PROBABILITY_WINDOW_SIZE / 2;
     for (int ati = 0; ati < AT_WIDTH; ati++)
     {
         int ati_min = ati - half_window;
@@ -313,23 +380,19 @@ main(
         if (ati_max > AT_WIDTH)
             ati_max = AT_WIDTH;
 
-        for (int cti = 0; cti < CT_WIDTH; cti++)
+        for (int cti = MIN_CTI_FOR_LOCAL_PROB; cti < MAX_CTI_FOR_LOCAL_PROB;
+            cti++)
         {
             int cti_min = cti - half_window;
             int cti_max = cti + half_window + 1;
-            if (cti_min < 0)
-                cti_min = 0;
-            if (cti_max > CT_WIDTH)
-                cti_max = CT_WIDTH;
-
-            //----------------------------//
-            // calculate the dif indicies //
-            //----------------------------//
+            if (cti_min < MIN_CTI_FOR_LOCAL_PROB)
+                cti_min = MIN_CTI_FOR_LOCAL_PROB;
+            if (cti_max > MAX_CTI_FOR_LOCAL_PROB)
+                cti_max = MAX_CTI_FOR_LOCAL_PROB;
 
             WVC* wvc = swath->GetWVC(cti, ati);
             if (wvc == NULL)
                 continue;
-            wvc->selected = NULL;    // initialize
 
             float best_avg_prob = 0.0;
             WindVectorPlus* best_vector = NULL;
@@ -359,35 +422,20 @@ main(
                         // get the probability indicies //
                         //------------------------------//
 
-                        int dif_idx[3];
-                        for (int i = 0; i < 3; i++)
-                            dif_idx[i] = DIF_DIM - 1;
-
                         WindVectorPlus* other_wvp_1 =
                             other_wvc->ambiguities.GetHead();
                         if (other_wvp_1 == NULL)
                             continue;
 
-                        float wvc_prob_sum = 0.0;
-                        float scale = other_wvp_1->obj;
                         float near_prob = 0.0;
 
                         for (WindVectorPlus* other_wvp =
                             other_wvc->ambiguities.GetHead(); other_wvp;
                             other_wvp = other_wvc->ambiguities.GetNext())
                         {
-                            float this_prob = exp((other_wvp->obj - scale)/2.0);
-
                             if (other_wvp == nearest)
-                                near_prob = this_prob;
-
-                            wvc_prob_sum += this_prob;
+                                near_prob = other_wvp->obj;
                         }
-
-                        if (wvc_prob_sum == 0.0)
-                            continue;
-
-                        near_prob /= wvc_prob_sum;
 
                         //--------------------------------------//
                         // accumulate the nearest's probability //
@@ -398,14 +446,13 @@ main(
                     }
                 }
                 float avg_prob = prob_sum / (float)wvc_count;
-                if (avg_prob > best_avg_prob)
+                if (avg_prob > best_avg_prob && wvc_count > MIN_COUNT)
                 {
                     best_avg_prob = avg_prob;
                     best_vector = wvp;
                 }
             }
-            if (best_avg_prob > min_prob &&
-                cti >= MIN_CTI_FOR_FIRST_RANK && cti <= MAX_CTI_FOR_FIRST_RANK)
+            if (best_avg_prob > min_prob)
             {
                 wvc->selected = best_vector;
                 continue;
@@ -495,21 +542,29 @@ main(
     // Just Ambiguity Removal //
     //------------------------//
 
-    g_speed_stopper = 5.0;
-    g_available_fraction = 0.25;
-    g_angle_check = 20.0;
-    swath->MedianFilter(5, 250, 0, 0, 0);
+    float speed[] =  { 5.0,    5.0,    5.0,  5.0,  3.0,  3.0,  3.0,  0.0,
+        0.0,  0.0 };
+    float second[] = { 0.25,   0.25,   0.25, 0.25, 0.25, 0.25, 0.5,  0.25,
+        0.5,  1.0 };
+    int number[] =   { 10,     8,      10,   8,    10,   8,    5,    10,
+        5,    0 };
+    int border[] =   { BORDER, BORDER, 0,    0,    0,    0,    0,    0,
+        0,    0 };
 
-    sprintf(filename, "%s.pass", vctr_base);
-    if (! l2b.WriteVctr(filename, 0))
-    {
-        fprintf(stderr, "%s: error writing vctr file %s\n", command,
-            filename);
-        exit(1);
-    }
-    g_speed_stopper = 0.0;
-    g_angle_check = 0.0;
-    swath->MedianFilter(5, 100, 0, 0, 0);
+for (int pass = 0; pass < 10; pass++)
+{
+    g_speed_stopper = speed[pass];
+    g_second_choice_fraction = second[pass];
+    g_number_needed = number[pass];
+    
+    g_available_fraction = 0.0;
+    g_no_ambig_within = 0.0;
+    g_too_different = 180.0;
+
+    swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 100, border[pass], 0, 0);
+    sprintf(filename, "%s.pass.%02d", vctr_base, pass);
+    l2b.WriteVctr(filename, 0);
+}
 
     if (! hdf_target_flag)
     {
