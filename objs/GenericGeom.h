@@ -9,7 +9,7 @@
 #include "EarthPosition.h"
 #include "CoordinateSwitch.h"
 
-#define velocity_frame	velocity_frame_geocentric
+#define velocity_frame	velocity_frame_geodetic
 
 static const char rcs_id_genericgeom_h[] =
 	"@(#) $Id$";
