@@ -39,8 +39,12 @@ static const char rcs_id_misc_h[] =
 //--------//
 
 #define ANGDIF(A,B)		(fabs(pi-fabs(pi-fabs((A)-(B)))))
+#ifndef MIN
 #define MIN(A,B)		((A)<(B)?(A):(B))
+#endif
+#ifndef MAX
 #define MAX(A,B)		((A)>(B)?(A):(B))
+#endif
 #define CWNTOCCWE(A)	(M_PI_2 - (A))
 
 // Macro returns 1 if Angle A is between Start and End 0 otherwise

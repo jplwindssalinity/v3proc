@@ -55,6 +55,7 @@ OBJS = \
 	L1AToL1B.o \
 	L1B.o \
 	L1BFrame.o \
+	L1BHdf.o \
 	L1BToL2A.o \
 	L2A.o \
 	L2AFrame.o \
@@ -176,6 +177,7 @@ L1AGSFrame.o: L1AGSFrame.C L1AGSFrame.h
 L1AToL1B.o: L1AToL1B.C L1AToL1B.h CheckFrame.h InstrumentGeom.h Sigma0.h L1A.h Spacecraft.h Ephemeris.h L1B.h XTable.h BYUXTable.h LandMap.h Attitude.h Matrix3.h EarthPosition.h Wind.h CoordinateSwitch.h LonLat.h Meas.h Qscat.h Distributions.h BaseFile.h L1AFrame.h L1AGSFrame.h Constants.h BufferedList.h L1BFrame.h Array.h Misc.h List.h Index.h AngleInterval.h Matrix.h Beam.h Antenna.h Tracking.h Scatterometer.h
 L1B.o: L1B.C L1B.h BaseFile.h L1BFrame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L1BFrame.o: L1BFrame.C L1BFrame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
+L1BHdf.o: L1BHdf.C L1BHdf.h L1B.h BaseFile.h L1BFrame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L1BToL2A.o: L1BToL2A.C L1BToL2A.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L1B.h Grid.h Beam.h Matrix3.h BufferedList.h EarthPosition.h CoordinateSwitch.h Spacecraft.h LonLat.h Meas.h Qscat.h BaseFile.h L1BFrame.h Array.h L2A.h List.h Attitude.h Constants.h Tracking.h Scatterometer.h L2AFrame.h
 L2A.o: L2A.C L2A.h BaseFile.h L2AFrame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L2AFrame.o: L2AFrame.C L2AFrame.h Constants.h Misc.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h

@@ -6,14 +6,27 @@
 static const char rcs_id_measurement_c[] =
 	"@(#) $Id$";
 
+#include <assert.h>
 #include <stdio.h>
 #include <unistd.h>
+
+#include "L1BHdf.h"
 #include "Meas.h"
 #include "Beam.h"
 #include "Constants.h"
 #include "LonLat.h"
 #include "GenericGeom.h"
+#include "Parameter.h"
 
+#ifndef IS_EVEN
+#define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
+#endif
+
+#ifndef THE_OTHER_BEAM
+#define THE_OTHER_BEAM(x) ((x & 0x00000001) ^ 0x00000001)
+#endif
+
+#define START_SLICE_INDEX    -4
 
 //======//
 // Meas //
@@ -103,10 +116,9 @@ Meas::Composite(
 	meas = meas_list->GetHead();
 
 
-	//---------------------------------------------------------------------        //
-	// Form the composite measurement from appropriate combinations of the
+	//---------------------------------------------------------------------         // Form the composite measurement from appropriate combinations of the
 	// elements of each slice measurement in this composite cell.
-	//---------------------------------------------------------------------//
+	//---------------------------------------------------------------------
 
 	value = sum_Ps / sum_XK;
 
@@ -268,6 +280,121 @@ Meas::FreeContents()
 	outline.FreeContents();
 	return;
 }
+
+int
+Meas::UnpackL1BHdf(
+L1BHdf*     l1bHdf,
+int32       pulseIndex,   // index in pluses
+int32       sliceIndex)   // index in slices
+{
+	FreeContents();
+
+    Parameter* param=0;
+    param = l1bHdf->GetParameter(SLICE_QUAL_FLAG, UNIT_DN);
+    assert(param != 0);
+    unsigned int* uintP = (unsigned int*)param->data;
+    unsigned int sliceQualFlags = *(uintP + pulseIndex);
+
+    //------------------------------------------------------------------
+    // if gain does not exceed peak gain thrshhold, throw this slice away
+    //------------------------------------------------------------------
+    if (sliceQualFlags & (1 << (sliceIndex * 4)))
+        return 0;
+    startSliceIdx = 0;
+    for (int i=0; i < MAX_L1BHDF_NUM_SLICES; i++)
+    {
+        if ((sliceQualFlags & (1 << (i * 4))) == 0)
+        {
+            startSliceIdx = START_SLICE_INDEX + i;
+            startSliceIdx = (startSliceIdx == 0 ?
+                                 startSliceIdx + 1 : startSliceIdx);
+            break;
+        }
+    }
+    assert (startSliceIdx != 0);
+
+    param = l1bHdf->GetParameter(SLICE_SIGMA0, UNIT_DB);
+    assert(param != 0);
+    float* floatP = (float*)param->data;
+    floatP += pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex;
+    value = (float) pow( 10.0, (double) *floatP / 10.0 );
+
+    param = l1bHdf->GetParameter(X_FACTOR, UNIT_DB);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    floatP += pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex;
+    XK = (float) pow( 10.0, (double) *floatP / 10.0 );
+
+    param = l1bHdf->GetParameter(SLICE_SNR, UNIT_DB);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    floatP += pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex;
+    float sliceSNR = (float) pow( 10.0, (double) *floatP / 10.0 );
+    EnSlice = value * XK / sliceSNR;
+
+    // bandwidth and tx pulse width come from configuration file
+    bandwidth = l1bHdf->configBandwidth;
+    txPulseWidth = l1bHdf->configTxPulseWidth;
+    landFlag = 0;
+
+    // outline: leave it alone
+
+    //---------------------------------------------------
+    // centroid is from slice_lon and slice_lat
+    //---------------------------------------------------
+    param = l1bHdf->GetParameter(SLICE_LON, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    double sliceLon = (double) *(floatP +
+                        pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+    param = l1bHdf->GetParameter(SLICE_LAT, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    double sliceLat = (double) *(floatP +
+                        pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+    centroid.SetAltLonGDLat(0.0, sliceLon, sliceLat);
+
+    //---------------------------------------------------
+    // get beamIdx and pol
+    //---------------------------------------------------
+    param = l1bHdf->GetParameter(FRAME_INST_STATUS_02, UNIT_MAP);
+    assert(param != 0);
+    unsigned char beamNo = *((unsigned char*)param->data);
+    if (IS_EVEN(pulseIndex))
+        beamIdx = (int)beamNo;
+    else
+        beamIdx = (int) THE_OTHER_BEAM(beamNo);
+    if (beamIdx == 0)  // beam A => H, B => V
+        pol = H_POL;
+    else
+        pol = V_POL;
+ 
+
+    param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    eastAzimuth = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+
+    param = l1bHdf->GetParameter(SLICE_INCIDENCE, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    incidenceAngle = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES+sliceIndex);
+
+    numSlices = 1;
+
+    param = l1bHdf->GetParameter(ANTENNA_AZIMUTH, UNIT_RADIANS);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    scanAngle = *(floatP + pulseIndex);
+
+    param = l1bHdf->GetParameter(SLICE_KPC_A, UNIT_DN);
+    assert(param != 0);
+    floatP = (float*)param->data;
+    A = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+
+    return 1;
+
+} // Meas::UnpackL1BHdf
 
 //==========//
 // MeasList //
@@ -552,6 +679,80 @@ MeasSpot::Read(
 	return(1);
 }
 
+int
+MeasSpot::UnpackL1BHdf(
+L1BHdf*      l1bHdf,    // SVT L1BHdf object
+int32        hdfIndex,  // index in the L1BHDF
+int32        pulseIndex)   // index of the pulses (max of 100)
+{
+    assert(l1bHdf != 0);
+    FreeContents();
+
+    // get time VD, use TAI time as base
+    Itime itime;
+    if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
+        return 0;
+    time = (double) itime.sec - ITIME_DEFAULT_SEC;
+
+    //----------------------------
+    // get orbit state
+    //----------------------------
+    scOrbitState.time = time;
+
+    Parameter* param=0;
+    param = l1bHdf->GetParameter(X_POS, UNIT_KILOMETERS);
+    assert(param != 0);
+    double x_pos = (double)(*((float*)(param->data)));
+
+    param = l1bHdf->GetParameter(Y_POS, UNIT_KILOMETERS);
+    assert(param != 0);
+    double y_pos = (double)(*((float*)(param->data)));
+
+    param = l1bHdf->GetParameter(Z_POS, UNIT_KILOMETERS);
+    assert(param != 0);
+    double z_pos = (double)(*((float*)(param->data)));
+
+    scOrbitState.rsat = Vector3(x_pos, y_pos, z_pos);
+
+    param = l1bHdf->GetParameter(X_VEL, UNIT_KMPS);
+    assert(param != 0);
+    double x_vel = (double)(*((float*)(param->data)));
+    param = l1bHdf->GetParameter(Y_VEL, UNIT_KMPS);
+    assert(param != 0);
+    double y_vel = (double)(*((float*)(param->data)));
+    param = l1bHdf->GetParameter(Z_VEL, UNIT_KMPS);
+    assert(param != 0);
+    double z_vel = (double)(*((float*)(param->data)));
+    scOrbitState.vsat = Vector3(x_vel, y_vel, z_vel);
+
+    //----------------------------
+    // get attitude
+    //----------------------------
+    param = l1bHdf->GetParameter(ROLL, UNIT_RADIANS);
+    assert(param != 0);
+    float roll = *((float*)(param->data));
+    param = l1bHdf->GetParameter(PITCH, UNIT_RADIANS);
+    assert(param != 0);
+    float pitch = *((float*)(param->data));
+    param = l1bHdf->GetParameter(YAW, UNIT_RADIANS);
+    assert(param != 0);
+    float yaw = *((float*)(param->data));
+    scAttitude.SetRPY(roll, pitch, yaw);
+
+    for (int i = 0; i < MAX_L1BHDF_NUM_SLICES; i++)
+    {
+        // save only the good slices
+        Meas* new_meas = new Meas();
+        if (new_meas->UnpackL1BHdf(l1bHdf, pulseIndex, i))
+        {
+            if ( ! Append(new_meas)) return(0);
+        }
+        else delete new_meas;
+    }
+
+    return(1);
+}
+
 //==============//
 // MeasSpotList //
 //==============//
@@ -635,6 +836,32 @@ MeasSpotList::Read(
 	}
 	return(1);
 }
+
+//----------------------------//
+// MeasSpotList::UnpackL1BHdf //
+//----------------------------//
+
+int
+MeasSpotList::UnpackL1BHdf(
+L1BHdf*      l1bHdf,
+int32        hdfIndex)     // index in the HDF
+{
+    assert(l1bHdf != 0);
+    FreeContents();
+
+    Parameter* param = l1bHdf->GetParameter(NUM_PULSES, UNIT_DN);
+    assert(param != 0);
+    int num_pulses = (int)(*((char*)(param->data)));
+    for (int i = 0; i < num_pulses; i++)
+    {
+        MeasSpot* new_meas_spot = new MeasSpot();
+        if (! new_meas_spot->UnpackL1BHdf(l1bHdf, hdfIndex, i) ||
+                                        ! Append(new_meas_spot))
+            return(0);
+    }
+    return(1);
+
+} // MeasSpotList::UnpackL1BHdf
 
 //----------------------------//
 // MeasSpotList::FreeContents //

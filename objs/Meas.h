@@ -9,6 +9,8 @@
 static const char rcs_id_meas_h[] =
     "@(#) $Id$";
 
+#include "mfhdf.h"
+
 #include "Beam.h"
 #include "LonLat.h"
 #include "Ephemeris.h"
@@ -23,6 +25,7 @@ static const char rcs_id_meas_h[] =
 //======================================================================
 
 class MeasList;
+class L1BHdf;
 
 //======================================================================
 // CLASS
@@ -65,6 +68,10 @@ public:
     int  Write(FILE* fp);
     int  Read(FILE* fp);
     int  WriteAscii(FILE* fp);
+
+    int  UnpackL1BHdf(L1BHdf*     l1bHdf,
+                      int32       pulseIndex,   // index in pluses
+                      int32       sliceIndex);  // index in slices
 
     //---------//
     // freeing //
@@ -238,6 +245,10 @@ public:
     int  WriteAscii(FILE* fp);
     int  Read(FILE* fp);
 
+    int  UnpackL1BHdf(L1BHdf*     l1bHdf,
+                      int32       hdfIndex,    // index in the HDF
+                      int32       pulseIndex); //index of the pulses(100)
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -274,6 +285,9 @@ public:
     int  Write(FILE* fp);
     int  WriteAscii(FILE* fp);
     int  Read(FILE* fp);
+
+    int  UnpackL1BHdf(L1BHdf*     l1bHdf,
+                      int32       hdfIndex);  // index in the HDF
 
     //---------//
     // freeing //
