@@ -442,6 +442,8 @@ main(
   int cf_frame_count = 0; // counts all spots (cf frames).
   int count = 0;
   int subcount = 0;
+  MeasSpot* meas_spot = NULL;
+  MeasSpotList* meas_spot_list = NULL;
 
   while(1)
   {
@@ -451,6 +453,9 @@ main(
 
     if (onebcheckfile == NULL) 
     {
+      if (meas_spot == NULL)
+      {  // Need to read another l1b frame        
+
 		//-----------------------------//
 		// read a level 1B data record //
 		//-----------------------------//
@@ -477,79 +482,76 @@ main(
 			break;	// done, exit loop
 		}
 
-        MeasSpotList* meas_spot_list = &(l1b.frame.spotList);
+        meas_spot_list = &(l1b.frame.spotList);
+        meas_spot = meas_spot_list->GetHead();  // Get first spot
+      }
+      else
+      {  // Load this spot, and then get next meas_spot
+        double meas_time = meas_spot->scOrbitState.time;
+        Meas* first_meas = meas_spot->GetHead();
+        double meas_azi = first_meas->scanAngle;
 
-        //----------------------//
-        // for each MeasSpot... //
-        //----------------------//
+        //-------------------------------------//
+        // Load spot data into cf1b CheckFrame //
+        //-------------------------------------//
 
-        for (MeasSpot* meas_spot = meas_spot_list->GetHead(); meas_spot;
-            meas_spot = meas_spot_list->GetNext())
-        {
-            double meas_time = meas_spot->scOrbitState.time;
-            Meas* first_meas = meas_spot->GetHead();
-            double meas_azi = first_meas->scanAngle;
+        cf1b.pulseCount = cf_frame_count-1;
+        cf1b.time = meas_spot->time;
+        cf1b.beamNumber = first_meas->beamIdx;
+        cf1b.antennaAziTx = 0.0;
+        cf1b.antennaAziGi = first_meas->scanAngle;
+        cf1b.orbitFrac = 0.0;
+        cf1b.spinRate = 0.0;
+        cf1b.txDoppler = 0.0;
+        cf1b.XdopplerFreq = 0.0;
+        cf1b.XroundTripTime = 0.0;
+        cf1b.EsCal = 0.0;
+        cf1b.deltaFreq = 0.0;
+        cf1b.EsnEcho = 0.0;
+        cf1b.EsnNoise = 0.0;
+        cf1b.rxGateDelay = 0.0;
+        cf1b.alpha = 0.0;
+        cf1b.rsat = meas_spot->scOrbitState.rsat;
+        cf1b.vsat = meas_spot->scOrbitState.vsat;
 
-            //-------------------------------------//
-            // Load spot data into cf1b CheckFrame //
-            //-------------------------------------//
-
-            cf1b.pulseCount = cf_frame_count-1;
-            cf1b.time = meas_spot->time;
-            cf1b.beamNumber = first_meas->beamIdx;
-            cf1b.antennaAziTx = 0.0;
-            cf1b.antennaAziGi = first_meas->scanAngle;
-            cf1b.orbitFrac = 0.0;
-            cf1b.spinRate = 0.0;
-            cf1b.txDoppler = 0.0;
-            cf1b.XdopplerFreq = 0.0;
-            cf1b.XroundTripTime = 0.0;
-            cf1b.EsCal = 0.0;
-            cf1b.deltaFreq = 0.0;
-            cf1b.EsnEcho = 0.0;
-            cf1b.EsnNoise = 0.0;
-            cf1b.rxGateDelay = 0.0;
-            cf1b.alpha = 0.0;
-            cf1b.rsat = meas_spot->scOrbitState.rsat;
-            cf1b.vsat = meas_spot->scOrbitState.vsat;
-
-            //------------------//
-            // for each Meas... //
-            //------------------//
+        //------------------//
+        // for each Meas... //
+        //------------------//
  
-            int j = 0;
-            for (Meas* meas = meas_spot->GetHead(); meas;
-                meas = meas_spot->GetNext())
-            {
-              //-------------------------------------------//
-              // ...load Meas slice data into CheckFrame   //
-              //-------------------------------------------//
+        int j = 0;
+        for (Meas* meas = meas_spot->GetHead(); meas;
+             meas = meas_spot->GetNext())
+        {
+          //-------------------------------------------//
+          // ...load Meas slice data into CheckFrame   //
+          //-------------------------------------------//
 
-              if (j >= cf.slicesPerSpot)
-              {
-                fprintf(stderr,"Error, Too many measurements in a spot\n");
-                exit(1);
-              }
+          if (j >= cf.slicesPerSpot)
+          {
+            fprintf(stderr,"Error, Too many measurements in a spot\n");
+            exit(1);
+          }
 
-              double alt1b,lon1b,lat1b;
-              meas->centroid.GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
-              double measR =
-                (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
+          double alt1b,lon1b,lat1b;
+          meas->centroid.GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
+          double measR =
+            (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
 
-              cf1b.idx[j] = meas->startSliceIdx;
-              cf1b.measType[j] = meas->measType;
-              cf1b.sigma0[j] = meas->value;
-              cf1b.XK[j] = meas->XK;
-              cf1b.Es[j] = meas->value*meas->XK;
-              cf1b.En[j] = meas->EnSlice;
-              cf1b.centroid[j] = meas->centroid;
-              cf1b.azimuth[j] = meas->eastAzimuth;
-              cf1b.incidence[j] = meas->incidenceAngle;
-              cf1b.R[j] = measR;
-              cf1b.GatGar[j] = 0.0;
-              j++;
-            }
-        } 
+          cf1b.idx[j] = meas->startSliceIdx;
+          cf1b.measType[j] = meas->measType;
+          cf1b.sigma0[j] = meas->value;
+          cf1b.XK[j] = meas->XK;
+          cf1b.Es[j] = meas->value*meas->XK;
+          cf1b.En[j] = meas->EnSlice;
+          cf1b.centroid[j] = meas->centroid;
+          cf1b.azimuth[j] = meas->eastAzimuth;
+          cf1b.incidence[j] = meas->incidenceAngle;
+          cf1b.R[j] = measR;
+          cf1b.GatGar[j] = 0.0;
+          j++;
+        }
+        meas_spot = meas_spot_list->GetNext();
+      }
     }
     else
     {  // A 2nd checkfile is provided.
@@ -710,8 +712,10 @@ main(
         (cf.EsnEcho - cf.EsnNoise)/beta;
       float en_spot2 = 1.0/(1.0 - cf1b.alpha)*
         (cf1b.EsnEcho - cf1b.EsnNoise)/beta;
-      float q_slice1 = cf.En[j]/en_spot1;
-      float q_slice2 = cf1b.En[i]/en_spot2;
+      float q_slice1;
+      float q_slice2;
+      if (en_spot1 == 0.0) q_slice1 = 0.0; else q_slice1 = cf.En[j]/en_spot1;
+      if (en_spot2 == 0.0) q_slice2 = 0.0; else q_slice2 = cf1b.En[i]/en_spot2;
 
       if (p_flag == 1)
       {
@@ -882,8 +886,8 @@ match_cf_frame(
   long search_win = SEARCH_WINDOW;
 
   if (call_count < 3) search_win = 10000000; // look hard at the beginning
-  float adiff;
-  double rr;
+  float adiff = 0.0;
+  double rr = 0.0;
   float minadiff = 100.0;
   double minrr = 10000.0;
 
@@ -962,9 +966,13 @@ match_frame(
 {
   int i;
 
+//  if (fabs(cf_source->antennaAziGi - cf_target->antennaAziGi) < 0.005 &&
+//      cf_source->beamNumber == cf_target->beamNumber )
   if (fabs(cf_source->antennaAziGi - cf_target->antennaAziGi) < 0.005 &&
-      cf_source->beamNumber == cf_target->beamNumber )
+      cf_source->beamNumber == cf_target->beamNumber &&
+      fabs(cf_source->time - cf_target->time) < 0.225 )
   {
+/*
     for (i=0; i < cf_source->slicesPerSpot; i++)
     {
       if (cf_source->idx[i] == cf_target->idx[0]) break;
@@ -979,6 +987,8 @@ match_frame(
     {
       return(1);
     }
+*/
+    return(1);
   }
 
   return(0);
