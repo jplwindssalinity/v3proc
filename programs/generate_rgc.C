@@ -64,6 +64,7 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "QscatConfig.h"
 #include "InstrumentGeom.h"
+#include "Qscat.h"
 #include "List.h"
 #include "List.C"
 #include "Tracking.h"
@@ -423,8 +424,11 @@ main(
 				//-------------------------------------------//
 				// calculate the ideal round trip time in ms //
 				//-------------------------------------------//
+                // for an explanation of why T_GRID and T_RC are
+                // here, check with Rod's memo
 
-				rtt[azimuth_step] = qscat.IdealRtt(&spacecraft) * S_TO_MS;
+				rtt[azimuth_step] = (qscat.IdealRtt(&spacecraft) + T_GRID +
+                    T_RC) * S_TO_MS;
 			}
 
 			//--------------------//
