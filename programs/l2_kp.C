@@ -531,8 +531,8 @@ main(
 				exit(-1);
 			}
 
-			if (caseid == 1 && x_idx.GetNearestIndex(wv.spd,&j) &&
-				c1_idx.GetNearestIndex(wv.dir,&i))
+			if (caseid == 1 && x_idx.GetNearestIndexStrict(wv.spd,&j) &&
+				c1_idx.GetNearestIndexStrict(wv.dir,&i))
 			{
 				count[i][j]++;
 				avg[i][j] += 1.0/count[i][j] * (s - avg[i][j]);
@@ -633,8 +633,8 @@ main(
 			}
 
 
-			if (caseid == 1 && x_idx.GetNearestIndex(wv.spd,&j) &&
-				c1_idx.GetNearestIndex(wv.dir,&i))
+			if (caseid == 1 && x_idx.GetNearestIndexStrict(wv.spd,&j) &&
+				c1_idx.GetNearestIndexStrict(wv.dir,&i))
 			{
 				diff = s - avg[i][j];
 				var[i][j] += diff*diff;
