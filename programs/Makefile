@@ -35,6 +35,7 @@ PROGRAMS = \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
+	generate_kfactor \
 	log_cfg \
 	windfield_to_vctr \
 	l17_centroids
@@ -71,3 +72,9 @@ install: $(PROGRAMS)
 
 %: %.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+
+
+
+
+
