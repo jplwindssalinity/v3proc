@@ -78,7 +78,7 @@ public:
 	// informational variables //
 	//-------------------------//
 
-	int		spotsPerFrame;
+	int		beamCyclesPerFrame;
 	int		slicesPerSpot;
 	int		totalSlices;
 };

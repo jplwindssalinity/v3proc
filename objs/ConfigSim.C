@@ -344,20 +344,23 @@ ConfigL00(
 		return(0);
 	l00->SetFilename(l00_filename);
 
-	int spots_per_frame;
-	if (! config_list->GetInt(L00_SPOTS_PER_FRAME_KEYWORD, &spots_per_frame))
+	int beam_cycles_per_frame;
+	if (! config_list->GetInt(L00_BEAM_CYCLES_PER_FRAME_KEYWORD,
+		&beam_cycles_per_frame))
+	{
 		return(0);
+	}
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
-	if (! l00->AllocateBuffer(spots_per_frame, slices_per_spot))
+	if (! l00->AllocateBuffer(beam_cycles_per_frame, slices_per_spot))
 		return(0);
 
 	//-------------------------//
 	// configure the l00 frame //
 	//-------------------------//
 
-	if (! l00->frame.Allocate(spots_per_frame, slices_per_spot))
+	if (! l00->frame.Allocate(beam_cycles_per_frame, slices_per_spot))
 		return(0);
 
 	return(1);
@@ -381,20 +384,23 @@ ConfigL10(
 		return(0);
 	l10->SetFilename(l10_filename);
 
-	int spots_per_frame;
-	if (! config_list->GetInt(L00_SPOTS_PER_FRAME_KEYWORD, &spots_per_frame))
+	int beam_cycles_per_frame;
+	if (! config_list->GetInt(L00_BEAM_CYCLES_PER_FRAME_KEYWORD,
+		&beam_cycles_per_frame))
+	{
 		return(0);
+	}
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
-	if (! l10->AllocateBuffer(spots_per_frame, slices_per_spot))
+	if (! l10->AllocateBuffer(beam_cycles_per_frame, slices_per_spot))
 		return(0);
 
 	//-------------------------//
 	// configure the l10 frame //
 	//-------------------------//
 
-	if (! l10->frame.Allocate(spots_per_frame, slices_per_spot))
+	if (! l10->frame.Allocate(beam_cycles_per_frame, slices_per_spot))
 		return(0);
 
 

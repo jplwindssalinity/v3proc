@@ -32,12 +32,12 @@ L10::~L10()
  
 int
 L10::AllocateBuffer(
-    int     spots_per_frame,
+    int     beam_cycles_per_frame,
     int     slices_per_spot)
 {
     // antenna position and sigma-0
     int bytes_per_slice = sizeof(short) + sizeof(float);
-    int total_slices = spots_per_frame * slices_per_spot;
+    int total_slices = beam_cycles_per_frame * slices_per_spot;
     int buffer_size = L10_FRAME_HEADER_SIZE + total_slices * bytes_per_slice;
     buffer = (char *)malloc(buffer_size);
     if (buffer == NULL)

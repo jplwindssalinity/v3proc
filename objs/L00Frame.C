@@ -18,7 +18,7 @@ static const char rcs_id_l00frame_c[] =
 L00Frame::L00Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
-	science(NULL), spotsPerFrame(0), slicesPerSpot(0), totalSlices(0)
+	science(NULL), beamCyclesPerFrame(0), slicesPerSpot(0), totalSlices(0)
 {
 	return;
 }
@@ -34,10 +34,10 @@ L00Frame::~L00Frame()
  
 int
 L00Frame::Allocate(
-	int		spots_per_frame,
+	int		beam_cycles_per_frame,
 	int		slices_per_spot)
 {
-	int total_slices = spots_per_frame * slices_per_spot;
+	int total_slices = beam_cycles_per_frame * slices_per_spot;
 
 	//----------------------------//
 	// allocate antenna positions //
@@ -55,7 +55,7 @@ L00Frame::Allocate(
 	if (science == NULL)
 		return(0);
 
-	spotsPerFrame = spots_per_frame;
+	beamCyclesPerFrame = beam_cycles_per_frame;
 	slicesPerSpot = slices_per_spot;
 	totalSlices = total_slices;
 
@@ -73,7 +73,7 @@ L00Frame::Deallocate()
 		free(antennaPosition);
 	if (science)
 		free(science);
-	spotsPerFrame = 0;
+	beamCyclesPerFrame = 0;
 	slicesPerSpot = 0;
 	totalSlices = 0;
 	return(1);

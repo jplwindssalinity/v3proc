@@ -395,7 +395,7 @@ InstrumentSim::ScatSim(
 	// determine if frame is ready //
 	//-----------------------------//
 
-	if (_spotNumber >= l00.frame.spotsPerFrame)
+	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
 	{
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame

@@ -39,7 +39,7 @@ public:
 	L10Frame();
 	~L10Frame();
 
-	int		Allocate(int spots_per_frame, int slices_per_spot);
+	int		Allocate(int beam_cycles_per_frame, int slices_per_spot);
 	int		Deallocate();
 
 	//-------------------//
@@ -79,7 +79,7 @@ public:
 	// informational variables //
 	//-------------------------//
  
-	int		spotsPerFrame;
+	int		beamCyclesPerFrame;
 	int		slicesPerSpot;
 	int		totalSlices;
 };

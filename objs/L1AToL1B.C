@@ -54,7 +54,8 @@ L10ToL15::Convert(
 	// for each spot... //
 	//------------------//
 
-	for (int i = 0; i < l10->frame.spotsPerFrame; i++)
+	for (int i = 0; i < l10->frame.beamCyclesPerFrame * antenna->numberOfBeams;
+		i++)
 	{
 		//------------------------//
 		// ...generate a MeasSpot //
