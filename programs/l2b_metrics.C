@@ -225,9 +225,6 @@ main(
 		exit(1);
 	}
 
-	xmgr_control(ofp, "RMS Direction Error vs. CTD", l20_file,
-		"Cross Track Distance (km)", "RMS Direction Error (deg)");
-
 	sprintf(filename, "%s.rms_dir_err", output_base);
 	ofp = fopen(filename, "w");
 	if (ofp == NULL)
@@ -236,6 +233,9 @@ main(
 			filename);
 		exit(1);
 	}
+
+	xmgr_control(ofp, "RMS Direction Error vs. CTD", l20_file,
+		"Cross Track Distance (km)", "RMS Direction Error (deg)");
 
 	for (int i = 0; i < cross_track_bins; i++)
 	{
@@ -257,9 +257,6 @@ main(
 		exit(1);
 	}
 
-	xmgr_control(ofp, "Skill vs. CTD", l20_file, "Cross Track Distance (km)",
-		"Skill");
-
 	sprintf(filename, "%s.skill", output_base);
 	ofp = fopen(filename, "w");
 	if (ofp == NULL)
@@ -268,6 +265,9 @@ main(
 			filename);
 		exit(1);
 	}
+
+	xmgr_control(ofp, "Skill vs. CTD", l20_file, "Cross Track Distance (km)",
+		"Skill");
 
 	for (int i = 0; i < cross_track_bins; i++)
 	{
