@@ -311,10 +311,8 @@ L2AH::GetWVC(
             _cellLat[i] * _cellLatScale * dtr);
 
         // set the azimuth
-        new_meas->eastAzimuth = (450.0 - _cellAzimuth[i] * _cellAzimuthScale)
-            * dtr;
-        if (new_meas->eastAzimuth >= two_pi)
-            new_meas->eastAzimuth -= two_pi;
+        new_meas->eastAzimuth =
+            gs_deg_to_pe_rad(_cellAzimuth[i] * _cellAzimuthScale);
 
         // set the incidence
         new_meas->incidenceAngle =
