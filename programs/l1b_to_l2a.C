@@ -75,6 +75,11 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+// Class declarations needed for templates
+// eliminates need to include the entire header file
+class AngleInterval;
+
+template class List<AngleInterval>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<StringPair>;

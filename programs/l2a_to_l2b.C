@@ -70,11 +70,14 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
-#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
 //-----------//
+
+// Class declarations needed for templates
+// eliminates need to include the entire header file
+class AngleInterval;
 
 template class List<StringPair>;
 template class List<Meas>;
