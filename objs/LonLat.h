@@ -89,6 +89,7 @@ public:
 	int		WriteBvg(FILE* fp);
 
 	double	Area();
+	double	Area1()		{ return(1.0); };
 	
 	//---------//
 	// freeing //

@@ -53,8 +53,11 @@ public:
 	unsigned int	OrbitTicksToDopplerStep(unsigned int orbit_ticks);
 	int				GetCommandedDoppler(int beam_idx,
 						unsigned int doppler_step, unsigned int antenna_dn,
-						unsigned int antenna_n, float* doppler);
-	int				SetInstrument(Instrument* instrument);
+						unsigned int antenna_n, float* doppler,
+						float chirp_rate = 0.0,
+						float residual_delay_error = 0.0);
+	int				SetInstrument(Instrument* instrument,
+						float residual_delay_error = 0.0);
 	int				Set(double*** terms);
 	int				SetTicksPerOrbit(unsigned int period);
 
@@ -121,10 +124,12 @@ public:
 	int					GetDelayAndDuration(int beam_idx,
 							unsigned int range_step, float xmit_pulse_width,
 							unsigned int antenna_dn, unsigned int antenna_n,
-							float* delay, float* width);
+							float* delay, float* width,
+							float* residual_delay_error);
 	int					GetNumberOfBeams() { return(_numberOfBeams); };
 	int					GetRangeSteps() { return(_rangeSteps); };
-	int					SetInstrument(Instrument* instrument);
+	int					SetInstrument(Instrument* instrument,
+							float* residual_delay_error);
 	int					SetRoundTripTime(double*** terms);
 	int					SetDuration(int beam_idx, float width);
 	int					SetTicksPerOrbit(unsigned int period);

@@ -82,7 +82,9 @@ DopplerTracker::GetCommandedDoppler(
 	unsigned int	doppler_step,
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
-	float*			doppler)
+	float*			doppler,
+	float			chirp_rate,
+	float			residual_delay_error)
 {
 	if (doppler_step >= _dopplerSteps)
 		return(0);
@@ -107,10 +109,13 @@ DopplerTracker::GetCommandedDoppler(
 	double raw_doppler = c_term + a_term *
 		cos(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
 
-	int doppler_dn = (int)(raw_doppler / DOPPLER_TRACKING_RESOLUTION + 0.5);
+	double residual_range_freq = residual_delay_error * chirp_rate;
+	double xmit_freq = raw_doppler - residual_range_freq;
+
+	double doppler_dn = rint(xmit_freq / DOPPLER_TRACKING_RESOLUTION);
 
 	// negative sign to convert "true" Doppler to additive xmit freq
-	*doppler = - doppler_dn * DOPPLER_TRACKING_RESOLUTION;
+	*doppler = (float)(-doppler_dn * DOPPLER_TRACKING_RESOLUTION);
 
 	return(1);
 }
@@ -121,7 +126,8 @@ DopplerTracker::GetCommandedDoppler(
 
 int
 DopplerTracker::SetInstrument(
-	Instrument*		instrument)
+	Instrument*		instrument,
+	float			residual_delay_error)
 {
 	int beam_idx = instrument->antenna.currentBeamIdx;
 	unsigned int doppler_step =
@@ -131,7 +137,7 @@ DopplerTracker::SetInstrument(
 	unsigned int antenna_n = instrument->antenna.GetEncoderN();
 	float doppler;
 	GetCommandedDoppler(beam_idx, doppler_step, antenna_dn, antenna_n,
-		&doppler);
+		&doppler, instrument->chirpRate, residual_delay_error);
 
 	instrument->SetCommandedDoppler(doppler);
 
@@ -467,7 +473,8 @@ RangeTracker::GetDelayAndDuration(
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
 	float*			delay,
-	float*			width)
+	float*			width,
+	float*			residual_delay_error)
 {
 	//---------------------//
 	// determine the width //
@@ -519,6 +526,7 @@ RangeTracker::GetDelayAndDuration(
 	unsigned int delay_dn =
 		(int)(cmd_delay / RANGE_TRACKING_TIME_RESOLUTION + 0.5);
 	*delay = delay_dn * RANGE_TRACKING_TIME_RESOLUTION;
+	*residual_delay_error = *delay - cmd_delay;
 
 	return(1);
 }
@@ -529,7 +537,8 @@ RangeTracker::GetDelayAndDuration(
 
 int
 RangeTracker::SetInstrument(
-	Instrument*		instrument)
+	Instrument*		instrument,
+	float*			residual_delay_error)
 {
 	int beam_idx = instrument->antenna.currentBeamIdx;
 	int range_step = OrbitTicksToRangeStep(instrument->orbitTicks);
@@ -541,7 +550,7 @@ RangeTracker::SetInstrument(
 
 	float delay, width;
 	GetDelayAndDuration(beam_idx, range_step, xpw, antenna_dn, antenna_n,
-		&delay, &width);
+		&delay, &width, residual_delay_error);
 
 	instrument->commandedRxGateDelay = delay;
 	instrument->commandedRxGateWidth = width;
@@ -842,7 +851,7 @@ RangeTracker::ReadBinary(
 //-------------//
 // azimuth_fit //
 //-------------//
- 
+
 int
 azimuth_fit(
 	int			count,
@@ -853,7 +862,7 @@ azimuth_fit(
 {
 	double wn = two_pi / (double) count;
 	double real[2], imag[2];
- 
+
 	for (int i = 0; i < 2; i++)
 	{
 		real[i] = 0.0;
@@ -867,10 +876,10 @@ azimuth_fit(
 			imag[i] += terms[j] * s;
 		}
 	}
- 
+
 	*a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
 	*p = -atan2(imag[1], real[1]);
 	*c = real[0] / (double)count;
- 
+
 	return(1);
 }

@@ -140,10 +140,10 @@ Outline::Write(
 		return(0);
 
 	LonLat lon_lat;
-    for (EarthPosition* r = GetHead(); r; r = GetNext())
+	for (EarthPosition* r = GetHead(); r; r = GetNext())
 	{
 		lon_lat.Set(*r);
-        if (! lon_lat.Write(fp))
+		if (! lon_lat.Write(fp))
 			return(0);
 	}
 	return(1);
@@ -185,10 +185,10 @@ Outline::WriteAscii(
 	// write the points
 	EarthPosition* r;
 	LonLat lon_lat;
-    for (r = GetHead(); r; r = GetNext())
+	for (r = GetHead(); r; r = GetNext())
 	{
 		lon_lat.Set(*r);
-        if (! lon_lat.WriteAscii(fp))
+		if (! lon_lat.WriteAscii(fp))
 			return(0);
 	}
 
@@ -211,10 +211,10 @@ Outline::WriteBvg(
 	// write the points
 	EarthPosition* r;
 	LonLat lon_lat;
-    for (r = GetHead(); r; r = GetNext())
+	for (r = GetHead(); r; r = GetNext())
 	{
 		lon_lat.Set(*r);
-        if (! lon_lat.WriteBvg(fp))
+		if (! lon_lat.WriteBvg(fp))
 			return(0);
 	}
 
@@ -247,7 +247,6 @@ Outline::WriteBvg(
 double
 Outline::Area()
 {
-	
 	int num = NodeCount();
 
 	if (num <= 2)
@@ -279,7 +278,7 @@ Outline::Area()
 			double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
 			double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
 			double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
-	
+
 			if (s12 != 0.0 & s23 != 0.0 & s31 != 0.0)
 			{	// 3 points are distinct, so add area contribution
 				// Cosine law

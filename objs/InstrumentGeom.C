@@ -98,9 +98,11 @@ LocateSlices(
 	// calculate commanded receiver gate delay and duration //
 	//------------------------------------------------------//
 
+	float residual_delay_error = 0.0;
 	if (instrument->useRgc)
 	{
-		if (! instrument->rangeTracker.SetInstrument(instrument))
+		if (! instrument->rangeTracker.SetInstrument(instrument,
+			&residual_delay_error))
 		{
 			fprintf(stderr,
 			"LocateSlices: error setting instrument using range tracker\n");
@@ -121,7 +123,8 @@ LocateSlices(
 
 	if (instrument->useDtc)
 	{
-		if (! instrument->dopplerTracker.SetInstrument(instrument))
+		if (! instrument->dopplerTracker.SetInstrument(instrument,
+			residual_delay_error))
 		{
 			fprintf(stderr,
 			"LocateSlices: error setting instrument using Doppler tracker\n");
