@@ -17,7 +17,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	l00FrameReady(0), _pulseNumber(0)
+:	l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -209,7 +209,7 @@ InstrumentSim::ScatSim(
 	// update the level 0.0 frame //
 	//----------------------------//
 
-	if (_pulseNumber == 0)
+	if (_spotNumber == 0)
 	{
 		l00FrameReady = 0;
 		l00Frame.time = time;
@@ -225,18 +225,18 @@ InstrumentSim::ScatSim(
 		l00Frame.velY = orbit_state->vsat.get(1);
 		l00Frame.velZ = orbit_state->vsat.get(2);
 	}
-	l00Frame.antennaPosition[_pulseNumber] = antenna->azimuthAngle;
-	l00Frame.sigma0[_pulseNumber] = value;
-	_pulseNumber++;
+	l00Frame.antennaPosition[_spotNumber] = antenna->azimuthAngle;
+	l00Frame.sigma0[_spotNumber] = value;
+	_spotNumber++;
 
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
-	if (_pulseNumber >= PULSES_PER_L00_FRAME)
+	if (_spotNumber >= SPOTS_PER_L00_FRAME)
 	{
 		l00FrameReady = 1;	// indicate frame is ready
-		_pulseNumber = 0;	// prepare to start a new frame
+		_spotNumber = 0;	// prepare to start a new frame
 	}
 
 	return(1);

@@ -16,8 +16,8 @@ static const char rcs_id_l10frame_h[] =
 //======================================================================
 
 #define L10_FRAME_TOP			44
-#define PULSES_PER_L10_FRAME	10
-#define L10_FRAME_SIZE			(L10_FRAME_TOP+PULSES_PER_L10_FRAME*8)
+#define SPOTS_PER_L10_FRAME		10
+#define L10_FRAME_SIZE			(L10_FRAME_TOP+SPOTS_PER_L10_FRAME*8)
 
 //======================================================================
 // CLASS
@@ -44,6 +44,7 @@ public:
 	//-------------------//
 
 	int		Pack(char* buffer);
+	int		Unpack(char* buffer);
 
 	//-------------------//
 	// product variables //
@@ -65,11 +66,11 @@ public:
 
 	// antenna position
 
-	float		antennaPosition[PULSES_PER_L10_FRAME];
+	float		antennaPosition[SPOTS_PER_L10_FRAME];
 
 	// sigma-0's
 
-	float		sigma0[PULSES_PER_L10_FRAME];
+	float		sigma0[SPOTS_PER_L10_FRAME];
 };
 
 #endif

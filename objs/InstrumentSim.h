@@ -84,7 +84,7 @@ protected:
 	// level 0 frame information //
 	//---------------------------//
 
-	int			_pulseNumber;
+	int			_spotNumber;
 };
 
 #endif

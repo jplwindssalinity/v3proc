@@ -69,12 +69,66 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&velZ, size);
 	idx += size;
 
-	size = sizeof(float) * PULSES_PER_L10_FRAME;
+	size = sizeof(float) * SPOTS_PER_L10_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
-	size = sizeof(float) * PULSES_PER_L10_FRAME;
+	size = sizeof(float) * SPOTS_PER_L10_FRAME;
 	memcpy((void *)(buffer + idx), (void *)sigma0, size);
+	idx += size;
+
+	return(idx);
+}
+
+//------------------//
+// L10Frame::Unpack //
+//------------------//
+
+int
+L10Frame::Unpack(
+	char*	buffer)
+{
+	int idx = 0;
+	int size;
+
+	size = sizeof(double);
+	memcpy((void *)&time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float);
+	memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcX, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcY, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&gcZ, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velX, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velY, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&velZ, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * SPOTS_PER_L10_FRAME;
+	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * SPOTS_PER_L10_FRAME;
+	memcpy((void *)sigma0, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);
