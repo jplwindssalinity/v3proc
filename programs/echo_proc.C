@@ -145,7 +145,7 @@ int ExtractAntSpinRateDnPer99(TlmHdfFile* l1File, int32* sdsIDs,
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
 ArgInfo leap_second_table_arg = LEAP_SECOND_TABLE_ARG;
 
-const char* usage_array[] = { "[ -cg ]", "[ -b l1b_file ]",
+const char* usage_array[] = { "[ -cgo ]", "[ -b l1b_file ]",
     "<ins_config_file>", "<l1a_file>", "<echo_file>", 0 };
 
 //--------------//
