@@ -199,7 +199,7 @@ main(
 	      meas=spot->GetHead();              
               rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&first_idx);
 	      meas=spot->GetTail();              
-              rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&first_idx);
+              rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&last_idx);
 
 	      int num_missing_guards=0;
               if(first_idx>0) num_missing_guards++;
