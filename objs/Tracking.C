@@ -443,7 +443,7 @@ TrackerBase<T>::WriteHex(
 	// terms //
 	//-------//
 
-	unsigned int array_size = 3 * DEFAULT_STEPS * sizeof(T);
+	unsigned int array_size = 3 * _steps * sizeof(T);
 	unsigned char* term_array = (unsigned char *)malloc(array_size);
 	if (term_array == NULL)
 		return(0);
@@ -451,7 +451,7 @@ TrackerBase<T>::WriteHex(
 	unsigned int bytes = 0;
 	for (int term = 0; term < 3; term++)
 	{
-		for (int step = 0; step < DEFAULT_STEPS; step++)
+		for (unsigned int step = 0; step < _steps; step++)
 		{
 			memcpy(term_array + bytes, (*(_termArray + step) + term),
 				sizeof(T));
@@ -522,6 +522,17 @@ TrackerBase<T>::ReadHex(
 	if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
 		return(0);
 
+	//----------//
+	// allocate //
+	//----------//
+
+	_steps = DEFAULT_STEPS;
+	if (! Allocate(_steps))
+	{
+		fclose(fp);
+		return(0);
+	}
+
 	//-------//
 	// scale //
 	//-------//
@@ -546,7 +557,7 @@ TrackerBase<T>::ReadHex(
 	// terms //
 	//-------//
 
-	unsigned int array_size = 3 * DEFAULT_STEPS * sizeof(T);
+	unsigned int array_size = 3 * _steps * sizeof(T);
 	unsigned char* term_array = (unsigned char *)malloc(array_size);
 	if (term_array == NULL)
 		return(0);
@@ -559,7 +570,7 @@ TrackerBase<T>::ReadHex(
 	unsigned int bytes = 0;
 	for (int term = 0; term < 3; term++)
 	{
-		for (int step = 0; step < DEFAULT_STEPS; step++)
+		for (unsigned int step = 0; step < _steps; step++)
 		{
 			memcpy((*(_termArray + step) + term), term_array + bytes,
 				sizeof(T));
@@ -1072,7 +1083,7 @@ write_hex(
 	unsigned short* ptr = (unsigned short *)buffer;
 	for (int i = 0; i < words; i++)
 	{
-		fprintf(fp, "%hx\n", *(ptr + i));
+		fprintf(fp, "%0hx\n", *(ptr + i));
 	}
 	return(1);
 }
