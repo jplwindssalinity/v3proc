@@ -11,12 +11,14 @@ CPPFLAGS =		-g -ptr. +w
 SYSLIBS =		-lm
 
 OBJS = \
+	SimControl.o \
 	Misc.o \
 	List.o \
 	ConfigList.o \
 	GMF.o \
 	OrbitSim.o \
-	InstrumentSim.o
+	SimConfig.o \
+	Instrument.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -55,12 +57,15 @@ $(TARGET_LIB):	$(OBJS)
 %.h: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v
 
-ConfigList.o:	ConfigList.h ConfigList.C
-List.o:			List.h List.C
-Misc.o:			Misc.h Misc.C
+ConfigList.o:	ConfigList.C ConfigList.h
 GMF.o:			GMF.C GMF.h
+Instrument.o:	Instrument.C Instrument.h
+List.o:			List.C List.h
+Misc.o:			Misc.C Misc.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h
-InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h
+SimConfig.o:	SimConfig.C SimConfig.h SimControl.h ConfigList.h
+SimControl.o:	SimControl.C SimControl.h ConfigList.h
 
 ConfigList.h:	List.h
-InstrumentSim.h:	ConfigList.h
+SimConfig.h:	ConfigList.h SimControl.h Instrument.h OrbitSim.h
+SimControl.h:	Instrument.h OrbitSim.h
