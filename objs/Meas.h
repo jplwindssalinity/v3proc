@@ -68,6 +68,12 @@ public:
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
 	float		estimatedKp;
+
+	//------------------------//
+	// not to be written out! //
+	//------------------------//
+
+	long		offset;				// byte offset in file
 };
 
 //======================================================================

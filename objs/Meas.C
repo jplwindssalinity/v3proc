@@ -21,7 +21,7 @@ static const char rcs_id_measurement_c[] =
 
 Meas::Meas()
 :	value(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
-	estimatedKp(1.0)
+	estimatedKp(1.0), offset(0)
 {
 	return;
 }
@@ -61,6 +61,7 @@ Meas::Read(
 	FILE*	fp)
 {
 	FreeContents();
+	offset = ftell(fp);
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
