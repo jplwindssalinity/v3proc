@@ -33,7 +33,7 @@ Instrument::Instrument()
 :	time(0.0), instrumentTicks(0), orbitTicks(0), commandedDoppler(0.0),
 	commandedRxGateDelay(0.0), commandedRxGateWidth(0.0), systemLoss(0.0),
 	transmitPower(0.0), echo_receiverGain(0.0), noise_receiverGain(0.0),
-	chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
+	orbitTicksPerOrbit(0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
 	systemTemperature(0.0), baseTransmitFreq(0.0), transmitFreq(0.0),
 	scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
 	guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
@@ -154,6 +154,18 @@ Instrument::GetSliceFreqBw(
 	}
 
 	return(1);
+}
+
+//---------------------------//
+// Instrument::OrbitFraction //
+//---------------------------//
+
+double
+Instrument::OrbitFraction()
+{
+	double frac = (double)(orbitTicks % orbitTicksPerOrbit) /
+		(double)orbitTicksPerOrbit;
+	return(frac);
 }
 
 //------------------------------//

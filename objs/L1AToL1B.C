@@ -129,7 +129,7 @@ L10ToL15::Convert(
 			//-------------------------------------------------------------//
 			// command the range delay, range width, and Doppler frequency //
 			//-------------------------------------------------------------//
- 
+
 			SetRangeAndDoppler(spacecraft, instrument);
 
 			//---------------------//
@@ -180,10 +180,7 @@ L10ToL15::Convert(
 				float k_factor=1.0;
 				if (useKfactor)
 				{
-				       float orbit_position=
-					 (instrument->time - 
-					 instrument->GetEqxTime())/
-					 spacecraft->orbitPeriod;
+					float orbit_position = instrument->OrbitFraction();
 
 					k_factor=kfactorTable.RetrieveByRelativeSliceNumber(
 						instrument->antenna.currentBeamIdx,
@@ -216,8 +213,8 @@ L10ToL15::Convert(
 
 				total_slice_idx++;
 				sliceno++;
-				if(l10->frame.slicesPerSpot%2==0 && sliceno==0)
-				  sliceno++;
+				if (l10->frame.slicesPerSpot % 2 == 0 && sliceno == 0)
+					sliceno++;
 			}
 
 			l15->frame.spotList.Append(meas_spot);

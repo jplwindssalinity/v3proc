@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
@@ -71,8 +71,3 @@ static const double golden_c = (3.0 - sqrt(5.0)) / 2.0;
 static const double golden_r = 1.0 - golden_c;
 
 #endif
-
-
-
-
-

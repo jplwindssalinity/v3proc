@@ -27,28 +27,28 @@ static const char rcs_id_spacecraft_h[] =
 //		The SpacecraftEvent object contains an spacecraft event time
 //		and event ID.
 //======================================================================
- 
+
 class SpacecraftEvent
 {
 public:
- 
+
 	//-------//
 	// enums //
 	//-------//
- 
+
 	enum SpacecraftEventE { NONE, UNKNOWN, UPDATE_STATE, EQUATOR_CROSSING };
- 
+
 	//--------------//
 	// construction //
 	//--------------//
- 
+
 	SpacecraftEvent();
 	~SpacecraftEvent();
- 
+
 	//-----------//
 	// variables //
 	//-----------//
- 
+
 	SpacecraftEventE	eventId;
 	double				time;
 };
@@ -72,27 +72,13 @@ public:
 
 	Spacecraft();
 	~Spacecraft();
-        int   SetOrbitPeriod( double semi_major_axis, double eccentricity,
-			      double inclination);
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	double                  orbitPeriod;
 	OrbitState		orbitState;
 	Attitude		attitude;
 };
 
 #endif
-
-
-
-
-
-
-
-
-
-
-

@@ -153,13 +153,13 @@ InstrumentSim::SetMeasurements(
 			    wv.spd = 0.0;
 			    wv.dir = 0.0;
 			  }
-			
+
 			//-------------------------------------------------------------------//
 			// Get the Kpm value appropriate for the current beam and wind speed //
 			//-------------------------------------------------------------------//
-		  
+
 			double Kpm = GetKpm(instrument,&wv);
-		      
+
 			//--------------------------------//
 			// convert wind vector to sigma-0 //
 			//--------------------------------//
@@ -214,13 +214,11 @@ InstrumentSim::SetMeasurements(
 
 		if (useKfactor)
 		{
-		        float orbit_position=
-			  (instrument->time - instrument->GetEqxTime())/
-			  spacecraft->orbitPeriod;
+			float orbit_position = instrument->OrbitFraction();
 
 			Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
 				instrument->antenna.currentBeamIdx,
-				instrument->antenna.azimuthAngle, 
+				instrument->antenna.azimuthAngle,
 				orbit_position, sliceno);
 		}
 
@@ -400,13 +398,11 @@ InstrumentSim::ScatSim(
 		int sliceno = 0;
 		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-		        float orbit_position=
-		          (instrument->time - instrument->GetEqxTime())/
-		          spacecraft->orbitPeriod;
+			float orbit_position = instrument->OrbitFraction();
 
 			if (!xTable.AddEntry(slice->XK,
 				instrument->antenna.currentBeamIdx,
-				instrument->antenna.azimuthAngle, 
+				instrument->antenna.azimuthAngle,
 				orbit_position, sliceno))
 			{
 				return(0);
@@ -462,7 +458,7 @@ SetRangeAndDoppler(
 	// command the rx gate width and delay //
 	//-------------------------------------//
 
-	float residual_delay;
+	float residual_delay = 0.0;
 	if (beam->useRangeTracker)
 	{
 		beam->rangeTracker.SetInstrument(instrument, &residual_delay);
@@ -490,23 +486,7 @@ SetRangeAndDoppler(
 
 	if (beam->useDopplerTracker)
 	{
-		unsigned short doppler_step =
-			beam->dopplerTracker.OrbitTicksToDopplerStep(instrument->orbitTicks,
-			instrument->orbitTicksPerPeriod);
-		unsigned int encoder = antenna->GetEncoderValue();
-		unsigned int encoder_n = antenna->GetEncoderN();
-
-		float doppler;
-
-		if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step,
-			encoder, encoder_n, &doppler, instrument->chirpRate,
-			residual_delay))
-		{
-			fprintf(stderr, "SetRangeAndDoppler: error using DTC\n");
-			return(0);
-		}
-		instrument->commandedDoppler =
-			beam->dopplerTracker.QuantizeFrequency(doppler);
+		beam->dopplerTracker.SetInstrument(instrument, residual_delay);
 	}
 	else
 	{

@@ -133,6 +133,8 @@ public:
 						float* doppler, float chirp_rate = 0.0,
 						float residual_delay = 0.0);
 	float			QuantizeFrequency(float frequency);
+	int				SetInstrument(Instrument* instrument,
+						float residual_delay);
 	int				Set(double** terms);
 
 	//--------------//

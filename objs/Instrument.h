@@ -81,10 +81,11 @@ public:
 	int			SetTime(double new_time);
 	int			SetCommandedDoppler(float commanded_doppler);
 	int			SetEqxTime(double eqx_time);
-        double                  GetEqxTime(){return(_eqxTime);}
+	double		GetEqxTime() { return(_eqxTime); };
 	float		GetTotalSignalBandwidth();
 	int			GetTotalSliceCount();
 	int			GetSliceFreqBw(int slice_idx, float* f1, float* bw);
+	double		OrbitFraction();
 
 	//-----------//
 	// functions //
@@ -107,7 +108,6 @@ public:
 
 	unsigned int	instrumentTicks;		// 32 Hz ticks
 	unsigned int	orbitTicks;				// 32 Hz ticks
-	unsigned int	orbitTicksPerPeriod;	// ticks per one orbit
 	float			commandedDoppler;		// Hz freq added to base xmit
 	float			commandedRxGateDelay;	// sec
 	float			commandedRxGateWidth;	// sec
@@ -124,6 +124,8 @@ public:
 	//-----------------//
 	// generally fixed //
 	//-----------------//
+
+	unsigned int	orbitTicksPerOrbit;	// ticks per one orbit
 
 	float		chirpRate;				// Hz/sec
 	float		chirpStartM;			// Hz/sec

@@ -177,7 +177,7 @@ RangeTracker::SetInstrument(
  
 	unsigned short range_step =
 		beam->rangeTracker.OrbitTicksToRangeStep(instrument->orbitTicks,
-		instrument->orbitTicksPerPeriod);
+		instrument->orbitTicksPerOrbit);
 	unsigned int encoder = antenna->GetEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
  
@@ -508,6 +508,38 @@ DopplerTracker::QuantizeFrequency(
 	float qdoppler = (float)doppler_dn * DOPPLER_TRACKING_RESOLUTION;
 
 	return(qdoppler);
+}
+
+//-------------------------------//
+// DopplerTracker::SetInstrument //
+//-------------------------------//
+
+int
+DopplerTracker::SetInstrument(
+	Instrument*		instrument,
+	float			residual_delay)
+{
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+
+	unsigned short doppler_step =
+		beam->dopplerTracker.OrbitTicksToDopplerStep(instrument->orbitTicks,
+		instrument->orbitTicksPerOrbit);
+	unsigned int encoder = antenna->GetEncoderValue();
+	unsigned int encoder_n = antenna->GetEncoderN();
+ 
+	float doppler;
+ 
+	if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step, encoder,
+		encoder_n, &doppler, instrument->chirpRate, residual_delay))
+	{
+		fprintf(stderr, "SetInstrument: error using DTC\n");
+		return(0);
+	}
+	instrument->commandedDoppler =
+		beam->dopplerTracker.QuantizeFrequency(doppler);
+
+	return(1);
 }
 
 //---------------------//

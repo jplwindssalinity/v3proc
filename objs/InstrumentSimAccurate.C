@@ -22,7 +22,7 @@ static const char rcs_id_instrumentsimaccurate_c[] =
 //=======================//
 
 InstrumentSimAccurate::InstrumentSimAccurate()
-  : numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0)
+:	numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0)
 {
 	return;
 }
@@ -68,14 +68,14 @@ InstrumentSimAccurate::SetMeasurements(
 		  //-----------------//
 		  // get wind vector //
 		  //-----------------//
-		  
+
 		  WindVector wv;
 		  if (! windfield->InterpolatedWindVector(lon_lat, &wv))
 		    {
 		      wv.spd = 0.0;
 		      wv.dir = 0.0;
 		    }
-		  
+
 		  //--------------------------------//
 		  // convert wind vector to sigma-0 //
 		  //--------------------------------//
@@ -84,7 +84,7 @@ InstrumentSimAccurate::SetMeasurements(
 		  // the s/c (the opposite direction as the look vector)
 		  float chi = wv.dir - meas->eastAzimuth + pi;
 
-                
+
 		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 					    chi, &sigma0);
 		}
@@ -185,9 +185,7 @@ InstrumentSimAccurate::ScatSim(
 	        int sliceno=0;
 		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-		        float orbit_position=
-		        (instrument->time - instrument->GetEqxTime())/
-		        spacecraft->orbitPeriod;
+			float orbit_position = instrument->OrbitFraction();
 
 			if(!xTable.AddEntry(slice->XK,
 					instrument->antenna.currentBeamIdx,
