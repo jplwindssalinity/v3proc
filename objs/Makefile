@@ -148,7 +148,7 @@ LonLat.o: LonLat.C LonLat.h List.h
 Matrix3.o: Matrix3.C Constants.h Matrix3.h CoordinateSwitch.h Attitude.h
 Meas.o: Meas.C Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
-PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
+PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
-Wind.o: Wind.C Wind.h Constants.h Array.h Misc.h List.h
+Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h
