@@ -187,7 +187,7 @@ for (int i=0; i < _crosstrack_bins; i++)
 	l17.frame.measList = _grid[i][_ati_start];
 	l17.frame.rev = 0;
 	l17.frame.cti = i;
-	l17.frame.ati = _ati_start;
+	l17.frame.ati = _ati_offset;
 	if (l17.frame.measList.GetHead() != NULL)
 	{	// only write a L1.7 frame if it contains some measurements
 		l17.WriteDataRec();

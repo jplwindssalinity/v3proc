@@ -91,10 +91,11 @@ protected:
 	// _grid[n] is the first row in memory, and _grid[n-1] is the latest
 	// row in memory. (Using arithmetic modulus the length of the grid
 	// in memory.)
-	// ati_offset gives the number of rows that the grid in memory is
+	// _ati_offset gives the number of rows that the grid in memory is
 	// displaced from the virtual grid specifed by the ephemeris object
 	// and the grid size parameters. Thus, _ati_offset = n means that
-	// _grid[0] is actually row n of the virtual grid (also zero offset).
+	// _grid[_ati_start] is actually row n of the virtual grid
+    // (also zero offset).
 	//
 
 	int _ati_start;
