@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -186,6 +186,15 @@ main(
         exit(1);
     }
     spacecraft_sim.LocationToOrbit(0.0, 0.0, 1);
+
+    //----------------------------------------//
+    // select geodetic or geocentric attitude //
+    //----------------------------------------//
+
+    if (! ConfigAttitude(&config_list))
+    {
+        fprintf(stderr, "%s: using default attitude reference\n", command);
+    }
 
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
@@ -421,52 +430,52 @@ main(
                 qscat.sas.antenna.SetEncoderAzimuthAngle(azimuth);
                 qscat.SetOtherAzimuths(&spacecraft);
 
-				//-------------------------------------------//
-				// calculate the ideal round trip time in ms //
-				//-------------------------------------------//
+                //-------------------------------------------//
+                // calculate the ideal round trip time in ms //
+                //-------------------------------------------//
                 // for an explanation of why T_GRID and T_RC are
                 // here, check with Rod's memo
 
-				rtt[azimuth_step] = (qscat.IdealRtt(&spacecraft) + T_GRID +
+                rtt[azimuth_step] = (qscat.IdealRtt(&spacecraft) + T_GRID +
                     T_RC) * S_TO_MS;
-			}
+            }
 
-			//--------------------//
-			// fit rtt parameters //
-			//--------------------//
+            //--------------------//
+            // fit rtt parameters //
+            //--------------------//
 
-			double a, p, c;
-			azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
-			*(*(terms + orbit_step) + 0) = a;
-			*(*(terms + orbit_step) + 1) = p;
-			*(*(terms + orbit_step) + 2) = c;
-		}
+            double a, p, c;
+            azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
+            *(*(terms + orbit_step) + 0) = a;
+            *(*(terms + orbit_step) + 1) = p;
+            *(*(terms + orbit_step) + 2) = c;
+        }
 
-		//-----------//
-		// set delay //
-		//-----------//
+        //-----------//
+        // set delay //
+        //-----------//
 
-		cds_beam_info->rangeTracker.SetRoundTripTime(terms);
+        cds_beam_info->rangeTracker.SetRoundTripTime(terms);
 
-		//---------------------------------------//
-		// write out the receiver gate constants //
-		//---------------------------------------//
+        //---------------------------------------//
+        // write out the receiver gate constants //
+        //---------------------------------------//
 
-		char filename[1024];
-		sprintf(filename, "%s.%d", rgc_base, beam_idx + 1);
-		if (! cds_beam_info->rangeTracker.WriteBinary(filename))
-		{
-			fprintf(stderr, "%s: error writing RGC file %s\n", command,
-				filename);
-			exit(1);
-		}
-	}
+        char filename[1024];
+        sprintf(filename, "%s.%d", rgc_base, beam_idx + 1);
+        if (! cds_beam_info->rangeTracker.WriteBinary(filename))
+        {
+            fprintf(stderr, "%s: error writing RGC file %s\n", command,
+                filename);
+            exit(1);
+        }
+    }
 
-	//----------------//
-	// free the array //
-	//----------------//
+    //----------------//
+    // free the array //
+    //----------------//
 
-	free_array((void *)terms, 2, RANGE_ORBIT_STEPS, 3);
+    free_array((void *)terms, 2, RANGE_ORBIT_STEPS, 3);
 
-	return (0);
+    return (0);
 }
