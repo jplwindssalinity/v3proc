@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
-static const char rcs_id_accurategeom_c[] =
-	"@(#) $Id$";
+static const char rcs_id_byuxtable_c[] =
+    "@(#) $Id$";
 
 #include "BYUXTable.h"
 #include "Qscat.h"
@@ -12,108 +12,130 @@ static const char rcs_id_accurategeom_c[] =
 #include "InstrumentGeom.h"
 #include "CheckFrame.h"
 
+//----------------------//
+// BYUXTable::BYUXTable //
+//----------------------//
+
 BYUXTable::BYUXTable()
-  : xnom(NULL), a(NULL), b(NULL), c(NULL), d(NULL),
-    xnomEgg(NULL), aEgg(NULL), bEgg(NULL), cEgg(NULL), dEgg(NULL)
-    
+:   xnom(NULL), a(NULL), b(NULL), c(NULL), d(NULL), xnomEgg(NULL),
+    aEgg(NULL), bEgg(NULL), cEgg(NULL), dEgg(NULL)
 {
-  _azimuthStepSize=two_pi/BYU_AZIMUTH_BINS;
-  _numSlices=BYU_NUM_SCIENCE_SLICES+BYU_NUM_GUARD_SLICES_PER_SIDE*2;
-  return;
+    _azimuthStepSize = two_pi / BYU_AZIMUTH_BINS;
+    _numSlices = BYU_NUM_SCIENCE_SLICES + BYU_NUM_GUARD_SLICES_PER_SIDE * 2;
+    return;
 }
+
+//---------------------//
+// BYUXTable::Allocate //
+//---------------------//
 
 int
 BYUXTable::Allocate()
 {
-  xnom=(float****)make_array(sizeof(float),4,BYU_NUM_BEAMS,_numSlices,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(xnom==NULL)return(0);
+    xnom = (float****)make_array(sizeof(float), 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (xnom == NULL)
+        return(0);
 
-  a=(float****)make_array(sizeof(float),4,BYU_NUM_BEAMS,_numSlices,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(a==NULL)return(0);
+    a = (float****)make_array(sizeof(float), 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (a == NULL)
+        return(0);
 
-  b=(float****)make_array(sizeof(float),4,BYU_NUM_BEAMS,_numSlices,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(b==NULL)return(0);
+    b = (float****)make_array(sizeof(float), 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (b == NULL)
+        return(0);
 
+    c = (float****)make_array(sizeof(float), 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (c == NULL)
+        return(0);
 
-  c=(float****)make_array(sizeof(float),4,BYU_NUM_BEAMS,_numSlices,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(c==NULL)return(0);
+    d = (float****)make_array(sizeof(float), 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (d == NULL)
+        return(0);
 
+    xnomEgg = (float***)make_array(sizeof(float), 3, BYU_NUM_BEAMS,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (xnomEgg == NULL)
+        return(0);
 
-  d=(float****)make_array(sizeof(float),4,BYU_NUM_BEAMS,_numSlices,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(d==NULL)return(0);
+    aEgg = (float***)make_array(sizeof(float), 3, BYU_NUM_BEAMS,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (aEgg == NULL)
+        return(0);
 
+    bEgg = (float***)make_array(sizeof(float), 3, BYU_NUM_BEAMS,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (bEgg == NULL)
+        return(0);
 
-  xnomEgg=(float***)make_array(sizeof(float),3,BYU_NUM_BEAMS,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(xnomEgg==NULL)return(0);
+    cEgg = (float***)make_array(sizeof(float), 3, BYU_NUM_BEAMS,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (cEgg == NULL)
+        return(0);
 
+    dEgg = (float***)make_array(sizeof(float), 3, BYU_NUM_BEAMS,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    if (dEgg==NULL)
+        return(0);
 
-  aEgg=(float***)make_array(sizeof(float),3,BYU_NUM_BEAMS,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(aEgg==NULL)return(0);
-
-
-  bEgg=(float***)make_array(sizeof(float),3,BYU_NUM_BEAMS,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(bEgg==NULL)return(0);
-
-
-  cEgg=(float***)make_array(sizeof(float),3,BYU_NUM_BEAMS,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(cEgg==NULL)return(0);
-
-
-  dEgg=(float***)make_array(sizeof(float),3,BYU_NUM_BEAMS,
-            BYU_ORBIT_POSITION_BINS,BYU_AZIMUTH_BINS);
-  if(dEgg==NULL)return(0);
-
-  return(1);
+    return(1);
 }
+
+//-----------------------//
+// BYUXTable::Deallocate //
+//-----------------------//
 
 int
 BYUXTable::Deallocate()
 {
-  free_array((void*)xnom,4,BYU_NUM_BEAMS, _numSlices,
-             BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
-  free_array((void*)a,4,BYU_NUM_BEAMS, _numSlices,
-             BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
-  free_array((void*)b,4,BYU_NUM_BEAMS, _numSlices,
-             BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
-  free_array((void*)c,4,BYU_NUM_BEAMS, _numSlices,
-             BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
-  free_array((void*)d,4,BYU_NUM_BEAMS, _numSlices,
-             BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
-  free_array((void*)xnomEgg,3,BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
-	     BYU_AZIMUTH_BINS);
-  free_array((void*)aEgg,3,BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
-	     BYU_AZIMUTH_BINS);
-  free_array((void*)bEgg,3,BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
-	     BYU_AZIMUTH_BINS);
-  free_array((void*)cEgg,3,BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
-	     BYU_AZIMUTH_BINS);
-  free_array((void*)dEgg,3,BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
-	     BYU_AZIMUTH_BINS);
-  return(1);
+    free_array((void*)xnom, 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    free_array((void*)a, 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    free_array((void*)b, 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    free_array((void*)c, 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    free_array((void*)d, 4, BYU_NUM_BEAMS, _numSlices,
+        BYU_ORBIT_POSITION_BINS, BYU_AZIMUTH_BINS);
+    free_array((void*)xnomEgg, 3, BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
+        BYU_AZIMUTH_BINS);
+    free_array((void*)aEgg, 3, BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
+        BYU_AZIMUTH_BINS);
+    free_array((void*)bEgg, 3, BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
+        BYU_AZIMUTH_BINS);
+    free_array((void*)cEgg, 3, BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
+        BYU_AZIMUTH_BINS);
+    free_array((void*)dEgg, 3, BYU_NUM_BEAMS, BYU_ORBIT_POSITION_BINS,
+        BYU_AZIMUTH_BINS);
+    return(1);
 }
+
+//-----------------------//
+// BYUXTable::~BYUXTable //
+//-----------------------//
 
 BYUXTable::~BYUXTable()
 {
-  if(xnom!=NULL)
-    Deallocate();
-  xnom=NULL;
-  return;
+    if (xnom != NULL)
+        Deallocate();
+
+    xnom = NULL;
+    return;
 }
 
+//-----------------//
+// BYUXTable::Read //
+//-----------------//
 
-int 
-BYUXTable::Read( 
-       const char*         ibeam_file, 
-       const char*         obeam_file)
+int
+BYUXTable::Read(
+    const char*  ibeam_file,
+    const char*  obeam_file)
 {
   FILE* ifp[2];
   ifp[0]=fopen(ibeam_file,"r");
@@ -217,15 +239,15 @@ BYUXTable::Read(
 
           // D
 	  fscanf(ifp[bm],"%s",string);
-	  dEgg[bm][o][ah]=atof(string);  
+	  dEgg[bm][o][ah]=atof(string);
 
           //--------------------------------------//
           // Skip over Doppler and Range for now  //
           //--------------------------------------//
-          fscanf(ifp[bm],"%s",string);    
-          fscanf(ifp[bm],"%s",string);    
+          fscanf(ifp[bm],"%s",string);
+          fscanf(ifp[bm],"%s",string);
       }
-    }    
+    }
   }
   return(1);
 }
@@ -300,7 +322,7 @@ BYUXTable::GetDeltaFreq(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     CheckFrame*  cf)
-{   
+{
 
   //-----------//
   // predigest //
@@ -329,9 +351,9 @@ BYUXTable::GetDeltaFreq(
   if(!GetBYUBoresight(spacecraft,qscat,&look,&azim)){
     fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
     fprintf(stderr,"Probably means earth_intercept not found\n");
-    exit(1);		
+    exit(1);
   }
-        
+
   Vector3 nominal_boresight;
   nominal_boresight.SphericalSet(1.0,look,azim);
 
@@ -352,7 +374,7 @@ BYUXTable::GetDeltaFreq(
     {
         fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
         fprintf(stderr,"Probably means earth_intercept not found\n");
-        exit(1);		
+        exit(1);
     }
 
     //--------------------------------//
@@ -370,12 +392,12 @@ BYUXTable::GetDeltaFreq(
 }
 
 
-float 
+float
 BYUXTable::GetX(
-		int           beam_number, 
-		float         azimuth_angle, 
-		float         orbit_position, 
-		int           slice_number, 
+		int           beam_number,
+		float         azimuth_angle,
+		float         orbit_position,
+		int           slice_number,
 		float         delta_freq)
 {
   int absolute_slice_number;
@@ -409,16 +431,16 @@ BYUXTable::GetX(
   return(X);
 }
 
-float 
+float
 BYUXTable::Interpolate(
-    float**         table, 
+    float**         table,
     float           orbit_time,
     float           azimuth_angle)
-{	
+{
         // calculate floating point index
 	float fazi = azimuth_angle / _azimuthStepSize;
         float ftime = orbit_time   / BYU_TIME_INTERVAL_BETWEEN_STEPS;
-        
+
 	// calculate indices (don't worry about range)
 	int a1 = (int)fazi;
 	int t1= (int)ftime;
@@ -442,7 +464,7 @@ BYUXTable::Interpolate(
 	// wrap indices into range
         t2%=BYU_ORBIT_POSITION_BINS;
         a2%=BYU_AZIMUTH_BINS;
-        
+
 	float retval=ct1*ca1*table[t1][a1]+ct1*ca2*table[t1][a2]
 	             +ct2*ca1*table[t2][a1]+ct2*ca2*table[t2][a2];
 	return(retval);
