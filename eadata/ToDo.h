@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.2   20 Apr 1998 15:20:20   sally
 // change List to EAList
@@ -59,7 +62,7 @@ static const char rcs_id_todo_h[]="@(#) $Header$";
 class ToDo
 {
 public:
-    friend operator==(const ToDo&, const ToDo&);
+    friend int operator==(const ToDo&, const ToDo&);
 
     enum StatusE
     {
