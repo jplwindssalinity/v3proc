@@ -25,7 +25,8 @@ PROGRAMS = \
 	memfilter \
 	make_pattern \
 	see_spot \
-	vap_to_bev
+	vap_to_bev \
+	fake_vap
 
 #----------------------------------------------------------------------
 # default: make all executable programs
