@@ -74,6 +74,7 @@ void* make_array(int type_size, int ndims, ...)
 	// Initial call in the recursive allocation tree
 	void* ptr = dim_setup(0,ndims,dimsize,type_size);
 
+	free(dimsize);
 	va_end(ap);
 	return(ptr);
 }

@@ -15,6 +15,7 @@ static const char rcs_id_l15_c[] =
 //=====//
 
 L15::L15()
+:	_status(OK)
 {
 	return;
 }
