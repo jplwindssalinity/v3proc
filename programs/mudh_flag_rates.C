@@ -8,14 +8,16 @@
 //    mudh_flag_rates
 //
 // SYNOPSIS
-//    mudh_flag_rates [ -s ssmi_dir ] [ -c time ] [ -m mudh_dir ]
-//        <flag_dir> <start_rev> <end_rev> <output_base>
+//    mudh_flag_rates [ -p spd:spd ] [ -s ssmi_dir ] [ -c time ]
+//        [ -m mudh_dir ] <flag_dir> <start_rev> <end_rev>
+//        <output_base>
 //
 // DESCRIPTION
 //    Generates plots of rainflag rates on the earth for both
 //    SSM/I and QSCAT.
 //
 // OPTIONS
+//    [ -p spd:spd ]   Restrict the output to a speed range.
 //    [ -m mudh_dir ]  The location of the MUDH files.
 //    [ -s ssmi_dir ]  The location of the SSM/I irr files.
 //    [ -c time ]      Collocation time for IRR.
@@ -100,7 +102,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING         "c:m:s:"
+#define OPTSTRING         "c:m:p:s:"
 #define BIG_DIM           100
 #define QUOTE             '"'
 #define REV_DIGITS        5
@@ -126,13 +128,15 @@ template class List<AngleInterval>;
 // OPTION VARIABLES //
 //------------------//
 
+int opt_spd = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -c min ]", "[ -m mudh_dir ]",
-    "[ -s ssmi_dir ]", "<flag_dir>", "<start_rev>", "<end_rev>",
-    "<output_base>", 0 };
+    "[ -p spd:spd ]", "[ -s ssmi_dir ]", "<flag_dir>", "<start_rev>",
+    "<end_rev>", "<output_base>", 0 };
 
 unsigned long total_count[LON_BINS][LAT_BINS];
 unsigned long qscat_rain_count[LON_BINS][LAT_BINS];
@@ -162,6 +166,9 @@ main(
     char* mudh_dir = DEFAULT_MUDH_DIR;
     char* irr_dir = DEFAULT_IRR_DIR;
 
+    float min_spd = 0.0;
+    float max_spd = 0.0;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -174,6 +181,15 @@ main(
         {
         case 'm':
             mudh_dir = optarg;
+            break;
+        case 'p':
+            if (scanf(optarg, " %f:%f", &min_spd, &max_spd) != 2)
+            {
+                fprintf(stderr, "%s: error parsing speed range %s\n", command,
+                    optarg);
+                exit(1);
+            }
+            opt_spd = 1;
             break;
         case 'c':
             collocation_time = atoi(optarg);
@@ -324,6 +340,13 @@ main(
                     continue;
                 }
 
+                if (opt_spd)
+                {
+                    double spd = (double)spd_array[ati][cti] * 0.01;
+                    if (spd < min_spd || spd > max_spd)
+                        continue;
+                }
+
                 int lon_idx;
                 float lon = (float)lon_array[ati][cti] * 0.01;
                 lon_index.GetNearestIndexWrapped(lon, &lon_idx);
@@ -372,6 +395,7 @@ main(
     float qscat_out_array[LON_BINS][LAT_BINS];
     float qscat_array[LON_BINS][LAT_BINS];
     float ssmi_array[LON_BINS][LAT_BINS];
+    float dif_array[LON_BINS][LAT_BINS];
     for (int lon_idx = 0; lon_idx < LON_BINS; lon_idx++)
     {
         for (int lat_idx = 0; lat_idx < LAT_BINS; lat_idx++)
@@ -388,6 +412,8 @@ main(
                 ssmi_array[lon_idx][lat_idx] =
                     (float)ssmi_rain_count[lon_idx][lat_idx] /
                     (float)total_count[lon_idx][lat_idx];
+                dif_array[lon_idx][lat_idx] = qscat_array[lon_idx][lat_idx] -
+                    ssmi_array[lon_idx][lat_idx];
             }
             if (qscat_inner_total_count[lon_idx][lat_idx] > MIN_POINTS)
             {
@@ -432,6 +458,19 @@ main(
     fwrite(&lon_width, sizeof(int), 1, ofp);
     fwrite(&lat_width, sizeof(int), 1, ofp);
     fwrite(qscat_array, sizeof(float), LON_BINS * LAT_BINS, ofp);
+    fclose(ofp);
+
+    sprintf(filename, "%s.dif", output_base);
+    ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fwrite(&lon_width, sizeof(int), 1, ofp);
+    fwrite(&lat_width, sizeof(int), 1, ofp);
+    fwrite(dif_array, sizeof(float), LON_BINS * LAT_BINS, ofp);
     fclose(ofp);
 
     sprintf(filename, "%s.in.qscat", output_base);
