@@ -14,6 +14,7 @@ static const char rcs_id_l10tol15_h[] =
 #include "Spacecraft.h"
 #include "Instrument.h"
 #include "Ephemeris.h"
+#include "XTable.h"
 
 
 //======================================================================
@@ -48,6 +49,19 @@ public:
 
 	int		Convert(L10* l10, Spacecraft* spacecraft, Instrument* instrument, Ephemeris* ephemeris,
 				L15* l15);
+
+	XTable          kfactorTable;
+        int useKfactor;
+        // If this is nonzero the kfactor table is read in and used.
+        int outputSigma0ToStdout;
+        // Output sigma0 values to stdout? 1/0=YES/NO (format readable by xmgr)
+        
 };
 
 #endif
+
+
+
+
+
+

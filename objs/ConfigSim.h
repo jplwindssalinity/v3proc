@@ -12,8 +12,10 @@ static const char rcs_id_configsim_h[] =
 #include "SpacecraftSim.h"
 #include "InstrumentSim.h"
 #include "InstrumentSimAccurate.h"
+#include "XTable.h"
 #include "L00.h"
 #include "L10.h"
+#include "L10ToL15.h"
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
@@ -143,6 +145,10 @@ RandomVelocity* ConfigUniformRandomVelocity(const char*
 #define USE_KPC_KEYWORD					"USE_KPC"
 #define PTGR_NOISE_VARIANCE_KEYWORD		"PTGR_NOISE_VARIANCE"
 #define PTGR_NOISE_MEAN_KEYWORD			"PTGR_NOISE_MEAN"
+#define UNIFORM_SIGMA_FIELD_KEYWORD      "UNIFORM_SIGMA_FIELD"
+#define OUTPUT_PR_TO_STDOUT_KEYWORD      "OUTPUT_PR_TO_STDOUT"
+#define USE_KFACTOR_KEYWORD              "USE_KFACTOR"
+#define CREATE_XTABLE_KEYWORD            "CREATE_XTABLE"
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
@@ -156,8 +162,7 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 #define NUM_LOOK_STEPS_KEYWORD           "NUM_INTEGRATION_LOOK_STEPS_PER_SLICE"
 #define AZIMUTH_INTEGRATION_RANGE_KEYWORD "AZIMUTH_INTEGRATION_RANGE"
 #define AZIMUTH_STEP_SIZE_KEYWORD        "AZIMUTH_INTEGRATION_STEP_SIZE"
-#define UNIFORM_SIGMA_FIELD_KEYWORD      "UNIFORM_SIGMA_FIELD"
-#define OUTPUT_PR_TO_STDOUT_KEYWORD      "OUTPUT_PR_TO_STDOUT"
+
 
 int ConfigInstrumentSimAccurate(InstrumentSimAccurate* instrument_sim,
 	ConfigList* config_list);
@@ -199,6 +204,14 @@ int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
 
 int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 
+
+//-----------------//
+// XTable          //
+//-----------------//
+
+#define XTABLE_FILENAME_KEYWORD                  "XTABLE_FILENAME"
+int ConfigXTable(XTable* xTable, ConfigList* config_list, char* read_write);
+
 //-----//
 // L00 //
 //-----//
@@ -223,6 +236,13 @@ int ConfigL10(L10* l10, ConfigList* config_list);
 #define L15_FILE_KEYWORD					"L15_FILE"
 
 int ConfigL15(L15* l15, ConfigList* config_list);
+
+//---------------------//
+// L10ToL15            //
+//---------------------//
+
+#define OUTPUT_SIGMA0_TO_STDOUT_KEYWORD     "OUTPUT_SIGMA0_TO_STDOUT"
+int ConfigL10ToL15(L10ToL15* l10tol15, ConfigList* config_list);
 
 //-----//
 // L17 //

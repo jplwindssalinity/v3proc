@@ -10,9 +10,11 @@ static const char rcs_id_configsim_c[] =
 #include "InstrumentSim.h"
 #include "InstrumentSimAccurate.h"
 #include "SpacecraftSim.h"
+#include "XTable.h"
 #include "Misc.h"
 #include "L00.h"
 #include "L10.h"
+#include "L10ToL15.h"
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
@@ -604,7 +606,40 @@ ConfigInstrumentSim(
 	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD, &output_Pr_to_stdout))
 	        output_Pr_to_stdout=0; // default value
 	instrument_sim->outputPrToStdout=output_Pr_to_stdout;
+
+        int use_kfactor;
+	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
+	        use_kfactor=0; // default value
+	instrument_sim->useKfactor=use_kfactor;
+
+        int create_xtable;
+	if (! config_list->GetInt(CREATE_XTABLE_KEYWORD, &create_xtable))
+	        create_xtable=0; // default value
+	instrument_sim->createXtable=create_xtable;
+
         config_list->LogErrors(1);
+
+	/****** You cannot use and create the XTable simultaneously. ***/
+        if(create_xtable && use_kfactor){
+	  fprintf(stderr,"ConfigInstrumentSim: Cannot use kfactor AND create Xtable\n");
+          return(0);
+	}
+
+        /*** To create an X table you NEED a uniform sigma0 field. ***/
+        if(create_xtable && !uniform_sigma_field){
+	  fprintf(stderr,"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
+	  return(0);
+	} 
+    
+        if(create_xtable){
+	  if(!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
+	    return(0);
+	}
+
+        else if(use_kfactor){
+	  if(!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
+	    return(0);
+	}
 
 	return(1);
 }
@@ -801,6 +836,91 @@ ConfigBeam(
 	return(1);
 }
 
+int 
+ConfigXTable(
+	     XTable*      xTable, 
+	     ConfigList*  config_list, 
+	     char* read_write)
+{
+
+  /**** Find out if XTable is to be configured READ or WRITE ***/
+  int read=0;
+  if(strcmp(read_write,"r") == 0)  read=1;
+  else if(strcmp(read_write,"w")==0) read=0;
+  else{
+    fprintf(stderr, "ConfigXTable: Bad read_write parameter");
+    return(0);
+  }
+
+  /**** Get XTable Filename  *****/
+
+  char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
+  if (xtable_filename == NULL)
+    return(0);
+  xTable->SetFilename(xtable_filename);
+
+
+  /**** Read header parameters for XTable object ****/
+  
+  int num_beams;
+  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
+    return(0);
+
+  float pri_per_beam, antenna_spin_rate;
+  if(! config_list->GetFloat(PRI_PER_BEAM_KEYWORD,&pri_per_beam))
+    return(0);  
+  if(! config_list->GetFloat(SPIN_RATE_KEYWORD,&antenna_spin_rate))
+    return(0);  
+  int num_azimuths=int((60.0/antenna_spin_rate)/pri_per_beam);
+
+  int num_science_slices;
+  if(! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,&num_science_slices))
+    return(0);
+
+  int num_guard_slices_each_side;
+  if(! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,&num_guard_slices_each_side))
+    return(0);
+
+  float science_slice_bandwidth;
+  if(! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,&science_slice_bandwidth))
+    return(0);
+
+  float guard_slice_bandwidth;
+  if(! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,&guard_slice_bandwidth))
+    return(0);
+
+
+  /**** If mode is READ, read in xTable and make sure its parameters match
+        those read from the config file                               *****/
+
+  if(read){
+    if(!xTable->Read()) return(0);
+    if(!xTable->CheckHeader(num_beams,num_azimuths,num_science_slices,
+			   num_guard_slices_each_side, science_slice_bandwidth,
+			   guard_slice_bandwidth))
+      return(0);
+  }
+
+  /***** If mode is WRITE, asign xTable parameters from parameters read from
+         config file, and allocate it the arrays                         ****/
+  
+  else{
+    xTable->numBeams=num_beams;
+    xTable->numAzimuthBins=num_azimuths;
+    xTable->numScienceSlices=num_science_slices;
+    xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
+    xTable->scienceSliceBandwidth=science_slice_bandwidth;
+    xTable->guardSliceBandwidth=guard_slice_bandwidth;
+    xTable->numSlices=xTable->numScienceSlices+2*xTable->numGuardSlicesEachSide;
+    if (!xTable->Allocate()){
+      fprintf(stderr,"Error allocating Xtable object/n");
+      return(0);
+    }   
+    
+  }
+
+  return(1);
+}
 //-----------//
 // ConfigL00 //
 //-----------//
@@ -938,6 +1058,36 @@ ConfigL15(
 	return(1);
 }
 
+//----------------//
+// ConfigL10ToL15 //
+//----------------//
+
+int
+ConfigL10ToL15(
+	L10ToL15*			l10tol15,
+	ConfigList*		config_list){
+
+        config_list->LogErrors(0);
+        int output_sigma0_to_stdout;
+	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD, &output_sigma0_to_stdout))
+	        output_sigma0_to_stdout=0; // default value
+	l10tol15->outputSigma0ToStdout=output_sigma0_to_stdout;
+
+        int use_kfactor;
+	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
+	        use_kfactor=0; // default value
+	l10tol15->useKfactor=use_kfactor;
+
+
+        if(use_kfactor){
+	  if(!ConfigXTable(&(l10tol15->kfactorTable),config_list,"r"))
+	    return(0);
+	}
+
+	config_list->LogErrors(1);
+
+	return(1);
+}
 //-----------//
 // ConfigL17 //
 //-----------//

@@ -17,6 +17,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "L00.h"
 #include "Spacecraft.h"
 #include "Distributions.h"
+#include "XTable.h"
 
 //======================================================================
 // CLASSES
@@ -72,7 +73,10 @@ public:
 
 	Gaussian		ptgrNoise;
 	double			startTime;
-	AntennaSim		antennaSim;		// the antenna simulator
+	AntennaSim		antennaSim;	       // the antenna simulator
+
+        XTable                  kfactorTable;
+        XTable                  xTable;
 
 	//---------------------------//
 	// level 0 frame information //
@@ -91,6 +95,12 @@ public:
         // If outputPrToStdout is nonzero then a table of Pr values is written
         // to stdout.
 
+        int useKfactor;
+        // If this is nonzero the kfactor table is read in and used.
+
+        int createXtable;
+        // If this is nonzero an  X table is created.
+
 protected:
 
 	//-----------//
@@ -107,3 +117,5 @@ protected:
 };
 
 #endif
+
+

@@ -20,7 +20,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	startTime(0.0), l00FrameReady(0), uniformSigmaField(0), outputPrToStdout(0), _spotNumber(0)
+:	startTime(0.0), l00FrameReady(0), uniformSigmaField(0), outputPrToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
 {
 	return;
 }
@@ -119,7 +119,8 @@ InstrumentSim::SetMeasurements(
 	//-------------------------//
 	// for each measurement... //
 	//-------------------------//
-
+        
+        int  sliceno=0;
 	for (Meas* meas = meas_spot->GetHead(); meas;
 		meas = meas_spot->GetNext())
 	{
@@ -164,19 +165,19 @@ InstrumentSim::SetMeasurements(
                 else {
 		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 			chi, &sigma0);
+		
+		  
+		  //--------------------------------------------------------------------//
+		  // Fuzz the sigma0 by Kpm to simulate the effects of model function
+		  // error.  The resulting sigma0 is the 'true' value.  It does not map
+		  // back to the correct wind speed for the current beam and geometry
+		  // because the model function is not perfect.
+		  // This Kpm application is UNCORRELATED.
+		  //--------------------------------------------------------------------//
+
+		  Gaussian rv(Kpm,1.0);
+		  sigma0 *= rv.GetNumber();
 		}
-
-	    //--------------------------------------------------------------------//
-   		// Fuzz the sigma0 by Kpm to simulate the effects of model function
-		// error.  The resulting sigma0 is the 'true' value.  It does not map
-		// back to the correct wind speed for the current beam and geometry
-		// because the model function is not perfect.
-		// This Kpm application is UNCORRELATED.
-    	//--------------------------------------------------------------------//
-
-	    Gaussian rv(Kpm,1.0);
-    	sigma0 *= rv.GetNumber();
-
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
@@ -191,13 +192,21 @@ InstrumentSim::SetMeasurements(
 		// convert Sigma0 to Power //
 		//-------------------------//
 
-		/************* FOR NOW Kfactor=1.0 *********/
+                /**** Kfactor: either 1.0 or taken from table ***/
 		float Kfactor=1.0;
+		if(useKfactor) 
+		  Kfactor=kfactorTable.RetrieveBySliceNumber(
+				       instrument->antenna.currentBeamIdx,
+				       instrument->antenna.azimuthAngle,
+				       sliceno);
+
+
 		if(! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
 				Kfactor, sigma0, &(meas->value)))
 		{
 			return(0);
 		}
+		sliceno++;
 	}
 
 	return(1);
@@ -342,6 +351,23 @@ InstrumentSim::ScatSim(
 			printf("\n");
 	}
 
+        //-----------------------------------------------//
+        //  Output X values to X table if enabled        //
+        //-----------------------------------------------//
+
+	if(createXtable)
+	{
+	        int sliceno=0;
+		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		{
+			xTable.AddEntry(slice->value,
+					instrument->antenna.currentBeamIdx,
+					instrument->antenna.azimuthAngle,
+					sliceno);
+			sliceno++;
+		}
+
+	}
 
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
