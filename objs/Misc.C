@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -312,7 +312,7 @@ downhill_simplex(
 
         if (nfunk >= 1000)
         {
-            printf("Error: too many function calls in downhill_simplex\n");
+//            printf("Error: too many function calls in downhill_simplex\n");
             return(0);
         }
         nfunk += 2;
@@ -365,6 +365,7 @@ downhill_simplex(
 //--------//
 // amotry //
 //--------//
+// function used by downhill simplex
 
 double
 amotry(
@@ -436,24 +437,47 @@ float median(
   return(retval);
 }
 
-float mean(const float* array, int num_elements){
-  float retval = 0.0;
-  for (int c = 0;c<num_elements;c++) retval+= array[c];
-  retval = retval/num_elements;
-  return(retval);
+//------//
+// mean //
+//------//
+
+float
+mean(
+    const float*  array,
+    int           num_elements)
+{
+    float retval = 0.0;
+    for (int c = 0; c < num_elements; c++)
+        retval += array[c];
+    retval = retval / num_elements;
+    return(retval);
 }
 
-void sort_increasing(float* array, int num_elements){
-  int idx = 0;
-  while(idx<num_elements-1){
-    if(array[idx]<= array[idx+1]) idx++;
-    else{
-      float tmp = array[idx+1];
-      array[idx+1] = array[idx];
-      array[idx] = tmp;
-      idx = 0;
+//-----------------//
+// sort_increasing //
+//-----------------//
+
+void
+sort_increasing(
+    float*  array,
+    int     num_elements)
+{
+    int idx = 0;
+    while (idx < num_elements - 1)
+    {
+        if (array[idx] <= array[idx+1])
+        {
+            idx++;
+        }
+        else
+        {
+            float tmp = array[idx+1];
+            array[idx+1] = array[idx];
+            array[idx] = tmp;
+            idx = 0;
+        }
     }
-  }
+    return;
 }
 
 //===============================================================//
@@ -461,7 +485,11 @@ void sort_increasing(float* array, int num_elements){
 // Also creates an index array (keyed off the first) if requested.
 //===============================================================//
 
-void insertion_sort(int N, float* a, int** indx)
+void
+insertion_sort(
+    int     N,
+    float*  a,
+    int**   indx)
 {
     float aa;
     int ii;
@@ -513,8 +541,16 @@ void insertion_sort(int N, float* a, int** indx)
     }
 }
 
-int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
+//----------------//
+// rel_to_abs_idx //
+//----------------//
 
+int
+rel_to_abs_idx(
+    int   rel_idx,
+    int   array_size,
+    int*  abs_idx)
+{
   //===================================================//
   // ODD ARRAY SIZE CASE                               //
   //===================================================//
@@ -540,8 +576,16 @@ int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
   return(1);
 }
 
-int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
+//----------------//
+// abs_to_rel_idx //
+//----------------//
 
+int
+abs_to_rel_idx(
+    int   abs_idx,
+    int   array_size,
+    int*  rel_idx)
+{
   //===================================================//
   // ODD ARRAY SIZE CASE                               //
   //===================================================//
@@ -566,8 +610,8 @@ int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
 
 float
 quantize(
-    float    value,
-    float    resolution)
+    float  value,
+    float  resolution)
 {
     double idx = floor(value / resolution + 0.5);
     float q_value = idx * resolution;
@@ -582,8 +626,8 @@ quantize(
 
 float
 wrap_angle_near(
-    float        angle,
-    float        target)
+    float  angle,
+    float  target)
 {
     // very simple and stupid algorithm
     while (angle - target > pi)
@@ -598,14 +642,13 @@ wrap_angle_near(
 //------------//
 // angle_diff //
 //------------//
-
-//
 // Computes the positive difference between two angles with the result
 // always less than pi.
-//
 
-float angle_diff(float ang1, float ang2)
-
+float
+angle_diff(
+    float  ang1,
+    float  ang2)
 {
     while (ang1 < 0) ang1 += two_pi;
     while (ang1 > two_pi) ang1 -= two_pi;
@@ -645,9 +688,12 @@ float angle_diff(float ang1, float ang2)
 // time_str = pointer to space for the date/time string that is determined
 //            to correspond to time (given the epoch correspondence).
 
-int set_character_time(double time, double epoch_time, char* epoch_time_str,
-                       char* time_str)
-
+int
+set_character_time(
+    double  time,
+    double  epoch_time,
+    char*   epoch_time_str,
+    char*   time_str)
 {
   double etime = asc2sec(epoch_time_str);
   sec2asc(etime + time - epoch_time, time_str);
@@ -1326,4 +1372,74 @@ fread_f77(
     return(nitems);
   }
   return(nitems);
+}
+
+//-----------------------//
+// golden_section_search //
+//-----------------------//
+// A general purpose, one-dimensional golden section search which
+// finds the maxima of a function if it is between the two starting
+// values.
+
+int
+golden_section_search(
+    double   min_x,
+    double   max_x,
+    double   x_tol,
+    double   (*funk)(double x, char** arguments),
+    char**   arguments,
+    double*  final_x,
+    double*  final_y)
+{
+    static const double golden_c = (3.0 - sqrt(5.0)) / 2.0;
+    static const double golden_r = 1.0 - golden_c;
+
+    //--------------------------//
+    // initialize search values //
+    //--------------------------//
+
+    double ax = min_x;
+    double cx = max_x;
+    double bx = ax + (cx - ax) * golden_r;
+
+    double x0, x1, x2, x3;
+    x0 = ax;
+    x1 = bx;
+    x2 = bx - golden_c * (bx - ax);
+    x3 = cx;
+
+    double f1 = (*funk)(x1, arguments);
+    double f2 = (*funk)(x2, arguments);
+
+    while (x3 - x0 > x_tol)
+    {
+        if (f2 > f1)
+        {
+            x0 = x1;
+            x1 = x2;
+            x2 = x2 + golden_c * (x3 - x2);
+            f1 = f2;
+            f2 = (*funk)(x2, arguments);
+        }
+        else
+        {
+            x3 = x2;
+            x2 = x1;
+            x1 = x1 - golden_c * (x1 - x0);
+            f2 = f1;
+            f1 = (*funk)(x1, arguments);
+        }
+    }
+
+    if (f1 > f2)
+    {
+        *final_x = x1;
+        *final_y = f1;
+    }
+    else
+    {
+        *final_x = x2;
+        *final_y = f2;
+    }
+    return(1);
 }
