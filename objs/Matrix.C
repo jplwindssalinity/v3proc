@@ -765,3 +765,178 @@ Matrix::SVDFit(
 
 	return;
 }
+
+/*
+//----------------------//
+// Matrix::NonlinearFit //
+//----------------------//
+
+int
+Matrix::NonlinearFit(
+	float*		x,
+	float*		y,
+	float*		std_dev,
+	int			number_of_points,
+	Vector*		coefficients,
+	int			number_of_coef,
+	Matrix*		covar,
+	Matrix*		alpha,
+	void		(*funcs)())
+{
+	//-------------------------------------//
+	// create needed matricies and vectors //
+	//-------------------------------------//
+
+	Matrix oneda;
+	oneda.Allocate(1, mfit);
+
+	Vector atry, da, beta;
+	atry.Allocate(number_of_coef);
+	da.Allocate(number_of_coef);
+	beta.Allocate(number_of_coef);
+
+	//-----------------------------//
+	// initialize convergance loop //
+	//-----------------------------//
+
+	float lambda = 0.001;
+	Marquardt();
+	old_chi_2 = chi_2;
+
+	float loop_old_chi_2 = 0.0;
+	int small_decrease_count = 0;
+	do
+	{
+		for (int j = 0; j < mfit; j++)
+		{
+			for (int k = 0; k < mfit; k++)
+				covar[j][k] = alpha[j][k];
+			covar[j][j] = alpha[j][j] * (1.0 + *lambda);
+			oneda[j][0] = beta[j];
+		}
+
+		covar = covar.Inverse();
+		oneda = covar * oneda;
+
+		for (int j = 0; j < mfit; j++)
+			da[j] = oneda[j][0];
+
+		for (int j = 0; j < number_of_coef; j++)
+			atry[j] = a[j];
+
+		for (int j = 0; j < mfit; j++)
+		{
+			atry[lista[j]] = a[lista[j]] + da[j];
+		}
+
+		Marquardt();
+
+		if (*chi_2 < old_chi_2)
+		{
+			*lambda *= 0.1;
+			old_chi_2 = (*chi_2);
+			for (int j = 0; j < mfit; j++)
+			{
+				for (int k = 0; k < mfit; k++)
+				{
+					alpha[j][k] = covar[j][k];
+				}
+				beta[j] = da[j];
+				a[lista[j]] = atry[lista[j]];
+			}
+		}
+		else
+		{
+			lambda *= 10.0;
+			chi_2 = old_chi_2;
+		}
+
+		//---------------------//
+		// check exit criteria //
+		//---------------------//
+
+		float dif_chi_2 = loop_old_chi_2 - chi_2;
+		if (dif_chi_2 > 0.0 && dif_chi_2 < THREHOLD_FRACTION * chi_2)
+		{
+			small_decrease_count++;
+			if (small_decrease_count >= 2)
+				break;
+		}
+		else
+		{
+			small_decrease_count = 0;
+		}
+
+		loop_old_chi_2 = chi_2;
+	} while (1);
+}
+
+//-------------------//
+// Matrix::Marquardt //
+//-------------------//
+
+int
+Matrix::Marquardt()
+{
+	Vector dyda;
+	dyda.Allocate(number_of_coef);
+
+	//---------------------------//
+	// initialize alpha and beta //
+	//---------------------------//
+
+	for (int j = 0; j < mfit; j++)
+	{
+		for (k = 0; k <= j; k++)
+		{
+			alpha[j][k] = 0.0;
+		}
+		beta[j] = 0.0;
+	}
+
+	//-----------//
+	// summation //
+	//-----------//
+
+	chi_2 = 0.0;
+	for (int i = 0; i < number_of_points; i++)
+	{
+		(*funcs)(x[i], a, &ymod, dyda, ma);
+		sig2i = 1.0 / (sig[i] * sig[i]);
+		dy = y[i] - ymod;
+		for (int j = 0; j < mfit; j++)
+		{
+			wt = dyda[lista[j]] * sig2i;
+			for (int k = 0; k <=j; k++)
+			{
+				alpha[j][k] += wt * dyda[lista[k]];
+			}
+			beta[j] += dy * wt;
+			chi_2 += dy * dy * sig2i;
+		}
+		for (int j = 1; j < mfit; j++)
+		{
+			for (int k = 0; k < j; k++)
+				alpha[k][j] = alpha[j][k];
+		}
+	}
+	dyda.Free();
+
+	return(1);
+}
+
+//-----------------//
+// Matrix::Inverse //
+//-----------------//
+
+int
+Matrix::Inverse()
+{
+	Matrix u, v;
+	Vector w;
+
+	if (! SVD(&u, &v, &w))
+		return(0);
+
+}
+*/

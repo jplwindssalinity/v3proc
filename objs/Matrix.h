@@ -95,6 +95,14 @@ public:
 				Vector* coefficients, int number_of_coef, Matrix* u, Matrix* v,
 				Vector* w);
 
+/*
+	int		NonlinearFit(float* x, float* y, float* std_dev,
+				int number_of_points, Vector* coefficients, int number_of_coef,
+				Matrix* covar, Matrix* alpha, void (*funcs)());
+	int		Marquardt();
+	int		Inverse();
+*/
+
 	//-----------//
 	// variables //
 	//-----------//
