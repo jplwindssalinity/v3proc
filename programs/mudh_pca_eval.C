@@ -585,18 +585,21 @@ main(
             QUOTE);
         fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
         fprintf(ofp, "@ legend on\n");
-        fprintf(ofp, "@ legend string 0 %cSSM/I R, MUDH R%c\n",
-            QUOTE, QUOTE);
-        fprintf(ofp, "@ legend string 1 %cSSM/I RM, MUDH R%c\n",
-            QUOTE, QUOTE);
-        fprintf(ofp, "@ legend string 2 %cSSM/I C, MUDH C%c\n",
-            QUOTE, QUOTE);
-        fprintf(ofp, "@ legend string 3 %cSSM/I CM, MUDH C%c\n",
-            QUOTE, QUOTE);
-        fprintf(ofp, "@ legend string 4 %cMUDH C, SSM/I R%c\n",
-            QUOTE, QUOTE);
-        fprintf(ofp, "@ legend string 5 %cMUDH R, SSM/I C%c\n",
-            QUOTE, QUOTE);
+        int legend_idx = 0;
+/*
+        fprintf(ofp, "@ legend string %d %cSSM/I R, MUDH R    %c\n",
+            legend_idx++, QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string %d %cSSM/I RM, MUDH R    %c\n",
+            legend_idx++, QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string %d %cSSM/I C, MUDH C    %c\n",
+            legend_idx++, QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string %d %cSSM/I CM, MUDH C    %c\n",
+            legend_idx++, QUOTE, QUOTE);
+*/
+        fprintf(ofp, "@ legend string %d %cMUDH C, SSM/I R    %c\n",
+            legend_idx++, QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string %d %cMUDH R, SSM/I C    %c\n",
+            legend_idx++, QUOTE, QUOTE);
 
         for (int prob_idx = 1; prob_idx < PROB_BINS; prob_idx++)
         {
@@ -679,9 +682,13 @@ main(
 
             if (mudh_r_percent > 50.0)
                 continue;    // don't bother
+/*
             fprintf(ofp, "%g %g %g %g %g %g %g\n", mudh_r_percent,
                 ssmi_r_mudh_r_percent_m, ssmi_mr_mudh_r_percent_m,
                 ssmi_c_mudh_c_percent_m, ssmi_cm_mudh_c_percent_m,
+                ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s);
+*/
+            fprintf(ofp, "%g %g %g\n", mudh_r_percent,
                 ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s);
         }
         fclose(ofp);
@@ -758,9 +765,9 @@ main(
                 QUOTE, QUOTE);
             fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
             fprintf(ofp, "@ legend on\n");
-            fprintf(ofp, "@ legend string 0 %cMUDH C%c\n",
+            fprintf(ofp, "@ legend string 0 %cMUDH C    %c\n",
                 QUOTE, QUOTE);
-            fprintf(ofp, "@ legend string 1 %cMUDH R%c\n",
+            fprintf(ofp, "@ legend string 1 %cMUDH R    %c\n",
                 QUOTE, QUOTE);
 
             for (int rain_idx = 0; rain_idx < IRR_BINS; rain_idx++)
