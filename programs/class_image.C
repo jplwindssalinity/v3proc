@@ -291,12 +291,12 @@ printf("%s\n", file);
         // skip the apts //
         //---------------//
 
-        fscanf(ifp, " apts");
-
         do
         {
             float lon, lat, val;
-            if (fscanf(ifp, " %g %g %g", &lon, &lat, &val) != 3)
+            if (fread((void *)&lon, sizeof(float), 1, ifp) != 1 ||
+                fread((void *)&lat, sizeof(float), 1, ifp) != 1 ||
+                fread((void *)&val, sizeof(float), 1, ifp) != 1)
             {
                 if (feof(ifp))
                     break;

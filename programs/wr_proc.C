@@ -8,17 +8,20 @@
 //    wr_proc
 //
 // SYNOPSIS
-//    wr_proc [ -f ] [ -c class_file ] [ -r rain_file ]
+//    wr_proc [ -fv ] [ -c class_file ] [ -r rain_file ]
 //        <ins_config_file> <hdf_l2a_file> <output_base>
 //
 // DESCRIPTION
 //    Performs wind retrieval and either provides information for
 //    classification or classifies.  Using the -r option indicates
 //    that you want to generate classification data.  Using the
-//    -c option indicates that you want to classify.
+//    -c option indicates that you want to classify.  The -f option
+//    indicates that you want to classify using the function form.
+//    Finally, the -v option means generate binary value files only.
 //
 // OPTIONS
 //    [ -f ]             Classify using a functional form.
+//    [ -v ]             Only output a val file.
 //    [ -c class_file ]  Input classification data.  Classify.
 //    [ -r rain_file ]   The collocated ones from Freilich.
 //
@@ -98,7 +101,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING        "fc:r:"
+#define OPTSTRING        "fvc:r:"
 #define MAX_S0_PER_ROW   3240
 #define MAX_CROSS_TRACK  76
 #define UNUSABLE         0x0001
@@ -120,7 +123,7 @@ void  check_status(HdfFile::StatusE status);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -f ]", "[ -c class_file ]",
+const char* usage_array[] = { "[ -fv ]", "[ -c class_file ]",
     "[ -r rain_file ]", "<ins_config_file>", "<hdf_l2a_file>",
     "<output_base>", 0 };
 
@@ -138,6 +141,7 @@ main(
     //------------//
 
     int opt_classify_func = 0;
+    int opt_val_only = 0;
 
     int opt_classify = 0;
     const char* class_file = NULL;
@@ -158,6 +162,9 @@ main(
         {
         case 'f':
             opt_classify_func = 1;
+            break;
+        case 'v':
+            opt_val_only = 1;
             break;
         case 'c':
             class_file = optarg;
@@ -408,7 +415,7 @@ main(
     FILE* rain_apts_ofp = NULL;
     FILE* class_dat_ofp = NULL;
     char filename[2048];
-    if (opt_analyze)
+    if (opt_analyze && ! opt_val_only)
     {
         // rain.apts
         sprintf(filename, "%s.rain.apts", output_base);
@@ -432,11 +439,25 @@ main(
         }
     }
     FILE* class_apts_ofp = NULL;
+    FILE* val_ofp = NULL;
     FILE* val_apts_ofp = NULL;
     FILE* bad_flag_ofp = NULL;
     FILE* bad_apts_ofp = NULL;
     if (opt_classify || opt_classify_func)
     {
+        // val
+        sprintf(filename, "%s.val", output_base);
+        val_ofp = fopen(filename, "w");
+        if (val_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+
+        if (! opt_val_only)
+{
+
         // class.apts
         sprintf(filename, "%s.class.apts", output_base);
         class_apts_ofp = fopen(filename, "w");
@@ -479,6 +500,7 @@ main(
             exit(1);
         }
         fprintf(bad_apts_ofp, "apts\n");
+}
     }
 
     //---------------//
@@ -845,7 +867,7 @@ main(
 
             if (opt_classify || opt_classify_func)
             {
-                // val.apts
+                // calculate
                 float metric_val = 0.0;
                 if (opt_classify)
                 {
@@ -861,6 +883,16 @@ main(
                     metric_val = 0.0428 * mem_spd + 0.0010 * dir_val +
                         0.2492 * dif;
                 }
+
+                // val
+                fwrite((void *)&lon_deg, sizeof(float), 1, val_ofp);
+                fwrite((void *)&lat_deg, sizeof(float), 1, val_ofp);
+                fwrite((void *)&metric_val, sizeof(float), 1, val_ofp);
+
+                if (opt_val_only)
+                    continue;
+
+                // val.apts
                 fprintf(val_apts_ofp, "%g %g %g\n", lon_deg, lat_deg,
                     metric_val);
 
@@ -943,6 +975,8 @@ main(
         fclose(class_apts_ofp);
     if (val_apts_ofp != NULL)
         fclose(val_apts_ofp);
+    if (val_ofp != NULL)
+        fclose(val_ofp);
     if (bad_flag_ofp != NULL)
         fclose(bad_flag_ofp);
     if (bad_apts_ofp != NULL)
