@@ -108,7 +108,7 @@ EarthPosition rground(meas->center.latitude,meas->center.longitude,
                       EarthPosition::GEODETIC);
 float ctd,atd;
 if (ephemeris.GetSubtrackCoordinates(rground,_start_time,
-	meas_time,&ctd,&atd) == 0);
+	meas_time,&ctd,&atd) == 0)
 {
 	return(0);	// Couldn't find a grid position, so dump this measurement.
 }
