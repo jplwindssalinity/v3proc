@@ -169,6 +169,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		attcntl->roll.SetVariance(std*std*dtr*dtr);
 		attcntl->roll.SetMean(mean*dtr);
 		attcntl->roll.SetCorrelationLength(corrlength);
+		attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
                 attcntl->roll.Initialize();
 
 		if(! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
@@ -181,6 +182,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		attcntl->pitch.SetVariance(std*std*dtr*dtr);
 		attcntl->pitch.SetMean(mean*dtr);
 		attcntl->pitch.SetCorrelationLength(corrlength);
+		attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
                 attcntl->pitch.Initialize();
 
 		if(! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
@@ -193,6 +195,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		attcntl->yaw.SetVariance(std*std*dtr*dtr);
 		attcntl->yaw.SetMean(mean*dtr);
 		attcntl->yaw.SetCorrelationLength(corrlength);
+		attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
                 attcntl->yaw.Initialize();
 	}
 	else
@@ -247,6 +250,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		attknow->roll.SetVariance(std*std*dtr*dtr);
 		attknow->roll.SetMean(mean*dtr);
 		attknow->roll.SetCorrelationLength(corrlength);
+		attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
                 attknow->roll.Initialize();
 
 		if(! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
@@ -259,6 +263,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		attknow->pitch.SetVariance(std*std*dtr*dtr);
 		attknow->pitch.SetMean(mean*dtr);
 		attknow->pitch.SetCorrelationLength(corrlength);
+		attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
                 attknow->pitch.Initialize();
 
 		if(! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
@@ -271,6 +276,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		attknow->yaw.SetVariance(std*std*dtr*dtr);
 		attknow->yaw.SetMean(mean*dtr);
 		attknow->yaw.SetCorrelationLength(corrlength);
+		attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
                 attknow->yaw.Initialize();
 	}
 	else
@@ -617,6 +623,7 @@ ConfigInstrumentSim(
 	ptgr_bias=pow(10,0.1*ptgr_bias)-1.0;
 	instrument_sim->ptgrNoise.SetMean(ptgr_bias);
         instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
+        instrument_sim->ptgrNoise.SetSeed(PTGR_SEED);
         instrument_sim->ptgrNoise.Initialize();
 
 	int uniform_sigma_field;

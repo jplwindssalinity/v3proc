@@ -64,6 +64,44 @@ public:
 
 //==================================================================//
 // CLASS							    //
+//            RNG						    //
+//								    //
+// Description: Basic Pseudo Random Number Generator                //
+// contains parameters:						    //
+//         _seed                                                    //
+//                      					    //
+// contains member function, GetDouble() return number on uniform   //
+// [0,1) range                                                      //
+// SetSeed(long int) SetRandomSeed() Uses lrand48 to set the seed   //
+//                                                                  //
+//==================================================================//
+
+#define RNG_M 714025
+#define RNG_IA 1366
+#define RNG_IC 150889
+
+class RNG
+{
+public:
+
+  RNG(long int seed);
+  RNG();
+  ~RNG();
+  void SetSeed(long int);
+  void SetRandomSeed();
+  double GetDouble();
+ 
+protected:
+
+void _Init();
+long int _seed;
+long int _output;
+long int _tab[98];
+
+};
+
+//==================================================================//
+// CLASS							    //
 //            Uniform						    //
 //								    //
 // Description: Uniform Distribution                                //
@@ -86,10 +124,12 @@ public:
 	void SetRadius(float r);
 	float GetMean();
         void SetMean(float m);
+        void SetSeed(long int seed);
 
 protected:
 	float _radius;
         float _mean;
+        RNG _rng;
 };
 
 
@@ -111,11 +151,12 @@ public:
 	int SetVariance(float v);
 	float GetMean();
         int SetMean(float m);
-
+        void SetSeed(long int seed);
 
 protected:
 	float _variance;
 	float _mean;
+        RNG _rng;
 };
 
 //==================================================================//
@@ -158,6 +199,7 @@ int Initialize();
 float GetNumber(double time);
 int SetVariance(float variance);
 int SetMean(float mean);
+void SetSeed(long int seed);
 int SetCorrelationLength(float corrlength);
 
 Gaussian Uncorrelated;

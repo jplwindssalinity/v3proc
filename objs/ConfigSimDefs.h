@@ -243,4 +243,22 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define INSTRUMENT_TIME_BUFFER_KEYWORD	"INSTRUMENT_TIME_BUFFER"
 
+
+//-------------------------------//
+// Random Number Generator Seeds //
+//-------------------------------//
+
+#define ROLL_CONTROL_SEED 1034
+#define PITCH_CONTROL_SEED 45299
+#define YAW_CONTROL_SEED 1999
+
+#define ROLL_KNOWLEDGE_SEED 5661
+#define PITCH_KNOWLEDGE_SEED 78965
+#define YAW_KNOWLEDGE_SEED 486
+
+#define PTGR_SEED 944
+
 #endif
+
+
+

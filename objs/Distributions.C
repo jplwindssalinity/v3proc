@@ -46,6 +46,55 @@ float GenericTimelessDist::GetNumber(double time){
 	else return(GetNumber());
 }
 
+//=============================//
+// RNG                         //
+//=============================//
+
+RNG::RNG(long int seed){
+  _seed=seed;
+  if(seed >= 0) _seed=-_seed;
+  _Init();
+}
+
+RNG::RNG(){
+  _seed=-lrand48()*lrand48();
+  _Init();
+}
+
+RNG::~RNG(){
+  return;
+}
+
+void RNG::SetSeed(long int seed){
+  _seed=seed;
+  if(seed >= 0) _seed=-_seed;
+  _Init();
+}
+
+void RNG::SetRandomSeed(){
+  _seed=-lrand48()*lrand48();
+  _Init();
+}
+
+double RNG::GetDouble(){
+  int j=(int)(1+(97.0*_output)/RNG_M);
+  _output=_tab[j];
+  _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
+  _tab[j]=_seed;
+  return((double)(_output)/RNG_M);
+}
+
+void RNG::_Init(){
+  int j;
+  if((_seed=(RNG_IC - _seed) % RNG_M) < 0) _seed=-_seed;
+  for(j=1;j<97;j++){
+    _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
+    _tab[j]=_seed;
+  }
+  _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
+  _output=_seed;
+}
+
 //============================//
 // Uniform                    //
 //============================//
@@ -75,7 +124,7 @@ float
 Uniform::GetNumber()
 {
 	float num;
-	num=(float)(2*_radius*(drand48()-0.5)+_mean);
+	num=(float)(2*_radius*(_rng.GetDouble()-0.5)+_mean);
 	return(num);
 }
 
@@ -93,6 +142,10 @@ float Uniform::GetMean(){
 
 void Uniform::SetMean(float m){
   _mean=m;
+}
+
+void Uniform::SetSeed(long int seed){
+  _rng.SetSeed(seed);
 }
 
 //============================//
@@ -124,8 +177,8 @@ Gaussian::GetNumber()
 	float num;
 	double v1, v2, r, fac;
         do {
-             v1=2.0*drand48()-1.0;
-             v2=2.0*drand48()-1.0;
+             v1=2.0*_rng.GetDouble()-1.0;
+             v2=2.0*_rng.GetDouble()-1.0;
              r = v1*v1+v2*v2;
         } while (r >= 1.0 || r == 0.0);
         fac=sqrt((float) -2.0*log(r)/r);
@@ -152,6 +205,11 @@ int Gaussian::SetMean(float m){
   _mean=m;
   return(1);
 }
+
+void Gaussian::SetSeed(long int seed){
+  _rng.SetSeed(seed);
+}
+
 
 //==================================//
 // Random Velocity                  //
@@ -272,6 +330,10 @@ int TimeCorrelatedGaussian::SetVariance(float variance){
 int TimeCorrelatedGaussian::SetMean(float mean){
   if(! Uncorrelated.SetMean(mean)) return(0);
   return(1);
+}
+
+void TimeCorrelatedGaussian::SetSeed(long int seed){
+  Uncorrelated.SetSeed(seed);
 }
 
 int TimeCorrelatedGaussian::SetCorrelationLength(float corrlength){
