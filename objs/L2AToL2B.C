@@ -41,7 +41,7 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	int count = gmf->FindSolutions(&(l17->frame.measList), wvc,
+	gmf->FindSolutions(&(l17->frame.measList), wvc,
 		initSpdStep, initPhiStep);
 	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
 		initPhiStep, finalSpdStep, finalPhiStep);
