@@ -42,6 +42,10 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "BYUXTable.h"
+#include "InstrumentGeom.h"
+#include "GenericGeom.h"
+#include "Antenna.h"
 #define  TOTAL_NUM_SLICES 12
 #define  DATA_UNAVAILABLE -999
 //-----------//
@@ -135,6 +139,8 @@ main(
 	      Meas* meas=spot->GetHead();
 	      double x,y,z;
               spot->scOrbitState.rsat.Get(&x,&y,&z);
+              float scan_angle=meas->scanAngle;
+              int beam_idx=meas->beamIdx;
 	      fprintf(ofp,"%d %g %g ",meas->beamIdx,spot->time,meas->scanAngle*rtd);
 	      
 
@@ -208,17 +214,56 @@ main(
 		spot->GetHead();
 		spot->GetNext();
 		egg.Composite(spot,TOTAL_NUM_SLICES-2);
-		fprintf(ofp,"%g\n",egg.value);
+		fprintf(ofp,"%g ",egg.value);
 	      }
 	      else if(count+num_missing_guards==TOTAL_NUM_SLICES){
 		spot->GetHead();
 		if(first_idx==0)  spot->GetNext();
 		egg.Composite(spot,TOTAL_NUM_SLICES-2);
-		fprintf(ofp,"%g\n",egg.value);		
+		fprintf(ofp,"%g ",egg.value);		
 	      }
 	      else{
-		fprintf(ofp,"%d\n",DATA_UNAVAILABLE);
+		fprintf(ofp,"%d ",DATA_UNAVAILABLE);
 	      }
+              //---------------------------------------//
+              // Output Egg Incidence Angle            //
+              // From BYU Ref Vector Angle             //
+              //---------------------------------------//
+              Antenna antenna;
+              double roll=0.0, pitch=0.0, yaw=0.0;
+              Attitude att;
+              att.Set(roll,pitch,yaw,1,2,3);
+              antenna.SetPedestalAttitude(&att);
+              double look, azim;
+              switch(beam_idx){
+	      case 0:
+		look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+		azim=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+		break;
+              case 1:
+		look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+		azim=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+		break;
+              default:
+                fprintf(stderr,"Fatal Error:Bad Beam Index\n");
+                exit(1);
+	      }
+	      CoordinateSwitch antenna_frame_to_gc=AntennaFrameToGC(&(spot->scOrbitState),&(spot->scAttitude),
+								 &antenna,scan_angle);
+	      Vector3 look_vector, gc_vector, surf_vector;
+              look_vector.SphericalSet(1.0,look,azim);
+              gc_vector=antenna_frame_to_gc.Forward(look_vector);
+              EarthPosition target;
+              if (earth_intercept(spot->scOrbitState.rsat, gc_vector, &target)!=1){
+		fprintf(stderr,"Fatal Error:Off the earth\n");
+                exit(1);
+	      }
+              CoordinateSwitch gc_to_surface = target.SurfaceCoordinateSystem();
+	      surf_vector=gc_to_surface.Forward(gc_vector);
+              double r, theta, phi;
+              surf_vector.SphericalGet(&r,&theta,&phi);
+              double inc_angle=pi-theta;
+              fprintf(ofp,"%g\n",inc_angle*rtd);
 	  }
 	  if(start_frame>=0) frame_number++;
         }
