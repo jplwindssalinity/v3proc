@@ -1,6 +1,6 @@
 //==============================================================//
 // Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_gmf_c[] =
@@ -24,12 +24,12 @@ static const char rcs_id_gmf_c[] =
 //=====//
 
 GMF::GMF()
-:	retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
-	retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), _spdTol(DEFAULT_SPD_TOL),
-	_sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
-	_maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
-	_copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
-	_dir_mle_maxima(NULL)
+:   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
+    retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), _spdTol(DEFAULT_SPD_TOL),
+    _sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
+    _maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
+    _copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
+    _dir_mle_maxima(NULL)
 {
 	SetPhiCount(DEFAULT_PHI_COUNT);
 
@@ -2259,8 +2259,6 @@ GMF::RetrieveWindsH1(
             {
                 left_idx = (left_idx + _phiCount - 1) % _phiCount;
             }
-            if (_bestObj[left_idx] > _bestObj[phi_idx])
-                continue;
 
             int right_idx = (phi_idx + 1) % _phiCount;
             while (_bestObj[right_idx] < _bestObj[phi_idx] &&
@@ -2268,20 +2266,27 @@ GMF::RetrieveWindsH1(
             {
                 right_idx = (right_idx + 1) % _phiCount;
             }
-            if (_bestObj[right_idx] > _bestObj[phi_idx])
-                continue;
 
-            float m, b;
+            if (_bestObj[left_idx] > _bestObj[phi_idx] ||
+                _bestObj[right_idx] > _bestObj[phi_idx])
+            {
+                left[peak_count] = phi_idx;
+                right[peak_count] = phi_idx;
+            }
+            else
+            {
+                float m, b;
 
-            int left_plus_idx = (left_idx + 1) % _phiCount;
-            m = _bestObj[left_plus_idx] - _bestObj[left_idx];
-            b = _bestObj[left_idx] - m * (float)left_idx;
-            left[peak_count] = (thresh - b) / m;
+                int left_plus_idx = (left_idx + 1) % _phiCount;
+                m = _bestObj[left_plus_idx] - _bestObj[left_idx];
+                b = _bestObj[left_idx] - m * (float)left_idx;
+                left[peak_count] = (thresh - b) / m;
 
-            int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
-            m = _bestObj[right_idx] - _bestObj[right_minus_idx];
-            b = _bestObj[right_minus_idx] - m * (float)right_idx;
-            right[peak_count] = (thresh - b) / m;
+                int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
+                m = _bestObj[right_idx] - _bestObj[right_minus_idx];
+                b = _bestObj[right_minus_idx] - m * (float)right_idx;
+                right[peak_count] = (thresh - b) / m;
+            }
 
             if (left[peak_count] > right[peak_count])
             {
@@ -2292,6 +2297,7 @@ GMF::RetrieveWindsH1(
             {
                 width[peak_count] = right[peak_count] - left[peak_count];
             }
+
             peak[peak_count] = phi_idx;
             number[peak_count] = 1;
             peak_count++;
