@@ -235,6 +235,7 @@ Sds::Create(
 //-------//
 // Write //
 //-------//
+
 int
 Sds::Write(
     int32  sd_id,
@@ -372,6 +373,22 @@ SdsUInt16::SetWithUnsignedShort(unsigned short* value)
     return;
 }
 
+//-------------------------//
+// SdsUInt16::SetFromFloat //
+//-------------------------//
+
+void
+SdsUInt16::SetFromFloat(float* value)
+{
+    uint16* ptr = (uint16 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (uint16)(rint(((double)*(value + i) / _cal) + _offset));
+    }
+
+    return;
+}
+
 //============//
 // SdsUInt32 //
 //============//
@@ -504,6 +521,22 @@ SdsInt16::SetMaxAndMin()
     if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
         return(0);
     return(1);
+}
+
+//------------------------//
+// SdsInt16::SetWithInt16 //
+//------------------------//
+// the calibration is ignored (assumed to be 1.0 and 0.0)
+
+void
+SdsInt16::SetWithInt16(int16* value)
+{
+    int16* ptr = (int16 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = *(value + i);
+    }
+    return;
 }
 
 //------------------------//

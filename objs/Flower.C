@@ -15,7 +15,7 @@ static const char rcs_id_flower_c[] =
 //========//
 
 Flower::Flower()
-:  cti(0), ati(0), selectedDirIdx(-1)
+:  cti(0), ati(0), rainFlag(0), selectedDirIdx(-1)
 {
     return;
 }
@@ -65,6 +65,7 @@ Flower::Write(
 {
     if (fwrite(&cti, sizeof(short), 1, fp) == 1 &&
         fwrite(&ati, sizeof(short), 1, fp) == 1 &&
+        fwrite(&rainFlag, sizeof(unsigned char), 1, fp) == 1 &&
         fwrite(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fwrite(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
@@ -83,6 +84,7 @@ Flower::Read(
 {
     if (fread(&cti, sizeof(short), 1, fp) == 1 &&
         fread(&ati, sizeof(short), 1, fp) == 1 &&
+        fread(&rainFlag, sizeof(unsigned char), 1, fp) == 1 &&
         fread(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fread(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
@@ -332,11 +334,42 @@ Flower::Add(
 
 void
 Flower::Multiply(
+    float  value)
+{
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        probabilityArray[i] *= value;
+    }
+    return;
+}
+
+//------------------//
+// Flower::Multiply //
+//------------------//
+
+void
+Flower::Multiply(
     Flower*  other_op)
 {
     for (int i = 0; i < DIR_BINS; i++)
     {
         probabilityArray[i] *= other_op->probabilityArray[i];
+    }
+    return;
+}
+
+//---------------//
+// Flower::Power //
+//---------------//
+
+void
+Flower::Power(
+    float  value)
+{
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        probabilityArray[i] = (float)pow((double)probabilityArray[i],
+            (double)value);
     }
     return;
 }
@@ -436,6 +469,7 @@ Flower::WriteFlower(
 //-------------------------//
 // Flower::WriteBestVector //
 //-------------------------//
+// rain is written a little differently
 
 int
 Flower::WriteBestVector(
@@ -456,6 +490,14 @@ Flower::WriteBestVector(
     if (max_prob == 0.0)
         return(0);
 
+    double head_scale = VECTOR_HEAD_SCALE;
+    double head_angle = VECTOR_HEAD_ANGLE;
+    if (rainFlag)
+    {
+        head_scale = RAIN_VECTOR_HEAD_SCALE;
+        head_angle = RAIN_VECTOR_HEAD_ANGLE;
+    }
+
     double x[6], y[6];
     double direction = GetDirection(max_dir_idx);
     double spd = GetSpeed(max_dir_idx);
@@ -463,14 +505,10 @@ Flower::WriteBestVector(
     y[0] = ati;
     x[1] = x[0] + VECTOR_SPEED_SCALE * spd * cos(direction);
     y[1] = y[0] + VECTOR_SPEED_SCALE * spd * sin(direction);
-    x[2] = x[1] + VECTOR_HEAD_SCALE * cos(direction + M_PI
-        - VECTOR_HEAD_ANGLE);
-    y[2] = y[1] + VECTOR_HEAD_SCALE * sin(direction + M_PI
-        - VECTOR_HEAD_ANGLE);
-    x[3] = x[1] + VECTOR_HEAD_SCALE * cos(direction - M_PI
-        + VECTOR_HEAD_ANGLE);
-    y[3] = y[1] + VECTOR_HEAD_SCALE * sin(direction - M_PI
-        + VECTOR_HEAD_ANGLE);
+    x[2] = x[1] + head_scale * cos(direction + M_PI - head_angle);
+    y[2] = y[1] + head_scale * sin(direction + M_PI - head_angle);
+    x[3] = x[1] + head_scale * cos(direction - M_PI + head_angle);
+    y[3] = y[1] + head_scale * sin(direction - M_PI + head_angle);
     x[4] = x[1];
     y[4] = y[1];
     x[5] = x[0];
@@ -538,6 +576,45 @@ Flower::FindBestDirIdx()
         }
     }
     return(max_idx);
+}
+
+//--------------------------//
+// Flower::ApplyPointFlower //
+//--------------------------//
+
+void
+Flower::ApplyPointFlower(
+    float    gamma,
+    float    alpha,
+    Flower*  point_flower)
+{
+    Flower cor_op;
+    cor_op.FillProbabilities(0.0);    // we'll be adding
+
+    Flower uncor_op;
+    uncor_op.FillProbabilities(1.0);    // we'll be multiplying
+
+    // add the flowers
+    cor_op.Add(point_flower);
+    cor_op.Multiply(alpha);    // scale the point flower by alpha
+    cor_op.Add(this);
+    cor_op.Normalize();
+
+
+    // multiply the flowers
+    uncor_op.Multiply(point_flower);
+    uncor_op.Power(alpha);    // scale the point flower by alpha
+    uncor_op.Multiply(this);
+    uncor_op.Normalize();
+
+    // combine using gamma
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        probabilityArray[i] = (1.0 - gamma) * uncor_op.probabilityArray[i] +
+            gamma * cor_op.probabilityArray[i];
+    }
+    Normalize(MIN_NORM_PROB);
+    return;
 }
 
 //=============//
@@ -630,6 +707,66 @@ FlowerArray::GetFlower(
 }
 
 //---------------------------//
+// FlowerArray::AttachFlower //
+//---------------------------//
+
+int
+FlowerArray::AttachFlower(
+    int      cti,
+    int      ati,
+    Flower*  flower)
+{
+    if (cti < 0 || cti >= CT_WIDTH || ati < 0 || ati >= AT_WIDTH)
+        return(0);
+
+    if (array[cti][ati] != NULL)
+    {
+        fprintf(stderr,
+            "FlowerArray::AttachFlower: I won't stomp on a flower!\n");
+        return(0);
+    }
+
+    array[cti][ati] = flower;
+    return(1);
+}
+
+//---------------------------//
+// FlowerArray::DetachFlower //
+//---------------------------//
+
+Flower*
+FlowerArray::DetachFlower(
+    int      cti,
+    int      ati)
+{
+    if (cti < 0 || cti >= CT_WIDTH || ati < 0 || ati >= AT_WIDTH)
+        return(NULL);
+
+    Flower* f = array[cti][ati];
+    array[cti][ati] = NULL;
+    return(f);
+}
+
+//---------------------------//
+// FlowerArray::DeleteFlower //
+//---------------------------//
+
+void
+FlowerArray::DeleteFlower(
+    int  cti,
+    int  ati)
+{
+    Flower* f = GetFlower(cti, ati);
+    if (f == NULL)
+        return;
+
+    free(f);
+    array[cti][ati] = NULL;
+
+    return;
+}
+
+//---------------------------//
 // FlowerArray::FreeContents //
 //---------------------------//
 
@@ -656,6 +793,7 @@ FlowerArray::FreeContents()
 // are assumed to be completely correlated and the probabilities
 // are added. Thanks to Bryan Stiles for helping me with the
 // formulation. This one uses the whole flower.
+// If use_rain_flag is set to 1, only data labelled rain free will be used.
 
 Flower*
 FlowerArray::LocalFlowerProb(
@@ -663,7 +801,8 @@ FlowerArray::LocalFlowerProb(
     int        window_size,
     int        center_cti,
     int        center_ati,
-    float      gamma)
+    float      gamma,
+    int        use_rain_flag)
 {
     //----------------//
     // get the center //
@@ -683,6 +822,7 @@ FlowerArray::LocalFlowerProb(
     dest_op->cti = center_cti;
     dest_op->ati = center_ati;
     dest_op->CopySpeeds(op0);    // use the original speeds
+    dest_op->rainFlag = op0->rainFlag;
 
     //--------------------------//
     // temporary Flower storage //
@@ -736,6 +876,13 @@ FlowerArray::LocalFlowerProb(
             if (op1 == NULL)
                 continue;
 
+            //----------------//
+            // check for rain //
+            //----------------//
+
+            if (use_rain_flag && op1->rainFlag)
+                continue;
+
             float distance = op0->KmDistance(op1);
 
             //------------------------------------//
@@ -761,10 +908,11 @@ FlowerArray::LocalFlowerProb(
                     float direction1 = op1->GetDirection(other_dir_idx);
                     float probability1 = op1->GetProbability(other_dir_idx);
 
-                    float dspeed = speed1 - speed0;
-                    float ddirection = ANGDIF(direction1, direction0);
+                    // given the other speed, what is mine
+                    float dspeed = speed0 - speed1;
+                    float ddirection = ANGDIF(direction0, direction1);
 
-                    float dist_prob = dp->Probability(distance, speed0,
+                    float dist_prob = dp->Probability(distance, speed1,
                         dspeed, ddirection);
                     if (dist_prob < 0.0)
                     {
@@ -827,7 +975,8 @@ FlowerArray::LocalVectorProb(
     int        window_size,
     int        center_cti,
     int        center_ati,
-    float      gamma)
+    float      gamma,
+    int        use_rain_flag)
 {
     //----------------//
     // get the center //
@@ -847,6 +996,7 @@ FlowerArray::LocalVectorProb(
     dest_op->cti = center_cti;
     dest_op->ati = center_ati;
     dest_op->CopySpeeds(op0);    // use the original speeds
+    dest_op->rainFlag = op0->rainFlag;
 
     //--------------------------//
     // temporary Flower storage //
@@ -898,6 +1048,13 @@ FlowerArray::LocalVectorProb(
 
             Flower* op1 = GetFlower(cti, ati);
             if (op1 == NULL)
+                continue;
+
+            //----------------//
+            // check for rain //
+            //----------------//
+
+            if (use_rain_flag && op1->rainFlag)
                 continue;
 
             float distance = op0->KmDistance(op1);
@@ -976,6 +1133,31 @@ FlowerArray::LocalVectorProb(
     dest_op->Normalize();
 
     return(dest_op);
+}
+
+//-----------------------------------//
+// FlowerArray::SelectBestDirections //
+//-----------------------------------//
+
+int
+FlowerArray::SelectBestDirections()
+{
+    int count = 0;
+    for (int i = 0; i < CT_WIDTH; i++)
+    {
+        for (int j = 0; j < AT_WIDTH; j++)
+        {
+            Flower* flower = array[i][j];
+            if (flower == NULL)
+                continue;
+
+            int best_idx = flower->FindBestDirIdx();
+            flower->SetSelectedDirIdx(best_idx);
+            if (best_idx != -1)
+                count++;
+        }
+    }
+    return(count);
 }
 
 //==========//

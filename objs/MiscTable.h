@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -51,6 +51,9 @@ public:
     //--------//
     // access //
     //--------//
+
+    float  GetMinSpd() { return(_spdMin); };
+    float  GetMaxSpd() { return(_spdMax); };
 
     int  GetInterpolatedValue(Meas::MeasTypeE met, float inc, float spd,
              float chi, float* value);

@@ -46,6 +46,8 @@ class DistProb;
 #define VECTOR_SPEED_SCALE  0.05
 #define VECTOR_HEAD_SCALE   0.15
 #define VECTOR_HEAD_ANGLE   15.0*dtr
+#define RAIN_VECTOR_HEAD_SCALE   0.50
+#define RAIN_VECTOR_HEAD_ANGLE   10.0*dtr
 
 #define PROB_DIAMOND_SCALE  1.5
 
@@ -87,7 +89,9 @@ public:
     float  KmDistance(Flower* other_op);
     void   Add(int dir_idx, float probability);
     void   Add(Flower* other_op);
+    void   Multiply(float value);
     void   Multiply(Flower* other_op);
+    void   Power(float value);
     void   Normalize();
     int    Normalize(float min_prob);
     int    WriteFlower(FILE* ofp, float scale = 2.0, float max_range = 0.0);
@@ -95,13 +99,15 @@ public:
     int    WriteBestProb(FILE* ofp);
     int    FindBestDirIdx();
     void   SetSelectedDirIdx(int dir_idx) { selectedDirIdx = dir_idx; return; };
+    void   ApplyPointFlower(float gamma, float alpha, Flower* point_flower);
 
     //-----------//
     // variables //
     //-----------//
 
-    short cti;
-    short ati;
+    short           cti;
+    short           ati;
+    unsigned char   rainFlag;
     float           probabilityArray[DIR_BINS];
     unsigned short  speedArray[DIR_BINS];
 
@@ -137,6 +143,9 @@ public:
 
     int       Read(const char* filename);
     Flower*   GetFlower(int cti, int ati);
+    int       AttachFlower(int cti, int ati, Flower* flower);
+    Flower*   DetachFlower(int cti, int ati);
+    void      DeleteFlower(int cti, int ati);
     void      FreeContents();
 
     //------------//
@@ -144,9 +153,10 @@ public:
     //------------//
 
     Flower*  LocalFlowerProb(DistProb* dp, int window_size, int center_cti,
-                 int center_ati, float gamma);
+                 int center_ati, float gamma, int use_rain_flag);
     Flower*  LocalVectorProb(DistProb* dp, int window_size, int center_cti,
-                 int center_ati, float gamma);
+                 int center_ati, float gamma, int use_rain_flag);
+    int      SelectBestDirections();
 
     //-----------//
     // variables //

@@ -127,6 +127,7 @@ public:
 
     int   SetMaxAndMin();
     void  SetWithUnsignedShort(unsigned short* value);
+    void  SetFromFloat(float* value);
 
 protected:
     uint16  _max;
@@ -195,6 +196,7 @@ public:
         const char** dim_names, int16 max, int16 min);
 
     int   SetMaxAndMin();
+    void  SetWithInt16(int16* value);
     void  SetFromFloat(float* value);
 
 protected:
