@@ -82,7 +82,7 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
-	size = sizeof(float) * SPOTS_PER_L10_FRAME;
+	size = sizeof(unsigned short) * SPOTS_PER_L10_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
@@ -149,7 +149,7 @@ L10Frame::Unpack(
 	attitude.SetYaw(tmp_float);
 	idx += size;
 
-	size = sizeof(float) * SPOTS_PER_L10_FRAME;
+	size = sizeof(unsigned short) * SPOTS_PER_L10_FRAME;
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
 
