@@ -76,7 +76,7 @@ template class List<LonLat>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
-template class List<WindVector>;
+template class List<WindVectorPlus>;
 
 //-----------//
 // CONSTANTS //

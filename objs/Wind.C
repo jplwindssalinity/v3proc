@@ -71,6 +71,23 @@ WindVectorPlus::~WindVectorPlus()
 	return;
 }
 
+//--------------------------//
+// WindVectorPlus::WriteL20 //
+//--------------------------//
+
+int
+WindVectorPlus::WriteL20(
+	FILE*	fp)
+{
+	if (fwrite((void *)&spd, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&dir, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&obj, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 
 //=====//
 // WVC //
