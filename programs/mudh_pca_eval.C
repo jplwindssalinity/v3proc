@@ -193,6 +193,13 @@ main(
     // process rev by rev //
     //--------------------//
 
+    unsigned long valid_wvc_count[2];
+    valid_wvc_count[0] = 0;    // both
+    valid_wvc_count[1] = 0;    // outer only
+    unsigned long classified_wvc_count[2];
+    classified_wvc_count[0] = 0;
+    classified_wvc_count[1] = 0;
+
     int rev_count = 0;
     unsigned int size = CT_WIDTH * AT_WIDTH;
     for (int rev = start_rev; rev <= end_rev; rev++)
@@ -333,11 +340,39 @@ main(
                 else
                     ssmi_class = SSMI_MIST;
 
+                //-----------------------//
+                // count classifications //
+                //-----------------------//
+
+                switch (flag_tab[ati][cti])
+                {
+                case BOTH_CLEAR:
+                case BOTH_RAIN:
+                    classified_wvc_count[0]++;
+                    valid_wvc_count[0]++;
+                    break;
+                case BOTH_UNKNOWN:
+                    valid_wvc_count[0]++;
+                    break;
+                case OUTER_CLEAR:
+                case OUTER_RAIN:
+                    classified_wvc_count[1]++;
+                    valid_wvc_count[1]++;
+                    break;
+                case OUTER_UNKNOWN:
+                    valid_wvc_count[1]++;
+                    break;
+                case CANNOT_CLASSIFY:
+                    break;
+                case NO_WVC:
+                    break;
+                }
+
                 //-------------------------------------//
                 // step through probability thresholds //
                 //-------------------------------------//
 
-                for (int prob_idx = 0; prob_idx <= PROB_BINS; prob_idx++)
+                for (int prob_idx = 0; prob_idx < PROB_BINS; prob_idx++)
                 {
                     float prob_thresh = (float)prob_idx * PROB_STEP;
 
@@ -376,10 +411,13 @@ main(
                         // it will stay unknown
                         mudh_class = MUDH_UNKNOWN;
                         break;
-                    case UNKNOWN:
+                    case CANNOT_CLASSIFY:
                         swath_idx = 2;    // unknown beam
-                        // it will stay unknown
-                        mudh_class = UNKNOWN;
+                        mudh_class = CANNOT_CLASSIFY;
+                        break;
+                    case NO_WVC:
+                        swath_idx = 2;    // unknown beam
+                        mudh_class = NO_WVC;
                         break;
                     default:
                         fprintf(stderr, "%s: unknown classification\n",
@@ -387,7 +425,6 @@ main(
                         exit(1);
                         break;
                     }
-
                     counts[swath_idx][ssmi_class][mudh_class][prob_idx]++;
                 }
             }
@@ -419,8 +456,21 @@ main(
             classified_count += counts[swath_idx][ssmi_class][MUDH_CLEAR][0];
             classified_count += counts[swath_idx][ssmi_class][MUDH_RAIN][0];
         }
-        double classified_percent = 100.0 * (double)classified_count /
-            (double)total_count;
+
+        double classified_percent = 100.0 *
+            (double)classified_wvc_count[swath_idx] /
+            (double)valid_wvc_count[swath_idx];
+
+        // it doesn't matter what probility bin we use, so why not zero
+        unsigned long ssmi_r_count =
+            counts[swath_idx][SSMI_RAIN][MUDH_CLEAR][0] +
+            counts[swath_idx][SSMI_RAIN][MUDH_RAIN][0] +
+            counts[swath_idx][SSMI_RAIN][MUDH_UNKNOWN][0];
+
+        unsigned long ssmi_c_count =
+            counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][0] +
+            counts[swath_idx][SSMI_CLEAR][MUDH_RAIN][0] +
+            counts[swath_idx][SSMI_CLEAR][MUDH_UNKNOWN][0];
 
         //-----------//
         // open file //
@@ -445,56 +495,104 @@ main(
             QUOTE);
         fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
         fprintf(ofp, "@ legend on\n");
-//        fprintf(ofp, "@ legend string 0 %cUnflagged Rain (misclass)%c\n",
-//            QUOTE, QUOTE);
-//        fprintf(ofp, "@ legend string 1 %cFalse Alarm%c\n", QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 0 %cSSM/I R, MUDH R%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 1 %cSSM/I RM, MUDH R%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 2 %cSSM/I C, MUDH C%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 3 %cSSM/I CM, MUDH C%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 4 %cMUDH C, SSM/I R%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 5 %cMUDH R, SSM/I C%c\n",
+            QUOTE, QUOTE);
 
-        for (int prob_idx = 0; prob_idx <= PROB_BINS; prob_idx++)
+        for (int prob_idx = 1; prob_idx < PROB_BINS; prob_idx++)
         {
 //            float prob_thresh = (float)prob_idx * PROB_STEP;
 
-            double mudh_r_count =
-                (double)counts[swath_idx][SSMI_CLEAR][MUDH_RAIN][prob_idx] +
-                (double)counts[swath_idx][SSMI_MIST][MUDH_RAIN][prob_idx] +
-                (double)counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
+            unsigned long mudh_r_count =
+                counts[swath_idx][SSMI_CLEAR][MUDH_RAIN][prob_idx] +
+                counts[swath_idx][SSMI_MIST][MUDH_RAIN][prob_idx] +
+                counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
 
-            double mudh_r_ssmi_r_count =
-                (double)counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
+            unsigned long ssmi_c_mudh_r_count =
+                counts[swath_idx][SSMI_CLEAR][MUDH_RAIN][prob_idx];
 
-            double mudh_r_ssmi_mr_count =
-                (double)counts[swath_idx][SSMI_MIST][MUDH_RAIN][prob_idx] +
-                (double)counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
+            unsigned long ssmi_mr_mudh_r_count =
+                counts[swath_idx][SSMI_MIST][MUDH_RAIN][prob_idx] +
+                counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
 
-            double mudh_c_count =
-                (double)counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx] +
-                (double)counts[swath_idx][SSMI_MIST][MUDH_CLEAR][prob_idx] +
-                (double)counts[swath_idx][SSMI_RAIN][MUDH_CLEAR][prob_idx];
+            unsigned long ssmi_r_mudh_r_count =
+                counts[swath_idx][SSMI_RAIN][MUDH_RAIN][prob_idx];
 
-            double mudh_c_ssmi_c_count =
-                (double)counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx];
+            unsigned long mudh_c_count =
+                counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx] +
+                counts[swath_idx][SSMI_MIST][MUDH_CLEAR][prob_idx] +
+                counts[swath_idx][SSMI_RAIN][MUDH_CLEAR][prob_idx];
 
-            double mudh_c_ssmi_cm_count =
-                (double)counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx] +
-                (double)counts[swath_idx][SSMI_MIST][MUDH_CLEAR][prob_idx];
+            unsigned long ssmi_c_mudh_c_count =
+                counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx];
+
+            unsigned long ssmi_cm_mudh_c_count =
+                counts[swath_idx][SSMI_CLEAR][MUDH_CLEAR][prob_idx] +
+                counts[swath_idx][SSMI_MIST][MUDH_CLEAR][prob_idx];
+
+            unsigned long ssmi_r_mudh_c_count =
+                counts[swath_idx][SSMI_RAIN][MUDH_CLEAR][prob_idx];
 
             if (mudh_r_count + mudh_c_count != classified_count)
             {
-                fprintf(stderr, "%s: error in here!\n", command);
+                fprintf(stderr, "%s: Not adding up right!\n", command);
+                fprintf(stderr, "   MUDH rain = %ld\n", mudh_r_count);
+                fprintf(stderr, "  MUDH clear = %ld\n", mudh_c_count);
+                fprintf(stderr, "  MUDH total = %ld\n", classified_count);
+                fprintf(stderr, "%d %d\n", swath_idx, prob_idx);
             }
 
-            double mudh_r_percent = 100.0 * mudh_r_count / classified_count;
-            double mudh_r_ssmi_r_percent =
-                100.0 * mudh_r_ssmi_r_count / mudh_r_count;
-            double mudh_r_ssmi_mr_percent =
-                100.0 * mudh_r_ssmi_mr_count / mudh_r_count;
-            double mudh_c_ssmi_c_percent =
-                100.0 * mudh_c_ssmi_c_count / mudh_c_count;
-            double mudh_c_ssmi_cm_percent =
-                100.0 * mudh_c_ssmi_cm_count / mudh_c_count;
+            double mudh_r_percent = 0.0;
+            if (classified_count > 0)
+                mudh_r_percent = 100.0 * mudh_r_count / classified_count;
+            double ssmi_r_mudh_r_percent_m = 0.0;
+            double ssmi_mr_mudh_r_percent_m = 0.0;
+            if (mudh_r_count > 0)
+            {
+                ssmi_r_mudh_r_percent_m = 100.0 * ssmi_r_mudh_r_count /
+                    mudh_r_count;
+                ssmi_mr_mudh_r_percent_m = 100.0 * ssmi_mr_mudh_r_count /
+                    mudh_r_count;
+            }
+            double ssmi_c_mudh_c_percent_m = 0.0;
+            double ssmi_cm_mudh_c_percent_m = 0.0;
+            if (mudh_c_count > 0)
+            {
+                ssmi_c_mudh_c_percent_m = 100.0 * ssmi_c_mudh_c_count /
+                    mudh_c_count;
+                ssmi_cm_mudh_c_percent_m = 100.0 * ssmi_cm_mudh_c_count /
+                    mudh_c_count;
+            }
 
-            fprintf(ofp, "%g %g %g %g %g\n", mudh_r_percent,
-                mudh_r_ssmi_r_percent, mudh_r_ssmi_mr_percent,
-                mudh_c_ssmi_c_percent, mudh_c_ssmi_cm_percent);
+            double ssmi_r_mudh_c_percent_s = 0.0;
+            if (ssmi_r_count > 0)
+            {
+                ssmi_r_mudh_c_percent_s = 100.0 * ssmi_r_mudh_c_count /
+                    ssmi_r_count;
+            }
+
+            double ssmi_c_mudh_r_percent_s = 0.0;
+            if (ssmi_c_count > 0)
+            {
+                ssmi_c_mudh_r_percent_s = 100.0 * ssmi_c_mudh_r_count /
+                    ssmi_c_count;
+            }
+
+            if (mudh_r_percent > 50.0)
+                continue;    // don't bother
+            fprintf(ofp, "%g %g %g %g %g %g %g\n", mudh_r_percent,
+                ssmi_r_mudh_r_percent_m, ssmi_mr_mudh_r_percent_m,
+                ssmi_c_mudh_c_percent_m, ssmi_cm_mudh_c_percent_m,
+                ssmi_r_mudh_c_percent_s, ssmi_c_mudh_r_percent_s);
         }
         fclose(ofp);
     }

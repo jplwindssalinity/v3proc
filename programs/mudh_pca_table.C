@@ -297,8 +297,8 @@ main(
     float tbv_array[AT_WIDTH][CT_WIDTH];
     float tbh_std_array[AT_WIDTH][CT_WIDTH];
     float tbv_std_array[AT_WIDTH][CT_WIDTH];
-    float tbh_cnt_array[AT_WIDTH][CT_WIDTH];
-    float tbv_cnt_array[AT_WIDTH][CT_WIDTH];
+    int tbh_cnt_array[AT_WIDTH][CT_WIDTH];
+    int tbv_cnt_array[AT_WIDTH][CT_WIDTH];
 
     float qual_array[AT_WIDTH][CT_WIDTH];
     float enof_array[AT_WIDTH][CT_WIDTH];
@@ -388,8 +388,8 @@ main(
         fread(tbv_array, sizeof(float), array_size, ifp);
         fread(tbh_std_array, sizeof(float), array_size, ifp);
         fread(tbv_std_array, sizeof(float), array_size, ifp);
-        fread(tbh_cnt_array, sizeof(float), array_size, ifp);
-        fread(tbv_cnt_array, sizeof(float), array_size, ifp);
+        fread(tbh_cnt_array, sizeof(int), array_size, ifp);
+        fread(tbv_cnt_array, sizeof(int), array_size, ifp);
         fclose(ifp);
 
         //---------------------------------------//
@@ -478,22 +478,22 @@ main(
                 int got_tbh = 0;
 
                 // Tb v is always needed
-                if (tbv_cnt_array[ati][cti] == 0.0 ||
+                if (tbv_cnt_array[ati][cti] == 0 ||
                     tbv_array[ati][cti] >= 300.0)
                 {
                     continue;
                 }
                 param[TBV_IDX] = tbv_array[ati][cti];
                 param[TBV_STD_IDX] = tbv_std_array[ati][cti];
-                tbv_cnt = tbv_cnt_array[ati][cti];
+                tbv_cnt = (double)tbv_cnt_array[ati][cti];
                 
                 // Tb h is needed for both beams only
-                if (tbh_cnt_array[ati][cti] > 0.0 &&
+                if (tbh_cnt_array[ati][cti] > 0 &&
                     tbh_array[ati][cti] < 300.0)
                 {
                     param[TBH_IDX] = tbh_array[ati][cti];
                     param[TBH_STD_IDX] = tbh_std_array[ati][cti];
-                    tbh_cnt = tbh_cnt_array[ati][cti];
+                    tbh_cnt = (double)tbh_cnt_array[ati][cti];
                     got_tbh = 1;
                 }
 

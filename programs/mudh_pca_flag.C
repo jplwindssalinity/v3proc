@@ -21,7 +21,8 @@
 //      3 = outer beam only, classified as no rain
 //      4 = outer beam only, classified as rain
 //      5 = outer beam only, unclassifiable
-//      6 = unknown
+//      6 = couldn't classify
+//      7 = not a valid wind vector
 //
 // OPTIONS
 //
@@ -125,8 +126,8 @@ float tbh_array[AT_WIDTH][CT_WIDTH];
 float tbv_array[AT_WIDTH][CT_WIDTH];
 float tbh_std_array[AT_WIDTH][CT_WIDTH];
 float tbv_std_array[AT_WIDTH][CT_WIDTH];
-float tbh_cnt_array[AT_WIDTH][CT_WIDTH];
-float tbv_cnt_array[AT_WIDTH][CT_WIDTH];
+int tbh_cnt_array[AT_WIDTH][CT_WIDTH];
+int tbv_cnt_array[AT_WIDTH][CT_WIDTH];
 
 static float           value_tab[AT_WIDTH][CT_WIDTH];
 static unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
@@ -259,25 +260,32 @@ main(
         {
             if (swath_idx == 0)
             {
+                // you hafta read something in
                 fprintf(stderr, "%s: error reading pcatab file %s\n", command,
                     pcatab_file);
                 exit(1);
             }
-        }
-        else if (swath_idx == 1)
-        {
-            opt_outer_swath = 0;
+            else if (swath_idx == 1)
+            {
+                // this part is optional, did we expect it?
+                if (opt_outer_swath)
+                {
+                    fprintf(stderr, "%s: pcatab missing second part\n",
+                        command);
+                    exit(1);
+                }
+            }
         }
     }
     fclose(pcatab_ifp);
 
     if (opt_outer_swath)
     {
-        printf("Full swath\n");
+        printf("  Full swath\n");
     }
     else
     {
-        printf("Inner swath only\n");
+        printf("  Inner swath only\n");
     }
 
     //-------------------//
@@ -328,8 +336,8 @@ main(
     fread(tbv_array, sizeof(float), array_size, ifp);
     fread(tbh_std_array, sizeof(float), array_size, ifp);
     fread(tbv_std_array, sizeof(float), array_size, ifp);
-    fread(tbh_cnt_array, sizeof(float), array_size, ifp);
-    fread(tbv_cnt_array, sizeof(float), array_size, ifp);
+    fread(tbh_cnt_array, sizeof(int), array_size, ifp);
+    fread(tbv_cnt_array, sizeof(int), array_size, ifp);
     fclose(ifp);
 
     //----------//
@@ -343,13 +351,14 @@ main(
         for (int cti = 0; cti < CT_WIDTH; cti++)
         {
             value_tab[ati][cti] = -1.0;
-            flag_tab[ati][cti] = UNKNOWN;
+            flag_tab[ati][cti] = CANNOT_CLASSIFY;
 
             // speed, direction, and mle are ALWAYS needed
             if (spd_array[ati][cti] == MAX_SHORT ||
                 dir_array[ati][cti] == MAX_SHORT ||
                 mle_array[ati][cti] == MAX_SHORT)
             {
+                flag_tab[ati][cti] = NO_WVC;
                 continue;
             }
 
@@ -398,22 +407,22 @@ main(
             int got_tbh = 0;
 
             // Tb v is always needed
-            if (tbv_cnt_array[ati][cti] == 0.0 ||
+            if (tbv_cnt_array[ati][cti] == 0 ||
                 tbv_array[ati][cti] >= 300.0)
             {
                 continue;
             }
             param[TBV_IDX] = tbv_array[ati][cti];
             param[TBV_STD_IDX] = tbv_std_array[ati][cti];
-            tbv_cnt = tbv_cnt_array[ati][cti];
+            tbv_cnt = (double)tbv_cnt_array[ati][cti];
 
             // Tb h is needed for both beams only
-            if (tbh_cnt_array[ati][cti] > 0.0 &&
+            if (tbh_cnt_array[ati][cti] > 0 &&
                 tbh_array[ati][cti] < 300.0)
             {
                 param[TBH_IDX] = tbh_array[ati][cti];
                 param[TBH_STD_IDX] = tbh_std_array[ati][cti];
-                tbh_cnt = tbh_cnt_array[ati][cti];
+                tbh_cnt = (double)tbh_cnt_array[ati][cti];
                 got_tbh = 1;
             }
 
@@ -423,7 +432,7 @@ main(
 
             // set these for convenience in writing eq's
             double tbv = param[TBV_IDX];
-            double tbh = param[TBV_IDX];
+            double tbh = param[TBH_IDX];
 
             double tbvc = tbv * alpha1 + beta1;
             double tau = 0.0;
@@ -497,6 +506,8 @@ main(
                 // compute the index too
                 pc_index[swath_idx][pc_idx].GetNearestIndex(pc[pc_idx],
                     &(pci[pc_idx]));
+                if (pci[pc_idx] >= DIM) pci[pc_idx] = DIM - 1;
+                if (pci[pc_idx] < 0) pci[pc_idx] = 0;
             }
 
             //------------------------------------------------------//
