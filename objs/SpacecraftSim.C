@@ -18,7 +18,7 @@ static const char rcs_id_spacecraftsim_c[] =
 static const double xmu = 3.986032e5;	// earth mass (GM) km3/sec2
 static const double rj2 = 1.08260e-3;	// earth gravitational harmonic
 static const double rm = 6.3781778e3;	// equatorial radius of earth
-static const double wa_deg = 4.1797271e-3;	// earth rotation rate
+static const double wa_deg = 4.1780746e-3;	// earth rotation rate
 static const double wa = wa_deg * dtr;	// rot. rate in radians
 
 //-----------------------//
