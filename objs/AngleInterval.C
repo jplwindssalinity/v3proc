@@ -252,18 +252,24 @@ AngleIntervalList::GetPossiblePlacings(
   return(1);
 }
 
+//-----------------------------------------//
+// AngleIntervalList::_GetPossiblePlacings //
+//-----------------------------------------//
+
 int
 AngleIntervalList::_GetPossiblePlacings(
-	int    num_angles_left,
-        int*   num_permutations,
-	int**  num_placings,
-	int    interval_idx=0,
-	int*   tmp_placings=NULL){
-  int num_intervals=NodeCount();
-  if(interval_idx==0){
-    tmp_placings=new int[num_intervals];
-    if(!tmp_placings) return(0);
-  }
+    int    num_angles_left,
+    int*   num_permutations,
+    int**  num_placings,
+    int    interval_idx,
+    int*   tmp_placings)
+{
+    int num_intervals = NodeCount();
+    if (interval_idx == 0) {
+        tmp_placings = new int[num_intervals];
+        if (! tmp_placings)
+            return(0);
+    }
   if(interval_idx==num_intervals-1){
     for(int i=0;i<num_intervals-1;i++){
       num_placings[*num_permutations][i]=tmp_placings[i];
