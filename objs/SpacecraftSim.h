@@ -45,9 +45,10 @@ public:
 	// initialization //
 	//----------------//
 
-	int		DefineOrbit(double semi_major_axis, double eccentricity,
-				double inclination, double longitude_of_asc_node,
-				double argument_of_perigee, double mean_anomaly);
+	int		DefineOrbit(double epoch, double semi_major_axis,
+				double eccentricity, double inclination,
+				double longitude_of_asc_node, double argument_of_perigee,
+				double mean_anomaly_at_epoch);
 
 	int		LocationToOrbit(double longitude, double latitude, int asc);
 
@@ -90,6 +91,7 @@ protected:
 	// variables //
 	//-----------//
 
+	double	_epoch;			// epoch (time for mean anomaly)
 	double	_a;				// semi-major axis (km)
 	double	_e;				// eccentricity
 	double	_i;				// inclination (radians)

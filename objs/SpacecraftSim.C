@@ -47,23 +47,25 @@ SpacecraftSim::~SpacecraftSim()
 
 int
 SpacecraftSim::DefineOrbit(
+	double	epoch,
 	double	semi_major_axis,
 	double	eccentricity,
 	double	inclination,
 	double	longitude_of_asc_node,
 	double	argument_of_perigee,
-	double	mean_anomaly)
+	double	mean_anomaly_at_epoch)
 {
 	//---------------------------------------//
 	// copy variables and convert to radians //
 	//---------------------------------------//
 
+	_epoch = epoch;
 	_a = semi_major_axis;
 	_e = eccentricity;
 	_i = inclination * dtr;
 	_bigOmega = longitude_of_asc_node * dtr;
 	_littleOmega = argument_of_perigee * dtr;
-	_l = mean_anomaly * dtr;
+	_l = mean_anomaly_at_epoch * dtr;
 
 	//-----------//
 	// predigest //
@@ -244,25 +246,9 @@ SpacecraftSim::UpdateOrbit(
 	double slonginer = (slong + hnew);
 	double earthmove = wa * time;
 
-//	double omg1p = hnew - earthmove;
-//	double slongear = slonginer - earthmove;
 
 	double slatdot = Gnew * sininew * cos(unew) / (rnew * rnew * coslat);
 	double slongdot = _H / (rnew * rnew * coslat * coslat);
-
-	// compute ascending lon longitude at start of current rev
-//	double ff = -_littleOmega;
-//	double E_node = atan2(_eta * sin(ff), cos(ff) + _e);
-//	double amean_node = E_node - _e * sin(E_node);
-//	double dt = (amean_node - _l) / _ameandot;
-
-	// get GMT of lat node crossing, the compute long_asc_node
-//	double pnode = two_pi / (_ameandot + _periasdot);
-//	int node_num = (int)((time - dt) / pnode) * pnode;
-
-	// long_asc_node
-//	double lnode = _bigOmega - (_ascnodot + wa) * (node_num + dt);
-//	lnode = fmod(lnode + two_pi, two_pi);
 
 	// calculate s/c location and velocity vectors
 	double c1 = cos(satlat);
@@ -318,16 +304,6 @@ SpacecraftSim::UpdateOrbit(
 	Vector3 vsat(vx, vy, vz);
 	spacecraft->orbitState.vsat = vsat;
 
-//	spacecraft->gcAltitude = rsmag;
-//	spacecraft->gcLongitude = satlon;
-//	spacecraft->gcLatitude = satlat;
-//	spacecraft->gcVector.Set(0, gc_x);
-//	spacecraft->gcVector.Set(1, gc_y);
-//	spacecraft->gcVector.Set(2, gc_z);
-//	spacecraft->velocityVector.Set(0, vx);
-//	spacecraft->velocityVector.Set(1, vy);
-//	spacecraft->velocityVector.Set(2, vz);
-
 	return(1);
 }
 
@@ -361,7 +337,7 @@ SpacecraftSim::DetermineNextEvent(
 	// initialize next time of each event //
 	//------------------------------------//
 
-	static double update_state_time = 0.0;
+	static double update_state_time = _epoch;
 
 	//----------------------------------------//
 	// find minimum time from possible events //

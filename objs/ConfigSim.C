@@ -29,6 +29,10 @@ ConfigSpacecraftSim(
 	// configure the spacecraft simulator //
 	//------------------------------------//
  
+	double epoch;
+	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
+		return(0);
+
 	double semi_major_axis;
 	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
 		return(0);
@@ -49,12 +53,15 @@ ConfigSpacecraftSim(
 	if (! config_list->GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD, &arg_of_perigee))
 		return(0);
  
-	double mean_anomaly;
-	if (! config_list->GetDouble(MEAN_ANOMALY_KEYWORD, &mean_anomaly))
+	double mean_anomaly_at_epoch;
+	if (! config_list->GetDouble(MEAN_ANOMALY_AT_EPOCH_KEYWORD,
+		&mean_anomaly_at_epoch))
+	{
 		return(0);
+	}
  
-	spacecraft_sim->DefineOrbit(semi_major_axis, eccentricity, inclination,
-		long_of_asc_node, arg_of_perigee, mean_anomaly);
+	spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
+		inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
 
 	//-------------------------//
 	// set up ephemeris period //
@@ -64,7 +71,7 @@ ConfigSpacecraftSim(
 	if (! config_list->GetDouble(EPHEMERIS_PERIOD_KEYWORD, &eph_period))
 		return(0);
 	spacecraft_sim->SetEphemerisPeriod(eph_period);
- 
+
 	return(1);
 }
 
@@ -102,6 +109,20 @@ ConfigInstrumentSim(
 
 	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
 		return(0);
+
+	//--------------------------------//
+	// initialize start and end times //
+	//--------------------------------//
+
+	double start_time;
+	if (! config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD, &start_time))
+		return(0);
+	instrument_sim->startTime = start_time;
+
+	double end_time;
+	if (! config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD, &end_time))
+		return(0);
+	instrument_sim->endTime = end_time;
 
 	return(1);
 }

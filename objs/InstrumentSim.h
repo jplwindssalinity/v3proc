@@ -67,6 +67,8 @@ public:
 	// variables //
 	//-----------//
 
+	double			startTime;
+	double			endTime;
 	AntennaSim		antennaSim;		// the antenna simulator
 
 	//---------------------------//
@@ -81,6 +83,8 @@ protected:
 	//-----------//
 	// variables //
 	//-----------//
+
+	double		_scatBeamTime[MAX_NUMBER_OF_BEAMS];
 
 	//---------------------------//
 	// level 0 frame information //

@@ -19,7 +19,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	l00FrameReady(0), _spotNumber(0)
+:	startTime(0.0), endTime(0.0), l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -28,8 +28,6 @@ InstrumentSim::~InstrumentSim()
 {
 	return;
 }
-
-double g_scat_beam_time[MAX_NUMBER_OF_BEAMS];
 
 //---------------------------//
 // InstrumentSim::Initialize //
@@ -41,7 +39,7 @@ InstrumentSim::Initialize(
 {
 	for (int i = 0; i < antenna->numberOfBeams; i++)
 	{
-		g_scat_beam_time[i] = antenna->beam[i].timeOffset;
+		_scatBeamTime[i] = startTime + antenna->beam[i].timeOffset;
 	}
 	return(1);
 }
@@ -60,13 +58,13 @@ InstrumentSim::DetermineNextEvent(
 	//----------------------------------------//
 
 	int min_idx = 0;
-	double min_time = g_scat_beam_time[0];
+	double min_time = _scatBeamTime[0];
 	for (int i = 1; i < antenna->numberOfBeams; i++)
 	{
-		if (g_scat_beam_time[i] < min_time)
+		if (_scatBeamTime[i] < min_time)
 		{
 			min_idx = i;
-			min_time = g_scat_beam_time[i];
+			min_time = _scatBeamTime[i];
 		}
 	}
 
@@ -85,12 +83,12 @@ InstrumentSim::DetermineNextEvent(
 
 	if (min_idx == 0)
 	{
-		g_scat_beam_time[min_idx] = (double)(int)(min_time /
+		_scatBeamTime[min_idx] = (double)(int)(min_time /
 			antenna->priPerBeam + 1.5) * antenna->priPerBeam;
 	}
 	else
 	{
-		g_scat_beam_time[min_idx] = (double)(int)(min_time /
+		_scatBeamTime[min_idx] = (double)(int)(min_time /
 			antenna->priPerBeam + 1.0) * antenna->priPerBeam +
 			antenna->beam[min_idx].timeOffset;
 	}

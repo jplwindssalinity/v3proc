@@ -30,12 +30,13 @@ static const char rcs_id_configsim_h[] =
 // Spacecraft //
 //------------//
 
+#define ORBIT_EPOCH_KEYWORD				"ORBIT_EPOCH"
 #define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
 #define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
 #define INCLINATION_KEYWORD				"INCLINATION"
 #define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
 #define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
-#define MEAN_ANOMALY_KEYWORD			"MEAN_ANOMALY"
+#define MEAN_ANOMALY_AT_EPOCH_KEYWORD	"MEAN_ANOMALY_AT_EPOCH"
 
 #define EPHEMERIS_PERIOD_KEYWORD		"EPHEMERIS_PERIOD"
 
@@ -47,6 +48,9 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 //------------//
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
+
+#define INSTRUMENT_START_TIME_KEYWORD	"INSTRUMENT_START_TIME"
+#define INSTRUMENT_END_TIME_KEYWORD		"INSTRUMENT_END_TIME"
 
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
