@@ -331,6 +331,21 @@ SpacecraftSim::UpdateOrbit(
 	return(1);
 }
 
+//-------------------------------//
+// SpacecraftSim::UpdateAttitude //
+//-------------------------------//
+
+int
+SpacecraftSim::UpdateAttitude(
+	Spacecraft*		spacecraft)
+{
+	// eventually, a function should go here
+	spacecraft->attitude.SetRoll(0.0);
+	spacecraft->attitude.SetPitch(0.0);
+	spacecraft->attitude.SetYaw(0.0);
+	return(1);
+}
+
 //-----------------------------------//
 // SpacecraftSim::DetermineNextEvent //
 //-----------------------------------//
