@@ -14,6 +14,7 @@ static const char rcs_id_ephemeris_c[] =
 #include "List.h"
 #include "List.C"
 #include "Interpolate.h"
+#include "Constants.h"
 
 //============//
 // OrbitState //
@@ -267,7 +268,7 @@ Ephemeris::GetOrbitState(
 	OrbitState* os2;
 	if (_GetBracketingOrbitStates(time, &os1, &os2) == 0)
 	{
-		//	printf("Error: Can't find requested time %g in Ephemeris\n",time);
+		printf("Error: Can't find requested time %g in Ephemeris\n",time);
 		return(0);
 	}
 
@@ -389,17 +390,23 @@ Ephemeris::GetNextOrbitState(
 // using this ephemeris object to define the subtrack.
 // This method locates the ephemeris point closest to the position point
 // and then uses the surface distance method to get the cross track distance,
-// and the starting time reference to get the along track distance.
+// and the reference point to get the along track distance.
 // The measurement time is used to determine which orbit the subtrack
 // coordinates are needed for.  Otherwise, the position will have subtrack
 // coordinates in every rev.
 //
 // INPUTS:
+//	rground = the position on the earth's surface to be gridded.
+//	subtrack_start = position on surface of grid start (0,0 point).
+//	start_time = the time when the s/c is directly over subtrack_start.
+//	measurement_time = the time at which rground was observed.
+//	crosstrack,alongtrack = pointers to return variables. (km)
 //
 
 int
 Ephemeris::GetSubtrackCoordinates(
 	EarthPosition	rground,
+	EarthPosition	subtrack_start,
 	double			start_time,
 	double			measurement_time,
 	float*			crosstrack,
@@ -525,23 +532,18 @@ Ephemeris::GetSubtrackCoordinates(
 	double min_time;
 	if (r1 < r2) min_time = t1; else min_time = t2;
 
-	// Compute the s/c position at the start of the subtrack grid, and at
-	// the minimum range position.  Also get the s/c velocity vector at the
-	// minimum range position.
-	EarthPosition start_position;
+	// Compute the s/c position and velocity at the minimum range point.
 	OrbitState min_state;
-	if (GetOrbitState(min_time,EPHEMERIS_INTERP_ORDER,&min_state) == 0) return(0);
-	//if (GetOrbitState_2pt(min_time,&min_state) == 0) return(0);
-	if (GetPosition(start_time,EPHEMERIS_INTERP_ORDER,&start_position) == 0)
+	if (GetOrbitState(min_time,EPHEMERIS_INTERP_ORDER,&min_state) == 0)
+	{
 		return(0);
+	}
 
-	// Compute the corresponding nadir points on the earth's surface.
+	// Compute the corresponding nadir point on the earth's surface.
 	EarthPosition subtrack_min = min_state.rsat.Nadir();
-	EarthPosition subtrack_start = start_position.Nadir();
 
-	// Compute surface distances in the crosstrack and alongtrack directions.
+	// Compute surface distance in the crosstrack direction (simple arclength).
 	*crosstrack = subtrack_min.surface_distance(rground);
-	*alongtrack = subtrack_min.surface_distance(subtrack_start);
 
 	// Determine which side the surface point is on.
 	Vector3 vec = subtrack_min & rground;	// cross product
@@ -551,11 +553,47 @@ Ephemeris::GetSubtrackCoordinates(
 		*crosstrack = -(*crosstrack);	// left side is defined to be negative
 	}
 
-	// Do the same for the along track distance (negative before the start point).
-	if (min_time < start_time)
-	{
-		*alongtrack = -(*alongtrack);	// before start is negative.
+	// The along track distance requires more care to keep it increasing
+	// smoothly around one rev, and across rev boundaries.
+	// Below, we integrate along the subtrack.
+
+	double delta_time = min_time - start_time;
+	double sign;
+
+	if (delta_time < 0.0)
+	{	// Need to integrate backwards.
+		sign = -1.0;
+		delta_time = -delta_time;
 	}
+	else
+	{
+		sign = 1.0;
+	}
+
+	int N = (int)(delta_time / SUBTRACK_INTEGRATION_STEPSIZE);
+	EarthPosition rstep,rsat;
+	EarthPosition rprev = subtrack_start;
+
+	for (int i=1; i <= N; i++)
+	{
+		double time = start_time + sign*i*SUBTRACK_INTEGRATION_STEPSIZE;
+		if (GetPosition(time,EPHEMERIS_INTERP_ORDER,&rsat) == 0)
+		{
+			printf("Error integrating along track\n");
+			*alongtrack = 0;
+			break;
+		}
+		rstep = rsat.Nadir();
+		float arclen = rprev.surface_distance(rstep);
+		*alongtrack += arclen;
+		rprev = rstep;
+	}
+
+	// Add in the last small piece (less than a stepsize).
+	*alongtrack += rprev.surface_distance(subtrack_min);
+
+	// Apply sign to result.
+	*alongtrack *= sign;
 
 	return(1);
 }

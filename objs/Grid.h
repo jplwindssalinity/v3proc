@@ -44,6 +44,7 @@ public:
 				double crosstrack_size, double alongtrack_size);
 
 	int		SetStartTime(double start_time);
+	int		SetEndTime(double end_time);
 
 	//---------------------//
 	// adding measurements //
@@ -79,9 +80,16 @@ protected:
 
 	//
 	// start_time specifies the zero point of the along track axis.
+	// end_time specifes the largest along track index that will be gridded.
+	// start_position is the nadir point corresponding to start_time.
 	//
 
+	EarthPosition _start_position;
 	double _start_time;
+	double _end_time;
+
+	// index corresponding to _end_time.
+	int _max_vati;
 
 	//
 	// _ati_start tracks the current earliest point in the circular buffer
@@ -98,6 +106,8 @@ protected:
 
 	int				_ati_start;
 	int				_ati_offset;
+
+	double			_orbit_period;
 
 	OffsetListList**	_grid;			// the grid of lists of offset lists
 };

@@ -21,7 +21,8 @@ Grid::Grid()
 :	_crosstrack_res(0.0), _alongtrack_res(0.0),
 	_crosstrack_size(0.0), _alongtrack_size(0.0),
 	_crosstrack_bins(0), _alongtrack_bins(0),
-	_start_time(0.0), _ati_start(0), _ati_offset(0),
+	_start_time(0.0), _end_time(0.0), _max_vati(0),
+	_ati_start(0), _ati_offset(0), _orbit_period(0.0),
 	_grid(NULL)
 {
 	return;
@@ -41,6 +42,49 @@ Grid::SetStartTime(double start_time)
 {
 	_start_time = start_time;
 	l17.header.startTime = _start_time;
+
+	if (ephemeris.GetPosition(_start_time,EPHEMERIS_INTERP_ORDER,
+		&_start_position) == 0)
+	{
+		printf("Error: Grid start time is out of ephemeris range\n");
+		exit(-1);
+	}
+
+	return(1);
+}
+
+int
+Grid::SetEndTime(double end_time)
+{
+	_end_time = end_time;
+//	l17.header.endTime = _end_time;
+
+	//--------------------------------------------------------------//
+	// Determine corresponding along track index (in virtual grid).
+	//--------------------------------------------------------------//
+
+	EarthPosition r;
+	if (ephemeris.GetPosition(_end_time,EPHEMERIS_INTERP_ORDER,&r) == 0)
+	{
+		printf("Error: Grid end time is out of ephemeris range\n");
+		exit(-1);
+	}
+
+	float ctd, atd;
+	if (ephemeris.GetSubtrackCoordinates(r, _start_position, _start_time,
+		_end_time, &ctd, &atd) == 0)
+	{
+		printf("Error: No subtrack coordinates for grid end time\n");
+		exit(-1);
+	}
+
+	_max_vati = (int) (atd/_alongtrack_res);	// virtual along track index.
+
+	if (_max_vati < 0)
+	{
+		printf("Warning: Grid end falls before grid start -> no output\n");
+	}
+
 	return(1);
 }
 
@@ -117,8 +161,8 @@ Grid::Add(
 	//----------------------------------//
 
 	float ctd, atd;
-	if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_time,
-		meas_time, &ctd, &atd) == 0)
+	if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_position,
+		_start_time, meas_time, &ctd, &atd) == 0)
 	{
 		return(0);	// Couldn't find a grid position, so dump this measurement.
 	}
@@ -141,13 +185,17 @@ Grid::Add(
 	// Negative vati means the point falls before the defined grid start.
 	// For this special case, Add() returns success, but dumps the measurement.
 	// If vati falls inside the defined grid, but in a portion that has been
-	// already output, then an error message is generated (see the next
-	// if-block after this one).
+	// already output, then an error message is generated (see below).
 	//
 
 	if (vati < 0)
 	{
 //		delete meas;
+		return(1);
+	}
+
+	if (vati > _max_vati)
+	{	// beyond end of grid, so do nothing.
 		return(1);
 	}
 

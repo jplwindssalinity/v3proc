@@ -14,8 +14,9 @@ static const char rcs_id_ephemeris_h[] =
 #include "BufferedList.h"
 #include "EarthPosition.h"
 
-#define EPHEMERIS_INTERP_ORDER	8
-#define RANGE_TIME_TOL			0.1
+#define EPHEMERIS_INTERP_ORDER			8
+#define SUBTRACK_INTEGRATION_STEPSIZE	2000.0
+#define RANGE_TIME_TOL					0.1
 
 //======================================================================
 // CLASSES
@@ -101,8 +102,10 @@ public:
 	// Subtrack conversion.
 	//
 
-	int GetSubtrackCoordinates(EarthPosition rground, double start_time,
-			double measurement_time, float *crosstrack, float *alongtrack);
+	int GetSubtrackCoordinates(EarthPosition rground,
+			EarthPosition subtrack_start, double start_time,
+			double measurement_time,
+			float *crosstrack, float *alongtrack);
 
 protected:
 
