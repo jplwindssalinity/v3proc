@@ -138,7 +138,7 @@ int  float_query(FILE* fp, char* query, float* current_value, int silent);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -ip ]", "<gmf_file>", "[output_base]", 0 };
+const char* usage_array[] = { "[ -ips ]", "<gmf_file>", "[output_base]", 0 };
 
 //--------------//
 // MAIN PROGRAM //
