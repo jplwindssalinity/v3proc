@@ -290,6 +290,7 @@ int32       sliceIndex)   // index in slices
 	FreeContents();
 
     Parameter* param=0;
+
     param = l1bHdf->GetParameter(SLICE_QUAL_FLAG, UNIT_DN);
     assert(param != 0);
     unsigned int* uintP = (unsigned int*)param->data;
@@ -682,6 +683,9 @@ int32        hdfIndex,  // index in the L1BHDF
 int32        pulseIndex)   // index of the pulses (max of 100)
 {
     assert(l1bHdf != 0);
+
+    Parameter* param=0;
+
     FreeContents();
 
     // get time VD, use TAI time as base
@@ -698,7 +702,6 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     //----------------------------
     scOrbitState.time = time;
 
-    Parameter* param=0;
     param = l1bHdf->GetParameter(X_POS, UNIT_KILOMETERS);
     assert(param != 0);
     double x_pos = (double)(*((float*)(param->data)));
@@ -853,8 +856,20 @@ int32        hdfIndex)     // index in the HDF
     Parameter* param = l1bHdf->GetParameter(NUM_PULSES, UNIT_DN);
     assert(param != 0);
     int num_pulses = (int)(*((char*)(param->data)));
+
     for (int i = 0; i < num_pulses; i++)
     {
+        //-------------------------------------------------------
+        // the bit 0-1 in sigma0_mode_flag must be 0 - meas pulse
+        // otherwise, skip this pulse
+        //-------------------------------------------------------
+        param = l1bHdf->GetParameter(SIGMA0_MODE_FLAG, UNIT_DN);
+        assert(param != 0);
+        unsigned short* ushortP = (unsigned short*) (param->data);
+        unsigned short sliceModeFlags = *(ushortP + i);
+        if ((sliceModeFlags & 0x0003) != 0)
+            break;
+
         MeasSpot* new_meas_spot = new MeasSpot();
         if (! new_meas_spot->UnpackL1BHdf(l1bHdf, hdfIndex, i) ||
                                         ! Append(new_meas_spot))
