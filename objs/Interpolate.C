@@ -99,7 +99,7 @@ polcoe(
 	// allocate temporary arrays //
 	//---------------------------//
 
-	double* s = (double *)malloc(n * sizeof(double));
+	double* s = (double *)malloc((n+1) * sizeof(double));
 	if (s == NULL)
 		return(0);
 
