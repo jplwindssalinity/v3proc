@@ -468,6 +468,8 @@ main(
 // process_orbit_step //
 //--------------------//
 
+#define QUOTE  '"'
+
 int
 process_orbit_step(
     int          beam_idx,
@@ -531,6 +533,16 @@ process_orbit_step(
 
     if (diag_base)
     {
+        //---------------------------------------------//
+        // determine if orbit step will be used in fit //
+        //---------------------------------------------//
+
+        char* used_string = "DISCARDED";
+        if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
+        {
+            used_string = "USED";
+        }
+
         char filename[1024];
         sprintf(filename, "%s.b%1d.s%03d", diag_base, beam_idx + 1,
             orbit_step);
@@ -539,10 +551,15 @@ process_orbit_step(
         {
             return(0);
         }
+        fprintf(ofp, "@ subtitle %cBeam %d, Orbit Step %d, %s%c\n", QUOTE,
+            beam_idx + 1, orbit_step, used_string, QUOTE);
+        fprintf(ofp, "@ xaxis label %cAzimuth Angle (deg)%c\n", QUOTE, QUOTE);
+        fprintf(ofp, "@ yaxis label %cBaseband Frequency (kHz)%c\n", QUOTE,
+            QUOTE);
         for (int i = 0; i < g_count[beam_idx]; i++)
         {
             fprintf(ofp, "%g %g\n", g_azimuth[beam_idx][i] * rtd,
-                g_meas_spec_peak[beam_idx][i]);
+                g_meas_spec_peak[beam_idx][i] / 1000.0);
         }
         fprintf(ofp, "&\n");
 
@@ -569,7 +586,8 @@ process_orbit_step(
         double step = two_pi / 360.0;
         for (double azim = 0; azim < two_pi + step / 2.0; azim += step)
         {
-            fprintf(ofp, "%g %g\n", azim * rtd, a * cos(azim + p) + c);
+            float value = a * cos(azim + p) + c;
+            fprintf(ofp, "%g %g\n", azim * rtd, value / 1000.0);
         }
 
         fclose(ofp);
@@ -755,12 +773,22 @@ plot_fit(
     int          term_count)
 {
     static char* term_string[3] = { "amp", "phase", "bias" };
+    static char* title_string[3] = { "Amplitude", "Phase", "Bias" };
+    static char* unit_string[3] = { "Frequency (Hz)", "Angle (radians)",
+        "Frequency (Hz)" };
+
     char filename[1024];
     sprintf(filename, "%s.b%1d.%s", base, beam_idx + 1,
         term_string[term_idx]);
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
         return(0);
+
+    fprintf(ofp, "@ subtitle %cBeam %d, %s%c\n", QUOTE,
+        beam_idx + 1, title_string[term_idx], QUOTE);
+    fprintf(ofp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, unit_string[term_idx],
+        QUOTE);
 
     for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
