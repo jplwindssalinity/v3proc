@@ -15,14 +15,14 @@
 //    Performs MUDH PCA classification and writes out two arrays:
 //      A floating point probability of rain array and a byte flag
 //      array.  The byte flag array has the following meanings:
-//      0 = both beams, classified as no rain
-//      1 = both beams, classified as rain
-//      2 = both beams, unclassifiable
-//      3 = outer beam only, classified as no rain
-//      4 = outer beam only, classified as rain
-//      5 = outer beam only, unclassifiable
-//      6 = couldn't classify
-//      7 = not a valid wind vector
+//      0 = inner swath, classified as no rain
+//      1 = inner swath, classified as rain
+//      2 = inner swath, unclassifiable
+//      3 = outer swath, classified as no rain
+//      4 = outer swath, classified as rain
+//      5 = outer swath, unclassifiable
+//      6 = no wind retrieved
+//      7 = unknown
 //
 // OPTIONS
 //
@@ -351,16 +351,42 @@ main(
         for (int cti = 0; cti < CT_WIDTH; cti++)
         {
             value_tab[ati][cti] = -1.0;
-            flag_tab[ati][cti] = CANNOT_CLASSIFY;
+            flag_tab[ati][cti] = UNKNOWN;    // generic default
 
-            // speed, direction, and mle are ALWAYS needed
+            //-----------------------------------//
+            // is this a valid wind vector cell? //
+            //-----------------------------------//
+
             if (spd_array[ati][cti] == MAX_SHORT ||
                 dir_array[ati][cti] == MAX_SHORT ||
                 mle_array[ati][cti] == MAX_SHORT)
             {
-                flag_tab[ati][cti] = NO_WVC;
+                flag_tab[ati][cti] = NO_WIND;
                 continue;
             }
+
+            //--------------------------//
+            // determine swath location //
+            //--------------------------//
+
+            int swath_idx;
+            if (nbd_array[ati][cti] == MAX_SHORT)
+            {
+                swath_idx = 1;    // outer swath (inner beam not available)
+                flag_tab[ati][cti] = OUTER_UNKNOWN;
+            }
+            else
+            {
+                swath_idx = 0;    // inner swath
+                flag_tab[ati][cti] = INNER_UNKNOWN;
+            }
+
+            //-----------------------------------------------//
+            // don't do the outer swath unless PCA available //
+            //----------------------------------------------//
+
+            if (swath_idx == 1 && ! opt_outer_swath)
+                continue;
 
             //------//
             // MUDH //
@@ -370,7 +396,6 @@ main(
             param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
             param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
-            // NBD is only for both beams
             int got_nbd = 0;
             if (nbd_array[ati][cti] != MAX_SHORT)
             {
@@ -382,17 +407,16 @@ main(
             // ENOF/Qual //
             //-----------//
 
+            int got_qual = 0;
+            if (qual_array[ati][cti] != -100.0)
+            {
+                param[QUAL_IDX] = qual_array[ati][cti];
+                got_qual = 1;
+            }
+
             int got_enof = 0;
-
-            // qual is ALWAYS needed
-            if (qual_array[ati][cti] == -100.0)
-                continue;
-            param[QUAL_IDX] = qual_array[ati][cti];
-
-            // ENOF is only needed for both beams
-            if (! finite((double)enof_array[ati][cti]))
-                continue;    // bad value
-            if (enof_array[ati][cti] != -100.0)
+            if (enof_array[ati][cti] != -100.0 &&
+                finite((double)enof_array[ati][cti]))
             {
                 param[ENOF_IDX] = enof_array[ati][cti];
                 got_enof = 1;
@@ -403,20 +427,18 @@ main(
             //----//
 
             double tbv_cnt = 0.0;
+            int got_tbv = 0;
+            if (tbv_cnt_array[ati][cti] > 0 &&
+                tbv_array[ati][cti] < 300.0)
+            {
+                param[TBV_IDX] = tbv_array[ati][cti];
+                param[TBV_STD_IDX] = tbv_std_array[ati][cti];
+                tbv_cnt = (double)tbv_cnt_array[ati][cti];
+                got_tbv = 1;
+            }
+
             double tbh_cnt = 0.0;
             int got_tbh = 0;
-
-            // Tb v is always needed
-            if (tbv_cnt_array[ati][cti] == 0 ||
-                tbv_array[ati][cti] >= 300.0)
-            {
-                continue;
-            }
-            param[TBV_IDX] = tbv_array[ati][cti];
-            param[TBV_STD_IDX] = tbv_std_array[ati][cti];
-            tbv_cnt = (double)tbv_cnt_array[ati][cti];
-
-            // Tb h is needed for both beams only
             if (tbh_cnt_array[ati][cti] > 0 &&
                 tbh_array[ati][cti] < 300.0)
             {
@@ -430,53 +452,47 @@ main(
             // transmittance //
             //---------------//
 
-            // set these for convenience in writing eq's
-            double tbv = param[TBV_IDX];
-            double tbh = param[TBH_IDX];
-
-            double tbvc = tbv * alpha1 + beta1;
+            int got_tau = 0;
             double tau = 0.0;
-            if (got_tbh)
+            if (got_tbv && got_tbh)
             {
-                double tbhc = tbh * alpha2 + beta2;
+                double tbvc = param[TBV_IDX] * alpha1 + beta1;
+                double tbhc = param[TBH_IDX] * alpha2 + beta2;
                 tau = a0 + a1 * log(300.0 - tbvc) +
                     a2 * log(300.0 - tbhc) + a3 * (tbvc - tbhc);
+                got_tau = 1;
             }
-            else
+            else if (got_tbv)
             {
+                double tbvc = param[TBV_IDX] * alpha1 + beta1;
                 tau = a4 + a5 * log(300.0 - tbvc);
+                got_tau = 1;
             }
             if (tau > 1.0) tau = 1.0;
             if (tau < 0.0) tau = 0.0;
             param[TRANS_IDX] = tau;
 
-            //--------------------------//
-            // determine swath location //
-            //--------------------------//
-            // all outer beam info is available (otherwise we woudn't
-            // have made it this far).  just check for inner beam
-            // info.
+            //------------------//
+            // check swath info //
+            //------------------//
 
-            int swath_idx;
-            if (got_nbd && got_enof && got_tbh &&
-                cti >= 8 && cti <= 67)
+            if (swath_idx == 0)
             {
-                swath_idx = 0;    // both beams
-            }
-            else if (! got_nbd && ! got_enof && ! got_tbh &&
-                (cti <= 8 || cti >= 67) )
-            {
-                swath_idx = 1;    // outer beam only
+                // inner swath
+                if (! got_nbd || ! got_enof || ! got_qual || ! got_tbh ||
+                    ! got_tbv || ! got_tau)
+                {
+                    continue;    // missing info
+                }
             }
             else
-                continue;    // i don't know what the hell is going on.
-
-            //-----------------------------------------------//
-            // don't do the outer swath unless PCA available //
-            //----------------------------------------------//
-
-            if (swath_idx == 1 && ! opt_outer_swath)
-                continue;
+            {
+                // outer swath
+                if (! got_qual || ! got_tbv || ! got_tau)
+                {
+                    continue;    // missing info
+                }
+            }
 
             //--------------------------------------//
             // determine principle component values //
@@ -520,23 +536,19 @@ main(
 
             if (prob_value < 0.0 || prob_value > 1.0)
             {
-                value_tab[ati][cti] = -1.0;
-                if (swath_idx == 0)
-                    flag_tab[ati][cti] = BOTH_UNKNOWN;
-                else if (swath_idx == 1)
-                    flag_tab[ati][cti] = OUTER_UNKNOWN;
+                // do nothing, already set to unknown
             }
             else if (prob_value <= threshold)
             {
                 if (swath_idx == 0)
-                    flag_tab[ati][cti] = BOTH_CLEAR;
+                    flag_tab[ati][cti] = INNER_CLEAR;
                 else if (swath_idx == 1)
                     flag_tab[ati][cti] = OUTER_CLEAR;
             }
             else
             {
                 if (swath_idx == 0)
-                    flag_tab[ati][cti] = BOTH_RAIN;
+                    flag_tab[ati][cti] = INNER_RAIN;
                 else if (swath_idx == 1)
                     flag_tab[ati][cti] = OUTER_RAIN;
             }
