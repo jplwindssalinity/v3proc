@@ -39,23 +39,23 @@ public:
         Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val);
 	~Kp();
 
-	//--------------//
-	// accessing Kp //
-	//--------------//
+    //--------------//
+    // accessing Kp //
+    //--------------//
 
-	int		GetKpc2(Meas* meas, double sigma_0, double* kpc2);
-	int		GetKpm2(int pol_idx, float speed, double* kpm2);
-	int		GetKpri2(double* kpri2);
-	int		GetKprs2(Meas* meas, double* kprs2);
-	int		GetKp2(Meas* meas, double sigma_0, int pol_idx, 
-			       float speed, double* kp2);
+    int  GetKpc2(Meas* meas, double sigma_0, double* kpc2);
+    int  GetKpm2(Meas::MeasTypeE meas_type, float speed, double* kpm2);
+    int  GetKpri2(double* kpri2);
+    int  GetKprs2(Meas* meas, double* kprs2);
+    int  GetKp2(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type,
+             float speed, double* kp2);
 
 	//---------------------//
 	// accessing variances //
 	//---------------------//
 
 	int		GetVpc(Meas* meas, double sigma_0, double* vpc);
-	int		GetVp(Meas* meas, double sigma_0, int pol_idx, 
+	int		GetVp(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type, 
 			      float speed, double* vp);
 
 	//-----------//

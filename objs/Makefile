@@ -70,6 +70,10 @@ OBJS = \
 	Meas.o \
 	Misc.o \
 	MiscTable.o \
+	Pscat.o \
+	PscatConfig.o \
+	PscatL1A.o \
+	PscatSim.o \
 	Qscat.o \
 	QscatConfig.o \
 	QscatSim.o \

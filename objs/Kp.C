@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_kp_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Kp.h"
 
@@ -14,26 +14,29 @@ static const char rcs_id_kp_c[] =
 //====//
 
 Kp::Kp()
-  : kpc2Constant(0.0), kpm2Constant(0.0), kpri2Constant(0.0), kprs2Constant(0.0), useConstantValues(0)
+:   kpc2Constant(0.0), kpm2Constant(0.0), kpri2Constant(0.0),
+    kprs2Constant(0.0), useConstantValues(0)
 {
-	return;
+    return;
 }
 
-Kp::Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val)
+Kp::Kp(
+    float  kpc_val,
+    float  kpm_val,
+    float  kpri_val,
+    float  kprs_val)
 {
-  useConstantValues=1;
-  kpc2Constant=kpc_val*kpc_val;
-  kpm2Constant=kpm_val*kpm_val;
-  kpri2Constant=kpri_val*kpri_val;
-  kprs2Constant=kprs_val*kprs_val;
-  return;
+    useConstantValues = 1;
+    kpc2Constant = kpc_val*kpc_val;
+    kpm2Constant = kpm_val*kpm_val;
+    kpri2Constant = kpri_val*kpri_val;
+    kprs2Constant = kprs_val*kprs_val;
+    return;
 }
-
-
 
 Kp::~Kp()
 {
-	return;
+    return;
 }
 
 //-------------//
@@ -86,24 +89,26 @@ Kp::GetKpc2(
 
 int
 Kp::GetKpm2(
-	int			pol_idx,
-	float		speed,
-	double*		kpm2)
+    Meas::MeasTypeE  meas_type,
+    float            speed,
+    double*          kpm2)
 {
-        //----------------------------//
-        // Constant Value case        //
-        //----------------------------//
-        if(useConstantValues){
-	  *kpm2=kpm2Constant;
-          return(1);
-	}
+    //---------------------//
+    // constant value case //
+    //---------------------//
 
-	double kpm_value;
-	if (! kpm.GetKpm(pol_idx, speed, &kpm_value))
-		return(0);
+    if (useConstantValues)
+    {
+        *kpm2 = kpm2Constant;
+        return(1);
+    }
 
-	*kpm2 = kpm_value * kpm_value;
-	return(1);
+    double kpm_value;
+    if (! kpm.GetKpm(meas_type, speed, &kpm_value))
+        return(0);
+
+    *kpm2 = kpm_value * kpm_value;
+    return(1);
 }
 
 //--------------//
@@ -166,24 +171,24 @@ Kp::GetKprs2(
 
 int
 Kp::GetKp2(
-	Meas*		meas,
-	double		sigma_0,
-	int			pol_idx,
-	float		speed,
-	double*		kp2)
+    Meas*            meas,
+    double           sigma_0,
+    Meas::MeasTypeE  meas_type,
+    float            speed,
+    double*          kp2)
 {
-	double kpc2, kpm2, kpri2, kprs2;
+    double kpc2, kpm2, kpri2, kprs2;
 
-	if (! GetKpc2(meas, sigma_0, &kpc2) ||
-		! GetKpm2(pol_idx, speed, &kpm2) ||
-		! GetKpri2(&kpri2) ||
-		! GetKprs2(meas, &kprs2))
-	{
-		return(0);
-	}
+    if (! GetKpc2(meas, sigma_0, &kpc2) ||
+        ! GetKpm2(meas_type, speed, &kpm2) ||
+        ! GetKpri2(&kpri2) ||
+        ! GetKprs2(meas, &kprs2))
+    {
+        return(0);
+    }
 
-	*kp2 = kpc2 + kpm2 + kpri2 + kprs2;
-	return(1);
+    *kp2 = kpc2 + kpm2 + kpri2 + kprs2;
+    return(1);
 }
 
 //------------//
@@ -227,23 +232,23 @@ Kp::GetVpc(
 
 int
 Kp::GetVp(
-	Meas*		meas,
-	double		sigma_0,
-	int			pol_idx,
-	float		speed,
-	double*		vp)
+    Meas*            meas,
+    double           sigma_0,
+    Meas::MeasTypeE  meas_type,
+    float            speed,
+    double*          vp)
 {
-	double vpc;
-	double kpm2, kpri2, kprs2;
-	if (! GetVpc(meas, sigma_0, &vpc) ||
-		! GetKpm2(pol_idx, speed, &kpm2) ||
-		! GetKpri2(&kpri2) ||
-		! GetKprs2(meas, &kprs2))
-	{
-		return(0);
-	}
+    double vpc;
+    double kpm2, kpri2, kprs2;
+    if (! GetVpc(meas, sigma_0, &vpc) ||
+        ! GetKpm2(meas_type, speed, &kpm2) ||
+        ! GetKpri2(&kpri2) ||
+        ! GetKprs2(meas, &kprs2))
+    {
+        return(0);
+    }
 
-	*vp = vpc + (kpm2 + kpri2 + kprs2) * sigma_0 * sigma_0;
+    *vp = vpc + (kpm2 + kpri2 + kprs2) * sigma_0 * sigma_0;
 
-	return(1);
+    return(1);
 }

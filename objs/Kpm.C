@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_kpm_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <malloc.h>
@@ -17,15 +17,15 @@ static const char rcs_id_kpm_c[] =
 //=====//
 
 Kpm::Kpm()
-:	_polCount(0), _table(NULL)
+:   _metCount(0), _table(NULL)
 {
-	return;
+    return;
 }
 
 Kpm::~Kpm()
 {
-	_Deallocate();
-	return;
+    _Deallocate();
+    return;
 }
 
 //----------------//
@@ -43,7 +43,7 @@ Kpm::ReadTable(
 	if (! _ReadHeader(fp))
 		return(0);
 
-	_polCount = 2;		// just force this for now
+	_metCount = 2;		// just force this for now
 
 	if (! _Allocate())
 		return(0);
@@ -83,10 +83,28 @@ Kpm::WriteTable(
 
 int
 Kpm::GetKpm(
-	int			pol_idx,
-	float		speed,
-	double*		kpm)
+    Meas::MeasTypeE  meas_type,
+    float            speed,
+    double*          kpm)
 {
+    //---------------------------------------------//
+    // determine coefficients for measurement type //
+    //---------------------------------------------//
+
+    int met_idx;
+    switch (meas_type)
+    {
+    case Meas::VV_MEAS_TYPE:
+        met_idx = 0;
+        break;
+    case Meas::HH_MEAS_TYPE:
+        met_idx = 1;
+        break;
+    default:
+        return(0);
+        break;
+    }
+
 	//----------------------------------//
 	// determine coefficients for speed //
 	//----------------------------------//
@@ -101,7 +119,7 @@ Kpm::GetKpm(
 	// interpolate to get Kpm //
 	//------------------------//
 
-	float* spd_table = *(_table + pol_idx);
+	float* spd_table = *(_table + met_idx);
 	*kpm = *(spd_table + idx[0]) * coef[0] +
 		*(spd_table + idx[1]) * coef[1];
 
@@ -115,7 +133,7 @@ Kpm::GetKpm(
 int
 Kpm::_Allocate()
 {
-	_table = (float **)make_array(sizeof(float), 2, _polCount,
+	_table = (float **)make_array(sizeof(float), 2, _metCount,
 		_speedIdx.GetBins());
 	if (_table == NULL)
 		return(0);
@@ -132,7 +150,7 @@ Kpm::_Deallocate()
 	if (_table == NULL)
 		return(1);
 
-	free_array((void *)_table, 2, _polCount, _speedIdx.GetBins());
+	free_array((void *)_table, 2, _metCount, _speedIdx.GetBins());
 
 	_table = NULL;
 	return(1);
@@ -177,7 +195,7 @@ Kpm::_ReadTable(
 	//----------------//
 
 	unsigned int bins = _speedIdx.GetBins();
-	for (int i = 0; i < _polCount; i++)
+	for (int i = 0; i < _metCount; i++)
 	{
 		if (fread((void *)*(_table + i), sizeof(float), bins, fp) != bins)
 		{
@@ -200,7 +218,7 @@ Kpm::_WriteTable(
 	//-----------------//
 
 	unsigned int bins = _speedIdx.GetBins();
-	for (int i = 0; i < _polCount; i++)
+	for (int i = 0; i < _metCount; i++)
 	{
 		if (fwrite((void *)*(_table + i), sizeof(float), bins, fp) != bins)
 		{
@@ -344,26 +362,25 @@ KpmField::Build(float corr_length)
 
 }
 
-//----------------------//
-// KpmField::GetRV
-//----------------------//
+//-----------------//
+// KpmField::GetRV //
+//-----------------//
 
 float
 KpmField::GetRV(
-	Kpm*	kpm,
-	int		polarization,
-	float	wspd,
-	LonLat	lon_lat)
+    Kpm*             kpm,
+    Meas::MeasTypeE  meas_type,
+    float            wspd,
+    LonLat           lon_lat)
 {
-	double kpm_value;
-	if (! kpm->GetKpm(polarization, wspd, &kpm_value))
-	{
-		fprintf(stderr, "KpmField::GetRV: I can't handle bad Kpm values!\n");
-		exit(1);
-	}
+    double kpm_value;
+    if (! kpm->GetKpm(meas_type, wspd, &kpm_value))
+    {
+        fprintf(stderr, "KpmField::GetRV: I can't handle bad Kpm values!\n");
+        exit(1);
+    }
 
-	return(GetRV(kpm_value,lon_lat));
-
+    return(GetRV(kpm_value, lon_lat));
 }
 
 float

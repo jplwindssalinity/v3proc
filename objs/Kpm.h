@@ -1,54 +1,55 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef KPM_H
 #define KPM_H
 
 static const char rcs_id_kpm_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Index.h"
 #include "EarthField.h"
 #include "Distributions.h"
+#include "Meas.h"
 
 //======================================================================
 // CLASSES
-//		Kpm, KpmField
+//    Kpm, KpmField
 //======================================================================
 
 //======================================================================
 // CLASS
-//		Kpm
+//    Kpm
 //
 // DESCRIPTION
-//		The Kpm object provides values of Kpm as needed.
+//    The Kpm object provides values of Kpm as needed.
 //======================================================================
 
 class Kpm
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	Kpm();
-	~Kpm();
+    Kpm();
+    ~Kpm();
 
-	//--------------//
-	// input/output //
-	//--------------//
+    //--------------//
+    // input/output //
+    //--------------//
 
-	int		ReadTable(const char* filename);
-	int		WriteTable(const char* filename);
+    int  ReadTable(const char* filename);
+    int  WriteTable(const char* filename);
 
 	//---------//
 	// getting //
 	//---------//
 
-	int		GetKpm(int pol_idx, float speed, double* kpm);
+    int  GetKpm(Meas::MeasTypeE meas_type, float speed, double* kpm);
 
 	//-----------//
 	// variables //
@@ -76,7 +77,7 @@ protected:
 	// variables //
 	//-----------//
 
-	int			_polCount;
+	int			_metCount;
 	Index		_speedIdx;
 	float**		_table;
 };
@@ -111,7 +112,8 @@ public:
 	// access
 	//--------------//
 
-	float GetRV(Kpm* kpm, int polarization, float wspd, LonLat lon_lat);
+	float GetRV(Kpm* kpm, Meas::MeasTypeE meas_type, float wspd,
+        LonLat lon_lat);
 	float GetRV(double kpm_value, LonLat lon_lat);
 
     //-----------//
