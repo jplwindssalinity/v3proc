@@ -865,13 +865,11 @@ evaluate(
             float fbb;
             if (g_opt_topo)
             {
-                fbb = fbb_table->GetFbb(spacecraft, qscat, NULL, NULL, &g_topo,
-                    &g_stable);
+                fbb = fbb_table->GetFbb(spacecraft, qscat, &g_topo, &g_stable);
             }
             else
             {
-                fbb = fbb_table->GetFbb(spacecraft, qscat, NULL, NULL, NULL,
-                    NULL);
+                fbb = fbb_table->GetFbb(spacecraft, qscat);
             }
 
             double dif = fbb -
