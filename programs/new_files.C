@@ -8,7 +8,7 @@
 //    new_files
 //
 // SYNOPSIS
-//    new_files <pattern_file> <type> [ done_log ]
+//    new_files <locator_file> <type> [ done_log ]
 //
 // DESCRIPTION
 //    Prints out a list of new files of the specified type.
@@ -21,14 +21,14 @@
 //
 // OPERANDS
 //    The following operands are supported:
-//      <pattern_file>  File containing the following information:
+//      <locator_file>  File containing the following information:
 //                        type  mature_age          (for each type)
 //                        type  directory  pattern  (repeated)
 //      <type>          The target type.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % new_files pattern.dat l1a l1a.dop.done
+//      % new_files locator.dat l1a l1a.dop.done
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -67,6 +67,8 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "e"
+
 //--------//
 // MACROS //
 //--------//
@@ -87,7 +89,8 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<pattern_file>", "<type>", "[ done_log ]", 0 };
+const char* usage_array[] = { "[ -e ]", "<locator_file>", "<type>",
+    "[ done_log ]", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -98,30 +101,49 @@ main(
     int    argc,
     char*  argv[])
 {
+    //------------//
+    // initialize //
+    //------------//
+
+    FILE* err_fp = NULL;  // don't report non-fatal errors, just keep going
+
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 3 && argc != 4)
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'e':
+            err_fp = stderr;    // report errors
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 2 && argc != optind + 3)
         usage(command, usage_array, 1);
 
-    int opt_idx = 1;
-    const char* pattern_file = argv[opt_idx++];
-    const char* type = argv[opt_idx++];
+    const char* locator_file = argv[optind++];
+    const char* type = argv[optind++];
     const char* done_log = NULL;
-    if (argc == 4)
-        done_log = argv[opt_idx++];
+    if (argc == optind + 1)
+        done_log = argv[optind++];
 
     //----------------------------//
-    // read pattern list for type //
+    // read locator list for type //
     //----------------------------//
 
     PatternList pattern_list;
-    if (! pattern_list.Read(pattern_file, type))
+    if (! pattern_list.Read(locator_file, type, stderr))
     {
         fprintf(stderr, "%s: error reading pattern list %s\n", command,
-            pattern_file);
+            locator_file);
         exit(1);
     }
 
@@ -132,7 +154,7 @@ main(
     FileList done_log_list;
     if (done_log != NULL)
     {
-        if (! done_log_list.Read(done_log))
+        if (! done_log_list.Read(done_log, stderr))
         {
             fprintf(stderr, "%s: error reading done log %s\n", command,
                 done_log);
@@ -145,7 +167,8 @@ main(
     //--------------------------//
 
     FileList new_file_list;
-    if (! pattern_list.NewStableFiles(&new_file_list, &done_log_list))
+    if (! pattern_list.NewStableFiles(&new_file_list, &done_log_list,
+        err_fp) && err_fp != NULL)
     {
         fprintf(stderr, "%s: error creating list of files\n", command);
         exit(1);

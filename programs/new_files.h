@@ -39,7 +39,7 @@ public:
     FileInfo();
     ~FileInfo();
 
-    int          Set(const char* file);
+    int          Set(const char* file, FILE* err_fp);
     const char*  Get() { return(_file); };
 
 private:
@@ -71,13 +71,13 @@ public:
     ~FileList();
 
     int  FreeContents();
-    int  Add(const char* file);
+    int  Add(const char* file, FILE* err_fp);
 
     //--------------//
     // input/output //
     //--------------//
 
-    int  Read(const char* filename);
+    int  Read(const char* filename, FILE* err_fp);
     int  Print();
 
     //--------------//
@@ -107,14 +107,16 @@ public:
     Pattern();
     ~Pattern();
 
-    int  Set(const char* directory, const char* pattern);
+    int  Set(const char* directory, const char* pattern, FILE* err_fp);
+
+    int  WriteAscii(FILE* fp);
 
     //--------------//
     // manipulation //
     //--------------//
 
     int  NewStableFiles(FileList* new_file_list, FileList* done_file_list,
-             int maturity);
+             int maturity, FILE* err_fp);
 
 private:
 
@@ -151,14 +153,15 @@ public:
     // input/output //
     //--------------//
 
-    int  Read(const char* pattern_file, const char* target_type);
+    int  Read(const char* pattern_file, const char* target_type, FILE* err_fp);
 
     //--------------//
     // manipulation //
     //--------------//
 
-    int  Add(const char* directory, const char* pattern);
-    int  NewStableFiles(FileList* new_file_list, FileList* done_file_list);
+    int  Add(const char* directory, const char* pattern, FILE* err_fp);
+    int  NewStableFiles(FileList* new_file_list, FileList* done_file_list,
+             FILE* err_fp);
 
 private:
 
@@ -191,13 +194,21 @@ FileInfo::~FileInfo()
 
 int
 FileInfo::Set(
-    const char*  file)
+    const char*  file,
+    FILE*        err_fp)
 {
     free(_file);
 
     _file = strdup(file);
     if (_file == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp, "FileInfo::Set: can't duplicate filename\n");
+            fprintf(err_fp, "    Filename: %s\n", file);
+        }
         return(0);
+    }
 
     return(1);
 }
@@ -237,15 +248,39 @@ FileList::FreeContents()
 
 int
 FileList::Add(
-    const char*  file)
+    const char*  file,
+    FILE*        err_fp)
 {
     FileInfo* new_fileinfo = new FileInfo;
     if (new_fileinfo == NULL)
-        return(0);
-
-    if (! new_fileinfo->Set(file) ||
-        ! Append(new_fileinfo))
     {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "FileList::Add: error creating new FileInfo object\n");
+        }
+        return(0);
+    }
+
+    if (! new_fileinfo->Set(file, err_fp))
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "FileList::Add: error setting filename in FileInfo object\n");
+            fprintf(err_fp, "    Filename: %s\n", file);
+        }
+        delete new_fileinfo;
+        return(0);
+    }
+    if (! Append(new_fileinfo))
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "FileList::Add: error appending FileInfo object to FileList\n");
+            fprintf(err_fp, "    Filename: %s\n", file);
+        }
         delete new_fileinfo;
         return(0);
     }
@@ -261,17 +296,32 @@ FileList::Add(
 
 int
 FileList::Read(
-    const char*  filename)
+    const char*  filename,
+    FILE*        err_fp)
 {
     FILE* ifp = fopen(filename, "r");
     if (ifp == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp, "FileList::Read: error opening file\n");
+            fprintf(err_fp, "    Filename: %s\n", filename);
+        }
         return(0);
+    }
 
     char file[FILE_SIZE];
     while (fscanf(ifp, " %s", file) == 1)
     {
-        if (! Add(file))
+        if (! Add(file, err_fp))
         {
+            if (err_fp != NULL)
+            {
+                fprintf(err_fp,
+                    "FileList::Read: error adding filename to FileList\n");
+                fprintf(err_fp, "    Input file: %s\n", filename);
+                fprintf(err_fp, "    Added file: %s\n", file);
+            }
             fclose(ifp);
             return(0);
         }
@@ -283,6 +333,11 @@ FileList::Read(
         return(1);
     }
 
+    if (err_fp != NULL)
+    {
+        fprintf(err_fp, "FileList::Read: error reading file\n");
+        fprintf(err_fp, "    Filename: %s\n", filename);
+    }
     fclose(ifp);
     return(0);
 }
@@ -343,19 +398,49 @@ Pattern::~Pattern()
 int
 Pattern::Set(
     const char*  directory,
-    const char*  pattern)
+    const char*  pattern,
+    FILE*        err_fp)
 {
     free(_directory);
     free(_pattern);
 
     _directory = strdup(directory);
     if (_directory == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "Pattern::Set: error duplicating directory string\n");
+            fprintf(err_fp, "    Directory: %s\n", directory);
+        }
         return(0);
+    }
 
     _pattern = strdup(pattern);
     if (_pattern == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "Pattern::Set: error duplicating pattern string\n");
+            fprintf(err_fp, "    Pattern: %s\n", pattern);
+        }
         return(0);
+    }
 
+    return(1);
+}
+
+//---------------------//
+// Pattern::WriteAscii //
+//---------------------//
+
+int
+Pattern::WriteAscii(
+    FILE*  fp)
+{
+    fprintf(fp, "    Directory: %s\n", _directory);
+    fprintf(fp, "      Pattern: %s\n", _pattern);
     return(1);
 }
 
@@ -367,7 +452,8 @@ int
 Pattern::NewStableFiles(
     FileList*  new_file_list,
     FileList*  done_file_list,
-    int        maturity)
+    int        maturity,
+    FILE*      err_fp)
 {
     //----------------//
     // open directory //
@@ -375,7 +461,15 @@ Pattern::NewStableFiles(
 
     DIR* dir = opendir(_directory);
     if (dir == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp, "Pattern::NewStableFiles: directory error\n");
+            fprintf(err_fp,
+                "    %s is not an openable directory\n", _directory);
+        }
         return(0);    // not a directory or some kind of error
+    }
 
     struct dirent* dir_entry;
     while ((dir_entry = readdir(dir)) != NULL)
@@ -403,8 +497,14 @@ Pattern::NewStableFiles(
             continue;
 
         // add to list
-        if (! new_file_list->Add(fullpath))
+        if (! new_file_list->Add(fullpath, err_fp))
         {
+            if (err_fp != NULL)
+            {
+                fprintf(err_fp, "Pattern::NewStableFiles: Add error\n");
+                fprintf(err_fp, "    Can't add %s to list of new files\n",
+                    fullpath);
+            }
             closedir(dir);
             return(0);
         }
@@ -455,7 +555,8 @@ PatternList::FreeContents()
 int
 PatternList::Read(
     const char*  pattern_file,
-    const char*  target_type)
+    const char*  target_type,
+    FILE*        err_fp)
 {
     //-----------------------//
     // open the pattern file //
@@ -463,7 +564,14 @@ PatternList::Read(
 
     FILE* ifp = fopen(pattern_file, "r");
     if (ifp == NULL)
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp, "PatternList::Read: error opening locator file\n");
+            fprintf(err_fp, "    Locator file: %s\n", pattern_file);
+        }
         return(0);
+    }
 
     //--------------------------//
     // read and parse each line //
@@ -482,8 +590,15 @@ PatternList::Read(
             if (strcmp(type, target_type) != 0)
                 continue;
 
-            if (! Add(directory, pattern))
+            if (! Add(directory, pattern, err_fp))
             {
+                if (err_fp != NULL)
+                {
+                    fprintf(err_fp,
+  "PatternList::Read: error adding directory and pattern to PatternList\n");
+                    fprintf(err_fp, "    Directory: %s\n", directory);
+                    fprintf(err_fp, "      Pattern: %s\n", pattern);
+                }
                 fclose(ifp);
                 return(0);
             }
@@ -508,6 +623,11 @@ PatternList::Read(
         return(1);
     }
 
+    if (err_fp != NULL)
+    {
+        fprintf(err_fp, "PatternList::Read: error reading locator file\n");
+        fprintf(err_fp, "    Filename: %s\n", pattern_file);
+    }
     fclose(ifp);
     return(0);
 }
@@ -519,16 +639,39 @@ PatternList::Read(
 int
 PatternList::Add(
     const char*  directory,
-    const char*  pattern)
+    const char*  pattern,
+    FILE*        err_fp)
 {
     Pattern* new_pattern = new Pattern;
     if (new_pattern == NULL)
-        return(0);
-
-    if (! new_pattern->Set(directory, pattern) ||
-        ! Append(new_pattern))
     {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "PatternList::Add: error creating new Pattern object\n");
+        }
+        return(0);
+    }
+
+    if (! new_pattern->Set(directory, pattern, err_fp))
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+                "PatternList::Add: error setting new Pattern\n");
+            fprintf(err_fp, "    Directory: %s\n", directory);
+            fprintf(err_fp, "      Pattern: %s\n", pattern);
+        }
         delete new_pattern;
+        return(0);
+    }
+    if (! Append(new_pattern))
+    {
+        if (err_fp != NULL)
+        {
+            fprintf(err_fp,
+            "PatternList::Add: error appending new Pattern to PatternList\n");
+        }
         return(0);
     }
 
@@ -542,13 +685,17 @@ PatternList::Add(
 int
 PatternList::NewStableFiles(
     FileList*  new_file_list,
-    FileList*  done_file_list)
+    FileList*  done_file_list,
+    FILE*      err_fp)
 {
     for (Pattern* pattern = GetHead(); pattern != NULL; pattern = GetNext())
     {
         if (! pattern->NewStableFiles(new_file_list, done_file_list,
-            _maturity))
+            _maturity, err_fp) && err_fp != NULL)
         {
+            fprintf(err_fp,
+              "PatternList::NewStableFiles: error finding new stable files\n");
+            pattern->WriteAscii(err_fp);
             return(0);
         }
     }
