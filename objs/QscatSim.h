@@ -73,14 +73,15 @@ public:
     int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
-             KpmField* kpmField, L1AFrame* l1a_frame);
+             KpmField* kpmField, Topo* topo, Stable* stable,
+             L1AFrame* l1a_frame);
     int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
     int  LoadSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
     int  SetL1ASpacecraft(Spacecraft* spacecraft, L1AFrame* l1a_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
-             MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
-             Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
-             KpmField* kpmField);
+             MeasSpot* meas_spot, WindField* windfield, Sigma0Map* inner_map,
+             Sigma0Map* outer_map, GMF* gmf, Kp* kp, KpmField* kpmField,
+             Topo* topo, Stable* stable, CheckFrame* cf);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Qscat* qscat,
              L1AFrame* l1a_frame);
     int  SetL1ALoopback(Qscat* qscat, L1AFrame* l1a_frame);

@@ -437,6 +437,8 @@ QscatSim::ScatSim(
     GMF*         gmf,
     Kp*          kp,
     KpmField*    kpmField,
+    Topo*        topo,
+    Stable*      stable,
     L1AFrame*    l1a_frame)
 {
     CheckFrame cf;
@@ -554,8 +556,8 @@ QscatSim::ScatSim(
     // set measurement values //
     //------------------------//
 
-    if (! SetMeasurements(spacecraft, qscat, &meas_spot, &cf,
-        windfield, inner_map, outer_map, gmf, kp, kpmField))
+    if (! SetMeasurements(spacecraft, qscat, &meas_spot, windfield,
+        inner_map, outer_map, gmf, kp, kpmField, topo, stable, &cf))
     {
         return(0);
     }
@@ -879,13 +881,15 @@ QscatSim::SetMeasurements(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     MeasSpot*    meas_spot,
-    CheckFrame*  cf,
     WindField*   windfield,
     Sigma0Map*   inner_map,
     Sigma0Map*   outer_map,
     GMF*         gmf,
     Kp*          kp,
-    KpmField*    kpmField)
+    KpmField*    kpmField,
+    Topo*        topo,
+    Stable*      stable,
+    CheckFrame*  cf)
 {
     //-------------------------//
     // for each measurement... //
@@ -1058,11 +1062,13 @@ QscatSim::SetMeasurements(
             {
                 if (simVs1BCheckfile)
                 {
-                  Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, cf);
+                    Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, topo,
+                        stable, cf);
                 }
                 else
                 {
-                  Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, NULL);
+                    Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, topo,
+                        stable, NULL);
                 }
             }
             if (! MeasToEsnX(qscat, meas, Xfactor, sigma0,
