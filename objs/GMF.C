@@ -1174,10 +1174,12 @@ GMF::SolutionCurve(
 			_bestSpd[phi_idx] = x2;
 			_bestObj[phi_idx] = f2;
 		}
-		ax = x1 - (x1 * 0.05);
+        // the additional 0.5 prevents near zero speeds from having nearly
+        // identical ax and cx
+		ax = x1 - (x1 * 0.05) - 0.5;
 		if (ax < _spdMin)
 			ax = _spdMin;
-		cx = x1 + (x2 * 0.05);
+		cx = x1 + (x2 * 0.05) + 0.5;
 		if (cx > _spdMax)
 			cx = _spdMax;
 	}
