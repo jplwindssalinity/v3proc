@@ -68,6 +68,13 @@ L1AToL1B::Convert(
 
 	l1b->frame.spotList.FreeContents();
 
+	//-----------//
+	// predigest //
+	//-----------//
+
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Antenna* antenna = &(instrument->antenna);
+
 	//------------------------//
 	// for each beam cycle... //
 	//------------------------//
@@ -75,16 +82,12 @@ L1AToL1B::Convert(
 	int base_slice_idx = 0;
 	int spot_idx = 0;
 
-	OrbitState* orbit_state = &(spacecraft->orbitState);
-
 	for (int beam_cycle = 0; beam_cycle < l1a->frame.antennaCyclesPerFrame;
 		beam_cycle++)
 	{
 		//------------------//
 		// for each beam... //
 		//------------------//
-
-		Antenna* antenna = &(instrument->antenna);
 
 		for (int beam_idx = 0; beam_idx < antenna->numberOfBeams;
 			beam_idx++)
