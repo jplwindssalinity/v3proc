@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -310,6 +310,7 @@ main(
         // set the ephemeris, orbit time, and orbit step //
         //-----------------------------------------------//
 
+        echo_info.frameTime.SetTime(frame->time);
         echo_info.gcX = frame->gcX;
         echo_info.gcY = frame->gcY;
         echo_info.gcZ = frame->gcZ;
