@@ -411,7 +411,7 @@ main(
 					// calculate the RGC delay //
 					//-------------------------//
 
-					range_step = range_tracker.OrbitTimeToRangeStep(
+					range_step = range_tracker.OrbitTicksToRangeStep(
 						instrument.orbitTicks);
 					float delay, duration;
 					range_tracker.GetDelayAndDuration(instrument_event.beamIdx,
