@@ -128,7 +128,7 @@ RandomVelocity::RandomVelocity()
 	_sample_period=1.0;
 	_radius=1.0;
         _mean=0.0;
-	_noise=new Uniform(0,0);
+	_noise= NULL;
 	_position=0.0;
 	_time=0.0;
 	_velocity=0.0;
