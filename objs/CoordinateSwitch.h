@@ -36,18 +36,21 @@ public:
 // construction
 //
 
-// Build from unit axial vectors
-CoordinateSwitch(Vector3 o2, Vector3 x2, Vector3 y2, Vector3 z2);
-// Build from a set of ordered rotations
-CoordinateSwitch(Vector3 o2, Attitude att);
-// Translation only
-CoordinateSwitch(Vector3 o2);
-~CoordinateSwitch();
+	CoordinateSwitch(Vector3 x2, Vector3 y2, Vector3 z2);
+	CoordinateSwitch(Vector3 o2);
+	CoordinateSwitch(Vector3 o2, Vector3 x2, Vector3 y2, Vector3 z2);
+	CoordinateSwitch(Attitude att);
+	CoordinateSwitch(Vector3 o2, Attitude att);
 
+	~CoordinateSwitch();
 
 //
 // methods
 //
+
+	void	SetAxes(Vector3 x2, Vector3 y2, Vector3 z2);
+	void	SetOrigin(Vector3 o2);
+	void	SetRotation(Attitude att);
 
 Vector3 Forward(Vector3 r);
 Vector3 Backward(Vector3 r);

@@ -9,31 +9,44 @@ static const char rcs_id_coordinateswitch_c[] =
 #include <math.h>
 #include "CoordinateSwitch.h"
 
-//
-// CoordinateSwitch
-//
+//==================//
+// CoordinateSwitch //
+//==================//
 
-//
 // Initialize with the unit coordinate vectors for frame 2 represented
-// in frame 1.  These are the rows of the coordinate transformation matrix
-// that changes a vector represented in frame 1 into the same vector
-// represented in frame 2.
-// The origin of frame 2 represented in frame 1 is stored in _o2.
-//
+// in frame 1.  These are the rows of the coordinate transformation
+// matrix that changes a vector represented in frame 1 into the same
+// vector represented in frame 2.
 
-CoordinateSwitch::CoordinateSwitch(Vector3 o2,
-								   Vector3 x2, Vector3 y2, Vector3 z2)
+CoordinateSwitch::CoordinateSwitch(
+	Vector3		x2,
+	Vector3		y2,
+	Vector3		z2)
 {
-
-_o2 = o2;
-x2.Scale(1.0);
-y2.Scale(1.0);
-z2.Scale(1.0);
-_trans.Rowset(x2,y2,z2);
-
+	SetAxes(x2, y2, z2);
+	return;
 }
-	
-//
+
+// The origin of frame 2 represented in frame 1 is stored in _o2.
+
+CoordinateSwitch::CoordinateSwitch(
+	Vector3		o2)
+{
+	SetOrigin(o2);
+	return;
+}
+
+CoordinateSwitch::CoordinateSwitch(
+	Vector3		o2,
+	Vector3		x2,
+	Vector3		y2,
+	Vector3		z2)
+{
+	SetOrigin(o2);
+	SetAxes(x2, y2, z2);
+	return;
+}
+
 // Initialize by forming the coordinate transformation matrix from a set
 // of ordered rotations about the coordinate axes of frame 1.
 // The coordinate transformation matrix changes a vector represented
@@ -49,57 +62,90 @@ _trans.Rowset(x2,y2,z2);
 // is the first to be applied, then order[0] = 1, if the second to be applied
 // then order[0] = 2, and so forth.
 // The origin of frame 2 represented in frame 1 is stored in _o2.
-//
 
-CoordinateSwitch::CoordinateSwitch(Vector3 o2, Attitude att)
+CoordinateSwitch::CoordinateSwitch(
+	Attitude	att)
 {
-
-_o2 = o2;
-
-double roll = att.GetRoll();
-double pitch = att.GetPitch();
-double yaw = att.GetYaw();
-
-double cr = cos(roll);
-double sr = sin(roll);
-double cp = cos(pitch);
-double sp = sin(pitch);
-double cy = cos(yaw);
-double sy = sin(yaw);
-
-Matrix3 rollmatrix(1,0,0,0,cr,sr,0,-sr,cr);
-Matrix3 pitchmatrix(cp,0,-sp,0,1,0,sp,0,cp);
-Matrix3 yawmatrix(1,0,0,0,cr,sr,0,-sr,cr);
-int *order = att.GetOrderIndicies();
-
-_trans.Identity();
-
-int i;
-for (i=1; i <= 3; i++)
-  {	// Apply rotation matrices in specifed order
-  if (order[0] == i) _trans = rollmatrix * _trans;
-  if (order[1] == i) _trans = pitchmatrix * _trans;
-  if (order[2] == i) _trans = yawmatrix * _trans;
-  }
-
+	SetRotation(att);
+	return;
 }
-	
-//
-// Initialize for translation only.
-// The origin of frame 2 represented in frame 1 is stored in _o2.
-//
 
-CoordinateSwitch::CoordinateSwitch(Vector3 o2)
-
+CoordinateSwitch::CoordinateSwitch(
+	Vector3		o2,
+	Attitude	att)
 {
-
-_o2 = o2;
-
+	SetOrigin(o2);
+	SetRotation(att);
+	return;
 }
 
 CoordinateSwitch::~CoordinateSwitch()
 {
-return;
+	return;
+}
+
+//---------//
+// SetAxes //
+//---------//
+
+void
+CoordinateSwitch::SetAxes(
+	Vector3		x2,
+	Vector3		y2,
+	Vector3		z2)
+{
+	x2.Scale(1.0);
+	y2.Scale(1.0);
+	z2.Scale(1.0);
+	_trans.Rowset(x2, y2, z2);
+	return;
+}
+
+//-----------//
+// SetOrigin //
+//-----------//
+
+void
+CoordinateSwitch::SetOrigin(
+	Vector3		o2)
+{
+	_o2 = o2;
+	return;
+}
+
+//-------------//
+// SetRotation //
+//-------------//
+
+void
+CoordinateSwitch::SetRotation(
+	Attitude	att)
+{
+	double roll = att.GetRoll();
+	double pitch = att.GetPitch();
+	double yaw = att.GetYaw();
+
+	double cr = cos(roll);
+	double sr = sin(roll);
+	double cp = cos(pitch);
+	double sp = sin(pitch);
+	double cy = cos(yaw);
+	double sy = sin(yaw);
+
+	Matrix3 rollmatrix(1,0,0,0,cr,sr,0,-sr,cr);
+	Matrix3 pitchmatrix(cp,0,-sp,0,1,0,sp,0,cp);
+	Matrix3 yawmatrix(1,0,0,0,cr,sr,0,-sr,cr);
+	int *order = att.GetOrderIndicies();
+
+	_trans.Identity();
+
+	for (int i = 1; i <= 3; i++)
+	{	// Apply rotation matrices in specifed order
+		if (order[0] == i) _trans = rollmatrix * _trans;
+		if (order[1] == i) _trans = pitchmatrix * _trans;
+		if (order[2] == i) _trans = yawmatrix * _trans;
+	}
+	return;
 }
 
 //
