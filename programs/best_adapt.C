@@ -8,7 +8,7 @@
 //    best_adapt
 //
 // SYNOPSIS
-//    best_adapt [ -h ] <cfg_file> <prob_file> <l2b_input_file>
+//    best_adapt [ -hl ] <cfg_file> <prob_file> <l2b_input_file>
 //        <vctr_base> <l2b_output_file>
 //
 // DESCRIPTION
@@ -19,6 +19,8 @@
 // OPTIONS
 //    The following options are supported:
 //      [ -h ]  Input and output files are HDF
+//      [ -l ]  Learn mode. Forces solutions to be correct so that
+//              the propagation works better.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -98,13 +100,13 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "h"
+#define OPTSTRING  "hl"
 
 #define WORST_PROB           -9e9
 #define HDF_NUM_AMBIGUITIES   4
 
 #define WINDOW_SIZE  5
-#define MIN_SAMPLES  4
+#define MIN_SAMPLES  10
 
 #define MEDIAN_FILTER_WINDOW_SIZE  7
 
@@ -143,13 +145,14 @@ float            dif_ratio[CT_WIDTH][AT_WIDTH];
 float            speed[CT_WIDTH][AT_WIDTH];
 float            prob[CT_WIDTH][AT_WIDTH];
 
-unsigned int  first_count_array[FIRST_INDICIES];
-unsigned int  first_good_array[FIRST_INDICIES];
+unsigned short  first_count_array[FIRST_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_INDICIES][SPEED_INDICIES];
 
-unsigned int filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
-unsigned int filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+unsigned short  filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+unsigned short  filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 
 int opt_hdf = 0;
+int opt_learn = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -172,6 +175,9 @@ main(
         {
         case 'h':
             opt_hdf = 1;
+            break;
+        case 'l':
+            opt_learn = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -201,13 +207,15 @@ main(
     }
     else
     {
-        fread(first_count_array, sizeof(unsigned int), FIRST_INDICIES, ifp);
-        fread(first_good_array, sizeof(unsigned int), FIRST_INDICIES, ifp);
-        fread(filter_count_array, sizeof(unsigned int),
+        fread(first_count_array, sizeof(unsigned short),
+            FIRST_INDICIES*SPEED_INDICIES, ifp);
+        fread(first_good_array, sizeof(unsigned short),
+            FIRST_INDICIES*SPEED_INDICIES, ifp);
+        fread(filter_count_array, sizeof(unsigned short),
             NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
             PROB_INDICIES,
             ifp);
-        fread(filter_good_array, sizeof(unsigned int),
+        fread(filter_good_array, sizeof(unsigned short),
             NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
             PROB_INDICIES,
             ifp);
@@ -283,14 +291,23 @@ main(
         }
     }
 
-/*
-    if (! l2b.OpenForWriting())
-    {
-        fprintf(stderr, "%s: error opening L2B file %s for writing\n",
-            command, l2b_output_file);
-        exit(1);
-    }
-*/
+    //-----------------------------------//
+    // initialize some index calculators //
+    //-----------------------------------//
+
+    Index first_index, neighbor_index, dif_ratio_index, speed_index,
+        cti_index, prob_index;
+
+    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
+        FIRST_INDICIES);
+    neighbor_index.SpecifyCenters(NEIGHBOR_MIN_VALUE, NEIGHBOR_MAX_VALUE,
+        NEIGHBOR_INDICIES);
+    dif_ratio_index.SpecifyCenters(DIF_RATIO_MIN_VALUE, DIF_RATIO_MAX_VALUE,
+        DIF_RATIO_INDICIES);
+    speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
+        SPEED_INDICIES);
+    cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE, CTI_INDICIES);
+    prob_index.SpecifyCenters(PROB_MIN_VALUE, PROB_MAX_VALUE, PROB_INDICIES);
 
     //---------//
     // HDF I/O //
@@ -306,6 +323,7 @@ main(
 
     if (opt_hdf)
     {
+/*
         //--------------------//
         // Read Nudge Vectors //
         //--------------------//
@@ -317,6 +335,7 @@ main(
                 command, l2b_input_file);
             exit(1);
         }
+*/
 
         //---------------//
         // Create Arrays //
@@ -401,6 +420,22 @@ main(
             }
             first_obj_prob[cti][ati] = wvp1->obj;
             first_speed[cti][ati] = wvp1->spd;
+
+/*
+            //---------------//
+            // learn quickly //
+            //---------------//
+
+            if (opt_learn && first_obj_prob[cti][ati] > FIRST_MIN_VALUE)
+            {
+                int idx;
+                first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
+                   &idx);
+                if (wvp1 == original_selected[cti][ati])
+                    first_good_array[idx]++;
+                first_count_array[idx]++;
+            }
+*/
         }
     }
 
@@ -422,24 +457,6 @@ main(
         }
     }
 
-    //-----------------------------------//
-    // initialize some index calculators //
-    //-----------------------------------//
-
-    Index first_index, neighbor_index, dif_ratio_index, speed_index,
-        cti_index, prob_index;
-
-    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
-        FIRST_INDICIES);
-    neighbor_index.SpecifyCenters(NEIGHBOR_MIN_VALUE, NEIGHBOR_MAX_VALUE,
-        NEIGHBOR_INDICIES);
-    dif_ratio_index.SpecifyCenters(DIF_RATIO_MIN_VALUE, DIF_RATIO_MAX_VALUE,
-        DIF_RATIO_INDICIES);
-    speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
-        SPEED_INDICIES);
-    cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE, CTI_INDICIES);
-    prob_index.SpecifyCenters(PROB_MIN_VALUE, PROB_MAX_VALUE, PROB_INDICIES);
-
     //----------------//
     // loop till done //
     //----------------//
@@ -449,6 +466,10 @@ main(
     int loop_idx = 0;
     int first_count = 0;
     int filter_count = 0;
+    float lowest_first = 2.0;
+    float highest_first = 0.0;
+    float lowest_filter = 2.0;
+    float highest_filter = 0.0;
     do
     {
         //----------------------------------------------------------------//
@@ -458,6 +479,7 @@ main(
         float best_prob = WORST_PROB;
         ChoiceE best_choice = NO_CHOICE;
         int best_first_idx = 0;
+        int best_fspd_idx = 0;
         int best_n_idx = 0;
         int best_dr_idx = 0;
         int best_s_idx = 0;
@@ -481,24 +503,25 @@ main(
                 // calculate the first ranked probability //
                 //----------------------------------------//
 
-                int first_speed_idx;
-                speed_index.GetNearestIndexClipped(first_speed[cti][ati],
-                    &first_speed_idx);
-
                 float first_prob;
                 int tmp_idx[2];
                 float first_coef[2];
                 first_index.GetLinearCoefsClipped(first_obj_prob[cti][ati],
                     tmp_idx, first_coef);
-                if (first_count_array[tmp_idx[0]] >= MIN_SAMPLES &&
-                    first_count_array[tmp_idx[1]] >= MIN_SAMPLES)
+
+                int fspd_idx;
+                speed_index.GetNearestIndexClipped(first_speed[cti][ati],
+                    &fspd_idx);
+
+                if (first_count_array[tmp_idx[0]][fspd_idx] >= MIN_SAMPLES &&
+                    first_count_array[tmp_idx[1]][fspd_idx] >= MIN_SAMPLES)
                 {
                     first_prob = first_coef[0] *
-                        (float)first_good_array[tmp_idx[0]] /
-                        (float)first_count_array[tmp_idx[0]] +
+                        (float)first_good_array[tmp_idx[0]][fspd_idx] /
+                        (float)first_count_array[tmp_idx[0]][fspd_idx] +
                         first_coef[1] *
-                        (float)first_good_array[tmp_idx[1]] /
-                        (float)first_count_array[tmp_idx[1]];
+                        (float)first_good_array[tmp_idx[1]][fspd_idx] /
+                        (float)first_count_array[tmp_idx[1]][fspd_idx];
                 }
                 else
                 {
@@ -515,6 +538,7 @@ main(
                     best_prob = first_prob;
                     first_index.GetNearestIndexClipped(
                         first_obj_prob[cti][ati], &best_first_idx);
+                    best_fspd_idx = fspd_idx;
                     best_choice = FIRST;
                     best_ati = ati;
                     best_cti = cti;
@@ -605,7 +629,7 @@ main(
 filter_prob = (float)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
 factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
 
-                if (factor_sum > 0.0)
+                if (filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx] > MIN_SAMPLES)
                 {
                     filter_prob /= factor_sum;
                 }
@@ -659,18 +683,30 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
         switch (best_choice)
         {
         case FIRST:
+            if (best_prob > highest_first)
+                highest_first = best_prob;
+            if (best_prob < lowest_first)
+                lowest_first = best_prob;
+
             wvc->selected = wvc->ambiguities.GetByIndex(0);
 
-            if (wvc->selected == original_selected[best_cti][best_ati])
-                first_good_array[best_first_idx]++;
-            first_count_array[best_first_idx]++;
+            if (! opt_learn)
+            {
+                if (wvc->selected == original_selected[best_cti][best_ati])
+                    first_good_array[best_first_idx][best_fspd_idx]++;
+                first_count_array[best_first_idx][best_fspd_idx]++;
+            }
 
-            // never let this WVC get initialized by first rank again
             change[best_cti][best_ati] = 1;
             first_count++;
             break;
 
         case FILTER:
+            if (best_prob > highest_filter)
+                highest_filter = best_prob;
+            if (best_prob < lowest_filter)
+                lowest_filter = best_prob;
+
             if (filter_selection[best_cti][best_ati] == NULL)
             {
                 fprintf(stderr, "%s: no filter selection\n", command);
@@ -683,8 +719,6 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
   filter_good_array[best_n_idx][best_dr_idx][best_s_idx][best_c_idx][best_p_idx]++;
             }
  filter_count_array[best_n_idx][best_dr_idx][best_s_idx][best_c_idx][best_p_idx]++;
-
-            // don't let this WVC get initialized by first rank
             change[best_cti][best_ati] = 1;
             filter_count++;
             break;
@@ -694,6 +728,13 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
             exit(1);
             break;
         }
+
+        //------------//
+        // learn mode //
+        //------------//
+
+        if (opt_learn)
+            wvc->selected = original_selected[best_cti][best_ati];
 
         //---------------------------------//
         // evaluate stuff that has changed //
@@ -856,6 +897,16 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
                 (float)total_count;
             printf("%d  1st:%.2f  Fil:%.2f\n", loop_idx, first_percent,
                 filter_percent);
+            first_count = 0;
+            filter_count = 0;
+
+            printf("  1st: %g to %g   Fil: %g to %g\n", lowest_first,
+                highest_first, lowest_filter, highest_filter);
+            lowest_first = 2.0;
+            highest_first = 0.0;
+            lowest_filter = 2.0;
+            highest_filter = 0.0;
+
             sprintf(filename, "%s.%06d", vctr_base, loop_idx);
             l2b.WriteVctr(filename, 0);
 
@@ -872,43 +923,50 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
             }
             else
             {
-                fwrite(first_count_array, sizeof(unsigned int),
-                    FIRST_INDICIES, ofp);
-                fwrite(first_good_array, sizeof(unsigned int),
-                    FIRST_INDICIES, ofp);
-                fwrite(filter_count_array, sizeof(unsigned int),
+                fwrite(first_count_array, sizeof(unsigned short),
+                    FIRST_INDICIES*SPEED_INDICIES, ofp);
+                fwrite(first_good_array, sizeof(unsigned short),
+                    FIRST_INDICIES*SPEED_INDICIES, ofp);
+                fwrite(filter_count_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
                     ofp);
-                fwrite(filter_good_array, sizeof(unsigned int),
+                fwrite(filter_good_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
                     ofp);
                 fclose(ofp);
             }
 
-// compare to original
-unsigned long comp_total_count = 0;
-unsigned long match_count = 0;
-for (int ati = 0; ati < AT_WIDTH; ati++)
-{
-  for (int cti = 0; cti < CT_WIDTH; cti++)
-  {
-    WVC* wvc = swath->GetWVC(cti, ati);
-    if (wvc == NULL)
-        continue;
-    if (wvc->selected == NULL)
-        continue;
-    if (wvc->selected == original_selected[cti][ati])
-        match_count++;
-    comp_total_count++;
-  }
-}
-printf("Match = %.2f %%\n", 100.0 * (float)match_count /
-  (float)comp_total_count);
+            if (! opt_learn)
+            {
+                // compare to original
+                unsigned long comp_total_count = 0;
+                unsigned long match_count = 0;
+                for (int ati = 0; ati < AT_WIDTH; ati++)
+                {
+                  for (int cti = 0; cti < CT_WIDTH; cti++)
+                  {
+                    WVC* wvc = swath->GetWVC(cti, ati);
+                    if (wvc == NULL)
+                        continue;
+                    if (wvc->selected == NULL)
+                        continue;
+                    if (wvc->selected == original_selected[cti][ati])
+                        match_count++;
+                    comp_total_count++;
+                  }
+                }
+                printf("  Match = %.2f %%\n", 100.0 * (float)match_count /
+                  (float)comp_total_count);
+            }
         }
         loop_idx++;
     } while (1);
+
+    //-------------------------//
+    // write final vector file //
+    //-------------------------//
 
     sprintf(filename, "%s.done", vctr_base);
     l2b.WriteVctr(filename, 0);
@@ -929,20 +987,27 @@ printf("Match = %.2f %%\n", 100.0 * (float)match_count /
     }
     else
     {
-        fwrite(first_count_array, sizeof(unsigned int),
-            FIRST_INDICIES, ofp);
-        fwrite(first_good_array, sizeof(unsigned int),
-            FIRST_INDICIES, ofp);
-        fwrite(filter_count_array, sizeof(unsigned int),
+        fwrite(first_count_array, sizeof(unsigned short),
+            FIRST_INDICIES*SPEED_INDICIES, ofp);
+        fwrite(first_good_array, sizeof(unsigned short),
+            FIRST_INDICIES*SPEED_INDICIES, ofp);
+        fwrite(filter_count_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
           ofp);
-        fwrite(filter_good_array, sizeof(unsigned int),
+        fwrite(filter_good_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
           ofp);
         fclose(ofp);
     }
+
+    //-------------------------//
+    // if learning, we're done //
+    //-------------------------//
+
+    if (opt_learn)
+        goto the_end;
 
     //---------------------//
     // final median filter //
@@ -1061,6 +1126,7 @@ printf("Match = %.2f %%\n", 100.0 * (float)match_count /
         }
     }
 
+the_end:
     l2b.Close();
     free_array((void*)spd, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)dir, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
