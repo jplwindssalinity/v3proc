@@ -11,15 +11,15 @@ static const char rcs_id_scatterometer_h[] =
 
 //======================================================================
 // CLASSES
-//      Scatterometer
+//    Scatterometer, ScatRF, ScatDig, ScatAnt
 //======================================================================
 
 //======================================================================
 // CLASS
-//      Scatterometer
+//    Scatterometer
 //
 // DESCRIPTION
-//      The Scatterometer class is a base class for scatterometers.
+//    The Scatterometer class is a base class for scatterometers.
 //======================================================================
 
 class Scatterometer
@@ -31,6 +31,81 @@ public:
 
     Scatterometer();
     ~Scatterometer();
+};
+
+//======================================================================
+// CLASS
+//    ScatRF
+//
+// DESCRIPTION
+//    The ScatRF class is a base class for the radio frequency
+//    subsystem for scatterometers.
+//======================================================================
+
+class ScatRF
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+
+    ScatRF();
+    ~ScatRF();
+
+    //-----------//
+    // variables //
+    //-----------//
+
+};
+
+//======================================================================
+// CLASS
+//    ScatDig
+//
+// DESCRIPTION
+//    The ScatDig class is a base class for the digital processor
+//    subsystem for scatterometers.
+//======================================================================
+
+class ScatDig
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+
+    ScatDig();
+    ~ScatDig();
+
+    //-----------//
+    // variables //
+    //-----------//
+
+};
+
+//======================================================================
+// CLASS
+//    ScatAnt
+//
+// DESCRIPTION
+//    The ScatAnt class is a base class for the antenna subsystem for
+//    scatterometers.
+//======================================================================
+
+class ScatAnt
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+
+    ScatAnt();
+    ~ScatAnt();
+
+    //-----------//
+    // variables //
+    //-----------//
+
 };
 
 #endif

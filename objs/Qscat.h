@@ -13,6 +13,7 @@ static const char rcs_id_qscat_h[] =
 #include "Tracking.h"
 #include "Spacecraft.h"
 #include "Scatterometer.h"
+
 class TargetInfoPackage;
 
 #define NUMBER_OF_QSCAT_BEAMS     2
@@ -48,7 +49,7 @@ public:
     float  rxGateWidth;    // the receiver gate width (s)
 };
 
-class QscatSes
+class QscatSes : public ScatRF
 {
 public:
     //--------------//
@@ -138,7 +139,7 @@ public:
 enum EncoderE { ENCODER_A, ENCODER_B };
 enum SpinRateE { LOW_SPIN_RATE, HIGH_SPIN_RATE };
 
-class QscatSas
+class QscatSas : public ScatAnt
 {
 public:
     //--------------//
@@ -202,7 +203,7 @@ public:
     unsigned char   rxGateWidthDn;
 };
 
-class QscatCds
+class QscatCds : public ScatDig
 {
 public:
     //--------------//

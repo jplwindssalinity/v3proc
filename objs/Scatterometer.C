@@ -21,3 +21,45 @@ Scatterometer::~Scatterometer()
 {
     return;
 }
+
+//========//
+// ScatRF //
+//========//
+
+ScatRF::ScatRF()
+{
+    return;
+}
+
+ScatRF::~ScatRF()
+{
+    return;
+}
+
+//=========//
+// ScatDig //
+//=========//
+
+ScatDig::ScatDig()
+{
+    return;
+}
+
+ScatDig::~ScatDig()
+{
+    return;
+}
+
+//=========//
+// ScatAnt //
+//=========//
+
+ScatAnt::ScatAnt()
+{
+    return;
+}
+
+ScatAnt::~ScatAnt()
+{
+    return;
+}
