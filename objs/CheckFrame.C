@@ -73,8 +73,6 @@ CheckFrame::Allocate(
 	{
 		return(0);
 	}
-    // idx is guaranteed to be zeroed
-    (void)memset(idx, 0, slicesPerSpot*sizeof(int));
 
 	sigma0 = (float *)malloc(slicesPerSpot * sizeof(float));
 	if (sigma0 == NULL)
@@ -132,6 +130,8 @@ CheckFrame::Allocate(
 		return(0);
 	}
 
+    Initialize();
+
 	return(1);
 }
 
@@ -173,6 +173,27 @@ CheckFrame::Deallocate()
 	GatGar = NULL;
 	
 	return(1);
+}
+
+//------------------------//
+// CheckFrame::Initialize //
+// Prepares for data.     //
+//------------------------//
+
+int
+CheckFrame::Initialize()
+
+{
+
+  if (idx == NULL)
+  {
+    return(0);
+  }
+
+  // idx needs to start out zeroed
+  (void)memset(idx, 0, slicesPerSpot*sizeof(int));
+
+  return(1);
 }
 
 //--------------------------//

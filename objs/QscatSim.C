@@ -174,6 +174,7 @@ QscatSim::L1AFrameInit(
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
         l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         l1a_frame->calPosition = 255;	// no cal pulses yet
+        l1a_frame->in_eu.true_cal_pulse_pos = 255;
 
         // extra data needed by GS for first pulse
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
@@ -186,6 +187,7 @@ QscatSim::L1AFrameInit(
           l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_a_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+          l1a_frame->in_eu.transmit_power_inner = qscat->ses.transmitPower;
         }
         else
         {
@@ -193,6 +195,7 @@ QscatSim::L1AFrameInit(
           l1a_frame->in_eu.range_gate_width_outer = ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_b_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+          l1a_frame->in_eu.transmit_power_outer = qscat->ses.transmitPower;
         }
         l1a_frame->in_eu.transmit_pulse_width = qscat->ses.txPulseWidth;
         l1a_frame->in_eu.precision_coupler_temp_eu =

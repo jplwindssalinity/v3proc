@@ -46,6 +46,7 @@ public:
 
 	int	Allocate(int slices_per_spot);
 	int	Deallocate();
+    int Initialize();
 
 	//-----//
 	// I/O //

@@ -138,6 +138,12 @@ L1AToL1B::Convert(
 
     for (int spot_idx = 0; spot_idx < frame->spotsPerFrame; spot_idx++)
     {
+        if (simVs1BCheckfile)
+        {
+          // cf.idx needs to start out zeroed for each spot
+          cf.Initialize();
+        }
+
         // check for loopback or load pulses, and skip them if encountered.
         if (spot_idx==frame->calPosition-2 || spot_idx==frame->calPosition-1)
           continue;
@@ -275,14 +281,22 @@ L1AToL1B::Convert(
 		CoordinateSwitch gc_to_antenna =
 			antenna_frame_to_gc.ReverseDirection();
 
+        int slice_count = qscat->ses.GetTotalSliceCount();
+
 		//-------------------//
 		// for each slice... //
 		//-------------------//
 
-		int slice_i = 0;
 		for (Meas* meas = meas_spot->GetHead(); meas;
 			meas = meas_spot->GetNext())
 		{
+		    int slice_i;
+            if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_i))
+            {
+                fprintf(stderr,"L1AToL1B::Convert, Bad slice number\n");
+                exit(1);
+            }
+
 			// Kfactor: either 1.0 or taken from table
 			float k_factor=1.0;
 			float x_factor=1.0;
@@ -412,8 +426,6 @@ L1AToL1B::Convert(
 
 			if (outputSigma0ToStdout)
 				printf("%g ",meas->value);
-
-			slice_i++;
 
 		}
 
