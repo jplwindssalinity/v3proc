@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -41,6 +41,8 @@ L1AToL1B::Convert(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     Ephemeris*   ephemeris,
+    Topo*        topo,
+    Stable*      stable,
     L1B*         l1b)
 {
     //--------------//
@@ -76,13 +78,13 @@ L1AToL1B::Convert(
     // set up instrument //
     //-------------------//
 
-	qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
-	qscat->cds.orbitTime = l1a->frame.orbitTicks;
+    qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
+    qscat->cds.orbitTime = l1a->frame.orbitTicks;
 
-	//------------------------------------//
-	// Extract and prepare cal pulse data //
+    //------------------------------------//
+    // Extract and prepare cal pulse data //
     // Note 8 bit shift for loopback's    //
-	//------------------------------------//
+    //------------------------------------//
 
     if (l1a->frame.calPosition != 255)
     {
@@ -125,17 +127,17 @@ L1AToL1B::Convert(
 
     l1b->frame.spotList.FreeContents();
 
-	//-----------//
-	// predigest //
-	//-----------//
+    //-----------//
+    // predigest //
+    //-----------//
 
-	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Antenna* antenna = &(qscat->sas.antenna);
+    OrbitState* orbit_state = &(spacecraft->orbitState);
+    Antenna* antenna = &(qscat->sas.antenna);
     L1AFrame* frame = &(l1a->frame);
 
-	//------------------//
-	// for each spot... //
-	//------------------//
+    //------------------//
+    // for each spot... //
+    //------------------//
 
     for (int spot_idx = 0; spot_idx < frame->spotsPerFrame; spot_idx++)
     {
@@ -215,7 +217,7 @@ L1AToL1B::Convert(
         // create a measurement spot //
         //---------------------------//
 
-		MeasSpot* meas_spot = new MeasSpot();
+        MeasSpot* meas_spot = new MeasSpot();
         meas_spot->time = time;
 
         //----------------------------------------//
@@ -225,14 +227,14 @@ L1AToL1B::Convert(
         if (! qscat->MakeSlices(meas_spot))
             return(0);
 
-		//----------------------------------------------------------//
-		// Extract and load slice energy measurements for this spot //
-		//----------------------------------------------------------//
+        //----------------------------------------------------------//
+        // Extract and load slice energy measurements for this spot //
+        //----------------------------------------------------------//
 
-		float Esn_echo = 0.0;
+        float Esn_echo = 0.0;
         Meas* meas = meas_spot->GetHead();
-		for (int i=0; i < l1a->frame.slicesPerSpot; i++)
-		{
+        for (int i=0; i < l1a->frame.slicesPerSpot; i++)
+        {
           meas->value = l1a->frame.science[base_slice_idx + i];
           if (meas->value < 0.0)
           {
@@ -243,26 +245,26 @@ L1AToL1B::Convert(
           Esn_echo += meas->value;
 
           meas = meas_spot->GetNext();
-		}
+        }
 
         //-----------------------------------------------------------------//
-		// Extract the spot noise measurement which applies to all slices. //
+        // Extract the spot noise measurement which applies to all slices. //
         //-----------------------------------------------------------------//
 
-		float Esn_noise = l1a->frame.spotNoise[spot_idx];
+        float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
-		//---------------------//
-		// locate measurements //
-		//---------------------//
+        //---------------------//
+        // locate measurements //
+        //---------------------//
 
-		if (l1a->frame.slicesPerSpot <= 1)
-		{
+        if (l1a->frame.slicesPerSpot <= 1)
+        {
             if (! qscat->LocateSpot(spacecraft, meas_spot))
             {
                 return(0);
             }
-		}
-		else
+        }
+        else
         {
             if (! qscat->LocateSliceCentroids(spacecraft, meas_spot,
                 sliceGainThreshold, processMaxSlices))
@@ -286,16 +288,16 @@ L1AToL1B::Convert(
           meas->landFlag = landMap.IsLand(lon, lat);
         }
 
-		//----------------------------------------//
-		// generate the reverse coordinate switch //
-		//----------------------------------------//
-		// duplicate work: forward transform already calc'd in Locate*
+        //----------------------------------------//
+        // generate the reverse coordinate switch //
+        //----------------------------------------//
+        // duplicate work: forward transform already calc'd in Locate*
 
-		CoordinateSwitch antenna_frame_to_gc =
-			AntennaFrameToGC(orbit_state, &(spacecraft->attitude),
-			antenna, antenna->txCenterAzimuthAngle);
-		CoordinateSwitch gc_to_antenna =
-			antenna_frame_to_gc.ReverseDirection();
+        CoordinateSwitch antenna_frame_to_gc =
+            AntennaFrameToGC(orbit_state, &(spacecraft->attitude),
+            antenna, antenna->txCenterAzimuthAngle);
+        CoordinateSwitch gc_to_antenna =
+            antenna_frame_to_gc.ReverseDirection();
 
         int slice_count = qscat->ses.GetTotalSliceCount();
 
@@ -306,72 +308,74 @@ L1AToL1B::Convert(
         Beam* beam = qscat->GetCurrentBeam();
         Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
 
-		//-------------------//
-		// for each slice... //
-		//-------------------//
+        //-------------------//
+        // for each slice... //
+        //-------------------//
 
-		for (Meas* meas = meas_spot->GetHead(); meas;
-			meas = meas_spot->GetNext())
-		{
+        for (Meas* meas = meas_spot->GetHead(); meas;
+            meas = meas_spot->GetNext())
+        {
             meas->measType = meas_type;
 
-		    int slice_i;
+            int slice_i;
             if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_i))
             {
                 fprintf(stderr,"L1AToL1B::Convert, Bad slice number\n");
                 exit(1);
             }
 
-			// Kfactor: either 1.0 or taken from table
-			float k_factor=1.0;
-			float x_factor=1.0;
+            // Kfactor: either 1.0 or taken from table
+            float k_factor=1.0;
+            float x_factor=1.0;
             float Es_slice,En_slice;
             float Esn_slice = meas->value;
 
-			if (useKfactor)
-			{
+            if (useKfactor)
+            {
                 fprintf(stderr,
                     "PscatL1AToL1B::Convert:No K factor algorithm set\n");
                 exit(1);
 
                 /****
-				float orbit_position = qscat->cds.OrbitFraction();
+                float orbit_position = qscat->cds.OrbitFraction();
 
-				k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
-					qscat->cds.currentBeamIdx,
+                k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
+                    qscat->cds.currentBeamIdx,
                     qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-					meas->startSliceIdx);
+                    meas->startSliceIdx);
 
-				//-----------------//
-				// set measurement //
-				//-----------------//
+                //-----------------//
+                // set measurement //
+                //-----------------//
 
-				// meas->value is the Esn value going in, sigma0 coming out.
+                // meas->value is the Esn value going in, sigma0 coming out.
                 float PtGr = 0.0;
-				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat, meas,
+                if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat, meas,
                     k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
                 {
                     return(0);
                 }
                 ****/
-			}
-			else if (useBYUXfactor)
+            }
+            else if (useBYUXfactor)
             {
-		        if (simVs1BCheckfile)
-		        {
-			      x_factor=BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal, &cf);
+                if (simVs1BCheckfile)
+                {
+                    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal,
+                        topo, stable, &cf);
                 }
                 else
-		        {
-			      x_factor=BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal,NULL);
+                {
+                    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal,
+                        topo, stable, NULL);
                 }
 
-			    //-----------------//
-			    // set measurement //
-			    //-----------------//
-			    
-			    // meas->value is the Esn value going in
-			    // sigma0 coming out.
+                //-----------------//
+                // set measurement //
+                //-----------------//
+
+                // meas->value is the Esn value going in
+                // sigma0 coming out.
                 if (! ComputeSigma0(qscat, meas, x_factor, Esn_slice,
                     Esn_echo, Esn_noise, En_echo_load, En_noise_load,
                     &Es_slice, &En_slice))
@@ -381,20 +385,20 @@ L1AToL1B::Convert(
             }
             else
             {
-			    fprintf(stderr,
-				    "L1AToL1B::Convert:No X computation algorithm set\n");
-			    exit(0);
+                fprintf(stderr,
+                    "L1AToL1B::Convert:No X computation algorithm set\n");
+                exit(0);
             }
-			
-			meas->scanAngle = qscat->sas.antenna.txCenterAzimuthAngle;
-			meas->beamIdx = qscat->cds.currentBeamIdx;
-			meas->txPulseWidth = qscat->ses.txPulseWidth;
 
-			//------------------//
-			// store check data //
-			//------------------//
+            meas->scanAngle = qscat->sas.antenna.txCenterAzimuthAngle;
+            meas->beamIdx = qscat->cds.currentBeamIdx;
+            meas->txPulseWidth = qscat->ses.txPulseWidth;
 
-			if (simVs1BCheckfile)
+            //------------------//
+            // store check data //
+            //------------------//
+
+            if (simVs1BCheckfile)
             {
                 Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
                 cf.R[slice_i] = (float)rlook.Magnitude();
@@ -432,79 +436,78 @@ L1AToL1B::Convert(
                 cf.var_esn_slice[slice_i] = 0;
                 cf.Es[slice_i] = Es_slice;
                 cf.En[slice_i] = En_slice;
-			    cf.sigma0[slice_i] = meas->value;
-			    cf.XK[slice_i] = meas->XK;
-			    cf.centroid[slice_i] = meas->centroid;
-			    cf.azimuth[slice_i] = meas->eastAzimuth;
-			    cf.incidence[slice_i] = meas->incidenceAngle;
+                cf.sigma0[slice_i] = meas->value;
+                cf.XK[slice_i] = meas->XK;
+                cf.centroid[slice_i] = meas->centroid;
+                cf.azimuth[slice_i] = meas->eastAzimuth;
+                cf.incidence[slice_i] = meas->incidenceAngle;
             }
 
-			//----------------------------------//
-			// Print calculated sigma0 values	//
-			// to stdout.						//
-			//----------------------------------//
+            //--------------------------------//
+            // Print calculated sigma0 values //
+            // to stdout.                     //
+            //--------------------------------//
 
-			if (outputSigma0ToStdout)
-				printf("%g ",meas->value);
+            if (outputSigma0ToStdout)
+                printf("%g ",meas->value);
+        }
 
-		}
+        //-----------------------------------------------------//
+        // composite into single spot measurement if necessary //
+        //-----------------------------------------------------//
 
-		//-----------------------------------------------------//
-		// composite into single spot measurement if necessary //
-		//-----------------------------------------------------//
+        if (useSpotCompositing)
+        {
+            Meas* comp = new Meas();
+            if (comp == NULL)
+                return(0);
 
-		if (useSpotCompositing)
-		{
-			Meas* comp = new Meas();
-			if (comp == NULL)
-				return(0);
+            if (! comp->Composite(meas_spot))
+                return(0);
 
-			if (! comp->Composite(meas_spot))
-				return(0);
+            meas_spot->FreeContents();
+            if (! meas_spot->Append(comp))
+                return(0);
+        }
 
-			meas_spot->FreeContents();
-			if (! meas_spot->Append(comp))
-				return(0);
-		}
+        //------------------------//
+        // Output data if enabled //
+        //------------------------//
 
-		//------------------------//
-		// Output data if enabled //
-		//------------------------//
-
-		if (simVs1BCheckfile)
-		{
-		  FILE* fptr = fopen(simVs1BCheckfile,"a");
-		  if (fptr == NULL)
-		  {
-			fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
-			exit(-1);
-		  }
+        if (simVs1BCheckfile)
+        {
+          FILE* fptr = fopen(simVs1BCheckfile,"a");
+          if (fptr == NULL)
+          {
+            fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+            exit(-1);
+          }
           cf.pulseCount = pulseCount;
-		  cf.ptgr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
-		  cf.time = time;
+          cf.ptgr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
+          cf.time = time;
           cf.beamNumber = qscat->cds.currentBeamIdx;
-		  cf.rsat = spacecraft->orbitState.rsat;
-		  cf.vsat = spacecraft->orbitState.vsat;
+          cf.rsat = spacecraft->orbitState.rsat;
+          cf.vsat = spacecraft->orbitState.vsat;
           cf.orbitFrac = qscat->cds.OrbitFraction();
           cf.spinRate = qscat->sas.antenna.spinRate;
           cf.txDoppler = qscat->ses.txDoppler;
           cf.rxGateDelay = qscat->ses.rxGateDelay;
-		  cf.attitude = spacecraft->attitude;
+          cf.attitude = spacecraft->attitude;
           cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
           cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
           cf.EsCal = Es_cal;
           cf.alpha = 1.0/beta * En_noise_load/En_echo_load;
           cf.EsnEcho = Esn_echo;
           cf.EsnNoise = Esn_noise;
-		  cf.WriteDataRec(fptr);
-		  fclose(fptr);
-		}
+          cf.WriteDataRec(fptr);
+          fclose(fptr);
+        }
 
-	    //----------------------//
-	    // add to list of spots //
-	    //----------------------//
+        //----------------------//
+        // add to list of spots //
+        //----------------------//
 
-	    l1b->frame.spotList.Append(meas_spot);
+        l1b->frame.spotList.Append(meas_spot);
         pulseCount++;
     }
 
@@ -519,7 +522,6 @@ L1AToL1B::Convert(
 //-------------------------//
 // L1AToL1B::ComputeSigma0 //
 //-------------------------//
-
 //
 // The ComputeSigma0 method estimates sigma0 from five energy
 // measurements and the tabulated X factor.
@@ -528,12 +530,12 @@ L1AToL1B::Convert(
 // all of the signal power falls in the slices.
 //
 // Inputs:
-//	qscat = pointer to current Qscat object
-//	meas = pointer to current measurement (holds results)
-//	Xfactor = Total radar equation parameter for this slice.
-//	Esn_slice = the received slice energy.
-//	Esn_echo = the sum of all the slice energies for this spot.
-//	Esn_noise = the noise channel measured energy.
+//    qscat = pointer to current Qscat object
+//    meas = pointer to current measurement (holds results)
+//    Xfactor = Total radar equation parameter for this slice.
+//    Esn_slice = the received slice energy.
+//    Esn_echo = the sum of all the slice energies for this spot.
+//    Esn_noise = the noise channel measured energy.
 //  En_echo_load = reference load echo channel measurement
 //  En_noise_load = reference load noise channel measurement
 //
@@ -552,17 +554,17 @@ L1AToL1B::ComputeSigma0(
     float*  En_slice)
 {
 
-	//--------------------------------//
+    //--------------------------------//
     // Extract some useful quantities.
-	//--------------------------------//
+    //--------------------------------//
 
-	double Tp = qscat->ses.txPulseWidth;
+    double Tp = qscat->ses.txPulseWidth;
     SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-	double Tg = ses_beam_info->rxGateWidth;
-	double Bn = qscat->ses.noiseBandwidth;
-	double Bs = meas->bandwidth;
-	double Be = qscat->ses.GetTotalSignalBandwidth();
-	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bn = qscat->ses.noiseBandwidth;
+    double Bs = meas->bandwidth;
+    double Be = qscat->ses.GetTotalSignalBandwidth();
+    double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 
     //-------------------------------------------------------------------//
     // Get the noise energy ratio correction from a table.
@@ -588,9 +590,9 @@ L1AToL1B::ComputeSigma0(
 
     q_slice *= Bs/Be;
 
-	//-------------------------------------------//
+    //-------------------------------------------//
     // Estimate slice signal and noise energies.
-	//-------------------------------------------//
+    //-------------------------------------------//
 
     if (! Er_to_Es(beta, Esn_slice, Esn_echo, Esn_noise, En_echo_load,
                    En_noise_load, q_slice, Es_slice, En_slice))
@@ -598,32 +600,31 @@ L1AToL1B::ComputeSigma0(
       return(0);
     }
 
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
     // Compute sigma0 from estimated signal energy and X factors.
-	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
-	// Kpc comes from Es_slice.
-	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+    // Kpc comes from Es_slice.
+    // Kpr comes from 1/X (ie., from Es_cal when computing X)
     // Xfactor has units of energy because Xcal has units of Pt * Tp.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
 
-	meas->value = *Es_slice / Xfactor;
+    meas->value = *Es_slice / Xfactor;
     meas->EnSlice = *En_slice;
 
-	//------------------------------------------------------------------//
-	// Store the total X factor.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
+    // Store the total X factor.
+    //------------------------------------------------------------------//
 
     meas->XK = Xfactor;
 
-	//------------------------------------------------------------------//
-	// Estimate Kpc coefficients using the
-	// approximate equations in Mike Spencer's Kpc memos.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
+    // Estimate Kpc coefficients using the
+    // approximate equations in Mike Spencer's Kpc memos.
+    //------------------------------------------------------------------//
 
-	meas->A = 1.0 / (Bs * Tp);
-	meas->B = 2.0 / (Bs * Tg);
-	meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
+    meas->A = 1.0 / (Bs * Tp);
+    meas->B = 2.0 / (Bs * Tg);
+    meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
 
-	return(1);
+    return(1);
 }
-
