@@ -77,6 +77,12 @@ public:
 
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
+
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
 };
 
 #endif

@@ -104,6 +104,8 @@ int
 Outline::Read(
 	FILE*	fp)
 {
+	FreeContents();
+
 	int count;
 	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
@@ -118,4 +120,18 @@ Outline::Read(
 		}
 	}
 	return(1);
+}
+
+//-----------------------//
+// Outline::FreeContents //
+//-----------------------//
+
+void
+Outline::FreeContents()
+{
+	LonLat* lon_lat;
+	GotoHead();
+	while ((lon_lat = RemoveCurrent()) != NULL)
+		delete lon_lat;
+	return;
 }
