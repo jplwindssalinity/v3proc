@@ -539,6 +539,7 @@ main(
                         &spacecraft);
 
                     // save the true attitude
+/*
                     if (true_att_fp != NULL &&
                         spacecraft_event.time >= instrument_start_time &&
                         spacecraft_event.time <= instrument_end_time)
@@ -550,6 +551,7 @@ main(
                             spacecraft.attitude.GetYaw() * rtd,
                             qscat.cds.orbitTime);
                     }
+*/
 
                     spacecraft_sim.ReportAttitude(spacecraft_event.time,
                       &spacecraft, &attitude);
