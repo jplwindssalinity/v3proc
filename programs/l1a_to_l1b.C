@@ -196,7 +196,7 @@ main(
 	// open files //
 	//------------//
 
-	l10.file.OpenForInput();
+	l10.OpenForReading();
 	l15.OpenForWriting();
 
 	//-----------------//
@@ -207,7 +207,9 @@ main(
 	L10ToL15 l10_to_l15;
 	if (! ConfigL10ToL15(&l10_to_l15, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 1.0 to Level 1.5 converter.\n", command);
+		fprintf(stderr,
+			"%s: error configuring Level 1.0 to Level 1.5 converter.\n",
+			command);
 		exit(1);
 	}
 
@@ -263,7 +265,7 @@ main(
 		data_record_number++;
 	} while (1);
 
-	l10.file.Close();
+	l10.Close();
 	l15.Close();
 
 	return (0);

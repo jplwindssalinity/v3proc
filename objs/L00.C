@@ -66,17 +66,6 @@ L00::DeallocateBuffer()
 }
 
 //------------------//
-// L00::SetFilename //
-//------------------//
-
-int
-L00::SetFilename(
-	const char*		filename)
-{
-	return(file.SetFilename(filename));
-}
-
-//------------------//
 // L00::ReadDataRec //
 //------------------//
 
@@ -84,9 +73,9 @@ int
 L00::ReadDataRec()
 {
 	// this will most likely get more complicated later with headers and all
-	if (! file.Read(buffer, bufferSize))
+	if (! Read(buffer, bufferSize))
 	{
-		if (file.EndOfFile())
+		if (EndOfFile())
 		{
 			// end of file, leave status alone (typically status is OK)
 			return(0);

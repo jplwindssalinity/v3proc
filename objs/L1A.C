@@ -65,26 +65,15 @@ L10::DeallocateBuffer()
 }
 
 //------------------//
-// L10::SetFilename //
-//------------------//
-
-int
-L10::SetFilename(
-	const char*		filename)
-{
-	return(file.SetFilename(filename));
-}
-
-//------------------//
 // L10::ReadDataRec //
 //------------------//
 
 int
 L10::ReadDataRec()
 {
-	if (! file.Read(buffer, bufferSize))
+	if (! Read(buffer, bufferSize))
 	{
-		if (file.EndOfFile())
+		if (EndOfFile())
 		{
 			// end of file, leave status alone (typically status is OK)
 			return(0);
@@ -106,5 +95,5 @@ L10::ReadDataRec()
 int
 L10::WriteDataRec()
 {
-	return(file.Write(buffer, bufferSize));
+	return(Write(buffer, bufferSize));
 }

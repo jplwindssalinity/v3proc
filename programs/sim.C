@@ -215,7 +215,7 @@ main(
 		fprintf(stderr, "%s: error configuring Level 0.0\n", command);
 		exit(1);
 	}
-	l00.file.OpenForOutput();
+	l00.OpenForWriting();
 
 	//--------------------------//
 	// create an ephemeris file //
@@ -425,7 +425,7 @@ main(
 					&spacecraft, &(l00.frame.attitude));
 
 				int size = l00.frame.Pack(l00.buffer);
-				l00.file.Write(l00.buffer, size);
+				l00.Write(l00.buffer, size);
 			}
 		}
 
@@ -441,7 +441,7 @@ main(
 	// close Level 0.0 file //
 	//----------------------//
 
-	l00.file.Close();
+	l00.Close();
 
 	//--------------------------//
 	// If createXtable is set	//

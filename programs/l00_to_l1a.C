@@ -165,8 +165,8 @@ main(
 	// open files //
 	//------------//
 
-	l00.file.OpenForInput();
-	l10.file.OpenForOutput();
+	l00.OpenForReading();
+	l10.OpenForWriting();
 
 	//-----------------//
 	// conversion loop //
@@ -225,8 +225,8 @@ main(
 
 	} while (1);
 
-	l00.file.Close();
-	l10.file.Close();
+	l00.Close();
+	l10.Close();
 
 	return (0);
 }

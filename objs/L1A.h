@@ -9,7 +9,7 @@
 static const char rcs_id_l10_h[] =
 	"@(#) $Id$";
 
-#include "GenericFile.h"
+#include "BaseFile.h"
 #include "L10Frame.h"
 
 
@@ -27,7 +27,7 @@ static const char rcs_id_l10_h[] =
 //		manipulating of Level 0.0 data.
 //======================================================================
 
-class L10
+class L10 : public BaseFile
 {
 public:
 
@@ -52,24 +52,22 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			SetFilename(const char* filename);
 	StatusE		GetStatus() { return(_status); };
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	int		ReadDataRec();
-	int		WriteDataRec();
+	int			ReadDataRec();
+	int			WriteDataRec();
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	GenericFile		file;
-	char*			buffer;
-	int				bufferSize;
-	L10Frame		frame;
+	char*		buffer;
+	int			bufferSize;
+	L10Frame	frame;
 
 protected:
 
