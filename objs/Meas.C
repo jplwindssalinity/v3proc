@@ -691,7 +691,10 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     // get time VD, use TAI time as base
     Itime itime;
     if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
+    {
+        fprintf(stderr, "Fail to get time on HDF index %d\n", hdfIndex);
         return 0;
+    }
     time = (double) itime.sec - ITIME_DEFAULT_SEC;
 
     //----------------------------
@@ -743,6 +746,8 @@ int32        pulseIndex)   // index of the pulses (max of 100)
     {
         // save only the good slices
         Meas* new_meas = new Meas();
+        // Meas::UnpackL1BHdf return 0 when there is no valid data
+        // so it is ok to ignore the return code 0
         if (new_meas->UnpackL1BHdf(l1bHdf, pulseIndex, i))
         {
             if ( ! Append(new_meas)) return(0);
