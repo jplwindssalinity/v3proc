@@ -94,7 +94,8 @@ L1A::WriteDataRec()
 // L1A::WriteDataRecAscii   //
 //--------------------------//
 int
-L1A::WriteDataRecAscii(){
+L1A::WriteDataRecAscii()
+{
   if(_outputFp==NULL) return(0);
   if(!frame.WriteAscii(_outputFp)) return(0);
   return(1);
@@ -118,7 +119,7 @@ L1A::WriteGSDataRec(void)
     (void)memcpy(ptr, &gsL1AFrameSize, sizeof(int)); ptr += sizeof(int);
 
     GSL1APcd* in_pcdP = &(gsFrame.in_pcd);
-    (void)memcpy(in_pcdP->frame_time, frame.frame_time, 21);
+    (void)memset(in_pcdP->frame_time, 0, 24);
     in_pcdP->time = frame.frame_time_secs;
     in_pcdP->instrument_time = frame.frame_time_secs;
     in_pcdP->orbit_time = (int)frame.orbitTicks;
@@ -133,6 +134,7 @@ L1A::WriteGSDataRec(void)
     in_pcdP->yaw = frame.attitude.GetYaw();
     (void)memcpy(ptr, in_pcdP, sizeof(GSL1APcd)); ptr += sizeof(GSL1APcd);
 
+/*
     GSL1AStatus* statusP = &(gsFrame.status);
     statusP->prf_count = frame.prf_count;
     statusP->prf_cycle_time = frame.prf_cycle_time;
@@ -144,14 +146,19 @@ L1A::WriteGSDataRec(void)
     statusP->pred_antenna_pos_count = frame.pred_antenna_pos_count;
     (void)memcpy(&(statusP->vtcw), &(frame.vtcw), 8);
     (void)memcpy(ptr, statusP, sizeof(GSL1AStatus));
+*/
+    (void)memcpy(&(gsFrame.status), &(frame.status), sizeof(GSL1AStatus));
     ptr += sizeof(GSL1AStatus);
 
+/*
     GSL1AEngData* engdataP = &(gsFrame.engdata);
     engdataP->precision_coupler_temp = frame.precision_coupler_temp;
     engdataP->rcv_protect_sw_temp = frame.rcv_protect_sw_temp;
     engdataP->beam_select_sw_temp = frame.beam_select_sw_temp;
     engdataP->receiver_temp = frame.receiver_temp;
     (void)memcpy(ptr, engdataP, sizeof(GSL1AEngData));
+*/
+    (void)memcpy(&(gsFrame.engdata), &(frame.engdata), sizeof(GSL1AEngData));
     ptr += sizeof(GSL1AEngData);
 
     // pad1[2]
@@ -174,6 +181,7 @@ L1A::WriteGSDataRec(void)
     (void)memset(ptr, 0, 32);
     ptr += 32;
 
+/*
     GSL1AEu* in_euP = &(gsFrame.in_eu);
     in_euP->prf_cycle_time_eu = (float)frame.prf_cycle_time_eu;
     in_euP->range_gate_delay_inner = (float)frame.range_gate_delay_inner;
@@ -187,6 +195,8 @@ L1A::WriteGSDataRec(void)
     in_euP->beam_select_sw_temp_eu = (float)frame.beam_select_sw_temp_eu;
     in_euP->receiver_temp_eu = (float)frame.receiver_temp_eu;
     (void)memcpy(ptr, in_euP, sizeof(GSL1AEu));
+*/
+    (void)memcpy(&(gsFrame.in_eu), &(frame.in_eu), sizeof(GSL1AEu));
     ptr += sizeof(GSL1AEu);
 
     GSL1ASci* in_scienceP = &(gsFrame.in_science);

@@ -104,9 +104,6 @@ public:
     GSL1AEngData   engdata;
     GSL1AEu        in_eu;
 
-    float  range_gate_delay_inner;
-    float  range_gate_delay_outer;
-
 	//----------------------------//
 	// L1A Status and Error Flags //
 	//----------------------------//
@@ -123,8 +120,6 @@ public:
 
     double          frame_time_secs;
     double          instrument_time;
-    unsigned char   range_gate_a_delay;
-    unsigned char   range_gate_b_delay;
 
 	//-------------------------//
 	// informational variables //

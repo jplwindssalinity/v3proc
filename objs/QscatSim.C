@@ -176,11 +176,24 @@ QscatSim::L1AFrameInit(
         l1a_frame->calPosition = 255;	// no cal pulses yet
 
         // extra data needed by GS for first pulse
-        l1a_frame->in_eu.prf_cycle_time_eu = qscat->ses.pri;
-        l1a_frame->range_gate_delay_inner =
-          (unsigned short)(qscat->ses.rxGateDelay * 1e6);
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-        l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
+        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
+        Beam* cur_beam = qscat->GetCurrentBeam();
+        l1a_frame->in_eu.prf_cycle_time_eu = qscat->ses.pri;
+        if (cur_beam->polarization == H_POL)
+        {
+          l1a_frame->in_eu.range_gate_delay_inner = qscat->ses.rxGateDelay;
+          l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
+          l1a_frame->status.range_gate_a_delay = qscat->cds.rxGateDelayDn;
+          l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+        }
+        else
+        {
+          l1a_frame->in_eu.range_gate_delay_outer = qscat->ses.rxGateDelay;
+          l1a_frame->in_eu.range_gate_width_outer = ses_beam_info->rxGateWidth;
+          l1a_frame->status.range_gate_b_delay = qscat->cds.rxGateDelayDn;
+          l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+        }
         l1a_frame->in_eu.transmit_pulse_width = qscat->ses.txPulseWidth;
         l1a_frame->in_eu.precision_coupler_temp_eu =
           qscat->ses.physicalTemperature;
@@ -192,7 +205,6 @@ QscatSim::L1AFrameInit(
           qscat->ses.physicalTemperature;
 
         // Set Frame Inst. Status Flag bits.
-        Beam* cur_beam = qscat->GetCurrentBeam();
         int inst_flag = 0;
         if (cur_beam->polarization == H_POL)
         {
@@ -223,9 +235,6 @@ QscatSim::L1AFrameInit(
         l1a_frame->instrument_time = qscat->cds.instrumentTime;
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
-        l1a_frame->range_gate_a_delay = qscat->cds.rxGateDelayDn;
-        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
         l1a_frame->status.pred_antenna_pos_count = 0; // needs to be filled
         l1a_frame->status.vtcw[0] = 0; // needs to be filled
@@ -245,14 +254,24 @@ QscatSim::L1AFrameInit(
         // Store data needed from 2nd pulse //
         //----------------------------------//
 
-        l1a_frame->range_gate_delay_outer =
-          qscat->ses.rxGateDelay;
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-        l1a_frame->in_eu.range_gate_width_outer = ses_beam_info->rxGateWidth;
-
-        l1a_frame->range_gate_b_delay = qscat->cds.rxGateDelayDn;
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+        Beam* cur_beam = qscat->GetCurrentBeam();
+        if (cur_beam->polarization == H_POL)
+        {
+          l1a_frame->in_eu.range_gate_delay_inner = qscat->ses.rxGateDelay;
+          l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
+          l1a_frame->status.range_gate_a_delay = qscat->cds.rxGateDelayDn;
+          l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+        }
+        else
+        {
+          l1a_frame->in_eu.range_gate_delay_outer = qscat->ses.rxGateDelay;
+          l1a_frame->in_eu.range_gate_width_outer = ses_beam_info->rxGateWidth;
+          l1a_frame->status.range_gate_b_delay = qscat->cds.rxGateDelayDn;
+          l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+        }
+
     }
 
     return(1);

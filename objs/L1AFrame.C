@@ -22,20 +22,18 @@ L1AFrame::L1AFrame()
   velZ(0.0), ptgr(0.0), calPosition(255), loopbackSlices(NULL),
   loopbackNoise(0.0), loadSlices(NULL), loadNoise(0.0),
   antennaPosition(NULL), science(NULL), spotNoise(NULL),
-  range_gate_delay_inner(0),
-  range_gate_delay_outer(0),
   frame_inst_status(0),
   frame_err_status(0),
   frame_qual_flag(0),
   frame_time_secs(0.0),
   instrument_time(0.0),
-  range_gate_a_delay(0),
-  range_gate_b_delay(0),
   antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
   slicesPerFrame(0)
 {
-    for (int i=0; i < 8; i++) status.vtcw[i] = 0;
-	return;
+  (void)memset(&status, 0, sizeof(GSL1AStatus));
+  (void)memset(&engdata, 0, sizeof(GSL1AEngData));
+  (void)memset(&in_eu, 0, sizeof(GSL1AEu));
+  return;
 }
 
 L1AFrame::~L1AFrame()
@@ -169,9 +167,6 @@ L1AFrame::FrameSize()
     size += sizeof(GSL1AEngData); // engdata structure
     size += sizeof(GSL1AEu);      // in_eu structure
 
-    size += sizeof(short);  // range_gate_delay_inner
-    size += sizeof(short);  // range_gate_delay_outer
-
     size += sizeof(int);    // frame_inst_status
     size += sizeof(int);    // frame_err_status
     size += sizeof(short);  // frame_qual_flag
@@ -179,8 +174,6 @@ L1AFrame::FrameSize()
 
     size += sizeof(double);   // frame_time_secs
     size += sizeof(double);   // instrument_time
-    size += sizeof(char);   // range_gate_a_delay
-    size += sizeof(char);   // range_gate_b_delay
 
     return(size);
 }
@@ -302,14 +295,6 @@ L1AFrame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&in_eu, size);
 	idx += size;
 
-	size = sizeof(unsigned short);
-	memcpy((void *)(buffer + idx), (void *)&range_gate_delay_inner, size);
-	idx += size;
-
-	size = sizeof(unsigned short);
-	memcpy((void *)(buffer + idx), (void *)&range_gate_delay_outer, size);
-	idx += size;
-
 	size = sizeof(unsigned int);
 	memcpy((void *)(buffer + idx), (void *)&frame_inst_status, size);
 	idx += size;
@@ -332,14 +317,6 @@ L1AFrame::Pack(
 
 	size = sizeof(double);
 	memcpy((void *)(buffer + idx), (void *)&instrument_time, size);
-	idx += size;
-
-	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&range_gate_a_delay, size);
-	idx += size;
-
-	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&range_gate_b_delay, size);
 	idx += size;
 
 	return(idx);
@@ -462,14 +439,6 @@ L1AFrame::Unpack(
 	memcpy((void *)&in_eu, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(unsigned short);
-	memcpy((void *)&range_gate_delay_inner, (void *)(buffer + idx), size);
-	idx += size;
-
-	size = sizeof(unsigned short);
-	memcpy((void *)&range_gate_delay_outer, (void *)(buffer + idx), size);
-	idx += size;
-
 	size = sizeof(unsigned int);
 	memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
 	idx += size;
@@ -492,14 +461,6 @@ L1AFrame::Unpack(
 
 	size = sizeof(double);
 	memcpy((void *)&instrument_time, (void *)(buffer + idx), size);
-	idx += size;
-
-	size = sizeof(unsigned char);
-	memcpy((void *)&range_gate_a_delay, (void *)(buffer + idx), size);
-	idx += size;
-
-	size = sizeof(unsigned char);
-	memcpy((void *)&range_gate_b_delay, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);
