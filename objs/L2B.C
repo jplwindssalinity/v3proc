@@ -523,6 +523,7 @@ L2B::ReadPureHdf(
             float special_spd = wind_speed_selection[cti]
                 * HDF_WIND_SPEED_SELECTION_SCALE;
             wv->SetSpdDir(special_spd, special_dir);
+            wvc->specialVector = wv;
 
             //----------------------------//
             // set the rain "probability" //
