@@ -2015,7 +2015,9 @@ GetTwoWayPeakGain(
 	double	round_trip_time,
 	double	azimuth_rate,
 	double*	look,
-	double*	azim)
+	double*	azim,
+	CoordinateSwitch* antenna_frame_to_gc=NULL,
+        Spacecraft* spacecraft=NULL)
 {
 	int ndim = 2;
 	double** p = (double**)make_array(sizeof(double),2,3,4);
@@ -2038,9 +2040,13 @@ GetTwoWayPeakGain(
 		p[i][3] = azimuth_rate;
 	}
 
+        char* ptr[3];
+        ptr[0]=(char*)beam;
+        ptr[1]=(char*)antenna_frame_to_gc;
+        ptr[2]=(char*)spacecraft;
 	double ftol = TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE;
 	downhill_simplex((double**)p, ndim, ndim+2, ftol,
-		NegativePowerGainProduct, beam);
+		NegativePowerGainProduct, ptr);
 
 	*look = p[0][0];
 	*azim = p[0][1];
@@ -2081,7 +2087,7 @@ GetTwoWayPeakGain2(
 	//---------------------------//
 
 	if (! GetTwoWayPeakGain(beam, tip.roundTripTime, azimuth_rate,
-		look, azim))
+		look, azim, antenna_frame_to_gc, spacecraft))
 	{
 		return(0);
 	}
@@ -2109,13 +2115,34 @@ GetTwoWayPeakGain2(
 double
 NegativePowerGainProduct(
 	double*		x,
-	void*		beam)
+	void*		ptr)
 {
-	double gp;
-	if(((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp)!=1){
+        double gp;
+	char** ptr2=(char**)ptr;
+        Beam* beam=(Beam*)ptr2[0];
+        CoordinateSwitch* antenna_frame_to_gc=(CoordinateSwitch*)ptr2[1];
+        Spacecraft* spacecraft = (Spacecraft*)ptr2[2];
+
+	if(beam->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp)!=1){
 	  fprintf(stderr,"Error:NegativePowerGainProduct function failed\n");
 	  exit(1);
+	}	
+
+        if(spacecraft!=NULL){
+	  Vector3 rlook_antenna;
+	  rlook_antenna.SphericalSet(1.0, x[0], x[1]);
+	  TargetInfoPackage tip;
+	  if(!RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna, 
+			      &tip)) {
+
+	    fprintf(stderr,"Error:NegativePowerGainProduct function failed\n");
+	    exit(1);
+	  }
+
+
+	  return(-gp/(tip.slantRange*tip.slantRange*tip.slantRange*tip.slantRange));
 	}
-	  
-	return(-gp);
+	else return(-gp);
 }
+
+

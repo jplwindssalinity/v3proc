@@ -101,6 +101,13 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_UNCORR_KPM_FLAG_KEYWORD		"SIM_UNCORR_KPM_FLAG"
 #define SIM_KPRI_FLAG_KEYWORD			"SIM_KPRI_FLAG"
 
+//-------------------------//
+// BYU X factor            //
+//-------------------------//
+
+#define USE_BYU_XFACTOR_KEYWORD                     "USE_BYU_XFACTOR"
+#define XFACTOR_INNER_BEAM_FILE_KEYWORD         "XFACTOR_INNER_BEAM_FILE"
+#define XFACTOR_OUTER_BEAM_FILE_KEYWORD         "XFACTOR_OUTER_BEAM_FILE"
 
 //---------------//
 // LandMap       //

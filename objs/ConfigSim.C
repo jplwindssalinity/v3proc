@@ -12,6 +12,7 @@ static const char rcs_id_configsim_c[] =
 #include "InstrumentSimAccurate.h"
 #include "SpacecraftSim.h"
 #include "XTable.h"
+#include "BYUXTable.h"
 #include "Misc.h"
 #include "L00.h"
 #include "L1A.h"
@@ -683,6 +684,11 @@ ConfigInstrumentSim(
 		compute_xfactor=0; // default value
 	instrument_sim->computeXfactor=compute_xfactor;
 
+	int use_BYU_xfactor;
+	if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
+		use_BYU_xfactor=0; // default value
+	instrument_sim->useBYUXfactor=use_BYU_xfactor;
+
 	int range_gate_clipping;
 	if (! config_list->GetInt(RANGE_GATE_CLIPPING_KEYWORD, &range_gate_clipping))
 		range_gate_clipping=0; // default value
@@ -699,49 +705,12 @@ ConfigInstrumentSim(
 
 	config_list->ExitForMissingKeywords();
 
-	float system_temperature;
-	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
-	{
-		fprintf(stderr,"Could not find system temperature in config file\n");
-		return(0);
-	}
-
-	/****** You cannot use and create the XTable simultaneously. ***/
-	if (create_xtable && use_kfactor)
-	{
-		fprintf(stderr,
-			"ConfigInstrumentSim: Cannot use kfactor AND create Xtable\n");
-		return(0);
-	}
-
-	/*** To create an X table you NEED a uniform sigma0 field. ***/
-	if (create_xtable && !uniform_sigma_field)
-	{
-		fprintf(stderr,
-			"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
-		return(0);
-	}
-
-	/*** To create an X table SYSTEM_TEMPERATURE MUST be zero so that **/
-	/*** Pn_slice will be zero and will NOT corrupt the X table **/
-	if (create_xtable && system_temperature!=0.0)
-	{
-		fprintf(stderr,
-			"ConfigInstrumentSim: Cannot create an Xtable with a nonzero system temperature! \n");
-		return(0);
-	}
-
-	if (create_xtable)
-	{
-		if (!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
-			return(0);
-	}
-	else if (use_kfactor)
-	{
-		if (!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
-			return(0);
-	}
         
+	/****** Exactly one of these must be true ***/
+	if (use_kfactor + compute_xfactor + use_BYU_xfactor != 1){
+	        fprintf(stderr,"ConfigInstrumentSim:X computation incorrectly specified.\n");
+		return(0);
+	}
 	if (compute_xfactor){
 	  int num_look_steps;
 	  if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
@@ -765,6 +734,24 @@ ConfigInstrumentSim(
 	  instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
 	}
 
+	else if (use_kfactor){
+	  if (!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
+	    return(0);
+	}
+        else if (use_BYU_xfactor){
+	  if (!ConfigBYUXTable(&(instrument_sim->BYUX),config_list))
+	    return(0);
+	}
+	if (create_xtable){
+	  if (!ConfigXTable(&(instrument_sim->xTable),config_list,"w"))
+	    return(0);
+	}
+        if(range_gate_clipping){
+	  if (!compute_xfactor){
+		fprintf(stderr,"ConfigInstrumentSim::Range Gate Clipping requires computed X factor.\n");
+		return(0);
+	  }
+	}
         if(apply_doppler_error){
           float doppler_bias;
 	  if (! config_list->GetFloat(DOPPLER_BIAS_KEYWORD,
@@ -1263,6 +1250,18 @@ ConfigXTable(
 	return(1);
 }
 
+int ConfigBYUXTable(
+         BYUXTable*             BYUX,
+	ConfigList*		config_list)
+{
+  char* ibeam_file=config_list->Get(XFACTOR_INNER_BEAM_FILE_KEYWORD);
+  char* obeam_file=config_list->Get(XFACTOR_OUTER_BEAM_FILE_KEYWORD);
+  if(!(BYUX->Read(ibeam_file, obeam_file))) return(0);
+  return(1);
+}
+
+
+
 //-----------//
 // ConfigL00 //
 //-----------//
@@ -1441,20 +1440,34 @@ ConfigL1AToL1B(
           exit(0);
 	} 
 
-	//----------//
-	// k-factor //
-	//----------//
+	//-------------------//
+	// k-factor/x-factor //
+	//-------------------//
 
 	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
 		use_kfactor=0; // default value
 	l1a_to_l1b->useKfactor=use_kfactor;
+
+	int use_BYU_xfactor;
+	if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
+		use_BYU_xfactor=0; // default value
+	l1a_to_l1b->useBYUXfactor=use_BYU_xfactor;
+
+	/****** Exactly one of these must be true ***/
+	if (use_kfactor + use_BYU_xfactor != 1){
+	        fprintf(stderr,"ConfigL1AToL1B:X computation incorrectly specified.\n");
+		return(0);
+	}
 	if (use_kfactor)
 	{
 		if (!ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
 			return(0);
 	}
-
+        else if (use_BYU_xfactor){
+	  if (!ConfigBYUXTable(&(l1a_to_l1b->BYUX),config_list))
+	    return(0);
+	}
 	//------------------//
 	// spot compositing //
 	//------------------//

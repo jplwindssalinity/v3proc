@@ -19,6 +19,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Spacecraft.h"
 #include "Distributions.h"
 #include "XTable.h"
+#include "BYUXTable.h"
 #include "Kpm.h"
 #include "CheckFrame.h"
 
@@ -78,6 +79,7 @@ public:
 				       Meas* meas, float* Kf);
 	int           ComputeXfactor(Spacecraft* spacecraft, Instrument* instrument,
 				       Meas* meas, float* X);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -88,6 +90,8 @@ public:
 
 	XTable			kfactorTable;
 	XTable			xTable;
+        BYUXTable               BYUX;
+
         LandMap                 landMap;
 	int numLookStepsPerSlice;
 
@@ -112,6 +116,7 @@ public:
 	int			uniformSigmaField;	// set all sigma0 values to 1.0
 	int			outputXToStdout;	// write X value to stdout
 	int			useKfactor;			// read and use K-factor table
+	int		        useBYUXfactor;		 // read and use Xfactor table
 	int			computeXfactor;     // compute X-factor
 	int			createXtable;		// create an X table
 	int			rangeGateClipping;  // simulate range gate clipping

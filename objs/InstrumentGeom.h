@@ -117,7 +117,9 @@ int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
 int		GetTwoWayPeakGain(Beam* beam, double round_trip_time,
-			double azimuth_rate, double* look, double* azimuth);
+			double azimuth_rate, double* look, double* azimuth,
+                        CoordinateSwitch* antenna_frame_to_gc=NULL,
+			Spacecraft* spacecraft=NULL);
 
 int		GetTwoWayPeakGain2(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Beam* beam, double azimuth_rate,

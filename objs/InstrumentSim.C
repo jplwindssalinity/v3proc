@@ -23,7 +23,7 @@ static const char rcs_id_instrumentsim_c[] =
 
 InstrumentSim::InstrumentSim()
 :	startTime(0.0), l00FrameReady(0), uniformSigmaField(0),
-	outputXToStdout(0), useKfactor(0), createXtable(0),
+	outputXToStdout(0), useKfactor(0), useBYUXfactor(0), createXtable(0),
 	rangeGateClipping(0), applyDopplerError(0), simVs1BCheckfile(NULL),
 	_spotNumber(0)
 {
@@ -244,28 +244,34 @@ InstrumentSim::SetMeasurements(
 		// Kfactor: either 1.0, taken from table, or X is computed
                 // directly
                 float Xfactor=0;
-		if (computeXfactor){
+		if (computeXfactor || useBYUXfactor){
                   // If you cannot calculate X it probably means the
                   // slice is partially off the earth.
                   // In this case remove it from the list and go on
                   // to next slice
-		  if(!ComputeXfactor(spacecraft,instrument,meas,&Xfactor)){
-		    meas=meas_spot->RemoveCurrent();
-		    delete meas;
-		    meas=meas_spot->GetCurrent();
-		    slice_i++;
-                    sliceno++;
-		    if(slice_count%2==0 && sliceno==0) sliceno++;
-		    continue;
+                  if(computeXfactor){
+		    if(!ComputeXfactor(spacecraft,instrument,meas,&Xfactor)){
+		      meas=meas_spot->RemoveCurrent();
+		      delete meas;
+		      meas=meas_spot->GetCurrent();
+		      slice_i++;
+		      sliceno++;
+		      if(slice_count%2==0 && sliceno==0) sliceno++;
+		      continue;
+		    }
 		  }
-
-
+		  else if(useBYUXfactor){
+		      Xfactor=BYUX.GetXTotal(spacecraft,instrument,meas);
+		  }
 		  if (! sigma0_to_Esn_slice_given_X(instrument, meas,
 				Xfactor, sigma0, &(meas->value)))
 		    {
 		      return(0);
 		    }
 		  meas->XK=Xfactor;
+		}
+                else if(useBYUXfactor){
+		  
 		}
 
                 else{
@@ -451,8 +457,9 @@ InstrumentSim::ScatSim(
 	//-------------------------------------------------------------//
 
 	SetRangeAndDoppler(spacecraft, instrument);
-        if(applyDopplerError) instrument->commandedDoppler+=dopplerBias;
-
+        if(applyDopplerError){
+	  instrument->SetCommandedDoppler(instrument->commandedDoppler+dopplerBias);
+	}
 	//---------------------//
 	// locate measurements //
 	//---------------------//
@@ -535,29 +542,41 @@ InstrumentSim::ScatSim(
 		    instrument->GetSliceFreqBw(slice_idx, &freq, &dummy);
 
 		    float gain=10*log10(slice->XK/XK_max);
+                    float lambda=speed_light_kps/instrument->transmitFreq;
+                    float kdb=instrument->transmitPower*instrument->echo_receiverGain*lambda*lambda/(64*pi*pi*pi*instrument->systemLoss);
+		    kdb=10*log10(kdb);
+                    if(instrument->antenna.currentBeamIdx==0)
+		      kdb+=2*G0H;
+		    else kdb+=2*G0V;
+		    float XKdb=10*log10(slice->XK);
 		    double range=(spacecraft->orbitState.rsat - 
  				     slice->centroid).Magnitude();
 		    float rtt=2.0*range/speed_light_kps;
 		    float pf=GetPulseFractionReceived(instrument,range);
-		    printf("%d %g %g %g %g %g %g %g\n",
-			   instrument->antenna.currentBeamIdx,
-			   instrument->antenna.azimuthAngle*rtd,freq,
-			   gain, rtt, pf,slice->XK, slice->value);
+		    //		    printf("%d %g %g %g %g %g %g %g\n",
+		    //   instrument->antenna.currentBeamIdx,
+		    //   instrument->antenna.azimuthAngle*rtd,freq,
+		    //   gain, rtt, pf,slice->XK, slice->value);
+
+		    printf("%g ",XKdb-kdb); //HACK
+                    float delta_freq=BYUX.GetDeltaFreq(spacecraft,instrument);
+                    //printf("%g ", delta_freq);
 		    total_spot_power+=slice->value;
 		    total_spot_X+=slice->XK;
 			                
 		  }
+		printf("\n"); //HACK
 		RangeTracker* rt= &(instrument->antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
 			
 
 		unsigned short orbit_step=rt->OrbitTicksToStep(instrument->orbitTicks,
 				   instrument->orbitTicksPerOrbit);
 
-		printf("TOTALS %d %d %g %g %g %g\n",(int)orbit_step,
-		       instrument->antenna.currentBeamIdx,
-		       instrument->antenna.azimuthAngle*rtd,
-		       instrument->commandedRxGateDelay,
-                       total_spot_X,total_spot_power);
+		//		printf("TOTALS %d %d %g %g %g %g\n",(int)orbit_step,
+		//       instrument->antenna.currentBeamIdx,
+		//      instrument->antenna.azimuthAngle*rtd,
+		//      instrument->commandedRxGateDelay,
+		//      total_spot_X,total_spot_power);
 		fflush(stdout);
 	}
 

@@ -94,7 +94,7 @@ int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 //--------//
 
 int ConfigXTable(XTable* xTable, ConfigList* config_list, char* read_write);
-
+int ConfigBYUXTable(BYUXTable* BYUX,ConfigList* config_list);
 //-----//
 // L00 //
 //-----//

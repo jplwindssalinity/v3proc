@@ -18,7 +18,8 @@ static const char rcs_id_l1atol1b_c[] =
 //==========//
 
 L1AToL1B::L1AToL1B()
-:	useKfactor(0), useSpotCompositing(0), outputSigma0ToStdout(0),
+:	useKfactor(0), useBYUXfactor(0), useSpotCompositing(0), 
+	outputSigma0ToStdout(0),
 	sliceGainThreshold(0.0), processMaxSlices(0), simVs1BCheckfile(NULL)
 {
 	return;
@@ -228,6 +229,8 @@ L1AToL1B::Convert(
 			{
 				// Kfactor: either 1.0 or taken from table
 				float k_factor=1.0;
+                                float x_factor=1.0;
+				float PtGr = l1a->frame.ptgr;
 				if (useKfactor)
 				{
 					float orbit_position = instrument->OrbitFraction();
@@ -236,20 +239,37 @@ L1AToL1B::Convert(
 						instrument->antenna.currentBeamIdx,
 						instrument->antenna.azimuthAngle, orbit_position,
 						meas->startSliceIdx);
+
+					//-----------------//
+					// set measurement //
+					//-----------------//
+
+					// meas->value is the Esn value going in, sigma0 coming out.
+					if (! Er_to_sigma0(&gc_to_antenna, spacecraft, instrument,
+							   meas, k_factor, meas->value, sumEsn, En, PtGr))
+					  {
+					    return(0);
+					  }
+				}
+				else if(useBYUXfactor){
+				  x_factor=BYUX.GetXTotal(spacecraft,instrument,meas,PtGr);
+				  //-----------------//
+				  // set measurement //
+				  //-----------------//
+
+				  // meas->value is the Esn value going in, sigma0 coming out.
+				  if (! Er_to_sigma0_given_X(instrument, meas, x_factor, meas->value, 
+							     sumEsn, En))
+				    {
+				      return(0);
+				    }
+				}
+				else{
+				  fprintf(stderr,"L1AToL1B::Convert:No X compuation algorithm set\n");
+				  exit(0);
 				}
 
-				float PtGr = l1a->frame.ptgr;
 
-				//-----------------//
-				// set measurement //
-				//-----------------//
-
-				// meas->value is the Esn value going in, sigma0 coming out.
-				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, meas->value, sumEsn, En, PtGr))
-				{
-					return(0);
-				}
 
 				meas->scanAngle = instrument->antenna.azimuthAngle;
 				meas->beamIdx = instrument->antenna.currentBeamIdx;

@@ -16,6 +16,7 @@ static const char rcs_id_l1atol1b_h[] =
 #include "LandMap.h"
 #include "Ephemeris.h"
 #include "XTable.h"
+#include "BYUXTable.h"
 
 
 //======================================================================
@@ -56,9 +57,12 @@ public:
 	//-----------//
 
 	XTable	kfactorTable;
+	XTable  xTable;
+        BYUXTable  BYUX;
         LandMap landMap;
 
-	int		useKfactor;				// read and use kfactor table
+	int		useKfactor;		 // read and use kfactor table
+	int		useBYUXfactor;		 // read and use Xfactor table
 	int		useSpotCompositing;		// make spots by compositing slices
 	int		outputSigma0ToStdout;	// output s0 values to stdout
 	float	sliceGainThreshold;		// use to decide which slices to process
