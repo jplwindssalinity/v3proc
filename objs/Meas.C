@@ -90,8 +90,8 @@ Meas::Composite(
 		sum_XK += meas->XK;
 		sum_EnSlice += meas->EnSlice;
 		sum_bandwidth += meas->bandwidth;
-		sum_centroid += meas->centroid;
-		sum_incidenceAngle += meas->incidenceAngle;
+		sum_centroid += meas->centroid * meas->XK;
+		sum_incidenceAngle += meas->XK * meas->incidenceAngle;
 		sum_xk2a += meas->XK * meas->XK * meas->A;
 		sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
 		sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
@@ -114,14 +114,16 @@ Meas::Composite(
 	bandwidth = sum_bandwidth;
 	txPulseWidth = meas->txPulseWidth;
 	outline.FreeContents();				// merged outlines not done yet
-	centroid = sum_centroid / N;
+	// Weighted average of centroids (weighted by XK)
+	centroid = sum_centroid / sum_XK;
 	// put centroid on surface
 	double alt, lon, lat;
 	centroid.GetAltLonGDLat(&alt, &lon, &lat);
 	centroid.SetAltLonGDLat(0.0, lon, lat);
 	pol = meas->pol;					// same for all slices
 	eastAzimuth = meas->eastAzimuth;	// same for all slices
-	incidenceAngle = sum_incidenceAngle / N;
+	// Weighted average of incidence angles (weighted by XK)
+	incidenceAngle = sum_incidenceAngle / sum_XK;
 	beamIdx = meas->beamIdx;			// same for all slices
 	startSliceIdx = min_slice_idx;
 	scanAngle = meas->scanAngle;		// same for all slices
