@@ -144,13 +144,29 @@ int32 dim_sizes_frame_3[] = { SD_UNLIMITED, 3 };
 int32 dim_sizes_frame_4[] = { SD_UNLIMITED, 4 };
 int32 dim_sizes_frame_5[] = { SD_UNLIMITED, 5 };
 int32 dim_sizes_frame_8[] = { SD_UNLIMITED, 8 };
+int32 dim_sizes_frame_13[] = { SD_UNLIMITED, 13 };
+int32 dim_sizes_frame_100[] = { SD_UNLIMITED, 100 };
+int32 dim_sizes_frame_2_8[] = { SD_UNLIMITED, 2, 8 };
+int32 dim_sizes_frame_100_12[] = { SD_UNLIMITED, 100, 12 };
 const char* dim_names_frame[] = { "Telemetry_Frame" };
 const char* dim_names_frame_packet_header[] = { "Telemetry_Frame",
     "Small_Integer" };
 const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame", "Message" };
 const char* dim_names_frame_cmd_history[] = { "Telemetry_Frame", "Command" };
 const char* dim_names_frame_fill[] = { "Telemetry_Frame", "Fill_Entries" };
+const char* dim_names_frame_word[] = { "Telemetry_Frame", "Word" };
+const char* dim_names_frame_pcd[] = { "Telemetry_Frame", "PCD_Group",
+    "Entry" };
+const char* dim_names_frame_pulse[] = { "Telemetry_Frame",
+    "Scatterometer_Pulse" };
+const char* dim_names_frame_byte[] = { "Telemetry_Frame", "Byte" };
+const char* dim_names_frame_pulse_slice[] = { "Telemetry_Frame",
+    "Scatterometer_Pulse", "Chirp" };
 const char* dim_names_frame_[] = { "Telemetry_Frame" };
+
+//=======//
+// SDSes //
+//=======//
 
 SdsFloat64* frame_time_secs = new SdsFloat64("frame_time_secs", 1,
     dim_sizes_frame, "sec", 1.0, 0.0, dim_names_frame, 5.0E9, 0.0);
@@ -382,8 +398,74 @@ SdsUInt8* eng_status_c3 = new SdsUInt8("eng_status_c3", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
 SdsUInt8* ses_data_error_flags = new SdsUInt8("ses_data_error_flags", 1,
     dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt32* cds_memory_dump_addr = new SdsUInt32("cds_memory_dump_addr", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffffffff, 0x00000000);
+SdsUInt32* cds_memory_dump_data = new SdsUInt32("cds_memory_dump_data", 2,
+    dim_sizes_frame_4, "n/a", 1.0, 0.0, dim_names_frame_word, 0xffffffff,
+    0x00000000);
+SdsUInt16* ses_memory_dump_addr = new SdsUInt16("ses_memory_dump_addr", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
+SdsUInt32* ses_memory_dump_data = new SdsUInt32("ses_memory_dump_data", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffffffff,
+    0x00000000);
+SdsUInt16* pcd_entry = new SdsUInt16("pcd_entry", 3, dim_sizes_frame_2_8,
+    "DN", 1.0, 0.0, dim_names_frame_pcd, 0xffff, 0x0000);
+SdsUInt16* pcd_entry2 = new SdsUInt16("pcd_entry", 3, dim_sizes_frame_2_8,
+    "DN", 1.0, 0.0, dim_names_frame_pcd, 0xffff, 0x0000);
+SdsInt16* range_gate_delay_inner = new SdsInt16("range_gate_delay_inner", 1,
+    dim_sizes_frame, "sec", 0.000001, 0.0, dim_names_frame, 12750, 0);
+SdsInt16* range_gate_delay_outer = new SdsInt16("range_gate_delay_outer", 1,
+    dim_sizes_frame, "sec", 0.000001, 0.0, dim_names_frame, 12750, 0);
+SdsInt16* range_gate_width_inner = new SdsInt16("range_gate_width_inner", 1,
+    dim_sizes_frame, "sec", 0.000001, 0.0, dim_names_frame, 12750, 0);
+SdsInt16* range_gate_width_outer = new SdsInt16("range_gate_width_outer", 1,
+    dim_sizes_frame, "sec", 0.000001, 0.0, dim_names_frame, 12750, 0);
+SdsInt16* transmit_pulse_width = new SdsInt16("transmit_pulse_width", 1,
+    dim_sizes_frame, "sec", 0.000001, 0.0, dim_names_frame, 12750, 0);
+SdsInt8* true_cal_pulse_pos = new SdsInt8("true_cal_pulse_pos", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 95, -1);
+SdsInt16* transmit_power_inner = new SdsInt16("transmit_power_inner", 1,
+    dim_sizes_frame, "dBm", 0.01, 0.0, dim_names_frame, 7000, 3000);
+SdsInt16* transmit_power_outer = new SdsInt16("transmit_power_outer", 1,
+    dim_sizes_frame, "dBm", 0.01, 0.0, dim_names_frame, 7000, 3000);
+SdsInt16* rj_temp_eu = new SdsInt16("rj_temp_eu", 1,
+    dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
+SdsInt16* precision_coupler_temp_eu =
+    new SdsInt16("precision_coupler_temp_eu", 1, dim_sizes_frame, "deg_C",
+    0.01, 0.0, dim_names_frame, 8314, -1706);
+SdsInt16* rcv_protect_sw_temp_eu = new SdsInt16("rcv_protect_sw_temp_eu", 1,
+    dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
+SdsInt16* beam_select_sw_temp_eu = new SdsInt16("beam_select_sw_temp_eu", 1,
+    dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
+SdsInt16* receiver_temp_eu = new SdsInt16("receiver_temp_eu", 1,
+    dim_sizes_frame, "deg_C", 0.01, 0.0, dim_names_frame, 8314, -1706);
+SdsUInt32* loop_back_cal_A_power = new SdsUInt32("loop_back_cal_A_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
+SdsUInt32* loop_back_cal_B_power = new SdsUInt32("loop_back_cal_B_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
+SdsUInt32* load_cal_A_power = new SdsUInt32("load_cal_A_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
+SdsUInt32* load_cal_B_power = new SdsUInt32("load_cal_B_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 8355840, 0);
+SdsUInt32* loop_back_cal_noise = new SdsUInt32("loop_back_cal_noise", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 4294967295, 0);
+SdsUInt32* load_cal_noise = new SdsUInt32("load_cal_noise", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 4294967295, 0);
+SdsUInt16* antenna_position = new SdsUInt16("antenna_position", 2,
+    dim_sizes_frame_100, "DN", 1.0, 0.0, dim_names_frame_pulse, 65535, 0);
+SdsUInt32* power_dn = new SdsUInt32("power_dn", 3, dim_sizes_frame_100_12,
+    "DN", 1.0, 0.0, dim_names_frame_pulse_slice, 8355840, 0);
+SdsUInt32* noise_dn = new SdsUInt32("noise_dn", 2, dim_sizes_frame_100,
+    "DN", 1.0, 0.0, dim_names_frame_pulse, 4294967295, 0);
+SdsUInt32* frame_inst_status = new SdsUInt32("frame_inst_status", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x3fffffff, 0x00000000);
+SdsUInt32* frame_err_status = new SdsUInt32("frame_err_status", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x0fffffff, 0x00000000);
+SdsUInt16* frame_qual_flag = new SdsUInt16("frame_qual_flag", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x001f, 0x0000);
+SdsUInt8* pulse_qual_flag = new SdsUInt8("pulse_qual_flag", 2,
+    dim_sizes_frame_13, "n/a", 1.0, 0.0, dim_names_frame_byte, 0xff, 0x00);
 
-// xxxxxx
 Sds* g_sds_table[] =
 {
     frame_time_secs,
@@ -499,6 +581,35 @@ Sds* g_sds_table[] =
     eng_status_c2,
     eng_status_c3,
     ses_data_error_flags,
+    cds_memory_dump_addr,
+    cds_memory_dump_data,
+    pcd_entry,
+    range_gate_delay_inner,
+    range_gate_delay_outer,
+    range_gate_width_inner,
+    range_gate_width_outer,
+    transmit_pulse_width,
+    true_cal_pulse_pos,
+    transmit_power_inner,
+    transmit_power_outer,
+    rj_temp_eu,
+    precision_coupler_temp_eu,
+    rcv_protect_sw_temp_eu,
+    beam_select_sw_temp_eu,
+    receiver_temp_eu,
+    loop_back_cal_A_power,
+    loop_back_cal_B_power,
+    load_cal_A_power,
+    load_cal_B_power,
+    loop_back_cal_noise,
+    load_cal_noise,
+    antenna_position,
+    power_dn,
+    noise_dn,
+    frame_inst_status,
+    frame_err_status,
+    frame_qual_flag,
+    pulse_qual_flag,
     NULL
 };
 
@@ -738,14 +849,68 @@ L1AH::WriteSDSs()
 {
     GSL1AStatus* status = &(frame.status);
     GSL1AEngData* engdata = &(frame.engdata);
+    GSL1AEu* in_eu = &(frame.in_eu);
 
-    //-----------------------//
-    // set all of the values //
-    //-----------------------//
+    //------------------------------------------------//
+    // set all of the values that will get used later //
+    //------------------------------------------------//
 
+    // frame time secs
     frame_time_secs->SetFromDouble(&(frame.time));
-    instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
+
+    // orbit time
     orbit_time->SetWithUnsignedInt(&(frame.orbitTicks));
+
+    // doppler orbit step
+    doppler_orbit_step->SetWithUnsignedChar(&(status->doppler_orbit_step));
+
+    // prf orbit step change
+	char posc;
+    posc = -1;
+    if (status->prf_orbit_step_change < 127)
+        posc = (char)status->prf_orbit_step_change;
+    prf_orbit_step_change->SetWithChar(&posc);
+
+    // prf cycle time
+    prf_cycle_time->SetWithUnsignedChar(&(status->prf_cycle_time));
+
+    // range gate a width
+    range_gate_a_width->SetWithUnsignedChar(&(status->range_gate_a_width));
+
+    // range gate b width
+    range_gate_b_width->SetWithUnsignedChar(&(status->range_gate_b_width));
+
+    // pulse width
+    pulse_width->SetWithUnsignedChar(&(status->pulse_width));
+
+    // true cal pulse pos
+    unsigned char tcpp = (unsigned char)in_eu->true_cal_pulse_pos;
+    true_cal_pulse_pos->SetWithChar((char *)&tcpp);
+
+    // precision coupler temp eu
+
+    // rcv protect sw temp eu
+
+    // beam select sw temp eu
+
+    // receiver temp eu
+
+    // antenna position
+
+    // power dn
+
+    // noise dn
+
+    // frame inst status
+
+    // pulse qual flag
+
+    // frame err status
+
+    // frame qual flag
+
+/*
+    instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
 
     // convert km to m
     frame.gcX *= 1000.0;
@@ -821,26 +986,18 @@ L1AH::WriteSDSs()
     invalid_command_count->SetWithUnsignedChar(&count);
 
     // cal pulse specified position
-/*
     char pos = -1;
     if (frame.calPosition != 255)    // 255 flags no cal pulse in frame
     {
         pos = (char)frame.calPosition;
     }
-*/
     specified_cal_pulse_pos->SetWithChar(
         &(status->specified_cal_pulse_pos));
 
-    prf_cycle_time->SetWithUnsignedChar(&(status->prf_cycle_time));
-
     range_gate_a_delay->SetWithUnsignedChar(
         &(status->range_gate_a_delay));
-    range_gate_a_width->SetWithUnsignedChar(
-        &(status->range_gate_a_width));
     range_gate_b_delay->SetWithUnsignedChar(
         &(status->range_gate_b_delay));
-    range_gate_b_width->SetWithUnsignedChar(
-        &(status->range_gate_b_width));
 
     unsigned int ds1 = 0;
     unsigned char* ds1_ptr = (unsigned char*)&ds1;
@@ -856,7 +1013,6 @@ L1AH::WriteSDSs()
     *(ds2_ptr + 3) = status->doppler_shift_command_2[2];
     doppler_shift_command_2->SetWithUnsignedInt(&ds2);
 
-    pulse_width->SetWithUnsignedChar(&(status->pulse_width));
     receiver_gain->SetWithUnsignedChar(&(status->receiver_gain));
     ses_configuration_flags->SetWithUnsignedChar(
         &(status->ses_configuration_flags));
@@ -872,14 +1028,6 @@ L1AH::WriteSDSs()
     running_error_count->SetWithUnsignedShort(&ushort);
 
     ses_reset_position->SetWithChar(&(status->ses_reset_position));
-    doppler_orbit_step->SetWithUnsignedChar(
-        &(status->doppler_orbit_step));
-
-	char posc;
-    posc = -1;
-    if (status->prf_orbit_step_change < 127)
-        posc = (char)status->prf_orbit_step_change;
-    prf_orbit_step_change->SetWithChar(&posc);
 
     cmd_history_queue->SetWithUnsignedShort(
         (unsigned short *)(status->cmd_history_queue));
@@ -908,74 +1056,85 @@ L1AH::WriteSDSs()
     float fill_values[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
     fill->SetWithFloat(fill_values);
 
-    unsigned char dummy = 64;
-    psu_elec_bus_volt->SetWithUnsignedChar(&dummy);
-    cds_current->SetWithUnsignedChar(&dummy);
-    ses_a_current->SetWithUnsignedChar(&dummy);
-    ses_b_current->SetWithUnsignedChar(&dummy);
-    twta_1_current->SetWithUnsignedChar(&dummy);
-    twta_2_current->SetWithUnsignedChar(&dummy);
-    sas_a_current->SetWithUnsignedChar(&dummy);
-    sas_b_current->SetWithUnsignedChar(&dummy);
-    pcu_sec_volt_p12->SetWithUnsignedChar(&dummy);
-    pcu_sec_volt_n12->SetWithUnsignedChar(&dummy);
-    pcu_sec_volt_p30->SetWithUnsignedChar(&dummy);
-    pcu_sec_volt_vme_p3->SetWithUnsignedChar(&dummy);
-    pcu_elec_bus_volt->SetWithUnsignedChar(&dummy);
-    idp_a_temp->SetWithUnsignedChar(&dummy);
-    idp_b_temp->SetWithUnsignedChar(&dummy);
-    psu_temp->SetWithUnsignedChar(&dummy);
+    unsigned char dummy_uchar = 64;
+    psu_elec_bus_volt->SetWithUnsignedChar(&dummy_uchar);
+    cds_current->SetWithUnsignedChar(&dummy_uchar);
+    ses_a_current->SetWithUnsignedChar(&dummy_uchar);
+    ses_b_current->SetWithUnsignedChar(&dummy_uchar);
+    twta_1_current->SetWithUnsignedChar(&dummy_uchar);
+    twta_2_current->SetWithUnsignedChar(&dummy_uchar);
+    sas_a_current->SetWithUnsignedChar(&dummy_uchar);
+    sas_b_current->SetWithUnsignedChar(&dummy_uchar);
+    pcu_sec_volt_p12->SetWithUnsignedChar(&dummy_uchar);
+    pcu_sec_volt_n12->SetWithUnsignedChar(&dummy_uchar);
+    pcu_sec_volt_p30->SetWithUnsignedChar(&dummy_uchar);
+    pcu_sec_volt_vme_p3->SetWithUnsignedChar(&dummy_uchar);
+    pcu_elec_bus_volt->SetWithUnsignedChar(&dummy_uchar);
+    idp_a_temp->SetWithUnsignedChar(&dummy_uchar);
+    idp_b_temp->SetWithUnsignedChar(&dummy_uchar);
+    psu_temp->SetWithUnsignedChar(&dummy_uchar);
 
     unsigned short relay_value;
     memcpy(&relay_value, engdata->relay_status, sizeof(unsigned short));
     relay_status->SetWithUnsignedShort(&relay_value);
 
-    ea_a_motor_current->SetWithUnsignedChar(&dummy);
-    ea_a_sec_volt_p5->SetWithUnsignedChar(&dummy);
-    ea_a_sec_volt_p14->SetWithUnsignedChar(&dummy);
+    ea_a_motor_current->SetWithUnsignedChar(&dummy_uchar);
+    ea_a_sec_volt_p5->SetWithUnsignedChar(&dummy_uchar);
+    ea_a_sec_volt_p14->SetWithUnsignedChar(&dummy_uchar);
     ea_a_spin_rate->SetWithUnsignedChar(&(engdata->ea_a_spin_rate));
-    ea_a_saa_torque_cmd->SetWithUnsignedChar(&dummy);
-    ea_b_motor_current->SetWithUnsignedChar(&dummy);
-    ea_b_sec_volt_p5->SetWithUnsignedChar(&dummy);
-    ea_b_sec_volt_p14->SetWithUnsignedChar(&dummy);
+    ea_a_saa_torque_cmd->SetWithUnsignedChar(&dummy_uchar);
+    ea_b_motor_current->SetWithUnsignedChar(&dummy_uchar);
+    ea_b_sec_volt_p5->SetWithUnsignedChar(&dummy_uchar);
+    ea_b_sec_volt_p14->SetWithUnsignedChar(&dummy_uchar);
     ea_b_spin_rate->SetWithUnsignedChar(&(engdata->ea_b_spin_rate));
-    ea_b_saa_torque_cmd->SetWithUnsignedChar(&dummy);
-    drive_motor_temp->SetWithUnsignedChar(&dummy);
-    ea_a_power_supply_temp->SetWithUnsignedChar(&dummy);
-    ea_b_power_supply_temp->SetWithUnsignedChar(&dummy);
-    duplex_bearing_temp->SetWithUnsignedChar(&dummy);
-    simplex_bearing_temp->SetWithUnsignedChar(&dummy);
-    rj_temp->SetWithUnsignedChar(&dummy);
+    ea_b_saa_torque_cmd->SetWithUnsignedChar(&dummy_uchar);
+    drive_motor_temp->SetWithUnsignedChar(&dummy_uchar);
+    ea_a_power_supply_temp->SetWithUnsignedChar(&dummy_uchar);
+    ea_b_power_supply_temp->SetWithUnsignedChar(&dummy_uchar);
+    duplex_bearing_temp->SetWithUnsignedChar(&dummy_uchar);
+    simplex_bearing_temp->SetWithUnsignedChar(&dummy_uchar);
+    rj_temp->SetWithUnsignedChar(&dummy_uchar);
     a2d_p12v_xcpl->SetWithUnsignedChar(&(engdata->a2d_p12v_xcpl));
-    twt1_body_reg_volt->SetWithUnsignedChar(&dummy);
-    twt1_ion_pump_current->SetWithUnsignedChar(&dummy);
-    twt1_body_current->SetWithUnsignedChar(&dummy);
-    twt1_drive_power->SetWithUnsignedChar(&dummy);
-    twt2_body_reg_volt->SetWithUnsignedChar(&dummy);
-    twt2_ion_pump_current->SetWithUnsignedChar(&dummy);
-    twt2_body_current->SetWithUnsignedChar(&dummy);
-    twt2_drive_power->SetWithUnsignedChar(&dummy);
+    twt1_body_reg_volt->SetWithUnsignedChar(&dummy_uchar);
+    twt1_ion_pump_current->SetWithUnsignedChar(&dummy_uchar);
+    twt1_body_current->SetWithUnsignedChar(&dummy_uchar);
+    twt1_drive_power->SetWithUnsignedChar(&dummy_uchar);
+    twt2_body_reg_volt->SetWithUnsignedChar(&dummy_uchar);
+    twt2_ion_pump_current->SetWithUnsignedChar(&dummy_uchar);
+    twt2_body_current->SetWithUnsignedChar(&dummy_uchar);
+    twt2_drive_power->SetWithUnsignedChar(&dummy_uchar);
     transmit_power_a->SetWithUnsignedChar(&(engdata->transmit_power_a));
     transmit_power_b->SetWithUnsignedChar(&(engdata->transmit_power_b));
-    power_convert_current->SetWithUnsignedChar(&dummy);
+    power_convert_current->SetWithUnsignedChar(&dummy_uchar);
     precision_coupler_temp->SetWithUnsignedChar(
         &(engdata->precision_coupler_temp));
-    twt1_hvps_chassis_temp->SetWithUnsignedChar(&dummy);
-    twt1_base_temp->SetWithUnsignedChar(&dummy);
-    twt2_hvps_chassis_temp->SetWithUnsignedChar(&dummy);
-    twt2_base_temp->SetWithUnsignedChar(&dummy);
+    twt1_hvps_chassis_temp->SetWithUnsignedChar(&dummy_uchar);
+    twt1_base_temp->SetWithUnsignedChar(&dummy_uchar);
+    twt2_hvps_chassis_temp->SetWithUnsignedChar(&dummy_uchar);
+    twt2_base_temp->SetWithUnsignedChar(&dummy_uchar);
     rcv_protect_sw_temp->SetWithUnsignedChar(&(engdata->rcv_protect_sw_temp));
-    power_converter_temp->SetWithUnsignedChar(&dummy);
-    gain_atten_temp->SetWithUnsignedChar(&dummy);
+    power_converter_temp->SetWithUnsignedChar(&dummy_uchar);
+    gain_atten_temp->SetWithUnsignedChar(&dummy_uchar);
     beam_select_sw_temp->SetWithUnsignedChar(&(engdata->beam_select_sw_temp));
-    scp_temp->SetWithUnsignedChar(&dummy);
+    scp_temp->SetWithUnsignedChar(&dummy_uchar);
     receiver_temp->SetWithUnsignedChar(&(engdata->receiver_temp));
-    exciter_a_temp->SetWithUnsignedChar(&dummy);
-    exciter_b_temp->SetWithUnsignedChar(&dummy);
+    exciter_a_temp->SetWithUnsignedChar(&dummy_uchar);
+    exciter_b_temp->SetWithUnsignedChar(&dummy_uchar);
     eng_status_c1->SetWithUnsignedChar(&(engdata->eng_status_c1));
     eng_status_c2->SetWithUnsignedChar(&(engdata->eng_status_c2));
     eng_status_c3->SetWithUnsignedChar(&(engdata->eng_status_c3));
-    ses_data_error_flags->SetWithUnsignedChar(&dummy);
+    ses_data_error_flags->SetWithUnsignedChar(&dummy_uchar);
+
+    cds_memory_dump_addr->SetWithUnsignedInt(&dummy_uchar);
+    unsigned int data[4] = { 0, 0, 0, 0 };
+    cds_memory_dump_data->SetWithUnsignedInt(data);
+
+    unsigned short dummy_ushort = 0;
+    ses_memory_dump_addr->SetWithUnsignedShort(&dummy_ushort);
+    ses_memory_dump_data->SetWithUnsignedInt(data);
+
+    pcd_entry->SetWithUnsignedShort(&dummy_ushort);
+*/
 
 // xxxxx
     //-------------------------------------------//
