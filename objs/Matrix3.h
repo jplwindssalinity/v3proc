@@ -86,6 +86,8 @@ double _m[3][3];
 //		and methods to perform basic matrix/vector operations.
 //======================================================================
 
+#define ZERO_VECTOR		Vector3(0.0)
+
 class Vector3
 {
 friend Matrix3;
@@ -124,7 +126,6 @@ void Show(char *name = NULL);
 	int		SphericalSet(double r, double theta, double phi);
 	int		Set(int index, double value);
 	int		Get(int index, double* value);
-	void	Zero();		// zero all elements
 
 protected:
 
