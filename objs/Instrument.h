@@ -10,6 +10,7 @@ static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
 #include "Antenna.h"
+#include "Tracking.h"
 
 //======================================================================
 // CLASSES
@@ -93,8 +94,10 @@ public:
 	// variables //
 	//-----------//
 
-	double		time;
-	Antenna		antenna;
+	double			time;
+	Antenna			antenna;
+	RangeTracker	rangeTracker;
+	DopplerTracker	dopplerTracker;
 
 	//------------------//
 	// generally varied //
@@ -103,7 +106,7 @@ public:
 	unsigned int	orbitTicks;				// 32 Hz ticks
 	float			commandedDoppler;		// Hz freq added to base xmit
 	float			receiverGateDelay;		// sec
-	float			receiverGateDuration;	// sec
+	float			receiverGateWidth;		// sec
 
 	//-------------------------------------//
 	// affected by noise, temperature etc. //
@@ -120,9 +123,7 @@ public:
 	float		chirpRate;				// Hz/sec
 	float		chirpStartM;			// Hz/sec
 	float		chirpStartB;			// Hz
-	float		systemDelay;			// sec
 	float		systemTemperature;		// K
-//	float		xmitPulsewidth;			// sec
 	float		baseTransmitFreq;		// Hz, starting frequency
 	float		transmitFreq;			// Hz, actual center transmit frequency
 
@@ -132,10 +133,17 @@ public:
 	int			guardSlicesPerSide;		// count
 
 	float		noiseBandwidth;			// Hz
-	int			useKpc;					// flag, 0 - no kpc, 1 - with kpc
+
+	//-------//
+	// flags //
+	//-------//
+
+	int				useKpc;		// 0 - no kpc, 1 - with kpc
+	unsigned char	useRgc;		// 0 - ideal delay, 1 - use RGC
+	unsigned char	useDtc;		// 0 - ideal Doppler, 1 - use DTC
 
 protected:
-	double		_eqxTime;
+	double			_eqxTime;
 };
 
 #endif

@@ -77,7 +77,6 @@ LocateSlices(
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
-	Attitude zero_rpy; // Constructor set rpy to zero
 
 	//------------------//
 	// set up meas spot //
@@ -95,32 +94,45 @@ LocateSlices(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
+	//------------------------------------------------------//
+	// calculate commanded receiver gate delay and duration //
+	//------------------------------------------------------//
 
-	//-------------------------------------------------//
-	// calculate Doppler shift and receiver gate delay //
-	//-------------------------------------------------//
-
-	Vector3 vector;
-	double look, azimuth;
-
-	if (! beam->GetElectricalBoresight(&look, &azimuth))
-		return(0);
-
-	vector.SphericalSet(1.0, look, azimuth);
-	TargetInfoPackage tip;
-	RangeAndRoundTrip(&zero_rpy_antenna_frame_to_gc, spacecraft, vector, &tip);
-
-	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
-		instrument->antenna.spinRate,&look, &azimuth))
+	if (instrument->useRgc)
 	{
-		return(0);
+		if (! instrument->rangeTracker.SetInstrument(instrument))
+		{
+			fprintf(stderr,
+			"LocateSlices: error setting instrument using range tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		instrument->receiverGateWidth = beam->receiverGateWidth;
+		double rtt = IdealRtt(spacecraft, instrument);
+		if (! RttToCommandedReceiverDelay(instrument, rtt))
+			return(0);
 	}
 
-	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
-		vector);
+	//---------------------------------------//
+	// calculate commanded Doppler frequency //
+	//---------------------------------------//
+
+	if (instrument->useDtc)
+	{
+		if (! instrument->dopplerTracker.SetInstrument(instrument))
+		{
+			fprintf(stderr,
+			"LocateSlices: error setting instrument using Doppler tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		if (! IdealCommandedDoppler(spacecraft, instrument))
+			return(0);
+	}
 
 	//-------------------//
 	// for each slice... //
@@ -153,8 +165,9 @@ LocateSlices(
 		Vector3 look_vector;
 		// guess at a reasonable slice frequency tolerance of .1%
 		float ftol = bw / 1000.0;
+		double look, azim;
 		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
-			look, azimuth, f1, f2, ftol, &(meas->outline), &look_vector,
+			look, azim, f1, f2, ftol, &(meas->outline), &look_vector,
 			&centroid))
 		{
 			return(0);
@@ -228,14 +241,14 @@ LocateSpot(
 
 	Vector3 rlook_antenna;
 
-	double look, azimuth;
-	if (! beam->GetElectricalBoresight(&look, &azimuth))
+	double look, azim;
+	if (! beam->GetElectricalBoresight(&look, &azim))
 	{
 		printf("Error determining electrical boresight\n");
 		return(0);
 	}
 
-	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	rlook_antenna.SphericalSet(1.0, look, azim);
 	TargetInfoPackage tip;
 	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
@@ -246,14 +259,14 @@ LocateSpot(
 	//
 
 	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
-		instrument->antenna.spinRate, &look, &azimuth))
+		instrument->antenna.spinRate, &look, &azim))
 	{
 		printf("Error determining 2 way electrical boresight\n");
 		return(0);
 	}
 
 	// Update with new boresight
-	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	rlook_antenna.SphericalSet(1.0, look, azim);
 	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
 	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
@@ -266,12 +279,12 @@ LocateSpot(
 
 	// get the max gain value.
 	float gp_max;
-	beam->GetPowerGainProduct(look, azimuth,tip.roundTripTime,
+	beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
 			instrument->antenna.spinRate, &gp_max);
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
-	beam_frame.Set(0.0, look, azimuth, 3, 2, 1);
+	beam_frame.Set(0.0, look, azim, 3, 2, 1);
 	CoordinateSwitch ant_to_beam(beam_frame);
 	CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
 
@@ -301,10 +314,10 @@ LocateSpot(
 			theta = (theta_max + theta_min) / 2.0;
 			look_mid.SphericalSet(1.0, theta, phi);
 			look_mid_ant = beam_to_ant.Forward(look_mid);
-			double r, look, azimuth;
-			look_mid_ant.SphericalGet(&r,&look,&azimuth);
+			double r, look, azim;
+			look_mid_ant.SphericalGet(&r,&look,&azim);
 			float gp;
-			beam->GetPowerGainProduct(look, azimuth, tip.roundTripTime,
+			beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
 				instrument->antenna.spinRate, &gp);
 			if (gp > contour_level * gp_max)
 			{
@@ -542,6 +555,7 @@ FindSlice(
 	return(1);
 }
 
+/*
 //-----------------//
 // DopplerAndDelay //
 //-----------------//
@@ -602,6 +616,74 @@ DopplerAndDelay(
 
 	return(1);
 }
+*/
+
+//----------//
+// IdealRtt //
+//----------//
+// Calculate the ideal round trip time.  The attitude is set to 0,0,0.
+// Used for the RGC or for calculating the commanded round trip time.
+
+double
+IdealRtt(
+	Spacecraft*			spacecraft,
+	Instrument*			instrument)
+{
+	//------------------------------//
+	// zero the spacecraft attitude //
+	//------------------------------//
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Attitude zero_rpy;
+	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(instrument->antenna));
+
+	//-------------------------------------------//
+	// find the current beam's two-way peak gain //
+	//-------------------------------------------//
+
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double azimuth_rate = instrument->antenna.spinRate;
+	double look, azim;
+	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+		azimuth_rate, &look, &azim))
+	{
+		return(0);
+	}
+
+	//-------------------------------//
+	// calculate the round trip time //
+	//-------------------------------//
+
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	Vector3 ulook_gc = zero_rpy_antenna_frame_to_gc.Forward(vector);
+	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
+	double round_trip_time = 2.0 * slant_range / speed_light_kps;
+
+	return(round_trip_time);
+}
+
+//-----------------------------//
+// RttToCommandedReceiverDelay //
+//-----------------------------//
+// Calculates the commanded receiver delay based on the round trip time.
+
+int
+RttToCommandedReceiverDelay(
+	Instrument*		instrument,
+	double			rtt)
+{
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double pulse_width = beam->pulseWidth;
+
+	instrument->receiverGateDelay = rtt +
+		(pulse_width - instrument->receiverGateWidth) / 2.0;
+
+	return(1);
+}
 
 //-----------------------//
 // IdealCommandedDoppler //
@@ -612,52 +694,53 @@ DopplerAndDelay(
 
 int
 IdealCommandedDoppler(
-	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
-	Instrument*			instrument,
-	Vector3				vector)
+	Instrument*			instrument)
 {
-	//-----------------------------------------------------//
-	// calculate receiver gate delay to put echo in center //
-	//-----------------------------------------------------//
-
-	int current_beam_idx = instrument->antenna.currentBeamIdx;
-	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+	//------------------------------//
+	// zero the spacecraft attitude //
+	//------------------------------//
 
 	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
-	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
-	double round_trip_time = 2.0 * slant_range / speed_light_kps;
+	Attitude zero_rpy;
+	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(instrument->antenna));
+
+	//-------------------------------------------//
+	// find the current beam's two-way peak gain //
+	//-------------------------------------------//
+
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double azimuth_rate = instrument->antenna.spinRate;
+	double look, azim;
+	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+		azimuth_rate, &look, &azim))
+	{
+		return(0);
+	}
 
 	//--------------------------------------------------//
 	// calculate baseband frequency w/o Doppler command //
 	//--------------------------------------------------//
 
-	double chirp_start = instrument->chirpStartM * pulse_width +
-		instrument->chirpStartB;
-	double transmit_center = -chirp_start / instrument->chirpRate;
-	double echo_center = transmit_center + round_trip_time +
-		instrument->systemDelay;
-	double range_freq = instrument->chirpRate *
-		(instrument->receiverGateDelay +
-		instrument->receiverGateDuration / 2.0 - echo_center);
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	TargetInfoPackage tip;
+	TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument, vector,
+		&tip);
 
-	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
-	Vector3 vrel = sc_orbit_state->vsat - vspot;
+	//----------------------------//
+	// calculte commanded Doppler //
+	//----------------------------//
 
 	instrument->commandedDoppler = 0.0;
-	double lambda, doppler_freq, new_commanded_doppler, dif;
 	do
 	{
-		instrument->transmitFreq = instrument->baseTransmitFreq +
-			instrument->commandedDoppler;
-		lambda = speed_light_kps / instrument->transmitFreq;
-		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
-		new_commanded_doppler = range_freq - doppler_freq;
-		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
-		instrument->commandedDoppler = new_commanded_doppler;
-	} while (dif > DOPPLER_ACCURACY);
+		TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+			vector, &tip);
+		instrument->commandedDoppler += tip.basebandFreq;
+	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
 
 	return(1);
 }
@@ -703,8 +786,8 @@ TargetInfo(
 		instrument->systemDelay;
 	tip->rangeFreq = instrument->chirpRate *
 		(instrument->receiverGateDelay - echo_center);
-	tip->basebandFreq = tip->rangeFreq - (tip->dopplerFreq +
-		instrument->commandedDoppler);
+	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq -
+		instrument->commandedDoppler;
 
 	return(1);
 }
@@ -1550,7 +1633,7 @@ GetTwoWayPeakGain(
 	double	round_trip_time,
 	double	azimuth_rate,
 	double*	look,
-	double*	azimuth)
+	double*	azim)
 {
 	int ndim = 2;
 	double** p = (double**)make_array(sizeof(double),2,3,4);
@@ -1561,11 +1644,11 @@ GetTwoWayPeakGain(
 	}
 
 	p[0][0] = *look;
-	p[0][1] = *azimuth;
+	p[0][1] = *azim;
 	p[1][0] = *look + 1.0*dtr;
-	p[1][1] = *azimuth;
+	p[1][1] = *azim;
 	p[2][0] = *look;
-	p[2][1] = *azimuth + 1.0*dtr;
+	p[2][1] = *azim + 1.0*dtr;
 
 	for (int i=0; i < ndim+1; i++)
 	{
@@ -1578,7 +1661,7 @@ GetTwoWayPeakGain(
 		NegativePowerGainProduct, beam);
 
 	*look = p[0][0];
-	*azimuth = p[0][1];
+	*azim = p[0][1];
 
 	free_array(p,2,3,4);
 
@@ -1596,17 +1679,17 @@ GetTwoWayPeakGain2(
 	Beam*				beam,
 	double				azimuth_rate,
 	double*				look,
-	double*				azimuth)
+	double*				azim)
 {
 	//---------------------------------------------//
 	// start with the one-way electrical boresight //
 	//---------------------------------------------//
 
-	if (! beam->GetElectricalBoresight(look, azimuth))
+	if (! beam->GetElectricalBoresight(look, azim))
 		return(0);
 
 	Vector3 rlook_antenna;
-	rlook_antenna.SphericalSet(1.0, *look, *azimuth);
+	rlook_antenna.SphericalSet(1.0, *look, *azim);
 	TargetInfoPackage tip;
 	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
@@ -1615,7 +1698,7 @@ GetTwoWayPeakGain2(
 	//---------------------------//
 
 	if (! GetTwoWayPeakGain(beam, tip.roundTripTime, azimuth_rate,
-		look, azimuth))
+		look, azim))
 	{
 		return(0);
 	}
