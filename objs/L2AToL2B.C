@@ -211,9 +211,9 @@ L2AToL2B::Flush(
 
 	if (useNudging)
 	{
-        if (smartNudgeFlag)
-            l2b->frame.swath.SmartNudge(&nudgeField);
-        else
+	  if (smartNudgeFlag) 
+	    l2b->frame.swath.LoResNudge(&nudgeVctrField, maxRankForNudging);
+	  else
             l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
 	}
 	else
