@@ -217,6 +217,9 @@ WVC::ReadL20(
 
 		if (! wvp->ReadL20(fp))
 			return(0);
+
+		if (! ambiguities.Append(wvp))
+			return(0);
 	}
 
 	//---------------------//
@@ -857,6 +860,13 @@ WindSwath::MedianFilter(
 	//--------------------//
 
 	int half_window = window_size / 2;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			change[cti][ati] = 1;
+		}
+	}
 
 	//--------//
 	// filter //
@@ -924,7 +934,7 @@ WindSwath::MedianFilterPass(
 			{
 				for (int j = ati_min; j < ati_max; j++)
 				{
-					if (change[cti][ati])
+					if (change[i][j])
 					{
 						goto change;
 						break;
@@ -948,10 +958,13 @@ WindSwath::MedianFilterPass(
 				{
 					for (int j = ati_min; j < ati_max; j++)
 					{
-						if (i == ati && j == cti)
+						if (i == cti && j == ati)
 							continue;		// don't check central vector
 
 						WVC* other_wvc = swath[i][j];
+						if (! other_wvc)
+							continue;
+
 						WindVectorPlus* other_wvp = other_wvc->selected;
 						if (! other_wvp)
 							continue;

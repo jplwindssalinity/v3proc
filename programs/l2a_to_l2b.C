@@ -167,6 +167,17 @@ main(
 		exit(1);
 	}
 
+	//------------------------------------//
+	// create and configure the converter //
+	//------------------------------------//
+
+	L17ToL20 l17_to_l20;
+	if (! ConfigL17ToL20(&l17_to_l20, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring GMF\n", command);
+		exit(1);
+	}
+
 	//------------//
 	// open files //
 	//------------//
@@ -174,12 +185,30 @@ main(
 	l17.file.OpenForInput();
 	l20.file.OpenForOutput();
 
+	//---------------------------------//
+	// read the header to set up swath //
+	//---------------------------------//
+
+	if (! l17.ReadHeader())
+	{
+		fprintf(stderr, "%s: error reading Level 1.7 header\n", command); 
+		exit(1);
+	}
+
+	int along_track_bins =
+		(int)(two_pi * r1_earth / l17.alongTrackResolution + 0.5);
+
+	if (! l20.frame.swath.Allocate(l17.crossTrackBins, along_track_bins))
+	{
+		fprintf(stderr, "%s: error allocating wind swath\n", command);
+		exit(1);
+	}
+
 	//-----------------//
 	// conversion loop //
 	//-----------------//
 
-	L17ToL20 l17_to_l20;
-
+int count = 0;
 	do
 	{
 		//------------------------------//
@@ -218,8 +247,14 @@ main(
 				command);
 			exit(1);
 		}
+count++;
+
+if (count == 10)
+	break;
 
 	} while (1);
+
+	l17_to_l20.Flush(&l20);
 
 	l17.file.Close();
 	l20.Close();

@@ -95,6 +95,12 @@ public:
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
 
+	//------//
+	// info //
+	//------//
+
+	LonLat		AverageLonLat();
+
 	//---------//
 	// freeing //
 	//---------//

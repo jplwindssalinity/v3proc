@@ -47,6 +47,7 @@ L17ToL20::ConvertAndWrite(
 		initPhiStep, finalSpdStep, finalPhiStep);
 	wvc->RemoveDuplicates();
 	wvc->SortByObj();
+	wvc->lonLat = l17->frame.measList.AverageLonLat();
 
 	//-------------------------//
 	// determine grid indicies //

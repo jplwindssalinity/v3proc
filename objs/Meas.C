@@ -10,6 +10,8 @@ static const char rcs_id_measurement_c[] =
 #include <unistd.h>
 #include "Meas.h"
 #include "Beam.h"
+#include "Constants.h"
+#include "LonLat.h"
 
 
 //======//
@@ -141,6 +143,60 @@ MeasList::Read(
 		}
 	}
 	return(1);
+}
+
+//-------------------------//
+// MeasList::AverageLonLat //
+//-------------------------//
+
+LonLat
+MeasList::AverageLonLat()
+{
+	// determine if the 360/0 gap is jumped (eg. points at 1 and 359 lon)
+	int above_pi = 0;
+	int below_pi = 0;
+	for (Meas* meas = GetHead(); meas; meas = GetNext())
+	{
+		if (meas->center.longitude > pi)
+			above_pi = 1;
+		else
+			below_pi = 1;
+	}
+
+	float lon = 0.0;
+	float lat = 0.0;
+	int count = 0;
+	if (above_pi && below_pi)
+	{
+		for (Meas* meas = GetHead(); meas; meas = GetNext())
+		{
+			lon += meas->center.longitude;
+			if (meas->center.longitude > pi)
+				lon -= two_pi;		// wrapping was necessary
+			lat += meas->center.latitude;
+			count++;
+		}
+	}
+	else
+	{
+		for (Meas* meas = GetHead(); meas; meas = GetNext())
+		{
+			lon += meas->center.longitude;
+			lat += meas->center.latitude;
+			count++;
+		}
+	}
+
+	lat /= (float)count;
+	lon /= (float)count;
+	if (lon < 0.0)
+		lon += two_pi;
+
+	LonLat lon_lat;
+	lon_lat.longitude = lon;
+	lon_lat.latitude = lat;
+
+	return(lon_lat);
 }
 
 //------------------------//
