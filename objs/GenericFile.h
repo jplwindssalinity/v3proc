@@ -40,6 +40,12 @@ public:
 
 	int		SetFilename(const char* filename);
 
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	FILE*	GetFp() { return(_fp); };
+
 	//--------------//
 	// input/output //
 	//--------------//
