@@ -43,15 +43,7 @@ L2AToL2B::ConvertAndWrite(
 {
 	static int last_rev_number = 0;
 
-	//------------------------------//
-	// check number of measurements //
-	//------------------------------//
-
 	MeasList* meas_list = &(l2a->frame.measList);
-	if (meas_list->NodeCount() < 2)
-	{
-		return(2);
-	}
 
 	//-----------------------------------//
 	// check for missing wind field data //
@@ -112,7 +104,7 @@ L2AToL2B::ConvertAndWrite(
 		}
 	}
 
-	if (wvc->ambiguities.NodeCount() < 2)
+	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
 		return(8);
@@ -161,15 +153,7 @@ L2AToL2B::GSConvertAndWrite(
 {
 	static int last_rev_number = 0;
 
-	//------------------------------//
-	// check number of measurements //
-	//------------------------------//
-
 	MeasList* meas_list = &(l2a->frame.measList);
-	if (meas_list->NodeCount() < 2)
-	{
-		return(2);
-	}
 
 	//-----------------------------------//
 	// check for missing wind field data //
@@ -211,7 +195,7 @@ L2AToL2B::GSConvertAndWrite(
 		return(7);
 	}
 
-	if (wvc->ambiguities.NodeCount() < 2)
+	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
 		return(8);
