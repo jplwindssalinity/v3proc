@@ -172,16 +172,16 @@ Sds::Create(
     if (_sdsId == -1)
     {
         fprintf(stderr, "Sds::Create: error with SDcreate\n");
-fprintf(stderr, "      SD Id: %d\n", (int)sd_id);
-fprintf(stderr, "   SDS Name: %s\n", _sdsName);
-fprintf(stderr, "  Data Type: %d\n", (int)_dataType);
-fprintf(stderr, "       Rank: %d\n", (int)_rank);
-fprintf(stderr, "       Dims:");
-for (int i = 0; i < _rank; i++)
-{
-  fprintf(stderr, " %d", (int)_dimSizes[i]);
-}
-fprintf(stderr, "\n");
+        fprintf(stderr, "      SD Id: %d\n", (int)sd_id);
+        fprintf(stderr, "   SDS Name: %s\n", _sdsName);
+        fprintf(stderr, "  Data Type: %d\n", (int)_dataType);
+        fprintf(stderr, "       Rank: %d\n", (int)_rank);
+        fprintf(stderr, "       Dims:");
+        for (int i = 0; i < _rank; i++)
+        {
+            fprintf(stderr, " %d", (int)_dimSizes[i]);
+        }
+        fprintf(stderr, "\n");
         return(0);
     }
 
@@ -227,7 +227,7 @@ fprintf(stderr, "\n");
         }
     }
 
-// sds_index = SDnametoindex(sd_id, sds_name);
+    // sds_index = SDnametoindex(sd_id, sds_name);
 
     return(1);
 }
@@ -676,4 +676,24 @@ SDnametoid(
         }
     }
     return (sds_id);
+}
+
+//--------------------//
+// SDreaddata_or_exit //
+//--------------------//
+
+void
+SDreaddata_or_exit(
+    const char*  name,
+    int32        sds_id,
+    int32*       start,
+    int32*       edges,
+    void*        data)
+{
+    if (SDreaddata(sds_id, start, NULL, edges, data) == FAIL)
+    {
+        fprintf(stderr, "Error reading SD data (%s : %ld)\n", name, sds_id);
+        exit(1);
+    }
+    return;
 }

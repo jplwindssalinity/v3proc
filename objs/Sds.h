@@ -255,5 +255,7 @@ protected:
 //------------------//
 
 int32 SDnametoid(int32 sd_id, char* sds_name, float64* scale_factor = NULL);
+void  SDreaddata_or_exit(const char* name, int32 sds_id, int32* start,
+          int32* edges, void* data);
 
 #endif
