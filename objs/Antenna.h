@@ -47,20 +47,17 @@ public:
 	// setting/getting //
 	//-----------------//
 
-	int		SetNumberOfEncoderBits(int number);
+	int				SetNumberOfEncoderValues(unsigned int number);
+	int				SetAzimuthWithEncoder(unsigned int encoder_value);
+
+	Beam*			GetCurrentBeam();
+	unsigned int	GetEncoderValue();
+	double			GetAntennaFraction();
 
 	CoordinateSwitch	GetAntPedToScBody()
 							{ return(_antPedToScBody); };
 	CoordinateSwitch	GetScBodyToAntPed()
 							{ return(_scBodyToAntPed); };
-	Beam*	GetCurrentBeam();
-
-	//-------------//
-	// conversions //
-	//-------------//
-
-	int		GetEncoderValue();
-	int		SetAzimuthWithEncoder(int encoder);
 
 	//-----------//
 	// variables //
@@ -81,8 +78,7 @@ protected:
 	// variables //
 	//-----------//
 
-	int					_numberOfEncoderBits;
-	double				_angularResolution;		// radians
+	unsigned int		_numberOfEncoderValues;
 	CoordinateSwitch	_antPedToScBody;
 	CoordinateSwitch	_scBodyToAntPed;
 };

@@ -54,37 +54,56 @@ DopplerTracker::Allocate(
 	return(1);
 }
 
-/*
-//-------------------------//
-// DopplerTracker::Doppler //
-//-------------------------//
+//-----------------------------------------//
+// DopplerTracker::OrbitTicksToDopplerStep //
+//-----------------------------------------//
+
+unsigned int
+DopplerTracker::OrbitTicksToDopplerStep(
+	unsigned int	orbit_ticks)
+{
+	float ticks_per_doppler_step = (float)_ticksPerOrbit /
+		(float)_dopplerSteps;
+	float f_doppler_step = (float)(orbit_ticks % _ticksPerOrbit) /
+		ticks_per_doppler_step;
+	unsigned int doppler_step = (int)f_doppler_step;
+	doppler_step %= _dopplerSteps;
+	return(doppler_step);
+}
+
+//-------------------------------------//
+// DopplerTracker::GetCommandedDoppler //
+//-------------------------------------//
 
 int
-DopplerTracker::Doppler(
-	int		orbit_step,
-	int		azimuth_step,
-	float*	doppler)
+DopplerTracker::GetCommandedDoppler(
+	int				beam_idx,
+	unsigned int	doppler_step,
+	double			antenna_fraction,
+	float*			doppler)
 {
-	//-----------------------------------//
-	// check the orbit and azimuth steps //
-	//-----------------------------------//
-
-	if (orbit_step < 0 || orbit_step > _orbitSteps)
+	if (doppler_step >= _dopplerSteps)
 		return(0);
 
-	if (azimuth_step < 0 || azimuth_step > _azimuthSteps)
-		return(0);
+	unsigned short* short_ptr = *(*(_term + beam_idx) + doppler_step);
+	unsigned short a_dn = *(short_ptr + AMPLITUDE_INDEX);
+	unsigned short p_dn = *(short_ptr + PHASE_INDEX);
+	unsigned short c_dn = *(short_ptr + CONSTANTS_INDEX);
 
-	//---------------------------------//
-	// calculate the Doppler frequency //
-	//---------------------------------//
+	float** float_ptr = *(_scale + beam_idx);
+	float ab = *(*(float_ptr + AMPLITUDE_INDEX) + 0);
+	float am = *(*(float_ptr + AMPLITUDE_INDEX) + 1);
+	float pb = *(*(float_ptr + PHASE_INDEX) + 0);
+	float pm = *(*(float_ptr + PHASE_INDEX) + 1);
+	float cb = *(*(float_ptr + CONSTANTS_INDEX) + 0);
+	float cm = *(*(float_ptr + CONSTANTS_INDEX) + 1);
 
-	double a_term = (double)am * (double)a[azimuth_step] + (double)ab;
-	double p_term = (double)pm * (double)p[azimuth_step] + (double)pb;
-	double c_term = (double)cm * (double)c[azimuth_step] + (double)cb;
+	double a_term = (double)am * (double)a_dn + (double)ab;
+	double p_term = (double)pm * (double)p_dn + (double)pb;
+	double c_term = (double)cm * (double)c_dn + (double)cb;
 
 	double raw_doppler = c_term + a_term *
-		cos(two_pi * ((double)azimuth_step / (double)_azimuthSteps) - p_term);
+		cos(two_pi * antenna_fraction + p_term);
 
 	int doppler_dn = (int)(raw_doppler / DOPPLER_TRACKING_RESOLUTION + 0.5);
 
@@ -92,7 +111,27 @@ DopplerTracker::Doppler(
 
 	return(1);
 }
-*/
+
+//-------------------------------//
+// DopplerTracker::SetInstrument //
+//-------------------------------//
+
+int
+DopplerTracker::SetInstrument(
+	Instrument*		instrument)
+{
+	int beam_idx = instrument->antenna.currentBeamIdx;
+	unsigned int doppler_step =
+		OrbitTicksToDopplerStep(instrument->orbitTicks);
+
+	double antenna_fraction = instrument->antenna.GetAntennaFraction();
+	float doppler;
+    GetCommandedDoppler(beam_idx, doppler_step, antenna_fraction, &doppler);
+
+	instrument->commandedDoppler = doppler;
+
+	return(1);
+}
 
 //---------------------//
 // DopplerTracker::Set //
@@ -159,7 +198,7 @@ DopplerTracker::Set(
 			{
 				*(*(*(_term + beam_idx) + orbit_step) + term_idx) =
 					(unsigned short)(
-					(*(*(term_ptr + orbit_step) + term_idx) - 
+					(*(*(term_ptr + orbit_step) + term_idx) -
 					*(*(*(_scale + beam_idx) + term_idx) + 0)) /
 					*(*(*(_scale + beam_idx) + term_idx) + 1) + 0.5);
 			}
@@ -169,25 +208,17 @@ DopplerTracker::Set(
 	return(1);
 }
 
-/*
-//----------------------------------------//
-// DopplerTracker::OrbitTimeToDopplerStep //
-//----------------------------------------//
+//----------------------------------//
+// DopplerTracker::SetTicksPerOrbit //
+//----------------------------------//
 
-unsigned short
-DopplerTracker::OrbitTimeToDopplerStep(
-	unsigned int	orbit_time)
+int
+DopplerTracker::SetTicksPerOrbit(
+	unsigned int	period)
 {
-	float ticks_per_doppler_step = (float)_ticksPerOrbit /
-		(float)_dopplerSteps;
-	float f_doppler_step = (float)(orbit_time % _ticksPerOrbit) /
-		ticks_per_doppler_step;
-	unsigned short doppler_step = (unsigned short)f_doppler_step;
-	doppler_step %= _dopplerSteps;
-	return(doppler_step);
+	_ticksPerOrbit = period;
+	return(1);
 }
-
-*/
 
 //-----------------------------//
 // DopplerTracker::WriteBinary //
@@ -197,8 +228,72 @@ int
 DopplerTracker::WriteBinary(
 	const char*		filename)
 {
-	filename;
-	return(0);
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//---------------------------------------------//
+	// write the number of beams and doppler steps //
+	//---------------------------------------------//
+
+	if (fwrite((void *)&_numberOfBeams, sizeof(unsigned int), 1, fp) != 1 ||
+		fwrite((void *)&_dopplerSteps, sizeof(unsigned int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//-----------------------//
+	// write the scale terms //
+	//-----------------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int term = 0; term < 3; term++)
+		{
+			if (fwrite((void *) *(*(_scale + beam_idx) + term), sizeof(float),
+				2, fp) != 2)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//-----------------//
+	// write the terms //
+	//-----------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int step = 0; step < _dopplerSteps; step++)
+		{
+			if (fwrite((void *) *(*(_term + beam_idx) + step),
+				sizeof(unsigned short), 3, fp) != 3)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//---------------------------//
+	// write the ticks per orbit //
+	//---------------------------//
+
+	if (fwrite((void *)&_ticksPerOrbit, sizeof(unsigned int), 1, fp) != 1)
+	{
+		return(0);
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
+	return(1);
 }
 
 //----------------------------//
@@ -209,9 +304,84 @@ int
 DopplerTracker::ReadBinary(
 	const char*		filename)
 {
-	filename;
-	return(0);
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//--------------------------------------------//
+	// read the number of beams and doppler steps //
+	//--------------------------------------------//
+
+	if (fread((void *)&_numberOfBeams, sizeof(unsigned int), 1, fp) != 1 ||
+		fread((void *)&_dopplerSteps, sizeof(unsigned int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//----------//
+	// allocate //
+	//----------//
+
+	if (! Allocate(_numberOfBeams, _dopplerSteps))
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//----------------------//
+	// read the scale terms //
+	//----------------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int term = 0; term < 3; term++)
+		{
+			if (fread((void *) *(*(_scale + beam_idx) + term), sizeof(float),
+				2, fp) != 2)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//----------------//
+	// read the terms //
+	//----------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int step = 0; step < _dopplerSteps; step++)
+		{
+			if (fread((void *) *(*(_term + beam_idx) + step),
+				sizeof(unsigned short), 3, fp) != 3)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//--------------------------//
+	// read the ticks per orbit //
+	//--------------------------//
+
+	if (fread((void *)&_ticksPerOrbit, sizeof(unsigned int), 1, fp) != 1)
+	{
+		return(0);
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
+	return(1);
 }
+
 
 //==============//
 // RangeTracker //
@@ -257,12 +427,12 @@ RangeTracker::Allocate(
 	return(1);
 }
 
-//------------------------------------//
-// RangeTracker::OrbitTimeToRangeStep //
-//------------------------------------//
+//-------------------------------------//
+// RangeTracker::OrbitTicksToRangeStep //
+//-------------------------------------//
 
 unsigned short
-RangeTracker::OrbitTimeToRangeStep(
+RangeTracker::OrbitTicksToRangeStep(
 	unsigned int		orbit_ticks)
 {
 	float ticks_per_range_step = (float)_ticksPerOrbit / (float)_rangeSteps;
@@ -319,7 +489,7 @@ RangeTracker::SetInstrument(
 	Instrument*		instrument)
 {
 	int beam_idx = instrument->antenna.currentBeamIdx;
-	int range_step = OrbitTimeToRangeStep(instrument->orbitTicks);
+	int range_step = OrbitTicksToRangeStep(instrument->orbitTicks);
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	float xpw = beam->pulseWidth;
 
@@ -401,8 +571,8 @@ RangeTracker::WriteBinary(
 	// write the number of beams and range steps //
 	//-------------------------------------------//
 
-	if (fwrite((void *)&_numberOfBeams, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&_rangeSteps, sizeof(int), 1, fp) != 1)
+	if (fwrite((void *)&_numberOfBeams, sizeof(unsigned int), 1, fp) != 1 ||
+		fwrite((void *)&_rangeSteps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);
@@ -468,8 +638,8 @@ RangeTracker::ReadBinary(
 	// read the number of beams and range steps //
 	//------------------------------------------//
 
-	if (fread((void *)&_numberOfBeams, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&_rangeSteps, sizeof(int), 1, fp) != 1)
+	if (fread((void *)&_numberOfBeams, sizeof(unsigned int), 1, fp) != 1 ||
+		fread((void *)&_rangeSteps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);

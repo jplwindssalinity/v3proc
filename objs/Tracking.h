@@ -50,8 +50,13 @@ public:
 	// algorithms //
 	//------------//
 
-//	int		Doppler(int orbit_step, int azimuth_step, float* doppler);
-	int		Set(double*** terms);
+	unsigned int	OrbitTicksToDopplerStep(unsigned int orbit_ticks);
+	int				GetCommandedDoppler(int beam_idx,
+						unsigned int doppler_step, double antenna_fraction,
+						float* doppler);
+	int				SetInstrument(Instrument* instrument);
+	int				Set(double*** terms);
+	int				SetTicksPerOrbit(unsigned int period);
 
 	//--------------//
 	// input/output //
@@ -68,7 +73,6 @@ private:
 
 	float***			_scale;		// [beam][term][coef_order]
 	unsigned short***	_term;		// [beam][step][term]
-
 	unsigned int		_ticksPerOrbit;		// orbit period
 
 	//-----------//
@@ -111,7 +115,7 @@ public:
 	// algorithms //
 	//------------//
 
-	unsigned short		OrbitTimeToRangeStep(unsigned int orbit_time);
+	unsigned short		OrbitTicksToRangeStep(unsigned int orbit_ticks);
 	int					GetDelayAndDuration(int beam_idx, int range_step,
 							float xmit_pulse_width, float* delay,
 							float* duration);

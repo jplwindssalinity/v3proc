@@ -17,7 +17,7 @@ static const char rcs_id_antenna_c[] =
 
 Antenna::Antenna()
 :	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0), spinRate(0.0),
-	currentBeamIdx(0), _numberOfEncoderBits(0), _angularResolution(0.0)
+	currentBeamIdx(0), _numberOfEncoderValues(0)
 {
 	return;
 }
@@ -41,16 +41,29 @@ Antenna::SetPedestalAttitude(
 	return(1);
 }
 
-//---------------------------------//
-// Antenna::SetNumberOfEncoderBits //
-//---------------------------------//
+//-----------------------------------//
+// Antenna::SetNumberOfEncoderValues //
+//-----------------------------------//
 
 int
-Antenna::SetNumberOfEncoderBits(
-	int		number)
+Antenna::SetNumberOfEncoderValues(
+	unsigned int	number)
 {
-	_numberOfEncoderBits = number;
-	_angularResolution = two_pi / pow(2.0, (double)_numberOfEncoderBits);
+	_numberOfEncoderValues = number;
+	return(1);
+}
+
+//--------------------------------//
+// Antenna::SetAzimuthWithEncoder //
+//--------------------------------//
+
+int
+Antenna::SetAzimuthWithEncoder(
+	unsigned int	encoder)
+{
+	// the 0.5 is to center the azimuth on the given encoder value
+	azimuthAngle = two_pi *
+		((double)(encoder + 0.5) / (double)_numberOfEncoderValues);
 	return(1);
 }
 
@@ -70,21 +83,22 @@ Antenna::GetCurrentBeam()
 // Antenna::GetEncoderValue //
 //--------------------------//
 
-int
+unsigned int
 Antenna::GetEncoderValue()
 {
-	int value = (int)(azimuthAngle / _angularResolution + 0.5);
-	return(value);
+	unsigned int encoder = (unsigned int)((azimuthAngle / two_pi) *
+		(double)_numberOfEncoderValues);
+	encoder %= _numberOfEncoderValues;
+	return(encoder);
 }
 
-//--------------------------------//
-// Antenna::SetAzimuthWithEncoder //
-//--------------------------------//
+//-----------------------------//
+// Antenna::GetAntennaFraction //
+//-----------------------------//
 
-int
-Antenna::SetAzimuthWithEncoder(
-	int		encoder)
+double
+Antenna::GetAntennaFraction()
 {
-	azimuthAngle = (double)encoder * _angularResolution;
-	return(1);
+	double fraction = azimuthAngle / two_pi;
+	return(fraction);
 }
