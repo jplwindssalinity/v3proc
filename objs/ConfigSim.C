@@ -1227,17 +1227,19 @@ ConfigL2AToL2B(
         {
             if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
                 return(0);
-	    //----------------------------------------//
-	    // Scale Wind Speeds?                     //
-	    //----------------------------------------//
-	    config_list->DoNothingForMissingKeywords();
-	    float scale;
-	    if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD, 
-				      &scale))
-	      {
-		l2a_to_l2b->nudgeField.ScaleSpeed(scale);
-	      }
-	    config_list->ExitForMissingKeywords();
+
+            //-------------------//
+            // Scale Wind Speeds //
+            //-------------------//
+
+            config_list->DoNothingForMissingKeywords();
+            float scale;
+            if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
+                &scale))
+            {
+                l2a_to_l2b->nudgeField.ScaleSpeed(scale);
+            }
+            config_list->ExitForMissingKeywords();
         }
 
         //----------------//
@@ -1419,8 +1421,8 @@ ConfigWindField(
     //----------------------------------------//
     config_list->DoNothingForMissingKeywords();
     float scale;
-    if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD, 
-			      &scale))
+    if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
+                  &scale))
     {
         windfield->ScaleSpeed(scale);
         fprintf(stderr,"Warning: scaling all wind speeds by %g\n",scale);
