@@ -575,7 +575,7 @@ DopplerTracker::GetCommandedDoppler(
 		Cosine(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
 
 	double residual_range_freq = residual_delay_error * chirp_rate;
-	double xmit_freq = raw_doppler - residual_range_freq;
+	double xmit_freq = raw_doppler + residual_range_freq;
 
 	// negative sign converts doppler to additive xmit freq
 	*doppler = -xmit_freq;
