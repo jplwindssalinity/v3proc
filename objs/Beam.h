@@ -29,6 +29,8 @@ static const char rcs_id_beam_h[] =
 
 enum PolE { NONE, V_POL, H_POL };
 
+extern const char* beam_map[];
+
 class Beam
 {
 public:
