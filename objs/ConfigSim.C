@@ -666,6 +666,17 @@ ConfigInstrumentSim(
 		create_xtable=0; // default value
 	instrument_sim->createXtable=create_xtable;
 
+	int compute_kfactor;
+	if (! config_list->GetInt(COMPUTE_KFACTOR_KEYWORD, &compute_kfactor))
+		compute_kfactor=0; // default value
+	instrument_sim->computeKfactor=compute_kfactor;
+
+	int range_gate_clipping;
+	if (! config_list->GetInt(RANGE_GATE_CLIPPING_KEYWORD, &range_gate_clipping))
+		range_gate_clipping=0; // default value
+	instrument_sim->rangeGateClipping=range_gate_clipping;
+
+
 	config_list->ExitForMissingKeywords();
 
 	float system_temperature;
@@ -710,6 +721,29 @@ ConfigInstrumentSim(
 		if (!ConfigXTable(&(instrument_sim->kfactorTable),config_list,"r"))
 			return(0);
 	}
+        
+	if (compute_kfactor){
+	  int num_look_steps;
+	  if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
+		return(0);
+	  instrument_sim->numLookStepsPerSlice=num_look_steps;
+	  
+	  float azimuth_integration_range;
+	  if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
+				      &azimuth_integration_range))
+	    {
+	      return(0);
+	    }
+	  instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
+
+	  float azimuth_step_size;
+	  if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
+				      &azimuth_step_size))
+	    {
+	      return(0);
+	    }
+	  instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
+	}
 
 	return(1);
 }
@@ -725,7 +759,6 @@ ConfigInstrumentSimAccurate(
 {
 	if (! ConfigInstrumentSim(instrument_sim, config_list))
 		return(0);
-
 	int num_look_steps;
 	if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
 		return(0);
@@ -746,6 +779,7 @@ ConfigInstrumentSimAccurate(
 		return(0);
 	}
 	instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
+
 
 	return(1);
 }
