@@ -9,7 +9,7 @@ HDFINCDIR =		$(INCDIR)/hdf
 
 EALIBS =		../../lib/libEAData.a
 HDFLIBS =		-L../../lib -lmfhdf -ldf -lz -lnsl
-LIBS =			../../lib/libSim.a
+LIBS =			../../lib/libSim.a /opt/local/lib/libjpeg.a
 LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
 
@@ -25,7 +25,7 @@ PROGRAMS = \
 	get_att \
 	get_look_att \
 	sim \
-        sim_overlay \
+	sim_overlay \
 	modu \
 	l1a_to_l1b \
 	l1b_to_l2a \
