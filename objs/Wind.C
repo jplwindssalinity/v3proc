@@ -1660,6 +1660,54 @@ WindSwath::SkillVsCti(
 	return(1);
 }
 
+//------------------------//
+// WindSwath::WithinVsCti //
+//------------------------//
+
+int
+WindSwath::WithinVsCti(
+	WindField*	truth,
+	float*		skill_array,
+	int*		count_array,
+	float		low_speed,
+	float		high_speed,
+	float		within_angle)
+{
+	//---------------------//
+	// calculate the count //
+	//---------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		int good_count = 0;
+		int count = 0;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+
+			float dif = ANGDIF(true_wv.dir, wvc->selected->dir);
+			if (dif < within_angle)
+				good_count++;
+
+			count++;
+		}
+
+		*(count_array + cti) = count;
+		*(skill_array + cti) = (float)good_count / (float)count;
+	}
+
+	return(1);
+}
+
 //-------------------------//
 // WindSwath::SpdBiasVsCti //
 //-------------------------//

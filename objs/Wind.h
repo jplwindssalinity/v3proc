@@ -289,6 +289,9 @@ public:
 				int* count_array, float low_speed, float high_speed);
 	int		SkillVsCti(WindField* truth, float* skill_array,
 				int* count_array, float low_speed, float high_speed);
+	int		WithinVsCti(WindField* truth, float* within_array,
+				int* count_array, float low_speed, float high_speed,
+				float within_angle);
 	int		SpdBiasVsCti(WindField* truth, float* spd_bias_array,
 				int* count_array, float low_speed, float high_speed);
 
