@@ -14,7 +14,7 @@ LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
 
 CCC =			$(PURE) gcc
-DEBUGFLAGS =	-O3
+DEBUGFLAGS =	-O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
 INSTALLDIR =	../../bin
