@@ -246,8 +246,17 @@ float azi, X=0;
   int bin_end=FindSliceNum(slice_max_freq);
 
   if(bin_start==bin_end){
-    fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Cannot resolve slice\n");
-    exit(1);
+    float bandwidth=GetBandwidth(bin_start);
+    float bin_min_freq=GetMinFreq(bin_start);
+    float bin_max_freq=bin_min_freq+bandwidth;
+    if((int)(slice_min_freq + 0.5) == (int)(bin_min_freq + 0.5)
+       && (int)(bandwidth +0.5) == (int)(slice_bandwidth+0.5)){
+      return(RetrieveBySliceNumber(beam_number,azimuth_angle, bin_start));
+    }
+    else{
+      fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Cannot resolve slice\n");
+      exit(1);
+    }
   }
 
   if(bin_start<0 || bin_end >= numSlices){
