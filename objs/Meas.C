@@ -422,15 +422,19 @@ int32       sliceIndex)   // index in slices
 
 } // Meas::UnpackL1BHdf
 
+//----------------------//
+// Meas::ReadL2AHdfCell //
+//----------------------//
+
 int
 Meas::ReadL2AHdfCell(
-L2AHdf*     l2aHdf,
-int         dataIndex,   // 0 - { _dataLength - 1 }
-int         arrayIndex)  // 0 - 3239
+    L2AHdf*  l2aHdf,
+    int      dataIndex,    // 0 - { _dataLength - 1 }
+    int      arrayIndex)   // 0 - 3239
 {
-	FreeContents();
+    FreeContents();
 
-    Parameter* param=0;
+    Parameter* param = 0;
 
     param = l2aHdf->ExtractParameter(SIGMA0_QUAL_FLAG, UNIT_DN, dataIndex);
     assert(param != 0);
@@ -440,17 +444,20 @@ int         arrayIndex)  // 0 - 3239
     //------------------------------------------------------------------
     // if bit 0 in sigma0_qual_flag is not 0, this measurement is not usable
     //------------------------------------------------------------------
+
     if (sigma0QualFlags & 0x0001)
-        return 0;
+        return(0);
 
     param = l2aHdf->ExtractParameter(SIGMA0, UNIT_DB, dataIndex);
     assert(param != 0);
     float* floatP = (float*)param->data;
     floatP += arrayIndex;
     value = (float) pow( 10.0, (double) *floatP / 10.0 );
+
     //------------------------------------------------------------------
     // if bit 2 in sigma0_qual_flag is 1, sigma0 is negative
     //------------------------------------------------------------------
+
     if ((sigma0QualFlags & 0x0004) && value > 0)
         value = -(value);
 
@@ -459,6 +466,7 @@ int         arrayIndex)  // 0 - 3239
     //---------------------------------------------------
     // langFlag is bits 0-1, includes ice-flag
     //---------------------------------------------------
+
     param = l2aHdf->ExtractParameter(SURFACE_FLAG, UNIT_DN, dataIndex);
     assert(param != 0);
     ushortP = (unsigned short*)param->data;
@@ -469,6 +477,7 @@ int         arrayIndex)  // 0 - 3239
     //---------------------------------------------------
     // centroid is from cell_lon and cell_lat.
     //---------------------------------------------------
+
     param = l2aHdf->ExtractParameter(CELL_LON, UNIT_RADIANS, dataIndex);
     assert(param != 0);
     floatP = (float*)param->data;
@@ -484,6 +493,7 @@ int         arrayIndex)  // 0 - 3239
     //---------------------------------------------------
     // get beamIdx (bit 2 in sigma0_mode_flag)
     //---------------------------------------------------
+
     param = l2aHdf->ExtractParameter(SIGMA0_MODE_FLAG, UNIT_DN, dataIndex);
     assert(param != 0);
     ushortP = (unsigned short*)param->data;
@@ -494,11 +504,11 @@ int         arrayIndex)  // 0 - 3239
     //---------------------------------------------------
     // measurement type depends on beam number
     //---------------------------------------------------
+
     if (beamIdx == 0)  // beam A => H, B => V
         measType = HH_MEAS_TYPE;
     else
         measType = VV_MEAS_TYPE;
-
 
     param = l2aHdf->ExtractParameter(CELL_AZIMUTH, UNIT_DEGREES, dataIndex);
     assert(param != 0);
@@ -531,8 +541,7 @@ int         arrayIndex)  // 0 - 3239
     C = *(floatP + arrayIndex);
 
 //printf("value = %f\n", value);
-    return 1;
-
+    return(1);
 } // Meas::UnpackL2AHdf
 
 //==========//
@@ -613,14 +622,18 @@ MeasList::WriteAscii(
     return(1);
 }
 
+//--------------------------//
+// MeasList::ReadL2AHdfCell //
+//--------------------------//
+
 int
 MeasList::ReadL2AHdfCell(
-L2AHdf*     l2aHdf,
-int         rowNo,       // row number: 1-1624
-int         cellNo)      // column number: 1-76
+    L2AHdf*  l2aHdf,
+    int      rowNo,    // row number: 1-1624
+    int      cellNo)   // column number: 1-76
 {
     assert(l2aHdf != 0);
-	FreeContents();
+    FreeContents();
 
     Parameter* param = 0;
     for (int i=0; i < l2aHdf->GetDataLength(); i++)
@@ -650,6 +663,7 @@ int         cellNo)      // column number: 1-76
             // the bit 0-1 in sigma0_mode_flag must be 0 - meas pulse
             // otherwise, skip this cell
             //-------------------------------------------------------
+
             unsigned short sliceModeFlags = *(sliceModeFlagsP + j);
             if ((sliceModeFlags & 0x0003) != 0)
                 continue;
@@ -657,6 +671,7 @@ int         cellNo)      // column number: 1-76
             //-------------------------------------------------------
             // if this is a valid cell, add to the list
             //-------------------------------------------------------
+
             Meas* new_meas = new Meas();
             if (new_meas->ReadL2AHdfCell(l2aHdf, i, j))
             {
