@@ -8,7 +8,7 @@
 //    get_look_att
 //
 // SYNOPSIS
-//    get_look_att [ -f type:windfield ]
+//    get_look_att [ -a roll:pitch:yaw ] [ -f type:windfield ]
 //      [ -s step_size ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -17,6 +17,7 @@
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
+//    [ -a roll:pitch:yaw ]  Fix the attitude.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
 //    [ -s step_size ]       The number of orbit steps to combine.
@@ -98,7 +99,7 @@ template class List<AngleInterval>;
 
 #define YAW_SET_TO_ZERO  1
 
-#define OPTSTRING    "s:f:"
+#define OPTSTRING    "a:f:s:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -119,7 +120,7 @@ template class List<AngleInterval>;
 
 // simplex search parameters
 #define LAMBDA      0.05
-#define XTOL        0.005
+#define XTOL        0.01
 #define PLEX_STEPS  36
 
 //--------//
@@ -137,10 +138,10 @@ template class List<AngleInterval>;
 int     process_orbit_step(const char* output_base, Spacecraft* spacecraft,
             Qscat* qscat, FbbTable* fbb_table, int orbit_step, FILE* att_fp);
 int     ds_optimize(Spacecraft* spacecraft, Qscat* qscat, FbbTable* fbb_table,
-            double look[2], double att[3], double lambda, double xtol);
+            double lookatt[5], double lambda, double xtol);
 double  ds_evaluate(double* x, void* ptr);
 double  evaluate(Spacecraft* spacecraft, Qscat* qscat, FbbTable* fbb_table,
-            double lookatt[3], FILE* ofp = NULL, int or_flag = 0);
+            double lookatt[5], FILE* ofp = NULL, int or_flag = 0);
 int     prune();
 
 //------------------//
@@ -151,7 +152,7 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]",
+const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]", "[ -l ]",
     "[ -s step_size ] ", "<sim_config_file>", "<output_base>",
     "<echo_file...>", 0 };
 
@@ -162,6 +163,7 @@ int        g_spots_per_frame = 0;
 EchoInfo*  g_echo_info;
 
 double     g_ref_look[NUMBER_OF_QSCAT_BEAMS];
+double     g_att[3];
 int        g_windfield_opt = 0;
 char*      g_windfield_type = NULL;
 char*      g_windfield_file = NULL;
@@ -170,6 +172,7 @@ GMF        g_gmf;
 int        g_step_size_opt = 0;
 int        g_step_size = 0;
 int        g_range_opt = 0;
+int        g_fix_att_opt = 0;
 int        g_start_orbit_step = 0;
 int        g_stop_orbit_step = 0;
 int        g_step_orbit_step = 1;
@@ -205,6 +208,18 @@ main(
                 exit(1);
             }
             g_windfield_opt = 1;
+            break;
+        case 'a':
+            g_fix_att_opt = 1;
+            if (sscanf(optarg, "%lf:%lf:%lf", &(g_att[0]), &(g_att[1]),
+                &(g_att[2])) != 3)
+            {
+                fprintf(stderr, "%s: what? %s\n", command, optarg);
+                exit(1);
+            }
+            g_att[0] *= dtr;
+            g_att[1] *= dtr;
+            g_att[2] *= dtr;
             break;
         case 's':
             g_step_size = atoi(optarg);
@@ -566,14 +581,22 @@ process_orbit_step(
     // search for best attitude //
     //--------------------------//
 
-    double att[3];
-    att[0] = 0.0;
-    att[1] = 0.0;
-    att[2] = 0.0;
-    double look[2];
-    look[0] = g_ref_look[0];
-    look[1] = g_ref_look[1];
-    ds_optimize(spacecraft, qscat, fbb_table, look, att, LAMBDA * dtr,
+    double lookatt[5];
+    lookatt[0] = g_ref_look[0];   // look angle inner beam
+    lookatt[1] = g_ref_look[1];   // look angle outer beam
+    if (g_fix_att_opt)
+    {
+        lookatt[2] = g_att[0];    // roll
+        lookatt[3] = g_att[1];    // pitch
+        lookatt[4] = g_att[2];    // yaw
+    }
+    else
+    {
+        lookatt[2] = 0.0;    // roll
+        lookatt[3] = 0.0;    // pitch
+        lookatt[4] = 0.0;    // yaw
+    }
+    ds_optimize(spacecraft, qscat, fbb_table, lookatt, LAMBDA * dtr,
         XTOL * dtr);
 
     //---------------------------//
@@ -582,7 +605,7 @@ process_orbit_step(
 
     char filename[1024];
     char title[1024];
-    sprintf(filename, "%s.att.%03d.out", output_base, orbit_step);
+    sprintf(filename, "%s.lookatt.%03d.out", output_base, orbit_step);
     sprintf(title, "Orbit Step = %03d", orbit_step);
 
     FILE* ofp = fopen(filename, "w");
@@ -590,19 +613,21 @@ process_orbit_step(
         return(0);
 
     fprintf(ofp, "@ title %c%s%c\n", QUOTES, title, QUOTES);
-    fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
-        att[0] * rtd, att[1] * rtd, att[2] * rtd, QUOTES);
+    fprintf(ofp, "@ subtitle %cInner Look=%.3f, Outer Look=%.3f, Delta Roll=%.3f, Delta Pitch = %.3f, Delta Yaw = %.3f%c\n", QUOTES,
+        lookatt[0] * rtd, lookatt[1] * rtd, lookatt[2] * rtd,
+        lookatt[3] * rtd, lookatt[4] * rtd, QUOTES);
 
-    evaluate(spacecraft, qscat, fbb_table, att, ofp, 0);
+    evaluate(spacecraft, qscat, fbb_table, lookatt, ofp, 0);
 
     fclose(ofp);
 
-    //---------------------------------------//
-    // add roll, pitch, yaw to attitude file //
-    //---------------------------------------//
+    //----------------------------------------------//
+    // add looks, roll, pitch, yaw to attitude file //
+    //----------------------------------------------//
 
-    fprintf(att_fp, "%d %g %g %g\n", orbit_step, att[0] * rtd, att[1] * rtd,
-        att[2] * rtd);
+    fprintf(att_fp, "%d %g %g %g %g %g\n", orbit_step, lookatt[0] * rtd,
+        lookatt[1] * rtd, lookatt[2] * rtd, lookatt[3] * rtd,
+        lookatt[4] * rtd);
     fflush(att_fp);
 
     return(1);
@@ -617,8 +642,7 @@ ds_optimize(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     FbbTable*    fbb_table,
-    double       look[2],
-    double       att[3],
+    double       lookatt[5],
     double       lambda,
     double       xtol)
 {
@@ -627,11 +651,10 @@ ds_optimize(
     if (p == NULL)
         return(0);
 
-    p[0][0] = look[0];   // inner look
-    p[0][1] = look[1];   // outer look
-    p[0][2] = att[0];    // roll
-    p[0][3] = att[1];    // pitch
-    p[0][4] = att[2];    // yaw
+    for (int i = 0; i < 5; i++)
+    {
+        p[0][i] = lookatt[i];
+    }
 
     for (int i = 1; i < ndim + 1; i++)
     {
@@ -650,14 +673,17 @@ ds_optimize(
     int unknowns = ndim;
     if (YAW_SET_TO_ZERO)
         unknowns = ndim - 1;
+
+    if (g_fix_att_opt)
+        unknowns = 2;
+
     downhill_simplex(p, unknowns, unknowns_plus_constants, 0.0, ds_evaluate,
         ptr, xtol);
 
-    look[0] = p[0][0];
-    look[1] = p[0][1];
-    att[0] = p[0][2];
-    att[1] = p[0][3];
-    att[2] = p[0][4];
+    for (int i = 0; i < 5; i++)
+    {
+        lookatt[i] = p[0][i];
+    }
 
     free_array(p, 2, ndim + 1, ndim);
 

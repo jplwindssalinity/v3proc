@@ -234,6 +234,66 @@ Image::Get(
     return(1);
 }
 
+//----------------//
+// Image::WriteIm //
+//----------------//
+
+#define IM_HEADER  "im  "
+
+int
+Image::WriteIm(
+    const char*  filename)
+{
+    //------------------//
+    // open output file //
+    //------------------//
+
+    FILE* ofp = fopen(filename, "w");
+    if (ofp == NULL)
+        return(0);
+
+    //-------------------//
+    // write header info //
+    //-------------------//
+
+    char* im_string = IM_HEADER;
+    if (fwrite(im_string, 4, 1, ofp) != 1)
+    {
+        fclose(ofp);
+        return(0);
+    }
+
+    if (fwrite(&_xSize, 4, 1, ofp) != 1 ||
+        fwrite(&_ySize, 4, 1, ofp) != 1)
+    {
+        fclose(ofp);
+        return(0);
+    }
+
+    //------------//
+    // write data //
+    //------------//
+
+    for (int x = 0; x < _xSize; x++)
+    {
+        if (fwrite(_image + x, sizeof(float), _ySize, ofp) !=
+            (unsigned int)_ySize)
+        {
+            fclose(ofp);
+            return(0);
+        }
+    }
+
+    //-------------------//
+    // close output file //
+    //-------------------//
+
+    fclose(ofp);
+
+    return(1);
+} 
+
+
 //------------------//
 // Image::WritePltr //
 //------------------//

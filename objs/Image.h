@@ -65,6 +65,7 @@ public:
     // input/output //
     //--------------//
 
+    int  WriteIm(const char* filename);
     int  WritePltr(const char* filename, Image* x_image, Image* y_image);
     int  WriteVctr(const char* filename, Image* dy_image, Image* x_image,
              Image* y_image);
