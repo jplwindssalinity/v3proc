@@ -90,7 +90,8 @@ ConfigSim.o:	ConfigSim.C ConfigSim.h InstrumentSim.h OrbitSim.h \
 				Product.h L1.h
 CoordinateSwitch.o:	CoordinateSwitch.C CoordinateSwitch.h Matrix3.h \
 			Constants.h
-GMF.o:			GMF.C GMF.h Interpolate.h
+GMF.o:			GMF.C GMF.h Interpolate.h Constants.h Measurement.h WVC.h \
+				List.h WindVector.h
 Instrument.o:	Instrument.C Instrument.h Antenna.h Orbit.h Beam.h \
 				Constants.h Matrix3.h
 InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
