@@ -51,7 +51,6 @@ public:
 
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
-	float		scAzimuth;			// azimuth angle ccw from s/c velocity
 	float		incidenceAngle;
 	float		estimatedKp;
 };
