@@ -59,9 +59,8 @@ static const char rcs_id[] =
 #include <string.h>
 #include "Misc.h"
 #include "ConfigList.h"
-#include "OrbitSim.h"
 #include "SimControl.h"
-#include "Config.h"
+#include "SimConfig.h"
 
 //-----------//
 // CONSTANTS //
