@@ -142,22 +142,63 @@ main(
 		exit(1);
 	}
 
-	//---------//
-	// convert //
-	//---------//
+	//-----------------//
+	// conversion loop //
+	//-----------------//
 
 	L0ToL1 l0_to_l1;
-	while (l0.ReadDataRec())
+
+	do
 	{
+		//----------------------------//
+		// read a level 0 data record //
+		//----------------------------//
+
+		if (! l0.ReadDataRec())
+		{
+			switch (l0.GetStatus())
+			{
+			case Product::ERROR_READING_BUFFER:
+				fprintf(stderr, "%s: error reading Level 0 data\n", command);
+				exit(1);
+				break;
+			case Product::ERROR_UNKNOWN:
+				fprintf(stderr, "%s: unknown error reading Level 0 data\n",
+					command);
+				exit(1);
+				break;
+			case Product::ERROR_NO_MORE_DATA:
+				break;
+			default:
+				fprintf(stderr, "%s: unknown status (???)\n", command);
+				exit(1);
+			}
+			break;		// done, exit do loop
+		}
+
+		//---------//
+		// convert //
+		//---------//
+
 		if (! l0_to_l1.Convert(&l0, &l1))
 		{
 			fprintf(stderr, "%s: error converting Level 0 to Level 1\n",
 				command);
 			exit(1);
 		}
-		l1.WriteDataRec();
-	}
-	l0.CloseCurrentFile();
+
+		//-----------------------------//
+		// write a level 1 data record //
+		//-----------------------------//
+
+		if (! l1.WriteDataRec())
+		{
+			fprintf(stderr, "%s: error writing Level 1 data\n", command);
+			exit(1);
+		}
+
+	} while (1);
+
 	l1.CloseCurrentFile();
 		
 	return (0);

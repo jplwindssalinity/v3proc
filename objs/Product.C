@@ -408,11 +408,16 @@ Product::WriteBuffer()
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
 	{
-		_status = ERROR_GETTING_CURRENT_FD;
-		return(0);
+		// file not opened
+		if (! OpenCurrentForOutput())
+			return(0);
+
+		// try again
+		return(WriteBuffer());
 	}
 
-	if (write(ofd, _frame, _size) != _size)
+	int bytes_written = write(ofd, _frame, _size);
+	if (bytes_written != _size)
 	{
 		_status = ERROR_WRITING_BUFFER;
 		return(0);
