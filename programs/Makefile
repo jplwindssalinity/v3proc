@@ -23,7 +23,8 @@ PROGRAMS = \
 	reformat_pattern \
 	memfilter \
 	make_pattern \
-	see_slices
+	see_slices \
+	see_spot
 
 #----------------------------------------------------------------------
 # default: make all executable programs
