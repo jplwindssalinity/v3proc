@@ -1,6 +1,6 @@
 //==============================================================//
 // Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// U.S. Government sponsorship acknowledged.			//
 //==============================================================//
 
 static const char rcs_id_l2a_c[] =
@@ -140,14 +140,14 @@ L2A::ReadGroupRec(
       idx++;
       if (! readFrame.Read(_inputFp))
 	return(0);
-      //      frame.CopyFrame(&frameGroup25[idx], &readFrame);
+      frame.CopyFrame(&frameGroup25[idx], &readFrame);
 
     }
   
   // CombineFrames returns the number of 50km frames (and the combined frames)
 
-  //  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
-  int nFrames=0;
+  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
+
   if (nFrames == 0)
     {
       nFrames=1;
@@ -156,7 +156,7 @@ L2A::ReadGroupRec(
 
   // copy over next frame (from next ati row) and return
 
-  //  frame.CopyFrame(&frameGroup25[0], &frameGroup25[idx]);
+  frame.CopyFrame(&frameGroup25[0], &frameGroup25[idx]);
 
   return(nFrames);
 
