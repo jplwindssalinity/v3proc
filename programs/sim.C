@@ -520,6 +520,8 @@ main(
     int spacecraft_done = 0;
     int instrument_done = 0;
 
+    int frame_count = 0;
+
     //-------------------------//
     // start with first events //
     //-------------------------//
@@ -689,18 +691,19 @@ main(
                 spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
                     &(frame->attitude));
 
+                int size = frame->Pack(l1a.buffer);
+                l1a.Write(l1a.buffer, size);
+
                 // save the true attitude
                 if (true_att_fp != NULL)
                 {
-                    fprintf(true_att_fp, "%u %g %g %g\n",
-                        frame->orbitTicks,
+                    fprintf(true_att_fp, "%d %g %g %g\n",
+                        frame_count,
                         spacecraft.attitude.GetRoll() * rtd,
                         spacecraft.attitude.GetPitch() * rtd,
                         spacecraft.attitude.GetYaw() * rtd);
                 }
-
-                int size = frame->Pack(l1a.buffer);
-                l1a.Write(l1a.buffer, size);
+                frame_count++;
             }
         }
 
