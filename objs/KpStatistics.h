@@ -60,7 +60,7 @@ public:
   //--------------//
 
   int Update(int ati, int cti, MeasList* meas_list, WVC* wvc, WGC* wgc,
-	     GMF* gmf);
+	     GMF* gmf, windTypeE wind_type=DIRTH);
   int ComputeKp(int beam, int iat, int ict, int ilook, int ispd, int ichi);
 
   //-----------//

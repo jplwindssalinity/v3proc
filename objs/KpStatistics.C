@@ -388,7 +388,7 @@ KpStatistics::WriteXmgr(const char* filename){
 	    for(int s=0;s<spdIdx.GetBins();s++){
 	      spdIdx.IndexToValue(s,&sval);
 	      ComputeKp(b,a,c,l,s,x);
-	      fprintf(ofp,"%g %g %g %g %g %g %g %g %d %d %d %g %g %d %g\n",sval,_kp,_kpi,_kpiWG,_kpc,_kpr,_kpm,_kpWG,_n,_nl,b,aval,cval,l,xval);
+	      fprintf(ofp,"%g %g %g %g %g %g %g %g %d %d %d %g %g %g %g\n",sval,_kp,_kpi,_kpiWG,_kpc,_kpr,_kpm,_kpWG,_n,_nl,b,aval,cval,lval, xval);
 	    }
 	    fprintf(ofp,"&\n");
 	  }
@@ -494,7 +494,8 @@ KpStatistics::Update( int ati,
 	     MeasList* meas_list,
 	     WVC* wvc,
 	     WGC* wgc,
-	     GMF* gmf)
+	     GMF* gmf,
+	     windTypeE wind_type=DIRTH)
 {
   //--------------------------------------------------------//
   // Initialize look set dependent arrays                   //
@@ -528,8 +529,28 @@ KpStatistics::Update( int ati,
 
   int ispd,ict,iat;
 
+
+
+  WindVector* wv=NULL;  
+  switch(wind_type){
+  case NCEP:
+    wv=wvc->nudgeWV;
+    // check for bad NCEP data
+    if(wv->spd==0 && wv->dir==0) return(1);
+    break;
+  case DIRTH:
+    wv=wvc->specialVector;
+    break;
+  case SELECTED:
+    wv=wvc->selected;
+    break;
+  case FIRSTRANK:
+    wv=wvc->ambiguities.GetHead();
+    break;
+  }
+
   // If speed is outside of range exit normally
-  float spd=wvc->specialVector->spd;
+  float spd=wv->spd;
   if(!spdIdx.GetNearestIndexStrict(spd,&ispd)) return(1);
 
   // If CTI or ATI is outside of range something weird is going on ... //
@@ -551,17 +572,14 @@ KpStatistics::Update( int ati,
       fprintf(stderr,"KpStatistics::Update-- Beam No. or Scan Angle Out of Bounds Huh??\n");
       exit(1);
     }
-    float phi= wvc->specialVector->dir;
+    float phi= wv->dir;
     float chi= phi - meas->eastAzimuth + pi;
 
-    WindVector wv;
-    wv.spd=spd;
-    wv.dir=phi;
     LonLat pos;
     pos.Set(meas->centroid);
-    wgc->GetWindVector(&wv,pos);
-    float mspd=wv.spd;
-    float mphi=wv.dir;
+    wgc->GetWindVector(wv,pos);
+    float mspd=wv->spd;
+    float mphi=wv->dir;
     float mchi= mphi - meas->eastAzimuth + pi;
     
     
@@ -587,6 +605,7 @@ KpStatistics::Update( int ati,
     // and 2) kpr used by the ground system was zero.
     float alpha = meas->A-1;
     float kpc2 = alpha  + meas->B/s0_calc + meas->C/s0_calc/s0_calc;
+
 
     //-----------------------------------//
     // Update look set arrays            //
@@ -625,11 +644,11 @@ KpStatistics::Update( int ati,
       if(diff_WG_var>3*diff_var) continue; // omit outliers 
 
       //-------- Start debugging stuff -------------------//
-      static int instance_no=0;
-      if(ispd==3){
-	printf("%d %f %f\n",instance_no,diff_var,diff_WG_var);
-        instance_no++;
-      }
+      // static int instance_no=0;
+      // if(ispd==3){
+      //	printf("%d %f %f\n",instance_no,diff_var,diff_WG_var);
+      //  instance_no++;
+      // }
       //--------- End Debugging Stuff --------------------//
 
       float chi_cos=lookset_mean_chi_cos[ibeam][ilook]/n;
@@ -676,10 +695,21 @@ KpStatistics::ComputeKp(int beam,
   float vp=sumVpEst[beam][iat][ict][ilook][ispd][ichi];
   _n=numMeas[beam][iat][ict][ilook][ispd][ichi];
   _nl=numLook[beam][iat][ict][ilook][ispd][ichi];
+  int degrees_of_freedom=2; // number of degrees of freedom in point-wise
+                            // wind estimation
+
+  int total_num_in_WVC=0;
+  for(int b=0;b<beamIdx.GetBins();b++){
+    for(int l=0;l<scanAngleIdx.GetBins();l++){
+     total_num_in_WVC+=numMeas[b][iat][ict][l][ispd][ichi]; 
+    }
+  }
+  float fraction_meas_in_lookset=(float)_n/(float)total_num_in_WVC;
+  float coeff= degrees_of_freedom*fraction_meas_in_lookset;
   vpc=vpc/_n;
   vpi=vpi/_nl;
   vpiWG=vpiWG/_nl;
-  vp=vp/(_n-_nl); 
+  vp=vp/(_n-coeff*_nl); 
 
   _kpi=sqrt(vpi);
   _kpi=10*log10(1+_kpi);
@@ -699,7 +729,6 @@ KpStatistics::ComputeKp(int beam,
     _kpm= sqrt(-_kpm);
     _kpm=-10*log10(1+_kpm);
   }
-
   _kpr=(1+vpiWG)/(1+vpc)-1;
   if(_kpr>0){
     _kpr=sqrt(_kpr);
