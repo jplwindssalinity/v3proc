@@ -125,7 +125,7 @@ PscatSim::DetermineNextEvent(
         return(0);
         break;
     }
-    
+
     //----------------------------//
     // update next time for event //
     //----------------------------//
@@ -754,45 +754,45 @@ PscatSim::SetMeasurements(
             // not perfect.
             //-------------------------------------------------------------//
 
-			// Uncorrelated component.
-			if (simUncorrKpmFlag == 1)
-			{
-				double kpm_value;
-				if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
-				{
-					printf(
+            // Uncorrelated component.
+            if (simUncorrKpmFlag == 1)
+            {
+                double kpm_value;
+                if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
+                {
+                    printf(
                         "Error: Bad Kpm value in PscatSim::SetMeasurements\n");
-					exit(-1);
-				}
-				Gaussian gaussianRv(1.0, 0.0);
-				float rv1 = gaussianRv.GetNumber();
-				float RV = rv1*kpm_value + 1.0;
+                    exit(-1);
+                }
+                Gaussian gaussianRv(1.0, 0.0);
+                float rv1 = gaussianRv.GetNumber();
+                float RV = rv1*kpm_value + 1.0;
                 if (RV < 0.0)
                 {
                     RV = 0.0;   // Do not allow negative sigma0's.
                 }
-				sigma0 *= RV;
-			}
+                sigma0 *= RV;
+            }
 
-			// Correlated component.
-			if (simCorrKpmFlag == 1)
-			{
-				sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
-			}
-		}
+            // Correlated component.
+            if (simCorrKpmFlag == 1)
+            {
+                sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
+            }
+        }
 
-		//-------------------------//
-		// convert Sigma0 to Power //
-		//-------------------------//
+        //-------------------------//
+        // convert Sigma0 to Power //
+        //-------------------------//
 
-		// Kfactor: either 1.0, taken from table, or X is computed
+        // Kfactor: either 1.0, taken from table, or X is computed
         // directly
         float Xfactor = 0;
         float Kfactor = 1.0;
         float Es, En, var_esn_slice;
-		CoordinateSwitch gc_to_antenna;
+        CoordinateSwitch gc_to_antenna;
 
-		if (computeXfactor || useBYUXfactor)
+        if (computeXfactor || useBYUXfactor)
         {
             // If you cannot calculate X it probably means the
             // slice is partially off the earth.
@@ -811,41 +811,43 @@ PscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
-              // HACK to use Pscat BYU X Tables for PSCAT
-              // X for all measurement types is the same
-              // Outer Beam X is used for incidence angle greater than 51  deg
-              // Otherwise Inner Beam X is used
-	      int real_beam_idx=pscat->cds.currentBeamIdx;
-	      double thres=51.0*dtr;
+                // HACK ALERT ----- HACK ALERT ---- HACK ALERT
+                // HACK to use Pscat BYU X Tables for PSCAT
+                // X for all measurement types is the same
+                // Outer Beam X is used for incidence angle greater than 51  deg
+                // Otherwise Inner Beam X is used
+                int real_beam_idx=pscat->cds.currentBeamIdx;
+                double thres=51.0*dtr;
                 if (meas->incidenceAngle < thres)
-                    pscat->cds.currentBeamIdx = 0;        
+                    pscat->cds.currentBeamIdx = 0;
                 else
                     pscat->cds.currentBeamIdx = 1;
-	      Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
-	      pscat->cds.currentBeamIdx=real_beam_idx;              
+                Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+                pscat->cds.currentBeamIdx=real_beam_idx;
             }
 
-            if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE || 
+            if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
                 meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
-            {  // correlation measurements need extra info to compute Kpc
-		      PMeas* meas1 = (PMeas*)meas_spot->GetPrev();  // co-pol
-		      PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
-              if (meas1 == NULL || meas2 == NULL)
-              {
-                fprintf(stderr, "Error: PscatSim needs triplets of PMeas\n");
-                return(0);
-              }
-              meas_spot->GotoNext();  // back to the correlation meas
-              meas_spot->GotoNext();
-              if (! pscat->PMeasToEsn(meas, meas1, meas2, Xfactor, sigma0,
-                  simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
-              {
-                  return(0);
-              }
+            {
+                // correlation measurements need extra info to compute Kpc
+                PMeas* meas1 = (PMeas*)meas_spot->GetPrev();  // co-pol
+                PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
+                if (meas1 == NULL || meas2 == NULL)
+                {
+                    fprintf(stderr,
+                        "Error: PscatSim needs triplets of PMeas\n");
+                    return(0);
+                }
+                meas_spot->GotoNext();  // back to the correlation meas
+                meas_spot->GotoNext();
+                if (! pscat->PMeasToEsn(meas, meas1, meas2, Xfactor, sigma0,
+                    simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+                {
+                    return(0);
+                }
             }
             else if (! pscat->PMeasToEsn(meas, NULL, NULL, Xfactor, sigma0,
-                  simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+                simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
@@ -854,7 +856,7 @@ PscatSim::SetMeasurements(
             // Following are true values needed for simulation of Kpc
             meas->Snr = Es/En;
             meas->Sigma0 = sigma0;
-		}
+        }
         else
         {
             Kfactor = 1.0;  // default to use if no Kfactor specified.
@@ -884,13 +886,13 @@ PscatSim::SetMeasurements(
             {
                 return(0);
             }
-		}
+        }
 
-		slice_i++;
-		meas = (PMeas*)meas_spot->GetNext();
-	}
+        slice_i++;
+        meas = (PMeas*)meas_spot->GetNext();
+    }
 
-	return(1);
+    return(1);
 }
 
 //-------------------------//
@@ -917,21 +919,48 @@ PscatSim::SetL1AScience(
     // determine the spot meas location offset
     int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
 
+    unsigned int* ptr = NULL;
+    unsigned int ivalue = 0;
+    float fvalue = 0.0;
+
     for (Meas* meas = meas_spot->GetHead(); meas;
         meas = meas_spot->GetNext())
     {
+        int meas_offset = 0;
+        switch (meas->measType)
+        {
+        case Meas::VV_MEAS_TYPE:
+        case Meas::HH_MEAS_TYPE:
+            meas_offset = 0;    // co-pol offset
+            ivalue = (unsigned int)meas->value;    // store value as uint
+            ptr = &ivalue;
+            break;
+        case Meas::VH_MEAS_TYPE:
+        case Meas::HV_MEAS_TYPE:
+            continue;    // x-pol isn't put into L1A
+            break;
+        case Meas::VV_HV_CORR_MEAS_TYPE:
+        case Meas::HH_VH_CORR_MEAS_TYPE:
+            meas_offset = 1;    // correlation offset
+            fvalue = (float)meas->value;    // store value as float
+            ptr = (unsigned int)&fvalue;
+            break;
+        default:
+            return(0);
+            break;
+        }
+
         int slice_idx;
         rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
             &slice_idx);
-        
+        int slice_meas_offset = slice_idx * l1a_frame->measPerSlice;
+
         //--------------------------//
         // update the level 1 frame //
         //--------------------------//
 
-        int slice_meas_offset = slice_idx * l1a_frame->measPerSlice;
-
-        l1a_frame->science[spot_meas_offset + slice_meas_offset] =
-            (unsigned int)(meas->value);
+        l1a_frame->science[spot_meas_offset + slice_meas_offset +
+            meas_offset] = *ptr;
     }
 
     // Compute the spot noise measurement.
