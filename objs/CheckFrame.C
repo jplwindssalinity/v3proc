@@ -390,6 +390,62 @@ return(1);
 }
 
 int
+CheckFrame::ReadDataRecFortran(
+	FILE*	fptr)
+{
+
+  //----------------------------------------------------------------------//
+  // Same as ReadDataRec, except this one reads unformatted fortran binary
+  // records which place record sizes before and after every element.
+  //----------------------------------------------------------------------//
+
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread_f77((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&(wv[slice_i].spd),sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&(wv[slice_i].dir),sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fread_f77((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (! centroid[slice_i].Read(fptr)) return(0);
+    if (fread_f77((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+    if (fread_f77((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+    if (fread_f77((void *)&En[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+    if (fread_f77((void *)&R[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+    if (fread_f77((void *)&GatGar[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+  }
+
+  float roll,pitch,yaw;
+  if (fread_f77((void *)&time,sizeof(double),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&yaw,sizeof(float),1,fptr) != 1) return(0);
+  if (! rsat.Read(fptr)) return(0);
+  if (! vsat.Read(fptr)) return(0);
+  if (fread_f77((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread_f77((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+  attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
+
+return(1);
+}
+
+int
 CheckFrame::WriteDataRecAscii(
 	FILE*	fptr)
 {
