@@ -117,6 +117,8 @@ $(LIBDIR)/libEAData.a: $(OBJS)
 %.h: $(SIM_CENTRAL_TREE)/src/eadata/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/eadata/RCS/$@,v
 
+.PRECIOUS: %.C
+
 Args.o: Args.C Args.h ArgDefs.h EAConfigList.h EALog.h EAList.h TlmFileList.h TlmHdfFile.h ListBase.h Parameter.h Itime.h CommonDefs.h HdfFile.h
 ArgsPlus.o: ArgsPlus.C Args.h ArgsPlus.h ParTab.h EAConfigList.h EALog.h TlmFileList.h LimitList.h Filter.h ToDo.h CmdList.h Eqx.h PolyTable.h ArgDefs.h Itime.h Parameter.h CommonDefs.h EAList.h TlmHdfFile.h LimitChecker.h Command.h Tpg.h Polynomial.h PolyErrNo.h ListBase.h HdfFile.h LimitState.h
 Backup.o: Backup.C Backup.h
@@ -132,6 +134,9 @@ EAList.o: EAList.C EAList.h ListBase.h
 Eqx.o: Eqx.C Eqx.h Itime.h EAList.h Tpg.h CommonDefs.h ListBase.h
 Filter.o: Filter.C Filter.h ParTab.h EAList.h TlmHdfFile.h CommonDefs.h Parameter.h ListBase.h HdfFile.h Itime.h
 HdfFile.o: HdfFile.C HdfFile.h EAList.h ListBase.h
+Hk2HdfMap.o: Hk2HdfMap.h FrameRead.h
+L1ADrvExtract.o: L1AExtract.h L1ADrvExtract.h
+L1ADrvTab.o: Print.h
 Headers.o: Headers.C Headers.h Parameter.h Itime.h CommonDefs.h
 Itime.o: Itime.C Itime.h CommonDefs.h
 L1AExtract.o: L1AExtract.C L1AExtract.h Parameter.h Itime.h CommonDefs.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
@@ -143,10 +148,12 @@ LimitChecker.o: LimitChecker.C LimitChecker.h LimitState.h HkdtExtract.h L1AExtr
 LimitList.o: LimitList.C CommonDefs.h LimitList.h ParTab.h LimitChecker.h LimitState.h HkdtExtract.h L1AExtract.h Parameter.h EAList.h Itime.h TlmHdfFile.h ListBase.h HdfFile.h
 LimitState.o: LimitState.C LimitState.h HkdtExtract.h L1AExtract.h ParTab.h TlmHdfFile.h Parameter.h CommonDefs.h Itime.h HdfFile.h EAList.h ListBase.h
 Mail.o: Mail.C Mail.h EAConfigList.h EAList.h ListBase.h
+NoTimeTlmFile.o: NoTimeTlmFile.h
 ParTab.o: ParTab.C Parameter.h ParTab.h Itime.h HdfFile.h CommonDefs.h EAList.h ListBase.h
 Parameter.o: Parameter.C Parameter.h CommonDefs.h
 ParameterList.o: ParameterList.C ParameterList.h Itime.h ParTab.h PolyTable.h TlmHdfFile.h CommonDefs.h Parameter.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h
 Print.o: Print.C Print.h
+Qpf.o: Qpf.h
 Reqq.o: Reqq.C CommonDefs.h Reqq.h Command.h CmdList.h Binning.h Tpg.h EAList.h Eqx.h Itime.h Parameter.h ListBase.h
 Rtcf.o: Rtcf.C CommonDefs.h Command.h Rtcf.h Reqq.h Binning.h Tpg.h CmdList.h Itime.h EAList.h Eqx.h Parameter.h ListBase.h
 TempInst.o: TempInst.C EAList.h EAList.C Command.h EAConfigList.h Eqx.h Filter.h LimitChecker.h Parameter.h Polynomial.h TlmHdfFile.h ToDo.h ListBase.h CommonDefs.h Tpg.h Itime.h LimitState.h HdfFile.h
