@@ -276,7 +276,7 @@ Image::WriteIm(
 
     for (int x = 0; x < _xSize; x++)
     {
-        if (fwrite(_image + x, sizeof(float), _ySize, ofp) !=
+        if (fwrite(*(_image + x), sizeof(float), _ySize, ofp) !=
             (unsigned int)_ySize)
         {
             fclose(ofp);
@@ -292,7 +292,6 @@ Image::WriteIm(
 
     return(1);
 } 
-
 
 //------------------//
 // Image::WritePltr //
