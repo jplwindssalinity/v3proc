@@ -46,8 +46,8 @@ public:
     // enums //
     //-------//
 
-    enum MeasTypeE { NONE, VV_MEAS_TYPE, HH_MEAS_TYPE, VV_VH_CORR_MEAS_TYPE,
-        HH_HV_CORR_MEAS_TYPE };
+    enum MeasTypeE { NONE, VV_MEAS_TYPE, HH_MEAS_TYPE, VH_MEAS_TYPE,
+        HV_MEAS_TYPE, VV_VH_CORR_MEAS_TYPE, HH_HV_CORR_MEAS_TYPE };
 
     //--------------//
     // construction //
@@ -77,10 +77,7 @@ public:
     int  Write(FILE* fp);
     int  Read(FILE* fp);
     int  WriteAscii(FILE* fp);
-
-    int  UnpackL1BHdf(L1BHdf*     l1bHdf,
-                      int32       pulseIndex,   // index in pluses
-                      int32       sliceIndex);  // index in slices
+    int  UnpackL1BHdf(L1BHdf* l1bHdf, int32 pulseIndex, int32 sliceIndex);
 
     //---------//
     // freeing //
@@ -125,61 +122,61 @@ public:
 
 //======================================================================
 // CLASS
-//		MeasList
+//    MeasList
 //
 // DESCRIPTION
-//		The MeasList object is a list of Meas objects.  Used for
-//		gridding.
+//    The MeasList object is a list of Meas objects.  Used for
+//    gridding.
 //======================================================================
 
 class MeasList : public List<Meas>
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	MeasList();
-	~MeasList();
+    MeasList();
+    ~MeasList();
 
-	//--------------//
-	// input/output //
-	//--------------//
+    //--------------//
+    // input/output //
+    //--------------//
 
-	int		Write(FILE* fp);
-	int		Read(FILE* fp);
-	int		WriteAscii(FILE* fp);
+    int  Write(FILE* fp);
+    int  Read(FILE* fp);
+    int  WriteAscii(FILE* fp);
 
-	//------//
-	// info //
-	//------//
+    //------//
+    // info //
+    //------//
 
-	LonLat		AverageLonLat();
+    LonLat  AverageLonLat();
 
-	//---------//
-	// freeing //
-	//---------//
+    //---------//
+    // freeing //
+    //---------//
 
-	void	FreeContents();
+    void  FreeContents();
 };
 
 //======================================================================
 // CLASS
-//		OffsetList
+//    OffsetList
 //
 // DESCRIPTION
-//		The OffsetList object is a list of byte offsets into a file.
-//		It is used to index Meas objects in a file.
+//    The OffsetList object is a list of byte offsets into a file.
+//    It is used to index Meas objects in a file.
 //======================================================================
 
 class OffsetList : public List<long>
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
 	OffsetList();
 	~OffsetList();

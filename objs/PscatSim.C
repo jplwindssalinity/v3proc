@@ -412,12 +412,24 @@ PscatSim::SetMeasTypes(
         for (Meas* meas = meas_spot->GetHead(); meas;
             meas = meas_spot->GetNext())
         {
-            meas->measType = Meas::VV_MEAS_TYPE;
+            meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
+
+            //--------------------//
+            // add VV measurement //
+            //--------------------//
+
             Meas* new_meas = new Meas();
             *new_meas = *meas;
-            new_meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
-            // the new node is inserted after the current node and
-            // is made the current node, list traversing continues
+            new_meas->measType = Meas::VV_MEAS_TYPE;
+            meas_spot->InsertAfter(new_meas);
+
+            //--------------------//
+            // add VH measurement //
+            //--------------------//
+
+            new_meas = new Meas();
+            *new_meas = *meas;
+            new_meas->measType = Meas::VH_MEAS_TYPE;
             meas_spot->InsertAfter(new_meas);
         }
         break;
@@ -425,12 +437,24 @@ PscatSim::SetMeasTypes(
         for (Meas* meas = meas_spot->GetHead(); meas;
             meas = meas_spot->GetNext())
         {
-            meas->measType = Meas::HH_MEAS_TYPE;
+            meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
+
+            //--------------------//
+            // add HH measurement //
+            //--------------------//
+
             Meas* new_meas = new Meas();
             *new_meas = *meas;
-            new_meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
-            // the new node is inserted after the current node and
-            // is made the current node, list traversing continues
+            new_meas->measType = Meas::HH_MEAS_TYPE;
+            meas_spot->InsertAfter(new_meas);
+
+            //--------------------//
+            // add HV measurement //
+            //--------------------//
+
+            new_meas = new Meas();
+            *new_meas = *meas;
+            new_meas->measType = Meas::HV_MEAS_TYPE;
             meas_spot->InsertAfter(new_meas);
         }
         break;
@@ -463,10 +487,6 @@ PscatSim::SetMeasurements(
     int slice_count = pscat->ses.GetTotalSliceCount();
     int slice_i = 0;
     int sliceno = -slice_count / 2;
-
-    // We need to track the previous meas for correlation measurements.
-    Meas* prev_meas = NULL;
-
     Meas* meas = meas_spot->GetHead();
     while (meas)
     {
@@ -499,6 +519,10 @@ PscatSim::SetMeasurements(
                 break;
             case Meas::HH_MEAS_TYPE:
                 sigma0 = 0.085;
+                break;
+            case Meas::VH_MEAS_TYPE:
+            case Meas::HV_MEAS_TYPE:
+                sigma0 = 0.001;   //  ???
                 break;
             case Meas::VV_VH_CORR_MEAS_TYPE:
             case Meas::HH_HV_CORR_MEAS_TYPE:
@@ -578,6 +602,7 @@ PscatSim::SetMeasurements(
 
 		// Kfactor: either 1.0, taken from table, or X is computed
         // directly
+        float Xfactor=0;
         float Kfactor=1.0;
         float Es,En,var_esn_slice;
 		CoordinateSwitch gc_to_antenna;
@@ -590,7 +615,7 @@ PscatSim::SetMeasurements(
             // to next slice
             if (computeXfactor)
             {
-                if (! ComputeXfactor(spacecraft, pscat, meas, &(meas->XK)))
+                if (! ComputeXfactor(spacecraft, pscat, meas, &Xfactor))
                 {
                     meas=meas_spot->RemoveCurrent();
                     delete meas;
@@ -604,19 +629,15 @@ PscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-                meas->XK = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+                Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
             }
-
-//            if (! sigma0_to_Esn_slice_given_X(pscat, meas, Xfactor, sigma0,
-//                simKpcFlag, &(meas->value), &Es, &En,
-//                &var_esn_slice))
-
-            if (! pscat->MeasToEsn(prev_meas, meas, meas->XK, sigma0,
-                    simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+            if (! sigma0_to_Esn_slice_given_X(pscat, meas, Xfactor, sigma0,
+                simKpcFlag, &(meas->value), &Es, &En,
+                &var_esn_slice))
             {
                 return(0);
             }
-
+            meas->XK=Xfactor;
 		}
         else
         {
@@ -653,7 +674,6 @@ PscatSim::SetMeasurements(
 		slice_i++;
 		if (slice_count%2==0 && sliceno==0)
             sliceno++;
-        prev_meas = meas;
 		meas=meas_spot->GetNext();
 	}
 
