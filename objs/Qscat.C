@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -349,7 +349,7 @@ QscatSes::tempToDn(
     }
     double x1 = (-b + sqrt(dd)) / (2*a);
     double x2 = (-b - sqrt(dd)) / (2*a);
-    unsigned char x;
+    unsigned char x = 0;
     if (x1 < 0 && x2 < 0)
     {
         fprintf(stderr,
@@ -2598,50 +2598,56 @@ Qscat::IdealRtt(
 // Qscat::IdealCommandedDoppler //
 //------------------------------//
 // Estimate the ideal commanded doppler frequency.
-// This method no longer zeroes the attitude. It is up to the calling
-// program to set the spacecraft attitude the desired thing.
+// This method has the option of using the spacecraft attitude. If
+// you want to configure the instrument like it will be used postlaunch,
+// make a copy of the spacecraft and send it in with the desired biases
+// as the attitude, and, of course, set the use_attitude flag. If you are
+// doing something else, don't bother.
+// The default is to not use the attitude, but to zero it out.
 
 #define DOPPLER_ACCURACY    1.0     // 1 Hz
 
 int
 Qscat::IdealCommandedDoppler(
     Spacecraft*       spacecraft,
-    QscatTargetInfo*  qti_out = NULL)
+    QscatTargetInfo*  qti_out = NULL,
+    int               use_attitude = 0)
 {
-    //------------------------------//
-    // zero the spacecraft attitude //
-    //------------------------------//
-
     OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 
-    //--------------------------------------------------//
-    // this section is for REALLY tracking the attitude //
-    //--------------------------------------------------//
-/*
-    Attitude* sc_attitude = &(spacecraft->attitude);
-    CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(sc_orbit_state,
-        sc_attitude, &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
-*/
+    Spacecraft* use_spacecraft = NULL;
+    CoordinateSwitch antenna_frame_to_gc;
 
-    //---------------------------------------------------------//
-    // this section is for zeroing out the spacecraft attitude //
-    //---------------------------------------------------------//
-
-    Attitude zero_rpy;
-    zero_rpy.Set(0.0, 0.0, 0.0, 2, 1, 3);
-    CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-        AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(sas.antenna),
-        sas.antenna.txCenterAzimuthAngle);
+    // if zeroing the attitude, this will get used
     Spacecraft sp_zero_att;
-    sp_zero_att.orbitState = *sc_orbit_state;
-    sp_zero_att.attitude = zero_rpy;
 
-    //-------------------------------------------------------//
-    // you can use these to choose how you want the attitude //
-    //-------------------------------------------------------//
+    if (use_attitude)
+    {
+        //--------------------------------------------------//
+        // this section is for REALLY tracking the attitude //
+        //--------------------------------------------------//
 
-    Spacecraft* use_spacecraft = &sp_zero_att;
-    CoordinateSwitch* af_to_gc = &zero_rpy_antenna_frame_to_gc;
+        Attitude* sc_attitude = &(spacecraft->attitude);
+        antenna_frame_to_gc = AntennaFrameToGC(sc_orbit_state, sc_attitude,
+            &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
+
+        use_spacecraft = spacecraft;
+    }
+    else
+    {
+        //---------------------------------------------------------//
+        // this section is for zeroing out the spacecraft attitude //
+        //---------------------------------------------------------//
+
+        Attitude zero_rpy;
+        zero_rpy.Set(0.0, 0.0, 0.0, 2, 1, 3);
+        antenna_frame_to_gc = AntennaFrameToGC(sc_orbit_state, &zero_rpy,
+            &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
+        sp_zero_att.orbitState = *sc_orbit_state;
+        sp_zero_att.attitude = zero_rpy;
+
+        use_spacecraft = &sp_zero_att;
+    }
 
     //-------------------------------------------//
     // find the current beam's two-way peak gain //
@@ -2659,7 +2665,7 @@ Qscat::IdealCommandedDoppler(
     }
     else if(cds.useSpectralDop)
     {
-        if (! GetPeakSpectralResponse(af_to_gc, use_spacecraft,
+        if (! GetPeakSpectralResponse(&antenna_frame_to_gc, use_spacecraft,
             this, &look, &azim))
         {
             return(0);
@@ -2667,7 +2673,7 @@ Qscat::IdealCommandedDoppler(
     }
     else
     {
-        if (! GetPeakSpatialResponse2(af_to_gc, use_spacecraft,
+        if (! GetPeakSpatialResponse2(&antenna_frame_to_gc, use_spacecraft,
             beam, azimuth_rate, &look, &azim))
         {
             return(0);
@@ -2684,7 +2690,7 @@ Qscat::IdealCommandedDoppler(
     ses.CmdTxDopplerEu(0.0);
     do
     {
-        TargetInfo(af_to_gc, use_spacecraft, vector, &qti);
+        TargetInfo(&antenna_frame_to_gc, use_spacecraft, vector, &qti);
         float freq = ses.txDoppler + qti.basebandFreq;
         ses.CmdTxDopplerEu(freq);
     } while (fabs(qti.basebandFreq) > DOPPLER_ACCURACY);

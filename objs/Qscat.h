@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -418,7 +418,7 @@ public:
              float gain_threshold = 0.0, int max_slices = 0);
     double  IdealRtt(Spacecraft* spacecraft, int use_flags = 0);
     int     IdealCommandedDoppler(Spacecraft* spacecraft,
-                QscatTargetInfo* qti_out = NULL);
+                QscatTargetInfo* qti_out = NULL, int use_attitude = 0);
 
 /*
     int  SetAntennaToTxCenter(int pri_delay = 0);
