@@ -8,7 +8,7 @@
 //		l2b_to_ascii
 //
 // SYNOPSIS
-//	      l2b_to_ascii <input_file> <output_file>  <start_frame> <end_frame>
+//	      l2b_to_ascii <input_file> <output_file>  [optional cti ati]
 //
 // DESCRIPTION
 //          Reads frames start_frame through end_frame from a L1b file and
@@ -56,7 +56,7 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 
-const char* usage_array[] = { "<input_file>", "<output_file>",0};
+const char* usage_array[] = { "<input_file>", "<output_file>", "<cti>", "<ati>",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -72,13 +72,17 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc!=3)
+	if (argc!=3 && argc!=5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* input_file = argv[clidx++];
 	const char* output_file = argv[clidx++];
-
+        int ati=0,cti=0;
+        if(argc==5){
+	  cti=atoi(argv[clidx++]);
+	  ati=atoi(argv[clidx++]);
+	}
 	//------------------------//
 	// create L2B object      //
 	//------------------------//
@@ -95,18 +99,6 @@ main(
 		exit(1);
 	}
 
-	//------------------------//
-	// open the output file   //
-	//------------------------//
-
- 	if (! l2b.OpenForWriting(output_file))
-	{
-		fprintf(stderr, "%s: error creating output file %s\n", command,
-			input_file);
-		exit(1);
-	}       
-
-
 
 	//---------------------//
 	// copy desired frames //
@@ -121,10 +113,28 @@ main(
 		  input_file);
 	  exit(1);
 	}
-	if(! l2b.WriteAscii()){
-	  fprintf(stderr, "%s: error writing to output file %s\n", command,
-		  output_file);
-	  exit(1);
+        if(argc==3){
+	  //------------------------//
+	  // open the output file   //
+	  //------------------------//
+
+	  if (! l2b.OpenForWriting(output_file))
+	    {
+	      fprintf(stderr, "%s: error creating output file %s\n", command,
+		      input_file);
+	      exit(1);
+	    }      
+
+	  if(! l2b.WriteAscii()){
+	    fprintf(stderr, "%s: error writing to output file %s\n", command,
+		    output_file);
+	    exit(1);
+	  }
+	}
+	else{
+	  FILE* ofp=fopen(output_file,"w");
+          l2b.frame.swath.swath[cti][ati]->WriteAscii(ofp);
+          fclose(ofp);
 	}
 
         //----------------------//
