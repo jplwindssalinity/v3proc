@@ -601,7 +601,7 @@ DopplerAndDelay(
 		xmit_freq = instrument->baseTransmitFreq +
 			instrument->commandedDoppler;
 		lambda = speed_light_kps / xmit_freq;
-		doppler_freq = 2000.0 * (vrel % ulook_gc) / lambda;
+		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
 		new_commanded_doppler = range_freq - doppler_freq;
 		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
 		instrument->commandedDoppler = new_commanded_doppler;
@@ -639,7 +639,7 @@ TargetInfo(
 	Vector3 vspot(-w_earth * rspot->get(1), w_earth * rspot->get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light_kps / actual_xmit_frequency;
-	tip->dopplerFreq = 2.0 * 1000.0 * (vrel % ulook_gc) / lambda;
+	tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
  
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
