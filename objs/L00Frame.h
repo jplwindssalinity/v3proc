@@ -65,8 +65,7 @@ public:
 
 	// antenna position
 
-	unsigned short	firstAntennaPosition;
-	unsigned char	antennaPosition[PULSES_PER_L00_FRAME - 1];
+	float		antennaPosition[PULSES_PER_L00_FRAME];
 
 	// sigma-0's
 

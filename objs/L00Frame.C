@@ -69,11 +69,7 @@ L00Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&velZ, size);
 	idx += size;
 
-	size = sizeof(unsigned short);
-	memcpy((void *)(buffer + idx), (void *)&firstAntennaPosition, size);
-	idx += size;
-
-	size = sizeof(unsigned char) * (PULSES_PER_L00_FRAME - 1);
+	size = sizeof(float) * PULSES_PER_L00_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
