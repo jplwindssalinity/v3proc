@@ -549,6 +549,12 @@ if (test < 0.0)
 	*crosstrack = -(*crosstrack);	// left side is defined to be negative
 }
 
+// Do the same for the along track distance (negative before the start point).
+if (min_time < start_time)
+{
+	*alongtrack = -(*alongtrack);	// before start is negative.
+}
+
 return(1);
 }
 
