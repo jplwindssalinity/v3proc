@@ -9,7 +9,7 @@
 static const char rcs_id_matrix3_h[] =
 	"@(#) $Id$";
 
-class Ephemeris;
+#include <stdio.h>
 
 //======================================================================
 // CLASSES
@@ -18,7 +18,6 @@ class Ephemeris;
 //		EarthPosition
 //======================================================================
 
-class Matrix3;
 class Vector3;
 class EarthPosition;
 
