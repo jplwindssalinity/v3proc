@@ -172,6 +172,16 @@ public:
 #define ECMWF_HIRES_LAT_DIM		321
 #define ECMWF_HIRES_TYPE		"ECMWF"
 
+#define ECMWF_LORES_LON_DIM             360
+#define ECMWF_LORES_LAT_DIM             181
+#define ECMWF_LORES_TYPE                "ONE_DEG"
+#define ECMWF_LORES_SCALE_FACTOR        100
+
+#define NSCAT_LON_DIM                   720
+#define NSCAT_LAT_DIM                   301
+#define NSCAT_TYPE                      "NSCAT"
+#define NSCAT_LAND_VALUE                -9999.0
+
 class WindField
 {
 public:
@@ -190,6 +200,8 @@ public:
 	int		ReadVap(const char* filename);
 	int		ReadEcmwfHiRes(const char* filename);
 	int		WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
+        int             ReadEcmwfLoRes(const char* filename);
+        int             ReadNSCAT(const char* filename);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 
