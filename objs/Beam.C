@@ -411,3 +411,57 @@ Beam::GetPowerGain(
 	*gain = (double)x;
 	return(1);
 }
+
+//---------------------------//
+// Beam::GetPowerGainProduct //
+//---------------------------//
+// This method determines the power gain at the input look direction,
+// and also at the look direction appropriate for the beam orientation
+// after the antenna rotates during the pulse flight time.
+// The two gains (transmit gain and receive gain) are multiplied together
+// to yield a 2-way gain product with scan loss approximately included.
+// Rotation is assumed to be in the positive azimuth direction.
+
+int
+Beam::GetPowerGainProduct(
+	double	look_angle,
+	double	azimuth_angle,
+	double	range,
+	double	azimuth_rate,
+	float	*gainproduct)
+{
+	float xmit_gain;
+	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
+		return(0);
+	double flight_time = 2.0*range/speed_light;
+	azimuth_angle += azimuth_rate*flight_time;
+	float recv_gain;
+	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
+		return(0);
+	*gainproduct = xmit_gain * recv_gain;
+	return(1);
+}
+
+//
+// Same as above, but returns a double
+//
+
+int
+Beam::GetPowerGainProduct(
+	double	look_angle,
+	double	azimuth_angle,
+	double	range,
+	double	azimuth_rate,
+	double	*gainproduct)
+{
+	float xmit_gain;
+	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
+		return(0);
+	double flight_time = 2.0*range/speed_light;
+	azimuth_angle += azimuth_rate*flight_time;
+	float recv_gain;
+	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
+		return(0);
+	*gainproduct = (double)(xmit_gain * recv_gain);
+	return(1);
+}

@@ -73,6 +73,10 @@ public:
 
 	int	GetPowerGain(double look_angle, double azimuth_angle, float *gain);
 	int	GetPowerGain(double look_angle, double azimuth_angle, double *gain);
+	int GetPowerGainProduct(double look_angle, double azimuth_angle,
+			double range, double azimuth_rate, float *gainproduct);
+	int GetPowerGainProduct(double look_angle, double azimuth_angle,
+			double range, double azimuth_rate, double *gainproduct);
 
 	//-----------//
 	// variables //
