@@ -92,7 +92,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<ecmwf_hires_file>", "<spd>", "<output_file",
+const char* usage_array[] = { "<ecmwf_hires_file>", "<spd>", "<output_file>",
 				0};
 
 //--------------//
