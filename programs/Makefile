@@ -19,7 +19,7 @@ PROGRAMS = \
 	l10_to_l15 \
 	l15_to_l17 \
 	l17_to_l20 \
-	l20_to_bev \
+	l20_to_vctr \
 	l20_metrics \
 	see_spot \
 	generate_rgc \
@@ -30,13 +30,14 @@ PROGRAMS = \
 	memfilter \
 	make_pattern \
 	test_pattern \
-	vap_to_bev \
+	vap_to_vctr \
 	fake_vap \
 	l15_outlines \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
-	log_cfg
+	log_cfg \
+	ecmwf_hires_to_vctr
 
 #----------------------------------------------------------------------
 # default: make all executable programs
