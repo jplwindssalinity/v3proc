@@ -9,6 +9,7 @@
 static const char rcs_id_lonlat_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "List.h"
 #include "EarthPosition.h"
 
@@ -35,7 +36,6 @@ public:
 	//--------------//
 
 	LonLat();
-	LonLat(EarthPosition r);
 	~LonLat();
 
 	Set(EarthPosition r);

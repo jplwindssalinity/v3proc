@@ -10,6 +10,8 @@ static const char rcs_id_lonlat_c[] =
 #include <math.h>
 #include "LonLat.h"
 #include "Constants.h"
+#include "EarthPosition.h"
+#include "List.h"
 
 
 //========//
@@ -19,13 +21,6 @@ static const char rcs_id_lonlat_c[] =
 LonLat::LonLat()
 :	longitude(0.0), latitude(0.0)
 {
-	return;
-}
-
-LonLat::LonLat(EarthPosition r)
-
-{
-	this->Set(r);
 	return;
 }
 
@@ -40,9 +35,8 @@ LonLat::~LonLat()
 
 int
 LonLat::Set(EarthPosition r)
-
 {
-	double alt,lat,lon;
+	double alt, lat, lon;
 	r.GetAltLonGDLat(&alt, &lon, &lat);
 	longitude = (float)lon;
 	latitude = (float)lat;

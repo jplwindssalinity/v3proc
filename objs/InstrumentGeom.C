@@ -274,10 +274,8 @@ FindSlice(
 			EarthPosition* spot_on_earth = new EarthPosition();
 			*spot_on_earth =
 				earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
-/*
 			if (! outline->Append(spot_on_earth))
 				return(0);
-*/
 			sum = sum + *spot_on_earth;
 		}
 	}
