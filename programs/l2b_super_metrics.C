@@ -80,11 +80,13 @@ template class List<WindVectorPlus>;
 template class List<AngleInterval>;
 template class List<EarthPosition>;
 
+#define SPEED_RESOLUTION 0.5
+#define SPEED_BINS 60
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING            "o:m:s:"
+#define OPTSTRING            "o:m:s:D:"
 
 //--------//
 // MACROS //
@@ -103,13 +105,14 @@ template class List<EarthPosition>;
 //------------------//
 
 int opt_speed = 0;
-
+int opt_dir = 0;
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -o output_base ]",
     "[ -m output_metric_file ]", "[ -s low_speed:high_speed ]",
+    "[ -D max_direction_error ]",
     "[ config_file... ]", "[ metric_file... ]", NULL };
 
 //--------------//
@@ -129,7 +132,7 @@ main(
     char* output_base = NULL;
 
     float low_speed, high_speed;
-
+    float max_direction_error;
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -155,6 +158,11 @@ main(
             }
             opt_speed = 1;
             break;
+        case 'D': 
+	  max_direction_error=atof(optarg)*dtr;
+          opt_dir=1;
+          break;
+              
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -199,6 +207,10 @@ main(
                 command, low_speed, high_speed);
             exit(1);
         }
+    }
+
+    if (opt_dir){
+      metrics.SetMaxDirectionError(max_direction_error);
     }
 
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
@@ -300,7 +312,7 @@ main(
             if (swath != NULL)
             {
                 if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
-                    &truth))
+                    SPEED_BINS, SPEED_RESOLUTION, &truth))
                 {
                     fprintf(stderr, "%s: error evaluating wind field\n",
                         command);
@@ -336,7 +348,7 @@ main(
     //-------------------------//
 
     if (output_base != NULL)
-    {
+    { 
         if (! total_metrics.WritePlotData(output_base))
         {
             fprintf(stderr, "%s: error writing plot data files\n", command);
