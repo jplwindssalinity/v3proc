@@ -4337,9 +4337,9 @@ GMF::BuildDirectionRanges(
      WVC*   wvc,
      float threshold){
      //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
-     static int wvcno=0;
-     static FILE* dbg=fopen("debugfile","w");
-     wvcno++;
+     // static int wvcno=0;
+     // static FILE* dbg=fopen("debugfile","w");
+     // wvcno++;
      //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
      int pdfarraysize=_phiCount;
      float pdfstepsize=_phiStepSize;
@@ -4539,18 +4539,18 @@ GMF::BuildDirectionRanges(
      }
 
      //------------------------------------------>>>> debugging tools
-     for(int c=0;c<pdfarraysize;c++)
-       fprintf(dbg,"%g %g PDF:WVC#%d\n",c*pdfstepsize*rtd,pdf[c],wvcno);
-     fprintf(dbg,"& PDF:WVC#%d\n",wvcno);
-     for(int c=0;c<_phiCount;c++)
-       fprintf(dbg,"%g %g BestObj:WVC#%d\n",c*_phiStepSize*rtd,_bestObj[c],wvcno);
-     fprintf(dbg,"& BestObj:WVC#%d\n",wvcno);
-     for(int c=0;c<num;c++)
-           fprintf(dbg,"%d %g Left:WVC#%d\n",c,rtd*range[c].left,wvcno);
-     fprintf(dbg,"& Left:WVC#%d\n",wvcno);
-     for(int c=0;c<num;c++)
-           fprintf(dbg,"%d %g Right:WVC#%d\n",c,rtd*range[c].right,wvcno);
-     fprintf(dbg,"& Right:WVC#%d\n",wvcno);
+     //for(int c=0;c<pdfarraysize;c++)
+     //  fprintf(dbg,"%g %g PDF:WVC#%d\n",c*pdfstepsize*rtd,pdf[c],wvcno);
+     //fprintf(dbg,"& PDF:WVC#%d\n",wvcno);
+     //for(int c=0;c<_phiCount;c++)
+     //  fprintf(dbg,"%g %g BestObj:WVC#%d\n",c*_phiStepSize*rtd,_bestObj[c],wvcno);
+     //fprintf(dbg,"& BestObj:WVC#%d\n",wvcno);
+     //for(int c=0;c<num;c++)
+     //      fprintf(dbg,"%d %g Left:WVC#%d\n",c,rtd*range[c].left,wvcno);
+     //fprintf(dbg,"& Left:WVC#%d\n",wvcno);
+     //for(int c=0;c<num;c++)
+     //      fprintf(dbg,"%d %g Right:WVC#%d\n",c,rtd*range[c].right,wvcno);
+     //fprintf(dbg,"& Right:WVC#%d\n",wvcno);
      //------------------------------------------>>>> debugging tools
 
      if (INTERP_RATIO > 1) delete[] pdf;

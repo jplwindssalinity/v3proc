@@ -20,6 +20,10 @@ static const char rcs_id_HDF_l2a_h[] =
 #define MAX_L2AxHDF_NUM_CELLS   810
 #endif
 
+#ifndef MAX_L2AhrHDF_NUM_CELLS
+#define MAX_L2AhrHDF_NUM_CELLS   2000
+#endif
+
 #ifndef MAX_L2AHDF_CELL_NO
 #define MIN_L2AHDF_CELL_NO     1
 #define MAX_L2AHDF_CELL_NO     76
@@ -28,6 +32,16 @@ static const char rcs_id_HDF_l2a_h[] =
 #ifndef MAX_L2AHDF_ROW_NO
 #define MIN_L2AHDF_ROW_NO     1
 #define MAX_L2AHDF_ROW_NO     1624
+#endif
+
+#ifndef MAX_L2AhrHDF_CELL_NO
+#define MIN_L2AhrHDF_CELL_NO     1
+#define MAX_L2AhrHDF_CELL_NO     152
+#endif
+
+#ifndef MAX_L2AhrHDF_ROW_NO
+#define MIN_L2AhrHDF_ROW_NO     1
+#define MAX_L2AhrHDF_ROW_NO     3248
 #endif
 
 

@@ -81,6 +81,33 @@ Vector::WriteAscii(
 }
 
 //--------------------//
+// Vector::Write      //
+//--------------------//
+
+int
+Vector::Write(
+   FILE*  ofp){
+  if(fwrite((void*)&_mSize,sizeof(int),1,ofp)!=1) return(0);
+  if(fwrite((void*)&_vector[0],sizeof(double),_mSize,ofp)!=(unsigned)_mSize) 
+    return(0);
+  return(1);
+}
+
+//--------------------//
+// Vector::Read       //
+//--------------------//
+
+int
+Vector::Read(
+   FILE*  ifp){
+  if(fread((void*)&_mSize,sizeof(int),1,ifp)!=1) return(0);
+  Allocate(_mSize);
+  if(fread((void*)&_vector[0],sizeof(double),_mSize,ifp)!=(unsigned)_mSize) 
+    return(0);
+  return(1);
+}
+
+//--------------------//
 // Vector::GetElement //
 //--------------------//
 
@@ -310,6 +337,39 @@ Matrix::WriteAscii(
         fprintf(ofp, "\n");
     }
     return(1);
+}
+
+//--------------------//
+// Matrix::Write      //
+//--------------------//
+
+int
+Matrix::Write(
+   FILE*  ofp){
+  if(fwrite((void*)&_mSize,sizeof(int),1,ofp)!=1) return(0);
+  if(fwrite((void*)&_nSize,sizeof(int),1,ofp)!=1) return(0);
+  for(int c=0;c<_mSize;c++){
+    if(fwrite((void*)&_matrix[c][0],sizeof(double),_nSize,ofp)!=(unsigned)_nSize) 
+      return(0);
+  }
+  return(1);
+}
+
+//--------------------//
+// Matrix::Read       //
+//--------------------//
+
+int
+Matrix::Read(
+   FILE*  ifp){
+  if(fread((void*)&_mSize,sizeof(int),1,ifp)!=1) return(0);
+  if(fread((void*)&_nSize,sizeof(int),1,ifp)!=1) return(0);
+  Allocate(_mSize,_nSize);
+  for(int c=0;c<_mSize;c++){
+    if(fread((void*)&_matrix[c][0],sizeof(double),_nSize,ifp)!=(unsigned)_nSize) 
+      return(0);
+  }
+  return(1);
 }
 
 //--------------------//

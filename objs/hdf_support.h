@@ -63,8 +63,8 @@ class HDF_update_file
 public:
     int  open(const char *filename);
     int  get_dataset_attributes(char *dataset_name, SD_attributes &attr);
-//  int  get_data(char *dataset_name,int *array);
-//  int  get_data(char *dataset_name,float *array);
+    int  get_data(char *dataset_name,int *array);
+    int  get_data(char *dataset_name,float *array);
     int  update(char *dataset_name,int index, int *array);
     int  update(char *dataset_name,int index, float *array);
     int  close();

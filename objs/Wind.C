@@ -846,7 +846,7 @@ WVC::FreeContents()
 //--------------------------//
 // WVC::Rank_Wind_Solutions //
 //--------------------------//
-
+#define MAXIMUM_ACCEPTABLE_SPEED 100
 int
 WVC::Rank_Wind_Solutions()
 {
@@ -897,8 +897,8 @@ WVC::Rank_Wind_Solutions()
     int    j;
     int    start_j;
     int    ambig;
-    int    speed_50_flag[wind_max_solutions];
-    int    speed_50_counter;
+    int    speed_large_flag[wind_max_solutions];
+    int    speed_large_counter;
     int    i_speed_processed;
     int    i_twin_processed;
     int    twin_flag[wind_max_solutions];
@@ -914,13 +914,13 @@ WVC::Rank_Wind_Solutions()
 
 //    Initialize.
 
-    speed_50_counter = 0;
+    speed_large_counter = 0;
     twin_counter = 0;
     num_sorted = 0;
 
     for (j = 0; j < wind_max_solutions; j++)
     {
-        speed_50_flag[j] = 0;
+        speed_large_flag[j] = 0;
         twin_flag[j] = 0;
     }
 
@@ -941,20 +941,20 @@ WVC::Rank_Wind_Solutions()
             wr_wind_dir[ambig] -= 360.0;
         }
 
-// Set high wind speed flag and count up if larger than 50 m/s.
+// Set high wind speed flag and count up if larger than MAXIMUM_ACCEPTABLE_SPEED.
 
-        if (wr_wind_speed[ambig] > 50.0)
+        if (wr_wind_speed[ambig] > MAXIMUM_ACCEPTABLE_SPEED)
         {
-            speed_50_flag[ambig] = 1;
-            speed_50_counter++;
+            speed_large_flag[ambig] = 1;
+            speed_large_counter++;
         }
     }
 
-// Eliminate wind solutions with speed > 50 m/s.
+// Eliminate wind solutions with speed > MAXIMUM_ACCEPTABLE_SPEED.
 
-    if (speed_50_counter > 0)
+    if (speed_large_counter > 0)
     {
-        num_ambigs = wr_num_ambigs - speed_50_counter;
+        num_ambigs = wr_num_ambigs - speed_large_counter;
         start_j = 0;
 
         for (i = 0; i < num_ambigs; i++)
@@ -962,7 +962,7 @@ WVC::Rank_Wind_Solutions()
             i_speed_processed = 0;
             for (j = start_j; j < wr_num_ambigs; j++)
             {
-                if (! i_speed_processed && speed_50_flag[j] == 0)
+                if (! i_speed_processed && speed_large_flag[j] == 0)
                 {
                     wr_wind_speed[i] = wr_wind_speed[j];
                     wr_wind_dir[i] = wr_wind_dir[j];
@@ -2203,6 +2203,14 @@ WindField::_Deallocate()
 // WindSwath //
 //===========//
 
+//#define HIRES12
+#ifdef HIRES12
+#define ExtractData2D_76 ExtractData2D_152
+#define ExtractData2D_76_uint2_float ExtractData2D_152_uint2_float
+#define ExtractData2D_76_int2_float ExtractData2D_152_int2_float
+#define ExtractData3D_76_4_uint2_float ExtractData3D_152_4_uint2_float
+#define ExtractData3D_76_4_int2_float ExtractData3D_152_4_int2_float
+#endif
 WindSwath::WindSwath()
 :   swath(0), useNudgeVectorsAsTruth(0), nudgeVectorsRead(0),
     _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
@@ -2367,6 +2375,55 @@ WindSwath::DeleteEntireSwath()
         return(0);
 
     return(1);
+}
+
+//-----------------------------------//
+// WindSwath::DeleteFlaggedData      //
+//-----------------------------------//
+int
+WindSwath::DeleteFlaggedData
+( const char* flag_file,
+  float       threshold)
+{
+  FILE* ifp=fopen(flag_file,"r");
+  if(ifp==NULL){
+    fprintf(stderr,"Fatal Error: Flag file %s cannot be opened\n",flag_file);
+    exit(1);
+  }
+  float* flag_value=(float*)malloc(sizeof(float)*_alongTrackBins*_crossTrackBins);
+  if(flag_value==NULL){
+    fprintf(stderr,"Fatal Error: Error allocating memory for flag_value\n");
+    exit(1);
+  }
+  if(fread(flag_value,sizeof(float),_alongTrackBins*_crossTrackBins,ifp)!=
+     (unsigned int)(_alongTrackBins*_crossTrackBins)){
+    fprintf(stderr,"Fatal Error: Flag file %s cannot be read\n",flag_file);
+    exit(1);
+  }
+  fclose(ifp);
+  
+  int count = 0;
+  for (int i = 0; i < _crossTrackBins; i++)
+    {
+      for (int j = 0; j < _alongTrackBins; j++)
+        {
+	  WVC* wvc = *(*(swath + i) + j);
+	  if (wvc == NULL)
+	    continue;
+
+	  int offset=j*_crossTrackBins+i;  
+	  if (flag_value[offset] > threshold || flag_value[offset]==-1)
+            {
+	      delete wvc;
+	      *(*(swath + i) + j) = NULL;
+	      count++;
+	      _validCells--;
+            }
+        }
+    }
+  
+  free(flag_value);
+  return(count);
 }
 
 //-----------------------------------//
@@ -2613,9 +2670,7 @@ WindSwath::ReadHdfL2B(
 {
     DeleteEntireSwath();    // in case
 
-    // cross bin number is fixed
-    _crossTrackBins = HDF_ACROSS_BIN_NO;
-
+    
     // along bin number comes from WVC_ROW
     const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
     if (rowSdsName == 0)
@@ -2628,6 +2683,11 @@ WindSwath::ReadHdfL2B(
         return(0);
 
     _alongTrackBins = dataLength;
+
+    _crossTrackBins = HDF_ACROSS_BIN_NO;
+#ifdef HIRES12
+    _crossTrackBins = 152;
+#endif
 
     // all cells are valid here
     _validCells = _alongTrackBins * _crossTrackBins;
@@ -2647,10 +2707,14 @@ WindSwath::ReadHdfL2B(
     char*  selectArray = new char[_crossTrackBins];
     float* modelSpeedArray=(float*) new float [_crossTrackBins];
     float* modelDirArray=(float*) new float [_crossTrackBins];
-
+    char*  tmpArray = new char[_crossTrackBins];
+    int* numArray = (int*) new int[_crossTrackBins];
     int32 sdsIds[1];
     for (int32 i = 0; i < _alongTrackBins; i++)
     {
+
+        for(int c=0;c<_crossTrackBins;c++) numArray[c]=0;
+
         sdsIds[0] = _lonSdsId;
         if (ExtractData2D_76_uint2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, lonArray) == 0)
@@ -2698,6 +2762,27 @@ WindSwath::ReadHdfL2B(
             return(0);
         }
 
+
+        sdsIds[0] = _numInForeSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, tmpArray) == 0)
+            return(0);
+	for(int c=0;c<_crossTrackBins;c++) numArray[c]+=tmpArray[c];
+
+        sdsIds[0] = _numInAftSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, tmpArray) == 0)
+            return(0);
+	for(int c=0;c<_crossTrackBins;c++) numArray[c]+=tmpArray[c];
+
+        sdsIds[0] = _numOutForeSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, tmpArray) == 0)
+            return(0);
+	for(int c=0;c<_crossTrackBins;c++) numArray[c]+=tmpArray[c];
+
+        sdsIds[0] = _numOutAftSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, tmpArray) == 0)
+            return(0);
+	for(int c=0;c<_crossTrackBins;c++) numArray[c]+=tmpArray[c];
+
         for (int j = 0; j < _crossTrackBins; j++)
         {
             WVC* wvc = new WVC();
@@ -2726,7 +2811,7 @@ WindSwath::ReadHdfL2B(
                     edir += two_pi;
 
                 wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k], edir);
-                wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
+                wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k]*numArray[j];
                 wvc->ambiguities.Append(wvp);
             }
             if (selectArray[j] > 0 && numambigArray[j] > 0)
@@ -2751,6 +2836,8 @@ WindSwath::ReadHdfL2B(
     delete [] dirArray;
     delete [] mleArray;
     delete [] selectArray;
+    delete [] numArray;
+    delete [] tmpArray;
 
     // close all needed datasets
     _CloseHdfDataSets();
@@ -2777,6 +2864,7 @@ WindSwath::ReadHdfL2B(
 
     return(1);
 }//WindSwath::ReadHdfL2B
+
 
 //---------------------------------------//
 // WindSwath::ReadNudgeVectorsFromHdfL2B //
@@ -2808,13 +2896,15 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
 {
     // cross bin number is fixed
     int crossTrackBins = HDF_ACROSS_BIN_NO;
+#ifdef HIRES12
+    crossTrackBins = 152;
+#endif
 
-    if(crossTrackBins!=_crossTrackBins)
+    if (crossTrackBins != _crossTrackBins)
     {
-        fprintf(stderr, "Bad number of cross track bins!\n");
+        fprintf(stderr, "ReadNudgeVectorsFromHdfL2B: crosstrackbins mismatch\n");
         return(0);
     }
-
     // along bin number comes from WVC_ROW
     const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
     if (rowSdsName == 0)
@@ -2925,6 +3015,63 @@ WindSwath::GetArraysForUpdatingHdf(
   return(1);
 } //WindSwath::GetArraysForUpdatingHDF
 
+int
+WindSwath::ReadHdfDIRTH(
+    const char* filename)
+{
+  float* speed, *dir;
+  HDF_update_file hdf_struct;
+  if (hdf_struct.open(filename)){
+    SD_attributes attr;
+    //---- Allocate arrays ---------------//
+   hdf_struct.get_dataset_attributes("wind_speed_selection",attr);
+   if(attr.dimensions[0]!=_alongTrackBins 
+      || attr.dimensions[1]!=_crossTrackBins)
+     {
+       hdf_struct.close();
+       return(0);
+     }
+   hdf_struct.get_dataset_attributes("wind_dir_selection",attr);
+   if(attr.dimensions[0]!=_alongTrackBins 
+      || attr.dimensions[1]!=_crossTrackBins)
+     {
+       hdf_struct.close();
+       return(0);
+     }
+   speed=(float*)malloc(sizeof(float)*_crossTrackBins*_alongTrackBins);
+   dir=(float*)malloc(sizeof(float)*_crossTrackBins*_alongTrackBins);
+   //----------Read Data Sets -------/
+   if (! hdf_struct.get_data("wind_speed_selection",speed)  ||
+       ! hdf_struct.get_data("wind_speed_selection",dir)){
+     hdf_struct.close();
+     free(speed);
+     free(dir);
+     return(0);
+   }
+   for(int i=0;i<_alongTrackBins;i++){
+     int offset=_crossTrackBins*i;
+     for(int j=0;j<_crossTrackBins;j++){
+       WVC* wvc=swath[i][j];
+       if(!wvc) continue;
+       if(!wvc->selected) continue;
+       wvc->selected->spd=speed[offset+j];
+       float edir = (450.0 - dir[offset+j])*dtr;
+       while (edir > two_pi)
+	 edir -= two_pi;
+
+       while (edir < 0)
+	 edir += two_pi;
+       wvc->selected->dir=edir;
+     }
+   }
+   hdf_struct.close();
+   free(speed);
+   free(dir);
+   return(1);
+  }
+  else return(0);
+
+}
 //----------------------//
 // WindSwath::UpdateHdf //
 //----------------------//
@@ -6250,6 +6397,22 @@ WindSwath::_OpenHdfDataSets(
                                                      WVC_SELECTION)) == 0)
         return(0);
 
+    if ((_numInForeSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     NUM_IN_FORE)) == 0)
+        return(0);
+
+    if ((_numInAftSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     NUM_IN_AFT)) == 0)
+        return(0);
+
+    if ((_numOutForeSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     NUM_OUT_FORE)) == 0)
+        return(0);
+
+    if ((_numOutAftSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     NUM_OUT_AFT)) == 0)
+        return(0);
+
     return(1);
 
 } // WindSwath::_OpenHdfDataSets
@@ -6268,6 +6431,10 @@ WindSwath::_CloseHdfDataSets(void)
     (void)SDendaccess(_dirSdsId); _dirSdsId = HDF_FAIL;
     (void)SDendaccess(_mleSdsId); _mleSdsId = HDF_FAIL;
     (void)SDendaccess(_selectSdsId); _selectSdsId = HDF_FAIL;
+    (void)SDendaccess(_numInForeSdsId); _numInForeSdsId = HDF_FAIL;
+    (void)SDendaccess(_numInAftSdsId); _numInAftSdsId = HDF_FAIL;
+    (void)SDendaccess(_numOutForeSdsId); _numOutForeSdsId = HDF_FAIL;
+    (void)SDendaccess(_numOutAftSdsId); _numOutAftSdsId = HDF_FAIL;
     (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
     (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
     return;

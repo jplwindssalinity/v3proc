@@ -605,3 +605,231 @@ int HDF_update_file::close(){
   SDend(sd_id);
   return(1);
 }
+
+int HDF_update_file::get_data(char *name,int *values)
+{
+	int32		dataset_id;
+	SD_attributes	attributes;
+	int		num_values;
+	int		i;
+
+	char	*temp_char;
+	float	*temp_float;
+	double	*temp_double;
+	short	*temp_short;
+	uint	*temp_uint;
+	ushort	*temp_ushort;
+	uchar	*temp_uchar;
+	int	*temp_int;
+
+	int32	start[6] = {0,0,0,0,0,0};
+	int32	stride[6] = {1,1,1,1,1,1};
+	int32	edge[6] = {1,0,0,0,0,0};
+
+
+	if (! get_dataset_attributes(name,attributes))
+	{
+		fprintf(stderr,"No such dataset: %s\n",name);
+		return 0;
+	}
+
+	num_values = 1;
+	start[0] = 1;
+	edge[0] = 1;
+
+	for(i=1; i < attributes.rank ; i++)
+	{
+		edge[i] = attributes.dimensions[i];
+		num_values *= attributes.dimensions[i];
+	}
+
+	dataset_id = SDselect(sd_id,attributes.index);
+
+	switch (attributes.type)
+	{
+	case DFNT_CHAR:
+	case DFNT_INT8:
+		temp_char = new (char[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_char);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_char[i]*attributes.scale + attributes.offset);
+		delete temp_char;
+		break;
+
+	case DFNT_UCHAR:
+	case DFNT_UINT8:
+		temp_uchar = new (uchar[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_uchar);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_uchar[i]*attributes.scale + attributes.offset);
+		delete temp_uchar;
+		break;
+
+
+	case DFNT_INT16:
+		temp_short = new (short[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_short);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_short[i]*attributes.scale + attributes.offset);
+		delete temp_short;
+		break;
+
+	case DFNT_UINT16:
+		temp_ushort = new (ushort[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_ushort);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_ushort[i]*attributes.scale + attributes.offset);
+		delete temp_ushort;
+		break;
+
+	case DFNT_INT32:
+		temp_int = new (int[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_int);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_int[i]*attributes.scale + attributes.offset);
+		delete temp_ushort;
+		break;
+
+	case DFNT_UINT32:
+		temp_uint = new (uint[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_uint);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_uint[i]*attributes.scale + attributes.offset);
+		delete temp_uint;
+		break;
+
+	case DFNT_FLOAT32:
+		temp_float = new (float[num_values]);
+		SDreaddata(dataset_id,start,stride,edge,temp_float);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_float[i]*attributes.scale + attributes.offset);
+		delete temp_float;
+		break;
+
+	case DFNT_FLOAT64:
+		temp_double = new (double[num_values]);
+		SDreaddata(dataset_id,start,stride,edge,temp_double);
+		for (i = 0; i < num_values ; i++)
+			values[i] = (int) (temp_double[i]*attributes.scale + attributes.offset);
+		delete temp_double;
+		break;
+	}
+
+	SDendaccess(dataset_id);
+
+	return 1;
+}
+
+int HDF_update_file::get_data(char *name,float *values)
+{
+	int32		dataset_id;
+	SD_attributes	attributes;
+	int		num_values;
+	int		i;
+
+	char	*temp_char;
+	float	*temp_float;
+	double	*temp_double;
+	short	*temp_short;
+	uint	*temp_uint;
+	ushort	*temp_ushort;
+	uchar	*temp_uchar;
+	int	*temp_int;
+
+	int32	start[6] = {0,0,0,0,0,0};
+	int32	stride[6] = {1,1,1,1,1,1};
+	int32	edge[6] = {1,0,0,0,0,0};
+
+
+	if (! get_dataset_attributes(name,attributes))
+	{
+		fprintf(stderr,"No such dataset: %s\n",name);
+		return 0;
+	}
+
+	num_values = 1;
+	start[0] = 1;
+	edge[0] = 1;
+
+	for(i=1; i < attributes.rank ; i++)
+	{
+		edge[i] = attributes.dimensions[i];
+		num_values *= attributes.dimensions[i];
+	}
+
+	dataset_id = SDselect(sd_id,attributes.index);
+
+	switch (attributes.type)
+	{
+	case DFNT_CHAR:
+	case DFNT_INT8:
+		temp_char = new (char[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_char);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_char[i]*attributes.scale + attributes.offset;
+		delete temp_char;
+		break;
+
+	case DFNT_UCHAR:
+	case DFNT_UINT8:
+		temp_uchar = new (uchar[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_uchar);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_uchar[i]*attributes.scale + attributes.offset;
+		delete temp_uchar;
+		break;
+
+
+	case DFNT_INT16:
+		temp_short = new (short[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_short);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_short[i]*attributes.scale + attributes.offset;
+		delete temp_short;
+		break;
+
+	case DFNT_UINT16:
+		temp_ushort = new (ushort[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_ushort);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_ushort[i]*attributes.scale + attributes.offset;
+		delete temp_ushort;
+		break;
+
+	case DFNT_INT32:
+		temp_int = new (int[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_int);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_int[i]*attributes.scale + attributes.offset;
+		delete temp_int;
+		break;
+
+	case DFNT_UINT32:
+		temp_uint = new (uint[num_values]);
+                SDreaddata(dataset_id,start,stride,edge,temp_uint);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_uint[i]*attributes.scale + attributes.offset;
+		delete temp_uint;
+		break;
+
+	case DFNT_FLOAT32:
+		temp_float = new (float[num_values]);
+		SDreaddata(dataset_id,start,stride,edge,temp_float);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_float[i]*attributes.scale + attributes.offset;
+		delete temp_float;
+		break;
+
+	case DFNT_FLOAT64:
+		temp_double = new (double[num_values]);
+		SDreaddata(dataset_id,start,stride,edge,temp_double);
+		for (i = 0; i < num_values ; i++)
+			values[i] = temp_double[i]*attributes.scale + attributes.offset;
+		delete temp_double;
+		break;
+	}
+
+	SDendaccess(dataset_id);
+
+	return 1;
+}

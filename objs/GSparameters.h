@@ -1,7 +1,8 @@
 // Ground System parameters
 #define	wind_start_speed		8.0
 #define	lower_speed_bound		0
-#define	upper_speed_bound		50
+//#define	upper_speed_bound		50
+#define	upper_speed_bound		100  // This is a HACK.
 #define	min_incidence_index		40
 #define	max_incidence_index		59
 #define	lower_azimuth_bound		0

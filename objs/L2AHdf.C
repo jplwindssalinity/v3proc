@@ -58,11 +58,18 @@ HdfFile::StatusE&         returnStatus)   // OUT
         l2aMeasTable[i].param = param;
     }
 
-    header.crossTrackResolution = header.alongTrackResolution = 25;
-    header.crossTrackBins = 76;
-    header.alongTrackBins = 1624;
-    header.zeroIndex = 38;
-
+    if (sourceId == SOURCE_L2Ahr){
+      header.crossTrackResolution = header.alongTrackResolution = 12.5;
+      header.crossTrackBins = 152;
+      header.alongTrackBins = 3248;
+      header.zeroIndex = 76;
+    }
+    else{
+      header.crossTrackResolution = header.alongTrackResolution = 25;
+      header.crossTrackBins = 76;
+      header.alongTrackBins = 1624;
+      header.zeroIndex = 38;
+    }
     // use wvc_row_time for startTime
     int numRowOne = 0;
     Itime totalRowOneTime(0, 0);
@@ -90,8 +97,10 @@ HdfFile::StatusE&         returnStatus)   // OUT
 
     if (sourceId == SOURCE_L2A)
         numCells = MAX_L2AHDF_NUM_CELLS;
-    else
+    else if (sourceId == SOURCE_L2Ax)
         numCells = MAX_L2AxHDF_NUM_CELLS;
+    else
+        numCells = MAX_L2AhrHDF_NUM_CELLS;
 
     returnStatus = HdfFile::_status = HdfFile::OK;
     return;
@@ -167,8 +176,10 @@ L2AHdf::ConvertRow(){
         _headerWritten = 1;
     }
 
+    int alongTrackBins=header.alongTrackBins;
+    int crossTrackBins=header.crossTrackBins;
     /************* Check for completion ********/
-    if (currentRowNo > MAX_L2AHDF_ROW_NO)
+    if (currentRowNo > alongTrackBins)
     {
         HdfFile::_status = HdfFile::NO_MORE_DATA;
         return(-1);
@@ -178,7 +189,7 @@ L2AHdf::ConvertRow(){
     /****** Allocate Space for Measurement Lists *****/
     /*************************************************/
 
-    MeasList meas_list_row[MAX_L2AHDF_CELL_NO];
+    MeasList meas_list_row[crossTrackBins];
     
 
     /**************************************************/
@@ -205,7 +216,7 @@ L2AHdf::ConvertRow(){
 
         param = ExtractParameter(CELL_INDEX, UNIT_DN, i);
         assert(param != 0);
-        char*  cell_index = (char*)param->data;
+        unsigned char*  cell_index = (unsigned char*)param->data;
         
         param = ExtractParameter(SIGMA0_MODE_FLAG, UNIT_DN, i);
         assert(param != 0);
@@ -329,7 +340,7 @@ L2AHdf::ConvertRow(){
     /**************************************************/
     int ati = currentRowNo - 1;
     int rev=0;
-    for(int cti=1;cti<=MAX_L2AHDF_CELL_NO;cti++){
+    for(int cti=1;cti<=crossTrackBins;cti++){
       char ctichar=(unsigned char) cti-1;
       if(meas_list_row[cti-1].NodeCount()==0) continue;
       if (fwrite((void *)&rev, sizeof(unsigned int), 1, _outputFp) != 1 ||

@@ -369,6 +369,7 @@ public:
 
     int  DeleteWVCs();
     int  DeleteEntireSwath();
+    int  DeleteFlaggedData(const char* flag_file, float threshold);
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
     int  DeleteDirectionOutliers(float max_dir_err, WindField* truth);
     int  DeleteSpeedOutliers(float max_spd_err, WindField* truth);
@@ -383,6 +384,7 @@ public:
     int  ReadL2B(const char* filename);
     int  ReadHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadHdfL2B(const char* filename);
+    int  ReadHdfDIRTH(const char* filename);
     int  ReadNudgeVectorsFromHdfL2B(const char* filename);
     int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadNscatSwv25(const char* filename);
@@ -531,6 +533,10 @@ protected:
     int32  _numambigSdsId;
     int32  _modelSpeedSdsId;
     int32  _modelDirSdsId;
+    int32  _numInForeSdsId;
+    int32  _numInAftSdsId;
+    int32  _numOutForeSdsId;
+    int32  _numOutAftSdsId;
 };
 
 #endif

@@ -46,6 +46,8 @@ public:
     //--------------//
 
     int   WriteAscii(FILE* ofp);
+    int   Write(FILE* fp);
+    int   Read(FILE* fp);
 
 	//--------//
 	// access //
@@ -104,6 +106,8 @@ public:
     //--------------//
 
     int   WriteAscii(FILE* ofp);
+    int   Write(FILE* fp);
+    int   Read(FILE* fp);
 
 	//--------------//
 	// manipulation //
@@ -160,3 +164,4 @@ protected:
 };
 
 #endif
+
