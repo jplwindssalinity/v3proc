@@ -215,6 +215,7 @@ L2B::ReadHDF(
     ptr = strchr(ptr+1, (int)'\n');
     sscanf(ptr, " %f", &inclination);
     header.inclination = inclination * dtr;
+    SDend(sd_id);
 
     // continue on with whatever...
     int32 dataType = 0;
