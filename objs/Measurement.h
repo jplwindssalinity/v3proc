@@ -27,6 +27,8 @@ static const char rcs_id_measurement_h[] =
 //		data.
 //======================================================================
 
+enum PolE { SCATTEROMETER_V_POL, SCATTEROMETER_H_POL };
+
 class Measurement
 {
 public:
@@ -42,6 +44,7 @@ public:
 	// variables //
 	//-----------//
 
+	PolE		pol;
 	double		value;			// sigma-0 or temperature measurement...
 	double		valuedB;		// ...and in dB
 	double		incidenceAngle;
@@ -50,6 +53,8 @@ public:
 
 	double		centerLongitude;
 	double		centerLatitude;
+
+	double		estimatedKp;
 };
 
 //======================================================================
@@ -62,7 +67,7 @@ public:
 //		retriever.
 //======================================================================
 
-class MeasurementList : List<Measurement>
+class MeasurementList : public List<Measurement>
 {
 public:
 
