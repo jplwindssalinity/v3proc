@@ -1,15 +1,15 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//    rain_apts
+//    rainerr_apts
 //
 // SYNOPSIS
-//    rain_apts [ -f ] [ -m minutes ] [ -i irr_thresh ] [ -v thresh ]
-//        <rain/flag_file> <mudh_file> <output_base>
+//    rainerr_apts [ -f ] [ -m minutes ] [ -i irr_thresh ]
+//        [ -v thresh ] <rain/flag_file> <mudh_file> <output_base>
 //
 // DESCRIPTION
 //    Generates apts files of rain rate, integrated rain rate,
@@ -29,7 +29,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % rain_apts 1208.rain 1208.mud 1208
+//      % rainerr_apts 1208.rain 1208.mud 1208
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -116,8 +116,8 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -m minutes ]",
-    "[ -i irr_thresh ]", "[ -v thresh ]", "<irain_file>", "<flag_file>" "<mudh_file>",
+const char* usage_array[] = { "[ -m minutes ]", "[ -i irr_thresh ]",
+    "[ -v thresh ]", "<irain_file>", "<flag_file>", "<mudh_file>",
     "<output_base>", 0 };
 
 //--------------//
@@ -206,21 +206,22 @@ main(
     }
     fclose(mudh_ifp);
 
-    //-------------------------//
-    // Set up ARRAYS           //
-    //-------------------------//
-    unsigned char  rain_rate[AT_WIDTH][CT_WIDTH];
-    unsigned char  time_dif[AT_WIDTH][CT_WIDTH];
-    unsigned char  which_ssmi[AT_WIDTH][CT_WIDTH];
-    unsigned short integrated_rain_rate[AT_WIDTH][CT_WIDTH];
+    //---------------//
+    // Set up arrays //
+    //---------------//
 
-    float          index_tab[AT_WIDTH][CT_WIDTH];
-    unsigned char  flag_tab[AT_WIDTH][CT_WIDTH];
+    unsigned char   rain_rate[AT_WIDTH][CT_WIDTH];
+    unsigned char   time_dif[AT_WIDTH][CT_WIDTH];
+    unsigned char   which_ssmi[AT_WIDTH][CT_WIDTH];
+    unsigned short  integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 
+    float           index_tab[AT_WIDTH][CT_WIDTH];
+    unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
 
     //-----------------//
     // read irain file //
     //-----------------//
+
     FILE* ifp = fopen(irr_file, "r");
     if (ifp == NULL)
     {
@@ -235,9 +236,10 @@ main(
     fread(integrated_rain_rate, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
     fclose(ifp);
 
-    //-----------------//
-    // read flag file  //
-    //-----------------//
+    //----------------//
+    // read flag file //
+    //----------------//
+
     ifp = fopen(flag_file, "r");
     if (ifp == NULL)
     {
@@ -255,68 +257,68 @@ main(
     //---------------------------------------//
 
     for (int ati = 0; ati < AT_WIDTH; ati++)
-      {
-	for (int cti = 0; cti < CT_WIDTH; cti++)
-	  {
-	    int co_time = time_dif[ati][cti] * 2 - 180;
-	    if (abs(co_time) > minutes ||
-		lon_array[ati][cti] == MAX_SHORT ||
-		lat_array[ati][cti] == MAX_SHORT ||
-		flag_tab[ati][cti]  == 2 )
-	      {
-		// flag as bad
-		integrated_rain_rate[ati][cti] = 2000;
-	      }
-	  }
-      }
+    {
+        for (int cti = 0; cti < CT_WIDTH; cti++)
+        {
+            int co_time = time_dif[ati][cti] * 2 - 180;
+            if (abs(co_time) > minutes ||
+                lon_array[ati][cti] == MAX_SHORT ||
+                lat_array[ati][cti] == MAX_SHORT ||
+                flag_tab[ati][cti]  == 2 )
+            {
+                // flag as bad
+                integrated_rain_rate[ati][cti] = 2000;
+            }
+        }
+    }
 
-    //-----------------------------------------//
-    // rain err flag file                      //
-    //-----------------------------------------//
+    //--------------------//
+    // rain err flag file //
+    //--------------------//
 
     char filename[1024];
     sprintf(filename, "%s.ref.apts", output_base);
     FILE* ref_ofp = fopen(filename, "w");
     if (ref_ofp == NULL)
-      {
-	fprintf(stderr,
-                "%s: error opening integrated rain rate flag file %s\n",
-                command, filename);
-	exit(1);
-      }
+    {
+        fprintf(stderr,
+            "%s: error opening integrated rain rate flag file %s\n", command,
+            filename);
+        exit(1);
+    }
     fprintf(ref_ofp, "apts\n");
     for (int ati = 0; ati < AT_WIDTH; ati++)
-      {
-	for (int cti = 0; cti < CT_WIDTH; cti++)
-	  {
-	    if (integrated_rain_rate[ati][cti] >= 1000)
-	      continue;
-	    float lon = (float)lon_array[ati][cti] * 0.01;
-	    float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
-	    float irr = integrated_rain_rate[ati][cti] * 0.1;
-	    int ref;
-	    if (irr == 0.0)
-	      ref = 1;
-	    else if (irr <= irr_thresh)
-	      ref = 2;
-	    else
-	      ref = 3;
-	    if (opt_flag_thresh)
-	      {
-		// re-threshold to get the flag
-		if (index_tab[ati][cti] > flag_thresh)
-		  ref+=3;
-	      }
-	    else
-	      {
-		// use the file's flag
-		if (flag_tab[ati][cti] == 1)
-		  ref+=3;
-	      }                
-	    fprintf(ref_ofp, "%g %g %d\n", lon, lat, ref);
-	  }
-      }
+    {
+        for (int cti = 0; cti < CT_WIDTH; cti++)
+        {
+            if (integrated_rain_rate[ati][cti] >= 1000)
+                continue;
+            float lon = (float)lon_array[ati][cti] * 0.01;
+            float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
+            float irr = integrated_rain_rate[ati][cti] * 0.1;
+            int ref;
+            if (irr == 0.0)
+                ref = 1;
+            else if (irr <= irr_thresh)
+                ref = 2;
+            else
+                ref = 3;
+            if (opt_flag_thresh)
+            {
+                // re-threshold to get the flag
+                if (index_tab[ati][cti] > flag_thresh)
+                    ref += 3;
+            }
+            else
+            {
+                // use the file's flag
+                if (flag_tab[ati][cti] == 1)
+                    ref += 3;
+            }
+            fprintf(ref_ofp, "%g %g %d\n", lon, lat, ref);
+        }
+    }
     fclose(ref_ofp);
-    
+
     return (0);
 }
