@@ -65,12 +65,23 @@ public:
 	// construction //
 	//--------------//
 
-	OrbitSim(double semi_major_axis, double eccentricity, double inclination,
-		double longitude_of_asc_node, double argument_of_perigee,
-		double mean_anomaly);
+	OrbitSim();
 	~OrbitSim();
 
-	int			LocationToOrbit(double longitude, double latitude, int asc);
+	//----------------//
+	// initialization //
+	//----------------//
+
+	int		DefineOrbit(double semi_major_axis, double eccentricity,
+				double inclination, double longitude_of_asc_node,
+				double argument_of_perigee, double mean_anomaly);
+
+	int		LocationToOrbit(double longitude, double latitude, int asc);
+
+	//-------------------//
+	// orbit propagation //
+	//-------------------//
+
 	OrbitState	GetOrbitState(double time);
 
 	//---------------------//

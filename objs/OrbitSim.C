@@ -45,7 +45,22 @@ OrbitState::~OrbitState()
 // OrbitSim //
 //==========//
 
-OrbitSim::OrbitSim(
+OrbitSim::OrbitSim()
+{
+	return;
+}
+
+OrbitSim::~OrbitSim()
+{
+	return;
+}
+
+//-----------------------//
+// OrbitSim::DefineOrbit //
+//-----------------------//
+
+int
+OrbitSim::DefineOrbit(
 	double	semi_major_axis,
 	double	eccentricity,
 	double	inclination,
@@ -99,8 +114,12 @@ OrbitSim::OrbitSim(
 	_G = sqrt(xmu * _pp);
 	_H = _G * _cosi;
 
-	return;
+	return(1);
 }
+
+//---------------------------//
+// OrbitSim::LocationToOrbit //
+//---------------------------//
 
 int
 OrbitSim::LocationToOrbit(
@@ -143,10 +162,9 @@ OrbitSim::LocationToOrbit(
 	return(1);
 }
 
-OrbitSim::~OrbitSim()
-{
-	return;
-}
+//-------------------------//
+// OrbitSim::GetOrbitState //
+//-------------------------//
 
 OrbitState
 OrbitSim::GetOrbitState(
