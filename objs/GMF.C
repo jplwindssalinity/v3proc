@@ -2623,6 +2623,7 @@ GMF::RetrieveWindsH1(
                 max_idx = peak_idx;
             }
         }
+
         if (max_idx != -1)
         {
             number_ambigs[max_idx]++;
@@ -2740,11 +2741,16 @@ GMF::RetrieveWindsH1(
     // limit to four solutions //
     //-------------------------//
 
-    while (wvc->ambiguities.NodeCount() > DEFAULT_MAX_SOLUTIONS)
+    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
+    if (delete_count > 0)
     {
-        fprintf(stderr, "Too many solutions: deleting\n");
-        WindVectorPlus* wvp = wvc->ambiguities.GetTail();
-        delete wvp;
+        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        for (int i = 0; i < delete_count; i++)
+        {
+            wvc->ambiguities.GotoTail();
+            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
+            delete wvp;
+        }
     }
 
 	return(1);
