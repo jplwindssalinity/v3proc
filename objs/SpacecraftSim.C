@@ -243,8 +243,9 @@ SpacecraftSim::UpdateOrbit(
 	double hnew = omg1r + delh;
 	double slonginer = (slong + hnew);
 	double earthmove = wa * time;
-	double omg1p = hnew - earthmove;
-	double slongear = slonginer - earthmove;
+
+//	double omg1p = hnew - earthmove;
+//	double slongear = slonginer - earthmove;
 
 	double slatdot = Gnew * sininew * cos(unew) / (rnew * rnew * coslat);
 	double slongdot = _H / (rnew * rnew * coslat * coslat);

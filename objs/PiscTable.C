@@ -449,6 +449,10 @@ PiscTable::_PolToIndex(
 	case H_POL:
 		idx = 1;
 		break;
+	case NONE:
+		fprintf(stderr,
+			"PiscTable::_PolToIndex: invalid polarization %d\n", pol);
+		exit(1);
 	}
 	return(idx);
 }
@@ -524,8 +528,8 @@ PiscTable::_ChiToRealIndex(
 {
 	if (chi < 0.0)
 	{
-		int chi_idx = (chi / two_pi) + 1;
-		chi += chi_idx * two_pi;
+		int chi_idx = (int)(chi / two_pi) + 1;
+		chi += (double)chi_idx * two_pi;
 	}
 	chi = fmod(chi, two_pi);
 	return(chi / _chiStep);
