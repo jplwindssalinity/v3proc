@@ -55,11 +55,32 @@ PROGRAMS = \
 	l2ags_s0 \
 	fix_ecmwf_speed
 
+HUDD_PROGRAMS = \
+	sim \
+	l00_to_l1a \
+	l1a_to_l1b \
+	l1b_to_l2a \
+	l2a_to_l2b \
+	l2b_to_vctr \
+	l2b_metrics \
+	see_spot \
+	eqx \
+	generate_rgc \
+	generate_dtc \
+	rgc_delay_errors \
+	baseband_errors \
+	fake_vap \
+	plot_solution_curves \
+	windfield_to_vctr \
+	log_cfg \
+	fix_ecmwf_speed
+
 #----------------------------------------------------------------------
 # default: make all executable programs
 #----------------------------------------------------------------------
 
 default: $(PROGRAMS)
+hudd: $(HUDD_PROGRAMS)
 
 #----------------------------------------------------------------------
 # clean: remove all executable programs
