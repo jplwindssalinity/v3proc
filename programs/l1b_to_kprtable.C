@@ -107,7 +107,7 @@ template class TrackerBase<unsigned short>;
 #define NUMBER_OF_BEAMS 2
 #define MIN_NUM_SAMPLES 1
 #define FILTER_SIZE 3
-#define FILTER_NUM_PASSES 0
+#define FILTER_NUM_PASSES 2
 
 //------------------//
 // GLOBAL VARIABLES //
