@@ -19,6 +19,34 @@ static const char rcs_id_configsim_c[] =
 #include "Distributions.h"
 
 //---------------------//
+// ConfigSpacecraft    //
+//---------------------//
+int
+ConfigSpacecraft(
+	Spacecraft* spacecraft,
+	ConfigList* config_list)
+{
+  //-------------------------------//
+  //Read in Attitude Order Indices //
+  //-------------------------------//
+
+  int order1, order2, order3;
+  if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
+    return(0);
+  if (! config_list->GetInt(ATTITUDE_ORDER_2_KEYWORD, &order2))
+    return(0);
+  if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
+    return(0);
+
+  //------------------------------//
+  // Initialize Attitude          //
+  //------------------------------//
+
+  spacecraft->attitude.Set(0.0,0.0,0.0,order1,order2,order3);
+  return(1);
+}
+
+//---------------------//
 // ConfigSpacecraftSim //
 //---------------------//
 
@@ -488,13 +516,11 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->endTime = end_time;
 
-	//---------------------//
-	// configure level 0.0 //
-	//---------------------//
-
-	if (! ConfigL00(&(instrument_sim->l00), config_list))
+	int slices_per_spot;
+	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
-
+	instrument_sim->slicesPerSpot = slices_per_spot;
+      
 	return(1);
 }
 

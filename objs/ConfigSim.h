@@ -38,9 +38,14 @@ static const char rcs_id_configsim_h[] =
 #define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
 #define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
 #define MEAN_ANOMALY_AT_EPOCH_KEYWORD	"MEAN_ANOMALY_AT_EPOCH"
+#define ATTITUDE_ORDER_1_KEYWORD        "ATTITUDE_ORDER_1"
+#define ATTITUDE_ORDER_2_KEYWORD        "ATTITUDE_ORDER_2"
+#define ATTITUDE_ORDER_3_KEYWORD        "ATTITUDE_ORDER_3"
 
 #define EPHEMERIS_PERIOD_KEYWORD		"EPHEMERIS_PERIOD"
 
+int ConfigSpacecraft(Spacecraft* spacecraft,
+		     ConfigList* config_list);
 int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
 
