@@ -13,6 +13,7 @@ CPPFLAGS =		-g -ptr. -ptr../objs +w -I$(INCDIR)
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
+	l0_to_l1 \
 	sim
 
 #----------------------------------------------------------------------
@@ -47,4 +48,7 @@ install: $(PROGRAMS)
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
 sim: sim.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+l0_to_l1: l0_to_l1.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
