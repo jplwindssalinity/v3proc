@@ -287,6 +287,8 @@ InstrumentSim::ScatSim(
 		for (int slice_idx = 0; slice_idx < l00.frame.slicesPerSpot;
 			slice_idx++)
 		{
+			meas.FreeContents();		// free's the outline
+	
 			//----------------------------------------//
 			// determine the baseband frequency range //
 			//----------------------------------------//
