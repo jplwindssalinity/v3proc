@@ -538,6 +538,13 @@ ConfigInstrumentSim(
 	InstrumentSim*	instrument_sim,
 	ConfigList*		config_list)
 {
+
+        //--------------------------------//
+        // Configure the Antenna Simulator//
+        //--------------------------------//
+	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
+		return(0);
+
 	//--------------------------------//
 	// initialize start and end times //
 	//--------------------------------//
