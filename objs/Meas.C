@@ -22,6 +22,7 @@ static const char rcs_id_measurement_c[] =
 Meas::Meas()
 :	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0),
 	transmitPulseWidth(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
+	beamIdx(-1),sliceIdx(-1),scanAngle(0.0),
 	A(0.0), B(0.0), C(0.0), offset(0)
 {
 	return;
@@ -57,6 +58,9 @@ Meas::Write(
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&sliceIdx, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&A, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&B, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&C, sizeof(float), 1, fp) != 1)
@@ -86,6 +90,9 @@ Meas::Read(
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&sliceIdx, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&A, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&B, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&C, sizeof(float), 1, fp) != 1)
@@ -121,6 +128,8 @@ Meas::FreeContents()
 	return;
 }
 
+
+/*************
 //-------------------//
 // Meas::EstimatedKp //
 //-------------------//
@@ -150,7 +159,7 @@ Meas::EstimatedKp(float sigma0)
 	float Kp = sqrt(Kpr2 + Kpm2 + Kpc2);
 	return(Kp);
 }
-
+**********/
 //==========//
 // MeasList //
 //==========//

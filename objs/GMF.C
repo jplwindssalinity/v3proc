@@ -617,12 +617,13 @@ GMF::_ObjectiveFunction(
 			&gmf_value);
 		float s = gmf_value - meas->value;
 
-		double ekp2, var;
+		double var;
 
-		if (! kp->GetTotalKp2(meas, gmf_value, meas->pol, spd, &ekp2))
-			var = 1.0;
-		else
-			var = ekp2 * gmf_value*gmf_value;
+		if (! kp->GetVariance(meas, gmf_value, meas->pol, spd, 
+				      meas->beamIdx, meas->sliceIdx, 
+				      meas->scanAngle,
+				      &var))
+			return(0);
 
 		fv += s*s / var + log(var);
 	}

@@ -37,8 +37,15 @@ int
 Kpri::GetKpri2(
 	double*		kpri2)
 {
-	// xxx, true Kpri needs to go here
-	*kpri2 = 0.0;
+	*kpri2 = _kpPtGr*_kpPtGr;
+	return(1);
+}
+
+int
+Kpri::SetKpPtGr(
+	double kp_ptgr)
+{
+        _kpPtGr=kp_ptgr;
 	return(1);
 }
 
@@ -387,6 +394,13 @@ int Kprs::NormalizeFrom3Sigma(){
   return(1);
 }
 
+//----------------------------------------------//
+// Checks to see if a Kpr Table is empty or not //
+//----------------------------------------------//
+int Kprs::Empty(){
+  if(_numBeams==0) return(1);
+  return(0);
+}
 //--------------------------------//
 // Kprs::Write                //
 //--------------------------------//   

@@ -96,11 +96,17 @@ Kp::GetKpri2(
 
 int
 Kp::GetKprs2(
-	double*		kprs2)
+	double*		kprs2,
+	int             beam_number,
+	int             slice_number,
+	float           azimuth)
 {
-	// This needs to incorporate Bryan's Kpr, i.e. Kprs
-	*kprs2 = 0.005115;	// 0.3 dB
-
+        if(kprs.Empty()){
+	  *kprs2=0.0;
+	  return(1);
+	}
+	*kprs2=kprs.Interpolate(beam_number,slice_number,azimuth);
+        *kprs2 *= *kprs2;
 	return(1);
 }
 
@@ -112,8 +118,11 @@ int
 Kp::GetTotalKp2(
 	Meas*		meas,
 	double		sigma_0,
-	int			pol_idx,
+	int		pol_idx,
 	float		speed,
+	int             beam_number,
+        int             slice_number,
+	float           azimuth,
 	double*		kp2)
 {
 	double kpc2, kpm2, kpri2, kprs2;
@@ -121,11 +130,25 @@ Kp::GetTotalKp2(
 	if (! GetKpc2(meas, sigma_0, &kpc2) ||
 		! GetKpm2(pol_idx, speed, &kpm2) ||
 		! GetKpri2(&kpri2) ||
-		! GetKprs2(&kprs2))
+		! GetKprs2(&kprs2, beam_number, slice_number, azimuth))
 	{
 		return(0);
 	}
 
-	*kp2 = sqrt(kpc2 + kpm2 + kpri2 + kprs2);
+	*kp2 = kpc2 + kpm2 + kpri2 + kprs2;
 	return(1);
 }
+
+int    Kp::GetVariance(Meas* meas, double sigma_0, int pol_idx, float speed,
+				int beam_number, int slice_number, float azimuth,
+				double* var)
+{  
+       if(! GetTotalKp2(meas, sigma_0, pol_idx, speed, beam_number, 
+                       slice_number, azimuth, var)) return(0);
+       if(*var == 0) *var=1;
+       else *var*=sigma_0*sigma_0;
+       return(1);
+}
+
+
+

@@ -83,8 +83,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define SYSTEM_LOSS_KEYWORD				"SYSTEM_LOSS"
 #define USE_KPC_KEYWORD					"USE_KPC"
 #define USE_KPM_KEYWORD					"USE_KPM"
-#define PTGR_NOISE_STD_KEYWORD		        "PTGR_NOISE_STD"
-#define PTGR_NOISE_MEAN_KEYWORD			"PTGR_NOISE_MEAN"
+#define PTGR_NOISE_KP_KEYWORD		        "PTGR_NOISE_KP"
+#define PTGR_NOISE_BIAS_KEYWORD			"PTGR_BIAS"
 #define PTGR_NOISE_CORRLENGTH_KEYWORD		"PTGR_NOISE_CORRLENGTH"
 #define UNIFORM_SIGMA_FIELD_KEYWORD		"UNIFORM_SIGMA_FIELD"
 #define OUTPUT_X_TO_STDOUT_KEYWORD		"OUTPUT_X_TO_STDOUT"
@@ -207,6 +207,12 @@ static const char rcs_id_configsimdefs_h[] =
 //-----//
 
 #define KPM_FILE_KEYWORD					"KPM_FILE"
+
+//------//
+// Kprs //
+//------//
+
+#define KPRS_FILE_KEYWORD					"KPRS_FILE"
 
 //----------//
 // KpmField //

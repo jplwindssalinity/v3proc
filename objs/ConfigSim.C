@@ -594,13 +594,13 @@ ConfigInstrumentSim(
 	// initialize PTGR noise //
 	//-----------------------//
 
-	float ptgr_std, ptgr_mean, ptgr_corrlength;
-	if (! config_list->GetFloat(PTGR_NOISE_STD_KEYWORD, &ptgr_std))
+	float kp_ptgr, ptgr_bias, ptgr_corrlength;
+	if (! config_list->GetFloat(PTGR_NOISE_KP_KEYWORD, &kp_ptgr))
 	{
 		fprintf(stderr,"Could not find PtGr noise variance in config file\n");
 		return(0);
 	}
-	if (! config_list->GetFloat(PTGR_NOISE_MEAN_KEYWORD, &ptgr_mean))
+	if (! config_list->GetFloat(PTGR_NOISE_BIAS_KEYWORD, &ptgr_bias))
 	{
 		fprintf(stderr,"Could not find PtGr noise mean in config file\n");
 		return(0);
@@ -612,9 +612,10 @@ ConfigInstrumentSim(
 		fprintf(stderr,"Could not find PtGr noise correlation length in config file\n");
 		return(0);
 	}
-
-	instrument_sim->ptgrNoise.SetVariance(ptgr_std*ptgr_std);
-	instrument_sim->ptgrNoise.SetMean(ptgr_mean);
+	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
+	instrument_sim->ptgrNoise.SetVariance(kp_ptgr*kp_ptgr);
+	ptgr_bias=pow(10,0.1*ptgr_bias)-1.0;
+	instrument_sim->ptgrNoise.SetMean(ptgr_bias);
         instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
         instrument_sim->ptgrNoise.Initialize();
 
@@ -1439,14 +1440,27 @@ ConfigKp(
 	// configure Kpri //
 	//----------------//
 
-	// put code here
+	double kp_ptgr;
+        if(! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
+	        return(0);
+	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
+        if(! kp->kpri.SetKpPtGr(kp_ptgr)) return(0);
 
 	//----------------//
 	// configure Kprs //
 	//----------------//
 
-	// put code here
+	char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
+	if (kprs_filename == NULL)
+		return(0);
+        if(strcmp(kprs_filename,"NONE") != 0  
+         && strcmp(kprs_filename,"none") != 0
+         && strcmp(kprs_filename,"None") != 0)
+	  {
 
+	    if(! kp->kprs.Read(kprs_filename)) return(0);
+	  }
+        
 	return(1);
 }
 

@@ -37,7 +37,12 @@ public:
 	Kpri();
 	~Kpri();
 
-	GetKpri2(double* kpri2);
+int	GetKpri2(double* kpri2);
+int	SetKpPtGr(double kp_ptgr);
+
+protected:
+
+	double _kpPtGr;
 };
 
 
@@ -76,6 +81,7 @@ public:
 	float	Interpolate(int beam_number, int slice_number, float azimuth);
 	int		Normalize();
 	int		NormalizeFrom3Sigma();
+        int             Empty();
 	int		Write(const char* filename);
 	int		WriteXmgr(const char* filename);
 	int		Read(const char* filename);
