@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.13  1999/10/07 22:09:25  sally
+// added L2Ahr file type
+//
 // 
 //    Rev 1.40   07 Oct 1999 13:59:18   sally
 // added L2Ahr file type
@@ -787,6 +790,47 @@ PolynomialTable*)     // unused
 }//ExtractData2D_76
 
 //----------------------------------------------------------------------
+// Function:    ExtractData2D_152 ([][])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_152(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 152;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(152 * length);
+        else
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(152 * length);
+        else
+            return -1;
+    }
+}//ExtractData2D_152
+
+//----------------------------------------------------------------------
 // Function:    ExtractData2D_49 ([][49])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
@@ -992,7 +1036,7 @@ PolynomialTable*)     // unused
 }//ExtractData2D_3240
 
 //----------------------------------------------------------------------
-// Function:    ExtractData2D_2_uint2_float ([][76])
+// Function:    ExtractData2D_76_uint2_float ([][76])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
 int
@@ -1115,6 +1159,131 @@ PolynomialTable*)     // unused
     return(length * 76);
 
 }//ExtractData2D_76_int2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_152_uint2_float ([][152])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_152_uint2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold unsigned short integers
+    unsigned short* tempBuffer =
+             (unsigned short*) calloc(length * 152, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 152;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    unsigned short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 152; j++, floatP++, ushortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*ushortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return(length * 152);
+
+}//ExtractData2D_152_uint2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_152_int2_float ([][152])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_152_int2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    short* tempBuffer = (short*) calloc(length * 152, sizeof(short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 152;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 152; j++, floatP++, ushortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*ushortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return(length * 152);
+
+}//ExtractData2D_152_int2_float
 
 //----------------------------------------------------------------------
 // Function:    ExtractData2D_100_uint2_float ([][100])
@@ -1741,6 +1910,131 @@ PolynomialTable*)     // unused
     return(length * 304);
 
 }//ExtractData3D_76_4_int2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_152_4_uint2_float ([][152][4])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_152_4_uint2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold unsigned short integers
+    unsigned short* tempBuffer =
+             (unsigned short*) calloc(length * 608, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[3], sdStride[3], sdEdge[3];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStart[2] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdStride[2] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 152;
+    sdEdge[2] = 4;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    unsigned short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 608; j++, floatP++, ushortP++)
+                *floatP = (float) (scaleFactor * (*ushortP));
+    }
+    free((void*) tempBuffer);
+
+    return(length * 608);
+
+}//ExtractData3D_152_4_uint2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_152_4_int2_float ([][152][4])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_152_4_int2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    short* tempBuffer = (short*) calloc(length * 608, sizeof(short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[3], sdStride[3], sdEdge[3];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStart[2] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdStride[2] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 152;
+    sdEdge[2] = 4;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    short* shortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 608; j++, floatP++, shortP++)
+            *floatP = (float) (scaleFactor * (*shortP));
+    }
+    free((void*) tempBuffer);
+
+    return(length * 608);
+
+}//ExtractData3D_152_4_int2_float
 
 //----------------------------------------------------------------------
 // Function:    ExtractData3D_100_12 ([][100][12])
