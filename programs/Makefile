@@ -18,7 +18,8 @@ PROGRAMS = \
 	l00_to_l10 \
 	l10_to_l15 \
 	l15_to_l17 \
-	l17_to_l20
+	l17_to_l20 \
+	make_pattern
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -66,4 +67,7 @@ l15_to_l17: l15_to_l17.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 l17_to_l20: l17_to_l20.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+make_pattern: make_pattern.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
