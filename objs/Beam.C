@@ -122,6 +122,13 @@ Beam::SetBeamPattern(
 //  unitx,unity = the x and y components of the unit vector that points in
 //    the desired direction in the beam frame.  The units should be consistent
 //    with the units of x_spacing and y_spacing.
+//	  Note that the x and y components can also be interpreted as any other
+//	  quantity that varies soley as a function of x and y respectively such as
+//	  azimuth and elevation.  The interpretation is established by the
+//	  program that creates and writes the beam pattern using WriteBeamPattern
+//	  below.  The interpretation of x_spacing and y_spacing used
+//	  to write the beam pattern should also be followed by any user of that
+//	  beam pattern.
 //
 
 double
