@@ -8,7 +8,7 @@
 //    l1a_hdf_energy_map
 //
 // SYNOPSIS
-//    l1a_hdf_energy_map [ -e ] <config_file> <output_base>
+//    l1a_hdf_energy_map [ -erw ] <config_file> <output_base>
 //      <L1A_file...>
 //
 // DESCRIPTION
@@ -18,6 +18,8 @@
 //
 // OPTIONS
 //    [ -e ]  Allow frames with errors.
+//    [ -r ]  Use ROM data.
+//    [ -w ]  Use WOM data.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -61,6 +63,7 @@ static const char rcs_id[] =
 #include "hdf.h"
 #include "mfhdf.h"
 #include "Misc.h"
+#include "BitMasks.h"
 #include "ConfigList.h"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
@@ -81,7 +84,7 @@ static const char rcs_id[] =
 #define LONGITUDE_BINS  1800
 #define LATITUDE_BINS   901
 
-#define OPTSTRING  "e"
+#define OPTSTRING  "erw"
 
 //--------//
 // MACROS //
@@ -113,12 +116,14 @@ template List<StringPair>;
 //------------------//
 
 int opt_error = 0;
+int opt_rom = 0;
+int opt_wom = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -e ]", "<config_file>", "<output_base>",
+const char* usage_array[] = { "[ -erw ]", "<config_file>", "<output_base>",
     "<L1A_file...>", 0 };
 
 float inner_energy[LONGITUDE_BINS][LATITUDE_BINS];
@@ -140,7 +145,7 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    extern char* optarg;
+//    extern char* optarg;
     extern int optind;
 
     int c;
@@ -151,13 +156,25 @@ main(
         case 'e':
             opt_error = 1;
             break;
+        case 'r':
+            opt_rom = 1;
+            break;
+        case 'w':
+            opt_wom = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
         }
     }
-    if (argc < optind + 3)
+    if (argc < optind + 3) {
         usage(command, usage_array, 1);
+    }
+    if (! opt_rom && ! opt_wom) {
+        fprintf(stderr, "%s: must specify a type of data ( -w and/or -r )\n",
+            command);
+        exit(1);
+    }
 
     char* config_file = argv[optind++];
     char* output_base = argv[optind++];
@@ -272,7 +289,7 @@ main(
         int32 true_cal_pulse_pos_sds_id = SDnametoid(sd_id,
             "true_cal_pulse_pos");
         int32 antenna_position_sds_id = SDnametoid(sd_id, "antenna_position");
-//        int32 operational_mode_sds_id = SDnametoid(sd_id, "operational_mode");
+        int32 operational_mode_sds_id = SDnametoid(sd_id, "operational_mode");
 
         //--------------------
         // read data
@@ -289,6 +306,27 @@ main(
         {
             start[0] = frame_idx;
             uint32 frame_err_status;
+
+            //----------------//
+            // check the mode //
+            //----------------//
+
+            uint8 operational_mode;
+            if (SDreaddata(operational_mode_sds_id, start,
+                NULL, generic_1d_edges, (VOIDP)&operational_mode) == FAIL)
+            {
+                fprintf(stderr,
+                    "%s: error reading SD data for operational_mode\n",
+                    command);
+                exit(1);
+            }
+            if (operational_mode == L1A_OPERATIONAL_MODE_WOM && ! opt_wom) {
+                continue;
+            }
+            if (operational_mode == L1A_OPERATIONAL_MODE_ROM && ! opt_rom) {
+                continue;
+            }
+
             if (SDreaddata(frame_err_status_sds_id, start,
                 NULL, generic_1d_edges, (VOIDP)&frame_err_status) == FAIL)
             {
@@ -347,21 +385,6 @@ main(
                     command, frame_idx);
                 continue;
             }
-
-/*
-            uint8 operational_mode;
-            if (SDreaddata(operational_mode_sds_id, start,
-                NULL, generic_1d_edges, (VOIDP)&operational_mode) == FAIL)
-            {
-                fprintf(stderr,
-                    "%s: error reading SD data for operational_mode\n",
-                    command);
-                exit(1);
-            }
-            if (operational_mode != 0x0e && operational_mode != 0xe0) {
-                continue;
-            }
-*/
 
             //---------------------//
             // geometry parameters //

@@ -67,6 +67,7 @@ static const char rcs_id[] =
 #define NUMBER_OF_QSCAT_BEAMS  2
 #define AZIMUTH_BINS           65536
 #define OPTSTRING              "e"
+#define QUOTE                  '"'
 
 //--------//
 // MACROS //
@@ -273,11 +274,9 @@ main(
                     command);
                 exit(1);
             }
-/*
             if (operational_mode != L1A_OPERATIONAL_MODE_ROM) {
                 continue;
             }
-*/
 
             //-------------------//
             // antenna postition //
@@ -387,23 +386,60 @@ main(
 
     char filename[1024];
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++) {
-        sprintf(filename, "%s.%d", output_base, beam_idx + 1);
-        FILE* ofp = fopen(filename, "w");
-        if (ofp == NULL)
-        {
-            fprintf(stderr, "%s: error opening output file %s\n", command,
-                filename);
-            exit(1);
-        }
+
+        sprintf(filename, "%s.avg.%d", output_base, beam_idx + 1);
+        FILE* avg_ofp = fopen_or_exit(filename, "w", command,
+            "average file", 1);
+        fprintf(avg_ofp,
+            "@ subtitle %cAverage Noise Channel Energy, Beam %d%c\n", QUOTE,
+            beam_idx + 1, QUOTE);
+        fprintf(avg_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
+            QUOTE);
+        fprintf(avg_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+
+        sprintf(filename, "%s.min.%d", output_base, beam_idx + 1);
+        FILE* min_ofp = fopen_or_exit(filename, "w", command,
+            "average file", 1);
+        fprintf(min_ofp,
+            "@ subtitle %cMinimum Noise Channel Energy, Beam %d%c\n", QUOTE,
+            beam_idx + 1, QUOTE);
+        fprintf(min_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
+            QUOTE);
+        fprintf(min_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+
+        sprintf(filename, "%s.max.%d", output_base, beam_idx + 1);
+        FILE* max_ofp = fopen_or_exit(filename, "w", command,
+            "average file", 1);
+        fprintf(max_ofp,
+            "@ subtitle %cMaximum Noise Channel Energy, Beam %d%c\n", QUOTE,
+            beam_idx + 1, QUOTE);
+        fprintf(max_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
+            QUOTE);
+        fprintf(max_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+
+        sprintf(filename, "%s.n.%d", output_base, beam_idx + 1);
+        FILE* n_ofp = fopen_or_exit(filename, "w", command,
+            "average file", 1);
+        fprintf(n_ofp,
+            "@ subtitle %cNumber of Samples, Beam %d%c\n", QUOTE,
+            beam_idx + 1, QUOTE);
+        fprintf(n_ofp, "@ xaxis label %cAntenna Azimuth Encoder%c\n", QUOTE,
+            QUOTE);
+        fprintf(n_ofp, "@ yaxis label %cEnergy (dn)%c\n", QUOTE, QUOTE);
+
         for (int i = 0; i < AZIMUTH_BINS; i++) {
             if (count_noise[beam_idx][i] > 0) {
-                fprintf(ofp, "%d %g %d %d %d\n", i,
-                    sum_noise[beam_idx][i] / (double)count_noise[beam_idx][i],
-                    min_noise[beam_idx][i], max_noise[beam_idx][i],
-                    count_noise[beam_idx][i]);
+                fprintf(avg_ofp, "%d %g\n", i, sum_noise[beam_idx][i]
+                    / (double)count_noise[beam_idx][i]);
+                fprintf(min_ofp, "%d %d\n", i, min_noise[beam_idx][i]);
+                fprintf(max_ofp, "%d %d\n", i, max_noise[beam_idx][i]);
+                fprintf(n_ofp, "%d %d\n", i, count_noise[beam_idx][i]);
             }
         }
-        fclose(ofp);
+        fclose(avg_ofp);
+        fclose(min_ofp);
+        fclose(max_ofp);
+        fclose(n_ofp);
     }
 
     return (0);
