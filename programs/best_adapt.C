@@ -14,9 +14,7 @@
 // DESCRIPTION
 //    This filter attempts to set the best vector, ONE WIND VECTOR
 //    CELL AT A TIME! Yes, this means it should be really slow.
-//    It also uses (and updates) a probability file. If you don't want
-//    to lose the contents of the probability file, make a backup
-//    *BEFORE* running this program -- it will stomp.
+//    It also uses (and updates) probability files.
 //
 // OPTIONS
 //    The following options are supported:
@@ -25,7 +23,7 @@
 // OPERANDS
 //    The following operands are supported:
 //      <cfg_file>         The configuration file
-//      <prob_file>        The probability count file.
+//      <prob_file>        The input probability count file.
 //      <l2b_input_file>   The input Level 2B wind field
 //      <vctr_base>        The output vctr file basename
 //      <l2b_output_file>  The output Level 2B wind field
@@ -460,11 +458,11 @@ main(
         float best_prob = WORST_PROB;
         ChoiceE best_choice = NO_CHOICE;
         int best_first_idx = 0;
-        int best_neighbor_idx = 0;
-        int best_dif_ratio_idx = 0;
-        int best_speed_idx = 0;
-        int best_cti_idx = 0;
-        int best_prob_idx = 0;
+        int best_n_idx = 0;
+        int best_dr_idx = 0;
+        int best_s_idx = 0;
+        int best_c_idx = 0;
+        int best_p_idx = 0;
         int best_ati = -1;
         int best_cti = -1;
         for (int ati = 0; ati < AT_WIDTH; ati++)
@@ -484,8 +482,8 @@ main(
                 //----------------------------------------//
 
                 int first_speed_idx;
-                speed_index.GetNearestIndex(first_speed[cti][ati],
-                        &first_speed_idx);
+                speed_index.GetNearestIndexClipped(first_speed[cti][ati],
+                    &first_speed_idx);
 
                 float first_prob;
                 int tmp_idx[2];
@@ -507,11 +505,16 @@ main(
                     first_prob = first_obj_prob[cti][ati];
                 }
 
-                if (first_prob > best_prob)
+                //---------------------------------//
+                // see if the first ranked is best //
+                //---------------------------------//
+                // only use if to initialize
+
+                if (wvc->selected == NULL && first_prob > best_prob)
                 {
                     best_prob = first_prob;
-                    first_index.GetNearestIndex(first_obj_prob[cti][ati],
-                        &best_first_idx);
+                    first_index.GetNearestIndexClipped(
+                        first_obj_prob[cti][ati], &best_first_idx);
                     best_choice = FIRST;
                     best_ati = ati;
                     best_cti = cti;
@@ -522,43 +525,115 @@ main(
                 //----------------------------------//
 
                 int neighbor_idx, dif_ratio_idx, speed_idx, cti_idx, prob_idx;
-                neighbor_index.GetNearestIndex(neighbor_count[cti][ati],
-                        &neighbor_idx);
-                dif_ratio_index.GetNearestIndex(dif_ratio[cti][ati],
-                        &dif_ratio_idx);
-                speed_index.GetNearestIndex(speed[cti][ati],
-                        &speed_idx);
-                cti_index.GetNearestIndex(cti, &cti_idx);
-                prob_index.GetNearestIndex(prob[cti][ati], &prob_idx);
+                neighbor_index.GetNearestIndexClipped(neighbor_count[cti][ati],
+                    &neighbor_idx);
+                dif_ratio_index.GetNearestIndexClipped(dif_ratio[cti][ati],
+                    &dif_ratio_idx);
+                speed_index.GetNearestIndexClipped(speed[cti][ati],
+                    &speed_idx);
+                cti_index.GetNearestIndexClipped(cti, &cti_idx);
+                prob_index.GetNearestIndexClipped(prob[cti][ati], &prob_idx);
 
-                float filter_prob;
-                if (filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx] >= MIN_SAMPLES)
+                float filter_prob = 0.0;
+                float factor_sum = 0.0;
+
+/*
+// interpolation
+                int n_idx[2];
+                float n_coef[2];
+                neighbor_index.GetLinearCoefsClipped(neighbor_count[cti][ati],
+                    n_idx, n_coef);
+
+                int dr_idx[2];
+                float dr_coef[2];
+                dif_ratio_index.GetLinearCoefsClipped(dif_ratio[cti][ati],
+                    dr_idx, dr_coef);
+
+                int s_idx[2];
+                float s_coef[2];
+                speed_index.GetLinearCoefsClipped(speed[cti][ati],
+                    s_idx, s_coef);
+
+                int c_idx[2];
+                float c_coef[2];
+                cti_index.GetLinearCoefsClipped(cti,
+                    c_idx, c_coef);
+
+                int p_idx[2];
+                float p_coef[2];
+                prob_index.GetLinearCoefsClipped(prob[cti][ati],
+                    p_idx, p_coef);
+
+                for (int i = 0; i < 2; i++)
                 {
-                    filter_prob =
-(float)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx] /
-(float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
+                  int n_i = n_idx[i];
+                  float n_c = n_coef[i];
+                  for (int j = 0; j < 2; j++)
+                  {
+                    int dr_i = dr_idx[j];
+                    float dr_c = dr_coef[j];
+                    for (int k = 0; k < 2; k++)
+                    {
+                      int s_i = s_idx[k];
+                      float s_c = s_coef[k];
+                      for (int l = 0; l < 2; l++)
+                      {
+                        int c_i = c_idx[l];
+                        float c_c = c_coef[l];
+                        for (int m = 0; m < 2; m++)
+                        {
+                          int p_i = p_idx[m];
+                          float p_c = p_coef[m];
+                          if (filter_count_array[n_i][dr_i][s_i][c_i][p_i] <
+                            MIN_SAMPLES)
+                          {
+                            continue;
+                          }
+                          float factor = n_c * dr_c * s_c * c_c * p_c;
+                          factor_sum += factor;
+                          filter_prob += factor *
+                        (float)filter_good_array[n_i][dr_i][s_i][c_i][p_i] /
+                        (float)filter_count_array[n_i][dr_i][s_i][c_i][p_i];
+                        }
+                      }
+                    }
+                  }
+                }
+*/
+
+// no interpolation
+filter_prob = (float)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
+factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
+
+                if (factor_sum > 0.0)
+                {
+                    filter_prob /= factor_sum;
                 }
                 else
                 {
                     // assign a probability randomly
                     filter_prob = drand48();
-                    filter_prob *= drand48();  // to skew it lower
                     // don't do something stupid
                     if (neighbor_count[cti][ati] < 2)
-                        filter_prob *= drand48();    // make it lower
+                        filter_prob *= filter_prob;
                 }
 
+                //---------------------------//
+                // see if the filter is best //
+                //---------------------------//
+                // it must beat the first ranked too, otherwise
+                // it won't overturn it
+
                 if (filter_prob > best_prob &&
+                    filter_prob > first_prob &&
                     wvc->selected != filter_selection[cti][ati])
                 {
-if (filter_prob < first_prob)
-printf("  Filter (%g) overriding first (%g)\n", filter_prob, first_prob);
                     best_prob = filter_prob;
-                    best_neighbor_idx = neighbor_idx;
-                    best_dif_ratio_idx = dif_ratio_idx;
-                    best_speed_idx = speed_idx;
-                    best_cti_idx = cti_idx;
-                    best_prob_idx = prob_idx;
+                    best_n_idx = neighbor_idx;
+                    best_dr_idx = dif_ratio_idx;
+                    best_s_idx = speed_idx;
+                    best_c_idx = cti_idx;
+                    best_p_idx = prob_idx;
                     best_choice = FILTER;
                     best_ati = ati;
                     best_cti = cti;
@@ -591,7 +666,6 @@ printf("  Filter (%g) overriding first (%g)\n", filter_prob, first_prob);
             first_count_array[best_first_idx]++;
 
             // never let this WVC get initialized by first rank again
-            first_obj_prob[best_cti][best_ati] = WORST_PROB;
             change[best_cti][best_ati] = 1;
             first_count++;
             break;
@@ -606,12 +680,11 @@ printf("  Filter (%g) overriding first (%g)\n", filter_prob, first_prob);
 
             if (wvc->selected == original_selected[best_cti][best_ati])
             {
-  filter_good_array[best_neighbor_idx][best_dif_ratio_idx][best_speed_idx][best_cti_idx][best_prob_idx]++;
+  filter_good_array[best_n_idx][best_dr_idx][best_s_idx][best_c_idx][best_p_idx]++;
             }
- filter_count_array[best_neighbor_idx][best_dif_ratio_idx][best_speed_idx][best_cti_idx][best_prob_idx]++;
+ filter_count_array[best_n_idx][best_dr_idx][best_s_idx][best_c_idx][best_p_idx]++;
 
             // don't let this WVC get initialized by first rank
-            first_obj_prob[best_cti][best_ati] = WORST_PROB;  // done with it
             change[best_cti][best_ati] = 1;
             filter_count++;
             break;
@@ -774,7 +847,7 @@ printf("  Filter (%g) overriding first (%g)\n", filter_prob, first_prob);
                 prob[cti][ati] = new_selected->obj;
             }
         }
-        if (loop_idx % 2000 == 0 && loop_idx != 0)
+        if (loop_idx % 5000 == 0 && loop_idx != 0)
         {
             int total_count = first_count + filter_count;
             float first_percent = 100.0 * (float)first_count /
@@ -833,7 +906,6 @@ for (int ati = 0; ati < AT_WIDTH; ati++)
 }
 printf("Match = %.2f %%\n", 100.0 * (float)match_count /
   (float)comp_total_count);
-
         }
         loop_idx++;
     } while (1);
