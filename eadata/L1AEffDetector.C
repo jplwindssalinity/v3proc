@@ -5,6 +5,9 @@
 // CM Log
 //
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.14   25 Mar 1999 14:11:42   daffer
 // Uploadable tables!
@@ -1558,7 +1561,7 @@ L1AEffDetector::DetectEffects(
               // parts can have access to the last 4 commands and
               // command counters.
 
-            for (j=0;j<4;j++) last_cmd_history[j] = cmd_history[j];
+            for (int j=0;j<4;j++) last_cmd_history[j] = cmd_history[j];
             last_cmd_counter = cmd_counter;
             last_inv_cmd_counter = inv_cmd_counter;
             first_time = 0;

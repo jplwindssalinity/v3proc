@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.20   25 Mar 1999 14:16:58   daffer
 // changed EA_CMD_SCTMDONN to
@@ -807,7 +810,7 @@ const char*  args)     // arguments string
             }
             EACommandE trigCmdIds_2[] = { EA_CMD_SCK16SET, EA_CMD_SCK13SET,
                                            EA_CMD_SCK14SET };
-            for (i=0; i < ElementNumber(trigCmdIds_2); i++)
+            for (int i=0; i < ElementNumber(trigCmdIds_2); i++)
             {
                 newCmd = new Command(trigCmdIds_2[i]);
                 newCmd->expectedTime = cmd->expectedTime;

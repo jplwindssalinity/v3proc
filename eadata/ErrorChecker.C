@@ -5,6 +5,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.11   16 Sep 1999 08:59:16   sally
 // check TWT errors only when that TWT is selected
@@ -893,6 +896,7 @@ int ErrorWatchDogTimerExpired(ErrorChecker* obj, char* name,
     { return(ErrorValueChanged(obj, name, format, ofp,
                   ERROR_WATCH_DOG_TIMER_EXPIRED, 0, "Not Expired","Expired"));}
 
+int
 ErrorTwt1ValueChanged(
 ErrorChecker*        obj,
 char*                name,
@@ -930,6 +934,7 @@ int ErrorTwt1BodyOcTrip(ErrorChecker* obj, char* name, char* format,FILE* ofp)
     { return(ErrorTwt1ValueChanged(obj, name, format, ofp,
                       ERROR_TWT_1_BODY_OC_TRIP, 0, "Not Tripped","Tripped"));}
 
+int
 ErrorTwt2ValueChanged(
 ErrorChecker*        obj,
 char*                name,
