@@ -76,6 +76,7 @@ public:
 	int		WriteObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
 	int		WriteGSObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
 	int		AppendSolutions(FILE* ofp, WVC* wvc, float min_obj, float max_obj);
+	int		WriteObjXmgr(char* basename, int panelcount, WVC* wvc);
 
 	//----------------//
 	// wind retrieval //

@@ -473,7 +473,6 @@ GMF::AppendSolutions(
 	// write individual solutions //
 	//----------------------------//
 
-	fprintf(ofp, "&\n");
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
@@ -2787,6 +2786,7 @@ GMF::RetrieveWindsH1(
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
     {
+		WriteObjXmgr("toomany",10,wvc);
         fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
@@ -2797,4 +2797,56 @@ GMF::RetrieveWindsH1(
     }
 
 	return(1);
+}
+
+//-------------------//
+// GMF::WriteObjXmgr //
+//-------------------//
+
+int
+GMF::WriteObjXmgr(
+	char*		basename,
+	int			panelcount,
+	WVC*		wvc)
+{
+
+  static FILE* objxmgr_file = NULL;
+  static char filename[256];
+  static count = 0;
+  static graphnum = 0;
+
+  sprintf(filename,"%s.%d",basename,count);
+  objxmgr_file = fopen(filename,"a");
+  if (objxmgr_file == NULL)
+  {
+    fprintf(stderr,"GMF::WriteObjXmgr: Error opening %s\n",filename);
+    exit(-1);
+  }
+
+  if (graphnum != 0)
+  {
+    fprintf(objxmgr_file, "&\n");
+  }
+
+  fprintf(objxmgr_file,"@WITH G%d\n",graphnum);
+  fprintf(objxmgr_file,"@G%d ON\n",graphnum);
+  float min_obj,max_obj;
+  GetObjLimits(&min_obj,&max_obj);
+  WriteObjectiveCurve(objxmgr_file,min_obj,max_obj);
+  fprintf(objxmgr_file, "&\n");
+  AppendSolutions(objxmgr_file,wvc,min_obj,max_obj);
+
+  if (graphnum == panelcount-1)
+  {
+    graphnum = 0;
+    count++;
+  }
+  else
+  {
+    graphnum++;
+  }
+
+  fclose(objxmgr_file);
+  return(1);
+
 }
