@@ -16,6 +16,7 @@ static const char rcs_id_l00frame_h[] =
 //======================================================================
 
 #define MAX_L00_BUFFER_SIZE		100
+#define PULSES_PER_L00_FRAME	50
 
 
 //======================================================================
@@ -50,6 +51,8 @@ public:
 
 	double		time;
 
+	// S/C information
+
 	float		gcAltitude;
 	float		gcLongitude;
 	float		gcLatitude;
@@ -60,7 +63,14 @@ public:
 	float		velY;
 	float		velZ;
 
-	float		antennaPosition;
+	// antenna position
+
+	unsigned short	firstAntennaPosition;
+	unsigned char	antennaPosition[PULSES_PER_L00_FRAME - 1];
+
+	// sigma-0's
+
+	float		sigma0[PULSES_PER_L00_FRAME];
 };
 
 #endif
