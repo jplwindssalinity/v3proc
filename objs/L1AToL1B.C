@@ -58,6 +58,7 @@ L10ToL15::Convert(
 	// set up instrument //
 	//-------------------//
 
+	instrument->SetTimeWithInstrumentTicks(l10->frame.instrumentTicks);
 	instrument->orbitTicks = l10->frame.orbitTicks;
 
 	//----------------------------//

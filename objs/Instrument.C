@@ -30,11 +30,11 @@ InstrumentEvent::~InstrumentEvent()
 //============//
 
 Instrument::Instrument()
-:	time(0.0), orbitTicks(0), commandedDoppler(0.0), commandedRxGateDelay(0.0),
-	commandedRxGateWidth(0.0), systemLoss(0.0), transmitPower(0.0),
-	receiverGain(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
-	systemTemperature(0.0), baseTransmitFreq(0.0), transmitFreq(0.0),
-	scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
+:	time(0.0), instrumentTicks(0), orbitTicks(0), commandedDoppler(0.0),
+	commandedRxGateDelay(0.0), commandedRxGateWidth(0.0), systemLoss(0.0),
+	transmitPower(0.0), receiverGain(0.0), chirpRate(0.0), chirpStartM(0.0),
+	chirpStartB(0.0), systemTemperature(0.0), baseTransmitFreq(0.0),
+	transmitFreq(0.0), scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
 	guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
 	useKpc(1), useKpm(1), useRgc(0), useDtc(0), _eqxTime(0)
 {
@@ -164,4 +164,17 @@ Instrument::TimeToOrbitTicks(
 {
 	unsigned int ticks = (unsigned int)(time * ORBIT_TICKS_PER_SECOND);
 	return(ticks);
+}
+
+//----------------------------------------//
+// Instrument::SetTimeWithInstrumentTicks //
+//----------------------------------------//
+
+int
+Instrument::SetTimeWithInstrumentTicks(
+	unsigned int	ticks)
+{
+	instrumentTicks = ticks;
+	time = ((double)ticks + 0.5) / INSTRUMENT_TICKS_PER_SECOND;
+	return(1);
 }

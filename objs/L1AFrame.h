@@ -17,7 +17,7 @@ static const char rcs_id_l10frame_h[] =
 //		L10Frame
 //======================================================================
 
-#define L10_FRAME_HEADER_SIZE	60
+#define L10_FRAME_HEADER_SIZE	69
 
 //======================================================================
 // CLASS
@@ -55,6 +55,7 @@ public:
 	//-------------------//
 
 	double			time;
+	unsigned int	instrumentTicks;
 	unsigned int	orbitTicks;
 	unsigned char	priOfOrbitTickChange;
 
@@ -62,19 +63,19 @@ public:
 	// S/C information //
 	//-----------------//
 
-	float		gcAltitude;
-	float		gcLongitude;
-	float		gcLatitude;
-	float		gcX;
-	float		gcY;
-	float		gcZ;
-	float		velX;
-	float		velY;
-	float		velZ;
+	float			gcAltitude;
+	float			gcLongitude;
+	float			gcLatitude;
+	float			gcX;
+	float			gcY;
+	float			gcZ;
+	float			velX;
+	float			velY;
+	float			velZ;
 
-	Attitude	attitude;
+	Attitude		attitude;
 
-	float		ptgr;
+	float			ptgr;
 
 	// antenna position
 	unsigned short*		antennaPosition;

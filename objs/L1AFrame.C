@@ -16,11 +16,12 @@ static const char rcs_id_l10frame_c[] =
 //==========//
 
 L10Frame::L10Frame()
-:	time(0), orbitTicks(0), priOfOrbitTickChange(255), gcAltitude(0.0),
-	gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0),
-	velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL),
-	science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0),
-	spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
+:	time(0), instrumentTicks(0), orbitTicks(0), priOfOrbitTickChange(255),
+	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0),
+	gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0),
+	antennaPosition(NULL), science(NULL), spotNoise(NULL),
+	antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
+	slicesPerFrame(0)
 {
 	return;
 }
@@ -108,6 +109,9 @@ L10Frame::Pack(
 	idx += size;
 
 	size = sizeof(unsigned int);
+	memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
+	idx += size;
+
 	memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
 	idx += size;
 
@@ -190,6 +194,9 @@ L10Frame::Unpack(
 	idx += size;
 
 	size = sizeof(unsigned int);
+	memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
+	idx += size;
+
 	memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
 	idx += size;
 

@@ -61,7 +61,8 @@ public:
 //		The Instrument object contains instrument state information.
 //======================================================================
 
-#define ORBIT_TICKS_PER_SECOND	32
+#define ORBIT_TICKS_PER_SECOND			32
+#define INSTRUMENT_TICKS_PER_SECOND		32
 
 class Instrument
 {
@@ -90,6 +91,7 @@ public:
 	//-----------//
 
 	unsigned int	TimeToOrbitTicks(double time);
+	int				SetTimeWithInstrumentTicks(unsigned int ticks);
 
 	//-----------//
 	// variables //
@@ -104,6 +106,7 @@ public:
 	// generally varied //
 	//------------------//
 
+	unsigned int	instrumentTicks;		// 32 Hz ticks
 	unsigned int	orbitTicks;				// 32 Hz ticks
 	float			commandedDoppler;		// Hz freq added to base xmit
 	float			commandedRxGateDelay;	// sec
