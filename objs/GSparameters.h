@@ -1,21 +1,34 @@
-// Ground System parameters
-#define	wind_start_speed		8.0
-#define	lower_speed_bound		0
-//#define	upper_speed_bound		50
-#define	upper_speed_bound		100  // This is a HACK.
-#define	min_incidence_index		40
-#define	max_incidence_index		59
-#define	lower_azimuth_bound		0
-#define	upper_azimuth_bound		90
-#define	wind_max_solutions		10
-#define	wind_speed_band			4
-#define	wind_speed_intv_init	0.5
-#define	wind_dir_intv_init		8.0
-#define wind_dir_intv_opti		2.5
-#define	wind_speed_intv_opti	0.25
-#define	wind_variance_limit		1.0e-9
-#define	MAX_DIR_SAMPLES 		800
+//=========================================================//
+// Copyright (C) 2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
-#define wind_speed_delta		0.1
-#define wind_dir_delta			5.0
-#define wind_likelihood_delta	0.5
+#ifndef GS_PARAMETERS_H
+#define GS_PARAMETERS_H
+
+static const char rcs_id_gs_parameters_h[] =
+    "@(#) $Id$";
+
+#define WIND_START_SPEED       8.0
+#define LOWER_SPEED_BOUND      0
+
+//#define upper_speed_bound     50
+#define UPPER_SPEED_BOUND      100  // This is a HACK.
+#define MIN_INCIDENCE_INDEX    40
+#define MAX_INCIDENCE_INDEX    59
+#define LOWER_AZIMUTH_BOUND    0
+#define UPPER_AZIMUTH_BOUND    90
+#define WIND_MAX_SOLUTIONS     10
+#define WIND_SPEED_BAND        4
+#define WIND_SPEED_INTV_INIT   0.5
+#define WIND_DIR_INTV_INIT     8.0
+#define WIND_DIR_INTV_OPTI     2.5
+#define WIND_SPEED_INTV_OPTI   0.25
+#define WIND_VARIANCE_LIMIT    1.0e-9
+#define MAX_DIR_SAMPLES        800
+
+#define WIND_SPEED_DELTA       0.1
+#define WIND_DIR_DELTA         5.0
+#define WIND_LIKELIHOOD_DELTA  0.5
+
+#endif
