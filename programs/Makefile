@@ -40,6 +40,7 @@ PROGRAMS = \
 	log_cfg \
 	windfield_to_vctr \
 	l17_centroids \
+	l17_diagnostics \
 	l17_s0
 
 #----------------------------------------------------------------------
