@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -143,7 +143,6 @@ WindVectorPlus::ReadL2B(
     }
     return(1);
 }
-
 
 //=================//
 // WindVectorField //
@@ -312,7 +311,8 @@ WindVectorField::InterpolateVectorField(
 //=====//
 
 WVC::WVC()
-:   nudgeWV(NULL), selected(NULL), selected_allocated(0), rainProb(0.0), rainFlagBits(0)
+:   nudgeWV(NULL), selected(NULL), selected_allocated(0), specialVector(NULL),
+    rainProb(0.0), rainFlagBits(0)
 {
     return;
 }
@@ -850,34 +850,34 @@ WVC::FreeContents()
 int
 WVC::Rank_Wind_Solutions()
 {
-// Translated from GS module: Rank_Wind_Solutions2.F
-// - Final sorting omitted.
-//!File Name:    Rank_Wind_Solutions.F
-//
-//!Description:
-//        This routine eliminates
-//            (1) redundant wind solutions
-//            (2) out-of-range
-//        and ranks the "final" wind solutions to be
-//        used by the ambiguity-removal processor.
-//
-//!Input Parameters:
-//    wind_speed_delta        -    speed tolerance value (0.1 m/s).
-//    wind_dir_delta            -    direction tolerance value (5 degrees).
-//    wind_likelihood_delta    -    MLE tolerance value (0.5).
-//
-//!Input/Output Parameters:
-//    wr_num_ambigs        - number of ambigous wind solutions.
-//    wr_mle                - value of maximum likelihood estimation.
-//    wr_wind_speed        - speeds of ambiguous wind solutions.
-//    wr_wind_dir            - directions of ambiguous wind solutions.
-//    wr_wind_speed_err    - errors associated with wind speed.
-//    wr_wind_dir_err        - errors associated with wind direction.
-//
+    // Translated from GS module: Rank_Wind_Solutions2.F
+    // - Final sorting omitted.
+    //!File Name:    Rank_Wind_Solutions.F
+    //
+    //!Description:
+    //        This routine eliminates
+    //            (1) redundant wind solutions
+    //            (2) out-of-range
+    //        and ranks the "final" wind solutions to be
+    //        used by the ambiguity-removal processor.
+    //
+    //!Input Parameters:
+    //    wind_speed_delta        -    speed tolerance value (0.1 m/s).
+    //    wind_dir_delta            -    direction tolerance value (5 degrees).
+    //    wind_likelihood_delta    -    MLE tolerance value (0.5).
+    //
+    //!Input/Output Parameters:
+    //    wr_num_ambigs        - number of ambigous wind solutions.
+    //    wr_mle                - value of maximum likelihood estimation.
+    //    wr_wind_speed        - speeds of ambiguous wind solutions.
+    //    wr_wind_dir            - directions of ambiguous wind solutions.
+    //    wr_wind_speed_err    - errors associated with wind speed.
+    //    wr_wind_dir_err        - errors associated with wind direction.
+    //
 
-    float  wr_wind_speed[wind_max_solutions];
-    float  wr_wind_dir[wind_max_solutions];
-    float  wr_mle[wind_max_solutions];
+    float wr_wind_speed[wind_max_solutions];
+    float wr_wind_dir[wind_max_solutions];
+    float wr_mle[wind_max_solutions];
 
     // Copy data into wr_ arrays. (convert radians to degrees)
     int i = 0;
@@ -2361,7 +2361,7 @@ int WindSwath::ReadFlagFile(
         fprintf(stderr, "Fatal Error: Flag file %s cannot be opened\n",
             flag_file);
         exit(1);
-    } 
+    }
     unsigned int size = _alongTrackBins * _crossTrackBins;
     float* flag_value = (float*)malloc(sizeof(float) * size);
     char* flag = (char*)malloc(sizeof(char) * size);
@@ -2379,43 +2379,43 @@ int WindSwath::ReadFlagFile(
             flag_file);
         exit(1);
     }
-    fclose(ifp);  
+    fclose(ifp);
     for (int ati = 0; ati < _alongTrackBins; ati++)
     {
       for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-	    int offset= ati*_crossTrackBins + cti;
-	    WVC* wvc = GetWVC(cti, ati);
-	    if(wvc!=NULL){
-		wvc->rainProb=flag_value[offset];
-		switch((int)(flag[offset])){
-		case 0:
-		  wvc->rainFlagBits=0;
-		  break;
-		case 1:
+    {
+        int offset= ati*_crossTrackBins + cti;
+        WVC* wvc = GetWVC(cti, ati);
+        if(wvc!=NULL){
+        wvc->rainProb=flag_value[offset];
+        switch((int)(flag[offset])){
+        case 0:
+          wvc->rainFlagBits=0;
+          break;
+        case 1:
                   wvc->rainFlagBits=2;
-		  break;
-		case 2:
-		  wvc->rainFlagBits=3;
-		  break;
-		case 3:
+          break;
+        case 2:
+          wvc->rainFlagBits=3;
+          break;
+        case 3:
                   wvc->rainFlagBits=4;
                   break;
-		case 4:
+        case 4:
                   wvc->rainFlagBits=6;
-		  break;
-		case 5:
+          break;
+        case 5:
                   wvc->rainFlagBits=7;
                   break;
                 case 6:
-		  wvc->rainFlagBits=7;
-		  break;
+          wvc->rainFlagBits=7;
+          break;
                 default:
-		  fprintf(stderr,"Error:ReadFlagFile:Bad Flag\n");
-		  exit(1);
-		}
-	    }
-	}
+          fprintf(stderr,"Error:ReadFlagFile:Bad Flag\n");
+          exit(1);
+        }
+        }
+    }
     }
     free(flag);
     free(flag_value);
@@ -3210,7 +3210,7 @@ WindSwath::WriteAscii(
 
 int
 WindSwath::InitWithRank(
-    int        rank)
+    int  rank)
 {
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -6369,130 +6369,146 @@ WindSwath::FractionNAmbigs(
     float       low_speed,
     float       high_speed)
 {
-  for(int cti=0;cti<_crossTrackBins;cti++){
-    int count=0;
-    frac_1amb_array[cti]=0;
-    frac_2amb_array[cti]=0;
-    frac_3amb_array[cti]=0;
-    frac_4amb_array[cti]=0;
-    for(int ati=0;ati<_alongTrackBins;ati++){
-       WVC* wvc = swath[cti][ati];
-       if (! wvc)
-     continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int count = 0;
+        frac_1amb_array[cti] = 0;
+        frac_2amb_array[cti] = 0;
+        frac_3amb_array[cti] = 0;
+        frac_4amb_array[cti] = 0;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
-       WindVector true_wv;
-       if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-     true_wv.dir=wvc->nudgeWV->dir;
-     true_wv.spd=wvc->nudgeWV->spd;
-       }
-       else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-     continue;
-       count++; // increment count of good wind vector cells
-       int num=wvc->ambiguities.NodeCount();
-       switch(num){
-       case 1:
-     frac_1amb_array[cti]++;
-     break;
-       case 2:
-     frac_2amb_array[cti]++;
-     break;
-       case 3:
-     frac_3amb_array[cti]++;
-     break;
-       case 4:
-     frac_4amb_array[cti]++;
-     break;
-       default:
-     fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",num);
-     return(0);
-       }
+            WindVector true_wv;
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+            count++; // increment count of good wind vector cells
+            int num = wvc->ambiguities.NodeCount();
+            switch(num)
+            {
+            case 1:
+                frac_1amb_array[cti]++;
+                break;
+            case 2:
+                frac_2amb_array[cti]++;
+                break;
+            case 3:
+                frac_3amb_array[cti]++;
+                break;
+            case 4:
+                frac_4amb_array[cti]++;
+                break;
+            default:
+                fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",
+                    num);
+                return(0);
+            }
+        }
+        if (count)
+        {
+            frac_1amb_array[cti] /= count;
+            frac_2amb_array[cti] /= count;
+            frac_3amb_array[cti] /= count;
+            frac_4amb_array[cti] /= count;
+        }
     }
-    if(count){
-      frac_1amb_array[cti]/=count;
-      frac_2amb_array[cti]/=count;
-      frac_3amb_array[cti]/=count;
-      frac_4amb_array[cti]/=count;
-    }
-  }
-  return(1);
+    return(1);
 }
-//--------------------------------//
-// WindSwath::NudgeOverrideVsCti  //
-//--------------------------------//
+
+//-------------------------------//
+// WindSwath::NudgeOverrideVsCti //
+//-------------------------------//
 
 int
 WindSwath::NudgeOverrideVsCti(
-     WindField* truth,
-     float* correction_rate_array,
-     float* change_incorrect_rate_array,
-     float* bad_nudge_rate_array,
-     float low_speed,
-     float high_speed)
+    WindField*  truth,
+    float*      correction_rate_array,
+    float*      change_incorrect_rate_array,
+    float*      bad_nudge_rate_array,
+    float       low_speed,
+    float       high_speed)
 {
-  for (int cti = 0; cti < _crossTrackBins; cti++)
+    for (int cti = 0; cti < _crossTrackBins; cti++)
     {
-      // Initialize counts and array
-      int count=0;
-      int total_count=0;
-      correction_rate_array[cti]=0;
-      change_incorrect_rate_array[cti]=0;
-      bad_nudge_rate_array[cti]=0;
-      /// loop through along track bins
-      for (int ati = 0; ati < _alongTrackBins; ati++)
+        // Initialize counts and array
+        int count = 0;
+        int total_count = 0;
+        correction_rate_array[cti] = 0;
+        change_incorrect_rate_array[cti] = 0;
+        bad_nudge_rate_array[cti] = 0;
+        /// loop through along track bins
+        for (int ati = 0; ati < _alongTrackBins; ati++)
         {
-      WVC* wvc = swath[cti][ati];
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue; // skip bad wind vector cells
 
-          if (! wvc)
-        continue; // skip bad wind vector cells
+            WindVector true_wv;
+            // Error Message for useNudgeVectorsAsTruth==1 case
+            if (useNudgeVectorsAsTruth)
+            {
+                fprintf(stderr,
+               "NudgeOverride makes no sense with useNudgeVectorsAsTruth=1\n");
+                return(0);
+            }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue; // if no truth, skip
 
-      WindVector true_wv;
-          // Error Message for useNudgeVectorsAsTruth==1 case
-          if (useNudgeVectorsAsTruth){
-        fprintf(stderr,"NudgeOverride makes no sense with useNudgeVectorsAsTruth=1\n");
-        return(0);
-      }
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue; // if out of speed range, skip
 
-      else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-        continue; // if no truth, skip
+            WindVector* nudge_wv = wvc->nudgeWV;
+            if (! nudge_wv)
+                continue;  // if no nudge vector, skip
 
-      if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-        continue; // if out of speed range, skip
+            WindVectorPlus* sel = wvc->selected;
+            if (! sel)
+                continue;  // if no selection skip
 
-          WindVector* nudge_wv=wvc->nudgeWV;
-        if (!nudge_wv) continue;  // if no nudge vector, skip
+            // compute closest ambiguities to truth and nudge field
+            WindVectorPlus* nudge_near =
+                wvc->GetNearestToDirection(nudge_wv->dir);
+            WindVectorPlus* truth_near =
+                wvc->GetNearestToDirection(true_wv.dir);
 
-      WindVectorPlus* sel=wvc->selected;
-          if (!sel) continue;  // if no selection skip
+            total_count++;
 
-          // compute closest ambiguities to truth and nudge field
-      WindVectorPlus* nudge_near=wvc->GetNearestToDirection(nudge_wv->dir);
-      WindVectorPlus* truth_near=wvc->GetNearestToDirection(true_wv.dir);
+            // if nudge and truth agree, then skip
+            if (nudge_near == truth_near)
+                continue;
 
-      total_count++;
+            // increment count of nudge/truth disagreements;
+            count++;
 
-      // if nudge and truth agree, then skip
-      if(nudge_near==truth_near) continue;
-
-      // increment count of nudge/truth disagreements;
-      count++;
-
-      // increment count of instrument corrections
-      if(truth_near==sel) correction_rate_array[cti]++;
-      // increment count of instrument incorrect changes
-      else if(sel!=nudge_near) change_incorrect_rate_array[cti]++;
+            // increment count of instrument corrections
+            if (truth_near == sel)
+                correction_rate_array[cti]++;
+            // increment count of instrument incorrect changes
+            else if (sel != nudge_near)
+                change_incorrect_rate_array[cti]++;
         }
-      // normalize by counts;
-      if(count!=0){
-    correction_rate_array[cti]/=count;
-    change_incorrect_rate_array[cti]/=count;
-      }
-      else{
-    correction_rate_array[cti]=-1;
-    change_incorrect_rate_array[cti]=-1;
-      }
-      bad_nudge_rate_array[cti]=(float)(count)/total_count;
+        // normalize by counts;
+        if (count != 0)
+        {
+            correction_rate_array[cti] /= count;
+            change_incorrect_rate_array[cti] /= count;
+        }
+        else
+        {
+            correction_rate_array[cti] =- 1;
+            change_incorrect_rate_array[cti] =- 1;
+        }
+        bad_nudge_rate_array[cti] = (float)(count) / total_count;
     }
-  return(1);
+    return(1);
 }
 
 //----------------------//
