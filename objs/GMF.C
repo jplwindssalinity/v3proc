@@ -284,6 +284,11 @@ GMF::RefineSolutions(
 			// reduce step sizes if necessary //
 			//--------------------------------//
 
+			if (max_dspd == -1 && wvp->spd <= _spdMin)
+				max_dspd = 0;
+			if (max_dspd == 1 && wvp->spd >= _spdMax)
+				max_dspd = 0;
+
 			if (max_dspd == 0 && max_dphi == 0)
 			{
 				if (spd_step > final_spd_step)
