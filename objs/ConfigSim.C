@@ -16,6 +16,7 @@ static const char rcs_id_configsim_c[] =
 #include "L17.h"
 #include "L20.h"
 #include "Constants.h"
+#include "Distributions.h"
 
 //---------------------//
 // ConfigSpacecraftSim //
