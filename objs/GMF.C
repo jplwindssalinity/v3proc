@@ -1518,7 +1518,7 @@ GMF::GetVariance(
     //-----//
 
     double vpm = 0.0;
-    if (retrieveUsingKpmFlag)
+    if (retrieveUsingKpmFlag && meas->numSlices!=-1)
     {
         double kpm2 = 0.0;
         if (! kp->GetKpm2(meas->measType, spd, &kpm2))
@@ -1572,12 +1572,16 @@ GMF::GetVariance(
     //------------------------//
     // calculate the variance //
     //------------------------//
-
-    if(meas->numSlices==-1) 
-      vpc=(meas->A*trial_sigma0 + meas->B)*trial_sigma0+meas->C;
-
-    double var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1+kpri2) *
+    double var;
+    if(meas->numSlices==-1){ 
+      float kpm=0.16;
+      float alpha=(1+kpm*kpm)*meas->A -1;
+      var = (alpha*trial_sigma0 + meas->B)*trial_sigma0+meas->C;
+    }
+    else{
+      var = (trial_sigma0*trial_sigma0 + vpc + vpm) * (1+kpri2) *
         (1+kprs2) - trial_sigma0*trial_sigma0;
+    }
     if (global_debug)
     {
         printf("%g %g %g %g %g %g ", trial_sigma0, vpc, kpri2, kprs2, vpm,
