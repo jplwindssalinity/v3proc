@@ -345,7 +345,7 @@ main(
 
     if (truth_type == NULL && ! nudge_as_truth_opt)
     {
-        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+        truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
         if (truth_type == NULL)
         {
             fprintf(stderr, "%s: must specify truth windfield type\n",
@@ -356,7 +356,7 @@ main(
 
     if (truth_file == NULL && ! nudge_as_truth_opt)
     {
-        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+        truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
         if (truth_file == NULL)
         {
             fprintf(stderr, "%s: must specify truth windfield file\n",
@@ -443,18 +443,18 @@ main(
             exit(1);
         }
 
-	//----------------------------------------//
-	// Scale Wind Speeds?                     //
-	//----------------------------------------//
-	config_list.DoNothingForMissingKeywords();
-	float scale;
-	if (config_list.GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD, 
-				  &scale))
-	  {
-	    truth.ScaleSpeed(scale);
-	    fprintf(stderr,"Warning: scaling all wind speeds by %g\n",scale);
-	  }
-	config_list.ExitForMissingKeywords();
+        //-------------------//
+        // Scale Wind Speeds //
+        //-------------------//
+
+        config_list.DoNothingForMissingKeywords();
+        float scale;
+        if (config_list.GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD, &scale))
+        {
+            truth.ScaleSpeed(scale);
+            fprintf(stderr, "Warning: scaling all wind speeds by %g\n", scale);
+        }
+        config_list.ExitForMissingKeywords();
     }
 
     //--------------------------//
@@ -463,7 +463,7 @@ main(
 
     config_list.DoNothingForMissingKeywords();
     float fixed_speed;
-    if (config_list.GetFloat(WINDFIELD_FIXED_SPEED_KEYWORD, &fixed_speed))
+    if (config_list.GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
     {
         truth.FixSpeed(fixed_speed);
     }
@@ -1161,7 +1161,7 @@ plot_thing(
     for (int i = 0; i < cross_track_bins; i++)
     {
         if (count_array[i] > 1)
-        {   
+        {
             if (tertiary)
             {
                 fprintf(ofp, "%g %g %g %g\n", ctd_array[i], plot_data[i],
