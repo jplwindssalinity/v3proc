@@ -1,22 +1,25 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.  //
-// U.S. Government sponsorship acknowledged.                //
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//      l1a_to_gs_l1a
+//    l1a_to_gs_l1a
 //
 // SYNOPSIS
-//        l1a_to_gs_l1a <config_file> <input_file> <output_file>  <start_frame> <end_frame>
+//    l1a_to_gs_l1a <config_file> <input_file> <output_file>
+//        <start_frame> <end_frame>
 //
 // DESCRIPTION
-//          Reads frames start_frame through end_frame from a L1b file and
-//          writes them to an ASCII file
-//      OPTIONS
-//          Last two arguments are optional
+//    Reads frames start_frame through end_frame from a L1b file and
+//    writes them to an ASCII file
+//
+// OPTIONS
+//    Last two arguments are optional
+//
 // AUTHOR
-//          Sally Chou
+//    Sally Chou
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -25,8 +28,6 @@
 
 static const char rcs_id[] =
     "@(#) $Id$";
-
-
 
 //----------//
 // INCLUDES //
@@ -52,7 +53,7 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 
-#define OPTSTRING               "a"
+#define OPTSTRING  "a"
 
 //-----------//
 // TEMPLATES //
@@ -75,9 +76,9 @@ template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
-const char* usage_array[] = { "[ -a ]", "<config_file>","<input_file>",
+const char* usage_array[] = { "[ -a ]", "<config_file>", "<input_file>",
     "<output_file>", "<cal_pulse_file>", "<start_frame>(OPT)",
-    "<end_frame>(OPT)",0};
+    "<end_frame>(OPT)", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -85,8 +86,8 @@ const char* usage_array[] = { "[ -a ]", "<config_file>","<input_file>",
 
 int
 main(
-    int     argc,
-    char*   argv[])
+    int    argc,
+    char*  argv[])
 {
     //------------------------//
     // parse the command line //
@@ -98,11 +99,11 @@ main(
 
     if (argc == 8 || argc == 6)
     {
-      int c = getopt(argc, argv, OPTSTRING);
-      if (c == 'a') ascii_flag = 1;
-      clidx++;
+        int c = getopt(argc, argv, OPTSTRING);
+        if (c == 'a') ascii_flag = 1;
+        clidx++;
     }
-    else if (argc != 7 && argc!=5)
+    else if (argc != 7 && argc != 5)
     {
         usage(command, usage_array, 1);
     }
@@ -111,10 +112,11 @@ main(
     const char* input_file = argv[clidx++];
     const char* output_file = argv[clidx++];
     const char* cal_pulse_file = argv[clidx++];
-    int start_frame=-1, end_frame=2;
-    if(argc==8){
-        start_frame=atoi(argv[clidx++]);
-        end_frame=atoi(argv[clidx++]);
+    int start_frame = -1, end_frame = 2;
+    if(argc == 8)
+    {
+        start_frame = atoi(argv[clidx++]);
+        end_frame = atoi(argv[clidx++]);
     }
 
     //---------------------//
@@ -129,19 +131,20 @@ main(
         exit(1);
     }
 
-    //------------------------//
-    // create L1A object      //
-    //------------------------//
+    //-------------------//
+    // create L1A object //
+    //-------------------//
+
     L1A l1a;
     if (! ConfigL1A(&l1a, &config_list))
     {
         fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
         exit(1);
     }
-        
-    //------------------------//
-    // open the input file    //
-    //------------------------//
+
+    //---------------------//
+    // open the input file //
+    //---------------------//
 
     if (! l1a.OpenForReading(input_file))
     {
@@ -150,20 +153,21 @@ main(
         exit(1);
     }
 
-    //------------------------//
-    // open the output file   //
-    //------------------------//
+    //----------------------//
+    // open the output file //
+    //----------------------//
 
     if (! l1a.OpenForWriting(output_file))
     {
         fprintf(stderr, "%s: error creating output file %s\n", command,
             output_file);
         exit(1);
-    }       
+    }
 
-    //------------------------//
-    // open the cal pulse file//
-    //------------------------//
+    //-------------------------//
+    // open the cal pulse file //
+    //-------------------------//
+
     if (! l1a.OpenCalPulseForWriting(cal_pulse_file))
     {
         fprintf(stderr, "%s: error creating Cal Pulse file %s\n", command,
@@ -171,7 +175,7 @@ main(
         exit(1);
     }
 
-    int frame_number=1;
+    int frame_number = 1;
 
     //---------------------//
     // copy desired frames //
@@ -221,12 +225,13 @@ main(
               }
             }
         }
-        if (start_frame>=0) frame_number++;
+        if (start_frame >= 0) frame_number++;
     }
 
     //----------------------//
     // close files and exit //
     //----------------------//
+
     l1a.Close();
     (void) l1a.CloseCalPulseFile();
     return(0);
