@@ -24,6 +24,7 @@ static const char rcs_id_configsim_h[] =
 #include "Grid.h"
 #include "ConfigList.h"
 #include "Tracking.h"
+#include "ConfigSimDefs.h"
 
 //======================================================================
 // DESCRIPTION
