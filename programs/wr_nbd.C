@@ -8,7 +8,8 @@
 //    wr_nbd
 //
 // SYNOPSIS
-//    wr_nbd <ins_config_file> <hdf_l2a_file> <output_nbd_file>
+//    wr_nbd <ins_config_file> <hdf_l2a_file> <hdf_l2b_file>
+//        <output_nbd_file>
 //
 // DESCRIPTION
 //    Calculates the normalized beam difference and stores it in
@@ -19,11 +20,12 @@
 // OPERANDS
 //    <ins_config_file>  The config file (for the GMF).
 //    <hdf_l2a_file>     The input HDF L2A file.
+//    <hdf_l2b_file>     The input HDF L2B file.
 //    <output_nbd_file>  The output file.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % wr_nbd $cfg l2a.203 203.nbd
+//      % wr_nbd $cfg l2a.203 l2b.203 203.nbd
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -116,7 +118,7 @@ void  check_status(HdfFile::StatusE status);
 //------------------//
 
 const char* usage_array[] = { "<ins_config_file>", "<hdf_l2a_file>",
-    "<output_nbd_file>", 0 };
+    "<hdf_l2b_file>", "<output_nbd_file>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -148,11 +150,12 @@ main(
         }
     }
 
-    if (argc < optind + 3)
+    if (argc < optind + 4)
         usage(command, usage_array, 1);
 
     const char* ins_config_file = argv[optind++];
     const char* l2a_hdf_file = argv[optind++];
+    const char* l2b_hdf_file = argv[optind++];
     const char* output_nbd_file = argv[optind++];
 
     //--------------------------------//
@@ -196,6 +199,20 @@ main(
         fprintf(stderr, "%s: error configuring Kp\n", command);
         exit(1);
     }
+
+    //-------------------//
+    // read the l2b file //
+    //-------------------//
+
+    L2B l2b;
+    l2b.SetInputFilename(l2b_hdf_file);
+    if (! l2b.ReadHDF())
+    {
+        fprintf(stderr, "%s: error reading L2B file %s\n", command,
+            l2b_hdf_file);
+        exit(1);
+    }
+    WindSwath* swath = &(l2b.frame.swath);
 
     //-------------------------------------//
     // hand-read the EA configuration file //
@@ -476,14 +493,18 @@ main(
 /*
             float lon_deg = avg_lon_lat.longitude * rtd;
             float lat_deg = avg_lon_lat.latitude * rtd;
-*/
 
             // wind retrieval
             WVC wvc;
             if (! gmf.RetrieveWinds_GS(meas_list, &kp, &wvc))
                 continue;
+*/
 
-            WindVectorPlus* wvp = wvc.ambiguities.GetHead();
+            WVC* wvc = swath->GetWVC(cell_idx, target_idx);
+            if (wvc == NULL)
+                continue;
+
+            WindVectorPlus* wvp = wvc->ambiguities.GetHead();
             if (wvp == NULL)
                 continue;
 /*
@@ -546,7 +567,7 @@ main(
                 comp_count[meas->beamIdx][foreaft_idx]++;
 */
             }
-            wvc.FreeContents();
+//            wvc.FreeContents();
 
 /*
             if (comp_count[0][0] == 0 || comp_count[0][1] == 0 ||
