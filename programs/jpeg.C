@@ -84,10 +84,14 @@ template class SortableList<CMNode>;
 
 #define OPTSTRING       "bgnc:q:x:y:"
 #define JPEG_EXTENSION  "jpeg"
+#define COLORBAR_WIDTH  50
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
+
+void  infowrite(int x_size, int y_size, int quality, const char* filename,
+          FILE* fp = stdout);
 
 //------------------//
 // OPTION VARIABLES //
@@ -102,7 +106,7 @@ int opt_rel = 0;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -gn ]", "[ -c colormap ]", "[ -q # ]",
+const char* usage_array[] = { "[ -bgn ]", "[ -c colormap ]", "[ -q # ]",
     "[ -x # ]", "[ -y # ]", "<input_array>", "[ output_jpeg ]", 0 };
 
 int  x_size = -1;
@@ -135,6 +139,9 @@ main(
     {
         switch(c)
         {
+        case 'b':
+            opt_bar = 1;
+            break;
         case 'g':
             opt_guess = 1;
             break;
@@ -306,21 +313,21 @@ main(
         }
     }
 
+    //----------------------//
+    // find the map extrema //
+    //----------------------//
+
+    CMNode* node = colormap.GetHead();
+    float min_map = node->value;
+    node = colormap.GetTail();
+    float max_map = node->value;
+
     //--------------------------//
     // normalize the input file //
     //--------------------------//
 
     if (opt_normalize)
     {
-        //----------------------//
-        // find the map extrema //
-        //----------------------//
-
-        CMNode* node = colormap.GetHead();
-        float min_map = node->value;
-        node = colormap.GetTail();
-        float max_map = node->value;
-
         //------------------------//
         // find the array extrema //
         //------------------------//
@@ -360,10 +367,7 @@ main(
     if (! write_jpeg(array, x_size, y_size, &colormap, quality, jpeg_file))
     {
         fprintf(stderr, "%s: error writing JPEG\n", command);
-        fprintf(stderr, "   X Size : %d\n", x_size);
-        fprintf(stderr, "   Y Size : %d\n", y_size);
-        fprintf(stderr, "  Quality : %d\n", quality);
-        fprintf(stderr, "     File : %s\n", jpeg_file);
+        infowrite(x_size, y_size, quality, jpeg_file, stderr);
         exit(1);
     }
 
@@ -373,11 +377,62 @@ main(
 
     free_array(array, 2, x_size, y_size);
 
-    fprintf(stderr, "JPEG Written...\n");
-    fprintf(stderr, "   X Size : %d\n", x_size);
-    fprintf(stderr, "   Y Size : %d\n", y_size);
-    fprintf(stderr, "  Quality : %d\n", quality);
-    fprintf(stderr, "     File : %s\n", jpeg_file);
+    printf("JPEG Written...\n");
+    infowrite(x_size, y_size, quality, jpeg_file);
 
+    //----------------------//
+    // generate a color bar //
+    //----------------------//
+
+    if (opt_bar)
+    {
+        sprintf(filename, "%s.bar.%s", array_file, JPEG_EXTENSION);
+        x_size = COLORBAR_WIDTH;
+        y_size /= 2;    // half the image height
+        array = (float **)make_array(sizeof(float), 2, x_size, y_size);
+        if (array == NULL)
+        {
+            fprintf(stderr, "%s: error allocating colorbar array (%d x %d)\n",
+                command, x_size, y_size);
+            exit(1);
+        }
+        for (int y = 0; y < y_size; y++)
+        {
+            float fraction = (float)y / (float)(y_size - 1);
+            float value = min_map + fraction * (max_map - min_map);
+            for (int x = 0; x < x_size; x++)
+            {
+                array[x][y] = value;
+            }
+        }
+        if (! write_jpeg(array, x_size, y_size, &colormap, quality, filename))
+        {
+            fprintf(stderr, "%s: error writing colorbar\n", command);
+            infowrite(x_size, y_size, quality, filename, stderr);
+            exit(1);
+        }
+        free_array(array, 2, x_size, y_size);
+        fprintf(stderr, "\nColorbar Written...\n");
+        infowrite(x_size, y_size, quality, filename);
+    }
     return (0);
+}
+
+//-----------//
+// infowrite //
+//-----------//
+
+void
+infowrite(
+    int          x_size,
+    int          y_size,
+    int          quality,
+    const char*  filename,
+    FILE*        fp)
+{
+    fprintf(fp, "   X Size : %d\n", x_size);
+    fprintf(fp, "   Y Size : %d\n", y_size);
+    fprintf(fp, "  Quality : %d\n", quality);
+    fprintf(fp, "     File : %s\n", filename);
+    return;
 }
