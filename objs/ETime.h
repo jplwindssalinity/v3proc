@@ -92,6 +92,7 @@ public:
     time_t          GetSec()  { return(_sec); };
     unsigned short  GetMs()   { return(_ms); };
     void            SetTime(double seconds);
+    double          GetTime();
 
     //-----------//
     // operators //

@@ -305,6 +305,17 @@ ETime::SetTime(
     return;
 }
 
+//----------------//
+// ETime::GetTime //
+//----------------//
+
+double
+ETime::GetTime()
+{
+    double seconds = (double)_sec + (double)_ms / 1000.0;
+    return seconds;
+}
+
 //------------//
 // operator== //
 //------------//
