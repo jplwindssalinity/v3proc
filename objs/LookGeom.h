@@ -78,4 +78,17 @@ Vector3 beam_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
 	              Attitude sc_att, Attitude ant_att, Attitude beam_att,
 			      Vector3 rlook_beam);
+
+//======================================================================
+// Function
+//		earth_intercept
+//
+// Description
+//		The earth_intercept function computes a position vector for
+//		the intercept point on the earth's surface for a particular
+//		look vector (specified in the earth geocentric frame).
+//======================================================================
+
+EarthPosition earth_intercept(EarthPosition rsat, Vector3 rlook_geo);
+
 #endif

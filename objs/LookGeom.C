@@ -296,3 +296,64 @@ EarthPosition rground = rsat + rlook_geo*S;
 return(rground);
 
 }
+
+//-----------------//
+// earth_intercept //
+//-----------------//
+
+EarthPosition
+earth_intercept(
+	EarthPosition	rsat,
+	Vector3			rlook_geo)
+{
+	rlook_geo.Scale(1.0);
+
+	Vector3 v1 = rlook_geo * rlook_geo;
+	Vector3 v2 = rsat * rlook_geo;
+	Vector3 v3 = rsat * rsat;
+
+	double efactor = 1.0 - eccentricity_earth * eccentricity_earth;
+	double c1 = v1.get(0) + v1.get(1) + v1.get(2) / efactor;
+	double c2 = v2.get(0) + v2.get(1) + v2.get(2) / efactor;
+	double c3 = v3.get(0) + v3.get(1) + v3.get(2) / efactor -
+				r1_earth * r1_earth;
+
+	//------------------------------//
+	// solve for the slant range, s //
+	//------------------------------//
+
+	double discrim = 4.0 * (c2 * c2 - c1 * c3);
+	if (discrim < 0.0)
+	{
+		fprintf(stderr,
+			"ERROR: earth_intercept did not find an earth intercept!\n");
+		exit(1);
+	}
+	double righthalf = sqrt(discrim) / (2.0 * c1);
+	double s1 = -c2 / c1 + righthalf;
+	double s2 = -c2 / c1 - righthalf;
+	double s;
+	if (s1 > 0.0 && s2 > 0.0)
+	{
+		// both positive, choose smaller one (this side of earth)
+		s = (s1 < s2) ? s1 : s2;
+	}
+	else if (s1 < 0.0 && s2 < 0.0)
+	{
+		// both negative, error
+		fprintf(stderr,
+			"ERROR: earth_intercept calculated negative slant range!\n");
+		exit(1);
+	}
+	else if (s1 > 0.0)
+		s = s1;
+	else
+		s = s2;
+
+	//------------------------------//
+	// calculate the earth location //
+	//------------------------------//
+
+	EarthPosition rground = rsat + rlook_geo * s;
+	return(rground);
+}
