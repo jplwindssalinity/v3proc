@@ -65,6 +65,7 @@ PROGRAMS = \
 	log_cfg \
 	l2ags_s0 \
 	fix_ecmwf_speed \
+	gs_l1a_to_ascii \
 	l2b_to_flower \
 	l2a_dissect \
 	l1b_to_half_egg \
