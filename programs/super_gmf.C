@@ -5,10 +5,10 @@
 
 //----------------------------------------------------------------------
 // NAME
-//    gmf
+//    super_gmf
 //
 // SYNOPSIS
-//    gmf <gmf_file> <output_base>
+//    super_gmf <gmf_file> <output_base>
 //
 // DESCRIPTION
 //    Generates plots about a geophysical model function. This
@@ -23,7 +23,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % gmf sass2.dat sass2
+//      % super_gmf sass2.dat sass2
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -107,7 +107,12 @@ template class TrackerBase<unsigned short>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
+Meas::MeasTypeE  query_pol();
+float            query_inc();
+float            query_spd();
+
 int a0_vs_wind_speed(GMF* gmf, const char* output_base);
+int s0_vs_azimuth_angle(GMF* gmf, const char* output_base);
 
 /*
 int term_vs_inc(const char* command, const char* gmf_file,
@@ -145,18 +150,17 @@ main(
 
     const char* command = no_path(argv[0]);
     int c;
-    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
-    {
-        switch(c)
-        {
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1) {
+        switch(c) {
         case '?':
             usage(command, usage_array, 1);
             break;
         }
     }
 
-    if (argc != optind + 2)
+    if (argc != optind + 2) {
         usage(command, usage_array, 1);
+    }
     char* gmf_file = argv[optind++];
     char* output_base = argv[optind++];
 
@@ -177,8 +181,7 @@ main(
     //-----------------//
 
     GMF gmf;
-    if (! gmf.ReadOldStyle(gmf_file))
-    {
+    if (! gmf.ReadOldStyle(gmf_file)) {
         fprintf(stderr, "%s: error reading gmf file %s\n",
             command, gmf_file);
         exit(1);
@@ -190,6 +193,7 @@ main(
 
     printf("Generate a plot of:\n");
     printf(" [1] A0 versus wind speed\n");
+    printf(" [2] Sigma-0 versus azimuth angle\n");
 
     int choice;
     if (scanf("%d", &choice) != 1) {
@@ -199,6 +203,9 @@ main(
     switch (choice) {
     case 1:
         a0_vs_wind_speed(&gmf, output_base);
+        break;
+    case 2:
+        s0_vs_azimuth_angle(&gmf, output_base);
         break;
     default:
         break;
@@ -217,21 +224,10 @@ a0_vs_wind_speed(
     const char*  output_base)
 {
     // polarization
-    printf("Polarization (H,V): ");
-    char pol_char;
-    scanf(" %c", &pol_char);
-    Meas::MeasTypeE meas_type = Meas::NONE;
-    if (pol_char == 'V' || pol_char == 'v') {
-        meas_type = Meas::VV_MEAS_TYPE;
-    } else if (pol_char == 'H' || pol_char == 'h') {
-        meas_type = Meas::HH_MEAS_TYPE;
-    }
+    Meas::MeasTypeE meas_type = query_pol();
 
     // incidence angle
-    printf("Incidence angle (in deg): ");
-    float inc;
-    scanf(" %f", &inc);
-    inc *= dtr;
+    float inc = query_inc();
 
     // speed range
     printf("Min speed (in m/s): ");
@@ -262,6 +258,43 @@ a0_vs_wind_speed(
             exit(1);
         }
         fprintf(ofp, "%g %g\n", spd, 10.0 * log10(a0));
+    }
+
+    fclose(ofp);
+
+    return(0);
+}
+
+//---------------------//
+// s0_vs_azimuth_angle //
+//---------------------//
+
+int
+s0_vs_azimuth_angle(
+    GMF*         gmf,
+    const char*  output_base)
+{
+    Meas::MeasTypeE meas_type = query_pol();
+    float inc = query_inc();
+    float spd = query_spd();
+
+    // filename
+    printf("Filename: ");
+    char filename[1024];
+    scanf("%s", filename);
+
+    FILE* ofp = fopen(filename, "w");
+    fprintf(ofp, "@ xaxis label %cAzimuth Angle (deg)%c\n", QUOTES, QUOTES);
+    fprintf(ofp, "@ yaxis label %cSigma-0 (dB)%c\n", QUOTES, QUOTES);
+
+    for (float az = 0.0; az <= 360; az += 5) {
+        float chi = az * dtr;
+        float s0;
+        if (! gmf->GetInterpolatedValue(meas_type, inc, spd, chi, &s0)) {
+            fprintf(stderr, "error getting sigma-0 value\n");
+            exit(1);
+        }
+        fprintf(ofp, "%g %g\n", az, 10.0 * log10(s0));
     }
 
     fclose(ofp);
@@ -513,3 +546,41 @@ term_vs_spd(
     return(1);
 }
 */
+
+Meas::MeasTypeE
+query_pol()
+{
+    Meas::MeasTypeE meas_type = Meas::NONE;
+    while (meas_type == Meas::NONE) {
+        printf("Polarization (H, V): ");
+        char pol_char;
+        scanf(" %c", &pol_char);
+        if (pol_char == 'V' || pol_char == 'v') {
+            meas_type = Meas::VV_MEAS_TYPE;
+        } else if (pol_char == 'H' || pol_char == 'h') {
+            meas_type = Meas::HH_MEAS_TYPE;
+        } else {
+            printf("Invalid entry, try again.\n");
+        }
+    }
+    return meas_type;
+}
+
+float
+query_inc()
+{
+    printf("Incidence angle (in degrees): ");
+    float inc;
+    scanf(" %f", &inc);
+    inc *= dtr;
+    return inc;
+}
+
+float
+query_spd()
+{
+    printf("Speed (in m/s): ");
+    float spd;
+    scanf(" %f", &spd);
+    return spd;
+}
