@@ -466,6 +466,52 @@ Flower::WriteFlower(
     return(1);
 }
 
+//------------------------//
+// Flower::WriteSpeedBall //
+//------------------------//
+
+int
+Flower::WriteSpeedBall(
+    FILE*  ofp,
+    float  scale)
+{
+    //----------------//
+    // generate speed //
+    //----------------//
+
+    fprintf(ofp, "#\n");
+    fprintf(ofp, "%d %d\n", cti, ati);
+    double min_speed = 100.0;
+    for (int dir_idx = 0; dir_idx <= DIR_BINS; dir_idx++)
+    {
+        int use_dir_idx = dir_idx % DIR_BINS;
+        double direction = GetDirection(use_dir_idx);
+        double speed = GetSpeed(use_dir_idx);
+        double dx = speed * scale * cos(direction);
+        double dy = speed * scale * sin(direction);
+        fprintf(ofp, "%g %g\n", (double)cti + dx, (double)ati + dy);
+        if (speed < min_speed)
+            min_speed = speed;
+    }
+    fprintf(ofp, "%d %d\n", cti, ati);
+
+    //-------------------//
+    // make the min loop //
+    //-------------------//
+
+    for (int dir_idx = 0; dir_idx <= DIR_BINS; dir_idx++)
+    {
+        int use_dir_idx = dir_idx % DIR_BINS;
+        double direction = GetDirection(use_dir_idx);
+        double dx = min_speed * scale * cos(direction);
+        double dy = min_speed * scale * sin(direction);
+        fprintf(ofp, "%g %g\n", (double)cti + dx, (double)ati + dy);
+    }
+    fprintf(ofp, "%d %d\n", cti, ati);
+
+    return(1);
+}
+
 //-------------------------//
 // Flower::WriteBestVector //
 //-------------------------//

@@ -14,6 +14,7 @@ static const char rcs_id_l2b_c[] =
 #include "ParTab.h"
 #include "L1AExtract.h"
 #include "Wind.h"
+#include "Misc.h"
 #include "Sds.h"
 #include "hdf.h"
 #include "mfhdf.h"
@@ -425,17 +426,21 @@ L2B::ReadPureHdf(
                 return(0);
             }
 
-            float nudge_edir = (450.0 - model_dir[cti] * HDF_MODEL_DIR_SCALE)
-                * dtr;
-            while (nudge_edir > two_pi)
-                nudge_edir -= two_pi;
-            while (nudge_edir < 0)
-                nudge_edir += two_pi;
-
+            float nudge_edir =
+                gs_deg_to_pe_rad(model_dir[cti] * HDF_MODEL_DIR_SCALE);
             float nudge_speed = model_speed[cti] * HDF_MODEL_SPEED_SCALE;
 
             wvc->nudgeWV->SetSpdDir(nudge_speed * NWP_SPEED_CORRECTION,
                 nudge_edir);
+
+            //--------------------------------//
+            // set the number of measurements //
+            //--------------------------------//
+
+            wvc->numInFore = (unsigned char)num_in_fore[cti];
+            wvc->numInAft = (unsigned char)num_in_aft[cti];
+            wvc->numOutFore = (unsigned char)num_out_fore[cti];
+            wvc->numOutAft = (unsigned char)num_out_aft[cti];
 
             //---------------------------//
             // create the ambiguity list //
@@ -453,12 +458,8 @@ L2B::ReadPureHdf(
                     return(0);
                 }
 
-                float edir = (450.0 - wind_dir[cti][ambig_idx]
-                    * HDF_WIND_DIR_SCALE) * dtr;
-                while (edir > two_pi)
-                    edir -= two_pi;
-                while (edir < 0)
-                    edir += two_pi;
+                float edir = gs_deg_to_pe_rad(wind_dir[cti][ambig_idx]
+                    * HDF_WIND_DIR_SCALE);
                 float spd = wind_speed[cti][ambig_idx] * HDF_WIND_SPEED_SCALE;
                 wvp->SetSpdDir(spd, edir);
 
@@ -495,12 +496,8 @@ L2B::ReadPureHdf(
                 return(0);
             }
 
-            float special_dir = (450.0 - wind_dir_selection[cti]
-                * HDF_WIND_DIR_SELECTION_SCALE) * dtr;
-            while (special_dir > two_pi)
-                special_dir -= two_pi;
-            while (special_dir < 0)
-                special_dir += two_pi;
+            float special_dir = gs_deg_to_pe_rad(wind_dir_selection[cti]
+                * HDF_WIND_DIR_SELECTION_SCALE);
             float special_spd = wind_speed_selection[cti]
                 * HDF_WIND_SPEED_SELECTION_SCALE;
             wv->SetSpdDir(special_spd, special_dir);
@@ -529,6 +526,10 @@ L2B::ReadPureHdf(
         SDendaccess(wvc_lat_sds_id) == FAIL ||
         SDendaccess(wvc_lon_sds_id) == FAIL ||
         SDendaccess(wvc_index_sds_id) == FAIL ||
+        SDendaccess(num_in_fore_sds_id) == FAIL ||
+        SDendaccess(num_in_aft_sds_id) == FAIL ||
+        SDendaccess(num_out_fore_sds_id) == FAIL ||
+        SDendaccess(num_out_aft_sds_id) == FAIL ||
         SDendaccess(wvc_quality_flag_sds_id) == FAIL ||
         SDendaccess(wvc_atten_corr_sds_id) == FAIL ||
         SDendaccess(model_speed_sds_id) == FAIL ||
@@ -539,7 +540,8 @@ L2B::ReadPureHdf(
         SDendaccess(max_likelihood_est_sds_id) == FAIL ||
         SDendaccess(wvc_selection_sds_id) == FAIL ||
         SDendaccess(wind_speed_selection_sds_id) == FAIL ||
-        SDendaccess(wind_dir_selection_sds_id) == FAIL)
+        SDendaccess(wind_dir_selection_sds_id) == FAIL ||
+        SDendaccess(mp_rain_probability_sds_id) == FAIL)
     {
         fprintf(stderr, "L2B::ReadPureHdf: error with SDendaccess\n");
         return(0);
@@ -579,17 +581,47 @@ int32 dim_sizes_frame[] = { SD_UNLIMITED, 76, 4 };
 
 // dimension names
 const char* dim_names_frame[] = { "Wind_Vector_Cell_Row",
-    "Wind_Vector_Cell" };
+    "Wind_Vector_Cell", "Ambiguity" };
 
 // SDS's
 SdsInt16* wvc_row = new SdsInt16("wvc_row", 1, dim_sizes_frame, "counts",
     1.0, 0.0, dim_names_frame, 1624, 1);
 SdsInt16* wvc_lat = new SdsInt16("wvc_lat", 2, dim_sizes_frame, "degrees",
-    0.01, 0.0, dim_names_frame, 90, -90);
+    0.01, 0.0, dim_names_frame, 9000, -9000);
 SdsUInt16* wvc_lon = new SdsUInt16("wvc_lon", 2, dim_sizes_frame, "degrees",
-    0.01, 0.0, dim_names_frame, 359.99, 0);
+    0.01, 0.0, dim_names_frame, 35999, 0);
 SdsInt8* wvc_index = new SdsInt8("wvc_index", 2, dim_sizes_frame, "counts",
     1.0, 0.0, dim_names_frame, 76, 1);
+SdsInt8* num_in_fore = new SdsInt8("num_in_fore", 2, dim_sizes_frame, "counts",
+    1.0, 0.0, dim_names_frame, 127, 0);
+SdsInt8* num_in_aft = new SdsInt8("num_in_aft", 2, dim_sizes_frame, "counts",
+    1.0, 0.0, dim_names_frame, 127, 0);
+SdsInt8* num_out_fore = new SdsInt8("num_out_fore", 2, dim_sizes_frame,
+    "counts", 1.0, 0.0, dim_names_frame, 127, 0);
+SdsInt8* num_out_aft = new SdsInt8("num_out_aft", 2, dim_sizes_frame,
+    "counts", 1.0, 0.0, dim_names_frame, 127, 0);
+SdsUInt16* wvc_quality_flag = new SdsUInt16("wvc_quality_flag", 2,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 32643, 0);
+SdsInt16* model_speed = new SdsInt16("model_speed", 2, dim_sizes_frame,
+    "m/s", 0.01, 0.0, dim_names_frame, 7000, 0);
+SdsUInt16* model_dir = new SdsUInt16("model_dir", 2, dim_sizes_frame,
+    "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
+SdsInt8* num_ambigs = new SdsInt8("num_ambigs", 2, dim_sizes_frame,
+    "counts", 1.0, 0.0, dim_names_frame, 4, 0);
+SdsInt16* wind_speed = new SdsInt16("wind_speed", 3, dim_sizes_frame,
+    "m/s", 0.01, 0.0, dim_names_frame, 5000, 0);
+SdsUInt16* wind_dir = new SdsUInt16("wind_dir", 3, dim_sizes_frame,
+    "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
+SdsInt16* max_likelihood_est = new SdsInt16("max_likelihood_est", 3,
+    dim_sizes_frame, "n/a", 0.001, 0.0, dim_names_frame, -30000, 0);
+SdsInt8* wvc_selection = new SdsInt8("wvc_selection", 2, dim_sizes_frame,
+    "n/a", 1.0, 0.0, dim_names_frame, 4, 0);
+SdsInt16* wind_speed_selection = new SdsInt16("wind_speed_selection", 2,
+    dim_sizes_frame, "m/s", 0.01, 0.0, dim_names_frame, 7000, 0);
+SdsUInt16* wind_dir_selection = new SdsUInt16("wind_dir_selection", 2,
+    dim_sizes_frame, "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
+SdsInt16* mp_rain_probability = new SdsInt16("mp_rain_probability", 2,
+    dim_sizes_frame, "n/a", 0.001, 0.0, dim_names_frame, 1000, -3000);
 
 // SDS table
 Sds* g_l2b_sds_table[] =
@@ -598,6 +630,21 @@ Sds* g_l2b_sds_table[] =
     wvc_lat,
     wvc_lon,
     wvc_index,
+    num_in_fore,
+    num_in_aft,
+    num_out_fore,
+    num_out_aft,
+    wvc_quality_flag,
+    model_speed,
+    model_dir,
+    num_ambigs,
+    wind_speed,
+    wind_dir,
+    max_likelihood_est,
+    wvc_selection,
+    wind_speed_selection,
+    wind_dir_selection,
+    mp_rain_probability,
     NULL
 };
 
@@ -679,11 +726,44 @@ L2B::WriteHdf(
         float wvc_lat_value[HDF_ACROSS_BIN_NO];
         float wvc_lon_value[HDF_ACROSS_BIN_NO];
         int8 wvc_index_value[HDF_ACROSS_BIN_NO];
+        int8 num_in_fore_value[HDF_ACROSS_BIN_NO];
+        int8 num_in_aft_value[HDF_ACROSS_BIN_NO];
+        int8 num_out_fore_value[HDF_ACROSS_BIN_NO];
+        int8 num_out_aft_value[HDF_ACROSS_BIN_NO];
+        uint16 wvc_quality_flag_value[HDF_ACROSS_BIN_NO];
+        float model_speed_value[HDF_ACROSS_BIN_NO];
+        float model_dir_value[HDF_ACROSS_BIN_NO];
+        int8 num_ambigs_value[HDF_ACROSS_BIN_NO];
+        float wind_speed_value[HDF_ACROSS_BIN_NO * HDF_NUM_AMBIGUITIES];
+        float wind_dir_value[HDF_ACROSS_BIN_NO * HDF_NUM_AMBIGUITIES];
+        float max_likelihood_est_value[HDF_ACROSS_BIN_NO*HDF_NUM_AMBIGUITIES];
+        int8 wvc_selection_value[HDF_ACROSS_BIN_NO];
+        float wind_speed_selection_value[HDF_ACROSS_BIN_NO];
+        float wind_dir_selection_value[HDF_ACROSS_BIN_NO];
+        float mp_rain_probability_value[HDF_ACROSS_BIN_NO];
         for (int cti = 0; cti < HDF_ACROSS_BIN_NO; cti++)
         {
-            // init
+            // init in case there is no WVC
             wvc_lat_value[cti] = 0.0;
             wvc_lon_value[cti] = 0.0;
+            num_in_fore_value[cti] = 0;
+            num_in_aft_value[cti] = 0;
+            num_out_fore_value[cti] = 0;
+            num_out_aft_value[cti] = 0;
+            wvc_quality_flag_value[cti] = 32387;
+            model_speed_value[cti] = 0.0;
+            model_dir_value[cti] = 0.0;
+            num_ambigs_value[cti] = 0;
+            for (int idx = 0; idx < HDF_NUM_AMBIGUITIES; idx++)
+            {
+                wind_speed_value[cti * HDF_NUM_AMBIGUITIES + idx] = 0.0;
+                wind_dir_value[cti * HDF_NUM_AMBIGUITIES + idx] = 0.0;
+                max_likelihood_est_value[cti*HDF_NUM_AMBIGUITIES + idx] = 0.0;
+            }
+            wvc_selection_value[cti] = 0;
+            wind_speed_selection_value[cti] = 0.0;
+            wind_dir_selection_value[cti] = 0.0;
+            mp_rain_probability_value[cti] = 0.0;
 
             // set the obvious
             wvc_index_value[cti] = cti + 1;
@@ -696,12 +776,65 @@ L2B::WriteHdf(
             // set the rest
             wvc_lat_value[cti] = wvc->lonLat.latitude * rtd;
             wvc_lon_value[cti] = wvc->lonLat.longitude * rtd;
+            num_in_fore_value[cti] = wvc->numInFore;
+            num_in_aft_value[cti] = wvc->numInAft;
+            num_out_fore_value[cti] = wvc->numOutFore;
+            num_out_aft_value[cti] = wvc->numOutAft;
+            wvc_quality_flag_value[cti] = wvc->rainFlagBits << 12;
+            if (wvc->nudgeWV != NULL)
+            {
+                 model_speed_value[cti] = wvc->nudgeWV->spd
+                     / NWP_SPEED_CORRECTION;
+                 model_dir_value[cti] = pe_rad_to_gs_deg(wvc->nudgeWV->dir);
+            }
+            num_ambigs_value[cti] = wvc->ambiguities.NodeCount();
+
+            int num_meas = wvc->numInFore + wvc->numInAft + wvc->numOutFore
+                + wvc->numOutAft;
+            int idx = 0;
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext())
+            {
+                wind_speed_value[cti * HDF_NUM_AMBIGUITIES + idx] = wvp->spd;
+                wind_dir_value[cti * HDF_NUM_AMBIGUITIES + idx] =
+                    pe_rad_to_gs_deg(wvp->dir);
+                float mle = wvp->obj;
+                if (unnormalize_mle_flag)
+                {
+                    mle /= num_meas;
+                }
+                max_likelihood_est_value[cti * HDF_NUM_AMBIGUITIES + idx] =
+                    mle;
+                idx++;
+            }
+
+            wvc_selection_value[cti] =
+                wvc->ambiguities.GetIndexOf(wvc->selected) + 1;
+            wind_speed_selection_value[cti] = wvc->selected->spd;
+            wind_dir_selection_value[cti] =
+                pe_rad_to_gs_deg(wvc->selected->dir);
+            mp_rain_probability_value[cti] = wvc->rainProb;
         }
 
         // set the sds
         wvc_lat->SetFromFloat(wvc_lat_value);
         wvc_lon->SetFromFloat(wvc_lon_value);
         wvc_index->SetWithChar(wvc_index_value);
+        num_in_fore->SetWithChar(num_in_fore_value);
+        num_in_aft->SetWithChar(num_in_aft_value);
+        num_out_fore->SetWithChar(num_out_fore_value);
+        num_out_aft->SetWithChar(num_out_aft_value);
+        wvc_quality_flag->SetWithUnsignedShort(wvc_quality_flag_value);
+        model_speed->SetFromFloat(model_speed_value);
+        model_dir->SetFromFloat(model_dir_value);
+        num_ambigs->SetWithChar(num_ambigs_value);
+        wind_speed->SetFromFloat(wind_speed_value);
+        wind_dir->SetFromFloat(wind_dir_value);
+        max_likelihood_est->SetFromFloat(max_likelihood_est_value);
+        wvc_selection->SetWithChar(wvc_selection_value);
+        wind_speed_selection->SetFromFloat(wind_speed_selection_value);
+        wind_dir_selection->SetFromFloat(wind_dir_selection_value);
+        mp_rain_probability->SetFromFloat(mp_rain_probability_value);
 
         //-----------------//
         // write the SDS's //
@@ -970,16 +1103,19 @@ L2B::ReadHDF(
     const char* filename = tlmHdfFile->GetFileName();
     int32 sd_id = SDstart(filename, DFACC_RDONLY);
     int32 attr_index = SDfindattr(sd_id, "orbit_inclination");
-    char attr_name[512];
-    int32 adata_type, count;
-    SDattrinfo(sd_id, attr_index, attr_name, &adata_type, &count);
-    char inc[32];
-    SDreadattr(sd_id, attr_index, inc);
-    float inclination;
-    char* ptr = strchr(inc, (int)'\n');
-    ptr = strchr(ptr+1, (int)'\n');
-    sscanf(ptr, " %f", &inclination);
-    header.inclination = inclination * dtr;
+    if (attr_index == SUCCEED)
+    {
+        char attr_name[512];
+        int32 adata_type, count;
+        SDattrinfo(sd_id, attr_index, attr_name, &adata_type, &count);
+        char inc[32];
+        SDreadattr(sd_id, attr_index, inc);
+        float inclination;
+        char* ptr = strchr(inc, (int)'\n');
+        ptr = strchr(ptr+1, (int)'\n');
+        sscanf(ptr, " %f", &inclination);
+        header.inclination = inclination * dtr;
+    }
     SDend(sd_id);
 
     // continue on with whatever...
@@ -1144,27 +1280,15 @@ L2B::ReadHDF(
             wvc->lonLat.longitude = lonArray[cti] * dtr;
             wvc->lonLat.latitude = latArray[cti] * dtr;
             wvc->nudgeWV = new WindVectorPlus();
-            float nudge_edir = (450.0 - modelDirArray[cti]) * dtr;
-            while (nudge_edir > two_pi)
-                nudge_edir -= two_pi;
-
-            while (nudge_edir < 0)
-                nudge_edir += two_pi;
-
+            float nudge_edir = gs_deg_to_pe_rad(modelDirArray[cti]);
             wvc->nudgeWV->SetSpdDir(modelSpeedArray[cti] * NWP_SPEED_CORRECTION,
                 nudge_edir);
 
             for (int k = 0; k < numambigArray[cti]; k++)
             {
                 WindVectorPlus* wvp = new WindVectorPlus();
-                float edir = (450.0 -
-                    dirArray[cti * HDF_NUM_AMBIGUITIES + k]) * dtr;
-                while (edir > two_pi)
-                    edir -= two_pi;
-
-                while (edir < 0)
-                    edir += two_pi;
-
+                float edir = gs_deg_to_pe_rad(dirArray[cti
+                    * HDF_NUM_AMBIGUITIES + k]);
                 wvp->SetSpdDir(speedArray[cti * HDF_NUM_AMBIGUITIES + k], edir);
                 if (unnormalize_mle)
                 {
@@ -1322,12 +1446,7 @@ L2B::ReadNudgeVectorsFromHdfL2B(
             if (! wvc)
                 continue;
             wvc->nudgeWV = new WindVectorPlus();
-            float nudge_edir = (450.0 - modelDirArray[cti]) * dtr;
-            while (nudge_edir > two_pi)
-                nudge_edir -= two_pi;
-
-            while (nudge_edir < 0)
-                nudge_edir += two_pi;
+            float nudge_edir = gs_deg_to_pe_rad(modelDirArray[cti]);
             wvc->nudgeWV->SetSpdDir(modelSpeedArray[cti] * NWP_SPEED_CORRECTION,
                 nudge_edir);
         }
@@ -1553,11 +1672,7 @@ L2B::ReadHDFDIRTH(
             if (! wvc->selected)
                 continue;
             wvc->selected->spd = speed[j];
-            float edir = (450.0 - dir[j]) * dtr;
-            while (edir > two_pi)
-                edir -= two_pi;
-            while (edir < 0)
-                edir += two_pi;
+            float edir = gs_deg_to_pe_rad(dir[j]);
             wvc->selected->dir = edir;
         }
     }

@@ -95,6 +95,7 @@ public:
     void   Normalize();
     int    Normalize(float min_prob);
     int    WriteFlower(FILE* ofp, float scale = 2.0, float max_range = 0.0);
+    int    WriteSpeedBall(FILE* ofp, float scale = 0.03);
     int    WriteBestVector(FILE* ofp);
     int    WriteBestProb(FILE* ofp);
     int    FindBestDirIdx();
