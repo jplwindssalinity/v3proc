@@ -9,27 +9,58 @@
 static const char rcs_id_l0_h[] =
 	"@(#) $Id$";
 
+#include "Product.h"
+
+//======================================================================
+// CLASSES
+//		L0File, L0FileList, L0
+//======================================================================
+
+#define L0_DATA_REC_SIZE	92
+
+
+//======================================================================
+// CLASS
+//		L0File
+//
+// DESCRIPTION
+//		The L0File object is used to read and write Level 0 data.
+//======================================================================
+
+class L0File : public ProductFile
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	L0File();
+	~L0File();
+};
+
+
 //======================================================================
 // CLASS
 //		L0
 //
 // DESCRIPTION
-//		The L0 object contains the Level 0 telemetry.
+//		The L0 object is used to manipulate Level 0 data.
 //======================================================================
 
-class L0
+class L0 : public Product
 {
 public:
 
-	//------//
-	// enum //
-	//------//
+	//-------//
+	// enums //
+	//-------//
 
-	enum BeamE { NONE, SCATTEROMETER_BEAM_A, SCATTEROMETER_BEAM_B };
+	enum L0BeamE { NONE, SCATTEROMETER_BEAM_A, SCATTEROMETER_BEAM_B };
 
-	//-------------//
-	// contruction //
-	//-------------//
+	//--------------//
+	// construction //
+	//--------------//
 
 	L0();
 	~L0();
@@ -38,35 +69,32 @@ public:
 	// input/output //
 	//--------------//
 
-	int		OpenForWriting(const char* output_file);
 	int		WriteDataRec();
 
 	//-----------//
-	// variables //
+	// insertion //
 	//-----------//
 
-	double			time;
+	int		InsertAll();
 
-	double			gcAltitude;
-	double			gcLongitude;
-	double			gcLatitude;
-	double			gcX;
-	double			gcY;
-	double			gcZ;
-	double			velX;
-	double			velY;
-	double			velZ;
+	//-------------------//
+	// product variables //
+	//-------------------//
 
-	double			antennaPosition;
-	unsigned char	beam;
+	double		time;
 
-protected:
+	double		gcAltitude;
+	double		gcLongitude;
+	double		gcLatitude;
+	double		gcX;
+	double		gcY;
+	double		gcZ;
+	double		velX;
+	double		velY;
+	double		velZ;
 
-	//-----------//
-	// variables //
-	//-----------//
-
-	int		_ofd;
+	double		antennaPosition;
+	L0BeamE		beam;
 };
 
 #endif

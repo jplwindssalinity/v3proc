@@ -89,7 +89,7 @@ InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
 				Instrument.h AntennaSim.h OrbitSim.h List.h Antenna.h \
 				Orbit.h Beam.h Constants.h Matrix3.h
 Interpolate.o:	Interpolate.C Interpolate.h
-L0.o:			L0.C L0.h
+L0.o:			L0.C L0.h Product.h
 List.o:			List.C List.h
 LookGeom.o:		LookGeom.C LookGeom.h CoordinateSwitch.h \
 			Matrix3.h Constants.h
