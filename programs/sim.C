@@ -224,9 +224,9 @@ main(
 		exit(1);
 	}
 
-	//----------------------//
-	// initialize simulator //
-	//----------------------//
+	//------------//
+	// initialize //
+	//------------//
 
 	if (! instrument_sim.Initialize(&(instrument.antenna)))
 	{
@@ -239,15 +239,12 @@ main(
 	// cycle through events //
 	//----------------------//
 
-	L00Frame l00_frame;
-	char l00_buffer[L00_FRAME_SIZE];
-
 	SpacecraftEvent spacecraft_event;
 	InstrumentEvent instrument_event;
 	int need_spacecraft_event  = 1;
 	int need_instrument_event  = 1;
 
-	while (instrument_event.time < 600.0)
+	for (;;)
 	{
 		//--------------------------------------//
 		// determine the next appropriate event //
@@ -278,7 +275,7 @@ main(
 			switch(spacecraft_event.eventId)
 			{
 			case SpacecraftEvent::UPDATE_STATE:
-				spacecraft_sim.UpdateOrbit(instrument_event.time,
+				spacecraft_sim.UpdateOrbit(spacecraft_event.time,
 					&spacecraft);
 				spacecraft.orbitState.Write(eph_fp);
 				break;
@@ -289,9 +286,27 @@ main(
 			}
 
 			need_spacecraft_event = 1;
+
+			//-----------------------------//
+			// check for end of simulation //
+			//-----------------------------//
+
+			if (spacecraft_event.time > instrument_sim.endTime)
+				break;
 		}
 		else
 		{
+			//----------------------------------------//
+			// check for end of instrument simulation //
+			//----------------------------------------//
+
+			if (instrument_event.time > instrument_sim.endTime)
+			{
+				// force the processing of one more spacecraft event
+				instrument_event.time = spacecraft_event.time + 1.0;
+				continue;
+			}
+
 			//------------------------------//
 			// process the instrument event //
 			//------------------------------//
@@ -321,8 +336,8 @@ main(
 
 			if (instrument_sim.l00FrameReady)
 			{
-				int size = instrument_sim.l00Frame.Pack(l00_buffer);
-				l00.file.Write(l00_buffer, size);
+				int size = instrument_sim.l00.frame.Pack(l00.buffer);
+				l00.file.Write(l00.buffer, size);
 			}
 
 			need_instrument_event = 1;
