@@ -15,7 +15,6 @@ static const char rcs_id_l2b_c[] =
 //=====//
 
 L2B::L2B()
-:	medianFilterWindowSize(0), medianFilterMaxPasses(0)
 {
 	return;
 }

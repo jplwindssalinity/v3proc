@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_instrumentsim_c[] =
 	"@(#) $Id$";
@@ -176,10 +176,10 @@ InstrumentSim::SetMeasurements(
 			// not perfect.
 			//---------------------------------------------------------------//
 
-			if (instrument->useKpm == 1)
+			if (instrument->simKpmFlag == 1)
 			{
-				sigma0 *= kpmField->GetRV(&(kp->kpm), meas->pol,
-					wv.spd,lon_lat);
+				sigma0 *= kpmField->GetRV(&(kp->kpm), meas->pol, wv.spd,
+					lon_lat);
 			}
 		}
 
@@ -264,9 +264,11 @@ InstrumentSim::SetL00Science(
 	//----------//
 	// set PtGr //
 	//----------//
+	// Only "noise it up" if simKpriFlag is set
 
 	l00_frame->ptgr= instrument->transmitPower*instrument->echo_receiverGain;
-	l00_frame->ptgr *= (1+ptgrNoise.GetNumber(instrument->time));
+	if (instrument->simKpriFlag)
+		l00_frame->ptgr *= (1 + ptgrNoise.GetNumber(instrument->time));
 
 	//----------------------//
 	// set antenna position //

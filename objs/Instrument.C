@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_instrumentsim_c[] =
 	"@(#) $Id$";
@@ -37,7 +37,7 @@ Instrument::Instrument()
 	systemTemperature(0.0), baseTransmitFreq(0.0), transmitFreq(0.0),
 	scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
 	guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
-	useKpc(1), useKpm(1), _eqxTime(0)
+	simKpcFlag(1), simKpmFlag(1), simKpriFlag(1), _eqxTime(0)
 {
 	return;
 }

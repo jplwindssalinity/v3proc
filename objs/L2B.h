@@ -69,13 +69,6 @@ public:
 	L2BHeader		header;
 	L2BFrame		frame;
 
-	//----------------------//
-	// processing variables //
-	//----------------------//
-
-	int				medianFilterWindowSize;
-	int				medianFilterMaxPasses;
-
 protected:
 
 	//-----------//

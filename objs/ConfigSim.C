@@ -19,6 +19,7 @@ static const char rcs_id_configsim_c[] =
 #include "L1B.h"
 #include "L2A.h"
 #include "L2B.h"
+#include "L2AToL2B.h"
 #include "Constants.h"
 #include "Distributions.h"
 #include "Tracking.h"
@@ -74,6 +75,10 @@ ConfigSpacecraftSim(
 	// configure the spacecraft simulator //
 	//------------------------------------//
 
+	int sim_kprs_flag;
+	if (! config_list->GetInt(SIM_KPRS_FLAG_KEYWORD, &sim_kprs_flag))
+		return(0);
+	spacecraft_sim->simKprsFlag = sim_kprs_flag;
 
 	//-------------------------------//
 	// configure the attitude models //
@@ -574,22 +579,6 @@ ConfigInstrument(
 	system_loss=(float)pow(10.0,0.1*system_loss);
 	instrument->systemLoss = system_loss;
 
-	int use_kpc;
-	if (! config_list->GetInt(USE_KPC_KEYWORD, &use_kpc))
-	{
-		printf("Could not find use Kpc flag in config file\n");
-		return(0);
-	}
-	instrument->useKpc = use_kpc;
-
-	int use_kpm;
-	if (! config_list->GetInt(USE_KPM_KEYWORD, &use_kpm))
-	{
-		printf("Could not find use Kpm flag in config file\n");
-		return(0);
-	}
-	instrument->useKpm = use_kpm;
-
 	//--------------//
 	// orbit period //
 	//--------------//
@@ -602,6 +591,25 @@ ConfigInstrument(
 		return(0);
 	}
 	instrument->orbitTicksPerOrbit = orbit_ticks;
+
+	//-------//
+	// FLAGS //
+	//-------//
+
+	int sim_kpc_flag;
+	if (! config_list->GetInt(SIM_KPC_FLAG_KEYWORD, &sim_kpc_flag))
+		return(0);
+	instrument->simKpcFlag = sim_kpc_flag;
+
+	int sim_kpm_flag;
+	if (! config_list->GetInt(SIM_KPM_FLAG_KEYWORD, &sim_kpm_flag))
+		return(0);
+	instrument->simKpmFlag = sim_kpm_flag;
+
+	int sim_kpri_flag;
+	if (! config_list->GetInt(SIM_KPRI_FLAG_KEYWORD, &sim_kpri_flag))
+		return(0);
+	instrument->simKpriFlag = sim_kpri_flag;
 
 	return(1);
 }
@@ -1403,14 +1411,26 @@ ConfigL2B(
 		return(0);
 	l2b->SetFilename(l2b_filename);
 
+	return(1);
+}
+
+//----------------//
+// ConfigL2AToL2B //
+//----------------//
+
+int
+ConfigL2AToL2B(
+	L2AToL2B*		l2a_to_l2b,
+	ConfigList*		config_list)
+{
 	int tmp_int;
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
-	l2b->medianFilterWindowSize = tmp_int;
-
+	l2a_to_l2b->medianFilterWindowSize = tmp_int;
+ 
 	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
 		return(0);
-	l2b->medianFilterMaxPasses = tmp_int;
+	l2a_to_l2b->medianFilterMaxPasses = tmp_int;
 
 	return(1);
 }

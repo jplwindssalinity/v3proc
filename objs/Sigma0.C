@@ -64,7 +64,7 @@ radar_X(
 		instrument->antenna.spinRate,&GatGar);
 
 	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
-		 A3db * lambda*lambda /
+		A3db * lambda*lambda /
 		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
 	return(1);
 }
@@ -94,7 +94,7 @@ radar_X_PtGr(
 		instrument->antenna.spinRate,&GatGar);
 
 	*X = PtGr * GatGar *
-		 A3db * lambda*lambda /
+		A3db * lambda*lambda /
 		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
 	return(1);
 }
@@ -191,7 +191,7 @@ sigma0_to_Esn_slice(
 
 	*Esn_slice = (float)(Es_slice + En_slice);
 
-	if (instrument->useKpc == 0)
+	if (instrument->simKpcFlag == 0)
 	{
 		return(1);
 	}
@@ -299,7 +299,7 @@ sigma0_to_Esn_noise(
 		meas = spot->GetNext();
 	}
 
-	if (instrument->useKpc == 0)
+	if (instrument->simKpcFlag == 0)
 	{
 		return(1);
 	}
@@ -392,7 +392,7 @@ Er_to_sigma0(
 	// Kpr comes from 1/X
 	meas->value = (float)(Es_slice / meas->XK / Tp);
 
-	if (instrument->useKpc == 0)
+	if (instrument->simKpcFlag == 0)
 	{
 		meas->A = 0.0;
 		meas->B = 0.0;

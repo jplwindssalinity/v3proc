@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef SPACECRAFTSIM_H
 #define SPACECRAFTSIM_H
@@ -90,15 +90,21 @@ public:
 	// Attitude Reporting Routine //
 	//----------------------------//
 
-	void ReportAttitude(double time, Spacecraft* spacecraft, 
+	void ReportAttitude(double time, Spacecraft* spacecraft,
 				Attitude* attitude);
 
-        //--------------------------//
-        // public variables         //
-        //--------------------------//
+	//------------------//
+	// public variables //
+	//------------------//
+
 	AttDist attCntlDist;	// Attitude Control Distribution
 	AttDist attKnowDist;	// Attitude Knowledge Distribution
 
+	//-------//
+	// flags //
+	//-------//
+
+	int		simKprsFlag;	// 0 = no knowledge error, 1 = knowledge error
 
 protected:
 

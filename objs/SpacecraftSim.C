@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_spacecraftsim_c[] =
 	"@(#) $Id$";
@@ -23,11 +23,11 @@ static const double rm_2 = rm * rm;
 //===============//
 
 SpacecraftSim::SpacecraftSim()
-:	_epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0), _littleOmega(0.0),
-	_l(0.0), _period(0.0), 
-	_a_3(0.0), _e_2(0.0), _ascnodot(0.0), _periasdot(0.0), _ameandot(0.0),
-	_eta(0.0), _pp(0.0), _pp_2(0.0), _cosi(0.0), _cosi_2(0.0), _sini_2(0.0),
-	_gama(0.0), _G(0.0), _H(0.0), _nextUpdateTime(0.0), _nextEqxTime(0.0)
+:	simKprsFlag(1), _epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0),
+	_littleOmega(0.0), _l(0.0), _period(0.0), _a_3(0.0), _e_2(0.0),
+	_ascnodot(0.0), _periasdot(0.0), _ameandot(0.0), _eta(0.0), _pp(0.0),
+	_pp_2(0.0), _cosi(0.0), _cosi_2(0.0), _sini_2(0.0), _gama(0.0), _G(0.0),
+	_H(0.0), _nextUpdateTime(0.0), _nextEqxTime(0.0)
 {
 	return;
 }
@@ -335,41 +335,39 @@ SpacecraftSim::UpdateAttitude(
 	double			time,
 	Spacecraft*		spacecraft)
 {
-
-  spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time));
-  spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time));
-  spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time));
+	spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time));
+	spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time));
+	spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time));
 
 	return(1);
 }
 
-
-
 //-------------------------------//
 // SpacecraftSim::ReportAttitude //
 //-------------------------------//
+// This method reports attitude + knowledge error
+// Knowledge error is added *only* if simKprsFlag is non-zero
 
-/**** This method reports attitude + knowledge error ****/
 void
 SpacecraftSim::ReportAttitude(
 	double			time,
 	Spacecraft*		spacecraft,
 	Attitude*		attitude)
 {
-	float roll,pitch,yaw;
-	unsigned char* order;
+	float roll = spacecraft->attitude.GetRoll();
+	float pitch = spacecraft->attitude.GetPitch();
+	float yaw = spacecraft->attitude.GetYaw();
 
-	roll=spacecraft->attitude.GetRoll();
-	pitch=spacecraft->attitude.GetPitch();
-	yaw=spacecraft->attitude.GetYaw();
+	if (simKprsFlag)
+	{
+		roll += attKnowDist.roll.GetNumber(time);
+		pitch += attKnowDist.pitch.GetNumber(time);
+		yaw += attKnowDist.yaw.GetNumber(time);
+	}
 
+	unsigned char* order = spacecraft->attitude.GetOrder();
+	attitude->Set(roll, pitch, yaw, order[0], order[1], order[2]);
 
-	roll+=attKnowDist.roll.GetNumber(time);
-	pitch+=attKnowDist.pitch.GetNumber(time);
-	yaw+=attKnowDist.yaw.GetNumber(time);
-
-	order=spacecraft->attitude.GetOrder();
-	attitude->Set(roll,pitch,yaw,order[0],order[1],order[2]);
 	return;
 }
 
@@ -504,7 +502,7 @@ SpacecraftSim::FindNextArgOfLatTime(
 
 	UpdateOrbit(time_2, &spacecraft);
 	double lat_2 = GetArgOfLat(&spacecraft);
-    lat_2 = fmod(lat_2 + add_me, two_pi) - pi;
+	lat_2 = fmod(lat_2 + add_me, two_pi) - pi;
 	while (lat_2 < 0.0)
 	{
 		time_2 += delta_time;
@@ -520,7 +518,7 @@ SpacecraftSim::FindNextArgOfLatTime(
 	double time_mid, lat_mid;
 	while (time_2 - time_1 > time_tol)
 	{
-		time_mid  = (time_1 + time_2) / 2.0;
+		time_mid = (time_1 + time_2) / 2.0;
 		UpdateOrbit(time_mid, &spacecraft);
 		lat_mid = GetArgOfLat(&spacecraft);
 		lat_mid = fmod(lat_mid + add_me, two_pi) - pi;

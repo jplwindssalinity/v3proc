@@ -143,8 +143,9 @@ public:
 	// flags //
 	//-------//
 
-	int				useKpc;		// 0 - no kpc, 1 - with kpc
-	int				useKpm;		// 0 - no kpm, 1 - with kpm
+	int			simKpcFlag;		// 0 = no Kpc, 1 = with Kpc
+	int			simKpmFlag;		// 0 = no Kpm, 1 = with Kpm
+	int			simKpriFlag;	// 0 = no Kpri, 1 = with Kpri
 
 protected:
 	double			_eqxTime;

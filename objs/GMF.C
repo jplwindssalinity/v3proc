@@ -21,9 +21,11 @@ static const char rcs_id_gmf_c[] =
 //=====//
 
 GMF::GMF()
-:	_spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
-	_smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
-	_bestSpd(NULL), _bestObj(NULL), _copyObj(NULL)
+:	retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
+	retrieveUsingKprsFlag(1), _spdTol(DEFAULT_SPD_TOL),
+	_sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
+	_maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
+	_copyObj(NULL)
 {
 	SetPhiCount(DEFAULT_PHI_COUNT);
 	return;
@@ -667,25 +669,98 @@ GMF::_ObjectiveFunction(
 	float		phi,
 	Kp*			kp)
 {
+	//-----------------------------------------//
+	// initialize the objective function value //
+	//-----------------------------------------//
+
 	float fv = 0.0;
+
+	//-------------------------//
+	// for each measurement... //
+	//-------------------------//
+
 	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
 	{
-		float chi = phi - meas->eastAzimuth + pi;
-		float gmf_value;
-		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
-			&gmf_value);
-		float s = gmf_value - meas->value;
+		//---------------------------------------//
+		// get sigma-0 for the trial wind vector //
+		//---------------------------------------//
 
-		double var;
+		float chi = phi - meas->eastAzimuth + pi;
+		float trial_value;
+		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
+			&trial_value);
+
+		//------------------------------------------------------------//
+		// find the difference between the trial and measured sigma-0 //
+		//------------------------------------------------------------//
+
+		float s = trial_value - meas->value;
+
+		//-------------------------------------------------------//
+		// calculate the expected variance for the trial sigma-0 //
+		//-------------------------------------------------------//
+
 		if (kp)
 		{
-			if (! kp->GetVp(meas, gmf_value, meas->pol, spd, &var))
-				return(0);
+			//--------------//
+			// Kpc variance //
+			//--------------//
+
+			double vpc;
+			if (retrieveUsingKpcFlag)
+			{
+				if (! kp->GetVpc(meas, trial_value, &vpc))
+					return(0);
+			}
+
+			//-----//
+			// Kpm //
+			//-----//
+
+			double kpm2;
+			if (retrieveUsingKpmFlag)
+			{
+				if (! kp->GetKpm2(meas->pol, spd, &kpm2))
+					return(0);
+			}
+
+			//------//
+			// Kpri //
+			//------//
+
+			double kpri2;
+			if (retrieveUsingKpriFlag)
+			{
+				if (! kp->GetKpri2(&kpri2))
+					return(0);
+			}
+
+			//------//
+			// Kprs //
+			//------//
+
+			double kprs2;
+			if (retrieveUsingKprsFlag)
+			{
+				if (! kp->GetKprs2(meas, &kprs2))
+					return(0);
+			}
+
+			//------------------------//
+			// calculate the variance //
+			//------------------------//
+
+			double var = vpc +
+				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
 
 			fv += s*s / var + log(var);
 		}
 		else
 		{
+			//--------------//
+			// no kp at all //
+			//--------------//
+
 			fv += s*s;
 		}
 	}

@@ -15,6 +15,7 @@ static const char rcs_id_l2atol2b_c[] =
 //==========//
 
 L2AToL2B::L2AToL2B()
+:	medianFilterWindowSize(0), medianFilterMaxPasses(0)
 {
 	return;
 }
@@ -131,8 +132,8 @@ L2AToL2B::Flush(
 {
 	// median filter
 	l2b->frame.swath.InitWithRank(1);
-	l2b->frame.swath.MedianFilter(l2b->medianFilterWindowSize,
-		l2b->medianFilterMaxPasses);
+	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
+		medianFilterMaxPasses);
 	if (! l2b->WriteHeader())
 		return(0);
 	if (! l2b->WriteDataRec())

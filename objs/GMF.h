@@ -82,6 +82,15 @@ public:
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
 
+	//-------//
+	// flags //
+	//-------//
+
+	int		retrieveUsingKpcFlag;
+	int		retrieveUsingKpmFlag;
+	int		retrieveUsingKpriFlag;
+	int		retrieveUsingKprsFlag;
+
 protected:
 
 	//----------------//

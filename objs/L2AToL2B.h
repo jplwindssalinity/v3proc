@@ -54,6 +54,13 @@ public:
 
 	int		WriteSolutionCurves(L2A* l2a, GMF* gmf, Kp* kp,
 				const char* output_file);
+
+	//----------------------//
+	// processing variables //
+	//----------------------//
+
+	int		medianFilterWindowSize;
+	int		medianFilterMaxPasses;
 };
 
 #endif
