@@ -173,6 +173,9 @@ L1AToL1B::Convert(
 				}
 			}
 
+			free(Esn);
+			Esn = NULL;
+
 			//----------------------------------------//
 			// generate the reverse coordinate switch //
 			//----------------------------------------//

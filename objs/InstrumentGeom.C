@@ -354,6 +354,7 @@ LocateSliceCentroids(
 			}
 			if (!flag) meas = meas_spot->GetNext();
 		}
+		if (indx) free(indx);
 	}
 					
 	if (gains)

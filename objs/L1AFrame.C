@@ -28,6 +28,7 @@ L1AFrame::L1AFrame()
 
 L1AFrame::~L1AFrame()
 {
+	Deallocate();
 	return;
 }
 

@@ -952,6 +952,14 @@ WindField::_Deallocate()
 
 	int lon_count = _lon.GetBins();
 	int lat_count = _lat.GetBins();
+	for (int i = 0; i < lon_count; i++)
+	{
+		for (int j = 0; j < lat_count; j++)
+		{
+			if (_field[i][j]) delete _field[i][j];
+		}
+	}
+
 	free_array((void *)_field, 2, lon_count, lat_count);
 
 	_field = NULL;
@@ -1267,6 +1275,8 @@ WindSwath::MedianFilter(
 			break;
 	} while (pass < max_passes);
 
+	free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+	free_array(change, 2, _crossTrackBins, _alongTrackBins);
 	return(pass);
 }
 
