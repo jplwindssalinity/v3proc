@@ -91,6 +91,7 @@ template class List<OffsetList>;
 // CONSTANTS //
 //-----------//
 
+#define EQX_TIME_TOLERANCE	0.1
 
 //--------//
 // MACROS //
@@ -280,6 +281,16 @@ main(
 		exit(1);
 	}
 	instrument_sim.startTime = instrument_start_time;
+
+	//------------------//
+	// set the eqx time //
+	//------------------//
+
+	double start_time;
+	start_time = spacecraft_sim.FindPrevEqxTime(instrument_start_time, 
+						    EQX_TIME_TOLERANCE);
+	instrument.Eqx(start_time);
+
 
 	//------------//
 	// initialize //
