@@ -74,6 +74,8 @@ static const char rcs_id[] =
 #include "Interpolate.h"
 #include "SeaPac.h"
 
+#include "mudh.h"
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -100,6 +102,8 @@ template class List<AngleInterval>;
 #define CT_WIDTH     76
 #define MIN_SAMPLES  100
 
+#define MAX_SHORT  65535
+
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -119,7 +123,7 @@ const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r rain_rate ]",
 
 // Index 1: Parameter (0=NBD, 1=Spd, 2=Dir, 3=MLE, 4=Prob
 // Index 2: SSM/I class (0=all, 1=rainfree, 2=rain)
-static unsigned long counts[16][16][16][16][3];
+static unsigned long counts[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM][3];
 
 //--------------//
 // MAIN PROGRAM //
@@ -170,6 +174,22 @@ main(
     int end_rev = atoi(argv[optind++]);
     const char* output_base = argv[optind++];
 
+    //--------------//
+    // simple calcs //
+    //--------------//
+
+    float nbd_spread = NBD_MAX - NBD_MIN;
+    int max_inbd = NBD_DIM - 2;    // save room for missing NBD index
+
+    float spd_spread = SPD_MAX - SPD_MIN;
+    int max_ispd = SPD_DIM - 1;
+
+    float dir_spread = DIR_MAX - DIR_MIN;
+    int max_idir = DIR_DIM - 1;
+
+    float mle_spread = MLE_MAX - MLE_MIN;
+    int max_imle = MLE_DIM - 1;
+
     //-------------------//
     // open output files //
     //-------------------//
@@ -188,10 +208,10 @@ main(
     // process rev by rev //
     //--------------------//
 
-    unsigned char nbd_array[AT_WIDTH][CT_WIDTH];
-    unsigned char spd_array[AT_WIDTH][CT_WIDTH];
-    unsigned char dir_array[AT_WIDTH][CT_WIDTH];
-    unsigned char mle_array[AT_WIDTH][CT_WIDTH];
+    unsigned short nbd_array[AT_WIDTH][CT_WIDTH];
+    unsigned short spd_array[AT_WIDTH][CT_WIDTH];
+    unsigned short dir_array[AT_WIDTH][CT_WIDTH];
+    unsigned short mle_array[AT_WIDTH][CT_WIDTH];
 
     for (int rev = start_rev; rev <= end_rev; rev++)
     {
@@ -209,10 +229,10 @@ main(
             fprintf(stderr, "%s: continuing...\n", command);
             continue;
         }
-        fread(nbd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
-        fread(spd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
-        fread(dir_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
-        fread(mle_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
+        fread(nbd_array, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
+        fread(spd_array, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
+        fread(dir_array, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
+        fread(mle_array, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
         fclose(ifp);
 
         //----------------//
@@ -258,42 +278,42 @@ main(
             {
                 // need the following: SSM/I rain rate, speed, direction, MLE
                 if (rain_rate[ati][cti] >= 250 ||
-                    spd_array[ati][cti] == 255 ||
-                    dir_array[ati][cti] == 255 ||
-                    mle_array[ati][cti] == 255)
+                    spd_array[ati][cti] == MAX_SHORT ||
+                    dir_array[ati][cti] == MAX_SHORT ||
+                    mle_array[ati][cti] == MAX_SHORT)
                 {
                     continue;
                 }
 
                 // convert back to real values
-                double nbd = (double)nbd_array[ati][cti] / 20.0 - 6.0;
-                double spd = (double)spd_array[ati][cti] / 5.0;
-                double dir = (double)dir_array[ati][cti] / 2.0;
-                double mle = (double)mle_array[ati][cti] / 8.0 - 30.0;
+                double nbd = (double)nbd_array[ati][cti] * 0.001 - 10.0;
+                double spd = (double)spd_array[ati][cti] * 0.01;
+                double dir = (double)dir_array[ati][cti] * 0.01;
+                double mle = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
                 // convert to tighter indicies
-                // nbd -4 to 6
-                // spd 0 to 30
-                // dir 0 to 90
-                // mle -10 to 0
-                int inbd = (int)((nbd +  4.0) * 14.0 / 10.0 + 0.5);
-                int ispd = (int)((spd +  0.0) * 15.0 / 30.0 + 0.5);
-                int idir = (int)((dir +  0.0) * 15.0 / 90.0 + 0.5);
-                int imle = (int)((mle + 10.0) * 15.0 / 10.0 + 0.5);
+                int inbd = (int)((nbd - NBD_MIN) * (float)max_inbd /
+                    nbd_spread + 0.5);
+                int ispd = (int)((spd - SPD_MIN) * (float)max_ispd /
+                    spd_spread + 0.5);
+                int idir = (int)((dir - DIR_MIN) * (float)max_idir /
+                    dir_spread + 0.5);
+                int imle = (int)((mle - MLE_MIN) * (float)max_imle /
+                    mle_spread + 0.5);
 
-                // nbd is scaled to 15 values so we can...
+                // nbd is scaled to fewer values so we can...
                 if (inbd < 0) inbd = 0;
-                if (inbd > 14) inbd = 14;
+                if (inbd > max_inbd) inbd = max_inbd;
 
                 // ...hack in a "missing nbd" index
-                if (nbd_array[ati][cti] == 255) inbd = 15;
+                if (nbd_array[ati][cti] == MAX_SHORT) inbd = max_inbd + 1;
 
                 if (ispd < 0) ispd = 0;
-                if (ispd > 15) ispd = 15;
+                if (ispd > max_ispd) ispd = max_ispd;
                 if (idir < 0) idir = 0;
-                if (idir > 15) idir = 15;
+                if (idir > max_idir) idir = max_idir;
                 if (imle < 0) imle = 0;
-                if (imle > 15) imle = 15;
+                if (imle > max_imle) imle = max_imle;
 
                 float rr = (float)rain_rate[ati][cti] * 0.1;
                 if (rr == 0.0)
@@ -309,16 +329,16 @@ main(
     // write table //
     //---------- --//
 
-    double norain_tab[16][16][16][16];
-    double rain_tab[16][16][16][16];
-    double all_count[16][16][16][16];
-    for (int i = 0; i < 16; i++)
+    double norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+    double rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+    double all_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+    for (int i = 0; i < NBD_DIM; i++)
     {
-        for (int j = 0; j < 16; j++)
+        for (int j = 0; j < SPD_DIM; j++)
         {
-            for (int k = 0; k < 16; k++)
+            for (int k = 0; k < DIR_DIM; k++)
             {
-                for (int l = 0; l < 16; l++)
+                for (int l = 0; l < MLE_DIM; l++)
                 {
                     norain_tab[i][j][k][l] = 0.0;
                     rain_tab[i][j][k][l] = 0.0;
@@ -343,9 +363,12 @@ main(
             }
         }
     }
-    fwrite(norain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
-    fwrite(rain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
-    fwrite(all_count, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
+    fwrite(norain_tab, sizeof(double),
+        NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM, mudhtab_ofp);
+    fwrite(rain_tab, sizeof(double),
+        NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM, mudhtab_ofp);
+    fwrite(all_count, sizeof(double),
+        NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM, mudhtab_ofp);
 
     //-------------//
     // close files //
@@ -371,13 +394,13 @@ main(
         // find max count
         unsigned long max_count = 0;
         unsigned long total_count = 0;
-        for (int i = 0; i < 16; i++)
+        for (int i = 0; i < NBD_DIM; i++)
         {
-            for (int j = 0; j < 16; j++)
+            for (int j = 0; j < SPD_DIM; j++)
             {
-                for (int k = 0; k < 16; k++)
+                for (int k = 0; k < DIR_DIM; k++)
                 {
-                    for (int l = 0; l < 16; l++)
+                    for (int l = 0; l < MLE_DIM; l++)
                     {
                         total_count += counts[i][j][k][l][0];
                         if (counts[i][j][k][l][0] > max_count)
@@ -393,13 +416,13 @@ main(
         for (unsigned long target = 0; target <= max_count; target++)
         {
             unsigned long target_count = 0;
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < NBD_DIM; i++)
             {
-                for (int j = 0; j < 16; j++)
+                for (int j = 0; j < SPD_DIM; j++)
                 {
-                    for (int k = 0; k < 16; k++)
+                    for (int k = 0; k < DIR_DIM; k++)
                     {
-                        for (int l = 0; l < 16; l++)
+                        for (int l = 0; l < MLE_DIM; l++)
                         {
                             if (counts[i][j][k][l][0] == target)
                             {
@@ -412,7 +435,8 @@ main(
             cell_PDF_sum += target_count;
             data_sum = (target_count * target);
             data_PDF_sum += data_sum;
-            double cell_PDF = (double)cell_PDF_sum / (double)(16*16*16*16);
+            double cell_PDF = (double)cell_PDF_sum /
+                (double)(NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM);
             double data_PDF = (double)data_PDF_sum / (double)(total_count);
             fprintf(hist_ofp, "%ld %g %g\n", target, cell_PDF, data_PDF);
         }

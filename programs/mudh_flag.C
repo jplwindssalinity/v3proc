@@ -78,6 +78,8 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "SeaPac.h"
 
+#include "mudh.h"
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -125,7 +127,7 @@ const char* usage_array[] = { "[ -t threshold ]", "<ins_config_file>",
     "<classtab_file>", "<hdf_l2a_file>", "<hdf_l2b_file>",
     "<output_flag_file>", 0 };
 
-static double         classtab[16][16][16][16];
+static double         classtab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static float          index_tab[AT_WIDTH][CT_WIDTH];
 static unsigned char  flag_tab[AT_WIDTH][CT_WIDTH];
 
@@ -173,6 +175,22 @@ main(
     const char* l2b_hdf_file = argv[optind++];
     const char* output_flag_file = argv[optind++];
 
+    //--------------//
+    // simple calcs //
+    //--------------//
+
+    float nbd_spread = NBD_MAX - NBD_MIN;
+    int max_inbd = NBD_DIM - 2;    // save room for missing NBD index
+
+    float spd_spread = SPD_MAX - SPD_MIN;
+    int max_ispd = SPD_DIM - 1;
+
+    float dir_spread = DIR_MAX - DIR_MIN;
+    int max_idir = DIR_DIM - 1;
+
+    float mle_spread = MLE_MAX - MLE_MIN;
+    int max_imle = MLE_DIM - 1;
+
     //--------------------//
     // read classtab file //
     //--------------------//
@@ -184,7 +202,7 @@ main(
             classtab_file);
         exit(1);
     }
-    unsigned long size = 16 * 16 * 16 * 16;
+    unsigned long size = NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM;
     if (fread(classtab, sizeof(double), size, classtab_ifp) != size)
     {
         fprintf(stderr, "%s: error reading classtab file %s\n", command,
@@ -519,20 +537,20 @@ main(
             //-----------------------------//
             // convert speed to MUDH index //
             //-----------------------------//
-            // speeds between 0.0 and 30.0 m/s are indexed between 0 and 15
 
-            int ispd = (int)(spd * 15.0 / 30.0 + 0.5);
+            int ispd = (int)((spd - SPD_MIN) * (float)max_ispd /
+                spd_spread + 0.5);
             if (ispd < 0) ispd = 0;
-            if (ispd > 15) ispd = 15;
+            if (ispd > max_ispd) ispd = max_ispd;
 
             //---------------------------//
             // convert MLE to MUDH index //
             //---------------------------//
-            // MLE values between -10 and 0 are indexed between 0 and 15
 
-            int imle = (int)((mle + 10.0) * 15.0 / 10.0 + 0.5);
+            int imle = (int)((mle - MLE_MIN) * (float)max_imle /
+                mle_spread + 0.5);
             if (imle < 0) imle = 0;
-            if (imle > 15) imle = 15;
+            if (imle > max_imle) imle = max_imle;
 
             //--------------//
             // clear arrays //
@@ -599,13 +617,10 @@ main(
             //-----------------------------------------//
             // calculate NBD and convert to MUDH index //
             //-----------------------------------------//
-            // NBD values between -4 and 6 are indexed between 0 and *14*
-            // 15 is reserved for "No NBD available" (outer beam only cases)
-
             // Requires fore and aft looks from both beams, otherwise NBD is
             // considered not available (even though it could be calcalated)
 
-            int inbd = 15;    // index for "No NBD available"
+            int inbd = max_inbd + 1;    // index for "No NBD available"
             if (count[0][0] > 0 && count[0][1] > 0 &&
                 count[1][0] > 0 && count[1][1] > 0)
             {
@@ -628,17 +643,15 @@ main(
                     1.0 / (double)beam_count[1]);
                 double nbd = mean_dif / sub_std;
 
-                inbd = (int)((nbd + 4.0) * 14.0 / 10.0 + 0.5);
+                inbd = (int)((nbd - NBD_MIN) * (float)max_inbd /
+                    nbd_spread + 0.5);
                 if (inbd < 0) inbd = 0;
-                if (inbd > 14) inbd = 14;
+                if (inbd > max_inbd) inbd = max_inbd;
             }
 
             //---------------------------------------------------------//
             // calculate direction parameter and convert to MUDH index //
             //---------------------------------------------------------//
-            // direction parameter values between 0 and 90
-            // are indexed between 0 and 15
-
             // use outer beam to determine cross track direction
             // need both fore and aft measurements
 
@@ -666,9 +679,10 @@ main(
                 // convert to degrees
                 dir_val *= rtd;
 
-                idir = (int)((dir +  0.0) * 15.0 / 90.0 + 0.5);
+                idir = (int)((dir - DIR_MIN) * (float)max_idir /
+                    dir_spread + 0.5);
                 if (idir < 0) idir = 0;
-                if (idir > 15) idir = 15;
+                if (idir > max_idir) idir = max_idir;
             }
 
             //------------------------------------------------------//

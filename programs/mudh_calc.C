@@ -103,6 +103,8 @@ template class List<AngleInterval>;
 #define AT_WIDTH  1624
 #define CT_WIDTH  76
 
+#define MAX_SHORT  65535
+
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -120,10 +122,10 @@ void  check_status(HdfFile::StatusE status);
 const char* usage_array[] = { "<ins_config_file>", "<hdf_l2a_file>",
     "<hdf_l2b_file>", "<output_mudh_file>", 0 };
 
-unsigned char  nbd_array[AT_WIDTH][CT_WIDTH];
-unsigned char  spd_array[AT_WIDTH][CT_WIDTH];
-unsigned char  dir_array[AT_WIDTH][CT_WIDTH];
-unsigned char  mle_array[AT_WIDTH][CT_WIDTH];
+unsigned short nbd_array[AT_WIDTH][CT_WIDTH];
+unsigned short spd_array[AT_WIDTH][CT_WIDTH];
+unsigned short dir_array[AT_WIDTH][CT_WIDTH];
+unsigned short mle_array[AT_WIDTH][CT_WIDTH];
 unsigned short lon_array[AT_WIDTH][CT_WIDTH];
 unsigned short lat_array[AT_WIDTH][CT_WIDTH];
 
@@ -321,12 +323,12 @@ main(
     {
         for (int j = 0; j < CT_WIDTH; j++)
         {
-            nbd_array[i][j] = 255;
-            spd_array[i][j] = 255;
-            dir_array[i][j] = 255;
-            mle_array[i][j] = 255;
-            lon_array[i][j] = 65535;
-            lat_array[i][j] = 65535;
+            nbd_array[i][j] = MAX_SHORT;
+            spd_array[i][j] = MAX_SHORT;
+            dir_array[i][j] = MAX_SHORT;
+            mle_array[i][j] = MAX_SHORT;
+            lon_array[i][j] = MAX_SHORT;
+            lat_array[i][j] = MAX_SHORT;
         }
     }
 
@@ -508,21 +510,21 @@ main(
             //-----------------//
             // set speed array //
             //-----------------//
-            // integer speed at 0.2 m/s resolution (0 - 50 m/s)
+            // integer speed at 0.01 m/s (0 - 50 m/s)
 
-            int ispd = (int)(spd * 5.0 + 0.5);
+            int ispd = (int)(spd / 0.01 + 0.5);
             if (ispd < 0) ispd = 0;
-            if (ispd > 250) ispd = 250;
-            spd_array[ati][cti] = (unsigned char)ispd;
+            if (ispd > 5000) ispd = 5000;
+            spd_array[ati][cti] = (unsigned short)ispd;
 
             //---------------//
             // set MLE array //
             //---------------//
-            // integer MLE at 0.125 m/s resolution (-30 - 0)
+            // integer MLE at 0.001 (-30 - 0)
 
-            int imle = (int)((mle + 30.0) * 8.0 + 0.5);
+            int imle = (int)((mle + 30.0) / 0.001 + 0.5);
             if (imle < 0) imle = 0;
-            if (imle > 240) imle = 240;
+            if (imle > 30000) imle = 30000;
             mle_array[ati][cti] = (unsigned char)imle;
 
             //------------------------//
@@ -620,10 +622,11 @@ main(
                     dir_val = pi_over_two - dir_val;
                 dir_val *= rtd;
 
-                int idir = (int)(dir_val * 2.0 + 0.5);
+                // integer dir at 0.01 deg (0 - 90 deg)
+                int idir = (int)(dir_val / 0.01 + 0.5);
                 if (idir < 0) idir = 0;
-                if (idir > 180) idir = 180;
-                dir_array[ati][cti] = (unsigned char)idir;
+                if (idir > 9000) idir = 9000;
+                dir_array[ati][cti] = (unsigned short)idir;
             }
 
             //---------------//
@@ -651,10 +654,11 @@ main(
                     1.0 / (double)beam_count[1]);
                 double nbd = mean_dif / sub_std;
 
-                int inbd = (int)((nbd + 6.0) * 20.0 + 0.5);
+                // integer NBD at 0.01 m/s (-10 - 10)
+                int inbd = (int)((nbd + 10.0) / 0.001 + 0.5);
                 if (inbd < 0) inbd = 0;
-                if (inbd > 240) inbd = 240;
-                nbd_array[ati][cti] = (unsigned char)inbd;
+                if (inbd > 20000) inbd = 20000;
+                nbd_array[ati][cti] = (unsigned short)inbd;
             }
         }
         for (int cti = 0; cti < CT_WIDTH; cti++)
@@ -681,10 +685,10 @@ main(
     // write arrays //
     //--------------//
 
-    fwrite(nbd_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(spd_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(dir_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(mle_array,  sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(nbd_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(spd_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(dir_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(mle_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
     fwrite(lon_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
     fwrite(lat_array, sizeof(short), CT_WIDTH * AT_WIDTH, ofp);
     fclose(ofp);
