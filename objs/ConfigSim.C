@@ -496,6 +496,21 @@ ConfigInstrument(
 		return(0);
 	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
 
+	float transmit_power;
+	if (! config_list->GetFloat(TRANSMIT_POWER_KEYWORD, &transmit_power))
+		return(0);
+	instrument->transmitPower = transmit_power;
+
+	float receiver_gain;
+	if (! config_list->GetFloat(RECEIVER_GAIN_KEYWORD, &receiver_gain))
+		return(0);
+	instrument->receiverGain = receiver_gain;
+
+	float system_loss;
+	if (! config_list->GetFloat(SYSTEM_LOSS_KEYWORD, &system_loss))
+		return(0);
+	instrument->systemLoss = system_loss;
+
 	return(1);
 }
 

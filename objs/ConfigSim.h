@@ -130,6 +130,9 @@ RandomVelocity* ConfigUniformRandomVelocity(const char*
 #define RECEIVER_GATE_WIDTH_KEYWORD		"RECEIVER_GATE_WIDTH"
 #define BASE_TRANSMIT_FREQUENCY_KEYWORD	"BASE_TRANSMIT_FREQUENCY"
 #define SLICE_BANDWIDTH_KEYWORD			"SLICE_BANDWIDTH"
+#define TRANSMIT_POWER_KEYWORD                  "TRANSMIT_POWER"
+#define RECEIVER_GAIN_KEYWORD                   "RECEIVER_GAIN"
+#define SYSTEM_LOSS_KEYWORD                     "SYSTEM_LOSS"
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
