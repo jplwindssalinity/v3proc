@@ -112,6 +112,7 @@ void free_array(void* ptr, int ndims, ...)
 	// Initial call in the recursive deallocation tree
 	dim_free(ptr,0,ndims,dimsize);
 
+	free(dimsize);
 	va_end(ap);
 	return;
 }
