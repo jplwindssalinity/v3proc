@@ -53,6 +53,7 @@ OBJS = \
 	L1A.o \
 	L1AFrame.o \
 	L1AGSFrame.o \
+	L1AHdf.o \
 	L1AToL1B.o \
 	L1B.o \
 	L1BFrame.o \
