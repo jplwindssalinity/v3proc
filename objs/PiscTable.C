@@ -434,6 +434,7 @@ PiscTable::_ChiToIndex(
 {
 	double chi_ridx = _ChiToRealIndex(chi);
 	int chi_idx = (int)(chi_ridx + 0.5);
+	chi_idx %= _chiCount;
 	return(chi_idx);
 }
 
