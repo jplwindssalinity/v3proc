@@ -8,7 +8,8 @@
 //    l1a_hdf_energy_map
 //
 // SYNOPSIS
-//    l1a_hdf_energy_map <config_file> <output_base> <L1A_file...>
+//    l1a_hdf_energy_map [ -e ] <config_file> <output_base>
+//      <L1A_file...>
 //
 // DESCRIPTION
 //    This program generates an output array which can be turned
@@ -16,7 +17,7 @@
 //    channel.
 //
 // OPTIONS
-//    None.
+//    [ -e ]  Allow frames with errors.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -80,7 +81,7 @@ static const char rcs_id[] =
 #define LONGITUDE_BINS  1800
 #define LATITUDE_BINS   901
 
-#define OPTSTRING  ""
+#define OPTSTRING  "e"
 
 //--------//
 // MACROS //
@@ -111,11 +112,13 @@ template List<StringPair>;
 // OPTION VARIABLES //
 //------------------//
 
+int opt_error = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<output_base>",
+const char* usage_array[] = { "[ -e ]", "<config_file>", "<output_base>",
     "<L1A_file...>", 0 };
 
 float inner_energy[LONGITUDE_BINS][LATITUDE_BINS];
@@ -145,6 +148,9 @@ main(
     {
         switch(c)
         {
+        case 'e':
+            opt_error = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -259,8 +265,6 @@ main(
         int32 roll_sds_id = SDnametoid(sd_id, "roll", &roll_scale);
         int32 pitch_sds_id = SDnametoid(sd_id, "pitch", &pitch_scale);
         int32 yaw_sds_id = SDnametoid(sd_id, "yaw", &yaw_scale);
-        int32 frame_inst_status_sds_id = SDnametoid(sd_id,
-            "frame_inst_status");
         int32 frame_err_status_sds_id = SDnametoid(sd_id, "frame_err_status");
         int32 frame_qual_flag_sds_id = SDnametoid(sd_id, "frame_qual_flag");
         int32 pulse_qual_flag_sds_id = SDnametoid(sd_id, "pulse_qual_flag");
@@ -293,7 +297,7 @@ main(
                     command, (int)frame_err_status_sds_id);
                 exit(1);
             }
-            if (frame_err_status != 0)
+            if (! opt_error && frame_err_status != 0)
             {
                 fprintf(stderr,
                     "%s: frame %d is evil. (error status = 0x%08x)\n",
@@ -311,10 +315,10 @@ main(
                 exit(1);
             }
 
-            if (frame_qual_flag != 0)
+            if (! opt_error && frame_qual_flag != 0)
             {
                 fprintf(stderr,
-                    "%s: frame %d is evil. (quality flag = %0x)\n", command,
+                    "%s: frame %d is evil. (quality flag = 0x%0x)\n", command,
                     frame_idx, frame_qual_flag);
                 continue;
             }
@@ -531,7 +535,6 @@ main(
             SDendaccess(roll_sds_id) == FAIL ||
             SDendaccess(pitch_sds_id) == FAIL ||
             SDendaccess(yaw_sds_id) == FAIL ||
-            SDendaccess(frame_inst_status_sds_id) == FAIL ||
             SDendaccess(frame_err_status_sds_id) == FAIL ||
             SDendaccess(frame_qual_flag_sds_id) == FAIL ||
             SDendaccess(pulse_qual_flag_sds_id) == FAIL ||
