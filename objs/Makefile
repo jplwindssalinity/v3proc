@@ -256,7 +256,7 @@ Mat.o: Mat.C Mat.h Vect.h
 Matrix.o: Matrix.C Matrix.h Misc.h
 Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C L1BHdf.h L2AHdf.h Meas.h Beam.h Constants.h LonLat.h GenericGeom.h L1B.h L2A.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h BaseFile.h Matrix3.h BufferedList.h
-Metrics.o: Metrics.C Metrics.h Wind.h WindSwath.h Matrix.h AngleInterval.h LonLatWind.h WindVector.h LonLat.h Index.h List.h Misc.h Constants.h EarthPosition.h Matrix3.h
+Metrics.o: Metrics.C Metrics.h Wind.h LonLatWind.h WindSwath.h Matrix.h AngleInterval.h WindVector.h LonLat.h Index.h List.h Misc.h Constants.h EarthPosition.h Matrix3.h
 Misc.o: Misc.C Misc.h Constants.h Matrix.h Array.h
 MiscTable.o: MiscTable.C MiscTable.h Interpolate.h Constants.h Array.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 PMeas.o: PMeas.C Pscat.h Distributions.h Qscat.h PMeas.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h Beam.h Constants.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h List.h BufferedList.h
@@ -287,7 +287,7 @@ Transform.o: Transform.C Transform.h Vect.h Mat.h
 Vect.o: Vect.C Vect.h Mat.h
 Wind.o: Wind.C WindVector.h Wind.h GSparameters.h Array.h Matrix.h AngleInterval.h LonLatWind.h LonLat.h Index.h List.h Misc.h Constants.h EarthPosition.h Matrix3.h
 WindGrad.o: WindGrad.C WindGrad.h Wind.h WindSwath.h Array.h Matrix.h AngleInterval.h LonLatWind.h WindVector.h LonLat.h Index.h List.h Misc.h Constants.h EarthPosition.h Matrix3.h
-WindSwath.o: WindSwath.C WindSwath.h hdf_support.h Distributions.h Array.h Wind.h Matrix.h AngleInterval.h LonLatWind.h WindVector.h LonLat.h Index.h List.h Misc.h Constants.h EarthPosition.h Matrix3.h
+WindSwath.o: WindSwath.C WindSwath.h hdf_support.h Distributions.h Array.h Vect.h EarthGeom.h Wind.h Constants.h Matrix.h AngleInterval.h LonLatWind.h WindVector.h LonLat.h Index.h List.h Misc.h EarthPosition.h Matrix3.h
 WindVector.o: WindVector.C WindVector.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
 gn.o: gn.C Vect.h Transform.h Constants.h Mat.h
