@@ -125,7 +125,6 @@ public:
 	int					RemoveDuplicates();
 	int					SortByObj();
 	WindVectorPlus*		GetNearestToDirection(float dir);
-	
 
 	//---------//
 	// freeing //
@@ -150,8 +149,11 @@ public:
 //		The WindField object hold a non-ambiguous wind field.
 //======================================================================
 
-#define VAP_LON_DIM		360
-#define VAP_LAT_DIM		121
+#define VAP_LON_DIM				360
+#define VAP_LAT_DIM				121
+
+#define ECMWF_HIRES_LON_DIM		640
+#define ECMWF_HIRES_LAT_DIM		321
 
 class WindField
 {
@@ -169,6 +171,7 @@ public:
 	//--------------//
 
 	int		ReadVap(const char* filename);
+	int		ReadEcmwfHiRes(const char* filename);
 	int		WriteBev(const char* filename);
 
 	//--------//
@@ -183,7 +186,7 @@ protected:
 	//--------------//
 	// construction //
 	//--------------//
- 
+
 	int		_Allocate();
 	int		_Deallocate();
 
@@ -294,7 +297,7 @@ protected:
 	//--------------//
 	// construction //
 	//--------------//
- 
+
 	int		_Allocate();
 	int		_Deallocate();
 

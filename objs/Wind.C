@@ -492,6 +492,81 @@ WindField::ReadVap(
 	return(1);
 }
 
+//---------------------------//
+// WindField::ReadEcmwfHiRes //
+//---------------------------//
+
+int
+WindField::ReadEcmwfHiRes(
+	const char*		filename)
+{
+	//-----------//
+	// open file //
+	//-----------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//------------//
+	// read field //
+	//------------//
+
+	int ymd, hms;
+	float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+	float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+
+	int int_size = sizeof(int);
+	int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
+
+	if (fread((void *)&ymd, int_size, 1, fp) != 1 ||
+		fread((void *)&hms, int_size, 1, fp) != 1 ||
+		fread((void *)u, uv_size, 1, fp) != 1 ||
+		fread((void *)v, uv_size, 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	//-------------------------------//
+	// transfer to wind field format //
+	//-------------------------------//
+
+	_lonCount = ECMWF_HIRES_LON_DIM;
+	_lonMin = -180.0 * dtr;
+	_lonMax = 179.4375 * dtr;
+	_lonStep = 0.5625 * dtr;
+
+	_latCount = ECMWF_HIRES_LAT_DIM;
+	_latMin = -90.0 * dtr;
+	_latMax = 90.0 * dtr;
+	_latStep = 0.5625 * dtr;
+
+	if (! _Allocate())
+		return(0);
+
+	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+	{
+		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+		{
+			WindVector* wv = new WindVector;
+			if (! wv)
+				return(0);
+
+			wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+			*(*(_field + lon_idx) + lat_idx) = wv;
+		}
+	}
+
+	return(1);
+}
+
 //---------------------//
 // WindField::WriteBev //
 //---------------------//
