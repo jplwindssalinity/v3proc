@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -173,7 +173,6 @@ float
 FbbTable::GetFbb(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    Meas*        meas,
     Topo*        topo,
     Stable*      stable,
     CheckFrame*  cf)
