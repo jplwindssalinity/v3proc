@@ -204,6 +204,12 @@ main(
 	//----------------------------------------------//
 
 	Spacecraft spacecraft;
+	if (! ConfigSpacecraft(&spacecraft, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+			command);
+		exit(1);
+	}
 
 	SpacecraftSim spacecraft_sim;
 	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
@@ -269,6 +275,13 @@ main(
 	if (! instrument_sim.Initialize(&(instrument.antenna)))
 	{
 		fprintf(stderr, "%s: error initializing instrument simulator\n",
+			command);
+		exit(1);
+	}
+
+	if (! spacecraft_sim.Initialize(spacecraft_start_time))
+	{
+		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
 			command);
 		exit(1);
 	}
