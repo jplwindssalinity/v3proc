@@ -48,7 +48,16 @@ public:
 	// compositing //
 	//-------------//
 
-	int		Composite(MeasList* meas_list);
+        //-------------------------------------------------//
+        // If N is nonzero we                              //
+        // compositing N consecutive meas objects starting //
+        // at meas_list->current                           //
+        // If N is zero (Default case) whole MeasList is   //
+        // composited.                                     //
+        //-------------------------------------------------//
+
+	int		Composite(MeasList* meas_list, int n=0);
+        
 
 	//--------------//
 	// input/output //
@@ -86,9 +95,10 @@ public:
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
-	int			beamIdx;
-	int			sliceIdx;
-	float		scanAngle;
+	int         			beamIdx;
+	int         			startSliceIdx;
+	int 			        numSlices;
+	float		                scanAngle;
 	float		A, B, C;			// Kpc coefficients
 
 	//------------------------//

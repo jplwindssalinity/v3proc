@@ -204,7 +204,8 @@ L10ToL15::Convert(
 				}
 
 				meas->scanAngle = instrument->antenna.azimuthAngle;
-				meas->sliceIdx = sliceno;
+				meas->startSliceIdx = sliceno;
+                                meas->numSlices = 1;
 				meas->beamIdx = instrument->antenna.currentBeamIdx;
 				meas->transmitPulseWidth = beam->pulseWidth;
 

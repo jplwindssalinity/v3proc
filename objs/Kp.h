@@ -45,19 +45,17 @@ public:
 	int		GetKpc2(Meas* meas, double sigma_0, double* kpc2);
 	int		GetKpm2(int pol_idx, float speed, double* kpm2);
 	int		GetKpri2(double* kpri2);
-	int		GetKprs2(int beam_number, int slice_number, float azimuth,
-				double* kprs2);
-	int		GetKp2(Meas* meas, double sigma_0, int pol_idx, float speed,
-				int beam_number, int slice_number, float azimuth,
-				double* kp2);
+	int		GetKprs2(Meas* meas, double* kprs2);
+	int		GetKp2(Meas* meas, double sigma_0, int pol_idx, 
+			       float speed, double* kp2);
 
 	//---------------------//
 	// accessing variances //
 	//---------------------//
 
 	int		GetVpc(Meas* meas, double sigma_0, double* vpc);
-	int		GetVp(Meas* meas, double sigma_0, int pol_idx, float speed,
-				int beam_number, int slice_number, float azimuth, double* vp);
+	int		GetVp(Meas* meas, double sigma_0, int pol_idx, 
+			      float speed, double* vp);
 
 	//-----------//
 	// variables //

@@ -349,6 +349,13 @@ float median(const float* array, int num_elements){
   return(retval);
 }
 
+float mean(const float* array, int num_elements){
+  float retval=0.0;
+  for(int c=0;c<num_elements;c++) retval+=array[c];
+  retval=retval/num_elements;
+  return(retval);
+}
+
 void sort_increasing(float* array, int num_elements){
   int idx=0;
   while(idx<num_elements-1){
@@ -361,3 +368,53 @@ void sort_increasing(float* array, int num_elements){
     }
   }
 }
+
+int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
+
+  //===================================================//
+  // ODD ARRAY SIZE CASE                               //
+  //===================================================//
+  if(array_size%2==1) 
+    *abs_idx=rel_idx + array_size/2;
+
+  //======================================================//
+  // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
+  //======================================================// 
+  else if(rel_idx < 0)
+    *abs_idx=rel_idx + array_size/2;
+  
+  //======================================================//
+  // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
+  //======================================================// 
+  else if(rel_idx > 0)
+    *abs_idx=rel_idx + array_size/2 -1;
+
+  //===============//
+  // ERROR         //
+  //===============//
+  else return(0);
+  return(1);
+}
+
+int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
+
+  //===================================================//
+  // ODD ARRAY SIZE CASE                               //
+  //===================================================//
+  if(array_size%2==1) *rel_idx=abs_idx-array_size/2;
+
+  //======================================================//
+  // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
+  //======================================================// 
+  else if(abs_idx<array_size/2) *rel_idx=abs_idx-array_size/2;
+
+  //======================================================//
+  // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
+  //======================================================// 
+  else *rel_idx=abs_idx-array_size/2 + 1;
+  return(1);
+}
+
+
+
+

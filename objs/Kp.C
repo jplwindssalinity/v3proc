@@ -96,9 +96,7 @@ Kp::GetKpri2(
 
 int
 Kp::GetKprs2(
-	int			beam_number,
-	int			slice_number,
-	float		azimuth,
+	Meas* meas,
 	double*		kprs2)
 {
 	if(kprs.Empty())
@@ -106,7 +104,12 @@ Kp::GetKprs2(
 		*kprs2=0.0;
 		return(1);
 	}
-	*kprs2 = kprs.Interpolate(beam_number,slice_number,azimuth);
+        int beam_number = meas->beamIdx;
+        int start_slice_rel_idx = meas->startSliceIdx;
+        int num_slices_per_comp = meas->numSlices;
+        float azimuth = meas->scanAngle;
+	*kprs2 = kprs.Interpolate(beam_number,num_slices_per_comp,
+				  start_slice_rel_idx,azimuth);
 	*kprs2 *= *kprs2;
 	return(1);
 }
@@ -121,9 +124,6 @@ Kp::GetKp2(
 	double		sigma_0,
 	int			pol_idx,
 	float		speed,
-	int			beam_number,
-	int			slice_number,
-	float		azimuth,
 	double*		kp2)
 {
 	double kpc2, kpm2, kpri2, kprs2;
@@ -131,7 +131,7 @@ Kp::GetKp2(
 	if (! GetKpc2(meas, sigma_0, &kpc2) ||
 		! GetKpm2(pol_idx, speed, &kpm2) ||
 		! GetKpri2(&kpri2) ||
-		! GetKprs2(beam_number, slice_number, azimuth, &kprs2))
+		! GetKprs2(meas, &kprs2))
 	{
 		return(0);
 	}
@@ -177,9 +177,6 @@ Kp::GetVp(
 	double		sigma_0,
 	int			pol_idx,
 	float		speed,
-	int			beam_number,
-	int			slice_number,
-	float		azimuth,
 	double*		vp)
 {
 	double vpc;
@@ -191,7 +188,7 @@ Kp::GetVp(
 	double kpm2, kpri2, kprs2;
 	if (! GetKpm2(pol_idx, speed, &kpm2) ||
 		! GetKpri2(&kpri2) ||
-		! GetKprs2(beam_number, slice_number, azimuth, &kprs2))
+		! GetKprs2(meas, &kprs2))
 	{
 		return(0);
 	}
@@ -200,3 +197,10 @@ Kp::GetVp(
 
 	return(1);
 }
+
+
+
+
+
+
+
