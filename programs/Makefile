@@ -34,6 +34,7 @@ PROGRAMS = \
 	l2a_s0 \
 	l2b_to_vctr \
 	hdf_l1a_echo_proc \
+	echo_proc \
 	psim \
 	pl1a_to_l1b \
 	pl1a_to_ascii \
