@@ -218,7 +218,7 @@ InstrumentSim::LocateSlices(
 
 		// get incidence angle
 		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
-		meas->center = centroid;
+		meas->centroid = centroid;
 
 		//-----------------------------//
 		// add measurment to meas spot //
@@ -393,7 +393,7 @@ InstrumentSim::LocateSpot(
 
 	// get incidence angle
 	meas->incidenceAngle = tip.rTarget.IncidenceAngle(rlook_gc);
-	meas->center = tip.rTarget;
+	meas->centroid = tip.rTarget;
 
 	//-----------------------------//
 	// add measurment to meas spot //
@@ -428,7 +428,7 @@ InstrumentSim::SetMeasurements(
 		//----------------------------------------//
 
 		double alt, lat, lon;
-		if (! meas->center.GetAltLonGDLat(&alt, &lon, &lat))
+		if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
 			return(0);
 
 		LonLat lon_lat;

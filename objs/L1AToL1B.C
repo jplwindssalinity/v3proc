@@ -13,8 +13,8 @@ static const char rcs_id_l10tol15_c[] =
 #include "GenericGeom.h"
 #include "Sigma0.h"
 
+#define XMGROUT	0	// Output sigma0 values to stdout? 1/0=YES/NO
 
-#define XMGROUT  0    // Output sigma0 values to stdout? 1/0=YES/NO
 //==========//
 // L10ToL15 //
 //==========//
@@ -36,7 +36,7 @@ L10ToL15::~L10ToL15()
 int
 L10ToL15::Convert(
 	L10*		l10,
-	Spacecraft*     spacecraft,
+	Spacecraft*	spacecraft,
 	Instrument*	instrument,
 	Ephemeris*	ephemeris,
 	L15*		l15)
@@ -147,7 +147,7 @@ L10ToL15::Convert(
 			//-------------------------------------------------//
  
 			Vector3 vector;
-			vector.SphericalSet(1.0, look, azimuth);  //boresight
+			vector.SphericalSet(1.0, look, azimuth);	//boresight
 			DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
 
 			//-------------------------//
@@ -195,7 +195,8 @@ L10ToL15::Convert(
 					return(0);
 				}
 
-				meas->center=centroid;
+				meas->centroid = centroid;
+
 				//---------------------------//
 				// generate measurement data //
 				//---------------------------//
@@ -215,10 +216,10 @@ L10ToL15::Convert(
 
 				// Eventually Kfactor should be computed (read from table)
 				float Kfactor=1.0;
-                                float sigma0, Pr;
+				float sigma0, Pr;
 				Pr=l10->frame.science[total_slice_idx];
-				CoordinateSwitch gc_to_antenna=
-				  antenna_frame_to_gc.ReverseDirection();
+				CoordinateSwitch gc_to_antenna =
+					antenna_frame_to_gc.ReverseDirection();
 
 				if(! Pr_to_sigma0(spacecraft, instrument,
 					meas, Kfactor, &gc_to_antenna,

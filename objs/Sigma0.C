@@ -40,7 +40,7 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 
 	double lambda = speed_light / instrument->baseTransmitFreq;
 	double A3db = meas->outline.Area();
-	Vector3 rlook = meas->center - spacecraft->orbitState.rsat;
+	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
 	double roundTripTime = 2.0 * R / speed_light_kps;
 

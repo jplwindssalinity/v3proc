@@ -60,9 +60,9 @@ public:
 	// variables //
 	//-----------//
 
-	float		value;
-	Outline		outline;
-	EarthPosition		center;
+	float				value;
+	Outline				outline;
+	EarthPosition		centroid;
 
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east

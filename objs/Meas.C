@@ -41,7 +41,7 @@ Meas::Write(
 {
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
-		center.WriteLonLat(fp) != 1 ||
+		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
@@ -63,7 +63,7 @@ Meas::Read(
 	FreeContents();
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
-		center.ReadLonLat(fp) != 1 ||
+		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
@@ -188,7 +188,7 @@ MeasList::AverageLonLat()
 	sum.SetPosition(0.0, 0.0, 0.0);
 	for (Meas* meas = GetHead(); meas; meas = GetNext())
 	{
-		sum += meas->center;
+		sum += meas->centroid;
 	}
 
 	// The center of the earth is at 0,0,0 (geocentric coords)
