@@ -131,8 +131,25 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		if (keyword1 == 0)
+		{
+			sptr = strstr(str,"strdup");
+			while (sptr != NULL)
+			{	// found a possible match
+				if (isspace(*(sptr+6)) || *(sptr+6) == '(')
+				{
+					if (!(isalnum(*(sptr-1)) || *(sptr-1) == '_'))	
+					{	// definite match
+						keyword1 = 1;
+						break;
+					}
+				}
+			    sptr = strstr(sptr+6,"strdup"); // look for more on this line
+			}
+		}
+
 		if (keyword1 == 1)
-		{	// found a new or malloc in this line
+		{	// found a new or malloc or strdup in this line
 			end = sptr;
 			while (*end != '\0')
 			{	// sweep for the end of this statement
