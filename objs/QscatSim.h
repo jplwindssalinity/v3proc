@@ -120,7 +120,8 @@ public:
     // flags //
     //-------//
 
-    int  uniformSigmaField;  // set all sigma0 values to 1.0
+    int  uniformSigmaField;  // set all sigma0 values to a constant value
+    float uniformSigmaValue; // the sigma0 to use when uniformSigmaField is set
     int  outputXToStdout;    // write X value to stdout
     int  useKfactor;         // read and use K-factor table
     int  createXtable;       // create an X table

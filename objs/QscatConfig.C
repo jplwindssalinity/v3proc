@@ -578,6 +578,7 @@ ConfigQscatSim(
     qscat_sim->ptgrNoise.Initialize();
 
     int uniform_sigma_field;
+    float uniform_sigma_value;
 
     config_list->WarnForMissingKeywords();
     if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD,
@@ -586,6 +587,12 @@ ConfigQscatSim(
         uniform_sigma_field=0;      // default value
     }
     qscat_sim->uniformSigmaField=uniform_sigma_field;
+    if (! config_list->GetFloat(UNIFORM_SIGMA_VALUE_KEYWORD,
+        &uniform_sigma_value))
+    {
+        uniform_sigma_value=1.0;      // default value
+    }
+    qscat_sim->uniformSigmaValue=uniform_sigma_value;
 
     int output_X_to_stdout;
     if (! config_list->GetInt(OUTPUT_X_TO_STDOUT_KEYWORD,

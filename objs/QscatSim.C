@@ -37,6 +37,7 @@ QscatSim::QscatSim()
     startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
     azimuthIntegrationRange(0.0), azimuthStepSize(0.0), dopplerBias(0.0),
     correlatedKpm(0.0), simVs1BCheckfile(NULL), uniformSigmaField(0),
+    uniformSigmaValue(0.0),
     outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
     useBYUXfactor(0), rangeGateClipping(0), applyDopplerError(0),
     l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
@@ -906,7 +907,17 @@ QscatSim::SetMeasurements(
         meas->landFlag=landMap.IsLand(lon,lat);
 
 		float sigma0;
-        if (meas->landFlag==1)
+		if (uniformSigmaField)
+		{
+			sigma0=uniformSigmaValue;
+			if (simVs1BCheckfile)
+			{
+				cf->sigma0[slice_i] = sigma0;
+				cf->wv[slice_i].spd = 0.0;
+				cf->wv[slice_i].dir = 0.0;
+			}
+		}
+        else if (meas->landFlag==1)
         {
             // Set sigma0 to average NSCAT land sigma0 for appropriate
             // incidence angle and polarization
@@ -917,16 +928,6 @@ QscatSim::SetMeasurements(
 			if (simVs1BCheckfile)
 			{
 				cf->sigma0[slice_i] = sigma0;
-				cf->wv[slice_i].spd = 0.0;
-				cf->wv[slice_i].dir = 0.0;
-			}
-		}
-		else if (uniformSigmaField)
-		{
-			sigma0=1;
-			if (simVs1BCheckfile)
-			{
-				cf->sigma0[slice_i] = 1.0;
 				cf->wv[slice_i].spd = 0.0;
 				cf->wv[slice_i].dir = 0.0;
 			}
