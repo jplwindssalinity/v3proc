@@ -13,6 +13,7 @@ static const char rcs_id_lonlat_c[] =
 #include "EarthPosition.h"
 #include "List.h"
 
+#define WARN_COUNT	100
 
 //========//
 // LonLat //
@@ -136,6 +137,10 @@ Outline::Write(
 	FILE*	fp)
 {
 	int count = NodeCount();
+	if (count > WARN_COUNT)
+	{
+		printf("Warning: node count = %d in Outline::Write\n",count);
+	}
 	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
 
@@ -162,6 +167,10 @@ Outline::Read(
 	int count;
 	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
+	if (count > WARN_COUNT)
+	{
+		printf("Warning: node count = %d in Outline::Read\n",count);
+	}
 
 	LonLat lon_lat;
 	for (int i = 0; i < count; i++)
@@ -228,6 +237,49 @@ Outline::WriteOtln(
 	LonLat inf;
 	inf.longitude = (float)HUGE_VAL;
 	inf.latitude = (float)HUGE_VAL;
+	if (! inf.WriteOtln(fp))
+		return(0);
+
+	return(1);
+}
+
+//--------------------//
+// Outline::WriteOtln //
+//--------------------//
+
+// Same as WriteOtln above, but writes a float in place of the second
+// infinity at the end of the outline.
+
+int
+Outline::WriteOtln(
+	FILE*	fp,
+	float	field)
+{
+	int count = NodeCount();
+
+	if (count < 1)
+		return(1);
+
+	// write the points
+	EarthPosition* r;
+	LonLat lon_lat;
+	for (r = GetHead(); r; r = GetNext())
+	{
+		lon_lat.Set(*r);
+		if (! lon_lat.WriteOtln(fp))
+			return(0);
+	}
+
+	// close the figure
+	r = GetHead();
+	lon_lat.Set(*r);
+	if (! lon_lat.WriteOtln(fp))
+		return(0);
+
+	// indicate done
+	LonLat inf;
+	inf.longitude = (float)HUGE_VAL;
+	inf.latitude = field;
 	if (! inf.WriteOtln(fp))
 		return(0);
 

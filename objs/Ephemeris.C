@@ -661,7 +661,7 @@ Ephemeris::GetSubtrackPosition(
 
 	cross_dir.Scale(ctd*1.1347);
 	EarthPosition search_start = r1 + cross_dir;
-	search_start.SurfaceSet();
+	search_start = search_start.Nadir();
 
 	*rground = search_start;
 	return(1);

@@ -87,6 +87,7 @@ public:
 
 	int		WriteAscii(FILE* fp);
 	int		WriteOtln(FILE* fp);
+	int		WriteOtln(FILE* fp, float field);
 
 	double	Area();
 	double	Area1()		{ return(1.0); };

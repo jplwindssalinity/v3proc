@@ -239,22 +239,6 @@ EarthPosition::GetAltLonGDLat(
 	return(1);
 }
 
-//---------------------------------------------------------------------------//
-// SurfaceSet
-//
-// Puts the current position on the earth's surface by setting the altitude
-// to zero, but leaving the lat,lon unchanged.
-//---------------------------------------------------------------------------//
-
-int
-EarthPosition::SurfaceSet()
-{
-	double alt,lon,dlat;
-	GetAltLonGDLat(&alt,&lon,&dlat);
-	SetAltLonGDLat(0.0,lon,dlat);
-	return(1);
-}
-
 //
 // ReadLonLat
 //
