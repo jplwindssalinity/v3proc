@@ -42,7 +42,7 @@ OBJS = \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
-        hdf_support.o \
+	hdf_support.o \
 	Image.o \
 	Index.o \
 	InstrumentGeom.o \
@@ -73,11 +73,11 @@ OBJS = \
 	Meas.o \
 	Misc.o \
 	MiscTable.o \
-    PMeas.o \
+	PMeas.o \
 	Pscat.o \
 	PscatConfig.o \
 	PscatL1A.o \
-    PscatL1AToL1B.o \
+	PscatL1AToL1B.o \
 	PscatSim.o \
 	Qscat.o \
 	QscatConfig.o \
@@ -88,7 +88,8 @@ OBJS = \
 	SpacecraftSim.o \
 	Tracking.o \
 	Wind.o \
-	XTable.o 
+	XTable.o \
+	SeaPac.o
 
 INCS = \
 	*.h \
