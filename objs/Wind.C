@@ -1685,6 +1685,37 @@ WindSwath::DeleteEntireSwath()
 	return(1);
 }
 
+//----------------------------//
+// WindSwath::DeleteLatitudes //
+//----------------------------//
+
+int
+WindSwath::DeleteLatitudesOutside(
+    float  low_lat,
+    float  high_lat)
+{
+    int count = 0;
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		for (int j = 0; j < _alongTrackBins; j++)
+		{
+			WVC* wvc = *(*(swath + i) + j);
+			if (wvc == NULL)
+				continue;
+
+            float lat = wvc->lonLat.latitude;
+            if (lat < low_lat || lat > high_lat)
+            {
+                delete wvc;
+                *(*(swath + i) + j) = NULL;
+                count++;
+                _validCells--;
+            }
+		}
+	}
+	return(count);
+}
+
 //---------------------//
 // WindSwath::WriteL2B //
 //---------------------//
@@ -2563,6 +2594,119 @@ WindSwath::SpdBias(
 	float spd_bias = (float)(sum / (double)count);
 
 	return(spd_bias);
+}
+
+//-----------------------------//
+// WindSwath::DirectionDensity //
+//-----------------------------//
+
+int
+WindSwath::DirectionDensity(
+    WindField*      truth,
+    unsigned int*   swath_density_array,
+    unsigned int*   field_density_array,
+    float           low_speed,
+    float           high_speed,
+    int             direction_count)
+{
+    //-------------------------//
+    // index direction density //
+    //-------------------------//
+
+    Index dir_idx;
+    dir_idx.SpecifyWrappedCenters(0.0, two_pi, direction_count);
+
+    //------------------//
+    // clear the counts //
+    //------------------//
+
+    for (int dir = 0; dir < direction_count; dir++)
+    {
+        *(swath_density_array + dir) = 0;
+        *(field_density_array + dir) = 0; 
+    }
+
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+
+            //--------------------------------------//
+            // determine the S/C velocity direction //
+            //--------------------------------------//
+
+            int ati_minus = ati - 1;
+            if (ati_minus < 0)
+                ati_minus = 0;
+			WVC* wvc_minus = swath[cti][ati_minus];
+			if (! wvc_minus)
+                continue;
+
+            int ati_plus = ati + 1;
+            if (ati_plus < 0)
+                ati_plus = 0;
+			WVC* wvc_plus = swath[cti][ati_plus];
+			if (! wvc_plus)
+                continue;
+
+            double dlat = wvc_plus->lonLat.latitude -
+                wvc_minus->lonLat.latitude;
+            double dlon = wvc_plus->lonLat.longitude -
+                wvc_minus->lonLat.longitude;
+            while (dlon > pi)
+                dlon -= two_pi;
+            while (dlon < -pi)
+                dlon += two_pi;
+
+            double sc_dir = atan2(dlat, dlon);    // ccw from east
+
+            //-------------------------------//
+            // determine the wind directions //
+            //-------------------------------//
+
+            float ret_dir = wvc->selected->dir;
+            float true_dir = true_wv.dir;
+
+            //-----------------------------------------------//
+            // determine the relative wind direction (0-360) //
+            //-----------------------------------------------//
+
+            float rel_ret_dir = ret_dir - sc_dir;
+            while (rel_ret_dir < 0.0)
+                rel_ret_dir += two_pi;
+            while (rel_ret_dir > two_pi)
+                rel_ret_dir -= two_pi;
+
+            float rel_true_dir = true_dir - sc_dir;
+            while (rel_true_dir < 0.0)
+                rel_true_dir += two_pi;
+            while (rel_true_dir > two_pi)
+                rel_true_dir -= two_pi;
+
+            //---------------------//
+            // determine the index //
+            //---------------------//
+
+            int ret_idx, true_idx;
+            dir_idx.GetNearestIndex(rel_ret_dir, &ret_idx);
+            dir_idx.GetNearestIndex(rel_true_dir, &true_idx);
+
+            ( *(swath_density_array + ret_idx) )++;
+            ( *(field_density_array + true_idx) )++;
+		}
+	}
+
+	return(1);
 }
 
 //---------------------//

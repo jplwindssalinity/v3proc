@@ -22,7 +22,8 @@
 //		[ -l l2b_file ]		Use this l2b file.
 //		[ -t truth_type ]	This is the truth file type.
 //		[ -f truth_file ]	This is the truth file.
-//		[ -s low:high ]		The range of wind speeds.
+//		[ -s low_spd:high_spd ]		The range of wind speeds.
+//      [ -r low_lat:high_lat ]  The range of latitudes.
 //		[ -o output_base ]	The base name to use for output files.
 //		[ -w within ]		The angle to use for within.
 //		[ -a ]				Autoscale plots
@@ -84,9 +85,11 @@ template class List<WindVectorPlus>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:t:f:s:o:w:a:i:"
+#define OPTSTRING				"c:l:t:f:r:s:o:w:a:i:"
 #define ARRAY_SIZE				1024
 
+#define DEFAULT_LOW_LAT         -90.0
+#define DEFAULT_HIGH_LAT        90.0
 #define DEFAULT_LOW_SPEED		0.0
 #define DEFAULT_HIGH_SPEED		30.0
 #define DEFAULT_WITHIN_ANGLE	45.0
@@ -130,7 +133,7 @@ int plot_thing(const char* extension, const char* title, const char* x_axis,
 		const char* y_axis, float* xylimits,
 		float* data = NULL, float* secondary = NULL);
 
-int plot_density(const char* extension, int cti, const char* title,
+int plot_density(const char* extension, const char* title,
         const char* x_axis, const char* y_axis, float* xylimits);
 
 
@@ -140,13 +143,16 @@ int rad_to_deg(float* data);
 // OPTION VARIABLES //
 //------------------//
 
+int lat_range_opt = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
-	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
-	"[ -o output_base ]", "[ -w within ]", "[ -a ]", "[ -i subtitle ]", 0 };
+	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
+    "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
+    "[ -a ]", "[ -i subtitle ]", 0 };
 
 // not always evil...
 float*         ctd_array = NULL;
@@ -158,8 +164,8 @@ int*           count_array = NULL;
 int            cross_track_bins = 0;
 
 float*         dir_array = NULL;
-unsigned int**  uint_array = NULL;
-unsigned int**  uint_2_array = NULL;
+unsigned int*  uint_array = NULL;
+unsigned int*  uint_2_array = NULL;
 
 const char*    command = NULL;
 char*          l2b_file = NULL;
@@ -185,6 +191,8 @@ main(
 	l2b_file = NULL;
 	char* truth_type = NULL;
 	char* truth_file = NULL;
+    float low_lat = DEFAULT_LOW_LAT * dtr;
+    float high_lat = DEFAULT_HIGH_LAT * dtr;
 	float low_speed = DEFAULT_LOW_SPEED;
 	float high_speed = DEFAULT_HIGH_SPEED;
 	float within_angle = DEFAULT_WITHIN_ANGLE;
@@ -227,11 +235,21 @@ main(
 		case 's':
 			if (sscanf(optarg, "%f:%f", &low_speed, &high_speed) != 2)
 			{
-				fprintf(stderr, "%s: error determine speed range %s\n",
+				fprintf(stderr, "%s: error determining speed range %s\n",
 					command, optarg);
 				exit(1);
 			}
 			break;
+        case 'r':
+            if (sscanf(optarg, "%f:%f", &low_lat, &high_lat) != 2)
+            {
+                fprintf(stderr, "%s: error determining latitude range %s\n",
+                    command, optarg);
+                exit(1);
+            }
+            low_lat *= dtr;
+            high_lat *= dtr;
+            lat_range_opt = 1;
 		case 'o':
 			output_base = optarg;
 			break;
@@ -329,6 +347,16 @@ main(
         exit(1);
     }
 
+    //---------------------//
+    // clear bad latitudes //
+    //---------------------//
+
+    if (lat_range_opt)
+    {
+        int lat_erase = swath->DeleteLatitudesOutside(low_lat, high_lat);
+        printf("Removing %d vectors out of latitude range\n", lat_erase);
+    }
+
 	//---------------//
 	// create arrays //
 	//---------------//
@@ -342,10 +370,8 @@ main(
 	count_array = new int[cross_track_bins];
 
 	dir_array = new float[DIRECTION_BINS];
-    uint_array = (unsigned int **)make_array(sizeof(unsigned int), 2,
-        cross_track_bins, DIRECTION_BINS);
-    uint_2_array = (unsigned int **)make_array(sizeof(unsigned int), 2,
-        cross_track_bins, DIRECTION_BINS);
+    uint_array = new unsigned int[DIRECTION_BINS];
+    uint_2_array = new unsigned int[DIRECTION_BINS];
 
 	char title[1024];
 
@@ -463,22 +489,25 @@ main(
 	xylimits[3] = SKILL_MAX;
 	sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
 		low_speed, high_speed);
-	plot_thing("within", title, "Cross Track Distance (km)", "Within",xylimits);
+	plot_thing("within", title, "Cross Track Distance (km)", "Within",
+        xylimits);
 
 	//----------------------------------------//
 	// Vector Correlation Coefficient vs. ctd //
 	//----------------------------------------//
 
-	if (! swath->VectorCorrelationVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
+    if (! swath->VectorCorrelationVsCti(&truth, value_array, count_array,
+        low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating vector correlation\n", command);
 		exit(1);
 	}
 	xylimits[2] = 0.0;
 	xylimits[3] = 2.0;
-	sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	plot_thing("vector_correlation", title, "Cross Track Distance (km)", "Vector Correlation Coefficient",xylimits);
+	sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed,
+        high_speed);
+	plot_thing("vector_correlation", title, "Cross Track Distance (km)",
+        "Vector Correlation Coefficient", xylimits);
 
 	//--------------------//
 	// avg nambig vs. ctd //
@@ -496,33 +525,26 @@ main(
 	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
 		"No. Ambigs",xylimits);
 
+	//=========//
+	// NEAREST //
+	//=========//
+
+	swath->SelectNearest(&truth);
+
     //------------------------------------//
     // nearest and true direction density //
     //------------------------------------//
 
-/*
-	if (! swath->DirectionDensityVsCti(&truth, uint_array, uint_2_array,
+	if (! swath->DirectionDensity(&truth, uint_array, uint_2_array,
 		low_speed, high_speed, DIRECTION_BINS))
 	{
 		fprintf(stderr, "%s: error calculating nearest direction densities\n",
 			command);
 		exit(1);
 	}
-
-    for (int cti = 0; cti < cross_track_bins; cti++)
-    {
-        sprintf(title, "Direction Density for CTD %g (%g - %g m/s)",
-            ctd_array[cti], low_speed, high_speed);
-        plot_density("dir_den", cti, title, "Relative Wind Direction (deg)",
-            "Density", xylimits);
-    }
-*/
-
-	//=========//
-	// NEAREST //
-	//=========//
-
-	swath->SelectNearest(&truth);
+    sprintf(title, "Direction Density (%g - %g m/s)", low_speed, high_speed);
+    plot_density("dir_den", title, "Relative Wind Direction (deg)",
+        "Density", xylimits);
 
 	//---------------------------------//
 	// nearest rms speed error vs. ctd //
@@ -595,9 +617,8 @@ main(
 	delete[] err_array;
 	delete[] ctd_array;
 	delete[] count_array;
-
-    free_array(uint_array, 2, cross_track_bins, DIRECTION_BINS);
-    free_array(uint_2_array, 2, cross_track_bins, DIRECTION_BINS);
+    delete[] uint_array;
+    delete[] uint_2_array;
 
 	return (0);
 }
@@ -617,7 +638,6 @@ xmgr_control(
 	const char*		y_label,
 	float*			xylimits)
 {
-	fprintf(ofp, "@ with g0\n");
 	fprintf(ofp, "@ title %c%s%c\n", QUOTE, title, QUOTE);
 	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
 	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
@@ -718,14 +738,13 @@ plot_thing(
 int
 plot_density(
     const char*  extension,
-    int          cti,
     const char*  title,
     const char*  x_axis,
     const char*  y_axis,
     float*       xylimits)
 {
 	char filename[1024];
-	sprintf(filename, "%s.%02d.%s", output_base, cti, extension);
+	sprintf(filename, "%s.%s", output_base, extension);
 	FILE* ofp = fopen(filename, "w");
 	if (ofp == NULL)
 	{
@@ -754,8 +773,8 @@ plot_density(
     unsigned int count_2 = 0;
     for (int i = 0; i < DIRECTION_BINS; i++)
     {
-        count += uint_array[cti][i];
-        count_2 += uint_2_array[cti][i];
+        count += uint_array[i];
+        count_2 += uint_2_array[i];
     }
 
     //-----------//
@@ -773,14 +792,13 @@ plot_density(
 	for (int i = 0; i < DIRECTION_BINS; i++)
 	{
         fprintf(ofp, "%g %g %g\n", dir_array[i],
-            scale * (double)uint_array[cti][i],
-            scale_2 * (double)uint_2_array[cti][i]);
+            scale * (double)uint_array[i],
+            scale_2 * (double)uint_2_array[i]);
 	}
 	fclose(ofp);
 
 	return(1);
 }
-
 
 //------------//
 // rad_to_deg //

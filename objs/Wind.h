@@ -300,6 +300,7 @@ public:
 
 	int		DeleteWVCs();
 	int		DeleteEntireSwath();
+    int     DeleteLatitudesOutside(float low_lat, float high_lat);
 
 	//--------------//
 	// input/output //
@@ -340,6 +341,10 @@ public:
 	int     WriteDirErrMap(WindField* truth, FILE* ofp);
 	float	Skill(WindField* truth);
 	float	SpdBias(WindField* truth);
+    int     DirectionDensity(WindField* truth,
+                unsigned int* swath_density_array,
+                unsigned int* field_density_array, float low_speed,
+                float high_speed, int direction_count);
 
 	int		SelectNearest(WindField* truth);
     int     GetProbabilityArray( WindField*  truth,
