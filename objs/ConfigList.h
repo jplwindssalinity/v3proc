@@ -77,7 +77,7 @@ private:
 //		therefore it contains error logging capabilities.
 //======================================================================
 
-#define INSERT_FILE_KEYWORD		"INSERT_FILE"
+#define INCLUDE_FILE_KEYWORD	"INCLUDE_FILE"
 #define CONFIG_FILE_LINE_SIZE	1024
 
 class ConfigList : public List<StringPair>

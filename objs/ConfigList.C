@@ -220,15 +220,15 @@ ConfigList::Read(
 		case 2:
 			if (isalnum(keyword[0]))
 			{
-				if (strcmp(keyword, INSERT_FILE_KEYWORD) == 0)
+				if (strcmp(keyword, INCLUDE_FILE_KEYWORD) == 0)
 				{
 					if (! Read(value))
 					{
 						if (_logFlag)
 						{
-							fprintf(_errorFp, "Error reading inserted file\n");
-							fprintf(_errorFp, "  Config File: %s\n", filename);
-							fprintf(_errorFp, "  Insert File: %s\n", value);
+							fprintf(_errorFp, "Error reading included file\n");
+							fprintf(_errorFp, "   Config File: %s\n", filename);
+							fprintf(_errorFp, "  Include File: %s\n", value);
 							exit(1);
 						}
 						return(0);
