@@ -81,6 +81,7 @@ public:
 	int			SetTime(double new_time);
 	int			SetCommandedDoppler(float commanded_doppler);
 	int			SetEqxTime(double eqx_time);
+        double                  GetEqxTime(){return(_eqxTime);}
 	float		GetTotalSignalBandwidth();
 	int			GetTotalSliceCount();
 	int			GetSliceFreqBw(int slice_idx, float* f1, float* bw);
@@ -150,3 +151,6 @@ protected:
 };
 
 #endif
+
+
+
