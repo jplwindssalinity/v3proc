@@ -84,6 +84,8 @@ PROGRAMS = \
 	fix_knowledge \
 	get_DopRan_scan \
 	get_X_scan \
+    expand_calpulse \
+    ephem_to_ascii \
 	BYUX_vs_time 
 #	sim_accurate
 #	generate_kfactor
@@ -114,6 +116,7 @@ HUDD_PROGRAMS = \
 
 DIAGNOSTIC_PROGRAMS = \
 	l2ab_obj_comp \
+    check_l1b \
 	l2b_to_vctr \
 	l2b_metrics \
 	see_spot \
@@ -138,6 +141,7 @@ DIAGNOSTIC_PROGRAMS = \
 	l2b_to_flower \
 	l2a_dissect \
 	l1b_to_ascii \
+    ephem_to_ascii \
 	l2a_to_ascii
 
 #----------------------------------------------------------------------

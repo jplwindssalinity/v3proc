@@ -186,9 +186,11 @@ main(
         if (frame_number >= start_frame)
         {
             l1a.frame.Unpack(l1a.buffer);
+            l1a.FillGSFrame();
             if (ascii_flag == 0)
             {
-              if (l1a.WriteGSDataRec() == 0)
+              l1a.gsFrame.Pack(l1a.gsBuffer);
+              if (l1a.Write(l1a.gsBuffer, GS_L1A_FRAME_SIZE) == 0)
               {
                   fprintf(stderr,
                          "%s: error writing GS data record\n", command);
