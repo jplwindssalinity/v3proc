@@ -107,6 +107,7 @@ CheckFrame::Allocate(
 	}
 
 	measType = (Meas::MeasTypeE *)malloc(slicesPerSpot*sizeof(Meas::MeasTypeE));
+    //printf("sizeof(Meas::MeasTypeE) = %d\n",sizeof(Meas::MeasTypeE));
 	if (measType == NULL)
 	{
 		return(0);
@@ -402,6 +403,145 @@ CheckFrame::ReadDataRec(
 }
 
 int
+CheckFrame::ReadFortranStructure(
+	FILE*	fptr)
+{
+
+  //----------------------------------------------------------------------//
+  // Same as ReadDataRec, except this one reads the record as a
+  // direct access fortran binary record which was written from a structure
+  // listing each member in turn.
+  //----------------------------------------------------------------------//
+
+  float roll,pitch,yaw;
+  int slices_per_spot;
+
+  if (fread((void *)&slices_per_spot,sizeof(int),1,fptr) != 1) return(0);
+  if (slicesPerSpot == 0)
+  {
+    // Need to allocate the checkframe first.  Subsequent reads using this
+    // CheckFrame will need to have matching slicesPerSpot.
+    if (! Allocate(slices_per_spot))
+    {
+      fprintf(stderr,"Error allocating a CheckFrame in ReadDataRec\n");
+      exit(1);
+    }
+  }
+  else if (slicesPerSpot != slices_per_spot)
+  {
+    fprintf(stderr,"Error: Mismatched CheckFrames, slicesPerSpot = %d, %d\n",
+      slicesPerSpot, slices_per_spot);
+    exit(1);
+  }
+
+  if (fread((void *)&pulseCount,sizeof(int),1,fptr) != 1) return(0);
+  if (fread((void *)&time,sizeof(double),1,fptr) != 1) return(0);
+  if (fread((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&yaw,sizeof(float),1,fptr) != 1) return(0);
+  if (! rsat.Read(fptr)) return(0);
+  if (! vsat.Read(fptr)) return(0);
+  if (fread((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
+  if (fread((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+  if (fread((void *)&alpha,sizeof(float),1,fptr) != 1)return(0);
+  if (fread((void *)&EsnEcho,sizeof(float),1,fptr) != 1)return(0);
+  if (fread((void *)&EsnNoise,sizeof(float),1,fptr) != 1)return(0);
+  attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
+  rsat /= 1000.0;
+  vsat /= 1000.0;
+
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&measType[slice_i],sizeof(Meas::MeasTypeE),1,fptr) != 1)
+      return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&(wv[slice_i].spd),sizeof(float),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&(wv[slice_i].dir),sizeof(float),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
+  }
+
+  double x,y,z;
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&x,sizeof(double),1,fptr) != 1) return(0);
+    centroid[slice_i].Set(0,x/1000.0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&y,sizeof(double),1,fptr) != 1) return(0);
+    centroid[slice_i].Set(1,y/1000.0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&z,sizeof(double),1,fptr) != 1) return(0);
+    centroid[slice_i].Set(2,z/1000.0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&En[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&R[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+    R[slice_i] /= 1000.0;
+  }
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fread((void *)&GatGar[slice_i],sizeof(float),1,fptr) != 1)
+      return(0);
+  }
+
+  return(1);
+
+}
+
+int
 CheckFrame::ReadDataRecFortran(
 	FILE*	fptr)
 {
@@ -412,7 +552,7 @@ CheckFrame::ReadDataRecFortran(
   //----------------------------------------------------------------------//
 
   float roll,pitch,yaw;
-  int slices_per_spot;
+  int slices_per_spot=0;
   double x,y,z;
   if (fread_f77((void *)&slicesPerSpot,sizeof(int),1,fptr) != 1) return(0);
   if (slicesPerSpot == 0)

@@ -58,6 +58,7 @@ public:
 	int AppendRecord(FILE* fptr);
 	int AppendSliceRecord(FILE* fptr, int slice_i, double lon, double lat);
     int ReadDataRec(FILE* fptr);
+    int ReadFortranStructure(FILE* fptr);
     int ReadDataRecFortran(FILE* fptr);
     int WriteDataRec(FILE* fptr);
     int WriteDataRecAscii(FILE* fptr);
