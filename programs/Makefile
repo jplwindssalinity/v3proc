@@ -5,7 +5,7 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-HDFINCDIR =     $(INCDIR)/hdf
+HDFINCDIR =		$(INCDIR)/hdf
 
 EALIBS =		../../lib/libEAData.a
 HDFLIBS =		-L../../lib -lmfhdf -ldf -lz -lnsl
@@ -27,8 +27,8 @@ PROGRAMS = \
 	l2a_to_l2b \
 	l2b_medianfilter \
 	l2b_to_vctr \
-        l2b_diff    \
-        l2b_diff_from_truth \
+	l2b_diff \
+	l2b_diff_from_truth \
 	test_hdf_l2b \
 	l2b_metrics \
 	see_spot \
@@ -72,7 +72,7 @@ PROGRAMS = \
 	l1b_to_half_egg \
 	l1a_to_ascii\
 	l1b_to_ascii \
-    checkframe_to_ascii \
+	checkframe_to_ascii \
 	l2a_to_ascii
 
 HUDD_PROGRAMS = \
@@ -109,7 +109,7 @@ DIAGNOSTIC_PROGRAMS = \
 	l1b_outlines \
 	plot_solution_curves \
 	windfield_to_vctr \
-    checkframe_to_ascii \
+	checkframe_to_ascii \
 	l2a_centroids \
 	l2a_maps \
 	l2_kp \
@@ -123,9 +123,9 @@ DIAGNOSTIC_PROGRAMS = \
 	log_cfg \
 	l2ags_s0 \
 	l2b_to_flower \
-    l2a_dissect \
-    l1b_to_ascii \
-    l2a_to_ascii
+	l2a_dissect \
+	l1b_to_ascii \
+	l2a_to_ascii
 
 #----------------------------------------------------------------------
 # default: make all executable programs
