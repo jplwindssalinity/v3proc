@@ -71,6 +71,7 @@ public:
     int  useManyAmbiguities;
     int  useAmbiguityWeights;
     int  usePeakSplitting;
+    int  useH1Flag;
     int  useNudging;
     int  smartNudgeFlag;
 

@@ -1541,6 +1541,10 @@ ConfigL2AToL2B(
 		return(0);
 	l2a_to_l2b->usePeakSplitting = tmp_int;
 
+	if (! config_list->GetInt(USE_H1_FLAG_KEYWORD, &tmp_int))
+		return(0);
+	l2a_to_l2b->useH1Flag = tmp_int;
+
 	if( l2a_to_l2b->usePeakSplitting && l2a_to_l2b->useManyAmbiguities)
 	{
 		fprintf(stderr,
