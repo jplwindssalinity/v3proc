@@ -396,8 +396,8 @@ main(
 				qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 				break;
 			default:
-				fprintf(stderr, "%s: unknown instrument event\n", command);
-				exit(1);
+//				fprintf(stderr, "%s: unknown instrument event\n", command);
+//				exit(1);
 				break;
 			}
 		}
