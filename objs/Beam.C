@@ -211,91 +211,6 @@ Beam::SetBeamPattern(
 
 }
 
-//--------------------//
-// Beam::GetPowerGain //
-//--------------------//
-
-//
-// Bilinear interpolation of the measured antenna gain for this beam.
-// The measured antenna pattern is stored in memory in the variable
-// power_gain[Nx][Ny].  The first index refers to steps along elevation (Em),
-// and the second index refers to steps along azimuth (Am) in the beam frame.
-//
-// Inputs:
-//  look,azimuth = the orientation of the unit vector that points in
-//    the desired direction in the antenna frame.
-//	  The units should be consistent with the units of x_spacing and y_spacing.
-//	gain = pointer to space for the interpolated power gain (real units).
-//
-
-int
-Beam::GetPowerGain(
-	double	look_angle,
-	double	azimuth_angle,
-	float *gain)
-{
-
-	// Check for loaded pattern data.
-	if (_power_gain == NULL)
-	{	// show stopper
-		printf("Error: No pattern data loaded for interpolation\n");
-		exit(-1);
-	}
-
-	// Transform antenna frame angles to beam reference frame.
-	double Em = _reference_lookAngle - look_angle;
-	double Am = azimuth_angle - _reference_azimuthAngle;
-	
-	// Compute 2-D indices for the lower left point in the grid square around
-	// the desired point.
-	int ix1 = (int)(Em/_x_spacing) + _ix_zero;
-	int iy1 = (int)(Am/_y_spacing) + _iy_zero;
-
-	if ((ix1 < 0) ||
-    	(ix1 > _Nx - 2) ||
-    	(iy1 < 0) ||
-    	(iy1 > _Ny - 2))
-	{
-		return(0);
-	}
-
-	// The actual location of the lower left point of the grid square.
-	double x1 = (ix1 - _ix_zero)*_x_spacing;
-	double y1 = (iy1 - _iy_zero)*_y_spacing;
-
-	// The power gain at the four grid square points.
-	double pg1 = _power_gain[ix1][iy1];
-	double pg2 = _power_gain[ix1+1][iy1];
-	double pg3 = _power_gain[ix1+1][iy1+1];
-	double pg4 = _power_gain[ix1][iy1+1];
-
-	// The proportional location of the requested point in the grid square.
-	double t = (Em - x1) / _x_spacing;
-	double u = (Am - y1) / _y_spacing;
-
-	// The interpolated power gain.
-	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
-	return(1);
-}
-
-//--------------------//
-// Beam::GetPowerGain //
-//--------------------//
-// same as above, but returns a double
-
-int
-Beam::GetPowerGain(
-	double	look_angle,
-	double	azimuth_angle,
-	double	*gain)
-{
-	float x;
-	if (! GetPowerGain(look_angle, azimuth_angle, &x))
-		return(0);
-	*gain = (double)x;
-	return(1);
-}
-
 //-----------------------//
 // Beam::ReadBeamPattern //
 //-----------------------//
@@ -410,4 +325,89 @@ Beam::WriteBeamPattern(char* filename)
 	}
 
     return(1);
+}
+
+//--------------------//
+// Beam::GetPowerGain //
+//--------------------//
+
+//
+// Bilinear interpolation of the measured antenna gain for this beam.
+// The measured antenna pattern is stored in memory in the variable
+// power_gain[Nx][Ny].  The first index refers to steps along elevation (Em),
+// and the second index refers to steps along azimuth (Am) in the beam frame.
+//
+// Inputs:
+//  look,azimuth = the orientation of the unit vector that points in
+//    the desired direction in the antenna frame.
+//	  The units should be consistent with the units of x_spacing and y_spacing.
+//	gain = pointer to space for the interpolated power gain (real units).
+//
+
+int
+Beam::GetPowerGain(
+	double	look_angle,
+	double	azimuth_angle,
+	float *gain)
+{
+
+	// Check for loaded pattern data.
+	if (_power_gain == NULL)
+	{	// show stopper
+		printf("Error: No pattern data loaded for interpolation\n");
+		exit(-1);
+	}
+
+	// Transform antenna frame angles to beam reference frame.
+	double Em = _reference_lookAngle - look_angle;
+	double Am = azimuth_angle - _reference_azimuthAngle;
+	
+	// Compute 2-D indices for the lower left point in the grid square around
+	// the desired point.
+	int ix1 = (int)(Em/_x_spacing) + _ix_zero;
+	int iy1 = (int)(Am/_y_spacing) + _iy_zero;
+
+	if ((ix1 < 0) ||
+    	(ix1 > _Nx - 2) ||
+    	(iy1 < 0) ||
+    	(iy1 > _Ny - 2))
+	{
+		return(0);
+	}
+
+	// The actual location of the lower left point of the grid square.
+	double x1 = (ix1 - _ix_zero)*_x_spacing;
+	double y1 = (iy1 - _iy_zero)*_y_spacing;
+
+	// The power gain at the four grid square points.
+	double pg1 = _power_gain[ix1][iy1];
+	double pg2 = _power_gain[ix1+1][iy1];
+	double pg3 = _power_gain[ix1+1][iy1+1];
+	double pg4 = _power_gain[ix1][iy1+1];
+
+	// The proportional location of the requested point in the grid square.
+	double t = (Em - x1) / _x_spacing;
+	double u = (Am - y1) / _y_spacing;
+
+	// The interpolated power gain.
+	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
+	return(1);
+}
+
+//--------------------//
+// Beam::GetPowerGain //
+//--------------------//
+// same as above, but returns a double
+
+int
+Beam::GetPowerGain(
+	double	look_angle,
+	double	azimuth_angle,
+	double	*gain)
+{
+	float x;
+	if (! GetPowerGain(look_angle, azimuth_angle, &x))
+		return(0);
+	*gain = (double)x;
+	return(1);
 }

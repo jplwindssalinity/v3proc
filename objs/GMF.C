@@ -265,8 +265,8 @@ GMF::WriteSolutionCurves(
 	//---------------//
 
 	delete wvc;
-	delete best_spd;
-	delete best_obj;
+	delete[] best_spd;
+	delete[] best_obj;
 
 	return(1);
 }
