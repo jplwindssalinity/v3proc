@@ -8,7 +8,7 @@
 //    suck
 //
 // SYNOPSIS
-//    suck <L1A_file...>
+//    suck [ -a	] [ -q ] <L1A_file...>
 //
 // DESCRIPTION
 //    This program extracts Doppler and range tracking constants from
@@ -16,6 +16,8 @@
 //
 // OPTIONS
 //    The following options are supported:
+//      [ -a ]  Use all frames. Even the bad ones. Risky!
+//      [ -q ]  Be quiet. Don't complain about bad frames.
 //      none
 //
 // OPERANDS
@@ -63,7 +65,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  ""
+#define OPTSTRING  "aq"
 
 //--------//
 // MACROS //
@@ -90,7 +92,7 @@ int32 SDnametoid(int32 sd_id, char* sds_name, float64* scale_factor = NULL);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<L1A_file...>", 0 };
+const char* usage_array[] = { "[ -a ]", "[ -q ]", "<L1A_file...>", 0 };
 const char* active_map[] = { "inactive", "active" };
 
 //--------------//
@@ -107,19 +109,23 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    extern char* optarg;
+//    extern char* optarg;
     extern int optind;
 
-    //--------------------
-    // By default, we will write to standard output. If a file
-    // name is given, we will use that instead.
-    //--------------------
+    int opt_all = 0;
+    int opt_quiet = 0;
 
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
         switch(c)
         {
+        case 'a':
+            opt_all = 1;
+            break;
+        case 'q':
+            opt_quiet = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -145,7 +151,7 @@ main(
     // loop through the input files //
     //------------------------------//
 
-    float64 last_instrument_time = -1.0;
+//    float64 last_instrument_time = -1.0;
 
     for (int file_idx = start_file_idx; file_idx < end_file_idx; file_idx++)
     {
@@ -218,10 +224,16 @@ main(
             }
             if (frame_err_status != 0)
             {
-                fprintf(stderr,
-                    "%s: frame %d is evil. (error status = 0x%08x)\n",
-                    command, frame_idx, (unsigned int)frame_err_status);
-//                continue;
+                if (! opt_quiet)
+                {
+                    fprintf(stderr,
+                        "%s: frame %d is evil. (error status = 0x%08x)\n",
+                        command, frame_idx, (unsigned int)frame_err_status);
+                }
+                if (! opt_all)
+                {
+                    continue;
+                }
             }
             uint16 frame_qual_flag;
             if (SDreaddata(frame_qual_flag_sds_id, start,
@@ -235,10 +247,16 @@ main(
 
             if (frame_qual_flag != 0)
             {
-                fprintf(stderr,
-                    "%s: frame %d is evil. (quality flag = %0x)\n", command,
-                    frame_idx, frame_qual_flag);
-//                continue;
+                if (! opt_quiet)
+                {
+                    fprintf(stderr,
+                        "%s: frame %d is evil. (quality flag = %0x)\n",
+                        command, frame_idx, frame_qual_flag);
+                }
+                if (! opt_all)
+                {
+                    continue;
+                }
             }
 
             //-----------------------------//
