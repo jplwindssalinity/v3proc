@@ -16,6 +16,7 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "LonLat.h"
 #include "Beam.h"
 #include "Matrix3.h"
+#include "Interpolate.h"
 
 //---------------//
 // BeamFrameToGC //
@@ -88,7 +89,8 @@ FindSlice(
 
 	float az_1 = 0.0;
 	float el_1 = 0.0;
-//	JumpToFreq(&az_1, &el_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
+	JumpToFreq(beam_frame_to_gc, spacecraft, instrument, &az_1, &el_1,
+		FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_1, &el_1,
 		FREQ_GRADIENT_ANGLE, &angle);
 	SetPoints(az_1, el_1, FREQ_GRADIENT_ANGLE, angle, az, el);
@@ -103,7 +105,8 @@ FindSlice(
 
 	float az_2 = 0.0;
 	float el_2 = 0.0;
-//	JumpToFreq(&az_2, &el_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
+	JumpToFreq(beam_frame_to_gc, spacecraft, instrument, &az_2, &el_2,
+		FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_2, &el_2,
 		FREQ_GRADIENT_ANGLE, &angle);
 	SetPoints(az_2, el_2, FREQ_GRADIENT_ANGLE, angle, az, el);
@@ -418,8 +421,8 @@ GainSlice(
     Instrument*         instrument,
 	float				az[3],
 	float				el[3],
-	float				s[3],
-	float				c[3])
+	double				s[3],
+	double				c[3])
 {
 	//------------------------//
 	// calculate center point //
@@ -445,7 +448,7 @@ GainSlice(
 	// get gain for those three points //
 	//---------------------------------//
 
-	float gain[3];
+	double gain[3];
 	int idx = instrument->antenna.currentBeamIdx;
 	gain[0] = instrument->antenna.beam[idx].GetPowerGain(az[0], el[0]);
 	gain[1] = instrument->antenna.beam[idx].GetPowerGain(az[1], el[1]);
@@ -454,6 +457,9 @@ GainSlice(
 	//-----------------//
 	// fit a quadratic //
 	//-----------------//
+
+	if (! polcoe(s, gain, 2, c))
+		return(0);
 
 	c[0] = 0.0;
 	c[1] = 0.0;

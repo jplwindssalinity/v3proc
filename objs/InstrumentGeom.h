@@ -43,8 +43,9 @@ CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
 int		FindSlice(float freq_1, float freq_2, float freq_tol,
 			Outline* outline, Vector3* centroid_beam_look);
 
-int		JumpToFreq(float* az, float* el, float gradient_angle,
-			float target_freq, float freq_tol);
+int		JumpToFreq(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
+			Instrument* instrument, float* az, float* el,
+			float gradient_angle, float target_freq, float freq_tol);
 
 int		FreqGradient(CoordinateSwitch* beam_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float az, float el,
