@@ -1,13 +1,13 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef LIST_C
 #define LIST_C
 
 static const char rcs_id_list_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include "List.h"
@@ -18,16 +18,16 @@ static const char rcs_id_list_c[] =
 
 template <class T>
 Node<T>::Node(
-	T*	new_data)
-:	prev(NULL), next(NULL), data(new_data)
+    T*    new_data)
+:   prev(NULL), next(NULL), data(new_data)
 {
-	return;
+    return;
 }
 
 template <class T>
 Node<T>::~Node()
 {
-	return;
+    return;
 }
 
 //======//
@@ -36,19 +36,19 @@ Node<T>::~Node()
 
 template <class T>
 List<T>::List()
-:	_head(NULL), _tail(NULL), _current(NULL)
+:   _head(NULL), _tail(NULL), _current(NULL)
 {
-	return;
+    return;
 }
 
 template <class T>
 List<T>::~List()
 {
-	if (_head != NULL)
-	{
-		fprintf(stderr, "List destroyed without being deallocated!\n");
-	}
-	return;
+    if (_head != NULL)
+    {
+        fprintf(stderr, "List destroyed without being deallocated!\n");
+    }
+    return;
 }
 
 //--------------//
@@ -62,28 +62,28 @@ List<T>::~List()
 template <class T>
 int
 List<T>::Append(
-	T*	new_data)
+    T*  new_data)
 {
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
 
-	if (_tail)
-	{
-		// end of list exists, just append
-		new_node->next = NULL;
-		new_node->prev = _tail;
-		_tail->next = new_node;
-		_tail = _current = new_node;
-	}
-	else
-	{
-		// list is empty
-		new_node->prev = NULL;
-		new_node->next = NULL;
-		_head = _tail = _current = new_node;
-	}
-	return(1);
+    if (_tail)
+    {
+        // end of list exists, just append
+        new_node->next = NULL;
+        new_node->prev = _tail;
+        _tail->next = new_node;
+        _tail = _current = new_node;
+    }
+    else
+    {
+        // list is empty
+        new_node->prev = NULL;
+        new_node->next = NULL;
+        _head = _tail = _current = new_node;
+    }
+    return(1);
 }
 
 //---------------//
@@ -96,31 +96,31 @@ List<T>::Append(
 template <class T>
 int
 List<T>::Prepend(
-	T*	new_data)
+    T*    new_data)
 {
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
 
-	if (_head)
-	{
-		// beginning of list exists, just prepend
-		new_node->next = _head;
-		new_node->prev = NULL;
-		_head->prev = new_node;
-		_head = new_node;
-	}
-	else
-	{
-		// list is empty
-		new_node->prev = NULL;
-		new_node->next = NULL;
-		_head = _tail = new_node;
-	}
+    if (_head)
+    {
+        // beginning of list exists, just prepend
+        new_node->next = _head;
+        new_node->prev = NULL;
+        _head->prev = new_node;
+        _head = new_node;
+    }
+    else
+    {
+        // list is empty
+        new_node->prev = NULL;
+        new_node->next = NULL;
+        _head = _tail = new_node;
+    }
 
-	_current = new_node;
+    _current = new_node;
 
-	return(1);
+    return(1);
 }
 
 //------------------//
@@ -133,35 +133,35 @@ List<T>::Prepend(
 template <class T>
 void
 List<T>::AppendList(
-	List<T>*	list)
+    List<T>*    list)
 {
-	//-------------------//
-	// patch list at end //
-	//-------------------//
+    //-------------------//
+    // patch list at end //
+    //-------------------//
 
-	if (_tail)
-	{
-		// list is not empty
-		_tail->next = list->_head;
-		list->_head->prev = _tail;
-		_tail = list->_tail;
-	}
-	else
-	{
-		// list is empty
-		_head = list->_head;
-		_tail = list->_tail;
-	}
+    if (_tail)
+    {
+        // list is not empty
+        _tail->next = list->_head;
+        list->_head->prev = _tail;
+        _tail = list->_tail;
+    }
+    else
+    {
+        // list is empty
+        _head = list->_head;
+        _tail = list->_tail;
+    }
 
-	//----------------------//
-	// disconnect from list //
-	//----------------------//
+    //----------------------//
+    // disconnect from list //
+    //----------------------//
 
-	// unattach from added_list
-	list->_head = NULL;
-	list->_tail = NULL;
+    // unattach from added_list
+    list->_head = NULL;
+    list->_tail = NULL;
 
-	return;
+    return;
 }
 
 //--------------------//
@@ -174,43 +174,43 @@ List<T>::AppendList(
 template <class T>
 int
 List<T>::InsertBefore(
-	T*	new_data)
+    T*    new_data)
 {
-	// create a new node
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
+    // create a new node
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
 
-	// define the current node
-	if (_current == NULL)
-		_current = _head;
+    // define the current node
+    if (_current == NULL)
+        _current = _head;
 
-	if (_head == NULL)
-	{
-		// empty list
-		_head = new_node;
-		_tail = new_node;
-		new_node->prev = NULL;
-		new_node->next = NULL;
-	}
-	else if (_current == _head)
-	{
-		// node goes before head
-		new_node->prev = _current->prev;
-		new_node->next = _current;
-		_current->prev = new_node;
-		_head = new_node;
-	}
-	else
-	{
-		// node inserts
-		new_node->prev = _current->prev;
-		new_node->next = _current;
-		_current->prev->next = new_node;
-		_current->prev = new_node;
-	}
-	_current = new_node;
-	return(1);
+    if (_head == NULL)
+    {
+        // empty list
+        _head = new_node;
+        _tail = new_node;
+        new_node->prev = NULL;
+        new_node->next = NULL;
+    }
+    else if (_current == _head)
+    {
+        // node goes before head
+        new_node->prev = _current->prev;
+        new_node->next = _current;
+        _current->prev = new_node;
+        _head = new_node;
+    }
+    else
+    {
+        // node inserts
+        new_node->prev = _current->prev;
+        new_node->next = _current;
+        _current->prev->next = new_node;
+        _current->prev = new_node;
+    }
+    _current = new_node;
+    return(1);
 }
 
 //-------------------//
@@ -223,43 +223,43 @@ List<T>::InsertBefore(
 template <class T>
 int
 List<T>::InsertAfter(
-	T*	new_data)
+    T*    new_data)
 {
-	// create a new node
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
+    // create a new node
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
 
-	// define the current node
-	if (_current == NULL)
-		_current = _tail;
+    // define the current node
+    if (_current == NULL)
+        _current = _tail;
 
-	if (_head == NULL)
-	{
-		// empty list
-		_head = new_node;
-		_tail = new_node;
-		new_node->prev = NULL;
-		new_node->next = NULL;
-	}
-	else if (_current == _tail)
-	{
-		// node goes after tail
+    if (_head == NULL)
+    {
+        // empty list
+        _head = new_node;
+        _tail = new_node;
+        new_node->prev = NULL;
+        new_node->next = NULL;
+    }
+    else if (_current == _tail)
+    {
+        // node goes after tail
         new_node->prev = _tail;
         new_node->next = NULL;
         _tail->next = new_node;
         _tail = new_node;
-	}
-	else
-	{
-		// node inserts
+    }
+    else
+    {
+        // node inserts
         new_node->prev = _current;
         new_node->next = _current->next;
         _current->next->prev = new_node;
         _current->next = new_node;
-	}
-	_current = new_node;
-	return(1);
+    }
+    _current = new_node;
+    return(1);
 }
 
 //---------------------//
@@ -272,28 +272,28 @@ template <class T>
 T*
 List<T>::RemoveCurrent()
 {
-	Node<T>* node = _current;
-	if (_current == NULL)
-		return (NULL);
-	if (_current->prev)
-		_current->prev->next = _current->next;
-	if (_current->next)
-		_current->next->prev = _current->prev;
-	if (_current == _head)
-		_head = _head->next;
-	if (_current == _tail)
-		_tail = _tail->prev;
-	_current = _current->next;
-	if (node)
-	{
-		T* data = node->data;
-		delete node;
-		return(data);
-	}
-	else
-	{
-		return(NULL);
-	}
+    Node<T>* node = _current;
+    if (_current == NULL)
+        return (NULL);
+    if (_current->prev)
+        _current->prev->next = _current->next;
+    if (_current->next)
+        _current->next->prev = _current->prev;
+    if (_current == _head)
+        _head = _head->next;
+    if (_current == _tail)
+        _tail = _tail->prev;
+    _current = _current->next;
+    if (node)
+    {
+        T* data = node->data;
+        delete node;
+        return(data);
+    }
+    else
+    {
+        return(NULL);
+    }
 }
 
 //---------------//
@@ -306,8 +306,8 @@ template <class T>
 T*
 List<T>::GetHead()
 {
-	_current = _head;
-	return (GetCurrent());
+    _current = _head;
+    return (GetCurrent());
 }
 
 //---------------//
@@ -320,8 +320,8 @@ template <class T>
 T*
 List<T>::GetTail()
 {
-	_current = _tail;
-	return (GetCurrent());
+    _current = _tail;
+    return (GetCurrent());
 }
 
 //------------------//
@@ -333,10 +333,10 @@ template <class T>
 T*
 List<T>::GetCurrent()
 {
-	if (_current)
-		return (_current->data);
-	else
-		return (0);
+    if (_current)
+        return (_current->data);
+    else
+        return (0);
 }
 
 //---------------//
@@ -349,9 +349,9 @@ template <class T>
 T*
 List<T>::GetNext()
 {
-	if (_current)
-		_current = _current->next;
-	return (GetCurrent());
+    if (_current)
+        _current = _current->next;
+    return (GetCurrent());
 }
 
 //---------------//
@@ -364,9 +364,9 @@ template <class T>
 T*
 List<T>::GetPrev()
 {
-	if (_current)
-		_current = _current->prev;
-	return (GetCurrent());
+    if (_current)
+        _current = _current->prev;
+    return (GetCurrent());
 }
 
 //------------------//
@@ -378,13 +378,35 @@ List<T>::GetPrev()
 template <class T>
 T*
 List<T>::GetByIndex(
-	int		index)
+    int        index)
 {
-	GotoHead();
-	for (int i = 0; i < index; i++)
-		GotoNext();
+    GotoHead();
+    for (int i = 0; i < index; i++)
+        GotoNext();
 
-	return(GetCurrent());
+    return(GetCurrent());
+}
+
+//------------------//
+// List::GetIndexOf //
+//------------------//
+// Returns the index of the node containing the given data. Returns
+// -1 on failure. The current node is unchanged. This is done using
+// pointer equality, NOT content equals.
+
+template <class T>
+int
+List<T>::GetIndexOf(
+    T*  data)
+{
+    int index = 0;
+    for (Node<T>* node = _head; node; node = node->next)
+    {
+        if (node->data == data)
+            return(index);
+        index++;
+    }
+    return(-1);
 }
 
 //----------------//
@@ -399,12 +421,12 @@ template <class T>
 int
 List<T>::GotoNext()
 {
-	if (! _current)
-		return(0);
-	_current = _current->next;
-	if (! _current)
-		return(0);
-	return(1);
+    if (! _current)
+        return(0);
+    _current = _current->next;
+    if (! _current)
+        return(0);
+    return(1);
 }
 
 //----------------//
@@ -419,12 +441,12 @@ template <class T>
 int
 List<T>::GotoPrev()
 {
-	if (! _current)
-		return(0);
-	_current = _current->prev;
-	if (! _current)
-		return(0);
-	return(1);
+    if (! _current)
+        return(0);
+    _current = _current->prev;
+    if (! _current)
+        return(0);
+    return(1);
 }
 
 //--------------------------//
@@ -438,16 +460,16 @@ template <class T>
 int
 List<T>::SwapCurrentAndNext()
 {
-	// make sure current and next exist
-	if (! _current || ! _current->next)
-		return(0);
+    // make sure current and next exist
+    if (! _current || ! _current->next)
+        return(0);
 
-	// swap
-	T* tmp_data = _current->data;
-	_current->data = _current->next->data;
-	_current->next->data = tmp_data;
+    // swap
+    T* tmp_data = _current->data;
+    _current->data = _current->next->data;
+    _current->next->data = tmp_data;
 
-	return(1);
+    return(1);
 }
 
 //-----------------//
@@ -459,11 +481,11 @@ template <class T>
 int
 List<T>::NodeCount()
 {
-	int count = 0;
-	for (Node<T>* node = _head; node; node = node->next)
-		count++;
+    int count = 0;
+    for (Node<T>* node = _head; node; node = node->next)
+        count++;
 
-	return(count);
+    return(count);
 }
 
 //--------------//
@@ -473,12 +495,12 @@ List<T>::NodeCount()
 template <class T>
 int
 List<T>::IsHead(
-	T*	data)
+    T*    data)
 {
-	if (_head && data == _head->data)
-		return(1);
-	else
-		return(0);
+    if (_head && data == _head->data)
+        return(1);
+    else
+        return(0);
 }
 
 //--------------//
@@ -488,12 +510,12 @@ List<T>::IsHead(
 template <class T>
 int
 List<T>::IsTail(
-	T*	data)
+    T*    data)
 {
-	if (_tail && data == _tail->data)
-		return(1);
-	else
-		return(0);
+    if (_tail && data == _tail->data)
+        return(1);
+    else
+        return(0);
 }
 
 //---------------//
@@ -504,10 +526,10 @@ template <class T>
 int
 List<T>::IsEmpty()
 {
-	if (_head)
-		return(0);
-	else
-		return(1);
+    if (_head)
+        return(0);
+    else
+        return(1);
 }
 
 
@@ -526,30 +548,30 @@ List<T>::IsEmpty()
 template <class T>
 int
 SortableList<T>::AddSorted(
-	T*	new_data)
+    T*    new_data)
 {
-	// make sure there is a current node
-	if (! _current)
-		_current = _head;
+    // make sure there is a current node
+    if (! _current)
+        _current = _head;
 
-	T* current_data = GetCurrent();
+    T* current_data = GetCurrent();
 
-	// search backwards
-	while (current_data && *new_data < *current_data)
-		current_data = GetPrev();
+    // search backwards
+    while (current_data && *new_data < *current_data)
+        current_data = GetPrev();
 
-	if (! current_data)
-		return(Prepend(new_data));
+    if (! current_data)
+        return(Prepend(new_data));
 
-	// search forward
-	while (current_data && *new_data >= *current_data)
-		current_data = GetNext();
+    // search forward
+    while (current_data && *new_data >= *current_data)
+        current_data = GetNext();
 
-	if (! current_data)
-		return(Append(new_data));
+    if (! current_data)
+        return(Append(new_data));
 
-	// insert before
-	return(InsertBefore(new_data));
+    // insert before
+    return(InsertBefore(new_data));
 }
 
 //-------------------------------//
@@ -564,18 +586,18 @@ SortableList<T>::AddSorted(
 template <class T>
 int
 SortableList<T>::AddUniqueSorted(
-	T*	new_data)
+    T*    new_data)
 {
-	// check for an == node
-	if (Find(new_data))
-	{
-		delete new_data;
-		return(1);
-	}
-	else
-	{
-		return(AddSorted(new_data));
-	}
+    // check for an == node
+    if (Find(new_data))
+    {
+        delete new_data;
+        return(1);
+    }
+    else
+    {
+        return(AddSorted(new_data));
+    }
 }
 
 //--------------------//
@@ -588,14 +610,14 @@ SortableList<T>::AddUniqueSorted(
 template<class T>
 int
 SortableList<T>::Find(
-	T*	data)
+    T*    data)
 {
-	for (T* contents = GetHead(); contents; contents = GetNext())
-	{
-		if (*contents == *data)
-			return(1);
-	}
-	return(0);
+    for (T* contents = GetHead(); contents; contents = GetNext())
+    {
+        if (*contents == *data)
+            return(1);
+    }
+    return(0);
 }
 
 //--------------------//
@@ -606,25 +628,25 @@ template <class T>
 int
 SortableList<T>::Sort()
 {
-	if (! _head)
-		return(0);
+    if (! _head)
+        return(0);
 
-	for (Node<T>* node = _head->next; node; node = node->next)
-	{
-		T* node_data = ((Node<T>*)node)->data;
-		T* prev_data = ((Node<T>*)(node->prev))->data;
-		if (*node_data < *prev_data)
-		{
-			// node needs to be sorted
-			_current = node;	// go to the unsorted node
-			node = node->prev;	// back up before current
-			T* data = RemoveCurrent();
-			_current = _head;	// go to beginning of list
-			if (! AddSorted(data))
-				return(0);
-		}
-	}
-	return(1);
+    for (Node<T>* node = _head->next; node; node = node->next)
+    {
+        T* node_data = ((Node<T>*)node)->data;
+        T* prev_data = ((Node<T>*)(node->prev))->data;
+        if (*node_data < *prev_data)
+        {
+            // node needs to be sorted
+            _current = node;    // go to the unsorted node
+            node = node->prev;    // back up before current
+            T* data = RemoveCurrent();
+            _current = _head;    // go to beginning of list
+            if (! AddSorted(data))
+                return(0);
+        }
+    }
+    return(1);
 }
 
 
@@ -637,10 +659,10 @@ SortableList<T>::Sort()
 int
 ListBase::IsEmpty()
 {
-	if (_head)
-		return(0);
-	else
-		return(1);
+    if (_head)
+        return(0);
+    else
+        return(1);
 }
 
 //---------------//
@@ -651,18 +673,18 @@ ListBase::IsEmpty()
 
 int
 ListBase::GotoNodeIndex(
-	int		node_index)
+    int        node_index)
 {
-	int index = 0;
-	for (NodeBase* node = _head; node; node = node->next, index++)
-	{
-		if (index == node_index)
-		{
-			_current = node;
-			return(1);
-		}
-	}
-	return(0);
+    int index = 0;
+    for (NodeBase* node = _head; node; node = node->next, index++)
+    {
+        if (index == node_index)
+        {
+            _current = node;
+            return(1);
+        }
+    }
+    return(0);
 }
 
 //--------------//
@@ -675,37 +697,37 @@ ListBase::GotoNodeIndex(
 
 void
 ListBase::_InsertAfter(
-	NodeBase*	node)
+    NodeBase*    node)
 {
-	if (_current == NULL)
-		_current = _tail;
+    if (_current == NULL)
+        _current = _tail;
 
-	if (_head == NULL)
-	{
-		// empty list
-		_head = node;
-		_tail = node;
-		node->prev = NULL;
-		node->next = NULL;
-	}
-	else if (_current == _tail)
-	{
-		// node goes after tail
-		node->next = NULL;
-		node->prev = _tail;
-		_tail->next = node;
-		_tail = node;
-	}
-	else
-	{
-		// node inserts
-		node->prev = _current;
-		node->next = _current->next;
-		_current->next = node;
-		node->next->prev = node;
-	}
-	_current = node;
-	return;
+    if (_head == NULL)
+    {
+        // empty list
+        _head = node;
+        _tail = node;
+        node->prev = NULL;
+        node->next = NULL;
+    }
+    else if (_current == _tail)
+    {
+        // node goes after tail
+        node->next = NULL;
+        node->prev = _tail;
+        _tail->next = node;
+        _tail = node;
+    }
+    else
+    {
+        // node inserts
+        node->prev = _current;
+        node->next = _current->next;
+        _current->next = node;
+        node->next->prev = node;
+    }
+    _current = node;
+    return;
 }
 
 //----------------//
@@ -717,19 +739,19 @@ ListBase::_InsertAfter(
 NodeBase*
 ListBase::_RemoveCurrent()
 {
-	NodeBase* current = _current;
-	if (_current == NULL)
-		return (NULL);
-	if (_current->prev)
-		_current->prev->next = _current->next;
-	if (_current->next)
-		_current->next->prev = _current->prev;
-	if (_current == _head)
-		_head = _head->next;
-	if (_current == _tail)
-		_tail = _tail->prev;
-	_current = _current->next;
-	return (current);
+    NodeBase* current = _current;
+    if (_current == NULL)
+        return (NULL);
+    if (_current->prev)
+        _current->prev->next = _current->next;
+    if (_current->next)
+        _current->next->prev = _current->prev;
+    if (_current == _head)
+        _head = _head->next;
+    if (_current == _tail)
+        _tail = _tail->prev;
+    _current = _current->next;
+    return (current);
 }
 
 //==============//
@@ -743,12 +765,12 @@ ListBase::_RemoveCurrent()
 template <class T>
 int
 List<T>::IsHead(
-	T*	data)
+    T*    data)
 {
-	if (_head)
-		return (data == ((Node<T>*)_head)->data ? 1 : 0);
-	else
-		return (0);
+    if (_head)
+        return (data == ((Node<T>*)_head)->data ? 1 : 0);
+    else
+        return (0);
 
 }
 
@@ -759,12 +781,12 @@ List<T>::IsHead(
 template <class T>
 int
 List<T>::IsTail(
-	T*	data)
+    T*    data)
 {
-	if (_tail)
-		return (data == ((Node<T>*)_tail)->data ? 1 : 0);
-	else
-		return (0);
+    if (_tail)
+        return (data == ((Node<T>*)_tail)->data ? 1 : 0);
+    else
+        return (0);
 
 }
 
@@ -775,12 +797,12 @@ List<T>::IsTail(
 template <class T>
 T*
 List<T>::GetIndex(
-	int		node_index)
+    int        node_index)
 {
-	if (! GotoNodeIndex(node_index))
-		return(0);
+    if (! GotoNodeIndex(node_index))
+        return(0);
 
-	return(GetCurrent());
+    return(GetCurrent());
 }
 
 //---------------//
@@ -794,18 +816,18 @@ template <class T>
 T*
 List<T>::RemoveCurrent()
 {
-	// remove the current node and get it
-	Node<T>* node = (Node<T>*)ListBase::_RemoveCurrent();
-	if (node)
-	{
-		T* data = node->data;
-		delete node;
-		return (data);
-	}
-	else
-	{
-		return (NULL);
-	}
+    // remove the current node and get it
+    Node<T>* node = (Node<T>*)ListBase::_RemoveCurrent();
+    if (node)
+    {
+        T* data = node->data;
+        delete node;
+        return (data);
+    }
+    else
+    {
+        return (NULL);
+    }
 }
 
 //--------------//
@@ -818,13 +840,13 @@ List<T>::RemoveCurrent()
 template <class T>
 int
 List<T>::InsertBefore(
-	T*	new_data)
+    T*    new_data)
 {
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
-	_InsertBefore((NodeBase*)new_node);
-	return(1);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
+    _InsertBefore((NodeBase*)new_node);
+    return(1);
 }
 
 //--------------//
@@ -837,13 +859,13 @@ List<T>::InsertBefore(
 template <class T>
 int
 List<T>::InsertAfter(
-	T*	new_data)
+    T*    new_data)
 {
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
-	_InsertAfter((NodeBase*)new_node);
-	return(1);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
+    _InsertAfter((NodeBase*)new_node);
+    return(1);
 }
 
 //-------------------//
@@ -856,16 +878,16 @@ List<T>::InsertAfter(
 template <class T>
 int
 List<T>::InsertBeforeIndex(
-	T*		new_data,
-	int		node_index)
+    T*        new_data,
+    int        node_index)
 {
-	if (! GotoNodeIndex(node_index))
-		return(0);
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
-	_InsertBefore((NodeBase*)new_node);
-	return(1);
+    if (! GotoNodeIndex(node_index))
+        return(0);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
+    _InsertBefore((NodeBase*)new_node);
+    return(1);
 }
 
 //------------------//
@@ -878,16 +900,16 @@ List<T>::InsertBeforeIndex(
 template <class T>
 int
 List<T>::InsertAfterIndex(
-	T*		new_data,
-	int		node_index)
+    T*        new_data,
+    int        node_index)
 {
-	if (! GotoNodeIndex(node_index))
-		return(0);
-	Node<T>* new_node = new Node<T>(new_data);
-	if (new_node == NULL)
-		return(0);
-	_InsertAfter((NodeBase*)new_node);
-	return(1);
+    if (! GotoNodeIndex(node_index))
+        return(0);
+    Node<T>* new_node = new Node<T>(new_data);
+    if (new_node == NULL)
+        return(0);
+    _InsertAfter((NodeBase*)new_node);
+    return(1);
 }
 */
 
