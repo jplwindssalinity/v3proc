@@ -81,6 +81,12 @@ public:
         Uniform(float radius, float mean);
 	~Uniform();
 	float GetNumber();
+
+	float GetRadius();
+	void SetRadius(float r);
+	float GetMean();
+        void SetMean(float m);
+
 protected:
 	float _radius;
         float _mean;
@@ -99,7 +105,14 @@ public:
 	Gaussian();
 	Gaussian(float variance, float mean);
 	~Gaussian();
-	float GetNumber();
+	float GetNumber();	
+
+	float GetVariance();
+	void SetVariance(float v);
+	float GetMean();
+        void SetMean(float m);
+
+
 protected:
 	float _variance;
 	float _mean;

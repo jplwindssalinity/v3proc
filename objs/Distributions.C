@@ -79,6 +79,21 @@ Uniform::GetNumber()
 	return(num);
 }
 
+float Uniform::GetRadius(){
+  return(_radius);
+}
+
+void Uniform::SetRadius(float r){
+  _radius=r;
+}
+
+float Uniform::GetMean(){
+  return(_mean);
+}
+
+void Uniform::SetMean(float m){
+  _mean=m;
+}
 
 //============================//
 // Gaussian                    //
@@ -96,6 +111,7 @@ Gaussian::Gaussian(float variance, float mean)
 	_mean=mean;
 	return;
 }
+
 
 Gaussian::~Gaussian()
 {
@@ -118,6 +134,21 @@ Gaussian::GetNumber()
 	return(num);
 }
 
+float Gaussian::GetVariance(){
+  return(_variance);
+}
+
+void Gaussian::SetVariance(float v){
+  _variance=v;
+}
+
+float Gaussian::GetMean(){
+  return(_mean);
+}
+
+void Gaussian::SetMean(float m){
+  _mean=m;
+}
 
 //==================================//
 // Random Velocity                  //
