@@ -145,14 +145,23 @@ main(
     if (! config_list.GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
         return(0);
 
-	//--------------------------------------------//
-	// Make and write beam patterns for each beam //
-	//--------------------------------------------//
+	//---------------------------------------------------//
+	// Make and write a beam pattern (use with each beam) //
+	//---------------------------------------------------//
 
-	int Nx = 512;
-	int Ny = 512;
-	int ix_zero = 256;
-	int iy_zero = 256;
+	// Number of beam widths to compute pattern data for
+	int Nwidths = 5;
+
+	// Number of sample points across the 3dB widths specified below.
+	int Nxw = 512;
+	int Nyw = 512;
+
+	// The total number of samples and zero point locations
+	int Nx = Nxw*Nwidths;
+	int Ny = Nyw*Nwidths;
+	int ix_zero = Nx/2;
+	int iy_zero = Ny/2;
+
 	double az_width = 1.19*dtr;
 	double elev_width = 1.4*dtr;
 	// Interpret x and y as azimuth and elevation angles.
@@ -165,49 +174,46 @@ main(
 	double max_gaindB = 30.0;
 	double max_gain = pow(10,max_gaindB/10);
 
-	for (int ib=0; ib < number_of_beams; ib++)
+	Beam cur_beam;
+	float** power_gain = (float**)make_array(sizeof(float),2,Nx,Ny);
+	if (power_gain == NULL)
 	{
-		Beam cur_beam;
-		float** power_gain = (float**)make_array(sizeof(float),2,Nx,Ny);
-		if (power_gain == NULL)
-		{
-			printf("Error allocating pattern array\n");
-			exit(-1);
-		}
-		double r,x,y,theta,phi,Fn;
-		for (int i=0; i < Nx; i++)
-		for (int j=0; j < Ny; j++)
-		{
-			x = (i - ix_zero)*x_spacing;
-			y = (j - iy_zero)*y_spacing;
-
-			// Compute spherical angles assuming x and y are components of
-			// the unit look vector in the beam frame.
-			//theta = asin(sqrt(x*x + y*y));
-			//phi = atan2(y,x);
-
-			// Compute spherical angles assuming x and y are azimuth and
-			// elevation angles.
-			Vector3 ulook;
-			ulook.AzimuthElevationSet(1.0,x,y);
-			ulook.SphericalGet(&r,&theta,&phi);
-
-			// compute normalized pattern with width elev_width in the x-z
-			// plane, and width az_width in the y-z plane.
-			// This pattern is for a rectangular aperture with uniform
-			// illumination (ie., sinc^2).
-			Fn = sin(pi*0.88/elev_width*sin(theta)*cos(phi)) /
-					 (pi*0.88/elev_width*sin(theta)*cos(phi)) *
-				 sin(pi*0.88/az_width*sin(theta)*sin(phi)) /
-					 (pi*0.88/az_width*sin(theta)*sin(phi));
-			Fn *= Fn;
-			power_gain[i][j] = Fn*max_gain;
-		}
-
-		cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
-									power_gain);
-		cur_beam.WriteBeamPattern("beampattern.dat");
+		printf("Error allocating pattern array\n");
+		exit(-1);
 	}
+	double r,x,y,theta,phi,Fn;
+	for (int i=0; i < Nx; i++)
+	for (int j=0; j < Ny; j++)
+	{
+		x = (i - ix_zero)*x_spacing;
+		y = (j - iy_zero)*y_spacing;
+
+		// Compute spherical angles assuming x and y are components of
+		// the unit look vector in the beam frame.
+		//theta = asin(sqrt(x*x + y*y));
+		//phi = atan2(y,x);
+
+		// Compute spherical angles assuming x and y are azimuth and
+		// elevation angles.
+		Vector3 ulook;
+		ulook.AzimuthElevationSet(1.0,x,y);
+		ulook.SphericalGet(&r,&theta,&phi);
+
+		// compute normalized pattern with width elev_width in the x-z
+		// plane, and width az_width in the y-z plane.
+		// This pattern is for a rectangular aperture with uniform
+		// illumination (ie., sinc^2).
+		Fn = sin(pi*0.88/elev_width*sin(theta)*cos(phi)) /
+				 (pi*0.88/elev_width*sin(theta)*cos(phi)) *
+			 sin(pi*0.88/az_width*sin(theta)*sin(phi)) /
+				 (pi*0.88/az_width*sin(theta)*sin(phi));
+		Fn *= Fn;
+		power_gain[i][j] = Fn*max_gain;
+	}
+
+	cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
+								power_gain);
+	cur_beam.WriteBeamPattern("beampattern.dat");
 
 	return (0);
 }
