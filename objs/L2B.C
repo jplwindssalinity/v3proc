@@ -355,7 +355,7 @@ L2B::ReadHDF(
         {
             WVC* wvc = new WVC();
 	    wvc->rainProb=rainArray[cti];
-	    wvc->rainFlagBits=char(0x7000 & qualArray[cti]);
+	    wvc->rainFlagBits=char((0x7000 & qualArray[cti])>>12);
             wvc->lonLat.longitude = lonArray[cti] * dtr;
             wvc->lonLat.latitude = latArray[cti] * dtr;
             wvc->nudgeWV = new WindVectorPlus();
