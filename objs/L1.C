@@ -70,40 +70,40 @@ L1::InsertAll()
 {
 	int idx = 0;
 
-	memcpy(_frame + idx, &time, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&time, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcAltitude, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcAltitude, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcLongitude, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcLongitude, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcLatitude, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcLatitude, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcX, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcX, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcY, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcY, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &gcZ, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&gcZ, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &velX, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&velX, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &velY, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&velY, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &velZ, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&velZ, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &antennaPosition, sizeof(double));
+	memcpy((void *)(_frame + idx), (void *)&antennaPosition, sizeof(double));
 	idx += sizeof(double);
 
-	memcpy(_frame + idx, &beam, sizeof(L1BeamE));
+	memcpy((void *)(_frame + idx), (void *)&beam, sizeof(L1BeamE));
 	idx += sizeof(L1BeamE);
 
 	return(1);
