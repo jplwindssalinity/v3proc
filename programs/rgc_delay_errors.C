@@ -383,9 +383,9 @@ main(
 					//---------------------------//
 
 					delay_error = delay - ideal_delay;
-					fprintf(rgc_err_fp, "%.6f %.6f %.6f %.6f\n",
+					fprintf(rgc_err_fp, "%.6f %.6f %.6f %.6f %d\n",
 						instrument_event.time, delay_error * 1000.0,
-						ideal_delay * 1000.0, delay * 1000.0);
+						ideal_delay * 1000.0, delay * 1000.0,antenna->currentBeamIdx);
 
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);
