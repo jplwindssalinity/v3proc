@@ -505,38 +505,38 @@ main(
                 (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
 
               printf("%d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
-                cf.idx[j],
-                cf.time, meas_spot->time,
-                cf.beamNumber, meas->beamIdx,
-                cf.measType[j], meas->measType,
-                cf.antennaAziTx, meas->scanAngle,
-                cf.antennaAziGi, 0.0,
-                cf.orbitFrac, 0.0,
-                cf.spinRate, 0.0,
-                cf.txDoppler, 0.0,
-                cf.XdopplerFreq, 0.0,
-                cf.XroundTripTime, 0.0,
-                cf.sigma0[j], meas->value,
-                cf.XK[j], meas->XK,
-                cf.EsCal, 0.0,
-                cf.deltaFreq, 0.0,
-                cf.Es[j], meas->value*meas->XK,
-                cf.En[j], meas->EnSlice,
-                cf.EsnEcho, 0.0,
-                cf.EsnNoise, 0.0,
-                cf.rxGateDelay, 0.0,
-                cf.alpha, 0.0,
-                lon,lon1b,lat,lat1b,
-                cf.azimuth[j], meas->eastAzimuth,
-                cf.incidence[j], meas->incidenceAngle,
-                cf.R[j], measR,
-                cf.GatGar[j], 0.0,
-                cf.rsat.Get(0), meas_spot->scOrbitState.rsat.Get(0),
-                cf.rsat.Get(1), meas_spot->scOrbitState.rsat.Get(1),
-                cf.rsat.Get(2), meas_spot->scOrbitState.rsat.Get(2),
-                cf.vsat.Get(0), meas_spot->scOrbitState.vsat.Get(0),
-                cf.vsat.Get(1), meas_spot->scOrbitState.vsat.Get(1),
-                cf.vsat.Get(2), meas_spot->scOrbitState.vsat.Get(2));
+                cf.idx[j],    // 1
+                cf.time, meas_spot->time,    // 2, 3
+                cf.beamNumber, meas->beamIdx,    // 4, 5
+                cf.measType[j], meas->measType,    // 6, 7
+                cf.antennaAziTx, meas->scanAngle,    // 8, 9
+                cf.antennaAziGi, 0.0,    // 10, 11
+                cf.orbitFrac, 0.0,    // 12, 13
+                cf.spinRate, 0.0,    // 14, 15
+                cf.txDoppler, 0.0,    // 16, 17
+                cf.XdopplerFreq, 0.0,    // 18, 19
+                cf.XroundTripTime, 0.0,    // 20, 21
+                cf.sigma0[j], meas->value,    // 22, 23
+                cf.XK[j], meas->XK,    // 24, 25
+                cf.EsCal, 0.0,    // 26, 27
+                cf.deltaFreq, 0.0,    // 28, 29
+                cf.Es[j], meas->value*meas->XK,    // 30, 31
+                cf.En[j], meas->EnSlice,    // 32, 33
+                cf.EsnEcho, 0.0,    // 34, 35
+                cf.EsnNoise, 0.0,    // 36, 37
+                cf.rxGateDelay, 0.0,    // 38, 39
+                cf.alpha, 0.0,    // 40, 41
+                lon,lon1b,lat,lat1b,    // 42, 43, 44, 45
+                cf.azimuth[j], meas->eastAzimuth,    // 46, 47
+                cf.incidence[j], meas->incidenceAngle,    // 48, 49
+                cf.R[j], measR,    // 50, 51
+                cf.GatGar[j], 0.0,    // 52, 53
+                cf.rsat.Get(0), meas_spot->scOrbitState.rsat.Get(0),  // 54, 55
+                cf.rsat.Get(1), meas_spot->scOrbitState.rsat.Get(1),  // 56, 57
+                cf.rsat.Get(2), meas_spot->scOrbitState.rsat.Get(2),  // 58, 59
+                cf.vsat.Get(0), meas_spot->scOrbitState.vsat.Get(0),  // 60, 61
+                cf.vsat.Get(1), meas_spot->scOrbitState.vsat.Get(1),  // 62, 63
+                cf.vsat.Get(2), meas_spot->scOrbitState.vsat.Get(2));  // 64,65
             }
         } 
     }
