@@ -97,6 +97,8 @@ PROGRAMS = \
 	gen_foff \
 	BYUX_vs_time \
 	l00_to_l1a \
+    check_l1b \
+    calpulse_to_ascii \
 	l2b_extract_worst
 #	sim_accurate
 #	generate_kfactor
@@ -169,6 +171,7 @@ GS_CHECK_PROGRAMS = \
     checkframe_to_ascii \
     gs_l1a_to_ascii \
     l1a_to_ascii \
+    calpulse_to_ascii \
     l1b_to_ascii
 
 #----------------------------------------------------------------------
