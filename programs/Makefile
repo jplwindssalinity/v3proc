@@ -58,7 +58,8 @@ PROGRAMS = \
 	log_cfg \
 	l2ags_s0 \
 	fix_ecmwf_speed \
-	l2b_to_flower
+	l2b_to_flower \
+        l2a_dissect
 
 HUDD_PROGRAMS = \
 	sim \
