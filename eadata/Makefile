@@ -215,5 +215,6 @@ TlmHdfFile.o: TlmHdfFile.C TlmHdfFile.h CommonDefs.h HdfFile.h Itime.h Parameter
 TlmFileList.o: TlmFileList.C TlmFileList.h Hk2File.h L1AFile.h NoTimeTlmFile.h EAList.h TlmHdfFile.h Parameter.h Itime.h TimeTlmFile.h ListBase.h CommonDefs.h HdfFile.h SafeString.h
 ToDo.o: ToDo.C ToDo.h CommonDefs.h Itime.h EAList.h ListBase.h
 Tpg.o: Tpg.C Tpg.h Itime.h CommonDefs.h
-UpldTbl.o: UpldTbl.C UpldTbl.h
+UpldTbl.o: UpldTbl.C UpldTbl_1.h Itime.h Command_1.h SafeString.h ArgsPlus.h UpldTbl.h Command.h UpldTblList.h
+UpldTblList.o: UpldTblList.C UpldTblList.h EAList.h UpldTbl.h Itime.h CommonDefs.h
 UpldTbl.h: UpldTbl_1.h
