@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -1330,11 +1330,11 @@ WindField::ReadEcmwfLoRes(
     short tmp_v[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
 
     int head_size = ECMWF_LORES_LON_DIM * sizeof(short);
-    int uvsize = ECMWF_LORES_LON_DIM * ECMWF_LORES_LAT_DIM * sizeof(short);
+    int uv_size = ECMWF_LORES_LON_DIM * ECMWF_LORES_LAT_DIM * sizeof(short);
 
     if (fread((void *)&head, head_size, 1, fp) != 1 ||
-        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+        fread((void *)tmp_u, uv_size, 1, fp) != 1 ||
+        fread((void *)tmp_v, uv_size, 1, fp) != 1)
     {
         fclose(fp);
         return(0);
@@ -1467,6 +1467,18 @@ WindField::ReadNCEP1(
     if (_field != NULL)
         return(2);
 
+    //-------------------------//
+    // determine the file size //
+    //-------------------------//
+
+    struct stat buf;
+    if (stat(filename, &buf) != 0)
+        return(0);
+
+    int use_int = 0;
+    if (buf.st_size == 522720)
+        use_int = 1;
+
     //-----------//
     // open file //
     //-----------//
@@ -1479,16 +1491,39 @@ WindField::ReadNCEP1(
     // read field //
     //------------//
 
-    short head[NCEP1_LON_DIM];
-    short tmp_u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
-    short tmp_v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    int int_head[NCEP1_LON_DIM];
+    int int_u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    int int_v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
 
-    int head_size = NCEP1_LON_DIM * sizeof(short);
-    int uvsize = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(short);
+    short short_head[NCEP1_LON_DIM];
+    short short_u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    short short_v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
 
-    if (fread((void *)&head, head_size, 1, fp) != 1 ||
-        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+    void* head_ptr = NULL;
+    void* u_ptr = NULL;
+    void* v_ptr = NULL;
+    int head_size = 0;
+    int uv_size = 0;
+    if (use_int)
+    {
+        head_ptr = int_head;
+        u_ptr = int_u;
+        v_ptr = int_v;
+        head_size = NCEP1_LON_DIM * sizeof(int);
+        uv_size = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(int);
+    }
+    else
+    {
+        head_ptr = short_head;
+        u_ptr = short_u;
+        v_ptr = short_v;
+        head_size = NCEP1_LON_DIM * sizeof(short);
+        uv_size = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(short);
+    }
+
+    if (fread((void *)head_ptr, head_size, 1, fp) != 1 ||
+        fread((void *)u_ptr, uv_size, 1, fp) != 1 ||
+        fread((void *)v_ptr, uv_size, 1, fp) != 1)
     {
         fclose(fp);
         return(0);
@@ -1522,8 +1557,16 @@ WindField::ReadNCEP1(
     {
         for (int lat_idx = 0; lat_idx < NCEP1_LAT_DIM; lat_idx++)
         {
-            u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
-            v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
+            if (use_int)
+            {
+                u[lat_idx][lon_idx] = (float)int_u[lat_idx][lon_idx] / scale;
+                v[lat_idx][lon_idx] = (float)int_v[lat_idx][lon_idx] / scale;
+            }
+            else
+            {
+                u[lat_idx][lon_idx] = (float)short_u[lat_idx][lon_idx] / scale;
+                v[lat_idx][lon_idx] = (float)short_v[lat_idx][lon_idx] / scale;
+            }
 
             WindVector* wv = new WindVector;
             if (! wv)
@@ -1566,11 +1609,11 @@ WindField::ReadNCEP2(
     short tmp_v[NCEP2_LAT_DIM][NCEP2_LON_DIM];
 
     int head_size = NCEP2_LON_DIM * sizeof(short);
-    int uvsize = NCEP2_LON_DIM * NCEP2_LAT_DIM * sizeof(short);
+    int uv_size = NCEP2_LON_DIM * NCEP2_LAT_DIM * sizeof(short);
 
     if (fread((void *)&head, head_size, 1, fp) != 1 ||
-        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+        fread((void *)tmp_u, uv_size, 1, fp) != 1 ||
+        fread((void *)tmp_v, uv_size, 1, fp) != 1)
     {
         fclose(fp);
         return(0);
