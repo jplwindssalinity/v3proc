@@ -94,8 +94,8 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<input_format>", "<input_rgc_file>",
-	"<output_format>", "<output_rgc_file>", 0 };
+const char* usage_array[] = { "<input_format (h,b)>", "<input_rgc_file>",
+	"<output_format (h,b)>", "<output_rgc_file>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
