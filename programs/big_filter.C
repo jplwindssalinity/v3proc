@@ -124,7 +124,7 @@ template class TrackerBase<unsigned short>;
 #define MAX_CTI_FOR_NUDGE   68
 */
 
-#define BORDER  13
+#define EDGE  13
 
 //--------//
 // MACROS //
@@ -150,12 +150,11 @@ const char* usage_array[] = { "<sim_cfg_file>", "<l2b_input_file>",
     "<min_prob>", "<vctr_base>", "<l2b_output_file>", "[ hdf_source_flag ]",
     "[ hdf_target_flag ]", 0 };
 
-extern float g_available_fraction;
 extern float g_speed_stopper;
-extern float g_no_ambig_within;
 extern int g_number_needed;
 extern float g_too_different;
 extern float g_second_choice_fraction;
+extern float g_error_of_best;
 
 //--------------//
 // MAIN PROGRAM //
@@ -542,29 +541,65 @@ main(
     // Just Ambiguity Removal //
     //------------------------//
 
-    float speed[] =  { 5.0,    5.0,    5.0,  5.0,  3.0,  3.0,  3.0,  0.0,
-        0.0,  0.0 };
-    float second[] = { 0.25,   0.25,   0.25, 0.25, 0.25, 0.25, 0.5,  0.25,
-        0.5,  1.0 };
-    int number[] =   { 10,     8,      10,   8,    10,   8,    5,    10,
-        5,    0 };
-    int border[] =   { BORDER, BORDER, 0,    0,    0,    0,    0,    0,
-        0,    0 };
+/*
+    float speed[] =  {    5.0,    5.0,  5.0,  5.0,    5.0,    5.0, 5.0, 5.0,
+         3.0,  3.0, 3.0,  3.0,  0.0,  0.0, 0.0,  0.0, 0.0 };
+    float second[] = {   0.25,   0.25, 0.25, 0.25,    0.3,    0.3, 0.3, 0.3,
+        0.25, 0.25, 0.3,  0.3, 0.25, 0.25, 0.3,  0.3, 1.0 };
+    int number[] =   {     10,      8,   10,    8,     10,      8,  10,   8,
+          10,    8,  10,    8,   10,    8,  10,    8,   1 };
+    int border[] =   { EDGE, EDGE,    0,    0, EDGE, EDGE,   0,   0,
+           0,    0,   0,    0,    0,    0,   0,    0,   0 };
+*/
+/*
+    float speed[] =  {    5.0,    5.0,  5.0,  5.0,    5.0,    5.0, 5.0, 5.0,
+         3.0,  3.0, 3.0,  3.0,  2.0,  2.0, 0.0,  0.0 };
+    float second[] = {   0.25,   0.25, 0.25, 0.25,    0.3,    0.3, 0.3, 0.3,
+        0.25, 0.25, 0.3,  0.3, 0.25, 0.25, 0.3,  0.3 };
+    int number[] =   {      8,      4,    8,    4,      8,      4,   8,   4,
+           8,    4,   8,    4,    8,    4,   8,    4 };
+    int border[] =   { EDGE, EDGE,    0,    0, EDGE, EDGE,   0,   0,
+           0,    0,   0,    0,    0,    0,   0,    0 };
+*/
 
-for (int pass = 0; pass < 10; pass++)
+    float speed[] =  {  5.0,  5.0,  3.0,  3.0 };
+    float second[] = { 0.25, 0.25, 0.25, 0.25 };
+    float bad[] =    {  0.1,  0.1,  0.1,  0.1 };
+    int number[] =   {   10,   10,   10,   10 };
+    int border[] =   { EDGE,    0, EDGE,    0 };
+
+for (int pass = 0; pass < 4; pass++)
 {
+printf("Pass %d\n", pass);
     g_speed_stopper = speed[pass];
     g_second_choice_fraction = second[pass];
     g_number_needed = number[pass];
+    g_error_of_best = bad[pass];
     
-    g_available_fraction = 0.0;
-    g_no_ambig_within = 0.0;
-    g_too_different = 180.0;
-
-    swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 100, border[pass], 0, 0);
+    swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 150, border[pass], 0, 0);
     sprintf(filename, "%s.pass.%02d", vctr_base, pass);
     l2b.WriteVctr(filename, 0);
 }
+
+//------------------//
+// fill in any gaps //
+//------------------//
+
+/*
+for (int ati = 0; ati < AT_WIDTH; ati++)
+{
+    for (int cti = 0; cti < CT_WIDTH; cti++)
+    {
+        WVC* wvc = swath->GetWVC(cti, ati);
+        if (wvc == NULL)
+            continue;
+        if (wvc->selected)
+            continue;
+        wvc->selected = wvc->ambiguities.GetHead();
+    }
+}
+swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 50, 0, 0, 0);
+*/
 
     if (! hdf_target_flag)
     {

@@ -177,6 +177,8 @@ int        g_opt_ice = 0;
 int        g_opt_fix_yaw = 0;
 double     g_fixed_yaw = 0.0;
 int        g_opt_topo = 0;
+Topo       g_topo;
+Stable     g_stable;
 
 //--------------//
 // MAIN PROGRAM //
@@ -305,8 +307,6 @@ main(
     }
     g_spots_per_frame = l1a.frame.spotsPerFrame;
 
-    // create and configure the topo map and s
-
     //--------------------------------//
     // create and configure Fbb table //
     //--------------------------------//
@@ -319,19 +319,28 @@ main(
         exit(1);
     }
 
-    //-------------------------------//
-    // create and configure topo map //
-    //-------------------------------//
+    //-----------------------------------------------------//
+    // configure topographic map and frequency shift table //
+    //-----------------------------------------------------//
 
-    Topo topo_map;
     if (g_opt_topo)
     {
-        char* topo_map_filename = config_list.Get("TOPO_MAP");
-        if (topo_map_filename == NULL)
+        char* topomap_file = config_list.Get(TOPOMAP_FILE_KEYWORD);
+        char* stable_file = config_list.Get(STABLE_FILE_KEYWORD);
+        if (topomap_file && stable_file)
         {
-            fprintf(stderr, "%s: error getting TOPO_MAP from config list\n",
-                command);
-            exit(1);
+            if (! g_topo.Read(topomap_file))
+            {
+                fprintf(stderr, "%s: error reading topographic map %s\n",
+                    command, topomap_file);
+                exit(1);
+            }
+            if (! g_stable.Read(stable_file))
+            {
+                fprintf(stderr, "%s: error reading S Table %s\n", command,
+                    stable_file);
+                exit(1);
+            }
         }
     }
 
@@ -812,20 +821,21 @@ evaluate(
                 qscat->LocateSliceCentroids(spacecraft, &meas_spot);
             }
 
-            //----------------//
-            // apply topology //
-            //----------------//
-
-            if (g_opt_topo)
-            {
-                // get latitude and longitude
-            }
-
             //---------------//
             // determine fbb //
             //---------------//
 
-            float fbb = fbb_table->GetFbb(spacecraft, qscat, NULL, NULL);
+            float fbb;
+            if (g_opt_topo)
+            {
+                fbb = fbb_table->GetFbb(spacecraft, qscat, NULL, NULL, &g_topo,
+                    &g_stable);
+            }
+            else
+            {
+                fbb = fbb_table->GetFbb(spacecraft, qscat, NULL, NULL, NULL,
+                    NULL);
+            }
 
             double dif = fbb -
                 g_echo_info[frame_idx].measSpecPeakFreq[spot_idx];

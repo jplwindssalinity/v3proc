@@ -110,7 +110,7 @@ Topo::Height(
     int lon_idx = (int)(TOPO_MAP_LONGITUDES * longitude / two_pi + 0.5);
     int lat_idx = (int)(TOPO_MAP_LATITUDES * (latitude + pi_over_two) / pi +
         0.5);
-    int height = *(*(_map + lon_idx) + lat_idx);
+    int height = *(*(_map + lat_idx) + lon_idx);
     return(height);
 }
 
