@@ -466,7 +466,7 @@ main(
             //---------------//
 
             float meas_spec_peak_slice, meas_spec_peak_freq, width;
-            if (! gaussian_fit2(&qscat, slice_number, signal_energy,
+            if (! gaussian_fit(&qscat, slice_number, signal_energy,
                 frame->slicesPerSpot, &meas_spec_peak_slice,
                 &meas_spec_peak_freq, &width))
             {
