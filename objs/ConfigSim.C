@@ -183,16 +183,6 @@ ConfigBeam(
 
 	sprintf(number, "%d", beam_number);
 
-	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &tmp_double))
-		return(0);
-	beam->lookAngle = tmp_double * dtr;
-
-	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &tmp_double))
-		return(0);
-	beam->azimuthAngle = tmp_double * dtr;
-
 	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
 	if (! config_list->GetChar(keyword, &tmp_char))
 		return(0);
@@ -209,6 +199,16 @@ ConfigBeam(
 	default:
 		return(0);
 	}
+
+	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &tmp_double))
+		return(0);
+	beam->lookAngle = tmp_double * dtr;
+
+	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &tmp_double))
+		return(0);
+	beam->azimuthAngle = tmp_double * dtr;
 
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
