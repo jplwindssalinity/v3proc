@@ -60,6 +60,7 @@ EarthPosition(Vector3 v);
 				double* gc_latitude);
 	int		GetAltLonGDLat(double* altitude, double* longitude,
 				double* gd_latitude);
+	int		SurfaceSet();
 
 
 //

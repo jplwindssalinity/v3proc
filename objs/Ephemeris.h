@@ -106,6 +106,8 @@ public:
 			EarthPosition subtrack_start, double start_time,
 			double measurement_time,
 			float *crosstrack, float *alongtrack);
+	int GetSubtrackPosition(double ctd, double atd,
+		double start_time, EarthPosition* rground);
 
 protected:
 

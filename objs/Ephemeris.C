@@ -213,8 +213,8 @@ Ephemeris::GetPosition(
 {
 
 	OrbitState os;
-	if (Ephemeris::GetOrbitState(time,order,&os) == 0) return(0);
-//	if (Ephemeris::GetOrbitState_2pt(time,&os) == 0) return(0);
+	if (GetOrbitState(time,order,&os) == 0) return(0);
+//	if (GetOrbitState_2pt(time,&os) == 0) return(0);
 	*rsat = os.rsat;
 	return(1);
 
@@ -383,7 +383,7 @@ Ephemeris::GetNextOrbitState(
 	return(1);
 }
 
-//
+//---------------------------------------------------------------------------//
 // GetSubtrackCoordinates
 //
 // Convert a position in geocentric coordinates into subtrack coordinates
@@ -401,7 +401,7 @@ Ephemeris::GetNextOrbitState(
 //	start_time = the time when the s/c is directly over subtrack_start.
 //	measurement_time = the time at which rground was observed.
 //	crosstrack,alongtrack = pointers to return variables. (km)
-//
+//---------------------------------------------------------------------------//
 
 int
 Ephemeris::GetSubtrackCoordinates(
@@ -595,6 +595,75 @@ Ephemeris::GetSubtrackCoordinates(
 	// Apply sign to result.
 	*alongtrack *= sign;
 
+	return(1);
+}
+
+//---------------------------------------------------------------------------//
+// GetSubtrackPosition
+//
+// Convert a position in subtrack coordinates into geocentric coordinates
+// using this ephemeris object to define the subtrack.
+// This method is the inverse of GetSubtrackCoordinates.
+//
+// INPUTS:
+//  ctd,atd = cross and along track distances to the surface point.
+//	subtrack_start = position on surface of grid start (0,0 point).
+//	start_time = the time when the s/c is directly over subtrack_start.
+//	rground = pointer to the returned position on the earth's surface. (km)
+//---------------------------------------------------------------------------//
+
+int
+Ephemeris::GetSubtrackPosition(
+	double			ctd,
+	double			atd,
+	double			start_time,
+	EarthPosition*	rground)
+{
+
+	//----------------------------------------------------------------//
+	// Estimate the time to reach the indicated along track position.
+	//----------------------------------------------------------------//
+
+	OrbitState start_state;
+	if (! GetOrbitState(start_time,EPHEMERIS_INTERP_ORDER,&start_state))
+	{
+		printf("Error: Ephemeris::GetSubtrackPosition needs ephemeris data\n");
+		exit(-1);
+	}
+	double vground = start_state.vsat.Magnitude() *
+		r1_earth/start_state.rsat.Magnitude();
+
+	//-------------------------------------------------------------------//
+	// The time is scaled to remove an error which is proportional to the
+	// along track distance (determined by trial and error).
+	//-------------------------------------------------------------------//
+
+	double measurement_time = start_time + atd/vground/1.0734;
+
+	//----------------------------------------------------------------//
+	// Go out perpendicular to the ground track to estimate the
+	// cross track position.
+	//----------------------------------------------------------------//
+
+	EarthPosition r1,r2;
+	if (GetPosition(measurement_time,EPHEMERIS_INTERP_ORDER,&r1) == 0 ||
+		GetPosition(measurement_time+1.0,EPHEMERIS_INTERP_ORDER,&r2) == 0)
+	{
+		printf("Error in Ephemeris::GetSubtrackPosition\n");
+		exit(-1);
+	}
+	Vector3 cross_dir = (r2 - r1) & r1;
+
+	//-------------------------------------------------------------------//
+	// The distance is scaled to remove an error which is proportional
+	// to the cross track distance (determined by trial and error).
+	//-------------------------------------------------------------------//
+
+	cross_dir.Scale(ctd*1.1347);
+	EarthPosition search_start = r1 + cross_dir;
+	search_start.SurfaceSet();
+
+	*rground = search_start;
 	return(1);
 }
 

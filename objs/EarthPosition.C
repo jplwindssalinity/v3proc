@@ -162,7 +162,7 @@ EarthPosition::GetAltLonGCLat(
 // Returns the earth position as altitude, longitude, and geodetic latitude
 // altitude = altitude above the ellipsoidal earth surface (km)
 // longitude = east longitude (radians)
-// gc_latitude = geodetic latitude (radians)
+// gd_latitude = geodetic latitude (radians)
 
 int
 EarthPosition::GetAltLonGDLat(
@@ -236,6 +236,22 @@ EarthPosition::GetAltLonGDLat(
 		return(0);
 	}
 
+	return(1);
+}
+
+//---------------------------------------------------------------------------//
+// SurfaceSet
+//
+// Puts the current position on the earth's surface by setting the altitude
+// to zero, but leaving the lat,lon unchanged.
+//---------------------------------------------------------------------------//
+
+int
+EarthPosition::SurfaceSet()
+{
+	double alt,lon,dlat;
+	GetAltLonGDLat(&alt,&lon,&dlat);
+	SetAltLonGDLat(0.0,lon,dlat);
 	return(1);
 }
 
