@@ -79,6 +79,7 @@ template class List<StringPair>;
 template class List<Meas>;
 template class List<LonLat>;
 template class List<MeasSpot>;
+template class List<WindVectorPlus>;
 
 //-----------//
 // CONSTANTS //
