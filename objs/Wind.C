@@ -819,7 +819,7 @@ WindField::InterpolatedWindVector(
 				lon_coef[0] * lat_coef[1] * corner_v[0][1] +
 				lon_coef[1] * lat_coef[0] * corner_v[1][0] +
 				lon_coef[1] * lat_coef[1] * corner_v[1][1];
-		
+
 	wv->SetUV(u, v);
 	return(1);
 }
@@ -1306,6 +1306,35 @@ WindSwath::MedianFilterPass(
 	}
 
 	return(flips);
+}
+
+//--------------------------//
+// WindSwath::SelectNearest //
+//--------------------------//
+
+int
+WindSwath::SelectNearest(
+	WindField*	truth)
+{
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
+			count++;
+		}
+	}
+
+	return(count);
 }
 
 //----------------------//

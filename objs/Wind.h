@@ -280,6 +280,8 @@ public:
 	float	Skill(WindField* truth);
 	float	SpdBias(WindField* truth);
 
+	int		SelectNearest(WindField* truth);
+
 	int		RmsSpdErrVsCti(WindField* truth, float* rms_spd_err_array,
 				int* count_array, float low_speed, float high_speed);
 	int		RmsDirErrVsCti(WindField* truth, float* rms_dir_err_array,
