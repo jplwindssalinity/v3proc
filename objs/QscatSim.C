@@ -95,7 +95,7 @@ QscatSim::DetermineNextEvent(
 
     int min_idx = 0;
     double min_time = beamInfo[0].txTime;
-    for (int beam_idx = 1; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         if (beamInfo[beam_idx].txTime < min_time)
         {
@@ -198,48 +198,51 @@ QscatSim::ScatSim(
         l1a_frame->time = qscat->cds.time;
         l1a_frame->orbitTicks = qscat->cds.orbitTime;
         l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
         l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         l1a_frame->calPosition = 255;	// no cal pulses yet
 
         // extra data needed by GS for first pulse (scaled appropriately)
-        l1a_frame->prf_cycle_time_eu = (unsigned short)(qscat->ses.pri * 1e4);
+        l1a_frame->in_eu.prf_cycle_time_eu = qscat->ses.pri;
         l1a_frame->range_gate_delay_inner =
           (unsigned short)(qscat->ses.rxGateDelay * 1e6);
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-        l1a_frame->range_gate_width_inner =
-          (unsigned short)(ses_beam_info->rxGateWidth * 1e6);
-        l1a_frame->transmit_pulse_width =
-          (unsigned short)(qscat->ses.txPulseWidth * 1e6);
-        l1a_frame->precision_coupler_temp_eu =
-          (short)(qscat->ses.physicalTemperature*1e2);
-        l1a_frame->rcv_protect_sw_temp_eu =
-          (short)(qscat->ses.physicalTemperature*1e2);
-        l1a_frame->beam_select_sw_temp_eu =
-          (short)(qscat->ses.physicalTemperature*1e2);
-        l1a_frame->receiver_temp_eu =
-          (short)(qscat->ses.physicalTemperature*1e2);
+        l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
+        l1a_frame->in_eu.transmit_pulse_width = qscat->ses.txPulseWidth;
+        l1a_frame->in_eu.precision_coupler_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.rcv_protect_sw_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.beam_select_sw_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.receiver_temp_eu =
+          qscat->ses.physicalTemperature;
         l1a_frame->frame_inst_status=0x00000050;  // set cal pulse flag later
         l1a_frame->frame_err_status=0x00000000;
         l1a_frame->frame_qual_flag=0x0000;
-        l1a_frame->pulse_qual_flag=0x00;
+        for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
 
         l1a_frame->frame_time_secs = qscat->cds.time;
         l1a_frame->instrument_time = qscat->cds.instrumentTime;
-        l1a_frame->prf_count = l1a_frame->spotsPerFrame;
-        l1a_frame->prf_cycle_time = qscat->cds.priDn;
+        l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
+        l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->range_gate_a_delay = qscat->cds.rxGateDelayDn;
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        l1a_frame->range_gate_a_width = cds_beam_info->rxGateWidthDn;
-        l1a_frame->pulse_width = qscat->cds.txPulseWidthDn;
-        l1a_frame->pred_antenna_pos_count = 0; // needs to be filled
-        l1a_frame->vtcw[0] = 0; // needs to be filled
-        l1a_frame->vtcw[1] = 0; // needs to be filled
-        l1a_frame->precision_coupler_temp =
+        l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+        l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
+        l1a_frame->status.pred_antenna_pos_count = 0; // needs to be filled
+        l1a_frame->status.vtcw[0] = 0; // needs to be filled
+        l1a_frame->status.vtcw[1] = 0; // needs to be filled
+        l1a_frame->engdata.precision_coupler_temp =
           qscat->ses.tempToDn(qscat->ses.physicalTemperature);
-        l1a_frame->rcv_protect_sw_temp = l1a_frame->precision_coupler_temp;
-        l1a_frame->beam_select_sw_temp = l1a_frame->precision_coupler_temp;
-        l1a_frame->receiver_temp = l1a_frame->precision_coupler_temp;
+        l1a_frame->engdata.rcv_protect_sw_temp =
+          l1a_frame->engdata.precision_coupler_temp;
+        l1a_frame->engdata.beam_select_sw_temp =
+          l1a_frame->engdata.precision_coupler_temp;
+        l1a_frame->engdata.receiver_temp =
+          l1a_frame->engdata.precision_coupler_temp;
     }
 
     //-----------------------------------------------//
@@ -381,8 +384,10 @@ QscatSim::ScatSim(
     if (orbit_step != l1a_frame->orbitStep)
     {
         l1a_frame->priOfOrbitStepChange = _spotNumber;
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         // remember, the CDS puts in the last orbit step (anti-documentation)
         l1a_frame->orbitStep = orbit_step;
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
     }
 
     //-----------------------------//
@@ -412,8 +417,12 @@ QscatSim::ScatSim(
             exit(-1);
         }
         cf.time = qscat->cds.time;
+        cf.beamNumber = qscat->cds.currentBeamIdx;
         cf.rsat = spacecraft->orbitState.rsat;
         cf.vsat = spacecraft->orbitState.vsat;
+        cf.orbitFrac = qscat->cds.OrbitFraction();
+        cf.spinRate = qscat->sas.antenna.spinRate;
+        cf.txDoppler = qscat->ses.txDoppler;
         cf.attitude = spacecraft->attitude;
         cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
         cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
@@ -479,8 +488,10 @@ QscatSim::LoopbackSim(
     if (orbit_step != l1a_frame->orbitStep)
     {
         l1a_frame->priOfOrbitStepChange = _spotNumber;
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         // remember, the CDS puts in the last orbit step (anti-documentation)
         l1a_frame->orbitStep = orbit_step;
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
     }
 
     //-----------------------------//
@@ -555,8 +566,10 @@ QscatSim::LoadSim(
     if (orbit_step != l1a_frame->orbitStep)
     {
         l1a_frame->priOfOrbitStepChange = _spotNumber;
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         // remember, the CDS puts in the last orbit step (anti-documentation)
         l1a_frame->orbitStep = orbit_step;
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
     }
 
     //-----------------------------//
@@ -772,7 +785,14 @@ QscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-                Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas);
+		        if (simVs1BCheckfile)
+		        {
+                  Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, cf);
+                }
+                else
+		        {
+                  Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, NULL);
+                }
             }
             if (! sigma0_to_Esn_slice_given_X(qscat, meas, Xfactor, sigma0,
                 simKpcFlag, &(meas->value), &Es, &En,
@@ -866,11 +886,6 @@ QscatSim::SetMeasurements(
             sliceno++;
 		meas=meas_spot->GetNext();
 	}
-
-    if (simVs1BCheckfile)
-    {
-        cf->deltaFreq = BYUX.GetDeltaFreq(spacecraft, qscat);
-    }
 
 	return(1);
 }
@@ -1005,6 +1020,7 @@ QscatSim::SetL1ALoopback(
     //--------------------------------------------------------//
 
     l1a_frame->calPosition = _spotNumber + 2;
+    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition + 1;
     _spotNumber++;
 
     return(1);

@@ -66,12 +66,17 @@ public:
 	EarthPosition	rsat;
 	Vector3			vsat;
 	Attitude		attitude;
+    int             beamNumber;
 	float			ptgr;
     float           orbitFrac;
     float           antennaAziTx;
     float           antennaAziGi;
     float           EsCal;
     float           deltaFreq;
+    float           spinRate;
+    float           txDoppler;
+    float           XdopplerFreq;
+    float           XroundTripTime;
 
 	//------------//
 	// slice data //

@@ -18,9 +18,11 @@ static const char rcs_id_checkframe_c[] =
 //============//
 
 CheckFrame::CheckFrame()
-:	time(0.0), rsat(Vector3(0.0,0.0,0.0)), vsat(0.0,0.0,0.0), attitude(),
+:	time(0.0), rsat(Vector3(0.0,0.0,0.0)),
+    vsat(0.0,0.0,0.0), attitude(), beamNumber(0),
     ptgr(0.0), orbitFrac(0.0), antennaAziTx(0.0), antennaAziGi(0.0),
-    EsCal(0.0), deltaFreq(0.0),
+    EsCal(0.0), deltaFreq(0.0), spinRate(0.0), txDoppler(0.0),
+    XdopplerFreq(0.0), XroundTripTime(0.0),
     idx(NULL), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
     Es(NULL), En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
@@ -188,12 +190,19 @@ CheckFrame::AppendRecord(
         if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
         att = rtd*attitude.GetYaw();//
         if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+        if (! rsat.Write(fptr)) return(0);
+        if (! vsat.Write(fptr)) return(0);
+        if (fwrite((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
         if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
 	return(1);
 }
 
@@ -265,12 +274,19 @@ CheckFrame::WriteDataRec(
   if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
   att = rtd*attitude.GetYaw();//
   if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+  if (! rsat.Write(fptr)) return(0);
+  if (! vsat.Write(fptr)) return(0);
+  if (fwrite((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
   if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
   return(1);
 }
 
@@ -306,12 +322,19 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&yaw,sizeof(float),1,fptr) != 1) return(0);
+  if (! rsat.Read(fptr)) return(0);
+  if (! vsat.Read(fptr)) return(0);
+  if (fread((void *)&beamNumber,sizeof(int),1,fptr) != 1) return(0);
   if (fread((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&spinRate,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&txDoppler,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -325,11 +348,16 @@ CheckFrame::WriteDataRecAscii(
   double alt,lon,lat;
   fprintf(fptr,"**** Spot Data ****\n");
   fprintf(fptr,"time (sec): %g\n",time);
+  fprintf(fptr,"beam number: %d\n",beamNumber);
   fprintf(fptr,"PtGr: %6g\n",ptgr);
   float roll,pitch,yaw;
   attitude.GetRPY(&roll,&pitch,&yaw);
   fprintf(fptr,"S/C roll,pitch,yaw (deg): %g %g %g\n",
     rtd*roll,rtd*pitch,rtd*yaw);
+  fprintf(fptr,"S/C Tx position (x,y,z km): %g %g %g\n",
+    rsat.Get(0),rsat.Get(1),rsat.Get(2));
+  fprintf(fptr,"S/C Tx velocity (x,y,z km/s): %g %g %g\n",
+    vsat.Get(0),vsat.Get(1),vsat.Get(2));
   fprintf(fptr,"orbit fraction (from ascending node): %g\n",orbitFrac);
   fprintf(fptr,"antenna azimuth Tx (rel to s/c y-axis. (deg)): %g\n",
     rtd*antennaAziTx);
@@ -337,6 +365,10 @@ CheckFrame::WriteDataRecAscii(
     rtd*antennaAziGi);
   fprintf(fptr,"EsCal (DN): %g\n",EsCal);
   fprintf(fptr,"deltaFreq (Hz): %g\n",deltaFreq);
+  fprintf(fptr,"spinRate (rad/s): %g\n",spinRate);
+  fprintf(fptr,"txDoppler (Hz): %g\n",txDoppler);
+  fprintf(fptr,"XdopplerFreq (Hz): %g\n",XdopplerFreq);
+  fprintf(fptr,"XroundTripTime (sec): %g\n",XroundTripTime);
   fprintf(fptr,"**** Slices Data ****\n");
   int sliceno = -5;
   for (int i=0; i < slicesPerSpot; i++)

@@ -156,8 +156,8 @@ L1AToL1B::Convert(
         // set up spacecraft //
         //-------------------//
 
-        if (! ephemeris->GetOrbitState(time, EPHEMERIS_INTERP_ORDER,
-            orbit_state))
+        if (! ephemeris->GetOrbitState(time+0.5*qscat->ses.txPulseWidth,
+                EPHEMERIS_INTERP_ORDER, orbit_state))
         {
             return(0);
         }
@@ -316,7 +316,14 @@ L1AToL1B::Convert(
 //                qscat->sas.SetAzimuthWithEncoder(held_encoder);
 //                qscat->SetAntennaToGroundImpact(spacecraft, 1);
 
-			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
+		        if (simVs1BCheckfile)
+		        {
+			      x_factor=BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal, &cf);
+                }
+                else
+		        {
+			      x_factor=BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal,NULL);
+                }
 
 			    //-----------------//
 			    // set measurement //
@@ -361,10 +368,10 @@ L1AToL1B::Convert(
                     // patterns.  Thus, to see what it actually is, we need
                     // to do the geometry work here that is normally done
                     // in radar_X() when using the K-factor approach.
-                    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                        &(spacecraft->attitude), &(qscat->sas.antenna),
-                        qscat->sas.antenna.txCenterAzimuthAngle);
-                    gc_to_antenna=gc_to_antenna.ReverseDirection();
+//                    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+//                        &(spacecraft->attitude), &(qscat->sas.antenna),
+//                        qscat->sas.antenna.txCenterAzimuthAngle);
+//                    gc_to_antenna=gc_to_antenna.ReverseDirection();
                     double roundTripTime = 2.0*cf.R[slice_i]/speed_light_kps;
 
                     Beam* beam = qscat->GetCurrentBeam();
@@ -442,13 +449,16 @@ L1AToL1B::Convert(
 		  }
 		  cf.ptgr = l1a->frame.ptgr;
 		  cf.time = time;
+          cf.beamNumber = qscat->cds.currentBeamIdx;
 		  cf.rsat = spacecraft->orbitState.rsat;
 		  cf.vsat = spacecraft->orbitState.vsat;
+          cf.orbitFrac = qscat->cds.OrbitFraction();
+          cf.spinRate = qscat->sas.antenna.spinRate;
+          cf.txDoppler = qscat->ses.txDoppler;
 		  cf.attitude = spacecraft->attitude;
           cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
           cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
           cf.EsCal = Es_cal;
-          cf.deltaFreq = BYUX.GetDeltaFreq(spacecraft, qscat);
 		  cf.WriteDataRec(fptr);
 		  fclose(fptr);
 		}

@@ -10,6 +10,7 @@ static const char rcs_id_accurategeom_c[] =
 #include "Qscat.h"
 #include "Sigma0.h"
 #include "InstrumentGeom.h"
+#include "CheckFrame.h"
 
 BYUXTable::BYUXTable()
 {
@@ -52,14 +53,14 @@ float
 BYUXTable::GetXTotal(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    Meas*        meas)
+    Meas*        meas,
+    CheckFrame*  cf)
 {
   // true Es_cal based on true PtGr
   float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
                  qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
                  qscat->ses.txPulseWidth;
-  float X = GetXTotal(spacecraft, qscat, meas,
-        Es_cal);
+  float X = GetXTotal(spacecraft, qscat, meas, Es_cal, cf);
   return(X);
 }
 
@@ -72,9 +73,10 @@ BYUXTable::GetXTotal(
     Spacecraft*   spacecraft,
     Qscat*        qscat,
     Meas*         meas,
-    float         Es_cal)
+    float         Es_cal,
+    CheckFrame*   cf)
 {
-  float X=GetX(spacecraft, qscat, meas);
+  float X=GetX(spacecraft, qscat, meas, cf);
 
   //--------------------------------------------------//
   // Compute the Xcal portion of the overall X factor.
@@ -95,9 +97,10 @@ float
 BYUXTable::GetX(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    Meas*        meas)
+    Meas*        meas,
+    CheckFrame*  cf)
 {
-  float delta_freq = GetDeltaFreq(spacecraft, qscat);
+  float delta_freq = GetDeltaFreq(spacecraft, qscat, cf);
   float orbit_position = qscat->cds.OrbitFraction();
   int beam_number = qscat->cds.currentBeamIdx;
   float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
@@ -112,9 +115,10 @@ BYUXTable::GetX(
 float
 BYUXTable::GetDeltaFreq(
     Spacecraft*  spacecraft,
-    Qscat*       qscat)
+    Qscat*       qscat,
+    CheckFrame*  cf)
 {
-        //-----------//
+    //-----------//
 	// predigest //
 	//-----------//
 
@@ -124,7 +128,7 @@ BYUXTable::GetDeltaFreq(
 	int beam_number = qscat->cds.currentBeamIdx;
 
 	//-------------------------------------------//
-        // Determine Nominal Look and Azimuth Angles //
+    // Determine Nominal Look and Azimuth Angles //
 	//-------------------------------------------//
 
 	float look;
@@ -137,13 +141,12 @@ BYUXTable::GetDeltaFreq(
 	  break;
 	case 1:
 	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
-	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
 	  break;
 	default:
 	  fprintf(stderr,"BYUXTable:GetDeltaFreq: Bad Beam Number\n");
 	  exit(0);
 	}
-
         
 	Vector3 nominal_boresight;
     nominal_boresight.SphericalSet(1.0,look,azim);
@@ -155,9 +158,9 @@ BYUXTable::GetDeltaFreq(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna, antenna->groundImpactAzimuthAngle);
 
-        //--------------------------------//
-        // Determine Delta Frequency      //
-        //--------------------------------//
+    //--------------------------------//
+    // Determine Delta Frequency      //
+    //--------------------------------//
 
 	TargetInfoPackage tip;
 	if (! TargetInfo(&antenna_frame_to_gc, spacecraft, qscat,
@@ -167,6 +170,18 @@ BYUXTable::GetDeltaFreq(
         fprintf(stderr,"Probably means earth_intercept not found\n");
 		exit(1);		
 	}
+
+    //--------------------------------//
+    // Log check data if requested    //
+    //--------------------------------//
+
+    if (cf)
+    {
+      cf->XdopplerFreq = tip.dopplerFreq;
+      cf->XroundTripTime = tip.roundTripTime;
+      cf->deltaFreq = tip.basebandFreq;
+    }
+
 	return(tip.basebandFreq);
 }
 

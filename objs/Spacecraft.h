@@ -45,6 +45,12 @@ public:
 	SpacecraftEvent();
 	~SpacecraftEvent();
 
+	//---------//
+	// Setting //
+	//---------//
+
+    int SetGroundImpactState(double ground_impact_time);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -77,8 +83,8 @@ public:
 	// variables //
 	//-----------//
 
-	OrbitState		orbitState;
-	Attitude		attitude;
+	OrbitState		orbitState;    // for middle of Tx pulse
+	Attitude		attitude;      // for middle of Tx pulse
 };
 
 #endif

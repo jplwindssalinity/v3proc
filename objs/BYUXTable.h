@@ -17,6 +17,7 @@
 #include "Qscat.h"
 #include "Meas.h"
 #include "XTable.h"
+#include "CheckFrame.h"
 
 static const char rcs_id_BYUXTable_h[] =
 	"@(#) $Id$";
@@ -44,11 +45,12 @@ class BYUXTable{
   ~BYUXTable();
 
   int    Read(const char* ibeam_file, const char* obeam_file);
-  float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas);
   float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-             float PtGr);
-  float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas);
-  float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat);
+                   CheckFrame* cf);
+  float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+                   float PtGr, CheckFrame* cf);
+  float  GetX(Spacecraft* spacecraft, Qscat* qscat, Meas* meas, CheckFrame* cf);
+  float  GetDeltaFreq(Spacecraft* spacecraft, Qscat* qscat, CheckFrame* cf);
   float  GetX(int beam_number, float azimuth_angle, float orbit_position, 
             int slice_number, float delta_freq);
 
@@ -60,11 +62,3 @@ class BYUXTable{
 };
 
 #endif
-
-
-
-
-
-
-
-
