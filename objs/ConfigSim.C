@@ -497,18 +497,23 @@ ConfigInstrument(
 	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
 
 	float transmit_power;
+	/**** parameter in config file should be in Watts ***/
 	if (! config_list->GetFloat(TRANSMIT_POWER_KEYWORD, &transmit_power))
 		return(0);
 	instrument->transmitPower = transmit_power;
 
 	float receiver_gain;
+	/**** parameter in config file should be in dB ***/
 	if (! config_list->GetFloat(RECEIVER_GAIN_KEYWORD, &receiver_gain))
 		return(0);
+	receiver_gain=(float)pow(10.0,0.1*receiver_gain);
 	instrument->receiverGain = receiver_gain;
 
 	float system_loss;
+	/**** parameter in config file should be in dB ***/
 	if (! config_list->GetFloat(SYSTEM_LOSS_KEYWORD, &system_loss))
 		return(0);
+	system_loss=(float)pow(10.0,0.1*system_loss);
 	instrument->systemLoss = system_loss;
 
 	return(1);
