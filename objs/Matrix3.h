@@ -9,16 +9,20 @@
 static const char rcs_id_matrix3_h[] =
 	"@(#) $Id$";
 
+class Ephemeris;
+
 //======================================================================
 // CLASSES
 //		Matrix3
 //		Vector3
 //		EarthPosition
+//		RangeFunction
 //======================================================================
 
 class Matrix3;
 class Vector3;
 class EarthPosition;
+class RangeFunction;
 
 //======================================================================
 // CLASS
@@ -125,6 +129,7 @@ double get(int i);		// extract one element
 void Show(char *name = NULL);
 
 	int		SphericalSet(double r, double theta, double phi);
+	int		SphericalGet(double *r, double *theta, double *phi);
 	int		Set(int index, double value);
 	void	Set(double x1, double x2, double x3);
 	int		Get(int index, double* value);
@@ -183,14 +188,59 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 //
 
 double surface_distance(EarthPosition r);
+EarthPosition Nadir();
 // lat,lon access
 Vector3 get_alt_lat_lon(earthposition_typeE etype);
-//double get_alt();	// extract the height above the earth's surface
-//double get_dlat();	// extract the geodetic latitude
-//double get_clat();	// extract the geocentric latitude
-//double get_elon();	// extract the east longitude
+void
+EarthPosition::GetSubtrackCoordinates(
+Ephemeris *ephemeris,
+double start_time,
+double measurement_time,
+double *crosstrack,
+double *alongtrack);
 //Vector3 normal(EarthPosition rground);	// get unit surface normal vector
-//void show_latlon();	// print as dlat,elon,alt triplet
 
 };
+
+//======================================================================
+// CLASS
+//		RangeFunction
+//
+// DESCRIPTION
+//		The RangeFunction object computes the distance between an orbit
+//		position and a position on the earth.  It provides the function
+//		(method Range()) to be minimized when an EarthPosition object
+//		invokes the method GetSubtrackCoordinates which needs to find
+//		the ephemeris point with minimum range to the surface point.
+//		To allow the use of standard routines, this object encapsulates
+//		the information needed (ephemeris and surface point). 
+//======================================================================
+
+class RangeFunction
+{
+public:
+
+//--------------//
+// construction //
+//--------------//
+
+RangeFunction(Ephemeris *ephemeris, EarthPosition *rground);
+RangeFunction();
+~RangeFunction();
+
+//
+// Distance from s/c to surface point at a particular time.
+//
+
+double Range(double time);
+
+//
+// Pointers that indicate which ephemeris object and surface point to use.
+//
+
+Ephemeris *ephemeris;
+EarthPosition *rground;
+
+};
+
 #endif

@@ -20,6 +20,7 @@ OBJS = \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
+	Ephemeris.o \
 	GMF.o \
 	Instrument.o \
 	InstrumentSim.o \
@@ -91,6 +92,7 @@ BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h Product.h List.h Antenna.h Constants.h Matrix3.h Attitude.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
+Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Measurement.h WVC.h List.h WindVector.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h Attitude.h Constants.h Matrix3.h
 InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h ConfigList.h AntennaSim.h SpacecraftSim.h L0.h Antenna.h Spacecraft.h CoordinateSwitch.h List.h Product.h Beam.h Attitude.h Constants.h Matrix3.h

@@ -10,7 +10,7 @@ static const char rcs_id_matrix3_c[] =
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "Matrix3.h"
+#include "Ephemeris.h"
 #include "Constants.h"
 
 //
@@ -585,6 +585,39 @@ Vector3::SphericalSet(
 	return(1);
 }
 
+//-----------------------//
+// Vector3::SphericalGet //
+//-----------------------//
+
+//
+// This method gets the spherical elements of the Vector3 object (which
+// is stored in rectangular form).
+// The standard definition of spherical coordinates is used:
+//   r is the length (magnitude) of the vector
+//   theta is the angle away from the no. 3 axis (z-axis)
+//   phi is the angle away from the no. 1 axis (x-axis) in the 1-2 (x-y) plane.
+//
+
+int
+Vector3::SphericalGet(
+	double	*r,
+	double	*theta,
+	double	*phi)
+{
+	*r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+
+	if (*r == 0.0)
+	{
+		*theta = 0;
+		*phi = 0;
+		return(1);
+	}
+
+	*theta = acos(_v[2] / *r);
+	*phi = atan2(_v[1],_v[0]);
+	return(1);
+}
+
 //--------------//
 // Vector3::Set //
 //--------------//
@@ -885,5 +918,126 @@ if (etype == GEOCENTRIC)
 
 Vector3 result(alt,lat,elon);
 return(result);
+
+}
+
+//
+// Nadir
+//
+// Compute the nadir position on the earth's surface directly below (above)
+// this objects position.
+//
+
+EarthPosition
+EarthPosition::Nadir()
+
+{
+
+Vector3 alt_lat_lon = this->get_alt_lat_lon(EarthPosition::GEOCENTRIC);
+EarthPosition result(alt_lat_lon.get(1),alt_lat_lon.get(2),
+	EarthPosition::GEOCENTRIC);
+return(result);
+
+}
+
+//
+// GetSubtrackCoordinates
+//
+// Convert a position in geocentric coordinates into subtrack coordinates
+// using the supplied ephemeris object to define the subtrack.
+// This method locates the ephemeris point closest to the position point
+// and then uses the surface distance method to get the cross track distance,
+// and the starting time reference to get the along track distance.
+// The measurement time is used to determine which orbit the subtrack
+// coordinates are needed for.  Otherwise, the position will have subtrack
+// coordinates in every rev.
+//
+// INPUTS:
+//
+
+void
+EarthPosition::GetSubtrackCoordinates(
+Ephemeris *ephemeris,
+double start_time,
+double measurement_time,
+double *crosstrack,
+double *alongtrack)
+
+{
+
+double ax,bx,cx,fa,fb,fc;
+ax = start_time - 1;
+bx = measurement_time;
+
+// Create an object which supplies the range function to be minimized by
+// standard routines like brent() below.
+RangeFunction rangefunc(ephemeris,this);
+
+// Bracket the minimum range.
+void mnbrak(double*,double*,double*,double*,double*,double*,double (*f)(double));
+//mnbrak(&ax,&bx,&cx,&fa,&fb,&fc,rangefunc.Range);
+
+// Locate the ephemeris position with minimum range to the EarthPosition.
+double brent(double,double,double,double (*f)(double),double,double*);
+double tol = 1e-4;
+double min_time;
+//double minrange = brent(ax,bx,cx,rangefunc.Range,tol,&min_time);
+
+// Compute the s/c position at the start of the subtrack grid, and at
+// the minimum range position.
+EarthPosition min_position,start_position;
+ephemeris->GetPosition(min_time,&min_position);
+ephemeris->GetPosition(start_time,&start_position);
+
+// Compute the corresponding nadir points on the earth's surface.
+EarthPosition subtrack_min = min_position.Nadir();
+EarthPosition subtrack_start = start_position.Nadir();
+
+// Compute surface distances in the crosstrack and alongtrack directions.
+*crosstrack = subtrack_min.surface_distance(*this);
+*alongtrack = subtrack_min.surface_distance(subtrack_start);
+
+}
+
+//
+// RangeFunction
+//
+
+//
+// Initialize with a pointer to the object defining the current ephemeris,
+// and with a pointer to the surface EarthPosition object.
+//
+
+RangeFunction::RangeFunction(Ephemeris *eptr, EarthPosition *rptr)
+{
+
+ephemeris = eptr;
+rground = rptr;
+
+}
+
+RangeFunction::RangeFunction()
+{
+return;
+}
+
+RangeFunction::~RangeFunction()
+{
+return;
+}
+
+//
+// Compute range between s/c location at indicated time and the surface point.
+//
+
+double
+RangeFunction::Range(double time)
+
+{
+
+EarthPosition rsat;
+ephemeris->GetPosition(time,&rsat);
+EarthPosition rlook = *rground - rsat;
+return(rlook.Magnitude());
 
 }
