@@ -221,7 +221,7 @@ ConfigL0(
 	char* l0_file = config_list->Get(L0_FILE_KEYWORD);
 	if (l0_file == NULL)
 		return(0);
-	l0->OpenForWriting(l0_file);
+	l0->AddFile(l0_file);
 
 	return(1);
 }
