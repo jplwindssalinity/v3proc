@@ -72,12 +72,6 @@ public:
 
 	MeasurementList();
 	~MeasurementList();
-
-	//----------//
-	// analysis //
-	//----------//
-
-	double		GetAverage();
 };
 
 #endif
