@@ -44,7 +44,7 @@ public:
              WindField* windfield, GMF* gmf);
 
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
-             GMF* gmf, L00Frame* l00_frame);
+             GMF* gmf, L1AFrame* l1a_frame);
 };
 
 #endif

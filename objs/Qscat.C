@@ -245,6 +245,34 @@ QscatSes::CmdTxDopplerEu(
     return(1);
 }
 
+//--------------------//
+// QscatSes::tempToDn //
+//--------------------//
+
+unsigned char
+QscatSes::tempToDn(
+    float  temp)
+{
+  // DN to EU conversion coefficients
+  double a = 0.000328789;
+  double b = -0.476764097;
+  double c = 83.137271991;
+
+  // invert with quadratic formula
+  double dd = b*b - 4*a*(c-temp);
+  if (dd < 0.0)
+  {
+    fprintf(stderr,
+      "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",temp);
+    exit(1);
+  }
+  double x1 = (-b + sqrt(dd))/(2*a);
+  double x2 = (-b - sqrt(dd))/(2*a);
+  unsigned char x;
+  if (x1 > x2) x = (unsigned char)x1; else x = (unsigned char)x2;
+  return(x);
+}
+
 //==========//
 // QscatSas //
 //==========//
@@ -405,7 +433,8 @@ CdsBeamInfo::~CdsBeamInfo()
 //==========//
 
 QscatCds::QscatCds()
-:   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
+:   priDn(0), txPulseWidthDn(0), rxGateDelayDn(0), spinRate(LOW_SPIN_RATE),
+    useRgc(0), useDtc(0),
     useBYUDop(0), useBYURange(0), useSpectralDop(0), useSpectralRange(0),
     azimuthIntegrationRange(0), azimuthStepSize(0), rangeGateClipping(0),
     orbitTicksPerOrbit(0), currentBeamIdx(0), 
@@ -800,7 +829,7 @@ SetDelayAndFrequency(
 
     // these defaults will produce no delay quantization correction
     // if ideal range tracking is used
-    unsigned char rx_gate_delay_dn = 0;
+    qscat->cds.rxGateDelayDn = 0;
     float rx_gate_delay_fdn = 0.0;
 
     if (qscat->cds.useRgc)
@@ -810,8 +839,8 @@ SetDelayAndFrequency(
         RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
         range_tracker->GetRxGateDelay(qscat->cds.orbitStep, ideal_encoder,
             cds_beam_info->rxGateWidthDn, qscat->cds.txPulseWidthDn,
-            &rx_gate_delay_dn, &rx_gate_delay_fdn);
-        qscat->ses.CmdRxGateDelayDn(rx_gate_delay_dn);
+            &(qscat->cds.rxGateDelayDn), &rx_gate_delay_fdn);
+        qscat->ses.CmdRxGateDelayDn(qscat->cds.rxGateDelayDn);
     }
     else
     {
@@ -834,7 +863,8 @@ SetDelayAndFrequency(
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
         short doppler_dn;
         doppler_tracker->GetCommandedDoppler(qscat->cds.orbitStep,
-            ideal_encoder, rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
+            ideal_encoder, qscat->cds.rxGateDelayDn, rx_gate_delay_fdn,
+            &doppler_dn);
         qscat->ses.CmdTxDopplerDn(doppler_dn);
     }
     else

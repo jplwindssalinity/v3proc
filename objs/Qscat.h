@@ -76,6 +76,12 @@ public:
     int  CmdTxDopplerDn(short tx_doppler_dn);
     int  CmdTxDopplerEu(float tx_doppler_eu);
 
+    //------------//
+    // Conversion //
+    //------------//
+
+    unsigned char tempToDn(float temp);
+
     //-----------//
     // variables //
     //-----------//
@@ -235,6 +241,7 @@ public:
 
     unsigned char   priDn;
     unsigned char   txPulseWidthDn;
+    unsigned char   rxGateDelayDn;
     SpinRateE       spinRate;
 
 // Flags and Parameters which are convenient to put here in order

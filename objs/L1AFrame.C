@@ -16,14 +16,48 @@ static const char rcs_id_l1aframe_c[] =
 //==========//
 
 L1AFrame::L1AFrame()
-:   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
-    priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
-    gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), ptgr(0.0), calPosition(255), loopbackSlices(NULL),
-    loopbackNoise(0.0), loadSlices(NULL), loadNoise(0.0),
-    antennaPosition(NULL), science(NULL), spotNoise(NULL), spotsPerFrame(0),
-    slicesPerSpot(0), slicesPerFrame(0)
+: time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
+  priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
+  gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
+  velZ(0.0), ptgr(0.0), calPosition(255), loopbackSlices(NULL),
+  loopbackNoise(0.0), loadSlices(NULL), loadNoise(0.0),
+  antennaPosition(NULL), science(NULL), spotNoise(NULL),
+  prf_cycle_time_eu(0),
+  range_gate_delay_inner(0),
+  range_gate_delay_outer(0),
+  range_gate_width_inner(0),
+  range_gate_width_outer(0),
+  transmit_pulse_width(0),
+  true_cal_pulse_pos(0),
+  precision_coupler_temp_eu(0),
+  rcv_protect_sw_temp_eu(0),
+  beam_select_sw_temp_eu(0),
+  receiver_temp_eu(0),
+  frame_inst_status(0),
+  frame_err_status(0),
+  frame_qual_flag(0),
+  pulse_qual_flag(0),
+  frame_time_secs(0.0),
+  instrument_time(0.0),
+  prf_count(0),
+  specified_cal_pulse_pos(0),
+  prf_cycle_time(0),
+  range_gate_a_delay(0),
+  range_gate_a_width(0),
+  range_gate_b_delay(0),
+  range_gate_b_width(0),
+  pulse_width(0),
+  pred_antenna_pos_count(0),
+  precision_coupler_temp(0),
+  rcv_protect_sw_temp(0),
+  beam_select_sw_temp(0),
+  receiver_temp(0),
+  antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
+  slicesPerFrame(0)
 {
+    for (int i=0; i < 21; i++) frame_time[i] = 0;
+    vtcw[0] = 0;
+    vtcw[1] = 0;
 	return;
 }
 
@@ -154,6 +188,41 @@ L1AFrame::FrameSize()
     size += sizeof(float) * slicesPerFrame;  // science data
     size += sizeof(float) * spotsPerFrame;   // spot noise
 
+    size += sizeof(short);  // prf_cycle_time_eu
+    size += sizeof(short);  // range_gate_delay_inner
+    size += sizeof(short);  // range_gate_delay_outer
+    size += sizeof(short);  // range_gate_width_inner
+    size += sizeof(short);  // range_gate_width_outer
+    size += sizeof(short);  // transmit_pulse_width
+    size += sizeof(char);   // true_cal_pulse_pos
+    size += sizeof(short);  // precision_coupler_temp_eu
+    size += sizeof(short);  // rcv_protect_sw_temp_eu
+    size += sizeof(short);  // beam_select_sw_temp_eu
+    size += sizeof(short);  // receiver_temp_eu
+
+    size += sizeof(int);    // frame_inst_status
+    size += sizeof(int);    // frame_err_status
+    size += sizeof(short);  // frame_qual_flag
+    size += sizeof(char);   // pulse_qual_flag
+
+    size += sizeof(char)*21;  // frame_time
+    size += sizeof(double);   // frame_time_secs
+    size += sizeof(double);   // instrument_time
+    size += sizeof(char);   // prf_count
+    size += sizeof(char);   // specified_cal_pulse_pos
+    size += sizeof(char);   // prf_cycle_time
+    size += sizeof(char);   // range_gate_a_delay
+    size += sizeof(char);   // range_gate_a_width
+    size += sizeof(char);   // range_gate_b_delay
+    size += sizeof(char);   // range_gate_b_width
+    size += sizeof(char);   // pulse_width
+    size += sizeof(char);   // pred_antenna_pos_count
+    size += sizeof(int)*2;  // vtcw
+    size += sizeof(char);   // precision_coupler_temp
+    size += sizeof(char);   // rcv_protect_sw_temp
+    size += sizeof(char);   // beam_select_sw_temp
+    size += sizeof(char);   // receiver_temp
+
     return(size);
 }
 
@@ -262,6 +331,134 @@ L1AFrame::Pack(
 	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
 	idx += size;
 
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&prf_cycle_time_eu, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_delay_inner, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_delay_outer, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_width_inner, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_width_outer, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&transmit_pulse_width, size);
+	idx += size;
+
+	size = sizeof(char);
+	memcpy((void *)(buffer + idx), (void *)&true_cal_pulse_pos, size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)(buffer + idx), (void *)&precision_coupler_temp_eu, size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)(buffer + idx), (void *)&rcv_protect_sw_temp_eu, size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)(buffer + idx), (void *)&beam_select_sw_temp_eu, size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)(buffer + idx), (void *)&receiver_temp_eu, size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)(buffer + idx), (void *)&frame_inst_status, size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)(buffer + idx), (void *)&frame_err_status, size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)(buffer + idx), (void *)&frame_qual_flag, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&pulse_qual_flag, size);
+	idx += size;
+
+	size = sizeof(char) * 21;
+	memcpy((void *)(buffer + idx), (void *)frame_time, size);
+	idx += size;
+
+	size = sizeof(double);
+	memcpy((void *)(buffer + idx), (void *)&frame_time_secs, size);
+	idx += size;
+
+	size = sizeof(double);
+	memcpy((void *)(buffer + idx), (void *)&instrument_time, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&prf_count, size);
+	idx += size;
+
+	size = sizeof(char);
+	memcpy((void *)(buffer + idx), (void *)&specified_cal_pulse_pos, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&prf_cycle_time, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_a_delay, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_a_width, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_b_delay, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&range_gate_b_width, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&pulse_width, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&pred_antenna_pos_count, size);
+	idx += size;
+
+	size = sizeof(unsigned int)*2;
+	memcpy((void *)(buffer + idx), (void *)vtcw, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&precision_coupler_temp, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&rcv_protect_sw_temp, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&beam_select_sw_temp, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&receiver_temp, size);
+	idx += size;
+
 	return(idx);
 }
 
@@ -368,6 +565,134 @@ L1AFrame::Unpack(
 
 	size = sizeof(float) * spotsPerFrame;
 	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&prf_cycle_time_eu, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&range_gate_delay_inner, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&range_gate_delay_outer, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&range_gate_width_inner, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&range_gate_width_outer, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&transmit_pulse_width, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(char);
+	memcpy((void *)&true_cal_pulse_pos, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)&precision_coupler_temp_eu, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)&rcv_protect_sw_temp_eu, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)&beam_select_sw_temp_eu, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(short);
+	memcpy((void *)&receiver_temp_eu, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)&frame_err_status, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned short);
+	memcpy((void *)&frame_qual_flag, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&pulse_qual_flag, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(char) * 21;
+	memcpy((void *)frame_time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(double);
+	memcpy((void *)&frame_time_secs, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(double);
+	memcpy((void *)&instrument_time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&prf_count, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(char);
+	memcpy((void *)&specified_cal_pulse_pos, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&prf_cycle_time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&range_gate_a_delay, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&range_gate_a_width, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&range_gate_b_delay, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&range_gate_b_width, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&pulse_width, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&pred_antenna_pos_count, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int)*2;
+	memcpy((void *)vtcw, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&precision_coupler_temp, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&rcv_protect_sw_temp, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&beam_select_sw_temp, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&receiver_temp, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

@@ -138,6 +138,10 @@ L1AToL1B::Convert(
 
     for (int spot_idx = 0; spot_idx < frame->spotsPerFrame; spot_idx++)
     {
+        // check for loopback or load pulses, and skip them if encountered.
+        if (spot_idx==frame->calPosition-2 || spot_idx==frame->calPosition-1)
+          continue;
+
         // determine the spot time
         double time = frame->time + spot_idx * qscat->ses.pri;
 
@@ -348,18 +352,41 @@ L1AToL1B::Convert(
 
 			if (simVs1BCheckfile)
             {
-                FILE* fptr = fopen(simVs1BCheckfile,"a");
-                if (fptr == NULL)
+                Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+                cf.R[slice_i] = (float)rlook.Magnitude();
+                if (useBYUXfactor)
                 {
-                    fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
-                    exit(1);
+                    // Antenna gain is not computed when using BYU X factor
+                    // because the X factor already includes the normalized
+                    // patterns.  Thus, to see what it actually is, we need
+                    // to do the geometry work here that is normally done
+                    // in radar_X() when using the K-factor approach.
+                    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+                        &(spacecraft->attitude), &(qscat->sas.antenna),
+                        qscat->sas.antenna.txCenterAzimuthAngle);
+                    gc_to_antenna=gc_to_antenna.ReverseDirection();
+                    double roundTripTime = 2.0*cf.R[slice_i]/speed_light_kps;
+
+                    Beam* beam = qscat->GetCurrentBeam();
+                    Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+                    double r, theta, phi;
+                    rlook_antenna.SphericalGet(&r,&theta,&phi);
+                    if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
+                        qscat->sas.antenna.spinRate, &(cf.GatGar[slice_i])))
+                    {
+                        cf.GatGar[slice_i] = 1.0;  // set a dummy value.
+                    }
                 }
-		        double alt, lat, lon;
-		        if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+                else
                 {
-                    fprintf(stderr,"Error computing lon/lat for centroid\n");
-                    exit(1);
+                    double lambda = speed_light_kps / qscat->ses.txFrequency;
+                    cf.GatGar[slice_i] = meas->XK / k_factor * (64*pi*pi*pi *
+                        cf.R[slice_i] * cf.R[slice_i]*cf.R[slice_i]*
+                        cf.R[slice_i] * qscat->systemLoss) /
+                        (qscat->ses.transmitPower * qscat->ses.rxGainEcho *
+                        lambda * lambda);
                 }
+
                 cf.idx[slice_i] = meas->startSliceIdx;
                 cf.var_esn_slice[slice_i] = 0;
                 cf.Es[slice_i] = Es_slice;
@@ -369,8 +396,6 @@ L1AToL1B::Convert(
 			    cf.centroid[slice_i] = meas->centroid;
 			    cf.azimuth[slice_i] = meas->eastAzimuth;
 			    cf.incidence[slice_i] = meas->incidenceAngle;
-                cf.AppendSliceRecord(fptr, slice_i, lon, lat);
-                fclose(fptr);
             }
 
 			//----------------------------------//
@@ -420,7 +445,8 @@ L1AToL1B::Convert(
 		  cf.rsat = spacecraft->orbitState.rsat;
 		  cf.vsat = spacecraft->orbitState.vsat;
 		  cf.attitude = spacecraft->attitude;
-		  cf.AppendRecord(fptr);
+          cf.antenna_azi = qscat->sas.antenna.txCenterAzimuthAngle;
+		  cf.WriteDataRec(fptr);
 		  fclose(fptr);
 		}
 

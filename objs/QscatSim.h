@@ -18,6 +18,7 @@ static const char rcs_id_qscatsim_h[] =
 #include "GMF.h"
 #include "Meas.h"
 #include "CheckFrame.h"
+#include "L1AFrame.h"
 
 //======================================================================
 // CLASSES
@@ -103,17 +104,17 @@ public:
     int  Initialize(Qscat* qscat);
     int  DetermineNextEvent(Qscat* qscat, QscatEvent* qscat_event);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
-             GMF* gmf, Kp* kp, KpmField* kpmField, L00Frame* l00_frame);
-    int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L00Frame* l00_frame);
-    int  LoadSim(Spacecraft* spacecraft, Qscat* qscat, L00Frame* l00_frame);
-    int  SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
+             GMF* gmf, Kp* kp, KpmField* kpmField, L1AFrame* l1a_frame);
+    int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
+    int  LoadSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
+    int  SetL1ASpacecraft(Spacecraft* spacecraft, L1AFrame* l1a_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
              MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField);
-    int  SetL00Science(MeasSpot* meas_spot, CheckFrame* cf, Qscat* qscat,
-             L00Frame* l00_frame);
-    int  SetL00Loopback(Qscat* qscat, L00Frame* l00_frame);
-    int  SetL00Load(Qscat* qscat, L00Frame* l00_frame);
+    int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Qscat* qscat,
+             L1AFrame* l1a_frame);
+    int  SetL1ALoopback(Qscat* qscat, L1AFrame* l1a_frame);
+    int  SetL1ALoad(Qscat* qscat, L1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
              float* X);
 
@@ -150,7 +151,7 @@ public:
     int  useBYUXfactor;      // read and use Xfactor table
     int  rangeGateClipping;  // simulate range gate clipping
     int  applyDopplerError;  // simulate doppler tracking error
-    int  l00FrameReady;      // indicates a level 0 frame is ready
+    int  l1aFrameReady;      // indicates a level 0 frame is ready
     int  simKpcFlag;         // 0 = no Kpc, 1 = Kpc
     int  simCorrKpmFlag;     // 0 = no Kpm, 1 = correllated Kpm
     int  simUncorrKpmFlag;   // 0 = no Kpm, 1 = uncorrellated Kpm

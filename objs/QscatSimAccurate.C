@@ -109,7 +109,7 @@ QscatSimAccurate::ScatSim(
     Qscat*       qscat,
     WindField*   windfield,
     GMF*         gmf,
-    L00Frame*    l00_frame)
+    L1AFrame*    l1a_frame)
 {
 	MeasSpot meas_spot;
 
@@ -120,9 +120,9 @@ QscatSimAccurate::ScatSim(
 
 	if (_spotNumber == 0)
 	{
-		if (! SetL00Spacecraft(spacecraft,l00_frame))
+		if (! SetL1ASpacecraft(spacecraft,l1a_frame))
 			return(0);
-		l00_frame->time = qscat->cds.time;
+		l1a_frame->time = qscat->cds.time;
 	}
 	//------------------------//
 	// calculate measurements //
@@ -142,7 +142,7 @@ QscatSimAccurate::ScatSim(
 			return(0);
 		}
 		if (outputXToStdout)
-            printf("%g ", qscat->sas.antenna.azimuthAngle / dtr);
+            printf("%g ", qscat->sas.antenna.txCenterAzimuthAngle / dtr);
 	}
 
 	//------------------------//
@@ -178,7 +178,7 @@ QscatSimAccurate::ScatSim(
 			float orbit_position = qscat->cds.OrbitFraction();
 
 			if(! xTable.AddEntry(slice->XK, qscat->cds.currentBeamIdx,
-                qscat->sas.antenna.azimuthAngle, orbit_position, sliceno))
+               qscat->sas.antenna.azimuthAngle, orbit_position, sliceno))
             {
                 return(0);
             }
@@ -192,21 +192,21 @@ QscatSimAccurate::ScatSim(
 	//--------------------------------//
 
 	// No check data allowed.
-	if (! SetL00Science(&meas_spot, NULL, qscat, l00_frame))
+	if (! SetL1AScience(&meas_spot, NULL, qscat, l1a_frame))
 		return(0);
 
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
-	if (_spotNumber >= l00_frame->spotsPerFrame)
+	if (_spotNumber >= l1a_frame->spotsPerFrame)
 	{
-		l00FrameReady = 1;	// indicate frame is ready
+		l1aFrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame
 	}
 	else
 	{
-		l00FrameReady = 0;	// indicate frame is not ready
+		l1aFrameReady = 0;	// indicate frame is not ready
 	}
 
 	return(1);
