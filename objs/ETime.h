@@ -51,6 +51,7 @@ public:
     //--------------//
 
     int  CurrentTime();
+    void  Zero()    { _sec = 0; _ms = 0; return; };
 
     //-------------//
     // conversions //
