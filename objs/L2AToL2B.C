@@ -291,6 +291,7 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
 }
 
 #define ONE_STAGE_WITHOUT_RANGES 1
+#define S3_WINDOW_SIZE  7
 
 //-----------------//
 // L2AToL2B::Flush //
@@ -355,7 +356,7 @@ L2AToL2B::Flush(
 	  if(medianFilterMaxPasses>0){
 	    l2b->frame.swath.DiscardUnselectedRanges();
 	  }
-	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
+	  l2b->frame.swath.MedianFilter(S3_WINDOW_SIZE,
 	      medianFilterMaxPasses, bound, useAmbiguityWeights,special);
 	}
 	//------------//

@@ -39,7 +39,7 @@ static const char rcs_id_misc_h[] =
 //--------//
 
 #define ANGDIF(A,B)   (fabs(pi-fabs(pi-fabs((A)-(B)))))
-
+#define SGN(x) ( (x) < 0 ? (-1) : (1) )
 #ifndef MIN
 #define MIN(A,B)      ((A)<(B)?(A):(B))
 #endif
