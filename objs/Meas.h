@@ -133,6 +133,12 @@ public:
 
 	MeasSpotList();
 	~MeasSpotList();
+
+	//---------//
+	// freeing //
+	//---------//
+
+	int		FreeContents();
 };
 
 #endif

@@ -92,3 +92,17 @@ MeasSpotList::~MeasSpotList()
 
 	return;
 }
+
+//----------------------------//
+// MeasSpotList::FreeContents //
+//----------------------------//
+
+int
+MeasSpotList::FreeContents()
+{
+	MeasSpot* meas_spot;
+	GetHead();
+	while ((meas_spot = RemoveCurrent()) != NULL)
+		delete meas_spot;
+	return(1);
+}
