@@ -700,6 +700,56 @@ TrackerBase<T>::WriteAscii(
     return(1);
 }
 
+//-------------------------//
+// TrackerBase::SetFromMro //
+//-------------------------//
+
+template <class T>
+int
+TrackerBase<T>::SetFromMro(
+    char*  mro)
+{
+    char* ptr = mro;
+
+    memcpy(&_tableId, ptr, 2);
+    ptr += 2;
+
+    unsigned short filesize;
+    memcpy(&filesize, ptr, 2);
+    ptr += 2;
+
+    unsigned short spare[SPARE_WORDS];
+    memcpy(spare, ptr, 2 * SPARE_WORDS);
+    ptr += 2 * SPARE_WORDS;
+
+    memcpy(_dither, ptr, 4);
+    ptr += 4;
+
+    memcpy(*(_scaleArray + AMPLITUDE_INDEX) + 1, ptr, 4);
+    ptr += 4;
+    memcpy(*(_scaleArray + AMPLITUDE_INDEX) + 0, ptr, 4);
+    ptr += 4;
+    memcpy(*(_scaleArray + PHASE_INDEX) + 1, ptr, 4);
+    ptr += 4;
+    memcpy(*(_scaleArray + PHASE_INDEX) + 0, ptr, 4);
+    ptr += 4;
+    memcpy(*(_scaleArray + BIAS_INDEX) + 1, ptr, 4);
+    ptr += 4;
+    memcpy(*(_scaleArray + BIAS_INDEX) + 0, ptr, 4);
+    ptr += 4;
+
+    for (int term = 0; term < 3; term++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            memcpy(*(_termArray + step) + term, ptr, sizeof(T));
+            ptr += sizeof(T);
+        }
+    }
+
+    return(1);
+}
+
 //==============//
 // RangeTracker //
 //==============//
@@ -1002,6 +1052,7 @@ RangeTracker::operator=(
 //------------------------------//
 
 #define RANGE_GATE_NORMALIZER  0.049903
+#define TRACKING_PI            3.141592654
 
 int
 RangeTracker::GetRxGateDelay(
@@ -1029,9 +1080,9 @@ RangeTracker::GetRxGateDelay(
     float C = cm * (float)c_dn + cb;
     float P = pm * (float)p_dn + pb;
 
-    float ttf = (2.0 * M_PI * (float)azimuth_step) / 32768.0 + P;
+    float ttf = (2.0 * TRACKING_PI * (float)azimuth_step) / 32768.0 + P;
     ttf = fabs(ttf);
-    ttf *= (256.0 / (2.0 * M_PI));
+    ttf *= (256.0 / (2.0 * TRACKING_PI));
 
     unsigned short tindex = (unsigned short)ttf;
 
@@ -1369,6 +1420,69 @@ DopplerTracker::WriteGS(
     return(1);
 }
 
+//-----------------------------//
+// DopplerTracker::MroAssemble //
+//-----------------------------//
+// For assemling a tracking table from the memory readout data
+
+#define MRO_ARRAY_SIZE    1600
+#define FINAL_DTC_OFFSET  1568
+
+int
+DopplerTracker::MroAssemble(
+    unsigned char   type,
+    unsigned short  offset,
+    char*           data)
+{
+    //------------//
+    // initialize //
+    //------------//
+
+    static int beam = 0;    // 0 = A, 1 = B
+    static unsigned short expected_offset = 0;
+    static char mro[MRO_ARRAY_SIZE];
+
+    //------------------//
+    // check table type //
+    //------------------//
+
+    switch (type)
+    {
+    case 0x0B:
+        // Doppler Tracking Table for Beam A
+        beam = 0;
+        break;
+    case 0x0C:
+        // Doppler Tracking Table for Beam A
+        beam = 1;
+        break;
+    default:
+        // some other table
+        return(0);
+        break;
+    }
+
+    //--------------//
+    // read in data //
+    //--------------//
+
+    if (offset != expected_offset)
+    {
+        expected_offset = 0;    // reset
+        return(0);
+    }
+    memcpy(mro + offset, data, 4);
+    expected_offset += 4;
+    if (offset == FINAL_DTC_OFFSET)
+    {
+        // convert array to table
+        SetFromMro(mro);
+        expected_offset = 0;    // reset
+        return(1);
+    }
+    return(0);
+}
+
 //-----------//
 // operator= //
 //-----------//
@@ -1445,9 +1559,9 @@ DopplerTracker::GetCommandedDoppler(
     float C = cm * (float)c_dn + cb;
     float P = pm * (float)p_dn + pb;
 
-    float ttf = (2.0 * M_PI * (float)azimuth_step) / 32768.0 + P;
+    float ttf = (2.0 * TRACKING_PI * (float)azimuth_step) / 32768.0 + P;
     ttf = fabs(ttf);
-    ttf *= (256.0 / (2.0 * M_PI));
+    ttf *= (256.0 / (2.0 * TRACKING_PI));
 
     unsigned short tindex = (unsigned short)ttf;
 

@@ -59,6 +59,8 @@ public:
 
     unsigned short  GetTableId()  { return(_tableId); };
 
+    int  SetFromMro(char* mro);
+
 protected:
 
     //-----------//
@@ -159,6 +161,7 @@ public:
 
     int  ReadGS(const char* filename, DopplerTracker* second_set);
     int  WriteGS(const char* filename, DopplerTracker* second_set);
+    int  MroAssemble(unsigned char type, unsigned short offset, char* data);
 
     //-----------//
     // operators //
