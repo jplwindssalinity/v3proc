@@ -2698,8 +2698,11 @@ WindSwath::DirectionDensity(
             //---------------------//
 
             int ret_idx, true_idx;
-            dir_idx.GetNearestIndex(rel_ret_dir, &ret_idx);
-            dir_idx.GetNearestIndex(rel_true_dir, &true_idx);
+            if (! dir_idx.GetNearestWrappedIndex(rel_ret_dir, &ret_idx) ||
+                ! dir_idx.GetNearestWrappedIndex(rel_true_dir, &true_idx))
+            {
+                return(0);
+            }
 
             ( *(swath_density_array + ret_idx) )++;
             ( *(field_density_array + true_idx) )++;
@@ -3305,8 +3308,8 @@ WindSwath::DirectionDensityVsCti(
                 continue;
 
             int ati_plus = ati + 1;
-            if (ati_plus < 0)
-                ati_plus = 0;
+            if (ati_plus >= _alongTrackBins)
+                ati_plus = _alongTrackBins - 1;
 			WVC* wvc_plus = swath[cti][ati_plus];
 			if (! wvc_plus)
                 continue;
