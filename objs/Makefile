@@ -62,7 +62,8 @@ OBJS = \
 	Spacecraft.o \
 	SpacecraftSim.o \
 	Tracking.o \
-	Wind.o
+	Wind.o \
+        XTable.o 
 
 INCS = \
 	*.h \
@@ -169,3 +170,10 @@ Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitu
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
 Tracking.o: Tracking.C Tracking.h Array.h Constants.h Instrument.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
+XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h Matrix3.h Attitude.h Beam.h LonLat.h EarthPosition.h Ephemeris.h List.h BufferedList.h
+
+
+
+
+
+
