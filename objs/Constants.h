@@ -35,6 +35,7 @@ static const double bK = 1.3806503e-23;
 #define MS_TO_S                   1.0E-3
 #define S_TO_MS                   1000.0
 #define M_TO_KM                   1.0E-3
+#define KM_TO_M                   1.0E+3
 #define MPS_TO_KMPS               1.0E-3
 
 //
