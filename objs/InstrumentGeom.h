@@ -48,7 +48,7 @@ int		LocateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot);
 
 int		LocateSliceCentroids(Spacecraft* spacecraft, Instrument* instrument,
-			MeasSpot* meas_spot);
+			MeasSpot* meas_spot, float gain_threshold = 0.0);
 
 int		LocateSpot(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot, float contour_level = DEFAULT_CONTOUR_LEVEL);

@@ -174,7 +174,8 @@ int
 LocateSliceCentroids(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-	MeasSpot*		meas_spot)
+	MeasSpot*		meas_spot,
+	float			gain_threshold)
 {
 	//-----------//
 	// predigest //
@@ -212,6 +213,20 @@ LocateSliceCentroids(
 		return(0);
 	}
 
+	//--------------------------//
+	// find gain at beam center //
+	//--------------------------//
+
+	float peak_two_way_gain;
+	if (gain_threshold)
+	{
+		if (! PowerGainProduct(&antenna_frame_to_gc, spacecraft, instrument,
+			center_look, center_azim, &peak_two_way_gain))
+		{
+			return(0);
+		}
+	}
+
 	//-------------------//
 	// for each slice... //
 	//-------------------//
@@ -219,13 +234,6 @@ LocateSliceCentroids(
 	int total_slices = instrument->GetTotalSliceCount();
 	for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
 	{
-		//-------------------------//
-		// create a new measurment //
-		//-------------------------//
-
-		Meas* meas = new Meas();
-		meas->pol = beam->polarization;
-
 		//----------------------------------//
 		// determine the centroid frequency //
 		//----------------------------------//
@@ -251,6 +259,20 @@ LocateSliceCentroids(
 				centroid_freq);
 			return(0);
 		}
+
+		//--------------------//
+		// threshold the gain //
+		//--------------------//
+
+		if (gain_threshold && gain / peak_two_way_gain < gain_threshold)
+			continue;
+
+		//-------------------------//
+		// create a new measurment //
+		//-------------------------//
+
+		Meas* meas = new Meas();
+		meas->pol = beam->polarization;
 
 		//--------------------------------//
 		// find the centroid on the earth //

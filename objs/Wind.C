@@ -1608,16 +1608,20 @@ int
 WindSwath::RmsSpdErrVsCti(
 	WindField*	truth,
 	float*		rms_spd_err_array,
+	float*		std_dev_array,
 	float*		std_err_array,
 	float*		spd_bias_array,
 	int*		count_array,
 	float		low_speed,
 	float		high_speed)
 {
+	// in all of this, x is (sample - true)^2
+
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		*(rms_spd_err_array + cti) = 0.0;
 		*(std_err_array + cti) = 0.0;
+		*(std_dev_array + cti) = 0.0;
 		*(spd_bias_array + cti) = 0.0;
 		*(count_array + cti) = 0;
 
@@ -1638,20 +1642,24 @@ WindSwath::RmsSpdErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float spd_err = wvc->selected->spd - true_wv.spd;
-			*(rms_spd_err_array + cti) += (spd_err * spd_err);
-			*(spd_bias_array + cti) += spd_err;
+			float dif = wvc->selected->spd - true_wv.spd;
+			float x = dif * dif;
+			*(rms_spd_err_array + cti) += x;
+			*(spd_bias_array + cti) += dif;
 			(*(count_array + cti))++;
 		}
 
-		//--------------------------//
-		// calculate the speed bias //
-		//--------------------------//
+		if (*(count_array + cti) < 2)
+			continue;
+
+		//--------------------//
+		// calculate the bias //
+		//--------------------//
 
 		*(spd_bias_array + cti) /= (float)*(count_array + cti);
 
 		//----------------------------------//
-		// calculate the mean sqaured error //
+		// calculate the mean squared error //
 		//----------------------------------//
 
 		*(rms_spd_err_array + cti) /= (float)*(count_array + cti);
@@ -1673,9 +1681,10 @@ WindSwath::RmsSpdErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float spd_err = wvc->selected->spd - true_wv.spd;
-			float err_err = spd_err * spd_err - *(rms_spd_err_array + cti);
-			*(std_err_array + cti) += (err_err * err_err);
+			float dif = wvc->selected->spd - true_wv.spd;
+			float x = dif * dif;
+			float dev = x - *(rms_spd_err_array + cti);
+			*(std_dev_array + cti) += (dev * dev);
 		}
 
 		//-----------//
@@ -1684,9 +1693,12 @@ WindSwath::RmsSpdErrVsCti(
 
 		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
 
-		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
-		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
-		*(std_err_array + cti) /= sqrt(*(count_array + cti));
+		*(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
+		*(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
+		*(std_dev_array + cti) /= (2.0 * sqrt(*(rms_spd_err_array + cti)));
+
+		*(std_err_array + cti) = *(std_dev_array + cti) /
+			sqrt(*(count_array + cti));
 	}
 
 	return(1);
@@ -1700,16 +1712,20 @@ int
 WindSwath::RmsDirErrVsCti(
 	WindField*	truth,
 	float*		rms_dir_err_array,
+	float*		std_dev_array,
 	float*		std_err_array,
 	float*		dir_bias_array,
 	int*		count_array,
 	float		low_speed,
 	float		high_speed)
 {
+	// in all of this, x is (sample - true)^2
+
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		*(rms_dir_err_array + cti) = 0.0;
 		*(std_err_array + cti) = 0.0;
+		*(std_dev_array + cti) = 0.0;
 		*(dir_bias_array + cti) = 0.0;
 		*(count_array + cti) = 0;
 
@@ -1730,25 +1746,26 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float near_angle =
-				wrap_angle_near(wvc->selected->dir, true_wv.dir);
-			float dir_err = near_angle - true_wv.dir;
-			*(rms_dir_err_array + cti) += (dir_err * dir_err);
-			*(dir_bias_array + cti) += dir_err;
+            float near_angle =
+                wrap_angle_near(wvc->selected->dir, true_wv.dir);
+            float dif = near_angle - true_wv.dir;
+			float x = dif * dif;
+			*(rms_dir_err_array + cti) += x;
+			*(dir_bias_array + cti) += dif;
 			(*(count_array + cti))++;
 		}
 
-		if (*(count_array + cti) == 0)
+		if (*(count_array + cti) < 2)
 			continue;
 
-		//------------------------------//
-		// calculate the direction bias //
-		//------------------------------//
+		//--------------------//
+		// calculate the bias //
+		//--------------------//
 
 		*(dir_bias_array + cti) /= (float)*(count_array + cti);
 
 		//----------------------------------//
-		// calculate the mean sqaured error //
+		// calculate the mean squared error //
 		//----------------------------------//
 
 		*(rms_dir_err_array + cti) /= (float)*(count_array + cti);
@@ -1770,11 +1787,12 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float near_angle =
-				wrap_angle_near(wvc->selected->dir, true_wv.dir);
-			float dir_err = near_angle - true_wv.dir;
-			float err_err = dir_err * dir_err - *(rms_dir_err_array + cti);
-			*(std_err_array + cti) += (err_err * err_err);
+            float near_angle =
+                wrap_angle_near(wvc->selected->dir, true_wv.dir);
+            float dif = near_angle - true_wv.dir;
+			float x = dif * dif;
+			float dev = x - *(rms_dir_err_array + cti);
+			*(std_dev_array + cti) += (dev * dev);
 		}
 
 		//-----------//
@@ -1783,9 +1801,12 @@ WindSwath::RmsDirErrVsCti(
 
 		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
 
-		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
-		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
-		*(std_err_array + cti) /= sqrt(*(count_array + cti));
+		*(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
+		*(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
+		*(std_dev_array + cti) /= (2.0 * sqrt(*(rms_dir_err_array + cti)));
+
+		*(std_err_array + cti) = *(std_dev_array + cti) /
+			sqrt(*(count_array + cti));
 	}
 
 	return(1);

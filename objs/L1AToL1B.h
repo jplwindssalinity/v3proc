@@ -59,6 +59,7 @@ public:
 	int		useKfactor;				// read and use kfactor table
 	int		useSpotCompositing;		// make spots by compositing slices
 	int		outputSigma0ToStdout;	// output s0 values to stdout
+	float	sliceGainThreshold;		// use to decide which slices to process
 };
 
 #endif

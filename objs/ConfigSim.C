@@ -1345,14 +1345,19 @@ ConfigL1AToL1B(
 	L1AToL1B*		l1a_to_l1b,
 	ConfigList*		config_list)
 {
+	//-------------------------//
+	// output simga0 to stdout //
+	//-------------------------//
+
 	config_list->WarnForMissingKeywords();
 	int output_sigma0_to_stdout;
 	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
 		&output_sigma0_to_stdout))
 	{
-		output_sigma0_to_stdout=0; // default value
+		output_sigma0_to_stdout = 0;	// default value
 	}
-	l1a_to_l1b->outputSigma0ToStdout=output_sigma0_to_stdout;
+	l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
+	config_list->ExitForMissingKeywords();
 
 	//----------//
 	// k-factor //
@@ -1362,7 +1367,6 @@ ConfigL1AToL1B(
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
 		use_kfactor=0; // default value
 	l1a_to_l1b->useKfactor=use_kfactor;
-
 	if (use_kfactor)
 	{
 		if (!ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
@@ -1378,7 +1382,14 @@ ConfigL1AToL1B(
 		spot_comp = 0;
 	l1a_to_l1b->useSpotCompositing = spot_comp;
 
-	config_list->ExitForMissingKeywords();
+	//---------------------------//
+	// gain threshold for slices //
+	//---------------------------//
+
+	float gain;
+	if (! config_list->GetFloat(SLICE_GAIN_THRESHOLD_KEYWORD, &gain))
+		return(0);
+	l1a_to_l1b->sliceGainThreshold = pow(10.0, 0.1 * gain);
 
 	return(1);
 }
