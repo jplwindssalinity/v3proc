@@ -303,6 +303,8 @@ GMF::RefineSolutions(
 
 			spd_idx = (int)(wvp->spd / spd_step + 0.5) + max_dspd;
 			phi_idx = (int)(wvp->dir / phi_step + 0.5) + max_dphi;
+			if (phi_idx < 0)
+				phi_idx = (int)(wvp->dir / phi_step + 360.5) + max_dphi;
 
 			wvp->spd = (double)spd_idx * spd_step;
 			wvp->dir = (double)phi_idx * phi_step;
