@@ -13,6 +13,7 @@ static const char rcs_id_configsim_c[] =
 #include "L00.h"
 #include "L10.h"
 #include "L15.h"
+#include "L17.h"
 
 //---------------------//
 // ConfigSpacecraftSim //
@@ -295,6 +296,27 @@ ConfigL15(
 	if (l15_filename == NULL)
 		return(0);
 	l15->SetFilename(l15_filename);
+
+	return(1);
+}
+
+//-----------//
+// ConfigL17 //
+//-----------//
+
+int
+ConfigL17(
+	L17*			l17,
+	ConfigList*		config_list)
+{
+	//---------------------------//
+	// configure the l17 product //
+	//---------------------------//
+
+	char* l17_filename = config_list->Get(L17_FILE_KEYWORD);
+	if (l17_filename == NULL)
+		return(0);
+	l17->SetFilename(l17_filename);
 
 	return(1);
 }
