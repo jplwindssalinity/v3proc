@@ -97,6 +97,13 @@ template class List<AngleInterval>;
 //-----------//
 
 #define MAX_ALONG_TRACK_BINS 1624
+
+//----------------//
+// HACKS          //
+//----------------//
+
+//#define LATLON_LIMIT_HACK
+
 //--------//
 // MACROS //
 //--------//
@@ -241,12 +248,9 @@ main(
 		exit(1);
 	}
 
-	//	int along_track_bins =
-	//	(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
-        int along_track_bins=MAX_ALONG_TRACK_BINS;
 
 	if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
-		along_track_bins))
+		l2a.header.alongTrackBins))
 	{
 		fprintf(stderr, "%s: error allocating wind swath\n", command);
 		exit(1);
@@ -298,22 +302,52 @@ main(
 		// convert //
 		//---------//
 
-		int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
-		switch (retval)
-		{
-		case 1:
-			break;
-		case 2:
-			break;
-		case 4:
-		case 5:
-			break;
-		case 0:
-			fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
-				command);
-			exit(1);
-			break;
+#ifdef LATLON_LIMIT_HACK
+                ////////// START HAAAAAAAAAAAAAACK
+		Meas* tstmeas = l2a.frame.measList.GetHead();
+		double alt, lat, lon;
+		if (! tstmeas) {
+		  printf("NULL MeasList \n");
+		  continue;
 		}
+                else{ 		  
+		  tstmeas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
+		  lon*=rtd;
+		  lat*=rtd;
+                }
+                if(lat<23.80 && lat>23.78 && lon<296.06 && lon>296.04){
+
+                ////////// END  HAAAAAAAAAAAAAACK
+#endif
+		  int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
+
+#ifdef LATLON_LIMIT_HACK
+                ////////// START HAAAAAAAAAAAAAACK
+		  if (retval!=1){
+		    printf("%g lat %g lon   retval=%d\n",lat,lon,retval);
+                  }
+	        ////////// END   HAAAAAAAAAAAAAACK
+#endif
+		  switch (retval)
+		    {
+		    case 1:
+		      break;
+		    case 2:
+		      break;
+		    case 4:
+		    case 5:
+		      break;
+		    case 0:
+		      fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
+			      command);
+		      exit(1);
+		      break;
+		    }
+#ifdef LATLON_LIMIT_HACK
+                ////////// START HAAAAAAAAAAAAAACK
+		}
+                ////////// END HAAAAAAAAAAAAAACK
+#endif
 	}
 
 	l2a_to_l2b.Flush(&l2b);

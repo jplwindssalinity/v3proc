@@ -8,7 +8,7 @@
 //		l2b_diff_from_truth
 //
 // SYNOPSIS
-//		l2b_diff_from_truth <config_file> [ vctr_base ] 
+//		l2b_diff_from_truth <config_file> [ vctr_base ] [hdfflag]
 //
 // DESCRIPTION
 //	        Computes difference between wind vectors in two l2b files and
@@ -122,7 +122,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<vctr_base>", "[ -h (read HDF format) ]" "[ -n (use nudge field as truth)]",0};
+const char* usage_array[] = { "<config_file>", "<vctr_base>", "[ hdfflag 1 = HDF, 0=default]" "[ nudgeflag 1=use nudge field as truth, 0=default]",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -183,7 +183,7 @@ main(
         char* truth_file = NULL;
 	WindField truth;
         if(!use_nudge_as_truth){
-	  config_list.Get(WINDFIELD_TYPE_KEYWORD);
+	  truth_type=config_list.Get(WINDFIELD_TYPE_KEYWORD);
 	  if (truth_type == NULL)
 	    {
 	      fprintf(stderr, "%s: must specify truth windfield type\n",

@@ -8,7 +8,8 @@
 //		l2b_metrics
 //
 // SYNOPSIS
-//		l2b_metrics [ -c config_file ] [ -l l2b_file ]
+//		l2b_metrics [ -c config_file ] [ -l l2b_file ] [ -m metric ]
+//                      [ -D dir_err_max ] [ -S spd_err_max ] 
 //			[ -t truth_type ] [ -f truth_file ] [ -s low:high ]
 //			[ -o output_base ] [ -w within ] [-a] [-i subtitle str]
 //
@@ -28,7 +29,10 @@
 //		[ -w within ]		The angle to use for within.
 //		[ -a ]				Autoscale plots
 //		[ -i subtitle string]
-//
+//              [ -m metric ]  Only produce a single specified metric
+//              [ -D max ] Omit WVC with direction error greater than max
+//              [ -S max ] Omit WVC with speed error greater than max
+//              
 // OPERANDS
 //		None.
 //
@@ -87,7 +91,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"hnc:l:t:f:r:s:o:w:a:i:"
+#define OPTSTRING				"hndc:l:t:f:r:s:o:w:a:i:m:D:S:P:p:"
 #define ARRAY_SIZE				1024
 
 #define DEFAULT_LOW_LAT         -90.0
@@ -114,11 +118,17 @@ template class List<AngleInterval>;
 #define SKILL_MIN				0.3
 #define SKILL_MAX				1.0
 
-#define DIRECTION_BINS			72		// 5 degree bins
+#define DIRECTION_BINS			360		// 1 degree bins
 
 //--------//
 // MACROS //
 //--------//
+
+//--------//
+// HACKS  //
+//--------//
+
+// #define HIRES12
 
 //------------------//
 // TYPE DEFINITIONS //
@@ -150,16 +160,20 @@ int plot_density(const char* extension, const char* title,
 int lat_range_opt = 0;
 int autoscale_opt = 0;
 int hdf_opt = 0;
+int hdf_dirth_opt = 0;
 int nudge_as_truth_opt = 0;
-
+int single_metric_opt = 0;
+int remove_dir_outliers_opt = 0;
+int remove_spd_outliers_opt = 0;
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
+        "[ -m metric ]","[-D dir_err_max]","[-S spd_err_max]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
-    "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]" "[ -n (use nudge field as truth)]", 0 };
+    "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]" "[ -n (use nudge field as truth)]","[ -d (READ HDF/DIRTH data sets)]", "[-P pflag_file]", "[-p pthresh]", 0 };
 
 // not always evil...
 float*         ctd_array = NULL;
@@ -178,6 +192,9 @@ const char*    command = NULL;
 char*          l2b_file = NULL;
 char*          output_base = NULL;
 char*          subtitle_str = NULL;
+char*          pflag_file = NULL;
+float          pthresh = 1.0;
+
 
 PlotFlagE      plot_flag = NORMAL;
 RangeFlagE     range_flag = USE_LIMITS;
@@ -202,12 +219,15 @@ main(
 	l2b_file = NULL;
 	char* truth_type = NULL;
 	char* truth_file = NULL;
+        char* spec_metric = NULL;
     float low_lat = DEFAULT_LOW_LAT * dtr;
     float high_lat = DEFAULT_HIGH_LAT * dtr;
 	float low_speed = DEFAULT_LOW_SPEED;
 	float high_speed = DEFAULT_HIGH_SPEED;
 	float within_angle = DEFAULT_WITHIN_ANGLE;
 	output_base = NULL;
+        float max_spd_err=0.0;
+        float max_dir_err=0.0;
 
 	//------------------------//
 	// parse the command line //
@@ -221,7 +241,7 @@ main(
 	int c;
 	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
 	{
-		switch(c)
+                switch(c)
 		{
 		case 'c':
 			config_file = optarg;
@@ -232,9 +252,25 @@ main(
 				exit(1);
 			}
 			break;
-		case 'l':
+		case 'd':
+		        hdf_opt = 1;
+			hdf_dirth_opt = 1;
+			break;
+                case 'l':
 			l2b_file = optarg;
 			break;
+                case 'm':
+		        single_metric_opt = 1;
+                        spec_metric = optarg;
+                        break;
+                case 'D':
+                        remove_dir_outliers_opt=1;
+                        max_dir_err=atof(optarg)*dtr;
+                        break;
+                case 'S': 
+		        remove_spd_outliers_opt=1;
+                        max_spd_err=atof(optarg);
+                        break;
 		case 't':
 			truth_type = optarg;
 			break;
@@ -249,19 +285,26 @@ main(
 				exit(1);
 			}
 			break;
-        case 'r':
-            if (sscanf(optarg, "%f:%f", &low_lat, &high_lat) != 2)
-            {
-                fprintf(stderr, "%s: error determining latitude range %s\n",
-                    command, optarg);
-                exit(1);
-            }
-            low_lat *= dtr;
-            high_lat *= dtr;
-            lat_range_opt = 1;
+		case 'r':
+		  if (sscanf(optarg, "%f:%f", &low_lat, &high_lat) != 2)
+		    {
+		      fprintf(stderr, "%s: error determining latitude range %s\n",
+			      command, optarg);
+		      exit(1);
+		    }
+		  low_lat *= dtr;
+		  high_lat *= dtr;
+		  lat_range_opt = 1;
+                  break;
 		case 'o':
 			output_base = optarg;
 			break;
+                case 'P':
+		        pflag_file = optarg;
+                        break;
+                case 'p':
+		        pthresh = atof(optarg);
+                        break;
 		case 'w':
 			within_angle = atof(optarg);
 			break;
@@ -337,9 +380,22 @@ main(
                                  argv[0], l2b_file);
           exit(1);
       }
+      if (hdf_dirth_opt){
+	if (l2b.frame.swath.ReadHdfDIRTH(l2b_file) == 0)
+	  {
+	    fprintf(stderr, "%s: cannot open HDF %s for DIRTH input\n",
+		    argv[0], l2b_file);
+	    exit(1);
+	  }
+      }
       l2b.header.crossTrackResolution = 25.0;
       l2b.header.alongTrackResolution = 25.0;
       l2b.header.zeroIndex = 38;
+#ifdef HIRES12
+      l2b.header.crossTrackResolution = 12.5;
+      l2b.header.alongTrackResolution = 12.5;
+      l2b.header.zeroIndex = 76;
+#endif
     }
     else
     {
@@ -402,6 +458,31 @@ main(
         printf("Removing %d vectors out of latitude range\n", lat_erase);
     }
 
+    //----------------------//
+    // clear flagged data   //
+    //----------------------//
+    if (pflag_file!=NULL)
+    {
+        int pflag_erase = swath->DeleteFlaggedData(pflag_file,pthresh);
+        printf("Removing %d flagged vectors using flagfile %s with\n", 
+	       pflag_erase,pflag_file);
+        printf("thresh=%g.\n",pthresh);
+    }
+    //-------------------------//
+    // clear outliers          //
+    //-------------------------//
+    if (remove_spd_outliers_opt)
+      {
+	int out_erase = swath->DeleteSpeedOutliers(max_spd_err,&truth);
+        printf("Removing %d vectors with greater than %g m/s speed error\n", 
+	       out_erase, max_spd_err);
+      }
+    if (remove_dir_outliers_opt)
+      {
+	int out_erase = swath->DeleteDirectionOutliers(max_dir_err,&truth);
+        printf("Removing %d vectors with greater than %g degree direction error\n", 
+	       out_erase, max_dir_err*rtd);
+      }
 	//---------------//
 	// create arrays //
 	//---------------//
@@ -450,29 +531,31 @@ main(
 
 	if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
 		value_2_array, count_array, low_speed, high_speed))
-	{
+	  {
 		fprintf(stderr, "%s: error calculating selected RMS speed error\n",
 			command);
 		exit(1);
-	}
-	xy_limits[2] = RMS_SPD_MIN;
-	xy_limits[3] = RMS_SPD_MAX;
-	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
+	  }
+	if(! single_metric_opt || strcmp("sel_rms_spd_err",spec_metric)==0){
+	  xy_limits[2] = RMS_SPD_MIN;
+	  xy_limits[3] = RMS_SPD_MAX;
+	  sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
-	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
+	  plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
 		"RMS Speed Error (m/s)", value_array, std_dev_array);
-
+	}
 	//-----------------------------//
 	// selected speed bias vs. ctd //
 	//-----------------------------//
 
-	xy_limits[2] = BIAS_SPD_MIN;
-	xy_limits[3] = BIAS_SPD_MAX;
-	sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
+	if(! single_metric_opt || strcmp("sel_spd_bias",spec_metric)==0){
+	  xy_limits[2] = BIAS_SPD_MIN;
+	  xy_limits[3] = BIAS_SPD_MAX;
+	  sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
+	  plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
 		"Speed Bias (m/s)", value_2_array);
-
+	}
 	//-------------------//
 	// WVC count vs. ctd //
 	//-------------------//
@@ -489,99 +572,115 @@ main(
 	// selected rms direction error vs. ctd //
 	//--------------------------------------//
 
-	if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
-		value_2_array, count_array, low_speed, high_speed))
-	{
+        if (! single_metric_opt || strcmp("sel_rms_dir_err",spec_metric)==0
+	    || strcmp("sel_dir_bias",spec_metric)==0)
+	  {
+	    if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
+		 value_2_array, count_array, low_speed, high_speed))
+	      {
 		fprintf(stderr, "%s: error calculating selected RMS direction error\n",
 			command);
 		exit(1);
-	}
-	rad_to_deg(value_array);
-	rad_to_deg(std_dev_array);
-	xy_limits[2] = RMS_DIR_MIN;
-	xy_limits[3] = RMS_DIR_MAX2;
-	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
+	      }
+	  }
+        if (! single_metric_opt || strcmp("sel_rms_dir_err",spec_metric)==0)
+	  {
+	    rad_to_deg(value_array);
+	    rad_to_deg(std_dev_array);
+	    xy_limits[2] = RMS_DIR_MIN;
+	    xy_limits[3] = RMS_DIR_MAX2;
+	    sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
-	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
+	    plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
 		"RMS Direction Error (deg)", value_array, std_dev_array);
-
+	  }
 	//---------------------------------//
 	// selected direction bias vs. ctd //
 	//---------------------------------//
 
-	rad_to_deg(value_2_array);
-	xy_limits[2] = BIAS_DIR_MIN2;
-	xy_limits[3] = BIAS_DIR_MAX2;
-	sprintf(title, "Selected Direction Bias vs. CTD (%g - %g m/s)", low_speed,
+        if (! single_metric_opt || strcmp("sel_dir_bias",spec_metric)==0)
+	  {
+	    rad_to_deg(value_2_array);
+	    xy_limits[2] = BIAS_DIR_MIN2;
+	    xy_limits[3] = BIAS_DIR_MAX2;
+	    sprintf(title, "Selected Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	plot_thing("sel_dir_bias", title, "Cross Track Distance (km)",
+	    plot_thing("sel_dir_bias", title, "Cross Track Distance (km)",
 		"Direction Bias (deg)", value_2_array);
-
+	  }
 	//---------------//
 	// skill vs. ctd //
 	//---------------//
 
-	if (! swath->SkillVsCti(&truth, value_array, count_array, low_speed,
+        if (! single_metric_opt || strcmp("skill",spec_metric)==0)
+	  {
+	    if (! swath->SkillVsCti(&truth, value_array, count_array, low_speed,
 		high_speed))
-	{
+	      {
 		fprintf(stderr, "%s: error calculating skill\n", command);
 		exit(1);
-	}
-	xy_limits[2] = SKILL_MIN;
-	xy_limits[3] = SKILL_MAX;
-	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
-
+	      }
+	    xy_limits[2] = SKILL_MIN;
+	    xy_limits[3] = SKILL_MAX;
+	    sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
+	    plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
+	  }
 	//----------------//
 	// within vs. ctd //
 	//----------------//
 
-	if (! swath->WithinVsCti(&truth, value_array, count_array, low_speed,
+        if (! single_metric_opt || strcmp("within",spec_metric)==0)
+	  {
+	    if (! swath->WithinVsCti(&truth, value_array, count_array, low_speed,
 		high_speed, within_angle * dtr))
-	{
+	      {
 		fprintf(stderr, "%s: error calculating within\n", command);
 		exit(1);
-	}
-	xy_limits[2] = SKILL_MIN;
-	xy_limits[3] = SKILL_MAX;
-	sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
+	      }
+	    xy_limits[2] = SKILL_MIN;
+	    xy_limits[3] = SKILL_MAX;
+	    sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
 		low_speed, high_speed);
-	plot_thing("within", title, "Cross Track Distance (km)", "Within");
-
+	    plot_thing("within", title, "Cross Track Distance (km)", "Within");
+	  }
 	//----------------------------------------//
 	// Vector Correlation Coefficient vs. ctd //
 	//----------------------------------------//
 
-    if (! swath->VectorCorrelationVsCti(&truth, value_array, count_array,
-        low_speed, high_speed))
-	{
+        if (! single_metric_opt || strcmp("vector_correlation",spec_metric)==0)
+	  {
+	    if (! swath->VectorCorrelationVsCti(&truth, value_array, count_array,
+						low_speed, high_speed))
+	      {
 		fprintf(stderr, "%s: error calculating vector correlation\n", command);
 		exit(1);
-	}
-	xy_limits[2] = 0.0;
-	xy_limits[3] = 2.0;
-	sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed,
-        high_speed);
-	plot_thing("vector_correlation", title, "Cross Track Distance (km)",
-        "Vector Correlation Coefficient");
-
+	      }
+	    xy_limits[2] = 0.0;
+	    xy_limits[3] = 2.0;
+	    sprintf(title, "Vector Correlation  vs. CTD (%g - %g m/s)", low_speed,
+		    high_speed);
+	    plot_thing("vector_correlation", title, "Cross Track Distance (km)",
+		       "Vector Correlation Coefficient");
+	  }
 	//--------------------//
 	// avg nambig vs. ctd //
 	//--------------------//
 
-	if (! swath->AvgNambigVsCti(&truth, value_array, low_speed, high_speed))
-	{
+        if (! single_metric_opt || strcmp("avg_nambig",spec_metric)==0)
+	  {
+	    if (! swath->AvgNambigVsCti(&truth, value_array, low_speed, high_speed))
+	      {
 		fprintf(stderr, "%s: error calculating average number of ambigs\n",
 			command);
 		exit(1);
-	}
-	xy_limits[2] = 0;
-	xy_limits[3] = 5;
-	sprintf(title, "Average Number of Ambiguities vs. CTD (%g - %g m/s)",
-        low_speed, high_speed);
-	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
+	      }
+	    xy_limits[2] = 0;
+	    xy_limits[3] = 5;
+	    sprintf(title, "Average Number of Ambiguities vs. CTD (%g - %g m/s)",
+		    low_speed, high_speed);
+	    plot_thing("avg_nambig", title, "Cross Track Distance (km)",
 		"Number of Ambiguities");
-
+	  }
 	//=========//
 	// NEAREST //
 	//=========//
@@ -592,78 +691,191 @@ main(
     // nearest and true direction density //
     //------------------------------------//
 
-	if (! swath->DirectionDensity(&truth, uint_array, uint_2_array,
+	if (! single_metric_opt || strcmp("dir_den",spec_metric)==0){
+	  if (! swath->DirectionDensity(&truth, uint_array, uint_2_array,
 		low_speed, high_speed, DIRECTION_BINS))
-	{
+	    {
 		fprintf(stderr, "%s: error calculating nearest direction densities\n",
 			command);
 		exit(1);
+	    }
+	  sprintf(title, "Direction Density (%g - %g m/s)", low_speed, high_speed);
+	  plot_density("dir_den", title, "Relative Wind Direction (deg)",
+		       "Density");
 	}
-    sprintf(title, "Direction Density (%g - %g m/s)", low_speed, high_speed);
-    plot_density("dir_den", title, "Relative Wind Direction (deg)",
-        "Density");
 
 	//---------------------------------//
 	// nearest rms speed error vs. ctd //
 	//---------------------------------//
 
-	if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
+        if (! single_metric_opt || strcmp("near_rms_spd_err",spec_metric)==0 
+            || strcmp("near_spd_bias",spec_metric)==0)
+	  {
+	    if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
 		value_2_array, count_array, low_speed, high_speed))
-	{
+	      {
 		fprintf(stderr, "%s: error calculating nearest RMS speed error\n",
 			command);
 		exit(1);
-	}
-	xy_limits[2] = RMS_SPD_MIN;
-	xy_limits[3] = RMS_SPD_MAX;
-	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
+	      }
+	  }
+        if (! single_metric_opt || strcmp("near_rms_spd_err",spec_metric)==0)
+	  {
+	    xy_limits[2] = RMS_SPD_MIN;
+	    xy_limits[3] = RMS_SPD_MAX;
+	    sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
-	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
+	    plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
 		"RMS Speed Error (m/s)", value_array, std_dev_array);
-
+	  }
 	//----------------------------//
 	// nearest speed bias vs. ctd //
 	//----------------------------//
-
-	xy_limits[2] = BIAS_SPD_MIN;
-	xy_limits[3] = BIAS_SPD_MAX;
-	sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
+        if (! single_metric_opt || strcmp("near_spd_bias",spec_metric)==0)
+	  {
+	    xy_limits[2] = BIAS_SPD_MIN;
+	    xy_limits[3] = BIAS_SPD_MAX;
+	    sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
+	    plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
 		"Speed Bias (m/s)", value_2_array);
-
+	  }
 	//-------------------------------------//
 	// nearest rms direction error vs. ctd //
 	//-------------------------------------//
-
-	if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
+        if (! single_metric_opt || strcmp("near_rms_dir_err",spec_metric)==0 
+            || strcmp("near_dir_bias",spec_metric)==0)
+	  {
+	    if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
 		value_2_array, count_array, low_speed, high_speed))
-	{
+	      {
 		fprintf(stderr, "%s: error calculating nearest RMS direction error\n",
 			command);
 		exit(1);
-	}
-	rad_to_deg(value_array);
-	rad_to_deg(std_dev_array);
-	xy_limits[2] = RMS_DIR_MIN;
-	xy_limits[3] = RMS_DIR_MAX;
-	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
+	      }
+	  }
+        if (! single_metric_opt || strcmp("near_rms_dir_err",spec_metric)==0)
+	  {
+	    rad_to_deg(value_array);
+	    rad_to_deg(std_dev_array);
+	    xy_limits[2] = RMS_DIR_MIN;
+	    xy_limits[3] = RMS_DIR_MAX;
+	    sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
-	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
+	    plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
 		"RMS Direction Error (deg)", value_array, std_dev_array);
-
+	  }
 	//--------------------------------//
 	// nearest direction bias vs. ctd //
 	//--------------------------------//
-
-	rad_to_deg(value_2_array);
-	xy_limits[2] = BIAS_DIR_MIN;
-	xy_limits[3] = BIAS_DIR_MAX;
-	sprintf(title, "Nearest Direction Bias vs. CTD (%g - %g m/s)", low_speed,
+        if (! single_metric_opt || strcmp("near_dir_bias",spec_metric)==0)
+	  {
+	    rad_to_deg(value_2_array);
+	    xy_limits[2] = BIAS_DIR_MIN;
+	    xy_limits[3] = BIAS_DIR_MAX;
+	    sprintf(title, "Nearest Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	plot_thing("near_dir_bias", title, "Cross Track Distance (km)",
+	    plot_thing("near_dir_bias", title, "Cross Track Distance (km)",
 		"Direction Bias (deg)", value_2_array);
+	  }
+	//=================================//
+	// Nudge Field Vs Truth Comparison //
+	//=================================//
+        if(!nudge_as_truth_opt){
+	  swath->SelectNudge();
 
+	  //------------------------------------//
+	  // nudge direction density            //
+	  //------------------------------------//
+
+	if (! single_metric_opt || strcmp("nudge_dir_den",spec_metric)==0){
+	  if (! swath->DirectionDensity(&truth, uint_array, uint_2_array,
+		low_speed, high_speed, DIRECTION_BINS))
+	    {
+		fprintf(stderr, "%s: error calculating nudge field direction densities\n",
+			command);
+		exit(1);
+	    }
+	  sprintf(title,"Nudge Field Direction Density (%g - %g m/s)", low_speed, high_speed);
+	  plot_density("nudge_dir_den", title, "Relative Wind Direction (deg)",
+		       "Density");
+	}
+
+	//---------------------------------//
+	// nudge rms speed error vs. ctd //
+	//---------------------------------//
+
+        if (! single_metric_opt || strcmp("nudge_rms_spd_err",spec_metric)==0 
+            || strcmp("nudge_spd_bias",spec_metric)==0)
+	  {
+	    if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
+	      {
+		fprintf(stderr, "%s: error calculating nudge field RMS speed error\n",
+			command);
+		exit(1);
+	      }
+	  }
+        if (! single_metric_opt || strcmp("nudge_rms_spd_err",spec_metric)==0)
+	  {
+	    xy_limits[2] = RMS_SPD_MIN;
+	    xy_limits[3] = RMS_SPD_MAX;
+	    sprintf(title, "Nudge Field RMS Speed Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	    plot_thing("nudge_rms_spd_err", title, "Cross Track Distance (km)",
+		"RMS Speed Error (m/s)", value_array, std_dev_array);
+	  }
+	//----------------------------//
+	// nudge field speed bias vs. ctd //
+	//----------------------------//
+        if (! single_metric_opt || strcmp("nudge_spd_bias",spec_metric)==0)
+	  {
+	    xy_limits[2] = BIAS_SPD_MIN;
+	    xy_limits[3] = BIAS_SPD_MAX;
+	    sprintf(title, "Nudge Field Speed Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	    plot_thing("nudge_spd_bias", title, "Cross Track Distance (km)",
+		"Speed Bias (m/s)", value_2_array);
+	  }
+	//-------------------------------------//
+	// nudge field rms direction error vs. ctd //
+	//-------------------------------------//
+        if (! single_metric_opt || strcmp("nudge_rms_dir_err",spec_metric)==0 
+            || strcmp("nudge_dir_bias",spec_metric)==0)
+	  {
+	    if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
+	      {
+		fprintf(stderr, "%s: error calculating nudge field RMS direction error\n",
+			command);
+		exit(1);
+	      }
+	  }
+        if (! single_metric_opt || strcmp("nudge_rms_dir_err",spec_metric)==0)
+	  {
+	    rad_to_deg(value_array);
+	    rad_to_deg(std_dev_array);
+	    xy_limits[2] = RMS_DIR_MIN;
+	    xy_limits[3] = RMS_DIR_MAX;
+	    sprintf(title, "Nudge Field RMS Direction Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	    plot_thing("nudge_rms_dir_err", title, "Cross Track Distance (km)",
+		"RMS Direction Error (deg)", value_array, std_dev_array);
+	  }
+	//--------------------------------//
+	// nudge field direction bias vs. ctd //
+	//--------------------------------//
+        if (! single_metric_opt || strcmp("nudge_dir_bias",spec_metric)==0)
+	  {
+	    rad_to_deg(value_2_array);
+	    xy_limits[2] = BIAS_DIR_MIN;
+	    xy_limits[3] = BIAS_DIR_MAX;
+	    sprintf(title, "Nudge Field Direction Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	    plot_thing("nudge_dir_bias", title, "Cross Track Distance (km)",
+		"Direction Bias (deg)", value_2_array);
+	  }
+	}
 	//-------------//
 	// free arrays //
 	//-------------//

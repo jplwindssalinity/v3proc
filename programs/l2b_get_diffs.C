@@ -259,7 +259,10 @@ main(
             float dirdif=ANGDIF(wvp->dir,true_wv.dir);
             float neardif=ANGDIF(nearest->dir,true_wv.dir);
             int nambig=wvc->ambiguities.NodeCount();
-	    printf("%d %d  SPEED %g %g %g TRUE DIR %g SELECTED DIR %g %g  NEAREST DIR %g %g NAMBIG %d\n", cti+1,ati+1,true_wv.spd,wvp->spd,
+            float lat = wvc->lonLat.latitude*rtd;
+	    float lon = wvc->lonLat.longitude*rtd;
+	    printf("%d %d  LONLAT %g %g SPEED %g %g %g TRUE DIR %g SELECTED DIR %g %g  NEAREST DIR %g %g NAMBIG %d\n", cti+1,ati+1,lon,lat,
+		   true_wv.spd,wvp->spd,
 		   fabs(true_wv.spd - wvp->spd), true_wv.dir*rtd, wvp->dir*rtd,
 		   dirdif*rtd, nearest->dir*rtd, neardif*rtd, nambig);
 	  }

@@ -96,7 +96,7 @@ template class TrackerBase<unsigned short>;
 //-----------//
 // CONSTANTS //
 //-----------//
-
+#define HIRES12
 #define HDF_NUM_AMBIGUITIES 4
 //--------//
 // MACROS //
@@ -119,7 +119,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>", 
-"[hdf_flag 1=hdf 0=default]", "[l2b_hdf_file (for updating)]",0};
+"[hdf_source_flag 1=hdf 0=default]","[hdf_target_flag 1=hdf 0=default]", "[l2b_hdf_file (for updating)]",0};
 
 //--------------------//
 // Report handler     //
@@ -150,17 +150,18 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3 && argc !=5)
+	if (argc != 3 && argc !=6)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
 	const char* l2b_output_file = argv[clidx++];
 
-        int hdf_flag=0;
+        int hdf_source_flag=0, hdf_target_flag=0;
         char* hdf_file=NULL;
-        if (argc==5){
-	  hdf_flag=atoi(argv[clidx++]);
+        if (argc==6){
+          hdf_source_flag=atoi(argv[clidx++]);
+	  hdf_target_flag=atoi(argv[clidx++]);
           hdf_file=argv[clidx++];
 	}
 
@@ -189,14 +190,18 @@ main(
 	//-------------------------------------//
 
 	L2B l2b;
-	if (! ConfigL2B(&l2b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
-		exit(1);
+	
+        if(hdf_source_flag){
+	  l2b.SetInputFilename(hdf_file);
 	}
+	else  if (! ConfigL2B(&l2b, &config_list))
+	  {
+	    fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
+	    exit(1);
+	  }
 
 	// Overwrite with new name
-    l2b.SetOutputFilename(l2b_output_file);
+        l2b.SetOutputFilename(l2b_output_file);
 
 
 	//------------------------------------//
@@ -213,12 +218,13 @@ main(
 	//------------//
 	// open files //
 	//------------//
-
-	if (! l2b.OpenForReading())
-    {
-        fprintf(stderr, "%s: error opening L2B file for reading\n", command);
-        exit(1);
-    }
+        if (! hdf_source_flag){
+	  if (! l2b.OpenForReading())
+	    {
+	      fprintf(stderr, "%s: error opening L2B file for reading\n", command);
+	      exit(1);
+	    }
+	}
 	if (! l2b.OpenForWriting())
     {
         fprintf(stderr, "%s: error opening L2B file %s for writing\n",
@@ -229,11 +235,12 @@ main(
 	//---------------------------------//
 	// read the header to set up swath //
 	//---------------------------------//
-
-	if (! l2b.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading Level 2B header\n", command); 
+        if (! hdf_source_flag){ 
+	  if (! l2b.ReadHeader())
+	    {
+	      fprintf(stderr, "%s: error reading Level 2B header\n", command); 
 		exit(1);
+	    }
 	}
 
 	//-----------------//
@@ -245,20 +252,35 @@ main(
 	float** spd=NULL, **dir=NULL;
 	int** num_ambigs=NULL;
 
-	for (;;)
-	{
-	        global_frame_number++;
-
-		//-----------------------------//
-		// read a level 2B data record //
-		//-----------------------------//
-
-		if (! l2b.ReadDataRec())
-		{
-			switch (l2b.GetStatus())
-			{
-			case L2B::OK:		// end of file
-				break;
+	
+	//-----------------------------//
+	// read a level 2B data record //
+	//-----------------------------//
+	if (hdf_source_flag){
+    
+	  if (l2b.frame.swath.ReadHdfL2B(hdf_file) == 0)
+	    {
+	      fprintf(stderr, "%s: cannot open HDF %s for input\n",
+		      argv[0], hdf_file);
+	      exit(1);
+	    }
+	  l2b.header.crossTrackResolution = 25.0;
+	  l2b.header.alongTrackResolution = 25.0;
+	  l2b.header.zeroIndex = 38;
+#ifdef HIRES12
+	  l2b.header.crossTrackResolution = 12.5;
+	  l2b.header.alongTrackResolution = 12.5;
+	  l2b.header.zeroIndex = 76;
+#endif
+	}
+	else if (! l2b.ReadDataRec())
+	  {
+	    switch (l2b.GetStatus())
+	      {
+	      case L2B::OK:	
+		fprintf(stderr, "%s: Unexpected EOF Level 2B data\n", command);
+				exit(1);
+				break;	// end of file
 			case L2B::ERROR_READING_FRAME:
 				fprintf(stderr, "%s: error reading Level 2B data\n", command);
 				exit(1);
@@ -272,93 +294,93 @@ main(
 				fprintf(stderr, "%s: unknown status (???)\n", command);
 				exit(1);
 			}
-			break;		// done, exit do loop
-		}
-                //------------------------------------//
-                // HDF I/O CASE                       //
-                //------------------------------------//
-                if (hdf_flag){
+			
+	  }
+	//------------------------------------//
+	// HDF I/O CASE                       //
+	//------------------------------------//
+	if (hdf_target_flag){
 
-		  //------------------------------//
-		  // Read Nudge Vectors           //
-		  //------------------------------//
-		  if (!l2b.frame.swath.ReadNudgeVectorsFromHdfL2B(hdf_file)){
-		    fprintf(stderr,"%s: Cannot Read Nudge Vectors from HDF L2b\n",command);
-		    exit(1);
-		  }
+	  //------------------------------//
+	  // Read Nudge Vectors           //
+	  //------------------------------//
+	  if(! hdf_source_flag){
+	    if (!l2b.frame.swath.ReadNudgeVectorsFromHdfL2B(hdf_file)){
+	      fprintf(stderr,"%s: Cannot Read Nudge Vectors from HDF L2b\n",command);
+	      exit(1);
+	    }
+	  }
+	  //-----------------------------//
+	  // Create Arrays               //
+	  //-----------------------------//
+	  ctibins=l2b.frame.swath.GetCrossTrackBins();
+	  atibins=l2b.frame.swath.GetAlongTrackBins();
+	  spd = (float**) make_array(sizeof(float),2,atibins,
+				     ctibins*HDF_NUM_AMBIGUITIES);
+	  dir = (float**) make_array(sizeof(float),2,atibins,
+				     ctibins*HDF_NUM_AMBIGUITIES);
+	  
+	  num_ambigs = (int**) make_array(sizeof(int),2,atibins,
+					  ctibins);
+	  if(! l2b.frame.swath.GetArraysForUpdatingHdf(spd,dir,
+						       num_ambigs)){
+	    fprintf(stderr,"%s: Failure to create array for updating hdf file\n",command);
+	    exit(1);
+	  }
+	}
+	//------------------------//
+	// Just Ambiguity Removal //
+	//------------------------//
 
-		  //-----------------------------//
-                  // Create Arrays               //
-                  //-----------------------------//
-                  ctibins=l2b.frame.swath.GetCrossTrackBins();
-		  atibins=l2b.frame.swath.GetAlongTrackBins();
-                  spd = (float**) make_array(sizeof(float),2,atibins,
-					      ctibins*HDF_NUM_AMBIGUITIES);
-                  dir = (float**) make_array(sizeof(float),2,atibins,
-					      ctibins*HDF_NUM_AMBIGUITIES);
-
-                  num_ambigs = (int**) make_array(sizeof(int),2,atibins,
-							ctibins);
-                  if(! l2b.frame.swath.GetArraysForUpdatingHdf(spd,dir,
-							       num_ambigs)){
-		    fprintf(stderr,"%s: Failure to create array for updating hdf file\n",command);
-		    exit(1);
-		  }
-		}
-		//------------------------//
-		// Just Ambiguity Removal //
-		//------------------------//
-
-		int retval = l2a_to_l2b.Flush(&l2b);
-		switch (retval)
-		{
-		case 1:
-			break;
-		case 2:
-			break;
-		case 4:
-		case 5:
-			break;
-		case 0:
-			fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
-				command);
-			exit(1);
-			break;
-		}
-		//-------------------------------------//
-		// HDF I/O CASE                        //
-		//-------------------------------------//
-		if(hdf_flag){
-		  //---------------------------------------------//
-		  // First Update Arrays with selected vectors   //
-		  //---------------------------------------------//
-		  for(int i=0;i<atibins;i++){
-		    for(int j=0;j<ctibins;j++){
-		      WVC* wvc=l2b.frame.swath.swath[j][i];
-		      if(!wvc){
-			num_ambigs[i][j]=0;
-			continue;
-		      }
-		      else if (! (wvc->selected)){
-			num_ambigs[i][j]=0;
-			continue;		
-		      }
-		      else{
-			int k=num_ambigs[i][j]-1;
-			spd[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->spd;
-			dir[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->dir;
-		      }
-		    }
-		  }
-		  //----------------------------------//
-		  // Update HDF file                  //
-		  //----------------------------------//
-		  if(! l2b.frame.swath.UpdateHdf(hdf_file,spd,dir,num_ambigs, num_ambigs)){
-		    fprintf(stderr,"%s: Unable to update hdf file\n",command);
-		    exit(1);
-		  }
+	int retval = l2a_to_l2b.Flush(&l2b);
+	switch (retval)
+	  {
+	  case 1:
+	    break;
+	  case 2:
+	    break;
+	  case 4:
+	  case 5:
+	    break;
+	  case 0:
+	    fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
+		    command);
+	    exit(1);
+	    break;
+	  }
+	//-------------------------------------//
+	// HDF I/O CASE                        //
+	//-------------------------------------//
+	if(hdf_target_flag){
+	  //---------------------------------------------//
+	  // First Update Arrays with selected vectors   //
+	  //---------------------------------------------//
+	  for(int i=0;i<atibins;i++){
+	    for(int j=0;j<ctibins;j++){
+	      WVC* wvc=l2b.frame.swath.swath[j][i];
+	      if(!wvc){
+		num_ambigs[i][j]=0;
+		continue;
+	      }
+	      else if (! (wvc->selected)){
+		num_ambigs[i][j]=0;
+		continue;		
+	      }
+	      else{
+		int k=num_ambigs[i][j]-1;
+		spd[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->spd;
+		dir[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->dir;
+	      }
+	    }
+	  }
+	  //----------------------------------//
+	  // Update HDF file                  //
+	  //----------------------------------//
+	  if(! l2b.frame.swath.UpdateHdf(hdf_file,spd,dir,num_ambigs, num_ambigs)){
+	    fprintf(stderr,"%s: Unable to update hdf file\n",command);
+	    exit(1);
+	  }
 		  
-		}
 	}
 
 	l2b.Close();

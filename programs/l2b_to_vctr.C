@@ -121,7 +121,7 @@ main(
 		vctr_base = argv[clidx++];
 	if (argc == 4)
 		hdf_flag=atoi(argv[clidx++]);
-
+                
 	//------------------//
 	// read in l2b file //
 	//------------------//
@@ -159,9 +159,9 @@ main(
 	//----------------------//
 
 	int max_rank = l2b.frame.swath.GetMaxAmbiguityCount();
+	char filename[1024];
 	for (int i = 0; i <= max_rank; i++)
 	{
-		char filename[1024];
 		sprintf(filename, "%s.%d", vctr_base, i);
 		if (! l2b.WriteVctr(filename, i))
 		{
@@ -170,6 +170,13 @@ main(
 			exit(1);
 		}
 	}
-
+        l2b.frame.swath.SelectNudge();
+        sprintf(filename, "%s.nudge", vctr_base);
+        if (! l2b.WriteVctr(filename, 0))
+		{
+			fprintf(stderr, "%s: error writing vctr file %s\n", command,
+				filename);
+			exit(1);
+		}
 	return (0);
 }
