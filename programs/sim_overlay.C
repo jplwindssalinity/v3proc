@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -205,8 +205,8 @@ main(
 
     double long_of_asc_node;
     if (! config_list.GetDouble(LONG_OF_ASC_NODE_KEYWORD, &long_of_asc_node))
-		return(0);
-    
+        return(0);
+
     spacecraft_sim.LocationToOrbit(long_of_asc_node,0.0,1);
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
@@ -287,6 +287,55 @@ main(
     {
         fprintf(stderr, "%s: error configuring wind field\n", command);
         exit(1);
+    }
+
+    //-----------------------//
+    // read the sigma-0 maps //
+    //-----------------------//
+
+    Sigma0Map inner_map, outer_map;
+    Sigma0Map* inner_map_ptr = NULL;
+    Sigma0Map* outer_map_ptr = NULL;
+    if (ConfigSigma0Maps(&inner_map, &outer_map, &config_list))
+    {
+        inner_map_ptr = &inner_map;
+        outer_map_ptr = &outer_map;
+    }
+
+    //-----------------------------------------------------//
+    // configure topographic map and frequency shift table //
+    //-----------------------------------------------------//
+
+    Topo topo;
+    Topo* topo_ptr = NULL;
+    Stable stable;
+    Stable* stable_ptr = NULL;
+
+    int use_topomap;
+    config_list.ExitForMissingKeywords();
+    config_list.GetInt(USE_TOPOMAP_KEYWORD, &use_topomap);
+    if (use_topomap)
+    {
+        char* topomap_file = config_list.Get(TOPOMAP_FILE_KEYWORD);
+        if (! topo.Read(topomap_file))
+        {
+            fprintf(stderr, "%s: error reading topographic map %s\n",
+                command, topomap_file);
+            exit(1);
+        }
+        topo_ptr = &topo;
+
+        char* stable_file = config_list.Get(STABLE_FILE_KEYWORD);
+        if (! stable.Read(stable_file))
+        {
+            fprintf(stderr, "%s: error reading S Table %s\n", command,
+                stable_file);
+            exit(1);
+        }
+        int stable_mode_id;
+        config_list.GetInt(STABLE_MODE_ID_KEYWORD, &stable_mode_id);
+        stable.SetModeId(stable_mode_id);
+        stable_ptr = &stable;
     }
 
     //-------------------------------------//
@@ -487,8 +536,9 @@ main(
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
 
-                    qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
-                        &kp, &kpmField, &(l1a.frame));
+                    qscat_sim.ScatSim(&spacecraft, &qscat, &windfield,
+                        inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
+                        topo_ptr, stable_ptr, &(l1a.frame));
                     qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
                                                  &qscat, &qscat_event);
                     break;
