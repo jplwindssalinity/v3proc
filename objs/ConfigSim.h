@@ -52,9 +52,9 @@ int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
 
-//------------------//
-// Orbit Simulation //
-//------------------//
+//-----------------------//
+// Spacecraft Simulation //
+//-----------------------//
 
 #define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
 #define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
@@ -63,7 +63,8 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 #define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
 #define MEAN_ANOMALY_KEYWORD			"MEAN_ANOMALY"
 
-int ConfigOrbitSim(OrbitSim* orbit_sim, ConfigList* config_list);
+int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
 
 //--------------------//
 // Antenna Simulation //

@@ -8,7 +8,7 @@ static const char rcs_id_configsim_c[] =
 
 #include "ConfigSim.h"
 #include "InstrumentSim.h"
-#include "OrbitSim.h"
+#include "SpacecraftSim.h"
 #include "Misc.h"
 
 
@@ -124,11 +124,11 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->SetBeamBTimeOffset(tmp_double);
 
-	//-------------------------------//
-	// configure the orbit simulator //
-	//-------------------------------//
+	//------------------------------------//
+	// configure the spacecraft simulator //
+	//------------------------------------//
 
-	if (! ConfigOrbitSim(&(instrument_sim->orbitSim), config_list))
+	if (! ConfigSpacecraftSim(&(instrument_sim->spacecraftSim), config_list))
 		return(0);
 
 	//---------------------------------//
@@ -141,18 +141,18 @@ ConfigInstrumentSim(
 	return(1);
 }
 
-//----------------//
-// ConfigOrbitSim //
-//----------------//
+//---------------------//
+// ConfigSpacecraftSim //
+//---------------------//
 
 int
-ConfigOrbitSim(
-	OrbitSim*		orbit_sim,
+ConfigSpacecraftSim(
+	SpacecraftSim*	spacecraft_sim,
 	ConfigList*		config_list)
 {
-	//-------------------------------//
-	// configure the orbit simulator //
-	//-------------------------------//
+	//------------------------------------//
+	// configure the spacecraft simulator //
+	//------------------------------------//
  
 	double semi_major_axis;
 	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
@@ -178,7 +178,7 @@ ConfigOrbitSim(
 	if (! config_list->GetDouble(MEAN_ANOMALY_KEYWORD, &mean_anomaly))
 		return(0);
  
-	orbit_sim->DefineOrbit(semi_major_axis, eccentricity, inclination,
+	spacecraft_sim->DefineOrbit(semi_major_axis, eccentricity, inclination,
 		long_of_asc_node, arg_of_perigee, mean_anomaly);
  
 	return(1);

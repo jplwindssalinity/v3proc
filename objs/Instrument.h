@@ -10,7 +10,7 @@ static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
 #include "Antenna.h"
-#include "Orbit.h"
+#include "Spacecraft.h"
 
 //======================================================================
 // CLASSES
@@ -41,7 +41,7 @@ public:
 	// variables //
 	//-----------//
 
-	Orbit		orbit;
+	Spacecraft	spacecraft;
 	Antenna		antenna;
 };
 

@@ -76,13 +76,27 @@ InstrumentSim::SimulateNextEvent(
 	// update the orbit //
 	//------------------//
 
-	orbitSim.UpdateOrbit(_eventTime, &(instrument->orbit));
+	spacecraftSim.UpdateOrbit(_eventTime, &(instrument->spacecraft));
 
 	//-----------------------------//
 	// update the antenna position //
 	//-----------------------------//
 
 	antennaSim.UpdatePosition(_eventTime, &(instrument->antenna));
+
+	//--------------------//
+	// simulate the event //
+	//--------------------//
+
+	switch(_event)
+	{
+	case NONE:
+		break;
+	case SCATTEROMETER_BEAM_A_MEASUREMENT:
+		break;
+	case SCATTEROMETER_BEAM_B_MEASUREMENT:
+		break;
+	}
 
 	return(1);
 }
@@ -102,15 +116,15 @@ InstrumentSim::GenerateL0(
 
     l0->time = _eventTime;
  
-    l0->gcAltitude = instrument->orbit.gcAltitude;
-    l0->gcLongitude = instrument->orbit.gcLongitude;
-    l0->gcLatitude = instrument->orbit.gcLatitude;
-    instrument->orbit.gcVector.Get(0, &(l0->gcX));
-    instrument->orbit.gcVector.Get(1, &(l0->gcY));
-    instrument->orbit.gcVector.Get(2, &(l0->gcZ));
-    instrument->orbit.velocityVector.Get(0, &(l0->velX));
-    instrument->orbit.velocityVector.Get(1, &(l0->velY));
-    instrument->orbit.velocityVector.Get(2, &(l0->velZ));
+    l0->gcAltitude = instrument->spacecraft.gcAltitude;
+    l0->gcLongitude = instrument->spacecraft.gcLongitude;
+    l0->gcLatitude = instrument->spacecraft.gcLatitude;
+    instrument->spacecraft.gcVector.Get(0, &(l0->gcX));
+    instrument->spacecraft.gcVector.Get(1, &(l0->gcY));
+    instrument->spacecraft.gcVector.Get(2, &(l0->gcZ));
+    instrument->spacecraft.velocityVector.Get(0, &(l0->velX));
+    instrument->spacecraft.velocityVector.Get(1, &(l0->velY));
+    instrument->spacecraft.velocityVector.Get(2, &(l0->velZ));
  
     l0->antennaPosition = instrument->antenna.azimuthAngle;
 	switch(_event)

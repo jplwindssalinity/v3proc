@@ -12,7 +12,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "ConfigList.h"
 #include "Instrument.h"
 #include "AntennaSim.h"
-#include "OrbitSim.h"
+#include "SpacecraftSim.h"
 #include "L0.h"
 
 //======================================================================
@@ -72,7 +72,7 @@ public:
 	//-----------//
 
 	AntennaSim		antennaSim;		// the antenna simulator
-	OrbitSim		orbitSim;		// the orbit simulator
+	SpacecraftSim	spacecraftSim;	// the spacecraft simulator
 
 protected:
 
