@@ -63,6 +63,7 @@ OBJS = \
 	Interpolate.o \
 	Jpeg.o \
 	Kp.o \
+        KpStatistics.o \
 	Kpm.o \
 	Kpr.o \
 	LandMap.o \
@@ -112,6 +113,7 @@ OBJS = \
 	Topo.o \
 	Tracking.o \
 	Wind.o \
+	WindGrad.o \
 	XTable.o \
 	SeaPac.o \
 	ENOFTable.o
