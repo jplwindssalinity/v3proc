@@ -8,21 +8,22 @@
 //    generate_rgc
 //
 // SYNOPSIS
-//    generate_rgc [ -f ] <sim_config_file> <RGC_base>
+//    generate_rgc [ -cf ] <config_file> <RGC_base>
 //
 // DESCRIPTION
 //    Generates a set of Receiver Gate Constants for each beam based
 //    upon the parameters in the simulation configuration file.
 //
 // OPTIONS
+//      [ -c ]  Clean the constants.
 //      [ -f ]  Make the range fixed over azimuth.
 //
 // OPERANDS
 //    The following operands are supported:
-//      <sim_config_file>  The sim_config_file needed listing
-//                           all input parameters.
+//      <config_file>  The config_file needed listing
+//                     all input parameters.
 //
-//      <RGC_base>         The RGC output base.
+//      <RGC_base>     The RGC output base.
 //
 // EXAMPLES
 //    An example of a command line is:
@@ -97,7 +98,7 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f"
+#define OPTSTRING  "cf"
 
 #define RANGE_ORBIT_STEPS    256
 #define RANGE_AZIMUTH_STEPS  90    // used for fitting
@@ -124,10 +125,11 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -f ]", "<sim_config_file>", "<RGC_base>",
+const char* usage_array[] = { "[ -cf ]", "<config_file>", "<RGC_base>",
     0 };
 
 int opt_fixed = 0;     // by default, delay can change as a function of azimuth
+int opt_clean = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -150,6 +152,9 @@ main(
     {
         switch(c)
         {
+        case 'c':
+            opt_clean = 1;
+            break;
         case 'f':
             opt_fixed = 1;
             break;
@@ -483,6 +488,17 @@ main(
         //-----------//
 
         cds_beam_info->rangeTracker.SetRoundTripTime(terms);
+
+        //-------//
+        // clean //
+        //-------//
+
+        if (opt_clean) {
+            float egw = (cds_beam_info->rxGateWidthDn -
+                qscat.cds.txPulseWidthDn) * RANGE_GATE_NORMALIZER;
+            cds_beam_info->rangeTracker.ClearAmpPhase();
+            cds_beam_info->rangeTracker.QuantizeCenter(egw);
+        }
 
         //---------------------------------------//
         // write out the receiver gate constants //
