@@ -9,6 +9,7 @@
 static const char rcs_id_ephemeris_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "Matrix3.h"
 #include "List.h"
 
