@@ -24,3 +24,36 @@ Measurement::~Measurement()
 {
 	return;
 }
+
+
+//=================//
+// MeasurementList //
+//=================//
+
+MeasurementList::MeasurementList()
+{
+	return;
+}
+
+MeasurementList::~MeasurementList()
+{
+	return;
+}
+
+//-----------------------------//
+// MeasurementList::GetAverage //
+//-----------------------------//
+
+double
+MeasurementList::GetAverage()
+{
+	double sum = 0.0;
+	unsigned int count = 0;
+	for (Measurement* meas = GetHead(); meas; meas = GetNext())
+	{
+		sum += meas->value;
+		count++;
+	}
+	double avg = sum / (double)count;
+	return(avg);
+}
