@@ -46,7 +46,10 @@ int main(int argc, char *argv[])
 	char str[STRLEN];
 	char numstring[STRLEN];
 	char wordstring[STRLEN];
-	char *sptr,*sptr1,*wordend;
+	char newline[STRLEN];
+	char *start,*end;
+	char *sptr,*wordend;
+	char *comment_start;
 	char c;
 
 	// Write out the #include "Malloc1.h" directive at the start of the output.
@@ -66,14 +69,19 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		int keyword = 0;
+		// Strip comments first.
+		sptr = strstr(str,"//");
+		comment_start = sptr;
+		if (comment_start != NULL) *comment_start = '\0';
+
+		int keyword1 = 0;
 
 		sptr = strstr(str,"new");
 		while (sptr != NULL)
 		{	// found a possible match
 			if (isspace(*(sptr+3)))
 			{	// definite match
-			keyword = 1;
+			keyword1 = 1;
 			break;
 			}
 			else
@@ -82,14 +90,14 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (keyword == 0)
+		if (keyword1 == 0)
 		{
 			sptr = strstr(str,"malloc");
 			while (sptr != NULL)
 			{	// found a possible match
 				if (isspace(*(sptr+6)) || *(sptr+6) == '(')
 				{	// definite match
-				keyword = 1;
+				keyword1 = 1;
 				break;
 				}
 				else
@@ -99,8 +107,35 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (keyword == 1)
+		if (keyword1 == 1)
 		{	// found a new or malloc in this line
+			end = sptr;
+			while (*end != '\0')
+			{	// sweep for the end of this statement
+				end++;
+				if (*end == ';')
+				{
+					break;
+				}
+			}
+			if (*end == '\0')
+			{
+				printf("Error: couldn't find the end of %s\n",sptr);
+				exit(-1);
+			}
+			start = sptr;
+			while (start != str)
+			{	// sweep for the beginning of this statement
+				start--;
+				if (*start == ';' || *start == '}')
+				{
+					start++;
+					break;
+				}
+			}
+		
+			// Find the variable name to use.
+	
 			while (sptr != str)
 			{	// sweep backward for the '='.
 				sptr--;
@@ -132,32 +167,28 @@ int main(int argc, char *argv[])
 			strcpy(wordstring,sptr);
 			*wordend = c;	// repair str
 
-			sptr1 = sptr;
-			while (*sptr1 != ';')
-			{	// sweep for the end of this statement
-				sptr1++;
-			}
-			*sptr1 = '\0';	// overwrite ';' with end of string marker.
-
-			// Write out the modified line.
-			strcat(str,",m_register((void*)");
-			strcat(str,wordstring);
-			strcat(str,",\"");
-			strcat(str,argv[1]);
-			strcat(str,":");
+			// Create an addition expression to replace the new or malloc call.
+			*end = '\0';
+			strcpy(newline,str);
+			strcat(newline,"; m_register((void*)");
+			strcat(newline,wordstring);
+			strcat(newline,",\"");
+			strcat(newline,argv[1]);
+			strcat(newline,":");
 			sprintf(numstring,"%d",line);
-			strcat(str,numstring);
-			strcat(str,"\");\n");
+			strcat(newline,numstring);
+			strcat(newline,"\");");
+			strcat(newline,end+1);
 		}
 
-		keyword = 0;
+		int keyword2 = 0;
 
 		sptr = strstr(str,"delete");
 		while (sptr != NULL)
 		{	// found a possible match
 			if (isspace(*(sptr+6)))
 			{	// definite match
-			keyword = 1;
+			keyword2 = 1;
 			break;
 			}
 			else
@@ -166,14 +197,14 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (keyword == 0)
+		if (keyword2 == 0)
 		{
 			sptr = strstr(str,"free");
 			while (sptr != NULL)
 			{	// found a possible match
 				if (isspace(*(sptr+4)) || *(sptr+4) == '(')
 				{	// definite match
-				keyword = 1;
+				keyword2 = 1;
 				break;
 				}
 				else
@@ -183,8 +214,35 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (keyword == 1)
+		if (keyword2 == 1)
 		{	// found a delete or free in this line
+			end = sptr;
+			while (*end != '\0')
+			{	// sweep for the end of this statement
+				end++;
+				if (*end == ';')
+				{
+					break;
+				}
+			}
+			if (*end == '\0')
+			{
+				printf("Error: couldn't find the end of %s\n",sptr);
+				exit(-1);
+			}
+			start = sptr;
+			while (start != str)
+			{	// sweep for the beginning of this statement
+				start--;
+				if (*start == ';' || *start == '}')
+				{
+					start++;
+					break;
+				}
+			}
+		
+			// Find the variable name to use.
+	
 			while (1)
 			{	// sweep forward for the end of the delete or free 
 				sptr++;
@@ -207,25 +265,35 @@ int main(int argc, char *argv[])
 			strcpy(wordstring,sptr);
 			*wordend = c;	// repair str
 
-			sptr1 = sptr;
-			while (*sptr1 != ';')
-			{	// sweep for the end of this statement
-				sptr1++;
-			}
-			*sptr1 = '\0';	// overwrite ';' with end of string marker.
-
-			// Write out the additional line.
-			strcat(str,",m_unregister((void*)");
-			strcat(str,wordstring);
-			strcat(str,",\"");
-			strcat(str,argv[1]);
-			strcat(str,":");
+			// Create a compound statement to replace the free or delete call.
+			c = *start;
+			*start = '\0';
+			strcpy(newline,str);
+			*start = c;
+			strcat(newline,"{m_unregister((void*)");
+			strcat(newline,wordstring);
+			strcat(newline,",\"");
+			strcat(newline,argv[1]);
+			strcat(newline,":");
 			sprintf(numstring,"%d",line);
-			strcat(str,numstring);
-			strcat(str,"\");\n");
+			strcat(newline,numstring);
+			strcat(newline,"\");");
+			c = *(end+1);
+			*(end+1) = '\0';
+			strcat(newline,start);
+			strcat(newline,"}");
+			*(end+1) = c;
+			strcat(newline,end+1);
 		}
 
-		if (fputs(str,outfile) == EOF)
+		// put back comments if no alterations were made. Also xfer line
+		if (keyword1 == 0 && keyword2 == 0)
+		{
+			if (comment_start != NULL) *comment_start = '/';
+			strcpy(newline,str);
+		}
+		
+		if (fputs(newline,outfile) == EOF)
 		{
 			printf("Error writing line to %s\n",argv[2]);
 			exit(-1);
