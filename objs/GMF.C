@@ -417,8 +417,7 @@ GMF::FindSolutions(
 			WindVector* new_wv = new WindVector();
 			if (! new_wv)
 				return(0);
-			new_wv->speed = best_spd_idx[phi_idx] * dspd;
-			new_wv->direction = phi_idx * dphi;
+			new_wv->SetSpdDir(best_spd_idx[phi_idx] * dspd, phi_idx * dphi);
 			if (! wvc->ambiguities.Append(new_wv))
 			{
 				delete best_spd_idx;
