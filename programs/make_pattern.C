@@ -161,8 +161,11 @@ main(
 	int iy_zero = 256;
 	double az_width = 1.19*dtr;
 	double elev_width = 1.4*dtr;
-	double x_width = 5.0*2.0*sin(az_width/2);
-	double y_width = 5.0*2.0*sin(elev_width/2);
+	// Interpret x and y as azimuth and elevation angles.
+	double x_width = az_width;
+	double y_width = elev_width;
+//	double x_width = 5.0*2.0*sin(az_width/2);
+//	double y_width = 5.0*2.0*sin(elev_width/2);
 	double x_spacing = x_width/Nx;
 	double y_spacing = y_width/Ny;
 	double max_gaindB = 30.0;
@@ -177,15 +180,24 @@ main(
 			printf("Error allocating pattern array\n");
 			exit(-1);
 		}
-		double x,y,theta,phi,Fn;
+		double r,x,y,theta,phi,Fn;
 		for (int i=0; i < Nx; i++)
 		for (int j=0; j < Ny; j++)
 		{
 			x = (i - ix_zero)*x_spacing;
 			y = (j - iy_zero)*y_spacing;
-			// compute spherical angles
-			theta = asin(sqrt(x*x + y*y));
-			phi = atan2(y,x);
+
+			// Compute spherical angles assuming x and y are components of
+			// the unit look vector in the beam frame.
+			//theta = asin(sqrt(x*x + y*y));
+			//phi = atan2(y,x);
+
+			// Compute spherical angles assuming x and y are azimuth and
+			// elevation angles.
+			Vector3 ulook;
+			ulook.AzimuthElevationSet(1.0,x,y);
+			ulook.SphericalGet(&r,&theta,&phi);
+
 			// compute normalized pattern with width elev_width in the x-z
 			// plane, and width az_width in the y-z plane.
 			// This pattern is for a rectangular aperture with uniform
