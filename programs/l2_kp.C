@@ -218,6 +218,17 @@ main(
 			exit(1);
 		}
 	}
+	else if (strcmp(input_source,"GS2A") == 0)
+	{
+		l2a_file = config_list.Get(L2A_FILE_KEYWORD);
+		l2a.SetFilename(l2a_file);
+		if (! l2a.OpenForReading())
+		{
+			fprintf(stderr, "%s: error opening GSL2A file %s\n",
+				command, l2a_file);
+			exit(1);
+		}
+	}
 	else
 	{
 		fprintf(stderr,"%s: Invalid input source = %s\n",
@@ -456,6 +467,11 @@ main(
 				ml->AppendList(spot);
 			}
 		}
+		else if (strcmp(input_source,"GS2A") == 0)
+		{
+			if (! l2a.ReadGSDataRec()) break;
+			ml = &(l2a.frame.measList);
+		}
 		else
 		{
 			if (! l2a.ReadDataRec()) break;
@@ -469,6 +485,7 @@ main(
 			//-----------------------------//
 
 			float s = m->value;
+//			s = m->incidenceAngle*rtd;
 
 			// all data
 			count_all++;
@@ -480,8 +497,18 @@ main(
 			//------------------------------------------------------------//
 
 			if (pol != m->pol) continue;
+//			if (m->startSliceIdx != 6) continue;
+			if (m->incidenceAngle < (54.24 - 0.06)*dtr ||
+				m->incidenceAngle > (54.24 + 0.06)*dtr) continue; 
 
 			lon_lat.Set(m->centroid);
+
+			// An inelegant fix to a nasty precision problem.
+			if (strcmp(truth_type,"VAP") == 0)
+			{
+				if (lon_lat.latitude < -60.0*dtr) lon_lat.latitude = -60.0*dtr;
+				if (lon_lat.latitude > 60.0*dtr) lon_lat.latitude = 60.0*dtr;
+			}
 
 			if (windfield)
 			{
@@ -538,6 +565,11 @@ main(
 				ml->AppendList(spot);
 			}
 		}
+		else if (strcmp(input_source,"GS2A") == 0)
+		{
+			if (! l2a.ReadGSDataRec()) break;
+			ml = &(l2a.frame.measList);
+		}
 		else
 		{
 			if (! l2a.ReadDataRec()) break;
@@ -551,6 +583,7 @@ main(
 			//----------------------//
 
 			float s = m->value;
+//			s = m->incidenceAngle*rtd;
 
 			// all data
 			diff = s - avg_sigma0;
@@ -563,8 +596,18 @@ main(
 			//------------------------------------------------------------//
 
 			if (pol != m->pol) continue;
+//			if (m->startSliceIdx != 6) continue;
+			if (m->incidenceAngle < (54.24 - 0.06)*dtr ||
+				m->incidenceAngle > (54.24 + 0.06)*dtr) continue; 
 
 			lon_lat.Set(m->centroid);
+
+			// An inelegant fix to a nasty precision problem.
+			if (strcmp(truth_type,"VAP") == 0)
+			{
+				if (lon_lat.latitude < -60.0*dtr) lon_lat.latitude = -60.0*dtr;
+				if (lon_lat.latitude > 60.0*dtr) lon_lat.latitude = 60.0*dtr;
+			}
 
 			if (truth_file)
 			{
