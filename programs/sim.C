@@ -73,10 +73,6 @@ template class List<WindVector>;
 // CONSTANTS //
 //-----------//
 
-// these probably belong somewhere else
-#define SCATTEROMETER_BEAM_A_INDEX		0
-#define SCATTEROMETER_BEAM_B_INDEX		1
-
 //--------//
 // MACROS //
 //--------//
@@ -219,6 +215,17 @@ main(
 	}
 
 	//----------------------//
+	// initialize simulator //
+	//----------------------//
+
+	if (! instrument_sim.Initialize(&(instrument.antenna)))
+	{
+		fprintf(stderr, "%s: error initializing instrument simulator\n",
+			command);
+		exit(1);
+	}
+
+	//----------------------//
 	// cycle through events //
 	//----------------------//
 
@@ -245,7 +252,8 @@ main(
 		}
 		if (need_instrument_event)
 		{
-			instrument_sim.DetermineNextEvent(&instrument_event);
+			instrument_sim.DetermineNextEvent(&(instrument.antenna),
+				&instrument_event);
 			need_instrument_event = 0;
 		}
 
@@ -282,19 +290,12 @@ main(
 
 			switch(instrument_event.eventId)
 			{
-			case InstrumentEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
 				orbit_state = &(spacecraft.orbitState);
 				spacecraft_sim.UpdateOrbit(instrument_event.time,
 					&spacecraft);
 				instrument_sim.ScatSim(instrument_event.time, orbit_state,
-					&instrument, SCATTEROMETER_BEAM_A_INDEX, &windfield, &gmf);
-				break;
-			case InstrumentEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
-				orbit_state = &(spacecraft.orbitState);
-				spacecraft_sim.UpdateOrbit(instrument_event.time,
-					&spacecraft);
-				instrument_sim.ScatSim(instrument_event.time, orbit_state,
-					&instrument, SCATTEROMETER_BEAM_A_INDEX, &windfield, &gmf);
+					&instrument, instrument_event.beamIdx, &windfield, &gmf);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
