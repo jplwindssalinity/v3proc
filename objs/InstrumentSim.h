@@ -17,27 +17,8 @@ static const char rcs_id_instrumentsim_h[] =
 
 //======================================================================
 // CLASSES
-//		SimEvent, InstrumentSim
+//		InstrumentSim
 //======================================================================
-
-
-//======================================================================
-// CLASS
-//		SimEvent
-//
-// DESCRIPTION
-//		The SimEvent object contains an event time and an event.
-//======================================================================
-
-class SimEvent
-{
-public:
-	enum EventE { NONE, UNKNOWN, UPDATE_ORBIT,
-		SCATTEROMETER_BEAM_A_MEASUREMENT, SCATTEROMETER_BEAM_B_MEASUREMENT };
-
-	EventE		event;
-	double		time;
-};
 
 
 //======================================================================
@@ -73,8 +54,8 @@ public:
 	// simulation control //
 	//--------------------//
 
-	int		DetermineNextEvent(SimEvent* event);
-	int		SimulateEvent(Instrument* instrument, SimEvent* event);
+	int		DetermineNextEvent(Event* event);
+	int		SimulateEvent(Instrument* instrument, Event* event);
 	int		GenerateL0(Instrument* instrument, L0* l0);
 
 	//-----------//

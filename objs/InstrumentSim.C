@@ -48,27 +48,27 @@ int InstrumentSim::SetBeamBTimeOffset(double beam_b_time_offset)
 
 int
 InstrumentSim::DetermineNextEvent(
-	SimEvent*		event)
+	Event*		event)
 {
 	int pri_cycle;
 
-	switch(event->event)
+	switch(event->eventId)
 	{
 	case NONE:
-		event->event = SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
+		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
 		break;
-	case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
-		event->event = SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT;
+	case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
+		event->eventId = Event::SCATTEROMETER_BEAM_B_MEASUREMENT;
 		pri_cycle = (int)((event->time + _beamBTimeOffset) / _priPerBeam);
 		event->time = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
 		break;
-	case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
-		event->event = SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
+	case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
+		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
 		pri_cycle = (int)(event->time / _priPerBeam);
 		event->time = _priPerBeam * (double)(pri_cycle + 1);
 		break;
 	default:
-		event->event = SimEvent::UNKNOWN;
+		event->eventId = Event::UNKNOWN;
 		return(0);
 		break;
 	}
@@ -82,16 +82,16 @@ InstrumentSim::DetermineNextEvent(
 int
 InstrumentSim::SimulateEvent(
 	Instrument*		instrument,
-	SimEvent*		event)
+	Event*			event)
 {
 	instrument->time = event->time;
-	switch(event->event)
+	switch(event->eventId)
 	{
-	case SimEvent::UPDATE_ORBIT:
+	case Event::UPDATE_ORBIT:
 		spacecraftSim.UpdateOrbit(instrument->time, &(instrument->spacecraft));
 		break;
-	case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
-	case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+	case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
+	case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
 		spacecraftSim.UpdateOrbit(instrument->time, &(instrument->spacecraft));
 		antennaSim.UpdatePosition(instrument->time, &(instrument->antenna));
 
@@ -100,12 +100,12 @@ InstrumentSim::SimulateEvent(
 		//--------------------------//
 
 		int beam_idx;
-		switch(event->event)
+		switch(event->eventId)
 		{
-		case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+		case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
 			beam_idx = 0;
 			break;
-		case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+		case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
 			beam_idx = 1;
 			break;
 		}
@@ -171,10 +171,10 @@ InstrumentSim::GenerateL0(
     l0->antennaPosition = instrument->antenna.azimuthAngle;
 	switch(instrument->event.eventId)
 	{
-		case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+		case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
 			l0->beam = L0::SCATTEROMETER_BEAM_A;
 			break;
-		case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+		case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
 			l0->beam = L0::SCATTEROMETER_BEAM_B;
 			break;
 	}
