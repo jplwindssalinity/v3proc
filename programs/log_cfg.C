@@ -1,47 +1,45 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		log_cfg
+//    log_cfg
 //
 // SYNOPSIS
-//		log_cfg <sim_config_file> [ output_file ]
+//    log_cfg <config_file> [ output_file ]
 //
 // DESCRIPTION
-//		Reads in the config file (with stomping) and writes it
-//		out for use as a record of the input data.
+//    Reads in a configuration file (with stomping) and writes it
+//    out for use as a record of the input data. Included files
+//    will be followed.
 //
 // OPTIONS
-//		None.
+//    The following options are supported:
+//      [ output_file ]  Write to this file instead of stdout.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>	The sim configuration file.
-//
-//		[ output_file ]		Write the log to this file instead of
-//							stdout.
+//    The following operand is supported:
+//      <config_file>  The configuration file.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% log_cfg sws1b.cfg sws1b.log
+//    An example of a command line is:
+//      % log_cfg sws1b.cfg sws1b.clog
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -49,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -92,7 +90,7 @@ template class List<StringPair>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "[ output_file ]", 0};
+const char* usage_array[] = { "<config_file>", "[ output_file ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -100,56 +98,56 @@ const char* usage_array[] = { "<sim_config_file>", "[ output_file ]", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc < 2 || argc > 3)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc < 2 || argc > 3)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
-	const char* output_file = NULL;
-	if (argc == 3)
-		output_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
+    const char* output_file = NULL;
+    if (argc == 3)
+        output_file = argv[clidx++];
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //---------------------//
+    // read in config file //
+    //---------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading configuration file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//--------------------//
-	// write out log file //
-	//--------------------//
+    //--------------------//
+    // write out log file //
+    //--------------------//
 
-	if (output_file)
-	{
-		if (! config_list.Write(output_file))
-		{
-			fprintf(stderr, "%s: error writing output log file %s\n",
-				command, output_file);
-			exit(1);
-		}
-	}
-	else
-	{
-		if (! config_list.Write(stdout))
-		{
-			fprintf(stderr, "%s: error writing output log file\n", command);
-			exit(1);
-		}
-	}
+    if (output_file)
+    {
+        if (! config_list.Write(output_file))
+        {
+            fprintf(stderr, "%s: error writing output log file %s\n",
+                command, output_file);
+            exit(1);
+        }
+    }
+    else
+    {
+        if (! config_list.Write(stdout))
+        {
+            fprintf(stderr, "%s: error writing output log file\n", command);
+            exit(1);
+        }
+    }
 
-	return (0);
+    return (0);
 }
