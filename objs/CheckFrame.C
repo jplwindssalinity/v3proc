@@ -175,6 +175,28 @@ CheckFrame::Deallocate()
 	return(1);
 }
 
+//------------------//
+// CheckFrame::Size //
+//------------------//
+
+int
+CheckFrame::Size()
+{
+
+  // First, the spot quantities
+  int size = 7*sizeof(double);
+  size += sizeof(int);
+  size += 14*sizeof(float);
+
+  // Next, the slice quantities
+  size += 3*slicesPerSpot*sizeof(double); // centroid
+  size += slicesPerSpot*sizeof(int);      // idx
+  size += 11*slicesPerSpot*sizeof(float); // the rest
+
+  return(size);
+
+}
+
 //------------------------//
 // CheckFrame::Initialize //
 // Prepares for data.     //
