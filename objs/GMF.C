@@ -194,11 +194,11 @@ GMF::FindSolutions(
 			best_obj[phi_idx] > best_obj[phi_idx_minus])
 		{
 			// maximum found -> add to list
-			WindVector* new_wv = new WindVector();
-			if (! new_wv)
+			WindVectorPlus* new_wvp = new WindVectorPlus();
+			if (! new_wvp)
 				return(0);
-			new_wv->SetSpdDir(best_spd_idx[phi_idx] * dspd, phi_idx * dphi);
-			if (! wvc->ambiguities.Append(new_wv))
+			new_wvp->SetSpdDir(best_spd_idx[phi_idx] * dspd, phi_idx * dphi);
+			if (! wvc->ambiguities.Append(new_wvp))
 			{
 				delete best_spd_idx;
 				delete best_obj;
@@ -232,8 +232,8 @@ GMF::RefineSolutions(
 	// for each solution... //
 	//----------------------//
 
-	for (WindVector* wv = wvc->ambiguities.GetHead(); wv;
-		wv = wvc->ambiguities.GetNext())
+	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+		wvp = wvc->ambiguities.GetNext())
 	{
 		//--------------------------------------//
 		// start with initial search resolution //
@@ -246,11 +246,11 @@ GMF::RefineSolutions(
 		// quantize speed and direction to step sizes //
 		//--------------------------------------------//
 
-		int spd_idx = (int)(wv->spd / spd_step + 0.5);
-		wv->spd = (double)spd_idx * spd_step;
+		int spd_idx = (int)(wvp->spd / spd_step + 0.5);
+		wvp->spd = (double)spd_idx * spd_step;
 
-		int phi_idx = (int)(wv->dir / phi_step + 0.5);
-		wv->dir = (double)phi_idx * phi_step;
+		int phi_idx = (int)(wvp->dir / phi_step + 0.5);
+		wvp->dir = (double)phi_idx * phi_step;
 
 		//-----------------------------------------------------//
 		// search until both step sizes are sufficiently small //
@@ -269,8 +269,8 @@ GMF::RefineSolutions(
 			{
 				for (int dphi = -1; dphi <= 1; dphi++)
 				{
-					double obj = _ObjectiveFunction(meas_list,
-						wv->spd + dspd * spd_step, wv->dir + dphi * phi_step);
+					double obj = _ObjectiveFunction(meas_list, wvp->spd +
+						dspd * spd_step, wvp->dir + dphi * phi_step);
 					if (obj > max_obj)
 					{
 						max_obj = obj;
@@ -301,12 +301,12 @@ GMF::RefineSolutions(
 			// update speed and direction for solution //
 			//-----------------------------------------//
 
-			spd_idx = (int)(wv->spd / spd_step + 0.5) + max_dspd;
-			phi_idx = (int)(wv->dir / phi_step + 0.5) + max_dphi;
+			spd_idx = (int)(wvp->spd / spd_step + 0.5) + max_dspd;
+			phi_idx = (int)(wvp->dir / phi_step + 0.5) + max_dphi;
 
-			wv->spd = (double)spd_idx * spd_step;
-			wv->dir = (double)phi_idx * phi_step;
-			wv->obj = max_obj;
+			wvp->spd = (double)spd_idx * spd_step;
+			wvp->dir = (double)phi_idx * phi_step;
+			wvp->obj = max_obj;
 		}
 	}
 

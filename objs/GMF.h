@@ -10,7 +10,7 @@ static const char rcs_id_gmf_h[] =
 	"@(#) $Id$";
 
 #include "PiscTable.h"
-#include "WVC.h"
+#include "Wind.h"
 #include "Meas.h"
 
 

@@ -16,7 +16,7 @@ static const char rcs_id_configsim_h[] =
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
-#include "WindField.h"
+#include "Wind.h"
 
 //======================================================================
 // DESCRIPTION

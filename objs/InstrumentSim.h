@@ -13,7 +13,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Instrument.h"
 #include "AntennaSim.h"
 #include "L00Frame.h"
-#include "WindField.h"
+#include "Wind.h"
 #include "GMF.h"
 #include "Ephemeris.h"
 #include "CoordinateSwitch.h"

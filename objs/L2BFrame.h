@@ -9,7 +9,7 @@
 static const char rcs_id_l20frame_h[] =
 	"@(#) $Id$";
 
-#include "WVC.h"
+#include "Wind.h"
 
 
 //======================================================================
