@@ -63,7 +63,10 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ieeefp.h>
+#include <math.h>
 #include "Misc.h"
+#include "Index.h"
 #include "mudh.h"
 
 //-----------//
@@ -75,6 +78,17 @@ static const char rcs_id[] =
 //-----------//
 
 #define OPTSTRING  ""
+
+const double alpha1 = 1.0;
+const double alpha2 = 1.0;
+const double beta1 = 0.0;
+const double beta2 = 0.0;
+const double a0 = -0.6202;
+const double a1 = -0.0499;
+const double a2 = 0.3283;
+const double a3 = 0.0013;
+const double a4 = -0.4368;
+const double a5 = 0.2895;
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -89,7 +103,29 @@ static const char rcs_id[] =
 //------------------//
 
 const char* usage_array[] = { "<pca_file>", "<pcatab_file>", "<threshold>",
-    "<mudh_file>", "<enof_file>", "<tb_file>", "<output_pflag_file>", 0 };
+    "<mudh_file>", "<enof_file>", "<tb_file>", "<output_flag_file>", 0 };
+
+static double  rain_tab[2][DIM][DIM][DIM][DIM];
+static double  clear_tab[2][DIM][DIM][DIM][DIM];
+static double  count_tab[2][DIM][DIM][DIM][DIM];
+
+static unsigned short  nbd_array[AT_WIDTH][CT_WIDTH];
+static unsigned short  spd_array[AT_WIDTH][CT_WIDTH];
+static unsigned short  dir_array[AT_WIDTH][CT_WIDTH];
+static unsigned short  mle_array[AT_WIDTH][CT_WIDTH];
+
+float qual_array[AT_WIDTH][CT_WIDTH];
+float enof_array[AT_WIDTH][CT_WIDTH];
+
+float tbh_array[AT_WIDTH][CT_WIDTH];
+float tbv_array[AT_WIDTH][CT_WIDTH];
+float tbh_std_array[AT_WIDTH][CT_WIDTH];
+float tbv_std_array[AT_WIDTH][CT_WIDTH];
+float tbh_cnt_array[AT_WIDTH][CT_WIDTH];
+float tbv_cnt_array[AT_WIDTH][CT_WIDTH];
+
+static float           value_tab[AT_WIDTH][CT_WIDTH];
+static unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
 
 //--------------//
 // MAIN PROGRAM //
@@ -130,21 +166,22 @@ main(
     const char* mudh_file = argv[optind++];
     const char* enof_file = argv[optind++];
     const char* tb_file = argv[optind++];
-    const char* output_file = argv[optind++];
+    const char* output_flag_file = argv[optind++];
 
-    //-------------------//
-    // read the pca file //
-    //-------------------//
+    //---------------//
+    // read PCA file //
+    //---------------//
 
     // first index 0=both beams, 1=outer only
-    float pca_weights[2][4][PARAM_COUNT];
+    float pca_weights[2][PC_COUNT][PARAM_COUNT];
     float pca_mean[2][PARAM_COUNT];
     float pca_std[2][PARAM_COUNT];
-    float pca_min[2][PARAM_COUNT];
-    float pca_max[2][PARAM_COUNT];
-    Index pc_index[2][4];
+    float pca_min[2][PC_COUNT];
+    float pca_max[2][PC_COUNT];
+    Index pc_index[2][PC_COUNT];
 
     int opt_outer_swath = 0;
+
     FILE* ifp = fopen(pca_file, "r");
     if (ifp == NULL)
     {
@@ -152,23 +189,39 @@ main(
             pca_file);
         exit(1);
     }
-    fread(pca_weights[0], sizeof(float), 4 * PARAM_COUNT, ifp);
-    fread(pca_mean[0], sizeof(float), PARAM_COUNT, ifp);
-    fread(pca_std[0], sizeof(float), PARAM_COUNT, ifp);
-    fread(pca_min[0], sizeof(float), PARAM_COUNT, ifp);
-    fread(pca_max[0], sizeof(float), PARAM_COUNT, ifp);
-    if (! feof(ifp))
+    unsigned int w_size = PC_COUNT * PARAM_COUNT;
+    if (fread(pca_weights[0], sizeof(float), w_size, ifp) != w_size ||
+        fread(pca_mean[0], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_std[0], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_min[0], sizeof(float), PC_COUNT, ifp) != PC_COUNT ||
+        fread(pca_max[0], sizeof(float), PC_COUNT, ifp) != PC_COUNT)
     {
-        fread(pca_weights[1], sizeof(float), 4 * PARAM_COUNT, ifp);
-        fread(pca_mean[1], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_std[1], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_min[1], sizeof(float), PARAM_COUNT, ifp);
+        fprintf(stderr, "%s: error reading first half of PCA file %s\n",
+            command, pca_file);
+        exit(1);
+    }
+    if (fread(pca_weights[1], sizeof(float), w_size, ifp) != w_size ||
+        fread(pca_mean[1], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_std[1], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_min[1], sizeof(float), PC_COUNT, ifp) != PC_COUNT ||
+        fread(pca_max[1], sizeof(float), PC_COUNT, ifp) != PC_COUNT)
+    {
+        // only complain if it is NOT EOF
+        if (! feof(ifp))
+        {
+            fprintf(stderr, "%s: error reading second half of PCA file %s\n",
+                command, pca_file);
+            exit(1);
+        }
+    }
+    else
+    {
         opt_outer_swath = 1;
     }
     fclose(ifp);
 
     // set up indices
-    for (int pc_idx = 0; pc_idx < 4; pc_idx++)
+    for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
     {
         pc_index[0][pc_idx].SpecifyEdges(pca_min[0][pc_idx],
             pca_max[0][pc_idx], DIM);
@@ -190,7 +243,7 @@ main(
             pcatab_file);
         exit(1);
     }
-    unsigned int size = DIM * DIM * DIR * DIM;
+    unsigned int size = DIM * DIM * DIM * DIM;
     for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
         if (fread(clear_tab[swath_idx], sizeof(double), size, pcatab_ifp) !=
@@ -209,9 +262,19 @@ main(
         }
         else if (swath_idx == 1)
         {
+            opt_outer_swath = 0;
         }
     }
     fclose(pcatab_ifp);
+
+    if (opt_outer_swath)
+    {
+        printf("Full swath\n");
+    }
+    else
+    {
+        printf("Inner swath only\n");
+    }
 
     //-------------------//
     // read in mudh file //
@@ -222,9 +285,9 @@ main(
     {
         fprintf(stderr, "%s: error opening MUDH file %s\n", command,
             mudh_file);
-        fprintf(stderr, "%s: continuing...\n", command);
-        continue;
+        exit(1);
     }
+    unsigned int array_size = CT_WIDTH * AT_WIDTH;
     fread(nbd_array, sizeof(short), array_size, ifp);
     fread(spd_array, sizeof(short), array_size, ifp);
     fread(dir_array, sizeof(short), array_size, ifp);
@@ -240,8 +303,7 @@ main(
     {
         fprintf(stderr, "%s: error opening ENOF file %s\n", command,
             enof_file);
-        fprintf(stderr, "%s: continuing...\n", command);
-        continue;
+        exit(1);
     }
     fread(qual_array, sizeof(float), array_size, ifp);
     fread(enof_array, sizeof(float), array_size, ifp);
@@ -256,8 +318,7 @@ main(
     {
         fprintf(stderr, "%s: error opening Tb file %s\n", command,
             tb_file);
-        fprintf(stderr, "%s: continuing...\n", command);
-        continue;
+        exit(1);
     }
     fread(tbh_array, sizeof(float), array_size, ifp);
     fread(tbv_array, sizeof(float), array_size, ifp);
@@ -271,11 +332,13 @@ main(
     // classify //
     //----------//
 
+    double param[PARAM_COUNT];
+
     for (int ati = 0; ati < AT_WIDTH; ati++)
     {
         for (int cti = 0; cti < CT_WIDTH; cti++)
         {
-            index_tab[ati][cti] = -1.0;
+            value_tab[ati][cti] = -1.0;
             flag_tab[ati][cti] = 2;
 
             // speed, direction, and mle are ALWAYS needed
@@ -295,6 +358,7 @@ main(
             param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
             // NBD is only for both beams
+            int got_nbd = 0;
             if (nbd_array[ati][cti] != MAX_SHORT)
             {
                 param[NBD_IDX] = (double)nbd_array[ati][cti] * 0.001 - 10.0;
@@ -435,10 +499,11 @@ main(
             // look up the value from the rain classification table //
             //------------------------------------------------------//
 
-            float prob_value = rain_tab[pci[0]][pci[1]][pci[2]][pci[3]];
-            index_tab[ati][cti] = mudh_value;
+            float prob_value =
+                rain_tab[swath_idx][pci[0]][pci[1]][pci[2]][pci[3]];
+            value_tab[ati][cti] = prob_value;
 
-            if (mudh_value <= mudh_thresh)
+            if (prob_value <= threshold)
             {
                 flag_tab[ati][cti] = 0;
             }
@@ -449,19 +514,19 @@ main(
         }
     }
 
-    //------------------//
-    // write pflag file //
-    //------------------//
+    //-----------------//
+    // write flag file //
+    //-----------------//
 
-    FILE* ofp = fopen(output_pflag_file, "w");
+    FILE* ofp = fopen(output_flag_file, "w");
     if (ofp == NULL)
     {
         fprintf(stderr, "%s: error opening output file %s\n", command,
-            output_pflag_file);
+            output_flag_file);
         exit(1);
     }
-    fwrite(index_tab, sizeof(float), CT_WIDTH * AT_WIDTH, ofp);
-    fwrite(flag_tab,   sizeof(char), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(value_tab, sizeof(float), CT_WIDTH * AT_WIDTH, ofp);
+    fwrite(flag_tab,  sizeof(char),  CT_WIDTH * AT_WIDTH, ofp);
     fclose(ofp);
 
     return (0);
