@@ -73,10 +73,21 @@ Beam::SetElectricalBoresight(
 	_elecBoresightLook = desired_electrical_look_angle;
 	_elecBoresightAzim = desired_electrical_azimuth_angle;
 
+	CoordinateSwitch total;
+
 	Attitude attitude;
 	attitude.Set(0.0, _elecBoresightLook - pi / 2.0, _elecBoresightAzim,
 		1, 2, 3);
-	_antennaFrameToBeamFrame.SetRotation(attitude);
+	CoordinateSwitch antennaFrameToBoreFrame;
+	antennaFrameToBoreFrame.SetRotation(attitude);
+
+	CoordinateSwitch boreFrameToBeamFrame;
+	attitude.Set(0.0, _electrical_boresight_Em, -_electrical_boresight_Am,
+		1, 2, 3);
+	boreFrameToBeamFrame.SetRotation(attitude);
+
+	_antennaFrameToBeamFrame = antennaFrameToBoreFrame;
+	_antennaFrameToBeamFrame.Append(&boreFrameToBeamFrame);
 
 	return(1);
 }

@@ -19,6 +19,7 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Interpolate.h"
 #include "Array.h"
 #include "Misc.h"
+#include "Constants.h"
 
 
 //------------------//
@@ -949,9 +950,6 @@ FreqGradient(
 // FindPeakGainUsingDeltas //
 //-------------------------//
 
-#define R	0.61803399
-#define C	(1.0-R)
-
 int
 FindPeakGainUsingDeltas(
 	CoordinateSwitch*	antenna_frame_to_gc,
@@ -979,7 +977,7 @@ FindPeakGainUsingDeltas(
 
 	double ax = -angle_offset;
 	double cx = angle_offset;
-	double bx = ax + (cx - ax) * R;
+	double bx = ax + (cx - ax) * golden_r;
 
 	//--------------------//
 	// widen if necessary //
@@ -987,28 +985,37 @@ FindPeakGainUsingDeltas(
 
 	float again, bgain, cgain;
 
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-		*look + ax * delta_look, *azim + ax * delta_azim, &again);
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-		*look + bx * delta_look, *azim + bx * delta_azim, &bgain);
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-		*look + cx * delta_look, *azim + cx * delta_azim, &cgain);
+	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			*look + ax * delta_look, *azim + ax * delta_azim, &again) ||
+		! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			*look + bx * delta_look, *azim + bx * delta_azim, &bgain) ||
+		! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		*look + cx * delta_look, *azim + cx * delta_azim, &cgain))
+	{
+		return(0);
+	}
 
 	do
 	{
 		if (again > bgain)
 		{
 			ax -= angle_offset;
-			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-				*look + ax * delta_look, *azim + ax * delta_azim, &again);
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + ax * delta_look, *azim + ax * delta_azim, &again))
+			{
+				return(0);
+			}
 			continue;
 		}
 
 		if (cgain > bgain)
 		{
 			cx += angle_offset;
-			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-				*look + cx * delta_look, *azim + cx * delta_azim, &cgain);
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + cx * delta_look, *azim + cx * delta_azim, &cgain))
+			{
+				return(0);
+			}
 			continue;
 		}
 
@@ -1025,19 +1032,22 @@ FindPeakGainUsingDeltas(
 	if (cx - bx > bx - ax)
 	{
 		x1 = bx;
-		x2 = bx + C * (cx - bx);
+		x2 = bx + golden_c * (cx - bx);
 	}
 	else
 	{
 		x2 = bx;
-		x1 = bx - C * (bx - ax);
+		x1 = bx - golden_c * (bx - ax);
 	}
 
 	float f1, f2;
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-		*look + x1 * delta_look, *azim + x1 * delta_azim, &f1);
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-		*look + x2 * delta_look, *azim + x2 * delta_azim, &f2);
+	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			*look + x1 * delta_look, *azim + x1 * delta_azim, &f1) ||
+		! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			*look + x2 * delta_look, *azim + x2 * delta_azim, &f2))
+	{
+		return(0);
+	}
 
 	while (x3 - x0 > angle_tol)
 	{
@@ -1045,19 +1055,25 @@ FindPeakGainUsingDeltas(
 		{
 			x0 = x1;
 			x1 = x2;
-			x2 = x2 + C * (x3 - x2);
+			x2 = x2 + golden_c * (x3 - x2);
 			f1 = f2;
-			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-				*look + x2 * delta_look, *azim + x2 * delta_azim, &f2);
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + x2 * delta_look, *azim + x2 * delta_azim, &f2))
+			{
+				return(0);
+			}
 		}
 		else
 		{
 			x3 = x2;
 			x2 = x1;
-			x1 = x1 - C * (x1 - x0);
+			x1 = x1 - golden_c * (x1 - x0);
 			f2 = f1;
-			PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
-				*look + x1 * delta_look, *azim + x1 * delta_azim, &f1);
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+				*look + x1 * delta_look, *azim + x1 * delta_azim, &f1))
+			{
+				return(0);
+			}
 		}
 	}
 
@@ -1096,8 +1112,11 @@ FindPeakGainForSlice(
 	double mid_azim = (azim[0] + azim[1]) / 2.0;
 
 	float mid_gain;
-	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument, mid_look,
-		mid_azim, &mid_gain);
+	if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+		mid_look, mid_azim, &mid_gain))
+	{
+		return(0);
+	}
 
 	if (gain[0] >= mid_gain && gain[0] >= gain[1])
 	{
@@ -1125,7 +1144,9 @@ FindPeakGainForSlice(
 		{
 			return(0);
 		}
-		PeakFit(c, peak_gain);
+		if (! PeakFit(c, peak_gain))
+			return(0);
+
 		return(1);
 	}
 	return(0);

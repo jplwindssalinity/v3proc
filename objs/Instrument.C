@@ -116,29 +116,24 @@ Instrument::GetSliceFreqBw(
 	// determine science index, guard index, and slice bandwidth //
 	//-----------------------------------------------------------//
 
-	float sidx, gidx;
-
 	float half_sci = (float)scienceSlicesPerSpot / 2.0;
 	if (zidx < -half_sci)
 	{
 		// lower guard slice
-		gidx = zidx + half_sci;
-		*f1 = half_sci * scienceSliceBandwidth +
+		*f1 = -half_sci * scienceSliceBandwidth +
 			(zidx + half_sci - 0.5) * guardSliceBandwidth;
 		*bw = guardSliceBandwidth;
 	}
 	else if (zidx > half_sci)
 	{
-		// upper guard slice
-		gidx = zidx - half_sci;
-		*f1 = (half_sci - 1.0) * scienceSliceBandwidth +
+		// in upper guard slice
+		*f1 = half_sci * scienceSliceBandwidth +
 			(zidx - half_sci - 0.5) * guardSliceBandwidth;
 		*bw = guardSliceBandwidth;
 	}
 	else
 	{
-		// no guard slices
-		sidx = zidx;
+		// guard slices
 		*f1 = (zidx - 0.5) * scienceSliceBandwidth;
 		*bw = scienceSliceBandwidth;
 	}
