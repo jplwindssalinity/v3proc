@@ -131,6 +131,7 @@ void Show(char *name = NULL);
 	int		AzimuthElevationGet(double *r, double *az, double *el);
 	int		Set(int index, double value);
 	void	Set(double x1, double x2, double x3);
+	void	Get(double* x1, double* x2, double* x3);
 	double	Get(int idx);
 	int		Get(int idx, double* value);
 	void	Zero();

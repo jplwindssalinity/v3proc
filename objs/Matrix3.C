@@ -721,6 +721,17 @@ _v[2] = x3;
 	return;
 }
 
+void
+Vector3::Get(double* x1, double* x2, double* x3)
+
+{
+
+*x1=_v[0];
+*x2=_v[1];
+*x3=_v[2];
+	return;
+}
+
 //--------------//
 // Vector3::Get //
 //--------------//
