@@ -6,11 +6,9 @@
 static const char rcs_id_l10tol15_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "L10ToL15.h"
-#include "Antenna.h"
-#include "Ephemeris.h"
 #include "InstrumentGeom.h"
-#include "GenericGeom.h"
 #include "Sigma0.h"
 
 #define XMGROUT	0	// Output sigma0 values to stdout? 1/0=YES/NO
@@ -29,6 +27,155 @@ L10ToL15::~L10ToL15()
 	return;
 }
 
+//-------------------//
+// L10ToL15::Convert //
+//-------------------//
+
+int
+L10ToL15::Convert(
+	L10*			l10,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	Ephemeris*		ephemeris,
+	L15*			l15)
+{
+	//--------------//
+	// unpack frame //
+	//--------------//
+
+	l10->frame.Unpack(l10->buffer);
+
+	//-------------------//
+	// set up spacecraft //
+	//-------------------//
+
+	float roll = l10->frame.attitude.GetRoll();
+	float pitch = l10->frame.attitude.GetPitch();
+	float yaw = l10->frame.attitude.GetYaw();
+	spacecraft->attitude.SetRPY(roll, pitch, yaw);
+
+	//----------------------------//
+	// ...free residual MeasSpots //
+	//----------------------------//
+
+	l15->frame.spotList.FreeContents();
+
+	//------------------------//
+	// for each beam cycle... //
+	//------------------------//
+
+	int total_slice_idx = 0;
+	int spot_idx = 0;
+
+	OrbitState orbit_state;
+
+	for (int beam_cycle = 0; beam_cycle < l10->frame.antennaCyclesPerFrame;
+		beam_cycle++)
+	{
+		//------------------//
+		// for each beam... //
+		//------------------//
+
+		Antenna* antenna = &(instrument->antenna);
+
+		for (int beam_idx = 0; beam_idx < antenna->numberOfBeams;
+			beam_idx++)
+		{
+			//--------------------//
+			// calculate the time //
+			//--------------------//
+
+			antenna->currentBeamIdx = beam_idx;
+			Beam* beam = antenna->GetCurrentBeam();
+			double time = l10->frame.time + beam_cycle * antenna->priPerBeam +
+				beam->timeOffset;
+
+			//-------------------//
+			// set up spacecraft //
+			//-------------------//
+
+			if (! ephemeris->GetOrbitState(time, EPHEMERIS_INTERP_ORDER,
+				&orbit_state))
+			{
+				return(0);
+			}
+
+			//-------------------//
+			// set up instrument //
+			//-------------------//
+
+			instrument->time = time;
+			antenna->SetAzimuthWithEncoder(
+				l10->frame.antennaPosition[spot_idx]);
+
+			//---------------------------// 
+			// create a measurement spot //
+			//---------------------------// 
+
+			MeasSpot* meas_spot = new MeasSpot();
+
+			//---------------------//
+			// locate measurements //
+			//---------------------//
+
+			if (l10->frame.slicesPerSpot <= 1)
+			{
+				if (! LocateSpot(time, spacecraft, instrument, meas_spot))
+					return(0);
+			}
+			else
+			{
+				if (! LocateSlices(time, spacecraft, instrument,
+					l10->frame.slicesPerSpot, meas_spot))
+				{
+					return(0);
+				}
+			}
+
+			//----------------------------------------//
+			// generate the reverse coordinate switch //
+			//----------------------------------------//
+			// duplicate work: forward transform already calc'd in Locate*
+
+			CoordinateSwitch antenna_frame_to_gc =
+				AntennaFrameToGC(&orbit_state, &(spacecraft->attitude),
+				antenna);
+			CoordinateSwitch gc_to_antenna =
+				antenna_frame_to_gc.ReverseDirection();
+
+			//-------------------//
+			// for each slice... //
+			//-------------------//
+
+			for (Meas* meas = meas_spot->GetHead(); meas;
+				meas = meas_spot->GetNext())
+			{
+				float k_factor = 1.0;
+				float Pr = l10->frame.science[total_slice_idx];
+				float sigma0;
+				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
+					meas, k_factor, Pr, &sigma0))
+				{
+					return(0);
+				}
+
+				//-----------------//
+				// set measurement //
+				//-----------------//
+
+				meas->value = sigma0;
+				total_slice_idx++;
+			}
+
+			l15->frame.spotList.Append(meas_spot);
+			spot_idx++;
+		}
+	}
+
+	return(1);
+}
+
+/*
 //-------------------//
 // L10ToL15::Convert //
 //-------------------//
@@ -146,7 +293,7 @@ L10ToL15::Convert(
 			//-------------------------------------------------//
 			// calculate ideal Doppler and range tracking info //
 			//-------------------------------------------------//
- 
+
 			Vector3 vector;
 			vector.SphericalSet(1.0, look, azimuth);	//boresight
 			DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument,
@@ -178,14 +325,14 @@ L10ToL15::Convert(
 				//----------------------------------------//
 				// determine the baseband frequency range //
 				//----------------------------------------//
- 
+
 				float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
 				float f2 = f1 + instrument->sliceBandwidth;
 
 				//----------------//
 				// find the slice //
 				//----------------//
- 
+
 				EarthPosition centroid;
 				Vector3 look_vector;
 				// guess at a reasonable slice frequency tolerance of 1%
@@ -202,7 +349,7 @@ L10ToL15::Convert(
 				//---------------------------//
 				// generate measurement data //
 				//---------------------------//
- 
+
 				// get local measurement azimuth
 				CoordinateSwitch gc_to_surface =
 					centroid.SurfaceCoordinateSystem();
@@ -210,21 +357,21 @@ L10ToL15::Convert(
 				double r, theta, phi;
 				rlook_surface.SphericalGet(&r, &theta, &phi);
 				meas->eastAzimuth = phi;
- 
+
 				// get incidence angle
 				meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
 
 				// Calculate Sigma0 from the received Power
 
-				// Eventually Kfactor should be computed (read from table)
-				float Kfactor=1.0;
+				// Eventually k_factor should be computed (read from table)
+				float k_factor=1.0;
 				float sigma0, Pr;
 				Pr=l10->frame.science[total_slice_idx];
 				CoordinateSwitch gc_to_antenna =
 					antenna_frame_to_gc.ReverseDirection();
 
 				if(! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-						meas, Kfactor, Pr, &sigma0))
+						meas, k_factor, Pr, &sigma0))
 				{
 					return(0);	
 				}
@@ -252,3 +399,4 @@ L10ToL15::Convert(
 
 	return(1);
 }
+*/

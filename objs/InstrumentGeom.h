@@ -17,6 +17,9 @@ static const char rcs_id_instrumentgeom_h[] =
 #include "LonLat.h"
 #include "Matrix3.h"
 #include "Matrix3.h"
+#include "Meas.h"
+
+#define POINTS_PER_SPOT_OUTLINE		18
 
 //======================================================================
 // STRUCTURE
@@ -39,6 +42,12 @@ struct TargetInfoPackage {
 
 CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
 						Attitude* attitude, Antenna* antenna);
+
+int		LocateSlices(double time, Spacecraft* spacecraft,
+			Instrument* instrument, int slices_per_spot, MeasSpot* meas_spot);
+
+int		LocateSpot(double time, Spacecraft* spacecraft,
+			Instrument* instrument, MeasSpot* meas_spot);
 
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, double look,

@@ -57,6 +57,308 @@ AntennaFrameToGC(
 	return(total);
 }
 
+//--------------//
+// LocateSlices //
+//--------------//
+
+int
+LocateSlices(
+	double			time,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	int				slices_per_spot,
+	MeasSpot*		meas_spot)
+{
+	//-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//------------------//
+	// set up meas spot //
+	//------------------//
+
+	meas_spot->FreeContents();
+	meas_spot->time = time;
+	meas_spot->scOrbitState = *orbit_state;
+	meas_spot->scAttitude = *attitude;
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//------------------------//
+	// determine slicing info //
+	//------------------------//
+
+	float total_freq = slices_per_spot * instrument->sliceBandwidth;
+	float min_freq = -total_freq / 2.0;
+
+	//-------------------------------------------------//
+	// calculate Doppler shift and receiver gate delay //
+	//-------------------------------------------------//
+
+	Vector3 vector;
+	double look, azimuth;
+
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+		return(0);
+
+	vector.SphericalSet(1.0, look, azimuth);
+	TargetInfoPackage tip;
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+
+	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
+		instrument->antenna.spinRate,&look, &azimuth))
+	{
+		return(0);
+	}
+
+	vector.SphericalSet(1.0, look, azimuth);		// boresight
+	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
+
+	//-------------------//
+	// for each slice... //
+	//-------------------//
+
+	for (int slice_idx = 0; slice_idx < slices_per_spot; slice_idx++)
+	{
+		//-------------------------//
+		// create a new measurment //
+		//-------------------------//
+
+		Meas* meas = new Meas();
+		meas->pol = beam->polarization;
+	
+		//----------------------------------------//
+		// determine the baseband frequency range //
+		//----------------------------------------//
+
+		float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
+		float f2 = f1 + instrument->sliceBandwidth;
+
+		//----------------//
+		// find the slice //
+		//----------------//
+
+		EarthPosition centroid;
+		Vector3 look_vector;
+		// guess at a reasonable slice frequency tolerance of 1%
+		float ftol = fabs(f1 - f2) / 100.0;
+		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
+			look, azimuth, f1, f2, ftol, &(meas->outline), &look_vector,
+			&centroid))
+		{
+			return(0);
+		}
+
+		//---------------------------//
+		// generate measurement data //
+		//---------------------------//
+
+		// get local measurement azimuth
+		CoordinateSwitch gc_to_surface =
+			centroid.SurfaceCoordinateSystem();
+		Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
+		double r, theta, phi;
+		rlook_surface.SphericalGet(&r, &theta, &phi);
+		meas->eastAzimuth = phi;
+
+		// get incidence angle
+		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
+		meas->centroid = centroid;
+
+		//-----------------------------//
+		// add measurment to meas spot //
+		//-----------------------------//
+
+		meas_spot->Append(meas);
+	}
+	return(1);
+}
+
+//------------//
+// LocateSpot //
+//------------//
+
+int
+LocateSpot(
+	double			time,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	MeasSpot*		meas_spot)
+{
+	//-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//------------------//
+	// set up meas spot //
+	//------------------//
+
+	meas_spot->FreeContents();
+	meas_spot->time = time;
+	meas_spot->scOrbitState = *orbit_state;
+	meas_spot->scAttitude = *attitude;
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//---------------------------------------------------//
+	// calculate the look vector in the geocentric frame //
+	//---------------------------------------------------//
+
+	Vector3 rlook_antenna;
+
+	double look, azimuth;
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+	{
+		printf("Error determining electrical boresight\n");
+		return(0);
+	}
+
+	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	TargetInfoPackage tip;
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+
+	//
+	// Using the round trip time from the one way boresight, compute the
+	// direction of the 2 way boresight.  Ideally, this should be iterated,
+	// but the round trip time difference should be very small.
+	//
+
+	if (! Get2WayElectricalBoresight(beam,tip.roundTripTime,
+		instrument->antenna.spinRate,&look, &azimuth))
+	{
+		printf("Error determining 2 way electrical boresight\n");
+		return(0);
+	}
+
+	// Update with new boresight
+	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+
+	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
+
+	//----------------------------//
+	// calculate the 3 dB outline //
+	//----------------------------//
+
+	Meas* meas = new Meas();	// need the outline to append to
+
+	// Start with the center position.
+	EarthPosition *rspot = new EarthPosition;
+	*rspot= tip.rTarget;
+	if (! meas->outline.Append(rspot))
+	{
+		printf("Error appending to spot outline\n");
+		return(0);
+	}
+
+	// get the max gain value.
+	float gp_max;
+	beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
+			instrument->antenna.spinRate,&gp_max);
+
+	// Align beam frame z-axis with the electrical boresight.
+	Attitude beam_frame;
+	beam_frame.Set(0.0,look,azimuth,3,2,1);
+	CoordinateSwitch ant_to_beam(beam_frame);
+	CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
+
+	//
+	// In the beam frame, for a set of azimuth angles, search for the
+	// theta angle that has the required gain product.
+	// Convert the results to the geocentric frame and find
+	// the earth intercepts.
+	//
+	
+	for (int i=0; i < POINTS_PER_SPOT_OUTLINE + 1; i++)
+	{
+		double phi = (two_pi * i) / POINTS_PER_SPOT_OUTLINE;
+
+		// Setup for bisection search for the half power product point.
+
+		double theta_max = 0.0;
+		double theta_min = 5.0*dtr;
+		double theta;
+		int NN = (int)(log((theta_min-theta_max)/(0.01*dtr))/log(2)) + 1;
+		Vector3 look_mid;
+		Vector3 look_mid_ant;
+		Vector3 look_mid_gc;
+
+		for (int j = 1; j <= NN; j++)
+		{	// Bisection search
+			theta = (theta_max + theta_min)/2.0;
+			look_mid.SphericalSet(1.0,theta,phi);
+			look_mid_ant = beam_to_ant.Forward(look_mid);
+			double r,look,azimuth;
+			look_mid_ant.SphericalGet(&r,&look,&azimuth);
+			float gp;
+			beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
+				instrument->antenna.spinRate,&gp);
+			if (gp > 0.5*gp_max)
+			{
+				theta_max = theta;
+			}
+			else
+			{
+				theta_min = theta;
+			}
+		}
+
+		look_mid_gc = antenna_frame_to_gc.Forward(look_mid_ant);
+		EarthPosition *rspot = new EarthPosition;
+		*rspot = earth_intercept(orbit_state->rsat,look_mid_gc);
+		if (! meas->outline.Append(rspot))
+		{
+			printf("Error appending to spot outline\n");
+			return(0);
+		}
+	}
+
+	//---------------------------//
+	// generate measurement data //
+	//---------------------------//
+
+	meas->pol = beam->polarization;
+
+	// get local measurement azimuth
+	CoordinateSwitch gc_to_surface = tip.rTarget.SurfaceCoordinateSystem();
+	Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+	double r, theta, phi;
+	rlook_surface.SphericalGet(&r, &theta, &phi);
+	meas->eastAzimuth = phi;
+
+	// get incidence angle
+	meas->incidenceAngle = tip.rTarget.IncidenceAngle(rlook_gc);
+	meas->centroid = tip.rTarget;
+
+	//-----------------------------//
+	// add measurment to meas spot //
+	//-----------------------------//
+
+	meas_spot->Append(meas);
+
+	return(1);
+}
+
 //-----------//
 // FindSlice //
 //-----------//

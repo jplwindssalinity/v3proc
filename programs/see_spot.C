@@ -71,6 +71,7 @@ static const char rcs_id[] =
 #include "Meas.h"
 #include "Ephemeris.h"
 #include "Wind.h"
+#include "InstrumentGeom.h"
 
 //-----------//
 // TEMPLATES //
@@ -302,8 +303,8 @@ main(
 					// slices //
 					//--------//
 
-					instrument_sim.LocateSlices(instrument_event.time,
-						&spacecraft, &instrument, &meas_spot);
+					LocateSlices(instrument_event.time, &spacecraft,
+						&instrument, instrument_sim.slicesPerSpot, &meas_spot);
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{
@@ -322,8 +323,8 @@ main(
 					// spot //
 					//------//
 
-					instrument_sim.LocateSpot(instrument_event.time,
-						&spacecraft, &instrument, &meas_spot);
+					LocateSpot(instrument_event.time, &spacecraft,
+						&instrument, &meas_spot);
 					Meas* meas = meas_spot.GetHead();
 					meas->outline.WriteBvg(output_fp);
 				}

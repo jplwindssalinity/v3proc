@@ -22,8 +22,6 @@ static const char rcs_id_instrumentsim_h[] =
 //		InstrumentSim
 //======================================================================
 
-#define POINTS_PER_SPOT_OUTLINE		18
-
 //======================================================================
 // CLASS
 //		InstrumentSim
@@ -59,10 +57,6 @@ public:
 	// scatterometer simulation //
 	//--------------------------//
 
-	int		LocateSlices(double time, Spacecraft* spacecraft,
-				Instrument* instrument, MeasSpot* meas_spot);
-	int		LocateSpot(double time, Spacecraft* spacecraft,
-				Instrument* instrument, MeasSpot* meas_spot);
 	int		SetMeasurements(Spacecraft* spacecraft, 
 				Instrument* instrument, 
 				MeasSpot* meas_spot, WindField* windfield,
