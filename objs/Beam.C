@@ -238,6 +238,8 @@ Beam::ReadBeamPattern(char* filename)
 		fread(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
 		fread(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
+		printf("Error reading beam pattern header info from %s\n",filename);
+		fclose(fp);
         return(0);
     }
 
@@ -249,6 +251,8 @@ Beam::ReadBeamPattern(char* filename)
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
+		printf("Invalid beam pattern header info in %s\n",filename);
+		fclose(fp);
         return(0);
     }
 
@@ -256,6 +260,8 @@ Beam::ReadBeamPattern(char* filename)
 	_power_gain = (float**)make_array(sizeof(float),2,_Nx,_Ny);
 	if (_power_gain == NULL)
 	{
+		printf("Can't allocate a pattern array\n");
+		fclose(fp);
 		return(0);
 	}
 
@@ -267,10 +273,13 @@ Beam::ReadBeamPattern(char* filename)
     	{
 			free_array(_power_gain,2,_Nx,_Ny);
 			_power_gain = NULL;
+			printf("Error reading pattern data from %s\n",filename);
+			fclose(fp);
        		return(0);
     	}
 	}
 
+	fclose(fp);
     return(1);
 }
 
@@ -293,11 +302,15 @@ Beam::WriteBeamPattern(char* filename)
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
+		printf("Error in header parameters to be written to %s\n",filename);
+		fclose(fp);
         return(0);
     }
 
 	if (_power_gain == NULL)
 	{
+		printf("No pattern data to write to %s\n",filename);
+		fclose(fp);
 		return(0);
 	}
 
@@ -311,6 +324,8 @@ Beam::WriteBeamPattern(char* filename)
 		fwrite(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
 		fwrite(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
+		printf("Error writing header data to %s\n",filename);
+		fclose(fp);
         return(0);
     }
 
@@ -320,10 +335,13 @@ Beam::WriteBeamPattern(char* filename)
 	{
 		if (fwrite(&(_power_gain[i][j]), sizeof(float), 1, fp) != 1)
     	{
+			printf("Error writing pattern data to %s\n",filename);
+			fclose(fp);
        		return(0);
     	}
 	}
 
+	fclose(fp);
     return(1);
 }
 
