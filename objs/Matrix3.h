@@ -115,6 +115,7 @@ Vector3(double init);
 	Vector3		operator&(Vector3 m2);	// cross product
 	double		operator%(Vector3 m2);	// dot product
 	Vector3		operator/(double s);	// divide by scalar
+	int             operator==(Vector3 m2); 		     
 
 //
 // Other access methods

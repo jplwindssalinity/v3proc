@@ -515,6 +515,17 @@ Vector3::operator/(
 	return(result);
 }
 
+//----------------//
+// operator ==    //
+//----------------//
+
+int
+Vector3::operator==(Vector3 m2)
+{
+       for(int i = 0; i < 3; i++)
+	       if(m2._v[i]!= _v[i]) return(0);
+       return(1);
+}
 
 //
 // Scale the vector to have the specifed magnitude.
