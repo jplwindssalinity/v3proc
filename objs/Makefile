@@ -76,7 +76,9 @@ AntennaSim.o:	AntennaSim.C AntennaSim.h Constants.h
 Beam.o:			Beam.C Beam.h
 BeamSim.o:		BeamSim.C BeamSim.h
 ConfigList.o:	ConfigList.C ConfigList.h List.h
-ConfigSim.o:	ConfigSim.C ConfigSim.h InstrumentSim.h OrbitSim.h
+ConfigSim.o:	ConfigSim.C ConfigSim.h InstrumentSim.h OrbitSim.h \
+				ConfigList.h Instrument.h AntennaSim.h L0.h Orbit.h \
+				List.h Antenna.h Constants.h Matrix3.h Beam.h
 CoordinateSwitch.o:	CoordinateSwitch.C CoordinateSwitch.h Matrix3.h \
 			Constants.h
 GMF.o:			GMF.C GMF.h Interpolate.h
