@@ -1,0 +1,115 @@
+#!/bin/csh
+#-----------------------------------------------------------#
+# Copyright (C) 1998, California Institute of Technology.	#
+# U.S. Government sponsorship acknowledged.					#
+#-----------------------------------------------------------#
+
+#----------------------------------------------------------------------
+# NAME
+#		l2b_six_plot
+#
+# SYNOPSIS
+#		l2b_six_plot <base>
+#
+# DESCRIPTION
+#		Uses xmgr to generate PostScript plots of l2b metrics.
+#		This script only generates RMS speed and direction plots.
+#
+# OPTIONS
+#		None.
+#
+# OPERANDS
+#		The following operand is supported:
+#		<base>		Indicates the base name for metric files.
+#
+# EXAMPLES
+#		An example of a command line is:
+#			% l2b_rms_plot l2b.dat
+#
+# ENVIRONMENT
+#		Not environment dependent
+#
+# EXIT STATUS
+#		The following exit values are returned:
+#		0	Program executed successfully
+#		>0	Program had an error
+#
+# NOTES
+#		None.
+#
+# AUTHOR
+#		James N. Huddleston
+#		hudd@acid.jpl.nasa.gov
+#
+# CONFIGURATION CONTROL
+#		"@(#) $Id$"
+#----------------------------------------------------------------------
+
+#------------------------#
+# Parse the command line #
+#------------------------#
+
+set command_name = $0
+set command_name = $command_name:t
+set opt_string = ""
+
+if ($#argv != 1) then
+  goto usage
+  exit(1)
+endif
+
+set base = $argv[1]
+
+#---------------#
+# get filenames #
+#---------------#
+
+set nspd = *$base*near_rms_spd*
+set ndir = *$base*near_rms_dir*
+
+set sspd = *$base*sel_rms_spd*
+set sdir = *$base*sel_rms_dir*
+
+#-----------------#
+# generate titles #
+#-----------------#
+
+#------#
+# plot #
+#------#
+
+grbatch -device 1 -p $SIM_CENTRAL_TREE/xmgrp/l2b_six_plot.p \
+  -graph 2 -xydy *$base*03*near_rms_spd_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
+  -graph 5 -xydy *$base*03*near_rms_dir_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
+  -graph 1 -xydy *$base*08*near_rms_spd_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
+  -graph 4 -xydy *$base*08*near_rms_dir_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
+  -graph 0 -xydy *$base*20*near_rms_spd_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
+  -graph 3 -xydy *$base*20*near_rms_dir_err \
+    -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
+  -p $SIM_CENTRAL_TREE/xmgrp/l2b_six_plot.p \
+  -printfile 6plot.ps
+
+#  -graph 1 -xydy $nspd -pexec "$spd_title" -pexec "$spd_subtitle" \
+#    -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
+#  -graph 0 -xydy $ndir -pexec "$dir_title" -pexec "$dir_subtitle" \
+#     -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
+
+exit(0)
+
+end
+
+
+#---------------------------#
+# LABEL: usage				#
+#	Explain command usage	#
+#---------------------------#
+
+usage:
+  echo "usage: $command_name <base>"
+  exit(1)
+end
