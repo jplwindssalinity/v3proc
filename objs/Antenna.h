@@ -11,6 +11,8 @@ static const char rcs_id_antenna_h[] =
 
 #include "Beam.h"
 
+#define MAX_NUMBER_OF_BEAMS		2
+
 //======================================================================
 // CLASSES
 //		Antenna
@@ -36,14 +38,12 @@ public:
 	Antenna();
 	~Antenna();
 
-	int		SetNumberOfBeams(int number_of_beams);
-
 	//-----------//
 	// variables //
 	//-----------//
 
 	int		numberOfBeams;
-	Beam*	beam;
+	Beam	beam[MAX_NUMBER_OF_BEAMS];
 
 	double	azimuthAngle;	// antenna azimuth angle
 };

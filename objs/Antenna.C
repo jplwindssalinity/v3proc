@@ -16,7 +16,7 @@ static const char rcs_id_antenna_c[] =
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), beam(NULL), azimuthAngle(0.0)
+:	numberOfBeams(0), azimuthAngle(0.0)
 {
 	return;
 }
@@ -25,19 +25,4 @@ Antenna::~Antenna()
 {
 	free(beam);
 	return;
-}
-
-//---------------------------//
-// Antenna::SetNumberOfBeams //
-//---------------------------//
-
-int
-Antenna::SetNumberOfBeams(
-	int		number_of_beams)
-{
-	beam = (Beam *)malloc(number_of_beams * sizeof(Beam));
-	if (beam == NULL)
-		return(0);
-	numberOfBeams = number_of_beams;
-	return(1);
 }
