@@ -1,7 +1,7 @@
-//==================================================================//
-// Copyright (C) 1997, California Institute of Technology.          //
-// U.S. Goverment sponsorship acknowledged                          //
-//==================================================================//
+//==========================================================//
+// Copyright (C) 1998, California Institute of Technology.	//
+// U.S. Goverment sponsorship acknowledged					//
+//==========================================================//
 
 //==================================================================//
 // Author:  Bryan Stiles   Created 9/18/97                          //
@@ -84,20 +84,19 @@ class RNG
 {
 public:
 
-  RNG(long int seed);
-  RNG();
-  ~RNG();
-  void SetSeed(long int);
-  void SetRandomSeed();
-  double GetDouble();
+	RNG(long int seed);
+	RNG();
+	~RNG();
+	void	SetSeed(long int);
+	void	SetRandomSeed();
+	double	GetDouble();
  
 protected:
 
-void _Init();
-long int _seed;
-long int _output;
-long int _tab[98];
-
+	void		_Init();
+	long int	_seed;
+	long int	_output;
+	long int	_tab[98];
 };
 
 //==================================================================//

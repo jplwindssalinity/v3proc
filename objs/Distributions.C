@@ -50,22 +50,27 @@ float GenericTimelessDist::GetNumber(double time){
 // RNG                         //
 //=============================//
 
-RNG::RNG(long int seed){
+RNG::RNG(
+	long int	seed)
+{
 	SetSeed(seed);
 	return;
 }
 
-RNG::RNG(){
+RNG::RNG()
+{
 	SetRandomSeed();
 	return;
 }
 
-RNG::~RNG(){
+RNG::~RNG()
+{
   return;
 }
 
 void
-RNG::SetSeed(long int seed)
+RNG::SetSeed(
+	long int	seed)
 {
 	if (seed > 0)
 		_seed = -seed;
@@ -76,28 +81,36 @@ RNG::SetSeed(long int seed)
 	_Init();
 }
 
-void RNG::SetRandomSeed(){
+void
+RNG::SetRandomSeed()
+{
 	SetSeed(lrand48() * lrand48());
 	return;
 }
 
-double RNG::GetDouble(){
-  int j=(int)(1+(97.0*_output)/RNG_M);
-  _output=_tab[j];
-  _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
-  _tab[j]=_seed;
-  return((double)(_output)/RNG_M);
+double
+RNG::GetDouble()
+{
+	int j = (int)(97.0 * _output / RNG_M);
+	_output = _tab[j];
+	_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+	_tab[j] = _seed;
+	return((double)(_output)/RNG_M);
 }
 
-void RNG::_Init(){
-  int j;
-  if((_seed=(RNG_IC - _seed) % RNG_M) < 0) _seed=-_seed;
-  for(j=1;j<97;j++){
-    _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
-    _tab[j]=_seed;
-  }
-  _seed=(RNG_IA*_seed + RNG_IC) % RNG_M;
-  _output=_seed;
+void
+RNG::_Init()
+{
+	if((_seed=(RNG_IC - _seed) % RNG_M) < 0)
+		_seed = -_seed;
+	for(int j = 0; j < 97; j++)
+	{
+		_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+		_tab[j] = _seed;
+	}
+	_seed = (RNG_IA * _seed + RNG_IC) % RNG_M;
+	_output = _seed;
+	return;
 }
 
 //============================//
