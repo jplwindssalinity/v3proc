@@ -505,6 +505,8 @@ main(
     {
         for (int nbd_avail = 0; nbd_avail < 2; nbd_avail++)
         {
+            if (param_idx == 0 && nbd_avail == 0)
+                continue;
             for (int idx = 0; idx < 255; idx++)
             {
                 // determine total number of points
@@ -538,6 +540,8 @@ main(
     {
         for (int nbd_avail = 0; nbd_avail < 2; nbd_avail++)
         {
+            if (param_idx == 0 && nbd_avail == 0)
+                continue;
             for (int idx = 0; idx < 255; idx++)
             {
                 if (counts[param_idx][1][0][nbd_avail][idx] == 0 ||
