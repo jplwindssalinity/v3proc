@@ -247,7 +247,7 @@ L2AH.o: L2AH.C L2AH.h Sds.h Constants.h Misc.h L2A.h ETime.h BaseFile.h Meas.h B
 L2AHdf.o: L2AHdf.C L2AHdf.h Constants.h L2A.h BaseFile.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L2AHdfSds.o: L2AHdfSds.C L2AHdfSds.h
 L2AToL2B.o: L2AToL2B.C L2AToL2B.h Constants.h Misc.h L2A.h L2B.h GMF.h BaseFile.h Meas.h WindSwath.h MiscTable.h Wind.h Kp.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix.h AngleInterval.h LonLatWind.h WindVector.h Index.h Kpm.h Kpr.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
-L2B.o: L2B.C L2B.h WindVector.h Wind.h Misc.h Sds.h BaseFile.h WindSwath.h Matrix.h AngleInterval.h LonLatWind.h LonLat.h Index.h List.h Constants.h EarthPosition.h Matrix3.h
+L2B.o: L2B.C L2B.h WindVector.h Wind.h Misc.h HdfHelp.h Sds.h BaseFile.h WindSwath.h Matrix.h AngleInterval.h LonLatWind.h LonLat.h Index.h List.h Constants.h EarthPosition.h Matrix3.h
 LandMap.o: LandMap.C Array.h Constants.h LandMap.h LonLat.h List.h EarthPosition.h Matrix3.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h Constants.h EarthPosition.h List.h Matrix3.h
