@@ -38,8 +38,8 @@ public:
     LonLat();
     ~LonLat();
 
-    Set(EarthPosition r);
-    Set(float lon, float lat);
+    int Set(EarthPosition r);
+    int Set(float lon, float lat);
 
     // this is only an approximation
     int  ApproxApplyDelta(float dlon_km, float dlat_km);
