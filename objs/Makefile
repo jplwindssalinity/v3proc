@@ -7,7 +7,11 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-CPPFLAGS =		-g -fno-implicit-templates -Wall
+DEBUGFLAGS = -O3
+
+
+
+CPPFLAGS =		$(DEBUGFLAGS) -fno-implicit-templates -Wall
 SYSLIBS =		-lm
 CCC =			gcc
 
@@ -71,11 +75,13 @@ INCS = \
 	List.C \
 	BufferedList.C
 
+
 #----------------------------------------------------------------------
 # default: make library
 #----------------------------------------------------------------------
 
 default: $(TARGET_LIB)
+
 
 #----------------------------------------------------------------------
 # depend: list dependencies
@@ -173,3 +179,6 @@ SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix
 Tracking.o: Tracking.C Tracking.h Array.h Instrument.h Constants.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
+
+
+
