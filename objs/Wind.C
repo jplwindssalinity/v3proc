@@ -1473,7 +1473,11 @@ WindField::ReadNCEP1(
 
     struct stat buf;
     if (stat(filename, &buf) != 0)
+    {
+        fprintf(stderr, "WindField::ReadNCEP1: can't stat file %s\n",
+            filename);
         return(0);
+    }
 
     int use_int = 0;
     if (buf.st_size == 522720)
@@ -1485,7 +1489,11 @@ WindField::ReadNCEP1(
 
     FILE* fp = fopen(filename, "r");
     if (fp == NULL)
+    {
+        fprintf(stderr, "WindField::ReadNCEP1: error opening file %s\n",
+            filename);
         return(0);
+    }
 
     //------------//
     // read field //
