@@ -434,7 +434,7 @@ main(
 				}
 				if(trueX_only == NULL){
 				  instrument_sim.ScatSim(&spacecraft,
-					       &instrument,NULL,NULL,NULL,
+					       &instrument,NULL,NULL,NULL, NULL,
 					       &(l00_dummy.frame));
 				}			
 			}
