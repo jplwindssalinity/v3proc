@@ -12,6 +12,7 @@ static const char rcs_id_accurategeom_c[] =
 #include "AccurateGeom.h"
 #include "Qscat.h"
 #include "Misc.h"
+#define OUTPUT_DETAILED_INFO 0
 
 //-----------------//
 // IntegrateSlices //
@@ -498,6 +499,23 @@ IntegrateSlice(
             if (range_gate_clipping)
                 Pf = GetPulseFractionReceived(qscat, range);
 
+
+	    if(OUTPUT_DETAILED_INFO){
+	      double alt, lon, lat;
+	      tip.rTarget.GetAltLonGDLat(&alt,&lon,&lat);
+	      double report_azim=antenna->azimuthAngle;
+	      double rtt=IdealRtt(spacecraft,qscat);
+              report_azim += rtt * antenna->spinRate/2.0;
+              double gp2;
+              int beam_number=qscat->cds.currentBeamIdx;
+	      float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
+              gp2=pow(10.0,2.0 * 0.1 * peak_gain);
+	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g %d\n",
+	          (look1+look2)/2.0*rtd,(azi1+azi2)/2.0*rtd,
+	           lat*rtd,lon*rtd,gatgar/gp2, range, tip.dopplerFreq,
+	          tip.basebandFreq, report_azim*rtd, slice_idx+1);
+ 
+	    }
 	      /*********************************/
 	      /*** Add AGPf/R^4 to sum         */
 	      /*********************************/
