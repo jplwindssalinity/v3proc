@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -373,12 +373,15 @@ int32       sliceIndex)   // index in slices
     floatP = (float*)param->data;
     double sliceLon = (double) *(floatP +
                         pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+    sliceLon /= cos(cellLat);
+    sliceLon += cellLon;
     param = l1bHdf->GetParameter(SLICE_LAT, UNIT_RADIANS);
     assert(param != 0);
     floatP = (float*)param->data;
     double sliceLat = (double) *(floatP +
                         pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
-    centroid.SetAltLonGDLat(0.0, sliceLon+cellLon, sliceLat+cellLat);
+    sliceLat += cellLat;
+    centroid.SetAltLonGDLat(0.0, sliceLon, sliceLat);
 
     //---------------------------------------------------
     // get beamIdx and pol
@@ -395,11 +398,13 @@ int32       sliceIndex)   // index in slices
     else
         measType = VV_MEAS_TYPE;
 
-
-    param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_RADIANS);
+    param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_DEGREES);
     assert(param != 0);
     floatP = (float*)param->data;
-    eastAzimuth = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES + sliceIndex);
+    float northAzimuth = *(floatP + pulseIndex * MAX_L1BHDF_NUM_SLICES +
+        sliceIndex);
+    eastAzimuth = (450.0 - northAzimuth) * dtr;
+    if (eastAzimuth >= two_pi) eastAzimuth -= two_pi;
 
     param = l1bHdf->GetParameter(SLICE_INCIDENCE, UNIT_RADIANS);
     assert(param != 0);
