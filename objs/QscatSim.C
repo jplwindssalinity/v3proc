@@ -33,7 +33,7 @@ QscatSimBeamInfo::~QscatSimBeamInfo()
 //==========//
 
 QscatSim::QscatSim()
-:   epochTime(0.0), epochTimeString(NULL),
+:   pulseCount(0), epochTime(0.0), epochTimeString(NULL),
     startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
     azimuthIntegrationRange(0.0), azimuthStepSize(0.0), dopplerBias(0.0),
     correlatedKpm(0.0), simVs1BCheckfile(NULL), uniformSigmaField(0),
@@ -866,9 +866,8 @@ QscatSim::SetMeasurements(
                   Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, NULL);
                 }
             }
-            if (! sigma0_to_Esn_slice_given_X(qscat, meas, Xfactor, sigma0,
-                simKpcFlag, &(meas->value), &Es, &En,
-                &var_esn_slice))
+            if (! MeasToEsnX(qscat, meas, Xfactor, sigma0,
+                             &(meas->value), &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
@@ -897,9 +896,9 @@ QscatSim::SetMeasurements(
             gc_to_antenna=gc_to_antenna.ReverseDirection();
             double Tp = qscat->ses.txPulseWidth;
 
-            if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, qscat, meas,
-                Kfactor*Tp, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
-                &Es, &En, &var_esn_slice))
+            if (! MeasToEsnK(spacecraft, qscat, meas, Kfactor*Tp, sigma0,
+                             &(meas->value), &Es, &En,
+                             &var_esn_slice, &(meas->XK)))
             {
                 return(0);
             }
@@ -981,6 +980,7 @@ QscatSim::SetL1AScience(
     //-------------------------//
 
     int slice_number = _spotNumber * l1a_frame->slicesPerSpot;
+    if (simVs1BCheckfile) cf->EsnEcho = 0.0;
     for (Meas* meas = meas_spot->GetHead(); meas;
         meas = meas_spot->GetNext())
     {
@@ -989,6 +989,7 @@ QscatSim::SetL1AScience(
         //----------------------------//
 
         l1a_frame->science[slice_number] = (unsigned int)(meas->value);
+        if (simVs1BCheckfile) cf->EsnEcho += meas->value;
         slice_number++;
     }
 
@@ -996,6 +997,7 @@ QscatSim::SetL1AScience(
     float spot_noise;
     sigma0_to_Esn_noise(qscat, meas_spot, simKpcFlag, &spot_noise);
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
+    if (simVs1BCheckfile) cf->EsnNoise = spot_noise;
 
     _spotNumber++;
 
@@ -1162,5 +1164,192 @@ QscatSim::ComputeXfactor(
     return(1);
 }
 
+//----------------------//
+// QscatSim::MeasToEsnX //
+//----------------------//
 
+// This method converts an average sigma0 measurement (of a particular type)
+// to signal + noise energy measurements.
+// The received energy is the sum of the signal energy and the noise energy
+// that falls within the appropriate bandwidth.
+// The total X factor is a required input.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
 
+int
+QscatSim::MeasToEsnX(
+    Qscat*  qscat,
+    Meas*   meas,
+    float   X,
+    float   sigma0,
+    float*  Esn,
+    float*  Es,
+    float*  En,
+    float*  var_esn_slice)
+{
+	//------------------------//
+	// Sanity check on sigma0 //
+	//------------------------//
+
+	if (fabs(sigma0) > 1.0e5)
+	{
+		fprintf(stderr,
+          "Error: QscatSim::MeasToEsnX encountered invalid sigma0 = %g\n",
+          sigma0);
+		exit(-1);
+	}
+
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tp = qscat->ses.txPulseWidth;
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bs = meas->bandwidth;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
+    double L13 = qscat->ses.receivePathLoss;
+
+	//------------------------------------------------------------------------//
+	// Signal (ie., echo) energy referenced to the point just before the
+	// I-Q detection occurs (ie., including the receiver gain and system loss).
+    // X has units of energy because Xcal has units of Pt * Tp.
+	//------------------------------------------------------------------------//
+
+	*Es = X*sigma0;
+
+	//------------------------------------------------------------------------//
+	// Noise power spectral densities referenced the same way as the signal.
+	//------------------------------------------------------------------------//
+
+	double N0_echo = bK * qscat->systemTemperature *
+        qscat->ses.rxGainEcho / L13;
+
+	//-------------------------------------------------------------------//
+    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+	//-------------------------------------------------------------------//
+
+    float q_slice;
+    if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
+    {
+      fprintf(stderr,"QscatSim::MeasToEsnX: Error getting Q value\n");
+      exit(1);
+    }
+
+	//------------------------------------------------------------------------//
+	// Noise energy within one slice referenced like the signal energy.
+	//------------------------------------------------------------------------//
+
+	double En1_slice = N0_echo * Be*q_slice * Tp;		// noise with signal
+	double En2_slice = N0_echo * Be*q_slice * (Tg-Tp);	// noise without signal
+	*En = En1_slice + En2_slice;
+
+	//------------------------------------------------------------------------//
+	// Signal + Noise Energy within one slice referenced like the signal energy.
+	//------------------------------------------------------------------------//
+
+	*Esn = *Es + *En;
+
+	if (simKpcFlag == 0)
+	{
+        *var_esn_slice = 0.0;
+		return(1);
+	}
+
+	//------------------------------------------------------------------------//
+	// Estimate the variance of the slice signal + noise energy measurements.
+	// The variance is simply the sum of the variance when the signal
+	// (and noise) are present together and the variance when only noise
+	// is present.  These variances come from radiometer theory, ie.,
+	// the reciprocal of the time bandwidth product is the normalized variance.
+	// The variance of the power is derived from the variance of the energy.
+	//------------------------------------------------------------------------//
+
+/*
+	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
+*/
+	// the above equation reduces to the following...
+	*var_esn_slice = (*Es + En1_slice)*(*Es + En1_slice) /
+		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
+
+	//------------------------------------------------------------------------//
+	// Fuzz the Esn value by adding a random number drawn from
+	// a gaussian distribution with the variance just computed and zero mean.
+	// This includes both thermal noise effects, and fading due to the
+	// random nature of the surface target.
+	// When the snr is low, the Kpc fuzzing can be large enough that
+	// the processing step will estimate a negative sigma0 from the
+	// fuzzed power.  This is normal, and will occur in real data also.
+	// The wind retrieval has to estimate the variance using the model
+	// sigma0 rather than the measured sigma0 to avoid problems computing
+	// Kpc for weighting purposes.
+	//------------------------------------------------------------------------//
+
+	Gaussian rv(*var_esn_slice,0.0);
+	*Esn += rv.GetNumber();
+
+	return(1);
+}
+
+//----------------------//
+// QscatSim::MeasToEsnK //
+//----------------------//
+
+//
+// This method converts an average sigma0 measurement (of a particular type)
+// to signal + noise energy measurements using a K-factor approach.
+// The K-factor is used along with other geometry information to compute
+// an approximate X-factor which is then passed to MeasToEsnX to
+// finish the conversion to energy.
+// This method assumes that the
+// geometry related factors such as range and antenna gain can be replaced
+// by effective values (instead of integrating over the bandwidth).
+// K-factor should remove any error introduced by this assumption.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
+//
+// Inputs:
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//		to the antenna frame for the prevailing geometry.
+//	spacecraft = pointer to current spacecraft object
+//	qscat = pointer to current Qscat object
+//	meas = pointer to current measurement (sigma0, cell center, area etc.)
+//	Kfactor = Radar equation correction factor for this cell.
+//	sigma0 = true sigma0 to assume.
+//	Esn_slice = pointer to signal+noise energy in a slice.
+//	X = pointer to true total X (ie., X = x*Kfactor).
+//
+
+int
+QscatSim::MeasToEsnK(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    Meas*        meas,
+    float        Kfactor,
+    float        sigma0,
+    float*       Esn,
+    float*       Es,
+    float*       En,
+    float*       var_Esn,
+    float*       X)
+{
+  //--------------------------------------------------------------------//
+  // Setup the geometry transformation needed to compute an approximate
+  // x on the fly. Little x-factor is the total X factor without the
+  // K-factor.
+  //--------------------------------------------------------------------//
+
+  CoordinateSwitch gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+    &(spacecraft->attitude), &(qscat->sas.antenna),
+    qscat->sas.antenna.txCenterAzimuthAngle);
+  gc_to_antenna = gc_to_antenna.ReverseDirection();
+
+  //----------------------------------------------------------------------//
+  // Compute the radar parameter x which includes gain, loss, and geometry
+  // factors in the received power.  This is the true value.  Processing
+  // uses a modified value that includes fuzzing by Kpr.  The total X
+  // includes the K-factor. ie., X = x*K
+  //----------------------------------------------------------------------//
+
+  double x;
+  radar_X(&gc_to_antenna, spacecraft, qscat, meas, &x);
+  *X = x*Kfactor;
+
+  return(MeasToEsnX(qscat, meas, *X, sigma0,
+                    Esn, Es, En, var_Esn));
+}

@@ -74,10 +74,6 @@ public:
     ~Pscat();
 
     int MakeSlices(MeasSpot* meas_spot);
-    int PMeasToEsn(PMeas* meas, PMeas* meas1, PMeas* meas2,
-                  float XK, float sigma0,
-                  int sim_kpc_flag, float* Esn, float* Es, float* En,
-                  float* var_Esn);
 
 };
 

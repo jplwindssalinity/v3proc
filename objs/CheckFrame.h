@@ -13,6 +13,7 @@ static const char rcs_id_checkframe_h[] =
 #include "Matrix3.h"
 #include "EarthPosition.h"
 #include "Wind.h"
+#include "Meas.h"
 
 //======================================================================
 // CLASSES
@@ -44,6 +45,7 @@ public:
 	// Setup //
 	//-------//
 
+	int	Allocate(FILE* fptr);
 	int	Allocate(int slices_per_spot);
 	int	Deallocate();
     int Initialize();
@@ -65,6 +67,7 @@ public:
 	// spot data //
 	//-----------//
 
+	int		        slicesPerSpot;
     unsigned int    pulseCount;
 	double			time;
 	EarthPosition	rsat;
@@ -83,12 +86,15 @@ public:
     float           XdopplerFreq;
     float           XroundTripTime;
     float           alpha;
+    float           EsnEcho;
+    float           EsnNoise;
 
 	//------------//
 	// slice data //
 	//------------//
 
     int*            idx;
+    Meas::MeasTypeE *measType;
 	float*			sigma0;
 	WindVector*		wv;
 	float*			XK;
@@ -101,11 +107,6 @@ public:
     float*          R;
     float*          GatGar;
 
-	//-------------------------//
-	// informational variables //
-	//-------------------------//
-
-	int		slicesPerSpot;
 };
 
 #endif

@@ -83,6 +83,12 @@ public:
     int  SetL1ALoad(Qscat* qscat, L1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
              float* X);
+    int  MeasToEsnX(Qscat* qscat, Meas* meas,
+                    float X, float sigma0,
+                    float* Esn, float* Es, float* En, float* var_Esn);
+    int  MeasToEsnK(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
+                    float K, float sigma0,
+                    float* Esn, float* Es, float* En, float* var_Esn, float* X);
 
     //-----------//
     // variables //

@@ -53,6 +53,10 @@ public:
              Ephemeris* ephemeris, L1B* l1b);
     int  ComputeSigma0Corr(Pscat* qscat, Meas* meas, float Xfactor,
              float Esn_slice, float* Es_slice, float* En_slice);
+    int ComputeSigma0(Pscat* pscat, Meas* meas, float Xfactor, float Esn_slice,
+                   float Esn_echo, float Esn_noise, float En_echo_load,
+                   float En_noise_load, float* Es_slice, float* En_slice);
+
 
     //-----------//
     // variables //

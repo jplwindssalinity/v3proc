@@ -325,6 +325,11 @@ L1AToL1B::Convert(
 
 			if (useKfactor)
 			{
+                fprintf(stderr,
+                    "PscatL1AToL1B::Convert:No K factor algorithm set\n");
+                exit(1);
+
+                /****
 				float orbit_position = qscat->cds.OrbitFraction();
 
 				k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
@@ -343,6 +348,7 @@ L1AToL1B::Convert(
                 {
                     return(0);
                 }
+                ****/
 			}
 			else if (useBYUXfactor)
             {
@@ -361,9 +367,9 @@ L1AToL1B::Convert(
 			    
 			    // meas->value is the Esn value going in
 			    // sigma0 coming out.
-			    if (! compute_sigma0(qscat, meas, x_factor, Esn_slice,
-						 Esn_echo, Esn_noise, En_echo_load, En_noise_load,
-                         &Es_slice, &En_slice))
+                if (! ComputeSigma0(qscat, meas, x_factor, Esn_slice,
+                    Esn_echo, Esn_noise, En_echo_load, En_noise_load,
+                    &Es_slice, &En_slice))
                 {
                     return(0);
                 }
@@ -482,6 +488,8 @@ L1AToL1B::Convert(
           cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
           cf.EsCal = Es_cal;
           cf.alpha = 1.0/beta * En_noise_load/En_echo_load;
+          cf.EsnEcho = Esn_echo;
+          cf.EsnNoise = Esn_noise;
 		  cf.WriteDataRec(fptr);
 		  fclose(fptr);
 		}
@@ -501,3 +509,102 @@ L1AToL1B::Convert(
 
     return(1);
 }
+
+//-------------------------//
+// L1AToL1B::ComputeSigma0 //
+//-------------------------//
+
+//
+// The ComputeSigma0 method estimates sigma0 from five energy
+// measurements and the tabulated X factor.
+// Various outputs are put in the Meas object passed in.
+// Note that the rho-factor is assumed to be 1.0. ie., we assume that
+// all of the signal power falls in the slices.
+//
+// Inputs:
+//	qscat = pointer to current Qscat object
+//	meas = pointer to current measurement (holds results)
+//	Xfactor = Total radar equation parameter for this slice.
+//	Esn_slice = the received slice energy.
+//	Esn_echo = the sum of all the slice energies for this spot.
+//	Esn_noise = the noise channel measured energy.
+//  En_echo_load = reference load echo channel measurement
+//  En_noise_load = reference load noise channel measurement
+//
+
+int
+L1AToL1B::ComputeSigma0(
+    Qscat*  qscat,
+    Meas*   meas,
+    float   Xfactor,
+    float   Esn_slice,
+    float   Esn_echo,
+    float   Esn_noise,
+    float   En_echo_load,
+    float   En_noise_load,
+    float*  Es_slice,
+    float*  En_slice)
+{
+
+	//--------------------------------//
+    // Extract some useful quantities.
+	//--------------------------------//
+
+	double Tp = qscat->ses.txPulseWidth;
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bn = qscat->ses.noiseBandwidth;
+	double Bs = meas->bandwidth;
+//	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
+
+	//-------------------------------------------------------------------//
+    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+	//-------------------------------------------------------------------//
+
+    float q_slice;
+    if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
+    {
+      fprintf(stderr,"compute_sigma0: Error getting Q value\n");
+      exit(1);
+    }
+
+	//-------------------------------------------//
+    // Estimate slice signal and noise energies.
+	//-------------------------------------------//
+
+    if (! Er_to_Es(beta, Esn_slice, Esn_echo, Esn_noise, En_echo_load,
+                   En_noise_load, q_slice, Es_slice, En_slice))
+    {
+      return(0);
+    }
+
+	//------------------------------------------------------------------//
+    // Compute sigma0 from estimated signal energy and X factors.
+	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+	// Kpc comes from Es_slice.
+	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // Xfactor has units of energy because Xcal has units of Pt * Tp.
+	//------------------------------------------------------------------//
+
+	meas->value = *Es_slice / Xfactor;
+    meas->EnSlice = *En_slice;
+
+	//------------------------------------------------------------------//
+	// Store the total X factor.
+	//------------------------------------------------------------------//
+
+    meas->XK = Xfactor;
+
+	//------------------------------------------------------------------//
+	// Estimate Kpc coefficients using the
+	// approximate equations in Mike Spencer's Kpc memos.
+	//------------------------------------------------------------------//
+
+	meas->A = 1.0 / (Bs * Tp);
+	meas->B = 2.0 / (Bs * Tg);
+	meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
+
+	return(1);
+}
+

@@ -32,33 +32,6 @@ int radar_X_PtGr(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 
 //======================================================================
 // Function
-//		sigma0_to_Esn_slice
-//
-// DESCRIPTION
-//		This function computes the signal + noise power received in
-//		a slice.
-//======================================================================
-
-int  sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna,
-         Spacecraft* spacecraft, Qscat* qscat, Meas* meas, float Kfactor,
-         float sigma0, int sim_kpc_flag, float* Esn, float* XK,
-         float* true_Es, float* true_En, float* var_esn_slice);
-
-//======================================================================
-// Function
-//		sigma0_to_Esn_slice_given_X
-//
-// DESCRIPTION
-//		This function computes the signal + noise power received in
-//		a slice. It uses X instead of K.
-//======================================================================
-
-int  sigma0_to_Esn_slice_given_X(Qscat* qscat, Meas* meas, float X,
-         float sigma0, int sim_kpc_flag, float* Esn, float* true_Es,
-         float* true_En, float* var_esn_slice);
-
-//======================================================================
-// Function
 //		sigma0_to_Esn_noise
 //
 // DESCRIPTION
@@ -69,32 +42,6 @@ int  sigma0_to_Esn_slice_given_X(Qscat* qscat, Meas* meas, float X,
 int  sigma0_to_Esn_noise(Qscat* qscat, MeasSpot* spot, int sim_kpc_flag,
          float* Pn);
 
-//=========================================================================
-// Function
-//		Er_to_sigma0
-//
-// The Er_to_sigma0 function computes sigma0 from a signal+noise and noise power
-// measurement for a given instrument state.
-//
-//=========================================================================
-
-int  Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
-         Qscat* qscat, Meas* meas, float Kfactor, float Psn, float sumPsn,
-         float Pn, float PtGr);
-
-//=========================================================================
-// Function
-//		Er_to_sigma0_given_X
-//
-// The Er_to_sigma0_given_X function computes sigma0 from a signal+noise
-// and noise power
-// measurement for a given instrument state using Xfactor rather than Kfactor
-//
-//=========================================================================
-
-int  Er_to_sigma0_given_X(Qscat* qscat, Meas* meas, float Xfactor, float Psn,
-         float sumPsn, float Pn);
-
 int radar_Xcal(Qscat* qscat, float Es_cal, double* Xcal);
 double true_Es_cal(Qscat* qscat);    
 int PtGr_to_Esn(TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
@@ -102,9 +49,6 @@ int PtGr_to_Esn(TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
                 float* Esn_echo_cal, float* Esn_noise_cal);
 int make_load_measurements(Qscat* qscat, float* En_echo_load,
                            float* En_noise_load);
-int compute_sigma0(Qscat* qscat, Meas* meas, float Xfactor, float Esn_slice,
-                   float Esn_echo, float Esn_noise, float En_echo_load,
-                   float En_noise_load, float* Es_slice, float* En_slice);
 int Er_to_Es(float beta, float Esn_slice, float Esn_echo, float Esn_noise,
              float En_echo_load, float En_noise_load, float q_slice,
              float* Es_slice, float* En_slice);

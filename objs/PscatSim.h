@@ -68,12 +68,19 @@ public:
              PscatEvent* pscat_event, MeasSpot* meas_spot,
              CheckFrame* cf,
              WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField);
-    int  SetL1AScience(MeasSpot* meas_spot, Pscat* pscat,
+    int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Pscat* pscat,
              PscatEvent* pscat_event, PscatL1AFrame* pscat_l1a_frame);
     int  SetL1ALoopback(Pscat* pscat, PscatL1AFrame* l1a_frame);
     int  SetL1ALoad(Pscat* pscat, PscatL1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Pscat* pscat, Meas* meas,
              float* X);
+    int  MeasToEsnX(Pscat* pscat, PMeas* meas, PMeas* meas1, PMeas* meas2,
+                    float X, float sigma0,
+                    float* Esn, float* Es, float* En, float* var_Esn);
+    int  MeasToEsnK(Spacecraft* spacecraft, Pscat* pscat, PMeas* meas,
+                    PMeas* meas1, PMeas* meas2,
+                    float K, float sigma0,
+                    float* Esn, float* Es, float* En, float* var_Esn, float* X);
 
     //-----------//
     // variables //

@@ -50,6 +50,9 @@ public:
 
     int  Convert(L1A* l1a, Spacecraft* spacecraft, Qscat* qscat,
              Ephemeris* ephemeris, L1B* l1b);
+    int  ComputeSigma0(Qscat* qscat, Meas* meas, float Xfactor, float Esn_slice,
+                   float Esn_echo, float Esn_noise, float En_echo_load,
+                   float En_noise_load, float* Es_slice, float* En_slice);
 
 	//-----------//
 	// variables //

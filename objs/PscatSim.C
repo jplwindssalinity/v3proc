@@ -220,7 +220,7 @@ PscatSim::ScatSim(
     CheckFrame cf;
     if (simVs1BCheckfile)
     {
-        if (!cf.Allocate(3*pscat->ses.GetTotalSliceCount()))
+        if (!cf.Allocate(pscat->ses.GetTotalSliceCount()))
         {
             fprintf(stderr, "Error allocating a CheckFrame\n");
             return(0);
@@ -316,7 +316,7 @@ PscatSim::ScatSim(
     // Add Spot Specific Info to Frame //
     //---------------------------------//
 
-    if (! SetL1AScience(&meas_spot, pscat, pscat_event, l1a_frame))
+    if (! SetL1AScience(&meas_spot, &cf, pscat, pscat_event, l1a_frame))
         return(0);
     l1a_frame->eventId[_spotNumber] = (unsigned char)pscat_event->eventId;
 
@@ -506,6 +506,7 @@ PscatSim::LoopbackSim(
         l1aFrameReady = 0;  // indicate frame is not ready
     }
 
+    pulseCount++;
     return(1);
 }
 
@@ -569,6 +570,7 @@ PscatSim::LoadSim(
         l1aFrameReady = 0;  // indicate frame is not ready
     }
 
+    pulseCount++;
     return(1);
 }
 
@@ -717,9 +719,21 @@ PscatSim::SetMeasurements(
     //-------------------------//
 
     int slice_i = 0;
+    int slice_count = pscat->ses.GetTotalSliceCount();
     PMeas* meas = (PMeas*)meas_spot->GetHead();
     while (meas)
     {
+        //------------------------------------//
+        // Set slice index for checkframe use //
+        // Overrides the incrementing count   //
+        //------------------------------------//
+
+        if (!rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_i))
+        {
+          fprintf(stderr, "SetMeasurements: Bad slice number\n");
+          exit(1);
+        }
+
         //----------------------------------------//
         // get lon and lat for the earth location //
         //----------------------------------------//
@@ -899,6 +913,7 @@ PscatSim::SetMeasurements(
                 if (simVs1BCheckfile)
                 {
                   Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, cf);
+                  // Note: beamNumber is the same for all slices.
                   cf->beamNumber = pscat->cds.currentBeamIdx;
                 }
                 else
@@ -923,14 +938,14 @@ PscatSim::SetMeasurements(
                 }
                 meas_spot->GotoNext();  // back to the correlation meas
                 meas_spot->GotoNext();
-                if (! pscat->PMeasToEsn(meas, meas1, meas2, Xfactor, sigma0,
-                    simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+                if (! MeasToEsnX(pscat, meas, meas1, meas2, Xfactor, sigma0,
+                    &(meas->value), &Es, &En, &var_esn_slice))
                 {
                     return(0);
                 }
             }
-            else if (! pscat->PMeasToEsn(meas, NULL, NULL, Xfactor, sigma0,
-                simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+            else if (! MeasToEsnX(pscat, meas, NULL, NULL, Xfactor, sigma0,
+                    &(meas->value), &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
@@ -953,22 +968,39 @@ PscatSim::SetMeasurements(
                     meas->startSliceIdx);
             }
 
-            //--------------------------------//
-            // generate the coordinate switch //
-            //--------------------------------//
-
-            gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-                &(spacecraft->attitude), &(pscat->sas.antenna),
-                pscat->sas.antenna.txCenterAzimuthAngle);
-            gc_to_antenna = gc_to_antenna.ReverseDirection();
             double Tp = pscat->ses.txPulseWidth;
 
-            if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, pscat, meas,
-                Kfactor*Tp, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
-                &Es, &En, &var_esn_slice))
+            if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
+                meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
+            {
+                // correlation measurements need extra info to compute Kpc
+                PMeas* meas1 = (PMeas*)meas_spot->GetPrev();  // co-pol
+                PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
+                if (meas1 == NULL || meas2 == NULL)
+                {
+                    fprintf(stderr,
+                        "Error: PscatSim needs triplets of PMeas\n");
+                    return(0);
+                }
+                meas_spot->GotoNext();  // back to the correlation meas
+                meas_spot->GotoNext();
+                if (! MeasToEsnK(spacecraft, pscat, meas, meas1, meas2,
+                    Kfactor*Tp, sigma0,
+                    &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
+                {
+                    return(0);
+                }
+            }
+            else if (! MeasToEsnK(spacecraft, pscat, meas, NULL, NULL,
+                     Kfactor*Tp, sigma0,
+                     &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
             {
                 return(0);
             }
+
+            // Following are true values needed for simulation of Kpc
+            meas->Snr = Es/En;
+            meas->Sigma0 = sigma0;
         }
 
 		if (simVs1BCheckfile)
@@ -1009,6 +1041,7 @@ PscatSim::SetMeasurements(
             }
 
             cf->idx[slice_i] = meas->startSliceIdx;
+            cf->measType[slice_i] = meas->measType;
             cf->var_esn_slice[slice_i] = var_esn_slice;
             cf->Es[slice_i] = Es;
             cf->En[slice_i] = En;
@@ -1032,6 +1065,7 @@ PscatSim::SetMeasurements(
 int
 PscatSim::SetL1AScience(
     MeasSpot*       meas_spot,
+    CheckFrame*     cf,
     Pscat*          pscat,
     PscatEvent*     pscat_event,
     PscatL1AFrame*  l1a_frame)
@@ -1048,6 +1082,7 @@ PscatSim::SetL1AScience(
 
     // determine the spot meas location offset
     int spot_slice_offset = _spotNumber * l1a_frame->slicesPerSpot;
+    if (simVs1BCheckfile) cf->EsnEcho = 0.0;
 
     for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
     {
@@ -1065,6 +1100,7 @@ PscatSim::SetL1AScience(
         case Meas::HH_MEAS_TYPE:
             l1a_frame->copol[spot_slice_offset + slice_idx] =
                 (unsigned int)meas->value;
+            if (simVs1BCheckfile) cf->EsnEcho += meas->value;
             break;
         case Meas::VH_MEAS_TYPE:
         case Meas::HV_MEAS_TYPE:
@@ -1098,6 +1134,7 @@ PscatSim::SetL1AScience(
     float spot_noise;
     sigma0_to_Esn_noise(pscat, &copol_only, simKpcFlag, &spot_noise);
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
+    if (simVs1BCheckfile) cf->EsnNoise = spot_noise;
     copol_only.GotoHead();
     while (copol_only.RemoveCurrent() != NULL)
         ;
@@ -1254,6 +1291,7 @@ PscatSim::SetL1ALoad(
 //--------------------------//
 // PscatSim::ComputeXfactor //
 //--------------------------//
+
 int
 PscatSim::ComputeXfactor(
     Spacecraft*  spacecraft,
@@ -1274,3 +1312,221 @@ PscatSim::ComputeXfactor(
     (*X) *= Xcal/(beam->peakGain * beam->peakGain);
     return(1);
 }
+
+//----------------------//
+// PscatSim::MeasToEsnX //
+//----------------------//
+
+// This method converts an average sigma0 measurement (of a particular type)
+// to signal + noise energy measurements.
+// The received energy is the sum of the signal energy and the noise energy
+// that falls within the appropriate bandwidth.
+// The total X factor is a required input.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
+
+int
+PscatSim::MeasToEsnX(
+    Pscat*  pscat,
+    PMeas*  meas,
+    PMeas*  meas1,
+    PMeas*  meas2,
+    float   X,
+    float   sigma0,
+    float*  Esn,
+    float*  Es,
+    float*  En,
+    float*  var_Esn)
+{
+    SesBeamInfo* ses_beam_info = pscat->GetCurrentSesBeamInfo();
+    double Tp = pscat->ses.txPulseWidth;
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bs = meas->bandwidth;
+
+    //--------------------------------------------------------------------//
+    // Signal (ie., echo) energy referenced to the point just before the
+    // I-Q detection occurs (ie., including the receiver gain and system loss).
+    // X has units of energy because Xcal has units of Pt * Tp.
+    //--------------------------------------------------------------------//
+
+    *Es = X * sigma0;
+
+    //-------------------------------------------//
+    // use measurement type to decide what to do //
+    //-------------------------------------------//
+
+    double N0_echo = bK * pscat->systemTemperature * pscat->ses.rxGainEcho /
+             pscat->ses.receivePathLoss;
+    double En1 = N0_echo * Bs * Tp;       // noise with signal
+    double En2 = N0_echo * Bs * (Tg-Tp);  // noise without signal
+
+    switch (meas->measType)
+    {
+    case Meas::VV_MEAS_TYPE:
+    case Meas::HH_MEAS_TYPE:
+    case Meas::VH_MEAS_TYPE:
+    case Meas::HV_MEAS_TYPE:
+        *En = En1 + En2;
+        *Esn = (float)(*Es + *En);
+        break;
+    case Meas::VV_HV_CORR_MEAS_TYPE:
+    case Meas::HH_VH_CORR_MEAS_TYPE:
+        // Put co-pol/x-pol thermal noise in *En for use in checkframes.
+        *En = En1 + En2;
+        // The thermal noise in the correlation measurement is assumed to be 0.
+        *Esn = *Es;
+        break;
+    default:
+        return(0);
+        break;
+    }
+
+    if (simKpcFlag == 0)
+    {
+        *var_Esn = 0.0;
+        return(1);
+    }
+
+    //--------------------------------------------------------------------//
+    // Estimate the variance of the slice signal + noise energy measurements.
+    // For copolarized measurements,
+    // the variance is simply the sum of the variance when the signal
+    // (and noise) are present together and the variance when only noise
+    // is present.  These variances come from radiometer theory, ie.,
+    // the reciprocal of the time bandwidth product is the normalized variance.
+    // The variance of the power is derived from the variance of the energy.
+    // For correlation measurements,
+    // the variance is a little more complicated as described in M. Spencer's
+    // draft memo.  The true SNR for co-pol and cross-pol measurements is
+    // required.  The variance from the noise only portion is added just like
+    // the co-pol case.
+    //--------------------------------------------------------------------//
+
+    if (meas->measType == Meas::VV_MEAS_TYPE ||
+        meas->measType == Meas::HH_MEAS_TYPE ||
+        meas->measType == Meas::VH_MEAS_TYPE ||
+        meas->measType == Meas::HV_MEAS_TYPE)
+    {
+        // co-pol or cross-pol measurement
+        if (Tg > Tp)
+        {
+            *var_Esn = (*Es + En1)*(*Es + En1) / (Bs*Tp) +
+                En2*En2 / (Bs*(Tg - Tp));
+        }
+        else
+        {
+            // receive gate is filled, so no noise only portion
+            *var_Esn = (*Es + En1)*(*Es + En1) / (Bs*Tg);
+        }
+    }
+    else if (meas1 != NULL && meas2 != NULL)
+    {
+        // correlation measurement (ie., sigma0 = sigma_vvhv or sigma_hhvh)
+        double var_corr = (sigma0*sigma0 + meas1->Sigma0 * meas2->Sigma0 *
+            (1.0 + 1.0/meas1->Snr)*(1.0 + 1.0/meas2->Snr)) / (2*Bs*Tp);
+        if (Tg > Tp)
+        {
+            // since Es=X^2*sigma0, var(Es) = X^2*var(sigma0)
+            *var_Esn = X*X*var_corr + En2*En2 / (Bs*(Tg - Tp));
+        }
+        else
+        {
+            // receive gate is filled, so no noise only portion
+            *var_Esn = X*X*var_corr;
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Error, PscatSim::MeasToEsn needs valid copol and xpol measurements to process correlation measurements\n");
+        exit(1);
+    }
+
+    //--------------------------------------------------------------------//
+    // Fuzz the Esn value by adding a random number drawn from
+    // a gaussian distribution with the variance just computed and zero mean.
+    // This includes both thermal noise effects, and fading due to the
+    // random nature of the surface target.
+    // When the snr is low, the Kpc fuzzing can be large enough that
+    // the processing step will estimate a negative sigma0 from the
+    // fuzzed power.  This is normal, and will occur in real data also.
+    // The wind retrieval has to estimate the variance using the model
+    // sigma0 rather than the measured sigma0 to avoid problems computing
+    // Kpc for weighting purposes.
+    //--------------------------------------------------------------------//
+
+    Gaussian rv(*var_Esn,0.0);
+    *Esn += rv.GetNumber();
+
+    return(1);
+}
+
+//----------------------//
+// PscatSim::MeasToEsnK //
+//----------------------//
+
+//
+// This method converts an average sigma0 measurement (of a particular type)
+// to signal + noise energy measurements using a K-factor approach.
+// The K-factor is used along with other geometry information to compute
+// an approximate X-factor which is then passed to MeasToEsnX to
+// finish the conversion to energy.
+// This method assumes that the
+// geometry related factors such as range and antenna gain can be replaced
+// by effective values (instead of integrating over the bandwidth).
+// K-factor should remove any error introduced by this assumption.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
+//
+// Inputs:
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//		to the antenna frame for the prevailing geometry.
+//	spacecraft = pointer to current spacecraft object
+//	qscat = pointer to current Qscat object
+//	meas = pointer to current measurement (sigma0, cell center, area etc.)
+//	Kfactor = Radar equation correction factor for this cell.
+//	sigma0 = true sigma0 to assume.
+//	Esn_slice = pointer to signal+noise energy in a slice.
+//	X = pointer to true total X (ie., X = x*Kfactor).
+//
+
+int
+PscatSim::MeasToEsnK(
+    Spacecraft*  spacecraft,
+    Pscat*       pscat,
+    PMeas*       meas,
+    PMeas*       meas1,
+    PMeas*       meas2,
+    float        Kfactor,
+    float        sigma0,
+    float*       Esn,
+    float*       Es,
+    float*       En,
+    float*       var_Esn,
+    float*       X)
+{
+
+  //--------------------------------------------------------------------//
+  // Setup the geometry transformation needed to compute an approximate
+  // x on the fly. Little x-factor is the total X factor without the
+  // K-factor.
+  //--------------------------------------------------------------------//
+
+  CoordinateSwitch gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
+    &(spacecraft->attitude), &(pscat->sas.antenna),
+    pscat->sas.antenna.txCenterAzimuthAngle);
+  gc_to_antenna = gc_to_antenna.ReverseDirection();
+
+  //----------------------------------------------------------------------//
+  // Compute the radar parameter x which includes gain, loss, and geometry
+  // factors in the received power.  This is the true value.  Processing
+  // uses a modified value that includes fuzzing by Kpr.  The total X
+  // includes the K-factor. ie., X = x*K
+  //----------------------------------------------------------------------//
+
+  double x;
+  radar_X(&gc_to_antenna, spacecraft, pscat, meas, &x);
+  *X = x*Kfactor;
+
+  return(MeasToEsnX(pscat, meas, meas1, meas2, *X, sigma0,
+                    Esn, Es, En, var_Esn));
+
+}
+
