@@ -75,6 +75,10 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+// Class declarations needed for templates
+// eliminates need to include the entire header file
+class AngleInterval;
+
 template class List<EarthPosition>;
 template class List<StringPair>;
 template class List<Meas>;
@@ -83,6 +87,7 @@ template class List<MeasSpot>;
 template class List<long>;
 template class List<OffsetList>;
 template class List<OrbitState>;
+template class List<AngleInterval>;
 template class BufferedList<OrbitState>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
@@ -371,14 +376,9 @@ main(
 			  qscat.cds.currentBeamIdx = beam_no;
 			  for(int a=0;a<360;a+=10){
 			    azimuth=a*dtr;
-			    qscat.sas.antenna.azimuthAngle = azimuth;
-
-			    // Add offset to azimuth to account for 
-			    // difference in PE and BYU definition
-
-			    double rtt=BYURtt(&spacecraft,&qscat);
-                            double pulse_width=qscat.ses.txPulseWidth;
-			    qscat.sas.antenna.TimeRotation(-(rtt+pulse_width)/2.0);
+                            // Use ground impact azimuth to match BYU
+			    qscat.SetAllAzimuthsUsingGroundImpact(&spacecraft,
+								  azimuth);
 			    TargetInfoPackage tip;
 			    SetDelayAndFrequency(&spacecraft,&qscat,&tip);     
 			  
