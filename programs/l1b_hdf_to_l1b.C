@@ -234,6 +234,14 @@ main(
         }
     }
 
+    rc = l1bHdf.HdfFile::GetStatus();
+    if (rc != HdfFile::OK && rc != HdfFile::NO_MORE_DATA)
+    {
+        fprintf(stderr, "%s: reading HDF %s failed before EOF is reached\n",
+                           argv[0], l1b_hdf_file);
+            exit(1);
+    }
+
 	return (0);
 
 } // main
