@@ -154,8 +154,8 @@ void* dim_setup(int level, int ndims, int dimsize[], int type_size)
 			for (int j=i-1; j >= 0; j--)
 			{	// free the pointers and data already allocated
 				dim_free(sub_ptr[j],level+1,ndims,dimsize);
-				return(NULL);
 			}
+			return(NULL);
 		}
 	}
 
@@ -173,6 +173,8 @@ void* dim_setup(int level, int ndims, int dimsize[], int type_size)
 
 void dim_free(void* ptr, int level, int ndims, int dimsize[])
 {
+
+	if (!ptr) return;
 
 	if (level == ndims-1)
 	{	// reached lowest level, so deallocate the actual data vector
