@@ -16,13 +16,6 @@ static const char rcs_id_wind_c[] =
 #include "NoTimeTlmFile.h"
 #include "hdf_support.h"
 #include "Distributions.h"
-/*
-#include "Constants.h"
-#include "Misc.h"
-#include "AngleInterval.h"
-#include "LonLat.h"
-#include "L1AExtract.h"
-*/
 
 // this should be removed eventually
 #define HDF_NUM_AMBIGUITIES   4
@@ -3718,7 +3711,7 @@ WindSwath::BestKFilter(
 int    g_number_needed = 0;
 float  g_speed_stopper = 0.0;
 float  g_error_ratio_of_best = 1.0;
-float  g_error_of_best = 0.0;
+float  g_error_of_best = 1.0;    // ratio to speed
 float  g_rain_flag_threshold = 1.0;
 int    g_rain_bit_flag_on = 0;
 int**  g_freeze_array = NULL;
@@ -3895,7 +3888,8 @@ WindSwath::MedianFilterPass(
                     }
 
                     // how must does the best beat the second best?
-                    if (second_vector_dif_sum > 0.0)
+                    if (second_vector_dif_sum > 0.0 &&
+                        g_error_ratio_of_best < 1.0)
                     {
                         float ratio = min_vector_dif_sum /
                             second_vector_dif_sum;
@@ -3905,7 +3899,8 @@ WindSwath::MedianFilterPass(
                         }
                     }
                     // how absolutely good is the best?
-                    if (new_selected[cti][ati] != NULL)
+                    if (new_selected[cti][ati] != NULL &&
+                        g_error_of_best < 1.0)
                     {
                         float avg_vector_dif = min_vector_dif_avg /
                             (float)selected_count;
