@@ -263,10 +263,10 @@ RangeTracker::Allocate(
 
 unsigned short
 RangeTracker::OrbitTimeToRangeStep(
-	unsigned int		orbit_time)
+	unsigned int		orbit_ticks)
 {
 	float ticks_per_range_step = (float)_ticksPerOrbit / (float)_rangeSteps;
-	float f_range_step = (float)(orbit_time % _ticksPerOrbit) /
+	float f_range_step = (float)(orbit_ticks % _ticksPerOrbit) /
 		ticks_per_range_step;
 	unsigned short range_step = (unsigned short)f_range_step;
 	range_step %= _rangeSteps;
@@ -319,12 +319,12 @@ RangeTracker::SetInstrument(
 	Instrument*		instrument)
 {
 	int beam_idx = instrument->antenna.currentBeamIdx;
-	int orbit_step = OrbitTimeToRangeStep(instrument->orbitTime);
+	int range_step = OrbitTimeToRangeStep(instrument->orbitTicks);
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	float xpw = beam->pulseWidth;
 
 	float delay, duration;
-	GetDelayAndDuration(beam_idx, orbit_step, xpw, &delay, &duration);
+	GetDelayAndDuration(beam_idx, range_step, xpw, &delay, &duration);
 
 	instrument->receiverGateDelay = delay;
 	instrument->receiverGateDuration = duration;
@@ -332,23 +332,19 @@ RangeTracker::SetInstrument(
 	return(1);
 }
 
-//------------------------//
-// RangeTracker::SetDelay //
-//------------------------//
+//--------------------------------//
+// RangeTracker::SetRoundTripTime //
+//--------------------------------//
 
 int
-RangeTracker::SetDelay(
+RangeTracker::SetRoundTripTime(
 	int		beam_idx,
-	int		orbit_step,
-	float	receiver_gate_duration,		// seconds
-	float	xmit_pulse_width,			// seconds
-	float	delay)
+	int		range_step,
+	float	round_trip_time)
 {
-	float table_delay = delay +
-		(receiver_gate_duration - xmit_pulse_width) / 2.0;
-	unsigned char delay_dn = (unsigned char)(table_delay /
+	unsigned char delay_dn = (unsigned char)(round_trip_time /
 		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	*(*(_delay + beam_idx) + orbit_step) = delay_dn;
+	*(*(_delay + beam_idx) + range_step) = delay_dn;
 
 	return(1);
 }
@@ -370,6 +366,18 @@ RangeTracker::SetDuration(
 		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
 	*(_duration + beam_idx) = duration_dn;
 
+	return(1);
+}
+
+//--------------------------------//
+// RangeTracker::SetTicksPerOrbit //
+//--------------------------------//
+
+int
+RangeTracker::SetTicksPerOrbit(
+	unsigned int	period)
+{
+	_ticksPerOrbit = period;
 	return(1);
 }
 
@@ -418,18 +426,18 @@ RangeTracker::WriteBinary(
 	//--------------------//
 
 	if (fwrite((void *)_duration, sizeof(unsigned char), _numberOfBeams,
-		fp) != 1)
+		fp) != _numberOfBeams)
 	{
-		return(1);
+		return(0);
 	}
 
 	//---------------------------//
 	// write the ticks per orbit //
 	//---------------------------//
 
-	if (fwrite((void *)&_ticksPerOrbit, sizeof(unsigned short), 1, fp) != 1)
+	if (fwrite((void *)&_ticksPerOrbit, sizeof(unsigned int), 1, fp) != 1)
 	{
-		return(1);
+		return(0);
 	}
 
 	//----------------//
@@ -495,18 +503,18 @@ RangeTracker::ReadBinary(
 	//-------------------//
 
 	if (fread((void *)_duration, sizeof(unsigned char), _numberOfBeams,
-		fp) != 1)
+		fp) != _numberOfBeams)
 	{
-		return(1);
+		return(0);
 	}
 
 	//--------------------------//
 	// read the ticks per orbit //
 	//--------------------------//
 
-	if (fread((void *)&_ticksPerOrbit, sizeof(unsigned short), 1, fp) != 1)
+	if (fread((void *)&_ticksPerOrbit, sizeof(unsigned int), 1, fp) != 1)
 	{
-		return(1);
+		return(0);
 	}
 
 	//----------------//

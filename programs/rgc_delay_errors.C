@@ -227,7 +227,6 @@ main(
 		fprintf(stderr, "%s: error configuring simulation times\n", command);
 		exit(1);
 	}
-instrument_start_time = 15870.0;
 	instrument_sim.startTime = instrument_start_time;
 
 	//------------------//
@@ -423,13 +422,8 @@ instrument_start_time = 15870.0;
 					//---------------------------//
 
 					delay_error = delay - ideal_delay;
-
-printf("%.6f  %g %g %g\n", instrument_event.time, look, azimuth, tip.slantRange);
-/*
-fprintf(rgc_err_fp, "%.6f %.11f\n", instrument_event.time, tip.slantRange);
 					fprintf(rgc_err_fp, "%g %g\n", instrument_event.time,
 						delay_error * 1000.0);
-*/
 
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);

@@ -81,6 +81,12 @@ public:
 	int			Eqx(double eqx_time);
 
 	//-----------//
+	// functions //
+	//-----------//
+
+	unsigned int	TimeToOrbitTicks(double time);
+
+	//-----------//
 	// variables //
 	//-----------//
 
@@ -91,7 +97,7 @@ public:
 	// generally varied //
 	//------------------//
 
-	unsigned short	orbitTime;				// 32 Hz ticks
+	unsigned int	orbitTicks;				// 32 Hz ticks
 	float			commandedDoppler;		// Hz
 	float			receiverGateDelay;		// sec
 	float			receiverGateDuration;	// sec

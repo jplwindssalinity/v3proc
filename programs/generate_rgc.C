@@ -85,7 +85,9 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define RANGE_ORBIT_STEPS		256
-#define RANGE_AZIMUTH_STEPS		90		// used for averaging
+#define RANGE_AZIMUTH_STEPS		45		// used for averaging
+
+#define EQX_TIME_TOLERANCE		0.1
 
 //--------//
 // MACROS //
@@ -196,12 +198,20 @@ main(
 		exit(1);
 	}
 
-	//------------//
-	// initialize //
-	//------------//
+	//-----------------------//
+	// mark equator crossing //
+	//-----------------------//
 
 	double start_time = spacecraft_sim.GetEpoch();
 	double orbit_period = spacecraft_sim.GetPeriod();
+
+	start_time += orbit_period / 2.0;
+	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	instrument.Eqx(start_time);
+
+	//------------//
+	// initialize //
+	//------------//
 
 	if (! instrument_sim.Initialize(&(instrument.antenna)))
 	{
@@ -209,7 +219,6 @@ main(
 			command);
 		exit(1);
 	}
-	instrument.Eqx(start_time);
 
 	if (! spacecraft_sim.Initialize(start_time))
 	{
@@ -235,7 +244,6 @@ main(
 
 	for (int orbit_step = 0; orbit_step < RANGE_ORBIT_STEPS; orbit_step++)
 	{
-printf("%d of %d\n", orbit_step, RANGE_ORBIT_STEPS);
 		//--------------------//
 		// calculate the time //
 		//--------------------//
@@ -300,8 +308,8 @@ printf("%d of %d\n", orbit_step, RANGE_ORBIT_STEPS);
 			// set delay //
 			//-----------//
 
-			range_tracker.SetDelay(beam_idx, orbit_step,
-				beam->receiverGateWidth, beam->pulseWidth, (float)avg_rtt);
+			range_tracker.SetRoundTripTime(beam_idx, orbit_step,
+				(float)avg_rtt);
 		}
 	}
 
@@ -315,6 +323,13 @@ printf("%d of %d\n", orbit_step, RANGE_ORBIT_STEPS);
 		Beam* beam = antenna->GetCurrentBeam();
 		range_tracker.SetDuration(beam_idx, beam->receiverGateWidth);
 	}
+
+	//---------------------//
+	// set ticks per orbit //
+	//---------------------//
+
+	unsigned int ticks_per_orbit = instrument.TimeToOrbitTicks(orbit_period);
+	range_tracker.SetTicksPerOrbit(ticks_per_orbit);
 
 	//---------------------------------------//
 	// write out the receiver gate constants //

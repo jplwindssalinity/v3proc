@@ -69,7 +69,7 @@ private:
 	float***			_scale;		// [beam][term][coef_order]
 	unsigned short***	_term;		// [beam][step][term]
 
-	unsigned short		_ticksPerOrbit;		// orbit period
+	unsigned int		_ticksPerOrbit;		// orbit period
 
 	//-----------//
 	// variables //
@@ -116,10 +116,10 @@ public:
 							float xmit_pulse_width, float* delay,
 							float* duration);
 	int					SetInstrument(Instrument* instrument);
-	int					SetDelay(int beam_idx, int range_step,
-							float receiver_gate_width, float xmit_pulse_width,
-							float delay);
+	int					SetRoundTripTime(int beam_idx, int range_step,
+							float round_trip_time);
 	int					SetDuration(int beam_idx, float duration);
+	int					SetTicksPerOrbit(unsigned int period);
 
 	//--------------//
 	// input/output //
@@ -136,7 +136,7 @@ private:
 
 	unsigned char**		_delay;				// delay[beam][step] arrays
 	unsigned char*		_duration;			// duration[beam] terms
-	unsigned short		_ticksPerOrbit;		// orbit period
+	unsigned int		_ticksPerOrbit;		// orbit period
 
 	//-----------//
 	// variables //

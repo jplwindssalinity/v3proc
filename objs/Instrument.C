@@ -30,7 +30,7 @@ InstrumentEvent::~InstrumentEvent()
 //============//
 
 Instrument::Instrument()
-:	time(0.0), orbitTime(0), commandedDoppler(0.0), receiverGateDelay(0.0),
+:	time(0.0), orbitTicks(0), commandedDoppler(0.0), receiverGateDelay(0.0),
 	receiverGateDuration(0.0), systemLoss(0.0), transmitPower(0.0),
 	receiverGain(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
 	systemDelay(0.0), systemTemperature(0.0), baseTransmitFreq(0.0),
@@ -55,7 +55,7 @@ Instrument::SetTime(
 {
 	time = new_time;
 	double time_since_eqx = time - _eqxTime;
-	orbitTime =  (unsigned short)(time_since_eqx * ORBIT_TICKS_PER_SECOND);
+	orbitTicks = TimeToOrbitTicks(time_since_eqx);
 	return(1);
 }
 
@@ -69,4 +69,16 @@ Instrument::Eqx(
 {
 	_eqxTime = eqx_time;
 	return(1);
+}
+
+//------------------------------//
+// Instrument::TimeToOrbitTicks //
+//------------------------------//
+
+unsigned int
+Instrument::TimeToOrbitTicks(
+	double		time)
+{
+	unsigned int ticks = (unsigned int)(time * ORBIT_TICKS_PER_SECOND);
+	return(ticks);
 }
