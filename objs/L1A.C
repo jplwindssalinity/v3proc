@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l1a_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <memory.h>
 #include <malloc.h>
@@ -18,15 +18,15 @@ static const char rcs_id_l1a_c[] =
 //=====//
 
 L1A::L1A()
-:	buffer(NULL), bufferSize(0), gsBuffer(NULL), _status(OK), _calPulseFP(0)
+:    buffer(NULL), bufferSize(0), gsBuffer(NULL), _status(OK), _calPulseFP(0)
 {
-	return;
+    return;
 }
 
 L1A::~L1A()
 {
-	DeallocateBuffer();
-	return;
+    DeallocateBuffer();
+    return;
 }
 
 //---------------------//
@@ -55,18 +55,18 @@ L1A::AllocateBuffer()
 int
 L1A::DeallocateBuffer()
 {
-	if (buffer)
+    if (buffer)
     {
-		free(buffer);
+        free(buffer);
         buffer = 0;
     }
-	bufferSize = 0;
-	if (gsBuffer)
+    bufferSize = 0;
+    if (gsBuffer)
     {
-		free(gsBuffer);
+        free(gsBuffer);
         gsBuffer = 0;
     }
-	return(1);
+    return(1);
 }
 
 //------------------//
@@ -76,21 +76,21 @@ L1A::DeallocateBuffer()
 int
 L1A::ReadDataRec()
 {
-	if (! Read(buffer, bufferSize))
-	{
-		if (EndOfFile())
-		{
-			// end of file, leave status alone (typically status is OK)
-			return(0);
-		}
-		else
-		{
-			// an error occurred
-			_status = ERROR_READING_FRAME;
-			return(0);
-		}
-	}
-	return(1);
+    if (! Read(buffer, bufferSize))
+    {
+        if (EndOfFile())
+        {
+            // end of file, leave status alone (typically status is OK)
+            return(0);
+        }
+        else
+        {
+            // an error occurred
+            _status = ERROR_READING_FRAME;
+            return(0);
+        }
+    }
+    return(1);
 }
 
 //-------------------//
@@ -100,7 +100,7 @@ L1A::ReadDataRec()
 int
 L1A::WriteDataRec()
 {
-	return(Write(buffer, bufferSize));
+    return(Write(buffer, bufferSize));
 }
 
 //--------------------------//
@@ -117,21 +117,21 @@ L1A::WriteDataRecAscii()
 int
 L1A::ReadGSDataRec(void)
 {
-	if (! Read(gsBuffer, GS_L1A_FRAME_SIZE))
-	{
-		if (EndOfFile())
-		{
-			// end of file, leave status alone (typically status is OK)
-			return(0);
-		}
-		else
-		{
-			// an error occurred
-			_status = ERROR_READING_FRAME;
-			return(0);
-		}
-	}
-	return(1);
+    if (! Read(gsBuffer, GS_L1A_FRAME_SIZE))
+    {
+        if (EndOfFile())
+        {
+            // end of file, leave status alone (typically status is OK)
+            return(0);
+        }
+        else
+        {
+            // an error occurred
+            _status = ERROR_READING_FRAME;
+            return(0);
+        }
+    }
+    return(1);
 }
 
 //----------------------------//
@@ -262,17 +262,26 @@ L1A::FillGSFrame(void)
 } // L1A::FillGSFrame
 
 
+//-----------------------------//
+// L1A::OpenCalPulseForWriting //
+//-----------------------------//
+
 int
 L1A::OpenCalPulseForWriting(
-const char*    filename)
+    const char*  filename)
 {
-    if (filename == 0) return 0;
+    if (filename == 0)
+        return 0;
     _calPulseFP = fopen(filename, "w");
     return(_calPulseFP == 0 ? 0 : 1);
 }
 
+//------------------------//
+// L1A::CloseCalPulseFile //
+//------------------------//
+
 int
-L1A::CloseCalPulseFile(void)
+L1A::CloseCalPulseFile()
 {
     if (_calPulseFP == 0)
         return 0;
@@ -287,16 +296,17 @@ L1A::CloseCalPulseFile(void)
     }
 }
 
-//--------------------------//
-// L1A::WriteCalPulse       //
-//--------------------------//
+//--------------------//
+// L1A::WriteCalPulse //
+//--------------------//
 
 int
-L1A::WriteGSCalPulseRec(void)
+L1A::WriteGSCalPulseRec()
 {
 //    int i=0;  // loop counter
 
-    if (_calPulseFP == NULL) return(0);
+    if (_calPulseFP == NULL)
+        return(0);
 
     //------------------------------------------------------------------
     // The record size of the cal pulse file is now 150 bytes, without
@@ -320,19 +330,19 @@ L1A::WriteGSCalPulseRec(void)
     unsigned char beam_num;
     if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
     {
-      // different
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        beam_num = 1;
-      else
-        beam_num = 0;
+        // different
+        if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+            beam_num = 1;
+        else
+            beam_num = 0;
     }
     else
     {
-      // same
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        beam_num = 0;
-      else
-        beam_num = 1;
+        // same
+        if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+            beam_num = 0;
+        else
+            beam_num = 1;
     }
     (void)memcpy(ptr, &beam_num, sizeof(char));
     ptr += sizeof(char);
@@ -392,14 +402,16 @@ L1A::WriteGSCalPulseRec(void)
     return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
 }
 
-//--------------------------//
-// L1A::ReadCalPulse        //
-//--------------------------//
+//-------------------//
+// L1A::ReadCalPulse //
+//-------------------//
 
 int
-L1A::ReadGSCalPulseRec(FILE* calfile)
+L1A::ReadGSCalPulseRec(
+    FILE*  calfile)
 {
-    if (calfile == NULL) return(0);
+    if (calfile == NULL)
+        return(0);
 
     //------------------------------------------------------------------
     // The record size of the cal pulse file is now 150 bytes, without
@@ -409,24 +421,25 @@ L1A::ReadGSCalPulseRec(FILE* calfile)
     int s;
     if ((s = fread(&(frame.time), sizeof(double), 1, calfile)) != 1)
     {
-      if (feof(calfile)) return(0);
-      fprintf(stderr,"Error reading calpulse frame time\n");
-      return(0);
+        if (feof(calfile))
+            return(0);
+        fprintf(stderr, "Error reading calpulse frame time\n");
+        return(0);
     }
 
     unsigned char tpos;
     if (fread(&tpos, sizeof(char), 1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse true_cal_pulse_pos \n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse true_cal_pulse_pos \n");
+        return(0);
     }
     frame.in_eu.true_cal_pulse_pos = tpos;
 
     unsigned char beam_num;
     if (fread(&beam_num, sizeof(char), 1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse beam_num\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse beam_num\n");
+        return(0);
     }
 //    frame.frame_inst_status = need to set correct bit for first pulse;
 
@@ -434,136 +447,137 @@ L1A::ReadGSCalPulseRec(FILE* calfile)
     if ((s=fread((frame.loopbackSlices), sizeof(unsigned int),
               frame.slicesPerSpot, calfile)) != frame.slicesPerSpot)
     {
-      fprintf(stderr,"Error reading calpulse loopbackSlices\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse loopbackSlices\n");
+        return(0);
     }
 
     if (fread(&(frame.loopbackNoise), sizeof(int), 1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse loopbackNoise\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse loopbackNoise\n");
+        return(0);
     }
 
     if ((s=fread((frame.loadSlices), sizeof(unsigned int),
               frame.slicesPerSpot, calfile)) != frame.slicesPerSpot)
     {
-      fprintf(stderr,"Error reading calpulse loadSlices\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse loadSlices\n");
+        return(0);
     }
 
     if (fread(&(frame.loadNoise), sizeof(int), 1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse loadNoise\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse loadNoise\n");
+        return(0);
     }
 
     if (fread(&(frame.in_eu.precision_coupler_temp_eu), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse frame precision_coupler_temp\n");
-      return(0);
+        fprintf(stderr,
+            "Error reading calpulse frame precision_coupler_temp\n");
+        return(0);
     }
     if (fread(&(frame.in_eu.rcv_protect_sw_temp_eu), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse rcv_protect_sw_temp\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse rcv_protect_sw_temp\n");
+        return(0);
     }
     if (fread(&(frame.in_eu.beam_select_sw_temp_eu), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse beam_select_sw_temp\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse beam_select_sw_temp\n");
+        return(0);
     }
     if (fread(&(frame.in_eu.receiver_temp_eu), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse receiver_temp\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse receiver_temp\n");
+        return(0);
     }
     if (fread(&(frame.in_eu.transmit_power_inner), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse transmit_power_inner\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse transmit_power_inner\n");
+        return(0);
     }
     if (fread(&(frame.in_eu.transmit_power_outer), sizeof(float),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse transmit_power_outer\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse transmit_power_outer\n");
+        return(0);
     }
     if (fread(&(frame.frame_inst_status), sizeof(int),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse frame_inst_status\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse frame_inst_status\n");
+        return(0);
     }
     if (fread(&(frame.frame_err_status), sizeof(int),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse frame_err_status\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse frame_err_status\n");
+        return(0);
     }
     int dummy; // 4 bytes at end are not used.
     if (fread(&(dummy), sizeof(int),
               1, calfile) != 1)
     {
-      fprintf(stderr,"Error reading calpulse dummy\n");
-      return(0);
+        fprintf(stderr, "Error reading calpulse dummy\n");
+        return(0);
     }
 
     return(1);
-
 }
 
-//--------------------------//
-// L1A::WriteCalPulseAscii  //
-//--------------------------//
+//-------------------------//
+// L1A::WriteCalPulseAscii //
+//-------------------------//
+
 int
-L1A::WriteGSCalPulseRecAscii(void)
+L1A::WriteGSCalPulseRecAscii()
 {
     int i=0;  // loop counter
 
     if (_calPulseFP == NULL) return(0);
 
-    fprintf(_calPulseFP,"Cal Pulse Record:\n");
+    fprintf(_calPulseFP, "Cal Pulse Record:\n");
     char ftime[25];
     (void)memcpy(ftime, frame.frame_time, 24);
     ftime[24] = '\0';
     fprintf(_calPulseFP, "frame time string (not in actual record): %s\n",
       ftime);
-    fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.time);
+    fprintf(_calPulseFP, "frame_time_secs = %g\n",frame.time);
     for (i=0; i < 12; i++)
     {
-      fprintf(_calPulseFP,"loopbackSlices[%d] = %d\n",
+      fprintf(_calPulseFP, "loopbackSlices[%d] = %d\n",
         i,frame.loopbackSlices[i]);
     }
-    fprintf(_calPulseFP,"loopbackNoise = %d\n",frame.loopbackNoise);
+    fprintf(_calPulseFP, "loopbackNoise = %d\n",frame.loopbackNoise);
 
     for (i=0; i < 12; i++)
     {
-      fprintf(_calPulseFP,"loadSlices[%d] = %d\n",
+      fprintf(_calPulseFP, "loadSlices[%d] = %d\n",
         i,frame.loadSlices[i]);
     }
-    fprintf(_calPulseFP,"loadNoise = %d\n",frame.loadNoise);
-    fprintf(_calPulseFP,"precision_coupler_temp_eu = %g\n",
+    fprintf(_calPulseFP, "loadNoise = %d\n",frame.loadNoise);
+    fprintf(_calPulseFP, "precision_coupler_temp_eu = %g\n",
       frame.in_eu.precision_coupler_temp_eu);
-    fprintf(_calPulseFP,"rcv_protect_sw_temp_eu = %g\n",
+    fprintf(_calPulseFP, "rcv_protect_sw_temp_eu = %g\n",
       frame.in_eu.rcv_protect_sw_temp_eu);
-    fprintf(_calPulseFP,"beam_select_sw_temp_eu = %g\n",
+    fprintf(_calPulseFP, "beam_select_sw_temp_eu = %g\n",
       frame.in_eu.beam_select_sw_temp_eu);
-    fprintf(_calPulseFP,"receiver_temp_eu = %g\n",
+    fprintf(_calPulseFP, "receiver_temp_eu = %g\n",
       frame.in_eu.receiver_temp_eu);
-    fprintf(_calPulseFP,"transmit_power_inner = %g\n",
+    fprintf(_calPulseFP, "transmit_power_inner = %g\n",
       frame.in_eu.transmit_power_inner);
-    fprintf(_calPulseFP,"transmit_power_outer = %g\n",
+    fprintf(_calPulseFP, "transmit_power_outer = %g\n",
       frame.in_eu.transmit_power_outer);
-    fprintf(_calPulseFP,"frame_inst_status = %d\n",
+    fprintf(_calPulseFP, "frame_inst_status = %d\n",
       frame.frame_inst_status);
-    fprintf(_calPulseFP,"frame_err_status = %d\n",
+    fprintf(_calPulseFP, "frame_err_status = %d\n",
       frame.frame_err_status);
-    fprintf(_calPulseFP,"true_cal_pulse_pos = %d\n",
+    fprintf(_calPulseFP, "true_cal_pulse_pos = %d\n",
       frame.in_eu.true_cal_pulse_pos);
 
     // Set beam identifier based on true unit offset position and first pulse
@@ -572,20 +586,19 @@ L1A::WriteGSCalPulseRecAscii(void)
     {
       // different
       if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        fprintf(_calPulseFP,"beam_identifier = %d\n",1);
+        fprintf(_calPulseFP, "beam_identifier = %d\n",1);
       else
-        fprintf(_calPulseFP,"beam_identifier = %d\n",0);
+        fprintf(_calPulseFP, "beam_identifier = %d\n",0);
     }
     else
     {
       // same
       if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        fprintf(_calPulseFP,"beam_identifier = %d\n",0);
+        fprintf(_calPulseFP, "beam_identifier = %d\n",0);
       else
-        fprintf(_calPulseFP,"beam_identifier = %d\n",1);
+        fprintf(_calPulseFP, "beam_identifier = %d\n",1);
     }
-    fprintf(_calPulseFP,"\n");
+    fprintf(_calPulseFP, "\n");
 
-  return(1);
-
+    return(1);
 }
