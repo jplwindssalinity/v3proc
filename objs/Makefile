@@ -119,7 +119,7 @@ BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h L17ToL20.h Wind.h Grid.h ConfigList.h Instrument.h AntennaSim.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h Antenna.h PiscTable.h Matrix3.h BufferedList.h Attitude.h Constants.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
-Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h
+Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h Interpolate.h
 Freq.o: Freq.C 
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h
 GenericFile.o: GenericFile.C GenericFile.h
