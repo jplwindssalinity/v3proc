@@ -127,6 +127,7 @@ public:
 
     int             SetAzimuthWithEncoder(unsigned short encoder_value);
     unsigned short  AzimuthToEncoder(double azimuth);
+    double          EncoderAzimuthToMechanicalAzimuth(double encoder_azimuth);
     int             ApplyAzimuthShift(double sample_delay);
     unsigned short  GetEncoder();
 

@@ -224,20 +224,23 @@ main(
     // select encoder information //
     //----------------------------//
 
-    unsigned int encoder_offset_dn;
+    unsigned int cds_encoder_offset_dn;
+    double sas_encoder_offset;
     switch (qscat.sas.encoderElectronics)
     {
         case ENCODER_A:
-            encoder_offset_dn = ENCODER_A_OFFSET;
+            cds_encoder_offset_dn = CDS_ENCODER_A_OFFSET;
+            sas_encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
             break;
         case ENCODER_B:
-            encoder_offset_dn = ENCODER_B_OFFSET;
+            cds_encoder_offset_dn = CDS_ENCODER_B_OFFSET;
+            sas_encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
             break;
         default:
             fprintf(stderr, "%s: unknown encoder electronics\n", command);
             exit(1);
     }
-    double encoder_offset = (double)encoder_offset_dn * two_pi /
+    double cds_encoder_offset = (double)cds_encoder_offset_dn * two_pi /
         (double)ENCODER_N;
 
     //-------------------------------------------//
@@ -393,11 +396,11 @@ main(
                     2.0;
                 azimuth -= (delay * assumed_spin_rate);
 
-                // subtract the encoder offset
-                azimuth -= encoder_offset;
+                // subtract the cds encoder offset
+                azimuth -= cds_encoder_offset;
 
                 // subtract the internal (sampling) delay angle
-                double cds_pri = (double)qscat.cds.priDn / 10.0;
+                double cds_pri = MS_TO_S * (double)qscat.cds.priDn / 10.0;
                 azimuth -= (cds_pri * assumed_spin_rate);
 
                 // add the actual sampling delay angle
@@ -407,6 +410,9 @@ main(
                 // the two-way gain product is formed correctly
                 azimuth += (qscat.ses.txPulseWidth *
                     qscat.sas.antenna.spinRate / 2.0);
+
+                // apply the sas encoder offset
+                azimuth += sas_encoder_offset;
 
                 //-------------------------//
                 // set the antenna azimuth //
