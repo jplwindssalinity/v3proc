@@ -87,6 +87,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = S4;
         return(1);
     }
+    else if (strcasecmp(wr_method, "POLAR_SPECIAL") == 0)
+    {
+        wrMethod = POLAR_SPECIAL;
+        return(1);
+    }
     else if (strcasecmp(wr_method, "CHEAT") == 0)
     {
         wrMethod = CHEAT;
@@ -147,8 +152,8 @@ L2AToL2B::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-//	float ctd, speed;
-//  WindVectorPlus* wvp;
+    float ctd, speed, dir;
+    WindVectorPlus* wvp;
     static num = 1;
     switch (wrMethod)
     {
@@ -231,21 +236,39 @@ L2AToL2B::ConvertAndWrite(
             }
 	    break;
 
+        case POLAR_SPECIAL:
+            if (! gmf->RetrieveWinds_GS(meas_list, kp, wvc,1))
+            {
+                delete wvc;
+                return(13);
+            }
+	    ctd=(l2a->frame.cti - l2a->header.zeroIndex)
+		*l2a->header.crossTrackResolution;
+            wvp=NULL;
+	    if(wvc) wvp=wvc->ambiguities.GetHead();
+            if(wvp){
+	      speed=wvp->spd;
+	      dir=wvp->dir*rtd;
+	      printf("%g %g %g %d %d\n",ctd,speed,dir,l2a->frame.cti, l2a->frame.ati);
+	      fflush(stdout);
+	    }
+	    break;
+
 
         case CHEAT:
 	  if(!Cheat(meas_list,wvc)){
-	    return(13);
+	    return(14);
 	  }
 	  break;
 
         default:
-            return(14);
+            return(15);
     }
 
 	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
-		return(15);
+		return(16);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
