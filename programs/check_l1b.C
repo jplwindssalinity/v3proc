@@ -84,7 +84,7 @@ template class TrackerBase<unsigned short>;
 //-----------//
 
 #define MAX_FRAMES 1000000000
-#define MAX_SPOTS  10000
+#define MAX_SPOTS  100000
 
 //--------//
 // MACROS //

@@ -307,7 +307,7 @@ main(
 	// start with first events //
 	//-------------------------//
 
-	qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+	qscat_sim.DetermineNextEvent(100, &qscat, &qscat_event);
 
 	//---------------------//
 	// loop through events //
@@ -402,7 +402,7 @@ main(
 //				exit(1);
 				break;
 			}
-            qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+            qscat_sim.DetermineNextEvent(100, &qscat, &qscat_event);
 		}
 
 		//---------------//

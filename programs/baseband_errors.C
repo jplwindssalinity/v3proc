@@ -267,8 +267,12 @@ main(
 	// start with first events //
 	//-------------------------//
 
+    int spots_per_frame = 0;
+    if (! config_list.GetInt("L00_ANTENNA_CYCLES_PER_FRAME", &spots_per_frame))
+      return(0);
+    spots_per_frame *= NUMBER_OF_QSCAT_BEAMS;
 	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-	qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+	qscat_sim.DetermineNextEvent(spots_per_frame, &qscat, &qscat_event);
 
 	//---------------------//
 	// loop through events //
@@ -392,7 +396,8 @@ main(
 					fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
                         qti.basebandFreq, qscat.ses.txDoppler);
 
-					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+					qscat_sim.DetermineNextEvent(spots_per_frame,
+                                                 &qscat, &qscat_event);
 					break;
 
 				default:

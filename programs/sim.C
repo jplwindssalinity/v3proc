@@ -381,7 +381,7 @@ main(
     //-------------------------//
 
     spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame, &qscat, &qscat_event);
 
     //---------------------//
     // loop through events //
@@ -478,7 +478,8 @@ main(
 
                     qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
                         &kp, &kpmField, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                                                 &qscat, &qscat_event);
                     break;
                 case QscatEvent::LOOPBACK_EVENT:
 
@@ -494,7 +495,8 @@ main(
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
                     qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                                                 &qscat, &qscat_event);
                     break;
                 case QscatEvent::LOAD_EVENT:
 
@@ -510,7 +512,8 @@ main(
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
                     qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                                                 &qscat, &qscat_event);
                     break;
                 default:
                     fprintf(stderr, "%s: unknown instrument event\n", command);
