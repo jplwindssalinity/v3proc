@@ -57,14 +57,14 @@ AngleInterval::GetEquallySpacedAngles(
 
 int
 AngleInterval::Read(FILE* fp){
- if(fwrite((void*)&left,sizeof(float),1,fp)!=1) return(0);
- if(fwrite((void*)&right,sizeof(float),1,fp)!=1) return(0);
+ if(fread((void*)&left,sizeof(float),1,fp)!=1) return(0);
+ if(fread((void*)&right,sizeof(float),1,fp)!=1) return(0);
  return(1);
 }
 int
 AngleInterval::Write(FILE* fp){
- if(fread((void*)&left,sizeof(float),1,fp)!=1) return(0);
- if(fread((void*)&right,sizeof(float),1,fp)!=1) return(0);
+ if(fwrite((void*)&left,sizeof(float),1,fp)!=1) return(0);
+ if(fwrite((void*)&right,sizeof(float),1,fp)!=1) return(0);
  return(1);
 }
 
