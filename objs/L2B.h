@@ -13,6 +13,8 @@ static const char rcs_id_l2b_h[] =
 #include "BaseFile.h"
 #include "WindSwath.h"
 
+#define L2B_TYPE  "HDF_L2B"
+
 //======================================================================
 // CLASSES
 //    L2BHeader, L2BFrame, L2B
