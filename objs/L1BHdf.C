@@ -148,8 +148,6 @@ int32   index)   // next HDF data index
             return 0;
         }
     }
-printf("bandwidth = %f\n", configBandwidth);
-printf("txPulseWidth = %f\n", configTxPulseWidth);
 
     return(frame.spotList.UnpackL1BHdf(this, index));
 
