@@ -337,14 +337,14 @@ GMF::FindSolutions(
 	MeasurementList*	measurement_list,
 	WVC*				wvc,
 	double				spd_step,
-	double				phi_step)		// in degrees
+	double				phi_step)		// in radians
 {
 	//---------------------------------------//
 	// determine index ranges and step sizes //
 	//---------------------------------------//
 
-	int phi_count = (int)(360.0 / phi_step);
-	double dphi = two_pi / (double)phi_count;		// in radians
+	int phi_count = (int)(two_pi / phi_step);
+	double dphi = two_pi / (double)phi_count;
 
 	int spd_count = (int)(_spdMax / spd_step);
 	double dspd = _spdMax / (double)spd_count;
