@@ -446,8 +446,9 @@ LocateSpot(
 
 	// get the max gain value.
 	float gp_max;
-	beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-			instrument->antenna.actualSpinRate, &gp_max);
+	if(! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+			instrument->antenna.actualSpinRate, &gp_max))
+	  gp_max=0;
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
@@ -484,8 +485,9 @@ LocateSpot(
 			double r, look, azim;
 			look_mid_ant.SphericalGet(&r,&look,&azim);
 			float gp;
-			beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-				instrument->antenna.actualSpinRate, &gp);
+			if(! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+				instrument->antenna.actualSpinRate, &gp))
+			  gp=0;
 			if (gp > contour_level * gp_max)
 			{
 				theta_max = theta;
@@ -1752,6 +1754,7 @@ PowerGainProduct(
 	if (! instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
 		tip.roundTripTime, instrument->antenna.actualSpinRate, gain))
 	{
+	        gain=0;
 		return(0);
 	}
 	return(1);
@@ -1896,6 +1899,7 @@ NegativePowerGainProduct(
 	void*		beam)
 {
 	double gp;
-	((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp);
+	if(!((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp))
+	  gp=0;
 	return(-gp);
 }

@@ -489,8 +489,9 @@ InstrumentSim::ComputeKfactor(
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-			     instrument->antenna.actualSpinRate, &GatGar);
+	if(!instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+			     instrument->antenna.actualSpinRate, &GatGar))
+	  GatGar=0;
 
 
         retval*=R*R*R*R/GatGar;

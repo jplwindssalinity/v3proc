@@ -60,8 +60,9 @@ radar_X(
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-		instrument->antenna.actualSpinRate, &GatGar);
+	if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+		instrument->antenna.actualSpinRate, &GatGar))
+	  GatGar=0;
 
 	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
 		A3db * lambda*lambda /
@@ -90,8 +91,9 @@ radar_X_PtGr(
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-		instrument->antenna.actualSpinRate,&GatGar);
+	if( ! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+		instrument->antenna.actualSpinRate,&GatGar))
+	  GatGar=0;
 
 	*X = PtGr * GatGar *
 		A3db * lambda*lambda /
