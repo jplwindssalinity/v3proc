@@ -83,7 +83,8 @@ template class TrackerBase<unsigned short>;
 
 #define OPTSTRING  "f:h"
 
-#define NO_COPOL_STRING  "copol0"
+#define NO_COPOL_STRING         "copol0"
+#define NO_START_FRAMES_STRING  "start0"
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -107,6 +108,7 @@ main(
 
     int opt_no_correlation = 0;
     int opt_no_copol = 0;
+    int opt_no_start_frames = 0;
     int opt_no_aft_look = 0;
     int opt_no_fore_look = 0;
     int opt_no_inner_beam = 0;
@@ -135,6 +137,10 @@ main(
             else if (strcasecmp(optarg, NO_COPOL_STRING) == 0)
             {
                 opt_no_copol = 1;
+            }
+            else if (strcasecmp(optarg, NO_START_FRAMES_STRING) == 0)
+            {
+                opt_no_start_frames = 1;
             }
             else if (strcasecmp(optarg, "aft0") == 0)
             {
@@ -172,6 +178,8 @@ main(
             printf("  corr0  : Remove correlation measurements\n");
             printf("%8s : Remove copolarization measurements\n",
                 NO_COPOL_STRING);
+            printf("%8s : Remove first two frames\n",
+                NO_START_FRAMES_STRING);
             printf("  aft0   : Remove aft look measurements\n");
             printf("  fore0  : Remove fore look measurements\n");
             printf("  inner0 : Remove inner beam measurements\n");
@@ -243,6 +251,10 @@ main(
             remove = remove || (opt_no_copol &&
                 (meas->measType == Meas::VV_MEAS_TYPE ||
                 meas->measType == Meas::HH_MEAS_TYPE));
+
+            // start frames (first two frames)
+            remove = remove || (opt_no_start_frames &&
+                (wvc_in == 1 || wvc_in == 2));
 
             remove = remove || (opt_no_aft_look && meas->scanAngle>pi/2 &&
                 meas->scanAngle < 3*pi/2);
