@@ -50,22 +50,25 @@ public:
 	// analyze //
 	//---------//
 
-	int		GetCoefs(PolE pol, double inc, double spd, double* A0, double* A1,
-				double* A1_phase, double* A2, double* A2_phase, double* A3,
-				double* A3_phase, double* A4, double* A4_phase);
+	int		GetCoefs(PolE pol, float inc, float spd, float* A0, float* A1,
+				float* A1_phase, float* A2, float* A2_phase, float* A3,
+				float* A3_phase, float* A4, float* A4_phase);
 
 	//----------------//
 	// wind retrieval //
 	//----------------//
 
 	int		FindSolutions(MeasList* meas_list, WVC* wvc,
-				double spd_step, double phi_step);
+				float spd_step, float phi_step);
 	int		RefineSolutions(MeasList* meas_list, WVC* wvc,
-				double initial_spd_step, double initial_phi_step,
-				double final_spd_step, double final_phi_step);
+				float initial_spd_step, float initial_phi_step,
+				float final_spd_step, float final_phi_step);
 
 	int		ModCurves(FILE* ofp, MeasList* meas_list,
-				double spd_step, double phi_step);
+				float spd_step, float phi_step);
+
+	int		SolutionCurve(MeasList* meas_list, float spd_step, int phi_count,
+				float* best_spd, float* best_obj);
 
 protected:
 
@@ -73,11 +76,11 @@ protected:
 	// wind retrieval //
 	//----------------//
 
-	double	_ObjectiveFunction(MeasList* meas_list, double u,
-				double phi);
-	int		_FindSolutionCurve(MeasList* meas_list, double dspd,
-				double dphi, int phi_count, int* best_spd_idx,
-				double* best_obj);
+	float	_ObjectiveFunction(MeasList* meas_list, float u,
+				float phi);
+	int		_FindSolutionCurve(MeasList* meas_list, float dspd,
+				float dphi, int phi_count, float* best_spd,
+				float* best_obj);
 };
 
 #endif
