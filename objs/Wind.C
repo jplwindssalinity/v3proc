@@ -2321,7 +2321,7 @@ WindSwath::ThresNudge(
 			// threshold objective function //
 
 			int rank_idx = 0;
-			float thres[2] = {0.1,0.05};
+			float thres[2] = {0.2,0.05};
 
 			int w = 0;
 			if (cti < 9 || cti > 71) { w = 1; }
@@ -2436,6 +2436,7 @@ WindSwath::MedianFilter(
 	int             bound,
 	int		weight_flag)
 {
+
 	//----------------------------//
 	// create a new selection map //
 	//----------------------------//
@@ -2472,7 +2473,7 @@ WindSwath::MedianFilter(
 	while (pass < max_passes)
 	{
 		int flips = MedianFilterPass(half_window, new_selected, change,
-						weight_flag, bound);
+						bound, weight_flag);
 		pass++;
 		if (flips == 0)
 			break;

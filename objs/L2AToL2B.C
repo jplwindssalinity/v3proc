@@ -310,7 +310,7 @@ L2AToL2B::Flush(
 	}
 	bound = 0;
 	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-		medianFilterMaxPasses, bound, useAmbiguityWeights);
+	      medianFilterMaxPasses, bound, useAmbiguityWeights);
 
 	//------------//
 	// output l2b //
