@@ -1419,6 +1419,7 @@ GMF::FindMany(
 //-------------------------//
 // GMF::_ObjectiveFunction //
 //-------------------------//
+int global_debug=0;  // GLOBAL DEBUG FLAG
 
 float
 GMF::_ObjectiveFunction(
@@ -1542,6 +1543,7 @@ GMF::_ObjectiveFunction(
                 (trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
                 trial_value*trial_value;
 
+	    if(global_debug) printf("%g %g %g %g %g %g ",trial_value,vpc,kpri2,kprs2,kpm2,var);
             if (var == 0.0)
             {    // variances all turned off, so use uniform weighting.
                 fv += s*s;
@@ -1760,7 +1762,7 @@ GMF::Calculate_Init_Wind_Solutions(
                if (minus_speed < (float)(lower_speed_bound))
 				{
                   _speed_buffer[k] = center_speed;
-                  _objective_buffer [k] = center_objective;
+                 _objective_buffer [k] = center_objective;
                   center_speed = center_speed + wind_speed_intv_init;
                   good_speed = 0;
 				}
@@ -2377,7 +2379,7 @@ GMF::Optimize_Wind_Solutions(
 
 //                  wr_wind_dir_err [ambig] = wind_dir_intv_opti *
 //                    sqrt (fabs (0.5 * q02 / determinant));
-				}
+			}
 			}
 		}
 	}	//  The big ambiguity loop
@@ -2392,6 +2394,23 @@ GMF::Optimize_Wind_Solutions(
 		wvp->obj = wr_mle[i];
 //		printf("opti: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
 		i++;
+// #define VPC_DEBUG  // Uncomment this line to get Vpc debugging output
+#ifdef VPC_DEBUG	
+		global_debug=1;
+		for(Meas*meas=meas_list->GetHead();meas;meas=meas_list->GetNext()){
+		  printf("%d %d %d %d %g %g %g %g ",i,meas->startSliceIdx,meas->numSlices,(int)(meas->measType),meas->value,wvp->obj,wvp->spd,wvp->dir*rtd);
+                  // calculate partial objective function
+		  MeasList ml;
+		  ml.Append(meas);
+                  float partial_obj=_ObjectiveFunction(&ml,wvp->spd,wvp->dir,kp);
+		  float sigma0_over_snr=meas->EnSlice / meas->XK / meas->txPulseWidth;
+		  printf("%g %g %g %g %g %g %g %g\n",partial_obj,sigma0_over_snr,
+			 meas->EnSlice, meas->XK, meas->txPulseWidth, meas->A, meas->B, meas->C);
+                  ml.GetHead();
+                  ml.RemoveCurrent();
+		}
+                  global_debug=0;
+#endif
         if (i >= wind_max_solutions) break;
 	}
 
