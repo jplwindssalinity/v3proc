@@ -48,6 +48,9 @@ install: $(PROGRAMS)
 %.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
+%: %.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
 sim: sim.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
