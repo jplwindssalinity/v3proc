@@ -57,6 +57,10 @@ $(TARGET_LIB):	$(OBJS)
 %.h: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v
 
+#----------------------------------------------------------------------
+# Object file dependancies
+#----------------------------------------------------------------------
+
 ConfigList.o:	ConfigList.C ConfigList.h
 GMF.o:			GMF.C GMF.h
 Instrument.o:	Instrument.C Instrument.h
@@ -66,6 +70,15 @@ OrbitSim.o:		OrbitSim.C OrbitSim.h
 SimConfig.o:	SimConfig.C SimConfig.h SimControl.h ConfigList.h
 SimControl.o:	SimControl.C SimControl.h ConfigList.h
 
+#----------------------------------------------------------------------
+# Include file dependancies
+#----------------------------------------------------------------------
+
 ConfigList.h:	List.h
+	touch $@
+
 SimConfig.h:	ConfigList.h SimControl.h Instrument.h OrbitSim.h
+	touch $@
+
 SimControl.h:	Instrument.h OrbitSim.h
+	touch $@
