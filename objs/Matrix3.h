@@ -9,11 +9,6 @@
 static const char rcs_id_matrix3_h[] =
 	"@(#) $Id$";
 
-enum matrixtypeE {GENERAL, IDENTITY};
-enum earthposition_typeE {RECTANGULAR,
-                          GEOCENTRIC,
-			  GEODETIC};
-
 //======================================================================
 // CLASSES
 //		Matrix3
@@ -38,6 +33,8 @@ class Matrix3
 {
 friend Vector3;
 public:
+
+enum matrixtypeE {GENERAL, IDENTITY};
 
 //--------------//
 // construction //
@@ -120,10 +117,11 @@ Vector3 operator&(Vector3 m2); // cross product
 //
 
 void scale(double r);		// set magnitude
-double Vector3::magnitude();	// get vector magnitude
+double Vector3::Magnitude();	// get vector magnitude
 double get(int i);		// extract one element
 void show(char *name = NULL);
 
+	int		SphericalSet(double r, double theta, double phi);
 	int		Set(int index, double value);
 	int		Get(int index, double* value);
 
@@ -157,12 +155,15 @@ class EarthPosition : public Vector3
 {
 public:
 
+enum earthposition_typeE {RECTANGULAR, GEOCENTRIC, GEODETIC};
+
 //
 // Additional construction methods
 //
 
 EarthPosition(double x1, double x2, double x3, earthposition_typeE etype);
 EarthPosition(double x1, double x2, earthposition_typeE etype);
+EarthPosition(Vector3 v);
 EarthPosition();
 ~EarthPosition();
 
@@ -177,7 +178,7 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 //
 
 // lat,lon access
-Vector3 get_alt_lat_lon(earthposition_typeE etype);
+Vector3 Get_alt_lat_lon(earthposition_typeE etype);
 //double get_alt();	// extract the height above the earth's surface
 //double get_dlat();	// extract the geodetic latitude
 //double get_clat();	// extract the geocentric latitude

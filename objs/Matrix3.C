@@ -507,7 +507,7 @@ if (mag != 0.0)
 // Get the magnitude of the vector.
 //
 
-double Vector3::magnitude()
+double Vector3::Magnitude()
 
 {
 return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
@@ -548,6 +548,31 @@ else
 
 }
 
+//-----------------------//
+// Vector3::SphericalSet //
+//-----------------------//
+
+//
+// This method sets the (rectangular) elements of a Vector3 object given the
+// corresonding elements in a spherical coordinate system.
+// The standard definition of spherical coordinates is used:
+//   r is the length (magnitude) of the vector
+//   theta is the angle away from the no. 3 axis (z-axis)
+//   phi is the angle away from the no. 1 axis (x-axis) in the 1-2 (x-y) plane.
+//
+
+int
+Vector3::SphericalSet(
+	double	r,
+	double	theta,
+	double	phi)
+{
+	_v[0] = r*sin(theta)*cos(phi);
+	_v[1] = r*sin(theta)*sin(phi);
+	_v[2] = r*cos(theta);
+	return(1);
+}
+
 //--------------//
 // Vector3::Set //
 //--------------//
@@ -585,7 +610,7 @@ Vector3::Get(
 //
 // Initialize with a complete set of 3 user-specified elements.
 // The meaning of the 3 elements is specified by the type argument at the end.
-// Note that altitudes must be specified in meters!
+// Note that altitudes must be specified in km!
 //
 
 EarthPosition::EarthPosition(double x1, double x2, double x3,
@@ -608,7 +633,7 @@ if (etype == RECTANGULAR)
   }
 else if (etype == GEOCENTRIC)
   {
-  // x1 is the altitude above the ellipsoidal earth's surface. (meters)
+  // x1 is the altitude above the ellipsoidal earth's surface. (km)
   // x2 is the geocentric latitude of the surface location (radians).
   // x3 is the east longitude of the surface location (radians).
 
@@ -663,6 +688,21 @@ EarthPosition::EarthPosition(0,lat,lon,etype);
 }
 
 //
+// Initialize with the elements of a Vector3 object.
+// The elements are assumed to be rectangular coordinates.
+//
+
+EarthPosition::EarthPosition(Vector3 v)
+
+{
+
+v.Get(0,&_v[0]);
+v.Get(1,&_v[1]);
+v.Get(2,&_v[2]);
+
+}
+
+//
 // Default constructor, no initialization
 //
 
@@ -709,7 +749,7 @@ _v[2] = vec.get(2);
 // Currently, only surface points (altitude = 0) are handled.
 //
 
-Vector3 EarthPosition::get_alt_lat_lon(earthposition_typeE etype)
+Vector3 EarthPosition::Get_alt_lat_lon(earthposition_typeE etype)
 
 {
 double lat = 0;
