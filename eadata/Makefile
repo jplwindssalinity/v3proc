@@ -12,13 +12,15 @@ DEBUG =       NODEBUG
 
 INCDIR =      ../../include
 LIBDIR =      ../../lib
+HDFINCDIR =   /usr/local/hdf/include
+
+INCFLAGS =    -I$(HDFINCDIR) -I.
 
 CFLAGS =      $(CDEBUGFLAGS) -D_NO_PROTO -Wall
 
 C++FLAGS =    $(CDEBUGFLAGS) -D__SCAT_GNUCPP__ -DFUNCPROTO -D$(DEBUG) \
               -D_REENTRANT -DXTFUNCPROTO -D__EXTENSIONS__ \
-              -I. -fno-implicit-templates -DNOPM
-
+              $(INCFLAGS) -fno-implicit-templates -DNOPM
 
 OBJS = \
 	TempInst.o \
