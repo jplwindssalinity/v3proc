@@ -280,82 +280,56 @@ Image::WritePltr(
         {
             // for each point...
 
-            // ...get its value
+            // ...get its value and location
             float value;
             if (! Get(x, y, &value))
                 continue;
-
-            // ...clear the edge array
-            float edge_sum[2][2];    // [0=x, 1=y][0=lower, 1=upper]
-            float edge_count[2][2];
-            for (int i = 0; i < 2; i++)
-            {
-                for (int j = 0; j < 2; j++)
-                {
-                    edge_sum[i][j] = 0.0;
-                    edge_count[i][j] = 0;
-                }
-            }
-
-            // ...get its corners
-            for (int dx = -1; dx < 2; dx++)
-            {
-                int edge_x = x + dx;
-                for (int dy = -1; dy < 2; dy++)
-                {
-                    int edge_y = y + dy;
-                    float x1, y1;
-                    if ( (! x_image->Get(edge_x, edge_y, &x1)) ||
-                         (! y_image->Get(edge_x, edge_y, &y1)) )
-                    {
-                        continue;
-                    }
-                    if (dx == -1)
-                    {
-                        edge_sum[0][0] += x1;
-                        edge_count[0][0]++;
-                    }
-                    if (dx == 1)
-                    {
-                        edge_sum[0][1] += x1;
-                        edge_count[0][1]++;
-                    }
-                    if (dy == -1)
-                    {
-                        edge_sum[1][0] += y1;
-                        edge_count[1][0]++;
-                    }
-                    if (dy == 1)
-                    {
-                        edge_sum[1][1] += y1;
-                        edge_count[1][1]++;
-                    }
-                }
-            }
-            if (edge_count[0][0] == 0 || edge_count[0][1] == 0 ||
-                edge_count[1][0] == 0 || edge_count[1][1] == 0)
-            {
+            float center_x, center_y;
+            if (! x_image->Get(x, y, &center_x))
                 continue;
+            if (! y_image->Get(x, y, &center_y))
+                continue;
+
+            if (center_x == 0.0 || center_y == 0.0)
+                continue;
+
+            // ...get its delta corners
+            float edges[4][2];
+            float dx[4] = { -1,  1,  1, -1 };
+            float dy[4] = { -1, -1,  1,  1 };
+            int edge_count = 0;
+            for (int i = 0; i < 4; i++)
+            {
+                if (! x_image->Get(x + dx[i], y + dy[i], &(edges[i][0])))
+                    break;
+                if (! y_image->Get(x + dx[i], y + dy[i], &(edges[i][1])))
+                    break;
+                if (edges[i][0] == 0.0 && edges[i][1] == 0.0)
+                    continue;
+                edge_count++;
             }
+            if (edge_count != 4)
+                continue;
+       
             float buffer[12];
 
-            buffer[0] = edge_sum[0][0] / edge_count[0][0]; // low x
-            buffer[1] = edge_sum[1][0] / edge_count[1][0]; // low y
-
-            buffer[2] = edge_sum[0][1] / edge_count[0][1]; // high x
-            buffer[3] = edge_sum[1][0] / edge_count[1][0]; // low y
-            
-            buffer[4] = edge_sum[0][1] / edge_count[0][1]; // high x
-            buffer[5] = edge_sum[1][1] / edge_count[1][1]; // high y
-            
-            buffer[6] = edge_sum[0][0] / edge_count[0][0]; // low x
-            buffer[7] = edge_sum[1][1] / edge_count[1][1]; // high y
+            buffer[0] = (center_x + edges[0][0]) / 2.0;
+            buffer[1] = (center_y + edges[0][1]) / 2.0;
+            buffer[2] = (center_x + edges[1][0]) / 2.0;
+            buffer[3] = (center_y + edges[1][1]) / 2.0;
+            buffer[4] = (center_x + edges[2][0]) / 2.0;
+            buffer[5] = (center_y + edges[2][1]) / 2.0;
+            buffer[6] = (center_x + edges[3][0]) / 2.0;
+            buffer[7] = (center_y + edges[3][1]) / 2.0;
 
             buffer[8] = value;
             buffer[9] = 0.0;
 
             buffer[10] = (float)HUGE_VAL;
             buffer[11] = (float)HUGE_VAL;
+
+            for (int i = 0; i < 8; i++)
+                buffer[i] *= rtd;
             
             if (fwrite(&buffer, sizeof(float) * 12, 1, ofp) != 1)
             {
@@ -371,6 +345,26 @@ Image::WritePltr(
 
     fclose(ofp);
 
+    return(1);
+}
+
+//-------------------//
+// Image::WriteAscii //
+//-------------------//
+
+int
+Image::WriteAscii(
+    FILE*  ofp)
+{
+    fprintf(ofp, "%d x %d\n", _xSize, _ySize);
+    for (int x = 0; x < _xSize; x++)
+    {
+        for (int y = 0; y < _ySize; y++)
+        {
+            fprintf(ofp, " %g", _image[x][y]);
+        }
+        fprintf(ofp, "\n");
+    }
     return(1);
 }
 
@@ -409,7 +403,7 @@ Image::Step(
     double x_center = (double)(_xSize - 1) / 2.0;
     double y_center = (double)(_ySize - 1) / 2.0;
     double max_center = MAX(x_center, y_center);
-    double delta_angle = atan2(max_center, 0.5);
+    double delta_angle = atan2(0.5, max_center);
     double min_angle = pi_over_two - delta_angle;
     double max_angle = pi_over_two + delta_angle;
 
@@ -429,6 +423,9 @@ Image::Step(
                 *(*(_image + x) + y) = 0.0;
         }
     }
+    int x_cen = (int)(x_center + 0.5);
+    int y_cen = (int)(y_center + 0.5);
+    *(*(_image + x_cen) + y_cen) = 0.0;
     return(1);
 }
 
@@ -471,7 +468,7 @@ Image::Convolve(
     {
         for (int result_y = 0; result_y < _ySize; result_y++)
         {
-            int count = 0;
+            int missing_value = 0;
             double sum = 0.0;
             for (int dx = -delta_x; dx <= delta_x; dx++)
             {
@@ -483,15 +480,15 @@ Image::Convolve(
                          (! image_2->Get(delta_x + dx, delta_y + dy,
                              &value_2)) )
                     {
-                        continue;
+                        missing_value = 1;
+                        break;
                     }
-                    count++;
                     sum += value_1 * value_2;
                 }
             }
-            if (count == 0)
+            if (missing_value)
             {
-                // no value, clear the mask
+                // missing values, clear the mask
                 Set(result_x, result_y, 0.0, 0);
             }
             else

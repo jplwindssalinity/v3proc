@@ -2614,7 +2614,7 @@ WindSwath::ReadNscatSwv25(
     // allocate //
     //----------//
 
-    _crossTrackBins = 48;
+    _crossTrackBins = 24 + 16 + 24;    // left + nadir gap + right
     _alongTrackBins = num_output_recs;
     _validCells = 0;
     _Allocate();
@@ -2659,7 +2659,11 @@ WindSwath::ReadNscatSwv25(
             if (wvc_lat[wvc_idx] == 0 && wvc_lon[wvc_idx] == 0)
                 continue;
 
+            // convert cross track index in file to real cross track index
             int cti = wvc_idx;
+            if (cti > 23)
+                cti += 16;
+
             WVC* wvc = new WVC();
             if (wvc == NULL)
             {

@@ -66,6 +66,7 @@ public:
     //--------------//
 
     int  WritePltr(const char* filename, Image* x_image, Image* y_image);
+    int  WriteAscii(FILE* ofp);
 
     //--------------//
     // initializing //
