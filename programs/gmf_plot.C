@@ -321,8 +321,8 @@ interact(
     int meas_type = (int)Meas::VV_MEAS_TYPE;
     float incidence_angle = 50.0;
     float speed = 7.0;
-    float chi = 45.0;
-
+    float dir = 45.0;
+    float mdir = 45.0;
     do
     {
         if (! string_query(stdin, "Measurement type", meas_type_map,
@@ -338,14 +338,19 @@ interact(
         {
             return(1);
         }
-        if (! float_query(stdin, "Wind direction", &chi))
+        if (! float_query(stdin, "Wind direction CCW from E", &dir))
         {
             return(1);
         }
+        if (! float_query(stdin, "Measurement direction CW from N", &mdir))
+        {
+            return(1);
+        }
+        float chi = (dir - mdir) * dtr + pi;
 
         float value;
         if (! gmf->GetInterpolatedValue((Meas::MeasTypeE)meas_type,
-            incidence_angle * dtr, speed, chi * dtr, &value))
+            incidence_angle * dtr, speed, chi, &value))
         {
             printf("Error looking up in GMF.\n");
         }

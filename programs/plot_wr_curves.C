@@ -180,6 +180,7 @@ main(
         fprintf(stderr, "%s: error configuring GMF\n", command);
         exit(1);
     }
+gmf.SetSpdTol(0.1);
 
     //--------------//
     // configure Kp //

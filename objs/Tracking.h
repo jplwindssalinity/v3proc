@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef TRACKING_H
 #define TRACKING_H
@@ -49,14 +49,14 @@ public:
     // input/output //
     //--------------//
 
-//    int  ReadGS(const char* filename);
     int  ReadBinary(const char* filename);
     int  WriteBinary(const char* filename);
     int  ReadOldBinary(const char* filename);
     int  WriteOldBinary(const char* filename);
     int  ReadHex(const char* filename);
     int  WriteHex(const char* filename);
-    int  WriteCode(const char* filename);
+    int  ReadGS(const char* filename);
+    int  WriteGS(const char* filename);
 
     //------------//
     // algorithms //
@@ -176,8 +176,9 @@ public:
     //------------//
     // operators  //
     //------------//
- 
+
     DopplerTracker& operator=(const DopplerTracker& from);
+
     //------------//
     // algorithms //
     //------------//

@@ -106,6 +106,18 @@ GMF::SetPhiCount(
     return(1);
 }
 
+//----------------//
+// GMF::SetSpdTol //
+//----------------//
+
+int
+GMF::SetSpdTol(
+    float  spd_tol)
+{
+    _spdTol = spd_tol;
+    return(1);
+}
+
 //------------------//
 // GMF:ReadOldStyle //
 //------------------//

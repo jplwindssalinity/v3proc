@@ -56,6 +56,7 @@ public:
     //-----------------//
 
     int  SetPhiCount(int phi_count);
+    int  SetSpdTol(float spd_tol);
 
     //--------------//
     // input/output //

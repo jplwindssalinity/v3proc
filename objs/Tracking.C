@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_qtracking_c[] =
     "@(#) $Id$";
@@ -157,6 +157,7 @@ TrackerBase<T>::ReadBinary(
     {
         if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
         {
+            fclose(fp);
             return(0);
         }
     }
@@ -169,6 +170,7 @@ TrackerBase<T>::ReadBinary(
     {
         if (fread((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
         {
+            fclose(fp);
             return(0);
         }
     }
@@ -217,6 +219,7 @@ TrackerBase<T>::WriteBinary(
     {
         if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
         {
+            fclose(fp);
             return(0);
         }
     }
@@ -229,6 +232,7 @@ TrackerBase<T>::WriteBinary(
     {
         if (fwrite((void *) *(_termArray + step), sizeof(T), 3, fp) != 3)
         {
+            fclose(fp);
             return(0);
         }
     }
@@ -296,7 +300,7 @@ TrackerBase<T>::ReadOldBinary(
             fclose(fp);
             return(0);
         }
-    
+
         for (unsigned int step = 0; step < _steps; step++)
         {
             if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
@@ -360,7 +364,7 @@ TrackerBase<T>::WriteOldBinary(
             fclose(fp);
             return(0);
         }
-    
+
         for (unsigned int step = 0; step < _steps; step++)
         {
             if (fwrite((void *) ( *(_termArray + step) + term[term_idx] ),
@@ -403,7 +407,10 @@ TrackerBase<T>::WriteHex(
     //----------//
 
     if (! write_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //-----------//
     // file size //
@@ -418,7 +425,10 @@ TrackerBase<T>::WriteHex(
     unsigned short file_size = id_size + size_size + spare_size +
         dither_size + terms_size + scale_size;
     if (! write_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //-------//
     // spare //
@@ -430,14 +440,20 @@ TrackerBase<T>::WriteHex(
         spare[i] = 0;
     }
     if (! write_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //--------//
     // dither //
     //--------//
 
     if (! write_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //-------//
     // scale //
@@ -456,6 +472,7 @@ TrackerBase<T>::WriteHex(
         ! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
             sizeof(float)))
     {
+        fclose(fp);
         return(0);
     }
 
@@ -466,7 +483,10 @@ TrackerBase<T>::WriteHex(
     unsigned int array_size = 3 * _steps * sizeof(T);
     unsigned char* term_array = (unsigned char *)malloc(array_size);
     if (term_array == NULL)
+    {
+        fclose(fp);
         return(0);
+    }
 
     unsigned int bytes = 0;
     for (int term = 0; term < 3; term++)
@@ -481,6 +501,7 @@ TrackerBase<T>::WriteHex(
 
     if (! write_hex(fp, (char *)term_array, array_size))
     {
+        fclose(fp);
         return(0);
     }
 
@@ -517,7 +538,10 @@ TrackerBase<T>::ReadHex(
     //----------//
 
     if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //-----------//
     // file size //
@@ -525,7 +549,10 @@ TrackerBase<T>::ReadHex(
 
     unsigned short file_size;
     if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //-------//
     // spare //
@@ -533,14 +560,20 @@ TrackerBase<T>::ReadHex(
 
     unsigned short spare[SPARE_WORDS];
     if (! read_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //--------//
     // dither //
     //--------//
 
     if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+    {
+        fclose(fp);
         return(0);
+    }
 
     //----------//
     // allocate //
@@ -570,6 +603,7 @@ TrackerBase<T>::ReadHex(
         ! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
             sizeof(float)))
     {
+        fclose(fp);
         return(0);
     }
 
@@ -580,10 +614,14 @@ TrackerBase<T>::ReadHex(
     unsigned int array_size = 3 * _steps * sizeof(T);
     unsigned char* term_array = (unsigned char *)malloc(array_size);
     if (term_array == NULL)
+    {
+        fclose(fp);
         return(0);
+    }
 
     if (! read_hex(fp, (char *)term_array, array_size))
     {
+        fclose(fp);
         return(0);
     }
 
@@ -609,14 +647,95 @@ TrackerBase<T>::ReadHex(
     return(1);
 }
 
-//------------------------//
-// TrackerBase::WriteCode //
-//------------------------//
+//---------------------//
+// TrackerBase::ReadGS //
+//---------------------//
 
 template <class T>
 int
-TrackerBase<T>::WriteCode(
-    const char*  filename)
+TrackerBase<T>::ReadGS(
+    const char*     filename)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    _steps = DEFAULT_STEPS;
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
+                sizeof(T), 1, fp) != 1)
+            {
+                fclose(fp);
+                return(0);
+            }
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
+//----------------------//
+// TrackerBase::WriteGS //
+//----------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteGS(
+    const char*     filename)
 {
     //---------------//
     // open the file //
@@ -626,9 +745,63 @@ TrackerBase<T>::WriteCode(
     if (fp == NULL)
         return(0);
 
-    //------------//
-    // close file //
-    //------------//
+    //-------//
+    // steps //
+    //-------//
+
+    if (_steps != DEFAULT_STEPS)
+    {
+        fprintf(stderr, "TrackerBase::WriteGS: invalid number of steps (%d)\n",
+            _steps);
+        fprintf(stderr, "    Must be %d for this function.\n", DEFAULT_STEPS);
+        fclose(fp);
+        return(0);
+    }
+
+/*
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1, sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0, sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1, sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0, sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1, sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0, sizeof(float), 1,
+            fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
+                sizeof(T), 1, fp) != 1)
+            {
+                fclose(fp);
+                return(0);
+            }
+        }
+    }
+*/
+
+    //----------------//
+    // close the file //
+    //----------------//
 
     fclose(fp);
 
@@ -650,40 +823,51 @@ RangeTracker::~RangeTracker()
     return;
 }
 
-//-----------------//
-// operators       //
-//-----------------//
+//-----------//
+// operators //
+//-----------//
 
 RangeTracker&
 RangeTracker::operator=(
-       const RangeTracker& from)
+    const RangeTracker&  from)
 {
-  rxRangeMem=from.rxRangeMem;
-  if(_scaleArray!=NULL) free_array((void*)_scaleArray,2,3,2);
-  if(_termArray!=NULL) free_array((void*)_termArray,2,_steps,3);
-  _tableId=from._tableId;
-  _steps=from._steps;
-  _dither[0]=from._dither[0];
-  _dither[1]=from._dither[1];
-  if(from._scaleArray==NULL) _scaleArray=NULL;
-  else{
-    _scaleArray=(float**)make_array(sizeof(float),2,3,2);
-    for(int i=0;i<3;i++){
-      for(int j=0;j<2;j++){
-	_scaleArray[i][j]=from._scaleArray[i][j];
-      }
+    rxRangeMem=from.rxRangeMem;
+    if(_scaleArray!=NULL)
+        free_array((void*)_scaleArray,2,3,2);
+    if(_termArray!=NULL)
+        free_array((void*)_termArray,2,_steps,3);
+    _tableId=from._tableId;
+    _steps=from._steps;
+    _dither[0]=from._dither[0];
+    _dither[1]=from._dither[1];
+    if(from._scaleArray==NULL)
+        _scaleArray=NULL;
+    else
+    {
+        _scaleArray=(float**)make_array(sizeof(float),2,3,2);
+        for(int i=0;i<3;i++)
+        {
+            for(int j=0;j<2;j++)
+            {
+                _scaleArray[i][j]=from._scaleArray[i][j];
+            }
+        }
     }
-  }
-  if(from._termArray==NULL) _termArray=NULL;
-  else{
-    _termArray=(unsigned char**)make_array(sizeof(unsigned char),2,_steps,3);
-    for(unsigned int i=0;i<_steps;i++){
-      for(int j=0;j<3;j++){
-	_termArray[i][j]=from._termArray[i][j];
-      }
+    if(from._termArray==NULL)
+        _termArray=NULL;
+    else
+    {
+        _termArray = (unsigned char**)make_array(sizeof(unsigned char), 2,
+            _steps, 3);
+        for(unsigned int i=0;i<_steps;i++)
+        {
+            for(int j=0;j<3;j++)
+            {
+                _termArray[i][j]=from._termArray[i][j];
+            }
+        }
     }
-  }
-  return(*this);
+    return(*this);
 }
 
 //------------------------------//
@@ -731,7 +915,7 @@ RangeTracker::GetRxGateDelay(
     float rx_range_mem = range_predict / RANGE_GATE_NORMALIZER;
     float rx_gate_width_fdn = (float)rx_gate_width_dn;
     float tx_pulse_width_fdn = (float)tx_pulse_width_dn;
-    *rx_gate_delay_fdn = rx_range_mem - 
+    *rx_gate_delay_fdn = rx_range_mem -
         (rx_gate_width_fdn - tx_pulse_width_fdn) / 2.0;
     *rx_gate_delay_dn = (unsigned char)(*rx_gate_delay_fdn + 0.5);
 
@@ -841,7 +1025,7 @@ DopplerTracker::operator=(
     _scaleArray=(float**)make_array(sizeof(float),2,3,2);
     for(int i=0;i<3;i++){
       for(int j=0;j<2;j++){
-	_scaleArray[i][j]=from._scaleArray[i][j];
+        _scaleArray[i][j]=from._scaleArray[i][j];
       }
     }
   }
@@ -850,7 +1034,7 @@ DopplerTracker::operator=(
     _termArray=(unsigned short**)make_array(sizeof(unsigned short),2,_steps,3);
     for(unsigned int i=0;i<_steps;i++){
       for(int j=0;j<3;j++){
-	_termArray[i][j]=from._termArray[i][j];
+        _termArray[i][j]=from._termArray[i][j];
       }
     }
   }
