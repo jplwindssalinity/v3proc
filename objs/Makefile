@@ -178,7 +178,7 @@ L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
 L00ToL1A.o: L00ToL1A.C L00ToL1A.h L00.h L1A.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Attitude.h
 L1A.o: L1A.C L1A.h Misc.h BaseFile.h L1AFrame.h L1AGSFrame.h Attitude.h
-L1AFrame.o: L1AFrame.C L1AFrame.h Constants.h Attitude.h L1AGSFrame.h
+L1AFrame.o: L1AFrame.C L1AFrame.h Constants.h Attitude.h L1AGSFrame.h L1AHdf.h
 L1AGSFrame.o: L1AGSFrame.C L1AGSFrame.h
 L1AToL1B.o: L1AToL1B.C L1AToL1B.h CheckFrame.h InstrumentGeom.h Sigma0.h Qscat.h L1A.h Spacecraft.h Ephemeris.h L1B.h XTable.h BYUXTable.h LandMap.h Attitude.h Matrix3.h EarthPosition.h Wind.h CoordinateSwitch.h LonLat.h Meas.h Distributions.h Antenna.h Tracking.h Scatterometer.h BaseFile.h L1AFrame.h L1AGSFrame.h Constants.h BufferedList.h L1BFrame.h Array.h Misc.h List.h Index.h AngleInterval.h Matrix.h Beam.h
 L1B.o: L1B.C L1B.h BaseFile.h L1BFrame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
