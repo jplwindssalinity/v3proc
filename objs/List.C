@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef LIST_C
 #define LIST_C
@@ -84,6 +84,47 @@ List<T>::Append(
 		_head = _tail = _current = new_node;
 	}
 	return(1);
+}
+
+//------------------//
+// List::AppendList //
+//------------------//
+// Appends the passed list to the end of the list.  The entire passed
+// list is disconnected and added to the new list.  The passed list
+// is emptied.  The current node is unchanged.
+
+template <class T>
+void
+List<T>::AppendList(
+	List<T>*	list)
+{
+	//-------------------//
+	// patch list at end //
+	//-------------------//
+
+	if (_tail)
+	{
+		// list is not empty
+		_tail->next = list->_head;
+		list->_head->prev = _tail;
+		_tail = list->_tail;
+	}
+	else
+	{
+		// list is empty
+		_head = list->_head;
+		_tail = list->_tail;
+	}
+
+	//----------------------//
+	// disconnect from list //
+	//----------------------//
+
+	// unattach from added_list
+	list->_head = NULL;
+	list->_tail = NULL;
+
+	return;
 }
 
 //---------------------//
@@ -293,34 +334,6 @@ List<T>::NodeCount()
 
 
 /*
-//------------//
-// AppendList //
-//------------//
-// adds a list to the end of another
-
-void
-ListBase::AppendList(
-	ListBase*	added_list)
-{
-	if (_tail)
-	{
-		// end of list exists, just append
-		_tail->next = added_list->_head;
-		added_list->_head->prev = _tail;
-		_tail = added_list->_tail;
-	}
-	else
-	{
-		// list is empty
-		_head = added_list->_head;
-		_tail = added_list->_tail;
-	}
-	// unattach from added_list
-	added_list->_head = NULL;
-	added_list->_tail = NULL;
-	return;
-}
-
 //---------//
 // IsEmpty //
 //---------//

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef LIST_H
 #define LIST_H
@@ -71,6 +71,7 @@ public:
 	//----------------//
 
 	int		Append(T* new_data);			// append to end of list
+	void	AppendList(List<T>* list);
 
 	//--------------------//
 	// removing from list //
