@@ -230,7 +230,7 @@ EarthPosition::GetAltLonGDLat(
 
 	if (i >= maxiter)
 	{
-		printf("Error: EarthPosition::GetAltLatLon\n");
+		printf("Error: EarthPosition::GetAltLonGDLat\n");
 		printf("  Did not converge to a solution for the surface point\n");
 		return(0);
 	}
