@@ -1,0 +1,42 @@
+//==========================================================//
+// Copyright (C) 1997, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.				//
+//==========================================================//
+
+#ifndef ACCURATEGEOM_H
+#define ACCURATEGEOM_H
+
+static const char rcs_id_accurategeom_h[] =
+	"@(#) $Id$";
+
+#include "EarthPosition.h"
+#include "CoordinateSwitch.h"
+#include "Ephemeris.h"
+#include "Spacecraft.h"
+#include "Instrument.h"
+#include "InstrumentGeom.h"
+#include "LonLat.h"
+#include "Matrix3.h"
+
+//======================================================================
+// DESCRIPTION
+//		High level instrument geometry functions, which perform
+// the precise calculations necessary for calculating Kpr, kfactor, etc.
+//======================================================================
+
+
+int		IntegrateSlices(double time, Spacecraft* spacecraft,
+			Instrument* instrument, int slices_per_spot, MeasSpot* meas_spot);
+
+#endif
+
+
+int             FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc, 
+			     Spacecraft* spacecraft, Instrument* instrument,
+			     float look1, float look2, float azi1, float azi2,
+                             Outline* box);
+
+int             FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
+			       Spacecraft* spacecraft, Instrument* instrument,
+			       float target_freq, float freq_tol, float* look,
+			       float azimuth);
