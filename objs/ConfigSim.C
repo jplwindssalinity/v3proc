@@ -133,10 +133,9 @@ ConfigAntenna(
 	// configure each beam //
 	//---------------------//
 
-	for (int beam_number = 0; beam_number < antenna->numberOfBeams;
-		beam_number++)
+	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
 	{
-		if (! ConfigBeam((antenna->beam + beam_number), beam_number,
+		if (! ConfigBeam((antenna->beam + beam_idx), beam_idx + 1,
 			config_list))
 		{
 			return(0);
