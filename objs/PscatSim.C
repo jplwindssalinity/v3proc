@@ -345,25 +345,24 @@ PscatSim::ScatSim(
             float XKdb = 10*log10(meas->XK);
 
             printf("%g ", XKdb-Xcaldb);
-//               float delta_freq = BYUX.GetDeltaFreq(spacecraft);
-//               printf("%g ", delta_freq);
+//          float delta_freq = BYUX.GetDeltaFreq(spacecraft);
+//          printf("%g ", delta_freq);
             total_spot_power += meas->value;
             total_spot_X += meas->XK;
 
           }
         printf("\n"); //HACK
-//      RangeTracker* rt= &(pscat->sas.antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
+//      RangeTracker* rt = &(pscat->sas.antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
 
 
 //      unsigned short orbit_step = rt->OrbitTicksToStep(pscat->cds.orbitTicks,
-//                 pscat->cds.orbitTicksPerOrbit);
+//          pscat->cds.orbitTicksPerOrbit);
 
-        //      printf("TOTALS %d %d %g %g %g %g\n", (int)orbit_step,
-        //       instrument->antenna.currentBeamIdx,
-        //      instrument->antenna.azimuthAngle*rtd,
-        //      instrument->commandedRxGateDelay,
-        //      total_spot_X, total_spot_power);
-        fflush(stdout);
+//      printf("TOTALS %d %d %g %g %g %g\n", (int)orbit_step,
+//          instrument->antenna.currentBeamIdx,
+//          instrument->antenna.azimuthAngle*rtd,
+//          instrument->commandedRxGateDelay, total_spot_X, total_spot_power);
+//      fflush(stdout);
     }
 
     //---------------------------------//
@@ -943,13 +942,6 @@ PscatSim::SetL1AScience(
             return(0);
             break;
         }
-
-        //--------------------------//
-        // update the level 1 frame //
-        //--------------------------//
-
-if (l1a_frame->copol[spot_slice_offset + slice_idx] == 17107)
-printf("x\n");
     }
 
     //----------------------------------------------------//

@@ -100,6 +100,8 @@ Kpm::GetKpm(
     case Meas::HH_MEAS_TYPE:
         met_idx = 1;
         break;
+    case Meas::VH_MEAS_TYPE:
+    case Meas::HV_MEAS_TYPE:
     case Meas::VV_HV_CORR_MEAS_TYPE:
     case Meas::HH_VH_CORR_MEAS_TYPE:
         //-----------------------//
