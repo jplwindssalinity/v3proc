@@ -464,12 +464,12 @@ const ParTabEntry L1BParTab[] =
   },
   { SIGMA0_MODE_FLAG, "Sigma 0 Mode Flag", SOURCE_L1A, MEAS_STATUS,
              "sigma0_mode_flag", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData2D_100, pr_uint2_100 }
+      { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractData2D_100, pr_uint2_100 }
     }
   },
   { SIGMA0_QUAL_FLAG, "Sigma 0 Quality Flag", SOURCE_L1A, MEAS_STATUS,
              "sigma0_qual_flag", 1, {
-      { UNIT_DN, "dn", DATA_UINT2, 0, ExtractData2D_100, pr_uint2_100 }
+      { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractData2D_100, pr_uint2_100 }
     }
   },
   { SIGMA0, "Sigma 0 for Entire Pulse", SOURCE_L1A, MEAS_POWER, "sigma0", 1, {
