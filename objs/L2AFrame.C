@@ -89,13 +89,12 @@ int
 L17Frame::Read(
 	FILE*	fp)
 {
-    if (fread((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
-        fread((void *)&ati, sizeof(int), 1, fp) != 1 ||
-        fread((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
+	if (fread((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
+		fread((void *)&ati, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
 		measList.Read(fp) != 1)
-
-    {
-        return(0);
+	{
+		return(0);
 	}
 
 	return(1);
@@ -109,12 +108,12 @@ int
 L17Frame::Write(
 	FILE*	fp)
 {
-    if (fwrite((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
-        fwrite((void *)&ati, sizeof(int), 1, fp) != 1 ||
-        fwrite((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
+	if (fwrite((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
+		fwrite((void *)&ati, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
 		measList.Write(fp) != 1)
-    {
-        return(0);
+	{
+		return(0);
 	}
 
 	return(1);
