@@ -88,6 +88,7 @@ public:
     // variables //
     //-----------//
 
+    unsigned long            pulseCount; // cumulative counter
     double                   epochTime;  // used for setting time strings
     char*                    epochTimeString;
     double                   startTime;

@@ -35,7 +35,7 @@ L1AFrame::L1AFrame()
   priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
   gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
   velZ(0.0), ptgr(0.0), calPosition(255), loopbackSlices(NULL),
-  loopbackNoise(0.0), loadSlices(NULL), loadNoise(0.0),
+  loopbackNoise(0), loadSlices(NULL), loadNoise(0),
   antennaPosition(NULL), science(NULL), spotNoise(NULL),
   frame_inst_status(0),
   frame_err_status(0),
@@ -84,12 +84,12 @@ L1AFrame::Allocate(
     // allocate cal measurements //
     //---------------------------//
 
-    loopbackSlices = (float *)malloc(slicesPerSpot * sizeof(float));
+    loopbackSlices = (unsigned int *)malloc(slicesPerSpot*sizeof(unsigned int));
     if (loopbackSlices == NULL)
     {
         return(0);
     }
-    loadSlices = (float *)malloc(slicesPerSpot * sizeof(float));
+    loadSlices = (unsigned int *)malloc(slicesPerSpot * sizeof(unsigned int));
     if (loadSlices == NULL)
     {
         return(0);
@@ -99,12 +99,12 @@ L1AFrame::Allocate(
 	// allocate science measurements //
 	//-------------------------------//
 
-	science = (float *)malloc(slicesPerFrame * sizeof(float));
+	science = (unsigned int *)malloc(slicesPerFrame * sizeof(unsigned int));
 	if (science == NULL)
 	{
 		return(0);
 	}
-	spotNoise = (float *)malloc(spotsPerFrame * sizeof(float));
+	spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
 	if (spotNoise == NULL)
 	{
 		return(0);
@@ -169,13 +169,13 @@ L1AFrame::FrameSize()
     size += sizeof(float);          // yaw
     size += sizeof(float);          // PtGr
     size += sizeof(unsigned char);  // cal position
-    size += sizeof(float) * slicesPerSpot;  // loopback slices
-    size += sizeof(float);          // loopback noise
-    size += sizeof(float) * slicesPerSpot;  // load slices
-    size += sizeof(float);          // load noise
-    size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
-    size += sizeof(float) * slicesPerFrame;  // science data
-    size += sizeof(float) * spotsPerFrame;   // spot noise
+    size += sizeof(unsigned int) * slicesPerSpot;  // loopback slices
+    size += sizeof(unsigned int);                  // loopback noise
+    size += sizeof(unsigned int) * slicesPerSpot;  // load slices
+    size += sizeof(unsigned int);                  // load noise
+    size += sizeof(unsigned short) * spotsPerFrame;// antenna position
+    size += sizeof(unsigned int) * slicesPerFrame; // science data
+    size += sizeof(unsigned int) * spotsPerFrame;  // spot noise
 
     size += sizeof(GSL1AStatus);  // status structure
     size += sizeof(GSL1AEngData); // engdata structure
@@ -268,19 +268,19 @@ L1AFrame::Pack(
     memcpy((void *)(buffer + idx), (void *)&calPosition, size);
     idx += size;
 
-    size = sizeof(float) * slicesPerSpot;
+    size = sizeof(unsigned int) * slicesPerSpot;
     memcpy((void *)(buffer + idx), (void *)loopbackSlices, size);
     idx += size;
 
-    size = sizeof(float);
+    size = sizeof(unsigned int);
     memcpy((void *)(buffer + idx), (void *)&loopbackNoise, size);
     idx += size;
 
-    size = sizeof(float) * slicesPerSpot;
+    size = sizeof(unsigned int) * slicesPerSpot;
     memcpy((void *)(buffer + idx), (void *)loadSlices, size);
     idx += size;
 
-    size = sizeof(float);
+    size = sizeof(unsigned int);
     memcpy((void *)(buffer + idx), (void *)&loadNoise, size);
     idx += size;
 
@@ -288,11 +288,11 @@ L1AFrame::Pack(
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
-	size = sizeof(float) * slicesPerFrame;
+	size = sizeof(unsigned int) * slicesPerFrame;
 	memcpy((void *)(buffer + idx), (void *)science, size);
 	idx += size;
 
-	size = sizeof(float) * spotsPerFrame;
+	size = sizeof(unsigned int) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
 	idx += size;
 
@@ -408,19 +408,19 @@ L1AFrame::Unpack(
     memcpy((void *)&calPosition, (void *)(buffer + idx), size);
     idx += size;
 
-    size = sizeof(float) * slicesPerSpot;
+    size = sizeof(unsigned int) * slicesPerSpot;
     memcpy((void *)loopbackSlices, (void *)(buffer + idx), size);
     idx += size;
 
-    size = sizeof(float);
+    size = sizeof(unsigned int);
     memcpy((void *)&loopbackNoise, (void *)(buffer + idx), size);
     idx += size;
 
-    size = sizeof(float) * slicesPerSpot;
+    size = sizeof(unsigned int) * slicesPerSpot;
     memcpy((void *)loadSlices, (void *)(buffer + idx), size);
     idx += size;
 
-    size = sizeof(float);
+    size = sizeof(unsigned int);
     memcpy((void *)&loadNoise, (void *)(buffer + idx), size);
     idx += size;
 
@@ -428,11 +428,11 @@ L1AFrame::Unpack(
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(float) * slicesPerFrame;
+	size = sizeof(unsigned int) * slicesPerFrame;
 	memcpy((void *)science, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(float) * spotsPerFrame;
+	size = sizeof(unsigned int) * spotsPerFrame;
 	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
 	idx += size;
 
@@ -487,11 +487,11 @@ int L1AFrame::WriteAscii(FILE* ofp){
   int offset=0;
   for(int c=0;c<spotsPerFrame;c++){
     fprintf(ofp,"\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
-    fprintf(ofp, "AntennaPos: %d SpotNoise: %g Beam:%d\n",
+    fprintf(ofp, "AntennaPos: %d SpotNoise: %d Beam:%d\n",
 	    (int)antennaPosition[c],spotNoise[c],c%2);
     fprintf(ofp,"E(S+N) Slices(1-%d): ",slicesPerSpot);
     for(int s=0;s<slicesPerSpot;s++){
-      fprintf(ofp,"%g ",science[offset]);
+      fprintf(ofp,"%d ",science[offset]);
       offset++;
     }
     fprintf(ofp,"\n");
@@ -569,33 +569,34 @@ L1AHdf*     l1aHdf)
     COPY_FROM_HDF_VALUE(l1aHdf, param, PULSE_QUALITY_FLAG, UNIT_HEX_BYTES,
                                 pulse_qual_flag);
 
-    unsigned int uint4_12[slicesPerSpot];
+//    unsigned int uint4_12[slicesPerSpot];
     COPY_FROM_HDF_ADDRESS(l1aHdf, param, LOOP_BACK_CAL_A_POWER, UNIT_DN,
-                                uint4_12, sizeof(int) * slicesPerSpot);
-    float* floatP = loopbackSlices;
-    for (int i=0; i < slicesPerSpot; i++, floatP++)
-        *floatP = (float) (uint4_12[i]);
+                                loopbackSlices, sizeof(int) * slicesPerSpot);
+//    float* floatP = loopbackSlices;
+//    for (int i=0; i < slicesPerSpot; i++, floatP++)
+//        *floatP = (float) (uint4_12[i]);
 
-    unsigned int uint4Num;
-    COPY_FROM_HDF_VALUE(l1aHdf, param, LOOP_BACK_CAL_NOISE, UNIT_DN, uint4Num);
-    loopbackNoise = (float) uint4Num;
+//    unsigned int uint4Num;
+    COPY_FROM_HDF_VALUE(l1aHdf, param, LOOP_BACK_CAL_NOISE, UNIT_DN,
+                        loopbackNoise);
+//    loopbackNoise = (float) uint4Num;
 
-    COPY_FROM_HDF_VALUE(l1aHdf, param, LOAD_CAL_NOISE, UNIT_DN, uint4Num);
-    loadNoise = (float) uint4Num;
+    COPY_FROM_HDF_VALUE(l1aHdf, param, LOAD_CAL_NOISE, UNIT_DN, loadNoise);
+//    loadNoise = (float) uint4Num;
 
-    unsigned int uint4_1200[slicesPerFrame];
+//    unsigned int uint4_1200[slicesPerFrame];
     COPY_FROM_HDF_ADDRESS(l1aHdf, param, POWER_DN, UNIT_DN,
-                   uint4_1200, slicesPerFrame * sizeof(unsigned int));
-    floatP = science;
-    for (int i=0; i < slicesPerFrame; i++, floatP++)
-        *floatP = (float) (uint4_1200[i]);
+                   science, slicesPerFrame * sizeof(unsigned int));
+//    floatP = science;
+//    for (int i=0; i < slicesPerFrame; i++, floatP++)
+//        *floatP = (float) (uint4_1200[i]);
 
-    unsigned int uint4_100[spotsPerFrame];
+//    unsigned int uint4_100[spotsPerFrame];
     COPY_FROM_HDF_ADDRESS(l1aHdf, param, NOISE_DN, UNIT_DN,
-                   uint4_100, spotsPerFrame * sizeof(unsigned int));
-    floatP = spotNoise;
-    for (int i=0; i < spotsPerFrame; i++, floatP++)
-        *floatP = (float) (uint4_100[i]);
+                   spotNoise, spotsPerFrame * sizeof(unsigned int));
+//    floatP = spotNoise;
+//    for (int i=0; i < spotsPerFrame; i++, floatP++)
+//        *floatP = (float) (uint4_100[i]);
 
     COPY_FROM_HDF_ADDRESS(l1aHdf, param, ANTENNA_POS, UNIT_DN,
                    antennaPosition, sizeof(unsigned short) * spotsPerFrame);

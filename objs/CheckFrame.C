@@ -18,11 +18,11 @@ static const char rcs_id_checkframe_c[] =
 //============//
 
 CheckFrame::CheckFrame()
-:	time(0.0), rsat(Vector3(0.0,0.0,0.0)),
+:	pulseCount(0), time(0.0), rsat(Vector3(0.0,0.0,0.0)),
     vsat(0.0,0.0,0.0), attitude(), beamNumber(0),
     ptgr(0.0), orbitFrac(0.0), antennaAziTx(0.0), antennaAziGi(0.0),
     EsCal(0.0), deltaFreq(0.0), spinRate(0.0), txDoppler(0.0), rxGateDelay(0.0),
-    XdopplerFreq(0.0), XroundTripTime(0.0),
+    XdopplerFreq(0.0), XroundTripTime(0.0), alpha(0.0),
     idx(NULL), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
     Es(NULL), En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
@@ -185,8 +185,8 @@ CheckFrame::Size()
 
   // First, the spot quantities
   int size = 7*sizeof(double);
-  size += sizeof(int);
-  size += 14*sizeof(float);
+  size += 2*sizeof(int);
+  size += 15*sizeof(float);
 
   // Next, the slice quantities
   size += 3*slicesPerSpot*sizeof(double); // centroid
@@ -229,6 +229,7 @@ CheckFrame::AppendRecord(
 
         float att;
 
+        if (fwrite((void *)&pulseCount,sizeof(int),1,fptr) != 1) return(0);
         if (fwrite((void *)&time,sizeof(double),1,fptr) != 1) return(0);
         att = rtd*attitude.GetRoll(); 
         if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
@@ -250,6 +251,7 @@ CheckFrame::AppendRecord(
         if (fwrite((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+        if (fwrite((void *)&alpha,sizeof(float),1,fptr) != 1)return(0);
 	return(1);
 }
 
@@ -314,6 +316,7 @@ CheckFrame::WriteDataRec(
 
   float att;
 
+  if (fwrite((void *)&pulseCount,sizeof(int),1,fptr) != 1) return(0);
   if (fwrite((void *)&time,sizeof(double),1,fptr) != 1) return(0);
   att = rtd*attitude.GetRoll(); 
   if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
@@ -335,6 +338,7 @@ CheckFrame::WriteDataRec(
   if (fwrite((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+  if (fwrite((void *)&alpha,sizeof(float),1,fptr) != 1)return(0);
   return(1);
 }
 
@@ -366,6 +370,7 @@ CheckFrame::ReadDataRec(
   }
 
   float roll,pitch,yaw;
+  if (fread((void *)&pulseCount,sizeof(int),1,fptr) != 1) return(0);
   if (fread((void *)&time,sizeof(double),1,fptr) != 1) return(0);
   if (fread((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
@@ -384,6 +389,7 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+  if (fread((void *)&alpha,sizeof(float),1,fptr) != 1)return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -427,6 +433,7 @@ CheckFrame::ReadDataRecFortran(
 
   float roll,pitch,yaw;
   double x,y,z;
+  if (fread_f77((void *)&pulseCount,sizeof(int),1,fptr) != 1) return(0);
   if (fread_f77((void *)&time,sizeof(double),1,fptr) != 1) return(0);
   if (fread_f77((void *)&roll,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
@@ -451,6 +458,7 @@ CheckFrame::ReadDataRecFortran(
   if (fread_f77((void *)&rxGateDelay,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&XdopplerFreq,sizeof(float),1,fptr) != 1) return(0);
   if (fread_f77((void *)&XroundTripTime,sizeof(float),1,fptr) != 1)return(0);
+  if (fread_f77((void *)&alpha,sizeof(float),1,fptr) != 1)return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -463,7 +471,8 @@ CheckFrame::WriteDataRecAscii(
 
   double alt,lon,lat;
   fprintf(fptr,"**** Spot Data ****\n");
-  fprintf(fptr,"time (sec): %g\n",time);
+  fprintf(fptr,"pulseCount: %d\n",pulseCount);
+  fprintf(fptr,"time (sec): %.8g\n",time);
   fprintf(fptr,"beam number: %d\n",beamNumber);
   fprintf(fptr,"PtGr: %6g\n",ptgr);
   float roll,pitch,yaw;
@@ -486,6 +495,7 @@ CheckFrame::WriteDataRecAscii(
   fprintf(fptr,"rxGateDelay (sec): %g\n",rxGateDelay);
   fprintf(fptr,"XdopplerFreq (Hz): %g\n",XdopplerFreq);
   fprintf(fptr,"XroundTripTime (sec): %g\n",XroundTripTime);
+  fprintf(fptr,"alpha: %g\n",alpha);
   fprintf(fptr,"**** Slices Data ****\n");
   int sliceno = -5;
   for (int i=0; i < slicesPerSpot; i++)

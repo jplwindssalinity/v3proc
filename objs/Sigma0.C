@@ -16,6 +16,7 @@ static const char rcs_id_sigma0_c[] =
 #include "Sigma0.h"
 #include "Qscat.h"
 #include "Distributions.h"
+#include "Misc.h"
 
 //
 // radar_X
@@ -249,6 +250,7 @@ sigma0_to_Esn_slice_given_X(
 	double Tp = qscat->ses.txPulseWidth;
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bs = meas->bandwidth;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
     double L13 = qscat->ses.receivePathLoss;
 
 	//------------------------------------------------------------------------//
@@ -266,12 +268,23 @@ sigma0_to_Esn_slice_given_X(
 	double N0_echo = bK * qscat->systemTemperature *
         qscat->ses.rxGainEcho / L13;
 
+	//-------------------------------------------------------------------//
+    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+	//-------------------------------------------------------------------//
+
+    float q_slice;
+    if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
+    {
+      fprintf(stderr,"sigma0_to_Esn_slice_given_X: Error getting Q value\n");
+      exit(1);
+    }
+
 	//------------------------------------------------------------------------//
 	// Noise energy within one slice referenced like the signal energy.
 	//------------------------------------------------------------------------//
 
-	double En1_slice = N0_echo * Bs * Tp;		// noise with signal
-	double En2_slice = N0_echo * Bs * (Tg-Tp);	// noise without signal
+	double En1_slice = N0_echo * Be*q_slice * Tp;		// noise with signal
+	double En2_slice = N0_echo * Be*q_slice * (Tg-Tp);	// noise without signal
 	double En_slice = En1_slice + En2_slice;
 
 	//double true_snr = Es_slice / En_slice;
@@ -706,14 +719,19 @@ compute_sigma0(
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bn = qscat->ses.noiseBandwidth;
 	double Bs = meas->bandwidth;
-	double Be = qscat->ses.GetTotalSignalBandwidth();
+//	double Be = qscat->ses.GetTotalSignalBandwidth();
 	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 
-	//--------------------------------------------------//
-    // Compute the noise energy ratio q from bandwidths.
-	//--------------------------------------------------//
+	//-------------------------------------------------------------------//
+    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+	//-------------------------------------------------------------------//
 
-    float q_slice = Bs/Be;
+    float q_slice;
+    if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
+    {
+      fprintf(stderr,"compute_sigma0: Error getting Q value\n");
+      exit(1);
+    }
 
 	//-------------------------------------------//
     // Estimate slice signal and noise energies.

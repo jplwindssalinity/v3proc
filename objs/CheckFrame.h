@@ -65,6 +65,7 @@ public:
 	// spot data //
 	//-----------//
 
+    unsigned int    pulseCount;
 	double			time;
 	EarthPosition	rsat;
 	Vector3			vsat;
@@ -81,6 +82,7 @@ public:
     float           rxGateDelay;
     float           XdopplerFreq;
     float           XroundTripTime;
+    float           alpha;
 
 	//------------//
 	// slice data //

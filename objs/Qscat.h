@@ -81,6 +81,7 @@ public:
     float         GetTotalSignalBandwidth();
     int           GetTotalSliceCount();
     int           GetSliceFreqBw(int slice_idx, float* f1, float* bw);
+    int           GetQRel(int slice_idx, float* q_slice);
 
     int  CmdTxPulseWidthDn(unsigned char tx_pulse_width_dn);
     int  CmdPriDn(unsigned char pri_dn);
@@ -131,6 +132,9 @@ public:
     float        L23Coef[5];             // polynomial fit coef's
     float        LcalopCoef[5];          // polynomial fit coef's
     float        physicalTemperature;    // deg. C
+
+    // Bandwidth ratios for slices using nominal mode (0.5 ms)
+    float* Qtable;
 
     SesBeamInfo  beamInfo[NUMBER_OF_QSCAT_BEAMS];
 };

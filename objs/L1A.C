@@ -200,6 +200,19 @@ L1A::FillGSFrame(void)
 
     (void)memcpy(gsFrame.in_science.antenna_position,
                  frame.antennaPosition, sizeof(short)*frame.spotsPerFrame);
+
+    // Cal measurements need to be converted to floats (but this isn't used!)
+    for (int i=0; i < frame.slicesPerSpot; i++)
+    {  // convert floats to ints
+      gsFrame.in_science.loop_back_cal_A_power[i]=(int)frame.loopbackSlices[i];
+      gsFrame.in_science.loop_back_cal_B_power[i]=(int)frame.loopbackSlices[i];
+      gsFrame.in_science.load_cal_A_power[i]=(int)frame.loadSlices[i];
+      gsFrame.in_science.load_cal_B_power[i]=(int)frame.loadSlices[i];
+    }
+    gsFrame.in_science.loop_back_cal_noise = (int)frame.loopbackNoise;
+    gsFrame.in_science.load_cal_noise = (int)frame.loadNoise;
+
+/*
     (void)memcpy(gsFrame.in_science.loop_back_cal_A_power,
                  frame.loopbackSlices, sizeof(float)*frame.slicesPerSpot);
     (void)memcpy(gsFrame.in_science.loop_back_cal_B_power,
@@ -212,7 +225,14 @@ L1A::FillGSFrame(void)
                  frame.loadSlices, sizeof(float)*frame.slicesPerSpot);
     (void)memcpy(&gsFrame.in_science.load_cal_noise,
                  &frame.loadNoise, sizeof(float));
+*/
 
+    (void)memcpy(gsFrame.in_science.power_dn,
+                 frame.science, sizeof(unsigned int)*frame.slicesPerFrame);
+    (void)memcpy(gsFrame.in_science.noise_dn,
+                 frame.spotNoise, sizeof(unsigned int)*frame.spotsPerFrame);
+
+/*
     for (int i=0; i < frame.slicesPerFrame; i++)
     {  // convert floats to ints
       *(gsFrame.in_science.power_dn[0] + i) = (int)frame.science[i];
@@ -221,6 +241,7 @@ L1A::FillGSFrame(void)
     {  // convert floats to ints
       gsFrame.in_science.noise_dn[i] = (int)frame.spotNoise[i];
     }
+*/
 
     // la1_frame_inst_status
     (void)memcpy(&(gsFrame.l1a_frame_inst_status),
@@ -272,7 +293,7 @@ L1A::CloseCalPulseFile(void)
 int
 L1A::WriteGSCalPulseRec(void)
 {
-    int i=0;  // loop counter
+//    int i=0;  // loop counter
 
     if (_calPulseFP == NULL) return(0);
 
@@ -314,8 +335,20 @@ L1A::WriteGSCalPulseRec(void)
     }
     (void)memcpy(ptr, &beam_num, sizeof(char));
     ptr += sizeof(char);
-//    printf("%d %d\n",frame.in_eu.true_cal_pulse_pos,*ptr);
 
+    (void)memcpy(ptr, frame.loopbackSlices,
+                 frame.slicesPerSpot * sizeof(unsigned int));
+    ptr += frame.slicesPerSpot * sizeof(unsigned int);
+    (void)memcpy(ptr, &(frame.loopbackNoise), sizeof(int));
+    ptr += sizeof(int);
+
+    (void)memcpy(ptr, frame.loadSlices,
+                 frame.slicesPerSpot * sizeof(unsigned int));
+    ptr += frame.slicesPerSpot * sizeof(unsigned int);
+    (void)memcpy(ptr, &(frame.loadNoise), sizeof(int));
+    ptr += sizeof(int);
+
+/*
     int Esn;  // integer storage for floating point cal pulse data
     for (i=0; i < 12; i++)
     {
@@ -336,6 +369,8 @@ L1A::WriteGSCalPulseRec(void)
     Esn = (int)frame.loadNoise;
     (void)memcpy(ptr, &Esn, sizeof(int));
     ptr += sizeof(int);
+*/
+
     (void)memcpy(ptr, &(frame.in_eu.precision_coupler_temp_eu), sizeof(float));
     ptr += sizeof(float);
     (void)memcpy(ptr, &(frame.in_eu.rcv_protect_sw_temp_eu), sizeof(float));
@@ -375,17 +410,17 @@ L1A::WriteGSCalPulseRecAscii(void)
     fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.time);
     for (i=0; i < 12; i++)
     {
-      fprintf(_calPulseFP,"loopbackSlices[%d] = %g\n",
+      fprintf(_calPulseFP,"loopbackSlices[%d] = %d\n",
         i,frame.loopbackSlices[i]);
     }
-    fprintf(_calPulseFP,"loopbackNoise = %g\n",frame.loopbackNoise);
+    fprintf(_calPulseFP,"loopbackNoise = %d\n",frame.loopbackNoise);
 
     for (i=0; i < 12; i++)
     {
-      fprintf(_calPulseFP,"loadSlices[%d] = %g\n",
+      fprintf(_calPulseFP,"loadSlices[%d] = %d\n",
         i,frame.loadSlices[i]);
     }
-    fprintf(_calPulseFP,"loadNoise = %g\n",frame.loadNoise);
+    fprintf(_calPulseFP,"loadNoise = %d\n",frame.loadNoise);
     fprintf(_calPulseFP,"precision_coupler_temp_eu = %g\n",
       frame.in_eu.precision_coupler_temp_eu);
     fprintf(_calPulseFP,"rcv_protect_sw_temp_eu = %g\n",

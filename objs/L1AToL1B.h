@@ -55,10 +55,11 @@ public:
 	// variables //
 	//-----------//
 
-    XTable     kfactorTable;
-    XTable     xTable;
-    BYUXTable  BYUX;
-    LandMap    landMap;
+    unsigned long pulseCount;  // cumulative counter
+    XTable        kfactorTable;
+    XTable        xTable;
+    BYUXTable     BYUX;
+    LandMap       landMap;
 
 	int		useKfactor;		 // read and use kfactor table
 	int		useBYUXfactor;		 // read and use Xfactor table

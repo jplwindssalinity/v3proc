@@ -41,13 +41,37 @@ QscatSes::QscatSes()
     rxGainNoise(0.0), calibrationBias(0.0), chirpRate(0.0),
     fftBinBandwidth(0.0),
     scienceSliceBandwidth(0.0),  scienceSlicesPerSpot(0),
-    guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0)
+    guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
+    receivePathLoss(0.0), transmitPathLoss(0.0), loopbackLoss(0.0),
+    loopbackLossRatio(0.0), physicalTemperature(0.0)
 {
+
+    Qtable = (float*)malloc(12*sizeof(float));
+    if (Qtable == NULL)
+    {
+      fprintf(stderr,"Error allocating memory while constructing QscatSes\n");
+      exit(1);
+    }
+    Qtable[0] = 0.262445;
+    Qtable[1] = 0.0474238;
+    Qtable[2] = 0.0474936;
+    Qtable[3] = 0.0475268;
+    Qtable[4] = 0.0475150;
+    Qtable[5] = 0.0475633;
+    Qtable[6] = 0.0475408;
+    Qtable[7] = 0.0475313;
+    Qtable[8] = 0.0475262;
+    Qtable[9] = 0.0474972;
+    Qtable[10] = 0.0474421;
+    Qtable[11] = 0.262501;
+
     return;
 }
 
 QscatSes::~QscatSes()
 {
+
+    if (Qtable) free(Qtable);
     return;
 }
 
@@ -137,6 +161,30 @@ QscatSes::GetSliceFreqBw(
 
     *f1-=0.5*fftBinBandwidth;
     return(1);
+}
+
+//-------------------//
+// QscatSes::GetQRel //
+//-------------------//
+
+int
+QscatSes::GetQRel(int rel_slice_idx, float* q_slice)
+{
+
+	//-------------------------------------------------------------------//
+    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+	//-------------------------------------------------------------------//
+
+    int i;
+    if (! rel_to_abs_idx(rel_slice_idx, GetTotalSliceCount(), &i))
+    {
+      fprintf(stderr,"GetQRel: Error converting relative slice index\n");
+      return(0);
+    }
+
+    *q_slice = Qtable[i];
+    return(1);
+
 }
 
 //-----------------------------//
@@ -2612,9 +2660,14 @@ SetDelayAndFrequency(
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
         short doppler_dn;
+//        printf("rx_gate_delay_DN,fDN = %d %g\n",qscat->cds.rxGateDelayDn,
+//               rx_gate_delay_fdn);
+//        printf("orbitStep = %d, ideal_encoder = %d\n",qscat->cds.orbitStep,
+//               ideal_encoder);
         doppler_tracker->GetCommandedDoppler(qscat->cds.orbitStep,
             ideal_encoder, qscat->cds.rxGateDelayDn, rx_gate_delay_fdn,
             &doppler_dn);
+//        printf("doppler_dn = %d\n",doppler_dn);
         qscat->ses.CmdTxDopplerDn(doppler_dn);
     }
     else

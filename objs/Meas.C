@@ -657,7 +657,7 @@ MeasSpot::WriteAscii(
         fprintf(fp,"#######         Spot Info               ######\n");
         fprintf(fp,"##############################################\n");
         fprintf(fp,"\n");
-        fprintf(fp,"Time: %g\n", time);
+        fprintf(fp,"Time: %.8g\n", time);
 	if (scOrbitState.WriteAscii(fp) != 1 ||
 		scAttitude.WriteAscii(fp) != 1 ||
 		MeasList::WriteAscii(fp) != 1)

@@ -69,6 +69,12 @@ public:
 
     Pscat();
     ~Pscat();
+
+    int MeasToEsn(Meas* prev_meas, Meas* meas, float XK,
+                  float sigma0,
+                  int sim_kpc_flag, float* Esn, float* Es, float* En,
+                  float* var_Esn);
+
 };
 
 #endif

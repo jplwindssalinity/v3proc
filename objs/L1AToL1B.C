@@ -18,7 +18,7 @@ static const char rcs_id_l1atol1b_c[] =
 //==========//
 
 L1AToL1B::L1AToL1B()
-:   useKfactor(0), useBYUXfactor(0), useSpotCompositing(0),
+:   pulseCount(0), useKfactor(0), useBYUXfactor(0), useSpotCompositing(0),
     outputSigma0ToStdout(0), sliceGainThreshold(0.0), processMaxSlices(0),
     simVs1BCheckfile(NULL), Esn_echo_cal(0.0), Esn_noise_cal(0.0),
     En_echo_load(0.0), En_noise_load(0.0)
@@ -150,7 +150,10 @@ L1AToL1B::Convert(
         //--------------------------//
 
         if (spot_idx==frame->calPosition-2 || spot_idx==frame->calPosition-1)
+        {
+          pulseCount++;
           continue;
+        }
 
         // determine the spot time
         double time = frame->time + spot_idx * qscat->ses.pri;
@@ -472,6 +475,7 @@ L1AToL1B::Convert(
 			fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
 			exit(-1);
 		  }
+          cf.pulseCount = pulseCount;
 		  cf.ptgr = l1a->frame.ptgr;
 		  cf.time = time;
           cf.beamNumber = qscat->cds.currentBeamIdx;
@@ -485,6 +489,7 @@ L1AToL1B::Convert(
           cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
           cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
           cf.EsCal = Es_cal;
+          cf.alpha = 1.0/beta * En_noise_load/En_echo_load;
 		  cf.WriteDataRec(fptr);
 		  fclose(fptr);
 		}
@@ -494,6 +499,7 @@ L1AToL1B::Convert(
 	    //----------------------//
 
 	    l1b->frame.spotList.Append(meas_spot);
+        pulseCount++;
     }
 
     if (outputSigma0ToStdout)

@@ -87,10 +87,10 @@ public:
     // cal data //
     //----------//
 
-    float*              loopbackSlices;
-    float               loopbackNoise;
-    float*              loadSlices;
-    float               loadNoise;
+    unsigned int*       loopbackSlices;
+    unsigned int        loopbackNoise;
+    unsigned int*       loadSlices;
+    unsigned int        loadNoise;
 
 	// antenna position
 	unsigned short*		antennaPosition;
@@ -99,8 +99,8 @@ public:
 	// science measurements //
     //----------------------//
 
-	float*				science;
-	float*				spotNoise;
+	unsigned int*		science;
+	unsigned int*		spotNoise;
 
     //---------------------------------------------------------//
     // Additional data needed to make GS compatible L1A files. //

@@ -506,6 +506,7 @@ QscatSim::ScatSim(
             fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
             exit(-1);
         }
+        cf.pulseCount = pulseCount;
         cf.time = qscat->cds.time;
         cf.beamNumber = qscat->cds.currentBeamIdx;
         cf.rsat = spacecraft->orbitState.rsat;
@@ -518,10 +519,13 @@ QscatSim::ScatSim(
         cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
         cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
         cf.EsCal = true_Es_cal(qscat);
+        cf.alpha = qscat->ses.noiseBandwidth /
+                     qscat->ses.GetTotalSignalBandwidth();
         cf.WriteDataRec(fptr);
         fclose(fptr);
     }
 
+    pulseCount++;
     return(1);
 }
 
@@ -591,6 +595,7 @@ QscatSim::LoopbackSim(
         l1aFrameReady = 0;  // indicate frame is not ready
     }
 
+    pulseCount++;
     return(1);
 }
 
@@ -653,6 +658,7 @@ QscatSim::LoadSim(
         l1aFrameReady = 0;  // indicate frame is not ready
     }
 
+    pulseCount++;
     return(1);
 }
 
@@ -998,13 +1004,14 @@ QscatSim::SetL1AScience(
         // update the level 0.0 frame //
         //----------------------------//
 
-        l1a_frame->science[slice_number] = meas->value;
+        l1a_frame->science[slice_number] = (unsigned int)(meas->value);
         slice_number++;
     }
 
     // Compute the spot noise measurement.
-    sigma0_to_Esn_noise(qscat, meas_spot, simKpcFlag,
-        &(l1a_frame->spotNoise[_spotNumber]));
+    float spot_noise;
+    sigma0_to_Esn_noise(qscat, meas_spot, simKpcFlag, &spot_noise);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
 
     _spotNumber++;
 
@@ -1032,11 +1039,6 @@ QscatSim::SetL1ALoopback(
     // Only "noise it up" if simKpriFlag is set. //
     //-------------------------------------------//
 
-//    if (simVs1BCheckfile)
-//    {
-//        cf->ptgr = PtGr;
-//    }
-
     float Esn_echo_cal,Esn_noise_cal;
     PtGr_to_Esn(&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
 
@@ -1058,22 +1060,23 @@ QscatSim::SetL1ALoopback(
         // processing system.
         //----------------------------------------------------------------//
 
-        l1a_frame->loopbackSlices[i] = 0.0;
-        l1a_frame->science[base_slice_number + i] = 0.0;
+        l1a_frame->loopbackSlices[i] = 0;
+        l1a_frame->science[base_slice_number + i] = 0;
     }
 
     // Now set the single slice with loopback energy.
     // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
     int icenter = l1a_frame->slicesPerSpot/2;
-    l1a_frame->loopbackSlices[icenter] = Esn_echo_cal/256.0;
-    l1a_frame->science[base_slice_number + icenter] = Esn_echo_cal/256.0;
+    l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
+    l1a_frame->science[base_slice_number + icenter] =
+      (unsigned int)(Esn_echo_cal/256.0);
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
     //----------------------------------------------//
 
-    l1a_frame->loopbackNoise = Esn_noise_cal;
-    l1a_frame->spotNoise[_spotNumber] = Esn_noise_cal;
+    l1a_frame->loopbackNoise = (unsigned int)(Esn_noise_cal);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(Esn_noise_cal);
 
     //--------------------------------------------------------//
     // Set cal position indicator so that the actual position //
@@ -1109,7 +1112,7 @@ QscatSim::SetL1ALoad(
 
     //-------------------------------------------//
     // Compute load noise measurements to assure //
-    // a perfect retrieval of alpha.             //
+    // a (nearly) perfect retrieval of alpha.             //
     //-------------------------------------------//
 
     float En_echo_load;
@@ -1133,17 +1136,18 @@ QscatSim::SetL1ALoad(
         // and into separate storage just like the ground processing system.
         //----------------------------------------------------------------//
 
-        l1a_frame->loadSlices[i] = En_echo_load/l1a_frame->slicesPerSpot;
+        l1a_frame->loadSlices[i] =
+          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
         l1a_frame->science[base_slice_number + i] =
-          En_echo_load/l1a_frame->slicesPerSpot;
+          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
     }
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
     //----------------------------------------------//
 
-    l1a_frame->loadNoise = En_noise_load;
-    l1a_frame->spotNoise[_spotNumber] = En_noise_load;
+    l1a_frame->loadNoise = (unsigned int)(En_noise_load);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(En_noise_load);
 
     _spotNumber++;
 

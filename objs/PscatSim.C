@@ -463,6 +463,10 @@ PscatSim::SetMeasurements(
     int slice_count = pscat->ses.GetTotalSliceCount();
     int slice_i = 0;
     int sliceno = -slice_count / 2;
+
+    // We need to track the previous meas for correlation measurements.
+    Meas* prev_meas = NULL;
+
     Meas* meas = meas_spot->GetHead();
     while (meas)
     {
@@ -574,7 +578,6 @@ PscatSim::SetMeasurements(
 
 		// Kfactor: either 1.0, taken from table, or X is computed
         // directly
-        float Xfactor=0;
         float Kfactor=1.0;
         float Es,En,var_esn_slice;
 		CoordinateSwitch gc_to_antenna;
@@ -587,7 +590,7 @@ PscatSim::SetMeasurements(
             // to next slice
             if (computeXfactor)
             {
-                if (! ComputeXfactor(spacecraft, pscat, meas, &Xfactor))
+                if (! ComputeXfactor(spacecraft, pscat, meas, &(meas->XK)))
                 {
                     meas=meas_spot->RemoveCurrent();
                     delete meas;
@@ -601,15 +604,19 @@ PscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-                Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+                meas->XK = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
             }
-            if (! sigma0_to_Esn_slice_given_X(pscat, meas, Xfactor, sigma0,
-                simKpcFlag, &(meas->value), &Es, &En,
-                &var_esn_slice))
+
+//            if (! sigma0_to_Esn_slice_given_X(pscat, meas, Xfactor, sigma0,
+//                simKpcFlag, &(meas->value), &Es, &En,
+//                &var_esn_slice))
+
+            if (! pscat->MeasToEsn(prev_meas, meas, meas->XK, sigma0,
+                    simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
-            meas->XK=Xfactor;
+
 		}
         else
         {
@@ -646,6 +653,7 @@ PscatSim::SetMeasurements(
 		slice_i++;
 		if (slice_count%2==0 && sliceno==0)
             sliceno++;
+        prev_meas = meas;
 		meas=meas_spot->GetNext();
 	}
 
