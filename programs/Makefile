@@ -34,7 +34,8 @@ PROGRAMS = \
 	fake_vap \
 	l15_outlines \
 	plot_solution_curves \
-	sim_accurate
+	sim_accurate \
+	make_kfactor
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -68,3 +69,9 @@ install: $(PROGRAMS)
 
 %: %.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+
+
+
+
+
