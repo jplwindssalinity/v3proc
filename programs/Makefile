@@ -44,6 +44,7 @@ PROGRAMS = \
 	memfilter \
 	fake_vap \
 	l1b_ascii \
+        l1b_to_slicebal \
 	l1b_outlines \
 	l1b_to_kprtable \
 	plot_solution_curves \
