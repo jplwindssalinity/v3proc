@@ -140,6 +140,9 @@ main(
 
 	const char* command = no_path(argv[0]);
 
+	if (argc == 1)
+		usage(command, usage_array, 1);
+
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
