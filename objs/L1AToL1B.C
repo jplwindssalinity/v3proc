@@ -180,7 +180,7 @@ L10ToL15::Convert(
 				float k_factor=1.0;
 				if (useKfactor)
 				{
-					k_factor=kfactorTable.RetrieveBySliceNumber(
+					k_factor=kfactorTable.RetrieveByRelativeSliceNumber(
 						instrument->antenna.currentBeamIdx,
 						instrument->antenna.azimuthAngle,
 						sliceno);
