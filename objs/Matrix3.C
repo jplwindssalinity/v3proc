@@ -687,6 +687,73 @@ EarthPosition::EarthPosition(double x1, double x2, double x3,
                              earthposition_typeE etype)
 
 {
+EarthPosition::SetPosition(x1,x2,x3,etype);
+return;
+}
+
+//
+// Initialize with a 2 user-specified elements.
+// The altitude is assumed to be zero (ie., a position on the surface)
+// The latitude type is specified by the type argument at the end.
+//
+
+EarthPosition::EarthPosition(double lat, double lon,
+                             earthposition_typeE etype)
+
+{
+// call SetPosition with zero altitude
+EarthPosition::SetPosition(0.0,lat,lon,etype);
+return;
+}
+
+//
+// Initialize with the elements of a Vector3 object.
+// The elements are assumed to be rectangular coordinates.
+//
+
+EarthPosition::EarthPosition(Vector3 v)
+
+{
+
+v.Get(0,&_v[0]);
+v.Get(1,&_v[1]);
+v.Get(2,&_v[2]);
+
+}
+
+//
+// Default constructor, no initialization
+//
+
+EarthPosition::EarthPosition()
+
+{
+return;
+}
+
+//
+// Default destructor, no action
+//
+
+EarthPosition::~EarthPosition()
+
+{
+return;
+}
+
+//
+// SetPosition
+//
+// Initialize with a complete set of 3 user-specified elements.
+// The meaning of the 3 elements is specified by the type argument at the end.
+// Note that altitudes must be specified in km!
+//
+
+int
+EarthPosition::SetPosition(double x1, double x2, double x3,
+                             earthposition_typeE etype)
+
+{
 
 if (etype == GEODETIC)
   {	// convert geodetic latitude to geocentric latitude
@@ -739,57 +806,8 @@ else
   exit(-1);
   }
 
-}
+return(1);
 
-//
-// Initialize with a 2 user-specified elements.
-// The altitude is assumed to be zero (ie., a position on the surface)
-// The latitude type is specified by the type argument at the end.
-//
-
-EarthPosition::EarthPosition(double lat, double lon,
-                             earthposition_typeE etype)
-
-{
-
-// call general constructor with zero altitude
-EarthPosition::EarthPosition(0,lat,lon,etype);
-
-}
-
-//
-// Initialize with the elements of a Vector3 object.
-// The elements are assumed to be rectangular coordinates.
-//
-
-EarthPosition::EarthPosition(Vector3 v)
-
-{
-
-v.Get(0,&_v[0]);
-v.Get(1,&_v[1]);
-v.Get(2,&_v[2]);
-
-}
-
-//
-// Default constructor, no initialization
-//
-
-EarthPosition::EarthPosition()
-
-{
-return;
-}
-
-//
-// Default destructor, no action
-//
-
-EarthPosition::~EarthPosition()
-
-{
-return;
 }
 
 //

@@ -71,6 +71,15 @@ double	alongtrack_size)
 		_alongtrack_bins,_crosstrack_bins);
 	if (_grid == NULL) return(0);
 
+	// Make an empty MeasList object, and copy it into each grid list.
+	MeasList empty_meas_list;
+
+	for (int i=0; i < _alongtrack_bins; i++)
+	for (int j=0; j < _alongtrack_bins; j++)
+	{
+		_grid[i][j] = empty_meas_list;
+	}
+
 	return(1);
 }
 
@@ -90,7 +99,11 @@ Grid::Add(Meas *meas, double meas_time)
 EarthPosition rground(meas->center.latitude,meas->center.longitude,
                       EarthPosition::GEODETIC);
 float ctd,atd;
-ephemeris.GetSubtrackCoordinates(rground,_start_time,meas_time,&ctd,&atd);
+if (ephemeris.GetSubtrackCoordinates(rground,_start_time,
+	meas_time,&ctd,&atd) == 0);
+{
+	return(0);	// Couldn't find a grid position, so dump this measurement.
+}
 
 //
 // Compute grid indices, noting that the cross track grid starts on the left
@@ -172,6 +185,25 @@ _grid[_ati_start][i].FreeContents();	// prepare for new data
 _ati_start++;
 if (_ati_start >= _alongtrack_bins) _ati_start = 0;
 _ati_offset++;
+
+return(1);
+
+}
+
+//
+// Grid::Flush
+//
+// Write out all the grid rows in memory.
+//
+
+int
+Grid::Flush()
+{
+
+for (int i=0; i < _alongtrack_bins; i++)
+{
+	ShiftForward();
+}
 
 return(1);
 

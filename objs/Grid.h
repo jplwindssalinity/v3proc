@@ -58,6 +58,7 @@ public:
 	//--------------//
 
 	int		ShiftForward();
+	int		Flush();
 
 	//-----------//
 	// variables //

@@ -175,6 +175,8 @@ EarthPosition(Vector3 v);
 EarthPosition();
 ~EarthPosition();
 
+int SetPosition(double x1, double x2, double x3, earthposition_typeE etype);
+
 //
 // Operators
 //
