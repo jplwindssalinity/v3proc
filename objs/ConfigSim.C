@@ -1397,6 +1397,8 @@ ConfigKpmField(
 	// configure the KpmField //
 	//------------------------//
 
+	config_list->DoNothingForMissingKeywords();
+
 	float corr_length;
 	if (! config_list->GetFloat(KPM_CORRELATION_LENGTH_KEYWORD, &corr_length))
 	{
@@ -1438,6 +1440,8 @@ ConfigKpmField(
 			return(0);
 		}
 	}
+
+	config_list->ExitForMissingKeywords();
 
 	return(1);
 }
