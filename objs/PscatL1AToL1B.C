@@ -222,11 +222,11 @@ PscatL1AToL1B::Convert(
 
         int slice_count = qscat->ses.GetTotalSliceCount();
 
-        //--------------------------------------------//
-        // determine measurement type from spot index //
-        //--------------------------------------------//
+        //----------------------------//
+        // determine measurement type //
+        //----------------------------//
 
-        PscatEvent::PscatEventE event = PscatSpotIdxToEvent(spot_idx);
+        PscatEvent::PscatEventE event = frame->event[spot_idx];
 
         //------------------------------------------------------//
         // set measurement types, add polarimetric measurements //
@@ -386,18 +386,4 @@ PscatL1AToL1B::Convert(
     }
 
     return(1);
-}
-
-//---------------------//
-// PscatSpotIdxToEvent //
-//---------------------//
-
-PscatEvent::PscatEventE
-PscatSpotIdxToEvent(
-    int  spot_idx)
-{
-    if (spot_idx % 2 == 0)
-        return(PscatEvent::HH_HV_SCAT_EVENT);
-    else
-        return(PscatEvent::VV_SCAT_EVENT);
 }

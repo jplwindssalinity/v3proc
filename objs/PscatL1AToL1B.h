@@ -78,6 +78,4 @@ public:
 */
 };
 
-PscatEvent::PscatEventE PscatSpotIdxToEvent(int spot_idx);
-
 #endif
