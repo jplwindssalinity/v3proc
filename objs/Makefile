@@ -113,7 +113,7 @@ Antenna.o: Antenna.C Antenna.h Beam.h Constants.h Attitude.h CoordinateSwitch.h 
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h CoordinateSwitch.h Matrix3.h
 Array.o: Array.C Array.h
 Attitude.o: Attitude.C Attitude.h
-Beam.o: Beam.C Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
+Beam.o: Beam.C Beam.h CoordinateSwitch.h Matrix3.h Attitude.h Array.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
