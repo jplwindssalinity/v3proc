@@ -66,15 +66,16 @@ public:
 				Instrument* instrument, 
 				MeasSpot* meas_spot, WindField* windfield,
 				GMF* gmf);
-	int		SetL00Spacecraft(Spacecraft* spacecraft);
-	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument);
+	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
+	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument, L00Frame* l00_frame);
 	int		ScatSim(double time, Spacecraft* spacecraft,
-				Instrument* instrument, WindField* windfield, GMF* gmf);
+				Instrument* instrument, WindField* windfield, GMF* gmf, L00Frame* l00_frame);
 
 	//-----------//
 	// variables //
 	//-----------//
 
+	int                     slicesPerSpot;
 	double			startTime;
 	double			endTime;
 	AntennaSim		antennaSim;		// the antenna simulator
@@ -83,7 +84,6 @@ public:
 	// level 0 frame information //
 	//---------------------------//
 
-	L00			l00;
 	int			l00FrameReady;
 
 protected:

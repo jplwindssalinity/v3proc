@@ -20,7 +20,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	startTime(0.0), endTime(0.0), l00FrameReady(0), _spotNumber(0)
+:	slicesPerSpot(0),startTime(0.0), endTime(0.0), l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -143,7 +143,7 @@ InstrumentSim::LocateSlices(
 	// determine slicing info //
 	//------------------------//
 
-	float total_freq = l00.frame.slicesPerSpot * instrument->sliceBandwidth;
+	float total_freq = slicesPerSpot * instrument->sliceBandwidth;
 	float min_freq = -total_freq / 2.0;
 
 	//-------------------------------------------------//
@@ -163,7 +163,7 @@ InstrumentSim::LocateSlices(
 	// for each slice... //
 	//-------------------//
 
-	for (int slice_idx = 0; slice_idx < l00.frame.slicesPerSpot;
+	for (int slice_idx = 0; slice_idx < slicesPerSpot;
 		slice_idx++)
 	{
 		//-------------------------//
@@ -452,10 +452,9 @@ InstrumentSim::SetMeasurements(
 
 int
 InstrumentSim::SetL00Spacecraft(
-	Spacecraft*		spacecraft)
+	Spacecraft*		spacecraft, L00Frame* l00_frame)
 {
 	OrbitState* orbit_state = &(spacecraft->orbitState);
-	L00Frame* l00_frame = &(l00.frame);
 
 	double alt, lon, lat;
 	if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
@@ -481,9 +480,9 @@ InstrumentSim::SetL00Spacecraft(
 int
 InstrumentSim::SetL00Science(
 	MeasSpot*		meas_spot,
-	Instrument*		instrument)
+	Instrument*		instrument,
+	L00Frame*               l00_frame)
 {
-	L00Frame* l00_frame = &(l00.frame);
 	Antenna* antenna = &(instrument->antenna);
 
 	//----------------------//
@@ -523,7 +522,8 @@ InstrumentSim::ScatSim(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	WindField*		windfield,
-	GMF*			gmf)
+	GMF*			gmf,
+	L00Frame*               l00_frame)
 {
 	MeasSpot meas_spot;
 
@@ -534,16 +534,16 @@ InstrumentSim::ScatSim(
 
 	if (_spotNumber == 0)
 	{	
-		if (! SetL00Spacecraft(spacecraft))
+		if (! SetL00Spacecraft(spacecraft,l00_frame))
 			return(0);
-		l00.frame.time = time;
+		l00_frame->time = time;
 	}
 
 	//---------------------//
 	// locate measurements //
 	//---------------------//
 
-	if (l00.frame.slicesPerSpot <= 1)
+	if (slicesPerSpot <= 1)
 	{
 		if (! LocateSpot(time, spacecraft, instrument, &meas_spot))
 			return(0);
@@ -567,14 +567,14 @@ InstrumentSim::ScatSim(
 	// Add Spot Specific Info to Frame //
 	//--------------------------------//
 
-	if (! SetL00Science(&meas_spot, instrument))
+	if (! SetL00Science(&meas_spot, instrument, l00_frame))
 		return(0);
 
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
-	if (_spotNumber >= l00.frame.spotsPerFrame)
+	if (_spotNumber >= l00_frame->spotsPerFrame)
 	{
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame
