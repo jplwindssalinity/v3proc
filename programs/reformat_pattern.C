@@ -223,8 +223,8 @@ main(
     for (int i=0; i < Nx; i++)
     for (int j=0; j < Ny; j++)
     {
-		power_gainv[i][j] = pow((v_gain[i*Ny + j]+G0V)/10.0,10.0);
-		power_gainh[i][j] = pow((h_gain[i*Ny + j]+G0H)/10.0,10.0);
+		power_gainv[i][j] = pow(10.0, (v_gain[i*Ny + j]+G0V)/10.0);
+		power_gainh[i][j] = pow(10.0, (h_gain[i*Ny + j]+G0H)/10.0);
 	}
 
 	//
