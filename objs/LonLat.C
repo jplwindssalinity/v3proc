@@ -84,7 +84,8 @@ int
 LonLat::WriteAscii(
 	FILE*	fp)
 {
-	fprintf(fp, "%g %g\n", longitude * rtd, latitude * rtd);
+	fprintf(fp, "Lon=%g(%g), Lat=%g(%g)\n",
+                longitude * rtd, longitude, latitude * rtd, latitude);
 	return(1);
 }
 

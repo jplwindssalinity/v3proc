@@ -15,6 +15,10 @@ static const char rcs_id_wind_h[] =
 #include "LonLat.h"
 #include "Index.h"
 
+#include <mfhdf.h>
+#include "Parameter.h"
+#include "TlmHdfFile.h"
+
 //======================================================================
 // CLASSES
 //		WindVector, WindVectorPlus, WVC, WindField, WindSwath
@@ -275,8 +279,12 @@ public:
 	int		WriteL2B(FILE* fp);
 	int		ReadL2B(FILE* fp);
 	int		ReadL2B(const char* filename);
+	int		ReadHdfL2B(TlmHdfFile* tlmHdfFile);
+	int		ReadHdfL2B(const char* filename);
 	int		WriteVctr(const char* filename, const int rank);
 	int		WriteFlower(const char* filename);
+	int		WriteAscii(const char* filename);
+	int		WriteAscii(FILE* fp);
 
 	//-----------//
 	// filtering //
@@ -330,6 +338,13 @@ protected:
 	int		_Allocate();
 	int		_Deallocate();
 
+	//--------------//
+	// for HDF      //
+	//--------------//
+    int     _OpenOneHdfDataSet(TlmHdfFile*, SourceIdE, ParamIdE);
+    int     _OpenHdfDataSets(TlmHdfFile*);
+    void    _CloseHdfDataSets(void);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -337,6 +352,16 @@ protected:
 	int		_crossTrackBins;
 	int		_alongTrackBins;
 	int		_validCells;
+
+	//--------------//
+	// for HDF      //
+	//--------------//
+    int32   _lonSdsId;
+    int32   _latSdsId;
+    int32   _speedSdsId;
+    int32   _dirSdsId;
+    int32   _mleSdsId;
+    int32   _selectSdsId;
 };
 
 #endif

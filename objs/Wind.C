@@ -15,6 +15,12 @@ static const char rcs_id_wind_c[] =
 #include "Array.h"
 #include "LonLat.h"
 
+#include "L1AExtract.h"
+#include "ParTab.h"
+#include "NoTimeTlmFile.h"
+
+#define HDF_ACROSS_BIN_NO    76
+#define HDF_NUM_AMBIGUITIES  4
 
 //============//
 // WindVector //
@@ -113,7 +119,7 @@ int
 WindVectorPlus::WriteAscii(
 	FILE*	fp)
 {
-	fprintf(fp, "Spd=%g Dir=%g Obj=%g\n", spd, dir * rtd, obj);
+	fprintf(fp, "Spd=%g Dir=%g(%g) Obj=%g\n", spd, dir * rtd, dir, obj);
 	return(1);
 }
 
@@ -304,12 +310,22 @@ int
 WVC::WriteAscii(
 	FILE*	fp)
 {
+    if ( ! lonLat.WriteAscii(fp))
+        return(0);
+
 	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
 		wvp = ambiguities.GetNext())
 	{
 		if (! wvp->WriteAscii(fp))
 			return(0);
 	}
+
+    if (selected)
+    {
+        fprintf(fp, "Selected: ");
+		if (! selected->WriteAscii(fp))
+			return(0);
+    }
 	return(1);
 }
 
@@ -1520,6 +1536,131 @@ WindSwath::ReadL2B(
 	return(1);
 }
 
+//-----------------------//
+// WindSwath::ReadHdfL2B //
+//-----------------------//
+
+int
+WindSwath::ReadHdfL2B(
+	TlmHdfFile*	tlmHdfFile)
+{
+	DeleteEntireSwath();		// in case
+
+    // cross bin number is fixed
+    _crossTrackBins = HDF_ACROSS_BIN_NO;
+
+    // along bin number comes from WVC_ROW
+    const char* rowSdsName = ParTabAccess::GetSdsNames(SOURCE_L2B, WVC_ROW);
+    if (rowSdsName == 0)
+        return(0);
+
+    int32 dataType=0, dataStartIndex=0, dataLength=0, numDimensions=0;
+    int32 rowSdsId = tlmHdfFile->SelectDataset(rowSdsName, dataType,
+                             dataStartIndex, dataLength, numDimensions);
+    if (rowSdsId == HDF_FAIL)
+        return(0);
+
+    _alongTrackBins = dataLength;
+
+    // all cells are valid here
+    _validCells = _alongTrackBins * _crossTrackBins;
+
+    // open all needed datasets
+    if ( ! _OpenHdfDataSets(tlmHdfFile))
+        return(0);
+
+	_Allocate();
+
+    float* lonArray = new float[_crossTrackBins];
+    float* latArray = new float[_crossTrackBins];
+    float* speedArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
+    float* dirArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
+    float* mleArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
+    char*  selectArray = new char[_crossTrackBins];
+    int32 sdsIds[1];
+	for (int32 i = 0; i < _alongTrackBins; i++)
+    {
+        sdsIds[0] = _lonSdsId;
+        if (ExtractData2D_76_uint2_float(tlmHdfFile, sdsIds, 
+                                           i, 1, 1, lonArray) == 0)
+            return(0);
+
+        sdsIds[0] = _latSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, 
+                                           i, 1, 1, latArray) == 0)
+            return(0);
+
+        sdsIds[0] = _speedSdsId;
+        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds, 
+                                           i, 1, 1, speedArray) == 0)
+            return(0);
+
+        sdsIds[0] = _dirSdsId;
+        if (ExtractData3D_76_4_uint2_float(tlmHdfFile, sdsIds, 
+                                           i, 1, 1, dirArray) == 0)
+            return(0);
+
+        sdsIds[0] = _mleSdsId;
+        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds, 
+                                           i, 1, 1, mleArray) == 0)
+            return(0);
+
+        sdsIds[0] = _selectSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, selectArray) == 0)
+            return(0);
+
+	    for (int j = 0; j < _crossTrackBins; j++)
+	    {
+		    WVC* wvc = new WVC();
+            wvc->lonLat.longitude = lonArray[j];
+            wvc->lonLat.latitude = latArray[j];
+            for (int k=0; k < HDF_NUM_AMBIGUITIES; k++)
+            {
+                WindVectorPlus* wvp = new WindVectorPlus();
+                wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k],
+                               dirArray[j * HDF_NUM_AMBIGUITIES + k]);
+                wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
+                wvc->ambiguities.Append(wvp);
+            }
+            if (selectArray[j] > 0)
+                wvc->selected = wvc->ambiguities.GetByIndex(selectArray[j]-1);
+
+		    *(*(swath + j) + i) = wvc;
+        }
+	}
+    delete [] lonArray;
+    delete [] latArray;
+    delete [] speedArray;
+    delete [] dirArray;
+    delete [] mleArray;
+    delete [] selectArray;
+
+    // close all needed datasets
+    _CloseHdfDataSets();
+
+	return(1);
+}
+//-----------------------//
+// WindSwath::ReadHdfL2B //
+//-----------------------//
+
+int
+WindSwath::ReadHdfL2B(
+	const char*		filename)
+{
+    // open the L2B HDF file
+    HdfFile::StatusE returnStatus = HdfFile::OK;
+    NoTimeTlmFile hdfL2BFile(filename, returnStatus);
+    if (returnStatus != HdfFile::OK)
+        return(0);
+
+	if (! ReadHdfL2B(&hdfL2BFile))
+		return(0);
+
+	return(1);
+
+}//WindSwath::ReadHdfL2B
+
 //----------------------//
 // WindSwath::WriteVctr //
 //----------------------//
@@ -1610,6 +1751,60 @@ WindSwath::WriteFlower(
 	fclose(fp);
 	return(1);
 }
+
+//------------------------//
+// WindSwath::WriteAscii  //
+//------------------------//
+
+int
+WindSwath::WriteAscii(
+	const char*		filename)
+{
+	//-----------//
+	// open file //
+	//-----------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+    int rc = WriteAscii(fp);
+    fclose(fp);
+    return(rc);
+
+} // WriteAscii
+
+//------------------------//
+// WindSwath::WriteAscii  //
+//------------------------//
+
+int
+WindSwath::WriteAscii(
+	FILE*     fp)
+{
+	//---------------//
+	// write ASCII   //
+	//---------------//
+
+    fprintf(fp, "Total Along Track Bins: %d\nTotal Cross Track Bins: %d\n",
+                             _alongTrackBins, _crossTrackBins);
+	for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+		for (int cti = 0; cti < _crossTrackBins; cti++)
+		{
+            fprintf(fp, "Along Track Bin: %d, Cross Track Bin: %d\n", ati, cti);
+			WVC* wvc = *(*(swath + cti) + ati);
+			if (wvc == NULL)
+				continue;
+
+			if (! wvc->WriteAscii(fp))
+				return(0);
+		}
+	}
+
+	return(1);
+
+} // WriteAscii
 
 //-------------------------//
 // WindSwath::InitWithRank //
@@ -2415,3 +2610,72 @@ WindSwath::_Deallocate()
 	_alongTrackBins = 0;
 	return(1);
 }
+
+//-------------------------------//
+// WindSwath::_OpenOneHdfDataSet //
+//-------------------------------//
+
+int
+WindSwath::_OpenOneHdfDataSet(
+TlmHdfFile*   tlmHdfFile,
+SourceIdE     source,
+ParamIdE      param)
+{
+    const char* sdsName = ParTabAccess::GetSdsNames(source, param);
+    if (sdsName == 0)
+        return(0);
+
+    int32 dataType=0, dataStartIndex=0, dataLength=0, numDimensions=0;
+    int32 sdsId = tlmHdfFile->SelectDataset(sdsName, dataType,
+                             dataStartIndex, dataLength, numDimensions);
+    if (sdsId == HDF_FAIL)
+        return(0);
+    else
+        return(sdsId);
+
+} // WindSwath::_OpenOneHdfDataSet
+
+//-----------------------------//
+// WindSwath::_OpenHdfDataSets //
+//-----------------------------//
+
+int
+WindSwath::_OpenHdfDataSets(
+TlmHdfFile*     tlmHdfFile)
+{
+    if ((_lonSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WVC_LON)) == 0)
+        return(0);
+    if ((_latSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WVC_LAT)) == 0)
+        return(0);
+    if ((_speedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     WIND_SPEED)) == 0)
+        return(0);
+    if ((_dirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WIND_DIR)) == 0)
+        return(0);
+    if ((_mleSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     MAX_LIKELIHOOD_EST)) == 0)
+        return(0);
+    if ((_selectSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     WVC_SELECTION)) == 0)
+        return(0);
+
+    return(1);
+
+} // WindSwath::_OpenHdfDataSets
+
+//------------------------------//
+// WindSwath::_CloseHdfDataSets //
+//------------------------------//
+
+void
+WindSwath::_CloseHdfDataSets(void)
+{
+    (void)SDendaccess(_lonSdsId); _lonSdsId = HDF_FAIL;
+    (void)SDendaccess(_latSdsId); _latSdsId = HDF_FAIL;
+    (void)SDendaccess(_speedSdsId); _speedSdsId = HDF_FAIL;
+    (void)SDendaccess(_dirSdsId); _dirSdsId = HDF_FAIL;
+    (void)SDendaccess(_mleSdsId); _mleSdsId = HDF_FAIL;
+    (void)SDendaccess(_selectSdsId); _selectSdsId = HDF_FAIL;
+    return;
+
+} // WindSwath::_OpenHdfDataSets

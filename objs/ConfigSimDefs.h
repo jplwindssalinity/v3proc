@@ -172,12 +172,14 @@ static const char rcs_id_configsimdefs_h[] =
 //-----//
 
 #define L1A_FILE_KEYWORD		"L1A_FILE"
+#define L1A_HDF_FILE_KEYWORD	"L1A_HDF_FILE"
 
 //-----//
 // L1B //
 //-----//
 
 #define L1B_FILE_KEYWORD		"L1B_FILE"
+#define L1B_HDF_FILE_KEYWORD	"L1B_HDF_FILE"
 
 //----------//
 // L1AToL1B //
@@ -193,12 +195,14 @@ static const char rcs_id_configsimdefs_h[] =
 //-----//
 
 #define L2A_FILE_KEYWORD		"L2A_FILE"
+#define L2A_HDF_FILE_KEYWORD	"L2A_HDF_FILE"
 
 //-----//
 // L2B //
 //-----//
 
-#define L2B_FILE_KEYWORD					"L2B_FILE"
+#define L2B_FILE_KEYWORD		"L2B_FILE"
+#define L2B_HDF_FILE_KEYWORD	"L2B_HDF_FILE"
 
 //----------//
 // L2AToL2B //

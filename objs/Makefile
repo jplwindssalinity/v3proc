@@ -5,15 +5,18 @@
 
 SHELL =			/bin/csh
 
+HDFINCDIR =   /usr/local/HDF/include
+
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-DEBUGFLAGS = -O3
+DEBUGFLAGS =    -O3
+INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
-
-
-CPPFLAGS =		$(DEBUGFLAGS) -fno-implicit-templates -Wall
+CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall
 SYSLIBS =		-lm
 CCC =			gcc
+
+CPINCFILES =    echo *.h
 
 OBJS = \
 	List.o \
@@ -100,7 +103,9 @@ depend:
 clean:
 	- /bin/rm -f $(TARGET_LIB)
 	- /bin/rm -f $(OBJS)
-	- /bin/rm -f $(INCDIR)/*
+	(set incfiles=($(INCS)); cd $(INCDIR); /bin/rm -f $$incfiles)
+
+#	- /bin/rm -f $(INCDIR)/*
 
 #----------------------------------------------------------------------
 # install: same as default
@@ -117,8 +122,10 @@ install: $(TARGET_LIB)
 $(TARGET_LIB):	$(OBJS)
 	- /bin/rm -f $(TARGET_LIB)
 	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS)
-	- (cd $(INCDIR); /bin/rm -f $(INCS))
+	- (set incfiles=($(INCS)); cd $(INCDIR); /bin/rm -f $$incfiles)
 	cp $(INCS) $(INCDIR)
+
+#	- (cd $(INCDIR); /bin/rm -f $(INCS))
 
 %.C: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.C,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v

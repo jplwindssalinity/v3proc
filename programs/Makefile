@@ -4,13 +4,18 @@
 #======================================================================
 
 SHELL =			/bin/csh
+HDFINCDIR =		/usr/local/HDF/include
 INCDIR =		../../include
+
+EALIBS =		../../lib/libEAData.a
+HDFLIBS =		-L/usr/local/HDF/lib -lmfhdf -ldf -lz -lnsl
 LIBS =			../../lib/libSim.a
-LDLIBS =		$(LIBS) -lm
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++
 PURE =
+
 CCC =			$(PURE) gcc
 DEBUGFLAGS =	-O3
-CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR)
+CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR)
 
 INSTALLDIR =	../../bin
 
@@ -22,6 +27,7 @@ PROGRAMS = \
 	l2a_to_l2b \
 	l2b_medianfilter \
 	l2b_to_vctr \
+	test_hdf_l2b \
 	l2b_metrics \
 	see_spot \
 	eqx \
@@ -119,5 +125,5 @@ install: $(PROGRAMS)
 %.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
-%: %.C $(LIBS)
+%: %.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
