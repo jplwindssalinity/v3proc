@@ -163,8 +163,8 @@ unsigned char  filter_speed_idx[CT_WIDTH][AT_WIDTH];
 unsigned char  filter_cti_idx[CT_WIDTH];
 unsigned char  filter_prob_idx[CT_WIDTH][AT_WIDTH];
 
-unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
-unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_count_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 
 unsigned short  filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 unsigned short  filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
@@ -260,7 +260,8 @@ main(
     // read in prob file //
     //-------------------//
 
-    size_t first_nitems = FIRST_INDICIES * CTI_INDICIES * SPEED_INDICIES;
+    size_t first_nitems = FIRST_PROB_INDICIES * FIRST_REL_DIR_INDICIES *
+        CTI_INDICIES * SPEED_INDICIES;
     size_t filter_nitems = NEIGHBOR_INDICIES * DIF_RATIO_INDICIES *
         SPEED_INDICIES * CTI_INDICIES * PROB_INDICIES;
 
@@ -368,11 +369,13 @@ main(
     // initialize some index calculators //
     //-----------------------------------//
 
-    Index first_index, neighbor_index, dif_ratio_index, speed_index,
-        prob_index;
+    Index first_index, first_rel_dir_index, neighbor_index, dif_ratio_index,
+        speed_index, prob_index;
 
-    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
-        FIRST_INDICIES);
+    first_index.SpecifyCenters(FIRST_PROB_MIN_VALUE, FIRST_PROB_MAX_VALUE,
+        FIRST_PROB_INDICIES);
+    first_rel_dir_index.SpecifyCenters(FIRST_REL_DIR_MIN_VALUE,
+        FIRST_REL_DIR_MAX_VALUE, FIRST_REL_DIR_INDICIES);
     neighbor_index.SpecifyCenters(NEIGHBOR_MIN_VALUE, NEIGHBOR_MAX_VALUE,
         NEIGHBOR_INDICIES);
     dif_ratio_index.SpecifyCenters(DIF_RATIO_MIN_VALUE, DIF_RATIO_MAX_VALUE,
@@ -393,6 +396,24 @@ main(
             use_cti = CTI_FOLDER - use_cti;
         filter_cti_idx[cti] = (unsigned char)use_cti;
     }
+
+    //--------------------------------------//
+    // pre-calculate s/c velocity direction //
+    //--------------------------------------//
+
+    float sc_dir[AT_WIDTH];
+    double tani = tan(l2b.header.inclination);
+    for (int i = 0; i < AT_WIDTH; i++)
+    {
+        double u = ((double)i + 0.5) * two_pi / (double)AT_WIDTH -
+            pi_over_two;
+        double cosu = cos(u);
+        double ang = atan(1.0 / (cosu * tani));
+        if (ang > 0.0)
+            ang -= pi;
+        sc_dir[i] = CWNTOCCWE(ang);
+    }
+
 
     //--------------------//
     // open the eval file //
@@ -508,6 +529,31 @@ main(
             first_obj_prob[cti][ati] = wvp1->obj;
             first_speed[cti][ati] = wvp1->spd;
 
+            //---------------------------------------------//
+            // calculate the swath-relative wind direction //
+            //---------------------------------------------//
+
+            // get a cross-swath direction that points away from
+            // the ground track
+            double xdir = 0.0;
+            if (cti <= CTI_MAX_VALUE)
+                xdir = sc_dir[ati] + pi_over_two;
+            else
+                xdir = sc_dir[ati] - pi_over_two;
+
+            // determine the wind direction
+            float first_dir = wvp1->dir;
+
+            // determine the relative wind direction (0-180) //
+            float rel_dir = first_dir - xdir;
+            while (rel_dir < 0.0)
+                rel_dir += two_pi;
+            while (rel_dir > two_pi)
+                rel_dir -= two_pi;
+            if (rel_dir > pi)
+                rel_dir = two_pi - rel_dir;
+            rel_dir *= rtd;
+
             //------------------------------------//
             // calculate the actual probabilities //
             //------------------------------------//
@@ -516,6 +562,11 @@ main(
             float ff_coef[2];
             first_index.GetLinearCoefsClipped(first_obj_prob[cti][ati],
                 ff_idx, ff_coef);
+
+            int fr_idx[2];
+            float fr_coef[2];
+            first_rel_dir_index.GetLinearCoefsClipped(rel_dir, fr_idx,
+                fr_coef);
 
             // fold over cti
             int use_cti = cti;
@@ -531,21 +582,27 @@ main(
             double total_sum = 0.0;
             for (int i = 0; i < 2; i++)
             {
-                int ff_i = ff_idx[i];
-                float ff_c = ff_coef[i];
+              int ff_i = ff_idx[i];
+              float ff_c = ff_coef[i];
 
-                // j, for cti, is skipped
-                for (int k = 0; k < 2; k++)
+              for (int j = 0; j < 2; j++)
+              {
+                int fr_i = fr_idx[j];
+                float fr_c = fr_coef[j];
+
+                // k, for cti, is skipped
+                for (int l = 0; l < 2; l++)
                 {
-                    int fs_i = fs_idx[k];
-                    float fs_c = fs_coef[k];
+                    int fs_i = fs_idx[l];
+                    float fs_c = fs_coef[l];
 
-                    double factor = ff_c * fs_c;
+                    double factor = ff_c * fr_c * fs_c;
                     good_sum += factor *
-                        first_good_array[ff_i][use_cti][fs_i];
+                        first_good_array[ff_i][fr_i][use_cti][fs_i];
                     total_sum += factor *
-                        first_count_array[ff_i][use_cti][fs_i];
+                        first_count_array[ff_i][fr_i][use_cti][fs_i];
                 }
+              }
             }
             if (total_sum == 0.0)
             {
@@ -610,7 +667,7 @@ main(
 
       float best_prob = WORST_PROB;
       ChoiceE best_choice = NO_CHOICE;
-      int best_first_idx = 0;
+//      int best_first_idx = 0;
       int bn_idx = 0;
       int bdr_idx = 0;
       int bs_idx = 0;
@@ -644,8 +701,10 @@ main(
           if (wvc->selected == NULL && first_prob > best_prob)
           {
             best_prob = first_prob;
+/*
             first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
               &best_first_idx);
+*/
             best_choice = FIRST;
             best_ati = ati;
             best_cti = cti;
