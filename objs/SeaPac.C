@@ -6,6 +6,7 @@
 static const char rcs_id_seapac_c[] =
     "@(#) $Id$";
 
+#include <math.h>
 #include "SeaPac.h"
 #include "Constants.h"
 
@@ -19,8 +20,8 @@ static const char rcs_id_seapac_c[] =
 #define L2A_XTRACK_GRIDS     76
 #define L2A_GRID_RESOLUTION  25000.0    // meters
 #define JOFFSET              (int)(L2A_XTRACK_GRIDS/2)
-#define ATRACK_BIN_CONST     two_pi/L2A_ATRACK_GRIDS
-#define XTRACK_BIN_CONST     L2A_GRID_RESOLUTION/EARTH_A
+#define ATRACK_BIN_CONST     (two_pi/L2A_ATRACK_GRIDS)
+#define XTRACK_BIN_CONST     (L2A_GRID_RESOLUTION/EARTH_A)
 
 int
 ijbin(
@@ -48,7 +49,7 @@ ijbin(
     double arglat = arg_lat * dtr;
     double arglmod = arglat + pi_over_two;
     if (arglmod > two_pi)
-        arglmod = arglmod - two_pi;
+        arglmod -= two_pi;
  
     //--------------------------------------------//
     // Compute orbit and nodal precession periods //
@@ -62,7 +63,6 @@ ijbin(
         fprintf(stderr, "Nodal period too small\n");
         return(0);
     }
- 
     if (fabs(slr) < EPSILON)
     {
         fprintf(stderr, "SLR too small (divide by zero)\n");
@@ -107,7 +107,7 @@ ijbin(
     double cslit0 = cos(lit0);
     double snlit0 = sin(lit0);
 
-    if (fabs(cslit0) <  EPSILON)
+    if (fabs(cslit0) < EPSILON)
     {
         fprintf(stderr, "cslit0 too small\n");
         return(0);
@@ -120,15 +120,15 @@ ijbin(
     double lip = atan((cosi*snlit0 + sini*tnlat) / cslit0);
  
     if (! ascend)
-        lip = lip + pi;
+        lip += pi;
 
     if (lip < 0.0)
-        lip = lip + two_pi;
+        lip += two_pi;
 
-    lip = lip + pi_over_two;
+    lip += pi_over_two;
 
     if (lip > two_pi)
-        lip = lip - two_pi;
+        lip -= two_pi;
 
     //-----------------------------------------------//
     // Begin iteration to get along-track longitude  //
@@ -162,7 +162,7 @@ ijbin(
         double clt = cos(lit);
         ascend = 1;
  
-        if (fabs(clt) <  EPSILON)
+        if (fabs(clt) < EPSILON)
         {
             fprintf(stderr, "abs_clt too small\n");
             return(0);
@@ -174,15 +174,15 @@ ijbin(
         double lip1 = atan((cosi*slt + (1.0 - e2) * sini*tnlat) / clt);
   
         if (! ascend)
-            lip1 = lip1 + pi;
+            lip1 += pi;
 
         if (lip1 < 0.0)
-            lip1 = lip1 + two_pi;
+            lip1 += two_pi;
 
-        lip1 = lip1 + pi_over_two;
+        lip1 += pi_over_two;
   
         if (lip1 > two_pi)
-            lip1 = lip1 - two_pi;
+            lip1 -= two_pi;
  
         //--------------------------------//
         // Check convergence of iteration //
@@ -198,7 +198,7 @@ ijbin(
     //----------------------------------------------------//
  
     double sphipi = (1.0 - e2)*cosi*snlat - sini*cslat*slt;
-    sphipi = sphipi / sqrt(1.0 - e2*snlat*snlat);
+    sphipi /= sqrt(1.0 - e2*snlat*snlat);
     double phipi = asin(sphipi);    // cross-track latitude
  
     //-----------------------------------------------------//
@@ -211,7 +211,7 @@ ijbin(
     int wvc_i = (int)floor(dat + 1.0);    // along-track coordinate
 
     if (wvc_i > L2A_ATRACK_GRIDS)
-        wvc_i = wvc_i - L2A_ATRACK_GRIDS;
+        wvc_i -= L2A_ATRACK_GRIDS;
 
     //------------------------------------------------------------//
     // Compute modified WVC_J for uniform grid                    //
@@ -249,456 +249,182 @@ ijbin(
     return(1);
 }
 
-/*
-subroutine SWS_IJBIN(   &
-      glb,              &
-      meas_lat,         &
-      meas_lon,         &
-      arg_lat,          &
-      long_asc_node,    &
-      nodal_period,     &
-      orb_eccen,        & 
-      orb_smaj_axis,    &
-      orb_inclination,  &
-      atrack_grid,      &
-      xtrack_grid,      &
-      atrack_bin_const, &
-      xtrack_bin_const, &
-      joffset,          & 
-      return_status,    &
-      wvc_i,            &
-      wvc_j)
+//------------------------//
+// compute_orbit_elements //
+//------------------------//
 
-   use  Sws_Smf 
-   use  Sws_Sws_45090  
-   use Proc_Tables
+#define EARTH_GRAVI_PARAM  3.98600E14
 
-   implicit none            
+int
+compute_orbit_elements(
+    double   x_pos,
+    double   y_pos,
+    double   z_pos,
+    double   x_vel,
+    double   y_vel,
+    double   z_vel,
+    double*  nodal_period,
+    double*  arg_lat,
+    double*  long_asc_node,
+    double*  orb_inclination,
+    double*  orb_smaj_axis,
+    double*  orb_eccen)
+{
+    double pos[3];
+    pos[0] = x_pos;
+    pos[1] = y_pos;
+    pos[2] = z_pos;
+
+    double vel[3];
+    vel[0] = x_vel;
+    vel[1] = y_vel;
+    vel[2] = z_vel;
+
+    //-----------------------------------//
+    // Calculate the vector dot products //
+    //-----------------------------------//
+
+    double rr = 0.0;
+    double rv = 0.0;
+    double vv = 0.0;
  
-!
-! Input Parameters
-!
+    for (int i = 0; i < 3; i++)
+    {
+        rr += pos[i]*pos[i];
+        rv += pos[i]*vel[i];
+        vv += vel[i]*vel[i];
+    }
 
-   TYPE (Global_Constants_Real_Type), intent(in) ::  glb  
+    //---------------------------------------------//
+    // Calculate the magnitude of the state vector //
+    //---------------------------------------------//
 
-   real,    intent(in) :: meas_lat     
-   real,    intent(in) :: meas_lon     
-   real,    intent(in) :: arg_lat          
-   real,    intent(in) :: long_asc_node    
-   real,    intent(in) :: nodal_period     
-   real,    intent(in) :: orb_eccen        
-   real,    intent(in) :: orb_smaj_axis    
-   real,    intent(in) :: orb_inclination
-   integer, intent(in) :: atrack_grid
-   integer, intent(in) :: xtrack_grid
-   real,    intent(in) :: atrack_bin_const
-   real,    intent(in) :: xtrack_bin_const
-   integer, intent(in) :: joffset
+    double r0 = sqrt(rr);
+    if (fabs(r0) < EPSILON)
+    {
+        fprintf(stderr, "abs_r0_too_small\n");
+        return(0);
+    }
+
+    //--------------------------------------------------------------//
+    // Calculate the values used in the semi-major axis computation //
+    //--------------------------------------------------------------//
+
+    double aa = (2.0 / r0) - (vv / EARTH_GRAVI_PARAM);
+    if (fabs(aa) < EPSILON)
+    {
+        fprintf(stderr, "abs_aa_too_small\n");
+        return(0);
+    }
+    if (aa < EPSILON)
+    {
+        fprintf(stderr, "aa_negative\n");
+        return(0);
+    }
  
-!
-! Input/Output Parameters
-!
-   integer, intent(inout) :: return_status 
+    //-------------------------------------------------//
+    // Compute the semi-major axis of the orbital path //
+    //-------------------------------------------------//
+
+    double tmp_orb_smaj_axis = 1.0 / aa;
+    if (tmp_orb_smaj_axis < EPSILON)
+    {
+        fprintf(stderr, "orb_smaj_axis_too_small\n");
+        return(0);
+    }
  
-!
-! Output Parameters
-!
-   integer, intent(out) :: wvc_i      
-   integer, intent(out) :: wvc_j     
- 
-!
-! Local Declarations
-!
+    //----------------------------------------------//
+    // Compute the eccentricity of the orbital path //
+    //----------------------------------------------//
 
-   real, parameter :: EPSILON = 1e-30 ! value used for error testing
-                                      ! needs to be a very small number
- 
-   integer                 :: handler_status   ! message handler status
-   character(MAX_MSG_SIZE) :: message          ! message string
-
-! calling subroutine
-   character(32)           :: module_name = 'SWS_IJBIN'
- 
-   logical :: ascend           ! ascending node flag
-   real    :: aa               ! orb_smaj_axis
-   real    :: ecc              ! orb_eccen
-   real    :: lzero            ! long_asc_node   (radians)
-   real    :: arglat           ! arg_lat         (radians)
-   real    :: inc              ! orb_inclination (radians)
-
-   real    :: cosi             ! cos(inc)
-   real    :: sini             ! sin(inc)
- 
-   real    :: arglmod          ! modified argument of latitude
- 
-   real    :: arat             ! axis to radius ratio
-   real    :: slr              ! normalized orbit ellipse
- 
-   real    :: prat             ! period ratio
-   real    :: p1               ! earth period wrt to node
-   real    :: pnode            ! ascending node rate
-
-   real    :: mlat             ! meas_lat (radians)
-   real    :: mlon             ! meas_lon (radians)
- 
-   real    :: snlat            ! sin(mlat)
-   real    :: cslat            ! cos(mlat)
-   real    :: tnlat            ! tan(mlat)
- 
-   real    :: lnode            ! ascending node longitude
-   real    :: lit0             ! nadir node difference longitude
- 
-   real    :: cslit0           ! cos(lit0)
-   real    :: snlit0           ! sin(lit0)
- 
-   real    :: lip              ! along-track longitude
-   real    :: lip1             ! along-track longitude temp variable
- 
-   real    :: diff             ! angular difference
-   real    :: ddif             ! angular difference min
-   real    :: d                ! angular difference temp variable
- 
-   real    :: lit              ! cell node longitude difference
-   real    :: slt              ! sin(lit)
-   real    :: clt              ! cos(lit)
- 
-   real    :: phipi            ! cross-track latitude
-   real    :: sphipi           ! cross-track latitiude temp variable
- 
-   real    :: dat              ! along-track distance
-   real    :: dct              ! cross-track distance
- 
-!
-! Function Declarations
-!
-
-   integer :: SWS_Get_Msg      ! SeaWinds error handling function
-   integer :: SWS_Dynamic_Msg  ! SeaWinds error handling function
-   logical :: SWS_Status_Test  ! SeaWinds error handling function
- 
-!
-!     Initialize variables.
-!
-   return_status =  S_SUCCESS
-
- 
-!
-!     Set some common conversions of orbit element variables.
-!
-
-   aa      = orb_smaj_axis
-
-   ecc     = orb_eccen
-
-   inc     = orb_inclination*glb%deg_to_rad
-
-   cosi    = cos(inc)
-
-   sini    = sin(inc)
-
-   lzero   = long_asc_node*glb%deg_to_rad
-
-   arglat  = arg_lat*glb%deg_to_rad    ! NEW 9/29/93
-
-   arglmod = arglat + glb%half_pi      ! to correspond to S.P.rev 10/4/93
-
-   if (arglmod > glb%two_pi) arglmod = arglmod - glb%two_pi
- 
-!
-! Compute orbit and nodal precession periods.
-!
-
-   arat  = aa / glb%earth_a         ! axis to radius ratio
-   slr   = arat*(1.e0 - ecc*ecc)    ! normalized orbit ellipse
- 
-   nodal_period_too_small:  if (abs(nodal_period) < EPSILON) then
-
-      handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,             &
-          message,module_name,return_status)
-
-      call SWS_Fill_Char_Field(handler_status,message,message,       &
-          'nodal period')
-
-      handler_status = SWS_Dynamic_Msg(                              &
-          handler_status,return_status,message,module_name)
-
-   endif   nodal_period_too_small
- 
-   chk_nodal_period_status: if (.not. SWS_Status_Test(return_status, &
-                                                      MASK_LEV_E)) then
-
-      chk_slr_too_small: if (abs(slr) <  EPSILON) then
-
-         handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,          &
-            message,module_name,return_status)
-
-         call SWS_Fill_Char_Field(handler_status,message,message,    &
-            'normalized orbit ellipse')
-
-         handler_status = SWS_Dynamic_Msg(                           &
-            handler_status,return_status,message,module_name)
-
-      endif chk_slr_too_small
-
-   
-      chk_slr_status: if (.not. SWS_Status_Test(return_status,       &
-                                                MASK_LEV_E)) then
- 
-         pnode = -1.5*glb%two_pi*glb%earth_j2_coeff*cosi  &
-                 /(nodal_period/slr*slr)
-
-         nodal_quantity_too_small: if (abs(glb%earth_angular_spd_rad     &
-                                       - pnode) <   EPSILON)    then
-
-            handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,          &
-                message,module_name,return_status)
-
-            call SWS_Fill_Char_Field(handler_status,message,message,    &
-                'quantity used to calculate earth period wrt to node')
-
-            handler_status = SWS_Dynamic_Msg(                           &
-                handler_status,return_status,message,module_name)
+    double ce = 1.0 - r0 / tmp_orb_smaj_axis;
+    double se = rv / sqrt(EARTH_GRAVI_PARAM * tmp_orb_smaj_axis);
+    double tmp_orb_eccen = sqrt(se*se + ce*ce);
+    double param = tmp_orb_smaj_axis * (1.0 - tmp_orb_eccen*tmp_orb_eccen);
+    if (fabs(param) < EPSILON)
+    {
+        fprintf(stderr, "abs_param_too_small\n");
+        return(0);
+    }
+    if (param < EPSILON)
+    {
+        fprintf(stderr, "param_negative\n");
+        return(0);
+    }
   
-         endif  nodal_quantity_too_small
+    //--------------------------------------------//
+    // Calculate values that are used in the rest //
+    // of the orbital element computations.       //
+    //--------------------------------------------//
+
+    double u[3], w[3];
+    for (int i = 0; i < 3; i++)
+    {
+        u[i] = pos[i] / r0;
+        w[i] = (rr * vel[i] - rv * pos[i]) /
+            (r0 * sqrt(EARTH_GRAVI_PARAM * param));
+    }
+
+    //-------------------------------------------//
+    // Compute the inclination of the orbit path //
+    //-------------------------------------------//
  
-         chk_nodal_quantity_status: if (.not. SWS_Status_Test(return_status,  &
-                                                              MASK_LEV_E)) then
+    double sini = sqrt(u[2]*u[2] + w[2]*w[2]);
+    double sum01 = u[0] + w[1];
+    double dif10 = u[1] - w[0];
+    double cosi = sqrt(sum01*sum01 + dif10*dif10) - 1.0;
+    double tmp_orb_inclination = atan2(sini, cosi);
+    tmp_orb_inclination *= rtd;
 
-            p1 = glb%two_pi/(glb%earth_angular_spd_rad - pnode) ! earth period
-
-            prat  = nodal_period/p1                             ! period ratio
+    //------------------------------------------------------//
+    // Compute the longitude of the ascending node crossing //
+    //------------------------------------------------------//
  
-!
-! Compute bin coordinates for each cell in beam.
-!
+    double tmp_long_asc_node = atan2((u[1]*w[2] - w[1]*u[2]),
+        (u[0]*w[2] - w[0]*u[2]));
+    tmp_long_asc_node *= rtd;
+    if (tmp_long_asc_node < 0.0)
+        tmp_long_asc_node += 360.0;
 
-            mlon  = meas_lon * glb%deg_to_rad  ! cell longitude in radians
-
-            mlat  = meas_lat * glb%deg_to_rad  ! cell latitude in radians
-
-            snlat = sin(mlat)
-
-            cslat = cos(mlat)
+    //--------------------------------------//
+    // Compute the argument of the latitude //
+    //--------------------------------------//
  
-            cslat_too_small: if (abs(cslat) < EPSILON)    then
-
-               handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,              &
-                                            message,module_name,return_status)
-
-               call SWS_Fill_Char_Field(handler_status,message,message,        &
-                                       'cosine of cell latitude')
-
-               handler_status = SWS_Dynamic_Msg(handler_status,return_status,  &
-                                                message,module_name)
-
-            endif  cslat_too_small
- 
-            chk_cslat_status: if (.not. SWS_Status_Test(return_status,         &
-                                                        MASK_LEV_E)) then
-
-               tnlat = snlat/cslat
- 
-!
-! Get a trial value of along-track longitude to seed the iteration.
-!
-
-               ascend = .true.
-
-               lnode  = lzero                ! ascending node longitude
-
-               lit0   = mlon - lnode         ! nadir node longitude difference
-
-               cslit0 = cos(lit0)
-
-               snlit0 = sin(lit0)
- 
-               cslit0_too_small: if (abs(cslit0) <  EPSILON) then
-
-                  handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,           &
-                                              message,module_name,return_status)
- 
-                  call SWS_Fill_Char_Field(handler_status,message,message,     &
-                                    'cosine of nadir node longitude difference')
-
-                  handler_status = SWS_Dynamic_Msg(handler_status,             &
-                                                   return_status,              &
-                                                   message,module_name)
-
-               endif  cslit0_too_small
- 
-               chk_cslit0_status: if (.not. SWS_Status_Test(return_status, &
-                                                             MASK_LEV_E)) then
-
-                  if (cslit0 < 0.0)  ascend = .false.
- 
-                  lip = atan((cosi*snlit0 + sini*tnlat)/cslit0) ! along-track
-                                                                ! longitude
- 
-                  if (.not. ascend) lip = lip + glb%pi
-
-                  if (lip <  0.0)   lip = lip + glb%two_pi
-
-                  lip = lip + glb%half_pi
-
-                  if (lip >  glb%two_pi)  lip = lip - glb%two_pi
-
-!
-! Begin iteration to get along-track longitude.
-! Compute new value for along-track `longitude'.
-!
-
-                  diff = 1.e0               ! set initial value greater
-                                            ! than tolerance
-
-                  atrack_longitude_loop: do while (diff > 1.0e-5)
- 
-                     diff = lip - arglmod   ! angular difference
-
-                     d = glb%pi - abs(glb%pi - abs(diff))
- 
-
-! Scott Dunbar and Vincent Hsiao made changes from here 
-! through abs_clt_too_small:, in order to properly handle
-! problems at beginning and end of rev.
-
-                     if (abs(diff) > glb%pi) then
-
-                        if (diff < -glb%pi) ddif = d            ! angular difference minimum
-                        if (diff >  glb%pi) ddif = -d
-
-                     else  
-
-                        ddif = diff
-
-                     endif  
-
-                     lnode  = lzero - prat*ddif ! ascending node longitude
-
-                     lit    = mlon - lnode      ! cell node longitude difference
-
-                     slt    = sin(lit)
-
-                     clt    = cos(lit)
-
-                     ascend = .true.
- 
-                     abs_clt_too_small: if (abs(clt) <  EPSILON)   then
-
-                        handler_status = SWS_Get_Msg(SWS_E_DIVIDE_BY_ZERO,   &
-                                                     message,module_name,    &
-                                                     return_status)
-
-                        call SWS_Fill_Char_Field(handler_status,message,     &
-                                                 message,                    &
-                            'cosine of cell node longitude difference')
-
-                        handler_status = SWS_Dynamic_Msg(handler_status,     &
-                                                         return_status,      &
-                                                         message,            &
-                                                         module_name)
-
-                     endif  abs_clt_too_small
- 
-!
-! Exit loop on error else continue.
-!
-
-
-                     if( SWS_Status_Test(return_status, MASK_LEV_E))  &
-                                                    exit atrack_longitude_loop
-  
-                     if (clt < 0.0) ascend = .false.
-
-                     lip1 = atan((cosi*slt  + (1.e0 - glb%earth_e_sq)  &
-                                            * sini*tnlat)/clt)
-  
-                     if (.not. ascend) lip1 = lip1 + glb%pi
-
-                     if (lip1 < 0.0) lip1 = lip1 + glb%two_pi
-
-                     lip1 = lip1 + glb%half_pi
-  
-                     if (lip1 > glb%two_pi) lip1 = lip1 - glb%two_pi
- 
-!
-! Check convergence of iteration.
-!
-
-                     diff = abs(lip - lip1) ! angular difference
-
-                     lip  = lip1            ! along-track longitude
- 
-                  end do  atrack_longitude_loop
- 
-!
-! Iteration to get along-track longitude is complete.
-! Now compute cross-track `latitude'.
-!
-
-              
-                 chk_err_status: if(.not. SWS_Status_Test(return_status,   &
-                                                        MASK_LEV_E))  then
-
-                    sphipi = (1.e0 - glb%earth_e_sq)*cosi*snlat - sini*cslat*slt
-
-                    sphipi = sphipi/sqrt (1.e0 - glb%earth_e_sq*snlat*snlat)
-
-                     phipi = asin(sphipi)         ! cross-track latitude
- 
-!
-! Compute bin coordinates from binning formulae.
-! Compute modified WVC_I for south polar rev boundary.
-!
-
-                     dat   = lip/atrack_bin_const   ! along-track distance
-
-                     wvc_i = nint(dat + 0.5)        ! along-track coordinate
-
-                     if (wvc_i > atrack_grid) wvc_i = wvc_i - atrack_grid 
-
-!
-! Compute modified WVC_J for uniform grid.
-! JPRIME = cell coordinate with respect to subtrack "cell 0".
-!
- 
-                     dct = phipi/xtrack_bin_const    ! cross-track distance
-
-                     wvc_j = nint(dct - 0.5)
-
-!
-! Final cross-track coordinate 
-! Reverse sign to conform to SeaWinds swath coordinate system.
-!
-
-                     wvc_j = - wvc_j + joffset         ! cross-track coordinate
- 
-!
-! Make sure that the cross-track coordinate is within 1,L2A_XTRACK_GRIDS range.
-!
-
-                     small_wvc_j:  if (wvc_j < 1) then
-
-                        wvc_j = 1
-
-                     else if (wvc_j > xtrack_grid) then
-
-                        wvc_j = xtrack_grid   
-
-                     endif   small_wvc_j
-
-                  endif chk_err_status
-
-               endif  chk_cslit0_status
-
-            endif  chk_cslat_status
- 
-         endif  chk_nodal_quantity_status
-
-      endif chk_slr_status
-
-   endif   chk_nodal_period_status   
-
-   return
-
-end  subroutine SWS_IJBIN
-*/
+    double tmp_arg_lat = atan2(u[2], w[2]);
+    tmp_arg_lat *= rtd;
+    if (tmp_arg_lat < 0.0)
+        tmp_arg_lat += 360.0;
+
+    //--------------------------//
+    // Compute the nodal period //
+    //--------------------------//
+
+    double ree2 = 1.0 - tmp_orb_eccen*tmp_orb_eccen;
+    if (fabs(ree2) < EPSILON)
+    {
+        fprintf(stderr, "abs_ree2_too_small\n");
+        return(0);
+    }
+    if (ree2 < EPSILON)
+    {
+        fprintf(stderr, "ree2_negative\n");
+        return(0);
+    }
+
+    cosi = cos(tmp_orb_inclination * dtr);
+    double cosi2 = cosi*cosi;
+    double sma2 = tmp_orb_smaj_axis * tmp_orb_smaj_axis;
+    double sma3 = sma2 * tmp_orb_smaj_axis;
+    double tmp_nodal_period = (2.0 * pi * sqrt(sma3 / EARTH_GRAVI_PARAM)) *
+        (1.0 + (0.75 * rj2 * r1_earth_2 / sma2) * ((1.0 - 3.0 * cosi2) *
+        sqrt(ree2) + (1.0 - 5.0 * cosi2)) / (ree2*ree2));
+
+    *orb_smaj_axis = tmp_orb_smaj_axis;
+    *orb_eccen = tmp_orb_eccen;
+    *orb_inclination = tmp_orb_inclination;
+    *long_asc_node = tmp_long_asc_node;
+    *arg_lat = tmp_arg_lat;
+    *nodal_period = tmp_nodal_period;
+
+    return(1);
+}
