@@ -31,6 +31,7 @@ static const double bK = 1.3805e-23;
 #define GHZ_TO_HZ				1.0E9
 #define US_TO_S					1.0E-6
 #define MS_TO_S					1.0E-3
+#define S_TO_MS					1000.0
 
 //
 // Some fixed constants describing the Earth.

@@ -504,7 +504,7 @@ RangeTracker::GetDelayAndDuration(
 
 	float table_delay = c_term + a_term * cos((two_pi/(double)antenna_n) *
 		(double)antenna_dn + p_term);
-	table_delay /= 1000.0;		// convert ms to seconds
+	table_delay *= MS_TO_S;		// convert ms to seconds
 
 	float cmd_delay = table_delay - (rgw - xmit_pulse_width) / 2.0;
 
@@ -594,9 +594,10 @@ RangeTracker::SetRoundTripTime(
 
 		for (int term_idx = 0; term_idx < 3; term_idx++)
 		{
-			*(*(*(_scale + beam_idx) + term_idx) + 0) = mins[term_idx];
+			*(*(*(_scale + beam_idx) + term_idx) + 0) = S_TO_MS *
+				mins[term_idx];
 
-			*(*(*(_scale + beam_idx) + term_idx) + 1) =
+			*(*(*(_scale + beam_idx) + term_idx) + 1) = S_TO_MS *
 				(maxs[term_idx] - mins[term_idx]) / 255.0;
 		}
 
@@ -611,7 +612,7 @@ RangeTracker::SetRoundTripTime(
 			{
 				*(*(*(_delay + beam_idx) + range_step) + term_idx) =
 					(unsigned char)(
-					(*(*(term_ptr + range_step) + term_idx) -
+					(S_TO_MS * *(*(term_ptr + range_step) + term_idx) -
 					*(*(*(_scale + beam_idx) + term_idx) + 0)) /
 					*(*(*(_scale + beam_idx) + term_idx) + 1) + 0.5);
 			}
