@@ -1,13 +1,13 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef MEAS_H
 #define MEAS_H
 
 static const char rcs_id_meas_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Beam.h"
 #include "LonLat.h"
@@ -18,94 +18,93 @@ static const char rcs_id_meas_h[] =
 
 //======================================================================
 // CLASSES
-//		Meas, MeasList, OffsetList, OffsetListList, MeasSpot,
-//		MeasSpotList
+//    Meas, MeasList, OffsetList, OffsetListList, MeasSpot,
+//    MeasSpotList
 //======================================================================
 
 class MeasList;
 
 //======================================================================
 // CLASS
-//		Meas
+//    Meas
 //
 // DESCRIPTION
-//		The Meas object is a general purpose object for holding and
-//		manipulating sigma-0 and brightness temperature measurements.
+//    The Meas object is a general purpose object for holding and
+//    manipulating sigma-0 and brightness temperature measurements.
 //======================================================================
 
 class Meas
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	Meas();
-	~Meas();
+    Meas();
+    ~Meas();
 
-	//-------------//
-	// compositing //
-	//-------------//
+    //-------------//
+    // compositing //
+    //-------------//
 
-	//--------------------------------------------------//
-	// If N is nonzero we								//
-	// compositing N consecutive meas objects starting	//
-	// at meas_list->current							//
-	// If N is zero (Default case) whole MeasList is	//
-	// composited.										//
-	//--------------------------------------------------//
+    //--------------------------------------------------//
+    // If N is nonzero we                               //
+    // compositing N consecutive meas objects starting  //
+    // at meas_list->current                            //
+    // If N is zero (Default case) whole MeasList is    //
+    // composited.                                      //
+    //--------------------------------------------------//
 
-	int		Composite(MeasList* meas_list, int n = 0);
+    int  Composite(MeasList* meas_list, int n = 0);
 
-	//--------------//
-	// input/output //
-	//--------------//
+    //--------------//
+    // input/output //
+    //--------------//
 
-	int		Write(FILE* fp);
-	int		Read(FILE* fp);
+    int  Write(FILE* fp);
+    int  Read(FILE* fp);
+    int  WriteAscii(FILE* fp);
 
-	int		WriteAscii(FILE* fp);
+    //---------//
+    // freeing //
+    //---------//
 
-	//---------//
-	// freeing //
-	//---------//
+    void  FreeContents();
 
-	void	FreeContents();
+    //--------------//
+    // sigma0 stuff //
+    //--------------//
 
-	//--------------//
-	// sigma0 stuff //
-	//--------------//
+    float  EstimatedKp(float sigma0);
 
-	float	EstimatedKp(float sigma0);
+    //-----------//
+    // variables //
+    //-----------//
 
-	//-----------//
-	// variables //
-	//-----------//
+    float          value;
+    float          XK;
+    float          EnSlice;
+    float          bandwidth;
+    float          txPulseWidth;
+    int            landFlag;
+    Outline        outline;
+    EarthPosition  centroid;
 
-	float				value;
-	float				XK;
-	float				EnSlice;
-	float				bandwidth;
-	float				txPulseWidth;
-        int                             landFlag;
-	Outline				outline;
-	EarthPosition		centroid;
+    PolE   pol;
+    float  eastAzimuth;    // azimuth angle ccw from east
+    float  incidenceAngle;
+    int    beamIdx;
+    int    startSliceIdx;
+    int    numSlices;
+    float  scanAngle;
+    float  A, B, C;    // Kpc coefficients
 
-	PolE		pol;
-	float		eastAzimuth;		// azimuth angle ccw from east
-	float		incidenceAngle;
-	int			beamIdx;
-	int			startSliceIdx;
-	int			numSlices;
-	float		scanAngle;
-	float		A, B, C;			// Kpc coefficients
+    //------------------------//
+    // not to be written out! //
+    //------------------------//
 
-	//------------------------//
-	// not to be written out! //
-	//------------------------//
-
-	long		offset;				// byte offset in file
+    long  offset;    // byte offset in file
 };
 
 //======================================================================
@@ -235,9 +234,9 @@ public:
 	// input/output //
 	//--------------//
 
-	int		Write(FILE* fp);
-        int             WriteAscii(FILE* fp);
-	int		Read(FILE* fp);
+    int  Write(FILE* fp);
+    int  WriteAscii(FILE* fp);
+    int  Read(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -272,15 +271,15 @@ public:
 	// input/output //
 	//--------------//
 
-	int		Write(FILE* fp);
-        int             WriteAscii(FILE* fp);
-	int		Read(FILE* fp);
+    int  Write(FILE* fp);
+    int  WriteAscii(FILE* fp);
+    int  Read(FILE* fp);
 
-	//---------//
-	// freeing //
-	//---------//
+    //---------//
+    // freeing //
+    //---------//
 
-	void	FreeContents();
+    void  FreeContents();
 };
 
 #endif
