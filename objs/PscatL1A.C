@@ -455,8 +455,9 @@ PscatL1AFrame::WriteAscii(
     for (int spot_idx = 0; spot_idx < spotsPerFrame; spot_idx++)
     {
         int spot_slice_offset = spot_idx * slicesPerSpot;
-        fprintf(ofp, "Spot %d (%s)\n", spot_idx,
-            pscat_event_map[(int)eventId[spot_idx]]);
+        fprintf(ofp, "Spot %d (%s) AntennaPos: %d SpotNoise: %d\n", spot_idx,
+		pscat_event_map[(int)eventId[spot_idx]],
+		antennaPosition[spot_idx],spotNoise[spot_idx]);
         for (int slice_idx = 0; slice_idx < slicesPerSpot; slice_idx++)
         {
             fprintf(ofp, "  %d %g\n", copol[spot_slice_offset + slice_idx],
