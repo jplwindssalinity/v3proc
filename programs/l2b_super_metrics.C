@@ -81,7 +81,7 @@ template class List<AngleInterval>;
 template class List<EarthPosition>;
 
 #define SPEED_RESOLUTION 0.5
-#define SPEED_BINS 60
+#define SPEED_BINS 100
 //-----------//
 // CONSTANTS //
 //-----------//
