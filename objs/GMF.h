@@ -48,8 +48,10 @@ public:
 	//--------//
 
 	// directions dir and chi are w.r.t. north
-	int GetSigma0(int pol, double inc, double wind_spd, double chi,
-		double* sigma_0);
+	int		GetNearestSigma0(int pol, double inc, double spd, double chi,
+				double* sigma_0);
+	int		GetInterSigma0(int pol, double inc, double spd, double chi,
+				double* sigma_0);
 
 protected:
 

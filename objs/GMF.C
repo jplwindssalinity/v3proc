@@ -10,6 +10,7 @@ static const char rcs_id_gmf_c[] =
 #include <unistd.h>
 #include <malloc.h>
 #include "GMF.h"
+#include "Interpolate.h"
 
 //=====//
 // GMF //
@@ -209,15 +210,15 @@ GMF::ReadTable(
 	return(1);
 }
 
-//----------------//
-// GMF::GetSigma0 //
-//----------------//
+//-----------------------//
+// GMF::GetNearestSigma0 //
+//-----------------------//
 
 int
-GMF::GetSigma0(
+GMF::GetNearestSigma0(
 	int		pol,
 	double	inc,
-	double	wind_spd,
+	double	spd,
 	double	chi,
 	double*	sigma_0)
 {
@@ -236,7 +237,7 @@ GMF::GetSigma0(
 	// take nearest value
 	// this needs to be changed to interpolation
 	double inc_didx = (inc - _incMin) / _incStep;
-	double spd_didx = (wind_spd - _spdMin) / _spdStep;
+	double spd_didx = (spd - _spdMin) / _spdStep;
 	double chi_didx = (chi - _chiMin) / _chiStep;
 
 	int inc_idx = (int)(inc_didx + 0.5);
@@ -251,5 +252,116 @@ GMF::GetSigma0(
 	if (chi_idx >= _chiCount) chi_idx = _chiCount;
 
 	*sigma_0 = *(*(*(*(_sigma0 + pol) + inc_idx) + spd_idx) + chi_idx);
+	return(1);
+}
+
+//---------------------//
+// GMF::GetInterSigma0 //
+//---------------------//
+
+#define ORDER_PLUS_ONE	4
+
+int
+GMF::GetInterSigma0(
+	int		pol,
+	double	inc,
+	double	spd,
+	double	chi,
+	double*	sigma_0)
+{
+	// make sure that pol is within table range
+	if (pol < 0 || pol >= _polCount)
+		return(0);
+
+	// make sure that chi is positive and within table range
+	while (chi < 0.0)
+		chi += 360.0;
+	while (chi >= 360.0)
+		chi -= 360.0;
+	if (chi < _chiMin - _chiStep || chi > _chiMax + _chiStep)
+		return(0);
+
+	// set up tmp arrays
+	double s0_x[ORDER_PLUS_ONE];
+	double s0_y[ORDER_PLUS_ONE];
+	double s0_spd_chi[ORDER_PLUS_ONE][ORDER_PLUS_ONE];
+
+	//---------------------------------//
+	// interpolate out incidence angle //
+	//---------------------------------//
+
+	double inc_didx = (inc - _incMin) / _incStep;
+	int inc_idx = (int)inc_didx;
+	int inc_offset = inc_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (inc_offset < 0)
+		inc_offset = 0;
+	if (inc_offset > _incCount - ORDER_PLUS_ONE)
+		inc_offset = _incCount - ORDER_PLUS_ONE;
+	double inc_subtable_didx = inc_didx - (double)inc_offset;
+
+	double spd_didx = (spd - _spdMin) / _spdStep;
+	int spd_idx = (int)spd_didx;
+	int spd_offset = spd_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (spd_offset < 0)
+		spd_offset = 0;
+	if (spd_offset > _spdCount - ORDER_PLUS_ONE)
+		spd_offset = _spdCount - ORDER_PLUS_ONE;
+	double spd_subtable_didx = spd_didx - (double)spd_offset;
+
+	double chi_didx = (chi - _chiMin) / _chiStep;
+	int chi_idx = (int)chi_didx;
+	int chi_offset = chi_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (chi_offset < 0)
+		chi_offset = 0;
+	if (chi_offset > _chiCount - ORDER_PLUS_ONE)
+		chi_offset = _chiCount - ORDER_PLUS_ONE;
+	double chi_subtable_didx = chi_didx - (double)chi_offset;
+
+	int sidx, cidx, iidx;
+	for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
+	{
+		for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+		{
+			for (iidx = 0; iidx < ORDER_PLUS_ONE; iidx++)
+			{
+				s0_x[iidx] = (double)iidx;
+				s0_y[iidx] = *(*(*(*(_sigma0 + pol) + iidx + inc_offset) +
+					sidx + spd_offset) + cidx + chi_offset);
+			}
+			polint(s0_x, s0_y, ORDER_PLUS_ONE, inc_subtable_didx,
+				&(s0_spd_chi[sidx][cidx]));
+		}
+	}
+
+	//-----------------------//
+	// interpolate out speed //
+	//-----------------------//
+
+	double s0_chi[ORDER_PLUS_ONE];
+	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+	{
+		for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
+		{
+			s0_x[sidx] = (double)sidx;
+			s0_y[sidx] = s0_spd_chi[sidx][cidx];
+		}
+		polint(s0_x, s0_y, ORDER_PLUS_ONE, spd_subtable_didx,
+			&(s0_chi[cidx]));
+	}
+
+	//---------------------------//
+	// interpolate out direciton //
+	//---------------------------//
+
+	double s0;
+	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+	{
+		s0_x[cidx] = (double)cidx;
+		s0_y[cidx] = s0_chi[cidx];
+	}
+	polint(s0_x, s0_y, ORDER_PLUS_ONE, chi_subtable_didx, &s0);
+
+	*sigma_0 = s0;
+
 	return(1);
 }
