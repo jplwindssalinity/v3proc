@@ -8,7 +8,7 @@
 //    best_adapt
 //
 // SYNOPSIS
-//    best_adapt [ -h ] [ -acijr ] [ -m fraction ] [ -d # ] <cfg_file>
+//    best_adapt [ -h ] [ -acijrw ] [ -m fraction ] [ -d # ] <cfg_file>
 //        <prob_file> <l2b_input_file> <vctr_base> <l2b_output_file>
 //        [ eval_file ]
 //
@@ -27,6 +27,7 @@
 //      [ -i ]  Interpolate. Interpolate filter probabilities. Slow.
 //      [ -j ]  Jack. Jack up probabilities based on N.
 //      [ -r ]  Random. Use random probabilities for low sample events.
+//      [ -w ]  Raw. Use raw probabilities (don't adjust)
 //      [ -m fraction ]  Auto(M)atic. Correct while the good fraction
 //        is below fraction.  Don't correct otherwise, plus lower
 //        probabilities -std.
@@ -111,7 +112,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "hacijrd:m:"
+#define OPTSTRING  "hacijrwd:m:"
 
 #define WORST_PROB           -9e9
 #define HDF_NUM_AMBIGUITIES   4
@@ -144,7 +145,7 @@ int write_eval(FILE* ofp, int bn_idx, int bdr_idx, int bs_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -h ]", "[ -acijr ]", "[ -m fraction ]",
+const char* usage_array[] = { "[ -h ]", "[ -acijrw ]", "[ -m fraction ]",
     "[ -d # ]", "<cfg_file>", "<prob_file>", "<l2b_input_file>",
     "<vctr_base>", "<l2b_output_file>", "<eval_file>", 0 };
 
@@ -174,6 +175,7 @@ int opt_correct = 0;
 int opt_interpolate = 0;
 int opt_jack = 0;
 int opt_random = 0;
+int opt_raw = 0;
 int opt_dump = 0;
 int dump_loops = 0;
 int opt_matic = 0;
@@ -554,7 +556,11 @@ main(
             {
                 // samples
                 first_actual_prob[cti][ati] = (float)(good_sum / total_sum);
-                first_actual_prob[cti][ati] -= sqrt(0.25 / (double)total_sum);
+                if (! opt_raw)
+                {
+                    first_actual_prob[cti][ati] -=
+                        sqrt(0.25 / (double)total_sum);
+                }
             }
         }
     }
@@ -778,7 +784,7 @@ main(
                 filter_prob += sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
               }
             }
-            else
+            else if (! opt_raw)
             {
               filter_prob -= sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
             }
