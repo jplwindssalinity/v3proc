@@ -737,7 +737,7 @@ FindPeakGainForSlice(
 //------------------//
 
 #define PEAK_ANGLE_OFFSET		0.00875		// about 0.50 degree
-#define LOCAL_ANGLE_OFFSET		0.001		// about 0.057 degree
+#define LOCAL_ANGLE_OFFSET		0.000875	// about 0.050 degree
 
 int
 FindSliceCorners(
@@ -862,7 +862,8 @@ FindSliceCorners(
 		//-------------//
 
 		while (target_gain > local_gain_array[0] &&
-				local_gain_array[0] > local_gain_array[2])
+				local_gain_array[0] > local_gain_array[1] &&
+				local_gain_array[1] > local_gain_array[2])
 		{
 			for (int j = 2; j > 0; j--)
 			{
@@ -872,10 +873,17 @@ FindSliceCorners(
 			}
 			local_look_array[0] -= local_look_step;
 			local_azim_array[0] -= local_azim_step;
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft,
+				instrument, local_look_array[0], local_azim_array[0],
+				&(local_gain_array[0])))
+			{
+				return(0);
+			}
 		}
 
 		while (target_gain > local_gain_array[2] &&
-				local_gain_array[2] > local_gain_array[0])
+				local_gain_array[2] > local_gain_array[1] &&
+				local_gain_array[1] > local_gain_array[0])
 		{
 			for (int j = 0; j < 2; j++)
 			{
@@ -885,6 +893,12 @@ FindSliceCorners(
 			}
 			local_look_array[2] += local_look_step;
 			local_azim_array[2] += local_azim_step;
+			if (! PowerGainProduct(antenna_frame_to_gc, spacecraft,
+				instrument, local_look_array[2], local_azim_array[2],
+				&(local_gain_array[2])))
+			{
+				return(0);
+			}
 		}
 
 		//-----------------//
@@ -908,8 +922,8 @@ FindSliceCorners(
 			(local_c[0] - target_gain);
 		if (local_qr < 0.0)
 		{
-			fprintf(stderr,
-				"FindSliceCorners: can't find target gain on local fit\n");
+//			fprintf(stderr,
+//				"FindSliceCorners: can't find target gain on local fit\n");
 			corner_look[i] = local_look;
 			corner_azim[i] = local_azim;
 			continue;
