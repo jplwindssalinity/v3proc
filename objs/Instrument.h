@@ -106,8 +106,8 @@ public:
 
 	unsigned int	orbitTicks;				// 32 Hz ticks
 	float			commandedDoppler;		// Hz freq added to base xmit
-	float			receiverGateDelay;		// sec
-	float			receiverGateWidth;		// sec
+	float			commandedRxGateDelay;	// sec
+	float			commandedRxGateWidth;	// sec
 
 	//-------------------------------------//
 	// affected by noise, temperature etc. //

@@ -507,7 +507,7 @@ RangeTracker::GetDelayAndDuration(
 		(double)antenna_dn + p_term);
 	table_delay *= MS_TO_S;		// convert ms to seconds
 
-	float cmd_delay = table_delay - (rgw - xmit_pulse_width) / 2.0;
+	float cmd_delay = table_delay + (xmit_pulse_width - rgw) / 2.0;
 
 	//----------//
 	// quantize //
@@ -541,8 +541,8 @@ RangeTracker::SetInstrument(
 	GetDelayAndDuration(beam_idx, range_step, xpw, antenna_dn, antenna_n,
 		&delay, &width);
 
-	instrument->receiverGateDelay = delay;
-	instrument->receiverGateWidth = width;
+	instrument->commandedRxGateDelay = delay;
+	instrument->commandedRxGateWidth = width;
 
 	return(1);
 }

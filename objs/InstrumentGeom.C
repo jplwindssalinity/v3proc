@@ -109,7 +109,7 @@ LocateSlices(
 	}
 	else
 	{
-		instrument->receiverGateWidth = beam->receiverGateWidth;
+		instrument->commandedRxGateWidth = beam->receiverGateWidth;
 		double rtt = IdealRtt(spacecraft, instrument);
 		if (! RttToCommandedReceiverDelay(instrument, rtt))
 			return(0);
@@ -590,7 +590,7 @@ DopplerAndDelay(
 	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
 	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
 	double round_trip_time = 2.0 * slant_range / speed_light_kps;
-	instrument->receiverGateDelay = pulse_width / 2.0 + round_trip_time +
+	instrument->commandedRxGateDelay = pulse_width / 2.0 + round_trip_time +
 		instrument->systemDelay;
 
 	//--------------------------------------------------//
@@ -603,7 +603,7 @@ DopplerAndDelay(
 	double echo_center = transmit_center + round_trip_time +
 		instrument->systemDelay;
 	double range_freq = instrument->chirpRate *
-		(instrument->receiverGateDelay - echo_center);
+		(instrument->commandedRxGateDelay - echo_center);
 
 	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
@@ -686,8 +686,8 @@ RttToCommandedReceiverDelay(
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double pulse_width = beam->pulseWidth;
 
-	instrument->receiverGateDelay = rtt +
-		(pulse_width - instrument->receiverGateWidth) / 2.0;
+	instrument->commandedRxGateDelay = rtt +
+		(pulse_width - instrument->commandedRxGateWidth) / 2.0;
 
 	return(1);
 }
@@ -792,7 +792,8 @@ TargetInfo(
 	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
 	double echo_center = transmit_center + tip->roundTripTime;
 	tip->rangeFreq = instrument->chirpRate *
-		(instrument->receiverGateDelay - echo_center);
+		(instrument->commandedRxGateDelay +
+		instrument->commandedRxGateWidth / 2.0 - echo_center);
 	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq -
 		instrument->commandedDoppler;
 
