@@ -44,7 +44,8 @@ public:
 	L10();
 	~L10();
 
-	int		AllocateBuffer(int beam_cycles_per_frame, int slices_per_spot);
+	int		AllocateBuffer(int number_of_beams, int antenna_cycles_per_frame,
+				int slices_per_spot);
 	int		DeallocateBuffer();
 
 	//---------------------//

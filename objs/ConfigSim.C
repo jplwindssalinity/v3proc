@@ -427,60 +427,39 @@ ConfigInstrument(
 
 	float chirp_rate;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
-		{
-		printf("No chirp rate specified\n");
 		return(0);
-		}
 	instrument->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_start_m;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
-		{
-		printf("No chirp start specified\n");
 		return(0);
-		}
 	instrument->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_rate_b;		// kHz
 	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
-		{
-		printf("No chirp start offset specified\n");
 		return(0);
-		}
 	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
 	float system_delay;		// us
 	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
-		{
-		printf("No system delay specified\n");
 		return(0);
-		}
 	instrument->systemDelay = system_delay * US_TO_S;
 
 	float receiver_gate_width;	// ms
 	if (! config_list->GetFloat(RECEIVER_GATE_WIDTH_KEYWORD,
 		&receiver_gate_width))
-	{
-		printf("No receiver gate width specified\n");
 		return(0);
-	}
 	instrument->receiverGateWidth = receiver_gate_width * MS_TO_S;
 
 	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
 		&base_transmit_freq))
-	{
-		printf("No base transmit frequency specified\n");
 		return(0);
-	}
 	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
 
 	float slice_bandwidth;
 	if (! config_list->GetFloat(SLICE_BANDWIDTH_KEYWORD, &slice_bandwidth))
-	{
-		printf("No slice bandwidth specified\n");
 		return(0);
-	}
 	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
 
 	return(1);
@@ -534,44 +513,26 @@ ConfigAntenna(
 
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
-	{
-		printf("Number of beams not specified\n");
 		return(0);
-	}
 	antenna->numberOfBeams = number_of_beams;
 
 	double pri_per_beam;
 	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &pri_per_beam))
-	{
-		printf("PRI per beam not specified\n");
 		return(0);
-	}
 	antenna->priPerBeam = pri_per_beam;
 
 	int encoder_bits;
 	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
-	{
-		printf("Number of encoder bits not specified\n");
 		return(0);
-	}
 	antenna->SetNumberOfEncoderBits(encoder_bits);
 
 	double roll, pitch, yaw;
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
-	{
-		printf("Antenna pedestal roll not specified\n");
 		return(0);
-	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
-	{
-		printf("Antenna pedestal pitch not specified\n");
 		return(0);
-	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
-	{
-		printf("Antenna pedestal yaw not specified\n");
 		return(0);
-	}
 	Attitude att;
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
@@ -616,10 +577,7 @@ ConfigBeam(
 
 	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
 	if (! config_list->GetChar(keyword, &tmp_char))
-	{
-		printf("Beam %d polarization not specified\n",beam_number);
 		return(0);
-	}
 	switch (tmp_char)
 	{
 	case 'V':
@@ -639,37 +597,25 @@ ConfigBeam(
 	double pulse_width;		// ms
 	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &pulse_width))
-	{
-		printf("Beam %d pulse width not specified\n",beam_number);
 		return(0);
-	}
 	beam->pulseWidth = pulse_width * MS_TO_S;
 
 	double look_angle;		// deg
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &look_angle))
-	{
-		printf("Beam %d look angle not specified\n",beam_number);
 		return(0);
-	}
 	look_angle *= dtr;
 
 	double azimuth_angle;	// deg
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &azimuth_angle))
-	{
-		printf("Beam %d azimuth angle not specified\n",beam_number);
 		return(0);
-	}
 	azimuth_angle *= dtr;
 
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
-	{
-		printf("Beam %d pattern file name not specified\n",beam_number);
 		return(0);
-	}
 	if (! beam->ReadBeamPattern(pattern_file))
 	{
 		printf("Error while reading beam %d pattern file\n",beam_number);
@@ -681,10 +627,7 @@ ConfigBeam(
 	// ms
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
-	{
-		printf("Beam %d time offset not specified\n",beam_number);
 		return(0);
-	}
 	beam->timeOffset = tmp_double * MS_TO_S;
 
 	return(1);
@@ -708,24 +651,36 @@ ConfigL00(
 		return(0);
 	l00->SetFilename(l00_filename);
 
-	int beam_cycles_per_frame;
-	if (! config_list->GetInt(L00_BEAM_CYCLES_PER_FRAME_KEYWORD,
-		&beam_cycles_per_frame))
+	int number_of_beams;
+	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+		return(0);
+
+	int antenna_cycles_per_frame;
+	if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
+		&antenna_cycles_per_frame))
 	{
 		return(0);
 	}
+
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
-	if (! l00->AllocateBuffer(beam_cycles_per_frame, slices_per_spot))
+
+	if (! l00->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
+		slices_per_spot))
+	{
 		return(0);
+	}
 
 	//-------------------------//
 	// configure the l00 frame //
 	//-------------------------//
 
-	if (! l00->frame.Allocate(beam_cycles_per_frame, slices_per_spot))
+	if (! l00->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
+		slices_per_spot))
+	{
 		return(0);
+	}
 
 	return(1);
 }
@@ -748,25 +703,36 @@ ConfigL10(
 		return(0);
 	l10->SetFilename(l10_filename);
 
-	int beam_cycles_per_frame;
-	if (! config_list->GetInt(L00_BEAM_CYCLES_PER_FRAME_KEYWORD,
-		&beam_cycles_per_frame))
+	int number_of_beams;
+	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+		return(0);
+
+	int antenna_cycles_per_frame;
+	if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
+		&antenna_cycles_per_frame))
 	{
 		return(0);
 	}
+
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
-	if (! l10->AllocateBuffer(beam_cycles_per_frame, slices_per_spot))
+
+	if (! l10->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
+		slices_per_spot))
+	{
 		return(0);
+	}
 
 	//-------------------------//
 	// configure the l10 frame //
 	//-------------------------//
 
-	if (! l10->frame.Allocate(beam_cycles_per_frame, slices_per_spot))
+	if (! l10->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
+		slices_per_spot))
+	{
 		return(0);
-
+	}
 
 	return(1);
 }

@@ -165,9 +165,9 @@ int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 // L00 //
 //-----//
 
-#define L00_FILE_KEYWORD					"L00_FILE"
-#define L00_BEAM_CYCLES_PER_FRAME_KEYWORD	"L00_BEAM_CYCLES_PER_FRAME"
-#define L00_SLICES_PER_SPOT_KEYWORD			"L00_SLICES_PER_SPOT"
+#define L00_FILE_KEYWORD						"L00_FILE"
+#define L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD	"L00_ANTENNA_CYCLES_PER_FRAME"
+#define L00_SLICES_PER_SPOT_KEYWORD				"L00_SLICES_PER_SPOT"
 
 int ConfigL00(L00* l00, ConfigList* config_list);
 

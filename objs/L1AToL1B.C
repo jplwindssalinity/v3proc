@@ -83,7 +83,7 @@ L10ToL15::Convert(
 	int total_slice_idx = 0;
 	int spot_idx = 0;
 
-	for (int beam_cycle = 0; beam_cycle < l10->frame.beamCyclesPerFrame;
+	for (int beam_cycle = 0; beam_cycle < l10->frame.antennaCyclesPerFrame;
 		beam_cycle++)
 	{
 		//------------------//

@@ -143,8 +143,7 @@ InstrumentSim::LocateSlices(
 	// determine slicing info //
 	//------------------------//
 
-	int slice_count = l00.frame.slicesPerSpot;
-	float total_freq = slice_count * instrument->sliceBandwidth;
+	float total_freq = l00.frame.slicesPerSpot * instrument->sliceBandwidth;
 	float min_freq = -total_freq / 2.0;
 
 	//-------------------------------------------------//
@@ -484,7 +483,6 @@ InstrumentSim::SetL00Science(
 	MeasSpot*		meas_spot,
 	Instrument*		instrument)
 {
-        int total_sliceNumber=_spotNumber*l00.frame.slicesPerSpot;
 	L00Frame* l00_frame = &(l00.frame);
 	Antenna* antenna = &(instrument->antenna);
 
@@ -499,6 +497,7 @@ InstrumentSim::SetL00Science(
 	// for each measurement... //
 	//-------------------------//
 
+	int slice_number = _spotNumber * l00_frame->slicesPerSpot;
 	for (Meas* meas = meas_spot->slices.GetHead(); meas;
 		meas = meas_spot->slices.GetNext())
 	{
@@ -506,8 +505,8 @@ InstrumentSim::SetL00Science(
 		// update the level 0.0 frame //
 		//----------------------------//
 
-		l00_frame->science[total_sliceNumber] = meas->value;
-		total_sliceNumber++;
+		l00_frame->science[slice_number] = meas->value;
+		slice_number++;
 	}
 	_spotNumber++;
 
@@ -529,15 +528,17 @@ InstrumentSim::ScatSim(
 	MeasSpot meas_spot;
 
 	//-----------------------------//
-        // If at the start of a frame  //
-	// Compute Frame header info   //
+	// If at the start of a frame //
+	// Compute Frame header info //
 	//-----------------------------//
-	if(_spotNumber==0){	
-	  if (! SetL00Spacecraft(spacecraft))
-	      return(0);
-	  l00.frame.time=time;
-	  
+
+	if (_spotNumber == 0)
+	{	
+		if (! SetL00Spacecraft(spacecraft))
+			return(0);
+		l00.frame.time = time;
 	}
+
 	//---------------------//
 	// locate measurements //
 	//---------------------//
@@ -573,9 +574,7 @@ InstrumentSim::ScatSim(
 	// determine if frame is ready //
 	//-----------------------------//
 
-	Antenna* antenna = &(instrument->antenna);
-
-	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
+	if (_spotNumber >= l00.frame.spotsPerFrame)
 	{
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame
@@ -587,9 +586,3 @@ InstrumentSim::ScatSim(
 
 	return(1);
 }
-
-
-
-
-
-

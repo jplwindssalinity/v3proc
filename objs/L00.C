@@ -33,13 +33,15 @@ L00::~L00()
 
 int
 L00::AllocateBuffer(
-	int		spots_per_frame,
+	int		number_of_beams,
+	int		antenna_cycles_per_frame,
 	int		slices_per_spot)
 {
 	// antenna position and sigma-0
 	int bytes_per_slice = sizeof(short) + sizeof(float);
-	int total_slices = spots_per_frame * slices_per_spot;
-	int buffer_size = L00_FRAME_HEADER_SIZE + total_slices * bytes_per_slice;
+	int buffer_size = L00_FRAME_HEADER_SIZE +
+		number_of_beams * antenna_cycles_per_frame * slices_per_spot *
+		bytes_per_slice;
 	buffer = (char *)malloc(buffer_size);
 	if (buffer == NULL)
 		return(0);
