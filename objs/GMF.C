@@ -67,6 +67,11 @@ int
 GMF::SetPhiCount(
 	int		phi_count)
 {
+	if (!_bestSpd && _phiCount == phi_count)
+	{	// No adjustment needed
+		return(1);
+	}
+
 	_phiCount = phi_count;
 	_phiStepSize = two_pi / _phiCount;
 
@@ -1626,11 +1631,11 @@ GMF::Calculate_Init_Wind_Solutions(
  
 			// Re-evaluate objective function to avoid interpolation bumps
 			// that introduce artificial peaks.
-			_objective_buffer[k] = _ObjectiveFunction(meas_list,
-										_speed_buffer[k],dtr*angle,kp);
-//            _objective_buffer [k] = center_objective
-//                                - (diff_objective_1*diff_objective_1
-//                                  /diff_objective_2) / 8.0;
+//			_objective_buffer[k] = _ObjectiveFunction(meas_list,
+//										_speed_buffer[k],dtr*angle,kp);
+            _objective_buffer [k] = center_objective
+                                - (diff_objective_1*diff_objective_1
+                                  /diff_objective_2) / 8.0;
 		}
 	}	// end of angular k loop
 
