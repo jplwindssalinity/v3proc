@@ -594,8 +594,11 @@ main(
             // accumulation decision //
             //-----------------------//
 
-            if (g_echo_info[g_frame_count].flag[spot_idx] != EchoInfo::OK)
+            if (g_echo_info[g_frame_count].quality_flag[spot_idx] !=
+                EchoInfo::OK)
+            {
                 continue;
+            }
 
             if (g_echo_info[g_frame_count].totalSignalEnergy[spot_idx] <
                 SIGNAL_ENERGY_THRESHOLD)
@@ -800,8 +803,8 @@ evaluate(
             float plot_offset = plot_offset_array[beam_idx];
 
             // only use data to be used
-            if (g_echo_info[frame_idx].flag[spot_idx] != EchoInfo::OK &&
-                ! or_flag)
+            if (g_echo_info[frame_idx].quality_flag[spot_idx] !=
+                EchoInfo::OK && ! or_flag)
             {
                 continue;
             }

@@ -627,7 +627,7 @@ main(
 
         for (int spot_idx = 0; spot_idx < 100; spot_idx++)
         {
-            echo_info.flag[spot_idx] = EchoInfo::OK;
+            echo_info.quality_flag[spot_idx] = EchoInfo::OK;
 
             // determine beam index and beam
             int beam_idx = spot_idx % NUMBER_OF_QSCAT_BEAMS;
@@ -666,7 +666,7 @@ main(
 
             if (xpos == 0.0 && ypos == 0.0 && zpos == 0.0)
             {
-                echo_info.flag[spot_idx] = EchoInfo::BAD_EPHEMERIS;
+                echo_info.quality_flag[spot_idx] = EchoInfo::BAD_EPHEMERIS;
                 wom_frame = 0;   // spin up again
                 continue;
             }
@@ -699,7 +699,7 @@ main(
             if (spot_idx == cal_pulse_pos - 2 ||
                 spot_idx == cal_pulse_pos - 1)
             {
-                echo_info.flag[spot_idx] = EchoInfo::CAL_OR_LOAD_PULSE;
+                echo_info.quality_flag[spot_idx] = EchoInfo::CAL_OR_LOAD_PULSE;
                 continue;
             }
 
@@ -745,8 +745,10 @@ main(
             }
 
             int type = land_map.GetType(lon, lat);
-            if (type != 0)    // not ocean
-                echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
+            if (type == 0)
+                echo_info.surface_flag[spot_idx] = EchoInfo::OCEAN;
+            else
+                echo_info.surface_flag[spot_idx] = EchoInfo::NOT_OCEAN;
 
             //-------------------------------//
             // determine total signal energy //
@@ -784,7 +786,7 @@ main(
 
             if (total_signal_energy < 10.0 * noise)
             {
-                echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                echo_info.quality_flag[spot_idx] = EchoInfo::BAD_PEAK;
                 continue;
             }
 
@@ -797,7 +799,7 @@ main(
                 signal_energy + 1, 10, &meas_spec_peak_slice,
                 &meas_spec_peak_freq, &width, 1))
             {
-                echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                echo_info.quality_flag[spot_idx] = EchoInfo::BAD_PEAK;
                 continue;
             }
             echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;

@@ -8,7 +8,7 @@
 //    get_look_att
 //
 // SYNOPSIS
-//    get_look_att [ -a roll:pitch:yaw ] [ -f type:windfield ]
+//    get_look_att [ -y yaw ] [ -a roll:pitch:yaw ] [ -f type:windfield ]
 //      [ -s start:end ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -17,6 +17,7 @@
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
+//    [ -y yaw ]             Fix yaw at given value.
 //    [ -a roll:pitch:yaw ]  Fix the attitude.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
@@ -97,9 +98,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define YAW_SET_TO_ZERO  1
-
-#define OPTSTRING    "a:f:s:"
+#define OPTSTRING    "a:f:s:y:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -151,7 +150,7 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -a roll:pitch:yaw ]",
+const char* usage_array[] = { "[ -y yaw ]", "[ -a roll:pitch:yaw ]",
     "[ -f type:windfield ]", "[ -s start:end ] ", "<sim_config_file>",
     "<output_base>", "<echo_file...>", 0 };
 
@@ -172,6 +171,8 @@ int        g_start_step = 0;
 int        g_end_step = ORBIT_STEPS;
 int        g_range_opt = 0;
 int        g_fix_att_opt = 0;
+int        g_opt_fix_yaw = 0;
+double     g_fixed_yaw = 0.0;
 int        g_start_orbit_step = 0;
 int        g_stop_orbit_step = 0;
 int        g_step_orbit_step = 1;
@@ -227,6 +228,16 @@ main(
                     optarg);
                 exit(1);
             }
+            break;
+        case 'y':
+            g_opt_fix_yaw = 1;
+            if (sscanf(optarg, "%lg", &g_fixed_yaw) != 1)
+            {
+                fprintf(stderr, "%s: error parsing yaw %s\n", command,
+                    optarg);
+                exit(1);
+            }
+            g_fixed_yaw *= dtr;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -597,7 +608,10 @@ process_orbit_step(
     {
         lookatt[2] = 0.0;    // roll
         lookatt[3] = 0.0;    // pitch
-        lookatt[4] = 0.0;    // yaw
+        if (g_opt_fix_yaw)
+            lookatt[4] = g_fixed_yaw;
+        else
+            lookatt[4] = 0.0;    // yaw
     }
     ds_optimize(spacecraft, qscat, fbb_table, lookatt, LAMBDA * dtr,
         XTOL * dtr);
@@ -674,7 +688,7 @@ ds_optimize(
 
     int unknowns_plus_constants = ndim;
     int unknowns = ndim;
-    if (YAW_SET_TO_ZERO)
+    if (g_opt_fix_yaw)
         unknowns = ndim - 1;
 
     if (g_fix_att_opt)
@@ -755,8 +769,8 @@ evaluate(
             float plot_offset = plot_offset_array[beam_idx];
 
             // only use data to be used
-            if (g_echo_info[frame_idx].flag[spot_idx] != EchoInfo::OK &&
-                ! or_flag)
+            if (g_echo_info[frame_idx].quality_flag[spot_idx] !=
+                EchoInfo::OK && ! or_flag)
             {
                 continue;
             }

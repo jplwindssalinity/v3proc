@@ -330,22 +330,29 @@ main(
                 int beam_idx = echo_info.SpotBeamIdx(spot_idx);
                 int orbit_step = echo_info.SpotOrbitStep(spot_idx);
 
-                if ((echo_info.flag[spot_idx] == EchoInfo::OK ||
-                    (echo_info.flag[spot_idx] == EchoInfo::NOT_OCEAN &&
-                    ! opt_ocean_only)) &&
-                    echo_info.totalSignalEnergy[spot_idx] >=
+                if (echo_info.quality_flag[spot_idx] != EchoInfo::OK)
+                    continue;
+
+                if (opt_ocean_only &&
+                    echo_info.surface_flag[spot_idx] != EchoInfo::OCEAN)
+                {
+                    continue;
+                }
+
+                if (echo_info.totalSignalEnergy[spot_idx] <
                     SIGNAL_ENERGY_THRESHOLD)
                 {
-                    if (g_offsets[file_idx_zero][orbit_step][0] == 1)
-                    {
-                        // start offset not set yet...so set it!
-                        g_offsets[file_idx_zero][orbit_step][0] =
-                            current_offset;
-                    }
-                    // might as well always set the ending offset
-                    g_offsets[file_idx_zero][orbit_step][1] = current_offset;
-                    g_sector_count[beam_idx][orbit_step]++;
+                    continue;
                 }
+                if (g_offsets[file_idx_zero][orbit_step][0] == 1)
+                {
+                    // start offset not set yet...so set it!
+                    g_offsets[file_idx_zero][orbit_step][0] =
+                        current_offset;
+                }
+                // might as well always set the ending offset
+                g_offsets[file_idx_zero][orbit_step][1] = current_offset;
+                g_sector_count[beam_idx][orbit_step]++;
             }
         } while (1);
 
@@ -525,9 +532,11 @@ main(
 
                 for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
                 {
-                    if (echo_info.flag[spot_idx] != EchoInfo::OK &&
-                        (echo_info.flag[spot_idx] != EchoInfo::NOT_OCEAN ||
-                        opt_ocean_only))
+                    if (echo_info.quality_flag[spot_idx] != EchoInfo::OK)
+                        continue;
+
+                    if (opt_ocean_only &&
+                        echo_info.surface_flag[spot_idx] != EchoInfo::OCEAN)
                     {
                         continue;
                     }

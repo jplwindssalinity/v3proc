@@ -25,7 +25,8 @@ class EchoInfo
 {
 public:
 
-    enum { OK, CAL_OR_LOAD_PULSE, NOT_OCEAN, BAD_PEAK, BAD_EPHEMERIS };
+    enum { OK, CAL_OR_LOAD_PULSE, BAD_PEAK, BAD_EPHEMERIS };
+    enum { OCEAN, NOT_OCEAN };
 
     int             Write(int fd);
     int             Read(int fd);
@@ -50,7 +51,8 @@ public:
     float           txCenterAzimuthAngle[SPOTS_PER_FRAME];
     float           txDoppler[SPOTS_PER_FRAME];
     float           rxGateDelay[SPOTS_PER_FRAME];
-    unsigned char   flag[SPOTS_PER_FRAME];
+    unsigned char   surface_flag[SPOTS_PER_FRAME];
+    unsigned char   quality_flag[SPOTS_PER_FRAME];
     float           totalSignalEnergy[SPOTS_PER_FRAME];
     float           deltaF[SPOTS_PER_FRAME];
     float           measSpecPeakFreq[SPOTS_PER_FRAME];
@@ -122,7 +124,8 @@ EchoInfo::Write(
           frame_float_size ||
         write(fd, (void *)rxGateDelay, frame_float_size) !=
           frame_float_size ||
-        write(fd, (void *)flag, frame_char_size) != frame_char_size ||
+        write(fd, (void *)surface_flag, frame_char_size) != frame_char_size ||
+        write(fd, (void *)quality_flag, frame_char_size) != frame_char_size ||
         write(fd, (void *)totalSignalEnergy, frame_float_size) !=
           frame_float_size ||
         write(fd, (void *)deltaF, frame_float_size) !=
@@ -185,7 +188,8 @@ EchoInfo::Read(
           frame_float_size ||
         read(fd, (void *)rxGateDelay, frame_float_size) !=
           frame_float_size ||
-        read(fd, (void *)flag, frame_char_size) != frame_char_size ||
+        read(fd, (void *)surface_flag, frame_char_size) != frame_char_size ||
+        read(fd, (void *)quality_flag, frame_char_size) != frame_char_size ||
         read(fd, (void *)totalSignalEnergy, frame_float_size) !=
           frame_float_size ||
         read(fd, (void *)deltaF, frame_float_size) !=
@@ -361,7 +365,7 @@ gaussian_fit(
     //------------------------//
 
     float fslice = p[0][0];
-    if (fslice < 0.0 || fslice > points + 0.5)
+    if (fslice < x[0] || fslice > x[points-1])
     {
         free_p(p, ndim);
         return(0);
