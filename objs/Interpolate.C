@@ -6,6 +6,7 @@
 static const char rcs_id_interpolate_c[] =
     "@(#) $Id$";
 
+#include <stdio.h>
 #include <math.h>
 #include <malloc.h>
 
