@@ -182,7 +182,7 @@ main(
 	double instrument_start_time, instrument_end_time;
 	double spacecraft_start_time, spacecraft_end_time;
 
-	if (! ConfigTimes(&spacecraft_sim, &config_list,
+	if (! ConfigControl(&spacecraft_sim, &config_list,
 		&grid_start_time, &grid_end_time,
 		&instrument_start_time, &instrument_end_time,
 		&spacecraft_start_time, &spacecraft_end_time))

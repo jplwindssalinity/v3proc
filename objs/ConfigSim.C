@@ -1116,13 +1116,15 @@ ConfigControl(
 		{
 			grid_lat_range *= dtr;
 			double orbit_period = spacecraft_sim->GetPeriod();
-			*grid_end_time = *grid_start_time + orbit_period * grid_lat_range / two_pi;
+			*grid_end_time = *grid_start_time +
+				orbit_period * grid_lat_range / two_pi;
 			have_grid_end_time = 1;
 		}
 		else if (have_grid_start_time &&
 			config_list->GetDouble(GRID_TIME_RANGE_KEYWORD, &grid_time_range))
 		{
 			*grid_end_time = *grid_start_time + grid_time_range;
+			have_grid_end_time = 1;
 		}
 	}
 

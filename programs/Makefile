@@ -9,13 +9,13 @@ LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
 CCC =			gcc
 
-CPPFLAGS =		-g -pg -Wall -I$(INCDIR)
+CPPFLAGS =		-g -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	sim \
-        sim_accurate \
+	sim_accurate \
 	l00_to_l10 \
 	l10_to_l15 \
 	l15_to_l17 \

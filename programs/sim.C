@@ -265,7 +265,7 @@ main(
 	double instrument_start_time, instrument_end_time;
 	double spacecraft_start_time, spacecraft_end_time;
 
-	if (! ConfigTimes(&spacecraft_sim, &config_list,
+	if (! ConfigControl(&spacecraft_sim, &config_list,
 		&grid_start_time, &grid_end_time,
 		&instrument_start_time, &instrument_end_time,
 		&spacecraft_start_time, &spacecraft_end_time))
@@ -419,80 +419,4 @@ main(
 	l00.file.Close();
 
 	return (0);
-}
-
-//-------------//
-// ConfigTimes //
-//-------------//
-
-int
-ConfigTimes(
-	SpacecraftSim*	spacecraft_sim,
-	ConfigList*		config_list,
-	double*			instrument_start_time,
-	double*			instrument_end_time,
-	double*			spacecraft_start_time,
-	double*			spacecraft_end_time)
-{
-	//--------------------//
-	// get the start time //
-	//--------------------//
-
-	double start_time;
-	if (! config_list->GetDouble(START_TIME_KEYWORD, &start_time))
-		return(0);
-
-	//----------------------------------------------------//
-	// get the starting argument of latitude for the grid //
-	//----------------------------------------------------//
-
-	double grid_arg_lat;
-	if (! config_list->GetDouble(GRID_START_ARG_OF_LAT_KEYWORD,
-		&grid_arg_lat))
-	{
-		return(0);
-	}
-
-	//----------------------------------------------------------//
-	// estimate the time of the grid start argument of latitude //
-	//----------------------------------------------------------//
-
-	double orbit_period = spacecraft_sim->GetPeriod();
-	Spacecraft spacecraft;
-	spacecraft_sim->UpdateOrbit(start_time, &spacecraft);
-	double arg_of_lat = spacecraft_sim->GetArgOfLat(&spacecraft);
-	double ang_dif = fmod(grid_arg_lat + two_pi - arg_of_lat, two_pi);
-	double grid_start_time = start_time + orbit_period * ang_dif / two_pi;
-
-	//-------------------------------------//
-	// calculate the instrument start time //
-	//-------------------------------------//
-
-	double pass_time_buffer;
-	if (! config_list->GetDouble(PASS_TIME_BUFFER_KEYWORD, &pass_time_buffer))
-		return(0);
-	*instrument_start_time = grid_start_time - pass_time_buffer;
-
-	//------------------------------//
-	// calculate the s/c start time //
-	//------------------------------//
-
-	double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-	*spacecraft_start_time = *instrument_start_time -
-		(EPHEMERIS_INTERP_ORDER + 2) * ephemeris_period;
-
-	//-------------------------//
-	// calculate the end times //
-	//-------------------------//
-
-	double grid_extent;
-	if (! config_list->GetDouble(GRID_LATITUDE_EXTENT_KEYWORD, &grid_extent))
-		return(0);
-	double grid_duration = orbit_period * grid_extent / two_pi;
-
-	*instrument_end_time = grid_start_time + grid_duration + pass_time_buffer;
-	*spacecraft_end_time = *instrument_end_time +
-		(EPHEMERIS_INTERP_ORDER + 2) * ephemeris_period;
-
-	return(1);
 }
