@@ -40,11 +40,18 @@ public:
 	Antenna();
 	~Antenna();
 
+	int		SetPedestalAttitude(Attitude* attitude);
+
 	//-----------------//
 	// setting/getting //
 	//-----------------//
 
 	int		SetNumberOfEncoderBits(int number);
+
+	CoordinateSwitch	GetAntPedToAntFrame()
+							{ return(_antPedToAntFrame); };
+	CoordinateSwitch	GetAntFrameToAntPed()
+							{ return(_antFrameToAntPed); };
 
 	//-------------//
 	// conversions //
@@ -63,14 +70,16 @@ public:
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle
 
-private:
+protected:
 
-	//---------------//
-	// configuration //
-	//---------------//
+	//-----------//
+	// variables //
+	//-----------//
 
-	int			_numberOfEncoderBits;
-	double		_angularResolution;
+	int					_numberOfEncoderBits;
+	double				_angularResolution;
+	CoordinateSwitch	_antPedToAntFrame;
+	CoordinateSwitch	_antFrameToAntPed;
 };
 
 #endif

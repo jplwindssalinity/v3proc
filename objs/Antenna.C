@@ -28,6 +28,20 @@ Antenna::~Antenna()
 	return;
 }
 
+//------------------------------//
+// Antenna::SetPedestalAttitude //
+//------------------------------//
+
+int
+Antenna::SetPedestalAttitude(
+	Attitude*	attitude)
+{
+	_antPedToAntFrame.SetRotation(*attitude);
+	_antFrameToAntPed = _antPedToAntFrame.ReverseDirection();
+
+	return(1);
+}
+
 //---------------------------------//
 // Antenna::SetNumberOfEncoderBits //
 //---------------------------------//
