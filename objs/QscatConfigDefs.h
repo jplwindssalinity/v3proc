@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -7,7 +7,7 @@
 #define QSCATCONFIGDEFS_H
 
 static const char rcs_id_qscatconfigdefs_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // QscatSim //
@@ -88,10 +88,11 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define BYU_OUTER_BEAM_LOOK_ANGLE_KEYWORD "BYU_OUTER_BEAM_LOOK_ANGLE"
 #define BYU_OUTER_BEAM_AZIMUTH_ANGLE_KEYWORD "BYU_OUTER_BEAM_AZIMUTH_ANGLE"
 
-//------------//
-// Sigma0Maps //
-//------------//
+//------//
+// Land //
+//------//
 
+#define SIM_LAND_FLAG_KEYWORD          "SIM_LAND_FLAG"
 #define USE_SIGMA0_MAPS_KEYWORD        "USE_SIGMA0_MAPS"
 #define INNER_BEAM_SIGMA0_MAP_KEYWORD  "INNER_BEAM_SIGMA0_MAP"
 #define OUTER_BEAM_SIGMA0_MAP_KEYWORD  "OUTER_BEAM_SIGMA0_MAP"

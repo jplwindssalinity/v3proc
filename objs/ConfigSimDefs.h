@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -78,9 +78,9 @@ static const char rcs_id_configsimdefs_h[] =
 // Kprc Noise Model      //
 //-----------------------//
 
-#define SIM_KPRC_KEYWORD      "SIM_KPRC"
-#define KPRC_VALUE_KEYWORD    "KPRC_VALUE"
-#define KPRC_SEED_KEYWORD      "KPRC_SEED"
+#define SIM_KPRC_KEYWORD    "SIM_KPRC"
+#define KPRC_VALUE_KEYWORD  "KPRC_VALUE"
+#define KPRC_SEED_KEYWORD   "KPRC_SEED"
 
 //-------//
 // seeds //
