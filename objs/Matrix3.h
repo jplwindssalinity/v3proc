@@ -63,10 +63,10 @@ Vector3 operator*(Vector3 v2);
 // Other matrix methods
 //
 
-void rowset(Vector3 r1, Vector3 r2, Vector3 r3);
-void identity();
-void inverse();
-void show(char *name = NULL);
+void Rowset(Vector3 r1, Vector3 r2, Vector3 r3);
+void Identity();
+void Inverse();
+void Show(char *name = NULL);
 
 protected:
 
@@ -116,10 +116,10 @@ Vector3 operator&(Vector3 m2); // cross product
 // Other access methods
 //
 
-void scale(double r);		// set magnitude
+void Scale(double r);		// set magnitude
 double Vector3::Magnitude();	// get vector magnitude
 double get(int i);		// extract one element
-void show(char *name = NULL);
+void Show(char *name = NULL);
 
 	int		SphericalSet(double r, double theta, double phi);
 	int		Set(int index, double value);
@@ -178,7 +178,7 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 //
 
 // lat,lon access
-Vector3 Get_alt_lat_lon(earthposition_typeE etype);
+Vector3 get_alt_lat_lon(earthposition_typeE etype);
 //double get_alt();	// extract the height above the earth's surface
 //double get_dlat();	// extract the geodetic latitude
 //double get_clat();	// extract the geocentric latitude

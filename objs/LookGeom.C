@@ -42,6 +42,9 @@ Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 
 {
 
+// Null vector to use when no translation is needed.
+Vector3 null_vector(0.0);
+
 // Spacecraft velocity frame unit vectors (in geocentric frame).
 // Geocentric definition of the z-axis
 Vector3 zscvel_geo = -rsat;
@@ -49,32 +52,32 @@ Vector3 yscvel_geo = zscvel_geo & vsat;
 Vector3 xscvel_geo = yscvel_geo & zscvel_geo;
 
 // Coordinate transformation from geocentric to s/c velocity
-CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
-//geo_to_scvel.show("antenna_look: geo_to_scvel");
+CoordinateSwitch geo_to_scvel(rsat,xscvel_geo,yscvel_geo,zscvel_geo);
+//geo_to_scvel.Show("antenna_look: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(sc_att,1,2,3);
-//scvel_to_scbody.show("antenna_look: scvel_to_scbody");
+CoordinateSwitch scvel_to_scbody(null_vector,sc_att,1,2,3);
+//scvel_to_scbody.Show("antenna_look: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(ant_att,1,2,3);
-//scbody_to_ant.show("antenna_look: scbody_to_ant");
+CoordinateSwitch scbody_to_ant(null_vector,ant_att,1,2,3);
+//scbody_to_ant.Show("antenna_look: scbody_to_ant");
 
 // rlook is a vector from the s/c to the ground target (in geocentric frame)
 Vector3 rlook = rground - rsat;
-//rlook.show("antenna_look: rlook");
+//rlook.Show("antenna_look: rlook");
 
 // Apply coordinate transformations to put rlook in the antenna frame.
 
-Vector3 rlook_scvel = geo_to_scvel.forward(rlook);
-Vector3 rlook_scbody = scvel_to_scbody.forward(rlook_scvel);
-Vector3 rlook_ant = scbody_to_ant.forward(rlook_scbody);
-//rlook_scvel.show("antenna_look: rlook_scvel");
-//rlook_scbody.show("antenna_look: rlook_scbody");
-//rlook_ant.show("antenna_look: rlook_ant");
+Vector3 rlook_scvel = geo_to_scvel.Forward(rlook);
+Vector3 rlook_scbody = scvel_to_scbody.Forward(rlook_scvel);
+Vector3 rlook_ant = scbody_to_ant.Forward(rlook_scbody);
+//rlook_scvel.Show("antenna_look: rlook_scvel");
+//rlook_scbody.Show("antenna_look: rlook_scbody");
+//rlook_ant.Show("antenna_look: rlook_ant");
 
-rlook_ant.scale(1.0);
-//rlook_ant.show("antenna_look: rlook_ant");
+rlook_ant.Scale(1.0);
+//rlook_ant.Show("antenna_look: rlook_ant");
 return(rlook_ant);
 
 }
@@ -109,6 +112,9 @@ EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
 
 {
 
+// Null vector to use when no translation is needed.
+Vector3 null_vector(0.0);
+
 //
 // Transform rlook_ant from the antenna frame to
 // the geocentric frame.
@@ -121,29 +127,29 @@ Vector3 yscvel_geo = zscvel_geo & vsat;
 Vector3 xscvel_geo = yscvel_geo & zscvel_geo;
 
 // Coordinate transformation from geocentric to s/c velocity
-CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
-//geo_to_scvel.show("earth_intercept: geo_to_scvel");
+CoordinateSwitch geo_to_scvel(rsat,xscvel_geo,yscvel_geo,zscvel_geo);
+//geo_to_scvel.Show("earth_intercept: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(sc_att,1,2,3);
-//scvel_to_scbody.show("earth_intercept: scvel_to_scbody");
+CoordinateSwitch scvel_to_scbody(null_vector,sc_att,1,2,3);
+//scvel_to_scbody.Show("earth_intercept: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(ant_att,1,2,3);
-//scbody_to_ant.show("earth_intercept: scbody_to_ant");
+CoordinateSwitch scbody_to_ant(null_vector,ant_att,1,2,3);
+//scbody_to_ant.Show("earth_intercept: scbody_to_ant");
 
 // Apply coordinate transformations to put rlook_ant in the geocentric
 // frame.
 
-Vector3 rlook_scbody = scbody_to_ant.backward(rlook_ant);
-Vector3 rlook_scvel = scvel_to_scbody.backward(rlook_scbody);
-Vector3 rlook_geo = geo_to_scvel.backward(rlook_scvel);
-//rlook_scbody.show("earth_intercept: rlook_scbody");
-//rlook_scvel.show("earth_intercept: rlook_scvel");
-//rlook_geo.show("earth_intercept: rlook_geo");
+Vector3 rlook_scbody = scbody_to_ant.Backward(rlook_ant);
+Vector3 rlook_scvel = scvel_to_scbody.Backward(rlook_scbody);
+Vector3 rlook_geo = geo_to_scvel.Backward(rlook_scvel);
+//rlook_scbody.Show("earth_intercept: rlook_scbody");
+//rlook_scvel.Show("earth_intercept: rlook_scvel");
+//rlook_geo.Show("earth_intercept: rlook_geo");
 
-rlook_geo.scale(1.0);
-//rlook_geo.show("earth_intercept: rlook_geo");
+rlook_geo.Scale(1.0);
+//rlook_geo.Show("earth_intercept: rlook_geo");
 
 Vector3 v1 = rlook_geo * rlook_geo;
 Vector3 v2 = rsat * rlook_geo;
@@ -178,10 +184,9 @@ if ((s1 > 0) && (s2 > 0))
 else if (s1 > 0) S = s1;	// choose the positive root
 else S = s2;
 //printf("slant range = %g\n",S);
-EarthPosition rground;
 //Vector3 rlook_geo_new = rlook_geo*S;
-//rlook_geo_new.show("earth_intercept: rlook_geo_new");
-rground = rsat + rlook_geo*S;
+//rlook_geo_new.Show("earth_intercept: rlook_geo_new");
+EarthPosition rground = rsat + rlook_geo*S;
 
 return(rground);
 

@@ -203,7 +203,7 @@ return(result);
 // the contents of the specified Vector3 objects.
 //
 
-void Matrix3::rowset(Vector3 r1, Vector3 r2, Vector3 r3)
+void Matrix3::Rowset(Vector3 r1, Vector3 r2, Vector3 r3)
 
 {
 
@@ -221,7 +221,7 @@ for (i=0; i < 3; i++)
 // Method identity sets the calling Matrix3 object to a 3x3 identity matrix.
 //
 
-void Matrix3::identity()
+void Matrix3::Identity()
 
 {
 
@@ -240,7 +240,7 @@ for (j=0; j < 3; j++)
 // The gaussj routine from Numerical Recipes is adapted for 3x3 matrices here.
 //
 
-void Matrix3::inverse()
+void Matrix3::Inverse()
 
 {
 
@@ -300,7 +300,7 @@ for (l=n-1;l>=0;l--) {
 
 }
 
-void Matrix3::show(char *name)
+void Matrix3::Show(char *name)
 
 {
 
@@ -489,7 +489,7 @@ return(result);
 // Scale the vector to have the specifed magnitude.
 //
 
-void Vector3::scale(double r)
+void Vector3::Scale(double r)
 
 {
 int i;
@@ -533,7 +533,7 @@ else
 
 }
 
-void Vector3::show(char *name)
+void Vector3::Show(char *name)
 
 {
 
@@ -657,7 +657,7 @@ else if (etype == GEOCENTRIC)
   Vector3 normal(_v[0]/(r1_earth*r1_earth),
                  _v[1]/(r1_earth*r1_earth),
                  _v[2]/(r2_earth*r2_earth));
-  normal.scale(x1);
+  normal.Scale(x1);
 
   _v[0] += normal.get(0);
   _v[1] += normal.get(1);
@@ -749,7 +749,7 @@ _v[2] = vec.get(2);
 // Currently, only surface points (altitude = 0) are handled.
 //
 
-Vector3 EarthPosition::Get_alt_lat_lon(earthposition_typeE etype)
+Vector3 EarthPosition::get_alt_lat_lon(earthposition_typeE etype)
 
 {
 double lat = 0;
