@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -145,7 +145,7 @@ public:
     int  AllocateBuffer();
     int  DeallocateBuffer();
 
-	//---------------------//
+    //---------------------//
     // setting and getting //
     //---------------------//
 

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -456,8 +456,8 @@ PscatL1AFrame::WriteAscii(
     {
         int spot_slice_offset = spot_idx * slicesPerSpot;
         fprintf(ofp, "Spot %d (%s) AntennaPos: %d SpotNoise: %d\n", spot_idx,
-		pscat_event_map[(int)eventId[spot_idx]],
-		antennaPosition[spot_idx],spotNoise[spot_idx]);
+        pscat_event_map[(int)eventId[spot_idx]],
+        antennaPosition[spot_idx],spotNoise[spot_idx]);
         for (int slice_idx = 0; slice_idx < slicesPerSpot; slice_idx++)
         {
             fprintf(ofp, "  %d %g\n", copol[spot_slice_offset + slice_idx],
