@@ -180,6 +180,8 @@ int        g_opt_topo = 0;
 Topo       g_topo;
 Stable     g_stable;
 
+extern int g_max_downhill_simplex_passes;
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -189,6 +191,12 @@ main(
     int    argc,
     char*  argv[])
 {
+    //------------//
+    // initialize //
+    //------------//
+
+    g_max_downhill_simplex_passes = 50;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -438,6 +446,11 @@ main(
 
             EchoInfo echo_info;
             int retval = echo_info.Read(ifd);
+
+// for some reason, zero seems bad
+if (current_offset == 0)
+  continue;
+            
             if (retval != 1)
             {
                 if (retval == -1)    // EOF
@@ -720,8 +733,32 @@ ds_optimize(
     if (g_opt_fix_yaw)
         unknowns = ndim - 1;
 
-    downhill_simplex(p, unknowns, unknowns_plus_constants, 0.0, ds_evaluate,
-        ptr, xtol);
+    if (! downhill_simplex(p, unknowns, unknowns_plus_constants, 0.0,
+        ds_evaluate, ptr, xtol))
+    {
+        printf("Did not converge.  Trying again.\n");
+
+        // average points to get new starting point
+        for (int j = 0; j < ndim; j++)
+        {
+            p[0][j] /= (float)(ndim + 1);
+            for (int i = 1; i < ndim + 1; i++)
+            {
+                p[0][j] += p[i][j] / (float)(ndim + 1);
+            }
+        }
+
+        // relambda-ize
+        for (int i = 1; i < ndim + 1; i++)
+        {
+            for (int j = 0; j < ndim; j++)
+            {
+                p[i][j] = p[0][j] + (j+1 == i ? lambda : 0.0);
+            }
+        }
+        downhill_simplex(p, unknowns, unknowns_plus_constants, 0.0,
+            ds_evaluate, ptr, xtol);
+    }
 
     for (int i = 0; i < 3; i++)
     {
