@@ -22,6 +22,7 @@ static const char rcs_id_instrumentsim_h[] =
 //		InstrumentSim
 //======================================================================
 
+#define POINTS_PER_SPOT_OUTLINE		18
 
 //======================================================================
 // CLASS
@@ -67,15 +68,17 @@ public:
 				MeasSpot* meas_spot, WindField* windfield,
 				GMF* gmf);
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
-	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument, L00Frame* l00_frame);
+	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
+				L00Frame* l00_frame);
 	int		ScatSim(double time, Spacecraft* spacecraft,
-				Instrument* instrument, WindField* windfield, GMF* gmf, L00Frame* l00_frame);
+				Instrument* instrument, WindField* windfield, GMF* gmf,
+				L00Frame* l00_frame);
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	int                     slicesPerSpot;
+	int				slicesPerSpot;
 	double			startTime;
 	AntennaSim		antennaSim;		// the antenna simulator
 

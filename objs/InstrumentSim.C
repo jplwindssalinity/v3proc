@@ -325,9 +325,9 @@ InstrumentSim::LocateSpot(
 	// the earth intercepts.
 	//
 	
-	for (int i=0; i < 16; i++)
+	for (int i=0; i < POINTS_PER_SPOT_OUTLINE + 1; i++)
 	{
-		double phi = pi/8*i;
+		double phi = (two_pi * i) / POINTS_PER_SPOT_OUTLINE;
 
 		// Setup for bisection search for the half power product point.
 
