@@ -313,6 +313,19 @@ BYUXTable::GetDeltaFreq(
   double look;
   double azim;
 
+  //-------------------------------------------------------------------------//
+  // The nominal_boresight and antenna_frame_to_gc coordinate switch below
+  // work together to realize the equations in IOM-3347-98-54.  In particular,
+  // look at eqns (6) and (7).  The nominal_boresight is put at an elevation
+  // angle matching the reference vector, and the azimuth is set to:
+  // groundImpactAzimuth - txCenterAzimuth + referenceAzimuth.  The
+  // coordinate switch is formed at the txCenterAzimuth.  Thus, the
+  // txCenterAzimuth is the origin.  The look vector has to be referenced
+  // to this origin, and that is why the txCenterAzimuth is subtracted
+  // from the nominal_boresight azimuth, leaving groundImpactAzimuth + refAzim
+  // as needed in eqns (6) and (7).
+  //-------------------------------------------------------------------------//
+
   if(!GetBYUBoresight(spacecraft,qscat,&look,&azim)){
     fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
     fprintf(stderr,"Probably means earth_intercept not found\n");
