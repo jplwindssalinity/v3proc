@@ -980,11 +980,11 @@ WindSwath::MedianFilterPass(
 		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			change[cti][ati] = 0;
-			if (new_selected[ati][cti])
+			if (new_selected[cti][ati])
 			{
-				if (new_selected[ati][cti] != swath[cti][ati]->selected)
+				if (new_selected[cti][ati] != swath[cti][ati]->selected)
 				{
-					swath[cti][ati]->selected = new_selected[ati][cti];
+					swath[cti][ati]->selected = new_selected[cti][ati];
 					change[cti][ati] = 1;
 					flips++;
 				}
