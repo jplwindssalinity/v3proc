@@ -22,6 +22,7 @@
 //		<cfg file>		The simulation configuration file.
 //		<l2A_file>		The Level 2a input file.
 //		<output_file_base_name>	Output file name to append suffixes to.
+//		<max_wvc_count> The maximum number of WVC's to read.
 //
 // EXAMPLES
 //		An example of a command line is:
@@ -105,7 +106,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "<cfg_file>", "<l2A_file>",
-	"<output_file_base>", 0};
+	"<output_file_base>", "<max_wvc_count>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -121,13 +122,14 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 4)
+	if (argc != 5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
 	const char* l2a_file = argv[clidx++];
 	const char* output_base = argv[clidx++];
+	const long max_wvc_count = atol(argv[clidx++]);
 
 	//--------------------------------//
 	// read in simulation config file //
@@ -198,7 +200,7 @@ main(
 	int ii[4] = {0,0,1,1};
 	int jj[4] = {0,1,1,0};
 
-	while (l2a.ReadDataRec())
+	while (l2a.ReadDataRec() && count < max_wvc_count)
 	{
 		EarthPosition start_position;
 		ephemeris.GetPosition(l2a.header.startTime,EPHEMERIS_INTERP_ORDER,
@@ -241,7 +243,7 @@ main(
 		sum_c_diff += fabs(ctd - cd);
 		sum_a_diff += fabs(atd - ad);
 		count++;
-		printf("%g %g %g %g\n",ctd,atd,ctd-cd,atd-ad);
+//		printf("%g %g %g %g\n",ctd,atd,ctd-cd,atd-ad);
 
 		outline.WriteOtln(ofp_grid,sum_sigma0/N);
 
