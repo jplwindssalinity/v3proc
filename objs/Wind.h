@@ -219,6 +219,11 @@ public:
 #define ECMWF_LORES_TYPE                "ONE_DEG"
 #define ECMWF_LORES_SCALE_FACTOR        100
 
+#define NCEP_LON_DIM                    144
+#define NCEP_LAT_DIM                    73
+#define NCEP_TYPE                       "NCEP"
+#define NCEP_SCALE_FACTOR               100
+
 #define NSCAT_LON_DIM                   720
 #define NSCAT_LAT_DIM                   301
 #define NSCAT_TYPE                      "NSCAT"
@@ -244,6 +249,7 @@ public:
 	int		WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
         int             ReadEcmwfLoRes(const char* filename);
         int             ReadNSCAT(const char* filename);
+        int             ReadNCEP(const char* filename);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 	

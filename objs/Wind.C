@@ -1307,6 +1307,92 @@ WindField::ReadNSCAT(
 }
 
 
+//---------------------//
+// WindField::ReadNCEP //
+//---------------------//
+
+int
+WindField::ReadNCEP(
+        const char*             filename)
+{
+        if (_field != NULL)
+          return(2);
+
+        //-----------//
+        // open file //
+        //-----------//
+
+        FILE* fp = fopen(filename, "r");
+        if (fp == NULL)
+                return(0);
+
+        //------------//
+        // read field //
+        //------------//
+
+        short head[NCEP_LON_DIM];
+        short tmp_u[NCEP_LAT_DIM][NCEP_LON_DIM];
+        short tmp_v[NCEP_LAT_DIM][NCEP_LON_DIM];
+
+        int head_size = NCEP_LON_DIM * sizeof(short);
+        int uvsize = NCEP_LON_DIM * NCEP_LAT_DIM * sizeof(short);
+
+        if (fread((void *)&head, head_size, 1, fp) != 1 ||
+                fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
+                fread((void *)tmp_v, uvsize, 1, fp) != 1)
+        {
+                fclose(fp);
+                return(0);
+        }
+
+        //------------//
+        // close file //
+        //------------//
+
+        fclose(fp);
+
+        //---------//
+        // convert //
+        //---------//
+
+        float u[NCEP_LAT_DIM][NCEP_LON_DIM];
+        float v[NCEP_LAT_DIM][NCEP_LON_DIM];
+        float scale = float(NCEP_SCALE_FACTOR);
+
+        //-------------------------------//
+        // transfer to wind field format //
+        //-------------------------------//
+
+        _lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, NCEP_LON_DIM);
+        _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP_LAT_DIM);
+
+  
+        if (! _Allocate())
+                return(0);
+
+
+        for (int lon_idx = 0; lon_idx < NCEP_LON_DIM; lon_idx++)
+        {
+                for (int lat_idx = 0; lat_idx < NCEP_LAT_DIM; lat_idx++)
+                {
+                         
+                        u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
+                        v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
+
+                        WindVector* wv = new WindVector;
+                        if (! wv)
+                                return(0);
+
+                        wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+                        *(*(_field + lon_idx) + lat_idx) = wv;
+                }
+        }
+
+        _wrap = 1;
+        return(1);
+}
+
+
 //----------------------------//
 // WindField::WriteEcmwfHiRes //
 //----------------------------//
@@ -1395,23 +1481,27 @@ WindField::ReadType(
 	const char*		type)
 {
 	if (strcasecmp(type, VAP_TYPE) == 0)
-	{
-		return(ReadVap(filename));
-	}
+	  {
+	    return(ReadVap(filename));
+	  }
 	else if (strcasecmp(type, ECMWF_HIRES_TYPE) == 0)
-	{
-		return(ReadEcmwfHiRes(filename));
-	}
+	  {
+	    return(ReadEcmwfHiRes(filename));
+	  }
         else if (strcasecmp(type, ECMWF_LORES_TYPE) == 0)
-        {
-                return(ReadEcmwfLoRes(filename));
-        }
+	  {
+	    return(ReadEcmwfLoRes(filename));
+	  }
         else if (strcasecmp(type, NSCAT_TYPE) == 0)
-        {
-                return(ReadNSCAT(filename));
-        }
+	  {
+	    return(ReadNSCAT(filename));
+	  }
+	else if (strcasecmp(type, NCEP_TYPE) == 0)
+	  {
+	    return(ReadNCEP(filename));
+	  }
 	else
-		return(0);
+	  return(0);
 }
 
 //----------------------//
