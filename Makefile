@@ -18,7 +18,7 @@ default: objs/Makefile programs/Makefile scripts/Makefile
 # clean: remove all object, executable and make files
 #----------------------------------------------------------------------
 
-clean: objs/Makefile programs/Makefile scripts/Makefile
+clean:
 	@ for dir in objs programs scripts; \
 		do (cd $$dir; \
 			echo "Making clean in `pwd`"; \
@@ -38,5 +38,5 @@ install: objs/Makefile programs/Makefile scripts/Makefile
 	done
 
 # rule for subtree makefiles
-%/Makefile: $(SIM_CENTRAL_TREE)/src/%/RCS/Makefile,v
-	(cd $*; co $(SIM_CENTRAL_TREE)/src/$*/RCS/Makefile,v)
+%/Makefile: $(SIM_CENTRAL_TREE)/%/RCS/Makefile,v
+	(cd $*; co $(SIM_CENTRAL_TREE)/$*/RCS/Makefile,v)
