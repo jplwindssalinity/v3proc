@@ -26,9 +26,9 @@ static const double rpm_to_radps = M_PI / 30.0;
 // Some fixed constants describing the Earth.
 //
 
-// semi-major/minor axes (r1_earth, r2_earth) are in meters.
-static const double r1_earth = 6378136.3;
-static const double r2_earth = 6356751.600562937;
+// semi-major/minor axes (r1_earth, r2_earth) are in km.
+static const double r1_earth = 6378.1363;
+static const double r2_earth = 6356.751600562937;
 static const double eccentricity_earth = 8.1819221455523210E-02;
 
 #endif
