@@ -100,7 +100,7 @@ static const char rcs_id[] =
 
 const char* usage_array[] = { "<pca_file>", "<pcatab_file>",
     "<inner_threshold>", "<outer_threshold>", "<mudh_file>", "<enof_file>",
-    "<tb_file>", "<output_flag_file>", 0 };
+    "<tb_file>", "<output_flag_file>", "<old_tb>",0 };
 
 static double  rain_tab[2][DIM][DIM][DIM][DIM];
 static double  clear_tab[2][DIM][DIM][DIM][DIM];
@@ -116,11 +116,10 @@ float enof_array[AT_WIDTH][CT_WIDTH];
 
 float tbh_array[AT_WIDTH][CT_WIDTH];
 float tbv_array[AT_WIDTH][CT_WIDTH];
-float tbh_std_array[AT_WIDTH][CT_WIDTH];
-float tbv_std_array[AT_WIDTH][CT_WIDTH];
-int tbh_cnt_array[AT_WIDTH][CT_WIDTH];
-int tbv_cnt_array[AT_WIDTH][CT_WIDTH];
-
+char tbh_cnt_array[AT_WIDTH][CT_WIDTH];
+char tbv_cnt_array[AT_WIDTH][CT_WIDTH];
+int dummy_int[AT_WIDTH][CT_WIDTH];
+float dummy_float[AT_WIDTH][CT_WIDTH];
 static float           value_tab[AT_WIDTH][CT_WIDTH];
 static unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
 
@@ -166,6 +165,10 @@ main(
     const char* enof_file = argv[optind++];
     const char* tb_file = argv[optind++];
     const char* output_flag_file = argv[optind++];
+    int tb_old = 0;
+    if (argc == optind+1){
+      tb_old=atoi(argv[optind++]);
+    }
 
     //---------------//
     // read PCA file //
@@ -299,12 +302,16 @@ main(
             }
             if (pca_weights[swath_idx][pc_idx][TBH_IDX] != 0.0 ||
                 pca_weights[swath_idx][pc_idx][TBV_IDX] != 0.0 ||
-                pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
-                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ||
                 pca_weights[swath_idx][pc_idx][TRANS_IDX] != 0.0)
             {
                 need_tb_file = 1;
             }
+            if (pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ){
+	      fprintf(stderr,"Use of Tb Std discontinued\n");
+              exit(1);
+	    }
+
         }
     }
 
@@ -357,12 +364,30 @@ main(
                 tb_file);
             exit(1);
         }
-        fread(tbh_array, sizeof(float), array_size, ifp);
-        fread(tbv_array, sizeof(float), array_size, ifp);
-        fread(tbh_std_array, sizeof(float), array_size, ifp);
-        fread(tbv_std_array, sizeof(float), array_size, ifp);
-        fread(tbh_cnt_array, sizeof(int), array_size, ifp);
-        fread(tbv_cnt_array, sizeof(int), array_size, ifp);
+        if(!tb_old){
+	  fread(tbh_array, sizeof(float), array_size, ifp);
+	  fread(tbv_array, sizeof(float), array_size, ifp);
+	  fread(tbh_cnt_array, sizeof(char), array_size, ifp);
+	  fread(tbv_cnt_array, sizeof(char), array_size, ifp);
+	}
+	else{
+	  fread(tbh_array, sizeof(float), array_size, ifp);
+	  fread(tbv_array, sizeof(float), array_size, ifp);
+	  fread(dummy_float, sizeof(float), array_size, ifp);
+	  fread(dummy_float, sizeof(float), array_size, ifp);
+	  fread(dummy_int, sizeof(int), array_size, ifp);
+	  for(int a=0;a<AT_WIDTH;a++){
+	    for(int c=0;c<CT_WIDTH;c++){
+	      tbh_cnt_array[a][c]=(char)dummy_int[a][c];
+	    }
+	  }
+	  fread(dummy_int, sizeof(int), array_size, ifp);
+	  for(int a=0;a<AT_WIDTH;a++){
+	    for(int c=0;c<CT_WIDTH;c++){
+	      tbv_cnt_array[a][c]=(char)dummy_int[a][c];
+	    }
+	  }  
+	}
         fclose(ifp);
     }
 
@@ -475,7 +500,7 @@ main(
                 {
                     param[TBV_IDX] = tbv_array[ati][cti];
                     got_param[TBV_IDX] = 1;
-                    param[TBV_STD_IDX] = tbv_std_array[ati][cti];
+                    param[TBV_STD_IDX] = 0;
                     got_param[TBV_STD_IDX] = 1;
                     tbv_cnt = (double)tbv_cnt_array[ati][cti];
                 }
@@ -485,7 +510,7 @@ main(
                 {
                     param[TBH_IDX] = tbh_array[ati][cti];
                     got_param[TBH_IDX] = 1;
-                    param[TBH_STD_IDX] = tbh_std_array[ati][cti];
+                    param[TBH_STD_IDX] = 0;
                     got_param[TBH_STD_IDX] = 1;
                     tbh_cnt = (double)tbh_cnt_array[ati][cti];
                 }
@@ -559,7 +584,7 @@ main(
                     break;    // get out of this loop
 
                 // compute the index too
-                pc_index[swath_idx][pc_idx].GetNearestIndex(pc[pc_idx],
+                pc_index[swath_idx][pc_idx].GetNearestIndexClipped(pc[pc_idx],
                     &(pci[pc_idx]));
                 if (pci[pc_idx] >= DIM) pci[pc_idx] = DIM - 1;
                 if (pci[pc_idx] < 0) pci[pc_idx] = 0;

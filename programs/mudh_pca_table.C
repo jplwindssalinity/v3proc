@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    mudh_pca_table [ -m mudh_dir ] [ -e enof_dir ] [ -t tb_dir ]
-//        [ -i irr_dir ] [ -c time ] [ -I irr_threshold ] <pca_file>
+//        [ -i irr_dir ] [ -c time ] [ -I irr_threshold ] [ -n ] <pca_file>
 //        <start_rev> <end_rev> <output_base>
 //
 // DESCRIPTION
@@ -22,6 +22,7 @@
 //    [ -i irr_dir ]   IRR files are always used, this can specify the dir.
 //    [ -c time ]      Collocation time for IRR.
 //    [ -I irr_threshold ]  The threshold definition of rain.
+//    [ -n ]  Use impact rather than rain rate threshold
 //
 // OPERANDS
 //    <pca_file>     The PCA file.  If short, assumes both beam case.
@@ -103,15 +104,16 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING         "m:e:t:i:c:I:"
+#define OPTSTRING         "m:e:t:i:c:I:n"
 #define BIG_DIM           100
 #define QUOTE             '"'
 #define REV_DIGITS        5
 
-#define DEFAULT_MUDH_DIR  "/export/svt11/hudd/allmudh"
-#define DEFAULT_TB_DIR    "/home/bstiles/dave"
+#define DEFAULT_MUDH_DIR  "/home/bstiles/mudh/data"
+#define DEFAULT_TB_DIR    "/home/bstiles/Tb/data"
 #define DEFAULT_ENOF_DIR  "/home/bstiles/carl"
 #define DEFAULT_IRR_DIR   "/export/svt11/hudd/ssmi"
+#define DEFAULT_IMPACT_DIR "/home/bstiles/impact/data"
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -127,7 +129,7 @@ template class List<AngleInterval>;
 
 const char* usage_array[] = { "[ -m mudh_dir ]", "[ -e enof_dir ]",
     "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "[ -I irr_threshold ]",
-    "<pca_file>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
+    "[ -n ]", "<pca_file>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // first index: 0=both_beams, 1=outer_only
 // second index: SSM/I class (0=all, 1=rainfree, 2=rain)
@@ -152,12 +154,17 @@ main(
 
     int collocation_time = 30;   // default 30 minutes
     float irr_threshold = 2.0;   // default two km*mm/hr
+    float impact_threshold = 1.0;
+    int use_impact = 0;
+    int badimpanom=0;
+    int badirranom=0;
+    int total_samples=0;
 
     char* mudh_dir = DEFAULT_MUDH_DIR;
     char* enof_dir = DEFAULT_ENOF_DIR;
     char* tb_dir = DEFAULT_TB_DIR;
     char* irr_dir = DEFAULT_IRR_DIR;
-
+    char* impact_dir = DEFAULT_IMPACT_DIR;
     int opt_outer_swath = 0;   // assume don't do outer swath
 
     //------------------------//
@@ -187,6 +194,9 @@ main(
             break;
         case 'I':
             irr_threshold = atof(optarg);
+            break;
+        case 'n':
+	    use_impact=1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -283,12 +293,16 @@ main(
             }
             if (pca_weights[swath_idx][pc_idx][TBH_IDX] != 0.0 ||
                 pca_weights[swath_idx][pc_idx][TBV_IDX] != 0.0 ||
-                pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
-                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ||
                 pca_weights[swath_idx][pc_idx][TRANS_IDX] != 0.0)
             {
                 need_tb_file = 1;
             }
+            if( pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ){
+	      fprintf(stderr,"TB Standard Deviation Parameters phased out!\n");
+	      exit(1);
+	    }
+
         }
     }
 
@@ -319,12 +333,13 @@ main(
     unsigned short dir_array[AT_WIDTH][CT_WIDTH];
     unsigned short mle_array[AT_WIDTH][CT_WIDTH];
 
+    float impact_array[AT_WIDTH][CT_WIDTH];
     float tbh_array[AT_WIDTH][CT_WIDTH];
     float tbv_array[AT_WIDTH][CT_WIDTH];
-    float tbh_std_array[AT_WIDTH][CT_WIDTH];
-    float tbv_std_array[AT_WIDTH][CT_WIDTH];
-    int tbh_cnt_array[AT_WIDTH][CT_WIDTH];
-    int tbv_cnt_array[AT_WIDTH][CT_WIDTH];
+    float dummy_float[AT_WIDTH][CT_WIDTH];
+    int dummy_int[AT_WIDTH][CT_WIDTH];
+    char tbh_cnt_array[AT_WIDTH][CT_WIDTH];
+    char tbv_cnt_array[AT_WIDTH][CT_WIDTH];
 
     float qual_array[AT_WIDTH][CT_WIDTH];
     float enof_array[AT_WIDTH][CT_WIDTH];
@@ -337,8 +352,37 @@ main(
         //----------------//
         // read rain file //
         //----------------//
-
+      if(rev%1==0){
+	printf("Rev %d\n",rev);
+        fflush(stdout);
+      }
         char rain_file[1024];
+        char impact_file[1024];
+        if(use_impact){
+	  sprintf(impact_file, "%s/%0*d.imp", impact_dir, REV_DIGITS, rev);
+	  FILE* ifp = fopen(impact_file,"r");
+          if(ifp==NULL){
+	    fprintf(stderr,"Impact File Not Found Skipping REV %d\n",rev);
+	    continue;
+	  }
+          int sz;
+          fread((void*)&sz,sizeof(int),1,ifp);
+          if(sz==0){
+            fclose(ifp);
+	    fprintf(stderr,"Impact File Not Found Skipping REV %d\n",rev);
+            continue;
+	  }
+          int* idx=(int*)malloc(sizeof(int)*sz);
+          float* val=(float*)malloc(sizeof(float)*sz);    
+	  fread((void*)idx,sizeof(int),sz,ifp);
+	  fread((void*)val,sizeof(float),sz,ifp);
+          fclose(ifp);
+          float* ptr=&(impact_array[0][0]);
+          for(int c=0;c<(int)array_size;c++) *(ptr+c)=-1;
+          for(int c=0;c<sz;c++) *(ptr+idx[c]-1)=val[c];
+	  free(idx);
+          free(val);
+	}
         sprintf(rain_file, "%s/%0*d.irain", irr_dir, REV_DIGITS, rev);
         FILE* ifp = fopen(rain_file, "r");
         if (ifp == NULL)
@@ -364,8 +408,16 @@ main(
         //----------------//
 
         char mudh_file[1024];
+        char syscom[1024];
         sprintf(mudh_file, "%s/%0*d.mudh", mudh_dir, REV_DIGITS, rev);
         ifp = fopen(mudh_file, "r");
+        int gzipped=0;
+        if (ifp == NULL){
+	  sprintf(syscom, "gunzip %s.gz",mudh_file);
+          system(syscom);
+	  ifp = fopen(mudh_file, "r");
+          gzipped=1;
+	}
         if (ifp == NULL)
         {
             fprintf(stderr, "%s: error opening MUDH file %s\n", command,
@@ -378,7 +430,10 @@ main(
         fread(dir_array, sizeof(short), array_size, ifp);
         fread(mle_array, sizeof(short), array_size, ifp);
         fclose(ifp);
-
+        if(gzipped){
+	  sprintf(syscom, "gzip %s",mudh_file);
+          system(syscom);
+	}
         //----------------//
         // read ENOF file //
         //----------------//
@@ -416,13 +471,32 @@ main(
                 fprintf(stderr, "%s: continuing...\n", command);
                 continue;
             }
-            fread(tbh_array, sizeof(float), array_size, ifp);
-            fread(tbv_array, sizeof(float), array_size, ifp);
-            fread(tbh_std_array, sizeof(float), array_size, ifp);
-            fread(tbv_std_array, sizeof(float), array_size, ifp);
-            fread(tbh_cnt_array, sizeof(int), array_size, ifp);
-            fread(tbv_cnt_array, sizeof(int), array_size, ifp);
+            if(rev < 5800 || rev > 8049){
+             fread(tbh_array, sizeof(float), array_size, ifp);
+             fread(tbv_array, sizeof(float), array_size, ifp);
+             fread(tbh_cnt_array, sizeof(char), array_size, ifp);
+             fread(tbv_cnt_array, sizeof(char), array_size, ifp);
+	    }
+	    else{
+	      fread(tbh_array, sizeof(float), array_size, ifp);
+              fread(tbv_array, sizeof(float), array_size, ifp);
+              fread(dummy_float, sizeof(float), array_size, ifp);
+              fread(dummy_float, sizeof(float), array_size, ifp);
+              fread(dummy_int, sizeof(int), array_size, ifp);
+              for(int a=0;a<AT_WIDTH;a++){
+		for(int c=0;c<CT_WIDTH;c++){
+		  tbh_cnt_array[a][c]=(char)dummy_int[a][c];
+		}
+	      }
+              fread(dummy_int, sizeof(int), array_size, ifp);
+              for(int a=0;a<AT_WIDTH;a++){
+		for(int c=0;c<CT_WIDTH;c++){
+		  tbv_cnt_array[a][c]=(char)dummy_int[a][c];
+		}
+	      }
+ 	    }
             fclose(ifp);
+
         }
 
         //---------------------------------------//
@@ -455,10 +529,20 @@ main(
                 // rain rate //
                 //-----------//
 
-                if (integrated_rain_rate[ati][cti] >= 1000)
-                    continue;
-                double irr = (double)integrated_rain_rate[ati][cti] * 0.1;
+	      if (integrated_rain_rate[ati][cti] >= 1000){
+		    if(use_impact && impact_array[ati][cti]!=-1){
+		      badirranom++;
+		    }
+		    continue;
 
+	      }
+	      double irr = (double)integrated_rain_rate[ati][cti] * 0.1;
+	      double imp = (double)impact_array[ati][cti];
+              if(use_impact && imp==-1){
+                badimpanom++;
+		continue;
+	      }
+              total_samples++;
                 //------------//
                 // initialize //
                 //------------//
@@ -530,7 +614,7 @@ main(
                     {
                         param[TBV_IDX] = tbv_array[ati][cti];
                         got_param[TBV_IDX] = 1;
-                        param[TBV_STD_IDX] = tbv_std_array[ati][cti];
+                        param[TBV_STD_IDX] = 0;
                         got_param[TBV_STD_IDX] = 1;
                         tbv_cnt = (double)tbv_cnt_array[ati][cti];
                     }
@@ -540,7 +624,7 @@ main(
                     {
                         param[TBH_IDX] = tbh_array[ati][cti];
                         got_param[TBH_IDX] = 1;
-                        param[TBH_STD_IDX] = tbh_std_array[ati][cti];
+                        param[TBH_STD_IDX] = 0;
                         got_param[TBH_STD_IDX] = 1;
                         tbh_cnt = (double)tbh_cnt_array[ati][cti];
                     }
@@ -654,7 +738,12 @@ main(
                     // rainfree
                     counts[swath_idx][1][pci[0]][pci[1]][pci[2]][pci[3]]++;
                 }
-                else if (irr > irr_threshold)
+                else if ( use_impact ==0 && irr > irr_threshold)
+                {
+                   // rain
+                    counts[swath_idx][2][pci[0]][pci[1]][pci[2]][pci[3]]++;
+                }
+               else if ( use_impact  && imp > impact_threshold)
                 {
                    // rain
                     counts[swath_idx][2][pci[0]][pci[1]][pci[2]][pci[3]]++;
@@ -718,7 +807,7 @@ main(
 
     fclose(pcatab_ofp);
 
-    printf("%d revs\n", rev_count);
+    printf("%d revs %d badirr %d badimp %d total_samples\n", rev_count,badirranom,badimpanom,total_samples);
 
     return (0);
 }
