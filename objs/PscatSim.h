@@ -73,6 +73,8 @@ public:
     double                   epochTime;  // used for setting time strings
     char*                    epochTimeString;
     double                   startTime;
+    // beamInfo contains the eventTime of the next event, but the eventId
+    // of the current (previous event)
     PscatEvent               beamInfo[NUMBER_OF_QSCAT_BEAMS];  // hybrid
     unsigned short           lastEventIdealEncoder;
     LandMap                  landMap;

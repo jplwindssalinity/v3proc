@@ -53,8 +53,6 @@ PscatSim::Initialize(
 // PscatSim::DetermineNextEvent //
 //------------------------------//
 
-#define NINETY_DEGREE_ENCODER  8191
-
 int
 PscatSim::DetermineNextEvent(
     Pscat*       pscat,
@@ -83,7 +81,21 @@ PscatSim::DetermineNextEvent(
     pscat_event->beamIdx = min_idx;
 
     unsigned short ideal_encoder = pscat->cds.EstimateIdealEncoder();
-    pscat_event->eventId = PscatEvent::VV_VH_SCAT_EVENT;
+
+    switch (pscat_event->beamIdx)
+    {
+    case 0:
+        // inner beam
+        pscat_event->eventId = PscatEvent::HH_HV_SCAT_EVENT;
+        break;
+    case 1:
+        // outer beam
+        pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+        break;
+    default:
+        return(0);
+        break;
+    }
 
     //----------------------------//
     // update next time for event //
@@ -471,7 +483,7 @@ PscatSim::SetMeasurements(
         // Compute Land Flag
         meas->landFlag = landMap.IsLand(lon,lat);
 
-		float sigma0;
+        float sigma0;
         if (meas->landFlag == 1)
         {
             // Set sigma0 to average NSCAT land sigma0 for appropriate
@@ -492,23 +504,23 @@ PscatSim::SetMeasurements(
                 return(0);
                 break;
             }
-		}
-		else if (uniformSigmaField)
-		{
-			sigma0 = 1.0;
-		}
-		else
-		{
-			//-----------------//
-			// get wind vector //
-			//-----------------//
+        }
+        else if (uniformSigmaField)
+        {
+            sigma0 = 1.0;
+        }
+        else
+        {
+            //-----------------//
+            // get wind vector //
+            //-----------------//
 
-			WindVector wv;
-			if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-			{
-				wv.spd = 0.0;
-				wv.dir = 0.0;
-			}
+            WindVector wv;
+            if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+            {
+                wv.spd = 0.0;
+                wv.dir = 0.0;
+            }
 
 			//--------------------------------//
 			// convert wind vector to sigma-0 //
