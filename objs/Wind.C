@@ -3769,8 +3769,8 @@ WindSwath::MedianFilter(
     int  max_passes,
     int  bound,
     int  weight_flag,
-    int  special = 0,
-    int  freeze = 0)
+    int  special,
+    int  freeze)
 {
     //----------------------------//
     // create a new selection map //
@@ -3925,8 +3925,8 @@ WindSwath::MedianFilterPass(
     char**             change,
     int                bound,
     int                weight_flag,
-    int                special = 0,
-    int                freeze = 0)
+    int                special,
+    int                freeze)
 {
     int flips = 0;
     float energy = 0.0;
