@@ -55,6 +55,10 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
 #include "Misc.h"
 #include "Constants.h"
 #include "Attitude.h"
@@ -62,10 +66,22 @@ static const char rcs_id[] =
 #include "Matrix3.h"
 #include "Beam.h"
 #include "Array.h"
+#include "ConfigList.h"
+#include "ConfigSim.h"
+#include "Instrument.h"
+#include "Antenna.h"
 
 //-----------//
 // TEMPLATES //
 //-----------//
+
+template class List<StringPair>;
+template class List<Meas>;
+template class List<EarthPosition>;
+template class List<MeasSpot>;
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
+template class List<WindVectorPlus>;
 
 //-----------//
 // CONSTANTS //
@@ -100,7 +116,7 @@ int read_pattern(const char* filename, float* el, float* az, float* gain,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<V pol pattern>", "<H pol pattern>", 0};
+const char* usage_array[] = { "<config file>", "<V pol pattern>", "<H pol pattern>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -116,12 +132,26 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc != 4)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
+	const char* config_file = argv[clidx++];
 	const char* v_pol_file = argv[clidx++];
 	const char* h_pol_file = argv[clidx++];
+
+	//--------------------------------//
+	// read in simulation config file //
+	//--------------------------------//
+
+	ConfigList config_list;
+	config_list.LogErrors();
+	if (! config_list.Read(config_file))
+	{
+		fprintf(stderr, "%s: error reading sim config file %s\n",
+			command, config_file);
+		exit(1);
+	}
 
 	//----------------------//
 	// read in the patterns //
@@ -173,8 +203,8 @@ main(
 		}
 	}
 
-	printf("%g %g %g\n", max_v_az * rtd, max_v_el * rtd, max_v_gain);
-	printf("%g %g %g\n", max_h_az * rtd, max_h_el * rtd, max_h_gain);
+	printf("peakV: azi,elev,gain: %g %g %g\n", max_v_az * rtd, max_v_el * rtd, max_v_gain);
+	printf("peakH: azi,elev,gain: %g %g %g\n", max_h_az * rtd, max_h_el * rtd, max_h_gain);
 
 	// Parameters defining the structure of the gain measurements.
 	int Nxm = 647;
@@ -240,7 +270,30 @@ main(
 	beamh.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
 								max_h_el,max_h_az,power_gainh);
 	beamh.WriteBeamPattern("beam1.pat");
-	
+
+	//-----------------------------------------------//
+	// create an instrument and instrument simulator //
+	//-----------------------------------------------//
+
+	Instrument instrument;
+	if (! ConfigInstrument(&instrument, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring instrument\n", command);
+		exit(1);
+	}
+
+	double look,azimuth;
+	float gain;
+	Beam beam = instrument.antenna.beam[0];
+	beam.GetElectricalBoresight(&look,&azimuth);
+	printf("Electrical Boresight H: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
+	beam.GetPowerGain(look,azimuth,&gain);
+	printf("Electrical Boresight H: (gain dB) %g\n",10.0*log(gain)/log(10.0));
+	beam = instrument.antenna.beam[1];
+	beam.GetElectricalBoresight(&look,&azimuth);
+	printf("Electrical Boresight V: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
+	beam.GetPowerGain(look,azimuth,&gain);
+	printf("Electrical Boresight V: (gain dB) %g\n",10.0*log(gain)/log(10.0));
 	return (0);
 
 }
