@@ -8,7 +8,7 @@
 //    sim
 //
 // SYNOPSIS
-//    sim [ -p ] <config_file>
+//    sim [ -p ] [ -a true_attitude_file ] <config_file>
 //
 // DESCRIPTION
 //    Simulates the SeaWinds 1b instrument based on the parameters
@@ -19,6 +19,9 @@
 //            file and pipes the l1a file to standard output.
 //            It would be a *really* good idea to have something
 //            there to get the data.
+//
+//    [ -a true_attitude_file ]  Writes a true attitude file containing
+//                                 time, roll, pitch, yaw, instrument_time
 //
 // OPERANDS
 //    The following operand is supported:
@@ -101,7 +104,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "p"
+#define OPTSTRING  "pa:"
 
 //--------//
 // MACROS //
@@ -123,7 +126,8 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -p ]", "<config_file>", 0};
+const char* usage_array[] = { "[ -p ]", "[ -a true_attitude_file ]",
+    "<config_file>", 0};
 
 int opt_pipe = 0;
 
@@ -159,6 +163,8 @@ main(
     int    argc,
     char*  argv[])
 {
+    char* true_att_filename = NULL;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -169,6 +175,9 @@ main(
     {
         switch(c)
         {
+        case 'a':
+            true_att_filename = optarg;
+            break;
         case 'p':
             opt_pipe = 1;
             break;
@@ -310,6 +319,22 @@ main(
         fprintf(stderr, "%s: error opening attitude file %s\n", command,
             att_filename);
         exit(1);
+    }
+
+    //-----------------------------//
+    // create a true attitude file //
+    //-----------------------------//
+
+    FILE* true_att_fp = NULL;
+    if (true_att_filename != NULL)
+    {
+        true_att_fp = fopen(true_att_filename, "w");
+        if (true_att_fp == NULL)
+        {
+            fprintf(stderr, "%s: error opening true attitude file %s\n",
+                command, true_att_filename);
+            exit(1);
+        }
     }
 
     //--------------------//
@@ -511,6 +536,18 @@ main(
                     spacecraft.orbitState.Write(eph_fp);
                     spacecraft_sim.UpdateAttitude(spacecraft_event.time,
                         &spacecraft);
+
+                    // save the true attitude
+                    if (true_att_fp != NULL)
+                    {
+                        fprintf(true_att_fp, "%.1f %g %g %g %d\n",
+                            spacecraft_event.time,
+                            spacecraft.attitude.GetRoll() * rtd,
+                            spacecraft.attitude.GetPitch() * rtd,
+                            spacecraft.attitude.GetYaw() * rtd,
+                            qscat.cds.instrumentTime);
+                    }
+
                     spacecraft_sim.ReportAttitude(spacecraft_event.time,
                       &spacecraft, &attitude);
                     spacecraft_sim.DetermineNextEvent(&spacecraft_event);
