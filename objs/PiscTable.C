@@ -13,6 +13,10 @@ static const char rcs_id_pisctable_c[] =
 #include "Constants.h"
 #include "Array.h"
 
+#define INC_TO_REAL_IDX(A) ((A - _incMin) / _incStep)
+#define SPD_TO_REAL_IDX(A) ((A - _spdMin) / _spdStep)
+#define CHI_TO_REAL_IDX(A) (A / _chiStep)
+
 //===========//
 // PiscTable //
 //===========//
@@ -84,10 +88,10 @@ int PiscTable::Write(
 int
 PiscTable::GetNearestValue(
 	PolE		pol,
-	double		inc,
-	double		spd,
-	double		chi,
-	double*		value)
+	float		inc,
+	float		spd,
+	float		chi,
+	float*		value)
 {
 	//-------------------//
 	// round to indicies //
@@ -118,110 +122,81 @@ PiscTable::GetNearestValue(
 // PiscTable::GetInterpolatedValue //
 //---------------------------------//
 
-#define ORDER_PLUS_ONE	4
-
 int
 PiscTable::GetInterpolatedValue(
 	PolE		pol,
-	double		inc,
-	double		spd,
-	double		chi,
-	double*		value)
+	float		inc,
+	float		spd,
+	float		chi,
+	float*		value)
 {
-	//---------------------------------------//
-	// determine real and truncated indicies //
-	//---------------------------------------//
+	//-------------------------//
+	// determine real indicies //
+	//-------------------------//
 
 	int pol_idx = _PolToIndex(pol);
+	float*** table = *(_value + pol_idx);
 
-	double inc_ridx = _IncToRealIndex(inc);
-	double spd_ridx = _SpdToRealIndex(spd);
-	double chi_ridx = _ChiToRealIndex(chi);
+	float inc_ridx = INC_TO_REAL_IDX(inc);
+	float spd_ridx = SPD_TO_REAL_IDX(spd);
+	while (chi < 0.0) chi += two_pi;
+	while (chi >= two_pi) chi -= two_pi;
+	float chi_ridx = CHI_TO_REAL_IDX(chi);
 
-	int inc_idx = (int)inc_ridx;
-	int spd_idx = (int)spd_ridx;
-	int chi_idx = (int)chi_ridx;
+	//------------------------------------//
+	// calculate upper and lower indicies //
+	//------------------------------------//
 
-	//-------------------------//
-	// set up temporary arrays //
-	//-------------------------//
-
-	double val_x[ORDER_PLUS_ONE];
-	double val_y[ORDER_PLUS_ONE];
-	double val_spd_chi[ORDER_PLUS_ONE][ORDER_PLUS_ONE];
-
-	//---------------------------------//
-	// interpolate out incidence angle //
-	//---------------------------------//
-
-	// offsets transform the index to the starting index
-	int inc_offset = inc_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (inc_offset < 0)
-		inc_offset = 0;
-	if (inc_offset > _incCount - ORDER_PLUS_ONE)
-		inc_offset = _incCount - ORDER_PLUS_ONE;
-	double inc_subtable_ridx = inc_ridx - (double)inc_offset;
-
-	int spd_offset = spd_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (spd_offset < 0)
-		spd_offset = 0;
-	if (spd_offset > _spdCount - ORDER_PLUS_ONE)
-		spd_offset = _spdCount - ORDER_PLUS_ONE;
-	double spd_subtable_ridx = spd_ridx - (double)spd_offset;
-
-	int chi_offset = chi_idx - (ORDER_PLUS_ONE / 2) + 1;
-	double chi_subtable_ridx = chi_ridx - (double)chi_offset;
-	if (chi_subtable_ridx < 0.0)
-		chi_subtable_ridx += (double)_chiCount;		// keep chi in array
-
-	int sidx, cidx, iidx;
-	int use_sidx, use_cidx, use_iidx;
-	for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
+	int li = (int)inc_ridx;
+	if (li < 0) li = 0;
+	int hi = li + 1;
+	if (hi >= _incCount)
 	{
-		use_sidx = sidx + spd_offset;
-		for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
-		{
-			use_cidx = cidx + chi_offset;
-			use_cidx = (use_cidx + _chiCount) % _chiCount;
-			for (iidx = 0; iidx < ORDER_PLUS_ONE; iidx++)
-			{
-				use_iidx = iidx + inc_offset;
-				val_x[iidx] = (double)iidx;
-				val_y[iidx] = *(*(*(*(_value + pol_idx) + use_iidx) +
-					use_sidx) + use_cidx);
-			}
-			polint(val_x, val_y, ORDER_PLUS_ONE, inc_subtable_ridx,
-				&(val_spd_chi[sidx][cidx]));
-		}
+		hi = _incCount - 1;
+		li = hi - 1;
 	}
+	float lo_inc = _incMin + li * _incStep;
 
-	//-----------------------//
-	// interpolate out speed //
-	//-----------------------//
-
-	double val_chi[ORDER_PLUS_ONE];
-	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+	int ls = (int)spd_ridx;
+	if (ls < 0) ls = 0;
+	int hs = ls + 1;
+	if (hs >= _spdCount)
 	{
-		for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
-		{
-			val_x[sidx] = (double)sidx;
-			val_y[sidx] = val_spd_chi[sidx][cidx];
-		}
-		polint(val_x, val_y, ORDER_PLUS_ONE, spd_subtable_ridx,
-			&(val_chi[cidx]));
+		hs = _spdCount - 1;
+		ls = hs - 1;
 	}
+	float lo_spd = _spdMin + ls * _spdStep;
 
-	//---------------------------//
-	// interpolate out direciton //
-	//---------------------------//
+	int lc = (int)chi_ridx;
+	int hc = lc + 1;
+	hc %= _chiCount;
+	float lo_chi = lc * _chiStep;
 
-	double val;
-	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
-	{
-		val_x[cidx] = (double)cidx;
-		val_y[cidx] = val_chi[cidx];
-	}
-	polint(val_x, val_y, ORDER_PLUS_ONE, chi_subtable_ridx, &val);
+	//--------------------------//
+	// assign fractional values //
+	//--------------------------//
+
+	float ai = (inc - lo_inc) / _incStep;
+	float as = (spd - lo_spd) / _spdStep;
+	float ac = (chi - lo_chi) / _chiStep;
+
+	float bi = 1.0 - ai;
+	float bs = 1.0 - as;
+	float bc = 1.0 - ac;
+
+	//---------------//
+	// interpolation //
+	//---------------//
+
+	float val =
+		ai * as * ac * *(*(*(table + hi) + hs) + hc) +
+		ai * as * bc * *(*(*(table + hi) + hs) + lc) +
+		ai * bs * ac * *(*(*(table + hi) + ls) + hc) +
+		ai * bs * bc * *(*(*(table + hi) + ls) + lc) +
+		bi * as * ac * *(*(*(table + li) + hs) + hc) +
+		bi * as * bc * *(*(*(table + li) + hs) + lc) +
+		bi * bs * ac * *(*(*(table + li) + ls) + hc) +
+		bi * bs * bc * *(*(*(table + li) + ls) + lc);
 
 	//--------------//
 	// return value //
@@ -242,7 +217,7 @@ PiscTable::_Allocate()
 	// allocate the primary pointer array //
 	//------------------------------------//
 
-	_value = (double****)make_array(sizeof(double), 4, _polCount,
+	_value = (float****)make_array(sizeof(float), 4, _polCount,
 		_incCount, _spdCount, _chiCount);
 
 	if (_value == NULL)
@@ -276,11 +251,11 @@ PiscTable::_ReadHeader(
 	int		fd)
 {
 	if (read(fd, &_polCount, sizeof(int)) != sizeof(int) ||
-		read(fd, &_incMin, sizeof(double)) != sizeof(double) ||
-		read(fd, &_incMax, sizeof(double)) != sizeof(double) ||
+		read(fd, &_incMin, sizeof(float)) != sizeof(float) ||
+		read(fd, &_incMax, sizeof(float)) != sizeof(float) ||
 		read(fd, &_spdCount, sizeof(int)) != sizeof(int) ||
-		read(fd, &_spdMin, sizeof(double)) != sizeof(double) ||
-		read(fd, &_spdMax, sizeof(double)) != sizeof(double) ||
+		read(fd, &_spdMin, sizeof(float)) != sizeof(float) ||
+		read(fd, &_spdMax, sizeof(float)) != sizeof(float) ||
 		read(fd, &_chiCount, sizeof(int)) != sizeof(int))
 	{
 		return(0);
@@ -300,7 +275,7 @@ PiscTable::_ReadTable(
 	// read the array //
 	//----------------//
 
-	int size = sizeof(double) * _chiCount;
+	int size = sizeof(float) * _chiCount;
 	for (int i = 0; i < _polCount; i++)
 	{
 		for (int j = 0; j < _incCount; j++)
@@ -317,9 +292,9 @@ PiscTable::_ReadTable(
 	// calculate step sizes //
 	//----------------------//
 
-	_incStep = (_incMax - _incMin) / (double)(_incCount - 1);
-	_spdStep = (_spdMax - _spdMin) / (double)(_spdCount - 1);
-	_chiStep = two_pi / (double)_chiCount;
+	_incStep = (_incMax - _incMin) / (float)(_incCount - 1);
+	_spdStep = (_spdMax - _spdMin) / (float)(_spdCount - 1);
+	_chiStep = two_pi / (float)_chiCount;
 
 	return(1);
 }
@@ -333,11 +308,11 @@ PiscTable::_WriteHeader(
 	int		fd)
 {
 	if (write(fd, &_polCount, sizeof(int) != sizeof(int)) ||
-		write(fd, &_incMin, sizeof(double)) != sizeof(double) ||
-		write(fd, &_incMax, sizeof(double)) != sizeof(double) ||
+		write(fd, &_incMin, sizeof(float)) != sizeof(float) ||
+		write(fd, &_incMax, sizeof(float)) != sizeof(float) ||
 		write(fd, &_spdCount, sizeof(int)) != sizeof(int) ||
-		write(fd, &_spdMin, sizeof(double)) != sizeof(double) ||
-		write(fd, &_spdMax, sizeof(double)) != sizeof(double) ||
+		write(fd, &_spdMin, sizeof(float)) != sizeof(float) ||
+		write(fd, &_spdMax, sizeof(float)) != sizeof(float) ||
 		write(fd, &_chiCount, sizeof(int)) != sizeof(int))
 	{
 		return(0);
@@ -357,7 +332,7 @@ PiscTable::_WriteTable(
 	// write the array //
 	//-----------------//
 
-	int size = sizeof(double) * _chiCount;
+	int size = sizeof(float) * _chiCount;
 	for (int i = 0; i < _polCount; i++)
 	{
 		for (int j = 0; j < _incCount; j++)
@@ -404,9 +379,9 @@ PiscTable::_PolToIndex(
 
 int
 PiscTable::_IncToIndex(
-	double		inc)
+	float		inc)
 {
-	double inc_ridx = _IncToRealIndex(inc);
+	float inc_ridx = INC_TO_REAL_IDX(inc);
 	int inc_idx = (int)(inc_ridx + 0.5);
 	return(inc_idx);
 }
@@ -417,9 +392,9 @@ PiscTable::_IncToIndex(
 
 int
 PiscTable::_SpdToIndex(
-	double		spd)
+	float		spd)
 {
-	double spd_ridx = _SpdToRealIndex(spd);
+	float spd_ridx = SPD_TO_REAL_IDX(spd);
 	int spd_idx = (int)(spd_ridx + 0.5);
 	return(spd_idx);
 }
@@ -430,51 +405,14 @@ PiscTable::_SpdToIndex(
 
 int
 PiscTable::_ChiToIndex(
-	double		chi)
+	float		chi)
 {
-	double chi_ridx = _ChiToRealIndex(chi);
+	while (chi < 0.0) chi += two_pi;
+	while (chi >= two_pi) chi -= two_pi;
+	float chi_ridx = CHI_TO_REAL_IDX(chi);
 	int chi_idx = (int)(chi_ridx + 0.5);
 	chi_idx %= _chiCount;
 	return(chi_idx);
-}
-
-//----------------------------//
-// PiscTable::_IncToRealIndex //
-//----------------------------//
-
-double
-PiscTable::_IncToRealIndex(
-	double		inc)
-{
-	return((inc - _incMin) / _incStep);
-}
-
-//----------------------------//
-// PiscTable::_SpdToRealIndex //
-//----------------------------//
-
-double
-PiscTable::_SpdToRealIndex(
-	double		spd)
-{
-	return((spd - _spdMin) / _spdStep);
-}
-
-//----------------------------//
-// PiscTable::_ChiToRealIndex //
-//----------------------------//
-
-double
-PiscTable::_ChiToRealIndex(
-	double		chi)
-{
-	if (chi < 0.0)
-	{
-		int chi_idx = (int)(chi / two_pi) + 1;
-		chi += (double)chi_idx * two_pi;
-	}
-	chi = fmod(chi, two_pi);
-	return(chi / _chiStep);
 }
 
 //--------------------------//
@@ -545,20 +483,20 @@ PiscTable::_ClipChiIndex(
 // PiscTable::_IndexToSpd //
 //------------------------//
 
-double
+float
 PiscTable::_IndexToSpd(
 	int		spd_idx)
 {
-	return((double)spd_idx * _spdStep + _spdMin);
+	return((float)spd_idx * _spdStep + _spdMin);
 }
 
 //------------------------//
 // PiscTable::_IndexToChi //
 //------------------------//
 
-double
+float
 PiscTable::_IndexToChi(
 	int		chi_idx)
 {
-	return((double)chi_idx * _chiStep);
+	return((float)chi_idx * _chiStep);
 }

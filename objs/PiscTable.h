@@ -53,10 +53,10 @@ public:
 	// access //
 	//--------//
 
-	int		GetNearestValue(PolE pol, double inc, double spd, double chi,
-				double* value);
-	int		GetInterpolatedValue(PolE pol, double inc, double spd, double chi,
-				double* value);
+	int		GetInterpolatedValue(PolE pol, float inc, float spd,
+				float chi, float* value);
+	int		GetNearestValue(PolE pol, float inc, float spd, float chi,
+				float* value);
 
 protected:
 
@@ -81,21 +81,17 @@ protected:
 	//--------//
 
 	int		_PolToIndex(PolE pol);
-	int		_IncToIndex(double inc);
-	int		_SpdToIndex(double spd);
-	int		_ChiToIndex(double chi);
-
-	double	_IncToRealIndex(double inc);
-	double	_SpdToRealIndex(double spd);
-	double	_ChiToRealIndex(double chi);
+	int		_IncToIndex(float inc);
+	int		_SpdToIndex(float spd);
+	int		_ChiToIndex(float chi);
 
 	int		_ClipPolIndex(int pol_idx);
 	int		_ClipIncIndex(int inc_idx);
 	int		_ClipSpdIndex(int spd_idx);
 	int		_ClipChiIndex(int chi_idx);
 
-	double	_IndexToSpd(int spd_idx);
-	double	_IndexToChi(int chi_idx);
+	float	_IndexToSpd(int spd_idx);
+	float	_IndexToChi(int chi_idx);
 
 	//-----------//
 	// variables //
@@ -104,19 +100,19 @@ protected:
 	int		_polCount;		// the number of "polarizations"
 
 	int		_incCount;		// the number of incidence angles
-	double	_incMin;		// the minimum incidence angle
-	double	_incMax;		// the maximum incidence angle
-	double	_incStep;		// the incidence angle step size
+	float	_incMin;		// the minimum incidence angle
+	float	_incMax;		// the maximum incidence angle
+	float	_incStep;		// the incidence angle step size
 
 	int		_spdCount;		// the number of wind speeds
-	double	_spdMin;		// the minimum wind speed
-	double	_spdMax;		// the maximum wind speed
-	double	_spdStep;		// the wind speed step size
+	float	_spdMin;		// the minimum wind speed
+	float	_spdMax;		// the maximum wind speed
+	float	_spdStep;		// the wind speed step size
 
 	int		_chiCount;		// the number of relative azimuth angles
-	double	_chiStep;		// the relative azimuth angle step size
+	float	_chiStep;		// the relative azimuth angle step size
 
-	double****	_value;		// the array of values
+	float****	_value;		// the array of values
 };
 
 #endif
