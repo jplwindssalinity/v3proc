@@ -918,6 +918,67 @@ Qscat::SetEncoderAzimuth(
 
     return(1);
 }
+//----------------------------------------//
+// Qsact::SetAllAzimuthsUsingGroundImpact //
+//----------------------------------------//
+// Takes Ground Impact Azimuth as a parameter sets other angles
+int
+Qscat::SetAllAzimuthsUsingGroundImpact(
+	   Spacecraft* spacecraft,
+	   double      angle){
+ sas.antenna.SetGroundImpactAzimuthAngle(angle);
+ if(!GroundImpactToTxCenterAzimuth(spacecraft))return(0); 
+ if(!TxCenterToEncoderAzimuth()) return(0);
+ return(1);
+}
+//----------------------------------------//
+// Qscat::GroundImpactToTxCenterAzimuth   //
+//----------------------------------------//
+// Assumes Ground Impact Azimuth Angle Has been Set
+// Computes and sets TxCenterAzimuth
+int 
+Qscat::GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft){    
+
+    // estimate the range to the surface using ground imapct
+    CoordinateSwitch antenna_frame_to_gc =
+        AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
+        &(sas.antenna), sas.antenna.groundImpactAzimuthAngle);
+    double look, azim;
+    Beam* beam = GetCurrentBeam();
+    if (! beam->GetElectricalBoresight(&look, &azim))
+        return(0);
+    Vector3 vector;
+    vector.SphericalSet(1.0, look, azim);
+    TargetInfoPackage tip;
+    if (! TargetInfo(&antenna_frame_to_gc, spacecraft, this, vector, &tip))
+        return(0);
+
+    // rotate to the antenna to the ground impact azimuth
+    double delta_t = tip.roundTripTime / 2.0;
+    sas.antenna.SetTxCenterAzimuthAngle(sas.antenna.groundImpactAzimuthAngle -
+        delta_t * sas.antenna.spinRate);
+    return(1);
+}
+//----------------------------------------//
+// Qscat::TxCenterToEncoderAzimuth        //
+//----------------------------------------//
+// Assumes Tx Center Azimuth Angle Has been Set
+// Computes and sets UNQUANTIZED Encoder azimuth
+int
+Qscat::TxCenterToEncoderAzimuth(){
+    double delta_t = GetEncoderToTxCenterDelay();
+    sas.antenna.SetEncoderAzimuthAngle(sas.antenna.txCenterAzimuthAngle -
+        delta_t * sas.antenna.spinRate);
+    return(1);
+}
+
+//---------------------------------------//
+// Qscat::GetEncodertoTxCenterDelay      //
+//---------------------------------------//
+double
+Qscat::GetEncoderToTxCenterDelay(){
+  return(ses.txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC);
+}
 
 //-------------------------//
 // Qscat::SetOtherAzimuths //
@@ -932,7 +993,7 @@ Qscat::SetOtherAzimuths(
     // Tx center //
     //-----------//
 
-    double delta_t = ses.txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC;
+    double delta_t = GetEncoderToTxCenterDelay();
     sas.antenna.SetTxCenterAzimuthAngle(sas.antenna.encoderAzimuthAngle +
         delta_t * sas.antenna.spinRate);
 

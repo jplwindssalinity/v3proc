@@ -300,6 +300,15 @@ public:
     SesBeamInfo*  GetCurrentSesBeamInfo();
 
     int  SetEncoderAzimuth(unsigned short encoder, int pri_delay);
+    int  SetEncoderAzimuthUnquantized(double angle){ 
+      sas.antenna.SetEncoderAzimuthAngle(angle);
+      return(1);
+    }
+
+    int  SetAllAzimuthsUsingGroundImpact(Spacecraft* spacecraft, double angle);
+    int  GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft);
+    double  GetEncoderToTxCenterDelay();
+    int  TxCenterToEncoderAzimuth();
     int  SetOtherAzimuths(Spacecraft* spacecraft);
 
 /*
