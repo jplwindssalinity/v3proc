@@ -95,6 +95,8 @@ public:
                     float K, float sigma0,
                     float* Esn, float* Es, float* En, float* var_Esn, float* X);
 
+    int  GetSpotNumber()  { return (_spotNumber); };
+
     //-----------//
     // variables //
     //-----------//
