@@ -1,23 +1,24 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l1b_to_half_egg
+//    l1b_to_half_egg
 //
 // SYNOPSIS
-//		l1b_to_half_egg <input_file> <output_file> 
+//    l1b_to_half_egg <input_file> <output_file>
 //
 // DESCRIPTION
-//          Reads a L1b file omits negative baseband slices and
-//          writes it back out to an output_file
-//      OPTIONS
-//		None.
+//    Reads a L1b file omits negative baseband slices and writes it
+//    back out to an output_file
+//
+// OPTIONS
+//    None.
+//
 // AUTHOR
-//		Bryan Stiles
-//		bstiles@acid.jpl.nasa.gov
+//    Bryan Stiles (bstiles@acid.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -25,8 +26,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
-
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -36,7 +36,6 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include "Misc.h"
 #include "L1B.h"
-#include "L1BFrame.h"
 #include "Meas.h"
 #include "List.h"
 #include "List.C"
@@ -68,8 +67,8 @@ const char* usage_array[] = { "<input_file>", "<output_file>",0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
 	//------------------------//
 	// parse the command line //
@@ -108,9 +107,7 @@ main(
 		fprintf(stderr, "%s: error creating output file %s\n", command,
 			input_file);
 		exit(1);
-	}       
-
-
+	}
 
 	//---------------------//
 	// copy desired frames //
@@ -118,10 +115,10 @@ main(
 
 	while (l1b.ReadDataRec())
 	{
-	  //------------------------//
-          // Loop through spots     //
-          //------------------------//
-  
+        //------------------------//
+        // Loop through spots     //
+        //------------------------//
+
           for(MeasSpot* spot=l1b.frame.spotList.GetHead();spot;
 	      spot=l1b.frame.spotList.GetNext()){
 
