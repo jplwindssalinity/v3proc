@@ -46,24 +46,26 @@ L17ToL20::ConvertAndWrite(
 	wvc->RemoveDuplicates();
 	wvc->SortByObj();
 
-/*
 	//-------------------------//
 	// determine grid indicies //
 	//-------------------------//
 
-	int rev = l17->frame.rev;
-	int ati = l17->frame.ati;
-	int cti = l17->frame.cti;
+	int rev = (int)l17->frame.rev;
+	int cti = (int)l17->frame.cti;
+	int ati = (int)l17->frame.ati;
 
-	//------------------------//
-	// write l20 if necessary //
-	//------------------------//
+	//------------------------------//
+	// determine if rev is complete //
+	//------------------------------//
 
 	if (rev != last_rev && last_rev)
 	{
+		// median filter rev
+		l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
+			l20->medianFilterMaxPasses);
 		if (! l20->WriteDataRec())
 			return(0);
-		l20.frame.swath.DeleteWVCs();
+		l20->frame.swath.DeleteWVCs();
 	}
 
 	//-------------------//
@@ -71,7 +73,6 @@ L17ToL20::ConvertAndWrite(
 	//-------------------//
 
 	l20->frame.swath.Add(ati, cti, wvc);
-*/
 
 	return(1);
 }

@@ -15,6 +15,7 @@ static const char rcs_id_l20_c[] =
 //=====//
 
 L20::L20()
+:	medianFilterWindowSize(0), medianFilterMaxPasses(0)
 {
 	return;
 }

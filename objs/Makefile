@@ -58,6 +58,7 @@ OBJS = \
 
 INCS = \
 	*.h \
+	Array.C \
 	List.C \
 	BufferedList.C
 
@@ -140,7 +141,7 @@ L15Frame.o: L15Frame.C L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h 
 L15ToL17.o: L15ToL17.C L15ToL17.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L15.h Grid.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L15Frame.h Array.h L17.h Meas.h List.h L17Frame.h LonLat.h
 L17.o: L17.C L17.h GenericFile.h L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17Frame.o: L17Frame.C L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
-L17ToL20.o: L17ToL20.C L17ToL20.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L17.h L20.h GMF.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L17Frame.h L20Frame.h PiscTable.h Wind.h Meas.h List.h LonLat.h
+L17ToL20.o: L17ToL20.C L17ToL20.h L17.h L20.h GMF.h GenericFile.h L17Frame.h L20Frame.h PiscTable.h Wind.h Meas.h Beam.h List.h LonLat.h Ephemeris.h Attitude.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L20.o: L20.C L20.h GenericFile.h L20Frame.h Wind.h List.h
 L20Frame.o: L20Frame.C L20Frame.h Wind.h List.h
 List.o: List.C List.h
@@ -151,5 +152,4 @@ Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
-Wind.o: Wind.C Wind.h Constants.h List.h
-WindVector.o: WindVector.C WindVector.h
+Wind.o: Wind.C Wind.h Constants.h Array.h List.h

@@ -216,6 +216,12 @@ public:
 
 	int		Allocate(int cross_track_size, int along_track_size);
 
+	//----------//
+	// building //
+	//----------//
+
+	int		Add(int cti, int ati, WVC* wvc);
+
 	//---------//
 	// freeing //
 	//---------//

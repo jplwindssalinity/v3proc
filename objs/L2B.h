@@ -64,6 +64,8 @@ public:
 	//-----------//
 
 	GenericFile		file;
+	int				medianFilterWindowSize;
+	int				medianFilterMaxPasses;
 	L20Frame		frame;
 
 protected:

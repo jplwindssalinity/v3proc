@@ -700,6 +700,26 @@ WindSwath::MedianFilterPass(
 	return(flips);
 }
 
+//----------------//
+// WindSwath::Add //
+//----------------//
+
+int
+WindSwath::Add(
+	int		cti,
+	int		ati,
+	WVC*	wvc)
+{
+	if (cti < 0 || cti >= _crossTrackSize ||
+		ati < 0 || ati >= _alongTrackSize)
+	{
+		return(0);
+	}
+
+	swath[cti][ati] = wvc;
+	return(1);
+}
+
 //-----------------------//
 // WindSwath::DeleteWVCs //
 //-----------------------//
