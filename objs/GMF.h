@@ -77,6 +77,7 @@ protected:
 	//--------------//
 
 	int		_Allocate();
+	int		_Deallocate();
 
 	//--------------//
 	// input/output //

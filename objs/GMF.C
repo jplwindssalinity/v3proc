@@ -13,21 +13,23 @@ static const char rcs_id_gmf_c[] =
 #include "GMF.h"
 #include "Interpolate.h"
 #include "Constants.h"
+#include "Beam.h"
 
 //=====//
 // GMF //
 //=====//
 
 GMF::GMF()
-:	_polCount(0), _incCount(0), _incMin(0.0), _incMax(0.0), _incStep(0.0),
-	_spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0), _chiCount(0),
-	_chiStep(0.0), _value(0)
+:	_polCount(0), _incCount(0), _incMin(0.0), _incMax(0.0),
+	_incStep(0.0), _spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0),
+	_chiCount(0), _chiStep(0.0), _value(0)
 {
 	return;
 }
 
 GMF::~GMF()
 {
+	_Deallocate();
 	return;
 }
 
@@ -475,6 +477,30 @@ GMF::_Allocate()
 }
 
 //------------------//
+// GMF::_Deallocate //
+//------------------//
+
+int
+GMF::_Deallocate()
+{
+	for (int i = 0; i < _polCount; i++)
+	{
+		for (int j = 0; j < _incCount; j++)
+		{
+			for (int k = 0; k < _spdCount; k++)
+			{
+				free(*(*(*(_value + i) + j) + k));
+			}
+			free(*(*(_value + i) + j));
+		}
+		free(*(_value + i));
+	}
+	free(_value);
+	_value = NULL;
+	return(1);
+}
+
+//------------------//
 // GMF::_ReadHeader //
 //------------------//
 
@@ -540,7 +566,18 @@ int
 GMF::_PolToIndex(
 	PolE	pol)
 {
-	return((int)pol);
+	// this should be done better later
+	int idx = 0;
+	switch(pol)
+	{
+	case V_POL:
+		idx = 0;
+		break;
+	case H_POL:
+		idx = 1;
+		break;
+	}
+	return(idx);
 }
 
 //------------------//
