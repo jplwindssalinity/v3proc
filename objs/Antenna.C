@@ -7,7 +7,6 @@ static const char rcs_id_antenna_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
-#include <malloc.h>
 #include "Antenna.h"
 #include "Beam.h"
 #include "Constants.h"
