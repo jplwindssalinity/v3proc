@@ -425,10 +425,10 @@ Er_to_sigma0(
 	double rho = 1.0;
 
 	// Estimate the noise energy in the slice. (exact for simulated data)
-	meas->En_slice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
+	meas->EnSlice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
 
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
-	double Es_slice = Esn_slice - meas->En_slice;
+	double Es_slice = Esn_slice - meas->EnSlice;
 
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Es_slice.
@@ -575,7 +575,7 @@ composite(
 
 	output_meas->value = sum_Ps / sum_XK;
 	output_meas->XK = sum_XK;
-	output_meas->En_slice = meas->En_slice;		// same for all slices.
+	output_meas->EnSlice = meas->EnSlice;		// same for all slices.
 	output_meas->bandwidth = meas->bandwidth;	// assumed same for all slices.
 
 	output_meas->outline.FreeContents();	// merged outlines not done yet.

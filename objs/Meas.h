@@ -68,7 +68,7 @@ public:
 
 	float				value;
 	float				XK;
-	float				En_slice;
+	float				EnSlice;
 	float				bandwidth;
 	Outline				outline;
 	EarthPosition		centroid;
@@ -76,7 +76,7 @@ public:
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
-	float		A,B,C;				// Kpc coefficients
+	float		A, B, C;			// Kpc coefficients
 
 	//------------------------//
 	// not to be written out! //

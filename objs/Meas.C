@@ -20,7 +20,7 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 Meas::Meas()
-:	value(0.0), XK(0.0), En_slice(0.0), bandwidth(0.0), pol(NONE),
+:	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), pol(NONE),
 	eastAzimuth(0.0), incidenceAngle(0.0), A(0.0), B(0.0), C(0.0), offset(0)
 {
 	return;
@@ -48,7 +48,7 @@ Meas::Write(
 
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&En_slice, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
@@ -76,7 +76,7 @@ Meas::Read(
 	offset = ftell(fp);
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&En_slice, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
@@ -128,12 +128,17 @@ Meas::EstimatedKp(float sigma0)
 	float Tp = 0.0015;		// transmit pulse length (need to handle better!)
 	float Kpr2 = 1.1482;	// 0.3 dB
 	float Kpm2 = 1.3804;	// 0.7 dB
-	float snr = sigma0 * XK * Tp/En_slice;
+
+	// if measurement is nonsense, return a Kp of 1.0
+	if (EnSlice == 0.0)
+		return(1.0);
+
+	float snr = sigma0 * XK * Tp/EnSlice;
 	if (snr < 0.0)
 	{
 		fprintf(stderr,
 			"Error: Meas::EstimatedKp computed negative SNR = %g\n", snr);
-        fprintf(stderr, "S0=%g XK=%g En_slice=%g\n", sigma0, XK, En_slice);
+        fprintf(stderr, "S0=%g XK=%g EnSlice=%g\n", sigma0, XK, EnSlice);
 		exit(1);
 	}
 	float Kpc2 = A + B/snr + C/snr/snr;
