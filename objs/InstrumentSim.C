@@ -142,7 +142,7 @@ InstrumentSim::ScatSim(
 	//--------------------------------//
 
 	CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(orbit_state, attitude,
-		antenna, beam);
+		antenna);
 
 	if (l00.frame.slicesPerSpot <= 1)
 	{

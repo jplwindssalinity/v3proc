@@ -54,6 +54,18 @@ Antenna::SetNumberOfEncoderBits(
 	return(1);
 }
 
+//-------------------------//
+// Antenna::GetCurrentBeam //
+//-------------------------//
+
+Beam*
+Antenna::GetCurrentBeam()
+{
+	if (currentBeamIdx < 0 || currentBeamIdx >= numberOfBeams)
+		return(NULL);
+	return(&(beam[currentBeamIdx]));
+}
+
 //--------------------------//
 // Antenna::GetEncoderValue //
 //--------------------------//

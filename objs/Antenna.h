@@ -52,6 +52,7 @@ public:
 							{ return(_antPedToScBody); };
 	CoordinateSwitch	GetScBodyToAntPed()
 							{ return(_scBodyToAntPed); };
+	Beam*	GetCurrentBeam();
 
 	//-------------//
 	// conversions //

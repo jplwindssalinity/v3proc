@@ -38,7 +38,7 @@ struct TargetInfoPackage {
 //======================================================================
 
 CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
-						Antenna* antenna, Beam* beam);
+						Antenna* antenna);
 
 int		FindSlice(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
 			Instrument* instrument, float freq_1, float freq_2, float freq_tol,

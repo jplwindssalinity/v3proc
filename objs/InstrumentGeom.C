@@ -26,8 +26,7 @@ CoordinateSwitch
 BeamFrameToGC(
 	OrbitState*		sc_orbit_state,
 	Attitude*		sc_attitude,
-	Antenna*		antenna,
-	Beam*			beam)
+	Antenna*		antenna)
 {
 	CoordinateSwitch total;
 
@@ -53,6 +52,7 @@ BeamFrameToGC(
 	total.Append(&ant_ped_to_ant_frame);
 
 	// antenna frame to beam frame
+	Beam* beam = antenna->GetCurrentBeam();
 	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
 	total.Append(&ant_frame_to_beam_frame);
 

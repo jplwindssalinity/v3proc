@@ -95,7 +95,7 @@ L10ToL15::Convert(
 
 		CoordinateSwitch beam_frame_to_gc =
 			BeamFrameToGC(&(meas_spot->scOrbitState), &(meas_spot->scAttitude),
-			antenna, beam);
+			antenna);
 
 		//----------------------------------//
 		// ...add measurements to spot list //

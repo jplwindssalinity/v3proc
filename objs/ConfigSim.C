@@ -310,12 +310,14 @@ ConfigBeam(
 
 	beam->SetBeamGeometry(look_angle, azimuth_angle);
 
+/*
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
 		return(0);
 	if (! beam->ReadBeamPattern(pattern_file, 0.0))
 		return(0);
+*/
 
 	// ms
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
