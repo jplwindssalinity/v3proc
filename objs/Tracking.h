@@ -25,6 +25,7 @@ static const char rcs_id_tracking_h[] =
 //		frequencies.
 //======================================================================
 
+/*
 class DopplerTracking
 {
 public:
@@ -78,6 +79,7 @@ private:
 	int			_orbitSteps;
 	int			_azimuthSteps;
 };
+*/
 
 //======================================================================
 // CLASS
@@ -88,6 +90,8 @@ private:
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
+#define RANGE_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
+
 class RangeTracking
 {
 public:
@@ -96,14 +100,26 @@ public:
 	// construction //
 	//--------------//
 
-	RangeTracking(int orbit_steps);
+	RangeTracking();
 	~RangeTracking();
+
+	int		Allocate(int number_of_beams, int orbit_steps);
+
+	//---------//
+	// setting //
+	//---------//
+
+	int		SetReceiverGateWidth(float receiver_gate_width);
+	int		SetXmitPulseWidth(float xmit_pulse_width);
+
 
 	//------------//
 	// algorithms //
 	//------------//
 
-	int		DelayAndDuration(int orbit_step, float* delay, float* duration);
+	unsigned short		OrbitTimeToRangeStep(unsigned int orbit_time);
+	int					DelayAndDuration(int beam_idx, int orbit_step,
+							float* delay, float* duration);
 
 	//--------------//
 	// input/output //
@@ -112,30 +128,24 @@ public:
 	int		WriteBinary(const char* filename);
 	int		ReadBinary(const char* filename);
 
-	//-----------//
-	// variables //
-	//-----------//
-
-	unsigned char*		da;			// delay arrays
-	unsigned char*		db;
-
-	unsigned char		wa;			// duration arrays
-	unsigned char		wb;
-
-	unsigned char		z;			// dithering constant
-
-	unsigned short		period;		// orbit period
-
-	unsigned short		checksum;	// duh!
-
 private:
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	int			_orbitSteps;
-	int			_azimuthSteps;
+	unsigned char**		_delay;				// delay[beam][step] arrays
+	unsigned char*		_duration;			// duration[beam] terms
+	unsigned short		_ticksPerOrbit;		// orbit period
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	int				_numberOfBeams;
+	int				_rangeSteps;
+	unsigned char	_receiverGateWidth;
+	unsigned char	_xmitPulseWidth;
 };
 
 #endif
