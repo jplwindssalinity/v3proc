@@ -40,11 +40,11 @@ public:
 		double argument_of_perigee);
 	~OrbitSim();
 
+	int		ScState(double time);
+
 	//----------------//
 	// initialization //
 	//----------------//
-
-	int		Initialize(double sc_lon, double sc_lat);
 
 protected:
 
@@ -52,9 +52,7 @@ protected:
 	// orbit propagation //
 	//-------------------//
 
-	int		_Update(double seconds);
-
-	double	_Ecan(double eccen, double mean_anom);
+	double	_Ecan(double mean_anom);
 
 	//-----------//
 	// variables //
@@ -67,18 +65,16 @@ protected:
 	double	_littleOmega;	// argument of perigee
 	double	_l;				// mean anomaly
 
-	double	_semilatex;
-	double	_gamma;
-	double	_rm;
-	double	_eta;
-	double	_cosi;
-	double	_sini;
-	double	_asc;		// ??? (double???)
-	double	_xmu;
-	double	_ameandot;
-	double	_periasdot;
-	double	_ascnodot;
-	double	_bp;
+	double	_gc_xyz[3];		// geocentric x
+	double	_gc_hll[3];		// geocentric height, longitude, latitude
+	double	_vel[3];		// s/c velocity in rotating Earth frame
+
+	//-----------------------//
+	// predigested variables //
+	//-----------------------//
+
+	double	_a_3;			// semi-major axis cubed
+	double	_e_2;			// eccentricity squared
 };
 
 #endif
