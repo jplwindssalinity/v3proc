@@ -219,10 +219,15 @@ public:
 #define ECMWF_LORES_TYPE                "ONE_DEG"
 #define ECMWF_LORES_SCALE_FACTOR        100
 
-#define NCEP_LON_DIM                    144
-#define NCEP_LAT_DIM                    73
-#define NCEP_TYPE                       "NCEP"
-#define NCEP_SCALE_FACTOR               100
+#define NCEP1_LON_DIM                    360
+#define NCEP1_LAT_DIM                    181
+#define NCEP1_TYPE                       "NCEP"
+#define NCEP1_SCALE_FACTOR               100
+
+#define NCEP2_LON_DIM                    144
+#define NCEP2_LAT_DIM                    73
+#define NCEP2_TYPE                       "NCEP2.5"
+#define NCEP2_SCALE_FACTOR               100
 
 #define NSCAT_LON_DIM                   720
 #define NSCAT_LAT_DIM                   301
@@ -249,7 +254,8 @@ public:
 	int		WriteEcmwfHiRes(const char* filename, int extra_time_flag = 0);
         int             ReadEcmwfLoRes(const char* filename);
         int             ReadNSCAT(const char* filename);
-        int             ReadNCEP(const char* filename);
+        int             ReadNCEP1(const char* filename);
+        int             ReadNCEP2(const char* filename);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 	
