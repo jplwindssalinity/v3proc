@@ -8,7 +8,7 @@ INCDIR =		../../include
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
 CCC =			gcc
-DEBUGFLAGS=              -O3
+DEBUGFLAGS=		-O3
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
@@ -32,7 +32,7 @@ PROGRAMS = \
 	test_pattern \
 	fake_vap \
 	l1b_outlines \
-    l1b_to_kprtable \
+	l1b_to_kprtable \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
@@ -45,10 +45,9 @@ PROGRAMS = \
 	l2_kp \
 	l2a_s0 \
 	l1b_s0 \
-        kprtable_to_xmgr \
-        l2ags_s0 \
-        s0_to_noise_value
-
+	kprtable_to_xmgr \
+	l2ags_s0 \
+	s0_to_noise_value
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -76,15 +75,9 @@ install: $(PROGRAMS)
 
 %.C: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.C,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
- 
+
 %.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
 %: %.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-
-
-
-
-

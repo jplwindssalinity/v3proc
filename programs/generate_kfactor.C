@@ -1,34 +1,34 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //		generate_kfactor
 //
 // SYNOPSIS
-//    generate_kfactor [ -tT trueX_file ] [-r trueX_file] [-e estimatedX_file] 
-//           <sim_config_file>    <output_file> 
+//		generate_kfactor [ -tT trueX_file ] [-r trueX_file]
+//			[-e estimatedX_file] <sim_config_file> <output_file> 
 // DESCRIPTION
 //		Generates a Table of Kfactor values indexed by beam, 
 //		azimuth, orbit position, and slice number. (XTABLE format)
 //
-// OPTIONS  
-//              -T           Create true_x table only, write to output file
-//                           No Kfactor table is created.
+// OPTIONS 
+//		-T				Create true_x table only, write to output file
+//						No Kfactor table is created.
 //
-//		-t filename  Create true_x table, write to filename 
-//              -r filename  Read true_x from filename
-//              -e filename  Create estimated_x table , write to filename
+//		-t filename		Create true_x table, write to filename 
+//		-r filename		Read true_x from filename
+//		-e filename		Create estimated_x table , write to filename
 //
 // OPERANDS
 //		The following operands are supported:
 //		<sim_config_file>	The sim_config_file needed listing
-//				        all input parameters, input files, and
-//								output files.
+//							all input parameters, input files, and
+//							output files.
 //
-//		<output_file>	        The K-factor output file.
+//		<output_file>		The K-factor output file.
 //
 //
 //
@@ -227,8 +227,8 @@ main(
  
 	config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
 	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
-	config_list.StompOrAppend(USE_KPC_KEYWORD, "0");
-	config_list.StompOrAppend(USE_KPM_KEYWORD, "0");
+	config_list.StompOrAppend(SIM_KPC_FLAG_KEYWORD, "0");
+	config_list.StompOrAppend(SIM_KPM_FLAG_KEYWORD, "0");
 	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
         config_list.StompOrAppend(ATTITUDE_CONTROL_MODEL_KEYWORD,"NONE");
 	config_list.StompOrAppend(CREATE_XTABLE_KEYWORD, "1");
