@@ -90,7 +90,7 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
-Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h
+Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h Constants.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h
 Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
