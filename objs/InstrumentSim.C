@@ -247,7 +247,8 @@ InstrumentSim::SetMeasurements(
                   // In this case remove it from the list and go on
                   // to next slice
 		  if(!ComputeXfactor(spacecraft,instrument,meas,&Xfactor)){
-		    meas_spot->RemoveCurrent();
+		    meas=meas_spot->RemoveCurrent();
+		    delete meas;
 		    meas=meas_spot->GetCurrent();
 		    slice_i++;
                     sliceno++;
