@@ -1,5 +1,5 @@
 //=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
+// Copyright (C) 1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.               //
 //=========================================================//
 
@@ -127,8 +127,8 @@ int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
 const char* usage_array[] = { "[ -d diagnostic_base ]", "<config_file>",
     "<echo_data_file>", "<dtc_base>", 0};
 
-int       g_count[NUMBER_OF_QSCAT_BEAMS];
-double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
+int     g_count[NUMBER_OF_QSCAT_BEAMS];
+double  g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double  g_meas_spec_peak[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 
@@ -323,7 +323,7 @@ main(
     }
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        doppler_tracker.Set(g_terms[beam_idx]);
+        doppler_tracker.SetTerms(g_terms[beam_idx]);
         char filename[1024];
         sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
         if (! doppler_tracker.WriteBinary(filename))

@@ -72,12 +72,10 @@ public:
 //===========//
 
 int     gaussian_fit(Qscat* qscat, double* x, double* y, int points,
-            float* peak_slice, float* peak_freq, float* width_freq);
+            float* peak_slice, float* peak_freq, float* width_freq,
+            int use_precalc = 0);
 double  gfit_eval(double* x, void* ptr);
-
-int     gaussian_fit2(Qscat* qscat, double* x, double* y, int points,
-            float* peak_slice, float* peak_freq, float* width_freq);
-double  gfit_eval2(double* x, void* ptr);
+double  gfit_eval_precalc(double* x, void* ptr);
 
 float   est_sigma0(int beam_idx, float incidence_angle);
 
@@ -245,152 +243,6 @@ EchoInfoPlus::ReadPlus(
     return(1);
 }
 
-//--------------//
-// gaussian_fit //
-//--------------//
-
-int
-gaussian_fit(
-    Qscat*   qscat,
-    double*  x,
-    double*  y,
-    int      points,
-    float*   peak_slice,
-    float*   peak_freq,
-    float*   width_freq)
-{
-    //----------------//
-    // allocate array //
-    //----------------//
-
-    int ndim = 4;
-    double** p = (double**)make_array(sizeof(double), 2, ndim + 1, ndim);
-    if (p == NULL)
-        return(0);
-
-    //--------------------//
-    // initialize simplex //
-    //--------------------//
-
-    int max_idx = 0;
-    for (int i = 0; i < points; i++)
-    {
-        if (y[i] > y[max_idx])
-            max_idx = i;
-    }
-
-    double amp = y[max_idx];
-    double amp_lambda = amp * 0.5;
-    double center = (double)max_idx;
-    double center_lambda = 0.2;
-    double width = 3.5;
-    double width_lambda = 0.5;
-    double bias = 0.0;
-    double bias_lambda = amp_lambda;
-
-    p[0][0] = amp;
-    p[0][1] = center;
-    p[0][2] = width;
-    p[0][3] = bias;
-
-    p[1][0] = amp + amp_lambda;
-    p[1][1] = center;
-    p[1][2] = width;
-    p[1][3] = bias;
-
-    p[2][0] = amp;
-    p[2][1] = center + center_lambda;
-    p[2][2] = width;
-    p[2][3] = bias;
-
-    p[3][0] = amp;
-    p[3][1] = center;
-    p[3][2] = width + width_lambda;
-    p[3][3] = bias;
-
-    p[4][0] = amp;
-    p[4][1] = center;
-    p[4][2] = width;
-    p[4][3] = bias + bias_lambda;
-
-    char* ptr[3];
-    ptr[0] = (char *)x;
-    ptr[1] = (char *)y;
-    ptr[2] = (char *)&points;
-
-    downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr);
-
-    //------------------------//
-    // check for "bad" values //
-    //------------------------//
-
-    float fslice = p[0][1];
-    if (fslice < 0.0 || fslice > points - 1)
-        return(0);
-
-    width = p[0][2];
-
-    int near_slice_idx = (int)(fslice + 0.5);
-    float f1, bw;
-    qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
-    *peak_slice = fslice;
-    *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
-    *width_freq = bw * width;
-
-    return(1);
-}
-
-//-----------//
-// gfit_eval //
-//-----------//
-// gaussian fit evaluation function (MSE)
-
-#define MIN_AMPLITUDE  0.0
-#define MIN_CENTER     -1.0
-#define MAX_CENTER     12.0
-#define MAX_WIDTH      12.0
-
-double
-gfit_eval(
-    double*  c,
-    void*    ptr)
-{
-    char** ptr2 = (char**)ptr;
-    double* x = (double *)ptr2[0];
-    double* y = (double *)ptr2[1];
-    int points = *(int *)ptr2[2];
-
-    //----------------------------------------//
-    // this is a hack to restrict the simplex //
-    //----------------------------------------//
-
-    if (c[0] < MIN_AMPLITUDE)
-        c[0] = MIN_AMPLITUDE;
-
-    if (c[1] < MIN_CENTER)
-        c[1] = MIN_CENTER;
-    if (c[1] > MAX_CENTER)
-        c[1] = MAX_CENTER;
-
-    if (c[2] > MAX_WIDTH)
-        c[2] = MAX_WIDTH;
-
-    //---------------------//
-    // the real evaluation //
-    //---------------------//
-
-    double sum_dif = 0.0;
-    for (int i = 0; i < points; i++)
-    {
-        double ex = (x[i] - c[1]) / c[2];
-        double arg = -ex * ex;
-        double val = c[0] * exp(arg) + c[3];
-        double dif = val - y[i];
-        sum_dif += ((dif * dif) / (double)points);
-    }
-    return(sum_dif);
-}
-
 //-------------------------//
 // EchoInfo::SpotOrbitStep //
 //-------------------------//
@@ -410,24 +262,24 @@ EchoInfo::SpotOrbitStep(
         return(orbitStep);
 }
 
-//---------------//
-// gaussian_fit2 //
-//---------------//
-// like gaussian_fit, but solves for the best amplitude and bias, thus
-// reducing a 4D problem to 2D
+//--------------//
+// gaussian_fit //
+//--------------//
+// solves for the best amplitude and bias, thus reducing a 4D problem to 2D
 // reduction equations courtesy of B. Stiles
 
 #define TOO_WIDE  11.0
 
 int
-gaussian_fit2(
+gaussian_fit(
     Qscat*   qscat,
     double*  x,
     double*  y,
     int      points,
     float*   peak_slice,
     float*   peak_freq,
-    float*   width_freq)
+    float*   width_freq,
+    int      use_precalc)
 {
     //----------------//
     // allocate array //
@@ -468,8 +320,16 @@ gaussian_fit2(
     ptr[1] = (char *)y;
     ptr[2] = (char *)&points;
 
-    if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval2, ptr))
-        return(0);
+    if (use_precalc)
+    {
+        if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval_precalc, ptr))
+            return(0);
+    }
+    else
+    {
+        if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr))
+            return(0);
+    }
 
     //------------------------//
     // check for "bad" values //
@@ -497,9 +357,9 @@ gaussian_fit2(
     return(1);
 }
 
-//------------//
-// gfit_eval2 //
-//------------//
+//-----------//
+// gfit_eval //
+//-----------//
 // gaussian fit evaluation function (MSE)
 
 #define MIN_CENTER     -1.0
@@ -507,7 +367,7 @@ gaussian_fit2(
 #define MAX_WIDTH      12.0
 
 double
-gfit_eval2(
+gfit_eval(
     double*  c,
     void*    ptr)
 {
@@ -544,6 +404,91 @@ gfit_eval2(
     {
         double ex = (x[i] - c[0]) / c[1];
         double val = exp(-ex * ex);
+        hold[i] = val;
+        f_sum += val;
+        f_sqr_sum += (val * val);
+        y_sum += y[i];
+        fy_sum += (y[i] * val);
+    }
+    double n = (double)points;
+    double denom = (n * f_sqr_sum - f_sum * f_sum);
+    double amp = (n * fy_sum - y_sum * f_sum) / denom;
+    double bias = (y_sum * f_sqr_sum - f_sum * fy_sum) / denom;
+
+    //---------------------//
+    // the real evaluation //
+    //---------------------//
+
+    double sum_dif = 0.0;
+    for (int i = 0; i < points; i++)
+    {
+        double val = amp * hold[i] + bias;
+        double dif = val - y[i];
+        sum_dif += ((dif * dif) / (double)points);
+    }
+    return(sum_dif);
+}
+
+//-------------------//
+// gfit_eval_precalc //
+//-------------------//
+// just like gfit_eval, but uses a look up table for exp
+
+double
+gfit_eval_precalc(
+    double*  c,
+    void*    ptr)
+{
+    char** ptr2 = (char**)ptr;
+    double* x = (double *)ptr2[0];
+    double* y = (double *)ptr2[1];
+    int points = *(int *)ptr2[2];
+
+    //----------------//
+    // do the precalc //
+    //----------------//
+
+    static int precalc_done = 0;
+    static double precalc_exp[1100];
+    if (! precalc_done)
+    {
+        for (int idx = 0; idx < 1100; idx++)
+        {
+            double abs_ex = (double)idx / 100.0;
+            precalc_exp[idx] = exp(-abs_ex * abs_ex);
+        }
+        precalc_done = 1;
+    }
+
+    //----------------------------------------//
+    // this is a hack to restrict the simplex //
+    //----------------------------------------//
+
+    if (c[0] < MIN_CENTER)
+        c[0] = MIN_CENTER;
+    if (c[0] > MAX_CENTER)
+        c[0] = MAX_CENTER;
+
+    if (c[1] > MAX_WIDTH)
+        c[1] = MAX_WIDTH;
+
+    //---------------------------------//
+    // estimate the amplitude and bias //
+    //---------------------------------//
+    // store computationally intensive terms
+
+    static double hold[12];
+
+    double f_sum = 0.0;
+    double f_sqr_sum = 0.0;
+    double y_sum = 0.0;
+    double fy_sum = 0.0;
+
+    for (int i = 0; i < points; i++)
+    {
+        double ex = (x[i] - c[0]) / c[1];
+        int idx = (int)(fabs(ex) * 100.0 + 0.5);
+        double val = precalc_exp[idx];
         hold[i] = val;
         f_sum += val;
         f_sqr_sum += (val * val);

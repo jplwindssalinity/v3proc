@@ -8,21 +8,22 @@
 //    hdf_l1a_echo_proc
 //
 // SYNOPSIS
-//    hdf_l1a_echo_proc <sim_config_file> <output_echo_file>
+//    hdf_l1a_echo_proc [ -tlm tlm_file... ] [ -o output_file ]
+//      [ -polytable polytable ] [ -ins ins_config_file ]
+//      [ -m gauss|cent ]
 //
 // DESCRIPTION
-//    Reads an official HDF L1A file and estimates frequency offsets
-//    (from 0 kHz baseband) of the spectral response of the echo by
-//    fitting a gaussian to the echo energies.
+//    Reads HDF L1A (or L1AP) files and generates echo data files
+//    containing a bunch of useful information about the echo
+//    and the transmit/receive conditions.  Has the option of using
+//    a gaussian fit or a weighted centroid to determine the echo
+//    center.
 //
 // OPERANDS
-//    The following operands are supported:
-//      <sim_config_file>   The simulation configuration file.
-//      <output_echo_file>  The output echo file name.
+//    N/A
 //
 // EXAMPLES
-//    An example of a command line is:
-//      % hdf_l1a_echo_proc qscat.cfg qscat.echo
+//    N/A
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -107,9 +108,14 @@ template class TrackerBase<unsigned char>;
 // TYPE DEFINITIONS //
 //------------------//
 
+enum MethodE { NO_METHOD, GAUSSIAN, CENTROID };
+
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
+
+void*  realloc_or_exit(const char* command, const char* label, int size,
+           void* orig_ptr);
 
 int ExtractAntSpinRateDnPer99(TlmHdfFile* l1File, int32* sdsIDs,
         int32 start, int32 stride, int32 length, VOIDP buffer,
@@ -125,26 +131,19 @@ int ExtractAntSpinRateDnPer99(TlmHdfFile* l1File, int32* sdsIDs,
 
 ArgInfo tlm_files_arg = TLM_FILES_ARG;
 ArgInfo l1a_files_arg = L1A_FILES_ARG;
-ArgInfo start_time_arg = START_TIME_ARG;
-ArgInfo end_time_arg = END_TIME_ARG;
-ArgInfo filter_arg = FILTER_ARG;
 ArgInfo output_file_arg = OUTPUT_FILE_ARG;
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
-ArgInfo no_gr_header_arg = NO_GR_HEADER_ARG;
-
 ArgInfo ins_config_arg = { "INSTRUMENT_CONFIG_FILE", "-ins",
     "ins_config_file" };
+ArgInfo method_arg = { "ECHO_METHOD", "-m", "gauss|cent" };
 
 ArgInfo* arg_info_array[] =
 {
     &tlm_files_arg,
-    &start_time_arg,
-    &end_time_arg,
-    &filter_arg,
     &output_file_arg,
     &poly_table_arg,
-    &no_gr_header_arg,
     &ins_config_arg,
+    &method_arg,
     0
 };
 
@@ -178,20 +177,16 @@ main(
 
     char* tlm_files_string = args_plus.Get(tlm_files_arg);
     char* l1a_files_string = args_plus.Get(l1a_files_arg);
-    char* start_time_string = args_plus.Get(start_time_arg);
-    char* end_time_string = args_plus.Get(end_time_arg);
-    char* filter_string = args_plus.Get(filter_arg);
     char* output_file_string = args_plus.Get(output_file_arg);
     char* poly_table_string = args_plus.Get(poly_table_arg);
     char* ins_config_string = args_plus.Get(ins_config_arg);
+    char* method_string = args_plus.GetOrExit(method_arg);
 
     //-------------------//
     // convert arguments //
     //-------------------//
 
     SourceIdE tlm_type = SOURCE_L1A;
-    Itime start_time = args_plus.GetStartTime(start_time_string);
-    Itime end_time = args_plus.GetEndTime(end_time_string);
     char* tlm_files = args_plus.GetTlmFilesOrExit(tlm_files_string, tlm_type,
         NULL, l1a_files_string, NULL, NULL, NULL);
 
@@ -201,17 +196,23 @@ main(
 
     int output_fd = args_plus.OutputFdOrStdout(output_file_string);
     TlmFileList* tlm_file_list = args_plus.TlmFileListOrExit(tlm_type,
-        tlm_files, start_time, end_time);
-    FilterSet* filter_set = args_plus.FilterSetOrNull(tlm_type, filter_string);
+        tlm_files, INVALID_TIME, INVALID_TIME);
     PolynomialTable* polyTable =
         args_plus.PolynomialTableOrNull(poly_table_string);
-
-
-    char* no_gr_header_string = args_plus.Get(no_gr_header_arg);
-    int no_gr_header = 0;
-    if (no_gr_header_string && strcmp(no_gr_header_string, "0") != 0)
+    MethodE method = NO_METHOD;
+    if (strcasecmp(method_string, "gauss") == 0)
     {
-        no_gr_header = 1;
+        method = GAUSSIAN;
+    }
+    else if (strcasecmp(method_string, "cent") == 0)
+    {
+        method = CENTROID;
+    }
+    else
+    {
+        fprintf(stderr, "%s: invalid center method %s\n", command,
+            method_string);
+        exit(1);
     }
 
     //---------------------//
@@ -325,7 +326,6 @@ main(
 
     EchoInfo echo_info;
 
-//    int dataRecCount = 0;
     for (TlmHdfFile* tlmFile = tlm_file_list->GetHead(); tlmFile;
         tlmFile = tlm_file_list->GetNext())
     {
@@ -358,34 +358,36 @@ main(
 
         int in_first_frame = 1;
 
-        for (int i = 0; i < tlmFile->GetDataLength(); i++)
+        for (int record_idx = 0; record_idx < tlmFile->GetDataLength();
+            record_idx++)
         {
+printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             //--------------------//
             // set the spacecraft //
             //--------------------//
 
             float xpos, ypos, zpos;
-            xpos_p->extractFunc(tlmFile, xpos_p->sdsIDs, i, 1, 1, &xpos,
-                polyTable);
-            ypos_p->extractFunc(tlmFile, ypos_p->sdsIDs, i, 1, 1, &ypos,
-                polyTable);
-            zpos_p->extractFunc(tlmFile, zpos_p->sdsIDs, i, 1, 1, &zpos,
-                polyTable);
+            xpos_p->extractFunc(tlmFile, xpos_p->sdsIDs, record_idx, 1, 1,
+                &xpos, polyTable);
+            ypos_p->extractFunc(tlmFile, ypos_p->sdsIDs, record_idx, 1, 1,
+                &ypos, polyTable);
+            zpos_p->extractFunc(tlmFile, zpos_p->sdsIDs, record_idx, 1, 1,
+                &zpos, polyTable);
 
             float xvel, yvel, zvel;
-            xvel_p->extractFunc(tlmFile, xvel_p->sdsIDs, i, 1, 1, &xvel,
-                polyTable);
-            yvel_p->extractFunc(tlmFile, yvel_p->sdsIDs, i, 1, 1, &yvel,
-                polyTable);
-            zvel_p->extractFunc(tlmFile, zvel_p->sdsIDs, i, 1, 1, &zvel,
-                polyTable);
+            xvel_p->extractFunc(tlmFile, xvel_p->sdsIDs, record_idx, 1, 1,
+                &xvel, polyTable);
+            yvel_p->extractFunc(tlmFile, yvel_p->sdsIDs, record_idx, 1, 1,
+                &yvel, polyTable);
+            zvel_p->extractFunc(tlmFile, zvel_p->sdsIDs, record_idx, 1, 1,
+                &zvel, polyTable);
 
             float roll, pitch, yaw;
-            roll_p->extractFunc(tlmFile, roll_p->sdsIDs, i, 1, 1, &roll,
-                polyTable);
-            pitch_p->extractFunc(tlmFile, pitch_p->sdsIDs, i, 1, 1, &pitch,
-                polyTable);
-            yaw_p->extractFunc(tlmFile, yaw_p->sdsIDs, i, 1, 1, &yaw,
+            roll_p->extractFunc(tlmFile, roll_p->sdsIDs, record_idx, 1, 1,
+                &roll, polyTable);
+            pitch_p->extractFunc(tlmFile, pitch_p->sdsIDs, record_idx, 1, 1,
+                &pitch, polyTable);
+            yaw_p->extractFunc(tlmFile, yaw_p->sdsIDs, record_idx, 1, 1, &yaw,
                 polyTable);
 
             spacecraft.orbitState.rsat.Set(xpos, ypos, zpos);
@@ -398,7 +400,7 @@ main(
 
             unsigned char pri_dn;
             prf_cycle_time_p->extractFunc(tlmFile, prf_cycle_time_p->sdsIDs,
-                i, 1, 1, &pri_dn, polyTable);
+                record_idx, 1, 1, &pri_dn, polyTable);
 
             qscat.ses.CmdPriDn(pri_dn);
 
@@ -407,7 +409,7 @@ main(
             //------------------------//
 
             unsigned int ant_pos[100];
-            ant_pos_p->extractFunc(tlmFile, ant_pos_p->sdsIDs, i, 1, 1,
+            ant_pos_p->extractFunc(tlmFile, ant_pos_p->sdsIDs, record_idx, 1, 1,
                 ant_pos, polyTable);
 
             unsigned int theta_max = ant_pos[99];
@@ -426,28 +428,28 @@ main(
             //-----------------------//
 
             unsigned int orbit_time;
-            orbit_time_p->extractFunc(tlmFile, orbit_time_p->sdsIDs, i, 1, 1,
-                &orbit_time, polyTable);
+            orbit_time_p->extractFunc(tlmFile, orbit_time_p->sdsIDs,
+                record_idx, 1, 1, &orbit_time, polyTable);
 
             unsigned char orbit_step;
-            orbit_step_p->extractFunc(tlmFile, orbit_step_p->sdsIDs, i, 1, 1,
-                &orbit_step, polyTable);
+            orbit_step_p->extractFunc(tlmFile, orbit_step_p->sdsIDs,
+                record_idx, 1, 1, &orbit_step, polyTable);
 
             unsigned char pri_of_orbit_step_change;
             pri_of_orbit_step_change_p->extractFunc(tlmFile,
-                pri_of_orbit_step_change_p->sdsIDs, i, 1, 1,
+                pri_of_orbit_step_change_p->sdsIDs, record_idx, 1, 1,
                 &pri_of_orbit_step_change, polyTable);
 
             unsigned char cal_pulse_pos;
             cal_pulse_pos_p->extractFunc(tlmFile, cal_pulse_pos_p->sdsIDs,
-                i, 1, 1, &cal_pulse_pos, polyTable);
+                record_idx, 1, 1, &cal_pulse_pos, polyTable);
 
             unsigned int slice_powers[1200];
-            slice_powers_p->extractFunc(tlmFile, slice_powers_p->sdsIDs, i,
-                1, 1, slice_powers, polyTable);
+            slice_powers_p->extractFunc(tlmFile, slice_powers_p->sdsIDs,
+                record_idx, 1, 1, slice_powers, polyTable);
             unsigned int noise_powers[100];
-            noise_meas_p->extractFunc(tlmFile, noise_meas_p->sdsIDs, i, 1, 1,
-                noise_powers, polyTable);
+            noise_meas_p->extractFunc(tlmFile, noise_meas_p->sdsIDs,
+                record_idx, 1, 1, noise_powers, polyTable);
 
             //-----------------------------------------------//
             // set the ephemeris, orbit time, and orbit step //
@@ -501,7 +503,8 @@ main(
                 qscat.cds.heldEncoder = held_encoder;
 
                 // get the ideal encoder for output
-                unsigned short ideal_encoder = qscat.cds.EstimateIdealEncoder();
+                unsigned short ideal_encoder =
+                    qscat.cds.EstimateIdealEncoder();
                 echo_info.idealEncoder[spot_idx] = ideal_encoder;
 
                 //-------------------------------//
@@ -607,13 +610,35 @@ main(
                 //---------------//
 
                 float meas_spec_peak_slice, meas_spec_peak_freq, width;
-                if (! gaussian_fit2(&qscat, slice_number, signal_energy + 1,
-                    10, &meas_spec_peak_slice, &meas_spec_peak_freq, &width))
+                double sum;
+                switch (method)
                 {
-                    echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
-                    continue;
+                case GAUSSIAN:
+                    if (! gaussian_fit(&qscat, slice_number,
+                        signal_energy + 1, 10, &meas_spec_peak_slice,
+                        &meas_spec_peak_freq, &width, 1))
+                    {
+                        echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                        continue;
+                    }
+                    echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;
+                    break;
+                case CENTROID:
+                    sum = 0.0;
+                    for (int slice_idx = 0; slice_idx < 12; slice_idx++)
+                    {
+                        float f1, bw;
+                        qscat.ses.GetSliceFreqBw(slice_idx, &f1, &bw);
+                        sum += ((f1 + 0.5 * bw) * signal_energy[slice_idx]);
+                    }
+                    echo_info.measSpecPeakFreq[spot_idx] = sum /
+                        total_signal_energy;
+                    break;
+                default:
+                    fprintf(stderr, "%s: undefined method %d\n", command,
+                        method);
+                    exit(1);
                 }
-                echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;
             }
 
             //---------------------//
@@ -658,8 +683,27 @@ main(
     //----------------//
 
     delete tlm_file_list;
-    if (filter_set)
-        delete filter_set;
 
     return (0);
+}
+
+//-----------------//
+// realloc_or_exit //
+//-----------------//
+// reallocs (if necessary) or exits with an error message
+
+void*
+realloc_or_exit(
+    const char*  command,   // command name (for error msg)
+    const char*  label,     // variable label (for error msg)
+    int          size,      // size to allocate
+    void*        orig_ptr)  // original pointer
+{
+    void* return_ptr = realloc(orig_ptr, size);
+    if (return_ptr == NULL)
+    {
+        fprintf(stderr, "%s: can't allocate for %s\n", command, label);
+        exit(1);
+    }
+    return(return_ptr);
 }
