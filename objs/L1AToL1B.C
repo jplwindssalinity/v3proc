@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l1atol1b_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include "L1AToL1B.h"
@@ -17,17 +17,17 @@ static const char rcs_id_l1atol1b_c[] =
 //==========//
 
 L1AToL1B::L1AToL1B()
-:	useKfactor(0), useBYUXfactor(0), useSpotCompositing(0),
-	outputSigma0ToStdout(0),
-	sliceGainThreshold(0.0), processMaxSlices(0), simVs1BCheckfile(NULL),
-    Esn_echo_cal(0.0), Esn_noise_cal(0.0), En_echo_load(0.0), En_noise_load(0.0)
+:   useKfactor(0), useBYUXfactor(0), useSpotCompositing(0),
+    outputSigma0ToStdout(0), sliceGainThreshold(0.0), processMaxSlices(0),
+    simVs1BCheckfile(NULL), Esn_echo_cal(0.0), Esn_noise_cal(0.0),
+    En_echo_load(0.0), En_noise_load(0.0)
 {
-	return;
+    return;
 }
 
 L1AToL1B::~L1AToL1B()
 {
-	return;
+    return;
 }
 
 //-------------------//
@@ -36,11 +36,11 @@ L1AToL1B::~L1AToL1B()
 
 int
 L1AToL1B::Convert(
-	L1A*			l1a,
-	Spacecraft*		spacecraft,
-    Qscat*          qscat,
-	Ephemeris*		ephemeris,
-	L1B*			l1b)
+    L1A*         l1a,
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    Ephemeris*   ephemeris,
+    L1B*         l1b)
 {
 	//--------------//
 	// unpack frame //
@@ -175,14 +175,8 @@ L1AToL1B::Convert(
         //----------------------------//
 
         // determine the CDS tracking azimuth angle
-        qscat->cds.heldEncoder = *(frame->antennaPosition + spot_idx);
-
-        // locate the antenna (not needed for tracking, but need to do
-        // it before losing the encoder position)
-        qscat->sas.SetAzimuthWithEncoder(qscat->cds.heldEncoder);
-        qscat->sas.ApplyAzimuthShift(qscat->ses.pri);
-        qscat->sas.ApplyAzimuthShift(qscat->ses.txPulseWidth / 2.0);
-
+        unsigned short held_encoder = *(frame->antennaPosition + spot_idx);
+        qscat->cds.heldEncoder = held_encoder;    // for tracking
         SetDelayAndFrequency(spacecraft, qscat);
 
         if (outputSigma0ToStdout)
@@ -220,6 +214,9 @@ L1AToL1B::Convert(
 		// locate measurements //
 		//---------------------//
 
+        // correctly locate antenna first
+        qscat->sas.SetAzimuthWithEncoder(held_encoder);
+        qscat->sas.RotateToTxCenter(1, &(qscat->ses));
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
             if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))
@@ -289,12 +286,11 @@ L1AToL1B::Convert(
 				//-----------------//
 
 				// meas->value is the Esn value going in, sigma0 coming out.
-				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat,
-						   meas, k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
-				  {
-				    return(0);
-				  }
-
+				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat, meas,
+                    k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
+                {
+                    return(0);
+                }
 			}
 			else if(useBYUXfactor)
 			  {
@@ -319,6 +315,7 @@ L1AToL1B::Convert(
 			    exit(0);
 			  }
 			
+            // scan angle is at the center of the Tx pulse
 			meas->scanAngle = qscat->sas.antenna.azimuthAngle;
 			meas->beamIdx = qscat->cds.currentBeamIdx;
 			meas->txPulseWidth = qscat->ses.txPulseWidth;

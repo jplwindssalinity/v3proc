@@ -387,6 +387,27 @@ QscatSas::AzimuthToEncoder(
     return(encoder);
 }
 
+//----------------------------//
+// QscatSas::RotateToTxCenter //
+//----------------------------//
+
+// most of these should be moved into the SES config
+#define T_ENC   9E-9
+#define T_GRID  19.87E-6
+#define T_RC    9.968E-6
+#define T_EXC   1E-6
+
+int
+QscatSas::RotateToTxCenter(
+    int             pri_delay,
+    QscatSes*       qscat_ses)
+{
+    double delta_t = (double)pri_delay * qscat_ses->pri +
+        qscat_ses->txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC;
+    ApplyAzimuthShift(delta_t); 
+    return(1);
+}
+
 //-----------------------//
 // QscatSas::CmdSpinRate //
 //-----------------------//
@@ -433,8 +454,8 @@ CdsBeamInfo::~CdsBeamInfo()
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
     useBYUDop(0), useBYURange(0), orbitTicksPerOrbit(0), currentBeamIdx(0), 
-    orbitTime(0),
-    orbitStep(0), time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
+    orbitTime(0), orbitStep(0), time(0.0), eqxTime(0.0), rawEncoder(0),
+    heldEncoder(0)
 {
     return;
 }
@@ -814,6 +835,7 @@ SetDelayAndFrequency(
     //---------------------------------------------//
     // sample the encoder for the next calculation //
     //---------------------------------------------//
+    // this needs to be done before rotating the antenna
 
     qscat->cds.heldEncoder = qscat->sas.GetEncoder();
 
@@ -821,7 +843,7 @@ SetDelayAndFrequency(
     // shift the antenna to the center of the tx pulse //
     //-------------------------------------------------//
 
-    qscat->sas.antenna.TimeRotation(qscat->ses.txPulseWidth / 2.0);
+    qscat->sas.RotateToTxCenter(0, &(qscat->ses));
 
     //-----------------------------//
     // calculate the rx gate delay //

@@ -140,10 +140,10 @@ public:
     //-----------------//
 
     int             SetAzimuthWithEncoder(unsigned short encoder_value);
-    unsigned short  AzimuthToEncoder(double azimuth);
-    double          EncoderAzimuthToMechanicalAzimuth(double encoder_azimuth);
     int             ApplyAzimuthShift(double sample_delay);
     unsigned short  GetEncoder();
+    unsigned short  AzimuthToEncoder(double azimuth);
+    int             RotateToTxCenter(int pri_delay, QscatSes* qscat_ses);
 
     int  CmdSpinRate(SpinRateE spin_rate);
 
