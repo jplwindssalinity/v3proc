@@ -76,6 +76,15 @@ public:
     void  GetNearestIndexClipped(float value, int* idx);
 
     int  IndexToValue(int idx, float* value);
+    int  IndexToRange(int idx, float* bin_min, float* bin_max);
+
+    //--------------//
+    // operators    //
+    //--------------//
+
+    friend int operator==(const Index& a, const Index& b);
+    friend int operator!=(const Index& a, const Index& b);
+ 
 
 protected:
 

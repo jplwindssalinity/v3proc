@@ -326,7 +326,7 @@ Index::GetNearestIndexStrict(
     int*   idx)
 {
     if (value < _min - _step / 2.0 ||
-        value > _max + _step / 2.0)
+        value >= _max + _step / 2.0)
     {
         return(0);
     }
@@ -347,7 +347,7 @@ Index::GetNearestIndexClipped(
 {
     if (value < _min)
         *idx = 0;
-    else if (value > _max)
+    else if (value >= _max)
         *idx = _bins - 1;
     else
         *idx = (int)((value - _min) / _step + 0.5);
@@ -385,4 +385,44 @@ Index::IndexToValue(
 
     *value = _min + (float)idx * _step;
     return(1);
+}
+
+//---------------------//
+// Index::IndexToValue //
+//---------------------//
+
+int
+Index::IndexToRange(
+    int     idx,
+    float*  bin_min,
+    float* bin_max)
+{
+    if (idx < 0 || idx >= _bins)
+        return(0);
+
+    *bin_min= _min + (float)idx * _step-0.5*_step;
+    *bin_max= *bin_min + _step;
+    return(1);
+}
+
+//-------------------------//
+// operator==              //
+//-------------------------//
+
+int
+operator==( const Index& a, const Index& b){
+  if(a._min!=b._min) return(0);
+  if(a._max!=b._max) return(0);
+  if(a._bins!=b._bins) return(0);
+  if(a._step!=b._step) return(0);
+  return(1);
+}
+
+//-------------------------//
+// operator!=              //
+//-------------------------//
+
+int
+operator!=( const Index& a, const Index& b){
+  return(!(a==b));
 }
