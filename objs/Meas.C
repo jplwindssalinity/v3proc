@@ -56,6 +56,8 @@ Meas::~Meas()
 // The input measurement list should all come from one spot, but this
 // routine does not (and can not) check for this.
 // Meas is set with the final composite measurement.
+// This function returns 0 (and does not composite) if any of the
+// measurements are HHVH or VVHV.
 
 int
 Meas::Composite(
@@ -68,7 +70,7 @@ Meas::Composite(
     float sum_bandwidth = 0.0;
     Vector3 sum_centroid(0.0,0.0,0.0);
     float sum_incidenceAngle = 0.0;
-//    float sum_X2 = 0.0;
+//  float sum_X2 = 0.0;
     float sum_xk2a = 0.0;
     float sum_xkbwb = 0.0;
     float sum_bw2c = 0.0;
@@ -91,77 +93,91 @@ Meas::Composite(
     else
         return(0);
 
-	int min_slice_idx = meas_start->startSliceIdx;
-        landFlag=0;
-	for (meas = meas_start; meas; meas = meas_list->GetNext())
-	{
-		//==================================================//
-		// Only composites n consecutive objects if default //
-		// parameter n is nonzero							//
-		//==================================================//
-		if(n != 0 && N >= n)
-			break;
-                if(meas->landFlag!=0) landFlag=1;
-		sum_Ps += meas->value * meas->XK;
-		sum_XK += meas->XK;
-		sum_EnSlice += meas->EnSlice;
-		sum_bandwidth += meas->bandwidth;
-		sum_centroid += meas->centroid * meas->XK;
-		sum_incidenceAngle += meas->XK * meas->incidenceAngle;
-		sum_xk2a += meas->XK * meas->XK * meas->A;
-		sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
-		sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
-//		sum_X2 += meas->XK*meas->XK;
-		N++;
-	}
+    int min_slice_idx = meas_start->startSliceIdx;
+    landFlag = 0;
+    for (meas = meas_start; meas; meas = meas_list->GetNext())
+    {
+        //-------------------------------------------//
+        // Don't composite HHVH or VVHV measurements //
+        //-------------------------------------------//
 
-	meas = meas_list->GetHead();
+        if (meas->measType == VV_HV_CORR_MEAS_TYPE ||
+            meas->measType == HH_VH_CORR_MEAS_TYPE)
+        {
+            return(0);
+        }
+
+        //==================================================//
+        // Only composites n consecutive objects if default //
+        // parameter n is nonzero                           //
+        //==================================================//
+
+        if (n != 0 && N >= n)
+            break;
+
+        if (meas->landFlag!=0)
+            landFlag=1;
+
+        sum_Ps += meas->value * meas->XK;
+        sum_XK += meas->XK;
+        sum_EnSlice += meas->EnSlice;
+        sum_bandwidth += meas->bandwidth;
+        sum_centroid += meas->centroid * meas->XK;
+        sum_incidenceAngle += meas->XK * meas->incidenceAngle;
+        sum_xk2a += meas->XK * meas->XK * meas->A;
+        sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
+        sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
+//      sum_X2 += meas->XK*meas->XK;
+        N++;
+    }
+
+    meas = meas_list->GetHead();
 
 
-	//---------------------------------------------------------------------         // Form the composite measurement from appropriate combinations of the
-	// elements of each slice measurement in this composite cell.
-	//---------------------------------------------------------------------
+    //---------------------------------------------------------------------         // Form the composite measurement from appropriate combinations of the
+    // elements of each slice measurement in this composite cell.
+    //---------------------------------------------------------------------
 
-	value = sum_Ps / sum_XK;
+    value = sum_Ps / sum_XK;
 
-	XK = sum_XK;
-	EnSlice = sum_EnSlice;
-	bandwidth = sum_bandwidth;
-	txPulseWidth = meas->txPulseWidth;
-	outline.FreeContents();				// merged outlines not done yet
-	// Weighted average of centroids (weighted by XK)
-	centroid = sum_centroid / sum_XK;
-	// put centroid on surface
-	double alt, lon, lat;
-	centroid.GetAltLonGDLat(&alt, &lon, &lat);
-	centroid.SetAltLonGDLat(0.0, lon, lat);
-	measType = meas->measType;    // same for all slices
-	eastAzimuth = meas->eastAzimuth;	// same for all slices
-	// Weighted average of incidence angles (weighted by XK)
-	incidenceAngle = sum_incidenceAngle / sum_XK;
-	beamIdx = meas->beamIdx;			// same for all slices
-	startSliceIdx = min_slice_idx;
-	scanAngle = meas->scanAngle;		// same for all slices
-	numSlices = N;
+    XK = sum_XK;
+    EnSlice = sum_EnSlice;
+    bandwidth = sum_bandwidth;
+    txPulseWidth = meas->txPulseWidth;
+    outline.FreeContents();    // merged outlines not done yet
+    // Weighted average of centroids (weighted by XK)
+    centroid = sum_centroid / sum_XK;
+    // put centroid on surface
+    double alt, lon, lat;
+    centroid.GetAltLonGDLat(&alt, &lon, &lat);
+    centroid.SetAltLonGDLat(0.0, lon, lat);
+    measType = meas->measType;    // same for all slices
+    eastAzimuth = meas->eastAzimuth;    // same for all slices
+    // Weighted average of incidence angles (weighted by XK)
+    incidenceAngle = sum_incidenceAngle / sum_XK;
+    beamIdx = meas->beamIdx;    // same for all slices
+    startSliceIdx = min_slice_idx;
+    scanAngle = meas->scanAngle;        // same for all slices
+    numSlices = N;
 
-	//----------------------------//
-	// composite Kpc coefficients //
-	//----------------------------//
-	// Composite Kpc coefficients.
-	// Derived from Mike's equations but not assuming that the A, B, C, and
-	// bandwidths for each slice are identical.
+    //----------------------------//
+    // composite Kpc coefficients //
+    //----------------------------//
+    // Composite Kpc coefficients.
+    // Derived from Mike's equations but not assuming that the A, B, C, and
+    // bandwidths for each slice are identical.
 
-	A = sum_xk2a / (sum_XK * sum_XK);
-	B = sum_xkbwb / (bandwidth * sum_XK);
-	C = sum_bw2c / (bandwidth * bandwidth);
+    A = sum_xk2a / (sum_XK * sum_XK);
+    B = sum_xkbwb / (bandwidth * sum_XK);
+    C = sum_bw2c / (bandwidth * bandwidth);
 
 /*
-	A = meas->A * sum_X2 / (sum_XK * sum_XK);
-	B = meas->B / N;
-	C = meas->C / N;
+    A = meas->A * sum_X2 / (sum_XK * sum_XK);
+    B = meas->B / N;
+    C = meas->C / N;
 */
 
-	return(1);
+    return(1);
 }
 
 //-------------//
