@@ -118,8 +118,12 @@ const char* usage_array[] = { "[ -c ]", "[ -s conclass_file ]",
     "[ -m minutes ]", "[ -r rain_rate ]", "<start_rev>", "<end_rev>",
     "<output_base>", 0 };
 
-// parameter (nbd,spd,dir,mle,prog); ssmi rain (0=no,1=yes); counts vs param
-static unsigned long counts[5][2][256];
+// index 1, parameter: nbd, spd, dir, mle, prog
+// index 2, ssmi rain flag: (0=total,1=clear,2=rain)
+// index 3, 0=without nbd, 1=with nbd
+// index 4, parameter index
+static unsigned long counts[5][3][2][256];
+
 static unsigned long matrix_sum[2][2];
 static unsigned long total_count = 0;
 static unsigned short conclass[16][16][16][16];
@@ -352,6 +356,8 @@ main(
         {
             for (int cti = 0; cti < CTI_SIZE; cti++)
             {
+                prb_array[ati][cti] = 0.0;
+
                 //-----------------------------------------//
                 // accumulate for percentage class capable //
                 //-----------------------------------------//
@@ -368,9 +374,7 @@ main(
                         without_nbd_count++;
                 }
 
-                prb_array[ati][cti] = 0.0;
-
-                if (rain_rate[ati][cti] >= 250 ||
+                if (rain_rate[ati][cti] > 250 ||
                     spd_array[ati][cti] == 255 ||
                     dir_array[ati][cti] == 255 ||
                     mle_array[ati][cti] == 255)
@@ -467,7 +471,7 @@ main(
             {
                 // check data
                 if (rain_rate[ati][cti] > 250 ||
-                    nbd_array[ati][cti] == 255 ||
+//                    nbd_array[ati][cti] == 255 ||
                     spd_array[ati][cti] == 255 ||
                     dir_array[ati][cti] == 255 ||
                     mle_array[ati][cti] == 255)
@@ -475,25 +479,30 @@ main(
                     continue;
                 }
                 float rr = rain_rate[ati][cti] * 0.1;
-                int ssmi_flag = 0;
+                int ssmi_flag;
+                if (rr == 0.0)
+                    ssmi_flag = 
                 if (rr > rain_threshold)
                     ssmi_flag = 1;
 
                 int nbd_idx = nbd_array[ati][cti];
-                counts[0][ssmi_flag][nbd_idx]++;
+                int with_nbd_idx = 0;
+                if (nbd_idx != 255)
+                    with_nbd_idx = 1;
+                counts[0][ssmi_flag][with_nbd_idx][nbd_idx]++;
 
                 int spd_idx = spd_array[ati][cti];
-                counts[1][ssmi_flag][spd_idx]++;
+                counts[1][ssmi_flag][with_nbd_idx][spd_idx]++;
 
                 int dir_idx = dir_array[ati][cti];
-                counts[2][ssmi_flag][dir_idx]++;
+                counts[2][ssmi_flag][with_nbd_idx][dir_idx]++;
 
                 int mle_idx = mle_array[ati][cti];
-                counts[3][ssmi_flag][mle_idx]++;
+                counts[3][ssmi_flag][with_nbd_idx][mle_idx]++;
 
                 int prb_idx = (int)(255.0 * prb_array[ati][cti] /
                     max_prb_array + 0.5);
-                counts[4][ssmi_flag][prb_idx]++;
+                counts[4][ssmi_flag][with_nbd_idx][prb_idx]++;
             }
         }
 
@@ -547,39 +556,47 @@ main(
     const char* rr_map[] = { "Clear", "Rain" };
     float param_b[] = { 6.0, 0.0, 0.0, 30.0, 0.0 };
     float param_m[] = { 20.0, 5.0, 2.0, 8.0, 255.0 };
-    for (int param_idx = 0; param_idx < 5; param_idx++)
+    for (int param_idx = 0; param_idx < 4; param_idx++)
     {
         for (int rr_idx = 0; rr_idx < 2; rr_idx++)
         {
             fprintf(histo_ofp, "# %s, %s\n", param_map[param_idx],
                 rr_map[rr_idx]);
+            for (int with_nbd_idx = 0; with_nbd_idx < 2; with_nbd_idx++)
+            {
+                for (int idx = 0; idx < 256; idx++)
+                {
+                    if (counts[param_idx][rr_idx][with_nbd_idx][idx] == 0)
+                        continue;
+                    float value = (float)idx / param_m[param_idx] -
+                        param_b[param_idx];
+                    fprintf(histo_ofp, "%g %lu\n", value,
+                        counts[param_idx][rr_idx][with_nbd_idx][idx]);
+                }
+                fprintf(histo_ofp, "&\n");
+            }
+        }
+        // ratio of rain to total and clear to total
+        for (int with_nbd_idx = 0; with_nbd_idx < 2; with_nbd_idx++)
+        {
             for (int idx = 0; idx < 256; idx++)
             {
-                if (counts[param_idx][rr_idx][idx] == 0)
+                if (counts[param_idx][0][with_nbd_idx][idx] +
+                    counts[param_idx][1][with_nbd_idx][idx] < MIN_SAMPLES)
+                {
                     continue;
+                }
+                unsigned long cell_total = counts[param_idx][0][with_nbd_idx][idx] + 
                 float value = (float)idx / param_m[param_idx] -
                     param_b[param_idx];
-                fprintf(histo_ofp, "%g %lu\n", value,
-                    counts[param_idx][rr_idx][idx]);
+                fprintf(prob_ofp, "%g %g %g\n", value,
+                    (double)counts[param_idx][1][with_nbd_idx][idx] /
+                    ((double)counts[param_idx][0][with_nbd_idx][idx] +
+                    (double)counts[param_idx][1][with_nbd_idx][idx]),
+);
             }
-            fprintf(histo_ofp, "&\n");
+            fprintf(prob_ofp, "&\n");
         }
-        // ratio of rain to total
-        for (int idx = 0; idx < 256; idx++)
-        {
-            if (counts[param_idx][0][idx] + counts[param_idx][1][idx] <
-                MIN_SAMPLES)
-            {
-                continue;
-            }
-            float value = (float)idx / param_m[param_idx] -
-                param_b[param_idx];
-            fprintf(prob_ofp, "%g %g\n", value,
-                (double)counts[param_idx][1][idx] /
-                ((double)counts[param_idx][0][idx] +
-                counts[param_idx][1][idx]));
-        }
-        fprintf(prob_ofp, "&\n");
     }
 
     //-----------------------//

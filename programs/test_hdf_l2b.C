@@ -1,46 +1,46 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		test_hdf_l2b.C
+//    test_hdf_l2b
 //
 // SYNOPSIS
-//		test_hdf_l2b [ -c config_file ] [ -l l2b_hdf_file ]
-//			[ -o output_file ]
+//    test_hdf_l2b [ -c config_file ] [ -l l2b_hdf_file ]
+//        [ -o output_file ]
 //
 // DESCRIPTION
-//		Generates output files containing ASCII output of a wind swatch
-//		given a L2B HDF file.
+//    Generates output files containing ASCII output of a wind swatch
+//    given a L2B HDF file.
 //
 // OPTIONS
-//		[ -c config_file ]	Use the specified config file.
-//		[ -l l2b_hdf_file ]		Use this HDF l2b file.
-//		[ -o output_file ]	The name to use for output file.
+//    The following options are supported:
+//      [ -c config_file ]   Use the specified config file.
+//      [ -l l2b_hdf_file ]  Use this HDF l2b file.
+//      [ -o output_file ]   The name to use for output file.
 //
 // OPERANDS
-//		None.
+//    None.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% test_hdf_l2b -c sally.cfg -l L2B_100.file -o l2b.out
+//    An example of a command line is:
+//      % test_hdf_l2b -c sally.cfg -l L2B_100.file -o l2b.out
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
-// AUTHOR
-//		Sally Chou
-//		Sally.H.Chou@jpl.nasa.gov
+// AUTHORS
+//    Sally Chou (Sally.H.Chou@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -48,7 +48,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -76,8 +76,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:o:"
-
+#define OPTSTRING  "c:l:o:"
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -92,13 +91,13 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_hdf_file ]",
-	"[ -o output_file ]", 0 };
+    "[ -o output_file ]", 0 };
 
 // not always evil...
-const char*		command = NULL;
-char*			l2b_hdf_file = NULL;
-char*			output_file = NULL;
-FILE*           output_fp = stdout;
+const char*  command = NULL;
+char*        l2b_hdf_file = NULL;
+char*        output_file = NULL;
+FILE*        output_fp = stdout;
 
 //--------------//
 // MAIN PROGRAM //
@@ -106,99 +105,99 @@ FILE*           output_fp = stdout;
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	char* config_file = NULL;
-	ConfigList config_list;
-	l2b_hdf_file = NULL;
-	output_file = NULL;
+    char* config_file = NULL;
+    ConfigList config_list;
+    l2b_hdf_file = NULL;
+    output_file = NULL;
 
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	command = no_path(argv[0]);
+    command = no_path(argv[0]);
 
-	if (argc == 1)
-		usage(command, usage_array, 1);
+    if (argc == 1)
+        usage(command, usage_array, 1);
 
-	int c;
-	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
-	{
-		switch(c)
-		{
-		case 'c':
-			config_file = optarg;
-			if (! config_list.Read(config_file))
-			{
-				fprintf(stderr, "%s: error reading config file %s\n",
-					command, config_file);
-				exit(1);
-			}
-			break;
-		case 'l':
-			l2b_hdf_file = optarg;
-			break;
-		case 'o':
-            output_file = optarg;
-			break;
-		case '?':
-			usage(command, usage_array, 1);
-			break;
-		}
-	}
-
-
-	//---------------------//
-	// check for arguments //
-	//---------------------//
-
-	if (! l2b_hdf_file)
-	{
-		l2b_hdf_file = config_list.Get(L2B_HDF_FILE_KEYWORD);
-		if (l2b_hdf_file == NULL)
-		{
-			fprintf(stderr, "%s: must specify HDF L2B file\n", command);
-			exit(1);
-		}
-	}
-
-	//-----------------------//
-	// read in level 2B file //
-	//-----------------------//
-
-    WindSwath swath;
-    if (swath.ReadHdfL2B(l2b_hdf_file) == 0)
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
-        fprintf(stderr, "%s: cannot open HDF %s for input\n",
-                               argv[0], l2b_hdf_file);
+        switch(c)
+        {
+        case 'c':
+            config_file = optarg;
+            if (! config_list.Read(config_file))
+            {
+                fprintf(stderr, "%s: error reading config file %s\n",
+                    command, config_file);
+                exit(1);
+            }
+            break;
+        case 'l':
+            l2b_hdf_file = optarg;
+            break;
+        case 'o':
+            output_file = optarg;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    //---------------------//
+    // check for arguments //
+    //---------------------//
+
+    if (! l2b_hdf_file)
+    {
+        l2b_hdf_file = config_list.Get(L2B_HDF_FILE_KEYWORD);
+        if (l2b_hdf_file == NULL)
+        {
+            fprintf(stderr, "%s: must specify HDF L2B file\n", command);
+            exit(1);
+        }
+    }
+
+    //-----------------------//
+    // read in level 2B file //
+    //-----------------------//
+
+    L2B l2b;
+    if (l2b.ReadHDF(l2b_hdf_file) == 0)
+    {
+        fprintf(stderr, "%s: cannot open HDF %s for input\n", argv[0],
+            l2b_hdf_file);
         exit(1);
     }
     if (output_file != 0)
     {
         if ((output_fp = fopen(output_file, "w")) == NULL)
         {
-            fprintf(stderr, "%s: cannot open %s for output\n",
-                               argv[0], output_file);
+            fprintf(stderr, "%s: cannot open %s for output\n", argv[0],
+                output_file);
             exit(1);
         }
     }
 
-	//-----------------------//
-	// write out as ASCII    //
-	//-----------------------//
-    if (swath.WriteAscii(output_fp) == 0)
+    //-----------------------//
+    // write out as ASCII    //
+    //-----------------------//
+
+    WindSwath* swath = &(l2b.frame.swath);
+    if (swath->WriteAscii(output_fp) == 0)
     {
         fprintf(stderr, "%s: cannot write ASCII output to %s\n",
-                               argv[0], output_file);
+            argv[0], output_file);
         exit(1);
     }
 
-	return (0);
-
-} // main
+    return (0);
+}

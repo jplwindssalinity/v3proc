@@ -121,18 +121,18 @@ const char* usage_array[] = { "[ -d mudh_dir ]", "[ -c mc_dir ]",
     "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // first index is for beam
-double sum_x[2][NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-double sum_y[2][NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-double sum_xx[2][NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-double sum_xy[2][NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-double count[2][NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+double sum_x[2][NBD_DIM][DIR_DIM][MLE_DIM];
+double sum_y[2][NBD_DIM][DIR_DIM][MLE_DIM];
+double sum_xx[2][NBD_DIM][DIR_DIM][MLE_DIM];
+double sum_xy[2][NBD_DIM][DIR_DIM][MLE_DIM];
+double count[2][NBD_DIM][DIR_DIM][MLE_DIM];
 
 // these are for the projection
-double p_sum_x[2][4][NBD_DIM];
-double p_sum_y[2][4][NBD_DIM];
-double p_sum_xx[2][4][NBD_DIM];
-double p_sum_xy[2][4][NBD_DIM];
-double p_count[2][4][NBD_DIM];
+double p_sum_x[2][3][NBD_DIM];
+double p_sum_y[2][3][NBD_DIM];
+double p_sum_xx[2][3][NBD_DIM];
+double p_sum_xy[2][3][NBD_DIM];
+double p_count[2][3][NBD_DIM];
 
 //--------------//
 // MAIN PROGRAM //
@@ -187,28 +187,11 @@ main(
     float nbd_spread = NBD_MAX - NBD_MIN;
     int max_inbd = NBD_DIM - 2;    // save room for missing NBD index
 
-    float spd_spread = SPD_MAX - SPD_MIN;
-    int max_ispd = SPD_DIM - 1;
-
     float dir_spread = DIR_MAX - DIR_MIN;
     int max_idir = DIR_DIM - 1;
 
     float mle_spread = MLE_MAX - MLE_MIN;
     int max_imle = MLE_DIM - 1;
-
-    //-------------------//
-    // open output files //
-    //-------------------//
-
-    char filename[2048];
-    sprintf(filename, "%s.mctab", output_base);
-    FILE* mctab_ofp = fopen(filename, "w");
-    if (mctab_ofp == NULL)
-    {
-        fprintf(stderr, "%s: error opening output file %s\n", command,
-            filename);
-        exit(1);
-    }
 
     //--------------------//
     // process rev by rev //
@@ -291,7 +274,6 @@ printf("%d\n", rev);
             //------------------------//
 
             double nbd = (double)nbd_array[ati][cti] * 0.001 - 10.0;
-            double spd = (double)spd_array[ati][cti] * 0.01;
             double dir = (double)dir_array[ati][cti] * 0.01;
             double mle = (double)mle_array[ati][cti] * 0.001 - 30.0;
 
@@ -299,11 +281,6 @@ printf("%d\n", rev);
                 mle_spread + 0.5);
             if (imle < 0) imle = 0;
             if (imle > max_imle) imle = max_imle;
-
-            int ispd = (int)((spd - SPD_MIN) * (float)max_ispd /
-                spd_spread + 0.5);
-            if (ispd < 0) ispd = 0;
-            if (ispd > max_ispd) ispd = max_ispd;
 
             int idir = (int)((dir - DIR_MIN) * (float)max_idir /
                 dir_spread + 0.5);
@@ -320,11 +297,11 @@ printf("%d\n", rev);
             // accumulate //
             //------------//
 
-            sum_x[beam_idx][inbd][ispd][idir][imle] += x;    // true
-            sum_y[beam_idx][inbd][ispd][idir][imle] += y;    // measured
-            sum_xx[beam_idx][inbd][ispd][idir][imle] += (x * x);
-            sum_xy[beam_idx][inbd][ispd][idir][imle] += (x * y);
-            count[beam_idx][inbd][ispd][idir][imle]++;
+            sum_x[beam_idx][inbd][idir][imle] += x;    // true
+            sum_y[beam_idx][inbd][idir][imle] += y;    // measured
+            sum_xx[beam_idx][inbd][idir][imle] += (x * x);
+            sum_xy[beam_idx][inbd][idir][imle] += (x * y);
+            count[beam_idx][inbd][idir][imle]++;
 
             // for the projections
             p_sum_x[beam_idx][0][inbd] += x;
@@ -333,26 +310,48 @@ printf("%d\n", rev);
             p_sum_xy[beam_idx][0][inbd] += (x * y);
             p_count[beam_idx][0][inbd]++;
 
-            p_sum_x[beam_idx][1][ispd] += x;
-            p_sum_y[beam_idx][1][ispd] += y;
-            p_sum_xx[beam_idx][1][ispd] += (x * x);
-            p_sum_xy[beam_idx][1][ispd] += (x * y);
-            p_count[beam_idx][1][ispd]++;
+            p_sum_x[beam_idx][1][idir] += x;
+            p_sum_y[beam_idx][1][idir] += y;
+            p_sum_xx[beam_idx][1][idir] += (x * x);
+            p_sum_xy[beam_idx][1][idir] += (x * y);
+            p_count[beam_idx][1][idir]++;
 
-            p_sum_x[beam_idx][2][idir] += x;
-            p_sum_y[beam_idx][2][idir] += y;
-            p_sum_xx[beam_idx][2][idir] += (x * x);
-            p_sum_xy[beam_idx][2][idir] += (x * y);
-            p_count[beam_idx][2][idir]++;
-
-            p_sum_x[beam_idx][3][imle] += x;
-            p_sum_y[beam_idx][3][imle] += y;
-            p_sum_xx[beam_idx][3][imle] += (x * x);
-            p_sum_xy[beam_idx][3][imle] += (x * y);
-            p_count[beam_idx][3][imle]++;
+            p_sum_x[beam_idx][2][imle] += x;
+            p_sum_y[beam_idx][2][imle] += y;
+            p_sum_xx[beam_idx][2][imle] += (x * x);
+            p_sum_xy[beam_idx][2][imle] += (x * y);
+            p_count[beam_idx][2][imle]++;
         } while (1);
         fclose(ifp);
     }
+
+    //------------------------------//
+    // write big accumulation table //
+    //------------------------------//
+
+    char filename[2048];
+    sprintf(filename, "%s.mcsumtab", output_base);
+    FILE* mcsumtab_ofp = fopen(filename, "w");
+    if (mcsumtab_ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+
+    unsigned int size = 2 * NBD_DIM * DIR_DIM * MLE_DIM;
+    if (fwrite(sum_x, sizeof(double), size, mcsumtab_ofp) != size ||
+        fwrite(sum_y, sizeof(double), size, mcsumtab_ofp) != size ||
+        fwrite(sum_xx, sizeof(double), size, mcsumtab_ofp) != size ||
+        fwrite(sum_xy, sizeof(double), size, mcsumtab_ofp) != size ||
+        fwrite(count, sizeof(double), size, mcsumtab_ofp) != size)
+    {
+        fprintf(stderr, "%s: error writing output file %s\n", command,
+            filename);
+        exit(1);
+    }
+
+    fclose(mcsumtab_ofp);
 
     //------------------------//
     // generate output tables //
@@ -362,45 +361,48 @@ printf("%d\n", rev);
     // sum_x will hold the m value (attenuation)
     // sum_y will hold the b value (additive scattering)
 
+    sprintf(filename, "%s.mctab", output_base);
+    FILE* mctab_ofp = fopen(filename, "w");
+    if (mctab_ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+
     for (int beam_idx = 0; beam_idx < 2; beam_idx++)
     {
       for (int i = 0; i < NBD_DIM; i++)
       {
-        for (int j = 0; j < SPD_DIM; j++)
+        for (int j = 0; j < DIR_DIM; j++)
         {
-          for (int k = 0; k < DIR_DIM; k++)
+          for (int k = 0; k < MLE_DIM; k++)
           {
-            for (int l = 0; l < MLE_DIM; l++)
-            {
-              double sum_x_ref = sum_x[beam_idx][i][j][k][l];
-              double sum_y_ref = sum_y[beam_idx][i][j][k][l];
-              double sum_xx_ref = sum_xx[beam_idx][i][j][k][l];
-              double sum_xy_ref = sum_xy[beam_idx][i][j][k][l];
-              double count_ref = count[beam_idx][i][j][k][l];
+              double sum_x_ref = sum_x[beam_idx][i][j][k];
+              double sum_y_ref = sum_y[beam_idx][i][j][k];
+              double sum_xx_ref = sum_xx[beam_idx][i][j][k];
+              double sum_xy_ref = sum_xy[beam_idx][i][j][k];
+              double count_ref = count[beam_idx][i][j][k];
               double denom = sum_x_ref * sum_x_ref -
                 count_ref * sum_xx_ref;
               if (denom == 0.0)
               {
-                sum_x[beam_idx][i][j][k][l] = 0.0;
-                sum_y[beam_idx][i][j][k][l] = 0.0;
+                sum_x[beam_idx][i][j][k] = 0.0;
+                sum_y[beam_idx][i][j][k] = 0.0;
                 continue;
               }
 
-              sum_x[beam_idx][i][j][k][l] = (sum_x_ref * sum_y_ref -
+              sum_x[beam_idx][i][j][k] = (sum_x_ref * sum_y_ref -
                 count_ref * sum_xy_ref) / denom;
-              sum_y[beam_idx][i][j][k][l] = (sum_x_ref * sum_xy_ref -
+              sum_y[beam_idx][i][j][k] = (sum_x_ref * sum_xy_ref -
                 sum_xx_ref * sum_y_ref) / denom;
-            }
           }
         }
       }
     }
-    fwrite(sum_x, sizeof(double), 2 * NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM,
-        mctab_ofp);
-    fwrite(sum_y, sizeof(double), 2 * NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM,
-        mctab_ofp);
-    fwrite(count, sizeof(double), 2 * NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM,
-        mctab_ofp);
+    fwrite(sum_x, sizeof(double), 2 * NBD_DIM * DIR_DIM * MLE_DIM, mctab_ofp);
+    fwrite(sum_y, sizeof(double), 2 * NBD_DIM * DIR_DIM * MLE_DIM, mctab_ofp);
+    fwrite(count, sizeof(double), 2 * NBD_DIM * DIR_DIM * MLE_DIM, mctab_ofp);
 
     //-------------//
     // close files //
@@ -433,9 +435,9 @@ printf("%d\n", rev);
             {
                 for (int l = 0; l < MLE_DIM; l++)
                 {
-                    total_count += count[beam_idx][i][j][k][l];
-                    if (count[beam_idx][i][j][k][l] > max_count)
-                        max_count = count[beam_idx][i][j][k][l];
+                    total_count += count[beam_idx][i][j][k];
+                    if (count[beam_idx][i][j][k] > max_count)
+                        max_count = count[beam_idx][i][j][k];
                 }
             }
         }
@@ -455,7 +457,7 @@ printf("%d\n", rev);
                 {
                     for (int l = 0; l < MLE_DIM; l++)
                     {
-                        if (count[beam_idx][i][j][k][l] == target)
+                        if (count[beam_idx][i][j][k] == target)
                         {
                             target_count++;
                         }
@@ -480,7 +482,7 @@ printf("%d\n", rev);
 
     for (int beam_idx = 0; beam_idx < 2; beam_idx++)
     {
-        for (int param_idx = 0; param_idx < 4; param_idx++)
+        for (int param_idx = 0; param_idx < 3; param_idx++)
         {
             for (int idx = 0; idx < NBD_DIM; idx++)
             {
@@ -505,12 +507,12 @@ printf("%d\n", rev);
         }
     }
 
-    const char* param_label[] = { "NBD", "Speed (m/s)",
-        "Swath Relative Direction (deg)", "MLE" };
-    const char* param_ext[] = { "nbd", "spd", "dir", "mle" };
-    float param_spread[] = { nbd_spread, spd_spread, dir_spread, mle_spread };
-    float param_min[] = { NBD_MIN, SPD_MIN, DIR_MIN, MLE_MIN };
-    for (int param_idx = 0; param_idx < 4; param_idx++)
+    const char* param_label[] = { "NBD", "Swath Relative Direction (deg)",
+        "MLE" };
+    const char* param_ext[] = { "nbd", "dir", "mle" };
+    float param_spread[] = { nbd_spread, dir_spread, mle_spread };
+    float param_min[] = { NBD_MIN, DIR_MIN, MLE_MIN };
+    for (int param_idx = 0; param_idx < 3; param_idx++)
     {
         char filename[1024];
 
@@ -523,7 +525,7 @@ printf("%d\n", rev);
                 command, filename);
             exit(1);
         }
-        fprintf(ofp_1, "@ title %cAttenuation%c\n", QUOTE, QUOTE);
+        fprintf(ofp_1, "@ subtitle %cAttenuation%c\n", QUOTE, QUOTE);
         fprintf(ofp_1, "@ xaxis label %c%s%c\n", QUOTE, param_label[param_idx],
             QUOTE);
         fprintf(ofp_1, "@ yaxis label %c%s%c\n", QUOTE, "Attenuation (dB)",
@@ -537,7 +539,7 @@ printf("%d\n", rev);
                 command, filename);
             exit(1);
         }
-        fprintf(ofp_2, "@ title %cAdditive Scatter%c\n", QUOTE, QUOTE);
+        fprintf(ofp_2, "@ subtitle %cAdditive Scatter%c\n", QUOTE, QUOTE);
         fprintf(ofp_2, "@ xaxis label %c%s%c\n", QUOTE, param_label[param_idx],
             QUOTE);
         fprintf(ofp_2, "@ yaxis label %c%s%c\n", QUOTE, "Additive Scatter",

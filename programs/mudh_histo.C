@@ -22,7 +22,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % mudh_table -m 15 1500 1600 rv1500-1600.15min
+//      % mudh_histo 1500 1600 1500-1600
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -63,7 +63,8 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    ""
+#define OPTSTRING   ""
+#define REV_DIGITS  5
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -77,7 +78,8 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<start_rev>", "<end_rev>", "<output_base>", 0 };
+const char* usage_array[] = { "<start_rev>", "<end_rev>",
+    "<output_base>", 0 };
 
 unsigned long accum[4][65536];
 
@@ -134,7 +136,7 @@ main(
         //----------------//
 
         char mudh_file[1024];
-        sprintf(mudh_file, "%d.mudh", rev);
+        sprintf(mudh_file, "%0*d.mudh", REV_DIGITS, rev);
         FILE* ifp = fopen(mudh_file, "r");
         if (ifp == NULL)
         {

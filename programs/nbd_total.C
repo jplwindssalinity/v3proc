@@ -498,15 +498,6 @@ main(
                 continue;
 
             LonLat avg_lon_lat = meas_list->AverageLonLat();
-/*
-            float lon_deg = avg_lon_lat.longitude * rtd;
-            float lat_deg = avg_lon_lat.latitude * rtd;
-
-            // wind retrieval
-            WVC wvc;
-            if (! gmf.RetrieveWinds_GS(meas_list, &kp, &wvc))
-                continue;
-*/
 
             WVC* wvc = swath->GetWVC(cell_idx, target_idx);
             if (wvc == NULL)
@@ -546,14 +537,15 @@ main(
             int count[2];
             double x_outer_comp_sum[2];    // fore/aft
             double y_outer_comp_sum[2];    // fore/aft
-            int outer_comp_count[2];    // fore/aft
+            int egg_count[2][2];    // beam, fore/aft
             for (int i = 0; i < 2; i++)
             {
                 norm_dif_sum[i] = 0.0;
                 count[i] = 0;
                 x_outer_comp_sum[i] = 0.0;
                 y_outer_comp_sum[i] = 0.0;
-                outer_comp_count[i] = 0;
+                egg_count[0][i] = 0;
+                egg_count[1][i] = 0;
             }
 
             for (Meas* meas = meas_list->GetHead(); meas;
@@ -582,7 +574,11 @@ main(
                 {
                     x_outer_comp_sum[foreaft_idx] += cos(meas->eastAzimuth);
                     y_outer_comp_sum[foreaft_idx] += sin(meas->eastAzimuth);
-                    outer_comp_count[foreaft_idx]++;
+                    egg_count[1][foreaft_idx]++;
+                }
+                else    // inner beam
+                {
+                    egg_count[0][foreaft_idx]++;
                 }
             }
 //            wvc.FreeContents();
@@ -591,13 +587,14 @@ main(
             // set direction array //
             //---------------------//
 
-            if (outer_comp_count[0] > 0 && outer_comp_count[1] > 0)
+            // use outer beam (index=1) for direction
+            if (egg_count[1][0] > 0 && egg_count[1][1] > 0)
             {
                 // calculate target angle
                 for (int i = 0; i < 2; i++)    // fore/aft
                 {
-                    x_outer_comp_sum[i] /= outer_comp_count[i];
-                    y_outer_comp_sum[i] /= outer_comp_count[i];
+                    x_outer_comp_sum[i] /= (double)egg_count[1][i];
+                    y_outer_comp_sum[i] /= (double)egg_count[1][i];
                 }
                 float target_angle =
                     atan2(y_outer_comp_sum[0] + y_outer_comp_sum[1],
@@ -622,12 +619,14 @@ main(
             // set NBD array //
             //---------------//
 
-            if (count[0] > 0 && count[1] > 0)
+            // requires fore and aft looks from both beams
+            if (egg_count[0][0] > 0 && egg_count[0][1] > 0 &&
+                egg_count[1][0] > 0 && egg_count[1][1] > 0)
             {
                 float mean_norm_dif[2];
                 for (int i = 0; i < 2; i++)
                 {
-                    mean_norm_dif[i] = norm_dif_sum[i] / count[i];
+                    mean_norm_dif[i] = norm_dif_sum[i] / (double)count[i];
                 }
                 float mean_dif = mean_norm_dif[0] - mean_norm_dif[1];
 

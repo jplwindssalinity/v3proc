@@ -256,7 +256,6 @@ main(
         {
             for (int cti = 0; cti < CT_WIDTH; cti++)
             {
-                double nbd = (double)nbd_array[ati][cti] / 20.0 - 6.0;
                 if (rain_rate[ati][cti] >= 250 ||
                     spd_array[ati][cti] == 255 ||
                     dir_array[ati][cti] == 255 ||
@@ -264,17 +263,23 @@ main(
                 {
                     continue;
                 }
+                double nbd = (double)nbd_array[ati][cti] / 20.0 - 6.0;
                 double spd = (double)spd_array[ati][cti] / 5.0;
                 double dir = (double)dir_array[ati][cti] / 2.0;
                 double mle = (double)mle_array[ati][cti] / 8.0 - 30.0;
 
+                // nbd -4 to 6
                 int inbd = (int)((nbd +  4.0) * 14.0 / 10.0 + 0.5);
+                // spd 0 to 30
                 int ispd = (int)((spd +  0.0) * 15.0 / 30.0 + 0.5);
+                // dir 0 to 90
                 int idir = (int)((dir +  0.0) * 15.0 / 90.0 + 0.5);
+                // mle -10 to 0
                 int imle = (int)((mle + 10.0) * 15.0 / 10.0 + 0.5);
 
                 if (inbd < 0) inbd = 0;
                 if (inbd > 14) inbd = 14;
+
                 // hack in missing nbd element
                 if (nbd_array[ati][cti] == 255) inbd = 15;
 

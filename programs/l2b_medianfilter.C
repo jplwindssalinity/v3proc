@@ -1,46 +1,45 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l2b_medianfilter
+//    l2b_medianfilter
 //
 // SYNOPSIS
-//		l2b_medianfilter <sim_config_file>
+//    l2b_medianfilter <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 2A to
-//		Level 2B data.  This program retrieves wind from measurements.
+//    Simulates the SeaWinds 1b ground processing of Level 2A to
+//    Level 2B data.  This program retrieves wind from measurements.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>		The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operand is supported:
+//    <sim_config_file>  The sim_config_file needed listing
+//                       all input parameters, input files, and
+//                       output files.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% l2b_medianfilter sws1b.cfg
+//    An example of a command line is:
+//      % l2b_medianfilter sws1b.cfg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//    0   Program executed successfully
+//    >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -48,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -70,7 +69,6 @@ static const char rcs_id[] =
 #include "L2AToL2B.h"
 #include "Tracking.h"
 #include "Tracking.C"
-
 
 //-----------//
 // TEMPLATES //
@@ -96,8 +94,10 @@ template class TrackerBase<unsigned short>;
 //-----------//
 // CONSTANTS //
 //-----------//
+
 #define HIRES12
-#define HDF_NUM_AMBIGUITIES 4
+#define HDF_NUM_AMBIGUITIES   4
+
 //--------//
 // MACROS //
 //--------//
@@ -118,8 +118,9 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>", 
-"[hdf_source_flag 1=hdf 0=default]","[hdf_target_flag 1=hdf 0=default]", "[l2b_hdf_file (for updating)]",0};
+const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>",
+    "[hdf_source_flag 1=hdf 0=default]", "[hdf_target_flag 1=hdf 0=default]",
+    "[l2b_hdf_file (for updating)]", 0};
 
 //--------------------//
 // Report handler     //
@@ -129,12 +130,14 @@ const char* usage_array[] = { "<sim_config_file>", "<output_l2b_file>",
 
 int global_frame_number=0;
 
-void report(int sig_num){
-  fprintf(stderr,"l2b_medianfilter: Starting frame number %d\n",
-	  global_frame_number);
-  return;
+void
+report(
+    int  sig_num)
+{
+    fprintf(stderr, "l2b_medianfilter: Starting frame number %d\n",
+        global_frame_number);
+    return;
 }
-
 
 //--------------//
 // MAIN PROGRAM //
@@ -142,251 +145,282 @@ void report(int sig_num){
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 3 && argc !=6)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc != 3 && argc !=6)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
-	const char* l2b_output_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
+    const char* l2b_output_file = argv[clidx++];
 
-        int hdf_source_flag=0, hdf_target_flag=0;
-        char* hdf_file=NULL;
-        if (argc==6){
-          hdf_source_flag=atoi(argv[clidx++]);
-	  hdf_target_flag=atoi(argv[clidx++]);
-          hdf_file=argv[clidx++];
-	}
+    int hdf_source_flag = 0;
+    int hdf_target_flag = 0;
+    char* hdf_file = NULL;
+    if (argc == 6)
+    {
+        hdf_source_flag = atoi(argv[clidx++]);
+        hdf_target_flag = atoi(argv[clidx++]);
+        hdf_file = argv[clidx++];
+    }
 
-        //------------------------//
-        // tell how far you have  //
-        // gotten if you receive  //
-        // the siguser1 signal    //
-        //------------------------//
+    //------------------------//
+    // tell how far you have  //
+    // gotten if you receive  //
+    // the siguser1 signal    //
+    //------------------------//
 
-        sigset(SIGUSR1,&report);
+    sigset(SIGUSR1,&report);
 
-	//---------------------//
-	// read in config file //
-	//---------------------//
+    //---------------------//
+    // read in config file //
+    //---------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// create and configure level products //
-	//-------------------------------------//
+    //-------------------------------------//
+    // create and configure level products //
+    //-------------------------------------//
 
-	L2B l2b;
-	
-        if(hdf_source_flag){
-	  l2b.SetInputFilename(hdf_file);
-	}
-	else  if (! ConfigL2B(&l2b, &config_list))
-	  {
-	    fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
-	    exit(1);
-	  }
+    L2B l2b;
+    if (hdf_source_flag)
+    {
+        l2b.SetInputFilename(hdf_file);
+    }
+    else if (! ConfigL2B(&l2b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
+        exit(1);
+    }
 
-	// Overwrite with new name
-        l2b.SetOutputFilename(l2b_output_file);
+    // Overwrite with new name
+    l2b.SetOutputFilename(l2b_output_file);
 
+    //------------------------------------//
+    // create and configure the converter //
+    //------------------------------------//
 
-	//------------------------------------//
-	// create and configure the converter //
-	//------------------------------------//
+    L2AToL2B l2a_to_l2b;
+    if (! ConfigL2AToL2B(&l2a_to_l2b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring L2AToL2B\n", command);
+        exit(1);
+    }
 
-	L2AToL2B l2a_to_l2b;
-	if (! ConfigL2AToL2B(&l2a_to_l2b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring L2AToL2B\n", command);
-		exit(1);
-	}
+    //------------//
+    // open files //
+    //------------//
 
-	//------------//
-	// open files //
-	//------------//
-        if (! hdf_source_flag){
-	  if (! l2b.OpenForReading())
-	    {
-	      fprintf(stderr, "%s: error opening L2B file for reading\n", command);
-	      exit(1);
-	    }
-	}
-	if (! l2b.OpenForWriting())
+    if (! hdf_source_flag)
+    {
+        if (! l2b.OpenForReading())
+        {
+            fprintf(stderr, "%s: error opening L2B file for reading\n",
+                command);
+            exit(1);
+        }
+    }
+    if (! l2b.OpenForWriting())
     {
         fprintf(stderr, "%s: error opening L2B file %s for writing\n",
             command, l2b_output_file);
         exit(1);
     }
 
-	//---------------------------------//
-	// read the header to set up swath //
-	//---------------------------------//
-        if (! hdf_source_flag){ 
-	  if (! l2b.ReadHeader())
-	    {
-	      fprintf(stderr, "%s: error reading Level 2B header\n", command); 
-		exit(1);
-	    }
-	}
+    //---------------------------------//
+    // read the header to set up swath //
+    //---------------------------------//
 
-	//-----------------//
-	// conversion loop //
-	//-----------------//
-	int ctibins=0;
-	int atibins=0;
+    if (! hdf_source_flag)
+    {
+        if (! l2b.ReadHeader())
+        {
+            fprintf(stderr, "%s: error reading Level 2B header\n", command);
+            exit(1);
+        }
+    }
 
-	float** spd=NULL, **dir=NULL;
-	int** num_ambigs=NULL;
+    //-----------------//
+    // conversion loop //
+    //-----------------//
 
-	
-	//-----------------------------//
-	// read a level 2B data record //
-	//-----------------------------//
-	if (hdf_source_flag){
-    
-	  if (l2b.frame.swath.ReadHdfL2B(hdf_file) == 0)
-	    {
-	      fprintf(stderr, "%s: cannot open HDF %s for input\n",
-		      argv[0], hdf_file);
-	      exit(1);
-	    }
-	  l2b.header.crossTrackResolution = 25.0;
-	  l2b.header.alongTrackResolution = 25.0;
-	  l2b.header.zeroIndex = 38;
+    int ctibins = 0;
+    int atibins = 0;
+
+    float** spd = NULL;
+    float** dir = NULL;
+    int** num_ambigs = NULL;
+
+    //-----------------------------//
+    // read a level 2B data record //
+    //-----------------------------//
+
+    if (hdf_source_flag)
+    {
+        if (l2b.ReadHDF(hdf_file) == 0)
+        {
+            fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
+                hdf_file);
+            exit(1);
+        }
+        l2b.header.crossTrackResolution = 25.0;
+        l2b.header.alongTrackResolution = 25.0;
+        l2b.header.zeroIndex = 38;
+
 #ifdef HIRES12
-	  l2b.header.crossTrackResolution = 12.5;
-	  l2b.header.alongTrackResolution = 12.5;
-	  l2b.header.zeroIndex = 76;
+        l2b.header.crossTrackResolution = 12.5;
+        l2b.header.alongTrackResolution = 12.5;
+        l2b.header.zeroIndex = 76;
 #endif
-	}
-	else if (! l2b.ReadDataRec())
-	  {
-	    switch (l2b.GetStatus())
-	      {
-	      case L2B::OK:	
-		fprintf(stderr, "%s: Unexpected EOF Level 2B data\n", command);
-				exit(1);
-				break;	// end of file
-			case L2B::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 2B data\n", command);
-				exit(1);
-				break;
-			case L2B::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 2B data\n",
-					command);
-				exit(1);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown status (???)\n", command);
-				exit(1);
-			}
-			
-	  }
-	//------------------------------------//
-	// HDF I/O CASE                       //
-	//------------------------------------//
-	if (hdf_target_flag){
+    }
+    else if (! l2b.ReadDataRec())
+    {
+        switch (l2b.GetStatus())
+        {
+        case L2B::OK:
+            fprintf(stderr, "%s: Unexpected EOF Level 2B data\n", command);
+            exit(1);
+            break;    // end of file
+        case L2B::ERROR_READING_FRAME:
+            fprintf(stderr, "%s: error reading Level 2B data\n", command);
+            exit(1);
+            break;
+        case L2B::ERROR_UNKNOWN:
+            fprintf(stderr, "%s: unknown error reading Level 2B data\n",
+                command);
+            exit(1);
+            break;
+        default:
+            fprintf(stderr, "%s: unknown status (???)\n", command);
+            exit(1);
+        }
+    }
 
-	  //------------------------------//
-	  // Read Nudge Vectors           //
-	  //------------------------------//
-	  if(! hdf_source_flag){
-	    if (!l2b.frame.swath.ReadNudgeVectorsFromHdfL2B(hdf_file)){
-	      fprintf(stderr,"%s: Cannot Read Nudge Vectors from HDF L2b\n",command);
-	      exit(1);
-	    }
-	  }
-	  //-----------------------------//
-	  // Create Arrays               //
-	  //-----------------------------//
-	  ctibins=l2b.frame.swath.GetCrossTrackBins();
-	  atibins=l2b.frame.swath.GetAlongTrackBins();
-	  spd = (float**) make_array(sizeof(float),2,atibins,
-				     ctibins*HDF_NUM_AMBIGUITIES);
-	  dir = (float**) make_array(sizeof(float),2,atibins,
-				     ctibins*HDF_NUM_AMBIGUITIES);
-	  
-	  num_ambigs = (int**) make_array(sizeof(int),2,atibins,
-					  ctibins);
-	  if(! l2b.frame.swath.GetArraysForUpdatingHdf(spd,dir,
-						       num_ambigs)){
-	    fprintf(stderr,"%s: Failure to create array for updating hdf file\n",command);
-	    exit(1);
-	  }
-	}
-	//------------------------//
-	// Just Ambiguity Removal //
-	//------------------------//
+    //---------//
+    // HDF I/O //
+    //---------//
 
-	int retval = l2a_to_l2b.InitFilterAndFlush(&l2b);
-	switch (retval)
-	  {
-	  case 1:
-	    break;
-	  case 2:
-	    break;
-	  case 4:
-	  case 5:
-	    break;
-	  case 0:
-	    fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
-		    command);
-	    exit(1);
-	    break;
-	  }
-	//-------------------------------------//
-	// HDF I/O CASE                        //
-	//-------------------------------------//
-	if(hdf_target_flag){
-	  //---------------------------------------------//
-	  // First Update Arrays with selected vectors   //
-	  //---------------------------------------------//
-	  for(int i=0;i<atibins;i++){
-	    for(int j=0;j<ctibins;j++){
-	      WVC* wvc=l2b.frame.swath.swath[j][i];
-	      if(!wvc){
-		num_ambigs[i][j]=0;
-		continue;
-	      }
-	      else if (! (wvc->selected)){
-		num_ambigs[i][j]=0;
-		continue;		
-	      }
-	      else{
-		int k=num_ambigs[i][j]-1;
-		spd[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->spd;
-		dir[i][j*HDF_NUM_AMBIGUITIES+k]=wvc->selected->dir;
-	      }
-	    }
-	  }
-	  //----------------------------------//
-	  // Update HDF file                  //
-	  //----------------------------------//
-	  if(! l2b.frame.swath.UpdateHdf(hdf_file,spd,dir,num_ambigs, num_ambigs)){
-	    fprintf(stderr,"%s: Unable to update hdf file\n",command);
-	    exit(1);
-	  }
-		  
-	}
+    if (hdf_target_flag)
+    {
+        //--------------------//
+        // Read Nudge Vectors //
+        //--------------------//
 
-	l2b.Close();
-	free_array((void*)spd,2,atibins,ctibins*HDF_NUM_AMBIGUITIES);
-	free_array((void*)dir,2,atibins,ctibins*HDF_NUM_AMBIGUITIES);
-	free_array((void*)num_ambigs,2,atibins,ctibins);
-	return (0);
+        if (! hdf_source_flag)
+        {
+            if (! l2b.ReadNudgeVectorsFromHdfL2B(hdf_file))
+            {
+                fprintf(stderr,
+                    "%s: error reading nudge vectors from HDF L2B file %s\n",
+                    command, hdf_file);
+                exit(1);
+            }
+        }
+
+        //---------------//
+        // Create Arrays //
+        //---------------//
+
+        ctibins = l2b.frame.swath.GetCrossTrackBins();
+        atibins = l2b.frame.swath.GetAlongTrackBins();
+        spd = (float**)make_array(sizeof(float), 2, atibins,
+            ctibins * HDF_NUM_AMBIGUITIES);
+        dir = (float**)make_array(sizeof(float), 2, atibins,
+            ctibins * HDF_NUM_AMBIGUITIES);
+
+        num_ambigs = (int**) make_array(sizeof(int), 2, atibins, ctibins);
+        if (! l2b.GetArraysForUpdatingDirthHdf(spd, dir, num_ambigs))
+        {
+            fprintf(stderr,
+                "%s: Failure to create array for updating hdf file\n",
+                command);
+            exit(1);
+        }
+    }
+
+    //------------------------//
+    // Just Ambiguity Removal //
+    //------------------------//
+
+    int retval = l2a_to_l2b.InitFilterAndFlush(&l2b);
+    switch (retval)
+    {
+    case 1:
+        break;
+    case 2:
+        break;
+    case 4:
+    case 5:
+        break;
+    case 0:
+        fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
+            command);
+        exit(1);
+        break;
+    }
+
+    //---------//
+    // HDF I/O //
+    //---------//
+
+    if (hdf_target_flag)
+    {
+        //-------------------------------------------//
+        // First Update Arrays with selected vectors //
+        //-------------------------------------------//
+
+        for (int i = 0; i < atibins; i++)
+        {
+            for (int j = 0; j < ctibins; j++)
+            {
+                WVC* wvc = l2b.frame.swath.swath[j][i];
+                if (! wvc)
+                {
+                    num_ambigs[i][j] = 0;
+                    continue;
+                }
+                else if (! (wvc->selected))
+                {
+                    num_ambigs[i][j] = 0;
+                    continue;
+                }
+                else
+                {
+                    int k = num_ambigs[i][j] - 1;
+                    spd[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->spd;
+                    dir[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->dir;
+                }
+            }
+        }
+
+        //-----------------//
+        // Update HDF file //
+        //-----------------//
+
+        if (! l2b.frame.swath.UpdateHdf(hdf_file, spd, dir, num_ambigs,
+            num_ambigs))
+        {
+            fprintf(stderr, "%s: Unable to update hdf file\n", command);
+            exit(1);
+        }
+    }
+
+    l2b.Close();
+    free_array((void*)spd, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
+    free_array((void*)dir, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
+    free_array((void*)num_ambigs, 2, atibins, ctibins);
+
+    return (0);
 }
-
