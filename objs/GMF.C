@@ -858,7 +858,8 @@ GMF::RetrieveWindsWithPeakSplitting(
 	    wvp=wvc->ambiguities.GetNext();
 	  }
 	  else{
-	    wvc->ambiguities.RemoveCurrent();
+	    wvp=wvc->ambiguities.RemoveCurrent();
+	    delete wvp;
 	    wvp=wvc->ambiguities.GetCurrent();
 	  }
 	}
