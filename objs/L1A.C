@@ -10,10 +10,6 @@ static const char rcs_id_l1a_c[] =
 #include <malloc.h>
 #include "L1A.h"
 
-#ifndef IS_EVEN
-#define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
-#endif
-
 #define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 2)
 
 //=====//

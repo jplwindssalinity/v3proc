@@ -38,14 +38,21 @@ static const char rcs_id_misc_h[] =
 // MACROS //
 //--------//
 
-#define ANGDIF(A,B)		(fabs(pi-fabs(pi-fabs((A)-(B)))))
+#define ANGDIF(A,B)   (fabs(pi-fabs(pi-fabs((A)-(B)))))
+
 #ifndef MIN
-#define MIN(A,B)		((A)<(B)?(A):(B))
+#define MIN(A,B)      ((A)<(B)?(A):(B))
 #endif
+
 #ifndef MAX
-#define MAX(A,B)		((A)>(B)?(A):(B))
+#define MAX(A,B)      ((A)>(B)?(A):(B))
 #endif
-#define CWNTOCCWE(A)	(M_PI_2 - (A))
+
+#ifndef IS_EVEN
+#define IS_EVEN(A)    (A % 2 == 0 ? 1 : 0)
+#endif
+
+#define CWNTOCCWE(A)  (M_PI_2 - (A))
 
 // Macro returns 1 if Angle A is between Start and End 0 otherwise
 // Only works if all three angles are between 0 and two_pi
