@@ -714,8 +714,9 @@ process_orbit_step(
         {
             return(0);
         }
-        fprintf(ofp, "@ subtitle %cBeam %d, Orbit Step %d, %s%c\n", QUOTE,
-            beam_idx + 1, orbit_step, used_string, QUOTE);
+        fprintf(ofp, "@ title %cBeam %d, Orbit Step%d%c\n", QUOTE,
+            beam_idx + 1, orbit_step, QUOTE);
+        fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, used_string, QUOTE);
         fprintf(ofp, "@ xaxis label %cAzimuth Angle (deg)%c\n", QUOTE, QUOTE);
         fprintf(ofp, "@ yaxis label %cBaseband Frequency (kHz)%c\n", QUOTE,
             QUOTE);
