@@ -125,13 +125,14 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 // is recieved.    //
 //-----------------//
 
-float sim_time = 0.0;
+double sim_time = 0.0;
+
 void
 report(
     int  sig_num)
 {
     sig_num = sig_num;
-    fprintf(stderr, "psim: Current simulation time %g\n", sim_time);
+    fprintf(stderr, "psim: Current simulation time %.2f\n", sim_time);
     return;
 }
 

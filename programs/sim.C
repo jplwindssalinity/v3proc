@@ -133,7 +133,7 @@ int opt_pipe = 0;
 // recieved.          //
 //--------------------//
 
-float sim_time = 0.0;
+double sim_time = 0.0;
 
 //------------------------------------------//
 // Debugging flag turns on print statements //
@@ -146,7 +146,7 @@ report(
     int  sig_num)
 {
     sig_num = sig_num;
-    fprintf(stderr, "sim: Current simulation time %g\n", sim_time);
+    fprintf(stderr, "sim: Current simulation time %.2f\n", sim_time);
     return;
 }
 
@@ -546,7 +546,7 @@ main(
                 // process the instrument event //
                 //------------------------------//
 
-                sim_time=qscat_event.time;
+                sim_time = qscat_event.time;
 /*
                 double mid_tx_pulse_time = qscat_event.time +
                    0.5*qscat.ses.txPulseWidth;
