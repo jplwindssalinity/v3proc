@@ -43,8 +43,7 @@ L10Frame::Allocate(
 	// allocate antenna positions //
 	//----------------------------//
  
-	antennaPosition =
-		(unsigned short *)malloc(total_slices * sizeof(unsigned short));
+	antennaPosition = (unsigned short *)malloc(total_slices * sizeof(unsigned short));
 	if (antennaPosition == NULL)
 		return(0);
  
