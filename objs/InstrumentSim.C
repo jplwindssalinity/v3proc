@@ -360,10 +360,10 @@ InstrumentSim::ScatSim(
 	        int sliceno=0;
 		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			xTable.AddEntry(slice->value,
+			if(!xTable.AddEntry(slice->value,
 					instrument->antenna.currentBeamIdx,
 					instrument->antenna.azimuthAngle,
-					sliceno);
+					sliceno)) return(0);
 			sliceno++;
 		}
 
