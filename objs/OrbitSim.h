@@ -66,15 +66,19 @@ public:
 	//--------------//
 
 	OrbitSim(double semi_major_axis, double eccentricity, double inclination,
-		double argument_of_perigee);
+		double longitude_of_asc_node, double argument_of_perigee,
+		double mean_anomaly);
 	~OrbitSim();
 
-	int			Initialize(double longitude, double latitude, int asc);
+	int			LocationToOrbit(double longitude, double latitude, int asc);
 	OrbitState	GetOrbitState(double time);
 
-	//----------------//
-	// initialization //
-	//----------------//
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	double		GetLongitudeOfAscendingNode() { return (_bigOmega * RTD); };
+	double		GetMeanAnomaly() { return (_l * RTD); };
 
 protected:
 

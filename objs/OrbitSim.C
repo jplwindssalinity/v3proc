@@ -49,7 +49,9 @@ OrbitSim::OrbitSim(
 	double	semi_major_axis,
 	double	eccentricity,
 	double	inclination,
-	double	argument_of_perigee)
+	double	longitude_of_asc_node,
+	double	argument_of_perigee,
+	double	mean_anomaly)
 {
 	//---------------------------------------//
 	// copy variables and convert to radians //
@@ -58,7 +60,9 @@ OrbitSim::OrbitSim(
 	_a = semi_major_axis;
 	_e = eccentricity;
 	_i = inclination * DTR;
+	_bigOmega = longitude_of_asc_node * DTR;
 	_littleOmega = argument_of_perigee * DTR;
+	_l = mean_anomaly * DTR;
 
 	//-----------//
 	// predigest //
@@ -99,7 +103,7 @@ OrbitSim::OrbitSim(
 }
 
 int
-OrbitSim::Initialize(
+OrbitSim::LocationToOrbit(
 	double		longitude,
 	double		latitude,
 	int			asc)
