@@ -98,6 +98,9 @@ ConfigBeam(
 		return(0);
 	beam->azimuthAngle = tmp_double * dtr;
 
+	// The beam frame is defined by the look angle and the azimuth angle.
+	beam->beamFrame.Set(0,beam->lookAngle,beam->azimuthAngle,3,2,1);
+
 	return(1);
 }
 

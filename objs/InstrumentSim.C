@@ -147,8 +147,10 @@ InstrumentSim::SimulateEvent(
 
 		double total_beam_azimuth = antenna->azimuthAngle + beam->azimuthAngle;
 		Vector3 beam_orientation;
-		beam_orientation.SphericalSet(1.0, beam->lookAngle,
-			total_beam_azimuth);
+		beam_orientation.SphericalSet(1.0, 0, 0);
+
+//		beam_orientation.SphericalSet(1.0, beam->lookAngle,
+//			total_beam_azimuth);
 
 		//--------------------------------------//
 		// calculate the earth intercept vector //
@@ -158,7 +160,7 @@ InstrumentSim::SimulateEvent(
 
 		EarthPosition rspot = earth_intercept(spacecraft->gcVector,
 			spacecraft->velocityVector, spacecraft->attitude,
-			antenna->antennaFrame, beam_orientation);
+			antenna->antennaFrame, beam->beamFrame, beam_orientation);
 
 		//------------------------------------//
 		// get sigma-0 for the earth location //

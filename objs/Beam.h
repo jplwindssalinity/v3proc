@@ -22,6 +22,8 @@ static const char rcs_id_beam_h[] =
 //		The Beam object contains beam state information.
 //======================================================================
 
+#include "Attitude.h"
+
 enum PolE { NONE, V_POL, H_POL };
 
 class Beam
@@ -42,6 +44,10 @@ public:
 	double	lookAngle;			// mounted look angle relative to antenna
 	double	azimuthAngle;		// mounted azimuth angle relative to antenna
 	PolE	polarization;
+
+	// Note: the beamFrame needs to be formed using the lookAngle and
+	// azimuthAngle above.
+	Attitude beamFrame;			// beam frame relative to antenna frame
 };
 
 #endif

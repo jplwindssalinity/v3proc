@@ -99,7 +99,7 @@ EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
 //
 // antenna_look
 //
-// This function computes the look direction in the antenna coordinate system
+// This function computes the look direction in the beam coordinate system
 // for a given s/c state and ground target.
 // Spacecraft attitude is assumed to use a GEOCENTRIC reference.
 //
@@ -112,20 +112,19 @@ EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
 //            frame defined by the orbit plane (just like NSCAT)
 //   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
 //             s/c body frame
+//   beam_att = beam attitude (roll,pitch,yaw) with respect to the
+//             antenna frame
 //        All angle inputs are in radians.
 //
 // Return Value:
-//   A unit vector in the antenna coordinate system pointed at the
+//   A unit vector in the beam coordinate system pointed at the
 //   ground target.
 //
 
 Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
-		     Attitude sc_att, Attitude ant_att)
+		     Attitude sc_att, Attitude ant_att, Attitude beam_att)
 
 {
-
-// Null vector to use when no translation is needed.
-Vector3 null_vector(0.0);
 
 // Spacecraft velocity frame unit vectors (in geocentric frame).
 Vector3 xscvel_geo;
@@ -136,33 +135,37 @@ velocity_frame(rsat,vsat,&xscvel_geo,&yscvel_geo,&zscvel_geo);
 // Coordinate transformation from geocentric to s/c velocity
 // Note that no translation is used because we are dealing only with
 // directions.
-CoordinateSwitch geo_to_scvel(null_vector,xscvel_geo,yscvel_geo,zscvel_geo);
+CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
 //geo_to_scvel.Show("antenna_look: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(null_vector,sc_att);
+CoordinateSwitch scvel_to_scbody(sc_att);
 //scvel_to_scbody.Show("antenna_look: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(null_vector,ant_att);
+CoordinateSwitch scbody_to_ant(ant_att);
 //scbody_to_ant.Show("antenna_look: scbody_to_ant");
+
+// Coordinate transformation from antenna frame to beam frame
+CoordinateSwitch ant_to_beam(beam_att);
 
 // rlook is a vector from the s/c to the ground target (in geocentric frame)
 Vector3 rlook = rground - rsat;
 //rlook.Show("antenna_look: rlook");
 
-// Apply coordinate transformations to put rlook in the antenna frame.
+// Apply coordinate transformations to put rlook in the beam frame.
 
 Vector3 rlook_scvel = geo_to_scvel.Forward(rlook);
 Vector3 rlook_scbody = scvel_to_scbody.Forward(rlook_scvel);
 Vector3 rlook_ant = scbody_to_ant.Forward(rlook_scbody);
+Vector3 rlook_beam = ant_to_beam.Forward(rlook_ant);
 //rlook_scvel.Show("antenna_look: rlook_scvel");
 //rlook_scbody.Show("antenna_look: rlook_scbody");
 //rlook_ant.Show("antenna_look: rlook_ant");
 
-rlook_ant.Scale(1.0);
+rlook_beam.Scale(1.0);
 //rlook_ant.Show("antenna_look: rlook_ant");
-return(rlook_ant);
+return(rlook_beam);
 
 }
 
@@ -181,6 +184,8 @@ return(rlook_ant);
 //            frame defined by the orbit plane (just like NSCAT)
 //   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
 //             s/c body frame
+//   beam_att = beam attitude (roll,pitch,yaw) with respect to the
+//             antenna frame
 //   rlook_ant = unit vector in antenna frame pointed in the desired
 //               look direction.
 //        All angle inputs are in radians.
@@ -191,16 +196,13 @@ return(rlook_ant);
 //
 
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
-	              Attitude sc_att, Attitude ant_att,
-			      Vector3 rlook_ant)
+	              Attitude sc_att, Attitude ant_att, Attitude beam_att,
+			      Vector3 rlook_beam)
 
 {
 
-// Null vector to use when no translation is needed.
-Vector3 null_vector(0.0);
-
 //
-// Transform rlook_ant from the antenna frame to
+// Transform rlook_beam from the beam frame to
 // the geocentric frame.
 //
 
@@ -213,20 +215,24 @@ velocity_frame(rsat,vsat,&xscvel_geo,&yscvel_geo,&zscvel_geo);
 // Coordinate transformation from geocentric to s/c velocity
 // Note that no translation is used because we are dealing only with
 // directions.
-CoordinateSwitch geo_to_scvel(null_vector,xscvel_geo,yscvel_geo,zscvel_geo);
+CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
 //geo_to_scvel.Show("earth_intercept: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
-CoordinateSwitch scvel_to_scbody(null_vector,sc_att);
+CoordinateSwitch scvel_to_scbody(sc_att);
 //scvel_to_scbody.Show("earth_intercept: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
-CoordinateSwitch scbody_to_ant(null_vector,ant_att);
+CoordinateSwitch scbody_to_ant(ant_att);
 //scbody_to_ant.Show("earth_intercept: scbody_to_ant");
 
-// Apply coordinate transformations to put rlook_ant in the geocentric
+// Coordinate transformation from antenna frame to beam frame
+CoordinateSwitch ant_to_beam(beam_att);
+
+// Apply coordinate transformations to put rlook_beam in the geocentric
 // frame.
 
+Vector3 rlook_ant = ant_to_beam.Backward(rlook_beam);
 Vector3 rlook_scbody = scbody_to_ant.Backward(rlook_ant);
 Vector3 rlook_scvel = scvel_to_scbody.Backward(rlook_scbody);
 Vector3 rlook_geo = geo_to_scvel.Backward(rlook_scvel);

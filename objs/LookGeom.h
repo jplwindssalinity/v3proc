@@ -57,12 +57,12 @@ void velocity_frame(EarthPosition rsat, Vector3 vsat,
 //
 // DESCRIPTION
 //		The antenna_look function computes a unit vector in the
-//		antenna frame that is pointed at a particular ground target.
+//		beam frame that is pointed at a particular ground target.
 //		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
 Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
-		     Attitude sc_att, Attitude ant_att);
+		     Attitude sc_att, Attitude ant_att, Attitude beam_att);
 
 //======================================================================
 // Function
@@ -71,11 +71,11 @@ Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 // DESCRIPTION
 //		The earth_intercept function computes a position vector for
 //		the intercept point on the earth's surface for a particular
-//		look vector (specified in the antenna frame).
+//		look vector (specified in the beam frame).
 //		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
-	              Attitude sc_att, Attitude ant_att,
-			      Vector3 rlook_ant);
+	              Attitude sc_att, Attitude ant_att, Attitude beam_att,
+			      Vector3 rlook_beam);
 #endif
