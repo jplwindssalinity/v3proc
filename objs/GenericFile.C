@@ -9,19 +9,19 @@ static const char rcs_id_genericfile_c[] =
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+#include "GenericFile.h"
+/*
 #include <unistd.h>
 #include <fcntl.h>
-#include "GenericFile.h"
+*/
 
 
 //=============//
 // GenericFile //
 //=============//
 
-#define INVALID_FD		-1
-
 GenericFile::GenericFile()
-:	_filename(NULL), _fd(INVALID_FD)
+:	_filename(NULL), _fp(NULL)
 {
 	return;
 }
@@ -59,12 +59,11 @@ GenericFile::OpenForInput()
 {
 	if (_filename == NULL)
 		return(0);
-	_fd = open(_filename, O_RDONLY);
-	if (_fd == -1)
-	{
-		_fd = INVALID_FD;
+
+	_fp = fopen(_filename, "r");
+	if (_fp == NULL)
 		return(0);
-	}
+
 	return(1);
 }
 
@@ -77,12 +76,11 @@ GenericFile::OpenForOutput()
 {
 	if (_filename == NULL)
 		return(0);
-	_fd = creat(_filename, 0644);
-	if (_fd == -1)
-	{
-		_fd = INVALID_FD;
+
+	_fp = fopen(_filename, "w");
+	if (_fp == NULL)
 		return(0);
-	}
+
 	return(1);
 }
 
@@ -93,9 +91,9 @@ GenericFile::OpenForOutput()
 int
 GenericFile::Read(
 	char*		buffer,
-	int			bytes)
+	size_t		bytes)
 {
-	if (read(_fd, buffer, bytes) != bytes)
+	if (fread(buffer, bytes, 1, _fp) != bytes)
 		return(0);
 	return(1);
 }
@@ -107,9 +105,9 @@ GenericFile::Read(
 int
 GenericFile::Write(
 	char*		buffer,
-	int			bytes)
+	size_t		bytes)
 {
-	if (write(_fd, buffer, bytes) != bytes)
+	if (fwrite(buffer, bytes, 1, _fp) != bytes)
 		return(0);
 	return(1);
 }
@@ -121,7 +119,10 @@ GenericFile::Write(
 int
 GenericFile::Close()
 {
-	if (_fd != INVALID_FD)
-		close(_fd);
+	if (_fp != NULL)
+	{
+		fclose(_fp);
+		_fp = NULL;
+	}
 	return(1);
 }

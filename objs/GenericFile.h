@@ -9,6 +9,8 @@
 static const char rcs_id_genericfile_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
+
 
 //======================================================================
 // CLASSES
@@ -22,7 +24,7 @@ static const char rcs_id_genericfile_h[] =
 //
 // DESCRIPTION
 //		The GenericFile object is used to easily handle opens, closes,
-//		reads, and writes for a single binary file.
+//		reads, and writes for a single stream.
 //======================================================================
 
 class GenericFile
@@ -45,8 +47,8 @@ public:
 	int		OpenForInput();
 	int		OpenForOutput();
 
-	int		Read(char* buffer, int bytes);
-	int		Write(char* buffer, int bytes);
+	int		Read(char* buffer, size_t bytes);
+	int		Write(char* buffer, size_t bytes);
 
 	int		Close();
 
@@ -57,7 +59,7 @@ protected:
 	//-----------//
 
 	char*	_filename;
-	int		_fd;
+	FILE*	_fp;
 };
 
 #endif
