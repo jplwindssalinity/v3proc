@@ -13,7 +13,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Ephemeris.h"
 #include "Sigma0.h"
 #include "Constants.h"
-
+#define UNIFORM_SIGMA 0 // (If 1 then all sigma0s=1)
 
 //===============//
 // InstrumentSim //
@@ -458,7 +458,7 @@ InstrumentSim::SetMeasurements(
 		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 			chi, &sigma0);
 
-
+                if (UNIFORM_SIGMA) sigma0=1;
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
@@ -624,3 +624,20 @@ InstrumentSim::ScatSim(
 
 	return(1);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
