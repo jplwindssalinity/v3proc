@@ -323,7 +323,9 @@ public:
 	float	SpdBias(WindField* truth);
 
 	int		SelectNearest(WindField* truth);
-
+	int             WindSwath::GetProbabilityArray( WindField*  truth,
+				float***  prob, int** num_samples, float** widths,
+				int true_dir_bins, int delta_dir_bins);
 	int		AvgNambigVsCti(float* avg_nambig);
 	int		RmsSpdErrVsCti(WindField* truth, float* rms_spd_err_array,
 				float* std_dev_array, float* std_err_array,

@@ -2504,6 +2504,89 @@ WindSwath::RmsDirErrVsCti(
 	return(1);
 }
 
+
+//---------------------------------//
+// WindSwath::GetProbabilityArray  //
+//---------------------------------//
+int
+WindSwath::GetProbabilityArray(
+WindField*           truth,
+float***              prob, 
+int**          num_samples,
+float**        widths,
+int          true_dir_bins,
+int          delta_dir_bins )
+{
+
+  float true_dir_step_size=two_pi/true_dir_bins;
+  float delta_dir_step_size=two_pi/delta_dir_bins;
+
+  //------------------------------------------------------//
+  // Initialize prob and num_samples arrays               //
+  //------------------------------------------------------//
+  
+  for(int ctd=0; ctd< _crossTrackBins; ctd++){
+    for(int td=0; td < true_dir_bins; td++){
+      num_samples[ctd][td]=0;
+      widths[ctd][td]=0.0;
+      for(int dd=0; dd < delta_dir_bins; dd++){
+	prob[ctd][td][dd]=0.0;
+      }
+    }
+  }
+
+  //------------------------------------------------------//
+  // Accumulate probability info and number of samples    //
+  //------------------------------------------------------//
+  for(int cti=0;cti<_crossTrackBins;cti++){
+    for(int ati=0;ati<_alongTrackBins;ati++){
+      // Calculate true direction index 
+      WVC* wvc = swath[cti][ati];
+      if (! wvc)
+	continue;
+
+      WindVector true_wv;
+      if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+	continue;   
+      while(true_wv.dir<0) true_wv.dir+=two_pi;
+      while(true_wv.dir>two_pi) true_wv.dir-=two_pi;
+
+      int true_dir_idx=(int)(true_wv.dir/true_dir_step_size +0.5);
+      if(true_dir_idx==true_dir_bins) true_dir_idx=0;
+
+      // Increment number of samples;
+      num_samples[cti][true_dir_idx]++;
+      float width=1, obj_sum=0;
+      for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
+	  wvp=wvc->ambiguities.GetNext()){
+	obj_sum+=wvp->obj;
+	if(obj_sum < 0.80) width++;
+	// Determine delta direction index			
+	float near_angle =
+	  wrap_angle_near(wvc->selected->dir, true_wv.dir);
+	float dif = near_angle - true_wv.dir;
+	int delta_dir_idx=(int)((dif+pi)/delta_dir_step_size +0.5);
+        if(delta_dir_idx==delta_dir_bins) delta_dir_idx=0;
+        // accumulate prob array
+	prob[cti][true_dir_idx][delta_dir_idx]+=wvp->obj;
+      }
+      widths[cti][true_dir_idx]+=width*delta_dir_step_size*rtd;
+    }
+  }
+
+  // divide accumulated sums of probabilities by number of samples
+  for(int cti=0;cti<_crossTrackBins;cti++){
+    for(int tdi=0;tdi<true_dir_bins;tdi++){
+      if(num_samples[cti][tdi]!=0){
+	for(int ddi=0;ddi<delta_dir_bins;ddi++)
+	  prob[cti][tdi][ddi]/=num_samples[cti][tdi];
+	widths[cti][tdi]/=num_samples[cti][tdi];
+      }
+    }
+  }
+  return(1);
+}
+
 //-----------------------//
 // WindSwath::SkillVsCti //
 //-----------------------//
