@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1998-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -202,7 +202,7 @@ main(
       }
       range_flag = 1;
     }
-   
+
     else if (c == -1) break;
   }
 
@@ -309,21 +309,25 @@ main(
   // Get record count //
   //------------------//
 
+/*
   if (fseek(check1,0,SEEK_END) != 0)
   {
     fprintf(stderr, "%s: error seeking to the end in %s\n", command,
             checkfile1);
     exit(1);
   }
-  long file_size = ftell(check1);
-  long total_spots = file_size/cf.Size();
+*/
+//  long file_size = ftell(check1);
+//  long total_spots = file_size/cf.Size();
 //  long total_slices = cf.slicesPerSpot * total_spots;
+/*
   if (fseek(check1,0,SEEK_SET) != 0)
   {
     fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
       checkfile1);
 	  exit(1);
   }
+*/
 
   //------------//
   // check loop //
@@ -535,7 +539,7 @@ void print_spot_field(
       fprintf(fptr,"%d ",cf->slicesPerSpot);
     }
 
-  } 
+  }
   if (strcmp(fieldname,"pulseCount") == 0)
   {
     if (range_flag == 0)
@@ -546,7 +550,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%d ",cf->pulseCount);
     }
-  } 
+  }
   if (strcmp(fieldname,"time") == 0)
   {
     if (range_flag == 0)
@@ -557,7 +561,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->time);
     }
-  } 
+  }
   if (strcmp(fieldname,"rx") == 0)
   {
     if (range_flag == 0)
@@ -568,7 +572,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->rsat.Get(0));
     }
-  } 
+  }
   if (strcmp(fieldname,"ry") == 0)
   {
     if (range_flag == 0)
@@ -579,7 +583,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->rsat.Get(1));
     }
-  } 
+  }
   if (strcmp(fieldname,"rz") == 0)
   {
     if (range_flag == 0)
@@ -590,7 +594,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->rsat.Get(2));
     }
-  } 
+  }
   if (strcmp(fieldname,"vx") == 0)
   {
     if (range_flag == 0)
@@ -601,7 +605,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->vsat.Get(0));
     }
-  } 
+  }
   if (strcmp(fieldname,"vy") == 0)
   {
     if (range_flag == 0)
@@ -612,7 +616,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->vsat.Get(1));
     }
-  } 
+  }
   if (strcmp(fieldname,"vz") == 0)
   {
     if (range_flag == 0)
@@ -623,7 +627,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->vsat.Get(2));
     }
-  } 
+  }
   float roll,pitch,yaw;
   cf->attitude.GetRPY(&roll,&pitch,&yaw);
   if (strcmp(fieldname,"roll") == 0)
@@ -636,7 +640,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",roll);
     }
-  } 
+  }
   if (strcmp(fieldname,"pitch") == 0)
   {
     if (range_flag == 0)
@@ -647,7 +651,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",pitch);
     }
-  } 
+  }
   if (strcmp(fieldname,"yaw") == 0)
   {
     if (range_flag == 0)
@@ -658,7 +662,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",yaw);
     }
-  } 
+  }
   if (strcmp(fieldname,"beamNumber") == 0)
   {
     if (range_flag == 0)
@@ -669,7 +673,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%d ",cf->beamNumber);
     }
-  } 
+  }
   if (strcmp(fieldname,"orbitFrac") == 0)
   {
     if (range_flag == 0)
@@ -680,7 +684,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->orbitFrac);
     }
-  } 
+  }
   if (strcmp(fieldname,"antennaAziTx") == 0)
   {
     if (range_flag == 0)
@@ -691,7 +695,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->antennaAziTx);
     }
-  } 
+  }
   if (strcmp(fieldname,"antennaAziGi") == 0)
   {
     if (range_flag == 0)
@@ -702,7 +706,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->antennaAziGi);
     }
-  } 
+  }
   if (strcmp(fieldname,"EsCal") == 0)
   {
     if (range_flag == 0)
@@ -713,7 +717,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->EsCal);
     }
-  } 
+  }
   if (strcmp(fieldname,"deltaFreq") == 0)
   {
     if (range_flag == 0)
@@ -724,7 +728,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->deltaFreq);
     }
-  } 
+  }
   if (strcmp(fieldname,"spinRate") == 0)
   {
     if (range_flag == 0)
@@ -735,7 +739,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->spinRate);
     }
-  } 
+  }
   if (strcmp(fieldname,"commandedDoppler") == 0)
   {
     if (range_flag == 0)
@@ -746,7 +750,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->txDoppler);
     }
-  } 
+  }
   if (strcmp(fieldname,"commandedDelay") == 0)
   {
     if (range_flag == 0)
@@ -757,7 +761,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->rxGateDelay);
     }
-  } 
+  }
   if (strcmp(fieldname,"Xdoppler") == 0)
   {
     if (range_flag == 0)
@@ -768,7 +772,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->XdopplerFreq);
     }
-  } 
+  }
   if (strcmp(fieldname,"XroundTripTime") == 0)
   {
     if (range_flag == 0)
@@ -779,7 +783,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->XroundTripTime);
     }
-  } 
+  }
   if (strcmp(fieldname,"alpha") == 0)
   {
     if (range_flag == 0)
@@ -790,7 +794,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->alpha);
     }
-  } 
+  }
   if (strcmp(fieldname,"EsnEcho") == 0)
   {
     if (range_flag == 0)
@@ -801,7 +805,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->EsnEcho);
     }
-  } 
+  }
   if (strcmp(fieldname,"EsnNoise") == 0)
   {
     if (range_flag == 0)
@@ -812,7 +816,7 @@ void print_spot_field(
     {
       fprintf(fptr,"%g ",cf->EsnNoise);
     }
-  } 
+  }
 
 }
 
@@ -834,7 +838,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%d ",cf->idx[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"measType") == 0)
   {
     if (range_flag == 0)
@@ -845,7 +849,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%d ",cf->measType[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"wv_spd") == 0)
   {
     if (range_flag == 0)
@@ -856,7 +860,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->wv[i].spd);
     }
-  } 
+  }
   if (strcmp(fieldname,"wv_dir") == 0)
   {
     if (range_flag == 0)
@@ -867,7 +871,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->wv[i].dir);
     }
-  } 
+  }
   if (strcmp(fieldname,"sigma0") == 0)
   {
     if (range_flag == 0)
@@ -878,7 +882,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->sigma0[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"X") == 0)
   {
     if (range_flag == 0)
@@ -889,7 +893,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->XK[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"Es") == 0)
   {
     if (range_flag == 0)
@@ -900,7 +904,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->Es[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"En") == 0)
   {
     if (range_flag == 0)
@@ -911,7 +915,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->En[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"var") == 0)
   {
     if (range_flag == 0)
@@ -922,7 +926,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->var_esn_slice[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"azimuth") == 0)
   {
     if (range_flag == 0)
@@ -933,7 +937,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",rtd*cf->azimuth[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"incidence") == 0)
   {
     if (range_flag == 0)
@@ -944,7 +948,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",rtd*cf->incidence[i]);
     }
-  } 
+  }
   double alt,lon,lat;
   cf->centroid[i].GetAltLonGDLat(&alt,&lon,&lat);
   if (strcmp(fieldname,"alt") == 0)
@@ -957,7 +961,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",alt);
     }
-  } 
+  }
   if (strcmp(fieldname,"lon") == 0)
   {
     if (range_flag == 0)
@@ -968,7 +972,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",rtd*lon);
     }
-  } 
+  }
   if (strcmp(fieldname,"lat") == 0)
   {
     if (range_flag == 0)
@@ -979,7 +983,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",rtd*lat);
     }
-  } 
+  }
   if (strcmp(fieldname,"range") == 0)
   {
     if (range_flag == 0)
@@ -990,7 +994,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->R[i]);
     }
-  } 
+  }
   if (strcmp(fieldname,"GatGar") == 0)
   {
     if (range_flag == 0)
@@ -1001,7 +1005,7 @@ void print_slice_field(FILE* fptr,
     {
       fprintf(fptr,"%g ",cf->GatGar[i]);
     }
-  } 
+  }
 
 }
 
@@ -1133,69 +1137,69 @@ double get_parameter(
   if (strcmp(fieldname,"idx") == 0)
   {
       return((double)(cf->idx[i]));
-  } 
+  }
   if (strcmp(fieldname,"measType") == 0)
   {
       return((double)(cf->measType[i]));
-  } 
+  }
   if (strcmp(fieldname,"wv_spd") == 0)
   {
       return((double)(cf->wv[i].spd));
-  } 
+  }
   if (strcmp(fieldname,"wv_dir") == 0)
   {
       return((double)(cf->wv[i].dir));
-  } 
+  }
   if (strcmp(fieldname,"sigma0") == 0)
   {
       return((double)(cf->sigma0[i]));
-  } 
+  }
   if (strcmp(fieldname,"X") == 0)
   {
       return((double)(cf->XK[i]));
-  } 
+  }
   if (strcmp(fieldname,"Es") == 0)
   {
       return((double)(cf->Es[i]));
-  } 
+  }
   if (strcmp(fieldname,"En") == 0)
   {
       return((double)(cf->En[i]));
-  } 
+  }
   if (strcmp(fieldname,"var") == 0)
   {
       return((double)(cf->var_esn_slice[i]));
-  } 
+  }
   if (strcmp(fieldname,"azimuth") == 0)
   {
       return((double)(rtd*cf->azimuth[i]));
-  } 
+  }
   if (strcmp(fieldname,"incidence") == 0)
   {
       return((double)(rtd*cf->incidence[i]));
-  } 
+  }
   double alt,lon,lat;
   cf->centroid[i].GetAltLonGDLat(&alt,&lon,&lat);
   if (strcmp(fieldname,"alt") == 0)
   {
       return(alt);
-  } 
+  }
   if (strcmp(fieldname,"lon") == 0)
   {
       return(rtd*lon);
-  } 
+  }
   if (strcmp(fieldname,"lat") == 0)
   {
       return(rtd*lat);
-  } 
+  }
   if (strcmp(fieldname,"range") == 0)
   {
       return((double)(cf->R[i]));
-  } 
+  }
   if (strcmp(fieldname,"GatGar") == 0)
   {
       return((double)(cf->GatGar[i]));
-  } 
+  }
 
   return(-1);
 }

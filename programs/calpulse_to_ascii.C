@@ -1,20 +1,21 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.  //
-// U.S. Government sponsorship acknowledged.                //
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1998-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//      calpulse_to_ascii
+//    calpulse_to_ascii
 //
 // SYNOPSIS
-//        calpulse_to_ascii <input_file> <output_file> <start_frame> <end_frame>
+//    calpulse_to_ascii <input_file> <output_file> <start_frame> <end_frame>
 //
 // DESCRIPTION
-//          Reads frames start_frame through end_frame from a calpulse file and
-//          writes them to an ASCII file
-//      OPTIONS
-//          Last two arguments are optional
+//    Reads frames start_frame through end_frame from a calpulse file and
+//    writes them to an ASCII file
+//
+// OPTIONS
+//    Last two arguments are optional
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -49,7 +50,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 #include "L1AGSFrame.h"
 
-#define OPTSTRING               "a"
+#define OPTSTRING  "a"
 
 //-----------//
 // TEMPLATES //
@@ -81,8 +82,8 @@ const char* usage_array[] = { "<config_file>", "<input_file>",
 
 int
 main(
-    int     argc,
-    char*   argv[])
+    int    argc,
+    char*  argv[])
 {
     //------------------------//
     // parse the command line //
@@ -102,8 +103,8 @@ main(
     int end_frame = 2;
     if (argc == 5)
     {
-      start_frame=atoi(argv[clidx++]);
-      end_frame=atoi(argv[clidx++]);
+        start_frame=atoi(argv[clidx++]);
+        end_frame=atoi(argv[clidx++]);
     }
 
     //---------------------//
@@ -118,66 +119,66 @@ main(
         exit(1);
     }
 
-
-    //------------------------//
-    // Create L1A object      //
-    //------------------------//
+    //-------------------//
+    // Create L1A object //
+    //-------------------//
 
     L1A l1a;
-  
     if (! ConfigL1A(&l1a, &config_list))
     {
         fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
         exit(1);
     }
 
-    //-------------------------------//
-    // Open the calpulse ascii file  //
-    //-------------------------------//
+    //------------------------------//
+    // Open the calpulse ascii file //
+    //------------------------------//
 
-    if (! l1a.OpenCalPulseForWriting(output_name))
+    FILE* ofp = fopen(output_name, "w");
+    if (ofp == NULL)
     {
-        fprintf(stderr, "%s: error creating Cal Pulse file %s\n", command,
+        fprintf(stderr, "%s: error creating calpulse file %s\n", command,
             output_name);
         exit(1);
     }
 
-    //-------------------------------//
-    // Open the calpulse input file  //
-    //-------------------------------//
+    //------------------------------//
+    // Open the calpulse input file //
+    //------------------------------//
 
-    FILE* cal_pulse_file = fopen(cal_pulse_file_name,"r");
-    if (cal_pulse_file == NULL)
+    if (! l1a.OpenCalPulseForReading(cal_pulse_file_name))
     {
-      fprintf(stderr,"Error opening cal pulse file %s\n",cal_pulse_file_name);
-      exit(1);
+        fprintf(stderr, "%s: error opening calpulse file %s for reading\n",
+            command, cal_pulse_file_name);
+        exit(1);
     }
 
     //--------------------------//
     // Translate desired frames //
     //--------------------------//
 
-    int frame_number=1;
-    while (l1a.ReadGSCalPulseRec(cal_pulse_file) && frame_number <= end_frame)
+    int frame_number = 1;
+    while (l1a.ReadGSCalPulseRec() && frame_number <= end_frame)
     {
-      if(frame_number >= start_frame)
-      {
-        if (l1a.WriteGSCalPulseRecAscii() == 0)
+        if (frame_number >= start_frame)
         {
-          fprintf(stderr,
-          "%s: error writing Cal Pulse record\n", command);
-          exit(1);
+            if (l1a.WriteGSCalPulseRecAscii(ofp) == 0)
+            {
+                fprintf(stderr, "%s: error writing Cal Pulse record\n",
+                    command);
+                exit(1);
+            }
         }
-      }
-      if(start_frame >= 0) frame_number++;
+        if (start_frame >= 0)
+            frame_number++;
     }
 
     //----------------------//
     // close files and exit //
     //----------------------//
 
+    fclose(ofp);
     l1a.Close();
-    fclose(cal_pulse_file);
 
     return(0);
 }

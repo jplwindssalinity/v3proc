@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -157,7 +157,8 @@ main(
     // open the output file //
     //----------------------//
 
-    if (! l1a.OpenForWriting(output_file))
+    FILE* ofp = fopen(output_file, "w");
+    if (ofp == NULL)
     {
         fprintf(stderr, "%s: error creating output file %s\n", command,
             output_file);
@@ -208,7 +209,7 @@ main(
             }
             else
             {
-              if (l1a.WriteGSDataRecAscii() == 0)
+              if (l1a.WriteGSDataRecAscii(ofp) == 0)
               {
                   fprintf(stderr,
                          "%s: error writing GS data record\n", command);
@@ -216,7 +217,7 @@ main(
               }
               if (l1a.frame.calPosition != 255)
               {
-                if (l1a.WriteGSCalPulseRecAscii() == 0)
+                if (l1a.WriteGSCalPulseRecAscii(ofp) == 0)
                 {
                     fprintf(stderr,
                            "%s: error writing Cal Pulse record\n", command);
@@ -225,14 +226,18 @@ main(
               }
             }
         }
-        if (start_frame >= 0) frame_number++;
+        if (start_frame >= 0)
+            frame_number++;
     }
 
     //----------------------//
     // close files and exit //
     //----------------------//
 
+    if (ofp != NULL)
+        fclose(ofp);
+
     l1a.Close();
-    (void) l1a.CloseCalPulseFile();
+    l1a.CloseCalPulseFile();
     return(0);
 }
