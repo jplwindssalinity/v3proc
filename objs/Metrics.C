@@ -7,15 +7,18 @@ static const char rcs_id_metrics_c[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <string.h>
 #include "Metrics.h"
 #include "Wind.h"
+
+#define METRICS_HEADER  "mets"
 
 //=========//
 // Metrics //
 //=========//
 
 Metrics::Metrics()
-:   _crossTrackBins(0), _crossTrackResolution(0.0), _ctd(NULL),
+:   _crossTrackBins(0), _crossTrackResolution(0.0),
     _lowWindSpeed(DEFAULT_METRICS_LOW_WIND_SPEED),
     _highWindSpeed(DEFAULT_METRICS_HIGH_WIND_SPEED),
     _selectedSumSqrSpdErr(NULL), _selectedSumSqrSpdErrCount(NULL),
@@ -39,30 +42,11 @@ Metrics::Initialize(
     int    cross_track_bins,
     float  cross_track_resolution)
 {
-    if (cross_track_bins == _crossTrackBins &&
-        cross_track_resolution == _crossTrackResolution)
-    {
-        // already initialized -- everything is OK
-        return(1);
-    }
+    if (! _Allocate(cross_track_bins))
+        return(0);
 
-    if (_crossTrackBins == 0 && _crossTrackResolution == 0.0)
-    {
-        // need to allocate
-        _Allocate(cross_track_bins);
-        for (int cti = 0; cti < cross_track_bins; cti++)
-        {
-            _ctd[cti] = ((float)cti - ((float)cross_track_bins - 1.0)
-                / 2.0) * cross_track_resolution;
-        }
-        _crossTrackResolution = cross_track_resolution;
-        return(1);
-    }
-
-    // you're trying to change the number of cross track bins
-    // or resolution.
-    // shame on you!
-    return(0);
+    _SetResolution(cross_track_resolution);
+    return(1);
 }
 
 //----------------------------//
@@ -79,6 +63,35 @@ Metrics::SetWindSpeedRange(
     return(1);
 }
 
+//----------------//
+// Metrics::Clear //
+//----------------//
+
+void
+Metrics::Clear()
+{
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        _selectedSumSqrSpdErr[cti] = 0.0;
+        _selectedSumSqrSpdErrCount[cti] = 0;
+        _selectedSumSqrDirErr[cti] = 0.0;
+        _selectedSumSqrDirErrCount[cti] = 0;
+    }
+}
+
+//---------------------//
+// Metrics::IndexToCtd //
+//---------------------//
+
+float
+Metrics::IndexToCtd(
+    int  cti)
+{
+    float ctd = ((float)cti - ((float)_crossTrackBins - 1.0)
+            / 2.0) * _crossTrackResolution;
+    return(ctd);
+}
+
 //---------------//
 // Metrics::Read //
 //---------------//
@@ -87,9 +100,21 @@ int
 Metrics::Read(
     const char*  filename)
 {
+    //---------------//
+    // open the file //
+    //---------------//
+
     FILE* ifp = fopen(filename, "r");
     if (ifp == NULL)
         return(0);
+
+    char header[4];
+    if (fread((void *)header, sizeof(char), 4, ifp) != 4 ||
+        strncmp(header, METRICS_HEADER, 4) != 0)
+    {
+        fclose(ifp);
+        return(0);
+    }
 
     //-------------------//
     // read the "header" //
@@ -121,47 +146,19 @@ Metrics::Read(
     // read //
     //------//
 
-    double* selected_sum_sqr_spd_err = new double[_crossTrackBins];
-    unsigned long* selected_sum_sqr_spd_err_count =
-        new unsigned long[_crossTrackBins];
-    double* selected_sum_sqr_dir_err = new double[_crossTrackBins];
-    unsigned long* selected_sum_sqr_dir_err_count =
-        new unsigned long[_crossTrackBins];
-    
-    if (fread((void *)selected_sum_sqr_spd_err, sizeof(double),
+    if (fread((void *)_selectedSumSqrSpdErr, sizeof(double),
             _crossTrackBins, ifp) != (size_t)_crossTrackBins ||
-        fread((void *)selected_sum_sqr_spd_err_count, sizeof(unsigned long),
+        fread((void *)_selectedSumSqrSpdErrCount, sizeof(unsigned long),
             _crossTrackBins, ifp) != (size_t)_crossTrackBins ||
-        fread((void *)selected_sum_sqr_dir_err, sizeof(double),
+        fread((void *)_selectedSumSqrDirErr, sizeof(double),
             _crossTrackBins, ifp) != (size_t)_crossTrackBins ||
-        fread((void *)selected_sum_sqr_dir_err_count, sizeof(unsigned long),
+        fread((void *)_selectedSumSqrDirErrCount, sizeof(unsigned long),
             _crossTrackBins, ifp) != (size_t)_crossTrackBins)
     {
         fprintf(stderr, "Metrics::Read: error reading data\n");
         fclose(ifp);
         return(0);
     }
-
-    //---------//
-    // combine //
-    //---------//
-
-    for (int cti = 0; cti < _crossTrackBins; cti++)
-    {
-        _selectedSumSqrSpdErr[cti] += selected_sum_sqr_spd_err[cti];
-        _selectedSumSqrSpdErrCount[cti] += selected_sum_sqr_spd_err_count[cti];
-        _selectedSumSqrDirErr[cti] += selected_sum_sqr_dir_err[cti];
-        _selectedSumSqrDirErrCount[cti] += selected_sum_sqr_dir_err_count[cti];
-    }
-
-    //------//
-    // free //
-    //------//
-
-    delete [] selected_sum_sqr_spd_err;
-    delete [] selected_sum_sqr_spd_err_count;
-    delete [] selected_sum_sqr_dir_err;
-    delete [] selected_sum_sqr_dir_err_count;
 
     fclose(ifp);
     return(1);
@@ -179,7 +176,10 @@ Metrics::Write(
     if (ofp == NULL)
         return(0);
 
-    if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, ofp) != 1 ||
+    char* metrics_string = METRICS_HEADER;
+
+    if (fwrite(metrics_string, sizeof(char), 4, ofp) != 4 ||
+        fwrite((void *)&_crossTrackBins, sizeof(int), 1, ofp) != 1 ||
         fwrite((void *)&_crossTrackResolution, sizeof(float), 1, ofp) != 1 ||
         fwrite((void *)_selectedSumSqrSpdErr, sizeof(double),
             _crossTrackBins, ofp) != (size_t)_crossTrackBins ||
@@ -209,11 +209,15 @@ Metrics::WritePlotData(
 {
     FILE* ofp = NULL;
 
+    char bname[1024];
+    sprintf(bname, "%s.%03d-%03d", basename,
+        (int)(_lowWindSpeed * 10.0 + 0.5), (int)(_highWindSpeed * 10.0 + 0.5));
+
     //--------------------------//
     // selected rms speed error //
     //--------------------------//
 
-    ofp = OpenPlotFile(basename, "sel_rms_spd_err", "Selected RMS Speed Error",
+    ofp = OpenPlotFile(bname, "sel_rms_spd_err", "Selected RMS Speed Error",
         "Cross Track Distance (km)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
@@ -221,7 +225,7 @@ Metrics::WritePlotData(
     {
         if (_selectedSumSqrSpdErrCount[cti] == 0)
             continue;
-        double ctd = _ctd[cti];
+        double ctd = IndexToCtd(cti);
         double value = sqrt(_selectedSumSqrSpdErr[cti]
             / (double)_selectedSumSqrSpdErrCount[cti]);
         fprintf(ofp, "%g %g\n", ctd, value);
@@ -232,7 +236,7 @@ Metrics::WritePlotData(
     // selected rms direction error //
     //------------------------------//
 
-    ofp = OpenPlotFile(basename, "sel_rms_dir_err",
+    ofp = OpenPlotFile(bname, "sel_rms_dir_err",
         "Selected RMS Direction Error", "Cross Track Distance (km)",
         "RMS Direction Error (deg)");
     if (ofp == NULL)
@@ -241,7 +245,7 @@ Metrics::WritePlotData(
     {
         if (_selectedSumSqrDirErrCount[cti] == 0)
             continue;
-        double ctd = _ctd[cti];
+        double ctd = IndexToCtd(cti);
         double value = rtd * sqrt(_selectedSumSqrDirErr[cti]
             / (double)_selectedSumSqrDirErrCount[cti]);
         fprintf(ofp, "%g %g\n", ctd, value);
@@ -286,6 +290,24 @@ Metrics::OpenPlotFile(
         fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, yaxis_label, QUOTE);
 
     return(ofp);
+}
+
+//-----------------------//
+// Metrics::IsCompatible //
+//-----------------------//
+
+int
+Metrics::IsCompatible(
+    const Metrics&  m)
+{
+    if (_crossTrackBins == m._crossTrackBins &&
+        _crossTrackResolution == m._crossTrackResolution &&
+        _lowWindSpeed == m._lowWindSpeed &&
+        _highWindSpeed == m._highWindSpeed)
+    {
+        return(1);
+    }
+    return(0);
 }
 
 //-------------------//
@@ -347,40 +369,84 @@ Metrics::Evaluate(
     return(1);
 }
 
-//--------------------//
-// Metrics::_Allocate //
-//--------------------//
+//---------------------//
+// Metrics::operator+= //
+//---------------------//
+// This operator will initialize this object if necessary.
 
 void
-Metrics::_Allocate(
-    int  cross_track_bins)
+Metrics::operator+=(
+    const Metrics&  m)
 {
-    //-------------//
-    // allocate... //
-    //-------------//
-
-    _crossTrackBins = cross_track_bins;
-
-    _ctd = new float[_crossTrackBins];
-    _selectedSumSqrSpdErr = new double[_crossTrackBins];
-    _selectedSumSqrSpdErrCount = new unsigned long[_crossTrackBins];
-    _selectedSumSqrDirErr = new double[_crossTrackBins];
-    _selectedSumSqrDirErrCount = new unsigned long[_crossTrackBins];
-
-    //-------------------//
-    // ...and initialize //
-    //-------------------//
+    if (_crossTrackBins == 0)
+    {
+        if (! Initialize(m._crossTrackBins, m._crossTrackResolution))
+        {
+            fprintf(stderr,
+                "Metrics::operator+=: error initializing Metrics\n");
+            exit(1);
+        }
+        _lowWindSpeed = m._lowWindSpeed;
+        _highWindSpeed = m._highWindSpeed;
+    }
+    if (! IsCompatible(m))
+    {
+        fprintf(stderr,
+            "Metrics::operator+=: attempting to add incompatible Metrics\n");
+        exit(1);
+    }
 
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
-        _ctd[cti] = 0.0;
-        _selectedSumSqrSpdErr[cti] = 0.0;
-        _selectedSumSqrSpdErrCount[cti] = 0;
-        _selectedSumSqrDirErr[cti] = 0.0;
-        _selectedSumSqrDirErrCount[cti] = 0;
+        _selectedSumSqrSpdErr[cti] += m._selectedSumSqrSpdErr[cti];
+        _selectedSumSqrSpdErrCount[cti] += m._selectedSumSqrSpdErrCount[cti];
+        _selectedSumSqrDirErr[cti] += m._selectedSumSqrDirErr[cti];
+        _selectedSumSqrDirErrCount[cti] += m._selectedSumSqrDirErrCount[cti];
     }
 
     return;
+}
+
+//--------------------//
+// Metrics::_Allocate //
+//--------------------//
+// Reallocates and clears.
+
+int
+Metrics::_Allocate(
+    int  cross_track_bins)
+{
+    //---------------//
+    // reallocate... //
+    //---------------//
+
+    _crossTrackBins = cross_track_bins;
+
+    _selectedSumSqrSpdErr = (double *)realloc(_selectedSumSqrSpdErr,
+        sizeof(double) * _crossTrackBins);
+    if (_selectedSumSqrSpdErr == NULL) return(0);
+
+    _selectedSumSqrSpdErrCount
+        = (unsigned long*)realloc(_selectedSumSqrSpdErrCount,
+            sizeof(unsigned long) * _crossTrackBins);
+    if (_selectedSumSqrSpdErrCount == NULL) return(0);
+
+    _selectedSumSqrDirErr = (double *)realloc(_selectedSumSqrDirErr,
+        sizeof(double) * _crossTrackBins);
+    if (_selectedSumSqrDirErr == NULL) return(0);
+
+    _selectedSumSqrDirErrCount
+        = (unsigned long*)realloc(_selectedSumSqrDirErrCount,
+            sizeof(unsigned long) * _crossTrackBins);
+    if (_selectedSumSqrDirErrCount == NULL) return(0);
+
+    //--------------//
+    // ...and clear //
+    //--------------//
+
+    Clear();
+
+    return(1);
 }
 
 //----------------------//
@@ -390,11 +456,10 @@ Metrics::_Allocate(
 void
 Metrics::_Deallocate()
 {
-    if (_selectedSumSqrSpdErr != NULL)
-        delete [] _selectedSumSqrSpdErr;
-
-    if (_selectedSumSqrSpdErrCount != NULL)
-        delete [] _selectedSumSqrSpdErrCount;
+    free(_selectedSumSqrSpdErr);
+    free(_selectedSumSqrSpdErrCount);
+    free(_selectedSumSqrDirErr);
+    free(_selectedSumSqrDirErrCount);
 
     return;
 }

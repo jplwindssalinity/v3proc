@@ -44,13 +44,15 @@ public:
     // configuration //
     //---------------//
 
-    int  Initialize(int cross_track_bins, float cross_track_resolution);
-    int  SetWindSpeedRange(float low_speed, float high_speed);
+    int   Initialize(int cross_track_bins, float cross_track_resolution);
+    int   SetWindSpeedRange(float low_speed, float high_speed);
+    void  Clear();
 
     //--------------//
     // input/output //
     //--------------//
 
+    float  IndexToCtd(int cti);
     int    Read(const char* filename);
     int    Write(const char* filename);
     int    WritePlotData(const char* basename);
@@ -62,12 +64,22 @@ public:
     // evaluation //
     //------------//
 
+    int  IsCompatible(const Metrics& m);
     int  Evaluate(WindSwath* swath, float resolution, WindField* truth);
+
+    //-----------//
+    // operators //
+    //-----------//
+
+    void operator+=(const Metrics& m);
 
 protected:
 
-    void  _Allocate(int cross_track_bins);
+    int   _Allocate(int cross_track_bins);
     void  _Deallocate();
+
+    void  _SetResolution(float cross_track_resolution)
+              { _crossTrackResolution = cross_track_resolution; };
 
     //-----------//
     // variables //
@@ -75,7 +87,6 @@ protected:
 
     int             _crossTrackBins;
     float           _crossTrackResolution;
-    float*          _ctd;
 
     float           _lowWindSpeed;
     float           _highWindSpeed;
