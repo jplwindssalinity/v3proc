@@ -88,7 +88,7 @@ GenericFile::Read(
 	char*		buffer,
 	size_t		bytes)
 {
-	if (fread(buffer, bytes, 1, _fp) != bytes)
+	if (fread(buffer, bytes, 1, _fp) != 1)
 		return(0);
 	return(1);
 }
@@ -102,7 +102,7 @@ GenericFile::Write(
 	char*		buffer,
 	size_t		bytes)
 {
-	if (fwrite(buffer, bytes, 1, _fp) != bytes)
+	if (fwrite(buffer, bytes, 1, _fp) != 1)
 		return(0);
 	return(1);
 }
