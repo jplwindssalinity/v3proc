@@ -166,14 +166,6 @@ InstrumentSim::LocateSlices(
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
 	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
 
-// try it
-TargetInfoPackage tip;
-if (! TargetInfo(&antenna_frame_to_gc, spacecraft,
-	instrument, vector, &tip))
-{
-	return(0);
-}
-
 	//-------------------//
 	// for each slice... //
 	//-------------------//
