@@ -138,7 +138,7 @@ main(
         {
         case 'a':
             g_ati_opt = 1;
-            ati = atoi(optarg);
+            ati = atoi(optarg)-1;  // to agree when HDF along track index
             break;
         case 'c':
             g_cti_opt = 1;

@@ -20,6 +20,7 @@
 //    [ - filter ]  Use the specified filter.
 //    [ -h ]        Help. Displays the list of filters.
 //    [ -s ]        Use a l2a_s0 format measurement file.	
+//    [ -g ]        Use l2a_s0 file created from official processor L2A
 //    [ -i ]        Plot probabilities due to individual measurements
 //
 //              Measurement File Format (Unless -s is set)
@@ -108,7 +109,7 @@ template class TrackerBase<unsigned short>;
 #define PULSEWIDTH 0.00149709
 #define SPD_RES  0.1 // m/s
 #define DIR_RES    1.0 // Degrees
-#define OPTSTRING "f:hsi"
+#define OPTSTRING "f:hsig"
 
 
 //--------//
@@ -131,7 +132,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[-f filter]", "[ -h ]", "[ -s ]","[ -i ]","<sim_config_file>", "<meas_file>", "<output_base>",0};
+const char* usage_array[] = { "[-f filter]", "[ -h ]", "[ -s ]","[ -i ]","[ -g ]","<sim_config_file>", "<meas_file>", "<output_base>",0};
 
 int ComputeProb(float** prob, int num_dirs, int num_spds, 
 		MeasList* meas_list, Kp* kp, GMF* gmf){
@@ -292,7 +293,7 @@ int read_meas_file(FILE* mfp, GMF* gmf, Kp* kp,
 	  return(1);
 }
 
-int read_s0_meas_file(FILE* mfp, MeasList* meas_list){
+int read_s0_meas_file(FILE* mfp, MeasList* meas_list, int gs_flag){
         char line[1024];
         char typestring[20];
         float inc, azi, s0, xk, en_slice, bandwidth, pulse_width;
@@ -363,7 +364,8 @@ int read_s0_meas_file(FILE* mfp, MeasList* meas_list){
 	    new_meas->A = kpa;
 	    new_meas->B = kpb;
 	    new_meas->C = kpc;
-            
+            if(gs_flag) new_meas->numSlices=-1;
+            else new_meas->numSlices=1;
 
             //-----------------//
             // add measurement //
@@ -397,6 +399,7 @@ main(
 	int opt_no_HHVH=0;
         int opt_no_VVHV=0;
         int s0_format=0;
+        int gs_to_s0_format=0;
         int output_individuals=0;
 
 	//------------------------//
@@ -465,6 +468,10 @@ main(
 		break;
 	      case 's':
 		s0_format=1;
+		break;
+	      case 'g':
+		s0_format=1;
+                gs_to_s0_format=1;
 		break;
               case 'i':
                 output_individuals=1;
@@ -546,7 +553,8 @@ main(
         MeasList meas_list;
 
         if(!s0_format) read_meas_file(mfp,&gmf,&kp,true_spd,true_dir,&meas_list);
-        else read_s0_meas_file(mfp,&meas_list);
+        
+        else read_s0_meas_file(mfp,&meas_list,gs_to_s0_format);
 
 
 

@@ -94,7 +94,7 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l2b_file>", "[ vctr_base ]", 0};
+const char* usage_array[] = { "<l2b_file>","[ vctr_base ]", "[hdf flag 1=HDF 0=default]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -110,41 +110,50 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc < 2 || argc > 3)
+	if (argc < 2 || argc > 4)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* l2b_file = argv[clidx++];
-	const char* vctr_base;
-	if (argc == 3)
+	const char* vctr_base = l2b_file;
+        int hdf_flag=0;
+	if (argc >= 3)
 		vctr_base = argv[clidx++];
-	else
-		vctr_base = l2b_file;
+	if (argc == 4)
+		hdf_flag=atoi(argv[clidx++]);
 
 	//------------------//
 	// read in l2b file //
 	//------------------//
 
 	L2B l2b;
-	if (! l2b.OpenForReading(l2b_file))
-	{
-		fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
-		exit(1);
+        if (hdf_flag){
+           l2b.SetInputFilename(l2b_file);
+           if( l2b.ReadHDF()==0){
+	     fprintf(stderr, "%s: error opening HDF L2B file %s\n", command, l2b_file);
+	     exit(1);
+	   }
 	}
-	if (! l2b.ReadHeader())
-	{
+        else{
+	  if (! l2b.OpenForReading(l2b_file))
+	    {
+	      fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
+	      exit(1);
+	    }
+	  if (! l2b.ReadHeader())
+	    {
 		fprintf(stderr, "%s: error reading L2B header from file %s\n",
 			command, l2b_file);
 		exit(1);
-	}
+	    }
 
-	if (! l2b.ReadDataRec())
-	{
-		fprintf(stderr, "%s: error reading L2B data record from file %s\n",
-			command, l2b_file);
-		exit(1);
+	  if (! l2b.ReadDataRec())
+	    {
+	      fprintf(stderr, "%s: error reading L2B data record from file %s\n",
+		      command, l2b_file);
+	      exit(1);
+	    }
 	}
-
 	//----------------------//
 	// write out vctr files //
 	//----------------------//

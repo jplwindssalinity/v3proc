@@ -56,7 +56,7 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 
-const char* usage_array[] = { "<input_file>", "<output_file>", "<cti>", "<ati>",0};
+const char* usage_array[] = { "<input_file>", "<output_file>", "<hdf_flag (1 for hdf, default 0)>","<cti>", "<ati>",0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -72,14 +72,18 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc!=3 && argc!=5)
+	if (argc!=3 && argc!=4 && argc!=6)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* input_file = argv[clidx++];
 	const char* output_file = argv[clidx++];
         int ati=0,cti=0;
-        if(argc==5){
+        int hdf_flag=0;
+        if(argc>=4){
+	  hdf_flag=atoi(argv[clidx++]);
+	}
+        if(argc==6){
 	  cti=atoi(argv[clidx++]);
 	  ati=atoi(argv[clidx++]);
 	}
@@ -91,7 +95,14 @@ main(
 	//------------------------//
 	// open the input file    //
 	//------------------------//
-
+	if (hdf_flag){
+	  l2b.SetInputFilename(input_file);
+	  if( l2b.ReadHDF()==0){
+	    fprintf(stderr, "%s: error opening HDF L2B file %s\n", command, input_file);
+	    exit(1);
+	  }
+	}
+        else{
  	if (! l2b.OpenForReading(input_file))
 	{
 		fprintf(stderr, "%s: error opening input file %s\n", command,
@@ -113,7 +124,8 @@ main(
 		  input_file);
 	  exit(1);
 	}
-        if(argc==3){
+	}
+        if(argc<=4){
 	  //------------------------//
 	  // open the output file   //
 	  //------------------------//

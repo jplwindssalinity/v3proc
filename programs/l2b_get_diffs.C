@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
+// Copyright (C) 1998-1999, California Institute of Technology.	//
 // U.S. Government sponsorship acknowledged.					//
 //==============================================================//
 
@@ -118,7 +118,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", 0};
+const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -134,11 +134,13 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2)
+	if (argc != 2 && argc !=3)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
+        int use_hdf=0;
+        if(argc==3) use_hdf=atoi(argv[clidx++]);
 
 	//---------------------//
 	// read in config file //
@@ -188,43 +190,57 @@ main(
 	//------------------//
 	// read in l2b file //
 	//------------------//
-
-	if (! l2b.OpenForReading())
-	{
-		fprintf(stderr, "%s: error opening L2B file\n",command);
-		exit(1);
+        if (use_hdf){      
+	  if (l2b.ReadHDF()== 0)
+	    {
+	      fprintf(stderr, "%s: cannot open HDF file for input\n",
+                                 argv[0]);
+	      exit(1);
+	    }
 	}
-	if (! l2b.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading L2B header from file \n",
-			command);
-		exit(1);
-	}
+        else{
+	  if (! l2b.OpenForReading())
+	    {
+	      fprintf(stderr, "%s: error opening L2B file\n",command);
+	      exit(1);
+	    }
+	  if (! l2b.ReadHeader())
+	    {
+	      fprintf(stderr, "%s: error reading L2B header from file \n",
+		      command);
+	      exit(1);
+	    }
 
-	if (! l2b.ReadDataRec())
-	{
-		fprintf(stderr, "%s: error reading L2B data record from file \n",
-			command);
-		exit(1);
+	  if (! l2b.ReadDataRec())
+	    {
+	      fprintf(stderr, "%s: error reading L2B data record from file \n",
+		      command);
+	      exit(1);
+	    }
 	}
 
 	//----------------------//
         // compute difference & //
 	// write out vctr files //
 	//----------------------//
-	for(int cti=0;cti<80;cti++){
+        int ctbins=l2b.frame.swath.GetCrossTrackBins();
+        int atbins=l2b.frame.swath.GetAlongTrackBins();
+	for(int cti=0;cti<ctbins;cti++){
 	  WindVector true_wv;
-	  for(int ati=0;ati<1603;ati++){
+	  for(int ati=0;ati<atbins;ati++){
 	    WVC* wvc=l2b.frame.swath.swath[cti][ati];
 	    if(!wvc) continue;
 	    WindVectorPlus* wvp=wvc->selected;
+            WindVectorPlus* nearest=wvc->GetNearestToDirection(true_wv.dir);
 	    if(!wvp) continue;
 	    if (! truth.InterpolatedWindVector(wvc->lonLat, &true_wv))
 				continue;
             float dirdif=ANGDIF(wvp->dir,true_wv.dir);
-	    printf("%d %d %g %g %g %g %g %g\n", cti,ati,true_wv.spd,wvp->spd,
+            float neardif=ANGDIF(nearest->dir,true_wv.dir);
+            int nambig=wvc->ambiguities.NodeCount();
+	    printf("%d %d  SPEED %g %g %g TRUE DIR %g SELECTED DIR %g %g  NEAREST DIR %g %g NAMBIG %d\n", cti+1,ati+1,true_wv.spd,wvp->spd,
 		   fabs(true_wv.spd - wvp->spd), true_wv.dir*rtd, wvp->dir*rtd,
-		   dirdif*rtd);
+		   dirdif*rtd, nearest->dir*rtd, neardif*rtd, nambig);
 	  }
 	}
 	return (0);
