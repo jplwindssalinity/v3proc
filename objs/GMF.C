@@ -495,6 +495,17 @@ GMF::WriteSolutionCurves(
             (_bestObj[i] - min_obj) * scale);
     }
 
+    //-------------------------//
+    // and write probabilities //
+    //-------------------------//
+
+    fprintf(ofp, "&\n");
+    for (int i = 0; i < _phiCount; i++)
+    {
+        double prob = exp((_bestObj[i] - max_obj) / 2.0);
+        fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd, prob);
+    }
+
     //----------------------------//
     // write individual solutions //
     //----------------------------//
