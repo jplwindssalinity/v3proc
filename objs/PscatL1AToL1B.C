@@ -337,14 +337,15 @@ PscatL1AToL1B::Convert(
             {
             case Meas::VV_MEAS_TYPE:
             case Meas::HH_MEAS_TYPE:
-                meas->value =
-                    frame->science[spot_meas_offset + slice_meas_offset];
+                meas->value = (float)(frame->science[spot_meas_offset +
+                    slice_meas_offset] + 0.5);
                 Esn_echo += meas->value;
                 break;
             case Meas::VV_HV_CORR_MEAS_TYPE:
             case Meas::HH_VH_CORR_MEAS_TYPE:
-                meas->value =
-                    frame->science[spot_meas_offset + slice_meas_offset + 1];
+                float* ptr = (float *)&(frame->science[spot_meas_offset +
+                    slice_meas_offset + 1]);
+                meas->value = *ptr;
                 break;
             default:
                 fprintf(stderr,
@@ -355,9 +356,9 @@ PscatL1AToL1B::Convert(
             }
         }
 
-        //-----------------------------------------------------------------//
-        // Extract the spot noise measurement which applies to all slices. //
-        //-----------------------------------------------------------------//
+        //-------------------------------------------------------------------//
+        // Extract the spot noise measurement which applies to copol slices. //
+        //-------------------------------------------------------------------//
 
         float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
@@ -386,9 +387,9 @@ PscatL1AToL1B::Convert(
                 fprintf(stderr,
                     "PscatL1AToL1B::Convert:No K factor algorithm set\n");
                 exit(1);
-		//                float orbit_position = pscat->cds.OrbitFraction();
 
-		//                k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
+                //    float orbit_position = pscat->cds.OrbitFraction();
+                //    k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
                 //    pscat->cds.currentBeamIdx,
                 //    pscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
                 //    meas->startSliceIdx);
@@ -403,19 +404,23 @@ PscatL1AToL1B::Convert(
                 //    k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
                 // {
                 //    return(0);
-		// }
+                // }
             }
             else if (useBYUXfactor)
             {
-	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
-              // HACK to use Qscat BYU X Tables for PSCAT
-              // X for all measurement types is the same
-              // Outer Beam X is used for incidence angle greater than 51 deg
-              // Otherwise Inner Beam X is used
-                int real_beam_idx=pscat->cds.currentBeamIdx;
-                double thres=51.0*dtr;
-                if(meas->incidenceAngle<thres) pscat->cds.currentBeamIdx=0;
-                else pscat->cds.currentBeamIdx=1;
+                // HACK ALERT ----- HACK ALERT ---- HACK ALERT
+                // HACK to use Qscat BYU X Tables for PSCAT
+                // X for all measurement types is the same
+                // Outer Beam X is used for incidence angle greater than 51 deg
+                // Otherwise Inner Beam X is used
+
+                int real_beam_idx = pscat->cds.currentBeamIdx;
+                double thres = 51.0*dtr;
+                if (meas->incidenceAngle<thres)
+                    pscat->cds.currentBeamIdx=0;
+                else
+                    pscat->cds.currentBeamIdx = 1;
+
                 if (simVs1BCheckfile)
                 {
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
@@ -426,7 +431,8 @@ PscatL1AToL1B::Convert(
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
                         NULL);
                 }
-                pscat->cds.currentBeamIdx=real_beam_idx;
+                pscat->cds.currentBeamIdx = real_beam_idx;
+
                 //-----------------//
                 // set measurement //
                 //-----------------//
