@@ -218,6 +218,8 @@ public:
 	WindSwath();
 	~WindSwath();
 
+	int		Allocate(int cross_track_bins, int along_track_bins);
+
 	//----------//
 	// building //
 	//----------//
@@ -274,8 +276,8 @@ protected:
 	// variables //
 	//-----------//
 
-	int		_crossTrackSize;
-	int		_alongTrackSize;
+	int		_crossTrackBins;
+	int		_alongTrackBins;
 	int		_validCells;
 };
 

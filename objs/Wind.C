@@ -613,7 +613,7 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:	swath(0), _crossTrackSize(0), _alongTrackSize(0), _validCells(0)
+:	swath(0), _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
 	return;
 }
@@ -622,6 +622,20 @@ WindSwath::~WindSwath()
 {
 	DeleteEntireSwath();
 	return;
+}
+
+//---------------------//
+// WindSwath::Allocate //
+//---------------------//
+
+int
+WindSwath::Allocate(
+	int		cross_track_bins,
+	int		along_track_bins)
+{
+	_crossTrackBins = cross_track_bins;
+	_alongTrackBins = along_track_bins;
+	return(_Allocate());
 }
 
 //----------------//
@@ -634,8 +648,8 @@ WindSwath::Add(
 	int		ati,
 	WVC*	wvc)
 {
-	if (cti < 0 || cti >= _crossTrackSize ||
-		ati < 0 || ati >= _alongTrackSize)
+	if (cti < 0 || cti >= _crossTrackBins ||
+		ati < 0 || ati >= _alongTrackBins)
 	{
 		return(0);	// out of range
 	}
@@ -655,9 +669,9 @@ WindSwath::Add(
 int
 WindSwath::DeleteWVCs()
 {
-	for (int i = 0; i < _alongTrackSize; i++)
+	for (int i = 0; i < _alongTrackBins; i++)
 	{
-		for (int j = 0; j < _crossTrackSize; j++)
+		for (int j = 0; j < _crossTrackBins; j++)
 		{
 			WVC* wvc = *(*(swath + i) + j);
 			if (wvc == NULL)
@@ -695,16 +709,16 @@ int
 WindSwath::WriteL20(
 	FILE*	fp)
 {
-	if (fwrite((void *)&_alongTrackSize, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&_crossTrackSize, sizeof(int), 1, fp) != 1 ||
+	if (fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&_validCells, sizeof(int), 1, fp) != 1)
 	{
 		return(0);
 	}
 
-	for (int cti = 0; cti < _crossTrackSize; cti++)
+	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
-		for (int ati = 0; ati < _alongTrackSize; ati++)
+		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = *(*(swath + cti) + ati);
 			if (wvc == NULL)
@@ -733,8 +747,8 @@ WindSwath::ReadL20(
 {
 	DeleteEntireSwath();		// in case
 
-	if (fread((void *)&_alongTrackSize, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&_crossTrackSize, sizeof(int), 1, fp) != 1 ||
+	if (fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
 		fread((void *)&_validCells, sizeof(int), 1, fp) != 1)
 	{
 		return(0);
@@ -793,9 +807,9 @@ WindSwath::WriteBev(
 	if (fp == NULL)
 		return(0);
 
-	for (int cti = 0; cti < _crossTrackSize; cti++)
+	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
-		for (int ati = 0; ati < _alongTrackSize; ati++)
+		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = *(*(swath + cti) + ati);
 			if (wvc == NULL)
@@ -826,14 +840,14 @@ WindSwath::MedianFilter(
 
 	WindVectorPlus*** new_selected =
 		(WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
-			_crossTrackSize, _alongTrackSize);
+			_crossTrackBins, _alongTrackBins);
 
 	//-------------------------//
 	// create a new change map //
 	//-------------------------//
 
 	char** change = (char**)make_array(sizeof(char), 2,
-		_crossTrackSize, _alongTrackSize);
+		_crossTrackBins, _alongTrackBins);
 		
 	//--------------------//
 	// prep for filtering //
@@ -873,22 +887,22 @@ WindSwath::MedianFilterPass(
 	//-------------//
 
 	int flips = 0;
-	for (int cti = 0; cti < _crossTrackSize; cti++)
+	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		int cti_min = cti - half_window;
 		int cti_max = cti + half_window + 1;
 		if (cti_min < 0)
 			cti_min = 0;
-		if (cti_max > _crossTrackSize)
-			cti_max = _crossTrackSize;
-		for (int ati = 0; ati < _alongTrackSize; ati++)
+		if (cti_max > _crossTrackBins)
+			cti_max = _crossTrackBins;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			int ati_min = ati - half_window;
 			int ati_max = ati + half_window + 1;
 			if (ati_min < 0)
 				ati_min = 0;
-			if (ati_max > _alongTrackSize)
-				ati_max = _alongTrackSize;
+			if (ati_max > _alongTrackBins)
+				ati_max = _alongTrackBins;
 
 			//------------------------------//
 			// initialize the new selection //
@@ -961,9 +975,9 @@ WindSwath::MedianFilterPass(
 	// transfer updates //
 	//------------------//
 
-	for (int cti = 0; cti < _crossTrackSize; cti++)
+	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
-		for (int ati = 0; ati < _alongTrackSize; ati++)
+		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			change[cti][ati] = 0;
 			if (new_selected[ati][cti])
@@ -991,9 +1005,9 @@ WindSwath::Skill(
 	int*		skill_sum_array,
 	int*		total_sum_array)
 {
-	for (int cti = 0; cti < _crossTrackSize; cti++)
+	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
-		for (int ati = 0; ati < _alongTrackSize; ati++)
+		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = swath[cti][ati];
 			if (! wvc || ! wvc->selected)
@@ -1028,15 +1042,15 @@ WindSwath::_Allocate()
 	if (swath != NULL)
 		return(0);
 
-	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackSize,
-		_alongTrackSize);
+	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackBins,
+		_alongTrackBins);
 
 	if (swath == NULL)
 		return(0);
 
-	for (int i = 0; i < _crossTrackSize; i++)
+	for (int i = 0; i < _crossTrackBins; i++)
 	{
-		for (int j = 0; j < _alongTrackSize; j++)
+		for (int j = 0; j < _alongTrackBins; j++)
 		{
 			swath[i][j] = NULL;
 		}
@@ -1055,9 +1069,9 @@ WindSwath::_Deallocate()
 	if (swath == NULL)
 		return(1);
 
-	free_array((void *)swath, 2, _crossTrackSize, _alongTrackSize);
+	free_array((void *)swath, 2, _crossTrackBins, _alongTrackBins);
 	swath = NULL;
-	_crossTrackSize = 0;
-	_alongTrackSize = 0;
+	_crossTrackBins = 0;
+	_alongTrackBins = 0;
 	return(1);
 }
