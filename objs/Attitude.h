@@ -9,6 +9,8 @@
 static const char rcs_id_attitude_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
+
 
 //======================================================================
 // CLASSES
@@ -38,8 +40,8 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int		Set(float roll, float pitch, float yaw, int order_1,
-				int order_2, int order_3);
+	int		Set(float roll, float pitch, float yaw, unsigned char order_1,
+				unsigned char order_2, unsigned char order_3);
 
 	float	GetRoll() { return(_roll); };
 	void	SetRoll(float roll) { _roll = roll; };
@@ -47,7 +49,14 @@ public:
 	void	SetPitch(float pitch) { _pitch = pitch; };
 	float	GetYaw() { return(_yaw); };
 	void	SetYaw(float yaw) { _yaw = yaw; };
-	int*	GetOrderIndicies() { return(_order); };
+	unsigned char*	GetOrderIndicies() { return(_order); };
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
 
 protected:
 
@@ -55,10 +64,10 @@ protected:
 	// variables //
 	//-----------//
 
-	float		_roll;
-	float		_pitch;
-	float		_yaw;
-	int			_order[3];
+	float			_roll;
+	float			_pitch;
+	float			_yaw;
+	unsigned char	_order[3];
 };
 
 #endif

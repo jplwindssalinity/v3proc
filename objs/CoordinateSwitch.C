@@ -145,11 +145,11 @@ CoordinateSwitch::SetRotation(
 	Matrix3 rollmatrix(1,0,0,0,cr,sr,0,-sr,cr);
 	Matrix3 pitchmatrix(cp,0,-sp,0,1,0,sp,0,cp);
 	Matrix3 yawmatrix(cy,sy,0,-sy,cy,0,0,0,1);
-	int *order = att.GetOrderIndicies();
+	unsigned char *order = att.GetOrderIndicies();
 
 	_trans.Identity();
 
-	for (int i = 1; i <= 3; i++)
+	for (unsigned char i = 1; i <= 3; i++)
 	{	// Apply rotation matrices in specifed order
 		if (order[0] == i) _trans = rollmatrix * _trans;
 		if (order[1] == i) _trans = pitchmatrix * _trans;

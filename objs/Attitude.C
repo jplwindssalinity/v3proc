@@ -6,6 +6,7 @@
 static const char rcs_id_attitude_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "Attitude.h"
 
 
@@ -34,12 +35,12 @@ Attitude::~Attitude()
 
 int
 Attitude::Set(
-	float		roll,
-	float		pitch,
-	float		yaw,
-	int			order_1,
-	int			order_2,
-	int			order_3)
+	float			roll,
+	float			pitch,
+	float			yaw,
+	unsigned char	order_1,
+	unsigned char	order_2,
+	unsigned char	order_3)
 {
 	if (order_1 < 1 || order_1 > 3 ||
 		order_2 < 1 || order_2 > 3 ||
@@ -53,5 +54,23 @@ Attitude::Set(
 	_order[0] = order_1;
 	_order[1] = order_2;
 	_order[2] = order_3;
+	return(1);
+}
+
+//-----------------//
+// Attitude::Write //
+//-----------------//
+
+int
+Attitude::Write(
+	FILE*	fp)
+{
+	if (fwrite((void *)&_roll, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_pitch, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_yaw, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_order, 3 * sizeof(unsigned char), 1, fp) != 1)
+	{
+		return(0);
+	}
 	return(1);
 }

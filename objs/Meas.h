@@ -41,6 +41,13 @@ public:
 	Meas();
 	~Meas();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* ofp);
+	int		Read(FILE* ofp);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -75,6 +82,13 @@ public:
 	MeasList();
 	~MeasList();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
+
 	//---------//
 	// freeing //
 	//---------//
@@ -102,6 +116,13 @@ public:
 
 	MeasSpot();
 	~MeasSpot();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -132,6 +153,13 @@ public:
 
 	MeasSpotList();
 	~MeasSpotList();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
 
 	//---------//
 	// freeing //
