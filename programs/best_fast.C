@@ -979,13 +979,15 @@ main(
               continue;
             if (wvc->selected == NULL)
               continue;
+            if (rain_contaminated[cti][ati])
+              continue;
             if (wvc->selected == original_selected[cti][ati])
               match_count++;
             comp_total_count++;
           }
         }
         choices();
-        printf("  Match = %.2f %%\n", 100.0 * (float)match_count /
+        printf("  Rainfree Match = %.2f %%\n", 100.0 * (float)match_count /
           (float)comp_total_count);
       }
       loop_idx++;
@@ -1063,12 +1065,14 @@ main(
           continue;
         if (wvc->selected == NULL)
           continue;
+        if (rain_contaminated[cti][ati])
+          continue;
         if (wvc->selected == original_selected[cti][ati])
           match_count++;
         comp_total_count++;
       }
     }
-    printf("  Post Median Filter Match = %.2f %%\n",
+    printf("  Post Median Filter Rainfree Match = %.2f %%\n",
         100.0 * (float)match_count / (float)comp_total_count);
 
     //--------//
