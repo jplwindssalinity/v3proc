@@ -646,7 +646,16 @@ PscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-                Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
+              // HACK to use Qscat BYU X Tables for PSCAT
+              // X for all measurement types is the same
+              // Outer Beam X is used for incidence angle greater than 43  deg
+              // Otherwise Inner Beam X is used
+	      int real_beam_idx=pscat->cds.currentBeamIdx;
+	      double thres=43.0*dtr;
+	      if(meas->incidenceAngle<thres) pscat->cds.currentBeamIdx=0;        
+	      Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
+	      pscat->cds.currentBeamIdx=real_beam_idx;              
             }
 
             if (meas->measType == Meas::VV_VH_CORR_MEAS_TYPE || 

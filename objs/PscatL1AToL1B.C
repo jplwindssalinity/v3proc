@@ -383,27 +383,39 @@ PscatL1AToL1B::Convert(
 
             if (useKfactor)
             {
-                float orbit_position = pscat->cds.OrbitFraction();
+                fprintf(stderr,
+                    "PscatL1AToL1B::Convert:No K factor algorithm set\n");
+                exit(1);
+		//                float orbit_position = pscat->cds.OrbitFraction();
 
-                k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
-                    pscat->cds.currentBeamIdx,
-                    pscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                    meas->startSliceIdx);
+		//                k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
+                //    pscat->cds.currentBeamIdx,
+                //    pscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
+                //    meas->startSliceIdx);
 
                 //-----------------//
                 // set measurement //
                 //-----------------//
 
                 // meas->value is the Esn value going in, sigma0 coming out.
-                float PtGr = 0.0;
-                if (! Er_to_sigma0(&gc_to_antenna, spacecraft, pscat, meas,
-                    k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
-                {
-                    return(0);
-                }
+                // float PtGr = 0.0;
+                // if (! Er_to_sigma0(&gc_to_antenna, spacecraft, pscat, meas,
+                //    k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
+                // {
+                //    return(0);
+		// }
             }
             else if (useBYUXfactor)
             {
+	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
+              // HACK to use Qscat BYU X Tables for PSCAT
+              // X for all measurement types is the same
+              // Outer Beam X is used for incidence angle greater than 43  deg
+              // Otherwise Inner Beam X is used
+                int real_beam_idx=pscat->cds.currentBeamIdx;
+                double thres=43.0*dtr;
+                if(meas->incidenceAngle<thres) pscat->cds.currentBeamIdx=0;
+                else pscat->cds.currentBeamIdx=1;
                 if (simVs1BCheckfile)
                 {
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
@@ -414,7 +426,7 @@ PscatL1AToL1B::Convert(
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
                         NULL);
                 }
-
+                pscat->cds.currentBeamIdx=real_beam_idx;
                 //-----------------//
                 // set measurement //
                 //-----------------//
@@ -430,7 +442,7 @@ PscatL1AToL1B::Convert(
             else
             {
                 fprintf(stderr,
-                    "PscatL1AToL1B::Convert:No X compuation algorithm set\n");
+                    "PscatL1AToL1B::Convert:No X computation algorithm set\n");
                 exit(1);
             }
 
