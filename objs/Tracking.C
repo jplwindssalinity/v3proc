@@ -108,7 +108,7 @@ Cosine(
 
 template <class T>
 TrackerBase<T>::TrackerBase()
-:	_tableId(0), _scaleArray(NULL), _termArray(NULL), _steps(0),
+:	_tableId(0), _scaleArray(NULL), _termArray(NULL), _steps(256),
 	_previousDelay(0.0)
 {
 	for (int i = 0; i < 2; i++)
