@@ -321,8 +321,8 @@ main(
 				instrument_sim.UpdateAntennaPosition(instrument_event.time,
 					&instrument);
 				instrument_sim.ScatSim(instrument_event.time,
-					&(spacecraft.orbitState), &(spacecraft.attitude),
-					&instrument, instrument_event.beamIdx, &windfield, &gmf);
+					&spacecraft, &instrument, instrument_event.beamIdx,
+					&windfield, &gmf);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
