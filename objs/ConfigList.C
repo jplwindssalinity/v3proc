@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2002, California Institute of Technology. //
+// Copyright (C) 1997-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -584,6 +584,24 @@ ConfigList::StompOrAppend(
     return(1);
 }
 
+//--------------------//
+// ConfigList::Remove //
+//--------------------//
+
+int
+ConfigList::Remove(
+    const char*  keyword)
+{
+    StringPair* pair = _Find(keyword);
+    if (pair) {
+        StringPair* sp = RemoveCurrent();
+        if (sp != NULL) {
+            delete sp;
+        }
+    }
+    return(1);
+}
+
 //--------------------------//
 // ConfigList::FreeContents //
 //--------------------------//
@@ -593,8 +611,9 @@ ConfigList::FreeContents()
 {
     StringPair* sp;
     GotoHead();
-    while ((sp = RemoveCurrent()) != NULL)
+    while ((sp = RemoveCurrent()) != NULL) {
         delete sp;
+    }
     return;
 }
 

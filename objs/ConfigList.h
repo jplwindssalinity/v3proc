@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -138,6 +138,7 @@ public:
     //----------------//
 
     int  StompOrAppend(const char* keyword, const char* value);
+    int  Remove(const char* keyword);
 
     //---------//
     // freeing //
