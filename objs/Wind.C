@@ -495,7 +495,7 @@ WindField::NearestWindVector(
 int
 WindField::_Allocate()
 {
-	if (_field == NULL)
+	if (_field != NULL)
 		return(0);
 
 	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, _lonCount,
@@ -522,6 +522,9 @@ WindField::_Allocate()
 int
 WindField::_Deallocate()
 {
+	if (_field == NULL)
+		return(1);
+
 	free_array((void *)_field, 2, _lonCount, _latCount);
 	_field = NULL;
 	return(1);
@@ -915,7 +918,7 @@ WindSwath::Skill(
 int
 WindSwath::_Allocate()
 {
-	if (swath == NULL)
+	if (swath != NULL)
 		return(0);
 
 	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackSize,
