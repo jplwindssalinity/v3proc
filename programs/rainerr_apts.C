@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    rainerr_apts [ -f ] [ -m minutes ] [ -i irr_thresh ]
-//        [ -v thresh ] <rain/flag_file> <mudh_file> <output_base>
+//        [ -t thresh ] <rain/flag_file> <mudh_file> <output_base>
 //
 // DESCRIPTION
 //    Generates apts files of rain rate, integrated rain rate,
@@ -19,7 +19,7 @@
 //    [ -f ]             It's a flag file, not a rain file.
 //    [ -m minutes ]     Collocated within minutes.
 //    [ -i irr_thresh ]  Threshold the integrated rain rate.
-//    [ -v thresh ]      Threshold the flag file value for "rain".
+//    [ -t thresh ]      Threshold the flag file value for "rain".
 //                       (Instead of using the flag in the file.)
 //
 // OPERANDS
@@ -102,7 +102,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "m:i:v:"
+#define OPTSTRING    "m:i:t:"
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -117,7 +117,7 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "[ -m minutes ]", "[ -i irr_thresh ]",
-    "[ -v thresh ]", "<irain_file>", "<flag_file>", "<mudh_file>",
+    "[ -t inner:outer ]", "<irain_file>", "<flag_file>", "<mudh_file>",
     "<output_base>", 0 };
 
 //--------------//
@@ -136,7 +136,7 @@ main(
     int minutes = 60;
     float irr_thresh = 2.0;
     int opt_flag_thresh = 0;
-    float flag_thresh = 0.0;
+    float flag_thresh[2];
 
     //------------------------//
     // parse the command line //
@@ -155,8 +155,14 @@ main(
         case 'i':
             irr_thresh = atof(optarg);
             break;
-        case 'v':
-            flag_thresh = atof(optarg);
+        case 't':
+            if (sscanf(optarg, "%f:%f", &(flag_thresh[0]),
+                &(flag_thresh[1])) != 2)
+            {
+                fprintf(stderr, "%s: error parsing thresholds (%s)\n",
+                    command, optarg);
+                exit(1);
+            }
             opt_flag_thresh = 1;
             break;
         case '?':
@@ -305,8 +311,30 @@ main(
                 ref = 3;
             if (opt_flag_thresh)
             {
+                // determine the swath location
+                int swath_idx = 2;
+                switch (flag_tab[ati][cti])
+                {
+                case INNER_CLEAR:
+                case INNER_RAIN:
+                case INNER_UNKNOWN:
+                    swath_idx = 0;
+                    break;
+                case OUTER_CLEAR:
+                case OUTER_RAIN:
+                case OUTER_UNKNOWN:
+                    swath_idx = 1;
+                    break;
+                case NO_WIND:
+                case UNKNOWN:
+                default:
+                    break;
+                }
+                if (swath_idx == 2)
+                    continue;
+
                 // re-threshold to get the flag
-                if (index_tab[ati][cti] > flag_thresh)
+                if (index_tab[ati][cti] > flag_thresh[swath_idx])
                     ref += 3;
             }
             else
