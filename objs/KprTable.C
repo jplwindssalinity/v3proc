@@ -381,6 +381,31 @@ int KprTable::Write(const char* filename){
 }
 
 //--------------------------------//
+// KprTable::WriteXmgr                //
+//--------------------------------//   
+int KprTable::WriteXmgr(const char* filename){
+      if (filename == NULL)
+      return(0);
+
+      FILE* fp = fopen(filename, "w");
+      if (fp == NULL)
+        return(0);
+
+      for(int a=0;a<_numAzimuths; a++){
+	float azi=360.0*(float(a)/(float)_numAzimuths);
+	for(int b=0; b<_numBeams; b++){
+	  fprintf(fp,"%g ", azi);
+	  for(int s=0; s<_slicesPerSpot; s++){
+	    float db=10*log10(1+_value[b][s][a]);
+	    fprintf(fp,"%g ",db);
+	  }
+	}
+	fprintf(fp,"\n");
+      }
+      return(1);							     
+}
+
+//--------------------------------//
 // KprTable::Read                 //
 //--------------------------------//   
 int KprTable::Read(const char* filename){

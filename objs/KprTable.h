@@ -48,6 +48,7 @@ public:
    int Normalize();
    int NormalizeFrom3Sigma();
    int Write(const char* filename);
+   int WriteXmgr(const char* filename);
    int Read(const char* filename);
    int GetNumBeams(){return(_numBeams);}
    int GetSlicesPerSpot(){return(_slicesPerSpot);}
