@@ -392,6 +392,137 @@ PscatSim::ScatSim(
     return(1);
 }
 
+//-----------------------//
+// PscatSim::LoopbackSim //
+//-----------------------//
+
+int
+PscatSim::LoopbackSim(
+    Spacecraft*     spacecraft,
+    Pscat*          pscat,
+    PscatL1AFrame*  l1a_frame)
+{
+    //----------------------------------------//
+    // compute frame header info if necessary //
+    //----------------------------------------//
+
+    L1AFrameInit(spacecraft, pscat, l1a_frame);
+
+    //-----------------------------//
+    // Set cal pulse sequence flag //
+    // (turn off Bit position 8)   //
+    //-----------------------------//
+
+    l1a_frame->frame_inst_status = l1a_frame->frame_inst_status & 0xFFFFFEFF;
+
+    //-------------------------------------------------//
+    // tracking must be done to update state variables //
+    //-------------------------------------------------//
+
+    SetOrbitStepDelayAndFrequency(spacecraft, pscat);
+
+    //--------------------------------------//
+    // Add Cal-pulse Specific Info to Frame //
+    //--------------------------------------//
+
+    if (! SetL1ALoopback(pscat, l1a_frame))
+        return(0);
+
+    //---------------------------------//
+    // set orbit step change indicator //
+    //---------------------------------//
+
+    unsigned short orbit_step = pscat->cds.SetAndGetOrbitStep();
+    if (orbit_step != l1a_frame->orbitStep)
+    {
+        l1a_frame->priOfOrbitStepChange = _spotNumber;
+//    l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
+        // remember, the CDS puts in the last orbit step (anti-documentation)
+        l1a_frame->orbitStep = orbit_step;
+//    l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
+    }
+
+    //-----------------------------//
+    // determine if frame is ready //
+    //-----------------------------//
+
+    if (_spotNumber >= l1a_frame->spotsPerFrame)
+    {
+        // Again, cal pulses will probably never end a frame, but just
+        // in case, we include this code...
+        l1aFrameReady = 1;  // indicate frame is ready
+        _spotNumber = 0;    // prepare to start a new frame
+    }
+    else
+    {
+        l1aFrameReady = 0;  // indicate frame is not ready
+    }
+
+    return(1);
+}
+
+//-------------------//
+// PscatSim::LoadSim //
+//-------------------//
+
+int
+PscatSim::LoadSim(
+    Spacecraft*     spacecraft,
+    Pscat*          pscat,
+    PscatL1AFrame*  l1a_frame)
+{
+    //----------------------------------------//
+    // compute frame header info if necessary //
+    //----------------------------------------//
+
+    L1AFrameInit(spacecraft,pscat,l1a_frame);
+
+    //-------------------------------------------------//
+    // tracking must be done to update state variables //
+    //-------------------------------------------------//
+
+    SetOrbitStepDelayAndFrequency(spacecraft, pscat);
+
+    //--------------------------------------//
+    // Add Cal-pulse Specific Info to Frame //
+    //--------------------------------------//
+
+    if (! SetL1ALoad(pscat, l1a_frame))
+        return(0);
+
+    //---------------------------------//
+    // set orbit step change indicator //
+    //---------------------------------//
+
+    unsigned short orbit_step = pscat->cds.SetAndGetOrbitStep();
+    if (orbit_step != l1a_frame->orbitStep)
+    {
+        l1a_frame->priOfOrbitStepChange = _spotNumber;
+//  l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
+        // remember, the CDS puts in the last orbit step (anti-documentation)
+        l1a_frame->orbitStep = orbit_step;
+//  l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
+    }
+
+    //-----------------------------//
+    // determine if frame is ready //
+    //-----------------------------//
+
+    if (_spotNumber >= l1a_frame->spotsPerFrame)
+    {
+        // Again, cal pulses will probably never end a frame, but just
+        // in case, we include this code...
+        l1aFrameReady = 1;  // indicate frame is ready
+        _spotNumber = 0;    // prepare to start a new frame
+    }
+    else
+    {
+        l1aFrameReady = 0;  // indicate frame is not ready
+    }
+
+    return(1);
+}
+
 //----------------------------//
 // PscatSim::SetL1ASpacecraft //
 //----------------------------//
@@ -674,7 +805,7 @@ PscatSim::SetMeasurements(
             else if (useBYUXfactor)
             {
 	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
-              // HACK to use Qscat BYU X Tables for PSCAT
+              // HACK to use Pscat BYU X Tables for PSCAT
               // X for all measurement types is the same
               // Outer Beam X is used for incidence angle greater than 43  deg
               // Otherwise Inner Beam X is used
@@ -795,6 +926,148 @@ PscatSim::SetL1AScience(
     //---------------//
 
     l1a_frame->event[_spotNumber] = (unsigned char)pscat_event;
+
+    _spotNumber++;
+
+    return(1);
+}
+
+//--------------------------//
+// PscatSim::SetL1ALoopback //
+//--------------------------//
+
+int
+PscatSim::SetL1ALoopback(
+    Pscat*          pscat,
+    PscatL1AFrame*  l1a_frame)
+{
+    //----------------------//
+    // set antenna position //
+    //----------------------//
+
+    l1a_frame->antennaPosition[_spotNumber] = pscat->cds.rawEncoder;
+
+    //-------------------------------------------//
+    // Set Es_cal using PtGr.                    //
+    // Only "noise it up" if simKpriFlag is set. //
+    //-------------------------------------------//
+
+    float Esn_echo_cal,Esn_noise_cal;
+    PtGr_to_Esn(&ptgrNoise, pscat, simKpriFlag, &Esn_echo_cal, &Esn_noise_cal);
+
+    //-------------------//
+    // for each slice... //
+    //-------------------//
+
+    // determine the spot meas location offset
+    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+
+    for (int i = 0; i < l1a_frame->slicesPerSpot; i++)
+    {
+        //----------------------------------------------------------------//
+        // Update the level 1A frame.
+        // Here, we set each slice to zero because the loopback energy
+        // is concentrated in one slice (which we add after this loop).
+        // A higher fidelity simulation would set some background thermal
+        // noise along with Kpc style variance in the noise and signal
+        // energies. Data is set into the science data just like the
+        // instrument, and into separate storage just like the ground
+        // processing system.
+        //----------------------------------------------------------------//
+
+        int slice_meas_offset = i * l1a_frame->measPerSlice;
+
+        l1a_frame->loopbackSlices[i] = 0;
+        l1a_frame->science[spot_meas_offset + slice_meas_offset] = 0;
+    }
+
+    // Now set the single slice with loopback energy.
+    // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
+    int icenter = l1a_frame->slicesPerSpot / 2;
+    l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
+    l1a_frame->science[spot_meas_offset + icenter * l1a_frame->measPerSlice] =
+      (unsigned int)(Esn_echo_cal/256.0);
+
+    //----------------------------------------------//
+    // Set corresponding noise channel measurements //
+    //----------------------------------------------//
+
+    l1a_frame->loopbackNoise = (unsigned int)(Esn_noise_cal);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(Esn_noise_cal);
+
+    //--------------------------------------------------------//
+    // Set cal position indicator so that the actual position //
+    // is one less than the unit offset position index        //
+    // (follows instrument telemetry).                        //
+    // Note that this is only done with loopbacks, and not    //
+    // for load measurements which always follow a loopback.  //
+    // Then increment the spot counter.                       //
+    //--------------------------------------------------------//
+
+    l1a_frame->calPosition = _spotNumber + 2;
+//  l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition - 1;
+    _spotNumber++;
+
+    return(1);
+}
+
+//----------------------//
+// PscatSim::SetL1ALoad //
+//----------------------//
+
+int
+PscatSim::SetL1ALoad(
+    Pscat*          pscat,
+    PscatL1AFrame*  l1a_frame)
+{
+    //----------------------//
+    // set antenna position //
+    //----------------------//
+
+    l1a_frame->antennaPosition[_spotNumber] = pscat->cds.rawEncoder;
+
+    //-------------------------------------------//
+    // Compute load noise measurements to assure //
+    // a (nearly) perfect retrieval of alpha.             //
+    //-------------------------------------------//
+
+    float En_echo_load;
+    float En_noise_load;
+    make_load_measurements(pscat, &En_echo_load, &En_noise_load);
+
+    //-------------------//
+    // for each slice... //
+    //-------------------//
+
+    // determine the spot meas location offset
+    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+
+    for (int i = 0; i < l1a_frame->slicesPerSpot; i++)
+    {
+        //----------------------------------------------------------------//
+        // Update the level 0.0 frame
+        // Here, we set each slice to the same number so that they
+        // add up to the echo channel energy computed above.
+        // A higher fidelity simulation would set each with its own
+        // variance (Kpc style) which would introduce some noise into alpha.
+        // Data is set into the science data just like the instrument,
+        // and into separate storage just like the ground processing system.
+        //----------------------------------------------------------------//
+
+        int slice_meas_offset = i * l1a_frame->measPerSlice;
+
+        l1a_frame->loadSlices[i] =
+          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
+        l1a_frame->science[spot_meas_offset + slice_meas_offset] =
+          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
+    }
+
+    //----------------------------------------------//
+    // Set corresponding noise channel measurements //
+    //----------------------------------------------//
+
+    l1a_frame->loadNoise = (unsigned int)(En_noise_load);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)(En_noise_load);
 
     _spotNumber++;
 

@@ -99,6 +99,12 @@ public:
     unsigned int*    science;
     unsigned int*    spotNoise;
 
+    //----------------------------//
+    // L1A Status and Error Flags //
+    //----------------------------//
+
+    unsigned int    frame_inst_status;
+
     //-------------------------//
     // informational variables //
     //-------------------------//

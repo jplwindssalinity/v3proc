@@ -18,6 +18,7 @@ static const char rcs_id_pscatsim_h[] =
 #include "GMF.h"
 #include "Meas.h"
 #include "PscatL1A.h"
+#include "QscatSim.h"
 
 //======================================================================
 // CLASSES
@@ -55,6 +56,10 @@ public:
     int  ScatSim(Spacecraft* spacecraft, Pscat* pscat,
              PscatEvent* pscat_event, WindField* windfield, GMF* gmf, Kp* kp,
              KpmField* kpmField, PscatL1AFrame* pscat_l1a_frame);
+    int  LoopbackSim(Spacecraft* spacecraft, Pscat* pscat,
+             PscatL1AFrame* l1a_frame);
+    int  LoadSim(Spacecraft* spacecraft, Pscat* pscat,
+             PscatL1AFrame* l1a_frame);
     int  SetL1ASpacecraft(Spacecraft* spacecraft,
              PscatL1AFrame* pscat_l1a_frame);
     int  SetMeasTypes(PscatEvent* pscat_event, MeasSpot* meas_spot);
@@ -63,6 +68,8 @@ public:
              WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField);
     int  SetL1AScience(MeasSpot* meas_spot, Pscat* pscat,
              PscatEvent* pscat_event, PscatL1AFrame* pscat_l1a_frame);
+    int  SetL1ALoopback(Pscat* pscat, PscatL1AFrame* l1a_frame);
+    int  SetL1ALoad(Pscat* pscat, PscatL1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Pscat* pscat, Meas* meas,
              float* X);
 
