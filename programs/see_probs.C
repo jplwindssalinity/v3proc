@@ -58,6 +58,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "Misc.h"
 #include "Index.h"
 #include "mudh.h"
@@ -121,6 +122,8 @@ main(
     int    argc,
     char*  argv[])
 {
+    char raw_string[2] = "";
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -133,6 +136,7 @@ main(
         {
         case 'r':
             opt_raw = 1;
+            strcpy(raw_string, ".r");
             break;
         case 'p':
             opt_picks = atoi(optarg);
@@ -222,7 +226,7 @@ main(
     printf("   Most : %ld\n", most_samples);
 
     char filename[1024];
-    sprintf(filename, "%s.samp", prob_file);
+    sprintf(filename, "%s%s.samp", prob_file, raw_string);
 	FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -231,48 +235,36 @@ main(
         exit(1);
     }
 
-    float thresh_array[3] = { 0.9, 0.99, -1.0 };
-    for (int idx = 0; idx < 3; idx++)
+    unsigned long sample_array[HISTO_MAX];
+    for (int i = 0; i < HISTO_MAX; i++)
+        sample_array[i] = 0;
+    sample_count = 0;
+    most_samples = 0;
+    for (int i = 0; i < NEIGHBOR_INDICIES; i++)
     {
-      float thresh = thresh_array[idx];
-      unsigned long sample_array[HISTO_MAX];
-      for (int i = 0; i < HISTO_MAX; i++)
-          sample_array[i] = 0;
-      sample_count = 0;
-      most_samples = 0;
-      for (int i = 0; i < NEIGHBOR_INDICIES; i++)
+      for (int j = 0; j < DIF_RATIO_INDICIES; j++)
       {
-        for (int j = 0; j < DIF_RATIO_INDICIES; j++)
+        for (int k = 0; k < SPEED_INDICIES; k++)
         {
-          for (int k = 0; k < SPEED_INDICIES; k++)
+          for (int l = 0; l < CTI_INDICIES; l++)
           {
-            for (int l = 0; l < CTI_INDICIES; l++)
+            for (int m = 0; m < PROB_INDICIES; m++)
             {
-              for (int m = 0; m < PROB_INDICIES; m++)
-              {
-                sample_count += filter_count_array[i][j][k][l][m];
-                if (filter_count_array[i][j][k][l][m] > most_samples)
-                  most_samples = filter_count_array[i][j][k][l][m];
-                if (filter_count_array[i][j][k][l][m] < 1)
-                  continue;
-                float prob = (float)filter_good_array[i][j][k][l][m] / 
-                    (float)filter_count_array[i][j][k][l][m];
-                if (prob < thresh)
-                    continue;
-                int idx = filter_count_array[i][j][k][l][m];
-                if (idx >= HISTO_MAX)
-                  idx = HISTO_MAX - 1;
-                sample_array[idx]++;
-              }
+              sample_count += filter_count_array[i][j][k][l][m];
+              if (filter_count_array[i][j][k][l][m] > most_samples)
+                most_samples = filter_count_array[i][j][k][l][m];
+              int idx = filter_count_array[i][j][k][l][m];
+              if (idx >= HISTO_MAX)
+                idx = HISTO_MAX - 1;
+              sample_array[idx]++;
             }
           }
         }
       }
-      for (int i = 1; i < HISTO_MAX; i++)
-      {
-          fprintf(ofp, "%d %ld\n", i, sample_array[i]);
-      }
-      fprintf(ofp, "&\n");
+    }
+    for (int i = 0; i < HISTO_MAX; i++)
+    {
+        fprintf(ofp, "%d %ld\n", i, sample_array[i]);
     }
     fclose(ofp);
 
@@ -285,7 +277,7 @@ main(
     // first rank //
     //------------//
 
-    sprintf(filename, "%s.1p", prob_file);
+    sprintf(filename, "%s%s.1p", prob_file, raw_string);
 	ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -326,7 +318,7 @@ main(
     // relative direction //
     //--------------------//
 
-    sprintf(filename, "%s.1rel", prob_file);
+    sprintf(filename, "%s%s.1rel", prob_file, raw_string);
 	ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -368,7 +360,7 @@ main(
     // relative direction cuts //
     //-------------------------//
 
-    sprintf(filename, "%s.1rels", prob_file);
+    sprintf(filename, "%s%s.1rels", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -419,7 +411,7 @@ main(
     // cross track //
     //-------------//
 
-    sprintf(filename, "%s.1cti", prob_file);
+    sprintf(filename, "%s%s.1cti", prob_file, raw_string);
 	ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -465,7 +457,7 @@ main(
     // first ranked speed //
     //--------------------//
 
-    sprintf(filename, "%s.1spd", prob_file);
+    sprintf(filename, "%s%s.1spd", prob_file, raw_string);
 	ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -507,7 +499,7 @@ main(
     // first speed cuts //
     //------------------//
 
-    sprintf(filename, "%s.1spds", prob_file);
+    sprintf(filename, "%s%s.1spds", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -555,7 +547,7 @@ main(
     // neighbors //
     //-----------//
 
-    sprintf(filename, "%s.n", prob_file);
+    sprintf(filename, "%s%s.n", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -600,7 +592,7 @@ main(
     // dif ratio //
     //-----------//
 
-    sprintf(filename, "%s.dr", prob_file);
+    sprintf(filename, "%s%s.dr", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -645,7 +637,7 @@ main(
     // speed //
     //-------//
 
-    sprintf(filename, "%s.spd", prob_file);
+    sprintf(filename, "%s%s.spd", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -690,7 +682,7 @@ main(
     // cti //
     //-----//
 
-    sprintf(filename, "%s.cti", prob_file);
+    sprintf(filename, "%s%s.cti", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -740,7 +732,7 @@ main(
     // prob //
     //------//
 
-    sprintf(filename, "%s.prob", prob_file);
+    sprintf(filename, "%s%s.prob", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -789,7 +781,7 @@ main(
     for (int i = 0; i < HISTO_SAMPLES+1; i++)
         prob_histo[i] = 0;
 
-    sprintf(filename, "%s.histo", prob_file);
+    sprintf(filename, "%s%s.histo", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
@@ -879,7 +871,7 @@ main(
     // top picks //
     //-----------//
 
-    sprintf(filename, "%s.pick", prob_file);
+    sprintf(filename, "%s%s.pick", prob_file, raw_string);
     ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
