@@ -14,8 +14,8 @@ static const char rcs_id_measurement_c[] =
 //=============//
 
 Measurement::Measurement()
-:	value(0.0), valuedB(0.0), incidenceAngle(0.0), centerLongitude(0.0),
-	centerLatitude(0.0)
+:	value(0.0), valuedB(0.0), incidenceAngle(0.0), scAzimuth(0.0),
+	northAzimuth(0.0), centerLongitude(0.0), centerLatitude(0.0)
 {
 	return;
 }

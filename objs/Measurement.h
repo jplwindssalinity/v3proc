@@ -45,6 +45,8 @@ public:
 	double		value;			// sigma-0 or temperature measurement...
 	double		valuedB;		// ...and in dB
 	double		incidenceAngle;
+	double		scAzimuth;		// az. angle relative to s/c
+	double		northAzimuth;	// az. angle relative to north
 
 	double		centerLongitude;
 	double		centerLatitude;
