@@ -14,6 +14,7 @@ static const char rcs_id_wind_h[] =
 #include "List.h"
 #include "LonLat.h"
 #include "Index.h"
+#include "Matrix.h"
 
 #include <mfhdf.h>
 #include "Parameter.h"
@@ -21,7 +22,7 @@ static const char rcs_id_wind_h[] =
 
 //======================================================================
 // CLASSES
-//		WindVector, WindVectorPlus, WVC, WindField, WindSwath
+//		WindVector, WindVectorPlus, WindVectorField, WVC, WindField, WindSwath
 //======================================================================
 //======================================================================
 // CLASS
@@ -93,6 +94,45 @@ public:
 	//-----------//
 
 	float		obj;		// the objective function value
+};
+
+//======================================================================
+// CLASS
+//		WindVectorField
+//
+// DESCRIPTION
+//		The WindVectorField object contains spd, dir,
+//		and a position in LonLat.
+//======================================================================
+
+class WindVectorField
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	WindVectorField();
+	~WindVectorField();
+
+	//--------------//
+	// input/interp //
+	//--------------//
+
+	
+	int             ReadVctr(const char* filename);
+	int		InterpolateVectorField(LonLat lon_lat, WindVector* nudge_wv, int idx);
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	Vector           dir;
+	Vector           spd;
+	Vector           lon;
+	Vector           lat;
+
 };
 
 //======================================================================
@@ -204,7 +244,7 @@ public:
         int             ReadNSCAT(const char* filename);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
-
+	
 	int		NewRes(WindField* windfield, float lon_res, float lat_res);
 
 	//--------//
@@ -322,6 +362,7 @@ public:
 
 	int		InitWithRank(int rank);
 	int		Nudge(WindField* nudge_field, int min_rank);
+	int             LoResNudge(WindVectorField* nudge_field, int min_rank);
 	int		SmartNudge(WindField* nudge_field);
 	int		MedianFilter(int window_size, int max_passes, int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
