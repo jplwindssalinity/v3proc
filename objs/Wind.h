@@ -131,6 +131,12 @@ public:
 	int					SortByDir();
 	WindVectorPlus*		GetNearestToDirection(float dir, int max_rank = 0);
 
+	//-------------//
+	// GS routines //
+	//-------------//
+
+	int					Rank_Wind_Solutions();
+
 	//---------//
 	// freeing //
 	//---------//

@@ -10,6 +10,7 @@ static const char rcs_id_wind_c[] =
 #include <string.h>
 #include "Wind.h"
 #include "Constants.h"
+#include "GSparameters.h"
 #include "Misc.h"
 #include "Array.h"
 #include "LonLat.h"
@@ -554,6 +555,227 @@ WVC::FreeContents()
 	return;
 }
 
+//--------------------------//
+// WVC::Rank_Wind_Solutions //
+//--------------------------//
+
+int
+WVC::Rank_Wind_Solutions()
+{
+
+//
+// Translated from GS module: Rank_Wind_Solutions2.F
+//  - Final sorting omitted.
+//!File Name:	Rank_Wind_Solutions.F
+//
+//!Description:   	
+// 	   This routine eliminates 
+//            (1) redundant wind solutions
+//            (2) out-of-range
+//          and ranks the "final" wind solutions to be  
+//          used by the ambiguity-removal processor. 
+//                      	
+//!Input Parameters:
+//    wind_speed_delta      -  speed tolerance value (0.1 m/s).
+//    wind_dir_delta        -  direction tolerance value (5 degrees).
+//    wind_likelihood_delta -  MLE tolerance value (0.5).
+//
+//!Input/Output Parameters: 
+//    wr_num_ambigs         - number of ambigous wind solutions.
+//    wr_mle                - value of maximum likelihood estimation.
+//    wr_wind_speed         - speeds of ambiguous wind solutions. 
+//    wr_wind_dir           - directions of ambiguous wind solutions. 
+//    wr_wind_speed_err     - errors associated with wind speed.
+//    wr_wind_dir_err       - errors associated with wind direction. 
+//
+
+    float   wr_wind_speed[wind_max_solutions];
+    float   wr_wind_dir[wind_max_solutions];
+    float   wr_mle[wind_max_solutions];
+
+    // Copy data into wr_ arrays. (convert radians to degrees)
+    int i = 0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead();
+         wvp; wvp = ambiguities.GetNext())
+    {
+        wr_wind_speed[i] = wvp->spd;
+        wr_wind_dir[i] = rtd*wvp->dir;
+        wr_mle[i] = wvp->obj;
+        i++;
+        if (i >= wind_max_solutions) break;
+    }
+	int wr_num_ambigs = i;
+
+// Local Declarations
+      int    j,k;
+      int    start_j;
+      int    ambig ;
+      int    speed_50_flag [wind_max_solutions];
+      int    speed_50_counter;
+      int    i_speed_processed;
+      int    i_twin_processed;
+      int    twin_flag [wind_max_solutions];
+      int    twin_counter ;
+      int    num_ambigs ;
+
+      float       diff_speed;
+      float       diff_dir;
+      float       diff_mle ;
+
+      int    num_sorted;
+      int    max_index;
+      float       max_mle;
+         
+//  Initialize. 
+
+      speed_50_counter = 0;
+      twin_counter     = 0;
+      num_sorted       = 0;
+ 
+	for (j=0; j < wind_max_solutions; j++)
+	{
+         speed_50_flag [j] = 0;
+         twin_flag [j]     = 0;
+	}
+
+	for (ambig=0; ambig < wr_num_ambigs; ambig++)
+	{
+
+//  Wind direction:  
+//    1. Constrain values between 0 and 360 degrees.
+//    2. Conform to SEAWIND's oceanographic convention.
+
+		if (wr_wind_dir[ambig] < 0.0)
+		{
+            wr_wind_dir[ambig] += 360.;
+		}
+
+		if (wr_wind_dir[ambig] > 360.)
+		{
+            wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
+		}
+
+// Set high wind speed flag and count up if larger than 50 m/s.    
+
+		if (wr_wind_speed[ambig] > 50.)
+		{
+            speed_50_flag [ambig] = 1;
+            speed_50_counter++;
+		}
+	}
+
+// Eliminate wind solutions with speed > 50 m/s. 
+
+	if (speed_50_counter > 0)
+	{
+         num_ambigs = wr_num_ambigs - speed_50_counter;
+         start_j  = 0;
+ 
+		for (i=0; i < num_ambigs; i++)
+		{
+            i_speed_processed = 0;
+
+			for (j=start_j; j < wr_num_ambigs; j++)
+			{
+               if (!  i_speed_processed && speed_50_flag [j] == 0)
+				{
+                   wr_wind_speed [i]    = wr_wind_speed [j];
+                   wr_wind_dir [i]      = wr_wind_dir [j];
+                   wr_mle [i]           = wr_mle [j];
+                   start_j = j + 1;
+                   i_speed_processed = 1;
+				}
+ 
+			}
+		}
+        wr_num_ambigs = num_ambigs;
+	}
+
+// Identify and eliminate possible "twin" solutions. Search 
+// the entire solution space, tag twin solutions with smaller MLE value. 
+      
+//        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
+	for (i=0; i < wr_num_ambigs; i++)
+	{
+          twin_flag [i] = 0;
+	}
+      twin_counter = 0;
+  
+	for (i=0; i < wr_num_ambigs-1; i++)
+	for (j=i+1; j < wr_num_ambigs; j++)
+	{
+
+            diff_speed = fabs (wr_wind_speed [i] - wr_wind_speed [j]);
+            diff_dir   = fabs (wr_wind_dir [i] - wr_wind_dir [j]);
+            diff_mle   = fabs (wr_mle [i] - wr_mle [j]);
+
+            if (diff_dir>180.0) diff_dir=360.-diff_dir;
+
+            if (diff_speed <= wind_speed_delta    &&
+               diff_dir   < wind_dir_delta      &&
+               diff_mle   < wind_likelihood_delta )
+			{
+                if (twin_flag[j] == 0)
+				{
+                   twin_flag [j] = 1;
+                   twin_counter = twin_counter + 1;
+
+                   if (wr_mle[j]>wr_mle[i])
+					{
+                    wr_wind_speed [i] = wr_wind_speed [j];
+                    wr_wind_dir [i] = wr_wind_dir [j];
+                    wr_mle [i] = wr_mle [j];
+					}
+				}
+			}
+	}
+
+// Eliminate tagged twin solutions. 
+
+	if  (twin_counter > 0)
+	{
+//        write(97,*) 'number of twins found ',twin_counter
+         num_ambigs =  wr_num_ambigs  -  twin_counter;
+         start_j  = 0;
+		for (i=0; i < num_ambigs; i++)
+		{
+            i_twin_processed = 0;
+
+			for (j=start_j; j < wr_num_ambigs; j++)
+			{
+				if (! i_twin_processed)
+				{
+					if  (twin_flag [j] == 0)
+					{
+                     wr_wind_speed [i] = wr_wind_speed [j];
+                     wr_wind_dir [i] = wr_wind_dir [j];
+                     wr_mle [i] = wr_mle [j];
+                     start_j = j + 1;
+                     i_twin_processed  = 1; 
+					}
+				}
+
+			}
+		}
+//        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
+         wr_num_ambigs = num_ambigs;
+	}
+
+    // Copy data from wr_ arrays. (convert to radians)
+    i = 0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead();
+         wvp; wvp = ambiguities.GetNext())
+    {
+        wvp->spd = wr_wind_speed[i];
+        wvp->dir = wr_wind_dir[i]*dtr;
+        wvp->obj = wr_mle[i];
+        i++;
+        if (i >= wind_max_solutions) break;
+    }
+ 
+    return(1);
+
+}
 
 //===========//
 // WindField //

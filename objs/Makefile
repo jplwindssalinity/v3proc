@@ -145,7 +145,7 @@ Distributions.o: Distributions.C Distributions.h
 EarthField.o: EarthField.C LonLat.h Constants.h Array.h Index.h EarthField.h List.h EarthPosition.h Matrix3.h
 EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Constants.h Matrix3.h BufferedList.h EarthPosition.h
-GMF.o: GMF.C GMF.h Meas.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Kp.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Tracking.h Misc.h Index.h Kpm.h Kpr.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
+GMF.o: GMF.C GMF.h Meas.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Kp.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Tracking.h Misc.h Index.h Kpm.h Kpr.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h GSparameters.h
 GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 Grid.o: Grid.C Grid.h Meas.h Sigma0.h Array.h L1B.h L2A.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Spacecraft.h Instrument.h Wind.h BaseFile.h L1BFrame.h L2AFrame.h CoordinateSwitch.h Tracking.h EarthPosition.h Matrix3.h BufferedList.h Constants.h Antenna.h InstConsts.h Misc.h Index.h
 Index.o: Index.C Index.h
@@ -183,5 +183,5 @@ Sigma0.o: Sigma0.C Sigma0.h Spacecraft.h Instrument.h Meas.h Distributions.h Con
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
 Tracking.o: Tracking.C Tracking.h Array.h Instrument.h Constants.h Antenna.h InstConsts.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
-Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h LonLat.h List.h Index.h EarthPosition.h Matrix3.h
+Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h LonLat.h List.h Index.h EarthPosition.h Matrix3.h GSparameters.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h

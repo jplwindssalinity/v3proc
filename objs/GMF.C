@@ -12,10 +12,12 @@ static const char rcs_id_gmf_c[] =
 #include <malloc.h>
 #include <math.h>
 #include "GMF.h"
+#include "GSparameters.h"
 #include "Meas.h"
 #include "Interpolate.h"
 #include "Constants.h"
 #include "Beam.h"
+#include "List.h"
 
 //=====//
 // GMF //
@@ -976,7 +978,7 @@ GMF::_ObjectiveFunction(
 			// Kpc variance //
 			//--------------//
 
-			double vpc;
+			double vpc = 0.0;
 			if (retrieveUsingKpcFlag)
 			{
 				if (! kp->GetVpc(meas, trial_value, &vpc))
@@ -987,7 +989,7 @@ GMF::_ObjectiveFunction(
 			// Kpm //
 			//-----//
 
-			double kpm2;
+			double kpm2 = 0.0;
 			if (retrieveUsingKpmFlag)
 			{
 				if (! kp->GetKpm2(meas->pol, spd, &kpm2))
@@ -998,7 +1000,7 @@ GMF::_ObjectiveFunction(
 			// Kpri //
 			//------//
 
-			double kpri2;
+			double kpri2 = 0.0;
 			if (retrieveUsingKpriFlag)
 			{
 				if (! kp->GetKpri2(&kpri2))
@@ -1009,7 +1011,7 @@ GMF::_ObjectiveFunction(
 			// Kprs //
 			//------//
 
-			double kprs2;
+			double kprs2 = 0.0;
 			if (retrieveUsingKprsFlag)
 			{
 				if (! kp->GetKprs2(meas, &kprs2))
@@ -1023,7 +1025,14 @@ GMF::_ObjectiveFunction(
 			double var = vpc +
 				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
 
-			fv += s*s / var + log(var);
+			if (var == 0.0)
+			{	// variances all turned off, so use uniform weighting.
+				fv += s*s;
+			}
+			else
+			{
+				fv += s*s / var + log(var);
+			}
 		}
 		else
 		{
@@ -1062,11 +1071,34 @@ GMF::GSRetrieveWinds(
 
 //  Step 3:  Rank the optimized wind solutions for use in ambiguity
 //           removal.
+
+	wvc->Rank_Wind_Solutions();
+
 	//------------------------------------------//
 	// sort the solutions by objective function //
 	//------------------------------------------//
 
 	wvc->SortByObj();
+
+	//----------------------------------------//
+	// keep only the 4 highest rank solutions //
+	//----------------------------------------//
+
+	if (wvc->ambiguities.NodeCount() > 4)
+	{
+		WindVectorPlus* wvp = NULL;
+		wvc->ambiguities.GotoHead();
+		for (int i=1; i <= 4; i++)
+		{
+			wvp = wvc->ambiguities.GetNext();
+		}
+
+		while (wvp != NULL)
+		{
+			wvp = wvc->ambiguities.RemoveCurrent();
+			delete(wvp);
+		}
+	}
 
 	return(1);
 }
@@ -1363,7 +1395,7 @@ GMF::Calculate_Init_Wind_Solutions(
 		if (! wvp)
 			return(0);
 		wvp->spd = speed_buffer [jj];
-		wvp->dir = dir_spacing * (float)(jj - 1) - dir_spacing;
+		wvp->dir = dtr * dir_spacing * (float)(jj - 1) - dir_spacing;
 		wvp->obj = objective_buffer [jj];
 		if (! wvc->ambiguities.Append(wvp))
 		{
@@ -1439,13 +1471,13 @@ GMF::Optimize_Wind_Solutions(
 	float	wr_wind_dir[wind_max_solutions];
 	float	wr_mle[wind_max_solutions];
 
-	// Copy data into wr_ arrays.
+	// Copy data into wr_ arrays. (convert radians to degrees)
 	i = 0;
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
 		 wvp; wvp = wvc->ambiguities.GetNext())
 	{
 		wr_wind_speed[i] = wvp->spd;
-		wr_wind_dir[i] = wvp->dir;
+		wr_wind_dir[i] = rtd*wvp->dir;
 		wr_mle[i] = wvp->obj;
 		i++;
 		if (i >= wind_max_solutions) break;
@@ -1797,15 +1829,16 @@ GMF::Optimize_Wind_Solutions(
 		}
 	}	//  The big ambiguity loop
 
-	// Copy data from wr_ arrays.
+	// Copy data from wr_ arrays. (convert to radians)
 	i = 0;
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
 		 wvp; wvp = wvc->ambiguities.GetNext())
 	{
 		wvp->spd = wr_wind_speed[i];
-		wvp->dir = wr_wind_dir[i];
+		wvp->dir = wr_wind_dir[i]*dtr;
 		wvp->obj = wr_mle[i];
 		i++;
+        if (i >= wind_max_solutions) break;
 	}
 
 
