@@ -8,7 +8,7 @@
 //    echo_proc
 //
 // SYNOPSIS
-//    echo_proc [ -cg ] [ -b l1b_file ] <ins_config_file> <l1a_file>
+//    echo_proc [ -cgo ] [ -b l1b_file ] <ins_config_file> <l1a_file>
 //        <echo_file>
 //        
 // DESCRIPTION
@@ -20,6 +20,7 @@
 // OPTIONS
 //    [ -c ]           Compute the centroid.
 //    [ -g ]           Compute the gaussian fit.
+//    [ -o ]           Process modulation off data instead of mod on.
 //    [ -b l1b_file ]  Analyze the specified l1b_file.
 //
 // OPERANDS
@@ -109,7 +110,7 @@ template class TrackerBase<unsigned char>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "b:cg"
+#define OPTSTRING  "b:cgo"
 
 #define WOM              0x0E
 
@@ -162,7 +163,8 @@ main(
 
     char* l1b_filename = NULL;
     int opt_centroid = 0;
-    int opt_gaussian = 0;
+    int opt_gaussian = 1;    // default
+    int target_mod_value = 1;    // process Mod ON data
 
     //------------------------//
     // parse the command line //
@@ -181,9 +183,14 @@ main(
             break;
         case 'c':
             opt_centroid = 1;
+            opt_gaussian = 0;
             break;
         case 'g':
             opt_gaussian = 1;
+            opt_centroid = 0;
+            break;
+        case 'o':
+            target_mod_value = 0;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -220,17 +227,6 @@ main(
     char* poly_table_string = ea_config_list.Get(POLY_TABLE_KEYWORD);
     char* leap_second_table_string =
         ea_config_list.Get(LEAP_SECOND_TABLE_KEYWORD);
-
-    //-----------------//
-    // check arguments //
-    //-----------------//
-
-    if (! opt_centroid && ! opt_gaussian)
-    {
-        fprintf(stderr,
-            "%s: must specify -c (centroid) and/or -g (gaussian)\n", command);
-        usage(command, usage_array, 1);
-    }
 
     //---------------//
     // use arguments //
@@ -474,7 +470,7 @@ main(
         unsigned char modulation;
         modulation_p->extractFunc(&l1a_file, modulation_p->sdsIDs, record_idx,
             1, 1, &modulation, polyTable);
-        if (modulation == 0)
+        if (modulation != target_mod_value)
             continue;
 
         wom_frame++;

@@ -8,7 +8,7 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -r ] [ -f fit_base ] <config_file> <dtc_base>
+//    echo_dtc [ -mr ] [ -f fit_base ] <config_file> <dtc_base>
 //      <echo_file...>
 //
 // DESCRIPTION
@@ -20,6 +20,8 @@
 //    coefficients and fill in missing gaps.
 //
 // OPTIONS
+//    [ -m ]           Only use the fit to supply constants for orbit
+//                       steps with missing data.
 //    [ -r ]           Allow time regression.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
 //
@@ -97,7 +99,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:r"
+#define OPTSTRING  "f:mr"
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
@@ -121,7 +123,8 @@ template class List<AngleInterval>;
 int     process_orbit_step(int beam_idx, int orbit_step,
             const char* fit_base);
 int     accumulate(int beam_idx, double azimuth, double meas_spec_peak);
-int     fit_terms(const char* fit_base, int beam_idx, double** terms);
+int     fit_terms(const char* fit_base, int beam_idx, int fit_missing_only,
+            double** terms);
 int     plot_fit(const char* base, int beam_idx, int term_idx, double** terms,
             double** p, int term_count);
 double  ds_evaluate_3(double* x, void* ptr);
@@ -136,7 +139,7 @@ double  evaluate_35(int* good, double* coef, double* x, int count);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -r ]", "[ -f fit_base ]",
+const char* usage_array[] = { "[ -mr ]", "[ -f fit_base ]",
     "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -163,6 +166,7 @@ main(
 
     int opt_regression = 1;    // default, check for regression
     int opt_fit = 0;
+    int opt_fit_for_missing_only = 0;
     const char* fit_base = NULL;
 
     //------------------------//
@@ -177,6 +181,9 @@ main(
     {
         switch(c)
         {
+        case 'm':
+            opt_fit_for_missing_only = 1;
+            break;
         case 'r':
             // this flag means *don't* check for regression
             opt_regression = 0;
@@ -313,7 +320,6 @@ main(
                 int beam_idx = echo_info.SpotBeamIdx(spot_idx);
                 int orbit_step = echo_info.SpotOrbitStep(spot_idx);
 
-// printf("%g\n", echo_info.totalSignalEnergy[spot_idx]);
                 if (echo_info.flag[spot_idx] == EchoInfo::OK &&
                     echo_info.totalSignalEnergy[spot_idx] >=
                     SIGNAL_ENERGY_THRESHOLD)
@@ -336,7 +342,6 @@ main(
         //----------------//
 
         close(ifd);
-
     }
 
     //-----------------------------------------------//
@@ -551,7 +556,8 @@ main(
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        fit_terms(fit_base, beam_idx, g_terms[beam_idx]);
+        fit_terms(fit_base, beam_idx, opt_fit_for_missing_only,
+            g_terms[beam_idx]);
     }
 
     //-------------//
@@ -781,6 +787,7 @@ int
 fit_terms(
     const char*  fit_base,
     int          beam_idx,
+    int          fit_for_missing_only,
     double**     terms)
 {
     //-------------------//
@@ -895,6 +902,9 @@ fit_terms(
 
     for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
+        if (fit_for_missing_only && good[orbit_step])
+            continue;
+     
         double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
 
         *(*(terms + orbit_step) + 0) = amp_p[0][0] +
