@@ -103,12 +103,14 @@ public:
     int  DetermineNextEvent(Qscat* qscat, QscatEvent* qscat_event);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField, L00Frame* l00_frame);
+    int  CalSim(Qscat* qscat, L00Frame* l00_frame);
     int  SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
              MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField);
     int  SetL00Science(MeasSpot* meas_spot, CheckFrame* cf, Qscat* qscat,
              L00Frame* l00_frame);
+    int  SetL00Cal(Qscat* qscat, L00Frame* l00_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
              float* X);
     int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);

@@ -17,6 +17,7 @@ static const char rcs_id_qscatconfig_c[] =
 #include "ConfigSimDefs.h"
 #include "Constants.h"
 #include "ConfigSim.h"
+#include "Interpolate.h"
 
 //----------------//
 // ConfigQscatSas //
@@ -80,6 +81,83 @@ ConfigQscatSes(
     if (! config_list->GetFloat(RX_GAIN_NOISE_KEYWORD, &rx_gain_noise))
         return(0);
     qscat_ses->rxGainNoise = (float)pow(10.0, 0.1 * rx_gain_noise);
+
+    //----------------------//
+    // physical temperature //
+    //----------------------//
+
+    float physical_temp;    // C
+    if (! config_list->GetFloat(PHYSICAL_TEMPERATURE_KEYWORD, &physical_temp))
+        return(0);
+    qscat_ses->physicalTemperature = physical_temp;
+
+    //--------------//
+    // loss factors //
+    //--------------//
+
+    if (! config_list->GetFloat(A0_L13_KEYWORD, &(qscat_ses->L13Coef[0])))
+        return(0);
+    if (! config_list->GetFloat(A1_L13_KEYWORD, &(qscat_ses->L13Coef[1])))
+        return(0);
+    if (! config_list->GetFloat(A2_L13_KEYWORD, &(qscat_ses->L13Coef[2])))
+        return(0);
+    if (! config_list->GetFloat(A3_L13_KEYWORD, &(qscat_ses->L13Coef[3])))
+        return(0);
+    if (! config_list->GetFloat(A4_L13_KEYWORD, &(qscat_ses->L13Coef[4])))
+        return(0);
+
+    if (! config_list->GetFloat(A0_L21_KEYWORD, &(qscat_ses->L21Coef[0])))
+        return(0);
+    if (! config_list->GetFloat(A1_L21_KEYWORD, &(qscat_ses->L21Coef[1])))
+        return(0);
+    if (! config_list->GetFloat(A2_L21_KEYWORD, &(qscat_ses->L21Coef[2])))
+        return(0);
+    if (! config_list->GetFloat(A3_L21_KEYWORD, &(qscat_ses->L21Coef[3])))
+        return(0);
+    if (! config_list->GetFloat(A4_L21_KEYWORD, &(qscat_ses->L21Coef[4])))
+        return(0);
+
+    if (! config_list->GetFloat(A0_L23_KEYWORD, &(qscat_ses->L23Coef[0])))
+        return(0);
+    if (! config_list->GetFloat(A1_L23_KEYWORD, &(qscat_ses->L23Coef[1])))
+        return(0);
+    if (! config_list->GetFloat(A2_L23_KEYWORD, &(qscat_ses->L23Coef[2])))
+        return(0);
+    if (! config_list->GetFloat(A3_L23_KEYWORD, &(qscat_ses->L23Coef[3])))
+        return(0);
+    if (! config_list->GetFloat(A4_L23_KEYWORD, &(qscat_ses->L23Coef[4])))
+        return(0);
+
+    if (! config_list->GetFloat(A0_LCALOP_KEYWORD, &(qscat_ses->LcalopCoef[0])))
+        return(0);
+    if (! config_list->GetFloat(A1_LCALOP_KEYWORD, &(qscat_ses->LcalopCoef[1])))
+        return(0);
+    if (! config_list->GetFloat(A2_LCALOP_KEYWORD, &(qscat_ses->LcalopCoef[2])))
+        return(0);
+    if (! config_list->GetFloat(A3_LCALOP_KEYWORD, &(qscat_ses->LcalopCoef[3])))
+        return(0);
+    if (! config_list->GetFloat(A4_LCALOP_KEYWORD, &(qscat_ses->LcalopCoef[4])))
+        return(0);
+
+    //--------------------------------------------------------------------//
+    // Compute system loss factors from polynomial interpolation formulas
+    // and the physical temperature.
+    //--------------------------------------------------------------------//
+
+    qscat_ses->receivePathLoss = polyval(qscat_ses->physicalTemperature,
+                                         qscat_ses->L13Coef,4);
+    qscat_ses->transmitPathLoss = polyval(qscat_ses->physicalTemperature,
+                                         qscat_ses->L21Coef,4);
+    qscat_ses->loopbackLoss = polyval(qscat_ses->physicalTemperature,
+                                         qscat_ses->L23Coef,4);
+    qscat_ses->loopbackLossRatio = polyval(qscat_ses->physicalTemperature,
+                                         qscat_ses->LcalopCoef,4);
+
+    // convert to real units
+    qscat_ses->receivePathLoss = pow(10.0,0.1*qscat_ses->receivePathLoss);
+    qscat_ses->transmitPathLoss = pow(10.0,0.1*qscat_ses->transmitPathLoss);
+    qscat_ses->loopbackLoss = pow(10.0,0.1*qscat_ses->loopbackLoss);
+    qscat_ses->loopbackLossRatio = pow(10.0,0.1*qscat_ses->loopbackLossRatio);
 
     //----------//
     // chirping //

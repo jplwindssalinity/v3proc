@@ -21,4 +21,7 @@ int polint(double xa[], double ya[], int n, double x, double* y);
 // for polcoe, n is the order
 int polcoe( double x[], double y[], int	n, double* cof);
 
+// for polyval, N is the order
+double polyval(double x, double a[], int N);
+
 #endif

@@ -167,10 +167,10 @@ polcoe(
 //--------------------------------------------------------//
 // Evaluate a polynomial function.
 //
-// y = a[N-1]*x^N + a[N-2]*x^(N-1) + ... + a[1]*x + a[0].
+// y = a[N]*x^N + a[N-1]*x^(N-1) + ... + a[1]*x + a[0].
 //
 // y is the return value,
-// a must be a vector of length N.
+// a must be a vector of length N+1.
 //--------------------------------------------------------//
  
 double polyval(double x, double a[], int N)
@@ -180,8 +180,8 @@ double polyval(double x, double a[], int N)
 int i;
 double value;
  
-value = a[N-1];
-for (i=N-2; i >= 0; i--)
+value = a[N];
+for (i=N-1; i >= 0; i--)
   {
   value = value*x + a[i];
   }

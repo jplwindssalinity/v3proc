@@ -77,6 +77,35 @@ L1AToL1B::Convert(
 	qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
 	qscat->cds.orbitTime = l1a->frame.orbitTicks;
 
+	//------------------------------------//
+	// Extract and prepare cal pulse data //
+	//------------------------------------//
+
+    float Esn_echo_cal = 0.0;
+    float En_echo_load = 0.0;
+	for (int i=0; i < l1a->frame.slicesPerSpot; i++)
+	{
+		Esn_echo_cal += l1a->frame.loopbackSlices[i];
+		En_echo_load += l1a->frame.loadSlices[i];
+	}
+    float Esn_noise_cal = l1a->frame.loopbackNoise;
+    float En_noise_load = l1a->frame.loadNoise;
+
+	//------------------------------------------------------//
+    // Estimate cal (loopback) signal and noise energies.
+    // Kpr noise shows up in the cal signal energy.
+    // Note that these are spot quantities (not slices).
+	//------------------------------------------------------//
+
+    double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
+    float Es_cal,En_cal;
+    if (! Er_to_Es(beta, Esn_echo_cal, Esn_echo_cal, Esn_noise_cal,
+                   En_echo_load, En_noise_load, 1.0, &Es_cal, &En_cal))
+    {
+      return(0);
+    }
+
+
 	//----------------------------//
 	// ...free residual MeasSpots //
 	//----------------------------//
@@ -176,16 +205,16 @@ L1AToL1B::Convert(
 				return(0);
 			}
 
-			float sumEsn = 0.0;
+			float Esn_echo = 0.0;
 			for (int i=0; i < l1a->frame.slicesPerSpot; i++)
 			{
 				Esn[i] = l1a->frame.science[base_slice_idx + i];
 				// Sum up the signal+noise measurements
-				sumEsn += Esn[i];
+				Esn_echo += Esn[i];
 			}
 
 			// Fetch the noise measurement which applies to all the slices.
-			float En = l1a->frame.spotNoise[spot_idx];
+			float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
 			//---------------------//
 			// locate measurements //
@@ -246,8 +275,10 @@ L1AToL1B::Convert(
 			{
 				// Kfactor: either 1.0 or taken from table
 				float k_factor=1.0;
-                                float x_factor=1.0;
+                float x_factor=1.0;
+                float Esn_slice = meas->value;
 				float PtGr = l1a->frame.ptgr;
+
 				if (useKfactor)
 				{
 					float orbit_position = qscat->cds.OrbitFraction();
@@ -263,26 +294,28 @@ L1AToL1B::Convert(
 
 					// meas->value is the Esn value going in, sigma0 coming out.
 					if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat,
-                        meas, k_factor, meas->value, sumEsn, En, PtGr))
+                        meas, k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
                     {
 					    return(0);
                     }
+
 				}
 				else if(useBYUXfactor)
                 {
-                    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, PtGr);
+                    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
-				  //-----------------//
-				  // set measurement //
-				  //-----------------//
+				    //-----------------//
+				    // set measurement //
+				    //-----------------//
 
-                     // meas->value is the Esn value going in
-                     // sigma0 coming out.
-                     if (! Er_to_sigma0_given_X(qscat, meas, x_factor,
-                         meas->value, sumEsn, En))
-                     {
-                         return(0);
-                     }
+                    // meas->value is the Esn value going in
+                    // sigma0 coming out.
+                    if (! compute_sigma0(qscat,meas,x_factor,
+                                         Esn_slice,Esn_echo,Esn_noise,
+                                         En_echo_load,En_noise_load))
+                    {
+					    return(0);
+                    }
 				}
 				else
                 {

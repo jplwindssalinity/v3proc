@@ -100,6 +100,26 @@ radar_X_PtGr(
 	return(1);
 }
 
+int
+radar_Xcal(
+    Qscat*             qscat,
+    float              Es_cal,
+    double*            Xcal)
+{
+
+    double L13 = qscat->ses.receivePathLoss;
+    double L21 = qscat->ses.transmitPathLoss;
+    double L23 = qscat->ses.loopbackLoss;
+    double Lcalop = qscat->ses.loopbackLossRatio;
+	double lambda = speed_light_kps / qscat->ses.txFrequency;
+    Beam* beam = qscat->GetCurrentBeam();
+
+	*Xcal = beam->peakGain * beam->peakGain * lambda*lambda /
+        (64*pi*pi*pi) * (L23*Lcalop/L13/L21) * Es_cal;
+
+	return(1);
+}
+
 
 //
 // sigma0_to_Esn_slice
@@ -209,6 +229,7 @@ sigma0_to_Esn_slice_given_X(
 	double Tp = qscat->ses.txPulseWidth;
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bs = meas->bandwidth;
+    double L13 = qscat->ses.receivePathLoss;
 
 	//------------------------------------------------------------------------//
 	// Signal (ie., echo) energy referenced to the point just before the
@@ -222,7 +243,7 @@ sigma0_to_Esn_slice_given_X(
 	//------------------------------------------------------------------------//
 
 	double N0_echo = bK * qscat->systemTemperature *
-        qscat->ses.rxGainEcho / qscat->systemLoss;
+        qscat->ses.rxGainEcho / L13;
 
 	//------------------------------------------------------------------------//
 	// Noise energy within one slice referenced like the signal energy.
@@ -286,6 +307,85 @@ sigma0_to_Esn_slice_given_X(
 }
 
 //
+// PtGr_to_Esn
+//
+// This function computes the loopback cal pulse energy received for a
+// given instrument state and PtGr.
+// The received energy is the sum of the looped back signal energy and
+// the noise energy that falls within the appropriate bandwidth.
+// The result could be fuzzed by Kpc which is where Kpri really comes from,
+// but this is NOT done right now.  Instead, Kpri noise is applied directly
+// to signal energy, and the noise subtraction for cal pulses works perfectly
+// with simulated data.
+//
+// Inputs:
+//	qscat = pointer to current Qscat object
+//	Esn_echo_cal = pointer to signal+noise energy in the echo channel.
+//	Esn_noise_cal = pointer to signal+noise energy in the noise channel.
+//
+
+int
+PtGr_to_Esn(
+    float        PtGr,
+    TimeCorrelatedGaussian*  ptgrNoise,
+    Qscat*       qscat,
+    int          sim_kpri_flag,
+    float*       Esn_echo_cal,
+    float*       Esn_noise_cal)
+{
+
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tp = qscat->ses.txPulseWidth;
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bn = qscat->ses.noiseBandwidth;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
+	double alpha = Bn/Be*beta;
+    double L13 = qscat->ses.receivePathLoss;
+    double L23 = qscat->ses.loopbackLoss;
+    double Lcalop = qscat->ses.loopbackLossRatio;
+
+	//------------------------------------------------------------------------//
+	// Signal (ie., echo) energy referenced to the point just before the
+	// I-Q detection occurs (ie., including the receiver gain and system loss).
+	//------------------------------------------------------------------------//
+
+	double Es_cal = PtGr/L23/Lcalop * Tp;
+
+	//------------------------------------------------------------------------//
+	// Add Kpri noise if requested.  This should properly be Kpc style noise
+    // added to the signal + noise measurement as done in sigma0_to_Esn, but
+    // we are controlling this variance source separately right now.
+	//------------------------------------------------------------------------//
+
+    if (sim_kpri_flag)
+        Es_cal *= (1 + ptgrNoise->GetNumber(qscat->cds.time));
+
+	//------------------------------------------------------------------------//
+	// Noise power spectral density referenced the same way as the signal.
+	//------------------------------------------------------------------------//
+
+	double N0_echo = bK * qscat->systemTemperature *
+        qscat->ses.rxGainEcho / L13;
+
+	//------------------------------------------------------------------------//
+	// Noise energy within echo channel referenced like the signal energy.
+	//------------------------------------------------------------------------//
+
+	double En_cal = N0_echo * Be * Tg;
+
+	//------------------------------------------------------------------------//
+	// Signal + Noise Energy within echo channel referenced as above.
+	// Noise channel measurements to get perfect reversal.
+	//------------------------------------------------------------------------//
+
+	*Esn_echo_cal = (float)(Es_cal + En_cal);
+    *Esn_noise_cal = (float)(beta*Es_cal + alpha*beta*En_cal);
+
+	return(1);
+}
+
+//
 // sigma0_to_Esn_noise
 //
 // This function computes the energy returned by the noise channel measurement.
@@ -315,7 +415,7 @@ sigma0_to_Esn_noise(
 	//------------------------------------------------------------------------//
 
 	double N0_noise = bK * qscat->systemTemperature *
-        qscat->ses.rxGainNoise / qscat->systemLoss;
+        qscat->ses.rxGainNoise / qscat->ses.receivePathLoss;
 
 	//------------------------------------------------------------------------//
 	// Useful quantities.
@@ -384,6 +484,7 @@ sigma0_to_Esn_noise(
 
 //
 // Er_to_sigma0
+// THIS FUNCTION IS OBSOLETE, BUT IS RETAINED FOR BACKWARD COMPATIBILITY
 //
 // The Er_to_sigma0 function estimates sigma0 from two signal+noise
 // measurements. One is the slice measurement Esn value.  The other is
@@ -426,6 +527,7 @@ Er_to_sigma0(
 
 //
 // Er_to_sigma0_given_X
+// THIS FUNCTION IS OBSOLETE, BUT IS RETAINED FOR BACKWARD COMPATIBILITY
 //
 // The Er_to_sigma0_given_X function estimates sigma0 from two signal+noise
 // measurements. One is the slice measurement Esn value.  The other is
@@ -490,3 +592,151 @@ Er_to_sigma0_given_X(
 	return(1);
 }
 
+//
+// compute_sigma0
+//
+// The compute_sigma0 function estimates sigma0 from five energy
+// measurements and the tabulated X factor.
+// Various outputs are put in the Meas object passed in.
+// Note that the rho-factor is assumed to be 1.0. ie., we assume that
+// all of the signal power falls in the slices.
+//
+// Inputs:
+//	qscat = pointer to current Qscat object
+//	meas = pointer to current measurement (holds results)
+//	Xfactor = Total radar equation parameter for this slice.
+//	Esn_slice = the received slice energy.
+//	Esn_echo = the sum of all the slice energies for this spot.
+//	Esn_noise = the noise channel measured energy.
+//  En_echo_load = reference load echo channel measurement
+//  En_noise_load = reference load noise channel measurement
+//
+
+int
+compute_sigma0(
+    Qscat*  qscat,
+    Meas*   meas,
+    float   Xfactor,
+    float   Esn_slice,
+    float   Esn_echo,
+    float   Esn_noise,
+    float   En_echo_load,
+    float   En_noise_load)
+{
+
+	//--------------------------------//
+    // Extract some useful quantities.
+	//--------------------------------//
+
+	double Tp = qscat->ses.txPulseWidth;
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+	double Tg = ses_beam_info->rxGateWidth;
+	double Bn = qscat->ses.noiseBandwidth;
+	double Bs = meas->bandwidth;
+	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
+
+	//--------------------------------------------------//
+    // Compute the noise energy ratio q from bandwidths.
+	//--------------------------------------------------//
+
+    float q_slice = Bs/Be;
+
+	//-------------------------------------------//
+    // Estimate slice signal and noise energies.
+	//-------------------------------------------//
+
+    float Es_slice,En_slice;
+    if (! Er_to_Es(beta, Esn_slice, Esn_echo, Esn_noise, En_echo_load,
+                   En_noise_load, q_slice, &Es_slice, &En_slice))
+    {
+      return(0);
+    }
+
+	//------------------------------------------------------------------//
+    // Compute sigma0 from estimated signal energy and X factors.
+	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+	// Kpc comes from Es_slice.
+	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+	//------------------------------------------------------------------//
+
+	meas->value = Es_slice / Xfactor / Tp;
+
+	//------------------------------------------------------------------//
+	// Store the total X factor.
+	//------------------------------------------------------------------//
+
+    meas->XK = Xfactor;
+
+	//------------------------------------------------------------------//
+	// Estimate Kpc coefficients using the
+	// approximate equations in Mike Spencer's Kpc memos.
+	//------------------------------------------------------------------//
+
+	meas->A = 1.0 / (Bs * Tp);
+	meas->B = 2.0 / (Bs * Tg);
+	meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
+
+	return(1);
+}
+
+//------------------------------------------------------------------------//
+// Er_to_Es
+//
+// The Er_to_Es function estimates the signal only energy
+// in a slice from five signal+noise measurements and the proportion
+// of the echo channel noise energy in the slice (q_slice).
+// The noise channel measurements include the echo channel but with
+// a different gain. The load measurements
+// are used to calibrate the bandwidth ratio of the noise filter to the
+// echo filter (alpha).  The receiver gain ratio (beta) between the
+// noise filter and the echo filter is a pre-launch calibrated constant.
+//
+// Inputs:
+//  Esn_slice = The slice echo channel energy (Esn_slice)
+//  Esn_echo = The total echo channel energy (Esn_echo)
+//  Esn_noise = The corresponding noise channel energy (Esn_noise)
+//  En_echo_load = The corresponding load echo channel energy (En_echo_load)
+//  En_noise_load = The corresponding load noise channel energy (En_noise_load)
+//	q_slice = ratio of noise energy in slice to echo channel noise energy.
+//	Es_slice = pointer to the computed slice signal energy.
+//	En_slice = pointer to the computed slice noise energy.
+//
+// Note that if q_slice is set to 1.0 and Esn_slice = Esn_echo, then
+// the returned energies apply to the entire pulse.
+//------------------------------------------------------------------------//
+
+int
+Er_to_Es(
+    float   beta,
+    float   Esn_slice,
+    float   Esn_echo,
+    float   Esn_noise,
+    float   En_echo_load,
+    float   En_noise_load,
+    float   q_slice,
+    float*  Es_slice,
+    float*  En_slice)
+{
+    // Compute alpha from the load measurements.
+    if (En_echo_load == 0.0)
+    {
+      fprintf(stderr,"Error, echo channel load energy is 0\n");
+      return(0);
+    }
+	double alpha = 1.0/beta * En_noise_load/En_echo_load;
+
+	// Estimate the noise energy in the slice. (exact when 0 variance is used)
+    if (alpha == 1.0 || beta == 0.0)
+    {
+      fprintf(stderr,"Error, bad alpha and/or beta values\n");
+      return(0);
+    }
+	double EnSpot = 1.0/(1.0 - alpha)*(Esn_echo - Esn_noise/beta);
+    *En_slice = q_slice * EnSpot;
+
+	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
+	*Es_slice = Esn_slice - *En_slice;
+
+	return(1);
+}

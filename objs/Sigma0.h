@@ -11,6 +11,7 @@ static const char rcs_id_sigma0_h[] =
 
 #include "CoordinateSwitch.h"
 #include "Spacecraft.h"
+#include "Distributions.h"
 #include "Qscat.h"
 
 //=======================================================================
@@ -94,4 +95,15 @@ int  Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 int  Er_to_sigma0_given_X(Qscat* qscat, Meas* meas, float Xfactor, float Psn,
          float sumPsn, float Pn);
 
+int radar_Xcal(Qscat* qscat, float Es_cal, double* Xcal);
+    
+int PtGr_to_Esn(float PtGr, TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
+                int sim_kpri_flag,
+                float* Esn_echo_cal, float* Esn_noise_cal);
+int compute_sigma0(Qscat* qscat, Meas* meas, float Xfactor, float Esn_slice,
+                   float Esn_echo, float Esn_noise, float En_echo_load,
+                   float En_noise_load);
+int Er_to_Es(float beta, float Esn_slice, float Esn_echo, float Esn_noise,
+             float En_echo_load, float En_noise_load, float q_slice,
+             float* Es_slice, float* En_slice);
 #endif

@@ -8,6 +8,7 @@ static const char rcs_id_accurategeom_c[] =
 
 #include "BYUXTable.h"
 #include "Qscat.h"
+#include "Sigma0.h"
 #include "InstrumentGeom.h"
 
 BYUXTable::BYUXTable()
@@ -53,9 +54,13 @@ BYUXTable::GetXTotal(
     Qscat*       qscat,
     Meas*        meas)
 {
-    float X = GetXTotal(spacecraft, qscat, meas,
-        qscat->ses.transmitPower * qscat->ses.rxGainEcho);
-    return(X);
+  // true Es_cal based on true PtGr
+  float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
+                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
+                 qscat->ses.txPulseWidth;
+  float X = GetXTotal(spacecraft, qscat, meas,
+        Es_cal);
+  return(X);
 }
 
 //----------------------//
@@ -67,18 +72,19 @@ BYUXTable::GetXTotal(
     Spacecraft*   spacecraft,
     Qscat*        qscat,
     Meas*         meas,
-    float         PtGr)
+    float         Es_cal)
 {
   float X=GetX(spacecraft, qscat, meas);
-  int beam_number = qscat->cds.currentBeamIdx;  
 
-  float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
-  float Gp2 = pow(10.0, 2.0 * 0.1 * peak_gain);
+  //--------------------------------------------------//
+  // Compute the Xcal portion of the overall X factor.
+  // Reference: IOM-3347-98-019.
+  //--------------------------------------------------//
 
-  float lambda = speed_light_kps / qscat->ses.txFrequency;
-  X*=PtGr*lambda*lambda*Gp2;
-  X /= 64.0*pi*pi*pi*qscat->systemLoss;
-  return(X);
+  double Xcal;
+  radar_Xcal(qscat,Es_cal,&Xcal);
+
+  return(X*Xcal); // Total X
 }
 
 //-----------------//

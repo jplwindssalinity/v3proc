@@ -17,6 +17,30 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define RX_GAIN_ECHO_KEYWORD       "RX_GAIN_ECHO"
 #define RX_GAIN_NOISE_KEYWORD      "RX_GAIN_NOISE"
 
+#define A0_L13_KEYWORD             "A0_L13"
+#define A1_L13_KEYWORD             "A1_L13"
+#define A2_L13_KEYWORD             "A2_L13"
+#define A3_L13_KEYWORD             "A3_L13"
+#define A4_L13_KEYWORD             "A4_L13"
+
+#define A0_L21_KEYWORD             "A0_L21"
+#define A1_L21_KEYWORD             "A1_L21"
+#define A2_L21_KEYWORD             "A2_L21"
+#define A3_L21_KEYWORD             "A3_L21"
+#define A4_L21_KEYWORD             "A4_L21"
+
+#define A0_L23_KEYWORD             "A0_L23"
+#define A1_L23_KEYWORD             "A1_L23"
+#define A2_L23_KEYWORD             "A2_L23"
+#define A3_L23_KEYWORD             "A3_L23"
+#define A4_L23_KEYWORD             "A4_L23"
+
+#define A0_LCALOP_KEYWORD             "A0_LCALOP"
+#define A1_LCALOP_KEYWORD             "A1_LCALOP"
+#define A2_LCALOP_KEYWORD             "A2_LCALOP"
+#define A3_LCALOP_KEYWORD             "A3_LCALOP"
+#define A4_LCALOP_KEYWORD             "A4_LCALOP"
+
 //----------//
 // QscatCds //
 //----------//

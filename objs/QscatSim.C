@@ -340,6 +340,26 @@ QscatSim::ScatSim(
     return(1);
 }
 
+//------------------//
+// QscatSim::CalSim //
+//------------------//
+
+int
+QscatSim::CalSim(
+    Qscat*       qscat,
+    L00Frame*    l00_frame)
+{
+
+    //--------------------------------------//
+    // Add Cal-pulse Specific Info to Frame //
+    //--------------------------------------//
+
+    if (! SetL00Cal(qscat, l00_frame))
+        return(0);
+
+    return(1);
+}
+
 //----------------------------//
 // QscatSim::SetL00Spacecraft //
 //----------------------------//
@@ -688,6 +708,76 @@ QscatSim::SetL00Science(
         &(l00_frame->spotNoise[_spotNumber]));
 
     _spotNumber++;
+
+    return(1);
+}
+
+//---------------------//
+// QscatSim::SetL00Cal //
+//---------------------//
+
+int
+QscatSim::SetL00Cal(
+    Qscat*       qscat,
+    L00Frame*    l00_frame)
+{
+
+    //-------------------------------------------//
+    // Compute load noise measurements to assure //
+    // a perfect retrieval of alpha.             //
+    //-------------------------------------------//
+
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bn = qscat->ses.noiseBandwidth;
+    double Be = qscat->ses.GetTotalSignalBandwidth();
+
+    double N0_echo = bK * qscat->systemTemperature *
+        qscat->ses.rxGainEcho / qscat->ses.receivePathLoss;
+    double N0_noise = bK * qscat->systemTemperature *
+        qscat->ses.rxGainNoise / qscat->ses.receivePathLoss;
+
+    float En_echo_load = N0_echo * Be * Tg;
+    float En_noise_load = N0_noise * Bn * Tg;
+
+    //-------------------------------------------//
+    // Set Es_cal using PtGr.                    //
+    // Only "noise it up" if simKpriFlag is set. //
+    //-------------------------------------------//
+
+    float PtGr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
+//    if (simVs1BCheckfile)
+//    {
+//        cf->ptgr = PtGr;
+//    }
+
+    float Esn_echo_cal,Esn_noise_cal;
+    PtGr_to_Esn(PtGr,&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
+
+    //-------------------//
+    // for each slice... //
+    //-------------------//
+
+    for (int i=0; i < l00_frame->slicesPerSpot; i++)
+    {
+        //----------------------------------------------------------------//
+        // update the level 0.0 frame 
+        // Here, we set each slice to the same number so that they
+        // add up to the proper echo channel energy with appropriate Kpri.
+        // A higher fidelity simulation would set each with its own
+        // variance (Kpc style).
+        //----------------------------------------------------------------//
+
+        l00_frame->loopbackSlices[i] = Esn_echo_cal/l00_frame->slicesPerSpot;
+        l00_frame->loadSlices[i] = En_echo_load/l00_frame->slicesPerSpot;
+    }
+
+    //----------------------------------------------//
+    // Set corresponding noise channel measurements //
+    //----------------------------------------------//
+
+    l00_frame->loopbackNoise = Esn_noise_cal;
+    l00_frame->loadNoise = En_noise_load;
 
     return(1);
 }
