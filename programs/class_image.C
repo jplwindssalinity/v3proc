@@ -8,13 +8,14 @@
 //    class_image
 //
 // SYNOPSIS
-//    class_image <output_base> <rev_count> <rev_spacing> <val_file...>
+//    class_image [ -m ] <output_base> <rev_count> <rev_spacing>
+//        <val_file...>
 //
 // DESCRIPTION
 //    Generates average value images on a 0.5 x 0.5 degree grid.
 //
 // OPTIONS
-//    None.
+//    [ -m ]  Generate max files instead of average files.
 //
 // OPERANDS
 //    <output_base>      The output base.
@@ -112,7 +113,7 @@ template class List<Datum>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING        ""
+#define OPTSTRING        "m"
 
 #define FLOAT_IMAGE_HEADER  "imf "
 #define CHAR_IMAGE_HEADER   "imc "
@@ -155,6 +156,8 @@ main(
     // initialize //
     //------------//
 
+    int opt_max = 0;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -166,6 +169,9 @@ main(
     {
         switch(c)
         {
+        case 'm':
+            opt_max = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -293,8 +299,11 @@ printf("%s\n", file);
 
         do
         {
+            short ati, cti;
             float lon, lat, val;
-            if (fread((void *)&lon, sizeof(float), 1, ifp) != 1 ||
+            if (fread((void *)&ati, sizeof(short), 1, ifp) != 1 ||
+                fread((void *)&cti, sizeof(short), 1, ifp) != 1 ||
+                fread((void *)&lon, sizeof(float), 1, ifp) != 1 ||
                 fread((void *)&lat, sizeof(float), 1, ifp) != 1 ||
                 fread((void *)&val, sizeof(float), 1, ifp) != 1)
             {
@@ -361,15 +370,22 @@ printf("%s\n", file);
                     continue;
                 double sum = 0.0;
                 int count = 0;
+                double max = -9e9;   // I know.  Bad coding.
                 for (Datum* d = dl->GetHead(); d != NULL; d = dl->GetNext())
                 {
                     sum += (double)d->val;
+                    if (d->val > max)
+                        max = d->val;
                     count++;
                 }
                 if (count == 0)
                     continue;
-                float avg = sum / count;
-                float outval = ((avg - SHORT_BIAS) / SHORT_SCALE +
+                float final_val;
+                if (opt_max)
+                    final_val = max;
+                else
+                    final_val = sum / count;
+                float outval = ((final_val - SHORT_BIAS) / SHORT_SCALE +
                     CHAR_BIAS) * CHAR_SCALE;
                 if (outval > 199.0)
                     outval = 199.0;
@@ -379,7 +395,10 @@ printf("%s\n", file);
             }
         }
         char filename[1024];
-        sprintf(filename, "%s.%05d", output_base, current_rev);
+        if (opt_max)
+            sprintf(filename, "%s.m.%05d", output_base, current_rev);
+        else
+            sprintf(filename, "%s.%05d", output_base, current_rev);
         FILE* ofp = fopen(filename, "w");
         if (ofp == NULL)
         {

@@ -8,15 +8,16 @@
 //    get_look_att
 //
 // SYNOPSIS
-//    get_look_att [ -y yaw ] [ -a roll:pitch:yaw ] [ -f type:windfield ]
-//      [ -s start:end ] <sim_config_file> <output_base>
-//      <echo_file...>
+//    get_look_att [ -i ] [ -y yaw ] [ -a roll:pitch:yaw ]
+//      [ -f type:windfield ] [ -s start:end ] <sim_config_file>
+//      <output_base> <echo_file...>
 //
 // DESCRIPTION
 //    Reads echo files and estimates the roll, pitch, and yaw
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
+//    [ -i ]                 Eliminate ice orbit steps.
 //    [ -y yaw ]             Fix yaw at given value.
 //    [ -a roll:pitch:yaw ]  Fix the attitude.
 //    [ -f type:windfield ]  Use windfield for energy profile
@@ -98,7 +99,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "a:f:s:y:"
+#define OPTSTRING    "ia:f:s:y:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -150,7 +151,7 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -y yaw ]", "[ -a roll:pitch:yaw ]",
+const char* usage_array[] = { "[ -i ]", "[ -y yaw ]", "[ -a roll:pitch:yaw ]",
     "[ -f type:windfield ]", "[ -s start:end ] ", "<sim_config_file>",
     "<output_base>", "<echo_file...>", 0 };
 
@@ -171,6 +172,7 @@ int        g_start_step = 0;
 int        g_end_step = ORBIT_STEPS;
 int        g_range_opt = 0;
 int        g_fix_att_opt = 0;
+int        g_opt_ice = 0;
 int        g_opt_fix_yaw = 0;
 double     g_fixed_yaw = 0.0;
 int        g_start_orbit_step = 0;
@@ -199,6 +201,9 @@ main(
     {
         switch(c)
         {
+        case 'i':
+            g_opt_ice = 1;
+            break;
         case 'f':
             if (sscanf(optarg, "%s:%s", g_windfield_type,
                 g_windfield_file) != 2)
@@ -496,6 +501,14 @@ main(
     for (int target_orbit_step = g_start_step; target_orbit_step < g_end_step;
         target_orbit_step++)
     {
+        if (g_opt_ice)
+        {
+            if ((target_orbit_step > 46 && target_orbit_step < 82) ||
+                (target_orbit_step > 167 && target_orbit_step < 217))
+            {
+                continue;
+            }
+        }
         printf("Processing orbit step %d...\n", target_orbit_step);
 
         g_frame_count = 0;

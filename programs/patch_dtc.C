@@ -8,13 +8,15 @@
 //    patch_dtc
 //
 // SYNOPSIS
-//    patch_dtc <dtc_land> <dtc_ocean> <dtc_hybrid>
+//    patch_dtc [ -io ] <dtc_land> <dtc_ocean> <dtc_hybrid>
 //
 // DESCRIPTION
 //    Reads the two dtc files and patches them together.
 //    Ya needs to do this for each beam.
 //
 // OPTIONS
+//    [ -i ]  Use inner beam south pole patch.
+//    [ -o ]  Use outer beam south pole patch.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -67,14 +69,12 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  ""
+#define OPTSTRING  "io"
 #define QUOTE      '"'
 
 #define ORBIT_STEPS            256
 #define NUMBER_OF_QSCAT_BEAMS  2
 
-#define SOUTH_POLE_MIN_ORBIT_STEP    169
-#define SOUTH_POLE_MAX_ORBIT_STEP    215
 #define SOUTH_POLE_FADE_ORBIT_STEPS  2
 
 //--------//
@@ -97,7 +97,15 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<dtc_land>", "<dtc_ocean>", "<dtc_hybrid>", 0 };
+const char* usage_array[] = { "[ -io ]", "<dtc_land>", "<dtc_ocean>",
+    "<dtc_hybrid>", 0 };
+
+// beam, min/max
+int south_pole_range[2][2] =
+{
+    { 172, 210 },
+    { 170, 218 }
+};
 
 //--------------//
 // MAIN PROGRAM //
@@ -108,6 +116,8 @@ main(
     int    argc,
     char*  argv[])
 {
+    int beam_idx = -1;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -120,6 +130,12 @@ main(
     {
         switch(c)
         {
+        case 'i':
+            beam_idx = 0;
+            break;
+        case 'o':
+            beam_idx = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -128,6 +144,12 @@ main(
 
     if (argc != optind + 3)
         usage(command, usage_array, 1);
+
+    if (beam_idx == -1)
+    {
+        fprintf(stderr, "%s: need -i or -o\n", command);
+        exit(1);
+    }
 
     const char* dtc_land_file = argv[optind++];
     const char* dtc_ocean_file = argv[optind++];
@@ -193,38 +215,35 @@ main(
     double ocean_factor, land_factor;
     for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
-        for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+        if (orbit_step >= south_pole_range[beam_idx][0] &&
+            orbit_step <= south_pole_range[beam_idx][1])
         {
-            if (orbit_step >= SOUTH_POLE_MIN_ORBIT_STEP &&
-                orbit_step <= SOUTH_POLE_MAX_ORBIT_STEP)
+            int dist1 = orbit_step - south_pole_range[beam_idx][0];
+            int dist2 = south_pole_range[beam_idx][1] - orbit_step;
+            int min_dist = MIN(dist1, dist2);
+            if (min_dist <= SOUTH_POLE_FADE_ORBIT_STEPS)
             {
-                int dist1 = orbit_step - SOUTH_POLE_MIN_ORBIT_STEP;
-                int dist2 = SOUTH_POLE_MAX_ORBIT_STEP - orbit_step;
-                int min_dist = MIN(dist1, dist2);
-                if (min_dist <= SOUTH_POLE_FADE_ORBIT_STEPS)
-                {
-                    land_factor = (double)min_dist /
-                        (double)SOUTH_POLE_FADE_ORBIT_STEPS;
-                    ocean_factor = 1.0 - land_factor;
-                }
-                else
-                {
-                    ocean_factor = 0.0;
-                    land_factor = 1.0;
-                }
+                land_factor = (double)min_dist /
+                    (double)SOUTH_POLE_FADE_ORBIT_STEPS;
+                ocean_factor = 1.0 - land_factor;
             }
             else
             {
-                ocean_factor = 1.0;
-                land_factor = 0.0;
+                ocean_factor = 0.0;
+                land_factor = 1.0;
             }
+        }
+        else
+        {
+            ocean_factor = 1.0;
+            land_factor = 0.0;
+        }
 
-            for (int coef_idx = 0; coef_idx < 3; coef_idx++)
-            {
-                *(*(hybrid_terms + orbit_step) + coef_idx) =
-                    ocean_factor * *(*(ocean_terms + orbit_step) + coef_idx) +
-                    land_factor * *(*(land_terms + orbit_step) + coef_idx);
-            }
+        for (int coef_idx = 0; coef_idx < 3; coef_idx++)
+        {
+            *(*(hybrid_terms + orbit_step) + coef_idx) =
+                ocean_factor * *(*(ocean_terms + orbit_step) + coef_idx) +
+                land_factor * *(*(land_terms + orbit_step) + coef_idx);
         }
     }
 
