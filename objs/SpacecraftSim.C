@@ -55,7 +55,7 @@ SpacecraftSim::Initialize(
 	double		start_time)
 {
 	_nextUpdateTime = start_time;
-	_nextEqxTime = NextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	_nextEqxTime = FindNextEqxTime(start_time, EQX_TIME_TOLERANCE);
 	return(1);
 }
 
@@ -468,7 +468,7 @@ SpacecraftSim::DetermineNextEvent(
 		// set next equator crossing time //
 		//--------------------------------//
 
-		_nextEqxTime = NextEqxTime(_nextEqxTime + GetPeriod(),
+		_nextEqxTime = FindNextEqxTime(_nextEqxTime + GetPeriod(),
 			EQX_TIME_TOLERANCE);
 	}
 	else
@@ -492,12 +492,26 @@ SpacecraftSim::DetermineNextEvent(
 	return(1);
 }
 
-//----------------------------//
-// SpacecraftSim::NextEqxTime //
-//----------------------------//
+//--------------------------------//
+// SpacecraftSim::FindPrevEqxTime //
+//--------------------------------//
 
 double
-SpacecraftSim::NextEqxTime(
+SpacecraftSim::FindPrevEqxTime(
+	double	time,
+	double	time_tol)
+{
+	double prev_time = time - GetPeriod();
+	double eqx_time = FindNextEqxTime(prev_time, time_tol);
+	return(eqx_time);
+}
+
+//--------------------------------//
+// SpacecraftSim::FindNextEqxTime //
+//--------------------------------//
+
+double
+SpacecraftSim::FindNextEqxTime(
 	double	time,
 	double	time_tol)
 {

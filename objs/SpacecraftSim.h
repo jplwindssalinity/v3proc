@@ -79,7 +79,8 @@ public:
 	//--------//
 
 	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
-	double	NextEqxTime(double time, double time_tol);
+	double	FindPrevEqxTime(double time, double time_tol);
+	double	FindNextEqxTime(double time, double time_tol);
 
 	//----------------------------------------------//
 	// Attitude Error Model Initialization Routines //
