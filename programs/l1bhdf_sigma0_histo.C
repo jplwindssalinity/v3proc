@@ -216,8 +216,8 @@ main(
           floatP += ipulse * MAX_L1BHDF_NUM_SLICES + islice;
           // do i need to put negative sign on explicitely here?
           double sigma0dB = (double)(*floatP);
-          unsigned int index = (int)((sigma0dB - min) / step + 0.5);
-          if (index >= 0 && index <= bins) count[index]++;
+          int ii = (int)((sigma0dB - min) / step + 0.5);
+          if (ii >= 0 && ii <= bins) count[ii]++;
         }
       }
 
