@@ -406,6 +406,7 @@ GMF::FindSolutions(
 					phi);
 			}
 		} while (1);
+// printf("%g %g\n", phi * rtd, spd);
 	}
 
 	//--------------------------------//
@@ -538,13 +539,15 @@ GMF::RefineSolutions(
 			if (phi_dir == 0)
 				phi_dir = -1;
 
-			double half_spd_step = spd_step / 2.0;
-			if (half_spd_step > final_spd_step)
-				spd_step = half_spd_step;
+			if (spd_step > final_spd_step)
+				spd_step /= 2.0;
+			if (spd_step < final_spd_step)
+				spd_step = final_spd_step;
 
-			double half_phi_step = phi_step / 2.0;
-			if (half_phi_step > final_phi_step)
-				phi_step = half_phi_step;
+			if (phi_step > final_phi_step)
+				phi_step /= 2.0;
+			if (phi_step < final_phi_step)
+				phi_step = final_phi_step;
 
 			//-----------------------------------------//
 			// update speed and direction for solution //
@@ -880,7 +883,8 @@ GMF::_ObjectiveFunction(
 	for (Measurement* meas = measurement_list->GetHead(); meas;
 			meas = measurement_list->GetNext())
 	{
-		double chi = meas->eastAzimuth - phi;
+//		double chi = meas->eastAzimuth - phi;
+		double chi = phi - (meas->eastAzimuth + pi);
 		double gmf_value;
 		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
 			&gmf_value);
