@@ -8,7 +8,7 @@
 //    wr_nbd_to_apts
 //
 // SYNOPSIS
-//    wr_nbd_to_apts <ins_config_file> <hdf_l2b_file> <nbd_file>
+//    wr_nbd_to_apts <hdf_l2b_file> <nbd_file>
 //        <apts_output_file>
 //
 // DESCRIPTION
@@ -19,7 +19,6 @@
 //    None.
 //
 // OPERANDS
-//    <ins_config_file>   The config file (for the GMF).
 //    <hdf_l2b_file>      The input HDF L2B file.
 //    <nbd_file>          The input NBD file.
 //    <apts_output_file>  The output apts file.
@@ -116,7 +115,7 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<ins_config_file>", "<hdf_l2b_file>",
+const char* usage_array[] = { "<hdf_l2b_file>",
     "<nbd_file>", "<apts_output_file>", 0 };
 
 //--------------//
@@ -149,57 +148,13 @@ main(
         }
     }
 
-    if (argc < optind + 4)
+    if (argc < optind + 3)
         usage(command, usage_array, 1);
 
-    const char* ins_config_file = argv[optind++];
     const char* l2b_hdf_file = argv[optind++];
     const char* nbd_file = argv[optind++];
     const char* apts_output_file = argv[optind++];
 
-/*
-    //--------------------------------//
-    // read in simulation config file //
-    //--------------------------------//
-
-    ConfigList config_list;
-    if (! config_list.Read(ins_config_file))
-    {
-        fprintf(stderr, "%s: error reading sim config file %s\n",
-            command, ins_config_file);
-        exit(1);
-    }
-
-    //-------------------------------------//
-    // read the geophysical model function //
-    //-------------------------------------//
-
-    GMF gmf;
-    char* gmf_filename = config_list.Get(GMF_FILE_KEYWORD);
-    if (gmf_filename == NULL)
-    {
-        fprintf(stderr, "%s: error determining GMF file\n", command);
-        exit(1);
-    }
-
-    if (! gmf.ReadOldStyle(gmf_filename))
-    {
-        fprintf(stderr, "%s: error reading GMF file %s\n", command,
-            gmf_filename);
-        exit(1);
-    }
-
-    //--------------//
-    // configure Kp //
-    //--------------//
-
-    Kp kp;
-    if (! ConfigKp(&kp, &config_list))
-    {
-        fprintf(stderr, "%s: error configuring Kp\n", command);
-        exit(1);
-    }
-*/
     //---------------//
     // read nbd file //
     //---------------//
@@ -229,100 +184,6 @@ main(
     }
     WindSwath* swath = &(l2b.frame.swath);
 
-/*
-    //-------------------------------------//
-    // hand-read the EA configuration file //
-    //-------------------------------------//
-
-    char* ea_config_filename = getenv(ENV_CONFIG_FILENAME);
-    if (ea_config_filename == NULL)
-    {
-        fprintf(stderr, "%s: need an EA_CONFIG_FILE environment variable\n",
-            command);
-        exit(1);
-    }
-    ConfigList ea_config_list;
-    if (! ea_config_list.Read(ea_config_filename))
-    {
-        fprintf(stderr, "%s: error reading EA configuration file %s\n",
-            command, ea_config_filename);
-        exit(1);
-    }
-
-    char* poly_table_string = ea_config_list.Get(POLY_TABLE_KEYWORD);
-    EA_PolynomialErrorNo poly_status = EA_POLY_OK;
-    PolynomialTable* polyTable = new PolynomialTable(poly_table_string,
-        poly_status);
-    if ( poly_status != EA_POLY_OK)
-    {
-        fprintf(stderr, "%s: error creating polynomial table from %s\n",
-            command, poly_table_string);
-        exit(1);
-    }
-
-    //------------------//
-    // set the l2a file //
-    //------------------//
-
-    Parameter* row_number_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        ROW_NUMBER, UNIT_DN);
-    Parameter* num_sigma0_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        NUM_SIGMA0, UNIT_DN);
-    Parameter* cell_index_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        CELL_INDEX, UNIT_DN);
-    Parameter* sigma0_mode_flag_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        SIGMA0_MODE_FLAG, UNIT_DN);
-    Parameter* sigma0_qual_flag_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        SIGMA0_QUAL_FLAG, UNIT_DN);
-    Parameter* sigma0_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        SIGMA0, UNIT_DB);
-    Parameter* surface_flag_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        SURFACE_FLAG, UNIT_DN);
-    Parameter* cell_lon_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        CELL_LON, UNIT_RADIANS);
-    Parameter* cell_lat_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        CELL_LAT, UNIT_RADIANS);
-    Parameter* cell_azimuth_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        CELL_AZIMUTH, UNIT_DEGREES);
-    Parameter* cell_incidence_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        CELL_INCIDENCE, UNIT_RADIANS);
-    Parameter* kp_alpha_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        KP_ALPHA, UNIT_DN);
-    Parameter* kp_beta_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        KP_BETA, UNIT_DN);
-    Parameter* kp_gamma_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        KP_GAMMA, UNIT_DN);
-    Parameter* sigma0_attn_map_p = ParTabAccess::GetParameter(SOURCE_L2Ax,
-        SIGMA0_ATTN_MAP, UNIT_DB);
-
-    HdfFile::StatusE status = HdfFile::OK;
-    L2AHdf l2a_file(l2a_hdf_file, SOURCE_L2Ax, status);
-    if (status != HdfFile::OK)
-    {
-        fprintf(stderr, "%s: error opening L2A file %s\n", command,
-            l2a_hdf_file);
-        exit(1);
-    }
-
-    check_status(l2a_file.OpenParamDatasets(row_number_p));
-    check_status(l2a_file.OpenParamDatasets(num_sigma0_p));
-    check_status(l2a_file.OpenParamDatasets(cell_lat_p));
-    check_status(l2a_file.OpenParamDatasets(cell_lon_p));
-    check_status(l2a_file.OpenParamDatasets(cell_azimuth_p));
-    check_status(l2a_file.OpenParamDatasets(cell_incidence_p));
-    check_status(l2a_file.OpenParamDatasets(sigma0_p));
-    check_status(l2a_file.OpenParamDatasets(kp_alpha_p));
-    check_status(l2a_file.OpenParamDatasets(kp_beta_p));
-    check_status(l2a_file.OpenParamDatasets(kp_gamma_p));
-    check_status(l2a_file.OpenParamDatasets(sigma0_attn_map_p));
-    check_status(l2a_file.OpenParamDatasets(sigma0_qual_flag_p));
-    check_status(l2a_file.OpenParamDatasets(sigma0_mode_flag_p));
-    check_status(l2a_file.OpenParamDatasets(surface_flag_p));
-    check_status(l2a_file.OpenParamDatasets(cell_index_p));
-
-    int l2a_length = l2a_file.GetDataLength();
-*/
-
     //------------------//
     // open output file //
     //------------------//
@@ -339,28 +200,6 @@ main(
     //---------------//
     // for each cell //
     //---------------//
-
-/*
-    short row_number = 0;
-    short num_sigma0;
-    float cell_lat[MAX_S0_PER_ROW];
-    float cell_lon[MAX_S0_PER_ROW];
-    float cell_azimuth[MAX_S0_PER_ROW];
-    float cell_incidence[MAX_S0_PER_ROW];
-    float sigma0[MAX_S0_PER_ROW];
-    float sigma0_attn_map[MAX_S0_PER_ROW];
-    float kp_alpha[MAX_S0_PER_ROW];
-    float kp_beta[MAX_S0_PER_ROW];
-    float kp_gamma[MAX_S0_PER_ROW];
-    unsigned short sigma0_qual_flag[MAX_S0_PER_ROW];
-    unsigned short sigma0_mode_flag[MAX_S0_PER_ROW];
-    unsigned short surface_flag[MAX_S0_PER_ROW];
-    char cell_index[MAX_S0_PER_ROW];
-
-    MeasList  meas_list_row[MAX_CROSS_TRACK];
-    char      ice_flag[MAX_CROSS_TRACK];
-    char      no_ice_flag[MAX_CROSS_TRACK];
-*/
 
     for (int ati = 0; ati < 1624; ati++)
     {
@@ -384,21 +223,6 @@ main(
     //-------------//
 
     fclose(ofp);
-
-/*
-    l2a_file.CloseParamDatasets(row_number_p);
-    l2a_file.CloseParamDatasets(num_sigma0_p);
-    l2a_file.CloseParamDatasets(cell_lat_p);
-    l2a_file.CloseParamDatasets(cell_lon_p);
-    l2a_file.CloseParamDatasets(cell_azimuth_p);
-    l2a_file.CloseParamDatasets(cell_incidence_p);
-    l2a_file.CloseParamDatasets(sigma0_p);
-    l2a_file.CloseParamDatasets(sigma0_qual_flag_p);
-    l2a_file.CloseParamDatasets(sigma0_mode_flag_p);
-    l2a_file.CloseParamDatasets(surface_flag_p);
-    l2a_file.CloseParamDatasets(cell_index_p);
-    l2a_file.CloseParamDatasets(sigma0_attn_map_p);
-*/
 
     return (0);
 }
