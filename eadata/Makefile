@@ -131,39 +131,39 @@ Drn.o: Drn.C Drn.h Itime.h Mail.h EAConfigList.h CommonDefs.h EAList.h ListBase.
 DrvParamList.o: DrvParamList.C DrvParamList.h Itime.h ParTab.h PolyTable.h TlmHdfFile.h ParameterList.h CommonDefs.h Parameter.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h
 EAConfigList.o: EAConfigList.C CommonDefs.h EAConfigList.h EAList.h ListBase.h
 EAList.o: EAList.C EAList.h ListBase.h
-EALog.o: EALog.C
+EALog.o: EALog.C EALog.h TlmFileList.h TlmHdfFile.h EAList.h Parameter.h Itime.h CommonDefs.h HdfFile.h ListBase.h
 Eqx.o: Eqx.C Eqx.h Itime.h EAList.h Tpg.h CommonDefs.h ListBase.h
 Filter.o: Filter.C Filter.h ParTab.h EAList.h TlmHdfFile.h CommonDefs.h Parameter.h ListBase.h HdfFile.h Itime.h
-FrameRead.o: FrameRead.C
+FrameRead.o: FrameRead.C CommonDefs.h
 HdfFile.o: HdfFile.C HdfFile.h EAList.h ListBase.h
-Hk2HdfMap.o: Hk2HdfMap.C Hk2HdfMap.h FrameRead.h
-L1ADrvExtract.o: L1ADrvExtract.C L1AExtract.h L1ADrvExtract.h
-L1ADrvTab.o: L1ADrvTab.C Print.h
 Headers.o: Headers.C Headers.h Parameter.h Itime.h CommonDefs.h
+Hk2HdfMap.o: Hk2HdfMap.C Parameter.h Hk2HdfMap.h FrameRead.h CommonDefs.h
 Itime.o: Itime.C Itime.h CommonDefs.h
+L1ADrvExtract.o: L1ADrvExtract.C L1AExtract.h L1ADrvExtract.h Parameter.h Itime.h ArgsPlus.h PolyTable.h Polynomial.h CommonDefs.h TlmHdfFile.h Args.h ArgDefs.h EALog.h EAList.h PolyErrNo.h HdfFile.h EAConfigList.h TlmFileList.h ListBase.h
+L1ADrvTab.o: L1ADrvTab.C ParTab.h L1AExtract.h L1ADrvExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
 L1AExtract.o: L1AExtract.C L1AExtract.h Parameter.h Itime.h CommonDefs.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
-L1AFilTab.o: L1AFilTab.C Filter.h L1AFilter.h EAList.h TlmHdfFile.h ListBase.h CommonDefs.h HdfFile.h Itime.h Parameter.h
 L1AFile.o: L1AFile.C L1AFile.h L1AExtract.h ParTab.h TlmHdfFile.h Itime.h Parameter.h CommonDefs.h HdfFile.h EAList.h ListBase.h
+L1AFilTab.o: L1AFilTab.C Filter.h L1AFilter.h EAList.h TlmHdfFile.h ListBase.h CommonDefs.h HdfFile.h Itime.h Parameter.h
 L1AFilter.o: L1AFilter.C Filter.h L1AExtract.h Parameter.h ParTab.h EAList.h TlmHdfFile.h CommonDefs.h Itime.h ListBase.h HdfFile.h
 L1AParTab.o: L1AParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
-L2AParTab.o: L2AParTab.C
-L2BParTab.o: L2BParTab.C
+L2AParTab.o: L2AParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
+L2BParTab.o: L2BParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
 LimitChecker.o: LimitChecker.C LimitChecker.h LimitState.h HkdtExtract.h L1AExtract.h ParTab.h Parameter.h Itime.h CommonDefs.h TlmHdfFile.h HdfFile.h EAList.h ListBase.h
 LimitList.o: LimitList.C CommonDefs.h LimitList.h ParTab.h LimitChecker.h LimitState.h HkdtExtract.h L1AExtract.h Parameter.h EAList.h Itime.h TlmHdfFile.h ListBase.h HdfFile.h
 LimitState.o: LimitState.C LimitState.h HkdtExtract.h L1AExtract.h ParTab.h TlmHdfFile.h Parameter.h CommonDefs.h Itime.h HdfFile.h EAList.h ListBase.h
-ListBase.o: ListBase.C
+ListBase.o: ListBase.C ListBase.h
 Mail.o: Mail.C Mail.h EAConfigList.h EAList.h ListBase.h
-NoTimeTlmFile.o: NoTimeTlmFile.C NoTimeTlmFile.h
-ParTab.o: ParTab.C Parameter.h ParTab.h Itime.h HdfFile.h CommonDefs.h EAList.h ListBase.h
+NoTimeTlmFile.o: NoTimeTlmFile.C NoTimeTlmFile.h Parameter.h TlmHdfFile.h CommonDefs.h HdfFile.h Itime.h EAList.h ListBase.h
 Parameter.o: Parameter.C Parameter.h CommonDefs.h
 ParameterList.o: ParameterList.C ParameterList.h Itime.h ParTab.h PolyTable.h TlmHdfFile.h CommonDefs.h Parameter.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h
-Polynomial.o: Polynomial.C
-PolyTable.o: PolyTable.C
+ParTab.o: ParTab.C Parameter.h ParTab.h Itime.h HdfFile.h CommonDefs.h EAList.h ListBase.h
+Polynomial.o: Polynomial.C Polynomial.h CommonDefs.h
+PolyTable.o: PolyTable.C CommonDefs.h PolyTable.h EAList.h Polynomial.h PolyErrNo.h ListBase.h
 Print.o: Print.C Print.h
-Qpf.o: Qpf.C Qpf.h
+Qpf.o: Qpf.C Qpf.h Itime.h Command.h CmdList.h Binning.h CommonDefs.h Tpg.h EAList.h Eqx.h Parameter.h ListBase.h
 Reqq.o: Reqq.C CommonDefs.h Reqq.h Command.h CmdList.h Binning.h Tpg.h EAList.h Eqx.h Itime.h Parameter.h ListBase.h
 Rtcf.o: Rtcf.C CommonDefs.h Command.h Rtcf.h Reqq.h Binning.h Tpg.h CmdList.h Itime.h EAList.h Eqx.h Parameter.h ListBase.h
-SafeString.o: SafeString.C
+SafeString.o: SafeString.C 
 TempInst.o: TempInst.C EAList.h EAList.C Command.h EAConfigList.h Eqx.h Filter.h LimitChecker.h Parameter.h Polynomial.h TlmHdfFile.h ToDo.h ListBase.h CommonDefs.h Tpg.h Itime.h LimitState.h HdfFile.h
 TlmFileList.o: TlmFileList.C TlmFileList.h L1AFile.h NoTimeTlmFile.h EAList.h TlmHdfFile.h Parameter.h Itime.h ListBase.h CommonDefs.h HdfFile.h
 TlmHdfFile.o: TlmHdfFile.C TlmHdfFile.h CommonDefs.h HdfFile.h Itime.h Parameter.h EAList.h ListBase.h
