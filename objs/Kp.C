@@ -277,7 +277,9 @@ Kp::GetVpc(
   // calculate variance //
   //--------------------//
 
-  double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
+  // Originally sigma0_over_snr=meas->EnSlice/meas->XK/meas->txPulseWidth
+  // Changed to solve error in vpc now that EnSlice is in data numbers
+  double sigma0_over_snr = meas->EnSlice / meas->XK;
   *vpc = 0.5 / meas->txPulseWidth / meas->bandwidth *
          (sigma0_corr*sigma0_corr + sigma0_copol*sigma0_xpol +
            (sigma0_copol + sigma0_xpol) * sigma0_over_snr +
