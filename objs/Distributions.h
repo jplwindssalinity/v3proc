@@ -55,10 +55,10 @@ public:
 class GenericTimelessDist: public GenericDist
 {
 public:
-	virtual float GetNumber()=0;
+	virtual float GetNumber() = 0;
 
 // GetNumber may be called with a time parameter, but it is ignored  //
-        float GetNumber(double time); 
+    float GetNumber(double time); 
 	virtual ~GenericTimelessDist();
 };
 
