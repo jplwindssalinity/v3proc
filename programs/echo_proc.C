@@ -111,6 +111,8 @@ template class TrackerBase<unsigned char>;
 
 #define OPTSTRING  "b:cg"
 
+#define WOM        0x0E
+
 //--------//
 // MACROS //
 //--------//
@@ -314,6 +316,8 @@ main(
 
     Parameter* frame_time_p = ParTabAccess::GetParameter(SOURCE_L1A,
         FRAME_TIME, UNIT_CODE_A);
+    Parameter* operational_mode_p = ParTabAccess::GetParameter(SOURCE_L1A,
+        OPERATIONAL_MODE, UNIT_MAP);
     Parameter* xpos_p = ParTabAccess::GetParameter(SOURCE_L1A, X_POS,
         UNIT_KILOMETERS);
     Parameter* ypos_p = ParTabAccess::GetParameter(SOURCE_L1A, Y_POS,
@@ -432,7 +436,7 @@ main(
     //--------------------//
 
     int l1a_length = l1a_file.GetDataLength();
-    if (l1b_filename != NULL)
+    if (l1b_file != NULL)
     {
         int l1b_length = l1b_file->GetDataLength();
         if (l1b_length != l1a_length)
@@ -448,9 +452,23 @@ main(
     // process frame by frame //
     //------------------------//
 
+    int wom_frame = 0;
+
     EchoInfo echo_info;
     for (int record_idx = 0; record_idx < l1a_length; record_idx++)
     {
+        //-----------------------//
+        // only process WOM data //
+        //-----------------------//
+
+        unsigned char operational_mode;
+        operational_mode_p->extractFunc(&l1a_file, operational_mode_p->sdsIDs,
+            record_idx, 1, 1, &operational_mode, polyTable);
+        if (operational_mode != WOM)
+            continue;
+
+        wom_frame++;
+
         //--------------//
         // get the time //
         //--------------//
@@ -569,6 +587,32 @@ main(
         echo_info.priOfOrbitStepChange = pri_of_orbit_step_change;
         echo_info.spinRate = omega;
 
+        //--------------//
+        // get L1B info //
+        //--------------//
+
+        float l1b_cell_lon[100];
+        float l1b_cell_lat[100];
+        short delta_f[100]; 
+        if (l1b_file != NULL)
+        {
+            cell_lon_p->extractFunc(l1b_file, cell_lon_p->sdsIDs, record_idx,
+                1, 1, l1b_cell_lon, polyTable);
+            cell_lat_p->extractFunc(l1b_file, cell_lat_p->sdsIDs, record_idx,
+                1, 1, l1b_cell_lat, polyTable);
+
+            //-------------//
+            // set delta f //
+            //-------------//
+
+            delta_f_p->extractFunc(l1b_file, delta_f_p->sdsIDs, record_idx,
+                1, 1, delta_f, polyTable);
+            for (int spot_idx = 0; spot_idx < 100; spot_idx++)
+            {
+                echo_info.deltaF[spot_idx] = (float)delta_f[spot_idx];
+            }
+        }
+
         //--------------------//
         // step through spots //
         //--------------------//
@@ -622,11 +666,11 @@ main(
             echo_info.txDoppler[spot_idx] = qscat.ses.txDoppler;
             echo_info.rxGateDelay[spot_idx] = qscat.ses.rxGateDelay;
 
-            //------------------------------//
-            // skip pulses from first frame //
-            //------------------------------//
+            //---------------------------------------//
+            // skip pulses from first two WOM frames //
+            //---------------------------------------//
 
-            if (record_idx == 0)
+            if (wom_frame < 3)
                 continue;
 
             //-------------------------//
@@ -643,31 +687,44 @@ main(
             //-----------//
             // flag land //
             //-----------//
+            // only need to do the geometry if L1B is not available
 
-            CoordinateSwitch antenna_frame_to_gc =
-                AntennaFrameToGC(&(spacecraft.orbitState),
-                attitude, antenna, antenna->groundImpactAzimuthAngle);
+            float lon, lat;
+            if (l1b_file != NULL)
+            {
+                lon = l1b_cell_lon[spot_idx];
+                lat = l1b_cell_lat[spot_idx];
+            }
+            else
+            {
+                CoordinateSwitch antenna_frame_to_gc =
+                    AntennaFrameToGC(&(spacecraft.orbitState),
+                    attitude, antenna, antenna->groundImpactAzimuthAngle);
 
-            double look, azim;
-            if (! beam->GetElectricalBoresight(&look, &azim))
-                return(0);
-            Vector3 vector;
-            vector.SphericalSet(1.0, look, azim);
-            QscatTargetInfo qti;
-            if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
-                vector, &qti))
-            {
-                fprintf(stderr, "%s: error finding target information\n",
-                    command);
-                exit(1);
+                double look, azim;
+                if (! beam->GetElectricalBoresight(&look, &azim))
+                    return(0);
+                Vector3 vector;
+                vector.SphericalSet(1.0, look, azim);
+                QscatTargetInfo qti;
+                if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                    vector, &qti))
+                {
+                    fprintf(stderr, "%s: error finding target information\n",
+                        command);
+                    exit(1);
+                }
+                double alt, lon_d, lat_d;
+                if (! qti.rTarget.GetAltLonGCLat(&alt, &lon_d, &lat_d))
+                {
+                    fprintf(stderr, "%s: error finding alt/lon/lat\n",
+                        command);
+                    exit(1);
+                }
+                lon = (float)lon_d;
+                lat = (float)lat_d;
             }
-            double alt, lon, lat;
-            if (! qti.rTarget.GetAltLonGCLat(&alt, &lon, &lat))
-            {
-                fprintf(stderr, "%s: error finding alt/lon/lat\n",
-                    command);
-                exit(1);
-            }
+
             if (land_map.IsLand(lon, lat))
             {
                 echo_info.flag[spot_idx] = EchoInfo::LAND;
@@ -748,6 +805,14 @@ main(
     l1a_file.CloseParamDatasets(slice_powers_p);
     l1a_file.CloseParamDatasets(prf_cycle_time_p);
     l1a_file.CloseParamDatasets(noise_meas_p);
+
+    if (l1b_file != NULL)
+    {
+        l1b_file->CloseParamDatasets(l1b_frame_time_p);
+        l1b_file->CloseParamDatasets(cell_lon_p);
+        l1b_file->CloseParamDatasets(cell_lat_p);
+        l1b_file->CloseParamDatasets(delta_f_p);
+    }
 
     //-------------------//
     // close output file //

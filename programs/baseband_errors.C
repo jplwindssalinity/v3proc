@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -159,21 +159,21 @@ main(
     // create a spacecraft and spacecraft simulator //
     //----------------------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	SpacecraftSim spacecraft_sim;
-	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    SpacecraftSim spacecraft_sim;
+    if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
@@ -193,176 +193,184 @@ main(
         exit(1);
     }
 
-	//---------------------//
-	// configure the times //
-	//---------------------//
+    //---------------------//
+    // configure the times //
+    //---------------------//
 
-	double grid_start_time, grid_end_time;
-	double instrument_start_time, instrument_end_time;
-	double spacecraft_start_time, spacecraft_end_time;
+    double grid_start_time, grid_end_time;
+    double instrument_start_time, instrument_end_time;
+    double spacecraft_start_time, spacecraft_end_time;
 
-	if (! ConfigControl(&spacecraft_sim, &config_list,
-		&grid_start_time, &grid_end_time,
-		&instrument_start_time, &instrument_end_time,
-		&spacecraft_start_time, &spacecraft_end_time))
-	{
-		fprintf(stderr, "%s: error configuring simulation times\n", command);
-		exit(1);
-	}
-	qscat_sim.startTime = instrument_start_time;
+    if (! ConfigControl(&spacecraft_sim, &config_list,
+        &grid_start_time, &grid_end_time,
+        &instrument_start_time, &instrument_end_time,
+        &spacecraft_start_time, &spacecraft_end_time))
+    {
+        fprintf(stderr, "%s: error configuring simulation times\n", command);
+        exit(1);
+    }
+    qscat_sim.startTime = instrument_start_time;
 
-	//------------------//
-	// set the eqx time //
-	//------------------//
+    //------------------//
+    // set the eqx time //
+    //------------------//
 
-	double eqx_time =
-		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
-			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	qscat.cds.SetEqxTime(eqx_time);
+    double eqx_time =
+        spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
+            EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+    qscat.cds.SetEqxTime(eqx_time);
 
-	//------------//
-	// initialize //
-	//------------//
+    //------------//
+    // initialize //
+    //------------//
 
-	if (! qscat_sim.Initialize(&qscat))
-	{
-		fprintf(stderr, "%s: error initializing QSCAT simulator\n",
-			command);
-		exit(1);
-	}
+    if (! qscat_sim.Initialize(&qscat))
+    {
+        fprintf(stderr, "%s: error initializing QSCAT simulator\n",
+            command);
+        exit(1);
+    }
 
-	if (! spacecraft_sim.Initialize(spacecraft_start_time))
-	{
-		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    if (! spacecraft_sim.Initialize(spacecraft_start_time))
+    {
+        fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	//----------------------//
-	// open the output file //
-	//----------------------//
+    //----------------------//
+    // open the output file //
+    //----------------------//
 
-	FILE* error_fp = fopen(error_file, "w");
-	if (error_fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening error file %s\n", command,
-			error_file);
-		exit(1);
-	}
+    FILE* error_fp = fopen(error_file, "w");
+    if (error_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening error file %s\n", command,
+            error_file);
+        exit(1);
+    }
 
-	//----------------------//
-	// cycle through events //
-	//----------------------//
+    //----------------------//
+    // cycle through events //
+    //----------------------//
 
-	SpacecraftEvent spacecraft_event;
-	spacecraft_event.time = spacecraft_start_time;
+    SpacecraftEvent spacecraft_event;
+    spacecraft_event.time = spacecraft_start_time;
 
-	QscatEvent qscat_event;
-	qscat_event.time = instrument_start_time;
+    QscatEvent qscat_event;
+    qscat_event.time = instrument_start_time;
 
-	int spacecraft_done = 0;
-	int instrument_done = 0;
+    int spacecraft_done = 0;
+    int instrument_done = 0;
 
-	//-------------------------//
-	// start with first events //
-	//-------------------------//
+    int init_spots = 0;
+
+    //-------------------------//
+    // start with first events //
+    //-------------------------//
 
     int spots_per_frame = 0;
     if (! config_list.GetInt("L00_ANTENNA_CYCLES_PER_FRAME", &spots_per_frame))
       return(0);
     spots_per_frame *= NUMBER_OF_QSCAT_BEAMS;
-	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-	qscat_sim.DetermineNextEvent(spots_per_frame, &qscat, &qscat_event);
+    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+    qscat_sim.DetermineNextEvent(spots_per_frame, &qscat, &qscat_event);
 
-	//---------------------//
-	// loop through events //
-	//---------------------//
+    //---------------------//
+    // loop through events //
+    //---------------------//
 
-	for (;;)
-	{
-		//---------------------------------------//
-		// process spacecraft event if necessary //
-		//---------------------------------------//
+    for (;;)
+    {
+        //---------------------------------------//
+        // process spacecraft event if necessary //
+        //---------------------------------------//
 
-		if (! spacecraft_done)
-		{
-			if (spacecraft_event.time > spacecraft_end_time)
-			{
-				spacecraft_done = 1;
-				continue;
-			}
-			if (spacecraft_event.time <= qscat_event.time ||
-				instrument_done)
-			{
-				//------------------------------//
-				// process the spacecraft event //
-				//------------------------------//
+        if (! spacecraft_done)
+        {
+            if (spacecraft_event.time > spacecraft_end_time)
+            {
+                spacecraft_done = 1;
+                continue;
+            }
+            if (spacecraft_event.time <= qscat_event.time ||
+                instrument_done)
+            {
+                //------------------------------//
+                // process the spacecraft event //
+                //------------------------------//
 
-				switch(spacecraft_event.eventId)
-				{
-				case SpacecraftEvent::EQUATOR_CROSSING:
-					qscat.cds.SetEqxTime(spacecraft_event.time);
-					break;
-				default:
-					break;
-				}
-				spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-			}
-		}
+                switch(spacecraft_event.eventId)
+                {
+                case SpacecraftEvent::EQUATOR_CROSSING:
+                    qscat.cds.SetEqxTime(spacecraft_event.time);
+                    break;
+                default:
+                    break;
+                }
+                spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+            }
+        }
 
-		//---------------------------------------//
-		// process instrument event if necessary //
-		//---------------------------------------//
+        //---------------------------------------//
+        // process instrument event if necessary //
+        //---------------------------------------//
 
-		if (! instrument_done)
-		{
-			if (qscat_event.time > instrument_end_time)
-			{
-				instrument_done = 1;
-				continue;
-			}
-			if (qscat_event.time <= spacecraft_event.time ||
-				spacecraft_done)
-			{
-				//------------------------------//
-				// process the instrument event //
-				//------------------------------//
+        if (! instrument_done)
+        {
+            if (qscat_event.time > instrument_end_time)
+            {
+                instrument_done = 1;
+                continue;
+            }
+            if (qscat_event.time <= spacecraft_event.time ||
+                spacecraft_done)
+            {
+                //------------------------------//
+                // process the instrument event //
+                //------------------------------//
 
-				Antenna* antenna = &(qscat.sas.antenna);
-				Beam* beam;
-				OrbitState* orbit_state;
-				Attitude* attitude;
-				CoordinateSwitch antenna_frame_to_gc;
-				Vector3 rlook_antenna;
-				QscatTargetInfo qti;
+                Antenna* antenna = &(qscat.sas.antenna);
+                Beam* beam;
+                OrbitState* orbit_state;
+                Attitude* attitude;
+                CoordinateSwitch antenna_frame_to_gc;
+                Vector3 rlook_antenna;
+                QscatTargetInfo qti;
 
-				switch(qscat_event.eventId)
-				{
-				case QscatEvent::SCAT_EVENT:
-				case QscatEvent::LOOPBACK_EVENT:
-				case QscatEvent::LOAD_EVENT:
+                switch(qscat_event.eventId)
+                {
+                case QscatEvent::SCAT_EVENT:
+                case QscatEvent::LOOPBACK_EVENT:
+                case QscatEvent::LOAD_EVENT:
 
-					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(qscat_event.time,
-						&spacecraft);
-					spacecraft_sim.UpdateAttitude(qscat_event.time,
-						&spacecraft);
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(qscat_event.time,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(qscat_event.time,
+                        &spacecraft);
 
-					// process instrument stuff
-					qscat.cds.SetTime(qscat_event.time);
-					qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    // process instrument stuff
+                    qscat.cds.SetTime(qscat_event.time);
+                    qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
 
-					qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+                    qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     beam = qscat.GetCurrentBeam();
 
-					//-------------------------------//
-					// do range and Doppler tracking //
-					//-------------------------------//
+                    //-------------------------------//
+                    // do range and Doppler tracking //
+                    //-------------------------------//
 
                     qscat.cds.useRgc = 1;
                     qscat.cds.useDtc = 1;
                     SetOrbitStepDelayAndFrequency(&spacecraft, &qscat);
+
+                    if (init_spots < 2)
+                    {
+                        init_spots++;
+                        continue;
+                    }
 
                     //----------------------------------//
                     // calculate the baseband frequency //
@@ -388,39 +396,39 @@ main(
                     qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
                         rlook_antenna, &qti);
 
-					//------------------------------//
-					// calculate the baseband error //
-					//------------------------------//
+                    //------------------------------//
+                    // calculate the baseband error //
+                    //------------------------------//
 
-					// any deviation from zero Hz is undesirable
-					fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
+                    // any deviation from zero Hz is undesirable
+                    fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
                         qti.basebandFreq, qscat.ses.txDoppler);
 
-					qscat_sim.DetermineNextEvent(spots_per_frame,
+                    qscat_sim.DetermineNextEvent(spots_per_frame,
                                                  &qscat, &qscat_event);
-					break;
+                    break;
 
-				default:
-					fprintf(stderr, "%s: unknown QSCAT event\n", command);
-					exit(1);
-					break;
-				}
-			}
-		}
+                default:
+                    fprintf(stderr, "%s: unknown QSCAT event\n", command);
+                    exit(1);
+                    break;
+                }
+            }
+        }
 
-		//---------------//
-		// check if done //
-		//---------------//
+        //---------------//
+        // check if done //
+        //---------------//
 
-		if (instrument_done && spacecraft_done)
-			break;
-	}
+        if (instrument_done && spacecraft_done)
+            break;
+    }
 
-	//-------------------//
-	// close error files //
-	//-------------------//
+    //-------------------//
+    // close error files //
+    //-------------------//
 
-	fclose(error_fp);
+    fclose(error_fp);
 
-	return (0);
+    return (0);
 }
