@@ -129,8 +129,32 @@ int
 CheckFrame::AppendRecord(
 	FILE*	fptr)
 {
-	fprintf(fptr,"%g %g %g %g\n",time,rtd*attitude.GetRoll(),
-		rtd*attitude.GetPitch(),
-		rtd*attitude.GetYaw());
+
+        float att;
+
+        if (fwrite((void *)&time,sizeof(double),1,fptr) != 1) return(0);
+        att = rtd*attitude.GetRoll(); 
+        if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+        att = rtd*attitude.GetPitch();//
+        if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+        att = rtd*attitude.GetYaw();//
+        if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
 	return(1);
 }
+
+int
+CheckFrame::AppendSliceRecord(
+	FILE*   fptr, 
+	int     slice_i,     
+        double  lon, double lat )
+{
+        if (fwrite((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&lon,sizeof(double),1,fptr) != 1) return(0);
+        if (fwrite((void *)&lat,sizeof(double),1,fptr) != 1) return(0);
+        return(1);
+}
+
