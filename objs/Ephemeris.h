@@ -77,7 +77,7 @@ public:
 	//--------------//
 
 	Ephemeris();
-	Ephemeris(char *filename, unsigned int maxstates);
+	Ephemeris(const char* filename, unsigned int maxstates);
 	~Ephemeris();
 
 	// Searching
@@ -90,6 +90,7 @@ public:
 
 	int GetPosition(double time, EarthPosition *rsat);
 	int GetOrbitState(double time, OrbitState *os);
+	int		GetNextOrbitState(OrbitState* os);
 
 	//
 	// Subtrack conversion.

@@ -8,7 +8,10 @@ static const char rcs_id_l17tol20_c[] =
 
 #include "L17ToL20.h"
 #include "Constants.h"
+#include "Misc.h"
 
+#define AZIMUTH_DIVERSITY		(5.0*dtr)
+#define INCIDENCE_DIVERSITY		(5.0*dtr)
 
 //==========//
 // L17ToL20 //
@@ -28,6 +31,9 @@ L17ToL20::~L17ToL20()
 //---------------------------//
 // L17ToL20::ConvertAndWrite //
 //---------------------------//
+// returns 0 on failure for bad reason (memory, etc.)
+// returns 1 on success
+// returns higher numbers for other reasons
 
 int
 L17ToL20::ConvertAndWrite(
@@ -37,23 +43,59 @@ L17ToL20::ConvertAndWrite(
 {
 	static int last_rev_number = 0;
 
+	//------------------------------//
+	// check number of measurements //
+	//------------------------------//
+
+	MeasList* meas_list = &(l17->frame.measList);
+	if (meas_list->NodeCount() < 2)
+	{
+		fprintf(stderr, "too few measurements\n");
+		return(2);
+	}
+
+	//-----------------------------------//
+	// check for missing wind field data //
+	//-----------------------------------//
+	// this should be handled by some kind of a flag!
+
+	int any_zero = 0;
+	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+	{
+		if (! meas->value)
+		{
+			any_zero = 1;
+			break;
+		}
+	}
+	if (any_zero)
+	{
+		fprintf(stderr, "insuffient wind data\n");
+		return(3);
+	}
+
 	//---------------//
 	// retrieve wind //
 	//---------------//
 
 	WVC* wvc = new WVC();
-	if (! gmf->RetrieveWinds(&(l17->frame.measList), wvc, phiStep, phiBuffer,
+	if (! gmf->RetrieveWinds(meas_list, wvc, phiStep, phiBuffer,
 		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS))
 	{
-		return(1);
+		fprintf(stderr, "wind retrieval failed\n");
+//		meas_list->WriteAscii(stdout);
+		delete wvc;
+		return(5);
 	}
+
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
-fprintf(stderr, "deleting node count %d\n", wvc->ambiguities.NodeCount());
+		fprintf(stderr, "deleting node count %d\n",
+			wvc->ambiguities.NodeCount());
 		delete wvc;
-		return(1);
+		return(6);
 	}
-	wvc->lonLat = l17->frame.measList.AverageLonLat();
+	wvc->lonLat = meas_list->AverageLonLat();
 
 	//-------------------------//
 	// determine grid indicies //

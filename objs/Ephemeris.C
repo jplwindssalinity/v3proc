@@ -14,9 +14,9 @@ static const char rcs_id_ephemeris_c[] =
 #include "List.h"
 #include "List.C"
 
-//
-// OrbitState
-//
+//============//
+// OrbitState //
+//============//
 
 //
 // Default constructor
@@ -103,7 +103,7 @@ Ephemeris::Ephemeris()
 }
 
 Ephemeris::Ephemeris(
-	char*			filename,
+	const char*		filename,
 	unsigned int	max_states)
 {
 	SetInputFile(filename);
@@ -261,6 +261,22 @@ Ephemeris::GetOrbitState(
 	// Linearly interpolate the components of the velocity vector.
 	orbit_state->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
 
+	return(1);
+}
+
+//------------------------------//
+// Ephemeris::GetNextOrbitState //
+//------------------------------//
+
+int
+Ephemeris::GetNextOrbitState(
+	OrbitState*		os)
+{
+	OrbitState* ptr = GetOrReadNext();
+	if (ptr == NULL)
+		return(0);
+
+	*os = *ptr;
 	return(1);
 }
 
