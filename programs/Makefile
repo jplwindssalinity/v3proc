@@ -20,6 +20,7 @@ PROGRAMS = \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_to_l2b \
+	l2b_medianfilter \
 	l2b_to_vctr \
 	l2b_metrics \
 	see_spot \
