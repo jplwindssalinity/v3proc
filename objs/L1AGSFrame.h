@@ -143,9 +143,9 @@ struct GSCalPulse
     float      transmit_power_outer;
     int        frame_inst_status;
     int        frame_err_status;
-    int        spare;
     char       true_cal_pulse_position;
     char       beam_identifier;
+    int        spare;
 };
 
 class L1AGSFrame
