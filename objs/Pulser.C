@@ -181,16 +181,12 @@ PulseList::WriteNadirReturns(
 //========//
 
 Pulser::Pulser()
-:   _pulsesInFlight(0),
-    _priSet(-1.0), _priMinSet(-1.0), _priMaxSet(-1.0), _priStep(-1.0),
-    _pri(-1.0), _priMin(0.0), _priMax(0.0),
-    _pulseWidthSet(-1.0), _pulseWidthMinSet(-1.0), _pulseWidthMaxSet(-1.0),
-    _pulseWidthStep(-1.0), _pulseWidth(-1.0), _pulseWidthMin(-1.0),
-    _pulseWidthMax(-1.0),
-    _offsetSet(-1.0), _offsetMinSet(-1.0), _offsetMaxSet(-1.0),
-    _offsetStep(-1.0), _offset(-1.0), _offsetMin(-1.0), _offsetMax(-1.0),
-    _lookAngle(-1.0), _twoWayBeamWidth(-1.0), _angleBuffer(-1.0),
-    _timeBuffer(-1.0)
+:   _pulserId(0), _pulseWidthSet(-1.0), _pulseWidthMinSet(-1.0),
+    _pulseWidthMaxSet(-1.0), _pulseWidthStep(-1.0), _pulseWidth(-1.0),
+    _pulseWidthMin(-1.0), _pulseWidthMax(-1.0), _offsetSet(-1.0),
+    _offsetMinSet(-1.0), _offsetMaxSet(-1.0), _offsetStep(-1.0),
+    _offset(-1.0), _offsetMin(-1.0), _offsetMax(-1.0), _lookAngle(-1.0),
+    _twoWayBeamWidth(-1.0), _pulseCount(0), _rttMin(0.0), _rttMax(0.0)
 {
     return;
 }
@@ -220,44 +216,6 @@ Pulser::Config(
 
     char keyword[1024];
     config_list->DoNothingForMissingKeywords();
-
-    //---------------------------//
-    // get info from config list //
-    //---------------------------//
-
-    substitute_string("BEAM_x_PULSES_IN_FLIGHT", "x", number, keyword);
-    config_list->GetInt(keyword, &_pulsesInFlight);
-
-    //-----//
-    // PRI //
-    //-----//
-
-    substitute_string("BEAM_x_PRI_MIN", "x", number, keyword);
-    config_list->GetDouble(keyword, &_priMinSet);
-
-    substitute_string("BEAM_x_PRI_MAX", "x", number, keyword);
-    config_list->GetDouble(keyword, &_priMaxSet);
-
-    substitute_string("BEAM_x_PRI_STEP", "x", number, keyword);
-    config_list->GetDouble(keyword, &_priStep);
-
-    substitute_string("BEAM_x_PRI", "x", number, keyword);
-    if (config_list->GetDouble(keyword, &_priSet))
-    {
-        _priMinSet = _priSet;
-        _priMin = _priMinSet;
-        _priMaxSet = _priSet;
-        _priMax = _priMaxSet;
-        _priStep = 1.0;    // as long as it is > 0
-    }
-    else
-    {
-        if (_priStep < 0.0)
-        {
-            fprintf(stderr, "Pulser::Config: a PRI step is needed\n");
-            exit(1);
-        }
-    }
 
     //-------------//
     // pulse width //
@@ -335,111 +293,47 @@ Pulser::Config(
     config_list->GetDouble(keyword, &_twoWayBeamWidth);
     _twoWayBeamWidth *= dtr;
 
-    substitute_string("BEAM_x_ANGLE_BUFFER", "x", number, keyword);
-    config_list->GetDouble(keyword, &_angleBuffer);
-    _angleBuffer *= dtr;
-
-    substitute_string("BEAM_x_TIME_BUFFER", "x", number, keyword);
-    config_list->GetDouble(keyword, &_timeBuffer);
-
     return(1);
 }
 
-//---------------------------//
-// Pulser::SetNadirLookAngle //
-//---------------------------//
+//-----------------//
+// Pulser::SetRtts //
+//-----------------//
 
 int
-Pulser::SetNadirLookAngle(
-    double  nadir_look_angle)
-{
-    _nadirLookAngle = nadir_look_angle;
-    return(1);
-}
-
-//---------------------//
-// Pulser::SetAltitude //
-//---------------------//
-
-int
-Pulser::SetAltitude(
-    double  altitude)
+Pulser::SetRtts(
+    double  altitude,
+    double  angle_buffer,
+    double  time_buffer)
 {
     //--------------------------------//
     // do some calculations on timing //
     //--------------------------------//
 
-    double look_angle_min = _lookAngle - _twoWayBeamWidth / 2.0 - _angleBuffer;
-    double look_angle_max = _lookAngle + _twoWayBeamWidth / 2.0 + _angleBuffer;
+    double look_angle_min = _lookAngle - _twoWayBeamWidth / 2.0 - angle_buffer;
+    double look_angle_max = _lookAngle + _twoWayBeamWidth / 2.0 + angle_buffer;
     double gch = r1_earth + altitude;
     double slant_range_min = slant_range(gch, look_angle_min);
     double slant_range_max = slant_range(gch, look_angle_max);
-    _rttMin = round_trip_time(slant_range_min) - _timeBuffer;
-    _rttMax = round_trip_time(slant_range_max) + _timeBuffer;
-
-    // nadir
-    slant_range_min = slant_range(gch, 0.0);
-    slant_range_max = slant_range(gch, _nadirLookAngle);
-    _rttMinNadir = round_trip_time(slant_range_min) - _timeBuffer;
-    _rttMaxNadir = round_trip_time(slant_range_max) + _timeBuffer;
+    _rttMin = round_trip_time(slant_range_min) - time_buffer;
+    _rttMax = round_trip_time(slant_range_max) + time_buffer;
 
     return(1);
 }
 
-//---------------------------//
-// Pulser::SetPulsesInFlight //
-//---------------------------//
+//--------------------------//
+// Pulser::SetPulseWidthMax //
+//--------------------------//
 
-int
-Pulser::SetPulsesInFlight(
-    int  pulses_in_flight)
+void
+Pulser::SetPulseWidthMax(
+    double  pulse_width_max)
 {
-    _pulsesInFlight = pulses_in_flight;
-
-    // need to change pri min
-    _priMin = _rttMax / (double)_pulsesInFlight;
-    if (_priMinSet >= 0.0)
-        _priMin = MAX(_priMin, _priMinSet);
-    SetPri(_priMin);
-
-    // need to change pri max
-    _priMax = _rttMin / (double)(_pulsesInFlight - 1);
-    if (_priMaxSet >= 0.0)
-        _priMax = MIN(_priMax, _priMaxSet);
-
-    return(1);
-}
-
-//----------------//
-// Pulser::SetPri //
-//----------------//
-
-int
-Pulser::SetPri(
-    double  pri)
-{
-printf("%g\n", pri);
-    if (pri <= _priMax)
-    {
-        _pri = pri;
-
-        // need to change pulse width max
-        _pulseWidthMax = _pri / 2.0;
-        if (_pulseWidthMaxSet >= 0.0)
-            _pulseWidthMax = MIN(_pulseWidthMax, _pulseWidthMaxSet);
-
-        // need to change offset max
-        _offsetMax = _pri;
-        if (_offsetMaxSet >= 0.0)
-            _offsetMax = MIN(_offsetMax, _offsetMaxSet);
-
-        return(1);
-    }
+    if (_pulseWidthMaxSet >= 0.0)
+        _pulseWidthMax = MIN(pulse_width_max, _pulseWidthMaxSet);
     else
-    {
-        _pri = _priMin;
-        return(0);
-    }
+        _pulseWidthMax = pulse_width_max;
+    return;
 }
 
 //-----------------------//
@@ -460,6 +354,21 @@ Pulser::SetPulseWidth(
         _pulseWidth = _pulseWidthMin;
         return(0);
     }
+}
+
+//----------------------//
+// Pulser::SetOffsetMax //
+//----------------------//
+
+void
+Pulser::SetOffsetMax(
+    double  offset_max)
+{
+    if (_offsetMaxSet >= 0.0)
+        _offsetMax = MIN(offset_max, _offsetMaxSet);
+    else
+        _offsetMax = offset_max;
+    return;
 }
 
 //-------------------//
@@ -489,8 +398,6 @@ Pulser::SetOffset(
 void
 Pulser::GotoFirstCombo()
 {
-    SetPulsesInFlight(_pulsesInFlight);    // must be set first!
-    SetPri(_priMin);
     SetPulseWidth(_pulseWidthMin);
     SetOffset(_offsetMin);
     _pulseCount = 0;
@@ -515,14 +422,6 @@ Pulser::GotoNextCombo()
     if (SetPulseWidth(_pulseWidth + _pulseWidthStep))
         return(1);
 
-    // pri
-    if (SetPri(_pri + _priStep))
-        return(1);
-
-    // pulses in flight
-    // this one doesn't change yet, there is no next combo
-    // we're done.
-
     return(0);
 }
 
@@ -531,7 +430,8 @@ Pulser::GotoNextCombo()
 //-------------------//
 
 Pulse*
-Pulser::NextPulse()
+Pulser::NextPulse(
+    double  pri)
 {
     //----------------------//
     // allocate a new pulse //
@@ -549,17 +449,12 @@ Pulser::NextPulse()
     // set the pulse info //
     //--------------------//
 
-    new_pulse->startTransmit = _pulseCount * _pri + _offset;
+    new_pulse->startTransmit = _pulseCount * pri + _offset;
     new_pulse->endTransmit = new_pulse->startTransmit + _pulseWidth;
     new_pulse->startEcho = new_pulse->startTransmit + _rttMin;
-    new_pulse->startPeakEcho = new_pulse->startTransmit + _rttMin +
-        _pulseWidth;
+    new_pulse->startPeakEcho = new_pulse->endTransmit + _rttMin;
     new_pulse->endPeakEcho = new_pulse->startTransmit + _rttMax;
-    new_pulse->endEcho = new_pulse->startTransmit + _rttMax + _pulseWidth;
-
-    new_pulse->startNadir = new_pulse->startTransmit + _rttMinNadir;
-    new_pulse->endNadir = new_pulse->startTransmit + _rttMaxNadir +
-        _pulseWidth;
+    new_pulse->endEcho = new_pulse->endTransmit + _rttMax;
 
     _pulseCount++;
 
@@ -573,7 +468,6 @@ Pulser::NextPulse()
 void
 Pulser::Memorize()
 {
-    _priMem = _pri;
     _pulseWidthMem = _pulseWidth;
     _offsetMem = _offset;
     return;
@@ -586,7 +480,6 @@ Pulser::Memorize()
 void
 Pulser::Recall()
 {
-    _pri = _priMem;
     _pulseWidth = _pulseWidthMem;
     _offset = _offsetMem;
     return;
@@ -597,6 +490,11 @@ Pulser::Recall()
 //===============//
 
 PulserCluster::PulserCluster()
+:   _altitude(0.0), _pulsesInFlight(0),  _priSet(-1.0), _priMinSet(-1.0),
+    _priMaxSet(-1.0), _priStep(-1.0), _pri(-1.0), _priMin(-1.0),
+    _priMax(-1.0), _priMem(-1.0), _clusterRttMin(0.0), _clusterRttMax(0.0),
+    _rttMinNadir(-1.0), _rttMaxNadir(-1.0), _angleBuffer(-1.0),
+    _timeBuffer(-1.0)
 {
     return;
 }
@@ -604,6 +502,7 @@ PulserCluster::PulserCluster()
 PulserCluster::~PulserCluster()
 {
     FreeContents();
+    _pulseList.FreeContents();
     return;
 }
 
@@ -622,19 +521,219 @@ PulserCluster::FreeContents()
     return;
 }
 
-//----------------------------//
-// PulserCluster::SetAltitude //
-//----------------------------//
+//-----------------------//
+// PulserCluster::Config //
+//-----------------------//
+
+int
+PulserCluster::Config(
+    ConfigList*  config_list)
+{
+    //------------------------//
+    // get pulsercluster info //
+    //------------------------//
+
+    config_list->ExitForMissingKeywords();
+
+    int pulses_in_flight;
+    config_list->GetInt("PULSES_IN_FLIGHT", &pulses_in_flight);
+    SetPulsesInFlight(pulses_in_flight);
+
+    double nadir_look_angle;
+    config_list->GetDouble("NADIR_LOOK_ANGLE", &nadir_look_angle);
+
+    config_list->GetDouble("ALTITUDE", &_altitude);
+
+    //---------------------------//
+    // set the nadir slant range //
+    //---------------------------//
+
+    double gch = r1_earth + _altitude;
+    double slant_range_min = slant_range(gch, 0.0);
+    double slant_range_max = slant_range(gch, nadir_look_angle);
+    _rttMinNadir = round_trip_time(slant_range_min) - _timeBuffer;
+    _rttMaxNadir = round_trip_time(slant_range_max) + _timeBuffer;
+
+    //-----//
+    // PRI //
+    //-----//
+
+    config_list->DoNothingForMissingKeywords();
+    config_list->GetDouble("PRI_MIN", &_priMinSet);
+    config_list->GetDouble("PRI_MAX", &_priMaxSet);
+    config_list->GetDouble("PRI_STEP", &_priStep);
+    if (config_list->GetDouble("PRI", &_priSet))
+    {
+        _priMinSet = _priSet;
+        _priMin = _priMinSet;
+        _priMaxSet = _priSet;
+        _priMax = _priMaxSet;
+        _priStep = 1.0;    // as long as it is > 0
+    }
+    else
+    {
+        if (_priStep < 0.0)
+        {
+            fprintf(stderr, "PulserCluster::Config: a PRI step is needed\n");
+            return(0);
+        }
+    }
+
+    //---------//
+    // buffers //
+    //---------//
+
+    config_list->GetDouble("ANGLE_BUFFER", &_angleBuffer);
+    _angleBuffer *= dtr;
+
+    config_list->GetDouble("TIME_BUFFER", &_timeBuffer);
+
+    //-----------------------------------------//
+    // determine the number of pulsers to make //
+    //-----------------------------------------//
+
+    int number_of_pulsers;
+    config_list->GetInt("NUMBER_OF_BEAMS", &number_of_pulsers);
+
+    for (int pulser_id = 1; pulser_id <= number_of_pulsers; pulser_id++)
+    {
+        Pulser* new_pulser = new Pulser();
+        if (new_pulser == NULL)
+        {
+            fprintf(stderr, "PulserCluster::Config: ");
+            fprintf(stderr, "error creating pulser for beam %d\n", pulser_id);
+            return(0);
+        }
+        if (! new_pulser->Config(pulser_id, config_list))
+        {
+            fprintf(stderr, "PulserCluster::Config: ");
+            fprintf(stderr, "error configuring pulser for beam %d\n",
+                pulser_id);
+            return(0);
+        }
+        if (! Append(new_pulser))
+        {
+            fprintf(stderr, "PulserCluster::Config: ");
+            fprintf(stderr,
+                "error adding pulser to pulser cluster for beam %d\n",
+                pulser_id);
+            return(0);
+        }
+    }
+
+    return(1);
+}
+
+//------------------------//
+// PulserCluster::SetRtts //
+//------------------------//
 
 void
-PulserCluster::SetAltitude(
-    double  altitude)
+PulserCluster::SetRtts(
+    int  use_buffer)
 {
+    //----------------------------------------------------------//
+    // set the round trip times for the pulsers and the cluster //
+    //----------------------------------------------------------//
+
+    _clusterRttMin = 0.0;
+    _clusterRttMax = 0.0;
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
-        pulser->SetAltitude(altitude);
+        if (use_buffer)
+            pulser->SetRtts(_altitude, _angleBuffer, _timeBuffer);
+        else
+            pulser->SetRtts(_altitude);
+        double pulser_min_rtt = pulser->GetRttMin();
+        double pulser_max_rtt = pulser->GetRttMax();
+        if (_clusterRttMin == 0.0)
+        {
+            // haven't set it yet, just use the min and max rtt
+            _clusterRttMin = pulser_min_rtt;
+            _clusterRttMax = pulser_max_rtt;
+        }
+        else
+        {
+            if (pulser_min_rtt < _clusterRttMin)
+                _clusterRttMin = pulser_min_rtt;
+            if (pulser_max_rtt > _clusterRttMax)
+                _clusterRttMax = pulser_max_rtt;
+        }
     }
+
     return;
+}
+
+//----------------------------------//
+// PulserCluster::SetPulsesInFlight //
+//----------------------------------//
+
+int
+PulserCluster::SetPulsesInFlight(
+    int  pulses_in_flight)
+{
+    _pulsesInFlight = pulses_in_flight;
+
+    // need to change pri min
+    _priMin = _clusterRttMax / (double)_pulsesInFlight;
+    if (_priMinSet >= 0.0)
+        _priMin = MAX(_priMin, _priMinSet);
+    SetPri(_priMin);
+
+    // need to change pri max
+    if (_pulsesInFlight == 1)
+    {
+        // technically, there is no PRI max, but we will make up one.
+        // assuming that the largest pulse width is rtt_min,
+        // we will calculate the PRI associated with pulsing and
+        // receiving each beam sequentially.
+        // i.e. rtt_min + rtt_max time for each beam
+        _priMax = 0.0;
+        for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+        {
+            _priMax += pulser->GetRttMin();
+            _priMax += pulser->GetRttMax();
+        }
+    }
+    else
+    {
+        // interlaced gives us a "true" max PRI
+        _priMax = _clusterRttMin / (double)(_pulsesInFlight - 1);
+    }
+    if (_priMaxSet >= 0.0)
+        _priMax = MIN(_priMax, _priMaxSet);
+
+    return(1);
+}
+
+//-----------------------//
+// PulserCluster::SetPri //
+//-----------------------//
+
+int
+PulserCluster::SetPri(
+    double  pri)
+{
+    if (pri <= _priMax)
+    {
+        _pri = pri;
+
+        // need to change pulse width max and offset max
+        double pulse_width_max = _pri / 2.0;
+        double offset_max = _pri;
+        for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+        {
+            pulser->SetPulseWidthMax(pulse_width_max);
+            pulser->SetOffsetMax(offset_max);
+        }
+
+        return(1);
+    }
+    else
+    {
+        _pri = _priMin;
+        return(0);
+    }
 }
 
 //-------------------------------//
@@ -644,6 +743,8 @@ PulserCluster::SetAltitude(
 void
 PulserCluster::GotoFirstCombo()
 {
+    SetPulsesInFlight(_pulsesInFlight);
+    SetPri(_priMin);
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
         pulser->GotoFirstCombo();
@@ -665,48 +766,16 @@ PulserCluster::GotoNextCombo()
         if (pulser->GotoNextCombo())
             return(1);
     }
+
+    // pri
+    if (SetPri(_pri + _priStep))
+        return(1);
+
+    // pulses in flight
+    // this one doesn't change yet, there is no next combo
+    // we're done.
+
     return(0);    // no more combos
-}
-
-//---------------------------------//
-// PulserCluster::NeededPulseCount //
-//---------------------------------//
-// determine the number of pulses needed for an evaluation
-
-int
-PulserCluster::NeededPulseCount()
-{
-    int max_in_flight = 0;
-    int product_in_flight = 1;
-    for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
-    {
-        int in_flight = pulser->GetPulsesInFlight();
-        if (in_flight > max_in_flight)
-            max_in_flight = in_flight;
-
-        product_in_flight *= in_flight;
-    }
-
-    int use_pulse_count = max_in_flight;
-    for (int i = max_in_flight; i < product_in_flight; i++)
-    {
-        int good = 1;
-        for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
-        {
-            int in_flight = pulser->GetPulsesInFlight();
-            if (i % in_flight != 0)
-            {
-                good = 0;
-                break;
-            }
-        }
-        if (good)
-        {
-            use_pulse_count = i;
-            break;
-        }
-    }
-    return(use_pulse_count + 2);
 }
 
 //-------------------------//
@@ -720,7 +789,7 @@ PulserCluster::Optimize()
     // determine the number of pulses needed for an evaluation //
     //---------------------------------------------------------//
 
-    int pulse_count = NeededPulseCount();
+    int pulse_count = _pulsesInFlight + 2;
 
     //-----------------------//
     // go to the first combo //
@@ -749,13 +818,25 @@ PulserCluster::Optimize()
 
             for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
             {
-                Pulse* new_pulse = pulser->NextPulse();
+                //----------------//
+                // set pulse info //
+                //----------------//
+
+                Pulse* new_pulse = pulser->NextPulse(_pri);
                 if (new_pulse == NULL)
                 {
                     fprintf(stderr,
                         "PulserCluster::Optimize: error allocating pulse\n");
                     exit(1);
                 }
+
+                //----------------//
+                // set nadir info //
+                //----------------//
+
+               new_pulse->startNadir = new_pulse->startTransmit + _rttMinNadir;
+               new_pulse->endNadir = new_pulse->endTransmit + _rttMaxNadir;
+
                 if (! pulse_list.AddIfSafe(new_pulse))
                 {
                     free(new_pulse);
@@ -800,7 +881,7 @@ PulserCluster::DutyFactor()
     double duty_factor_sum = 0.0;
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
-        duty_factor_sum += pulser->DutyFactor();
+        duty_factor_sum += pulser->DutyFactor(_pri);
     }
     return(duty_factor_sum);
 }
@@ -812,6 +893,7 @@ PulserCluster::DutyFactor()
 void
 PulserCluster::Memorize()
 {
+    _priMem = _pri;
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
         pulser->Memorize();
@@ -826,6 +908,7 @@ PulserCluster::Memorize()
 void
 PulserCluster::Recall()
 {
+    _pri = _priMem;
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
         pulser->Recall();

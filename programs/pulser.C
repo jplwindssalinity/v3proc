@@ -139,49 +139,16 @@ main(
     ConfigList config_list;
     config_list.Read(config_file);
 
-    //------------------------------//
-    // create and configure pulsers //
-    //------------------------------//
+    //----------------------//
+    // create and configure //
+    //----------------------//
 
     PulserCluster pulser_cluster;
-    int number_of_beams;
-    config_list.GetInt("NUMBER_OF_BEAMS", &number_of_beams);
-    for (int pulser_id = 1; pulser_id <= number_of_beams; pulser_id++)
+    if (! pulser_cluster.Config(&config_list))
     {
-        Pulser* new_pulser = new Pulser();
-        if (new_pulser == NULL)
-        {
-            fprintf(stderr, "%s: error creating pulser for beam %d\n",
-                command, pulser_id);
-            exit(1);
-        }
-        if (! new_pulser->Config(pulser_id, &config_list))
-        {
-            fprintf(stderr, "%s: error configuring pulser for beam %d\n",
-                command, pulser_id);
-            exit(1);
-        }
-        if (! pulser_cluster.Append(new_pulser))
-        {
-            fprintf(stderr,
-                "%s: error adding pulser to pulser cluster for beam %d\n",
-                command, pulser_id);
-            exit(1);
-        }
+        fprintf(stderr, "%s: error configuring pulser cluster\n", command);
+        exit(1);
     }
-
-    //----------------------------------//
-    // set the nadir angle and altitude //
-    //----------------------------------//
-
-    double nadir_look_angle;
-    config_list.GetDouble("NADIR_LOOK_ANGLE", &nadir_look_angle);
-    Pulser::SetNadirLookAngle(nadir_look_angle);
-
-    double altitude;
-    config_list.GetDouble("ALTITUDE", &altitude);
-printf(" call %g\n", altitude);
-    pulser_cluster.SetAltitude(altitude);
 
     //----------//
     // optimize //

@@ -16,7 +16,7 @@ static const char rcs_id_pulse_h[] =
 
 //======================================================================
 // CLASSES
-//    
+//
 //======================================================================
 
 //======================================================================
@@ -83,23 +83,26 @@ public:
     Pulser();
     ~Pulser();
 
-    int     Config(int beam_number, ConfigList* config_list);
+    int     Config(int pulser_id, ConfigList* config_list);
 
-    int     GetPulsesInFlight() { return(_pulsesInFlight); };
     int     GetId() { return(_pulserId); };
+    double  GetRttMin() { return(_rttMin); };
+    double  GetRttMax() { return(_rttMax); };
 
-    static int     SetNadirLookAngle(double nadir_look_angle);
-    int     SetAltitude(double altitude);
+    int     SetRtts(double altitude, double angle_buffer = 0.0,
+                double time_buffer = 0.0);
     int     SetPulsesInFlight(int pulses_in_flight);
     int     SetPri(double pri);
+    void    SetPulseWidthMax(double pulse_width_max);
     int     SetPulseWidth(double pulse_width);
+    void    SetOffsetMax(double offset_max);
     int     SetOffset(double offset);
 
     void    GotoFirstCombo();
     int     GotoNextCombo();
 
-    Pulse*  NextPulse();
-    double  DutyFactor() { return(_pulseWidth / _pri); };
+    Pulse*  NextPulse(double pri);
+    double  DutyFactor(double pri) { return(_pulseWidth / pri); };
     void    Memorize();
     void    Recall();
     int     WriteTransmitPulses(FILE* ofp);
@@ -108,17 +111,6 @@ public:
 
 private:
     int     _pulserId;
-
-    int     _pulsesInFlight;
-
-    double  _priSet;
-    double  _priMinSet;
-    double  _priMaxSet;
-    double  _priStep;
-    double  _pri;
-    double  _priMin;
-    double  _priMax;
-    double  _priMem;
 
     double  _pulseWidthSet;
     double  _pulseWidthMinSet;
@@ -140,24 +132,12 @@ private:
 
     double  _lookAngle;
     double  _twoWayBeamWidth;
-    double  _angleBuffer;
-    double  _timeBuffer;
 
     // used for operations
-    int     _useBuffer;
     int     _pulseCount;
     double  _rttMin;
     double  _rttMax;
-
-    // these aren't pulser dependent
-    static double  _nadirLookAngle;
-    static double  _rttMinNadir;
-    static double  _rttMaxNadir;
 };
-
-double Pulser::_nadirLookAngle;
-double Pulser::_rttMinNadir;
-double Pulser::_rttMaxNadir;
 
 //======================================================================
 // CLASS
@@ -177,7 +157,12 @@ public:
 
     void    FreeContents();
 
-    void    SetAltitude(double altitude);
+    int     Config(ConfigList* config_list);
+
+    void    SetRtts(int use_buffer);
+    int     SetPulsesInFlight(int pulses_in_flight);
+    int     SetPri(double pri);
+
     int     NeededPulseCount();
     double  Optimize();
     void    GotoFirstCombo();
@@ -188,7 +173,28 @@ public:
     int     WritePulseTiming(const char* filename);
 
 private:
-    double    _altitude;
+    double  _altitude;
+
+    int     _pulsesInFlight;
+
+    double  _priSet;
+    double  _priMinSet;
+    double  _priMaxSet;
+    double  _priStep;
+    double  _pri;
+    double  _priMin;
+    double  _priMax;
+    double  _priMem;
+
+    double  _clusterRttMin;
+    double  _clusterRttMax;
+
+    double  _rttMinNadir;
+    double  _rttMaxNadir;
+
+    double  _angleBuffer;
+    double  _timeBuffer;
+
     PulseList  _pulseList;
 };
 
