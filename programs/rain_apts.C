@@ -8,8 +8,8 @@
 //    rain_apts
 //
 // SYNOPSIS
-//    rain_apts [ -i ] [ -m minutes ] <classtab> <rain_file>
-//        <mudh_file> <output_base>
+//    rain_apts [ -i ] [ -m minutes ] <rain_file> <mudh_file>
+//        <output_base>
 //
 // DESCRIPTION
 //    Generates apts files of rain rate and integrated rain rate.
@@ -19,14 +19,13 @@
 //    [ -m minutes ]  Collocated within minutes.
 //
 // OPERANDS
-//    <classtab>     The classification function table.
 //    <rain_file>    The input rain file.
 //    <mudh_file>    The matching MUDH file (for lon and lat)
 //    <output_base>  The output base.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % rain_apts -i class.tab 1208.rain 1208.mud 1208
+//      % rain_apts -i 1208.rain 1208.mud 1208
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -111,10 +110,8 @@ template class List<AngleInterval>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -i ]", "[ -m minutes ]", "<classtab>",
-    "<rain_file>", "<mudh_file>", "<output_base>", 0 };
-
-static double classtab[16][16][16][16];
+const char* usage_array[] = { "[ -i ]", "[ -m minutes ]", "<rain_file>",
+    "<mudh_file>", "<output_base>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -155,33 +152,12 @@ main(
         }
     }
 
-    if (argc < optind + 4)
+    if (argc < optind + 3)
         usage(command, usage_array, 1);
 
-    const char* classtab_file = argv[optind++];
     const char* rain_file = argv[optind++];
     const char* mudh_file = argv[optind++];
     const char* output_base = argv[optind++];
-
-    //--------------------//
-    // read classtab file //
-    //--------------------//
-
-    FILE* classtab_ifp = fopen(classtab_file, "r");
-    if (classtab_ifp == NULL)
-    {
-        fprintf(stderr, "%s: error opening classtab file %s\n", command,
-            classtab_file);
-        exit(1);
-    }
-    unsigned long size = 16 * 16 * 16 * 16;
-    if (fread(classtab, sizeof(double), size, classtab_ifp) != size)
-    {
-        fprintf(stderr, "%s: error reading classtab file %s\n", command,
-            classtab_file);
-        exit(1);
-    }
-    fclose(classtab_ifp);
 
     //----------------//
     // read mudh file //
@@ -201,7 +177,7 @@ main(
             mudh_file);
         exit(1);
     }
-    size = CTI_SIZE * ATI_SIZE;
+    unsigned long size = CTI_SIZE * ATI_SIZE;
     if (fread(nbd_array,  sizeof(char), size, mudh_ifp) != size ||
         fread(spd_array,  sizeof(char), size, mudh_ifp) != size ||
         fread(dir_array,  sizeof(char), size, mudh_ifp) != size ||
