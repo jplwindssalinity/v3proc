@@ -8,7 +8,7 @@
 //    get_att_otf
 //
 // SYNOPSIS
-//    get_att_otf [ -bit ] [ -y yaw ] [ -f type:windfield ]
+//    get_att_otf [ -bitm ] [ -y yaw ] [ -f type:windfield ]
 //      [ -s step ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -20,6 +20,7 @@
 //    [ -b ]                 Calculate the bias instead of the attitude.
 //    [ -i ]                 Eliminate ice orbit steps.
 //    [ -t ]                 Use topography map.
+//    [ -m ]                 Use minutes from orbit start.
 //    [ -y yaw ]             Fix yaw at given value.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
@@ -100,12 +101,15 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "bf:is:ty:"
+#define OPTSTRING    "bitmf:s:y:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
 #define MIN_POINTS_PER_DIR_STEP   10
 #define MIN_DIR_STEP_DATA_POINTS  36
+
+#define MIN_PEAK  -40000
+#define MAX_PEAK   40000
 
 #define QUOTES    '"'
 
@@ -119,7 +123,7 @@ template class List<AngleInterval>;
 #define MIN_VAR_DATA_COUNT  2
 
 // simplex search parameters
-#define LAMBDA      0.05
+#define LAMBDA      0.3
 #define XTOL        0.01
 #define PLEX_STEPS  36
 
@@ -178,6 +182,9 @@ int        g_opt_topo = 0;
 Topo       g_topo;
 Stable     g_stable;
 int        g_opt_bias = 0;
+int        g_opt_minutes = 0;
+
+int        g_land_is_there = 0;
 
 extern int g_max_downhill_simplex_passes;
 
@@ -232,6 +239,9 @@ main(
                     optarg);
                 exit(1);
             }
+            break;
+        case 'm':
+            g_opt_minutes = 1;
             break;
         case 't':
             g_opt_topo = 1;
@@ -497,6 +507,7 @@ main(
     double sum_time = 0.0;
     int starting_orbit_step = -1;
     g_frame_count = 0;
+    g_land_is_there = 0;
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
     {
         //----------------//
@@ -557,6 +568,7 @@ main(
                 starting_orbit_step = (int)(last_orbit_step / g_step) * g_step;
                 sum_time = 0.0;
                 g_frame_count = 0;
+                g_land_is_there = 0;
             }
             else
             {
@@ -610,7 +622,7 @@ process_orbit_step(
     char filename[1024];
     char title[1024];
     sprintf(filename, "%s.att.%03d.out", output_base, orbit_step);
-    sprintf(title, "Orbit Step = %03d", orbit_step);
+    sprintf(title, "Orbit Step = %03d, Orbit Time = %g", orbit_step, g_time);
 
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
@@ -628,10 +640,14 @@ process_orbit_step(
     // add roll, pitch, yaw to attitude file //
     //---------------------------------------//
 
-//    minutes
-//    double delta_time = (g_time - g_first_time) / 60.0;
-    fprintf(att_fp, "%g %g %g %g\n", g_time, att[0] * rtd,
-        att[1] * rtd, att[2] * rtd);
+    double use_time;
+    if (g_opt_minutes)
+        use_time = (g_time - g_first_time) / 60.0;
+    else
+        use_time = g_time;
+
+    fprintf(att_fp, "%g %g %g %g %d\n", use_time, att[0] * rtd,
+        att[1] * rtd, att[2] * rtd, g_land_is_there);
     fflush(att_fp);
 
     return(1);
@@ -787,6 +803,20 @@ evaluate(
                 continue;
             }
 
+            // check for weirdness
+            if (g_echo_info[frame_idx].measSpecPeakFreq[spot_idx] < MIN_PEAK ||
+                g_echo_info[frame_idx].measSpecPeakFreq[spot_idx] > MAX_PEAK)
+            {
+                continue;
+            }
+
+            // check for land
+            if (g_echo_info[frame_idx].surface_flag[spot_idx] ==
+                EchoInfo::NOT_OCEAN)
+            {
+                g_land_is_there = 1;
+            }
+
             // set the antenna
             qscat->sas.antenna.txCenterAzimuthAngle =
                 g_echo_info[frame_idx].txCenterAzimuthAngle[spot_idx];
@@ -839,6 +869,10 @@ evaluate(
                     fbb + plot_offset);
             }
             dif = dif * dif;
+
+// this makes stronger measurements more important
+dif *= g_echo_info[frame_idx].totalSignalEnergy[spot_idx];
+
             mse += dif;
         }
 //        if (ofp && beam_idx != NUMBER_OF_QSCAT_BEAMS - 1)
