@@ -63,7 +63,7 @@ OBJS = \
 	Interpolate.o \
 	Jpeg.o \
 	Kp.o \
-        KpStatistics.o \
+	KpStatistics.o \
 	Kpm.o \
 	Kpr.o \
 	LandMap.o \
@@ -217,6 +217,7 @@ Jpeg.o: Jpeg.C Jpeg.h Array.h List.h
 Kp.o: Kp.C Kp.h Kpm.h Kpr.h Index.h EarthField.h Distributions.h Meas.h L00Frame.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Kpm.o: Kpm.C Kpm.h Constants.h Array.h Index.h EarthField.h Distributions.h Meas.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Kpr.o: Kpr.C Kpr.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h BufferedList.h
+KpStatistics.o: KpStatistics.C KpStatistics.h Array.h Index.h GMF.h Wind.h Meas.h MiscTable.h Constants.h Kp.h Misc.h List.h LonLat.h AngleInterval.h Matrix.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
 L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
 L00ToL1A.o: L00ToL1A.C L00ToL1A.h L00.h L1A.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Attitude.h
