@@ -243,7 +243,11 @@ public:
     unsigned short  SetAndGetOrbitStep();
     CdsBeamInfo*    GetCurrentBeamInfo();
     double          GetAssumedSpinRate();
-    unsigned short  EstimateIdealEncoder();
+    unsigned short  EstimateIdealEncoder(int calculate_prev_delay = 0,
+                        unsigned short prev_range_step = 0,
+                        unsigned short prev_azimuth_step = 0,
+                        unsigned char prev_rx_gate_width_dn = 0,
+                        unsigned char prev_tx_pulse_width_dn = 0);
 
     int  LoadRgc(int beam_idx, const char* file);
     int  LoadDtc(int beam_idx, const char* file);

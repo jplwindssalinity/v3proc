@@ -655,9 +655,20 @@ QscatCds::GetAssumedSpinRate()
 // QscatCds::EstimateIdealEncoder //
 //--------------------------------//
 // This returns an ideal encoder estimate.  Basically, a quantized azimuth.
+// There are two ways for this function to work:
+// 1) Use the previously stored range gate delay (in rxRangeMem)
+// 2) Calculate what the previous range gate delay was
+// The optional argument, if non-zero, indicates to use method 2
+// Option 1 should be used to simulate data, Option 2 should be used
+// to process data
 
 unsigned short
-QscatCds::EstimateIdealEncoder()
+QscatCds::EstimateIdealEncoder(
+    int             calculate_prev_delay,
+    unsigned short  prev_range_step,
+    unsigned short  prev_azimuth_step,
+    unsigned char   prev_rx_gate_width_dn,
+    unsigned char   prev_tx_pulse_width_dn)
 {
     //-------------//
     // dereference //
@@ -671,7 +682,7 @@ QscatCds::EstimateIdealEncoder()
     //---------------------------------------//
 
     unsigned int int_encoder = (unsigned int)(heldEncoder & 0x7fff);
-//    printf("\ninitial encoder value = %d\n",int_encoder);
+    // printf("\nInitial encoder value = %d\n", int_encoder);
 
     //----------------------//
     // apply encoder offset //
@@ -689,7 +700,7 @@ QscatCds::EstimateIdealEncoder()
         encoder_offset = CDS_ENCODER_A_OFFSET;
     }
     int_encoder += encoder_offset;
-//   printf("plus encoder offset = %d\n",int_encoder);
+    // printf("Plus encoder offset = %d\n", int_encoder);
 
     //-------------------//
     // apply beam offset //
@@ -707,25 +718,46 @@ QscatCds::EstimateIdealEncoder()
         beam_offset = BEAM_B_OFFSET;
     }
     int_encoder += beam_offset;
-//    printf("plus beam offset = %d\n",int_encoder);
+    // printf("Plus beam offset = %d\n", int_encoder);
 
-    //-------------------------------------------//
-    // apply internal delay and centering offset //
-    //-------------------------------------------//
+    //-----------------------------------//
+    // determine spin rate in dn per pri //
+    //-----------------------------------//
 
     float spin_rate = GetAssumedSpinRate();
-//    printf("priDn = %d\n",priDn);
+    // printf("priDn = %d\n", priDn);
     unsigned short ant_dn_per_pri = (unsigned short)
         ( ( ( ((float)priDn / 10.0) * 32768.0 * spin_rate) /
         (60.0 * 1000.0)) + 0.5);
-//    printf("ant_dn_per_pri = %d\n",ant_dn_per_pri);
-    float rx_range_mem = range_tracker->rxRangeMem;
-//   printf("rx_range_mem = %g\n",rx_range_mem);
+    // printf("ant_dn_per_pri = %d\n", ant_dn_per_pri);
+
+    //--------------------------------------------//
+    // get or calculate previous range gate delay //
+    //--------------------------------------------//
+
+    float rx_range_mem;
+    if (calculate_prev_delay)
+    {
+        // do the previous range tracking calculation
+        // the rxRangeMem variable will get set
+
+        unsigned char prev_rx_gate_delay_dn;
+        float prev_rx_gate_delay_fdn;
+        range_tracker->GetRxGateDelay(prev_range_step, prev_azimuth_step,
+            prev_rx_gate_width_dn, prev_tx_pulse_width_dn,
+            &prev_rx_gate_delay_dn, &prev_rx_gate_delay_fdn);
+    }
+    rx_range_mem = range_tracker->rxRangeMem;
+    // printf("rx_range_mem = %g\n", rx_range_mem);
+
+    //------------------//
+    // apply to encoder //
+    //------------------//
 
     int_encoder += (unsigned int)( (float)ant_dn_per_pri * (1.0 +
         (rx_range_mem + (float)txPulseWidthDn) /
         ((float)priDn * 4.0)) + 0.5);
-//    printf("plus delay and centering offset = %d\n",int_encoder);
+    // printf("Plus delay and centering offset = %d\n", int_encoder);
 
     //-----------------//
     // mod the encoder //
