@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -13,20 +13,18 @@ static const char rcs_id_configsimdefs_h[] =
 // Spacecraft //
 //------------//
 
-#define ORBIT_EPOCH_KEYWORD				"ORBIT_EPOCH"
-#define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
-#define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
-#define INCLINATION_KEYWORD				"INCLINATION"
-#define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
-#define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
-#define MEAN_ANOMALY_AT_EPOCH_KEYWORD	"MEAN_ANOMALY_AT_EPOCH"
-#define ATTITUDE_ORDER_1_KEYWORD		"ATTITUDE_ORDER_1"
-#define ATTITUDE_ORDER_2_KEYWORD		"ATTITUDE_ORDER_2"
-#define ATTITUDE_ORDER_3_KEYWORD		"ATTITUDE_ORDER_3"
-
-#define EPHEMERIS_PERIOD_KEYWORD		"EPHEMERIS_PERIOD"
-
-#define SIM_KPRS_FLAG_KEYWORD			"SIM_KPRS_FLAG"
+#define ORBIT_EPOCH_KEYWORD            "ORBIT_EPOCH"
+#define SEMI_MAJOR_AXIS_KEYWORD        "SEMI_MAJOR_AXIS"
+#define ECCENTRICITY_KEYWORD           "ECCENTRICITY"
+#define INCLINATION_KEYWORD            "INCLINATION"
+#define LONG_OF_ASC_NODE_KEYWORD       "LONG_OF_ASC_NODE"
+#define ARGUMENT_OF_PERIGEE_KEYWORD    "ARGUMENT_OF_PERIGEE"
+#define MEAN_ANOMALY_AT_EPOCH_KEYWORD  "MEAN_ANOMALY_AT_EPOCH"
+#define ATTITUDE_ORDER_1_KEYWORD       "ATTITUDE_ORDER_1"
+#define ATTITUDE_ORDER_2_KEYWORD       "ATTITUDE_ORDER_2"
+#define ATTITUDE_ORDER_3_KEYWORD       "ATTITUDE_ORDER_3"
+#define EPHEMERIS_PERIOD_KEYWORD       "EPHEMERIS_PERIOD"
+#define SIM_KPRS_FLAG_KEYWORD          "SIM_KPRS_FLAG"
 
 //------------------------------//
 // Attitude Control Error Model //
@@ -102,17 +100,17 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define TX_PULSE_WIDTH_KEYWORD			"TX_PULSE_WIDTH"
 
-//-------------------------//
-// BYU X factor            //
-//-------------------------//
+//--------------//
+// BYU X factor //
+//--------------//
 
-#define USE_BYU_XFACTOR_KEYWORD                     "USE_BYU_XFACTOR"
-#define XFACTOR_INNER_BEAM_FILE_KEYWORD         "XFACTOR_INNER_BEAM_FILE"
-#define XFACTOR_OUTER_BEAM_FILE_KEYWORD         "XFACTOR_OUTER_BEAM_FILE"
+#define USE_BYU_XFACTOR_KEYWORD          "USE_BYU_XFACTOR"
+#define XFACTOR_INNER_BEAM_FILE_KEYWORD  "XFACTOR_INNER_BEAM_FILE"
+#define XFACTOR_OUTER_BEAM_FILE_KEYWORD  "XFACTOR_OUTER_BEAM_FILE"
 
-//---------------//
-// LandMap       //
-//---------------//
+//---------//
+// LandMap //
+//---------//
 
 #define LANDMAP_FILE_KEYWORD                           "LANDMAP_FILE"
 #define USE_LANDMAP_KEYWORD                            "USE_LANDMAP"
@@ -231,11 +229,12 @@ static const char rcs_id_configsimdefs_h[] =
 #define ONE_PEAK_WIDTH_KEYWORD					"ONE_PEAK_WIDTH"
 #define TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD	"TWO_PEAK_SEPARATION_THRESHOLD"
 #define SCALED_PROBABILITY_THRESHOLD_KEYWORD	"SCALED_PROBABILITY_THRESHOLD"
-#define USE_NUDGING_THRESHOLD_KEYWORD           "USE_NUDGING_THRESHOLD" 
+#define USE_NUDGING_THRESHOLD_KEYWORD           "USE_NUDGING_THRESHOLD"
 #define NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD      "NEAR_SWATH_NUDGE_THRESHOLD"
 #define FAR_SWATH_NUDGE_THRESHOLD_KEYWORD       "FAR_SWATH_NUDGE_THRESHOLD"
 #define USE_NARROW_MEDIAN_FILTER_KEYWORD        "USE_NARROW_MEDIAN_FILTER"
 #define USE_RANDOM_RANK_INIT_KEYWORD            "USE_RANDOM_RANK_INIT"
+
 //------------------//
 // Spacecraft State //
 //------------------//
@@ -247,8 +246,9 @@ static const char rcs_id_configsimdefs_h[] =
 // WindField //
 //-----------//
 
-#define WINDFIELD_TYPE_KEYWORD				"WINDFIELD_TYPE"
-#define WINDFIELD_FILE_KEYWORD				"WINDFIELD_FILE"
+#define WINDFIELD_TYPE_KEYWORD         "WINDFIELD_TYPE"
+#define WINDFIELD_FILE_KEYWORD         "WINDFIELD_FILE"
+#define WINDFIELD_FIXED_SPEED_KEYWORD  "WINDFIELD_FIXED_SPEED"
 
 //-----//
 // GMF //
