@@ -6,16 +6,21 @@
 static const char rcs_id_seapac_c[] =
     "@(#) $Id$";
 
+#include "SeaPac.h"
+#include "Constants.h"
+
 //-------//
 // ijbin //
 //-------//
 
-#include "Constants.h"
-
-#define EARTH_A           6.3781363E6    // meters
-#define EPSILON           1E-30
-#define L2A_ATRACK_GRIDS  1624
-#define L2A_XTRACK_GRIDS  76
+#define EARTH_A              6.3781363E6    // meters
+#define EPSILON              1E-30
+#define L2A_ATRACK_GRIDS     1624
+#define L2A_XTRACK_GRIDS     76
+#define L2A_GRID_RESOLUTION  25000.0    // meters
+#define JOFFSET              (int)(L2A_XTRACK_GRIDS/2)
+#define ATRACK_BIN_CONST     two_pi/L2A_ATRACK_GRIDS
+#define XTRACK_BIN_CONST     L2A_GRID_RESOLUTION/EARTH_A
 
 int
 ijbin(
@@ -25,11 +30,10 @@ ijbin(
     double  long_asc_node,
     double  arg_lat,
     double  nodal_period,
-    int     joffset,
-    double  atrack_bin_const,
-    double  xtrack_bin_const,
     double  meas_lon,
-    double  meas_lat)
+    double  meas_lat,
+    int*    ati,
+    int*    cti)
 {
     //--------------------------------------------------------//
     // Set some common conversions of orbit element variables //
@@ -202,7 +206,7 @@ ijbin(
     // Compute modified WVC_I for south polar rev boundary //
     //-----------------------------------------------------//
 
-    double dat = lip / atrack_bin_const;    // along-track distance
+    double dat = lip / ATRACK_BIN_CONST;    // along-track distance
     // int wvc_i = nint(dat + 0.5);
     int wvc_i = (int)floor(dat + 1.0);    // along-track coordinate
 
@@ -214,7 +218,7 @@ ijbin(
     // JPRIME = cell coordinate with respect to subtrack "cell 0" //
     //------------------------------------------------------------//
 
-    double dct = phipi / xtrack_bin_const;    // cross-track distance
+    double dct = phipi / XTRACK_BIN_CONST;    // cross-track distance
     // wvc_j = nint(dct - 0.5);
     int wvc_j = (int)floor(dct);
 
@@ -223,7 +227,7 @@ ijbin(
     // Reverse sign to conform to SeaWinds swath coordinate system //
     //-------------------------------------------------------------//
 
-    wvc_j = -wvc_j + joffset;    // cross-track coordinate
+    wvc_j = -wvc_j + JOFFSET;    // cross-track coordinate
  
     //-------------------------------------------//
     // Make sure that the cross-track coordinate //
@@ -238,6 +242,10 @@ ijbin(
     {
         wvc_j = L2A_XTRACK_GRIDS;
     }
+
+    *ati = wvc_i;
+    *cti = wvc_j;
+
     return(1);
 }
 
