@@ -290,7 +290,7 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
   return(1);
 }
 
-#define ONE_STAGE_WITHOUT_RANGES 0
+#define ONE_STAGE_WITHOUT_RANGES 1
 
 //-----------------//
 // L2AToL2B::Flush //
