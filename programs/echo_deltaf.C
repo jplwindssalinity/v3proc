@@ -136,6 +136,7 @@ int       g_sector_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 
 float     g_percentage[NUMBER_OF_QSCAT_BEAMS][AZIMUTH_STEPS][ORBIT_STEPS];
 float     g_max_delta_f[NUMBER_OF_QSCAT_BEAMS][AZIMUTH_STEPS][ORBIT_STEPS];
+float     g_max_raw_delta_f[NUMBER_OF_QSCAT_BEAMS][AZIMUTH_STEPS][ORBIT_STEPS];
 
 // the following are allocated dynamically
 double**  g_azimuth;
@@ -470,22 +471,49 @@ main(
     // output //
     //--------//
 
+    char filename[1024];
+    int x_size = AZIMUTH_STEPS;
+    int y_size = ORBIT_STEPS;
+    FILE* ofp = NULL;
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        char filename[1024];
-        sprintf(filename, "%s.%d", output_base, beam_idx + 1);
-        FILE* ofp = fopen(filename, "w");
+        //--------------------//
+        // the fitted delta f //
+        //--------------------//
+
+        sprintf(filename, "%s.fit.%d", output_base, beam_idx + 1);
+        ofp = fopen(filename, "w");
         if (ofp == NULL) {
             fprintf(stderr, "%s: error opening output file %s\n", command,
                 filename);
             exit(1);
         }
-        int x_size = AZIMUTH_STEPS;
-        int y_size = ORBIT_STEPS;
         fwrite(&x_size, sizeof(int), 1, ofp);
         fwrite(&y_size, sizeof(int), 1, ofp);
         if (fwrite(g_max_delta_f[beam_idx], sizeof(float), x_size * y_size,
-            ofp) != x_size * y_size)
+            ofp) != (unsigned int)(x_size * y_size))
+        {
+            fprintf(stderr, "%s: error writing output file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fclose(ofp);
+
+        //-----------------//
+        // the raw delta f //
+        //-----------------//
+
+        sprintf(filename, "%s.raw.%d", output_base, beam_idx + 1);
+        ofp = fopen(filename, "w");
+        if (ofp == NULL) {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fwrite(&x_size, sizeof(int), 1, ofp);
+        fwrite(&y_size, sizeof(int), 1, ofp);
+        if (fwrite(g_max_raw_delta_f[beam_idx], sizeof(float),
+            x_size * y_size, ofp) != (unsigned int)(x_size * y_size))
         {
             fprintf(stderr, "%s: error writing output file %s\n", command,
                 filename);
@@ -571,12 +599,16 @@ process_orbit_step(
     for (int i = 0; i < g_count[beam_idx]; i++)
     {
         float delta_f = g_delta_f[beam_idx][i];
+        float abs_df = fabs(delta_f);
         float fit_peak = c + a * cos(g_azimuth[beam_idx][i] + p);
-        float dif = fabs(delta_f - fit_peak);
+        float abs_dif = fabs(delta_f - fit_peak);
         int az_idx = (int)(g_azimuth[beam_idx][i] * 256.0 / two_pi);
 
-        if (dif > g_max_delta_f[beam_idx][az_idx][orbit_step]) {
-            g_max_delta_f[beam_idx][az_idx][orbit_step] = dif;
+        if (abs_dif > g_max_delta_f[beam_idx][az_idx][orbit_step]) {
+            g_max_delta_f[beam_idx][az_idx][orbit_step] = abs_dif;
+        }
+        if (abs_df > g_max_raw_delta_f[beam_idx][az_idx][orbit_step]) {
+            g_max_raw_delta_f[beam_idx][az_idx][orbit_step] = abs_df;
         }
 
 /*
