@@ -133,9 +133,9 @@ main(
 	char string[100], *value;
 	char* file_still_there; 
         float lon, lat;     
-        double bias=0, ave_bias[20], var=0, ave_std[20];  
-        int num_grids[20], num_s0=0;
-        for(int c=0;c<20;c++){
+        double bias=0, ave_bias[25], var=0, ave_std[25];  
+        int num_grids[25], num_s0=0;
+        for(int c=0;c<25;c++){
 	  ave_bias[c]=0.0;
           ave_std[c]=0.0;
           num_grids[c]=0;
@@ -163,7 +163,7 @@ main(
         std=sqrt(var);
         fprintf(ofp, "Tot: %g %g %g\n",wv.spd,bias,std);
         int offset=(int)floor(wv.spd);
-	if(offset<20){
+	if(offset<25){
 	  ave_std[offset]+=fabs(std);
 	  ave_bias[offset]+=fabs(bias);
 	  num_grids[offset]++;
@@ -241,18 +241,19 @@ main(
     var=var/num_s0;
     double std=sqrt(var);
     int offset=(int)floor(wv.spd);
-    if(offset<20){
+    if(offset<25){
       ave_std[offset]+=fabs(std);
       ave_bias[offset]+=fabs(bias);
       num_grids[offset]++;
     }
   }
-  for(int c=0;c<20;c++){
+  for(int c=0;c<25;c++){
     ave_bias[c]=ave_bias[c]/num_grids[c];
     ave_bias[c]=10*log10(1.0+ave_bias[c]);
     ave_std[c]=ave_std[c]/num_grids[c];
     ave_std[c]=10*log10(1.0+ave_std[c]);
-    printf("%g %g %g\n",(float)(c+c+1)/2.0,ave_bias[c],ave_std[c]);
+    printf("%g %g %g %d\n",(float)(c+c+1)/2.0,ave_bias[c],ave_std[c],
+	   num_grids[c]);
   }
  fclose(ifp);
  fclose(ofp);
