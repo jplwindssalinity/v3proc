@@ -325,7 +325,6 @@ main(
 	gmf.RetrieveWinds_GS(&meas_list,kp_ptr,&wvc);
 
 
-        float obj=gmf._ObjectiveFunction(&meas_list,
 	for(WindVectorPlus* wvp=wvc.ambiguities.GetHead();wvp;wvp=wvc.ambiguities.GetNext()){
 	  fprintf(ofp,"%g %g\n&\n%g %g\n&\n",wvp->spd,dtr*wvp->dir,wvp->spd,wvp->obj);
 	  for(int spd=0;spd<20;spd++){
