@@ -34,6 +34,7 @@ PROGRAMS = \
 	l1b_ascii \
 	l2a_s0 \
 	l2b_to_vctr \
+	echo_deltaf \
 	sim_overlay \
 	modu \
 	echo_dtc \
