@@ -134,7 +134,7 @@ sigma0_to_Psn(
 	Meas*				meas,
 	float				Kfactor,
 	float				sigma0,
-	float*				Psn_slice)
+	float*				Esn_slice)
 {
 	//------------------------//
 	// Sanity check on sigma0 //
@@ -183,10 +183,10 @@ sigma0_to_Psn(
 	double En_slice = En1_slice + En2_slice;
 
 	//------------------------------------------------------------------------//
-	// Signal + Noise POWER within one slice referenced like the signal power.
+	// Signal + Noise Energy within one slice referenced like the signal energy.
 	//------------------------------------------------------------------------//
 
-	*Psn_slice = (float)((Es_slice + En_slice) / Tg);
+	*Esn_slice = (float)(Es_slice + En_slice);
 
 	if (instrument->useKpc == 0)
 	{
@@ -204,10 +204,9 @@ sigma0_to_Psn(
 
 	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
 		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
-	float var_psn_slice = var_esn_slice / (Tg*Tg);
 
 	//------------------------------------------------------------------------//
-	// Fuzz the Psn value by adding a random number drawn from
+	// Fuzz the Esn value by adding a random number drawn from
 	// a gaussian distribution with the variance just computed and zero mean.
 	// This includes both thermal noise effects, and fading due to the
 	// random nature of the surface target.
@@ -219,8 +218,8 @@ sigma0_to_Psn(
 	// Kpc for weighting purposes.
 	//------------------------------------------------------------------------//
 
-	Gaussian rv(var_psn_slice,0.0);
-	*Psn_slice += rv.GetNumber();
+	Gaussian rv(var_esn_slice,0.0);
+	*Esn_slice += rv.GetNumber();
 
 	// Below is the old approach based on SNR
 	//------------------------------------------------------------------------//
@@ -295,14 +294,12 @@ int
 Pnoise(
 	Instrument*			instrument,
 	MeasSpot*			spot,
-	float*				Psn_noise)
+	float*				Esn_noise)
 {
 	//------------------------------------------------------------------------//
 	// Noise power spectral densities referenced the same way as the signal.
 	//------------------------------------------------------------------------//
 
-	double N0_echo = bK * instrument->systemTemperature *
-		instrument->echo_receiverGain / instrument->systemLoss;
 	double N0_noise = bK * instrument->systemTemperature *
 		instrument->noise_receiverGain / instrument->systemLoss;
 
@@ -317,27 +314,28 @@ Pnoise(
 	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
 
 	//------------------------------------------------------------------------//
-	// Start with the noise contribution to the noise energy measurement.
-	// This is simply the noise spectral density (using the noise channel gain)
-	// multiplied by the noise bandwidth and the receiver gate width.
+	// Start with the noise contribution to the noise energy measurement
+	// outside of the echo bandwidth.
+	// This is simply the noise power spectral density (using the noise
+	// channel gain) multiplied by the appropriate bandwidth and the
+	// receiver gate width.
 	//------------------------------------------------------------------------//
 
-	double Esn_noise = N0_noise*Bn*Tg;
+	*Esn_noise = N0_noise*(Bn-Be)*Tg;
 
 	//------------------------------------------------------------------------//
-	// Add in the signal energies within the measurement spot.
-	// These signal energies will include Kpc variance (if selected) that
-	// incorporates both signal variation due to fading, and thermal noise
+	// Add in the signal + noise energies within the measurement spot.
+	// These energies will include Kpc variance (if selected) that
+	// accounts for both signal variation due to fading, and thermal noise
 	// variation from the receiver front end.
+	// The gain of the noise channel is different from the gain of the echo
+	// channel, so a correction factor is applied.
 	//------------------------------------------------------------------------//
 
-	double En_slice,Es_slice;
 	Meas* meas = spot->GetHead();
 	while (meas != NULL)
 	{
-		En_slice = N0_echo * meas->bandwidth * Tg;
-		Es_slice = meas->value*Tg - En_slice;
-		Esn_noise += Es_slice*beta;
+		*Esn_noise += meas->value*beta;
 		meas = spot->GetNext();
 	}
 
@@ -365,9 +363,7 @@ Pnoise(
 	//------------------------------------------------------------------------//
 
 	Gaussian rv(var_noise,0.0);
-	Esn_noise += rv.GetNumber();
-
-	*Psn_noise = Esn_noise / Tg;
+	*Esn_noise += rv.GetNumber();
 
 	return(1);
 }
@@ -376,8 +372,8 @@ Pnoise(
 // Pr_to_sigma0
 //
 // The Pr_to_sigma0 function estimates sigma0 from two signal+noise
-// measurements. One is the slice measurement Psn value.  The other is
-// the noise channel measurement which includes all of the slice powers.
+// measurements. One is the slice measurement Esn value.  The other is
+// the noise channel measurement which includes all of the slice energies.
 // See sigma0_to_Psn and Pnoise above.
 // Various outputs are put in the Meas object passed in.
 //
@@ -388,7 +384,7 @@ Pnoise(
 //	instrument = pointer to current instrument object
 //	meas = pointer to current measurement (for radar_X: cell center, area etc.)
 //	Kfactor = Radar equation correction factor for this cell.
-//	Psn = the received slice power.
+//	Esn = the received slice power.
 //	sumPsn = the sum of all the slice powers for this spot.
 //	Pn = the noise bandwidth measured power.
 //	PtGr = power gain product to use (includes any Kpr fuzzing).
@@ -401,9 +397,9 @@ Pr_to_sigma0(
 	Instrument*			instrument,
 	Meas*				meas,
 	float				Kfactor,
-	float				Psn_slice,
-	float				Psn_echo,
-	float				Psn_noise,
+	float				Esn_slice,
+	float				Esn_echo,
+	float				Esn_noise,
 	float				PtGr)
 {
 	// Compute radar parameter using telemetry values etc that may have been
@@ -415,6 +411,9 @@ Pr_to_sigma0(
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
 
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double Tp = beam->pulseWidth;
+	double Tg = beam->receiverGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Bs = meas->bandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
@@ -422,16 +421,16 @@ Pr_to_sigma0(
 	double alpha = Bn/Be*beta;
 	double rho = 1.0;
 
-	// Estimate the noise in the slice. (exact for simulated data)
-	meas->Pn_slice = Bs/Be*(rho/beta*Psn_noise-Psn_echo)/(alpha*rho/beta-1.0);
+	// Estimate the noise energy in the slice. (exact for simulated data)
+	meas->Pn_slice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
 
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
-	double Ps_slice = Psn_slice - meas->Pn_slice;
+	double Es_slice = Esn_slice - meas->Pn_slice;
 
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
-	// Kpc comes from Ps_slice.
+	// Kpc comes from Es_slice.
 	// Kpr comes from 1/X
-	meas->value = (float)(Ps_slice / meas->XK);
+	meas->value = (float)(Es_slice / meas->XK / Tp);
 
 	if (instrument->useKpc == 0)
 	{
@@ -446,9 +445,8 @@ Pr_to_sigma0(
 		// approximate equations in Mike Spencer's Kpc memos.
 		//------------------------------------------------------------------//
 
-		Beam* beam = instrument->antenna.GetCurrentBeam();
-		meas->A = 1.0 / (Bs * beam->pulseWidth);
-		meas->B = 2.0 / (Bs * beam->receiverGateWidth);
+		meas->A = 1.0 / (Bs * Tp);
+		meas->B = 2.0 / (Bs * Tg);
 		meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
 	}
 
