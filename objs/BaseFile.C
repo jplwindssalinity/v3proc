@@ -52,11 +52,17 @@ int
 BaseFile::OpenForReading()
 {
 	if (_filename == NULL)
+	{
+		printf("Error: No filename specified for BaseFile::OpenForReading\n");
 		return(0);
+	}
 
 	_fp = fopen(_filename, "r");
 	if (_fp == NULL)
+	{
+		printf("Error: Can't open %s in BaseFile::OpenForReading\n",_filename);
 		return(0);
+	}
 
 	return(1);
 }
@@ -66,7 +72,10 @@ BaseFile::OpenForReading(
 	const char*		filename)
 {
 	if (! SetFilename(filename))
+	{
+		printf("Error: No filename specified for BaseFile::OpenForReading\n");
 		return(0);
+	}
 
 	if (! OpenForReading())
 		return(0);
@@ -82,11 +91,17 @@ int
 BaseFile::OpenForWriting()
 {
 	if (_filename == NULL)
+	{
+		printf("Error: No filename specified for BaseFile::OpenForWriting\n");
 		return(0);
+	}
 
 	_fp = fopen(_filename, "w");
 	if (_fp == NULL)
+	{
+		printf("Error: Can't open %s in BaseFile::OpenForWriting\n",_filename);
 		return(0);
+	}
 
 	return(1);
 }
@@ -96,7 +111,10 @@ BaseFile::OpenForWriting(
 	const char*		filename)
 {
 	if (! SetFilename(filename))
+	{
+		printf("Error: No filename specified for BaseFile::OpenForWriting\n");
 		return(0);
+	}
 
 	if (! OpenForWriting())
 		return(0);
