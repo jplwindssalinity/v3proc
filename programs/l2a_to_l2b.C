@@ -249,9 +249,11 @@ main(
         exit(1);
     }
 
-
+    int along_track_bins =
+        (int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
+ 
     if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
-        l2a.header.alongTrackBins))
+        along_track_bins))
     {
         fprintf(stderr, "%s: error allocating wind swath\n", command);
         exit(1);
