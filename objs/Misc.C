@@ -408,21 +408,21 @@ void insertion_sort(int N, float* a, int** indx)
 			printf("Error allocating memory in insertion_sort\n");
 			exit(-1);
 		}
-		for (int i = 0; i < N; i++) *indx[i] = i;
+		for (int i = 0; i < N; i++) (*indx)[i] = i;
 
 		for (int j = 2; j < N; j++)
 		{
 			aa = a[j];
-			ii = *indx[j];
+			ii = (*indx)[j];
 			int i = j - 1;
 			while (i > 0 && a[i] > aa)
 			{
 				a[i+1] = a[i];
-				*indx[i+1] = *indx[i];
+				(*indx)[i+1] = (*indx)[i];
 				i--;
 			}
 			a[i+1] = aa;
-			*indx[i+1] = ii;
+			(*indx)[i+1] = ii;
 		}
 	}
 }
