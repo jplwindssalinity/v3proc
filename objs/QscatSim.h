@@ -67,7 +67,8 @@ public:
     //--------------------//
 
     int  Initialize(Qscat* qscat);
-    int  DetermineNextEvent(Qscat* qscat, QscatEvent* qscat_event);
+    int  DetermineNextEvent(int spots_per_frame,
+                            Qscat* qscat, QscatEvent* qscat_event);
     int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField, L1AFrame* l1a_frame);
@@ -136,6 +137,7 @@ public:
 protected:
     int  _spotNumber;
     int  _spinUpPulses;      // first two pulses just do tracking
+    int  _calPending;        // A cal pulse is waiting to execute.
 };
 
 #endif

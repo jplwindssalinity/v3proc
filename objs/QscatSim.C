@@ -40,7 +40,7 @@ QscatSim::QscatSim()
     outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
     useBYUXfactor(0), rangeGateClipping(0), applyDopplerError(0),
     l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
-    simKpriFlag(0), _spotNumber(0), _spinUpPulses(2)
+    simKpriFlag(0), _spotNumber(0), _spinUpPulses(2), _calPending(0)
 {
     return;
 }
@@ -73,6 +73,7 @@ QscatSim::Initialize(
 
 int
 QscatSim::DetermineNextEvent(
+    int          spots_per_frame,
     Qscat*       qscat,
     QscatEvent*  qscat_event)
 {
@@ -102,10 +103,19 @@ QscatSim::DetermineNextEvent(
     switch (lastEventType)
     {
     case QscatEvent::SCAT_EVENT:
-        if (ideal_encoder > NINETY_DEGREE_ENCODER &&
-            lastEventIdealEncoder <= NINETY_DEGREE_ENCODER)
+        if ((ideal_encoder > NINETY_DEGREE_ENCODER &&
+             lastEventIdealEncoder <= NINETY_DEGREE_ENCODER) ||
+            _calPending == 1)
         {
-            qscat_event->eventId = QscatEvent::LOOPBACK_EVENT;
+            if (_spotNumber < 5 || _spotNumber > spots_per_frame - 5)
+            {
+              _calPending = 1;
+            }
+            else
+            {
+              qscat_event->eventId = QscatEvent::LOOPBACK_EVENT;
+              _calPending = 0;
+            }
         }
         else
         {
@@ -187,6 +197,7 @@ QscatSim::L1AFrameInit(
           l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
           l1a_frame->in_eu.transmit_power_outer = qscat->ses.transmitPower;
         }
+
         l1a_frame->in_eu.transmit_pulse_width = 1e3*qscat->ses.txPulseWidth;
         l1a_frame->in_eu.precision_coupler_temp_eu =
           qscat->ses.physicalTemperature;
@@ -224,7 +235,10 @@ QscatSim::L1AFrameInit(
         l1a_frame->frame_qual_flag=0x0000;
         for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
 
-        set_character_time(qscat->cds.time, epochTime, epochTimeString,
+        // Use instrumentTime to make sure the time string is consistent
+        // with vtcw (used by SeaPAC L1A processor).
+        set_character_time(qscat->cds.instrumentTime/32.0,
+                           epochTime, epochTimeString,
                            l1a_frame->frame_time);
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
@@ -232,19 +246,31 @@ QscatSim::L1AFrameInit(
         l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
 
         // transfer instrument time in microseconds into vtcw.
-        double vtcw_time = 1e6*qscat->cds.instrumentTime;
+        double vtcw_time = 1e6*qscat->cds.instrumentTime/32.0;
         unsigned int vtcw_time_hi4 = (int)(vtcw_time/65536);
         unsigned short vtcw_time_lo2 =
-          (unsigned short)(vtcw_time - vtcw_time_hi4*65536);
+          (unsigned short)(vtcw_time - (double)(vtcw_time_hi4)*65536.0);
         memcpy((void *)(l1a_frame->status.vtcw), (void *)(&vtcw_time_hi4),
                sizeof(unsigned int));
         memcpy((void *)(l1a_frame->status.vtcw+4), (void *)(&vtcw_time_lo2),
                sizeof(unsigned short));
         // convert instrument time to 5 bytes (with zero fractional part)
-        l1a_frame->status.corres_instr_time[0] = 0; // zero fractional part
-        memcpy((void *)(l1a_frame->status.corres_instr_time+1),
+        memcpy((void *)(l1a_frame->status.corres_instr_time),
                (void *)&(qscat->cds.instrumentTime),
                sizeof(unsigned int));
+        l1a_frame->status.corres_instr_time[4] = 0; // zero fractional part
+
+        //-----------------------------------------------------------------//
+        // Set all temperatures in frame enginnering data to physical temp.
+        //-----------------------------------------------------------------//
+
+        static ii[22] = {13,14,15,28,29,30,31,32,33,46,47,48,49,50,51,52,
+                        53,54,55,56,57,58};
+        char* ptr = (char*)&(l1a_frame->engdata);
+        for (int i=0; i < 22; i++)
+        {
+          ptr[ii[i]] = qscat->ses.tempToDn(qscat->ses.physicalTemperature);
+        }
 
         l1a_frame->engdata.precision_coupler_temp =
           qscat->ses.tempToDn(qscat->ses.physicalTemperature);

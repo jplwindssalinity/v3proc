@@ -55,6 +55,7 @@ public:
     int  UnpackHdf(L1AHdf* l1aHdf);
 
     static void DoubleToVTCW(double vtcw_time, char* vtcw6Bytes);
+    double VTCWToDouble(char* vtcw6Bytes);
 
     //-------------------//
     // product variables //

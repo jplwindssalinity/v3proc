@@ -139,8 +139,8 @@ FILE*   ofp)
     unsigned short vtcw_lo2 = 0;
     (void)memcpy(&vtcw_hi4, status.vtcw, sizeof(unsigned int));
     (void)memcpy(&vtcw_lo2, status.vtcw+4, sizeof(unsigned short));
-    double vtcw = vtcw_hi4*65536 + vtcw_lo2;
-    fprintf(ofp,"vtcw = %g\n",vtcw);
+    double vtcw = (double)(vtcw_hi4)*65536.0 + vtcw_lo2;
+    fprintf(ofp,"vtcw = %14.2f\n",vtcw);
     unsigned int corres_instr_time = 0;
     unsigned char frac = 0;
     (void)memcpy(&frac, status.corres_instr_time, sizeof(unsigned char));

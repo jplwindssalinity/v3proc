@@ -615,13 +615,25 @@ char*     vtcw6Bytes)
 
     unsigned int vtcw_time_hi4 = (int)(vtcw_time/65536);
     unsigned short vtcw_time_lo2 =
-               (unsigned short)(vtcw_time - vtcw_time_hi4 * 65536);
+               (unsigned short)(vtcw_time - (double)(vtcw_time_hi4) * 65536.0);
     memcpy((void *)vtcw6Bytes, (void *)(&vtcw_time_hi4), sizeof(unsigned int));
     memcpy((void *)(vtcw6Bytes + 4), (void *)(&vtcw_time_lo2),
                                      sizeof(unsigned short));
     return;
 
 } // L1AFrame::DoubleToVTCW
+
+double
+L1AFrame::VTCWToDouble(
+  char*     vtcw6Bytes)
+{
+  unsigned int vtcw_hi4 = 0;
+  unsigned short vtcw_lo2 = 0;
+  (void)memcpy(&vtcw_hi4, vtcw6Bytes, sizeof(unsigned int));
+  (void)memcpy(&vtcw_lo2, vtcw6Bytes+4, sizeof(unsigned short));
+  return((double)(vtcw_hi4)*65536.0 + vtcw_lo2);
+   
+} // L1AFrame::VTCWToDouble
 
 void
 L1AFrame::UnpackL1AStatus(
