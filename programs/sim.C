@@ -91,8 +91,6 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //

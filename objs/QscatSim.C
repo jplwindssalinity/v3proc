@@ -270,7 +270,7 @@ QscatSim::L1AFrameInit(
         // Set all temperatures in frame enginnering data to physical temp.
         //-----------------------------------------------------------------//
 
-        static ii[22] = {13,14,15,28,29,30,31,32,33,46,47,48,49,50,51,52,
+        static int ii[22] = {13,14,15,28,29,30,31,32,33,46,47,48,49,50,51,52,
                         53,54,55,56,57,58};
         char* ptr = (char*)&(l1a_frame->engdata);
         for (int i=0; i < 22; i++)
