@@ -158,6 +158,29 @@ protected:
 
 //======================================================================
 // CLASS
+//    SdsInt8
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for int8 data
+//======================================================================
+
+class SdsInt8 : public Sds
+{
+public:
+    SdsInt8(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, int8 max, int8 min);
+
+    int   SetMaxAndMin();
+    void  SetWithChar(char* value);
+
+protected:
+    int8  _max;
+    int8  _min;
+};
+
+//======================================================================
+// CLASS
 //    SdsInt16
 //
 // DESCRIPTION

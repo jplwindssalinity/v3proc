@@ -422,6 +422,56 @@ SdsUInt32::SetWithUnsignedInt(unsigned int* value)
     return;
 }
 
+//=========//
+// SdsInt8 //
+//=========//
+
+SdsInt8::SdsInt8(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    int8          max,
+    int8          min)
+:   Sds(sds_name, DFNT_INT8, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//-----------------------//
+// SdsInt8::SetMaxAndMin //
+//-----------------------//
+
+int
+SdsInt8::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//----------------------//
+// SdsInt8::SetWithChar //
+//----------------------//
+// the calibration is ignored (assumed to be 1.0 and 0.0)
+
+void
+SdsInt8::SetWithChar(char* value)
+{
+    int8* ptr = (int8 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (int8)(*(value + i));
+    }
+    return;
+}
+
 //==========//
 // SdsInt16 //
 //==========//

@@ -141,12 +141,15 @@ Attribute* g_attribute_table[] =
 
 int32 dim_sizes_frame[] = { SD_UNLIMITED };
 int32 dim_sizes_frame_3[] = { SD_UNLIMITED, 3 };
+int32 dim_sizes_frame_4[] = { SD_UNLIMITED, 4 };
 int32 dim_sizes_frame_5[] = { SD_UNLIMITED, 5 };
 const char* dim_names_frame[] = { "Telemetry_Frame" };
 const char* dim_names_frame_packet_header[] = { "Telemetry_Frame",
     "Small_Integer" };
 const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame",
     "Message" };
+const char* dim_names_frame_cmd_history[] = { "Telemetry_Frame",
+    "Command" };
 const char* dim_names_frame_[] = { "Telemetry_Frame" };
 
 SdsFloat64* frame_time_secs = new SdsFloat64("frame_time_secs", 1,
@@ -197,6 +200,50 @@ SdsUInt16* error_message = new SdsUInt16("error_message", 1, dim_sizes_frame,
 SdsUInt16* error_message_history = new SdsUInt16("error_message_history", 2,
     dim_sizes_frame_5, "n/a", 1.0, 0.0, dim_names_frame_err_msg_hist,
     65535, 0);
+SdsUInt8* valid_command_count = new SdsUInt8("valid_command_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* invalid_command_count = new SdsUInt8("invalid_command_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsInt8* specified_cal_pulse_pos = new SdsInt8("specified_cal_pulse_pos", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 96, -1);
+SdsUInt8* prf_cycle_time = new SdsUInt8("prf_cycle_time", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* range_gate_a_delay = new SdsUInt8("range_gate_a_delay", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* range_gate_a_width = new SdsUInt8("range_gate_a_width", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* range_gate_b_delay = new SdsUInt8("range_gate_b_delay", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* range_gate_b_width = new SdsUInt8("range_gate_b_width", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt32* doppler_shift_command_1 = new SdsUInt32("doppler_shift_command_1",
+    1, dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x00ffffff,
+    0x00000000);
+SdsUInt32* doppler_shift_command_2 = new SdsUInt32("doppler_shift_command_2",
+    1, dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x00ffffff,
+    0x00000000);
+SdsUInt8* pulse_width = new SdsUInt8("pulse_width", 1, dim_sizes_frame,
+    "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* receiver_gain = new SdsUInt8("receiver_gain", 1, dim_sizes_frame,
+    "dB", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ses_configuration_flags = new SdsUInt8("ses_configuration_flags", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x0f, 0);
+SdsUInt8* ses_data_overrun_count = new SdsUInt8("ses_data_overrun_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 100, 0);
+SdsUInt8* ses_data_underrun_count = new SdsUInt8("ses_data_underrun_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 100, 0);
+SdsUInt8* pred_antenna_pos_count = new SdsUInt8("pred_antenna_pos_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 100, 0);
+SdsUInt16* running_error_count = new SdsUInt16("running_error_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 65535, 0);
+SdsInt8* ses_reset_position = new SdsInt8("ses_reset_position", 1,
+    dim_sizes_frame, "pulse", 1.0, 0.0, dim_names_frame, 100, -1);
+SdsUInt8* doppler_orbit_step = new SdsUInt8("doppler_orbit_step", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsInt8* prf_orbit_step_change = new SdsInt8("prf_orbit_step_change", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 100, -1);
+SdsUInt16* cmd_history_queue = new SdsUInt16("cmd_history_queue", 2,
+    dim_sizes_frame_4, "n/a", 1.0, 0.0, dim_names_frame_cmd_history, 65535, 0);
 
 // xxxxxx
 Sds* g_sds_table[] =
@@ -224,6 +271,27 @@ Sds* g_sds_table[] =
     status_change_flags,
     error_message,
     error_message_history,
+    valid_command_count,
+    invalid_command_count,
+    specified_cal_pulse_pos,
+    prf_cycle_time,
+    range_gate_a_delay,
+    range_gate_a_width,
+    range_gate_b_delay,
+    range_gate_b_width,
+    doppler_shift_command_1,
+    doppler_shift_command_2,
+    pulse_width,
+    receiver_gain,
+    ses_configuration_flags,
+    ses_data_overrun_count,
+    ses_data_underrun_count,
+    pred_antenna_pos_count,
+    running_error_count,
+    ses_reset_position,
+    doppler_orbit_step,
+    prf_orbit_step_change,
+    cmd_history_queue,
     NULL
 };
 
@@ -461,6 +529,8 @@ L1AH::CreateSDSs()
 int
 L1AH::WriteSDSs()
 {
+    GSL1AStatus* status = &(frame.status);
+
     //-----------------------//
     // set all of the values //
     //-----------------------//
@@ -534,7 +604,77 @@ L1AH::WriteSDSs()
     // error message and history
     static unsigned short ushort_zero = 0;
     error_message->SetWithUnsignedShort(&ushort_zero);
-    error_message_history->SetWithUnsignedShort(&ushort_zero);
+    static unsigned short history[] = { 1, 2, 3, 4, 5 };
+    error_message_history->SetWithUnsignedShort(history);
+
+    // valid and invalid command counters
+    static unsigned char count = 6;
+    valid_command_count->SetWithUnsignedChar(&count);
+    invalid_command_count->SetWithUnsignedChar(&count);
+
+    // cal pulse specified position
+/*
+    char pos = -1;
+    if (frame.calPosition != 255)    // 255 flags no cal pulse in frame
+    {
+        pos = (char)frame.calPosition;
+    }
+*/
+    specified_cal_pulse_pos->SetWithChar(
+        &(status->specified_cal_pulse_pos));
+
+    prf_cycle_time->SetWithUnsignedChar(&(status->prf_cycle_time));
+
+    range_gate_a_delay->SetWithUnsignedChar(
+        &(status->range_gate_a_delay));
+    range_gate_a_width->SetWithUnsignedChar(
+        &(status->range_gate_a_width));
+    range_gate_b_delay->SetWithUnsignedChar(
+        &(status->range_gate_b_delay));
+    range_gate_b_width->SetWithUnsignedChar(
+        &(status->range_gate_b_width));
+
+    unsigned int ds1 = 0;
+    unsigned char* ds1_ptr = (unsigned char*)&ds1;
+    *(ds1_ptr + 1) = status->doppler_shift_command_1[0];
+    *(ds1_ptr + 2) = status->doppler_shift_command_1[1];
+    *(ds1_ptr + 3) = status->doppler_shift_command_1[2];
+    doppler_shift_command_1->SetWithUnsignedInt(&ds1);
+
+    unsigned int ds2 = 0;
+    unsigned char* ds2_ptr = (unsigned char*)&ds2;
+    *(ds2_ptr + 1) = status->doppler_shift_command_2[0];
+    *(ds2_ptr + 2) = status->doppler_shift_command_2[1];
+    *(ds2_ptr + 3) = status->doppler_shift_command_2[2];
+    doppler_shift_command_2->SetWithUnsignedInt(&ds2);
+
+    pulse_width->SetWithUnsignedChar(&(status->pulse_width));
+    receiver_gain->SetWithUnsignedChar(&(status->receiver_gain));
+    ses_configuration_flags->SetWithUnsignedChar(
+        &(status->ses_configuration_flags));
+    ses_data_overrun_count->SetWithUnsignedChar(
+        &(status->ses_data_overrun_count));
+    ses_data_underrun_count->SetWithUnsignedChar(
+        &(status->ses_data_underrun_count));
+    pred_antenna_pos_count->SetWithUnsignedChar(
+        &(status->pred_antenna_pos_count));
+
+    unsigned short ushort;
+    memcpy(status->running_error_count, &ushort, 2);
+    running_error_count->SetWithUnsignedShort(&ushort);
+
+    ses_reset_position->SetWithChar(&(status->ses_reset_position));
+    doppler_orbit_step->SetWithUnsignedChar(
+        &(status->doppler_orbit_step));
+
+	char posc;
+    posc = -1;
+    if (status->prf_orbit_step_change < 127)
+        posc = (char)status->prf_orbit_step_change;
+    prf_orbit_step_change->SetWithChar(&posc);
+
+    cmd_history_queue->SetWithUnsignedShort(
+        (unsigned short *)(status->cmd_history_queue));
 
 // xxxxxx
     //-------------------------------------------//
