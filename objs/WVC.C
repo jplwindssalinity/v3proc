@@ -24,6 +24,22 @@ WVC::~WVC()
 	return;
 }
 
+//---------------//
+// WVC::WriteL20 //
+//---------------//
+
+int
+WVC::WriteL20(
+	FILE*	fp)
+{
+	for (WindVector* wv = ambiguities.GetHead(); wv;
+		wv = ambiguities.GetNext())
+	{
+		wv->WriteL20(fp);
+	}
+	return(1);
+}
+
 //-----------------------//
 // WVC::WriteAmbigsAscii //
 //-----------------------//
@@ -90,4 +106,18 @@ WVC::RemoveDuplicates()
 		wv = new_wvc.ambiguities.RemoveCurrent();
 
 	return(count);
+}
+
+//-------------------//
+// WVC::FreeContents //
+//-------------------//
+
+void
+WVC::FreeContents()
+{
+	WindVector* wv;
+	ambiguities.GotoHead();
+	while ((wv = ambiguities.RemoveCurrent()))
+		delete wv;
+	return;
 }

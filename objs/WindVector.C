@@ -39,14 +39,31 @@ WindVector::operator==(
 		return(0);
 }
 
+//----------------------//
+// WindVector::WriteL20 //
+//----------------------//
+
+int
+WindVector::WriteL20(
+	FILE*	fp)
+{
+	if (fwrite((void *)&spd, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&dir, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&obj, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 //-----------------------//
 // WindVector::SetSpdDir //
 //-----------------------//
 
 int
 WindVector::SetSpdDir(
-	double	speed,
-	double	direction)
+	float	speed,
+	float	direction)
 {
 	spd = speed;
 	dir = direction;
@@ -59,10 +76,10 @@ WindVector::SetSpdDir(
 
 int
 WindVector::SetUV(
-	double	u,
-	double	v)
+	float	u,
+	float	v)
 {
-	spd = hypot(u, v);
-	dir = atan2(v, u);
+	spd = (float)hypot((double)u, (double)v);
+	dir = (float)atan2((double)v, (double)u);
 	return(1);
 }

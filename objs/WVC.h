@@ -44,12 +44,19 @@ public:
 	//--------------//
 
 	int		WriteAmbigsAscii(FILE* ofp);
+	int		WriteL20(FILE* fp);
 
 	//--------------//
 	// manipulation //
 	//--------------//
 
 	int		RemoveDuplicates();
+
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
 
 	//-----------//
 	// variables //

@@ -42,7 +42,8 @@ L15::SetFilename(
 int
 L15::ReadDataRec()
 {
-	return(0);
+	FILE* fp = file.GetFp();
+	return(frame.spotList.Read(fp));
 }
 
 //-------------------//
@@ -52,5 +53,6 @@ L15::ReadDataRec()
 int
 L15::WriteDataRec()
 {
-	return(0);
+	FILE* fp = file.GetFp();
+	return(frame.spotList.Write(fp));
 }

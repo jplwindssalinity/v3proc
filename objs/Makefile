@@ -13,13 +13,13 @@ CCC =			gcc
 
 OBJS = \
 	List.o \
+	BufferedList.o \
 	Antenna.o \
 	AntennaSim.o \
 	Array.o \
 	Attitude.o \
 	Beam.o \
 	BeamSim.o \
-	BufferedList.o \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
@@ -43,6 +43,9 @@ OBJS = \
 	L15Frame.o \
 	L17.o \
 	L17Frame.o \
+	L17ToL20.o \
+	L20.o \
+	L20Frame.o \
 	LonLat.o \
 	Matrix3.o \
 	Meas.o \
@@ -115,7 +118,7 @@ Beam.o: Beam.C Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h WindVector.h List.h Antenna.h Attitude.h PiscTable.h WVC.h Meas.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h WindField.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h WindVector.h List.h Antenna.h Attitude.h PiscTable.h WVC.h Meas.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h WVC.h Meas.h CoordinateSwitch.h List.h WindVector.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h
@@ -137,6 +140,9 @@ L15.o: L15.C L15.h GenericFile.h L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h A
 L15Frame.o: L15Frame.C L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17.o: L17.C L17.h GenericFile.h L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17Frame.o: L17Frame.C L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
+L17ToL20.o: L17ToL20.C L17ToL20.h Antenna.h Ephemeris.h InstrumentGeom.h GenericGeom.h L17.h L20.h GMF.h Beam.h Attitude.h Matrix3.h BufferedList.h CoordinateSwitch.h GenericFile.h L17Frame.h L20Frame.h PiscTable.h WVC.h Meas.h List.h WindVector.h LonLat.h
+L20.o: L20.C L20.h GenericFile.h L20Frame.h WVC.h List.h WindVector.h
+L20Frame.o: L20Frame.C L20Frame.h WVC.h List.h WindVector.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h List.h
 Matrix3.o: Matrix3.C Constants.h Matrix3.h CoordinateSwitch.h Attitude.h

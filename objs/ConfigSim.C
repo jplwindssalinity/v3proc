@@ -14,6 +14,7 @@ static const char rcs_id_configsim_c[] =
 #include "L10.h"
 #include "L15.h"
 #include "L17.h"
+#include "L20.h"
 
 //---------------------//
 // ConfigSpacecraftSim //
@@ -317,6 +318,27 @@ ConfigL17(
 	if (l17_filename == NULL)
 		return(0);
 	l17->SetFilename(l17_filename);
+
+	return(1);
+}
+
+//-----------//
+// ConfigL20 //
+//-----------//
+
+int
+ConfigL20(
+	L20*			l20,
+	ConfigList*		config_list)
+{
+	//---------------------------//
+	// configure the l20 product //
+	//---------------------------//
+
+	char* l20_filename = config_list->Get(L20_FILE_KEYWORD);
+	if (l20_filename == NULL)
+		return(0);
+	l20->SetFilename(l20_filename);
 
 	return(1);
 }

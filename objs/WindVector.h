@@ -34,6 +34,12 @@ public:
 	WindVector();
 	~WindVector();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteL20(FILE* fp);
+
 	//-----------//
 	// operators //
 	//-----------//
@@ -44,16 +50,16 @@ public:
 	// setting //
 	//---------//
 
-	int		SetSpdDir(double speed, double direction);
-	int		SetUV(double u, double v);
+	int		SetSpdDir(float speed, float direction);
+	int		SetUV(float u, float v);
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	double		spd;
-	double		dir;	// ccw from east
-	double		obj;	// objective function value
+	float	spd;
+	float	dir;	// ccw from east
+	float	obj;	// objective function value
 };
 
 #endif
