@@ -598,6 +598,8 @@ main(
 
                 // hack out fore/aft index
                 int foreaft_idx = (int)(meas->scanAngle + 0.5);
+                if (foreaft_idx != 0)
+                    foreaft_idx = 1;
 
                 //----------------------------------//
                 // direction parameter calculations //
