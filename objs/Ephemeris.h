@@ -14,12 +14,14 @@ static const char rcs_id_ephemeris_h[] =
 
 //======================================================================
 // CLASSES
-//		Ephemeris
 //		OrbitState
+//		Ephemeris
+//		RangeFunction
 //======================================================================
 
-class Ephemeris;
 class OrbitState;
+class Ephemeris;
+class RangeFunction;
 
 //======================================================================
 // CLASS
@@ -41,15 +43,15 @@ OrbitState();
 
 // I/O
 
-int Write(int output_fd);
-int Read(int input_fd);
+int Write(FILE *outputfile);
+int Read(FILE *inputfile);
 
 //-----------//
 // variables //
 //-----------//
 
 double time;
-Vector3 rsat;
+EarthPosition rsat;
 Vector3 vsat;
 
 };
@@ -74,20 +76,78 @@ public:
 //--------------//
 
 Ephemeris();
+Ephemeris(char *filename);
 ~Ephemeris();
 
 // I/O
 
-int Write(int output_fd);
-int Read(int input_fd);
+int SetFile(char *filename);
+int ReadThrough(double time);
 
+//
 // Interpolation and extraction.
+//
 
 int GetPosition(double time, EarthPosition *rsat);
+
+//
+// Subtrack conversion.
+//
+
+int GetSubtrackCoordinates(
+EarthPosition rground,
+double start_time,
+double measurement_time,
+float *crosstrack,
+float *alongtrack);
 
 //-----------//
 // variables //
 //-----------//
+
+FILE *inputfile;
+long max_states;
+
+};
+
+//======================================================================
+// CLASS
+//		RangeFunction
+//
+// DESCRIPTION
+//		The RangeFunction object computes the distance between an orbit
+//		position and a position on the earth.  It provides the function
+//		(method Range()) to be minimized when an Ephemeris object
+//		invokes the method GetSubtrackCoordinates which needs to find
+//		the ephemeris point with minimum range to the surface point.
+//		To allow the use of standard routines, this object encapsulates
+//		the information needed (ephemeris and surface point). 
+//======================================================================
+
+class RangeFunction
+{
+public:
+
+//--------------//
+// construction //
+//--------------//
+
+RangeFunction(Ephemeris *ephemeris, EarthPosition *rground);
+RangeFunction();
+~RangeFunction();
+
+//
+// Distance from s/c to surface point at a particular time.
+//
+
+float Range(double time);
+
+//
+// Pointers that indicate which ephemeris object and surface point to use.
+//
+
+Ephemeris *ephemeris;
+EarthPosition *rground;
 
 };
 
