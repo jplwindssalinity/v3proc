@@ -14,7 +14,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "Sigma0.h"
 
 
-#define XMGROUT  1     // Output sigma0 values to stdout? 1/0=YES/NO
+#define XMGROUT  0    // Output sigma0 values to stdout? 1/0=YES/NO
 //==========//
 // L10ToL15 //
 //==========//
