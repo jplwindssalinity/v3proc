@@ -28,7 +28,8 @@ static const char rcs_id_metrics_h[] =
 
 #define DEFAULT_METRICS_LOW_WIND_SPEED   3.0
 #define DEFAULT_METRICS_HIGH_WIND_SPEED  30.0
-#define DEFAULT_MAX_DIRECTION_ERROR 200.0*dtr
+#define DEFAULT_MAX_DIRECTION_ERROR      200.0*dtr
+
 class Metrics
 {
 public:
@@ -47,7 +48,7 @@ public:
     int   Initialize(int cross_track_bins, float cross_track_resolution,
 		     int speed_bins, float speed_resolution);
     int   SetWindSpeedRange(float low_speed, float high_speed);
-    void  SetMaxDirectionError(float val){_maxDirectionError=val;}
+    void  SetMaxDirectionError(float val) { _maxDirectionError = val; };
     void  Clear();
 
     //--------------//
@@ -57,7 +58,6 @@ public:
     float  IndexToCtd(int cti);
     float  IndexToSpeed(int ispd);
     int    SpeedToIndex(float speed);
-    
     int    Read(const char* filename);
     int    Write(const char* filename);
     int    WritePlotData(const char* basename);
@@ -70,7 +70,7 @@ public:
     //------------//
 
     int  IsCompatible(const Metrics& m);
-    int  Evaluate(WindSwath* swath, float resolution, 
+    int  Evaluate(WindSwath* swath, float resolution,
 		  int speed_bins, float speed_resolution, WindField* truth);
 
     //-----------//
@@ -85,8 +85,8 @@ protected:
     void  _Deallocate();
 
     void  _SetResolution(float cross_track_resolution, float speed_resolution)
-              { _crossTrackResolution = cross_track_resolution; 
-	        _speedResolution = speed_resolution; }
+              { _crossTrackResolution = cross_track_resolution;
+              _speedResolution = speed_resolution; };
 
     //-----------//
     // variables //
@@ -128,5 +128,3 @@ protected:
 };
 
 #endif
-
-

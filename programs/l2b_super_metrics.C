@@ -9,8 +9,8 @@
 //
 // SYNOPSIS
 //    l2b_super_metrics [ -o output_base ] [ -m output_metric_file ]
-//        [ -s low_speed:high_speed ] [ config_file... ]
-//        [ metric_file... ]
+//        [ -s low_speed:high_speed ] [ -D max_direction_diff ]
+//        [ config_file... ] [ metric_file... ]
 //
 // DESCRIPTION
 //    Reads in any input metric files, calculates wind retrieval
@@ -25,6 +25,8 @@
 //   [ -m output_metric_file ]    Generate an output metric file.
 //   [ -s low_speed:high_speed ]  Only produce output for this range
 //                                  of speeds.
+//   [ -D max_direction_diff ]    Retricts data to those within the specified
+//                                  number of degrees.
 //   [ config_file... ]           Evaluate based on these configs.
 //   [ metric_file... ]           Combine these metric files.
 //
@@ -55,7 +57,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-    "@(#) $Id$";
+  "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -80,13 +82,14 @@ template class List<WindVectorPlus>;
 template class List<AngleInterval>;
 template class List<EarthPosition>;
 
-#define SPEED_RESOLUTION 0.5
-#define SPEED_BINS 100
+#define SPEED_RESOLUTION  0.5
+#define SPEED_BINS        100
+
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING            "o:m:s:D:"
+#define OPTSTRING  "o:m:s:D:"
 
 //--------//
 // MACROS //
@@ -106,14 +109,15 @@ template class List<EarthPosition>;
 
 int opt_speed = 0;
 int opt_dir = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -o output_base ]",
     "[ -m output_metric_file ]", "[ -s low_speed:high_speed ]",
-    "[ -D max_direction_error ]",
-    "[ config_file... ]", "[ metric_file... ]", NULL };
+    "[ -D max_direction_diff ]", "[ config_file... ]", "[ metric_file... ]",
+    NULL };
 
 //--------------//
 // MAIN PROGRAM //
@@ -133,6 +137,7 @@ main(
 
     float low_speed, high_speed;
     float max_direction_error;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -158,11 +163,10 @@ main(
             }
             opt_speed = 1;
             break;
-        case 'D': 
-	  max_direction_error=atof(optarg)*dtr;
-          opt_dir=1;
-          break;
-              
+        case 'D':
+            max_direction_error = atof(optarg) * dtr;
+            opt_dir = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -209,8 +213,9 @@ main(
         }
     }
 
-    if (opt_dir){
-      metrics.SetMaxDirectionError(max_direction_error);
+    if (opt_dir)
+    {
+        metrics.SetMaxDirectionError(max_direction_error);
     }
 
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
@@ -289,21 +294,23 @@ main(
                         command, truth_type, truth_file);
                     exit(1);
                 }
-		//----------------------------------------//
-		// Scale Wind Speeds?                     //
-		//----------------------------------------//
-		config_list.DoNothingForMissingKeywords();
-		float scale;
-		if (config_list.GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD, 
-					  &scale))
-		  {
-		    truth.ScaleSpeed(scale);
-		    fprintf(stderr,"Warning: scaling all wind speeds by %g\n",scale);
-		  }
-		config_list.ExitForMissingKeywords();
-            }
-	    
 
+                //-------------------//
+                // scale wind speeds //
+                //-------------------//
+
+                config_list.MemorizeLogFlag();
+                config_list.DoNothingForMissingKeywords();
+                float scale;
+                if (config_list.GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
+                    &scale))
+                {
+                    truth.ScaleSpeed(scale);
+                    fprintf(stderr, "Warning: scaling all wind speeds by %g\n",
+                        scale);
+                }
+                config_list.RestoreLogFlag();
+            }
 
             //------------------//
             // generate metrics //
@@ -348,7 +355,7 @@ main(
     //-------------------------//
 
     if (output_base != NULL)
-    { 
+    {
         if (! total_metrics.WritePlotData(output_base))
         {
             fprintf(stderr, "%s: error writing plot data files\n", command);

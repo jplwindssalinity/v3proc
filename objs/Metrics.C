@@ -93,7 +93,7 @@ Metrics::Clear()
         _selSumSqrDirErrCount[cti] = 0;
     }
 
-   for (int ispd = 0; ispd < _speedBins; ispd++)
+    for (int ispd = 0; ispd < _speedBins; ispd++)
     {
         _nearSumSqrSpdErrVsSpd[ispd] = 0.0;
         _nearSumSqrSpdErrVsSpdCount[ispd] = 0;
@@ -105,7 +105,7 @@ Metrics::Clear()
         _selSumSqrDirErrVsSpd[ispd] = 0.0;
         _selSumSqrDirErrVsSpdCount[ispd] = 0;
     }
-    
+
     return;
 }
 
@@ -122,22 +122,31 @@ Metrics::IndexToCtd(
     return(ctd);
 }
 
+//-----------------------//
+// Metrics::IndexToSpeed //
+//-----------------------//
+
 float
 Metrics::IndexToSpeed(
-    int ispd)
+    int  ispd)
 {
-  float speed=ispd*_speedResolution+0.5*_speedResolution;
-  return(speed);
+    float speed = ((float)ispd + 0.5) * _speedResolution;
+    return(speed);
 }
+
+//-----------------------//
+// Metrics::SpeedToIndex //
+//-----------------------//
 
 int
 Metrics::SpeedToIndex(
-     float speed)
+    float  speed)
 {
-  if(speed< 0 || speed >= _speedBins*_speedResolution){
-    return(-1);
-  }
-  return(int(speed/_speedResolution));
+    if (speed < 0 || speed >= _speedBins * _speedResolution)
+    {
+        return(-1);
+    }
+    return(int(speed / _speedResolution));
 }
 
 //---------------//
@@ -175,7 +184,7 @@ Metrics::Read(
 
     if (fread((void *)&cross_track_bins, sizeof(int), 1, ifp) != 1 ||
         fread((void *)&cross_track_resolution, sizeof(float), 1, ifp) != 1 ||
-	fread((void *)&speed_bins, sizeof(int), 1, ifp) != 1 ||
+        fread((void *)&speed_bins, sizeof(int), 1, ifp) != 1 ||
         fread((void *)&speed_resolution, sizeof(float), 1, ifp) != 1)
     {
         fprintf(stderr, "Metrics::Read: error reading header\n");
@@ -188,13 +197,13 @@ Metrics::Read(
     //------------//
 
     if (! Initialize(cross_track_bins, cross_track_resolution, speed_bins,
-		     speed_resolution))
+        speed_resolution))
     {
         fprintf(stderr, "Metrics::Read: error initializing metrics\n");
         fclose(ifp);
         return(0);
     }
-    
+
     //------//
     // read //
     //------//
@@ -215,7 +224,7 @@ Metrics::Read(
             _crossTrackBins, ifp) != (size_t)_crossTrackBins ||
         fread((void *)_selSumSqrDirErrCount, sizeof(unsigned long),
             _crossTrackBins, ifp) != (size_t)_crossTrackBins ||
-	fread((void *)_nearSumSqrSpdErrVsSpd, sizeof(double),
+        fread((void *)_nearSumSqrSpdErrVsSpd, sizeof(double),
             _speedBins, ifp) != (size_t)_speedBins ||
         fread((void *)_nearSumSqrSpdErrVsSpdCount, sizeof(unsigned long),
             _speedBins, ifp) != (size_t)_speedBins ||
@@ -231,7 +240,6 @@ Metrics::Read(
             _speedBins, ifp) != (size_t)_speedBins ||
         fread((void *)_selSumSqrDirErrVsSpdCount, sizeof(unsigned long),
             _speedBins, ifp) != (size_t)_speedBins)
-
     {
         fprintf(stderr, "Metrics::Read: error reading data\n");
         fclose(ifp);
@@ -259,7 +267,7 @@ Metrics::Write(
     if (fwrite(metrics_string, sizeof(char), 4, ofp) != 4 ||
         fwrite((void *)&_crossTrackBins, sizeof(int), 1, ofp) != 1 ||
         fwrite((void *)&_crossTrackResolution, sizeof(float), 1, ofp) != 1 ||
-	fwrite((void *)&_speedBins, sizeof(int), 1, ofp) != 1 ||
+        fwrite((void *)&_speedBins, sizeof(int), 1, ofp) != 1 ||
         fwrite((void *)&_speedResolution, sizeof(float), 1, ofp) != 1 ||
         fwrite((void *)_nearSumSqrSpdErr, sizeof(double),
             _crossTrackBins, ofp) != (size_t)_crossTrackBins ||
@@ -328,7 +336,7 @@ Metrics::WritePlotData(
         double ctd = IndexToCtd(cti);
         double value = sqrt(_nearSumSqrSpdErr[cti]
             / (double)_nearSumSqrSpdErrCount[cti]);
-        fprintf(ofp, "%g %g\n", ctd, value);
+        fprintf(ofp, "%g %g %ld\n", ctd, value, _nearSumSqrSpdErrCount[cti]);
     }
     fclose(ofp);
 
@@ -348,7 +356,7 @@ Metrics::WritePlotData(
         double ctd = IndexToCtd(cti);
         double value = rtd * sqrt(_nearSumSqrDirErr[cti]
             / (double)_nearSumSqrDirErrCount[cti]);
-        fprintf(ofp, "%g %g\n", ctd, value);
+        fprintf(ofp, "%g %g %ld\n", ctd, value, _nearSumSqrDirErrCount[cti]);
     }
     fclose(ofp);
 
@@ -367,7 +375,7 @@ Metrics::WritePlotData(
         double ctd = IndexToCtd(cti);
         double value = sqrt(_selSumSqrSpdErr[cti]
             / (double)_selSumSqrSpdErrCount[cti]);
-        fprintf(ofp, "%g %g\n", ctd, value);
+        fprintf(ofp, "%g %g %ld\n", ctd, value, _selSumSqrSpdErrCount[cti]);
     }
     fclose(ofp);
 
@@ -387,7 +395,7 @@ Metrics::WritePlotData(
         double ctd = IndexToCtd(cti);
         double value = rtd * sqrt(_selSumSqrDirErr[cti]
             / (double)_selSumSqrDirErrCount[cti]);
-        fprintf(ofp, "%g %g\n", ctd, value);
+        fprintf(ofp, "%g %g %ld\n", ctd, value, _selSumSqrDirErrCount[cti]);
     }
     fclose(ofp);
 
@@ -395,8 +403,8 @@ Metrics::WritePlotData(
     // nearest rms speed error vs speed //
     //----------------------------------//
 
-    ofp = OpenPlotFile(basename, "near_rms_spd_err_vs_spd", "Nearest RMS Speed Error",
-        "Speed (m/s)", "RMS Speed Error (m/s)");
+    ofp = OpenPlotFile(basename, "near_rms_spd_err_vs_spd",
+        "Nearest RMS Speed Error", "Speed (m/s)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
     for (int ispd = 0; ispd < _speedBins; ispd++)
@@ -406,7 +414,8 @@ Metrics::WritePlotData(
         double speed = IndexToSpeed(ispd);
         double value = sqrt(_nearSumSqrSpdErrVsSpd[ispd]
             / (double)_nearSumSqrSpdErrVsSpdCount[ispd]);
-        fprintf(ofp, "%g %g\n", speed, value);
+        fprintf(ofp, "%g %g %ld\n", speed, value,
+            _nearSumSqrSpdErrVsSpdCount[ispd]);
     }
     fclose(ofp);
 
@@ -414,8 +423,9 @@ Metrics::WritePlotData(
     // nearest rms direction error vs speed //
     //--------------------------------------//
 
-    ofp = OpenPlotFile(basename, "near_rms_dir_err_vs_spd", "Nearest RMS Direction Error",
-        "Speed (m/s)", "RMS Direction Error (deg)");
+    ofp = OpenPlotFile(basename, "near_rms_dir_err_vs_spd",
+        "Nearest RMS Direction Error", "Speed (m/s)",
+        "RMS Direction Error (deg)");
     if (ofp == NULL)
         return(0);
     for (int ispd = 0; ispd < _speedBins; ispd++)
@@ -425,16 +435,17 @@ Metrics::WritePlotData(
         double speed = IndexToSpeed(ispd);
         double value = rtd * sqrt(_nearSumSqrDirErrVsSpd[ispd]
             / (double)_nearSumSqrDirErrVsSpdCount[ispd]);
-        fprintf(ofp, "%g %g\n", speed, value);
+        fprintf(ofp, "%g %g %ld\n", speed, value,
+            _nearSumSqrDirErrVsSpdCount[ispd]);
     }
     fclose(ofp);
 
-    //----------------------------------//
+    //-----------------------------------//
     // selected rms speed error vs speed //
-    //----------------------------------//
+    //-----------------------------------//
 
-    ofp = OpenPlotFile(basename, "sel_rms_spd_err_vs_spd", "Selected RMS Speed Error",
-        "Speed (m/s)", "RMS Speed Error (m/s)");
+    ofp = OpenPlotFile(basename, "sel_rms_spd_err_vs_spd",
+        "Selected RMS Speed Error", "Speed (m/s)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
     for (int ispd = 0; ispd < _speedBins; ispd++)
@@ -444,16 +455,18 @@ Metrics::WritePlotData(
         double speed = IndexToSpeed(ispd);
         double value = sqrt(_selSumSqrSpdErrVsSpd[ispd]
             / (double)_selSumSqrSpdErrVsSpdCount[ispd]);
-        fprintf(ofp, "%g %g\n", speed, value);
+        fprintf(ofp, "%g %g %ld\n", speed, value,
+            _selSumSqrSpdErrVsSpdCount[ispd]);
     }
     fclose(ofp);
 
-    //--------------------------------------//
+    //---------------------------------------//
     // selected rms direction error vs speed //
-    //--------------------------------------//
+    //---------------------------------------//
 
-    ofp = OpenPlotFile(basename, "sel_rms_dir_err_vs_spd", "Selected RMS Direction Error",
-        "Speed (m/s)", "RMS Direction Error (deg)");
+    ofp = OpenPlotFile(basename, "sel_rms_dir_err_vs_spd",
+        "Selected RMS Direction Error", "Speed (m/s)",
+        "RMS Direction Error (deg)");
     if (ofp == NULL)
         return(0);
     for (int ispd = 0; ispd < _speedBins; ispd++)
@@ -463,11 +476,10 @@ Metrics::WritePlotData(
         double speed = IndexToSpeed(ispd);
         double value = rtd * sqrt(_selSumSqrDirErrVsSpd[ispd]
             / (double)_selSumSqrDirErrVsSpdCount[ispd]);
-        fprintf(ofp, "%g %g\n", speed, value);
+        fprintf(ofp, "%g %g %ld\n", speed, value,
+            _selSumSqrDirErrVsSpdCount[ispd]);
     }
     fclose(ofp);
-
-
 
     return(1);
 }
@@ -519,11 +531,11 @@ Metrics::IsCompatible(
 {
     if (_crossTrackBins == m._crossTrackBins &&
         _crossTrackResolution == m._crossTrackResolution &&
-	_speedBins == m._speedBins &&
+        _speedBins == m._speedBins &&
         _speedResolution == m._speedResolution &&
         _lowWindSpeed == m._lowWindSpeed &&
         _highWindSpeed == m._highWindSpeed &&
-	_maxDirectionError == m._maxDirectionError)
+        _maxDirectionError == m._maxDirectionError)
     {
         return(1);
     }
@@ -544,8 +556,11 @@ Metrics::Evaluate(
 {
     Clear();    // clear the metrics first
     int cross_track_bins = swath->GetCrossTrackBins();
-    if (! Initialize(cross_track_bins, resolution,speed_bins,speed_resolution))
+    if (! Initialize(cross_track_bins, resolution, speed_bins,
+        speed_resolution))
+    {
         return(0);
+    }
 
     int along_track_bins = swath->GetAlongTrackBins();
 
@@ -565,17 +580,16 @@ Metrics::Evaluate(
             // check speed range //
             //-------------------//
 
-            int in_speed_range=1;
+            int in_speed_range = 1;
             if (true_wv.spd < _lowWindSpeed || true_wv.spd >= _highWindSpeed)
-                in_speed_range=0;
+                in_speed_range = 0;
 
-            //-------------------//
-            // get speed index   //
-            //-------------------//
+            //-----------------//
+            // get speed index //
+            //-----------------//
+            // ispd = -1 if speed is outside range of array
 
-            int ispd=SpeedToIndex(true_wv.spd);
-
-            // ispd = -1 if speed is outside range of array 
+            int ispd = SpeedToIndex(true_wv.spd);
 
             //-------------------------//
             // nearest RMS speed error //
@@ -585,34 +599,37 @@ Metrics::Evaluate(
             if (nearest == NULL)
                 continue;
 
-            double spd_dif = nearest->spd - true_wv.spd;
-            double spd_dif_sqr = spd_dif * spd_dif;
+            double near_spd_dif = nearest->spd - true_wv.spd;
+            double near_spd_dif_sqr = near_spd_dif * near_spd_dif;
 
-            if(in_speed_range){
-	      _nearSumSqrSpdErr[cti] += spd_dif_sqr;
-	      _nearSumSqrSpdErrCount[cti]++;             
-	    }
-            if(ispd>=0){
-	      _nearSumSqrSpdErrVsSpd[ispd] += spd_dif_sqr;
-	      _nearSumSqrSpdErrVsSpdCount[ispd]++; 
-	    }            
+            if (in_speed_range)
+            {
+                _nearSumSqrSpdErr[cti] += near_spd_dif_sqr;
+                _nearSumSqrSpdErrCount[cti]++;
+            }
+            if (ispd >= 0)
+            {
+                _nearSumSqrSpdErrVsSpd[ispd] += near_spd_dif_sqr;
+                _nearSumSqrSpdErrVsSpdCount[ispd]++;
+            }
 
             //-----------------------------//
             // nearest RMS direction error //
             //-----------------------------//
 
-            double dir_dif = ANGDIF(nearest->dir, true_wv.dir);
-            double dir_dif_sqr = dir_dif * dir_dif;
+            double near_dir_dif = ANGDIF(nearest->dir, true_wv.dir);
+            double near_dir_dif_sqr = near_dir_dif * near_dir_dif;
 
-            if(in_speed_range){
-	      _nearSumSqrDirErr[cti] += dir_dif_sqr;
-	      _nearSumSqrDirErrCount[cti]++;
-	    }
-
-            if(ispd>=0){
-	      _nearSumSqrDirErrVsSpd[ispd] += dir_dif_sqr;
-	      _nearSumSqrDirErrVsSpdCount[ispd]++;
-	    }
+            if (in_speed_range)
+            {
+                _nearSumSqrDirErr[cti] += near_dir_dif_sqr;
+                _nearSumSqrDirErrCount[cti]++;
+            }
+            if (ispd >= 0)
+            {
+                _nearSumSqrDirErrVsSpd[ispd] += near_dir_dif_sqr;
+                _nearSumSqrDirErrVsSpdCount[ispd]++;
+            }
 
             //--------------------------//
             // selected RMS speed error //
@@ -621,33 +638,37 @@ Metrics::Evaluate(
             if (wvc->selected == NULL)
                 continue;
 
-            spd_dif = wvc->selected->spd - true_wv.spd;
-            spd_dif_sqr = spd_dif * spd_dif;
+            double sel_spd_dif = wvc->selected->spd - true_wv.spd;
+            double sel_spd_dif_sqr = sel_spd_dif * sel_spd_dif;
 
-            if(in_speed_range){
-	      _selSumSqrSpdErr[cti] += spd_dif_sqr;
-	      _selSumSqrSpdErrCount[cti]++;
-	    }
-            if(ispd>=0){
-	      _selSumSqrSpdErrVsSpd[ispd] += spd_dif_sqr;
-	      _selSumSqrSpdErrVsSpdCount[ispd]++;
-	    }
+            if (in_speed_range)
+            {
+                _selSumSqrSpdErr[cti] += sel_spd_dif_sqr;
+                _selSumSqrSpdErrCount[cti]++;
+            }
+            if (ispd >= 0)
+            {
+                _selSumSqrSpdErrVsSpd[ispd] += sel_spd_dif_sqr;
+                _selSumSqrSpdErrVsSpdCount[ispd]++;
+            }
 
             //------------------------------//
             // selected RMS direction error //
             //------------------------------//
 
-            dir_dif = ANGDIF(wvc->selected->dir, true_wv.dir);
-            dir_dif_sqr = dir_dif * dir_dif;
+            double sel_dir_dif = ANGDIF(wvc->selected->dir, true_wv.dir);
+            double sel_dir_dif_sqr = sel_dir_dif * sel_dir_dif;
 
-	    if(in_speed_range && fabs(dir_dif)< _maxDirectionError){
-	      _selSumSqrDirErr[cti] += dir_dif_sqr;
-	      _selSumSqrDirErrCount[cti]++;
-	    }
-	    if(ispd>=0 && fabs(dir_dif)< _maxDirectionError){
-	      _selSumSqrDirErrVsSpd[ispd] += dir_dif_sqr;
-	      _selSumSqrDirErrVsSpdCount[ispd]++;
-	    }
+            if (in_speed_range && fabs(sel_dir_dif) < _maxDirectionError)
+            {
+                _selSumSqrDirErr[cti] += sel_dir_dif_sqr;
+                _selSumSqrDirErrCount[cti]++;
+            }
+            if (ispd >= 0 && fabs(sel_dir_dif) < _maxDirectionError)
+            {
+                _selSumSqrDirErrVsSpd[ispd] += sel_dir_dif_sqr;
+                _selSumSqrDirErrVsSpdCount[ispd]++;
+            }
         }
     }
     return(1);
@@ -664,7 +685,8 @@ Metrics::operator+=(
 {
     if (_crossTrackBins == 0)
     {
-        if (! Initialize(m._crossTrackBins, m._crossTrackResolution,m._speedBins,m._speedResolution))
+        if (! Initialize(m._crossTrackBins, m._crossTrackResolution,
+            m._speedBins, m._speedResolution))
         {
             fprintf(stderr,
                 "Metrics::operator+=: error initializing Metrics\n");
@@ -697,9 +719,11 @@ Metrics::operator+=(
     for (int ispd = 0; ispd < _speedBins; ispd++)
     {
         _nearSumSqrSpdErrVsSpd[ispd] += m._nearSumSqrSpdErrVsSpd[ispd];
-        _nearSumSqrSpdErrVsSpdCount[ispd] += m._nearSumSqrSpdErrVsSpdCount[ispd];
+        _nearSumSqrSpdErrVsSpdCount[ispd]
+            += m._nearSumSqrSpdErrVsSpdCount[ispd];
         _nearSumSqrDirErrVsSpd[ispd] += m._nearSumSqrDirErrVsSpd[ispd];
-        _nearSumSqrDirErrVsSpdCount[ispd] += m._nearSumSqrDirErrVsSpdCount[ispd];
+        _nearSumSqrDirErrVsSpdCount[ispd]
+            += m._nearSumSqrDirErrVsSpdCount[ispd];
 
         _selSumSqrSpdErrVsSpd[ispd] += m._selSumSqrSpdErrVsSpd[ispd];
         _selSumSqrSpdErrVsSpdCount[ispd] += m._selSumSqrSpdErrVsSpdCount[ispd];
@@ -717,14 +741,15 @@ Metrics::operator+=(
 
 int
 Metrics::_Allocate(
-    int  cross_track_bins, int speed_bins)
+    int  cross_track_bins,
+    int  speed_bins)
 {
     //---------------//
     // reallocate... //
     //---------------//
 
     _crossTrackBins = cross_track_bins;
-    _speedBins=speed_bins;
+    _speedBins = speed_bins;
 
     //---------//
     // nearest //
@@ -734,8 +759,7 @@ Metrics::_Allocate(
         sizeof(double) * _crossTrackBins);
     if (_nearSumSqrSpdErr == NULL) return(0);
 
-    _nearSumSqrSpdErrCount
-        = (unsigned long*)realloc(_nearSumSqrSpdErrCount,
+    _nearSumSqrSpdErrCount = (unsigned long*)realloc(_nearSumSqrSpdErrCount,
             sizeof(unsigned long) * _crossTrackBins);
     if (_nearSumSqrSpdErrCount == NULL) return(0);
 
@@ -743,8 +767,7 @@ Metrics::_Allocate(
         sizeof(double) * _crossTrackBins);
     if (_nearSumSqrDirErr == NULL) return(0);
 
-    _nearSumSqrDirErrCount
-        = (unsigned long*)realloc(_nearSumSqrDirErrCount,
+    _nearSumSqrDirErrCount = (unsigned long*)realloc(_nearSumSqrDirErrCount,
             sizeof(unsigned long) * _crossTrackBins);
     if (_nearSumSqrDirErrCount == NULL) return(0);
 
@@ -756,21 +779,18 @@ Metrics::_Allocate(
         sizeof(double) * _crossTrackBins);
     if (_selSumSqrSpdErr == NULL) return(0);
 
-    _selSumSqrSpdErrCount
-        = (unsigned long*)realloc(_selSumSqrSpdErrCount,
-            sizeof(unsigned long) * _crossTrackBins);
+    _selSumSqrSpdErrCount = (unsigned long*)realloc(_selSumSqrSpdErrCount,
+        sizeof(unsigned long) * _crossTrackBins);
     if (_selSumSqrSpdErrCount == NULL) return(0);
 
     _selSumSqrDirErr = (double *)realloc(_selSumSqrDirErr,
         sizeof(double) * _crossTrackBins);
     if (_selSumSqrDirErr == NULL) return(0);
 
-    _selSumSqrDirErrCount
-        = (unsigned long*)realloc(_selSumSqrDirErrCount,
-            sizeof(unsigned long) * _crossTrackBins);
+    _selSumSqrDirErrCount = (unsigned long*)realloc(_selSumSqrDirErrCount,
+        sizeof(unsigned long) * _crossTrackBins);
     if (_selSumSqrDirErrCount == NULL) return(0);
 
-    
     //-------------------//
     // nearest  vs speed //
     //-------------------//
@@ -781,7 +801,7 @@ Metrics::_Allocate(
 
     _nearSumSqrSpdErrVsSpdCount
         = (unsigned long*)realloc(_nearSumSqrSpdErrVsSpdCount,
-            sizeof(unsigned long) * _speedBins);
+        sizeof(unsigned long) * _speedBins);
     if (_nearSumSqrSpdErrVsSpdCount == NULL) return(0);
 
     _nearSumSqrDirErrVsSpd = (double *)realloc(_nearSumSqrDirErrVsSpd,
@@ -790,7 +810,7 @@ Metrics::_Allocate(
 
     _nearSumSqrDirErrVsSpdCount
         = (unsigned long*)realloc(_nearSumSqrDirErrVsSpdCount,
-            sizeof(unsigned long) * _speedBins);
+        sizeof(unsigned long) * _speedBins);
     if (_nearSumSqrDirErrVsSpdCount == NULL) return(0);
 
     //-------------------//
@@ -803,7 +823,7 @@ Metrics::_Allocate(
 
     _selSumSqrSpdErrVsSpdCount
         = (unsigned long*)realloc(_selSumSqrSpdErrVsSpdCount,
-            sizeof(unsigned long) * _speedBins);
+        sizeof(unsigned long) * _speedBins);
     if (_selSumSqrSpdErrVsSpdCount == NULL) return(0);
 
     _selSumSqrDirErrVsSpd = (double *)realloc(_selSumSqrDirErrVsSpd,
@@ -812,7 +832,7 @@ Metrics::_Allocate(
 
     _selSumSqrDirErrVsSpdCount
         = (unsigned long*)realloc(_selSumSqrDirErrVsSpdCount,
-            sizeof(unsigned long) * _speedBins);
+        sizeof(unsigned long) * _speedBins);
     if (_selSumSqrDirErrVsSpdCount == NULL) return(0);
 
     Clear();
@@ -849,8 +869,3 @@ Metrics::_Deallocate()
 
     return;
 }
-
-
-
-
-
