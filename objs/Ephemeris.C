@@ -13,6 +13,7 @@ static const char rcs_id_ephemeris_c[] =
 #include "Ephemeris.h"
 #include "List.h"
 #include "List.C"
+#include "Interpolate.h"
 
 //============//
 // OrbitState //
@@ -98,6 +99,10 @@ return(1);
 //===========//
 
 Ephemeris::Ephemeris()
+: _interp_midpoint_time(0),
+  _interp_order(-1), _interp_time(NULL), _interp_x(NULL),
+  _interp_y(NULL), _interp_z(NULL), _interp_vx(NULL), _interp_vy(NULL),
+  _interp_vz(NULL)
 {
 	return;
 }
@@ -108,6 +113,15 @@ Ephemeris::Ephemeris(
 {
 	SetInputFile(filename);
 	SetMaxNodes(max_states);
+	_interp_midpoint_time = 0;
+	_interp_order = -1;
+	_interp_time = NULL;
+	_interp_x = NULL;
+	_interp_y = NULL;
+	_interp_z = NULL;
+	_interp_vx = NULL;
+	_interp_vy = NULL;
+	_interp_vz = NULL;
 	return;
 }
 
@@ -118,6 +132,13 @@ Ephemeris::Ephemeris(
 Ephemeris::~Ephemeris()
 {
 	CloseInputFile();
+	if (_interp_time != NULL) free(_interp_time);
+	if (_interp_x != NULL) free(_interp_x);
+	if (_interp_y != NULL) free(_interp_y);
+	if (_interp_z != NULL) free(_interp_z);
+	if (_interp_vx != NULL) free(_interp_vx);
+	if (_interp_vy != NULL) free(_interp_vy);
+	if (_interp_vz != NULL) free(_interp_vz);
 	return;
 }
 
@@ -186,36 +207,16 @@ Ephemeris::FindSouthPole()
 int
 Ephemeris::GetPosition(
 	double			time,
+	int				order,
 	EarthPosition*	rsat)
 {
-	OrbitState* os1;
-	OrbitState* os2;
-	if (_GetBracketingOrbitStates(time, &os1, &os2) == 0)
-	{
-	//	printf("Error: Can't find requested time %g in Ephemeris\n",time);
-		return(0);
-	}
-	
-	double time1 = os1->time;
-	EarthPosition rsat1 = os1->rsat;
 
-	double time2 = os2->time;
-	EarthPosition rsat2 = os2->rsat;
-
-	// Linearly interpolate the position components in time.
-	//*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
-
-	// Circular interpolation of the position vector.
-	double range = rsat1.Magnitude();
-	double theta = acos((rsat1 % rsat2)/range/range);
-	double theta1 = (time-time1)/(time2-time1) * theta;
-	Matrix3 a;
-	a.Rowset(rsat1, rsat2, rsat1 & rsat2);
-	Vector3 b(range*range*cos(theta1), range*range*cos(theta-theta1), 0);
-	a.Inverse();
-	*rsat = a * b;
-
+	OrbitState os;
+	if (Ephemeris::GetOrbitState(time,order,&os) == 0) return(0);
+//	if (Ephemeris::GetOrbitState_2pt(time,&os) == 0) return(0);
+	*rsat = os.rsat;
 	return(1);
+
 }
 
 //--------------------------//
@@ -223,9 +224,100 @@ Ephemeris::GetPosition(
 //--------------------------//
 // Interpolate this OrbitState List (ie., Ephemeris) to the desired time
 // and return the interpolated OrbitState
+// This method uses N'th order polynomial interpolation.
 
 int
 Ephemeris::GetOrbitState(
+	double			time,
+	int				order,
+	OrbitState*		orbit_state)
+{
+
+	if (order < 0) return(0);
+
+	if (order != _interp_order)
+	{	// need to reform the interpolating arrays.
+		if (_interp_time != NULL) free(_interp_time);
+		_interp_time = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_x != NULL) free(_interp_x);
+		_interp_x = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_y != NULL) free(_interp_y);
+		_interp_y = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_z != NULL) free(_interp_z);
+		_interp_z = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_vx != NULL) free(_interp_vx);
+		_interp_vx = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_vy != NULL) free(_interp_vy);
+		_interp_vy = (double*)malloc(sizeof(double)*(order+1));
+		if (_interp_vz != NULL) free(_interp_vz);
+		_interp_vz = (double*)malloc(sizeof(double)*(order+1));
+		if ((_interp_x == NULL) || (_interp_y == NULL) ||
+			(_interp_z == NULL) || (_interp_vx == NULL) ||
+			(_interp_vy == NULL) || (_interp_vz == NULL) ||
+			(_interp_time == NULL))
+		{
+		return(0);
+		}
+	}
+
+	OrbitState* os1;
+	OrbitState* os2;
+	if (_GetBracketingOrbitStates(time, &os1, &os2) == 0)
+	{
+	//	printf("Error: Can't find requested time %g in Ephemeris\n",time);
+		return(0);
+	}
+
+	if ((os1->time != _interp_midpoint_time) || (order != _interp_order))
+	{	// Interpolating points need to be set up.
+		_interp_midpoint_time = os1->time;
+		_interp_order = order;
+		for (int i=0; i < (order+1)/2; i++)
+		{	// Position list at start of the set of interpolating points.
+			if (GotoPrev() == 0) break;	// Can't back up anymore.
+		}
+		OrbitState* os = GetCurrent();
+		if (os == NULL) os = GetHead();	// Backed off beginning of list.
+		for (int i=0; i < order+1; i++)
+		{	// Load the interpolating set.
+			if (os == NULL) return(0);	// Ephemeris not long enough
+			_interp_time[i] = os->time;
+			_interp_x[i] = os->rsat.get(0);
+			_interp_y[i] = os->rsat.get(1);
+			_interp_z[i] = os->rsat.get(2);
+			_interp_vx[i] = os->vsat.get(0);
+			_interp_vy[i] = os->vsat.get(1);
+			_interp_vz[i] = os->vsat.get(2);
+			os = GetOrReadNext();
+		}
+	}
+
+	// Polynomial interpolation of the vector components.
+	double x,y,z,vx,vy,vz;
+	polint(_interp_time,_interp_x,order+1,time,&x);
+	polint(_interp_time,_interp_y,order+1,time,&y);
+	polint(_interp_time,_interp_z,order+1,time,&z);
+	polint(_interp_time,_interp_vx,order+1,time,&vx);
+	polint(_interp_time,_interp_vy,order+1,time,&vy);
+	polint(_interp_time,_interp_vz,order+1,time,&vz);
+
+	orbit_state->rsat.Set(x,y,z);
+	orbit_state->vsat.Set(vx,vy,vz);
+	orbit_state->time = time;
+
+	return(1);
+}
+
+//------------------------------//
+// Ephemeris::GetOrbitState_2pt //
+//------------------------------//
+// Interpolate this OrbitState List (ie., Ephemeris) to the desired time
+// and return the interpolated OrbitState
+// This method uses a simple 2 point linear or circular (depending on which
+// is commented out below) interpolation between the bracketing points.
+
+int
+Ephemeris::GetOrbitState_2pt(
 	double			time,
 	OrbitState*		orbit_state)
 {
@@ -260,6 +352,8 @@ Ephemeris::GetOrbitState(
 
 	// Linearly interpolate the components of the velocity vector.
 	orbit_state->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
+
+	orbit_state->time = time;
 
 	return(1);
 }
@@ -426,8 +520,10 @@ if (r1 < r2) min_time = t1; else min_time = t2;
 // minimum range position.
 EarthPosition start_position;
 OrbitState min_state;
-if (GetOrbitState(min_time,&min_state) == 0) return(0);
-if (GetPosition(start_time,&start_position) == 0) return(0);
+if (GetOrbitState(min_time,EPHEMERIS_INTERP_ORDER,&min_state) == 0) return(0);
+//if (GetOrbitState_2pt(min_time,&min_state) == 0) return(0);
+if (GetPosition(start_time,EPHEMERIS_INTERP_ORDER,&start_position) == 0)
+	return(0);
 
 // Compute the corresponding nadir points on the earth's surface.
 EarthPosition subtrack_min = min_state.rsat.Nadir();
@@ -451,6 +547,10 @@ return(1);
 //--------------------------------------//
 // Ephemeris::_GetBracketingOrbitStates //
 //--------------------------------------//
+//
+// This method locates the two ephemeris points that bracket a
+// particular time.  It also positions the current pointer for the
+// Ephemeris list at the second of these points (*os2 below).
 
 int
 Ephemeris::_GetBracketingOrbitStates(
@@ -526,7 +626,8 @@ RangeFunction::Range(double time)
 {
 
 EarthPosition rsat;
-if (ephemeris->GetPosition(time,&rsat) == 0) return(-1.0);
+if (ephemeris->GetPosition(time,EPHEMERIS_INTERP_ORDER,&rsat) == 0)
+	return(-1.0);
 EarthPosition rlook = *rground - rsat;
 return(rlook.Magnitude());
 

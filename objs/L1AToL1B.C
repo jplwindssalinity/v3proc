@@ -80,7 +80,7 @@ L10ToL15::Convert(
 		// ...determine the spacecraft orbit state and attitude //
 		//------------------------------------------------------//
 
-		if (! ephemeris->GetOrbitState(l10->frame.time,
+		if (! ephemeris->GetOrbitState(l10->frame.time,EPHEMERIS_INTERP_ORDER,
 			&(meas_spot->scOrbitState)))
 		{
 			return(0);

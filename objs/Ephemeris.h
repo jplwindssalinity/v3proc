@@ -13,6 +13,8 @@ static const char rcs_id_ephemeris_h[] =
 #include "Matrix3.h"
 #include "BufferedList.h"
 
+#define EPHEMERIS_INTERP_ORDER	8
+
 //======================================================================
 // CLASSES
 //		OrbitState
@@ -88,8 +90,9 @@ public:
 	// Interpolation and extraction.
 	//
 
-	int GetPosition(double time, EarthPosition *rsat);
-	int GetOrbitState(double time, OrbitState *os);
+	int GetPosition(double time, int order, EarthPosition *rsat);
+	int GetOrbitState(double time, int order, OrbitState *os);
+	int GetOrbitState_2pt(double time, OrbitState *os);
 	int		GetNextOrbitState(OrbitState* os);
 
 	//
@@ -108,8 +111,15 @@ protected:
 	// variables //
 	//-----------//
 
-	FILE*			_inputFile;
-	unsigned int	_maxStates;
+	double	_interp_midpoint_time;
+	int		_interp_order;
+	double*	_interp_time;
+	double*	_interp_x;
+	double*	_interp_y;
+	double*	_interp_z;
+	double*	_interp_vx;
+	double*	_interp_vy;
+	double*	_interp_vz;
 };
 
 //======================================================================
