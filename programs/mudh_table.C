@@ -311,6 +311,7 @@ main(
 
     double norain_tab[16][16][16][16];
     double rain_tab[16][16][16][16];
+    double all_count[16][16][16][16];
     for (int i = 0; i < 16; i++)
     {
         for (int j = 0; j < 16; j++)
@@ -321,6 +322,7 @@ main(
                 {
                     norain_tab[i][j][k][l] = 0.0;
                     rain_tab[i][j][k][l] = 0.0;
+                    all_count[i][j][k][l] = (double)counts[i][j][k][l][0];
                     if (counts[i][j][k][l][0] > MIN_SAMPLES)
                     {
                         double norain_prob = (double)counts[i][j][k][l][1] /
@@ -343,6 +345,7 @@ main(
     }
     fwrite(norain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
     fwrite(rain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
+    fwrite(all_count, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
 
     //-------------//
     // close files //
