@@ -7,13 +7,13 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 HDFINCDIR =		/usr/local/HDF/include
 
-EALIBS =		../../lib/libEAData.a
+EALIBS =		../../lib/libEAData.a /usr/local/lib/libtiff.a
 HDFLIBS =		-L/usr/local/HDF/lib -lmfhdf -ldf -lz -lnsl
-LIBS =			../../lib/libSim.a /opt/local/lib/libjpeg.a
+LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
 
-CCC =			$(PURE) g++
+CCC =			$(PURE) gcc
 DEBUGFLAGS =	-O2
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 
@@ -59,7 +59,6 @@ PROGRAMS = \
 	generate_rgc \
 	generate_dtc \
 	rgc_delay_errors \
-	baseband_errors \
 	rgc_format \
 	dtc_format \
     tc_info \
@@ -127,6 +126,7 @@ PROGRAMS = \
 #	fix_knowledge
 #	sim_l1a_echo_proc
 #	echo_split
+#	baseband_errors
 
 SVT_PROGRAMS = \
     l1a_hdf_energy_map

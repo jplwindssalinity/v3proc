@@ -365,8 +365,8 @@ main(
     //---------------------------------//
 
     TIFF* tif_fp = TIFFOpen(tiff_file, "w");
-    TIFFSetField(tif_fp, TIFFTAG_IMAGELENGTH, (uint32)x_size);
-    TIFFSetField(tif_fp, TIFFTAG_IMAGEWIDTH, (uint32)y_size);
+    TIFFSetField(tif_fp, TIFFTAG_IMAGELENGTH, (uint32)y_size);
+    TIFFSetField(tif_fp, TIFFTAG_IMAGEWIDTH, (uint32)x_size);
     TIFFSetField(tif_fp, TIFFTAG_SAMPLESPERPIXEL, (uint32)3);
     TIFFSetField(tif_fp, TIFFTAG_BITSPERSAMPLE, (uint32)8);
     TIFFSetField(tif_fp, TIFFTAG_PLANARCONFIG, (uint32)PLANARCONFIG_SEPARATE);
@@ -375,45 +375,23 @@ main(
 
     unsigned char *buf = NULL;
 
-    buf = (unsigned char *)_TIFFmalloc(y_size);
+    buf = (unsigned char *)_TIFFmalloc(x_size);
     if (buf == NULL)
     {
         fprintf(stderr, "%s: error allocating scanline (%d)\n", command,
-            y_size);
+            x_size);
         exit(1);
     }
 
-    for (x = 0; x < x_size; x++)
-    {
-        for (y = 0; y < y_size; y++)
-        {
-            unsigned char color[3];
-            colormap.ConvertToColor(array[x][y], color);
-            buf[y] = color[0];
+    for (c = 0; c < 3; c++) {
+        for (y = 0; y < y_size; y++) {
+            for (x = 0; x < x_size; x++) {
+                unsigned char color[3];
+                colormap.ConvertToColor(array[x][y_size - 1 - y], color);
+                buf[x] = color[c];
+            }
+            TIFFWriteScanline(tif_fp, buf, y, c);
         }
-        TIFFWriteScanline(tif_fp, buf, x, 0);
-    }
-
-    for (x = 0; x < x_size; x++)
-    {
-        for (y = 0; y < y_size; y++)
-        {
-            unsigned char color[3];
-            colormap.ConvertToColor(array[x][y], color);
-            buf[y] = color[1];
-        }
-        TIFFWriteScanline(tif_fp, buf, x, 1);
-    }
-
-    for (x = 0; x < x_size; x++)
-    {
-        for (y = 0; y < y_size; y++)
-        {
-            unsigned char color[3];
-            colormap.ConvertToColor(array[x][y], color);
-            buf[y] = color[2];
-        }
-        TIFFWriteScanline(tif_fp, buf, x, 2);
     }
 
     _TIFFfree(buf);
