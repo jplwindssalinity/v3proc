@@ -510,6 +510,10 @@ protected:
     int32  _dirSdsId;
     int32  _mleSdsId;
     int32  _selectSdsId;
+    int32  _numambigSdsId;
+    int32  _modelSpeedSdsId;
+    int32  _modelDirSdsId;
 };
 
 #endif
+

@@ -2461,12 +2461,16 @@ WindSwath::ReadHdfL2B(
 
     _Allocate();
 
+    unsigned char*   numambigArray = new unsigned char[_crossTrackBins];
     float* lonArray = new float[_crossTrackBins];
     float* latArray = new float[_crossTrackBins];
     float* speedArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
     float* dirArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
     float* mleArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
     char*  selectArray = new char[_crossTrackBins];
+    float* modelSpeedArray=(float*) new float [_crossTrackBins];
+    float* modelDirArray=(float*) new float [_crossTrackBins];
+
     int32 sdsIds[1];
     for (int32 i = 0; i < _alongTrackBins; i++)
     {
@@ -2499,25 +2503,49 @@ WindSwath::ReadHdfL2B(
         if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, selectArray) == 0)
             return(0);
 
+        sdsIds[0] = _numambigSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, numambigArray) == 0)
+            return(0);
+        
+	sdsIds[0] = _modelSpeedSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, modelSpeedArray) == 0)
+	    return(0);
+
+	sdsIds[0] = _modelDirSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, modelDirArray) == 0)
+	    return(0);
+
         for (int j = 0; j < _crossTrackBins; j++)
         {
             WVC* wvc = new WVC();
-            wvc->lonLat.longitude = lonArray[j];
-            wvc->lonLat.latitude = latArray[j];
-            for (int k=0; k < HDF_NUM_AMBIGUITIES; k++)
+            wvc->lonLat.longitude = lonArray[j]*dtr;
+            wvc->lonLat.latitude = latArray[j]*dtr;
+            wvc->nudgeWV = new WindVectorPlus();
+            float nudge_edir=(450.0-modelDirArray[j])*dtr;
+            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j],nudge_edir);
+
+            for (int k=0; k < numambigArray[j]; k++)
             {
                 WindVectorPlus* wvp = new WindVectorPlus();
-                wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k],
-                               dirArray[j * HDF_NUM_AMBIGUITIES + k]);
+                float edir=(450.0-dirArray[j * HDF_NUM_AMBIGUITIES + k])*dtr;
+                wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k],edir);
                 wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
                 wvc->ambiguities.Append(wvp);
             }
-            if (selectArray[j] > 0)
+            if (selectArray[j] > 0 && numambigArray[j] > 0){
                 wvc->selected = wvc->ambiguities.GetByIndex(selectArray[j]-1);
-
-            *(*(swath + j) + i) = wvc;
+		*(*(swath + j) + i) = wvc;
+	    }
+            else{
+	      delete wvc;
+              *(*(swath + j) + i) = NULL;
+              _validCells--;
+	    }
         }
     }
+    delete [] modelDirArray;
+    delete [] modelSpeedArray;
+    delete [] numambigArray;
     delete [] lonArray;
     delete [] latArray;
     delete [] speedArray;
@@ -5402,6 +5430,8 @@ int
 WindSwath::_OpenHdfDataSets(
     TlmHdfFile*  tlmHdfFile)
 {
+    if ((_numambigSdsId =_OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, NUM_AMBIGS)) == 0)
+        return(0);
     if ((_lonSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WVC_LON)) == 0)
         return(0);
     if ((_latSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WVC_LAT)) == 0)
@@ -5410,6 +5440,11 @@ WindSwath::_OpenHdfDataSets(
                                                      WIND_SPEED)) == 0)
         return(0);
     if ((_dirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, WIND_DIR)) == 0)
+        return(0);
+    if ((_modelSpeedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+                                                     MODEL_SPEED)) == 0)
+        return(0);
+    if ((_modelDirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, MODEL_DIR)) == 0)
         return(0);
     if ((_mleSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
                                                      MAX_LIKELIHOOD_EST)) == 0)
