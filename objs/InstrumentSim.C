@@ -185,19 +185,21 @@ InstrumentSim::ScatSim(
 
 	Vector3 rlook_beam;
 	rlook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
-	Vector3 rlook_geo = beam_frame_to_gc.Forward(rlook_beam);
+	Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
 
 	//-------------------------------//
 	// calculate the earth intercept //
 	//-------------------------------//
 
-	EarthPosition rspot = earth_intercept(rlook_geo, sc_orbit_state->rsat);
+	EarthPosition spot_on_earth = earth_intercept(rlook_gc,
+		sc_orbit_state->rsat);
 
 	//----------------------------------------//
 	// get wind vector for the earth location //
 	//----------------------------------------//
 
-	Vector3 alt_lat_lon = rspot.get_alt_lat_lon(EarthPosition::GEODETIC);
+	Vector3 alt_lat_lon =
+		spot_on_earth.get_alt_lat_lon(EarthPosition::GEODETIC);
 	double lat, lon;
 	alt_lat_lon.Get(0, &lat);
 	alt_lat_lon.Get(1, &lon);
@@ -209,9 +211,16 @@ InstrumentSim::ScatSim(
 
 	Meas meas;
 	meas.pol = beam->polarization;
-	meas.eastAzimuth = 0.0;			// generate local coords, calc az.
-	meas.scAzimuth = 0.0;			// calc az from s/c vel and look angle
-	meas.incidenceAngle = 0.0;		// use local normal to calc inc.
+
+	// get local measurement azimuth
+	CoordinateSwitch gc_to_surface = spot_on_earth.SurfaceCoordinateSystem();
+	Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+	double r, theta, phi;
+	rlook_surface.SphericalGet(&r, &theta, &phi);
+	meas.eastAzimuth = phi;
+	
+	// get incidence angle
+	meas.incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
 
 	//--------------------------------//
 	// convert wind vector to sigma-0 //
