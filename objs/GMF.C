@@ -1448,6 +1448,7 @@ GMF::Optimize_Wind_Solutions(
 		wr_wind_dir[i] = wvp->dir;
 		wr_mle[i] = wvp->obj;
 		i++;
+		if (i >= wind_max_solutions) break;
 	}
 
 //
@@ -1795,6 +1796,18 @@ GMF::Optimize_Wind_Solutions(
 			}
 		}
 	}	//  The big ambiguity loop
+
+	// Copy data from wr_ arrays.
+	i = 0;
+	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+		 wvp; wvp = wvc->ambiguities.GetNext())
+	{
+		wvp->spd = wr_wind_speed[i];
+		wvp->dir = wr_wind_dir[i];
+		wvp->obj = wr_mle[i];
+		i++;
+	}
+
 
 	return(1);
 
