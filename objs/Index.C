@@ -6,6 +6,7 @@
 static const char rcs_id_index_c[] =
 	"@(#) $Id$";
 
+#include <stdlib.h>
 #include "Index.h"
 
 //=======//
@@ -90,6 +91,44 @@ Index::SpecifyNewBins(
 		return(0);
 
 	return(1);
+}
+
+//---------------------//
+// Index::MakeIntArray //
+//---------------------//
+
+int*
+Index::MakeIntArray()
+{
+
+	int* ptr = (int*)malloc(sizeof(int)*_bins);
+	if (ptr == NULL) return(NULL);
+	for (int i=0; i < _bins; i++)
+	{
+		ptr[i] = 0;
+	}
+
+	return(ptr);
+
+}
+
+//-----------------------//
+// Index::MakeFloatArray //
+//-----------------------//
+
+float*
+Index::MakeFloatArray()
+{
+
+	float* ptr = (float*)malloc(sizeof(float)*_bins);
+	if (ptr == NULL) return(NULL);
+	for (int i=0; i < _bins; i++)
+	{
+		ptr[i] = 0.0;
+	}
+
+	return(ptr);
+
 }
 
 //-------------//

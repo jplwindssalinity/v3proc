@@ -243,6 +243,7 @@ public:
 	//---------------------//
 
 	int		GetCrossTrackBins()		{ return(_crossTrackBins); };
+	int		GetAlongTrackBins()		{ return(_alongTrackBins); };
 
 	//---------//
 	// freeing //

@@ -51,6 +51,9 @@ public:
 	int		GetBins() { return(_bins); };
 	float	GetStep() { return(_step); };
 
+	int*	MakeIntArray();
+	float*	MakeFloatArray();
+
 	//--------------//
 	// input/output //
 	//--------------//
