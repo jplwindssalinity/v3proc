@@ -42,8 +42,8 @@ public:
 	// construction //
 	//--------------//
  
-	SpacecraftEvent::SpacecraftEvent();
-	SpacecraftEvent::~SpacecraftEvent();
+	SpacecraftEvent();
+	~SpacecraftEvent();
  
 	//-----------//
 	// variables //
