@@ -2804,10 +2804,10 @@ WindSwath::AvgNambigVsCti(
 
 int
 WindSwath::WvcVsCti(
-    WindField*     truth,
-    unsigned int*  count,
-    float          low_speed,
-    float          high_speed)
+    WindField*  truth,
+    float*      count,
+    float       low_speed,
+    float       high_speed)
 {
 	//--------------------------------//
 	// sum number of WVC for each cti //
@@ -2815,7 +2815,7 @@ WindSwath::WvcVsCti(
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
-        *(count + cti) = 0;
+        *(count + cti) = 0.0;
 		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = swath[cti][ati];
@@ -2829,7 +2829,7 @@ WindSwath::WvcVsCti(
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
                 continue;
 
-			(*(count + cti))++;
+			*(count + cti) = *(count + cti) + 1.0;
 		}
 	}
 

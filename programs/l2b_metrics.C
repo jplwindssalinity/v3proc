@@ -127,7 +127,7 @@ template class List<WindVectorPlus>;
 //-----------------------//
 
 int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
-		const char* x_label, const char* y_label);
+        const char* x_label, const char* y_label, float* xy_limits = NULL);
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
 		const char* y_axis, float* xy_limits = NULL,
@@ -524,13 +524,13 @@ main(
 	sprintf(title, "Average Number of Ambiguities vs. CTD (%g - %g m/s)",
         low_speed, high_speed);
 	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
-		"Number of Ambiguities",xy_limits);
+		"Number of Ambiguities", xy_limits);
 
 	//---------------//
 	// number of WVC //
 	//---------------//
 
-	if (! swath->WvcVsCti(&truth, uint_array, low_speed, high_speed))
+	if (! swath->WvcVsCti(&truth, value_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating number of WVC\n", command);
 		exit(1);
@@ -656,7 +656,7 @@ xmgr_control(
 	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
 	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
 	fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, y_label, QUOTE);
-	if (! autoscale && xy_limits != NULL)
+	if ((! autoscale) && xy_limits != NULL)
 	{
 		fprintf(ofp, "@ world xmin %f\n", xy_limits[0]);
 		fprintf(ofp, "@ world xmax %f\n", xy_limits[1]);
