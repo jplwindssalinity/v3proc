@@ -18,10 +18,26 @@
 #ifndef MISC_H
 #define MISC_H
 
-#include <stdio.h>
-
 static const char rcs_id_misc_h[] =
 	"@(#) $Id$";
+
+//----------//
+// INCLUDES //
+//----------//
+
+#include <stdio.h>
+
+//--------//
+// MACROS //
+//--------//
+
+#define ANGDIF(A,B)		(fabs(pi-fabs(pi-fabs((A)-(B)))))
+#define MIN(A,B)		((A)<(B)?(A):(B))
+#define MAX(A,B)		((A)>(B)?(A):(B))
+
+//-----------//
+// FUNCTIONS //
+//-----------//
 
 const char*		no_path(const char* string);
 void			usage(const char* argv0, const char* option_array[],
