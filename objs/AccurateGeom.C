@@ -122,8 +122,8 @@ IntegrateSlices(
 
 		// guess at a reasonable slice frequency tolerance of .1%
 		float ftol = fabs(f1 - f2) / 1000.0;
-                double centroid_look;
-                double centroid_azimuth;
+                double centroid_look=look;
+                double centroid_azimuth=azimuth;
                 float dummy;
 
 		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft,
@@ -140,8 +140,8 @@ IntegrateSlices(
 		centroid=tip.rTarget;
 		
                 /**** for now use looktol and azitol of .01 degrees ***/
-		float looktol=0.01*dtr;
-                float azitol=0.01*dtr;
+		float looktol=0.1*dtr;
+                float azitol=0.1*dtr;
 
 		/*** for now use azimuth range of 10 degrees ***/
                 float azirange=10.0*dtr;
@@ -158,13 +158,13 @@ IntegrateSlices(
 		int look_scan_dir;
                 if(fabs(f2)>fabs(f1)){
 		  high_gain_freq=f1;
-		  if(f1<f2) look_scan_dir=1;
-		  else look_scan_dir=-1;
+		  if(f1<f2) look_scan_dir=-1;
+		  else look_scan_dir=+1;
 		}
                 else{
 		  high_gain_freq=f2;	
-		  if(f1>f2) look_scan_dir=1;
-		  else look_scan_dir=-1;
+		  if(f1>f2) look_scan_dir=-1;
+		  else look_scan_dir=+1;
 		}
 
                 //--------------------------------------//
@@ -342,7 +342,7 @@ FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
   /**** Choose look angles on either side of the target frequency ***/
   float start_look=*look-2*dtr;
   float end_look=*look+2*dtr;
-  float mid_look, actual_freq;
+  float mid_look, actual_freq, dlookdfreq;
   float start_freq=target_freq-1;
   float end_freq=target_freq-1;
   while(1){
@@ -357,20 +357,27 @@ FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
       return(0);
     end_freq=tip.basebandFreq;
 
-    if(target_freq > start_freq && target_freq < end_freq) break;
+    if(target_freq < start_freq && target_freq > end_freq) break;
 
     start_look -= dtr;
     end_look += dtr;
   }
 
   do{
-    mid_look=(start_look+end_look)/2.0;
+    dlookdfreq=(end_look-start_look)/(end_freq-start_freq);
+    mid_look=start_look + dlookdfreq*(target_freq-start_freq);
     vector.SphericalSet(1.0,mid_look,azimuth);
     if( ! TargetInfo(antenna_frame_to_gc,spacecraft,instrument,vector,&tip))
       return(0);
     actual_freq=tip.basebandFreq;
-    if(actual_freq > target_freq) start_look=mid_look;
-    else end_look=mid_look;
+    if(actual_freq < target_freq){
+      end_look=mid_look;
+      end_freq=actual_freq;
+    }
+    else{
+      start_look=mid_look;
+      start_freq= actual_freq;
+    }
     }while(fabs(actual_freq-target_freq)>freq_tol);
   *look=mid_look;
   return(1);
