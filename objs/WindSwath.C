@@ -3617,33 +3617,32 @@ WindSwath::operator-=(
 
 int
 WindSwath::DifferenceFromTruth(
-    WindField*  truth)
+    LonLatWind*  truth)
 {
-    for (int i = 0; i < _crossTrackBins; i++)
-    {
-        for (int j = 0; j < _alongTrackBins; j++)
-        {
+    for (int i = 0; i < _crossTrackBins; i++) {
+        for (int j = 0; j < _alongTrackBins; j++) {
             WVC* wvc = *(*(swath + i) + j);
-            if (wvc == NULL)
+            if (wvc == NULL) {
                 continue;
+            }
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
-            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV) {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv)) {
                 continue;
+            }
 
-                        WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-              while(wvp){
+            WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+            while (wvp) {
                 float u1, v1, u2, v2;
-                            wvp->GetUV(&u1,&v1);
-                            true_wv.GetUV(&u2,&v2);
-                wvp->SetUV(u1-u2,v1-v2);
-                wvp=wvc->ambiguities.GetNext();
-              }
-
+                wvp->GetUV(&u1, &v1);
+                true_wv.GetUV(&u2, &v2);
+                wvp->SetUV(u1 - u2, v1 - v2);
+                wvp = wvc->ambiguities.GetNext();
+            }
         }
     }
     return(1);
@@ -4405,12 +4404,59 @@ WindSwath::NearestWindVector(
 //-----------------------------------//
 // WindSwath::InterpolatedWindVector //
 //-----------------------------------//
+// Calling this method will allocate, and never deallocate, memory.
+// Typically, the allocations will be small.
 
 int
 WindSwath::InterpolatedWindVector(
     LonLat       lon_lat,
     WindVector*  wv)
 {
+printf("Target %g %g\n", lon_lat.longitude * rtd, lon_lat.latitude * rtd);
+    static LonLat* lonlat_min = NULL;
+    static LonLat* lonlat_max = NULL;
+    static int section_count = 0;
+
+    //----------------------------------------------------//
+    // if this is the first call, break the wind swath up //
+    //----------------------------------------------------//
+
+    if (lonlat_min == NULL) {
+        section_count = (int)(_alongTrackBins / _crossTrackBins) + 1;
+        lonlat_min = new LonLat[section_count];
+        lonlat_max = new LonLat[section_count];
+
+        for (int sidx = 0; sidx < section_count; sidx++) {
+
+            int min_ati = sidx * _crossTrackBins - 1;
+            min_ati = MAX(0, min_ati);
+            int max_ati = (sidx + 1) * _crossTrackBins + 1;
+            max_ati = MIN(max_ati, _alongTrackBins);
+
+            lonlat_min[sidx].latitude = two_pi;
+            lonlat_min[sidx].longitude = two_pi;
+            lonlat_max[sidx].latitude = -two_pi;
+            lonlat_max[sidx].longitude = -two_pi;
+
+            for (int ati = min_ati; ati < max_ati; ati++) {
+                for (int cti = 0; cti < _crossTrackBins; cti++) {
+                    WVC* wvc = GetWVC(cti, ati);
+                    if (wvc == NULL) {
+                        continue;
+                    }
+                    lonlat_min[sidx].latitude = MIN(lonlat_min[sidx].latitude,
+                        wvc->lonLat.latitude);
+                    lonlat_min[sidx].longitude = MIN(
+                        lonlat_min[sidx].longitude, wvc->lonLat.longitude);
+                    lonlat_max[sidx].latitude = MAX(lonlat_max[sidx].latitude,
+                        wvc->lonLat.latitude);
+                    lonlat_max[sidx].longitude = MAX(
+                        lonlat_max[sidx].longitude, wvc->lonLat.longitude);
+                }
+            }
+        }
+    }
+
     // For now, this is a fairly simply algorithm:
     // First, a tiny search is performed around the last successful indicies.
     // If that fails, a full-on brute force search is performed.
@@ -4419,12 +4465,12 @@ WindSwath::InterpolatedWindVector(
     // the quick tiny vicinity search //
     //--------------------------------//
 
-    static int last_good_ati = 0;
     static int last_good_cti = 0;
-    for (int delta_ati = -1; delta_ati < 2; delta_ati++) {
-        int ati = (last_good_ati + delta_ati) % _alongTrackBins;
-        for (int delta_cti = -1; delta_cti < 2; delta_cti++) {
-            int cti = (last_good_cti + delta_cti) % _crossTrackBins;
+    static int last_good_ati = 0;
+    for (int delta_cti = -1; delta_cti < 2; delta_cti++) {
+        int cti = (last_good_cti + delta_cti) % _crossTrackBins;
+        for (int delta_ati = -1; delta_ati < 2; delta_ati++) {
+            int ati = (last_good_ati + delta_ati) % _alongTrackBins;
             if (_Interpolate(lon_lat, cti, ati, wv)) {
                 last_good_ati = ati;
                 last_good_cti = cti;
@@ -4436,13 +4482,29 @@ WindSwath::InterpolatedWindVector(
     //------------------------//
     // the brute force search //
     //------------------------//
+    // only search promising sections
 
-    for (int ati = 0; ati < _alongTrackBins - 1; ati++) {
+    for (int sidx = 0; sidx < section_count; sidx++) {
+        if (lon_lat.latitude < lonlat_min[sidx].latitude ||
+            lon_lat.longitude < lonlat_min[sidx].longitude ||
+            lon_lat.latitude > lonlat_max[sidx].latitude ||
+            lon_lat.longitude > lonlat_max[sidx].longitude)
+        {
+            continue;
+        }
+
+        int min_ati = sidx * _crossTrackBins - 1;
+        min_ati = MAX(0, min_ati);
+        int max_ati = (sidx + 1) * _crossTrackBins + 1;
+        max_ati = MIN(max_ati, _alongTrackBins);
+
         for (int cti = 0; cti < _crossTrackBins - 1; cti++) {
-            if (_Interpolate(lon_lat, cti, ati, wv)) {
-                last_good_ati = ati;
-                last_good_cti = cti;
-                return(1);
+            for (int ati = min_ati; ati < max_ati; ati++) {
+                if (_Interpolate(lon_lat, cti, ati, wv)) {
+                    last_good_cti = cti;
+                    last_good_ati = ati;
+                    return(1);
+                }
             }
         }
     }
@@ -4457,10 +4519,10 @@ WindSwath::InterpolatedWindVector(
 // using only the 4-neighbors specified by low_cti and low_ati.
 // Returns 1 on success; 0 on failure.
 // Grid is:
-//     D ----- C
-//     |       |
-//     |       |
-//     A ----- B
+//     D----C
+//     |    |
+//     |    |
+//     A----B
 // where AB is the cross track axis and AD is the along track axis
 // low_cti, low_ati refers to point A
 
@@ -4525,19 +4587,39 @@ WindSwath::_Interpolate(
         return(0);
     }
 
+    //--------------------------------------------//
+    // make sure we are on this side of the earth //
+    //--------------------------------------------//
+
+    Vect diff;
+    diff.Difference(a, p);
+    double a_dist = diff.Magnitude();
+    if (a_dist > r1_earth) {
+        return(0);
+    }
+
     //----------------------------//
     // determine the coefficients //
     //----------------------------//
 
-    double a_coef = 2.0 - s1 - t1;
-    double b_coef = s1 + t2;
-    double c_coef = 2.0 - s2 - t2;
-    double d_coef = s2 + t1;
-    double sum = a_coef + b_coef + c_coef + d_coef;
-    a_coef /= sum;
-    b_coef /= sum;
-    c_coef /= sum;
-    d_coef /= sum;
+    diff.Difference(b, p);
+    double b_dist = diff.Magnitude();
+    diff.Difference(c, p);
+    double c_dist = diff.Magnitude();
+    diff.Difference(d, p);
+    double d_dist = diff.Magnitude();
+
+    double a_top = b_dist * c_dist * d_dist;
+    double b_top = a_dist * c_dist * d_dist;
+    double c_top = a_dist * b_dist * d_dist;
+    double d_top = a_dist * b_dist * c_dist;
+    double denom = (a_top + b_top + c_top + d_top);
+
+    double a_coef = a_top / denom;
+    double b_coef = b_top / denom;
+    double c_coef = c_top / denom;
+    double d_coef = d_top / denom;
+printf("coefs = %g %g %g %g\n", a_coef, b_coef, c_coef, d_coef);
 
     //------------------------//
     // decompose into u and v //

@@ -136,7 +136,7 @@ public:
     //------------//
 
     void  operator-=(const WindSwath& w);
-    int   DifferenceFromTruth(WindField* truth);
+    int   DifferenceFromTruth(LonLatWind* truth);
     int   ExcessDifference(WindField* truth);
     int   CtdArray(float cross_track_res, float* ctd_array);
     int   DirArray(int number_of_bins, float* dir_array);
