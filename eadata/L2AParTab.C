@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.7  1999/06/10 17:50:51  sally
+// add "leap second table"
+//
 // 
 //    Rev 1.4   26 Mar 1999 15:40:50   sally
 // added "L1 Time" unit
@@ -111,7 +114,7 @@ const ParTabEntry L2AParTab[] =
                           0, ExtractData2D_3240_int2_float, pr_3240float4_6 }
     }
   },
-  { KP_BETA, "KP Beta", SOURCE_L2A, MEAS_DATA, "kp_alpha", 1, {
+  { KP_BETA, "KP Beta", SOURCE_L2A, MEAS_DATA, "kp_beta", 1, {
       { UNIT_DN, "dn", DATA_FLOAT4_3240,
                           0, ExtractData2D_3240_int2_float, pr_3240float4_6 }
     }

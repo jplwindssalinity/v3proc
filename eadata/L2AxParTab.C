@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.1  1999/05/28 16:29:58  sally
+// Initial revision
+//
 // 
 //    Rev 1.0   25 May 1999 14:05:30   sally
 // Initial revision.
@@ -102,7 +105,7 @@ const ParTabEntry L2AxParTab[] =
                           0, ExtractData2D_810_int2_float, pr_810float4_6 }
     }
   },
-  { KP_BETA, "KP Beta", SOURCE_L2A, MEAS_DATA, "kp_alpha", 1, {
+  { KP_BETA, "KP Beta", SOURCE_L2A, MEAS_DATA, "kp_beta", 1, {
       { UNIT_DN, "dn", DATA_FLOAT4_810,
                           0, ExtractData2D_810_int2_float, pr_810float4_6 }
     }
