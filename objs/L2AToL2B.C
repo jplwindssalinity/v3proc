@@ -89,7 +89,7 @@ L2AToL2B::ConvertAndWrite(
 	else if(usePeakSplitting)
 	{
 		if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
-			onePeakWidth, twoPeakSep, probThreshold))
+			onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
 		{
 			delete wvc;
 			return(6);

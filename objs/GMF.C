@@ -546,6 +546,7 @@ GMF::RetrieveManyWinds(
 	return(1);
 }
 
+/********* Commented out old version
 //-------------------------------------//
 // GMF::RetrieveWindsWithPeakSplitting //
 //-------------------------------------//
@@ -701,6 +702,143 @@ GMF::RetrieveWindsWithPeakSplitting(
 		wvc->SortByObj();
 		return(1);
 }
+Commented out old version       ********/
+
+//-------------------------------------//
+// GMF::_ObjectiveToProbability         //
+//-------------------------------------//
+int
+GMF::_ObjectiveToProbability(float scale, int radius)
+{
+  float sum=0;
+  for(int c=0;c<_phiCount;c++){
+    *(_bestObj+c)=exp((*(_bestObj+c)-scale)/2);
+    sum+=*(_bestObj+c);
+  }
+  for(int c=0;c<_phiCount;c++){
+    *(_bestObj+c)/=sum;
+  }
+  float* tmp_buffer=new float[_phiCount];
+  for(int c=0;c<_phiCount;c++){
+    *(tmp_buffer+c)=0;
+    for(int r=-radius;r<=radius;r++){
+      int offset=c+r;
+      if(offset<0) offset+=_phiCount;
+      if(offset>=_phiCount) offset-=_phiCount;
+      *(tmp_buffer+c)+=*(_bestObj+offset);
+    }
+  }
+  for(int c=0;c<_phiCount;c++){
+    *(_bestObj+c)=*(tmp_buffer+c);
+  }
+  delete(tmp_buffer);
+  return(1);
+}
+
+//-------------------------------------//
+// GMF::RetrieveWindsWithPeakSplitting //
+//-------------------------------------//
+int             
+GMF::RetrieveWindsWithPeakSplitting(
+	MeasList*         meas_list,
+        Kp*                      kp, 
+        WVC*                    wvc, 
+        float                 one_peak_width, 
+        float                 two_peak_separation_threshold, 
+	float                 threshold,
+	int                   max_num_ambigs)
+
+{
+        if(! RetrieveWinds(meas_list,kp,wvc)) return(0);
+        int one_peak_radius=(int)(one_peak_width/(2*_phiStepSize) +0.5);
+
+        //----------------------------------------------------------------//
+        // Convert Objective Function Values to Scaled Probability Values //
+	//----------------------------------------------------------------//
+	float scale=0;
+        WindVectorPlus* head=wvc->ambiguities.GetHead();
+        if(head!=NULL) scale=head->obj;
+	_ObjectiveToProbability(scale,one_peak_radius);
+	
+	//--------------------------------------//
+	// determine number of ambiguities with  //
+	// scaled probability values greater than //
+	// threshold and remove ambiguities that  //
+	// are below the threshold                //
+	//----------------------------------------//
+
+	int num_peaks=0;
+	
+
+        WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+
+	while(wvp){	    
+	  int phi_idx=(int)(wvp->dir/_phiStepSize +0.5);
+	  float prob=*(_bestObj+phi_idx);
+	  if (prob > threshold){
+	    num_peaks++;
+	    wvp->obj=prob;
+	    wvp=wvc->ambiguities.GetNext();
+	  }
+	  else{
+	    wvc->ambiguities.RemoveCurrent();
+	    wvp=wvc->ambiguities.GetCurrent();
+	  }
+	}
+
+	//------------------------------------------//
+        // Add ambiguities until the maximum number //
+        // of ambiguities is reached.               //
+        //------------------------------------------//
+
+        while(num_peaks<max_num_ambigs){
+	  float max_prob=0;
+          int max_offset;
+          for(int c=0;c<_phiCount;c++){
+             
+            // check to see if the direction is already represented by
+            // a peak 
+	    int available=1;
+            float dir=(float)c*_phiStepSize;
+	    for(wvp=wvc->ambiguities.GetHead();wvp;
+		wvp=wvc->ambiguities.GetNext()){
+	      if(fabs(ANGDIF(wvp->dir,dir))<two_peak_separation_threshold){
+		available=0;
+	      }
+	    }
+            // determine the available direction with the maximum probability
+	    if(available==1 && *(_bestObj+c)>max_prob){
+	      max_prob=*(_bestObj+c);
+	      max_offset=c;
+	    }
+	  }
+	  //------------//
+	  // add to wvc //
+	  //------------//
+	  
+	  wvp = new WindVectorPlus();
+	  if (! wvp)
+	    return(0);
+	  wvp->spd = _bestSpd[max_offset];
+	  wvp->dir = (float)max_offset * _phiStepSize;
+	  wvp->obj = _bestObj[max_offset];
+	  if (! wvc->ambiguities.Append(wvp))
+	    {
+	      delete wvp;
+	      return(0);
+	    }
+	  num_peaks++;
+	}
+
+
+	//--------------------------------------------//
+	// sort the solutions by probability          //
+	//--------------------------------------------//
+
+	wvc->SortByObj();
+	return(1);
+}
+
 
 //--------------------//
 // GMF::SolutionCurve //

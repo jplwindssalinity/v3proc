@@ -85,7 +85,7 @@ public:
 	int             RetrieveWindsWithPeakSplitting(MeasList* meas_list,
                            Kp* kp, WVC* wvc, float one_peak_width, float
 			   two_peak_separation_threshold, 
-			   float threshold);
+			   float threshold, int max_num_ambigs);
 	int		SolutionCurve(MeasList* meas_list, Kp* kp);
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
@@ -119,6 +119,7 @@ protected:
 
 	float	_ObjectiveFunction(MeasList* meas_list, float u, float phi,
 				Kp* kp);
+	int     _ObjectiveToProbability(float scale, int radius);
 
 	//-----------//
 	// variables //
