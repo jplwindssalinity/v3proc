@@ -629,9 +629,9 @@ Vector3::SphericalGet(
 // The definition of the azimuth/elevation coordinates is:
 //   r is the length (magnitude) of the vector
 //   az is the angle away from the z-axis (no. 3) of the projection
-//     onto the xz plane.
-//   el is the angle away from the z-axis (no. 3) of the projection
 //     onto the yz plane.
+//   el is the angle away from the z-axis (no. 3) of the projection
+//     onto the xz plane.
 //
 
 int
@@ -641,8 +641,8 @@ Vector3::AzimuthElevationSet(
 	double	el)
 {
 	_v[2] = r / sqrt(tan(az)*tan(az) + tan(el)*tan(el) + 1.0);
-	_v[1] = _v[2]*tan(el);
-	_v[0] = _v[2]*tan(az);
+	_v[1] = _v[2]*tan(az);
+	_v[0] = _v[2]*tan(el);
 	return(1);
 }
 
@@ -656,9 +656,9 @@ Vector3::AzimuthElevationSet(
 // The definition of the azimuth/elevation coordinates is:
 //   r is the length (magnitude) of the vector
 //   az is the angle away from the z-axis (no. 3) of the projection
-//     onto the xz plane.
-//   el is the angle away from the z-axis (no. 3) of the projection
 //     onto the yz plane.
+//   el is the angle away from the z-axis (no. 3) of the projection
+//     onto the xz plane.
 //
 
 int
@@ -676,8 +676,8 @@ Vector3::AzimuthElevationGet(
 		return(1);
 	}
 
-	*az = atan2(_v[0],_v[2]);
-	*el = atan2(_v[1],_v[2]);
+	*el = atan2(_v[0],_v[2]);
+	*az = atan2(_v[1],_v[2]);
 	return(1);
 }
 
