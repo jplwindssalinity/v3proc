@@ -5,13 +5,13 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		l17_diagnositics
+//		l2a_diagnositics
 //
 // SYNOPSIS
-//		l17_diagnositics <cfg file> <l17_file> <output_file_base_name>
+//		l2a_diagnositics <cfg file> <l2a_file> <output_file_base_name>
 //
 // DESCRIPTION
-//		Reads in a Level 1.7 file and writes out diagnositic data files
+//		Reads in a Level 2a file and writes out diagnositic data files
 //		for use in geo,heo etc.
 //
 // OPTIONS
@@ -20,12 +20,12 @@
 // OPERANDS
 //		The following operand is supported:
 //		<cfg file>		The simulation configuration file.
-//		<l17_file>		The Level 1.7 input file.
+//		<l2a_file>		The Level 2a input file.
 //		<output_file_base_name>	Output file name to append suffixes to.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l17_diagnostics qscat.cfg l17.dat l17
+//			% l2a_diagnostics qscat.cfg l2a.dat l2a
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -53,7 +53,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "Misc.h"
-#include "L17.h"
+#include "L2a.h"
 #include "ConfigList.h"
 #include "Ephemeris.h"
 #include "ConfigSim.h"
@@ -100,7 +100,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<cfg_file>", "<l17_file>",
+const char* usage_array[] = { "<cfg_file>", "<l2a_file>",
 	"<output_file_base>", 0};
 
 //--------------//
@@ -122,7 +122,7 @@ main(
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
-	const char* l17_file = argv[clidx++];
+	const char* l2a_file = argv[clidx++];
 	const char* output_base = argv[clidx++];
 
 	//--------------------------------//
@@ -138,14 +138,14 @@ main(
 	}
 
 	//-------------------------//
-	// open the Level 1.7 file //
+	// open the Level 2a file //
 	//-------------------------//
 
-	L17 l17;
-	if (! l17.OpenForReading(l17_file))
+	L2a l2a;
+	if (! l2a.OpenForReading(l2a_file))
 	{
-		fprintf(stderr, "%s: error opening Level 1.7 file %s\n", command,
-			l17_file);
+		fprintf(stderr, "%s: error opening Level 2a file %s\n", command,
+			l2a_file);
 		exit(1);
 	}
 
@@ -194,14 +194,14 @@ main(
 	int ii[4] = {0,0,1,1};
 	int jj[4] = {0,1,1,0};
 
-	while (l17.ReadDataRec())
+	while (l2a.ReadDataRec())
 	{
 		EarthPosition start_position;
-		ephemeris.GetPosition(l17.header.startTime,EPHEMERIS_INTERP_ORDER,
+		ephemeris.GetPosition(l2a.header.startTime,EPHEMERIS_INTERP_ORDER,
 			&start_position);
 		start_position = start_position.Nadir();
 
-		MeasList* ml = &(l17.frame.measList);
+		MeasList* ml = &(l2a.frame.measList);
 		int N = ml->NodeCount();
 		float sum_sigma0 = 0.0;
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
@@ -217,23 +217,23 @@ main(
 		EarthPosition *r;
 		for (int k=0; k < 4; k++)
 		{
-			ctd = (l17.frame.cti - l17.header.zeroIndex - 0.5 + ii[k]) *
-				l17.header.crossTrackResolution;
-			atd = (l17.frame.ati + jj[k]) * l17.header.alongTrackResolution;
+			ctd = (l2a.frame.cti - l2a.header.zeroIndex - 0.5 + ii[k]) *
+				l2a.header.crossTrackResolution;
+			atd = (l2a.frame.ati + jj[k]) * l2a.header.alongTrackResolution;
 			r = new EarthPosition;
-			ephemeris.GetSubtrackPosition(ctd,atd,l17.header.startTime,r);
+			ephemeris.GetSubtrackPosition(ctd,atd,l2a.header.startTime,r);
 			outline.Append(r);
 /*
 			float cd,ad;
 			ephemeris.GetSubtrackCoordinates(*r,start_position,
-				l17.header.startTime,l17.header.startTime,&cd,&ad);
+				l2a.header.startTime,l2a.header.startTime,&cd,&ad);
 			printf("%g %g %g %g\n",ctd,atd,ctd-cd,atd-ad);
 */
 		}
 
 		float cd,ad;
 		ephemeris.GetSubtrackCoordinates(*r,start_position,
-			l17.header.startTime,l17.header.startTime+atd/6.5,&cd,&ad);
+			l2a.header.startTime,l2a.header.startTime+atd/6.5,&cd,&ad);
 		sum_c_diff += fabs(ctd - cd);
 		sum_a_diff += fabs(atd - ad);
 		count++;
@@ -251,7 +251,7 @@ main(
 	//-----------------//
 
 	fclose(ofp_grid);
-	l17.Close();
+	l2a.Close();
 
 	return (0);
 }

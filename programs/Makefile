@@ -15,12 +15,12 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	sim \
-	l00_to_l10 \
-	l10_to_l15 \
-	l15_to_l17 \
-	l17_to_l20 \
-	l20_to_vctr \
-	l20_metrics \
+	l00_to_l1a \
+	l1a_to_l1b \
+	l1b_to_l2a \
+	l2a_to_l2b \
+	l2b_to_vctr \
+	l2b_metrics \
 	see_spot \
 	generate_rgc \
 	generate_dtc \
@@ -31,8 +31,8 @@ PROGRAMS = \
 	make_pattern \
 	test_pattern \
 	fake_vap \
-	l15_outlines \
-        l15_to_kprtable \
+	l1b_outlines \
+    l1b_to_kprtable \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
@@ -40,9 +40,9 @@ PROGRAMS = \
 	make_kpmfield \
 	log_cfg \
 	windfield_to_vctr \
-	l17_centroids \
-	l17_diagnostics \
-	l17_s0
+	l2a_centroids \
+	l2a_diagnostics \
+	l2a_s0
 
 #----------------------------------------------------------------------
 # default: make all executable programs
