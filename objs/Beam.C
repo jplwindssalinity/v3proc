@@ -8,6 +8,7 @@ static const char rcs_id_beam_c[] =
 
 #include "Beam.h"
 #include "Array.h"
+#include "Constants.h"
 
 //======//
 // Beam //
@@ -17,9 +18,10 @@ const char* beam_map[] = { "None", "V", "H" };
 
 Beam::Beam()
 :	polarization(NONE), pulseWidth(0.0), timeOffset(0.0),
-	_lookAngle(0.0), _azimuthAngle(0.0),
+	_reference_lookAngle(0.0), _reference_azimuthAngle(0.0),
+	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0),
 	_Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
-	_x_spacing(0.0), _y_spacing(0.0), _out_of_range_value(0.0),
+	_x_spacing(0.0), _y_spacing(0.0),
 	_power_gain(NULL)
 {
 	return;
@@ -36,30 +38,127 @@ Beam::~Beam()
 	return;
 }
 
-//-----------------------//
-// Beam::SetBeamGeometry //
-//-----------------------//
+//------------------------------//
+// Beam::SetElectricalBoresight //
+//------------------------------//
+
+//
+// This method orients a beam (already loaded with ReadBeamPattern) so that
+// the electrical boresight points at the indicated look angle and azimuth
+// angle in the antenna frame.  Since the beam pattern is stored in the
+// beam reference frame (defined by the mechanical boresight) the Beam object
+// sets up a coordinate switch between the antenna frame and the beam
+// reference frame, placing the reference X-axis so that the beam electrical
+// boresight has the desired look and azimuth angles.
+//
 
 int
-Beam::SetBeamGeometry(
-	double	look_angle,
-	double	azimuth_angle)
+Beam::SetElectricalBoresight(
+	double	desired_electrical_look_angle,
+	double	desired_electrical_azimuth_angle)
 {
+	// Check to see if a beam pattern has been loaded.
+	if (_power_gain == NULL)
+	{
+		printf("Error: SetElectricalBoresight found no loaded beam pattern\n");
+ 		return(0);
+	}
+
 	//------------------------//
-	// copy passed parameters //
+	// Setup Reference frame  //
 	//------------------------//
 
-	_lookAngle = look_angle;
-	_azimuthAngle = azimuth_angle;
+	// The X-axis of the beam reference frame is defined by the following
+	// two variables. (These are spherical angles in the antenna frame.)
+	_reference_lookAngle = desired_electrical_look_angle +
+							_electrical_boresight_Em;
+	_reference_azimuthAngle = desired_electrical_azimuth_angle -
+								 _electrical_boresight_Am;
 
 	//----------------------------------------------------//
 	// generate forward and reverse coordinate transforms //
 	//----------------------------------------------------//
 
-	Attitude beam_frame;
-	beam_frame.Set(0.0, _lookAngle, _azimuthAngle, 3, 2, 1);
+	Attitude reference_frame;
+	reference_frame.Set(0.0,_reference_lookAngle - pi/2.0,
+						_reference_azimuthAngle,3,2,1);
 
-	_antFrameToBeamFrame.SetRotation(beam_frame);
+	_antFrameToBeamFrame.SetRotation(reference_frame);
+	_beamFrameToAntFrame = _antFrameToBeamFrame.ReverseDirection();
+
+	return(1);
+}
+
+//------------------------------//
+// Beam::GetElectricalBoresight //
+//------------------------------//
+
+//
+// This method determines the electrical boresight in the antenna frame
+// with standard spherical angles (called look_angle and azimuth_angle).
+//
+
+int
+Beam::GetElectricalBoresight(
+	double*	look_angle,
+	double*	azimuth_angle)
+{
+	// Check to see if a beam pattern has been loaded.
+	if (_power_gain == NULL)
+	{
+		printf("Error: GetElectricalBoresight found no loaded beam pattern\n");
+ 		return(0);
+	}
+
+	*look_angle = _reference_lookAngle - _electrical_boresight_Em;
+	*azimuth_angle = _reference_azimuthAngle + _electrical_boresight_Am;
+	return(1);
+
+}
+
+//------------------------------//
+// Beam::SetMechanicalBoresight //
+//------------------------------//
+
+//
+// This method orients the beam (already loaded with ReadBeamPattern) so that
+// the mechanical boresight points at the indicated look angle and azimuth
+// angle in the antenna frame.  The electrical boresight is then determined
+// by the beam pattern which was measured in the mechanical boresight frame.
+// With this method, the two SeaWinds beams can be placed consistently by
+// using the same mechanical boresight direction for each beam.
+//
+
+int
+Beam::SetMechanicalBoresight(
+	double	look_angle,
+	double	azimuth_angle)
+{
+	// Check to see if a beam pattern has been loaded.
+	if (_power_gain == NULL)
+	{
+		printf("Error: SetMechanicalBoresight found no loaded beam pattern\n");
+ 		return(0);
+	}
+
+	//------------------------//
+	// Setup Reference frame  //
+	//------------------------//
+
+	// The X-axis of the beam reference frame is defined by the following
+	// two variables. (These are spherical angles in the antenna frame.)
+	_reference_lookAngle = look_angle;
+	_reference_azimuthAngle = azimuth_angle;
+
+	//----------------------------------------------------//
+	// generate forward and reverse coordinate transforms //
+	//----------------------------------------------------//
+
+	Attitude reference_frame;
+	reference_frame.Set(0.0,_reference_lookAngle - pi/2.0,
+						_reference_azimuthAngle,3,2,1);
+
+	_antFrameToBeamFrame.SetRotation(reference_frame);
 	_beamFrameToAntFrame = _antFrameToBeamFrame.ReverseDirection();
 
 	return(1);
@@ -77,7 +176,9 @@ Beam::SetBeamGeometry(
 int
 Beam::SetBeamPattern(
 	int	Nx, int Ny, int ix_zero, int iy_zero,
-	double x_spacing, double y_spacing, float **power_gain)
+	double x_spacing, double y_spacing,
+	double electrical_boresight_Em, double electrical_boresight_Am,
+	float **power_gain)
 {
 	//------------------------//
 	// copy passed parameters //
@@ -89,6 +190,8 @@ Beam::SetBeamPattern(
 	_iy_zero = iy_zero;
 	_x_spacing = x_spacing;
 	_y_spacing = y_spacing;
+	_electrical_boresight_Em = electrical_boresight_Em;
+	_electrical_boresight_Am = electrical_boresight_Am;
 
 	// Some sanity checking.
 	if ((_Nx <= 0) ||
@@ -115,26 +218,21 @@ Beam::SetBeamPattern(
 //
 // Bilinear interpolation of the measured antenna gain for this beam.
 // The measured antenna pattern is stored in memory in the variable
-// power_gain[Nx][Ny].  The first index refers to steps along the x-axis,
-// and the second index refers to steps along the y-axis of the beam frame.
+// power_gain[Nx][Ny].  The first index refers to steps along elevation (Em),
+// and the second index refers to steps along azimuth (Am) in the beam frame.
 //
 // Inputs:
-//  unitx,unity = the x and y components of the unit vector that points in
-//    the desired direction in the beam frame.  The units should be consistent
-//    with the units of x_spacing and y_spacing.
-//	  Note that the x and y components can also be interpreted as any other
-//	  quantity that varies soley as a function of x and y respectively such as
-//	  azimuth and elevation.  The interpretation is established by the
-//	  program that creates and writes the beam pattern using WriteBeamPattern
-//	  below.  The interpretation of x_spacing and y_spacing used
-//	  to write the beam pattern should also be followed by any user of that
-//	  beam pattern.
+//  look,azimuth = the orientation of the unit vector that points in
+//    the desired direction in the antenna frame.
+//	  The units should be consistent with the units of x_spacing and y_spacing.
+//	gain = pointer to space for the interpolated power gain (real units).
 //
 
-double
+int
 Beam::GetPowerGain(
-	double	unitx,
-	double	unity)
+	double	look_angle,
+	double	azimuth_angle,
+	float *gain)
 {
 
 	// Check for loaded pattern data.
@@ -144,17 +242,21 @@ Beam::GetPowerGain(
 		exit(-1);
 	}
 
+	// Transform antenna frame angles to beam reference frame.
+	double Em = _reference_lookAngle - look_angle;
+	double Am = azimuth_angle - _reference_azimuthAngle;
+	
 	// Compute 2-D indices for the lower left point in the grid square around
 	// the desired point.
-	int ix1 = (int)(unitx/_x_spacing) + _ix_zero;
-	int iy1 = (int)(unity/_y_spacing) + _iy_zero;
+	int ix1 = (int)(Em/_x_spacing) + _ix_zero;
+	int iy1 = (int)(Am/_y_spacing) + _iy_zero;
 
 	if ((ix1 < 0) ||
     	(ix1 > _Nx - 2) ||
     	(iy1 < 0) ||
     	(iy1 > _Ny - 2))
 	{
-		return(_out_of_range_value);
+		return(0);
 	}
 
 	// The actual location of the lower left point of the grid square.
@@ -168,11 +270,12 @@ Beam::GetPowerGain(
 	double pg4 = _power_gain[ix1][iy1+1];
 
 	// The proportional location of the requested point in the grid square.
-	double t = (unitx - x1) / _x_spacing;
-	double u = (unity - y1) / _y_spacing;
+	double t = (Em - x1) / _x_spacing;
+	double u = (Am - y1) / _y_spacing;
 
 	// The interpolated power gain.
-	return( (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4 );
+	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
+	return(1);
 
 }
 
@@ -181,7 +284,7 @@ Beam::GetPowerGain(
 //-----------------------//
 
 int
-Beam::ReadBeamPattern(char* filename, double out_of_range_value)
+Beam::ReadBeamPattern(char* filename)
 {
 
 	// Check for an existing pattern, and remove if needed.
@@ -189,10 +292,6 @@ Beam::ReadBeamPattern(char* filename, double out_of_range_value)
 	{
 		free_array(_power_gain,2,_Nx,_Ny);
 	}
-
-	// Set the out of range value which is returned by GetPowerGain for any
-	// requested points that lie outside the range covered by the beam pattern.
-	_out_of_range_value = out_of_range_value;
 
     FILE* fp = fopen(filename,"r");
     if (fp == NULL) return(0);
@@ -203,7 +302,9 @@ Beam::ReadBeamPattern(char* filename, double out_of_range_value)
         fread(&_ix_zero, sizeof(int), 1, fp) != 1 ||
         fread(&_iy_zero, sizeof(int), 1, fp) != 1 ||
         fread(&_x_spacing, sizeof(double), 1, fp) != 1 ||
-        fread(&_y_spacing, sizeof(double), 1, fp) != 1)
+        fread(&_y_spacing, sizeof(double), 1, fp) != 1 ||
+		fread(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
+		fread(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
         return(0);
     }
@@ -274,7 +375,9 @@ Beam::WriteBeamPattern(char* filename)
         fwrite(&_ix_zero, sizeof(int), 1, fp) != 1 ||
         fwrite(&_iy_zero, sizeof(int), 1, fp) != 1 ||
         fwrite(&_x_spacing, sizeof(double), 1, fp) != 1 ||
-        fwrite(&_y_spacing, sizeof(double), 1, fp) != 1)
+        fwrite(&_y_spacing, sizeof(double), 1, fp) != 1 ||
+		fwrite(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
+		fwrite(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
         return(0);
     }

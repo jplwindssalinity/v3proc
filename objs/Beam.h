@@ -29,7 +29,7 @@ static const char rcs_id_beam_h[] =
 //		the following conventions are followed in here and in Beam.C:
 //		look_angle and azimuth_angle pairs refer to standard spherical angles
 //		in the antenna frame.
-//		elevation or Em and azimuth pairs refer to the modifed spherical
+//		elevation or Em and azimuth or Am pairs refer to the modifed spherical
 //		angles used to access the beam pattern in the beam reference frame.
 //======================================================================
 
@@ -59,7 +59,9 @@ public:
 	int		SetMechanicalBoresight(double look_angle, double azimuth_angle);
 
 	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
-				double x_spacing, double y_spacing, float **power_gain);
+			    double x_spacing, double y_spacing,
+    			double electrical_boresight_Em, double electrical_boresight_Am,
+    			float **power_gain);
 
 	int		ReadBeamPattern(char* filename);
 	int		WriteBeamPattern(char* filename);
@@ -90,7 +92,7 @@ protected:
 
 	// Beam pattern info
 	double _electrical_boresight_Em;
-	double _electrical_boresight_azimuth;
+	double _electrical_boresight_Am;
 	int		_Nx;
 	int		_Ny;
 	int		_ix_zero;
