@@ -565,102 +565,102 @@ WVC::Rank_Wind_Solutions()
 
 //
 // Translated from GS module: Rank_Wind_Solutions2.F
-//  - Final sorting omitted.
+// - Final sorting omitted.
 //!File Name:	Rank_Wind_Solutions.F
 //
-//!Description:   	
-// 	   This routine eliminates 
-//            (1) redundant wind solutions
-//            (2) out-of-range
-//          and ranks the "final" wind solutions to be  
-//          used by the ambiguity-removal processor. 
-//                      	
+//!Description:
+//		This routine eliminates 
+//			(1) redundant wind solutions
+//			(2) out-of-range
+//		and ranks the "final" wind solutions to be
+//		used by the ambiguity-removal processor. 
+//
 //!Input Parameters:
-//    wind_speed_delta      -  speed tolerance value (0.1 m/s).
-//    wind_dir_delta        -  direction tolerance value (5 degrees).
-//    wind_likelihood_delta -  MLE tolerance value (0.5).
+//	wind_speed_delta		-	speed tolerance value (0.1 m/s).
+//	wind_dir_delta			-	direction tolerance value (5 degrees).
+//	wind_likelihood_delta	-	MLE tolerance value (0.5).
 //
 //!Input/Output Parameters: 
-//    wr_num_ambigs         - number of ambigous wind solutions.
-//    wr_mle                - value of maximum likelihood estimation.
-//    wr_wind_speed         - speeds of ambiguous wind solutions. 
-//    wr_wind_dir           - directions of ambiguous wind solutions. 
-//    wr_wind_speed_err     - errors associated with wind speed.
-//    wr_wind_dir_err       - errors associated with wind direction. 
+//	wr_num_ambigs		- number of ambigous wind solutions.
+//	wr_mle				- value of maximum likelihood estimation.
+//	wr_wind_speed		- speeds of ambiguous wind solutions. 
+//	wr_wind_dir			- directions of ambiguous wind solutions. 
+//	wr_wind_speed_err	- errors associated with wind speed.
+//	wr_wind_dir_err		- errors associated with wind direction. 
 //
 
-    float   wr_wind_speed[wind_max_solutions];
-    float   wr_wind_dir[wind_max_solutions];
-    float   wr_mle[wind_max_solutions];
+	float	wr_wind_speed[wind_max_solutions];
+	float	wr_wind_dir[wind_max_solutions];
+	float	wr_mle[wind_max_solutions];
 
-    // Copy data into wr_ arrays. (convert radians to degrees)
-    int i = 0;
-    for (WindVectorPlus* wvp = ambiguities.GetHead();
-         wvp; wvp = ambiguities.GetNext())
-    {
-        wr_wind_speed[i] = wvp->spd;
-        wr_wind_dir[i] = rtd*wvp->dir;
-        wr_mle[i] = wvp->obj;
-        i++;
-        if (i >= wind_max_solutions) break;
-    }
+	// Copy data into wr_ arrays. (convert radians to degrees)
+	int i = 0;
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		wr_wind_speed[i] = wvp->spd;
+		wr_wind_dir[i] = rtd*wvp->dir;
+		wr_mle[i] = wvp->obj;
+		i++;
+		if (i >= wind_max_solutions)
+			break;
+	}
 	int wr_num_ambigs = i;
 
 // Local Declarations
-      int    j,k;
-      int    start_j;
-      int    ambig ;
-      int    speed_50_flag [wind_max_solutions];
-      int    speed_50_counter;
-      int    i_speed_processed;
-      int    i_twin_processed;
-      int    twin_flag [wind_max_solutions];
-      int    twin_counter ;
-      int    num_ambigs ;
+	int		j;
+	int		start_j;
+	int		ambig;
+	int		speed_50_flag[wind_max_solutions];
+	int		speed_50_counter;
+	int		i_speed_processed;
+	int		i_twin_processed;
+	int		twin_flag[wind_max_solutions];
+	int		twin_counter;
+	int		num_ambigs;
+	float	diff_speed;
+	float	diff_dir;
+	float	diff_mle;
 
-      float       diff_speed;
-      float       diff_dir;
-      float       diff_mle ;
+	int		num_sorted;
+//	int		max_index;
+//	float	max_mle;
 
-      int    num_sorted;
-      int    max_index;
-      float       max_mle;
-         
-//  Initialize. 
+//	Initialize. 
 
-      speed_50_counter = 0;
-      twin_counter     = 0;
-      num_sorted       = 0;
+	speed_50_counter	= 0;
+	twin_counter		= 0;
+	num_sorted			= 0;
  
 	for (j=0; j < wind_max_solutions; j++)
 	{
-         speed_50_flag [j] = 0;
-         twin_flag [j]     = 0;
+		speed_50_flag[j]	= 0;
+		twin_flag[j]		= 0;
 	}
 
 	for (ambig=0; ambig < wr_num_ambigs; ambig++)
 	{
 
-//  Wind direction:  
-//    1. Constrain values between 0 and 360 degrees.
-//    2. Conform to SEAWIND's oceanographic convention.
+//	Wind direction:
+//		1. Constrain values between 0 and 360 degrees.
+//		2. Conform to SEAWIND's oceanographic convention.
 
 		if (wr_wind_dir[ambig] < 0.0)
 		{
-            wr_wind_dir[ambig] += 360.;
+			wr_wind_dir[ambig] += 360.;
 		}
 
 		if (wr_wind_dir[ambig] > 360.)
 		{
-            wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
+			wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
 		}
 
-// Set high wind speed flag and count up if larger than 50 m/s.    
+// Set high wind speed flag and count up if larger than 50 m/s.
 
 		if (wr_wind_speed[ambig] > 50.)
 		{
-            speed_50_flag [ambig] = 1;
-            speed_50_counter++;
+			speed_50_flag[ambig] = 1;
+			speed_50_counter++;
 		}
 	}
 
@@ -668,8 +668,8 @@ WVC::Rank_Wind_Solutions()
 
 	if (speed_50_counter > 0)
 	{
-         num_ambigs = wr_num_ambigs - speed_50_counter;
-         start_j  = 0;
+		num_ambigs = wr_num_ambigs - speed_50_counter;
+		start_j = 0;
  
 		for (i=0; i < num_ambigs; i++)
 		{
@@ -677,11 +677,11 @@ WVC::Rank_Wind_Solutions()
 
 			for (j=start_j; j < wr_num_ambigs; j++)
 			{
-               if (!  i_speed_processed && speed_50_flag [j] == 0)
+               if (!  i_speed_processed && speed_50_flag[j] == 0)
 				{
-                   wr_wind_speed [i]    = wr_wind_speed [j];
-                   wr_wind_dir [i]      = wr_wind_dir [j];
-                   wr_mle [i]           = wr_mle [j];
+                   wr_wind_speed[i]    = wr_wind_speed[j];
+                   wr_wind_dir[i]      = wr_wind_dir[j];
+                   wr_mle[i]           = wr_mle[j];
                    start_j = j + 1;
                    i_speed_processed = 1;
 				}
@@ -697,7 +697,7 @@ WVC::Rank_Wind_Solutions()
 //        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
 	for (i=0; i < wr_num_ambigs; i++)
 	{
-          twin_flag [i] = 0;
+          twin_flag[i] = 0;
 	}
       twin_counter = 0;
   
@@ -705,9 +705,9 @@ WVC::Rank_Wind_Solutions()
 	for (j=i+1; j < wr_num_ambigs; j++)
 	{
 
-            diff_speed = fabs (wr_wind_speed [i] - wr_wind_speed [j]);
-            diff_dir   = fabs (wr_wind_dir [i] - wr_wind_dir [j]);
-            diff_mle   = fabs (wr_mle [i] - wr_mle [j]);
+            diff_speed = fabs (wr_wind_speed[i] - wr_wind_speed[j]);
+            diff_dir   = fabs (wr_wind_dir[i] - wr_wind_dir[j]);
+            diff_mle   = fabs (wr_mle[i] - wr_mle[j]);
 
             if (diff_dir>180.0) diff_dir=360.-diff_dir;
 
@@ -717,14 +717,14 @@ WVC::Rank_Wind_Solutions()
 			{
                 if (twin_flag[j] == 0)
 				{
-                   twin_flag [j] = 1;
+                   twin_flag[j] = 1;
                    twin_counter = twin_counter + 1;
 
                    if (wr_mle[j]>wr_mle[i])
 					{
-                    wr_wind_speed [i] = wr_wind_speed [j];
-                    wr_wind_dir [i] = wr_wind_dir [j];
-                    wr_mle [i] = wr_mle [j];
+                    wr_wind_speed[i] = wr_wind_speed[j];
+                    wr_wind_dir[i] = wr_wind_dir[j];
+                    wr_mle[i] = wr_mle[j];
 					}
 				}
 			}
@@ -745,11 +745,11 @@ WVC::Rank_Wind_Solutions()
 			{
 				if (! i_twin_processed)
 				{
-					if  (twin_flag [j] == 0)
+					if  (twin_flag[j] == 0)
 					{
-                     wr_wind_speed [i] = wr_wind_speed [j];
-                     wr_wind_dir [i] = wr_wind_dir [j];
-                     wr_mle [i] = wr_mle [j];
+                     wr_wind_speed[i] = wr_wind_speed[j];
+                     wr_wind_dir[i] = wr_wind_dir[j];
+                     wr_mle[i] = wr_mle[j];
                      start_j = j + 1;
                      i_twin_processed  = 1; 
 					}
