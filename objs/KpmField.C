@@ -10,6 +10,7 @@ static const char rcs_id_kpmfield_c[] =
 #include <malloc.h>
 #include "KpmField.h"
 #include "Constants.h"
+#include "Beam.h"
 
 //==========//
 // KpmField //
@@ -207,9 +208,9 @@ KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
 	float RV;
 	float rv1;
 
-	float Kpm = GetKpm(polarization,wspd);
+	float Kpm = GetKpm(polarization-V_POL,wspd);
 
-	if (_corrLength == 0.0)
+	if (! corr.field)
 	{	// no spatial correlation, so just draw a gaussian random number
 		rv1 = _gaussianRv.GetNumber();
 	}
