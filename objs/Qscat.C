@@ -423,12 +423,12 @@ QscatSas::SetAzimuthWithEncoder(
     if (encoder & ENCODER_MASK)
     {
         // encoder B
-        encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
+        encoder_offset = encoderBOffset * dtr;
     }
     else
     {
         // encoder A
-        encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
+        encoder_offset = encoderAOffset * dtr;
     }
 
     // mask out the encoder bit
@@ -478,13 +478,13 @@ QscatSas::AzimuthToEncoder(
     {
         // encoder B
         encoder_bit = ENCODER_B_BIT;
-        encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
+        encoder_offset = encoderBOffset * dtr;
     }
     else
     {
         // encoder A
         encoder_bit = ENCODER_A_BIT;
-        encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
+        encoder_offset = encoderAOffset * dtr;
     }
 
     //-----------------------//
@@ -704,12 +704,12 @@ QscatCds::EstimateIdealEncoder(
     if (heldEncoder & 0x8000)
     {
         // encoder B
-        encoder_offset = CDS_ENCODER_B_OFFSET;
+        encoder_offset = encoderBOffset;
     }
     else
     {
         // encoder A
-        encoder_offset = CDS_ENCODER_A_OFFSET;
+        encoder_offset = encoderAOffset;
     }
     int_encoder += encoder_offset;
     // printf("Plus encoder offset = %d\n", int_encoder);

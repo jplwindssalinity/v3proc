@@ -36,6 +36,26 @@ ConfigQscatSas(
     if (! ConfigAntenna(&(qscat_sas->antenna), config_list))
         return(0);
 
+    //-----------------------------//
+    // set the SAS encoder offsets //
+    //-----------------------------//
+
+    float sas_encoder_a_offset;
+    if (! config_list->GetFloat(SAS_ENCODER_A_OFFSET_KEYWORD,
+        &sas_encoder_a_offset))
+    {
+        return(0);
+    }
+    qscat_sas->encoderAOffset = sas_encoder_a_offset;
+
+    float sas_encoder_b_offset;
+    if (! config_list->GetFloat(SAS_ENCODER_B_OFFSET_KEYWORD,
+        &sas_encoder_b_offset))
+    {
+        return(0);
+    }
+    qscat_sas->encoderBOffset = sas_encoder_b_offset;
+
     return(1);
 }
 
@@ -328,6 +348,26 @@ ConfigQscatCds(
         return(0);
     }
     qscat_cds->orbitTicksPerOrbit = orbit_ticks;
+
+    //-----------------//
+    // encoder offsets //
+    //-----------------//
+
+    int cds_encoder_a_offset;
+    if (! config_list->GetInt(CDS_ENCODER_A_OFFSET_KEYWORD,
+        &cds_encoder_a_offset))
+    {
+        return(0);
+    }
+    qscat_cds->encoderAOffset = cds_encoder_a_offset;
+
+    int cds_encoder_b_offset;
+    if (! config_list->GetInt(CDS_ENCODER_B_OFFSET_KEYWORD,
+        &cds_encoder_b_offset))
+    {
+        return(0);
+    }
+    qscat_cds->encoderBOffset = cds_encoder_b_offset;
 
     //------------------//
     // for each beam... //

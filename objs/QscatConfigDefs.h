@@ -53,12 +53,22 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define PHYSICAL_TEMPERATURE_KEYWORD  "PHYSICAL_TEMPERATURE"
 
 //----------//
+// QscatSas //
+//----------//
+
+#define SAS_ENCODER_A_OFFSET_KEYWORD  "SAS_ENCODER_A_OFFSET"
+#define SAS_ENCODER_B_OFFSET_KEYWORD  "SAS_ENCODER_B_OFFSET"
+
+//----------//
 // QscatCds //
 //----------//
 
 #define TX_PULSE_WIDTH_KEYWORD     "TX_PULSE_WIDTH"
 #define PRI_KEYWORD                "PRI"
 #define ANTENNA_SPIN_RATE_KEYWORD  "ANTENNA_SPIN_RATE"
+
+#define CDS_ENCODER_A_OFFSET_KEYWORD  "CDS_ENCODER_A_OFFSET"
+#define CDS_ENCODER_B_OFFSET_KEYWORD  "CDS_ENCODER_B_OFFSET"
 
 #define BEAM_x_RX_GATE_WIDTH_KEYWORD  "BEAM_x_RX_GATE_WIDTH"
 #define BEAM_x_RGC_FILE_KEYWORD       "BEAM_x_RGC_FILE"
