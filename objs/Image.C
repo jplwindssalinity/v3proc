@@ -516,6 +516,24 @@ Image::WriteAscii(
     return(1);
 }
 
+//-------------//
+// Image::Fill //
+//-------------//
+
+int
+Image::Fill(
+    float  fill_value)
+{
+    for (int x = 0; x < _xSize; x++)
+    {
+        for (int y = 0; y < _ySize; y++)
+        {
+            *(*(_image + x) + y) = fill_value;
+        }
+    }
+    return(1);
+}
+
 //-----------------//
 // Image::FillMask //
 //-----------------//

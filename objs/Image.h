@@ -75,6 +75,7 @@ public:
     // initializing //
     //--------------//
 
+    int  Fill(float fill_value);
     int  FillMask(uchar fill_value);
     int  Step(float angle);
 
