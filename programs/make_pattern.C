@@ -150,7 +150,7 @@ main(
 	//---------------------------------------------------//
 
 	// Number of beam widths to compute pattern data for
-	int Nwidths = 5;
+	int Nwidths = 3;
 
 	// Number of sample points across the 3dB widths specified below.
 	int Nxw = 512;

@@ -14,6 +14,7 @@ CPPFLAGS =		-g -pg -Wall -I$(INCDIR)
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
+	convert_pattern \
 	gen_ephem \
 	sim \
 	l00_to_l10 \
@@ -54,6 +55,9 @@ install: $(PROGRAMS)
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
 %: %.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+convert_pattern: convert_pattern.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 gen_ephem: gen_ephem.C $(LIBS)
