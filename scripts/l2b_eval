@@ -87,6 +87,16 @@ l2b_metrics -c $cfg_file -s  7:15 -o $l2b_file.07-15
 l2b_metrics -c $cfg_file -s 15:30 -o $l2b_file.15-30
 echo "`date` : Completed l2b_metrics"
 
+#-------------------#
+# generate PS files #
+#-------------------#
+
+echo "`date` : Generating PostScript"
+l2b_metrics_plot 03-07
+l2b_metrics_plot 07-15
+l2b_metrics_plot 15-30
+echo "`date` : Completed generating PostScript"
+
 exit(0)
 
 end
