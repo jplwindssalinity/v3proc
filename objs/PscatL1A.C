@@ -22,9 +22,11 @@ PscatL1AFrame::PscatL1AFrame()
 :   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), antennaPosition(NULL), event(NULL), science(NULL),
-    spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
-    slicesPerSpot(0), measPerSlice(0), measPerSpot(0), measPerFrame(0)
+    velZ(0.0), calPosition(0), loopbackSlices(NULL), loopbackNoise(0),
+    loadSlices(NULL), loadNoise(0), antennaPosition(NULL), event(NULL),
+    science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0),
+    spotsPerFrame(0), slicesPerSpot(0), measPerSlice(0), measPerSpot(0),
+    measPerFrame(0)
 {
     return;
 }
@@ -61,6 +63,21 @@ PscatL1AFrame::Allocate(
     if (antennaPosition == NULL)
         return(0);
 
+    //---------------------------//
+    // allocate cal measurements //
+    //---------------------------//
+
+    loopbackSlices = (unsigned int *)malloc(slicesPerSpot*sizeof(unsigned int));
+    if (loopbackSlices == NULL)
+    {
+        return(0);
+    }
+    loadSlices = (unsigned int *)malloc(slicesPerSpot * sizeof(unsigned int));
+    if (loadSlices == NULL)
+    {
+        return(0);
+    }
+
     //-----------------//
     // allocate events //
     //-----------------//
@@ -93,6 +110,10 @@ PscatL1AFrame::Deallocate()
 {
     if (antennaPosition)
         free(antennaPosition);
+    if (loopbackSlices)
+        free(loopbackSlices);
+    if (loadSlices)
+        free(loadSlices);
     if (event)
         free(event);
     if (science)
@@ -100,6 +121,8 @@ PscatL1AFrame::Deallocate()
     if (spotNoise)
         free(spotNoise);
     antennaPosition = NULL;
+    loopbackSlices = NULL;
+    loadSlices = NULL;
     event = NULL;
     science = NULL;
     spotNoise = NULL;
@@ -136,6 +159,11 @@ PscatL1AFrame::FrameSize()
     size += sizeof(float);          // roll
     size += sizeof(float);          // pitch
     size += sizeof(float);          // yaw
+    size += sizeof(unsigned char);  // cal position
+    size += sizeof(unsigned int) * slicesPerSpot;  // loopback slices
+    size += sizeof(unsigned int);                  // loopback noise
+    size += sizeof(unsigned int) * slicesPerSpot;  // load slices
+    size += sizeof(unsigned int);                  // load noise
     size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
     size += sizeof(unsigned char) * spotsPerFrame;  // event
     size += sizeof(float) * measPerFrame;  // science data
@@ -212,6 +240,26 @@ PscatL1AFrame::Pack(
 
     tmp_float = attitude.GetYaw();
     memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
+
+    size = sizeof(unsigned char);
+    memcpy((void *)(buffer + idx), (void *)&calPosition, size);
+    idx += size;
+
+    size = sizeof(unsigned int) * slicesPerSpot;
+    memcpy((void *)(buffer + idx), (void *)loopbackSlices, size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&loopbackNoise, size);
+    idx += size;
+
+    size = sizeof(unsigned int) * slicesPerSpot;
+    memcpy((void *)(buffer + idx), (void *)loadSlices, size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&loadNoise, size);
     idx += size;
 
     size = sizeof(unsigned short) * spotsPerFrame;
@@ -301,6 +349,26 @@ PscatL1AFrame::Unpack(
 
     memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
     attitude.SetYaw(tmp_float);
+    idx += size;
+
+    size = sizeof(unsigned char);
+    memcpy((void *)&calPosition, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(unsigned int) * slicesPerSpot;
+    memcpy((void *)loopbackSlices, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)&loopbackNoise, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(unsigned int) * slicesPerSpot;
+    memcpy((void *)loadSlices, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)&loadNoise, (void *)(buffer + idx), size);
     idx += size;
 
     size = sizeof(unsigned short) * spotsPerFrame;
