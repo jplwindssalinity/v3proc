@@ -309,6 +309,7 @@ InstrumentSim::ScatSim(
 			{
 				return(0);
 			}
+// meas.outline.WriteBvg(stdout);
 
 			//----------------------------------------//
 			// get wind vector for the earth location //
