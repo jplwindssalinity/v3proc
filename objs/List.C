@@ -193,9 +193,32 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
-//-----------//
-// NodeCount //
-//-----------//
+//--------------------------//
+// List::SwapCurrentAndNext //
+//--------------------------//
+// Swaps the data in the current and next node (if they both exist)
+// The current node is unchanged.
+// Returns 1 on success, 0 if either node doesn't exist
+
+template <class T>
+T*
+List<T>::SwapCurrentAndNext()
+{
+	// make sure current and next exist
+	if (! _current || ! _current->next)
+		return(0);
+
+	// swap
+	T* tmp_data = _current->data;
+	_current->data = _current->next->data;
+	_current->next->data = tmp_data;
+
+	return(1);
+}
+
+//-----------------//
+// List::NodeCount //
+//-----------------//
 // Returns the number of nodes in the list
 
 template <class T>

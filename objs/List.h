@@ -94,6 +94,7 @@ public:
 
 	void	GotoHead() { _current = _head; };
 	void	GotoTail() { _current = _tail; };
+	int		SwapCurrentAndNext();
 
 	//-------------//
 	// information //
