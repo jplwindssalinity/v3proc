@@ -127,13 +127,6 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->SetBeamBTimeOffset(tmp_double);
 
-	//------------------------------------//
-	// configure the spacecraft simulator //
-	//------------------------------------//
-
-	if (! ConfigSpacecraftSim(&(instrument_sim->spacecraftSim), config_list))
-		return(0);
-
 	//---------------------------------//
 	// configure the antenna simulator //
 	//---------------------------------//
