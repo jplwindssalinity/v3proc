@@ -112,56 +112,70 @@ Grid::Add(
 		return(0);	// Couldn't find a grid position, so dump this measurement.
 	}
 
-//
-// Compute grid indices, noting that the cross track grid starts on the left
-// side at cti = 0.
-//
+	//
+	// Compute grid indices, noting that the cross track grid starts on the left
+	// side at cti = 0.
+	//
 
-int cti = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
-int vati = (int) (atd/_alongtrack_res);	// virtual along track index.
+	int cti = (int) ((ctd + _crosstrack_size/2.0)/_crosstrack_res + 0.5);
+	int vati = (int) (atd/_alongtrack_res);	// virtual along track index.
 
-if ((cti >= _crosstrack_bins) || (cti < 0))
-{
-	printf("Error: crosstrack index = %d out of range in Grid::Add\n",cti);
-	return(0);
-}
+	if ((cti >= _crosstrack_bins) || (cti < 0))
+	{
+		printf("Error: crosstrack index = %d out of range in Grid::Add\n",cti);
+		return(0);
+	}
 
-//
-// Note that reverse shifting is not implemented.
-// Thus, if vati falls before the earliest row in memory, it is considered
-// out of range instead of trying to back up the buffer.  This limitation
-// is imposed by BufferedList.
-//
+	//
+	// Negative vati means the point falls before the defined grid start.
+	// For this special case, Add() returns success, but dumps the measurement.
+	// If vati falls inside the defined grid, but in a portion that has been
+	// already output, then an error message is generated (see the next
+	// if-block after this one).
+	//
 
-if (vati < _ati_offset)
-{
-	printf("Error: alongtrack index = %d out of range in Grid::Add\n",vati);
-	return(0);
-}
+	if (vati < 0)
+	{
+		delete meas;
+		return(1);
+	}
 
-//
-// Determine if the along track index is in memory or not.
-// If not, read and write rows until it is in range.
-//
+	//
+	// Note that reverse shifting is not implemented.
+	// Thus, if vati falls before the earliest row in memory, it is considered
+	// out of range instead of trying to back up the buffer.  This limitation
+	// is imposed by BufferedList.
+	//
 
-while (vati - _ati_offset >= _alongtrack_bins)
-{	// vati is beyond latest row, so need to shift the grid buffer
-	ShiftForward();
-}
+	if (vati < _ati_offset)
+	{
+		printf("Error: alongtrack index = %d out of range in Grid::Add\n",vati);
+		return(0);
+	}
 
-//
-// Convert the along track index into the virtual buffer (vati) to an
-// index into the grid in memory (ati).
-//
+	//
+	// Determine if the along track index is in memory or not.
+	// If not, read and write rows until it is in range.
+	//
 
-int ati = vati - _ati_offset + _ati_start;
-if (ati >= _alongtrack_bins) ati -= _alongtrack_bins;
+	while (vati - _ati_offset >= _alongtrack_bins)
+	{	// vati is beyond latest row, so need to shift the grid buffer
+		ShiftForward();
+	}
 
-// Add the measurement to the appropriate grid cell measurement list.
-_grid[cti][ati].Append(meas);
+	//
+	// Convert the along track index into the virtual buffer (vati) to an
+	// index into the grid in memory (ati).
+	//
 
-//printf("%d %d %f %f\n",cti,vati,ctd,atd);
-return(1);
+	int ati = vati - _ati_offset + _ati_start;
+	if (ati >= _alongtrack_bins) ati -= _alongtrack_bins;
+
+	// Add the measurement to the appropriate grid cell measurement list.
+	_grid[cti][ati].Append(meas);
+
+	//printf("%d %d %f %f\n",cti,vati,ctd,atd);
+	return(1);
 
 }
 
