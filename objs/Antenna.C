@@ -25,7 +25,6 @@ Antenna::Antenna()
 
 Antenna::~Antenna()
 {
-	free(beam);
 	return;
 }
 
