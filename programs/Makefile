@@ -8,7 +8,7 @@ INCDIR =		../../include
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
 CCC =			gcc
-DEBUGFLAGS=		-O3
+DEBUGFLAGS =	-O3
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
@@ -38,7 +38,6 @@ PROGRAMS = \
 	make_kfactor \
 	generate_kfactor \
 	make_kpmfield \
-	log_cfg \
 	windfield_to_vctr \
 	l2a_centroids \
 	l2a_diagnostics \
@@ -46,8 +45,9 @@ PROGRAMS = \
 	l2a_s0 \
 	l1b_s0 \
 	kprtable_to_xmgr \
-	l2ags_s0 \
-	s0_to_noise_value
+	s0_to_noise_value \
+	log_cfg \
+	l2ags_s0
 
 #----------------------------------------------------------------------
 # default: make all executable programs
