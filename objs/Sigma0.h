@@ -100,6 +100,8 @@ int radar_Xcal(Qscat* qscat, float Es_cal, double* Xcal);
 int PtGr_to_Esn(float PtGr, TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
                 int sim_kpri_flag,
                 float* Esn_echo_cal, float* Esn_noise_cal);
+int make_load_measurements(Qscat* qscat, float* En_echo_load,
+                           float* En_noise_load);
 int compute_sigma0(Qscat* qscat, Meas* meas, float Xfactor, float Esn_slice,
                    float Esn_echo, float Esn_noise, float En_echo_load,
                    float En_noise_load);

@@ -319,7 +319,10 @@ sigma0_to_Esn_slice_given_X(
 // with simulated data.
 //
 // Inputs:
+//  PtGr = true transmit power reciever gain product to use.
+//  ptgrNoise = noise process to use when applying Kpri variance.
 //	qscat = pointer to current Qscat object
+//  sim_kpri_flag = 1 when Kpri variance should be applied, 0 otherwise.
 //	Esn_echo_cal = pointer to signal+noise energy in the echo channel.
 //	Esn_noise_cal = pointer to signal+noise energy in the noise channel.
 //
@@ -381,6 +384,52 @@ PtGr_to_Esn(
 
 	*Esn_echo_cal = (float)(Es_cal + En_cal);
     *Esn_noise_cal = (float)(beta*Es_cal + alpha*beta*En_cal);
+
+	return(1);
+}
+
+//
+// make_load_measurements
+//
+// This function computes the load cal pulse energy received for a
+// given instrument state.
+// The received energy is
+// the noise energy that falls within the appropriate bandwidth.
+// The result could be fuzzed by Kpc which is where Kpri really comes from,
+// but this is NOT done right now.  Instead, Kpri noise is applied directly
+// to the loopback signal energy.  The load measurements recover alpha
+// perfectly right now.
+//
+// Inputs:
+//	qscat = pointer to current Qscat object
+//	En_echo_load = pointer to load noise energy in the echo channel.
+//	En_noise_load = pointer to load noise energy in the noise channel.
+//
+
+int
+make_load_measurements(
+    Qscat*       qscat,
+    float*       En_echo_load,
+    float*       En_noise_load)
+{
+
+    //-------------------------------------------//
+    // Compute load noise measurements to assure //
+    // a perfect retrieval of alpha.             //
+    //-------------------------------------------//
+
+    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bn = qscat->ses.noiseBandwidth;
+    double Be = qscat->ses.GetTotalSignalBandwidth();
+
+    double N0_echo = bK * qscat->systemTemperature *
+        qscat->ses.rxGainEcho / qscat->ses.receivePathLoss;
+    double N0_noise = bK * qscat->systemTemperature *
+        qscat->ses.rxGainNoise / qscat->ses.receivePathLoss;
+
+    *En_echo_load = N0_echo * Be * Tg;
+    *En_noise_load = N0_noise * Bn * Tg;
 
 	return(1);
 }

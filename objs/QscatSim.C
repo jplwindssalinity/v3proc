@@ -968,18 +968,9 @@ QscatSim::SetL00Load(
     // a perfect retrieval of alpha.             //
     //-------------------------------------------//
 
-    SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-    double Tg = ses_beam_info->rxGateWidth;
-    double Bn = qscat->ses.noiseBandwidth;
-    double Be = qscat->ses.GetTotalSignalBandwidth();
-
-    double N0_echo = bK * qscat->systemTemperature *
-        qscat->ses.rxGainEcho / qscat->ses.receivePathLoss;
-    double N0_noise = bK * qscat->systemTemperature *
-        qscat->ses.rxGainNoise / qscat->ses.receivePathLoss;
-
-    float En_echo_load = N0_echo * Be * Tg;
-    float En_noise_load = N0_noise * Bn * Tg;
+    float En_echo_load;
+    float En_noise_load;
+    make_load_measurements(qscat,&En_echo_load,&En_noise_load);
 
     //-------------------//
     // for each slice... //
