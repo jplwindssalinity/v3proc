@@ -264,7 +264,8 @@ EarthPosition::ReadLonLat(FILE* fp)
 int
 EarthPosition::WriteLonLat(FILE* fp)
 {
-	LonLat lon_lat(*this);
+	LonLat lon_lat;
+	lon_lat.Set(*this);
 	if (lon_lat.Write(fp) == 0) return(0);
 	return(1);
 }

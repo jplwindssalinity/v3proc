@@ -197,7 +197,8 @@ MeasList::AverageLonLat()
 	// Find the surface point lying along the averaged direction.
 	EarthPosition ravg = earth_intercept(earth_center,sum);
 
-	LonLat lon_lat(ravg);
+	LonLat lon_lat;
+	lon_lat.Set(ravg);
 	return(lon_lat);
 }
 
