@@ -7,6 +7,7 @@ static const char rcs_id_configlist_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include <ctype.h>
@@ -256,7 +257,8 @@ ConfigList::Write(
 	//--------------------------------------//
 
 	int max_length = 0;
-	for (StringPair* pair = GetHead(); pair != NULL; pair = GetNext())
+	StringPair* pair;
+	for (pair = GetHead(); pair != NULL; pair = GetNext())
 	{
 		int length = strlen(pair->GetKeyword());
 		if (length > max_length)
@@ -265,7 +267,7 @@ ConfigList::Write(
 
 	max_length += 4;	// leave a 4 character gap
 
-	for (StringPair* pair = GetHead(); pair != NULL; pair = GetNext())
+	for (pair = GetHead(); pair != NULL; pair = GetNext())
 	{
 		char* keyword = pair->GetKeyword();
 		char* value = pair->GetValue();
