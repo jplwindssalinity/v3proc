@@ -9,48 +9,47 @@
 #include "EarthPosition.h"
 #include "CoordinateSwitch.h"
 
+#define velocity_frame	velocity_frame_geocentric
+
 static const char rcs_id_genericgeom_h[] =
 	"@(#) $Id$";
 
 //======================================================================
 // Functions
-//		velocity_frame
+//		velocity_frame_geocentric
 //		velocity_frame_geodetic
+//		(velocity_frame)
 //		beam_look
 //		earth_intercept
 //======================================================================
 
 //======================================================================
 // Function
-//		velocity_frame
+//		velocity_frame_geocentric
 //
 // DESCRIPTION
-//		The velocity_frame function computes the axial unit vectors that
-//		define the s/c velocity frame (or local coordinate system) from
-//		the s/c position and velocity.
+//		The velocity_frame_geocentric function computes the axial unit
+//		vectors that define the s/c velocity frame (or local coordinate
+//		system) from the s/c position and velocity.
 //		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
-void velocity_frame(EarthPosition rsat, Vector3 vsat,
-					Vector3 *xscvel_geo,
-					Vector3 *yscvel_geo,
-					Vector3 *zscvel_geo);
+void	velocity_frame_geocentric(EarthPosition rsat, Vector3 vsat,
+			Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo);
 
 //======================================================================
 // Function
 //		velocity_frame_geodetic
 //
 // DESCRIPTION
-//		The velocity_frame_geodetic function computes the axial unit vectors
-//		that define the s/c velocity frame (or local coordinate system) from
-//		the s/c position and velocity.
+//		The velocity_frame_geodetic function computes the axial unit
+//		vectors that define the s/c velocity frame (or local coordinate
+//		system) from the s/c position and velocity.
 //		A GEODETIC convention for the attitude reference is used.
 //======================================================================
 
-void velocity_frame(EarthPosition rsat, Vector3 vsat,
-					Vector3 *xscvel_geo,
-					Vector3 *yscvel_geo,
-					Vector3 *zscvel_geo);
+void	velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
+			Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo);
 
 //======================================================================
 // Function

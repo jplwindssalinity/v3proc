@@ -16,7 +16,7 @@ static const char rcs_id_genericgeom_c[] =
 
 
 //
-// velocity_frame
+// velocity_frame_geocentric
 //
 // This function determines the spacecraft velocity frame (also called
 // the local coordinate system) given the s/c position and velocity.
@@ -37,20 +37,21 @@ static const char rcs_id_genericgeom_c[] =
 //  corresponding unit vectors.
 //
 
-void velocity_frame(EarthPosition rsat, Vector3 vsat,
-					Vector3 *xscvel_geo,
-					Vector3 *yscvel_geo,
-					Vector3 *zscvel_geo)
-
+void
+velocity_frame_geocentric(
+	EarthPosition	rsat,
+	Vector3			vsat,
+	Vector3			*xscvel_geo,
+	Vector3			*yscvel_geo,
+	Vector3			*zscvel_geo)
 {
-
-// Geocentric definition of the z-axis
-*zscvel_geo = -rsat;
-// y-axis is perpendicular to the orbit plane
-*yscvel_geo = *zscvel_geo & vsat;
-// x-axis close to, but not the same as the velocity vector
-*xscvel_geo = *yscvel_geo & *zscvel_geo;
-
+	// Geocentric definition of the z-axis
+	*zscvel_geo = -rsat;
+	// y-axis is perpendicular to the orbit plane
+	*yscvel_geo = *zscvel_geo & vsat;
+	// x-axis close to, but not the same as the velocity vector
+	*xscvel_geo = *yscvel_geo & *zscvel_geo;
+	return;
 }
 
 //
