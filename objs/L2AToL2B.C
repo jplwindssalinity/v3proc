@@ -69,7 +69,7 @@ L17ToL20::ConvertAndWrite(
 	// add to wind swath //
 	//-------------------//
 
-	l20->frame.swath.Add(ati, cti, wvc);
+	l20->frame.swath.Add(cti, ati, wvc);
 
 	return(1);
 }
