@@ -82,6 +82,8 @@ protected:
 	StatusE		_status;
 	int			_headerRead;
         int                     _headerWritten;
+
+	int                     idx;
 };
 
 #endif

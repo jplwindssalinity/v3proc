@@ -140,13 +140,13 @@ L2A::ReadGroupRec(
       idx++;
       if (! readFrame.Read(_inputFp))
 	return(0);
-      frame.CopyFrame(&frameGroup25[idx], &readFrame);
+      //      frame.CopyFrame(&frameGroup25[idx], &readFrame);
 
     }
   
   // CombineFrames returns the number of 50km frames (and the combined frames)
 
-  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
+  //  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
   if (nFrames == 0)
     {
       cerr << "Could not combine frames" << endl;
@@ -156,7 +156,7 @@ L2A::ReadGroupRec(
 
   // copy over next frame (from next ati row) and return
 
-  frame.CopyFrame(&frameGroup25[0], &frameGroup25[idx]);
+  //  frame.CopyFrame(&frameGroup25[0], &frameGroup25[idx]);
 
   return(nFrames);
 
