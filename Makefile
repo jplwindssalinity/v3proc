@@ -7,11 +7,11 @@
 # default: make all object and executable files
 #----------------------------------------------------------------------
 
-default: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile \
-		HDF/Makefile.svt
+default: eadata/Makefile objs/Makefile programs/Makefile \
+		eaprograms/Makefile scripts/Makefile HDF/Makefile.svt
 	@ (cd HDF; echo "Making default (Makefile.svt) in `pwd`"; \
 	make -f Makefile.svt)
-	@ for dir in eadata objs programs scripts; \
+	@ for dir in eadata objs programs eaprograms scripts; \
 		do (cd $$dir; \
 			echo "Making default in `pwd`"; \
 			make default); \
@@ -24,7 +24,7 @@ default: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile \
 clean:
 	@ (cd HDF; echo "Making clean (Makefile.svt) in `pwd`"; \
 	make clean -f Makefile.svt)
-	@ for dir in eadata objs programs scripts; \
+	@ for dir in eadata objs programs eaprograms scripts; \
 		do (cd $$dir; \
 			echo "Making clean in `pwd`"; \
 			make clean; \
@@ -35,8 +35,9 @@ clean:
 # install: make all object and executable files and install
 #----------------------------------------------------------------------
 
-install: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile
-	@ for dir in eadata objs programs scripts; \
+install: eadata/Makefile objs/Makefile programs/Makefile \
+		eaprograms/Makefile scripts/Makefile
+	@ for dir in eadata objs programs eaprograms scripts; \
 		do (cd $$dir; \
 			echo "Making install in `pwd`"; \
 			make install); \
