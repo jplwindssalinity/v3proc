@@ -340,6 +340,71 @@ GMF::WriteSolutionCurves(
 	return(1);
 }
 
+//--------------------------//
+// GMF::WriteObjectiveCurve //
+//--------------------------//
+
+int
+GMF::WriteObjectiveCurve(
+	FILE*		ofp)
+{
+
+	float min_obj = _bestObj[0];
+	float max_obj = _bestObj[0];
+	for (int i = 0; i < _phiCount; i++)
+	{
+		if (_bestObj[i] < min_obj)
+			min_obj = _bestObj[i];
+		if (_bestObj[i] > max_obj)
+			max_obj = _bestObj[i];
+	}
+	float scale = 1.0 / (max_obj - min_obj);
+	for (int i = 0; i < _phiCount; i++)
+	{
+		fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
+			(_bestObj[i] - min_obj) * scale);
+	}
+
+	return(1);
+}
+
+//----------------------//
+// GMF::AppendSolutions //
+//----------------------//
+
+int
+GMF::AppendSolutions(
+	FILE*		ofp,
+	WVC*		wvc)
+{
+
+	float min_obj = _bestObj[0];
+	float max_obj = _bestObj[0];
+	for (int i = 0; i < _phiCount; i++)
+	{
+		if (_bestObj[i] < min_obj)
+			min_obj = _bestObj[i];
+		if (_bestObj[i] > max_obj)
+			max_obj = _bestObj[i];
+	}
+	float scale = 1.0 / (max_obj - min_obj);
+
+	//----------------------------//
+	// write individual solutions //
+	//----------------------------//
+
+	fprintf(ofp, "&\n");
+	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+		wvp = wvc->ambiguities.GetNext())
+	{
+		int phi_idx = (int)(wvp->dir/_phiStepSize);
+		fprintf(ofp, "%g %g\n", wvp->dir * rtd,
+				 (_bestObj[phi_idx]-min_obj)*scale);
+	}
+
+	return(1);
+}
+
 //----------------------------//
 // GMF::CheckRetrieveCriteria //
 //----------------------------//
