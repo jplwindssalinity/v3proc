@@ -10,11 +10,6 @@ static const char rcs_id_genericfile_c[] =
 #include <malloc.h>
 #include <string.h>
 #include "GenericFile.h"
-/*
-#include <unistd.h>
-#include <fcntl.h>
-*/
-
 
 //=============//
 // GenericFile //
