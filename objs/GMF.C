@@ -3277,7 +3277,7 @@ GMF::RetrieveWindsH1(
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
     {
-		WriteObjXmgr("toomany",10,wvc);
+//		WriteObjXmgr("toomany",10,wvc);
         fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
         for (int i = 0; i < delete_count; i++)
         {
