@@ -8,6 +8,7 @@ static const char rcs_id_wind_c[] =
 
 #include <stdio.h>
 #include <string.h>
+#include <iostream.h>
 #include "Wind.h"
 #include "Constants.h"
 #include "GSparameters.h"
@@ -140,6 +141,173 @@ WindVectorPlus::ReadL2B(
 	return(1);
 }
 
+
+//=================//
+// WindVectorField //
+//=================//
+
+WindVectorField::WindVectorField()
+{
+	return;
+}
+
+WindVectorField::~WindVectorField()
+{
+  lon.Free();
+  lat.Free();
+  dir.Free();
+  spd.Free();
+
+  return;
+}
+
+//---------------------------//
+// WindVectorField::ReadVctr //
+//---------------------------//
+
+int 
+WindVectorField::ReadVctr(
+      const char* filename)
+{
+
+  //-----------//
+  // open file //
+  //-----------//
+  
+  FILE* fp = fopen(filename, "r");
+  if (fp == NULL) 
+    return(0);
+
+  //----------------//
+  // allocate 1 rev //
+  //----------------//
+
+  int revsize = 16000;
+
+  lon.Allocate(revsize);
+  lat.Allocate(revsize);
+  spd.Allocate(revsize);
+  dir.Allocate(revsize);
+
+  //------------//
+  // read field //
+  //------------//
+  
+  float llon, llat, lspd, ldir;
+  int idx=0;
+  
+  // first read
+
+  if (fread((void *)&ldir, sizeof(float), 1, fp) != 1)
+      {
+	fclose(fp);
+	return(0);
+      }
+  
+  cerr << "ldir: " << llon << endl;
+
+  if (fread((void *)&llon, sizeof(float), 1, fp) != 1 ||
+      fread((void *)&llat, sizeof(float), 1, fp) != 1 ||
+      fread((void *)&lspd, sizeof(float), 1, fp) != 1 ||
+      fread((void *)&ldir, sizeof(float), 1, fp) != 1)
+    {
+      fclose(fp);
+      return(0);
+    }
+  
+  cerr << "llon: " << llon << endl;
+  cerr << "ldir: " << ldir << endl;
+
+  while(!feof(fp) ){
+    
+    idx++;
+    
+    lon.SetElement(idx-1, (double)llon);
+    lat.SetElement(idx-1, (double)llat);
+    spd.SetElement(idx-1, (double)lspd);
+    dir.SetElement(idx-1, (double)ldir);
+    
+    //-----------//
+    // next read //
+    //-----------//
+    
+    if (fread((void *)&llon, sizeof(float), 1, fp) != 1 ||
+	fread((void *)&llat, sizeof(float), 1, fp) != 1 ||
+	fread((void *)&lspd, sizeof(float), 1, fp) != 1 ||
+	fread((void *)&ldir, sizeof(float), 1, fp) != 1)
+      {
+	fclose(fp);
+	break;
+      }
+  }
+  
+  cerr << "Units read: " << idx  << endl;
+
+  fclose(fp);
+
+  return(idx);
+  
+}
+
+
+//-----------------------------------------//
+// WindVectorField::InterpolateVectorField //
+//-----------------------------------------//
+
+int 
+WindVectorField::InterpolateVectorField(
+             LonLat       lon_lat,
+	     WindVector*  nwv,
+	     int          idx)
+{
+
+  // find size of windfield
+
+  int sz = dir.GetSize();
+
+  // get earth position of lon_lat
+
+  EarthPosition cell25;
+  double alt = 0;
+  double bound = 50.;
+
+  cell25.SetAltLonGCLat(alt, (double)lon_lat.longitude, (double)lon_lat.latitude);
+
+  // loop through and find position closest
+
+  double distance;
+  int good_idx = -1;
+
+  for (int i = 0; i < sz; i++) {
+
+    EarthPosition cell50;
+    double llat, llon;
+
+    lon.GetElement(i, &llon);
+    lat.GetElement(i, &llat);
+    cell50.SetAltLonGCLat(alt, llon, llat);
+
+    distance = cell50.SurfaceDistance(cell25);
+    if (i == 0) 
+      cerr << "Surface Distance: " << distance << endl;
+    
+    if (distance < bound) {
+      double dir_value, spd_value;
+      dir.GetElement(i, &dir_value);
+      spd.GetElement(i, &spd_value);
+      nwv->SetSpdDir(spd_value, dir_value);
+      good_idx = i;
+    }
+  }
+  
+  if (good_idx == -1) {
+    cerr << "Couldn't find 50km cell" << endl;
+    return(0);
+  }
+
+  return(1);
+
+}
 
 //=====//
 // WVC //
@@ -1611,12 +1779,12 @@ WindSwath::Add(
 	}
 
 	if (swath[cti][ati])
-    {
-        fprintf(stderr, "WindSwath::Add: attempted cell replacement\n");
-        fprintf(stderr, "  cti = %d, ati = %d\n", cti, ati);
-		return(0);	// already a cell there
-    }
-
+	  {
+	    fprintf(stderr, "WindSwath::Add: attempted cell replacement\n");
+	    fprintf(stderr, "  cti = %d, ati = %d\n", cti, ati);
+	    return(0);	// already a cell there
+	  }
+	
 	swath[cti][ati] = wvc;
 	_validCells++;
 	return(1);
@@ -2128,6 +2296,39 @@ WindSwath::Nudge(
 			count++;
 		}
 	}
+	return(count);
+}
+
+//-----------------------//
+// WindSwath::LoResNudge //
+//-----------------------//
+
+int
+WindSwath::LoResNudge(
+	WindVectorField*   nudge_field,
+	int                max_rank)
+{
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	  {
+	    for (int ati = 0; ati < _alongTrackBins; ati++)
+	      {
+	        WVC* wvc = swath[cti][ati];
+		if (! wvc)
+		  continue;
+		
+		WindVector nudge_wv;
+
+		int idx = (ati * _crossTrackBins + cti)/2;
+
+		if (! nudge_field->InterpolateVectorField(wvc->lonLat, &nudge_wv, idx) )
+		  continue;
+		
+		wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, max_rank);
+		count++;
+	      }
+	  }
+
 	return(count);
 }
 
