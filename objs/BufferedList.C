@@ -15,14 +15,16 @@ static const char rcs_id_bufferedlist_c[] =
 
 template <class T>
 BufferedList<T>::BufferedList()
-:	_nodeFile(NULL), _maxNodes(0), _numNodes(0)
+:	_inputFp(NULL), _maxNodes(0), _numNodes(0)
 {
 	return;
 }
 
 template <class T>
-BufferedList<T>::BufferedList(FILE *nodefile, long max_nodes)
-:	_nodeFile(nodefile), _maxNodes(max_nodes), _numNodes(0)
+BufferedList<T>::BufferedList(
+	FILE*			input_fp,
+	unsigned int	max_nodes)
+:	_inputFp(input_fp), _maxNodes(max_nodes), _numNodes(0)
 {
 	return;
 }
@@ -30,12 +32,60 @@ BufferedList<T>::BufferedList(FILE *nodefile, long max_nodes)
 template <class T>
 BufferedList<T>::~BufferedList()
 {
+	CloseInputFile();
+
     T* data;
     GetHead();
     while ((data=RemoveCurrent()) != NULL)
         delete data;
 
     return;
+}
+
+//----------------------------//
+// BufferedList::SetInputFile //
+//----------------------------//
+
+template <class T>
+int
+BufferedList<T>::SetInputFile(
+	const char*		filename)
+{
+	CloseInputFile();		// in case it is open already
+	_inputFp = fopen(filename, "r");
+	if (_inputFp == NULL)
+		return(0);
+
+	return(1);
+}
+
+//---------------------------//
+// BufferedList::SetMaxNodes //
+//---------------------------//
+
+template <class T>
+int
+BufferedList<T>::SetMaxNodes(
+	unsigned int	max_nodes)
+{
+	_maxNodes = max_nodes;
+	return(1);
+}
+
+//------------------------------//
+// BufferedList::CloseInputFile //
+//------------------------------//
+
+template <class T>
+int
+BufferedList<T>::CloseInputFile()
+{
+	if (_inputFp)
+	{
+		fclose(_inputFp);
+		_inputFp = NULL;
+	}
+	return(1);
 }
 
 //-----------------------------//
@@ -55,16 +105,16 @@ BufferedList<T>::GetOrReadNext()
 	if (! _current)
 		_current = _head;
 
-	if (_current->next)
+	if (_current && _current->next)
 	{
 		// There is a next node in memory, so just return it.
 		return(GetNext());
 	}
 	else
 	{
-		// At the tail, so try to read in another node.
+		// At the tail (or empty list), so try to read in another node.
 		T* new_data = new T;		// make a new data space
-		if (new_data->Read(_nodeFile))
+		if (new_data->Read(_inputFp))
 		{
 			// successful read, so Append the new data.
 			Append(new_data);
@@ -79,8 +129,8 @@ BufferedList<T>::GetOrReadNext()
 
 				// go back to the tail
 				GotoTail();
-				return(new_data);
 			}
+			return(new_data);
 		}
 		else
 		{
@@ -89,5 +139,5 @@ BufferedList<T>::GetOrReadNext()
 			return(NULL);
 		}
 	}
-	return(NULL);
+	return(NULL);	// should never get here
 }

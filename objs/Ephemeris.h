@@ -72,43 +72,39 @@ class Ephemeris : public BufferedList<OrbitState>
 {
 public:
 
-//--------------//
-// construction //
-//--------------//
+	//--------------//
+	// construction //
+	//--------------//
 
-Ephemeris();
-Ephemeris(char *filename, long maxstates);
-~Ephemeris();
+	Ephemeris();
+	Ephemeris(char *filename, unsigned int maxstates);
+	~Ephemeris();
 
-// I/O
+	//
+	// Interpolation and extraction.
+	//
 
-int SetFile(char *filename);
+	int GetPosition(double time, EarthPosition *rsat);
+	int GetOrbitState(double time, OrbitState *os);
 
-//
-// Interpolation and extraction.
-//
+	//
+	// Subtrack conversion.
+	//
 
-int GetPosition(double time, EarthPosition *rsat);
-int GetOrbitState(double time, OrbitState *os);
+	int GetSubtrackCoordinates(EarthPosition rground, double start_time,
+			double measurement_time, float *crosstrack, float *alongtrack);
 
-//
-// Subtrack conversion.
-//
+protected:
 
-int GetSubtrackCoordinates(
-EarthPosition rground,
-double start_time,
-double measurement_time,
-float *crosstrack,
-float *alongtrack);
+	int		_GetBracketingOrbitStates(double time, OrbitState** os1,
+				OrbitState** os2);
 
-//-----------//
-// variables //
-//-----------//
+	//-----------//
+	// variables //
+	//-----------//
 
-FILE *inputfile;
-long max_states;
-
+	FILE*			_inputFile;
+	unsigned int	_maxStates;
 };
 
 //======================================================================

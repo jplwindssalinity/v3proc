@@ -36,8 +36,12 @@ public:
 	//--------------//
 
 	BufferedList();
-	BufferedList(FILE *nodefile, long max_nodes);
+	BufferedList(FILE* input_fp, unsigned int max_nodes);
 	~BufferedList();
+
+	int		SetInputFile(const char* filename);
+	int		SetMaxNodes(unsigned int max_nodes);
+	int		CloseInputFile();
 
 	//--------------------//
 	// Buffered retrieval //
@@ -51,9 +55,9 @@ protected:
 	// variables //
 	//-----------//
 
-	FILE *_nodeFile;
-	long _maxNodes;
-	long _numNodes;
+	FILE*			_inputFp;
+	unsigned int	_maxNodes;
+	unsigned int	_numNodes;
 };
 
 #endif

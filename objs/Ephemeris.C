@@ -93,34 +93,22 @@ return(1);
 
 }
 
-//
-// Ephemeris
-//
-
-//
-// Default constructor
-//
+//===========//
+// Ephemeris //
+//===========//
 
 Ephemeris::Ephemeris()
 {
-inputfile = NULL;
-return;
+	return;
 }
 
-Ephemeris::Ephemeris(char *filename, long maxstates)
+Ephemeris::Ephemeris(
+	char*			filename,
+	unsigned int	max_states)
 {
-Ephemeris::SetFile(filename);
-
-//
-// Set the maximum number of OrbitState's that this Ephemeris object will
-// hold in memory.  A larger number of states can still be accessed because
-// the Ephemeris object will automatically read in new data and flush old
-// data as needed.
-//
-
-max_states = maxstates;
-
-return;
+	SetInputFile(filename);
+	SetMaxNodes(max_states);
+	return;
 }
 
 //
@@ -129,160 +117,65 @@ return;
 
 Ephemeris::~Ephemeris()
 {
-if (inputfile != NULL) fclose(inputfile);
-return;
+	CloseInputFile();
+	return;
 }
 
-//
-// Ephemeris::SetFile
-//
-// Open a file to read ephemeris data from.
-//
-
-int
-Ephemeris::SetFile(char *filename)
-
-{
-
-if (filename == NULL)
-{
-	inputfile = NULL;
-	return(0);
-}
-
-inputfile = fopen(filename,"r");
-
-return(1);
-
-}
-
-//
-// Ephemeris::GetPosition
-//
+//------------------------//
+// Ephemeris::GetPosition //
+//------------------------//
 // Interpolate this OrbitState List (ie., Ephemeris) to the desired time
 // and return the position.
-//
 
 int
 Ephemeris::GetPosition(
-double time,
-EarthPosition *rsat)
-
+	double			time,
+	EarthPosition*	rsat)
 {
+	OrbitState* os1;
+	OrbitState* os2;
+	_GetBracketingOrbitStates(time, &os1, &os2);
+	
+	// Linearly interpolate the position components in time.
 
-//
-// Determine if the desired time is covered by ephemeris data in memory.
-// If not, then more data needs to be read in.  This may also cause data
-// from the other end of the list of orbit states to be deallocated
-// (to maintain a fixed amount of memory).
-// Currently, only forward reading is implemented to maintain high performance.
-// The BufferedList object handles the reading and flushing.
-//
+	double time1 = os1->time;
+	EarthPosition rsat1 = os1->rsat;
 
-//
-// Bracket the desired time in the ephemeris.
-//
+	double time2 = os2->time;
+	EarthPosition rsat2 = os2->rsat;
 
-OrbitState *current_state = GetCurrent();
-while (current_state != NULL)
-{
-if (current_state->time < time)
-	current_state = ReadNext();
-else
-	break;
-}
-while (current_state != NULL)
-{
-if (current_state->time > time)
-	current_state = GetPrev();
-else
-	break;
+	*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+	return(1);
 }
 
-// Check for out of range desired time.
-if (current_state == NULL)
-{
-	printf("Error: Couldn't locate ephemeris data\n");
-	exit(-1);
-}
-
-// Linearly interpolate the position components in time.
-
-EarthPosition rsat1 = current_state->rsat;
-double time1 = current_state->time;
-current_state = GetNext();
-EarthPosition rsat2 = current_state->rsat;
-double time2 = current_state->time;
-
-*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
-return(1);
-
-}
-
-//
-// Ephemeris::GetOrbitState
-//
+//--------------------------//
+// Ephemeris::GetOrbitState //
+//--------------------------//
 // Interpolate this OrbitState List (ie., Ephemeris) to the desired time
-// and return the orbit state.
-//
+// and return the interpolated OrbitState
 
 int
 Ephemeris::GetOrbitState(
-double time,
-OrbitState *os)
-
+	double			time,
+	OrbitState*		orbit_state)
 {
+	OrbitState* os1;
+	OrbitState* os2;
+	_GetBracketingOrbitStates(time, &os1, &os2);
 
-//
-// Determine if the desired time is covered by ephemeris data in memory.
-// If not, then more data needs to be read in.  This may also cause data
-// from the other end of the list of orbit states to be deallocated
-// (to maintain a fixed amount of memory).
-// Currently, only forward reading is implemented to maintain high performance.
-// The BufferedList object handles the reading and flushing.
-//
+	// Linearly interpolate the position components in time.
 
-//
-// Bracket the desired time in the ephemeris.
-//
+	double time1 = os1->time;
+	EarthPosition rsat1 = os1->rsat;
+	Vector3 vsat1 = os1->vsat;
 
-OrbitState *current_state = GetCurrent();
-while (current_state != NULL)
-{
-if (current_state->time < time)
-	current_state = ReadNext();
-else
-	break;
-}
-while (current_state != NULL)
-{
-if (current_state->time > time)
-	current_state = GetPrev();
-else
-	break;
-}
+	double time2 = os2->time;
+	EarthPosition rsat2 = os2->rsat;
+	Vector3 vsat2 = os2->vsat;
 
-// Check for out of range desired time.
-if (current_state == NULL)
-{
-	printf("Error: Couldn't locate ephemeris data\n");
-	exit(-1);
-}
-
-// Linearly interpolate the position components in time.
-
-EarthPosition rsat1 = current_state->rsat;
-Vector3 vsat1 = current_state->vsat;
-double time1 = current_state->time;
-current_state = GetNext();
-EarthPosition rsat2 = current_state->rsat;
-Vector3 vsat2 = current_state->vsat;
-double time2 = current_state->time;
-
-os->rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
-os->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
-return(1);
-
+	orbit_state->rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+	orbit_state->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
+	return(1);
 }
 
 //
@@ -310,7 +203,7 @@ float *alongtrack)
 
 {
 
-float ax,bx,cx,fa,fb,fc;
+float ax,bx;
 ax = start_time - 1;
 bx = measurement_time;
 
@@ -324,7 +217,7 @@ void mnbrak(float*,float*,float*,float*,float*,float*,float (*f)(float));
 
 // Locate the ephemeris position with minimum range to the EarthPosition.
 float brent(float,float,float,float (*f)(float),float,float*);
-float tol = 1e-4;
+// float tol = 1e-4;
 double min_time;
 //float minrange = brent(ax,bx,cx,rangefunc.Range,tol,&min_time);
 
@@ -345,9 +238,45 @@ EarthPosition subtrack_start = start_position.Nadir();
 return(1);
 }
 
-//
-// RangeFunction
-//
+//--------------------------------------//
+// Ephemeris::_GetBracketingOrbitStates //
+//--------------------------------------//
+
+int
+Ephemeris::_GetBracketingOrbitStates(
+	double			time,
+	OrbitState**	os1,
+	OrbitState**	os2)
+{
+	// make sure there is data in the list (if there is any at all)
+	OrbitState* current_state = GetCurrent();
+	if (current_state == NULL)
+		current_state = GetOrReadNext();
+
+	// search forward
+	while (current_state && current_state->time < time)
+		current_state = GetOrReadNext();
+
+	// search backward
+	while (current_state && current_state->time > time)
+		current_state = GetPrev();
+
+	OrbitState* next_state = GetOrReadNext();
+
+	// check
+	if (! current_state || ! next_state)
+		return(0);
+
+	// set states
+	*os1 = current_state;
+	*os2 = next_state;
+	return(1);
+}
+
+
+//===============//
+// RangeFunction //
+//===============//
 
 //
 // Initialize with a pointer to the object defining the current ephemeris,
