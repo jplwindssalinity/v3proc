@@ -370,6 +370,63 @@ void sort_increasing(float* array, int num_elements){
   }
 }
 
+//===============================================================//
+// Insertion sort into ascending order.
+// Also creates an index array (keyed off the first) if requested.
+//===============================================================//
+
+void insertion_sort(int N, float* a, int** indx)
+{
+	float aa;
+	int ii;
+
+	if (a == NULL)
+	{
+		printf("Error: insertion_sort passed null key array\n");
+		exit(-1);
+	}
+
+	if (indx == NULL)
+	{
+		for (int j = 2; j < N; j++)
+		{
+			aa = a[j];
+			int i = j - 1;
+			while (i > 0 && a[i] > aa)
+			{
+				a[i+1] = a[i];
+				i--;
+			}
+			a[i+1] = aa;
+		}
+	}
+	else
+	{
+		*indx = (int*)malloc(N*sizeof(int));
+		if (*indx == NULL)
+		{
+			printf("Error allocating memory in insertion_sort\n");
+			exit(-1);
+		}
+		for (int i = 0; i < N; i++) *indx[i] = i;
+
+		for (int j = 2; j < N; j++)
+		{
+			aa = a[j];
+			ii = *indx[j];
+			int i = j - 1;
+			while (i > 0 && a[i] > aa)
+			{
+				a[i+1] = a[i];
+				*indx[i+1] = *indx[i];
+				i--;
+			}
+			a[i+1] = aa;
+			*indx[i+1] = ii;
+		}
+	}
+}
+
 int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
 
   //===================================================//

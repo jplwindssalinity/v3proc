@@ -585,6 +585,9 @@ ConfigInstrument(
 	// convert to real units and un-normalize
 	instrument->corrKpm = pow(10.0,0.1*corr_kpmdB) - 1.0;
 
+	// don't waste time generating zero variance rv's
+	if (corr_kpmdB == 0.0) instrument->simCorrKpmFlag = 0;
+
 	return(1);
 }
 
@@ -1382,6 +1385,15 @@ ConfigL1AToL1B(
 	if (! config_list->GetFloat(SLICE_GAIN_THRESHOLD_KEYWORD, &gain))
 		return(0);
 	l1a_to_l1b->sliceGainThreshold = pow(10.0, 0.1 * gain);
+
+	//-----------------------------------------------//
+	// maximum number of slices to use in processing //
+	//-----------------------------------------------//
+
+	int max_slices;
+	if (! config_list->GetInt(PROCESS_MAX_SLICES_KEYWORD, &max_slices))
+		return(0);
+	l1a_to_l1b->processMaxSlices = max_slices;
 
 	return(1);
 }

@@ -6,6 +6,8 @@
 static const char rcs_id_instrumentgeom_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "CoordinateSwitch.h"
 #include "Ephemeris.h"
 #include "Attitude.h"
@@ -175,7 +177,8 @@ LocateSliceCentroids(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
-	float			gain_threshold)
+	float			gain_threshold,
+	int				max_slices)
 {
 	//-----------//
 	// predigest //
@@ -232,6 +235,14 @@ LocateSliceCentroids(
 	//-------------------//
 
 	int total_slices = instrument->GetTotalSliceCount();
+	int slice_count = 0;
+	float* gains = (float*)malloc(total_slices*sizeof(float));
+	if (! gains)
+	{
+		printf("Error allocating memory in LocateSliceCentroids\n");
+		return(0);
+	}
+
 	for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
 	{
 		//----------------------------------//
@@ -266,6 +277,8 @@ LocateSliceCentroids(
 
 		if (gain_threshold && gain / peak_two_way_gain < gain_threshold)
 			continue;
+
+		gains[slice_count] = gain;
 
 		//-------------------------//
 		// create a new measurment //
@@ -305,7 +318,38 @@ LocateSliceCentroids(
 		//-----------------------------//
 
 		meas_spot->Append(meas);
+		slice_count++;
 	}
+
+	//------------------------------------------------------------------//
+	// Throw out the low gain slices to stay within the max slice count //
+	//------------------------------------------------------------------//
+
+	if (max_slices && slice_count > max_slices)
+	{
+		int* indx;
+		insertion_sort(slice_count,gains,&indx);
+
+		meas_spot->GotoHead();
+		Meas* meas;
+		int flag;
+
+		for (int i = 0; i < slice_count; i++)
+		{	// Check each slice for possible deletion.
+			flag = 0;	// not removed yet
+			for (int j = 0; j < slice_count - max_slices; j++)
+			{	// Check for a match with the index of a low gain slice.
+				if (indx[j] == i)
+				{	// Found a low gain slice, so dump it.
+					meas = meas_spot->RemoveCurrent();
+					if (meas) delete meas;
+					flag = 1;	// removed
+				}
+			}
+			if (!flag) meas = meas_spot->GetNext();
+		}
+	}
+					
 	return(1);
 }
 

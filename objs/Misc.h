@@ -68,6 +68,7 @@ double			amotry(double** p, double* y, double* psum, int ndim,
 float			median(const float* array, int num_elements);
 float			mean(const float* array, int num_elements);
 void			sort_increasing(float* array, int num_elements);
+void			insertion_sort(int N, float* a, int** indx);
 
 int				rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx);
 int				abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx);

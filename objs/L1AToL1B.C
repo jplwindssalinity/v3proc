@@ -18,7 +18,7 @@ static const char rcs_id_l1atol1b_c[] =
 
 L1AToL1B::L1AToL1B()
 :	useKfactor(0), useSpotCompositing(0), outputSigma0ToStdout(0),
-	sliceGainThreshold(0.0)
+	sliceGainThreshold(0.0), processMaxSlices(0)
 {
 	return;
 }
@@ -145,7 +145,7 @@ L1AToL1B::Convert(
 			else
 			{
 				if (! LocateSliceCentroids(spacecraft, instrument, meas_spot,
-					sliceGainThreshold))
+					sliceGainThreshold,processMaxSlices))
 				{
 					return(0);
 				}
