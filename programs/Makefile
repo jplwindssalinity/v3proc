@@ -40,6 +40,7 @@ PROGRAMS = \
 	baseband_errors \
 	rgc_format \
 	dtc_format \
+	cds_tracking_check \
 	memfilter \
 	fake_vap \
 	l1b_ascii \
