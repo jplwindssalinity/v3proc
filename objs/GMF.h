@@ -1,5 +1,5 @@
  //=============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -36,10 +36,9 @@ static const char rcs_id_gmf_h[] =
 #define DEFAULT_SMOOTH_ANGLE       10.0*dtr
 #define DEFAULT_MAX_SOLUTIONS      4
 #define DEFAULT_PHI_COUNT          360
-//#define S2_DEBUG_INTERVAL               17
-//#define S2_DETAILED_DEBUG               88
+//#define S2_DEBUG_INTERVAL        17
+//#define S2_DETAILED_DEBUG        88
 #define MINIMUM_WVC_MEASUREMENTS   4
-
 
 class GMF : public MiscTable
 {

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -12,9 +12,9 @@ static const char rcs_id_gmf_c[] =
 #include <malloc.h>
 #include <math.h>
 #ifdef INTEL86
-#include <ieee754.h>
+  #include <ieee754.h>
 #else
-#include <ieeefp.h>
+  #include <ieeefp.h>
 #endif
 #include "GMF.h"
 #include "GSparameters.h"
@@ -807,45 +807,49 @@ GMF::RetrieveManyWinds(
 //-------------------------------------//
 int
 GMF::RetrieveWindsWithPeakSplitting(
-    MeasList*         meas_list,
-        Kp*                      kp,
-        WVC*                    wvc,
-        float                 one_peak_width,
-        float                 two_peak_separation_threshold,
-    float                 threshold)
-
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc,
+    float      one_peak_width,
+    float      two_peak_separation_threshold,
+    float      threshold)
 {
-        if(! RetrieveWinds(meas_list,kp,wvc)) return(0);
-        float two_peak_width=one_peak_width/3;
-        float one_peak_separation_threshold=2.0*two_peak_width;
+    if (! RetrieveWinds(meas_list,kp,wvc))
+        return(0);
+    float two_peak_width = one_peak_width / 3;
+    float one_peak_separation_threshold = 2.0 * two_peak_width;
 
-    //--------------------------------------//
-    // determine number of ambiguities with  //
+    //----------------------------------------//
+    // determine number of ambiguities with   //
     // scaled probability values greater than //
     // threshold                              //
     //----------------------------------------//
 
-    int num_peaks=0;
+    int num_peaks = 0;
     float top_peaks_dir[2];
 
-    float obj,scale=0;
-        WindVectorPlus* head=wvc->ambiguities.GetHead();
-        if(head!=NULL) scale=head->obj;
-    for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-        wvp; wvp=wvc->ambiguities.GetNext()){
-      obj=wvp->obj;
-      float prob=exp((obj-scale)/2);
-      if (prob > threshold){
-        if(num_peaks<2) top_peaks_dir[num_peaks]=wvp->dir;
-        num_peaks++;
-      }
+    float obj, scale = 0;
+    WindVectorPlus* head = wvc->ambiguities.GetHead();
+    if (head != NULL)
+        scale = head->obj;
+    for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+        wvp = wvc->ambiguities.GetNext())
+    {
+        obj = wvp->obj;
+        float prob = exp((obj - scale) / 2);
+        if (prob > threshold)
+        {
+            if (num_peaks < 2)
+                top_peaks_dir[num_peaks] = wvp->dir;
+            num_peaks++;
+        }
     }
 
     //-------------------------------------------------------------//
-        // Case 1: Two peaks closer together than one peak_separation_ //
-        // threshold. They are combined to form a single peak and Case //
-        // 2 is applied.                                               //
-        //-------------------------------------------------------------//
+    // Case 1: Two peaks closer together than one peak_separation_ //
+    // threshold. They are combined to form a single peak and Case //
+    // 2 is applied.                                               //
+    //-------------------------------------------------------------//
 
     if(num_peaks==2 && fabs(ANGDIF(top_peaks_dir[0],top_peaks_dir[1]))<
        one_peak_separation_threshold){
@@ -994,29 +998,36 @@ GMF::_ObjectiveToProbability(
     float  scale,
     int    radius)
 {
-  float sum=0;
-  for(int c=0;c<_phiCount;c++){
-    *(_bestObj+c)=exp((*(_bestObj+c)-scale)/2);
-    sum+=*(_bestObj+c);
-  }
-  for(int c=0;c<_phiCount;c++){
-    *(_bestObj+c)/=sum;
-  }
-  float* tmp_buffer=new float[_phiCount];
-  for(int c=0;c<_phiCount;c++){
-    *(tmp_buffer+c)=0;
-    for(int r=-radius;r<=radius;r++){
-      int offset=c+r;
-      if(offset<0) offset+=_phiCount;
-      if(offset>=_phiCount) offset-=_phiCount;
-      *(tmp_buffer+c)+=*(_bestObj+offset);
+    float sum = 0;
+    for(int c = 0; c < _phiCount; c++)
+    {
+        *(_bestObj + c) = exp((*(_bestObj + c) - scale) / 2);
+        sum += *(_bestObj + c);
     }
-  }
-  for(int c=0;c<_phiCount;c++){
-    *(_bestObj+c)=*(tmp_buffer+c);
-  }
-  delete(tmp_buffer);
-  return(1);
+    for(int c = 0; c < _phiCount; c++)
+    {
+        *(_bestObj + c) /= sum;
+    }
+    float* tmp_buffer = new float[_phiCount];
+    for (int c = 0; c < _phiCount; c++)
+    {
+        *(tmp_buffer + c) = 0;
+        for (int r = -radius; r <= radius; r++)
+        {
+            int offset = c + r;
+            if (offset < 0)
+                offset += _phiCount;
+            if (offset >= _phiCount)
+                offset -= _phiCount;
+            *(tmp_buffer + c) += *(_bestObj + offset);
+        }
+    }
+    for (int c = 0; c < _phiCount; c++)
+    {
+        *(_bestObj + c) = *(tmp_buffer + c);
+    }
+    delete(tmp_buffer);
+    return(1);
 }
 
 //-------------------------------------//
@@ -1393,7 +1404,7 @@ GMF::FindMaxima(
 
 int
 GMF::FindMany(
-    WVC*        wvc)
+    WVC*  wvc)
 {
     //---------------------------------------//
     // find maximum objective function value //
@@ -1456,6 +1467,7 @@ GMF::FindMany(
     }
     return(1);
 }
+
 //------------------//
 // GMF::GetVariance //
 //------------------//
