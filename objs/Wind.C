@@ -2198,6 +2198,23 @@ WindSwath::GetMaxAmbiguityCount()
     return(max_count);
 }
 
+//-------------------//
+// WindSwath::GetWVC //
+//-------------------//
+
+WVC*
+WindSwath::GetWVC(
+    int  cti,
+    int  ati)
+{
+    if (cti < 0 || cti >= _crossTrackBins ||
+        ati < 0 || ati >= _alongTrackBins)
+    {
+        return(NULL);
+    }
+    return( *(*(swath + cti) + ati) );
+}
+
 //-----------------------//
 // WindSwath::DeleteWVCs //
 //-----------------------//

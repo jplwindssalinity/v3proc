@@ -42,6 +42,7 @@ OBJS = \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
+	Image.o \
 	Index.o \
 	InstrumentGeom.o \
 	Interpolate.o \

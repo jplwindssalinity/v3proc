@@ -356,9 +356,10 @@ public:
     // setting and getting //
     //---------------------//
 
-    int  GetCrossTrackBins()  { return(_crossTrackBins); };
-    int  GetAlongTrackBins()  { return(_alongTrackBins); };
-    int  GetMaxAmbiguityCount();
+    int   GetCrossTrackBins()  { return(_crossTrackBins); };
+    int   GetAlongTrackBins()  { return(_alongTrackBins); };
+    int   GetMaxAmbiguityCount();
+    WVC*  GetWVC(int cti, int ati);
 
     //---------//
     // freeing //
