@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -143,18 +143,18 @@ struct GSL1AEu
 struct GSL1ASci
 {
     // methods
-    int Read(char*   frameStartByte);
+    int Read(char*  frameStartByte);
 
     // member variables
-    short      antenna_position[100];
-    float      loop_back_cal_A_power[12];
-    float      loop_back_cal_B_power[12];
-    float      loop_back_cal_noise;
-    float      load_cal_A_power[12];
-    float      load_cal_B_power[12];
-    float      load_cal_noise;
-    int        power_dn[12][100];
-    int        noise_dn[100];
+    unsigned short  antenna_position[100];
+    float           loop_back_cal_A_power[12];
+    float           loop_back_cal_B_power[12];
+    float           loop_back_cal_noise;
+    float           load_cal_A_power[12];
+    float           load_cal_B_power[12];
+    float           load_cal_noise;
+    int             power_dn[12][100];
+    int             noise_dn[100];
 };
 
 //---------------------------------
