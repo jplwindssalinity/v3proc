@@ -14,7 +14,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	_priPerBeam(0.0), _beamBTimeOffset(0.0), _event(NONE)
+:	_priPerBeam(0.0), _beamBTimeOffset(0.0)
 {
 	return;
 }
@@ -32,21 +32,24 @@ int
 InstrumentSim::InitByConfig(
 	ConfigList*		config_list)
 {
-	if (! ConfigInstrument(config_list))
+	if (! Config(config_list))
 		return(0);
 
-	if (! ConfigOrbit(config_list))
+	if (! ConfigOrbitSim(config_list))
+		return(0);
+
+	if (! ConfigAntennaSim(config_list))
 		return(0);
 
 	return(1);
 }
 
-//---------------------------------//
-// InstrumentSim::ConfigInstrument //
-//---------------------------------//
+//-----------------------//
+// InstrumentSim::Config //
+//-----------------------//
 
 int
-InstrumentSim::ConfigInstrument(
+InstrumentSim::Config(
 	ConfigList*		config_list)
 {
 	double tmp_double;
@@ -62,17 +65,17 @@ InstrumentSim::ConfigInstrument(
 	return(1);
 }
 
-//----------------------------//
-// InstrumentSim::ConfigOrbit //
-//----------------------------//
+//-------------------------------//
+// InstrumentSim::ConfigOrbitSim //
+//-------------------------------//
 
 int
-InstrumentSim::ConfigOrbit(
+InstrumentSim::ConfigOrbitSim(
 	ConfigList*		config_list)
 {
-	//-------------------------//
-	// set up orbit parameters //
-	//-------------------------//
+	//------------------------------------//
+	// set up orbit simulation parameters //
+	//------------------------------------//
  
 	double semi_major_axis;
 	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
@@ -104,34 +107,75 @@ InstrumentSim::ConfigOrbit(
 	return(1);
 }
 
+//---------------------------------//
+// InstrumentSim::ConfigAntennaSim //
+//---------------------------------//
+
+int
+InstrumentSim::ConfigAntennaSim(
+	ConfigList*		config_list)
+{
+	//--------------------------------------//
+	// set up antenna simulation parameters //
+	//--------------------------------------//
+ 
+	double spin_rate;
+	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
+		return(0);
+
+	antennaSim.SetSpinRate(spin_rate);
+	return(1);
+}
+
 //----------------------------------//
 // InstrumentSim::SimulateNextEvent //
 //----------------------------------//
 
 int
 InstrumentSim::SimulateNextEvent(
-	double*		time)
+	double*		time,
+	SimEventE*	event)
 {
-	int pri_cycle = (int)(*time / _priPerBeam);
-	
-	SimEventE current_event;
+	//--------------------------//
+	// determine the next event //
+	//--------------------------//
+
+	int pri_cycle;
 	switch(_event)
 	{
 	case NONE:
-		current_event = BEAM_A;
+		_event = BEAM_A;
 		break;
 	case BEAM_A:
-		current_event = BEAM_B;
-		*time = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
+		_event = BEAM_B;
+		pri_cycle = (int)((_eventTime + _beamBTimeOffset) / _priPerBeam);
+		_eventTime = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
 		break;
 	case BEAM_B:
-		current_event = BEAM_A;
-		*time = _priPerBeam * (double)(pri_cycle + 1);
+		pri_cycle = (int)(_eventTime / _priPerBeam);
+		_event = BEAM_A;
+		_eventTime = _priPerBeam * (double)(pri_cycle + 1);
 		break;
 	}
-	_event = current_event;
 
-	orbitSim.UpdateOrbit(*time, &(instrument.orbit));
+	//------------------//
+	// update the orbit //
+	//------------------//
+
+	orbitSim.UpdateOrbit(_eventTime, &(instrument.orbit));
+
+	//-----------------------------//
+	// update the antenna position //
+	//-----------------------------//
+
+	antennaSim.UpdatePosition(_eventTime, &(instrument.antenna));
+
+	//--------------------------//
+	// set event and event time //
+	//--------------------------//
+
+	*event = _event;
+	*time = _eventTime;
 
 	return(1);
 }

@@ -11,6 +11,7 @@ static const char rcs_id_instrumentsim_h[] =
 
 #include "ConfigList.h"
 #include "Instrument.h"
+#include "AntennaSim.h"
 #include "OrbitSim.h"
 
 //======================================================================
@@ -34,7 +35,6 @@ static const char rcs_id_instrumentsim_h[] =
 class InstrumentSim
 {
 public:
-
 	//------//
 	// enum //
 	//------//
@@ -53,14 +53,15 @@ public:
 	//----------------//
 
 	int		InitByConfig(ConfigList* config_list);
-	int		ConfigInstrument(ConfigList* config_list);
-	int		ConfigOrbit(ConfigList* config_list);
+	int		Config(ConfigList* config_list);
+	int		ConfigOrbitSim(ConfigList* config_list);
+	int		ConfigAntennaSim(ConfigList* config_list);
 
 	//--------------------//
 	// simulation control //
 	//--------------------//
 
-	int		SimulateNextEvent(double* time);
+	int		SimulateNextEvent(double* time, SimEventE* event);
 
 	//-----------//
 	// variables //
@@ -68,6 +69,7 @@ public:
 
 	Instrument		instrument;		// the instrument state
 
+	AntennaSim		antennaSim;		// the antenna simulator
 	OrbitSim		orbitSim;		// the orbit simulator
 
 protected:
@@ -80,18 +82,19 @@ protected:
 	double		_beamBTimeOffset;		// seconds
 
 	SimEventE	_event;					// the last/current event
+	double		_eventTime;				// the last/current event time
 };
 
-//---------------------//
-// Instrument Keywords //
-//---------------------//
+//--------------------------------//
+// Instrument Simulation Keywords //
+//--------------------------------//
 
 #define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
 #define BEAM_B_TIME_OFFSET_KEYWORD		"BEAM_B_TIME_OFFSET"
 
-//----------------//
-// Orbit Keywords //
-//----------------//
+//---------------------------//
+// Orbit Simulation Keywords //
+//---------------------------//
 
 #define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
 #define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
@@ -99,5 +102,11 @@ protected:
 #define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
 #define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
 #define MEAN_ANOMALY_KEYWORD			"MEAN_ANOMALY"
+
+//-----------------------------//
+// Antenna Simulation Keywords //
+//-----------------------------//
+
+#define SPIN_RATE_KEYWORD				"SPIN_RATE"
 
 #endif

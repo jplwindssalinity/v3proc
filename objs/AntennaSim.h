@@ -9,6 +9,8 @@
 static const char rcs_id_antennasim_h[] =
 	"@(#) $Id$";
 
+#include "Antenna.h"
+
 //======================================================================
 // CLASSES
 //		AntennaSim
@@ -36,6 +38,18 @@ public:
 
 	AntennaSim();
 	~AntennaSim();
+
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	int		SetSpinRate(double spin_rate);
+
+	//------------------//
+	// antenna position //
+	//------------------//
+
+	int		UpdatePosition(double time, Antenna* antenna);
 
 protected:
 
