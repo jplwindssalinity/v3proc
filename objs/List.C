@@ -231,6 +231,26 @@ List<T>::GotoNext()
 	return(1);
 }
 
+//----------------//
+// List::GotoPrev //
+//----------------//
+// Sets the current node to be the prev node.
+// Returns 1 on success.  If the current node or the node preceeding
+// the current node does not exist (is NULL), GotoPrev fails and
+// returns 0.
+
+template <class T>
+int
+List<T>::GotoPrev()
+{
+	if (! _current)
+		return(0);
+	_current = _current->prev;
+	if (! _current)
+		return(0);
+	return(1);
+}
+
 //--------------------------//
 // List::SwapCurrentAndNext //
 //--------------------------//
