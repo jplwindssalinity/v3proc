@@ -94,6 +94,7 @@ public:
     double  GetRttMin() { return(_rttMin); };
     double  GetRttMax() { return(_rttMax); };
     double  GetOffset() { return(_offset); };
+    double  GetPulseWidth() { return(_pulseWidth); };
 
     int     SetRtts(double altitude, double angle_buffer = 0.0,
                 double time_buffer = 0.0);
@@ -175,6 +176,7 @@ public:
     void    GotoFirstCombo();
     int     GotoNextCombo();
     int     PulsersInOrder();
+    int     IdenticalPulseWidths();
     double  DutyFactor();
     void    Memorize();
     void    Recall();
@@ -203,12 +205,14 @@ private:
 
     int     _keepPulserOrder;
     int     _spacePulsesEvenly;
+    int     _identicalPulseWidths;
 
     double  _angleBuffer;
     double  _timeBuffer;
 
     int        _targetPulseCount;
     double     _maxDutyFactor;
+    int        _avoidNadir;
     PulseList  _pulseList;
 };
 

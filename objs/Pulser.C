@@ -573,7 +573,8 @@ PulserCluster::PulserCluster()
     _priMaxSet(-1.0), _priStep(-1.0), _pri(-1.0), _priMin(-1.0),
     _priMax(-1.0), _priMem(-1.0), _clusterRttMin(0.0), _clusterRttMax(0.0),
     _rttMinNadir(-1.0), _rttMaxNadir(-1.0), _angleBuffer(0.0),
-    _timeBuffer(0.0), _targetPulseCount(0), _maxDutyFactor(1.0)
+    _timeBuffer(0.0), _targetPulseCount(0), _maxDutyFactor(1.0),
+    _avoidNadir(0)
 {
     return;
 }
@@ -677,9 +678,15 @@ PulserCluster::Config(
     int avoid_nadir;
     config_list->GetInt("AVOID_NADIR", &avoid_nadir);
     if (avoid_nadir)
+    {
+        _avoidNadir = 1;
         _pulseList.AvoidNadir();
+    }
     else
+    {
+        _avoidNadir = 0;
         _pulseList.IgnoreNadir();
+    }
 
     //-----------------//
     // keep beam order //
@@ -697,6 +704,14 @@ PulserCluster::Config(
 	config_list->GetInt("SPACE_PULSES_EVENLY", &_spacePulsesEvenly);
     if (_spacePulsesEvenly)
         printf("Spacing pulses evenly.\n");
+
+    //---------------//
+    // evenly spaced //
+    //---------------//
+
+	config_list->GetInt("IDENTICAL_PULSE_WIDTHS", &_identicalPulseWidths);
+    if (_identicalPulseWidths)
+        printf("Identical pulse widths.\n");
 
     config_list->ExitForMissingKeywords();
 
@@ -796,16 +811,33 @@ PulserCluster::SetPulsesInFlight(
     // need to change pri max
     if (_pulsesInFlight == 1)
     {
-        // technically, there is no PRI max, but we will make up one.
-        // assuming that the largest pulse width is rtt_min,
-        // we will calculate the PRI associated with pulsing and
-        // receiving each beam sequentially.
-        // i.e. rtt_min + rtt_max time for each beam
+        // Technically, there is no PRI max, but we will make up a
+        // reasonable one. Assuming sequential Tx and Rx operations
+        // for each beam, the maximum time that should be spent on
+        // each beam is:
+        //     pulse_width + rtt_max
+        // Without a nadir constraint, the largest possible pulse width
+        // is rtt_min (because then the echo starts coming back).
+        // With the nadir constraint, the largest possible pulse width
+        // must conform to:
+        //     pulse_width + rtt_max_nadir < rtt_min
+        // i.e., the nadir return must be done before the echo starts.
+        // This results in a maximum pulse width of rtt_min - rtt_max_nadir.
+
         _priMax = 0.0;
         for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
         {
-            _priMax += pulser->GetRttMin();
-            _priMax += pulser->GetRttMax();
+            double time_for_pulser;
+            if (_avoidNadir)
+            {
+                time_for_pulser = pulser->GetRttMin() - _rttMaxNadir
+                    + pulser->GetRttMax();
+            }
+            else
+            {
+                time_for_pulser = pulser->GetRttMin() + pulser->GetRttMax();
+            }
+            _priMax += time_for_pulser;
         }
     }
     else
@@ -831,21 +863,35 @@ PulserCluster::SetPri(
     {
         _pri = pri;
 
-        //-------------------------------------------------//
-        // need to change pulse width max and offset range //
-        //-------------------------------------------------//
+        //----------------------------//
+        // precalculations for offset //
+        //----------------------------//
 
-        double pulse_width_max = _pri / 2.0;
         double offset_max = _pri;
-
-        // calculation needed to evenly space pulses
         double even_offset_step = 0.0;
         if (_spacePulsesEvenly)
             even_offset_step = _pri / (double)NodeCount();
 
         for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
         {
+            //---------------------------------//
+            // determine the pulse width range //
+            //---------------------------------//
+
+            double rtt_min = pulser->GetRttMin();
+            double pulse_width_max = rtt_min
+                - (double)(_pulsesInFlight - 1) * _pri;
+            if (_avoidNadir)
+            {
+                double nadir_pulse_width_max = rtt_min - _rttMaxNadir;
+                pulse_width_max = MIN(pulse_width_max, nadir_pulse_width_max);
+            }
             pulser->SetPulseWidthMax(pulse_width_max);
+
+            //-------------------------//
+            // define the offset range //
+            //-------------------------//
+
             pulser->SetOffsetMax(offset_max);
 
             if (_spacePulsesEvenly)
@@ -977,7 +1023,7 @@ PulserCluster::Optimize()
     // try the combinations //
     //----------------------//
 
-    double max_duty_factor = 0.0;
+    double best_duty_factor = 0.0;
     double duty_factor = 0.0;
     do
     {
@@ -1000,15 +1046,60 @@ PulserCluster::Optimize()
                 break;
         }
 
+        //----------------------------------------//
+        // restrict the duty factor, if necessary //
+        //----------------------------------------//
+
+        int no_more_combos = 0;
+        do
+        {
+            double tmp_duty_factor = DutyFactor();
+            if (tmp_duty_factor > best_duty_factor &&
+                tmp_duty_factor < _maxDutyFactor)
+            {
+                break;    // this is worth checking
+            }
+            if (! GotoNextCombo())
+            {
+                no_more_combos = 1;
+                break;
+            }
+        } while (1);
+        if (no_more_combos)
+            break;
+
+        //-----------------------------------------//
+        // restrict the pulse widths, if necessary //
+        //-----------------------------------------//
+
+        if (_identicalPulseWidths)
+        {
+            int no_more_combos = 0;
+            while(! IdenticalPulseWidths())
+            {
+                if (! GotoNextCombo())
+                {
+                    no_more_combos = 1;
+                    break;
+                }
+            }
+            if (no_more_combos)
+                break;
+        }
+
+        //----------------------------------//
+        // generate the pulses, if possible //
+        //----------------------------------//
+
         if (GenerateAllPulses())
         {
             duty_factor = DutyFactor();
             if (duty_factor > _maxDutyFactor)
                 continue;
 
-            if (duty_factor > max_duty_factor)
+            if (duty_factor > best_duty_factor)
             {
-                max_duty_factor = duty_factor;
+                best_duty_factor = duty_factor;
                 printf("Best duty factor = %g%%\n", 100.0 * duty_factor);
                 Memorize();
             }
@@ -1019,7 +1110,7 @@ PulserCluster::Optimize()
 
     } while (1);
 
-    return(max_duty_factor);
+    return(best_duty_factor);
 }
 
 //-------------------------------//
@@ -1036,6 +1127,25 @@ PulserCluster::PulsersInOrder()
         if (offset < last_offset)
             return(0);    // you, my little pulser, are out of order
         last_offset = offset;
+    }
+    return(1);
+}
+
+//-------------------------------------//
+// PulserCluster::IdenticalPulseWidths //
+//-------------------------------------//
+
+int
+PulserCluster::IdenticalPulseWidths()
+{
+    Pulser* pulser = GetHead();
+    double pulse_width = pulser->GetPulseWidth();
+    pulser = GetNext();
+    while (pulser)
+    {
+        if (pulser->GetPulseWidth() != pulse_width)
+            return(0);    // stinky little deviant
+        pulser = GetNext();
     }
     return(1);
 }
