@@ -756,9 +756,10 @@ QscatSim::SetMeasurements(
             gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
                 &(spacecraft->attitude), &(qscat->sas.antenna));
             gc_to_antenna=gc_to_antenna.ReverseDirection();
+            double Tp = qscat->ses.txPulseWidth;
 
             if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, qscat, meas,
-                Kfactor, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
+                Kfactor*Tp, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
                 &true_Es, &true_En, &var_esn_slice))
             {
                 return(0);

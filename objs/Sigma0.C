@@ -234,9 +234,10 @@ sigma0_to_Esn_slice_given_X(
 	//------------------------------------------------------------------------//
 	// Signal (ie., echo) energy referenced to the point just before the
 	// I-Q detection occurs (ie., including the receiver gain and system loss).
+    // X has units of energy because Xcal has units of Pt * Tp.
 	//------------------------------------------------------------------------//
 
-	double Es_slice = X*sigma0*Tp;
+	double Es_slice = X*sigma0;
 
 	//------------------------------------------------------------------------//
 	// Noise power spectral densities referenced the same way as the signal.
@@ -624,10 +625,14 @@ Er_to_sigma0_given_X(
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
 	double Es_slice = Esn_slice - meas->EnSlice;
 
+	//------------------------------------------------------------------//
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Es_slice.
 	// Kpr comes from 1/X
-	meas->value = (float)(Es_slice / Xfactor / Tp);
+    // Xfactor is in units of energy because Xcal is in units of energy.
+	//------------------------------------------------------------------//
+
+	meas->value = (float)(Es_slice / Xfactor);
 
 	//------------------------------------------------------------------//
 	// Estimate Kpc coefficients using the

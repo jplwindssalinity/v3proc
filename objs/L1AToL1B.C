@@ -344,52 +344,56 @@ L1AToL1B::Convert(
 
 			slice_i++;
 
-			//-----------------------------------------------------//
-			// composite into single spot measurement if necessary //
-			//-----------------------------------------------------//
-
-			if (useSpotCompositing)
-			{
-				Meas* comp = new Meas();
-				if (comp == NULL)
-					return(0);
-
-				if (! comp->Composite(meas_spot))
-					return(0);
-
-				meas_spot->FreeContents();
-				if (! meas_spot->Append(comp))
-					return(0);
-			}
-
-			//------------------------//
-			// Output data if enabled //
-			//------------------------//
-
-			if (simVs1BCheckfile)
-			  {
-			    FILE* fptr = fopen(simVs1BCheckfile,"a");
-			    if (fptr == NULL)
-			      {
-				fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
-				exit(-1);
-			      }
-			    cf.ptgr = l1a->frame.ptgr;
-			    cf.time = time;
-			    cf.rsat = spacecraft->orbitState.rsat;
-			    cf.vsat = spacecraft->orbitState.vsat;
-			    cf.attitude = spacecraft->attitude;
-			    cf.AppendRecord(fptr);
-			    fclose(fptr);
-			  }
 		}
-		//----------------------//
-		// add to list of spots //
-		//----------------------//
 
-		l1b->frame.spotList.Append(meas_spot);
+		//-----------------------------------------------------//
+		// composite into single spot measurement if necessary //
+		//-----------------------------------------------------//
+
+		if (useSpotCompositing)
+		{
+			Meas* comp = new Meas();
+			if (comp == NULL)
+				return(0);
+
+			if (! comp->Composite(meas_spot))
+				return(0);
+
+			meas_spot->FreeContents();
+			if (! meas_spot->Append(comp))
+				return(0);
+		}
+
+		//------------------------//
+		// Output data if enabled //
+		//------------------------//
+
+		if (simVs1BCheckfile)
+		{
+		  FILE* fptr = fopen(simVs1BCheckfile,"a");
+		  if (fptr == NULL)
+		  {
+			fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+			exit(-1);
+		  }
+		  cf.ptgr = l1a->frame.ptgr;
+		  cf.time = time;
+		  cf.rsat = spacecraft->orbitState.rsat;
+		  cf.vsat = spacecraft->orbitState.vsat;
+		  cf.attitude = spacecraft->attitude;
+		  cf.AppendRecord(fptr);
+		  fclose(fptr);
+		}
+
+	    //----------------------//
+	    // add to list of spots //
+	    //----------------------//
+
+	    l1b->frame.spotList.Append(meas_spot);
     }
-    if (outputSigma0ToStdout){
+
+    if (outputSigma0ToStdout)
+    {
       printf("\n");
     }
 
