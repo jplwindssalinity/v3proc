@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   28 Oct 1998 15:00:34   sally
+// add L1B Hdf
+// Revision 1.2  1998/10/20 21:26:17  sally
+// add L1B
+//
+// 
 //    Rev 1.7   20 Oct 1998 10:52:42   sally
 // add static QPF commands (table macro commands)
 // 
@@ -96,6 +102,9 @@ static const char rcs_id_common_defs_h[] = "@(#) $Header$";
 #define SAVE_COPY(to,from,len) \
                 { (void)strncpy(to,from,len-1); to[len-1]='\0'; }
 #endif
+
+#define EA_CONST_DEGREES_TO_RADIANS    1.745329252e-2
+#define EA_CONST_RADIANS_TO_DEGREES    5.729577951e1
 
 //---------------------------
 // Level 0 Quality Flag Maps 
