@@ -278,6 +278,9 @@ main(
     // get necessary parameters //
     //--------------------------//
 
+    Parameter* frame_time_p = ParTabAccess::GetParameter(SOURCE_L1A,
+        FRAME_TIME, UNIT_CODE_A);
+
     Parameter* xpos_p = ParTabAccess::GetParameter(SOURCE_L1A, X_POS,
         UNIT_KILOMETERS);
     Parameter* ypos_p = ParTabAccess::GetParameter(SOURCE_L1A, Y_POS,
@@ -351,6 +354,7 @@ main(
         //-------------------------//
 
         HdfFile::StatusE status;
+        status = tlmFile->OpenParamDatasets(frame_time_p);
         status = tlmFile->OpenParamDatasets(xpos_p);
         status = tlmFile->OpenParamDatasets(ypos_p);
         status = tlmFile->OpenParamDatasets(zpos_p);
@@ -378,6 +382,16 @@ main(
         for (int record_idx = 0; record_idx < tlmFile->GetDataLength();
             record_idx++)
         {
+            //--------------//
+            // get the time //
+            //--------------//
+
+            char time[6];
+            frame_time_p->extractFunc(tlmFile, frame_time_p->sdsIDs,
+                record_idx, 1, 1, &time, polyTable);
+            ETime frame_time;
+            frame_time.FromChar6(time);
+
             //--------------------//
             // set the spacecraft //
             //--------------------//
@@ -471,6 +485,7 @@ main(
             // set the ephemeris, orbit time, and orbit step //
             //-----------------------------------------------//
 
+            echo_info.frameTime = frame_time;
             echo_info.gcX = xpos;
             echo_info.gcY = ypos;
             echo_info.gcZ = zpos;
@@ -676,6 +691,7 @@ main(
         // close datasets //
         //----------------//
 
+        tlmFile->CloseParamDatasets(frame_time_p);
         tlmFile->CloseParamDatasets(xpos_p);
         tlmFile->CloseParamDatasets(ypos_p);
         tlmFile->CloseParamDatasets(zpos_p);
