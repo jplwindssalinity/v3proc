@@ -115,6 +115,6 @@ int		GetTwoWayPeakGain2(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
 			double* look, double* azimuth);
 
-double	ReciprocalPowerGainProduct(double*,void*);
+double	NegativePowerGainProduct(double*, void*);
 
 #endif

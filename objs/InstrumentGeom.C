@@ -1556,8 +1556,8 @@ GetTwoWayPeakGain(
 	}
 
 	double ftol = TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE;
-	downhill_simplex((double**)p,ndim,ndim+2,ftol,
-		ReciprocalPowerGainProduct,beam);
+	downhill_simplex((double**)p, ndim, ndim+2, ftol,
+		NegativePowerGainProduct, beam);
 
 	*look = p[0][0];
 	*azimuth = p[0][1];
@@ -1605,14 +1605,14 @@ GetTwoWayPeakGain2(
 	return(1);
 }
 
-//----------------------------//
-// ReciprocalPowerGainProduct //
-//----------------------------//
+//--------------------------//
+// NegativePowerGainProduct //
+//--------------------------//
 
 //
-// ReciprocalPowerGainProduct is the function to be minimized by
+// NegativePowerGainProduct is the function to be minimized by
 // GetTwoWayPeakGain.
-// It computes the reciprocal of the PowerGainProduct for the inputs given
+// It computes the negative of the PowerGainProduct for the inputs given
 // in the input vector.  The elements of the input vector are:
 //
 // x[0] = look angle (rad)
@@ -1622,15 +1622,12 @@ GetTwoWayPeakGain2(
 // beam = pointer to a beam object containing the pattern to use.
 //
 
-double ReciprocalPowerGainProduct(double* x, void* beam)
-
+double
+NegativePowerGainProduct(
+	double*		x,
+	void*		beam)
 {
 	double gp;
 	((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp);
-	if (gp == 0.0)
-	{
-		printf("Error: ReciprocalPowerGainProduct received a 0 gain value\n");
-		exit(-1);
-	}
-	return(1.0 / gp);
+	return(-gp);
 }
