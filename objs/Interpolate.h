@@ -12,8 +12,10 @@ static const char rcs_id_interpolate_h[] =
 //======================================================================
 // DESCRIPTION
 //		Interpolation functions
+//		Polynomial fitting
 //======================================================================
 
 int polint(double xa[], double ya[], int n, double x, double* y);
+int polcoe( double x[], double y[], int	n, double* cof);
 
 #endif
