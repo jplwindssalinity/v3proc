@@ -1,14 +1,14 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //    echo_split
 //
 // SYNOPSIS
-//    echo_split <echo_data_file> <output_base>
+//    echo_split <echo_data_file> [ output_base ]
 //
 // DESCRIPTION
 //    Splits the echo data file into orbit steps.
@@ -19,7 +19,7 @@
 // OPERANDS
 //    The following operands are supported:
 //      <echo_data_file>   The echo data input file.
-//      <output_base>      The output file base name.
+//      [ output_base ]    The output file base name.
 //
 // EXAMPLES
 //    An example of a command line is:
@@ -103,7 +103,7 @@ template class List<long>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<echo_data_file>", "<output_base>", 0};
+const char* usage_array[] = { "<echo_data_file>", "[ output_base ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -120,12 +120,16 @@ main(
 
     const char* command = no_path(argv[0]);
 
-    if (argc != 3)
+    if (argc != 2 && argc != 3)
         usage(command, usage_array, 1);
 
     int argidx = 1;
     const char* echo_data_file = argv[argidx++];
-    const char* output_base = argv[argidx++];
+    const char* output_base;
+    if (argc == 3)
+        output_base = argv[argidx++];
+    else
+        output_base = echo_data_file;
 
     //---------------------------------//
     // open echo data file for reading //

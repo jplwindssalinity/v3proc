@@ -367,13 +367,11 @@ process_orbit_step(
 
     // to do this, just negate the a and the c term
     // if f(x) = a * cos(x + p) + c, then -f(x) = -a * cos(x + p) - c
-    a *= -1.0;
-    c *= -1.0;
 
-    double newA = sqrt(A*A + 2.0*A*a*cos(P-p) + a*a);
-    double newC = C + c;
-    double y = A*sin(P) + a*sin(p);
-    double x = A*cos(P) + a*cos(p);
+    double newA = sqrt(A*A - 2.0*A*a*cos(P-p) + a*a);
+    double newC = C - c;
+    double y = A*sin(P) - a*sin(p);
+    double x = A*cos(P) - a*cos(p);
     double newP = atan2(y, x);
 
     *(*(terms + orbit_step) + 0) = newA;

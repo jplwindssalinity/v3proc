@@ -45,11 +45,11 @@ public:
     float           spinRate;
     unsigned char   beamIdx[SPOTS_PER_FRAME];
     unsigned short  idealEncoder[SPOTS_PER_FRAME];
-    double          txCenterAzimuthAngle[SPOTS_PER_FRAME];
+    float           txCenterAzimuthAngle[SPOTS_PER_FRAME];
     float           txDoppler[SPOTS_PER_FRAME];
     float           rxGateDelay[SPOTS_PER_FRAME];
     unsigned char   flag[SPOTS_PER_FRAME];
-    double          totalSignalEnergy[SPOTS_PER_FRAME];
+    float           totalSignalEnergy[SPOTS_PER_FRAME];
     float           measSpecPeakFreq[SPOTS_PER_FRAME];
 };
 
@@ -90,7 +90,6 @@ EchoInfo::Write(
     int float_size = sizeof(float);
     int int_size = sizeof(int);
     int char_size = sizeof(char);
-    int frame_double_size = SPOTS_PER_FRAME * sizeof(double);
     int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
     int frame_short_size = SPOTS_PER_FRAME * sizeof(short);
     int frame_char_size = SPOTS_PER_FRAME * sizeof(char);
@@ -112,15 +111,15 @@ EchoInfo::Write(
         write(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         write(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
-        write(fd, (void *)txCenterAzimuthAngle, frame_double_size) !=
-          frame_double_size ||
+        write(fd, (void *)txCenterAzimuthAngle, frame_float_size) !=
+          frame_float_size ||
         write(fd, (void *)txDoppler, frame_float_size) !=
           frame_float_size ||
         write(fd, (void *)rxGateDelay, frame_float_size) !=
           frame_float_size ||
         write(fd, (void *)flag, frame_char_size) != frame_char_size ||
-        write(fd, (void *)totalSignalEnergy, frame_double_size) !=
-          frame_double_size ||
+        write(fd, (void *)totalSignalEnergy, frame_float_size) !=
+          frame_float_size ||
         write(fd, (void *)measSpecPeakFreq, frame_float_size) !=
           frame_float_size)
     {
@@ -140,7 +139,6 @@ EchoInfo::Read(
     int float_size = sizeof(float);
     int int_size = sizeof(int);
     int char_size = sizeof(char);
-    int frame_double_size = SPOTS_PER_FRAME * sizeof(double);
     int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
     int frame_short_size = SPOTS_PER_FRAME * sizeof(short);
     int frame_char_size = SPOTS_PER_FRAME * sizeof(char);
@@ -178,15 +176,15 @@ EchoInfo::Read(
         read(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         read(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
-        read(fd, (void *)txCenterAzimuthAngle, frame_double_size) !=
-          frame_double_size ||
+        read(fd, (void *)txCenterAzimuthAngle, frame_float_size) !=
+          frame_float_size ||
         read(fd, (void *)txDoppler, frame_float_size) !=
           frame_float_size ||
         read(fd, (void *)rxGateDelay, frame_float_size) !=
           frame_float_size ||
         read(fd, (void *)flag, frame_char_size) != frame_char_size ||
-        read(fd, (void *)totalSignalEnergy, frame_double_size) !=
-          frame_double_size ||
+        read(fd, (void *)totalSignalEnergy, frame_float_size) !=
+          frame_float_size ||
         read(fd, (void *)measSpecPeakFreq, frame_float_size) !=
           frame_float_size)
     {

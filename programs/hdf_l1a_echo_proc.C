@@ -408,7 +408,7 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             // estimate the spin rate //
             //------------------------//
 
-            unsigned int ant_pos[100];
+            unsigned short ant_pos[100];
             ant_pos_p->extractFunc(tlmFile, ant_pos_p->sdsIDs, record_idx, 1, 1,
                 ant_pos, polyTable);
 
