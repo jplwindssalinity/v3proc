@@ -166,7 +166,7 @@ install: $(TARGET_LIB)
 
 $(TARGET_LIB):	$(OBJS) $(C_OBJS)
 	- /bin/rm -f $(TARGET_LIB)
-	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS) $(C_OBJS)
+	/opt/local/bin/ar -r $(TARGET_LIB) $(OBJS) $(C_OBJS)
 	- (set incfiles=($(INCS)); cd $(INCDIR); /bin/rm -f $$incfiles)
 	cp $(INCS) $(INCDIR)
 
