@@ -36,17 +36,42 @@ public:
 	WindField();
 	~WindField();
 
-	//-----------//
-	// variables //
-	//-----------//
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		ReadVap(const char* filename);
+
+	//--------//
+	// access //
+	//--------//
+
+	WindVector*		NearestWindVector(double longitude, double latitude);
 
 protected:
 
+	//--------------//
+	// construction //
+	//--------------//
+
+	int		_Allocate();
+	int		_Deallocate();
+
 	//-----------//
 	// variables //
 	//-----------//
 
-	WindVector**	field;
+	int				_lonCount;
+	double			_lonMin;
+	double			_lonMax;
+	double			_lonStep;
+
+	int				_latCount;
+	double			_latMin;
+	double			_latMax;
+	double			_latStep;
+
+	WindVector***	_field;			// a 2-d array of pointers
 };
 
 #endif
