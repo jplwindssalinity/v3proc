@@ -143,13 +143,13 @@ int32 dim_sizes_frame[] = { SD_UNLIMITED };
 int32 dim_sizes_frame_3[] = { SD_UNLIMITED, 3 };
 int32 dim_sizes_frame_4[] = { SD_UNLIMITED, 4 };
 int32 dim_sizes_frame_5[] = { SD_UNLIMITED, 5 };
+int32 dim_sizes_frame_8[] = { SD_UNLIMITED, 8 };
 const char* dim_names_frame[] = { "Telemetry_Frame" };
 const char* dim_names_frame_packet_header[] = { "Telemetry_Frame",
     "Small_Integer" };
-const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame",
-    "Message" };
-const char* dim_names_frame_cmd_history[] = { "Telemetry_Frame",
-    "Command" };
+const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame", "Message" };
+const char* dim_names_frame_cmd_history[] = { "Telemetry_Frame", "Command" };
+const char* dim_names_frame_fill[] = { "Telemetry_Frame", "Fill_Entries" };
 const char* dim_names_frame_[] = { "Telemetry_Frame" };
 
 SdsFloat64* frame_time_secs = new SdsFloat64("frame_time_secs", 1,
@@ -244,6 +244,144 @@ SdsInt8* prf_orbit_step_change = new SdsInt8("prf_orbit_step_change", 1,
     dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 100, -1);
 SdsUInt16* cmd_history_queue = new SdsUInt16("cmd_history_queue", 2,
     dim_sizes_frame_4, "n/a", 1.0, 0.0, dim_names_frame_cmd_history, 65535, 0);
+SdsUInt8* calc_ant_max_grp_count = new SdsUInt8("calc_ant_max_grp_count", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 100, 0);
+SdsFloat64* vtcw = new SdsFloat64("vtcw", 1, dim_sizes_frame, "counts", 1.0,
+    0.0, dim_names_frame, 28147497.0, 0);
+SdsFloat64* corres_instr_time = new SdsFloat64("corres_instr_time", 1,
+    dim_sizes_frame, "counts", 1.0, 0.0, dim_names_frame, 68719476736.0, 0);
+SdsUInt8* fsw_mission_version_num = new SdsUInt8("fsw_mission_version_num", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x3f, 0x00);
+SdsUInt8* fsw_build_number = new SdsUInt8("fsw_build_number", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pbi_flag = new SdsUInt8("pbi_flag", 1, dim_sizes_frame, "n/a",
+    1.0, 0.0, dim_names_frame, 0x3f, 0);
+SdsFloat32* fill = new SdsFloat32("fill", 1, dim_sizes_frame_8, "n/a", 1.0,
+    0.0, dim_names_frame_fill, 0.0, 0.0);
+SdsUInt8* psu_elec_bus_volt = new SdsUInt8("psu_elec_bus_volt", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* cds_current = new SdsUInt8("cds_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ses_a_current = new SdsUInt8("ses_a_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ses_b_current = new SdsUInt8("ses_b_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twta_1_current = new SdsUInt8("twta_1_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twta_2_current = new SdsUInt8("twta_2_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* sas_a_current = new SdsUInt8("sas_a_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* sas_b_current = new SdsUInt8("sas_b_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pcu_sec_volt_p12 = new SdsUInt8("pcu_sec_volt_p12", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pcu_sec_volt_n12 = new SdsUInt8("pcu_sec_volt_n12", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pcu_sec_volt_p30 = new SdsUInt8("pcu_sec_volt_p30", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pcu_sec_volt_vme_p3 = new SdsUInt8("pcu_sec_volt_vme_p3", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* pcu_elec_bus_volt = new SdsUInt8("pcu_elec_bus_volt", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* idp_a_temp = new SdsUInt8("idp_a_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* idp_b_temp = new SdsUInt8("idp_b_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* psu_temp = new SdsUInt8("psu_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt16* relay_status = new SdsUInt16("relay_status", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
+SdsUInt8* ea_a_motor_current = new SdsUInt8("ea_a_motor_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_a_sec_volt_p5 = new SdsUInt8("ea_a_sec_volt_p5", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_a_sec_volt_p14 = new SdsUInt8("ea_a_sec_volt_p14", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_a_spin_rate = new SdsUInt8("ea_a_spin_rate", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_a_saa_torque_cmd = new SdsUInt8("ea_a_saa_torque_cmd", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_motor_current = new SdsUInt8("ea_b_motor_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_sec_volt_p5 = new SdsUInt8("ea_b_sec_volt_p5", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_sec_volt_p14 = new SdsUInt8("ea_b_sec_volt_p14", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_spin_rate = new SdsUInt8("ea_b_spin_rate", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_saa_torque_cmd = new SdsUInt8("ea_b_saa_torque_cmd", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* drive_motor_temp = new SdsUInt8("drive_motor_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_a_power_supply_temp = new SdsUInt8("ea_a_power_supply_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ea_b_power_supply_temp = new SdsUInt8("ea_b_power_supply_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* duplex_bearing_temp = new SdsUInt8("duplex_bearing_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* simplex_bearing_temp = new SdsUInt8("simplex_bearing_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* rj_temp = new SdsUInt8("rj_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* a2d_p12v_xcpl = new SdsUInt8("a2d_p12v_xcpl", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_body_reg_volt = new SdsUInt8("twt1_body_reg_volt", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_ion_pump_current = new SdsUInt8("twt1_ion_pump_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_body_current = new SdsUInt8("twt1_body_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_drive_power = new SdsUInt8("twt1_drive_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_body_reg_volt = new SdsUInt8("twt2_body_reg_volt", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_ion_pump_current = new SdsUInt8("twt2_ion_pump_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_body_current = new SdsUInt8("twt2_body_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_drive_power = new SdsUInt8("twt2_drive_power", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* transmit_power_a = new SdsUInt8("transmit_power_a", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* transmit_power_b = new SdsUInt8("transmit_power_b", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* power_convert_current = new SdsUInt8("power_convert_current", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* precision_coupler_temp = new SdsUInt8("precision_coupler_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_hvps_chassis_temp = new SdsUInt8("twt1_hvps_chassis_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt1_base_temp = new SdsUInt8("twt1_base_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_hvps_chassis_temp = new SdsUInt8("twt2_hvps_chassis_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* twt2_base_temp = new SdsUInt8("twt2_base_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* rcv_protect_sw_temp = new SdsUInt8("rcv_protect_sw_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* power_converter_temp = new SdsUInt8("power_converter_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* gain_atten_temp = new SdsUInt8("gain_atten_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* beam_select_sw_temp = new SdsUInt8("beam_select_sw_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* scp_temp = new SdsUInt8("scp_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* receiver_temp = new SdsUInt8("receiver_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* exciter_a_temp = new SdsUInt8("exciter_a_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* exciter_b_temp = new SdsUInt8("exciter_b_temp", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* eng_status_c1 = new SdsUInt8("eng_status_c1", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* eng_status_c2 = new SdsUInt8("eng_status_c2", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* eng_status_c3 = new SdsUInt8("eng_status_c3", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt8* ses_data_error_flags = new SdsUInt8("ses_data_error_flags", 1,
+    dim_sizes_frame, "DN", 1.0, 0.0, dim_names_frame, 255, 0);
 
 // xxxxxx
 Sds* g_sds_table[] =
@@ -292,6 +430,75 @@ Sds* g_sds_table[] =
     doppler_orbit_step,
     prf_orbit_step_change,
     cmd_history_queue,
+    calc_ant_max_grp_count,
+    vtcw,
+    corres_instr_time,
+    fsw_mission_version_num,
+    fsw_build_number,
+    pbi_flag,
+    fill,
+    psu_elec_bus_volt,
+    cds_current,
+    ses_a_current,
+    ses_b_current,
+    twta_1_current,
+    twta_2_current,
+    sas_a_current,
+    sas_b_current,
+    pcu_sec_volt_p12,
+    pcu_sec_volt_n12,
+    pcu_sec_volt_p30,
+    pcu_sec_volt_vme_p3,
+    pcu_elec_bus_volt,
+    idp_a_temp,
+    idp_b_temp,
+    psu_temp,
+    relay_status,
+    ea_a_motor_current,
+    ea_a_sec_volt_p5,
+    ea_a_sec_volt_p14,
+    ea_a_spin_rate,
+    ea_a_saa_torque_cmd,
+    ea_b_motor_current,
+    ea_b_sec_volt_p5,
+    ea_b_sec_volt_p14,
+    ea_b_spin_rate,
+    ea_b_saa_torque_cmd,
+    drive_motor_temp,
+    ea_a_power_supply_temp,
+    ea_b_power_supply_temp,
+    duplex_bearing_temp,
+    simplex_bearing_temp,
+    rj_temp,
+    a2d_p12v_xcpl,
+    twt1_body_reg_volt,
+    twt1_ion_pump_current,
+    twt1_body_current,
+    twt1_drive_power,
+    twt2_body_reg_volt,
+    twt2_ion_pump_current,
+    twt2_body_current,
+    twt2_drive_power,
+    transmit_power_a,
+    transmit_power_b,
+    power_convert_current,
+    precision_coupler_temp,
+    twt1_hvps_chassis_temp,
+    twt1_base_temp,
+    twt2_hvps_chassis_temp,
+    twt2_base_temp,
+    rcv_protect_sw_temp,
+    power_converter_temp,
+    gain_atten_temp,
+    beam_select_sw_temp,
+    scp_temp,
+    receiver_temp,
+    exciter_a_temp,
+    exciter_b_temp,
+    eng_status_c1,
+    eng_status_c2,
+    eng_status_c3,
+    ses_data_error_flags,
     NULL
 };
 
@@ -530,6 +737,7 @@ int
 L1AH::WriteSDSs()
 {
     GSL1AStatus* status = &(frame.status);
+    GSL1AEngData* engdata = &(frame.engdata);
 
     //-----------------------//
     // set all of the values //
@@ -675,8 +883,101 @@ L1AH::WriteSDSs()
 
     cmd_history_queue->SetWithUnsignedShort(
         (unsigned short *)(status->cmd_history_queue));
+    calc_ant_max_grp_count->SetWithUnsignedChar(
+        &(status->calc_ant_max_grp_count));
 
-// xxxxxx
+    unsigned int vtcw_hi4 = 0;
+    unsigned short vtcw_lo2 = 0;
+    (void)memcpy(&vtcw_hi4, status->vtcw, sizeof(unsigned int));
+    (void)memcpy(&vtcw_lo2, status->vtcw+4, sizeof(unsigned short));
+    double vtcw_value = (double)(vtcw_hi4)*65536.0 + vtcw_lo2;
+    vtcw->SetFromDouble(&vtcw_value);
+
+    unsigned int ci_time = 0;
+    unsigned char ci_frac = 0;
+    (void)memcpy(&ci_time, status->corres_instr_time, sizeof(unsigned int));
+    (void)memcpy(&ci_frac, status->corres_instr_time+4, sizeof(unsigned char));
+    double corres_value = (double)ci_time * 256.0 + (double)ci_frac;
+    corres_instr_time->SetFromDouble(&corres_value);
+
+    fsw_mission_version_num->SetWithUnsignedChar(
+        &(status->fsw_mission_version_num));
+    fsw_build_number->SetWithUnsignedChar(&(status->fsw_build_number));
+    pbi_flag->SetWithUnsignedChar(&(status->pbi_flag));
+
+    float fill_values[8] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
+    fill->SetWithFloat(fill_values);
+
+    unsigned char dummy = 64;
+    psu_elec_bus_volt->SetWithUnsignedChar(&dummy);
+    cds_current->SetWithUnsignedChar(&dummy);
+    ses_a_current->SetWithUnsignedChar(&dummy);
+    ses_b_current->SetWithUnsignedChar(&dummy);
+    twta_1_current->SetWithUnsignedChar(&dummy);
+    twta_2_current->SetWithUnsignedChar(&dummy);
+    sas_a_current->SetWithUnsignedChar(&dummy);
+    sas_b_current->SetWithUnsignedChar(&dummy);
+    pcu_sec_volt_p12->SetWithUnsignedChar(&dummy);
+    pcu_sec_volt_n12->SetWithUnsignedChar(&dummy);
+    pcu_sec_volt_p30->SetWithUnsignedChar(&dummy);
+    pcu_sec_volt_vme_p3->SetWithUnsignedChar(&dummy);
+    pcu_elec_bus_volt->SetWithUnsignedChar(&dummy);
+    idp_a_temp->SetWithUnsignedChar(&dummy);
+    idp_b_temp->SetWithUnsignedChar(&dummy);
+    psu_temp->SetWithUnsignedChar(&dummy);
+
+    unsigned short relay_value;
+    memcpy(&relay_value, engdata->relay_status, sizeof(unsigned short));
+    relay_status->SetWithUnsignedShort(&relay_value);
+
+    ea_a_motor_current->SetWithUnsignedChar(&dummy);
+    ea_a_sec_volt_p5->SetWithUnsignedChar(&dummy);
+    ea_a_sec_volt_p14->SetWithUnsignedChar(&dummy);
+    ea_a_spin_rate->SetWithUnsignedChar(&(engdata->ea_a_spin_rate));
+    ea_a_saa_torque_cmd->SetWithUnsignedChar(&dummy);
+    ea_b_motor_current->SetWithUnsignedChar(&dummy);
+    ea_b_sec_volt_p5->SetWithUnsignedChar(&dummy);
+    ea_b_sec_volt_p14->SetWithUnsignedChar(&dummy);
+    ea_b_spin_rate->SetWithUnsignedChar(&(engdata->ea_b_spin_rate));
+    ea_b_saa_torque_cmd->SetWithUnsignedChar(&dummy);
+    drive_motor_temp->SetWithUnsignedChar(&dummy);
+    ea_a_power_supply_temp->SetWithUnsignedChar(&dummy);
+    ea_b_power_supply_temp->SetWithUnsignedChar(&dummy);
+    duplex_bearing_temp->SetWithUnsignedChar(&dummy);
+    simplex_bearing_temp->SetWithUnsignedChar(&dummy);
+    rj_temp->SetWithUnsignedChar(&dummy);
+    a2d_p12v_xcpl->SetWithUnsignedChar(&(engdata->a2d_p12v_xcpl));
+    twt1_body_reg_volt->SetWithUnsignedChar(&dummy);
+    twt1_ion_pump_current->SetWithUnsignedChar(&dummy);
+    twt1_body_current->SetWithUnsignedChar(&dummy);
+    twt1_drive_power->SetWithUnsignedChar(&dummy);
+    twt2_body_reg_volt->SetWithUnsignedChar(&dummy);
+    twt2_ion_pump_current->SetWithUnsignedChar(&dummy);
+    twt2_body_current->SetWithUnsignedChar(&dummy);
+    twt2_drive_power->SetWithUnsignedChar(&dummy);
+    transmit_power_a->SetWithUnsignedChar(&(engdata->transmit_power_a));
+    transmit_power_b->SetWithUnsignedChar(&(engdata->transmit_power_b));
+    power_convert_current->SetWithUnsignedChar(&dummy);
+    precision_coupler_temp->SetWithUnsignedChar(
+        &(engdata->precision_coupler_temp));
+    twt1_hvps_chassis_temp->SetWithUnsignedChar(&dummy);
+    twt1_base_temp->SetWithUnsignedChar(&dummy);
+    twt2_hvps_chassis_temp->SetWithUnsignedChar(&dummy);
+    twt2_base_temp->SetWithUnsignedChar(&dummy);
+    rcv_protect_sw_temp->SetWithUnsignedChar(&(engdata->rcv_protect_sw_temp));
+    power_converter_temp->SetWithUnsignedChar(&dummy);
+    gain_atten_temp->SetWithUnsignedChar(&dummy);
+    beam_select_sw_temp->SetWithUnsignedChar(&(engdata->beam_select_sw_temp));
+    scp_temp->SetWithUnsignedChar(&dummy);
+    receiver_temp->SetWithUnsignedChar(&(engdata->receiver_temp));
+    exciter_a_temp->SetWithUnsignedChar(&dummy);
+    exciter_b_temp->SetWithUnsignedChar(&dummy);
+    eng_status_c1->SetWithUnsignedChar(&(engdata->eng_status_c1));
+    eng_status_c2->SetWithUnsignedChar(&(engdata->eng_status_c2));
+    eng_status_c3->SetWithUnsignedChar(&(engdata->eng_status_c3));
+    ses_data_error_flags->SetWithUnsignedChar(&dummy);
+
+// xxxxx
     //-------------------------------------------//
     // determine some information from the frame //
     //-------------------------------------------//

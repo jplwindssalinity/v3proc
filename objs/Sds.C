@@ -557,6 +557,22 @@ SdsFloat32::SetMaxAndMin()
 }
 
 //--------------------------//
+// SdsFloat32::SetWithFloat //
+//--------------------------//
+// the calibration is ignored (assumed to be 1.0 and 0.0)
+
+void
+SdsFloat32::SetWithFloat(float* value)
+{
+    float32* ptr = (float32 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (float32)(*(value + i));
+    }
+    return;
+}
+
+//--------------------------//
 // SdsFloat32::SetFromFloat //
 //--------------------------//
 

@@ -218,6 +218,7 @@ public:
         const char** dim_names, float32 max, float32 min);
 
     int   SetMaxAndMin();
+    void  SetWithFloat(float* value);
     void  SetFromFloat(float* value);
 
 protected:
