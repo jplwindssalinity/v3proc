@@ -101,8 +101,8 @@ template class List<AngleInterval>;
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
-#define SECTOR_COUNT             8
-#define MIN_POINTS_PER_SECTOR    10
+#define SECTOR_COUNT             2
+#define MIN_POINTS_PER_SECTOR    20
 // MIN_SECTORS should be 6
 #define MIN_SECTORS              4
 
