@@ -162,6 +162,24 @@ main(
 		exit(1);
 	}
 
+	//-------------------------------//
+	// configure the grid start time //
+	//-------------------------------//
+
+	double grid_start_time, grid_end_time;
+	double instrument_start_time, instrument_end_time;
+	double spacecraft_start_time, spacecraft_end_time;
+ 
+	if (! ConfigTimes(&spacecraft_sim, &config_list,
+		&grid_start_time, &grid_end_time,
+		&instrument_start_time, &instrument_end_time,
+		&spacecraft_start_time, &spacecraft_end_time))
+	{
+		fprintf(stderr, "%s: error configuring simulation times\n", command);
+		exit(1);
+	}
+	grid.SetStartTime(grid_start_time);
+
 	//------------//
 	// open files //
 	//------------//

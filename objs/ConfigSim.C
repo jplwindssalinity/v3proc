@@ -18,25 +18,26 @@ static const char rcs_id_configsim_c[] =
 #include "Constants.h"
 #include "Distributions.h"
 
-//---------------------//
-// ConfigSpacecraft    //
-//---------------------//
+//------------------//
+// ConfigSpacecraft //
+//------------------//
+
 int
 ConfigSpacecraft(
 	Spacecraft* spacecraft,
 	ConfigList* config_list)
 {
-  //-------------------------------//
-  //Read in Attitude Order Indices //
-  //-------------------------------//
+	//-------------------------------//
+	//Read in Attitude Order Indices //
+	//-------------------------------//
 
-  int order1, order2, order3;
-  if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
-    return(0);
-  if (! config_list->GetInt(ATTITUDE_ORDER_2_KEYWORD, &order2))
-    return(0);
-  if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
-    return(0);
+	int order1, order2, order3;
+	if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
+		return(0);
+	if (! config_list->GetInt(ATTITUDE_ORDER_2_KEYWORD, &order2))
+		return(0);
+	if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
+		return(0);
 
   //------------------------------//
   // Initialize Attitude          //
@@ -111,11 +112,11 @@ ConfigSpacecraftSim(
 	return(1);
 }
 
-//----------------------------------//
-// ConfigAttitudeControlModel       //
-//----------------------------------//
+//----------------------------//
+// ConfigAttitudeControlModel //
+//----------------------------//
 
-int 
+int
 ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
@@ -124,12 +125,12 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 
 	char* string;
 
-        string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
-        if(! string)
+	string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
+	if (! string)
 		return(0);
 
 	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-	   || strcmp(string,"none")==0) return(1);
+		|| strcmp(string,"none")==0) return(1);
 
 
 	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
@@ -162,7 +163,7 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 		   if(yaw==NULL)return(0);
 	}
 
-	
+
 	else if(strcmp(string,"Gaussian_Random_Velocity")==0
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
@@ -227,7 +228,7 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 // ConfigAttitudeKnowledgeModel     //
 //----------------------------------//
 
-int 
+int
 ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
@@ -274,7 +275,6 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 		if(yaw==NULL) return(0);
 	}
 
-	
 	else if(strcmp(string,"Gaussian_Random_Velocity")==0
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
@@ -345,17 +345,17 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	// ConfigGaussian                   //
 	//----------------------------------//
 
-Gaussian* 
+Gaussian*
 ConfigGaussian(const char* variance_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list)
 {
 	double variance, mean;
 
- 	if(! config_list->GetDouble(variance_keyword,
+	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(NULL);
         variance*=dtr*dtr;
- 	if(! config_list->GetDouble(mean_keyword,
+	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
 	mean*=dtr;
 	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
@@ -367,7 +367,7 @@ ConfigGaussian(const char* variance_keyword,
 	// ConfigUniform                    //
 	//----------------------------------//
 
-Uniform* 
+Uniform*
 ConfigUniform(const char* radius_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list)
@@ -389,9 +389,9 @@ ConfigUniform(const char* radius_keyword,
 	// ConfigGaussianRandomVelocity               //
 	//--------------------------------------------//
 
-RandomVelocity* 
+RandomVelocity*
 ConfigGaussianRandomVelocity(const char* samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword, 
+	const char* bound_keyword, const char* mean_keyword,
 	const char* variance_keyword,
 	ConfigList* config_list)
 {
@@ -402,13 +402,13 @@ ConfigGaussianRandomVelocity(const char* samprate_keyword,
 	   &sample_rate)) return(NULL);
 
 
- 	if(! config_list->GetDouble(variance_keyword,
+	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(NULL);
         variance*=dtr*dtr;
- 	if(! config_list->GetDouble(mean_keyword,
+	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
 	mean*=dtr;
- 	if(! config_list->GetDouble(bound_keyword,
+	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(NULL);
         bound*=dtr;
 	velocity = new Gaussian((float)variance,0.0);
@@ -421,9 +421,9 @@ ConfigGaussianRandomVelocity(const char* samprate_keyword,
 	// ConfigUniformRandomVelocity              //
 	//------------------------------------------//
 
-RandomVelocity* 
+RandomVelocity*
 ConfigUniformRandomVelocity(const char* samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword, 
+	const char* bound_keyword, const char* mean_keyword,
 	const char* radius_keyword,
 	ConfigList* config_list)
 {
@@ -434,14 +434,14 @@ ConfigUniformRandomVelocity(const char* samprate_keyword,
 	   &sample_rate)) return(NULL);
 
 
- 	if(! config_list->GetDouble(radius_keyword,
+	if(! config_list->GetDouble(radius_keyword,
 	   &radius)) return(NULL);
 	radius*=dtr;
- 	if(! config_list->GetDouble(mean_keyword,
+	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
 	mean*=dtr;
- 	if(! config_list->GetDouble(bound_keyword,
-	   &bound)) return(NULL);
+	if(! config_list->GetDouble(bound_keyword, &bound))
+		return(NULL);
 	bound*=dtr;
 	velocity=new Uniform((float)radius,0.0);
 	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
@@ -538,35 +538,30 @@ ConfigInstrumentSim(
 	InstrumentSim*	instrument_sim,
 	ConfigList*		config_list)
 {
+	//--------------------------------//
+	// Configure the Antenna Simulator//
+	//--------------------------------//
 
-        //--------------------------------//
-        // Configure the Antenna Simulator//
-        //--------------------------------//
 	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
 		return(0);
 
-	//--------------------------------//
-	// initialize start and end times //
-	//--------------------------------//
-
-	double start_time;
-	if (! config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD, &start_time))
-		return(0);
-	instrument_sim->startTime = start_time;
+	//----------------------------//
+	// initialize slices per spot //
+	//----------------------------//
 
 	int slices_per_spot;
 	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
 		return(0);
 	instrument_sim->slicesPerSpot = slices_per_spot;
-      
+
 	return(1);
 }
 
-//---------------------//
-// ConfigAntennaSim    //
-//---------------------//
+//------------------//
+// ConfigAntennaSim //
+//------------------//
 
-int 
+int
 ConfigAntennaSim(
 	 AntennaSim* antenna_sim,
 	 ConfigList* config_list)
@@ -1021,11 +1016,84 @@ ConfigGrid(
 
 	grid->Allocate(ct_res, at_res, 2000.0, 5000.0);
 
+	return(1);
+}
+
+//-------------//
+// ConfigTimes //
+//-------------//
+
+int
+ConfigTimes(
+	SpacecraftSim*	spacecraft_sim,
+	ConfigList*		config_list,
+	double*			grid_start_time,
+	double*			grid_end_time,
+	double*			instrument_start_time,
+	double*			instrument_end_time,
+	double*			spacecraft_start_time,
+	double*			spacecraft_end_time)
+{
+	//--------------------//
+	// get the start time //
+	//--------------------//
+
 	double start_time;
-	if (! config_list->GetDouble(ALONGTRACK_START_TIME_KEYWORD, &start_time))
+	if (! config_list->GetDouble(START_TIME_KEYWORD, &start_time))
 		return(0);
 
-	grid->SetStartTime(start_time);
+	//----------------------------------------------------//
+	// get the starting argument of latitude for the grid //
+	//----------------------------------------------------//
+
+	double grid_arg_lat;
+	if (! config_list->GetDouble(GRID_START_ARG_OF_LAT_KEYWORD,
+		&grid_arg_lat))
+	{
+		return(0);
+	}
+
+	//----------------------------------------------------------//
+	// estimate the time of the grid start argument of latitude //
+	//----------------------------------------------------------//
+
+	double orbit_period = spacecraft_sim->GetPeriod();
+	Spacecraft spacecraft;
+	spacecraft_sim->UpdateOrbit(start_time, &spacecraft);
+	double arg_of_lat = spacecraft_sim->GetArgOfLat(&spacecraft);
+	double ang_dif = fmod(grid_arg_lat + two_pi - arg_of_lat, two_pi);
+	*grid_start_time = start_time + orbit_period * ang_dif / two_pi;
+
+	//-------------------------------------//
+	// calculate the instrument start time //
+	//-------------------------------------//
+
+	double pass_time_buffer;
+	if (! config_list->GetDouble(PASS_TIME_BUFFER_KEYWORD, &pass_time_buffer))
+		return(0);
+	*instrument_start_time = *grid_start_time - pass_time_buffer;
+
+	//------------------------------//
+	// calculate the s/c start time //
+	//------------------------------//
+
+	double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
+	*spacecraft_start_time = *instrument_start_time -
+		(EPHEMERIS_INTERP_ORDER + 2) * ephemeris_period;
+
+	//-------------------------//
+	// calculate the end times //
+	//-------------------------//
+
+	double grid_extent;
+	if (! config_list->GetDouble(GRID_LATITUDE_EXTENT_KEYWORD, &grid_extent))
+		return(0);
+	double grid_duration = orbit_period * grid_extent / two_pi;
+
+	*grid_end_time = *grid_start_time + grid_duration;
+	*instrument_end_time = *grid_end_time + pass_time_buffer;
+	*spacecraft_end_time = *instrument_end_time +
+		(EPHEMERIS_INTERP_ORDER + 2) * ephemeris_period;
 
 	return(1);
 }

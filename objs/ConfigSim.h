@@ -38,67 +38,66 @@ static const char rcs_id_configsim_h[] =
 #define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
 #define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
 #define MEAN_ANOMALY_AT_EPOCH_KEYWORD	"MEAN_ANOMALY_AT_EPOCH"
-#define ATTITUDE_ORDER_1_KEYWORD        "ATTITUDE_ORDER_1"
-#define ATTITUDE_ORDER_2_KEYWORD        "ATTITUDE_ORDER_2"
-#define ATTITUDE_ORDER_3_KEYWORD        "ATTITUDE_ORDER_3"
+#define ATTITUDE_ORDER_1_KEYWORD		"ATTITUDE_ORDER_1"
+#define ATTITUDE_ORDER_2_KEYWORD		"ATTITUDE_ORDER_2"
+#define ATTITUDE_ORDER_3_KEYWORD		"ATTITUDE_ORDER_3"
 
 #define EPHEMERIS_PERIOD_KEYWORD		"EPHEMERIS_PERIOD"
 
-int ConfigSpacecraft(Spacecraft* spacecraft,
-		     ConfigList* config_list);
+int ConfigSpacecraft(Spacecraft* spacecraft, ConfigList* config_list);
 int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
-	ConfigList* config_list);
+		ConfigList* config_list);
 
-//--------------------------------//
-// Attitude Control Error Model   //
-//--------------------------------//
+//------------------------------//
+// Attitude Control Error Model //
+//------------------------------//
 
-#define ATTITUDE_CONTROL_MODEL_KEYWORD  "ATTITUDE_CONTROL_MODEL"
-#define CONTROL_SAMPLE_RATE_KEYWORD    "CONTROL_SAMPLE_RATE"
-#define ROLL_CONTROL_MEAN_KEYWORD 	"ROLL_CONTROL_MEAN"
-#define PITCH_CONTROL_MEAN_KEYWORD 	"PITCH_CONTROL_MEAN"
-#define YAW_CONTROL_MEAN_KEYWORD 	"YAW_CONTROL_MEAN"
-#define ROLL_CONTROL_BOUND_KEYWORD 	"ROLL_CONTROL_BOUND"
-#define PITCH_CONTROL_BOUND_KEYWORD 	"PITCH_CONTROL_BOUND"
-#define YAW_CONTROL_BOUND_KEYWORD 	"YAW_CONTROL_BOUND"
-#define ROLL_CONTROL_VARIANCE_KEYWORD 	"ROLL_CONTROL_VARIANCE"
-#define PITCH_CONTROL_VARIANCE_KEYWORD 	"PITCH_CONTROL_VARIANCE"
-#define YAW_CONTROL_VARIANCE_KEYWORD 	"YAW_CONTROL_VARIANCE"
-#define ROLL_CONTROL_RADIUS_KEYWORD 	"ROLL_CONTROL_RADIUS"
-#define PITCH_CONTROL_RADIUS_KEYWORD 	"PITCH_CONTROL_RADIUS"
-#define YAW_CONTROL_RADIUS_KEYWORD 	"YAW_CONTROL_RADIUS"
+#define ATTITUDE_CONTROL_MODEL_KEYWORD	"ATTITUDE_CONTROL_MODEL"
+#define CONTROL_SAMPLE_RATE_KEYWORD		"CONTROL_SAMPLE_RATE"
+#define ROLL_CONTROL_MEAN_KEYWORD		"ROLL_CONTROL_MEAN"
+#define PITCH_CONTROL_MEAN_KEYWORD		"PITCH_CONTROL_MEAN"
+#define YAW_CONTROL_MEAN_KEYWORD		"YAW_CONTROL_MEAN"
+#define ROLL_CONTROL_BOUND_KEYWORD		"ROLL_CONTROL_BOUND"
+#define PITCH_CONTROL_BOUND_KEYWORD		"PITCH_CONTROL_BOUND"
+#define YAW_CONTROL_BOUND_KEYWORD		"YAW_CONTROL_BOUND"
+#define ROLL_CONTROL_VARIANCE_KEYWORD	"ROLL_CONTROL_VARIANCE"
+#define PITCH_CONTROL_VARIANCE_KEYWORD	"PITCH_CONTROL_VARIANCE"
+#define YAW_CONTROL_VARIANCE_KEYWORD	"YAW_CONTROL_VARIANCE"
+#define ROLL_CONTROL_RADIUS_KEYWORD		"ROLL_CONTROL_RADIUS"
+#define PITCH_CONTROL_RADIUS_KEYWORD	"PITCH_CONTROL_RADIUS"
+#define YAW_CONTROL_RADIUS_KEYWORD		"YAW_CONTROL_RADIUS"
 
 int ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
 
 //--------------------------------//
-// Attitude Knowledge Error Model   //
+// Attitude Knowledge Error Model //
 //--------------------------------//
 
-#define ATTITUDE_KNOWLEDGE_MODEL_KEYWORD   	"ATTITUDE_KNOWLEDGE_MODEL"
-#define KNOWLEDGE_SAMPLE_RATE_KEYWORD    	"KNOWLEDGE_SAMPLE_RATE"
-#define ROLL_KNOWLEDGE_MEAN_KEYWORD 		"ROLL_KNOWLEDGE_MEAN"
-#define PITCH_KNOWLEDGE_MEAN_KEYWORD 		"PITCH_KNOWLEDGE_MEAN"
-#define YAW_KNOWLEDGE_MEAN_KEYWORD 		"YAW_KNOWLEDGE_MEAN"
-#define ROLL_KNOWLEDGE_BOUND_KEYWORD 		"ROLL_KNOWLEDGE_BOUND"
-#define PITCH_KNOWLEDGE_BOUND_KEYWORD 		"PITCH_KNOWLEDGE_BOUND"
-#define YAW_KNOWLEDGE_BOUND_KEYWORD 		"YAW_KNOWLEDGE_BOUND"
-#define ROLL_KNOWLEDGE_VARIANCE_KEYWORD 	"ROLL_KNOWLEDGE_VARIANCE"
-#define PITCH_KNOWLEDGE_VARIANCE_KEYWORD 	"PITCH_KNOWLEDGE_VARIANCE"
-#define YAW_KNOWLEDGE_VARIANCE_KEYWORD 		"YAW_KNOWLEDGE_VARIANCE"
-#define ROLL_KNOWLEDGE_RADIUS_KEYWORD 		"ROLL_KNOWLEDGE_RADIUS"
-#define PITCH_KNOWLEDGE_RADIUS_KEYWORD 		"PITCH_KNOWLEDGE_RADIUS"
-#define YAW_KNOWLEDGE_RADIUS_KEYWORD 		"YAW_KNOWLEDGE_RADIUS"
+#define ATTITUDE_KNOWLEDGE_MODEL_KEYWORD	"ATTITUDE_KNOWLEDGE_MODEL"
+#define KNOWLEDGE_SAMPLE_RATE_KEYWORD		"KNOWLEDGE_SAMPLE_RATE"
+#define ROLL_KNOWLEDGE_MEAN_KEYWORD			"ROLL_KNOWLEDGE_MEAN"
+#define PITCH_KNOWLEDGE_MEAN_KEYWORD		"PITCH_KNOWLEDGE_MEAN"
+#define YAW_KNOWLEDGE_MEAN_KEYWORD			"YAW_KNOWLEDGE_MEAN"
+#define ROLL_KNOWLEDGE_BOUND_KEYWORD		"ROLL_KNOWLEDGE_BOUND"
+#define PITCH_KNOWLEDGE_BOUND_KEYWORD		"PITCH_KNOWLEDGE_BOUND"
+#define YAW_KNOWLEDGE_BOUND_KEYWORD			"YAW_KNOWLEDGE_BOUND"
+#define ROLL_KNOWLEDGE_VARIANCE_KEYWORD		"ROLL_KNOWLEDGE_VARIANCE"
+#define PITCH_KNOWLEDGE_VARIANCE_KEYWORD	"PITCH_KNOWLEDGE_VARIANCE"
+#define YAW_KNOWLEDGE_VARIANCE_KEYWORD		"YAW_KNOWLEDGE_VARIANCE"
+#define ROLL_KNOWLEDGE_RADIUS_KEYWORD		"ROLL_KNOWLEDGE_RADIUS"
+#define PITCH_KNOWLEDGE_RADIUS_KEYWORD		"PITCH_KNOWLEDGE_RADIUS"
+#define YAW_KNOWLEDGE_RADIUS_KEYWORD		"YAW_KNOWLEDGE_RADIUS"
 
 int ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
 
-//---------------------------------//
-// Generic Noise Model Config      //
-// 	Routines                   //
-//---------------------------------//
+//------------------------------//
+// Generic Noise Model Config	//
+// Routines						//
+//------------------------------//
 
-Gaussian*  ConfigGaussian(const char* variance_keyword,
+Gaussian*	ConfigGaussian(const char* variance_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list);
 
@@ -106,15 +105,15 @@ Uniform* ConfigUniform(const char* radius_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list);
 
-RandomVelocity* ConfigGaussianRandomVelocity(const char* 	
+RandomVelocity* ConfigGaussianRandomVelocity(const char*
 	samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword, 
+	const char* bound_keyword, const char* mean_keyword,
 	const char* variance_keyword,
 	ConfigList* config_list);
 
-RandomVelocity* ConfigUniformRandomVelocity(const char* 	
+RandomVelocity* ConfigUniformRandomVelocity(const char*
 	samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword, 
+	const char* bound_keyword, const char* mean_keyword,
 	const char* radius_keyword,
 	ConfigList* config_list);
 
@@ -130,14 +129,11 @@ RandomVelocity* ConfigUniformRandomVelocity(const char*
 #define RECEIVER_GATE_WIDTH_KEYWORD		"RECEIVER_GATE_WIDTH"
 #define BASE_TRANSMIT_FREQUENCY_KEYWORD	"BASE_TRANSMIT_FREQUENCY"
 #define SLICE_BANDWIDTH_KEYWORD			"SLICE_BANDWIDTH"
-#define TRANSMIT_POWER_KEYWORD                  "TRANSMIT_POWER"
-#define RECEIVER_GAIN_KEYWORD                   "RECEIVER_GAIN"
-#define SYSTEM_LOSS_KEYWORD                     "SYSTEM_LOSS"
+#define TRANSMIT_POWER_KEYWORD			"TRANSMIT_POWER"
+#define RECEIVER_GAIN_KEYWORD			"RECEIVER_GAIN"
+#define SYSTEM_LOSS_KEYWORD				"SYSTEM_LOSS"
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
-
-#define INSTRUMENT_START_TIME_KEYWORD	"INSTRUMENT_START_TIME"
-#define INSTRUMENT_END_TIME_KEYWORD		"INSTRUMENT_END_TIME"
 
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
@@ -146,8 +142,8 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 // AntennaSim //
 //------------//
 
-#define START_AZIMUTH_KEYWORD           "START_AZIMUTH"
-#define ANTENNA_START_TIME_KEYWORD      "INSTRUMENT_START_TIME"
+#define START_AZIMUTH_KEYWORD			"START_AZIMUTH"
+#define ANTENNA_START_TIME_KEYWORD		"INSTRUMENT_START_TIME"
 
 int ConfigAntennaSim(AntennaSim* antenna_sim,
 	ConfigList* config_list);
@@ -163,7 +159,6 @@ int ConfigAntennaSim(AntennaSim* antenna_sim,
 #define ANTENNA_PEDESTAL_PITCH_KEYWORD	"ANTENNA_PEDESTAL_PITCH"
 #define ANTENNA_PEDESTAL_YAW_KEYWORD	"ANTENNA_PEDESTAL_YAW"
 #define SPIN_RATE_KEYWORD				"ANTENNA_SPIN_RATE"
-
 
 int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
 
@@ -265,8 +260,21 @@ int ConfigGMF(GMF* gmf, ConfigList* config_file);
 
 #define ALONGTRACK_RESOLUTION_KEYWORD		"ALONGTRACK_RESOLUTION"
 #define CROSSTRACK_RESOLUTION_KEYWORD		"CROSSTRACK_RESOLUTION"
-#define ALONGTRACK_START_TIME_KEYWORD		"ALONGTRACK_START_TIME"
 
 int ConfigGrid(Grid* grid, ConfigList* config_list);
+
+//---------------//
+// Control Stuff //
+//---------------//
+
+#define START_TIME_KEYWORD				"START_TIME"
+#define GRID_START_ARG_OF_LAT_KEYWORD	"GRID_START_ARG_OF_LAT"
+#define PASS_TIME_BUFFER_KEYWORD		"PASS_TIME_BUFFER"
+#define GRID_LATITUDE_EXTENT_KEYWORD	"GRID_LATITUDE_EXTENT"
+
+int		ConfigTimes(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
+			double* grid_start_time, double* grid_end_time,
+			double* instrument_start_time, double* instrument_end_time,
+			double* spacecraft_start_time, double* spacecraft_end_time);
 
 #endif
