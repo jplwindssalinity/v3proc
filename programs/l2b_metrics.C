@@ -87,7 +87,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:t:f:r:s:o:w:a:i:"
+#define OPTSTRING				"hc:l:t:f:r:s:o:w:a:i:"
 #define ARRAY_SIZE				1024
 
 #define DEFAULT_LOW_LAT         -90.0
@@ -149,6 +149,7 @@ int plot_density(const char* extension, const char* title,
 
 int lat_range_opt = 0;
 int autoscale_opt = 0;
+int hdf_opt = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -157,7 +158,7 @@ int autoscale_opt = 0;
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
-    "[ -a ]", "[ -i subtitle ]", 0 };
+    "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]", 0 };
 
 // not always evil...
 float*         ctd_array = NULL;
@@ -269,6 +270,9 @@ main(
 		case 'i':
 			subtitle_str = optarg;
 			break;
+		case 'h':
+			hdf_opt = 1;
+			break;
 		case '?':
 			usage(command, usage_array, 1);
 			break;
@@ -320,25 +324,38 @@ main(
 
 	L2B l2b;
 	l2b.SetInputFilename(l2b_file);
-	if (! l2b.OpenForReading())
-	{
-		fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
-		exit(1);
-	}
 
-	if (! l2b.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading L2B header from file %s\n",
-			command, l2b_file);
-		exit(1);
-	}
+    if (hdf_opt)
+    {
+      if (l2b.frame.swath.ReadHdfL2B(l2b_file) == 0)
+      {
+          fprintf(stderr, "%s: cannot open HDF %s for input\n",
+                                 argv[0], l2b_file);
+          exit(1);
+      }
+    }
+    else
+    {
+	  if (! l2b.OpenForReading())
+	  {
+		  fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
+		  exit(1);
+	  }
 
-	if (! l2b.ReadDataRec())
-	{
-		fprintf(stderr, "%s: error reading L2B swath from file %s\n",
-			command, l2b_file);
-		exit(1);
-	}
+	  if (! l2b.ReadHeader())
+	  {
+		  fprintf(stderr, "%s: error reading L2B header from file %s\n",
+			  command, l2b_file);
+		  exit(1);
+	  }
+
+	  if (! l2b.ReadDataRec())
+	  {
+		  fprintf(stderr, "%s: error reading L2B swath from file %s\n",
+			  command, l2b_file);
+		  exit(1);
+	  }
+    }
 
 	WindSwath* swath = &(l2b.frame.swath);
 
