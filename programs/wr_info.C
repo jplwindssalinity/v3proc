@@ -13,20 +13,21 @@
 //
 // DESCRIPTION
 //    Performs wind retrieval and provide information for
-//    classification.
+//    classification.  The output classinfo file is read by
+//    wr_classify.
 //
 // OPTIONS
 //    None.
 //
 // OPERANDS
 //    <ins_config_file>  The config file (for the GMF).
-//    <ssmi_rain_file>   File containing colocated ssmi rain rates.
+//    <ssmi_rain_file>   A MHF collocated rain file.
 //    <hdf_l2a_file>     The input HDF L2A file.
-//    <output_base>      The output base.
+//    <output_base>      The output info file.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % wr_info qscat.cfg QS_S2B.rain QS_S2A.1999 1.out
+//      % wr_info qscat.cfg 1999.rain 1999.l2a 1999.base
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -72,6 +73,7 @@ static const char rcs_id[] =
 #include "ConfigSimDefs.h"
 #include "L2B.h"
 #include "ConfigSim.h"
+#include "SeaPac.h"
 
 //-----------//
 // TEMPLATES //
@@ -94,18 +96,19 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING           ""
-#define MAX_S0_PER_ROW      3240
-#define MAX_CROSS_TRACK     76
-#define UNUSABLE            0x0001
-#define NEGATIVE            0x0004
-#define ANTENNA_BEAM        0x0004
+#define OPTSTRING        ""
+#define MAX_S0_PER_ROW   3240
+#define MAX_CROSS_TRACK  76
+#define UNUSABLE         0x0001
+#define NEGATIVE         0x0004
+#define ANTENNA_BEAM     0x0004
+#define MIN_RAIN_DN      0
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-void   check_status(HdfFile::StatusE status);
+void  check_status(HdfFile::StatusE status);
 
 //------------------//
 // OPTION VARIABLES //
@@ -127,6 +130,10 @@ main(
     int    argc,
     char*  argv[])
 {
+    //------------//
+    // initialize //
+    //------------//
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -148,9 +155,9 @@ main(
         usage(command, usage_array, 1);
 
     const char* ins_config_file = argv[optind++];
-    const char* ssmi_rain_file = argv[optind++];
-    const char* l2a_hdf_file = argv[optind++];
-    const char* output_base = argv[optind++];
+    const char* rain_file = argv[optind++];
+    const char* l2a_file = argv[optind++];
+    const char* output_file = argv[optind++];
 
     //--------------------------------//
     // read in simulation config file //
@@ -183,16 +190,29 @@ main(
         exit(1);
     }
 
+/*
+    //-------------------//
+    // read the land map //
+    //-------------------//
+
+    static unsigned char land_map[LAND_SEA_LATITUDES][LAND_SEA_LONGITUDES];
+    if (! read_land_sea_map("/seapac/proc/stt-tables/LMAP0002", land_map))
+    {
+        fprintf(stderr, "%s: error reading land map\n", command);
+        exit(1);
+    }
+*/
+
     //--------------------//
-    // read the ssmi file //
+    // read the rain file //
     //--------------------//
 
     unsigned char rain_rate[1624][76];
-    FILE* ifp = fopen(ssmi_rain_file, "r");
+    FILE* ifp = fopen(rain_file, "r");
     if (ifp == NULL)
     {
         fprintf(stderr, "%s: error opening rain file %s\n", command,
-            ssmi_rain_file);
+            rain_file);
         exit(1);
     }
     fread(rain_rate, sizeof(char), 76 * 1624, ifp);
@@ -306,34 +326,68 @@ main(
     //-------------------//
 
     char filename[2048];
-    sprintf(filename, "%s.info", output_base);
-    FILE* info_ofp = fopen(filename, "w");
-    if (info_ofp == NULL)
+    sprintf(filename, "%s.apts", output_base);
+    FILE* apts_ofp = fopen(filename, "w");
+    if (apts_ofp == NULL)
     {
         fprintf(stderr, "%s: error opening output file %s\n", command,
             filename);
         exit(1);
+    }
+    fprintf(apts_ofp, "apts\n");
+
+    FILE* rain_ofp = NULL;
+    if (opt_rain)
+    {
+        sprintf(filename, "%s.rain", output_base);
+        rain_ofp = fopen(filename, "w");
+        if (rain_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fprintf(rain_ofp, "apts\n");
     }
 
-    sprintf(filename, "%s.rain", output_base);
-    FILE* rain_ofp = fopen(filename, "w");
-    if (rain_ofp == NULL)
+    FILE* class_ofp = NULL;
+    if (opt_classify)
     {
-        fprintf(stderr, "%s: error opening output file %s\n", command,
-            filename);
-        exit(1);
+        sprintf(filename, "%s.class", output_base);
+        class_ofp = fopen(filename, "w");
+        if (class_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fprintf(class_ofp, "apts\n");
     }
-    fprintf(rain_ofp, "apts\n");
 
-    sprintf(filename, "%s.dir", output_base);
-    FILE* dir_ofp = fopen(filename, "w");
-    if (dir_ofp == NULL)
+    FILE* analyze_ofp = NULL;
+    if (opt_analyze)
     {
-        fprintf(stderr, "%s: error opening output file %s\n", command,
-            filename);
-        exit(1);
+        sprintf(filename, "%s.analyze", output_base);
+        analyze_ofp = fopen(filename, "w");
+        if (analyze_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
     }
-    fprintf(dir_ofp, "apts\n");
+
+    //------------------------//
+    // read the classify file //
+    //------------------------//
+
+    Index metric_index[3];
+    int ctype_count[3];
+    int total_count;
+    int count_m_given_c[3][3][100];
+    int count_m[3][100];
+    FILE* class_ifp;
+
 
     //---------------//
     // for each cell //
@@ -355,10 +409,22 @@ main(
     unsigned short surface_flag[MAX_S0_PER_ROW];
     char cell_index[MAX_S0_PER_ROW];
 
-    MeasList meas_list_row[MAX_CROSS_TRACK];
+    MeasList  meas_list_row[MAX_CROSS_TRACK];
+    char      ice_flag[MAX_CROSS_TRACK];
+    char      no_ice_flag[MAX_CROSS_TRACK];
 
     for (int target_row = 1; target_row <= 1624; target_row++)
     {
+        //---------------------//
+        // clear the ice flags //
+        //---------------------//
+
+        for (int i = 0; i < MAX_CROSS_TRACK; i++)
+        {
+            ice_flag[i] = 0;
+            no_ice_flag[i] = 0;
+        }
+
         for (int idx = 0; idx < l2a_length; idx++)
         {
             // check row number
@@ -425,6 +491,44 @@ main(
                 if (sigma0_qual_flag[j] & UNUSABLE)
                     continue;
 
+                // check lat
+                if (opt_lat)
+                {
+                    if (cell_lat[j] < min_lat || cell_lat[j] > max_lat)
+                        continue;
+                }
+
+                // skip land
+                int land_flag = surface_flag[j] & 0x00000001;
+                if (land_flag)
+                    continue;
+
+                //-------------------//
+                // set the ice flags //
+                //-------------------//
+
+                int cell_idx = cell_index[j] - 1;
+                int ice_avail = ! (surface_flag[j] & 0x00000400);
+                if (ice_avail)
+                {
+                    int ice = surface_flag[j] & 0x00000002;
+                    if (ice)
+                        ice_flag[cell_idx] = 1;
+                    else
+                        no_ice_flag[cell_idx] = 1;
+                }
+                else
+                {
+                    // no data.  I'll mark both and it will seem mixed
+                    ice_flag[cell_idx] = 1;
+                    no_ice_flag[cell_idx] = 1;
+                }
+
+/*
+                if (map_value(cell_lon[j] * rtd, cell_lat[j] * rtd, land_map))
+                    continue;
+*/
+
                 Meas* new_meas = new Meas;
                 new_meas->incidenceAngle = cell_incidence[j];
                 new_meas->value = sigma0[j] +
@@ -432,7 +536,7 @@ main(
                 new_meas->value = pow(10.0, 0.1 * new_meas->value);
                 if (sigma0_qual_flag[j] & NEGATIVE)
                     new_meas->value = -(new_meas->value);
-                new_meas->landFlag = (int)(surface_flag[j] & 0x00000003);
+                new_meas->landFlag = (int)(surface_flag[j] & 0x00000001);
                 new_meas->centroid.SetAltLonGDLat(0.0, cell_lon[j],
                     cell_lat[j]);
                 new_meas->beamIdx = (int)(sigma0_mode_flag[j] & 0x0004);
@@ -454,7 +558,6 @@ main(
                 else
                     new_meas->scanAngle = 1.0;    // aft
 
-                int cell_idx = cell_index[j] - 1;
                 if (cell_idx < 0 || cell_idx >= MAX_CROSS_TRACK)
                 {
                     fprintf(stderr, "%s: bad cell index (%d)\n", command,
@@ -480,6 +583,8 @@ main(
             if (meas_list->NodeCount() == 0)
                 continue;
 
+            LonLat avg_lon_lat = meas_list->AverageLonLat();
+
             // wind retrieval
             WVC wvc;
             if (! gmf.RetrieveWinds_GS(meas_list, &kp, &wvc))
@@ -490,8 +595,6 @@ main(
                 continue;
             float mem_spd = wvp->spd;
             float mem_dir = wvp->dir;
-
-            LonLat avg_lon_lat = meas_list->AverageLonLat();
 
             //-----------------//
             // accumulate info //
@@ -590,6 +693,10 @@ main(
             std[1] = sqrt(count[1]) / norm_sum[1];
             float mrd_std = sqrt(std[0]*std[0] + std[1]*std[1]);
 
+            //----------------------------------//
+            // calculate the angular difference //
+            //----------------------------------//
+
             float dir_val = ANGDIF(target_angle[1], mem_dir);
             if (dir_val > pi_over_two)
                 dir_val = pi - dir_val;
@@ -601,43 +708,110 @@ main(
 
             dif /= mrd_std;
 
-            float rain_val = dif * mem_spd * dir_val;
-            if (rain_val < -100.0)
-                rain_val = -100.0;
-            if (rain_val > 100.0)
-                rain_val = 100.0;
+            float product_val = dif * mem_spd * dir_val;
+            if (product_val < -100.0)
+                product_val = -100.0;
+            if (product_val > 100.0)
+                product_val = 100.0;
 
-            fprintf(rain_ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
-                avg_lon_lat.latitude * rtd, rain_val);
-
-            if (dif < -1000.0)
-                dif = -1000.0;
-            if (dif > 1000.0)
-                dif = 1000.0;
-//printf("%g\n", target_angle[1] * rtd);
-            fprintf(dir_ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
-                avg_lon_lat.latitude * rtd, rtd * dir_val);
+            fprintf(apts_ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
+                avg_lon_lat.latitude * rtd, product_val);
 
             //--------------------//
             // feed the rain file //
             //--------------------//
 
-/*
-            unsigned char rate_dn = rain_rate[target_row - 1][cell_idx];
-            if (val > 1.0 && mem_spd > 5.0)
+            unsigned char rate_dn = 0;
+            if (opt_rain)
             {
-                fprintf(rain_ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
-                    avg_lon_lat.latitude * rtd, val);
-                fflush(rain_ofp);
+                rate_dn = rain_rate[target_row - 1][cell_idx];
+                if (rate_dn <= 250)
+                {
+                    fprintf(rain_ofp, "%g %g %g\n",
+                        avg_lon_lat.longitude * rtd,
+                        avg_lon_lat.latitude * rtd, (float)rate_dn * 0.1);
+                }
             }
 
-            if (val < -3.0)
-                val = -3.0;
-            if (val > 3.0)
-                val = 3.0;
-            fprintf(ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
-                avg_lon_lat.latitude * rtd, val);
-*/
+            //-----------------------//
+            // feed the analyze file //
+            //-----------------------//
+
+            if (opt_analyze)
+            {
+                int is_ice = -1;
+                if (ice_flag[cell_idx] != no_ice_flag[cell_idx])
+                {
+                    if (ice_flag[cell_idx])
+                        is_ice = 1;    // ice
+                    else
+                        is_ice = 0;    // not ice
+                }
+                int is_rain = -1;
+                if (rate_dn <= 250)
+                {
+                    if (rate_dn > MIN_RAIN_DN)
+                        is_rain = 1;    // rain
+                    else
+                        is_rain = 0;    // not rain
+                }
+                int class_val = -1;    // 0 = ocean, 1 = rain, 2 = ice
+                if (is_ice == 1)
+                    class_val = 2;    // ice beats everything!
+                else if (is_ice == 0 && is_rain == 1)
+                    class_val = 1;    // not ice, is rain
+                else if (is_ice == 0 && is_rain == 0)
+                    class_val = 0;    // not ice, not rain
+                if (class_val != -1)
+                {
+                    fprintf(analyze_ofp, "%d %g %g %g\n", class_val, mem_spd,
+                        dir_val * rtd, dif);
+                }
+            }
+
+            //----------//
+            // classify //
+            //----------//
+
+            if (opt_classify)
+            {
+                float value[3];
+                value[0] = mem_spd;
+                value[1] = dir_val * rtd;
+                value[2] = dif;
+
+                float prob[3];
+                for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+                {
+                    prob[ctype_idx] = 1.0;
+                    for (int metric_idx = 0; metric_idx < 3; metric_idx++)
+                    {
+                        int use_idx;
+                        if (! metric_index[metric_idx].GetNearestIndex(
+                            value[metric_idx], &use_idx))
+                        {
+                            continue;
+                        }
+
+                        // hacked avoid div by zero
+                        if (count_m[metric_idx][use_idx] == 0)
+                            count_m[metric_idx][use_idx] = 1;
+
+                        prob[ctype_idx] *=
+                      ((float)count_m_given_c[metric_idx][ctype_idx][use_idx] /
+                       (float)count_m[metric_idx][use_idx]);
+                    }
+                }
+                int max_ctype_idx = 0;
+                for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+                {
+                    if (prob[ctype_idx] > prob[max_ctype_idx])
+                        max_ctype_idx = ctype_idx;
+                }
+                fprintf(class_ofp, "%g %g %d\n",
+                    avg_lon_lat.longitude * rtd,
+                    avg_lon_lat.latitude * rtd, max_ctype_idx);
+            }
         }
         for (int cell_idx = 0; cell_idx < MAX_CROSS_TRACK; cell_idx++)
         {
@@ -646,9 +820,11 @@ main(
         }
     }
 
-    fclose(dir_ofp);
-    fclose(rain_ofp);
-    fclose(info_ofp);
+    fclose(apts_ofp);
+    if (rain_ofp != NULL)
+        fclose(rain_ofp);
+    if (class_ofp != NULL)
+        fclose(class_ofp);
 
     l2a_file.CloseParamDatasets(row_number_p);
     l2a_file.CloseParamDatasets(num_sigma0_p);

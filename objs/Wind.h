@@ -387,7 +387,7 @@ public:
     int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadNscatSwv25(const char* filename);
     int  GetArraysForUpdatingHdf(float** spd, float** dir, int** num_ambig);
-    int  UpdateHdf(const char* filename, float** spd, float** dir, 
+    int  UpdateHdf(const char* filename, float** spd, float** dir,
              int** num_ambig, int** selected);
     int  WriteVctr(const char* filename, const int rank);
     int  WriteFlower(const char* filename);
@@ -399,10 +399,13 @@ public:
     //-----------//
 
     int    InitWithRank(int rank);
+    int    InitWithNudge();
     int    InitRandom();
+    int    HideSpeed(float min_speed, float max_speed);
     int    UnInitSpeed(float min_speed, float max_speed);
     int    GetNudgeVectors(WindField* nudge_field);
-    int    GetHurricaneNudgeVectors(WindField* nudge_field, EarthPosition* center, float radius);
+    int    GetHurricaneNudgeVectors(WindField* nudge_field,
+               EarthPosition* center, float radius);
     int    Nudge(int min_rank);
     int    HurricaneNudge(int min_rank, EarthPosition* center, float radius);
     int    S3Nudge();
@@ -531,8 +534,3 @@ protected:
 };
 
 #endif
-
-
-
-
-

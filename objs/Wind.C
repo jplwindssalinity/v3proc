@@ -3302,6 +3302,35 @@ WindSwath::InitWithRank(
     return(count);
 }
 
+//--------------------------//
+// WindSwath::InitWithNudge //
+//--------------------------//
+
+int
+WindSwath::InitWithNudge()
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+            if (wvc->ambiguities.NodeCount() == 1)
+            {
+                wvc->selected = wvc->ambiguities.GetByIndex(0);
+            }
+            else
+            {
+                wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir);
+            }
+            count++;
+        }
+    }
+    return(count);
+}
+
 //-----------------------//
 // WindSwath::InitRandom //
 //-----------------------//
@@ -3334,12 +3363,12 @@ WindSwath::InitRandom()
     return(count);
 }
 
-//------------------------//
-// WindSwath::UnInitSpeed //
-//------------------------//
+//----------------------//
+// WindSwath::HideSpeed //
+//----------------------//
 
 int
-WindSwath::UnInitSpeed(
+WindSwath::HideSpeed(
     float  min_speed,
     float  max_speed)
 {

@@ -8,18 +8,21 @@
 //    wr_ocean
 //
 // SYNOPSIS
-//    wr_ocean [ -l minlat:maxlat ] [ -r ssmi_rain_file ] [ -i ]
-//        <ins_config_file> <hdf_l2a_file> <output_base>
+//    wr_ocean [ -l minlat:maxlat ] [ -r ssmi_rain_file ] [ -a ]
+//        [ -c classify_file ] [ -f flag_file ] <ins_config_file>
+//        <hdf_l2a_file> <output_base>
 //
 // DESCRIPTION
 //    Performs wind retrieval and provide information for
-//    classification.  When rain files are read in, it produces
-//    plots of speed/direction/dif vs. rain rate.
+//    classification.  When rain files are read in, it adds
+//    rain (speed/direction/dif) to the class file.
 //
 // OPTIONS
 //    [ -l minlat:maxlat ]   Restricted latitude range.
 //    [ -r ssmi_rain_file ]  What it says.  The ones from Freilich.
-//    [ -i ]                 Make ice plots.
+//    [ -a ]                 Analyze for classification file.
+//    [ -c classify_file ]   Classify and make a plottable file.
+//    [ -f flag_file ]       Classify and make a flag file.
 //
 // OPERANDS
 //    <ins_config_file>  The config file (for the GMF).
@@ -97,12 +100,13 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING        "l:r:i"
+#define OPTSTRING        "l:r:ac:f:"
 #define MAX_S0_PER_ROW   3240
 #define MAX_CROSS_TRACK  76
 #define UNUSABLE         0x0001
 #define NEGATIVE         0x0004
 #define ANTENNA_BEAM     0x0004
+#define MIN_RAIN_DN      0
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -119,7 +123,8 @@ void  check_status(HdfFile::StatusE status);
 //------------------//
 
 const char* usage_array[] = { "[ -l minlat:maxlat ]", "[ -r ssmi_rain_file ]",
-    "[ -i ]", "<ins_config_file>", "<hdf_l2a_file>", "<output_base>", 0 };
+    "[ -a ]", "[ -c classify_file ]", "[ -f flag_file ]", "<ins_config_file>",
+    "<hdf_l2a_file>", "<output_base>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -138,10 +143,13 @@ main(
     float max_lat = 0.0;
 
     const char* rain_file = NULL;
+    const char* classify_file = NULL;
 
     int opt_lat = 0;
     int opt_rain = 0;
-    int opt_ice = 0;
+    int opt_analyze = 0;
+    int opt_classify = 0;
+    int opt_flag = 0;
 
     //------------------------//
     // parse the command line //
@@ -169,8 +177,12 @@ main(
             rain_file = optarg;
             opt_rain = 1;
             break;
-        case 'i':
-            opt_ice = 1;
+        case 'a':
+            opt_analyze = 1;
+            break;
+        case 'c':
+            classify_file = optarg;
+            opt_classify = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -245,6 +257,62 @@ main(
         }
         fread(rain_rate, sizeof(char), 76 * 1624, ifp);
         fclose(ifp);
+    }
+
+    //------------------------//
+    // read the classify file //
+    //------------------------//
+
+    Index metric_index[3];
+    int ctype_count[3];
+    int total_count;
+    int count_m_given_c[3][3][100];
+    int count_m[3][100];
+    FILE* class_ifp;
+    if (opt_classify)
+    {
+        class_ifp = fopen(classify_file, "r");
+        if (class_ifp == NULL)
+        {
+            fprintf(stderr, "%s: error opening classify file %s\n", command,
+                classify_file);
+            exit(1);
+        }
+        fscanf(class_ifp, "# ctype counts");
+        for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+        {
+            fscanf(class_ifp, " %d\n", &(ctype_count[ctype_idx]));
+        }
+
+        fscanf(class_ifp, "# metric pdf's");
+        for (int metric_idx = 0; metric_idx < 3; metric_idx++)
+        {
+            metric_index[metric_idx].ReadAscii(class_ifp);
+            for (int i = 0; i < metric_index[metric_idx].GetBins(); i++)
+            {
+                fscanf(class_ifp, " %d\n",
+                    &(count_m[metric_idx][i]));
+            }
+        }
+
+        fscanf(class_ifp, "# conditional pdf's");
+        for (int metric_idx = 0; metric_idx < 3; metric_idx++)
+        {
+            for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+            {
+                for (int i = 0; i < metric_index[metric_idx].GetBins(); i++)
+                {
+                    fscanf(class_ifp, " %d\n",
+                        &(count_m_given_c[metric_idx][ctype_idx][i]));
+                }
+            }
+        }
+
+        fclose(class_ifp);
+
+        total_count = 0;
+        for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+            total_count += ctype_count[ctype_idx];
     }
 
     //--------------//
@@ -376,14 +444,29 @@ main(
                 filename);
             exit(1);
         }
+        fprintf(rain_ofp, "apts\n");
     }
 
-    FILE* ice_ofp = NULL;
-    if (opt_ice)
+    FILE* class_ofp = NULL;
+    if (opt_classify)
     {
-        sprintf(filename, "%s.ice", output_base);
-        ice_ofp = fopen(filename, "w");
-        if (ice_ofp == NULL)
+        sprintf(filename, "%s.class", output_base);
+        class_ofp = fopen(filename, "w");
+        if (class_ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fprintf(class_ofp, "apts\n");
+    }
+
+    FILE* analyze_ofp = NULL;
+    if (opt_analyze)
+    {
+        sprintf(filename, "%s.analyze", output_base);
+        analyze_ofp = fopen(filename, "w");
+        if (analyze_ofp == NULL)
         {
             fprintf(stderr, "%s: error opening output file %s\n", command,
                 filename);
@@ -710,41 +793,109 @@ main(
 
             dif /= mrd_std;
 
-            float rain_val = dif * mem_spd * dir_val;
-            if (rain_val < -100.0)
-                rain_val = -100.0;
-            if (rain_val > 100.0)
-                rain_val = 100.0;
+            float product_val = dif * mem_spd * dir_val;
+            if (product_val < -100.0)
+                product_val = -100.0;
+            if (product_val > 100.0)
+                product_val = 100.0;
 
             fprintf(apts_ofp, "%g %g %g\n", avg_lon_lat.longitude * rtd,
-                avg_lon_lat.latitude * rtd, rain_val);
+                avg_lon_lat.latitude * rtd, product_val);
 
             //--------------------//
             // feed the rain file //
             //--------------------//
 
+            unsigned char rate_dn = 0;
             if (opt_rain)
             {
-                unsigned char rate_dn = rain_rate[target_row - 1][cell_idx];
-                fprintf(rain_ofp, "%g %g %g %g\n", (float)rate_dn * 0.1,
-                    mem_spd, dir_val, dif);
+                rate_dn = rain_rate[target_row - 1][cell_idx];
+                if (rate_dn <= 250)
+                {
+                    fprintf(rain_ofp, "%g %g %g\n",
+                        avg_lon_lat.longitude * rtd,
+                        avg_lon_lat.latitude * rtd, (float)rate_dn * 0.1);
+                }
             }
 
-            //-------------------//
-            // feed the ice file //
-            //-------------------//
+            //-----------------------//
+            // feed the analyze file //
+            //-----------------------//
 
-            if (opt_ice)
+            if (opt_analyze)
             {
-                if (ice_flag[cell_idx] == no_ice_flag[cell_idx])
-                    continue;
-                int ice_val;
-                if (ice_flag[cell_idx])
-                    ice_val = 1;
-                else
-                    ice_val = 0;
-                fprintf(ice_ofp, "%d %g %g %g\n", ice_val, mem_spd, dir_val,
-                    dif);
+                int is_ice = -1;
+                if (ice_flag[cell_idx] != no_ice_flag[cell_idx])
+                {
+                    if (ice_flag[cell_idx])
+                        is_ice = 1;    // ice
+                    else
+                        is_ice = 0;    // not ice
+                }
+                int is_rain = -1;
+                if (rate_dn <= 250)
+                {
+                    if (rate_dn > MIN_RAIN_DN)
+                        is_rain = 1;    // rain
+                    else
+                        is_rain = 0;    // not rain
+                }
+                int class_val = -1;    // 0 = ocean, 1 = rain, 2 = ice
+                if (is_ice == 1)
+                    class_val = 2;    // ice beats everything!
+                else if (is_ice == 0 && is_rain == 1)
+                    class_val = 1;    // not ice, is rain
+                else if (is_ice == 0 && is_rain == 0)
+                    class_val = 0;    // not ice, not rain
+                if (class_val != -1)
+                {
+                    fprintf(analyze_ofp, "%d %g %g %g\n", class_val, mem_spd,
+                        dir_val * rtd, dif);
+                }
+            }
+
+            //----------//
+            // classify //
+            //----------//
+
+            if (opt_classify)
+            {
+                float value[3];
+                value[0] = mem_spd;
+                value[1] = dir_val * rtd;
+                value[2] = dif;
+
+                float prob[3];
+                for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+                {
+                    prob[ctype_idx] = 1.0;
+                    for (int metric_idx = 0; metric_idx < 3; metric_idx++)
+                    {
+                        int use_idx;
+                        if (! metric_index[metric_idx].GetNearestIndex(
+                            value[metric_idx], &use_idx))
+                        {
+                            continue;
+                        }
+
+                        // hacked avoid div by zero
+                        if (count_m[metric_idx][use_idx] == 0)
+                            count_m[metric_idx][use_idx] = 1;
+
+                        prob[ctype_idx] *=
+                      ((float)count_m_given_c[metric_idx][ctype_idx][use_idx] /
+                       (float)count_m[metric_idx][use_idx]);
+                    }
+                }
+                int max_ctype_idx = 0;
+                for (int ctype_idx = 0; ctype_idx < 3; ctype_idx++)
+                {
+                    if (prob[ctype_idx] > prob[max_ctype_idx])
+                        max_ctype_idx = ctype_idx;
+                }
+                fprintf(class_ofp, "%g %g %d\n",
+                    avg_lon_lat.longitude * rtd,
+                    avg_lon_lat.latitude * rtd, max_ctype_idx);
             }
         }
         for (int cell_idx = 0; cell_idx < MAX_CROSS_TRACK; cell_idx++)
@@ -757,6 +908,8 @@ main(
     fclose(apts_ofp);
     if (rain_ofp != NULL)
         fclose(rain_ofp);
+    if (class_ofp != NULL)
+        fclose(class_ofp);
 
     l2a_file.CloseParamDatasets(row_number_p);
     l2a_file.CloseParamDatasets(num_sigma0_p);
