@@ -334,6 +334,12 @@ L2AH::GetWVC(
         new_meas->B = _kpBeta[i] * KP_BETA_SCALE;
         new_meas->C = _kpGamma[i];
 
+        // hack fore/aft info into scanAngle
+        if (_sigma0ModeFlag[i] & 0x0008)
+            new_meas->scanAngle = 0.0;    // fore
+        else
+            new_meas->scanAngle = 1.0;    // aft
+
         //------------------------//
         // append the measurement //
         //------------------------//
