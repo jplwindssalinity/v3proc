@@ -51,6 +51,7 @@ public:
 	//--------------//
 
 	int		RemoveDuplicates();
+	int		SortByObj();
 
 	//---------//
 	// freeing //
@@ -63,7 +64,6 @@ public:
 	//-----------//
 
 	List<WindVector>	ambiguities;
-	WindVector			truth;
 };
 
 #endif

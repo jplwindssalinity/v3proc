@@ -46,6 +46,7 @@ L17ToL20::Convert(
 	gmf->RefineSolutions(&(l17->frame.measList), wvc, INIT_SPD, INIT_PHI,
 		FINAL_SPD, FINAL_PHI);
 	wvc->RemoveDuplicates();
+	wvc->SortByObj();
 
 	return(1);
 }

@@ -306,6 +306,7 @@ GMF::RefineSolutions(
 
 			wv->spd = (double)spd_idx * spd_step;
 			wv->dir = (double)phi_idx * phi_step;
+			wv->obj = max_obj;
 		}
 	}
 

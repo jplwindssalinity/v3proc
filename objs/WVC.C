@@ -108,6 +108,39 @@ WVC::RemoveDuplicates()
 	return(count);
 }
 
+//----------------//
+// WVC::SortByObj //
+//----------------//
+// uses idiot-sort (based on the stupidity and laziness of JNH)
+// sorts in descending order (the highest obj is first)
+
+int
+WVC::SortByObj()
+{
+	int need_sorting = 1;
+
+	while (need_sorting)
+	{
+		need_sorting = 0;
+		for (WindVector* wv = ambiguities.GetHead(); wv;
+			wv = ambiguities.GetNext())
+		{
+			WindVector* next_wv = ambiguities.GetNext();
+			if (next_wv)
+			{
+				ambiguities.GetPrev();
+				if (next_wv->obj > wv->obj)
+				{
+					ambiguities.SwapCurrentAndNext();
+					ambiguities.GetNext();
+					need_sorting = 1;
+				}
+			}
+		}
+	}
+	return(1);
+}
+
 //-------------------//
 // WVC::FreeContents //
 //-------------------//
