@@ -33,8 +33,8 @@ L15File::~L15File()
 
 L15::L15()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0),
-	antennaPosition(0.0), beam(NONE)
+	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(0.0),
+	beam(NONE), sigma_0(0.0)
 {
 	AllocateFrame(L15_DATA_REC_SIZE);
 	return;
@@ -90,6 +90,9 @@ L15::PackFrame()
 	memcpy((void *)(_frame + idx), (void *)&beam, sizeof(L15BeamE));
 	idx += sizeof(L15BeamE);
 
+	memcpy((void *)(_frame + idx), (void *)&sigma_0, sizeof(double));
+	idx += sizeof(double);
+
 	return(1);
 }
 
@@ -137,6 +140,9 @@ L15::UnpackFrame()
 
 	memcpy((void *)&beam, (void *)(_frame + idx), sizeof(L15BeamE));
 	idx += sizeof(L15BeamE);
+
+	memcpy((void *)&sigma_0, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
 
 	return(1);
 }

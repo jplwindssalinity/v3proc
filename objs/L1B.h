@@ -16,7 +16,7 @@ static const char rcs_id_l15_h[] =
 //		L15File, L15FileList, L15
 //======================================================================
 
-#define L15_DATA_REC_SIZE	92
+#define L15_DATA_REC_SIZE	100
 
 
 //======================================================================
@@ -90,6 +90,7 @@ public:
 
 	double		antennaPosition;
 	L15BeamE	beam;
+	double		sigma_0;
 };
 
 #endif
