@@ -108,18 +108,16 @@ return;
 //
 
 Matrix3 Matrix3::operator+(Matrix3 m2)
-
 {
-int i,j;
-Matrix3 result;
-
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  result._m[i][j] = _m[i][j] + m2._m[i][j];
-  }
-
-return(result);
+	Matrix3 result;
+	for (int i = 0; i < 3; i++)
+	{
+		for (int j = 0; j < 3; j++)
+		{
+			result._m[i][j] = _m[i][j] + m2._m[i][j];
+		}
+	}
+	return(result);
 }
 
 //
@@ -392,15 +390,12 @@ return;
 
 Vector3 Vector3::operator+(Vector3 v2)
 {
-int i;
-Vector3 result;
-
-for (i=0; i < 3; i++)
-  {
-  result._v[i] = _v[i] + v2._v[i];
-  }
-
-return(result);
+	Vector3 result;
+	for (int i = 0; i < 3; i++)
+	{
+		result._v[i] = _v[i] + v2._v[i];
+	}
+	return(result);
 }
 
 Vector3 Vector3::operator-(Vector3 v2)
