@@ -359,7 +359,6 @@ main(
         for (int record_idx = 0; record_idx < tlmFile->GetDataLength();
             record_idx++)
         {
-printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             //--------------------//
             // set the spacecraft //
             //--------------------//
@@ -429,9 +428,9 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             orbit_time_p->extractFunc(tlmFile, orbit_time_p->sdsIDs,
                 record_idx, 1, 1, &orbit_time, polyTable);
 
-            unsigned char orbit_step;
+            unsigned char base_orbit_step;
             orbit_step_p->extractFunc(tlmFile, orbit_step_p->sdsIDs,
-                record_idx, 1, 1, &orbit_step, polyTable);
+                record_idx, 1, 1, &base_orbit_step, polyTable);
 
             unsigned char pri_of_orbit_step_change;
             pri_of_orbit_step_change_p->extractFunc(tlmFile,
@@ -463,7 +462,7 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             echo_info.pitch = pitch;
             echo_info.yaw = yaw;
             echo_info.orbitTicks = orbit_time;
-            echo_info.orbitStep = orbit_step;
+            echo_info.orbitStep = base_orbit_step;
             echo_info.priOfOrbitStepChange = pri_of_orbit_step_change;
             echo_info.spinRate = omega;
 
@@ -486,6 +485,8 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
 
                 // determine orbit step
                 qscat.cds.orbitTime = orbit_time;
+                
+                unsigned char orbit_step = base_orbit_step;
                 if (pri_of_orbit_step_change != 255 &&
                     spot_idx < pri_of_orbit_step_change)
                 {
@@ -637,6 +638,12 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             // write out the frame //
             //---------------------//
 
+            if (in_first_frame)
+            {
+                in_first_frame = 0;
+                continue;
+            }
+
             if (! echo_info.Write(output_fd))
             {
                 fprintf(stderr,
@@ -644,8 +651,6 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
                     command, output_file_string);
                 exit(1);
             }
-
-            in_first_frame = 0;
         }
 
         //----------------//
