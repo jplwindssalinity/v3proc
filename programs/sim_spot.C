@@ -160,13 +160,27 @@ main(
     Vector3 rlook_geo;  // beam look direction in geocentric frame
     EarthPosition rsat;
 
-	#define NPTS 5
+	#define NPTS 15
 	#define BEAM_WIDTH_LOOK	0.008552
 	#define BEAM_WIDTH_AZIMUTH 0.007269
 
-    double look_delta[NPTS] = {0,BEAM_WIDTH_LOOK,0,-BEAM_WIDTH_LOOK,0};
-    double azimuth_delta[NPTS] = {-BEAM_WIDTH_AZIMUTH,0,BEAM_WIDTH_AZIMUTH,0,
-									-BEAM_WIDTH_AZIMUTH};
+    double look_delta[NPTS+1];
+    double azimuth_delta[NPTS+1];
+
+	//
+	// Setup for drawing an ellipse
+	//
+
+	double theta,r;
+	double a2 = BEAM_WIDTH_LOOK*BEAM_WIDTH_LOOK;
+	double b2 = BEAM_WIDTH_AZIMUTH*BEAM_WIDTH_AZIMUTH;
+	for (int j=0; j <= NPTS; j++)
+	{
+		theta = j*two_pi/NPTS;
+		r = sqrt(a2*b2/(a2*sin(theta)*sin(theta) + b2*cos(theta)*cos(theta)));
+		look_delta[j] = r*cos(theta);
+		azimuth_delta[j] = r*sin(theta);
+	}
 
 	//----------------------//
 	// cycle through events //
@@ -196,7 +210,7 @@ main(
 		if (ang > 0.3491 && ang < 5.9341)
 			continue;
         Spacecraft *sc = &(instrument.spacecraft);
-		for (int i=0; i < NPTS; i++)
+		for (int i=0; i <= NPTS; i++)
 		{
         	rlook_ant.SphericalSet(1.0,
             	instrument.antenna.beam[beam_idx].lookAngle + look_delta[i],
