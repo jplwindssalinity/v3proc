@@ -22,6 +22,7 @@ OBJS = \
 	CoordinateSwitch.o \
 	Ephemeris.o \
 	GMF.o \
+	Grid.o \
 	Instrument.o \
 	InstrumentSim.o \
 	Interpolate.o \
@@ -90,28 +91,39 @@ Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h Product.h List.h Antenna.h Constants.h Matrix3.h Attitude.h Beam.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h \
+	L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h WindField.h GMF.h \
+	Spacecraft.h Product.h List.h Antenna.h WindVector.h PiscTable.h \
+	Measurement.h WVC.h Constants.h Matrix3.h Attitude.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
-Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h
-GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Measurement.h WVC.h List.h WindVector.h
-Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h Attitude.h Constants.h Matrix3.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h ConfigList.h AntennaSim.h SpacecraftSim.h L0.h Antenna.h Spacecraft.h CoordinateSwitch.h List.h Product.h Beam.h Attitude.h Constants.h Matrix3.h
+Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h
+GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h \
+	Measurement.h WVC.h Attitude.h List.h WindVector.h
+Grid.o: Grid.C 
+Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
+	Attitude.h Constants.h Matrix3.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h \
+	ConfigList.h AntennaSim.h SpacecraftSim.h L0.h WindField.h GMF.h \
+	Antenna.h Spacecraft.h CoordinateSwitch.h List.h Product.h WindVector.h \
+	PiscTable.h Measurement.h WVC.h Beam.h Attitude.h Constants.h Matrix3.h
 Interpolate.o: Interpolate.C 
-Kp.o: Kp.C Kp.h PiscTable.h Beam.h
+Kp.o: Kp.C Kp.h PiscTable.h Beam.h Attitude.h
 L0.o: L0.C L0.h Product.h List.h
 L0ToL1.o: L0ToL1.C L0ToL1.h L0.h L1.h Product.h List.h
 L1.o: L1.C L1.h Product.h List.h
 L15.o: L15.C L15.h Product.h List.h
 L1ToL15.o: L1ToL15.C L1ToL15.h L1.h L15.h Product.h List.h
 List.o: List.C List.h
-LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
+LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h \
+	Attitude.h
 Matrix3.o: Matrix3.C Matrix3.h Constants.h
-Measurement.o: Measurement.C Measurement.h Beam.h List.h
+Measurement.o: Measurement.C Measurement.h Beam.h List.h Attitude.h
 Misc.o: Misc.C Misc.h
-PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h
+PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
 Product.o: Product.C Product.h List.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Attitude.h
-SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h Matrix3.h Attitude.h
+SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h \
+	Matrix3.h Attitude.h
 WVC.o: WVC.C WVC.h Constants.h List.h WindVector.h
 WindField.o: WindField.C WindField.h WindVector.h
 WindVector.o: WindVector.C WindVector.h
