@@ -161,9 +161,11 @@ main(
 	// cycle through events //
 	//----------------------//
 
-	while (sim.GetEventTime() < 120.0)
+	Event event;
+	while (event.time < 120.0)
 	{
-		sim.SimulateNextEvent(&instrument);
+		sim.DetermineNextEvent(&event);
+		sim.SimulateEvent(&instrument, &event);
 		sim.GenerateL0(&instrument, &l0);
 	}
 	l0.CloseCurrentFile();
