@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -121,36 +121,39 @@ Matrix3 Matrix3::operator+(Matrix3 m2)
 // Operator - to subtract two 3x3 matrices, giving a 3x3 matrix.
 //
 
-Matrix3 Matrix3::operator-(Matrix3 m2)
+Matrix3
+Matrix3::operator-(
+    Matrix3  m2)
 {
-int i,j;
-Matrix3 result;
+    Matrix3 result;
 
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  result._m[i][j] = _m[i][j] - m2._m[i][j];
-  }
-
-return(result);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            result._m[i][j] = _m[i][j] - m2._m[i][j];
+        }
+    }
+    return(result);
 }
 
 //
 // Operator unary - to negate a 3x3 matrix, giving a 3x3 matrix.
 //
 
-Matrix3 Matrix3::operator-()
+Matrix3
+Matrix3::operator-()
 {
-int i,j;
-Matrix3 result;
+    Matrix3 result;
 
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  result._m[i][j] = - _m[i][j];
-  }
-
-return(result);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            result._m[i][j] = - _m[i][j];
+        }
+    }
+   return(result);
 }
 
 //------------//
@@ -175,7 +178,6 @@ Matrix3::operator*(
             }
         }
     }
-
     return(result);
 }
 
@@ -183,8 +185,9 @@ Matrix3::operator*(
 // Operator * to multiply a 3-vector by a 3x3 matrix, giving a 3-vector.
 //
 
-Vector3 Matrix3::operator*(Vector3 v2)
-
+Vector3
+Matrix3::operator*(
+    Vector3  v2)
 {
 int i,k;
 Vector3 result(0);
