@@ -7,6 +7,7 @@ static const char rcs_id_sds_c[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include <math.h>
 #include "Sds.h"
 #include "mfhdf.h"
 
@@ -80,12 +81,17 @@ Sds::Sds(
     _dimNames = (char **)malloc(rank * sizeof(char *));
     _start = (int32 *)malloc(rank * sizeof(int32));
     _edges = (int32 *)malloc(rank * sizeof(int32));
+    _frameSize = 1;
     for (int i = 0; i < rank; i++)
     {
         _start[i] = 0;
-        _edges[i] = _dimSizes[i];
+        _edges[i] = dim_sizes[i];
         _dimSizes[i] = dim_sizes[i];
         _dimNames[i] = strdup(dim_names[i]);
+        if (i > 0)
+        {
+            _frameSize *= dim_sizes[i];
+        }
     }
 
     // prepare to write one frame at a time
@@ -93,8 +99,8 @@ Sds::Sds(
     SetFrameCluster(1);
 
     _units = strdup(units);
-    _cal = 1.0;
-    _offset = 0.0;
+    _cal = cal;
+    _offset = offset;
 
     return;
 }
@@ -166,6 +172,16 @@ Sds::Create(
     if (_sdsId == -1)
     {
         fprintf(stderr, "Sds::Create: error with SDcreate\n");
+fprintf(stderr, "      SD Id: %d\n", (int)sd_id);
+fprintf(stderr, "   SDS Name: %s\n", _sdsName);
+fprintf(stderr, "  Data Type: %d\n", (int)_dataType);
+fprintf(stderr, "       Rank: %d\n", (int)_rank);
+fprintf(stderr, "       Dims:");
+for (int i = 0; i < _rank; i++)
+{
+  fprintf(stderr, " %d", (int)_dimSizes[i]);
+}
+fprintf(stderr, "\n");
         return(0);
     }
 
@@ -256,6 +272,106 @@ Sds::SetMaxAndMin()
     exit(1);
 }
 
+//==========//
+// SdsUInt8 //
+//==========//
+
+SdsUInt8::SdsUInt8(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    uint8         max,
+    uint8         min)
+:   Sds(sds_name, DFNT_UINT8, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//------------------------//
+// SdsUInt8::SetMaxAndMin //
+//------------------------//
+
+int
+SdsUInt8::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//-------------------------------//
+// SdsUInt8::SetWithUnsignedChar //
+//-------------------------------//
+// the calibration is ignored (assumed to be 1.0 and 0.0)
+
+void
+SdsUInt8::SetWithUnsignedChar(unsigned char* value)
+{
+    uint8* ptr = (uint8 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (uint8)(*(value + i));
+    }
+    return;
+}
+
+//===========//
+// SdsUInt16 //
+//===========//
+
+SdsUInt16::SdsUInt16(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    uint16        max,
+    uint16        min)
+:   Sds(sds_name, DFNT_UINT16, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//-------------------------//
+// SdsUInt16::SetMaxAndMin //
+//-------------------------//
+
+int
+SdsUInt16::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//---------------------------------//
+// SdsUInt16::SetWithUnsignedShort //
+//---------------------------------//
+// the calibration is ignored (assumed to be 1.0 and 0.0)
+
+void
+SdsUInt16::SetWithUnsignedShort(unsigned short* value)
+{
+    uint16* ptr = (uint16 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (uint16)(*(value + i));
+    }
+    return;
+}
+
 //============//
 // SdsUInt32 //
 //============//
@@ -298,11 +414,61 @@ SdsUInt32::SetMaxAndMin()
 void
 SdsUInt32::SetWithUnsignedInt(unsigned int* value)
 {
-    float64* ptr = (float64 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
+    uint32* ptr = (uint32 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
     {
-        *(ptr + i) = *(value + i);
+        *(ptr + i) = (uint32)(*(value + i));
     }
+    return;
+}
+
+//==========//
+// SdsInt16 //
+//==========//
+
+SdsInt16::SdsInt16(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    int16         max,
+    int16         min)
+:   Sds(sds_name, DFNT_INT16, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//------------------------//
+// SdsInt16::SetMaxAndMin //
+//------------------------//
+
+int
+SdsInt16::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//------------------------//
+// SdsInt16::SetFromFloat //
+//------------------------//
+
+void
+SdsInt16::SetFromFloat(float* value)
+{
+    int16* ptr = (int16 *)_calibratedData;
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
+    {
+        *(ptr + i) = (int16)(rint(((double)*(value + i) / _cal) + _offset));
+    }
+
     return;
 }
 
@@ -348,7 +514,7 @@ void
 SdsFloat32::SetFromFloat(float* value)
 {
     float32* ptr = (float32 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
     {
         *(ptr + i) = (float32)(((double)*(value + i) / _cal) + _offset);
     }
@@ -397,7 +563,7 @@ void
 SdsFloat64::SetFromDouble(double* value)
 {
     float64* ptr = (float64 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
     {
         *(ptr + i) = (float64)((*(value + i) / _cal) + _offset);
     }
@@ -412,7 +578,7 @@ void
 SdsFloat64::SetFromUnsignedInt(unsigned int* value)
 {
     float64* ptr = (float64 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
+    for (int i = 0; i < _frameCluster * _frameSize; i++)
     {
         *(ptr + i) = (float64)(((double)*(value + i) / _cal) + _offset);
     }

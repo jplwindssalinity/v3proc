@@ -51,7 +51,8 @@ public:
 
     int  WriteHDFFrame();
 
-    int  WriteHDFHeader(double period, double inclination, double sma);
+    int  WriteHDFHeader(double period, double inclination, double sma,
+             double eccentricity);
 
     int  CloseHdfInputFile();
     int  CloseHdfOutputFile();
@@ -62,7 +63,7 @@ public:
 protected:
 
     // reference time
-    ETime  _referenceEtime;
+    double  _referenceTime;
 
     // HDF header variables
     // these get set somewhere along the way by the WriteSDSs method

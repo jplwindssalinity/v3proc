@@ -67,6 +67,30 @@ Attribute* orbit_inclination = new Attribute("orbit_inclination", "float", "1",
     "<missing>");
 Attribute* orbit_semi_major_axis = new Attribute("orbit_semi_major_axis",
     "float", "1", "<missing>");
+Attribute* orbit_eccentricity = new Attribute("orbit_eccentricity", "float",
+    "1", "<missing>");
+Attribute* range_beginning_date = new Attribute("RangeBeginningDate", "char",
+    "1", "<missing>");
+Attribute* range_beginning_time = new Attribute("RangeBeginningTime", "char",
+    "1", "<missing>");
+Attribute* range_ending_date = new Attribute("RangeEndingDate", "char",
+    "1", "<missing>");
+Attribute* range_ending_time = new Attribute("RangeEndingTime", "char",
+    "1", "<missing>");
+Attribute* ephemeris_type = new Attribute("ephemeris_type", "char", "1",
+    "Sim");
+Attribute* parameter_name = new Attribute("ParameterName", "char", "1",
+    "power_dn");
+Attribute* attitude_type = new Attribute("attitude_type", "char", "1",
+    "Sim");
+Attribute* maximum_pulses_per_frame =
+    new Attribute("maximum_pulses_per_frame", "int", "1", "<missing>");
+Attribute* l1a_expected_frames = new Attribute("l1a_expected_frames", "int",
+    "1", "<missing>");
+Attribute* l1a_actual_frames = new Attribute("l1a_actual_frames", "int",
+    "1", "<missing>");
+Attribute* product_span = new Attribute("product_span", "int", "1",
+    "Pass");
 
 Attribute* g_attribute_table[] =
 {
@@ -96,6 +120,18 @@ Attribute* g_attribute_table[] =
     rev_orbit_period,
     orbit_inclination,
     orbit_semi_major_axis,
+    orbit_eccentricity,
+    range_beginning_date,
+    range_beginning_time,
+    range_ending_date,
+    range_ending_time,
+    ephemeris_type,
+    parameter_name,
+    attitude_type,
+    maximum_pulses_per_frame,
+    l1a_expected_frames,
+    l1a_actual_frames,
+    product_span,
     NULL
 };
 
@@ -104,7 +140,14 @@ Attribute* g_attribute_table[] =
 //====================//
 
 int32 dim_sizes_frame[] = { SD_UNLIMITED };
+int32 dim_sizes_frame_3[] = { SD_UNLIMITED, 3 };
+int32 dim_sizes_frame_5[] = { SD_UNLIMITED, 5 };
 const char* dim_names_frame[] = { "Telemetry_Frame" };
+const char* dim_names_frame_packet_header[] = { "Telemetry_Frame",
+    "Small_Integer" };
+const char* dim_names_frame_err_msg_hist[] = { "Telemetry_Frame",
+    "Message" };
+const char* dim_names_frame_[] = { "Telemetry_Frame" };
 
 SdsFloat64* frame_time_secs = new SdsFloat64("frame_time_secs", 1,
     dim_sizes_frame, "sec", 1.0, 0.0, dim_names_frame, 5.0E9, 0.0);
@@ -114,13 +157,73 @@ SdsUInt32* orbit_time = new SdsUInt32("orbit_time", 1, dim_sizes_frame,
     "counts", 1.0, 0.0, dim_names_frame, 4294967295, 0);
 SdsFloat32* x_pos = new SdsFloat32("x_pos", 1, dim_sizes_frame, "m", 1.0, 0.0,
     dim_names_frame, 9999999.0, -9999999.0);
+SdsFloat32* y_pos = new SdsFloat32("y_pos", 1, dim_sizes_frame, "m", 1.0, 0.0,
+    dim_names_frame, 9999999.0, -9999999.0);
+SdsFloat32* z_pos = new SdsFloat32("z_pos", 1, dim_sizes_frame, "m", 1.0, 0.0,
+    dim_names_frame, 9999999.0, -9999999.0);
+SdsFloat32* x_vel = new SdsFloat32("x_vel", 1, dim_sizes_frame, "m/s",
+    1.0, 0.0, dim_names_frame, 8000.0, -8000.0);
+SdsFloat32* y_vel = new SdsFloat32("y_vel", 1, dim_sizes_frame, "m/s",
+    1.0, 0.0, dim_names_frame, 8000.0, -8000.0);
+SdsFloat32* z_vel = new SdsFloat32("z_vel", 1, dim_sizes_frame, "m/s",
+    1.0, 0.0, dim_names_frame, 8000.0, -8000.0);
+SdsInt16* roll = new SdsInt16("roll", 1, dim_sizes_frame, "deg", 0.001, 0.0,
+    dim_names_frame, 3.0, -3.0);
+SdsInt16* pitch = new SdsInt16("pitch", 1, dim_sizes_frame, "deg", 0.001, 0.0,
+    dim_names_frame, 3.0, -3.0);
+SdsInt16* yaw = new SdsInt16("yaw", 1, dim_sizes_frame, "deg", 0.001, 0.0,
+    dim_names_frame, 3.0, -3.0);
+SdsUInt16* first_packet_header = new SdsUInt16("first_packet_header", 2,
+    dim_sizes_frame_3, "n/a", 1.0, 0.0, dim_names_frame_packet_header,
+    0xffff, 0x0000);
+SdsUInt16* telemetry_table_id = new SdsUInt16("telemetry_table_id", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 65535, 0);
+SdsUInt8* status_error_flags = new SdsUInt8("status_error_flags", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xff, 0x00);
+SdsUInt8* table_readout_type = new SdsUInt8("table_readout_type", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0x1e, 0x00);
+SdsUInt16* table_readout_offset = new SdsUInt16("table_readout_offset", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
+SdsUInt32* table_readout_data = new SdsUInt32("table_readout_data", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xffffffff, 0x00000000);
+SdsUInt8* operational_mode = new SdsUInt8("operational_mode", 1,
+    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 0xe0, 0x00);
+SdsUInt8* prf_count = new SdsUInt8("prf_count", 1, dim_sizes_frame, "counts",
+    1.0, 0.0, dim_names_frame, 255, 0);
+SdsUInt16* status_change_flags = new SdsUInt16("prf_count", 1, dim_sizes_frame,
+    "n/a", 1.0, 0.0, dim_names_frame, 0xffff, 0x0000);
+SdsUInt16* error_message = new SdsUInt16("error_message", 1, dim_sizes_frame,
+    "n/a", 1.0, 0.0, dim_names_frame, 65535, 0);
+SdsUInt16* error_message_history = new SdsUInt16("error_message_history", 2,
+    dim_sizes_frame_5, "n/a", 1.0, 0.0, dim_names_frame_err_msg_hist,
+    65535, 0);
 
+// xxxxxx
 Sds* g_sds_table[] =
 {
     frame_time_secs,
     instrument_time,
     orbit_time,
     x_pos,
+    y_pos,
+    z_pos,
+    x_vel,
+    y_vel,
+    z_vel,
+    roll,
+    pitch,
+    yaw,
+    first_packet_header,
+    telemetry_table_id,
+    status_error_flags,
+    table_readout_type,
+    table_readout_offset,
+    table_readout_data,
+    operational_mode,
+    prf_count,
+    status_change_flags,
+    error_message,
+    error_message_history,
     NULL
 };
 
@@ -133,7 +236,9 @@ L1AH::L1AH()
     _eqxLongitude(0.0), _hdfInputFileId(0), _hdfOutputFileId(0),
     _sdsInputFileId(0), _sdsOutputFileId(0), _currentRecordIdx(0)
 {
-    _referenceEtime.FromCodeA("2000-01-01");
+    ETime ref;
+    ref.FromCodeA("2005-01-01");
+    _referenceTime = ref.GetSec();
     return;
 }
 
@@ -240,11 +345,9 @@ L1AH::CreateVdatas()
 int
 L1AH::WriteVdatas()
 {
-    double add_seconds = (double)_referenceEtime.GetSec();
-
     // add the reference time to the delta time to get the "real" time
     ETime real_time;
-    real_time.SetTime(frame.time + add_seconds);
+    real_time.SetTime(frame.time + _referenceTime);
 
     // convert to a string
     char string[CODE_B_TIME_LENGTH];
@@ -269,7 +372,7 @@ L1AH::WriteVdatas()
     // seek
     if (_currentRecordIdx > 0)
     {
-        // dumb-ass HDF seek function can't seek to the end
+        // HDF seek function can't seek to the end
         // you are "supposed" to seek to one before the end...
         if (VSseek(vdata_id, _currentRecordIdx - 1) == FAIL)
         {
@@ -354,6 +457,7 @@ L1AH::CreateSDSs()
 //-----------------//
 // L1AH::WriteSDSs //
 //-----------------//
+
 int
 L1AH::WriteSDSs()
 {
@@ -364,8 +468,75 @@ L1AH::WriteSDSs()
     frame_time_secs->SetFromDouble(&(frame.time));
     instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
     orbit_time->SetWithUnsignedInt(&(frame.orbitTicks));
-    x_pos->SetFromFloat(&(frame.gcX));
 
+    // convert km to m
+    frame.gcX *= 1000.0;
+    frame.gcY *= 1000.0;
+    frame.gcZ *= 1000.0;
+    x_pos->SetFromFloat(&(frame.gcX));
+    y_pos->SetFromFloat(&(frame.gcY));
+    z_pos->SetFromFloat(&(frame.gcZ));
+
+    // convert km/s to m/s
+    frame.velX *= 1000.0;
+    frame.velY *= 1000.0;
+    frame.velZ *= 1000.0;
+    x_vel->SetFromFloat(&(frame.velX));
+    y_vel->SetFromFloat(&(frame.velY));
+    z_vel->SetFromFloat(&(frame.velZ));
+
+    // convert radians to degrees
+    float r, p, y;
+    frame.attitude.GetRPY(&r, &p, &y);
+    r *= rtd;
+    p *= rtd;
+    y *= rtd;
+    roll->SetFromFloat(&r);
+    pitch->SetFromFloat(&p);
+    yaw->SetFromFloat(&y);
+
+    // set the packet header to 1 2 3
+    static unsigned short packet_header[3] = { 1, 2, 3 };
+    first_packet_header->SetWithUnsignedShort(packet_header);
+
+    // this value was copied from a SeaWinds data file
+    static unsigned short table_id = 514;
+    telemetry_table_id->SetWithUnsignedShort(&table_id);
+
+    // no errors
+    static unsigned char uchar_zero = 0;
+    status_error_flags->SetWithUnsignedChar(&uchar_zero);
+
+    // this indicates the CDS contents table
+    static unsigned char readout_type = 0x0f;
+    table_readout_type->SetWithUnsignedChar(&readout_type);
+
+    // zero offset
+    static unsigned short offset = 0x0000;
+    table_readout_offset->SetWithUnsignedShort(&offset);
+
+    // zero data
+    static unsigned int data = 0x00000000;
+    table_readout_data->SetWithUnsignedInt(&data);
+
+    // this indicates wind observation mode
+    static unsigned char wom = 0x0e;
+    operational_mode->SetWithUnsignedChar(&wom);
+
+    // the number of pulses per frame
+    static unsigned char pulses = 100;
+    prf_count->SetWithUnsignedChar(&pulses);
+
+    // set the fault detection and protection flags
+    static unsigned short flags = 0x0760;
+    status_change_flags->SetWithUnsignedShort(&flags);
+
+    // error message and history
+    static unsigned short ushort_zero = 0;
+    error_message->SetWithUnsignedShort(&ushort_zero);
+    error_message_history->SetWithUnsignedShort(&ushort_zero);
+
+// xxxxxx
     //-------------------------------------------//
     // determine some information from the frame //
     //-------------------------------------------//
@@ -450,7 +621,8 @@ int
 L1AH::WriteHDFHeader(
     double  period,
     double  inclination,
-    double  sma)
+    double  sma,
+    double  eccentricity)
 {
     //--------------------------------------------//
     // set up all attributes that need setting up //
@@ -478,9 +650,8 @@ L1AH::WriteHDFHeader(
     equator_crossing_longitude->ReplaceContents(buffer);
 
     // eqx date
-    ETime eqx_etime;
-    eqx_etime.SetTime(_eqxTime + _referenceEtime.GetSec());
-    eqx_etime.ToCodeB(buffer);
+    etime.SetTime(_eqxTime + _referenceTime);
+    etime.ToCodeB(buffer);
     buffer[8] = '\0';
     equator_crossing_date->ReplaceContents(buffer);
 
@@ -500,8 +671,39 @@ L1AH::WriteHDFHeader(
     orbit_inclination->ReplaceContents(buffer);
 
     // orbit semi major axis
-    sprintf(buffer, "%d", (int)sma);
+    sprintf(buffer, "%d", (int)(1000.0 * sma));    // km to m
     orbit_semi_major_axis->ReplaceContents(buffer);
+
+    // orbit eccentricity
+    sprintf(buffer, "%.8f", eccentricity);
+    orbit_eccentricity->ReplaceContents(buffer);
+
+    // range beginning date
+    etime.SetTime(_rangeBeginningTime + _referenceTime);
+    etime.ToCodeB(buffer);
+    buffer[8] = '\0';
+    range_beginning_date->ReplaceContents(buffer);
+
+    // range beginning time
+    range_beginning_time->ReplaceContents(buffer + 9);
+
+    // range ending date
+    etime.SetTime(_rangeEndingTime + _referenceTime);
+    etime.ToCodeB(buffer);
+    buffer[8] = '\0';
+    range_ending_date->ReplaceContents(buffer);
+
+    // range ending time
+    range_ending_time->ReplaceContents(buffer + 9);
+
+    // maximum pulses per frame
+    sprintf(buffer, "%d", frame.spotsPerFrame);
+    maximum_pulses_per_frame->ReplaceContents(buffer);
+
+    // l1a expected and actual frames
+    sprintf(buffer, "%d", _currentRecordIdx);
+    l1a_expected_frames->ReplaceContents(buffer);
+    l1a_actual_frames->ReplaceContents(buffer);
 
     //----------------------//
     // write out attributes //

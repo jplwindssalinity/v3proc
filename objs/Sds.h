@@ -83,7 +83,54 @@ protected:
     int32*   _edges;
     void*    _calibratedData;
 
+    int      _frameSize;       // the number of elements per frame
     int      _frameCluster;    // the number of frames per i/o operation
+};
+
+//======================================================================
+// CLASS
+//    SdsUInt8
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for uint8 data
+//======================================================================
+
+class SdsUInt8 : public Sds
+{
+public:
+    SdsUInt8(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, uint8 max, uint8 min);
+
+    int   SetMaxAndMin();
+    void  SetWithUnsignedChar(unsigned char* value);
+
+protected:
+    uint8  _max;
+    uint8  _min;
+};
+
+//======================================================================
+// CLASS
+//    SdsUInt16
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for uint16 data
+//======================================================================
+
+class SdsUInt16 : public Sds
+{
+public:
+    SdsUInt16(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, uint16 max, uint16 min);
+
+    int   SetMaxAndMin();
+    void  SetWithUnsignedShort(unsigned short* value);
+
+protected:
+    uint16  _max;
+    uint16  _min;
 };
 
 //======================================================================
@@ -107,6 +154,29 @@ public:
 protected:
     uint32  _max;
     uint32  _min;
+};
+
+//======================================================================
+// CLASS
+//    SdsInt16
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for int16 data
+//======================================================================
+
+class SdsInt16 : public Sds
+{
+public:
+    SdsInt16(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, int16 max, int16 min);
+
+    int   SetMaxAndMin();
+    void  SetFromFloat(float* value);
+
+protected:
+    int16  _max;
+    int16  _min;
 };
 
 //======================================================================
