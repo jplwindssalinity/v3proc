@@ -71,6 +71,12 @@ static const char rcs_id[] =
 
 #define OPTSTRING  "h"
 
+#define QUOTE      '"'
+
+#define MIN_SAMPLES      100
+#define HISTO_MAX        200
+#define NUMBER_OF_PICKS  20
+
 //--------//
 // MACROS //
 //--------//
@@ -98,11 +104,11 @@ unsigned char  neighbor_count[CT_WIDTH][AT_WIDTH];
 float          dif_ratio[CT_WIDTH][AT_WIDTH];
 float          speed[CT_WIDTH][AT_WIDTH];
 
-unsigned int  first_count_array[FIRST_INDICIES];
-unsigned int  first_good_array[FIRST_INDICIES];
+unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 
-unsigned int filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
-unsigned int filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+unsigned short  filter_count_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
+unsigned short  filter_good_array[NEIGHBOR_INDICIES][DIF_RATIO_INDICIES][SPEED_INDICIES][CTI_INDICIES][PROB_INDICIES];
 
 //--------------//
 // MAIN PROGRAM //
@@ -147,15 +153,15 @@ main(
     }
     else
     {
-        fread(first_count_array, sizeof(unsigned int),
-            FIRST_INDICIES, ifp);
-        fread(first_good_array, sizeof(unsigned int),
-            FIRST_INDICIES, ifp);
-        fread(filter_count_array, sizeof(unsigned int),
+        fread(first_count_array, sizeof(unsigned short),
+            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ifp);
+        fread(first_good_array, sizeof(unsigned short),
+            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ifp);
+        fread(filter_count_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
           ifp);
-        fread(filter_good_array, sizeof(unsigned int),
+        fread(filter_good_array, sizeof(unsigned short),
           NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
           PROB_INDICIES,
           ifp);
@@ -188,34 +194,75 @@ main(
     unsigned long most_samples = 0;
     for (int i = 0; i < FIRST_INDICIES; i++)
     {
-        sample_count += first_count_array[i];
-        if (first_count_array[i] > most_samples)
-            most_samples = first_count_array[i];
+        for (int j = 0; j < CTI_INDICIES; j++)
+        {
+            for (int k = 0; k < SPEED_INDICIES; k++)
+            {
+                sample_count += first_count_array[i][j][k];
+                if (first_count_array[i][j][k] > most_samples)
+                    most_samples = first_count_array[i][j][k];
+            }
+        }
     }
     printf("First Ranked\n");
     printf("  Total : %ld\n", sample_count);
     printf("   Most : %ld\n", most_samples);
 
-    sample_count = 0;
-    most_samples = 0;
-    for (int i = 0; i < NEIGHBOR_INDICIES; i++)
+    char filename[1024];
+    sprintf(filename, "%s.samp", prob_file);
+	FILE* ofp = fopen(filename, "w");
+    if (ofp == NULL)
     {
-      for (int j = 0; j < DIF_RATIO_INDICIES; j++)
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+
+    float thresh_array[3] = { 0.9, 0.99, -1.0 };
+    for (int idx = 0; idx < 3; idx++)
+    {
+      float thresh = thresh_array[idx];
+      unsigned long sample_array[HISTO_MAX];
+      for (int i = 0; i < HISTO_MAX; i++)
+          sample_array[i] = 0;
+      sample_count = 0;
+      most_samples = 0;
+      for (int i = 0; i < NEIGHBOR_INDICIES; i++)
       {
-        for (int k = 0; k < SPEED_INDICIES; k++)
+        for (int j = 0; j < DIF_RATIO_INDICIES; j++)
         {
-          for (int l = 0; l < CTI_INDICIES; l++)
+          for (int k = 0; k < SPEED_INDICIES; k++)
           {
-            for (int m = 0; m < PROB_INDICIES; m++)
+            for (int l = 0; l < CTI_INDICIES; l++)
             {
-              sample_count += filter_count_array[i][j][k][l][m];
-              if (filter_count_array[i][j][k][l][m] > most_samples)
-                most_samples = filter_count_array[i][j][k][l][m];
+              for (int m = 0; m < PROB_INDICIES; m++)
+              {
+                sample_count += filter_count_array[i][j][k][l][m];
+                if (filter_count_array[i][j][k][l][m] > most_samples)
+                  most_samples = filter_count_array[i][j][k][l][m];
+                if (filter_count_array[i][j][k][l][m] < 1)
+                  continue;
+                float prob = (float)filter_good_array[i][j][k][l][m] / 
+                    (float)filter_count_array[i][j][k][l][m];
+                if (prob < thresh)
+                    continue;
+                int idx = filter_count_array[i][j][k][l][m];
+                if (idx >= HISTO_MAX)
+                  idx = HISTO_MAX - 1;
+                sample_array[idx]++;
+              }
             }
           }
         }
       }
+      for (int i = 1; i < HISTO_MAX; i++)
+      {
+          fprintf(ofp, "%d %ld\n", i, sample_array[i]);
+      }
+      fprintf(ofp, "&\n");
     }
+    fclose(ofp);
+
     printf("\n");
     printf("Filter\n");
     printf("  Total : %ld\n", sample_count);
@@ -225,25 +272,156 @@ main(
     // first rank //
     //------------//
 
-    char filename[1024];
-    sprintf(filename, "%s.1st", prob_file);
-	FILE* ofp = fopen(filename, "w");
+    sprintf(filename, "%s.1p", prob_file);
+	ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
         fprintf(stderr, "%s: error opening output file %s\n", command,
             filename);
         exit(1);
     }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / MLE Probability", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "MLE Probability", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
     for (int i = 0; i < FIRST_INDICIES; i++)
     {
-        if (first_count_array[i] == 0)
+        unsigned long total_count = 0;
+        unsigned long good_count = 0;
+        for (int j = 0; j < CTI_INDICIES; j++)
+        {
+            for (int k = 0; k < SPEED_INDICIES; k++)
+            {
+                total_count += first_count_array[i][j][k];
+                good_count += first_good_array[i][j][k];
+            }
+        }
+        float fprob;
+        first_index.IndexToValue(i, &fprob);
+        if (total_count < MIN_SAMPLES)
             continue;
-        float first_prob;
-        first_index.IndexToValue(i, &first_prob);
-        float prob = (float)first_good_array[i] /
-            (float)first_count_array[i];
-        fprintf(ofp, "%g %g %d\n", first_prob, prob,
-            first_count_array[i]);
+        float prob = (float)good_count / (float)total_count;
+        fprintf(ofp, "%g %g %ld\n", fprob, prob, total_count);
+    }
+    fclose(ofp);
+
+    sprintf(filename, "%s.1cti", prob_file);
+	ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / Cross Track Index", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Cross Track Index", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    for (int cti = 0; cti < 2 * CTI_INDICIES; cti++)
+    {
+        int j = cti;
+        if (j > CTI_FOLD_MAX)
+            j = CTI_FOLDER - j;
+        unsigned long total_count = 0;
+        unsigned long good_count = 0;
+        for (int i = 0; i < FIRST_INDICIES; i++)
+        {
+            for (int k = 0; k < SPEED_INDICIES; k++)
+            {
+                total_count += first_count_array[i][j][k];
+                good_count += first_good_array[i][j][k];
+            }
+        }
+/*
+        float cti;
+        cti_index.IndexToValue(use_cti, &cti);
+*/
+        if (total_count < MIN_SAMPLES)
+            continue;
+        float prob = (float)good_count / (float)total_count;
+        fprintf(ofp, "%d %g %ld\n", cti, prob, total_count);
+    }
+    fclose(ofp);
+
+    sprintf(filename, "%s.1spd", prob_file);
+	ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / First Ranked Speed", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "First Ranked Speed (m/s)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    for (int k = 0; k < SPEED_INDICIES; k++)
+    {
+        unsigned long total_count = 0;
+        unsigned long good_count = 0;
+        for (int i = 0; i < FIRST_INDICIES; i++)
+        {
+            for (int j = 0; j < CTI_INDICIES; j++)
+            {
+                total_count += first_count_array[i][j][k];
+                good_count += first_good_array[i][j][k];
+            }
+        }
+        float speed;
+        speed_index.IndexToValue(k, &speed);
+        if (total_count < MIN_SAMPLES)
+            continue;
+        float prob = (float)good_count / (float)total_count;
+        fprintf(ofp, "%g %g %ld\n", speed, prob, total_count);
+    }
+    fclose(ofp);
+
+    //------------------//
+    // first speed cuts //
+    //------------------//
+
+    sprintf(filename, "%s.1spds", prob_file);
+    ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "First Ranked / MLE Probability (by speed)", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "MLE Probability", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    fprintf(ofp, "@ legend on\n");
+    for (int k = 0; k < SPEED_INDICIES; k++)
+    {
+        float speed;
+        speed_index.IndexToValue(k, &speed);
+        fprintf(ofp, "@ legend string %d %c%g m/s%c\n", k, QUOTE, speed,
+            QUOTE);
+        for (int i = 0; i < FIRST_INDICIES; i++)
+        {
+            float first;
+            first_index.IndexToValue(i, &first);
+            unsigned long total_count = 0;
+            unsigned long good_count = 0;
+            for (int j = 0; j < CTI_INDICIES; j++)
+            {
+                total_count += first_count_array[i][j][k];
+                good_count += first_good_array[i][j][k];
+            }
+            if (total_count < MIN_SAMPLES)
+                continue;
+            float prob = (float)good_count / (float)total_count;
+            fprintf(ofp, "%g %g %ld\n", first, prob, total_count);
+        }
+        fprintf(ofp, "&\n");
     }
     fclose(ofp);
 
@@ -259,6 +437,12 @@ main(
             filename);
         exit(1);
     }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "Filter / Neighbors", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "Neighbors", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
     for (int i = 0; i < NEIGHBOR_INDICIES; i++)
     {
       unsigned long total_count = 0;
@@ -277,7 +461,7 @@ main(
           }
         }
       }
-      if (total_count == 0)
+      if (total_count < MIN_SAMPLES)
           continue;
       float neighbors;
       neighbor_index.IndexToValue(i, &neighbors);
@@ -298,6 +482,12 @@ main(
             filename);
         exit(1);
     }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "Filter / Difference Ratio", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "Difference Ratio", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
     for (int j = 0; j < DIF_RATIO_INDICIES; j++)
     {
       unsigned long total_count = 0;
@@ -316,7 +506,7 @@ main(
           }
         }
       }
-      if (total_count == 0)
+      if (total_count < MIN_SAMPLES)
           continue;
       float dif_ratio;
       dif_ratio_index.IndexToValue(j, &dif_ratio);
@@ -337,6 +527,12 @@ main(
             filename);
         exit(1);
     }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "Filter / Speed", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "First Ranked Speed (m/s)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
     for (int k = 0; k < SPEED_INDICIES; k++)
     {
       unsigned long total_count = 0;
@@ -355,7 +551,7 @@ main(
           }
         }
       }
-      if (total_count == 0)
+      if (total_count < MIN_SAMPLES)
           continue;
       float speed;
       speed_index.IndexToValue(k, &speed);
@@ -376,8 +572,17 @@ main(
             filename);
         exit(1);
     }
-    for (int l = 0; l < CTI_INDICIES; l++)
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "Filter / Cross Track Index", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "Cross Track Index", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
+    for (int cti = 0; cti < CTI_INDICIES * 2; cti++)
     {
+      int l = cti;
+      if (l > CTI_FOLD_MAX)
+        l = CTI_FOLDER - l;
       unsigned long total_count = 0;
       unsigned long good_count = 0;
       for (int i = 0; i < NEIGHBOR_INDICIES; i++)
@@ -394,12 +599,14 @@ main(
           }
         }
       }
-      if (total_count == 0)
+      if (total_count < MIN_SAMPLES)
           continue;
+/*
       float cti;
-      cti_index.IndexToValue(l, &cti);
+      cti_index.IndexToValue(use_cti, &cti);
+*/
       float prob = (float)good_count / (float)total_count;
-      fprintf(ofp, "%g %g %ld\n", cti, prob, total_count);
+      fprintf(ofp, "%d %g %ld\n", cti, prob, total_count);
     }
     fclose(ofp);
 
@@ -415,6 +622,12 @@ main(
             filename);
         exit(1);
     }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE,
+        "Filter / MLE Probability", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE,
+        "MLE Probability", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Probability Selected",
+        QUOTE);
     for (int m = 0; m < PROB_INDICIES; m++)
     {
       unsigned long total_count = 0;
@@ -433,7 +646,7 @@ main(
           }
         }
       }
-      if (total_count == 0)
+      if (total_count < MIN_SAMPLES)
           continue;
       float sprob;
       prob_index.IndexToValue(m, &sprob);
@@ -442,35 +655,85 @@ main(
     }
     fclose(ofp);
 
-/*
-    //-----------------//
-    // write prob file //
-    //-----------------//
+    //-----------//
+    // top picks //
+    //-----------//
 
-    FILE* ofp = fopen(output_file, "w");
+    sprintf(filename, "%s.pick", prob_file);
+    ofp = fopen(filename, "w");
     if (ofp == NULL)
     {
-        fprintf(stderr, "%s: error opening prob file %s\n", command,
-            output_file);
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
         exit(1);
     }
-    else
+
+    for (int pick_idx = 0; pick_idx < NUMBER_OF_PICKS; pick_idx++)
     {
-        fwrite(first_count_array, sizeof(unsigned int),
-            FIRST_INDICIES*SPEED_INDICIES, ofp);
-        fwrite(first_good_array, sizeof(unsigned int),
-            FIRST_INDICIES*SPEED_INDICIES, ofp);
-        fwrite(filter_count_array, sizeof(unsigned int),
-          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
-          PROB_INDICIES,
-          ofp);
-        fwrite(filter_good_array, sizeof(unsigned int),
-          NEIGHBOR_INDICIES*DIF_RATIO_INDICIES*SPEED_INDICIES*CTI_INDICIES*
-          PROB_INDICIES,
-          ofp);
-        fclose(ofp);
+      double max_filter_prob = 0.0;
+      int max_i = 0;
+      int max_j = 0;
+      int max_k = 0;
+      int max_l = 0;
+      int max_m = 0;
+      for (int i = 0; i < NEIGHBOR_INDICIES; i++)
+      {
+        for (int j = 0; j < DIF_RATIO_INDICIES; j++)
+        {
+          for (int k = 0; k < SPEED_INDICIES; k++)
+          {
+            for (int l = 0; l < CTI_INDICIES; l++)
+            {
+              for (int m = 0; m < PROB_INDICIES; m++)
+              {
+                if (filter_count_array[i][j][k][l][m] < 1)
+                  continue;
+                double filter_prob =
+                    (double)filter_good_array[i][j][k][l][m] /
+                    (double)filter_count_array[i][j][k][l][m];
+                filter_prob -= sqrt(0.25 /
+                    (double)filter_count_array[i][j][k][l][m]);
+                if (filter_prob > max_filter_prob)
+                {
+                    max_filter_prob = filter_prob;
+                    max_i = i;
+                    max_j = j;
+                    max_k = k;
+                    max_l = l;
+                    max_m = m;
+                }
+              }
+            }
+          }
+        }
+      }
+      float neighbors;
+      neighbor_index.IndexToValue(max_i, &neighbors);
+      float dif_ratio;
+      dif_ratio_index.IndexToValue(max_j, &dif_ratio);
+      float speed;
+      speed_index.IndexToValue(max_k, &speed);
+      int use_cti = max_l;
+      if (use_cti > CTI_FOLD_MAX)
+        use_cti = CTI_FOLDER - use_cti;
+      float cti;
+      cti_index.IndexToValue(use_cti, &cti);
+      float prob;
+      prob_index.IndexToValue(max_m, &prob);
+      fprintf(ofp, "Pick %d\n", pick_idx + 1);
+      fprintf(ofp, "  Neighbors %g\n", neighbors);
+      fprintf(ofp, "  Dif Ratio %g\n", dif_ratio);
+      fprintf(ofp, "      Speed %g\n", speed);
+      fprintf(ofp, "        CTI %g\n", cti);
+      fprintf(ofp, "       Prob %g\n", prob);
+      fprintf(ofp, "  %d / %d -> %g\n",
+          filter_good_array[max_i][max_j][max_k][max_l][max_m],
+          filter_count_array[max_i][max_j][max_k][max_l][max_m],
+          max_filter_prob);
+      fprintf(ofp, "\n");
+      filter_good_array[max_i][max_j][max_k][max_l][max_m] = 0;
     }
-*/
+    fclose(ofp);
 
     return (0);
 }

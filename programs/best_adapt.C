@@ -367,7 +367,7 @@ main(
     //-----------------------------------//
 
     Index first_index, neighbor_index, dif_ratio_index, speed_index,
-        cti_index, prob_index;
+        prob_index;
 
     first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
         FIRST_INDICIES);
@@ -377,7 +377,6 @@ main(
         DIF_RATIO_INDICIES);
     speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
         SPEED_INDICIES);
-    cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE, CTI_INDICIES);
     prob_index.SpecifyCenters(PROB_MIN_VALUE, PROB_MAX_VALUE, PROB_INDICIES);
 
     //----------------------------------//
@@ -386,9 +385,11 @@ main(
 
     for (int cti = 0; cti < CT_WIDTH; cti++)
     {
-        int cti_idx;
-        cti_index.GetNearestIndexClipped(cti, &cti_idx);
-        filter_cti_idx[cti] = (unsigned char)cti_idx;
+        // fold over cti
+        int use_cti = cti;
+        if (use_cti > CTI_FOLD_MAX)
+            use_cti = CTI_FOLDER - use_cti;
+        filter_cti_idx[cti] = (unsigned char)use_cti;
     }
 
     //--------------------//
@@ -514,9 +515,10 @@ main(
             first_index.GetLinearCoefsClipped(first_obj_prob[cti][ati],
                 ff_idx, ff_coef);
 
-            int fc_idx[2];
-            float fc_coef[2];
-            cti_index.GetLinearCoefsClipped(cti, fc_idx, fc_coef);
+            // fold over cti
+            int use_cti = cti;
+            if (use_cti > CTI_FOLD_MAX)
+                use_cti = CTI_FOLDER - use_cti;
 
             int fs_idx[2];
             float fs_coef[2];
@@ -529,21 +531,18 @@ main(
             {
                 int ff_i = ff_idx[i];
                 float ff_c = ff_coef[i];
-                for (int j = 0; j < 2; j++)
-                {
-                    int fc_i = fc_idx[j];
-                    float fc_c = fc_coef[j];
-                    for (int k = 0; k < 2; k++)
-                    {
-                        int fs_i = fs_idx[k];
-                        float fs_c = fs_coef[k];
 
-                        double factor = ff_c * fc_c * fs_c;
-                        good_sum += factor *
-                            first_good_array[ff_i][fc_i][fs_i];
-                        total_sum += factor *
-                            first_count_array[ff_i][fc_i][fs_i];
-                    }
+                // j, for cti, is skipped
+                for (int k = 0; k < 2; k++)
+                {
+                    int fs_i = fs_idx[k];
+                    float fs_c = fs_coef[k];
+
+                    double factor = ff_c * fs_c;
+                    good_sum += factor *
+                        first_good_array[ff_i][use_cti][fs_i];
+                    total_sum += factor *
+                        first_count_array[ff_i][use_cti][fs_i];
                 }
             }
             if (total_sum == 0.0)
@@ -1216,6 +1215,26 @@ main(
     //---------------------//
 
     swath->MedianFilter(MEDIAN_FILTER_WINDOW_SIZE, 200, 0, 0, 0);
+
+    // compare to original
+    unsigned long comp_total_count = 0;
+    unsigned long match_count = 0;
+    for (int ati = 0; ati < AT_WIDTH; ati++)
+    {
+      for (int cti = 0; cti < CT_WIDTH; cti++)
+      {
+        WVC* wvc = swath->GetWVC(cti, ati);
+        if (wvc == NULL)
+          continue;
+        if (wvc->selected == NULL)
+          continue;
+        if (wvc->selected == original_selected[cti][ati])
+          match_count++;
+        comp_total_count++;
+      }
+    }
+    printf("  Post Median Filter Match = %.2f %%\n",
+        100.0 * (float)match_count / (float)comp_total_count);
 
     //--------//
     // output //

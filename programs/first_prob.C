@@ -130,8 +130,8 @@ char             rain_contaminated[CT_WIDTH][AT_WIDTH];
 float            first_obj_prob[CT_WIDTH][AT_WIDTH];
 float            first_obj_speed[CT_WIDTH][AT_WIDTH];
 
-unsigned short  first_count_array[FIRST_INDICIES][SPEED_INDICIES];
-unsigned short  first_good_array[FIRST_INDICIES][SPEED_INDICIES];
+unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 
 int opt_hdf = 0;
 
@@ -198,9 +198,11 @@ main(
     // initialize some index calculators //
     //-----------------------------------//
 
-    Index first_index, speed_index;
+    Index first_index, cti_index, speed_index;
     first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
         FIRST_INDICIES);
+    cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE,
+        CTI_INDICIES);
     speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
         SPEED_INDICIES);
 
@@ -225,7 +227,7 @@ main(
             {
                 fprintf(stderr, "%s: error opening HDF L2B file %s\n", command,
                     l2b_input_file);
-                exit(1);
+                continue;
             }
         }
         else
@@ -234,20 +236,20 @@ main(
             {
                 fprintf(stderr, "%s: error opening L2B file %s\n", command,
                     l2b_input_file);
-                exit(1);
+                continue;
             }
             if (! l2b.ReadHeader())
             {
                 fprintf(stderr, "%s: error reading L2B header from file %s\n",
                     command, l2b_input_file);
-                exit(1);
+                continue;
             }
             if (! l2b.ReadDataRec())
             {
                 fprintf(stderr,
                     "%s: error reading L2B data record from file %s\n",
                     command, l2b_input_file);
-                exit(1);
+                continue;
             }
         }
 
@@ -356,35 +358,44 @@ main(
                 if (first_obj_prob[cti][ati] > FIRST_MIN_VALUE &&
                     ! rain_contaminated[cti][ati])
                 {
-                    int fidx,sidx;
+                    int fidx, cidx, sidx;
                     first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
                        &fidx);
+
+                    int use_cti = cti;
+                    if (use_cti > CTI_FOLD_MAX)
+                        use_cti = CTI_FOLDER - use_cti;
+                    cti_index.GetNearestIndexClipped(use_cti, &cidx);
+
                     speed_index.GetNearestIndexClipped(
                        first_obj_speed[cti][ati], &sidx);
 
                     // scale if necessary
-                    if (first_count_array[fidx][sidx] >= MAX_SHORT)
+                    if (first_count_array[fidx][cidx][sidx] >= MAX_SHORT)
                     {
-printf("chopping %d %d\n", first_good_array[fidx][sidx],
-    first_count_array[fidx][sidx]);
+                        printf("chopping %d %d\n",
+                            first_good_array[fidx][cidx][sidx],
+                            first_count_array[fidx][cidx][sidx]);
                         double new_count =
-                          (double)first_count_array[fidx][sidx] * 15.0 / 16.0;
+                          (double)first_count_array[fidx][cidx][sidx] * 15.0 /
+                          16.0;
                         double new_good =
-                          (double)first_good_array[fidx][sidx] * 15.0 / 16.0;
-                        first_count_array[fidx][sidx] =
+                          (double)first_good_array[fidx][cidx][sidx] * 15.0 /
+                          16.0;
+                        first_count_array[fidx][cidx][sidx] =
                           (unsigned short)(new_count + 0.5);
-                        first_good_array[fidx][sidx] =
+                        first_good_array[fidx][cidx][sidx] =
                           (unsigned short)(new_good + 0.5);
-                        if (first_good_array[fidx][sidx] >=
-                            first_count_array[fidx][sidx])
+                        if (first_good_array[fidx][cidx][sidx] >=
+                            first_count_array[fidx][cidx][sidx])
                         {
-                          first_good_array[fidx][sidx] =
-                            first_count_array[fidx][sidx];
+                          first_good_array[fidx][cidx][sidx] =
+                            first_count_array[fidx][cidx][sidx];
                         }
                     }
                     if (wvp1 == original_selected[cti][ati])
-                        first_good_array[fidx][sidx]++;
-                    first_count_array[fidx][sidx]++;
+                        first_good_array[fidx][cidx][sidx]++;
+                    first_count_array[fidx][cidx][sidx]++;
                 }
             }
         }
@@ -410,9 +421,9 @@ printf("chopping %d %d\n", first_good_array[fidx][sidx],
     else
     {
         fwrite(first_count_array, sizeof(unsigned short),
-            FIRST_INDICIES*SPEED_INDICIES, ofp);
+            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ofp);
         fwrite(first_good_array, sizeof(unsigned short),
-            FIRST_INDICIES*SPEED_INDICIES, ofp);
+            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ofp);
         fclose(ofp);
     }
 
