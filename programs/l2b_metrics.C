@@ -8,7 +8,7 @@
 //		l20_metrics
 //
 // SYNOPSIS
-//		l20_metrics <l20_file> <truth> [ output_base ]
+//		l20_metrics <l20_file> <truth> <truth_type> [ output_base ]
 //
 // DESCRIPTION
 //		Generates output files containing wind retrieval metrics
@@ -24,10 +24,11 @@
 //		The following operand is supported:
 //		<l20_file>		The level 2.0 file to read.
 //		<truth>			The truth wind field.
+//		<truth_type>	The type of the truth wind field.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l20_metrics l20.dat vap.wf metrics
+//			% l20_metrics l20.dat ecmwf.wf ecmwf metrics
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -62,6 +63,7 @@ static const char rcs_id[] =
 #include "List.h"
 #include "List.C"
 #include "Constants.h"
+#include "Wind.h"
 
 //-----------//
 // TEMPLATES //
@@ -99,7 +101,8 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l20_file>", "<truth>", "[ output_base ]", 0};
+const char* usage_array[] = { "<l20_file>", "<truth>", "<truth_type>",
+	"[ output_base ]", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -115,17 +118,18 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc < 3 || argc > 4)
+	if (argc < 4 || argc > 5)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* l20_file = argv[clidx++];
 	const char* truth_file = argv[clidx++];
+	const char* truth_type = argv[clidx++];
 	const char* output_base;
-	if (argc == 4)
+	if (argc == 5)
 		output_base = argv[clidx++];
 	else
-		output_base = l20_file;
+		output_base = no_path(l20_file);
 
 	//------------------------//
 	// read in level 2.0 file //
@@ -158,7 +162,7 @@ main(
 	//----------------------------//
 
 	WindField truth;
-	truth.ReadVap(truth_file);
+	truth.ReadType(truth_file, truth_type);
 
 	//---------------//
 	// create arrays //
