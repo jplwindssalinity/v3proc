@@ -8,24 +8,24 @@
 //		sim
 //
 // SYNOPSIS
-//		sim <sim_control_file>
+//		sim <sim_config_file>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b instrument based on the parameters
-//		in the simulation control file.
+//		in the simulation configuration file.
 //
 // OPTIONS
 //		None.
 //
 // OPERANDS
 //		The following operand is supported:
-//		<sim_control_file>		The sim_control_file needed listing
+//		<sim_config_file>		The sim_config_file needed listing
 //								all input parameters, input files, and
 //								output files.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% sim sim.ctrl.1
+//			% sim sws1b.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -56,11 +56,14 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "Misc.h"
 #include "ConfigList.h"
+#include "InstrumentSim.h"
+/*
+#include <string.h>
 #include "SimControl.h"
 #include "SimConfig.h"
+*/
 
 //-----------//
 // CONSTANTS //
@@ -86,7 +89,7 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_control_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -106,30 +109,30 @@ main(
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
-	const char* sim_control_file = argv[clidx++];
+	const char* config_file = argv[clidx++];
 
-	//---------------------------------//
-	// read in simulation control file //
-	//---------------------------------//
+	//--------------------------------//
+	// read in simulation config file //
+	//--------------------------------//
 
-	ConfigList sim_control_list;
-	sim_control_list.LogErrors();
-	if (! sim_control_list.Read(sim_control_file))
+	ConfigList config_list;
+	config_list.LogErrors();
+	if (! config_list.Read(config_file))
 	{
-		fprintf(stderr, "%s: error reading sim control file %s\n",
-			command, sim_control_file);
+		fprintf(stderr, "%s: error reading sim config file %s\n",
+			command, config_file);
 		exit(1);
 	}
 
-	//--------------------------------------------------//
-	// create a simulation control object               //
-	// use the simulation control list to initialize it //
-	//--------------------------------------------------//
+	//-----------------------------------------------//
+	// create an instrument simulator and initialize //
+	//-----------------------------------------------//
 
-	SimControl sim_control;
-	if (! ConfigSimControl(&sim_control, &sim_control_list))
+	InstrumentSim sim;
+	if (! sim.InitByConfig(&config_list))
 	{
-		fprintf(stderr, "%s: error configuring simulation\n", command);
+		fprintf(stderr, "%s: error configuring instrument simulation\n",
+			command);
 		exit(1);
 	}
 
@@ -137,14 +140,14 @@ main(
 	// cycle through events //
 	//----------------------//
 
-	SimEvent sim_event;
-	while (sim_event.time < 12120.0)
+	double time = 0.0;
+	while (time < 12120.0)
 	{
-		sim_event = sim_control.NextEvent(sim_event.time);
-		OrbitState os = sim_control.orbit.GetOrbitState((double)sim_event.time);
-		printf("%g %g %g %g %g %g %g\n", sim_event.time, os.gc_vector[0],
-			os.gc_vector[1], os.gc_vector[2], os.velocity_vector[0],
-			os.velocity_vector[1], os.velocity_vector[2]);
+		sim.SimulateNextEvent(&time);
+		Orbit *os = &(sim.instrument.orbit);
+		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector[0],
+			os->gc_vector[1], os->gc_vector[2], os->velocity_vector[0],
+			os->velocity_vector[1], os->velocity_vector[2]);
 	}
 
 	return (0);
