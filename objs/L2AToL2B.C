@@ -315,7 +315,7 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
 
 #define ONE_STAGE_WITHOUT_RANGES 1
 #define S3_WINDOW_SIZE  7
-
+#define S3_NUDGE 0
 //-----------------//
 // L2AToL2B::Flush //
 //-----------------//
@@ -346,7 +346,10 @@ L2AToL2B::Flush(
 	}
 	else if (useNudging)
 	{
-	  if (useNudgeThreshold) 
+          if (S3_NUDGE)
+	    l2b->frame.swath.S3Nudge();
+
+	  else if (useNudgeThreshold) 
 	    l2b->frame.swath.ThresNudge(maxRankForNudging,
 					nudgeThresholds);
 	  else 
