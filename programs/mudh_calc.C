@@ -252,6 +252,15 @@ main(
         exit(1);
     }
 
+    char* leap_second_table_string =
+        ea_config_list.Get(LEAP_SECOND_TABLE_KEYWORD);
+    if (Itime::CreateLeapSecTable(leap_second_table_string) == 0)
+    {
+        fprintf(stderr, "%s: error creating leap second table %s\n",
+            command, leap_second_table_string);
+        exit(1);
+    }
+
     //------------------//
     // set the l2a file //
     //------------------//
