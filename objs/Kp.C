@@ -14,9 +14,22 @@ static const char rcs_id_kp_c[] =
 //====//
 
 Kp::Kp()
+  : kpc2Constant(0.0), kpm2Constant(0.0), kpri2Constant(0.0), kprs2Constant(0.0), useConstantValues(0)
 {
 	return;
 }
+
+Kp::Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val)
+{
+  useConstantValues=1;
+  kpc2Constant=kpc_val*kpc_val;
+  kpm2Constant=kpm_val*kpm_val;
+  kpri2Constant=kpri_val*kpri_val;
+  kprs2Constant=kprs_val*kprs_val;
+  return;
+}
+
+
 
 Kp::~Kp()
 {
@@ -33,6 +46,15 @@ Kp::GetKpc2(
 	double		sigma_0,
 	double*		kpc2)
 {
+
+        //----------------------------//
+        // Constant Value case        //
+        //----------------------------//
+        if(useConstantValues){
+	  *kpc2=kpc2Constant;
+          return(1);
+	}
+
 	//----------------------------//
 	// check for division by zero //
 	//----------------------------//
@@ -68,6 +90,14 @@ Kp::GetKpm2(
 	float		speed,
 	double*		kpm2)
 {
+        //----------------------------//
+        // Constant Value case        //
+        //----------------------------//
+        if(useConstantValues){
+	  *kpm2=kpm2Constant;
+          return(1);
+	}
+
 	double kpm_value;
 	if (! kpm.GetKpm(pol_idx, speed, &kpm_value))
 		return(0);
@@ -84,6 +114,14 @@ int
 Kp::GetKpri2(
 	double*		kpri2)
 {
+        //----------------------------//
+        // Constant Value case        //
+        //----------------------------//
+        if(useConstantValues){
+	  *kpri2=kpri2Constant;
+          return(1);
+	}
+
 	if (! kpri.GetKpri2(kpri2))
 		return(0);
 
@@ -99,6 +137,14 @@ Kp::GetKprs2(
 	Meas* meas,
 	double*		kprs2)
 {
+        //----------------------------//
+        // Constant Value case        //
+        //----------------------------//
+        if(useConstantValues){
+	  *kprs2=kprs2Constant;
+          return(1);
+	}
+
 	if(kprs.Empty())
 	{
 		*kprs2=0.005;
@@ -150,6 +196,14 @@ Kp::GetVpc(
 	double		sigma_0,
 	double*		vpc)
 {
+        //----------------------------//
+        // Constant Value case        //
+        //----------------------------//
+        if(useConstantValues){
+	  *vpc=kpc2Constant*sigma_0*sigma_0;
+          return(1);
+	}
+
 	//--------------------------------//
 	// calculate sigma-0 coefficients //
 	//--------------------------------//

@@ -36,6 +36,7 @@ public:
 	//--------------//
 
 	Kp();
+        Kp(float kpc_val, float kpm_val, float kpri_val, float kprs_val);
 	~Kp();
 
 	//--------------//
@@ -64,6 +65,13 @@ public:
 	Kpm		kpm;
 	Kpri	kpri;
 	Kprs	kprs;
+        float   kpc2Constant;
+        float   kpm2Constant;
+        float   kpri2Constant;
+        float   kprs2Constant;
+	int useConstantValues;
 };
 
 #endif
+
+
