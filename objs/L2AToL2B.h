@@ -39,7 +39,7 @@ public:
     //------//
 
     enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, H3, S1, S2, 
-				PEAK_SPLITTING };
+				PEAK_SPLITTING, CHEAT };
 
 	//--------------//
 	// construction //
@@ -61,6 +61,12 @@ public:
 	int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
 	int		Flush(L2B* l2b);
 
+        //------------------------------------------//
+        // Routine for outputting the Nudge Field   //
+        // wind vector                              //
+        //------------------------------------------//
+	
+	int             Cheat(MeasList* meas_list, WVC* wvc);
 	//-----------//
 	// debugging //
 	//-----------//

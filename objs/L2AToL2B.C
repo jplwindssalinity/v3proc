@@ -81,6 +81,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = PEAK_SPLITTING;
         return(1);
     }
+    else if (strcasecmp(wr_method, "CHEAT") == 0)
+    {
+        wrMethod = CHEAT;
+        return(1);
+    }
     else
         return(0);
 }
@@ -211,14 +216,19 @@ L2AToL2B::ConvertAndWrite(
                 return(11);
             }
             break;
+        case CHEAT:
+	  if(!Cheat(meas_list,wvc)){
+	    return(12);
+	  }
+	  break;
         default:
-            return(12);
+            return(13);
     }
 
 	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
-		return(13);
+		return(14);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
@@ -245,6 +255,22 @@ L2AToL2B::ConvertAndWrite(
 		return(0);
 
 	return(1);
+}
+//-----------------//
+// L2AToL2B::Cheat //
+//-----------------//
+int
+L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
+{
+  wvc->lonLat=meas_list->AverageLonLat();
+  WindVectorPlus* wvp = new WindVectorPlus;
+  if(! nudgeField.InterpolatedWindVector(wvc->lonLat,wvp)){
+    delete wvp;
+    return(0);
+  }
+  wvp->obj=0;
+  wvc->ambiguities.Append(wvp);
+  return(1);
 }
 
 //-----------------//
