@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2000, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -9,8 +9,8 @@
 //
 // SYNOPSIS
 //    get_att [ -it ] [ -y yaw ] [ -f type:windfield ]
-//      [ -s start:end:step ] <sim_config_file> <output_base>
-//      <echo_file...>
+//      [ -s start:end:step ] [ -x xtol ] <sim_config_file>
+//      <output_base> <echo_file...>
 //
 // DESCRIPTION
 //    Reads echo files and estimates the roll, pitch, and yaw
@@ -25,6 +25,7 @@
 //    [ -s start:end:step ]  The range of orbit steps to calculate.  The
 //                             end is really end+1. The step will combine
 //                             orbit steps.
+//    [ -x xtol ]            Set the tolerance on the downhill simplex
 //
 // OPERANDS
 //    The following operands are supported:
@@ -100,7 +101,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "f:is:ty:"
+#define OPTSTRING    "f:is:tx:y:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -179,6 +180,7 @@ double     g_fixed_yaw = 0.0;
 int        g_opt_topo = 0;
 Topo       g_topo;
 Stable     g_stable;
+double     g_xtol = XTOL * dtr;
 
 extern int g_max_downhill_simplex_passes;
 
@@ -234,6 +236,9 @@ main(
             break;
         case 't':
             g_opt_topo = 1;
+            break;
+        case 'x':
+            g_xtol = atof(optarg) * dtr;
             break;
         case 'y':
             g_opt_fix_yaw = 1;
@@ -658,7 +663,7 @@ process_orbit_step(
         att[2] = g_fixed_yaw;
     else
         att[2] = 0.0;    // yaw
-    ds_optimize(spacecraft, qscat, fbb_table, att, LAMBDA * dtr, XTOL * dtr);
+    ds_optimize(spacecraft, qscat, fbb_table, att, LAMBDA * dtr, g_xtol);
 
     //---------------------------//
     // generate a knowledge plot //
