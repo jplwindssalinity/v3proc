@@ -364,7 +364,7 @@ XTable::FindSliceNum(float freq){
   fr-=abs_min_freq;
   sn=0;
 
-  if(freq < numGuardSlicesEachSide*guardSliceBandwidth){
+  if(fr < numGuardSlicesEachSide*guardSliceBandwidth){
     return((int)(fr/guardSliceBandwidth));
   }
 
