@@ -345,10 +345,11 @@ L2AH::GetWVC(
         new_meas->C = _kpGamma[i];
 
         // hack fore/aft info into scanAngle
+        // this should allow any simple fore/aft detector to work
         if (_sigma0ModeFlag[i] & 0x0008)
             new_meas->scanAngle = 0.0;    // fore
         else
-            new_meas->scanAngle = 1.0;    // aft
+            new_meas->scanAngle = 3.0;    // aft (approximately 171 deg)
 
         //------------------------//
         // append the measurement //
