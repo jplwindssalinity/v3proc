@@ -181,6 +181,7 @@ public:
     int              SortByObj();
     int              SortByDir();
     WindVectorPlus*  GetNearestToDirection(float dir, int max_rank = 0);
+    WindVectorPlus*  GetNearestRangeToDirection(float dir);
 
     //-------------//
     // GS routines //
@@ -393,6 +394,7 @@ public:
     int    InitRandom();
     int    GetNudgeVectors(WindField* nudge_field);
     int    Nudge(int min_rank);
+    int    S3Nudge();
     int    ThresNudge(int min_rank, float thres[2]);
     int    LoResNudge(WindVectorField* nudge_field, int min_rank);
     int    SmartNudge(WindField* nudge_field);

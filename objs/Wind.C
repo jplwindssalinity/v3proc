@@ -796,6 +796,38 @@ WVC::GetNearestToDirection(
     return(nearest);
 }
 
+
+//---------------------------------//
+// WVC::GetNearestRangeToDirection //
+//---------------------------------//
+// Returns the nearest ambiguity which is included in the S3 probability
+// threshold, other ambiguities those which sum to less than 1-threshold, and
+// thus have 0 width are excluded
+WindVectorPlus*
+WVC::GetNearestRangeToDirection(
+    float  dir)
+{
+    WindVectorPlus* nearest = NULL;
+    float min_dif = two_pi;
+
+    AngleInterval* range=directionRanges.GetHead();
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (range->left!=range->right)
+        {
+	  float dif = ANGDIF(wvp->dir, dir);
+	  if (dif < min_dif)
+	    {
+            min_dif = dif;
+            nearest = wvp;
+	    }
+	}
+	range=directionRanges.GetNext();
+    }
+    return(nearest);
+}
+
 //-------------------//
 // WVC::FreeContents //
 //-------------------//
@@ -2953,6 +2985,32 @@ WindSwath::Nudge(
                 continue;
 
             wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, max_rank);
+            count++;
+        }
+    }
+    return(count);
+}
+
+//------------------//
+// WindSwath::S3Nudge //
+//------------------//
+
+int
+WindSwath::S3Nudge()
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            if (wvc->nudgeWV==NULL)
+                continue;
+
+            wvc->selected = wvc->GetNearestRangeToDirection(wvc->nudgeWV->dir);
             count++;
         }
     }
