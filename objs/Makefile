@@ -28,6 +28,7 @@ OBJS = \
 	Attitude.o \
 	BaseFile.o \
 	Beam.o \
+	CheckFrame.o \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
@@ -145,6 +146,7 @@ Attitude.o: Attitude.C Attitude.h
 BaseFile.o: BaseFile.C BaseFile.h
 Beam.o: Beam.C Beam.h Array.h Constants.h Attitude.h CoordinateSwitch.h Tracking.h Matrix3.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
+CheckFrame.o: CheckFrame.C CheckFrame.h EarthPosition.h Matrix3.h Attitude.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h InstrumentSim.h InstrumentSimAccurate.h SpacecraftSim.h XTable.h Misc.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Constants.h Distributions.h Tracking.h Kpm.h EarthField.h Kp.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h BaseFile.h L00Frame.h L1AFrame.h Ephemeris.h L1BFrame.h L2AFrame.h L2BFrame.h Index.h LonLat.h Kpr.h List.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h InstConsts.h PiscTable.h Matrix3.h BufferedList.h EarthPosition.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
