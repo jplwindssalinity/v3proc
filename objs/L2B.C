@@ -15,6 +15,7 @@ static const char rcs_id_l2b_c[] =
 //=====//
 
 L2B::L2B()
+  :_status(OK)
 {
 	return;
 }
@@ -35,3 +36,8 @@ L2B::WriteVctr(
 {
 	return(frame.swath.WriteVctr(filename, rank));
 }
+
+
+
+
+
