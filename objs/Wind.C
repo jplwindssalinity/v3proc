@@ -1648,14 +1648,13 @@ WindSwath::RmsSpdErrVsCti(
 		// calculate the speed bias //
 		//--------------------------//
 
-		*(spd_bias_array + cti) /= (float)*(count_array + cti); 
+		*(spd_bias_array + cti) /= (float)*(count_array + cti);
 
-		//-------------------------//
-		// calculate the RMS error //
-		//-------------------------//
+		//----------------------------------//
+		// calculate the mean sqaured error //
+		//----------------------------------//
 
 		*(rms_spd_err_array + cti) /= (float)*(count_array + cti);
-		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
 
 		//--------------------------//
 		// second pass calculations //
@@ -1675,9 +1674,15 @@ WindSwath::RmsSpdErrVsCti(
 				continue;
 
 			float spd_err = wvc->selected->spd - true_wv.spd;
-			float err_err = spd_err - *(spd_bias_array + cti);
+			float err_err = spd_err * spd_err - *(rms_spd_err_array + cti);
 			*(std_err_array + cti) += (err_err * err_err);
 		}
+
+		//-----------//
+		// RMS error //
+		//-----------//
+
+		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
 
 		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
 		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
@@ -1733,18 +1738,20 @@ WindSwath::RmsDirErrVsCti(
 			(*(count_array + cti))++;
 		}
 
+		if (*(count_array + cti) == 0)
+			continue;
+
 		//------------------------------//
 		// calculate the direction bias //
 		//------------------------------//
 
-		*(dir_bias_array + cti) /= (float)*(count_array + cti); 
+		*(dir_bias_array + cti) /= (float)*(count_array + cti);
 
-		//-------------------------//
-		// calculate the RMS error //
-		//-------------------------//
+		//----------------------------------//
+		// calculate the mean sqaured error //
+		//----------------------------------//
 
 		*(rms_dir_err_array + cti) /= (float)*(count_array + cti);
-		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
 
 		//--------------------------//
 		// second pass calculations //
@@ -1766,9 +1773,15 @@ WindSwath::RmsDirErrVsCti(
 			float near_angle =
 				wrap_angle_near(wvc->selected->dir, true_wv.dir);
 			float dir_err = near_angle - true_wv.dir;
-			float err_err = dir_err - *(dir_bias_array + cti);
+			float err_err = dir_err * dir_err - *(rms_dir_err_array + cti);
 			*(std_err_array + cti) += (err_err * err_err);
 		}
+
+		//-----------//
+		// RMS error //
+		//-----------//
+
+		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
 
 		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
 		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
