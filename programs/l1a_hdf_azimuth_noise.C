@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 2002, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 2002-2003, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -323,6 +323,24 @@ main(
 
             int loopback_index = true_cal_pulse_pos - 1;
             int load_index = true_cal_pulse_pos;
+
+            //------------------//
+            // check for zeroes //
+            //------------------//
+
+            int zero_flag = 0;
+            for (int pulse_idx = 0; pulse_idx < 100; pulse_idx++) {
+                if (noise_dn[pulse_idx] == 0) {
+                    zero_flag = 1;
+                    break;
+                }
+            }
+            if (zero_flag) {
+                fprintf(stderr,
+                    "%s: zero noise power in frame %d. Skipping.\n", command,
+                    frame_idx);
+                continue;
+            }
 
             //----------------//
             // for each pulse //
