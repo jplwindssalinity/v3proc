@@ -1057,11 +1057,91 @@ GMF::GSRetrieveWinds(
 	WVC*		wvc)
 {
 
+	double s0[14] = {0.02157744,
+    0.011324,
+    0.02021976,
+    0.02306747,
+    0.02424343,
+    0.03130476,
+    0.0202901,
+    0.01193988,
+    0.01422329,
+            0.01041866,
+            0.01937416,
+            0.009054492,
+            0.01030949,
+            0.002940533};
+	double inc[14] = {54.74,
+    54.31,
+    54.2075,
+    53.88,
+    53.88667,
+    53.785,
+    53.79,
+    53.69,
+    53.77,
+            53.88,
+            53.98999,
+            54.19,
+            54.4975,
+            54.7};
+double azi[14] = {37.7,
+    40.31,
+    42.0925,
+    42.94,
+    44.73,
+    46.545,
+    47.37,
+    49.2,
+    70.33,
+            71.19,
+            73.13999,
+            74.0,
+            76.82,
+            79.69};
+
+	Meas* meas = meas_list->GetHead();
+	for (int i=0; i < 14; i++)
+	{
+		meas->value = s0[i];
+		meas->incidenceAngle = dtr*inc[i];
+		meas->eastAzimuth = dtr*azi[i];
+		if (inc[i] > 50.0)
+		{
+			meas->pol = V_POL;
+			meas->beamIdx = 2;
+		}
+		else
+		{
+			meas->pol = H_POL;
+			meas->beamIdx = 1;
+		}
+		meas = meas_list->GetNext();
+	}
+	while ((meas = meas_list->RemoveCurrent()) != NULL)
+		delete meas;
+
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
 //
 
 	Calculate_Init_Wind_Solutions(meas_list,kp,wvc);
+	WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+	wvp = wvc->ambiguities.GetNext();
+	wvp->spd = 12.13;
+	for (wvp=wvc->ambiguities.GetHead(); wvp;
+		 wvp = wvc->ambiguities.GetNext())
+	{
+		printf("init obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
+	}
+	FILE* fptr = fopen("objfcn.dat","w");
+	if (fptr == NULL) exit(-1);
+	for (float speed=6.0; speed <= 14.0; speed += 0.1)
+	for (float dir=190.0; dir <= 210.0; dir += 0.1)
+	{
+		float obj =_ObjectiveFunction(meas_list,speed,dtr*dir,kp);
+		fprintf(fptr,"%g %g %g\n",obj,speed,dir);
+	}
 
 //
 //  Step 2:  Iterate to find an optimized set of wind solutions.
@@ -1086,7 +1166,7 @@ GMF::GSRetrieveWinds(
 
 	if (wvc->ambiguities.NodeCount() > 4)
 	{
-		WindVectorPlus* wvp = NULL;
+		wvp = NULL;
 		wvc->ambiguities.GotoHead();
 		for (int i=1; i <= 4; i++)
 		{
@@ -1099,6 +1179,13 @@ GMF::GSRetrieveWinds(
 			delete(wvp);
 		}
 	}
+
+	for (wvp=wvc->ambiguities.GetHead(); wvp;
+		 wvp = wvc->ambiguities.GetNext())
+	{
+		printf("final obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
+	}
+	exit(0);
 
 	return(1);
 }
@@ -1148,6 +1235,13 @@ GMF::Calculate_Init_Wind_Solutions(
       float      objective_buffer [MAX_DIR_SAMPLES+1] ;
       int   dir_mle_maxima [MAX_DIR_SAMPLES+1];
 
+	for (i=0; i <= MAX_DIR_SAMPLES+1; i++)
+	{
+		speed_buffer[i] = 0.0;
+		objective_buffer[i] = 0.0;
+		dir_mle_maxima[i] = 0;
+	}
+
       center_speed = (int)(wind_start_speed);
 
       if (center_speed < (lower_speed_bound + 2))
@@ -1178,9 +1272,10 @@ GMF::Calculate_Init_Wind_Solutions(
          minus_speed  =  center_speed -  wind_speed_intv_init;
          plus_speed   =  center_speed +  wind_speed_intv_init; 
 
-		minus_objective = _ObjectiveFunction(meas_list,minus_speed,angle,kp);
-		center_objective = _ObjectiveFunction(meas_list,center_speed,angle,kp);
-		plus_objective = _ObjectiveFunction(meas_list,plus_speed,angle,kp);
+		minus_objective=_ObjectiveFunction(meas_list,minus_speed,dtr*angle,kp);
+		center_objective=_ObjectiveFunction(meas_list,center_speed,
+			dtr*angle,kp);
+		plus_objective=_ObjectiveFunction(meas_list,plus_speed,dtr*angle,kp);
 
 //
 //   Move the triplet in the speed dimension until center_objective
@@ -1229,7 +1324,7 @@ GMF::Calculate_Init_Wind_Solutions(
                if (good_speed)
 				{
 					minus_objective = _ObjectiveFunction(meas_list,
-										minus_speed,angle,kp);
+										minus_speed,dtr*angle,kp);
 				}
 			}
 
@@ -1266,7 +1361,7 @@ GMF::Calculate_Init_Wind_Solutions(
                if   (good_speed)
 				{
 					plus_objective = _ObjectiveFunction(meas_list,
-										plus_speed,angle,kp);
+										plus_speed,dtr*angle,kp);
 				}
 			}
 		}	// while loop
@@ -1395,8 +1490,9 @@ GMF::Calculate_Init_Wind_Solutions(
 		if (! wvp)
 			return(0);
 		wvp->spd = speed_buffer [jj];
-		wvp->dir = dtr * dir_spacing * (float)(jj - 1) - dir_spacing;
+		wvp->dir = dtr * (dir_spacing * (float)(jj - 1) - dir_spacing);
 		wvp->obj = objective_buffer [jj];
+		printf("init: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
 		if (! wvc->ambiguities.Append(wvp))
 		{
 			delete wvp;
@@ -1519,7 +1615,7 @@ GMF::Optimize_Wind_Solutions(
                if (i_dir == 0  ||  i_spd == 0)
 				{
 					current_objective[i][j] = _ObjectiveFunction(meas_list,
-										speed,direction,kp);
+										speed,dtr*direction,kp);
 
 					if (current_objective [i][j] > maximum_objective)
             		{ 
@@ -1564,7 +1660,7 @@ GMF::Optimize_Wind_Solutions(
 							wind_dir_intv_opti;
 
 						current_objective[i][j] = _ObjectiveFunction(meas_list,
-											speed,direction,kp);
+											speed,dtr*direction,kp);
 
                    		if (current_objective [i][j] > maximum_objective)
 						{             
@@ -1635,7 +1731,7 @@ GMF::Optimize_Wind_Solutions(
 								direction = center_dir + (float)(i_dir) * 
                                   wind_dir_intv_opti;
 								saved_objective[i][j] = _ObjectiveFunction(
-									meas_list,speed,direction,kp);
+									meas_list,speed,dtr*direction,kp);
 							}
                         	else
                         	{
@@ -1813,7 +1909,7 @@ GMF::Optimize_Wind_Solutions(
 //   Estimate the final value of likelihood. 
 //
 				wr_mle[ambig] = _ObjectiveFunction(meas_list,
-					wr_wind_speed[ambig],wr_wind_dir[ambig],kp);
+					wr_wind_speed[ambig],dtr*wr_wind_dir[ambig],kp);
 
 //
 //   Estimate the RMS speed and direction errors. 
@@ -1837,6 +1933,7 @@ GMF::Optimize_Wind_Solutions(
 		wvp->spd = wr_wind_speed[i];
 		wvp->dir = wr_wind_dir[i]*dtr;
 		wvp->obj = wr_mle[i];
+		printf("opti: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
 		i++;
         if (i >= wind_max_solutions) break;
 	}
