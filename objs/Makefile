@@ -63,7 +63,6 @@ depend:
 clean:
 	- rm -f $(TARGET_LIB)
 	- rm -f $(OBJS)
-	- rm -rf Templates.DB
 
 #----------------------------------------------------------------------
 # install: same as default
