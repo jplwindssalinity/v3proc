@@ -848,7 +848,6 @@ int
 L1AH::WriteSDSs()
 {
     GSL1AStatus* status = &(frame.status);
-    GSL1AEngData* engdata = &(frame.engdata);
     GSL1AEu* in_eu = &(frame.in_eu);
 
     //------------------------------------------------//
@@ -888,26 +887,38 @@ L1AH::WriteSDSs()
     true_cal_pulse_pos->SetWithChar((char *)&tcpp);
 
     // precision coupler temp eu
+    precision_coupler_temp_eu->SetFromFloat(
+        &(in_eu->precision_coupler_temp_eu));
 
     // rcv protect sw temp eu
+    rcv_protect_sw_temp_eu->SetFromFloat(&(in_eu->rcv_protect_sw_temp_eu));
 
     // beam select sw temp eu
+    beam_select_sw_temp_eu->SetFromFloat(&(in_eu->beam_select_sw_temp_eu));
 
     // receiver temp eu
+    receiver_temp_eu->SetFromFloat(&(in_eu->receiver_temp_eu));
 
     // antenna position
+    antenna_position->SetWithUnsignedShort(frame.antennaPosition);
 
     // power dn
+    power_dn->SetWithUnsignedInt(frame.science);
 
     // noise dn
+    noise_dn->SetWithUnsignedInt(frame.spotNoise);
 
     // frame inst status
+    frame_inst_status->SetWithUnsignedInt(&(frame.frame_inst_status));
 
     // pulse qual flag
+    pulse_qual_flag->SetWithUnsignedChar(frame.pulse_qual_flag);
 
     // frame err status
+    frame_err_status->SetWithUnsignedInt(&(frame.frame_err_status));
 
     // frame qual flag
+    frame_qual_flag->SetWithUnsignedShort(&(frame.frame_qual_flag));
 
 /*
     instrument_time->SetFromUnsignedInt(&(frame.instrumentTicks));
@@ -1106,16 +1117,12 @@ L1AH::WriteSDSs()
     transmit_power_a->SetWithUnsignedChar(&(engdata->transmit_power_a));
     transmit_power_b->SetWithUnsignedChar(&(engdata->transmit_power_b));
     power_convert_current->SetWithUnsignedChar(&dummy_uchar);
-    precision_coupler_temp->SetWithUnsignedChar(
-        &(engdata->precision_coupler_temp));
     twt1_hvps_chassis_temp->SetWithUnsignedChar(&dummy_uchar);
     twt1_base_temp->SetWithUnsignedChar(&dummy_uchar);
     twt2_hvps_chassis_temp->SetWithUnsignedChar(&dummy_uchar);
     twt2_base_temp->SetWithUnsignedChar(&dummy_uchar);
-    rcv_protect_sw_temp->SetWithUnsignedChar(&(engdata->rcv_protect_sw_temp));
     power_converter_temp->SetWithUnsignedChar(&dummy_uchar);
     gain_atten_temp->SetWithUnsignedChar(&dummy_uchar);
-    beam_select_sw_temp->SetWithUnsignedChar(&(engdata->beam_select_sw_temp));
     scp_temp->SetWithUnsignedChar(&dummy_uchar);
     receiver_temp->SetWithUnsignedChar(&(engdata->receiver_temp));
     exciter_a_temp->SetWithUnsignedChar(&dummy_uchar);
@@ -1136,7 +1143,6 @@ L1AH::WriteSDSs()
     pcd_entry->SetWithUnsignedShort(&dummy_ushort);
 */
 
-// xxxxx
     //-------------------------------------------//
     // determine some information from the frame //
     //-------------------------------------------//
