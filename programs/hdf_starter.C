@@ -89,7 +89,7 @@ static const char rcs_id[] =
 const char* no_path(const char* string);
 void usage(const char* command, const char* option_array[],
     const int exit_value);
-int32 SDnametoid(int32 sd_id, char* sds_name);
+int32 SDnametoid(int32 sd_id, char* sds_name, float64* scale_factor = NULL);
 
 //------------------//
 // OPTION VARIABLES //
@@ -288,6 +288,16 @@ main(
         // straightforward. Actually, I've made a helper function,
         // cleverly called "SDnametoid" that makes both function
         // calls for you. Let's all enjoy use happy function!
+        //
+        // ***UPDATE***
+        // I have updated the "SDnametoid" function to do even more!
+        // Now, if you pass it a pointer to a float64, SDnametoid will
+        // look up the scale factor for you. Yep, that's right: you
+        // won't need to read the SIS and hard code in scale factors.
+        // It would look like this...
+        // float64 sigma0_sf;
+        // int32 sigma0_sds_id = SDnametoid(sd_id, "sigam0", &sigma0_sf);
+        // If the scale factor is zero, something went wrong.
         //--------------------
 
         int32 power_dn_sds_id = SDnametoid(sd_id, "power_dn");
@@ -644,9 +654,14 @@ usage(
 
 int32
 SDnametoid(
-    int32  sd_id,
-    char*  sds_name)
+    int32     sd_id,
+    char*     sds_name,
+    float64*  scale_factor)
 {
+    //------------------------------//
+    // convert the name to an index //
+    //------------------------------//
+
     int32 sds_index = SDnametoindex(sd_id, sds_name);
     if (sds_index == FAIL)
     {
@@ -654,6 +669,11 @@ SDnametoid(
             sds_name);
         exit(1);
     }
+
+    //-------------------------------//
+    // select that sd, and get an id //
+    //-------------------------------//
+
     int32 sds_id = SDselect(sd_id, sds_index);
     if (sds_id == FAIL)
     {
@@ -661,5 +681,21 @@ SDnametoid(
             sds_index);
         exit(1);
     }
+
+    //----------------------//
+    // get the scale factor //
+    //----------------------//
+
+    if (scale_factor != NULL)
+    {
+        float64 cal_error, offset, offset_error;
+        int32 data_type;
+        if (SDgetcal(sds_id, scale_factor, &cal_error, &offset,
+            &offset_error, &data_type) == FAIL)
+        {
+            *scale_factor = 0.0;
+        }
+    }
+
     return (sds_id);
 }
