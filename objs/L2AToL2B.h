@@ -44,6 +44,7 @@ public:
 	//------------//
 
 	int		ConvertAndWrite(L17* l17, GMF* gmf, L20* l20);
+	int		Flush(L20* l20);
 
 	//-----------//
 	// variables //

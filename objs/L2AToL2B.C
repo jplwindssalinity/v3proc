@@ -34,14 +34,16 @@ L17ToL20::ConvertAndWrite(
 	GMF*	gmf,
 	L20*	l20)
 {
-	static int last_rev = 0;
+	static int last_rev_number = 0;
 
 	//---------------//
 	// retrieve wind //
 	//---------------//
 
 	WVC* wvc = new WVC();
-	gmf->FindSolutions(&(l17->frame.measList), wvc, initSpdStep, initPhiStep);
+	int count = gmf->FindSolutions(&(l17->frame.measList), wvc,
+		initSpdStep, initPhiStep);
+printf("%d\n", count);
 	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
 		initPhiStep, finalSpdStep, finalPhiStep);
 	wvc->RemoveDuplicates();
@@ -59,15 +61,8 @@ L17ToL20::ConvertAndWrite(
 	// determine if rev is complete //
 	//------------------------------//
 
-	if (rev != last_rev && last_rev)
-	{
-		// median filter rev
-		l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
-			l20->medianFilterMaxPasses);
-		if (! l20->WriteDataRec())
-			return(0);
-		l20->frame.swath.DeleteWVCs();
-	}
+	if (rev != last_rev_number && last_rev_number)
+		Flush(l20);	// process and write
 
 	//-------------------//
 	// add to wind swath //
@@ -75,5 +70,22 @@ L17ToL20::ConvertAndWrite(
 
 	l20->frame.swath.Add(ati, cti, wvc);
 
+	return(1);
+}
+
+//-------//
+// Flush //
+//-------//
+
+int
+L17ToL20::Flush(
+	L20*	l20)
+{
+	// median filter
+	l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
+		l20->medianFilterMaxPasses);
+	if (! l20->WriteDataRec())
+		return(0);
+	l20->frame.swath.DeleteWVCs();
 	return(1);
 }
