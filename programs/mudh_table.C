@@ -309,7 +309,8 @@ main(
     // write table //
     //---------- --//
 
-    unsigned short mudhtab[16][16][16][16];
+    double norain_tab[16][16][16][16];
+    double rain_tab[16][16][16][16];
     for (int i = 0; i < 16; i++)
     {
         for (int j = 0; j < 16; j++)
@@ -318,33 +319,30 @@ main(
             {
                 for (int l = 0; l < 16; l++)
                 {
-                    mudhtab[i][j][k][l] = 0;
+                    norain_tab[i][j][k][l] = 0.0;
+                    rain_tab[i][j][k][l] = 0.0;
                     if (counts[i][j][k][l][0] > MIN_SAMPLES)
                     {
-                        double rainfree_prob = (double)counts[i][j][k][l][1] /
+                        double norain_prob = (double)counts[i][j][k][l][1] /
                             (double)counts[i][j][k][l][0];
                         double rain_prob = (double)counts[i][j][k][l][2] /
                             (double)counts[i][j][k][l][0];
 
-                        // scale to 0.5 percent resolution
-                        int irainfree = (int)(rainfree_prob * 200.0 + 0.5);
-                        int irain = (int)(rain_prob * 200.0 + 0.5);
-
-                        // pack
-                        int iprob = irain * 256 + irainfree;
-                        mudhtab[i][j][k][l] = (unsigned short)iprob;
+                        norain_tab[i][j][k][l] = norain_prob;
+                        rain_tab[i][j][k][l] = rain_prob;
                     }
                     else
                     {
-                        // mark as uncalculatable (100.5 %)
-                        int iprob = 201 * 256 + 201;
-                        mudhtab[i][j][k][l] = (unsigned short)iprob;
+                        // mark as uncalculatable (2.0)
+                        norain_tab[i][j][k][l] = 2.0;
+                        rain_tab[i][j][k][l] = 2.0;
                     }
                 }
             }
         }
     }
-    fwrite(mudhtab, sizeof(short), 16 * 16 * 16 * 16, mudhtab_ofp);
+    fwrite(norain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
+    fwrite(rain_tab, sizeof(double), 16 * 16 * 16 * 16, mudhtab_ofp);
 
     //-------------//
     // close files //
