@@ -748,17 +748,17 @@ FindPeakGainForSlice(
 	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument, mid_look,
 		mid_azim, &mid_gain);
 
-	if (gain[0] > mid_gain && gain[0] > gain[1])
+	if (gain[0] >= mid_gain && gain[0] >= gain[1])
 	{
 		*peak_gain = gain[0];
 		return(1);
 	}
-	else if (gain[1] > mid_gain && gain[1] > gain[0])
+	else if (gain[1] >= mid_gain && gain[1] >= gain[0])
 	{
 		*peak_gain = gain[1];
 		return(1);
 	}
-	else if (mid_gain > gain[0] && mid_gain > gain[1])
+	else if (mid_gain >= gain[0] && mid_gain >= gain[1])
 	{
 		double look_array[3], azim_array[3];
 		look_array[0] = look[0];
@@ -769,8 +769,11 @@ FindPeakGainForSlice(
 		azim_array[2] = azim[1];
 
 		double s[3], c[3];
-		QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
-			azim_array, s, c);
+		if (! QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
+			azim_array, s, c))
+		{
+			return(0);
+		}
 		PeakFit(c, peak_gain);
 		return(1);
 	}
