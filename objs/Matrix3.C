@@ -36,7 +36,7 @@ _m[1][2] = x23;
 _m[2][0] = x31;
 _m[2][1] = x32;
 _m[2][2] = x33;
-
+	return;
 }
 
 //
@@ -53,7 +53,7 @@ for (j=0; j < 3; j++)
   {
   _m[i][j] = init;
   }
-
+	return;
 }
 
 //
@@ -83,6 +83,7 @@ else
   printf("Error: Matrix3 object received unrecognized enum = %d\n",mtype);
   exit(-1);
   }
+	return;
 }
 
 //
@@ -215,7 +216,7 @@ for (i=0; i < 3; i++)
   _m[1][i] = r2._v[i];
   _m[2][i] = r3._v[i];
   }
-
+	return;
 }
 
 //
@@ -233,7 +234,7 @@ for (j=0; j < 3; j++)
   _m[i][j] = 0;
   if (i == j) _m[i][j] = 1;
   }
-
+	return;
 }
 
 //
@@ -298,7 +299,7 @@ for (l=n-1;l>=0;l--) {
 }
 
 #undef SWAP
-
+	return;
 }
 
 void Matrix3::Show(char *name)
@@ -340,7 +341,7 @@ else
     }
   free(str);
   }
-
+	return;
 }
 
 //
@@ -358,7 +359,7 @@ Vector3::Vector3(double x1, double x2, double x3)
 _v[0] = x1;
 _v[1] = x2;
 _v[2] = x3;
-
+	return;
 }
 
 //
@@ -374,7 +375,7 @@ for (i=0; i < 3; i++)
   {
   _v[i] = init;
   }
-
+	return;
 }
 	
 //
@@ -513,7 +514,7 @@ if (mag != 0.0)
     {
     _v[i] *= r/mag;
     }
-
+	return;
 }
 
 //
@@ -543,7 +544,6 @@ else
   printf("Error: attempted to get out of range element from Vector3 object\n");
   exit(-1);
   }
-
 }
 
 void Vector3::Show(char *name)
@@ -558,7 +558,7 @@ else
   {
   printf("%s = (%10g, %10g, %10g)\n",name,_v[0],_v[1],_v[2]);
   }
-
+	return;
 }
 
 //-----------------------//
@@ -642,7 +642,7 @@ Vector3::Set(double x1, double x2, double x3)
 _v[0] = x1;
 _v[1] = x2;
 _v[2] = x3;
-
+	return;
 }
 
 //--------------//
@@ -718,7 +718,7 @@ EarthPosition::EarthPosition(Vector3 v)
 v.Get(0,&_v[0]);
 v.Get(1,&_v[1]);
 v.Get(2,&_v[2]);
-
+	return;
 }
 
 //
@@ -824,7 +824,7 @@ void EarthPosition::operator=(Vector3 vec)
 _v[0] = vec.get(0);
 _v[1] = vec.get(1);
 _v[2] = vec.get(2);
-
+	return;
 }
 
 //
@@ -1010,8 +1010,8 @@ EarthPosition::SurfaceCoordinateSystem()
 Vector3 urot(0,0,1);
 Vector3 xlocal = urot & (*this);
 xlocal.Scale(1.0);
-Vector3 zlocal = (*this).Normal();
-Vector3 ylocal = zlocal & ylocal;
+Vector3 zlocal = Normal();
+Vector3 ylocal = zlocal & xlocal;
 CoordinateSwitch cs(xlocal,ylocal,zlocal);
 return(cs);
 
