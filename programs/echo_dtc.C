@@ -424,7 +424,8 @@ main(
 
             double azimuth = two_pi *
                 (double)echo_info.idealEncoder[spot_idx] / (double)ENCODER_N;
-            accumulate(echo_info.beamIdx[spot_idx], azimuth,
+            int beam_idx = echo_info.SpotBeamIdx(spot_idx);
+            accumulate(beam_idx, azimuth,
                 echo_info.measSpecPeakFreq[spot_idx]);
         }
     } while (1);
