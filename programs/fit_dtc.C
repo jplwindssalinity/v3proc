@@ -8,13 +8,13 @@
 //    fit_dtc
 //
 // SYNOPSIS
-//    fit_dtc <raw_dtc_file> <dtc_base>
+//    fit_dtc [ -n ] <raw_dtc_file> <dtc_base>
 //
 // DESCRIPTION
 //    Reads the raw DTC file and generates a fit to the data.
 //
 // OPTIONS
-//    None
+//    [ -n ]  Natural.  No fit.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -52,6 +52,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <math.h>
 #include "Misc.h"
 #include "Array.h"
 #include "Tracking.h"
@@ -94,7 +95,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  ""
+#define OPTSTRING  "n"
 #define QUOTE      '"'
 
 #define ORBIT_STEPS            256
@@ -124,7 +125,7 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<raw_dtc_file>", "<dtc_base>", 0 };
+const char* usage_array[] = { "[ -n ]", "<raw_dtc_file>", "<dtc_base>", 0 };
 
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
@@ -145,6 +146,8 @@ main(
     int    argc,
     char*  argv[])
 {
+    int opt_natural = 0;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -157,6 +160,9 @@ main(
     {
         switch(c)
         {
+        case 'n':
+            opt_natural = 1;
+            break;
         case '?':
             usage(command, usage_array, 1);
             break;
@@ -211,10 +217,13 @@ main(
     // fit //
     //-----//
 
+if (! opt_natural)
+{
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         fit_terms_plus(dtc_base, beam_idx, g_terms[beam_idx]);
     }
+}
 
     //-------------//
     // set Doppler //
@@ -279,14 +288,17 @@ fit_terms_plus(
     int max_term[3] = { 4, 3, 3 };
 //    double threshold[3] = { 500.0, 0.01, 500.0 };    // amp, phase, bias
     double threshold[3] = { 0.0, 0.0, 0.0 };    // amp, phase, bias
-    double new_coefs[ORBIT_STEPS];
+    double new_coefs[3][ORBIT_STEPS];
 
     //----------------------//
     // for each coefficient //
     //----------------------//
 
-    for (int coef_idx = 0; coef_idx < 3; coef_idx++)
+    int coef_translate[3] = { 0, 2, 1};    // want phase the last index
+    for (int coef_access_idx = 0; coef_access_idx < 3; coef_access_idx++)
     {
+        int coef_idx = coef_translate[coef_access_idx];
+
         //------------------//
         // fill in the data //
         //------------------//
@@ -299,6 +311,23 @@ fit_terms_plus(
                 azimuth[sample_count] = two_pi * (double)orbit_step /
                     (double)ORBIT_STEPS;
                 data[sample_count] = *(*(terms + orbit_step) + coef_idx);
+
+/*
+//-----------------------//
+// calculate phase again //
+//-----------------------//
+
+if (coef_idx == 1)    // phase
+{
+    double orig_bias = *(*(terms + orbit_step) + 2);    // original bias
+    double fit_bias = new_coefs[2][orbit_step];       // fit bias
+    double orig_amp = *(*(terms + orbit_step) + 0);    // original a
+    double fit_amp = new_coefs[0][orbit_step];       // fit a
+    double orig_phase = *(*(terms + orbit_step) + 1);    // original p
+    data[sample_count] = acos((orig_bias - fit_bias +
+        orig_amp * cos(orig_phase)) / fit_amp);
+}
+*/
                 sample_count++;
             }
         }
@@ -368,10 +397,10 @@ fit_terms_plus(
         {
             double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
 
-            new_coefs[orbit_step] = 0.0;
+            new_coefs[coef_idx][orbit_step] = 0.0;
             for (int i = 0; i < TERM_COUNT; i++)
             {
-                new_coefs[orbit_step] += amplitude[i] *
+                new_coefs[coef_idx][orbit_step] += amplitude[i] *
                     cos((double)i * angle + phase[i]);
             }
         }
@@ -382,19 +411,24 @@ fit_terms_plus(
 
         if (fit_base)
         {
-            plot_fit_spec(fit_base, beam_idx, coef_idx, terms, new_coefs);
+            plot_fit_spec(fit_base, beam_idx, coef_idx, terms,
+                new_coefs[coef_idx]);
         }
+    }
 
-        //---------------//
-        // plug in terms //
-        //---------------//
+    //---------------//
+    // plug in terms //
+    //---------------//
 
+    for (int coef_idx = 0; coef_idx < 3; coef_idx++)
+    {
         for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
         {
-            *(*(terms + orbit_step) + coef_idx) = new_coefs[orbit_step];
+            *(*(terms + orbit_step) + coef_idx) =
+                new_coefs[coef_idx][orbit_step];
         }
-
     }
+
     free_array(data, 1, good_count);
     free_array(azimuth, 1, good_count);
 
