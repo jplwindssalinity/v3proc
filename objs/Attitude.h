@@ -38,12 +38,12 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			Set(double roll, double pitch, double yaw, int order_1,
+	int			Set(float roll, float pitch, float yaw, int order_1,
 					int order_2, int order_3);
 
-	double		GetRoll() { return(_roll); };
-	double		GetPitch() { return(_pitch); };
-	double		GetYaw() { return(_yaw); };
+	float		GetRoll() { return(_roll); };
+	float		GetPitch() { return(_pitch); };
+	float		GetYaw() { return(_yaw); };
 	int*		GetOrderIndicies() { return(_order); };
 
 protected:
@@ -52,9 +52,9 @@ protected:
 	// variables //
 	//-----------//
 
-	double		_roll;
-	double		_pitch;
-	double		_yaw;
+	float		_roll;
+	float		_pitch;
+	float		_yaw;
 	int			_order[3];
 };
 
