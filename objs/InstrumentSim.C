@@ -69,35 +69,24 @@ InstrumentSim::DetermineNextEvent(
 
 	static double scat_a_time = 0.0;
 	static double scat_b_time = _beamBTimeOffset;
-	static double orb_time = 0.0;
 
 	//----------------------------------------//
 	// find minimum time from possible events //
 	//----------------------------------------//
 
-	if (scat_a_time <= scat_b_time &&
-		scat_a_time <= orb_time)
+	if (scat_a_time <= scat_b_time)
 	{
 		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
 		event->time = scat_a_time;
 		scat_a_time = (double)(int)(event->time / _priPerBeam + 1.5) *
 			_priPerBeam;
 	}
-	else if (scat_b_time <= scat_a_time &&
-			scat_b_time <= orb_time)
+	else if (scat_b_time <= scat_a_time)
 	{
 		event->eventId = Event::SCATTEROMETER_BEAM_B_MEASUREMENT;
 		event->time = scat_b_time;
 		scat_b_time = (double)((int)(event->time / _priPerBeam) + 1) *
 			_priPerBeam + _beamBTimeOffset;
-	}
-	else if (orb_time <= scat_a_time &&
-			orb_time <= scat_b_time)
-	{
-		event->eventId = Event::UPDATE_ORBIT;
-		event->time = orb_time;
-		orb_time = (int)(event->time / ORBIT_UPDATE_PERIOD + 1.5) *
-			ORBIT_UPDATE_PERIOD;
 	}
 	else
 		return(0);
