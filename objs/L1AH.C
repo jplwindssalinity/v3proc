@@ -628,9 +628,6 @@ L1AH::L1AH()
     _eqxLongitude(0.0), _hdfInputFileId(0), _hdfOutputFileId(0),
     _sdsInputFileId(0), _sdsOutputFileId(0), _currentRecordIdx(0)
 {
-    ETime ref;
-    ref.FromCodeA("1993-01-01");
-    _referenceTime = ref.GetSec();
     return;
 }
 
@@ -737,9 +734,8 @@ L1AH::CreateVdatas()
 int
 L1AH::WriteVdatas()
 {
-    // add the reference time to the delta time to get the "real" time
     ETime real_time;
-    real_time.SetTime(frame.time + _referenceTime);
+    real_time.SetTime(frame.time);
 
     // convert to a string
     char string[CODE_B_TIME_LENGTH];
@@ -851,7 +847,8 @@ L1AH::CreateSDSs()
 //-----------------//
 
 int
-L1AH::WriteSDSs()
+L1AH::WriteSDSs(
+    double  time_offset)
 {
     GSL1AStatus* status = &(frame.status);
     GSL1AEu* in_eu = &(frame.in_eu);
@@ -861,7 +858,8 @@ L1AH::WriteSDSs()
     //------------------------------------------------//
 
     // frame time secs
-    frame_time_secs->SetFromDouble(&(frame.time));
+    double seconds = frame.time - time_offset;
+    frame_time_secs->SetFromDouble(&(seconds));
 
     // orbit time
     orbit_time->SetWithUnsignedInt(&(frame.orbitTicks));
@@ -870,7 +868,7 @@ L1AH::WriteSDSs()
     doppler_orbit_step->SetWithUnsignedChar(&(status->doppler_orbit_step));
 
     // prf orbit step change
-	char posc;
+    char posc;
     posc = -1;
     if (status->prf_orbit_step_change < 127)
         posc = (char)status->prf_orbit_step_change;
@@ -1211,14 +1209,15 @@ L1AH::EndSDSOutput()
 //---------------------//
 
 int
-L1AH::WriteHDFFrame()
+L1AH::WriteHDFFrame(
+    double time_offset)
 {
     if (! WriteVdatas())
     {
         fprintf(stderr, "L1AH::WriteHDFFrame: error with WriteVdatas\n");
         return(0);
     }
-    if (! WriteSDSs())
+    if (! WriteSDSs(time_offset))
     {
         fprintf(stderr, "L1AH::WriteHDFFrame: error with WriteSDSs\n");
         return(0);
@@ -1263,7 +1262,7 @@ L1AH::WriteHDFHeader(
     equator_crossing_longitude->ReplaceContents(buffer);
 
     // eqx date
-    etime.SetTime(_eqxTime + _referenceTime);
+    etime.SetTime(_eqxTime);
     etime.ToCodeB(buffer);
     buffer[8] = '\0';
     equator_crossing_date->ReplaceContents(buffer);
@@ -1292,7 +1291,7 @@ L1AH::WriteHDFHeader(
     orbit_eccentricity->ReplaceContents(buffer);
 
     // range beginning date
-    etime.SetTime(_rangeBeginningTime + _referenceTime);
+    etime.SetTime(_rangeBeginningTime);
     etime.ToCodeB(buffer);
     buffer[8] = '\0';
     range_beginning_date->ReplaceContents(buffer);
@@ -1301,7 +1300,7 @@ L1AH::WriteHDFHeader(
     range_beginning_time->ReplaceContents(buffer + 9);
 
     // range ending date
-    etime.SetTime(_rangeEndingTime + _referenceTime);
+    etime.SetTime(_rangeEndingTime);
     etime.ToCodeB(buffer);
     buffer[8] = '\0';
     range_ending_date->ReplaceContents(buffer);

@@ -46,10 +46,10 @@ public:
 
     int  OpenSDSForWriting();
     int  CreateSDSs();
-    int  WriteSDSs();
+    int  WriteSDSs(double time_offset);
     int  EndSDSOutput();
 
-    int  WriteHDFFrame();
+    int  WriteHDFFrame(double time_offset);
 
     int  WriteHDFHeader(double period, double inclination, double sma,
              double eccentricity);
@@ -61,9 +61,6 @@ public:
     void  EqxCheck();
 
 protected:
-
-    // reference time
-    double  _referenceTime;
 
     // HDF header variables
     // these get set somewhere along the way by the WriteSDSs method
