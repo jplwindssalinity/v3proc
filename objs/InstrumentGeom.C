@@ -234,6 +234,7 @@ LocateSliceCentroids(
 	// for each slice... //
 	//-------------------//
 
+	// Assume that every incoming spot has the same number of slices.
 	int total_slices = instrument->GetTotalSliceCount();
 	int slice_count = 0;
 	float* gains = (float*)malloc(total_slices*sizeof(float));
@@ -285,6 +286,9 @@ LocateSliceCentroids(
 		//-------------------------//
 
 		Meas* meas = new Meas();
+		// We assume that the slices are sequential.
+		abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
+		meas->numSlices = 1;
 		meas->pol = beam->polarization;
 
 		//--------------------------------//

@@ -176,7 +176,6 @@ L1AToL1B::Convert(
 			// for each slice... //
 			//-------------------//
 
-			int sliceno = -(l1a->frame.slicesPerSpot / 2);
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
@@ -189,7 +188,7 @@ L1AToL1B::Convert(
 					k_factor = kfactorTable.RetrieveByRelativeSliceNumber(
 						instrument->antenna.currentBeamIdx,
 						instrument->antenna.azimuthAngle, orbit_position,
-						sliceno);
+						meas->startSliceIdx);
 				}
 
 				float Esn = l1a->frame.science[total_slice_idx];
@@ -207,8 +206,6 @@ L1AToL1B::Convert(
 				}
 
 				meas->scanAngle = instrument->antenna.azimuthAngle;
-				meas->startSliceIdx = sliceno;
-				meas->numSlices = 1;
 				meas->beamIdx = instrument->antenna.currentBeamIdx;
 				meas->txPulseWidth = beam->txPulseWidth;
 
@@ -221,9 +218,6 @@ L1AToL1B::Convert(
 					printf("%g ",meas->value);
 
 				total_slice_idx++;
-				sliceno++;
-				if (l1a->frame.slicesPerSpot % 2 == 0 && sliceno == 0)
-					sliceno++;
 			}
 
 			//-----------------------------------------------------//
