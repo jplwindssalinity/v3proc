@@ -24,8 +24,6 @@ static const char rcs_id_configsim_h[] =
 // Spacecraft //
 //------------//
 
-int ConfigSpacecraft(Spacecraft* spacecraft, ConfigList* config_list);
-
 #define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
 #define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
 #define INCLINATION_KEYWORD				"INCLINATION"

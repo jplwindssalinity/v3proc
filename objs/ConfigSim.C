@@ -11,24 +11,6 @@ static const char rcs_id_configsim_c[] =
 #include "SpacecraftSim.h"
 #include "Misc.h"
 
-//------------------//
-// ConfigSpacecraft //
-//------------------//
-
-int
-ConfigSpacecraft(
-	Spacecraft*		spacecraft,
-	ConfigList*		config_list)
-{
-	//-------------------//
-	// nothing to do yet //
-	//-------------------//
-
-	spacecraft;
-	config_list;
-	return(1);
-}
-
 //---------------------//
 // ConfigSpacecraftSim //
 //---------------------//
