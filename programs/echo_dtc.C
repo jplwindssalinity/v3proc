@@ -442,14 +442,23 @@ main(
         printf("Processing orbit step %d...\n", target_orbit_step);
         for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
         {
+            //----------------//
+            // check for data //
+            //----------------//
+
             int file_idx_zero = file_idx - start_idx;
+
+            char* echo_file = argv[file_idx];
+            printf("  %s\n", echo_file);
+
+            if (g_offsets[file_idx_zero][target_orbit_step][0] == 1) {
+                printf("    No data.\n");
+                continue;
+            }
 
             //----------------//
             // open each file //
             //----------------//
-
-            char* echo_file = argv[file_idx];
-            printf("  %s\n", echo_file);
 
             int ifd = open(echo_file, O_RDONLY);
             if (ifd == -1)
@@ -506,6 +515,7 @@ main(
                 {
                     if (! regression && echo_info.frameTime <= last_time)
                     {
+                        // first regressive frame
                         regression = 1;
                         regression_start = echo_info.frameTime;
                         continue;
@@ -691,6 +701,14 @@ process_orbit_step(
     int          orbit_step,
     const char*  fit_base)
 {
+    //----------------//
+    // check for data //
+    //----------------//
+
+    if (g_count[beam_idx] == 0) {
+        return(1);
+    }
+
     //-------------------------//
     // first, scale the offset //
     //-------------------------//
