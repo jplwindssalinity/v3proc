@@ -19,7 +19,7 @@ static const char rcs_id_product_c[] =
 //=============//
 
 ProductFile::ProductFile()
-:	_filename(NULL), _fd(INVALID_FD)
+:	_filename(NULL), _fd(INVALID_FD), _status(OK)
 {
 	return;
 }
@@ -48,7 +48,10 @@ ProductFile::AssignFile(
 
 	_filename = strdup(filename);
 	if (! _filename)
+	{
+		_status = ERROR_ALLOCATING_FILENAME;
 		return(0);
+	}
 
 	return(1);
 }
@@ -61,14 +64,23 @@ int
 ProductFile::OpenForOutput()
 {
 	if (! _filename)
+	{
+		_status = ERROR_MISSING_FILE;
 		return(0);
+	}
 
 	if (_fd != INVALID_FD)
+	{
+		_status = ERROR_REOPENING_FILE;
 		return(0);
+	}
 
 	_fd = creat(_filename, 0644);
 	if (_fd == INVALID_FD)
+	{
+		_status = ERROR_CREATING_FILE;
 		return(0);
+	}
 
 	return(1);
 }
@@ -84,7 +96,10 @@ ProductFile::Close()
 		return(1);			// already closed (?)
 
 	if (close(_fd) != 0)
+	{
+		_status = ERROR_CLOSING_FILE;
 		return(0);
+	}
 
 	return(1);
 }
@@ -95,6 +110,7 @@ ProductFile::Close()
 //=================//
 
 ProductFileList::ProductFileList()
+:	_status(OK)
 {
 	return;
 }
@@ -114,17 +130,22 @@ ProductFileList::AddFile(
 {
 	ProductFile* new_product_file = new ProductFile();
 	if (! new_product_file)
+	{
+		_status = ERROR_CREATING_PRODUCT_FILE;
 		return(0);
+	}
 
 	if (! new_product_file->AssignFile(filename))
 	{
 		free(new_product_file);
+		_status = ERROR_ASSIGNING_FILENAME;
 		return(0);
 	}
 
 	if (! Append(new_product_file))
 	{
 		free(new_product_file);
+		_status = ERROR_APPENDING_PRODUCT_FILE;
 		return(0);
 	}
 
@@ -157,10 +178,16 @@ ProductFileList::OpenCurrentForOutput()
 {
 	ProductFile* pf = GetCurrent();
 	if (! pf)
+	{
+		_status = ERROR_NO_CURRENT_PRODUCT_FILE;
 		return(0);
+	}
 
 	if (! pf->OpenForOutput())
+	{
+		_status = ERROR_OPENING_PRODUCT_OUTPUT_FILE;
 		return(0);
+	}
 
 	return(1);
 }
@@ -174,7 +201,10 @@ ProductFileList::GetCurrentFd()
 {
 	ProductFile* pf = GetCurrent();
 	if (! pf)
-		return(0);
+	{
+		_status = ERROR_NO_CURRENT_PRODUCT_FILE;
+		return(INVALID_FD);
+	}
 
 	return(pf->GetFd());
 }
@@ -188,10 +218,16 @@ ProductFileList::CloseCurrentFile()
 {
 	ProductFile* pf = GetCurrent();
 	if (! pf)
+	{
+		_status = ERROR_NO_CURRENT_PRODUCT_FILE;
 		return(0);
+	}
 
 	if (! pf->Close())
+	{
+		_status = ERROR_CLOSING_PRODUCT_FILE;
 		return(0);
+	}
 
 	return(1);
 }
@@ -202,7 +238,7 @@ ProductFileList::CloseCurrentFile()
 //=========//
 
 Product::Product()
-:	_frame(NULL), _size(0)
+:	_frame(NULL), _size(0), _status(OK)
 {
 	return;
 }
@@ -222,7 +258,10 @@ Product::AllocateBuffer(
 {
 	_frame = (char *)realloc((void *)_frame, buffer_size);
 	if (! _frame)
+	{
+		_status = ERROR_ALLOCATING_BUFFER;
 		return(0);
+	}
 
 	_size = buffer_size;
 	return(1);
@@ -236,7 +275,12 @@ int
 Product::AddFile(
 	const char*		filename)
 {
-	return(_fileList.AddFile(filename));
+	if (! _fileList.AddFile(filename))
+	{
+		_status = ERROR_ADDING_FILE;
+		return(0);
+	}
+	return(1);
 }
 
 //------------------------//
@@ -247,8 +291,10 @@ int
 Product::GotoFirstFile()
 {
 	if (! _fileList.GetHead())
+	{
+		_status = ERROR_NO_FILES;
 		return(0);
-
+	}
 	return(1);
 }
 
@@ -259,7 +305,12 @@ Product::GotoFirstFile()
 int
 Product::OpenCurrentForOutput()
 {
-	return(_fileList.OpenCurrentForOutput());
+	if (! _fileList.OpenCurrentForOutput())
+	{
+		_status = ERROR_OPENING_CURRENT_FILE;
+		return(0);
+	}
+	return(1);
 }
 
 //---------------------------//
@@ -269,7 +320,12 @@ Product::OpenCurrentForOutput()
 int
 Product::CloseCurrentFile()
 {
-	return(_fileList.CloseCurrentFile());
+	if (! _fileList.CloseCurrentFile())
+	{
+		_status = ERROR_CLOSING_CURRENT_FILE;
+		return(0);
+	}
+	return(1);
 }
 
 //----------------------//
@@ -281,10 +337,16 @@ Product::WriteBuffer()
 {
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
+	{
+		_status = ERROR_GETTING_CURRENT_FD;
 		return(0);
+	}
 
 	if (write(ofd, _frame, _size) != _size)
+	{
+		_status = ERROR_WRITING_BUFFER;
 		return(0);
+	}
 
 	return(1);
 }
@@ -298,10 +360,16 @@ Product::ReadBuffer()
 {
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
+	{
+		_status = ERROR_GETTING_CURRENT_FD;
 		return(0);
+	}
 
-	if (write(ofd, _frame, _size) != _size)
+	if (read(ofd, _frame, _size) != _size)
+	{
+		_status = ERROR_READING_BUFFER;
 		return(0);
+	}
 
 	return(1);
 }

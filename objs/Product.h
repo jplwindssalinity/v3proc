@@ -33,6 +33,13 @@ class ProductFile
 {
 public:
 
+	//------//
+	// enum //
+	//------//
+
+	enum StatusE { OK, ERROR_ALLOCATING_FILENAME, ERROR_MISSING_FILE,
+		ERROR_REOPENING_FILE, ERROR_CREATING_FILE, ERROR_CLOSING_FILE };
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -54,6 +61,7 @@ public:
 	//---------//
 
 	int		GetFd() { return(_fd); };
+	int		GetStatus() { return(_status); };
 
 protected:
 
@@ -63,6 +71,8 @@ protected:
 
 	char*		_filename;
 	int			_fd;
+
+	StatusE		_status;
 };
 
 
@@ -78,6 +88,14 @@ protected:
 class ProductFileList : public List<ProductFile>
 {
 public:
+
+	//------//
+	// enum //
+	//------//
+
+	enum StatusE { OK, ERROR_CREATING_PRODUCT_FILE, ERROR_ASSIGNING_FILENAME,
+		ERROR_APPENDING_PRODUCT_FILE, ERROR_NO_CURRENT_PRODUCT_FILE,
+		ERROR_OPENING_PRODUCT_OUTPUT_FILE, ERROR_CLOSING_PRODUCT_FILE };
 
 	//--------------//
 	// construction //
@@ -96,6 +114,20 @@ public:
 	int		OpenCurrentForOutput();
 	int		GetCurrentFd();
 	int		CloseCurrentFile();
+
+	//---------//
+	// getting //
+	//---------//
+
+	int		GetStatus() { return(_status); };
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	StatusE		_status;
 };
 
 
@@ -116,6 +148,11 @@ public:
 	//------//
 	// enum //
 	//------//
+
+	enum StatusE { OK, ERROR_ALLOCATING_BUFFER, ERROR_NO_FILES,
+		ERROR_ADDING_FILE, ERROR_OPENING_CURRENT_FILE,
+		ERROR_CLOSING_CURRENT_FILE, ERROR_GETTING_CURRENT_FD,
+		ERROR_WRITING_BUFFER, ERROR_READING_BUFFER };
 
 	//--------------//
 	// construction //
@@ -142,6 +179,12 @@ public:
 	int		WriteBuffer();
 	int		ReadBuffer();
 
+	//---------//
+	// getting //
+	//---------//
+
+	int		GetStatus() { return(_status); };
+
 protected:
 
 	//-----------//
@@ -151,6 +194,8 @@ protected:
 	ProductFileList		_fileList;
 	char*				_frame;
 	int					_size;
+
+	StatusE				_status;
 };
 
 #endif
