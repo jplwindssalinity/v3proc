@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1999-2002, California Institute of Technology. //
+// Copyright (C) 1999-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -217,8 +217,7 @@ main(
     //----------------------------//
 
     Qscat qscat;
-    if (! ConfigQscat(&qscat, &config_list))
-    {
+    if (! ConfigQscat(&qscat, &config_list)) {
         fprintf(stderr, "%s: error configuring QSCAT\n", command);
         exit(1);
     }
@@ -238,8 +237,7 @@ main(
 
     char* land_map_file = config_list.Get(SIMPLE_LANDMAP_FILE_KEYWORD);
     SimpleLandMap land_map;
-    if (! land_map.Read(land_map_file))
-    {
+    if (! land_map.Read(land_map_file)) {
         fprintf(stderr, "%s: error reading land map %s\n", command,
             land_map_file);
         exit(1);
@@ -250,8 +248,7 @@ main(
     //--------------------------//
 
     int32 l1a_sd_id = SDstart(l1a_filename, DFACC_READ);
-    if (l1a_sd_id == FAIL)
-    {
+    if (l1a_sd_id == FAIL) {
         fprintf(stderr, "%s: error opening HDF file %s for reading\n",
             command, l1a_filename);
         exit(1);
@@ -299,8 +296,7 @@ main(
     //--------------------------//
 
     int32 l1b_sd_id = SDstart(l1b_filename, DFACC_READ);
-    if (l1b_sd_id == FAIL)
-    {
+    if (l1b_sd_id == FAIL) {
         fprintf(stderr, "%s: error opening HDF file %s for reading\n",
             command, l1b_filename);
         exit(1);
@@ -320,8 +316,7 @@ main(
     //--------------------//
 
     int ofd = creat(echo_file, 0644);
-    if (ofd == -1)
-    {
+    if (ofd == -1) {
         fprintf(stderr, "%s: error creating output echo file %s\n", command,
             echo_file);
         exit(1);
@@ -332,23 +327,20 @@ main(
     //--------------------//
 
     int l1a_frame_count = 0;
-    if (! SDattrint(l1a_sd_id, "l1a_actual_frames", &l1a_frame_count))
-    {
+    if (! SDattrint(l1a_sd_id, "l1a_actual_frames", &l1a_frame_count)) {
         fprintf(stderr, "%s: error reading attribute for l1a_actual_frames\n",
             command);
         exit(1);
     }
 
     int l1b_frame_count = 0;
-    if (! SDattrint(l1b_sd_id, "l1b_actual_frames", &l1b_frame_count))
-    {
+    if (! SDattrint(l1b_sd_id, "l1b_actual_frames", &l1b_frame_count)) {
         fprintf(stderr, "%s: error reading attribute for l1b_actual_frames\n",
             command);
         exit(1);
     }
 
-    if (l1b_frame_count != l1a_frame_count)
-    {
+    if (l1b_frame_count != l1a_frame_count) {
         fprintf(stderr, "%s: mismatched data lengths\n", command);
         fprintf(stderr, "  %s : %d records\n", l1a_filename, l1a_frame_count);
         fprintf(stderr, "  %s : %d records\n", l1b_filename, l1b_frame_count);
@@ -366,8 +358,7 @@ main(
     int wom_frame = 0;
 
     EchoInfo echo_info;
-    for (int record_idx = 0; record_idx < l1a_frame_count; record_idx++)
-    {
+    for (int record_idx = 0; record_idx < l1a_frame_count; record_idx++) {
         start[0] = record_idx;
 
         //------------------//
@@ -407,7 +398,8 @@ main(
         }
         if (frame_err_status != 0 || frame_qual_flag != 0 || bad_pulses) {
             if (opt_verbose) {
-                printf("  Bad frame %d\n", record_idx);
+                printf("  Bad frame %d (%0lx %0hx %0hx)\n", record_idx,
+                  frame_err_status, frame_qual_flag, bad_pulses);
             }
             wom_frame = 0;   // spin up again
             continue;
