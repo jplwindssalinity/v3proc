@@ -108,16 +108,19 @@ L1A::WriteGSDataRec(void)
 {
     if(_outputFp==NULL) return(0);
 
+    // zero out the frame buffer
     char gsFrameBuffer[GS_L1A_FRAME_SIZE];
+    (void)memset(&gsFrameBuffer, 0, GS_L1A_FRAME_SIZE);
+
     char* ptr = gsFrameBuffer;
-    // write byte size header
+    // write byte size header for fortran header
     int gsL1AFrameSize = GS_L1A_FRAME_SIZE - 8;
     (void)memcpy(ptr, &gsL1AFrameSize, sizeof(int)); ptr += sizeof(int);
 
     GSL1APcd* in_pcdP = &(gsFrame.in_pcd);
-    // in_pcdP->frame_time
-    in_pcdP->time = frame.time;
-    in_pcdP->instrument_time = frame.time;
+    (void)memcpy(in_pcdP->frame_time, frame.frame_time, 21);
+    in_pcdP->time = frame.frame_time_secs;
+    in_pcdP->instrument_time = frame.frame_time_secs;
     in_pcdP->orbit_time = (int)frame.orbitTicks;
     in_pcdP->x_pos = frame.gcX;
     in_pcdP->y_pos = frame.gcY;
@@ -131,10 +134,23 @@ L1A::WriteGSDataRec(void)
     (void)memcpy(ptr, in_pcdP, sizeof(GSL1APcd)); ptr += sizeof(GSL1APcd);
 
     GSL1AStatus* statusP = &(gsFrame.status);
+    statusP->prf_count = frame.prf_count;
+    statusP->prf_cycle_time = frame.prf_cycle_time;
+    statusP->range_gate_a_delay = frame.range_gate_a_delay;
+    statusP->range_gate_a_width = frame.range_gate_a_width;
+    statusP->range_gate_b_delay = frame.range_gate_b_delay;
+    statusP->range_gate_b_width = frame.range_gate_b_width;
+    statusP->pulse_width = frame.pulse_width;
+    statusP->pred_antenna_pos_count = frame.pred_antenna_pos_count;
+    (void)memcpy(&(statusP->vtcw), &(frame.vtcw), 8);
     (void)memcpy(ptr, statusP, sizeof(GSL1AStatus));
     ptr += sizeof(GSL1AStatus);
 
     GSL1AEngData* engdataP = &(gsFrame.engdata);
+    engdataP->precision_coupler_temp = frame.precision_coupler_temp;
+    engdataP->rcv_protect_sw_temp = frame.rcv_protect_sw_temp;
+    engdataP->beam_select_sw_temp = frame.beam_select_sw_temp;
+    engdataP->receiver_temp = frame.receiver_temp;
     (void)memcpy(ptr, engdataP, sizeof(GSL1AEngData));
     ptr += sizeof(GSL1AEngData);
 
@@ -159,7 +175,17 @@ L1A::WriteGSDataRec(void)
     ptr += 32;
 
     GSL1AEu* in_euP = &(gsFrame.in_eu);
-    in_euP->true_cal_pulse_pos = (int)frame.calPosition;
+    in_euP->prf_cycle_time_eu = (float)frame.prf_cycle_time_eu;
+    in_euP->range_gate_delay_inner = (float)frame.range_gate_delay_inner;
+    in_euP->range_gate_delay_outer = (float)frame.range_gate_delay_outer;
+    in_euP->range_gate_width_inner = (float)frame.range_gate_width_inner;
+    in_euP->range_gate_width_outer = (float)frame.range_gate_width_outer;
+    in_euP->transmit_pulse_width = (float)frame.transmit_pulse_width;
+    in_euP->true_cal_pulse_pos = (int)frame.true_cal_pulse_pos;
+    in_euP->precision_coupler_temp_eu = (float)frame.precision_coupler_temp_eu;
+    in_euP->rcv_protect_sw_temp_eu = (float)frame.rcv_protect_sw_temp_eu;
+    in_euP->beam_select_sw_temp_eu = (float)frame.beam_select_sw_temp_eu;
+    in_euP->receiver_temp_eu = (float)frame.receiver_temp_eu;
     (void)memcpy(ptr, in_euP, sizeof(GSL1AEu));
     ptr += sizeof(GSL1AEu);
 
@@ -170,24 +196,27 @@ L1A::WriteGSDataRec(void)
     ptr += sizeof(GSL1ASci);
 
     // la1_frame_inst_status
-    (void)memset(ptr, 0, sizeof(int));
+    (void)memcpy(ptr, &(frame.frame_inst_status), sizeof(int));
     ptr += sizeof(int);
 
     // l1a_frame_err_status
-    (void)memset(ptr, 0, sizeof(int));
+    (void)memcpy(ptr, &(frame.frame_err_status), sizeof(int));
     ptr += sizeof(int);
 
     // l1a_frame_qual_flag
-    (void)memset(ptr, 0, sizeof(short));
+    (void)memcpy(ptr, &(frame.frame_qual_flag), sizeof(short));
     ptr += sizeof(short);
 
     // l1a_pulse_qual_flag[13]
-    (void)memset(ptr, 0, 13);
+    (void)memcpy(ptr, &(frame.pulse_qual_flag), 13);
     ptr += 13;
 
     // pad3
     (void)memset(ptr, 0, 1);
     ptr++;
+
+    // write byte size trailer for fortran header
+    (void)memcpy(ptr, &gsL1AFrameSize, sizeof(int)); ptr += sizeof(int);
 
     return(Write(gsFrameBuffer, GS_L1A_FRAME_SIZE));
 }

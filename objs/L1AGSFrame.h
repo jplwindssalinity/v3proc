@@ -53,11 +53,11 @@ struct GSL1AStatus
     unsigned char   prf_count;
     char            pad2[17];
     unsigned char   prf_cycle_time;
-    char            pad3;
+    unsigned char   range_gate_a_delay;
     unsigned char   range_gate_a_width;
-    char            pad4;
+    unsigned char   range_gate_b_delay;
     unsigned char   range_gate_b_width;
-    char            pad5[8];
+    char            pad5[8];  // doppler shift command 1 & 2
     unsigned char   pulse_width;
     char            pad6[4];
     unsigned char   pred_antenna_pos_count;
@@ -89,12 +89,13 @@ struct GSL1AEngData
 struct GSL1AEu
 {
     float           prf_cycle_time_eu;
-    char            pad1[8];
+    float           range_gate_delay_inner;
+    float           range_gate_delay_outer;
     float           range_gate_width_inner;
     float           range_gate_width_outer;
     float           transmit_pulse_width;
     int             true_cal_pulse_pos;
-    char            pad2[8];
+    char            pad2[8];   // transmit_power_inner & transmit_power_outer
     float           precision_coupler_temp_eu;
     float           rcv_protect_sw_temp_eu;
     float           beam_select_sw_temp_eu;
