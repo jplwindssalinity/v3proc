@@ -2914,8 +2914,12 @@ GMF::RetrieveWinds_H2(
         if (_bestObj[phi_idx] < min_obj)
             min_obj = _bestObj[phi_idx];
     }
-    if(h3_and_s1_flag==2) min_obj=0;
-    float threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
+    float threshold_delta;
+    if(h3_and_s1_flag==2){    // S1 uses a peak-specific threshold
+      min_obj=0;
+      threshold_delta=1.0-H1_THRESH_FRACTION;
+    }  
+    else threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
 
     //----------------//
     // initialize map //
@@ -2994,7 +2998,9 @@ GMF::RetrieveWinds_H2(
             // ...map peak extent //
             //--------------------//
 
-            float thresh = _bestObj[phi_idx] - threshold_delta;
+            float thresh; // S1 uses a threshold relative to the peak height
+	    if(h3_and_s1_flag==2) thresh =_bestObj[phi_idx]*threshold_delta;
+            else thresh = _bestObj[phi_idx] - threshold_delta;
             int left_idx = (phi_idx + H2_PHI_COUNT - 1) % H2_PHI_COUNT;
             while (_bestObj[left_idx] < _bestObj[phi_idx] &&
                    _bestObj[left_idx] > thresh)
