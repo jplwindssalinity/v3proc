@@ -87,11 +87,12 @@ InstrumentSimAccurate::SetMeasurements(
 
 		if (UNIFORM_SIGMA) sigma0=1;
 
-                //---------------------------------//
-                // convert sigma-0 to power        //
-		//---------------------------------//
-                /**** meas->value hold the GA/R^4 integral ****/
-		double lambda = speed_light_kps / instrument->baseTransmitFreq;
+		//--------------------------//
+		// convert sigma-0 to power //
+		//--------------------------//
+		/**** meas->value hold the GA/R^4 integral ****/
+
+		double lambda = speed_light_kps / instrument->transmitFreq;
 		double constants =instrument->transmitPower*instrument->receiverGain;
 		constants*=lambda*lambda/(64*pi*pi*pi*instrument->systemLoss);
                 meas->value*=sigma0*constants;
