@@ -120,3 +120,24 @@ get_bits(
 {
 	return( (byte >> (position + 1 - bit_count)) & ~(~0 << bit_count) );
 }
+
+//-------------------//
+// substitute_string //
+//-------------------//
+
+int
+substitute_string(
+	const char*		string,
+	const char*		find,
+	const char*		replace,
+	char*			result)
+{
+	char* ptr = strstr(string, find);
+	if (ptr == 0)
+		return(0);
+
+	int length = strlen(find);
+	sprintf(result, "%.*s%s%s", string, (ptr - string), replace,
+		string + length);
+	return(1);
+}

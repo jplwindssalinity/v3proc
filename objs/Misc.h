@@ -32,5 +32,7 @@ FILE*			fopen_or_exit(const char* filename, const char* type,
 					const char* command, const char* description,
 					const int exit_value);
 char			get_bits(char byte, int position, int bit_count);
+int				substitute_string(const char* string, const char* find,
+					const char* replace, char* result);
 
 #endif
