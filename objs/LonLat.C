@@ -248,64 +248,72 @@ double
 Outline::Area()
 {
 	
-	EarthPosition* p1 = GetHead();
-	EarthPosition* p2 = GetNext();
-	EarthPosition* p3 = GetNext();
-	EarthPosition* p4 = GetNext();
+	int num = NodeCount();
 
-	double mag_p1 = p1->Magnitude();
-	double mag_p2 = p2->Magnitude();
-	double mag_p3 = p3->Magnitude();
-	double mag_p4 = p4->Magnitude();
+	if (num == 3)
+	{
+		EarthPosition* p1 = GetHead();
+		EarthPosition* p2 = GetNext();
+		EarthPosition* p3 = GetNext();
 
-	// Divide into two spherical triangles and compute their areas.
+		double mag_p1 = p1->Magnitude();
+		double mag_p2 = p2->Magnitude();
+		double mag_p3 = p3->Magnitude();
+		double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
 
-	// Average spherical radius to use in each spherical triangle.
-	double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
-	double R2 = (mag_p1 + mag_p3 + mag_p4)/3.0;
+		// Side lengths from the earth center angle.
+		double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
+		double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
+		double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
+	
+		// Cosine law
+		double A1 = acos(-(s23*s23 - s12*s12 - s31*s31)/s12/s31/2.0);
+		double area = 0.5*s12*s31*sin(A1);
+		return(area);
+	}
+	else if (num == 4)
+	{
+		// Triangle 1 between points 1,2,3.
+	
+		EarthPosition* p1 = GetHead();
+		EarthPosition* p2 = GetNext();
+		EarthPosition* p3 = GetNext();
+		EarthPosition* p4 = GetNext();
 
-	// Side lengths expressed as the cosine,sine of the earth center angle.
-	double cos_s12 = (*p1 % *p2) / mag_p1 / mag_p2;
-	double cos_s23 = (*p2 % *p3) / mag_p2 / mag_p3;
-	double cos_s31 = (*p3 % *p1) / mag_p3 / mag_p1;
-	double cos_s34 = (*p3 % *p4) / mag_p3 / mag_p4;
-	double cos_s41 = (*p4 % *p1) / mag_p4 / mag_p1;
+		double mag_p1 = p1->Magnitude();
+		double mag_p2 = p2->Magnitude();
+		double mag_p3 = p3->Magnitude();
+		double mag_p4 = p4->Magnitude();
+		double R1 = (mag_p1 + mag_p2 + mag_p3)/3.0;
+		double R2 = (mag_p1 + mag_p3 + mag_p4)/3.0;
 
-	double sin_s12 = sqrt(1.0 - cos_s12*cos_s12);
-	double sin_s23 = sqrt(1.0 - cos_s23*cos_s23);
-	double sin_s31 = sqrt(1.0 - cos_s31*cos_s31);
-	double sin_s34 = sqrt(1.0 - cos_s34*cos_s34);
-	double sin_s41 = sqrt(1.0 - cos_s41*cos_s41);
+		// Side lengths from the earth center angle.
+		double s12 = R1*acos((*p1 % *p2) / mag_p1 / mag_p2);
+		double s23 = R1*acos((*p2 % *p3) / mag_p2 / mag_p3);
+		double s31 = R1*acos((*p3 % *p1) / mag_p3 / mag_p1);
+	
+		// Cosine law
+		double A1 = acos(-(s23*s23 - s12*s12 - s31*s31)/s12/s31/2.0);
+		double area1 = 0.5*s12*s31*sin(A1);
+	
+		// Triangle 2 between points 1,3,4.
 
-	// Triangle 1 between points 1,2,3.
-	// (Angles A1 and A3 for this triangle only)
+		// Side lengths from the earth center angle.
+		s31 = R2*acos((*p3 % *p1) / mag_p3 / mag_p1);
+		double s34 = R2*acos((*p3 % *p4) / mag_p3 / mag_p4);
+		double s14 = R2*acos((*p4 % *p1) / mag_p4 / mag_p1);
 
-	// Cosine law for spherical triangles
-	// A1 is the angle of vertex 1 of the spherical triangle on the surface
-	double cos_A1 = (cos_s23 - cos_s12*cos_s31) / (sin_s12 * sin_s31);
-	double A1 = acos(cos_A1);
-	double sin_A1 = sin(A1);
-	// Sine Law to get the other angles.
-	double A2 = asin(sin_s31 * sin_A1 / sin_s23);
-	double A3 = asin(sin_s12 * sin_A1 / sin_s23);
+		// Cosine law
+		A1 = acos(-(s34*s34 - s14*s14 - s31*s31)/s14/s31/2.0);
+		double area2 = 0.5*s14*s31*sin(A1);
 
-	double area1 = (A1 + A2 + A3 - pi)*R1*R1;
-
-	// Triangle 2 between points 1,3,4.
-	// (Angles A1 and A3 for this triangle only)
-
-	// Cosine law for spherical triangles
-	// A1 is the angle of vertex 1 of the spherical triangle on the surface
-	cos_A1 = (cos_s34 - cos_s41*cos_s31) / (sin_s41 * sin_s31);
-	A1 = acos(cos_A1);
-	sin_A1 = sin(A1);
-	// Sine Law to get the other angles.
-	A3 = asin(sin_s41 * sin_A1 / sin_s34);
-	double A4 = asin(sin_s31 * sin_A1 / sin_s34);
-
-	double area2 = (A1 + A3 + A4 - pi)*R2*R2;
-
-	return(area1 + area2);
+		return(area1 + area2);
+	}
+	else
+	{
+		printf("Error: Outline areas require triangles or quadrilaterals\n");
+		return(0.0);
+	}
 
 }
 
