@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 2000, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 2000-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_topo_c[] =
     "@(#) $Id$";
@@ -34,7 +34,7 @@ Topo::Topo()
 
 Topo::~Topo()
 {
-	_Deallocate();
+    _Deallocate();
     return;
 }
 
@@ -161,7 +161,7 @@ Stable::Stable()
 
 Stable::~Stable()
 {
-	_Deallocate();
+    _Deallocate();
     return;
 }
 
@@ -369,6 +369,11 @@ topo_delta_f(
     float    latitude)
 {
     float height = topo->Height(longitude, latitude);
+    if (height == 0.0)
+    {
+        // no need to get s_factor
+        return 0.0;
+    }
     float s_factor = stable->GetValue(beam_idx, antenna_azimuth,
         orbit_fraction);
     float delta_f = s_factor * height * FFT_BIN_SIZE;
