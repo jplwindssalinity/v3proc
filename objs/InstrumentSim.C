@@ -438,7 +438,7 @@ InstrumentSim::ScatSim(
 	else
 	{
 		if (! LocateSliceCentroids(spacecraft, instrument, &meas_spot))
-			return(0);
+		    return(0);
 
 		if (outputXToStdout)
 			printf("%g ",instrument->antenna.azimuthAngle/dtr);
@@ -567,8 +567,8 @@ InstrumentSim::ComputeKfactor(
 	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	if(!instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-	  instrument->antenna.actualSpinRate, &GatGar)){
+	if(instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+	  instrument->antenna.actualSpinRate, &GatGar)!=1){
 	  fprintf(stderr,"ComputeKfactor: Cannot calculate GatGar at centroid\n");
 	  exit(1);
 	}

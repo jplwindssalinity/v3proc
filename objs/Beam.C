@@ -370,6 +370,21 @@ Beam::WriteBeamPattern(char* filename)
 //	gain = pointer to space for the interpolated power gain (real units).
 //
 
+//**********************************************************//
+//        RETURN VALUES                                     //
+//**********************************************************//
+// Returns a 1 if it successfully retrieves a gain from     //
+// the table.                                               //
+//                                                          //
+// Returns a 2 if the look and azimuth angle are for a      //
+// location outside the domain of the tabulated gain values //
+//                                                          //
+// Returns a 0 for any other error condition                //
+//                                                          //
+// This is the general return structure used by a number    //
+// of functions.                                            //
+//***********************************************************/
+
 int
 Beam::GetPowerGain(
 	double		look_angle,
@@ -404,7 +419,8 @@ Beam::GetPowerGain(
 	{
 		fprintf(stderr,"GetPowerGain: requested point out of range (%g, %g)\n",
 			look_angle, azimuth_angle);
-		return(0);
+		*gain=0;
+		return(2);
 	}
 
 	// The actual location of the lower left point of the grid square.
@@ -430,7 +446,6 @@ Beam::GetPowerGain(
 // Beam::GetPowerGain //
 //--------------------//
 // same as above, but returns a double
-
 int
 Beam::GetPowerGain(
 	double	look_angle,
@@ -438,10 +453,9 @@ Beam::GetPowerGain(
 	double	*gain)
 {
 	float x;
-	if (! GetPowerGain(look_angle, azimuth_angle, &x))
-		return(0);
+	int retval=GetPowerGain(look_angle, azimuth_angle, &x);
 	*gain = (double)x;
-	return(1);
+	return(retval);
 }
 
 //---------------------------//
@@ -453,6 +467,20 @@ Beam::GetPowerGain(
 // The two gains (transmit gain and receive gain) are multiplied together
 // to yield a 2-way gain product with scan loss approximately included.
 // Rotation is assumed to be in the positive azimuth direction.
+//**********************************************************//
+//        RETURN VALUES                                     //
+//**********************************************************//
+// Returns a 1 if it successfully retrieves a gain from     //
+// the table.                                               //
+//                                                          //
+// Returns a 2 if the look and azimuth angle are for a      //
+// location outside the domain of the tabulated gain values //
+//                                                          //
+// Returns a 0 for any other error condition                //
+//                                                          //
+// This is the general return structure used by a number    //
+// of functions.                                            //
+//**********************************************************//
 
 int
 Beam::GetPowerGainProduct(
@@ -463,13 +491,14 @@ Beam::GetPowerGainProduct(
 	double	*gain_product)
 {
 	float xmit_gain;
-	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
-		return(0);
+	int retval1, retval2;
+	retval1=GetPowerGain(look_angle, azimuth_angle, &xmit_gain);
 	azimuth_angle -= azimuth_rate * round_trip_time;
 	float recv_gain;
-	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
-		return(0);
+	retval2=GetPowerGain(look_angle, azimuth_angle, &recv_gain);
 	*gain_product = (double)(xmit_gain * recv_gain);
+        if(retval1==0 || retval2==0) return(0);
+        if(retval1==2 || retval2==2) return(2);
 	return(1);
 }
 
@@ -486,11 +515,15 @@ Beam::GetPowerGainProduct(
 	float	*gain_product)
 {
 	double tmp;
-	if (! GetPowerGainProduct(look_angle, azimuth_angle, round_trip_time,
-		azimuth_rate, &tmp))
-	{
-		return(0);
-	}
+        int retval;
+        retval=GetPowerGainProduct(look_angle, azimuth_angle, round_trip_time,
+		azimuth_rate, &tmp);
 	*gain_product = (float)tmp;
-	return(1);
+	return(retval);
 }
+
+
+
+
+
+

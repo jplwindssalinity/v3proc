@@ -231,15 +231,10 @@ IntegrateSlices(
 				  box_center, &tip))
 		      return(0);
 
-//		    if((look_scan_dir == 1 && tip.basebandFreq < low_gain_freq)
-//		                           ||
-//	      (look_scan_dir==-1 && tip.basebandFreq > low_gain_freq))
 
 		    if(look_num>=num_look_steps_per_slice)
 		      break;
 
-//		    if(debug) printf("Look=%g Freq=%g \n",(look1+look2)/2.0,
-//				     tip.basebandFreq);
 
 		    float gatgar, range, area;
 
@@ -253,10 +248,6 @@ IntegrateSlices(
 					    (azi1+azi2)/2.0, &gatgar))
 			return(0);
 
-//		    if(debug) printf("     Area %g Range %g GatGar %g \n",
-//				     area, range, gatgar);
-//		    if(debug) printf("     dX %g\n",
-//				     area*gatgar/(range*range*range*range));
 
 		    /*********************************/
 		    /*** Add AG/R^4 to sum           */
@@ -267,24 +258,11 @@ IntegrateSlices(
                     /*********************************/
 		    /* Goto next box                  */
 		    /*********************************/
-//                   float gt;
-//		   if(debug2){
-//		     beam->GetPowerGain((look1+look2)/2.0,(azi1+azi2)/2.0,&gt);
-//		   }
-//    Vector3 vector;
-//    vector.SphericalSet(1.0,40.785*dtr,-0.36*dtr);
-//    TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
-//				 vector, &tip);
-//    Vector3 gc_vector=antenna_frame_to_gc.Forward(vector);
-//    EarthPosition r_target = earth_intercept(orbit_state->rsat, gc_vector);
-
-//		   xarray[a*40+look_num]=gatgar;
 		    lk+=look_scan_dir*looktol;
 		    look_num++;
 		  }
 		}
 
-//		if(debug2)fwrite(&xarray[0],sizeof(float),40*20,stdout);
 		//---------------------------//
 		// generate measurement data //
 		//---------------------------//

@@ -189,6 +189,7 @@ LocateSliceCentroids(
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
+	TargetInfoPackage tip;
 
 	//------------------//
 	// set up meas spot //
@@ -217,6 +218,47 @@ LocateSliceCentroids(
 		return(0);
 	}
 
+        //-----------------------------------//
+        // Calculate center line of the spot //
+        // for use in determining centroids  //
+        // of outer slices.                  //
+        //-----------------------------------//
+        
+        // Find central frequency of spot 
+        Vector3 center_vector;
+        center_vector.SphericalSet(1.0, center_look, center_azim);
+        TargetInfo(&antenna_frame_to_gc,spacecraft,instrument,center_vector,
+		   &tip);
+        float spot_center_freq=tip.basebandFreq;
+        
+	// Find Peak Gain Locations + and - 5 kHz from the center frequency
+        // for now just use 8 Hz as the tolerance for calculating the
+        // these locations.
+
+        double neg_look=center_look;
+	double neg_azim=center_azim; 
+        double pos_look=center_look;
+        double pos_azim=center_azim;
+
+	float dummy_gain;
+        float freq_offset=5000;
+        double ftol_center_line=8;
+	if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, instrument,
+				 spot_center_freq+freq_offset, ftol_center_line, 
+				 &pos_look, &pos_azim, &dummy_gain) ||
+	    ! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, instrument,
+				 spot_center_freq-freq_offset, ftol_center_line, 
+				 &neg_look, &neg_azim, &dummy_gain))
+	  {
+	    fprintf(stderr,
+		    "LocateSliceCentroids: error finding peak gains for centerline.\n");
+	    return(0);
+	  }
+
+	// Calculate coefficients for (look,azimuth) vs freq center lines
+        double dlookdfreq=(pos_look-neg_look)/(2*freq_offset);
+        double dazimdfreq=(pos_azim-neg_azim)/(2*freq_offset);
+        
 	//--------------------------//
 	// find gain at beam center //
 	//--------------------------//
@@ -224,8 +266,8 @@ LocateSliceCentroids(
 	float peak_two_way_gain;
 	if (gain_threshold)
 	{
-		if (! PowerGainProduct(&antenna_frame_to_gc, spacecraft, instrument,
-			center_look, center_azim, &peak_two_way_gain))
+		if ( PowerGainProduct(&antenna_frame_to_gc, spacecraft, instrument,
+			center_look, center_azim, &peak_two_way_gain)!=1)
 		{
 			return(0);
 		}
@@ -241,7 +283,7 @@ LocateSliceCentroids(
 	float* gains = (float*)malloc(total_slices*sizeof(float));
 	if (! gains)
 	{
-		printf("Error allocating memory in LocateSliceCentroids\n");
+		fprintf(stderr,"Error allocating memory in LocateSliceCentroids\n");
 		return(0);
 	}
 
@@ -267,10 +309,17 @@ LocateSliceCentroids(
 		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, instrument,
 			centroid_freq, ftol, &look, &azim, &gain))
 		{
-			fprintf(stderr,
-				"LocateSliceCentroids: error finding peak gain for %g Hz\n",
-				centroid_freq);
+		  // If all else fails
+		  // Calculate centroid look and
+                  // azimuth using precalculated center line
+
+                  look=center_look+(centroid_freq-spot_center_freq)*dlookdfreq;
+		  azim=center_azim+(centroid_freq-spot_center_freq)*dazimdfreq;
+		  if(! PowerGainProduct(&antenna_frame_to_gc, spacecraft, 
+					instrument,look, azim, &gain))
+		    {
 			return(0);
+		    }
 		}
 
 		//--------------------//
@@ -446,8 +495,8 @@ LocateSpot(
 
 	// get the max gain value.
 	float gp_max;
-	if(! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-			    instrument->antenna.actualSpinRate, &gp_max)){
+	if(beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
+			    instrument->antenna.actualSpinRate, &gp_max)!=1){
 	  fprintf(stderr,"Locate Spot: Cannot compute max gain.\n");
 	  return(0);
 	}
@@ -490,7 +539,7 @@ LocateSpot(
 			float gp;
 			if(! beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
 				instrument->antenna.actualSpinRate, &gp))
-			  gp=0;
+			  return(0);
 			if (gp > contour_level * gp_max)
 			{
 				theta_max = theta;
@@ -1419,7 +1468,7 @@ FindPeakGainUsingDeltas(
 			}
 			continue;
 		}
-
+                if(again==bgain && bgain==cgain) return(0);
 		break;
 	} while (1);
 
@@ -1899,13 +1948,9 @@ PowerGainProduct(
 	TargetInfoPackage tip;
 	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
 	int idx = instrument->antenna.currentBeamIdx;
-	if (! instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
-		tip.roundTripTime, instrument->antenna.actualSpinRate, gain))
-	{
-	        gain=0;
-		return(0);
-	}
-	return(1);
+	int retval=instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
+		tip.roundTripTime, instrument->antenna.actualSpinRate, gain);
+	return(retval);
 }
 
 //-------------------//
@@ -2047,7 +2092,10 @@ NegativePowerGainProduct(
 	void*		beam)
 {
 	double gp;
-	if(!((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp))
-	  gp=0;
+	if(((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp)!=1){
+	  fprintf(stderr,"Error:NegativePowerGainProduct function failed\n");
+	  exit(1);
+	}
+	  
 	return(-gp);
 }
