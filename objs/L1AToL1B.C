@@ -108,7 +108,7 @@ L10ToL15::Convert(
 			antenna->SetAzimuthWithEncoder(
 				l10->frame.antennaPosition[spot_idx]);
 
-			if(XMGROUT) printf("%g ",antenna->azimuthAngle*dtr);
+			if(XMGROUT) printf("%g ",antenna->azimuthAngle/dtr);
 
 			//---------------------------// 
 			// create a measurement spot //
@@ -285,7 +285,7 @@ L10ToL15::Convert(
 			// commanded doppler
 			// commanded receiver gate delay
 
-			if(XMGROUT) printf("%g ",antenna->azimuthAngle*dtr);
+			if(XMGROUT) printf("%g ",antenna->azimuthAngle/dtr);
 
 			//----------------------------//
 			// generate coordinate switch //
