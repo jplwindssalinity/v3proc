@@ -247,7 +247,9 @@ void Matrix3::Inverse()
 
 int n = 3;
 int indxc[3],indxr[3],ipiv[3];
-int i,icol,irow,j,k,l,ll;
+int i, j, k, l, ll;
+int icol = 0;
+int irow = 0;
 float big,dum,pivinv,temp;
 
 for (j=0;j<n;j++) ipiv[j]=0;
