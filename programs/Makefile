@@ -85,6 +85,7 @@ PROGRAMS = \
 	l1a_to_ascii\
 	l1b_to_ascii \
 	checkframe_to_ascii \
+    checkframe_extract \
 	l2a_to_ascii \
 	l2b_to_ascii \
 	reformat_pattern \
@@ -174,6 +175,7 @@ GS_CHECK_PROGRAMS = \
     l1a_to_gs_l1a \
     l1b_hdf_to_l1b \
     check_l1b \
+    checkframe_extract \
     checkframe_to_ascii \
     gs_l1a_to_ascii \
     l1a_to_ascii \
