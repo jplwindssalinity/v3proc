@@ -83,8 +83,8 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define MAX_FRAMES 1000000000
 #define MAX_SPOTS  100000
+#define SEARCH_WINDOW 1000
 
 //--------//
 // MACROS //
@@ -103,6 +103,11 @@ match_cf_frame(
   CheckFrame* cf_target,
   CheckFrame* cf_source,
   FILE* source_fp);
+int
+match_frame(
+  CheckFrame* cf_target,
+  CheckFrame* cf_source,
+  double* rr);
 float identity(float* elem);
 float identitydB(float* elem);
 float dBerr(float* elem);
@@ -129,13 +134,14 @@ plot4(char* filename,
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING               "sfo:"
+#define OPTSTRING               "sfpo:r:"
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -s ]", "[ -f ]", "[-o output_base]",
+const char* usage_array[] = { "[ -s ]", "[ -f ]", "[ -p (print to stdout) ]",
+  " [-o output_base] ", "[ -r low:hi (pulse count) ]",
   "<cfg file>", "<simcheckfile>",
   "<onebcheckfile>", 0};
 extern int optind;
@@ -160,16 +166,29 @@ main(
 	char* onebcheckfile = NULL;
     char* output_base = NULL;
 
+    int range_low = -1;
+    int range_hi = -1;
     int f_flag = 0;
     int s_flag = 0;
+    int p_flag = 0;
     while (1)
     {
       int c = getopt(argc, argv, OPTSTRING);
       if (c == 'f') f_flag = 1;
       else if (c == 's') s_flag = 1;
+      else if (c == 'p') p_flag = 1;
       else if (c == 'o')
       {
         output_base = optarg;
+      }
+      else if (c == 'r')
+      {
+        if (sscanf(optarg, "%d:%d", &range_low, &range_hi) != 2)
+        {
+          fprintf(stderr, "%s: error determining spot range %s\n",
+              command, optarg);
+          exit(1);
+        }
       }
       else if (c == -1) break;
     }
@@ -253,6 +272,14 @@ main(
 	  fprintf(stderr, "%s: error allocating check frame\n", command);
 	  exit(1);
 	}
+    if (onebcheckfile == NULL) 
+    {
+      if (! cf1b.Allocate(cf.slicesPerSpot))
+      {
+        fprintf(stderr,"Error allocating onebcheckframe\n");
+        exit(1);
+      }
+    }
 
   //------------------//
   // Get record count //
@@ -274,10 +301,16 @@ main(
 	  exit(1);
   }
 
+  if (range_low == -1 && range_hi == -1)
+  {
+    range_low = 0;
+    range_hi = total_spots;
+  }
+
   // Subsample large numbers of spots to keep the number of points on
   // a graph reasonable.
-  int subsample = (int)(total_spots/MAX_SPOTS) + 1;
-  int Nspots = total_spots/subsample;
+  int subsample = (int)((range_hi - range_low)/MAX_SPOTS) + 1;
+  int Nspots = (range_hi - range_low)/subsample;
   int Nslices = Nspots*cf.slicesPerSpot;
   fprintf(stderr,"subsample=%d Nspots=%d Nslices=%d\n",
     subsample,Nspots,Nslices);
@@ -410,12 +443,14 @@ main(
   int count = 0;
   int subcount = 0;
 
-  if (onebcheckfile == NULL) 
+  while(1)
   {
-    while(1)
-    {
-        if (cf_frame_count >= MAX_FRAMES) break;
+    subcount++;  // step through the subsampled spots
+    if (cf_frame_count > range_hi) break;
+    cf_frame_count++;  // count all spots
 
+    if (onebcheckfile == NULL) 
+    {
 		//-----------------------------//
 		// read a level 1B data record //
 		//-----------------------------//
@@ -455,105 +490,75 @@ main(
             Meas* first_meas = meas_spot->GetHead();
             double meas_azi = first_meas->scanAngle;
 
-		    //---------------------------------------------//
-		    // Read in the corresponding checkframe record //
-		    //---------------------------------------------//
+            //-------------------------------------//
+            // Load spot data into cf1b CheckFrame //
+            //-------------------------------------//
 
-            cf_frame_count++;
-            if (cf_frame_count >= MAX_FRAMES) break;
-            int found = 0;
-	        while (cf.ReadDataRec(check_fp))
-	        {
-                if (fabs(cf.antennaAziGi - meas_azi) < 0.011/4.0)
-                {
-                    found = 1;
-                    break;
-                }
-//                found = 1;
-//                break;
-	        }
-            if (found == 0)
-            {
-                fprintf(stderr,"Can't find a checkframe at time = %g\n",
-                        meas_time);
-                rewind(check_fp);
-                continue;
-            }
+            cf1b.pulseCount = cf_frame_count-1;
+            cf1b.time = meas_spot->time;
+            cf1b.beamNumber = first_meas->beamIdx;
+            cf1b.antennaAziTx = 0.0;
+            cf1b.antennaAziGi = first_meas->scanAngle;
+            cf1b.orbitFrac = 0.0;
+            cf1b.spinRate = 0.0;
+            cf1b.txDoppler = 0.0;
+            cf1b.XdopplerFreq = 0.0;
+            cf1b.XroundTripTime = 0.0;
+            cf1b.EsCal = 0.0;
+            cf1b.deltaFreq = 0.0;
+            cf1b.EsnEcho = 0.0;
+            cf1b.EsnNoise = 0.0;
+            cf1b.rxGateDelay = 0.0;
+            cf1b.alpha = 0.0;
+            cf1b.rsat = meas_spot->scOrbitState.rsat;
+            cf1b.vsat = meas_spot->scOrbitState.vsat;
 
             //------------------//
             // for each Meas... //
             //------------------//
  
+            int j = 0;
             for (Meas* meas = meas_spot->GetHead(); meas;
                 meas = meas_spot->GetNext())
             {
               //-------------------------------------------//
-              // ...compare Meas data with CheckFrame data //
+              // ...load Meas slice data into CheckFrame   //
               //-------------------------------------------//
 
-              int j;
-              for (j=0; j < cf.slicesPerSpot; j++)
-              {  // search for matching checkframe slice record
-                if (cf.idx[j] == meas->startSliceIdx && cf.idx[j] != 0) break;
+              if (j >= cf.slicesPerSpot)
+              {
+                fprintf(stderr,"Error, Too many measurements in a spot\n");
+                exit(1);
               }
-              if (j >= cf.slicesPerSpot) continue;  // no match found
 
-              double alt,lon,lat,alt1b,lon1b,lat1b;
-              cf.centroid[j].GetAltLonGDLat(&alt,&lon,&lat);
+              double alt1b,lon1b,lat1b;
               meas->centroid.GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
               double measR =
                 (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
 
-              printf("%d %d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
-                cf.pulseCount, cf.idx[j],    // 1, 2
-                cf.time, meas_spot->time,    // 3, 4
-                cf.beamNumber, meas->beamIdx,    // 5, 6
-                cf.measType[j], meas->measType,    // 7, 8
-                cf.antennaAziTx, meas->scanAngle,    // 9, 10
-                cf.antennaAziGi, 0.0,    // 11, 12
-                cf.orbitFrac, 0.0,    // 13, 14
-                cf.spinRate, 0.0,    // 15, 16
-                cf.txDoppler, 0.0,    // 17, 18
-                cf.XdopplerFreq, 0.0,    // 19, 20
-                cf.XroundTripTime, 0.0,    // 21, 22
-                cf.sigma0[j], meas->value,    // 23, 24
-                cf.XK[j], meas->XK,    // 25, 26
-                cf.EsCal, 0.0,    // 27, 28
-                cf.deltaFreq, 0.0,    // 29, 30
-                cf.Es[j], meas->value*meas->XK,    // 31, 32
-                cf.En[j], meas->EnSlice,    // 33, 34
-                cf.EsnEcho, 0.0,    // 35, 36
-                cf.EsnNoise, 0.0,    // 37, 38
-                cf.rxGateDelay, 0.0,    // 39, 40
-                cf.alpha, 0.0,    // 41, 42
-                lon,lon1b,lat,lat1b,    // 43, 44, 45, 46
-                cf.azimuth[j], meas->eastAzimuth,    // 47, 48
-                cf.incidence[j], meas->incidenceAngle,    // 49, 50
-                cf.R[j], measR,    // 51, 52
-                cf.GatGar[j], 0.0,    // 53, 54
-                cf.rsat.Get(0), meas_spot->scOrbitState.rsat.Get(0),  // 55, 56
-                cf.rsat.Get(1), meas_spot->scOrbitState.rsat.Get(1),  // 57, 58
-                cf.rsat.Get(2), meas_spot->scOrbitState.rsat.Get(2),  // 59, 60
-                cf.vsat.Get(0), meas_spot->scOrbitState.vsat.Get(0),  // 61, 62
-                cf.vsat.Get(1), meas_spot->scOrbitState.vsat.Get(1),  // 63, 64
-                cf.vsat.Get(2), meas_spot->scOrbitState.vsat.Get(2));  // 65,66
+              cf1b.idx[j] = meas->startSliceIdx;
+              cf1b.measType[j] = meas->measType;
+              cf1b.sigma0[j] = meas->value;
+              cf1b.XK[j] = meas->XK;
+              cf1b.Es[j] = meas->value*meas->XK;
+              cf1b.En[j] = meas->EnSlice;
+              cf1b.centroid[j] = meas->centroid;
+              cf1b.azimuth[j] = meas->eastAzimuth;
+              cf1b.incidence[j] = meas->incidenceAngle;
+              cf1b.R[j] = measR;
+              cf1b.GatGar[j] = 0.0;
+              j++;
             }
         } 
     }
-  }
-  else
-  {
-    while (1)
-    {  // for each 1B check frame...
+    else
+    {  // A 2nd checkfile is provided.
 
       //-----------------------//
       // Read a 1B check frame //
       //-----------------------//
 
-      if (cf_frame_count >= MAX_FRAMES) break;
-      cf_frame_count++;  // count all spots
       int ret;
-      subcount++;  // step through the subsampled frames (ie., spots)
       if (f_flag == 0)
       {
         ret = cf1b.ReadDataRec(oneb_fp);
@@ -564,146 +569,153 @@ main(
       }
       if (! ret) break; // end of oneb_fp file
 
-      //-------------------------------------//
-      // Accumulate statistics on all pulses //
-      //-------------------------------------//
+    }
 
-      if (s_flag == 1)
-      {
-        if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
-        for (int i=0; i < cf.slicesPerSpot; i++)
-        for (int j=0; j < cf.slicesPerSpot; j++)
-        {
-          if (cf1b.idx[i] != cf.idx[j] || cf1b.idx[i] == 0 || cf.idx[j] == 0)
-            continue;
+    if (cf_frame_count < range_low) continue;  // wait till in range.
 
-          float snr = 10.0/log(10.0)*log(cf.Es[j]/cf.En[j]);
-          int isnr;
-          if (!snr_idx.GetNearestIndex(snr,&isnr))
-          {
-            fprintf(stderr,"Warning: Snr index out of range (snr (dB) = %g)\n",
-                    snr);
-            continue;
-          }
+    //-------------------------------------//
+    // Accumulate statistics on all pulses //
+    //-------------------------------------//
 
-          c_stat[isnr]++;
-
-          float diff = (cf1b.sigma0[i] - cf.sigma0[j])/cf.sigma0[j];
-          e_sigma0_sum[isnr] += diff;
-          e_sigma0_sum2[isnr] += diff*diff;
-          if (e_sigma0_max[isnr] < diff) e_sigma0_max[isnr] = diff;
-          if (e_sigma0_min[isnr] > diff) e_sigma0_min[isnr] = diff;
-
-          diff = (cf1b.XK[i] - cf.XK[j])/cf.XK[j];
-          e_X_sum[isnr] += diff;
-          e_X_sum2[isnr] += diff*diff;
-          if (e_X_max[isnr] < diff) e_X_max[isnr] = diff;
-          if (e_X_min[isnr] > diff) e_X_min[isnr] = diff;
-
-          diff = (cf1b.Es[i] - cf.Es[j])/cf.Es[j];
-          e_Es_sum[isnr] += diff;
-          e_Es_sum2[isnr] += diff*diff;
-          if (e_Es_max[isnr] < diff) e_Es_max[isnr] = diff;
-          if (e_Es_min[isnr] > diff) e_Es_min[isnr] = diff;
-
-          diff = (cf1b.En[i] - cf.En[j])/cf.En[j];
-          e_En_sum[isnr] += diff;
-          e_En_sum2[isnr] += diff*diff;
-          if (e_En_max[isnr] < diff) e_En_max[isnr] = diff;
-          if (e_En_min[isnr] > diff) e_En_min[isnr] = diff;
-
-          break; // done with this slice
-        }
-      }
-
-      //--------------------------------------------//
-      // Accumulate data for subsampled pulses only //
-      //--------------------------------------------//
-
-      if (subcount < subsample)
-      {  // skip over pulses until the next subsample
-        continue;
-      }
-      else
-      {  // process this pulse and start subsample count again
-        subcount = 0;
-      }
-
-      if (s_flag == 0)
-      {  // still need to read a matching frame
-        if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
-      }
-
-      if (output_base != NULL)
-      {
-        ant_aziGi[spot_count][0] = cf.antennaAziGi;
-        ant_aziGi[spot_count][1] = cf1b.antennaAziGi;
-        tx_doppler[spot_count][0] = cf.txDoppler;
-        tx_doppler[spot_count][1] = cf1b.txDoppler;
-        x_doppler[spot_count][0] = cf.XdopplerFreq;
-        x_doppler[spot_count][1] = cf1b.XdopplerFreq;
-        rx_gate_delay[spot_count][0] = cf.rxGateDelay;
-        rx_gate_delay[spot_count][1] = cf1b.rxGateDelay;
-        delta_freq[spot_count][0] = cf.deltaFreq;
-        delta_freq[spot_count][1] = cf1b.deltaFreq;
-      }
-      spot_count++;
-
+    if (s_flag == 1)
+    {
+      if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
       for (int i=0; i < cf.slicesPerSpot; i++)
       for (int j=0; j < cf.slicesPerSpot; j++)
       {
         if (cf1b.idx[i] != cf.idx[j] || cf1b.idx[i] == 0 || cf.idx[j] == 0)
           continue;
-        double alt,lon1,lat1,alt1b,lon1b,lat1b;
-        cf.centroid[j].GetAltLonGDLat(&alt,&lon1,&lat1);
-        cf1b.centroid[i].GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
 
-        if (output_base != NULL)
+        float snr = 10.0/log(10.0)*log(cf.Es[j]/cf.En[j]);
+        int isnr;
+        if (!snr_idx.GetNearestIndex(snr,&isnr))
         {
-          int abs_idx;
-          if (! rel_to_abs_idx(cf.idx[j],cf.slicesPerSpot,&abs_idx))
-          {
-            fprintf(stderr,"Error converting to abs idx\n");
-            exit(1);
-          }
-          pulse_count[count][0] = abs_idx/(float)cf.slicesPerSpot +
-            cf_frame_count;
-          slice_idx[count][0] = cf.idx[j];
-          sigma0[count][0] = cf.sigma0[j];
-          X[count][0] = cf.XK[j];
-          Es[count][0] = cf.Es[j];
-          En[count][0] = cf.En[j];
-          // convert east azimuth to north azimuth
-          azim[count][0] = pi/2.0 - cf.azimuth[j];
-//          if (azim[count][0] < -pi) azim[count][0] += 2.0*pi;
-//          if (azim[count][0] > -pi) azim[count][0] -= 2.0*pi;
-          incang[count][0] = cf.incidence[j];
-          range[count][0] = cf.R[j];
-          lon[count][0] = lon1;
-          lat[count][0] = lat1;
-
-          slice_idx[count][1] = cf1b.idx[i];
-          sigma0[count][1] = cf1b.sigma0[i];
-          X[count][1] = cf1b.XK[i];
-          Es[count][1] = cf1b.Es[i];
-          En[count][1] = cf1b.En[i];
-          azim[count][1] = cf1b.azimuth[i];
-          incang[count][1] = cf1b.incidence[i];
-          range[count][1] = cf1b.R[i];
-          lon[count][1] = lon1b;
-          lat[count][1] = lat1b;
+          fprintf(stderr,"Warning: Snr index out of range (snr (dB) = %g)\n",
+                  snr);
+          continue;
         }
 
-              float beta = 2.6915348;
-              float esn_slice1 = cf.Es[j] + cf.En[j];
-              float esn_slice2 = cf1b.Es[i] + cf1b.En[i];
-              float en_spot1 = 1.0/(1.0 - cf.alpha)*
-                (cf.EsnEcho - cf.EsnNoise)/beta;
-              float en_spot2 = 1.0/(1.0 - cf1b.alpha)*
-                (cf1b.EsnEcho - cf1b.EsnNoise)/beta;
-              float q_slice1 = cf.En[j]/en_spot1;
-              float q_slice2 = cf1b.En[i]/en_spot2;
-              printf("%d %d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
+        c_stat[isnr]++;
+
+        float diff = (cf1b.sigma0[i] - cf.sigma0[j])/cf.sigma0[j];
+        e_sigma0_sum[isnr] += diff;
+        e_sigma0_sum2[isnr] += diff*diff;
+        if (e_sigma0_max[isnr] < diff) e_sigma0_max[isnr] = diff;
+        if (e_sigma0_min[isnr] > diff) e_sigma0_min[isnr] = diff;
+
+        diff = (cf1b.XK[i] - cf.XK[j])/cf.XK[j];
+        e_X_sum[isnr] += diff;
+        e_X_sum2[isnr] += diff*diff;
+        if (e_X_max[isnr] < diff) e_X_max[isnr] = diff;
+        if (e_X_min[isnr] > diff) e_X_min[isnr] = diff;
+
+        diff = (cf1b.Es[i] - cf.Es[j])/cf.Es[j];
+        e_Es_sum[isnr] += diff;
+        e_Es_sum2[isnr] += diff*diff;
+        if (e_Es_max[isnr] < diff) e_Es_max[isnr] = diff;
+        if (e_Es_min[isnr] > diff) e_Es_min[isnr] = diff;
+
+        diff = (cf1b.En[i] - cf.En[j])/cf.En[j];
+        e_En_sum[isnr] += diff;
+        e_En_sum2[isnr] += diff*diff;
+        if (e_En_max[isnr] < diff) e_En_max[isnr] = diff;
+        if (e_En_min[isnr] > diff) e_En_min[isnr] = diff;
+
+        break; // done with this slice
+      }
+    }
+
+    //--------------------------------------------//
+    // Accumulate data for subsampled pulses only //
+    //--------------------------------------------//
+
+    if (subcount < subsample)
+    {  // skip over pulses until the next subsample
+      continue;
+    }
+    else
+    {  // process this pulse and start subsample count again
+      subcount = 0;
+    }
+
+    if (s_flag == 0)
+    {  // still need to read a matching frame
+      if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
+    }
+
+    if (output_base != NULL)
+    {
+      ant_aziGi[spot_count][0] = cf.antennaAziGi;
+      ant_aziGi[spot_count][1] = cf1b.antennaAziGi;
+      tx_doppler[spot_count][0] = cf.txDoppler;
+      tx_doppler[spot_count][1] = cf1b.txDoppler;
+      x_doppler[spot_count][0] = cf.XdopplerFreq;
+      x_doppler[spot_count][1] = cf1b.XdopplerFreq;
+      rx_gate_delay[spot_count][0] = cf.rxGateDelay;
+      rx_gate_delay[spot_count][1] = cf1b.rxGateDelay;
+      delta_freq[spot_count][0] = cf.deltaFreq;
+      delta_freq[spot_count][1] = cf1b.deltaFreq;
+    }
+    spot_count++;
+
+    for (int i=0; i < cf.slicesPerSpot; i++)
+    for (int j=0; j < cf.slicesPerSpot; j++)
+    {
+      if (cf1b.idx[i] != cf.idx[j] || cf1b.idx[i] == 0 || cf.idx[j] == 0)
+        continue;
+      double alt,lon1,lat1,alt1b,lon1b,lat1b;
+      cf.centroid[j].GetAltLonGDLat(&alt,&lon1,&lat1);
+      cf1b.centroid[i].GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
+
+      if (output_base != NULL)
+      {
+        int abs_idx;
+        if (! rel_to_abs_idx(cf.idx[j],cf.slicesPerSpot,&abs_idx))
+        {
+          fprintf(stderr,"Error converting to abs idx\n");
+          exit(1);
+        }
+        pulse_count[count][0] = abs_idx/(float)cf.slicesPerSpot +
+          cf_frame_count;
+        slice_idx[count][0] = cf.idx[j];
+        sigma0[count][0] = cf.sigma0[j];
+        X[count][0] = cf.XK[j];
+        Es[count][0] = cf.Es[j];
+        En[count][0] = cf.En[j];
+        // convert east azimuth to north azimuth
+        azim[count][0] = pi/2.0 - cf.azimuth[j];
+//        if (azim[count][0] < -pi) azim[count][0] += 2.0*pi;
+//        if (azim[count][0] > -pi) azim[count][0] -= 2.0*pi;
+        incang[count][0] = cf.incidence[j];
+        range[count][0] = cf.R[j];
+        lon[count][0] = lon1;
+        lat[count][0] = lat1;
+
+        slice_idx[count][1] = cf1b.idx[i];
+        sigma0[count][1] = cf1b.sigma0[i];
+        X[count][1] = cf1b.XK[i];
+        Es[count][1] = cf1b.Es[i];
+        En[count][1] = cf1b.En[i];
+        azim[count][1] = cf1b.azimuth[i];
+        incang[count][1] = cf1b.incidence[i];
+        range[count][1] = cf1b.R[i];
+        lon[count][1] = lon1b;
+        lat[count][1] = lat1b;
+      }
+
+      float beta = 2.6915348;
+      float esn_slice1 = cf.Es[j] + cf.En[j];
+      float esn_slice2 = cf1b.Es[i] + cf1b.En[i];
+      float en_spot1 = 1.0/(1.0 - cf.alpha)*
+        (cf.EsnEcho - cf.EsnNoise)/beta;
+      float en_spot2 = 1.0/(1.0 - cf1b.alpha)*
+        (cf1b.EsnEcho - cf1b.EsnNoise)/beta;
+      float q_slice1 = cf.En[j]/en_spot1;
+      float q_slice2 = cf1b.En[i]/en_spot2;
+
+      if (p_flag == 1)
+      {
+        printf("%d %d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
                cf.pulseCount, cf.idx[j],
                cf.time, cf1b.time,
                cf.beamNumber, cf1b.beamNumber,
@@ -739,13 +751,13 @@ main(
                esn_slice1, esn_slice2,
                en_spot1, en_spot2,
                q_slice1, q_slice2);
-        count++;
-        break; // done with this slice
       }
+      count++;
+      break; // done with this slice
     }
   }
 
-  if (onebcheckfile != NULL && output_base != NULL) 
+  if (output_base != NULL) 
   {
     fprintf(stderr,"total_slices = %ld, total_spots = %ld, file_size = %ld\n",
            total_slices,
@@ -800,7 +812,7 @@ main(
 
   }
 
-  if (onebcheckfile != NULL && output_base != NULL && s_flag == 1) 
+  if (output_base != NULL && s_flag == 1) 
   {
     float** snr = (float**)make_array(sizeof(float),2,Nstat,1);
     int* use = (int*)malloc(sizeof(int)*Nstat);
@@ -866,25 +878,110 @@ match_cf_frame(
   FILE* source_fp)
 
 {
+  static long call_count = 0;
+  long search_win = SEARCH_WINDOW;
+
+  if (call_count < 3) search_win = 10000000; // look hard at the beginning
+  float adiff;
+  double rr;
+  float minadiff = 100.0;
+  double minrr = 10000.0;
+
+  if (cf_source->ReadDataRec(source_fp))
+  {  // check next frame first
+    int rv = match_frame(cf_target,cf_source,&rr);
+    if (rv == 1)
+    {
+//      fprintf(stderr,"%g %g %d\n",rr,
+//          fabs(cf_source->antennaAziGi - cf_target->antennaAziGi),
+//          cf_source->beamNumber);
+      return(1);
+    }
+  }
+
+  int position = ftell(source_fp);
+
+  // backup to scan the search window
+  if (fseek(source_fp,-search_win*cf_source->Size(),SEEK_CUR) != 0)
+  {  // can't back up enough, just go to the beginning.
+    if (fseek(source_fp,0,SEEK_SET) != 0)
+    {
+      fprintf(stderr,
+        "check_l1b: Error seeking in primary checkfile\n");
+       exit(1);
+    }
+  }
+
+  int count = 0;
   int found = 0;
+
   while (cf_source->ReadDataRec(source_fp))
   {  // look for matching sim check frame
-    if (cf_source->pulseCount == cf_target->pulseCount)
+    int rv = match_frame(cf_target,cf_source,&rr);
+    if (rv == 1)
     {
+//      fprintf(stderr,"%g %g %d\n",rr,
+//        fabs(cf_source->antennaAziGi - cf_target->antennaAziGi),
+//        cf_source->beamNumber);
       found = 1;
       break;
     }
+
+    adiff = fabs(cf_source->antennaAziGi - cf_target->antennaAziGi);
+    if (adiff < minadiff) minadiff = adiff;
+    if (rr < minrr) minrr = rr;
+
+    count++;
+    if (count > 2*search_win) break;
   }
 
   if (found == 0)
   {
     fprintf(stderr,"Can't match a target checkframe at index = %d\n",
     cf_target->pulseCount);
-    rewind(source_fp);
+    fprintf(stderr,"minadiff = %g, minrr = %g\n",minadiff,minrr);
+    if (fseek(source_fp,position,SEEK_SET) != 0)
+    {
+      fprintf(stderr,
+              "checkframe_extract: Error seeking in primary checkfile\n");
+       exit(1);
+    }
   }
 
+  call_count++;
   return(found);
 
+}
+
+int
+match_frame(
+  CheckFrame* cf_target,
+  CheckFrame* cf_source,
+  double *rr)
+
+{
+  int i;
+
+  if (fabs(cf_source->antennaAziGi - cf_target->antennaAziGi) < 0.005 &&
+      cf_source->beamNumber == cf_target->beamNumber )
+  {
+    for (i=0; i < cf_source->slicesPerSpot; i++)
+    {
+      if (cf_source->idx[i] == cf_target->idx[0]) break;
+    } 
+    if (i >= cf_source->slicesPerSpot)
+    {
+      fprintf(stderr,"can't match slice %d\n",cf_target->idx[0]);
+      return(2);
+    } 
+    *rr = cf_source->centroid[i].SurfaceDistance(cf_target->centroid[0]);
+    if (cf_source->centroid[i].SurfaceDistance(cf_target->centroid[0]) < 30.0)
+    {
+      return(1);
+    }
+  }
+
+  return(0);
 }
 
 float identity(float* elem)
