@@ -62,6 +62,7 @@ static const char rcs_id[] =
 #include <math.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "Meas.h"
 #include "Misc.h"
 #include "Beam.h"
 #include "GMF.h"
@@ -70,6 +71,12 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
+#include "Wind.h"
+
+// these are needed because Meas (which this program needs) uses L2AHdf
+// (which this program doesn't need)
+#include "Tracking.h"
+#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //
@@ -84,6 +91,12 @@ template class List<long>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class List<AngleInterval>;
+template class List<AngleInterval>;
+
+// these are needed because Meas (which this program needs) uses L2AHdf
+// (which this program doesn't need)
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //
