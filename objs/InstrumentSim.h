@@ -90,6 +90,8 @@ public:
 
         float azimuthStepSize;
 
+	float dopplerBias;
+
 	//---------------------------//
 	// level 0 frame information //
 	//---------------------------//
@@ -110,6 +112,9 @@ public:
 
         int                     rangeGateClipping;      // simulate range gate
 							// clipping
+
+        int                     applyDopplerError;      //simulate doppler
+							//tracking error
 protected:
 
 	//-----------//

@@ -367,6 +367,7 @@ InstrumentSim::ScatSim(
 	//-------------------------------------------------------------//
 
 	SetRangeAndDoppler(spacecraft, instrument);
+        if(applyDopplerError) instrument->commandedDoppler+=dopplerBias;
 
 	//---------------------//
 	// locate measurements //

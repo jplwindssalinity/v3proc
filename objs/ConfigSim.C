@@ -676,6 +676,11 @@ ConfigInstrumentSim(
 		range_gate_clipping=0; // default value
 	instrument_sim->rangeGateClipping=range_gate_clipping;
 
+	int apply_doppler_error;
+	if (! config_list->GetInt(APPLY_DOPPLER_ERROR_KEYWORD, &apply_doppler_error))
+		apply_doppler_error=0; // default value
+	instrument_sim->applyDopplerError=apply_doppler_error;
+
 
 	config_list->ExitForMissingKeywords();
 
@@ -745,6 +750,15 @@ ConfigInstrumentSim(
 	  instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
 	}
 
+        if(apply_doppler_error){
+          float doppler_bias;
+	  if (! config_list->GetFloat(DOPPLER_BIAS_KEYWORD,
+				      &doppler_bias))
+	    {
+	      return(0);
+	    }
+	  instrument_sim->dopplerBias=doppler_bias*KHZ_TO_HZ;
+	}
 	return(1);
 }
 
