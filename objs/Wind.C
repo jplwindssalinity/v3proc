@@ -316,16 +316,21 @@ WVC::~WVC()
 {
     WindVectorPlus* wvp;
     ambiguities.GotoHead();
-    int selected_allocated = 0;
 
-    while ((wvp=ambiguities.RemoveCurrent()) != NULL)
+    while ((wvp = ambiguities.RemoveCurrent()) != NULL)
     {
-        delete wvp;
         if (wvp == selected)
             selected_allocated = 0;
+        delete wvp;
     }
-    if (selected_allocated)
-        delete selected;
+    if (selected_allocated) {
+        if (selected != NULL)
+            delete selected;
+    }
+    if (specialVector != NULL) {
+        delete specialVector;
+    }
+        
     if (nudgeWV)
     {
         delete nudgeWV;
