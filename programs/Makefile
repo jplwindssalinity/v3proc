@@ -5,7 +5,8 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-LDLIBS =		../../lib/libSim.a -lm
+LIBS =			../../lib/libSim.a
+LDLIBS =		$(LIBS) -lm
 
 CPPFLAGS =		-g -ptr. -ptr../objs +w -I$(INCDIR)
 
@@ -45,5 +46,5 @@ install: $(PROGRAMS)
 %.h: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
-sim: sim.C
+sim: sim.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
