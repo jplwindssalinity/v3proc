@@ -2433,7 +2433,7 @@ GMF::RetrieveWindsH1(
             // check the nature of the peak //
             //------------------------------//
 
-            if (left_idx == right_idx == phi_idx)
+            if (left_idx == phi_idx && right_idx == phi_idx)
             {
                 //-------------------------------------------------//
                 // I think this is impossible, but just in case... //
@@ -2467,7 +2467,7 @@ GMF::RetrieveWindsH1(
 
                 int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
                 m = _bestObj[right_idx] - _bestObj[right_minus_idx];
-                b = _bestObj[right_minus_idx] - m * (float)right_idx;
+                b = _bestObj[right_minus_idx] - m * (float)right_minus_idx;
                 right_rad[peak_idx] = _phiStepSize * (thresh - b) / m;
             }
 
@@ -2478,8 +2478,14 @@ GMF::RetrieveWindsH1(
             while (left_rad[peak_idx] < 0.0)
                 left_rad[peak_idx] += two_pi;
 
-            while (right_rad[peak_idx] < left_rad[peak_idx])
+            while (left_rad[peak_idx] > two_pi)
+                left_rad[peak_idx] -= two_pi;
+
+            while (right_rad[peak_idx] - left_rad[peak_idx] < 0.0)
                 right_rad[peak_idx] += two_pi;
+
+            while (right_rad[peak_idx] - left_rad[peak_idx] > two_pi)
+                right_rad[peak_idx] -= two_pi;
 
             width_rad[peak_idx] = right_rad[peak_idx] -
                 left_rad[peak_idx];
@@ -2593,7 +2599,7 @@ GMF::RetrieveWindsH1(
     {
         int max_idx = -1;
         float max_use_width = 0.0;
-        for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+        for (peak_idx = 0; peak_idx < peak_count; peak_idx++)
         {
             if (! valid_peak[peak_idx])
                 continue;
@@ -2655,7 +2661,7 @@ GMF::RetrieveWindsH1(
     //-------------------------------//
 
     WVC tmp_wvc;
-    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    for (peak_idx = 0; peak_idx < peak_count; peak_idx++)
     {
         if (! valid_peak[peak_idx])
             continue;
@@ -2694,11 +2700,13 @@ GMF::RetrieveWindsH1(
     // peak split multiple ambiguity peaks //
     //-------------------------------------//
 
-    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    for (peak_idx = 0; peak_idx < peak_count; peak_idx++)
     {
         if (! valid_peak[peak_idx])
             continue;
 
+        float max_peak_obj = -9E50;
+        WindVectorPlus* max_wvp = NULL;
         if (number_ambigs[peak_idx] > 1)
         {
             for (int i = 0; i < number_ambigs[peak_idx]; i++)
@@ -2721,12 +2729,34 @@ GMF::RetrieveWindsH1(
                 wvp->dir = dir;
                 wvp->obj = obj;
 
+                if (wvp->obj > max_peak_obj)
+                {
+                    max_peak_obj = wvp->obj;
+                    max_wvp = wvp;
+                }
+
                 // put in wvc
-                if (! wvc->ambiguities.Append(wvp))
+                if (! tmp_wvc.ambiguities.Append(wvp))
                 {
                     delete wvp;
                     return(0);
                 }
+            }
+        }
+
+        //------------------------------------//
+        // reassign objective function values //
+        //------------------------------------//
+
+        tmp_wvc.ambiguities.GotoHead();
+        while (WindVectorPlus* wvp = tmp_wvc.ambiguities.RemoveCurrent())
+        {
+            if (wvp != max_wvp)
+                wvp->obj = min_obj;
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
             }
         }
     }
