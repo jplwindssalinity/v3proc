@@ -329,7 +329,7 @@ main(
                 (unsigned short)table_readout_offset,
                 table_readout_data, &beam_idx, &active))
             {
-                sprintf(filename, "%d.%d.%s.rgc", range_tracker.GetTableId(),
+                sprintf(filename, "%04X.%d.%s.rgc", range_tracker.GetTableId(),
                     beam_idx + 1, active_map[active]);
                 if (! range_tracker.WriteBinary(filename))
                 {
@@ -343,8 +343,9 @@ main(
                 (unsigned short)table_readout_offset,
                 table_readout_data, &beam_idx, &active))
             {
-                sprintf(filename, "%d.%d.%s.dtc", doppler_tracker.GetTableId(),
-                    beam_idx + 1, active_map[active]);
+                sprintf(filename, "%04X.%d.%s.dtc",
+                    doppler_tracker.GetTableId(), beam_idx + 1,
+                    active_map[active]);
                 if (! doppler_tracker.WriteBinary(filename))
                 {
                     fprintf(stderr, "%s: error writing DTC to file %s\n",
