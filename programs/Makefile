@@ -15,6 +15,7 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	l00_to_l10 \
+	l10_to_l15 \
 	sim
 
 #----------------------------------------------------------------------
@@ -54,4 +55,7 @@ sim: sim.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 l00_to_l10: l00_to_l10.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+l10_to_l15: l10_to_l15.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
