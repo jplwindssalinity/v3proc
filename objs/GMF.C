@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
+// Copyright (C) 1997-1998, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_gmf_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -25,11 +25,11 @@ static const char rcs_id_gmf_c[] =
 
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
-    retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), _spdTol(DEFAULT_SPD_TOL),
-    _sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
-    _maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
-    _copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
-    _dir_mle_maxima(NULL)
+    retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), smartNudgeFlag(0),
+    _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
+    _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
+    _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
+    _objective_buffer(NULL), _dir_mle_maxima(NULL)
 {
 	SetPhiCount(DEFAULT_PHI_COUNT);
 
@@ -228,6 +228,7 @@ GMF::GetCoefs(
 
 	return(1);
 }
+
 //---------------//
 // GMF::WritePdf //
 //---------------//
@@ -386,7 +387,7 @@ GMF::GetObjLimits(
 		if (_bestObj[i] > *max_obj)
 			*max_obj = _bestObj[i];
 	}
-	
+
 	return(1);
 }
 
@@ -440,7 +441,7 @@ GMF::WriteGSObjectiveCurve(
 
 	for (int i = 2; i <= num_dir_samples; i++)
 	{
-		float angle = dir_spacing * (float)(i - 1) - dir_spacing; 
+		float angle = dir_spacing * (float)(i - 1) - dir_spacing;
 		fprintf(ofp, "%g %g\n", angle,
 			(_objective_buffer[i] - min_obj) * scale);
 	}
@@ -627,13 +628,13 @@ GMF::RetrieveManyWinds(
 //-------------------------------------//
 // GMF::RetrieveWindsWithPeakSplitting //
 //-------------------------------------//
-int             
+int
 GMF::RetrieveWindsWithPeakSplitting(
 	MeasList*         meas_list,
-        Kp*                      kp, 
-        WVC*                    wvc, 
-        float                 one_peak_width, 
-        float                 two_peak_separation_threshold, 
+        Kp*                      kp,
+        WVC*                    wvc,
+        float                 one_peak_width,
+        float                 two_peak_separation_threshold,
 	float                 threshold)
 
 {
@@ -649,7 +650,7 @@ GMF::RetrieveWindsWithPeakSplitting(
 
 	int num_peaks=0;
 	float top_peaks_dir[2];
-	
+
 	float obj,scale=0;
         WindVectorPlus* head=wvc->ambiguities.GetHead();
         if(head!=NULL) scale=head->obj;
@@ -701,7 +702,7 @@ GMF::RetrieveWindsWithPeakSplitting(
 	      wvp= new WindVectorPlus();
 	      wvp->spd=_bestSpd[phi_idx];
 	      wvp->dir=dir;
-              wvp->obj=_bestObj[phi_idx];	     
+              wvp->obj=_bestObj[phi_idx];
 	      wvc->ambiguities.Append(wvp);
 	      wvp=NULL;
 	    }
@@ -712,8 +713,8 @@ GMF::RetrieveWindsWithPeakSplitting(
         // Case 3: two peaks less than two peak separation //
         // threshold apart which do not fit Case 1:        //
         //-------------------------------------------------//
-		if(num_peaks==2 && 
-		   fabs(ANGDIF(top_peaks_dir[0],top_peaks_dir[1]))< 
+		if(num_peaks==2 &&
+		   fabs(ANGDIF(top_peaks_dir[0],top_peaks_dir[1]))<
 		   two_peak_separation_threshold){
 
                   WindVectorPlus* wvp=wvc->ambiguities.GetHead();
@@ -729,14 +730,14 @@ GMF::RetrieveWindsWithPeakSplitting(
                     if(wvp){
 		      wvp->spd=_bestSpd[phi_idx];
 		      wvp->dir=dir;
-		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp->obj=_bestObj[phi_idx];
 		      wvp=wvc->ambiguities.GetNext();
 		    }
 		    else{
 		      wvp= new WindVectorPlus();
 		      wvp->spd=_bestSpd[phi_idx];
 		      wvp->dir=dir;
-		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp->obj=_bestObj[phi_idx];
                       wvc->ambiguities.Append(wvp);
                       wvp=NULL;
 		    }
@@ -753,25 +754,25 @@ GMF::RetrieveWindsWithPeakSplitting(
                     if(wvp){
 		      wvp->spd=_bestSpd[phi_idx];
 		      wvp->dir=dir;
-		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp->obj=_bestObj[phi_idx];
 		      wvp=wvc->ambiguities.GetNext();
 		    }
 		    else{
 		      wvp= new WindVectorPlus();
 		      wvp->spd=_bestSpd[phi_idx];
 		      wvp->dir=dir;
-		      wvp->obj=_bestObj[phi_idx];	     
+		      wvp->obj=_bestObj[phi_idx];
                       wvc->ambiguities.Append(wvp);
                       wvp=NULL;
 		    }
 		  }
 		}
-	
+
 		//----------------------------------//
                 // Case 4: Everything else          //
                 // Do not change ambiguities.       //
                 //----------------------------------//
-               	
+
 		//------------------------------------------//
 		// sort the solutions by objective function //
 		//------------------------------------------//
@@ -815,13 +816,13 @@ GMF::_ObjectiveToProbability(float scale, int radius)
 //-------------------------------------//
 // GMF::RetrieveWindsWithPeakSplitting //
 //-------------------------------------//
-int             
+int
 GMF::RetrieveWindsWithPeakSplitting(
 	MeasList*         meas_list,
-        Kp*                      kp, 
-        WVC*                    wvc, 
-        float                 one_peak_width, 
-        float                 two_peak_separation_threshold, 
+        Kp*                      kp,
+        WVC*                    wvc,
+        float                 one_peak_width,
+        float                 two_peak_separation_threshold,
 	float                 threshold,
 	int                   max_num_ambigs)
 
@@ -836,7 +837,7 @@ GMF::RetrieveWindsWithPeakSplitting(
         WindVectorPlus* head=wvc->ambiguities.GetHead();
         if(head!=NULL) scale=head->obj;
 	_ObjectiveToProbability(scale,one_peak_radius);
-	
+
 	//--------------------------------------//
 	// determine number of ambiguities with  //
 	// scaled probability values greater than //
@@ -845,11 +846,11 @@ GMF::RetrieveWindsWithPeakSplitting(
 	//----------------------------------------//
 
 	int num_peaks=0;
-	
+
 
         WindVectorPlus* wvp=wvc->ambiguities.GetHead();
 
-	while(wvp){	    
+	while(wvp){
 	  int phi_idx=(int)(wvp->dir/_phiStepSize +0.5);
 	  float prob=*(_bestObj+phi_idx);
 	  if (prob > threshold){
@@ -873,9 +874,9 @@ GMF::RetrieveWindsWithPeakSplitting(
 	  float max_prob=0;
           int max_offset=0;
           for(int c=0;c<_phiCount;c++){
-             
+
             // check to see if the direction is already represented by
-            // a peak 
+            // a peak
 	    int available=1;
             float dir=(float)c*_phiStepSize;
 	    for(wvp=wvc->ambiguities.GetHead();wvp;
@@ -893,7 +894,7 @@ GMF::RetrieveWindsWithPeakSplitting(
 	  //------------//
 	  // add to wvc //
 	  //------------//
-	  
+
 	  wvp = new WindVectorPlus();
 	  if (! wvp)
 	    return(0);
@@ -916,7 +917,6 @@ GMF::RetrieveWindsWithPeakSplitting(
 	wvc->SortByObj();
 	return(1);
 }
-
 
 //--------------------//
 // GMF::SolutionCurve //
@@ -1453,16 +1453,16 @@ GMF::Calculate_Init_Wind_Solutions(
 {
 
 //
-//!Description:   	
-// 	        This routine calculates an initial set of wind solutions 
-//               using an iterative "coarse search" mechanism based on MLE 
-//               computations.   
-//                      	
+//!Description:
+// 	        This routine calculates an initial set of wind solutions
+//               using an iterative "coarse search" mechanism based on MLE
+//               computations.
+//
 
 //
 // Local Declarations
 //
-  
+
       int   i;
       int   j;
       int   k;
@@ -1502,26 +1502,26 @@ GMF::Calculate_Init_Wind_Solutions(
          center_speed = (upper_speed_bound -1);
 
 //
-//   Calculate number of wind direction samples.    
+//   Calculate number of wind direction samples.
 //
 
       dir_spacing =  wind_dir_intv_init;
       num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
 //
-//   Loop through directional space to find local MLE maximas.  
+//   Loop through directional space to find local MLE maximas.
 //
-      
+
 	for (k=2; k <= num_dir_samples-1; k++)
 	{
-         angle = dir_spacing * (float)(k - 1) - dir_spacing; 
-         
+         angle = dir_spacing * (float)(k - 1) - dir_spacing;
+
 //
-//   Compute MLE at 3 points centered about center speed. 
+//   Compute MLE at 3 points centered about center speed.
 //
 
          minus_speed  =  center_speed -  wind_speed_intv_init;
-         plus_speed   =  center_speed +  wind_speed_intv_init; 
+         plus_speed   =  center_speed +  wind_speed_intv_init;
 
 		minus_objective=_ObjectiveFunction(meas_list,minus_speed,dtr*angle,kp);
 		center_objective=_ObjectiveFunction(meas_list,center_speed,
@@ -1530,30 +1530,30 @@ GMF::Calculate_Init_Wind_Solutions(
 
 //
 //   Move the triplet in the speed dimension until center_objective
-//   reaches maximum.   Clip search at 0 m/sec and 50 m/sec.  
+//   reaches maximum.   Clip search at 0 m/sec and 50 m/sec.
 //
 
-         good_speed = 1;  
+         good_speed = 1;
 
-         while (good_speed && 
+         while (good_speed &&
             (center_objective < minus_objective  ||
-             center_objective < plus_objective) )  
+             center_objective < plus_objective) )
 		{
 
 //
-//  If "minus speed" has the largest objective value, shift the speed 
-//  "downward".      
+//  If "minus speed" has the largest objective value, shift the speed
+//  "downward".
 //
 
             if (minus_objective > center_objective  &&
                minus_objective > plus_objective    &&
                good_speed )
 			{
-               center_speed = center_speed 
+               center_speed = center_speed
                            - wind_speed_intv_init ;
                plus_objective = center_objective;
                center_objective = minus_objective;
-               minus_speed = center_speed 
+               minus_speed = center_speed
                           - wind_speed_intv_init;
 
 //
@@ -1569,7 +1569,7 @@ GMF::Calculate_Init_Wind_Solutions(
 				}
 
 //
-//   Re-Evaluate objective function with shifted minus speed.   
+//   Re-Evaluate objective function with shifted minus speed.
 //
 
                if (good_speed)
@@ -1583,22 +1583,22 @@ GMF::Calculate_Init_Wind_Solutions(
 //  If "plus speed" has the largest objective value, shift the speed
 //  "upward".
 //
- 
+
             if (plus_objective > center_objective  &&
-               plus_objective > minus_objective   && 
+               plus_objective > minus_objective   &&
                good_speed  )
-			{ 
+			{
                center_speed = center_speed + wind_speed_intv_init;
                minus_objective = center_objective;
                center_objective = plus_objective;
                plus_speed = center_speed + wind_speed_intv_init;
- 
+
 //
 //   Clip search at maximum (50) speed.
 //
- 
+
                if  (plus_speed > (float)(upper_speed_bound))
-				{ 
+				{
                   _speed_buffer [k] = center_speed;
                   _objective_buffer [k] = center_objective;
                   center_speed = center_speed - wind_speed_intv_init;
@@ -1608,7 +1608,7 @@ GMF::Calculate_Init_Wind_Solutions(
 //
 //   Re-Evaluate objective function with shifted plus speed.
 //
- 
+
                if   (good_speed)
 				{
 					plus_objective = _ObjectiveFunction(meas_list,
@@ -1621,15 +1621,15 @@ GMF::Calculate_Init_Wind_Solutions(
          if (center_objective >= minus_objective  &&
             center_objective >= plus_objective   &&
             good_speed)
-		{ 
+		{
             diff_objective_1 = plus_objective - minus_objective;
             diff_objective_2 = (plus_objective + minus_objective)
                             - 2.0 * center_objective;
- 
+
             _speed_buffer [k] = center_speed  - 0.5
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
- 
+
 			// Re-evaluate objective function to avoid interpolation bumps
 			// that introduce artificial peaks.
 //			_objective_buffer[k] = _ObjectiveFunction(meas_list,
@@ -1642,18 +1642,18 @@ GMF::Calculate_Init_Wind_Solutions(
 
 
 //
-//   Make speed/objective buffers "circularly continuous".   
+//   Make speed/objective buffers "circularly continuous".
 //
 
-      _speed_buffer [1] = _speed_buffer [num_dir_samples - 1]; 
+      _speed_buffer [1] = _speed_buffer [num_dir_samples - 1];
       _speed_buffer [num_dir_samples] = _speed_buffer [2];
 
       _objective_buffer [1]  = _objective_buffer [num_dir_samples - 1];
       _objective_buffer [num_dir_samples]  = _objective_buffer [2];
-      
+
 //
-//   Find local MLE maximas over the angular intervals.  
-//                           
+//   Find local MLE maximas over the angular intervals.
+//
 
       num_mle_maxima = 0;
 
@@ -1668,15 +1668,15 @@ GMF::Calculate_Init_Wind_Solutions(
 	}
 
 //
-//   If the number of local MLE maximas exceeds the desired maximum 
-//   wind solutions (= wind_max_solutions), sort and select the 
+//   If the number of local MLE maximas exceeds the desired maximum
+//   wind solutions (= wind_max_solutions), sort and select the
 //   (wind_max_solutions) highest.
-//  
-         
+//
+
     if (num_mle_maxima > wind_max_solutions)
 	{
 //		printf("number greater than 10 = %d\n",num_mle_maxima);
-//         write(99,*) objective_buffer 
+//         write(99,*) objective_buffer
 
 		for (i=1; i <= num_mle_maxima; i++)
 		{
@@ -1691,8 +1691,8 @@ GMF::Calculate_Init_Wind_Solutions(
 			}
 
 //
-//    Tag current maxima index as -2 if it is not in the highest 
-//    "wind_max_solutions" rank.  Otherwise, tag as -1.  
+//    Tag current maxima index as -2 if it is not in the highest
+//    "wind_max_solutions" rank.  Otherwise, tag as -1.
 //
 
             if (k >= wind_max_solutions)
@@ -1702,31 +1702,31 @@ GMF::Calculate_Init_Wind_Solutions(
 		}
 
 //
-//    Select and store "highest rank" directional indices into     
-//    "latter" dimensions of the array.        
-// 
-           
+//    Select and store "highest rank" directional indices into
+//    "latter" dimensions of the array.
+//
+
         ii = 0;
 		for (i=1; i <= num_mle_maxima; i++)
 		{
             if (_dir_mle_maxima[i + num_mle_maxima] == -1)
 			{
                ii = ii + 1;
-               _dir_mle_maxima [ii + 2 * num_mle_maxima] = _dir_mle_maxima [i];      
+               _dir_mle_maxima [ii + 2 * num_mle_maxima] = _dir_mle_maxima [i];
 			}
 		}
-          
+
 //
-//    Move "highest rank" directions back to the front.  
-//          
+//    Move "highest rank" directions back to the front.
+//
 
 		for (k=1; k <= wind_max_solutions; k++)
 		{
-            _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima];  
+            _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima];
 		}
         num_mle_maxima = wind_max_solutions;
 //		printf("dir_mle_maxima = %d\n",dir_mle_maxima);
- 
+
 	}
 
 //
@@ -1736,7 +1736,7 @@ GMF::Calculate_Init_Wind_Solutions(
     int wr_num_ambigs = num_mle_maxima;
 	for (i=1; i <= wr_num_ambigs; i++)
 	{
-        jj = _dir_mle_maxima [i]; 
+        jj = _dir_mle_maxima [i];
 //        wr_wind_dir [i] = dir_spacing * (float)(jj - 1) - dir_spacing;
 //        wr_wind_speed [i] = speed_buffer [jj];
 //        wr_mle [i] = objective_buffer [jj];
@@ -1771,16 +1771,16 @@ GMF::Optimize_Wind_Solutions(
 {
 
 //
-//!Description:   	
+//!Description:
 // 	        This routine does optimization for the initial set of
 //               wind solutions.  It also computes the errors associated
-//               with optimized wind speeds and directions.    
-//                      	
+//               with optimized wind speeds and directions.
+//
 
 //
 // Local Declarations
 //
-  
+
       int   i;
       int   j;
       int   ambig ;
@@ -1835,7 +1835,7 @@ GMF::Optimize_Wind_Solutions(
 	}
 
 //
-//  Initialization  
+//  Initialization
 //
 
 	for (ambig=0; ambig < wvc->ambiguities.NodeCount(); ambig++)
@@ -1846,7 +1846,7 @@ GMF::Optimize_Wind_Solutions(
 
          center_speed = wr_wind_speed [ambig];
          center_dir = wr_wind_dir [ambig];
-         number_iterations =  0; 
+         number_iterations =  0;
          maximum_objective = -1000000.;
          points_in_search = 5;
          i_spd_max = 0;
@@ -1854,10 +1854,10 @@ GMF::Optimize_Wind_Solutions(
          shift_pattern = 0;
 
 //
-//   Compute initial objecitve function values at 5 non-corner grid 
+//   Compute initial objecitve function values at 5 non-corner grid
 //   points.   Find maximum location and its shift vector.
-//       
-          
+//
+
 
 		for (i=1; i <= 3; i++)
 		{
@@ -1873,7 +1873,7 @@ GMF::Optimize_Wind_Solutions(
 										speed,dtr*direction,kp);
 
 					if (current_objective [i][j] > maximum_objective)
-            		{ 
+            		{
                       maximum_objective = current_objective [i][j];
                       i_spd_max = i_spd;
                       i_dir_max = i_dir;
@@ -1884,22 +1884,22 @@ GMF::Optimize_Wind_Solutions(
 
 //
 //   Check if the maximum point has shifted from the original center
-//   point.    
+//   point.
 //
 
          shift_pattern = abs (i_spd_max) + abs (i_dir_max);
          number_iterations = number_iterations + 1;
 
 //
-//   Continuous search until "9-points" AND "no shift" detected. 
+//   Continuous search until "9-points" AND "no shift" detected.
 //
 
 
-		while (shift_pattern != 0  || points_in_search  != 9 )  
+		while (shift_pattern != 0  || points_in_search  != 9 )
 		{
 //
 //    If "5-point" AND "no shift" is reached, turn on "9-point"
-//    search option and compute the 4 corners.   
+//    search option and compute the 4 corners.
 //
 
             if (shift_pattern == 0  && points_in_search == 5)
@@ -1918,9 +1918,9 @@ GMF::Optimize_Wind_Solutions(
 											speed,dtr*direction,kp);
 
                    		if (current_objective [i][j] > maximum_objective)
-						{             
+						{
                    	    	maximum_objective = current_objective [i][j];
-                   	    	i_spd_max = i - 2; 
+                   	    	i_spd_max = i - 2;
                    	    	i_dir_max = j - 2;
 						}
 					}
@@ -1931,7 +1931,7 @@ GMF::Optimize_Wind_Solutions(
 			}
 
 //
-//   If center point is not the maximum point, do shift.      
+//   If center point is not the maximum point, do shift.
 //
 
             if (shift_pattern != 0)
@@ -1942,7 +1942,7 @@ GMF::Optimize_Wind_Solutions(
 								* wind_dir_intv_opti;
 
 //
-//   Loop through  3 x 3  phase space. 
+//   Loop through  3 x 3  phase space.
 //
 
 				for (i=1; i <= 3; i++)
@@ -1960,8 +1960,8 @@ GMF::Optimize_Wind_Solutions(
 
 //
 //   Continue do-loop processing unless "points_in_search = 5" AND
-//   "coordinate sum = 2". 
-//      
+//   "coordinate sum = 2".
+//
 
 						if (points_in_search != 5  || new_coord_sum != 2)
 						{
@@ -1976,22 +1976,22 @@ GMF::Optimize_Wind_Solutions(
 
 //
 //    If "old" coordinate is outside the "new" boundary, then do shift
-//    and compute a new MLE. 
-//           
+//    and compute a new MLE.
+//
 
 							if (old_coord_sum > max_shift)
 							{
-								speed = center_speed + (float)(i_spd) * 
+								speed = center_speed + (float)(i_spd) *
                                   wind_speed_intv_opti;
-								direction = center_dir + (float)(i_dir) * 
+								direction = center_dir + (float)(i_dir) *
                                   wind_dir_intv_opti;
 								saved_objective[i][j] = _ObjectiveFunction(
 									meas_list,speed,dtr*direction,kp);
 							}
                         	else
                         	{
-								saved_objective [i][j] = 
-									current_objective [i_spd_old][i_dir_old]; 
+								saved_objective [i][j] =
+									current_objective [i_spd_old][i_dir_old];
 							}
 
 						}
@@ -2000,17 +2000,17 @@ GMF::Optimize_Wind_Solutions(
 
 
 //
-//   Find maximum objective value and its shift vector.  
+//   Find maximum objective value and its shift vector.
 //
 
 //
-//    Initialization: assume maximum is at new center point.  
+//    Initialization: assume maximum is at new center point.
 //
 
-               maximum_objective = saved_objective [2][2]; 
+               maximum_objective = saved_objective [2][2];
                i_spd_max  = 0;
                i_dir_max  = 0;
- 
+
 				for (i=1; i <= 3; i++)
 				{
 					i_spd = i - 2;
@@ -2020,7 +2020,7 @@ GMF::Optimize_Wind_Solutions(
 						coord_sum = abs(i_spd) + abs(i_dir);
 
 //
-//    Skip corners for 5-points search. 
+//    Skip corners for 5-points search.
 //
 
 						if (points_in_search != 5  || coord_sum  != 2)
@@ -2040,62 +2040,62 @@ GMF::Optimize_Wind_Solutions(
 
                shift_pattern = abs(i_spd_max) + abs (i_dir_max);
                number_iterations = number_iterations + 1;
-              
-			}	// if (shift_pattern /= 0)   
+
+			}	// if (shift_pattern /= 0)
 
 		}	// while loop
 
 //
 //   Now the 9-point search is complete, store "new" speed and
-//   direction back to WR array.     
+//   direction back to WR array.
 //
 
          wr_wind_speed [ambig]  = center_speed;
          wr_wind_dir [ambig] = center_dir;
 
 //
-//   Interpolate to find optimized wind solutions. 
+//   Interpolate to find optimized wind solutions.
 //
 
 //
-//    Compute various partial derivatives and Jacobian determinant.   
-//    
+//    Compute various partial derivatives and Jacobian determinant.
+//
 //      q00:  constant term
 //      q10:  1st partial  w.r.t.  speed
 //      q01:  1st partial  w.r.t.  direction
 //      q20:  2nd parital  w.r.t.  speed
 //      q02:  2nd partial  w.r.t.  direction
-//      q11:  2nd partial  w.r.t.  speed and direction  
-//      determinant:  Jacobian determinant. 
+//      q11:  2nd partial  w.r.t.  speed and direction
+//      determinant:  Jacobian determinant.
 //
 
          q00 =  - current_objective [2][2];
-         q10 =  - (current_objective [3][2] - 
+         q10 =  - (current_objective [3][2] -
                   current_objective [1][2] ) / 2.;
-         q01 =  - (current_objective [2][3] - 
+         q01 =  - (current_objective [2][3] -
                   current_objective [2][1] ) / 2.;
-         q20 =  - (current_objective [3][2] + 
+         q20 =  - (current_objective [3][2] +
                   current_objective [1][2] -
                   2.0 * current_objective [2][2] );
-         q02 =  - (current_objective [2][3] + 
+         q02 =  - (current_objective [2][3] +
                   current_objective [2][1] -
                   2.0 * current_objective [2][2] );
          q11 =  - (current_objective [3][3] -
-                  current_objective [3][1] - 
-                  current_objective [1][3] +  
+                  current_objective [3][1] -
+                  current_objective [1][3] +
                   current_objective [1][1] ) / 4.;
-        
+
          determinant = q20 * q02 - q11 * q11;
 
 
 //
-//   Skip to next ambiguity if determinant happens to be 0. 
-//  
+//   Skip to next ambiguity if determinant happens to be 0.
+//
 
         if (determinant == 0)
 		{
             wr_mle [ambig] = - q00;
-//            wr_wind_speed_err [ambig] = 
+//            wr_wind_speed_err [ambig] =
 //				wind_speed_intv_opti / sqrt (float(wr_count));
 //            wr_wind_dir_err [ambig] =
 //				wind_dir_intv_opti /sqrt ((float)(wr_count));
@@ -2105,22 +2105,22 @@ GMF::Optimize_Wind_Solutions(
 //
 //   Compute final wind speed solution.
 //
-              
+
             final_speed = wr_wind_speed [ambig] -
                          wind_speed_intv_opti *
                         (q10 * q02 - q01 * q11) /
                         determinant;
 
-            if (fabs (final_speed - wr_wind_speed [ambig]) 
+            if (fabs (final_speed - wr_wind_speed [ambig])
                > 2. * wind_speed_intv_opti   ||
                final_speed < 0.0)
 			{
                 wr_mle [ambig] = -q00;
-//                wr_wind_speed_err [ambig] = wind_speed_intv_opti  
+//                wr_wind_speed_err [ambig] = wind_speed_intv_opti
 //					* sqrt (fabs (0.5 * q20 / determinant));
-//                wr_wind_dir_err [ambig] = wind_dir_intv_opti  
+//                wr_wind_dir_err [ambig] = wind_dir_intv_opti
 //					* sqrt (fabs (0.5 * q02 / determinant));
-			}           
+			}
             else
 			{
 //
@@ -2130,22 +2130,22 @@ GMF::Optimize_Wind_Solutions(
                           wind_dir_intv_opti *
                           (q20 * q01 - q10 * q11) /
                           determinant;
-                
-               if (fabs (final_dir - wr_wind_dir [ambig]) 
+
+               if (fabs (final_dir - wr_wind_dir [ambig])
 					> 2. * wind_dir_intv_opti)
 				{
 
                   wr_mle [ambig] = -q00;
-//                  wr_wind_speed_err [ambig] 
-//					= wind_speed_intv_opti  
+//                  wr_wind_speed_err [ambig]
+//					= wind_speed_intv_opti
 //					* sqrt (fabs (0.5 * q20 / determinant));
-//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti  
+//                  wr_wind_dir_err [ambig] = wind_dir_intv_opti
 //					* sqrt (fabs (0.5 * q02 / determinant));
-				} 
-               else 
-      			{ 
+				}
+               else
+      			{
 //
-//   Constrain final direction between 0 and 360 degrees. 
+//   Constrain final direction between 0 and 360 degrees.
 //
 
                   if  (final_dir < 0.)
@@ -2155,19 +2155,19 @@ GMF::Optimize_Wind_Solutions(
 
 //
 //   Move interpolated speed & direction into WR arrays.
-//         
+//
 
                   wr_wind_speed [ambig] = final_speed;
                   wr_wind_dir [ambig] = final_dir;
 
 //
-//   Estimate the final value of likelihood. 
+//   Estimate the final value of likelihood.
 //
 				wr_mle[ambig] = _ObjectiveFunction(meas_list,
 					wr_wind_speed[ambig],dtr*wr_wind_dir[ambig],kp);
 
 //
-//   Estimate the RMS speed and direction errors. 
+//   Estimate the RMS speed and direction errors.
 //
 
 //                  wr_wind_speed_err [ambig] = wind_speed_intv_opti *
@@ -2752,8 +2752,20 @@ GMF::RetrieveWindsH1(
         tmp_wvc.ambiguities.GotoHead();
         while (WindVectorPlus* wvp = tmp_wvc.ambiguities.RemoveCurrent())
         {
-            if (wvp != max_wvp)
-                wvp->obj = min_obj;
+            if (smartNudgeFlag)
+            {
+                // smart nudge
+                if (wvp->obj > (max_obj - min_obj) * 0.8 + min_obj)
+                    wvp->obj = 1.0;
+                else
+                    wvp->obj = 0.0;
+            }
+            else
+            {
+                // get one ambiguity per peak
+                if (wvp != max_wvp)
+                    wvp->obj = min_obj;
+            }
             if (! wvc->ambiguities.Append(wvp))
             {
                 delete wvp;

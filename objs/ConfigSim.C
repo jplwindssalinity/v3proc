@@ -1577,6 +1577,18 @@ ConfigL2AToL2B(
 	l2a_to_l2b->useNudging = use_nudging;
 	if (use_nudging)
 	{
+        //------------------------//
+        // configure nudging flag //
+        //------------------------//
+
+        if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
+            return(0);
+        l2a_to_l2b->smartNudgeFlag = tmp_int;
+
+        //-----------------------//
+        // configure nudge field //
+        //-----------------------//
+
 		char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
 		if (nudge_type == NULL)
 			return(0);
@@ -1690,6 +1702,14 @@ ConfigGMF(
 	if (! config_list->GetInt(RETRIEVE_USING_LOGVAR_KEYWORD, &tmp_int))
 		return(0);
 	gmf->retrieveUsingLogVar = tmp_int;
+
+    //------------------------//
+    // configure nudging flag //
+    //------------------------//
+
+    if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
+        return(0);
+    gmf->smartNudgeFlag = tmp_int;
 
 	return(1);
 }

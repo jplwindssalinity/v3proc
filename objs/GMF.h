@@ -117,11 +117,13 @@ public:
 	// flags //
 	//-------//
 
-	int		retrieveUsingKpcFlag;
-	int		retrieveUsingKpmFlag;
-	int		retrieveUsingKpriFlag;
-	int		retrieveUsingKprsFlag;
-	int		retrieveUsingLogVar;
+    int  retrieveUsingKpcFlag;
+    int  retrieveUsingKpmFlag;
+    int  retrieveUsingKpriFlag;
+    int  retrieveUsingKprsFlag;
+    int  retrieveUsingLogVar;
+
+    int  smartNudgeFlag;
 
 protected:
 

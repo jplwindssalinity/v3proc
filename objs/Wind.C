@@ -1862,6 +1862,51 @@ WindSwath::Nudge(
 	return(count);
 }
 
+//-----------------------//
+// WindSwath::SmartNudge //
+//-----------------------//
+
+int
+WindSwath::SmartNudge(
+    WindField*  nudge_field)
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            WindVector nudge_wv;
+            if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
+                continue;
+
+            WindVectorPlus* nearest = NULL;
+            float min_dif = two_pi;
+
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                 wvp = wvc->ambiguities.GetNext())
+            {
+                if (wvp->obj == 0.0)
+                    continue;
+
+                float dif = ANGDIF(wvp->dir, nudge_wv.dir);
+                if (dif < min_dif)
+                {
+                    min_dif = dif;
+                    nearest = wvp;
+                }
+            }
+
+            wvc->selected = nearest;
+            count++;
+        }
+    }
+    return(count);
+}
+
 //-------------------------//
 // WindSwath::MedianFilter //
 //-------------------------//

@@ -68,10 +68,11 @@ public:
 	// flags //
 	//-------//
 
-	int		useManyAmbiguities;
-	int		useAmbiguityWeights;
-	int		usePeakSplitting;
-	int		useNudging;
+    int  useManyAmbiguities;
+    int  useAmbiguityWeights;
+    int  usePeakSplitting;
+    int  useNudging;
+    int  smartNudgeFlag;
 
 	//-----------------------------------------//
 	// Parameters for Peak Splitting Algorithm //

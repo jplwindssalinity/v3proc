@@ -15,10 +15,10 @@ static const char rcs_id_l2atol2b_c[] =
 //==========//
 
 L2AToL2B::L2AToL2B()
-:	medianFilterWindowSize(0), medianFilterMaxPasses(0), 
-	maxRankForNudging(0), useManyAmbiguities(0),
-	useAmbiguityWeights(0), usePeakSplitting(0), useNudging(0),
-	onePeakWidth(0.0), twoPeakSep(181.0),probThreshold(0.0)
+:   medianFilterWindowSize(0), medianFilterMaxPasses(0), maxRankForNudging(0),
+    useManyAmbiguities(0), useAmbiguityWeights(0), usePeakSplitting(0),
+    useNudging(0), smartNudgeFlag(0), onePeakWidth(0.0), twoPeakSep(181.0),
+    probThreshold(0.0)
 {
 	return;
 }
@@ -242,7 +242,10 @@ L2AToL2B::Flush(
 
 	if (useNudging)
 	{
-		l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
+        if (smartNudgeFlag)
+            l2b->frame.swath.SmartNudge(&nudgeField);
+        else
+            l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
 	}
 	else
 	{
