@@ -278,10 +278,15 @@ StringPair*
 ConfigList::Find(
 	const char*		keyword)
 {
-	for (StringPair* pair = GetHead(); pair; pair = GetNext())
+	for (StringPair* pair = GetTail(); pair; pair = GetPrev())
 	{
 		if (strcmp(pair->GetKeyword(), keyword) == 0)
 			return(pair);
+	}
+	if (_logFlag)
+	{
+		fprintf(_errorFp, "Missing keyword\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
 	}
 	return(0);
 }
@@ -301,6 +306,37 @@ const char*		keyword)
 		return(0);
 }
 
+//--------------------//
+// ConfigList::GetInt //
+//--------------------//
+// sets the value to the retrieved int
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetInt(
+	const char*		keyword,
+	int*			value)
+{
+	char* string = Get(keyword);
+	if (! string)
+		return(0);
+
+	int tmp;
+	if (sscanf(string, "%d", &tmp) != 1)
+	{
+		if (_logFlag)
+		{
+			fprintf(_errorFp, "Error converting value to int\n");
+			fprintf(_errorFp, "  Keyword: %s\n", keyword);
+			fprintf(_errorFp, "    Value: %s\n", string);
+		}
+		return(0);
+	}
+
+	*value = tmp;
+	return(1);
+}
+
 //-----------------------//
 // ConfigList::GetDouble //
 //-----------------------//
@@ -314,11 +350,7 @@ ConfigList::GetDouble(
 {
 	char* string = Get(keyword);
 	if (! string)
-	{
-		fprintf(_errorFp, "Can't find requested keyword\n");
-		fprintf(_errorFp, "  Keyword: %s\n", keyword);
 		return(0);
-	}
 
 	double tmp;
 	if (sscanf(string, "%lg", &tmp) != 1)
