@@ -416,28 +416,19 @@ QscatSim::ScatSim(
             float dummy, freq;
             qscat->ses.GetSliceFreqBw(slice_idx, &freq, &dummy);
 
-//          float gain=10*log10(slice->XK/XK_max);
-            float lambda = speed_light_kps / qscat->ses.txFrequency;
-            Beam* beam = qscat->GetCurrentBeam();
-            float kdb = qscat->ses.transmitPower * qscat->ses.rxGainEcho *
-                lambda * lambda * beam->peakGain * beam->peakGain /
-                (64.0 * pi * pi * pi * qscat->systemLoss);
-            kdb = 10.0 * log10(kdb);
-
+	    float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
+                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
+                 qscat->ses.txPulseWidth;
+            double Xcaldb; 
+            radar_Xcal(qscat,Es_cal,&Xcaldb);
+            Xcaldb = 10.0 * log10(Xcaldb);
+            
 
             float XKdb=10*log10(slice->XK);
-//          double range=(spacecraft->orbitState.rsat -
-//                   slice->centroid).Magnitude();
-//          float rtt=2.0*range/speed_light_kps;
-//          float pf=GetPulseFractionReceived(range);
-            //          printf("%d %g %g %g %g %g %g %g\n",
-            //   qscat->cds.currentBeamIdx,
-            //   qscat->sas.antenna.azimuthAngle*rtd,freq,
-            //   gain, rtt, pf,slice->XK, slice->value);
 
-            printf("%g ",XKdb-kdb); //HACK
-//                    float delta_freq=BYUX.GetDeltaFreq(spacecraft);
-                    //printf("%g ", delta_freq);
+            printf("%g ",XKdb-Xcaldb); 
+//               float delta_freq=BYUX.GetDeltaFreq(spacecraft);
+//               printf("%g ", delta_freq);
             total_spot_power+=slice->value;
             total_spot_X+=slice->XK;
 
@@ -1145,7 +1136,6 @@ QscatSim::SetL1ALoad(
 //--------------------------//
 // QscatSim::ComputeXfactor //
 //--------------------------//
-
 int
 QscatSim::ComputeXfactor(
     Spacecraft*  spacecraft,
@@ -1153,14 +1143,21 @@ QscatSim::ComputeXfactor(
     Meas*        meas,
     float*       X)
 {
-    double lambda = speed_light_kps / qscat->ses.txFrequency;
     if (! IntegrateSlice(spacecraft, qscat, meas, numLookStepsPerSlice,
         azimuthIntegrationRange, azimuthStepSize, rangeGateClipping, X))
     {
         return(0);
     }
+    Beam* beam = qscat->GetCurrentBeam();
+    double Xcal; 
+    float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
+                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
+                 qscat->ses.txPulseWidth;
 
-    (*X) *= qscat->ses.transmitPower * qscat->ses.rxGainEcho *
-        lambda*lambda / (64*pi*pi*pi * qscat->systemLoss);
+    radar_Xcal(qscat,Es_cal,&Xcal);
+    (*X)*=Xcal/(beam->peakGain * beam->peakGain);
     return(1);
 }
+
+
+

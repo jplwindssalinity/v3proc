@@ -6,12 +6,6 @@
 #ifndef XTable_H
 #define XTable_H
 
-#define BYU_NUM_BEAMS  2
-#define BYU_AZIMUTH_BINS 36
-#define BYU_ORBIT_POSITION_BINS 32
-#define BYU_NUM_SCIENCE_SLICES 10
-#define BYU_NUM_GUARD_SLICES_PER_SIDE 1
-
 #include<stdio.h>
 static const char rcs_id_XTable_h[] =
 	"@(#) $Id$";
@@ -58,7 +52,6 @@ public:
                                  // parameters.
   int Write();
   int Read();
-  int ReadBYU(FILE* ibeam_fp, FILE* obeam_fp);
   
   int SetFilename(const char* fname);
 

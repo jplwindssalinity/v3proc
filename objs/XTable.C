@@ -217,45 +217,6 @@ int XTable::Read(){
       return(1);
 }
 
-int 
-XTable::ReadBYU(FILE* ibeam_fp, FILE* obeam_fp){
-  char string[40];
-  numBeams=BYU_NUM_BEAMS;
-  numAzimuthBins=BYU_AZIMUTH_BINS;
-  numOrbitPositionBins=BYU_ORBIT_POSITION_BINS;
-  numScienceSlices=BYU_NUM_SCIENCE_SLICES;
-  numGuardSlicesEachSide=BYU_NUM_GUARD_SLICES_PER_SIDE;
-  numSlices=numScienceSlices+2*numGuardSlicesEachSide;
-  if (!Allocate()) return(0);
-  
-  /******* Read Inner Beam ***************/
-  for(int s=0;s<numSlices;s++){
-    for(int a=0;a<numAzimuthBins;a++){
-      for(int o=0;o<numOrbitPositionBins;o++){
-        fscanf(ibeam_fp,"%s",string);
-	_value[0][a][o][s]=atof(string);
-        _empty[0][a][o][s]=0;
-      }
-    }
-  }
-
-  /******* Read Outer Beam ***************/
-  for(int s=0;s<numSlices;s++){
-    for(int a=0;a<numAzimuthBins;a++){
-      for(int o=0;o<numOrbitPositionBins;o++){
-        fscanf(obeam_fp,"%s",string);
-	_value[1][a][o][s]=atof(string);
-        _empty[1][a][o][s]=0;
-      }
-    }
-  }
- 
-  if (! CheckEmpty()){
-    fprintf(stderr,"XTable::Read: There are empty entries after reading!\n");
-        return(0);
-  }
-  return(1);  
-}
 
 int
 XTable::SetFilename(const char* fname){
