@@ -11,6 +11,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "GenericGeom.h"
 #include "InstrumentGeom.h"
 #include "Ephemeris.h"
+#include "Sigma0.h"
 #include "Constants.h"
 
 
@@ -378,7 +379,9 @@ InstrumentSim::LocateSpot(
 //--------------------------------//
 
 int
-InstrumentSim::SetMeasurements(
+InstrumentSim::SetMeasurements(	
+	Spacecraft*             spacecraft,
+	Instrument*             instrument,
 	MeasSpot*		meas_spot,
 	WindField*		windfield,
 	GMF*			gmf)
@@ -413,6 +416,7 @@ InstrumentSim::SetMeasurements(
 			wv.dir = 0.0;
 		}
 
+
 		//--------------------------------//
 		// convert wind vector to sigma-0 //
 		//--------------------------------//
@@ -420,9 +424,32 @@ InstrumentSim::SetMeasurements(
 		// chi is defined so that 0.0 means the wind is blowing towards
 		// the s/c (the opposite direction as the look vector)
 		float chi = wv.dir - meas->eastAzimuth + pi;
-		float value;
+		float sigma0;
 		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
-			chi, &value);
+			chi, &sigma0);
+
+
+		//--------------------------------//
+		// generate the coordinate switch //
+		//--------------------------------//
+		
+		CoordinateSwitch gc_to_antenna = AntennaFrameToGC(
+						    &(spacecraft->orbitState),
+						    &(spacecraft->attitude), 
+						    &(instrument->antenna));
+		gc_to_antenna=gc_to_antenna.ReverseDirection();
+
+
+		//-------------------------------//
+		// convert Sigma0 to Power       //
+		//-------------------------------//
+
+                /************* FOR NOW Kfactor=1.0  *********/
+		float Kfactor=1.0;
+		if(! sigma0_to_Pr(spacecraft, instrument, meas,
+				  Kfactor, &gc_to_antenna, sigma0,
+					&(meas->value))) return(0);
+
 	}
 	return(1);
 }
@@ -525,7 +552,8 @@ InstrumentSim::ScatSim(
 	// set measurement values //
 	//------------------------//
 
-	if (! SetMeasurements(&meas_spot, windfield, gmf))
+	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, 
+			      gmf))
 		return(0);
 
 	//-----------------------------//

@@ -61,7 +61,7 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 
 
 //
-// receive_power
+// sigma0_to_Pr
 //
 // The receive_power function computes the power received for a
 // given instrument state and average sigma0.
@@ -78,14 +78,14 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 //
 
 int sigma0_to_Pr(Spacecraft *spacecraft, Instrument *instrument,
-					Meas *meas, float Kfactor, CoordinateSwitch* gc_to_antenna,
-					float *Pr)
+		 Meas *meas, float Kfactor, CoordinateSwitch* gc_to_antenna, 
+		 float sigma0, float *Pr)
 
 {
 
 	double X;
 	radar_X(spacecraft,instrument,meas,gc_to_antenna,&X);
-	*Pr = (float)(Kfactor*X*meas->value);
+	*Pr = (float)(Kfactor*X*sigma0);
 	return(1);
 
 }
