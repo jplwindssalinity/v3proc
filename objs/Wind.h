@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -151,13 +151,9 @@ public:
 //    list of ambiguous solution WindVectorPlus.
 //======================================================================
 
-    // bit 0 1/0 = not usable/usable
-    // bit 1 1/0 = rain/no rain
-    // bit 2 1/0 = outer/inner
-
-#define RAIN_FLAG_UNUSABLE  0x01    // bit 0
-#define RAIN_FLAG_RAIN      0x02    // bit 1
-#define RAIN_FLAG_LOCATION  0x04    // bit 2
+#define RAIN_FLAG_UNUSABLE  0x01    // bit 0 1/0 = not usable/usable
+#define RAIN_FLAG_RAIN      0x02    // bit 1 1/0 = rain/no rain
+#define RAIN_FLAG_LOCATION  0x04    // bit 2 1/0 = outer/inner
 
 class WVC
 {
@@ -212,10 +208,11 @@ public:
     WindVectorPlus*        nudgeWV;
     WindVectorPlus*        selected;
     int                    selected_allocated;
+    WindVector*            specialVector;    // for DIR or whatever
     List<WindVectorPlus>   ambiguities;
     AngleIntervalListPlus  directionRanges;
     float                  rainProb;
-    char                   rainFlagBits; 
+    char                   rainFlagBits;
     // bit 0 1/0 = not usable/usable
     // bit 1 1/0 = rain/no rain
     // bit 2 1/0 = outer/inner
@@ -386,7 +383,7 @@ public:
     int  DeleteEntireSwath();
     int  DeleteFlaggedData();
     int  DeleteFlaggedData(const char* flag_file, int use_thresh,
-			   float threshold_both, float threshold_outer);
+             float threshold_both, float threshold_outer);
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
     int  DeleteDirectionOutliers(float max_dir_err, WindField* truth);
     int  DeleteSpeedOutliers(float max_spd_err, WindField* truth);
@@ -429,11 +426,11 @@ public:
     int    LoResNudge(WindVectorField* nudge_field, int min_rank);
     int    SmartNudge(WindField* nudge_field);
     int    MedianFilter(int window_size, int max_passes, int bound,
-               int weight_flag = 0, int special=0, int freeze=0);
+               int weight_flag = 0, int special = 0, int freeze = 0);
     int    BestKFilter(int window_size, int k);
     int    MedianFilterPass(int half_window, WindVectorPlus*** selected,
-               char** change, int bound, int weight_flag = 0, int special=0,
-			    int freeze=0);
+               char** change, int bound, int weight_flag = 0, int special = 0,
+               int freeze = 0);
     int    BestKFilterPass(int half_window, int k,
                WindVectorPlus*** new_selected, float** prob, float* best_prob);
     int    BestKFilterSubPass(int half_window, WindVectorPlus*** new_selected,
@@ -503,14 +500,12 @@ public:
                int* count_array, float low_speed, float high_speed,
                COMPONENT_TYPE component1, COMPONENT_TYPE component2);
     int    Streamosity(WindField* truth, float* stream_array,
-		       float* good_stream_array, float low_speed,
-		       float high_speed);
+               float* good_stream_array, float low_speed, float high_speed);
     int    FractionNAmbigs(WindField* truth, float* frac_1amb_array,
-			   float* frac_2amb_array, float* frac_3amb_array,
-			   float* frac_4amb_array, float low_speed,
-			   float high_speed);
+               float* frac_2amb_array, float* frac_3amb_array,
+               float* frac_4amb_array, float low_speed, float high_speed);
     int    NudgeOverrideVsCti(WindField* truth, float* correction_rate_array,
-               float* change_incorrect_rate_array, 
+               float* change_incorrect_rate_array,
                float* bad_nudge_rate_array, float low_speed,
                float high_speed);
     //-----------//
