@@ -741,12 +741,13 @@ IdealCommandedDoppler(
 	// calculte commanded Doppler //
 	//----------------------------//
 
-	instrument->commandedDoppler = 0.0;
+	instrument->SetCommandedDoppler(0.0);
 	do
 	{
 		TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
 			vector, &tip);
-		instrument->commandedDoppler += tip.basebandFreq;
+		float freq = instrument->commandedDoppler + tip.basebandFreq;
+		instrument->SetCommandedDoppler(freq);
 	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
 
 	return(1);

@@ -133,7 +133,7 @@ DopplerTracker::SetInstrument(
 	GetCommandedDoppler(beam_idx, doppler_step, antenna_dn, antenna_n,
 		&doppler);
 
-	instrument->commandedDoppler = doppler;
+	instrument->SetCommandedDoppler(doppler);
 
 	return(1);
 }

@@ -79,6 +79,7 @@ public:
 	//---------------------//
 
 	int			SetTime(double new_time);
+	int			SetCommandedDoppler(float commanded_doppler);
 	int			Eqx(double eqx_time);
 	float		GetTotalSignalBandwidth();
 	int			GetTotalSliceCount();

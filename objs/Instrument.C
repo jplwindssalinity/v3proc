@@ -60,6 +60,19 @@ Instrument::SetTime(
 	return(1);
 }
 
+//---------------------------------//
+// Instrument::SetCommandedDoppler //
+//---------------------------------//
+
+int
+Instrument::SetCommandedDoppler(
+	float		commanded_doppler)
+{
+	commandedDoppler = commanded_doppler;
+	transmitFreq = baseTransmitFreq + commandedDoppler;
+	return(1);
+}
+
 //-----------------//
 // Instrument::Eqx //
 //-----------------//
