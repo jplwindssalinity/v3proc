@@ -8,7 +8,7 @@
 //		fake_ecmwf
 //
 // SYNOPSIS
-//		fake_ecmwf <spd> <output_file>
+//		fake_ecmwf [ -e ] <spd> <output_file>
 //
 // DESCRIPTION
 //		Generates a fake ECMWF Hi-Res wind field with a fixed wind
@@ -87,11 +87,14 @@ template class List<WindVectorPlus>;
 // OPTION VARIABLES //
 //------------------//
 
+#define OPTSTRING  "e"
+unsigned char extra_bytes_flag = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<spd>", "<output_file>", 0};
+const char* usage_array[] = { "[ -e ]", "<spd>", "<output_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -107,12 +110,26 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
-		usage(command, usage_array, 1);
+    extern int optind;
 
-	int clidx = 1;
-	float spd = atof(argv[clidx++]);
-	const char* output_file = argv[clidx++];
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'e':
+            extra_bytes_flag = 1;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+    if (argc != optind + 2)
+        usage(command, usage_array, 1);
+
+	float spd = atof(argv[optind++]);
+	const char* output_file = argv[optind++];
 
 	//----------------//
 	// fake the field //
@@ -125,7 +142,7 @@ main(
 	// write out ECMWF file //
 	//----------------------//
 
-	if (! wind_field.WriteEcmwfHiRes(output_file))
+	if (! wind_field.WriteEcmwfHiRes(output_file, extra_bytes_flag))
 	{
 		fprintf(stderr, "%s: error writing ECMWF file %s\n", command,
 			output_file);

@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include "Constants.h"
 #include "List.h"
 #include "List.C"
+#include "Array.h"
 
 //-----------//
 // TEMPLATES //
@@ -108,6 +109,8 @@ template class List<WindVectorPlus>;
 #define SKILL_MIN				0.3
 #define SKILL_MAX				1.0
 
+#define DIRECTION_BINS			90
+
 //--------//
 // MACROS //
 //--------//
@@ -127,6 +130,10 @@ int plot_thing(const char* extension, const char* title, const char* x_axis,
 		const char* y_axis, float* xylimits,
 		float* data = NULL, float* secondary = NULL);
 
+int plot_density(const char* extension, int cti, const char* title,
+        const char* x_axis, const char* y_axis, float* xylimits);
+
+
 int rad_to_deg(float* data);
 
 //------------------//
@@ -142,18 +149,23 @@ const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -o output_base ]", "[ -w within ]", "[ -a ]", "[ -i subtitle ]", 0 };
 
 // not always evil...
-float*			ctd_array = NULL;
-float*			value_array = NULL;
-float*			value_2_array = NULL;
-float*			err_array = NULL;
-float*			std_dev_array = NULL;
-int*			count_array = NULL;
-int				cross_track_bins = 0;
-const char*		command = NULL;
-char*			l2b_file = NULL;
-char*			output_base = NULL;
-char*			subtitle_str = NULL;
-int				autoscale = 0;
+float*         ctd_array = NULL;
+float*         value_array = NULL;
+float*         value_2_array = NULL;
+float*         err_array = NULL;
+float*         std_dev_array = NULL;
+int*           count_array = NULL;
+int            cross_track_bins = 0;
+
+float*         dir_array = NULL;
+unsigned int**  uint_array = NULL;
+unsigned int**  uint_2_array = NULL;
+
+const char*    command = NULL;
+char*          l2b_file = NULL;
+char*          output_base = NULL;
+char*          subtitle_str = NULL;
+int            autoscale = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -310,7 +322,12 @@ main(
 	//----------------------------//
 
 	WindField truth;
-	truth.ReadType(truth_file, truth_type);
+	if (! truth.ReadType(truth_file, truth_type))
+    {
+        fprintf(stderr, "%s: error reading true wind field from file %s\n",
+            command, truth_file);
+        exit(1);
+    }
 
 	//---------------//
 	// create arrays //
@@ -324,6 +341,12 @@ main(
 	err_array = new float[cross_track_bins];
 	count_array = new int[cross_track_bins];
 
+	dir_array = new float[DIRECTION_BINS];
+    uint_array = (unsigned int **)make_array(sizeof(unsigned int), 2,
+        cross_track_bins, DIRECTION_BINS);
+    uint_2_array = (unsigned int **)make_array(sizeof(unsigned int), 2,
+        cross_track_bins, DIRECTION_BINS);
+
 	char title[1024];
 
 	//--------------------//
@@ -333,6 +356,16 @@ main(
 	if (! swath->CtdArray(l2b.header.crossTrackResolution, ctd_array))
 	{
 		fprintf(stderr, "%s: error generating CTD array\n", command);
+		exit(1);
+	}
+
+	//--------------------//
+	// generate dir array //
+	//--------------------//
+
+	if (! swath->DirArray(DIRECTION_BINS, dir_array))
+	{
+		fprintf(stderr, "%s: error generating dir array\n", command);
 		exit(1);
 	}
 
@@ -463,6 +496,28 @@ main(
 	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
 		"No. Ambigs",xylimits);
 
+    //------------------------------------//
+    // nearest and true direction density //
+    //------------------------------------//
+
+/*
+	if (! swath->DirectionDensityVsCti(&truth, uint_array, uint_2_array,
+		low_speed, high_speed, DIRECTION_BINS))
+	{
+		fprintf(stderr, "%s: error calculating nearest direction densities\n",
+			command);
+		exit(1);
+	}
+
+    for (int cti = 0; cti < cross_track_bins; cti++)
+    {
+        sprintf(title, "Direction Density for CTD %g (%g - %g m/s)",
+            ctd_array[cti], low_speed, high_speed);
+        plot_density("dir_den", cti, title, "Relative Wind Direction (deg)",
+            "Density", xylimits);
+    }
+*/
+
 	//=========//
 	// NEAREST //
 	//=========//
@@ -541,6 +596,9 @@ main(
 	delete[] ctd_array;
 	delete[] count_array;
 
+    free_array(uint_array, 2, cross_track_bins, DIRECTION_BINS);
+    free_array(uint_2_array, 2, cross_track_bins, DIRECTION_BINS);
+
 	return (0);
 }
 
@@ -613,11 +671,11 @@ plot_thing(
 	char sub_title[1024];
 	if (subtitle_str)
 	{
-		sprintf(sub_title,"%s %s",l2b_file,subtitle_str);
+		sprintf(sub_title,"%s %s", l2b_file, subtitle_str);
 	}
 	else
 	{
-		sprintf(sub_title,"%s",l2b_file);
+		sprintf(sub_title,"%s", l2b_file);
 	}
 
 	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xylimits);
@@ -652,6 +710,77 @@ plot_thing(
 
 	return(1);
 }
+
+//--------------//
+// plot_density //
+//--------------//
+
+int
+plot_density(
+    const char*  extension,
+    int          cti,
+    const char*  title,
+    const char*  x_axis,
+    const char*  y_axis,
+    float*       xylimits)
+{
+	char filename[1024];
+	sprintf(filename, "%s.%02d.%s", output_base, cti, extension);
+	FILE* ofp = fopen(filename, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			filename);
+		exit(1);
+	}
+
+	char sub_title[1024];
+	if (subtitle_str)
+	{
+		sprintf(sub_title, "%s %s", l2b_file, subtitle_str);
+	}
+	else
+	{
+		sprintf(sub_title, "%s", l2b_file);
+	}
+
+	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xylimits);
+
+    //-------//
+    // count //
+    //-------//
+
+    unsigned int count = 0;
+    unsigned int count_2 = 0;
+    for (int i = 0; i < DIRECTION_BINS; i++)
+    {
+        count += uint_array[cti][i];
+        count_2 += uint_2_array[cti][i];
+    }
+
+    //-----------//
+    // normalize //
+    //-----------//
+
+    double width = dir_array[1] - dir_array[0];
+    double scale = 1.0 / (width * (double)count);
+    double scale_2 = 1.0 / (width * (double)count_2);
+
+	//------//
+	// plot //
+	//------//
+
+	for (int i = 0; i < DIRECTION_BINS; i++)
+	{
+        fprintf(ofp, "%g %g %g\n", dir_array[i],
+            scale * (double)uint_array[cti][i],
+            scale_2 * (double)uint_2_array[cti][i]);
+	}
+	fclose(ofp);
+
+	return(1);
+}
+
 
 //------------//
 // rad_to_deg //
