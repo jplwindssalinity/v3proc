@@ -184,6 +184,12 @@ int
 Beam::ReadBeamPattern(char* filename, double out_of_range_value)
 {
 
+	// Check for an existing pattern, and remove if needed.
+	if (_power_gain != NULL)
+	{
+		free_array(_power_gain,2,_Nx,_Ny);
+	}
+
 	// Set the out of range value which is returned by GetPowerGain for any
 	// requested points that lie outside the range covered by the beam pattern.
 	_out_of_range_value = out_of_range_value;
