@@ -61,6 +61,7 @@ OBJS = \
 	L2BFrame.o \
 	LonLat.o \
 	Malloc1.o \
+	Matrix.o \
 	Matrix3.o \
 	Meas.o \
 	Misc.o \

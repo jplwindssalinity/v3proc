@@ -64,6 +64,7 @@ public:
 
 	int		CloseInputFile();
 	int		CloseOutputFile();
+	int		Close();
 
 	//--------//
 	// status //

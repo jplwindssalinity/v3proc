@@ -191,3 +191,15 @@ BaseFile::CloseOutputFile()
 	}
 	return(1);
 }
+
+//-----------------//
+// BaseFile::Close //
+//-----------------//
+
+int
+BaseFile::Close()
+{
+	CloseInputFile();
+	CloseOutputFile();
+	return(1);
+}
