@@ -426,9 +426,6 @@ WindField::~WindField()
 // WindField::ReadVap //
 //--------------------//
 
-#define VAP_LON_DIM		360
-#define VAP_LAT_DIM		121
-
 int
 WindField::ReadVap(
 	const char*		filename)

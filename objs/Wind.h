@@ -150,6 +150,9 @@ public:
 //		The WindField object hold a non-ambiguous wind field.
 //======================================================================
 
+#define VAP_LON_DIM		360
+#define VAP_LAT_DIM		121
+
 class WindField
 {
 public:
