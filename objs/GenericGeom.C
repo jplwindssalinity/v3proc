@@ -245,3 +245,63 @@ earth_intercept(
 	EarthPosition rground = rsat + rlook_geo * s;
 	return(rground);
 }
+
+//------//
+// elem //
+//------//
+
+// Compute Keplerian elements from an EarthPosition and velocity vector
+
+int
+elem(EarthPosition	r,
+	Vector3 	v,
+	double*		a,
+	double*		e,
+	double*		i,
+	double*		w,
+	double*		RA,
+	double*		M,
+	double*		P)
+{
+
+	double R = r.Magnitude();
+	double V = v.Magnitude();
+
+	//---------------------------//
+	// Orbit plane normal vector //
+	//---------------------------//
+
+	Vector3 Nhat = (r & v);
+	Nhat.Scale(1.0);
+
+	//-------------------//
+	// Geocentric z axis //
+	//-------------------//
+
+	Vector3 zhat(0,0,1);
+
+	*i = acos(Nhat % zhat);
+
+	*RA = atan2(-Nhat.Get(1),Nhat.Get(2));
+
+	Vector3 O = zhat & Nhat;
+
+	*a = 1.0 / (2.0/R - V*V/xmu);
+
+	*P = sqrt(4*pi*pi*(*a)*(*a)*(*a)/xmu);
+
+	double beta = pi/2 - acos(r % v);
+
+	double tmp = R*V*V/xmu;
+	*e = sqrt(tmp*tmp*cos(beta)*cos(beta) + sin(beta)*sin(beta));
+
+	double nu = atan2(tmp*sin(beta)*cos(beta), tmp*cos(beta)*cos(beta) - 1.0);
+
+	*w = acos(O % r) - nu;
+
+	double E = 2.0*atan(sqrt((1-(*e))/(1+(*e))) * tan(nu/2));
+
+	*M = E - (*e)*sin(E);
+
+	return(1);
+}
