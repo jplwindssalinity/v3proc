@@ -27,6 +27,19 @@ Attribute::Attribute(
     return;
 }
 
+//----------------------------//
+// Attribute::ReplaceContents //
+//----------------------------//
+
+void
+Attribute::ReplaceContents(
+    const char*  contents)
+{
+    free(_contents);
+    _contents = strdup(contents);
+    return;
+}
+
 //------------------//
 // Attribute::Write //
 //------------------//
@@ -244,70 +257,6 @@ Sds::SetMaxAndMin()
 }
 
 //============//
-// SdsFloat64 //
-//============//
-
-SdsFloat64::SdsFloat64(
-    const char*   sds_name,
-    int32         rank,
-    int32*        dim_sizes,
-    const char*   units,
-    float64       cal,
-    float64       offset,
-    const char**  dim_names,
-    float64       max,
-    float64       min)
-:   Sds(sds_name, DFNT_FLOAT64, rank, dim_sizes, units, cal, offset, dim_names)
-{
-    // remember the max and min
-    _max = max;
-    _min = min;
-    return;
-}
-
-//--------------------------//
-// SdsFloat64::SetMaxAndMin //
-//--------------------------//
-
-int
-SdsFloat64::SetMaxAndMin()
-{
-    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
-        return(0);
-    return(1);
-}
-
-//---------------------------//
-// SdsFloat64::SetFromDouble //
-//---------------------------//
-
-void
-SdsFloat64::SetFromDouble(double* value)
-{
-    float64* ptr = (float64 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
-    {
-        *(ptr + i) = (*(value + i) / _cal) + _offset;
-    }
-    return;
-}
-
-//--------------------------------//
-// SdsFloat64::SetFromUnsignedInt //
-//--------------------------------//
-
-void
-SdsFloat64::SetFromUnsignedInt(unsigned int* value)
-{
-    float64* ptr = (float64 *)_calibratedData;
-    for (int i = 0; i < _frameCluster; i++)
-    {
-        *(ptr + i) = ((double)*(value + i) / _cal) + _offset;
-    }
-    return;
-}
-
-//============//
 // SdsUInt32 //
 //============//
 
@@ -353,6 +302,119 @@ SdsUInt32::SetWithUnsignedInt(unsigned int* value)
     for (int i = 0; i < _frameCluster; i++)
     {
         *(ptr + i) = *(value + i);
+    }
+    return;
+}
+
+//============//
+// SdsFloat32 //
+//============//
+
+SdsFloat32::SdsFloat32(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    float32       max,
+    float32       min)
+:   Sds(sds_name, DFNT_FLOAT32, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//--------------------------//
+// SdsFloat32::SetMaxAndMin //
+//--------------------------//
+
+int
+SdsFloat32::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//--------------------------//
+// SdsFloat32::SetFromFloat //
+//--------------------------//
+
+void
+SdsFloat32::SetFromFloat(float* value)
+{
+    float32* ptr = (float32 *)_calibratedData;
+    for (int i = 0; i < _frameCluster; i++)
+    {
+        *(ptr + i) = (float32)(((double)*(value + i) / _cal) + _offset);
+    }
+    return;
+}
+
+//============//
+// SdsFloat64 //
+//============//
+
+SdsFloat64::SdsFloat64(
+    const char*   sds_name,
+    int32         rank,
+    int32*        dim_sizes,
+    const char*   units,
+    float64       cal,
+    float64       offset,
+    const char**  dim_names,
+    float64       max,
+    float64       min)
+:   Sds(sds_name, DFNT_FLOAT64, rank, dim_sizes, units, cal, offset, dim_names)
+{
+    // remember the max and min
+    _max = max;
+    _min = min;
+    return;
+}
+
+//--------------------------//
+// SdsFloat64::SetMaxAndMin //
+//--------------------------//
+
+int
+SdsFloat64::SetMaxAndMin()
+{
+    if (SDsetrange(_sdsId, (void *)&_max, (void *)&_min) == FAIL)
+        return(0);
+    return(1);
+}
+
+//---------------------------//
+// SdsFloat64::SetFromDouble //
+//---------------------------//
+
+void
+SdsFloat64::SetFromDouble(double* value)
+{
+    float64* ptr = (float64 *)_calibratedData;
+    for (int i = 0; i < _frameCluster; i++)
+    {
+        *(ptr + i) = (float64)((*(value + i) / _cal) + _offset);
+    }
+    return;
+}
+
+//--------------------------------//
+// SdsFloat64::SetFromUnsignedInt //
+//--------------------------------//
+
+void
+SdsFloat64::SetFromUnsignedInt(unsigned int* value)
+{
+    float64* ptr = (float64 *)_calibratedData;
+    for (int i = 0; i < _frameCluster; i++)
+    {
+        *(ptr + i) = (float64)(((double)*(value + i) / _cal) + _offset);
     }
     return;
 }

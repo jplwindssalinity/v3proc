@@ -33,6 +33,7 @@ class Attribute
 public:
     Attribute(const char* name, const char* type, const char* size,
         const char* contents);
+    void ReplaceContents(const char* contents);
     int Write(int32 obj_id);
 
 protected:
@@ -87,6 +88,52 @@ protected:
 
 //======================================================================
 // CLASS
+//    SdsUInt32
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for uint32 data
+//======================================================================
+
+class SdsUInt32 : public Sds
+{
+public:
+    SdsUInt32(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, uint32 max, uint32 min);
+
+    int   SetMaxAndMin();
+    void  SetWithUnsignedInt(unsigned int* value);
+
+protected:
+    uint32  _max;
+    uint32  _min;
+};
+
+//======================================================================
+// CLASS
+//    SdsFloat32
+//
+// DESCRIPTION
+//    The Sds class holds SDS information for Float32 data
+//======================================================================
+
+class SdsFloat32 : public Sds
+{
+public:
+    SdsFloat32(const char* sds_name, int32 rank, int32* dim_sizes,
+        const char* units, float64 cal, float64 offset,
+        const char** dim_names, float32 max, float32 min);
+
+    int   SetMaxAndMin();
+    void  SetFromFloat(float* value);
+
+protected:
+    float32  _max;
+    float32  _min;
+};
+
+//======================================================================
+// CLASS
 //    SdsFloat64
 //
 // DESCRIPTION
@@ -107,29 +154,6 @@ public:
 protected:
     float64  _max;
     float64  _min;
-};
-
-//======================================================================
-// CLASS
-//    SdsUInt32
-//
-// DESCRIPTION
-//    The Sds class holds SDS information for uint32 data
-//======================================================================
-
-class SdsUInt32 : public Sds
-{
-public:
-    SdsUInt32(const char* sds_name, int32 rank, int32* dim_sizes,
-        const char* units, float64 cal, float64 offset,
-        const char** dim_names, uint32 max, uint32 min);
-
-    int   SetMaxAndMin();
-    void  SetWithUnsignedInt(unsigned int* value);
-
-protected:
-    uint32  _max;
-    uint32  _min;
 };
 
 #endif
