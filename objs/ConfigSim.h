@@ -12,6 +12,7 @@ static const char rcs_id_configsim_h[] =
 #include "InstrumentSim.h"
 #include "L0.h"
 #include "L1.h"
+#include "L15.h"
 
 //======================================================================
 // DESCRIPTION
@@ -89,5 +90,13 @@ int ConfigL0(L0* l0, ConfigList* config_list);
 #define L1_FILE_KEYWORD					"L1_FILE"
 
 int ConfigL1(L1* l1, ConfigList* config_list);
+
+//-----//
+// L15 //
+//-----//
+
+#define L15_FILE_KEYWORD				"L15_FILE"
+
+int ConfigL15(L15* l15, ConfigList* config_list);
 
 #endif

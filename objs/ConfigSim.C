@@ -246,3 +246,24 @@ ConfigL1(
 
 	return(1);
 }
+
+//-----------//
+// ConfigL15 //
+//-----------//
+
+int
+ConfigL15(
+	L15*			l15,
+	ConfigList*		config_list)
+{
+	//--------------------------//
+	// configure the l15 object //
+	//--------------------------//
+
+	char* l15_file = config_list->Get(L15_FILE_KEYWORD);
+	if (l15_file == NULL)
+		return(0);
+	l15->AddFile(l15_file);
+
+	return(1);
+}
