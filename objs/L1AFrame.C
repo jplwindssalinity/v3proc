@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l1aframe_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <assert.h>
 #include <memory.h>
@@ -52,8 +52,8 @@ L1AFrame::L1AFrame()
 
 L1AFrame::~L1AFrame()
 {
-	Deallocate();
-	return;
+    Deallocate();
+    return;
 }
 
 //---------------//
@@ -62,23 +62,23 @@ L1AFrame::~L1AFrame()
 
 int
 L1AFrame::Allocate(
-	int		number_of_beams,
-	int		antenna_cycles_per_frame,
-	int		slices_per_spot)
+    int  number_of_beams,
+    int  antenna_cycles_per_frame,
+    int  slices_per_spot)
 {
-	antennaCyclesPerFrame = antenna_cycles_per_frame;
-	spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
-	slicesPerSpot = slices_per_spot;
-	slicesPerFrame = spotsPerFrame * slicesPerSpot;
+    antennaCyclesPerFrame = antenna_cycles_per_frame;
+    spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
+    slicesPerSpot = slices_per_spot;
+    slicesPerFrame = spotsPerFrame * slicesPerSpot;
 
-	//----------------------------//
-	// allocate antenna positions //
-	//----------------------------//
+    //----------------------------//
+    // allocate antenna positions //
+    //----------------------------//
 
-	antennaPosition = (unsigned short *)malloc(spotsPerFrame *
-		sizeof(unsigned short));
-	if (antennaPosition == NULL)
-		return(0);
+    antennaPosition = (unsigned short *)malloc(spotsPerFrame *
+        sizeof(unsigned short));
+    if (antennaPosition == NULL)
+        return(0);
 
     //---------------------------//
     // allocate cal measurements //
@@ -95,22 +95,22 @@ L1AFrame::Allocate(
         return(0);
     }
 
-	//-------------------------------//
-	// allocate science measurements //
-	//-------------------------------//
+    //-------------------------------//
+    // allocate science measurements //
+    //-------------------------------//
 
-	science = (unsigned int *)malloc(slicesPerFrame * sizeof(unsigned int));
-	if (science == NULL)
-	{
-		return(0);
-	}
-	spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
-	if (spotNoise == NULL)
-	{
-		return(0);
-	}
+    science = (unsigned int *)malloc(slicesPerFrame * sizeof(unsigned int));
+    if (science == NULL)
+    {
+        return(0);
+    }
+    spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
+    if (spotNoise == NULL)
+    {
+        return(0);
+    }
 
-	return(1);
+    return(1);
 }
 
 //----------------------//
@@ -120,26 +120,26 @@ L1AFrame::Allocate(
 int
 L1AFrame::Deallocate()
 {
-	if (antennaPosition)
-		free(antennaPosition);
+    if (antennaPosition)
+        free(antennaPosition);
     if (loopbackSlices)
         free(loopbackSlices);
     if (loadSlices)
         free(loadSlices);
-	if (science)
-		free(science);
-	if (spotNoise)
-		free(spotNoise);
+    if (science)
+        free(science);
+    if (spotNoise)
+        free(spotNoise);
     antennaPosition = NULL;
     loopbackSlices = NULL;
     loadSlices = NULL;
     science = NULL;
     spotNoise = NULL;
-	antennaCyclesPerFrame = 0;
-	spotsPerFrame = 0;
-	slicesPerSpot = 0;
-	slicesPerFrame = 0;
-	return(1);
+    antennaCyclesPerFrame = 0;
+    spotsPerFrame = 0;
+    slicesPerSpot = 0;
+    slicesPerFrame = 0;
+    return(1);
 }
 
 //---------------------//
@@ -181,10 +181,10 @@ L1AFrame::FrameSize()
     size += sizeof(GSL1AEngData); // engdata structure
     size += sizeof(GSL1AEu);      // in_eu structure
 
-    size += sizeof(int);    // frame_inst_status
-    size += sizeof(int);    // frame_err_status
-    size += sizeof(short);  // frame_qual_flag
-    size += 13*sizeof(char);   // pulse_qual_flag
+    size += sizeof(unsigned int);    // frame_inst_status
+    size += sizeof(unsigned int);    // frame_err_status
+    size += sizeof(unsigned short);  // frame_qual_flag
+    size += 13 * sizeof(unsigned char);   // pulse_qual_flag
 
     size += 24;  // frame_time
 
@@ -197,69 +197,69 @@ L1AFrame::FrameSize()
 
 int
 L1AFrame::Pack(
-	char*	buffer)
+    char*  buffer)
 {
-	int idx = 0;
-	int size;
+    int idx = 0;
+    int size;
 
-	size = sizeof(double);
-	memcpy((void *)(buffer + idx), (void *)&time, size);
-	idx += size;
+    size = sizeof(double);
+    memcpy((void *)(buffer + idx), (void *)&time, size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
+    idx += size;
 
-	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
-	idx += size;
+    size = sizeof(unsigned char);
+    memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
+    idx += size;
 
-	size = sizeof(float);
-	memcpy((void *)(buffer + idx), (void *)&gcAltitude, size);
-	idx += size;
+    size = sizeof(float);
+    memcpy((void *)(buffer + idx), (void *)&gcAltitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcLongitude, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcLongitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcLatitude, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcLatitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcX, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcX, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcY, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcY, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcZ, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcZ, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velX, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velX, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velY, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velY, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velZ, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velZ, size);
+    idx += size;
 
-	float tmp_float;
-	tmp_float = attitude.GetRoll();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    float tmp_float;
+    tmp_float = attitude.GetRoll();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
-	tmp_float = attitude.GetPitch();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    tmp_float = attitude.GetPitch();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
-	tmp_float = attitude.GetYaw();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    tmp_float = attitude.GetYaw();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
     size = sizeof(unsigned char);
     memcpy((void *)(buffer + idx), (void *)&calPosition, size);
@@ -281,51 +281,51 @@ L1AFrame::Pack(
     memcpy((void *)(buffer + idx), (void *)&loadNoise, size);
     idx += size;
 
-	size = sizeof(unsigned short) * spotsPerFrame;
-	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
-	idx += size;
+    size = sizeof(unsigned short) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
+    idx += size;
 
-	size = sizeof(unsigned int) * slicesPerFrame;
-	memcpy((void *)(buffer + idx), (void *)science, size);
-	idx += size;
+    size = sizeof(unsigned int) * slicesPerFrame;
+    memcpy((void *)(buffer + idx), (void *)science, size);
+    idx += size;
 
-	size = sizeof(unsigned int) * spotsPerFrame;
-	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
-	idx += size;
+    size = sizeof(unsigned int) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+    idx += size;
 
-	size = sizeof(GSL1AStatus);
-	memcpy((void *)(buffer + idx), (void *)&status, size);
-	idx += size;
+    size = sizeof(GSL1AStatus);
+    memcpy((void *)(buffer + idx), (void *)&status, size);
+    idx += size;
 
-	size = sizeof(GSL1AEngData);
-	memcpy((void *)(buffer + idx), (void *)&engdata, size);
-	idx += size;
+    size = sizeof(GSL1AEngData);
+    memcpy((void *)(buffer + idx), (void *)&engdata, size);
+    idx += size;
 
-	size = sizeof(GSL1AEu);
-	memcpy((void *)(buffer + idx), (void *)&in_eu, size);
-	idx += size;
+    size = sizeof(GSL1AEu);
+    memcpy((void *)(buffer + idx), (void *)&in_eu, size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)(buffer + idx), (void *)&frame_inst_status, size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&frame_inst_status, size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)(buffer + idx), (void *)&frame_err_status, size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&frame_err_status, size);
+    idx += size;
 
-	size = sizeof(unsigned short);
-	memcpy((void *)(buffer + idx), (void *)&frame_qual_flag, size);
-	idx += size;
+    size = sizeof(unsigned short);
+    memcpy((void *)(buffer + idx), (void *)&frame_qual_flag, size);
+    idx += size;
 
-	size = 13*sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&pulse_qual_flag, size);
-	idx += size;
+    size = 13*sizeof(unsigned char);
+    memcpy((void *)(buffer + idx), (void *)&pulse_qual_flag, size);
+    idx += size;
 
-	size = 24;
-	memcpy((void *)(buffer + idx), (void *)frame_time, size);
-	idx += size;
+    size = 24;
+    memcpy((void *)(buffer + idx), (void *)frame_time, size);
+    idx += size;
 
-	return(idx);
+    return(idx);
 }
 
 //------------------//
@@ -334,69 +334,69 @@ L1AFrame::Pack(
 
 int
 L1AFrame::Unpack(
-	char*	buffer)
+    char*    buffer)
 {
-	int idx = 0;
-	int size;
+    int idx = 0;
+    int size;
 
-	size = sizeof(double);
-	memcpy((void *)&time, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(double);
+    memcpy((void *)&time, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned char);
-	memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned char);
+    memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(float);
-	memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(float);
+    memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcX, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcX, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcY, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcY, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcZ, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcZ, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velX, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velX, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velY, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velY, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velZ, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velZ, (void *)(buffer + idx), size);
+    idx += size;
 
-	float tmp_float;
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetRoll(tmp_float);
-	idx += size;
+    float tmp_float;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetRoll(tmp_float);
+    idx += size;
 
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetPitch(tmp_float);
-	idx += size;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetPitch(tmp_float);
+    idx += size;
 
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetYaw(tmp_float);
-	idx += size;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetYaw(tmp_float);
+    idx += size;
 
     size = sizeof(unsigned char);
     memcpy((void *)&calPosition, (void *)(buffer + idx), size);
@@ -418,79 +418,88 @@ L1AFrame::Unpack(
     memcpy((void *)&loadNoise, (void *)(buffer + idx), size);
     idx += size;
 
-	size = sizeof(unsigned short) * spotsPerFrame;
-	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned short) * spotsPerFrame;
+    memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int) * slicesPerFrame;
-	memcpy((void *)science, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int) * slicesPerFrame;
+    memcpy((void *)science, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int) * spotsPerFrame;
-	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int) * spotsPerFrame;
+    memcpy((void *)spotNoise, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(GSL1AStatus);
-	memcpy((void *)&status, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(GSL1AStatus);
+    memcpy((void *)&status, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(GSL1AEngData);
-	memcpy((void *)&engdata, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(GSL1AEngData);
+    memcpy((void *)&engdata, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(GSL1AEu);
-	memcpy((void *)&in_eu, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(GSL1AEu);
+    memcpy((void *)&in_eu, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)&frame_err_status, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)&frame_err_status, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned short);
-	memcpy((void *)&frame_qual_flag, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned short);
+    memcpy((void *)&frame_qual_flag, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = 13*sizeof(unsigned char);
-	memcpy((void *)&pulse_qual_flag, (void *)(buffer + idx), size);
-	idx += size;
+    size = 13*sizeof(unsigned char);
+    memcpy((void *)&pulse_qual_flag, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = 24;
-	memcpy((void *)frame_time, (void *)(buffer + idx), size);
-	idx += size;
+    size = 24;
+    memcpy((void *)frame_time, (void *)(buffer + idx), size);
+    idx += size;
 
-	return(idx);
+    return(idx);
 }
 
 
-//--------------------------//
-// L1AFrame::WriteAscii     //
-//--------------------------//
+//----------------------//
+// L1AFrame::WriteAscii //
+//----------------------//
 
-int L1AFrame::WriteAscii(FILE* ofp){
-  fprintf(ofp,"\n########################Frame Info#####################\n\n");
-  fprintf(ofp,"Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitStepChange %d\n",
-	  time,instrumentTicks,orbitTicks,(int)priOfOrbitStepChange);
-  fprintf(ofp,"GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
-	  gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY,gcZ);
-  fprintf(ofp,"VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g\n",
-	  velX,velY,velZ,attitude.GetRoll()*rtd,attitude.GetPitch()*rtd,attitude.GetYaw()*rtd);
-  int offset=0;
-  for(int c=0;c<spotsPerFrame;c++){
-    fprintf(ofp,"\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
-    fprintf(ofp, "AntennaPos: %d SpotNoise: %d Beam:%d\n",
-	    (int)antennaPosition[c],spotNoise[c],c%2);
-    fprintf(ofp,"E(S+N) Slices(1-%d): ",slicesPerSpot);
-    for(int s=0;s<slicesPerSpot;s++){
-      fprintf(ofp,"%d ",science[offset]);
-      offset++;
+int
+L1AFrame::WriteAscii(
+    FILE*  ofp)
+{
+    fprintf(ofp,
+        "\n########################Frame Info#####################\n\n");
+    fprintf(ofp,
+        "Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitStepChange %d\n",
+        time, instrumentTicks, orbitTicks, (int)priOfOrbitStepChange);
+    fprintf(ofp, "GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
+        gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY, gcZ);
+    fprintf(ofp, "VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g\n",
+        velX, velY, velZ, attitude.GetRoll()*rtd, attitude.GetPitch()*rtd,
+        attitude.GetYaw()*rtd);
+    int offset=0;
+    for (int c=0; c<spotsPerFrame; c++)
+    {
+        fprintf(ofp,
+            "\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
+        fprintf(ofp, "AntennaPos: %d SpotNoise: %d Beam:%d\n",
+            (int)antennaPosition[c], spotNoise[c], c%2);
+        fprintf(ofp, "E(S+N) Slices(1-%d): ", slicesPerSpot);
+        for (int s=0; s<slicesPerSpot; s++)
+        {
+            fprintf(ofp, "%d ", science[offset]);
+            offset++;
+        }
+        fprintf(ofp, "\n");
     }
-    fprintf(ofp,"\n");
-  }
-  return(1);
+    return(1);
 }
 
 //---------------------//
@@ -593,7 +602,7 @@ L1AHdf*     l1aHdf)
     COPY_FROM_HDF_ADDRESS(l1aHdf, param, ANTENNA_POS, UNIT_DN,
                    antennaPosition, sizeof(unsigned short) * spotsPerFrame);
 
-	return 1;
+    return 1;
 
 } //L1AFrame::UnpackHdf
 
