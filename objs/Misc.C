@@ -583,3 +583,463 @@ float angle_diff(float ang1, float ang2)
 	return(result);
 
 }
+
+//--------------------//
+// set_character_time //
+//--------------------//
+
+// This function sets a date/time string of the form: yyyy-mm-ddThh:mm:ss.dddZ
+// which corresponds to the input time in secs past a specifed epoch time.
+// The epoch date/time string is also supplied by the user.
+// The string pointers are assumed to point to already allocated memory
+// (24 bytes long).
+//
+// time = time in seconds since an arbitrary zero point.
+// epoch_time = another time in seconds with the same zero point as time.
+// epoch_time_str = pointer to date/time string that corresponds to epoch_time
+// time_str = pointer to space for the date/time string that is determined
+//            to correspond to time (given the epoch correspondence).
+
+int set_character_time(double time, double epoch_time, char* epoch_time_str,
+                       char* time_str)
+
+{
+  double etime = asc2sec(epoch_time_str);
+  sec2asc(etime + time - epoch_time, time_str);
+  // Set trailing 3 spaces, overwriting null terminator!
+  time_str[21] = ' ';
+  time_str[22] = ' ';
+  time_str[23] = ' ';
+  return(1);
+}
+
+/*
+ * asc2sec()
+ *
+ * Translation from asc2sec.F
+ *
+ *
+ *    SUBROUTINE asc2sec( asctime, SEC )
+ *
+ *  Input
+ *
+ *  asctime  is a character string containing a left justified time in th
+ *           ASCII Time Code :
+ *
+ *              YYYY-DDDThh:mm:ss.ddd
+ *
+ *           where
+ *
+ *              YYYY     is the year
+ *              DDD      is the day of year
+ *              hh       is the hour
+ *              mm       is the minute
+ *              ss       is the seconds
+ *              .ddd     is the fractional seconds
+ *
+ *
+ *  Output
+ *
+ *  SEC      is the seconds past the reference epoch 
+ *
+ */
+
+double asc2sec(char *asctime)
+
+{
+int year,doy,hour,minute;
+int y,m,d,c,ya,date2j;
+float second;
+double sec,jd,jdref;
+
+if (strlen(asctime) < 16 || strlen(asctime) > 24)
+{
+  fprintf(stderr,"Error: asc2sec received an invalid time string = %s\n",
+          asctime);
+  exit(1);
+}
+
+if (sscanf(asctime,"%4d-%3dT%2d:%2d:%f",&year,&doy,&hour,&minute,&second) != 5)
+  {
+  fprintf(stderr,"asc2sec: Error reading elements of date string %s\n",asctime);
+  exit(0);
+  }
+
+/*
+ *     compute the double precision Julian date at the start of
+ *     the current day.
+ *
+ */
+
+y = year - 1;
+m = 10;
+d = doy;
+
+c = y/100;
+ya = y - 100*c;
+date2j = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + d + 1721119;
+jd = date2j - 0.5;
+
+/*
+ * year,month,day: 1995,1,1
+ * Julian date = 2449718.500000
+ *
+ * year,month,day: 1996,1,1
+ * Julian date = 2450083.500000
+ *
+ * year,month,day: 1997,1,1
+ * Julian date = 2450449.500000
+ *
+ * year,month,day: 1998,1,1
+ * Julian date = 2450814.500000
+ *
+ */
+
+jdref = 2450083.5;
+
+sec = (jd - jdref)*86400.0 + hour*3600.0 + minute*60.0 + second;
+
+return(sec);
+
+}
+
+/*
+ * sec2asc
+ *
+ * Translation from sec2asc.F
+ * The return string asctime must be at least 22 bytes long (21 for the string
+ * and 1 for the '\0').
+ *
+ *
+ *    SUBROUTINE sec2asc( sec, asctime )
+ *
+ *  Input
+ *
+ *  sec      is the seconds past the reference epoch 
+ *
+ *
+ *  Output
+ *
+ *  asctime  is a character string containing a left justified time in th
+ *           ASCII Time Code :
+ *
+ *              YYYY-DDDThh:mm:ss.ddd
+ *
+ *           where
+ *
+ *              YYYY     is the year
+ *              DDD      is the day of year
+ *              hh       is the hour
+ *              mm       is the minute
+ *              ss       is the seconds
+ *              .ddd     is the fractional seconds
+ *
+ */
+
+int sec2asc(double sec, char *asctime)
+
+{
+int month,day,year,doy,hour,minute,sec10;
+int j,jd0;
+int y,m,d,c,ya,jdint,isec;
+float second;
+double frac,jd,jdref,jdplus,dsec;
+
+/*
+ * year,month,day: 1995,1,1
+ * Julian date = 2449718.500000
+ *
+ * year,month,day: 1996,1,1
+ * Julian date = 2450083.500000
+ *
+ * year,month,day: 1997,1,1
+ * Julian date = 2450449.500000
+ *
+ * year,month,day: 1998,1,1
+ * Julian date = 2450814.500000
+ *
+ */
+
+if (asctime == NULL)
+  {
+  fprintf(stderr,"Error: sec2asc received a NULL string pointer\n");
+  exit(1);
+  }
+
+/* 1996,1,1 */
+jdref = 2450083.50;
+frac = fmod( sec, 1.0 );
+if (frac < 0.0) frac = 1 + frac;
+jd = (sec - frac + 0.5) / 86400.0 + jdref;
+
+/*
+ *  Compute JDINT, the integer Julian date at noon of the current day
+ *  compute DSEC, the number of seconds elapsed since the start of the
+ *  current day.
+ *
+ */
+
+jdplus = jd + 0.5;
+jdint  = (int)jdplus;
+dsec   = 86400.0 * fmod(jdplus, 1.0 );
+if (dsec >= 86400.0)
+  {
+  jdint = jdint + 1;
+  dsec  = dsec  - 86400.0;
+  }
+isec = (int)dsec;
+
+/*
+ *  compute the year, month, and day of the calendar date.
+ */
+j = jdint;
+
+j = j - 1721119;
+y = (4*j-1)/146097;
+j = 4*j - 1 - 146097*y;
+d = j/4;
+j = (4*d+3)/1461;
+d = 4*d + 3 - 1461*j;
+d = (d+4)/4;
+m = (5*d-3)/153;
+d = 5*d - 3 - 153*m;
+d = (d+5)/5;
+y = 100*y + j;
+if ( m < 10 )
+  {
+  m = m + 3;
+  }
+else
+  {
+  m = m - 9;
+  y = y + 1;
+  }
+
+year   = y;
+month  = m;
+day    = d;
+
+/*  Compute HOUR. */
+hour   = isec/3600;
+isec   = isec - 3600*hour;
+
+/*  Compute minute. */
+minute = isec/60;
+isec   = isec - 60*minute;
+
+/*  Compute sec10. */
+sec10  = isec/10;
+isec   = isec - 10*sec10;
+
+/*  Compute second. */
+second = isec + frac;
+
+/*
+ *      DAYOYR = DATE2J( YEAR, MONTH, DAY ) - DATE2J( YEAR, 1, 0 )
+ */
+
+y = year;
+m = month;
+d = day;
+
+if ( m > 2 )
+  {
+  m = m - 3;
+  }
+else
+  {
+  m = m + 9;
+  y = y - 1;
+  }
+
+c  = y/100;
+ya = y - 100*c;
+jd = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + d + 1721119;
+
+m = 10;
+y = year - 1;
+
+c  = y/100;
+ya = y - 100*c;
+jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
+
+doy = (int)(jd - jd0);
+
+sprintf(asctime,"%04d-%03dT%02d:%02d:%1d%05.3f",
+	year,doy,hour,minute,sec10,second);
+
+return(1);
+
+}
+
+/*
+ * sec2asc
+ *
+ * Translation from sec2asc.F
+ * Modifed to generate month and day of month instead of day of year.
+ *
+ *
+ *    SUBROUTINE sec2asc_c( sec, asctime )
+ *
+ *  Input
+ *
+ *  sec      is the seconds past the reference epoch 
+ *
+ *
+ *  Output
+ *
+ *  asctime  is a character string containing a left justified time in th
+ *           ASCII Time Code :
+ *
+ *              YYYY-MM-DDThh:mm:ss.dddZ
+ *
+ *           where
+ *
+ *              YYYY     is the year
+ *              MM       is the month
+ *              DD       is the day of the month
+ *              hh       is the hour
+ *              mm       is the minute
+ *              ss       is the seconds
+ *              .ddd     is the fractional seconds
+ *
+ */
+
+#include <stdio.h>
+#include <math.h>
+
+int sec2asc_month(double sec, char* asctime)
+
+{
+int month,day,year,doy,hour,minute,sec10;
+int j,jd0;
+int y,m,d,c,ya,jdint,isec;
+float second;
+double frac,jd,jdref,jdplus,dsec;
+
+/*
+ * year,month,day: 1995,1,1
+ * Julian date = 2449718.500000
+ *
+ * year,month,day: 1996,1,1
+ * Julian date = 2450083.500000
+ *
+ * year,month,day: 1997,1,1
+ * Julian date = 2450449.500000
+ *
+ * year,month,day: 1998,1,1
+ * Julian date = 2450814.500000
+ *
+ */
+
+if (asctime == NULL)
+  {
+  fprintf(stderr,"Error: sec2asc_month received a NULL string pointer\n");
+  exit(1);
+  }
+
+/* 1996,1,1 */
+jdref = 2450083.50;
+frac = fmod( sec, 1.0 );
+if (frac < 0.0) frac = 1 + frac;
+jd = (sec - frac + 0.5) / 86400.0 + jdref;
+
+/*
+ *  Compute JDINT, the integer Julian date at noon of the current day
+ *  compute DSEC, the number of seconds elapsed since the start of the
+ *  current day.
+ *
+ */
+
+jdplus = jd + 0.5;
+jdint  = (int)jdplus;
+dsec   = 86400.0 * fmod(jdplus, 1.0 );
+if (dsec >= 86400.0)
+  {
+  jdint = jdint + 1;
+  dsec  = dsec  - 86400.0;
+  }
+isec = (int)dsec;
+
+/*
+ *  compute the year, month, and day of the calendar date.
+ */
+j = jdint;
+
+j = j - 1721119;
+y = (4*j-1)/146097;
+j = 4*j - 1 - 146097*y;
+d = j/4;
+j = (4*d+3)/1461;
+d = 4*d + 3 - 1461*j;
+d = (d+4)/4;
+m = (5*d-3)/153;
+d = 5*d - 3 - 153*m;
+d = (d+5)/5;
+y = 100*y + j;
+if ( m < 10 )
+  {
+  m = m + 3;
+  }
+else
+  {
+  m = m - 9;
+  y = y + 1;
+  }
+
+year   = y;
+month  = m;
+day    = d;
+
+/*  Compute HOUR. */
+hour   = isec/3600;
+isec   = isec - 3600*hour;
+
+/*  Compute minute. */
+minute = isec/60;
+isec   = isec - 60*minute;
+
+/*  Compute sec10. */
+sec10  = isec/10;
+isec   = isec - 10*sec10;
+
+/*  Compute second. */
+second = isec + frac;
+
+/*
+ *      DAYOYR = DATE2J( YEAR, MONTH, DAY ) - DATE2J( YEAR, 1, 0 )
+ */
+
+y = year;
+m = month;
+d = day;
+
+if ( m > 2 )
+  {
+  m = m - 3;
+  }
+else
+  {
+  m = m + 9;
+  y = y - 1;
+  }
+
+c  = y/100;
+ya = y - 100*c;
+jd = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + d + 1721119;
+
+m = 10;
+y = year - 1;
+
+c  = y/100;
+ya = y - 100*c;
+jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
+
+doy = (int)(jd - jd0);
+
+sprintf(asctime,"%04d-%02d-%02dT%02d:%02d:%1d%05.3f",
+	year,month,day,hour,minute,sec10,second);
+
+return(1);
+
+}

@@ -482,6 +482,15 @@ ConfigQscatSim(
     QscatSim*    qscat_sim,
     ConfigList*  config_list)
 {
+
+    //-----------------//
+    // time references //
+    //-----------------//
+
+	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &(qscat_sim->epochTime)))
+		return(0);
+    qscat_sim->epochTimeString = config_list->Get(EPOCH_TIME_STRING_KEYWORD);
+
     //----------//
     // land map //
     //----------//

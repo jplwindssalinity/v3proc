@@ -123,6 +123,8 @@ public:
     // variables //
     //-----------//
 
+    double                   epochTime;  // used for setting time strings
+    char*                    epochTimeString;
     double                   startTime;
     QscatSimBeamInfo         beamInfo[NUMBER_OF_QSCAT_BEAMS];
     QscatEvent::QscatEventE  lastEventType;

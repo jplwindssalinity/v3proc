@@ -10,6 +10,12 @@ static const char rcs_id_qscatconfigdefs_h[] =
 	"@(#) $Id$";
 
 //----------//
+// QscatSim //
+//----------//
+
+#define EPOCH_TIME_STRING_KEYWORD  "EPOCH_TIME_STRING"
+
+//----------//
 // QscatSes //
 //----------//
 

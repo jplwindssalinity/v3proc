@@ -48,7 +48,8 @@ QscatSimBeamInfo::~QscatSimBeamInfo()
 //==========//
 
 QscatSim::QscatSim()
-:   startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
+:   epochTime(0.0), epochTimeString(NULL),
+    startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
     azimuthIntegrationRange(0.0), azimuthStepSize(0.0), dopplerBias(0.0),
     correlatedKpm(0.0), simVs1BCheckfile(NULL), uniformSigmaField(0),
     outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
@@ -185,7 +186,8 @@ QscatSim::L1AFrameInit(
         if (cur_beam->polarization == H_POL)
         {
           l1a_frame->in_eu.range_gate_delay_inner = 1e3*qscat->ses.rxGateDelay;
-          l1a_frame->in_eu.range_gate_width_inner = 1e3*ses_beam_info->rxGateWidth;
+          l1a_frame->in_eu.range_gate_width_inner =
+            1e3*ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_a_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
           l1a_frame->in_eu.transmit_power_inner = qscat->ses.transmitPower;
@@ -193,7 +195,8 @@ QscatSim::L1AFrameInit(
         else
         {
           l1a_frame->in_eu.range_gate_delay_outer = 1e3*qscat->ses.rxGateDelay;
-          l1a_frame->in_eu.range_gate_width_outer = 1e3*ses_beam_info->rxGateWidth;
+          l1a_frame->in_eu.range_gate_width_outer =
+            1e3*ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_b_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
           l1a_frame->in_eu.transmit_power_outer = qscat->ses.transmitPower;
@@ -235,9 +238,8 @@ QscatSim::L1AFrameInit(
         l1a_frame->frame_qual_flag=0x0000;
         for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
 
-        l1a_frame->frame_time_secs = qscat->cds.time;
-        // assume fractional part of instrumentTime is zero for now
-        l1a_frame->instrument_time = qscat->cds.instrumentTime;
+        set_character_time(qscat->cds.time, epochTime, epochTimeString,
+                           l1a_frame->frame_time);
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;

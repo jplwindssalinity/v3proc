@@ -140,6 +140,7 @@ L1A::ReadGSDataRec(void)
 //----------------------------//
 // L1A::WriteGSDataRecAscii   //
 //----------------------------//
+
 int
 L1A::WriteGSDataRecAscii()
 {
@@ -149,18 +150,37 @@ L1A::WriteGSDataRecAscii()
 
 }
 
-//--------------------------//
+//-----------------------//
 // L1A::WriteGSDataRec   //
-//--------------------------//
+//-----------------------//
+
 int
-L1A::WriteGSDataRec(void)
+L1A::WriteGSDataRec()
 {
     if(_outputFp==NULL) return(0);
+    FillGSFrame();
+    if (gsFrame.Pack(gsBuffer) == 0) return 0;
+    return(Write(gsBuffer, GS_L1A_FRAME_SIZE));
+
+}
+
+//--------------------//
+// L1A::FillGSFrame   //
+//--------------------//
+
+int
+L1A::FillGSFrame(void)
+{
+
+    //----------------------------------------------//
+    // Transfer data from standard frame to gsFrame //
+    //----------------------------------------------//
 
     GSL1APcd* in_pcdP = &(gsFrame.in_pcd);
-    (void)memset(in_pcdP->frame_time, 0, 24);
-    in_pcdP->time = frame.frame_time_secs;
-    in_pcdP->instrument_time = frame.frame_time_secs;
+    (void)memcpy(in_pcdP->frame_time, frame.frame_time, 24);
+    in_pcdP->time = frame.time;
+    // assumes fractional part of instrument_time (5th byte) is zero
+    in_pcdP->instrument_time = (double)frame.instrumentTicks;
     in_pcdP->orbit_time = (int)frame.orbitTicks;
     in_pcdP->x_pos = frame.gcX*1000;
     in_pcdP->y_pos = frame.gcY*1000;
@@ -197,7 +217,6 @@ L1A::WriteGSDataRec(void)
     (void)memcpy(&gsFrame.in_science.load_cal_noise,
                  &frame.loadNoise, sizeof(float));
 
-    // transpose??
     for (int i=0; i < frame.slicesPerFrame; i++)
     {  // convert floats to ints
       *(gsFrame.in_science.power_dn[0] + i) = (int)frame.science[i];
@@ -222,11 +241,7 @@ L1A::WriteGSDataRec(void)
     // l1a_pulse_qual_flag[13]
     (void)memcpy(&(gsFrame.l1a_pulse_qual_flag), &(frame.pulse_qual_flag), 13);
 
-    if (gsFrame.Pack(gsBuffer) == 0) return 0;
-
-    return(Write(gsBuffer, GS_L1A_FRAME_SIZE));
-
-} // L1A::WriteGSDataRec
+} // L1A::FillGSFrame
 
 
 int
@@ -274,7 +289,7 @@ L1A::WriteGSCalPulseRec(void)
     (void)memset(calPulseBuffer, 0, GS_CAL_PULSE_FRAME_SIZE);
 
     char* ptr = calPulseBuffer;
-    (void)memcpy(ptr, &(frame.frame_time_secs), sizeof(double));
+    (void)memcpy(ptr, &(frame.time), sizeof(double));
     ptr += sizeof(double);
 
     int Esn;  // integer storage for floating point cal pulse data
@@ -351,7 +366,7 @@ L1A::WriteGSCalPulseRecAscii(void)
     if (_calPulseFP == NULL) return(0);
 
     fprintf(_calPulseFP,"Cal Pulse Record:\n");
-    fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.frame_time_secs);
+    fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.time);
     for (i=0; i < 12; i++)
     {
       fprintf(_calPulseFP,"loopbackSlices[%d] = %g\n",

@@ -114,12 +114,10 @@ public:
     unsigned char   pulse_qual_flag[13];
 
 	//--------------------------------------------------------------------//
-	// L1A Raw Telemetry Values needed to go back to L00 (ie., telemetry) //
-    // These values are all in DN's.                                      //
+	// L1A character time needed by GS
 	//--------------------------------------------------------------------//
 
-    double          frame_time_secs;
-    double          instrument_time;
+    char frame_time[24];
 
 	//-------------------------//
 	// informational variables //

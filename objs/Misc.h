@@ -86,4 +86,10 @@ float			quantize(float value, float resolution);
 float			wrap_angle_near(float angle, float target);
 float 			angle_diff(float ang1, float ang2);
 
+int set_character_time(double time, double epoch_time, char* epoch_time_str,
+                       char* time_str);
+double asc2sec(char *asctime);
+int sec2asc(double sec, char *asctime);
+int sec2asc_month(double sec, char* asctime);
+
 #endif

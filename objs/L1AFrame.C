@@ -25,11 +25,10 @@ L1AFrame::L1AFrame()
   frame_inst_status(0),
   frame_err_status(0),
   frame_qual_flag(0),
-  frame_time_secs(0.0),
-  instrument_time(0.0),
   antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
   slicesPerFrame(0)
 {
+  (void)memset(&frame_time, 0, 24);
   (void)memset(&status, 0, sizeof(GSL1AStatus));
   (void)memset(&engdata, 0, sizeof(GSL1AEngData));
   (void)memset(&in_eu, 0, sizeof(GSL1AEu));
@@ -172,8 +171,7 @@ L1AFrame::FrameSize()
     size += sizeof(short);  // frame_qual_flag
     size += 13*sizeof(char);   // pulse_qual_flag
 
-    size += sizeof(double);   // frame_time_secs
-    size += sizeof(double);   // instrument_time
+    size += 24;  // frame_time
 
     return(size);
 }
@@ -311,12 +309,8 @@ L1AFrame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&pulse_qual_flag, size);
 	idx += size;
 
-	size = sizeof(double);
-	memcpy((void *)(buffer + idx), (void *)&frame_time_secs, size);
-	idx += size;
-
-	size = sizeof(double);
-	memcpy((void *)(buffer + idx), (void *)&instrument_time, size);
+	size = 24;
+	memcpy((void *)(buffer + idx), (void *)frame_time, size);
 	idx += size;
 
 	return(idx);
@@ -455,12 +449,8 @@ L1AFrame::Unpack(
 	memcpy((void *)&pulse_qual_flag, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(double);
-	memcpy((void *)&frame_time_secs, (void *)(buffer + idx), size);
-	idx += size;
-
-	size = sizeof(double);
-	memcpy((void *)&instrument_time, (void *)(buffer + idx), size);
+	size = 24;
+	memcpy((void *)frame_time, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

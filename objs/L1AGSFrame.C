@@ -62,7 +62,7 @@ char*      buffer)
     ptr += sizeof(short);
     (void)memcpy(ptr, l1a_pulse_qual_flag, 13); ptr += 13;
     ptr++;
-    (void)memcpy(&gsL1AFrameSize, ptr, sizeof(int)); ptr += sizeof(int);
+    (void)memcpy(ptr, &gsL1AFrameSize, sizeof(int)); ptr += sizeof(int);
     return 1;
 
 } // L1AGSFrame::Pack
@@ -111,7 +111,10 @@ FILE*   ofp)
     // write PCD
     //-----------------------------
     fprintf(ofp, "\n####################  PCD ####################\n\n");
-    fprintf(ofp, "frame_time: %s\n", in_pcd.frame_time);
+    char ftime[25];
+    (void)memcpy(ftime, in_pcd.frame_time, 24);
+    ftime[24] = '\0';
+    fprintf(ofp, "frame_time: %s\n", ftime);
     fprintf(ofp, "time: %g, instrument_time: %g, orbit_time: %d\n",
                      in_pcd.time, in_pcd.instrument_time, in_pcd.orbit_time);
     fprintf(ofp, "x_pos: %g, y_pos: %g, z_pos: %g\n",
@@ -120,9 +123,6 @@ FILE*   ofp)
                      in_pcd.x_vel, in_pcd.y_vel, in_pcd.z_vel);
     fprintf(ofp, "roll: %g, pitch: %g, yaw: %g\n",
                      in_pcd.roll, in_pcd.pitch, in_pcd.yaw);
-    //--------------------------------------//
-    // Now write out the GS specific stuff. //
-    //--------------------------------------//
   
     fprintf(ofp,"\n ============== GS Status Block ==============\n\n");
     fprintf(ofp,"prf_count = %d\n", status.prf_count);
@@ -141,9 +141,12 @@ FILE*   ofp)
     (void)memcpy(&vtcw_lo2, status.vtcw+4, sizeof(unsigned short));
     double vtcw = vtcw_hi4*65536 + vtcw_lo2;
     fprintf(ofp,"vtcw = %g\n",vtcw);
-    double corres_instr_time = 0.0;
-    (void)memcpy(&corres_instr_time, status.corres_instr_time, sizeof(double));
-    fprintf(ofp,"corres_instr_time = %g\n",corres_instr_time);
+    unsigned int corres_instr_time = 0;
+    unsigned char frac = 0;
+    (void)memcpy(&frac, status.corres_instr_time, sizeof(unsigned char));
+    (void)memcpy(&corres_instr_time, status.corres_instr_time+1,
+                 sizeof(unsigned int));
+    fprintf(ofp,"corres_instr_time = %d, (frac) %d\n",corres_instr_time,frac);
   
     fprintf(ofp,"\n ============== GS Engineering Block ==============\n\n");
     fprintf(ofp,"precision_coupler_temp = %d\n",engdata.precision_coupler_temp);
@@ -196,14 +199,14 @@ FILE*   ofp)
     fprintf(ofp,"\nload_cal_A_power[12]: \n");
     for (i=0; i < 2; i++)
     {
-        for (j=0; j < 6; j++)
+        for (j=0; j < 5; j++)
             fprintf(ofp, " %g", in_science.load_cal_A_power[i*6+j]);
         fprintf(ofp, "\n");
     }
     fprintf(ofp,"\nload_cal_B_power[12]: \n");
     for (i=0; i < 2; i++)
     {
-        for (j=0; j < 6; j++)
+        for (j=0; j < 5; j++)
             fprintf(ofp, " %g", in_science.load_cal_B_power[i*6+j]);
         fprintf(ofp, "\n");
     }

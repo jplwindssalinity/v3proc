@@ -64,6 +64,7 @@ public:
 
     int  ReadGSDataRec(void);
     int  WriteGSDataRec(void);
+    int  FillGSFrame(void);
     int  WriteGSDataRecAscii(void);
 
 	int  OpenCalPulseForWriting(const char* filename);
