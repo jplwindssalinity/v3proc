@@ -13,7 +13,7 @@
 #
 # DESCRIPTION
 #		Executes the primary simulation chain, i.e.:
-#			sim, l00_to_l1a, l1a_to_l1b, l1b_to_l2a, l2a_to_l2b
+#			sim, l1a_to_l1b, l1b_to_l2a, l2a_to_l2b
 #
 # OPTIONS
 #		None.
@@ -81,11 +81,12 @@ echo ""
 #----------------#
 # run l00_to_l1a #
 #----------------#
+# Not used anymore
 
-echo "`date` : Starting l00_to_l1a"
-l00_to_l1a $cfg_file
-echo "`date` : Completed l00_to_l1a"
-echo ""
+#echo "`date` : Starting l00_to_l1a"
+#l00_to_l1a $cfg_file
+#echo "`date` : Completed l00_to_l1a"
+#echo ""
 
 #----------------#
 # run l1a_to_l1b #

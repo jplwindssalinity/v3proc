@@ -88,14 +88,14 @@ endif
 # run l00_to_l1a #
 #----------------#
 
-if (-e l1a.dat) then
-  ;
-else
-  echo "`date` : Starting l00_to_l1a"
-  l00_to_l1a $cfg_file
-  echo "`date` : Completed l00_to_l1a"
-  echo ""
-endif
+#if (-e l1a.dat) then
+#  ;
+#else
+#  echo "`date` : Starting l00_to_l1a"
+#  l00_to_l1a $cfg_file
+#  echo "`date` : Completed l00_to_l1a"
+#  echo ""
+#endif
 
 #----------------#
 # run l1a_to_l1b #

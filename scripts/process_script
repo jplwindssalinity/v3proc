@@ -73,10 +73,10 @@ echo ""
 # run l00_to_l1a #
 #----------------#
 
-echo "`date` : Starting l00_to_l1a"
-l00_to_l1a $cfg_file
-echo "`date` : Completed l00_to_l1a"
-echo ""
+#echo "`date` : Starting l00_to_l1a"
+#l00_to_l1a $cfg_file
+#echo "`date` : Completed l00_to_l1a"
+#echo ""
 
 #----------------#
 # run l1a_to_l1b #
