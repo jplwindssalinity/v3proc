@@ -90,7 +90,7 @@ private:
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
-#define RECEIVER_GATE_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
+#define RANGE_TRACKING_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
 
 class RangeTracking
 {
@@ -109,16 +109,18 @@ public:
 	// setting //
 	//---------//
 
-	int		SetReceiverGateWidth(float receiver_gate_width);
-	int		SetXmitPulseWidth(float xmit_pulse_width);
-
 	//------------//
 	// algorithms //
 	//------------//
 
 	unsigned short		OrbitTimeToRangeStep(unsigned int orbit_time);
 	int					DelayAndDuration(int beam_idx, int orbit_step,
+							float receiver_gate_width, float xmit_pulse_width,
 							float* delay, float* duration);
+	int					SetDelay(int beam_idx, int orbit_step,
+							float receiver_gate_width, float xmit_pulse_width,
+							float delay);
+	int					SetDuration(int beam_idx, float duration);
 
 	//--------------//
 	// input/output //
@@ -143,8 +145,6 @@ private:
 
 	int				_numberOfBeams;
 	int				_rangeSteps;
-	unsigned char	_receiverGateWidth;
-	unsigned char	_xmitPulseWidth;
 };
 
 #endif

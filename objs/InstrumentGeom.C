@@ -1510,12 +1510,12 @@ GetTwoWayPeakGain(
 	return(1);
 }
 
-//-------------------//
-// GetTwoWayPeakGain //
-//-------------------//
+//--------------------//
+// GetTwoWayPeakGain2 //
+//--------------------//
 
 int
-GetTwoWayPeakGain(
+GetTwoWayPeakGain2(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Beam*				beam,
