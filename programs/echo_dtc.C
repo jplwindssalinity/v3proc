@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1999-2001, California Institute of Technology. //
+// Copyright (C) 1999-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -645,6 +645,22 @@ main(
     fprintf(offset_fp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
     fprintf(offset_fp, "@ yaxis label %cBaseband Frequency (kHz)%c\n", QUOTE,
         QUOTE);
+    fprintf(offset_fp, "@ world xmin 0\n");
+    fprintf(offset_fp, "@ world xmax 256\n");
+    fprintf(offset_fp, "@ xaxis tick major 64\n");
+    fprintf(offset_fp, "@ xaxis tick minor 16\n");
+    fprintf(offset_fp, "@ legend on\n");
+    fprintf(offset_fp, "@ legend x1 0.67\n");
+    fprintf(offset_fp, "@ legend y1 0.75\n");
+    fprintf(offset_fp, "@ legend string 0 %cInner Beam Minimum%c\n", QUOTE,
+        QUOTE);
+    fprintf(offset_fp, "@ legend string 1 %cInner Beam Maximum%c\n", QUOTE,
+        QUOTE);
+    fprintf(offset_fp, "@ legend string 2 %cOuter Beam Minimum%c\n", QUOTE,
+        QUOTE);
+    fprintf(offset_fp, "@ legend string 3 %cOuter Beam Maximum%c\n", QUOTE,
+        QUOTE);
+
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
