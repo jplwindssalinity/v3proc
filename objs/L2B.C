@@ -128,21 +128,17 @@ L2B::WriteAscii()
     return(frame.swath.WriteAscii(_outputFp));
 }
 
+//--------------//
+// L2B::ReadHDF //
+//--------------//
 
-//-----------------//
-// L2B::ReadHDF    //
-//-----------------//
-
-int L2B::ReadHDF(){
-     if (frame.swath.ReadHdfL2B(_inputFilename) == 0) return(0);
-     header.crossTrackResolution = 25.0;
-     header.alongTrackResolution = 25.0;
-     header.zeroIndex = 38;
-     return(1);
+int
+L2B::ReadHDF()
+{
+    if (frame.swath.ReadHdfL2B(_inputFilename) == 0)
+        return(0);
+    header.crossTrackResolution = 25.0;
+    header.alongTrackResolution = 25.0;
+    header.zeroIndex = 38;
+    return(1);
 }
-
-
-
-
-
-
