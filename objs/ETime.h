@@ -11,6 +11,7 @@ static const char rcs_id_etime_h[] =
 
 #include <stdio.h>
 #include <time.h>
+#include <string.h>
 
 //======================================================================
 // CLASSES

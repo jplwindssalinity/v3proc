@@ -354,8 +354,8 @@ Image::WritePltr(
 
             // ...get its delta corners
             float edges[4][2];
-            float dx[4] = { -1,  1,  1, -1 };
-            float dy[4] = { -1, -1,  1,  1 };
+            int dx[4] = { -1,  1,  1, -1 };
+            int dy[4] = { -1, -1,  1,  1 };
             int edge_count = 0;
             for (int i = 0; i < 4; i++)
             {

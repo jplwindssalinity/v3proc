@@ -10,6 +10,7 @@ static const char rcs_id_earthfield_h[] =
 	"@(#) $Id$";
 
 #include "LonLat.h"
+#include<stdlib.h>
 
 //======================================================================
 // CLASSES

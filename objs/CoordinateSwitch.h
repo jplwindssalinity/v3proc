@@ -8,6 +8,7 @@
 
 #include "Matrix3.h"
 #include "Attitude.h"
+#include<stdlib.h>
 
 static const char rcs_id_coordinateswitch_h[] =
 	"@(#) $Id$";

@@ -11,6 +11,7 @@ static const char rcs_id_l00tol1a_h[] =
 
 #include "L00.h"
 #include "L1A.h"
+#include <string.h>
 
 
 //======================================================================

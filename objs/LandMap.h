@@ -9,8 +9,8 @@
 static const char rcs_id_landmap_h[] =
     "@(#) $Id$";
 
-#include "LandMap.h"
 #include "LonLat.h"
+#include <stdlib.h>
 
 //======================================================================
 // CLASSES

@@ -10,6 +10,7 @@ static const char rcs_id_beam_h[] =
     "@(#) $Id$";
 
 #include "CoordinateSwitch.h"
+#include<stdlib.h>
 
 //======================================================================
 // CLASSES

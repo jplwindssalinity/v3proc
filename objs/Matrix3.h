@@ -29,7 +29,7 @@ class Vector3;
 
 class Matrix3
 {
-    friend Vector3;
+    friend class Vector3;
 
 public:
 
@@ -87,7 +87,7 @@ protected:
 
 class Vector3
 {
-    friend Matrix3;
+    friend class Matrix3;
 
 public:
 

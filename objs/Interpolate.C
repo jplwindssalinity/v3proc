@@ -9,6 +9,7 @@ static const char rcs_id_interpolate_c[] =
 #include <stdio.h>
 #include <math.h>
 #include <malloc.h>
+#include "Interpolate.h"
 
 //--------//
 // polint //

@@ -6,6 +6,8 @@
 #ifndef INTERPOLATE_H
 #define INTERPOLATE_H
 
+#include <stdlib.h>
+
 static const char rcs_id_interpolate_h[] =
 	"@(#) $Id$";
 
@@ -33,3 +35,6 @@ int cubic_spline(double* x, double* y, int n, double yp1, double ypn, double* y2
 int interpolate_cubic_spline(double* xa, double* ya, double* y2a, int n,
 			     double x, double* y);
 #endif
+
+
+
