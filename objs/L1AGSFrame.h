@@ -51,10 +51,18 @@ struct GSL1AStatus
     int Read(char*   frameStartByte);
 
     // member variables
-    char            pad1[10];
+    unsigned char   telemetry_table_id[2];
+    unsigned char   status_error_flags;
+    unsigned char   table_readout_type;
+    unsigned char   table_readout_offset[2];
+    unsigned char   table_readout_data[4];
     unsigned char   operational_mode;
     unsigned char   prf_count;
-    char            pad2[16];
+    unsigned char   status_change_flags[2];
+    unsigned char   error_message[2];
+    unsigned char   error_message_history[10];
+    unsigned char   valid_command_count;
+    unsigned char   invalid_command_count;
     char            specified_cal_pulse_pos;
     unsigned char   prf_cycle_time;
     unsigned char   range_gate_a_delay;
@@ -66,15 +74,21 @@ struct GSL1AStatus
     unsigned char   pulse_width;
     unsigned char   receiver_gain;
     unsigned char   ses_configuration_flags;
-    char            pad6[2];
+    unsigned char   ses_data_overrun_count;
+    unsigned char   ses_data_underrun_count;
     unsigned char   pred_antenna_pos_count;
-    char            pad7[3];
+    unsigned char   running_error_count[2];
+    char            ses_reset_position;
     unsigned char   doppler_orbit_step;
     unsigned char   prf_orbit_step_change;
-    char            pad8[9];
+    unsigned char   cmd_history_queue[8];
+    unsigned char   calc_ant_max_grp_count;
     char            vtcw[6];
     char            corres_instr_time[5];
-    char            pad9[9];
+    unsigned char   fsw_mission_version_num;
+    unsigned char   fsw_build_number;
+    unsigned char   pbi_flag;
+    char            pad1[6];
 };
 
 struct GSL1AEngData
@@ -83,20 +97,29 @@ struct GSL1AEngData
     int Read(char*   frameStartByte);
 
     // member variables
-    char            pad1[34];
+    char            pad1[16];
+    unsigned char   relay_status[2];
+    char            pad2[3];
+    unsigned char   ea_a_spin_rate;
+    char            pad3[4];
+    unsigned char   ea_b_spin_rate;
+    char            pad4[7];
     unsigned char   a2d_p12v_xcpl;
-    char            pad2[8];
+    char            pad5[8];
     unsigned char   transmit_power_a;
     unsigned char   transmit_power_b;
-    char            pad3;
-    unsigned char   precision_coupler_temp;
-    char            pad4[4];
-    unsigned char   rcv_protect_sw_temp;
-    char            pad5[2];
-    unsigned char   beam_select_sw_temp;
     char            pad6;
+    unsigned char   precision_coupler_temp;
+    char            pad7[4];
+    unsigned char   rcv_protect_sw_temp;
+    char            pad8[2];
+    unsigned char   beam_select_sw_temp;
+    char            pad9;
     unsigned char   receiver_temp;
-    char            pad7[5];
+    char            pad10[2];
+    unsigned char   eng_status_c1;
+    unsigned char   eng_status_c2;
+    unsigned char   eng_status_c3;
 };
 
 struct GSL1AEu

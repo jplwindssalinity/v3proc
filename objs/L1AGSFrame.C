@@ -125,8 +125,25 @@ FILE*   ofp)
                      in_pcd.roll, in_pcd.pitch, in_pcd.yaw);
   
     fprintf(ofp,"\n ============== GS Status Block ==============\n\n");
+    fprintf(ofp,"telemetry_table_id = %d\n", *((short*)status.telemetry_table_id));
+    fprintf(ofp,"status_error_flags = %d\n", status.status_error_flags);
+    fprintf(ofp,"table_readout_type = %d\n", status.table_readout_type);
+    fprintf(ofp,"table_readout_offset = %d\n", *((short*)status.table_readout_offset));
+    fprintf(ofp,"table_readout_data = %d %d %d %d\n",
+      status.table_readout_data[0],
+      status.table_readout_data[1],
+      status.table_readout_data[2],
+      status.table_readout_data[3]);
     fprintf(ofp,"operational_mode = %d\n", status.operational_mode);
     fprintf(ofp,"prf_count = %d\n", status.prf_count);
+    fprintf(ofp,"status_change_flags = %d\n", *((short*)status.status_change_flags));
+    fprintf(ofp,"error_message = %d\n", *((unsigned short*)status.error_message));
+    fprintf(ofp,"error_message_history = ");
+    for (int i=0; i < 5; i++)
+      fprintf(ofp," %d", *((unsigned short*)(status.error_message_history + i*2)));
+    fprintf(ofp,"\n");
+    fprintf(ofp,"valid_command_count %d\n", status.valid_command_count);
+    fprintf(ofp,"invalid_command_count %d\n", status.invalid_command_count);
     fprintf(ofp,"specified_cal_pulse_pos = %d\n",
       status.specified_cal_pulse_pos);
     fprintf(ofp,"prf_cycle_time = %d\n", status.prf_cycle_time);
@@ -134,10 +151,36 @@ FILE*   ofp)
     fprintf(ofp,"range_gate_a_width = %d\n", status.range_gate_a_width);
     fprintf(ofp,"range_gate_b_delay = %d\n", status.range_gate_b_delay);
     fprintf(ofp,"range_gate_b_width = %d\n", status.range_gate_b_width);
+    fprintf(ofp,"doppler_shift_command_1 = %d %d %d\n",
+      status.doppler_shift_command_1[0],
+      status.doppler_shift_command_1[1],
+      status.doppler_shift_command_1[2]);
+    fprintf(ofp,"doppler_shift_command_2 = %d %d %d\n",
+      status.doppler_shift_command_2[0],
+      status.doppler_shift_command_2[1],
+      status.doppler_shift_command_2[2]);
     fprintf(ofp,"pulse_width = %d\n", status.pulse_width);
+    fprintf(ofp,"receiver_gain (attenuation) = %d dB\n", status.receiver_gain);
+    fprintf(ofp,"ses_configuration_flags = 0x%02x\n",
+      status.ses_configuration_flags);
+    fprintf(ofp,"ses_data_overrun_count = %d\n", status.ses_data_overrun_count);
+    fprintf(ofp,"ses_data_underrun_count = %d\n",
+      status.ses_data_underrun_count);
     fprintf(ofp,"pred_antenna_pos_count = %d\n", status.pred_antenna_pos_count);
+    fprintf(ofp,"running_error_count = %d\n", *((unsigned short*)status.running_error_count));
+    fprintf(ofp,"ses_reset_position = %d\n", status.ses_reset_position);
     fprintf(ofp,"doppler_orbit_step = %d\n", status.doppler_orbit_step);
     fprintf(ofp,"prf_orbit_step_change = %d\n", status.prf_orbit_step_change);
+    fprintf(ofp,"cmd_history_queue = %d %d %d %d %d %d %d %d\n",
+      status.cmd_history_queue[0],
+      status.cmd_history_queue[1],
+      status.cmd_history_queue[2],
+      status.cmd_history_queue[3],
+      status.cmd_history_queue[4],
+      status.cmd_history_queue[5],
+      status.cmd_history_queue[6],
+      status.cmd_history_queue[7]);
+    fprintf(ofp,"calc_ant_max_grp_count = %d\n", status.calc_ant_max_grp_count);
     unsigned int vtcw_hi4 = 0;
     unsigned short vtcw_lo2 = 0;
     (void)memcpy(&vtcw_hi4, status.vtcw, sizeof(unsigned int));
@@ -146,18 +189,30 @@ FILE*   ofp)
     fprintf(ofp,"vtcw = %14.2f\n",vtcw);
     unsigned int corres_instr_time = 0;
     unsigned char frac = 0;
-    (void)memcpy(&frac, status.corres_instr_time, sizeof(unsigned char));
-    (void)memcpy(&corres_instr_time, status.corres_instr_time+1,
+    (void)memcpy(&corres_instr_time, status.corres_instr_time,
                  sizeof(unsigned int));
+    (void)memcpy(&frac, status.corres_instr_time+4, sizeof(unsigned char));
     fprintf(ofp,"corres_instr_time = %d, (frac) %d\n",corres_instr_time,frac);
+    fprintf(ofp,"fsw_mission_version_num = %d\n",
+      status.fsw_mission_version_num);
+    fprintf(ofp,"fsw_build_number = %d\n",
+      status.fsw_build_number);
+    fprintf(ofp,"pbi_flag = %d\n",
+      status.pbi_flag);
   
     fprintf(ofp,"\n ============== GS Engineering Block ==============\n\n");
+    fprintf(ofp,"relay_status = %d\n",
+      *((unsigned short *)engdata.relay_status));
+    fprintf(ofp,"ea_a_spin_rate = %d\n",engdata.ea_a_spin_rate);
+    fprintf(ofp,"ea_b_spin_rate = %d\n",engdata.ea_b_spin_rate);
+    fprintf(ofp,"a2d_p12v_xcpl = %d\n",engdata.a2d_p12v_xcpl);
     fprintf(ofp,"transmit_power_a = %d\n",engdata.transmit_power_a);
     fprintf(ofp,"transmit_power_b = %d\n",engdata.transmit_power_b);
     fprintf(ofp,"precision_coupler_temp = %d\n",engdata.precision_coupler_temp);
     fprintf(ofp,"rcv_protect_sw_temp = %d\n", engdata.rcv_protect_sw_temp);
     fprintf(ofp,"beam_select_sw_temp = %d\n", engdata.beam_select_sw_temp);
     fprintf(ofp,"receiver_temp = %d\n", engdata.receiver_temp);
+    fprintf(ofp,"a2d_p12v_xcpl voltage = %d\n", engdata.a2d_p12v_xcpl);
   
     fprintf(ofp,"\n ============== GS EU Block ==============\n\n");
     fprintf(ofp,"prf_cycle_time_eu = %g\n", in_eu.prf_cycle_time_eu);
