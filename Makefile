@@ -18,7 +18,7 @@ default: eadata/Makefile objs/Makefile programs/Makefile \
 	done
 
 core: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile
-	@ for dir in objs programs scripts; \
+	@ for dir in eadata objs programs scripts; \
 		do (cd $$dir; \
 			echo "Making default in `pwd`"; \
 			make default); \
