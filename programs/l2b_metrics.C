@@ -164,17 +164,16 @@ main(
 	// rms speed error vs. ctd //
 	//-------------------------//
 
-	float value[ARRAY_SIZE];
-	int count[ARRAY_SIZE];
-	float ctd[ARRAY_SIZE];
+	float value_array[ARRAY_SIZE];
+	int count_array[ARRAY_SIZE];
+	float ctd_array[ARRAY_SIZE];
 	int max_idx;
-/*
-	if (! l20.frame.swath.RmsSpeedError(&truth, value, count, ctd, &max_idx))
+	if (! l20.frame.swath.RmsSpdErrVsCtd(&truth, ctd_array, value_array,
+		count_array))
 	{
 		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
 		exit(1);
 	}
-*/
 
 	char filename[1024];
 	sprintf(filename, "%s.rms_spd_err", output_base);
@@ -188,8 +187,11 @@ main(
 
 	for (int i = 0; i < max_idx; i++)
 	{
-		if (count[i] > 0)
-			fprintf(ofp, "%g %g %d\n", ctd[i], value[i], count[i]);
+		if (count_array[i] > 0)
+		{
+			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
+				count_array[i]);
+		}
 	}
 	fclose(ofp);
 
