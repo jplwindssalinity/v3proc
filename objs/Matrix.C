@@ -1,10 +1,10 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 static const char rcs_id_matrix_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <malloc.h>
@@ -17,15 +17,15 @@ static const char rcs_id_matrix_c[] =
 //========//
 
 Vector::Vector()
-:	_mSize(0), _vector(NULL)
+:   _mSize(0), _vector(NULL)
 {
-	return;
+    return;
 }
 
 Vector::~Vector()
 {
-	Free();
-	return;
+    Free();
+    return;
 }
 
 //------------------//
@@ -34,15 +34,15 @@ Vector::~Vector()
 
 int
 Vector::Allocate(
-	int		m_size)
+    int  m_size)
 {
-  Free();		// free just in case
+    Free();    // free just in case
   
-  _vector = (double *)malloc(m_size * sizeof(double));
-  if (_vector == NULL)
-    return(0);
-  _mSize = m_size;
-  return(1);
+    _vector = (double *)malloc(m_size * sizeof(double));
+    if (_vector == NULL)
+        return(0);
+    _mSize = m_size;
+    return(1);
 }
 
 //--------------//
@@ -52,10 +52,30 @@ Vector::Allocate(
 void
 Vector::Free()
 {
-	free((char *)_vector);
-	_vector = NULL;
-	_mSize = 0;
-	return;
+    if (_vector != NULL)
+    {
+        free((char *)_vector);
+        _vector = NULL;
+    }
+    _mSize = 0;
+    return;
+}
+
+//--------------------//
+// Vector::WriteAscii //
+//--------------------//
+
+int
+Vector::WriteAscii(
+    FILE*  ofp)
+{
+    fprintf(ofp, "Size = %d\n", _mSize);
+    for (int i = 0; i < _mSize; i++)
+    {
+        fprintf(ofp, " %9g", _vector[i]);
+    }
+    fprintf(ofp, "\n");
+    return(1);
 }
 
 //--------------------//
@@ -64,13 +84,42 @@ Vector::Free()
 
 int
 Vector::GetElement(
-	int			index,
-	double*		value)
+    int      index,
+    double*  value)
 {
-	if (index < 0 || index >= _mSize)
-		return(0);
-	*value = _vector[index];
-	return(1);
+    if (index < 0 || index >= _mSize)
+        return(0);
+    *value = _vector[index];
+    return(1);
+}
+
+//--------------//
+// Vector::Fill //
+//--------------//
+
+void
+Vector::Fill(
+    double  value)
+{
+    for (int i = 0; i < _mSize; i++)
+        _vector[i] = value;
+    return;
+}
+
+//----------------------//
+// Vector::CopyContents //
+//----------------------//
+
+int
+Vector::CopyContents(
+    Vector*  vector)
+{
+    int use_m = MIN(_mSize, vector->_mSize);
+    for (int i = 0; i < use_m; i++)
+    {
+        _vector[i] = vector->_vector[i];
+    }
+    return(1);
 }
 
 //--------------------//
@@ -79,13 +128,13 @@ Vector::GetElement(
 
 int
 Vector::SetElement(
-	int     index,
-	double  value)
+    int     index,
+    double  value)
 {
-  if (index < 0 || index >= _mSize)
-    return(0);
-  _vector[index] = value;
-  return(1);
+    if (index < 0 || index >= _mSize)
+        return(0);
+    _vector[index] = value;
+    return(1);
 }
 
 //-----------------//
@@ -94,7 +143,7 @@ Vector::SetElement(
 
 int 
 Vector::SetSize(
-	int m_size)
+    int  m_size)
 {
   if (m_size > _mSize)
     return(0);
@@ -103,20 +152,50 @@ Vector::SetSize(
   return(1);
 }
 
+//------------------//
+// Vector::Multiply //
+//------------------//
+
+int
+Vector::Multiply(
+    Matrix*  a,
+    Vector*  b)
+{
+    if (a->_nSize != b->_mSize)
+        return(0);
+
+    if (! Allocate(a->_mSize))
+        return(0);
+
+    double** am = a->_matrix;
+    double* bv = b->_vector;
+
+    for (int i = 0; i < _mSize; i++)
+    {
+        _vector[i] = 0.0;
+        for (int ii = 0; ii < a->_nSize; ii++)
+        {
+            _vector[i] += am[i][ii] * bv[ii];
+        }
+    }
+    return(1);
+}
+
+
 //========//
 // Matrix //
 //========//
 
 Matrix::Matrix()
-:	_mSize(0), _nSize(0), _matrix(NULL)
+:   _mSize(0), _nSize(0), _matrix(NULL)
 {
-	return;
+    return;
 }
 
 Matrix::~Matrix()
 {
-	Free();
-	return;
+    Free();
+    return;
 }
 
 //------------------//
@@ -125,49 +204,53 @@ Matrix::~Matrix()
 
 int
 Matrix::Allocate(
-	int		m_size,
-	int		n_size)
+    int  m_size,
+    int  n_size)
 {
-	//-------------------//
-	// free just in case //
-	//-------------------//
+    //-------------------//
+    // free just in case //
+    //-------------------//
 
-	Free();
+    Free();
 
-	//------------------------------------//
-	// allocate for the array of pointers //
-	//------------------------------------//
+    //------------------------------------//
+    // allocate for the array of pointers //
+    //------------------------------------//
  
-	_matrix = (double **)malloc(m_size * sizeof(double *));
-	if (_matrix == NULL)
-		return(0);
+    _matrix = (double **)malloc(m_size * sizeof(double *));
+    if (_matrix == NULL)
+        return(0);
  
-	//------------------------------//
-	// allocate memory for each row //
-	//------------------------------//
+    //------------------------------//
+    // allocate memory for each row //
+    //------------------------------//
  
-	unsigned int row_size = sizeof(double) * n_size;
-	for (int i = 0; i < m_size; i++)
-	{
-		double* row = (double *)malloc(row_size);
-		if (row == NULL)
-		{
-			for (int j = 0; j < i; j++)
-				free((char *)*(_matrix + j));
-			free((char *)_matrix);
-			return(0);
-		}
-		*(_matrix + i) = row;
-	}
+    unsigned int row_size = sizeof(double) * n_size;
+    for (int i = 0; i < m_size; i++)
+    {
+        double* row = (double *)malloc(row_size);
+        if (row == NULL)
+        {
+            for (int j = 0; j < i; j++)
+            {
+                if (*(_matrix + j) != NULL)
+                    free((char *)*(_matrix + j));
+            }
+            if (_matrix != NULL)
+                free((char *)_matrix);
+            return(0);
+        }
+        *(_matrix + i) = row;
+    }
  
-	//---------------//
-	// set variables //
-	//---------------//
+    //---------------//
+    // set variables //
+    //---------------//
  
-	_mSize = m_size;
-	_nSize = n_size;
+    _mSize = m_size;
+    _nSize = n_size;
  
-	return(1);
+    return(1);
 }
 
 //--------------//
@@ -177,33 +260,55 @@ Matrix::Allocate(
 void
 Matrix::Free()
 {
-	if (_matrix == NULL)
-		return;
+    if (_matrix == NULL)
+        return;
  
-	//---------------//
-	// free each row //
-	//---------------//
+    //---------------//
+    // free each row //
+    //---------------//
  
-	for (int i = 0; i < _mSize; i++)
-	{
-		free((char *)*(_matrix + i));
-	}
+    for (int i = 0; i < _mSize; i++)
+    {
+        if (*(_matrix + i) != NULL)
+            free((char *)*(_matrix + i));
+    }
  
-	//----------------------------//
-	// free the array of pointers //
-	//----------------------------//
+    //----------------------------//
+    // free the array of pointers //
+    //----------------------------//
  
-	free((char *)_matrix);
+    if (_matrix != NULL)
+        free((char *)_matrix);
  
-	//---------------//
-	// set variables //
-	//---------------//
+    //---------------//
+    // set variables //
+    //---------------//
  
-	_matrix = NULL;
-	_mSize = 0;
-	_nSize = 0;
+    _matrix = NULL;
+    _mSize = 0;
+    _nSize = 0;
  
-	return;
+    return;
+}
+
+//--------------------//
+// Matrix::WriteAscii //
+//--------------------//
+
+int
+Matrix::WriteAscii(
+    FILE*  ofp)
+{
+    fprintf(ofp, "Size = %d x %d\n", _mSize, _nSize);
+    for (int i = 0; i < _mSize; i++)
+    {
+        for (int j = 0; j < _nSize; j++)
+        {
+            fprintf(ofp, " %9g", _matrix[i][j]);
+        }
+        fprintf(ofp, "\n");
+    }
+    return(1);
 }
 
 //--------------//
@@ -212,16 +317,16 @@ Matrix::Free()
 
 void
 Matrix::Fill(
-	double		fill_value)
+    double  fill_value)
 {
-	for (int i = 0; i < _mSize; i++)
-	{
-		for (int j = 0; j < _nSize; j++)
-		{
-			_matrix[i][j] = fill_value;
-		}
-	}
-	return;
+    for (int i = 0; i < _mSize; i++)
+    {
+        for (int j = 0; j < _nSize; j++)
+        {
+            _matrix[i][j] = fill_value;
+        }
+    }
+    return;
 }
 
 //----------------------//
@@ -231,18 +336,18 @@ Matrix::Fill(
 
 void
 Matrix::CopyContents(
-	Matrix*		a)
+    Matrix*  a)
 {
-	int min_msize = MIN(_mSize, a->_mSize);
-	int min_nsize = MIN(_nSize, a->_nSize);
-	for (int i = 0; i < min_msize; i++)
-	{
-		for (int j = 0; j < min_nsize; j++)
-		{
-			_matrix[i][j] = a->_matrix[i][j];
-		}
-	}
-	return;
+    int min_msize = MIN(_mSize, a->_mSize);
+    int min_nsize = MIN(_nSize, a->_nSize);
+    for (int i = 0; i < min_msize; i++)
+    {
+        for (int j = 0; j < min_nsize; j++)
+        {
+            _matrix[i][j] = a->_matrix[i][j];
+        }
+    }
+    return;
 }
 
 //-------------//
@@ -251,7 +356,7 @@ Matrix::CopyContents(
 // decomposes the matrix (A) into U, W, and V such that UWV' = A
 // returns 1 on success, 0 on failure
 // the diagonal matrix of singular values is placed in W.
-// NOTE: A must have more rows than columns
+// NOTE: Rows >= columns
 
 /* computes sqrt(a*a + b*b) without destructive overflow or underflow */
 static double at, bt, ct;
@@ -262,77 +367,84 @@ static double at, bt, ct;
 
 int
 Matrix::SVD(
-	Matrix*		u,
-	Vector*		w,
-	Matrix*		v)
+    Matrix*  u,
+    Vector*  w,
+    Matrix*  v)
 {
-	//----------------//
-	// check the size //
-	//----------------//
+    //----------------//
+    // check the size //
+    //----------------//
 
-	if (_mSize < _nSize)
-		return(0);
+    if (_mSize < _nSize)
+        return(0);
 
-	//---------------------------------//
-	// create the r vector (temporary) //
-	//---------------------------------//
+    //---------------------------------//
+    // create the r vector (temporary) //
+    //---------------------------------//
 
-	Vector rv;
-	rv.Allocate(_nSize);
-	double* rva = rv._vector;
+    Vector rv;
+    if (! rv.Allocate(_nSize))
+        return(0);
 
-	//----------------------------------------------------------//
-	// create the w vector and the u and v matricies (returned) //
-	//----------------------------------------------------------//
+    double* rva = rv._vector;
 
-	w->Allocate(_nSize);
-	double* wva = w->_vector;
-	u->Allocate(this->_mSize, this->_nSize);
-	u->CopyContents(this);
-	double** uma = u->_matrix;
-	v->Allocate(_nSize, _nSize);
-	double** vma = v->_matrix;
+    //----------------------------------------------------------//
+    // create the w vector and the u and v matricies (returned) //
+    //----------------------------------------------------------//
 
-	//---------------------------------------------//
-	// householder reduction to bidirectional form //
-	//---------------------------------------------//
+    if (! w->Allocate(_nSize))
+        return(0);
+    double* wva = w->_vector;
 
-	double scale = 0.0;
-	double g = 0.0;
-	double anorm = 0.0;
-	double s, f, h;
-	int i, j, k;
-	int l = 0;
-	for (i = 0; i < _nSize; i++)
-	{
-		l = i + 1;
-		rva[i] = scale * g;
-		g = s = scale = 0.0;
-		if (i < _mSize)
-		{
-			for (k = i; k < _mSize; k++)
-			{
-				scale += fabs(uma[k][i]);
-			}
-			if (scale)
-			{
-				for (k = i; k < _mSize; k++)
-				{
-					uma[k][i] /= scale;
-					s += uma[k][i] * uma[k][i];
-				}
-				f = uma[i][i];
-				g = -sign(sqrt(s), f);
-				h = f * g - s;
-				uma[i][i] = f - g;
-				if (i != _nSize - 1)
-				{
-					for (j = l; j < _nSize; j++)
-					{
-						for (s = 0.0, k = i; k < _mSize; k++)
-						{
-							s += uma[k][i] * uma[k][j];
-						}
+    if (! u->Allocate(this->_mSize, this->_nSize))
+        return(0);
+    u->CopyContents(this);
+    double** uma = u->_matrix;
+
+    if (! v->Allocate(_nSize, _nSize))
+        return(0);
+    double** vma = v->_matrix;
+
+    //---------------------------------------------//
+    // householder reduction to bidirectional form //
+    //---------------------------------------------//
+
+    double scale = 0.0;
+    double g = 0.0;
+    double anorm = 0.0;
+    double s, f, h;
+    int i, j, k;
+    int l = 0;
+    for (i = 0; i < _nSize; i++)
+    {
+        l = i + 1;
+        rva[i] = scale * g;
+        g = s = scale = 0.0;
+        if (i < _mSize)
+        {
+            for (k = i; k < _mSize; k++)
+            {
+                scale += fabs(uma[k][i]);
+            }
+            if (scale)
+            {
+                for (k = i; k < _mSize; k++)
+                {
+                    uma[k][i] /= scale;
+                    s += uma[k][i] * uma[k][i];
+                }
+                f = uma[i][i];
+                g = -sign(sqrt(s), f);
+                h = f * g - s;
+                uma[i][i] = f - g;
+                if (i != _nSize - 1)
+                {
+                    for (j = l; j < _nSize; j++)
+                    {
+                        for (s = 0.0, k = i; k < _mSize; k++)
+                        {
+                            s += uma[k][i] * uma[k][j];
+                        }
 						f = s / h;
 						for (k = i; k < _mSize; k++)
 						{
@@ -614,55 +726,64 @@ Matrix::SVD(
 
 int
 Matrix::SolveSVD(
-	Vector*		b,
-	Vector*		x)
+    Vector*  b,
+    Vector*  x)
 {
-	Matrix extendm;
-	if (_mSize < _nSize)	// underdetermined
-		extendm.Allocate(_nSize, _nSize);
-	else
-		extendm.Allocate(_mSize, _nSize);
+    Matrix extendm;
+    if (_mSize < _nSize)    // underdetermined
+    {
+        if (! extendm.Allocate(_nSize, _nSize))
+            return(0);
+    }
+    else
+    {
+        if (! extendm.Allocate(_mSize, _nSize))
+            return(0);
+    }
 
-	extendm.Fill(0.0);
-	extendm.CopyContents(this);
+    extendm.Fill(0.0);
+    extendm.CopyContents(this);
 
-	//-----------//
-	// decompose //
-	//-----------//
+    //-----------//
+    // decompose //
+    //-----------//
 
-	Matrix u, v;
-	Vector w;
-	if (! extendm.SVD(&u, &w, &v))
-		return(0);
+    Matrix u, v;
+    Vector w;
+    if (! extendm.SVD(&u, &w, &v))
+        return(0);
 
-	if (x->_mSize != _nSize)
-		x->Allocate(_nSize);
+    if (x->_mSize != _nSize)
+    {
+        if (! x->Allocate(_nSize))
+            return(0);
+    }
 
-	//------------------//
-	// threshold values //
-	//------------------//
+    //------------------//
+    // threshold values //
+    //------------------//
 
-	double wmax = 0.0;
-	for (int i = 0; i < _nSize; i++)
-	{
-		if (w._vector[i] > wmax)
-			wmax = w._vector[i];
-	}
-	double wmin = wmax * 1e-06;
-	for (int i = 0; i < _nSize; i++)
-	{
-		if (w._vector[i] < wmin)
-			w._vector[i] = 0.0;
-	}
+    double wmax = 0.0;
+    for (int i = 0; i < _nSize; i++)
+    {
+        if (w._vector[i] > wmax)
+            wmax = w._vector[i];
+    }
+    double wmin = wmax * 1E-06;
+    for (int i = 0; i < _nSize; i++)
+    {
+        if (w._vector[i] < wmin)
+            w._vector[i] = 0.0;
+    }
 
-	//-----------------//
-	// back-substitute //
-	//-----------------//
+    //-----------------//
+    // back-substitute //
+    //-----------------//
 
-	if (! extendm.BackSubSVD(&u, &w, &v, b, x))
-		return(0);
+    if (! extendm.BackSubSVD(&u, &w, &v, b, x))
+        return(0);
 
-	return(1);
+    return(1);
 }
 
 //------------//
@@ -678,7 +799,8 @@ Matrix::BackSubSVD(
 	Vector*		x)
 {
 	Vector tmp;
-	tmp.Allocate(_nSize);
+	if (! tmp.Allocate(_nSize))
+        return(0);
 
 	for (int j = 0; j < _nSize; j++)
 	{
@@ -713,34 +835,37 @@ Matrix::BackSubSVD(
 
 #define TOL		1.0E-5
 
-void
+int
 Matrix::SVDFit(
-	float*		x,
-	float*		y,
-	float*		std_dev,
-	int			number_of_points,
-	Vector*		coefficients,
-	int			number_of_coef,
-	Matrix*		u,
-	Matrix*		v,
-	Vector*		w)
+    double*  x,
+    double*  y,
+    double*  std_dev,
+    int      number_of_points,
+    Vector*  coefficients,
+    int      number_of_coef,
+    Matrix*  u,
+    Matrix*  v,
+    Vector*  w)
 {
 	//--------------------------//
 	// create temporary vectors //
 	//--------------------------//
 
 	Vector b;
-	b.Allocate(number_of_points);
+	if (! b.Allocate(number_of_points))
+        return(0);
 
 	Vector afunc;
-	afunc.Allocate(number_of_coef);
+	if (! afunc.Allocate(number_of_coef))
+        return(0);
 
 	//-----------------------------------------------//
 	// accumulate coefficients of the fitting matrix //
 	//-----------------------------------------------//
 
 	Matrix a;
-	a.Allocate(number_of_points, number_of_coef);
+	if (! a.Allocate(number_of_points, number_of_coef))
+        return(0);
 	for (int i = 0; i < number_of_points; i++)
 	{
 		//---------------------//
@@ -751,7 +876,7 @@ Matrix::SVDFit(
 		for (int j = 1; j < number_of_coef; j++)
 			afunc._vector[j] = afunc._vector[j-1] * x[i];
 
-		float tmp;
+		double tmp;
 		if (std_dev)
 			tmp = 1.0 / std_dev[i];
 		else
@@ -793,113 +918,240 @@ Matrix::SVDFit(
 
 	u->BackSubSVD(u, w, v, &b, coefficients);
 
-	return;
+	return(1);
 }
-
-/*
 
 //----------------------//
 // Matrix::NonlinearFit //
 //----------------------//
 
+#define THRESHOLD_FRACTION  1E-3
+
 int
 Matrix::NonlinearFit(
-	float*		x,
-	float*		y,
-	float*		std_dev,
-	int			number_of_points,
-	Vector*		coefficients,
-	int			number_of_coef,
-	Matrix*		covar,
-	Matrix*		alpha,
-	void		(*funcs)())
+    double*  x,
+    double*  y,
+    double*  std_dev,
+    int      number_of_points,
+    Vector*  coefficients,
+    int*     ia,
+    Matrix*  covar,
+    double*  chi_2,
+    void     (*funcs)(double, double *, double *, double *, int))
 {
-	//-------------------------------------//
-	// create needed matricies and vectors //
-	//-------------------------------------//
+    //-------------------------------------//
+    // create needed matricies and vectors //
+    //-------------------------------------//
 
-	Matrix oneda;
-	oneda.Allocate(1, mfit);
+    int ma = coefficients->GetSize();
+    int mfit = 0;
+    for (int j = 0; j < ma; j++)
+    {
+        if (ia[j])
+            mfit++;
+    }
 
-	Vector atry, da, beta;
-	atry.Allocate(number_of_coef);
-	da.Allocate(number_of_coef);
-	beta.Allocate(number_of_coef);
+    Vector oneda;
+    if (! oneda.Allocate(mfit))
+        return(0);
+    double* onedav = oneda._vector;
 
-	//-----------------------------//
-	// initialize convergance loop //
-	//-----------------------------//
+    Matrix alpha;
+    if (! alpha.Allocate(ma, ma))
+        return(0);
+    double** alpham = alpha._matrix;
 
-	float lambda = 0.001;
-	Marquardt();
-	old_chi_2 = chi_2;
+    Vector atry;
+    if (! atry.Allocate(ma))
+        return(0);
+    double* atryv = atry._vector;
 
-	float loop_old_chi_2 = 0.0;
-	int small_decrease_count = 0;
-	do
-	{
-		for (int j = 0; j < mfit; j++)
-		{
-			for (int k = 0; k < mfit; k++)
-				covar[j][k] = alpha[j][k];
-			covar[j][j] = alpha[j][j] * (1.0 + *lambda);
-			oneda[j][0] = beta[j];
-		}
+    Vector da;
+    if (! da.Allocate(ma))
+        return(0);
+    double* dav = da._vector;
 
-		covar = covar.Inverse();
-		oneda = covar * oneda;
+    Vector beta;
+    if (! beta.Allocate(ma))
+        return(0);
+    double* betav = beta._vector;
 
-		for (int j = 0; j < mfit; j++)
-			da[j] = oneda[j][0];
+    if (! covar->Allocate(ma, ma))
+        return(0);
+    double** covarm = covar->_matrix;
 
-		for (int j = 0; j < number_of_coef; j++)
-			atry[j] = a[j];
+    double* coefv = coefficients->_vector;
 
-		for (int j = 0; j < mfit; j++)
-		{
-			atry[lista[j]] = a[lista[j]] + da[j];
-		}
+    //-----------------------------//
+    // initialize convergance loop //
+    //-----------------------------//
 
-		Marquardt();
+    double lambda = 0.001;
+    Marquardt(x, y, std_dev, number_of_points, coefficients, ia, &alpha,
+        &beta, chi_2, funcs);
+    double old_chi_2 = *chi_2;
+    for (int i = 0; i < ma; i++)
+    {
+        atryv[i] = coefv[i];
+    }
 
-		if (*chi_2 < old_chi_2)
-		{
-			*lambda *= 0.1;
-			old_chi_2 = (*chi_2);
-			for (int j = 0; j < mfit; j++)
-			{
-				for (int k = 0; k < mfit; k++)
-				{
-					alpha[j][k] = covar[j][k];
-				}
-				beta[j] = da[j];
-				a[lista[j]] = atry[lista[j]];
-			}
-		}
-		else
-		{
-			lambda *= 10.0;
-			chi_2 = old_chi_2;
-		}
+    //------------------//
+    // convergance loop //
+    //------------------//
 
-		//---------------------//
-		// check exit criteria //
-		//---------------------//
+    double loop_old_chi_2 = 0.0;
+    int small_decrease_count = 0;
+    do
+    {
+        int j = 0;
+        for (int l = 0; l < ma; l++)
+        {
+            if (ia[l])
+            {
+                int k = 0;
+                for (int m = 0; m < ma; m++)
+                {
+                    if (ia[m])
+                    {
+                        covarm[j][k] = alpham[j][k];
+                        k++;
+                    }
+                }
+                covarm[j][j] = alpham[j][j] * (1.0 + lambda);
+                onedav[j] = betav[j];
+                j++;
+            }
+        }
 
-		float dif_chi_2 = loop_old_chi_2 - chi_2;
-		if (dif_chi_2 > 0.0 && dif_chi_2 < THREHOLD_FRACTION * chi_2)
-		{
-			small_decrease_count++;
-			if (small_decrease_count >= 2)
-				break;
-		}
-		else
-		{
-			small_decrease_count = 0;
-		}
+        Vector new_oneda;
+        covar->SolveSVD(&oneda, &new_oneda);
+        oneda.CopyContents(&new_oneda);
+        covar->Inverse(covar);
 
-		loop_old_chi_2 = chi_2;
-	} while (1);
+        for (int j = 0; j < mfit; j++)
+        {
+            dav[j] = onedav[j];
+        }
+
+        if (lambda == 0.0)
+        {
+            CovarianceSort(covar, ma, ia, mfit);
+            return(1);
+        }
+
+        j = 0;
+        for (int l = 0; l < ma; l++)
+        {
+            if (ia[l])
+            {
+                atryv[l] = coefv[l] + dav[j];
+                j++;
+            }
+        }
+
+        Marquardt(x, y, std_dev, number_of_points, &atry, ia, covar, &da,
+            chi_2, funcs);
+
+        if (*chi_2 < old_chi_2)
+        {
+            lambda *= 0.1;
+            old_chi_2 = *chi_2;
+            int j = 0;
+            for (int l = 0; l < ma; l++)
+            {
+                if (ia[l])
+                {
+                    int k = 0;
+                    for (int m = 0; m < ma; m++)
+                    {
+                        if (ia[m])
+                        {
+                            alpham[j][k] = covarm[j][k];
+                            k++;
+                        }
+                    }
+                    betav[j] = dav[j];
+                    coefv[l] = atryv[l];
+                    j++;
+                }
+            }
+        }
+        else
+        {
+            lambda *= 10.0;
+            *chi_2 = old_chi_2;
+        }
+static int count = 0;
+count++;
+printf("count = %d\n", count);
+printf("%g %g %g\n", coefv[0], coefv[1], coefv[2]);
+if (count == 483)
+  printf("here\n");
+
+        //---------------------//
+        // check exit criteria //
+        //---------------------//
+
+        double dif_chi_2 = loop_old_chi_2 - *chi_2;
+        if (dif_chi_2 > 0.0 && dif_chi_2 < THRESHOLD_FRACTION * *chi_2)
+        {
+            small_decrease_count++;
+            if (small_decrease_count >= 3)
+                break;
+        }
+        else
+        {
+            small_decrease_count = 0;
+        }
+
+        loop_old_chi_2 = *chi_2;
+    } while (1);
+
+    return(1);
+}
+
+//------------------------//
+// Matrix::CovarianceSort //
+//------------------------//
+
+#define SWAP(a,b) { swap = (a); (a) = (b); (b) = swap; }
+
+int
+Matrix::CovarianceSort(
+    Matrix*  covar,
+    int      ma,
+    int*     ia,
+    int      mfit)
+{
+    double** covarm = covar->_matrix;
+
+    for (int i = mfit; i < ma; i++)
+    {
+        for (int j = 0; j <= i; j++)
+        {
+            covarm[i][j] = covarm[j][i] = 0.0;
+        }
+    }
+
+    int k = mfit - 1;
+    double swap;
+    for (int j = ma - 1; j >= 0; j--)
+    {
+        if (ia[j])
+        {
+            for (int i = 0; i < ma; i++)
+            {
+                SWAP(covarm[i][k], covarm[i][j]);
+            }
+            for (int i = 0; i < ma; i++)
+            {
+                SWAP(covarm[k][i], covarm[j][i]);
+            }
+            k--;
+        }
+    }
+
+    return(1);
 }
 
 //-------------------//
@@ -907,53 +1159,95 @@ Matrix::NonlinearFit(
 //-------------------//
 
 int
-Matrix::Marquardt()
+Matrix::Marquardt(
+    double*  x,
+    double*  y,
+    double*  std_dev,
+    int      number_of_points,
+    Vector*  coefficients,
+    int*     ia,
+    Matrix*  alpha,
+    Vector*  beta,
+    double*  chi_2,
+    void     (*funcs)(double, double * , double *, double *, int))
 {
-	Vector dyda;
-	dyda.Allocate(number_of_coef);
+    int ma = coefficients->_mSize;
 
-	//---------------------------//
-	// initialize alpha and beta //
-	//---------------------------//
+    Vector dyda;
+    if (! dyda.Allocate(ma))
+        return(0);
+    double* dydav = dyda._vector;
 
-	for (int j = 0; j < mfit; j++)
-	{
-		for (k = 0; k <= j; k++)
-		{
-			alpha[j][k] = 0.0;
-		}
-		beta[j] = 0.0;
-	}
+    double** alpham = alpha->_matrix;
+    double* betav = beta->_vector;
 
-	//-----------//
-	// summation //
-	//-----------//
+    //---------------------------//
+    // initialize alpha and beta //
+    //---------------------------//
 
-	chi_2 = 0.0;
-	for (int i = 0; i < number_of_points; i++)
-	{
-		(*funcs)(x[i], a, &ymod, dyda, ma);
-		sig2i = 1.0 / (sig[i] * sig[i]);
-		dy = y[i] - ymod;
-		for (int j = 0; j < mfit; j++)
-		{
-			wt = dyda[lista[j]] * sig2i;
-			for (int k = 0; k <=j; k++)
-			{
-				alpha[j][k] += wt * dyda[lista[k]];
-			}
-			beta[j] += dy * wt;
-			chi_2 += dy * dy * sig2i;
-		}
-		for (int j = 1; j < mfit; j++)
-		{
-			for (int k = 0; k < j; k++)
-				alpha[k][j] = alpha[j][k];
-		}
-	}
-	dyda.Free();
+    int mfit = 0;
+    for (int j = 0; j < ma; j++)
+    {
+        if (ia[j])
+            mfit++;
+    }
+    for (int j = 0; j < mfit; j++)
+    {
+        for (int k = 0; k <= j; k++)
+        {
+            alpham[j][k] = 0.0;
+        }
+        betav[j] = 0.0;
+    }
 
-	return(1);
+    //-----------//
+    // summation //
+    //-----------//
+
+    *chi_2 = 0.0;
+    double* av = coefficients->_vector;
+    double ymod;
+    for (int i = 0; i < number_of_points; i++)
+    {
+        (*funcs)(x[i], av, &ymod, dydav, ma);
+        double sig2i;
+        if (std_dev == NULL)
+            sig2i = 1.0;
+        else
+            sig2i = 1.0 / (std_dev[i] * std_dev[i]);
+
+        double dy = y[i] - ymod;
+        int j = 0;
+        for (int l = 0; l < ma; l++)
+        {
+            if (ia[l])
+            {
+                double wt = dydav[l] * sig2i;
+                int k = 0;
+                for (int m = 0; m <= l; m++)
+                {
+                    if (ia[m])
+                    {
+                        alpham[j][k] += wt * dydav[m];
+                        k++;
+                    }
+                    betav[j] += dy * wt;
+                }
+                j++;
+            }
+        }
+        (*chi_2) += dy * dy * sig2i;
+    }
+    for (int j = 1; j < mfit; j++)
+    {
+        for (int k = 0; k < j; k++)
+        {
+            alpham[k][j] = alpham[j][k];
+        }
+    }
+    dyda.Free();
+
+    return(1);
 }
 
 //-----------------//
@@ -961,59 +1255,108 @@ Matrix::Marquardt()
 //-----------------//
 
 int
-Matrix::Inverse()
+Matrix::Inverse(
+    Matrix*  matrix)
 {
-	Matrix u, v;
-	Vector w;
+    Matrix u, v;
+    Vector w;
 
-	if (! SVD(&u, &v, &w))
-		return(0);
+    if (! matrix->SVD(&u, &w, &v))
+        return(0);
 
-	for (int i = 0; i < w._mSize; i++)
-	{
-		w._vector[i] = 1.0 / w._vector[i];
-	}
+    for (int i = 0; i < w._mSize; i++)
+    {
+        if (fabs(w._vector[i]) < 1E-06)
+            w._vector[i] = 0.0;
+        else
+            w._vector[i] = 1.0 / w._vector[i];
+    }
 
-	*this = v.MultiplyDiag(&w) * u.Transpose();
+    //--------------------------//
+    // do the diagonal multiply //
+    //--------------------------//
+
+    Matrix vw;
+    if (! vw.Allocate(v._mSize, w._mSize))
+        return(0);
+
+    double** am = v._matrix;
+    double* bv = w._vector;
+    double** vwm = vw._matrix;
+
+    for (int i = 0; i < _mSize; i++)
+    {
+        for (int j = 0; j < _nSize; j++)
+        {
+            vwm[i][j] = am[i][j] * bv[j];
+        }
+    }
+
+    Matrix utrans;
+    utrans.Transpose(&u);
+
+    Multiply(&vw, &utrans);
+    return(1);
+}
+
+//------------------//
+// Matrix::Multiply //
+//------------------//
+
+int
+Matrix::Multiply(
+    Matrix*  a,
+    Matrix*  b)
+{
+    if (a->_nSize != b->_mSize)
+        return(0);
+
+    if (! Allocate(a->_mSize, b->_nSize))
+        return(0);
+
+    double** am = a->_matrix;
+    double** bm = b->_matrix;
+
+    for (int i = 0; i < _mSize; i++)
+    {
+        for (int j = 0; j < _nSize; j++) 
+        {
+            _matrix[i][j] = 0.0;
+            for (int ii = 0; ii < a->_nSize; ii++)
+            {
+                _matrix[i][j] += am[i][ii] * bm[ii][j];
+            }
+        }
+    }
+    return(1);
 }
 
 //-------------------//
 // Matrix::Transpose //
 //-------------------//
 
-Matrix&
-Matrix::Transpose()
+int
+Matrix::Transpose(
+    Matrix*  matrix)
 {
-	//-----------------------------//
-	// create the transpose matrix //
-	//-----------------------------//
+    //-----------------------------//
+    // create the transpose matrix //
+    //-----------------------------//
 
-	Matrix at;
-	at->Allocate(a->_nSize, a->_mSize);
+    if (! Allocate(matrix->_nSize, matrix->_mSize))
+        return(0);
 
-	//-----------//
-	// transpose //
-	//-----------//
+    //-----------//
+    // transpose //
+    //-----------//
 
-	for (int i = 0; i < at->_mSize; i++)
-	{
-		for (int j = 0; j < at->_nSize; j++)
-		{
-			at->_matrix[i][j] = a->_matrix[j][i];
-		}
-	}
+    for (int i = 0; i < _mSize; i++)
+    {
+        for (int j = 0; j < _nSize; j++)
+        {
+            _matrix[i][j] = matrix->_matrix[j][i];
+        }
+    }
 
-	return(at);
+    return(1);
 }
-
-//------------//
-// operator:* //
-//------------//
-
-Matrix
-operator*(
-	const Matrix&	matrix1,
-	const Matrix&	matrix2)
-{
-}
-*/

@@ -8,10 +8,10 @@
 //    fix_dtc
 //
 // SYNOPSIS
-//    fix_dtc <sim_config_file> <freq_offset_file> <dtc_base>
+//    fix_dtc <sim_config_file> <echo_data_file> <dtc_base>
 //
 // DESCRIPTION
-//    Reads the frequency offset file and generates corrected Doppler
+//    Reads the echo data file and generates corrected Doppler
 //    tracking constants which should center the echo.
 //
 // OPTIONS
@@ -20,12 +20,12 @@
 // OPERANDS
 //    The following operands are supported:
 //      <sim_config_file>   The simulation configuration file.
-//      <freq_offset_file>  The frequency offset output file.
+//      <echo_data_file>    The echo data file.
 //      <dtc_base>          The base name of the output DTC files.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % fix_dtc qscat.cfg data.freqoff dtc
+//      % fix_dtc qscat.cfg echo.dat dtc
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -91,7 +91,7 @@ template class List<AngleInterval>;
 //-----------//
 
 #define MAXIMUM_SPOTS_PER_ORBIT_STEP  10000
-#define SIGNAL_ENERGY_THRESHOLD       0.0
+#define SIGNAL_ENERGY_THRESHOLD       1.0E-8
 #define ORBIT_STEPS      256
 #define EPHEMERIS_CHAR   'E'
 #define ORBIT_STEP_CHAR  'O'
@@ -111,7 +111,8 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int process_orbit_step(int beam_idx, int orbit_step);
-int accumulate(int beam_idx, float azimuth, float bb);
+int accumulate(int beam_idx, double azimuth, double bb);
+void funcs(double x, double* a, double* y, double* dyda, int na);
 
 //------------------//
 // OPTION VARIABLES //
@@ -121,10 +122,10 @@ int accumulate(int beam_idx, float azimuth, float bb);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<freq_offset_file>",
+const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>",
     "<dtc_base>", 0};
 
-int       g_count[NUMBER_OF_QSCAT_BEAMS];
+int      g_count[NUMBER_OF_QSCAT_BEAMS];
 double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double    g_bb[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
@@ -148,7 +149,7 @@ main(
 
     int clidx = 1;
     const char* config_file = argv[clidx++];
-    const char* offset_file = argv[clidx++];
+    const char* echo_data_file = argv[clidx++];
     const char* dtc_base = argv[clidx++];
 
     //---------------------//
@@ -174,15 +175,15 @@ main(
         exit(1);
     }
 
-    //------------------------------//
-    // open offset file for reading //
-    //------------------------------//
+    //---------------------------------//
+    // open echo data file for reading //
+    //---------------------------------//
 
-    FILE* ifp = fopen(offset_file, "r");
+    FILE* ifp = fopen(echo_data_file, "r");
     if (ifp == NULL)
     {
-        fprintf(stderr, "%s: error opening offset file %s\n", command,
-            offset_file);
+        fprintf(stderr, "%s: error opening echo data file %s\n", command,
+            echo_data_file);
         exit(1);
     }
 
@@ -219,8 +220,8 @@ main(
                 break;
             if (ferror(ifp))
             {
-                fprintf(stderr, "%s: error reading offset file %s\n", command,
-                    offset_file);
+                fprintf(stderr, "%s: error reading echo data file %s\n",
+                    command, echo_data_file);
                 exit(1);
             }
         }
@@ -282,11 +283,11 @@ main(
             if (total_signal_energy < SIGNAL_ENERGY_THRESHOLD)
                 continue;
 
-            float azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
+            double azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
             accumulate(beam_idx, azimuth, baseband_freq);
             break;
         }
-	} while (1);
+    } while (1);
 
     //-------------//
     // set Doppler //
@@ -345,24 +346,21 @@ process_orbit_step(
     // fit a sinusoid to the data //
     //----------------------------//
 
-    double real[2], imag[2];
-    for (int i = 0; i < 2; i++)
-    {
-        real[i] = 0.0;
-        imag[i] = 0.0;
-        for (int j = 0; j < g_count[beam_idx]; j++)
-        {
-            double arg = g_azimuth[beam_idx][j] * (double)i;
-            double c = cos(arg);
-            double s = sin(arg);
-            real[i] += g_bb[beam_idx][j] * c;
-            imag[i] += g_bb[beam_idx][j] * s;
-        }
-    }
-    double a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) /
-        (double)g_count[beam_idx];
-    double p = -atan2(imag[1], real[1]);
-    double c = real[0] / (double)g_count[beam_idx];
+    Vector coefs;
+    coefs.Allocate(3);
+    coefs.SetElement(0, 1.0);
+    coefs.SetElement(1, 0.0);
+    coefs.SetElement(2, 0.0);
+    int ia[3] = { 1, 1, 1};    // use all coefficients
+    double chisqr;
+
+    Matrix covar;
+    covar.NonlinearFit(g_azimuth[beam_idx], g_bb[beam_idx], (double *)NULL,
+        g_count[beam_idx], &coefs, ia, &covar, &chisqr, funcs);
+    double a, p, c;
+    coefs.GetElement(0, &a);
+    coefs.GetElement(1, &p);
+    coefs.GetElement(2, &c);
 
     //-----------------------------//
     // estimate the standard error //
@@ -396,20 +394,20 @@ process_orbit_step(
 
     double** terms = g_terms[beam_idx];
 
-    float A = *(*(terms + orbit_step) + 0);
-    float P = *(*(terms + orbit_step) + 1);
-    float C = *(*(terms + orbit_step) + 2);
+    double A = *(*(terms + orbit_step) + 0);
+    double P = *(*(terms + orbit_step) + 1);
+    double C = *(*(terms + orbit_step) + 2);
 
     // to do this, just negate the a and the c term
     // if f(x) = a * cos(x + p) + c, then -f(x) = -a * cos(x + p) - c
     a *= -1.0;
     c *= -1.0;
 
-    float newA = sqrt(A*A + 2.0*A*a*cos(P-p) + a*a);
-    float newC = C + c;
-    float y = A*sin(P) + a*sin(p);
-    float x = A*cos(P) + a*cos(p);
-    float newP = atan2(y, x);
+    double newA = sqrt(A*A + 2.0*A*a*cos(P-p) + a*a);
+    double newC = C + c;
+    double y = A*sin(P) + a*sin(p);
+    double x = A*cos(P) + a*cos(p);
+    double newP = atan2(y, x);
 
     *(*(terms + orbit_step) + 0) = newA;
     *(*(terms + orbit_step) + 1) = newP;
@@ -432,9 +430,9 @@ process_orbit_step(
 
 int
 accumulate(
-    int    beam_idx,
-    float  azimuth,
-    float  bb)
+    int     beam_idx,
+    double  azimuth,
+    double  bb)
 {
     int idx = g_count[beam_idx];
     g_azimuth[beam_idx][idx] = azimuth;
@@ -442,4 +440,23 @@ accumulate(
     g_count[beam_idx]++;
 
     return(1);
+}
+
+//-------//
+// funcs //
+//-------//
+
+void
+funcs(
+    double   x,
+    double*  a,
+    double*  y,
+    double*  dyda,
+    int      na)
+{
+    *y = a[0] * cos(x + a[1]) + a[2];
+    dyda[0] = cos(x + a[1]);    // amplitude
+    dyda[1] = -a[0] * sin(x + a[1]);    // phase
+    dyda[2] = 1.0;    // bias
+    return;
 }
