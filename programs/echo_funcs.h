@@ -25,7 +25,7 @@ class EchoInfo
 {
 public:
 
-    enum { OK, CAL_OR_LOAD_PULSE, NOT_OCEAN, BAD_PEAK };
+    enum { OK, CAL_OR_LOAD_PULSE, NOT_OCEAN, BAD_PEAK, BAD_EPHEMERIS };
 
     int             Write(int fd);
     int             Read(int fd);
