@@ -12,7 +12,9 @@ public:
 
   int nin; /*** number of inputs ***/
   int nout; /*** number of outputs ***/
-  int hn; /*** number of hidden units ***/
+  int hn; /*** number of hidden units (must be a multiple of (nhlayers) ***/
+  int nhlayers;
+  int outputSigmoidFlag;
   float** win;/*** weights between input units and hidden units ***/
   float** dwin;/*** previous weight changes ***/
        /***        (indices (hidden node number, input node number))***/
@@ -27,9 +29,6 @@ public:
   float* err;  /*** error at outputs ***/
   float* herr; /*** derivative of Mean Square Error with respect to hidden
                     unit output ***/
-  float* ierr; /*** derivative of Mean square error with respect to inputs **/
-               /*** can be used to write a backprop routine to optimize    **/
-               /*** habituation parameters                                 **/
   float moment;/*** momentum coefficient ***/
   float ssize; /*** training step size ****/
 
@@ -65,14 +64,16 @@ public:
   int Read(char* filename);
   int ReadHeader(FILE* ifp);
   int ReadDelta(char* filename);
-
+  int ReadBin(FILE* ofp);
+  int ReadBin(char* filename);
 
   /**** write an MLP weights file ****/
-  int Write(FILE* ifp);
+  int Write(FILE* ofp);
   int Write(char* filename);
   int WriteHeader(FILE* ofp);
   int WriteDelta(char* filename);
-
+  int WriteBin(FILE* ofp);
+  int WriteBin(char* filename);
 };
 #endif
 

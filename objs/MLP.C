@@ -7,7 +7,7 @@
 #include "Distributions.h"
 
 MLP::MLP()
-  : nin(0), nout(0), hn(0)
+  : nin(0), nout(0), hn(0), outputSigmoidFlag(1)
 {
   return;
 }
@@ -22,7 +22,6 @@ MLP::~MLP(){
     free_array((void*)err,1,nout);
     free_array((void*)hnout,1,hn);
     free_array((void*)herr,1,hn);
-    free_array((void*)ierr,1,nin);
     nin=0;
     nout=0;
     hn=0;
@@ -66,11 +65,10 @@ int MLP::Allocate(){
   outp=(float*)make_array(sizeof(float),1,nout);
   err=(float*)make_array(sizeof(float),1,nout);
   herr=(float*)make_array(sizeof(float),1,hn);
-  ierr=(float*)make_array(sizeof(float),1,nin);
   hnout=(float*)make_array(sizeof(float),1,hn);
   moment=0;
   ssize=0;
-  if( win && dwin && whid && dwhid && outp && err && herr && ierr && hnout)
+  if( win && dwin && whid && dwhid && outp && err && herr && hnout)
     return(1);
   else return(0);
 }
@@ -113,7 +111,7 @@ float MLP::Train(MLPData* pattern,
       fprintf(stderr,"MLP::Train: Backward Pass failed.\n");
       exit(1);
     }
-    fvno++;  
+    fvno++;
   }
   sum/=fvno;
   return(sum);
@@ -194,23 +192,26 @@ float MLP::Forward(float* dout, float* inpts){
     /*** add threshold **/
     sum+=whid[c][hn];
     /*** perform sigmoid ***/
-    outp[c]=sum;
+    if (outputSigmoidFlag) outp[c]=1/(1+exp(-sum));
+    else  outp[c]=sum;
   }
 
   /*** calculate MSE and errs ***/
   sum=0;
 
+  int nvalid=0;
   for(c=0;c<nout;c++){ 
     /***#############HACK_ALERT#########HACK_ALERT############****/
     /**** dout[c]=-1 means don't care, do not train on this value ***/
     /*****####################################################****/
-    if(dout[c]!=-1){
+    if(dout[c]>=-0.5){
       err[c]=(dout[c]-outp[c]);
+      nvalid++;
     }
     else err[c]=0;
     sum+=err[c]*err[c];
   }
-  sum=sum/nout;
+  sum=sum/nvalid;
   return(sum);
 }
 
@@ -218,6 +219,10 @@ int MLP::Backward(float* inpts){
    int c,d;
   
    
+   /*** compute output sigmoid derivatives ***/
+   if(outputSigmoidFlag){
+     for(c=0;c<nout;c++) err[c]*=outp[c]*(1-outp[c]);
+   }
    /**** clear herr ***/
    for(c=0;c<hn;c++) herr[c]=0;
    
@@ -232,15 +237,6 @@ int MLP::Backward(float* inpts){
    for(c=0;c<hn;c++) 
      herr[c]*=hnout[c]*(1-hnout[c]);
    
-   /**** clear ierr ***/
-   for(c=0;c<nin;c++) ierr[c]=0;
-
-   /*** calculate ierr ***/
-   for(c=0;c<hn;c++){
-     for(d=0;d<nin;d++){
-       ierr[d]+=herr[c]*win[c][d];
-     }
-   }
 
    /*** update output thresholds ***/
    for(c=0;c<nout;c++){
@@ -321,6 +317,32 @@ int MLP::Write(char* filename){
   return(1);
 }
 
+int MLP::WriteBin(char* filename){
+  FILE* ofp;
+  ofp=fopen(filename,"w");
+  if(!ofp) return(0);
+  if(!WriteBin(ofp)) return(0);
+  fclose(ofp);
+  return(1);
+}
+
+int MLP::WriteBin(FILE* ofp){
+   if( fwrite(&nin,sizeof(int),1,ofp)!=1 ||
+       fwrite(&nout,sizeof(int),1,ofp)!=1 ||
+       fwrite(&hn,sizeof(int),1,ofp)!=1 ){
+     return(0);
+   }
+   for(int c=0;c<hn;c++){
+     if( fwrite(&win[c][0],sizeof(float),nin+1,ofp)!=(unsigned int)(nin+1))
+       return(0);
+   }
+   for(int c=0;c<nout;c++){
+     if( fwrite(&whid[c][0],sizeof(float),hn+1,ofp)!=(unsigned int)(hn+1))
+       return(0);
+   }
+   return(1);
+}
+
 /*** write MLP weights including previous weight updates ****/
 int MLP::WriteDelta(char* filename){
   FILE* ofp;
@@ -377,7 +399,36 @@ int MLP::Read(char* filename){
   fclose(ifp);
   return(1);
 }
-int MLP::ReadHeader(FILE*ifp){
+
+int MLP::ReadBin(char* filename){
+  FILE* ifp;
+
+  ifp=fopen(filename,"r");
+  if(!ifp) return(0);
+  if(!ReadBin(ifp)) return(0);
+  fclose(ifp);
+  return(1);
+}
+
+int MLP::ReadBin(FILE* ifp){
+   if( fread(&nin,sizeof(int),1,ifp)!=1 ||
+       fread(&nout,sizeof(int),1,ifp)!=1 || 
+       fread(&hn,sizeof(int),1,ifp)!=1 ){
+     return(0);
+   }
+   if(!Allocate()) return(0);
+   for(int c=0;c<hn;c++){
+     if( fread(&win[c][0],sizeof(float),nin+1,ifp)!=(unsigned int)(nin+1))
+       return(0);
+   }
+   for(int c=0;c<nout;c++){
+     if( fread(&whid[c][0],sizeof(float),hn+1,ifp)!=(unsigned int)(hn+1))
+       return(0);
+   }
+   return(1);
+}
+
+int MLP::ReadHeader(FILE* ifp){
   char* value_string;
   char* line_from_file;
   line_from_file=(char *)malloc(MAXIMUM_LINE_LENGTH*sizeof(char));
