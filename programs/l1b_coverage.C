@@ -18,6 +18,7 @@
 //      1 = missed land
 //      2 = covered ocean
 //      3 = covered land
+//      4 = ground track
 //
 // OPTIONS
 //    The following options are supported:
@@ -200,7 +201,7 @@ main(
         {
             fprintf(stderr, "%s: error opening HDF file %s for reading\n",
                 command, l1b_file);
-            exit(1);
+            continue;
         }
 
         int32 attr_index_l1b_actual_frame = SDfindattr(sd_id, "l1b_actual_frames");
@@ -210,7 +211,9 @@ main(
         {
             fprintf(stderr,
                 "%s: error reading attribute for l1b_actual_frames\n", command);
-            exit(1);
+            fprintf(stderr, "    file = %s\n", l1b_file);
+            SDend(sd_id);
+            continue;
         }
 
         int frame_count = 0;
@@ -219,13 +222,17 @@ main(
             fprintf(stderr, "%s: error parsing l1b_actual_frame attribute\n",
                 command);
             fprintf(stderr, "%s\n", data);
-            exit(1);
+            fprintf(stderr, "    file = %s\n", l1b_file);
+            SDend(sd_id);
+            continue;
         }
 
         int32 frame_err_status_sds_id = SDnametoid(sd_id, "frame_err_status");
         int32 frame_qual_flag_sds_id = SDnametoid(sd_id, "frame_qual_flag");
         int32 cell_lat_sds_id = SDnametoid(sd_id, "cell_lat");
         int32 cell_lon_sds_id = SDnametoid(sd_id, "cell_lon");
+        int32 sc_lat_sds_id = SDnametoid(sd_id, "sc_lat");
+        int32 sc_lon_sds_id = SDnametoid(sd_id, "sc_lon");
 
         int32 start[3] = { 0, 0 };
         int32 edges[3] = { 1, 100 };
@@ -308,11 +315,45 @@ main(
                 exit(1);
             }
 
+            float32 sc_lat;
+            if (SDreaddata(sc_lat_sds_id, start, NULL, edges,
+                (VOIDP)&sc_lat) == FAIL)
+            {
+                fprintf(stderr, "%s: error reading SD data for sc_lat\n",
+                    command);
+                exit(1);
+            }
+
+            float32 sc_lon;
+            if (SDreaddata(sc_lon_sds_id, start, NULL, edges,
+                (VOIDP)&sc_lon) == FAIL)
+            {
+                fprintf(stderr, "%s: error reading SD data for sc_lon\n",
+                    command);
+                exit(1);
+            }
+
+            //--------------//
+            // ground track //
+            //--------------//
+
+            int lat_idx, lon_idx;
+            lat_index.GetNearestIndexClipped(sc_lat, &lat_idx);
+            lon_index.GetNearestIndexClipped(sc_lon, &lon_idx);
+
+            if (array[lon_idx][lat_idx] == 0 || array[lon_idx][lat_idx] == 2)
+            {
+                array[lon_idx][lat_idx] = 4;
+            }
+            else if (array[lon_idx][lat_idx] == 1 ||
+                array[lon_idx][lat_idx] == 3)
+            {
+                array[lon_idx][lat_idx] = 5;
+            }
+
             for (int i = 0; i < 100; i++)
             {
-                int lat_idx;
                 lat_index.GetNearestIndexClipped(cell_lat[i], &lat_idx);
-                int lon_idx;
                 lon_index.GetNearestIndexClipped(cell_lon[i], &lon_idx);
 
                 if (array[lon_idx][lat_idx] == 0)

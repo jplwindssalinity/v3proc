@@ -27,11 +27,10 @@
 //                                  of speeds.
 //   [ -D max_direction_diff ]    Retricts data to those within the specified
 //                                  number of degrees.
-//   [ config_file... ]           Evaluate based on these configs.
-//   [ metric_file... ]           Combine these metric files.
 //
 // OPERANDS
-//    None.
+//   [ config_file... ]           Evaluate based on these configs.
+//   [ metric_file... ]           Combine these metric files.
 //
 // EXAMPLES
 //    An example of a command line is:
@@ -271,7 +270,7 @@ main(
             WindSwath* swath = NULL;
             if (l2b_file != NULL)
             {
-                if (! l2b.Read(l2b_file))
+                if (! l2b.SmartRead(l2b_file))
                 {
                     fprintf(stderr, "%s: error reading L2B file %s\n", command,
                         l2b_file);
@@ -295,7 +294,7 @@ main(
                     // L2B truth //
                     //-----------//
 
-                    if (! truth_l2b.Read(truth_file)) {
+                    if (! truth_l2b.SmartRead(truth_file)) {
                         fprintf(stderr, "%s: error reading truth L2B file %s\n",
                             command, truth_file);
                         exit(1);
