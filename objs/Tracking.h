@@ -49,6 +49,7 @@ public:
     // input/output //
     //--------------//
 
+//    int  ReadGS(const char* filename);
     int  ReadBinary(const char* filename);
     int  WriteBinary(const char* filename);
     int  ReadOldBinary(const char* filename);
