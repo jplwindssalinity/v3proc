@@ -1,11 +1,11 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.			//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 
 static const char rcs_id_wind_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +18,6 @@ static const char rcs_id_wind_c[] =
 #include "Array.h"
 #include "AngleInterval.h"
 #include "LonLat.h"
-
 #include "L1AExtract.h"
 #include "ParTab.h"
 #include "NoTimeTlmFile.h"
@@ -37,14 +36,14 @@ static const char rcs_id_wind_c[] =
 //============//
 
 WindVector::WindVector()
-:	spd(0.0), dir(0.0)
+:   spd(0.0), dir(0.0)
 {
-	return;
+    return;
 }
 
 WindVector::~WindVector()
 {
-	return;
+    return;
 }
 
 //-----------------------//
@@ -53,12 +52,12 @@ WindVector::~WindVector()
 
 int
 WindVector::SetSpdDir(
-	float	speed,
-	float	direction)
+    float    speed,
+    float    direction)
 {
-	spd = speed;
-	dir = direction;
-	return(1);
+    spd = speed;
+    dir = direction;
+    return(1);
 }
 
 //-------------------//
@@ -67,12 +66,12 @@ WindVector::SetSpdDir(
 
 int
 WindVector::SetUV(
-	float	u,
-	float	v)
+    float    u,
+    float    v)
 {
-	spd = (float)hypot((double)u, (double)v);
-	dir = (float)atan2((double)v, (double)u);
-	return(1);
+    spd = (float)hypot((double)u, (double)v);
+    dir = (float)atan2((double)v, (double)u);
+    return(1);
 }
 
 //-------------------//
@@ -81,12 +80,12 @@ WindVector::SetUV(
 
 int
 WindVector::GetUV(
-	float*	u,
-	float*	v)
+    float*    u,
+    float*    v)
 {
-	*u = spd * (float)cos((double)dir);
-	*v = spd * (float)sin((double)dir);
-	return(1);
+    *u = spd * (float)cos((double)dir);
+    *v = spd * (float)sin((double)dir);
+    return(1);
 }
 
 //================//
@@ -94,14 +93,14 @@ WindVector::GetUV(
 //================//
 
 WindVectorPlus::WindVectorPlus()
-:	obj(0.0)
+:   obj(0.0)
 {
-	return;
+    return;
 }
 
 WindVectorPlus::~WindVectorPlus()
 {
-	return;
+    return;
 }
 
 //--------------------------//
@@ -110,15 +109,15 @@ WindVectorPlus::~WindVectorPlus()
 
 int
 WindVectorPlus::WriteL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	if (fwrite((void *)&spd, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&dir, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&obj, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fwrite((void *)&spd, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&dir, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&obj, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //----------------------------//
@@ -127,10 +126,10 @@ WindVectorPlus::WriteL2B(
 
 int
 WindVectorPlus::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
-	fprintf(fp, "Spd=%g Dir=%g(%g) Obj=%g\n", spd, dir * rtd, dir, obj);
-	return(1);
+    fprintf(fp, "Spd=%g Dir=%g(%g) Obj=%g\n", spd, dir * rtd, dir, obj);
+    return(1);
 }
 
 //-------------------------//
@@ -139,15 +138,15 @@ WindVectorPlus::WriteAscii(
 
 int
 WindVectorPlus::ReadL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	if (fread((void *)&spd, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&dir, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&obj, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fread((void *)&spd, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&dir, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&obj, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 
@@ -157,7 +156,7 @@ WindVectorPlus::ReadL2B(
 
 WindVectorField::WindVectorField()
 {
-	return;
+    return;
 }
 
 WindVectorField::~WindVectorField()
@@ -174,17 +173,16 @@ WindVectorField::~WindVectorField()
 // WindVectorField::ReadVctr //
 //---------------------------//
 
-int 
+int
 WindVectorField::ReadVctr(
-      const char* filename)
+    const char*  filename)
 {
-
   //-----------//
   // open file //
   //-----------//
-  
+
   FILE* fp = fopen(filename, "r");
-  if (fp == NULL) 
+  if (fp == NULL)
     return(0);
 
   //----------------//
@@ -201,18 +199,18 @@ WindVectorField::ReadVctr(
   //------------//
   // read field //
   //------------//
-  
+
   float llon, llat, lspd, ldir;
   int idx=0;
-  
+
   // first read
 
-  if (fread((void *)&ldir, sizeof(float), 1, fp) != 1)
-      {
-	fclose(fp);
-	return(0);
-      }
-  
+    if (fread((void *)&ldir, sizeof(float), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
   cerr << "ldir: " << llon << endl;
 
   if (fread((void *)&llon, sizeof(float), 1, fp) != 1 ||
@@ -223,39 +221,38 @@ WindVectorField::ReadVctr(
       fclose(fp);
       return(0);
     }
-  
+
   cerr << "llon: " << llon << endl;
   cerr << "ldir: " << ldir << endl;
 
   while(!feof(fp) ){
-    
+
     idx++;
-    
+
     lon.SetElement(idx-1, (double)llon);
     lat.SetElement(idx-1, (double)llat);
     spd.SetElement(idx-1, (double)lspd);
     dir.SetElement(idx-1, (double)ldir);
-    
+
     //-----------//
     // next read //
     //-----------//
-    
+
     if (fread((void *)&llon, sizeof(float), 1, fp) != 1 ||
-	fread((void *)&llat, sizeof(float), 1, fp) != 1 ||
-	fread((void *)&lspd, sizeof(float), 1, fp) != 1 ||
-	fread((void *)&ldir, sizeof(float), 1, fp) != 1)
+    fread((void *)&llat, sizeof(float), 1, fp) != 1 ||
+    fread((void *)&lspd, sizeof(float), 1, fp) != 1 ||
+    fread((void *)&ldir, sizeof(float), 1, fp) != 1)
       {
-	fclose(fp);
-	break;
+    fclose(fp);
+    break;
       }
   }
-  
+
   cerr << "Units read: " << idx  << endl;
 
   fclose(fp);
 
   return(idx);
-  
 }
 
 
@@ -263,11 +260,11 @@ WindVectorField::ReadVctr(
 // WindVectorField::InterpolateVectorField //
 //-----------------------------------------//
 
-int 
+int
 WindVectorField::InterpolateVectorField(
-             LonLat       lon_lat,
-	     WindVector*  nwv,
-	     int          idx)
+    LonLat       lon_lat,
+    WindVector*  nwv,
+    int          idx)
 {
 
   // find size of windfield
@@ -297,9 +294,9 @@ WindVectorField::InterpolateVectorField(
     cell50.SetAltLonGCLat(alt, llon, llat);
 
     distance = cell50.SurfaceDistance(cell25);
-    if (i == 0) 
+    if (i == 0)
       cerr << "Surface Distance: " << distance << endl;
-    
+
     if (distance < bound) {
       double dir_value, spd_value;
       dir.GetElement(i, &dir_value);
@@ -308,7 +305,7 @@ WindVectorField::InterpolateVectorField(
       good_idx = i;
     }
   }
-  
+
   if (good_idx == -1) {
     cerr << "Couldn't find 50km cell" << endl;
     return(0);
@@ -323,27 +320,27 @@ WindVectorField::InterpolateVectorField(
 //=====//
 
 WVC::WVC()
-:	nudgeWV(NULL), selected(NULL), selected_allocated(0)
+:    nudgeWV(NULL), selected(NULL), selected_allocated(0)
 {
-	return;
+    return;
 }
 
 WVC::~WVC()
 {
-	WindVectorPlus* wvp;
-	ambiguities.GotoHead();
+    WindVectorPlus* wvp;
+    ambiguities.GotoHead();
         int selected_allocated=0;
-        
-	  while ((wvp=ambiguities.RemoveCurrent()) != NULL){
-		delete wvp;
-		if (wvp==selected) selected_allocated=0;
-	  }
-	  if(selected_allocated) delete selected;
+
+      while ((wvp=ambiguities.RemoveCurrent()) != NULL){
+        delete wvp;
+        if (wvp==selected) selected_allocated=0;
+      }
+      if(selected_allocated) delete selected;
           if(nudgeWV){
-	    delete nudgeWV;
-	    nudgeWV=NULL;
-	  }
-	return;
+        delete nudgeWV;
+        nudgeWV=NULL;
+      }
+    return;
 }
 
 //---------------//
@@ -352,73 +349,73 @@ WVC::~WVC()
 
 int
 WVC::WriteL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	//----------------------------------//
-	// write the longitude and latitude //
-	//----------------------------------//
+    //----------------------------------//
+    // write the longitude and latitude //
+    //----------------------------------//
 
-	if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
+    if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
 
-	//---------------------------//
-	// write the number of nodes //
-	//---------------------------//
+    //---------------------------//
+    // write the number of nodes //
+    //---------------------------//
 
-	unsigned char count = ambiguities.NodeCount();
+    unsigned char count = ambiguities.NodeCount();
         if(selected_allocated) count++;
-	if (fwrite((void *)&count, sizeof(unsigned char), 1, fp) != 1)
-		return(0);
+    if (fwrite((void *)&count, sizeof(unsigned char), 1, fp) != 1)
+        return(0);
 
-	//-------------//
-	// write nodes //
-	//-------------//
+    //-------------//
+    // write nodes //
+    //-------------//
 
-	char selected_idx = -1;
-	char idx = 0;
+    char selected_idx = -1;
+    char idx = 0;
 
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		if (! wvp->WriteL2B(fp))
-			return(0);
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (! wvp->WriteL2B(fp))
+            return(0);
 
-		if (wvp == selected)
-			selected_idx = idx;
+        if (wvp == selected)
+            selected_idx = idx;
 
-		idx++;
-	}
-         
-	if(selected_allocated){
-	  selected_idx=ambiguities.NodeCount();
-	  if(!selected->WriteL2B(fp)) return(0);
-	}
-	//----------------------//
-	// write selected index //
-	//----------------------//
-        
-	if (fwrite((void *)&selected_idx, sizeof(char), 1, fp) != 1)
-		return(0);
+        idx++;
+    }
+
+    if(selected_allocated){
+      selected_idx=ambiguities.NodeCount();
+      if(!selected->WriteL2B(fp)) return(0);
+    }
+    //----------------------//
+    // write selected index //
+    //----------------------//
+
+    if (fwrite((void *)&selected_idx, sizeof(char), 1, fp) != 1)
+        return(0);
 
         //-----------------------//
         // write nudge vector    //
         //-----------------------//
 
-	char nudgeWV_allocated= nudgeWV ? 1 : 0;
-	if (fwrite((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
-		return(0);	  
-	if(nudgeWV_allocated){
-	  if(!nudgeWV->WriteL2B(fp)) return(0);
-	}
+    char nudgeWV_allocated= nudgeWV ? 1 : 0;
+    if (fwrite((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
+        return(0);
+    if(nudgeWV_allocated){
+      if(!nudgeWV->WriteL2B(fp)) return(0);
+    }
 
-	//----------------------//
+    //----------------------//
         // Write directionRanges//
         //----------------------//
-	if(!directionRanges.Write(fp))return(0);
-	return(1);
+    if(!directionRanges.Write(fp))return(0);
+    return(1);
 }
 
 //--------------//
@@ -427,72 +424,72 @@ WVC::WriteL2B(
 
 int
 WVC::ReadL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	//---------------------------------//
-	// read the longitude and latitude //
-	//---------------------------------//
+    //---------------------------------//
+    // read the longitude and latitude //
+    //---------------------------------//
 
-	if (fread((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
-		fread((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
+    if (fread((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+        fread((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
 
-	//--------------------------//
-	// read the number of nodes //
-	//--------------------------//
+    //--------------------------//
+    // read the number of nodes //
+    //--------------------------//
 
-	unsigned char count;
-	if (fread((void *)&count, sizeof(unsigned char), 1, fp) != 1)
-		return(0);
+    unsigned char count;
+    if (fread((void *)&count, sizeof(unsigned char), 1, fp) != 1)
+        return(0);
 
-	//------------//
-	// read nodes //
-	//------------//
+    //------------//
+    // read nodes //
+    //------------//
 
-	for (int i = 0; i < count; i++)
-	{
-		WindVectorPlus* wvp = new WindVectorPlus();
+    for (int i = 0; i < count; i++)
+    {
+        WindVectorPlus* wvp = new WindVectorPlus();
 
-		if (! wvp->ReadL2B(fp))
-			return(0);
+        if (! wvp->ReadL2B(fp))
+            return(0);
 
-		if (! ambiguities.Append(wvp))
-			return(0);
-	}
+        if (! ambiguities.Append(wvp))
+            return(0);
+    }
 
-	//---------------------//
-	// read selected index //
-	//---------------------//
+    //---------------------//
+    // read selected index //
+    //---------------------//
 
-	char selected_idx;
-	if (fread((void *)&selected_idx, sizeof(char), 1, fp) != 1)
-		return(0);
+    char selected_idx;
+    if (fread((void *)&selected_idx, sizeof(char), 1, fp) != 1)
+        return(0);
 
-	//----------------------//
-	// set selected pointer //
-	//----------------------//
+    //----------------------//
+    // set selected pointer //
+    //----------------------//
 
-	selected = ambiguities.GetByIndex((int)selected_idx);
+    selected = ambiguities.GetByIndex((int)selected_idx);
 
         //-----------------------//
         // read nudge vector     //
         //-----------------------//
-        
-	char nudgeWV_allocated;
-	if (fread((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
-		return(0);	  
-	if(nudgeWV_allocated){
-	  nudgeWV=new WindVectorPlus;
-	  if(!nudgeWV->ReadL2B(fp)) return(0);
-	}
-        
-	//----------------------//
+
+    char nudgeWV_allocated;
+    if (fread((void *)&nudgeWV_allocated, sizeof(char), 1, fp) != 1)
+        return(0);
+    if(nudgeWV_allocated){
+      nudgeWV=new WindVectorPlus;
+      if(!nudgeWV->ReadL2B(fp)) return(0);
+    }
+
+    //----------------------//
         // Read directionRanges //
         //----------------------//
-	if(!directionRanges.Read(fp)) return(0);
-	return(1);
+    if(!directionRanges.Read(fp)) return(0);
+    return(1);
 }
 
 //----------------//
@@ -501,26 +498,26 @@ WVC::ReadL2B(
 
 int
 WVC::WriteVctr(
-	FILE*		fp,
-	const int	rank)
+    FILE*        fp,
+    const int    rank)
 {
-	WindVectorPlus* write_me = NULL;
-	if (rank == 0)
-		write_me = selected;
-	else
-		write_me = ambiguities.GetByIndex(rank - 1);
+    WindVectorPlus* write_me = NULL;
+    if (rank == 0)
+        write_me = selected;
+    else
+        write_me = ambiguities.GetByIndex(rank - 1);
 
-	if (! write_me)
-		return(1);
+    if (! write_me)
+        return(1);
 
-	if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&(write_me->spd), sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&(write_me->dir), sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&(write_me->spd), sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&(write_me->dir), sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //-----------------//
@@ -529,23 +526,23 @@ WVC::WriteVctr(
 
 int
 WVC::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
     if ( ! lonLat.WriteAscii(fp))
         return(0);
 
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		if (! wvp->WriteAscii(fp))
-			return(0);
-	}
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (! wvp->WriteAscii(fp))
+            return(0);
+    }
 
     if (selected)
     {
         fprintf(fp, "Selected: ");
-		if (! selected->WriteAscii(fp))
-			return(0);
+        if (! selected->WriteAscii(fp))
+            return(0);
     }
 
     //----------------------//
@@ -562,76 +559,76 @@ WVC::WriteAscii(
 
 int
 WVC::WriteFlower(
-	FILE*	fp)
+    FILE*    fp)
 {
-	//-------------------//
-	// sort by direction //
-	//-------------------//
+    //-------------------//
+    // sort by direction //
+    //-------------------//
 
-	if (! SortByDir())
-		return(0);
+    if (! SortByDir())
+        return(0);
 
-	//------------------------//
-	// find maximum obj value //
-	//------------------------//
+    //------------------------//
+    // find maximum obj value //
+    //------------------------//
 
-	float max_obj = 0.0;
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		if (wvp->obj > max_obj)
-			max_obj = wvp->obj;
-	}
+    float max_obj = 0.0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (wvp->obj > max_obj)
+            max_obj = wvp->obj;
+    }
 
-	//-----------------//
-	// generate flower //
-	//-----------------//
+    //-----------------//
+    // generate flower //
+    //-----------------//
 
-	float max_dist = 10.0;	// 10 km
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		float dlat = max_dist * sin(wvp->dir) / (r1_earth * max_obj);
-		float dlon = max_dist * cos(wvp->dir) /
-						(r1_earth * max_obj * cos(lonLat.latitude));
-		dlat *= wvp->obj;
-		dlon *= wvp->obj;
+    float max_dist = 10.0;    // 10 km
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        float dlat = max_dist * sin(wvp->dir) / (r1_earth * max_obj);
+        float dlon = max_dist * cos(wvp->dir) /
+                        (r1_earth * max_obj * cos(lonLat.latitude));
+        dlat *= wvp->obj;
+        dlon *= wvp->obj;
 
-		LonLat lon_lat;
-		lon_lat.latitude = lonLat.latitude + dlat;
-		lon_lat.longitude = lonLat.longitude + dlon;
-		if (! lon_lat.WriteOtln(fp))
-			return(0);
-	}
+        LonLat lon_lat;
+        lon_lat.latitude = lonLat.latitude + dlat;
+        lon_lat.longitude = lonLat.longitude + dlon;
+        if (! lon_lat.WriteOtln(fp))
+            return(0);
+    }
 
-	//------------//
-	// close path //
-	//------------//
+    //------------//
+    // close path //
+    //------------//
 
-	WindVectorPlus* wvp2 = ambiguities.GetHead();
-	float dlat2 = max_dist * sin(wvp2->dir) / (r1_earth * max_obj);
-	float dlon2 = max_dist * cos(wvp2->dir) /
-					(r1_earth * max_obj * cos(lonLat.latitude));
-	dlat2 *= wvp2->obj;
-	dlon2 *= wvp2->obj;
+    WindVectorPlus* wvp2 = ambiguities.GetHead();
+    float dlat2 = max_dist * sin(wvp2->dir) / (r1_earth * max_obj);
+    float dlon2 = max_dist * cos(wvp2->dir) /
+                    (r1_earth * max_obj * cos(lonLat.latitude));
+    dlat2 *= wvp2->obj;
+    dlon2 *= wvp2->obj;
 
-	LonLat lon_lat2;
-	lon_lat2.latitude = lonLat.latitude + dlat2;
-	lon_lat2.longitude = lonLat.longitude + dlon2;
-	if (! lon_lat2.WriteOtln(fp))
-		return(0);
+    LonLat lon_lat2;
+    lon_lat2.latitude = lonLat.latitude + dlat2;
+    lon_lat2.longitude = lonLat.longitude + dlon2;
+    if (! lon_lat2.WriteOtln(fp))
+        return(0);
 
-	//-----//
-	// end //
-	//-----//
+    //-----//
+    // end //
+    //-----//
 
-	LonLat inf;
-	inf.longitude = (float)HUGE_VAL;
-	inf.latitude = (float)HUGE_VAL;
-	if (! inf.WriteOtln(fp))
-		return(0);
+    LonLat inf;
+    inf.longitude = (float)HUGE_VAL;
+    inf.latitude = (float)HUGE_VAL;
+    if (! inf.WriteOtln(fp))
+        return(0);
 
-	return(1);
+    return(1);
 }
 
 //-----------------------//
@@ -641,51 +638,51 @@ WVC::WriteFlower(
 int
 WVC::RemoveDuplicates()
 {
-	int count = 0;
+    int count = 0;
 
-	//--------------------------------------//
-	// use a new WVC to identify duplicates //
-	//--------------------------------------//
+    //--------------------------------------//
+    // use a new WVC to identify duplicates //
+    //--------------------------------------//
 
-	WVC new_wvc;
-	WindVectorPlus* wvp = ambiguities.GetHead();
-	while (wvp)
-	{
-		int match_found = 0;
-		for (WindVectorPlus* wvp_tmp = new_wvc.ambiguities.GetHead();
-			wvp_tmp && wvp_tmp != wvp;
-			wvp_tmp = new_wvc.ambiguities.GetNext())
-		{
-			if (wvp_tmp->spd == wvp->spd &&
-				wvp_tmp->dir == wvp->dir)
-			{
-				match_found = 1;
-				break;
-			}
-		}
-		if (match_found)
-		{
-			wvp = ambiguities.RemoveCurrent();	// next becomes current
-			delete wvp;
-			wvp = ambiguities.GetCurrent();
-			count++;
-		}
-		else
-		{
-			new_wvc.ambiguities.Append(wvp);
-			wvp = ambiguities.GetNext();
-		}
-	}
+    WVC new_wvc;
+    WindVectorPlus* wvp = ambiguities.GetHead();
+    while (wvp)
+    {
+        int match_found = 0;
+        for (WindVectorPlus* wvp_tmp = new_wvc.ambiguities.GetHead();
+            wvp_tmp && wvp_tmp != wvp;
+            wvp_tmp = new_wvc.ambiguities.GetNext())
+        {
+            if (wvp_tmp->spd == wvp->spd &&
+                wvp_tmp->dir == wvp->dir)
+            {
+                match_found = 1;
+                break;
+            }
+        }
+        if (match_found)
+        {
+            wvp = ambiguities.RemoveCurrent();    // next becomes current
+            delete wvp;
+            wvp = ambiguities.GetCurrent();
+            count++;
+        }
+        else
+        {
+            new_wvc.ambiguities.Append(wvp);
+            wvp = ambiguities.GetNext();
+        }
+    }
 
-	//---------------------//
-	// get rid of new list //
-	//---------------------//
+    //---------------------//
+    // get rid of new list //
+    //---------------------//
 
-	wvp = new_wvc.ambiguities.GetHead();
-	while (wvp)
-		wvp = new_wvc.ambiguities.RemoveCurrent();
+    wvp = new_wvc.ambiguities.GetHead();
+    while (wvp)
+        wvp = new_wvc.ambiguities.RemoveCurrent();
 
-	return(count);
+    return(count);
 }
 
 //----------------//
@@ -697,26 +694,26 @@ WVC::RemoveDuplicates()
 int
 WVC::SortByObj()
 {
-	int need_sorting;
-	do
-	{
-		need_sorting = 0;
-		for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-			wvp = ambiguities.GetNext())
-		{
-			WindVectorPlus* next_wvp = ambiguities.GetNext();
-			if (next_wvp)
-			{
-				ambiguities.GotoPrev();
-				if (next_wvp->obj > wvp->obj)
-				{
-					ambiguities.SwapCurrentAndNext();
-					need_sorting = 1;
-				}
-			}
-		}
-	} while (need_sorting);
-	return(1);
+    int need_sorting;
+    do
+    {
+        need_sorting = 0;
+        for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+            wvp = ambiguities.GetNext())
+        {
+            WindVectorPlus* next_wvp = ambiguities.GetNext();
+            if (next_wvp)
+            {
+                ambiguities.GotoPrev();
+                if (next_wvp->obj > wvp->obj)
+                {
+                    ambiguities.SwapCurrentAndNext();
+                    need_sorting = 1;
+                }
+            }
+        }
+    } while (need_sorting);
+    return(1);
 }
 
 //----------------//
@@ -728,26 +725,26 @@ WVC::SortByObj()
 int
 WVC::SortByDir()
 {
-	int need_sorting;
-	do
-	{
-		need_sorting = 0;
-		for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-			wvp = ambiguities.GetNext())
-		{
-			WindVectorPlus* next_wvp = ambiguities.GetNext();
-			if (next_wvp)
-			{
-				ambiguities.GotoPrev();
-				if (next_wvp->dir < wvp->dir)
-				{
-					ambiguities.SwapCurrentAndNext();
-					need_sorting = 1;
-				}
-			}
-		}
-	} while (need_sorting);
-	return(1);
+    int need_sorting;
+    do
+    {
+        need_sorting = 0;
+        for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+            wvp = ambiguities.GetNext())
+        {
+            WindVectorPlus* next_wvp = ambiguities.GetNext();
+            if (next_wvp)
+            {
+                ambiguities.GotoPrev();
+                if (next_wvp->dir < wvp->dir)
+                {
+                    ambiguities.SwapCurrentAndNext();
+                    need_sorting = 1;
+                }
+            }
+        }
+    } while (need_sorting);
+    return(1);
 }
 
 //----------------------------//
@@ -757,31 +754,31 @@ WVC::SortByDir()
 
 WindVectorPlus*
 WVC::GetNearestToDirection(
-	float	dir,
-	int		max_rank)
+    float  dir,
+    int    max_rank)
 {
-	WindVectorPlus* nearest = NULL;
-	float min_dif = two_pi;
+    WindVectorPlus* nearest = NULL;
+    float min_dif = two_pi;
 
-	int rank = 0;
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		if (max_rank)
-		{
-			rank++;
-			if (rank > max_rank)
-				break;
-		}
+    int rank = 0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        if (max_rank)
+        {
+            rank++;
+            if (rank > max_rank)
+                break;
+        }
 
-		float dif = ANGDIF(wvp->dir, dir);
-		if (dif < min_dif)
-		{
-			min_dif = dif;
-			nearest = wvp;
-		}
-	}
-	return(nearest);
+        float dif = ANGDIF(wvp->dir, dir);
+        if (dif < min_dif)
+        {
+            min_dif = dif;
+            nearest = wvp;
+        }
+    }
+    return(nearest);
 }
 
 //-------------------//
@@ -791,11 +788,11 @@ WVC::GetNearestToDirection(
 void
 WVC::FreeContents()
 {
-	WindVectorPlus* wvp;
-	ambiguities.GotoHead();
-	while ((wvp = ambiguities.RemoveCurrent()))
-		delete wvp;
-	return;
+    WindVectorPlus* wvp;
+    ambiguities.GotoHead();
+    while ((wvp = ambiguities.RemoveCurrent()))
+        delete wvp;
+    return;
 }
 
 //--------------------------//
@@ -809,144 +806,144 @@ WVC::Rank_Wind_Solutions()
 //
 // Translated from GS module: Rank_Wind_Solutions2.F
 // - Final sorting omitted.
-//!File Name:	Rank_Wind_Solutions.F
+//!File Name:    Rank_Wind_Solutions.F
 //
 //!Description:
-//		This routine eliminates 
-//			(1) redundant wind solutions
-//			(2) out-of-range
-//		and ranks the "final" wind solutions to be
-//		used by the ambiguity-removal processor. 
+//        This routine eliminates
+//            (1) redundant wind solutions
+//            (2) out-of-range
+//        and ranks the "final" wind solutions to be
+//        used by the ambiguity-removal processor.
 //
 //!Input Parameters:
-//	wind_speed_delta		-	speed tolerance value (0.1 m/s).
-//	wind_dir_delta			-	direction tolerance value (5 degrees).
-//	wind_likelihood_delta	-	MLE tolerance value (0.5).
+//    wind_speed_delta        -    speed tolerance value (0.1 m/s).
+//    wind_dir_delta            -    direction tolerance value (5 degrees).
+//    wind_likelihood_delta    -    MLE tolerance value (0.5).
 //
-//!Input/Output Parameters: 
-//	wr_num_ambigs		- number of ambigous wind solutions.
-//	wr_mle				- value of maximum likelihood estimation.
-//	wr_wind_speed		- speeds of ambiguous wind solutions. 
-//	wr_wind_dir			- directions of ambiguous wind solutions. 
-//	wr_wind_speed_err	- errors associated with wind speed.
-//	wr_wind_dir_err		- errors associated with wind direction. 
+//!Input/Output Parameters:
+//    wr_num_ambigs        - number of ambigous wind solutions.
+//    wr_mle                - value of maximum likelihood estimation.
+//    wr_wind_speed        - speeds of ambiguous wind solutions.
+//    wr_wind_dir            - directions of ambiguous wind solutions.
+//    wr_wind_speed_err    - errors associated with wind speed.
+//    wr_wind_dir_err        - errors associated with wind direction.
 //
 
-	float	wr_wind_speed[wind_max_solutions];
-	float	wr_wind_dir[wind_max_solutions];
-	float	wr_mle[wind_max_solutions];
+    float    wr_wind_speed[wind_max_solutions];
+    float    wr_wind_dir[wind_max_solutions];
+    float    wr_mle[wind_max_solutions];
 
-	// Copy data into wr_ arrays. (convert radians to degrees)
-	int i = 0;
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		wr_wind_speed[i] = wvp->spd;
-		wr_wind_dir[i] = rtd*wvp->dir;
-		wr_mle[i] = wvp->obj;
-		i++;
-		if (i >= wind_max_solutions)
-			break;
-	}
-	int wr_num_ambigs = i;
+    // Copy data into wr_ arrays. (convert radians to degrees)
+    int i = 0;
+    for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+        wvp = ambiguities.GetNext())
+    {
+        wr_wind_speed[i] = wvp->spd;
+        wr_wind_dir[i] = rtd*wvp->dir;
+        wr_mle[i] = wvp->obj;
+        i++;
+        if (i >= wind_max_solutions)
+            break;
+    }
+    int wr_num_ambigs = i;
 
 // Local Declarations
-	int		j;
-	int		start_j;
-	int		ambig;
-	int		speed_50_flag[wind_max_solutions];
-	int		speed_50_counter;
-	int		i_speed_processed;
-	int		i_twin_processed;
-	int		twin_flag[wind_max_solutions];
-	int		twin_counter;
-	int		num_ambigs;
-	float	diff_speed;
-	float	diff_dir;
-	float	diff_mle;
+    int        j;
+    int        start_j;
+    int        ambig;
+    int        speed_50_flag[wind_max_solutions];
+    int        speed_50_counter;
+    int        i_speed_processed;
+    int        i_twin_processed;
+    int        twin_flag[wind_max_solutions];
+    int        twin_counter;
+    int        num_ambigs;
+    float    diff_speed;
+    float    diff_dir;
+    float    diff_mle;
 
-	int		num_sorted;
-//	int		max_index;
-//	float	max_mle;
+    int        num_sorted;
+//    int        max_index;
+//    float    max_mle;
 
-//	Initialize. 
+//    Initialize.
 
-	speed_50_counter	= 0;
-	twin_counter		= 0;
-	num_sorted			= 0;
- 
-	for (j=0; j < wind_max_solutions; j++)
-	{
-		speed_50_flag[j]	= 0;
-		twin_flag[j]		= 0;
-	}
+    speed_50_counter    = 0;
+    twin_counter        = 0;
+    num_sorted            = 0;
 
-	for (ambig=0; ambig < wr_num_ambigs; ambig++)
-	{
+    for (j=0; j < wind_max_solutions; j++)
+    {
+        speed_50_flag[j]    = 0;
+        twin_flag[j]        = 0;
+    }
 
-//	Wind direction:
-//		1. Constrain values between 0 and 360 degrees.
-//		2. Conform to SEAWIND's oceanographic convention.
+    for (ambig=0; ambig < wr_num_ambigs; ambig++)
+    {
 
-		if (wr_wind_dir[ambig] < 0.0)
-		{
-			wr_wind_dir[ambig] += 360.;
-		}
+//    Wind direction:
+//        1. Constrain values between 0 and 360 degrees.
+//        2. Conform to SEAWIND's oceanographic convention.
 
-		if (wr_wind_dir[ambig] > 360.)
-		{
-			wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
-		}
+        if (wr_wind_dir[ambig] < 0.0)
+        {
+            wr_wind_dir[ambig] += 360.;
+        }
+
+        if (wr_wind_dir[ambig] > 360.)
+        {
+            wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
+        }
 
 // Set high wind speed flag and count up if larger than 50 m/s.
 
-		if (wr_wind_speed[ambig] > 50.)
-		{
-			speed_50_flag[ambig] = 1;
-			speed_50_counter++;
-		}
-	}
+        if (wr_wind_speed[ambig] > 50.)
+        {
+            speed_50_flag[ambig] = 1;
+            speed_50_counter++;
+        }
+    }
 
-// Eliminate wind solutions with speed > 50 m/s. 
+// Eliminate wind solutions with speed > 50 m/s.
 
-	if (speed_50_counter > 0)
-	{
-		num_ambigs = wr_num_ambigs - speed_50_counter;
-		start_j = 0;
- 
-		for (i=0; i < num_ambigs; i++)
-		{
+    if (speed_50_counter > 0)
+    {
+        num_ambigs = wr_num_ambigs - speed_50_counter;
+        start_j = 0;
+
+        for (i=0; i < num_ambigs; i++)
+        {
             i_speed_processed = 0;
 
-			for (j=start_j; j < wr_num_ambigs; j++)
-			{
+            for (j=start_j; j < wr_num_ambigs; j++)
+            {
                if (!  i_speed_processed && speed_50_flag[j] == 0)
-				{
+                {
                    wr_wind_speed[i]    = wr_wind_speed[j];
                    wr_wind_dir[i]      = wr_wind_dir[j];
                    wr_mle[i]           = wr_mle[j];
                    start_j = j + 1;
                    i_speed_processed = 1;
-				}
- 
-			}
-		}
-        wr_num_ambigs = num_ambigs;
-	}
+                }
 
-// Identify and eliminate possible "twin" solutions. Search 
-// the entire solution space, tag twin solutions with smaller MLE value. 
-      
+            }
+        }
+        wr_num_ambigs = num_ambigs;
+    }
+
+// Identify and eliminate possible "twin" solutions. Search
+// the entire solution space, tag twin solutions with smaller MLE value.
+
 //        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
-	for (i=0; i < wr_num_ambigs; i++)
-	{
+    for (i=0; i < wr_num_ambigs; i++)
+    {
           twin_flag[i] = 0;
-	}
+    }
       twin_counter = 0;
-  
-	for (i=0; i < wr_num_ambigs-1; i++)
-	for (j=i+1; j < wr_num_ambigs; j++)
-	{
+
+    for (i=0; i < wr_num_ambigs-1; i++)
+    for (j=i+1; j < wr_num_ambigs; j++)
+    {
 
             diff_speed = fabs (wr_wind_speed[i] - wr_wind_speed[j]);
             diff_dir   = fabs (wr_wind_dir[i] - wr_wind_dir[j]);
@@ -957,61 +954,61 @@ WVC::Rank_Wind_Solutions()
             if (diff_speed <= wind_speed_delta    &&
                diff_dir   < wind_dir_delta      &&
                diff_mle   < wind_likelihood_delta )
-			{
+            {
                 if (twin_flag[j] == 0)
-				{
+                {
                    twin_flag[j] = 1;
                    twin_counter = twin_counter + 1;
 
                    if (wr_mle[j]>wr_mle[i])
-					{
+                    {
                     wr_wind_speed[i] = wr_wind_speed[j];
                     wr_wind_dir[i] = wr_wind_dir[j];
                     wr_mle[i] = wr_mle[j];
-					}
-				}
-			}
-	}
+                    }
+                }
+            }
+    }
 
-// Eliminate tagged twin solutions. 
+// Eliminate tagged twin solutions.
 
-	if  (twin_counter > 0)
-	{
+    if  (twin_counter > 0)
+    {
 //        write(97,*) 'number of twins found ',twin_counter
          num_ambigs =  wr_num_ambigs  -  twin_counter;
          start_j  = 0;
-		for (i=0; i < num_ambigs; i++)
-		{
+        for (i=0; i < num_ambigs; i++)
+        {
             i_twin_processed = 0;
 
-			for (j=start_j; j < wr_num_ambigs; j++)
-			{
-				if (! i_twin_processed)
-				{
-					if  (twin_flag[j] == 0)
-					{
+            for (j=start_j; j < wr_num_ambigs; j++)
+            {
+                if (! i_twin_processed)
+                {
+                    if  (twin_flag[j] == 0)
+                    {
                      wr_wind_speed[i] = wr_wind_speed[j];
                      wr_wind_dir[i] = wr_wind_dir[j];
                      wr_mle[i] = wr_mle[j];
                      start_j = j + 1;
-                     i_twin_processed  = 1; 
-					}
-				}
+                     i_twin_processed  = 1;
+                    }
+                }
 
-			}
-		}
+            }
+        }
 //        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
          wr_num_ambigs = num_ambigs;
-	}
+    }
 
     // Copy data from wr_ arrays. (convert to radians)
-	WindVectorPlus* wvp = ambiguities.GetHead();
-	for (i = 0; i < wr_num_ambigs; i++)
+    WindVectorPlus* wvp = ambiguities.GetHead();
+    for (i = 0; i < wr_num_ambigs; i++)
     {
         wvp->spd = wr_wind_speed[i];
         wvp->dir = wr_wind_dir[i]*dtr;
         wvp->obj = wr_mle[i];
-		wvp = ambiguities.GetNext();
+        wvp = ambiguities.GetNext();
     }
     while (wvp != NULL)
     {
@@ -1034,7 +1031,7 @@ WVC::GetEstimatedSquareError(){
     prob[idx]=exp((wvp->obj-scale)/2);
     sum+=prob[idx];
     idx++;
-    wvp=ambiguities.GetNext();    
+    wvp=ambiguities.GetNext();
   }
   for(int c=0;c<ambiguities.NodeCount();c++) prob[c]/=sum;
   wvp=ambiguities.GetHead();
@@ -1093,20 +1090,21 @@ WVC::RedistributeObjs(){
   SortByObj();
   return(1);
 }
+
 //===========//
 // WindField //
 //===========//
 
 WindField::WindField()
-:	_wrap(0), _field(0)
+:    _wrap(0), _useFixedSpeed(0), _fixedSpeed(0.0), _field(0)
 {
-	return;
+    return;
 }
 
 WindField::~WindField()
 {
-	_Deallocate();
-	return;
+    _Deallocate();
+    return;
 }
 
 //--------------------//
@@ -1115,63 +1113,63 @@ WindField::~WindField()
 
 int
 WindField::ReadVap(
-	const char*		filename)
+    const char*        filename)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-	//------------//
-	// read field //
-	//------------//
+    //------------//
+    // read field //
+    //------------//
 
-	float u[VAP_LAT_DIM][VAP_LON_DIM];
-	float v[VAP_LAT_DIM][VAP_LON_DIM];
+    float u[VAP_LAT_DIM][VAP_LON_DIM];
+    float v[VAP_LAT_DIM][VAP_LON_DIM];
 
-	int size = VAP_LON_DIM * VAP_LAT_DIM * sizeof(float);
-	if (fread((void *)u, size, 1, fp) != 1 ||
-		fread((void *)v, size, 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
+    int size = VAP_LON_DIM * VAP_LAT_DIM * sizeof(float);
+    if (fread((void *)u, size, 1, fp) != 1 ||
+        fread((void *)v, size, 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	//-------------------------------//
-	// transfer to wind field format //
-	//-------------------------------//
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
 
-	_lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, VAP_LON_DIM);
-	_lat.SpecifyCenters(-60.0 * dtr, 60.0 * dtr, VAP_LAT_DIM);
+    _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, VAP_LON_DIM);
+    _lat.SpecifyCenters(-60.0 * dtr, 60.0 * dtr, VAP_LAT_DIM);
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	for (int lon_idx = 0; lon_idx < VAP_LON_DIM; lon_idx++)
-	{
-		for (int lat_idx = 0; lat_idx < VAP_LAT_DIM; lat_idx++)
-		{
-			WindVector* wv = new WindVector;
-			if (! wv)
-				return(0);
+    for (int lon_idx = 0; lon_idx < VAP_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < VAP_LAT_DIM; lat_idx++)
+        {
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
 
-			wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-			*(*(_field + lon_idx) + lat_idx) = wv;
-		}
-	}
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
 
-	_wrap = 1;
+    _wrap = 1;
 
-	return(1);
+    return(1);
 }
 
 //---------------------------//
@@ -1180,67 +1178,67 @@ WindField::ReadVap(
 
 int
 WindField::ReadEcmwfHiRes(
-	const char*		filename)
+    const char*        filename)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-	//------------//
-	// read field //
-	//------------//
+    //------------//
+    // read field //
+    //------------//
 
-	int ymd, hms;
-	float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
-	float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+    int ymd, hms;
+    float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+    float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
 
-	int int_size = sizeof(int);
-	int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
+    int int_size = sizeof(int);
+    int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
 
-	if (fread((void *)&ymd, int_size, 1, fp) != 1 ||
-		fread((void *)&hms, int_size, 1, fp) != 1 ||
-		fread((void *)u, uv_size, 1, fp) != 1 ||
-		fread((void *)v, uv_size, 1, fp) != 1)
-	{
-		fclose(fp);
-		return(0);
-	}
+    if (fread((void *)&ymd, int_size, 1, fp) != 1 ||
+        fread((void *)&hms, int_size, 1, fp) != 1 ||
+        fread((void *)u, uv_size, 1, fp) != 1 ||
+        fread((void *)v, uv_size, 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	//-------------------------------//
-	// transfer to wind field format //
-	//-------------------------------//
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
 
-	_lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
-	_lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
+    _lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
+    _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
-	{
-		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
-		{
-			WindVector* wv = new WindVector;
-			if (! wv)
-				return(0);
+    for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+        {
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
 
-			wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-			*(*(_field + lon_idx) + lat_idx) = wv;
-		}
-	}
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
 
-	_wrap = 1;
-	return(1);
+    _wrap = 1;
+    return(1);
 }
 
 //---------------------------//
@@ -1302,7 +1300,7 @@ WindField::ReadEcmwfLoRes(
         _lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_LORES_LON_DIM);
         _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_LORES_LAT_DIM);
 
-  
+
         if (! _Allocate())
                 return(0);
 
@@ -1311,7 +1309,7 @@ WindField::ReadEcmwfLoRes(
         {
                 for (int lat_idx = 0; lat_idx < ECMWF_LORES_LAT_DIM; lat_idx++)
                 {
-                         
+
                         u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
                         v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
 
@@ -1388,7 +1386,7 @@ WindField::ReadNSCAT(
                       u[lat_idx][lon_idx] = 0.;
                       v[lat_idx][lon_idx] = 0.;
                     }
-                  
+
                         WindVector* wv = new WindVector;
                         if (! wv)
                                 return(0);
@@ -1462,7 +1460,7 @@ WindField::ReadNCEP1(
         _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP1_LON_DIM);
         _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP1_LAT_DIM);
 
-  
+
         if (! _Allocate())
                 return(0);
 
@@ -1471,7 +1469,7 @@ WindField::ReadNCEP1(
         {
                 for (int lat_idx = 0; lat_idx < NCEP1_LAT_DIM; lat_idx++)
                 {
-                         
+
                         u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
                         v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
 
@@ -1547,7 +1545,7 @@ WindField::ReadNCEP2(
         _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP2_LON_DIM);
         _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP2_LAT_DIM);
 
-  
+
         if (! _Allocate())
                 return(0);
 
@@ -1556,7 +1554,7 @@ WindField::ReadNCEP2(
         {
                 for (int lat_idx = 0; lat_idx < NCEP2_LAT_DIM; lat_idx++)
                 {
-                         
+
                         u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
                         v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
 
@@ -1583,40 +1581,40 @@ WindField::WriteEcmwfHiRes(
     const char*  filename,
     int          extra_time_flag)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//----------------//
-	// transfer to uv //
-	//----------------//
+    //----------------//
+    // transfer to uv //
+    //----------------//
 
-	int ymd, hms;
-	float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
-	float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+    int ymd, hms;
+    float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+    float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
 
-	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
-	{
-		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
-		{
-			WindVector* wv = *(*(_field + lon_idx) + lat_idx);
-			if (wv)
-			{
-				wv->GetUV(&u[lat_idx][lon_idx], &v[lat_idx][lon_idx]);
-			}
-		}
-	}
+    for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+        {
+            WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+            if (wv)
+            {
+                wv->GetUV(&u[lat_idx][lon_idx], &v[lat_idx][lon_idx]);
+            }
+        }
+    }
 
-	//-------------//
-	// write field //
-	//-------------//
+    //-------------//
+    // write field //
+    //-------------//
 
-	int int_size = sizeof(int);
-	int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
+    int int_size = sizeof(int);
+    int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
 
     if (extra_time_flag)
     {
@@ -1658,35 +1656,35 @@ WindField::WriteEcmwfHiRes(
 
 int
 WindField::ReadType(
-	const char*		filename,
-	const char*		type)
+    const char*        filename,
+    const char*        type)
 {
-	if (strcasecmp(type, VAP_TYPE) == 0)
-	  {
-	    return(ReadVap(filename));
-	  }
-	else if (strcasecmp(type, ECMWF_HIRES_TYPE) == 0)
-	  {
-	    return(ReadEcmwfHiRes(filename));
-	  }
+    if (strcasecmp(type, VAP_TYPE) == 0)
+      {
+        return(ReadVap(filename));
+      }
+    else if (strcasecmp(type, ECMWF_HIRES_TYPE) == 0)
+      {
+        return(ReadEcmwfHiRes(filename));
+      }
         else if (strcasecmp(type, ECMWF_LORES_TYPE) == 0)
-	  {
-	    return(ReadEcmwfLoRes(filename));
-	  }
+      {
+        return(ReadEcmwfLoRes(filename));
+      }
         else if (strcasecmp(type, NSCAT_TYPE) == 0)
-	  {
-	    return(ReadNSCAT(filename));
-	  }
-	else if (strcasecmp(type, NCEP1_TYPE) == 0)
-	  {
-	    return(ReadNCEP1(filename));
-	  }
-	else if (strcasecmp(type, NCEP2_TYPE) == 0)
-	  {
-	    return(ReadNCEP2(filename));
-	  }
-	else
-	  return(0);
+      {
+        return(ReadNSCAT(filename));
+      }
+    else if (strcasecmp(type, NCEP1_TYPE) == 0)
+      {
+        return(ReadNCEP1(filename));
+      }
+    else if (strcasecmp(type, NCEP2_TYPE) == 0)
+      {
+        return(ReadNCEP2(filename));
+      }
+    else
+      return(0);
 }
 
 //----------------------//
@@ -1695,60 +1693,60 @@ WindField::ReadType(
 
 int
 WindField::WriteVctr(
-	const char*		filename)
+    const char*        filename)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//--------------//
-	// write header //
-	//--------------//
+    //--------------//
+    // write header //
+    //--------------//
 
-	char* hdr = VCTR_HEADER;
-	if (fwrite((void *)hdr, 4, 1, fp) != 1)
-		return(0);
+    char* hdr = VCTR_HEADER;
+    if (fwrite((void *)hdr, 4, 1, fp) != 1)
+        return(0);
 
-	//-------//
-	// write //
-	//-------//
+    //-------//
+    // write //
+    //-------//
 
-	int lon_count = _lon.GetBins();
-	int lat_count = _lat.GetBins();
-	for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
-	{
-		float longitude;
-		_lon.IndexToValue(lon_idx, &longitude);
-		for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
-		{
-			float latitude;
-			_lat.IndexToValue(lat_idx, &latitude);
-			WindVector* wv = _field[lon_idx][lat_idx];
-			if (wv)
-			{
-				// calculate longitude and latitude
-				if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-					fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
-					fwrite((void *)&(wv->spd), sizeof(float), 1, fp) != 1 ||
-					fwrite((void *)&(wv->dir), sizeof(float), 1, fp) != 1)
-				{
-					return(0);
-				}
-			}
-		}
-	}
+    int lon_count = _lon.GetBins();
+    int lat_count = _lat.GetBins();
+    for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
+    {
+        float longitude;
+        _lon.IndexToValue(lon_idx, &longitude);
+        for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
+        {
+            float latitude;
+            _lat.IndexToValue(lat_idx, &latitude);
+            WindVector* wv = _field[lon_idx][lat_idx];
+            if (wv)
+            {
+                // calculate longitude and latitude
+                if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+                    fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
+                    fwrite((void *)&(wv->spd), sizeof(float), 1, fp) != 1 ||
+                    fwrite((void *)&(wv->dir), sizeof(float), 1, fp) != 1)
+                {
+                    return(0);
+                }
+            }
+        }
+    }
 
-	//------------//
-	// close file //
-	//------------//
+    //------------//
+    // close file //
+    //------------//
 
-	fclose(fp);
+    fclose(fp);
 
-	return(1);
+    return(1);
 }
 
 //-------------------//
@@ -1757,66 +1755,66 @@ WindField::WriteVctr(
 
 int
 WindField::NewRes(
-	WindField*	windfield,
-	float		lon_res,
-	float		lat_res)
+    WindField*    windfield,
+    float        lon_res,
+    float        lat_res)
 {
-	//----------//
-	// re-index //
-	//----------//
+    //----------//
+    // re-index //
+    //----------//
 
-	int old_bins, new_bins;
-	float old_step;
+    int old_bins, new_bins;
+    float old_step;
 
-	old_bins = windfield->_lon.GetBins();
-	old_step = windfield->_lon.GetStep();
-	new_bins = (int)((float)old_bins * old_step / lon_res + 0.5);
-	_lon.SpecifyNewBins(&(windfield->_lon), new_bins);
+    old_bins = windfield->_lon.GetBins();
+    old_step = windfield->_lon.GetStep();
+    new_bins = (int)((float)old_bins * old_step / lon_res + 0.5);
+    _lon.SpecifyNewBins(&(windfield->_lon), new_bins);
 
-	old_bins = windfield->_lat.GetBins();
-	old_step = windfield->_lat.GetStep();
-	new_bins = (int)((float)old_bins * old_step / lat_res + 0.5);
-	_lat.SpecifyNewBins(&(windfield->_lat), new_bins);
+    old_bins = windfield->_lat.GetBins();
+    old_step = windfield->_lat.GetStep();
+    new_bins = (int)((float)old_bins * old_step / lat_res + 0.5);
+    _lat.SpecifyNewBins(&(windfield->_lat), new_bins);
 
-	//----------//
-	// allocate //
-	//----------//
+    //----------//
+    // allocate //
+    //----------//
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	//--------------------//
-	// generate windfield //
-	//--------------------//
+    //--------------------//
+    // generate windfield //
+    //--------------------//
 
-	LonLat lon_lat;
-	int lon_bins = _lon.GetBins();
-	int lat_bins = _lat.GetBins();
-	for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
-	{
-		float value;
-		if (! _lon.IndexToValue(lon_idx, &value))
-			return(0);
+    LonLat lon_lat;
+    int lon_bins = _lon.GetBins();
+    int lat_bins = _lat.GetBins();
+    for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
+    {
+        float value;
+        if (! _lon.IndexToValue(lon_idx, &value))
+            return(0);
 
-		lon_lat.longitude = value;
-		for (int lat_idx = 0; lat_idx < lat_bins; lat_idx++)
-		{
-			if (! _lat.IndexToValue(lat_idx, &value))
-				return(0);
+        lon_lat.longitude = value;
+        for (int lat_idx = 0; lat_idx < lat_bins; lat_idx++)
+        {
+            if (! _lat.IndexToValue(lat_idx, &value))
+                return(0);
 
-			lon_lat.latitude = value;
+            lon_lat.latitude = value;
 
-			WindVector* wv = new WindVector;
-			if (! wv)
-				return(0);
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
 
-			if (! windfield->InterpolatedWindVector(lon_lat, wv))
-				return(0);
+            if (! windfield->InterpolatedWindVector(lon_lat, wv))
+                return(0);
 
-			*(*(_field + lon_idx) + lat_idx) = wv;
-		}
-	}
-	return(1);
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
+    return(1);
 }
 
 //------------------------------//
@@ -1825,27 +1823,32 @@ WindField::NewRes(
 
 int
 WindField::NearestWindVector(
-	LonLat			lon_lat,
-	WindVector*		wv)
+    LonLat       lon_lat,
+    WindVector*  wv)
 {
-	// put longitude in range (hopefully)
-	float lon_min = _lon.GetMin();
-	int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
-	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
+    // put longitude in range (hopefully)
+    float lon_min = _lon.GetMin();
+    int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
+    float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
-	// convert to longitude index
-	int lon_idx;
-	if (! _lon.GetNearestIndex(lon, &lon_idx))
-		return(0);
+    // convert to longitude index
+    int lon_idx;
+    if (! _lon.GetNearestIndex(lon, &lon_idx))
+        return(0);
 
-	// convert to latitude index
-	int lat_idx;
-	if (! _lat.GetNearestIndex(lon_lat.latitude, &lat_idx))
-		return(0);
+    // convert to latitude index
+    int lat_idx;
+    if (! _lat.GetNearestIndex(lon_lat.latitude, &lat_idx))
+        return(0);
 
-	*wv = *(*(*(_field + lon_idx) + lat_idx));
+    *wv = *(*(*(_field + lon_idx) + lat_idx));
 
-	return(1);
+    if (_useFixedSpeed)
+    {
+        wv->spd = _fixedSpeed;
+    }
+
+    return(1);
 }
 
 //-----------------------------------//
@@ -1854,58 +1857,77 @@ WindField::NearestWindVector(
 
 int
 WindField::InterpolatedWindVector(
-	LonLat			lon_lat,
-	WindVector*		wv)
+    LonLat            lon_lat,
+    WindVector*        wv)
 {
-	// put longitude in range (hopefully)
-	float lon_min = _lon.GetMin();
-	int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
-	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
+    // put longitude in range (hopefully)
+    float lon_min = _lon.GetMin();
+    int wrap_factor = (int)ceil((lon_min - lon_lat.longitude) / two_pi);
+    float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
-	// find longitude indicies
-	int lon_idx[2];
-	float lon_coef[2];
-	if (_wrap)
-	{
-		if (! _lon.GetLinearCoefsWrapped(lon, lon_idx, lon_coef))
-			return(0);
-	}
-	else
-	{
-		if (! _lon.GetLinearCoefsClipped(lon, lon_idx, lon_coef))
-			return(0);
-	}
+    // find longitude indicies
+    int lon_idx[2];
+    float lon_coef[2];
+    if (_wrap)
+    {
+        if (! _lon.GetLinearCoefsWrapped(lon, lon_idx, lon_coef))
+            return(0);
+    }
+    else
+    {
+        if (! _lon.GetLinearCoefsClipped(lon, lon_idx, lon_coef))
+            return(0);
+    }
 
-	// find latitude indicies
-	int lat_idx[2];
-	float lat_coef[2];
-	if (! _lat.GetLinearCoefsClipped(lon_lat.latitude, lat_idx, lat_coef))
-		return(0);
+    // find latitude indicies
+    int lat_idx[2];
+    float lat_coef[2];
+    if (! _lat.GetLinearCoefsClipped(lon_lat.latitude, lat_idx, lat_coef))
+        return(0);
 
-	WindVector* corner_wv[2][2];
-	corner_wv[0][0] = *(*(_field + lon_idx[0]) + lat_idx[0]);
-	corner_wv[0][1] = *(*(_field + lon_idx[0]) + lat_idx[1]);
-	corner_wv[1][0] = *(*(_field + lon_idx[1]) + lat_idx[0]);
-	corner_wv[1][1] = *(*(_field + lon_idx[1]) + lat_idx[1]);
+    WindVector* corner_wv[2][2];
+    corner_wv[0][0] = *(*(_field + lon_idx[0]) + lat_idx[0]);
+    corner_wv[0][1] = *(*(_field + lon_idx[0]) + lat_idx[1]);
+    corner_wv[1][0] = *(*(_field + lon_idx[1]) + lat_idx[0]);
+    corner_wv[1][1] = *(*(_field + lon_idx[1]) + lat_idx[1]);
 
-	float corner_u[2][2], corner_v[2][2];
-	corner_wv[0][0]->GetUV(&corner_u[0][0], &corner_v[0][0]);
-	corner_wv[0][1]->GetUV(&corner_u[0][1], &corner_v[0][1]);
-	corner_wv[1][0]->GetUV(&corner_u[1][0], &corner_v[1][0]);
-	corner_wv[1][1]->GetUV(&corner_u[1][1], &corner_v[1][1]);
+    float corner_u[2][2], corner_v[2][2];
+    corner_wv[0][0]->GetUV(&corner_u[0][0], &corner_v[0][0]);
+    corner_wv[0][1]->GetUV(&corner_u[0][1], &corner_v[0][1]);
+    corner_wv[1][0]->GetUV(&corner_u[1][0], &corner_v[1][0]);
+    corner_wv[1][1]->GetUV(&corner_u[1][1], &corner_v[1][1]);
 
-	float u =	lon_coef[0] * lat_coef[0] * corner_u[0][0] +
-				lon_coef[0] * lat_coef[1] * corner_u[0][1] +
-				lon_coef[1] * lat_coef[0] * corner_u[1][0] +
-				lon_coef[1] * lat_coef[1] * corner_u[1][1];
+    float u =    lon_coef[0] * lat_coef[0] * corner_u[0][0] +
+                lon_coef[0] * lat_coef[1] * corner_u[0][1] +
+                lon_coef[1] * lat_coef[0] * corner_u[1][0] +
+                lon_coef[1] * lat_coef[1] * corner_u[1][1];
 
-	float v =	lon_coef[0] * lat_coef[0] * corner_v[0][0] +
-				lon_coef[0] * lat_coef[1] * corner_v[0][1] +
-				lon_coef[1] * lat_coef[0] * corner_v[1][0] +
-				lon_coef[1] * lat_coef[1] * corner_v[1][1];
+    float v =    lon_coef[0] * lat_coef[0] * corner_v[0][0] +
+                lon_coef[0] * lat_coef[1] * corner_v[0][1] +
+                lon_coef[1] * lat_coef[0] * corner_v[1][0] +
+                lon_coef[1] * lat_coef[1] * corner_v[1][1];
 
-	wv->SetUV(u, v);
-	return(1);
+    wv->SetUV(u, v);
+
+    if (_useFixedSpeed)
+    {
+        wv->spd = _fixedSpeed;
+    }
+
+    return(1);
+}
+
+//---------------------//
+// WindField::FixSpeed //
+//---------------------//
+
+int
+WindField::FixSpeed(
+    float  speed)
+{
+    _useFixedSpeed = 1;
+    _fixedSpeed = speed;
+    return(1);
 }
 
 //-------------------------//
@@ -1914,24 +1936,24 @@ WindField::InterpolatedWindVector(
 
 int
 WindField::SetAllSpeeds(
-	float	speed)
+    float    speed)
 {
-	int count = 0;
-	int lon_count = _lon.GetBins();
-	int lat_count = _lat.GetBins();
-	for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
-	{
-		for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
-		{
-			WindVector* wv = *(*(_field + lon_idx) + lat_idx);
-			if (wv)
-			{
-				wv->spd = speed;
-				count++;
-			}
-		}
-	}
-	return(count);
+    int count = 0;
+    int lon_count = _lon.GetBins();
+    int lat_count = _lat.GetBins();
+    for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
+        {
+            WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+            if (wv)
+            {
+                wv->spd = speed;
+                count++;
+            }
+        }
+    }
+    return(count);
 }
 
 //---------------------------//
@@ -1942,35 +1964,35 @@ int
 WindField::FakeEcmwfHiRes(
     float  speed)
 {
-	//-------------------------------//
-	// specify ECMWF hi-res sampling //
-	//-------------------------------//
+    //-------------------------------//
+    // specify ECMWF hi-res sampling //
+    //-------------------------------//
 
-	_lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
-	_lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
+    _lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
+    _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
-	{
+    for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+    {
         float dir = 8.0 * (float)lon_idx * two_pi / (float)ECMWF_HIRES_LON_DIM;
         while (dir > two_pi)
             dir -= two_pi;
 
-		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
-		{
-			WindVector* wv = new WindVector;
-			if (! wv)
-				return(0);
+        for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+        {
+            WindVector* wv = new WindVector;
+            if (! wv)
+                return(0);
 
             wv->SetSpdDir(speed, dir);
-			*(*(_field + lon_idx) + lat_idx) = wv;
-		}
-	}
+            *(*(_field + lon_idx) + lat_idx) = wv;
+        }
+    }
 
-	_wrap = 1;
-	return(1);
+    _wrap = 1;
+    return(1);
 }
 
 //----------------------//
@@ -1980,26 +2002,26 @@ WindField::FakeEcmwfHiRes(
 int
 WindField::_Allocate()
 {
-	if (_field != NULL)
-		return(0);
+    if (_field != NULL)
+        return(0);
 
-	int lon_count = _lon.GetBins();
-	int lat_count = _lat.GetBins();
-	_field = (WindVector ***)make_array(sizeof(WindVector *), 2, lon_count,
-		lat_count);
+    int lon_count = _lon.GetBins();
+    int lat_count = _lat.GetBins();
+    _field = (WindVector ***)make_array(sizeof(WindVector *), 2, lon_count,
+        lat_count);
 
-	if (_field == NULL)
-		return(0);
+    if (_field == NULL)
+        return(0);
 
-	for (int i = 0; i < lon_count; i++)
-	{
-		for (int j = 0; j < lat_count; j++)
-		{
-			_field[i][j] = NULL;
-		}
-	}
+    for (int i = 0; i < lon_count; i++)
+    {
+        for (int j = 0; j < lat_count; j++)
+        {
+            _field[i][j] = NULL;
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //------------------------//
@@ -2009,23 +2031,23 @@ WindField::_Allocate()
 int
 WindField::_Deallocate()
 {
-	if (_field == NULL)
-		return(1);
+    if (_field == NULL)
+        return(1);
 
-	int lon_count = _lon.GetBins();
-	int lat_count = _lat.GetBins();
-	for (int i = 0; i < lon_count; i++)
-	{
-		for (int j = 0; j < lat_count; j++)
-		{
-			if (_field[i][j]) delete _field[i][j];
-		}
-	}
+    int lon_count = _lon.GetBins();
+    int lat_count = _lat.GetBins();
+    for (int i = 0; i < lon_count; i++)
+    {
+        for (int j = 0; j < lat_count; j++)
+        {
+            if (_field[i][j]) delete _field[i][j];
+        }
+    }
 
-	free_array((void *)_field, 2, lon_count, lat_count);
+    free_array((void *)_field, 2, lon_count, lat_count);
 
-	_field = NULL;
-	return(1);
+    _field = NULL;
+    return(1);
 }
 
 
@@ -2034,15 +2056,15 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:	swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
+:    swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
-	return;
+    return;
 }
 
 WindSwath::~WindSwath()
 {
-	DeleteEntireSwath();
-	return;
+    DeleteEntireSwath();
+    return;
 }
 
 //---------------------//
@@ -2051,12 +2073,12 @@ WindSwath::~WindSwath()
 
 int
 WindSwath::Allocate(
-	int		cross_track_bins,
-	int		along_track_bins)
+    int        cross_track_bins,
+    int        along_track_bins)
 {
-	_crossTrackBins = cross_track_bins;
-	_alongTrackBins = along_track_bins;
-	return(_Allocate());
+    _crossTrackBins = cross_track_bins;
+    _alongTrackBins = along_track_bins;
+    return(_Allocate());
 }
 
 //----------------//
@@ -2065,33 +2087,33 @@ WindSwath::Allocate(
 
 int
 WindSwath::Add(
-	int		cti,
-	int		ati,
-	WVC*	wvc)
+    int        cti,
+    int        ati,
+    WVC*    wvc)
 {
-	if (cti < 0 || cti >= _crossTrackBins ||
-		ati < 0 || ati >= _alongTrackBins)
-	{
-		// Quietly dump out of range cells.
-		delete wvc;
-		return(1);
+    if (cti < 0 || cti >= _crossTrackBins ||
+        ati < 0 || ati >= _alongTrackBins)
+    {
+        // Quietly dump out of range cells.
+        delete wvc;
+        return(1);
 
 //        fprintf(stderr, "WindSwath::Add: out of range\n");
 //        fprintf(stderr, "  cti = %d (Max = %d), ati = %d (Max = %d)\n",
 //            cti, _crossTrackBins, ati, _alongTrackBins);
-//		return(0);	// out of range
-	}
+//        return(0);    // out of range
+    }
 
-	if (swath[cti][ati])
-	  {
-	    fprintf(stderr, "WindSwath::Add: attempted cell replacement\n");
-	    fprintf(stderr, "  cti = %d, ati = %d\n", cti, ati);
-	    return(0);	// already a cell there
-	  }
-	
-	swath[cti][ati] = wvc;
-	_validCells++;
-	return(1);
+    if (swath[cti][ati])
+      {
+        fprintf(stderr, "WindSwath::Add: attempted cell replacement\n");
+        fprintf(stderr, "  cti = %d, ati = %d\n", cti, ati);
+        return(0);    // already a cell there
+      }
+
+    swath[cti][ati] = wvc;
+    _validCells++;
+    return(1);
 }
 
 //-------------------//
@@ -2100,22 +2122,22 @@ WindSwath::Add(
 
 WVC*
 WindSwath::Remove(
-	int		cti,
-	int		ati)
+    int        cti,
+    int        ati)
 {
         WVC* wvc=NULL;
-	if (cti < 0 || cti >= _crossTrackBins ||
-		ati < 0 || ati >= _alongTrackBins)
-	{
-	     
-		return(NULL);
-	}
-	else{
-	  wvc=swath[cti][ati];
+    if (cti < 0 || cti >= _crossTrackBins ||
+        ati < 0 || ati >= _alongTrackBins)
+    {
+
+        return(NULL);
+    }
+    else{
+      wvc=swath[cti][ati];
           swath[cti][ati]=NULL;
-	  if(wvc)_validCells--;
-	  return(wvc);
-	} 
+      if(wvc)_validCells--;
+      return(wvc);
+    }
 }
 //---------------------------------//
 // WindSwath::GetMaxAmbiguityCount //
@@ -2124,21 +2146,21 @@ WindSwath::Remove(
 int
 WindSwath::GetMaxAmbiguityCount()
 {
-	int max_count = 0;
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			WVC* wvc = *(*(swath + i) + j);
-			if (wvc == NULL)
-				continue;
+    int max_count = 0;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
 
-			int count = wvc->ambiguities.NodeCount();
-			if (count > max_count)
-				max_count = count;
-		}
-	}
-	return(max_count);
+            int count = wvc->ambiguities.NodeCount();
+            if (count > max_count)
+                max_count = count;
+        }
+    }
+    return(max_count);
 }
 
 //-----------------------//
@@ -2148,20 +2170,20 @@ WindSwath::GetMaxAmbiguityCount()
 int
 WindSwath::DeleteWVCs()
 {
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			WVC* wvc = *(*(swath + i) + j);
-			if (wvc == NULL)
-				continue;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
 
-			delete wvc;
-			*(*(swath + i) + j) = NULL;
-		}
-	}
-	_validCells = 0;
-	return(1);
+            delete wvc;
+            *(*(swath + i) + j) = NULL;
+        }
+    }
+    _validCells = 0;
+    return(1);
 }
 
 //------------------------------//
@@ -2171,13 +2193,13 @@ WindSwath::DeleteWVCs()
 int
 WindSwath::DeleteEntireSwath()
 {
-	if (! DeleteWVCs())
-		return(0);
+    if (! DeleteWVCs())
+        return(0);
 
-	if (! _Deallocate())
-		return(0);
+    if (! _Deallocate())
+        return(0);
 
-	return(1);
+    return(1);
 }
 
 //----------------------------//
@@ -2190,13 +2212,13 @@ WindSwath::DeleteLatitudesOutside(
     float  high_lat)
 {
     int count = 0;
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			WVC* wvc = *(*(swath + i) + j);
-			if (wvc == NULL)
-				continue;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
 
             float lat = wvc->lonLat.latitude;
             if (lat < low_lat || lat > high_lat)
@@ -2206,9 +2228,9 @@ WindSwath::DeleteLatitudesOutside(
                 count++;
                 _validCells--;
             }
-		}
-	}
-	return(count);
+        }
+    }
+    return(count);
 }
 
 //---------------------//
@@ -2217,34 +2239,34 @@ WindSwath::DeleteLatitudesOutside(
 
 int
 WindSwath::WriteL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&_validCells, sizeof(int), 1, fp) != 1)
-	{
-		return(0);
-	}
+    if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&_validCells, sizeof(int), 1, fp) != 1)
+    {
+        return(0);
+    }
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = *(*(swath + cti) + ati);
-			if (wvc == NULL)
-				continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = *(*(swath + cti) + ati);
+            if (wvc == NULL)
+                continue;
 
-			if (fwrite((void *)&cti, sizeof(int), 1, fp) != 1 ||
-				fwrite((void *)&ati, sizeof(int), 1, fp) != 1)
-			{
-				return(0);
-			}
+            if (fwrite((void *)&cti, sizeof(int), 1, fp) != 1 ||
+                fwrite((void *)&ati, sizeof(int), 1, fp) != 1)
+            {
+                return(0);
+            }
 
-			if (! wvc->WriteL2B(fp))
-				return(0);
-		}
-	}
-	return(1);
+            if (! wvc->WriteL2B(fp))
+                return(0);
+        }
+    }
+    return(1);
 }
 
 //--------------------//
@@ -2253,35 +2275,35 @@ WindSwath::WriteL2B(
 
 int
 WindSwath::ReadL2B(
-	FILE*	fp)
+    FILE*    fp)
 {
-	DeleteEntireSwath();		// in case
+    DeleteEntireSwath();        // in case
 
-	if (fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&_validCells, sizeof(int), 1, fp) != 1)
-	{
-		return(0);
-	}
-	_Allocate();
+    if (fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&_validCells, sizeof(int), 1, fp) != 1)
+    {
+        return(0);
+    }
+    _Allocate();
 
-	for (int i = 0; i < _validCells; i++)
-	{
-		int cti, ati;
-		if (fread((void *)&cti, sizeof(int), 1, fp) != 1 ||
-			fread((void *)&ati, sizeof(int), 1, fp) != 1)
-		{
-			return(0);
-		}
+    for (int i = 0; i < _validCells; i++)
+    {
+        int cti, ati;
+        if (fread((void *)&cti, sizeof(int), 1, fp) != 1 ||
+            fread((void *)&ati, sizeof(int), 1, fp) != 1)
+        {
+            return(0);
+        }
 
-		WVC* wvc = new WVC();
+        WVC* wvc = new WVC();
 
-		if (! wvc->ReadL2B(fp))
-			return(0);
+        if (! wvc->ReadL2B(fp))
+            return(0);
 
-		*(*(swath + cti) + ati) = wvc;
-	}
-	return(1);
+        *(*(swath + cti) + ati) = wvc;
+    }
+    return(1);
 }
 
 //--------------------//
@@ -2290,17 +2312,17 @@ WindSwath::ReadL2B(
 
 int
 WindSwath::ReadL2B(
-	const char*		filename)
+    const char*        filename)
 {
-	FILE* fp = fopen(filename, "r");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-	if (! ReadL2B(fp))
-		return(0);
+    if (! ReadL2B(fp))
+        return(0);
 
-	fclose(fp);
-	return(1);
+    fclose(fp);
+    return(1);
 }
 
 //-----------------------//
@@ -2309,9 +2331,9 @@ WindSwath::ReadL2B(
 
 int
 WindSwath::ReadHdfL2B(
-	TlmHdfFile*	tlmHdfFile)
+    TlmHdfFile*    tlmHdfFile)
 {
-	DeleteEntireSwath();		// in case
+    DeleteEntireSwath();        // in case
 
     // cross bin number is fixed
     _crossTrackBins = HDF_ACROSS_BIN_NO;
@@ -2336,7 +2358,7 @@ WindSwath::ReadHdfL2B(
     if ( ! _OpenHdfDataSets(tlmHdfFile))
         return(0);
 
-	_Allocate();
+    _Allocate();
 
     float* lonArray = new float[_crossTrackBins];
     float* latArray = new float[_crossTrackBins];
@@ -2345,30 +2367,30 @@ WindSwath::ReadHdfL2B(
     float* mleArray = (float*)new float[_crossTrackBins*HDF_NUM_AMBIGUITIES];
     char*  selectArray = new char[_crossTrackBins];
     int32 sdsIds[1];
-	for (int32 i = 0; i < _alongTrackBins; i++)
+    for (int32 i = 0; i < _alongTrackBins; i++)
     {
         sdsIds[0] = _lonSdsId;
-        if (ExtractData2D_76_uint2_float(tlmHdfFile, sdsIds, 
+        if (ExtractData2D_76_uint2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, lonArray) == 0)
             return(0);
 
         sdsIds[0] = _latSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, 
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, latArray) == 0)
             return(0);
 
         sdsIds[0] = _speedSdsId;
-        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds, 
+        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, speedArray) == 0)
             return(0);
 
         sdsIds[0] = _dirSdsId;
-        if (ExtractData3D_76_4_uint2_float(tlmHdfFile, sdsIds, 
+        if (ExtractData3D_76_4_uint2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, dirArray) == 0)
             return(0);
 
         sdsIds[0] = _mleSdsId;
-        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds, 
+        if (ExtractData3D_76_4_int2_float(tlmHdfFile, sdsIds,
                                            i, 1, 1, mleArray) == 0)
             return(0);
 
@@ -2376,9 +2398,9 @@ WindSwath::ReadHdfL2B(
         if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, selectArray) == 0)
             return(0);
 
-	    for (int j = 0; j < _crossTrackBins; j++)
-	    {
-		    WVC* wvc = new WVC();
+        for (int j = 0; j < _crossTrackBins; j++)
+        {
+            WVC* wvc = new WVC();
             wvc->lonLat.longitude = lonArray[j];
             wvc->lonLat.latitude = latArray[j];
             for (int k=0; k < HDF_NUM_AMBIGUITIES; k++)
@@ -2392,9 +2414,9 @@ WindSwath::ReadHdfL2B(
             if (selectArray[j] > 0)
                 wvc->selected = wvc->ambiguities.GetByIndex(selectArray[j]-1);
 
-		    *(*(swath + j) + i) = wvc;
+            *(*(swath + j) + i) = wvc;
         }
-	}
+    }
     delete [] lonArray;
     delete [] latArray;
     delete [] speedArray;
@@ -2405,7 +2427,7 @@ WindSwath::ReadHdfL2B(
     // close all needed datasets
     _CloseHdfDataSets();
 
-	return(1);
+    return(1);
 }
 //-----------------------//
 // WindSwath::ReadHdfL2B //
@@ -2413,7 +2435,7 @@ WindSwath::ReadHdfL2B(
 
 int
 WindSwath::ReadHdfL2B(
-	const char*		filename)
+    const char*        filename)
 {
     // open the L2B HDF file
     HdfFile::StatusE returnStatus = HdfFile::OK;
@@ -2421,10 +2443,10 @@ WindSwath::ReadHdfL2B(
     if (returnStatus != HdfFile::OK)
         return(0);
 
-	if (! ReadHdfL2B(&hdfL2BFile))
-		return(0);
+    if (! ReadHdfL2B(&hdfL2BFile))
+        return(0);
 
-	return(1);
+    return(1);
 
 }//WindSwath::ReadHdfL2B
 
@@ -2434,44 +2456,44 @@ WindSwath::ReadHdfL2B(
 
 int
 WindSwath::WriteVctr(
-	const char*		filename,
-	const int		rank)		// 0 = selected
+    const char*        filename,
+    const int        rank)        // 0 = selected
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//--------------//
-	// write header //
-	//--------------//
+    //--------------//
+    // write header //
+    //--------------//
 
-	char* hdr = VCTR_HEADER;
-	if (fwrite((void *)hdr, 4, 1, fp) != 1)
-		return(0);
+    char* hdr = VCTR_HEADER;
+    if (fwrite((void *)hdr, 4, 1, fp) != 1)
+        return(0);
 
-	//---------------//
-	// write vectors //
-	//---------------//
+    //---------------//
+    // write vectors //
+    //---------------//
 
-	for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-		for (int cti = 0; cti < _crossTrackBins; cti++)
-		{
-			WVC* wvc = *(*(swath + cti) + ati);
-			if (wvc == NULL)
-				continue;
+    for (int ati = 0; ati < _alongTrackBins; ati++)
+    {
+        for (int cti = 0; cti < _crossTrackBins; cti++)
+        {
+            WVC* wvc = *(*(swath + cti) + ati);
+            if (wvc == NULL)
+                continue;
 
-			if (! wvc->WriteVctr(fp, rank))
-				return(0);
-		}
-	}
+            if (! wvc->WriteVctr(fp, rank))
+                return(0);
+        }
+    }
 
-	fclose(fp);
-	return(1);
+    fclose(fp);
+    return(1);
 }
 
 //------------------------//
@@ -2480,43 +2502,43 @@ WindSwath::WriteVctr(
 
 int
 WindSwath::WriteFlower(
-	const char*		filename)
+    const char*        filename)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
-	//--------------//
-	// write header //
-	//--------------//
+    //--------------//
+    // write header //
+    //--------------//
 
-	char* hdr = OTLN_HEADER;
-	if (fwrite((void *)hdr, 4, 1, fp) != 1)
-		return(0);
+    char* hdr = OTLN_HEADER;
+    if (fwrite((void *)hdr, 4, 1, fp) != 1)
+        return(0);
 
-	//---------------//
-	// write flowers //
-	//---------------//
+    //---------------//
+    // write flowers //
+    //---------------//
 
-	for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-		for (int cti = 0; cti < _crossTrackBins; cti++)
-		{
-			WVC* wvc = *(*(swath + cti) + ati);
-			if (wvc == NULL)
-				continue;
+    for (int ati = 0; ati < _alongTrackBins; ati++)
+    {
+        for (int cti = 0; cti < _crossTrackBins; cti++)
+        {
+            WVC* wvc = *(*(swath + cti) + ati);
+            if (wvc == NULL)
+                continue;
 
-			if (! wvc->WriteFlower(fp))
-				return(0);
-		}
-	}
+            if (! wvc->WriteFlower(fp))
+                return(0);
+        }
+    }
 
-	fclose(fp);
-	return(1);
+    fclose(fp);
+    return(1);
 }
 
 //------------------------//
@@ -2525,15 +2547,15 @@ WindSwath::WriteFlower(
 
 int
 WindSwath::WriteAscii(
-	const char*		filename)
+    const char*        filename)
 {
-	//-----------//
-	// open file //
-	//-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-	FILE* fp = fopen(filename, "w");
-	if (fp == NULL)
-		return(0);
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
 
     int rc = WriteAscii(fp);
     fclose(fp);
@@ -2547,29 +2569,29 @@ WindSwath::WriteAscii(
 
 int
 WindSwath::WriteAscii(
-	FILE*     fp)
+    FILE*     fp)
 {
-	//---------------//
-	// write ASCII   //
-	//---------------//
+    //---------------//
+    // write ASCII   //
+    //---------------//
 
     fprintf(fp, "Total Along Track Bins: %d\nTotal Cross Track Bins: %d\n",
                              _alongTrackBins, _crossTrackBins);
-	for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-		for (int cti = 0; cti < _crossTrackBins; cti++)
-		{
+    for (int ati = 0; ati < _alongTrackBins; ati++)
+    {
+        for (int cti = 0; cti < _crossTrackBins; cti++)
+        {
             fprintf(fp, "Along Track Bin: %d, Cross Track Bin: %d\n", ati, cti);
-			WVC* wvc = *(*(swath + cti) + ati);
-			if (wvc == NULL)
-				continue;
+            WVC* wvc = *(*(swath + cti) + ati);
+            if (wvc == NULL)
+                continue;
 
-			if (! wvc->WriteAscii(fp))
-				return(0);
-		}
-	}
+            if (! wvc->WriteAscii(fp))
+                return(0);
+        }
+    }
 
-	return(1);
+    return(1);
 
 } // WriteAscii
 
@@ -2579,21 +2601,21 @@ WindSwath::WriteAscii(
 
 int
 WindSwath::InitWithRank(
-	int		rank)
+    int        rank)
 {
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
-			wvc->selected = wvc->ambiguities.GetByIndex(rank-1);
-			count++;
-		}
-	}
-	return(count);
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+            wvc->selected = wvc->ambiguities.GetByIndex(rank-1);
+            count++;
+        }
+    }
+    return(count);
 }
 
 //-------------------------//
@@ -2603,50 +2625,50 @@ WindSwath::InitWithRank(
 int
 WindSwath::InitRandom()
 {
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
                         // get random rank
-			int nc=wvc->ambiguities.NodeCount();
-			Uniform rand(nc/2.0,nc/2.0);
-			int idx=(int)rand.GetNumber();
-                         
+            int nc=wvc->ambiguities.NodeCount();
+            Uniform rand(nc/2.0,nc/2.0);
+            int idx=(int)rand.GetNumber();
+
                         // account for possible floating point inaccuracies.
-			if(idx<0) idx=0;
+            if(idx<0) idx=0;
                         if(idx>=nc) idx=nc-1;
 
-			wvc->selected = wvc->ambiguities.GetByIndex(idx);
-			count++;
-		}
-	}
-	return(count);
+            wvc->selected = wvc->ambiguities.GetByIndex(idx);
+            count++;
+        }
+    }
+    return(count);
 }
 
 int
 WindSwath::GetNudgeVectors(
-	 WindField* nudge_field){
+     WindField* nudge_field){
         for (int cti = 0; cti < _crossTrackBins; cti++)
-	  {
-	    for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-		  WVC* wvc = swath[cti][ati];
-		  if (! wvc)
-		    continue;
+      {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+          WVC* wvc = swath[cti][ati];
+          if (! wvc)
+            continue;
                   wvc->nudgeWV=new WindVectorPlus;
-                  if (! nudge_field->InterpolatedWindVector(wvc->lonLat, 
-							    wvc->nudgeWV)){
-		    delete wvc->nudgeWV;
-		    wvc->nudgeWV=NULL;
-		  }
-		}
-	  }
-	return(1);
+                  if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
+                                wvc->nudgeWV)){
+            delete wvc->nudgeWV;
+            wvc->nudgeWV=NULL;
+          }
+        }
+      }
+    return(1);
 }
 //------------------//
 // WindSwath::Nudge //
@@ -2654,25 +2676,25 @@ WindSwath::GetNudgeVectors(
 
 int
 WindSwath::Nudge(
-	int max_rank)
+    int max_rank)
 {
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
-			if (wvc->nudgeWV==NULL)
-				continue;
+            if (wvc->nudgeWV==NULL)
+                continue;
 
-			wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, max_rank);
-			count++;
-		}
-	}
-	return(count);
+            wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, max_rank);
+            count++;
+        }
+    }
+    return(count);
 }
 
 //-----------------------//
@@ -2681,44 +2703,44 @@ WindSwath::Nudge(
 
 int
 WindSwath::ThresNudge(
-	int max_rank,
+    int max_rank,
         float thres[2])
 {
 
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
-			// threshold objective function //
+            // threshold objective function //
 
-			int rank_idx = 0;
+            int rank_idx = 0;
 
-			int w = 0;
-			if (cti < 9 || cti > 71) { w = 1; }
-			 else { w = 0; }
-			
-			WindVectorPlus* head = wvc->ambiguities.GetHead();
-			
-			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
-			     wvp; wvp = wvc->ambiguities.GetNext()) {
-			  if ( exp(0.5*(wvp->obj - head->obj)) >= thres[w] )
-			    rank_idx++;
-			}
+            int w = 0;
+            if (cti < 9 || cti > 71) { w = 1; }
+             else { w = 0; }
 
-			WindVector nudge_wv;
-			if (wvc->nudgeWV==NULL)
-			  continue;
-			
-			wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, rank_idx);
-			count++;
-		}
-	}
-	return(count);
+            WindVectorPlus* head = wvc->ambiguities.GetHead();
+
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+                 wvp; wvp = wvc->ambiguities.GetNext()) {
+              if ( exp(0.5*(wvp->obj - head->obj)) >= thres[w] )
+                rank_idx++;
+            }
+
+            WindVector nudge_wv;
+            if (wvc->nudgeWV==NULL)
+              continue;
+
+            wvc->selected = wvc->GetNearestToDirection(wvc->nudgeWV->dir, rank_idx);
+            count++;
+        }
+    }
+    return(count);
 }
 
 //-----------------------//
@@ -2727,31 +2749,31 @@ WindSwath::ThresNudge(
 
 int
 WindSwath::LoResNudge(
-	WindVectorField*   nudge_field,
-	int                max_rank)
+    WindVectorField*   nudge_field,
+    int                max_rank)
 {
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	  {
-	    for (int ati = 0; ati < _alongTrackBins; ati++)
-	      {
-	        WVC* wvc = swath[cti][ati];
-		if (! wvc)
-		  continue;
-		
-		WindVector nudge_wv;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+      {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+          {
+            WVC* wvc = swath[cti][ati];
+        if (! wvc)
+          continue;
 
-		int idx = (ati * _crossTrackBins + cti)/2;
+        WindVector nudge_wv;
 
-		if (! nudge_field->InterpolateVectorField(wvc->lonLat, &nudge_wv, idx) )
-		  continue;
-		
-		wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, max_rank);
-		count++;
-	      }
-	  }
+        int idx = (ati * _crossTrackBins + cti)/2;
 
-	return(count);
+        if (! nudge_field->InterpolateVectorField(wvc->lonLat, &nudge_wv, idx) )
+          continue;
+
+        wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, max_rank);
+        count++;
+          }
+      }
+
+    return(count);
 }
 
 //-----------------------//
@@ -2808,58 +2830,58 @@ WindSwath::SmartNudge(
 // If Special=2 Use Spatial Probability Maximization (S4)
 int
 WindSwath::MedianFilter(
-	int		window_size,
-	int		max_passes,
-	int             bound,
-	int		weight_flag,
+    int        window_size,
+    int        max_passes,
+    int             bound,
+    int        weight_flag,
         int             special=0)
 {
 
-	//----------------------------//
-	// create a new selection map //
-	//----------------------------//
+    //----------------------------//
+    // create a new selection map //
+    //----------------------------//
 
-	WindVectorPlus*** new_selected =
-		(WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
-			_crossTrackBins, _alongTrackBins);
+    WindVectorPlus*** new_selected =
+        (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
+            _crossTrackBins, _alongTrackBins);
 
-	//-------------------------//
-	// create a new change map //
-	//-------------------------//
+    //-------------------------//
+    // create a new change map //
+    //-------------------------//
 
-	char** change = (char**)make_array(sizeof(char), 2,
-		_crossTrackBins, _alongTrackBins);
+    char** change = (char**)make_array(sizeof(char), 2,
+        _crossTrackBins, _alongTrackBins);
 
-	//--------------------//
-	// prep for filtering //
-	//--------------------//
+    //--------------------//
+    // prep for filtering //
+    //--------------------//
 
-	int half_window = window_size / 2;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			change[cti][ati] = 1;
-		}
-	}
+    int half_window = window_size / 2;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            change[cti][ati] = 1;
+        }
+    }
 
-	//--------//
-	// filter //
-	//--------//
+    //--------//
+    // filter //
+    //--------//
 
-	int pass = 0;
-	while (pass < max_passes)
-	{
-		int flips = MedianFilterPass(half_window, new_selected, change,
-						bound, weight_flag, special);
-		pass++;
-		if (flips == 0)
-			break;
-	} 
+    int pass = 0;
+    while (pass < max_passes)
+    {
+        int flips = MedianFilterPass(half_window, new_selected, change,
+                        bound, weight_flag, special);
+        pass++;
+        if (flips == 0)
+            break;
+    }
 
-	free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
-	free_array(change, 2, _crossTrackBins, _alongTrackBins);
-	return(pass);
+    free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+    free_array(change, 2, _crossTrackBins, _alongTrackBins);
+    return(pass);
 }
 
 #define BK_NUM_PASS 200
@@ -2870,79 +2892,79 @@ WindSwath::MedianFilter(
 //-------------------------//
 int
 WindSwath::BestKFilter(
-     
+
      int            window_size,
      int            k){
         //----------------------------//
-	// create a new selection map //
-	//----------------------------//
-	WindVectorPlus*** new_selected =
-		(WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
-			_crossTrackBins, _alongTrackBins);
+    // create a new selection map //
+    //----------------------------//
+    WindVectorPlus*** new_selected =
+        (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
+            _crossTrackBins, _alongTrackBins);
 
-	//-------------------------//
-	// create a probability map//
-	//-------------------------//
+    //-------------------------//
+    // create a probability map//
+    //-------------------------//
 
-	float** prob = (float**)make_array(sizeof(float), 2,
-		_crossTrackBins, _alongTrackBins);
+    float** prob = (float**)make_array(sizeof(float), 2,
+        _crossTrackBins, _alongTrackBins);
 
         //-------------------------//
         // create best prob array  //
         //-------------------------//
         float* best_prob=new float[k];
 
-	//--------------------//
-	// prep for filtering //
-	//--------------------//
+    //--------------------//
+    // prep for filtering //
+    //--------------------//
 
-	int half_window = window_size / 2;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			if(swath[cti][ati]){
-			  swath[cti][ati]->selected = NULL;
-			  if(!swath[cti][ati]->RedistributeObjs())
-			    fprintf(stderr,"BestKFilter RedistributeObjs failed.\n");
-			}
-			new_selected[cti][ati]=NULL;
-			
-		}
-	}
+    int half_window = window_size / 2;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            if(swath[cti][ati]){
+              swath[cti][ati]->selected = NULL;
+              if(!swath[cti][ati]->RedistributeObjs())
+                fprintf(stderr,"BestKFilter RedistributeObjs failed.\n");
+            }
+            new_selected[cti][ati]=NULL;
 
-	//--------//
-	// filter //
-	//--------//
+        }
+    }
 
-	int finished=0;
+    //--------//
+    // filter //
+    //--------//
+
+    int finished=0;
         int pass=0;
-	while (!finished && pass<BK_NUM_PASS)
-	{
-		pass++;
-		printf("Pass=%d ",pass);
-		finished = BestKFilterPass(half_window,k,new_selected, prob,
-						best_prob);
-	} 
+    while (!finished && pass<BK_NUM_PASS)
+    {
+        pass++;
+        printf("Pass=%d ",pass);
+        finished = BestKFilterPass(half_window,k,new_selected, prob,
+                        best_prob);
+    }
         int count=0;
         // Remove unselected WVCs and and count them
         for(int cti=0;cti<_crossTrackBins;cti++){
-	  for(int ati=0; ati<_alongTrackBins;ati++){
-	    if(swath[cti][ati]==NULL) continue;
+      for(int ati=0; ati<_alongTrackBins;ati++){
+        if(swath[cti][ati]==NULL) continue;
             if(swath[cti][ati]->selected==NULL){
-	      count++;
-	      WVC* wvc=Remove(cti,ati);
+          count++;
+          WVC* wvc=Remove(cti,ati);
               delete wvc;
-	    }
-	  }
-	}
+        }
+      }
+    }
         printf("Unselected count=%d\n",count);
-	free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
-	free_array(prob, 2, _crossTrackBins, _alongTrackBins);
+    free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
+    free_array(prob, 2, _crossTrackBins, _alongTrackBins);
         delete[] best_prob;
-	return(1);
+    return(1);
 }
-     
+
 //-----------------------------//
 // WindSwath::MedianFilterPass //
 //-----------------------------//
@@ -2950,218 +2972,218 @@ WindSwath::BestKFilter(
 
 int
 WindSwath::MedianFilterPass(
-	int			half_window,
-	WindVectorPlus***	new_selected,
-	char**			change,
-	int                     bound,
-	int			weight_flag,
-	int                     special=0)
+    int            half_window,
+    WindVectorPlus***    new_selected,
+    char**            change,
+    int                     bound,
+    int            weight_flag,
+    int                     special=0)
 {
         int flips=0;
         float energy=0.0;
-	//-------------//
-	// filter loop //
-	//-------------//
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		int cti_min = cti - half_window;
-		int cti_max = cti + half_window + 1;
-		if (cti_min < bound)
-			cti_min = bound;
-		if (cti_max > _crossTrackBins-bound)
-			cti_max = _crossTrackBins-bound;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			int ati_min = ati - half_window;
-			int ati_max = ati + half_window + 1;
-			if (ati_min < 0)
-				ati_min = 0;
-			if (ati_max > _alongTrackBins)
-				ati_max = _alongTrackBins;
+    //-------------//
+    // filter loop //
+    //-------------//
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int cti_min = cti - half_window;
+        int cti_max = cti + half_window + 1;
+        if (cti_min < bound)
+            cti_min = bound;
+        if (cti_max > _crossTrackBins-bound)
+            cti_max = _crossTrackBins-bound;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            int ati_min = ati - half_window;
+            int ati_max = ati + half_window + 1;
+            if (ati_min < 0)
+                ati_min = 0;
+            if (ati_max > _alongTrackBins)
+                ati_max = _alongTrackBins;
 
-			//------------------------------//
-			// initialize the new selection //
-			//------------------------------//
+            //------------------------------//
+            // initialize the new selection //
+            //------------------------------//
 
-			new_selected[cti][ati] = NULL;
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+            new_selected[cti][ati] = NULL;
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
-			//-------------------//
-			// check for changes //
-			//-------------------//
+            //-------------------//
+            // check for changes //
+            //-------------------//
 
-			for (int i = cti_min; i < cti_max; i++)
-			{
-				for (int j = ati_min; j < ati_max; j++)
-				{
-					if (change[i][j])
-					{
-						goto change;
-						break;
-					}
-				}
-			}
-			continue;		// no changes
+            for (int i = cti_min; i < cti_max; i++)
+            {
+                for (int j = ati_min; j < ati_max; j++)
+                {
+                    if (change[i][j])
+                    {
+                        goto change;
+                        break;
+                    }
+                }
+            }
+            continue;        // no changes
 
-		change:
-			float min_vector_dif_sum = (float)HUGE_VAL;
-			//--------------------------------------------//
+        change:
+            float min_vector_dif_sum = (float)HUGE_VAL;
+            //--------------------------------------------//
                         // Don't use range information if unavailable //
                         // or special= 0                              //
                         //--------------------------------------------//
                         if(special==0 || (special==1 && wvc->directionRanges.NodeCount()==0)){
 
-			  for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
-			       wvp = wvc->ambiguities.GetNext())
-			    {
-			      float vector_dif_sum = 0.0;
-			      float x1 = wvp->spd * cos(wvp->dir);
-			      float y1 = wvp->spd * sin(wvp->dir);
+              for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                   wvp = wvc->ambiguities.GetNext())
+                {
+                  float vector_dif_sum = 0.0;
+                  float x1 = wvp->spd * cos(wvp->dir);
+                  float y1 = wvp->spd * sin(wvp->dir);
 
-			      for (int i = cti_min; i < cti_max; i++)
-				{
-				  for (int j = ati_min; j < ati_max; j++)
-				    {
-				      if (i == cti && j == ati)
-					continue;		// don't check central vector
-				      
-				      WVC* other_wvc = swath[i][j];
-				      if (! other_wvc)
-					continue;
+                  for (int i = cti_min; i < cti_max; i++)
+                {
+                  for (int j = ati_min; j < ati_max; j++)
+                    {
+                      if (i == cti && j == ati)
+                    continue;        // don't check central vector
 
-				      WindVectorPlus* other_wvp = other_wvc->selected;
-				      if (! other_wvp)
-					continue;
-				      
-				      float x2 = other_wvp->spd * cos(other_wvp->dir);
-				      float y2 = other_wvp->spd * sin(other_wvp->dir);
+                      WVC* other_wvc = swath[i][j];
+                      if (! other_wvc)
+                    continue;
 
-				      float dx = x2 - x1;
-				      float dy = y2 - y1;
-				      vector_dif_sum += sqrt(dx*dx + dy*dy);
-				    }
-				}
+                      WindVectorPlus* other_wvp = other_wvc->selected;
+                      if (! other_wvp)
+                    continue;
 
-				//------------------------------//
-				// apply weighting if necessary //
-				//------------------------------//
+                      float x2 = other_wvp->spd * cos(other_wvp->dir);
+                      float y2 = other_wvp->spd * sin(other_wvp->dir);
 
-			      if (weight_flag)
-				{
-				  if (wvp->obj == 0.0)
-				    vector_dif_sum = (float)HUGE_VAL;
-				  else
-				    vector_dif_sum /= wvp->obj;
-				}
+                      float dx = x2 - x1;
+                      float dy = y2 - y1;
+                      vector_dif_sum += sqrt(dx*dx + dy*dy);
+                    }
+                }
 
-			      if (vector_dif_sum < min_vector_dif_sum)
-				{
-				  min_vector_dif_sum = vector_dif_sum;
-				  new_selected[cti][ati] = wvp;
-				}
-			    }	// done with ambiguities
-			}
+                //------------------------------//
+                // apply weighting if necessary //
+                //------------------------------//
+
+                  if (weight_flag)
+                {
+                  if (wvp->obj == 0.0)
+                    vector_dif_sum = (float)HUGE_VAL;
+                  else
+                    vector_dif_sum /= wvp->obj;
+                }
+
+                  if (vector_dif_sum < min_vector_dif_sum)
+                {
+                  min_vector_dif_sum = vector_dif_sum;
+                  new_selected[cti][ati] = wvp;
+                }
+                }    // done with ambiguities
+            }
                         //-----------------------------------------------//
                         // Special Cases: Use Range Info (S3)            //
                         //-----------------------------------------------//
-			else if(special==1){
-			     
-			     WindVectorPlus* wvp = new WindVectorPlus;
+            else if(special==1){
+
+                 WindVectorPlus* wvp = new WindVectorPlus;
                              // Determine the Median Vector
                              if(USE_MEDIAN_FOR_RANGE){
-			       if(!GetMedianBySorting(wvp, cti_min, cti_max, 
-						    ati_min,ati_max))
-				 return(0);
-			     }
-			     else{
-			       if(!GetWindowMean(wvp, cti_min, cti_max, 
-						    ati_min,ati_max))
-				 return(0);
-			     }
+                   if(!GetMedianBySorting(wvp, cti_min, cti_max,
+                            ati_min,ati_max))
+                 return(0);
+                 }
+                 else{
+                   if(!GetWindowMean(wvp, cti_min, cti_max,
+                            ati_min,ati_max))
+                 return(0);
+                 }
                              if(USE_CLOSEST_VECTOR){
-			       if(!wvc->directionRanges.GetNearestVector(wvp))
-				 return(0);
-			     }
+                   if(!wvc->directionRanges.GetNearestVector(wvp))
+                 return(0);
+                 }
                              else{
-			       float tmp=wvc->directionRanges.GetNearestValue(wvp->dir);
-			       wvp->dir=tmp;
-			       wvp->spd=wvc->directionRanges.GetBestSpeed(tmp);			       
-			     }
-			     new_selected[cti][ati]=wvp;
-			}  // Done with special==1 procedure
+                   float tmp=wvc->directionRanges.GetNearestValue(wvp->dir);
+                   wvp->dir=tmp;
+                   wvp->spd=wvc->directionRanges.GetBestSpeed(tmp);
+                 }
+                 new_selected[cti][ati]=wvp;
+            }  // Done with special==1 procedure
                         // Spatial Probability Search (special==2)
-			else if(special==2){
-			     WindVectorPlus* wvp = new WindVectorPlus;
-			     energy+=GetMostProbableDir(wvp,cti,ati,cti_min,
-						    cti_max,ati_min,ati_max);
-			     new_selected[cti][ati]=wvp;
-			}
-			else{
-			  fprintf(stderr,"MedianFilter: Bad Special Value %d\n"
-				  ,special);
-			  exit(1);
-			}
-		}	// done with ati
-	}	// done with cti
+            else if(special==2){
+                 WindVectorPlus* wvp = new WindVectorPlus;
+                 energy+=GetMostProbableDir(wvp,cti,ati,cti_min,
+                            cti_max,ati_min,ati_max);
+                 new_selected[cti][ati]=wvp;
+            }
+            else{
+              fprintf(stderr,"MedianFilter: Bad Special Value %d\n"
+                  ,special);
+              exit(1);
+            }
+        }    // done with ati
+    }    // done with cti
 
-	//------------------//
-	// transfer updates //
-	//------------------//
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			change[cti][ati] = 0;
-			if (new_selected[cti][ati])
-			{
+    //------------------//
+    // transfer updates //
+    //------------------//
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            change[cti][ati] = 0;
+            if (new_selected[cti][ati])
+            {
                           //-----------------------------------------------//
-			  // Special Procedure if special==1 or special==2 //
-			  // used                                          //
+              // Special Procedure if special==1 or special==2 //
+              // used                                          //
                           //-----------------------------------------------//
-				  
-			  if((special==1 && swath[cti][ati]->directionRanges.NodeCount()!=0) || special==2){
-			    // replace selected
-			    // but set change only if the direction
-			    // changes substantially
-                                    			  
-			    if(swath[cti][ati]->selected_allocated){
-			      double dif=ANGDIF(swath[cti][ati]->selected->dir, 
-						new_selected[cti][ati]->dir);
-			      if(dif>FLIPPING_WITHIN_RANGE_THRESHOLD)
-				change[cti][ati]=1;
-				      
-			      else{
-				change[cti][ati]=0;		
-			      }
-				      
-			      delete swath[cti][ati]->selected;
-			    }
-			    else{
-			      swath[cti][ati]->selected_allocated=1;
-			      change[cti][ati]=1;
-			    }
-			    swath[cti][ati]->selected = new_selected[cti][ati];
-			    flips+=change[cti][ati];
-			  }
+
+              if((special==1 && swath[cti][ati]->directionRanges.NodeCount()!=0) || special==2){
+                // replace selected
+                // but set change only if the direction
+                // changes substantially
+
+                if(swath[cti][ati]->selected_allocated){
+                  double dif=ANGDIF(swath[cti][ati]->selected->dir,
+                        new_selected[cti][ati]->dir);
+                  if(dif>FLIPPING_WITHIN_RANGE_THRESHOLD)
+                change[cti][ati]=1;
+
+                  else{
+                change[cti][ati]=0;
+                  }
+
+                  delete swath[cti][ati]->selected;
+                }
+                else{
+                  swath[cti][ati]->selected_allocated=1;
+                  change[cti][ati]=1;
+                }
+                swath[cti][ati]->selected = new_selected[cti][ati];
+                flips+=change[cti][ati];
+              }
                           //----------------------------------//
-			  // IF RANGE INFO NOT USED           //
-			  //----------------------------------//
-			  else if (new_selected[cti][ati] != swath[cti][ati]->selected)
-			    {
-			      change[cti][ati]=1;
-			      swath[cti][ati]->selected = new_selected[cti][ati];
-			      flips+=change[cti][ati];
-			    }
+              // IF RANGE INFO NOT USED           //
+              //----------------------------------//
+              else if (new_selected[cti][ati] != swath[cti][ati]->selected)
+                {
+                  change[cti][ati]=1;
+                  swath[cti][ati]->selected = new_selected[cti][ati];
+                  flips+=change[cti][ati];
+                }
 
-                          
-			}
-		}
-	}
-	printf("Flips %d  Energy %g\n",flips,energy);
+
+            }
+        }
+    }
+    printf("Flips %d  Energy %g\n",flips,energy);
         fflush(stdout);
-	return(flips);
+    return(flips);
 }
 
 #define NUM_BK_SUB_PASSES 100
@@ -3171,10 +3193,10 @@ WindSwath::MedianFilterPass(
 // Returns 1 if finished 0 otherwise.
 int
 WindSwath::BestKFilterPass(
-	int			half_window,
+    int            half_window,
         int                     k,
-	WindVectorPlus***	new_selected,
-	float**			prob,
+    WindVectorPlus***    new_selected,
+    float**            prob,
         float*                  best_prob)
 {
   // Initialize best probability array
@@ -3183,34 +3205,34 @@ WindSwath::BestKFilterPass(
   for (int cti = 0; cti < _crossTrackBins; cti++)
     {
       for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-	  if(swath[cti][ati]==NULL) continue;
+    {
+      if(swath[cti][ati]==NULL) continue;
           if(swath[cti][ati]->selected!=NULL) continue;
 
 
-	  int cti_min=MAX(0,cti-half_window);
-	  int cti_max=MIN(_crossTrackBins-1,cti+half_window);
-	  int ati_min=MAX(0,ati-half_window);
-	  int ati_max=MIN(_alongTrackBins,ati+half_window);
-       
+      int cti_min=MAX(0,cti-half_window);
+      int cti_max=MIN(_crossTrackBins-1,cti+half_window);
+      int ati_min=MAX(0,ati-half_window);
+      int ati_max=MIN(_alongTrackBins,ati+half_window);
+
           // Calculate probabilities
-	  prob[cti][ati]=GetMostProbableAmbiguity(&(new_selected[cti][ati]),
-						  cti,ati,cti_min,cti_max,
-						  ati_min,ati_max);
+      prob[cti][ati]=GetMostProbableAmbiguity(&(new_selected[cti][ati]),
+                          cti,ati,cti_min,cti_max,
+                          ati_min,ati_max);
 
           // Update best probability array
-	  if(prob[cti][ati]>best_prob[0]){
-	    best_prob[0]=prob[cti][ati];
+      if(prob[cti][ati]>best_prob[0]){
+        best_prob[0]=prob[cti][ati];
             int c=1;
             while(best_prob[c]<best_prob[c-1]){
-	      float tmp=best_prob[c];
+          float tmp=best_prob[c];
               best_prob[c]=best_prob[c-1];
               best_prob[c-1]=tmp;
-	      c++;
+          c++;
               if(c==k)break;
-	    }
-	  }          
-	}
+        }
+      }
+    }
     }
    int finished=1;
    int num_added=0;
@@ -3218,31 +3240,31 @@ WindSwath::BestKFilterPass(
    for (int cti = 0; cti < _crossTrackBins; cti++)
     {
       for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-	  if(swath[cti][ati]==NULL) continue;
+    {
+      if(swath[cti][ati]==NULL) continue;
           if(swath[cti][ati]->selected!=NULL) continue;
 
-	  int wrong=0;
+      int wrong=0;
           WindVectorPlus* closest=NULL;
-	  if(swath[cti][ati]->nudgeWV){
-	    closest=
-	      swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);}
-	  
-	  if(closest && closest!=new_selected[cti][ati])
-	    wrong=1;
+      if(swath[cti][ati]->nudgeWV){
+        closest=
+          swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);}
+
+      if(closest && closest!=new_selected[cti][ati])
+        wrong=1;
           num_added++;
-          
+
           if(prob[cti][ati]!=1){
            if(prob[cti][ati]<best_prob[0]){
-	     num_added--;
-	     new_selected[cti][ati]=NULL;
-	     finished=0;
-	     wrong=0;
-	   } 
-	  }
-	  num_wrong+=wrong;
-	  swath[cti][ati]->selected=new_selected[cti][ati];
-	}   
+         num_added--;
+         new_selected[cti][ati]=NULL;
+         finished=0;
+         wrong=0;
+       }
+      }
+      num_wrong+=wrong;
+      swath[cti][ati]->selected=new_selected[cti][ati];
+    }
     }
    int subfinished=0;
    int subpass=0;
@@ -3253,24 +3275,24 @@ WindSwath::BestKFilterPass(
    //-------------------------//
 
    char** change = (char**)make_array(sizeof(char), 2,
-				      _crossTrackBins, _alongTrackBins);	  //--------------------//
+                      _crossTrackBins, _alongTrackBins);      //--------------------//
    // prep for subpass filtering //
    //--------------------//
 
    for (int cti = 0; cti < _crossTrackBins; cti++)
      {
        for (int ati = 0; ati < _alongTrackBins; ati++)
-	 {
-	   change[cti][ati] = 1;
-	 }
+     {
+       change[cti][ati] = 1;
+     }
      }
 
 
    while(subpass<NUM_BK_SUB_PASSES && !subfinished){
      subpass++;
      printf("Subpass %d:",subpass);
-     subfinished=BestKFilterSubPass(half_window, new_selected, 
-				    &num_wrong, change);
+     subfinished=BestKFilterSubPass(half_window, new_selected,
+                    &num_wrong, change);
    }
    if(num_added==0) finished=1;
    free_array(change, 2, _crossTrackBins, _alongTrackBins);
@@ -3283,8 +3305,8 @@ WindSwath::BestKFilterPass(
 // Returns 1 if finished 0 otherwise.
 int
 WindSwath::BestKFilterSubPass(
-	int			half_window,
-	WindVectorPlus***	new_selected,
+    int            half_window,
+    WindVectorPlus***    new_selected,
         int*                   num_wrong,
         char**                  change)
 {
@@ -3292,66 +3314,66 @@ WindSwath::BestKFilterSubPass(
   for (int cti = 0; cti < _crossTrackBins; cti++)
     {
       for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
-	  if(swath[cti][ati]==NULL) continue;
+    {
+      if(swath[cti][ati]==NULL) continue;
           if(swath[cti][ati]->selected==NULL) continue;
 
 
-	  int cti_min=MAX(0,cti-half_window);
-	  int cti_max=MIN(_crossTrackBins-1,cti+half_window);
-	  int ati_min=MAX(0,ati-half_window);
-	  int ati_max=MIN(_alongTrackBins,ati+half_window);
-	  //-------------------//
-	  // check for changes //
-	  //-------------------//
+      int cti_min=MAX(0,cti-half_window);
+      int cti_max=MIN(_crossTrackBins-1,cti+half_window);
+      int ati_min=MAX(0,ati-half_window);
+      int ati_max=MIN(_alongTrackBins,ati+half_window);
+      //-------------------//
+      // check for changes //
+      //-------------------//
 
-	  for (int i = cti_min; i < cti_max; i++)
-	    {
-	      for (int j = ati_min; j < ati_max; j++)
-		{
-		  if (change[i][j])
-		    {
-		      goto change;
-		      break;
-		    }
-		}
-	    }
-	  continue;
+      for (int i = cti_min; i < cti_max; i++)
+        {
+          for (int j = ati_min; j < ati_max; j++)
+        {
+          if (change[i][j])
+            {
+              goto change;
+              break;
+            }
+        }
+        }
+      continue;
           // Get Best Ambiguity
-change:	  GetMostProbableAmbiguity(&(new_selected[cti][ati]),
-						  cti,ati,cti_min,cti_max,
-						  ati_min,ati_max);
-        
-	}
+change:      GetMostProbableAmbiguity(&(new_selected[cti][ati]),
+                          cti,ati,cti_min,cti_max,
+                          ati_min,ati_max);
+
+    }
     }
    int finished=1;
    int flips=0;
    for (int cti = 0; cti < _crossTrackBins; cti++)
     {
       for (int ati = 0; ati < _alongTrackBins; ati++)
-	{
+    {
           change[cti][ati]=0;
-	  if(swath[cti][ati]==NULL) continue;
+      if(swath[cti][ati]==NULL) continue;
           if(swath[cti][ati]->selected==NULL) continue;
           if(new_selected[cti][ati]!=swath[cti][ati]->selected){
             int new_wrong=0, old_wrong=0;
-	    WindVectorPlus* closest=NULL;
-	    if(swath[cti][ati]->nudgeWV){
-	      closest=swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);
-	    }
-	    if(closest && closest!=swath[cti][ati]->selected)
-	      old_wrong=1;	  
-	    if(closest && closest!=new_selected[cti][ati])
-	      new_wrong=1;
+        WindVectorPlus* closest=NULL;
+        if(swath[cti][ati]->nudgeWV){
+          closest=swath[cti][ati]->GetNearestToDirection(swath[cti][ati]->nudgeWV->dir);
+        }
+        if(closest && closest!=swath[cti][ati]->selected)
+          old_wrong=1;
+        if(closest && closest!=new_selected[cti][ati])
+          new_wrong=1;
             *num_wrong+=(new_wrong-old_wrong);
-	    swath[cti][ati]->selected=new_selected[cti][ati];
-	    finished=0;
-	    flips++;
-	    change[cti][ati]=1;
-	  }
-          
-          
-	}  
+        swath[cti][ati]->selected=new_selected[cti][ati];
+        finished=0;
+        flips++;
+        change[cti][ati]=1;
+      }
+
+
+    }
     }
    printf(" Num_flipped %d Num_wrong %d\n",flips, *num_wrong);
    return(finished);
@@ -3361,31 +3383,31 @@ change:	  GetMostProbableAmbiguity(&(new_selected[cti][ati]),
 // WindSwath::GetWindowMean                //
 //-----------------------------------------//
 
-int 
+int
 WindSwath::GetWindowMean(
-      WindVectorPlus* wvp, 
+      WindVectorPlus* wvp,
       int             cti_min,
-      int             cti_max, 
-      int             ati_min, 
+      int             cti_max,
+      int             ati_min,
       int             ati_max){
   double x=0,y=0;
   int count=0;
   for (int i = cti_min; i < cti_max; i++)
     {
       for (int j = ati_min; j < ati_max; j++)
-	{
-	  WVC* other_wvc = swath[i][j];
-	  if (! other_wvc)
-	    continue;
-	  
-	  WindVectorPlus* other_wvp = other_wvc->selected;
-	  if (! other_wvp)
-	    continue;
-	  count++;
-	  x+= other_wvp->spd * cos(other_wvp->dir);
-	  y+= other_wvp->spd * sin(other_wvp->dir);
-	  count++;
-	}
+    {
+      WVC* other_wvc = swath[i][j];
+      if (! other_wvc)
+        continue;
+
+      WindVectorPlus* other_wvp = other_wvc->selected;
+      if (! other_wvp)
+        continue;
+      count++;
+      x+= other_wvp->spd * cos(other_wvp->dir);
+      y+= other_wvp->spd * sin(other_wvp->dir);
+      count++;
+    }
     }
     if(count==0) return(0);
     x/=count;
@@ -3408,12 +3430,12 @@ WindSwath::GetWindowMean(
 #define NUM_DIRECTION_STEPS    45
 float
 WindSwath::GetMostProbableDir(
-      WindVectorPlus* wvp, 
+      WindVectorPlus* wvp,
       int             cti,
       int             ati,
       int             cti_min,
-      int             cti_max, 
-      int             ati_min, 
+      int             cti_max,
+      int             ati_min,
       int             ati_max){
   float max_prob=-HUGE_VAL;
   float max_dir=0.0;
@@ -3429,14 +3451,14 @@ WindSwath::GetMostProbableDir(
     for (int i = cti_min; i < cti_max; i++)
     {
       for (int j = ati_min; j < ati_max; j++)
-	{
-	  WVC* other_wvc = swath[i][j];
-	  if (! other_wvc)
-	    continue;
-	  
-	  WindVectorPlus* other_wvp = other_wvc->selected;
-	  if (! other_wvp)
-	    continue;
+    {
+      WVC* other_wvc = swath[i][j];
+      if (! other_wvc)
+        continue;
+
+      WindVectorPlus* other_wvp = other_wvc->selected;
+      if (! other_wvp)
+        continue;
           if(i==cti && j==ati) continue;
           // Add likelihood due to probability of selected being correct
           // Commented out because it is not necessary unless other possible
@@ -3444,17 +3466,17 @@ WindSwath::GetMostProbableDir(
           // As it is now it just adds a constant value to likelihood for
           // all possible dir values.
           //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
-	  // Add likelihood due to difference between selected and trial value
+      // Add likelihood due to difference between selected and trial value
           float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
           float k=CW_DEVIATION*spd/CORRELATION_WIDTH;
           float sigma=k*dist;
           float x2=other_wvp->spd*cos(other_wvp->dir);
-          float y2=other_wvp->spd*sin(other_wvp->dir);  
+          float y2=other_wvp->spd*sin(other_wvp->dir);
           float dx=x1-x2;
           float dy=y1-y2;
-	  float diff=(dx*dx+dy*dy)/(sigma*sigma);
-	  likelihood-=diff;
-	}
+      float diff=(dx*dx+dy*dy)/(sigma*sigma);
+      likelihood-=diff;
+    }
     }
     likelihood+=wvc->directionRanges.GetBestObj(dir);
     if(likelihood>max_prob){
@@ -3470,12 +3492,12 @@ WindSwath::GetMostProbableDir(
 
 float
 WindSwath::GetMostProbableAmbiguity(
-      WindVectorPlus** wvp, 
+      WindVectorPlus** wvp,
       int             cti,
       int             ati,
       int             cti_min,
-      int             cti_max, 
-      int             ati_min, 
+      int             cti_max,
+      int             ati_min,
       int             ati_max){
   float max_prob=-HUGE_VAL;
   int max_prob_num=-1;
@@ -3486,7 +3508,7 @@ WindSwath::GetMostProbableAmbiguity(
   float* prob= new float[wvc->ambiguities.NodeCount()];
 
   int amb_num=0;
-  for(WindVectorPlus* amb=wvc->ambiguities.GetHead(); amb; 
+  for(WindVectorPlus* amb=wvc->ambiguities.GetHead(); amb;
       amb=wvc->ambiguities.GetNext(),amb_num++){
 
     float x1,y1;
@@ -3497,14 +3519,14 @@ WindSwath::GetMostProbableAmbiguity(
     for (int i = cti_min; i < cti_max; i++)
     {
       for (int j = ati_min; j < ati_max; j++)
-	{
-	  WVC* other_wvc = swath[i][j];
-	  if (! other_wvc)
-	    continue;
-	  
-	  WindVectorPlus* other_wvp = other_wvc->selected;
-	  if (! other_wvp)
-	    continue;
+    {
+      WVC* other_wvc = swath[i][j];
+      if (! other_wvc)
+        continue;
+
+      WindVectorPlus* other_wvp = other_wvc->selected;
+      if (! other_wvp)
+        continue;
           if(i==cti && j==ati) continue;
           // Add likelihood due to probability of selected being correct
           // Commented out because it is not necessary unless other possible
@@ -3512,11 +3534,11 @@ WindSwath::GetMostProbableAmbiguity(
           // As it is now it just adds a constant value to likelihood for
           // all possible dir values.
           //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
-	  // Add likelihood due to difference between selected and trial value
+      // Add likelihood due to difference between selected and trial value
           float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
           // k1: part of sigma due to width of peak and distance
           float k1=CW_DEVIATION_AMB*spd/CORRELATION_WIDTH;
-          
+
           // Part of sigma due to possible error in neighboring selection
           float k2=other_wvc->GetEstimatedSquareError();
           float sigma=sqrt(k1*k1*dist*dist+k2*k2);
@@ -3524,9 +3546,9 @@ WindSwath::GetMostProbableAmbiguity(
           other_wvp->GetUV(&x2,&y2);
           float dx=x1-x2;
           float dy=y1-y2;
-	  float diff=(dx*dx+dy*dy)/(sigma*sigma);
-	  likelihood-=diff;
-	}
+      float diff=(dx*dx+dy*dy)/(sigma*sigma);
+      likelihood-=diff;
+    }
     }
     likelihood+=amb->obj;
     if(BK_NUDGE){
@@ -3565,33 +3587,33 @@ WindSwath::DiscardUnselectedRanges(){
    for (int i = 0; i < _crossTrackBins; i++)
     {
       for (int j = 0; j < _alongTrackBins; j++)
-	{
-	  WVC* wvc = swath[i][j];
-	  if (! wvc)
-	    continue;
-	  
-	  WindVectorPlus* sel = wvc->selected;
-	  if (! sel)
-	    continue;
-          AngleInterval* ai=wvc->directionRanges.GetHead();
-	  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+    {
+      WVC* wvc = swath[i][j];
+      if (! wvc)
+        continue;
 
-	  while(wvp){
-	    if(wvp!=sel)
-	      {
-		ai=wvc->directionRanges.RemoveCurrent();
-		delete ai;
-		wvp=wvc->ambiguities.RemoveCurrent();
+      WindVectorPlus* sel = wvc->selected;
+      if (! sel)
+        continue;
+          AngleInterval* ai=wvc->directionRanges.GetHead();
+      WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+
+      while(wvp){
+        if(wvp!=sel)
+          {
+        ai=wvc->directionRanges.RemoveCurrent();
+        delete ai;
+        wvp=wvc->ambiguities.RemoveCurrent();
                 delete wvp;
-		wvp=wvc->ambiguities.GetCurrent();
-	      }
-	    else{
-	      ai=wvc->directionRanges.GetNext();
-	      wvp=wvc->ambiguities.GetNext();
-	    }
-	  }
-	}
-    } 
+        wvp=wvc->ambiguities.GetCurrent();
+          }
+        else{
+          ai=wvc->directionRanges.GetNext();
+          wvp=wvc->ambiguities.GetNext();
+        }
+      }
+    }
+    }
    return(1);
 }
 
@@ -3599,12 +3621,12 @@ WindSwath::DiscardUnselectedRanges(){
 //-----------------------------------------//
 // WindSwath::GetMedianBySorting           //
 //-----------------------------------------//
-int            
+int
 WindSwath::GetMedianBySorting(
-      WindVectorPlus* wvp, 
+      WindVectorPlus* wvp,
       int             cti_min,
-      int             cti_max, 
-      int             ati_min, 
+      int             cti_max,
+      int             ati_min,
       int             ati_max){
   float* x=new float[(cti_max-cti_min)*(ati_max-ati_min)];
   float* y=new float[(cti_max-cti_min)*(ati_max-ati_min)];
@@ -3612,19 +3634,19 @@ WindSwath::GetMedianBySorting(
   for (int i = cti_min; i < cti_max; i++)
     {
       for (int j = ati_min; j < ati_max; j++)
-	{
-	  WVC* other_wvc = swath[i][j];
-	  if (! other_wvc)
-	    continue;
-	  
-	  WindVectorPlus* other_wvp = other_wvc->selected;
-	  if (! other_wvp)
-	    continue;
+    {
+      WVC* other_wvc = swath[i][j];
+      if (! other_wvc)
+        continue;
 
-	  x[count] = other_wvp->spd * cos(other_wvp->dir);
-	  y[count] = other_wvp->spd * sin(other_wvp->dir);
-	  count++;
-	}
+      WindVectorPlus* other_wvp = other_wvc->selected;
+      if (! other_wvp)
+        continue;
+
+      x[count] = other_wvp->spd * cos(other_wvp->dir);
+      y[count] = other_wvp->spd * sin(other_wvp->dir);
+      count++;
+    }
     }
   if(count==0) return(0);
   sort_increasing(x,count);
@@ -3653,27 +3675,27 @@ WindSwath::GetMedianBySorting(
 
 int
 WindSwath::SelectNearest(
-	WindField*	truth)
+    WindField*    truth)
 {
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
-			count++;
-		}
-	}
+            wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
+            count++;
+        }
+    }
 
-	return(count);
+    return(count);
 }
 
 //----------------------//
@@ -3682,39 +3704,39 @@ WindSwath::SelectNearest(
 
 float
 WindSwath::RmsSpdErr(
-	WindField*	truth)
+    WindField*    truth)
 {
-	//----------------------------------//
-	// calculate the sum of the squares //
-	//----------------------------------//
+    //----------------------------------//
+    // calculate the sum of the squares //
+    //----------------------------------//
 
-	double sum = 0.0;
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    double sum = 0.0;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			double dif = wvc->selected->spd - true_wv.spd;
-			sum += (dif * dif);
-			count++;
-		}
-	}
+            double dif = wvc->selected->spd - true_wv.spd;
+            sum += (dif * dif);
+            count++;
+        }
+    }
 
-	//-------------------------------//
-	// take the mean and square root //
-	//-------------------------------//
+    //-------------------------------//
+    // take the mean and square root //
+    //-------------------------------//
 
-	float rms_spd_err = (float)sqrt(sum/(double)count);
+    float rms_spd_err = (float)sqrt(sum/(double)count);
 
-	return(rms_spd_err);
+    return(rms_spd_err);
 }
 
 //----------------------//
@@ -3723,39 +3745,39 @@ WindSwath::RmsSpdErr(
 
 float
 WindSwath::RmsDirErr(
-	WindField*	truth)
+    WindField*    truth)
 {
-	//----------------------------------//
-	// calculate the sum of the squares //
-	//----------------------------------//
+    //----------------------------------//
+    // calculate the sum of the squares //
+    //----------------------------------//
 
-	double sum = 0.0;
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    double sum = 0.0;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			double dif = ANGDIF(wvc->selected->dir, true_wv.dir);
-			sum += (dif * dif);
-			count++;
-		}
-	}
+            double dif = ANGDIF(wvc->selected->dir, true_wv.dir);
+            sum += (dif * dif);
+            count++;
+        }
+    }
 
-	//-------------------------------//
-	// take the mean and square root //
-	//-------------------------------//
+    //-------------------------------//
+    // take the mean and square root //
+    //-------------------------------//
 
-	float rms_dir_err = (float)sqrt(sum/(double)count);
+    float rms_dir_err = (float)sqrt(sum/(double)count);
 
-	return(rms_dir_err);
+    return(rms_dir_err);
 }
 
 //---------------------------//
@@ -3764,66 +3786,66 @@ WindSwath::RmsDirErr(
 
 int
 WindSwath::WriteDirErrMap(
-	WindField*	truth,
+    WindField*    truth,
         FILE*           ofp)
 {
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			float dif = fabs(ANGDIF(wvc->selected->dir, 
-						true_wv.dir))*rtd;
-			float lon=wvc->lonLat.longitude*rtd;
-			float lat=wvc->lonLat.latitude*rtd;
-			fwrite((void*)&dif,sizeof(float),1,ofp);
-			fwrite((void*)&lon,sizeof(float),1,ofp);
-			fwrite((void*)&lat,sizeof(float),1,ofp);
-			
-		}
-	}
+            float dif = fabs(ANGDIF(wvc->selected->dir,
+                        true_wv.dir))*rtd;
+            float lon=wvc->lonLat.longitude*rtd;
+            float lat=wvc->lonLat.latitude*rtd;
+            fwrite((void*)&dif,sizeof(float),1,ofp);
+            fwrite((void*)&lon,sizeof(float),1,ofp);
+            fwrite((void*)&lat,sizeof(float),1,ofp);
 
-	return(1);
+        }
+    }
+
+    return(1);
 }
 
 int
 WindSwath::WriteMaxDirErrIndices(
-	WindField*	truth,
+    WindField*    truth,
         FILE*           ofp)
 {
         int ati_max=0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
                 float max=0.0;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			float dif = fabs(ANGDIF(wvc->selected->dir, 
-						true_wv.dir))*rtd;
-			if(dif>max){
+            float dif = fabs(ANGDIF(wvc->selected->dir,
+                        true_wv.dir))*rtd;
+            if(dif>max){
                           ati_max=ati;
-			  max=dif;
-			}
-			
-		}
-        fprintf(ofp,"Err %f cti %d ati %d\n",max,cti,ati_max);
-	}
+              max=dif;
+            }
 
-	return(1);
+        }
+        fprintf(ofp,"Err %f cti %d ati %d\n",max,cti,ati_max);
+    }
+
+    return(1);
 }
 
 //------------------//
@@ -3832,37 +3854,37 @@ WindSwath::WriteMaxDirErrIndices(
 
 float
 WindSwath::Skill(
-	WindField*	truth)
+    WindField*    truth)
 {
-	int good_count = 0;
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    int good_count = 0;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
-			if (nearest == wvc->selected)
-				good_count++;
+            WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
+            if (nearest == wvc->selected)
+                good_count++;
 
-			count++;
-		}
-	}
+            count++;
+        }
+    }
 
-	float skill;
-	if (count == 0)
-	  skill = 0;
-	else
-	  skill = (float)good_count / (float)count;
+    float skill;
+    if (count == 0)
+      skill = 0;
+    else
+      skill = (float)good_count / (float)count;
 
-	return(skill);
+    return(skill);
 }
 
 //--------------------//
@@ -3871,39 +3893,39 @@ WindSwath::Skill(
 
 float
 WindSwath::SpdBias(
-	WindField*	truth)
+    WindField*    truth)
 {
-	//---------------------------//
-	// calculate the summed bias //
-	//---------------------------//
+    //---------------------------//
+    // calculate the summed bias //
+    //---------------------------//
 
-	double sum = 0.0;
-	int count = 0;
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    double sum = 0.0;
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			double dif = wvc->selected->spd - true_wv.spd;
-			sum += dif;
-			count++;
-		}
-	}
+            double dif = wvc->selected->spd - true_wv.spd;
+            sum += dif;
+            count++;
+        }
+    }
 
-	//-----------//
-	// normalize //
-	//-----------//
+    //-----------//
+    // normalize //
+    //-----------//
 
-	float spd_bias = (float)(sum / (double)count);
+    float spd_bias = (float)(sum / (double)count);
 
-	return(spd_bias);
+    return(spd_bias);
 }
 
 //-----------------------------//
@@ -3933,23 +3955,23 @@ WindSwath::DirectionDensity(
     for (int dir = 0; dir < direction_count; dir++)
     {
         *(swath_density_array + dir) = 0;
-        *(field_density_array + dir) = 0; 
+        *(field_density_array + dir) = 0;
     }
 
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
             //--------------------------------------//
             // determine the S/C velocity direction //
@@ -3958,15 +3980,15 @@ WindSwath::DirectionDensity(
             int ati_minus = ati - 1;
             if (ati_minus < 0)
                 ati_minus = 0;
-			WVC* wvc_minus = swath[cti][ati_minus];
-			if (! wvc_minus)
+            WVC* wvc_minus = swath[cti][ati_minus];
+            if (! wvc_minus)
                 continue;
 
             int ati_plus = ati + 1;
             if (ati_plus >= _alongTrackBins)
                 ati_plus = _alongTrackBins - 1;
-			WVC* wvc_plus = swath[cti][ati_plus];
-			if (! wvc_plus)
+            WVC* wvc_plus = swath[cti][ati_plus];
+            if (! wvc_plus)
                 continue;
 
             double dlat = wvc_plus->lonLat.latitude -
@@ -4016,10 +4038,10 @@ WindSwath::DirectionDensity(
 
             ( *(swath_density_array + ret_idx) )++;
             ( *(field_density_array + true_idx) )++;
-		}
-	}
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //---------------------//
@@ -4028,16 +4050,16 @@ WindSwath::DirectionDensity(
 
 int
 WindSwath::CtdArray(
-	float		cross_track_res,
-	float*		ctd_array)
+    float        cross_track_res,
+    float*        ctd_array)
 {
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
-			cross_track_res;
-		*(ctd_array + i) = ctd;
-	}
-	return(1);
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
+            cross_track_res;
+        *(ctd_array + i) = ctd;
+    }
+    return(1);
 }
 
 //---------------------//
@@ -4061,9 +4083,9 @@ WindSwath::DirArray(
         float value;
         dir_idx.IndexToValue(i, &value);
         *(dir_array + i) = value;
-	}
+    }
 
-	return(1);
+    return(1);
 }
 
 //---------------------------//
@@ -4077,19 +4099,19 @@ WindSwath::AvgNambigVsCti(
     float       low_speed,
     float       high_speed)
 {
-	//----------------------------------------//
-	// sum number of ambiguities for each cti //
-	//----------------------------------------//
+    //----------------------------------------//
+    // sum number of ambiguities for each cti //
+    //----------------------------------------//
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		int count = 0;
-		long sum = 0;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc)
-				continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int count = 0;
+        long sum = 0;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
 
             WindVector true_wv;
             if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
@@ -4098,17 +4120,17 @@ WindSwath::AvgNambigVsCti(
             if (true_wv.spd < low_speed || true_wv.spd > high_speed)
                 continue;
 
-			sum += wvc->ambiguities.NodeCount();
-			count++;
-		}
+            sum += wvc->ambiguities.NodeCount();
+            count++;
+        }
 
-		if (count == 0)
-		  avg_nambig[cti] = 0;
-		else
-		  avg_nambig[cti] = (double)sum / (double)count;
-	}
+        if (count == 0)
+          avg_nambig[cti] = 0;
+        else
+          avg_nambig[cti] = (double)sum / (double)count;
+    }
 
-	return(1);
+    return(1);
 }
 
 //---------------------------//
@@ -4117,102 +4139,102 @@ WindSwath::AvgNambigVsCti(
 
 int
 WindSwath::RmsSpdErrVsCti(
-	WindField*	truth,
-	float*		rms_spd_err_array,
-	float*		std_dev_array,
-	float*		std_err_array,
-	float*		spd_bias_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed)
+    WindField*    truth,
+    float*        rms_spd_err_array,
+    float*        std_dev_array,
+    float*        std_err_array,
+    float*        spd_bias_array,
+    int*        count_array,
+    float        low_speed,
+    float        high_speed)
 {
-	// in all of this, x is (sample - true)^2
+    // in all of this, x is (sample - true)^2
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		*(rms_spd_err_array + cti) = 0.0;
-		*(std_err_array + cti) = 0.0;
-		*(std_dev_array + cti) = 0.0;
-		*(spd_bias_array + cti) = 0.0;
-		*(count_array + cti) = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        *(rms_spd_err_array + cti) = 0.0;
+        *(std_err_array + cti) = 0.0;
+        *(std_dev_array + cti) = 0.0;
+        *(spd_bias_array + cti) = 0.0;
+        *(count_array + cti) = 0;
 
-		//-------------------------//
-		// first pass calculations //
-		//-------------------------//
+        //-------------------------//
+        // first pass calculations //
+        //-------------------------//
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			float dif = wvc->selected->spd - true_wv.spd;
-			float x = dif * dif;
-			*(rms_spd_err_array + cti) += x;
-			*(spd_bias_array + cti) += dif;
-			(*(count_array + cti))++;
-		}
+            float dif = wvc->selected->spd - true_wv.spd;
+            float x = dif * dif;
+            *(rms_spd_err_array + cti) += x;
+            *(spd_bias_array + cti) += dif;
+            (*(count_array + cti))++;
+        }
 
-		if (*(count_array + cti) < 2)
-			continue;
+        if (*(count_array + cti) < 2)
+            continue;
 
-		//--------------------//
-		// calculate the bias //
-		//--------------------//
+        //--------------------//
+        // calculate the bias //
+        //--------------------//
 
-		*(spd_bias_array + cti) /= (float)*(count_array + cti);
+        *(spd_bias_array + cti) /= (float)*(count_array + cti);
 
-		//----------------------------------//
-		// calculate the mean squared error //
-		//----------------------------------//
+        //----------------------------------//
+        // calculate the mean squared error //
+        //----------------------------------//
 
-		*(rms_spd_err_array + cti) /= (float)*(count_array + cti);
+        *(rms_spd_err_array + cti) /= (float)*(count_array + cti);
 
-		//--------------------------//
-		// second pass calculations //
-		//--------------------------//
+        //--------------------------//
+        // second pass calculations //
+        //--------------------------//
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			float dif = wvc->selected->spd - true_wv.spd;
-			float x = dif * dif;
-			float dev = x - *(rms_spd_err_array + cti);
-			*(std_dev_array + cti) += (dev * dev);
-		}
+            float dif = wvc->selected->spd - true_wv.spd;
+            float x = dif * dif;
+            float dev = x - *(rms_spd_err_array + cti);
+            *(std_dev_array + cti) += (dev * dev);
+        }
 
-		//-----------//
-		// RMS error //
-		//-----------//
+        //-----------//
+        // RMS error //
+        //-----------//
 
-		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
+        *(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
 
-		*(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
-		*(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
-		*(std_dev_array + cti) /= (2.0 * sqrt(*(rms_spd_err_array + cti)));
+        *(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
+        *(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
+        *(std_dev_array + cti) /= (2.0 * sqrt(*(rms_spd_err_array + cti)));
 
-		*(std_err_array + cti) = *(std_dev_array + cti) /
-			sqrt(*(count_array + cti));
-	}
+        *(std_err_array + cti) = *(std_dev_array + cti) /
+            sqrt(*(count_array + cti));
+    }
 
-	return(1);
+    return(1);
 }
 
 //---------------------------//
@@ -4221,106 +4243,106 @@ WindSwath::RmsSpdErrVsCti(
 
 int
 WindSwath::RmsDirErrVsCti(
-	WindField*	truth,
-	float*		rms_dir_err_array,
-	float*		std_dev_array,
-	float*		std_err_array,
-	float*		dir_bias_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed)
+    WindField*    truth,
+    float*        rms_dir_err_array,
+    float*        std_dev_array,
+    float*        std_err_array,
+    float*        dir_bias_array,
+    int*        count_array,
+    float        low_speed,
+    float        high_speed)
 {
-	// in all of this, x is (sample - true)^2
+    // in all of this, x is (sample - true)^2
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		*(rms_dir_err_array + cti) = 0.0;
-		*(std_err_array + cti) = 0.0;
-		*(std_dev_array + cti) = 0.0;
-		*(dir_bias_array + cti) = 0.0;
-		*(count_array + cti) = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        *(rms_dir_err_array + cti) = 0.0;
+        *(std_err_array + cti) = 0.0;
+        *(std_dev_array + cti) = 0.0;
+        *(dir_bias_array + cti) = 0.0;
+        *(count_array + cti) = 0;
 
-		//-------------------------//
-		// first pass calculations //
-		//-------------------------//
+        //-------------------------//
+        // first pass calculations //
+        //-------------------------//
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			float near_angle =
-				wrap_angle_near(wvc->selected->dir, true_wv.dir);
-			float dif = near_angle - true_wv.dir;
-			float x = dif * dif;
-			*(rms_dir_err_array + cti) += x;
-			*(dir_bias_array + cti) += dif;
-			(*(count_array + cti))++;
-		}
+            float near_angle =
+                wrap_angle_near(wvc->selected->dir, true_wv.dir);
+            float dif = near_angle - true_wv.dir;
+            float x = dif * dif;
+            *(rms_dir_err_array + cti) += x;
+            *(dir_bias_array + cti) += dif;
+            (*(count_array + cti))++;
+        }
 
-		if (*(count_array + cti) < 2)
-			continue;
+        if (*(count_array + cti) < 2)
+            continue;
 
-		//--------------------//
-		// calculate the bias //
-		//--------------------//
+        //--------------------//
+        // calculate the bias //
+        //--------------------//
 
-		*(dir_bias_array + cti) /= (float)*(count_array + cti);
+        *(dir_bias_array + cti) /= (float)*(count_array + cti);
 
-		//----------------------------------//
-		// calculate the mean squared error //
-		//----------------------------------//
+        //----------------------------------//
+        // calculate the mean squared error //
+        //----------------------------------//
 
-		*(rms_dir_err_array + cti) /= (float)*(count_array + cti);
+        *(rms_dir_err_array + cti) /= (float)*(count_array + cti);
 
-		//--------------------------//
-		// second pass calculations //
-		//--------------------------//
+        //--------------------------//
+        // second pass calculations //
+        //--------------------------//
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			float near_angle =
-				wrap_angle_near(wvc->selected->dir, true_wv.dir);
-			float dif = near_angle - true_wv.dir;
-			float x = dif * dif;
-			float dev = x - *(rms_dir_err_array + cti);
-			*(std_dev_array + cti) += (dev * dev);
-		}
+            float near_angle =
+                wrap_angle_near(wvc->selected->dir, true_wv.dir);
+            float dif = near_angle - true_wv.dir;
+            float x = dif * dif;
+            float dev = x - *(rms_dir_err_array + cti);
+            *(std_dev_array + cti) += (dev * dev);
+        }
 
-		//-----------//
-		// RMS error //
-		//-----------//
+        //-----------//
+        // RMS error //
+        //-----------//
 
-		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
+        *(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
 
-		*(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
-		*(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
-		*(std_dev_array + cti) /= (2.0 * sqrt(*(rms_dir_err_array + cti)));
+        *(std_dev_array + cti) /= (float)(*(count_array + cti) - 1);
+        *(std_dev_array + cti) = sqrt(*(std_dev_array + cti));
+        *(std_dev_array + cti) /= (2.0 * sqrt(*(rms_dir_err_array + cti)));
 
-		*(std_err_array + cti) = *(std_dev_array + cti) /
-			sqrt(*(count_array + cti));
-	}
+        *(std_err_array + cti) = *(std_dev_array + cti) /
+            sqrt(*(count_array + cti));
+    }
 
-	return(1);
+    return(1);
 }
 
 
@@ -4330,7 +4352,7 @@ WindSwath::RmsDirErrVsCti(
 int
 WindSwath::GetProbabilityArray(
 WindField*           truth,
-float***              prob, 
+float***              prob,
 int**          num_samples,
 float**        widths,
 int          true_dir_bins,
@@ -4343,13 +4365,13 @@ int          delta_dir_bins )
   //------------------------------------------------------//
   // Initialize prob and num_samples arrays               //
   //------------------------------------------------------//
-  
+
   for(int ctd=0; ctd< _crossTrackBins; ctd++){
     for(int td=0; td < true_dir_bins; td++){
       num_samples[ctd][td]=0;
       widths[ctd][td]=0.0;
       for(int dd=0; dd < delta_dir_bins; dd++){
-	prob[ctd][td][dd]=0.0;
+    prob[ctd][td][dd]=0.0;
       }
     }
   }
@@ -4359,14 +4381,14 @@ int          delta_dir_bins )
   //------------------------------------------------------//
   for(int cti=0;cti<_crossTrackBins;cti++){
     for(int ati=0;ati<_alongTrackBins;ati++){
-      // Calculate true direction index 
+      // Calculate true direction index
       WVC* wvc = swath[cti][ati];
       if (! wvc)
-	continue;
+    continue;
 
       WindVector true_wv;
       if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-	continue;   
+    continue;
       while(true_wv.dir<0) true_wv.dir+=two_pi;
       while(true_wv.dir>two_pi) true_wv.dir-=two_pi;
 
@@ -4377,17 +4399,17 @@ int          delta_dir_bins )
       num_samples[cti][true_dir_idx]++;
       float width=1, obj_sum=0;
       for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
-	  wvp=wvc->ambiguities.GetNext()){
-	obj_sum+=wvp->obj;
-	if(obj_sum < 0.80) width++;
-	// Determine delta direction index			
-	float near_angle =
-	  wrap_angle_near(wvc->selected->dir, true_wv.dir);
-	float dif = near_angle - true_wv.dir;
-	int delta_dir_idx=(int)((dif+pi)/delta_dir_step_size +0.5);
+      wvp=wvc->ambiguities.GetNext()){
+    obj_sum+=wvp->obj;
+    if(obj_sum < 0.80) width++;
+    // Determine delta direction index
+    float near_angle =
+      wrap_angle_near(wvc->selected->dir, true_wv.dir);
+    float dif = near_angle - true_wv.dir;
+    int delta_dir_idx=(int)((dif+pi)/delta_dir_step_size +0.5);
         if(delta_dir_idx==delta_dir_bins) delta_dir_idx=0;
         // accumulate prob array
-	prob[cti][true_dir_idx][delta_dir_idx]+=wvp->obj;
+    prob[cti][true_dir_idx][delta_dir_idx]+=wvp->obj;
       }
       widths[cti][true_dir_idx]+=width*delta_dir_step_size*rtd;
     }
@@ -4397,76 +4419,76 @@ int          delta_dir_bins )
   for(int cti=0;cti<_crossTrackBins;cti++){
     for(int tdi=0;tdi<true_dir_bins;tdi++){
       if(num_samples[cti][tdi]!=0){
-	for(int ddi=0;ddi<delta_dir_bins;ddi++)
-	  prob[cti][tdi][ddi]/=num_samples[cti][tdi];
-	widths[cti][tdi]/=num_samples[cti][tdi];
+    for(int ddi=0;ddi<delta_dir_bins;ddi++)
+      prob[cti][tdi][ddi]/=num_samples[cti][tdi];
+    widths[cti][tdi]/=num_samples[cti][tdi];
       }
     }
   }
   return(1);
 }
 void WindSwath::operator-=(const WindSwath& w){
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			WVC* wvc1 = *(*(swath + i) + j);
-			if (wvc1 == NULL)
-				continue;
-			WVC* wvc2 = *(*(w.swath + i) + j);
-			if (wvc2 == NULL)
-				continue;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc1 = *(*(swath + i) + j);
+            if (wvc1 == NULL)
+                continue;
+            WVC* wvc2 = *(*(w.swath + i) + j);
+            if (wvc2 == NULL)
+                continue;
 
-			WindVectorPlus* wvp_sel=new WindVectorPlus;
+            WindVectorPlus* wvp_sel=new WindVectorPlus;
                         float u1, v1, u2, v2;
-			wvc1->selected->GetUV(&u1,&v1);
-			wvc2->selected->GetUV(&u2,&v2);
-			wvp_sel->SetUV(u1-u2,v1-v2);
-			wvc1->selected=wvp_sel;
-			wvc1->selected_allocated=1;
+            wvc1->selected->GetUV(&u1,&v1);
+            wvc2->selected->GetUV(&u2,&v2);
+            wvp_sel->SetUV(u1-u2,v1-v2);
+            wvc1->selected=wvp_sel;
+            wvc1->selected_allocated=1;
                         WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
-			WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
-			  while(wvp1 && wvp2){
+            WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
+              while(wvp1 && wvp2){
                             wvp1->GetUV(&u1,&v1);
                             wvp2->GetUV(&u2,&v2);
-			    wvp1->SetUV(u1-u2,v1-v2);
-			    wvp1=wvc1->ambiguities.GetNext();
-			    wvp2=wvc2->ambiguities.GetNext();
-			  }
-			while(wvp1){
-			  wvp1=wvc1->ambiguities.RemoveCurrent();
-			  delete wvp1;
-			  wvp1=wvc1->ambiguities.GetCurrent();
-			}
+                wvp1->SetUV(u1-u2,v1-v2);
+                wvp1=wvc1->ambiguities.GetNext();
+                wvp2=wvc2->ambiguities.GetNext();
+              }
+            while(wvp1){
+              wvp1=wvc1->ambiguities.RemoveCurrent();
+              delete wvp1;
+              wvp1=wvc1->ambiguities.GetCurrent();
+            }
 
-		}
-	}
+        }
+    }
 }
 int WindSwath::DifferenceFromTruth(WindField* truth){
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			WVC* wvc = *(*(swath + i) + j);
-			if (wvc == NULL)
-				continue;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
-			
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
                         WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-			  while(wvp){
-			    float u1, v1, u2, v2;
+              while(wvp){
+                float u1, v1, u2, v2;
                             wvp->GetUV(&u1,&v1);
                             true_wv.GetUV(&u2,&v2);
-			    wvp->SetUV(u1-u2,v1-v2);
-			    wvp=wvc->ambiguities.GetNext();
-			  }
+                wvp->SetUV(u1-u2,v1-v2);
+                wvp=wvc->ambiguities.GetNext();
+              }
 
-		}
-	}
-	return(1);
+        }
+    }
+    return(1);
 }
 
 //-----------------------//
@@ -4475,48 +4497,48 @@ int WindSwath::DifferenceFromTruth(WindField* truth){
 
 int
 WindSwath::SkillVsCti(
-	WindField*	truth,
-	float*		skill_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed)
+    WindField*    truth,
+    float*        skill_array,
+    int*        count_array,
+    float        low_speed,
+    float        high_speed)
 {
-	//---------------------//
-	// calculate the count //
-	//---------------------//
+    //---------------------//
+    // calculate the count //
+    //---------------------//
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		int good_count = 0;
-		int count = 0;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int good_count = 0;
+        int count = 0;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
-			if (nearest == wvc->selected)
-				good_count++;
+            WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
+            if (nearest == wvc->selected)
+                good_count++;
 
-			count++;
-		}
+            count++;
+        }
 
-		*(count_array + cti) = count;
-		if (count == 0)
-		  *(skill_array + cti) = 0;
-		else
-		  *(skill_array + cti) = (float)good_count / (float)count;
-	}
+        *(count_array + cti) = count;
+        if (count == 0)
+          *(skill_array + cti) = 0;
+        else
+          *(skill_array + cti) = (float)good_count / (float)count;
+    }
 
-	return(1);
+    return(1);
 }
 
 //------------------------//
@@ -4525,49 +4547,49 @@ WindSwath::SkillVsCti(
 
 int
 WindSwath::WithinVsCti(
-	WindField*	truth,
-	float*		skill_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed,
-	float		within_angle)
+    WindField*    truth,
+    float*        skill_array,
+    int*        count_array,
+    float        low_speed,
+    float        high_speed,
+    float        within_angle)
 {
-	//---------------------//
-	// calculate the count //
-	//---------------------//
+    //---------------------//
+    // calculate the count //
+    //---------------------//
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		int good_count = 0;
-		int count = 0;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int good_count = 0;
+        int count = 0;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
-			float dif = ANGDIF(true_wv.dir, wvc->selected->dir);
-			if (dif < within_angle)
-				good_count++;
+            float dif = ANGDIF(true_wv.dir, wvc->selected->dir);
+            if (dif < within_angle)
+                good_count++;
 
-			count++;
-		}
+            count++;
+        }
 
-		*(count_array + cti) = count;
-		if (count == 0)
-		  *(skill_array + cti) = 0;
-		else
-		  *(skill_array + cti) = (float)good_count / (float)count;
-	}
+        *(count_array + cti) = count;
+        if (count == 0)
+          *(skill_array + cti) = 0;
+        else
+          *(skill_array + cti) = (float)good_count / (float)count;
+    }
 
-	return(1);
+    return(1);
 }
 
 //----------------------------------//
@@ -4599,21 +4621,21 @@ WindSwath::DirectionDensityVsCti(
         for (int dir = 0; dir < direction_count; dir++)
         {
             *( *(swath_density_array + cti) + dir) = 0;
-            *( *(field_density_array + cti) + dir) = 0; 
+            *( *(field_density_array + cti) + dir) = 0;
         }
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
             //--------------------------------------//
             // determine the S/C velocity direction //
@@ -4622,15 +4644,15 @@ WindSwath::DirectionDensityVsCti(
             int ati_minus = ati - 1;
             if (ati_minus < 0)
                 ati_minus = 0;
-			WVC* wvc_minus = swath[cti][ati_minus];
-			if (! wvc_minus)
+            WVC* wvc_minus = swath[cti][ati_minus];
+            if (! wvc_minus)
                 continue;
 
             int ati_plus = ati + 1;
             if (ati_plus >= _alongTrackBins)
                 ati_plus = _alongTrackBins - 1;
-			WVC* wvc_plus = swath[cti][ati_plus];
-			if (! wvc_plus)
+            WVC* wvc_plus = swath[cti][ati_plus];
+            if (! wvc_plus)
                 continue;
 
             double dlat = wvc_plus->lonLat.latitude -
@@ -4677,10 +4699,10 @@ WindSwath::DirectionDensityVsCti(
 
             ( *( *(swath_density_array + cti) + ret_idx) )++;
             ( *( *(field_density_array + cti) + true_idx) )++;
-		}
-	}
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //-------------------------------------//
@@ -4693,127 +4715,127 @@ WindSwath::ComponentCovarianceVsCti(
     float*          cc_array,
     int*            count_array,
     float           low_speed,
-    float           high_speed, 
-    COMPONENT_TYPE  component1, 
+    float           high_speed,
+    COMPONENT_TYPE  component1,
     COMPONENT_TYPE  component2)
 {
         // In all this:
         // c1 is the value of component1
         // c2 is the value of component2
-	// x is (c1*c2)
-       
+    // x is (c1*c2)
+
         //---------------------------------//
         // Allocate Mean Arrays            //
         //---------------------------------//
- 
+
         float* mean_c1_array= new float[_crossTrackBins];
         float* mean_c2_array= new float[_crossTrackBins];
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		*(cc_array + cti) = 0.0;
-		*(count_array + cti) = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        *(cc_array + cti) = 0.0;
+        *(count_array + cti) = 0;
                 *(mean_c1_array +cti)=0.0;
                 *(mean_c2_array +cti)=0.0;
 
-		//-------------------------//
-		// first pass calculations //
-		//-------------------------//
+        //-------------------------//
+        // first pass calculations //
+        //-------------------------//
 
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc || ! wvc->selected)
+                continue;
 
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
 
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
-			//-------------------//
-			// Find Components   //
-			//-------------------//
-			float u=0,v=0;
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
+            //-------------------//
+            // Find Components   //
+            //-------------------//
+            float u=0,v=0;
                         float c1=0,c2=0;
-			switch(component1){
-			case UTRUE:
-			  true_wv.GetUV(&u,&v);
-			  c1=u;
-			  break;
-			case VTRUE:
-			  true_wv.GetUV(&u,&v);
-			  c1=v;
-			  break;
-			case UMEAS:
-			  wvc->selected->GetUV(&u,&v);
-			  c1=u;
-			  break;
-			case VMEAS:
-			  wvc->selected->GetUV(&u,&v);
-			  c1=v;
-			  break;
-			default:
-			  fprintf(stderr,"ComponentCovariance: Bad component1\n");
-			  return(0);
-			}
-			switch(component2){
-			case UTRUE:
-			  true_wv.GetUV(&u,&v);
-			  c2=u;
-			  break;
-			case VTRUE:
-			  true_wv.GetUV(&u,&v);
-			  c2=v;
-			  break;
-			case UMEAS:
-			  wvc->selected->GetUV(&u,&v);
-			  c2=u;
-			  break;
-			case VMEAS:
-			  wvc->selected->GetUV(&u,&v);
-			  c2=v;
-			  break;
-			default:
-			  fprintf(stderr,"ComponentCovariance: Bad component2\n");
-			  return(0);
-			}
+            switch(component1){
+            case UTRUE:
+              true_wv.GetUV(&u,&v);
+              c1=u;
+              break;
+            case VTRUE:
+              true_wv.GetUV(&u,&v);
+              c1=v;
+              break;
+            case UMEAS:
+              wvc->selected->GetUV(&u,&v);
+              c1=u;
+              break;
+            case VMEAS:
+              wvc->selected->GetUV(&u,&v);
+              c1=v;
+              break;
+            default:
+              fprintf(stderr,"ComponentCovariance: Bad component1\n");
+              return(0);
+            }
+            switch(component2){
+            case UTRUE:
+              true_wv.GetUV(&u,&v);
+              c2=u;
+              break;
+            case VTRUE:
+              true_wv.GetUV(&u,&v);
+              c2=v;
+              break;
+            case UMEAS:
+              wvc->selected->GetUV(&u,&v);
+              c2=u;
+              break;
+            case VMEAS:
+              wvc->selected->GetUV(&u,&v);
+              c2=v;
+              break;
+            default:
+              fprintf(stderr,"ComponentCovariance: Bad component2\n");
+              return(0);
+            }
                         //-------------------//
-			// Update Arrays     //
-			//-------------------//
-			float x = c1*c2;
-			*(cc_array + cti) += x;
+            // Update Arrays     //
+            //-------------------//
+            float x = c1*c2;
+            *(cc_array + cti) += x;
                         *(mean_c1_array +cti) +=c1;
                         *(mean_c2_array +cti) +=c2;
-			(*(count_array + cti))++;
-		}
+            (*(count_array + cti))++;
+        }
 
-		if (*(count_array + cti) < 2)
-			continue;
+        if (*(count_array + cti) < 2)
+            continue;
 
-		//----------------------------------//
-		// calculate the covariance         //
-		//----------------------------------//
+        //----------------------------------//
+        // calculate the covariance         //
+        //----------------------------------//
 
-		*(mean_c1_array + cti) /= (float)*(count_array + cti);
-		*(mean_c2_array + cti) /= (float)*(count_array + cti);
-		*(cc_array + cti) /= (float)*(count_array + cti);
+        *(mean_c1_array + cti) /= (float)*(count_array + cti);
+        *(mean_c2_array + cti) /= (float)*(count_array + cti);
+        *(cc_array + cti) /= (float)*(count_array + cti);
                 *(cc_array +cti) -= (*(mean_c1_array +cti))*(*(mean_c2_array +cti));
 
-	}
+    }
 
-	delete(mean_c1_array);
+    delete(mean_c1_array);
         delete(mean_c2_array);
-	return(1);
+    return(1);
 }
 int
 WindSwath::VectorCorrelationVsCti(
         WindField* truth,
-	float* vc_array,
-	int* count_array,
-	float low_speed,
-	float high_speed){
+    float* vc_array,
+    int* count_array,
+    float low_speed,
+    float high_speed){
   //---------------------------------------------//
   // Allocate Component Covariance  Arrays       //
   // Nomenclature s[component_id][component_id]  //
@@ -4838,37 +4860,37 @@ WindSwath::VectorCorrelationVsCti(
   //----------------------------------------------//
   // Calculate Component Covariances              //
   //----------------------------------------------//
-  if(! ComponentCovarianceVsCti(truth, su1u1_array, count_array, low_speed, 
-		      high_speed, UTRUE, UTRUE))
+  if(! ComponentCovarianceVsCti(truth, su1u1_array, count_array, low_speed,
+              high_speed, UTRUE, UTRUE))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su2u2_array, count_array, low_speed, 
-		      high_speed, UMEAS, UMEAS))
+  if(! ComponentCovarianceVsCti(truth, su2u2_array, count_array, low_speed,
+              high_speed, UMEAS, UMEAS))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, sv1v1_array, count_array, low_speed, 
-		      high_speed, VTRUE, VTRUE))
+  if(! ComponentCovarianceVsCti(truth, sv1v1_array, count_array, low_speed,
+              high_speed, VTRUE, VTRUE))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, sv2v2_array, count_array, low_speed, 
-		      high_speed, VMEAS, VMEAS))
+  if(! ComponentCovarianceVsCti(truth, sv2v2_array, count_array, low_speed,
+              high_speed, VMEAS, VMEAS))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su1u2_array, count_array, low_speed, 
-		      high_speed, UTRUE, UMEAS))
+  if(! ComponentCovarianceVsCti(truth, su1u2_array, count_array, low_speed,
+              high_speed, UTRUE, UMEAS))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, sv1v2_array, count_array, low_speed, 
-		      high_speed, VTRUE, VMEAS))
+  if(! ComponentCovarianceVsCti(truth, sv1v2_array, count_array, low_speed,
+              high_speed, VTRUE, VMEAS))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su1v1_array, count_array, low_speed, 
-		      high_speed, UTRUE, VTRUE))
+  if(! ComponentCovarianceVsCti(truth, su1v1_array, count_array, low_speed,
+              high_speed, UTRUE, VTRUE))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su1v2_array, count_array, low_speed, 
-		      high_speed, UTRUE, VMEAS))
+  if(! ComponentCovarianceVsCti(truth, su1v2_array, count_array, low_speed,
+              high_speed, UTRUE, VMEAS))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su2v1_array, count_array, low_speed, 
-		      high_speed, UMEAS, VTRUE))
+  if(! ComponentCovarianceVsCti(truth, su2v1_array, count_array, low_speed,
+              high_speed, UMEAS, VTRUE))
     return(0);
-  if(! ComponentCovarianceVsCti(truth, su2v2_array, count_array, low_speed, 
-		      high_speed, UMEAS, VMEAS))
+  if(! ComponentCovarianceVsCti(truth, su2v2_array, count_array, low_speed,
+              high_speed, UMEAS, VMEAS))
     return(0);
-  
+
   //-----------------------------------------------//
   // Compute Vector Correlation Array              //
   //-----------------------------------------------//
@@ -4922,24 +4944,24 @@ WindSwath::VectorCorrelationVsCti(
 int
 WindSwath::_Allocate()
 {
-	if (swath != NULL)
-		return(0);
+    if (swath != NULL)
+        return(0);
 
-	swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackBins,
-		_alongTrackBins);
+    swath = (WVC ***)make_array(sizeof(WVC *), 2, _crossTrackBins,
+        _alongTrackBins);
 
-	if (swath == NULL)
-		return(0);
+    if (swath == NULL)
+        return(0);
 
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		for (int j = 0; j < _alongTrackBins; j++)
-		{
-			swath[i][j] = NULL;
-		}
-	}
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            swath[i][j] = NULL;
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //------------------------//
@@ -4949,14 +4971,14 @@ WindSwath::_Allocate()
 int
 WindSwath::_Deallocate()
 {
-	if (swath == NULL)
-		return(1);
+    if (swath == NULL)
+        return(1);
 
-	free_array((void *)swath, 2, _crossTrackBins, _alongTrackBins);
-	swath = NULL;
-	_crossTrackBins = 0;
-	_alongTrackBins = 0;
-	return(1);
+    free_array((void *)swath, 2, _crossTrackBins, _alongTrackBins);
+    swath = NULL;
+    _crossTrackBins = 0;
+    _alongTrackBins = 0;
+    return(1);
 }
 
 //-------------------------------//

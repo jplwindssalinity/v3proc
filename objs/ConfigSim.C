@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -33,8 +33,8 @@ static const char rcs_id_configsim_c[] =
 
 int
 ConfigSpacecraft(
-	Spacecraft* spacecraft,
-	ConfigList* config_list)
+    Spacecraft*  spacecraft,
+    ConfigList*  config_list)
 {
 	//--------------------------------//
 	// Read in Attitude Order Indices //
@@ -1244,8 +1244,8 @@ ConfigEphemeris(
 
 int
 ConfigWindField(
-	WindField*		windfield,
-	ConfigList*		config_list)
+    WindField*   windfield,
+    ConfigList*  config_list)
 {
 	//--------------------------//
 	// configure the wind field //
@@ -1261,6 +1261,18 @@ ConfigWindField(
 
 	if (! windfield->ReadType(windfield_filename, windfield_type))
 		return(0);
+
+    //--------------------------//
+    // use as fixed wind speed? //
+    //--------------------------//
+
+    config_list->DoNothingForMissingKeywords();
+    float fixed_speed;
+    if (config_list->GetFloat(WINDFIELD_FIXED_SPEED_KEYWORD, &fixed_speed))
+    {
+        windfield->FixSpeed(fixed_speed);
+    }
+    config_list->ExitForMissingKeywords();
 
 	return(1);
 }
