@@ -205,7 +205,7 @@ L1AToL1B::Convert(
 
 				meas->scanAngle = instrument->antenna.azimuthAngle;
 				meas->startSliceIdx = sliceno;
-                                meas->numSlices = 1;
+				meas->numSlices = 1;
 				meas->beamIdx = instrument->antenna.currentBeamIdx;
 				meas->txPulseWidth = beam->txPulseWidth;
 
