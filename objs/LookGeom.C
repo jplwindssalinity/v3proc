@@ -21,10 +21,12 @@ static const char rcs_id_lookgeom_c[] =
 //   rsat = s/c position vector (rotating geocentric frame)
 //   vsat = s/c intertial velocity (rotating geocentric frame)
 //   rground = ground target position vector (rotating geocentric frame)
+//             Note that rsat and rground must have the same units (eg., km).
 //   sc_att = s/c body attitude vector (roll,pitch,yaw) with respect to the
 //            frame defined by the orbit plane (just like NSCAT)
 //   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
 //             s/c body frame
+//        All angle inputs are in radians.
 //
 // Return Value:
 //   A unit vector in the antenna coordinate system pointed at the
@@ -63,4 +65,33 @@ Vector3 rlook_ant = scbody_to_ant.forward(rlook_scbody);
 rlook_ant.scale(1.0);
 return(rlook_ant);
 
+}
+
+//
+// earth_intercept
+//
+// This function computes the ground intercept point for a given s/c
+// and antenna state.
+//
+// Inputs:
+//  
+//   rsat = s/c position vector (rotating geocentric frame)
+//   vsat = s/c intertial velocity (rotating geocentric frame)
+//   sc_att = s/c body attitude vector (roll,pitch,yaw) with respect to the
+//            frame defined by the orbit plane (just like NSCAT)
+//   ant_att = antenna attitude (roll,pitch,yaw) with respect to the
+//             s/c body frame
+//   antenna_look_dir = unit vector in antenna frame pointed in the desired
+//                      look direction.
+//        All angle inputs are in radians.
+//
+// Return Value:
+//   The position vector of the ground intercept point in geocentric
+//   coordinates (km).
+//
+
+Vector3 antenna_look(Vector3 rsat, Vector3 vsat,
+		     Vector3 sc_att, Vector3 ant_att, Vector3 antenna_look_dir)
+
+{
 }
