@@ -392,9 +392,9 @@ main(
                 }
                 Vector3 vector;
                 vector.SphericalSet(1.0, look, az);
-                TargetInfoPackage tip;
-                if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-                    vector, &tip))
+                QscatTargetInfo qti;
+                if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                    vector, &qti))
                 {
                     fprintf(stderr, "%s: error finding round trip time\n",
                         command);
@@ -402,7 +402,7 @@ main(
                 }
 
                 // then apply to the azimuth angle
-                double delay = (tip.roundTripTime + qscat.ses.txPulseWidth) /
+                double delay = (qti.roundTripTime + qscat.ses.txPulseWidth) /
                     2.0;
                 azimuth -= (delay * assumed_spin_rate);
 
@@ -470,7 +470,7 @@ main(
 				// calculate corrective frequency //
 				//--------------------------------//
 
-				IdealCommandedDoppler(&spacecraft, &qscat);
+				qscat.IdealCommandedDoppler(&spacecraft);
 
 				// constants are used to calculate the actual Doppler
                 // frequency to correct for, but IdealCommandedDoppler

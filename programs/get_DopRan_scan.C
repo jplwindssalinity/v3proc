@@ -382,9 +382,9 @@ main(
 								  azimuth);
 
 			    printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
-			    TargetInfoPackage tip;
+			    QscatTargetInfo qti;
                             
-			    SetDelayAndFrequency(&spacecraft,&qscat,&tip);     
+			    SetDelayAndFrequency(&spacecraft,&qscat,&qti);     
 			  
 
 			    CoordinateSwitch antenna_frame_to_gc =
@@ -405,21 +405,25 @@ main(
 				exit(1);
 			      }
                             vector.SphericalSet(1.0,look,azim);
-			    if(!TargetInfo(&antenna_frame_to_gc,
-					   &spacecraft,&qscat,vector,&tip))
-			      exit(1);
-			    printf("SpatialPeak %g %g %g ",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);
+			    if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                    vector, &qti))
+                {
+                    exit(1);
+                }
+			    printf("SpatialPeak %g %g %g ",qti.dopplerFreq,qti.slantRange,qti.basebandFreq);
 
                             // Report Spectral Peak Info
 			    if (! GetPeakSpectralResponse(&antenna_frame_to_gc,
 					&spacecraft,&qscat,&look,&azim))
 				exit(1);
                             vector.SphericalSet(1.0,look,azim);
-			    if(!TargetInfo(&antenna_frame_to_gc,
-					   &spacecraft,&qscat,vector,&tip))
-			    exit(1);
+			    if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                     vector, &qti))
+                {
+                    exit(1);
+                }
 
-			    printf("SpectralPeak %g %g %g ",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);	 
+			    printf("SpectralPeak %g %g %g ",qti.dopplerFreq,qti.slantRange,qti.basebandFreq);	 
 
 
                             //printf("\n");
@@ -435,10 +439,12 @@ main(
 			    if(! GetBYUBoresight(&spacecraft,&qscat,&look,&azim))
 			      exit(1);
                             vector.SphericalSet(1.0,look,azim);
-			    if(!TargetInfo(&antenna_frame_to_gc,
-					   &spacecraft,&qscat,vector,&tip))
-			    exit(1);
-			    printf("BYUPeak %g %g %g\n",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);
+			    if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                    vector, &qti))
+                {
+                    exit(1);
+                }
+			    printf("BYUPeak %g %g %g\n",qti.dopplerFreq,qti.slantRange,qti.basebandFreq);
 
                             fflush(stdout);
 

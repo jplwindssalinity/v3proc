@@ -244,12 +244,12 @@ main(
             // read in the spot data //
             //-----------------------//
 
-            int beam_idx, ideal_encoder, held_encoder, land_flag;
-            float tx_doppler, rx_gate_delay, meas_spec_peak, exp_spec_peak,
-                total_signal_energy;
+            int beam_idx, ideal_encoder, land_flag;
+            float tx_doppler, rx_gate_delay, tx_center_azimuth,
+                meas_spec_peak_freq, total_signal_energy;
             if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
-                &ideal_encoder, &held_encoder, &meas_spec_peak,
-                &exp_spec_peak, &total_signal_energy, &land_flag))
+                &ideal_encoder, &tx_center_azimuth, &meas_spec_peak_freq,
+                &total_signal_energy, &land_flag))
             {
                 fprintf(stderr,
                     "%s: error reading spot from echo data file %s\n",
@@ -268,7 +268,7 @@ main(
                 continue;
 
             azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
-            accumulate(beam_idx, azimuth, meas_spec_peak);
+            accumulate(beam_idx, azimuth, meas_spec_peak_freq);
             break;
         case EPHEMERIS_ID:
             float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;

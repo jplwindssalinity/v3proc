@@ -14,9 +14,6 @@
 //    Reads the simulated L1A file and estimates frequency offsets
 //    (from 0 kHz baseband) of the spectral response of the echo.
 //
-// OPTIONS
-//    None.
-//
 // OPERANDS
 //    The following operands are supported:
 //      <sim_config_file>  The simulation configuration file.
@@ -61,6 +58,7 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "QscatConfig.h"
 #include "InstrumentGeom.h"
+#include "AccurateGeom.h"
 #include "List.h"
 #include "List.C"
 #include "Tracking.h"
@@ -91,7 +89,8 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define KM_RANGE                 100.0
+#define KM_RANGE  100.0
+#define POINTS    4
 
 //--------//
 // MACROS //
@@ -199,9 +198,6 @@ main(
     double signal_energy[10];
     double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
         9.0 };
-    double c[3];
-    Vector coefs;
-    coefs.Allocate(3);
 
     //-----------//
     // predigest //
@@ -217,7 +213,11 @@ main(
     // open Level 1A file //
     //--------------------//
 
-    l1a.OpenForReading();
+    if (! l1a.OpenForReading())
+    {
+        fprintf(stderr, "%s: error opening L1A file\n", command);
+        exit(1);
+    }
 
     //------------------//
     // open output file //
@@ -236,7 +236,7 @@ main(
     //-------------------//
 
     int last_orbit_step = -1;
-
+    int in_first_frame = 1;
     do
     {
         //-----------------------------//
@@ -375,6 +375,23 @@ main(
 
             SetDelayAndFrequency(&spacecraft, &qscat);
 
+            //------------------------------//
+            // skip pulses from first frame //
+            //------------------------------//
+
+            if (in_first_frame)
+                continue;
+
+            //-------------------------//
+            // skip calibration pulses //
+            //-------------------------//
+
+            if (spot_idx == frame->calPosition - 2 ||
+                spot_idx == frame->calPosition - 1)
+            {
+                continue;
+            }
+
             //-----------//
             // flag land //
             //-----------//
@@ -387,16 +404,16 @@ main(
                 return(0);
             Vector3 vector;
             vector.SphericalSet(1.0, look, azim);
-            TargetInfoPackage tip;
-            if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-                vector, &tip))
+            QscatTargetInfo qti;
+            if (! qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                vector, &qti))
             {
                 fprintf(stderr, "%s: error finding target information\n",
                     command);
                 exit(1);
             }
             double alt, lon, lat;
-            if (! tip.rTarget.GetAltLonGCLat(&alt, &lon, &lat))
+            if (! qti.rTarget.GetAltLonGCLat(&alt, &lon, &lat))
             {
                 fprintf(stderr, "%s: error finding alt/lon/lat\n", command);
                 exit(1);
@@ -413,39 +430,6 @@ main(
                     break;
                 }
             }
-
-            //----------------------------------//
-            // calculate expected peak response //
-            //----------------------------------//
-
-            antenna_frame_to_gc = AntennaFrameToGC(&(spacecraft.orbitState),
-                attitude, antenna, antenna->txCenterAzimuthAngle);
-            if (! beam->GetElectricalBoresight(&look, &azim))
-                return(0);
-            vector.SphericalSet(1.0, look, azim);
-            if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-                vector, &tip))
-            {
-                fprintf(stderr, "%s: error finding target information\n",
-                    command);
-                exit(1);
-            }
-            if (! GetPeakSpatialResponse(beam, tip.roundTripTime,
-                qscat.sas.antenna.spinRate, &look, &azim))
-            {
-                printf("%s: error determining peak response\n", command);
-                exit(1);
-            }
-            vector.SphericalSet(1.0, look, azim);
-            if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-                vector, &tip))
-            {
-                fprintf(stderr,
-                    "%s: error finding peak response target information\n",
-                    command);
-                exit(1);
-            }
-            double expected_peak = tip.basebandFreq;
 
             //----------------------//
             // threshold spot power //
@@ -475,58 +459,50 @@ main(
                 total_signal_energy += signal_energy[slice_idx];
             }
 
-            //----------------------------------//
-            // fit a quadratic to find the peak //
-            //----------------------------------//
+            //---------------//
+            // find the peak //
+            //---------------//
 
-            Matrix u, v;
-            Vector w;
-            u.SVDFit(slice_number, signal_energy, NULL, frame->slicesPerSpot,
-                &coefs, 3, &u, &v, &w);
-            coefs.GetElement(0, &(c[0]));
-            coefs.GetElement(1, &(c[1]));
-            coefs.GetElement(2, &(c[2]));
-            float peak_slice = -c[1] / (2.0 * c[2]);
+            float meas_spec_peak_slice, meas_spec_peak_freq;
+            if (! find_peak(&qscat, slice_number, signal_energy,
+                frame->slicesPerSpot, &meas_spec_peak_slice,
+                &meas_spec_peak_freq))
+            {
+                continue;
+            }
+
 /*
 static int zz = 0;
 char fn[1024];
-if (ideal_encoder < 0.005 || ideal_encoder > 6.278)
+if (ideal_encoder > 3641 && ideal_encoder < 4551)
 {
-sprintf(fn, "xxx.%05d", zz);
+sprintf(fn, "xxx.%05d.%d", zz, beam_idx);
 FILE* fp = fopen(fn, "w");
 for (int i = 0; i < 10; i++)
 {
-  fprintf(fp, "%g %g %g %g\n", slice_number[i], signal_energy[i],
-    c[2]*i*i + c[1]*i + c[0], frame->science[base_slice_idx + i]);
+//  fprintf(fp, "%g %g %g %g\n", slice_number[i], signal_energy[i],
+//    c[2]*i*i + c[1]*i + c[0], frame->science[base_slice_idx + i]);
+  fprintf(fp, "%g %g %g\n", slice_number[i], signal_energy[i],
+    frame->science[base_slice_idx + i]);
 }
 fprintf(fp, "&\n");
-fprintf(fp, "%g 0.0\n", peak_slice);
+fprintf(fp, "%g 0.0\n", meas_spec_peak_slice);
 fclose(fp);
 zz++;
 }
 */
-            // make sure peak is in range
-            if (peak_slice < 0.0 || peak_slice > frame->slicesPerSpot - 1)
-                continue;
-
-            // make sure peak is actually a peak
-            if (c[2] >= 0.0)
-                continue;
-
-            int near_slice_idx = (int)(peak_slice + 0.5);
-            float f1, bw;
-            qscat.ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
-            float f_bb_data = f1 + bw *
-                (peak_slice - (float)near_slice_idx + 0.5);
-
             //-------//
             // write //
             //-------//
 
             write_spot(ofd, beam_idx, qscat.ses.txDoppler,
-                qscat.ses.rxGateDelay, ideal_encoder, qscat.cds.heldEncoder,
-                f_bb_data, expected_peak, total_signal_energy, land_flag);
+                qscat.ses.rxGateDelay, ideal_encoder,
+                qscat.sas.antenna.txCenterAzimuthAngle, meas_spec_peak_freq,
+                total_signal_energy, land_flag);
         }
+
+        in_first_frame = 0;
+
     } while (1);
 
     l1a.Close();

@@ -95,8 +95,8 @@ template class List<AngleInterval>;
 
 #define LINE_SIZE  1024
 
-#define MAXIMUM_SPOTS_PER_ORBIT_STEP  10000
-#define MAXIMUM_EPHEM_PER_ORBIT_STEP  200
+#define MAX_SPOTS_PER_ORBIT_STEP  10000
+#define MAX_EPHEM_PER_ORBIT_STEP  200
 
 #define SIGNAL_ENERGY_THRESHOLD       1.0E-8
 
@@ -108,10 +108,7 @@ template class List<AngleInterval>;
 #define PITCH_START_STEP  0.001    // about 0.057 degrees
 #define YAW_START_STEP    0.001    // about 0.057 degrees
 
-#define ROLL_END_STEP   0.0001    // about 0.0057 degrees
-#define PITCH_END_STEP  0.0001    // about 0.0057 degrees
-#define YAW_END_STEP    0.0001    // about 0.0057 degrees
-
+#define END_STEP          0.00001    // about 0.00057 degrees
 
 //--------//
 // MACROS //
@@ -126,13 +123,14 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int     initialize();
+int     large_slope(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
+            double c[3], double step[3], int* idx);
 int     process_orbit_step(Spacecraft* spacecraft, Qscat* qscat,
-            int orbit_step);
-int     optimize(Spacecraft* spacecraft, Qscat* qscat, float* roll,
-            float* pitch, float* yaw, float roll_step, float pitch_step, 
-            float yaw_step);
-double  evaluate(Spacecraft* spacecraft, Qscat* qscat, float roll,
-            float pitch, float yaw, FILE* ofp = NULL);
+            BYUXTable* byux, int orbit_step);
+int     optimize(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
+            double att[3], double step[3]);
+double  evaluate(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
+            double att[3], FILE* ofp = NULL);
 
 //------------------//
 // OPTION VARIABLES //
@@ -158,14 +156,14 @@ struct Ephem
 };
 
 int       g_ephem_count = 0;
-Ephem     g_ephem[MAXIMUM_EPHEM_PER_ORBIT_STEP];
+Ephem     g_ephem[MAX_EPHEM_PER_ORBIT_STEP];
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
-double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
-double    g_meas_spec_peak[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
-float     g_tx_doppler[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
-float     g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
-int       g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
+double    g_tx_center_azimuth[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+double  g_meas_spec_peak_freq[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+float     g_tx_doppler[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+float     g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+int       g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 
 //--------------//
 // MAIN PROGRAM //
@@ -222,11 +220,10 @@ main(
         exit(1);
     }
 
-    QscatSim qscat_sim;
-    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    BYUXTable byux;
+    if (! ConfigBYUXTable(&byux,&config_list))
     {
-        fprintf(stderr, "%s: error configuring instrument simulator\n",
-            command);
+        fprintf(stderr,"%s: error configuring BYUXTable\n", command);
         exit(1);
     }
 
@@ -280,7 +277,6 @@ main(
         //-------//
 
         int idx;
-        double azimuth;
         Ephem* eph;
 
         switch (id)
@@ -291,12 +287,12 @@ main(
             // read in the spot data //
             //-----------------------//
 
-            int beam_idx, ideal_encoder, held_encoder, land_flag;
-            float tx_doppler, rx_gate_delay, meas_spec_peak, exp_spec_peak,
-                total_signal_energy;
+            int beam_idx, ideal_encoder, land_flag;
+            float tx_doppler, rx_gate_delay, tx_center_azimuth,
+                meas_spec_peak_freq, total_signal_energy;
             if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
-                &ideal_encoder, &held_encoder, &meas_spec_peak,
-                &exp_spec_peak, &total_signal_energy, &land_flag))
+                &ideal_encoder, &tx_center_azimuth, &meas_spec_peak_freq,
+                &total_signal_energy, &land_flag))
             {
                 fprintf(stderr,
                     "%s: error reading spot from echo data file %s\n",
@@ -319,17 +315,15 @@ main(
             //------------//
 
             idx = g_count[beam_idx];
-            azimuth = two_pi * (double)ideal_encoder /
-                (double)ENCODER_N;
 
-            if (idx >= MAXIMUM_SPOTS_PER_ORBIT_STEP)
+            if (idx >= MAX_SPOTS_PER_ORBIT_STEP)
             {
                 fprintf(stderr, "%s: too much spot data\n", command);
                 exit(1);
             }
 
-            g_azimuth[beam_idx][idx] = azimuth;
-            g_meas_spec_peak[beam_idx][idx] = meas_spec_peak;
+            g_tx_center_azimuth[beam_idx][idx] = tx_center_azimuth;
+            g_meas_spec_peak_freq[beam_idx][idx] = meas_spec_peak_freq;
             g_tx_doppler[beam_idx][idx] = tx_doppler;
             g_rx_gate_delay[beam_idx][idx] = rx_gate_delay;
             g_ephem_idx[beam_idx][idx] = (g_ephem_count - 1);
@@ -339,7 +333,7 @@ main(
             float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;
             read_ephemeris(ifd, &gcx, &gcy, &gcz, &velx, &vely, &velz, &roll,
                 &pitch, &yaw);
-            if (g_ephem_count >= MAXIMUM_EPHEM_PER_ORBIT_STEP)
+            if (g_ephem_count >= MAX_EPHEM_PER_ORBIT_STEP)
             {
                 fprintf(stderr, "%s: too much ephemeris data\n", command);
                 exit(1);
@@ -362,7 +356,8 @@ main(
             {
                 if (last_orbit_step != -1)
                 {
-                    process_orbit_step(&spacecraft, &qscat, last_orbit_step);
+                    process_orbit_step(&spacecraft, &qscat, &byux,
+                        last_orbit_step);
 
                     // transfer ephemeris
                     g_ephem[0] = g_ephem[g_ephem_count - 1];
@@ -403,6 +398,44 @@ initialize()
     return(1);
 }
 
+//-------------//
+// large slope //
+//-------------//
+
+int
+large_slope(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    BYUXTable*   byux,
+    double       c[3],
+    double       step[3],
+    int*         idx)
+{
+    double try_c_low[3];
+    double try_c_high[3];
+
+    double max_dif = 0.0;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            try_c_low[j] = c[j];
+            try_c_high[j] = c[j];
+        }
+        try_c_low[i] -= step[i] / 2.0;
+        try_c_high[i] += step[i] / 2.0;
+        double low_sse = evaluate(spacecraft, qscat, byux, try_c_low, NULL);
+        double high_sse = evaluate(spacecraft, qscat, byux, try_c_high, NULL);
+        double dif = fabs(low_sse - high_sse);
+        if (dif > max_dif)
+        {
+            max_dif = dif;
+            *idx = i;
+        }
+    }
+    return(1);
+}
+
 //--------------------//
 // process_orbit_step //
 //--------------------//
@@ -411,34 +444,30 @@ int
 process_orbit_step(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
+    BYUXTable*   byux,
     int          orbit_step)
 {
     //---------------------//
     // initialize attitude //
     //---------------------//
 
-    float roll = 0.0;
-    float pitch = 0.0;
-    float yaw = 0.0;
-
-    float roll_step = ROLL_START_STEP;
-    float pitch_step = PITCH_START_STEP;
-    float yaw_step = YAW_START_STEP;
+    double att[3] = {0.0, 0.0, 0.0};
+    double step[3] = {ROLL_START_STEP, PITCH_START_STEP, YAW_START_STEP};
+    double use_step[3] = {0.0, 0.0, 0.0};
 
     do
     {
-        optimize(spacecraft, qscat, &roll, &pitch, &yaw, roll_step, 0.0, 0.0);
-        roll_step /= 2.0;
+        int idx;
+        large_slope(spacecraft, qscat, byux, att, step, &idx);
+        use_step[idx] = step[idx];
+        optimize(spacecraft, qscat, byux, att, use_step);
+        use_step[idx] = 0.0;
+printf("%g %g %g %g %g %g\n", att[0] * rtd, att[1] * rtd, att[2] * rtd, step[0], step[1], step[2]);
+        if (step[idx] < END_STEP)
+            break;
 
-        optimize(spacecraft, qscat, &roll, &pitch, &yaw, 0.0, pitch_step, 0.0);
-        pitch_step /= 2.0;
-
-        optimize(spacecraft, qscat, &roll, &pitch, &yaw, 0.0, 0.0, yaw_step);
-        yaw_step /= 2.0;
-
-    } while (roll_step > ROLL_END_STEP ||
-        pitch_step > PITCH_END_STEP ||
-        yaw_step > YAW_END_STEP);
+        step[idx] /= 2.0;
+    } while (1);
 
     //---------------------------//
     // generate a knowledge plot //
@@ -453,10 +482,12 @@ process_orbit_step(
     fprintf(ofp, "@ title %cOrbit Step = %03d%c\n", QUOTES, orbit_step,
         QUOTES);
     fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
-        roll * rtd, pitch * rtd, yaw * rtd, QUOTES);
+        att[0] * rtd, att[1] * rtd, att[2] * rtd, QUOTES);
 
-    evaluate(spacecraft, qscat, roll, pitch, yaw, ofp);
-//    evaluate(spacecraft, qscat, -0.1 * dtr, 0.2 * dtr, 0.0, ofp);
+    evaluate(spacecraft, qscat, byux, att, ofp);
+
+//fprintf(ofp, "&\n");
+//evaluate(spacecraft, qscat, byux, -0.1 * dtr, 0.2 * dtr, 0.0, ofp);
 
     fclose(ofp);
 
@@ -473,27 +504,23 @@ int
 optimize(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    float*       roll,
-    float*       pitch,
-    float*       yaw,
-    float        roll_step,
-    float        pitch_step,
-    float        yaw_step)
+    BYUXTable*   byux,
+    double       att[3],
+    double       step[3])
 {
     //---------------------//
     // determine direction //
     //---------------------//
 
     // assume going forward
-    float old_roll = *roll - roll_step / 2.0;
-    float old_pitch = *pitch - pitch_step / 2.0;
-    float old_yaw = *yaw - yaw_step / 2.0;
-    double old_mse = evaluate(spacecraft, qscat, old_roll, old_pitch, old_yaw);
-
-    float new_roll = *roll + roll_step / 2.0;
-    float new_pitch = *pitch + pitch_step / 2.0;
-    float new_yaw = *yaw + yaw_step / 2.0;
-    double new_mse = evaluate(spacecraft, qscat, new_roll, new_pitch, new_yaw);
+    double old_att[3], new_att[3];
+    for (int i = 0; i < 3; i++)
+    {
+        old_att[i] = att[i] - step[i] / 2.0;
+        new_att[i] = att[i] + step[i] / 2.0;
+    }
+    double old_mse = evaluate(spacecraft, qscat, byux, old_att);
+    double new_mse = evaluate(spacecraft, qscat, byux, new_att);
 
     float delta_sign = 1.0;
 
@@ -502,9 +529,10 @@ optimize(
     {
         // reverse direction
         delta_sign = -1.0;
-        SWAP(new_roll, old_roll);
-        SWAP(new_pitch, old_pitch);
-        SWAP(new_yaw, old_yaw);
+        for (int i = 0; i < 3; i++)
+        {
+            SWAP(new_att[i], old_att[i]);
+        }
         SWAP(new_mse, old_mse);
     }
 
@@ -517,22 +545,21 @@ optimize(
         if (new_mse < old_mse)
         {
             // continue moving forward
-            old_roll = new_roll;
-            old_pitch = new_pitch;
-            old_yaw = new_yaw;
+            for (int i = 0; i < 3; i++)
+            {
+                old_att[i] = new_att[i];
+                new_att[i] += delta_sign * step[i];
+            }
             old_mse = new_mse;
-            new_roll = old_roll + delta_sign * roll_step;
-            new_pitch = old_pitch + delta_sign * pitch_step;
-            new_yaw = old_yaw + delta_sign * yaw_step;
-            new_mse = evaluate(spacecraft, qscat, new_roll, new_pitch,
-                new_yaw);
+            new_mse = evaluate(spacecraft, qscat, byux, new_att);
         }
         else
         {
             // stop (new value is worse than the old)
-            *roll = old_roll;
-            *pitch = old_pitch;
-            *yaw = old_yaw;
+            for (int i = 0; i < 3; i++)
+            {
+                att[i] = old_att[i];
+            }
             break;
         }
     }
@@ -547,26 +574,16 @@ double
 evaluate(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    float        roll,
-    float        pitch,
-    float        yaw,
+    BYUXTable*   byux,
+    double       att[3],
     FILE*        ofp)
 {
     double mse = 0.0;
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        double look, azim;
-        if (beam_idx == 0)
-        {
-            look = BYU_INNER_BEAM_LOOK_ANGLE * dtr;
-            azim = BYU_INNER_BEAM_AZIMUTH_ANGLE * dtr;
-        }
-        else
-        {
-            look = BYU_OUTER_BEAM_LOOK_ANGLE * dtr;
-            azim = BYU_OUTER_BEAM_AZIMUTH_ANGLE * dtr;
-        }
+        qscat->cds.currentBeamIdx = beam_idx;
+
         for (int idx = 0; idx < g_count[beam_idx]; idx++)
         {
             // set the spacecraft
@@ -575,32 +592,54 @@ evaluate(
                 ephem->gcz);
             spacecraft->orbitState.vsat.Set(ephem->velx, ephem->vely,
                 ephem->velz);
-            spacecraft->attitude.SetRPY(ephem->roll + roll,
-                ephem->pitch + pitch, ephem->yaw + yaw);
+            spacecraft->attitude.SetRPY(ephem->roll + att[0],
+                ephem->pitch + att[1], ephem->yaw + att[2]);
 
             // set the antenna
-            qscat->sas.antenna.groundImpactAzimuthAngle =
-                g_azimuth[beam_idx][idx];
-
-            // calculate the reference vector baseband frequency
-            CoordinateSwitch antenna_frame_to_gc =
-                AntennaFrameToGC(&(spacecraft->orbitState),
-                &(spacecraft->attitude), &(qscat->sas.antenna),
-                g_azimuth[beam_idx][idx]); 
-            Vector3 vector;
-            vector.SphericalSet(1.0, look, azim);
+            qscat->sas.antenna.txCenterAzimuthAngle =
+                g_tx_center_azimuth[beam_idx][idx];
+            qscat->TxCenterToGroundImpactAzimuth(spacecraft);
 
             // set the instrument
             qscat->ses.CmdRxGateDelayEu(g_rx_gate_delay[beam_idx][idx]);
             qscat->ses.CmdTxDopplerEu(g_tx_doppler[beam_idx][idx]);
 
-            TargetInfoPackage tip;
-            TargetInfo(&antenna_frame_to_gc, spacecraft, qscat, vector, &tip);
-            double dif = tip.basebandFreq - g_meas_spec_peak[beam_idx][idx];
+            //-------------------------------------------//
+            // calculate BYU reference vector frequency  //
+            // and calculate the peak spectral frequency //
+            //-------------------------------------------//
+
+            float calc_byu_freq = byux->GetDeltaFreq(spacecraft, qscat, NULL);
+            float orbit_position = qscat->cds.OrbitFraction();
+            float gi_azim = qscat->sas.antenna.groundImpactAzimuthAngle;
+
+            double x[10];
+            int slices_per_spot = qscat->ses.scienceSlicesPerSpot +
+                2 * qscat->ses.guardSlicesPerSide;
+            for (int slice_idx = 0; slice_idx < slices_per_spot; slice_idx++)
+            {
+                int rel_slice;
+                abs_to_rel_idx(slice_idx, slices_per_spot, &rel_slice);
+                x[slice_idx] = byux->GetX(beam_idx, gi_azim, orbit_position,
+                    rel_slice, calc_byu_freq);
+            }
+
+            float calc_spec_peak_slice, calc_spec_peak_freq;
+            double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
+                7.0, 8.0, 9.0 };
+            if (! find_peak(qscat, slice_number, x, slices_per_spot,
+                &calc_spec_peak_slice, &calc_spec_peak_freq))
+            {
+                continue;
+            }
+
+            double dif = calc_spec_peak_freq -
+                g_meas_spec_peak_freq[beam_idx][idx];
             if (ofp)
             {
-                fprintf(ofp, "%g %g %g\n", g_azimuth[beam_idx][idx] * rtd,
-                    g_meas_spec_peak[beam_idx][idx], tip.basebandFreq);
+                fprintf(ofp, "%g %g %g\n",
+                    g_tx_center_azimuth[beam_idx][idx] * rtd,
+                    g_meas_spec_peak_freq[beam_idx][idx], calc_spec_peak_freq);
             }
             dif *= dif;
             mse += dif;

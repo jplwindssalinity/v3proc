@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    generate_foff_table [ -d diagfile ] <sim_config_file>
-//        <echo_data_file> <spec_ref_file> <foff_file>
+//        <echo_data_file> <foff_file>
 //
 // DESCRIPTION
 //    Reads the frequency offset file and generates a correction table
@@ -22,7 +22,6 @@
 //    The following operands are supported:
 //      <sim_config_file>  The simulation configuration file.
 //      <echo_proc_file>   The echo processing file.
-//      <spec_ref_file>    The spectral/reference correction table.
 //      <foff_file>        The frequency offset file.
 //
 // EXAMPLES
@@ -57,6 +56,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <fcntl.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -70,6 +70,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
+#include "echo_funcs.h"
 
 //-----------//
 // TEMPLATES //
@@ -95,10 +96,6 @@ template class List<AngleInterval>;
 #define SECONDS_PER_ORBIT_STEP  190.0
 #define FOFF_ORBIT_STEPS        32
 #define FOFF_AZIMUTH_STEPS      36
-#define EPHEMERIS_CHAR          'E'
-#define ORBIT_STEP_CHAR         'O'
-#define ORBIT_TIME_CHAR         'T'
-#define LINE_SIZE               2048
 
 #define OPTSTRING    "d:"
 
@@ -115,7 +112,7 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int accumulate(int beam_idx, int orbit_step, int azimuth_step,
-        float baseband_freq, float expected_freq);
+        float meas_spec_peak, float exp_spec_peak);
 
 //------------------//
 // OPTION VARIABLES //
@@ -128,7 +125,7 @@ unsigned char diagfile_opt = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -d diagfile ]", "<sim_config_file>",
-    "<echo_data_file>", "<spec_ref_file>", "<foff_file>", 0};
+    "<echo_data_file>", "<foff_file>", 0};
 
 double g_foff_sum[NUMBER_OF_QSCAT_BEAMS][FOFF_ORBIT_STEPS][FOFF_AZIMUTH_STEPS];
 double g_meas_sum[NUMBER_OF_QSCAT_BEAMS][FOFF_ORBIT_STEPS][FOFF_AZIMUTH_STEPS];
@@ -167,12 +164,11 @@ main(
         }
     }
 
-    if (argc != optind + 4)
+    if (argc != optind + 3)
         usage(command, usage_array, 1);
 
     const char* config_file = argv[optind++];
     const char* echo_data_file = argv[optind++];
-    const char* spec_ref_file = argv[optind++];
     const char* foff_file = argv[optind++];
 
     //---------------------//
@@ -199,15 +195,11 @@ main(
     }
 
     //---------------------------------//
-    // read in spectral reference file //
-    //---------------------------------//
-
-    //---------------------------------//
     // open echo data file for reading //
     //---------------------------------//
 
-    FILE* ifp = fopen(echo_data_file, "r");
-    if (ifp == NULL)
+    int ifd = open(echo_data_file, O_RDONLY);
+    if (ifd == -1)
     {
         fprintf(stderr, "%s: error opening echo data file %s\n", command,
             echo_data_file);
@@ -218,7 +210,7 @@ main(
     // initialize //
     //------------//
 
-    int orbit_time = 0;
+    unsigned int orbit_time = 0;
 
     //-----------------------//
     // read and process data //
@@ -226,16 +218,18 @@ main(
 
     do
     {
-        //-------------//
-        // read a line //
-        //-------------//
+        //--------------------//
+        // read the record id //
+        //--------------------//
 
-        char line[LINE_SIZE];
-        if (fgets(line, LINE_SIZE, ifp) == NULL)
+        int id;
+        int size = sizeof(int);
+        int retval = read(ifd, &id, size);
+        if (retval != size)
         {
-            if (feof(ifp))
-                break;
-            if (ferror(ifp))
+            if (retval == 0)
+                break;    // EOF
+            else
             {
                 fprintf(stderr, "%s: error reading echo data file %s\n",
                     command, echo_data_file);
@@ -247,56 +241,54 @@ main(
         // parse //
         //-------//
 
-        switch (line[0])
+        switch (id)
         {
-        case EPHEMERIS_CHAR:
-            // ephemerities are not needed
-            break;
-        case ORBIT_TIME_CHAR:
-            if (sscanf(line, " %*c %d", &orbit_time) != 1)
+        case SPOT_ID:
+            int beam_idx, ideal_encoder, land_flag, orbit_step, azimuth_step;
+            float tx_doppler, rx_gate_delay, tx_center_azimuth,
+                meas_spec_peak_freq, total_signal_energy, time_since_an;
+            if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
+                &ideal_encoder, &tx_center_azimuth, &meas_spec_peak_freq,
+                &total_signal_energy, &land_flag))
             {
-                fprintf(stderr, "%s: error parsing orbit time line\n",
-                    command);
-                fprintf(stderr, "  Line: %s\n", line);
-                exit(1);
-            }
-            break;
-        case ORBIT_STEP_CHAR:
-            // orbit step not needed
-            break;
-        default:
-            int beam_idx, ideal_encoder, raw_encoder, land_flag;
-            float tx_doppler, rx_gate_delay, baseband_freq, expected_freq,
-                total_signal_energy;
-            if (sscanf(line, " %d %f %f %d %d %f %f %f %d", &beam_idx,
-                &tx_doppler, &rx_gate_delay, &ideal_encoder, &raw_encoder,
-                &baseband_freq, &expected_freq, &total_signal_energy,
-                &land_flag) != 9)
-            {
-                fprintf(stderr, "%s: error parsing line\n", command);
-                fprintf(stderr, "  Line: %s\n", line);
+                fprintf(stderr,
+                    "%s: error reading spot from echo data file %s\n",
+                    command, echo_data_file);
                 exit(1);
             }
 
             // calculate X azimuth step
-            int azimuth_step = (int)(FOFF_AZIMUTH_STEPS *
+            azimuth_step = (int)(FOFF_AZIMUTH_STEPS *
                 (double)ideal_encoder / (double)ENCODER_N + 0.5);
             azimuth_step %= FOFF_AZIMUTH_STEPS;
 
             // calculate X orbit step
-            float time_since_an = (float)orbit_time /
+            time_since_an = (float)orbit_time /
                 (float)ORBIT_TICKS_PER_SECOND;
-            int orbit_step = (int)(time_since_an / SECONDS_PER_ORBIT_STEP +
+            orbit_step = (int)(time_since_an / SECONDS_PER_ORBIT_STEP +
                 0.5);
             orbit_step %= FOFF_ORBIT_STEPS;
 
-            accumulate(beam_idx, orbit_step, azimuth_step, baseband_freq,
-                expected_freq);
+            accumulate(beam_idx, orbit_step, azimuth_step, meas_spec_peak_freq,
+                calc_spec_peak_freq);
+            break;
+        case EPHEMERIS_ID:
+            float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;
+            read_ephemeris(ifd, &gcx, &gcy, &gcz, &velx, &vely, &velz, &roll,
+                &pitch, &yaw);
+            break;
+        case ORBIT_STEP_ID:
+            read_orbit_step(ifd, &orbit_step);
+            break;
+        case ORBIT_TIME_ID:
+            read_orbit_time(ifd, &orbit_time);
+            break;
+        default:
             break;
         }
     } while (1);
 
-    fclose(ifp);
+    close(ifd);
 
     //-----------------//
     // write out table //
@@ -335,7 +327,7 @@ main(
     if (diagfile_opt)
     {
         FILE* ofp = fopen(diagfile, "w");
-        if (ifp == NULL)
+        if (ofp == NULL)
         {
             fprintf(stderr, "%s: error opening diagnostic output file %s\n",
                 command, diagfile);
@@ -385,12 +377,12 @@ accumulate(
     int    beam_idx,
     int    orbit_step,
     int    azimuth_step,
-    float  baseband_freq,
-    float  expected_freq)
+    float  meas_spec_peak,
+    float  exp_spec_peak)
 {
-    float dif = baseband_freq - expected_freq;
-    g_meas_sum[beam_idx][orbit_step][azimuth_step] += baseband_freq;
-    g_calc_sum[beam_idx][orbit_step][azimuth_step] += expected_freq;
+    float dif = meas_spec_peak - exp_spec_peak;
+    g_meas_sum[beam_idx][orbit_step][azimuth_step] += meas_spec_peak;
+    g_calc_sum[beam_idx][orbit_step][azimuth_step] += exp_spec_peak;
     g_foff_sum[beam_idx][orbit_step][azimuth_step] += dif;
     g_count[beam_idx][orbit_step][azimuth_step]++;
 

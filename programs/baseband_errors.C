@@ -330,7 +330,7 @@ main(
 				Attitude* attitude;
 				CoordinateSwitch antenna_frame_to_gc;
 				Vector3 rlook_antenna;
-				TargetInfoPackage tip;
+				QscatTargetInfo qti;
 
 				switch(qscat_event.eventId)
 				{
@@ -366,10 +366,10 @@ main(
 
                     orbit_state = &(spacecraft.orbitState);
                     attitude = &(spacecraft.attitude);
- 
+
                     antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
                         attitude, antenna, antenna->txCenterAzimuthAngle);
- 
+
                     double look, azimuth;
                     if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
                         &spacecraft, beam, antenna->spinRate, &look, &azimuth))
@@ -379,10 +379,10 @@ main(
                           command);
                         exit(1);
                     }
- 
+
                     rlook_antenna.SphericalSet(1.0, look, azimuth);
-                    TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-                        rlook_antenna, &tip);
+                    qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+                        rlook_antenna, &qti);
 
 					//------------------------------//
 					// calculate the baseband error //
@@ -390,7 +390,7 @@ main(
 
 					// any deviation from zero Hz is undesirable
 					fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
-                        tip.basebandFreq, qscat.ses.txDoppler);
+                        qti.basebandFreq, qscat.ses.txDoppler);
 
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;

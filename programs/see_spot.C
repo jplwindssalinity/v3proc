@@ -1,50 +1,50 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		see_spot
+//    see_spot
 //
 // SYNOPSIS
-//		see_spot [ -d dB ] [ -cs ] <sim_config_file> <output_file>
+//    see_spot [ -d dB ] [ -cs ] <sim_config_file> <output_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b instrument based on the parameters
-//		in the simulation configuration file.  Generates a binary
-//		vector graphics files for the spots.
+//    Simulates the SeaWinds 1b instrument based on the parameters
+//    in the simulation configuration file.  Generates a binary
+//    vector graphics files for the spots.
 //
 // OPTIONS
-//		[ -d dB ]	dB level for contours (defaults to 3.0)
-//		[ -c ]		Show the centroid
-//		[ -s ]		Show slices instead of spots
+//    [ -d dB ]  dB level for contours (defaults to 3.0)
+//    [ -c ]     Show the centroid
+//    [ -s ]     Show slices instead of spots
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>		The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
-//		<output_file>			The binary vector graphics output file.
+//    The following operand is supported:
+//      <sim_config_file>  The sim_config_file needed listing
+//                         all input parameters, input files, and
+//                         output files.
+//      <output_file>o     The binary vector graphics output file.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% see_spot -c sws1b.cfg spot.bvg
+//    An example of a command line is:
+//      % see_spot -c sws1b.cfg spot.bvg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//     0  Program executed successfully
+//    >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston
+//    hudd@casket.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -52,7 +52,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -104,7 +104,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define DEFAULT_DB_LEVEL	-3.0
+#define DEFAULT_DB_LEVEL  -3.0
 
 //--------//
 // MACROS //
@@ -122,7 +122,7 @@ template class TrackerBase<unsigned short>;
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING	"cd:s"
+#define OPTSTRING  "cd:s"
 
 unsigned char centroid_opt = 0;
 unsigned char slice_opt = 0;
@@ -133,7 +133,7 @@ float contour_level = pow(10.0, 0.1 * DEFAULT_DB_LEVEL);
 //------------------//
 
 const char* usage_array[] = { "[ -d dB ]", "[ -cs ]", "<sim_config_file>",
-	"<output_file>", 0};
+    "<output_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -141,8 +141,8 @@ const char* usage_array[] = { "[ -d dB ]", "[ -cs ]", "<sim_config_file>",
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
 	//------------------------//
 	// parse the command line //
@@ -358,7 +358,7 @@ main(
 					// slices //
 					//--------//
 
-					LocateSlices(&spacecraft, &qscat, &meas_spot);
+					qscat.LocateSlices(&spacecraft, &meas_spot);
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{

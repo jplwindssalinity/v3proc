@@ -79,14 +79,14 @@ PROGRAMS = \
 	reformat_pattern \
 	test_pattern \
 	l1a_echo_proc \
-	generate_foff_table \
 	fix_dtc \
 	fix_knowledge \
 	get_DopRan_scan \
 	get_X_scan \
     expand_calpulse \
     ephem_to_ascii \
-	BYUX_vs_time 
+	generate_foff_table \
+	BYUX_vs_time
 #	sim_accurate
 #	generate_kfactor
 

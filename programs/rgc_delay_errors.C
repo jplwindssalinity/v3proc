@@ -327,7 +327,7 @@ main(
 				Attitude* attitude;
 				double ideal_delay, delay_error;
 				CoordinateSwitch antenna_frame_to_gc;
-				TargetInfoPackage tip;
+				QscatTargetInfo qti;
 				Vector3 vector;
 				float delay;
                 SesBeamInfo* ses_beam_info;
@@ -380,15 +380,15 @@ main(
                         exit(1);
                     }
 					vector.SphericalSet(1.0, look, azim);
-					TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
-						vector, &tip);
+					qscat.TargetInfo(&antenna_frame_to_gc, &spacecraft,
+						vector, &qti);
 
 					//---------------------------//
 					// calculate the ideal delay //
 					//---------------------------//
 
                     ses_beam_info = qscat.GetCurrentSesBeamInfo();
-					ideal_delay = tip.roundTripTime +
+					ideal_delay = qti.roundTripTime +
 						(qscat.ses.txPulseWidth -
                         ses_beam_info->rxGateWidth) / 2.0;
 
