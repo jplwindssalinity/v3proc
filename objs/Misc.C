@@ -508,3 +508,37 @@ wrap_angle_near(
 
 	return(angle);
 }
+
+//------------//
+// angle_diff //
+//------------//
+
+//
+// Computes the positive difference between two angles with the result
+// always less than pi.
+//
+
+float angle_diff(float ang1, float ang2)
+
+{
+	while (ang1 < 0) ang1 += two_pi;
+	while (ang1 > two_pi) ang1 -= two_pi;
+
+	while (ang2 < 0) ang2 += two_pi;
+	while (ang2 > two_pi) ang2 -= two_pi;
+
+	float result;
+	if (ang1 > ang2)
+	{
+		result = ang1 - ang2;
+	}
+	else
+	{
+		result = ang2 - ang1;
+	}
+
+	if (result > pi) result = two_pi - result;
+
+	return(result);
+
+}
