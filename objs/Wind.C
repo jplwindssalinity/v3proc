@@ -1,6 +1,6 @@
 //==============================================================//
 // Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// U.S. Government sponsorship acknowledged.			//
 //==============================================================//
 
 static const char rcs_id_wind_c[] =
@@ -14,6 +14,7 @@ static const char rcs_id_wind_c[] =
 #include "GSparameters.h"
 #include "Misc.h"
 #include "Array.h"
+#include "AngleInterval.h"
 #include "LonLat.h"
 
 #include "L1AExtract.h"
@@ -377,14 +378,22 @@ WVC::WriteL2B(
 
 		idx++;
 	}
-
+         
+	if(selected_allocated){
+	  selected_idx=ambiguities.NodeCount();
+	  selected->WriteL2B(fp);
+	}
 	//----------------------//
 	// write selected index //
 	//----------------------//
-
+        
 	if (fwrite((void *)&selected_idx, sizeof(char), 1, fp) != 1)
 		return(0);
 
+	//----------------------//
+        // Write directionRanges//
+        //----------------------//
+	directionRanges.Write(fp);
 	return(1);
 }
 
@@ -443,6 +452,10 @@ WVC::ReadL2B(
 
 	selected = ambiguities.GetByIndex((int)selected_idx);
 
+	//----------------------//
+        // Read directionRanges //
+        //----------------------//
+	directionRanges.Read(fp);
 	return(1);
 }
 
@@ -2598,6 +2611,45 @@ WindSwath::MedianFilterPass(
 					new_selected[cti][ati] = wvp;
 				}
 			}	// done with ambiguities
+			//------------------------------------//
+                        // Use range information if available //
+                        //------------------------------------//
+                        if(wvc->directionRanges.NodeCount()!=0){
+
+			  // find index of new_selected in ambiguities list;
+                          int idx=-1;
+                          int test_idx=0;
+			  for(WindVectorPlus* wvp=swath[cti][ati]->ambiguities.GetHead();
+			      wvp;wvp=swath[cti][ati]->ambiguities.GetNext(),test_idx++){
+			    if(wvp==new_selected[cti][ati]){
+			      idx=test_idx;
+                              break;
+			    }
+			  }
+			  
+			  // Get Range Information
+			  AngleInterval* range=swath[cti][ati]->directionRanges.GetHead();
+			  for(int c=0;c<idx;c++) range=swath[cti][ati]->directionRanges.GetNext();
+                          
+			  // Check to see if the width of the range is nonzero
+			  if(range->left!=range->right){
+			     WindVectorPlus* wvp = new WindVectorPlus;
+
+                             // Determine the Median Vector
+                             if(GetMedianBySorting(wvp, cti_min, cti_max, 
+						    ati_min,ati_max)) 
+			       {
+
+				 // If the direction of the median vector is
+				 // within the range then SELECT the median vector
+				 if(range->InRange(wvp->dir)){
+				   new_selected[cti][ati]=wvp;
+				 } 
+			       }
+                             // Otherwise select the closest ambiguity
+			     else delete wvp;
+			  }
+			} // Done with use range info procedure
 		}	// done with ati
 	}	// done with cti
 
@@ -2614,15 +2666,85 @@ WindSwath::MedianFilterPass(
 			{
 				if (new_selected[cti][ati] != swath[cti][ati]->selected)
 				{
-					swath[cti][ati]->selected = new_selected[cti][ati];
-					change[cti][ati] = 1;
-					flips++;
+				  // Special Procedure if Range Information is
+				  // used
+				  
+				  if(swath[cti][ati]->directionRanges.NodeCount()!=0){
+				    // if selected already allocated
+                                    // delete it
+				    if(swath[cti][ati]->selected_allocated){ 
+				      delete swath[cti][ati]->selected;
+				      swath[cti][ati]->selected_allocated=0;
+				    }
+
+				    // Is the selected one of the original
+				    // ambiguities?
+                                    int found=0;
+				    for(WindVectorPlus* wvp=swath[cti][ati]->ambiguities.GetHead();
+					wvp;swath[cti][ati]->ambiguities.GetNext()){
+				      if(wvp==new_selected[cti][ati]){
+					found=1;
+					break;
+				      } 
+				    }
+				    // if it is not then allocate selected
+                                    if(!found){
+				      swath[cti][ati]->selected_allocated=1;
+				    }
+				  }
+				  swath[cti][ati]->selected = new_selected[cti][ati];
+				  change[cti][ati] = 1;
+				  flips++;
 				}
 			}
 		}
 	}
 
 	return(flips);
+}
+
+//-----------------------------------------//
+// WindSwath::GetMedianBySorting           //
+//-----------------------------------------//
+int            
+WindSwath::GetMedianBySorting(
+      WindVectorPlus* wvp, 
+      int             cti_min,
+      int             cti_max, 
+      int             ati_min, 
+      int             ati_max){
+  float* x=new float[(cti_max-cti_min)*(ati_max-ati_min)];
+  float* y=new float[(cti_max-cti_min)*(ati_max-ati_min)];
+  int count=0;
+  for (int i = cti_min; i < cti_max; i++)
+    {
+      for (int j = ati_min; j < ati_max; j++)
+	{
+	  WVC* other_wvc = swath[i][j];
+	  if (! other_wvc)
+	    continue;
+	  
+	  WindVectorPlus* other_wvp = other_wvc->selected;
+	  if (! other_wvp)
+	    continue;
+
+	  x[count] = other_wvp->spd * cos(other_wvp->dir);
+	  y[count] = other_wvp->spd * sin(other_wvp->dir);
+	  count++;
+	}
+    }
+  if(count==0) return(0);
+  sort_increasing(x,count);
+  sort_increasing(y,count);
+  float x_med=x[count/2+1];
+  float y_med=x[count/2+1];
+  wvp->spd=sqrt(x_med*x_med + y_med*y_med);
+  wvp->dir=acos(x_med/wvp->spd);
+  if(y_med<0) wvp->dir=two_pi-wvp->dir;
+  wvp->obj=-(float)HUGE_VAL;
+  delete x;
+  delete y;
+  return(1);
 }
 
 //--------------------------//

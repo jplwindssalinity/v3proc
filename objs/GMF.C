@@ -2313,7 +2313,7 @@ GMF::WriteObjXmgr(
 // The H1 version uses adaptive thresholding and a sub-function
 
 #define H1_DELTA_SPEED_FRACTION    0.2
-#define H1_THRESH_FRACTION         0.9
+#define H1_THRESH_FRACTION         0.1   // for S1 should be 0.9
 
 int
 GMF::SolutionCurve_H1(
@@ -3338,6 +3338,7 @@ GMF::RetrieveWinds_S2(
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
     SolutionCurve_H1(meas_list, kp);
+    
     ConvertObjToPdf();
 
     float peak_dir[DEFAULT_MAX_SOLUTIONS];
@@ -3809,13 +3810,12 @@ GMF::EstimateDirMSE(
   return(retval);
 }
 
-/****
 
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
 //-----------------------//
 
-#define S3_PROB_THRESHOLD 0.1
+#define S3_PROB_THRESHOLD 0.8
 int
 GMF::RetrieveWinds_S3(
     MeasList*  meas_list,
@@ -3893,81 +3893,123 @@ GMF::RetrieveWinds_S3(
 
     wvc->SortByObj();
 
-
+    //-------------------------------------------//
+    // Determine Direction Intervals Comprising  //
+    // (S3_PROB_THRESHOLD)*100% of the probability    //
+    //-------------------------------------------//
     
     //-------------------------------------------//
     // Determine edges each of peak              //
-    // and store them as additional ambiguities  //
+    // and store them in wvc->DirectionRanges    //
     //-------------------------------------------//
-
-    float* left_edges=new float[ambiguities];
-    float* right_edges=new float[ambiguities];
-    int num_intervals;
-    if(!S3GetPeakEdges(S3_PROB_THRESHOLD, &num_intervals, left_edges, right_edges)) 
-      {
-	delete left_edges;
-        delete right_edges;
-        return(0);
-      }
     
-    int* peak_to_interval_map = new int[ambiguities];
+    if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
 
-    int p=0;
-    for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;p++){
-      peak_to_interval_map[p] = -1;
-      for(int c=0;c<num_intervals;c++){
-	if(BETWEENANG(wvp->dir,left_edges[c],right_edges[c]))
-	  peak_to_interval_map[p] = c;
-      }
-      // Delete Peaks outside of probability intervals
-      if(peak_to_interval_map[p]==-1){
-	wvp=wvc->ambiguities.RemoveCurrent();
-	delete wvp;
-        wvp=wvc->ambiguities.GetCurrent();
-        ambiguities--;
-	if(wvp) peak_to_interval_map[p]=peak_to_interval_map[p+1];
-      }
-      else wvp=wvc->ambiguities.GetNext();
+    //-------------------------//
+    // limit to four solutions //
+    //-------------------------//
+
+    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
+    if (delete_count > 0)
+    {
+        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        for (int i = 0; i < delete_count; i++)
+        {
+            wvc->ambiguities.GotoTail();
+            wvc->directionRanges.GotoTail();
+            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
+	    AngleInterval* ai = wvc->directionRanges.RemoveCurrent();
+            delete wvp;
+	    delete ai;
+        }
     }
 
-    
-    for(int p=0;p<ambiguities;p++){
-      WindVectorPlus* wvp=new WindVectorPlus;
-      wvp->dir=left_edges[peak_to_interval_map[p]];
-      float dummy;
-      FindBestSpeed(meas_list, kp, wvp->dir, 0, 50,
-            &(wvp->spd), &dummy);
-      wvp->obj = -99.e99; // These ambiguities should never be used for
-                          // nudging.
-      wvc->ambiguities.Append(wvp);
-    }
-
-    for(int p=0;p<ambiguities;p++){
-      WindVectorPlus* wvp=new WindVectorPlus;
-      wvp->dir=right_edges[peak_to_interval_map[p]];
-      float dummy;
-      FindBestSpeed(meas_list, kp, wvp->dir, 0, 50,
-            &(wvp->spd), &dummy);
-      wvp->obj = -99.e99; // These ambiguities should never be used for
-                          // nudging.
-      wvc->ambiguities.Append(wvp);
-    }
-    delete peak_to_interval_map;
-    delete left_edges;
-    delete right_edges;
     return(1);
 }
 
-// This function incomplete 
+
 int 
-GMF::S3GetPeakEdges(
-     float threshold, 
-     int*  num_intervals, 
-     int*  left_edges, 
-     int*  right_edges){
-     return(0);
+GMF::BuildDirectionRanges(
+     WVC*   wvc,
+     float threshold){
+
+     int num=wvc->ambiguities.NodeCount();
+     if(num==0) return(1);
+     AngleInterval* range=new AngleInterval[num];
+     
+     // Initialize Ranges to Width 0
+     int offset=0;
+     for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
+	 wvp=wvc->ambiguities.GetNext(), offset++){
+       range[offset].SetLeftRight(wvp->dir,wvp->dir);
+     }
+    
+     // Initialize intermediate variables
+     float prob_sum=0;
+     int* dir_include=new int[_phiCount];
+     for(int c=0;c<_phiCount;c++) dir_include[c]=0;
+     int* left_idx= new int[num];
+     int* right_idx=new int[num];
+     for(int c=0;c<num;c++){
+        left_idx[c]=int(floor(range[c].left/_phiStepSize));
+        right_idx[c]=(left_idx[c]+1)%_phiCount;
+     }
+     //Add the maximal probability among directions not included in range
+     //to prob_sum, and expand ranges accordingly.
+     while(1){
+
+       // Determine maximum available directions by sliding down the
+       // peaks on both sides
+       float max=0.0;
+       int max_idx=-1;
+       int right=0;
+       for(int c=0;c<num;c++){
+	 if(_bestObj[left_idx[c]]>max && !dir_include[left_idx[c]]){
+	   max=_bestObj[left_idx[c]];
+	   right=0;
+	   max_idx=c;
+	 }
+	 if(_bestObj[right_idx[c]]>max && !dir_include[right_idx[c]]){
+	   max=_bestObj[right_idx[c]];
+	   right=1;
+	   max_idx=c;
+	 }
+       }
+       if(max==0.0){
+	 fprintf(stderr,"GMF::BuildDirectionRanges() Max=0.0?????\n");
+         exit(1);
+       }
+       // Add maximum to total included probability
+       prob_sum+=max;
+
+       // Break if threshold reached
+       if(prob_sum>threshold) break;
+
+       // Expand range to include best available direction
+       //  and update intermediate variables
+       if(right){
+	 float tmp_left=range[max_idx].left;
+         float tmp_right=right_idx[max_idx]*_phiStepSize+0.5*_phiStepSize;
+         dir_include[right_idx[max_idx]]=1;
+	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
+	 right_idx[max_idx]++;
+	 right_idx[max_idx]%=_phiCount;
+       }
+       else{
+	 float tmp_right=range[max_idx].right;
+         float tmp_left=left_idx[max_idx]*_phiStepSize-0.5*_phiStepSize;
+         dir_include[left_idx[max_idx]]=1;
+	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
+	 left_idx[max_idx]--;
+	 if(left_idx[max_idx]<0) left_idx[max_idx]+=_phiCount;
+       }
+     }
+     for(int c=0;c<num;c++) wvc->directionRanges.Append(&range[c]);
+     delete dir_include;
+     delete left_idx;
+     delete right_idx;
+     return(1);
 } 
 
-******/
 
 

@@ -103,6 +103,8 @@ public:
     int     RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc,
                 int h3_and_s1_flag = 0);
     int     RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     BuildDirectionRanges(WVC* wvc, float threshold);
     int     BruteForceGetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
 			      int level=0, float* tmp_peak_dir=NULL);
     int     GetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,

@@ -55,6 +55,18 @@ AngleInterval::GetEquallySpacedAngles(
   return(1);
 }
 
+int
+AngleInterval::Read(FILE* fp){
+ if(fwrite((void*)&left,sizeof(float),1,fp)!=1) return(0);
+ if(fwrite((void*)&right,sizeof(float),1,fp)!=1) return(0);
+ return(1);
+}
+int
+AngleInterval::Write(FILE* fp){
+ if(fread((void*)&left,sizeof(float),1,fp)!=1) return(0);
+ if(fread((void*)&right,sizeof(float),1,fp)!=1) return(0);
+ return(1);
+}
 
 //------------------------------------//
 // AngleIntervalList Methods          //
@@ -79,6 +91,47 @@ AngleIntervalList::FreeContents(){
   while((i = RemoveCurrent()) != NULL)
     delete i;
   return;
+}
+
+int 
+AngleIntervalList::Write(FILE* fp){
+  int node_count=NodeCount();
+  if(node_count!=0){   // allows backward compatibility
+    char magic[21]="Angle_Interval_Magic";
+    if(fwrite((void *)&magic[0], sizeof(char), 21, fp) != 21)
+		return(0);
+    if(fwrite((void *)&node_count, sizeof(int),1, fp) != 1)
+		return(0);
+    for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
+      if(! ai->Write(fp)) return(0);
+    }
+  }
+  return(1);
+}
+
+int 
+AngleIntervalList::Read(FILE* fp){
+  int node_count;
+  char magic[21];
+  fpos_t pos;
+  if(fgetpos(fp,&pos)!=0)return(0);
+  if(fread((void *)&magic[0], sizeof(char), 21, fp) != 21){
+    if(feof(fp)) return(1);
+    else return(0);
+  }
+  if(strcmp(magic,"Angle_Interval_Magic")!=0){  // for backward compatibility
+    if(fsetpos(fp,&pos)!=0)return(0);
+  }
+  else{
+    if(fread((void *)&node_count, sizeof(int),1, fp) != 1)
+      return(0);
+    for(int c=0;c<node_count;c++){
+      AngleInterval* ai= new AngleInterval;
+      if(! ai->Read(fp)) return(0);
+      if(! Append(ai)) return(0);
+    }
+  }
+  return(1);
 }
 
 //----------------------------------//

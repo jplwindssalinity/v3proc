@@ -77,9 +77,11 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+class AngleInterval;
 template class List<StringPair>;
 template class List<EarthPosition>;
 template class List<WindVectorPlus>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //

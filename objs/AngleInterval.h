@@ -5,13 +5,17 @@
 #include<math.h>
 #include"Constants.h"
 
+
 class AngleInterval{
  public:
   AngleInterval();
   ~AngleInterval();
+  int Read(FILE* fp);
+  int Write(FILE* fp);
   int SetLeftRight(float left, float right);
   int GetEquallySpacedAngles(int num_angles, float* angles);
   float GetWidth(){return((left<right)?(right-left):(right+two_pi-left));}
+  int InRange(float angle){ return(BETWEENANG(angle,left,right));}
 
   //variables
 
@@ -24,6 +28,8 @@ class AngleIntervalList : public List<AngleInterval>{
   AngleIntervalList();
   ~AngleIntervalList();
   void FreeContents();
+  int Read(FILE* fp);
+  int Write(FILE* fp);
   int Bisect();
   int GetPossiblePlacings(int num_angles, int* permutations, int*** num_placings);
  protected:

@@ -14,6 +14,7 @@ static const char rcs_id_wind_h[] =
 #include "List.h"
 #include "LonLat.h"
 #include "Index.h"
+#include "AngleInterval.h"
 #include "Matrix.h"
 
 #include <mfhdf.h>
@@ -194,6 +195,7 @@ public:
 	WindVectorPlus*			selected;
 	int                             selected_allocated;
 	List<WindVectorPlus>	ambiguities;
+	AngleIntervalList       directionRanges;
 };
 
 //======================================================================
@@ -369,7 +371,8 @@ public:
 				     int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 					 char** change, int bound, int weight_flag = 0);
-
+        int             GetMedianBySorting(WindVectorPlus* wvp, int cti_min,
+					   int cti_max, int ati_min, int ati_max);
 	//------------//
 	// evaluation //
 	//------------//
