@@ -26,4 +26,14 @@
 #define AT_WIDTH  1624
 #define CT_WIDTH  76
 
+//-----------//
+// PCA stuff //
+//-----------//
+
+#define DIM       32
+#define PC_COUNT  4
+
+enum { NBD_IDX = 0, SPD_IDX, DIR_IDX, MLE_IDX, ENOF_IDX, QUAL_IDX, TBH_IDX,
+    TBV_IDX, TBH_STD_IDX, TBV_STD_IDX, TRANS_IDX, PARAM_COUNT };
+
 #endif

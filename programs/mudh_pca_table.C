@@ -9,11 +9,8 @@
 //
 // SYNOPSIS
 //    mudh_pca_table [ -m mudh_dir ] [ -e enof_dir ] [ -t tb_dir ]
-//        [ -i irr_dir ] [ -c time ] [ -2 pca_both ] [ -1 pca_outer ]
-//        <start_rev> <end_rev> <output_base>
-//
-//    mudh_pca_table [ -h ] [ -p ] [ -m minutes ] [ -r irr_thresh ]
-//        [ -d mudh_dir ] <start_rev> <end_rev> <output_base>
+//        [ -i irr_dir ] [ -c time ] <pca_file> <start_rev> <end_rev>
+//        <output_base>
 //
 // DESCRIPTION
 //    Generates a mudh table for classification.
@@ -24,23 +21,16 @@
 //    [ -t tb]         Use the Tb files located in tb_dir.
 //    [ -i irr_dir ]   IRR files are always used, this can specify the dir.
 //    [ -c time ]      Collocation time for IRR.
-//    [ -2 pca_both ]  PCA file for both beam case.
-//    [ -1 pca_both ]  PCA file for outer beam only case.
-//
-//    [ -h ]             Make a sample histogram. (Number of samples)
-//    [ -p ]             Make a set of probability charts.
-//    [ -m minutes ]     Time difference maximum.
-//    [ -r irr_thresh ]  The SSM/I rain rate to threshold.
-//    [ -d mudh_dir ]    An alternate directory for MUDH files.
 //
 // OPERANDS
+//    <pca_file>     The PCA file.  If short, assumes both beam case.
 //    <start_rev>    Duh.
 //    <end_rev>      Duh again.
 //    <output_base>  The output base.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % mudh_pca_table -m 15 1500 1600 rv1500-1600.15min
+//      % mudh_pca_table -c 30 pca.021100 1500 1600 1500-1600
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -122,11 +112,6 @@ template class List<AngleInterval>;
 #define DEFAULT_ENOF_DIR  "/home/bstiles/carl"
 #define DEFAULT_IRR_DIR   "/export/svt11/hudd/ssmi"
 
-#define DIM               32
-
-enum { NBD_IDX = 0, SPD_IDX, DIR_IDX, MLE_IDX, ENOF_IDX, QUAL_IDX, TBH_IDX,
-    TBV_IDX, TBH_STD_IDX, TBV_STD_IDX, A_IDX, PARAM_COUNT };
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -151,8 +136,8 @@ const double a4 = -0.4368;
 const double a5 = 0.2895;
 
 const char* usage_array[] = { "[ -m mudh_dir ]", "[ -e enof_dir ]",
-    "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "[ -2 pca_both ]",
-    "[ -1 pca_outer ]", "<start_rev>", "<end_rev>", "<output_base>", 0 };
+    "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "<pca_file>",
+    "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // first index: 0=both_beams, 1=outer_only
 // second index: SSM/I class (0=all, 1=rainfree, 2=rain)
@@ -183,11 +168,7 @@ main(
     char* tb_dir = DEFAULT_TB_DIR;
     char* irr_dir = DEFAULT_IRR_DIR;
 
-    char* pca_outer_file = NULL;
-    char* pca_both_file = NULL;
-
-    int opt_outer = 0;
-    int opt_both = 0;
+    int opt_outer_swath = 0;   // assume don't do outer swath
 
     //------------------------//
     // parse the command line //
@@ -208,82 +189,77 @@ main(
         case 't':
             tb_dir = optarg;
             break;
-        case '1':
-            pca_outer_file = optarg;
-            opt_outer = 1;
-            break;
-        case '2':
-            pca_both_file = optarg;
-            opt_both = 1;
-            break;
         case '?':
             usage(command, usage_array, 1);
             break;
         }
     }
 
-    if (argc < optind + 3)
+    if (argc < optind + 4)
         usage(command, usage_array, 1);
 
+    const char* pca_file = argv[optind++];
     int start_rev = atoi(argv[optind++]);
     int end_rev = atoi(argv[optind++]);
     const char* output_base = argv[optind++];
 
-    //------------------//
-    // read PCA file(s) //
-    //------------------//
+    //---------------//
+    // read PCA file //
+    //---------------//
 
     // first index 0=both beams, 1=outer only
-    float pca_weights[2][4][PARAM_COUNT];
+    float pca_weights[2][PC_COUNT][PARAM_COUNT];
     float pca_mean[2][PARAM_COUNT];
     float pca_std[2][PARAM_COUNT];
-    float pca_min[2][PARAM_COUNT];
-    float pca_max[2][PARAM_COUNT];
+    float pca_min[2][PC_COUNT];
+    float pca_max[2][PC_COUNT];
+    Index pc_index[2][PC_COUNT];
 
-    Index pc_index[2][4];
-
-    if (opt_both)
+    FILE* ifp = fopen(pca_file, "r");
+    if (ifp == NULL)
     {
-        FILE* ifp = fopen(pca_both_file, "r");
-        if (ifp == NULL)
+        fprintf(stderr, "%s: error opening PCA file %s\n", command,
+            pca_file);
+        exit(1);
+    }
+    unsigned int w_size = PC_COUNT * PARAM_COUNT;
+    if (fread(pca_weights[0], sizeof(float), w_size, ifp) != w_size ||
+        fread(pca_mean[0], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_std[0], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_min[0], sizeof(float), PC_COUNT, ifp) != PC_COUNT ||
+        fread(pca_max[0], sizeof(float), PC_COUNT, ifp) != PC_COUNT)
+    {
+        fprintf(stderr, "%s: error reading first half of PCA file %s\n",
+            command, pca_file);
+        exit(1);
+    }
+    if (fread(pca_weights[1], sizeof(float), w_size, ifp) != w_size ||
+        fread(pca_mean[1], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_std[1], sizeof(float), PARAM_COUNT, ifp) != PARAM_COUNT ||
+        fread(pca_min[1], sizeof(float), PC_COUNT, ifp) != PC_COUNT ||
+        fread(pca_max[1], sizeof(float), PC_COUNT, ifp) != PC_COUNT)
+    {
+        // only complain if it is NOT EOF
+        if (! feof(ifp))
         {
-            fprintf(stderr, "%s: error opening PCA file %s\n", command,
-                pca_both_file);
+            fprintf(stderr, "%s: error reading second half of PCA file %s\n",
+                command, pca_file);
             exit(1);
-        }
-        fread(pca_weights[0], sizeof(float), 4 * PARAM_COUNT, ifp);
-        fread(pca_mean[0], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_std[0], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_min[0], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_max[0], sizeof(float), PARAM_COUNT, ifp);
-        fclose(ifp);
-
-        // set up indices
-        for (int pc_idx = 0; pc_idx < 4; pc_idx++)
-        {
-            pc_index[0][pc_idx].SpecifyEdges(pca_min[0][pc_idx],
-                pca_max[0][pc_idx], DIM);
         }
     }
-
-    if (opt_outer)
+    else
     {
-        FILE* ifp = fopen(pca_outer_file, "r");
-        if (ifp == NULL)
-        {
-            fprintf(stderr, "%s: error opening PCA file %s\n", command,
-                pca_outer_file);
-            exit(1);
-        }
-        fread(pca_weights[1], sizeof(float), 4 * PARAM_COUNT, ifp);
-        fread(pca_mean[1], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_std[1], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_min[1], sizeof(float), PARAM_COUNT, ifp);
-        fread(pca_max[1], sizeof(float), PARAM_COUNT, ifp);
-        fclose(ifp);
+        opt_outer_swath = 1;
+        printf("  I am outer beam only capable.\n");
+    }
+    fclose(ifp);
 
-        // set up indices
-        for (int pc_idx = 0; pc_idx < 4; pc_idx++)
+    // set up indices
+    for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
+    {
+        pc_index[0][pc_idx].SpecifyEdges(pca_min[0][pc_idx],
+            pca_max[0][pc_idx], DIM);
+        if (opt_outer_swath)
         {
             pc_index[1][pc_idx].SpecifyEdges(pca_min[1][pc_idx],
                 pca_max[1][pc_idx], DIM);
@@ -521,9 +497,9 @@ main(
                     got_tbh = 1;
                 }
 
-                //-------------------//
-                // nadir attenuation //
-                //-------------------//
+                //---------------//
+                // transmittance //
+                //---------------//
 
                 // set these for convenience in writing eq's
                 double tbv = param[TBV_IDX];
@@ -543,9 +519,12 @@ main(
                 }
                 if (tau > 1.0) tau = 1.0;
                 if (tau < 0.0) tau = 0.0;
+                param[TRANS_IDX] = tau;
+/*
                 double alpha = -log(tau);    // one-way nadir optical depth
                 // 2-way att (dB)
-                param[A_IDX] = 20.0 * log10(exp(1.0)) * alpha;
+                double a = 20.0 * log10(exp(1.0)) * alpha;
+*/
 
                 //--------------------------//
                 // determine swath location //
@@ -568,13 +547,11 @@ main(
                 else
                     continue;    // i don't know what the hell is going on.
 
-                //-------------------------------//
-                // only do requested swath parts //
-                //-------------------------------//
+                //-----------------------------------------------//
+                // don't do the outer swath unless PCA available //
+                //----------------------------------------------//
 
-                if (swath_idx == 0 && ! opt_both)
-                    continue;
-                if (swath_idx == 1 && ! opt_outer)
+                if (swath_idx == 1 && ! opt_outer_swath)
                     continue;
 
                 //--------------------------------------//
@@ -589,9 +566,9 @@ main(
                         pca_std[swath_idx][param_idx];
                 }
 
-                double pc[4];
-                int pci[4];
-                for (int pc_idx = 0; pc_idx < 4; pc_idx++)
+                double pc[PC_COUNT];
+                int pci[PC_COUNT];
+                for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
                 {
                     pc[pc_idx] = 0.0;
                     for (int param_idx = 0; param_idx < PARAM_COUNT;
@@ -630,10 +607,8 @@ main(
 
     for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
-      // skip swath parts you didn't do
-      if (swath_idx == 0 && ! opt_both)
-        continue;
-      if (swath_idx == 1 && ! opt_outer)
+      // skip outer swath if you can't do it
+      if (swath_idx == 1 && ! opt_outer_swath)
         continue;
 
       for (int i = 0; i < DIM; i++)
