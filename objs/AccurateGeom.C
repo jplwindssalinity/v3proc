@@ -549,18 +549,18 @@ GetPeakSpectralResponse(
   /*** Temporarily change Doppler and Range flags and initialize commanded Doppler
        and range gate delay to BYU boresight. ****/
 
-  // save old qscat values
-  Qscat old_qscat=*qscat;
+  // make a copy of qscat which will be modified
+  Qscat qscopy=*qscat;
 
-  qscat->cds.useBYUDop=1;
-  qscat->cds.useSpectralDop=0;
-  qscat->cds.useBYURange=1;
-  qscat->cds.useSpectralRange=0;
-  SetDelayAndFrequency(spacecraft,qscat);
+  qscopy.cds.useBYUDop=1;
+  qscopy.cds.useSpectralDop=0;
+  qscopy.cds.useBYURange=1;
+  qscopy.cds.useSpectralRange=0;
+  SetDelayAndFrequency(spacecraft,&qscopy);
 
 
   /***** Initialize look and azim to BYU Boresight value **/
-  if(! GetBYUBoresight(spacecraft,qscat,look,azim)){
+  if(! GetBYUBoresight(spacecraft,&qscopy,look,azim)){
 	    return(0);
   }
 
@@ -582,7 +582,7 @@ GetPeakSpectralResponse(
 
   NegSpecParam other_params;
   other_params.spacecraft=spacecraft;
-  other_params.qscat=qscat;
+  other_params.qscat=&qscopy;
   void* ptr=(void*)(& other_params);
 
   double rtol = SPECTRAL_RESPONSE_TOLERANCE;
@@ -592,13 +592,11 @@ GetPeakSpectralResponse(
 
   freq = p[0][0];
   float dummy;
-  if(!FindPeakResponseAtFreq(antenna_frame_to_gc,spacecraft,qscat,freq,
+  if(!FindPeakResponseAtFreq(antenna_frame_to_gc,spacecraft,&qscopy,freq,
 			     ftol,look,azim,&dummy)) return(0);
   
   free_array(p,2,ndim+1,ndim+2);
 
-  // Reinstate old cds values
-  *qscat=old_qscat;
   return(1);
 }
 
