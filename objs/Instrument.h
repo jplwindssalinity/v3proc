@@ -18,10 +18,10 @@ static const char rcs_id_instrument_h[] =
 
 //======================================================================
 // CLASS
-//      InstrumentEvent
+//		InstrumentEvent
 //
 // DESCRIPTION
-//      The InstrumentEvent object contains an instrument event time
+//		The InstrumentEvent object contains an instrument event time
 //		and event ID.
 //======================================================================
  
@@ -33,7 +33,7 @@ public:
 	// enums //
 	//-------//
 
-    enum InstrumentEventE { NONE, SCATTEROMETER_MEASUREMENT };
+	enum InstrumentEventE { NONE, SCATTEROMETER_MEASUREMENT };
 
 	//--------------//
 	// construction //
@@ -46,8 +46,8 @@ public:
 	// variables //
 	//-----------//
  
-    double      		time;
-    InstrumentEventE	eventId;
+	double				time;
+	InstrumentEventE	eventId;
 	int					beamIdx;
 };
 
@@ -75,8 +75,18 @@ public:
 	// variables //
 	//-----------//
 
-	double				time;
-	Antenna				antenna;
+	double		time;
+	Antenna		antenna;
+
+/*
+	float		chirpRate;			// kHz/ms
+	float		chirpStartM;		// kHz/ms
+	float		chirpStartB;		// kHz
+	float		carrierFrequency;	// GHz
+	float		pulseWidth;			// ms
+	float		systemDelay;		// ms
+	float		gridDelay;			// ms
+*/
 };
 
 #endif

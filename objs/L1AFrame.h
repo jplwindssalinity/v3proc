@@ -17,9 +17,7 @@ static const char rcs_id_l10frame_h[] =
 //		L10Frame
 //======================================================================
 
-#define L10_FRAME_TOP			56
-#define SPOTS_PER_L10_FRAME		10
-#define L10_FRAME_SIZE			(L10_FRAME_TOP+SPOTS_PER_L10_FRAME*6)
+#define L10_FRAME_HEADER_SIZE	56
 
 //======================================================================
 // CLASS
@@ -40,6 +38,9 @@ public:
 
 	L10Frame();
 	~L10Frame();
+
+	int		Allocate(int spots_per_frame, int slices_per_spot);
+	int		Deallocate();
 
 	//-------------------//
 	// data manipulation //
@@ -69,12 +70,18 @@ public:
 	Attitude	attitude;
 
 	// antenna position
+	unsigned short*		antennaPosition;
 
-	unsigned short	antennaPosition[SPOTS_PER_L10_FRAME];
+	// science measurements
+	float*				science;
 
-	// sigma-0's
-
-	float		sigma0[SPOTS_PER_L10_FRAME];
+	//-------------------------//
+	// informational variables //
+	//-------------------------//
+ 
+	int		spotsPerFrame;
+	int		slicesPerSpot;
+	int		totalSlices;
 };
 
 #endif

@@ -124,6 +124,13 @@ ConfigInstrumentSim(
 		return(0);
 	instrument_sim->endTime = end_time;
 
+	//---------------------//
+	// configure level 0.0 //
+	//---------------------//
+
+	if (! ConfigL00(&(instrument_sim->l00), config_list))
+		return(0);
+
 	return(1);
 }
 
@@ -277,6 +284,22 @@ ConfigL00(
 		return(0);
 	l00->SetFilename(l00_filename);
 
+	int spots_per_frame;
+	if (! config_list->GetInt(L00_SPOTS_PER_FRAME_KEYWORD, &spots_per_frame))
+		return(0);
+	int slices_per_spot;
+	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
+		return(0);
+	if (! l00->AllocateBuffer(spots_per_frame, slices_per_spot))
+		return(0);
+
+	//-------------------------//
+	// configure the l00 frame //
+	//-------------------------//
+
+	if (! l00->frame.Allocate(spots_per_frame, slices_per_spot))
+		return(0);
+	
 	return(1);
 }
 
@@ -297,6 +320,23 @@ ConfigL10(
 	if (l10_filename == NULL)
 		return(0);
 	l10->SetFilename(l10_filename);
+
+	int spots_per_frame;
+	if (! config_list->GetInt(L00_SPOTS_PER_FRAME_KEYWORD, &spots_per_frame))
+		return(0);
+	int slices_per_spot;
+	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
+		return(0);
+	if (! l10->AllocateBuffer(spots_per_frame, slices_per_spot))
+		return(0);
+
+	//-------------------------//
+	// configure the l10 frame //
+	//-------------------------//
+
+	if (! l10->frame.Allocate(spots_per_frame, slices_per_spot))
+		return(0);
+	
 
 	return(1);
 }

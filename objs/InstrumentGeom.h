@@ -17,4 +17,7 @@ static const char rcs_id_instrumentgeom_h[] =
 CoordinateSwitch BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
 					Antenna* antenna, Beam* beam);
 
+int FindSliceOutline(float freq_1, float freq_2, float freq_tol,
+	Outline* outline);
+
 #endif

@@ -33,6 +33,6 @@ L00ToL10::Convert(
 	L10*	l10)
 {
 	// this method will need to do real work later
-	memcpy(l10->buffer, l00->buffer, L00_FRAME_SIZE);
+	memcpy(l10->buffer, l00->buffer, l00->bufferSize);
 	return(1);
 }

@@ -54,7 +54,7 @@ L10ToL15::Convert(
 	// for each spot... //
 	//------------------//
 
-	for (int i = 0; i < SPOTS_PER_L10_FRAME; i++)
+	for (int i = 0; i < l10->frame.spotsPerFrame; i++)
 	{
 		//------------------------//
 		// ...generate a MeasSpot //
@@ -109,7 +109,7 @@ L10ToL15::Convert(
 			 earth_intercept(meas_spot->scOrbitState.rsat, rlook_gc);
 
 		Meas* meas = new Meas();
-		meas->value = l10->frame.sigma0[i];
+		meas->value = l10->frame.science[i];
 		double alt,lat,lon;
 		if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC, &alt,
 				&lat, &lon) == 0)

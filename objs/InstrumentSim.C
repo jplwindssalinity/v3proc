@@ -201,35 +201,36 @@ InstrumentSim::ScatSim(
 	// update the level 0.0 frame //
 	//----------------------------//
 
+	L00Frame* l00_frame = &(l00.frame);
 	if (_spotNumber == 0)
 	{
 		l00FrameReady = 0;
-		l00Frame.time = time;
+		l00_frame->time = time;
 		if (sc_orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
 			 &alt, &lat, &lon) == 0)
 		{
 			printf("Error: ScatSim can't convert rsat\n");
 			return(0);
 		}
-		l00Frame.gcAltitude = alt;
-		l00Frame.gcLongitude = lon;
-		l00Frame.gcLatitude = lat;
-		l00Frame.gcX = sc_orbit_state->rsat.get(0);
-		l00Frame.gcY = sc_orbit_state->rsat.get(1);
-		l00Frame.gcZ = sc_orbit_state->rsat.get(2);
-		l00Frame.velX = sc_orbit_state->vsat.get(0);
-		l00Frame.velY = sc_orbit_state->vsat.get(1);
-		l00Frame.velZ = sc_orbit_state->vsat.get(2);
+		l00_frame->gcAltitude = alt;
+		l00_frame->gcLongitude = lon;
+		l00_frame->gcLatitude = lat;
+		l00_frame->gcX = sc_orbit_state->rsat.get(0);
+		l00_frame->gcY = sc_orbit_state->rsat.get(1);
+		l00_frame->gcZ = sc_orbit_state->rsat.get(2);
+		l00_frame->velX = sc_orbit_state->vsat.get(0);
+		l00_frame->velY = sc_orbit_state->vsat.get(1);
+		l00_frame->velZ = sc_orbit_state->vsat.get(2);
 	}
-	l00Frame.antennaPosition[_spotNumber] = antenna->GetEncoderValue();
-	l00Frame.sigma0[_spotNumber] = value;
+	l00_frame->antennaPosition[_spotNumber] = antenna->GetEncoderValue();
+	l00_frame->science[_spotNumber] = value;
 	_spotNumber++;
 
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
-	if (_spotNumber >= SPOTS_PER_L00_FRAME)
+	if (_spotNumber >= l00_frame->spotsPerFrame)
 	{
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame

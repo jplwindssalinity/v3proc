@@ -7,6 +7,7 @@ static const char rcs_id_l10frame_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
+#include <malloc.h>
 #include "L10Frame.h"
 
 
@@ -16,7 +17,8 @@ static const char rcs_id_l10frame_c[] =
 
 L10Frame::L10Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0)
+	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
+	science(NULL), spotsPerFrame(0), slicesPerSpot(0), totalSlices(0)
 {
 	return;
 }
@@ -24,6 +26,58 @@ L10Frame::L10Frame()
 L10Frame::~L10Frame()
 {
 	return;
+}
+
+//---------------//
+// L10::Allocate //
+//---------------//
+ 
+int
+L10Frame::Allocate(
+	int		spots_per_frame,
+	int		slices_per_spot)
+{
+	int total_slices = spots_per_frame * slices_per_spot;
+ 
+	//----------------------------//
+	// allocate antenna positions //
+	//----------------------------//
+ 
+	antennaPosition =
+		(unsigned short *)malloc(total_slices * sizeof(unsigned short));
+	if (antennaPosition == NULL)
+		return(0);
+ 
+	//-------------------------------//
+	// allocate science measurements //
+	//-------------------------------//
+ 
+	science = (float *)malloc(total_slices * sizeof(float));
+	if (science == NULL)
+		return(0);
+ 
+	spotsPerFrame = spots_per_frame;
+	slicesPerSpot = slices_per_spot;
+	totalSlices = total_slices;
+ 
+	return(1);
+}
+
+//----------------------//
+// L10Frame::Deallocate //
+//----------------------//
+ 
+int
+L10Frame::Deallocate()
+{
+	if (antennaPosition)
+		free(antennaPosition);
+	if (science)
+		free(science);
+	spotsPerFrame = 0;
+	slicesPerSpot = 0;
+	totalSlices = 0;
+	return(1);
 }
 
 //----------------//
@@ -82,12 +136,12 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
-	size = sizeof(unsigned short) * SPOTS_PER_L10_FRAME;
+	size = sizeof(unsigned short) * totalSlices;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
-	size = sizeof(float) * SPOTS_PER_L10_FRAME;
-	memcpy((void *)(buffer + idx), (void *)sigma0, size);
+	size = sizeof(float) * totalSlices;
+	memcpy((void *)(buffer + idx), (void *)science, size);
 	idx += size;
 
 	return(idx);
@@ -149,12 +203,12 @@ L10Frame::Unpack(
 	attitude.SetYaw(tmp_float);
 	idx += size;
 
-	size = sizeof(unsigned short) * SPOTS_PER_L10_FRAME;
+	size = sizeof(unsigned short) * totalSlices;
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(float) * SPOTS_PER_L10_FRAME;
-	memcpy((void *)sigma0, (void *)(buffer + idx), size);
+	size = sizeof(float) * totalSlices;
+	memcpy((void *)science, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

@@ -44,6 +44,9 @@ public:
 	L10();
 	~L10();
 
+	int		AllocateBuffer(int spots_per_frame, int slices_per_spot);
+	int		DeallocateBuffer();
+
 	//---------------------//
 	// setting and getting //
 	//---------------------//
@@ -63,7 +66,8 @@ public:
 	//-----------//
 
 	GenericFile		file;
-	char			buffer[L10_FRAME_SIZE];
+	char*			buffer;
+	int				bufferSize;
 	L10Frame		frame;
 
 protected:

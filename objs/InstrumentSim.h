@@ -12,7 +12,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "ConfigList.h"
 #include "Instrument.h"
 #include "AntennaSim.h"
-#include "L00Frame.h"
+#include "L00.h"
 #include "Wind.h"
 #include "GMF.h"
 #include "Ephemeris.h"
@@ -75,8 +75,8 @@ public:
 	// level 0 frame information //
 	//---------------------------//
 
-	L00Frame		l00Frame;
-	int				l00FrameReady;
+	L00			l00;
+	int			l00FrameReady;
 
 protected:
 

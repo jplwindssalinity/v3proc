@@ -7,6 +7,7 @@ static const char rcs_id_l00_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
+#include <malloc.h>
 #include "L00.h"
 
 
@@ -15,14 +16,48 @@ static const char rcs_id_l00_c[] =
 //=====//
 
 L00::L00()
-:	_status(OK)
+:	buffer(NULL), bufferSize(0), _status(OK)
 {
 	return;
 }
 
 L00::~L00()
 {
+	DeallocateBuffer();
 	return;
+}
+
+//---------------------//
+// L00::AllocateBuffer //
+//---------------------//
+
+int
+L00::AllocateBuffer(
+	int		spots_per_frame,
+	int		slices_per_spot)
+{
+	// antenna position and sigma-0
+	int bytes_per_slice = sizeof(short) + sizeof(float);
+	int total_slices = spots_per_frame * slices_per_spot;
+	int buffer_size = L00_FRAME_HEADER_SIZE + total_slices * bytes_per_slice;
+	buffer = (char *)malloc(buffer_size);
+	if (buffer == NULL)
+		return(0);
+	bufferSize = buffer_size;
+	return(1);
+}
+
+//-----------------------//
+// L00::DeallocateBuffer //
+//-----------------------//
+
+int
+L00::DeallocateBuffer()
+{
+	if (buffer)
+		free(buffer);
+	bufferSize = 0;
+	return(1);
 }
 
 //------------------//
@@ -44,7 +79,7 @@ int
 L00::ReadDataRec()
 {
 	// this will most likely get more complicated later with headers and all
-	if (! file.Read(buffer, L00_FRAME_SIZE))
+	if (! file.Read(buffer, bufferSize))
 	{
 		if (file.EndOfFile())
 		{
