@@ -888,24 +888,6 @@ ConfigBeam(
 	}
 	beam->rxGateWidth = gate_width * MS_TO_S;
 
-	double look_angle;		// deg
-	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &look_angle))
-	{
-		printf("Could not find beam look angle in config file\n");
-		return(0);
-	}
-	look_angle *= dtr;
-
-	double azimuth_angle;	// deg
-	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &azimuth_angle))
-	{
-		printf("Could not find beam azimuth angle in config file\n");
-		return(0);
-	}
-	azimuth_angle *= dtr;
-
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
@@ -919,7 +901,51 @@ ConfigBeam(
 		return(0);
 	}
 
-	beam->SetElectricalBoresight(look_angle, azimuth_angle);
+	//-----------------------------------------------------------------//
+	// Setup one mechanical boresight, or two electrical boresights.
+	//-----------------------------------------------------------------//
+
+	config_list->DoNothingForMissingKeywords();
+
+	double look_angle;		// deg
+	double azimuth_angle;	// deg
+
+	if (config_list->GetDouble(MECH_LOOK_ANGLE_KEYWORD, &look_angle))
+	{
+		look_angle *= dtr;
+		if (config_list->GetDouble(MECH_AZIMUTH_ANGLE_KEYWORD, &azimuth_angle))
+		{
+			azimuth_angle *= dtr;
+			beam->SetMechanicalBoresight(look_angle, azimuth_angle);
+		}
+		else
+		{
+			printf("Missing mechanical boresight azimuth in config file\n");
+			return(0);
+		}
+	}
+	else
+	{
+		substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
+		if (! config_list->GetDouble(keyword, &look_angle))
+		{
+			printf("Could not find beam look angle in config file\n");
+			return(0);
+		}
+		look_angle *= dtr;
+
+		substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
+		if (! config_list->GetDouble(keyword, &azimuth_angle))
+		{
+			printf("Could not find beam azimuth angle in config file\n");
+			return(0);
+		}
+		azimuth_angle *= dtr;
+
+		beam->SetElectricalBoresight(look_angle, azimuth_angle);
+	}
+
+	config_list->ExitForMissingKeywords();
 
 	// ms
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
