@@ -36,7 +36,10 @@ Outline::Outline()
 
 Outline::~Outline()
 {
+	LonLat* lon_lat;
 	GetHead();
-	while (RemoveCurrent() != NULL) ;
+	while ((lon_lat=RemoveCurrent()) != NULL)
+		delete lon_lat;
+
 	return;
 }

@@ -114,6 +114,11 @@ ConfigList::ConfigList()
 
 ConfigList::~ConfigList()
 {
+	StringPair* pair;
+	GetHead();
+	while ((pair=RemoveCurrent()) != NULL)
+		delete pair;
+
 	return;
 }
 
