@@ -322,7 +322,7 @@ else
     exit(-1);
     }
   // fill temporary string with spaces (equal to name string in length)
-  for (i=0; i < strlen(name); i++)
+  for (i=0; i < (int)strlen(name); i++)
     {
     str[i] = ' ';
     }
@@ -826,7 +826,7 @@ double EarthPosition::surface_distance(EarthPosition r)
 
 {
 
-double mag = this->Magnitude();
+double mag = Magnitude();
 //double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 double theta = acos((*this % r) / (mag * r.Magnitude()));
 return(mag * theta);
@@ -855,7 +855,7 @@ double elon;
 double alt;
 
 double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
-double f1 = 1 - flat;
+// double f1 = 1 - flat;
 double f2 = flat*(2.0 - flat);
 double rho = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 double r = sqrt(_v[0]*_v[0] + _v[1]*_v[1]);
@@ -934,7 +934,7 @@ EarthPosition::Nadir()
 
 {
 
-Vector3 alt_lat_lon = this->get_alt_lat_lon(EarthPosition::GEOCENTRIC);
+Vector3 alt_lat_lon = get_alt_lat_lon(EarthPosition::GEOCENTRIC);
 EarthPosition result(alt_lat_lon.get(1),alt_lat_lon.get(2),
 	EarthPosition::GEOCENTRIC);
 return(result);
@@ -1002,16 +1002,15 @@ return(cs);
 //
 // IncidenceAngle
 //
-// Compute the angle between a local normal at this EarthPosition and
-// a vector (in the geocentric frame).
+// Compute the incidence angle of a vector (in the geocentric frame) at
+// this EarthPosition.
 // The angle is returned in radians.
 //
 
 double
-EarthPosition::IncidenceAngle(Vector3 rlook)
-
+EarthPosition::IncidenceAngle(
+	Vector3		vector)
 {
-
-return(acos(rlook % this->Normal()));
-
+	Vector3 normal = Normal();
+	return(acos(vector % -normal));
 }
