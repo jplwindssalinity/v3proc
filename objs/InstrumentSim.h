@@ -56,9 +56,9 @@ public:
 	// simulation control //
 	//--------------------//
 
-	int		DetermineNextEvent(Event* event);
-	int		SimulateEvent(Instrument* instrument, Event* event, WindField* wf,
-				GMF* gmf);
+	int		DetermineNextEvent(InstrumentEvent* instrument_event);
+	int		SimulateEvent(Instrument* instrument,
+				InstrumentEvent* instrument_event, WindField* wf, GMF* gmf);
 
 	//-----------//
 	// variables //
