@@ -5,13 +5,13 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		ecmwf_hires_to_bev
+//		ecmwf_hires_to_vctr
 //
 // SYNOPSIS
-//		ecmwf_hires_to_bev <ecmwf_hires_file> <bev_file>
+//		ecmwf_hires_to_vctr <ecmwf_hires_file> <vctr_file>
 //
 // DESCRIPTION
-//		Converts a ECMWF HiRes file into a bev (binary earth vector) file
+//		Converts a ECMWF HiRes file into a vctr (vector) file
 //		file for plotting in IDL.
 //
 // OPTIONS
@@ -20,11 +20,11 @@
 // OPERANDS
 //		The following operands are supported:
 //		<ecmwf_hires_file>		The input ECMWF HiRes wind field
-//		<bev_file>		The output bev file
+//		<vector_file>			The output vector file
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% ecmwf_hires_to_bev ecmwf.hires output.bev
+//			% ecmwf_hires_to_vector ecmwf.hires output.vctr
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -90,7 +90,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<ecmwf_hires_file>", "<bev_file>", 0};
+const char* usage_array[] = { "<ecmwf_hires_file>", "<Vctr_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -111,7 +111,7 @@ main(
 
 	int clidx = 1;
 	const char* ecmwf_hires_file = argv[clidx++];
-	const char* bev_file = argv[clidx++];
+	const char* vctr_file = argv[clidx++];
 
 	//--------------------------//
 	// read in ECMWF HiRes file //
@@ -125,13 +125,13 @@ main(
 		exit(1);
 	}
 
-	//--------------------//
-	// write out bev file //
-	//--------------------//
+	//---------------------//
+	// write out vctr file //
+	//---------------------//
 
-	if (! wind_field.WriteBev(bev_file))
+	if (! wind_field.WriteVctr(vctr_file))
 	{
-		fprintf(stderr, "%s: error writing bev file %s\n", command, bev_file);
+		fprintf(stderr, "%s: error writing Vctr file %s\n", command, vctr_file);
 		exit(1);
 	}
 

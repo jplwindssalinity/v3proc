@@ -5,14 +5,13 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		vap_to_bev
+//		vap_to_vctr
 //
 // SYNOPSIS
-//		vap_to_bev <vap_file> <bev_file>
+//		vap_to_vctr <vap_file> <Vctr_file>
 //
 // DESCRIPTION
-//		Converts a vap file into a bev (binary earth vector) file
-//		file for plotting in IDL.
+//		Converts a vap file into a Vctr (vector) file for plotting in IDL.
 //
 // OPTIONS
 //		None.
@@ -20,11 +19,11 @@
 // OPERANDS
 //		The following operands are supported:
 //		<vap_file>		The input vap wind field
-//		<bev_file>		The output bev file
+//		<Vctr_file>		The output vctr file
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% vap_to_bev 96interp.bin output.bev
+//			% vap_to_vctr 96interp.bin output.vctr
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -90,7 +89,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<vap_file>", "<bev_file>", 0};
+const char* usage_array[] = { "<vap_file>", "<Vctr_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -111,7 +110,7 @@ main(
 
 	int clidx = 1;
 	const char* vap_file = argv[clidx++];
-	const char* bev_file = argv[clidx++];
+	const char* vctr_file = argv[clidx++];
 
 	//------------------//
 	// read in vap file //
@@ -124,13 +123,14 @@ main(
 		exit(1);
 	}
 
-	//--------------------//
-	// write out bev file //
-	//--------------------//
+	//---------------------//
+	// write out vctr file //
+	//---------------------//
 
-	if (! wind_field.WriteBev(bev_file))
+	if (! wind_field.WriteVctr(vctr_file))
 	{
-		fprintf(stderr, "%s: error writing bev file %s\n", command, bev_file);
+		fprintf(stderr, "%s: error writing Vctr file %s\n", command,
+			vctr_file);
 		exit(1);
 	}
 

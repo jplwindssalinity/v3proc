@@ -5,13 +5,13 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		l20_to_bev
+//		l20_to_vctr
 //
 // SYNOPSIS
-//		l20_to_bev <l20_file> <bev_file>
+//		l20_to_vctr <l20_file> <Vctr_base>
 //
 // DESCRIPTION
-//		Converts a l20 file into multiple bev (binary earth vector)
+//		Converts a l20 file into multiple Vctr (vector)
 //		files for plotting in IDL.  Output filenames are created by
 //		adding the rank number (0 for selected) to the base name.
 //
@@ -21,11 +21,11 @@
 // OPERANDS
 //		The following operands are supported:
 //		<l20_file>		The input l20 wind field
-//		<bev_base>		The output bev file basename
+//		<vctr_base>		The output vctr file basename
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l20_to_bev 96interp.bin output.bev
+//			% l20_to_vctr 96interp.bin output.vctr
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -92,7 +92,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l20_file>", "<bev_base>", 0};
+const char* usage_array[] = { "<l20_file>", "<Vctr_base>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -113,7 +113,7 @@ main(
 
 	int clidx = 1;
 	const char* l20_file = argv[clidx++];
-	const char* bev_base = argv[clidx++];
+	const char* vctr_base = argv[clidx++];
 
 	//------------------//
 	// read in l20 file //
@@ -140,16 +140,16 @@ main(
 	}
 
 	//---------------------//
-	// write out bev files //
+	// write out vctr files //
 	//---------------------//
 
 	for (int i = 0; i < 5; i++)
 	{
 		char filename[1024];
-		sprintf(filename, "%s.%d", bev_base, i);
-		if (! l20.WriteBev(filename, i))
+		sprintf(filename, "%s.%d", vctr_base, i);
+		if (! l20.WriteVctr(filename, i))
 		{
-			fprintf(stderr, "%s: error writing BEV file %s\n", command,
+			fprintf(stderr, "%s: error writing Vctr file %s\n", command,
 				filename);
 			exit(1);
 		}
