@@ -568,9 +568,7 @@ L2B::GetArraysForUpdatingDirthHdf(
             else
             {
                 int k = 0;
-                num_ambig[ati][cti] = wvc->ambiguities.NodeCount() + 1;
-                if (num_ambig[ati][cti] > HDF_NUM_AMBIGUITIES)
-                num_ambig[ati][cti] = HDF_NUM_AMBIGUITIES;
+                num_ambig[ati][cti] = wvc->ambiguities.NodeCount();
                 for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
                     wvp = wvc->ambiguities.GetNext())
                 {
