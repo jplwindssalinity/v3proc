@@ -223,6 +223,9 @@ main(
     double Be = qscat.ses.GetTotalSignalBandwidth();
     double Bs = qscat.ses.scienceSliceBandwidth;
 
+    float f1, bw;
+    qscat.ses.GetSliceFreqBw((int)1, &f1, &bw);    // the first science slice
+
     //--------------------//
     // configure land map //
     //--------------------//
@@ -663,11 +666,15 @@ main(
             else
             {
                 double centroid = 0.0;
+                double sum = 0.0;
                 for (int i = 0; i < 10; i++)
                 {
-                    centroid += ((double)i - 4.5) * pow(signal_energy[i + 1],
-                        4.0);
+                    double tofour = pow(signal_energy[i + 1], 4.0);
+                    centroid += (double)i * tofour;
+                    sum += tofour;
                 }
+                centroid /= sum;
+                echo_info.measSpecPeakFreq[spot_idx] = f1 +  centroid * bw;
             }
         }
 
