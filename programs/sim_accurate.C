@@ -202,7 +202,7 @@ main(
 	}
 
 	InstrumentSimAccurate instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
+	if (! ConfigInstrumentSimAccurate(&instrument_sim, &config_list))
 	{
 		fprintf(stderr, "%s: error configuring instrument simulator\n",
 			command);
