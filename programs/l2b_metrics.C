@@ -143,7 +143,8 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
         const char* x_label, const char* y_label);
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
-        const char* y_axis, float* data = NULL, float* secondary = NULL);
+        const char* y_axis, float* data = NULL, float* secondary = NULL,
+	       float* tertiary = NULL);
 
 int rad_to_deg(float* data);
 
@@ -195,6 +196,7 @@ char*          subtitle_str = NULL;
 char*          pflag_file = NULL;
 float          pthresh_both = 1.0;
 float          pthresh_outer = 1.0;
+int            opt_use_pthresh = 0;
 
 PlotFlagE      plot_flag = NORMAL;
 RangeFlagE     range_flag = USE_LIMITS;
@@ -304,9 +306,11 @@ main(
             break;
         case 'p':
             pthresh_both = atof(optarg);
+            opt_use_pthresh=1;
             break;
         case 'q':
             pthresh_outer = atof(optarg);
+            opt_use_pthresh=1;
             break;
         case 'w':
             within_angle = atof(optarg);
@@ -472,12 +476,15 @@ main(
 
     if (pflag_file != NULL)
     {
-        int pflag_erase = swath->DeleteFlaggedData(pflag_file, pthresh_both, 
-						   pthresh_outer);
-        printf("Removing %d flagged vectors using flagfile %s with\n",
+        int pflag_erase = swath->DeleteFlaggedData(pflag_file, opt_use_pthresh,
+						  pthresh_both, pthresh_outer);
+        printf("Removing %d flagged vectors using flagfile %s using\n",
             pflag_erase, pflag_file);
-        printf("thresh_both=%g thresh_outer=%g.\n", pthresh_both,
-	       pthresh_outer);
+        if(opt_use_pthresh)
+	  printf("thresh_both=%g thresh_outer=%g.\n", pthresh_both,
+	        pthresh_outer);
+        else
+	  printf("flag bits in file (not thresholding rain probability values)\n");
     }
 
     //----------------//
@@ -707,6 +714,105 @@ main(
             low_speed, high_speed);
         plot_thing("avg_nambig", title, "Cross Track Distance (km)",
             "Number of Ambiguities");
+    }
+    //------------------------------------------------------//
+    // Streamosity                                          //
+    //------------------------------------------------------//
+    // Stream: percentage of the time distance between first//
+    // second is greater than 120                           //
+    // Goodstream: Stream and Truth within 30 degrees of    //
+    // both                                                 //
+    //------------------------------------------------------//
+    if (! single_metric_opt || strcmp("stream", spec_metric) == 0
+	||  strcmp("good_stream",spec_metric) == 0 )
+      {
+	if (! swath->Streamosity(&truth,value_array,value_2_array,
+					  low_speed,high_speed)){
+	    fprintf(stderr,
+		    "%s: error calculating streamosity percentages\n",
+                    command);
+                exit(1);
+	  }
+      }
+    if (! single_metric_opt || strcmp("stream", spec_metric) == 0){
+      xy_limits[2] = 0.0;
+      xy_limits[3] = 1.0;
+      sprintf(title, "Streamline Rate vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+      plot_thing("stream", title, "Cross Track Distance (km)",
+                "Streamline rate", value_array);
+    }
+    if (! single_metric_opt || strcmp("good_stream", spec_metric) == 0){
+      xy_limits[2] = 0.0;
+      xy_limits[3] = 1.0;
+      sprintf(title, "Good Streamline Rate vs. CTD (%g - %g m/s)",
+	      low_speed, high_speed);
+      plot_thing("good_stream", title, "Cross Track Distance (km)",
+		 "Good Streamline rate", value_2_array);
+    }
+
+    //------------------------------------------------------//
+    // Fraction of N ambiguity solutions                    //
+    //------------------------------------------------------//
+    // File ext: frac_N_ambigs     (N=1,2,3,or 4)           //
+    // Name for use with single metric is frac_N_ambigs     //
+    // which yields all four files                          //
+    //------------------------------------------------------//
+    if (! single_metric_opt || strcmp("frac_N_ambigs", spec_metric) == 0)
+    {
+	if (! swath->FractionNAmbigs(&truth,value_array,value_2_array,
+				     err_array,std_dev_array,
+				     low_speed,high_speed)){
+	    fprintf(stderr,
+		    "%s: error calculating N ambig percentages\n",
+                    command);
+                exit(1);
+	  }
+	xy_limits[2] = 0.0;
+	xy_limits[3] = 1.0;
+	sprintf(title, "Rate of 1 Ambig Solutions vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+	plot_thing("frac_1_ambigs", title, "Cross Track Distance (km)",
+		   "Occurrence Rate", value_array);
+	sprintf(title, "Rate of 2 Ambig Solutions vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+	plot_thing("frac_2_ambigs", title, "Cross Track Distance (km)",
+		   "Occurrence Rate", value_2_array);
+	sprintf(title, "Rate of 3 Ambig Solutions vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+	plot_thing("frac_3_ambigs", title, "Cross Track Distance (km)",
+		   "Occurrence Rate", err_array);
+	sprintf(title, "Rate of 4 Ambig Solutions vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+	plot_thing("frac_4_ambigs", title, "Cross Track Distance (km)",
+		   "Occurrence Rate", std_dev_array);
+    }
+    if (! nudge_as_truth_opt)
+    {
+        //-----------------------------------------------------//
+        // Nudge Override Rates                                //
+        //-----------------------------------------------------//
+        // Percentage of the time an incorrect nudge vector is //
+        // Overridden by the correct or another incorrect ambig//
+        //-----------------------------------------------------//
+        if (! single_metric_opt || strcmp("nudge_override", spec_metric) == 0)
+	{
+	  if (! swath->NudgeOverrideVsCti(&truth,value_array,value_2_array,
+					  err_array,low_speed,high_speed)){
+	    fprintf(stderr,
+		    "%s: error calculating nudge override percentages\n",
+                    command);
+                exit(1);
+	  }
+            xy_limits[2] = 0.0;
+            xy_limits[3] = 1.0;
+            sprintf(title, "Nudge Override Rates vs. CTD (%g - %g m/s)",
+                low_speed, high_speed);
+            plot_thing("nudge_override", title, "Cross Track Distance (km)",
+                "Override rates", value_array, value_2_array, err_array);
+            // First column=CTD, Second Column=Rate of Correct Overrides,
+            // Third column=Rate of Still Incorrect Overrides
+	}
     }
 
     //=========//
@@ -1001,7 +1107,8 @@ plot_thing(
     const char*  x_axis,
     const char*  y_axis,
     float*       data,
-    float*       secondary)
+    float*       secondary,
+    float*       tertiary)
 {
     char filename[1024];
     sprintf(filename, "%s.%s", output_base, extension);
@@ -1038,8 +1145,13 @@ plot_thing(
     for (int i = 0; i < cross_track_bins; i++)
     {
         if (count_array[i] > 1)
-        {
-            if (secondary)
+        {   
+	    if (tertiary)
+	    {
+	       fprintf(ofp, "%g %g %g %g\n", ctd_array[i], plot_data[i],
+                    secondary[i], tertiary[i]);
+	    }
+            else if (secondary)
             {
                 fprintf(ofp, "%g %g %g\n", ctd_array[i], plot_data[i],
                     secondary[i]);
