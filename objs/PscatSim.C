@@ -1473,6 +1473,7 @@ PscatSim::MeasToEsnX(
     //--------------------------------------------------------------------//
 
     Gaussian rv(*var_Esn,0.0);
+    float rval;
     if (meas->measType == Meas::VV_MEAS_TYPE ||
         meas->measType == Meas::HH_MEAS_TYPE ||
         meas->measType == Meas::VH_MEAS_TYPE ||
@@ -1482,8 +1483,8 @@ PscatSim::MeasToEsnX(
       int i;
       for (i=0; i < 10; i++)
       {
-        float rval = rv.GetNumber();
-        if (rval >= -*Esn)  break;
+        rval = rv.GetNumber();
+        if (rval >= -(*Esn))  break;
       }
       if (i >= 10)
       {
@@ -1493,7 +1494,7 @@ PscatSim::MeasToEsnX(
       }
       else
       {
-        *Esn += rv.GetNumber();
+        *Esn += rval;
       }
     }
     else

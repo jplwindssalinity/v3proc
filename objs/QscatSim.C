@@ -1290,11 +1290,12 @@ QscatSim::MeasToEsnX(
 	//------------------------------------------------------------------------//
 
 	Gaussian rv(*var_esn_slice,0.0);
+    float rval;
     int i;
     for (i=0; i < 10; i++)
     {
-      float rval = rv.GetNumber();
-      if (rval >= -*Esn)  break;
+      rval = rv.GetNumber();
+      if (rval > -(*Esn))  break;
     }
     if (i >= 10)
     {
@@ -1304,7 +1305,7 @@ QscatSim::MeasToEsnX(
     }
     else
     {
-      *Esn += rv.GetNumber();
+      *Esn += rval;
     }
 
 	return(1);

@@ -234,6 +234,11 @@ L1AToL1B::Convert(
 		for (int i=0; i < l1a->frame.slicesPerSpot; i++)
 		{
           meas->value = l1a->frame.science[base_slice_idx + i];
+          if (meas->value < 0.0)
+          {
+            fprintf(stderr,
+              "L1AToL1B: Warning, found negative Esn in spot %d\n",spot_idx);
+          }
           // Sum up ALL the signal+noise measurements
           Esn_echo += meas->value;
 

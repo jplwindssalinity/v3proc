@@ -336,6 +336,12 @@ PscatL1AToL1B::Convert(
             case Meas::HH_MEAS_TYPE:
                 meas->value = (float)frame->copol[spot_slice_offset +
                     slice_idx] + 0.5;
+                if (meas->value < 0.0)
+                {
+                  fprintf(stderr,
+                    "PscatL1AToL1B: Warning, found negative Esn in spot %d\n",
+                     spot_idx);
+                }
                 break;
             case Meas::VV_HV_CORR_MEAS_TYPE:
             case Meas::HH_VH_CORR_MEAS_TYPE:
