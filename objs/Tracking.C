@@ -1000,6 +1000,73 @@ RangeTracker::WriteGS(
     return(1);
 }
 
+//---------------------------//
+// RangeTracker::MroAssemble //
+//---------------------------//
+// For assemling a tracking table from the memory readout data
+
+#define RGC_MRO_ARRAY_SIZE  1600
+#define FINAL_RGC_OFFSET    1568
+
+int
+RangeTracker::MroAssemble(
+    unsigned char   type,
+    unsigned short  offset,
+    char*           data,
+    int*            beam_idx)
+{
+    //------------//
+    // initialize //
+    //------------//
+
+    static int beam = 0;    // 0 = A, 1 = B
+    static unsigned short expected_offset = 0;
+    static char mro[RGC_MRO_ARRAY_SIZE];
+
+    //------------------//
+    // check table type //
+    //------------------//
+
+    switch (type)
+    {
+    case 0x0D:
+        // Range Tracking Table for Beam A
+        beam = 0;
+        break;
+    case 0x0E:
+        // Range Tracking Table for Beam A
+        beam = 1;
+        break;
+    default:
+        // some other table
+        return(0);
+        break;
+    }
+
+    //--------------//
+    // read in data //
+    //--------------//
+
+printf("%d\n", offset);
+    if (offset != expected_offset)
+    {
+        expected_offset = 0;    // reset
+        return(0);
+    }
+    memcpy(mro + offset, data, 4);
+    expected_offset += 4;
+    if (offset == FINAL_RGC_OFFSET)
+    {
+        // convert array to table
+        SetFromMro(mro);
+        expected_offset = 0;    // reset
+        *beam_idx = beam;
+        return(1);
+    }
+    return(0);
+}
+
+
 //-----------//
 // operator= //
 //-----------//
@@ -1425,8 +1492,8 @@ DopplerTracker::WriteGS(
 //-----------------------------//
 // For assemling a tracking table from the memory readout data
 
-#define MRO_ARRAY_SIZE    1600
-#define FINAL_DTC_OFFSET  1568
+#define DTC_MRO_ARRAY_SIZE  1000
+#define FINAL_DTC_OFFSET    996
 
 int
 DopplerTracker::MroAssemble(
@@ -1441,7 +1508,7 @@ DopplerTracker::MroAssemble(
 
     static int beam = 0;    // 0 = A, 1 = B
     static unsigned short expected_offset = 0;
-    static char mro[MRO_ARRAY_SIZE];
+    static char mro[DTC_MRO_ARRAY_SIZE];
 
     //------------------//
     // check table type //
@@ -1467,6 +1534,7 @@ DopplerTracker::MroAssemble(
     // read in data //
     //--------------//
 
+printf("%d\n", offset);
     if (offset != expected_offset)
     {
         expected_offset = 0;    // reset
