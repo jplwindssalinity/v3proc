@@ -8,6 +8,8 @@ static const char rcs_id_l2b_c[] =
 
 #include <memory.h>
 #include <string.h>
+#include <hdf.h>
+#include <mfhdf.h>
 #include "L2B.h"
 #include "TlmHdfFile.h"
 #include "NoTimeTlmFile.h"
@@ -16,9 +18,8 @@ static const char rcs_id_l2b_c[] =
 #include "WindVector.h"
 #include "Wind.h"
 #include "Misc.h"
+#include "HdfHelp.h"
 #include "Sds.h"
-#include "hdf.h"
-#include "mfhdf.h"
 
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
@@ -118,6 +119,24 @@ L2B::~L2B()
     return;
 }
 
+//----------------//
+// L2B::SmartRead //
+//----------------//
+
+int
+L2B::SmartRead(
+    const char*  filename,
+    int          unnormalize_mle_flag)
+{
+    // see if the file is HDF
+    if (HdfHelp::IsHdfFile(filename)) {
+        return(ReadPureHdf(filename, unnormalize_mle_flag));
+    } else {
+        return(Read(filename));
+    }
+    return(0);
+}
+
 //-----------//
 // L2B::Read //
 //-----------//
@@ -152,7 +171,9 @@ L2B::Read(
 // L2B::ReadPureHdf //
 //------------------//
 
+/*
 #define ROW_WIDTH  76
+*/
 #define AMBIGS      4
 
 int
@@ -166,21 +187,12 @@ L2B::ReadPureHdf(
 
     frame.swath.DeleteEntireSwath();
 
-    //----------------------------------------//
-    // some generic HDF start and edge arrays //
-    //----------------------------------------//
-
-    // the HDF read routine should only access as many dimensions as needed
-    int32 generic_start[3] = { 0, 0, 0 };
-    int32 generic_edges[3] = { 1, ROW_WIDTH, AMBIGS };
-
     //--------------------------//
     // start access to the file //
     //--------------------------//
 
     int32 sd_id = SDstart(filename, DFACC_READ);
-    if (sd_id == FAIL)
-    {
+    if (sd_id == FAIL) {
         fprintf(stderr, "L2B::ReadPureHdf: error with SDstart\n");
         return(0);
     }
@@ -191,32 +203,23 @@ L2B::ReadPureHdf(
 
     int32 attr_index_l2b_actual_wvc_rows = SDfindattr(sd_id,
         "l2b_actual_wvc_rows");
-    if (attr_index_l2b_actual_wvc_rows == FAIL)
-    {
+    if (attr_index_l2b_actual_wvc_rows == FAIL) {
         fprintf(stderr, "L2B::ReadPureHdf: error with SDfindattr\n");
         return(0);
     }
 
     char data[1024];
-    if (SDreadattr(sd_id, attr_index_l2b_actual_wvc_rows, data) == FAIL)
-    {
+    if (SDreadattr(sd_id, attr_index_l2b_actual_wvc_rows, data) == FAIL) {
         fprintf(stderr, "L2B::ReadPureHdf: error with SDreadattr\n");
         return(0);
     }
 
     int l2b_actual_wvc_rows = 0;
-    if (sscanf(data, " %*[^\n] %*[^\n] %d", &l2b_actual_wvc_rows) != 1)
-    {
+    if (sscanf(data, " %*[^\n] %*[^\n] %d", &l2b_actual_wvc_rows) != 1) {
         fprintf(stderr, "L2B::ReadPureHdf: error parsing header\n");
         return(0);
     }
-
-    //----------//
-    // allocate //
-    //----------//
-
-    if (! frame.swath.Allocate(ROW_WIDTH, l2b_actual_wvc_rows))
-        return(0);
+    int along_track_width = l2b_actual_wvc_rows;
 
     //-------------------------------//
     // get all the necessary SDS IDs //
@@ -245,11 +248,71 @@ L2B::ReadPureHdf(
     int32 mp_rain_probability_sds_id = SDnametoid(sd_id,
         "mp_rain_probability");
 
+    //---------------------------------//
+    // determine the cross track width //
+    //---------------------------------//
+
+    char name[66];
+    int32 rank, dim_sizes[8], data_type, n_attrs;
+    if (SDgetinfo(wvc_lat_sds_id, name, &rank, dim_sizes, &data_type,
+        &n_attrs) == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDgetinfo\n");
+        return(0);
+    }
+    int cross_track_width = dim_sizes[1];
+
+    //-------------------------//
+    // guess at the resolution //
+    //-------------------------//
+    // this is a total hack, but the resolution isn't explicitly given
+    // assume a 1900 km swath
+    // 100.0 km   19 wvc across (  0 -  28)
+    //  50.0 km   38 wvc across ( 29 -  56)
+    //  25.0 km   76 wvc across ( 57 -  85)
+    //  20.0 km   95 wvc across ( 86 - 110)
+    //  15.0 km  127 wvc across (111 - 139)
+    //  12.5 km  152 wvc across (140 -   ?)
+
+    float resolution = 0.0;
+    if (cross_track_width < 29) {
+        resolution = 100.0;
+    } else if (cross_track_width < 57) {
+        resolution = 50.0;
+    } else if (cross_track_width < 86) {
+        resolution = 25.0;
+    } else if (cross_track_width < 111) {
+        resolution = 20.0;
+    } else if (cross_track_width < 140) {
+        resolution = 15.0;
+    } else {
+        resolution = 12.5;
+    }
+
+    header.crossTrackResolution = resolution;
+    header.alongTrackResolution = resolution;
+    header.zeroIndex = cross_track_width / 2;
+
+    //----------------------------------------//
+    // some generic HDF start and edge arrays //
+    //----------------------------------------//
+
+    // the HDF read routine should only access as many dimensions as needed
+    int32 generic_start[3] = { 0, 0, 0 };
+    int32 generic_edges[3] = { 1, cross_track_width, AMBIGS };
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! frame.swath.Allocate(cross_track_width, along_track_width))
+        return(0);
+
     //--------------//
     // for each row //
     //--------------//
 
-    for (int ati = 0; ati < l2b_actual_wvc_rows; ati++)
+    for (int ati = 0; ati < along_track_width; ati++)
     {
         //--------------//
         // read the row //
@@ -272,7 +335,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 wvc_lat[ROW_WIDTH];
+        int16 wvc_lat[cross_track_width];
         if (SDreaddata(wvc_lat_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_lat) == FAIL)
         {
@@ -281,7 +344,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        uint16 wvc_lon[ROW_WIDTH];
+        uint16 wvc_lon[cross_track_width];
         if (SDreaddata(wvc_lon_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_lon) == FAIL)
         {
@@ -290,7 +353,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 wvc_index[ROW_WIDTH];
+        int8 wvc_index[cross_track_width];
         if (SDreaddata(wvc_index_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_index) == FAIL)
         {
@@ -299,7 +362,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 num_in_fore[ROW_WIDTH];
+        int8 num_in_fore[cross_track_width];
         if (SDreaddata(num_in_fore_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_in_fore) == FAIL)
         {
@@ -308,7 +371,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 num_in_aft[ROW_WIDTH];
+        int8 num_in_aft[cross_track_width];
         if (SDreaddata(num_in_aft_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_in_aft) == FAIL)
         {
@@ -317,7 +380,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 num_out_fore[ROW_WIDTH];
+        int8 num_out_fore[cross_track_width];
         if (SDreaddata(num_out_fore_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_out_fore) == FAIL)
         {
@@ -326,7 +389,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 num_out_aft[ROW_WIDTH];
+        int8 num_out_aft[cross_track_width];
         if (SDreaddata(num_out_aft_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_out_aft) == FAIL)
         {
@@ -335,7 +398,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        uint16 wvc_quality_flag[ROW_WIDTH];
+        uint16 wvc_quality_flag[cross_track_width];
         if (SDreaddata(wvc_quality_flag_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_quality_flag) == FAIL)
         {
@@ -345,7 +408,7 @@ L2B::ReadPureHdf(
         }
 
 /*
-        int16 atten_corr[ROW_WIDTH];
+        int16 atten_corr[cross_track_width];
         if (SDreaddata(atten_corr_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)atten_corr) == FAIL)
         {
@@ -355,7 +418,7 @@ L2B::ReadPureHdf(
         }
 */
 
-        int16 model_speed[ROW_WIDTH];
+        int16 model_speed[cross_track_width];
         if (SDreaddata(model_speed_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)model_speed) == FAIL)
         {
@@ -364,7 +427,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        uint16 model_dir[ROW_WIDTH];
+        uint16 model_dir[cross_track_width];
         if (SDreaddata(model_dir_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)model_dir) == FAIL)
         {
@@ -373,7 +436,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 num_ambigs[ROW_WIDTH];
+        int8 num_ambigs[cross_track_width];
         if (SDreaddata(num_ambigs_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_ambigs) == FAIL)
         {
@@ -382,7 +445,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 wind_speed[ROW_WIDTH][AMBIGS];
+        int16 wind_speed[cross_track_width][AMBIGS];
         if (SDreaddata(wind_speed_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_speed) == FAIL)
         {
@@ -391,7 +454,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        uint16 wind_dir[ROW_WIDTH][AMBIGS];
+        uint16 wind_dir[cross_track_width][AMBIGS];
         if (SDreaddata(wind_dir_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_dir) == FAIL)
         {
@@ -400,7 +463,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 max_likelihood_est[ROW_WIDTH][AMBIGS];
+        int16 max_likelihood_est[cross_track_width][AMBIGS];
         if (SDreaddata(max_likelihood_est_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)max_likelihood_est) == FAIL)
         {
@@ -409,7 +472,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int8 wvc_selection[ROW_WIDTH];
+        int8 wvc_selection[cross_track_width];
         if (SDreaddata(wvc_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_selection) == FAIL)
         {
@@ -418,7 +481,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 wind_speed_selection[ROW_WIDTH];
+        int16 wind_speed_selection[cross_track_width];
         if (SDreaddata(wind_speed_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_speed_selection) == FAIL)
         {
@@ -427,7 +490,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        uint16 wind_dir_selection[ROW_WIDTH];
+        uint16 wind_dir_selection[cross_track_width];
         if (SDreaddata(wind_dir_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_dir_selection) == FAIL)
         {
@@ -436,7 +499,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 mp_rain_probability[ROW_WIDTH];
+        int16 mp_rain_probability[cross_track_width];
         if (SDreaddata(mp_rain_probability_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)mp_rain_probability) == FAIL)
         {
@@ -449,7 +512,7 @@ L2B::ReadPureHdf(
         // assemble into wind vector cells //
         //---------------------------------//
 
-        for (int cti = 0; cti < ROW_WIDTH; cti++)
+        for (int cti = 0; cti < cross_track_width; cti++)
         {
             // if there are no ambiguities, wind was not retrieved
             if (num_ambigs[cti] == 0)
@@ -933,6 +996,8 @@ L2B::WriteHdf(
 //--------------------//
 // right now, this just inserts the selection
 
+#define ROW_WIDTH  76
+
 int
 L2B::InsertPureHdf(
     const char*  input_filename,
@@ -960,6 +1025,7 @@ L2B::InsertPureHdf(
         return(0);    // error, not EOF
 
     fclose(ifp);
+    fclose(ofp);
 
     //----------------------------------------//
     // some generic HDF start and edge arrays //
