@@ -106,7 +106,7 @@ int GMF::ReadOldStyle(
 					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
 						(double)value;
 
-					int chi_idx_2 = _chiCount - chi_idx;
+					int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
 					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(double)value;
 				}
