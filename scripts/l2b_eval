@@ -6,10 +6,10 @@
 
 #----------------------------------------------------------------------
 # NAME
-#		l2b_eval_script
+#		l2b_eval
 #
 # SYNOPSIS
-#		l2b_eval_script <cfg_file>
+#		l2b_eval <cfg_file>
 #
 # DESCRIPTION
 #		Executes programs for the display and evaluation of
@@ -25,7 +25,7 @@
 #
 # EXAMPLES
 #		An example of a command line is:
-#			% l2b_eval_script qscat.cfg
+#			% l2b_eval qscat.cfg
 #
 # ENVIRONMENT
 #		Not environment dependent
