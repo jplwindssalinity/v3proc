@@ -214,8 +214,7 @@ main(
 		// write solution curves //
 		//-----------------------//
 
-		gmf.WriteSolutionCurves(ofp, &meas_list, 0.0087, 0.0873, 0.0873,
-			0.05, 4);
+		gmf.WriteSolutionCurves(ofp, &meas_list);
 
 		//-------------------//
 		// close output file //
