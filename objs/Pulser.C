@@ -311,6 +311,15 @@ Pulser::Config(
         }
         _offsetMin = MAX(_offsetStep, _offsetMinSet);
     }
+    if (_pulserId == 1)
+    {
+        _offsetSet = 0.0;
+        _offsetMinSet = 0.0;
+        _offsetMin = 0.0;
+        _offsetMaxSet = 0.0;
+        _offsetMax = 0.0;
+        _offsetStep = 1.0;    // as long as it is > 0
+    }
 
     //--------//
     // others //
@@ -833,9 +842,11 @@ PulserCluster::GotoNextCombo()
     }
 
     // pri
-printf("%g (%g)\n", _pri + _priStep, _priMax);
     if (SetPri(_pri + _priStep))
+    {
+        printf("%.2f%%\n", 100.0 * (_pri - _priMin) / (_priMax - _priMin));
         return(1);
+    }
 
     // pulses in flight
     // this one doesn't change yet, there is no next combo
@@ -918,8 +929,10 @@ PulserCluster::Optimize()
         if (GenerateAllPulses())
         {
             duty_factor = DutyFactor();
-            if (duty_factor > max_duty_factor &&
-                duty_factor <= _maxDutyFactor)
+            if (duty_factor > _maxDutyFactor)
+                continue;
+
+            if (duty_factor > max_duty_factor)
             {
                 max_duty_factor = duty_factor;
                 printf("Best duty factor = %g\n", duty_factor);
