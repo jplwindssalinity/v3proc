@@ -32,6 +32,7 @@ PROGRAMS = \
 	test_pattern \
 	fake_vap \
 	l15_outlines \
+        l15_to_kprtable \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
