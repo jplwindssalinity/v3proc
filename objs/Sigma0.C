@@ -136,11 +136,9 @@ sigma0_to_Psn(
 	float				sigma0,
 	float*				Psn_slice)
 {
-
-
-	//-------------------------//
-	// Sanity check on sigma0.
-	//-------------------------//
+	//------------------------//
+	// Sanity check on sigma0 //
+	//------------------------//
 
 	if (fabs(sigma0) > 1.0e5)
 	{
@@ -243,7 +241,7 @@ sigma0_to_Psn(
 	//------------------------------------------------------------------------//
 	// Fuzz the Ps value by multiplying by a random number drawn from
 	// a gaussian distribution with a variance of Kpc^2.  This includes both
-	// thermal noise effects, and fading due to the random nature of the 
+	// thermal noise effects, and fading due to the random nature of the
 	// surface target.
 	// Kpc is applied to Ps instead of Psn because sigma0 is proportional
 	// to Ps (not Psn), and Kpc is defined for sigma0.  A more correct way
@@ -481,13 +479,13 @@ GetKpm(
 {
 	// V-pol is index 0, H-pol is index 1 for the 1st dim.
 	static float Kpmtable[2][36] =
-	{{6.3824e-01, 5.6835e-01, 4.9845e-01, 4.2856e-01, 3.5867e-01, 2.8877e-01,
+	{ {6.3824e-01, 5.6835e-01, 4.9845e-01, 4.2856e-01, 3.5867e-01, 2.8877e-01,
 	2.5092e-01, 2.1307e-01, 1.9431e-01, 1.7555e-01, 1.7072e-01, 1.6589e-01,
 	1.6072e-01, 1.5554e-01, 1.4772e-01, 1.3990e-01, 1.2843e-01, 1.1696e-01,
 	1.1656e-01, 1.1615e-01, 1.0877e-01, 1.0138e-01, 9.0447e-02, 7.9516e-02,
 	8.6400e-02, 9.3285e-02, 8.4927e-02, 7.6569e-02, 7.2302e-02, 6.8036e-02,
 	7.7333e-02, 8.6630e-02, 9.0959e-02, 9.5287e-02, 9.9616e-02, 1.0394e-01},
-	 {4.3769e-01,  4.0107e-01, 3.6446e-01, 3.2784e-01, 2.9122e-01, 2.5461e-01,
+	  {4.3769e-01,  4.0107e-01, 3.6446e-01, 3.2784e-01, 2.9122e-01, 2.5461e-01,
 	2.2463e-01, 1.9464e-01, 1.7066e-01, 1.4667e-01, 1.3207e-01, 1.1747e-01,
 	1.0719e-01, 9.6918e-02, 9.0944e-02, 8.4969e-02, 7.7334e-02, 6.9699e-02,
 	6.9107e-02, 6.8515e-02, 6.6772e-02, 6.5030e-02, 5.7429e-02, 4.9828e-02,
@@ -511,7 +509,6 @@ GetKpm(
 	}
 
 	return(Kpm);
-
 }
 
 //
@@ -533,7 +530,6 @@ composite(
 	Meas*		output_meas)
 
 {
-
 	float sum_Ps = 0.0;
 	float sum_XK = 0.0;
 	Vector3 sum_centroid(0.0,0.0,0.0);
@@ -602,5 +598,4 @@ composite(
 	output_meas->C = meas->C  / N;
 
 	return(1);
-
 }
