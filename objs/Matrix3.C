@@ -472,6 +472,21 @@ return(result);
 }
 
 //
+// Add and assign one vector to another.
+//
+
+void Vector3::operator+=(Vector3 v2)
+
+{
+
+_v[0] += v2._v[0];
+_v[1] += v2._v[1];
+_v[2] += v2._v[2];
+return;
+
+}
+
+//
 // Cross product of two vectors.
 //
 
