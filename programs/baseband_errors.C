@@ -239,9 +239,9 @@ main(
 	// set the eqx time //
 	//------------------//
 
-	double start_time = instrument_start_time - spacecraft_sim.GetPeriod();
-	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
-	instrument.Eqx(start_time);
+	double eqx_time = spacecraft_sim.FindPrevEqxTime(instrument_start_time,
+		EQX_TIME_TOLERANCE);
+	instrument.Eqx(eqx_time);
 
 	//------------//
 	// initialize //
@@ -401,9 +401,9 @@ main(
 					range_tracker.SetInstrument(&instrument);
 					doppler_tracker.SetInstrument(&instrument);
 
-					//------------------------------//
-					// get the true round trip time //
-					//------------------------------//
+					//----------------------------------------//
+					// get the beam center baseband frequency //
+					//----------------------------------------//
 
 					antenna = &(instrument.antenna);
 					beam = antenna->GetCurrentBeam();
@@ -426,8 +426,8 @@ main(
 					//------------------------------//
 
 					// actually, any deviation from zero Hz is undesirable
-					fprintf(error_fp, "%.6f %g\n", instrument_event.time,
-						tip.basebandFreq / 1000.0);
+					fprintf(error_fp, "%.6f %.6f\n", instrument_event.time,
+						tip.basebandFreq);
 
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);

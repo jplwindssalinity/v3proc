@@ -90,7 +90,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define DOPPLER_ORBIT_STEPS		256
-#define DOPPLER_AZIMUTH_STEPS	360		// used for fitting
+#define DOPPLER_AZIMUTH_STEPS	45		// used for fitting
 
 //--------//
 // MACROS //
@@ -113,7 +113,7 @@ template class BufferedList<OrbitState>;
 //------------------//
 
 const char* usage_array[] = { "<sim_config_file>", "<RGC_file>",
-	"<DTC_FILE>", 0};
+	"<DTC_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -225,15 +225,13 @@ main(
 	terms = (double ***)make_array(sizeof(double), 3,
 		antenna->numberOfBeams, DOPPLER_ORBIT_STEPS, 3);
 
-	//-----------------------//
-	// mark equator crossing //
-	//-----------------------//
+	//------------------------------//
+	// start at an equator crossing //
+	//------------------------------//
 
-	double start_time = spacecraft_sim.GetEpoch();
-	double orbit_period = spacecraft_sim.GetPeriod();
-
-	start_time += orbit_period / 2.0;
-	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	double start_time =
+		spacecraft_sim.FindNextEqxTime(spacecraft_sim.GetEpoch(),
+		EQX_TIME_TOLERANCE);
 	instrument.Eqx(start_time);
 
 	//------------//
@@ -246,7 +244,6 @@ main(
 			command);
 		exit(1);
 	}
-	instrument.Eqx(start_time);
 
 	if (! spacecraft_sim.Initialize(start_time))
 	{
@@ -267,6 +264,7 @@ main(
 	// loop through orbit //
 	//--------------------//
 
+	double orbit_period = spacecraft_sim.GetPeriod();
 	double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
 	double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
 
@@ -285,6 +283,12 @@ main(
 		//-----------------------//
 
 		spacecraft_sim.UpdateOrbit(time, &spacecraft);
+
+		//-------------------------//
+		// set the instrument time //
+		//-------------------------//
+
+		instrument.SetTime(time);
 
 		//--------------------//
 		// step through beams //
@@ -306,7 +310,7 @@ main(
 				azimuth_step++)
 			{
 				antenna->azimuthAngle = azimuth_step_size *
-					((double)azimuth_step + 0.5);
+					((double)azimuth_step);
 
 				CoordinateSwitch antenna_frame_to_gc =
 					AntennaFrameToGC(orbit_state, attitude, antenna);

@@ -172,11 +172,13 @@ DopplerTracker::Set(
 		{
 			for (int term_idx = 0; term_idx < 3; term_idx++)
 			{
-				if (*(*(term_ptr + orbit_step) + term_idx) < mins[term_idx])
-					mins[term_idx] = *(*(term_ptr + orbit_step) + term_idx);
+				double value = *(*(term_ptr + orbit_step) + term_idx);
 
-				if (*(*(term_ptr + orbit_step) + term_idx) > maxs[term_idx])
-					maxs[term_idx] = *(*(term_ptr + orbit_step) + term_idx);
+				if (value < mins[term_idx])
+					mins[term_idx] = value;
+
+				if (value > maxs[term_idx])
+					maxs[term_idx] = value;
 			}
 		}
 

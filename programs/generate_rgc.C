@@ -86,7 +86,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define RANGE_ORBIT_STEPS		256
-#define RANGE_AZIMUTH_STEPS		360		// used for fitting
+#define RANGE_AZIMUTH_STEPS		45		// used for fitting
 
 #define EQX_TIME_TOLERANCE		0.1
 
@@ -208,15 +208,13 @@ main(
 	terms = (double ***)make_array(sizeof(double), 3,
 		antenna->numberOfBeams, RANGE_ORBIT_STEPS, 3);
 
-	//-----------------------//
-	// mark equator crossing //
-	//-----------------------//
+	//------------------------------//
+	// start at an equator crossing //
+	//------------------------------//
 
-	double start_time = spacecraft_sim.GetEpoch();
-	double orbit_period = spacecraft_sim.GetPeriod();
-
-	start_time += orbit_period / 2.0;
-	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	double start_time =
+		spacecraft_sim.FindNextEqxTime(spacecraft_sim.GetEpoch(),
+		EQX_TIME_TOLERANCE);
 	instrument.Eqx(start_time);
 
 	//------------//
@@ -241,6 +239,7 @@ main(
 	// loop through orbit //
 	//--------------------//
 
+	double orbit_period = spacecraft_sim.GetPeriod();
 	double orbit_step_size = orbit_period / (double)RANGE_ORBIT_STEPS;
 	double azimuth_step_size = two_pi / (double)RANGE_AZIMUTH_STEPS;
 

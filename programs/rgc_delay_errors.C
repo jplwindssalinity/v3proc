@@ -234,9 +234,9 @@ main(
 	// set the eqx time //
 	//------------------//
 
-	double start_time = instrument_start_time - spacecraft_sim.GetPeriod();
-	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
-	instrument.Eqx(start_time);
+	double eqx_time = spacecraft_sim.FindPrevEqxTime(instrument_start_time,
+		EQX_TIME_TOLERANCE);
+	instrument.Eqx(eqx_time);
 
 	//------------//
 	// initialize //
@@ -304,7 +304,6 @@ main(
 	// loop through events //
 	//---------------------//
 
-//int xxx = 0;
 	for (;;)
 	{
 		//---------------------------------------//

@@ -727,20 +727,13 @@ IdealCommandedDoppler(
 		return(0);
 	}
 
-	//--------------------------------------------------//
-	// calculate baseband frequency w/o Doppler command //
-	//--------------------------------------------------//
-
-	Vector3 vector;
-	vector.SphericalSet(1.0, look, azim);
-	TargetInfoPackage tip;
-	TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument, vector,
-		&tip);
-
 	//----------------------------//
 	// calculte commanded Doppler //
 	//----------------------------//
 
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	TargetInfoPackage tip;
 	instrument->SetCommandedDoppler(0.0);
 	do
 	{
