@@ -30,6 +30,7 @@ public:
     int             Write(int fd);
     int             Read(int fd);
     unsigned char   SpotOrbitStep(int spot_idx);
+    int             SpotBeamIdx(int spot_idx);
 
     ETime           frameTime;
     float           gcX;
@@ -45,7 +46,6 @@ public:
     unsigned char   orbitStep;
     unsigned char   priOfOrbitStepChange;
     float           spinRate;
-    unsigned char   beamIdx[SPOTS_PER_FRAME];
     unsigned short  idealEncoder[SPOTS_PER_FRAME];
     float           txCenterAzimuthAngle[SPOTS_PER_FRAME];
     float           txDoppler[SPOTS_PER_FRAME];
@@ -113,7 +113,6 @@ EchoInfo::Write(
         write(fd, (void *)&priOfOrbitStepChange, char_size) !=
           char_size ||
         write(fd, (void *)&spinRate, float_size) != float_size ||
-        write(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         write(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
         write(fd, (void *)txCenterAzimuthAngle, frame_float_size) !=
@@ -175,7 +174,6 @@ EchoInfo::Read(
         read(fd, (void *)&priOfOrbitStepChange, char_size) !=
           char_size ||
         read(fd, (void *)&spinRate, float_size) != float_size ||
-        read(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         read(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
         read(fd, (void *)txCenterAzimuthAngle, frame_float_size) !=
@@ -251,7 +249,7 @@ unsigned char
 EchoInfo::SpotOrbitStep(
     int  spot_idx)
 {
-    if (priOfOrbitStepChange != 255 && spot_idx < priOfOrbitStepChange)
+    if (priOfOrbitStepChange != 255 && spot_idx < priOfOrbitStepChange - 1)
     {
         if (orbitStep == 0)
             return(ORBIT_STEPS - 1);
@@ -260,6 +258,17 @@ EchoInfo::SpotOrbitStep(
     }
     else
         return(orbitStep);
+}
+
+//-----------------------//
+// EchoInfo::SpotBeamIdx //
+//-----------------------//
+
+int
+EchoInfo::SpotBeamIdx(
+    int  spot_idx)
+{
+    return(spot_idx % NUMBER_OF_QSCAT_BEAMS);
 }
 
 //--------------//

@@ -20,6 +20,7 @@ CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
+	echo_dtc_otf \
 	sim \
 	l1a_to_l1b \
 	l1b_to_l2a \
