@@ -128,6 +128,7 @@ public:
 
 	int					RemoveDuplicates();
 	int					SortByObj();
+	int					SortByDir();
 	WindVectorPlus*		GetNearestToDirection(float dir);
 
 	//---------//
@@ -269,6 +270,7 @@ public:
 	int		ReadL2B(FILE* fp);
 	int		ReadL2B(const char* filename);
 	int		WriteVctr(const char* filename, const int rank);
+	int		WriteFlower(const char* filename);
 
 	//-----------//
 	// filtering //

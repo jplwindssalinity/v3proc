@@ -320,6 +320,13 @@ int
 WVC::WriteFlower(
 	FILE*	fp)
 {
+	//-------------------//
+	// sort by direction //
+	//-------------------//
+
+	if (! SortByDir())
+		return(0);
+
 	//------------------------//
 	// find maximum obj value //
 	//------------------------//
@@ -367,15 +374,6 @@ WVC::WriteFlower(
 	LonLat lon_lat2;
 	lon_lat2.latitude = lonLat.latitude + dlat2;
 	lon_lat2.longitude = lonLat.longitude + dlon2;
-	if (! lon_lat2.WriteOtln(fp))
-		return(0);
-
-	//-------------//
-	// mark center //
-	//-------------//
-
-	lon_lat2.latitude = lonLat.latitude;
-	lon_lat2.longitude = lonLat.longitude;
 	if (! lon_lat2.WriteOtln(fp))
 		return(0);
 
@@ -467,6 +465,37 @@ WVC::SortByObj()
 			{
 				ambiguities.GotoPrev();
 				if (next_wvp->obj > wvp->obj)
+				{
+					ambiguities.SwapCurrentAndNext();
+					need_sorting = 1;
+				}
+			}
+		}
+	} while (need_sorting);
+	return(1);
+}
+
+//----------------//
+// WVC::SortByDir //
+//----------------//
+// uses idiot-sort (based on the stupidity and laziness of JNH)
+// sorts in ascending order (the lowest dir is first)
+
+int
+WVC::SortByDir()
+{
+	int need_sorting;
+	do
+	{
+		need_sorting = 0;
+		for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+			wvp = ambiguities.GetNext())
+		{
+			WindVectorPlus* next_wvp = ambiguities.GetNext();
+			if (next_wvp)
+			{
+				ambiguities.GotoPrev();
+				if (next_wvp->dir < wvp->dir)
 				{
 					ambiguities.SwapCurrentAndNext();
 					need_sorting = 1;
@@ -1296,6 +1325,51 @@ WindSwath::WriteVctr(
 				continue;
 
 			if (! wvc->WriteVctr(fp, rank))
+				return(0);
+		}
+	}
+
+	fclose(fp);
+	return(1);
+}
+
+//------------------------//
+// WindSwath::WriteFlower //
+//------------------------//
+
+int
+WindSwath::WriteFlower(
+	const char*		filename)
+{
+	//-----------//
+	// open file //
+	//-----------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//--------------//
+	// write header //
+	//--------------//
+
+	char* hdr = OTLN_HEADER;
+	if (fwrite((void *)hdr, 4, 1, fp) != 1)
+		return(0);
+
+	//---------------//
+	// write flowers //
+	//---------------//
+
+	for (int ati = 0; ati < _alongTrackBins; ati++)
+	{
+		for (int cti = 0; cti < _crossTrackBins; cti++)
+		{
+			WVC* wvc = *(*(swath + cti) + ati);
+			if (wvc == NULL)
+				continue;
+
+			if (! wvc->WriteFlower(fp))
 				return(0);
 		}
 	}
