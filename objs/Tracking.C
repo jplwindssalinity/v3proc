@@ -812,7 +812,7 @@ RangeTracker::ReadBinary(
 	// read the duration //
 	//-------------------//
 
-	if (fread((void *) *_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fread((void *)_duration, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);
