@@ -83,9 +83,12 @@ void velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
 {
 
 // Geodetic definition of the z-axis
-Vector3 rsat_geodetic = rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
-double nadir_lat = rsat_geodetic.get(1);
-double nadir_lon = rsat_geodetic.get(2);
+double alt,nadir_lat,nadir_lon;
+if (rsat.GetAltLatLon(EarthPosition::GEODETIC,&alt,&nadir_lat,&nadir_lon) == 0)
+{
+	printf("Error: velocity_frame_geodetic could not convert input position\n");
+	exit(-1);
+}
 EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
 *zscvel_geo = rnadir - rsat;
 
@@ -307,6 +310,7 @@ earth_intercept(
 	Vector3			rlook_geo)
 {
 	rlook_geo.Scale(1.0);
+//	rlook_geo.Show("earth_intercept: rlook_geo");
 
 	Vector3 v1 = rlook_geo * rlook_geo;
 	Vector3 v2 = rsat * rlook_geo;
@@ -332,6 +336,7 @@ earth_intercept(
 	double righthalf = sqrt(discrim) / (2.0 * c1);
 	double s1 = -c2 / c1 + righthalf;
 	double s2 = -c2 / c1 - righthalf;
+//	printf("s1 = %g, s2 = %g\n",s1,s2);
 	double s;
 	if (s1 > 0.0 && s2 > 0.0)
 	{
@@ -353,6 +358,10 @@ earth_intercept(
 	//------------------------------//
 	// calculate the earth location //
 	//------------------------------//
+
+	//printf("slant range = %g\n",s);
+	//Vector3 rlook_geo_new = rlook_geo*s;
+	//rlook_geo_new.Show("earth_intercept: rlook_geo_new");
 
 	EarthPosition rground = rsat + rlook_geo * s;
 	return(rground);
