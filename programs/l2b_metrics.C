@@ -731,7 +731,7 @@ plot_thing(
 
 	for (int i = 0; i < cross_track_bins; i++)
 	{
-		if (count_array[i] > 0)
+		if (count_array[i] > 1)
 		{
 			if (secondary)
 			{
