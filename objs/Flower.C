@@ -624,6 +624,31 @@ Flower::FindBestDirIdx()
     return(max_idx);
 }
 
+//----------------------------//
+// Flower::FindNextPeakDirIdx //
+//----------------------------//
+
+int
+Flower::FindNextPeakDirIdx(
+    int  idx)
+{
+    for (int dir_idx = idx + 1; dir_idx <= DIR_BINS; dir_idx++)
+    {
+        double prob = GetProbability(dir_idx);
+
+        int prev_idx = (dir_idx - 1 + DIR_BINS) % DIR_BINS;
+        double prev_prob = GetProbability(prev_idx);
+
+        int next_idx = (dir_idx + 1) % DIR_BINS;
+        double next_prob = GetProbability(next_idx);
+
+        if (prob >= prev_prob && prob >= next_prob)
+            return(dir_idx);
+    }
+    return(-1);
+}
+
+
 //--------------------------//
 // Flower::ApplyPointFlower //
 //--------------------------//
@@ -840,6 +865,10 @@ FlowerArray::FreeContents()
 // are added. Thanks to Bryan Stiles for helping me with the
 // formulation. This one uses the whole flower.
 // If use_rain_flag is set to 1, only data labelled rain free will be used.
+// The probability for a direction in the other WVC must be greater than
+// min_prob, otherwise, it won't bother using it.
+// Also, the probability for this WVC's direction must be greater than
+// min_prob, or it won't bother calculating what the neighbors think.
 
 Flower*
 FlowerArray::LocalFlowerProb(
@@ -848,7 +877,8 @@ FlowerArray::LocalFlowerProb(
     int        center_cti,
     int        center_ati,
     float      gamma,
-    int        use_rain_flag)
+    int        use_rain_flag,
+    float      min_prob)
 {
     //----------------//
     // get the center //
@@ -922,6 +952,7 @@ FlowerArray::LocalFlowerProb(
             if (op1 == NULL)
                 continue;
 
+
             //----------------//
             // check for rain //
             //----------------//
@@ -940,6 +971,10 @@ FlowerArray::LocalFlowerProb(
 
             for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
             {
+                float probability0 = op0->GetProbability(dir_idx);
+                if (probability0 < min_prob)
+                    continue;
+
                 float speed0 = op0->GetSpeed(dir_idx);
                 float direction0 = op0->GetDirection(dir_idx);
 
@@ -950,9 +985,12 @@ FlowerArray::LocalFlowerProb(
                 for (int other_dir_idx = 0; other_dir_idx < DIR_BINS;
                     other_dir_idx++)
                 {
+                    float probability1 = op1->GetProbability(other_dir_idx);
+                    if (probability1 < min_prob)
+                        continue;
+
                     float speed1 = op1->GetSpeed(other_dir_idx);
                     float direction1 = op1->GetDirection(other_dir_idx);
-                    float probability1 = op1->GetProbability(other_dir_idx);
 
                     // given the other speed, what is mine
                     float dspeed = speed0 - speed1;
@@ -1181,6 +1219,185 @@ FlowerArray::LocalVectorProb(
     return(dest_op);
 }
 
+//-------------------------------//
+// FlowerArray::LocalVectorsProb //
+//-------------------------------//
+// gamma controls the assumptions about error correlation. When
+// gamma is 0.0, the errors are assumed to be uncorrelated and the
+// probabilities are multiplied. When gamma is 1.0, the errors
+// are assumed to be completely correlated and the probabilities
+// are added. Thanks to Bryan Stiles for helping me with the
+// formulation. This one uses the neighbors vectors.
+
+Flower*
+FlowerArray::LocalVectorsProb(
+    DistProb*  dp,
+    int        window_size,
+    int        center_cti,
+    int        center_ati,
+    float      gamma,
+    int        use_rain_flag)
+{
+    //----------------//
+    // get the center //
+    //----------------//
+
+    Flower* op0 = GetFlower(center_cti, center_ati);
+    if (op0 == NULL)
+        return(NULL);
+
+    //-------------------------------//
+    // this is where the output goes //
+    //-------------------------------//
+
+    Flower* dest_op = new Flower();
+    if (dest_op == NULL)
+        return(NULL);
+    dest_op->cti = center_cti;
+    dest_op->ati = center_ati;
+    dest_op->CopySpeeds(op0);    // use the original speeds
+    dest_op->rainFlag = op0->rainFlag;
+
+    //--------------------------//
+    // temporary Flower storage //
+    //--------------------------//
+
+    Flower cor_op;
+    cor_op.FillProbabilities(0.0);    // we'll be adding
+
+    Flower uncor_op;
+    uncor_op.FillProbabilities(1.0);    // we'll be multiplying
+
+    //-----------------------------//
+    // determine window boundaries //
+    //-----------------------------//
+
+    int half_window = window_size / 2;
+
+    int min_cti = center_cti - half_window;
+    if (min_cti < 0)
+        min_cti = 0;
+    int max_cti = center_cti + half_window + 1;
+    if (max_cti > CT_WIDTH)
+        max_cti = CT_WIDTH;
+
+    int min_ati = center_ati - half_window;
+    if (min_ati < 0)
+        min_ati = 0;
+    int max_ati = center_ati + half_window + 1;
+    if (max_ati > AT_WIDTH)
+        max_ati = AT_WIDTH;
+
+    //----------------------------------------------//
+    // calculate the probability for each direction //
+    //----------------------------------------------//
+
+    for (int cti = min_cti; cti < max_cti; cti++)
+    {
+        for (int ati = min_ati; ati < max_ati; ati++)
+        {
+            //--------------------------//
+            // don't use the center WVC //
+            //--------------------------//
+
+            if (cti == center_cti && ati == center_ati)
+                continue;
+
+            // assume the information from this wvc will be good
+            int bad_wvc = 0;
+
+            Flower* op1 = GetFlower(cti, ati);
+            if (op1 == NULL)
+                continue;
+
+            //----------------//
+            // check for rain //
+            //----------------//
+
+            if (use_rain_flag && op1->rainFlag)
+                continue;
+
+            float distance = op0->KmDistance(op1);
+
+            //------------------------------------//
+            // first, clear the probability array //
+            //------------------------------------//
+
+            Flower tmp_op;
+            tmp_op.FillProbabilities(0.0);
+
+            for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+            {
+                float speed0 = op0->GetSpeed(dir_idx);
+                float direction0 = op0->GetDirection(dir_idx);
+
+                //------------//
+                // accumulate //
+                //------------//
+
+                int other_dir_idx = -1;
+                do
+                {
+                    other_dir_idx = op1->FindNextPeakDirIdx(other_dir_idx);
+                    if (other_dir_idx == -1)
+                    {
+                        // done with peaks
+                        break;
+                    }
+
+                    float speed1 = op1->GetSpeed(other_dir_idx);
+                    float direction1 = op1->GetDirection(other_dir_idx);
+                    float probability1 = op1->GetProbability(other_dir_idx);
+
+                    float dspeed = speed1 - speed0;
+                    float ddirection = ANGDIF(direction1, direction0);
+
+                    float dist_prob = dp->Probability(distance, speed0,
+                        dspeed, ddirection);
+                    if (dist_prob < 0.0)
+                    {
+                        // can't estimate probs: eliminate this wvc
+                        bad_wvc = 1;
+                        break;
+                    }
+
+                    tmp_op.Add(dir_idx, dist_prob * probability1);
+                } while(1);
+            }
+
+            if (bad_wvc)
+                continue;
+
+            //----------------------------------------------------//
+            // form the correlated and uncorrelated probabilities //
+            //----------------------------------------------------//
+
+            tmp_op.Normalize();
+            cor_op.Add(&tmp_op);
+            uncor_op.Multiply(&tmp_op);
+            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+        }
+    }
+
+    //----------------------------------------//
+    // form the combination weighted by gamma //
+    //----------------------------------------//
+
+    cor_op.Normalize();
+    uncor_op.Normalize();    // just to be sure
+
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        dest_op->probabilityArray[i] =
+            (1.0 - gamma) * uncor_op.probabilityArray[i] +
+            gamma * cor_op.probabilityArray[i];
+    }
+
+    dest_op->Normalize();
+
+    return(dest_op);
+}
+
 //-----------------------------------//
 // FlowerArray::SelectBestDirections //
 //-----------------------------------//
@@ -1246,6 +1463,30 @@ DistProb::DistProb()
 
 DistProb::~DistProb()
 {
+    return;
+}
+
+//----------------//
+// DistProb::Fill //
+//----------------//
+
+void
+DistProb::Fill(
+    int  number)
+{
+    for (int i = 0; i < DISTANCE_BINS; i++)
+    {
+        for (int j = 0; j < SPEED_BINS; j++)
+        {
+            for (int k = 0; k < DSPEED_BINS; k++)
+            {
+                for (int l = 0; l < DDIRECTION_BINS; l++)
+                {
+                    count[i][j][k][l] = number;
+                }
+            }
+        }
+    }
     return;
 }
 
