@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -79,6 +79,8 @@ static const char rcs_id[] =
 #include "Meas.h"
 #include "L1B.h"
 #include "Misc.h"
+#include "Tracking.h"
+#include "Tracking.C"
 
 //-----------------------//
 // Templates             //

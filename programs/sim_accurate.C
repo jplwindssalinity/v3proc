@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -72,6 +72,8 @@ static const char rcs_id[] =
 #include "Ephemeris.h"
 #include "Wind.h"
 #include "InstrumentSimAccurate.h"
+#include "Tracking.h"
+#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

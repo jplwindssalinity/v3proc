@@ -66,6 +66,8 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "L2B.h"
 #include "L2AToL2B.h"
+#include "Tracking.h"
+#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //

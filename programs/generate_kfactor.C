@@ -75,6 +75,8 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "XTable.h"
+#include "Tracking.h"
+#include "Tracking.C"
 
 //-----------//
 // TEMPLATES //
