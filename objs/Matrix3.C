@@ -746,54 +746,88 @@ _v[2] = vec.get(2);
 //
 // Convert the rectangular vector stored in this object into the
 // corresponding altitude above the surface, latitude, and longitude.
-// Currently, only surface points (altitude = 0) are handled.
+// Units are km and radians.
+//
+// Inputs:
+//  etype = GEOCENTRIC or GEODETIC - the type of latitude to return
+//
+// Return Value:
+//  A Vector3 object containing the altitude, latitude, and E. longitude
+//  (in that order) of the point contained in the calling EarthPosition object.
 //
 
 Vector3 EarthPosition::get_alt_lat_lon(earthposition_typeE etype)
 
 {
-double lat = 0;
-double elon = 0;
 
-double sx2 = sin(_v[1]);
+double lat;
+double elon;
+double alt;
 
-// Radius of earth at desired location.
 double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
-double radius = r1_earth*(1 - flat*sx2*sx2);
-double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+double f1 = 1 - flat;
+double f2 = flat*(2.0 - flat);
+double rho = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+double r = sqrt(_v[0]*_v[0] + _v[1]*_v[1]);
 
-if (fabs(radius - mag) > 0.001)
-  {	// more than 1 mm off the surface is considered off the surface
-  printf("Error: get_alt_lat_lon\n");
-  printf("       Off surface position vectors are not handled yet\n");
-  exit(-1);
+if (rho == 0.0)
+  {	// center of the earth
+  Vector3 result(-r2_earth,0,0);
+  return(result);
   }
 
-if ((etype == GEOCENTRIC) || (etype == GEODETIC))
-  {
-  lat = asin(_v[2]/mag);
-  double coslat = cos(lat);
-  if (coslat == 0.0)
-    {	// at one of the poles, so longitude is not defined: just use zero.
-    elon = 0.0;
-    }
-  else
-    {
-    elon = acos(_v[0]/mag/coslat);
-    }
+// Compute east longitude
+if (_v[0] == 0.0)
+  {	// on the 90 -- 270 great circle
+  if (_v[1] > 0.0) elon = pi/2; else elon = 3*pi/2;
   }
 else
   {
-  printf("Error: type must be GEOCENTRIC or GEODETIC for get_alt_lat_lon\n");
+  elon = atan2(_v[1],_v[0]);
+  if (elon < 0.0) elon += 2*pi;
+  }
+
+// Trial values to start the interation
+lat = asin(_v[2]/rho);
+double sinlat = sin(lat);
+double coslat = cos(lat);
+alt = rho - r1_earth*(1.0 - flat*sinlat*sinlat);
+
+// Iterate to solution (or maximum numer of interations)
+double g0,g1,g2;
+double dr,dz,dalt,dlat;
+double tol = 1.0e-14;
+int maxiter = 10;
+int i;
+for (i=1; i <= maxiter; i++)
+  {
+  sinlat = sin(lat);
+  coslat = cos(lat);
+  g0 = r1_earth/sqrt(1.0 - f2*sinlat*sinlat);
+  g1 = g0 + alt;
+  g2 = g0*(1-flat)*(1-flat) + alt;
+  dr = r - g1*coslat;
+  dz = _v[2] - g2*sinlat;
+  dalt = dr*coslat + dz*sinlat;
+  dlat = (dz*coslat - dr*sinlat) / (r1_earth + alt + dalt);
+  lat += dlat;
+  alt += dalt;
+  if ((dlat < tol) && (fabs(dalt)/(r1_earth + alt) < tol)) break;
+  }
+
+if (i >= maxiter)
+  {
+  printf("Error: EarthPosition::get_alt_lat_lon\n");
+  printf("  Did not converge to a solution for the surface point\n");
   exit(-1);
   }
 
-if (etype == GEODETIC)
-  {	// convert geocentric latitude to geodetic latitude
-  lat = atan(tan(lat)/(1-eccentricity_earth*eccentricity_earth));
+if (etype == GEOCENTRIC)
+  {	// convert geodetic latitude to geocentric latitude
+  lat = atan(tan(lat)*(1-eccentricity_earth*eccentricity_earth));
   }
 
-Vector3 result(0,lat,elon);
+Vector3 result(alt,lat,elon);
 return(result);
 
 }
