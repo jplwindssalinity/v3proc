@@ -221,13 +221,60 @@ CheckFrame::AppendSliceRecord(
         return(1);
 }
 
+//--------------------------//
+// CheckFrame::WriteDataRec //
+//--------------------------//
+
+int
+CheckFrame::WriteDataRec(
+	FILE*	fptr)
+{
+
+  double lon,lat;
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
+  {
+    if (fwrite((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
+    if (fwrite((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fwrite((void *)&wv[slice_i].spd,sizeof(float),1,fptr) != 1) return(0);
+    if (fwrite((void *)&wv[slice_i].dir,sizeof(float),1,fptr) != 1) return(0);
+    if (fwrite((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fwrite((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
+    if (fwrite((void *)&incidence[slice_i],sizeof(float),1,fptr)!=1) return(0);
+    if (! centroid[slice_i].WriteLonLat()) return(0);
+    if (fwrite((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
+	  return(0);
+    if (fwrite((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
+	  return(0);
+    if (fwrite((void *)&En[slice_i],sizeof(float),1,fptr) != 1)
+	  return(0);
+    if (fwrite((void *)&R[slice_i],sizeof(float),1,fptr) != 1)
+	  return(0);
+    if (fwrite((void *)&GatGar[slice_i],sizeof(float),1,fptr) != 1)
+	  return(0);
+  }
+
+  float att;
+
+  if (fwrite((void *)&time,sizeof(double),1,fptr) != 1) return(0);
+  att = rtd*attitude.GetRoll(); 
+  if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+  att = rtd*attitude.GetPitch();//
+  if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+  att = rtd*attitude.GetYaw();//
+  if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+  return(1);
+}
+
 int
 CheckFrame::ReadDataRec(
 	FILE*	fptr)
 {
 
   double lon,lat;
-  for (int slice_i=0; slice_i < 10; slice_i++)
+  for (int slice_i=0; slice_i < slicesPerSpot; slice_i++)
   {
     if (fread((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
     if (fread((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
@@ -236,9 +283,7 @@ CheckFrame::ReadDataRec(
     if (fread((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
-    if (fread((void *)&lon,sizeof(double),1,fptr) != 1) return(0);
-    if (fread((void *)&lat,sizeof(double),1,fptr) != 1) return(0);
-    centroid[slice_i].SetAltLonGDLat(0.0,lon,lat);
+    if (! centroid[slice_i].ReadLonLat()) return(0);
     if (fread((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
     if (fread((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
@@ -282,7 +327,7 @@ CheckFrame::WriteDataRecAscii(
     rtd*antenna_azi);
   fprintf(fptr,"**** Slices Data ****\n");
   int sliceno = -5;
-  for (int i=0; i < 10; i++)
+  for (int i=0; i < slicesPerSpot; i++)
   {
     if (idx[i] < -6 || idx[i] > 6 || idx[i] == 0) continue;  // invalid data
     fprintf(fptr,"  Slice %d\n",idx[i]);
