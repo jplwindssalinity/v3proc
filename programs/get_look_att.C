@@ -151,9 +151,9 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]", "[ -l ]",
-    "[ -s start:end ] ", "<sim_config_file>", "<output_base>",
-    "<echo_file...>", 0 };
+const char* usage_array[] = { "[ -a roll:pitch:yaw ]",
+    "[ -f type:windfield ]", "[ -s start:end ] ", "<sim_config_file>",
+    "<output_base>", "<echo_file...>", 0 };
 
 off_t***   g_offsets;
 
