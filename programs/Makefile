@@ -73,7 +73,8 @@ PROGRAMS = \
 	checkframe_to_ascii \
 	l2a_to_ascii \
 	reformat_pattern \
-	test_pattern
+	test_pattern \
+	get_X_scan
 #	generate_kfactor
 
 HUDD_PROGRAMS = \
