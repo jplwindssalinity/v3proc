@@ -344,7 +344,7 @@ PtGr_to_Esn(
 	double Bn = qscat->ses.noiseBandwidth;
 	double Be = qscat->ses.GetTotalSignalBandwidth();
 	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
-	double alpha = Bn/Be*beta;
+	double alpha = Bn/Be;
     double L13 = qscat->ses.receivePathLoss;
     double L23 = qscat->ses.loopbackLoss;
     double Lcalop = qscat->ses.loopbackLossRatio;
@@ -788,6 +788,7 @@ Er_to_Es(
       fprintf(stderr,"Error, bad alpha and/or beta values\n");
       return(0);
     }
+
 	double EnSpot = 1.0/(1.0 - alpha)*(Esn_echo - Esn_noise/beta);
     *En_slice = q_slice * EnSpot;
 
