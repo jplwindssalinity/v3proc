@@ -291,21 +291,21 @@ main(
 	beam.GetPowerGain(look,azimuth,&gain);
 	printf("Electrical Boresight H: (gain dB) %g\n",10.0*log(gain)/log(10.0));
 	// Write out cuts for plotting.
-	for (int i=-1000; i <= 1000; i++)
-	{
-		double azi = i/1000.0*dtr;
-
-	    Vector3 vector;
-   		vector.SphericalSet(1.0, look, azi);
-    	vector = beam._antennaFrameToBeamFrame.Forward(vector);
-    	double r, theta, phi;
-    	vector.SphericalGet(&r, &theta, &phi);
-    	double Em = pi / 2.0 - theta;
-    	double Am = phi;
+//	for (int i=-1000; i <= 1000; i++)
+//	{
+//		double azi = i/1000.0*dtr;
+//
+//	    Vector3 vector;
+ //  		vector.SphericalSet(1.0, look, azi);
+  //  	vector = beam._antennaFrameToBeamFrame.Forward(vector);
+   // 	double r, theta, phi;
+    //	vector.SphericalGet(&r, &theta, &phi);
+    //	double Em = pi / 2.0 - theta;
+//    	double Am = phi;
 	
-		beam.GetPowerGain(look,azi,&gain);
-		printf("%g %g %g %g\n",azi,10.0*log(gain)/log(10.0),Em,Am);
-	}
+//		beam.GetPowerGain(look,azi,&gain);
+//		printf("%g %g %g %g\n",azi,10.0*log(gain)/log(10.0),Em,Am);
+//	}
 
 	beam = instrument.antenna.beam[1];
 	beam.GetElectricalBoresight(&look,&azimuth);
@@ -313,12 +313,12 @@ main(
 	beam.GetPowerGain(look,azimuth,&gain);
 	printf("Electrical Boresight V: (gain dB) %g\n",10.0*log(gain)/log(10.0));
 	// Write out cuts for plotting.
-	for (int i=-1000; i <= 1000; i++)
-	{
-		double azi = i/1000.0*dtr;
-		beam.GetPowerGain(look,azi,&gain);
-		printf("%g %g\n",azi,10.0*log(gain)/log(10.0));
-	}
+//	for (int i=-1000; i <= 1000; i++)
+//	{
+//		double azi = i/1000.0*dtr;
+//		beam.GetPowerGain(look,azi,&gain);
+//		printf("%g %g\n",azi,10.0*log(gain)/log(10.0));
+//	}
 	return (0);
 
 	
