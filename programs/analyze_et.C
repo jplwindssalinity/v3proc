@@ -211,6 +211,24 @@ main(
         }
     }
 
+    //---------//
+    // buffers //
+    //---------//
+
+    struct SpotTrack {
+        double time;
+        OrbitState orbit_state;
+        Attitude attitude;
+        unsigned int encoder;
+        int beam_idx;
+        float commanded_doppler;
+        float commanded_rx_gate_delay;
+        float commanded_rx_gate_width;
+        float f_bb_expected;
+        float f_bb_data;
+    };
+    SpotTrack spot_track[SPOTS];
+
     //-----------------//
     // conversion loop //
     //-----------------//
@@ -222,35 +240,61 @@ main(
     int beam_idx;
     float f_bb_data, f_bb_expected;
 
+    int spot_idx = 0;
+    unsigned int last_orbit_step = -1;
+    int done = 0;
     do
     {
+        //----------------------//
+        // check the spot index //
+        //----------------------//
+
+        if (spot_idx >= SPOTS)
+        {
+            fprintf(stderr, "%s: too many spots\n", command);
+            exit(1);
+        }
+
         //-----------------------------//
         // read an echo tracker record //
         //-----------------------------//
 
-        double time;
-        if (fread((void *)&time, sizeof(double), 1, input_fp) != 1 ||
-            ! spacecraft.orbitState.Read(input_fp) ||
-            ! spacecraft.attitude.Read(input_fp) ||
-            fread((void *)&encoder, sizeof(unsigned int), 1, input_fp) != 1 ||
-            fread((void *)&beam_idx, sizeof(int), 1, input_fp) != 1 ||
-            fread((void *)&(instrument.commandedDoppler), sizeof(float), 1,
+        SpotTrack* st = &(spot_track[spot_idx]);
+        if (fread((void *)&(st->time), sizeof(double), 1, input_fp) != 1 ||
+            fread((void *)&(st->orbit_step), sizeof(unsigned int), 1,
                 input_fp) != 1 ||
-            fread((void *)&(instrument.commandedRxGateDelay), sizeof(float), 1,
+            ! st->orbit_state.Read(input_fp) ||
+            ! st->attitude.Read(input_fp) ||
+            fread((void *)&(st->encoder), sizeof(unsigned int), 1,
                 input_fp) != 1 ||
-            fread((void *)&(instrument.commandedRxGateWidth), sizeof(float), 1,
+            fread((void *)&(st->beam_idx), sizeof(int), 1, input_fp) != 1 ||
+            fread((void *)&(st->commanded_doppler), sizeof(float), 1,
                 input_fp) != 1 ||
-            fread((void *)&f_bb_expected, sizeof(float), 1, input_fp) != 1 ||
-            fread((void *)&f_bb_data, sizeof(float), 1, input_fp) != 1)
+            fread((void *)&(st->commanded_rx_gate_delay), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&(st->commanded_rx_gate_width), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&(st->f_bb_expected), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&(st->f_bb_data), sizeof(float), 1, input_fp) != 1)
         {
-            break;
+            done = 1;
         }
 
-        //----------------//
-        // set up antenna //
-        //----------------//
+        //-----------------------------//
+        // check for end of orbit step //
+        //-----------------------------//
 
-        antenna->SetAzimuthWithEncoder(encoder);
+        if (done ||
+            (st->orbit_step != last_orbit_step && last_orbit_step != -1))
+        {
+            Attitude attitude = estimate_attitude();
+            
+            fprintf(output_fp, "%d %g %g %g\n", orbit_step, roll*rtd,
+                pitch*rtd, yaw*rtd);
+            last_orbit_step = st->orbit_step;
+            spot_idx = 0;
+        }
 
         //---------------------------//
         // write to the output files //
@@ -360,7 +404,7 @@ main(
             }
         }
 */
-    } while (1);
+    } while (! done);
 
     //-------------//
     // close files //
@@ -370,7 +414,42 @@ main(
     {
         fclose(output_fp[i]);
     }
-   fclose(input_fp);
+    fclose(input_fp);
 
     return (0);
+}
+
+Attitude
+estimate_attitude(
+    int         spot_count,
+    SpotTrack*  spot_track)
+{
+    Instrument instrument;
+    Spacecraft spacecraft;
+    for (int spot_idx = 0; spot_idx < spot_count; spot_idx++)
+    {
+        spacecraft.orbitState = spot_track[spot_idx].orbit_state;
+        spacecraft.attitude = spot_track[spot_idx].attitude;
+        unsigned int encoder = spot_track[spot_idx].encoder;
+            fread((void *)&encoder, sizeof(unsigned int), 1, input_fp) != 1 ||
+            fread((void *)&beam_idx, sizeof(int), 1, input_fp) != 1 ||
+            fread((void *)&(instrument.commandedDoppler), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&(instrument.commandedRxGateDelay), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&(instrument.commandedRxGateWidth), sizeof(float), 1,
+                input_fp) != 1 ||
+            fread((void *)&f_bb_expected, sizeof(float), 1, input_fp) != 1 ||
+            fread((void *)&f_bb_data, sizeof(float), 1, input_fp) != 1)
+        {
+            break;
+        }
+
+        //----------------//
+        // set up antenna //
+        //----------------//
+
+        antenna->SetAzimuthWithEncoder(encoder);
+        
+    }
 }
