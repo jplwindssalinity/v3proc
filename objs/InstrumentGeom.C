@@ -291,7 +291,7 @@ LocateSliceCentroids(
 		abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
 		meas->numSlices = 1;
 		meas->pol = beam->polarization;
-		meas->value = Esn[slice_idx];
+		if (Esn) meas->value = Esn[slice_idx];
 
 		//--------------------------------//
 		// find the centroid on the earth //
