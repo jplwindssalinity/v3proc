@@ -14,7 +14,7 @@ static const char rcs_id_l1a_c[] =
 #define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
 #endif
 
-#define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 3)
+#define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 2)
 
 //=====//
 // L1A //
@@ -319,11 +319,26 @@ L1A::WriteGSCalPulseRec(void)
     ptr += sizeof(int);
     (void)memcpy(ptr, &(frame.in_eu.true_cal_pulse_pos), sizeof(char));
     ptr += sizeof(char);
-    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
-        *ptr ^= GET_L1A_FIRST_PULSE(frame.frame_inst_status); // different
-    else
-        *ptr = GET_L1A_FIRST_PULSE(frame.frame_inst_status); // same
 
+    // Set beam identifier based on true unit offset position and first pulse
+    // identity.
+    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
+    {
+      // different
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        *ptr = 1;
+      else
+        *ptr = 0;
+    }
+    else
+    {
+      // same
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        *ptr = 0;
+      else
+        *ptr = 1;
+    }
+//    printf("%d %d\n",frame.in_eu.true_cal_pulse_pos,*ptr);
 
     return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
 }

@@ -1068,7 +1068,7 @@ QscatSim::SetL1ALoopback(
     //--------------------------------------------------------//
 
     l1a_frame->calPosition = _spotNumber + 2;
-    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition + 1;
+    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition - 1;
     _spotNumber++;
 
     return(1);
