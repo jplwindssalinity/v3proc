@@ -1078,6 +1078,7 @@ return(1);
 // B = D*cos(E) and C = -D*sin(E)
 // solved for...
 // D = sqrt(B*B + C*C) and E = atan2(-B / C)
+// points with variances less than 0.0 are not fitfit
 
 int
 sinfit(
@@ -1117,7 +1118,11 @@ sinfit(
     for (int i = 0; i < count; i++)
     {
         if (variance)
+        {
             use_var = variance[i];
+            if (use_var < 0.0)
+                continue;
+        }
 
         double si = sin(azimuth[i]);
         double co = cos(azimuth[i]);
