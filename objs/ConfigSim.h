@@ -13,6 +13,7 @@ static const char rcs_id_configsim_h[] =
 #include "InstrumentSim.h"
 #include "L00.h"
 #include "L10.h"
+#include "L15.h"
 #include "WindField.h"
 
 //======================================================================
@@ -86,6 +87,14 @@ int ConfigL00(L00* l00, ConfigList* config_list);
 #define L10_FILE_KEYWORD					"L10_FILE"
 
 int ConfigL10(L10* l10, ConfigList* config_list);
+
+//-----//
+// L15 //
+//-----//
+
+#define L15_FILE_KEYWORD					"L15_FILE"
+
+int ConfigL15(L15* l15, ConfigList* config_list);
 
 //-----------//
 // Ephemeris //
