@@ -1,10 +1,10 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_l00frame_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <memory.h>
 #include <malloc.h>
@@ -16,13 +16,13 @@ static const char rcs_id_l00frame_c[] =
 //==========//
 
 L00Frame::L00Frame()
-:	time(0), instrumentTicks(0), orbitTicks(0), priOfOrbitTickChange(255),
-	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0),
-	gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0),
-	antennaPosition(NULL), science(NULL), spotNoise(NULL), spotsPerFrame(0),
-	slicesPerSpot(0), slicesPerFrame(0)
+:   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
+    priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
+    gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
+    velZ(0.0), ptgr(0.0), antennaPosition(NULL), science(NULL),
+    spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
 {
-	return;
+    return;
 }
 
 L00Frame::~L00Frame()
@@ -114,7 +114,10 @@ L00Frame::Pack(
 	idx += size;
 
 	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&priOfOrbitTickChange, size);
+	memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
+	idx += size;
+
+	memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
 	idx += size;
 
 	size = sizeof(float);
@@ -199,7 +202,10 @@ L00Frame::Unpack(
 	idx += size;
 
 	size = sizeof(unsigned char);
-	memcpy((void *)&priOfOrbitTickChange, (void *)(buffer + idx), size);
+	memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(float);

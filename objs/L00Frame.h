@@ -57,7 +57,8 @@ public:
 	double			time;
 	unsigned int	instrumentTicks;
 	unsigned int	orbitTicks;
-	unsigned char	priOfOrbitTickChange;
+    unsigned char   orbitStep;
+	unsigned char	priOfOrbitStepChange;
 	float			gcAltitude;
 	float			gcLongitude;
 	float			gcLatitude;

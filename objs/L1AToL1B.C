@@ -100,11 +100,10 @@ L1AToL1B::Convert(
     double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
     float Es_cal,En_cal;
     if (! Er_to_Es(beta, Esn_echo_cal, Esn_echo_cal, Esn_noise_cal,
-                   En_echo_load, En_noise_load, 1.0, &Es_cal, &En_cal))
+        En_echo_load, En_noise_load, 1.0, &Es_cal, &En_cal))
     {
-      return(0);
+        return(0);
     }
-
 
 	//----------------------------//
 	// ...free residual MeasSpots //
@@ -159,7 +158,7 @@ L1AToL1B::Convert(
 			// set up instrument //
 			//-------------------//
 
-			if (spot_idx == l1a->frame.priOfOrbitTickChange)
+			if (spot_idx == l1a->frame.priOfOrbitStepChange)
 				qscat->cds.orbitTime++;
 
             unsigned short encoder = l1a->frame.antennaPosition[spot_idx];
@@ -178,6 +177,8 @@ L1AToL1B::Convert(
 			//-----------------------------------------------//
 			// command the range delay and Doppler frequency //
 			//-----------------------------------------------//
+
+            SetDelayAndFrequency(spacecraft, qscat);
 
 /*
             if (qscat->cds.useTracking)
@@ -242,16 +243,12 @@ L1AToL1B::Convert(
             for(Meas* meas = meas_spot->GetHead(); meas;
                 meas = meas_spot->GetNext())
             {  
-			  double alt,lat,lon;
-			  if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
-			    return(0);
+                double alt,lat,lon;
+                if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+                    return(0);
 			  
-			  LonLat lon_lat;
-			  lon_lat.longitude = lon;
-			  lon_lat.latitude = lat;
-			
-			  // Compute Land Flag
-			  meas->landFlag=landMap.IsLand(lon,lat);
+                // Compute Land Flag
+                meas->landFlag = landMap.IsLand(lon, lat);
 			}
 
 			//----------------------------------------//

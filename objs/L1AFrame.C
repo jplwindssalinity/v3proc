@@ -16,12 +16,12 @@ static const char rcs_id_l1aframe_c[] =
 //==========//
 
 L1AFrame::L1AFrame()
-:	time(0), instrumentTicks(0), orbitTicks(0), priOfOrbitTickChange(255),
-	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0),
-	gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0),
-	antennaPosition(NULL), science(NULL), spotNoise(NULL),
-	antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
-	slicesPerFrame(0)
+:   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
+    priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
+    gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
+    velZ(0.0), ptgr(0.0), antennaPosition(NULL), science(NULL),
+    spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
+    slicesPerSpot(0), slicesPerFrame(0)
 {
 	return;
 }
@@ -117,7 +117,10 @@ L1AFrame::Pack(
 	idx += size;
 
 	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&priOfOrbitTickChange, size);
+	memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
+	idx += size;
+
+	memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
 	idx += size;
 
 	size = sizeof(float);
@@ -202,7 +205,10 @@ L1AFrame::Unpack(
 	idx += size;
 
 	size = sizeof(unsigned char);
-	memcpy((void *)&priOfOrbitTickChange, (void *)(buffer + idx), size);
+	memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
+	idx += size;
+
+	memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(float);
@@ -271,8 +277,8 @@ L1AFrame::Unpack(
 
 int L1AFrame::WriteAscii(FILE* ofp){
   fprintf(ofp,"\n########################Frame Info#####################\n\n");
-  fprintf(ofp,"Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitTickChange %d\n",
-	  time,instrumentTicks,orbitTicks,(int)priOfOrbitTickChange);
+  fprintf(ofp,"Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitStepChange %d\n",
+	  time,instrumentTicks,orbitTicks,(int)priOfOrbitStepChange);
   fprintf(ofp,"GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
 	  gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY,gcZ);
   fprintf(ofp,"VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g PtGr: %g\n",

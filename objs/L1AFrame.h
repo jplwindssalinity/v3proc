@@ -1,20 +1,20 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef L1AFRAME_H
 #define L1AFRAME_H
 
 static const char rcs_id_l1aframe_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Attitude.h"
 
 
 //======================================================================
 // CLASSES
-//		L1AFrame
+//    L1AFrame
 //======================================================================
 
 #define L1A_FRAME_HEADER_SIZE	69
@@ -55,10 +55,11 @@ public:
 	// product variables //
 	//-------------------//
 
-	double			time;
-	unsigned int	instrumentTicks;
-	unsigned int	orbitTicks;
-	unsigned char	priOfOrbitTickChange;
+    double         time;
+    unsigned int   instrumentTicks;
+    unsigned int   orbitTicks;
+    unsigned char  orbitStep;
+    unsigned char  priOfOrbitStepChange;
 
 	//-----------------//
 	// S/C information //

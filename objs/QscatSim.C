@@ -161,8 +161,9 @@ QscatSim::ScatSim(
             return(0);
         l00_frame->time = qscat->cds.time;
         l00_frame->orbitTicks = qscat->cds.orbitTime;
+        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
         l00_frame->instrumentTicks = qscat->cds.instrumentTime;
-        l00_frame->priOfOrbitTickChange = 255;      // flag value
+        l00_frame->priOfOrbitStepChange = 255;      // flag value
     }
 
     //-----------------------------------------------//
@@ -296,11 +297,16 @@ QscatSim::ScatSim(
     }
 
     //---------------------------------//
-    // set orbit tick change indicator //
+    // set orbit step change indicator //
     //---------------------------------//
 
-    if (qscat->cds.orbitTime != l00_frame->orbitTicks)
-        l00_frame->priOfOrbitTickChange = _spotNumber;
+    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    if (orbit_step != l00_frame->orbitStep)
+    {
+        l00_frame->priOfOrbitStepChange = _spotNumber;
+        // remember, the CDS puts in the last orbit step (anti-documentation)
+        l00_frame->orbitStep = orbit_step;
+    }
 
     //-----------------------------//
     // determine if frame is ready //
@@ -802,92 +808,5 @@ QscatSim::ComputeXfactor(
 
     (*X) *= qscat->ses.transmitPower * qscat->ses.rxGainEcho *
         lambda*lambda / (64*pi*pi*pi * qscat->systemLoss);
-    return(1);
-}
-
-//----------------------//
-// SetDelayAndFrequency //
-//----------------------//
-
-int
-QscatSim::SetDelayAndFrequency(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat)
-{
-    //------------------------------------------------------//
-    // calculate the encoder value to use for the algorithm //
-    //------------------------------------------------------//
-
-    unsigned short encoder = qscat->cds.EstimateEncoder();
-
-    //---------------------------------------------//
-    // sample the encoder for the next calculation //
-    //---------------------------------------------//
-
-    qscat->cds.previousEncoder = qscat->sas.GetEncoder();
-
-    //-------------------------------------------------//
-    // shift the antenna to the center of the tx pulse //
-    //-------------------------------------------------//
-
-    qscat->sas.antenna.TimeRotation(qscat->ses.txPulseWidth / 2.0);
-
-    //---------------------------------//
-    // calculate orbit step, if needed //
-    //---------------------------------//
-
-    unsigned short orbit_step = 0;
-    if (qscat->cds.useRgc || qscat->cds.useDtc)
-        orbit_step = qscat->cds.GetTrackingOrbitStep();
-
-    //-----------------------------//
-    // calculate the rx gate delay //
-    //-----------------------------//
-
-    // these defaults will produce no delay quantization correction
-    // if ideal range tracking is used
-    unsigned char rx_gate_delay_dn = 0;
-    float rx_gate_delay_fdn = 0.0;
-
-    if (qscat->cds.useRgc)
-    {
-        // tracking algorithm
-        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
-        range_tracker->GetRxGateDelay(orbit_step, encoder,
-            cds_beam_info->rxGateWidthDn, qscat->cds.txPulseWidthDn,
-            &rx_gate_delay_dn, &rx_gate_delay_fdn);
-        qscat->ses.CmdRxGateDelayDn(rx_gate_delay_dn);
-    }
-    else
-    {
-        // ideal delay
-        float rtt = IdealRtt(spacecraft, qscat);
-        SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-        float delay = rtt +
-            (qscat->ses.txPulseWidth - ses_beam_info->rxGateWidth) / 2.0;
-        qscat->ses.CmdRxGateDelayEu(delay);
-    }
-
-    //----------------------------//
-    // calculate the tx frequency //
-    //----------------------------//
-
-    if (qscat->cds.useDtc)
-    {
-        // tracking algorithm
-        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
-        short doppler_dn;
-        doppler_tracker->GetCommandedDoppler(orbit_step, encoder,
-            rx_gate_delay_dn, rx_gate_delay_fdn, &doppler_dn);
-        qscat->ses.CmdTxDopplerDn(doppler_dn);
-    }
-    else
-    {
-        // ideal frequency
-        IdealCommandedDoppler(spacecraft, qscat);
-    }
-
     return(1);
 }

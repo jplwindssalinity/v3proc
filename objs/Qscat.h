@@ -11,6 +11,7 @@ static const char rcs_id_qscat_h[] =
 
 #include "Antenna.h"
 #include "Tracking.h"
+#include "Spacecraft.h"
 
 #define NUMBER_OF_QSCAT_BEAMS     2
 #define ENCODER_N                 32768
@@ -158,11 +159,11 @@ public:
 #define TX_FREQUENCY_CMD_RESOLUTION    2.0E3
 #define PRI_CMD_RESOLUTION             9.9806E-5
 
-#define DOPPLER_ORBIT_STEPS  256
-#define CDS_ENCODER_A_OFFSET     16408
-#define CDS_ENCODER_B_OFFSET     28
-#define BEAM_A_OFFSET        0
-#define BEAM_B_OFFSET        0
+#define ORBIT_STEPS           256
+#define CDS_ENCODER_A_OFFSET  16408
+#define CDS_ENCODER_B_OFFSET  28
+#define BEAM_A_OFFSET         0
+#define BEAM_B_OFFSET         0
 
 class CdsBeamInfo
 {
@@ -190,9 +191,9 @@ public:
     // getting/setting //
     //-----------------//
 
-    int           SetTime(double new_time);
-    int           SetEqxTime(double eqx_time);
-    int           SetTimeWithInstrumentTime(unsigned int ticks);
+    int  SetTime(double new_time);
+    int  SetEqxTime(double eqx_time);
+    int  SetTimeWithInstrumentTime(unsigned int ticks);
 
     double          OrbitFraction();
     unsigned short  GetTrackingOrbitStep();
@@ -270,5 +271,11 @@ public:
     float     systemLoss;           // dimensionless multiplicative factor
     float     systemTemperature;    // K
 };
+
+//------------------//
+// helper functions //
+//------------------//
+
+int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
 #endif
