@@ -8,7 +8,7 @@
 //    tiff
 //
 // SYNOPSIS
-//    tiff [ -bgn ] [ -c colormap ] [ -q # ] [ -x # ] [ -y # ]
+//    tiff [ -bgs ] [ -c colormap ] [ -q # ] [ -x # ] [ -y # ]
 //        <input_array> [ output_tiff ]
 //
 // DESCRIPTION
@@ -17,7 +17,7 @@
 // OPTIONS
 //    [ -b ]       Bar. Generate a color bar strip too. input_array.bar.tiff
 //    [ -g ]       Guess at the dimensions and ask.
-//    [ -n ]       Normalize. Linearly scale the array values to match
+//    [ -s ]       Scale. Linearly scale the array values to match
 //                   the range of colors in the colormap.
 //    [ -c colormap ]  Colormap. A colormap file to use. Colormap files
 //                       are ASCII files containing (value, R, G, B) per line.
@@ -83,7 +83,7 @@ template class SortableList<CMNode>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING       "bgnc:q:x:y:"
+#define OPTSTRING       "bgsc:q:x:y:"
 #define TIFF_EXTENSION  "tiff"
 #define COLORBAR_WIDTH  50
 
@@ -100,14 +100,14 @@ void  infowrite(int x_size, int y_size, const char* filename,
 
 int opt_bar = 0;
 int opt_guess = 0;
-int opt_normalize = 0;
+int opt_scale = 0;
 int opt_rel = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -bgn ]", "[ -c colormap ]", "[ -q # ]",
+const char* usage_array[] = { "[ -bgs ]", "[ -c colormap ]", "[ -q # ]",
     "[ -x # ]", "[ -y # ]", "<input_array>", "[ output_tiff ]", 0 };
 
 int  x_size = -1;
@@ -145,8 +145,8 @@ main(
         case 'g':
             opt_guess = 1;
             break;
-        case 'n':
-            opt_normalize = 1;
+        case 's':
+            opt_scale = 1;
             break;
         case 'c':
             colormap_file = optarg;
@@ -282,7 +282,7 @@ main(
     else
     {
         colormap.BlackToWhite(0.0, 1.0);
-        opt_normalize = 1;
+        opt_scale = 1;
     }
 
     //-----------------------------//
@@ -322,11 +322,11 @@ main(
     node = colormap.GetTail();
     float max_map = node->value;
 
-    //--------------------------//
-    // normalize the input file //
-    //--------------------------//
+    //----------------------//
+    // scale the input file //
+    //----------------------//
 
-    if (opt_normalize)
+    if (opt_scale)
     {
         //------------------------//
         // find the array extrema //
