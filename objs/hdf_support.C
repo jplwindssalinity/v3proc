@@ -618,7 +618,7 @@ int HDF_update_file::get_data(char *name,int *values)
 	double	*temp_double;
 	short	*temp_short;
 	uint	*temp_uint;
-	ushort	*temp_ushort;
+	ushort	*temp_ushort = NULL;
 	uchar	*temp_uchar;
 	int	*temp_int;
 

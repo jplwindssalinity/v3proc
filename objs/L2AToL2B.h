@@ -58,7 +58,8 @@ public:
     //------------//
 
     int  ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
-    int  Flush(L2B* l2b);
+    int  InitAndFilter(L2B* l2b);
+    int  InitFilterAndFlush(L2B* l2b);
 
     //------------------------------------------//
     // Routine for outputting the Nudge Field   //

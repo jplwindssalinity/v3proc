@@ -112,7 +112,7 @@ int
 L2AToL2B::ConvertAndWrite(
     L2A*    l2a,
     GMF*    gmf,
-    Kp*        kp,
+    Kp*     kp,
     L2B*    l2b)
 {
     static int last_rev_number = 0;
@@ -290,7 +290,7 @@ L2AToL2B::ConvertAndWrite(
     //------------------------------//
 
     if (rev != last_rev_number && last_rev_number)
-        Flush(l2b);    // process and write
+        InitFilterAndFlush(l2b);    // process and write
 
     //-------------------//
     // add to wind swath //
@@ -323,16 +323,16 @@ L2AToL2B::Cheat(
     return(1);
 }
 
-//-----------------//
-// L2AToL2B::Flush //
-//-----------------//
+//-------------------------//
+// L2AToL2B::InitAndFilter //
+//-------------------------//
 
-#define ONE_STAGE_WITHOUT_RANGES 1
-#define S3_WINDOW_SIZE  medianFilterWindowSize
-#define S3_NUDGE 0
+#define ONE_STAGE_WITHOUT_RANGES  1
+#define S3_WINDOW_SIZE            medianFilterWindowSize
+#define S3_NUDGE                  0
 
 int
-L2AToL2B::Flush(
+L2AToL2B::InitAndFilter(
     L2B*  l2b)
 {
     //-----------------------------------------------------//
@@ -353,10 +353,10 @@ L2AToL2B::Flush(
     // initialize //
     //------------//
 
-    #define ALREADY_INITD 0
-    #define USEBESTK 0
-    #define BESTKPARAMETER  1000
-    #define BESTKWINDOWSIZE 15
+    #define ALREADY_INITD    0
+    #define USEBESTK         0
+    #define BESTKPARAMETER   1000
+    #define BESTKWINDOWSIZE  15
 
     if (ALREADY_INITD)
     {
@@ -435,6 +435,20 @@ L2AToL2B::Flush(
         l2b->frame.swath.MedianFilter(S3_WINDOW_SIZE, medianFilterMaxPasses,
             bound, useAmbiguityWeights,special);
     }
+
+    return(1);
+}
+
+//------------------------------//
+// L2AToL2B::InitFilterAndFlush //
+//------------------------------//
+
+int
+L2AToL2B::InitFilterAndFlush(
+    L2B*  l2b)
+{
+    if (! InitAndFilter(l2b))
+        return(0);
 
     //------------//
     // output l2b //
