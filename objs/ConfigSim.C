@@ -55,6 +55,23 @@ ConfigSpacecraft(
 		return(0);
 	}
 
+        //--------------------//
+        // Initialize Period  //
+        //--------------------//
+
+	double semi_major_axis;
+	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
+		return(0);
+
+	double eccentricity;
+	if (! config_list->GetDouble(ECCENTRICITY_KEYWORD, &eccentricity))
+		return(0);
+
+	double inclination;
+	if (! config_list->GetDouble(INCLINATION_KEYWORD, &inclination))
+		return(0);
+
+	spacecraft->SetOrbitPeriod(semi_major_axis, eccentricity, inclination);
 	return(1);
 }
 
