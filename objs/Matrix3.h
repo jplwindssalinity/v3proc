@@ -126,6 +126,7 @@ void Show(char *name = NULL);
 
 	int		SphericalSet(double r, double theta, double phi);
 	int		Set(int index, double value);
+	void	Set(double x1, double x2, double x3);
 	int		Get(int index, double* value);
 	void	Zero();
 

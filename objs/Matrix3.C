@@ -600,6 +600,17 @@ Vector3::Set(
 	return(1);
 }
 
+void
+Vector3::Set(double x1, double x2, double x3)
+
+{
+
+_v[0] = x1;
+_v[1] = x2;
+_v[2] = x3;
+
+}
+
 //--------------//
 // Vector3::Get //
 //--------------//
