@@ -140,16 +140,10 @@ main(
 		exit(1);
 	}
 
-	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
-	//-----------------------------------------------//
-
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(-1);
-	}
+	// Only the number of beams is needed from the config file
+    int number_of_beams;
+    if (! config_list.GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+        return(0);
 
 	//--------------------------------------------//
 	// Make and write beam patterns for each beam //
@@ -171,9 +165,9 @@ main(
 	double max_gaindB = 30.0;
 	double max_gain = pow(10,max_gaindB/10);
 
-	for (int ib=0; ib < instrument.antenna.numberOfBeams; ib++)
+	for (int ib=0; ib < number_of_beams; ib++)
 	{
-		Beam* cur_beam = &(instrument.antenna.beam[ib]);
+		Beam cur_beam;
 		float** power_gain = (float**)make_array(sizeof(float),2,Nx,Ny);
 		if (power_gain == NULL)
 		{
@@ -210,9 +204,9 @@ main(
 			power_gain[i][j] = Fn*max_gain;
 		}
 
-		cur_beam->SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
+		cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
 									power_gain);
-		cur_beam->WriteBeamPattern("beampattern.dat");
+		cur_beam.WriteBeamPattern("beampattern.dat");
 	}
 
 	return (0);
