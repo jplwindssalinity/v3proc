@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -12,7 +12,7 @@
 //
 // DESCRIPTION
 //    Computes difference between wind vectors in two l2b files and
-//    convert it to vector               
+//    convert it to vector
 //    files for plotting in IDL.  Output filenames are created by
 //    adding the rank number (0 for selected) to the base name.
 //    If vctr_base is not provided, l2b_file is used as the base name.
@@ -141,12 +141,12 @@ main(
         usage(command, usage_array, 1);
 
     int clidx = 1;
- 
+
     const char* config_file = argv[clidx++];
     const char* vctr_base = argv[clidx++];
     int hdf_flag = 0;
     int use_nudge_as_truth = 0;
-        
+
     if (argc > 3)
     {
         hdf_flag = atoi(argv[clidx++]);
@@ -186,15 +186,15 @@ main(
     WindField truth;
     if (! use_nudge_as_truth)
     {
-        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+        truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
         if (truth_type == NULL)
         {
             fprintf(stderr, "%s: must specify truth windfield type\n",
                 command);
             exit(1);
         }
-    
-        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+
+        truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
         if (truth_file == NULL)
         {
             fprintf(stderr, "%s: must specify truth windfield file\n",
@@ -222,7 +222,7 @@ main(
             fprintf(stderr, "%s: cannot open HDF file for input\n", command);
             exit(1);
         }
-    } 
+    }
     else
     {
         if (! l2b.ReadHeader())
