@@ -58,7 +58,15 @@ public:
 	// scatterometer simulation //
 	//--------------------------//
 
-	int		ScatSim(double time, Spacecraft* sc_orbit_state,
+	int		LocateSlices(double time, Spacecraft* spacecraft,
+				Instrument* instrument, MeasSpot* meas_spot);
+	int		LocateSpot(double time, Spacecraft* spacecraft,
+				Instrument* instrument, MeasSpot* meas_spot);
+	int		SetMeasurements(MeasSpot* meas_spot, WindField* windfield,
+				GMF* gmf);
+	int		SetL00Spacecraft(Spacecraft* spacecraft);
+	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument);
+	int		ScatSim(double time, Spacecraft* spacecraft,
 				Instrument* instrument, WindField* windfield, GMF* gmf);
 
 	//-----------//

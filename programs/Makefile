@@ -14,15 +14,16 @@ CPPFLAGS =		-g -pg -Wall -I$(INCDIR)
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
-	reformat_pattern \
-	memfilter \
 	sim \
 	l00_to_l10 \
 	l10_to_l15 \
 	l15_to_l17 \
 	l17_to_l20 \
 	l20_metrics \
-	make_pattern
+	reformat_pattern \
+	memfilter \
+	make_pattern \
+	see_slices
 
 #----------------------------------------------------------------------
 # default: make all executable programs

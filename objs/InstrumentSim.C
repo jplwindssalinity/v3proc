@@ -109,6 +109,333 @@ InstrumentSim::UpdateAntennaPosition(
 	return(1);
 }
 
+//-----------------------------//
+// InstrumentSim::LocateSlices //
+//-----------------------------//
+
+int
+InstrumentSim::LocateSlices(
+	double			time,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	MeasSpot*		meas_spot)
+{
+	//-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//------------------//
+	// set up meas spot //
+	//------------------//
+
+	meas_spot->FreeContents();
+	meas_spot->time = time;
+	meas_spot->scOrbitState = *orbit_state;
+	meas_spot->scAttitude = *attitude;
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//------------------------//
+	// determine slicing info //
+	//------------------------//
+
+	int slice_count = l00.frame.slicesPerSpot;
+	float total_freq = slice_count * instrument->sliceBandwidth;
+	float min_freq = -total_freq / 2.0;
+
+	//-------------------------------------------------//
+	// calculate Doppler shift and receiver gate delay //
+	//-------------------------------------------------//
+
+	Vector3 vector;
+	TargetInfoPackage tip;
+
+	double look, azimuth;
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+		return(0);
+
+	vector.SphericalSet(1.0, look, azimuth);		// boresight
+	if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
+		instrument, &tip))
+	{
+		return(0);
+	}
+	instrument->commandedDoppler = tip.dopplerFreq;
+	float center_delay = 2.0 * tip.slantRange / speed_light_kps;
+	instrument->receiverGateDelay = center_delay + beam->pulseWidth / 2.0 -
+		instrument->receiverGateWidth / 2.0;
+
+	//-------------------//
+	// for each slice... //
+	//-------------------//
+
+	for (int slice_idx = 0; slice_idx < l00.frame.slicesPerSpot;
+		slice_idx++)
+	{
+		//-------------------------//
+		// create a new measurment //
+		//-------------------------//
+
+		Meas* meas = new Meas();
+		meas->pol = beam->polarization;
+	
+		//----------------------------------------//
+		// determine the baseband frequency range //
+		//----------------------------------------//
+
+		float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
+		float f2 = f1 + instrument->sliceBandwidth;
+
+		//----------------//
+		// find the slice //
+		//----------------//
+
+		EarthPosition centroid;
+		Vector3 look_vector;
+		// guess at a reasonable slice frequency tolerance of 1%
+		float ftol = fabs(f1 - f2) / 100.0;
+		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
+			look, azimuth, f1, f2, ftol, &(meas->outline), &look_vector,
+			&centroid))
+		{
+			return(0);
+		}
+
+		//---------------------------//
+		// generate measurement data //
+		//---------------------------//
+
+		// get local measurement azimuth
+		CoordinateSwitch gc_to_surface =
+			centroid.SurfaceCoordinateSystem();
+		Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
+		double r, theta, phi;
+		rlook_surface.SphericalGet(&r, &theta, &phi);
+		meas->eastAzimuth = phi;
+
+		// get incidence angle
+		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
+
+		//-----------------------------//
+		// add measurment to meas spot //
+		//-----------------------------//
+
+		meas_spot->slices.Append(meas);
+	}
+	return(1);
+}
+
+//---------------------------//
+// InstrumentSim::LocateSpot //
+//---------------------------//
+
+int
+InstrumentSim::LocateSpot(
+	double			time,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	MeasSpot*		meas_spot)
+{
+	//-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//------------------//
+	// set up meas spot //
+	//------------------//
+
+	meas_spot->FreeContents();
+	meas_spot->time = time;
+	meas_spot->scOrbitState = *orbit_state;
+	meas_spot->scAttitude = *attitude;
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//---------------------------------------------------//
+	// calculate the look vector in the geocentric frame //
+	//---------------------------------------------------//
+
+	Vector3 rlook_antenna;
+
+	double look, azimuth;
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+		return(0);
+
+	rlook_antenna.SphericalSet(1.0, look, azimuth);
+	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
+
+	//-------------------------------//
+	// calculate the earth intercept //
+	//-------------------------------//
+
+	EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
+		rlook_gc);
+
+	//---------------------------//
+	// generate measurement data //
+	//---------------------------//
+
+	Meas* meas = new Meas();
+	meas->pol = beam->polarization;
+
+	// get local measurement azimuth
+	CoordinateSwitch gc_to_surface = spot_on_earth.SurfaceCoordinateSystem();
+	Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+	double r, theta, phi;
+	rlook_surface.SphericalGet(&r, &theta, &phi);
+	meas->eastAzimuth = phi;
+
+	// get incidence angle
+	meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
+
+	//-----------------------------//
+	// add measurment to meas spot //
+	//-----------------------------//
+
+	meas_spot->slices.Append(meas);
+
+	return(1);
+}
+
+//--------------------------------//
+// InstrumentSim::SetMeasurements //
+//--------------------------------//
+
+int
+InstrumentSim::SetMeasurements(
+	MeasSpot*		meas_spot,
+	WindField*		windfield,
+	GMF*			gmf)
+{
+	//-------------------------//
+	// for each measurement... //
+	//-------------------------//
+
+	for (Meas* meas = meas_spot->slices.GetHead(); meas;
+		meas = meas_spot->slices.GetNext())
+	{
+		//----------------------------------------//
+		// get lon and lat for the earth location //
+		//----------------------------------------//
+
+		double alt, lat, lon;
+		if (! meas->center.GetAltLonGDLat(&alt, &lon, &lat))
+			return(0);
+
+		LonLat lon_lat;
+		lon_lat.longitude = lon;
+		lon_lat.latitude = lat;
+
+		//-----------------//
+		// get wind vector //
+		//-----------------//
+
+		WindVector wv;
+		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+		{
+			wv.spd = 0.0;
+			wv.dir = 0.0;
+		}
+
+		//--------------------------------//
+		// convert wind vector to sigma-0 //
+		//--------------------------------//
+
+		// chi is defined so that 0.0 means the wind is blowing towards
+		// the s/c (the opposite direction as the look vector)
+		float chi = wv.dir - meas->eastAzimuth + pi;
+		float value;
+		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
+			chi, &value);
+	}
+	return(1);
+}
+
+//---------------------------------//
+// InstrumentSim::SetL00Spacecraft //
+//---------------------------------//
+
+int
+InstrumentSim::SetL00Spacecraft(
+	Spacecraft*		spacecraft)
+{
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	L00Frame* l00_frame = &(l00.frame);
+
+	double alt, lon, lat;
+	if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
+		return(0);
+
+	l00_frame->gcAltitude = alt;
+	l00_frame->gcLongitude = lon;
+	l00_frame->gcLatitude = lat;
+	l00_frame->gcX = orbit_state->rsat.get(0);
+	l00_frame->gcY = orbit_state->rsat.get(1);
+	l00_frame->gcZ = orbit_state->rsat.get(2);
+	l00_frame->velX = orbit_state->vsat.get(0);
+	l00_frame->velY = orbit_state->vsat.get(1);
+	l00_frame->velZ = orbit_state->vsat.get(2);
+
+	return(1);
+}
+
+//------------------------------//
+// InstrumentSim::SetL00Science //
+//------------------------------//
+
+int
+InstrumentSim::SetL00Science(
+	MeasSpot*		meas_spot,
+	Instrument*		instrument)
+{
+	L00Frame* l00_frame = &(l00.frame);
+	Antenna* antenna = &(instrument->antenna);
+
+	//----------------------//
+	// set antenna position //
+	//----------------------//
+
+	l00_frame->antennaPosition[_spotNumber] =
+		(unsigned short)antenna->GetEncoderValue();
+
+	//-------------------------//
+	// for each measurement... //
+	//-------------------------//
+
+	for (Meas* meas = meas_spot->slices.GetHead(); meas;
+		meas = meas_spot->slices.GetNext())
+	{
+		//----------------------------//
+		// update the level 0.0 frame //
+		//----------------------------//
+
+		l00_frame->science[_spotNumber] = meas->value;
+		_spotNumber++;
+	}
+
+	return(1);
+}
+
 //------------------------//
 // InstrumentSim::ScatSim //
 //------------------------//
@@ -121,283 +448,51 @@ InstrumentSim::ScatSim(
 	WindField*		windfield,
 	GMF*			gmf)
 {
-	//-----------//
-	// predigest //
-	//-----------//
+	MeasSpot meas_spot;
 
-	Antenna* antenna = &(instrument->antenna);
-	Beam* beam = antenna->GetCurrentBeam();
-	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Attitude* attitude = &(spacecraft->attitude);
-
-	//--------------------------------//
-	// generate the coordinate switch //
-	//--------------------------------//
-
-	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		attitude, antenna);
-
-	double look, azimuth;
-	if (! beam->GetElectricalBoresight(&look, &azimuth))
-		return(0);
+	//---------------------//
+	// locate measurements //
+	//---------------------//
 
 	if (l00.frame.slicesPerSpot <= 1)
 	{
-		//===========//
-		// full spot //
-		//===========//
-
-		//---------------------------------------------------//
-		// calculate the look vector in the geocentric frame //
-		//---------------------------------------------------//
-
-		Vector3 rlook_antenna;
-		rlook_antenna.SphericalSet(1.0, look, azimuth);
-		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
-
-		//-------------------------------//
-		// calculate the earth intercept //
-		//-------------------------------//
-
-		EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
-			rlook_gc);
-
-		//----------------------------------------//
-		// get wind vector for the earth location //
-		//----------------------------------------//
-
-		double alt, lat, lon;
-		if (! spot_on_earth.GetAltLonGDLat(&alt, &lon, &lat))
-		{
-			fprintf(stderr, "Error: ScatSim can't convert spot_on_earth\n");
+		if (! LocateSpot(time, spacecraft, instrument, &meas_spot))
 			return(0);
-		}
-
-		LonLat lon_lat;
-		lon_lat.longitude = lon;
-		lon_lat.latitude = lat;
-		WindVector wv;
-		if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-		{
-			wv.spd = 0.0;
-			wv.dir = 0.0;
-		}
-
-		//---------------------------//
-		// generate measurement data //
-		//---------------------------//
-
-		Meas meas;
-		meas.pol = beam->polarization;
-
-		// get local measurement azimuth
-		CoordinateSwitch gc_to_surface =
-			spot_on_earth.SurfaceCoordinateSystem();
-		Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
-		double r, theta, phi;
-		rlook_surface.SphericalGet(&r, &theta, &phi);
-		meas.eastAzimuth = phi;
-
-		// get incidence angle
-		meas.incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
-
-		//--------------------------------//
-		// convert wind vector to sigma-0 //
-		//--------------------------------//
-
-		// chi is defined so that 0.0 means the wind is blowing towards
-		// the s/c (the opposite direction as the look vector)
-		float chi = wv.dir - meas.eastAzimuth + pi;
-		float value;
-		gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv.spd, chi,
-			&value);
-
-		//----------------------------//
-		// update the level 0.0 frame //
-		//----------------------------//
-
-		L00Frame* l00_frame = &(l00.frame);
-		if (_spotNumber == 0)
-		{
-			l00FrameReady = 0;
-			l00_frame->time = time;
-			if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
-			{
-				fprintf(stderr, "Error: ScatSim can't convert rsat\n");
-				return(0);
-			}
-			l00_frame->gcAltitude = alt;
-			l00_frame->gcLongitude = lon;
-			l00_frame->gcLatitude = lat;
-			l00_frame->gcX = orbit_state->rsat.get(0);
-			l00_frame->gcY = orbit_state->rsat.get(1);
-			l00_frame->gcZ = orbit_state->rsat.get(2);
-			l00_frame->velX = orbit_state->vsat.get(0);
-			l00_frame->velY = orbit_state->vsat.get(1);
-			l00_frame->velZ = orbit_state->vsat.get(2);
-		}
-		l00_frame->antennaPosition[_spotNumber] =
-			(unsigned short)antenna->GetEncoderValue();
-		l00_frame->science[_spotNumber] = value;
-		_spotNumber++;
 	}
 	else
 	{
-		//========//
-		// slices //
-		//========//
-
-		//------------------------//
-		// determine slicing info //
-		//------------------------//
-
-		int slice_count = l00.frame.slicesPerSpot;
-		float total_freq = slice_count * instrument->sliceBandwidth;
-		float min_freq = -total_freq / 2.0;
-
-		//----------------------//
-		// start up measurement //
-		//----------------------//
-
-		Meas meas;
-		meas.pol = beam->polarization;
-
-		//-------------------------------------------------//
-		// calculate ideal Doppler and range tracking info //
-		//-------------------------------------------------//
-
-		Vector3 vector;
-		TargetInfoPackage tip;
-		vector.SphericalSet(1.0, look, azimuth);		// boresight
-		if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
-			instrument, &tip))
-		{
+		if (! LocateSlices(time, spacecraft, instrument, &meas_spot))
 			return(0);
-		}
-		instrument->commandedDoppler = tip.dopplerFreq;
-		float center_delay = 2.0 * tip.slantRange / speed_light_kps;
-		instrument->receiverGateDelay = center_delay + beam->pulseWidth / 2.0 -
-			instrument->receiverGateWidth / 2.0;
-
-		//-------------------//
-		// for each slice... //
-		//-------------------//
-
-		for (int slice_idx = 0; slice_idx < l00.frame.slicesPerSpot;
-			slice_idx++)
-		{
-			meas.FreeContents();		// free's the outline
-	
-			//----------------------------------------//
-			// determine the baseband frequency range //
-			//----------------------------------------//
-
-			float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
-			float f2 = f1 + instrument->sliceBandwidth;
-
-			//----------------//
-			// find the slice //
-			//----------------//
-
-			EarthPosition centroid;
-			Vector3 look_vector;
-			// guess at a reasonable slice frequency tolerance of 1%
-			float ftol = fabs(f1 - f2) / 100.0;
-			if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
-				look, azimuth, f1, f2, ftol, &(meas.outline), &look_vector,
-				&centroid))
-			{
-				return(0);
-			}
-// meas.outline.WriteBvg(stdout);
-
-			//----------------------------------------//
-			// get wind vector for the earth location //
-			//----------------------------------------//
-
-			double alt, lat, lon;
-			if (! centroid.GetAltLonGDLat(&alt, &lon, &lat))
-			{
-				fprintf(stderr,
-					"Error: ScatSim can't convert spot_on_earth\n");
-				return(0);
-			}
-
-			LonLat lon_lat;
-			lon_lat.longitude = lon;
-			lon_lat.latitude = lat;
-			WindVector wv;
-			if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-			{
-				wv.spd = 0.0;
-				wv.dir = 0.0;
-			}
-
-			//---------------------------//
-			// generate measurement data //
-			//---------------------------//
-
-			// get local measurement azimuth
-			CoordinateSwitch gc_to_surface =
-				centroid.SurfaceCoordinateSystem();
-			Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
-			double r, theta, phi;
-			rlook_surface.SphericalGet(&r, &theta, &phi);
-			meas.eastAzimuth = phi;
-
-			// get incidence angle
-			meas.incidenceAngle = centroid.IncidenceAngle(look_vector);
-
-			//--------------------------------//
-			// convert wind vector to sigma-0 //
-			//--------------------------------//
-
-			// chi is defined so that 0.0 means the wind is blowing towards
-			// the s/c (the opposite direction as the look vector)
-			float chi = wv.dir - meas.eastAzimuth + pi;
-			float value;
-			gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv.spd,
-				chi, &value);
-
-			//----------------------------//
-			// update the level 0.0 frame //
-			//----------------------------//
-
-			L00Frame* l00_frame = &(l00.frame);
-			if (_spotNumber == 0)
-			{
-				l00FrameReady = 0;
-				l00_frame->time = time;
-				if (! orbit_state->rsat.GetAltLonGDLat(&alt, &lon, &lat))
-				{
-					fprintf(stderr, "Error: ScatSim can't convert rsat\n");
-					return(0);
-				}
-				l00_frame->gcAltitude = alt;
-				l00_frame->gcLongitude = lon;
-				l00_frame->gcLatitude = lat;
-				l00_frame->gcX = orbit_state->rsat.get(0);
-				l00_frame->gcY = orbit_state->rsat.get(1);
-				l00_frame->gcZ = orbit_state->rsat.get(2);
-				l00_frame->velX = orbit_state->vsat.get(0);
-				l00_frame->velY = orbit_state->vsat.get(1);
-				l00_frame->velZ = orbit_state->vsat.get(2);
-			}
-			l00_frame->antennaPosition[_spotNumber] =
-				antenna->GetEncoderValue();
-			l00_frame->science[_spotNumber] = value;
-			_spotNumber++;
-		}
 	}
+
+	//------------------------//
+	// set measurement values //
+	//------------------------//
+
+	if (! SetMeasurements(&meas_spot, windfield, gmf))
+		return(0);
 
 	//-----------------------------//
 	// determine if frame is ready //
 	//-----------------------------//
 
+	Antenna* antenna = &(instrument->antenna);
 	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
 	{
+		//---------------------//
+		// fill in other stuff //
+		//---------------------//
+
+		if (! SetL00Spacecraft(spacecraft))
+			return(0);
+
 		l00FrameReady = 1;	// indicate frame is ready
 		_spotNumber = 0;	// prepare to start a new frame
+
+	}
+	else
+	{
+		l00FrameReady = 0;	// indicate frame is not ready
 	}
 
 	return(1);
