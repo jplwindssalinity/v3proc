@@ -767,6 +767,7 @@ Matrix::SVDFit(
 }
 
 /*
+
 //----------------------//
 // Matrix::NonlinearFit //
 //----------------------//
@@ -938,5 +939,51 @@ Matrix::Inverse()
 	if (! SVD(&u, &v, &w))
 		return(0);
 
+	for (int i = 0; i < w._mSize; i++)
+	{
+		w._vector[i] = 1.0 / w._vector[i];
+	}
+
+	*this = v.MultiplyDiag(&w) * u.Transpose();
+}
+
+//-------------------//
+// Matrix::Transpose //
+//-------------------//
+
+Matrix&
+Matrix::Transpose()
+{
+	//-----------------------------//
+	// create the transpose matrix //
+	//-----------------------------//
+
+	Matrix at;
+	at->Allocate(a->_nSize, a->_mSize);
+
+	//-----------//
+	// transpose //
+	//-----------//
+
+	for (int i = 0; i < at->_mSize; i++)
+	{
+		for (int j = 0; j < at->_nSize; j++)
+		{
+			at->_matrix[i][j] = a->_matrix[j][i];
+		}
+	}
+
+	return(at);
+}
+
+//------------//
+// operator:* //
+//------------//
+
+Matrix
+operator*(
+	const Matrix&	matrix1,
+	const Matrix&	matrix2)
+{
 }
 */
