@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   26 Mar 1999 15:40:32   sally
+// added "L1 Time" unit
+// 
 //    Rev 1.16   23 Dec 1998 16:32:14   sally
 // move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
 // because it returns one single value only, not 100 pulses of values.

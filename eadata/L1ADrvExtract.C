@@ -6,6 +6,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.23   27 Apr 1999 12:56:50   sally
+// if true_cal_pulse_pos is even => Beam A, else Beam B
+// 
+//    Rev 1.22   23 Apr 1999 15:51:24   sally
+// typo on load_cal_B_power, and fix the array size for tempsdsIDs
+// 
+//    Rev 1.21   05 Apr 1999 13:46:28   sally
+// fix for receiver gain
+// 
 //    Rev 1.20   23 Dec 1998 16:30:34   sally
 // move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
 // because it returns one single value only, not 100 pulses of values.
@@ -92,13 +101,25 @@
 
 static const char rcs_id_L1ADrvExtract_C[] = "@(#) $Header$";
 
-#if 0
-unsigned short *_prevAntPos=0;   // holds address one of the following
-unsigned short _prevAntPos_dn=0;
-unsigned short _prevAntPos_deg=0;
-unsigned short _prevAntPos_deg_sec=0;
-unsigned short _prevAntPos_rot_min=0;
-#endif
+int32*  _rgACurrentIndex=0;
+int*    _rgALastDataIndex=0;
+float*  _rgABuf=0;
+int32*  _rgBCurrentIndex=0;
+int*    _rgBLastDataIndex=0;
+float*  _rgBBuf=0;
+
+int32   _rgADNCurrentIndex=0;
+int     _rgADNLastDataIndex=0;
+float   _rgADNBuf[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int32   _rgADBCurrentIndex=0;
+int     _rgADBLastDataIndex=0;
+float   _rgADBBuf[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int32   _rgBDNCurrentIndex=0;
+int     _rgBDNLastDataIndex=0;
+float   _rgBDNBuf[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int32   _rgBDBCurrentIndex=0;
+int     _rgBDBLastDataIndex=0;
+float   _rgBDBBuf[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 unsigned char _onlyOneMap[] =
 {
@@ -176,6 +197,7 @@ DerivedExtractResult*   extractResults)
     return 1;
 } // _oneUint2TodB
 
+#if 0
 static int
 _allUint2TodB(
 unsigned short*         uint2P,
@@ -197,6 +219,7 @@ DerivedExtractResult*   extractResults)
     }
     return (numValidValues);
 } // _allUint2TodB
+#endif
 
 inline int
 _oneUint4TodB(
@@ -303,15 +326,15 @@ PolynomialTable*)     // unused
     else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
+        // WOM: true cal pulse pos must be even number (Beam A)
         // and > 0 (Cal Frame)
         //---------------------------------------------------------
         char status=0;
         if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
                         != HDF_SUCCEED)
             return(-1);
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
+        // true cal pulse pos has to be >0 and even
+        if (status <= 0 || status % 2 != 0)
         {
             (void)memset(extractResults->validDataMap, 0,
                                              MAX_NUM_DERIVED_VALUES);
@@ -407,15 +430,15 @@ PolynomialTable*)     // unused
     else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
-        // WOM: true cal pulse pos must be even number (Beam B)
+        // WOM: true cal pulse pos must be odd number (Beam B)
         // and > 0 (Cal Frame)
         //---------------------------------------------------------
         char status=0;
         if (l1File->GetDatasetData1D(sdsIDs[2], start, 1, 1, &status)
                         != HDF_SUCCEED)
             return(-1);
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
+        // true cal pulse pos has to be >0 and odd
+        if (status <= 0 || status % 2 == 0)
         {
             (void)memset((void*)extractResults->validDataMap, 0,
                                              MAX_NUM_DERIVED_VALUES);
@@ -510,7 +533,7 @@ unsigned char*      validDataMap)
     else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
-        // WOM: true cal pulse pos must be odd number (Beam A)
+        // WOM: true cal pulse pos must be even number (Beam A)
         // and > 0 (Cal Frame)
         //---------------------------------------------------------
         char status=0;
@@ -518,8 +541,8 @@ unsigned char*      validDataMap)
                                                != HDF_SUCCEED)
             return(-1);
 
-        // true cal pulse pos has to be >0 and odd
-        if (status <= 0 || status % 2 == 0)
+        // true cal pulse pos has to be >0 and even
+        if (status <= 0 || status % 2 != 0)
         {
             (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
             return 0;
@@ -1272,7 +1295,7 @@ unsigned char*      validDataMap)
     else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
-        // WOM: true cal pulse pos must be even number (Beam B)
+        // WOM: true cal pulse pos must be odd number (Beam B)
         // and > 0 (Cal Frame)
         //---------------------------------------------------------
         char status=0;
@@ -1280,8 +1303,8 @@ unsigned char*      validDataMap)
                                                != HDF_SUCCEED)
             return(-1);
 
-        // true cal pulse pos has to be >0 and even
-        if (status <= 0 || status % 2 != 0)
+        // true cal pulse pos has to be >0 and odd
+        if (status <= 0 || status % 2 == 0)
         {
             (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
             return 0;
@@ -2403,8 +2426,8 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
 
-        // odd => A, even => B
-        if (status % 2 != 0)
+        // even => A, odd => B
+        if (status % 2 == 0)
             tempsdsIDs[0] = sdsIDs[3];
         else
             tempsdsIDs[0] = sdsIDs[4];
@@ -3410,13 +3433,13 @@ PolynomialTable*)     // unused
                  (DerivedExtractResult*) p_extractResults;
 
     // get noise load first, return if fails
-    int32 tempsdsIDs[4];
+    int32 tempsdsIDs[5];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[4];  // load_cal_noise
     int rc = _extractAverageNoiseLoadDN(l1File, tempsdsIDs, start,
-                                       stride, length, p_extractResults, 0);
+                                       stride, length, extractResults, 0);
     if (rc <= 0)
     {
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
@@ -3430,9 +3453,9 @@ PolynomialTable*)     // unused
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
     tempsdsIDs[3] = sdsIDs[5];  // load_cal_A_power
-    tempsdsIDs[3] = sdsIDs[5];  // load_cal_B_power
+    tempsdsIDs[4] = sdsIDs[6];  // load_cal_B_power
     rc = _extractAverageEchoLoadDN(l1File, tempsdsIDs, start,
-                                       stride, length, p_extractResults, 0);
+                                       stride, length, extractResults, 0);
     if (rc <= 0)
     {
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
@@ -3728,19 +3751,10 @@ PolynomialTable* polyTable)
         fprintf(stderr, "Receiver Gain A: No polynomial table\n");
         return -1;
     }
-    static const Polynomial* xmitPowerPoly=0;
-    if (xmitPowerPoly == 0)
-    {
-        xmitPowerPoly = polyTable->SelectPolynomial(
-                                 "transmit_power_a", "mWatts");
-    }
-    if (xmitPowerPoly == 0)
-    {
-        fprintf(stderr, "Receiver Gain A: No polynomial for trasmit power\n");
-        return -1;
-    }
 
     DerivedExtractResult extractResults;
+    extractResults.dataBuf = (char*)malloc(100 * sizeof(unsigned int));
+    assert(extractResults.dataBuf != 0);
     // get noise load first, return if fails
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
@@ -3749,10 +3763,14 @@ PolynomialTable* polyTable)
     tempsdsIDs[3] = sdsIDs[3];  // loop_back_cal_noise
     int numNoises = ExtractBeamANoiseDN(l1File, tempsdsIDs, start,
                                        stride, length, &extractResults);
-    if (numNoises <= 0) return(numNoises);
+    if (numNoises <= 0)
+    {
+        free((void*)extractResults.dataBuf);
+        return(numNoises);
+    }
 
     unsigned int dnSum=0;
-    if (numNoises > 1)
+    if (numNoises >= 1)
     {
         unsigned int* uintP;
         for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
@@ -3765,13 +3783,18 @@ PolynomialTable* polyTable)
         }
     }
     // now get transmit power a, return if fails
+    // reuse the space allocated above
     tempsdsIDs[0] = sdsIDs[4];  // transmit power a
-    float xmitPowerDN;
-    int rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
-                                       stride, length, &xmitPowerDN);
-    if (rc <= 0) return(rc);
+    int rc = ExtractXmitPowerAmWatts(l1File, tempsdsIDs, start,
+                             stride, length, &extractResults, polyTable);
+    if (rc <= 0)
+    {
+        free((void*)extractResults.dataBuf);
+        return(rc);
+    }
 
-    float xmitPowerMWatts = xmitPowerPoly->Apply(xmitPowerDN);
+    // only have one value
+    float xmitPowerMWatts = *((float*)extractResults.dataBuf);
     if (xmitPowerMWatts == 0.0)
     {
         fprintf(stderr, "Tranmit power (denominator) == 0.0\n");
@@ -3782,6 +3805,8 @@ PolynomialTable* polyTable)
 
     // CBM: average over all 23 pulses
     if (numNoises > 1) gainDN /= (float)numNoises;
+
+    free((void*)extractResults.dataBuf);
 
     return 1;
 
@@ -3802,11 +3827,20 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable* polyTable)
 {
-    static int32 currentIndex=0;
-    static float rcvGainBuf[10];
-
     // extract one at a time
     if (length != 1) return -1;
+
+    //-----------------------------------------------------------
+    // this holds the index[0-9] extracted previously
+    // if _rgACurrentIndex is not set then it is not called from one
+    // of the EU extraction function
+    //-----------------------------------------------------------
+    if (_rgACurrentIndex == 0)
+        _rgACurrentIndex = &_rgADNCurrentIndex;
+    if (_rgALastDataIndex == 0)
+        _rgALastDataIndex = &_rgADNLastDataIndex;
+    if (_rgABuf == 0)
+        _rgABuf = _rgADNBuf;
 
     assert(l1File != 0);
 
@@ -3819,54 +3853,87 @@ PolynomialTable* polyTable)
     if (rc <= 0)
     {
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        _rgACurrentIndex=0;
+        _rgALastDataIndex=0;
+        _rgABuf=0;
         return rc;
     }
 
     // WOM: need to get running average of 10 values
     int i=0;
     // for the first 4 measurements, save and return
-    if (currentIndex < 4)
+    if (*_rgACurrentIndex < 4)
     {
-        rcvGainBuf[currentIndex] = rcvGain;
-        currentIndex++;
+        _rgABuf[*_rgACurrentIndex] = rcvGain;
+        (*_rgACurrentIndex)++;
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        _rgACurrentIndex=0;
+        _rgALastDataIndex=0;
+        _rgABuf=0;
         return 0;
     }
-    else if (currentIndex == 4)
+    else if (*_rgACurrentIndex == 4)
     {
-        rcvGainBuf[4] = rcvGain;
+        _rgABuf[4] = rcvGain;
         // extract 5 more measurements: [5],[6],[7],[8],[9]
-        for (i=1; i < 6; i++)
+        i=1;
+        // j continue to loop, but i increments only when there is valid RG
+        for (int j=1; i < 6; j++)
         {
-            rc = _extractOneReceiverGainADN(l1File, sdsIDs, start+i,
+            rc = _extractOneReceiverGainADN(l1File, sdsIDs, start+j,
                                         stride, length, rcvGain, polyTable);
-            if (rc != 1)
+            if (rc == 1)
+            {
+                _rgABuf[4+i] = rcvGain;
+                i++;
+                *_rgALastDataIndex = start+j;
+                continue;
+            }
+            else if (rc == 0)
+                // can't get receiver gain in this frame, go to next
+                continue;
+            else
             {
                 (void)memset(extractResults->validDataMap, 0,
                                               MAX_NUM_DERIVED_VALUES);
+                _rgACurrentIndex=0;
+                _rgALastDataIndex=0;
+                _rgABuf=0;
                 return rc;
             }
-            rcvGainBuf[4+i] = rcvGain;
         }
     }
     else
     {
         // extract the [9]
-        rc = _extractOneReceiverGainADN(l1File, sdsIDs, start+5,
-                                       stride, length, rcvGain, polyTable);
-        if (rc != 1)
+        for(int k = *_rgALastDataIndex; ; k++)
         {
-            (void)memset(extractResults->validDataMap, 0,
+            rc = _extractOneReceiverGainADN(l1File, sdsIDs, k,
+                                       stride, length, rcvGain, polyTable);
+            if (rc == 1)
+            {
+                _rgABuf[9] = rcvGain;
+                *_rgALastDataIndex = k;
+                break;
+            }
+            else if (rc == 0)
+                continue;
+            else
+            {
+                (void)memset(extractResults->validDataMap, 0,
                                               MAX_NUM_DERIVED_VALUES);
-            return rc;
+                _rgACurrentIndex=0;
+                _rgALastDataIndex=0;
+                _rgABuf=0;
+                return rc;
+            }
         }
-        rcvGainBuf[9] = rcvGain;
     }
 
     // now add them up and average it over 10
     float totalRcvGain = 0.0;
     for (i=0; i < 9; i++)
-        totalRcvGain += rcvGainBuf[i];
+        totalRcvGain += _rgABuf[i];
     float avgRcvGain = totalRcvGain / 10.0;
     (void)memcpy(extractResults->dataBuf, &avgRcvGain, sizeof(float));
     (void)memcpy(extractResults->validDataMap,
@@ -3874,8 +3941,12 @@ PolynomialTable* polyTable)
 
     // save the first 9 rcv gains in the buffer for the next run
     for (i=0; i < 8; i++)
-        rcvGainBuf[i] = rcvGainBuf[i+1];
-    currentIndex++;
+        _rgABuf[i] = _rgABuf[i+1];
+    (*_rgACurrentIndex)++;
+
+    _rgACurrentIndex=0;
+    _rgALastDataIndex=0;
+    _rgABuf=0;
 
     return 1;
 
@@ -3905,19 +3976,10 @@ PolynomialTable* polyTable)
         fprintf(stderr, "Receiver Gain B: No polynomial table\n");
         return -1;
     }
-    static const Polynomial* xmitPowerPoly=0;
-    if (xmitPowerPoly == 0)
-    {
-        xmitPowerPoly = polyTable->SelectPolynomial(
-                                 "transmit_power_b", "mWatts");
-    }
-    if (xmitPowerPoly == 0)
-    {
-        fprintf(stderr, "Receiver Gain B: No polynomial for trasmit power\n");
-        return -1;
-    }
 
     DerivedExtractResult extractResults;
+    extractResults.dataBuf = (char*)malloc(100 * sizeof(unsigned int));
+    assert(extractResults.dataBuf != 0);
     // get noise load first, return if fails
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
@@ -3926,10 +3988,14 @@ PolynomialTable* polyTable)
     tempsdsIDs[3] = sdsIDs[3];  // loop_back_cal_noise
     int numNoises = ExtractBeamBNoiseDN(l1File, tempsdsIDs, start,
                                        stride, length, &extractResults);
-    if (numNoises <= 0) return(numNoises);
+    if (numNoises <= 0)
+    {
+        free((void*)extractResults.dataBuf);
+        return(numNoises);
+    }
 
     unsigned int dnSum=0;
-    if (numNoises > 1)
+    if (numNoises >= 1)
     {
         unsigned int* uintP;
         for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
@@ -3941,14 +4007,20 @@ PolynomialTable* polyTable)
             }
         }
     }
-    // now get transmit power a, return if fails
-    tempsdsIDs[0] = sdsIDs[4];  // transmit power a
-    float xmitPowerDN;
-    int rc = ExtractData1D_uint1_float(l1File, tempsdsIDs, start,
-                                       stride, length, &xmitPowerDN);
-    if (rc <= 0) return(rc);
 
-    float xmitPowerMWatts = xmitPowerPoly->Apply(xmitPowerDN);
+    // now get transmit power b, return if fails
+    // reuse the space allocated above
+    tempsdsIDs[0] = sdsIDs[4];  // transmit power a
+    int rc = ExtractXmitPowerBmWatts(l1File, tempsdsIDs, start,
+                             stride, length, &extractResults, polyTable);
+    if (rc <= 0)
+    {
+        free((void*)extractResults.dataBuf);
+        return(rc);
+    }
+
+    // only have one value
+    float xmitPowerMWatts = *((float*)extractResults.dataBuf);
     if (xmitPowerMWatts == 0.0)
     {
         fprintf(stderr, "Tranmit power (denominator) == 0.0\n");
@@ -3978,9 +4050,6 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable* polyTable)
 {
-    static int32 currentIndex=0;
-    static float rcvGainBuf[10];
-
     // extract one at a time
     if (length != 1) return -1;
 
@@ -3988,59 +4057,104 @@ PolynomialTable* polyTable)
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
 
-    float rcvGain;
+    //-----------------------------------------------------------
+    // this holds the index[0-9] extracted previously
+    // if _rgBCurrentIndex is not set then it is not called from one
+    // of the EU extraction function
+    //-----------------------------------------------------------
+    if (_rgBCurrentIndex == 0)
+        _rgBCurrentIndex = &_rgBDNCurrentIndex;
+    if (_rgBLastDataIndex == 0)
+        _rgBLastDataIndex = &_rgBDNLastDataIndex;
+    if (_rgBBuf == 0)
+        _rgBBuf = _rgBDNBuf;
+
+    float rcvGain=0.0;
     int rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start,
                                 stride, length, rcvGain, polyTable);
     if (rc <= 0)
     {
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        _rgBCurrentIndex=0;
+        _rgBLastDataIndex=0;
+        _rgBBuf=0;
         return rc;
     }
 
     // for the first 4 measurements, save and return
     int i=0;
-    if (currentIndex < 4)
+    if (*_rgBCurrentIndex < 4)
     {
-        rcvGainBuf[currentIndex] = rcvGain;
-        currentIndex++;
+        _rgBBuf[*_rgBCurrentIndex] = rcvGain;
+        (*_rgBCurrentIndex)++;
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
+        _rgBCurrentIndex=0;
+        _rgBLastDataIndex=0;
+        _rgBBuf=0;
         return 0;
     }
-    else if (currentIndex == 4)
+    else if (*_rgBCurrentIndex == 4)
     {
-        rcvGainBuf[4] = rcvGain;
+        _rgBBuf[4] = rcvGain;
         // extract 5 more measurements: [5],[6],[7],[8],[9]
-        for (i=1; i < 6; i++)
+        i=1;
+        // j continue to loop, but i increments only when there is valid RG
+        for (int j=1; i < 6; j++)
         {
-            rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start+i,
-                                       stride, length, rcvGain, polyTable);
-            if (rc != 1)
+            rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start+j,
+                                        stride, length, rcvGain, polyTable);
+            if (rc == 1)
+            {
+                _rgBBuf[4+i] = rcvGain;
+                i++;
+                *_rgBLastDataIndex = start+j;
+                continue;
+            }
+            else if (rc == 0)
+                // can't get receiver gain in this frame, go to next
+                continue;
+            else
             {
                 (void)memset(extractResults->validDataMap, 0,
                                               MAX_NUM_DERIVED_VALUES);
+                _rgBCurrentIndex=0;
+                _rgBLastDataIndex=0;
+                _rgBBuf=0;
                 return rc;
             }
-            rcvGainBuf[4+i] = rcvGain;
         }
     }
     else
     {
         // extract the [9]
-        rc = _extractOneReceiverGainBDN(l1File, sdsIDs, start+5,
-                                     stride, length, rcvGain, polyTable);
-        if (rc != 1)
+        for(int k = *_rgBLastDataIndex; ; k++)
         {
-            (void)memset(extractResults->validDataMap, 0,
+            rc = _extractOneReceiverGainADN(l1File, sdsIDs, k,
+                                       stride, length, rcvGain, polyTable);
+            if (rc == 1)
+            {
+                _rgBBuf[9] = rcvGain;
+                *_rgBLastDataIndex = k;
+                break;
+            }
+            else if (rc == 0)
+                continue;
+            else
+            {
+                (void)memset(extractResults->validDataMap, 0,
                                               MAX_NUM_DERIVED_VALUES);
-            return rc;
+                _rgBCurrentIndex=0;
+                _rgBLastDataIndex=0;
+                _rgBBuf=0;
+                return rc;
+            }
         }
-        rcvGainBuf[9] = rcvGain;
     }
 
     // now add them up and average it over 10
     float totalRcvGain = 0.0;
     for (i=0; i < 9; i++)
-        totalRcvGain += rcvGainBuf[i];
+        totalRcvGain += _rgBBuf[i];
     float avgRcvGain = totalRcvGain / 10;
     (void)memcpy(extractResults->dataBuf, &avgRcvGain, sizeof(float));
     (void)memcpy(extractResults->validDataMap,
@@ -4048,8 +4162,12 @@ PolynomialTable* polyTable)
 
     // save the first 9 rcv gains in the buffer for the next run
     for (i=0; i < 8; i++)
-        rcvGainBuf[i] = rcvGainBuf[i+1];
-    currentIndex++;
+        _rgBBuf[i] = _rgBBuf[i+1];
+    (*_rgBCurrentIndex)++;
+
+    _rgBCurrentIndex=0;
+    _rgBLastDataIndex=0;
+    _rgBBuf=0;
 
     return 1;
 
@@ -4069,14 +4187,24 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable* polyTable)
 {
+    if (_rgACurrentIndex == 0)
+        _rgACurrentIndex = &_rgADBCurrentIndex;
+    if (_rgALastDataIndex == 0)
+        _rgALastDataIndex = &_rgADBLastDataIndex;
+    if (_rgABuf == 0)
+        _rgABuf = _rgADBBuf;
     int rc = ExtractReceiverGainADN(l1File, sdsIDs,
                            start, stride, length, p_extractResults, polyTable);
     DerivedExtractResult* extractResults =
                            (DerivedExtractResult*) p_extractResults;
+    _rgACurrentIndex = 0;
+    _rgALastDataIndex = 0;
+    _rgABuf = 0;
     switch(rc)
     {
         case 1:
-            return(_oneFloat4TodB(extractResults));
+            (void)_oneFloat4TodB(extractResults);
+            return 1;
         case 0:
             (void)memset(extractResults->validDataMap,
                                 0, MAX_NUM_DERIVED_VALUES);
@@ -4102,8 +4230,17 @@ int32       length,
 VOIDP       p_extractResults,
 PolynomialTable* polyTable)
 {
+    if (_rgBCurrentIndex == 0)
+        _rgBCurrentIndex = &_rgBDBCurrentIndex;
+    if (_rgBLastDataIndex == 0)
+        _rgBLastDataIndex = &_rgBDBLastDataIndex;
+    if (_rgBBuf == 0)
+        _rgBBuf = _rgBDBBuf;
     int rc = ExtractReceiverGainBDN(l1File, sdsIDs,
                            start, stride, length, p_extractResults, polyTable);
+    _rgBCurrentIndex = 0;
+    _rgBLastDataIndex = 0;
+    _rgBBuf = 0;
     DerivedExtractResult* extractResults =
                            (DerivedExtractResult*) p_extractResults;
     switch(rc)
