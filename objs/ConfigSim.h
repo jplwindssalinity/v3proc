@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -169,5 +169,11 @@ int  ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
          double* grid_start_time, double* grid_end_time,
          double* instrument_start_time, double* instrument_end_time,
          double* spacecraft_start_time, double* spacecraft_end_time);
+
+//-------------------------//
+// Geodetic vs. geocentric //
+//-------------------------//
+
+int  ConfigAttitude(ConfigList* config_list);
 
 #endif

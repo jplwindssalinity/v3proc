@@ -41,7 +41,7 @@ AntennaFrameToGC(
 
     // geocentric to s/c velocity
     Vector3 sc_xv, sc_yv, sc_zv;
-    velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat, &sc_xv,
+    g_velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat, &sc_xv,
         &sc_yv, &sc_zv);
     CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
     total = gc_to_scv;

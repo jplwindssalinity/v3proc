@@ -337,6 +337,12 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define INSTRUMENT_TIME_BUFFER_KEYWORD  "INSTRUMENT_TIME_BUFFER"
 
+//-------------------------//
+// geodetic vs. geocentric //
+//-------------------------//
+
+#define ATTITUDE_KEYWORD  "ATTITUDE"
+
 //-------------------------------//
 // Random Number Generator Seeds //
 //-------------------------------//

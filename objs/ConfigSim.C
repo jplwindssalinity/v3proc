@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -26,6 +26,7 @@ static const char rcs_id_configsim_c[] =
 #include "Kpm.h"
 #include "EarthField.h"
 #include "Kp.h"
+#include "GenericGeom.h"
 
 //------------------//
 // ConfigSpacecraft //
@@ -71,92 +72,92 @@ ConfigSpacecraftSim(
     SpacecraftSim*  spacecraft_sim,
     ConfigList*     config_list)
 {
-	//------------------------------------//
-	// configure the spacecraft simulator //
-	//------------------------------------//
+    //------------------------------------//
+    // configure the spacecraft simulator //
+    //------------------------------------//
 
-	int sim_kprs_flag;
-	if (! config_list->GetInt(SIM_KPRS_FLAG_KEYWORD, &sim_kprs_flag))
-		return(0);
-	spacecraft_sim->simKprsFlag = sim_kprs_flag;
+    int sim_kprs_flag;
+    if (! config_list->GetInt(SIM_KPRS_FLAG_KEYWORD, &sim_kprs_flag))
+        return(0);
+    spacecraft_sim->simKprsFlag = sim_kprs_flag;
 
-	//-------------------------------//
-	// configure the attitude models //
-	//-------------------------------//
+    //-------------------------------//
+    // configure the attitude models //
+    //-------------------------------//
 
-	if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
-			config_list))
-	{
-		return(0);
-	}
+    if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
+            config_list))
+    {
+        return(0);
+    }
 
-	if (! ConfigAttitudeKnowledgeModel(&(spacecraft_sim->attKnowDist),
-			config_list))
-	{
-		return(0);
-	}
+    if (! ConfigAttitudeKnowledgeModel(&(spacecraft_sim->attKnowDist),
+            config_list))
+    {
+        return(0);
+    }
 
-	if (! config_list->GetFloat(SIM_ROLL_BIAS_KEYWORD,
+    if (! config_list->GetFloat(SIM_ROLL_BIAS_KEYWORD,
         &(spacecraft_sim->rollBias)))
-		return(0);
+        return(0);
 
-	if (! config_list->GetFloat(SIM_PITCH_BIAS_KEYWORD,
+    if (! config_list->GetFloat(SIM_PITCH_BIAS_KEYWORD,
         &(spacecraft_sim->pitchBias)))
-		return(0);
+        return(0);
 
-	if (! config_list->GetFloat(SIM_YAW_BIAS_KEYWORD,
+    if (! config_list->GetFloat(SIM_YAW_BIAS_KEYWORD,
         &(spacecraft_sim->yawBias)))
-		return(0);
+        return(0);
 
-	// Biases are specifed in degrees, but stored in radians.
+    // Biases are specifed in degrees, but stored in radians.
     spacecraft_sim->rollBias *= dtr;
     spacecraft_sim->pitchBias *= dtr;
     spacecraft_sim->yawBias *= dtr;
 
-	double epoch;
-	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
-		return(0);
+    double epoch;
+    if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
+        return(0);
 
-	double semi_major_axis;
-	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
-		return(0);
+    double semi_major_axis;
+    if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
+        return(0);
 
-	double eccentricity;
-	if (! config_list->GetDouble(ECCENTRICITY_KEYWORD, &eccentricity))
-		return(0);
+    double eccentricity;
+    if (! config_list->GetDouble(ECCENTRICITY_KEYWORD, &eccentricity))
+        return(0);
 
-	double inclination;
-	if (! config_list->GetDouble(INCLINATION_KEYWORD, &inclination))
-		return(0);
+    double inclination;
+    if (! config_list->GetDouble(INCLINATION_KEYWORD, &inclination))
+        return(0);
 
-	double long_of_asc_node;
-	if (! config_list->GetDouble(LONG_OF_ASC_NODE_KEYWORD, &long_of_asc_node))
-		return(0);
+    double long_of_asc_node;
+    if (! config_list->GetDouble(LONG_OF_ASC_NODE_KEYWORD, &long_of_asc_node))
+        return(0);
 
-	double arg_of_perigee;
-	if (! config_list->GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD, &arg_of_perigee))
-		return(0);
+    double arg_of_perigee;
+    if (! config_list->GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD, &arg_of_perigee))
+        return(0);
 
-	double mean_anomaly_at_epoch;
-	if (! config_list->GetDouble(MEAN_ANOMALY_AT_EPOCH_KEYWORD,
-		&mean_anomaly_at_epoch))
-	{
-		return(0);
-	}
+    double mean_anomaly_at_epoch;
+    if (! config_list->GetDouble(MEAN_ANOMALY_AT_EPOCH_KEYWORD,
+        &mean_anomaly_at_epoch))
+    {
+        return(0);
+    }
 
-	spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
-		inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
+    spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
+        inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
 
-	//-------------------------//
-	// set up ephemeris period //
-	//-------------------------//
+    //-------------------------//
+    // set up ephemeris period //
+    //-------------------------//
 
-	double eph_period;
-	if (! config_list->GetDouble(EPHEMERIS_PERIOD_KEYWORD, &eph_period))
-		return(0);
-	spacecraft_sim->SetEphemerisPeriod(eph_period);
+    double eph_period;
+    if (! config_list->GetDouble(EPHEMERIS_PERIOD_KEYWORD, &eph_period))
+        return(0);
+    spacecraft_sim->SetEphemerisPeriod(eph_period);
 
-	return(1);
+    return(1);
 }
 
 //----------------------------//
@@ -165,88 +166,87 @@ ConfigSpacecraftSim(
 
 int
 ConfigAttitudeControlModel(AttDist* attcntl,
-	ConfigList* config_list)
+    ConfigList* config_list)
 {
 
-	char* string;
+    char* string;
 
-	string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
-	if (! string)
-		return(0);
+    string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
+    if (! string)
+        return(0);
 
-	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0)
-	{
-		// By default mean, variance, and correlation length
-		// are set to zero
-		return(1);
-	}
+    if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+        || strcmp(string,"none")==0)
+    {
+        // By default mean, variance, and correlation length
+        // are set to zero
+        return(1);
+    }
 
-	else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
-		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
-		|| strcmp(string,"time_correlated_gaussian")==0)
-	{
+    else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
+        strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
+        || strcmp(string,"time_correlated_gaussian")==0)
+    {
 
-		float stdv, meanx, corrlength;
+        float stdv, meanx, corrlength;
 
-		if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
-				&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
+                &corrlength))
+        {
+            return(0);
+        }
 
-		attcntl->roll.SetVariance(stdv*stdv*dtr*dtr);
-		attcntl->roll.SetMean(meanx*dtr);
-		attcntl->roll.SetCorrelationLength(corrlength);
-		attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
-		attcntl->roll.Initialize();
+        attcntl->roll.SetVariance(stdv*stdv*dtr*dtr);
+        attcntl->roll.SetMean(meanx*dtr);
+        attcntl->roll.SetCorrelationLength(corrlength);
+        attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
+        attcntl->roll.Initialize();
 
-		if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
-				&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
+                &corrlength))
+        {
+            return(0);
+        }
 
-		attcntl->pitch.SetVariance(stdv*stdv*dtr*dtr);
-		attcntl->pitch.SetMean(meanx*dtr);
-		attcntl->pitch.SetCorrelationLength(corrlength);
-		attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
-		attcntl->pitch.Initialize();
+        attcntl->pitch.SetVariance(stdv*stdv*dtr*dtr);
+        attcntl->pitch.SetMean(meanx*dtr);
+        attcntl->pitch.SetCorrelationLength(corrlength);
+        attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
+        attcntl->pitch.Initialize();
 
-		if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
-			&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
+            &corrlength))
+        {
+            return(0);
+        }
 
-		attcntl->yaw.SetVariance(stdv*stdv*dtr*dtr);
-		attcntl->yaw.SetMean(meanx*dtr);
-		attcntl->yaw.SetCorrelationLength(corrlength);
-		attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
-		attcntl->yaw.Initialize();
-	}
-	else
-	{
-		fprintf(stderr,"No such Attitude Control Model. \n");
-		fprintf(stderr,"Implemented models are:");
-		fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
-		return(0);
-	}
+        attcntl->yaw.SetVariance(stdv*stdv*dtr*dtr);
+        attcntl->yaw.SetMean(meanx*dtr);
+        attcntl->yaw.SetCorrelationLength(corrlength);
+        attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
+        attcntl->yaw.Initialize();
+    }
+    else
+    {
+        fprintf(stderr,"No such Attitude Control Model. \n");
+        fprintf(stderr,"Implemented models are:");
+        fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
+        return(0);
+    }
 
-
-	return(1);
+    return(1);
 }
 
 //------------------------------//
@@ -255,94 +255,93 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 
 int
 ConfigAttitudeKnowledgeModel(AttDist* attknow,
-	ConfigList* config_list)
+    ConfigList* config_list)
 {
 
-	char* string;
+    char* string;
 
-	string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
-	if (! string)
-		return(0);
+    string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
+    if (! string)
+        return(0);
 
-	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0)
-	{
-		// By default mean, variance, and correlation length
-		// are set to zero
-		return(1);
-	}
+    if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+        || strcmp(string,"none")==0)
+    {
+        // By default mean, variance, and correlation length
+        // are set to zero
+        return(1);
+    }
 
-	else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
-		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
-		|| strcmp(string,"time_correlated_gaussian")==0)
-	{
+    else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
+        strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
+        || strcmp(string,"time_correlated_gaussian")==0)
+    {
 
-		float stdv, meanx, corrlength;
+        float stdv, meanx, corrlength;
 
-		if (! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
-			&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
+            &corrlength))
+        {
+            return(0);
+        }
 
-		attknow->roll.SetVariance(stdv*stdv*dtr*dtr);
-		attknow->roll.SetMean(meanx*dtr);
-		attknow->roll.SetCorrelationLength(corrlength);
-		attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
-		attknow->roll.Initialize();
+        attknow->roll.SetVariance(stdv*stdv*dtr*dtr);
+        attknow->roll.SetMean(meanx*dtr);
+        attknow->roll.SetCorrelationLength(corrlength);
+        attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
+        attknow->roll.Initialize();
 
-		if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
-				&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
+                &corrlength))
+        {
+            return(0);
+        }
 
-		attknow->pitch.SetVariance(stdv*stdv*dtr*dtr);
-		attknow->pitch.SetMean(meanx*dtr);
-		attknow->pitch.SetCorrelationLength(corrlength);
-		attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
-		attknow->pitch.Initialize();
+        attknow->pitch.SetVariance(stdv*stdv*dtr*dtr);
+        attknow->pitch.SetMean(meanx*dtr);
+        attknow->pitch.SetCorrelationLength(corrlength);
+        attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
+        attknow->pitch.Initialize();
 
-		if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &stdv))
-			return(0);
-		if (! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &meanx))
-			return(0);
-		if (! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
-				&corrlength))
-		{
-			return(0);
-		}
+        if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &stdv))
+            return(0);
+        if (! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &meanx))
+            return(0);
+        if (! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
+                &corrlength))
+        {
+            return(0);
+        }
 
-		attknow->yaw.SetVariance(stdv*stdv*dtr*dtr);
-		attknow->yaw.SetMean(meanx*dtr);
-		attknow->yaw.SetCorrelationLength(corrlength);
-		attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
-		attknow->yaw.Initialize();
-	}
-	else
-	{
-		fprintf(stderr,"No such Attitude Control Model. \n");
-		fprintf(stderr,"Implemented models are:");
-		fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
-		return(0);
-	}
+        attknow->yaw.SetVariance(stdv*stdv*dtr*dtr);
+        attknow->yaw.SetMean(meanx*dtr);
+        attknow->yaw.SetCorrelationLength(corrlength);
+        attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
+        attknow->yaw.Initialize();
+    }
+    else
+    {
+        fprintf(stderr,"No such Attitude Control Model. \n");
+        fprintf(stderr,"Implemented models are:");
+        fprintf(stderr,"TIME_CORRELATED_GAUSSIAN and NONE. \n");
+        return(0);
+    }
 
-
-	return(1);
+    return(1);
 }
 
 /****************************************
 //--------------------------------------//
-// Configuration Routines for Specific	//
-// Noise Distributions					//
+// Configuration Routines for Specific  //
+// Noise Distributions                  //
 //--------------------------------------//
 
 //----------------//
@@ -351,107 +350,107 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 
 Gaussian*
 ConfigGaussian(const char* variance_keyword,
-	const char* mean_keyword,
-	ConfigList* config_list)
+    const char* mean_keyword,
+    ConfigList* config_list)
 {
-	double variance, meanx;
+    double variance, meanx;
 
-	if (! config_list->GetDouble(variance_keyword, &variance))
-		return(NULL);
-	variance*=dtr*dtr;
-	if (! config_list->GetDouble(mean_keyword, &meanx))
-		return(NULL);
-	meanx*=dtr;
-	Gaussian* new_g = new Gaussian((float)variance,(float)meanx);
-	return(new_g);
+    if (! config_list->GetDouble(variance_keyword, &variance))
+        return(NULL);
+    variance*=dtr*dtr;
+    if (! config_list->GetDouble(mean_keyword, &meanx))
+        return(NULL);
+    meanx*=dtr;
+    Gaussian* new_g = new Gaussian((float)variance,(float)meanx);
+    return(new_g);
 }
 
-	//---------------//
-	// ConfigUniform //
-	//---------------//
+    //---------------//
+    // ConfigUniform //
+    //---------------//
 
 Uniform*
 ConfigUniform(
-	const char*		radius_keyword,
-	const char*		mean_keyword,
-	ConfigList*		config_list)
+    const char*        radius_keyword,
+    const char*        mean_keyword,
+    ConfigList*        config_list)
 {
-	double radius, meanx;
+    double radius, meanx;
 
-	if (! config_list->GetDouble(radius_keyword, &radius))
-		return(NULL);
-	radius*=dtr;
-	if (! config_list->GetDouble(mean_keyword, &meanx))
-		return(NULL);
-	meanx*=dtr;
-	Uniform* new_u = new Uniform((float)radius,float(meanx));
-	return(new_u);
+    if (! config_list->GetDouble(radius_keyword, &radius))
+        return(NULL);
+    radius*=dtr;
+    if (! config_list->GetDouble(mean_keyword, &meanx))
+        return(NULL);
+    meanx*=dtr;
+    Uniform* new_u = new Uniform((float)radius,float(meanx));
+    return(new_u);
 }
 
-	//------------------------------//
-	// ConfigGaussianRandomVelocity //
-	//------------------------------//
+    //------------------------------//
+    // ConfigGaussianRandomVelocity //
+    //------------------------------//
 
 RandomVelocity*
 ConfigGaussianRandomVelocity(
-	const char*		samprate_keyword,
-	const char*		bound_keyword,
-	const char*		mean_keyword,
-	const char*		variance_keyword,
-	ConfigList*		config_list)
+    const char*        samprate_keyword,
+    const char*        bound_keyword,
+    const char*        mean_keyword,
+    const char*        variance_keyword,
+    ConfigList*        config_list)
 {
-	double variance, meanx, sample_rate, bound;
-	GenericTimelessDist *velocity;
+    double variance, meanx, sample_rate, bound;
+    GenericTimelessDist *velocity;
 
-	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
-		return(NULL);
+    if (! config_list->GetDouble(samprate_keyword, &sample_rate))
+        return(NULL);
 
-	if (! config_list->GetDouble(variance_keyword, &variance))
-		return(NULL);
-	variance*=dtr*dtr;
-	if (! config_list->GetDouble(mean_keyword, &meanx))
-		return(NULL);
-	meanx*=dtr;
-	if (! config_list->GetDouble(bound_keyword, &bound))
-		return(NULL);
-	bound*=dtr;
-	velocity = new Gaussian((float)variance,0.0);
-	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)meanx);
-	return(new_rv);
+    if (! config_list->GetDouble(variance_keyword, &variance))
+        return(NULL);
+    variance*=dtr*dtr;
+    if (! config_list->GetDouble(mean_keyword, &meanx))
+        return(NULL);
+    meanx*=dtr;
+    if (! config_list->GetDouble(bound_keyword, &bound))
+        return(NULL);
+    bound*=dtr;
+    velocity = new Gaussian((float)variance,0.0);
+    RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)meanx);
+    return(new_rv);
 }
 
 
-	//-----------------------------//
-	// ConfigUniformRandomVelocity //
-	//-----------------------------//
+    //-----------------------------//
+    // ConfigUniformRandomVelocity //
+    //-----------------------------//
 
 RandomVelocity*
 ConfigUniformRandomVelocity(
-	const char*		samprate_keyword,
-	const char*		bound_keyword,
-	const char*		mean_keyword,
-	const char*		radius_keyword,
-	ConfigList*		config_list)
+    const char*        samprate_keyword,
+    const char*        bound_keyword,
+    const char*        mean_keyword,
+    const char*        radius_keyword,
+    ConfigList*        config_list)
 {
-	double radius, meanx, sample_rate, bound;
-	GenericTimelessDist *velocity;
+    double radius, meanx, sample_rate, bound;
+    GenericTimelessDist *velocity;
 
-	if (! config_list->GetDouble(samprate_keyword, &sample_rate))
-		return(NULL);
+    if (! config_list->GetDouble(samprate_keyword, &sample_rate))
+        return(NULL);
 
-	if (! config_list->GetDouble(radius_keyword, &radius))
-		return(NULL);
-	radius*=dtr;
-	if (! config_list->GetDouble(mean_keyword, &meanx))
-		return(NULL);
-	meanx*=dtr;
-	if (! config_list->GetDouble(bound_keyword, &bound))
-		return(NULL);
-	bound*=dtr;
-	velocity=new Uniform((float)radius,0.0);
-	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)meanx);
-	return(new_rv);
+    if (! config_list->GetDouble(radius_keyword, &radius))
+        return(NULL);
+    radius*=dtr;
+    if (! config_list->GetDouble(mean_keyword, &meanx))
+        return(NULL);
+    meanx*=dtr;
+    if (! config_list->GetDouble(bound_keyword, &bound))
+        return(NULL);
+    bound*=dtr;
+    velocity=new Uniform((float)radius,0.0);
+    RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate,
+        (float)bound, (float)meanx);
+    return(new_rv);
 }
 ********************************************/
 
@@ -461,47 +460,47 @@ ConfigUniformRandomVelocity(
 
 int
 ConfigAntenna(
-	Antenna*		antenna,
-	ConfigList*		config_list)
+    Antenna*        antenna,
+    ConfigList*        config_list)
 {
-	//-----------------------//
-	// configure the antenna //
-	//-----------------------//
+    //-----------------------//
+    // configure the antenna //
+    //-----------------------//
 
-	int number_of_beams;
-	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
-	{
-		fprintf(stderr,"Could not find number of beams in config file\n");
-		return(0);
-	}
-	antenna->numberOfBeams = number_of_beams;
+    int number_of_beams;
+    if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+    {
+        fprintf(stderr,"Could not find number of beams in config file\n");
+        return(0);
+    }
+    antenna->numberOfBeams = number_of_beams;
 
-	double roll, pitch, yaw;
-	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
-	{
-		fprintf(stderr,"Could not find antenna pedestal roll in config file\n");
-		return(0);
-	}
-	if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
-	{
-		fprintf(stderr,"Could not find antenna pedestal pitch in config file\n");
-		return(0);
-	}
-	if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
-	{
-		fprintf(stderr,"Could not find antenna pedestal yaw in config file\n");
-		return(0);
-	}
-        
-	//---------------------------------//
-        // Convert from degrees to radians //
-	//---------------------------------//
+    double roll, pitch, yaw;
+    if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
+    {
+        fprintf(stderr,"Could not find antenna pedestal roll in config file\n");
+        return(0);
+    }
+    if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
+    {
+        fprintf(stderr,"Could not find antenna pedestal pitch in config file\n");
+        return(0);
+    }
+    if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
+    {
+        fprintf(stderr,"Could not find antenna pedestal yaw in config file\n");
+        return(0);
+    }
+
+    //---------------------------------//
+    // Convert from degrees to radians //
+    //---------------------------------//
         roll*=dtr;
         pitch*=dtr;
         yaw*=dtr;
-	Attitude att;
-	att.Set(roll, pitch, yaw, 1, 2, 3);
-	antenna->SetPedestalAttitude(&att);
+    Attitude att;
+    att.Set(roll, pitch, yaw, 1, 2, 3);
+    antenna->SetPedestalAttitude(&att);
 
     //----------------//
     // initialization //
@@ -517,20 +516,20 @@ ConfigAntenna(
         return(0);
     antenna->startAzimuth = start_azi*dtr;
 
-	//---------------------//
-	// configure each beam //
-	//---------------------//
+    //---------------------//
+    // configure each beam //
+    //---------------------//
 
-	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
-	{
-		if (! ConfigBeam((antenna->beam + beam_idx), beam_idx + 1,
-			config_list))
-		{
-			return(0);
-		}
-	}
+    for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
+    {
+        if (! ConfigBeam((antenna->beam + beam_idx), beam_idx + 1,
+            config_list))
+        {
+            return(0);
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //------------//
@@ -539,51 +538,51 @@ ConfigAntenna(
 
 int
 ConfigBeam(
-	Beam*			beam,
-	int				beam_number,
-	ConfigList*		config_list)
+    Beam*            beam,
+    int                beam_number,
+    ConfigList*        config_list)
 {
-	char keyword[1024];
-	char number[8];
-	char tmp_char;
+    char keyword[1024];
+    char number[8];
+    char tmp_char;
 
-	sprintf(number, "%d", beam_number);
+    sprintf(number, "%d", beam_number);
 
-	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
-	if (! config_list->GetChar(keyword, &tmp_char))
-	{
-		fprintf(stderr,"Missing keyword %s in config file\n",keyword);
-		return(0);
-	}
-	switch (tmp_char)
-	{
-	case 'V':
-	case 'v':
-		beam->polarization = V_POL;
-		break;
-	case 'H':
-	case 'h':
-		beam->polarization = H_POL;
-		break;
-	default:
-		fprintf(stderr,"Beam %d polarization (%c) not recognized\n",
-			beam_number,tmp_char);
-		return(0);
-	}
+    substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
+    if (! config_list->GetChar(keyword, &tmp_char))
+    {
+        fprintf(stderr,"Missing keyword %s in config file\n",keyword);
+        return(0);
+    }
+    switch (tmp_char)
+    {
+    case 'V':
+    case 'v':
+        beam->polarization = V_POL;
+        break;
+    case 'H':
+    case 'h':
+        beam->polarization = H_POL;
+        break;
+    default:
+        fprintf(stderr,"Beam %d polarization (%c) not recognized\n",
+            beam_number,tmp_char);
+        return(0);
+    }
 
-	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
-	char* pattern_file = config_list->Get(keyword);
-	if (pattern_file == NULL)
-	{
-		fprintf(stderr,"Could not find beam pattern file in config file\n");
-		return(0);
-	}
-	if (! beam->ReadBeamPattern(pattern_file))
-	{
+    substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
+    char* pattern_file = config_list->Get(keyword);
+    if (pattern_file == NULL)
+    {
+        fprintf(stderr,"Could not find beam pattern file in config file\n");
+        return(0);
+    }
+    if (! beam->ReadBeamPattern(pattern_file))
+    {
         fprintf(stderr,
             "Error while reading beam %d pattern file\n",beam_number);
-		return(0);
-	}
+        return(0);
+    }
 
     //-----------//
     // peak gain //
@@ -605,54 +604,54 @@ ConfigBeam(
 
     beam->peakGain = pow(10.0, 0.1*(peak_gain - waveguide_loss));
 
-	//-----------------------------------------------------------------//
-	// Setup one mechanical boresight, or two electrical boresights.
-	//-----------------------------------------------------------------//
+    //-----------------------------------------------------------------//
+    // Setup one mechanical boresight, or two electrical boresights.
+    //-----------------------------------------------------------------//
 
-	config_list->DoNothingForMissingKeywords();
+    config_list->DoNothingForMissingKeywords();
 
-	double look_angle;		// deg
-	double azimuth_angle;	// deg
+    double look_angle;        // deg
+    double azimuth_angle;    // deg
 
-	if (config_list->GetDouble(MECH_LOOK_ANGLE_KEYWORD, &look_angle))
-	{
-		look_angle *= dtr;
-		if (config_list->GetDouble(MECH_AZIMUTH_ANGLE_KEYWORD, &azimuth_angle))
-		{
-			azimuth_angle *= dtr;
-			beam->SetMechanicalBoresight(look_angle, azimuth_angle);
-		}
-		else
-		{
-			fprintf(stderr,
+    if (config_list->GetDouble(MECH_LOOK_ANGLE_KEYWORD, &look_angle))
+    {
+        look_angle *= dtr;
+        if (config_list->GetDouble(MECH_AZIMUTH_ANGLE_KEYWORD, &azimuth_angle))
+        {
+            azimuth_angle *= dtr;
+            beam->SetMechanicalBoresight(look_angle, azimuth_angle);
+        }
+        else
+        {
+            fprintf(stderr,
                 "Missing mechanical boresight azimuth in config file\n");
-			return(0);
-		}
-	}
-	else
-	{
-		substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
-		if (! config_list->GetDouble(keyword, &look_angle))
-		{
-			fprintf(stderr,"Could not find beam look angle in config file\n");
-			return(0);
-		}
-		look_angle *= dtr;
+            return(0);
+        }
+    }
+    else
+    {
+        substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
+        if (! config_list->GetDouble(keyword, &look_angle))
+        {
+            fprintf(stderr,"Could not find beam look angle in config file\n");
+            return(0);
+        }
+        look_angle *= dtr;
 
-		substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
-		if (! config_list->GetDouble(keyword, &azimuth_angle))
-		{
-			fprintf(stderr,"Could not find beam azimuth angle in config file\n");
-			return(0);
-		}
-		azimuth_angle *= dtr;
+        substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
+        if (! config_list->GetDouble(keyword, &azimuth_angle))
+        {
+            fprintf(stderr,"Could not find beam azimuth angle in config file\n");
+            return(0);
+        }
+        azimuth_angle *= dtr;
 
-		beam->SetElectricalBoresight(look_angle, azimuth_angle);
-	}
+        beam->SetElectricalBoresight(look_angle, azimuth_angle);
+    }
 
-	config_list->ExitForMissingKeywords();
+    config_list->ExitForMissingKeywords();
 
-	return(1);
+    return(1);
 }
 
 //--------------//
@@ -661,121 +660,121 @@ ConfigBeam(
 
 int
 ConfigXTable(
-	XTable*			xTable,
-	ConfigList*		config_list,
-	char*			read_write)
+    XTable*            xTable,
+    ConfigList*        config_list,
+    char*            read_write)
 {
-	/**** Find out if XTable is to be configured READ or WRITE ***/
-	int read_flag =0;
-	if (strcmp(read_write,"r") == 0)
-		read_flag =1;
-	else if (strcmp(read_write,"w")==0)
-		read_flag =0;
-	else
-	{
-		fprintf(stderr, "ConfigXTable: Bad read_write parameter");
-		return(0);
-	}
+    /**** Find out if XTable is to be configured READ or WRITE ***/
+    int read_flag =0;
+    if (strcmp(read_write,"r") == 0)
+        read_flag =1;
+    else if (strcmp(read_write,"w")==0)
+        read_flag =0;
+    else
+    {
+        fprintf(stderr, "ConfigXTable: Bad read_write parameter");
+        return(0);
+    }
 
-	/**** Get XTable Filename *****/
+    /**** Get XTable Filename *****/
 
-	char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
-	if (xtable_filename == NULL)
-		return(0);
+    char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
+    if (xtable_filename == NULL)
+        return(0);
 
-	xTable->SetFilename(xtable_filename);
+    xTable->SetFilename(xtable_filename);
 
 
-	/**** Read header parameters for XTable object ****/
+    /**** Read header parameters for XTable object ****/
 
-	int num_beams;
-	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
-		return(0);
+    int num_beams;
+    if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
+        return(0);
 
-	int num_science_slices;
-	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,
-		&num_science_slices))
-	{
-		return(0);
-	}
+    int num_science_slices;
+    if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,
+        &num_science_slices))
+    {
+        return(0);
+    }
 
-	int num_guard_slices_each_side;
-	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,
-		&num_guard_slices_each_side))
-	{
-		return(0);
-	}
+    int num_guard_slices_each_side;
+    if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,
+        &num_guard_slices_each_side))
+    {
+        return(0);
+    }
 
-	int num_azimuths;
-	if (! config_list->GetInt(XTABLE_NUM_AZIMUTHS_KEYWORD,&num_azimuths))
-		return(0);
+    int num_azimuths;
+    if (! config_list->GetInt(XTABLE_NUM_AZIMUTHS_KEYWORD,&num_azimuths))
+        return(0);
 
-	int num_orbit_positions;
-	if (! config_list->GetInt(XTABLE_NUM_ORBIT_STEPS_KEYWORD,
-		&num_orbit_positions))
-	{
-		return(0);
-	}
+    int num_orbit_positions;
+    if (! config_list->GetInt(XTABLE_NUM_ORBIT_STEPS_KEYWORD,
+        &num_orbit_positions))
+    {
+        return(0);
+    }
 
-	float science_slice_bandwidth;
-	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
-		&science_slice_bandwidth))
-	{
-		fprintf(stderr,"Could not find slice bandwidth in config file\n");
-		return(0);
-	}
-	science_slice_bandwidth*=KHZ_TO_HZ;
+    float science_slice_bandwidth;
+    if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
+        &science_slice_bandwidth))
+    {
+        fprintf(stderr,"Could not find slice bandwidth in config file\n");
+        return(0);
+    }
+    science_slice_bandwidth*=KHZ_TO_HZ;
 
-	float guard_slice_bandwidth;
-	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,
-		&guard_slice_bandwidth))
-	{
-		fprintf(stderr,"Could not find guard slice bandwidth in config file\n");
-		return(0);
-	}
-	guard_slice_bandwidth*=KHZ_TO_HZ;
+    float guard_slice_bandwidth;
+    if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,
+        &guard_slice_bandwidth))
+    {
+        fprintf(stderr,"Could not find guard slice bandwidth in config file\n");
+        return(0);
+    }
+    guard_slice_bandwidth*=KHZ_TO_HZ;
 
-	/**** If mode is READ, read in xTable and make sure its parameters match
-		those read from the config file *****/
+    /**** If mode is READ, read in xTable and make sure its parameters match
+        those read from the config file *****/
 
-	if (read_flag )
-	{
-		if (!xTable->Read())
-		{
-			fprintf(stderr,"Error reading xTable in ConfigXTable\n");
-			return(0);
-		}
-		if (!xTable->CheckHeader(num_beams, num_science_slices,
-				num_guard_slices_each_side, science_slice_bandwidth,
-				guard_slice_bandwidth))
-		{
-			fprintf(stderr,"Header check failed in ConfigXTable\n");
-			return(0);
-		}
-	}
+    if (read_flag )
+    {
+        if (!xTable->Read())
+        {
+            fprintf(stderr,"Error reading xTable in ConfigXTable\n");
+            return(0);
+        }
+        if (!xTable->CheckHeader(num_beams, num_science_slices,
+                num_guard_slices_each_side, science_slice_bandwidth,
+                guard_slice_bandwidth))
+        {
+            fprintf(stderr,"Header check failed in ConfigXTable\n");
+            return(0);
+        }
+    }
 
-	/***** If mode is WRITE, asign xTable parameters from parameters read from
-		config file, and allocate it the arrays ****/
+    /***** If mode is WRITE, asign xTable parameters from parameters read from
+        config file, and allocate it the arrays ****/
 
-	else
-	{
-		xTable->numBeams=num_beams;
-		xTable->numAzimuthBins=num_azimuths;
-		xTable->numOrbitPositionBins=num_orbit_positions;
-		xTable->numScienceSlices=num_science_slices;
-		xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
-		xTable->scienceSliceBandwidth=science_slice_bandwidth;
-		xTable->guardSliceBandwidth=guard_slice_bandwidth;
-		xTable->numSlices=xTable->numScienceSlices +
-			2 * xTable->numGuardSlicesEachSide;
-		if (!xTable->Allocate())
-		{
-			fprintf(stderr,"ConfigXTable:Error allocating XTable object.\n");
-			return(0);
-		}
-	}
+    else
+    {
+        xTable->numBeams=num_beams;
+        xTable->numAzimuthBins=num_azimuths;
+        xTable->numOrbitPositionBins=num_orbit_positions;
+        xTable->numScienceSlices=num_science_slices;
+        xTable->numGuardSlicesEachSide=num_guard_slices_each_side;
+        xTable->scienceSliceBandwidth=science_slice_bandwidth;
+        xTable->guardSliceBandwidth=guard_slice_bandwidth;
+        xTable->numSlices=xTable->numScienceSlices +
+            2 * xTable->numGuardSlicesEachSide;
+        if (!xTable->Allocate())
+        {
+            fprintf(stderr,"ConfigXTable:Error allocating XTable object.\n");
+            return(0);
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //-----------------//
@@ -818,60 +817,60 @@ ConfigFbbTable(
 
 int
 ConfigL00(
-	L00*			l00,
-	ConfigList*		config_list)
+    L00*            l00,
+    ConfigList*        config_list)
 {
-	//---------------------------//
-	// configure the l00 product //
-	//---------------------------//
+    //---------------------------//
+    // configure the l00 product //
+    //---------------------------//
 
-	char* l00_filename = config_list->Get(L00_FILE_KEYWORD);
-	if (l00_filename == NULL)
-		return(0);
-	l00->SetInputFilename(l00_filename);
-	l00->SetOutputFilename(l00_filename);
+    char* l00_filename = config_list->Get(L00_FILE_KEYWORD);
+    if (l00_filename == NULL)
+        return(0);
+    l00->SetInputFilename(l00_filename);
+    l00->SetOutputFilename(l00_filename);
 
-	int number_of_beams;
-	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
-		return(0);
+    int number_of_beams;
+    if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+        return(0);
 
-	int antenna_cycles_per_frame;
-	if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
-		&antenna_cycles_per_frame))
-	{
-		return(0);
-	}
+    int antenna_cycles_per_frame;
+    if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
+        &antenna_cycles_per_frame))
+    {
+        return(0);
+    }
 
-	int s_count;
-	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
-		return(0);
+    int s_count;
+    if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
+        return(0);
 
-	int g_count;
-	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
-		return(0);
+    int g_count;
+    if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+        return(0);
 
-	int total_slices = s_count + 2 * g_count;
+    int total_slices = s_count + 2 * g_count;
 
-	//-------------------------//
-	// configure the l00 frame //
-	//-------------------------//
+    //-------------------------//
+    // configure the l00 frame //
+    //-------------------------//
 
-	if (! l00->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
-		total_slices))
-	{
-		return(0);
-	}
+    if (! l00->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
+        total_slices))
+    {
+        return(0);
+    }
 
     //-----------------------------------------//
     // use the frame size to allocate a buffer //
     //-----------------------------------------//
 
-	if (! l00->AllocateBuffer())
-	{
-		return(0);
-	}
+    if (! l00->AllocateBuffer())
+    {
+        return(0);
+    }
 
-	return(1);
+    return(1);
 }
 
 //-----------//
@@ -880,60 +879,60 @@ ConfigL00(
 
 int
 ConfigL1A(
-	L1A*			l1a,
-	ConfigList*		config_list)
+    L1A*            l1a,
+    ConfigList*        config_list)
 {
-	//---------------------------//
-	// configure the l1a product //
-	//---------------------------//
+    //---------------------------//
+    // configure the l1a product //
+    //---------------------------//
 
-	char* l1a_filename = config_list->Get(L1A_FILE_KEYWORD);
-	if (l1a_filename == NULL)
-		return(0);
-	l1a->SetInputFilename(l1a_filename);
-	l1a->SetOutputFilename(l1a_filename);
+    char* l1a_filename = config_list->Get(L1A_FILE_KEYWORD);
+    if (l1a_filename == NULL)
+        return(0);
+    l1a->SetInputFilename(l1a_filename);
+    l1a->SetOutputFilename(l1a_filename);
 
-	int number_of_beams;
-	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
-		return(0);
+    int number_of_beams;
+    if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+        return(0);
 
-	int antenna_cycles_per_frame;
-	if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
-		&antenna_cycles_per_frame))
-	{
-		return(0);
-	}
+    int antenna_cycles_per_frame;
+    if (! config_list->GetInt(L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD,
+        &antenna_cycles_per_frame))
+    {
+        return(0);
+    }
 
-	int s_count;
-	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
-		return(0);
+    int s_count;
+    if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
+        return(0);
 
-	int g_count;
-	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
-		return(0);
+    int g_count;
+    if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+        return(0);
 
-	int total_slices = s_count + 2 * g_count;
+    int total_slices = s_count + 2 * g_count;
 
-	//-------------------------//
-	// configure the l1a frame //
-	//-------------------------//
+    //-------------------------//
+    // configure the l1a frame //
+    //-------------------------//
 
-	if (! l1a->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
-		total_slices))
-	{
-		return(0);
-	}
+    if (! l1a->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
+        total_slices))
+    {
+        return(0);
+    }
 
     //-----------------------------------------//
     // use the frame size to allocate a buffer //
     //-----------------------------------------//
 
-	if (! l1a->AllocateBuffer())
-	{
-		return(0);
-	}
+    if (! l1a->AllocateBuffer())
+    {
+        return(0);
+    }
 
-	return(1);
+    return(1);
 }
 
 //-----------//
@@ -942,20 +941,20 @@ ConfigL1A(
 
 int
 ConfigL1B(
-	L1B*			l1b,
-	ConfigList*		config_list)
+    L1B*            l1b,
+    ConfigList*        config_list)
 {
-	//---------------------------//
-	// configure the l1b product //
-	//---------------------------//
+    //---------------------------//
+    // configure the l1b product //
+    //---------------------------//
 
-	char* l1b_filename = config_list->Get(L1B_FILE_KEYWORD);
-	if (l1b_filename == NULL)
-		return(0);
-	l1b->SetInputFilename(l1b_filename);
-	l1b->SetOutputFilename(l1b_filename);
+    char* l1b_filename = config_list->Get(L1B_FILE_KEYWORD);
+    if (l1b_filename == NULL)
+        return(0);
+    l1b->SetInputFilename(l1b_filename);
+    l1b->SetOutputFilename(l1b_filename);
 
-	return(1);
+    return(1);
 }
 
 //--------------//
@@ -964,12 +963,12 @@ ConfigL1B(
 
 int
 ConfigL1BHdf(
-	L1BHdf*			l1bHdf,
-	ConfigList*		config_list)
+    L1BHdf*            l1bHdf,
+    ConfigList*        config_list)
 {
-	//-------------------------------//
-	// configure the l1b HDF product //
-	//-------------------------------//
+    //-------------------------------//
+    // configure the l1b HDF product //
+    //-------------------------------//
     float science_slice_bandwidth;
     if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
         &science_slice_bandwidth))
@@ -987,7 +986,7 @@ ConfigL1BHdf(
     }
     l1bHdf->configTxPulseWidth = txPulseWidth * MS_TO_S;
 
-	return(1);
+    return(1);
 
 } // ConfigL1BHdf
 
@@ -997,97 +996,100 @@ ConfigL1BHdf(
 
 int
 ConfigL1AToL1B(
-	L1AToL1B*		l1a_to_l1b,
-	ConfigList*		config_list)
+    L1AToL1B*        l1a_to_l1b,
+    ConfigList*        config_list)
 {
-	//-------------------------//
-	// output simga0 to stdout //
-	//-------------------------//
+    //-------------------------//
+    // output simga0 to stdout //
+    //-------------------------//
 
-	config_list->DoNothingForMissingKeywords();
-	int output_sigma0_to_stdout;
-	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
-		&output_sigma0_to_stdout))
-	{
-		output_sigma0_to_stdout = 0;	// default value
-	}
-	l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
+    config_list->DoNothingForMissingKeywords();
+    int output_sigma0_to_stdout;
+    if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
+        &output_sigma0_to_stdout))
+    {
+        output_sigma0_to_stdout = 0;    // default value
+    }
+    l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
 
-	l1a_to_l1b->simVs1BCheckfile =
-		config_list->Get(ONEB_CHECKFILE_KEYWORD);
+    l1a_to_l1b->simVs1BCheckfile =
+        config_list->Get(ONEB_CHECKFILE_KEYWORD);
     // Remove any pre-existing check file
     FILE* fptr = fopen(l1a_to_l1b->simVs1BCheckfile,"w");
     if (fptr != NULL) fclose(fptr);
 
-	config_list->ExitForMissingKeywords();
+    config_list->ExitForMissingKeywords();
 
         //--------------------------------------//
         // Read in the land map file            //
         //--------------------------------------//
-	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
+    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
         int use_land;
         config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
         if(! l1a_to_l1b->landMap.Initialize(landfile,use_land)){
-	  fprintf(stderr,"Cannot Initialize Land Map\n");
+      fprintf(stderr,"Cannot Initialize Land Map\n");
           exit(0);
-	} 
+    }
 
-	//-------------------//
-	// k-factor/x-factor //
-	//-------------------//
+    //-------------------//
+    // k-factor/x-factor //
+    //-------------------//
 
-	int use_kfactor;
-	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
-		use_kfactor=0; // default value
-	l1a_to_l1b->useKfactor=use_kfactor;
+    int use_kfactor;
+    if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
+        use_kfactor=0; // default value
+    l1a_to_l1b->useKfactor=use_kfactor;
 
-	int use_BYU_xfactor;
-	if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
-		use_BYU_xfactor=0; // default value
-	l1a_to_l1b->useBYUXfactor=use_BYU_xfactor;
+    int use_BYU_xfactor;
+    if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
+        use_BYU_xfactor=0; // default value
+    l1a_to_l1b->useBYUXfactor=use_BYU_xfactor;
 
-	/****** Exactly one of these must be true ***/
-	if (use_kfactor + use_BYU_xfactor != 1){
-	        fprintf(stderr,"ConfigL1AToL1B:X computation incorrectly specified.\n");
-		return(0);
-	}
-	if (use_kfactor)
-	{
-		if (!ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
-			return(0);
-	}
+    /****** Exactly one of these must be true ***/
+    if (use_kfactor + use_BYU_xfactor != 1)
+    {
+        fprintf(stderr,
+            "ConfigL1AToL1B:X computation incorrectly specified.\n");
+        return(0);
+    }
+    if (use_kfactor)
+    {
+        if (!ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
+            return(0);
+    }
         else if (use_BYU_xfactor){
-	  if (!ConfigBYUXTable(&(l1a_to_l1b->BYUX),config_list))
-	    return(0);
-	}
-	//------------------//
-	// spot compositing //
-	//------------------//
+      if (!ConfigBYUXTable(&(l1a_to_l1b->BYUX),config_list))
+        return(0);
+    }
 
-	int spot_comp;
-	if (! config_list->GetInt(USE_SPOT_COMPOSITES_KEYWORD, &spot_comp))
-		spot_comp = 0;
-	l1a_to_l1b->useSpotCompositing = spot_comp;
+    //------------------//
+    // spot compositing //
+    //------------------//
 
-	//---------------------------//
-	// gain threshold for slices //
-	//---------------------------//
+    int spot_comp;
+    if (! config_list->GetInt(USE_SPOT_COMPOSITES_KEYWORD, &spot_comp))
+        spot_comp = 0;
+    l1a_to_l1b->useSpotCompositing = spot_comp;
 
-	float gain;
-	if (! config_list->GetFloat(SLICE_GAIN_THRESHOLD_KEYWORD, &gain))
-		return(0);
-	l1a_to_l1b->sliceGainThreshold = pow(10.0, 0.1 * gain);
+    //---------------------------//
+    // gain threshold for slices //
+    //---------------------------//
 
-	//-----------------------------------------------//
-	// maximum number of slices to use in processing //
-	//-----------------------------------------------//
+    float gain;
+    if (! config_list->GetFloat(SLICE_GAIN_THRESHOLD_KEYWORD, &gain))
+        return(0);
+    l1a_to_l1b->sliceGainThreshold = pow(10.0, 0.1 * gain);
 
-	int max_slices;
-	if (! config_list->GetInt(PROCESS_MAX_SLICES_KEYWORD, &max_slices))
-		return(0);
-	l1a_to_l1b->processMaxSlices = max_slices;
+    //-----------------------------------------------//
+    // maximum number of slices to use in processing //
+    //-----------------------------------------------//
 
-	return(1);
+    int max_slices;
+    if (! config_list->GetInt(PROCESS_MAX_SLICES_KEYWORD, &max_slices))
+        return(0);
+    l1a_to_l1b->processMaxSlices = max_slices;
+
+    return(1);
 }
 
 //-----------//
@@ -1096,20 +1098,20 @@ ConfigL1AToL1B(
 
 int
 ConfigL2A(
-	L2A*			l2a,
-	ConfigList*		config_list)
+    L2A*         l2a,
+    ConfigList*  config_list)
 {
-	//---------------------------//
-	// configure the L2A product //
-	//---------------------------//
+    //---------------------------//
+    // configure the L2A product //
+    //---------------------------//
 
-	char* l2a_filename = config_list->Get(L2A_FILE_KEYWORD);
-	if (l2a_filename == NULL)
-		return(0);
-	l2a->SetInputFilename(l2a_filename);
-	l2a->SetOutputFilename(l2a_filename);
+    char* l2a_filename = config_list->Get(L2A_FILE_KEYWORD);
+    if (l2a_filename == NULL)
+        return(0);
+    l2a->SetInputFilename(l2a_filename);
+    l2a->SetOutputFilename(l2a_filename);
 
-	return(1);
+    return(1);
 }
 
 //-----------//
@@ -1118,20 +1120,20 @@ ConfigL2A(
 
 int
 ConfigL2B(
-	L2B*			l2b,
-	ConfigList*		config_list)
+    L2B*         l2b,
+    ConfigList*  config_list)
 {
-	//---------------------------//
-	// configure the l2b product //
-	//---------------------------//
+    //---------------------------//
+    // configure the l2b product //
+    //---------------------------//
 
-	char* l2b_filename = config_list->Get(L2B_FILE_KEYWORD);
-	if (l2b_filename == NULL)
-		return(0);
-	l2b->SetInputFilename(l2b_filename);
-	l2b->SetOutputFilename(l2b_filename);
-	
-	return(1);
+    char* l2b_filename = config_list->Get(L2B_FILE_KEYWORD);
+    if (l2b_filename == NULL)
+        return(0);
+    l2b->SetInputFilename(l2b_filename);
+    l2b->SetOutputFilename(l2b_filename);
+
+    return(1);
 }
 
 //----------------//
@@ -1140,143 +1142,147 @@ ConfigL2B(
 
 int
 ConfigL2AToL2B(
-	L2AToL2B*		l2a_to_l2b,
-	ConfigList*		config_list)
+    L2AToL2B*    l2a_to_l2b,
+    ConfigList*  config_list)
 {
-	int tmp_int;
+    int tmp_int;
         float tmp_float;
-	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
-		return(0);
-	l2a_to_l2b->medianFilterWindowSize = tmp_int;
+    if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
+        return(0);
+    l2a_to_l2b->medianFilterWindowSize = tmp_int;
 
-	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
-		return(0);
-	l2a_to_l2b->medianFilterMaxPasses = tmp_int;
+    if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
+        return(0);
+    l2a_to_l2b->medianFilterMaxPasses = tmp_int;
 
-	if (! config_list->GetInt(MAX_RANK_FOR_NUDGING_KEYWORD, &tmp_int))
-		return(0);
-	l2a_to_l2b->maxRankForNudging = tmp_int;
+    if (! config_list->GetInt(MAX_RANK_FOR_NUDGING_KEYWORD, &tmp_int))
+        return(0);
+    l2a_to_l2b->maxRankForNudging = tmp_int;
 
-	if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
-		return(0);
-	l2a_to_l2b->useManyAmbiguities = tmp_int;
+    if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
+        return(0);
+    l2a_to_l2b->useManyAmbiguities = tmp_int;
 
-	if (! config_list->GetInt(USE_AMBIGUITY_WEIGHTS_KEYWORD, &tmp_int))
-		return(0);
-	l2a_to_l2b->useAmbiguityWeights = tmp_int;
+    if (! config_list->GetInt(USE_AMBIGUITY_WEIGHTS_KEYWORD, &tmp_int))
+        return(0);
+    l2a_to_l2b->useAmbiguityWeights = tmp_int;
 
-	char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
-	if (wr_method == NULL)
-	  return(0);
-	if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
-	  return(0);
+    char* wr_method = config_list->Get(WIND_RETRIEVAL_METHOD_KEYWORD);
+    if (wr_method == NULL)
+      return(0);
+    if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
+      return(0);
 
-	//---------//
-	// nudging //
-	//---------//
+    //---------//
+    // nudging //
+    //---------//
 
-	int use_nudging;
-	if (! config_list->GetInt(USE_NUDGING_KEYWORD, &use_nudging))
-		return(0);
+    int use_nudging;
+    if (! config_list->GetInt(USE_NUDGING_KEYWORD, &use_nudging))
+        return(0);
 
-	l2a_to_l2b->useNudging = use_nudging;
-	if (use_nudging)
-	{
-	  //------------------------//
-	  // configure nudging flag //
-	  //------------------------//
-	  
-	  if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
+    l2a_to_l2b->useNudging = use_nudging;
+    if (use_nudging)
+    {
+      //------------------------//
+      // configure nudging flag //
+      //------------------------//
+
+      if (! config_list->GetInt(SMART_NUDGE_FLAG_KEYWORD, &tmp_int))
             return(0);
-	  l2a_to_l2b->smartNudgeFlag = tmp_int;
+      l2a_to_l2b->smartNudgeFlag = tmp_int;
 
-	  //-----------------------//
-	  // configure nudge field //
-	  //-----------------------//
-	  
-	  char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
-	  if (nudge_type == NULL)
-	    return(0);
-	  
-	  char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
-	  if (nudge_windfield == NULL)
-	    return(0);
-	  
-	  if (tmp_int) {
-	    if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
-	      return(0);
-	  } else {
-	    if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
-	      return(0);
-	  }
+      //-----------------------//
+      // configure nudge field //
+      //-----------------------//
 
-	  //----------------//
-	  // threshold flag //
-	  //----------------//
+      char* nudge_type = config_list->Get(NUDGE_WINDFIELD_TYPE_KEYWORD);
+      if (nudge_type == NULL)
+        return(0);
 
-	  if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
-	    return(0);
-	  l2a_to_l2b->useNudgeThreshold = tmp_int;
-          
-	  if(l2a_to_l2b->useNudgeThreshold){
-	    if (! config_list->GetFloat(NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD, &tmp_float))
-	      return(0);
-	    l2a_to_l2b->nudgeThresholds[0]=tmp_float;
-	    if (! config_list->GetFloat(FAR_SWATH_NUDGE_THRESHOLD_KEYWORD, &tmp_float))
-	      return(0);
-	    l2a_to_l2b->nudgeThresholds[1]=tmp_float;
-	  }
-	  else{
-	    config_list->DoNothingForMissingKeywords();
-	    if (! config_list->GetInt(USE_STREAM_NUDGING_KEYWORD, &tmp_int))
-	      { 
-		l2a_to_l2b->useNudgeStream = 0;  // default
-	      }
-	    else{
-	      l2a_to_l2b->useNudgeStream = tmp_int;
-	      if (! config_list->GetFloat(STREAM_THRESHOLD_KEYWORD, 
-					  &tmp_float))
-		l2a_to_l2b->streamThreshold = 0.0; // default
-	      else { 
-		l2a_to_l2b->streamThreshold = tmp_float;
-	      }
-	    }
-	     
-	    config_list->ExitForMissingKeywords();
-	  }
-	}
+      char* nudge_windfield = config_list->Get(NUDGE_WINDFIELD_FILE_KEYWORD);
+      if (nudge_windfield == NULL)
+        return(0);
 
-	if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
-	  return(0);
-	l2a_to_l2b->useNMF = tmp_int;
+      if (tmp_int) {
+        if (! l2a_to_l2b->nudgeVctrField.ReadVctr(nudge_windfield))
+          return(0);
+      } else {
+        if (! l2a_to_l2b->nudgeField.ReadType(nudge_windfield, nudge_type))
+          return(0);
+      }
 
-	if (! config_list->GetInt(USE_RANDOM_RANK_INIT_KEYWORD, &tmp_int))
-	  return(0);
-	l2a_to_l2b->useRandomInit = tmp_int;
+      //----------------//
+      // threshold flag //
+      //----------------//
 
-	config_list->DoNothingForMissingKeywords();
+      if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
+        return(0);
+      l2a_to_l2b->useNudgeThreshold = tmp_int;
+
+      if(l2a_to_l2b->useNudgeThreshold)
+      {
+            if (! config_list->GetFloat(NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD,
+                &tmp_float))
+            {
+                return(0);
+            }
+        l2a_to_l2b->nudgeThresholds[0]=tmp_float;
+        if (! config_list->GetFloat(FAR_SWATH_NUDGE_THRESHOLD_KEYWORD, &tmp_float))
+          return(0);
+        l2a_to_l2b->nudgeThresholds[1]=tmp_float;
+      }
+      else{
+        config_list->DoNothingForMissingKeywords();
+        if (! config_list->GetInt(USE_STREAM_NUDGING_KEYWORD, &tmp_int))
+          {
+        l2a_to_l2b->useNudgeStream = 0;  // default
+          }
+        else{
+          l2a_to_l2b->useNudgeStream = tmp_int;
+          if (! config_list->GetFloat(STREAM_THRESHOLD_KEYWORD,
+                      &tmp_float))
+        l2a_to_l2b->streamThreshold = 0.0; // default
+          else {
+        l2a_to_l2b->streamThreshold = tmp_float;
+          }
+        }
+
+        config_list->ExitForMissingKeywords();
+      }
+    }
+
+    if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
+      return(0);
+    l2a_to_l2b->useNMF = tmp_int;
+
+    if (! config_list->GetInt(USE_RANDOM_RANK_INIT_KEYWORD, &tmp_int))
+      return(0);
+    l2a_to_l2b->useRandomInit = tmp_int;
+
+    config_list->DoNothingForMissingKeywords();
         if ( config_list->GetInt(USE_HURRICANE_NUDGE_KEYWORD, &tmp_int) && tmp_int){
-	  config_list->ExitForMissingKeywords();
+      config_list->ExitForMissingKeywords();
           l2a_to_l2b->useHurricaneNudgeField=tmp_int;
-	  char* hurricane_file=config_list->Get(HURRICANE_WINDFIELD_FILE_KEYWORD);
-	  if(hurricane_file==NULL) return(0);
+      char* hurricane_file=config_list->Get(HURRICANE_WINDFIELD_FILE_KEYWORD);
+      if(hurricane_file==NULL) return(0);
           if(! l2a_to_l2b->hurricaneField.ReadHurricane(hurricane_file))
-	    return(0);
-	  if(! config_list->GetFloat(HURRICANE_RADIUS_KEYWORD,&tmp_float))
-	    return(0);
+        return(0);
+      if(! config_list->GetFloat(HURRICANE_RADIUS_KEYWORD,&tmp_float))
+        return(0);
           l2a_to_l2b->hurricaneRadius=tmp_float; // km
           float lat, lon;
-	  if(! config_list->GetFloat(HURRICANE_CENTER_LATITUDE_KEYWORD,&tmp_float))
-	    return(0);
+      if(! config_list->GetFloat(HURRICANE_CENTER_LATITUDE_KEYWORD,&tmp_float))
+        return(0);
           lat=tmp_float*dtr;
-	  if(! config_list->GetFloat(HURRICANE_CENTER_LONGITUDE_KEYWORD,&tmp_float))
-	    return(0);
+      if(! config_list->GetFloat(HURRICANE_CENTER_LONGITUDE_KEYWORD,&tmp_float))
+        return(0);
           lon=tmp_float*dtr;
           l2a_to_l2b->hurricaneCenter.SetAltLonGDLat(0.0,lon,lat);
-	}	
+    }
         else l2a_to_l2b->useHurricaneNudgeField=0;
-	config_list->ExitForMissingKeywords();
-	return(1);
+    config_list->ExitForMissingKeywords();
+    return(1);
 }
 
 //-----------------//
@@ -1285,17 +1291,17 @@ ConfigL2AToL2B(
 
 int
 ConfigEphemeris(
-	Ephemeris*		ephemeris,
-	ConfigList*		config_list)
+    Ephemeris*        ephemeris,
+    ConfigList*        config_list)
 {
-	char* ephemeris_filename = config_list->Get(EPHEMERIS_FILE_KEYWORD);
-	if (ephemeris_filename == NULL)
-		return(0);
-	ephemeris->SetInputFile(ephemeris_filename);
+    char* ephemeris_filename = config_list->Get(EPHEMERIS_FILE_KEYWORD);
+    if (ephemeris_filename == NULL)
+        return(0);
+    ephemeris->SetInputFile(ephemeris_filename);
 
-	ephemeris->SetMaxNodes(30000);		// this should be calculated
+    ephemeris->SetMaxNodes(30000);        // this should be calculated
 
-	return(1);
+    return(1);
 }
 
 //-----------------//
@@ -1307,20 +1313,20 @@ ConfigWindField(
     WindField*   windfield,
     ConfigList*  config_list)
 {
-	//--------------------------//
-	// configure the wind field //
-	//--------------------------//
+    //--------------------------//
+    // configure the wind field //
+    //--------------------------//
 
-	char* windfield_type = config_list->Get(WINDFIELD_TYPE_KEYWORD);
-	if (windfield_type == NULL)
-		return(0);
+    char* windfield_type = config_list->Get(WINDFIELD_TYPE_KEYWORD);
+    if (windfield_type == NULL)
+        return(0);
 
-	char* windfield_filename = config_list->Get(WINDFIELD_FILE_KEYWORD);
-	if (windfield_filename == NULL)
-		return(0);
+    char* windfield_filename = config_list->Get(WINDFIELD_FILE_KEYWORD);
+    if (windfield_filename == NULL)
+        return(0);
 
-	if (! windfield->ReadType(windfield_filename, windfield_type))
-		return(0);
+    if (! windfield->ReadType(windfield_filename, windfield_type))
+        return(0);
 
     //--------------------------//
     // use as fixed wind speed? //
@@ -1334,7 +1340,7 @@ ConfigWindField(
     }
     config_list->ExitForMissingKeywords();
 
-	return(1);
+    return(1);
 }
 
 //-----------//
@@ -1343,77 +1349,77 @@ ConfigWindField(
 
 int
 ConfigGMF(
-	GMF*			gmf,
-	ConfigList*		config_list)
+    GMF*            gmf,
+    ConfigList*        config_list)
 {
-	//-------------------//
-	// configure the gmf //
-	//-------------------//
+    //-------------------//
+    // configure the gmf //
+    //-------------------//
 
-	char* gmf_filename = config_list->Get(GMF_FILE_KEYWORD);
-	if (gmf_filename == NULL)
-		return(0);
+    char* gmf_filename = config_list->Get(GMF_FILE_KEYWORD);
+    if (gmf_filename == NULL)
+        return(0);
         char* gmf_format = config_list->Get(GMF_FILE_FORMAT_KEYWORD);
-	if (gmf_format == NULL)
-		return(0);
+    if (gmf_format == NULL)
+        return(0);
 
         if(strcasecmp(gmf_format,"OLD_STYLE")==0){
-	  if (! gmf->ReadOldStyle(gmf_filename))
-	    return(0);
-	}
+      if (! gmf->ReadOldStyle(gmf_filename))
+        return(0);
+    }
         else if(strcasecmp(gmf_format,"POLARIMETRIC")==0){
-	  if (! gmf->ReadPolarimetric(gmf_filename))
-	    return(0);
-	}
+      if (! gmf->ReadPolarimetric(gmf_filename))
+        return(0);
+    }
         else return(0);
 
-	//--------------------------------//
-	// configure the number of angles //
-	//--------------------------------//
+    //--------------------------------//
+    // configure the number of angles //
+    //--------------------------------//
 
-	int tmp_int;
-	if (! config_list->GetInt(GMF_PHI_COUNT_KEYWORD, &tmp_int))
-		return(0);
-	if (! gmf->SetPhiCount(tmp_int))
-		return(0);
+    int tmp_int;
+    if (! config_list->GetInt(GMF_PHI_COUNT_KEYWORD, &tmp_int))
+        return(0);
+    if (! gmf->SetPhiCount(tmp_int))
+        return(0);
 
-	//---------------------------//
-	// configure retrieval flags //
-	//---------------------------//
+    //---------------------------//
+    // configure retrieval flags //
+    //---------------------------//
 
-	if (! config_list->GetInt(RETRIEVE_USING_KPC_FLAG_KEYWORD, &tmp_int))
-		return(0);
-	gmf->retrieveUsingKpcFlag = tmp_int;
+    if (! config_list->GetInt(RETRIEVE_USING_KPC_FLAG_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveUsingKpcFlag = tmp_int;
 
-	if (! config_list->GetInt(RETRIEVE_USING_KPM_FLAG_KEYWORD, &tmp_int))
-		return(0);
-	gmf->retrieveUsingKpmFlag = tmp_int;
+    if (! config_list->GetInt(RETRIEVE_USING_KPM_FLAG_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveUsingKpmFlag = tmp_int;
 
-	if (! config_list->GetInt(RETRIEVE_USING_KPRI_FLAG_KEYWORD, &tmp_int))
-		return(0);
-	gmf->retrieveUsingKpriFlag = tmp_int;
+    if (! config_list->GetInt(RETRIEVE_USING_KPRI_FLAG_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveUsingKpriFlag = tmp_int;
 
-	if (! config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD, &tmp_int))
-		return(0);
-	gmf->retrieveUsingKprsFlag = tmp_int;
+    if (! config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveUsingKprsFlag = tmp_int;
 
-	if (! config_list->GetInt(RETRIEVE_USING_LOGVAR_KEYWORD, &tmp_int))
-		return(0);
-	gmf->retrieveUsingLogVar = tmp_int;
+    if (! config_list->GetInt(RETRIEVE_USING_LOGVAR_KEYWORD, &tmp_int))
+        return(0);
+    gmf->retrieveUsingLogVar = tmp_int;
 
         config_list->DoNothingForMissingKeywords();
 
-	if ( config_list->GetInt(RETRIEVE_OVER_ICE_KEYWORD, &tmp_int))
-	  gmf->retrieveOverIce = tmp_int;
+    if ( config_list->GetInt(RETRIEVE_OVER_ICE_KEYWORD, &tmp_int))
+      gmf->retrieveOverIce = tmp_int;
         else
-	  gmf->retrieveOverIce = 0;
-        
+      gmf->retrieveOverIce = 0;
+
         config_list->ExitForMissingKeywords();
 
-	float tmp_float;
-	if ( ! config_list->GetFloat(REQUIRED_AZIMUTH_DIVERSITY_KEYWORD, &tmp_float))
-	        return(0);
-	gmf->minimumAzimuthDiversity = tmp_float*dtr;
+    float tmp_float;
+    if ( ! config_list->GetFloat(REQUIRED_AZIMUTH_DIVERSITY_KEYWORD, &tmp_float))
+            return(0);
+    gmf->minimumAzimuthDiversity = tmp_float*dtr;
 
         // Otherwise it uses the default value initialized by the constructor
 
@@ -1425,7 +1431,7 @@ ConfigGMF(
         return(0);
     gmf->smartNudgeFlag = tmp_int;
 
-	return(1);
+    return(1);
 }
 
 //----------//
@@ -1434,56 +1440,56 @@ ConfigGMF(
 
 int
 ConfigKp(
-	Kp*				kp,
-	ConfigList*		config_list)
+    Kp*                kp,
+    ConfigList*        config_list)
 {
-	//---------------//
-	// configure Kpm //
-	//---------------//
+    //---------------//
+    // configure Kpm //
+    //---------------//
 
-	char* kpm_filename = config_list->Get(KPM_FILE_KEYWORD);
-	if (kpm_filename == NULL)
-		return(0);
+    char* kpm_filename = config_list->Get(KPM_FILE_KEYWORD);
+    if (kpm_filename == NULL)
+        return(0);
 
-	if (! kp->kpm.ReadTable(kpm_filename))
-	{
-		fprintf(stderr,"Error reading Kpm table from %s\n",kpm_filename);
-		return(0);
-	}
+    if (! kp->kpm.ReadTable(kpm_filename))
+    {
+        fprintf(stderr,"Error reading Kpm table from %s\n",kpm_filename);
+        return(0);
+    }
 
-	//----------------//
-	// configure Kpri //
-	//----------------//
+    //----------------//
+    // configure Kpri //
+    //----------------//
 
-	double kp_ptgr;
-	if (! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
-		return(0);
-	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
-	if (! kp->kpri.SetKpPtGr(kp_ptgr))
-	{
-		fprintf(stderr,"Error setting KpPtGr\n");
-		return(0);
-	}
+    double kp_ptgr;
+    if (! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
+        return(0);
+    kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
+    if (! kp->kpri.SetKpPtGr(kp_ptgr))
+    {
+        fprintf(stderr,"Error setting KpPtGr\n");
+        return(0);
+    }
 
-	//----------------//
-	// configure Kprs //
-	//----------------//
+    //----------------//
+    // configure Kprs //
+    //----------------//
 
-	char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
-	if (kprs_filename == NULL)
-		return(0);
-	if (strcmp(kprs_filename,"NONE") != 0
-		&& strcmp(kprs_filename,"none") != 0
-		&& strcmp(kprs_filename,"None") != 0)
-	{
-		if (! kp->kprs.Read(kprs_filename))
-		{
-			fprintf(stderr,"Error reading Kprs from %s\n",kprs_filename);
-			return(0);
-		}
-	}
+    char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
+    if (kprs_filename == NULL)
+        return(0);
+    if (strcmp(kprs_filename,"NONE") != 0
+        && strcmp(kprs_filename,"none") != 0
+        && strcmp(kprs_filename,"None") != 0)
+    {
+        if (! kp->kprs.Read(kprs_filename))
+        {
+            fprintf(stderr,"Error reading Kprs from %s\n",kprs_filename);
+            return(0);
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //----------------//
@@ -1492,35 +1498,35 @@ ConfigKp(
 
 int
 ConfigKpmField(
-	KpmField*			kpmField,
-	ConfigList*		config_list)
+    KpmField*            kpmField,
+    ConfigList*        config_list)
 {
-	//------------------------//
-	// configure the KpmField //
-	//------------------------//
+    //------------------------//
+    // configure the KpmField //
+    //------------------------//
 
-	config_list->DoNothingForMissingKeywords();
+    config_list->DoNothingForMissingKeywords();
 
-	char* kpm_filename = config_list->Get(KPM_FIELD_FILE_KEYWORD);
+    char* kpm_filename = config_list->Get(KPM_FIELD_FILE_KEYWORD);
 
-	if (kpm_filename == NULL)
-	{
-		// No file specified, so use an uncorrelated field.
-		// KpmField is automatically initialized with _corrLength = 0.0.
-		fprintf(stderr,"Using uncorrelated Kpm\n");
-	}
-	else if (! kpmField->corr.Read(kpm_filename))
-	{
-		// No file present (or wrong format) so build a field and write it
-		// to the indicated file name (overwriting anything in the file).
+    if (kpm_filename == NULL)
+    {
+        // No file specified, so use an uncorrelated field.
+        // KpmField is automatically initialized with _corrLength = 0.0.
+        fprintf(stderr,"Using uncorrelated Kpm\n");
+    }
+    else if (! kpmField->corr.Read(kpm_filename))
+    {
+        // No file present (or wrong format) so build a field and write it
+        // to the indicated file name (overwriting anything in the file).
 
-		fprintf(stderr,"Error reading KpmField from %s\n",kpm_filename);
-		return(0);
-	}
+        fprintf(stderr,"Error reading KpmField from %s\n",kpm_filename);
+        return(0);
+    }
 
-	config_list->ExitForMissingKeywords();
+    config_list->ExitForMissingKeywords();
 
-	return(1);
+    return(1);
 }
 
 //------------//
@@ -1529,189 +1535,217 @@ ConfigKpmField(
 
 int
 ConfigGrid(
-	Grid*			grid,
-	ConfigList*		config_list)
+    Grid*            grid,
+    ConfigList*        config_list)
 {
-	//---------------//
-	// configure L1B //
-	//---------------//
+    //---------------//
+    // configure L1B //
+    //---------------//
 
-	if (! ConfigL1B(&(grid->l1b), config_list))
-		return(0);
+    if (! ConfigL1B(&(grid->l1b), config_list))
+        return(0);
 
-	//---------------//
-	// configure L2A //
-	//---------------//
+    //---------------//
+    // configure L2A //
+    //---------------//
 
-	if (! ConfigL2A(&(grid->l2a), config_list))
-		return(0);
+    if (! ConfigL2A(&(grid->l2a), config_list))
+        return(0);
 
-	//---------------------//
-	// configure ephemeris //
-	//---------------------//
+    //---------------------//
+    // configure ephemeris //
+    //---------------------//
 
-	if (! ConfigEphemeris(&(grid->ephemeris), config_list))
-		return(0);
+    if (! ConfigEphemeris(&(grid->ephemeris), config_list))
+        return(0);
 
-	//------------------------//
-	// configure rest of grid //
-	//------------------------//
+    //------------------------//
+    // configure rest of grid //
+    //------------------------//
 
-	double ct_res;
-	if (! config_list->GetDouble(CROSSTRACK_RESOLUTION_KEYWORD, &ct_res))
-		return(0);
+    double ct_res;
+    if (! config_list->GetDouble(CROSSTRACK_RESOLUTION_KEYWORD, &ct_res))
+        return(0);
 
-	double at_res;
-	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
-		return(0);
+    double at_res;
+    if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
+        return(0);
 
-	double ct_size;
-	if (! config_list->GetDouble(GRID_WINDOW_CROSSTRACK_SIZE_KEYWORD, &ct_size))
-		return(0);
+    double ct_size;
+    if (! config_list->GetDouble(GRID_WINDOW_CROSSTRACK_SIZE_KEYWORD, &ct_size))
+        return(0);
 
-	double at_size;
-	if (! config_list->GetDouble(GRID_WINDOW_ALONGTRACK_SIZE_KEYWORD, &at_size))
-		return(0);
+    double at_size;
+    if (! config_list->GetDouble(GRID_WINDOW_ALONGTRACK_SIZE_KEYWORD, &at_size))
+        return(0);
 
-	grid->Allocate(ct_res, at_res, ct_size, at_size);
+    grid->Allocate(ct_res, at_res, ct_size, at_size);
 
-	return(1);
+    return(1);
 }
 
 //---------------//
 // ConfigControl //
 //---------------//
 
-#define EPHEMERIS_BUFFER		300			// 5 minutes
+#define EPHEMERIS_BUFFER        300            // 5 minutes
 
 int
 ConfigControl(
-	SpacecraftSim*	spacecraft_sim,
-	ConfigList*		config_list,
-	double*			grid_start_time,
-	double*			grid_end_time,
-	double*			instrument_start_time,
-	double*			instrument_end_time,
-	double*			spacecraft_start_time,
-	double*			spacecraft_end_time)
+    SpacecraftSim*    spacecraft_sim,
+    ConfigList*        config_list,
+    double*            grid_start_time,
+    double*            grid_end_time,
+    double*            instrument_start_time,
+    double*            instrument_end_time,
+    double*            spacecraft_start_time,
+    double*            spacecraft_end_time)
 {
-	config_list->DoNothingForMissingKeywords();
-	double orbit_period = spacecraft_sim->GetPeriod();
+    config_list->DoNothingForMissingKeywords();
+    double orbit_period = spacecraft_sim->GetPeriod();
 
-	//-----------------//
-	// grid start time //
-	//-----------------//
+    //-----------------//
+    // grid start time //
+    //-----------------//
 
-	double time_in_rev;
-	if (config_list->GetDouble(TIME_IN_REV_KEYWORD, &time_in_rev))
-	{
-		*grid_start_time = spacecraft_sim->FindPrevArgOfLatTime(time_in_rev,
-			SOUTH_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	}
-	else
-	{
-		fprintf(stderr, "ConfigControl: can't determine grid start time\n");
-		exit(1);
-	}
+    double time_in_rev;
+    if (config_list->GetDouble(TIME_IN_REV_KEYWORD, &time_in_rev))
+    {
+        *grid_start_time = spacecraft_sim->FindPrevArgOfLatTime(time_in_rev,
+            SOUTH_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+    }
+    else
+    {
+        fprintf(stderr, "ConfigControl: can't determine grid start time\n");
+        exit(1);
+    }
 
-	//---------------//
-	// grid end time //
-	//---------------//
+    //---------------//
+    // grid end time //
+    //---------------//
 
-	double grid_lat_range, grid_time_range;
-	if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
-	{
-		grid_time_range = orbit_period * grid_lat_range / 360.0;
-		*grid_end_time = *grid_start_time + grid_time_range;
-	}
-	else if (config_list->GetDouble(GRID_TIME_RANGE_KEYWORD, &grid_time_range))
-	{
-		*grid_end_time = *grid_start_time + grid_time_range;
-	}
-	else
-	{
-		fprintf(stderr, "ConfigControl: can't determine grid end time\n");
-		exit(1);
-	}
+    double grid_lat_range, grid_time_range;
+    if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
+    {
+        grid_time_range = orbit_period * grid_lat_range / 360.0;
+        *grid_end_time = *grid_start_time + grid_time_range;
+    }
+    else if (config_list->GetDouble(GRID_TIME_RANGE_KEYWORD, &grid_time_range))
+    {
+        *grid_end_time = *grid_start_time + grid_time_range;
+    }
+    else
+    {
+        fprintf(stderr, "ConfigControl: can't determine grid end time\n");
+        exit(1);
+    }
 
-	//-----------------------//
-	// instrument start time //
-	//-----------------------//
+    //-----------------------//
+    // instrument start time //
+    //-----------------------//
 
-	double ins_buf;
-	if (config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD,
-		instrument_start_time))
-	{
-		// nothing to do -- woo hoo!
-	}
-	else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
-	{
-		*instrument_start_time = *grid_start_time - ins_buf;
-	}
-	else
-	{
-		fprintf(stderr,
-			"ConfigControl: can't determine instrument start time\n");
-		exit(1);
-	}
+    double ins_buf;
+    if (config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD,
+        instrument_start_time))
+    {
+        // nothing to do -- woo hoo!
+    }
+    else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
+    {
+        *instrument_start_time = *grid_start_time - ins_buf;
+    }
+    else
+    {
+        fprintf(stderr,
+            "ConfigControl: can't determine instrument start time\n");
+        exit(1);
+    }
 
-	//---------------------//
-	// instrument end time //
-	//---------------------//
+    //---------------------//
+    // instrument end time //
+    //---------------------//
 
-	if (config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD,
-		instrument_end_time))
-	{
-		// nothing to do -- woo hoo again!
-	}
-	else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
-	{
-		*instrument_end_time = *grid_end_time + ins_buf;
-	}
-	else
-	{
-		fprintf(stderr,
-			"ConfigControl: can't determine instrument end time\n");
-		exit(1);
-	}
+    if (config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD,
+        instrument_end_time))
+    {
+        // nothing to do -- woo hoo again!
+    }
+    else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
+    {
+        *instrument_end_time = *grid_end_time + ins_buf;
+    }
+    else
+    {
+        fprintf(stderr,
+            "ConfigControl: can't determine instrument end time\n");
+        exit(1);
+    }
 
-	//-----------------------//
-	// spacecraft start time //
-	//-----------------------//
+    //-----------------------//
+    // spacecraft start time //
+    //-----------------------//
 
-	if (config_list->GetDouble(SPACECRAFT_START_TIME_KEYWORD,
-		spacecraft_start_time))
-	{
-		// nothing to do -- woo hoo once more!
-		fprintf(stderr,"Using explicit spacecraft start time\n");
-	}
-	else
-	{
-		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-		double first_time = MIN(*instrument_start_time, *grid_start_time);
-		*spacecraft_start_time = first_time -
-			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) - EPHEMERIS_BUFFER;
-	}
+    if (config_list->GetDouble(SPACECRAFT_START_TIME_KEYWORD,
+        spacecraft_start_time))
+    {
+        // nothing to do -- woo hoo once more!
+        fprintf(stderr,"Using explicit spacecraft start time\n");
+    }
+    else
+    {
+        double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
+        double first_time = MIN(*instrument_start_time, *grid_start_time);
+        *spacecraft_start_time = first_time -
+            ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) - EPHEMERIS_BUFFER;
+    }
 
-	//---------------------//
-	// spacecraft end time //
-	//---------------------//
+    //---------------------//
+    // spacecraft end time //
+    //---------------------//
 
-	if (config_list->GetDouble(SPACECRAFT_END_TIME_KEYWORD,
-		spacecraft_end_time))
-	{
-		// nothing to do -- woo hoo once more!
-		fprintf(stderr,"Using explicit spacecraft end time\n");
-	}
-	else
-	{
-		double last_time = MAX(*instrument_end_time, *grid_end_time);
-		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-		*spacecraft_end_time = last_time +
-			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) + EPHEMERIS_BUFFER;
-	}
+    if (config_list->GetDouble(SPACECRAFT_END_TIME_KEYWORD,
+        spacecraft_end_time))
+    {
+        // nothing to do -- woo hoo once more!
+        fprintf(stderr,"Using explicit spacecraft end time\n");
+    }
+    else
+    {
+        double last_time = MAX(*instrument_end_time, *grid_end_time);
+        double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
+        *spacecraft_end_time = last_time +
+            ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) + EPHEMERIS_BUFFER;
+    }
 
-	config_list->ExitForMissingKeywords();
+    config_list->ExitForMissingKeywords();
 
-	return(1);
+    return(1);
+}
+
+//----------------//
+// ConfigAttitude //
+//----------------//
+// this odd function doesn't configure an object, but sets a
+// global variable to the appropriate function for geodetic or
+// geocentric pointing
+
+int
+ConfigAttitude(
+    ConfigList*  config_list)
+{
+    char *attitude = config_list->Get(ATTITUDE_KEYWORD);
+    if (attitude == NULL)
+        return(0);
+
+    if (strcasecmp("geocentric", attitude) == 0)
+    {
+        g_velocity_frame = velocity_frame_geocentric;
+        return (1);
+    }
+    else if (strcasecmp("geodetic", attitude) == 0)
+    {
+        g_velocity_frame = velocity_frame_geodetic;
+        return (1);
+    }
+    return (0);
 }
