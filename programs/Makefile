@@ -15,6 +15,7 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	sim \
+        sim_accurate \
 	l00_to_l10 \
 	l10_to_l15 \
 	l15_to_l17 \
