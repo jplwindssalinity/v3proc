@@ -12,6 +12,7 @@ class AngleInterval{
   ~AngleInterval();
   int Read(FILE* fp);
   int Write(FILE* fp);
+  int WriteAscii(FILE* fp);
   int SetLeftRight(float left, float right);
   int GetEquallySpacedAngles(int num_angles, float* angles);
   float GetWidth(){return((left<right)?(right-left):(right+two_pi-left));}
@@ -30,6 +31,7 @@ class AngleIntervalList : public List<AngleInterval>{
   void FreeContents();
   int Read(FILE* fp);
   int Write(FILE* fp);
+  int WriteAscii(FILE* fp);
   int Bisect();
   int GetPossiblePlacings(int num_angles, int* permutations, int*** num_placings);
  protected:

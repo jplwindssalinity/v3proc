@@ -74,6 +74,7 @@ PROGRAMS = \
 	l1b_to_ascii \
 	checkframe_to_ascii \
 	l2a_to_ascii \
+	l2b_to_ascii \
 	reformat_pattern \
 	test_pattern \
 	l1a_echo_proc \

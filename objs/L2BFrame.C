@@ -59,6 +59,22 @@ L2BHeader::Write(
 	return(1);
 }
 
+//-----------------------//
+// L2BHeader::WriteAscii //
+//-----------------------//
+
+int
+L2BHeader::WriteAscii(
+	FILE*	fp)
+{ 
+        fprintf(fp, "############################################\n");
+        fprintf(fp, "##                L2B DataFile            ##\n");
+        fprintf(fp, "############################################\n");
+        fprintf(fp,"\n\nCrossTrackRes %g AlongTrackRes %g ZeroIndex %d\n\n",
+		crossTrackResolution,alongTrackResolution,zeroIndex);
+	return(1);
+}
+
 //==========//
 // L2BFrame //
 //==========//

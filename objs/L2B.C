@@ -38,6 +38,18 @@ L2B::WriteVctr(
 }
 
 
+//-----------------//
+// L2B::WriteAscii //
+//-----------------//
+
+int
+L2B::WriteAscii()
+{
+        if(!header.WriteAscii(_outputFp)) return(0);
+	return(frame.swath.WriteAscii(_outputFp));
+}
+
+
 
 
 

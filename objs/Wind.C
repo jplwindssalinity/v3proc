@@ -513,7 +513,13 @@ WVC::WriteAscii(
 		if (! selected->WriteAscii(fp))
 			return(0);
     }
-	return(1);
+
+    //----------------------//
+    // Write directionRanges//
+    //----------------------//
+    if(!directionRanges.WriteAscii(fp))return(0);
+    return(1);
+
 }
 
 //------------------//

@@ -61,7 +61,7 @@ public:
 	int		WriteDataRec() { return(frame.swath.WriteL2B(_outputFp)); };
 
 	int		WriteVctr(const char* filename, const int rank);
-
+        int             WriteAscii();
 	//-----------//
 	// variables //
 	//-----------//

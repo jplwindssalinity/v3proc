@@ -67,6 +67,11 @@ AngleInterval::Write(FILE* fp){
  if(fwrite((void*)&right,sizeof(float),1,fp)!=1) return(0);
  return(1);
 }
+int
+AngleInterval::WriteAscii(FILE* fp){
+  fprintf(fp,"AngleInterval left=%g right=%g\n",left*rtd,right*rtd);
+  return(1);
+}
 
 //------------------------------------//
 // AngleIntervalList Methods          //
@@ -104,6 +109,18 @@ AngleIntervalList::Write(FILE* fp){
 		return(0);
     for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
       if(! ai->Write(fp)) return(0);
+    }
+  }
+  return(1);
+}
+
+int 
+AngleIntervalList::WriteAscii(FILE* fp){
+  int node_count=NodeCount();
+  if(node_count!=0){   // allows backward compatibility
+    fprintf(fp,"AngleIntervalList %d nodes\n",node_count);
+    for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
+      if(! ai->WriteAscii(fp)) return(0);
     }
   }
   return(1);
