@@ -2395,6 +2395,32 @@ WindSwath::CtdArray(
 	return(1);
 }
 
+//---------------------//
+// WindSwath::DirArray //
+//---------------------//
+
+int
+WindSwath::DirArray(
+    int     number_of_bins,
+    float*  dir_array)
+{
+    //-------------------------//
+    // index direction density //
+    //-------------------------//
+
+    Index dir_idx;
+    dir_idx.SpecifyWrappedCenters(0.0, two_pi, number_of_bins);
+
+    for (int i = 0; i < number_of_bins; i++)
+    {
+        float value;
+        dir_idx.IndexToValue(i, &value);
+        *(dir_array + i) = value;
+	}
+
+	return(1);
+}
+
 //---------------------------//
 // WindSwath::AvgNambigVsCti //
 //---------------------------//
