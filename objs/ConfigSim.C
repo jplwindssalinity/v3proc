@@ -523,12 +523,25 @@ ConfigInstrument(
 		return(0);
 	instrument->transmitPower = transmit_power;
 
-	float receiver_gain;
+	float echo_receiver_gain;
 	/**** parameter in config file should be in dB ***/
-	if (! config_list->GetFloat(RECEIVER_GAIN_KEYWORD, &receiver_gain))
+	if (! config_list->GetFloat(ECHO_RECEIVER_GAIN_KEYWORD,
+		&echo_receiver_gain))
+	{
 		return(0);
-	receiver_gain=(float)pow(10.0,0.1*receiver_gain);
-	instrument->receiverGain = receiver_gain;
+	}
+	echo_receiver_gain=(float)pow(10.0,0.1*echo_receiver_gain);
+	instrument->echo_receiverGain = echo_receiver_gain;
+
+	float noise_receiver_gain;
+	/**** parameter in config file should be in dB ***/
+	if (! config_list->GetFloat(NOISE_RECEIVER_GAIN_KEYWORD,
+		&noise_receiver_gain))
+	{
+		return(0);
+	}
+	noise_receiver_gain=(float)pow(10.0,0.1*noise_receiver_gain);
+	instrument->noise_receiverGain = noise_receiver_gain;
 
 	float system_loss;
 	/**** parameter in config file should be in dB ***/

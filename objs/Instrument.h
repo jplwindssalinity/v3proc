@@ -118,7 +118,8 @@ public:
 
 	float		systemLoss;			// dimensionless multiplicative factor
 	float		transmitPower;		// Watts
-	float		receiverGain;		// dimensionless multiplicative factor
+	float		echo_receiverGain;		// dimensionless multiplicative factor
+	float		noise_receiverGain;		// dimensionless multiplicative factor
 
 	//-----------------//
 	// generally fixed //

@@ -95,7 +95,8 @@ InstrumentSimAccurate::SetMeasurements(
 		/**** meas->value hold the GA/R^4 integral ****/
 
 		double lambda = speed_light_kps / instrument->transmitFreq;
-		double constants =instrument->transmitPower*instrument->receiverGain;
+		double constants =instrument->transmitPower*
+			instrument->echo_receiverGain;
 		constants*=lambda*lambda/(64*pi*pi*pi*instrument->systemLoss);
 		meas->value*=sigma0*constants;
 	}

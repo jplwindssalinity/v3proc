@@ -181,6 +181,9 @@ InstrumentSim::SetMeasurements(
 
 			if (instrument->useKpm == 1)
 			{
+
+//				sigma0 *= kpmgrid->GetRV(meas->pol,wv.spd,lon,lat);
+
 				Gaussian rv(Kpm*Kpm,1.0);
 				float rv1 = -1.0;
 				while (rv1 < 0.0)
@@ -268,7 +271,7 @@ InstrumentSim::SetL00Science(
 	// set PtGr //
 	//----------//
 
-	l00_frame->ptgr= instrument->transmitPower*instrument->receiverGain;
+	l00_frame->ptgr= instrument->transmitPower*instrument->echo_receiverGain;
 	l00_frame->ptgr *= (1+ptgrNoise.GetNumber());
 
 	//----------------------//
