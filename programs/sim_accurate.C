@@ -434,5 +434,15 @@ main(
 
 	l00.file.Close();
 
+	//----------------------------//
+        // If createXtable is set     //
+        // write XTABLE file          //
+        //----------------------------//
+
+	if(instrument_sim.createXtable){
+	  instrument_sim.xTable.Write();
+	}
+
+
 	return (0);
 }
