@@ -111,6 +111,8 @@ FindSlice(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
+	float				look,
+	float				azimuth,
 	float				freq_1,
 	float				freq_2,
 	float				freq_tol,
@@ -118,26 +120,29 @@ FindSlice(
 	Vector3*			centroid)
 {
 	float s_peak;
-	float look[3], azimuth[3];
+	float look_array[3], azimuth_array[3];
 	double s[3];
+
+	// determine beam electrical boresight //
 
 	//-----------------------//
 	// get frequency 1 slice //
-	//-----------------------//
+	//-----------------r-----//
 
 	float angle_f1;
 	double c_f1[3];
-	float look_1 = 0.0;
-	float azimuth_1 = 0.0;
+	float look_1 = look;
+	float azimuth_1 = azimuth;
 	JumpToFreq(antenna_frame_to_gc, spacecraft, instrument, &look_1,
 		&azimuth_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
 	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_1,
 		&azimuth_1, FREQ_GRADIENT_ANGLE, &angle_f1);
-	SetPoints(look_1, azimuth_1, FREQ_GRADIENT_ANGLE, angle_f1, look, azimuth);
-	GainSlice(instrument, look, azimuth, s, c_f1);
-	s_peak = -c_f1[1] / 2.0 * c_f1[2];
-	look_1 = look[0] + s_peak * sin(angle_f1);
-	azimuth_1 = azimuth[0] + s_peak * cos(angle_f1);
+	SetPoints(look_1, azimuth_1, FREQ_GRADIENT_ANGLE, angle_f1, look_array,
+		azimuth_array);
+	GainSlice(instrument, look_array, azimuth_array, s, c_f1);
+	s_peak = -c_f1[1] / (2.0 * c_f1[2]);
+	look_1 = look_array[0] + s_peak * sin(angle_f1);
+	azimuth_1 = azimuth_array[0] + s_peak * cos(angle_f1);
 
 	//-----------------------//
 	// get frequency 2 slice //
@@ -145,32 +150,33 @@ FindSlice(
 
 	float angle_f2;
 	double c_f2[3];
-	float look_2 = 0.0;
-	float azimuth_2 = 0.0;
+	float look_2 = look;
+	float azimuth_2 = azimuth;
 	JumpToFreq(antenna_frame_to_gc, spacecraft, instrument, &look_2,
 		&azimuth_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
 	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_2,
 		&azimuth_2, FREQ_GRADIENT_ANGLE, &angle_f2);
-	SetPoints(look_2, azimuth_2, FREQ_GRADIENT_ANGLE, angle_f2, look, azimuth);
-	GainSlice(instrument, look, azimuth, s, c_f2);
-	s_peak = -c_f2[1] / 2.0 * c_f2[2];
-	look_2 = look[0] + s_peak * sin(angle_f2);
-	azimuth_2 = azimuth[0] + s_peak * cos(angle_f2);
+	SetPoints(look_2, azimuth_2, FREQ_GRADIENT_ANGLE, angle_f2, look_array,
+		azimuth_array);
+	GainSlice(instrument, look_array, azimuth_array, s, c_f2);
+	s_peak = -c_f2[1] / (2.0 * c_f2[2]);
+	look_2 = look_array[0] + s_peak * sin(angle_f2);
+	azimuth_2 = azimuth_array[0] + s_peak * cos(angle_f2);
 
 	//----------------------------------------//
 	// determine absolute peak gain for slice //
 	//----------------------------------------//
 
-	look[0] = look_1;
-	azimuth[0] = azimuth_1;
-	look[2] = look_2;
-	azimuth[2] = azimuth_2;
+	look_array[0] = look_1;
+	azimuth_array[0] = azimuth_1;
+	look_array[2] = look_2;
+	azimuth_array[2] = azimuth_2;
 //	double angle = atan2(look_2 - look_1, azimuth_2 - azimuth_1);
 	double c[3];
-	GainSlice(instrument, look, azimuth, s, c);
-	s_peak = -c[1] / 2.0 * c[2];
-//	float peak_look = look[0] + s_peak * sin(angle);
-//	float peak_azimuth = azimuth[0] + s_peak * cos(angle);
+	GainSlice(instrument, look_array, azimuth_array, s, c);
+	s_peak = -c[1] / (2.0 * c[2]);
+//	float peak_look = look_array[0] + s_peak * sin(angle);
+//	float peak_azimuth = azimuth_array[0] + s_peak * cos(angle);
 	float gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
 
 	float outline_look[2][2];
@@ -187,10 +193,10 @@ FindSlice(
 	float s1 = (-c_f1[1] + q) / twoa;
 	float s2 = (-c_f1[1] - q) / twoa;
 
-	outline_look[0][0] = look[0] + s1 * sin(angle_f1);
-	outline_azimuth[0][0] = azimuth[0] + s1 * cos(angle_f1);
-	outline_look[0][1] = look[0] + s2 * sin(angle_f1);
-	outline_azimuth[0][1] = azimuth[0] + s2 * cos(angle_f1);
+	outline_look[0][0] = look_array[0] + s1 * sin(angle_f1);
+	outline_azimuth[0][0] = azimuth_array[0] + s1 * cos(angle_f1);
+	outline_look[0][1] = look_array[0] + s2 * sin(angle_f1);
+	outline_azimuth[0][1] = azimuth_array[0] + s2 * cos(angle_f1);
 
 	//------------------------------------------------------//
 	// determine target -3 db gain location for frequency 2 //
@@ -202,10 +208,10 @@ FindSlice(
 	s1 = (-c_f2[1] + q) / twoa;
 	s2 = (-c_f2[1] - q) / twoa;
 
-	outline_look[1][0] = look[2] + s1 * sin(angle_f2);
-	outline_azimuth[1][0] = azimuth[2] + s1 * cos(angle_f2);
-	outline_look[1][1] = look[2] + s2 * sin(angle_f2);
-	outline_azimuth[1][1] = azimuth[2] + s2 * cos(angle_f2);
+	outline_look[1][0] = look_array[2] + s1 * sin(angle_f2);
+	outline_azimuth[1][0] = azimuth_array[2] + s1 * cos(angle_f2);
+	outline_look[1][1] = look_array[2] + s2 * sin(angle_f2);
+	outline_azimuth[1][1] = azimuth_array[2] + s2 * cos(angle_f2);
 
 	//--------------------//
 	// create the outline //
@@ -542,13 +548,13 @@ GainSlice(
 	// calculate projected distances //
 	//-------------------------------//
 
-	s[0] = 0.0;
+	s[1] = 0.0;
 	float dl, da;
 	dl = (look[1] - look[0]);
 	da = (azim[1] - azim[0]);
-	s[1] = sqrt(dl*dl + da*da);
-	dl = (look[2] - look[0]);
-	da = (azim[2] - azim[0]);
+	s[0] = -sqrt(dl*dl + da*da);
+	dl = (look[2] - look[1]);
+	da = (azim[2] - azim[1]);
 	s[2] = sqrt(dl*dl + da*da);
 
 	//---------------------------------//

@@ -139,6 +139,10 @@ InstrumentSim::ScatSim(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
+	double look, azimuth;
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+		return(0);
+
 	if (l00.frame.slicesPerSpot <= 1)
 	{
 		//===========//
@@ -149,9 +153,6 @@ InstrumentSim::ScatSim(
 		// calculate the look vector in the geocentric frame //
 		//---------------------------------------------------//
 
-		double look, azimuth;
-		if (! beam->GetElectricalBoresight(&look, &azimuth))
-			return(0);
 		Vector3 rlook_antenna;
 		rlook_antenna.SphericalSet(1.0, look, azimuth);
 		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
@@ -268,10 +269,10 @@ InstrumentSim::ScatSim(
 		// calculate ideal Doppler and range tracking info //
 		//-------------------------------------------------//
 
-		Vector3 ulook_beam;
+		Vector3 vector;
 		TargetInfoPackage tip;
-		ulook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
-		if (! TargetInfo(ulook_beam, &antenna_frame_to_gc, spacecraft,
+		vector.SphericalSet(1.0, look, azimuth);		// boresight
+		if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
 			instrument, &tip))
 		{
 			return(0);
@@ -303,7 +304,7 @@ InstrumentSim::ScatSim(
 			// guess at a reasonable slice frequency tolerance of 1%
 			float ftol = fabs(f1 - f2) / 100.0;
 			if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
-				f1, f2, ftol, &(meas.outline), &centroid))
+				look, azimuth, f1, f2, ftol, &(meas.outline), &centroid))
 			{
 				return(0);
 			}
