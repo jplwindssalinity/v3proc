@@ -5,14 +5,14 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		l2a_to_l2b
+//		l2ab_25to50
 //
 // SYNOPSIS
-//		l2a_to_l2b <sim_config_file>
+//		l2ab_25to50 <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 2A to
-//		Level 2B data.  This program retrieves wind from measurements.
+//		Based on l2a_to_l2b, this program retrieves winds at 50km
+//              resolution from a 25km l2a file.
 //
 // OPTIONS
 //		None.
@@ -25,7 +25,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l2a_to_l2b sws1b.cfg
+//			% l2ab_25to50 25to50.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -237,6 +237,10 @@ main(
 		exit(1);
 	}
 
+	//--------------------------------------------------//
+	// along-track and cross-track bins are half of l2a // 
+	//--------------------------------------------------//
+
 	int along_track_bins =
 		(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
 	along_track_bins = along_track_bins/2;
@@ -298,7 +302,9 @@ main(
 			break;		// done, exit do loop
 		}
 
-		// frame //
+		//-------------------------------//
+		// for each frame in the "group" //
+		//-------------------------------//
 
 		for (int idx=0; idx < readRetVal; idx++)
 		  {
@@ -326,6 +332,7 @@ main(
 		      }
 		  }
 	}
+
 	l2a_to_l2b.Flush(&l2b);
 
 	l2a.Close();
