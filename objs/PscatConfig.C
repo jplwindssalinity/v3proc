@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_pscatconfig_c[] =
     "@(#) $Id$";
@@ -264,6 +264,16 @@ ConfigPscatSim(
     // don't waste time generating zero variance rv's
     if (corr_kpmdB == 0.0)
         pscat_sim->simCorrKpmFlag = 0;
+
+    char* configuration = config_list->Get(PSCAT_CONFIGURATION_KEYWORD);
+    if (configuration == NULL)
+        return(0);
+    if (! pscat_sim->SetConfiguration(configuration))
+    {
+        fprintf(stderr, "ConfigPscatSim: error setting configuration (%s)\n",
+            configuration);
+        return(0);
+    }
 
     return(1);
 }

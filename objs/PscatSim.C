@@ -26,7 +26,8 @@ PscatSim::PscatSim()
     simVs1BCheckfile(NULL), uniformSigmaField(0), outputXToStdout(0),
     useKfactor(0), createXtable(0), computeXfactor(0), useBYUXfactor(0),
     rangeGateClipping(0), l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0),
-    simUncorrKpmFlag(0), simKpriFlag(0), _spotNumber(0), _spinUpPulses(2)
+    simUncorrKpmFlag(0), simKpriFlag(0), _spotNumber(0), _spinUpPulses(2),
+    _configuration(NONE)
 {
     return;
 }
@@ -50,6 +51,33 @@ PscatSim::Initialize(
     }
     return(1);
 }
+
+//----------------------------//
+// PscatSim::SetConfiguration //
+//----------------------------//
+
+int
+PscatSim::SetConfiguration(
+    const char*  string)
+{
+    if (strcasecmp(string, INNER_POL_OUTER_COPOL_STRING) == 0)
+    {
+        _configuration = INNER_POL_OUTER_COPOL;
+        return(1);
+    }
+    else if (strcasecmp(string, BOTH_POL_STRING) == 0)
+    {
+        _configuration = BOTH_POL;
+        return(1);
+    }
+    else
+    {
+        _configuration = NONE;
+        return(0);
+    }
+    return(0);
+}
+
 
 #define NINETY_DEGREE_ENCODER  8191
 
@@ -110,7 +138,20 @@ PscatSim::DetermineNextEvent(
                 break;
             case 1:
                 // outer beam
-                pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+                switch (_configuration)
+                {
+                case INNER_POL_OUTER_COPOL:
+                    pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+                    break;
+                case BOTH_POL:
+                    pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
+                    break;
+                default:
+                    fprintf(stderr,
+                      "PscatSim::DetermineNextEvent: unknown configuration\n");
+                    exit(1);
+                    break;
+                }
                 break;
             default:
                 return(0);
@@ -729,8 +770,9 @@ PscatSim::SetMeasurements(
 
         if (!rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_i))
         {
-          fprintf(stderr, "SetMeasurements: Bad slice number\n");
-          exit(1);
+            fprintf(stderr, "PscatSim::SetMeasurements: Bad slice number %d\n",
+                slice_i);
+            exit(1);
         }
 
         //----------------------------------------//

@@ -35,9 +35,15 @@ static const char rcs_id_pscatsim_h[] =
 //      simulators.
 //======================================================================
 
+#define INNER_POL_OUTER_COPOL_STRING  "INNER_POL_OUTER_COPOL"
+#define BOTH_POL_STRING               "BOTH_POL"
+
 class PscatSim
 {
 public:
+
+    enum PscatConfiguration { NONE, INNER_POL_OUTER_COPOL, BOTH_POL };
+
     //--------------//
     // construction //
     //--------------//
@@ -50,6 +56,7 @@ public:
     //--------------------//
 
     int  Initialize(Pscat* pscat);
+    int  SetConfiguration(const char* string);
     int  DetermineNextEvent(Pscat* pscat, PscatEvent* pscat_event);
     int  L1AFrameInit(Spacecraft* spacecraft, Pscat* pscat,
              PscatL1AFrame* l1aframe);
@@ -127,7 +134,9 @@ public:
 
 protected:
     int  _spotNumber;
-    int  _spinUpPulses;      // first two pulses just do tracking
+    int  _spinUpPulses;    // just do tracking for first two pulses
+
+    PscatConfiguration  _configuration;
 };
 
 #endif
