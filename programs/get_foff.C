@@ -714,20 +714,18 @@ process_orbit_step(
             g_sector_count[beam_idx][orbit_step]++;
     }
 
-    //-------------------------//
-    // check for resonableness //
-    //-------------------------//
+    //--------------------------//
+    // check for reasonableness //
+    //--------------------------//
 
-/*
-    if (isnand(newA) || isnand(newC) || isnand(newP))
+    if (isnand(a) || isnand(c) || isnand(p))
         g_sector_count[beam_idx][orbit_step] = 0;
 
-    if (fabs(newA) > 600000.0)
+    if (fabs(a) > 600000.0)
         g_sector_count[beam_idx][orbit_step] = 0;
 
-    if (fabs(newC) > 600000.0)
+    if (fabs(c) > 600000.0)
         g_sector_count[beam_idx][orbit_step] = 0;
-*/
 
     //------------------//
     // set up good flag //

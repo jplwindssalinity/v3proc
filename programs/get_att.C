@@ -99,6 +99,8 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
+#define YAW_SET_TO_ZERO  1
+
 #define OPTSTRING    "as:if:"
 
 #define PLOT_OFFSET               40000
@@ -119,7 +121,7 @@ template class List<AngleInterval>;
 #define MIN_VAR_DATA_COUNT  2
 
 // simplex search parameters
-#define LAMBDA      0.2
+#define LAMBDA      0.05
 #define XTOL        0.001
 #define PLEX_STEPS  36
 
@@ -725,7 +727,12 @@ ds_optimize(
     ptr[1] = (char *)qscat;
     ptr[2] = (char *)fbb_table;
 
-    downhill_simplex(p, ndim, ndim, 0.0, ds_evaluate, ptr, xtol);
+    int unknowns_plus_constants = ndim;
+    int unknowns = ndim;
+    if (YAW_SET_TO_ZERO)
+        unknowns = ndim - 1;
+    downhill_simplex(p, unknowns, unknowns_plus_constants, 0.0, ds_evaluate,
+        ptr, xtol);
 
     for (int i = 0; i < 3; i++)
         att[i] = p[0][i];
