@@ -43,7 +43,7 @@ PROGRAMS = \
 	make_kpmfield \
 	windfield_to_vctr \
 	l2a_centroids \
-	l2a_diagnostics \
+	l2a_maps \
 	l2_kp \
 	l2a_s0 \
 	l2a_s0l \
