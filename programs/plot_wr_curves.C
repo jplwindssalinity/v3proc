@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -214,7 +214,7 @@ main(
     {
         meas_list.FreeContents();
 
-        sprintf(filename, "%s.05%d", output_base, file_idx);
+        sprintf(filename, "%s.%05d", output_base, file_idx);
         printf("\nEnter information for output file %s\n", filename);
         for (int meas_idx = 1; ; meas_idx++)
         {

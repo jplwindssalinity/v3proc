@@ -1,30 +1,34 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //    gmf_plot
 //
 // SYNOPSIS
-//    gmf_plot [ -p ] <gmf_file> <output_base>
+//    gmf_plot [ -ip ] <gmf_file> [output_base]
 //
 // DESCRIPTION
 //    Generates plots about a geophysical model function.
 //
 // OPTIONS
 //    The following options are supported:
+//      [ -i ]  Interactive.
 //      [ -p ]  Indicates the gmf file is polarimetric.
 //
 // OPERANDS
 //    The following operands are supported:
 //      <gmf_file>     The geophysical model function file.
-//      <output_base>  The base name for output files.
+//      [output_base]  The base name for output files.  This is not
+//                       needed if the interactive option is
+//                       specified.
 //
 // EXAMPLES
 //    An example of a command line is:
 //      % gmf_plot -p pkmod.dat pkmod.plot
+//      % gmf_plot -i nscat2.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -68,7 +72,7 @@ static const char rcs_id[] =
 //-----------//
 // TEMPLATES //
 //-----------//
- 
+
 template class List<Meas>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
@@ -84,7 +88,7 @@ template class List<AngleInterval>;
 //-----------//
 
 #define QUOTES     '"'
-#define OPTSTRING  "p"
+#define OPTSTRING  "ip"
 
 #define POLS  2
 #define INCS  67
@@ -106,6 +110,10 @@ template class List<AngleInterval>;
 
 int  gen_plot(const char* output_base, GMF* gmf, Meas::MeasTypeE meas_type,
          float inc, int use_log);
+int  interact(GMF* gmf);
+int  string_query(FILE* fp, char* query, const char* choices[],
+         int* current_idx);
+int  float_query(FILE* fp, char* query, float* current_value);
 
 //------------------//
 // OPTION VARIABLES //
@@ -115,7 +123,7 @@ int  gen_plot(const char* output_base, GMF* gmf, Meas::MeasTypeE meas_type,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -p ]", "<gmf_file>", "<output_base>", 0 };
+const char* usage_array[] = { "[ -ip ]", "<gmf_file>", "[output_base]", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -131,6 +139,7 @@ main(
     //------------//
 
     int opt_pol = 0;
+    int opt_interactive = 0;
 
     //------------------------//
     // parse the command line //
@@ -144,6 +153,9 @@ main(
     {
         switch(c)
         {
+        case 'i':
+            opt_interactive = 1;
+            break;
         case 'p':
             opt_pol = 1;
             break;
@@ -153,11 +165,21 @@ main(
         }
     }
 
-    if (argc != optind + 2)
-        usage(command, usage_array, 1);
-
-    const char* gmf_file = argv[optind++];
-    const char* output_base = argv[optind++];
+    const char* gmf_file = NULL;
+    const char* output_base = NULL;
+    if (opt_interactive)
+    {
+        if (argc != optind + 1)
+            usage(command, usage_array, 1);
+        gmf_file = argv[optind++];
+    }
+    else
+    {
+        if (argc != optind + 2)
+            usage(command, usage_array, 1);
+        gmf_file = argv[optind++];
+        output_base = argv[optind++];
+    }
 
     //-----------------//
     // read in the gmf //
@@ -183,27 +205,39 @@ main(
         }
     }
 
-    //--------------------//
-    // generate the plots //
-    //--------------------//
-
-    gen_plot(output_base, &gmf, Meas::VV_MEAS_TYPE, 46.0, 1);
-    gen_plot(output_base, &gmf, Meas::HH_MEAS_TYPE, 46.0, 1);
-
-    gen_plot(output_base, &gmf, Meas::VV_MEAS_TYPE, 54.0, 1);
-    gen_plot(output_base, &gmf, Meas::HH_MEAS_TYPE, 54.0, 1);
-
-    if (opt_pol)
+    if (opt_interactive)
     {
-        gen_plot(output_base, &gmf, Meas::VH_MEAS_TYPE, 46.0, 1);
-        gen_plot(output_base, &gmf, Meas::HV_MEAS_TYPE, 46.0, 1);
-        gen_plot(output_base, &gmf, Meas::VV_HV_CORR_MEAS_TYPE, 46.0, 0);
-        gen_plot(output_base, &gmf, Meas::HH_VH_CORR_MEAS_TYPE, 46.0, 0);
+        //--------------------------//
+        // do the interactive thing //
+        //--------------------------//
 
-        gen_plot(output_base, &gmf, Meas::VH_MEAS_TYPE, 54.0, 1);
-        gen_plot(output_base, &gmf, Meas::HV_MEAS_TYPE, 54.0, 1);
-        gen_plot(output_base, &gmf, Meas::VV_HV_CORR_MEAS_TYPE, 54.0, 0);
-        gen_plot(output_base, &gmf, Meas::HH_VH_CORR_MEAS_TYPE, 54.0, 0);
+        interact(&gmf);
+        printf("\n");
+    }
+    else
+    {
+        //--------------------//
+        // generate the plots //
+        //--------------------//
+
+        gen_plot(output_base, &gmf, Meas::VV_MEAS_TYPE, 46.0, 1);
+        gen_plot(output_base, &gmf, Meas::HH_MEAS_TYPE, 46.0, 1);
+
+        gen_plot(output_base, &gmf, Meas::VV_MEAS_TYPE, 54.0, 1);
+        gen_plot(output_base, &gmf, Meas::HH_MEAS_TYPE, 54.0, 1);
+
+        if (opt_pol)
+        {
+            gen_plot(output_base, &gmf, Meas::VH_MEAS_TYPE, 46.0, 1);
+            gen_plot(output_base, &gmf, Meas::HV_MEAS_TYPE, 46.0, 1);
+            gen_plot(output_base, &gmf, Meas::VV_HV_CORR_MEAS_TYPE, 46.0, 0);
+            gen_plot(output_base, &gmf, Meas::HH_VH_CORR_MEAS_TYPE, 46.0, 0);
+
+            gen_plot(output_base, &gmf, Meas::VH_MEAS_TYPE, 54.0, 1);
+            gen_plot(output_base, &gmf, Meas::HV_MEAS_TYPE, 54.0, 1);
+            gen_plot(output_base, &gmf, Meas::VV_HV_CORR_MEAS_TYPE, 54.0, 0);
+            gen_plot(output_base, &gmf, Meas::HH_VH_CORR_MEAS_TYPE, 54.0, 0);
+        }
     }
 
     return (0);
@@ -274,4 +308,137 @@ gen_plot(
     }
     fclose(ofp);
     return(1);
+}
+
+//----------//
+// interact //
+//----------//
+
+int
+interact(
+    GMF*  gmf)
+{
+    int meas_type = (int)Meas::VV_MEAS_TYPE;
+    float incidence_angle = 50.0;
+    float speed = 7.0;
+    float chi = 45.0;
+
+    do
+    {
+        if (! string_query(stdin, "Measurement type", meas_type_map,
+            &meas_type))
+        {
+            return(1);
+        }
+        if (! float_query(stdin, "Incidence angle", &incidence_angle))
+        {
+            return(1);
+        }
+        if (! float_query(stdin, "Wind speed", &speed))
+        {
+            return(1);
+        }
+        if (! float_query(stdin, "Wind direction", &chi))
+        {
+            return(1);
+        }
+
+        float value;
+        if (! gmf->GetInterpolatedValue((Meas::MeasTypeE)meas_type,
+            incidence_angle * dtr, speed, chi * dtr, &value))
+        {
+            printf("Error looking up in GMF.\n");
+        }
+        else
+        {
+            printf("%g", value);
+            if (value > 0.0)
+            {
+                double db_val = 10.0 * log10(value);
+                printf(" (%g dB)", db_val);
+            }
+            printf("\n\n");
+        }
+
+    } while (1);
+
+    return(1);
+}
+
+//--------------//
+// string_query //
+//--------------//
+// 1 = got value
+// 0 = done
+
+#define MAX_STRING_LENGTH  1024
+
+int
+string_query(
+    FILE*        fp,
+    char*        query,
+    const char*  choices[],
+    int*         current_idx)
+{
+    char string[MAX_STRING_LENGTH];
+    do
+    {
+        printf("%s (%s): ", query, choices[*current_idx]);
+        if (fgets(string, MAX_STRING_LENGTH, fp) == NULL)
+            return(0);    // ctrl D ?
+
+        if (strlen(string) == 1)
+            return(1);    // use default
+
+        for (int idx = 0; choices[idx] != NULL; idx++)
+        {
+            if (strncasecmp(string, choices[idx], strlen(string) - 1) == 0)
+            {
+                *current_idx = idx;
+                return(1);    // got valid value
+            }
+        }
+
+        printf("Input must be one of:");
+        for (int idx = 0; choices[idx] != NULL; idx++)
+        {
+            printf(" %s", choices[idx]);
+        }
+        printf("\n");
+    } while (1);
+    return(0);
+}
+
+//-------------//
+// float_query //
+//-------------//
+// 1 = got value
+// 0 = done
+
+int
+float_query(
+    FILE*   fp,
+    char*   query,
+    float*  current_value)
+{
+    char string[MAX_STRING_LENGTH];
+    do
+    {
+        printf("%s (%g): ", query, *current_value);
+        if (fgets(string, MAX_STRING_LENGTH, fp) == NULL)
+            return(0);    // ctrl D ?
+
+        if (strlen(string) == 1)
+            return(1);    // use default
+
+        float value;
+        if (sscanf(string, " %g", &value) == 1)
+        {
+            *current_value = value;
+            return(1);    // got valid value
+        }
+
+        printf("Input must be a number.\n");
+    } while (1);
+    return(0);
 }
