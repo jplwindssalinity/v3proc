@@ -86,7 +86,7 @@ TrackerBase<T>::~TrackerBase()
 template <class T>
 int
 TrackerBase<T>::Allocate(
-    unsigned int    steps)
+    unsigned int  steps)
 {
     //-------------------------------//
     // check for previous allocation //
@@ -191,7 +191,7 @@ TrackerBase<T>::ReadBinary(
 template <class T>
 int
 TrackerBase<T>::WriteBinary(
-    const char*     filename)
+    const char*  filename)
 {
     //---------------//
     // open the file //
@@ -253,7 +253,7 @@ TrackerBase<T>::WriteBinary(
 template <class T>
 int
 TrackerBase<T>::ReadOldBinary(
-    const char*     filename)
+    const char*  filename)
 {
     //---------------//
     // open the file //
@@ -328,7 +328,7 @@ TrackerBase<T>::ReadOldBinary(
 template <class T>
 int
 TrackerBase<T>::WriteOldBinary(
-    const char*     filename)
+    const char*  filename)
 {
     //---------------//
     // open the file //
@@ -647,167 +647,6 @@ TrackerBase<T>::ReadHex(
     return(1);
 }
 
-//---------------------//
-// TrackerBase::ReadGS //
-//---------------------//
-
-template <class T>
-int
-TrackerBase<T>::ReadGS(
-    const char*     filename)
-{
-    //---------------//
-    // open the file //
-    //---------------//
-
-    FILE* fp = fopen(filename, "r");
-    if (fp == NULL)
-        return(0);
-
-    //-------//
-    // steps //
-    //-------//
-
-    _steps = DEFAULT_STEPS;
-
-    //----------//
-    // allocate //
-    //----------//
-
-    if (! Allocate(_steps))
-    {
-        fclose(fp);
-        return(0);
-    }
-
-    //---------------//
-    // scale factors //
-    //---------------//
-
-    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1), sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
-            fp) != 1)
-    {
-        fclose(fp);
-        return(0);
-    }
-
-    //-------//
-    // terms //
-    //-------//
-
-    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
-    for (int term_idx = 0; term_idx < 3; term_idx++)
-    {
-        for (unsigned int step = 0; step < _steps; step++)
-        {
-            if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
-                sizeof(T), 1, fp) != 1)
-            {
-                fclose(fp);
-                return(0);
-            }
-        }
-    }
-
-    //----------------//
-    // close the file //
-    //----------------//
-
-    fclose(fp);
-
-    return(1);
-}
-
-//----------------------//
-// TrackerBase::WriteGS //
-//----------------------//
-
-template <class T>
-int
-TrackerBase<T>::WriteGS(
-    const char*     filename)
-{
-    //---------------//
-    // open the file //
-    //---------------//
-
-    FILE* fp = fopen(filename, "w");
-    if (fp == NULL)
-        return(0);
-
-    //-------//
-    // steps //
-    //-------//
-
-    if (_steps != DEFAULT_STEPS)
-    {
-        fprintf(stderr, "TrackerBase::WriteGS: invalid number of steps (%d)\n",
-            _steps);
-        fprintf(stderr, "    Must be %d for this function.\n", DEFAULT_STEPS);
-        fclose(fp);
-        return(0);
-    }
-
-/*
-    //---------------//
-    // scale factors //
-    //---------------//
-
-    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1, sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0, sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1, sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0, sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1, sizeof(float), 1,
-            fp) != 1 ||
-        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0, sizeof(float), 1,
-            fp) != 1)
-    {
-        fclose(fp);
-        return(0);
-    }
-
-    //-------//
-    // terms //
-    //-------//
-
-    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
-    for (int term_idx = 0; term_idx < 3; term_idx++)
-    {
-        for (unsigned int step = 0; step < _steps; step++)
-        {
-            if (fread((void *) ( *(_termArray + step) + term[term_idx] ),
-                sizeof(T), 1, fp) != 1)
-            {
-                fclose(fp);
-                return(0);
-            }
-        }
-    }
-*/
-
-    //----------------//
-    // close the file //
-    //----------------//
-
-    fclose(fp);
-
-    return(1);
-}
-
 //==============//
 // RangeTracker //
 //==============//
@@ -832,42 +671,276 @@ RangeTracker::operator=(
     const RangeTracker&  from)
 {
     rxRangeMem=from.rxRangeMem;
-    if(_scaleArray!=NULL)
+    if (_scaleArray!=NULL)
         free_array((void*)_scaleArray,2,3,2);
-    if(_termArray!=NULL)
+    if (_termArray!=NULL)
         free_array((void*)_termArray,2,_steps,3);
     _tableId=from._tableId;
     _steps=from._steps;
     _dither[0]=from._dither[0];
     _dither[1]=from._dither[1];
-    if(from._scaleArray==NULL)
+    if (from._scaleArray==NULL)
         _scaleArray=NULL;
     else
     {
         _scaleArray=(float**)make_array(sizeof(float),2,3,2);
-        for(int i=0;i<3;i++)
+        for (int i=0;i<3;i++)
         {
-            for(int j=0;j<2;j++)
+            for (int j=0;j<2;j++)
             {
                 _scaleArray[i][j]=from._scaleArray[i][j];
             }
         }
     }
-    if(from._termArray==NULL)
+    if (from._termArray==NULL)
         _termArray=NULL;
     else
     {
         _termArray = (unsigned char**)make_array(sizeof(unsigned char), 2,
             _steps, 3);
-        for(unsigned int i=0;i<_steps;i++)
+        for (unsigned int i=0;i<_steps;i++)
         {
-            for(int j=0;j<3;j++)
+            for (int j=0;j<3;j++)
             {
                 _termArray[i][j]=from._termArray[i][j];
             }
         }
     }
     return(*this);
+}
+
+//----------------------//
+// RangeTracker::ReadGS //
+//----------------------//
+
+int
+RangeTracker::ReadGS(
+    const char*    filename,
+    RangeTracker*  second_set)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    _steps = DEFAULT_STEPS;
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! Allocate(_steps) || ! second_set->Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    int dummy;
+    if (fread((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1),
+        sizeof(float), 1, fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //------------------------------------------------//
+    // the ground system used 2 bytes for range terms //
+    //------------------------------------------------//
+
+    unsigned short tmp_array_1[DEFAULT_STEPS];
+    unsigned short tmp_array_2[DEFAULT_STEPS];
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        if (fread((void *)tmp_array_1, _steps * 2, 1, fp) != 1 ||
+            fread((void *)tmp_array_2, _steps * 2, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            *(*(_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_1[step];
+            *(*(second_set->_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_2[step];
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
+//-----------------------//
+// RangeTracker::WriteGS //
+//-----------------------//
+
+int
+RangeTracker::WriteGS(
+    const char*    filename,
+    RangeTracker*  second_set)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    int dummy = 3120;
+    if (fwrite((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fwrite((void *) (*(_scaleArray + BIAS_INDEX) + 1),
+        sizeof(float), 1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float),
+            1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float),
+            1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //------------------------------------------------//
+    // the ground system used 2 bytes for range terms //
+    //------------------------------------------------//
+
+    unsigned short tmp_array_1[DEFAULT_STEPS];
+    unsigned short tmp_array_2[DEFAULT_STEPS];
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            *(*(_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_1[step];
+            *(*(second_set->_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_2[step];
+        }
+        if (fwrite((void *)tmp_array_1, _steps * 2, 1, fp) != 1 ||
+            fwrite((void *)tmp_array_2, _steps * 2, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    }
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    if (fwrite((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
 }
 
 //------------------------------//
@@ -1006,40 +1079,285 @@ DopplerTracker::~DopplerTracker()
 {
     return;
 }
-//-----------------//
-// operators       //
-//-----------------//
+
+//-----------//
+// operators //
+//-----------//
 
 DopplerTracker&
 DopplerTracker::operator=(
-       const DopplerTracker& from)
+    const DopplerTracker&  from)
 {
-  if(_scaleArray!=NULL) free_array((void*)_scaleArray,2,3,2);
-  if(_termArray!=NULL) free_array((void*)_termArray,2,_steps,3);
-  _tableId=from._tableId;
-  _steps=from._steps;
-  _dither[0]=from._dither[0];
-  _dither[1]=from._dither[1];
-  if(from._scaleArray==NULL) _scaleArray=NULL;
-  else{
-    _scaleArray=(float**)make_array(sizeof(float),2,3,2);
-    for(int i=0;i<3;i++){
-      for(int j=0;j<2;j++){
-        _scaleArray[i][j]=from._scaleArray[i][j];
-      }
+    if (_scaleArray != NULL)
+        free_array((void*)_scaleArray, 2, 3, 2);
+    if (_termArray!=NULL)
+        free_array((void*)_termArray, 2, _steps, 3);
+    _tableId = from._tableId;
+    _steps = from._steps;
+    _dither[0] = from._dither[0];
+    _dither[1] = from._dither[1];
+    if (from._scaleArray == NULL)
+        _scaleArray=NULL;
+    else
+    {
+        _scaleArray=(float**)make_array(sizeof(float),2,3,2);
+        for (int i=0;i<3;i++)
+        {
+            for (int j=0;j<2;j++)
+            {
+                _scaleArray[i][j]=from._scaleArray[i][j];
+            }
+        }
     }
-  }
-  if(from._termArray==NULL) _termArray=NULL;
-  else{
-    _termArray=(unsigned short**)make_array(sizeof(unsigned short),2,_steps,3);
-    for(unsigned int i=0;i<_steps;i++){
-      for(int j=0;j<3;j++){
-        _termArray[i][j]=from._termArray[i][j];
-      }
+    if (from._termArray==NULL)
+        _termArray=NULL;
+    else
+    {
+        _termArray = (unsigned short**)make_array(sizeof(unsigned short), 2,
+            _steps, 3);
+        for (unsigned int i=0;i<_steps;i++){
+              for (int j=0;j<3;j++){
+                _termArray[i][j]=from._termArray[i][j];
+            }
+        }
     }
-  }
-  return(*this);
+    return(*this);
 }
+
+//------------------------//
+// DopplerTracker::ReadGS //
+//------------------------//
+
+int
+DopplerTracker::ReadGS(
+    const char*      filename,
+    DopplerTracker*  second_set)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
+
+    //-------//
+    // steps //
+    //-------//
+
+    _steps = DEFAULT_STEPS;
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! Allocate(_steps) || ! second_set->Allocate(_steps))
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    int dummy;
+    if (fread((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fread((void *) (*(_scaleArray + BIAS_INDEX) + 1),
+        sizeof(float), 1, fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fread((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fread((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //--------------------------------------------------//
+    // the ground system uses 4 bytes for Doppler terms //
+    //--------------------------------------------------//
+
+    unsigned int tmp_array_1[DEFAULT_STEPS];
+    unsigned int tmp_array_2[DEFAULT_STEPS];
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        if (fread((void *)tmp_array_1, _steps * 4, 1, fp) != 1 ||
+            fread((void *)tmp_array_2, _steps * 4, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            *(*(_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_1[step];
+            *(*(second_set->_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_2[step];
+        }
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
+//-------------------------//
+// DopplerTracker::WriteGS //
+//-------------------------//
+
+int
+DopplerTracker::WriteGS(
+    const char*      filename,
+    DopplerTracker*  second_set)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    int dummy = 6192;
+    if (fwrite((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    if (fwrite((void *) (*(_scaleArray + BIAS_INDEX) + 1),
+        sizeof(float), 1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + BIAS_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + BIAS_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 1), sizeof(float),
+            1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + AMPLITUDE_INDEX) + 0), sizeof(float),
+            1, fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + AMPLITUDE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + PHASE_INDEX) + 1), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 1),
+            sizeof(float), 1, fp) != 1 ||
+
+        fwrite((void *) (*(_scaleArray + PHASE_INDEX) + 0), sizeof(float), 1,
+            fp) != 1 ||
+        fwrite((void *) (*(second_set->_scaleArray + PHASE_INDEX) + 0),
+            sizeof(float), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //--------------------------------------------------//
+    // the ground system used 4 bytes for Doppler terms //
+    //--------------------------------------------------//
+
+    unsigned int tmp_array_1[DEFAULT_STEPS];
+    unsigned int tmp_array_2[DEFAULT_STEPS];
+
+    //-------//
+    // terms //
+    //-------//
+
+    unsigned int term[3] = { AMPLITUDE_INDEX, PHASE_INDEX, BIAS_INDEX };
+    for (int term_idx = 0; term_idx < 3; term_idx++)
+    {
+        for (unsigned int step = 0; step < _steps; step++)
+        {
+            *(*(_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_1[step];
+            *(*(second_set->_termArray + step) + term[term_idx]) =
+                (unsigned short)tmp_array_2[step];
+        }
+        if (fwrite((void *)tmp_array_1, _steps * 4, 1, fp) != 1 ||
+            fwrite((void *)tmp_array_2, _steps * 4, 1, fp) != 1)
+        {
+            fclose(fp);
+            return(0);
+        }
+    }
+
+    //-------------------------------//
+    // dummy for fortran unformatted //
+    //-------------------------------//
+
+    if (fwrite((void *)&dummy, sizeof(int), 1, fp) != 1)
+    {
+        fclose(fp);
+        return(0);
+    }
+
+    //----------------//
+    // close the file //
+    //----------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
 //-------------------------------------//
 // DopplerTracker::GetCommandedDoppler //
 //-------------------------------------//

@@ -55,27 +55,6 @@ public:
     int  WriteOldBinary(const char* filename);
     int  ReadHex(const char* filename);
     int  WriteHex(const char* filename);
-    int  ReadGS(const char* filename);
-    int  WriteGS(const char* filename);
-
-    //------------//
-    // algorithms //
-    //------------//
-
-/*
-    unsigned short  OrbitTicksToStep(unsigned int orbit_ticks,
-                        unsigned int ticks_per_orbit);
-    unsigned int    OrbitStepToTicks(unsigned short orbit_step,
-                        unsigned int ticks_per_orbit);
-    unsigned int    AngleOffset(Antenna* antenna, Beam* beam,
-                        double spin_rate);
-
-    //--------//
-    // access //
-    //--------//
-
-    int  GetSteps() { return(_steps); };
-*/
 
 protected:
 
@@ -112,14 +91,21 @@ class RangeTracker : public TrackerBase<unsigned char>
     //--------------//
 
     RangeTracker();
-    RangeTracker(const RangeTracker& from){*this=from;return;}
+    RangeTracker(const RangeTracker& from) { *this = from; return; }
     ~RangeTracker();
 
     //--------------//
-    // operators    //
+    // input/output //
     //--------------//
 
-    RangeTracker& operator=(const RangeTracker& from);
+    int  ReadGS(const char* filename, RangeTracker* second_set);
+    int  WriteGS(const char* filename, RangeTracker* second_set);
+
+    //-----------//
+    // operators //
+    //-----------//
+
+    RangeTracker&  operator=(const RangeTracker& from);
 
     //------------//
     // algorithms //
@@ -131,15 +117,6 @@ class RangeTracker : public TrackerBase<unsigned char>
              float* rx_gate_delay_fdn);
     int    SetRoundTripTime(double** terms);
 
-/*
-    int    GetRxGateDelay(unsigned int range_step, float xmit_pulse_width,
-          float rx_gate_width, unsigned int antenna_dn,
-unsigned int antenna_n, float* delay);
-    float  QuantizeWidth(float width);
-    float  QuantizeDelay(float delay, float* residual_delay);
-    int    SetInstrument(Instrument* instrument, float* residual_delay);
-    int    SetRoundTripTime(double** terms);
-*/
     //-----------//
     // variables //
     //-----------//
@@ -170,12 +147,19 @@ public:
     //--------------//
 
     DopplerTracker();
-    DopplerTracker(const DopplerTracker& from){*this=from;return;}
+    DopplerTracker(const DopplerTracker& from) { *this = from; return; }
     ~DopplerTracker();
 
-    //------------//
-    // operators  //
-    //------------//
+    //--------------//
+    // input/output //
+    //--------------//
+
+    int  ReadGS(const char* filename, DopplerTracker* second_set);
+    int  WriteGS(const char* filename, DopplerTracker* second_set);
+
+    //-----------//
+    // operators //
+    //-----------//
 
     DopplerTracker& operator=(const DopplerTracker& from);
 
@@ -188,13 +172,6 @@ public:
              float rx_gate_delay_fdn, short* commanded_doppler_dn);
     int  Set(double** terms);
     int  GetTerms(double** terms);
-/*
-    int  GetCommandedDoppler(unsigned int doppler_step, float rx_gate_delay,
-             unsigned int antenna_dn, unsigned int antenna_n, float* doppler,
-             float chirp_rate = 0.0, float residual_delay = 0.0);
-    float  QuantizeFrequency(float frequency);
-    int    SetInstrument(Instrument* instrument, float residual_delay);
-*/
 };
 
 //==================//
@@ -202,13 +179,6 @@ public:
 //==================//
 
 int  azimuth_fit(int count, double* terms, double* a, double* p, double* c);
-
-/*
-int  SetInstrument(RangeTracker* range_tracker,
-         DopplerTracker* doppler_tracker, Instrument* instrument,
-         unsigned short encoder);
-*/
-
 int  write_hex(FILE* fp, char* buffer, int bytes);
 int  read_hex(FILE* fp, char* buffer, int bytes);
 
