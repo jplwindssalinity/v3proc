@@ -99,7 +99,7 @@ CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h Matrix3.h List.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h \
 	Measurement.h WVC.h Attitude.h List.h WindVector.h
-Grid.o: Grid.C 
+Grid.o: Grid.C Grid.h Measurement.h List.h Beam.h Attitude.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Spacecraft.h Beam.h \
 	Attitude.h Constants.h Matrix3.h
 InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h LookGeom.h \
