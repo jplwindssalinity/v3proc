@@ -31,6 +31,12 @@ class L00
 {
 public:
 
+	//------//
+	// enum //
+	//------//
+
+	enum StatusE { OK, ERROR_READING_FRAME, ERROR_UNKNOWN };
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -42,15 +48,30 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int		SetFilename(const char* filename);
+	int			SetFilename(const char* filename);
+	StatusE		GetStatus() { return(_status); };
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		ReadDataRec();
 
 	//-----------//
 	// variables //
 	//-----------//
 
 	GenericFile		file;
-	char			buffer[MAX_L00_FRAME_SIZE];
+	char			buffer[L00_FRAME_SIZE];
 	L00Frame		frame;
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	StatusE		_status;
 };
 
 #endif

@@ -15,6 +15,7 @@ static const char rcs_id_l00_c[] =
 //=====//
 
 L00::L00()
+:	_status(OK)
 {
 	return;
 }
@@ -33,4 +34,16 @@ L00::SetFilename(
 	const char*		filename)
 {
 	return(file.SetFilename(filename));
+}
+
+//------------------//
+// L00::ReadDataRec //
+//------------------//
+
+int
+L00::ReadDataRec()
+{
+	// this will most likely get more complicated later with headers and all
+	file.Read(buffer, L00_FRAME_SIZE);
+	return(1);
 }
