@@ -9,7 +9,7 @@ LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
 CCC =			gcc
 DEBUGFLAGS=              -O3
-CPPFLAGS =		$(DEBUGFLAG) -Wall -I$(INCDIR)
+CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
 

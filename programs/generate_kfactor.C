@@ -429,7 +429,7 @@ main(
 
 				if(read_trueX_file == NULL){
 				  instrument_sim_acc.ScatSim(&spacecraft,
-					       &instrument,NULL,NULL,NULL,
+					       &instrument,NULL,NULL,
 					       &(l00_dummy.frame));
 				}
 				if(trueX_only == NULL){
