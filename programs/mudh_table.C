@@ -98,7 +98,6 @@ template class List<AngleInterval>;
 //-----------//
 
 #define OPTSTRING    "hm:r:"
-#define MIN_SAMPLES  100
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -339,7 +338,7 @@ main(
                     norain_tab[i][j][k][l] = 0.0;
                     rain_tab[i][j][k][l] = 0.0;
                     all_count[i][j][k][l] = (double)counts[i][j][k][l][0];
-                    if (counts[i][j][k][l][0] > MIN_SAMPLES)
+                    if (counts[i][j][k][l][0] > 0)
                     {
                         double norain_prob = (double)counts[i][j][k][l][1] /
                             (double)counts[i][j][k][l][0];
