@@ -6,11 +6,12 @@
 SHELL =			/bin/csh
 
 HDFINCDIR =   /usr/local/HDF/include
+SWSHDFINC =   /export/data/sws/HDF4.1r1/include
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
 DEBUGFLAGS =    -O3
-INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
+INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I$(SWSHDFINC) -I.
 
 CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall
 SYSLIBS =		-lm
