@@ -361,7 +361,11 @@ MeasList::AverageLonLat()
 	EarthPosition earth_center;
 	earth_center.SetPosition(0.0, 0.0, 0.0);
 	// Find the surface point lying along the averaged direction.
-	EarthPosition ravg = earth_intercept(earth_center,sum);
+	EarthPosition ravg; 
+	if(earth_intercept(earth_center,sum,&ravg)!=1){
+	  fprintf(stderr,"MeasList::AveLonLat: earth_intercept error\n");
+	  exit(1);
+	}
 
 	LonLat lon_lat;
 	lon_lat.Set(ravg);

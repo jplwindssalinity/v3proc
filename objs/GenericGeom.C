@@ -181,11 +181,17 @@ return(rlook_beam);
 //-----------------//
 // earth_intercept //
 //-----------------//
-
-EarthPosition
+//----------------------------------//
+// Return Values                    //
+// 0: Negative Slant Range Error    //
+// 1: No Error                      //
+// 2: Off the Earth Error           //
+//----------------------------------//
+int
 earth_intercept(
 	EarthPosition	rsat,
-	Vector3			rlook_geo)
+	Vector3			rlook_geo,
+	EarthPosition*  intercept)
 {
 	rlook_geo.Scale(1.0);
 //	rlook_geo.Show("earth_intercept: rlook_geo");
@@ -208,7 +214,7 @@ earth_intercept(
 	{
 		fprintf(stderr,
 			"ERROR: earth_intercept did not find an earth intercept!\n");
-		exit(1);
+		return(2);
 	}
 	double righthalf = sqrt(discrim) / (2.0 * c1);
 	double frac = -c2 / c1;
@@ -227,7 +233,7 @@ earth_intercept(
 		// both negative, error
 		fprintf(stderr,
 			"ERROR: earth_intercept calculated negative slant range!\n");
-		exit(1);
+		return(0);
 	}
 	else if (s1 > 0.0)
 		s = s1;
@@ -242,8 +248,8 @@ earth_intercept(
 	//Vector3 rlook_geo_new = rlook_geo*s;
 	//rlook_geo_new.Show("earth_intercept: rlook_geo_new");
 
-	EarthPosition rground = rsat + rlook_geo * s;
-	return(rground);
+	*intercept = rsat + rlook_geo * s;
+	return(1);
 }
 
 //------//

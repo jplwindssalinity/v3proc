@@ -29,10 +29,11 @@ int		IntegrateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot, int num_look_steps_per_slice,
 			float azimuth_integration_range, float azimuth_step_size);
 
-float		IntegrateSlice(Spacecraft* spacecraft, Instrument* instrument,
+int		IntegrateSlice(Spacecraft* spacecraft, Instrument* instrument,
 			Meas* meas, int num_look_steps_per_slice,
 			float azimuth_integration_range, 
-			float azimuth_step_size, int range_gate_clipping);
+			float azimuth_step_size, int range_gate_clipping,
+			float *X);
 
 float           GetPulseFractionReceived(Instrument* instrument, float range);
 

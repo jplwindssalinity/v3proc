@@ -73,10 +73,10 @@ public:
 				WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField,
 				L00Frame* l00_frame);
 
-	float           ComputeKfactor(Spacecraft* spacecraft, Instrument* instrument,
-				       Meas* meas);
-	float           ComputeXfactor(Spacecraft* spacecraft, Instrument* instrument,
-				       Meas* meas);
+	int           ComputeKfactor(Spacecraft* spacecraft, Instrument* instrument,
+				       Meas* meas, float* Kf);
+	int           ComputeXfactor(Spacecraft* spacecraft, Instrument* instrument,
+				       Meas* meas, float* X);
 	//-----------//
 	// variables //
 	//-----------//

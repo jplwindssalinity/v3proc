@@ -292,7 +292,7 @@ IntegrateSlices(
 // IntegrateSlice  //
 //-----------------//
 
-float
+int
 IntegrateSlice(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
@@ -300,10 +300,11 @@ IntegrateSlice(
 	int			num_look_steps_per_slice,
 	float			azimuth_integration_range,
 	float			azimuth_step_size,
-	int                     range_gate_clipping)
+	int                     range_gate_clipping,
+	float* X)
 {	
 
-        float retval=0.0; 
+        *X=0.0; 
 
         //-----------//
 	// predigest //
@@ -390,7 +391,8 @@ IntegrateSlice(
 	    if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
 				high_gain_freq,ftol,&start_look,azi)){
 	      fprintf(stderr,"IntegrateSlice: Cannot find starting look angle\n");
-	      exit(1);
+	      fprintf(stderr,"Probably means earth_intercept not found\n");
+		return(0);
 	    }
 	    /*******************************/
 	    /** find ending look angle ***/
@@ -398,7 +400,8 @@ IntegrateSlice(
 	    if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
 				low_gain_freq,ftol,&end_look,azi)){
 	      fprintf(stderr,"IntegrateSlice: Cannot find ending look angle\n");
-	      exit(1);
+	      fprintf(stderr,"Probably means earth_intercept not found\n");
+		return(0);
 	    }
 	    
 	    
@@ -436,7 +439,8 @@ IntegrateSlice(
 	      if (! FindBoxCorners(&antenna_frame_to_gc,spacecraft,instrument,
 				   look1,look2,azi1,azi2, &box)){
 		fprintf(stderr,"IntegrateSlice: Cannot find box corners\n");
-		      exit(1);
+	        fprintf(stderr,"Probably means earth_intercept not found\n");
+		return(0);
 	      }
 	      
 	      
@@ -451,7 +455,8 @@ IntegrateSlice(
 	      if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
 			     box_center, &tip)){
 		fprintf(stderr,"IntegrateSlice: Cannot find box range\n");
-		exit(1);
+                fprintf(stderr,"Probably means earth_intercept not found\n");
+		return(0);		
 	      }
 	      range=tip.slantRange;
 	      
@@ -472,7 +477,8 @@ IntegrateSlice(
 					    instrument, (look1+look2)/2.0,
 				    (azi1+azi2)/2.0, &gatgar)){
 		fprintf(stderr,"IntegrateSlice: Cannot find box gain\n");
-		exit(1);
+                fprintf(stderr,"Probably means earth_intercept not found\n");
+		return(0);
 	      }
 	      /*********************************/
 	      /** Calculate portion of pulse   */
@@ -487,7 +493,7 @@ IntegrateSlice(
 	      /*** Add AGPf/R^4 to sum         */
 	      /*********************************/
 	      
-	      retval+=area*gatgar/(range*range*range*range)*Pf;
+	      *X+=area*gatgar/(range*range*range*range)*Pf;
 		    
 	      /*********************************/
 	      /* Goto next box                  */
@@ -497,7 +503,7 @@ IntegrateSlice(
 	      look_num++;
 	    }
 	  }
-	return(retval);
+	return(1);
 }
 
 float

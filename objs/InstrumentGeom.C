@@ -350,8 +350,16 @@ LocateSliceCentroids(
 		rlook_antenna.SphericalSet(1.0, look, azim);
 		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
 		EarthPosition centroid;
-		centroid = earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
-
+		switch(earth_intercept(spacecraft->orbitState.rsat, rlook_gc,
+				       &centroid)){
+		case 0:
+		  return(0);
+		case 1:
+		  break;
+		case 2:
+		  continue;
+		}
+	
 		//---------------------------//
 		// generate measurement data //
 		//---------------------------//
@@ -466,7 +474,8 @@ LocateSpot(
 
 	rlook_antenna.SphericalSet(1.0, look, azim);
 	TargetInfoPackage tip;
-	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+	if(!RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna,
+			      &tip)) return(0);
 
 	//
 	// Using the round trip time from the one way boresight, compute the
@@ -483,7 +492,8 @@ LocateSpot(
 
 	// Update with new boresight
 	rlook_antenna.SphericalSet(1.0, look, azim);
-	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+	if(!RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna,
+			      &tip))return(0);
 
 	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
 
@@ -552,7 +562,8 @@ LocateSpot(
 
 		look_mid_gc = antenna_frame_to_gc.Forward(look_mid_ant);
 		EarthPosition *rspot = new EarthPosition;
-		*rspot = earth_intercept(orbit_state->rsat,look_mid_gc);
+		if(earth_intercept(orbit_state->rsat,look_mid_gc,rspot)!=1)
+		  return(0);
 		if (! meas->outline.Append(rspot))
 		{
 			printf("Error appending to spot outline\n");
@@ -748,8 +759,9 @@ FindSlice(
 		rlook_antenna.SphericalSet(1.0, c_look[i], c_azim[i]);
 		Vector3 rlook_gc = antenna_frame_to_gc->Forward(rlook_antenna);
 		EarthPosition* spot_on_earth = new EarthPosition();
-		*spot_on_earth =
-			earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
+	        if(earth_intercept(spacecraft->orbitState.rsat, rlook_gc,
+				   spot_on_earth)!=1)
+		  return(0);
 
 		if (! outline->Append(spot_on_earth))
 			return(0);
@@ -768,7 +780,8 @@ FindSlice(
 
 	EarthPosition earth_center;
 	earth_center.SetPosition(0.0, 0.0, 0.0);
-	*centroid = earth_intercept(earth_center, sum);
+	if(earth_intercept(earth_center,sum,centroid)!=1)
+	  return(0);
 
 	//---------------------------//
 	// determine the look vector //
@@ -874,7 +887,7 @@ IdealRtt(
 	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
 	{
-		return(0);
+		exit(1);
 	}
 
 	//-------------------------------//
@@ -884,7 +897,9 @@ IdealRtt(
 	Vector3 vector;
 	vector.SphericalSet(1.0, look, azim);
 	Vector3 ulook_gc = zero_rpy_antenna_frame_to_gc.Forward(vector);
-	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	EarthPosition r_target;
+	if(earth_intercept(sc_orbit_state->rsat, ulook_gc,&r_target)!=1) 
+	  exit(1);
 	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
 	double round_trip_time = 2.0 * slant_range / speed_light_kps;
 
@@ -1098,7 +1113,9 @@ TargetInfo(
 
 	// Compute earth intercept point and range
 	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	if(earth_intercept(sc_orbit_state->rsat, ulook_gc,
+				       &(tip->rTarget))!=1)
+	  return(0);
 	EarthPosition* rspot = &(tip->rTarget);
 	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
 
@@ -1946,7 +1963,8 @@ PowerGainProduct(
 	Vector3 vector;
 	vector.SphericalSet(1.0, look, azim);
 	TargetInfoPackage tip;
-	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
+	if(!RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip))
+	  return(0);
 	int idx = instrument->antenna.currentBeamIdx;
 	int retval=instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
 		tip.roundTripTime, instrument->antenna.actualSpinRate, gain);
@@ -1970,7 +1988,8 @@ RangeAndRoundTrip(
 
 	// Compute earth intercept point and range.
 	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	if(earth_intercept(sc_orbit_state->rsat, ulook_gc,&(tip->rTarget))!=1)
+	  return(0);
 	tip->slantRange = (sc_orbit_state->rsat - tip->rTarget).Magnitude();
 	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
 
@@ -2054,7 +2073,8 @@ GetTwoWayPeakGain2(
 	Vector3 rlook_antenna;
 	rlook_antenna.SphericalSet(1.0, *look, *azim);
 	TargetInfoPackage tip;
-	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+	if(!RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna, 
+			      &tip)) return(0);
 
 	//---------------------------//
 	// get the two-way peak gain //

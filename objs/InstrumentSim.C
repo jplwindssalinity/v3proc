@@ -131,7 +131,8 @@ InstrumentSim::SetMeasurements(
 	int slice_count = instrument->GetTotalSliceCount();
 	int slice_i = 0;
 	int sliceno = -slice_count/2;
-	for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
+        Meas* meas=meas_spot->GetHead();
+	while(meas)
 	{
 		meas->startSliceIdx = sliceno;
 
@@ -241,7 +242,19 @@ InstrumentSim::SetMeasurements(
                 // directly
                 float Xfactor=0;
 		if (computeXfactor){
-		  Xfactor=ComputeXfactor(spacecraft,instrument,meas);	
+                  // If you cannot calculate X it probably means the
+                  // slice is partially off the earth.
+                  // In this case remove it from the list and go on
+                  // to next slice
+		  if(!ComputeXfactor(spacecraft,instrument,meas,&Xfactor)){
+		    meas_spot->RemoveCurrent();
+		    meas=meas_spot->GetCurrent();
+		    slice_i++;
+                    sliceno++;
+		    if(slice_count%2==0 && sliceno==0) sliceno++;
+		    continue;
+		  }
+
 
 		  if (! sigma0_to_Esn_slice_given_X(instrument, meas,
 				Xfactor, sigma0, &(meas->value)))
@@ -284,6 +297,7 @@ InstrumentSim::SetMeasurements(
 		sliceno++;
 		slice_i++;
 		if(slice_count%2==0 && sliceno==0) sliceno++;
+		meas=meas_spot->GetNext();
 	}
 
 	return(1);
@@ -440,8 +454,6 @@ InstrumentSim::ScatSim(
 		if (! LocateSliceCentroids(spacecraft, instrument, &meas_spot))
 		    return(0);
 
-		if (outputXToStdout)
-			printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
 	//------------------------//
@@ -454,19 +466,6 @@ InstrumentSim::ScatSim(
 		return(0);
 	}
 
-	//--------------------------------//
-	// Output X to Stdout if enabled //
-	//--------------------------------//
-
-	if (outputXToStdout)
-	{
-		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
-		{
-			printf("%g ",slice->XK);
-		}
-		if (instrument->antenna.currentBeamIdx==1)
-			printf("\n");
-	}
 
 	//---------------------------------------//
 	// Output X values to X table if enabled //
@@ -496,6 +495,58 @@ InstrumentSim::ScatSim(
 
 	if (! SetL00Science(&meas_spot, &cf, instrument, l00_frame))
 		return(0);
+
+	//--------------------------------//
+	// Output X to Stdout if enabled //
+	//--------------------------------//
+
+	
+	if (outputXToStdout)
+	{		
+	        float XK_max=0;
+	        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		{
+			if(XK_max < slice->XK) XK_max=slice->XK;
+		}
+	        float total_spot_X=0;
+                float total_spot_power=0;
+ 		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		  {   
+		    int slice_count = instrument->GetTotalSliceCount();     
+		    int slice_idx;
+		    if(!rel_to_abs_idx(slice->startSliceIdx,slice_count,&slice_idx)){
+		      fprintf(stderr,"ScatSim: Bad slice number\n");
+		      exit(1);
+		    }
+		    float dummy, freq;
+		    instrument->GetSliceFreqBw(slice_idx, &freq, &dummy);
+
+		    float gain=10*log10(slice->XK/XK_max);
+		    double range=(spacecraft->orbitState.rsat - 
+ 				     slice->centroid).Magnitude();
+		    float rtt=2.0*range/speed_light_kps;
+		    float pf=GetPulseFractionReceived(instrument,range);
+		    printf("%d %g %g %g %g %g %g %g\n",
+			   instrument->antenna.currentBeamIdx,
+			   instrument->antenna.azimuthAngle*rtd,freq,
+			   gain, rtt, pf,slice->XK, slice->value);
+		    total_spot_power+=slice->value;
+		    total_spot_X+=slice->XK;
+			                
+		  }
+		RangeTracker* rt= &(instrument->antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
+			
+
+		unsigned short orbit_step=rt->OrbitTicksToStep(instrument->orbitTicks,
+				   instrument->orbitTicksPerOrbit);
+
+		printf("TOTALS %d %d %g %g %g %g\n",(int)orbit_step,
+		       instrument->antenna.currentBeamIdx,
+		       instrument->antenna.azimuthAngle*rtd,
+		       instrument->commandedRxGateDelay,
+                       total_spot_X,total_spot_power);
+		fflush(stdout);
+	}
 
 	//---------------------------------//
 	// set orbit tick change indicator //
@@ -545,16 +596,17 @@ InstrumentSim::ScatSim(
 //---------------------------------//
 // InstrumentSim::ComputeKfactor   //
 //---------------------------------//
-float
+int
 InstrumentSim::ComputeKfactor(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-        Meas*                   meas){
+        Meas*                   meas,
+	float* Kf){
   
-        float retval=0.0;
-        retval=IntegrateSlice(spacecraft,instrument,meas,
+        if(!IntegrateSlice(spacecraft,instrument,meas,
 			      numLookStepsPerSlice,azimuthIntegrationRange,
-			      azimuthStepSize, rangeGateClipping);	
+			      azimuthStepSize, rangeGateClipping, Kf))
+	  return(0);	
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
         CoordinateSwitch gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState), 
 							  &(spacecraft->attitude), &(instrument->antenna));
@@ -570,32 +622,33 @@ InstrumentSim::ComputeKfactor(
 	if(instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
 	  instrument->antenna.actualSpinRate, &GatGar)!=1){
 	  fprintf(stderr,"ComputeKfactor: Cannot calculate GatGar at centroid\n");
-	  exit(1);
+	  return(0);
 	}
 
 
-        retval*=R*R*R*R/GatGar;
-        return(retval);
+        (*Kf)*=R*R*R*R/GatGar;
+        return(1);
 }
 
 //---------------------------------//
 // InstrumentSim::ComputeXfactor   //
 //---------------------------------//
-float
+int
 InstrumentSim::ComputeXfactor(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-        Meas*                   meas){
+        Meas*                   meas,
+	float* X){
 
   	double lambda = speed_light_kps / instrument->transmitFreq;
-        float retval=0.0;
-        retval=IntegrateSlice(spacecraft,instrument,meas,
+        if(!IntegrateSlice(spacecraft,instrument,meas,
 			      numLookStepsPerSlice,azimuthIntegrationRange,
-			      azimuthStepSize, rangeGateClipping);	
+			      azimuthStepSize, rangeGateClipping, X))
+	  return(0);	
 
-        retval*=instrument->transmitPower * instrument->echo_receiverGain 
+        (*X)*=instrument->transmitPower * instrument->echo_receiverGain 
 	        * lambda*lambda /(64*pi*pi*pi * instrument->systemLoss);
-        return(retval);
+        return(1);
 }
 
 //--------------------//
