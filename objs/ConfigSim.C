@@ -1428,7 +1428,7 @@ ConfigControl(
 	else
 	{
 		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-		*spacecraft_start_time = *instrument_start_time -
+		*spacecraft_start_time = *grid_start_time -
 			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
 	}
 
