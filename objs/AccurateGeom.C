@@ -149,8 +149,8 @@ IntegrateSlices(
 
 		float centroid_freq=(f1+f2)/2.0;
 
-		// guess at a reasonable slice frequency tolerance of .1%
-		float ftol = bw / 1000.0;
+		// guess at a reasonable slice frequency tolerance of 8 Hz
+		float ftol = 8.0;
 		double centroid_look=look;
 		double centroid_azimuth=azimuth;
 		float dummy;
