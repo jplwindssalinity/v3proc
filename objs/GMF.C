@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -1894,108 +1894,112 @@ GMF::Calculate_Init_Wind_Solutions(
     WVC*       wvc,
     int        polar_special)
 {
-//!Description:
-//             This routine calculates an initial set of wind solutions
-//               using an iterative "coarse search" mechanism based on MLE
-//               computations.
-//
+    // Description:
+    //   This routine calculates an initial set of wind solutions
+    //   using an iterative "coarse search" mechanism based on MLE
+    //   computations.
+    //
 
-//
-//        Remove Bad Copol Measurements
-//
-      RemoveBadCopol(meas_list,kp);
-//
-// Local Declarations
-//
+    //
+    // Remove Bad Copol Measurements
+    //
+    RemoveBadCopol(meas_list,kp);
 
-      int   i;
-      int   j;
-      int   k;
-      int   ii;
-      int   jj;
-      float      center_speed;
-      float      minus_speed;
-      float      plus_speed;
-      int   good_speed;
-      float      center_objective;
-      float      minus_objective;
-      float      plus_objective;
-      float      dir_spacing;
-      int   num_dir_samples;
-      float      angle;
-      float      diff_objective_1;
-      float      diff_objective_2;
-      float      current_objective;
-      int   num_mle_maxima;
-//      float      speed_buffer [MAX_DIR_SAMPLES+1];
-//      float      objective_buffer [MAX_DIR_SAMPLES+1] ;
-//      int   dir_mle_maxima [MAX_DIR_SAMPLES+1];
+    //
+    // Local Declarations
+    //
 
-    for (i=0; i <= MAX_DIR_SAMPLES+1; i++)
+    int    i;
+    int    j;
+    int    k;
+    int    ii;
+    int    jj;
+    float  center_speed;
+    float  minus_speed;
+    float  plus_speed;
+    int    good_speed;
+    float  center_objective;
+    float  minus_objective;
+    float  plus_objective;
+    float  dir_spacing;
+    int    num_dir_samples;
+    float  angle;
+    float  diff_objective_1;
+    float  diff_objective_2;
+    float  current_objective;
+    int    num_mle_maxima;
+    //  float  speed_buffer [MAX_DIR_SAMPLES+1];
+    //  float  objective_buffer [MAX_DIR_SAMPLES+1] ;
+    //  int    dir_mle_maxima [MAX_DIR_SAMPLES+1];
+
+    for (i = 0; i < MAX_DIR_SAMPLES + 1; i++)
     {
         _speed_buffer[i] = 0.0;
         _objective_buffer[i] = 0.0;
         _dir_mle_maxima[i] = 0;
     }
 
-      center_speed = (int)(wind_start_speed);
+    center_speed = (int)(wind_start_speed);
+    if (center_speed < (lower_speed_bound + 2))
+        center_speed = (lower_speed_bound + 2);
 
-      if (center_speed < (lower_speed_bound + 2))
-         center_speed = (lower_speed_bound + 2);
+    if (center_speed > (upper_speed_bound - 1))
+        center_speed = (upper_speed_bound -1);
 
-      if (center_speed > (upper_speed_bound - 1))
-         center_speed = (upper_speed_bound -1);
+    //
+    // Calculate number of wind direction samples.
+    //
 
-//
-//   Calculate number of wind direction samples.
-//
+    dir_spacing =  wind_dir_intv_init;
+    num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
-      dir_spacing =  wind_dir_intv_init;
-      num_dir_samples = (int)(360. / dir_spacing) + 2 ;
+    //
+    // Loop through directional space to find local MLE maximas.
+    //
 
-//
-//   Loop through directional space to find local MLE maximas.
-//
-
-      int multiridge=0;
-      int tmp=0;
-      float tmp2,tmp3, max_multiridge_sep=0, ave_multiridge_sep=0;
-      float multiridge_width=0.0, min_multiridge_sep=HUGE_VAL;
-    for (k=2; k <= num_dir_samples-1; k++)
+    int multiridge = 0;
+    int tmp = 0;
+    float tmp2, tmp3, max_multiridge_sep = 0, ave_multiridge_sep = 0;
+    float multiridge_width = 0.0, min_multiridge_sep = HUGE_VAL;
+    for (k = 2; k <= num_dir_samples - 1; k++)
     {
-      if(polar_special){
-        tmp=FindMultiSpeedRidge(meas_list, kp,k,&tmp2,&tmp3);
-        if(tmp>multiridge) multiridge=tmp;
-            if(tmp>1){
-          multiridge_width+=dir_spacing;
-          ave_multiridge_sep+=tmp2;
-          if(tmp2>max_multiridge_sep) max_multiridge_sep=tmp2;
-              if(tmp3<min_multiridge_sep) min_multiridge_sep=tmp3;
-        }
+        if (polar_special) {
+            tmp = FindMultiSpeedRidge(meas_list, kp, k, &tmp2, &tmp3);
+            if (tmp > multiridge)
+                multiridge = tmp;
+            if (tmp > 1) {
+                multiridge_width += dir_spacing;
+                ave_multiridge_sep += tmp2;
+                if (tmp2 > max_multiridge_sep)
+                    max_multiridge_sep = tmp2;
+                if (tmp3 < min_multiridge_sep)
+                    min_multiridge_sep = tmp3;
+            }
             continue;
-      }
-         angle = dir_spacing * (float)(k - 1) - dir_spacing;
+        }
+        angle = dir_spacing * (float)(k - 1) - dir_spacing;
 
-//
-//   Compute MLE at 3 points centered about center speed.
-//
+        //
+        // Compute MLE at 3 points centered about center speed.
+        //
+        minus_speed = center_speed - wind_speed_intv_init;
+        plus_speed  = center_speed + wind_speed_intv_init;
 
-         minus_speed  =  center_speed -  wind_speed_intv_init;
-         plus_speed   =  center_speed +  wind_speed_intv_init;
+        minus_objective = _ObjectiveFunction(meas_list, minus_speed,
+            dtr * angle, kp);
+        center_objective = _ObjectiveFunction(meas_list, center_speed,
+            dtr * angle, kp);
+        plus_objective = _ObjectiveFunction(meas_list, plus_speed,
+            dtr * angle, kp);
 
-        minus_objective=_ObjectiveFunction(meas_list,minus_speed,dtr*angle,kp);
-        center_objective=_ObjectiveFunction(meas_list,center_speed,
-            dtr*angle,kp);
-        plus_objective=_ObjectiveFunction(meas_list,plus_speed,dtr*angle,kp);
+        //
+        // Move the triplet in the speed dimension until center_objective
+        // reaches maximum.   Clip search at 0 m/sec and 50 m/sec.
+        //
 
-//
-//   Move the triplet in the speed dimension until center_objective
-//   reaches maximum.   Clip search at 0 m/sec and 50 m/sec.
-//
+        good_speed = 1;
 
-         good_speed = 1;
-
-         while (good_speed &&
+        while (good_speed &&
             (center_objective < minus_objective  ||
              center_objective < plus_objective) )
         {
