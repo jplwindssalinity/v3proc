@@ -63,7 +63,7 @@ public:
     void Rowset(Vector3 r1, Vector3 r2, Vector3 r3);
     void Identity();
     void Inverse();
-    void Show(char *name = NULL);
+    void Show(char *name = (char*)NULL);
 
 protected:
 
@@ -129,7 +129,7 @@ public:
 
     void    Scale(double r);        // set magnitude
     double  Magnitude();        // get vector magnitude
-    void    Show(char *name = NULL);
+    void    Show(char *name = (char*)NULL);
 
     int     SphericalSet(double r, double theta, double phi);
     int     SphericalGet(double *r, double *theta, double *phi);
