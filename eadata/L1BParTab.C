@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.5  1999/02/24 03:24:55  sally
+// add L2AHdf
+//
 // 
 //    Rev 1.4   03 Nov 1998 16:01:16   sally
 // adapt to Vdata
@@ -475,7 +478,7 @@ const ParTabEntry L1BParTab[] =
       { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractData2D_100, pr_uint2_100 }
     }
   },
-  { SIGMA0, "Sigma 0 for Entire Pulse", SOURCE_L1A, MEAS_POWER, "sigma0", 1, {
+  { SIGMA0, "Sigma 0 for Entire Pulse", SOURCE_L1A, MEAS_POWER, "cell_sigma0", 1, {
       { UNIT_DB, "dB", DATA_FLOAT4_100, 0,
                       ExtractData2D_100_int2_float, pr_float4_6_100 }
     }
@@ -509,13 +512,13 @@ const ParTabEntry L1BParTab[] =
                       ExtractData2D_100_uint2_float_dtr, pr_float4_6_100 }
     }
   },
-  { SNR, "Signal to Noise Ratio", SOURCE_L1A, MEAS_POWER, "snr", 1, {
+  { SNR, "Signal to Noise Ratio", SOURCE_L1A, MEAS_POWER, "cell_snr", 1, {
       { UNIT_DB, "dB", DATA_FLOAT4_100, 0,
                       ExtractData2D_100_int2_float, pr_float4_6_100 }
     }
   },
   { KPC_A, "Zero Order Coeff to Calc Kpc", SOURCE_L1A,
-                       MEAS_DATA, "kpc_a", 1, {
+                       MEAS_DATA, "cell_kpc_a", 1, {
       { UNIT_DN, "dn", DATA_FLOAT4_100, 0,
                       ExtractData2D_100_int2_float, pr_float4_6_100 }
     }
