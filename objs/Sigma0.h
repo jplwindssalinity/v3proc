@@ -12,10 +12,11 @@ static const char rcs_id_sigma0_h[] =
 #include "Spacecraft.h"
 #include "Instrument.h"
 #include "Meas.h"
+#include "Wind.h"
 
 //======================================================================
 // Functions
-//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0
+//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm
 //======================================================================
 
 //=======================================================================
@@ -70,6 +71,7 @@ int Pr_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
 		float sumPsn, float Pn, float PtGr, float* sigma0);
 
+float GetKpm(Instrument* instrument, WindVector* wv);
 
 #endif
 

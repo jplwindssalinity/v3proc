@@ -218,7 +218,7 @@ main(
 	//
 	// Setup the parameters and arrays needed for the beam patterns.
 	// The width's and spacings are specified for azimuth and elevation
-	// angles as defined for the SeaWinds-1B simulator (see Matrix3.C).
+	// angles as defined for the SeaWinds-1A measured antenna pattern.
 	// For now, the two beam patterns have the same parameters, and
 	// match the parameters of the measured gains.  Regridding in elevation
 	// may be needed to ensure that everthing is uniformly spaced.
@@ -290,12 +290,38 @@ main(
 	printf("Electrical Boresight H: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);
 	printf("Electrical Boresight H: (gain dB) %g\n",10.0*log(gain)/log(10.0));
+	// Write out cuts for plotting.
+	for (int i=-1000; i <= 1000; i++)
+	{
+		double azi = i/1000.0*dtr;
+
+	    Vector3 vector;
+   		vector.SphericalSet(1.0, look, azi);
+    	vector = beam._antennaFrameToBeamFrame.Forward(vector);
+    	double r, theta, phi;
+    	vector.SphericalGet(&r, &theta, &phi);
+    	double Em = pi / 2.0 - theta;
+    	double Am = phi;
+	
+		beam.GetPowerGain(look,azi,&gain);
+		printf("%g %g %g %g\n",azi,10.0*log(gain)/log(10.0),Em,Am);
+	}
+
 	beam = instrument.antenna.beam[1];
 	beam.GetElectricalBoresight(&look,&azimuth);
 	printf("Electrical Boresight V: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);
 	printf("Electrical Boresight V: (gain dB) %g\n",10.0*log(gain)/log(10.0));
+	// Write out cuts for plotting.
+	for (int i=-1000; i <= 1000; i++)
+	{
+		double azi = i/1000.0*dtr;
+		beam.GetPowerGain(look,azi,&gain);
+		printf("%g %g\n",azi,10.0*log(gain)/log(10.0));
+	}
 	return (0);
+
+	
 
 }
 

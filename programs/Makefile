@@ -29,6 +29,7 @@ PROGRAMS = \
 	reformat_pattern \
 	memfilter \
 	make_pattern \
+	test_pattern \
 	vap_to_bev \
 	fake_vap \
 	l15_outlines \

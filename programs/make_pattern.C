@@ -85,6 +85,11 @@ template class List<WindVectorPlus>;
 // CONSTANTS //
 //-----------//
 
+#define G0V     40.91
+#define G0H     39.27
+#define AZ_WIDTH	1.6
+#define ELEV_WIDTH	1.8
+
 //--------//
 // MACROS //
 //--------//
@@ -140,80 +145,121 @@ main(
 		exit(1);
 	}
 
-	// Only the number of beams is needed from the config file
-    int number_of_beams;
-    if (! config_list.GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
-        return(0);
-
 	//---------------------------------------------------//
 	// Make and write a beam pattern (use with each beam) //
 	//---------------------------------------------------//
 
-	// Number of beam widths to compute pattern data for
-	int Nwidths = 3;
+    // Parameters defining the structure of the gain measurements.
+    int Nxm = 647;
+    int Nym = 401;
+    double xm_spacing = 0.031 * dtr;
+    double ym_spacing = 0.05 * dtr;
+    int ixm_zero = 324;
+    int iym_zero = 201;
 
-	// Number of sample points across the 3dB widths specified below.
-	int Nxw = 512;
-	int Nyw = 512;
+    //
+    // Setup the parameters and arrays needed for the beam patterns.
+    // The width's and spacings are specified for azimuth and elevation
+    // angles as defined for the SeaWinds-1A measured antenna patterns.
+    // For now, the two beam patterns have the same parameters, and
+    // match the parameters of the measured gains.
+    //
 
-	// The total number of samples and zero point locations
-	int Nx = Nxw*Nwidths;
-	int Ny = Nyw*Nwidths;
-	int ix_zero = Nx/2;
-	int iy_zero = Ny/2;
+    double x_spacing = xm_spacing;
+    double y_spacing = ym_spacing;
+    int Nx = Nxm;
+    int Ny = Nym;
+    int ix_zero = ixm_zero;
+    int iy_zero = iym_zero;
 
-	double az_width = 1.19*dtr;
-	double elev_width = 1.4*dtr;
-	// Interpret x and y as azimuth and elevation angles.
-	double x_width = az_width;
-	double y_width = elev_width;
-//	double x_width = 5.0*2.0*sin(az_width/2);
-//	double y_width = 5.0*2.0*sin(elev_width/2);
-	double x_spacing = x_width/Nx;
-	double y_spacing = y_width/Ny;
-	double max_gaindB = 30.0;
-	double max_gain = pow(10,max_gaindB/10);
+    float** power_gainv = (float**)make_array(sizeof(float),2,Nx,Ny);
+    if (power_gainv == NULL)
+    {
+        printf("Error allocating v-pol pattern array\n");
+        exit(-1);
+    }
+    float** power_gainh = (float**)make_array(sizeof(float),2,Nx,Ny);
+    if (power_gainh == NULL)
+    {
+        printf("Error allocating h-pol pattern array\n");
+        exit(-1);
+    }
 
-	Beam cur_beam;
-	float** power_gain = (float**)make_array(sizeof(float),2,Nx,Ny);
-	if (power_gain == NULL)
-	{
-		printf("Error allocating pattern array\n");
-		exit(-1);
-	}
-	double r,x,y,theta,phi,Fn;
-	for (int i=0; i < Nx; i++)
-	for (int j=0; j < Ny; j++)
-	{
-		x = (i - ix_zero)*x_spacing;
-		y = (j - iy_zero)*y_spacing;
+    //
+	// Synthesize pattern data using a sinc^2 (rectangular aperture with
+	// uniform illumination) and the appropriate beam widths.
+    // Also scale by the peak pattern values.
+	// See page 125 in Microwave Remote Sensing, vol 1, Ulaby, Moore, and Fung.
+    //
 
-		// Compute spherical angles assuming x and y are components of
-		// the unit look vector in the beam frame.
-		//theta = asin(sqrt(x*x + y*y));
-		//phi = atan2(y,x);
+	double az_width = AZ_WIDTH*dtr;
+	double elev_width = ELEV_WIDTH*dtr;
+	double max_gainV = pow(10.0, G0V/10.0);
+	double max_gainH = pow(10.0, G0H/10.0);
 
-		// Compute spherical angles assuming x and y are azimuth and
-		// elevation angles.
+    for (int i=0; i < Nx; i++)
+    for (int j=0; j < Ny; j++)
+    {
+        double Em = (i - ix_zero)*x_spacing;
+        double Am = (j - iy_zero)*y_spacing;
 		Vector3 ulook;
-		ulook.AzimuthElevationSet(1.0,x,y);
-		ulook.SphericalGet(&r,&theta,&phi);
+		ulook.SphericalSet(1.0,pi/2.0-Em,Am);
+		Vector3 xhat(1.0,0.0,0.0);
+		double theta = acos(ulook % xhat);
+		double phi;
+		if ((ulook.Get(2) == 0.0) && (ulook.Get(1) >= 0.0))
+		{
+			phi = 0.0;
+		}
+		else if ((ulook.Get(2) == 0.0) && (ulook.Get(1) < 0.0))
+		{
+			phi = pi;
+		}
+		else
+		{
+			phi = atan2(ulook.Get(1),ulook.Get(2));
+		}
 
-		// compute normalized pattern with width elev_width in the x-z
-		// plane, and width az_width in the y-z plane.
-		// This pattern is for a rectangular aperture with uniform
-		// illumination (ie., sinc^2).
-		Fn = sin(pi*0.88/elev_width*sin(theta)*cos(phi)) /
-				 (pi*0.88/elev_width*sin(theta)*cos(phi)) *
-			 sin(pi*0.88/az_width*sin(theta)*sin(phi)) /
+		double Fn1,Fn2;
+		if ((sin(theta) == 0.0) || (cos(phi) == 0.0))
+		{
+			Fn1 = 1.0;
+		}	
+		else
+		{
+			Fn1 = sin(pi*0.88/elev_width*sin(theta)*cos(phi)) /
+				 (pi*0.88/elev_width*sin(theta)*cos(phi));
+		}
+
+		if ((sin(theta) == 0.0) || (sin(phi) == 0.0))
+		{
+			Fn2 = 1.0;
+		}	
+		else
+		{
+			Fn2 = sin(pi*0.88/az_width*sin(theta)*sin(phi)) /
 				 (pi*0.88/az_width*sin(theta)*sin(phi));
-		Fn *= Fn;
-		power_gain[i][j] = Fn*max_gain;
-	}
+		}
 
-	cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,0.0,0.0,
-								power_gain);
-	cur_beam.WriteBeamPattern("beampattern.dat");
+		double Fn = Fn1 * Fn2;
+		Fn *= Fn;
+		power_gainv[i][j] = Fn*max_gainV;
+		power_gainh[i][j] = Fn*max_gainH;
+    }
+
+    //
+    // Make beam objects and write them out.
+    //
+
+    Beam beamv;
+    beamv.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
+                                0.0,0.0,power_gainv);
+    beamv.WriteBeamPattern("beam2.pat");
+
+    Beam beamh;
+    beamh.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
+                                0.0,0.0,power_gainh);
+    beamh.WriteBeamPattern("beam1.pat");
 
 	return (0);
 }

@@ -20,6 +20,7 @@ static const char rcs_id_sigma0_c[] =
 #include "Meas.h"
 #include "Distributions.h"
 #include "Constants.h"
+#include "Wind.h"
 
 //
 // radar_X
@@ -109,7 +110,7 @@ radar_X_PtGr(
 // geometry related factors such as range and antenna gain can be replaced
 // by effective values (instead of integrating over the bandwidth).
 // K-factor should remove any error introduced by this assumption.
-// The result is fuzzed by Kpc.
+// The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
 // See also the Pnoise function which computes the total signal (all slices)
 // plus noise power over a much larger noise measurement bandwidth.
 //
@@ -135,18 +136,34 @@ sigma0_to_Psn(
 	float				sigma0,
 	float*				Psn)
 {
+
+	//----------------------------------------------------------------------//
+	// Compute the radar parameter X which includes gain, loss, and geometry
+	// factors in the received power.  This is the true value.  Processing
+	// uses a modified value that includes fuzzing by Kpr.
+	//----------------------------------------------------------------------//
+
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 
+	//------------------------------------------------------------------------//
 	// Signal (ie., echo) power referenced to the point just before the
 	// I-Q detection occurs (ie., including the receiver gain and system loss).
+	//------------------------------------------------------------------------//
+
 	double Ps_slice = Kfactor*X*sigma0;
 
+	//------------------------------------------------------------------------//
 	// Constant noise power within one slice referenced to the antenna terminal
+	//------------------------------------------------------------------------//
+
 	double Pn_slice = bK * meas->bandwidth * instrument->systemTemperature;
 
+	//------------------------------------------------------------------------//
 	// Multiply by receiver gain and system loss to reference noise power
 	// at the same place as the signal power.
+	//------------------------------------------------------------------------//
+
 	Pn_slice *= instrument->receiverGain / instrument->systemLoss;
 
 	if (instrument->useKpc == 0)
@@ -155,8 +172,10 @@ sigma0_to_Psn(
 		return(1);
 	}
 
+	//------------------------------------------------------------------------//
 	// Estimate Kpc using the true value of snr (known here!) and the
 	// approximate equations in Mike Spencer's Kpc memos.
+	//------------------------------------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 
@@ -166,6 +185,7 @@ sigma0_to_Psn(
 	double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
 	float Kpc = A + B/snr + C/snr/snr;
 
+	//------------------------------------------------------------------------//
 	// Fuzz the Ps value by multiplying by a random number drawn from
 	// a gaussian distribution with a variance of Kpc.  This includes both
 	// thermal noise effects, and fading due to the random nature of the 
@@ -176,6 +196,7 @@ sigma0_to_Psn(
 	// to the noise, and a fading effect that applies only to the signal.
 	// However, as long as Kpc is correct, the approach implemented here
 	// will give the final sigma0's the correct variance.
+	//------------------------------------------------------------------------//
 
 	Gaussian rv(Kpc,1.0);
 	Ps_slice *= rv.GetNumber();
@@ -304,4 +325,46 @@ Pr_to_sigma0(
 	return(1);
 }
 
+//
+// GetKpm
+//
+// Return the Kpm value appropriate for the current instrument state
+// (ie., beam) and wind vector.
+//
+// Inputs:
+//	instrument = pointer to current instrument object.
+//	wv = pointer to wind vector to use.
+//
+// Return Value:
+//	The value of Kpm to use.
+//
+
+float
+GetKpm(
+	Instrument* instrument,
+	WindVector* wv)
+
+{
+
+	float Kpm;
+	int ib = instrument->antenna.currentBeamIdx;
+	if (wv->spd < 0)
+	{
+		printf("Error: GetKpm received a negative wind speed\n");
+		exit(-1);
+	}
+	else if (wv->spd < 35)
+	{
+	Kpm = 0.2;
+//		Kpm = Kpmtable[ib][(int)wv->spd];
+	}
+	else
+	{
+	Kpm = 0.2;
+//		Kpm = Kpmtable[ib][35];
+	}
+
+	return(Kpm);
+
+}
 

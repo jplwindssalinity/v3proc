@@ -374,8 +374,8 @@ Beam::GetPowerGain(
 
 	// Compute 2-D indices for the lower left point in the grid square around
 	// the desired point.
-	int ix1 = (int)(floor(Em/_x_spacing) + 0.5) + _ix_zero;
-	int iy1 = (int)(floor(Am/_y_spacing) + 0.5) + _iy_zero;
+	int ix1 = (int)floor(Em/_x_spacing) + _ix_zero;
+	int iy1 = (int)floor(Am/_y_spacing) + _iy_zero;
 
 	if ((ix1 < 0) ||
     	(ix1 > _Nx - 2) ||
