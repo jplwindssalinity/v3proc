@@ -201,7 +201,7 @@ List<T>::GetPrev()
 // Returns 1 on success, 0 if either node doesn't exist
 
 template <class T>
-T*
+int
 List<T>::SwapCurrentAndNext()
 {
 	// make sure current and next exist
