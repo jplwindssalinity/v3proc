@@ -8,7 +8,7 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -mr ] [ -f fit_base ] <config_file> <dtc_base>
+//    echo_dtc [ -mrl ] [ -f fit_base ] <config_file> <dtc_base>
 //      <echo_file...>
 //
 // DESCRIPTION
@@ -23,6 +23,7 @@
 //    [ -m ]           Only use the fit to supply constants for orbit
 //                       steps with missing data.
 //    [ -r ]           Allow time regression.
+//    [ -l ]           Eliminate land.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
 //
 // OPERANDS
@@ -99,7 +100,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "f:mr"
+#define OPTSTRING  "f:lmr"
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
@@ -136,7 +137,7 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -mr ]", "[ -f fit_base ]",
+const char* usage_array[] = { "[ -lmr ]", "[ -f fit_base ]",
     "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -164,6 +165,7 @@ main(
     //------------//
 
     int opt_regression = 1;    // default, check for regression
+    int opt_process_land = 1;    // default, process land
     int opt_fit = 0;
     int opt_fit_for_missing_only = 0;
     const char* fit_base = NULL;
@@ -180,6 +182,10 @@ main(
     {
         switch(c)
         {
+        case 'l':
+            // this flag means eliminate land
+            opt_process_land = 0;
+            break;
         case 'm':
             opt_fit_for_missing_only = 1;
             break;
@@ -319,7 +325,9 @@ main(
                 int beam_idx = echo_info.SpotBeamIdx(spot_idx);
                 int orbit_step = echo_info.SpotOrbitStep(spot_idx);
 
-                if (echo_info.flag[spot_idx] == EchoInfo::OK &&
+                if ((echo_info.flag[spot_idx] == EchoInfo::OK ||
+                    (echo_info.flag[spot_idx] == EchoInfo::NOT_OCEAN &&
+                    opt_process_land)) &&
                     echo_info.totalSignalEnergy[spot_idx] >=
                     SIGNAL_ENERGY_THRESHOLD)
                 {
@@ -512,8 +520,12 @@ main(
 
                 for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
                 {
-                    if (echo_info.flag[spot_idx] != EchoInfo::OK)
+                    if (echo_info.flag[spot_idx] != EchoInfo::OK &&
+                        (echo_info.flag[spot_idx] != EchoInfo::NOT_OCEAN ||
+                        ! opt_process_land))
+                    {
                         continue;
+                    }
 
                     if (echo_info.totalSignalEnergy[spot_idx] <
                         SIGNAL_ENERGY_THRESHOLD)
@@ -660,11 +672,23 @@ process_orbit_step(
     double P = *(*(terms + orbit_step) + 1);
     double C = *(*(terms + orbit_step) + 2);
 
-    double newA = sqrt(A*A*cos(2.0*P) + a*a*cos(2.0*p) - cos(P+p));
+//    double newA = sqrt(A*A*cos(2.0*P) + a*a*cos(2.0*p) - cos(P+p));
+    double newA = sqrt(A*A - 2.0*A*a*cos(P+p) + a*a);
     double newC = C - c;
     double y = A*sin(P) - a*sin(p);
     double x = A*cos(P) - a*cos(p);
     double newP = atan2(y, x);
+
+/*
+for (double angle = 0.0; angle < two_pi; angle += 1.0 * dtr)
+{
+  double v_orig = A * cos(angle + P) + C;
+  double v_delta = a * cos(angle + p) + c;
+  double v_new = newA * cos(angle + newP) + newC;
+printf("%g %g %g %g %g\n", angle, v_orig, v_delta, v_new, v_orig - v_delta - v_new);
+}
+exit(0);
+*/
 
     *(*(terms + orbit_step) + 0) = newA;
     *(*(terms + orbit_step) + 1) = newP;
@@ -704,7 +728,7 @@ process_orbit_step(
         {
             return(0);
         }
-        fprintf(ofp, "@ title %cBeam %d, Orbit Step%d%c\n", QUOTE,
+        fprintf(ofp, "@ title %cBeam %d, Orbit Step %d%c\n", QUOTE,
             beam_idx + 1, orbit_step, QUOTE);
         fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, used_string, QUOTE);
         fprintf(ofp, "@ xaxis label %cAzimuth Angle (deg)%c\n", QUOTE, QUOTE);

@@ -265,7 +265,7 @@ fit_terms_plus(
     double* azimuth = (double *)make_array(sizeof(double), 1, good_count);
     double* data = (double *)make_array(sizeof(double), 1, good_count);
 
-    int max_term[3] = { 4, 3, 3 };
+    int max_term[3] = { 3, 2, 2 };
     double threshold[3] = { 0.0, 0.0, 0.0 };    // amp, phase, bias
     double new_coefs[3][ORBIT_STEPS];
 
@@ -390,7 +390,7 @@ fit_terms_plus(
             //-------------//
 
             int toss_count = 0;
-            double thresh = 3.0 * std_dev;
+            double thresh = 5.0 * std_dev;
             sample_count = 0;
             for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
             {
