@@ -2199,6 +2199,7 @@ GMF::Optimize_Wind_Solutions(
 
 #define H1_THRESH_FRACTION    0.1
 
+/*
 //----------------------//
 // GMF::RetrieveWindsH1 //
 //----------------------//
@@ -2230,17 +2231,18 @@ GMF::RetrieveWindsH1(
         if (_bestObj[phi_idx] < min_obj)
             min_obj = _bestObj[phi_idx];
     }
-    float thresh_dif = (max_obj - min_obj) * H1_THRESH_FRACTION;
+    float threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
 
     //-------------//
     // find maxima //
     //-------------//
 
     int peak[10];
-    float left[10];
-    float right[10];
-    float width[10];
-    int number[10];
+    float left_rad[10];
+    float right_rad[10];
+    float width_rad[10];
+    int number_ambigs[10];
+    int overlapping_peak[10];
     int peak_count = 0;
 
     for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
@@ -2252,7 +2254,7 @@ GMF::RetrieveWindsH1(
             // maxima found, determine width //
             //-------------------------------//
 
-            float thresh = _bestObj[phi_idx] - thresh_dif;
+            float thresh = _bestObj[phi_idx] - threshold_delta;
             int left_idx = (phi_idx + _phiCount - 1) % _phiCount;
             while (_bestObj[left_idx] < _bestObj[phi_idx] &&
                    _bestObj[left_idx] > thresh)
@@ -2270,8 +2272,8 @@ GMF::RetrieveWindsH1(
             if (_bestObj[left_idx] > _bestObj[phi_idx] ||
                 _bestObj[right_idx] > _bestObj[phi_idx])
             {
-                left[peak_count] = (float)phi_idx * _phiStepSize;
-                right[peak_count] = left[peak_count];
+                left_rad[peak_count] = (float)phi_idx * _phiStepSize;
+                right_rad[peak_count] = left_rad[peak_count];
             }
             else
             {
@@ -2280,26 +2282,28 @@ GMF::RetrieveWindsH1(
                 int left_plus_idx = (left_idx + 1) % _phiCount;
                 m = _bestObj[left_plus_idx] - _bestObj[left_idx];
                 b = _bestObj[left_idx] - m * (float)left_idx;
-                left[peak_count] = _phiStepSize * (thresh - b) / m;
+                left_rad[peak_count] = _phiStepSize * (thresh - b) / m;
 
                 int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
                 m = _bestObj[right_idx] - _bestObj[right_minus_idx];
                 b = _bestObj[right_minus_idx] - m * (float)right_idx;
-                right[peak_count] = _phiStepSize * (thresh - b) / m;
+                right_rad[peak_count] = _phiStepSize * (thresh - b) / m;
             }
 
-            if (left[peak_count] > right[peak_count])
+            if (left_rad[peak_count] > right_rad[peak_count])
             {
-                width[peak_count] = right[peak_count] + two_pi -
-                    left[peak_count];
+                width_rad[peak_count] = right_rad[peak_count] + two_pi -
+                    left_rad[peak_count];
             }
             else
             {
-                width[peak_count] = right[peak_count] - left[peak_count];
+                width_rad[peak_count] = right_rad[peak_count] - left_rad[peak_count];
             }
 
             peak[peak_count] = phi_idx;
-            number[peak_count] = 1;
+            number_ambigs[peak_count] = 1;
+            overlapping_peak[peak_count] = -1;
+
             peak_count++;
             if (peak_count > 10)
             {
@@ -2315,24 +2319,24 @@ GMF::RetrieveWindsH1(
 
     for (int this_idx = 0; this_idx < peak_count; this_idx++)
     {
-        if (number[this_idx] == -1)
+        if (number_ambigs[this_idx] == -1)
             continue;
 
-        if (width[this_idx] == 0.0)    // too thin to overlap
+        if (width_rad[this_idx] == 0.0)    // too thin to overlap
             continue;
 
-        float center = left[this_idx] + width[this_idx] / 2.0;
+        float center = left_rad[this_idx] + width_rad[this_idx] / 2.0;
         for (int other_idx = 0; other_idx < peak_count; other_idx++)
         {
-            if (number[other_idx] == -1)
+            if (number_ambigs[other_idx] == -1)
                 continue;
 
             if (other_idx == this_idx)
                 continue;
 
-            float other_center = left[other_idx] + width[other_idx] / 2.0;
+            float other_center = left_rad[other_idx] + width_rad[other_idx] / 2.0;
             float center_dif = ANGDIF(center, other_center);
-            float range = (width[this_idx] + width[other_idx]) / 2.0;
+            float range = (width_rad[this_idx] + width_rad[other_idx]) / 2.0;
 
             if (center_dif >= range)    // no overlap
                 continue;
@@ -2347,28 +2351,28 @@ GMF::RetrieveWindsH1(
             while (other_center < center - pi)
                 other_center += two_pi;
 
-            float other_left = other_center - width[other_idx] / 2.0;
-            float other_right = other_center + width[other_idx] / 2.0;
-            float this_left = center - width[this_idx] / 2.0;
-            float this_right = center + width[this_idx] / 2.0;
+            float other_left = other_center - width_rad[other_idx] / 2.0;
+            float other_right = other_center + width_rad[other_idx] / 2.0;
+            float this_left = center - width_rad[this_idx] / 2.0;
+            float this_right = center + width_rad[this_idx] / 2.0;
 
-            if (width[other_idx] == 0.0)
+            if (width_rad[other_idx] == 0.0)
             {
                 //---------------------//
                 // wide overlaps point //
                 //---------------------//
 
                 // add new peak
-                right[peak_count] = right[this_idx];     // new "peak"
-                left[peak_count] = right[other_idx];
-                width[peak_count] = right[peak_count] - left[peak_count];
-                number[peak_count] = 0;
+                right_rad[peak_count] = right_rad[this_idx];     // new "peak"
+                left_rad[peak_count] = right_rad[other_idx];
+                width_rad[peak_count] = right_rad[peak_count] - left_rad[peak_count];
+                number_ambigs[peak_count] = 0;
                 peak_count++;
 
                 // shorten this one
-                right[this_idx] = left[other_idx];
-                width[this_idx] = right[this_idx] - left[this_idx];
-                number[this_idx] = 0;
+                right_rad[this_idx] = left_rad[other_idx];
+                width_rad[this_idx] = right_rad[this_idx] - left_rad[this_idx];
+                number_ambigs[this_idx] = 0;
             }
             else
             {
@@ -2376,10 +2380,10 @@ GMF::RetrieveWindsH1(
                 // wide overlaps wide //
                 //--------------------//
 
-                left[this_idx] = MIN(other_left, this_left);
-                right[this_idx] = MAX(other_right, this_right);
-                width[this_idx] = right[this_idx] - left[this_idx];
-                number[other_idx] = -1;    // turn it off
+                left_rad[this_idx] = MIN(other_left, this_left);
+                right_rad[this_idx] = MAX(other_right, this_right);
+                width_rad[this_idx] = right_rad[this_idx] - left_rad[this_idx];
+                number_ambigs[other_idx] = -1;    // turn it off
             }
         }
     }
@@ -2391,7 +2395,7 @@ GMF::RetrieveWindsH1(
     int ambiguities_left = DEFAULT_MAX_SOLUTIONS;
     for (int this_idx = 0; this_idx < peak_count; this_idx++)
     {
-        if (number[this_idx] == 1)
+        if (number_ambigs[this_idx] == 1)
             ambiguities_left--;
     }
 
@@ -2407,10 +2411,11 @@ GMF::RetrieveWindsH1(
         float max_use_width = 0.0;
         for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
         {
-            if (number[peak_idx] == -1)
+            if (number_ambigs[peak_idx] == -1)
                 continue;
 
-            float use_width = (float)width[peak_idx] / (float)number[peak_idx];
+            float use_width = (float)width_rad[peak_idx] /
+                (float)number_ambigs[peak_idx];
             if (use_width > max_use_width)
             {
                 max_use_width = use_width;
@@ -2419,7 +2424,7 @@ GMF::RetrieveWindsH1(
         }
         if (max_idx != -1)
         {
-            number[max_idx]++;
+            number_ambigs[max_idx]++;
             ambiguities_left--;
         }
     }
@@ -2431,10 +2436,10 @@ GMF::RetrieveWindsH1(
     WVC tmp_wvc;
     for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
     {
-        if (number[peak_idx] == -1)
+        if (number_ambigs[peak_idx] == -1)
             continue;
 
-        if (number[peak_idx] == 1)
+        if (number_ambigs[peak_idx] == 1)
         {
             WindVectorPlus* wvp = new WindVectorPlus();
             if (! wvp)
@@ -2470,13 +2475,13 @@ GMF::RetrieveWindsH1(
 
     for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
     {
-        if (number[peak_idx] > 1)
+        if (number_ambigs[peak_idx] > 1)
         {
-            for (int i = 0; i < number[peak_idx]; i++)
+            for (int i = 0; i < number_ambigs[peak_idx]; i++)
             {
-                float dir = left[peak_idx] +
-                        width[peak_idx] / (2.0 * (float)number[peak_idx]) +
-                        (float)i * width[peak_idx] / (float)number[peak_idx];
+                float dir = left_rad[peak_idx] +
+                        width_rad[peak_idx] / (2.0 * (float)number_ambigs[peak_idx]) +
+                        (float)i * width_rad[peak_idx] / (float)number_ambigs[peak_idx];
 
                 dir = fmod(dir, two_pi);
 
@@ -2502,6 +2507,7 @@ GMF::RetrieveWindsH1(
 
 	return(1);
 }
+*/
 
 //----------------------//
 // GMF::SolutionCurveH1 //
@@ -2631,4 +2637,342 @@ GMF::FindBestSpeed(
     }
 
     return(1);
+}
+
+//----------------------//
+// GMF::RetrieveWindsH1 //
+//----------------------//
+
+int
+GMF::RetrieveWindsH1(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+    //--------------------------------//
+    // generate coarse solution curve //
+    //--------------------------------//
+
+    if (_phiCount != 45)
+        SetPhiCount(45);
+    SolutionCurveH1(meas_list, kp);
+
+    //----------------------------//
+    // determine maxima threshold //
+    //----------------------------//
+
+    float min_obj = _bestObj[0];
+    float max_obj = _bestObj[0];
+    for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > max_obj)
+            max_obj = _bestObj[phi_idx];
+        if (_bestObj[phi_idx] < min_obj)
+            min_obj = _bestObj[phi_idx];
+    }
+    float threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
+
+    //-------------//
+    // find maxima //
+    //-------------//
+
+    int peak[10];
+    float left_rad[10];
+    float right_rad[10];
+    float width_rad[10];
+    int number_ambigs[10];
+    int overlap_idx[10];
+
+    int peak_count = 0;
+    for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % _phiCount] &&
+            _bestObj[phi_idx] > _bestObj[(phi_idx + _phiCount - 1) % _phiCount])
+        {
+            //----------------------------------------------//
+            // maxima found, determine left and right edges //
+            //----------------------------------------------//
+
+            float thresh = _bestObj[phi_idx] - threshold_delta;
+            int left_idx = (phi_idx + _phiCount - 1) % _phiCount;
+            while (_bestObj[left_idx] < _bestObj[phi_idx] &&
+                   _bestObj[left_idx] > thresh)
+            {
+                left_idx = (left_idx + _phiCount - 1) % _phiCount;
+            }
+
+            int right_idx = (phi_idx + 1) % _phiCount;
+            while (_bestObj[right_idx] < _bestObj[phi_idx] &&
+                   _bestObj[right_idx] > thresh)
+            {
+                right_idx = (right_idx + 1) % _phiCount;
+            }
+
+            //------------------------------//
+            // check the nature of the peak //
+            //------------------------------//
+
+            if (_bestObj[left_idx] > _bestObj[phi_idx] ||
+                _bestObj[right_idx] > _bestObj[phi_idx])
+            {
+                //--------------------------------------------------//
+                // just a blip on the side of mountain, but keep it //
+                //--------------------------------------------------//
+
+                left_rad[peak_count] = (float)phi_idx * _phiStepSize;
+                right_rad[peak_count] = left_rad[peak_count];
+            }
+            else
+            {
+                //----------------------------------//
+                // a real peak, determine the edges //
+                //----------------------------------//
+
+                float m, b;
+
+                int left_plus_idx = (left_idx + 1) % _phiCount;
+                m = _bestObj[left_plus_idx] - _bestObj[left_idx];
+                b = _bestObj[left_idx] - m * (float)left_idx;
+                left_rad[peak_count] = _phiStepSize * (thresh - b) / m;
+
+                int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
+                m = _bestObj[right_idx] - _bestObj[right_minus_idx];
+                b = _bestObj[right_minus_idx] - m * (float)right_idx;
+                right_rad[peak_count] = _phiStepSize * (thresh - b) / m;
+            }
+
+            //---------------------//
+            // calculate the width //
+            //---------------------//
+
+            while (left_rad[peak_count] < 0.0)
+                left_rad[peak_count] += two_pi;
+
+            while (right_rad[peak_count] < left_rad[peak_count])
+                right_rad[peak_count] += two_pi;
+
+            width_rad[peak_count] = right_rad[peak_count] -
+                left_rad[peak_count];
+
+            //----------------------//
+            // set other parameters //
+            //----------------------//
+
+            peak[peak_count] = phi_idx;
+            number_ambigs[peak_count] = 1;    // assign it one ambiguity
+            overlap_idx[peak_count] = -1;     // no overlaps yet
+
+            peak_count++;
+            if (peak_count > 10)
+            {
+                fprintf(stderr, "Too many ambiguities!\n");
+                return(0);
+            }
+        }
+    }
+
+    //-------------------//
+    // check for overlap //
+    //-------------------//
+
+    for (int this_idx = 0; this_idx < peak_count; this_idx++)
+    {
+        if (number_ambigs[this_idx] == -1)    // erased peak
+            continue;
+
+        if (width_rad[this_idx] == 0.0)    // too thin to overlap
+            continue;
+
+        float center = (left_rad[this_idx] + right_rad[this_idx]) / 2.0;
+
+        for (int other_idx = 0; other_idx < peak_count; other_idx++)
+        {
+            if (number_ambigs[other_idx] == -1)    // erased peak
+                continue;
+
+            if (other_idx == this_idx)      // the same peak
+                continue;
+
+            float other_center = (left_rad[other_idx] +
+                right_rad[other_idx]) / 2.0;
+            float center_dif = ANGDIF(center, other_center);
+            float range = (width_rad[this_idx] + width_rad[other_idx]) / 2.0;
+
+            if (center_dif >= range)    // no overlap
+                continue;
+
+            //------------------------------------------//
+            // overlap: get the centers near each other //
+            //------------------------------------------//
+
+            while (other_center > center + pi)
+                other_center -= two_pi;
+            while (other_center < center - pi)
+                other_center += two_pi;
+
+            float this_left = center - width_rad[this_idx] / 2.0;
+            float this_right = center + width_rad[this_idx] / 2.0;
+
+            float other_left = other_center - width_rad[other_idx] / 2.0;
+            float other_right = other_center + width_rad[other_idx] / 2.0;
+
+            if (width_rad[other_idx] == 0.0)
+            {
+                //------------------------------//
+                // wide overlaps point: mark it //
+                //------------------------------//
+
+                if (overlap_idx[this_idx] != -1)
+                    fprintf(stderr, "Multiple overlaps!\n");
+
+                overlap_idx[this_idx] = other_idx;
+            }
+            else
+            {
+                //----------------------------------//
+                // wide overlaps wide: combine them //
+                //----------------------------------//
+
+                left_rad[this_idx] = MIN(other_left, this_left);
+                right_rad[this_idx] = MAX(other_right, this_right);
+                width_rad[this_idx] = right_rad[this_idx] - left_rad[this_idx];
+                number_ambigs[other_idx] = -1;    // turn it off
+            }
+        }
+    }
+
+    //--------------------------//
+    // assign extra ambiguities //
+    //--------------------------//
+
+    int ambiguities_left = DEFAULT_MAX_SOLUTIONS;
+    for (int this_idx = 0; this_idx < peak_count; this_idx++)
+    {
+        if (number_ambigs[this_idx] == 1)
+            ambiguities_left--;
+    }
+
+    if (ambiguities_left < 0)
+    {
+        fprintf(stderr, "Too many ambiguities!\n");
+        return(0);
+    }
+
+    int max_idx = -1;
+    while (ambiguities_left)
+    {
+        float max_use_width = 0.0;
+        for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+        {
+            if (number_ambigs[peak_idx] == -1)
+                continue;
+
+            float use_width = (float)width_rad[peak_idx] /
+                (float)number_ambigs[peak_idx];
+            if (use_width > max_use_width)
+            {
+                max_use_width = use_width;
+                max_idx = peak_idx;
+            }
+        }
+        if (max_idx != -1)
+        {
+            number_ambigs[max_idx]++;
+            ambiguities_left--;
+
+            //-------------------------//
+            // check for overlap index //
+            //-------------------------//
+
+            if (overlap_idx[max_idx] != -1)
+            {
+                //--------------//
+                // absorb point //
+                //--------------//
+
+                number_ambigs[max_idx]++;                 // absorb ambiguity
+                number_ambigs[overlap_idx[max_idx]] = -1;  // erase point
+            }
+        }
+    }
+
+    //-------------------------------//
+    // refine single ambiguity peaks //
+    //-------------------------------//
+
+    WVC tmp_wvc;
+    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    {
+        if (number_ambigs[peak_idx] == -1)
+            continue;
+
+        if (number_ambigs[peak_idx] == 1)
+        {
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = _bestSpd[peak[peak_idx]];
+            wvp->dir = (float)peak[peak_idx] * _phiStepSize;
+            wvp->obj = _bestObj[peak[peak_idx]];
+
+            // put in temporary wvc
+            if (! tmp_wvc.ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+
+            // refine
+            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
+
+            // transfer to real wvc
+            tmp_wvc.ambiguities.GotoHead();
+            wvp = tmp_wvc.ambiguities.RemoveCurrent();
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+        }
+    }
+
+    //-------------------------------------//
+    // peak split multiple ambiguity peaks //
+    //-------------------------------------//
+
+    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    {
+        if (number_ambigs[peak_idx] > 1)
+        {
+            for (int i = 0; i < number_ambigs[peak_idx]; i++)
+            {
+                float dir = left_rad[peak_idx] +
+                        width_rad[peak_idx] /
+                        (2.0 * (float)number_ambigs[peak_idx]) +
+                        (float)i * width_rad[peak_idx] /
+                        (float)number_ambigs[peak_idx];
+
+                dir = fmod(dir, two_pi);
+
+                float spd, obj;
+                FindBestSpeed(meas_list, kp, dir, 0.0, 50.0, &spd, &obj);
+
+                WindVectorPlus* wvp = new WindVectorPlus();
+                if (! wvp)
+                    return(0);
+                wvp->spd = spd;
+                wvp->dir = dir;
+                wvp->obj = obj;
+
+                // put in wvc
+                if (! wvc->ambiguities.Append(wvp))
+                {
+                    delete wvp;
+                    return(0);
+                }
+            }
+        }
+    }
+
+	return(1);
 }
