@@ -139,7 +139,6 @@ main(
 	//--------------------------------//
 
 	ConfigList config_list;
-	config_list.LogErrors();
 	if (! config_list.Read(config_file))
 	{
 		fprintf(stderr, "%s: error reading sim config file %s\n",

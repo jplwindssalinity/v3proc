@@ -480,31 +480,10 @@ ConfigInstrument(
 		return(0);
 	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
-/*
-	float system_delay;		// us
-	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
-		return(0);
-	instrument->systemDelay = system_delay * US_TO_S;
-*/
-
 	float system_temperature;		// K
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
 		return(0);
 	instrument->systemTemperature = system_temperature;
-
-/*
-	float xmit_pulse_width;	// ms
-	if (! config_list->GetFloat(XMIT_PULSE_WIDTH_KEYWORD,
-		&xmit_pulse_width))
-		return(0);
-	instrument->xmitPulsewidth = xmit_pulse_width * MS_TO_S;
-
-	float receiver_gate_width;	// ms
-	if (! config_list->GetFloat(RECEIVER_GATE_WIDTH_KEYWORD,
-		&receiver_gate_width))
-		return(0);
-	instrument->receiverGateWidth = receiver_gate_width * MS_TO_S;
-*/
 
 	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
@@ -567,7 +546,7 @@ ConfigInstrument(
 		return(0);
 	instrument->useKpm = use_kpm;
 
-	config_list->LogErrors(0);
+	config_list->WarnForMissingKeywords();
 
 	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
 	if (rgc_file)
@@ -593,7 +572,7 @@ ConfigInstrument(
 		instrument->useDtc = 1;
 	}
 
-	config_list->LogErrors(1);
+	config_list->ExitForMissingKeywords();
 
 	return(1);
 }
@@ -629,7 +608,7 @@ ConfigInstrumentSim(
 
 	int uniform_sigma_field;
 
-	config_list->LogErrors(0);
+	config_list->WarnForMissingKeywords();
 	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD,
 		&uniform_sigma_field))
 	{
@@ -655,7 +634,7 @@ ConfigInstrumentSim(
 		create_xtable=0; // default value
 	instrument_sim->createXtable=create_xtable;
 
-	config_list->LogErrors(1);
+	config_list->ExitForMissingKeywords();
 
 	/****** You cannot use and create the XTable simultaneously. ***/
 	if(create_xtable && use_kfactor)
@@ -1115,7 +1094,7 @@ ConfigL10ToL15(
 	L10ToL15*			l10tol15,
 	ConfigList*		config_list)
 {
-	config_list->LogErrors(0);
+	config_list->WarnForMissingKeywords();
 	int output_sigma0_to_stdout;
 	if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
 		&output_sigma0_to_stdout))
@@ -1135,7 +1114,7 @@ ConfigL10ToL15(
 			return(0);
 	}
 
-	config_list->LogErrors(1);
+	config_list->ExitForMissingKeywords();
 
 	return(1);
 }
@@ -1343,202 +1322,119 @@ ConfigControl(
 	double*			spacecraft_start_time,
 	double*			spacecraft_end_time)
 {
-	//-----------------------------------//
-	// indicate nothing has been set yet //
-	//-----------------------------------//
+	config_list->WarnForMissingKeywords();
 
-	int have_spacecraft_start_time = 0;
-	int have_spacecraft_end_time = 0;
-	int have_instrument_start_time = 0;
-	int have_instrument_end_time = 0;
-	int have_grid_start_time = 0;
-	int have_grid_end_time = 0;
+	//-----------------//
+	// grid start time //
+	//-----------------//
 
-	//-------------------------//
-	// disable error reporting //
-	//-------------------------//
+	double time_in_rev;
+	if (config_list->GetDouble(TIME_IN_REV_KEYWORD, &time_in_rev))
+	{
+		*grid_start_time = time_in_rev;
+//		*grid_start_time = spacecraft_sim->FindPrevGridStartTime(time_in_rev);
+	}
+	else
+	{
+		fprintf(stderr, "ConfigControl: can't determine grid start time\n");
+		exit(1);
+	}
 
-	config_list->LogErrors(0);
+	//---------------//
+	// grid end time //
+	//---------------//
 
-	//--------------------//
-	// get explicit times //
-	//--------------------//
+	double grid_lat_range, grid_time_range;
+	if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
+	{
+		double orbit_period = spacecraft_sim->GetPeriod();
+		grid_time_range = orbit_period * grid_lat_range / 360.0;
+		*grid_end_time = *grid_start_time + grid_time_range;
+	}
+	else if (config_list->GetDouble(GRID_TIME_RANGE_KEYWORD, &grid_time_range))
+	{
+		*grid_end_time = *grid_start_time + grid_time_range;
+	}
+	else
+	{
+        fprintf(stderr, "ConfigControl: can't determine grid end time\n");
+        exit(1);
+	}
+
+	//-----------------------//
+	// instrument start time //
+	//-----------------------//
+
+	double ins_buf;
+	if (config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD,
+		instrument_start_time))
+	{
+		// nothing to do -- woo hoo!
+	}
+	else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
+	{
+		*instrument_start_time = *grid_start_time - ins_buf;
+	}
+	else
+	{
+		fprintf(stderr,
+			"ConfigControl: can't determine instrument start time\n");
+		exit(1);
+	}
+
+	//---------------------//
+	// instrument end time //
+	//---------------------//
+
+	if (config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD,
+		instrument_end_time))
+	{
+		// nothing to do -- woo hoo again!
+	}
+	else if (config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD, &ins_buf))
+	{
+		*instrument_end_time = *grid_end_time + ins_buf;
+	}
+	else
+	{
+		fprintf(stderr,
+			"ConfigControl: can't determine instrument end time\n");
+		exit(1);
+	}
+
+	//-----------------------//
+	// spacecraft start time //
+	//-----------------------//
 
 	if (config_list->GetDouble(SPACECRAFT_START_TIME_KEYWORD,
 		spacecraft_start_time))
 	{
-		have_spacecraft_start_time = 1;
+		// nothing to do -- woo hoo once more!
 	}
+	else
+	{
+		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
+		*spacecraft_start_time = *instrument_start_time -
+			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
+	}
+
+	//---------------------//
+	// spacecraft end time //
+	//---------------------//
+
 	if (config_list->GetDouble(SPACECRAFT_END_TIME_KEYWORD,
 		spacecraft_end_time))
 	{
-		have_spacecraft_end_time = 1;
+		// nothing to do -- woo hoo once more!
 	}
-	if (config_list->GetDouble(INSTRUMENT_START_TIME_KEYWORD,
-		instrument_start_time))
+	else
 	{
-		have_instrument_start_time = 1;
-	}
-	if (config_list->GetDouble(INSTRUMENT_END_TIME_KEYWORD,
-		instrument_end_time))
-	{
-		have_instrument_end_time = 1;
-	}
-	if (config_list->GetDouble(GRID_START_TIME_KEYWORD, grid_start_time))
-		have_grid_start_time = 1;
-	if (config_list->GetDouble(GRID_END_TIME_KEYWORD, grid_end_time))
-		have_grid_end_time = 1;
-
-	//-------------------------------//
-	// determine the grid start time //
-	//-------------------------------//
-
-	if (! have_grid_start_time)
-	{
-		double ap_start, g_arg_of_lat;
-		if (config_list->GetDouble(APPROXIMATE_START_TIME_KEYWORD,
-				&ap_start) &&
-			config_list->GetDouble(GRID_START_ARG_OF_LAT_KEYWORD,
-				&g_arg_of_lat))
-		{
-			g_arg_of_lat *= dtr;
-			double orbit_period = spacecraft_sim->GetPeriod();
-			Spacecraft spacecraft;
-			spacecraft_sim->UpdateOrbit(ap_start, &spacecraft);
-			double arg_of_lat = spacecraft_sim->GetArgOfLat(&spacecraft);
-			double ang_dif = fmod(g_arg_of_lat + two_pi - arg_of_lat, two_pi);
-			*grid_start_time = ap_start + orbit_period * ang_dif / two_pi;
-			have_grid_start_time = 1;
-		}
+		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
+		*spacecraft_end_time = *instrument_end_time +
+			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
 	}
 
-	//-----------------------------//
-	// determine the grid end time //
-	//-----------------------------//
-
-	if (! have_grid_end_time)
-	{
-		double grid_lat_range, grid_time_range;
-		if (have_grid_start_time &&
-			config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD,
-				&grid_lat_range))
-		{
-			grid_lat_range *= dtr;
-			double orbit_period = spacecraft_sim->GetPeriod();
-			*grid_end_time = *grid_start_time +
-				orbit_period * grid_lat_range / two_pi;
-			have_grid_end_time = 1;
-		}
-		else if (have_grid_start_time &&
-			config_list->GetDouble(GRID_TIME_RANGE_KEYWORD, &grid_time_range))
-		{
-			*grid_end_time = *grid_start_time + grid_time_range;
-			have_grid_end_time = 1;
-		}
-	}
-
-	//-------------------------------------//
-	// determine the instrument start time //
-	//-------------------------------------//
-
-	if (! have_instrument_start_time)
-	{
-		double i_buffer;
-		if (have_grid_start_time &&
-			config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD,
-				&i_buffer))
-		{
-			*instrument_start_time = *grid_start_time - i_buffer;
-			have_instrument_start_time = 1;
-		}
-	}
-
-	//-----------------------------------//
-	// determine the instrument end time //
-	//-----------------------------------//
-
-	if (! have_instrument_end_time)
-	{
-		double i_buffer;
-		if (have_grid_end_time &&
-			config_list->GetDouble(INSTRUMENT_TIME_BUFFER_KEYWORD,
-				&i_buffer))
-		{
-			*instrument_end_time = *grid_end_time + i_buffer;
-			have_instrument_end_time = 1;
-		}
-	}
-
-	//-------------------------------------//
-	// determine the spacecraft start time //
-	//-------------------------------------//
-
-	if (! have_spacecraft_start_time)
-	{
-		if (have_instrument_start_time)
-		{
-			double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-			*spacecraft_start_time = *instrument_start_time -
-				ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
-			have_spacecraft_start_time = 1;
-		}
-	}
-
-	//-----------------------------------//
-	// determine the spacecraft end time //
-	//-----------------------------------//
-
-	if (! have_spacecraft_end_time)
-	{
-		if (have_instrument_end_time)
-		{
-			double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-			*spacecraft_end_time = *instrument_end_time +
-				ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
-			have_spacecraft_end_time = 1;
-		}
-	}
-
-	//----------------------------//
-	// report missing information //
-	//----------------------------//
-
-	if (! have_grid_start_time)
-	{
-		fprintf(stderr, "Can't determine grid start time\n");
-		return(0);
-	}
-	if (! have_grid_end_time)
-	{
-		fprintf(stderr, "Can't determine grid end time\n");
-		return(0);
-	}
-	if (! have_instrument_start_time)
-	{
-		fprintf(stderr, "Can't determine instrument start time\n");
-		return(0);
-	}
-	if (! have_instrument_end_time)
-	{
-		fprintf(stderr, "Can't determine instrument end time\n");
-		return(0);
-	}
-	if (! have_spacecraft_start_time)
-	{
-		fprintf(stderr, "Can't determine spacecraft start time\n");
-		return(0);
-	}
-	if (! have_spacecraft_end_time)
-	{
-		fprintf(stderr, "Can't determine spacecraft end time\n");
-		return(0);
-	}
-
-	//---------------------------//
-	// re-enable error reporting //
-	//---------------------------//
-
-	config_list->LogErrors(1);
+	config_list->ExitForMissingKeywords();
 
 	return(1);
 }

@@ -91,12 +91,14 @@ public:
 	ConfigList();
 	~ConfigList();
 
-	//---------------//
-	// error logging //
-	//---------------//
+	//---------//
+	// logging //
+	//---------//
 
-	void	LogErrors(FILE* error_fp, int log_flag = 1);
-	void	LogErrors(int log_flag = 1);
+	void	SetLogFile(FILE* error_fp) { _errorFp = error_fp; };
+	void	ExitForMissingKeywords() { _logFlag = EXIT; };
+	void	WarnForMissingKeywords() { _logFlag = WARN; };
+	void	DoNothingForMissingKeywords() { _logFlag = NOTHING; };
 
 	//--------------//
 	// input/output //
@@ -121,14 +123,28 @@ public:
 	int		GetDouble(const char* keyword, double* value);
 	int		GetFloat(const char* keyword, float* value);
 
+	//----------------//
+	// adding to list //
+	//----------------//
+
+	int		StompOrAppend(const char* keyword, const char* value);
+
 protected:
+
+	enum LogE { EXIT, WARN, NOTHING };
+
+	//---------//
+	// methods //
+	//---------//
+
+	StringPair*		_Find(const char* keyword);
 
 	//-----------//
 	// variables //
 	//-----------//
 
 	FILE*	_errorFp;		// for error logging
-	int		_logFlag;		// for error logging (non-zero = log)
+	LogE	_logFlag;		// what to do
 };
 
 #endif

@@ -108,7 +108,7 @@ StringPair::SetValue(
 //============//
 
 ConfigList::ConfigList()
-:	_errorFp(stderr), _logFlag(0)
+:	_errorFp(stderr), _logFlag(EXIT)
 {
 	return;
 }
@@ -120,28 +120,6 @@ ConfigList::~ConfigList()
 	while ((pair=RemoveCurrent()) != NULL)
 		delete pair;
 
-	return;
-}
-
-//-----------------------//
-// ConfigList::LogErrors //
-//-----------------------//
-
-void
-ConfigList::LogErrors(
-	FILE*			error_fp,
-	int				log_flag)
-{
-	_errorFp = error_fp;
-	_logFlag = log_flag;
-	return;
-}
-
-void
-ConfigList::LogErrors(
-	int		log_flag)
-{
-	_logFlag = log_flag;
 	return;
 }
 
@@ -163,13 +141,9 @@ ConfigList::Read(
 		ifp = fopen(filename, "r");
 		if (ifp == NULL)
 		{
-			if (_logFlag)
-			{
-				fprintf(_errorFp, "Error opening config file\n");
-				fprintf(_errorFp, "  Config File: %s\n", filename);
-				exit(1);
-			}
-			return(0);
+			fprintf(_errorFp, "Error opening config file.\n");
+			fprintf(_errorFp, "  Config File: %s\n", filename);
+			exit(1);
 		}
 	}
 
@@ -189,14 +163,10 @@ ConfigList::Read(
 				break;
 			else			// error
 			{
-				if (_logFlag)
-				{
-					fprintf(_errorFp, "Error reading line from config file\n");
-					fprintf(_errorFp, "  Config File: %s\n", filename);
-					fprintf(_errorFp, "  Line Number: %d\n", line_number);
-					exit(1);
-				}
-				return(0);
+				fprintf(_errorFp, "Error reading line from config file\n");
+				fprintf(_errorFp, "  Config File: %s\n", filename);
+				fprintf(_errorFp, "  Line Number: %d\n", line_number);
+				exit(1);
 			}
 		}
 		num_read = sscanf(line, " %s %s", keyword, value);
@@ -206,15 +176,11 @@ ConfigList::Read(
 			if (isalnum(keyword[0]))
 			{
 				// looks like a valid keyword, but no corresponding value
-				if (_logFlag)
-				{
-					fprintf(_errorFp, "Missing value for keyword\n");
-					fprintf(_errorFp, "  Config File: %s\n", filename);
-					fprintf(_errorFp, "  Line Number: %d\n", line_number);
-					fprintf(_errorFp, "         Line: %s\n", line);
-					exit(1);
-				}
-				return(0);
+				fprintf(_errorFp, "Missing value for keyword\n");
+				fprintf(_errorFp, "  Config File: %s\n", filename);
+				fprintf(_errorFp, "  Line Number: %d\n", line_number);
+				fprintf(_errorFp, "         Line: %s\n", line);
+				exit(1);
 			}
 			break;
 		case 2:
@@ -224,20 +190,15 @@ ConfigList::Read(
 				{
 					if (! Read(value))
 					{
-						if (_logFlag)
-						{
-							fprintf(_errorFp, "Error reading included file\n");
-							fprintf(_errorFp, "   Config File: %s\n", filename);
-							fprintf(_errorFp, "  Include File: %s\n", value);
-							exit(1);
-						}
-						return(0);
+						fprintf(_errorFp, "Error reading included file\n");
+						fprintf(_errorFp, "   Config File: %s\n", filename);
+						fprintf(_errorFp, "  Include File: %s\n", value);
+						exit(1);
 					}
 				}
 				else
 				{
-					StringPair* pair = new StringPair(keyword, value);
-					Append(pair);
+					StompOrAppend(keyword, value);
 				}
 			}
 		}
@@ -288,16 +249,23 @@ StringPair*
 ConfigList::Find(
 	const char*		keyword)
 {
-	for (StringPair* pair = GetTail(); pair; pair = GetPrev())
+	StringPair* pair = _Find(keyword);
+	if (pair)
+		return(pair);
+
+	switch (_logFlag)
 	{
-		if (strcmp(pair->GetKeyword(), keyword) == 0)
-			return(pair);
-	}
-	if (_logFlag)
-	{
-		fprintf(_errorFp, "Missing keyword\n");
+	case EXIT:
+		fprintf(_errorFp, "ERROR: missing keyword\n");
 		fprintf(_errorFp, "  Keyword: %s\n", keyword);
 		exit(1);
+		break;
+	case WARN:
+		fprintf(_errorFp, "Warning: missing keyword\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		break;
+	default:
+		break;
 	}
 	return(0);
 }
@@ -308,7 +276,7 @@ ConfigList::Find(
 
 char*
 ConfigList::Get(
-const char*		keyword)
+	const char*		keyword)
 {
 	StringPair* pair = Find(keyword);
 	if (pair)
@@ -335,14 +303,10 @@ ConfigList::GetChar(
 	char tmp;
 	if (sscanf(string, "%c", &tmp) != 1)
 	{
-		if (_logFlag)
-		{
-			fprintf(_errorFp, "Error converting value to char\n");
-			fprintf(_errorFp, "  Keyword: %s\n", keyword);
-			fprintf(_errorFp, "    Value: %s\n", string);
-			exit(1);
-		}
-		return(0);
+		fprintf(_errorFp, "Error converting value to char\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		fprintf(_errorFp, "    Value: %s\n", string);
+		exit(1);
 	}
 
 	*value = tmp;
@@ -367,14 +331,10 @@ ConfigList::GetInt(
 	int tmp;
 	if (sscanf(string, "%d", &tmp) != 1)
 	{
-		if (_logFlag)
-		{
-			fprintf(_errorFp, "Error converting value to int\n");
-			fprintf(_errorFp, "  Keyword: %s\n", keyword);
-			fprintf(_errorFp, "    Value: %s\n", string);
-			exit(1);
-		}
-		return(0);
+		fprintf(_errorFp, "Error converting value to int\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		fprintf(_errorFp, "    Value: %s\n", string);
+		exit(1);
 	}
 
 	*value = tmp;
@@ -399,14 +359,10 @@ ConfigList::GetDouble(
 	double tmp;
 	if (sscanf(string, "%lg", &tmp) != 1)
 	{
-		if (_logFlag)
-		{
-			fprintf(_errorFp, "Error converting value to double\n");
-			fprintf(_errorFp, "  Keyword: %s\n", keyword);
-			fprintf(_errorFp, "    Value: %s\n", string);
-			exit(1);
-		}
-		return(0);
+		fprintf(_errorFp, "Error converting value to double\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		fprintf(_errorFp, "    Value: %s\n", string);
+		exit(1);
 	}
 
 	*value = tmp;
@@ -431,16 +387,55 @@ ConfigList::GetFloat(
 	float tmp;
 	if (sscanf(string, "%g", &tmp) != 1)
 	{
-		if (_logFlag)
-		{
-			fprintf(_errorFp, "Error converting value to float\n");
-			fprintf(_errorFp, "  Keyword: %s\n", keyword);
-			fprintf(_errorFp, "    Value: %s\n", string);
-			exit(1);
-		}
-		return(0);
+		fprintf(_errorFp, "Error converting value to float\n");
+		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		fprintf(_errorFp, "    Value: %s\n", string);
+		exit(1);
 	}
 
 	*value = tmp;
 	return(1);
+}
+
+//---------------------------//
+// ConfigList::StompOrAppend //
+//---------------------------//
+
+int
+ConfigList::StompOrAppend(
+	const char*		keyword,
+	const char*		value)
+{
+	StringPair* pair = _Find(keyword);
+	if (pair)
+	{
+		if (! pair->SetValue(value))
+			return(0);
+	}
+	else
+	{
+		StringPair* new_pair = new StringPair(keyword, value);
+		if (new_pair == NULL)
+			return(0);
+
+		if (! Append(new_pair))
+			return(0);
+	}
+	return(1);
+}
+
+//-------------------//
+// ConfigList::_Find //
+//-------------------//
+
+StringPair*
+ConfigList::_Find(
+	const char*		keyword)
+{
+	for (StringPair* pair = GetHead(); pair; pair = GetNext())
+	{
+		if (strcmp(pair->GetKeyword(), keyword) == 0)
+			return(pair);
+	}
+	return(NULL);
 }

@@ -125,7 +125,6 @@ main(
 	//---------------------------//
 
 	ConfigList config_list;
-	config_list.LogErrors();
 	if (! config_list.Read(config_file))
 	{
 		fprintf(stderr, "%s: error reading config file %s\n",
