@@ -403,7 +403,7 @@ main(
 				break;		// done, exit do loop
 			}
 
-			if (l2a.frame.cti < 59 || l2a.frame.cti > 63) continue;
+//			if (l2a.frame.cti < 59 || l2a.frame.cti > 63) continue;
 
 			//---------//
 			// process //
@@ -611,7 +611,7 @@ main(
 		}
 
 		int output = 0;
-		if ((!missed_gs) && (missed_pe))
+		if ((missed_gs) && (!missed_pe))
 		{
 			output = 1;
 		}
@@ -657,7 +657,9 @@ main(
 			float max_obj = 1.0;
 			gmf.GetObjLimits(&min_obj,&max_obj);
 			gmf.WriteObjectiveCurve(ofp,min_obj,max_obj);
+		    fprintf(ofp, "&\n");
 			gmf.AppendSolutions(ofp,wvc1,min_obj,max_obj);
+		    fprintf(ofp, "&\n");
 			gmf.AppendSolutions(ofp,wvc2,min_obj,max_obj);
 		    fprintf(ofp, "&\n");
 	        fprintf(ofp, "%g %g\n", true_wv.dir * rtd, 0.5);
