@@ -93,6 +93,20 @@ List<T>::GetHead()
 	return (GetCurrent());
 }
 
+//---------------//
+// List::GetTail //
+//---------------//
+// The tail node becomes the current node.
+// Returns the data from the current node on success, 0 on failure
+
+template <class T>
+T*
+List<T>::GetTail()
+{
+	_current = _tail;
+	return (GetCurrent());
+}
+
 //------------------//
 // List::GetCurrent //
 //------------------//
@@ -120,6 +134,21 @@ List<T>::GetNext()
 {
 	if (_current)
 		_current = _current->next;
+	return (GetCurrent());
+}
+
+//---------------//
+// List::GetPrev //
+//---------------//
+// The previous node becomes the current node.
+// Returns the data from the current node on success, 0 on failure.
+
+template <class T>
+T*
+List<T>::GetPrev()
+{
+	if (_current)
+		_current = _current->prev;
 	return (GetCurrent());
 }
 
@@ -424,36 +453,6 @@ List<T>::IsTail(
 	else
 		return (0);
 
-}
-
-
-//---------//
-// GetTail //
-//---------//
-// the tail node becomes the current node
-// return the data from the current node.
-
-template <class T>
-T*
-List<T>::GetTail()
-{
-	_current = _tail;
-	return (GetCurrent());
-}
-
-//---------//
-// GetPrev //
-//---------//
-// the prev node becomes the current node
-// return the data from the current node.
-
-template <class T>
-T*
-List<T>::GetPrev()
-{
-	if (_current)
-		_current = _current->prev;
-	return (GetCurrent());
 }
 
 //----------//

@@ -78,8 +78,10 @@ public:
 	//----------------------//
 
 	T*		GetHead();			// current = head, return T* of current
+	T*		GetTail();			// current = tail, return T* of current
 	T*		GetCurrent();		// return T* of current
 	T*		GetNext();			// current = next, return T* of current
+	T*		GetPrev();			// current = prev, return T* of current
 
 protected:
 
