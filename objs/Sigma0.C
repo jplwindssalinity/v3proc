@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //
 // This file contains functions useful for sigma0 and power calculations
@@ -124,7 +124,7 @@ radar_X_PtGr(
 //	Kfactor = Radar equation correction factor for this cell.
 //	sigma0 = true sigma0 to assume.
 //	Esn_slice = pointer to signal+noise energy in a slice.
-//  XK = pointer to true X * Kfactor.
+//	XK = pointer to true X * Kfactor.
 //
 
 int
@@ -404,97 +404,6 @@ Er_to_sigma0(
 		meas->B = 2.0 / (Bs * Tg);
 		meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
 	}
-
-	return(1);
-}
-
-//
-// composite
-//
-// Combine measurments into one composite sigma0 and Kpc coefficients.
-// The input measurement list should all come from one spot, but this
-// routine does not (and can not) check for this.
-// The final composite measurement is put in a single measurement.
-//
-// Inputs:
-//	input_measList = pointer to list of measurements to be composited.
-//	output_meas = pointer to the Meas structure to put results in.
-//
-
-int
-composite(
-	MeasList*	input_measList,
-	Meas*		output_meas)
-
-{
-	float sum_Ps = 0.0;
-	float sum_XK = 0.0;
-	Vector3 sum_centroid(0.0,0.0,0.0);
-	float sum_inc_angle = 0.0;
-	float sum_azi_angle = 0.0;
-	float sum_X2 = 0.0;
-	output_meas->bandwidth = 0.0;
-	output_meas->EnSlice = 0.0;
-	int N = 0;
-
-	//
-	// Using X in place of Ps when compositing Kpc assumes that sigma0 is
-	// uniform across the composite cell area.  This assumption is used
-	// below because we sum X^2 instead of Ps^2.
-	// We actually use XK which subsumes the K-factor with X.
-	//
-
-	Meas* meas;
-	for (meas = input_measList->GetHead();
-		meas;
-		meas = input_measList->GetNext())
-	{
-		sum_Ps += meas->value * meas->XK;
-		sum_XK += meas->XK;
-		sum_centroid += meas->centroid;
-		sum_inc_angle += meas->incidenceAngle;
-		sum_azi_angle += meas->eastAzimuth;
-		sum_X2 += meas->XK*meas->XK;
-		output_meas->bandwidth += meas->bandwidth;
-		output_meas->EnSlice += meas->EnSlice;
-		N++;
-	}
-
-	meas = input_measList->GetHead();
-
-	//---------------------------------------------------------------------//
-	// Form the composite measurement from appropriate combinations of the
-	// elements of each slice measurement in this composite cell.
-	//---------------------------------------------------------------------//
-
-	output_meas->value = sum_Ps / sum_XK;
-	output_meas->XK = sum_XK;
-	output_meas->transmitPulseWidth = meas->transmitPulseWidth;
-
-	output_meas->outline.FreeContents();	// merged outlines not done yet.
-	output_meas->centroid = sum_centroid / N;
-	// Make sure centroid is on the surface.
-	double alt,lat,lon;
-	output_meas->centroid.GetAltLonGDLat(&alt,&lat,&lon);
-	output_meas->centroid.SetAltLonGDLat(0.0,lat,lon);
-
-	output_meas->pol = meas->pol;
-
-	// Approx incidence and azimuth angles.
-	// These should really be done using the satellite
-	// position, but that would mean putting the sat. position in Meas.
-	output_meas->eastAzimuth = sum_azi_angle / N;
-	output_meas->incidenceAngle = sum_inc_angle / N;
-	output_meas->beamIdx = meas->beamIdx;		// assumed
-
-	// Composite Kpc coefficients.
-	// Here we assume that all the slices in one spot have the same values
-	// of A,B,C (ie., bandwidths, and pulsewidths don't change within a spot).
-	// This will only be an issue if guard slices are composited with regular
-	// slices.
-	output_meas->A = meas->A * sum_X2 / (sum_XK * sum_XK);
-	output_meas->B = meas->B  / N;
-	output_meas->C = meas->C  / N;
 
 	return(1);
 }

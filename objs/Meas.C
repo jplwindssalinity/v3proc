@@ -33,6 +33,91 @@ Meas::~Meas()
 	return;
 }
 
+//-----------------//
+// Meas::Composite //
+//-----------------//
+// Combine measurements into one composite sigma0 and Kpc coefficients.
+// The input measurement list should all come from one spot, but this
+// routine does not (and can not) check for this.
+// Meas is set with the final composite measurement.
+
+int
+Meas::Composite(
+	MeasList*	meas_list)
+{
+	float sum_Ps = 0.0;
+	float sum_XK = 0.0;
+	float sum_EnSlice = 0.0;
+	float sum_bandwidth = 0.0;
+	Vector3 sum_centroid(0.0,0.0,0.0);
+	float sum_eastAzimuth_x = 0.0;
+	float sum_eastAzimuth_y = 0.0;
+	float sum_incidenceAngle = 0.0;
+	float sum_azi_angle = 0.0;
+	float sum_X2 = 0.0;
+	int N = 0;
+
+	//
+	// Using X in place of Ps when compositing Kpc assumes that sigma0 is
+	// uniform across the composite cell area.  This assumption is used
+	// below because we sum X^2 instead of Ps^2.
+	// We actually use XK which subsumes the K-factor with X.
+	//
+
+	Meas* meas;
+	for (meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+	{
+		sum_Ps += meas->value * meas->XK;
+		sum_XK += meas->XK;
+		sum_EnSlice += meas->EnSlice;
+		sum_bandwidth += meas->bandwidth;
+		sum_centroid += meas->centroid;
+		sum_incidenceAngle += meas->incidenceAngle;
+		sum_X2 += meas->XK*meas->XK;
+		N++;
+	}
+
+	meas = meas_list->GetHead();
+
+	//---------------------------------------------------------------------//
+	// Form the composite measurement from appropriate combinations of the
+	// elements of each slice measurement in this composite cell.
+	//---------------------------------------------------------------------//
+
+	value = sum_Ps / sum_XK;
+	XK = sum_XK;
+	EnSlice = sum_EnSlice;
+	bandwidth = sum_bandwidth;
+	transmitPulseWidth = meas->transmitPulseWidth;
+	outline.FreeContents();				// merged outlines not done yet
+	centroid = sum_centroid / N;
+	// put centroid on surface
+	double alt, lon, lat;
+	centroid.GetAltLonGDLat(&alt, &lon, &lat);
+	centroid.SetAltLonGDLat(0.0, lon, lat);
+	pol = meas->pol;					// same for all slices
+	eastAzimuth = meas->eastAzimuth;	// same for all slices
+	incidenceAngle = sum_incidenceAngle / N;
+	beamIdx = meas->beamIdx;			// same for all slices
+	sliceIdx = meas->sliceIdx;			// this needs to change
+	scanAngle = meas->scanAngle;		// same for all slices
+
+	//----------------------------//
+	// composite Kpc coefficients //
+	//----------------------------//
+	// Composite Kpc coefficients.
+	// Here we assume that all the slices in one spot have the same values
+	// of A,B,C (ie., bandwidths, and pulsewidths don't change within a spot).
+	// This will only be an issue if guard slices are composited with regular
+	// slices.
+
+	A = meas->A * sum_X2 / (sum_XK * sum_XK);
+	B = meas->B / N;
+	C = meas->C / N;
+
+	return(1);
+}
+
 //-------------//
 // Meas::Write //
 //-------------//
@@ -142,8 +227,8 @@ Meas::EstimatedKp(float sigma0)
 	float Kpm2 = 0.03059;	// 0.7 dB
 
 	// if measurement is nonsense, return a Kp of 1.0
-        // Since A is set to zero by Er_to_sigma0 if useKpc is zero
-        // this should handle that case as well.
+	// Since A is set to zero by Er_to_sigma0 if useKpc is zero
+	// this should handle that case as well.
 	if (A == 0.0 || EnSlice==0)
 		return(1.0);
 
@@ -152,7 +237,7 @@ Meas::EstimatedKp(float sigma0)
 	{
 		fprintf(stderr,
 			"Error: Meas::EstimatedKp computed negative SNR = %g\n", snr);
-        fprintf(stderr, "S0=%g XK=%g EnSlice=%g\n", sigma0, XK, EnSlice);
+		fprintf(stderr, "S0=%g XK=%g EnSlice=%g\n", sigma0, XK, EnSlice);
 		exit(1);
 	}
 	float Kpc2 = A + B/snr + C/snr/snr;

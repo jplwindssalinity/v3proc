@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef SIGMA0_H
 #define SIGMA0_H
@@ -16,7 +16,7 @@ static const char rcs_id_sigma0_h[] =
 
 //======================================================================
 // Functions
-//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm, composite
+//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm
 //======================================================================
 
 //=======================================================================
@@ -71,7 +71,4 @@ int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
 		float sumPsn, float Pn, float PtGr);
 
-int composite(MeasList* input_measList, Meas* output_meas);
-
 #endif
-

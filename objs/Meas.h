@@ -22,6 +22,8 @@ static const char rcs_id_meas_h[] =
 //		MeasSpotList
 //======================================================================
 
+class MeasList;
+
 //======================================================================
 // CLASS
 //		Meas
@@ -41,6 +43,12 @@ public:
 
 	Meas();
 	~Meas();
+
+	//-------------//
+	// compositing //
+	//-------------//
+
+	int		Composite(MeasList* meas_list);
 
 	//--------------//
 	// input/output //

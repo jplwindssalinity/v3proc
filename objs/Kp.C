@@ -96,10 +96,10 @@ Kp::GetKpri2(
 
 int
 Kp::GetKprs2(
-	double*		kprs2,
 	int			beam_number,
 	int			slice_number,
-	float		azimuth)
+	float		azimuth,
+	double*		kprs2)
 {
 	if(kprs.Empty())
 	{
@@ -111,12 +111,12 @@ Kp::GetKprs2(
 	return(1);
 }
 
-//-----------------//
-// Kp::GetTotalKp2 //
-//-----------------//
+//------------//
+// Kp::GetKp2 //
+//------------//
 
 int
-Kp::GetTotalKp2(
+Kp::GetKp2(
 	Meas*		meas,
 	double		sigma_0,
 	int			pol_idx,
@@ -131,7 +131,7 @@ Kp::GetTotalKp2(
 	if (! GetKpc2(meas, sigma_0, &kpc2) ||
 		! GetKpm2(pol_idx, speed, &kpm2) ||
 		! GetKpri2(&kpri2) ||
-		! GetKprs2(&kprs2, beam_number, slice_number, azimuth))
+		! GetKprs2(beam_number, slice_number, azimuth, &kprs2))
 	{
 		return(0);
 	}
@@ -140,12 +140,39 @@ Kp::GetTotalKp2(
 	return(1);
 }
 
-//-----------------//
-// Kp::GetVariance //
-//-----------------//
+//------------//
+// Kp::GetVpc //
+//------------//
 
 int
-Kp::GetVariance(
+Kp::GetVpc(
+	Meas*		meas,
+	double		sigma_0,
+	double*		vpc)
+{
+	//--------------------------------//
+	// calculate sigma-0 coefficients //
+	//--------------------------------//
+
+	double xktp = meas->XK * meas->transmitPulseWidth;
+	double aa = meas->A;
+	double bb = meas->B * meas->EnSlice / xktp;
+	double cc = meas->C * meas->EnSlice * meas->EnSlice / (xktp * xktp);
+
+	//--------------------//
+	// calculate variance //
+	//--------------------//
+
+	*vpc = (aa * sigma_0 + bb) * sigma_0 + cc;
+	return(1);
+}
+
+//-----------//
+// Kp::GetVp //
+//-----------//
+
+int
+Kp::GetVp(
 	Meas*		meas,
 	double		sigma_0,
 	int			pol_idx,
@@ -153,17 +180,23 @@ Kp::GetVariance(
 	int			beam_number,
 	int			slice_number,
 	float		azimuth,
-	double*		var)
+	double*		vp)
 {
-	if(! GetTotalKp2(meas, sigma_0, pol_idx, speed, beam_number,
-			slice_number, azimuth, var))
+	double vpc;
+	if (! GetVpc(meas, sigma_0, &vpc))
 	{
 		return(0);
 	}
-	if(*var == 0)
-		*var=1;
-	else
-		*var*=sigma_0*sigma_0;
+
+	double kpm2, kpri2, kprs2;
+	if (! GetKpm2(pol_idx, speed, &kpm2) ||
+		! GetKpri2(&kpri2) ||
+		! GetKprs2(beam_number, slice_number, azimuth, &kprs2))
+	{
+		return(0);
+	}
+
+	*vp = vpc + (kpm2 + kpri2 + kprs2) * sigma_0 * sigma_0;
 
 	return(1);
 }
