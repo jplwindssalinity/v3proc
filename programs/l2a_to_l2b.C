@@ -241,15 +241,23 @@ int count = 0;
 		// convert //
 		//---------//
 
+if (count > 2000)
+{
+	printf("%d\n", count);
 		if (! l17_to_l20.ConvertAndWrite(&l17, &gmf, &l20))
 		{
 			fprintf(stderr, "%s: error converting Level 1.7 to Level 2.0\n",
 				command);
 			exit(1);
 		}
+
+		char filename[256];
+		sprintf(filename, "mod.%04d", count);
+		l17_to_l20.WriteSolutionCurves(&l17, &gmf, filename);
+}
 count++;
 
-if (count == 10)
+if (count == 2500)
 	break;
 
 	} while (1);

@@ -53,21 +53,22 @@ public:
 	int		GetCoefs(PolE pol, float inc, float spd, float* A0, float* A1,
 				float* A1_phase, float* A2, float* A2_phase, float* A3,
 				float* A3_phase, float* A4, float* A4_phase);
+	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list,
+				float spd_step, float phi_step, float phi_buffer);
+
 
 	//----------------//
 	// wind retrieval //
 	//----------------//
 
-	int		FindSolutions(MeasList* meas_list, WVC* wvc,
-				float spd_step, float phi_step);
-	int		RefineSolutions(MeasList* meas_list, WVC* wvc,
-				float initial_spd_step, float initial_phi_step,
-				float final_spd_step, float final_phi_step);
-
-	int		ModCurves(FILE* ofp, MeasList* meas_list,
-				float spd_step, float phi_step);
+	int		RetrieveWinds(MeasList* meas_list, WVC* wvc,
+				float spd_step, float phi_step, float phi_buffer);
 
 	int		SolutionCurve(MeasList* meas_list, float spd_step, int phi_count,
+				float* best_spd, float* best_obj);
+	int		Smooth(int phi_count, int phi_buffer, float* best_obj,
+				int solutions);
+	int		FindMaxima(WVC* wvc, int phi_count, int phi_buffer,
 				float* best_spd, float* best_obj);
 
 protected:
@@ -78,9 +79,6 @@ protected:
 
 	float	_ObjectiveFunction(MeasList* meas_list, float u,
 				float phi);
-	int		_FindSolutionCurve(MeasList* meas_list, float dspd,
-				float dphi, int phi_count, float* best_spd,
-				float* best_obj);
 };
 
 #endif

@@ -15,7 +15,7 @@ static const char rcs_id_l17tol20_c[] =
 //==========//
 
 L17ToL20::L17ToL20()
-:	initSpdStep(0.0), initPhiStep(0.0), finalSpdStep(0.0), finalPhiStep(0.0)
+:	spdStep(0.0), phiStep(0.0)
 {
 	return;
 }
@@ -42,12 +42,8 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	gmf->FindSolutions(&(l17->frame.measList), wvc,
-		initSpdStep, initPhiStep);
-	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
-		initPhiStep, finalSpdStep, finalPhiStep);
-	wvc->RemoveDuplicates();
-	wvc->SortByObj();
+	gmf->RetrieveWinds(&(l17->frame.measList), wvc,
+		spdStep, phiStep, phiBuffer);
 	wvc->lonLat = l17->frame.measList.AverageLonLat();
 
 	//-------------------------//
@@ -92,42 +88,53 @@ L17ToL20::Flush(
 	return(1);
 }
 
-//-----------------------------//
-// L17ToL20::GenerateModCurves //
-//-----------------------------//
+//-------------------------------//
+// L17ToL20::WriteSolutionCurves //
+//-------------------------------//
 
 int
-L17ToL20::GenerateModCurves(
+L17ToL20::WriteSolutionCurves(
 	L17*			l17,
 	GMF*			gmf,
 	const char*		output_file)
 {
+	//------------------//
+	// open output file //
+	//------------------//
+
 	FILE* ofp = fopen(output_file, "w");
 	if (ofp == NULL)
 		return(0);
 
-	gmf->ModCurves(ofp, &(l17->frame.measList), finalSpdStep, finalPhiStep);
+	//-----------------------//
+	// write solution curves //
+	//-----------------------//
 
-	// show selected vectors
+	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), spdStep, phiStep,
+		phiBuffer);
+
+	//--------------------//
+	// indicate solutions //
+	//--------------------//
+
 	WVC* wvc = new WVC();
-	gmf->FindSolutions(&(l17->frame.measList), wvc,
-		initSpdStep, initPhiStep);
-
-	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
-		initPhiStep, finalSpdStep, finalPhiStep);
-	wvc->RemoveDuplicates();
-	wvc->SortByObj();
+	gmf->RetrieveWinds(&(l17->frame.measList), wvc, spdStep, phiStep,
+		phiBuffer);
 
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
 		fprintf(ofp, "&\n");
-		fprintf(ofp, "%g %g %g\n", wvp->dir * rtd, wvp->spd,
-			wvp->obj * 500.0 + 5.0);
+		fprintf(ofp, "%g %g\n", wvp->dir * rtd, wvp->spd);
 	}
 
 	delete wvc;
 
+	//-------------------//
+	// close output file //
+	//-------------------//
+
 	fclose(ofp);
+
 	return(1);
 }

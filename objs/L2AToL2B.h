@@ -50,16 +50,15 @@ public:
 	// debugging //
 	//-----------//
 
-	int		GenerateModCurves(L17* l17, GMF* gmf, const char* output_file);
+	int		WriteSolutionCurves(L17* l17, GMF* gmf, const char* output_file);
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	float	initSpdStep;
-	float	initPhiStep;
-	float	finalSpdStep;
-	float	finalPhiStep;
+	float	spdStep;
+	float	phiStep;
+	float	phiBuffer;
 };
 
 #endif

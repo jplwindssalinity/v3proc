@@ -115,10 +115,9 @@ int ConfigL17(L17* l17, ConfigList* config_list);
 // L17ToL20 //
 //----------//
 
-#define INIT_SPD_STEP_KEYWORD				"INIT_SPD_STEP"
-#define INIT_PHI_STEP_KEYWORD				"INIT_PHI_STEP"
-#define FINAL_SPD_STEP_KEYWORD				"FINAL_SPD_STEP"
-#define FINAL_PHI_STEP_KEYWORD				"FINAL_PHI_STEP"
+#define SPD_STEP_KEYWORD					"SPD_STEP"
+#define PHI_STEP_KEYWORD					"PHI_STEP"
+#define PHI_BUFFER_KEYWORD					"PHI_BUFFER"
 
 int ConfigL17ToL20(L17ToL20* l17_to_l20, ConfigList* config_list);
 

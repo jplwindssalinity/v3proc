@@ -333,21 +333,17 @@ ConfigL17ToL20(
 {
 	double tmp;
 
-	if (! config_list->GetDouble(INIT_SPD_STEP_KEYWORD, &tmp))
+	if (! config_list->GetDouble(SPD_STEP_KEYWORD, &tmp))
 		return(0);
-	l17_to_l20->initSpdStep = (float)tmp;
+	l17_to_l20->spdStep = (float)tmp;
 
-	if (! config_list->GetDouble(INIT_PHI_STEP_KEYWORD, &tmp))
+	if (! config_list->GetDouble(PHI_STEP_KEYWORD, &tmp))
 		return(0);
-	l17_to_l20->initPhiStep = (float)tmp;
+	l17_to_l20->phiStep = (float)tmp * dtr;
 
-	if (! config_list->GetDouble(FINAL_SPD_STEP_KEYWORD, &tmp))
+	if (! config_list->GetDouble(PHI_BUFFER_KEYWORD, &tmp))
 		return(0);
-	l17_to_l20->finalSpdStep = (float)tmp;
-
-	if (! config_list->GetDouble(FINAL_PHI_STEP_KEYWORD, &tmp))
-		return(0);
-	l17_to_l20->finalPhiStep = (float)tmp;
+	l17_to_l20->phiBuffer = (float)tmp * dtr;
 
 	return(1);
 }
