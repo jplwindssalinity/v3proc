@@ -21,7 +21,6 @@ static const double two_pi = 2.0 * M_PI;
 static const double dtr = 1.745329252e-2;
 static const double rtd = 5.729577951e1;
 static const double rpm_to_radps = M_PI / 30.0;
-static const double speed_light = 2.99792458e8;
 static const double speed_light_kps = 2.99792458e5;
 
 // conversion factors
