@@ -62,6 +62,7 @@ public:
     int  WriteDataRec();
     int  WriteDataRecAscii();
 
+    int  ReadGSDataRec(void);
     int  WriteGSDataRec(void);
     int  WriteGSDataRecAscii(void);
 
@@ -78,6 +79,7 @@ public:
 	int			bufferSize;
 	L1AFrame	frame;
 
+	char*		gsBuffer;
     L1AGSFrame  gsFrame;
     GSCalPulse  calPulse;
 

@@ -165,8 +165,9 @@ public:
     // data manipulation //
     //-------------------//
 
-    int  ReadL1AFile(FILE* ifp);
-    int  WriteGSL1AFile(FILE* ofp);
+    int  Pack(char* buffer);
+    int  Unpack(char* buffer);
+    int  WriteAscii(FILE* ofp);
 
     //-------------------------------------------------------------
     // product variables
@@ -183,7 +184,7 @@ public:
     char          pcd[32];
     GSL1AEu       in_eu;
     GSL1ASci      in_science;
-    int           la1_frame_inst_status;
+    int           l1a_frame_inst_status;
     int           l1a_frame_err_status;
     short         l1a_frame_qual_flag;
     char          l1a_pulse_qual_flag[13];
