@@ -50,7 +50,7 @@ radar_X(
 	double*				X)
 {
 	double lambda = speed_light_kps / instrument->transmitFreq;
-	double A3db = meas->outline.Area1();
+	double A3db = 1.0;
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
 	double roundTripTime = 2.0 * R / speed_light_kps;
@@ -80,7 +80,7 @@ radar_X_PtGr(
 	double*				X)
 {
 	double lambda = speed_light_kps / instrument->transmitFreq;
-	double A3db = meas->outline.Area1();
+	double A3db = 1.0;
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
 	double roundTripTime = 2.0 * R / speed_light_kps;
