@@ -53,6 +53,13 @@ public:
 	int		GetInterSigma0(int pol, double inc, double spd, double chi,
 				double* sigma_0);
 
+	//---------//
+	// analyze //
+	//---------//
+
+	int		GetCoefs(int pol, double inc, double spd, double* A0, double* a1,
+				double* a2);
+
 protected:
 
 	int		_Allocate();

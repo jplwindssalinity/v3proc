@@ -9,6 +9,7 @@ static const char rcs_id_gmf_c[] =
 #include <fcntl.h>
 #include <unistd.h>
 #include <malloc.h>
+#include <math.h>
 #include "GMF.h"
 #include "Interpolate.h"
 
@@ -80,10 +81,11 @@ int GMF::ReadOldStyle(
 	_spdMax = 50.0;
 	_spdStep = 1.0;
 
-	_chiCount = 37;
+	int file_chi_count = 37;
+	_chiCount = 73;
 	_chiMin = 0.0;
 	_chiMax = 360.0;
-	_chiStep = 10.0;
+	_chiStep = 5.0;
 
 	if (! _Allocate())
 		return(0);
@@ -91,7 +93,7 @@ int GMF::ReadOldStyle(
 	float value;
 	for (int pol_idx = 0; pol_idx < _polCount; pol_idx++)
 	{
-		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+		for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
 		{
 			for (int spd_idx = 0; spd_idx < _spdCount; spd_idx++)
 			{
@@ -103,6 +105,10 @@ int GMF::ReadOldStyle(
 						return(0);
 					}
 					*(*(*(*(_sigma0+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
+						(double)value;
+
+					int chi_idx_2 = (_chiCount - 1) - chi_idx;
+					*(*(*(*(_sigma0+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(double)value;
 				}
 			}
@@ -362,6 +368,49 @@ GMF::GetInterSigma0(
 	polint(s0_x, s0_y, ORDER_PLUS_ONE, chi_subtable_didx, &s0);
 
 	*sigma_0 = s0;
+
+	return(1);
+}
+
+//---------------//
+// GMF::GetCoefs //
+//---------------//
+
+int
+GMF::GetCoefs(
+	int			pol,
+	double		inc,
+	double		spd,
+	double*		A0,
+	double*		a1,
+	double*		a2)
+{
+	double real[3], imag[3];
+	int n = _chiCount - 1;
+	double wn = M_PI * 2.0 / n;
+
+	for (int i = 0; i < 3; i++)
+	{
+		real[i] = 0.0;
+		imag[i] = 0.0;
+
+		// assumes single point overlap in chi
+		for (int chi_idx = 0; chi_idx < n; chi_idx++)
+		{
+			double arg = wn * (double)i * (double)chi_idx;
+			double c = cos(arg);
+			double s = sin(arg);
+			double chi = ((double)chi_idx - _chiMin) * _chiStep;
+			double s0;
+			GetInterSigma0(pol, inc, spd, chi, &s0);
+			real[i] += s0 * c;
+			imag[i] += s0 * s;
+		}
+	}
+
+	*A0 = real[0] / (double)n;
+	*a1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
+	*a2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
 
 	return(1);
 }
