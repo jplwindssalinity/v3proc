@@ -36,7 +36,6 @@ OBJS = \
 	Meas.o \
 	Misc.o \
 	PiscTable.o \
-	Product.o \
 	Spacecraft.o \
 	SpacecraftSim.o \
 	WVC.o \
@@ -116,7 +115,6 @@ Matrix3.o: Matrix3.C Constants.h Matrix3.h
 Meas.o: Meas.C Measurement.h Beam.h List.h Attitude.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
-Product.o: Product.C Product.h List.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h List.h
 WVC.o: WVC.C WVC.h Constants.h List.h WindVector.h
