@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -55,6 +55,8 @@ public:
     int  GetInterpolatedValue(Meas::MeasTypeE met, float inc, float spd,
              float chi, float* value);
     int  GetNearestValue(Meas::MeasTypeE met, float inc, float spd, float chi,
+             float* value);
+    int  GetMaxValueForSpeed(Meas::MeasTypeE met, float inc, float spd,
              float* value);
 
 protected:

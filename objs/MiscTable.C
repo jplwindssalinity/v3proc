@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -41,23 +41,23 @@ MiscTable::~MiscTable()
 
 int
 MiscTable::Read(
-	const char*		filename)
+    const char*  filename)
 {
-	int fd = open(filename, O_RDONLY);
-	if (fd == -1)
-		return(0);
+    int fd = open(filename, O_RDONLY);
+    if (fd == -1)
+        return(0);
 
-	if (! _ReadHeader(fd))
-		return(0);
+    if (! _ReadHeader(fd))
+        return(0);
 
-	if (! _Allocate())
-		return(0);
+    if (! _Allocate())
+        return(0);
 
-	if (! _ReadTable(fd))
-		return(0);
+    if (! _ReadTable(fd))
+        return(0);
 
-	close(fd);
-	return(1);
+    close(fd);
+    return(1);
 }
 
 //-----------------//
@@ -65,20 +65,20 @@ MiscTable::Read(
 //-----------------//
 
 int MiscTable::Write(
-	const char*		filename)
+    const char*  filename)
 {
-	int fd = creat(filename, 0644);
-	if (fd == -1)
-		return(0);
+    int fd = creat(filename, 0644);
+    if (fd == -1)
+        return(0);
 
-	if (! _WriteHeader(fd))
-		return(0);
+    if (! _WriteHeader(fd))
+        return(0);
 
-	if (! _WriteTable(fd))
-		return(0);
+    if (! _WriteTable(fd))
+        return(0);
 
-	close(fd);
-	return(1);
+    close(fd);
+    return(1);
 }
 
 //----------------------------//
@@ -93,29 +93,29 @@ MiscTable::GetNearestValue(
     float            chi,
     float*           value)
 {
-	//-------------------//
-	// round to indicies //
-	//-------------------//
+    //-------------------//
+    // round to indicies //
+    //-------------------//
 
-	int met_idx = _MetToIndex(met);
-	int inc_idx = _IncToIndex(inc);
-	int spd_idx = _SpdToIndex(spd);
-	int chi_idx = _ChiToIndex(chi);
+    int met_idx = _MetToIndex(met);
+    int inc_idx = _IncToIndex(inc);
+    int spd_idx = _SpdToIndex(spd);
+    int chi_idx = _ChiToIndex(chi);
 
-	//------------------------//
-	// keep indicies in range //
-	//------------------------//
+    //------------------------//
+    // keep indicies in range //
+    //------------------------//
 
-	met_idx = _ClipMetIndex(met_idx);
-	inc_idx = _ClipIncIndex(inc_idx);
-	spd_idx = _ClipSpdIndex(spd_idx);
+    met_idx = _ClipMetIndex(met_idx);
+    inc_idx = _ClipIncIndex(inc_idx);
+    spd_idx = _ClipSpdIndex(spd_idx);
 
-	//--------------//
-	// access table //
-	//--------------//
+    //--------------//
+    // access table //
+    //--------------//
 
-	*value = *(*(*(*(_value + met_idx) + inc_idx) + spd_idx) + chi_idx);
-	return(1);
+    *value = *(*(*(*(_value + met_idx) + inc_idx) + spd_idx) + chi_idx);
+    return(1);
 }
 
 //---------------------------------//
@@ -130,85 +130,122 @@ MiscTable::GetInterpolatedValue(
     float            chi,
     float*           value)
 {
-	//-------------------------//
-	// determine real indicies //
-	//-------------------------//
+    //-------------------------//
+    // determine real indicies //
+    //-------------------------//
 
-	int met_idx = _MetToIndex(met);
-	float*** table = *(_value + met_idx);
+    int met_idx = _MetToIndex(met);
+    float*** table = *(_value + met_idx);
 
-	float inc_ridx = INC_TO_REAL_IDX(inc);
-	float spd_ridx = SPD_TO_REAL_IDX(spd);
-	while (chi < 0.0) chi += two_pi;
-	while (chi >= two_pi) chi -= two_pi;
-	float chi_ridx = CHI_TO_REAL_IDX(chi);
-        /***** FIX to Floating point bug ******/
-        while(chi_ridx >= _chiCount){
-	  chi_ridx -= _chiCount;
-	  chi -= two_pi;
-	}
+    float inc_ridx = INC_TO_REAL_IDX(inc);
+    float spd_ridx = SPD_TO_REAL_IDX(spd);
 
-	//------------------------------------//
-	// calculate upper and lower indicies //
-	//------------------------------------//
+    while (chi < 0.0)
+        chi += two_pi;
 
-	int li = (int)inc_ridx;
-	if (li < 0) li = 0;
-	int hi = li + 1;
-	if (hi >= _incCount)
-	{
-		hi = _incCount - 1;
-		li = hi - 1;
-	}
-	float lo_inc = _incMin + li * _incStep;
+    while (chi >= two_pi)
+        chi -= two_pi;
 
-	int ls = (int)spd_ridx;
-	if (ls < 0) ls = 0;
-	int hs = ls + 1;
-	if (hs >= _spdCount)
-	{
-		hs = _spdCount - 1;
-		ls = hs - 1;
-	}
-	float lo_spd = _spdMin + ls * _spdStep;
+    float chi_ridx = CHI_TO_REAL_IDX(chi);
+    /***** FIX to Floating point bug ******/
+    while(chi_ridx >= _chiCount)
+    {
+        chi_ridx -= _chiCount;
+        chi -= two_pi;
+    }
 
-	int lc = (int)chi_ridx;
-	int hc = lc + 1;
-	hc %= _chiCount;
-	float lo_chi = lc * _chiStep;
+    //------------------------------------//
+    // calculate upper and lower indicies //
+    //------------------------------------//
 
-	//--------------------------//
-	// assign fractional values //
-	//--------------------------//
+    int li = (int)inc_ridx;
 
-	float ai = (inc - lo_inc) / _incStep;
-	float as = (spd - lo_spd) / _spdStep;
-	float ac = (chi - lo_chi) / _chiStep;
+    if (li < 0)
+        li = 0;
 
-	float bi = 1.0 - ai;
-	float bs = 1.0 - as;
-	float bc = 1.0 - ac;
+    int hi = li + 1;
+    if (hi >= _incCount)
+    {
+        hi = _incCount - 1;
+        li = hi - 1;
+    }
+    float lo_inc = _incMin + li * _incStep;
 
-	//---------------//
-	// interpolation //
-	//---------------//
+    int ls = (int)spd_ridx;
 
-	float val =
-		ai * as * ac * *(*(*(table + hi) + hs) + hc) +
-		ai * as * bc * *(*(*(table + hi) + hs) + lc) +
-		ai * bs * ac * *(*(*(table + hi) + ls) + hc) +
-		ai * bs * bc * *(*(*(table + hi) + ls) + lc) +
-		bi * as * ac * *(*(*(table + li) + hs) + hc) +
-		bi * as * bc * *(*(*(table + li) + hs) + lc) +
-		bi * bs * ac * *(*(*(table + li) + ls) + hc) +
-		bi * bs * bc * *(*(*(table + li) + ls) + lc);
+    if (ls < 0)
+        ls = 0;
 
-	//--------------//
-	// return value //
-	//--------------//
+    int hs = ls + 1;
+    if (hs >= _spdCount)
+    {
+        hs = _spdCount - 1;
+        ls = hs - 1;
+    }
+    float lo_spd = _spdMin + ls * _spdStep;
 
-	*value = val;
-	return(1);
+    int lc = (int)chi_ridx;
+    int hc = lc + 1;
+    hc %= _chiCount;
+    float lo_chi = lc * _chiStep;
+
+    //--------------------------//
+    // assign fractional values //
+    //--------------------------//
+
+    float ai = (inc - lo_inc) / _incStep;
+    float as = (spd - lo_spd) / _spdStep;
+    float ac = (chi - lo_chi) / _chiStep;
+
+    float bi = 1.0 - ai;
+    float bs = 1.0 - as;
+    float bc = 1.0 - ac;
+
+    //---------------//
+    // interpolation //
+    //---------------//
+
+    float val =
+        ai * as * ac * *(*(*(table + hi) + hs) + hc) +
+        ai * as * bc * *(*(*(table + hi) + hs) + lc) +
+        ai * bs * ac * *(*(*(table + hi) + ls) + hc) +
+        ai * bs * bc * *(*(*(table + hi) + ls) + lc) +
+        bi * as * ac * *(*(*(table + li) + hs) + hc) +
+        bi * as * bc * *(*(*(table + li) + hs) + lc) +
+        bi * bs * ac * *(*(*(table + li) + ls) + hc) +
+        bi * bs * bc * *(*(*(table + li) + ls) + lc);
+
+    //--------------//
+    // return value //
+    //--------------//
+
+    *value = val;
+    return(1);
+}
+
+//--------------------------------//
+// MiscTable::GetMaxValueForSpeed //
+//--------------------------------//
+
+int
+MiscTable::GetMaxValueForSpeed(
+    Meas::MeasTypeE  met,
+    float            inc,
+    float            spd,
+    float*           value)
+{
+    float max_value;
+    GetInterpolatedValue(met, inc, spd, 0.0, &max_value);
+
+    float dir;
+    for (int dir_idx = 0; (dir = dir_idx * dir_step) < two_pi; dir_idx++)
+    {
+        float trial_value;
+        GetInterpolatedValue(met, inc, spd, 0.0, &trial_value);
+        if (trial_value > max_value)
+            max_value = trial_value;
+    }
+    return(max_value);
 }
 
 //----------------------//

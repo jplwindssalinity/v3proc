@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_pscatsim_c[] =
     "@(#) $Id$";
@@ -23,11 +23,10 @@ PscatSim::PscatSim()
     lastEventType(PscatEvent::NONE), lastEventIdealEncoder(0),
     numLookStepsPerSlice(0), azimuthIntegrationRange(0.0),
     azimuthStepSize(0.0), dopplerBias(0.0), correlatedKpm(0.0),
-    simVs1BCheckfile(NULL),
-    uniformSigmaField(0), outputXToStdout(0), useKfactor(0), createXtable(0),
-    computeXfactor(0), useBYUXfactor(0), rangeGateClipping(0),
-    l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
-    simKpriFlag(0), _spotNumber(0), _spinUpPulses(2)
+    simVs1BCheckfile(NULL), uniformSigmaField(0), outputXToStdout(0),
+    useKfactor(0), createXtable(0), computeXfactor(0), useBYUXfactor(0),
+    rangeGateClipping(0), l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0),
+    simUncorrKpmFlag(0), simKpriFlag(0), _spotNumber(0), _spinUpPulses(2)
 {
     return;
 }
@@ -843,21 +842,26 @@ PscatSim::SetMeasurements(
 
                 if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
                     meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
-                {  // Correlation measurements use a constant variance
-                  double var_sig0 = kpm_value*kpm_value * 0.002*0.002;
-                  Gaussian gaussianRv(var_sig0, 0.0);
-                  sigma0 += gaussianRv.GetNumber();
+                {
+                    // Correlation measurements use the maximum value of
+                    // sigma-0 to determine the variance
+                    float kpm_sig0;
+                    gmf->GetMaxValueForSpeed(meas->measType,
+                        meas->incidenceAngle, wv.spd, &kpm_sig0);
+                    double var_sig0 = kpm_value*kpm_value * kpm_sig0*kpm_sig0;
+                    Gaussian gaussianRv(var_sig0, 0.0);
+                    sigma0 += gaussianRv.GetNumber();
                 }
                 else
                 {
-                  Gaussian gaussianRv(1.0, 0.0);
-                  float rv1 = gaussianRv.GetNumber();
-                  float RV = rv1*kpm_value + 1.0;
-                  if (RV < 0.0)
-                  {
-                      RV = 0.0;   // Do not allow negative sigma0's.
-                  }
-                  sigma0 *= RV;
+                    Gaussian gaussianRv(1.0, 0.0);
+                    float rv1 = gaussianRv.GetNumber();
+                    float RV = rv1*kpm_value + 1.0;
+                    if (RV < 0.0)
+                    {
+                        RV = 0.0;   // Do not allow negative sigma0's.
+                    }
+                    sigma0 *= RV;
                 }
             }
 
@@ -1003,8 +1007,8 @@ PscatSim::SetMeasurements(
             meas->Sigma0 = sigma0;
         }
 
-		if (simVs1BCheckfile)
-		{
+        if (simVs1BCheckfile)
+        {
             Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
             cf->R[slice_i] = (float)rlook.Magnitude();
             if (computeXfactor || useBYUXfactor)
@@ -1027,7 +1031,7 @@ PscatSim::SetMeasurements(
                 if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
                     pscat->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
                 {
-                    cf->GatGar[slice_i] = 1.0;	// set a dummy value.
+                    cf->GatGar[slice_i] = 1.0;    // set a dummy value.
                 }
             }
             else
@@ -1045,11 +1049,11 @@ PscatSim::SetMeasurements(
             cf->var_esn_slice[slice_i] = var_esn_slice;
             cf->Es[slice_i] = Es;
             cf->En[slice_i] = En;
-			cf->XK[slice_i] = meas->XK;
-			cf->centroid[slice_i] = meas->centroid;
-			cf->azimuth[slice_i] = meas->eastAzimuth;
-			cf->incidence[slice_i] = meas->incidenceAngle;
-		}
+            cf->XK[slice_i] = meas->XK;
+            cf->centroid[slice_i] = meas->centroid;
+            cf->azimuth[slice_i] = meas->eastAzimuth;
+            cf->incidence[slice_i] = meas->incidenceAngle;
+        }
 
         slice_i++;
         meas = (PMeas*)meas_spot->GetNext();
@@ -1468,7 +1472,7 @@ PscatSim::MeasToEsnX(
     // to use the true distribution (not a gaussian) to avoid this problem!
     //--------------------------------------------------------------------//
 
-	Gaussian rv(*var_Esn,0.0);
+    Gaussian rv(*var_Esn,0.0);
     if (meas->measType == Meas::VV_MEAS_TYPE ||
         meas->measType == Meas::HH_MEAS_TYPE ||
         meas->measType == Meas::VH_MEAS_TYPE ||
@@ -1518,15 +1522,15 @@ PscatSim::MeasToEsnX(
 // The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
 //
 // Inputs:
-//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
-//		to the antenna frame for the prevailing geometry.
-//	spacecraft = pointer to current spacecraft object
-//	qscat = pointer to current Qscat object
-//	meas = pointer to current measurement (sigma0, cell center, area etc.)
-//	Kfactor = Radar equation correction factor for this cell.
-//	sigma0 = true sigma0 to assume.
-//	Esn_slice = pointer to signal+noise energy in a slice.
-//	X = pointer to true total X (ie., X = x*Kfactor).
+//  gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//    to the antenna frame for the prevailing geometry.
+//  spacecraft = pointer to current spacecraft object
+//  qscat = pointer to current Qscat object
+//  meas = pointer to current measurement (sigma0, cell center, area etc.)
+//  Kfactor = Radar equation correction factor for this cell.
+//  sigma0 = true sigma0 to assume.
+//  Esn_slice = pointer to signal+noise energy in a slice.
+//  X = pointer to true total X (ie., X = x*Kfactor).
 //
 
 int
@@ -1569,6 +1573,4 @@ PscatSim::MeasToEsnK(
 
   return(MeasToEsnX(pscat, meas, meas1, meas2, *X, sigma0,
                     Esn, Es, En, var_Esn));
-
 }
-

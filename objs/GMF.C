@@ -1445,46 +1445,49 @@ GMF::GetVariance(
     // Kpc variance //
     //--------------//
 
-  double vpc = 0.0;
-  float s0_co, s0_x;
-  if (retrieveUsingKpcFlag)
+    double vpc = 0.0;
+    float s0_co, s0_x;
+    if (retrieveUsingKpcFlag)
     {
-      switch (meas->measType)
-	{
-	case Meas::VV_MEAS_TYPE:
-	case Meas::HH_MEAS_TYPE:
-	case Meas::VH_MEAS_TYPE:
-	case Meas::HV_MEAS_TYPE:
-	  if (! kp->GetVpc(meas, trial_sigma0, &vpc)){
-	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
-            vpc=0.0;
-          }
-          break;
-	case Meas::VV_HV_CORR_MEAS_TYPE:
-	  GetInterpolatedValue(Meas::VV_MEAS_TYPE,
-			       meas->incidenceAngle, spd, chi, &s0_co);
-	  GetInterpolatedValue(Meas::HV_MEAS_TYPE,
-			       meas->incidenceAngle, spd, chi, &s0_x);
-	  if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc)){
-	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
-	    vpc=0.0;
-	  }
-	  break;
-	case Meas::HH_VH_CORR_MEAS_TYPE:
-	  GetInterpolatedValue(Meas::HH_MEAS_TYPE,
-			       meas->incidenceAngle, spd, chi, &s0_co);
-	  GetInterpolatedValue(Meas::VH_MEAS_TYPE,
-			       meas->incidenceAngle, spd, chi, &s0_x);
-	  if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc)){
-	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
-	    vpc=0.0;
-	  }
-          break;
-	default:
-	  fprintf(stderr,"GMF::GetVariance: Bad Measurement Type\n");
-	  exit(1);
-	  break;
-	}
+        switch (meas->measType)
+        {
+        case Meas::VV_MEAS_TYPE:
+        case Meas::HH_MEAS_TYPE:
+        case Meas::VH_MEAS_TYPE:
+        case Meas::HV_MEAS_TYPE:
+            if (! kp->GetVpc(meas, trial_sigma0, &vpc))
+            {
+                fprintf(stderr, "GMF::GetVariance: Error computing Vpc\n");
+                vpc = 0.0;
+            }
+            break;
+        case Meas::VV_HV_CORR_MEAS_TYPE:
+            GetInterpolatedValue(Meas::VV_MEAS_TYPE, meas->incidenceAngle,
+                spd, chi, &s0_co);
+            GetInterpolatedValue(Meas::HV_MEAS_TYPE, meas->incidenceAngle,
+                spd, chi, &s0_x);
+            if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc))
+            {
+                fprintf(stderr, "GMF::GetVariance: Error computing Vpc\n");
+                vpc = 0.0;
+            }
+            break;
+        case Meas::HH_VH_CORR_MEAS_TYPE:
+            GetInterpolatedValue(Meas::HH_MEAS_TYPE, meas->incidenceAngle,
+                spd, chi, &s0_co);
+            GetInterpolatedValue(Meas::VH_MEAS_TYPE, meas->incidenceAngle,
+                spd, chi, &s0_x);
+            if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc))
+            {
+                fprintf(stderr, "GMF::GetVariance: Error computing Vpc\n");
+                vpc = 0.0;
+            }
+            break;
+        default:
+            fprintf(stderr, "GMF::GetVariance: Bad Measurement Type\n");
+            exit(1);
+            break;
+        }
     }
 
     //-----//
@@ -1504,9 +1507,10 @@ GMF::GetVariance(
         {
         case Meas::VV_HV_CORR_MEAS_TYPE:
         case Meas::HH_VH_CORR_MEAS_TYPE:
-            // 0.002 is an assumed value for correlation sigma-0
-            // this *MUST* be consistent with PscatSim kpm calculations
-            vpm = kpm2 * 0.002 * 0.002;
+            float kpm_sig0;
+            gmf->GetMaxValueForSpeed(meas->measType, meas->incidenceAngle,
+                spd, &kpm_sig0);
+            vpm = kpm2 * kpm_sig0*kpm_sig0;
             break;
         default:
             vpm = kpm2 * trial_sigma0 * trial_sigma0;
