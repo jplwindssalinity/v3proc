@@ -880,7 +880,7 @@ GMF::_ObjectiveFunction(
 	for (Measurement* meas = measurement_list->GetHead(); meas;
 			meas = measurement_list->GetNext())
 	{
-		double chi = meas->northAzimuth - phi;
+		double chi = meas->eastAzimuth - phi;
 		double gmf_value;
 		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
 			&gmf_value);

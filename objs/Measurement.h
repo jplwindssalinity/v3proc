@@ -55,8 +55,8 @@ public:
 	PolE		pol;
 	double		value;			// sigma-0 or temperature measurement
 	double		incidenceAngle;
-	double		scAzimuth;		// az. angle relative to s/c
-	double		northAzimuth;	// az. angle relative to north
+	double		scAzimuth;		// az. angle ccw from s/c velocity
+	double		eastAzimuth;	// az. angle ccw from east
 
 	double		centerLongitude;
 	double		centerLatitude;
