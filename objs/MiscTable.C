@@ -238,10 +238,10 @@ MiscTable::GetMaxValueForSpeed(
     GetInterpolatedValue(met, inc, spd, 0.0, &max_value);
 
     float dir;
-    for (int dir_idx = 0; (dir = dir_idx * _chiStep) < two_pi; dir_idx++)
+    for (int dir_idx = 1; (dir = dir_idx * _chiStep) < two_pi; dir_idx++)
     {
         float trial_value;
-        GetInterpolatedValue(met, inc, spd, 0.0, &trial_value);
+        GetInterpolatedValue(met, inc, spd, dir, &trial_value);
         if (trial_value > max_value)
             max_value = trial_value;
     }
