@@ -872,6 +872,13 @@ ConfigAntenna(
 		fprintf(stderr,"Could not find antenna pedestal yaw in config file\n");
 		return(0);
 	}
+        
+	//---------------------------------//
+        // Convert from degrees to radians //
+	//---------------------------------//
+        roll*=dtr;
+        pitch*=dtr;
+        yaw*=dtr;
 	Attitude att;
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
