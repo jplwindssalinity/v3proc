@@ -13,6 +13,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Instrument.h"
 #include "AntennaSim.h"
 #include "OrbitSim.h"
+#include "L0.h"
 
 //======================================================================
 // CLASSES
@@ -29,17 +30,19 @@ static const char rcs_id_instrumentsim_h[] =
 //		simulate the instrument by operating on the subsystem
 //		simulators.  It is used to set members of an Instrument object
 //		and to command subsystem simulators as if the instrument were
-//		funcionting.
+//		functioning.
 //======================================================================
 
 class InstrumentSim
 {
 public:
+
 	//------//
 	// enum //
 	//------//
 
-	enum SimEventE { NONE, BEAM_A, BEAM_B };
+	enum SimEventE { NONE, SCATTEROMETER_BEAM_A_MEASUREMENT,
+		SCATTEROMETER_BEAM_B_MEASUREMENT };
 
 	//-------------//
 	// contruction //
@@ -48,26 +51,23 @@ public:
 	InstrumentSim();
 	~InstrumentSim();
 
-	//----------------//
-	// initialization //
-	//----------------//
+	//---------------------//
+	// setting and getting //
+	//---------------------//
 
-	int		InitByConfig(ConfigList* config_list);
-	int		Config(ConfigList* config_list);
-	int		ConfigOrbitSim(ConfigList* config_list);
-	int		ConfigAntennaSim(ConfigList* config_list);
+	int		SetPriPerBeam(double pri_per_beam);
+	int		SetBeamBTimeOffset(double beam_b_time_offset);
 
 	//--------------------//
 	// simulation control //
 	//--------------------//
 
-	int		SimulateNextEvent(double* time, SimEventE* event);
+	int		SimulateNextEvent(Instrument* instrument);
+	int		GenerateL0(Instrument* instrument, L0* l0);
 
 	//-----------//
 	// variables //
 	//-----------//
-
-	Instrument		instrument;		// the instrument state
 
 	AntennaSim		antennaSim;		// the antenna simulator
 	OrbitSim		orbitSim;		// the orbit simulator
@@ -84,29 +84,5 @@ protected:
 	SimEventE	_event;					// the last/current event
 	double		_eventTime;				// the last/current event time
 };
-
-//--------------------------------//
-// Instrument Simulation Keywords //
-//--------------------------------//
-
-#define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
-#define BEAM_B_TIME_OFFSET_KEYWORD		"BEAM_B_TIME_OFFSET"
-
-//---------------------------//
-// Orbit Simulation Keywords //
-//---------------------------//
-
-#define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
-#define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
-#define INCLINATION_KEYWORD				"INCLINATION"
-#define LONG_OF_ASC_NODE_KEYWORD		"LONG_OF_ASC_NODE"
-#define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
-#define MEAN_ANOMALY_KEYWORD			"MEAN_ANOMALY"
-
-//-----------------------------//
-// Antenna Simulation Keywords //
-//-----------------------------//
-
-#define SPIN_RATE_KEYWORD				"SPIN_RATE"
 
 #endif
