@@ -244,22 +244,23 @@ SimpleLandMap::Write(
     return(1);
 }
 
-//-----------------------//
-// SimpleLandMap::IsLand //
-//-----------------------//
-// lon must be between -pi and +two_pi radians
+//------------------------//
+// SimpleLandMap::GetType //
+//------------------------//
+// lon must be between 0 and +two_pi radians
 // lat must be between -pi/2 and +pi/2 radians
+// 0 is ocean
+// 1 is land
+// 2 is mixed
 
 int
-SimpleLandMap::IsLand(
+SimpleLandMap::GetType(
     float  lon,
     float  lat)
 {
-    static const float pi_2 = pi / 2.0;
-
     lon += two_pi;    // to make sure it is in range
     int lon_idx = (int)(lon / _lonResolution);
-    int lat_idx = (int)((lat + pi_2) / _latResolution);
+    int lat_idx = (int)((lat + pi_over_two) / _latResolution);
     lon_idx = lon_idx % _lonSamples;
     if (lat_idx < 0)
         lat_idx = 0;
@@ -268,6 +269,22 @@ SimpleLandMap::IsLand(
 
     int flag = *(*(_map + lon_idx) + lat_idx);
     return(flag);
+}
+
+//-----------------------//
+// SimpleLandMap::IsLand //
+//-----------------------//
+
+int
+SimpleLandMap::IsLand(
+    float  lon,
+    float  lat)
+{
+    int flag = GetType(lon, lat);
+    if (flag == 1)
+        return(1);
+    else
+        return(0);
 }
 
 //-------------------------//
@@ -281,21 +298,26 @@ SimpleLandMap::Allocate(
 {
     _lonSamples = lon_samples;
     _latSamples = lat_samples;
+
+    _lonResolution = two_pi / _lonSamples;
+    _latResolution = pi / _latSamples;
+
     return(_Allocate());
 }
 
 //---------------------//
-// SimpleLandMap::Zero //
+// SimpleLandMap::Fill //
 //---------------------//
 
 int
-SimpleLandMap::Zero()
+SimpleLandMap::Fill(
+    char  value)
 {
     for (int i = 0; i < _lonSamples; i++)
     {
         for (int j = 0; j < _latSamples; j++)
         {
-            *(*(_map + i) + j) = 0;
+            *(*(_map + i) + j) = value;
         }
     }
     return(1);
