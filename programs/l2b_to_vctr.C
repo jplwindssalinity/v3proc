@@ -133,9 +133,9 @@ main(
     L2B l2b;
     if (hdf_flag)
     {
-        if( l2b.ReadHDF(l2b_file) == 0)
+        if (! l2b.ReadPureHdf(l2b_file))
         {
-            fprintf(stderr, "%s: error opening HDF L2B file %s\n", command,
+            fprintf(stderr, "%s: error reading HDF L2B file %s\n", command,
                 l2b_file);
             exit(1);
         }
