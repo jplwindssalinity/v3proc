@@ -498,7 +498,7 @@ main(
         // set Doppler //
         //-------------//
 
-        doppler_tracker->Set(terms);
+        doppler_tracker->SetTerms(terms);
 
         //------------------------------------------//
         // write out the doppler tracking constants //
