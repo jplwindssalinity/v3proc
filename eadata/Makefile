@@ -13,12 +13,13 @@ DEBUG =       NODEBUG
 INCDIR =      ../../include
 LIBDIR =      ../../lib
 HDFINCDIR =   /usr/local/HDF/include
+SWSHDFINC =   /export/data/sws/HDF4.1r1/include
 
 CFLAGS =      $(CDEBUGFLAGS) -D_NO_PROTO -Wall
 
 C++FLAGS =    $(CDEBUGFLAGS) -D__SCAT_GNUCPP__ -DFUNCPROTO -D$(DEBUG) \
               -D_REENTRANT -DXTFUNCPROTO -D__EXTENSIONS__ \
-              -I$(HDFINCDIR) -I. -fno-implicit-templates -DNOPM
+              -I$(HDFINCDIR) -I$(SWSHDFINC) -I. -fno-implicit-templates -DNOPM
 
 
 OBJS = \
