@@ -141,17 +141,6 @@ sigma0_to_Esn_slice(
 	float*				Esn_slice,
 	float*				XK)
 {
-	//------------------------//
-	// Sanity check on sigma0 //
-	//------------------------//
-
-	if (fabs(sigma0) > 1.0e5)
-	{
-		printf("Error: sigma0_to_Psn encountered invalid sigma0 = %g\n",
-			sigma0);
-		exit(-1);
-	}
-
 	//----------------------------------------------------------------------//
 	// Compute the radar parameter X which includes gain, loss, and geometry
 	// factors in the received power.  This is the true value.  Processing
@@ -161,82 +150,7 @@ sigma0_to_Esn_slice(
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 	*XK = X*Kfactor;
-
-	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->txPulseWidth;
-	double Tg = beam->rxGateWidth;
-	double Bs = meas->bandwidth;
-
-	//------------------------------------------------------------------------//
-	// Signal (ie., echo) energy referenced to the point just before the
-	// I-Q detection occurs (ie., including the receiver gain and system loss).
-	//------------------------------------------------------------------------//
-
-	double Es_slice = Kfactor*X*sigma0*Tp;
-
-	//------------------------------------------------------------------------//
-	// Noise power spectral densities referenced the same way as the signal.
-	//------------------------------------------------------------------------//
-
-	double N0_echo = bK * instrument->systemTemperature *
-		instrument->echo_receiverGain / instrument->systemLoss;
-
-	//------------------------------------------------------------------------//
-	// Noise energy within one slice referenced like the signal energy.
-	//------------------------------------------------------------------------//
-
-	double En1_slice = N0_echo * Bs * Tp;		// noise with signal
-	double En2_slice = N0_echo * Bs * (Tg-Tp);	// noise without signal
-	double En_slice = En1_slice + En2_slice;
-
-	//double true_snr = Es_slice / En_slice;
-	//printf("%d %g\n", meas->startSliceIdx, true_snr);
-
-	//------------------------------------------------------------------------//
-	// Signal + Noise Energy within one slice referenced like the signal energy.
-	//------------------------------------------------------------------------//
-
-	*Esn_slice = (float)(Es_slice + En_slice);
-
-	if (instrument->simKpcFlag == 0)
-	{
-		return(1);
-	}
-
-	//------------------------------------------------------------------------//
-	// Estimate the variance of the slice signal + noise energy measurements.
-	// The variance is simply the sum of the variance when the signal
-	// (and noise) are present together and the variance when only noise
-	// is present.  These variances come from radiometer theory, ie.,
-	// the reciprocal of the time bandwidth product is the normalized variance.
-	// The variance of the power is derived from the variance of the energy.
-	//------------------------------------------------------------------------//
-
-/*
-	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
-		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
-*/
-	// the above equation reduces to the following...
-	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
-		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
-
-	//------------------------------------------------------------------------//
-	// Fuzz the Esn value by adding a random number drawn from
-	// a gaussian distribution with the variance just computed and zero mean.
-	// This includes both thermal noise effects, and fading due to the
-	// random nature of the surface target.
-	// When the snr is low, the Kpc fuzzing can be large enough that
-	// the processing step will estimate a negative sigma0 from the
-	// fuzzed power.  This is normal, and will occur in real data also.
-	// The wind retrieval has to estimate the variance using the model
-	// sigma0 rather than the measured sigma0 to avoid problems computing
-	// Kpc for weighting purposes.
-	//------------------------------------------------------------------------//
-
-	Gaussian rv(var_esn_slice,0.0);
-	*Esn_slice += rv.GetNumber();
-
-	return(1);
+        return(sigma0_to_Esn_slice_given_X(instrument,meas,*XK,sigma0,Esn_slice));
 }
 
 //
@@ -488,8 +402,8 @@ sigma0_to_Esn_noise(
 
 int
 Er_to_sigma0(
-	CoordinateSwitch*	gc_to_antenna,
-	Spacecraft*			spacecraft,
+        CoordinateSwitch*               gc_to_antenna,
+	Spacecraft*                     spacecraft,
 	Instrument*			instrument,
 	Meas*				meas,
 	float				Kfactor,
@@ -502,8 +416,41 @@ Er_to_sigma0(
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
 	double X;
 	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
-	meas->XK = X*Kfactor;
+	return(Er_to_sigma0_given_X(instrument,meas,X*Kfactor,Esn_slice,
+				    Esn_echo,Esn_noise));
+}
 
+//
+// Er_to_sigma0_given_X
+//
+// The Er_to_sigma0_given_X function estimates sigma0 from two signal+noise
+// measurements. One is the slice measurement Esn value.  The other is
+// the noise channel measurement which includes all of the slice energies.
+// See sigma0_to_Esn and sigma0_to_Esn_noise above.
+// Various outputs are put in the Meas object passed in.
+//
+// Inputs:
+//	instrument = pointer to current instrument object
+//	meas = pointer to current measurement (for radar_X: cell center, area etc.)
+//	Xfactor = Radar equation parameter for this cell.
+//
+//	Esn_slice = the received slice energy.
+//	Esn_echo = the sum of all the slice energies for this spot.
+//	Esn_noise = the noise channel measured energy.
+//	PtGr = power gain product to use (includes any Kpr fuzzing).
+//
+
+int
+Er_to_sigma0_given_X(
+	Instrument*			instrument,
+	Meas*				meas,
+	float				Xfactor,
+	float				Esn_slice,
+	float				Esn_echo,
+	float				Esn_noise)
+{
+
+        meas->XK=Xfactor;
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
 
@@ -526,7 +473,7 @@ Er_to_sigma0(
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Es_slice.
 	// Kpr comes from 1/X
-	meas->value = (float)(Es_slice / meas->XK / Tp);
+	meas->value = (float)(Es_slice / Xfactor / Tp);
 
 	if (instrument->simKpcFlag == 0)
 	{
@@ -548,3 +495,4 @@ Er_to_sigma0(
 
 	return(1);
 }
+

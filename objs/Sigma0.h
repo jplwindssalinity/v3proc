@@ -85,4 +85,16 @@ int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
 		float sumPsn, float Pn, float PtGr);
 
+//=========================================================================
+// Function
+//		Er_to_sigma0_given_X
+//
+// The Er_to_sigma0_given_X function computes sigma0 from a signal+noise and noise power
+// measurement for a given instrument state using Xfactor rather than Kfactor
+//
+//=========================================================================
+
+int Er_to_sigma0_given_X(Instrument* instrument, Meas* meas, float Xfactor, float Psn,
+		float sumPsn, float Pn);
+
 #endif
