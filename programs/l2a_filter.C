@@ -104,6 +104,10 @@ main(
     //------------//
 
     int opt_no_correlation = 0;
+    int opt_no_aft_look = 0;
+    int opt_no_fore_look = 0;
+    int opt_no_inner_beam = 0;
+    int opt_no_outer_beam = 0;
 
     //------------------------//
     // parse the command line //
@@ -123,6 +127,22 @@ main(
             {
                 opt_no_correlation = 1;
             }
+            else if (strcasecmp(optarg, "aft0") == 0)
+            {
+                opt_no_aft_look = 1;
+            }
+            else if (strcasecmp(optarg, "fore0") == 0)
+            {
+                opt_no_fore_look = 1;
+            }
+            else if (strcasecmp(optarg, "outer0") == 0)
+            {
+                opt_no_outer_beam = 1;
+            }
+            else if (strcasecmp(optarg, "inner0") == 0)
+            {
+                opt_no_inner_beam = 1;
+            }
             else
             {
                 fprintf(stderr, "%s: error parsing filter %s\n", command,
@@ -132,7 +152,11 @@ main(
             break;
         case 'h':
             printf("Filters:\n");
-            printf("  corr0 : Remove correlation measurements\n");
+            printf("  corr0  : Remove correlation measurements\n");
+            printf("  aft0   : Remove aft look measurements\n");
+            printf("  fore0  : Remove fore look measurements\n");
+            printf("  inner0 : Remove inner beam measurements\n");
+            printf("  outer0 : Remove outer beam  measurements\n");
             exit(0);
             break;
         case '?':
@@ -183,28 +207,35 @@ main(
 
     int wvc_in = 0;
     int wvc_out = 0;
+    int remove=0;
     L2AFrame* frame = &(l2a.frame);
     while (l2a.ReadDataRec())
-    {
-        if (opt_no_correlation)
+    {            
+
+      for (Meas* meas = frame->measList.GetHead(); meas; )
         {
-            for (Meas* meas = frame->measList.GetHead(); meas; )
-            {
-                wvc_in++;
-                if (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
-                    meas->measType == Meas::HH_VH_CORR_MEAS_TYPE)
-                {
-                    meas = frame->measList.RemoveCurrent();
-                    delete meas;
-                    meas = frame->measList.GetCurrent();
-                }
-                else
-                {
-                    meas = frame->measList.GetNext();
-                    wvc_out++;
-                }
-            }
-        }
+	  wvc_in++;
+	  remove = opt_no_correlation &&
+	      (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
+	       meas->measType == Meas::HH_VH_CORR_MEAS_TYPE);
+          remove= remove || (opt_no_aft_look && meas->scanAngle>pi/2 
+		  && meas->scanAngle<3*pi/2);
+          remove= remove || (opt_no_fore_look && (meas->scanAngle<pi/2 ||
+						  meas->scanAngle>3*pi/2));
+          remove= remove || (opt_no_inner_beam && meas->beamIdx==0);
+          remove= remove || (opt_no_outer_beam && meas->beamIdx==1);
+	  if(remove)
+	    {
+	      meas = frame->measList.RemoveCurrent();
+	      delete meas;
+	      meas = frame->measList.GetCurrent();
+	    }
+	  else
+	    {
+	      meas = frame->measList.GetNext();
+	      wvc_out++;
+	    }
+	}
         l2a.WriteDataRec();
     }
 
