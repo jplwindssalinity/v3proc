@@ -167,6 +167,18 @@ main(
 		exit(1);
 	}
 
+	//----------------------------------------//
+	// create an attitude knowledge error model //
+	//----------------------------------------//
+
+	if (! ConfigAttitudeKnowledgeModel(&spacecraft_sim, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring attitude knowledge error model\n",
+			command);
+		fprintf(stderr, "    for spacecraft simulator\n");
+		exit(1);
+	}
+
 	//-----------------------------------------------//
 	// create an instrument and instrument simulator //
 	//-----------------------------------------------//
@@ -351,6 +363,13 @@ main(
 
 			if (instrument_sim.l00FrameReady)
 			{
+
+			       // Report Latest Attitude Measurement
+			       // + Knowledge Error
+				spacecraft_sim.ReportAttitude(
+				    instrument_event.time, &spacecraft,
+				    &(instrument_sim.l00.frame.attitude));
+
 				int size = instrument_sim.l00.frame.Pack(l00.buffer);
 				l00.file.Write(l00.buffer, size);
 			}
