@@ -2210,7 +2210,6 @@ WindField::_Deallocate()
     return(1);
 }
 
-
 //===========//
 // WindSwath //
 //===========//
@@ -2390,9 +2389,10 @@ WindSwath::DeleteEntireSwath()
     return(1);
 }
 
-//-----------------------------------//
-// WindSwath::DeleteFlaggedData      //
-//-----------------------------------//
+//------------------------------//
+// WindSwath::DeleteFlaggedData //
+//------------------------------//
+
 int
 WindSwath::DeleteFlaggedData
 ( const char* flag_file,
@@ -2436,10 +2436,10 @@ WindSwath::DeleteFlaggedData
       // outer beam only case
       if (flag[offset]>=3) threshold=threshold_outer;
       if (flag[offset]==2 || flag[offset]>=5) not_classified=1;
-      if (use_thresh==0 && (flag[offset]==1 || flag[offset]==4)) 
-	rain_bit_set=1;
-      if ((use_thresh && (flag_value[offset] > threshold)) || 
-	  not_classified || rain_bit_set)
+      if (use_thresh==0 && (flag[offset]==1 || flag[offset]==4))
+          rain_bit_set=1;
+      if ((use_thresh && (flag_value[offset] > threshold)) ||
+          not_classified || rain_bit_set)
             {
           delete wvc;
           *(*(swath + i) + j) = NULL;
@@ -3291,11 +3291,13 @@ WindSwath::GetNudgeVectors(
 //----------------------------//
 // WindSwath::GetNudgeVectors //
 //----------------------------//
+
 int
 WindSwath::GetHurricaneNudgeVectors(
-     WindField*     nudge_field,
-     EarthPosition* center,
-     float  radius){
+    WindField*      nudge_field,
+    EarthPosition*  center,
+    float           radius)
+{
   if(!nudgeVectorsRead) {
     fprintf(stderr, "WindSwath::GetHurricaneNudgeVectors failed 1\n");
     exit(0);
@@ -3310,7 +3312,8 @@ WindSwath::GetHurricaneNudgeVectors(
 
           EarthPosition cell_pos;
 
-          cell_pos.SetAltLonGDLat(0.0,wvc->lonLat.longitude,wvc->lonLat.latitude);
+        cell_pos.SetAltLonGDLat(0.0, wvc->lonLat.longitude,
+            wvc->lonLat.latitude);
           if(center->SurfaceDistance(cell_pos)<radius){
             if (! wvc->nudgeWV) wvc->nudgeWV=new WindVectorPlus;
         if (! nudge_field->InterpolatedWindVector(wvc->lonLat,
@@ -3323,6 +3326,7 @@ WindSwath::GetHurricaneNudgeVectors(
     }
     return(1);
 }
+
 //------------------//
 // WindSwath::Nudge //
 //------------------//
@@ -3351,12 +3355,13 @@ WindSwath::Nudge(
     return(count);
 }
 
-//------------------//
+//------------------------//
 // WindSwath::StreamNudge //
-//------------------//
+//------------------------//
 
 int
-WindSwath::StreamNudge(float stream_thresh)
+WindSwath::StreamNudge(
+    float  stream_thresh)
 {
     printf("WindSwath::StreamT %g\n",stream_thresh);
     int count = 0;
@@ -3370,19 +3375,19 @@ WindSwath::StreamNudge(float stream_thresh)
 
             if (wvc->nudgeWV==NULL)
                 continue;
-	    WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
-	    WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
-	    if( !wvp2 )
-	      wvc->selected=wvp1;
-	    else{
-	      float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
-	      if(angdif < stream_thresh*dtr) wvc->selected=wvp1;
-	      else{
-		wvc->selected = 
-		  wvc->GetNearestToDirection(wvc->nudgeWV->dir,2);
-		count++;
-	      }
-	    }
+            WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
+            WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
+            if (! wvp2)
+                wvc->selected=wvp1;
+        else{
+          float angdif=fabs(ANGDIF(wvp1->dir,wvp2->dir));
+          if(angdif < stream_thresh*dtr) wvc->selected=wvp1;
+          else{
+        wvc->selected =
+          wvc->GetNearestToDirection(wvc->nudgeWV->dir,2);
+        count++;
+          }
+        }
         }
     }
     return(count);
@@ -3394,9 +3399,9 @@ WindSwath::StreamNudge(float stream_thresh)
 
 int
 WindSwath::HurricaneNudge(
-    int  min_rank,
-    EarthPosition* center,
-    float radius)
+    int             min_rank,
+    EarthPosition*  center,
+    float           radius)
 {
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -3427,9 +3432,9 @@ WindSwath::HurricaneNudge(
     return(count);
 }
 
-//------------------//
+//--------------------//
 // WindSwath::S3Nudge //
-//------------------//
+//--------------------//
 
 int
 WindSwath::S3Nudge()
@@ -3618,9 +3623,9 @@ WindSwath::MedianFilter(
     {
         for (int ati = 0; ati < _alongTrackBins; ati++)
         {
-	  if(freeze==0 || cti<freeze || cti>_crossTrackBins-freeze)
+      if(freeze==0 || cti<freeze || cti>_crossTrackBins-freeze)
             change[cti][ati] = 1;
-	  else change[cti][ati] =0;
+      else change[cti][ati] =0;
         }
     }
 
@@ -3777,8 +3782,9 @@ WindSwath::MedianFilterPass(
             // check for freeze  //
             // state             //
             //-------------------//
-	    if (freeze !=0 & cti>=freeze & cti<=_crossTrackBins-freeze)
-	      continue; 
+
+            if (freeze != 0 & cti >= freeze & cti <= _crossTrackBins - freeze)
+                continue;
 
             //-------------------//
             // check for changes //
@@ -3798,104 +3804,117 @@ WindSwath::MedianFilterPass(
             continue;        // no changes
 
         change:
+
             float min_vector_dif_sum = (float)HUGE_VAL;
+
             //--------------------------------------------//
             // Don't use range information if unavailable //
             // or special= 0                              //
             //--------------------------------------------//
 
-            if (special == 0 || (special == 1 &&
-                wvc->directionRanges.NodeCount() == 0))
+            if (special == 0 ||
+                (special == 1 && wvc->directionRanges.NodeCount() == 0))
             {
-              for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
-                   wvp = wvc->ambiguities.GetNext())
+                for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                    wvp = wvc->ambiguities.GetNext())
                 {
-                  float vector_dif_sum = 0.0;
-                  float x1 = wvp->spd * cos(wvp->dir);
-                  float y1 = wvp->spd * sin(wvp->dir);
+                    float vector_dif_sum = 0.0;
+                    float x1 = wvp->spd * cos(wvp->dir);
+                    float y1 = wvp->spd * sin(wvp->dir);
 
-                  for (int i = cti_min; i < cti_max; i++)
-                {
-                  for (int j = ati_min; j < ati_max; j++)
+                    for (int i = cti_min; i < cti_max; i++)
                     {
-                      if (i == cti && j == ati)
-                    continue;        // don't check central vector
+                        for (int j = ati_min; j < ati_max; j++)
+                        {
+                            if (i == cti && j == ati)
+                                continue;        // don't check central vector
 
-                      WVC* other_wvc = swath[i][j];
-                      if (! other_wvc)
-                    continue;
+                            WVC* other_wvc = swath[i][j];
+                            if (! other_wvc)
+                                continue;
 
-                      WindVectorPlus* other_wvp = other_wvc->selected;
-                      if (! other_wvp)
-                    continue;
+                            WindVectorPlus* other_wvp = other_wvc->selected;
+                            if (! other_wvp)
+                                continue;
 
-                      float x2 = other_wvp->spd * cos(other_wvp->dir);
-                      float y2 = other_wvp->spd * sin(other_wvp->dir);
+                            float x2 = other_wvp->spd * cos(other_wvp->dir);
+                            float y2 = other_wvp->spd * sin(other_wvp->dir);
 
-                      float dx = x2 - x1;
-                      float dy = y2 - y1;
-                      vector_dif_sum += sqrt(dx*dx + dy*dy);
+                            float dx = x2 - x1;
+                            float dy = y2 - y1;
+                            vector_dif_sum += sqrt(dx*dx + dy*dy);
+                        }
                     }
-                }
 
-                //------------------------------//
-                // apply weighting if necessary //
-                //------------------------------//
+                    //------------------------------//
+                    // apply weighting if necessary //
+                    //------------------------------//
 
-                  if (weight_flag)
-                {
-                  if (wvp->obj == 0.0)
-                    vector_dif_sum = (float)HUGE_VAL;
-                  else
-                    vector_dif_sum /= wvp->obj;
-                }
+                    if (weight_flag)
+                    {
+                        if (wvp->obj == 0.0)
+                            vector_dif_sum = (float)HUGE_VAL;
+                        else
+                            vector_dif_sum /= wvp->obj;
+                    }
 
-                  if (vector_dif_sum < min_vector_dif_sum)
-                {
-                  min_vector_dif_sum = vector_dif_sum;
-                  new_selected[cti][ati] = wvp;
-                }
+                    if (vector_dif_sum < min_vector_dif_sum)
+                    {
+                        min_vector_dif_sum = vector_dif_sum;
+                        new_selected[cti][ati] = wvp;
+                    }
                 }    // done with ambiguities
             }
-                        //-----------------------------------------------//
-                        // Special Cases: Use Range Info (S3)            //
-                        //-----------------------------------------------//
-            else if(special==1){
+            else if (special == 1)
+            {
+                //-----------------------------------------------//
+                // Special Cases: Use Range Info (S3)            //
+                //-----------------------------------------------//
 
-                 WindVectorPlus* wvp = new WindVectorPlus;
-                             // Determine the Median Vector
-                             if(USE_MEDIAN_FOR_RANGE){
-                   if(!GetMedianBySorting(wvp, cti_min, cti_max,
-                            ati_min,ati_max))
-                 return(0);
-                 }
-                 else{
-                   if(!GetWindowMean(wvp, cti_min, cti_max,
-                            ati_min,ati_max))
-                 return(0);
-                 }
-                             if(USE_CLOSEST_VECTOR){
-                   if(!wvc->directionRanges.GetNearestVector(wvp))
-                 return(0);
-                 }
-                             else{
-                   float tmp=wvc->directionRanges.GetNearestValue(wvp->dir);
-                   wvp->dir=tmp;
-                   wvp->spd=wvc->directionRanges.GetBestSpeed(tmp);
-                 }
-                 new_selected[cti][ati]=wvp;
+                WindVectorPlus* wvp = new WindVectorPlus;
+                // Determine the Median Vector
+                if (USE_MEDIAN_FOR_RANGE)
+                {
+                    if (! GetMedianBySorting(wvp, cti_min, cti_max,
+                        ati_min, ati_max))
+                    {
+                        return(0);
+                    }
+                }
+                else
+                {
+                    if (! GetWindowMean(wvp, cti_min, cti_max,
+                        ati_min, ati_max))
+                    {
+                        return(0);
+                    }
+                }
+                if (USE_CLOSEST_VECTOR)
+                {
+                    if (! wvc->directionRanges.GetNearestVector(wvp))
+                        return(0);
+                }
+                else
+                {
+                    float tmp = wvc->directionRanges.GetNearestValue(wvp->dir);
+                    wvp->dir = tmp;
+                    wvp->spd = wvc->directionRanges.GetBestSpeed(tmp);
+                }
+                new_selected[cti][ati] = wvp;
             }  // Done with special==1 procedure
-                        // Spatial Probability Search (special==2)
-            else if(special==2){
+            else if (special == 2)
+            {
+                // Spatial Probability Search (special==2)
                  WindVectorPlus* wvp = new WindVectorPlus;
-                 energy+=GetMostProbableDir(wvp,cti,ati,cti_min,
-                            cti_max,ati_min,ati_max);
-                 new_selected[cti][ati]=wvp;
+                 energy += GetMostProbableDir(wvp, cti, ati, cti_min,
+                     cti_max, ati_min, ati_max);
+                 new_selected[cti][ati] = wvp;
             }
-            else{
-              fprintf(stderr,"MedianFilter: Bad Special Value %d\n"
-                  ,special);
-              exit(1);
+            else
+            {
+                fprintf(stderr, "MedianFilter: Bad Special Value %d\n",
+                    special);
+                exit(1);
             }
         }    // done with ati
     }    // done with cti
@@ -3903,6 +3922,7 @@ WindSwath::MedianFilterPass(
     //------------------//
     // transfer updates //
     //------------------//
+
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
         for (int ati = 0; ati < _alongTrackBins; ati++)
@@ -3915,51 +3935,48 @@ WindSwath::MedianFilterPass(
                 // used                                          //
                 //-----------------------------------------------//
 
-                if ((special ==1 &&
+                if ((special == 1 &&
                     swath[cti][ati]->directionRanges.NodeCount() != 0) ||
-                    special==2)
+                    special == 2)
                 {
-                // replace selected
-                // but set change only if the direction
-                // changes substantially
+                    // replace selected
+                    // but set change only if the direction
+                    // changes substantially
 
-                if(swath[cti][ati]->selected_allocated){
-                  double dif=ANGDIF(swath[cti][ati]->selected->dir,
-                        new_selected[cti][ati]->dir);
-                  if(dif>FLIPPING_WITHIN_RANGE_THRESHOLD)
-                change[cti][ati]=1;
+                    if (swath[cti][ati]->selected_allocated)
+                    {
+                        double dif = ANGDIF(swath[cti][ati]->selected->dir,
+                            new_selected[cti][ati]->dir);
+                        if (dif > FLIPPING_WITHIN_RANGE_THRESHOLD)
+                            change[cti][ati]=1;
+                        else
+                            change[cti][ati]=0;
 
-                  else{
-                change[cti][ati]=0;
-                  }
-
-                  delete swath[cti][ati]->selected;
+                        delete swath[cti][ati]->selected;
+                    }
+                    else
+                    {
+                        swath[cti][ati]->selected_allocated = 1;
+                        change[cti][ati] = 1;
+                    }
+                    swath[cti][ati]->selected = new_selected[cti][ati];
+                    flips += change[cti][ati];
                 }
-                else{
-                  swath[cti][ati]->selected_allocated=1;
-                  change[cti][ati]=1;
-                }
-                swath[cti][ati]->selected = new_selected[cti][ati];
-                flips+=change[cti][ati];
-              }
-
-              //------------------------//
-              // IF RANGE INFO NOT USED //
-              //------------------------//
-
-              else if (new_selected[cti][ati] != swath[cti][ati]->selected)
+                else if (new_selected[cti][ati] != swath[cti][ati]->selected)
                 {
-                  change[cti][ati]=1;
-                  swath[cti][ati]->selected = new_selected[cti][ati];
-                  flips+=change[cti][ati];
+                    //------------------------//
+                    // IF RANGE INFO NOT USED //
+                    //------------------------//
+
+                    change[cti][ati] = 1;
+                    swath[cti][ati]->selected = new_selected[cti][ati];
+                    flips += change[cti][ati];
                 }
-
-
             }
         }
     }
-    printf("Flips %d  Energy %g\n",flips,energy);
-        fflush(stdout);
+    printf("Flips %d  Energy %g\n", flips, energy);
+    fflush(stdout);
     return(flips);
 }
 
@@ -4669,9 +4686,9 @@ WindSwath::SelectNearest(
     return(count);
 }
 
-//--------------------------//
-// WindSwath::SelectNudge   //
-//--------------------------//
+//------------------------//
+// WindSwath::SelectNudge //
+//------------------------//
 
 int
 WindSwath::SelectNudge()
@@ -5519,7 +5536,15 @@ WindSwath::GetProbabilityArray(
   }
   return(1);
 }
-void WindSwath::operator-=(const WindSwath& w){
+
+//-----------------------//
+// WindSwath::operator-= //
+//-----------------------//
+
+void
+WindSwath::operator-=(
+    const WindSwath&  w)
+{
     for (int i = 0; i < _crossTrackBins; i++)
     {
         for (int j = 0; j < _alongTrackBins; j++)
@@ -6066,16 +6091,16 @@ WindSwath::VectorCorrelationVsCti(
   delete(su2v2_array);
 
   return(1);
-} 
+}
 
 //--------------------------------//
 // WindSwath::Streamosity         //
 //--------------------------------//
 
 int    WindSwath::Streamosity(
-    WindField* truth, 
+    WindField* truth,
     float* stream_array,
-    float* good_stream_array, 
+    float* good_stream_array,
     float low_speed,
     float high_speed){
 
@@ -6086,15 +6111,15 @@ int    WindSwath::Streamosity(
     for(int ati=0;ati<_alongTrackBins;ati++){
        WVC* wvc = swath[cti][ati];
        if (! wvc)
-	 continue;
+     continue;
 
        WindVector true_wv;
        if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-	 true_wv.dir=wvc->nudgeWV->dir;
-	 true_wv.spd=wvc->nudgeWV->spd;
-       } 
+     true_wv.dir=wvc->nudgeWV->dir;
+     true_wv.spd=wvc->nudgeWV->spd;
+       }
        else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-	 continue;
+     continue;
        count++; // increment count of good wind vector cells
        WindVectorPlus* wvp1=wvc->ambiguities.GetHead();
        WindVectorPlus* wvp2=wvc->ambiguities.GetNext();
@@ -6115,17 +6140,21 @@ int    WindSwath::Streamosity(
   }
   return(1);
 }
-int    
-WindSwath::FractionNAmbigs(
-    WindField* truth, 
-    float* frac_1amb_array,
-    float* frac_2amb_array, 
-    float* frac_3amb_array,
-    float* frac_4amb_array, 
-    float low_speed,
-    float high_speed)
-{
 
+//----------------------------//
+// WindSwath::FractionNAmbigs //
+//----------------------------//
+
+int
+WindSwath::FractionNAmbigs(
+    WindField*  truth,
+    float*      frac_1amb_array,
+    float*      frac_2amb_array,
+    float*      frac_3amb_array,
+    float*      frac_4amb_array,
+    float       low_speed,
+    float       high_speed)
+{
   for(int cti=0;cti<_crossTrackBins;cti++){
     int count=0;
     frac_1amb_array[cti]=0;
@@ -6135,33 +6164,33 @@ WindSwath::FractionNAmbigs(
     for(int ati=0;ati<_alongTrackBins;ati++){
        WVC* wvc = swath[cti][ati];
        if (! wvc)
-	 continue;
+     continue;
 
        WindVector true_wv;
        if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-	 true_wv.dir=wvc->nudgeWV->dir;
-	 true_wv.spd=wvc->nudgeWV->spd;
-       } 
+     true_wv.dir=wvc->nudgeWV->dir;
+     true_wv.spd=wvc->nudgeWV->spd;
+       }
        else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-	 continue;
+     continue;
        count++; // increment count of good wind vector cells
        int num=wvc->ambiguities.NodeCount();
        switch(num){
-       case 1: 
-	 frac_1amb_array[cti]++;
-	 break;
-       case 2: 
-	 frac_2amb_array[cti]++;
-	 break;
-       case 3: 
-	 frac_3amb_array[cti]++;
-	 break;
-       case 4: 
-	 frac_4amb_array[cti]++;
-	 break;
+       case 1:
+     frac_1amb_array[cti]++;
+     break;
+       case 2:
+     frac_2amb_array[cti]++;
+     break;
+       case 3:
+     frac_3amb_array[cti]++;
+     break;
+       case 4:
+     frac_4amb_array[cti]++;
+     break;
        default:
-	 fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",num);
-	 return(0);
+     fprintf(stderr,"Frac_N_Ambigs:: Bad number of ambigs %d\n",num);
+     return(0);
        }
     }
     if(count){
@@ -6177,11 +6206,11 @@ WindSwath::FractionNAmbigs(
 // WindSwath::NudgeOverrideVsCti  //
 //--------------------------------//
 
-int   
+int
 WindSwath::NudgeOverrideVsCti(
-     WindField* truth, 
+     WindField* truth,
      float* correction_rate_array,
-     float* change_incorrect_rate_array, 
+     float* change_incorrect_rate_array,
      float* bad_nudge_rate_array,
      float low_speed,
      float high_speed)
@@ -6192,61 +6221,60 @@ WindSwath::NudgeOverrideVsCti(
       int count=0;
       int total_count=0;
       correction_rate_array[cti]=0;
-      change_incorrect_rate_array[cti]=0; 
+      change_incorrect_rate_array[cti]=0;
       bad_nudge_rate_array[cti]=0;
       /// loop through along track bins
       for (int ati = 0; ati < _alongTrackBins; ati++)
-        { 
-           
-	  WVC* wvc = swath[cti][ati];
+        {
+      WVC* wvc = swath[cti][ati];
 
           if (! wvc)
-	    continue; // skip bad wind vector cells
+        continue; // skip bad wind vector cells
 
-	  WindVector true_wv;
+      WindVector true_wv;
           // Error Message for useNudgeVectorsAsTruth==1 case
           if (useNudgeVectorsAsTruth){
-	    fprintf(stderr,"NudgeOverride makes no sense with useNudgeVectorsAsTruth=1\n");
-	    return(0);
-	  }
+        fprintf(stderr,"NudgeOverride makes no sense with useNudgeVectorsAsTruth=1\n");
+        return(0);
+      }
 
-	  else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-	    continue; // if no truth, skip
+      else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+        continue; // if no truth, skip
 
-	  if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-	    continue; // if out of speed range, skip
+      if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+        continue; // if out of speed range, skip
 
           WindVector* nudge_wv=wvc->nudgeWV;
-	    if (!nudge_wv) continue;  // if no nudge vector, skip
+        if (!nudge_wv) continue;  // if no nudge vector, skip
 
-	  WindVectorPlus* sel=wvc->selected;
+      WindVectorPlus* sel=wvc->selected;
           if (!sel) continue;  // if no selection skip
 
           // compute closest ambiguities to truth and nudge field
-	  WindVectorPlus* nudge_near=wvc->GetNearestToDirection(nudge_wv->dir);
-	  WindVectorPlus* truth_near=wvc->GetNearestToDirection(true_wv.dir);
-	  
-	  total_count++;
+      WindVectorPlus* nudge_near=wvc->GetNearestToDirection(nudge_wv->dir);
+      WindVectorPlus* truth_near=wvc->GetNearestToDirection(true_wv.dir);
 
-	  // if nudge and truth agree, then skip
-	  if(nudge_near==truth_near) continue;
+      total_count++;
 
-	  // increment count of nudge/truth disagreements;
-	  count++;  
-          
-	  // increment count of instrument corrections
-	  if(truth_near==sel) correction_rate_array[cti]++;
-	  // increment count of instrument incorrect changes
-	  else if(sel!=nudge_near) change_incorrect_rate_array[cti]++;	
+      // if nudge and truth agree, then skip
+      if(nudge_near==truth_near) continue;
+
+      // increment count of nudge/truth disagreements;
+      count++;
+
+      // increment count of instrument corrections
+      if(truth_near==sel) correction_rate_array[cti]++;
+      // increment count of instrument incorrect changes
+      else if(sel!=nudge_near) change_incorrect_rate_array[cti]++;
         }
       // normalize by counts;
       if(count!=0){
-	correction_rate_array[cti]/=count;
-	change_incorrect_rate_array[cti]/=count;
+    correction_rate_array[cti]/=count;
+    change_incorrect_rate_array[cti]/=count;
       }
       else{
-	correction_rate_array[cti]=-1;
-	change_incorrect_rate_array[cti]=-1;
+    correction_rate_array[cti]=-1;
+    change_incorrect_rate_array[cti]=-1;
       }
       bad_nudge_rate_array[cti]=(float)(count)/total_count;
     }
