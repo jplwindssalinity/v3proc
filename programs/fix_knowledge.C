@@ -439,7 +439,7 @@ main(
             // accumulation decision //
             //-----------------------//
 
-            if (echo_info.flag[spot_idx] != EchoInfo::OK)
+            if (echo_info.quality_flag[spot_idx] != EchoInfo::OK)
                 continue;
 
             if (echo_info.totalSignalEnergy[spot_idx] < SIGNAL_ENERGY_THRESHOLD)

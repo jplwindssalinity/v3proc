@@ -330,7 +330,7 @@ main(
 
         for (int spot_idx = 0; spot_idx < frame->spotsPerFrame; spot_idx++)
         {
-            echo_info.flag[spot_idx] = EchoInfo::OK;
+            echo_info.quality_flag[spot_idx] = EchoInfo::OK;
 
             // determine beam index and beam
             int beam_idx = spot_idx % NUMBER_OF_QSCAT_BEAMS;
@@ -389,7 +389,7 @@ main(
             if (spot_idx == frame->calPosition - 2 ||
                 spot_idx == frame->calPosition - 1)
             {
-                echo_info.flag[spot_idx] = EchoInfo::CAL_OR_LOAD_PULSE;
+                echo_info.quality_flag[spot_idx] = EchoInfo::CAL_OR_LOAD_PULSE;
                 continue;
             }
 
@@ -426,7 +426,7 @@ main(
                 use_lon_lat.ApproxApplyDelta(dlon_km[i], dlat_km[i]);
                 if (qscat_sim.landMap.IsLand(&use_lon_lat))
                 {
-                    echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
+                    echo_info.surface_flag[spot_idx] = EchoInfo::NOT_OCEAN;
                     break;
                 }
             }
@@ -469,7 +469,7 @@ main(
                 frame->slicesPerSpot, &meas_spec_peak_slice,
                 &meas_spec_peak_freq, &width))
             {
-                echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                echo_info.quality_flag[spot_idx] = EchoInfo::BAD_PEAK;
                 continue;
             }
             echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;
