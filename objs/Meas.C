@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -33,7 +33,7 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 const char* meas_type_map[] = { "None", "VV", "HH", "VH", "HV", "VVHV",
-    "HHVH" };
+    "HHVH", NULL };
 
 Meas::Meas()
 :   value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), txPulseWidth(0.0),
@@ -186,37 +186,37 @@ Meas::Composite(
 
 int
 Meas::Write(
-	FILE*	fp)
+    FILE*  fp)
 {
-	// Sanity check on sigma0 and estimated Kp
-	if (fabs(value) > 1.0e5)
-	{
-		printf("Error: Meas::Write encountered invalid sigma0 = %g\n",value);
-		exit(-1);
-	}
+    // Sanity check on sigma0 and estimated Kp
+    if (fabs(value) > 1.0e5)
+    {
+        printf("Error: Meas::Write encountered invalid sigma0 = %g\n",value);
+        exit(-1);
+    }
 
-	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
-		outline.Write(fp) != 1 ||
-		centroid.WriteLonLat(fp) != 1 ||
-		fwrite((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
+    if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
+        outline.Write(fp) != 1 ||
+        centroid.WriteLonLat(fp) != 1 ||
+        fwrite((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
         fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
         fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&A, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&B, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&C, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+        fwrite((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&A, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&B, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&C, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //------------//
@@ -225,32 +225,32 @@ Meas::Write(
 
 int
 Meas::Read(
-	FILE*	fp)
+    FILE*    fp)
 {
-	FreeContents();
-	offset = ftell(fp);
-	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
-		outline.Read(fp) != 1 ||
-		centroid.ReadLonLat(fp) != 1 ||
-		fread((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
+    FreeContents();
+    offset = ftell(fp);
+    if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
+        outline.Read(fp) != 1 ||
+        centroid.ReadLonLat(fp) != 1 ||
+        fread((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
         fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&A, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&B, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&C, sizeof(float), 1, fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+        fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&scanAngle, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&A, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&B, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&C, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //------------------//
@@ -259,7 +259,7 @@ Meas::Read(
 
 int
 Meas::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
     double lon=0, lat=0, alt=0;
     centroid.GetAltLonGDLat(&alt,&lon,&lat);
@@ -269,13 +269,13 @@ Meas::WriteAscii(
     fprintf(fp, "BeamIdx: %d ", beamIdx);
     fprintf(fp, "StartSliceIdx: %d ", startSliceIdx);
     fprintf(fp, "NumSlices: %d ", numSlices);
-	fprintf(fp, "ScanAngle: %g ", scanAngle*rtd);
+    fprintf(fp, "ScanAngle: %g ", scanAngle*rtd);
     fprintf(fp, "XK: %g ",XK);
-	fprintf(fp, "Value: %g ", value);
+    fprintf(fp, "Value: %g ", value);
     fprintf(fp, "EnSlice: %g ", EnSlice);
-	fprintf(fp, "MeasType: %s ", meas_type_map[(int)measType]);
-	fprintf(fp, "IncAngle: %g ", incidenceAngle*rtd);
-	fprintf(fp, "eastAzimuth: %g ", eastAzimuth*rtd);
+    fprintf(fp, "MeasType: %s ", meas_type_map[(int)measType]);
+    fprintf(fp, "IncAngle: %g ", incidenceAngle*rtd);
+    fprintf(fp, "eastAzimuth: %g ", eastAzimuth*rtd);
     fprintf(fp, "Longitude: %g ",lon);
     fprintf(fp, "Latitude: %g ",lat);
     fprintf(fp, "Bandwidth: %g ", bandwidth);
@@ -285,7 +285,7 @@ Meas::WriteAscii(
     fprintf(fp, "B: %g ", B);
     fprintf(fp, "C: %g \n", C);
 
-	return(1);
+    return(1);
 }
 
 //--------------------//
@@ -295,8 +295,8 @@ Meas::WriteAscii(
 void
 Meas::FreeContents()
 {
-	outline.FreeContents();
-	return;
+    outline.FreeContents();
+    return;
 }
 
 int
@@ -305,7 +305,7 @@ L1BHdf*     l1bHdf,
 int32       pulseIndex,   // index in pluses
 int32       sliceIndex)   // index in slices
 {
-	FreeContents();
+    FreeContents();
 
     Parameter* param=0;
 
@@ -445,15 +445,15 @@ MeasList::Write(
     FILE*  fp)
 {
     int count = NodeCount();
-	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
-		return(0);
+    if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
+        return(0);
 
-	for (Meas* meas = GetHead(); meas; meas = GetNext())
-	{
-		if (! meas->Write(fp))
-			return(0);
-	}
-	return(1);
+    for (Meas* meas = GetHead(); meas; meas = GetNext())
+    {
+        if (! meas->Write(fp))
+            return(0);
+    }
+    return(1);
 }
 
 //----------------//
@@ -462,24 +462,24 @@ MeasList::Write(
 
 int
 MeasList::Read(
-	FILE*	fp)
+    FILE*    fp)
 {
-	FreeContents();
+    FreeContents();
 
-	int count;
-	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
-		return(0);
+    int count;
+    if (fread((void *)&count, sizeof(int), 1, fp) != 1)
+        return(0);
 
-	for (int i = 0; i < count; i++)
-	{
-		Meas* new_meas = new Meas();
-		if (! new_meas->Read(fp) ||
-			! Append(new_meas))
-		{
-			return(0);
-		}
-	}
-	return(1);
+    for (int i = 0; i < count; i++)
+    {
+        Meas* new_meas = new Meas();
+        if (! new_meas->Read(fp) ||
+            ! Append(new_meas))
+        {
+            return(0);
+        }
+    }
+    return(1);
 }
 
 //----------------------//
@@ -488,15 +488,15 @@ MeasList::Read(
 
 int
 MeasList::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
-	fprintf(fp, "\n### Slice/Composite Count: %d ####\n", NodeCount());
-	for (Meas* meas = GetHead(); meas; meas = GetNext())
-	{
-		if (! meas->WriteAscii(fp))
-			return(0);
-	}
-	return(1);
+    fprintf(fp, "\n### Slice/Composite Count: %d ####\n", NodeCount());
+    for (Meas* meas = GetHead(); meas; meas = GetNext())
+    {
+        if (! meas->WriteAscii(fp))
+            return(0);
+    }
+    return(1);
 }
 
 //-------------------------//
@@ -506,26 +506,26 @@ MeasList::WriteAscii(
 LonLat
 MeasList::AverageLonLat()
 {
-	EarthPosition sum;
-	sum.SetPosition(0.0, 0.0, 0.0);
-	for (Meas* meas = GetHead(); meas; meas = GetNext())
-	{
-		sum += meas->centroid;
-	}
+    EarthPosition sum;
+    sum.SetPosition(0.0, 0.0, 0.0);
+    for (Meas* meas = GetHead(); meas; meas = GetNext())
+    {
+        sum += meas->centroid;
+    }
 
-	// The center of the earth is at 0,0,0 (geocentric coords)
-	EarthPosition earth_center;
-	earth_center.SetPosition(0.0, 0.0, 0.0);
-	// Find the surface point lying along the averaged direction.
-	EarthPosition ravg;
-	if(earth_intercept(earth_center,sum,&ravg)!=1){
-	  fprintf(stderr,"MeasList::AveLonLat: earth_intercept error\n");
-	  exit(1);
-	}
+    // The center of the earth is at 0,0,0 (geocentric coords)
+    EarthPosition earth_center;
+    earth_center.SetPosition(0.0, 0.0, 0.0);
+    // Find the surface point lying along the averaged direction.
+    EarthPosition ravg;
+    if(earth_intercept(earth_center,sum,&ravg)!=1){
+      fprintf(stderr,"MeasList::AveLonLat: earth_intercept error\n");
+      exit(1);
+    }
 
-	LonLat lon_lat;
-	lon_lat.Set(ravg);
-	return(lon_lat);
+    LonLat lon_lat;
+    lon_lat.Set(ravg);
+    return(lon_lat);
 }
 
 //------------------------//
@@ -535,11 +535,11 @@ MeasList::AverageLonLat()
 void
 MeasList::FreeContents()
 {
-	Meas* meas;
-	GotoHead();
-	while ((meas = RemoveCurrent()) != NULL)
-		delete meas;
-	return;
+    Meas* meas;
+    GotoHead();
+    while ((meas = RemoveCurrent()) != NULL)
+        delete meas;
+    return;
 }
 
 
@@ -549,13 +549,13 @@ MeasList::FreeContents()
 
 OffsetList::OffsetList()
 {
-	return;
+    return;
 }
 
 OffsetList::~OffsetList()
 {
-	FreeContents();
-	return;
+    FreeContents();
+    return;
 }
 
 //--------------------------//
@@ -564,26 +564,26 @@ OffsetList::~OffsetList()
 
 int
 OffsetList::MakeMeasList(
-	FILE*		fp,
-	MeasList*	meas_list)
+    FILE*        fp,
+    MeasList*    meas_list)
 {
-	for (long* offset = GetHead(); offset; offset = GetNext())
-	{
-		Meas* meas = new Meas();
-		if (fseek(fp, *offset, SEEK_SET) == -1)
-			return(0);
+    for (long* offset = GetHead(); offset; offset = GetNext())
+    {
+        Meas* meas = new Meas();
+        if (fseek(fp, *offset, SEEK_SET) == -1)
+            return(0);
 
-		if (! meas->Read(fp))
-			return(0);
+        if (! meas->Read(fp))
+            return(0);
 
-		if (! meas_list->Append(meas))
-		{
-			delete meas;
-			return(0);
-		}
-	}
+        if (! meas_list->Append(meas))
+        {
+            delete meas;
+            return(0);
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //--------------------------//
@@ -593,11 +593,11 @@ OffsetList::MakeMeasList(
 void
 OffsetList::FreeContents()
 {
-	long* offset;
-	GotoHead();
-	while ((offset = RemoveCurrent()) != NULL)
-		delete offset;
-	return;
+    long* offset;
+    GotoHead();
+    while ((offset = RemoveCurrent()) != NULL)
+        delete offset;
+    return;
 }
 
 //================//
@@ -606,13 +606,13 @@ OffsetList::FreeContents()
 
 OffsetListList::OffsetListList()
 {
-	return;
+    return;
 }
 
 OffsetListList::~OffsetListList()
 {
-	FreeContents();
-	return;
+    FreeContents();
+    return;
 }
 
 //------------------------------//
@@ -622,11 +622,11 @@ OffsetListList::~OffsetListList()
 void
 OffsetListList::FreeContents()
 {
-	OffsetList* offsetlist;
-	GotoHead();
-	while ((offsetlist = RemoveCurrent()) != NULL)
-		delete offsetlist;
-	return;
+    OffsetList* offsetlist;
+    GotoHead();
+    while ((offsetlist = RemoveCurrent()) != NULL)
+        delete offsetlist;
+    return;
 }
 
 //==========//
@@ -634,14 +634,14 @@ OffsetListList::FreeContents()
 //==========//
 
 MeasSpot::MeasSpot()
-:	time(0.0), scOrbitState(), scAttitude()
+:    time(0.0), scOrbitState(), scAttitude()
 {
-	return;
+    return;
 }
 
 MeasSpot::~MeasSpot()
 {
-	return;
+    return;
 }
 
 //-----------------//
@@ -650,16 +650,16 @@ MeasSpot::~MeasSpot()
 
 int
 MeasSpot::Write(
-	FILE*	fp)
+    FILE*    fp)
 {
-	if (fwrite((void *)&time, sizeof(double), 1, fp) != 1 ||
-		scOrbitState.Write(fp) != 1 ||
-		scAttitude.Write(fp) != 1 ||
-		MeasList::Write(fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fwrite((void *)&time, sizeof(double), 1, fp) != 1 ||
+        scOrbitState.Write(fp) != 1 ||
+        scAttitude.Write(fp) != 1 ||
+        MeasList::Write(fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //-----------------//
@@ -668,20 +668,20 @@ MeasSpot::Write(
 
 int
 MeasSpot::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
         fprintf(fp,"\n##############################################\n");
         fprintf(fp,"#######         Spot Info               ######\n");
         fprintf(fp,"##############################################\n");
         fprintf(fp,"\n");
         fprintf(fp,"Time: %.8g\n", time);
-	if (scOrbitState.WriteAscii(fp) != 1 ||
-		scAttitude.WriteAscii(fp) != 1 ||
-		MeasList::WriteAscii(fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (scOrbitState.WriteAscii(fp) != 1 ||
+        scAttitude.WriteAscii(fp) != 1 ||
+        MeasList::WriteAscii(fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 //----------------//
@@ -690,18 +690,18 @@ MeasSpot::WriteAscii(
 
 int
 MeasSpot::Read(
-	FILE*	fp)
+    FILE*    fp)
 {
-	FreeContents();
+    FreeContents();
 
-	if (fread((void *)&time, sizeof(double), 1, fp) != 1 ||
-		scOrbitState.Read(fp) != 1 ||
-		scAttitude.Read(fp) != 1 ||
-		MeasList::Read(fp) != 1)
-	{
-		return(0);
-	}
-	return(1);
+    if (fread((void *)&time, sizeof(double), 1, fp) != 1 ||
+        scOrbitState.Read(fp) != 1 ||
+        scAttitude.Read(fp) != 1 ||
+        MeasList::Read(fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
 }
 
 int
@@ -791,17 +791,17 @@ int32        pulseIndex)   // index of the pulses (max of 100)
 
 MeasSpotList::MeasSpotList()
 {
-	return;
+    return;
 }
 
 MeasSpotList::~MeasSpotList()
 {
-	MeasSpot* meas_spot;
-	GotoHead();
-	while ((meas_spot=RemoveCurrent()) != NULL)
-		delete meas_spot;
+    MeasSpot* meas_spot;
+    GotoHead();
+    while ((meas_spot=RemoveCurrent()) != NULL)
+        delete meas_spot;
 
-	return;
+    return;
 }
 
 //---------------------//
@@ -810,18 +810,18 @@ MeasSpotList::~MeasSpotList()
 
 int
 MeasSpotList::Write(
-	FILE*	fp)
+    FILE*    fp)
 {
-	int count = NodeCount();
-	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
-		return(0);
+    int count = NodeCount();
+    if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
+        return(0);
 
-	for (MeasSpot* meas_spot = GetHead(); meas_spot; meas_spot = GetNext())
-	{
-		if (! meas_spot->Write(fp))
-			return(0);
-	}
-	return(1);
+    for (MeasSpot* meas_spot = GetHead(); meas_spot; meas_spot = GetNext())
+    {
+        if (! meas_spot->Write(fp))
+            return(0);
+    }
+    return(1);
 }
 
 //--------------------------//
@@ -830,43 +830,45 @@ MeasSpotList::Write(
 
 int
 MeasSpotList::WriteAscii(
-	FILE*	fp)
+    FILE*    fp)
 {
-        fprintf(fp, "\n########################################\n");
-	fprintf(fp, "###          Spot Count: %4d       ####\n", NodeCount());
-        fprintf(fp, "########################################\n");
-        fprintf(fp, "\n");
-	for (MeasSpot* spot = GetHead(); spot; spot= GetNext())
-	{
-		if (! spot->WriteAscii(fp))
-			return(0);
-	}
-	return(1);
+    fprintf(fp, "\n");
+    fprintf(fp, "########################################\n");
+    fprintf(fp, "###          Spot Count: %4d       ###\n", NodeCount());
+    fprintf(fp, "########################################\n");
+    fprintf(fp, "\n");
+    for (MeasSpot* spot = GetHead(); spot; spot= GetNext())
+    {
+        if (! spot->WriteAscii(fp))
+            return(0);
+    }
+    return(1);
 }
+
 //--------------------//
 // MeasSpotList::Read //
 //--------------------//
 
 int
 MeasSpotList::Read(
-	FILE*	fp)
+    FILE*    fp)
 {
-	FreeContents();
+    FreeContents();
 
-	int count;
-	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
-		return(0);
+    int count;
+    if (fread((void *)&count, sizeof(int), 1, fp) != 1)
+        return(0);
 
-	for (int i = 0; i < count; i++)
-	{
-		MeasSpot* new_meas_spot = new MeasSpot();
-		if (! new_meas_spot->Read(fp) ||
-			! Append(new_meas_spot))
-		{
-			return(0);
-		}
-	}
-	return(1);
+    for (int i = 0; i < count; i++)
+    {
+        MeasSpot* new_meas_spot = new MeasSpot();
+        if (! new_meas_spot->Read(fp) ||
+            ! Append(new_meas_spot))
+        {
+            return(0);
+        }
+    }
+    return(1);
 }
 
 //----------------------------//
@@ -875,8 +877,8 @@ MeasSpotList::Read(
 
 int
 MeasSpotList::UnpackL1BHdf(
-L1BHdf*      l1bHdf,
-int32        hdfIndex)     // index in the HDF
+    L1BHdf*  l1bHdf,
+    int32    hdfIndex)    // index in the HDF
 {
     assert(l1bHdf != 0);
     FreeContents();
@@ -904,7 +906,6 @@ int32        hdfIndex)     // index in the HDF
             return(0);
     }
     return(1);
-
 } // MeasSpotList::UnpackL1BHdf
 
 //----------------------------//
@@ -914,9 +915,9 @@ int32        hdfIndex)     // index in the HDF
 void
 MeasSpotList::FreeContents()
 {
-	MeasSpot* meas_spot;
-	GotoHead();
-	while ((meas_spot = RemoveCurrent()) != NULL)
-		delete meas_spot;
-	return;
+    MeasSpot* meas_spot;
+    GotoHead();
+    while ((meas_spot = RemoveCurrent()) != NULL)
+        delete meas_spot;
+    return;
 }
