@@ -16,7 +16,8 @@ static const char rcs_id_instrumentsimaccurate_c[] =
 #include "InstrumentSimAccurate.h"
 #include "AccurateGeom.h"
 
-#define UNIFORM_SIGMA 1 // (If 1 then all sigma0s=1)
+#define UNIFORM_SIGMA 0 // (If 1 then all sigma0s=1)
+#define XMGROUT 0 // (If 1 azimuth vs. Pr is output to an xmgr compatible file)
 
 //=======================//
 // InstrumentSimAccurate //
@@ -141,6 +142,8 @@ InstrumentSimAccurate::ScatSim(
 		{
 			return(0);
 		}
+		if(XMGROUT) printf("%g ",instrument->antenna.azimuthAngle/dtr);
+		
 	}	
 
 	//------------------------//
@@ -150,6 +153,14 @@ InstrumentSimAccurate::ScatSim(
 	if (! SetMeasurements(instrument, &meas_spot, windfield, gmf))
 		return(0);
 
+        if(XMGROUT){
+	  for(Meas* slice=meas_spot.GetHead(); slice;
+	      slice=meas_spot.GetNext()){
+
+	    printf("%g ",slice->value);
+	  }
+	  if(instrument->antenna.currentBeamIdx==1) printf("\n");
+	}
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
 	//--------------------------------//
