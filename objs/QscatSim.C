@@ -109,10 +109,7 @@ QscatSim::DetermineNextEvent(
         }
         else
         {
-            if (lastEventType == QscatEvent::SCAT_EVENT)
-                qscat_event->eventId = QscatEvent::SCAT_EVENT;
-            else
-                qscat_event->eventId = QscatEvent::SCAT_EVENT;
+            qscat_event->eventId = QscatEvent::SCAT_EVENT;
         }
         break;
     case QscatEvent::LOOPBACK_EVENT:
