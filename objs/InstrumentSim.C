@@ -153,17 +153,18 @@ InstrumentSim::LocateSlices(
 	Vector3 vector;
 	double look, azimuth;
 
-    if (! beam->GetElectricalBoresight(&look, &azimuth))
-        return(0);
-    vector.SphericalSet(1.0, look, azimuth);
-    TargetInfoPackage  tip;
-    RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+	if (! beam->GetElectricalBoresight(&look, &azimuth))
+		return(0);
 
-    if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
-        instrument->antenna.spinRate,&look, &azimuth))
+	vector.SphericalSet(1.0, look, azimuth);
+	TargetInfoPackage tip;
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+
+	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
+		instrument->antenna.spinRate,&look, &azimuth))
 	{
-        return(0);
-    }
+		return(0);
+	}
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
 	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
@@ -279,7 +280,7 @@ InstrumentSim::LocateSpot(
 	}
 
 	rlook_antenna.SphericalSet(1.0, look, azimuth);
-	TargetInfoPackage  tip;
+	TargetInfoPackage tip;
 	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
 	//
@@ -322,10 +323,10 @@ InstrumentSim::LocateSpot(
 			instrument->antenna.spinRate,&gp_max);
 
 	// Align beam frame z-axis with the electrical boresight.
-    Attitude beam_frame;
-    beam_frame.Set(0.0,look,azimuth,3,2,1);
-    CoordinateSwitch ant_to_beam(beam_frame);
-    CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
+	Attitude beam_frame;
+	beam_frame.Set(0.0,look,azimuth,3,2,1);
+	CoordinateSwitch ant_to_beam(beam_frame);
+	CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
 
 	//
 	// In the beam frame, for a set of azimuth angles, search for the
@@ -410,8 +411,8 @@ InstrumentSim::LocateSpot(
 
 int
 InstrumentSim::SetMeasurements(	
-	Spacecraft*             spacecraft,
-	Instrument*             instrument,
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
 	MeasSpot*		meas_spot,
 	WindField*		windfield,
 	GMF*			gmf)
@@ -458,26 +459,26 @@ InstrumentSim::SetMeasurements(
 		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 			chi, &sigma0);
 
-                if (UNIFORM_SIGMA) sigma0=1;
+		if (UNIFORM_SIGMA) sigma0=1;
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
 		
 		CoordinateSwitch gc_to_antenna = AntennaFrameToGC(
-						    &(spacecraft->orbitState),
-						    &(spacecraft->attitude), 
-						    &(instrument->antenna));
+							&(spacecraft->orbitState),
+							&(spacecraft->attitude), 
+							&(instrument->antenna));
 		gc_to_antenna=gc_to_antenna.ReverseDirection();
 
 
-		//-------------------------------//
-		// convert Sigma0 to Power       //
-		//-------------------------------//
+		//-------------------------//
+		// convert Sigma0 to Power //
+		//-------------------------//
 
-                /************* FOR NOW Kfactor=1.0  *********/
+		/************* FOR NOW Kfactor=1.0 *********/
 		float Kfactor=1.0;
 		if(! sigma0_to_Pr(spacecraft, instrument, meas,
-				  Kfactor, &gc_to_antenna, sigma0,
+				Kfactor, &gc_to_antenna, sigma0,
 					&(meas->value))) return(0);
 
 	}
@@ -519,7 +520,7 @@ int
 InstrumentSim::SetL00Science(
 	MeasSpot*		meas_spot,
 	Instrument*		instrument,
-	L00Frame*               l00_frame)
+	L00Frame*		l00_frame)
 {
 	Antenna* antenna = &(instrument->antenna);
 
@@ -561,7 +562,7 @@ InstrumentSim::ScatSim(
 	Instrument*		instrument,
 	WindField*		windfield,
 	GMF*			gmf,
-	L00Frame*               l00_frame)
+	L00Frame*		l00_frame)
 {
 	MeasSpot meas_spot;
 
@@ -596,8 +597,7 @@ InstrumentSim::ScatSim(
 	// set measurement values //
 	//------------------------//
 
-	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, 
-			      gmf))
+	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, gmf))
 		return(0);
 
 
@@ -624,20 +624,3 @@ InstrumentSim::ScatSim(
 
 	return(1);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
