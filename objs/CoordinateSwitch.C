@@ -177,6 +177,23 @@ CoordinateSwitch::Append(
 	return(1);
 }
 
+//------------------------------------//
+// CoordinateSwitch::ReverseDirection //
+//------------------------------------//
+// This method returns a coordinate transform object which performs
+// the coordinate switch in the opposite direction.
+
+CoordinateSwitch
+CoordinateSwitch::ReverseDirection()
+{
+	CoordinateSwitch x;
+
+	x._trans = _trans;
+	x._trans.Inverse();
+	x._o2 = -_trans * _o2;
+	return(x);
+}
+
 //
 // The method Forward converts a vector represented in frame 1, into
 // the same vector represented in frame 2.

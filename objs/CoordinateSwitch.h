@@ -54,6 +54,8 @@ public:
 	void	SetRotation(Attitude att);
 	int		Append(CoordinateSwitch* next);
 
+	CoordinateSwitch	ReverseDirection();
+
 Vector3 Forward(Vector3 r);
 Vector3 Backward(Vector3 r);
 void Show(char *name = NULL);
