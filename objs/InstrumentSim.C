@@ -15,6 +15,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Sigma0.h"
 #include "Constants.h"
 #include "Kpm.h"
+#include "CheckFrame.h"
 
 //===============//
 // InstrumentSim //
@@ -22,7 +23,9 @@ static const char rcs_id_instrumentsim_c[] =
 
 InstrumentSim::InstrumentSim()
 :	startTime(0.0), l00FrameReady(0), uniformSigmaField(0),
-	outputXToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
+	outputXToStdout(0), useKfactor(0), createXtable(0),
+	rangeGateClipping(0), applyDopplerError(0), simVs1BCheckfile(NULL),
+	_spotNumber(0)
 {
 	return;
 }
@@ -115,6 +118,7 @@ InstrumentSim::SetMeasurements(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
+	CheckFrame*		cf,
 	WindField*		windfield,
 	GMF*			gmf,
 	Kp*				kp,
@@ -125,6 +129,7 @@ InstrumentSim::SetMeasurements(
 	//-------------------------//
 
 	int slice_count = instrument->GetTotalSliceCount();
+	int slice_i = 0;
 	int sliceno = -slice_count/2;
 	for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
 	{
@@ -146,6 +151,12 @@ InstrumentSim::SetMeasurements(
 		if (uniformSigmaField)
 		{
 			sigma0=1;
+			if (simVs1BCheckfile)
+			{
+				cf->sigma0[slice_i] = 1.0;
+				cf->wv[slice_i].spd = 0.0;
+				cf->wv[slice_i].dir = 0.0;
+			}
 		}
 		else
 		{
@@ -170,6 +181,13 @@ InstrumentSim::SetMeasurements(
 
 			gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 				chi, &sigma0);
+
+			if (simVs1BCheckfile)
+			{
+				cf->sigma0[slice_i] = sigma0;
+				cf->wv[slice_i].spd = wv.spd;
+				cf->wv[slice_i].dir = wv.dir;
+			}
 
 			//---------------------------------------------------------------//
 			// Fuzz the sigma0 by Kpm to simulate the effects of model function
@@ -241,7 +259,17 @@ InstrumentSim::SetMeasurements(
 		{
 			return(0);
 		}
+
+		if (simVs1BCheckfile)
+		{
+			cf->XK[slice_i] = meas->XK;
+			cf->centroid[slice_i] = meas->centroid;
+			cf->azimuth[slice_i] = meas->eastAzimuth;
+			cf->incidence[slice_i] = meas->incidenceAngle;
+		}
+
 		sliceno++;
+		slice_i++;
 		if(slice_count%2==0 && sliceno==0) sliceno++;
 	}
 
@@ -282,6 +310,7 @@ InstrumentSim::SetL00Spacecraft(
 int
 InstrumentSim::SetL00Science(
 	MeasSpot*		meas_spot,
+	CheckFrame*		cf,
 	Instrument*		instrument,
 	L00Frame*		l00_frame)
 {
@@ -293,6 +322,11 @@ InstrumentSim::SetL00Science(
 	// Only "noise it up" if simKpriFlag is set
 
 	l00_frame->ptgr= instrument->transmitPower*instrument->echo_receiverGain;
+	if (simVs1BCheckfile)
+	{
+		cf->ptgr = l00_frame->ptgr;
+	}
+
 	if (instrument->simKpriFlag)
 		l00_frame->ptgr *= (1 + ptgrNoise.GetNumber(instrument->time));
 
@@ -342,6 +376,16 @@ InstrumentSim::ScatSim(
 	KpmField*		kpmField,
 	L00Frame*		l00_frame)
 {
+	CheckFrame cf;
+	if (simVs1BCheckfile)
+	{
+		if (!cf.Allocate(instrument->scienceSlicesPerSpot))
+		{
+            fprintf(stderr,"Error allocating a CheckFrame\n");
+			return(0);
+		}
+	}
+
 	MeasSpot meas_spot;
 
 	//----------------------------------------//
@@ -391,7 +435,7 @@ InstrumentSim::ScatSim(
 	// set measurement values //
 	//------------------------//
 
-	if (! SetMeasurements(spacecraft, instrument, &meas_spot,
+	if (! SetMeasurements(spacecraft, instrument, &meas_spot, &cf,
 		windfield, gmf, kp, kpmField))
 	{
 		return(0);
@@ -437,7 +481,7 @@ InstrumentSim::ScatSim(
 	// Add Spot Specific Info to Frame //
 	//---------------------------------//
 
-	if (! SetL00Science(&meas_spot, instrument, l00_frame))
+	if (! SetL00Science(&meas_spot, &cf, instrument, l00_frame))
 		return(0);
 
 	//---------------------------------//
@@ -460,6 +504,27 @@ InstrumentSim::ScatSim(
 	{
 		l00FrameReady = 0;	// indicate frame is not ready
 	}
+
+    //--------------------------------//
+    // Output data if enabled //
+    //--------------------------------//
+
+
+    if (simVs1BCheckfile)
+    {
+        FILE* fptr = fopen(simVs1BCheckfile,"a");
+        if (fptr == NULL)
+        {
+            fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+            exit(-1);
+        }
+		cf.time = instrument->time;
+		cf.rsat = spacecraft->orbitState.rsat;
+		cf.vsat = spacecraft->orbitState.vsat;
+		cf.attitude = spacecraft->attitude;
+		cf.AppendRecord(fptr);
+        fclose(fptr);
+    }
 
 	return(1);
 }

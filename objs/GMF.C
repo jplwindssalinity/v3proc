@@ -25,7 +25,7 @@ static const char rcs_id_gmf_c[] =
 
 GMF::GMF()
 :	retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
-	retrieveUsingKprsFlag(1), _spdTol(DEFAULT_SPD_TOL),
+	retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), _spdTol(DEFAULT_SPD_TOL),
 	_sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
 	_maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
 	_copyObj(NULL)
@@ -1067,9 +1067,13 @@ GMF::_ObjectiveFunction(
 			{	// variances all turned off, so use uniform weighting.
 				fv += s*s;
 			}
-			else
+			else if (retrieveUsingLogVar)
 			{
 				fv += s*s / var + log(var);
+			}
+			else
+			{
+				fv += s*s / var;
 			}
 		}
 		else

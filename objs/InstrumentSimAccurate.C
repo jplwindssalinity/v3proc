@@ -199,7 +199,8 @@ InstrumentSimAccurate::ScatSim(
 	// Add Spot Specific Info to Frame //
 	//--------------------------------//
 
-	if (! SetL00Science(&meas_spot, instrument, l00_frame))
+	// No check data allowed.
+	if (! SetL00Science(&meas_spot, NULL, instrument, l00_frame))
 		return(0);
 
 	//-----------------------------//

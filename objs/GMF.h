@@ -107,6 +107,7 @@ public:
 	int		retrieveUsingKpmFlag;
 	int		retrieveUsingKpriFlag;
 	int		retrieveUsingKprsFlag;
+	int		retrieveUsingLogVar;
 
 protected:
 

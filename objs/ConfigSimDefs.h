@@ -101,6 +101,12 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_UNCORR_KPM_FLAG_KEYWORD		"SIM_UNCORR_KPM_FLAG"
 #define SIM_KPRI_FLAG_KEYWORD			"SIM_KPRI_FLAG"
 
+//---------------//
+// InstrumentSim //
+//---------------//
+
+#define SIM_CHECKFILE_KEYWORD				"SIM_CHECKFILE"
+
 //-----------------------//
 // InstrumentSimAccurate //
 //-----------------------//
@@ -189,6 +195,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_SPOT_COMPOSITES_KEYWORD			"USE_SPOT_COMPOSITES"
 #define SLICE_GAIN_THRESHOLD_KEYWORD		"SLICE_GAIN_THRESHOLD"
 #define PROCESS_MAX_SLICES_KEYWORD			"PROCESS_MAX_SLICES"
+#define ONEB_CHECKFILE_KEYWORD				"ONEB_CHECKFILE"
 
 //-----//
 // L2A //
@@ -243,6 +250,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define RETRIEVE_USING_KPM_FLAG_KEYWORD		"RETRIEVE_USING_KPM_FLAG"
 #define RETRIEVE_USING_KPRI_FLAG_KEYWORD	"RETRIEVE_USING_KPRI_FLAG"
 #define RETRIEVE_USING_KPRS_FLAG_KEYWORD	"RETRIEVE_USING_KPRS_FLAG"
+#define RETRIEVE_USING_LOGVAR_KEYWORD		"RETRIEVE_USING_LOGVAR"
 
 //-----//
 // Kpm //

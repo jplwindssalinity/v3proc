@@ -681,6 +681,9 @@ ConfigInstrumentSim(
 		apply_doppler_error=0; // default value
 	instrument_sim->applyDopplerError=apply_doppler_error;
 
+	config_list->DoNothingForMissingKeywords();
+	instrument_sim->simVs1BCheckfile =
+		config_list->Get(SIM_CHECKFILE_KEYWORD);
 
 	config_list->ExitForMissingKeywords();
 
@@ -1409,6 +1412,10 @@ ConfigL1AToL1B(
 		output_sigma0_to_stdout = 0;	// default value
 	}
 	l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
+
+	l1a_to_l1b->simVs1BCheckfile =
+		config_list->Get(ONEB_CHECKFILE_KEYWORD);
+
 	config_list->ExitForMissingKeywords();
 
 	//----------//
@@ -1675,6 +1682,10 @@ ConfigGMF(
 	if (! config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD, &tmp_int))
 		return(0);
 	gmf->retrieveUsingKprsFlag = tmp_int;
+
+	if (! config_list->GetInt(RETRIEVE_USING_LOGVAR_KEYWORD, &tmp_int))
+		return(0);
+	gmf->retrieveUsingLogVar = tmp_int;
 
 	return(1);
 }

@@ -19,6 +19,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Distributions.h"
 #include "XTable.h"
 #include "Kpm.h"
+#include "CheckFrame.h"
 
 //======================================================================
 // CLASSES
@@ -61,10 +62,12 @@ public:
 	//--------------------------//
 
 	int		SetMeasurements(Spacecraft* spacecraft, Instrument* instrument,
-				MeasSpot* meas_spot, WindField* windfield, GMF* gmf, Kp* kp,
+				MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
+				GMF* gmf, Kp* kp,
 				KpmField* kpmField);
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
-	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
+	int		SetL00Science(MeasSpot* meas_spot, CheckFrame* cf,
+				Instrument* instrument,
 				L00Frame* l00_frame);
 	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
 				WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField,
@@ -104,17 +107,14 @@ public:
 
 	int			uniformSigmaField;	// set all sigma0 values to 1.0
 	int			outputXToStdout;	// write X value to stdout
-	int			useKfactor;		// read and use K-factor table
-				      
-        int                     computeKfactor;         // compute K-factor
-
+	int			useKfactor;			// read and use K-factor table
+	int			computeKfactor;     // compute K-factor
 	int			createXtable;		// create an X table
+	int			rangeGateClipping;  // simulate range gate clipping
+	int			applyDopplerError;  // simulate doppler tracking error
 
-        int                     rangeGateClipping;      // simulate range gate
-							// clipping
+	char*		simVs1BCheckfile;	// output data for cross check with 1B
 
-        int                     applyDopplerError;      //simulate doppler
-							//tracking error
 protected:
 
 	//-----------//

@@ -11,6 +11,7 @@ static const char rcs_id_l1atol1b_c[] =
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
 #include "InstrumentSim.h"
+#include "CheckFrame.h"
 
 //==========//
 // L1AToL1B //
@@ -18,7 +19,7 @@ static const char rcs_id_l1atol1b_c[] =
 
 L1AToL1B::L1AToL1B()
 :	useKfactor(0), useSpotCompositing(0), outputSigma0ToStdout(0),
-	sliceGainThreshold(0.0), processMaxSlices(0)
+	sliceGainThreshold(0.0), processMaxSlices(0), simVs1BCheckfile(NULL)
 {
 	return;
 }
@@ -45,6 +46,20 @@ L1AToL1B::Convert(
 	//--------------//
 
 	l1a->frame.Unpack(l1a->buffer);
+
+	//-------------------//
+	// set up check data //
+	//-------------------//
+
+	CheckFrame cf;
+	if (simVs1BCheckfile)
+	{
+		if (!cf.Allocate(l1a->frame.slicesPerSpot))
+        {
+			fprintf(stderr,"Error allocating a CheckFrame\n");
+            return(0);
+        }
+	}
 
 	//-------------------//
 	// set up spacecraft //
@@ -194,6 +209,7 @@ L1AToL1B::Convert(
 			// for each slice... //
 			//-------------------//
 
+			int slice_i = 0;
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
@@ -226,6 +242,19 @@ L1AToL1B::Convert(
 				meas->beamIdx = instrument->antenna.currentBeamIdx;
 				meas->txPulseWidth = beam->txPulseWidth;
 
+				//------------------//
+				// store check data //
+				//------------------//
+
+        		if (simVs1BCheckfile)
+        		{
+					cf.sigma0[slice_i] = meas->value;
+            		cf.XK[slice_i] = meas->XK;
+            		cf.centroid[slice_i] = meas->centroid;
+            		cf.azimuth[slice_i] = meas->eastAzimuth;
+            		cf.incidence[slice_i] = meas->incidenceAngle;
+        		}
+
 				//----------------------------------//
 				// Print calculated sigma0 values	//
 				// to stdout.						//
@@ -234,6 +263,7 @@ L1AToL1B::Convert(
 				if (outputSigma0ToStdout)
 					printf("%g ",meas->value);
 
+				slice_i++;
 			}
 
 			//-----------------------------------------------------//
@@ -254,6 +284,27 @@ L1AToL1B::Convert(
 					return(0);
 			}
 
+        	//--------------------------------//
+        	// Output data if enabled //
+        	//--------------------------------//
+
+	    	if (simVs1BCheckfile)
+   	 		{
+   	    		FILE* fptr = fopen(simVs1BCheckfile,"a");
+   	    		if (fptr == NULL)
+        		{
+            		fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+            		exit(-1);
+        		}
+				cf.ptgr = l1a->frame.ptgr;
+        		cf.time = time;
+        		cf.rsat = spacecraft->orbitState.rsat;
+        		cf.vsat = spacecraft->orbitState.vsat;
+        		cf.attitude = spacecraft->attitude;
+        		cf.AppendRecord(fptr);
+        		fclose(fptr);
+    		}
+
 			//----------------------//
 			// add to list of spots //
 			//----------------------//
@@ -263,6 +314,7 @@ L1AToL1B::Convert(
 			base_slice_idx += l1a->frame.slicesPerSpot;
 		}
 		if (outputSigma0ToStdout) printf("\n");
+
 	}
 
 	return(1);
