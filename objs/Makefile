@@ -76,13 +76,13 @@ ConfigList.o:	ConfigList.C ConfigList.h List.h
 CoordinateSwitch.o:	CoordinateSwitch.C CoordinateSwitch.h Matrix3.h
 GMF.o:			GMF.C GMF.h
 Instrument.o:	Instrument.C Instrument.h Antenna.h Orbit.h Beam.h \
-				Constants.h
+				Constants.h Matrix3.h
 InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
 				Instrument.h OrbitSim.h List.h Antenna.h Orbit.h \
-				Beam.h Constants.h
+				Beam.h Constants.h Matrix3.h
 List.o:			List.C List.h
 LookGeom.o:		LookGeom.C CoordinateSwitch.h Matrix3.h
 Matrix3.o:		Matrix3.C Matrix3.h
 Misc.o:			Misc.C Misc.h
-Orbit.o:		Orbit.C Orbit.h Constants.h
-OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h
+Orbit.o:		Orbit.C Orbit.h Constants.h Matrix3.h
+OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h Matrix3.h
