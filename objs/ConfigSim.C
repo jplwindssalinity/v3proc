@@ -322,7 +322,7 @@ ConfigGaussian(const char* variance_keyword,
 	   &variance)) return(NULL);
  	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
-	Gaussian* new_g = new Gaussian((float)variance,(float)mean));
+	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
 	return(new_g);
 
 }
@@ -342,7 +342,7 @@ ConfigUniform(const char* radius_keyword,
 	  &radius)) return(NULL);
 	if(! config_list->GetDouble(mean_keyword,
 	  &mean)) return(NULL);
-	Uniform* new_u = new Uniform((float)radius,float(mean)));
+	Uniform* new_u = new Uniform((float)radius,float(mean));
 	return(new_u);
 
 }
