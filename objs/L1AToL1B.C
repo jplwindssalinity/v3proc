@@ -14,6 +14,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "Sigma0.h"
 
 
+#define XMGROUT  1     // Output sigma0 values to stdout? 1/0=YES/NO
 //==========//
 // L10ToL15 //
 //==========//
@@ -74,7 +75,11 @@ L10ToL15::Convert(
 	// set up spacecraft //
 	//-------------------//
 
-	*attitude = l10->frame.attitude;
+	float roll,pitch,yaw;
+	roll = l10->frame.attitude.GetRoll();
+	pitch = l10->frame.attitude.GetPitch();
+	yaw = l10->frame.attitude.GetYaw();
+	attitude->SetRPY(roll,pitch,yaw);
 
 	//------------------------//
 	// for each beam cycle... //
@@ -219,6 +224,14 @@ L10ToL15::Convert(
 					meas, Kfactor, &gc_to_antenna,
 					Pr, &sigma0)) return(0);	
 			
+
+				//----------------------------------//
+				// Print calculated sigma0 values   //
+				// to stdout.                       //
+				//----------------------------------//
+
+				if (XMGROUT) printf("%g\n",sigma0);
+
 				//-----------------//
 				// add measurement //
 				//-----------------//
