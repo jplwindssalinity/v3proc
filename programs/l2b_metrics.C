@@ -11,7 +11,7 @@
 //    l2b_metrics [ -c config_file ] [ -l l2b_file ] [ -m metric ]
 //        [ -D dir_err_max ] [ -S spd_err_max ] [ -t truth_type ]
 //        [ -f truth_file ] [ -s low:high ] [ -o output_base ]
-//        [ -w within ] [-a] [-i subtitle str]
+//        [ -w within ] [ -a ] [ -i subtitle str ]
 //
 // DESCRIPTION
 //    Generates output files containing wind retrieval metrics
@@ -28,7 +28,7 @@
 //    [ -o output_base ]       The base name to use for output files.
 //    [ -w within ]            The angle to use for within.
 //    [ -a ]                   Autoscale plots
-//    [ -i subtitle string]    Use this as the subtitle string.
+//    [ -i subtitle string ]   Use this as the subtitle string.
 //    [ -m metric ]            Only produce a single specified metric
 //    [ -D max ]               Omit WVC with direction error greater than max
 //    [ -S max ]               Omit WVC with speed error greater than max
@@ -166,12 +166,12 @@ int remove_spd_outliers_opt = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
-    "[ -m metric ]","[-D dir_err_max]","[-S spd_err_max]",
+    "[ -m metric ]","[ -D dir_err_max]","[ -S spd_err_max]",
     "[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
     "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]",
     "[ -n (use nudge field as truth)]", "[ -d (READ HDF/DIRTH data sets)]",
-    "[-P pflag_file]", "[-p pthresh_both]", "[-q pthresh_outer]", 0 };
+    "[ -P pflag_file]", "[ -p pthresh_both]", "[ -q pthresh_outer]", 0 };
 
 float*  ctd_array = NULL;
 float*  value_array = NULL;
