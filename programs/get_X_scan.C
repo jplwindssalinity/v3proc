@@ -5,16 +5,14 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		all_errors
+//		get_X_scan
 //
 // SYNOPSIS
-//		all_errors <sim_config_file> <error_file> <decimation>
+//		get_X_scan <sim_config_file> <beam number> <time>
 //
 // DESCRIPTION
-//		Generates plottable error file showing the baseband frequency
-//              and delay
-//		errors between the actual peak 2-way gain baseband frequency
-//		and the algorithmic frequency.
+//		Generates plottable X file for one scan.
+//              writes to stdout
 //
 // OPTIONS
 //		None.
@@ -25,11 +23,11 @@
 //								all input parameters, input files, and
 //								output files.
 //
-//		<error_file>		A plottable error file.
+//		<beam_number>		0=inner 1=outer
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% baseband_errors qscat.cfg baseband.err
+//			% get_X_scan X.cfg 0 0
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -43,8 +41,8 @@
 //		None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//		Bryan W. Stiles
+//		bstiles@acid.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -71,6 +69,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "QscatConfig.h"
 
 //-----------//
 // TEMPLATES //
@@ -173,23 +172,23 @@ main(
 	}
 
 	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
+	// create QSCAT and QSCAT simulator              //
 	//-----------------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
-		exit(1);
-	}
+	Qscat qscat;
+	if (! ConfigQscat(&qscat, &config_list))
+	  {
+	    fprintf(stderr, "%s: error configuring QSCAT\n", command);
+	    exit(1);
+	  }
 
-	InstrumentSim instrument_sim;
-	if (! ConfigInstrumentSim(&instrument_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring instrument simulator\n",
-			command);
-		exit(1);
-	}
+	QscatSim qscat_sim;
+	if (! ConfigQscatSim(&qscat_sim, &config_list))
+	  {
+	    fprintf(stderr, "%s: error configuring QSCAT simulator\n", command);
+	    exit(1);
+	  }
+	
 
 	//----------------------------//
 	// create a Level 0.0 product //
@@ -253,11 +252,11 @@ main(
 	double spacecraft_start_time, spacecraft_end_time;
 
 
-	instrument_sim.startTime = inst_time;
-	spacecraft_start_time=-100.0;
+	qscat_sim.startTime = inst_time;
+	spacecraft_start_time=inst_time-100.0;
         instrument_start_time=inst_time;
-        instrument_end_time=6000.0;
-        spacecraft_end_time=6100.0;
+        instrument_end_time=inst_time+100.0;
+        spacecraft_end_time=instrument_end_time+100.0;
 
 	//------------------//
 	// set the eqx time //
@@ -266,15 +265,15 @@ main(
 	double eqx_time =
 		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(eqx_time);
+	qscat.cds.SetEqxTime(eqx_time);
 
 	//------------//
 	// initialize //
 	//------------//
 
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
+	if (! qscat_sim.Initialize(&qscat))
 	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
+		fprintf(stderr, "%s: error initializing QSCAT simulator\n",
 			command);
 		exit(1);
 	}
@@ -333,7 +332,7 @@ main(
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::EQUATOR_CROSSING:
-					instrument.SetEqxTime(spacecraft_event.time);
+					qscat.cds.SetEqxTime(spacecraft_event.time);
 					break;
 				default:
 					break;
@@ -367,17 +366,17 @@ main(
 			  spacecraft_sim.UpdateAttitude(instrument_event_time, &spacecraft);
 		  
 			  // process instrument stuff
-			  instrument.SetTime(instrument_event_time);
+			  qscat.cds.SetTime(instrument_event_time);
 
-			  instrument.antenna.currentBeamIdx = beam_no-1;
+			  qscat.cds.currentBeamIdx = beam_no;
 			  for(int a=0;a<360;a+=10){
 			    azimuth=a*dtr;
-			    instrument.antenna.azimuthAngle = azimuth;
-			    double rtt=IdealRtt(&spacecraft,&instrument);
-			    instrument.antenna.azimuthAngle -= rtt *
-			      instrument.antenna.actualSpinRate/2.0;
+			    qscat.sas.antenna.azimuthAngle = azimuth;
+			    double rtt=IdealRtt(&spacecraft,&qscat);
+			    qscat.sas.antenna.azimuthAngle -= rtt *
+			      qscat.sas.antenna.spinRate/2.0;
 			    printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
-			    instrument_sim.ScatSim(&spacecraft, &instrument,
+			    qscat_sim.ScatSim(&spacecraft, &qscat,
 						 &windfield, &gmf, &kp, &kpmField, &(l00.frame));			  	
 
 			  
@@ -398,3 +397,8 @@ main(
 
 	return (0);
 }
+
+
+
+
+
