@@ -11,8 +11,39 @@ static const char rcs_id_orbitsim_h[] =
 
 //======================================================================
 // CLASSES
+//		OrbitState
 //		OrbitSim
 //======================================================================
+
+//======================================================================
+// CLASS
+//		OrbitState
+//
+// DESCRIPTION
+//		The OrbitState object contains the orbit state.
+//======================================================================
+
+class OrbitState
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	OrbitState();
+	~OrbitState();
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	double	gc_altitude;
+	double	gc_longitude;
+	double	gc_latitude;
+	double	gc_vector[3];
+    double  velocity_vector[3];
+};
 
 //======================================================================
 // CLASS
@@ -24,9 +55,7 @@ static const char rcs_id_orbitsim_h[] =
 //======================================================================
 
 #define DTR		1.745329252e-2
-#define TWOPI	6.283185308
-
-#define RJ2		1.08260E-3
+#define RTD		5.729577951e1
 
 class OrbitSim
 {
@@ -40,7 +69,8 @@ public:
 		double argument_of_perigee);
 	~OrbitSim();
 
-	int		ScState(double time);
+	int			Initialize(double longitude, double latitude, int asc);
+	OrbitState	GetOrbitState(double time);
 
 	//----------------//
 	// initialization //
@@ -65,16 +95,32 @@ protected:
 	double	_littleOmega;	// argument of perigee
 	double	_l;				// mean anomaly
 
-	double	_gc_xyz[3];		// geocentric x
-	double	_gc_hll[3];		// geocentric height, longitude, latitude
-	double	_vel[3];		// s/c velocity in rotating Earth frame
-
 	//-----------------------//
 	// predigested variables //
 	//-----------------------//
 
 	double	_a_3;			// semi-major axis cubed
 	double	_e_2;			// eccentricity squared
+
+	double	_ascnodot;		// rate of regression of ascending node
+	double	_periasdot;		// rate of precession of perigee
+	double	_ameandot;		// perturbation of mean anomaly
+	double	_eta;
+	double	_pp;
+	double	_pp_2;
+	double	_cosi;
+	double	_cosi_2;
+	double	_sini_2;
+	double	_gama;
+
+	double	_G;
+	double	_H;
+
+	//-----------------//
+	// the orbit state //
+	//-----------------//
+
+	OrbitState	_orbitState;
 };
 
 #endif
