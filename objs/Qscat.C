@@ -434,12 +434,10 @@ CdsBeamInfo::~CdsBeamInfo()
 
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), rxGateDelayDn(0), spinRate(LOW_SPIN_RATE),
-    useRgc(0), useDtc(0),
-    useBYUDop(0), useBYURange(0), useSpectralDop(0), useSpectralRange(0),
-    azimuthIntegrationRange(0), azimuthStepSize(0), 
-    orbitTicksPerOrbit(0), currentBeamIdx(0), 
-    orbitTime(0), orbitStep(0), time(0.0), eqxTime(0.0), rawEncoder(0),
-    heldEncoder(0)
+    useRgc(0), useDtc(0), useBYUDop(0), useBYURange(0), useSpectralDop(0),
+    useSpectralRange(0), azimuthIntegrationRange(0), azimuthStepSize(0),
+    orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0), orbitStep(0),
+    time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
 {
     return;
 }
@@ -918,27 +916,35 @@ Qscat::SetEncoderAzimuth(
 
     return(1);
 }
+
 //----------------------------------------//
 // Qsact::SetAllAzimuthsUsingGroundImpact //
 //----------------------------------------//
 // Takes Ground Impact Azimuth as a parameter sets other angles
+
 int
 Qscat::SetAllAzimuthsUsingGroundImpact(
-	   Spacecraft* spacecraft,
-	   double      angle){
- sas.antenna.SetGroundImpactAzimuthAngle(angle);
- if(!GroundImpactToTxCenterAzimuth(spacecraft))return(0); 
- if(!TxCenterToEncoderAzimuth()) return(0);
- return(1);
+    Spacecraft*  spacecraft,
+    double       angle)
+{
+    sas.antenna.SetGroundImpactAzimuthAngle(angle);
+    if (! GroundImpactToTxCenterAzimuth(spacecraft))
+        return(0); 
+    if (! TxCenterToEncoderAzimuth())
+        return(0);
+    return(1);
 }
-//----------------------------------------//
-// Qscat::GroundImpactToTxCenterAzimuth   //
-//----------------------------------------//
+
+//--------------------------------------//
+// Qscat::GroundImpactToTxCenterAzimuth //
+//--------------------------------------//
 // Assumes Ground Impact Azimuth Angle Has been Set
 // Computes and sets TxCenterAzimuth
-int 
-Qscat::GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft){    
 
+int 
+Qscat::GroundImpactToTxCenterAzimuth(
+    Spacecraft*  spacecraft)
+{    
     // estimate the range to the surface using ground imapct
     CoordinateSwitch antenna_frame_to_gc =
         AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
@@ -959,25 +965,61 @@ Qscat::GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft){
         delta_t * sas.antenna.spinRate);
     return(1);
 }
-//----------------------------------------//
-// Qscat::TxCenterToEncoderAzimuth        //
-//----------------------------------------//
+
+//--------------------------------------//
+// Qscat::TxCenterToGroundImpactAzimuth //
+//--------------------------------------//
+// assumes txCenterAzimuthAngle has been set.
+// computes and sets the ground impact azimuth
+
+int 
+Qscat::TxCenterToGroundImpactAzimuth(
+    Spacecraft*  spacecraft)
+{    
+    // estimate the range to the surface using tx center
+    CoordinateSwitch antenna_frame_to_gc =
+        AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
+        &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
+    double look, azim;
+    Beam* beam = GetCurrentBeam();
+    if (! beam->GetElectricalBoresight(&look, &azim))
+        return(0);
+    Vector3 vector;
+    vector.SphericalSet(1.0, look, azim);
+    TargetInfoPackage tip;
+    if (! TargetInfo(&antenna_frame_to_gc, spacecraft, this, vector, &tip))
+        return(0);
+
+    // rotate to the antenna to the ground impact azimuth
+    double delta_t = tip.roundTripTime / 2.0;
+    sas.antenna.SetGroundImpactAzimuthAngle(sas.antenna.txCenterAzimuthAngle +
+        delta_t * sas.antenna.spinRate);
+
+    return(1);
+}
+
+//---------------------------------//
+// Qscat::TxCenterToEncoderAzimuth //
+//---------------------------------//
 // Assumes Tx Center Azimuth Angle Has been Set
 // Computes and sets UNQUANTIZED Encoder azimuth
 int
-Qscat::TxCenterToEncoderAzimuth(){
+Qscat::TxCenterToEncoderAzimuth()
+{
     double delta_t = GetEncoderToTxCenterDelay();
     sas.antenna.SetEncoderAzimuthAngle(sas.antenna.txCenterAzimuthAngle -
         delta_t * sas.antenna.spinRate);
     return(1);
 }
 
-//---------------------------------------//
-// Qscat::GetEncodertoTxCenterDelay      //
-//---------------------------------------//
+//----------------------------------//
+// Qscat::GetEncodertoTxCenterDelay //
+//----------------------------------//
+
 double
-Qscat::GetEncoderToTxCenterDelay(){
-  return(ses.txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC);
+Qscat::GetEncoderToTxCenterDelay()
+{
+    return(ses.txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC);
 }
 
 //-------------------------//
@@ -1001,24 +1043,8 @@ Qscat::SetOtherAzimuths(
     // ground impact //
     //---------------//
 
-    // estimate the range to the surface using tx center
-    CoordinateSwitch antenna_frame_to_gc =
-        AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
-        &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
-    double look, azim;
-    Beam* beam = GetCurrentBeam();
-    if (! beam->GetElectricalBoresight(&look, &azim))
+    if (! TxCenterToGroundImpactAzimuth(spacecraft))
         return(0);
-    Vector3 vector;
-    vector.SphericalSet(1.0, look, azim);
-    TargetInfoPackage tip;
-    if (! TargetInfo(&antenna_frame_to_gc, spacecraft, this, vector, &tip))
-        return(0);
-
-    // rotate to the antenna to the ground impact azimuth
-    delta_t = tip.roundTripTime / 2.0;
-    sas.antenna.SetGroundImpactAzimuthAngle(sas.antenna.txCenterAzimuthAngle +
-        delta_t * sas.antenna.spinRate);
 
     return(1);
 }

@@ -307,9 +307,11 @@ public:
 
     int  SetAllAzimuthsUsingGroundImpact(Spacecraft* spacecraft, double angle);
     int  GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft);
-    double  GetEncoderToTxCenterDelay();
+    int  TxCenterToGroundImpactAzimuth(Spacecraft* spacecraft);
     int  TxCenterToEncoderAzimuth();
     int  SetOtherAzimuths(Spacecraft* spacecraft);
+
+    double  GetEncoderToTxCenterDelay();
 
 /*
     int  SetAntennaToTxCenter(int pri_delay = 0);
