@@ -152,6 +152,7 @@ public:
 
 	LonLat					lonLat;
 	WindVectorPlus*			selected;
+	int                             selected_allocated;
 	List<WindVectorPlus>	ambiguities;
 };
 
@@ -306,7 +307,7 @@ public:
 	//-----------//
 
 	int		InitWithRank(int rank);
-	int		Nudge(WindField* nudge_field);
+	int		Nudge(WindField* nudge_field, int min_rank);
 	int		MedianFilter(int window_size, int max_passes, int weight_flag = 0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 				char** change, int weight_flag = 0);
@@ -316,10 +317,12 @@ public:
 	//------------//
 
 	void            operator-=(const WindSwath& w);
+	int             DifferenceFromTruth(WindField* truth);
 	int		CtdArray(float cross_track_res, float* ctd_array);
 
 	float	RmsSpdErr(WindField* truth);
 	float	RmsDirErr(WindField* truth);
+	int     WriteDirErrMap(WindField* truth, FILE* ofp);
 	float	Skill(WindField* truth);
 	float	SpdBias(WindField* truth);
 

@@ -62,6 +62,7 @@ public:
 
 	int		medianFilterWindowSize;
 	int		medianFilterMaxPasses;
+	int             maxRankForNudging;
 
 	//-------//
 	// flags //

@@ -1502,7 +1502,7 @@ ConfigL2B(
 		return(0);
 	l2b->SetInputFilename(l2b_filename);
 	l2b->SetOutputFilename(l2b_filename);
-
+	
 	return(1);
 }
 
@@ -1524,6 +1524,10 @@ ConfigL2AToL2B(
 	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterMaxPasses = tmp_int;
+
+	if (! config_list->GetInt(MAX_RANK_FOR_NUDGING_KEYWORD, &tmp_int))
+		return(0);
+	l2a_to_l2b->maxRankForNudging = tmp_int;
 
 	if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
 		return(0);

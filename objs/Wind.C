@@ -146,7 +146,7 @@ WindVectorPlus::ReadL2B(
 //=====//
 
 WVC::WVC()
-:	selected(NULL)
+:	selected(NULL), selected_allocated(0)
 {
 	return;
 }
@@ -155,9 +155,13 @@ WVC::~WVC()
 {
 	WindVectorPlus* wvp;
 	ambiguities.GotoHead();
-	while ((wvp=ambiguities.RemoveCurrent()) != NULL)
+        int selected_allocated=0;
+        
+	  while ((wvp=ambiguities.RemoveCurrent()) != NULL){
 		delete wvp;
-
+		if (wvp==selected) selected_allocated=0;
+	  }
+	  if(selected_allocated) delete selected;
 	return;
 }
 
@@ -1331,7 +1335,7 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:	swath(0), _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
+:	swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
 	return;
 }
@@ -1835,7 +1839,8 @@ WindSwath::InitWithRank(
 
 int
 WindSwath::Nudge(
-	WindField*	nudge_field)
+	WindField*	nudge_field,
+	int max_rank)
 {
 	int count = 0;
 	for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -1850,7 +1855,7 @@ WindSwath::Nudge(
 			if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
 				continue;
 
-			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, 2);
+			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, max_rank);
 			count++;
 		}
 	}
@@ -1901,14 +1906,14 @@ WindSwath::MedianFilter(
 	//--------//
 
 	int pass = 0;
-	do
+	while (pass < max_passes)
 	{
 		int flips = MedianFilterPass(half_window, new_selected, change,
 						weight_flag);
 		pass++;
 		if (flips == 0)
 			break;
-	} while (pass < max_passes);
+	} 
 
 	free_array(new_selected, 2, _crossTrackBins, _alongTrackBins);
 	free_array(change, 2, _crossTrackBins, _alongTrackBins);
@@ -2164,6 +2169,41 @@ WindSwath::RmsDirErr(
 	float rms_dir_err = (float)sqrt(sum/(double)count);
 
 	return(rms_dir_err);
+}
+
+//---------------------------//
+// WindSwath::WriteDirErrMap //
+//---------------------------//
+
+int
+WindSwath::WriteDirErrMap(
+	WindField*	truth,
+        FILE*           ofp)
+{
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			float dif = fabs(ANGDIF(wvc->selected->dir, 
+						true_wv.dir))*rtd;
+			float lon=wvc->lonLat.longitude*rtd;
+			float lat=wvc->lonLat.latitude*rtd;
+			fwrite((void*)&dif,sizeof(float),1,ofp);
+			fwrite((void*)&lon,sizeof(float),1,ofp);
+			fwrite((void*)&lat,sizeof(float),1,ofp);
+			
+		}
+	}
+
+	return(1);
 }
 
 //------------------//
@@ -2604,6 +2644,7 @@ void WindSwath::operator-=(const WindSwath& w){
 			wvc2->selected->GetUV(&u2,&v2);
 			wvp_sel->SetUV(u1-u2,v1-v2);
 			wvc1->selected=wvp_sel;
+			wvc1->selected_allocated=1;
                         WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
 			WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
 			  while(wvp1 && wvp2){
@@ -2614,13 +2655,41 @@ void WindSwath::operator-=(const WindSwath& w){
 			    wvp2=wvc2->ambiguities.GetNext();
 			  }
 			while(wvp1){
-			  wvc1->ambiguities.RemoveCurrent();
+			  wvp1=wvc1->ambiguities.RemoveCurrent();
+			  delete wvp1;
 			  wvp1=wvc1->ambiguities.GetCurrent();
 			}
 
 		}
 	}
 }
+int WindSwath::DifferenceFromTruth(WindField* truth){
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		for (int j = 0; j < _alongTrackBins; j++)
+		{
+			WVC* wvc = *(*(swath + i) + j);
+			if (wvc == NULL)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+			
+                        WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+			  while(wvp){
+			    float u1, v1, u2, v2;
+                            wvp->GetUV(&u1,&v1);
+                            true_wv.GetUV(&u2,&v2);
+			    wvp->SetUV(u1-u2,v1-v2);
+			    wvp=wvc->ambiguities.GetNext();
+			  }
+
+		}
+	}
+	return(1);
+}
+
 //-----------------------//
 // WindSwath::SkillVsCti //
 //-----------------------//
