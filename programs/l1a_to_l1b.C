@@ -159,13 +159,24 @@ main(
 	}
 
 	//---------------------------------//
+	// create and configure spacecraft //
+	//---------------------------------//
+
+	Spacecraft spacecraft;
+	if (! ConfigSpacecraft(&spacecraft, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring spacecraft\n", command);
+		exit(1);
+	}
+
+	//---------------------------------//
 	// create and configure instrument //
 	//---------------------------------//
 
 	Instrument instrument;
 	if (! ConfigInstrument(&instrument, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring antenna\n", command);
+		fprintf(stderr, "%s: error configuring instrument\n", command);
 		exit(1);
 	}
 
@@ -226,7 +237,7 @@ main(
 		// convert //
 		//---------//
 
-		if (! l10_to_l15.Convert(&l10, &instrument, &ephemeris, &l15))
+		if (! l10_to_l15.Convert(&l10, &spacecraft, &instrument, &ephemeris, &l15))
 		{
 		       fprintf(stderr, "%s: error converting data record %d\n",
 				command, data_record_number);
