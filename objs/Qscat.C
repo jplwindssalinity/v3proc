@@ -585,6 +585,9 @@ QscatCds::SetTime(
     double time_since_eqx = time - eqxTime;
     orbitTime = (unsigned int)(time_since_eqx * ORBIT_TICKS_PER_SECOND);
 
+    int loops = (int)(orbitTime / orbitTicksPerOrbit);
+    orbitTime -= loops * orbitTicksPerOrbit;
+
     return(1);
 }
 
