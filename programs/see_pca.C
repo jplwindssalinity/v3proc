@@ -164,8 +164,13 @@ main(
             printf("  Principle Component %d\n", pc_idx + 1);
             for (int param_idx = 0; param_idx < PARAM_COUNT; param_idx++)
             {
-                printf("    %5s : %g\n", param_string[param_idx],
-                    pca_weights[swath_idx][pc_idx][param_idx]);
+                printf("    %5s : %g (u=%g, s=%g, m=%g, M=%g)\n",
+                    param_string[param_idx],
+                    pca_weights[swath_idx][pc_idx][param_idx],
+                    pca_mean[swath_idx][param_idx],
+                    pca_std[swath_idx][param_idx],
+                    pca_min[swath_idx][param_idx],
+                    pca_max[swath_idx][param_idx]);
             }
         }
     }
