@@ -10,7 +10,6 @@ static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
 #include "Antenna.h"
-#include "Tracking.h"
 
 //======================================================================
 // CLASSES
@@ -92,6 +91,7 @@ public:
 
 	unsigned int	TimeToOrbitTicks(double time);
 	int				SetTimeWithInstrumentTicks(unsigned int ticks);
+	int				SetRxGateAndDoppler();
 
 	//-----------//
 	// variables //
@@ -99,8 +99,6 @@ public:
 
 	double			time;
 	Antenna			antenna;
-	RangeTracker	rangeTracker;
-	DopplerTracker	dopplerTracker;
 
 	//------------------//
 	// generally varied //
@@ -108,6 +106,7 @@ public:
 
 	unsigned int	instrumentTicks;		// 32 Hz ticks
 	unsigned int	orbitTicks;				// 32 Hz ticks
+	unsigned int	orbitTicksPerPeriod;	// ticks per one orbit
 	float			commandedDoppler;		// Hz freq added to base xmit
 	float			commandedRxGateDelay;	// sec
 	float			commandedRxGateWidth;	// sec
@@ -145,8 +144,6 @@ public:
 
 	int				useKpc;		// 0 - no kpc, 1 - with kpc
 	int				useKpm;		// 0 - no kpm, 1 - with kpm
-	unsigned char	useRgc;		// 0 - ideal delay, 1 - use RGC
-	unsigned char	useDtc;		// 0 - ideal Doppler, 1 - use DTC
 
 protected:
 	double			_eqxTime;

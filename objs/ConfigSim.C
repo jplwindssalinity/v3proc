@@ -194,17 +194,18 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 			|| strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
 			|| strcmp(string,"uniform_random_velocity")==0)
 	{
-	        roll=ConfigUniformRandomVelocity(
+		roll=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
-		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_RADIUS_KEYWORD,
-			config_list);
-		if(roll==NULL) return(0);
-	        pitch=ConfigUniformRandomVelocity(
+		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_RADIUS_KEYWORD, config_list);
+		if(roll==NULL)
+			return(0);
+		pitch=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
 		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_RADIUS_KEYWORD,
 			config_list);
-		if(pitch==NULL) return(0);
-	        yaw=ConfigUniformRandomVelocity(
+		if(pitch==NULL)
+			return(0);
+		yaw=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
 		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_RADIUS_KEYWORD,
 			config_list);
@@ -251,13 +252,13 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	else if (strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
 			|| strcmp(string,"gaussian")==0)
 	{
-	        roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
+		roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
 			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
 		if (roll==NULL) return(0);
-	        pitch=ConfigGaussian(PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
+		pitch=ConfigGaussian(PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
 			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
 		if (pitch==NULL) return(0);
-	        yaw=ConfigGaussian(YAW_KNOWLEDGE_VARIANCE_KEYWORD,
+		yaw=ConfigGaussian(YAW_KNOWLEDGE_VARIANCE_KEYWORD,
 			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
 		if (yaw==NULL) return(0);
 
@@ -604,54 +605,6 @@ ConfigInstrument(
 	}
 	instrument->useKpm = use_kpm;
 
-	int use_rgc;
-	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
-	{
-		printf("Could not find use RGC flag in config file\n");
-		return(0);
-	}
-	instrument->useRgc = use_rgc;
-	if (use_rgc)
-	{
-		char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
-		if (rgc_file == NULL)
-		{
-			printf("Could not find RGC file name in config file\n");
-			return(0);
-		}
-
-		if (! instrument->rangeTracker.ReadBinary(rgc_file))
-		{
-			fprintf(stderr, "ConfigInstrument: error reading RGC file %s\n",
-				rgc_file);
-			return(0);
-		}
-	}
-
-	int use_dtc;
-	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
-	{
-		printf("Could not find use RGC flag in config file\n");
-		return(0);
-	}
-	instrument->useDtc = use_dtc;
-	if (use_dtc)
-	{
-		char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
-		if (dtc_file == NULL)
-		{
-			printf("Could not find DTC file name in config file\n");
-			return(0);
-		}
-
-		if (! instrument->dopplerTracker.ReadBinary(dtc_file))
-		{
-			fprintf(stderr, "ConfigInstrument: error reading DTC file %s\n",
-				dtc_file);
-			return(0);
-		}
-	}
-
 	return(1);
 }
 
@@ -742,7 +695,7 @@ ConfigInstrumentSim(
 		fprintf(stderr,
 			"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
 		return(0);
-	} 
+	}
 
 	/*** To create an X table SYSTEM_TEMPERATURE MUST be zero so that **/
         /*** Pn_slice will be zero and will NOT corrupt the X table      **/
@@ -752,7 +705,7 @@ ConfigInstrumentSim(
 			"ConfigInstrumentSim: Cannot create an Xtable with a
 nonzero system temperature! \n");
 		return(0);
-	} 
+	}
 
 	if(create_xtable)
 	{
@@ -779,20 +732,20 @@ ConfigInstrumentSimAccurate(
 {
         if (! ConfigInstrumentSim(instrument_sim, config_list))
 	        return(0);
-        
-        int num_look_steps;
+
+	int num_look_steps;
 	if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
 		return(0);
 	instrument_sim->numLookStepsPerSlice=num_look_steps;
 
         float azimuth_integration_range;
-	if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD, 
+	if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
 				  &azimuth_integration_range))
 		return(0);
 	instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
 
         float azimuth_step_size;
-	if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD, 
+	if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
 				  &azimuth_step_size))
 		return(0);
 	instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
@@ -958,7 +911,7 @@ ConfigBeam(
 		printf("Could not find beam receiver gate width in config file\n");
 		return(0);
 	}
-	beam->receiverGateWidth = gate_width * MS_TO_S;
+	beam->rxGateWidth = gate_width * MS_TO_S;
 
 	double look_angle;		// deg
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
@@ -1002,13 +955,75 @@ ConfigBeam(
 	}
 	beam->timeOffset = tmp_double * MS_TO_S;
 
+	//----------------//
+	// Range Tracking //
+	//----------------//
+
+	int use_rgc;
+	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
+	{
+		printf("Could not find use RGC flag in config file\n");
+		return(0);
+	}
+	beam->useRangeTracker = use_rgc;
+	if (use_rgc)
+	{
+		substitute_string(BEAM_x_RGC_FILE_KEYWORD, "x", number, keyword);
+		char* rgc_file = config_list->Get(keyword);
+		if (rgc_file == NULL)
+		{
+			printf("Could not find RGC file name in config file\n");
+			return(0);
+		}
+
+		if (! beam->rangeTracker.ReadBinary(rgc_file))
+		{
+			fprintf(stderr, "ConfigBeam: error reading RGC file %s\n",
+				rgc_file);
+			return(0);
+		}
+	}
+
+	//------------------//
+	// Doppler Tracking //
+	//------------------//
+
+	int use_dtc;
+	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
+	{
+		printf("Could not find use DTC flag in config file\n");
+		return(0);
+	}
+	beam->useDopplerTracker = use_dtc;
+	if (use_dtc)
+	{
+		substitute_string(BEAM_x_DTC_FILE_KEYWORD, "x", number, keyword);
+		char* dtc_file = config_list->Get(keyword);
+		if (dtc_file == NULL)
+		{
+			printf("Could not find DTC file name in config file\n");
+			return(0);
+		}
+
+		if (! beam->dopplerTracker.ReadBinary(dtc_file))
+		{
+			fprintf(stderr, "ConfigBeam: error reading DTC file %s\n",
+				dtc_file);
+			return(0);
+		}
+	}
+
 	return(1);
 }
 
-int 
+//--------------//
+// ConfigXTable //
+//--------------//
+
+int
 ConfigXTable(
-	     XTable*      xTable, 
-	     ConfigList*  config_list, 
+	     XTable*      xTable,
+	     ConfigList*  config_list,
 	     char* read_write)
 {
 
@@ -1033,7 +1048,7 @@ ConfigXTable(
 
 
   /**** Read header parameters for XTable object ****/
-  
+
   int num_beams;
   if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
 	{
@@ -1045,12 +1060,12 @@ ConfigXTable(
   if(! config_list->GetFloat(PRI_PER_BEAM_KEYWORD,&pri_per_beam))
 	{
 	printf("Could not find PRI per beam in config file\n");
-    return(0);  
+    return(0);
 	}
   if(! config_list->GetFloat(SPIN_RATE_KEYWORD,&antenna_spin_rate))
 	{
 	printf("Could not find spin rate in config file\n");
-    return(0);  
+    return(0);
 	}
   int num_azimuths=int((60.0/antenna_spin_rate)/pri_per_beam);
 
@@ -1105,7 +1120,7 @@ ConfigXTable(
 
   /***** If mode is WRITE, asign xTable parameters from parameters read from
          config file, and allocate it the arrays                         ****/
-  
+
   else{
     xTable->numBeams=num_beams;
     xTable->numAzimuthBins=num_azimuths;
@@ -1117,8 +1132,8 @@ ConfigXTable(
     if (!xTable->Allocate()){
       fprintf(stderr,"Error allocating Xtable object/n");
       return(0);
-    }   
-    
+    }
+
   }
 
   return(1);
@@ -1619,44 +1634,6 @@ ConfigControl(
 	}
 
 	config_list->ExitForMissingKeywords();
-
-	return(1);
-}
-
-//--------------------//
-// ConfigRangeTracker //
-//--------------------//
-
-int
-ConfigRangeTracker(
-	RangeTracker*		range_tracker,
-	ConfigList*			config_list)
-{
-	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
-	if (rgc_file == NULL)
-		return(0);
-
-	if (! range_tracker->ReadBinary(rgc_file))
-		return(0);
-
-	return(1);
-}
-
-//----------------------//
-// ConfigDopplerTracker //
-//----------------------//
-
-int
-ConfigDopplerTracker(
-	DopplerTracker*	doppler_tracker,
-	ConfigList*			config_list)
-{
-	char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
-	if (dtc_file == NULL)
-		return(0);
-
-	if (! doppler_tracker->ReadBinary(dtc_file))
-		return(0);
 
 	return(1);
 }

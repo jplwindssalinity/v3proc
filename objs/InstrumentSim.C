@@ -443,25 +443,56 @@ SetRangeAndDoppler(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument)
 {
-	//-----------------------------------------//
-	// command the range delay and range width //
-	//-----------------------------------------//
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
 
-	float residual_delay_error = 0.0;
-	if (instrument->useRgc)
+	//-------------------------------------//
+	// command the rx gate width and delay //
+	//-------------------------------------//
+
+	float residual_delay;
+	if (beam->useRangeTracker)
 	{
-		if (! instrument->rangeTracker.SetInstrument(instrument,
-			&residual_delay_error))
+		//-------//
+		// width //
+		//-------//
+
+		instrument->commandedRxGateWidth =
+			beam->rangeTracker.QuantizeWidth(beam->rxGateWidth);
+
+		//-------//
+		// delay //
+		//-------//
+
+		unsigned short range_step =
+			beam->rangeTracker.OrbitTicksToRangeStep(instrument->orbitTicks,
+			instrument->orbitTicksPerPeriod);
+		unsigned int encoder = antenna->GetEncoderValue();
+		unsigned int encoder_n = antenna->GetEncoderN();
+
+		float delay;
+
+		if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->pulseWidth,
+			instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
 		{
-			fprintf(stderr, "SetRangeAndDoppler: ");
-			fprintf(stderr, "error setting instrument using range tracker\n");
+			fprintf(stderr, "SetRangeAndDoppler: error using RGC\n");
 			return(0);
 		}
+		instrument->commandedRxGateDelay =
+			beam->rangeTracker.QuantizeDelay(delay, &residual_delay);
 	}
 	else
 	{
-		Beam* beam = instrument->antenna.GetCurrentBeam();
-		instrument->commandedRxGateWidth = beam->receiverGateWidth;
+		//-------//
+		// width //
+		//-------//
+
+		instrument->commandedRxGateWidth = beam->rxGateWidth;
+
+		//-------//
+		// delay //
+		//-------//
+
 		double rtt = IdealRtt(spacecraft, instrument);
 		if (! RttToCommandedReceiverDelay(instrument, rtt))
 			return(0);
@@ -471,15 +502,25 @@ SetRangeAndDoppler(
 	// command the Doppler frequency //
 	//-------------------------------//
 
-	if (instrument->useDtc)
+	if (beam->useDopplerTracker)
 	{
-		if (! instrument->dopplerTracker.SetInstrument(instrument,
-			residual_delay_error))
+		unsigned short doppler_step =
+			beam->dopplerTracker.OrbitTicksToDopplerStep(instrument->orbitTicks,
+			instrument->orbitTicksPerPeriod);
+		unsigned int encoder = antenna->GetEncoderValue();
+		unsigned int encoder_n = antenna->GetEncoderN();
+
+		float doppler;
+
+		if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step,
+			encoder, encoder_n, &doppler, instrument->chirpRate,
+			residual_delay))
 		{
-			fprintf(stderr, "SetRangeAndDoppler: ");
-			fprintf(stderr, "error setting instrument using Doppler tracker\n");
+			fprintf(stderr, "SetRangeAndDoppler: error using DTC\n");
 			return(0);
 		}
+		instrument->commandedDoppler =
+			beam->dopplerTracker.QuantizeFrequency(doppler);
 	}
 	else
 	{

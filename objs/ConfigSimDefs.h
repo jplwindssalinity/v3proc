@@ -123,6 +123,8 @@ static const char rcs_id_configsimdefs_h[] =
 // Beam //
 //------//
 
+#define USE_RGC_KEYWORD						"USE_RGC"
+#define USE_DTC_KEYWORD						"USE_DTC"
 #define BEAM_x_LOOK_ANGLE_KEYWORD			"BEAM_x_LOOK_ANGLE"
 #define BEAM_x_AZIMUTH_ANGLE_KEYWORD		"BEAM_x_AZIMUTH_ANGLE"
 #define BEAM_x_POLARIZATION_KEYWORD			"BEAM_x_POLARIZATION"
@@ -130,6 +132,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD	"BEAM_x_RECEIVER_GATE_WIDTH"
 #define BEAM_x_TIME_OFFSET_KEYWORD			"BEAM_x_TIME_OFFSET"
 #define BEAM_x_PATTERN_FILE_KEYWORD			"BEAM_x_PATTERN_FILE"
+#define BEAM_x_RGC_FILE_KEYWORD				"BEAM_x_RGC_FILE"
+#define BEAM_x_DTC_FILE_KEYWORD				"BEAM_x_DTC_FILE"
 
 //--------//
 // XTable //
@@ -225,14 +229,5 @@ static const char rcs_id_configsimdefs_h[] =
 #define SPACECRAFT_END_TIME_KEYWORD		"SPACECRAFT_END_TIME"
 
 #define INSTRUMENT_TIME_BUFFER_KEYWORD	"INSTRUMENT_TIME_BUFFER"
-
-//----------//
-// Tracking //
-//----------//
-
-#define USE_RGC_KEYWORD		"USE_RGC"
-#define USE_DTC_KEYWORD		"USE_DTC"
-#define RGC_FILE_KEYWORD	"RGC_FILE"
-#define DTC_FILE_KEYWORD	"DTC_FILE"
 
 #endif

@@ -194,13 +194,4 @@ int		ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
 			double* instrument_start_time, double* instrument_end_time,
 			double* spacecraft_start_time, double* spacecraft_end_time);
 
-//----------//
-// Tracking //
-//----------//
-
-int		ConfigRangeTracker(RangeTracker* range_tracker,
-			ConfigList* config_list);
-int		ConfigDopplerTracker(DopplerTracker* doppler_tracker,
-			ConfigList* config_list);
-
 #endif
