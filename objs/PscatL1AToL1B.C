@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -78,7 +78,7 @@ PscatL1AToL1B::Convert(
     // set up instrument //
     //-------------------//
 
-    pscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
+    pscat->cds.time = l1a->frame.time;
     pscat->cds.orbitTime = l1a->frame.orbitTicks;
 
     //------------------------------------//

@@ -78,7 +78,8 @@ L1AToL1B::Convert(
     // set up instrument //
     //-------------------//
 
-    qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
+    qscat->cds.time = l1a->frame.time;
+//    qscat->cds.SetTimeWithInstrumentTime(l1a->frame.instrumentTicks);
     qscat->cds.orbitTime = l1a->frame.orbitTicks;
 
     //------------------------------------//
