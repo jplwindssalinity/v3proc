@@ -169,6 +169,23 @@ InstrumentSimAccurate::ScatSim(
 			printf("\n");
 	}
 
+        //-----------------------------------------------//
+        //  Output X values to X table if enabled        //
+        //-----------------------------------------------//
+
+	if(createXtable)
+	{
+	        int sliceno=0;
+		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		{
+			if(!xTable.AddEntry(slice->value,
+					instrument->antenna.currentBeamIdx,
+					instrument->antenna.azimuthAngle,
+					sliceno)) return(0);
+			sliceno++;
+		}
+
+	}
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
 	//--------------------------------//
