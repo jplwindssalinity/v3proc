@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -859,6 +859,11 @@ ConfigQscatSim(
     //-------//
     // flags //
     //-------//
+
+    int sim_land;
+    if (! config_list->GetInt(SIM_LAND_FLAG_KEYWORD, &sim_land))
+        return(0);
+    qscat_sim->simLandFlag = sim_land;
 
     int sim_kpc_flag;
     if (! config_list->GetInt(SIM_KPC_FLAG_KEYWORD, &sim_kpc_flag))

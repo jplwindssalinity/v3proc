@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-2001, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -23,17 +23,17 @@ static const char rcs_id_qscatsim_h[] =
 
 //======================================================================
 // CLASSES
-//      QscatSim
+//    QscatSim
 //======================================================================
 
 //======================================================================
 // CLASS
-//      QscatSim
+//    QscatSim
 //
 // DESCRIPTION
-//      The QscatSim object contains the information necessary to
-//      simulate the QuikSCAT instrument by operating on the subsystem
-//      simulators.
+//    The QscatSim object contains the information necessary to
+//    simulate the QuikSCAT instrument by operating on the subsystem
+//    simulators.
 //======================================================================
 
 class QscatSimBeamInfo
@@ -68,14 +68,16 @@ public:
     //--------------------//
 
     int  Initialize(Qscat* qscat);
-    int  DetermineNextEvent(int spots_per_frame,
-                            Qscat* qscat, QscatEvent* qscat_event);
-    int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1aframe);
+    int  DetermineNextEvent(int spots_per_frame, Qscat* qscat,
+             QscatEvent* qscat_event);
+    int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat,
+             L1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
              KpmField* kpmField, Topo* topo, Stable* stable,
              L1AFrame* l1a_frame);
-    int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
+    int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat,
+             L1AFrame* l1a_frame);
     int  LoadSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
     int  SetL1ASpacecraft(Spacecraft* spacecraft, L1AFrame* l1a_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
@@ -88,12 +90,11 @@ public:
     int  SetL1ALoad(Qscat* qscat, L1AFrame* l1a_frame);
     int  ComputeXfactor(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
              float* X);
-    int  MeasToEsnX(Qscat* qscat, Meas* meas,
-                    float X, float sigma0,
-                    float* Esn, float* Es, float* En, float* var_Esn);
+    int  MeasToEsnX(Qscat* qscat, Meas* meas, float X, float sigma0,
+             float* Esn, float* Es, float* En, float* var_Esn);
     int  MeasToEsnK(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-                    float K, float sigma0,
-                    float* Esn, float* Es, float* En, float* var_Esn, float* X);
+             float K, float sigma0, float* Esn, float* Es, float* En,
+             float* var_Esn, float* X);
 
     int  GetSpotNumber()  { return (_spotNumber); };
 
@@ -134,6 +135,7 @@ public:
     // flags //
     //-------//
 
+    int    simLandFlag;        // 0 = ignore land, 1 = simulate land
     int    uniformSigmaField;  // set all sigma0 values to a constant value
     float  uniformSigmaValue;  // the sigma0 when uniformSigmaField is set
     int    outputXToStdout;    // write X value to stdout

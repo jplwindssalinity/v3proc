@@ -912,7 +912,22 @@ QscatSim::SetMeasurements(
         lon_lat.latitude = lat;
 
         // Compute Land Flag
-        meas->landFlag=landMap.IsLand(lon, lat);
+        meas->landFlag = landMap.IsLand(lon, lat);
+
+        //--------------------------//
+        // ignore land if necessary //
+        //--------------------------//
+
+        if (meas->landFlag == 1 && simLandFlag == 0)
+        {
+            // this is land, but we don't want land
+            // remove this measurement, and go to the next
+            meas = meas_spot->RemoveCurrent();
+            delete meas;
+            meas = meas_spot->GetCurrent();
+            slice_i++;
+            continue;
+        }
 
         float sigma0;
         if (uniformSigmaField)
@@ -925,7 +940,7 @@ QscatSim::SetMeasurements(
                 cf->wv[slice_i].dir = 0.0;
             }
         }
-        else if (meas->landFlag==1)
+        else if (meas->landFlag == 1)
         {
             //-------------------------------------------//
             // LAND! Try to use the inner and outer maps //
@@ -1002,7 +1017,7 @@ QscatSim::SetMeasurements(
                 if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
                 {
                     printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
-                    exit(-1);
+                    exit(1);
                 }
                 Gaussian gaussianRv(1.0,0.0);
                 float rv1 = gaussianRv.GetNumber();
@@ -1036,9 +1051,9 @@ QscatSim::SetMeasurements(
 
         // Kfactor: either 1.0, taken from table, or X is computed
         // directly
-        float Xfactor=0;
-        float Kfactor=1.0;
-        float Es,En,var_esn_slice;
+        float Xfactor = 0.0;
+        float Kfactor = 1.0;
+        float Es, En, var_esn_slice;
         CoordinateSwitch gc_to_antenna;
 
         if (computeXfactor || useBYUXfactor)
@@ -1051,9 +1066,9 @@ QscatSim::SetMeasurements(
             {
                 if (! ComputeXfactor(spacecraft, qscat, meas, &Xfactor))
                 {
-                    meas=meas_spot->RemoveCurrent();
+                    meas = meas_spot->RemoveCurrent();
                     delete meas;
-                    meas=meas_spot->GetCurrent();
+                    meas = meas_spot->GetCurrent();
                     slice_i++;
                     continue;
                 }
@@ -1071,16 +1086,16 @@ QscatSim::SetMeasurements(
                         stable, NULL);
                 }
             }
-            if (! MeasToEsnX(qscat, meas, Xfactor, sigma0,
-                             &(meas->value), &Es, &En, &var_esn_slice))
+            if (! MeasToEsnX(qscat, meas, Xfactor, sigma0, &(meas->value),
+                &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
-            meas->XK=Xfactor;
+            meas->XK = Xfactor;
         }
         else
         {
-            Kfactor=1.0;  // default to use if no Kfactor specified.
+            Kfactor = 1.0;  // default to use if no Kfactor specified.
             if (useKfactor)
             {
                 float orbit_position = qscat->cds.OrbitFraction();
@@ -1102,8 +1117,7 @@ QscatSim::SetMeasurements(
             double Tp = qscat->ses.txPulseWidth;
 
             if (! MeasToEsnK(spacecraft, qscat, meas, Kfactor*Tp, sigma0,
-                             &(meas->value), &Es, &En,
-                             &var_esn_slice, &(meas->XK)))
+                &(meas->value), &Es, &En, &var_esn_slice, &(meas->XK)))
             {
                 return(0);
             }
@@ -1158,7 +1172,7 @@ QscatSim::SetMeasurements(
         }
 
         slice_i++;
-        meas=meas_spot->GetNext();
+        meas = meas_spot->GetNext();
     }
 
     return(1);
