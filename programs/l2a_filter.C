@@ -277,7 +277,15 @@ main(
     {
         for (Meas* meas = frame->measList.GetHead(); meas; )
         {
+
             wvc_in++;
+
+	    // Estimate Scan Angle if its not available (officila proc)
+            // Assumes spacecraft vector is due North
+            if(meas->numSlices==-1){
+	      meas->scanAngle=meas->eastAzimuth-pi/2;
+              while(meas->scanAngle < 0) meas->scanAngle+=2*pi;
+	    }
             remove = opt_no_correlation &&
                 (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
                 meas->measType == Meas::HH_VH_CORR_MEAS_TYPE);
