@@ -420,10 +420,17 @@ GMF::FindSolutions(
 			new_wv->speed = best_spd_idx[phi_idx] * dspd;
 			new_wv->direction = phi_idx * dphi;
 			if (! wvc->ambiguities.Append(new_wv))
+			{
+				delete best_spd_idx;
+				delete best_obj;
 				return(0);
+			}
 			count++;
 		}
 	}
+
+	delete best_spd_idx;
+	delete best_obj;
 	return(count);
 }
 
