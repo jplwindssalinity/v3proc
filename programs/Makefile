@@ -186,7 +186,7 @@ GS_CHECK_PROGRAMS = \
 # default: make all executable programs
 #----------------------------------------------------------------------
 
-default: $(PROGRAMS)
+default: $(PROGRAMS) $(GS_CHECK_PROGRAMS)
 hudd: $(HUDD_PROGRAMS)
 stiles: $(STILES_PROGRAMS)
 diag: $(DIAGNOSTIC_PROGRAMS)
