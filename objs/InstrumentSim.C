@@ -8,6 +8,7 @@ static const char rcs_id_instrumentsim_c[] =
 
 #include "InstrumentSim.h"
 #include "Instrument.h"
+#include "LookGeom.h"
 
 
 //===============//
@@ -15,7 +16,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	_priPerBeam(0.0), _beamBTimeOffset(0.0), _event(NONE), _eventTime(0)
+:	_priPerBeam(0.0), _beamBTimeOffset(0.0)
 {
 	return;
 }
@@ -41,60 +42,101 @@ int InstrumentSim::SetBeamBTimeOffset(double beam_b_time_offset)
 	return(1);
 }
 
-//----------------------------------//
-// InstrumentSim::SimulateNextEvent //
-//----------------------------------//
+//-----------------------------------//
+// InstrumentSim::DetermineNextEvent //
+//-----------------------------------//
 
 int
-InstrumentSim::SimulateNextEvent(
-	Instrument*		instrument)
+InstrumentSim::DetermineNextEvent(
+	SimEvent*		event)
 {
-	//-----------------------------------------//
-	// determine the next event and event time //
-	//-----------------------------------------//
-
 	int pri_cycle;
 
-	switch(_event)
+	switch(event->event)
 	{
 	case NONE:
-		_event = SCATTEROMETER_BEAM_A_MEASUREMENT;
+		event->event = SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
 		break;
-	case SCATTEROMETER_BEAM_A_MEASUREMENT:
-		_event = SCATTEROMETER_BEAM_B_MEASUREMENT;
-		pri_cycle = (int)((_eventTime + _beamBTimeOffset) / _priPerBeam);
-		_eventTime = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
+	case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+		event->event = SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT;
+		pri_cycle = (int)((event->time + _beamBTimeOffset) / _priPerBeam);
+		event->time = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
 		break;
-	case SCATTEROMETER_BEAM_B_MEASUREMENT:
-		pri_cycle = (int)(_eventTime / _priPerBeam);
-		_event = SCATTEROMETER_BEAM_A_MEASUREMENT;
-		_eventTime = _priPerBeam * (double)(pri_cycle + 1);
+	case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+		event->event = SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
+		pri_cycle = (int)(event->time / _priPerBeam);
+		event->time = _priPerBeam * (double)(pri_cycle + 1);
+		break;
+	default:
+		event->event = SimEvent::UNKNOWN;
+		return(0);
 		break;
 	}
+	return(1);
+}
 
-	//------------------//
-	// update the orbit //
-	//------------------//
+//------------------------------//
+// InstrumentSim::SimulateEvent //
+//------------------------------//
 
-	spacecraftSim.UpdateOrbit(_eventTime, &(instrument->spacecraft));
-
-	//-----------------------------//
-	// update the antenna position //
-	//-----------------------------//
-
-	antennaSim.UpdatePosition(_eventTime, &(instrument->antenna));
-
-	//--------------------//
-	// simulate the event //
-	//--------------------//
-
-	switch(_event)
+int
+InstrumentSim::SimulateEvent(
+	Instrument*		instrument,
+	SimEvent*		event)
+{
+	instrument->time = event->time;
+	switch(event->event)
 	{
-	case NONE:
+	case SimEvent::UPDATE_ORBIT:
+		spacecraftSim.UpdateOrbit(instrument->time, &(instrument->spacecraft));
 		break;
-	case SCATTEROMETER_BEAM_A_MEASUREMENT:
-		break;
-	case SCATTEROMETER_BEAM_B_MEASUREMENT:
+	case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+	case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+		spacecraftSim.UpdateOrbit(instrument->time, &(instrument->spacecraft));
+		antennaSim.UpdatePosition(instrument->time, &(instrument->antenna));
+
+		//--------------------------//
+		// determine the beam index //
+		//--------------------------//
+
+		int beam_idx;
+		switch(event->event)
+		{
+		case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
+			beam_idx = 0;
+			break;
+		case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
+			beam_idx = 1;
+			break;
+		}
+
+		//--------------------------------//
+		// calculate the beam orientation //
+		//--------------------------------//
+
+		Antenna* antenna = &(instrument->antenna);
+		Beam* beam = &(antenna->beam[beam_idx]);
+
+		Vector3 beam_orientation;
+		beam_orientation.SphericalSet(1.0, pi/2.0 - beam->lookAngle,
+			antenna->azimuthAngle + beam->azimuthAngle);
+
+		//--------------------------------------//
+		// calculate the earth intercept vector //
+		//--------------------------------------//
+
+		Spacecraft* spacecraft = &(instrument->spacecraft);
+
+		EarthPosition rspot = earth_intercept(spacecraft->gcVector,
+			spacecraft->velocityVector, spacecraft->attitude,
+			antenna->antennaFrame, beam_orientation);
+
+		//------------------------------------//
+		// get sigma-0 for the earth location //
+		//------------------------------------//
+
+		Vector3 alt_lat_lon = rspot.get_alt_lat_lon(EarthPosition::GEODETIC);
+
 		break;
 	}
 
@@ -114,7 +156,7 @@ InstrumentSim::GenerateL0(
 	// update telemetry parameters //
 	//-----------------------------//
 
-    l0->time = _eventTime;
+    l0->time = instrument->time;
  
     l0->gcAltitude = instrument->spacecraft.gcAltitude;
     l0->gcLongitude = instrument->spacecraft.gcLongitude;
@@ -127,12 +169,12 @@ InstrumentSim::GenerateL0(
     instrument->spacecraft.velocityVector.Get(2, &(l0->velZ));
  
     l0->antennaPosition = instrument->antenna.azimuthAngle;
-	switch(_event)
+	switch(instrument->event.eventId)
 	{
-		case SCATTEROMETER_BEAM_A_MEASUREMENT:
+		case SimEvent::SCATTEROMETER_BEAM_A_MEASUREMENT:
 			l0->beam = L0::SCATTEROMETER_BEAM_A;
 			break;
-		case SCATTEROMETER_BEAM_B_MEASUREMENT:
+		case SimEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
 			l0->beam = L0::SCATTEROMETER_BEAM_B;
 			break;
 	}

@@ -14,8 +14,26 @@ static const char rcs_id_instrument_h[] =
 
 //======================================================================
 // CLASSES
-//		Instrument
+//		Event, Instrument
 //======================================================================
+
+//======================================================================
+// CLASS
+//      Event
+//
+// DESCRIPTION
+//      The Event object contains an event time and an event.
+//======================================================================
+ 
+class Event
+{
+public:
+    enum EventE { NONE, UNKNOWN, UPDATE_ORBIT,
+        SCATTEROMETER_BEAM_A_MEASUREMENT, SCATTEROMETER_BEAM_B_MEASUREMENT };
+ 
+    EventE      eventId;
+    double      time;
+};
 
 
 //======================================================================
@@ -41,8 +59,12 @@ public:
 	// variables //
 	//-----------//
 
+	double		time;
+
 	Spacecraft	spacecraft;
 	Antenna		antenna;
+
+	Event		event;
 };
 
 #endif
