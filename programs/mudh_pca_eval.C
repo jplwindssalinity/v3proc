@@ -8,22 +8,22 @@
 //    mudh_pca_eval
 //
 // SYNOPSIS
-//    mudh_pca_eval [ -e ecmwf_dir ] [ -t inner:outer ]
-//        [ -r irr_threshold ] [ -s min_spd:max_spd ] [ -f flag_dir ]
-//        [ -c time ] <start_rev> <end_rev> <output_base>
+//    mudh_pca_eval [ -e ecmwf_dir ] [ -f flag_dir ]
+//        [ -c time ] [ -r irr_threshold ] [ -s min_spd:max_spd ]
+//        [ -t inner_thresh:outer_thresh ] <start_rev> <end_rev>
+//        <output_base>
 //
 // DESCRIPTION
-//    Generate an evaluation chart of misclassification and
-//    false alarm versus fraction flagged.  Or, if inner and outer
-//    thresholds are specified, plot versus integrated rain rate.
+//    Generate evaluation charts of various metrics.
 //
 // OPTIONS
 //    [ -e ecmwf_dir ]        Directory to get ECMWF files from.
-//    [ -t inner:outer ]      Fixed thresholds.  Plot vs. IRR
-//    [ -r irr_threshold ]    Used to define rain.  Defaults to 2.0 km*mm/hr
-//    [ -s min_spd:max_spd ]  Use the ECMWF speed range specified.
 //    [ -f flag_dir ]         The directory containing the flag files.
 //    [ -c time ]             The collocation time.  Defaults to 30 minutes.
+//    [ -r irr_threshold ]    Used to define rain.  Defaults to 2.0 km*mm/hr
+//    [ -s min_spd:max_spd ]  Use the ECMWF speed range specified.
+//    [ -t inner_thresh:outer_thresh ]  Fixed thresholds used to overwrite
+//                              the flag values.
 //
 // OPERANDS
 //    <start_rev>     Duh.
@@ -74,7 +74,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "e:r:s:f:c:t:"
+#define OPTSTRING  "c:e:f:r:s:t:"
 #define QUOTE      '"'
 
 #define DEFAULT_FLAG_DIR          "/export/svt11/hudd/pca"
@@ -85,20 +85,26 @@ static const char rcs_id[] =
 #define DEFAULT_COLLOCATION_TIME  30
 #define REV_DIGITS                5
 
-// for the vs. rain rate histogram
+// vs. rain rate histograms
 #define IRR_BINS                  100
 #define IRR_STEP                  0.3
 
-// for the vs. probability histogram
+// vs. probability histograms
 #define PROB_BINS                 100
 #define PROB_OFFSET               -2
 #define PROB_STEP                 0.05
 
-// MUDH classes reduced to three choices
-enum { MUDH_CLEAR = 0, MUDH_RAIN, MUDH_UNKNOWN, MUDH_3CLASS_COUNT };
+// swath index
+enum { INNER_SWATH = 0, OUTER_SWATH, SWATH_UNKNOWN, SWATH_COUNT };
 
-// SSM/I classes reduced to three choices
-enum { SSMI_CLEAR = 0, SSMI_MIST, SSMI_RAIN, SSMI_CLASS_COUNT };
+// MUDH condition
+enum { MUDH_CLEAR = 0, MUDH_RAIN, MUDH_UNKNOWN, MUDH_CONDITION_COUNT };
+
+// SSM/I condition
+enum { SSMI_CLEAR = 0, SSMI_MIST, SSMI_RAIN, SSMI_CONDITION_COUNT };
+
+// key metrics
+enum { MISSED_RAIN = 0, FALSE_ALARM, METRIC_COUNT };
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -112,13 +118,14 @@ enum { SSMI_CLEAR = 0, SSMI_MIST, SSMI_RAIN, SSMI_CLASS_COUNT };
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -t inner:outer ]", "[ -r irr_threshold ]",
-    "[ -s min_spd:max_spd ]", "[ -f flag_dir ]", "[ -c time ]",
-    "<start_rev>", "<end_rev>", "<output_base>", 0 };
+const char* usage_array[] = { "[ -e ecmwf_dir ]", "[ -f flag_dir ]",
+    "[ -c time ]", "[ -r irr_threshold ]", "[ -s min_spd:max_spd ]",
+    "[ -t inner_thresh:outer_thresh ]", "<start_rev>", "<end_rev>",
+    "<output_base>", 0 };
 
 // flag
-static float           value_tab[AT_WIDTH][CT_WIDTH];
-static unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
+static float           prob_value[AT_WIDTH][CT_WIDTH];
+static unsigned char   mudh_flag[AT_WIDTH][CT_WIDTH];
 
 // irain
 static unsigned char   rain_rate[AT_WIDTH][CT_WIDTH];
@@ -128,14 +135,15 @@ static unsigned short  integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 // ECMWF
 static float           ecmwf_spd_array[AT_WIDTH][CT_WIDTH];
 
-// Index 1: Swath index 0(inner swath), 1(outer swath), 2(unknown)
-// Index 2: SSM/I class 0(irr=0), 1(0<irr<=irr_threshold), 2(irr>irr_threshold)
-// Index 3: MUDH PCA class 0(clear), 1(rain), 2(unknown)
-// Index 4: 0=probability, 1=irr
-// Index 5: probability or rain index
-static unsigned long counts[3][SSMI_CLASS_COUNT][MUDH_3CLASS_COUNT][PROB_BINS];
+// metric accumulation
+static unsigned long
+  counts[SWATH_COUNT][SSMI_CONDITION_COUNT][MUDH_CONDITION_COUNT][PROB_BINS];
+static unsigned long irr_counts[SWATH_COUNT][MUDH_CONDITION_COUNT][IRR_BINS];
 
-static unsigned long irr_counts[3][MUDH_3CLASS_COUNT][IRR_BINS];
+static unsigned long flag_ssmi_count[SWATH_COUNT][SSMI_CONDITION_COUNT];
+static unsigned long flag_bad_count[SWATH_COUNT][METRIC_COUNT];
+
+static unsigned long precollocated_count[SWATH_COUNT][MUDH_CONDITION_COUNT];
 
 //--------------//
 // MAIN PROGRAM //
@@ -154,9 +162,8 @@ main(
     float min_spd = 0.0;
     float max_spd = 0.0;
 
-    int opt_vs_irr = 0;
-    float inner_threshold = 0.0;
-    float outer_threshold = 0.0;
+    int opt_reflag = 0;
+    float prob_threshold[SWATH_COUNT];
 
     float irr_threshold = DEFAULT_IRR_THRESHOLD;
     int collocation_time = DEFAULT_COLLOCATION_TIME;
@@ -175,18 +182,14 @@ main(
     {
         switch(c)
         {
+        case 'c':
+            collocation_time = atoi(optarg);
+            break;
         case 'e':
             ecmwf_dir = optarg;
             break;
-        case 't':
-            if (sscanf(optarg, "%f:%f", &inner_threshold, &outer_threshold) !=
-                2)
-            {
-                fprintf(stderr, "%s: error parsing thresholds (%s)\n",
-                    command, optarg);
-                exit(1);
-            }
-            opt_vs_irr = 1;
+        case 'f':
+            flag_dir = optarg;
             break;
         case 'r':
             irr_threshold = atof(optarg);
@@ -200,11 +203,15 @@ main(
             }
             opt_spd = 1;
             break;
-        case 'f':
-            flag_dir = optarg;
-            break;
-        case 'c':
-            collocation_time = atoi(optarg);
+        case 't':
+            if (sscanf(optarg, "%f:%f", &(prob_threshold[INNER_SWATH]),
+                &(prob_threshold[OUTER_SWATH])) != 2)
+            {
+                fprintf(stderr, "%s: error parsing thresholds (%s)\n",
+                    command, optarg);
+                exit(1);
+            }
+            opt_reflag = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -223,12 +230,14 @@ main(
     // process rev by rev //
     //--------------------//
 
-    unsigned long valid_wvc_count[2];
+    unsigned long valid_wvc_count[SWATH_COUNT];
     valid_wvc_count[0] = 0;    // inner swath
     valid_wvc_count[1] = 0;    // outer swath
-    unsigned long classified_wvc_count[2];
+    valid_wvc_count[2] = 0;    // unknown
+    unsigned long classified_wvc_count[SWATH_COUNT];
     classified_wvc_count[0] = 0;
     classified_wvc_count[1] = 0;
+    classified_wvc_count[2] = 0;
 
     int rev_count = 0;
     unsigned int size = CT_WIDTH * AT_WIDTH;
@@ -248,8 +257,8 @@ main(
                 command, flag_file);
             continue;
         }
-        if (fread(value_tab, sizeof(float), size, ifp) != size ||
-            fread(flag_tab,   sizeof(char), size, ifp) != size)
+        if (fread(prob_value, sizeof(float), size, ifp) != size ||
+            fread(mudh_flag,   sizeof(char), size, ifp) != size)
         {
             fprintf(stderr,
                 "%s: error reading input flag file %s\n", command, flag_file);
@@ -350,6 +359,74 @@ main(
                     }
                 }
 
+                //-----------------------//
+                // determine swath index //
+                //-----------------------//
+
+                int swath_idx = SWATH_UNKNOWN;
+                int use_mudh_flag = mudh_flag[ati][cti];
+                if (use_mudh_flag == INNER_CLEAR ||
+                    use_mudh_flag == INNER_RAIN ||
+                    use_mudh_flag == INNER_UNKNOWN)
+                {
+                    swath_idx = INNER_SWATH;
+                }
+                else if (use_mudh_flag == OUTER_CLEAR ||
+                    use_mudh_flag == OUTER_RAIN ||
+                    use_mudh_flag == OUTER_UNKNOWN)
+                {
+                    swath_idx = OUTER_SWATH;
+                }
+
+                //---------------//
+                // classify MUDH //
+                //---------------//
+
+                int mudh_cond = MUDH_UNKNOWN;
+                if (opt_reflag)
+                {
+                    float prob_rain = prob_value[ati][cti];
+                    if (prob_rain >= 0.0 &&
+                        prob_rain <= prob_threshold[swath_idx])
+                    {
+                        mudh_cond = MUDH_CLEAR;
+                    }
+                    else if (prob_rain <= 1.0)
+                    {
+                        mudh_cond = MUDH_RAIN;
+                    }
+                }
+                else
+                {
+                    switch(use_mudh_flag)
+                    {
+                    case INNER_CLEAR:
+                    case OUTER_CLEAR:
+                        mudh_cond = MUDH_CLEAR;
+                        break;
+                    case INNER_RAIN:
+                    case OUTER_RAIN:
+                        mudh_cond = MUDH_RAIN;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                //----------------------------//
+                // determine flagged quantity //
+                //----------------------------//
+
+                if (use_mudh_flag == INNER_CLEAR ||
+                    use_mudh_flag == INNER_RAIN ||
+                    use_mudh_flag == INNER_UNKNOWN ||
+                    use_mudh_flag == OUTER_CLEAR ||
+                    use_mudh_flag == OUTER_RAIN ||
+                    use_mudh_flag == OUTER_UNKNOWN)
+                {
+                    precollocated_count[swath_idx][mudh_cond]++;
+                }
+
                 //-------------------------//
                 // check ssmi availability //
                 //-------------------------//
@@ -362,104 +439,71 @@ main(
                 //----------------------//
 
                 float irr = integrated_rain_rate[ati][cti] * 0.1;
-                int ssmi_class;
+                int ssmi_cond;
                 if (irr == 0.0)
-                    ssmi_class = SSMI_CLEAR;
+                    ssmi_cond = SSMI_CLEAR;
                 else if (irr > irr_threshold)
-                    ssmi_class = SSMI_RAIN;
+                    ssmi_cond = SSMI_RAIN;
                 else
-                    ssmi_class = SSMI_MIST;
+                    ssmi_cond = SSMI_MIST;
+
+                //---------------------------------------//
+                // first, just evaluate the actual flags //
+                //---------------------------------------//
+
+                flag_ssmi_count[swath_idx][ssmi_cond]++;
+                if (ssmi_cond == SSMI_RAIN)
+                {
+                    if (use_mudh_flag == INNER_CLEAR)
+                        flag_bad_count[INNER_SWATH][MISSED_RAIN]++;
+                    else if (use_mudh_flag == OUTER_CLEAR)
+                        flag_bad_count[OUTER_SWATH][MISSED_RAIN]++;
+                }
+                else if (ssmi_cond == SSMI_CLEAR)
+                {
+                    if (use_mudh_flag == INNER_RAIN)
+                        flag_bad_count[INNER_SWATH][FALSE_ALARM]++;
+                    else if (use_mudh_flag == OUTER_RAIN)
+                        flag_bad_count[OUTER_SWATH][FALSE_ALARM]++;
+                }
 
                 //-----------------------//
                 // count classifications //
                 //-----------------------//
 
-                switch (flag_tab[ati][cti])
+                switch (use_mudh_flag)
                 {
                 case INNER_CLEAR:
                 case INNER_RAIN:
-                    classified_wvc_count[0]++;
-                    valid_wvc_count[0]++;
-                    break;
-                case INNER_UNKNOWN:
-                    valid_wvc_count[0]++;
-                    break;
                 case OUTER_CLEAR:
                 case OUTER_RAIN:
-                    classified_wvc_count[1]++;
-                    valid_wvc_count[1]++;
+                    classified_wvc_count[swath_idx]++;
+                    valid_wvc_count[swath_idx]++;
                     break;
+                case INNER_UNKNOWN:
                 case OUTER_UNKNOWN:
-                    valid_wvc_count[1]++;
+                    valid_wvc_count[swath_idx]++;
                     break;
                 case NO_WIND:
-                    break;
                 case UNKNOWN:
                     break;
                 }
 
-                //--------------------------//
-                // for the fixed thresholds //
-                //--------------------------//
+                //---------------//
+                // vs. rain rate //
+                //---------------//
 
-                if (opt_vs_irr)
-                {
-                    int rain_idx = (int)(irr / IRR_STEP + 0.5);
-                    if (rain_idx > IRR_BINS - 1) rain_idx = IRR_BINS - 1;
+                int rain_idx = (int)(irr / IRR_STEP + 0.5);
+                if (rain_idx > IRR_BINS - 1)
+                    rain_idx = IRR_BINS - 1;
 
-                    //---------------//
-                    // classify MUDH //
-                    //---------------//
+                irr_counts[swath_idx][mudh_cond][rain_idx]++;
 
-                    float prob_rain = value_tab[ati][cti];
-                    int swath_idx = 2;    // unknown
-                    int mudh_class = MUDH_UNKNOWN;
-                    switch (flag_tab[ati][cti])
-                    {
-                    case INNER_CLEAR:
-                    case INNER_RAIN:
-                        swath_idx = 0;    // inner swath
-                        if (prob_rain <= inner_threshold)
-                            mudh_class = MUDH_CLEAR;
-                        else
-                            mudh_class = MUDH_RAIN;
-                        break;
-                    case INNER_UNKNOWN:
-                        swath_idx = 0;    // inner swath
-                        // it will stay unknown
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    case OUTER_CLEAR:
-                    case OUTER_RAIN:
-                        swath_idx = 1;    // outer swath
-                        if (prob_rain <= outer_threshold)
-                            mudh_class = MUDH_CLEAR;
-                        else
-                            mudh_class = MUDH_RAIN;
-                        break;
-                    case OUTER_UNKNOWN:
-                        swath_idx = 1;    // outer swath
-                        // it will stay unknown
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    case NO_WIND:
-                    case UNKNOWN:
-                        swath_idx = 2;    // unknown beam
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    default:
-                        fprintf(stderr, "%s: unknown classification\n",
-                            command);
-                        exit(1);
-                        break;
-                    }
-                    irr_counts[swath_idx][mudh_class][rain_idx]++;
-                }
+                //-----------------//
+                // vs. probability //
+                //-----------------//
 
-                //-------------------------------------//
-                // step through probability thresholds //
-                //-------------------------------------//
-
+                float prob_rain = prob_value[ati][cti];
                 for (int prob_idx = 0; prob_idx < PROB_BINS; prob_idx++)
                 {
                     float prob_thresh = pow(10.0,
@@ -469,61 +513,55 @@ main(
                     // classify MUDH //
                     //---------------//
 
-                    float prob_rain = value_tab[ati][cti];
-                    int swath_idx = 2;    // unknown
-                    int mudh_class = MUDH_UNKNOWN;
-                    switch (flag_tab[ati][cti])
-                    {
-                    case INNER_CLEAR:
-                    case INNER_RAIN:
-                        swath_idx = 0;    // inner swath
-                        if (prob_rain <= prob_thresh)
-                            mudh_class = MUDH_CLEAR;
-                        else
-                            mudh_class = MUDH_RAIN;
-                        break;
-                    case INNER_UNKNOWN:
-                        swath_idx = 0;    // inner swath
-                        // it will stay unknown
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    case OUTER_CLEAR:
-                    case OUTER_RAIN:
-                        swath_idx = 1;    // outer swath
-                        if (prob_rain <= prob_thresh)
-                            mudh_class = MUDH_CLEAR;
-                        else
-                            mudh_class = MUDH_RAIN;
-                        break;
-                    case OUTER_UNKNOWN:
-                        swath_idx = 1;    // outer swath
-                        // it will stay unknown
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    case NO_WIND:
-                    case UNKNOWN:
-                        swath_idx = 2;    // unknown beam
-                        mudh_class = MUDH_UNKNOWN;
-                        break;
-                    default:
-                        fprintf(stderr, "%s: unknown classification\n",
-                            command);
-                        exit(1);
-                        break;
-                    }
-                    counts[swath_idx][ssmi_class][mudh_class][prob_idx]++;
+                    int mudh_cond;
+                    if (prob_rain < 0.0 || prob_rain > 1.0)
+                        mudh_cond = MUDH_UNKNOWN;
+                    else if (prob_rain > prob_thresh)
+                        mudh_cond = MUDH_RAIN;
+                    else
+                        mudh_cond = MUDH_CLEAR;
+
+                    counts[swath_idx][ssmi_cond][mudh_cond][prob_idx]++;
                 }
             }
         }
         rev_count++;
     }
 
+    //---------------------------//
+    // write flag info to stdout //
+    //---------------------------//
+
+    const char* swath_ext[] = { "inner", "outer" };
+    const char* swath_string[] = { "Inner swath", "Outer swath" };
+
+    for (int swath_idx = 0; swath_idx < 2; swath_idx++)
+    {
+        printf("%s\n", swath_string[swath_idx]);
+        double total_precol =
+            (double)(precollocated_count[swath_idx][MUDH_CLEAR] +
+            precollocated_count[swath_idx][MUDH_RAIN] +
+            precollocated_count[swath_idx][MUDH_UNKNOWN]);
+        printf("Rain flagged %g %%\n", 100.0 *
+            (double)precollocated_count[swath_idx][MUDH_RAIN] /
+            total_precol);
+        printf("Unknown %g %%\n", 100.0 *
+            (double)precollocated_count[swath_idx][MUDH_UNKNOWN] /
+            total_precol);
+        printf("Missed Rain = %g\n", 100.0 *
+            (double)flag_bad_count[swath_idx][MISSED_RAIN] /
+            (double)flag_ssmi_count[swath_idx][SSMI_RAIN]);
+        printf("False Alarm = %g\n", 100.0 *
+            (double)flag_bad_count[swath_idx][FALSE_ALARM] /
+            (double)flag_ssmi_count[swath_idx][SSMI_CLEAR]);
+        if (swath_idx == 0)
+            printf("\n");
+    }
+
     //--------------//
     // output files //
     //--------------//
 
-    const char* swath_ext[] = { "inner", "outer" };
-    const char* swath_string[] = { "Inner swath", "Outer swath" };
     for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
         //------------------------------//
@@ -532,15 +570,15 @@ main(
 
         unsigned long total_count = 0;
         unsigned long classified_count = 0;
-        for (int ssmi_class = 0; ssmi_class < SSMI_CLASS_COUNT; ssmi_class++)
+        for (int ssmi_cond = 0; ssmi_cond < SSMI_CONDITION_COUNT; ssmi_cond++)
         {
             // it doesn't matter what probility bin we use, so why not zero
-            total_count += counts[swath_idx][ssmi_class][MUDH_CLEAR][0];
-            total_count += counts[swath_idx][ssmi_class][MUDH_RAIN][0];
-            total_count += counts[swath_idx][ssmi_class][MUDH_UNKNOWN][0];
+            total_count += counts[swath_idx][ssmi_cond][MUDH_CLEAR][0];
+            total_count += counts[swath_idx][ssmi_cond][MUDH_RAIN][0];
+            total_count += counts[swath_idx][ssmi_cond][MUDH_UNKNOWN][0];
 
-            classified_count += counts[swath_idx][ssmi_class][MUDH_CLEAR][0];
-            classified_count += counts[swath_idx][ssmi_class][MUDH_RAIN][0];
+            classified_count += counts[swath_idx][ssmi_cond][MUDH_CLEAR][0];
+            classified_count += counts[swath_idx][ssmi_cond][MUDH_RAIN][0];
         }
 
         double classified_percent = 100.0 *
@@ -703,103 +741,100 @@ main(
     // vs rain rate //
     //--------------//
 
-    if (opt_vs_irr)
+    for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
-        for (int swath_idx = 0; swath_idx < 2; swath_idx++)
+        //------------------------------//
+        // determine classified percent //
+        //------------------------------//
+
+        unsigned long total_count = 0;
+        unsigned long classified_count = 0;
+        for (int rain_idx = 0; rain_idx < IRR_BINS; rain_idx++)
         {
-            //------------------------------//
-            // determine classified percent //
-            //------------------------------//
+            total_count +=
+                irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
+            total_count +=
+                irr_counts[swath_idx][MUDH_RAIN][rain_idx];
+            total_count +=
+                irr_counts[swath_idx][MUDH_UNKNOWN][rain_idx];
 
-            unsigned long total_count = 0;
-            unsigned long classified_count = 0;
-            for (int rain_idx = 0; rain_idx < IRR_BINS; rain_idx++)
-            {
-                total_count +=
-                    irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
-                total_count +=
-                    irr_counts[swath_idx][MUDH_RAIN][rain_idx];
-                total_count +=
-                    irr_counts[swath_idx][MUDH_UNKNOWN][rain_idx];
-
-                classified_count +=
-                    irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
-                classified_count +=
-                    irr_counts[swath_idx][MUDH_RAIN][rain_idx];
-            }
-
-            if (total_count != valid_wvc_count[swath_idx] ||
-                classified_count != classified_wvc_count[swath_idx])
-            {
-                fprintf(stderr, "%s: something funny here.\n", command);
-                exit(0);
-            }
-
-            double classified_percent = 100.0 *
-                (double)classified_wvc_count[swath_idx] /
-                (double)valid_wvc_count[swath_idx];
-
-            //-----------//
-            // open file //
-            //-----------//
-
-            char filename[1024];
-            sprintf(filename, "%s.irr.%s", output_base, swath_ext[swath_idx]);
-            FILE* ofp = fopen(filename, "w");
-            if (ofp == NULL)
-            {
-                fprintf(stderr, "%s: error opening output file %s\n", command,
-                    filename);
-                exit(1);
-            }
-
-            char subtitle[1024];
-            subtitle[0] = '\0';
-            if (opt_spd)
-            {
-                sprintf(subtitle, "%.1f to %.1f m/s (ECMWF), ", min_spd,
-                    max_spd);
-            }
-
-            fprintf(ofp, "@ title %c%s, %d revs (%d - %d)%c\n", QUOTE,
-                swath_string[swath_idx], rev_count, start_rev, end_rev, QUOTE);
-            fprintf(ofp, "@ subtitle %c%s%g percent classified%c\n", QUOTE,
-                 subtitle, classified_percent, QUOTE);
-
-            fprintf(ofp, "@ xaxis label %cIntegrated Rain Rate (km*mm/hr)%c\n",
-                QUOTE, QUOTE);
-            fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
-            fprintf(ofp, "@ legend on\n");
-            fprintf(ofp, "@ legend string 0 %cMUDH C    %c\n",
-                QUOTE, QUOTE);
-            fprintf(ofp, "@ legend string 1 %cMUDH R    %c\n",
-                QUOTE, QUOTE);
-
-            for (int rain_idx = 0; rain_idx < IRR_BINS; rain_idx++)
-            {
-                unsigned long mudh_r_count =
-                    irr_counts[swath_idx][MUDH_RAIN][rain_idx];
-
-                unsigned long mudh_c_count =
-                    irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
-
-                unsigned long mudh_count =
-                    irr_counts[swath_idx][MUDH_CLEAR][rain_idx] +
-                    irr_counts[swath_idx][MUDH_RAIN][rain_idx] +
-                    irr_counts[swath_idx][MUDH_UNKNOWN][rain_idx];
-
-                if (mudh_count == 0)
-                    continue;
-
-                double mudh_r_percent = 100.0 * mudh_r_count / mudh_count;
-                double mudh_c_percent = 100.0 * mudh_c_count / mudh_count;
-
-                float irr = (float)rain_idx * IRR_STEP;
-                fprintf(ofp, "%g %g %g\n", (float)irr,
-                    mudh_c_percent, mudh_r_percent);
-            }
-            fclose(ofp);
+            classified_count +=
+                irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
+            classified_count +=
+                irr_counts[swath_idx][MUDH_RAIN][rain_idx];
         }
+
+        if (total_count != valid_wvc_count[swath_idx] ||
+            classified_count != classified_wvc_count[swath_idx])
+        {
+            fprintf(stderr, "%s: something funny here.\n", command);
+            exit(0);
+        }
+
+        double classified_percent = 100.0 *
+            (double)classified_wvc_count[swath_idx] /
+            (double)valid_wvc_count[swath_idx];
+
+        //-----------//
+        // open file //
+        //-----------//
+
+        char filename[1024];
+        sprintf(filename, "%s.irr.%s", output_base, swath_ext[swath_idx]);
+        FILE* ofp = fopen(filename, "w");
+        if (ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                filename);
+            exit(1);
+        }
+
+        char subtitle[1024];
+        subtitle[0] = '\0';
+        if (opt_spd)
+        {
+            sprintf(subtitle, "%.1f to %.1f m/s (ECMWF), ", min_spd,
+                max_spd);
+        }
+
+        fprintf(ofp, "@ title %c%s, %d revs (%d - %d)%c\n", QUOTE,
+            swath_string[swath_idx], rev_count, start_rev, end_rev, QUOTE);
+        fprintf(ofp, "@ subtitle %c%s%g percent classified%c\n", QUOTE,
+             subtitle, classified_percent, QUOTE);
+
+        fprintf(ofp, "@ xaxis label %cIntegrated Rain Rate (km*mm/hr)%c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
+        fprintf(ofp, "@ legend on\n");
+        fprintf(ofp, "@ legend string 0 %cMUDH C    %c\n",
+            QUOTE, QUOTE);
+        fprintf(ofp, "@ legend string 1 %cMUDH R    %c\n",
+            QUOTE, QUOTE);
+
+        for (int rain_idx = 0; rain_idx < IRR_BINS; rain_idx++)
+        {
+            unsigned long mudh_r_count =
+                irr_counts[swath_idx][MUDH_RAIN][rain_idx];
+
+            unsigned long mudh_c_count =
+                irr_counts[swath_idx][MUDH_CLEAR][rain_idx];
+
+            unsigned long mudh_count =
+                irr_counts[swath_idx][MUDH_CLEAR][rain_idx] +
+                irr_counts[swath_idx][MUDH_RAIN][rain_idx] +
+                irr_counts[swath_idx][MUDH_UNKNOWN][rain_idx];
+
+            if (mudh_count == 0)
+                continue;
+
+            double mudh_r_percent = 100.0 * mudh_r_count / mudh_count;
+            double mudh_c_percent = 100.0 * mudh_c_count / mudh_count;
+
+            float irr = (float)rain_idx * IRR_STEP;
+            fprintf(ofp, "%g %g %g\n", (float)irr,
+                mudh_c_percent, mudh_r_percent);
+        }
+        fclose(ofp);
     }
 
     return (0);
