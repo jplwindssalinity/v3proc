@@ -16,6 +16,8 @@ static const char rcs_id_metrics_c[] =
 
 Metrics::Metrics()
 :   _crossTrackBins(0), _crossTrackResolution(0.0), _ctd(NULL),
+    _lowWindSpeed(DEFAULT_METRICS_LOW_WIND_SPEED),
+    _highWindSpeed(DEFAULT_METRICS_HIGH_WIND_SPEED),
     _selectedSumSqrSpdErr(NULL), _selectedSumSqrSpdErrCount(NULL),
     _selectedSumSqrDirErr(NULL), _selectedSumSqrDirErrCount(NULL)
 {
@@ -26,6 +28,55 @@ Metrics::~Metrics()
 {
     _Deallocate();
     return;
+}
+
+//---------------------//
+// Metrics::Initialize //
+//---------------------//
+
+int
+Metrics::Initialize(
+    int    cross_track_bins,
+    float  cross_track_resolution)
+{
+    if (cross_track_bins == _crossTrackBins &&
+        cross_track_resolution == _crossTrackResolution)
+    {
+        // already initialized -- everything is OK
+        return(1);
+    }
+
+    if (_crossTrackBins == 0 && _crossTrackResolution == 0.0)
+    {
+        // need to allocate
+        _Allocate(cross_track_bins);
+        for (int cti = 0; cti < cross_track_bins; cti++)
+        {
+            _ctd[cti] = ((float)cti - ((float)cross_track_bins - 1.0)
+                / 2.0) * cross_track_resolution;
+        }
+        _crossTrackResolution = cross_track_resolution;
+        return(1);
+    }
+
+    // you're trying to change the number of cross track bins
+    // or resolution.
+    // shame on you!
+    return(0);
+}
+
+//----------------------------//
+// Metrics::SetWindSpeedRange //
+//----------------------------//
+
+int
+Metrics::SetWindSpeedRange(
+    float  low_speed,
+    float  high_speed)
+{
+    _lowWindSpeed = low_speed;
+    _highWindSpeed = high_speed;
+    return(1);
 }
 
 //---------------//
@@ -163,7 +214,7 @@ Metrics::WritePlotData(
     //--------------------------//
 
     ofp = OpenPlotFile(basename, "sel_rms_spd_err", "Selected RMS Speed Error",
-        NULL, "Cross Track Distance (km)", "RMS Speed Error (m/s)");
+        "Cross Track Distance (km)", "RMS Speed Error (m/s)");
     if (ofp == NULL)
         return(0);
     for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -182,7 +233,7 @@ Metrics::WritePlotData(
     //------------------------------//
 
     ofp = OpenPlotFile(basename, "sel_rms_dir_err",
-        "Selected RMS Direction Error", NULL, "Cross Track Distance (km)",
+        "Selected RMS Direction Error", "Cross Track Distance (km)",
         "RMS Direction Error (deg)");
     if (ofp == NULL)
         return(0);
@@ -211,7 +262,6 @@ Metrics::OpenPlotFile(
     const char*  output_base,
     const char*  extension,
     const char*  title,
-    const char*  subtitle,
     const char*  xaxis_label,
     const char*  yaxis_label)
 {
@@ -223,6 +273,9 @@ Metrics::OpenPlotFile(
         return(NULL);
     }
 
+    char subtitle[1024];
+    sprintf(subtitle, "%g - %g m/s", _lowWindSpeed, _highWindSpeed);
+
     if (title != NULL)
         fprintf(ofp, "@ title %c%s%c\n", QUOTE, title, QUOTE);
     if (subtitle != NULL)
@@ -233,41 +286,6 @@ Metrics::OpenPlotFile(
         fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, yaxis_label, QUOTE);
 
     return(ofp);
-}
-
-//---------------------//
-// Metrics::Initialize //
-//---------------------//
-
-int
-Metrics::Initialize(
-    int    cross_track_bins,
-    float  cross_track_resolution)
-{
-    if (cross_track_bins == _crossTrackBins &&
-        cross_track_resolution == _crossTrackResolution)
-    {
-        // already initialized -- everything is OK
-        return(1);
-    }
-
-    if (_crossTrackBins == 0 && _crossTrackResolution == 0.0)
-    {
-        // need to allocate
-        _Allocate(cross_track_bins);
-        for (int cti = 0; cti < cross_track_bins; cti++)
-        {
-            _ctd[cti] = ((float)cti - ((float)cross_track_bins - 1.0)
-                / 2.0) * cross_track_resolution;
-        }
-        _crossTrackResolution = cross_track_resolution;
-        return(1);
-    }
-
-    // you're trying to change the number of cross track bins
-    // or resolution.
-    // shame on you!
-    return(0);
 }
 
 //-------------------//
@@ -296,6 +314,13 @@ Metrics::Evaluate(
 
             WindVector true_wv;
             if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
+            //-------------------//
+            // check speed range //
+            //-------------------//
+
+            if (true_wv.spd < _lowWindSpeed || true_wv.spd >= _highWindSpeed)
                 continue;
 
             //--------------------------//

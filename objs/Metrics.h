@@ -26,6 +26,9 @@ static const char rcs_id_metrics_h[] =
 //    combining with other metric objects.
 //======================================================================
 
+#define DEFAULT_METRICS_LOW_WIND_SPEED   3.0
+#define DEFAULT_METRICS_HIGH_WIND_SPEED  30.0
+
 class Metrics
 {
 public:
@@ -42,6 +45,7 @@ public:
     //---------------//
 
     int  Initialize(int cross_track_bins, float cross_track_resolution);
+    int  SetWindSpeedRange(float low_speed, float high_speed);
 
     //--------------//
     // input/output //
@@ -51,8 +55,8 @@ public:
     int    Write(const char* filename);
     int    WritePlotData(const char* basename);
     FILE*  OpenPlotFile(const char* output_base, const char* extension,
-               const char* title, const char* subtitle,
-               const char* xaxis_label, const char* yaxis_label);
+               const char* title, const char* xaxis_label,
+               const char* yaxis_label);
 
     //------------//
     // evaluation //
@@ -72,6 +76,9 @@ protected:
     int             _crossTrackBins;
     float           _crossTrackResolution;
     float*          _ctd;
+
+    float           _lowWindSpeed;
+    float           _highWindSpeed;
 
     double*         _selectedSumSqrSpdErr;
     unsigned long*  _selectedSumSqrSpdErrCount;

@@ -9,7 +9,8 @@
 //
 // SYNOPSIS
 //    l2b_super_metrics [ -c config_file ] [ -o output_base ]
-//        [ -m output_metric_file ] [ input_metric_files... ]
+//        [ -m output_metric_file ] [ -s low_speed:high_speed ]
+//        [ input_metric_files... ]
 //
 // DESCRIPTION
 //    Reads in any input metric files, calculates wind retrieval
@@ -18,13 +19,15 @@
 //    combined metric file.
 //
 // OPTIONS
-//   [ -c config_file ]         Use this config_file to determine the
-//                                l2b file and truth file.
-//   [ -o output_base ]         The base name to use for the plottable
-//                                output files. The default output base
-//                                is "metric".
-//   [ -m output_metric_file ]  Generate an output metric file.
-//   [ input_metric_files... ]  Combine these metric files.
+//   [ -c config_file ]           Use this config_file to determine the
+//                                  l2b file and truth file.
+//   [ -o output_base ]           The base name to use for the plottable
+//                                  output files. The default output base
+//                                  is "metric".
+//   [ -m output_metric_file ]    Generate an output metric file.
+//   [ -m low_speed:high_speed ]  Only produce output for this range
+//                                  of speeds.
+//   [ input_metric_files... ]    Combine these metric files.
 //
 // OPERANDS
 //    None.
@@ -84,7 +87,7 @@ template class List<EarthPosition>;
 
 #define DEFAULT_OUTPUT_BASE  "metrics"
 
-#define OPTSTRING            "c:o:m:"
+#define OPTSTRING            "c:o:m:s:"
 
 //--------//
 // MACROS //
@@ -102,12 +105,15 @@ template class List<EarthPosition>;
 // OPTION VARIABLES //
 //------------------//
 
+int opt_speed = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -o output_base ]",
-    "[ -m output_metric_file ]", "[ input_metric_files... ]", NULL };
+    "[ -m output_metric_file ]", "[ -s low_speed:high_speed ]",
+    "[ input_metric_files... ]", NULL };
 
 //--------------//
 // MAIN PROGRAM //
@@ -125,6 +131,8 @@ main(
     char* config_file = NULL;
     char* output_metric_file = NULL;
     char* output_base = DEFAULT_OUTPUT_BASE;
+
+    float low_speed, high_speed;
 
     //------------------------//
     // parse the command line //
@@ -144,6 +152,15 @@ main(
             break;
         case 'o':
             output_base = optarg;
+            break;
+        case 's':
+            if (sscanf(optarg, "%f:%f", &low_speed, &high_speed) != 2)
+            {
+                fprintf(stderr, "%s: error determining speed range %s\n",
+                    command, optarg);
+                exit(1);
+            }
+            opt_speed = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -249,6 +266,21 @@ main(
             fprintf(stderr,
                 "%s: error reading truth wind field of type %s from file %s\n",
                 command, truth_type, truth_file);
+            exit(1);
+        }
+    }
+
+    //-------------------//
+    // configure metrics //
+    //-------------------//
+
+    if (opt_speed)
+    {
+        if (! metrics.SetWindSpeedRange(low_speed, high_speed))
+        {
+            fprintf(stderr,
+                "%s: error setting metric wind speed range (%g - %g)\n",
+                command, low_speed, high_speed);
             exit(1);
         }
     }
