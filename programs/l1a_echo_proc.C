@@ -54,6 +54,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <fcntl.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -67,6 +68,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
+#include "echo_funcs.h"
 
 //-----------//
 // TEMPLATES //
@@ -90,10 +92,6 @@ template class List<AngleInterval>;
 //-----------//
 
 #define KM_RANGE                 100.0
-
-#define EPHEMERIS_CHAR   'E'
-#define ORBIT_STEP_CHAR  'O'
-#define ORBIT_TIME_CHAR  'T'
 
 //--------//
 // MACROS //
@@ -225,8 +223,8 @@ main(
     // open output file //
     //------------------//
 
-    FILE* ofp = fopen(output_file, "w");
-    if (ofp == NULL)
+    int ofd = creat(output_file, 0644);
+    if (ofd == -1)
     {
         fprintf(stderr, "%s: error opening output file %s\n", command,
             output_file);
@@ -309,15 +307,14 @@ main(
         // write out an ephemeris line //
         //-----------------------------//
 
-        fprintf(ofp, "%c %g %g %g %g %g %g %g %g %g\n", EPHEMERIS_CHAR,
-            frame->gcX, frame->gcY, frame->gcZ, frame->velX, frame->velY,
-            frame->velZ, roll, pitch, yaw);
+        write_ephemeris(ofd, frame->gcX, frame->gcY, frame->gcZ, frame->velX,
+            frame->velY, frame->velZ, roll, pitch, yaw);
 
         //------------------------------//
         // write out an orbit time line //
         //------------------------------//
 
-        fprintf(ofp, "%c %d\n", ORBIT_TIME_CHAR, frame->orbitTicks);
+        write_orbit_time(ofd, frame->orbitTicks);
 
         //--------------------//
         // step through spots //
@@ -355,7 +352,7 @@ main(
 
             if ((int)orbit_step != last_orbit_step)
             {
-                fprintf(ofp, "%c %d\n", ORBIT_STEP_CHAR, orbit_step);
+                write_orbit_step(ofd, orbit_step);
                 last_orbit_step = orbit_step;
             }
 
@@ -490,6 +487,7 @@ main(
             coefs.GetElement(1, &(c[1]));
             coefs.GetElement(2, &(c[2]));
             float peak_slice = -c[1] / (2.0 * c[2]);
+/*
 static int zz = 0;
 char fn[1024];
 if (ideal_encoder < 0.005 || ideal_encoder > 6.278)
@@ -506,6 +504,7 @@ fprintf(fp, "%g 0.0\n", peak_slice);
 fclose(fp);
 zz++;
 }
+*/
             // make sure peak is in range
             if (peak_slice < 0.0 || peak_slice > frame->slicesPerSpot - 1)
                 continue;
@@ -524,10 +523,9 @@ zz++;
             // write //
             //-------//
 
-            fprintf(ofp, "%d %g %g %d %d %g %g %g %d\n", beam_idx,
-                qscat.ses.txDoppler, qscat.ses.rxGateDelay, ideal_encoder,
-                qscat.cds.heldEncoder, f_bb_data, expected_peak,
-                total_signal_energy, land_flag);
+            write_spot(ofd, beam_idx, qscat.ses.txDoppler,
+                qscat.ses.rxGateDelay, ideal_encoder, qscat.cds.heldEncoder,
+                f_bb_data, expected_peak, total_signal_energy, land_flag);
         }
     } while (1);
 

@@ -78,6 +78,7 @@ PROGRAMS = \
 	l1a_echo_proc \
 	generate_foff_table \
 	fix_dtc \
+	fix_knowledge \
 	get_DopRan_scan \
 	get_X_scan \
 	BYUX_vs_time 
@@ -172,3 +173,7 @@ install: $(PROGRAMS)
 
 %: %.C $(LIBS) $(EALIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+fix_dtc: fix_dtc.C echo_funcs.h
+fix_knowledge: fix_knowledge.C echo_funcs.h
+l1a_echo_proc: l1a_echo_proc.C echo_funcs.h

@@ -55,6 +55,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <fcntl.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -68,6 +69,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
+#include "echo_funcs.h"
 
 //-----------//
 // TEMPLATES //
@@ -93,9 +95,6 @@ template class List<AngleInterval>;
 #define MAXIMUM_SPOTS_PER_ORBIT_STEP  10000
 #define SIGNAL_ENERGY_THRESHOLD       1.0E-8
 #define ORBIT_STEPS      256
-#define EPHEMERIS_CHAR   'E'
-#define ORBIT_STEP_CHAR  'O'
-#define ORBIT_TIME_CHAR  'T'
 #define LINE_SIZE        2048
 
 //--------//
@@ -111,7 +110,7 @@ template class List<AngleInterval>;
 //-----------------------//
 
 int process_orbit_step(int beam_idx, int orbit_step);
-int accumulate(int beam_idx, double azimuth, double bb);
+int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
 int sinfit(double* azimuth, double* value, int count, double* amplitude,
         double* phase, double* bias);
 
@@ -128,7 +127,7 @@ const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>",
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
-double    g_bb[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
+double  g_meas_spec_peak[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 
 //--------------//
@@ -182,8 +181,8 @@ main(
     // open echo data file for reading //
     //---------------------------------//
 
-    FILE* ifp = fopen(echo_data_file, "r");
-    if (ifp == NULL)
+    int ifd = open(echo_data_file, O_RDONLY);
+    if (ifd == -1)
     {
         fprintf(stderr, "%s: error opening echo data file %s\n", command,
             echo_data_file);
@@ -212,16 +211,18 @@ main(
 
     do
     {
-        //-------------//
-        // read a line //
-        //-------------//
+        //--------------------//
+        // read the record id //
+        //--------------------//
 
-        char line[LINE_SIZE];
-        if (fgets(line, LINE_SIZE, ifp) == NULL)
+        int id;
+        int size = sizeof(int);
+        int retval = read(ifd, &id, size);
+        if (retval != size)
         {
-            if (feof(ifp))
-                break;
-            if (ferror(ifp))
+            if (retval == 0)
+                break;    // EOF
+            else
             {
                 fprintf(stderr, "%s: error reading echo data file %s\n",
                     command, echo_data_file);
@@ -233,46 +234,26 @@ main(
         // parse //
         //-------//
 
-        switch (line[0])
+        double azimuth;
+
+        switch (id)
         {
-        case EPHEMERIS_CHAR:
-            // ephemerities are not needed
-            break;
-        case ORBIT_TIME_CHAR:
-            // orbit time is not needed
-            break;
-        case ORBIT_STEP_CHAR:
-            if (sscanf(line, " %*c %d", &orbit_step) != 1)
-            {
-                fprintf(stderr, "%s: error parsing orbit step line\n",
-                    command);
-                fprintf(stderr, "  Line: %s\n", line);
-                exit(1);
-            }
-            if (orbit_step != last_orbit_step)
-            {
-                if (last_orbit_step != -1)
-                {
-                    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
-                        beam_idx++)
-                    {
-                        process_orbit_step(beam_idx, last_orbit_step);
-                    }
-                }
-                last_orbit_step = orbit_step;
-            }
-            break;
-        default:
-            int beam_idx, ideal_encoder, raw_encoder, land_flag;
-            float tx_doppler, rx_gate_delay, baseband_freq, expected_peak,
+        case SPOT_ID:
+
+            //-----------------------//
+            // read in the spot data //
+            //-----------------------//
+
+            int beam_idx, ideal_encoder, held_encoder, land_flag;
+            float tx_doppler, rx_gate_delay, meas_spec_peak, exp_spec_peak,
                 total_signal_energy;
-            if (sscanf(line, " %d %f %f %d %d %f %f %f %d", &beam_idx,
-                &tx_doppler, &rx_gate_delay, &ideal_encoder, &raw_encoder,
-                &baseband_freq, &expected_peak, &total_signal_energy,
-                &land_flag) != 9)
+            if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
+                &ideal_encoder, &held_encoder, &meas_spec_peak,
+                &exp_spec_peak, &total_signal_energy, &land_flag))
             {
-                fprintf(stderr, "%s: error parsing line\n", command);
-                fprintf(stderr, "  Line: %s\n", line);
+                fprintf(stderr,
+                    "%s: error reading spot from echo data file %s\n",
+                    command, echo_data_file);
                 exit(1);
             }
 
@@ -286,8 +267,37 @@ main(
             if (total_signal_energy < SIGNAL_ENERGY_THRESHOLD)
                 continue;
 
-            double azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
-            accumulate(beam_idx, azimuth, baseband_freq);
+            azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
+            accumulate(beam_idx, azimuth, meas_spec_peak);
+            break;
+        case EPHEMERIS_ID:
+            float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;
+            read_ephemeris(ifd, &gcx, &gcy, &gcz, &velx, &vely, &velz, &roll,
+                &pitch, &yaw);
+            break;
+        case ORBIT_STEP_ID:
+            read_orbit_step(ifd, &orbit_step);
+            if (orbit_step != last_orbit_step)
+            {
+                if (last_orbit_step != -1)
+                {
+                    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
+                        beam_idx++)
+                    {
+                        process_orbit_step(beam_idx, last_orbit_step);
+                    }
+                }
+                last_orbit_step = orbit_step;
+            }
+            break;
+        case ORBIT_TIME_ID:
+            unsigned int orbit_ticks;
+            read_orbit_time(ifd, &orbit_ticks);
+            break;
+        default:
+            fprintf(stderr, "%s: unknown data type in echo data file %s\n",
+                command, echo_data_file);
+            exit(1);
             break;
         }
     } while (1);
@@ -341,7 +351,7 @@ process_orbit_step(
     for (int i = 0; i < g_count[beam_idx]; i++)
     {
         fprintf(ofp, "%g %g\n", g_azimuth[beam_idx][i] * rtd,
-            g_bb[beam_idx][i]);
+            g_meas_spec_peak[beam_idx][i]);
     }
     fprintf(ofp, "&\n");
 
@@ -350,7 +360,8 @@ process_orbit_step(
     //----------------------------//
 
     double a, p, c;
-    sinfit(g_azimuth[beam_idx], g_bb[beam_idx], g_count[beam_idx], &a, &p, &c);
+    sinfit(g_azimuth[beam_idx], g_meas_spec_peak[beam_idx], g_count[beam_idx],
+        &a, &p, &c);
 
     //-----------------------------//
     // estimate the standard error //
@@ -359,7 +370,7 @@ process_orbit_step(
     double sum_sqr_dif = 0.0;
     for (int i = 0; i < g_count[beam_idx]; i++)
     {
-        double dif = g_bb[beam_idx][i] -
+        double dif = g_meas_spec_peak[beam_idx][i] -
             (a * cos(g_azimuth[beam_idx][i] + p) + c);
         sum_sqr_dif += dif*dif;
     }
@@ -422,11 +433,11 @@ int
 accumulate(
     int     beam_idx,
     double  azimuth,
-    double  bb)
+    double  meas_spec_peak)
 {
     int idx = g_count[beam_idx];
     g_azimuth[beam_idx][idx] = azimuth;
-    g_bb[beam_idx][idx] = bb;
+    g_meas_spec_peak[beam_idx][idx] = meas_spec_peak;
     g_count[beam_idx]++;
 
     return(1);
