@@ -104,7 +104,7 @@ template class List<AngleInterval>;
 #define SECTOR_COUNT             8
 #define MIN_POINTS_PER_SECTOR    10
 // MIN_SECTORS should be 6
-#define MIN_SECTORS              2
+#define MIN_SECTORS              4
 
 //--------//
 // MACROS //
@@ -600,6 +600,36 @@ process_orbit_step(
     sinfit(g_azimuth[beam_idx], g_meas_spec_peak[beam_idx], NULL,
         g_count[beam_idx], &a, &p, &c);
 
+    //-------------------------//
+    // new align/overlap check //
+    //-------------------------//
+
+    int align[SECTOR_COUNT], offset[SECTOR_COUNT];
+    for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
+    {
+        align[sector_idx] = 0;
+        offset[sector_idx] = 0;
+    }
+
+    for (int i = 0; i < g_count[beam_idx]; i++)
+    {
+        int align_idx = (int)(SECTOR_COUNT * g_azimuth[beam_idx][i] / two_pi);
+        align[align_idx]++;
+
+        int offset_idx = (int)(SECTOR_COUNT * g_azimuth[beam_idx][i] / two_pi +
+            0.5) % SECTOR_COUNT;
+        offset[offset_idx]++;
+    }
+    g_sector_count[beam_idx][orbit_step] = 0;
+    for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
+    {
+        if (align[sector_idx] >= MIN_POINTS_PER_SECTOR)
+            g_sector_count[beam_idx][orbit_step]++;
+        if (offset[sector_idx] >= MIN_POINTS_PER_SECTOR)
+            g_sector_count[beam_idx][orbit_step]++;
+    }
+
+/*
     //---------------------------//
     // determine sector coverage //
     //---------------------------//
@@ -622,6 +652,7 @@ process_orbit_step(
             g_sector_count[beam_idx][orbit_step]++;
         }
     }
+*/
 
     //------------------------------------------//
     // subtract the sinusoid from the constants //
