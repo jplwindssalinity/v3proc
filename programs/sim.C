@@ -218,16 +218,16 @@ main(
     }
 
     //----------------------------//
-    // create a Level 0.0 product //
+    // create a Level 1A product //
     //----------------------------//
 
-    L00 l00;
-    if (! ConfigL00(&l00, &config_list))
+    L1A l1a;
+    if (! ConfigL1A(&l1a, &config_list))
     {
         fprintf(stderr, "%s: error configuring Level 0\n", command);
         exit(1);
     }
-    l00.OpenForWriting();
+    l1a.OpenForWriting();
 
     //--------------------------//
     // create an ephemeris file //
@@ -445,7 +445,7 @@ main(
 
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 					qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
-                        &kp, &kpmField, &(l00.frame));
+                        &kp, &kpmField, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
 				case QscatEvent::LOOPBACK_MEASUREMENT:
@@ -459,8 +459,9 @@ main(
 					// process instrument stuff
 					qscat.cds.SetTime(qscat_event.time);
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    qscat.SetOtherAzimuths(&spacecraft);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
-					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l00.frame));
+					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
 				case QscatEvent::LOAD_MEASUREMENT:
@@ -474,8 +475,9 @@ main(
 					// process instrument stuff
 					qscat.cds.SetTime(qscat_event.time);
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    qscat.SetOtherAzimuths(&spacecraft);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
-					qscat_sim.LoadSim(&spacecraft, &qscat, &(l00.frame));
+					qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
 				default:
@@ -486,18 +488,18 @@ main(
 			}
 
 			//-----------------------------------//
-			// write Level 0.0 data if necessary //
+			// write Level 1A data if necessary //
 			//-----------------------------------//
 
-			if (qscat_sim.l00FrameReady)
+			if (qscat_sim.l1aFrameReady)
 			{
 				// Report Latest Attitude Measurement
 				// + Knowledge Error
 				spacecraft_sim.ReportAttitude(qscat_event.time,
-					&spacecraft, &(l00.frame.attitude));
+					&spacecraft, &(l1a.frame.attitude));
 
-				int size = l00.frame.Pack(l00.buffer);
-				l00.Write(l00.buffer, size);
+				int size = l1a.frame.Pack(l1a.buffer);
+				l1a.Write(l1a.buffer, size);
 			}
 		}
 
@@ -510,10 +512,10 @@ main(
 	}
 
 	//----------------------//
-	// close Level 0.0 file //
+	// close Level 1A file //
 	//----------------------//
 
-	l00.Close();
+	l1a.Close();
 
 	//--------------------------//
 	// If createXtable is set	//
