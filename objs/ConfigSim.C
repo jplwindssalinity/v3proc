@@ -468,59 +468,92 @@ ConfigInstrument(
 
 	float chirp_rate;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
+	{
+		printf("Could not find chirp rate in config file\n");
 		return(0);
+	}
 	instrument->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_start_m;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
+	{
+		printf("Could not find chirp start_m in config file\n");
 		return(0);
+	}
 	instrument->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_rate_b;		// kHz
 	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
+	{
+		printf("Could not find chirp start_b in config file\n");
 		return(0);
+	}
 	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
 	float system_temperature;		// K
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
+	{
+		printf("Could not find system temperature in config file\n");
 		return(0);
+	}
 	instrument->systemTemperature = system_temperature;
 
 	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
 		&base_transmit_freq))
+	{
+		printf("Could not find base transmit freq in config file\n");
 		return(0);
+	}
 	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
 
 	float s_bw;
 	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
+	{
+		printf("Could not find slice bandwidth in config file\n");
 		return(0);
+	}
 	instrument->scienceSliceBandwidth = s_bw * KHZ_TO_HZ;
 
 	int s_count;
 	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
+	{
+		printf("Could not find slices per spot in config file\n");
 		return(0);
+	}
 	instrument->scienceSlicesPerSpot = s_count;
 
 	float g_bw;
 	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD, &g_bw))
+	{
+		printf("Could not find guard slice bandwidth in config file\n");
 		return(0);
+	}
 	instrument->guardSliceBandwidth = g_bw * KHZ_TO_HZ;
 
 	int g_count;
 	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+	{
+		printf("Could not find guard slices per spot in config file\n");
 		return(0);
+	}
 	instrument->guardSlicesPerSide = g_count;
 
 	float noise_bandwidth;
 	if (! config_list->GetFloat(NOISE_BANDWIDTH_KEYWORD, &noise_bandwidth))
+	{
+		printf("Could not find noise bandwidth in config file\n");
 		return(0);
+	}
 	instrument->noiseBandwidth = noise_bandwidth * KHZ_TO_HZ;
 
 	float transmit_power;
 	/**** parameter in config file should be in Watts ***/
 	if (! config_list->GetFloat(TRANSMIT_POWER_KEYWORD, &transmit_power))
+	{
+		printf("Could not find transmit power in config file\n");
 		return(0);
+	}
 	instrument->transmitPower = transmit_power;
 
 	float echo_receiver_gain;
@@ -528,6 +561,7 @@ ConfigInstrument(
 	if (! config_list->GetFloat(ECHO_RECEIVER_GAIN_KEYWORD,
 		&echo_receiver_gain))
 	{
+		printf("Could not find echo receiver gain in config file\n");
 		return(0);
 	}
 	echo_receiver_gain=(float)pow(10.0,0.1*echo_receiver_gain);
@@ -538,6 +572,7 @@ ConfigInstrument(
 	if (! config_list->GetFloat(NOISE_RECEIVER_GAIN_KEYWORD,
 		&noise_receiver_gain))
 	{
+		printf("Could not find noise receiver gain in config file\n");
 		return(0);
 	}
 	noise_receiver_gain=(float)pow(10.0,0.1*noise_receiver_gain);
@@ -546,29 +581,44 @@ ConfigInstrument(
 	float system_loss;
 	/**** parameter in config file should be in dB ***/
 	if (! config_list->GetFloat(SYSTEM_LOSS_KEYWORD, &system_loss))
+	{
+		printf("Could not find system loss in config file\n");
 		return(0);
+	}
 	system_loss=(float)pow(10.0,0.1*system_loss);
 	instrument->systemLoss = system_loss;
 
 	int use_kpc;
 	if (! config_list->GetInt(USE_KPC_KEYWORD, &use_kpc))
+	{
+		printf("Could not find use Kpc flag in config file\n");
 		return(0);
+	}
 	instrument->useKpc = use_kpc;
 
 	int use_kpm;
 	if (! config_list->GetInt(USE_KPM_KEYWORD, &use_kpm))
+	{
+		printf("Could not find use Kpm flag in config file\n");
 		return(0);
+	}
 	instrument->useKpm = use_kpm;
 
 	int use_rgc;
 	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
+	{
+		printf("Could not find use RGC flag in config file\n");
 		return(0);
+	}
 	instrument->useRgc = use_rgc;
 	if (use_rgc)
 	{
 		char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
 		if (rgc_file == NULL)
+		{
+			printf("Could not find RGC file name in config file\n");
 			return(0);
+		}
 
 		if (! instrument->rangeTracker.ReadBinary(rgc_file))
 		{
@@ -580,13 +630,19 @@ ConfigInstrument(
 
 	int use_dtc;
 	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
+	{
+		printf("Could not find use RGC flag in config file\n");
 		return(0);
+	}
 	instrument->useDtc = use_dtc;
 	if (use_dtc)
 	{
 		char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
 		if (dtc_file == NULL)
+		{
+			printf("Could not find DTC file name in config file\n");
 			return(0);
+		}
 
 		if (! instrument->dopplerTracker.ReadBinary(dtc_file))
 		{
@@ -621,9 +677,15 @@ ConfigInstrumentSim(
 
 	float ptgr_var, ptgr_mean;
 	if (! config_list->GetFloat(PTGR_NOISE_VARIANCE_KEYWORD, &ptgr_var))
+	{
+		printf("Could not find PtGr noise variance in config file\n");
 		return(0);
+	}
 	if (! config_list->GetFloat(PTGR_NOISE_MEAN_KEYWORD, &ptgr_mean))
+	{
+		printf("Could not find PtGr noise mean in config file\n");
 		return(0);
+	}
 
 	instrument_sim->ptgrNoise.SetVariance(ptgr_var);
 	instrument_sim->ptgrNoise.SetMean(ptgr_mean);
@@ -661,7 +723,10 @@ ConfigInstrumentSim(
 
 	float system_temperature;
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
-		return(0);        
+	{
+		printf("Could not find system temperature in config file\n");
+		return(0);
+	}
 
 	/****** You cannot use and create the XTable simultaneously. ***/
 	if(create_xtable && use_kfactor)
@@ -771,34 +836,55 @@ ConfigAntenna(
 
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+	{
+		printf("Could not find number of beams in config file\n");
 		return(0);
+	}
 	antenna->numberOfBeams = number_of_beams;
 
 	double pri_per_beam;
 	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &pri_per_beam))
+	{
+		printf("Could not find PRI per beam in config file\n");
 		return(0);
+	}
 	antenna->priPerBeam = pri_per_beam;
 
 	int encoder_bits;
 	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
+	{
+		printf("Could not find number of encoder bits in config file\n");
 		return(0);
+	}
 	unsigned int values = 1 << encoder_bits;
 	antenna->SetNumberOfEncoderValues(values);
 
 	double roll, pitch, yaw;
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
+	{
+		printf("Could not find antenna pedestal roll in config file\n");
 		return(0);
+	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
+	{
+		printf("Could not find antenna pedestal pitch in config file\n");
 		return(0);
+	}
 	if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
+	{
+		printf("Could not find antenna pedestal yaw in config file\n");
 		return(0);
+	}
 	Attitude att;
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
 
 	double spin_rate;
 	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
+	{
+		printf("Could not find spin rate in config file\n");
 		return(0);
+	}
 	antenna->spinRate = spin_rate * rpm_to_radps;
 
 	//---------------------//
@@ -836,7 +922,10 @@ ConfigBeam(
 
 	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
 	if (! config_list->GetChar(keyword, &tmp_char))
+	{
+		printf("Missing keyword %s in config file\n",keyword);
 		return(0);
+	}
 	switch (tmp_char)
 	{
 	case 'V':
@@ -856,31 +945,46 @@ ConfigBeam(
 	double pulse_width;		// ms
 	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &pulse_width))
+	{
+		printf("Could not find beam pulse width in config file\n");
 		return(0);
+	}
 	beam->pulseWidth = pulse_width * MS_TO_S;
 
 	double gate_width;		// ms
 	substitute_string(BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &gate_width))
+	{
+		printf("Could not find beam receiver gate width in config file\n");
 		return(0);
+	}
 	beam->receiverGateWidth = gate_width * MS_TO_S;
 
 	double look_angle;		// deg
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &look_angle))
+	{
+		printf("Could not find beam look angle in config file\n");
 		return(0);
+	}
 	look_angle *= dtr;
 
 	double azimuth_angle;	// deg
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &azimuth_angle))
+	{
+		printf("Could not find beam azimuth angle in config file\n");
 		return(0);
+	}
 	azimuth_angle *= dtr;
 
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
 	if (pattern_file == NULL)
+	{
+		printf("Could not find beam pattern file in config file\n");
 		return(0);
+	}
 	if (! beam->ReadBeamPattern(pattern_file))
 	{
 		printf("Error while reading beam %d pattern file\n",beam_number);
@@ -892,7 +996,10 @@ ConfigBeam(
 	// ms
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
+	{
+		printf("Could not find beam time offset in config file\n");
 		return(0);
+	}
 	beam->timeOffset = tmp_double * MS_TO_S;
 
 	return(1);
@@ -918,7 +1025,10 @@ ConfigXTable(
 
   char * xtable_filename= config_list->Get(XTABLE_FILENAME_KEYWORD);
   if (xtable_filename == NULL)
+	{
+	printf("Could not find XTable filename in config file\n");
     return(0);
+	}
   xTable->SetFilename(xtable_filename);
 
 
@@ -926,31 +1036,52 @@ ConfigXTable(
   
   int num_beams;
   if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
+	{
+	printf("Could not find number of beams in config file\n");
     return(0);
+	}
 
   float pri_per_beam, antenna_spin_rate;
   if(! config_list->GetFloat(PRI_PER_BEAM_KEYWORD,&pri_per_beam))
+	{
+	printf("Could not find PRI per beam in config file\n");
     return(0);  
+	}
   if(! config_list->GetFloat(SPIN_RATE_KEYWORD,&antenna_spin_rate))
+	{
+	printf("Could not find spin rate in config file\n");
     return(0);  
+	}
   int num_azimuths=int((60.0/antenna_spin_rate)/pri_per_beam);
 
   int num_science_slices;
   if(! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,&num_science_slices))
+	{
+	printf("Could not find slices per spot in config file\n");
     return(0);
+	}
 
   int num_guard_slices_each_side;
   if(! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD,&num_guard_slices_each_side))
+	{
+	printf("Could not find guard slices per side in config file\n");
     return(0);
+	}
 
   float science_slice_bandwidth;
   if(! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,&science_slice_bandwidth))
+	{
+	printf("Could not find slice bandwidth in config file\n");
     return(0);
+	}
   science_slice_bandwidth*=KHZ_TO_HZ;
 
   float guard_slice_bandwidth;
   if(! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,&guard_slice_bandwidth))
+	{
+	printf("Could not find guard slice bandwidth in config file\n");
     return(0);
+	}
   guard_slice_bandwidth*=KHZ_TO_HZ;
 
 
@@ -958,11 +1089,18 @@ ConfigXTable(
         those read from the config file                               *****/
 
   if(read){
-    if(!xTable->Read()) return(0);
+    if(!xTable->Read())
+	{
+		printf("Error reading xTable in ConfigXTable\n");
+		return(0);
+	}
     if(!xTable->CheckHeader(num_beams, num_science_slices,
 			   num_guard_slices_each_side, science_slice_bandwidth,
 			   guard_slice_bandwidth))
-      return(0);
+	{
+		printf("Header check failed in ConfigXTable\n");
+    	return(0);
+	}
   }
 
   /***** If mode is WRITE, asign xTable parameters from parameters read from
