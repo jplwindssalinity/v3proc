@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   28 Oct 1998 15:04:22   sally
+// add units for radians
+// 
 //    Rev 1.1   16 Oct 1998 09:05:06   sally
 // extract frame_time using V data
 // 
@@ -17,6 +20,8 @@
 // $Author$
 //
 //=========================================================
+
+#include <stdio.h>
 
 #include "ParTab.h"
 #include "L1AExtract.h"
@@ -352,12 +357,16 @@ const ParTabEntry L1BParTab[] =
       { UNIT_DN, "dn", DATA_INT1, 0, ExtractData1D, pr_int1 }
     }
   },
-  { SC_LAT, "S/C Latitude", SOURCE_L1A, MEAS_LOCATION, "sc_lat", 1, {
-      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+  { SC_LAT, "S/C Latitude", SOURCE_L1A, MEAS_LOCATION, "sc_lat", 2, {
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4, 
+                                   0, ExtractData1D_float_dtr, pr_float4_6}
     }
   },
-  { SC_LON, "S/C Longitude", SOURCE_L1A, MEAS_LOCATION, "sc_lon", 1, {
-      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+  { SC_LON, "S/C Longitude", SOURCE_L1A, MEAS_LOCATION, "sc_lon", 2, {
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4, 
+                                   0, ExtractData1D_float_dtr, pr_float4_6}
     }
   },
   { SC_ALT, "S/C Altitude", SOURCE_L1A, MEAS_DISTANCE, "sc_alt", 2, {
@@ -384,33 +393,42 @@ const ParTabEntry L1BParTab[] =
     }
   },
   { X_VEL, "X Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "x_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "x_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
   { Y_VEL, "Y Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "y_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "y_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
   { Z_VEL, "Z Component of S/C Velocity", SOURCE_L1A, MEAS_VELOCITY,
-                "z_vel", 1, {
-      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 }
+                "z_vel", 2, {
+      { UNIT_MPS, "m/s", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
+      { UNIT_KMPS, "km/s", DATA_FLOAT4, 0, ExtractData1D_m_km, pr_float4_6 }
     }
   },
-  { ROLL, "S/C Roll", SOURCE_L1A, MEAS_ORIENTATION, "roll", 1, {
+  { ROLL, "S/C Roll", SOURCE_L1A, MEAS_ORIENTATION, "roll", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
-  { PITCH, "S/C Pitch", SOURCE_L1A, MEAS_ORIENTATION, "pitch", 1, {
+  { PITCH, "S/C Pitch", SOURCE_L1A, MEAS_ORIENTATION, "pitch", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
-  { YAW, "S/C Yaw", SOURCE_L1A, MEAS_ORIENTATION, "yaw", 1, {
+  { YAW, "S/C Yaw", SOURCE_L1A, MEAS_ORIENTATION, "yaw", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4,
-                           0, ExtractData1D_int2_float, pr_float4_6 }
+                           0, ExtractData1D_int2_float, pr_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4,
+                           0, ExtractData1D_int2_float_dtr, pr_float4_6 }
     }
   },
   { BANDWIDTH_RATIO, "Bandwidth Ratio", SOURCE_L1A, MEAS_POWER,
@@ -429,15 +447,19 @@ const ParTabEntry L1BParTab[] =
     }
   },
   { CELL_LAT, "Center Latitude for whole pulse", SOURCE_L1A,
-              MEAS_DATA, "cell_lat", 1, {
+              MEAS_DATA, "cell_lat", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100,
-                   0, ExtractData2D_100, pr_float4_6_100 }
+                   0, ExtractData2D_100, pr_float4_6_100 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100,
+                   0, ExtractData2D_100_float_dtr, pr_float4_6_100 }
     }
   },
   { CELL_LON, "Center Longitude for whole pulse", SOURCE_L1A,
-              MEAS_DATA, "cell_lon", 1, {
+              MEAS_DATA, "cell_lon", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100,
-                   0, ExtractData2D_100, pr_float4_6_100 }
+                   0, ExtractData2D_100, pr_float4_6_100 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100,
+                   0, ExtractData2D_100_float_dtr, pr_float4_6_100 }
     }
   },
   { SIGMA0_MODE_FLAG, "Sigma 0 Mode Flag", SOURCE_L1A, MEAS_STATUS,
@@ -461,21 +483,27 @@ const ParTabEntry L1BParTab[] =
     }
   },
   { CELL_AZIMUTH, "Azimuth for whole pulse", SOURCE_L1A,
-                       MEAS_DATA, "cell_azimuth", 1, {
+                       MEAS_DATA, "cell_azimuth", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100, 0,
-                      ExtractData2D_100_uint2_float, pr_float4_6_100 }
+                      ExtractData2D_100_uint2_float, pr_float4_6_100 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100, 0,
+                      ExtractData2D_100_uint2_float_dtr, pr_float4_6_100 }
     }
   },
   { CELL_INCIDENCE, "Incidence for whole pulse", SOURCE_L1A,
-                       MEAS_DATA, "cell_incidence", 1, {
+                       MEAS_DATA, "cell_incidence", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100, 0,
-                      ExtractData2D_100_int2_float, pr_float4_6_100 }
+                      ExtractData2D_100_int2_float, pr_float4_6_100 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100, 0,
+                      ExtractData2D_100_int2_float_dtr, pr_float4_6_100 }
     }
   },
   { ANTENNA_AZIMUTH, "Antenna Azimuth", SOURCE_L1A,
-                       MEAS_DATA, "antenna_azimuth", 1, {
+                       MEAS_DATA, "antenna_azimuth", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100, 0,
-                      ExtractData2D_100_uint2_float, pr_float4_6_100 }
+                      ExtractData2D_100_uint2_float, pr_float4_6_100 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100, 0,
+                      ExtractData2D_100_uint2_float_dtr, pr_float4_6_100 }
     }
   },
   { SNR, "Signal to Noise Ratio", SOURCE_L1A, MEAS_POWER, "snr", 1, {
@@ -491,19 +519,23 @@ const ParTabEntry L1BParTab[] =
   },
   { SLICE_QUAL_FLAG, "Slice Quality Flag", SOURCE_L1A,
                        MEAS_STATUS, "slice_qual_flag", 1, {
-      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractData1D, pr_uint4_100 }
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractData2D_100, pr_uint4_100 }
     }
   },
   { SLICE_LAT, "Difference of Slice Latitude", SOURCE_L1A,
-                       MEAS_DATA, "slice_lat", 1, {
+                       MEAS_DATA, "slice_lat", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100_8, 0,
-                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 }
+                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100_8, 0,
+                      ExtractData3D_100_8_int2_float_dtr, pr_100_8_float4_6 }
     }
   },
   { SLICE_LON, "Difference of Slice Longitude", SOURCE_L1A,
-                       MEAS_DATA, "slice_lon", 1, {
+                       MEAS_DATA, "slice_lon", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100_8, 0,
-                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 }
+                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100_8, 0,
+                      ExtractData3D_100_8_int2_float_dtr, pr_100_8_float4_6 }
     }
   },
   { SLICE_SIGMA0, "Sigma 0 for each Slice", SOURCE_L1A,
@@ -519,15 +551,19 @@ const ParTabEntry L1BParTab[] =
     }
   },
   { SLICE_AZIMUTH, "Azimuth for each Slice", SOURCE_L1A,
-                       MEAS_POWER, "slice_azimuth", 1, {
-      { UNIT_DEGREES, "degress", DATA_FLOAT4_100_8, 0,
-                      ExtractData3D_100_8_uint2_float, pr_100_8_float4_6 }
+                       MEAS_POWER, "slice_azimuth", 2, {
+      { UNIT_DEGREES, "degrees", DATA_FLOAT4_100_8, 0,
+                      ExtractData3D_100_8_uint2_float, pr_100_8_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100_8, 0,
+                      ExtractData3D_100_8_uint2_float_dtr, pr_100_8_float4_6 }
     }
   },
   { SLICE_INCIDENCE, "Incidence for each Slice", SOURCE_L1A,
-                       MEAS_DATA, "slice_incidence", 1, {
+                       MEAS_DATA, "slice_incidence", 2, {
       { UNIT_DEGREES, "degrees", DATA_FLOAT4_100_8, 0,
-                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 }
+                      ExtractData3D_100_8_int2_float, pr_100_8_float4_6 },
+      { UNIT_RADIANS, "radians", DATA_FLOAT4_100_8, 0,
+                      ExtractData3D_100_8_int2_float_dtr, pr_100_8_float4_6 }
     }
   },
   { SLICE_SNR, "Slice Signal to Noise Ratio", SOURCE_L1A,

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.31   28 Oct 1998 15:04:48   sally
+// add new units for L1B Hdf
+// 
 //    Rev 1.29   13 Oct 1998 15:34:26   sally
 // added L1B file
 // 
@@ -1025,7 +1028,9 @@ enum UnitIdE
     UNIT_EU,
     UNIT_TELSA,     // Mag field
     UNIT_KM_SEC,    // Km/sec
-    UNIT_HZ         // Hertz
+    UNIT_HZ,        // Hertz
+    UNIT_KMPS,      // kilometers per second
+    UNIT_RADIANS
 };
 
 //---------------------------------
