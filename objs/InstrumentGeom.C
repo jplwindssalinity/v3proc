@@ -1036,7 +1036,12 @@ Get2WayElectricalBoresight(
 	beam->GetElectricalBoresight(look,azimuth);
 
 	int ndim = 2;
-	double p[3][4];
+	double** p = (double**)make_array(sizeof(double),2,3,4);
+	if (p == NULL)
+	{
+		printf("Error allocating memory in Get2WayElectricalBoresight\n");
+		return(0);
+	}
 
 	p[0][0] = *look;
 	p[0][1] = *azimuth;
@@ -1057,6 +1062,8 @@ Get2WayElectricalBoresight(
 
 	*look = p[0][0];
 	*azimuth = p[0][1];
+
+	free_array(p,2,3,4);
 
 	return(1);
 }

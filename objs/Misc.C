@@ -169,7 +169,7 @@ downhill_simplex(
 
 	for (i=0; i < ndim+1; i++)
 	{
-		y[i] = (*funk)(p[i],ptr);
+		y[i] = (*funk)(&(p[i][0]),ptr);
 	}
 
 	double* psum = (double*)malloc(sizeof(double)*totdim);
