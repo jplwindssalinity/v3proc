@@ -43,11 +43,11 @@ struct TargetInfoPackage {
 CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
 						Attitude* attitude, Antenna* antenna);
 
-int		LocateSlices(Spacecraft* spacecraft,
-			Instrument* instrument, int slices_per_spot, MeasSpot* meas_spot);
+int		LocateSlices(Spacecraft* spacecraft, Instrument* instrument,
+			MeasSpot* meas_spot);
 
-int		LocateSpot(Spacecraft* spacecraft,
-			Instrument* instrument, MeasSpot* meas_spot);
+int		LocateSpot(Spacecraft* spacecraft, Instrument* instrument,
+			MeasSpot* meas_spot);
 
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, double look,
@@ -109,7 +109,7 @@ int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
 int		GetTwoWayPeakGain(Beam* beam, double round_trip_time,
-            double azimuth_rate, double* look, double* azimuth);
+			double azimuth_rate, double* look, double* azimuth);
 
 int		GetTwoWayPeakGain2(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Beam* beam, double azimuth_rate,

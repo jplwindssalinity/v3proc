@@ -66,7 +66,6 @@ int
 LocateSlices(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-	int				slices_per_spot,
 	MeasSpot*		meas_spot)
 {
 	//-----------//
@@ -98,13 +97,6 @@ LocateSlices(
 	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
 		AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
 
-	//------------------------//
-	// determine slicing info //
-	//------------------------//
-
-	float total_freq = slices_per_spot * instrument->sliceBandwidth;
-	float min_freq = -total_freq / 2.0;
-
 	//-------------------------------------------------//
 	// calculate Doppler shift and receiver gate delay //
 	//-------------------------------------------------//
@@ -133,7 +125,8 @@ LocateSlices(
 	// for each slice... //
 	//-------------------//
 
-	for (int slice_idx = 0; slice_idx < slices_per_spot; slice_idx++)
+	int total_slices = instrument->GetTotalSliceCount();
+	for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
 	{
 		//-------------------------//
 		// create a new measurment //
@@ -146,8 +139,10 @@ LocateSlices(
 		// determine the baseband frequency range //
 		//----------------------------------------//
 
-		float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
-		float f2 = f1 + instrument->sliceBandwidth;
+		float f1, bw, f2;
+		if (! instrument->GetSliceFreqBw(slice_idx, &f1, &bw))
+			return(0);
+		f2 = f1 + bw;
 
 		//----------------//
 		// find the slice //
@@ -156,7 +151,7 @@ LocateSlices(
 		EarthPosition centroid;
 		Vector3 look_vector;
 		// guess at a reasonable slice frequency tolerance of .1%
-		float ftol = fabs(f1 - f2) / 1000.0;
+		float ftol = bw / 1000.0;
 		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
 			look, azimuth, f1, f2, ftol, &(meas->outline), &look_vector,
 			&centroid))
@@ -179,6 +174,7 @@ LocateSlices(
 		// get incidence angle
 		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
 		meas->centroid = centroid;
+		meas->bandwidth = bw;
 
 		//-----------------------------//
 		// add measurment to meas spot //

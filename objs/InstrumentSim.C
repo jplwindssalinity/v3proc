@@ -21,7 +21,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	slicesPerSpot(0), startTime(0.0), l00FrameReady(0), _spotNumber(0)
+:	startTime(0.0), l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -162,7 +162,7 @@ InstrumentSim::SetMeasurements(
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
-	
+
 		CoordinateSwitch gc_to_antenna = AntennaFrameToGC(
 							&(spacecraft->orbitState),
 							&(spacecraft->attitude),
@@ -224,13 +224,13 @@ InstrumentSim::SetL00Science(
 {
 	Antenna* antenna = &(instrument->antenna);
 
+	//----------//
+	// set PtGr //
+	//----------//
 
-	//----------------------//
-	// set PtGr             //
-	//----------------------// 
-        l00_frame->ptgr= instrument->transmitPower*instrument->receiverGain;
-        l00_frame->ptgr*=(1+ptgrNoise.GetNumber());
-       
+	l00_frame->ptgr= instrument->transmitPower*instrument->receiverGain;
+	l00_frame->ptgr *= (1+ptgrNoise.GetNumber());
+
 	//----------------------//
 	// set antenna position //
 	//----------------------//
@@ -276,10 +276,9 @@ InstrumentSim::ScatSim(
 {
 	MeasSpot meas_spot;
 
-	//-----------------------------//
-	// If at the start of a frame //
-	// Compute Frame header info //
-	//-----------------------------//
+	//----------------------------------------//
+	// compute frame header info if necessary //
+	//----------------------------------------//
 
 	if (_spotNumber == 0)
 	{
@@ -292,18 +291,15 @@ InstrumentSim::ScatSim(
 	// locate measurements //
 	//---------------------//
 
-	if (slicesPerSpot <= 1)
+	if (instrument->scienceSlicesPerSpot <= 1)
 	{
 		if (! LocateSpot(spacecraft, instrument, &meas_spot))
 			return(0);
 	}
 	else
 	{
-		if (! LocateSlices(spacecraft, instrument, slicesPerSpot,
-			&meas_spot))
-		{
+		if (! LocateSlices(spacecraft, instrument, &meas_spot))
 			return(0);
-		}
 	}
 
 	//------------------------//

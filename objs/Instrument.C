@@ -34,8 +34,9 @@ Instrument::Instrument()
 	receiverGateDuration(0.0), systemLoss(0.0), transmitPower(0.0),
 	receiverGain(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
 	systemDelay(0.0), systemTemperature(0.0), baseTransmitFreq(0.0),
-	transmitFreq(0.0), sliceBandwidth(0.0), noiseBandwidth(0.0),
-	signalBandwidth(0.0), useKpc(1), _eqxTime(0)
+	transmitFreq(0.0), scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
+	guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
+	useKpc(1), _eqxTime(0)
 {
 	return;
 }
@@ -68,6 +69,80 @@ Instrument::Eqx(
 	double	eqx_time)
 {
 	_eqxTime = eqx_time;
+	return(1);
+}
+
+//-------------------------------------//
+// Instrument::GetTotalSignalBandwidth //
+//-------------------------------------//
+
+float
+Instrument::GetTotalSignalBandwidth()
+{
+	float bw = (float)scienceSlicesPerSpot * scienceSliceBandwidth +
+		(float)(guardSlicesPerSide * 2) * guardSliceBandwidth;
+	return(bw);
+}
+
+//--------------------------------//
+// Instrument::GetTotalSliceCount //
+//--------------------------------//
+
+int
+Instrument::GetTotalSliceCount()
+{
+	int slice_count = scienceSlicesPerSpot + 2 * guardSlicesPerSide;
+	return(slice_count);
+}
+
+//----------------------------//
+// Instrument::GetSliceFreqBw //
+//----------------------------//
+
+int
+Instrument::GetSliceFreqBw(
+	int		slice_idx,
+	float*	f1,
+	float*	bw)
+{
+	//----------------------------//
+	// determine slice zero index //
+	//----------------------------//
+
+	float center_idx = ((float)GetTotalSliceCount() - 1.0) / 2.0;
+	float zidx = (float)slice_idx - center_idx;		// zeroed index
+
+	//-----------------------------------------------------------//
+	// determine science index, guard index, and slice bandwidth //
+	//-----------------------------------------------------------//
+
+	float sidx, gidx;
+
+	float half_sci = (float)scienceSlicesPerSpot / 2.0;
+	if (zidx < -half_sci)
+	{
+		// lower guard slice
+		gidx = zidx + half_sci;
+		*f1 = half_sci * scienceSliceBandwidth +
+			(zidx + half_sci - 0.5) * guardSliceBandwidth;
+		*bw = guardSliceBandwidth;
+	}
+	else if (zidx > half_sci)
+	{
+		// upper guard slice
+		gidx = zidx - half_sci;
+		*f1 = (half_sci - 1.0) * scienceSliceBandwidth +
+			(zidx - half_sci - 0.5) * guardSliceBandwidth;
+		*bw = guardSliceBandwidth;
+	}
+	else
+	{
+		// no guard slices
+		sidx = zidx;
+		*f1 = (zidx - 0.5) * scienceSliceBandwidth;
+		*bw = scienceSliceBandwidth;
+	}
+
 	return(1);
 }
 

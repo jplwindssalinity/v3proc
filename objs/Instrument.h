@@ -79,6 +79,9 @@ public:
 
 	int			SetTime(double new_time);
 	int			Eqx(double eqx_time);
+	float		GetTotalSignalBandwidth();
+	int			GetTotalSliceCount();
+	int			GetSliceFreqBw(int slice_idx, float* f1, float* bw);
 
 	//-----------//
 	// functions //
@@ -114,18 +117,22 @@ public:
 	// generally fixed //
 	//-----------------//
 
-	float		chirpRate;			// Hz/sec
-	float		chirpStartM;		// Hz/sec
-	float		chirpStartB;		// Hz
-	float		systemDelay;		// sec
-	float		systemTemperature;	// K
-//	float		xmitPulsewidth;		// sec
-	float		baseTransmitFreq;	// Hz, starting frequency
-	float		transmitFreq;		// Hz, actual center transmit frequency
-	float		sliceBandwidth;		// Hz
-	float		noiseBandwidth;		// Hz
-	float		signalBandwidth;	// Hz
-	int			useKpc;				// flag, 0 - no kpc, 1 - with kpc
+	float		chirpRate;				// Hz/sec
+	float		chirpStartM;			// Hz/sec
+	float		chirpStartB;			// Hz
+	float		systemDelay;			// sec
+	float		systemTemperature;		// K
+//	float		xmitPulsewidth;			// sec
+	float		baseTransmitFreq;		// Hz, starting frequency
+	float		transmitFreq;			// Hz, actual center transmit frequency
+
+	float		scienceSliceBandwidth;	// Hz
+	int			scienceSlicesPerSpot;	// count
+	float		guardSliceBandwidth;	// Hz
+	int			guardSlicesPerSide;		// count
+
+	float		noiseBandwidth;			// Hz
+	int			useKpc;					// flag, 0 - no kpc, 1 - with kpc
 
 protected:
 	double		_eqxTime;

@@ -26,7 +26,7 @@ static const char rcs_id_accurategeom_h[] =
 
 
 int		IntegrateSlices(Spacecraft* spacecraft, Instrument* instrument,
-			int slices_per_spot, MeasSpot* meas_spot);
+			MeasSpot* meas_spot);
 
 int		FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float look1,

@@ -110,9 +110,9 @@ L10ToL15::Convert(
 
 			if(XMGROUT) printf("%g ",antenna->azimuthAngle/dtr);
 
-			//---------------------------// 
+			//---------------------------//
 			// create a measurement spot //
-			//---------------------------// 
+			//---------------------------//
 
 			MeasSpot* meas_spot = new MeasSpot();
 
@@ -127,11 +127,8 @@ L10ToL15::Convert(
 			}
 			else
 			{
-				if (! LocateSlices(spacecraft, instrument,
-					l10->frame.slicesPerSpot, meas_spot))
-				{
+				if (! LocateSlices(spacecraft, instrument, meas_spot))
 					return(0);
-				}
 			}
 
 			//----------------------------------------//
@@ -170,11 +167,11 @@ L10ToL15::Convert(
 					meas, k_factor, Psn, sumPsn, Pn, PtGr, &sigma0))
 				{
 					return(0);
-				}				
+				}
 
 				//----------------------------------//
-				// Print calculated sigma0 values   //
-				// to stdout.			    //
+				// Print calculated sigma0 values	//
+				// to stdout.						//
 				//----------------------------------//
 
 				if (XMGROUT) printf("%g ",1.0-sigma0);

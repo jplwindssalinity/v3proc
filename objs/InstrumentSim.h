@@ -58,10 +58,8 @@ public:
 	// scatterometer simulation //
 	//--------------------------//
 
-	int		SetMeasurements(Spacecraft* spacecraft, 
-				Instrument* instrument, 
-				MeasSpot* meas_spot, WindField* windfield,
-				GMF* gmf);
+	int		SetMeasurements(Spacecraft* spacecraft, Instrument* instrument,
+				MeasSpot* meas_spot, WindField* windfield, GMF* gmf);
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
 	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
 				L00Frame* l00_frame);
@@ -72,8 +70,7 @@ public:
 	// variables //
 	//-----------//
 
-	Gaussian                        ptgrNoise;
-	int				slicesPerSpot;
+	Gaussian		ptgrNoise;
 	double			startTime;
 	AntennaSim		antennaSim;		// the antenna simulator
 

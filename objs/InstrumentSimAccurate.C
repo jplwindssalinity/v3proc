@@ -95,7 +95,7 @@ InstrumentSimAccurate::SetMeasurements(
 		double lambda = speed_light_kps / instrument->transmitFreq;
 		double constants =instrument->transmitPower*instrument->receiverGain;
 		constants*=lambda*lambda/(64*pi*pi*pi*instrument->systemLoss);
-                meas->value*=sigma0*constants;
+		meas->value*=sigma0*constants;
 	}
 	return(1);
 }
@@ -129,15 +129,14 @@ InstrumentSimAccurate::ScatSim(
 	// calculate measurements //
 	//------------------------//
 
-	if (slicesPerSpot <= 1)
+	if (instrument->scienceSlicesPerSpot <= 1)
 	{
-	  fprintf(stderr,"Sorry no eggs!!!\n");
-	  return(0);
+		fprintf(stderr,"Sorry no eggs!!!\n");
+		return(0);
 	}
 	else
 	{
-		if (! IntegrateSlices(spacecraft, instrument,
-				     slicesPerSpot, &meas_spot))
+		if (! IntegrateSlices(spacecraft, instrument, &meas_spot))
 		{
 			return(0);
 		}
@@ -151,14 +150,16 @@ InstrumentSimAccurate::ScatSim(
 	if (! SetMeasurements(instrument, &meas_spot, windfield, gmf))
 		return(0);
 
-        if(XMGROUT){
-	  for(Meas* slice=meas_spot.GetHead(); slice;
-	      slice=meas_spot.GetNext()){
-
-	    printf("%g ",slice->value);
-	  }
-	  if(instrument->antenna.currentBeamIdx==1) printf("\n");
+	if(XMGROUT)
+	{
+		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		{
+			printf("%g ",slice->value);
+		}
+		if(instrument->antenna.currentBeamIdx==1)
+			printf("\n");
 	}
+
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
 	//--------------------------------//

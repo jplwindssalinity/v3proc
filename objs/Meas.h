@@ -61,6 +61,7 @@ public:
 	//-----------//
 
 	float				value;
+	float				bandwidth;
 	Outline				outline;
 	EarthPosition		centroid;
 

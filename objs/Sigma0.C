@@ -31,12 +31,12 @@ static const char rcs_id_sigma0_c[] =
 // ie., Pr(signal) = K*X*sigma0.
 //
 // Inputs:
-//  spacecraft = pointer to current spacecraft object
-//  instrument = pointer to current instrument object
+//	spacecraft = pointer to current spacecraft object
+//	instrument = pointer to current instrument object
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
-//  gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
-//  X = pointer to return variable
+//	X = pointer to return variable
 //
 //
 
@@ -75,7 +75,7 @@ radar_X_PtGr(
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
 	Meas*				meas,
-        float                           PtGr,
+	float				PtGr,
 	double*				X)
 {
 	double lambda = speed_light_kps / instrument->transmitFreq;
@@ -114,14 +114,14 @@ radar_X_PtGr(
 // plus noise power over a much larger noise measurement bandwidth.
 //
 // Inputs:
-//  gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
-//  spacecraft = pointer to current spacecraft object
-//  instrument = pointer to current instrument object
+//	spacecraft = pointer to current spacecraft object
+//	instrument = pointer to current instrument object
 //	meas = pointer to current measurement (sigma0, cell center, area etc.)
-//  Kfactor = Radar equation correction factor for this cell.
-//  sigma0 = true sigma0 to assume.
-//  Pr = pointer to return variable
+//	Kfactor = Radar equation correction factor for this cell.
+//	sigma0 = true sigma0 to assume.
+//	Pr = pointer to return variable
 //
 //
 
@@ -143,8 +143,7 @@ sigma0_to_Psn(
 	double Ps_slice = Kfactor*X*sigma0;
 
 	// Constant noise power within one slice referenced to the antenna terminal
-	double Pn_slice = bK*instrument->sliceBandwidth *
-		instrument->systemTemperature;
+	double Pn_slice = bK * meas->bandwidth * instrument->systemTemperature;
 
 	// Multiply by receiver gain and system loss to reference noise power
 	// at the same place as the signal power.
@@ -162,10 +161,9 @@ sigma0_to_Psn(
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 
 	double snr = Ps_slice/Pn_slice;
-	double A = 1.0/(instrument->sliceBandwidth * beam->pulseWidth);
-	double B = 2.0/(instrument->sliceBandwidth * beam->receiverGateWidth);
-	double C = B/2.0 *
-		(1.0 + instrument->sliceBandwidth/instrument->noiseBandwidth);
+	double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
+	double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
+	double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
 	float Kpc = A + B/snr + C/snr/snr;
 
 	// Fuzz the Ps value by multiplying by a random number drawn from
@@ -196,12 +194,12 @@ sigma0_to_Psn(
 // the much smaller echo bandwidth (contained within the noise bandwidth).
 //
 // Inputs:
-//  instrument = pointer to current instrument object
+//	instrument = pointer to current instrument object
 //	spot = pointer to current spot (Psn)
 //		Note: the measurements in this spot must ALREADY have Psn values
-//			  stored in the value member in the same units that this method
-//			  uses.
-//  Pn = pointer to return variable
+//			stored in the value member in the same units that this method
+//			uses.
+//	Pn = pointer to return variable
 //
 //
 
@@ -215,8 +213,8 @@ Pnoise(
 	// bandwidth. The signal bandwidth includes all the slices.  The noise
 	// power within the slices is added in below when the Psn's for the slices
 	// are added.
-	*Pn = bK*(instrument->noiseBandwidth - instrument->signalBandwidth) *
-		instrument->systemTemperature;
+	*Pn = bK * (instrument->noiseBandwidth -
+		instrument->GetTotalSignalBandwidth()) * instrument->systemTemperature;
 
 	// Multiply by receiver gain and system loss to reference noise power
 	// at the same place as the signal power.
@@ -254,16 +252,16 @@ Pnoise(
 // See sigma0_to_Psn and Pnoise above.
 //
 // Inputs:
-//  gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
 //		to the antenna frame for the prevailing geometry.
-//  spacecraft = pointer to current spacecraft object
-//  instrument = pointer to current instrument object
+//	spacecraft = pointer to current spacecraft object
+//	instrument = pointer to current instrument object
 //	meas = pointer to current measurement (for radar_X: cell center, area etc.)
-//  Kfactor = Radar equation correction factor for this cell.
-//  Psn = the received slice power.
+//	Kfactor = Radar equation correction factor for this cell.
+//	Psn = the received slice power.
 //	sumPsn = the sum of all the slice powers for this spot.
-//  Pn = the noise bandwidth measured power.
-//  sigma0 = pointer to return variable
+//	Pn = the noise bandwidth measured power.
+//	sigma0 = pointer to return variable
 //
 //
 
@@ -277,21 +275,20 @@ Pr_to_sigma0(
 	float				Psn,
 	float				sumPsn,
 	float				Pn,
-	float                           PtGr,
+	float				PtGr,
 	float*				sigma0)
 {
 	// Compute radar parameter using telemetry values etc that may have been
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
 	double X;
 	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
-      
 
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
 
 	double Bn = instrument->noiseBandwidth;
-	double Bs = instrument->sliceBandwidth;
-	double Be = instrument->signalBandwidth;
+	double Bs = meas->bandwidth;
+	double Be = instrument->GetTotalSignalBandwidth();
 
 	// Estimate the noise in the slice. (exact for simulated data)
 	double Pn_slice = Bs/Bn*Pn - Bs/Bn*(sumPsn - Be/Bn*Pn)/(1-Be/Bn);

@@ -511,20 +511,30 @@ ConfigInstrument(
 		return(0);
 	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
 
-	float slice_bandwidth;
-	if (! config_list->GetFloat(SLICE_BANDWIDTH_KEYWORD, &slice_bandwidth))
+	float s_bw;
+	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
 		return(0);
-	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
+	instrument->scienceSliceBandwidth = s_bw * KHZ_TO_HZ;
+
+	int s_count;
+	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
+		return(0);
+	instrument->scienceSlicesPerSpot = s_count;
+
+	float g_bw;
+	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD, &g_bw))
+		return(0);
+	instrument->guardSliceBandwidth = g_bw * KHZ_TO_HZ;
+
+	int g_count;
+	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+		return(0);
+	instrument->guardSlicesPerSide = g_count;
 
 	float noise_bandwidth;
 	if (! config_list->GetFloat(NOISE_BANDWIDTH_KEYWORD, &noise_bandwidth))
 		return(0);
 	instrument->noiseBandwidth = noise_bandwidth * KHZ_TO_HZ;
-
-	int slices_per_spot;
-	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
-		return(0);
-	instrument->signalBandwidth = slice_bandwidth * KHZ_TO_HZ * slices_per_spot;
 
 	float transmit_power;
 	/**** parameter in config file should be in Watts ***/
@@ -569,15 +579,6 @@ ConfigInstrumentSim(
 
 	if (! ConfigAntennaSim(&(instrument_sim->antennaSim), config_list))
 		return(0);
-
-	//----------------------------//
-	// initialize slices per spot //
-	//----------------------------//
-
-	int slices_per_spot;
-	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
-		return(0);
-	instrument_sim->slicesPerSpot = slices_per_spot;
 
 	//----------------------------//
         // initialize PTGR noise      //
@@ -784,12 +785,18 @@ ConfigL00(
 		return(0);
 	}
 
-	int slices_per_spot;
-	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
+	int s_count;
+	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
 		return(0);
 
+	int g_count;
+	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+		return(0);
+
+	int total_slices = s_count + 2 * g_count;
+
 	if (! l00->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
-		slices_per_spot))
+		total_slices))
 	{
 		return(0);
 	}
@@ -799,7 +806,7 @@ ConfigL00(
 	//-------------------------//
 
 	if (! l00->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
-		slices_per_spot))
+		total_slices))
 	{
 		return(0);
 	}
@@ -836,12 +843,18 @@ ConfigL10(
 		return(0);
 	}
 
-	int slices_per_spot;
-	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
+	int s_count;
+	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
 		return(0);
 
+	int g_count;
+	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
+		return(0);
+
+	int total_slices = s_count + 2 * g_count;
+
 	if (! l10->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
-		slices_per_spot))
+		total_slices))
 	{
 		return(0);
 	}
@@ -851,7 +864,7 @@ ConfigL10(
 	//-------------------------//
 
 	if (! l10->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
-		slices_per_spot))
+		total_slices))
 	{
 		return(0);
 	}
