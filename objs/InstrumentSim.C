@@ -136,8 +136,8 @@ InstrumentSim::ScatSim(
 	// generate the coordinate switch //
 	//--------------------------------//
 
-	CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(orbit_state, attitude,
-		antenna);
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
 
 	if (l00.frame.slicesPerSpot <= 1)
 	{
@@ -149,9 +149,12 @@ InstrumentSim::ScatSim(
 		// calculate the look vector in the geocentric frame //
 		//---------------------------------------------------//
 
-		Vector3 rlook_beam;
-		rlook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
-		Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
+		double look, azimuth;
+		if (! beam->GetElectricalBoresight(&look, &azimuth))
+			return(0);
+		Vector3 rlook_antenna;
+		rlook_antenna.SphericalSet(1.0, look, azimuth);
+		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
 
 		//-------------------------------//
 		// calculate the earth intercept //
@@ -268,8 +271,8 @@ InstrumentSim::ScatSim(
 		Vector3 ulook_beam;
 		TargetInfoPackage tip;
 		ulook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
-		if (! TargetInfo(ulook_beam, &beam_frame_to_gc, spacecraft, instrument,
-            &tip))
+		if (! TargetInfo(ulook_beam, &antenna_frame_to_gc, spacecraft,
+			instrument, &tip))
 		{
 			return(0);
 		}
@@ -296,11 +299,11 @@ InstrumentSim::ScatSim(
 			// find the slice //
 			//----------------//
 
-			Vector3 centroid_beam_look;
+			Vector3 centroid;
 			// guess at a reasonable slice frequency tolerance of 1%
 			float ftol = fabs(f1 - f2) / 100.0;
-			if (! FindSlice(&beam_frame_to_gc, spacecraft, instrument, f1, f2,
-				ftol, &(meas.outline), &centroid_beam_look))
+			if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
+				f1, f2, ftol, &(meas.outline), &centroid))
 			{
 				return(0);
 			}
@@ -309,7 +312,7 @@ InstrumentSim::ScatSim(
 			// calculate the look vector in the geocentric frame //
 			//---------------------------------------------------//
 
-			Vector3 rlook_gc = beam_frame_to_gc.Forward(centroid_beam_look);
+			Vector3 rlook_gc = antenna_frame_to_gc.Forward(centroid);
 
 			//-------------------------------//
 			// calculate the earth intercept //

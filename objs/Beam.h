@@ -72,6 +72,7 @@ public:
 							{ return(_beamFrameToAntFrame); };
 
 	int	GetPowerGain(double look_angle, double azimuth_angle, float *gain);
+	int	GetPowerGain(double look_angle, double azimuth_angle, double *gain);
 
 	//-----------//
 	// variables //

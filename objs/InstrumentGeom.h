@@ -37,12 +37,16 @@ struct TargetInfoPackage {
 //		Higher level geometry functions.  Typically instrument related.
 //======================================================================
 
-CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
-						Antenna* antenna);
+//CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
+//						Antenna* antenna);
 
-int		FindSlice(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
-			Instrument* instrument, float freq_1, float freq_2, float freq_tol,
-			Outline* outline, Vector3* centroid_beam_look);
+CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
+						Attitude* attitude, Antenna* antenna);
+
+int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Instrument* instrument, float freq_1,
+			float freq_2, float freq_tol, Outline* outline,
+			Vector3* centroid);
 
 int		JumpToFreq(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
 			Instrument* instrument, float* az, float* el,
@@ -52,7 +56,7 @@ int		FreqGradient(CoordinateSwitch* beam_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float az, float el,
 				float grad_angle, float* df_daz, float* df_del);
 
-int		TargetInfo(Vector3 ulook_beam, CoordinateSwitch* beam_frame_to_gc,
+int		TargetInfo(Vector3 ulook_beam, CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument,
 			TargetInfoPackage* tip);
 

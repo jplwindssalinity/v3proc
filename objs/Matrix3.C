@@ -499,6 +499,21 @@ return(_v[0]*v2._v[0] + _v[1]*v2._v[1] + _v[2]*v2._v[2]);
 
 }
 
+//------------//
+// operator / //
+//------------//
+
+Vector3
+Vector3::operator/(
+	double	s)
+{
+	Vector3 result;
+	for (int i = 0; i < 3; i++)
+		result._v[i] = _v[i] / s;
+	return(result);
+}
+
+
 //
 // Scale the vector to have the specifed magnitude.
 //

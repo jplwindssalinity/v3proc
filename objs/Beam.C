@@ -276,7 +276,24 @@ Beam::GetPowerGain(
 	// The interpolated power gain.
 	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
 	return(1);
+}
 
+//--------------------//
+// Beam::GetPowerGain //
+//--------------------//
+// same as above, but returns a double
+
+int
+Beam::GetPowerGain(
+	double	look_angle,
+	double	azimuth_angle,
+	double	*gain)
+{
+	float x;
+	if (! GetPowerGain(look_angle, azimuth_angle, &x))
+		return(0);
+	*gain = (double)x;
+	return(1);
 }
 
 //-----------------------//

@@ -93,17 +93,19 @@ L10ToL15::Convert(
 
 		antenna->SetAzimuthWithEncoder(l10->frame.antennaPosition[i]);
 
-		CoordinateSwitch beam_frame_to_gc =
-			BeamFrameToGC(&(meas_spot->scOrbitState), &(meas_spot->scAttitude),
-			antenna);
+		CoordinateSwitch antenna_frame_to_gc =
+			AntennaFrameToGC(&(meas_spot->scOrbitState),
+				&(meas_spot->scAttitude), antenna);
 
 		//----------------------------------//
 		// ...add measurements to spot list //
 		//----------------------------------//
 
-		Vector3 rlook_beam;
-		rlook_beam.SphericalSet(1.0, 0.0, 0.0);
-		Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
+		double look, azimuth;
+		beam->GetElectricalBoresight(&look, &azimuth);
+		Vector3 rlook_antenna;
+		rlook_antenna.SphericalSet(1.0, look, azimuth);
+		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
 
 		EarthPosition spot_on_earth =
 			 earth_intercept(meas_spot->scOrbitState.rsat, rlook_gc);
