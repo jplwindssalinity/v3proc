@@ -1,42 +1,57 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l1b_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <memory.h>
 #include "L1B.h"
 
+
+//==========//
+// L1BFrame //
+//==========//
+
+L1BFrame::L1BFrame()
+{
+    return;
+}
+
+L1BFrame::~L1BFrame()
+{
+    return;
+}
 
 //=====//
 // L1B //
 //=====//
 
 L1B::L1B()
-:	_status(OK)
+:   _status(OK)
 {
-	return;
+    return;
 }
 
 L1B::~L1B()
 {
-	return;
+    return;
 }
+
+//------------------------//
+// L1B::WriteDataRecAscii //
+//------------------------//
 
 int
-L1B::WriteDataRecAscii(){
-  fprintf(_outputFp,"\n###############################################\n");
-  fprintf(_outputFp,"#####                                    ######\n");
-  fprintf(_outputFp,"#####      L1B Data Record               ######\n");
-  fprintf(_outputFp,"#####                                    ######\n");
-  fprintf(_outputFp,"###############################################\n");
-  fprintf(_outputFp,"\n");
-  return(frame.spotList.WriteAscii(_outputFp));
+L1B::WriteDataRecAscii()
+{
+    fprintf(_outputFp, "\n");
+    fprintf(_outputFp, "###############################################\n");
+    fprintf(_outputFp, "#####                                    ######\n");
+    fprintf(_outputFp, "#####           L1B Data Record          ######\n");
+    fprintf(_outputFp, "#####                                    ######\n");
+    fprintf(_outputFp, "###############################################\n");
+    fprintf(_outputFp, "\n");
+    return(frame.spotList.WriteAscii(_outputFp));
 }
-
-
-
-
-
