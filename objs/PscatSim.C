@@ -93,6 +93,7 @@ PscatSim::DetermineNextEvent(
     case PscatEvent::VV_HV_SCAT_EVENT:
     case PscatEvent::HH_VH_SCAT_EVENT:
     case PscatEvent::LOAD_EVENT:
+    case PscatEvent::NONE:
         if (ideal_encoder > NINETY_DEGREE_ENCODER &&
             lastEventIdealEncoder <= NINETY_DEGREE_ENCODER)
         {
