@@ -8,14 +8,12 @@
 //		gmf
 //
 // SYNOPSIS
-//		gmf [ -d ] [ -g gmf_file ] [ -r coef_file ] [ -w coef_file ]
+//		gmf [ -g gmf_file ] [ -r coef_file ] [ -w coef_file ]
 //
 // DESCRIPTION
 //		Generates plots about a geophysical model function.
 //
 // OPTIONS
-//		[ -d ]
-//			Write terms in dB.
 //		[ -g gmf_file ]
 //			Gets the GMF information from a gmf table.
 //		[ -r coef_file ]
@@ -100,13 +98,11 @@ int term_vs_spd(const char* command, const char* gmf_file,
 // OPTION VARIABLES //
 //------------------//
 
-unsigned char db_flag = 0;
-
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -d ]", "[ -g gmf_file ]", "[ -r coef_file ]",
+const char* usage_array[] = { "[ -g gmf_file ]", "[ -r coef_file ]",
 	"[ -w coef_file ]", 0 };
 
 const char* pol_map[] = { "V", "H" };
@@ -137,9 +133,6 @@ main(
 	{
 		switch(c)
 		{
-		case 'd':
-			db_flag = 1;
-			break;
 		case 'g':
 			read_gmf = optarg;
 			break;
@@ -176,6 +169,10 @@ main(
 	double a1_phase[POLS][INCS][SPDS];
 	double a2[POLS][INCS][SPDS];
 	double a2_phase[POLS][INCS][SPDS];
+	double a3[POLS][INCS][SPDS];
+	double a3_phase[POLS][INCS][SPDS];
+	double a4[POLS][INCS][SPDS];
+	double a4_phase[POLS][INCS][SPDS];
 
 	//-----------------//
 	// read in the gmf //
@@ -191,9 +188,9 @@ main(
 			exit(1);
 		}
 
-		//-------------------------------//
-		// transform into A0, a1, and a2 //
-		//-------------------------------//
+		//---------------------------------------//
+		// transform into A0, a1, a2, a3, and a4 //
+		//---------------------------------------//
 
 		for (int pol = 0; pol < POLS; pol++)
 		{
@@ -203,20 +200,26 @@ main(
 				for (int spd = 1; spd < SPDS; spd += 1)
 				{
 					double dspd = (double)spd;
-					double A0, A1, A1_phase, A2, A2_phase;
-					gmf.GetCoefs(pol, dinc, dspd, &A0, &A1, &A1_phase, &A2,
-						&A2_phase);
-					a0[pol][inc][spd] = A0;
-					a1[pol][inc][spd] = A1 / A0;
-					a1_phase[pol][inc][spd] = fmod(A1_phase * RTD + 360.0,
-						360.0);
+					double xa0, xa1, xa1p, xa2, xa2p, xa3, xa3p, xa4, xa4p;
+					gmf.GetCoefs(pol, dinc, dspd, &xa0, &xa1, &xa1p, &xa2,
+						&xa2p, &xa3, &xa3p, &xa4, &xa4p);
+					a0[pol][inc][spd] = xa0;
+					a1[pol][inc][spd] = xa1 / xa0;
+					a1_phase[pol][inc][spd] = fmod(xa1p * RTD + 360.0, 360.0);
 					if (a1_phase[pol][inc][spd] > 270.0)
 						a1_phase[pol][inc][spd] -= 360.0;
-					a2[pol][inc][spd] = A2 / A0;
-					a2_phase[pol][inc][spd] = fmod(A2_phase * RTD + 360.0,
-						360.0);
+					a2[pol][inc][spd] = xa2 / xa0;
+					a2_phase[pol][inc][spd] = fmod(xa2p * RTD + 360.0, 360.0);
 					if (a2_phase[pol][inc][spd] > 270.0)
 						a2_phase[pol][inc][spd] -= 360.0;
+					a3[pol][inc][spd] = xa3 / xa0;
+					a3_phase[pol][inc][spd] = fmod(xa3p * RTD + 360.0, 360.0);
+					if (a3_phase[pol][inc][spd] > 270.0)
+						a3_phase[pol][inc][spd] -= 360.0;
+					a4[pol][inc][spd] = xa4 / xa0;
+					a4_phase[pol][inc][spd] = fmod(xa4p * RTD + 360.0, 360.0);
+					if (a4_phase[pol][inc][spd] > 270.0)
+						a4_phase[pol][inc][spd] -= 360.0;
 				}
 			}
 		}
@@ -240,7 +243,11 @@ main(
 			read(ifd, a1, size) != size ||
 			read(ifd, a1_phase, size) != size ||
 			read(ifd, a2, size) != size ||
-			read(ifd, a2_phase, size) != size)
+			read(ifd, a2_phase, size) != size ||
+			read(ifd, a3, size) != size ||
+			read(ifd, a3_phase, size) != size ||
+			read(ifd, a4, size) != size ||
+			read(ifd, a4_phase, size) != size)
 		{
 			fprintf(stderr, "%s: error reading coefficient file %s\n",
 				command, read_coef);
@@ -267,7 +274,11 @@ main(
 			write(ofd, a1, size) != size ||
 			write(ofd, a1_phase, size) != size ||
 			write(ofd, a2, size) != size ||
-			write(ofd, a2_phase, size) != size)
+			write(ofd, a2_phase, size) != size ||
+			write(ofd, a3, size) != size ||
+			write(ofd, a3_phase, size) != size ||
+			write(ofd, a4, size) != size ||
+			write(ofd, a4_phase, size) != size)
 		{
 			fprintf(stderr, "%s: error writing coefficient file %s\n",
 				command, write_coef);
@@ -276,17 +287,25 @@ main(
 		close(ofd);
 	}
 
-	term_vs_inc(command, base, a0, "a0", db_flag);
-	term_vs_inc(command, base, a1, "a1", db_flag);
+	term_vs_inc(command, base, a0, "a0", 1);
+	term_vs_inc(command, base, a1, "a1", 0);
 	term_vs_inc(command, base, a1_phase, "a1p", 0);
-	term_vs_inc(command, base, a2, "a2", db_flag);
+	term_vs_inc(command, base, a2, "a2", 0);
 	term_vs_inc(command, base, a2_phase, "a2p", 0);
+	term_vs_inc(command, base, a3, "a3", 0);
+	term_vs_inc(command, base, a3_phase, "a3p", 0);
+	term_vs_inc(command, base, a4, "a4", 0);
+	term_vs_inc(command, base, a4_phase, "a4p", 0);
 
-	term_vs_spd(command, base, a0, "a0", db_flag);
-	term_vs_spd(command, base, a1, "a1", db_flag);
+	term_vs_spd(command, base, a0, "a0", 1);
+	term_vs_spd(command, base, a1, "a1", 0);
 	term_vs_spd(command, base, a1_phase, "a1p", 0);
-	term_vs_spd(command, base, a2, "a2", db_flag);
+	term_vs_spd(command, base, a2, "a2", 0);
 	term_vs_spd(command, base, a2_phase, "a2p", 0);
+	term_vs_spd(command, base, a3, "a3", 0);
+	term_vs_spd(command, base, a3_phase, "a3p", 0);
+	term_vs_spd(command, base, a4, "a4", 0);
+	term_vs_spd(command, base, a4_phase, "a4p", 0);
 
 	return (0);
 }
@@ -335,10 +354,10 @@ term_vs_inc(
 				spds[spd_idx], QUOTES);
 			for (int inc = 20; inc <= 60; inc += INC_STEP)
 			{
-				if (flag)
+				if (flag && term[pol][inc][spds[spd_idx]] > 0.0)
 					fprintf(ofp, "%d %g\n", inc,
 						10.0 * log10(term[pol][inc][spds[spd_idx]]));
-				else
+				else if (! flag)
 					fprintf(ofp, "%d %g\n", inc,
 						term[pol][inc][spds[spd_idx]]);
 			}
@@ -395,10 +414,10 @@ term_vs_spd(
 				incs[inc_idx], QUOTES);
 			for (int spd = 1; spd < SPDS; spd++)
 			{
-				if (flag)
+				if (flag && term[pol][incs[inc_idx]][spd] > 0.0)
 					fprintf(ofp, "%d %g\n", spd,
 						10.0 * log10(term[pol][incs[inc_idx]][spd]));
-				else
+				else if (! flag)
 					fprintf(ofp, "%d %g\n", spd, term[pol][incs[inc_idx]][spd]);
 			}
 			inc_idx++;
