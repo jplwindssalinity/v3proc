@@ -1490,6 +1490,13 @@ int
 DopplerTracker::GetTerms(
     double**    terms)
 {
+    float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
+    float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
+    float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
+    float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
+    float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
+    float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
+
     for (unsigned int doppler_step = 0; doppler_step < _steps; doppler_step++)
     {
         unsigned short* short_ptr = *(_termArray + doppler_step);
@@ -1497,13 +1504,6 @@ DopplerTracker::GetTerms(
         unsigned short a_dn = *(short_ptr + AMPLITUDE_INDEX);
         unsigned short c_dn = *(short_ptr + BIAS_INDEX);
         unsigned short p_dn = *(short_ptr + PHASE_INDEX);
-
-        float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
-        float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
-        float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
-        float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
-        float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
-        float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
 
         float A = am * (float)a_dn + ab;
         float C = cm * (float)c_dn + cb;
