@@ -187,6 +187,7 @@ main(
 			if (fgets(line, 1024, stdin) != line)
 				break;
 
+			if (line[0]=='#') continue; // skip comments
 			if (sscanf(line, " %c %f %f %f", &polchar, &inc, &azi, &s0) != 4)
 			{
 				if (meas_idx == 1)
