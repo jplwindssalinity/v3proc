@@ -46,7 +46,8 @@ PROGRAMS = \
 	l2a_s0 \
 	l1b_s0 \
         kprtable_to_xmgr \
-        l2ags_s0
+        l2ags_s0 \
+        s0_to_noise_val
 
 
 #----------------------------------------------------------------------
