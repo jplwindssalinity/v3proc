@@ -90,8 +90,10 @@ return(rlook_ant);
 //   coordinates (km).
 //
 
-Vector3 antenna_look(Vector3 rsat, Vector3 vsat,
+/**
+Vector3 earth_intercept(Vector3 rsat, Vector3 vsat,
 		     Vector3 sc_att, Vector3 ant_att, Vector3 antenna_look_dir)
 
 {
 }
+**/
