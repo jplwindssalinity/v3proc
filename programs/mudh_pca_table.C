@@ -503,7 +503,7 @@ main(
 
                 // set these for convenience in writing eq's
                 double tbv = param[TBV_IDX];
-                double tbh = param[TBV_IDX];
+                double tbh = param[TBH_IDX];
 
                 double tbvc = tbv * alpha1 + beta1;
                 double tau = 0.0;
