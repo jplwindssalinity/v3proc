@@ -36,7 +36,7 @@ L1::L1()
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0),
 	antennaPosition(0.0), beam(NONE)
 {
-	AllocateBuffer(L1_DATA_REC_SIZE);
+	AllocateFrame(L1_DATA_REC_SIZE);
 	return;
 }
 
@@ -45,28 +45,12 @@ L1::~L1()
 	return;
 }
 
-//------------------//
-// L1::WriteDataRec //
-//------------------//
-
-int
-L1::WriteDataRec()
-{
-	if (! InsertAll())
-		return(0);
-
-	if (! WriteBuffer())
-		return(0);
-
-	return(1);
-}
-
 //---------------//
-// L1::InsertAll //
+// L1::PackFrame //
 //---------------//
 
 int
-L1::InsertAll()
+L1::PackFrame()
 {
 	int idx = 0;
 
@@ -106,5 +90,53 @@ L1::InsertAll()
 	memcpy((void *)(_frame + idx), (void *)&beam, sizeof(L1BeamE));
 	idx += sizeof(L1BeamE);
 
+	return(1);
+}
+
+//-----------------//
+// L1::UnpackFrame //
+//-----------------//
+ 
+int
+L1::UnpackFrame()
+{
+	int idx = 0;
+ 
+	memcpy((void *)&time, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcAltitude, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcLongitude, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcLatitude, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcX, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcY, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&gcZ, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&velX, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&velY, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&velZ, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&antennaPosition, (void *)(_frame + idx), sizeof(double));
+	idx += sizeof(double);
+ 
+	memcpy((void *)&beam, (void *)(_frame + idx), sizeof(L1BeamE));
+	idx += sizeof(L1BeamE);
+ 
 	return(1);
 }

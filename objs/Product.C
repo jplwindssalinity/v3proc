@@ -303,18 +303,18 @@ Product::~Product()
 	return;
 }
 
-//-------------------------//
-// Product::AllocateBuffer //
-//-------------------------//
+//------------------------//
+// Product::AllocateFrame //
+//------------------------//
 
 int
-Product::AllocateBuffer(
+Product::AllocateFrame(
 	const int	buffer_size)
 {
 	_frame = (char *)realloc((void *)_frame, buffer_size);
 	if (! _frame)
 	{
-		_status = ERROR_ALLOCATING_BUFFER;
+		_status = ERROR_ALLOCATING_FRAME;
 		return(0);
 	}
 
@@ -398,12 +398,12 @@ Product::CloseCurrentFile()
 	return(1);
 }
 
-//----------------------//
-// Product::WriteBuffer //
-//----------------------//
+//---------------------//
+// Product::WriteFrame //
+//---------------------//
 
 int
-Product::WriteBuffer()
+Product::WriteFrame()
 {
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
@@ -413,25 +413,25 @@ Product::WriteBuffer()
 			return(0);
 
 		// try again
-		return(WriteBuffer());
+		return(WriteFrame());
 	}
 
 	int bytes_written = write(ofd, _frame, _size);
 	if (bytes_written != _size)
 	{
-		_status = ERROR_WRITING_BUFFER;
+		_status = ERROR_WRITING_FRAME;
 		return(0);
 	}
 
 	return(1);
 }
 
-//---------------------//
-// Product::ReadBuffer //
-//---------------------//
+//--------------------//
+// Product::ReadFrame //
+//--------------------//
 
 int
-Product::ReadBuffer()
+Product::ReadFrame()
 {
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
@@ -441,7 +441,7 @@ Product::ReadBuffer()
 			return(0);
 
 		// try again
-		return(ReadBuffer());
+		return(ReadFrame());
 	}
 
 	int bytes_read = read(ofd, _frame, _size);
@@ -461,15 +461,52 @@ Product::ReadBuffer()
 				_status = ERROR_NO_MORE_DATA;
 				break;
 			}
-			return(ReadBuffer());
+			return(ReadFrame());
 			break;
 		case -1:
-			_status = ERROR_READING_BUFFER;
+			_status = ERROR_READING_FRAME;
 			break;
 		default:
 			_status = ERROR_UNKNOWN;
 			break;
 		}
+		return(0);
+	}
+
+	return(1);
+}
+
+//--------------//
+// WriteDataRec //
+//--------------//
+
+int
+Product::WriteDataRec()
+{
+	if (! PackFrame())
+	{
+		_status = ERROR_PACKING_FRAME;
+		return(0);
+	}
+	if (! WriteFrame())
+		return(0);
+
+	return(1);
+}
+
+//-------------//
+// ReadDataRec //
+//-------------//
+
+int
+Product::ReadDataRec()
+{
+	if (! ReadFrame())
+		return(0);
+
+	if (! UnpackFrame())
+	{
+		_status = ERROR_UNPACKING_FRAME;
 		return(0);
 	}
 

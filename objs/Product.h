@@ -153,10 +153,11 @@ public:
 	// enum //
 	//------//
 
-	enum StatusE { OK, ERROR_UNKNOWN, ERROR_ALLOCATING_BUFFER, ERROR_NO_FILES,
+	enum StatusE { OK, ERROR_UNKNOWN, ERROR_ALLOCATING_FRAME, ERROR_NO_FILES,
 		ERROR_ADDING_FILE, ERROR_OPENING_OUTPUT_FILE, ERROR_OPENING_INPUT_FILE,
 		ERROR_CLOSING_CURRENT_FILE, ERROR_GETTING_CURRENT_FD,
-		ERROR_WRITING_BUFFER, ERROR_READING_BUFFER, ERROR_NO_MORE_DATA };
+		ERROR_WRITING_FRAME, ERROR_READING_FRAME, ERROR_NO_MORE_DATA,
+		ERROR_PACKING_FRAME, ERROR_UNPACKING_FRAME };
 
 	//--------------//
 	// construction //
@@ -165,7 +166,7 @@ public:
 	Product();
 	~Product();
 
-	int		AllocateBuffer(const int buffer_size);
+	int		AllocateFrame(const int buffer_size);
 	int		AddFile(const char* filename);
 
 	//-------------------//
@@ -181,8 +182,17 @@ public:
 	// input/output //
 	//--------------//
 
-	int		WriteBuffer();
-	int		ReadBuffer();
+	int		WriteFrame();
+	int		ReadFrame();
+	int		WriteDataRec();
+	int		ReadDataRec();
+
+	//-------------------//
+	// data manipulation //
+	//-------------------//
+
+	virtual int		PackFrame() = 0;
+	virtual int		UnpackFrame() = 0;
 
 	//---------//
 	// getting //

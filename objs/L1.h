@@ -65,17 +65,12 @@ public:
 	L1();
 	~L1();
 
-	//--------------//
-	// input/output //
-	//--------------//
-
-	int		WriteDataRec();
-
-	//-----------//
-	// insertion //
-	//-----------//
-
-	int		InsertAll();
+	//-------------------//
+	// data manipulation //
+	//-------------------//
+ 
+	int		PackFrame();
+	int		UnpackFrame();
 
 	//-------------------//
 	// product variables //

@@ -36,7 +36,7 @@ L0::L0()
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0),
 	antennaPosition(0.0), beam(NONE)
 {
-	AllocateBuffer(L0_DATA_REC_SIZE);
+	AllocateFrame(L0_DATA_REC_SIZE);
 	return;
 }
 
@@ -45,44 +45,12 @@ L0::~L0()
 	return;
 }
 
-//------------------//
-// L0::WriteDataRec //
-//------------------//
-
-int
-L0::WriteDataRec()
-{
-	if (! InsertAll())
-		return(0);
-
-	if (! WriteBuffer())
-		return(0);
-
-	return(1);
-}
-
-//-----------------//
-// L0::ReadDataRec //
-//-----------------//
-
-int
-L0::ReadDataRec()
-{
-	if (! ReadBuffer())
-		return(0);
-
-	if (! ExtractAll())
-		return(0);
-
-	return(1);
-}
-
 //---------------//
-// L0::InsertAll //
+// L0::PackFrame //
 //---------------//
 
 int
-L0::InsertAll()
+L0::PackFrame()
 {
 	int idx = 0;
 
@@ -124,12 +92,13 @@ L0::InsertAll()
 
 	return(1);
 }
-//----------------//
-// L0::ExtractAll //
-//----------------//
+
+//-----------------//
+// L0::UnpackFrame //
+//-----------------//
 
 int
-L0::ExtractAll()
+L0::UnpackFrame()
 {
 	int idx = 0;
 

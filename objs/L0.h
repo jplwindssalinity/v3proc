@@ -65,19 +65,12 @@ public:
 	L0();
 	~L0();
 
-	//--------------//
-	// input/output //
-	//--------------//
+	//-------------------//
+	// data manipulation //
+	//-------------------//
 
-	int		WriteDataRec();
-	int		ReadDataRec();
-
-	//-----------//
-	// insertion //
-	//-----------//
-
-	int		InsertAll();
-	int		ExtractAll();
+	int		PackFrame();
+	int		UnpackFrame();
 
 	//-------------------//
 	// product variables //
