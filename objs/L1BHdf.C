@@ -82,7 +82,7 @@ L1BHdf::~L1BHdf()
     for (int i=0; i < l1bMeasTableSize; i++)
     {
         param = l1bMeasTable[i].param;
-        if (param == 0)
+        if (param != 0)
         {
             (void) CloseDataset(param->sdsIDs[0]);
             if (param->data != 0)
