@@ -369,6 +369,8 @@ public:
     int  DeleteWVCs();
     int  DeleteEntireSwath();
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
+    int  DeleteDirectionOutliers(float max_dir_err, WindField* truth);
+    int  DeleteSpeedOutliers(float max_spd_err, WindField* truth);
     int  DeleteLongitudesOutside(float low_lon, float high_lon);
 
     //--------------//
@@ -443,6 +445,7 @@ public:
                float high_speed, int direction_count);
 
     int    SelectNearest(WindField* truth);
+    int    SelectNudge();
     int    MatchSelected(WindSwath* source);
     int    GetProbabilityArray( WindField* truth, float*** prob,
                int** num_samples, float** widths, int true_dir_bins,

@@ -2335,6 +2335,86 @@ WindSwath::DeleteLongitudesOutside(
     return(count);
 }
 
+//------------------------------------//
+// WindSwath::DeleteDirectionOutliers //
+//------------------------------------//
+
+int
+WindSwath::DeleteDirectionOutliers(
+    float  max_dir_err,
+    WindField* truth)
+{
+    int count = 0;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (!wvc  || !(wvc->selected))
+                continue;
+
+            WindVector true_wv;
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
+            double dir_err = ANGDIF(wvc->selected->dir, true_wv.dir);
+            
+            if (dir_err > max_dir_err)
+            {
+                delete wvc;
+                *(*(swath + i) + j) = NULL;
+                count++;
+                _validCells--;
+            }
+        }
+    }
+    return(count);
+}
+
+//------------------------------------//
+// WindSwath::DeleteSpeedOutliers     //
+//------------------------------------//
+
+int
+WindSwath::DeleteSpeedOutliers(
+    float  max_spd_err,
+    WindField* truth)
+{
+    int count = 0;
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (!wvc  || !(wvc->selected))
+                continue;
+
+            WindVector true_wv;
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
+	      true_wv.dir=wvc->nudgeWV->dir;
+              true_wv.spd=wvc->nudgeWV->spd;
+	    }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
+            double spd_err = fabs(wvc->selected->spd - true_wv.spd);
+            
+            if (spd_err > max_spd_err)
+            {
+                delete wvc;
+                *(*(swath + i) + j) = NULL;
+                count++;
+                _validCells--;
+            }
+        }
+    }
+    return(count);
+}
+
 //---------------------//
 // WindSwath::WriteL2B //
 //---------------------//
@@ -4221,6 +4301,33 @@ WindSwath::SelectNearest(
                 continue;
 
             wvc->selected = wvc->GetNearestToDirection(true_wv.dir);
+            count++;
+        }
+    }
+
+    return(count);
+}
+
+//--------------------------//
+// WindSwath::SelectNudge   //
+//--------------------------//
+
+int
+WindSwath::SelectNudge()
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc )
+                continue;
+            if (! wvc->nudgeWV){
+	      wvc->selected=NULL;
+                continue;
+	    }
+            wvc->selected = wvc->nudgeWV;
             count++;
         }
     }
