@@ -1,19 +1,19 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
 static const char rcs_id_constants_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <math.h>
 
 //======================================================================
 // DESCRIPTION
-//		A bunch of "universal" constants.
+//    A bunch of "universal" constants.
 //======================================================================
 
 static const double pi = M_PI;
@@ -27,13 +27,14 @@ static const double speed_light_kps = 2.99792458e5;
 static const double bK = 1.3805e-23;
 
 // conversion factors
-#define KHZ_PER_MS_TO_HZ_PER_S	1.0E6
-#define KHZ_TO_HZ				1.0E3
-#define GHZ_TO_HZ				1.0E9
-#define US_TO_S					1.0E-6
-#define MS_TO_S					1.0E-3
-#define S_TO_MS					1000.0
-#define M_TO_KM                 1.0E-3
+#define KHZ_PER_MS_TO_HZ_PER_S    1.0E6
+#define KHZ_TO_HZ                 1.0E3
+#define GHZ_TO_HZ                 1.0E9
+#define US_TO_S                   1.0E-6
+#define MS_TO_S                   1.0E-3
+#define S_TO_MS                   1000.0
+#define M_TO_KM                   1.0E-3
+#define MPS_TO_KMPS               1.0E-3
 
 //
 // Some fixed constants describing the Earth.
@@ -54,16 +55,15 @@ static const double flat = 1.0 - sqrt(1.0 - e2);
 // sidereal rotation rate (rad/sec)
 static const double w_earth = M_PI / 180 * 4.1780746e-3;
 
-
 //----------------------//
 // more Earth constants //
 //----------------------//
 
-static const double xmu = 3.986005e5;	// earth mass (GM) km3/sec2
-static const double rj2 = 1.08260e-3;	// earth gravitational harmonic
-static const double rm = r1_earth;	// equatorial radius of earth
-static const double wa_deg = 4.1780746e-3;	// earth rotation rate
-static const double wa = wa_deg * dtr;	// rot. rate in radians
+static const double xmu = 3.986005e5;       // earth mass (GM) km3/sec2
+static const double rj2 = 1.08260e-3;       // earth gravitational harmonic
+static const double rm = r1_earth;          // equatorial radius of earth
+static const double wa_deg = 4.1780746e-3;  // earth rotation rate
+static const double wa = wa_deg * dtr;      // rot. rate in radians
 
 //---------------------------------//
 // golden section search constants //
