@@ -161,11 +161,14 @@ main(
 	// cycle through events //
 	//----------------------//
 
+	WindField windfield;
+	GMF gmf;
+
 	Event event;
 	while (event.time < 120.0)
 	{
 		sim.DetermineNextEvent(&event);
-		sim.SimulateEvent(&instrument, &event);
+		sim.SimulateEvent(&instrument, &event, &windfield, &gmf);
 		sim.GenerateL0(&instrument, &l0);
 	}
 	l0.CloseCurrentFile();
