@@ -6,6 +6,8 @@
 static const char rcs_id_instrumentgeom_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
+#include <math.h>
 #include "InstrumentGeom.h"
 #include "CoordinateSwitch.h"
 #include "Ephemeris.h"
@@ -105,7 +107,8 @@ AntennaFrameToGC(
 //-----------//
 
 // step size for evaluating gradient
-#define FREQ_GRADIENT_ANGLE		0.008		// about 0.5 degree
+#define FREQ_GRADIENT_ANGLE		0.009		// about 0.5 degree
+#define QUADRATIC_ANGLE			0.017		// about 0.5 degree
 
 int
 FindSlice(
@@ -125,8 +128,6 @@ FindSlice(
 	float look_array[3], azimuth_array[3];
 	double s[3];
 
-	// determine beam electrical boresight //
-
 	//-----------------------//
 	// get frequency 1 slice //
 	//-----------------------//
@@ -139,7 +140,7 @@ FindSlice(
 		&azimuth_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
 	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_1,
 		&azimuth_1, FREQ_GRADIENT_ANGLE, &angle_f1);
-	SetPoints(look_1, azimuth_1, FREQ_GRADIENT_ANGLE, angle_f1, look_array,
+	SetPoints(look_1, azimuth_1, QUADRATIC_ANGLE, angle_f1, look_array,
 		azimuth_array);
 	GainSlice(instrument, look_array, azimuth_array, s, c_f1);
 	s_peak = -c_f1[1] / (2.0 * c_f1[2]);
@@ -158,7 +159,7 @@ FindSlice(
 		&azimuth_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
 	IsoFreqAngle(antenna_frame_to_gc, spacecraft, instrument, &look_2,
 		&azimuth_2, FREQ_GRADIENT_ANGLE, &angle_f2);
-	SetPoints(look_2, azimuth_2, FREQ_GRADIENT_ANGLE, angle_f2, look_array,
+	SetPoints(look_2, azimuth_2, QUADRATIC_ANGLE, angle_f2, look_array,
 		azimuth_array);
 	GainSlice(instrument, look_array, azimuth_array, s, c_f2);
 	s_peak = -c_f2[1] / (2.0 * c_f2[2]);
@@ -602,9 +603,84 @@ GainSlice(
 
 	double gain[3];
 	int idx = instrument->antenna.currentBeamIdx;
-	instrument->antenna.beam[idx].GetPowerGain(look[0], azim[0], &gain[0]);
-	instrument->antenna.beam[idx].GetPowerGain(look[1], azim[1], &gain[1]);
-	instrument->antenna.beam[idx].GetPowerGain(look[2], azim[2], &gain[2]);
+	if (! instrument->antenna.beam[idx].GetPowerGain(look[0], azim[0],
+			&gain[0]) ||
+		! instrument->antenna.beam[idx].GetPowerGain(look[1], azim[1],
+			&gain[1]) ||
+		! instrument->antenna.beam[idx].GetPowerGain(look[2], azim[2],
+			&gain[2]))
+	{
+		return(0);
+	}
+
+	//-----------------//
+	// fit a quadratic //
+	//-----------------//
+
+	if (! polcoe(s, gain, 2, c))
+		return(0);
+
+	return(1);
+}
+
+//-------------------//
+// DetailedGainSlice //
+//-------------------//
+
+int
+DetailedGainSlice(
+	Instrument*		instrument,
+	float			look[3],
+	float			azim[3],
+	double			s[3],
+	double			c[3])
+{
+	//------------------------//
+	// calculate center point //
+	//------------------------//
+
+	look[1] = (look[0] + look[2]) / 2.0;
+	azim[1] = (azim[0] + azim[2]) / 2.0;
+
+	//-------------------------------//
+	// calculate projected distances //
+	//-------------------------------//
+
+	s[1] = 0.0;
+	float dl, da;
+	dl = (look[1] - look[0]);
+	da = (azim[1] - azim[0]);
+	s[0] = -sqrt(dl*dl + da*da);
+	dl = (look[2] - look[1]);
+	da = (azim[2] - azim[1]);
+	s[2] = sqrt(dl*dl + da*da);
+
+	int idx = instrument->antenna.currentBeamIdx;
+	double angle = atan2(dl, da);
+	angle += pi / 2.0;						// iso freq angle
+	double xgain;
+	for (float xs = -0.1; xs < 0.1; xs += 0.001)
+	{
+		float xlook = xs * cos(angle) + look[1];
+		float xazim = xs * sin(angle) + azim[1];
+		if (instrument->antenna.beam[idx].GetPowerGain(xlook, xazim, &xgain))
+			printf("%g %g\n", xs, xgain);
+	}
+
+	//---------------------------------//
+	// get gain for those three points //
+	//---------------------------------//
+
+	double gain[3];
+	if (! instrument->antenna.beam[idx].GetPowerGain(look[0], azim[0],
+			&gain[0]) ||
+		! instrument->antenna.beam[idx].GetPowerGain(look[1], azim[1],
+			&gain[1]) ||
+		! instrument->antenna.beam[idx].GetPowerGain(look[2], azim[2],
+			&gain[2]))
+	{
+		return(0);
+	}
 
 	//-----------------//
 	// fit a quadratic //

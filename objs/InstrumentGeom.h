@@ -70,4 +70,7 @@ int		SetPoints(float az_0, float el_0, float distance, float angle,
 int		GainSlice(Instrument* instrument, float az[3], float el[3],
 			double s[3], double c[3]);
 
+int		DetailedGainSlice(Instrument* instrument, float az[3], float el[3],
+			double s[3], double c[3]);
+
 #endif
