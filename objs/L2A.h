@@ -57,7 +57,7 @@ public:
 	int		WriteDataRec();
         int             WriteDataRecAscii();
 	int		ReadDataRec();
-
+	int             ReadGroupRec(int reset, L2AFrame* frameGroup25, L2AFrame* frameGroup50);
 	int		ReadGSDataRec();
 
 	//---------------------//

@@ -98,6 +98,71 @@ L2A::ReadDataRec()
 }
 
 //-------------------//
+// L2A::ReadGroupRec //
+//-------------------//
+
+int 
+L2A::ReadGroupRec(
+     int rset,
+     L2AFrame* frameGroup25,
+     L2AFrame* frameGroup50)
+  
+{
+
+  if (_inputFp == NULL) return(0);
+
+  // read header
+
+  if (! _headerRead)
+    {
+      if (! header.Read(_inputFp))
+	  return(0);
+      _headerRead = 1;
+    }
+
+  // previous reads or first call?
+  
+
+  if (! rset) 
+    {
+      if (! frameGroup25[0].Read(_inputFp))
+	return(0);
+      rset=1;
+    }
+
+  // read frames 1 to ctb-1 for this ati row and next ati row
+
+  idx = 0;
+  L2AFrame readFrame;
+      
+  while (frameGroup25[idx].ati < frameGroup25[0].ati + 2)
+    {
+      idx++;
+      if (! readFrame.Read(_inputFp))
+	return(0);
+      frame.CopyFrame(&frameGroup25[idx], &readFrame);
+
+    }
+  
+  // CombineFrames returns the number of 50km frames (and the combined frames)
+
+  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
+  if (nFrames == 0)
+    {
+      cerr << "Could not combine frames" << endl;
+      nFrames=1;
+      return(0);
+    }
+
+  // copy over next frame (from next ati row) and return
+
+  frame.CopyFrame(&frameGroup25[0], &frameGroup25[idx]);
+
+  return(nFrames);
+
+}
+
+//-------------------//
 // L2A::WriteDataRec //
 //-------------------//
 
