@@ -311,6 +311,37 @@ const char*		keyword)
 		return(0);
 }
 
+//---------------------//
+// ConfigList::GetChar //
+//---------------------//
+// sets the value to the retrieved char
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetChar(
+	const char*		keyword,
+	char*			value)
+{
+	char* string = Get(keyword);
+	if (! string)
+		return(0);
+
+	char tmp;
+	if (sscanf(string, "%c", &tmp) != 1)
+	{
+		if (_logFlag)
+		{
+			fprintf(_errorFp, "Error converting value to char\n");
+			fprintf(_errorFp, "  Keyword: %s\n", keyword);
+			fprintf(_errorFp, "    Value: %s\n", string);
+		}
+		return(0);
+	}
+
+	*value = tmp;
+	return(1);
+}
+
 //--------------------//
 // ConfigList::GetInt //
 //--------------------//

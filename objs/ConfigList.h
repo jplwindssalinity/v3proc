@@ -116,8 +116,9 @@ public:
 	// interpreting values //
 	//---------------------//
 
-	int				GetInt(const char* keyword, int* value);
-	int				GetDouble(const char* keyword, double* value);
+	int		GetChar(const char* keyword, char* value);
+	int		GetInt(const char* keyword, int* value);
+	int		GetDouble(const char* keyword, double* value);
 
 protected:
 
