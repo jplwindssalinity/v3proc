@@ -86,6 +86,8 @@ public:
 	float			rxGateWidth;		// receiver gate width in seconds
 	float			timeOffset;			// seconds after prf for beam index 0
 
+	unsigned int	sasBeamOffset;		// from ant. center to elec. bore (dn)
+
 	int				useRangeTracker;
 	int				useDopplerTracker;
 	RangeTracker	rangeTracker;

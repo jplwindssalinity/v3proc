@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_antenna_c[] =
 	"@(#) $Id$";
@@ -16,8 +16,9 @@ static const char rcs_id_antenna_c[] =
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0), spinRate(0.0),
-	currentBeamIdx(0), _numberOfEncoderValues(0)
+:	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0),
+	commandedSpinRate(0.0), actualSpinRate(0.0), encoderAOffset(0),
+	encoderDelay(0.0), currentBeamIdx(0), _numberOfEncoderValues(0)
 {
 	return;
 }

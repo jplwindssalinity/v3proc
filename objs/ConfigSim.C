@@ -459,92 +459,61 @@ ConfigInstrument(
 
 	float chirp_rate;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
-	{
-		printf("Could not find chirp rate in config file\n");
 		return(0);
-	}
 	instrument->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_start_m;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
-	{
-		printf("Could not find chirp start_m in config file\n");
 		return(0);
-	}
 	instrument->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
 
 	float chirp_rate_b;		// kHz
 	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
-	{
-		printf("Could not find chirp start_b in config file\n");
 		return(0);
-	}
 	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
 	float system_temperature;		// K
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
-	{
-		printf("Could not find system temperature in config file\n");
 		return(0);
-	}
 	instrument->systemTemperature = system_temperature;
 
 	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
 		&base_transmit_freq))
 	{
-		printf("Could not find base transmit freq in config file\n");
 		return(0);
 	}
 	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
 
 	float s_bw;
 	if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
-	{
-		printf("Could not find slice bandwidth in config file\n");
 		return(0);
-	}
 	instrument->scienceSliceBandwidth = s_bw * KHZ_TO_HZ;
 
 	int s_count;
 	if (! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
-	{
-		printf("Could not find slices per spot in config file\n");
 		return(0);
-	}
 	instrument->scienceSlicesPerSpot = s_count;
 
 	float g_bw;
 	if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD, &g_bw))
-	{
-		printf("Could not find guard slice bandwidth in config file\n");
 		return(0);
-	}
 	instrument->guardSliceBandwidth = g_bw * KHZ_TO_HZ;
 
 	int g_count;
 	if (! config_list->GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
-	{
-		printf("Could not find guard slices per spot in config file\n");
 		return(0);
-	}
 	instrument->guardSlicesPerSide = g_count;
 
 	float noise_bandwidth;
 	if (! config_list->GetFloat(NOISE_BANDWIDTH_KEYWORD, &noise_bandwidth))
-	{
-		printf("Could not find noise bandwidth in config file\n");
 		return(0);
-	}
 	instrument->noiseBandwidth = noise_bandwidth * KHZ_TO_HZ;
 
 	float transmit_power;
 	/**** parameter in config file should be in Watts ***/
 	if (! config_list->GetFloat(TRANSMIT_POWER_KEYWORD, &transmit_power))
-	{
-		printf("Could not find transmit power in config file\n");
 		return(0);
-	}
 	instrument->transmitPower = transmit_power;
 
 	float echo_receiver_gain;
@@ -552,7 +521,6 @@ ConfigInstrument(
 	if (! config_list->GetFloat(ECHO_RECEIVER_GAIN_KEYWORD,
 		&echo_receiver_gain))
 	{
-		printf("Could not find echo receiver gain in config file\n");
 		return(0);
 	}
 	echo_receiver_gain=(float)pow(10.0,0.1*echo_receiver_gain);
@@ -563,7 +531,6 @@ ConfigInstrument(
 	if (! config_list->GetFloat(NOISE_RECEIVER_GAIN_KEYWORD,
 		&noise_receiver_gain))
 	{
-		printf("Could not find noise receiver gain in config file\n");
 		return(0);
 	}
 	noise_receiver_gain=(float)pow(10.0,0.1*noise_receiver_gain);
@@ -572,10 +539,7 @@ ConfigInstrument(
 	float system_loss;
 	/**** parameter in config file should be in dB ***/
 	if (! config_list->GetFloat(SYSTEM_LOSS_KEYWORD, &system_loss))
-	{
-		printf("Could not find system loss in config file\n");
 		return(0);
-	}
 	system_loss=(float)pow(10.0,0.1*system_loss);
 	instrument->systemLoss = system_loss;
 
@@ -587,7 +551,6 @@ ConfigInstrument(
 	if (! config_list->GetUnsignedInt(ORBIT_TICKS_PER_ORBIT_KEYWORD,
 		&orbit_ticks))
 	{
-		fprintf(stderr, "Missing orbit ticks\n");
 		return(0);
 	}
 	instrument->orbitTicksPerOrbit = orbit_ticks;
@@ -814,6 +777,8 @@ ConfigAntenna(
 	Antenna*		antenna,
 	ConfigList*		config_list)
 {
+	double tmp_double;
+
 	//-----------------------//
 	// configure the antenna //
 	//-----------------------//
@@ -826,22 +791,19 @@ ConfigAntenna(
 	}
 	antenna->numberOfBeams = number_of_beams;
 
-	double pri_per_beam;
-	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &pri_per_beam))
+	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &tmp_double))
 	{
 		printf("Could not find PRI per beam in config file\n");
 		return(0);
 	}
 	antenna->priPerBeam = (float)number_of_beams *
-		quantize(pri_per_beam / (float)number_of_beams, PRF_CLOCK_RESOLUTION);
+		quantize(tmp_double / (float)number_of_beams, PRF_CLOCK_RESOLUTION);
 
-	int encoder_bits;
-	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
-	{
-		printf("Could not find number of encoder bits in config file\n");
+	int tmp_int;
+	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &tmp_int))
 		return(0);
-	}
-	unsigned int values = 1 << encoder_bits;
+
+	unsigned int values = 1 << tmp_int;
 	antenna->SetNumberOfEncoderValues(values);
 
 	double roll, pitch, yaw;
@@ -864,13 +826,29 @@ ConfigAntenna(
 	att.Set(roll, pitch, yaw, 1, 2, 3);
 	antenna->SetPedestalAttitude(&att);
 
-	double spin_rate;
-	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
-	{
-		printf("Could not find spin rate in config file\n");
+	//---------//
+	// encoder //
+	//---------//
+
+	if (! config_list->GetInt(ENCODER_A_OFFSET_KEYWORD, &tmp_int))
 		return(0);
-	}
-	antenna->spinRate = spin_rate * rpm_to_radps;
+	antenna->encoderAOffset = tmp_int;
+
+	if (! config_list->GetDouble(ENCODER_DELAY_KEYWORD, &tmp_double))
+		return(0);
+	antenna->encoderDelay = tmp_double;
+
+	//------------//
+	// spin rates //
+	//------------//
+
+	if (! config_list->GetDouble(COMMANDED_SPIN_RATE_KEYWORD, &tmp_double))
+		return(0);
+	antenna->commandedSpinRate = tmp_double;	// dn/ms
+
+	if (! config_list->GetDouble(ACTUAL_SPIN_RATE_KEYWORD, &tmp_double))
+		return(0);
+	antenna->actualSpinRate = tmp_double * rpm_to_radps;
 
 	//---------------------//
 	// configure each beam //
@@ -1042,6 +1020,7 @@ ConfigBeam(
 				rgc_file);
 			return(0);
 		}
+
 	}
 
 	//------------------//
@@ -1071,6 +1050,19 @@ ConfigBeam(
 				dtc_file);
 			return(0);
 		}
+	}
+
+	//-------------------------//
+	// parameters for tracking //
+	//-------------------------//
+
+	if (use_rgc || use_dtc)
+	{
+		substitute_string(BEAM_x_PEAK_OFFSET_DN_KEYWORD, "x", number, keyword);
+		int tmp_int;
+		if (! config_list->GetInt(keyword, &tmp_int))
+			return(0);
+		beam->sasBeamOffset = (unsigned int)tmp_int;
 	}
 
 	return(1);

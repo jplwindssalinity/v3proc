@@ -122,7 +122,10 @@ static const char rcs_id_configsimdefs_h[] =
 #define ANTENNA_PEDESTAL_ROLL_KEYWORD	"ANTENNA_PEDESTAL_ROLL"
 #define ANTENNA_PEDESTAL_PITCH_KEYWORD	"ANTENNA_PEDESTAL_PITCH"
 #define ANTENNA_PEDESTAL_YAW_KEYWORD	"ANTENNA_PEDESTAL_YAW"
-#define SPIN_RATE_KEYWORD				"ANTENNA_SPIN_RATE"
+#define COMMANDED_SPIN_RATE_KEYWORD		"COMMANDED_SPIN_RATE"
+#define ACTUAL_SPIN_RATE_KEYWORD		"ACTUAL_SPIN_RATE"
+#define ENCODER_A_OFFSET_KEYWORD		"ENCODER_A_OFFSET"
+#define ENCODER_DELAY_KEYWORD			"ENCODER_DELAY"
 
 //------//
 // Beam //
@@ -141,6 +144,9 @@ static const char rcs_id_configsimdefs_h[] =
 #define BEAM_x_PATTERN_FILE_KEYWORD			"BEAM_x_PATTERN_FILE"
 #define BEAM_x_RGC_FILE_KEYWORD				"BEAM_x_RGC_FILE"
 #define BEAM_x_DTC_FILE_KEYWORD				"BEAM_x_DTC_FILE"
+
+// Tracking
+#define BEAM_x_PEAK_OFFSET_DN_KEYWORD		"BEAM_x_PEAK_OFFSET_DN"
 
 //--------//
 // XTable //
@@ -263,13 +269,13 @@ static const char rcs_id_configsimdefs_h[] =
 // Random Number Generator Seeds //
 //-------------------------------//
 
-#define ROLL_CONTROL_SEED 1034
-#define PITCH_CONTROL_SEED 45299
-#define YAW_CONTROL_SEED 1999
+#define ROLL_CONTROL_SEED	1034
+#define PITCH_CONTROL_SEED	45299
+#define YAW_CONTROL_SEED	1999
 
-#define ROLL_KNOWLEDGE_SEED 5661
-#define PITCH_KNOWLEDGE_SEED 78965
-#define YAW_KNOWLEDGE_SEED 486
+#define ROLL_KNOWLEDGE_SEED		5661
+#define PITCH_KNOWLEDGE_SEED	78965
+#define YAW_KNOWLEDGE_SEED		486
 
 #define PTGR_SEED 944
 

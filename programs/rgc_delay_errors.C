@@ -355,7 +355,7 @@ main(
 
 					double look, azim;
 					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->spinRate, &look, &azim);
+						beam, antenna->actualSpinRate, &look, &azim);
 					vector.SphericalSet(1.0, look, azim);
 					TargetInfo(&antenna_frame_to_gc, &spacecraft, &instrument,
 						vector, &tip);

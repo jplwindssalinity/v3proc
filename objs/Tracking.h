@@ -25,7 +25,7 @@ float	Cosine(float angle);
 //		RangeTracker
 //
 // DESCRIPTION
-//		The RangeTracker object is used to store the Range	Tracking
+//		The RangeTracker object is used to store the Range Tracking
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
@@ -50,16 +50,16 @@ public:
 
 	unsigned short		OrbitTicksToRangeStep(unsigned int orbit_ticks,
 							unsigned int ticks_per_orbit);
-	int					GetRxGateDelay(unsigned int range_step,
-							float xmit_pulse_width, float rx_gate_width,
-							unsigned int antenna_dn, unsigned int antenna_n,
-							float* delay);
-	float				QuantizeWidth(float width);
-	float				QuantizeDelay(float delay, float* residual_delay);
-	int					SetInstrument(Instrument* instrument,
-							float* residual_delay);
-	int					GetRangeSteps() { return(_rangeSteps); };
-	int					SetRoundTripTime(double** terms);
+	int		GetRxGateDelay(unsigned int range_step, float xmit_pulse_width,
+				float rx_gate_width, unsigned int sas_beam_offset,
+				unsigned int sas_encoder_offset, float omega_cds,
+				float encoder_delay, unsigned int antenna_dn,
+				unsigned int antenna_n, float* delay);
+	float	QuantizeWidth(float width);
+	float	QuantizeDelay(float delay, float* residual_delay);
+	int		SetInstrument(Instrument* instrument, float* residual_delay);
+	int		GetRangeSteps() { return(_rangeSteps); };
+	int		SetRoundTripTime(double** terms);
 
 	//--------------//
 	// input/output //
@@ -91,6 +91,12 @@ private:
 	//-----------//
 
 	unsigned int	_rangeSteps;
+
+	//-----------------//
+	// state variables //
+	//-----------------//
+
+	float			_previousDelay;
 };
 
 

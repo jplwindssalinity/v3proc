@@ -168,8 +168,12 @@ RangeTracker::OrbitTicksToRangeStep(
 int
 RangeTracker::GetRxGateDelay(
 	unsigned int	range_step,
-	float			xmit_pulse_width,		// seconds
-	float			rx_gate_width,			// seconds
+	float			xmit_pulse_width,	// seconds
+	float			rx_gate_width,		// seconds
+	unsigned int	sas_beam_offset,	// dn
+	unsigned int	sas_encoder_offset,	// dn
+	float			omega_cds,			// dn/ms
+	float			encoder_delay,		// ms
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
 	float*			delay)
@@ -198,12 +202,22 @@ RangeTracker::GetRxGateDelay(
 	double p_term = (double)pm * (double)p_dn + (double)pb;
 	double c_term = (double)cm * (double)c_dn + (double)cb;
 
+	//------------------------------//
+	// calculate intermediate terms //
+	//------------------------------//
+
+	float half_time = (_previousDelay + xmit_pulse_width) / 2.0;
+	unsigned int centering_offset = (int)(half_time * omega_cds + 0.5);
+	unsigned int encoder_time_offset = (int)(encoder_delay * omega_cds + 0.5);
+
 	//---------------------//
 	// determine the delay //
 	//---------------------//
 
+	unsigned int use_antenna_dn = antenna_dn + sas_beam_offset +
+		centering_offset + sas_encoder_offset + encoder_time_offset;
 	float table_delay = c_term + a_term * Cosine((two_pi/(double)antenna_n) *
-		(double)antenna_dn + p_term);
+		(double)use_antenna_dn + p_term);
 	table_delay *= MS_TO_S;		// convert ms to seconds
 
 	*delay = table_delay + (xmit_pulse_width - rx_gate_width) / 2.0;
@@ -271,9 +285,10 @@ RangeTracker::SetInstrument(
 	unsigned int encoder_n = antenna->GetEncoderN();
  
 	float delay;
- 
 	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->txPulseWidth,
-		instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
+		instrument->commandedRxGateWidth, beam->sasBeamOffset,
+		antenna->encoderAOffset, antenna->commandedSpinRate,
+		antenna->encoderDelay, encoder, encoder_n, &delay))
 	{
 		fprintf(stderr, "RangeTracker::SetInstrument: error using RGC\n");
 		return(0);

@@ -303,7 +303,7 @@ main(
 
 				double look, azimuth;
 				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-					beam, antenna->spinRate, &look, &azimuth))
+					beam, antenna->actualSpinRate, &look, &azimuth))
 				{
 					fprintf(stderr, "%s: error finding two-way peak gain\n",
 						command);

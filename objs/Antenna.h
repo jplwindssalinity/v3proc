@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef ANTENNA_H
 #define ANTENNA_H
@@ -64,14 +64,19 @@ public:
 	// variables //
 	//-----------//
 
-	int			numberOfBeams;
-	double		priPerBeam;		// seconds
-	Beam		beam[MAX_NUMBER_OF_BEAMS];
-	Attitude	antennaFrame;	// relative to s/c
-	double		azimuthAngle;	// antenna azimuth angle
-	double		spinRate;		// radians per second
+	int				numberOfBeams;
+	double			priPerBeam;		// seconds
+	Beam			beam[MAX_NUMBER_OF_BEAMS];
+	Attitude		antennaFrame;	// relative to s/c
+	double			azimuthAngle;	// antenna azimuth angle
 
-	int			currentBeamIdx;	// index of current beam
+	double			commandedSpinRate;	// dn/ms
+	double			actualSpinRate;		// radians per second
+
+	unsigned int	encoderAOffset;	// dn
+	double			encoderDelay;	// seconds
+
+	int				currentBeamIdx;	// index of current beam
 
 protected:
 

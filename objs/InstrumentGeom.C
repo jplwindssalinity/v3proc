@@ -208,7 +208,7 @@ LocateSliceCentroids(
 
 	double center_look, center_azim;
 	if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
-		instrument->antenna.spinRate, &center_look, &center_azim))
+		instrument->antenna.actualSpinRate, &center_look, &center_azim))
 	{
 		return(0);
 	}
@@ -369,7 +369,7 @@ LocateSpot(
 	//
 
 	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
-		instrument->antenna.spinRate, &look, &azim))
+		instrument->antenna.actualSpinRate, &look, &azim))
 	{
 		printf("Error determining 2 way electrical boresight\n");
 		return(0);
@@ -390,7 +390,7 @@ LocateSpot(
 	// get the max gain value.
 	float gp_max;
 	beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-			instrument->antenna.spinRate, &gp_max);
+			instrument->antenna.actualSpinRate, &gp_max);
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
@@ -428,7 +428,7 @@ LocateSpot(
 			look_mid_ant.SphericalGet(&r,&look,&azim);
 			float gp;
 			beam->GetPowerGainProduct(look, azim, tip.roundTripTime,
-				instrument->antenna.spinRate, &gp);
+				instrument->antenna.actualSpinRate, &gp);
 			if (gp > contour_level * gp_max)
 			{
 				theta_max = theta;
@@ -755,7 +755,7 @@ IdealRtt(
 	//-------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double azimuth_rate = instrument->antenna.spinRate;
+	double azimuth_rate = instrument->antenna.actualSpinRate;
 	double look, azim;
 	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
@@ -823,7 +823,7 @@ IdealCommandedDoppler(
 	//-------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double azimuth_rate = instrument->antenna.spinRate;
+	double azimuth_rate = instrument->antenna.actualSpinRate;
 	double look, azim;
 	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
 		azimuth_rate, &look, &azim))
@@ -1689,7 +1689,7 @@ PowerGainProduct(
 	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
 	int idx = instrument->antenna.currentBeamIdx;
 	if (! instrument->antenna.beam[idx].GetPowerGainProduct(look, azim,
-		tip.roundTripTime, instrument->antenna.spinRate, gain))
+		tip.roundTripTime, instrument->antenna.actualSpinRate, gain))
 	{
 		return(0);
 	}

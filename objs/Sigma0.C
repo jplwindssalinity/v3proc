@@ -57,11 +57,11 @@ radar_X(
 
 	int ib = instrument->antenna.currentBeamIdx;
 	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
-	double r,theta,phi;
+	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	instrument->antenna.beam[ib].GetPowerGainProduct(theta,phi,roundTripTime,
-		instrument->antenna.spinRate,&GatGar);
+	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+		instrument->antenna.actualSpinRate, &GatGar);
 
 	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
 		A3db * lambda*lambda /
@@ -87,11 +87,11 @@ radar_X_PtGr(
 
 	int ib = instrument->antenna.currentBeamIdx;
 	Vector3 rlook_antenna = gc_to_antenna->Forward(rlook);
-	double r,theta,phi;
+	double r, theta, phi;
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
-	instrument->antenna.beam[ib].GetPowerGainProduct(theta,phi,roundTripTime,
-		instrument->antenna.spinRate,&GatGar);
+	instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
+		instrument->antenna.actualSpinRate,&GatGar);
 
 	*X = PtGr * GatGar *
 		A3db * lambda*lambda /
@@ -144,7 +144,8 @@ sigma0_to_Esn_slice(
 
 	if (fabs(sigma0) > 1.0e5)
 	{
-		printf("Error: sigma0_to_Psn encountered invalid sigma0 = %g\n",sigma0);
+		printf("Error: sigma0_to_Psn encountered invalid sigma0 = %g\n",
+			sigma0);
 		exit(-1);
 	}
 
@@ -186,7 +187,7 @@ sigma0_to_Esn_slice(
 	double En_slice = En1_slice + En2_slice;
 
 	//double true_snr = Es_slice / En_slice;
-	//printf("%d %g\n",meas->startSliceIdx,true_snr);
+	//printf("%d %g\n", meas->startSliceIdx, true_snr);
 
 	//------------------------------------------------------------------------//
 	// Signal + Noise Energy within one slice referenced like the signal energy.
