@@ -121,7 +121,7 @@ echo ""
 echo "`date` : Verifying configuration file"
 log_cfg $cfg_file $cfg_file.clog2
 diff $cfg_file.clog $cfg_file.clog2
-rm $cfg_file.clog2
+rm -f $cfg_file.clog2
 echo "`date` : Completed verifying configuration file"
 
 
