@@ -6,6 +6,7 @@
 static const char rcs_id_beam_c[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "Beam.h"
 #include "Array.h"
 #include "Constants.h"

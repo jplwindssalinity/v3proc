@@ -33,9 +33,6 @@ static const char rcs_id_beam_h[] =
 //		angles used to access the beam pattern in the beam reference frame.
 //======================================================================
 
-#include "CoordinateSwitch.h"
-#include "Misc.h"
-
 enum PolE { NONE, V_POL, H_POL };
 
 extern const char* beam_map[];

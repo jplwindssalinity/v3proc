@@ -9,6 +9,7 @@
 static const char rcs_id_antenna_h[] =
 	"@(#) $Id$";
 
+#include "CoordinateSwitch.h"
 #include "Beam.h"
 #include "Attitude.h"
 
