@@ -236,14 +236,6 @@ main(
 		exit(1);
 	}
 
-	//-----------//
-	// variables //
-	//-----------//
-
-	OrbitState* orbit_state = &(spacecraft.orbitState);
-	Attitude* attitude = &(spacecraft.attitude);
-	Vector3 vector;
-
 	//--------------------//
 	// loop through orbit //
 	//--------------------//
@@ -275,7 +267,6 @@ main(
 			beam_idx++)
 		{
 			antenna->currentBeamIdx = beam_idx;
-			Beam* beam = antenna->GetCurrentBeam();
 
 			//----------------------//
 			// step through azimuth //
@@ -289,27 +280,11 @@ main(
 				antenna->azimuthAngle = azimuth_step_size *
 					((double)azimuth_step + 0.5);
 
-				CoordinateSwitch antenna_frame_to_gc =
-					AntennaFrameToGC(orbit_state, attitude, antenna);
+				//-------------------------------------//
+				// calculate the ideal round trip time //
+				//-------------------------------------//
 
-				//---------------------------------------------------------//
-				// calculate the round trip time for the two-way peak gain //
-				//---------------------------------------------------------//
-
-				double look, azimuth;
-				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-					beam, antenna->spinRate, &look, &azimuth))
-				{
-					fprintf(stderr, "%s: error finding two-way peak gain\n",
-						command);
-					exit(1);
-				}
-				vector.SphericalSet(1.0, look, azimuth);
-				TargetInfoPackage tip;
-				RangeAndRoundTrip(&antenna_frame_to_gc, &spacecraft,
-					vector, &tip);
-
-				rtt[azimuth_step] = tip.roundTripTime;
+				rtt[azimuth_step] = IdealRtt(&spacecraft, &instrument);
 			}
 
 			//--------------------//

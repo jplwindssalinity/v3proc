@@ -399,7 +399,6 @@ main(
 
 					range_tracker.SetInstrument(&instrument);
 					doppler_tracker.SetInstrument(&instrument);
-printf("%9g %9g\n", instrument_event.time, instrument.commandedDoppler);
 
 					//------------------------------//
 					// get the true round trip time //

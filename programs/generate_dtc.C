@@ -227,10 +227,10 @@ main(
 	//-----------------------//
 	// mark equator crossing //
 	//-----------------------//
- 
+
 	double start_time = spacecraft_sim.GetEpoch();
 	double orbit_period = spacecraft_sim.GetPeriod();
- 
+
 	start_time += orbit_period / 2.0;
 	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
 	instrument.Eqx(start_time);
@@ -295,12 +295,6 @@ main(
 			antenna->currentBeamIdx = beam_idx;
 			Beam* beam = antenna->GetCurrentBeam();
 
-			//------------------------------//
-			// calculate receiver gate info //
-			//------------------------------//
-
-			range_tracker.SetInstrument(&instrument);
-
 			//--------------------------------//
 			// calculate baseband frequencies //
 			//--------------------------------//
@@ -326,8 +320,17 @@ main(
 				}
 				vector.SphericalSet(1.0, look, azimuth);
 
-				IdealCommandedDoppler(&antenna_frame_to_gc, &spacecraft,
-					&instrument, vector);
+				//------------------------------//
+				// calculate receiver gate info //
+				//------------------------------//
+
+				range_tracker.SetInstrument(&instrument);
+
+				//--------------------------------//
+				// calculate corrective frequency //
+				//--------------------------------//
+
+				IdealCommandedDoppler(&spacecraft, &instrument);
 
 				// constants store Doppler to correct for (ergo -)
 				dop_com[azimuth_step] = -instrument.commandedDoppler;

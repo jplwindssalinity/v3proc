@@ -303,6 +303,7 @@ main(
 	// loop through events //
 	//---------------------//
 
+//int xxx = 0;
 	for (;;)
 	{
 		//---------------------------------------//
@@ -360,8 +361,8 @@ main(
 				int range_step;
 				double ideal_delay, delay_error;
 				CoordinateSwitch antenna_frame_to_gc;
-				Vector3 rlook_antenna;
 				TargetInfoPackage tip;
+				Vector3 vector;
 				unsigned int antenna_dn, antenna_n;
 
 				switch(instrument_event.eventId)
@@ -392,14 +393,12 @@ main(
 					antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 						attitude, antenna);
 
-					double look, azimuth;
+					double look, azim;
 					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->spinRate, &look, &azimuth);
-
-					rlook_antenna.SphericalSet(1.0, look, azimuth);
-
-					RangeAndRoundTrip(&antenna_frame_to_gc, &spacecraft,
-						rlook_antenna, &tip);
+						beam, antenna->spinRate, &look, &azim);
+					vector.SphericalSet(1.0, look, azim);
+					TargetInfo(&antenna_frame_to_gc, &spacecraft, &instrument,
+						vector, &tip);
 
 					//---------------------------//
 					// calculate the ideal delay //

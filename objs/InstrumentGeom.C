@@ -1624,7 +1624,7 @@ RangeAndRoundTrip(
 // the scattering geometry.
 //
 
-#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE	1e-5
+#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE	1e-6
 
 int
 GetTwoWayPeakGain(
