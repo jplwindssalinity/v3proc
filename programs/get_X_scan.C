@@ -1,48 +1,48 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		get_X_scan
+//    get_X_scan
 //
 // SYNOPSIS
-//		get_X_scan <sim_config_file> <beam number> <time>
+//    get_X_scan <sim_config_file> <beam number> <time>
 //
 // DESCRIPTION
-//		Generates plottable X file for one scan.
-//              writes to stdout
+//    Generates plottable X file for one scan.
+//    writes to stdout
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<sim_config_file>	The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operands are supported:
+//      <sim_config_file>  The sim_config_file needed listing
+//                           all input parameters, input files, and
+//                           output files.
 //
-//		<beam_number>		0=inner 1=outer
+//      <beam_number>      0=inner 1=outer
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% get_X_scan X.cfg 0 0
+//    An example of a command line is:
+//      % get_X_scan X.cfg 0 0
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		Bryan W. Stiles
-//		bstiles@acid.jpl.nasa.gov
+//    Bryan W. Stiles
+//    bstiles@acid.jpl.nasa.gov
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -50,7 +50,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -70,8 +70,6 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 #include "QscatConfig.h"
-
-
 
 //-----------//
 // TEMPLATES //
@@ -98,7 +96,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define EQX_TIME_TOLERANCE	0.1
+#define EQX_TIME_TOLERANCE    0.1
 
 //--------//
 // MACROS //
@@ -120,7 +118,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<beam_no>", "<time>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<beam_no>", "<time>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -128,283 +126,275 @@ const char* usage_array[] = { "<sim_config_file>", "<beam_no>", "<time>", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int        argc,
+    char*    argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
 
-	if (argc != 4)
-		usage(command, usage_array, 1);
+    if (argc != 4)
+        usage(command, usage_array, 1);
 
-	int arg_idx = 1;
-	const char* config_file = argv[arg_idx++];
-        int beam_no =atoi(argv[arg_idx++]);
-        float inst_time =atof(argv[arg_idx++]);
-        float azimuth;
+    int arg_idx = 1;
+    const char* config_file = argv[arg_idx++];
+    int beam_no =atoi(argv[arg_idx++]);
+    float inst_time =atof(argv[arg_idx++]);
+    float azimuth;
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //--------------------------------//
+    // read in simulation config file //
+    //--------------------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//----------------------------------------------//
-	// create a spacecraft and spacecraft simulator //
-	//----------------------------------------------//
+    //----------------------------------------------//
+    // create a spacecraft and spacecraft simulator //
+    //----------------------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	SpacecraftSim spacecraft_sim;
-	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    SpacecraftSim spacecraft_sim;
+    if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	//-----------------------------------------------//
-	// create QSCAT and QSCAT simulator              //
-	//-----------------------------------------------//
+    //-----------------------------------------------//
+    // create QSCAT and QSCAT simulator              //
+    //-----------------------------------------------//
 
-	Qscat qscat;
-	if (! ConfigQscat(&qscat, &config_list))
-	  {
-	    fprintf(stderr, "%s: error configuring QSCAT\n", command);
-	    exit(1);
-	  }
+    Qscat qscat;
+    if (! ConfigQscat(&qscat, &config_list))
+      {
+        fprintf(stderr, "%s: error configuring QSCAT\n", command);
+        exit(1);
+      }
 
-	QscatSim qscat_sim;
-	if (! ConfigQscatSim(&qscat_sim, &config_list))
-	  {
-	    fprintf(stderr, "%s: error configuring QSCAT simulator\n", command);
-	    exit(1);
-	  }
-	
+    QscatSim qscat_sim;
+    if (! ConfigQscatSim(&qscat_sim, &config_list))
+      {
+        fprintf(stderr, "%s: error configuring QSCAT simulator\n", command);
+        exit(1);
+      }
 
-	//----------------------------//
-	// create a Level 1A product  //
-	//----------------------------//
+    //----------------------------//
+    // create a Level 1A product  //
+    //----------------------------//
 
-	L1A l1a;
-	if (! ConfigL1A(&l1a, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 0.0\n", command);
-		exit(1);
-	}
-	//--------------------//
-	// read the windfield //
-	//--------------------//
+    L1A l1a;
+    if (! ConfigL1A(&l1a, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 0.0\n", command);
+        exit(1);
+    }
+    //--------------------//
+    // read the windfield //
+    //--------------------//
 
-	WindField windfield;
-	if (! ConfigWindField(&windfield, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring wind field\n", command);
-		exit(1);
-	}
+    WindField windfield;
+    if (! ConfigWindField(&windfield, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring wind field\n", command);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// read the geophysical model function //
-	//-------------------------------------//
+    //-------------------------------------//
+    // read the geophysical model function //
+    //-------------------------------------//
 
-	GMF gmf;
-	if (! ConfigGMF(&gmf, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring GMF\n", command);
-		exit(1);
-	}
+    GMF gmf;
+    if (! ConfigGMF(&gmf, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring GMF\n", command);
+        exit(1);
+    }
 
-	//--------------//
-	// configure Kp //
-	//--------------//
- 
-	Kp kp;
-	if (! ConfigKp(&kp, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Kp\n", command);
-		exit(1);
-	}
+    //--------------//
+    // configure Kp //
+    //--------------//
 
-	//------------------//
-	// Setup a KpmField //
-	//------------------//
+    Kp kp;
+    if (! ConfigKp(&kp, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Kp\n", command);
+        exit(1);
+    }
 
-	KpmField kpmField;
-	if (! ConfigKpmField(&kpmField, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring KpmField\n", command);
-		exit(1);
-	}
+    //------------------//
+    // Setup a KpmField //
+    //------------------//
 
-	//---------------------//
-	// configure the times //
-	//---------------------//
+    KpmField kpmField;
+    if (! ConfigKpmField(&kpmField, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring KpmField\n", command);
+        exit(1);
+    }
 
-	double instrument_start_time, instrument_end_time;
-	double spacecraft_start_time, spacecraft_end_time;
+    //---------------------//
+    // configure the times //
+    //---------------------//
+
+    double instrument_start_time, instrument_end_time;
+    double spacecraft_start_time, spacecraft_end_time;
 
 
-	qscat_sim.startTime = inst_time;
-	spacecraft_start_time=inst_time-100.0;
+    qscat_sim.startTime = inst_time;
+    spacecraft_start_time=inst_time-100.0;
         instrument_start_time=inst_time;
         instrument_end_time=inst_time+100.0;
         spacecraft_end_time=instrument_end_time+100.0;
 
-	//------------------//
-	// set the eqx time //
-	//------------------//
+    //------------------//
+    // set the eqx time //
+    //------------------//
 
-	double eqx_time =
-		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
-			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	qscat.cds.SetEqxTime(eqx_time);
+    double eqx_time =
+        spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
+            EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+    qscat.cds.SetEqxTime(eqx_time);
 
-	//------------//
-	// initialize //
-	//------------//
+    //------------//
+    // initialize //
+    //------------//
 
-	if (! qscat_sim.Initialize(&qscat))
-	{
-		fprintf(stderr, "%s: error initializing QSCAT simulator\n",
-			command);
-		exit(1);
-	}
+    if (! qscat_sim.Initialize(&qscat))
+    {
+        fprintf(stderr, "%s: error initializing QSCAT simulator\n",
+            command);
+        exit(1);
+    }
 
-	if (! spacecraft_sim.Initialize(0.0))
-	{
-		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    if (! spacecraft_sim.Initialize(0.0))
+    {
+        fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+            command);
+        exit(1);
+    }
+
+    //----------------------//
+    // cycle through events //
+    //----------------------//
+
+    SpacecraftEvent spacecraft_event;
+    spacecraft_event.time = spacecraft_start_time;
+
+    float instrument_event_time;
+    instrument_event_time = instrument_start_time;
+
+    int spacecraft_done = 0;
+    int instrument_done = 0;
+
+    //-------------------------//
+    // start with first events //
+    //-------------------------//
+
+    spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+
+    //---------------------//
+    // loop through events //
+    //---------------------//
+
+    for (;;)
+    {
+        //---------------------------------------//
+        // process spacecraft event if necessary //
+        //---------------------------------------//
+
+        if (! spacecraft_done)
+        {
+            if (spacecraft_event.time > spacecraft_end_time)
+            {
+                spacecraft_done = 1;
+                continue;
+            }
+            if (spacecraft_event.time <= instrument_event_time ||
+                instrument_done)
+            {
+                //------------------------------//
+                // process the spacecraft event //
+                //------------------------------//
+
+                switch(spacecraft_event.eventId)
+                {
+                case SpacecraftEvent::EQUATOR_CROSSING:
+                    qscat.cds.SetEqxTime(spacecraft_event.time);
+                    break;
+                default:
+                    break;
+                }
+                spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+            }
+        }
+
+        //---------------------------------------//
+        // process instrument event if necessary //
+        //---------------------------------------//
+
+        if (! instrument_done)
+        {
+            if (instrument_event_time > instrument_end_time)
+            {
+                instrument_done = 1;
+                continue;
+            }
+            if (instrument_event_time <= spacecraft_event.time ||
+                spacecraft_done)
+            {
+              //------------------------------//
+              // process the instrument event //
+              //------------------------------//
 
 
-	//----------------------//
-	// cycle through events //
-	//----------------------//
+              // process spacecraft stuff
+              spacecraft_sim.UpdateOrbit(instrument_event_time,
+                             &spacecraft);
+              spacecraft_sim.UpdateAttitude(instrument_event_time, &spacecraft);
 
-	SpacecraftEvent spacecraft_event;
-	spacecraft_event.time = spacecraft_start_time;
+              // process instrument stuff
+              qscat.cds.SetTime(instrument_event_time);
 
-	float instrument_event_time;
-	instrument_event_time = instrument_start_time;
-
-	int spacecraft_done = 0;
-	int instrument_done = 0;
-
-	//-------------------------//
-	// start with first events //
-	//-------------------------//
-
-	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-
-	//---------------------//
-	// loop through events //
-	//---------------------//
-
-	for (;;)
-	{
-		//---------------------------------------//
-		// process spacecraft event if necessary //
-		//---------------------------------------//
-
-		if (! spacecraft_done)
-		{
-			if (spacecraft_event.time > spacecraft_end_time)
-			{
-				spacecraft_done = 1;
-				continue;
-			}
-			if (spacecraft_event.time <= instrument_event_time ||
-				instrument_done)
-			{
-				//------------------------------//
-				// process the spacecraft event //
-				//------------------------------//
-
-				switch(spacecraft_event.eventId)
-				{
-				case SpacecraftEvent::EQUATOR_CROSSING:
-					qscat.cds.SetEqxTime(spacecraft_event.time);
-					break;
-				default:
-					break;
-				}
-				spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-			}
-		}
-
-		//---------------------------------------//
-		// process instrument event if necessary //
-		//---------------------------------------//
-
-		if (! instrument_done)
-		{
-			if (instrument_event_time > instrument_end_time)
-			{
-				instrument_done = 1;
-				continue;
-			}
-			if (instrument_event_time <= spacecraft_event.time ||
-				spacecraft_done)
-			{
-			  //------------------------------//
-			  // process the instrument event //
-			  //------------------------------//
-
-
-			  // process spacecraft stuff
-			  spacecraft_sim.UpdateOrbit(instrument_event_time,
-						     &spacecraft);
-			  spacecraft_sim.UpdateAttitude(instrument_event_time, &spacecraft);
-		  
-			  // process instrument stuff
-			  qscat.cds.SetTime(instrument_event_time);
-
-			  qscat.cds.currentBeamIdx = beam_no;
-			  for(int a=0;a<360;a+=10){
-			    azimuth=a*dtr;
+              qscat.cds.currentBeamIdx = beam_no;
+              for(int a=0;a<360;a+=10){
+                azimuth=a*dtr;
                             // Use ground impact azimuth to match BYU
-			    qscat.SetAllAzimuthsUsingGroundImpact(&spacecraft,
-								  azimuth);
-			    printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
-			    qscat_sim.ScatSim(&spacecraft, &qscat,
-						 &windfield, &gmf, &kp, &kpmField, &(l1a.frame));			  	
+                qscat.SetAllAzimuthsUsingGroundImpact(&spacecraft,
+                                  azimuth);
+                printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
 
-			  
-			  }					
-			  instrument_event_time=instrument_end_time+100;
-					
-			}
-		}
+                // 2001.07.05 JNH - Put in NULLS for sigma-0 maps and
+                // topographic correction
+                qscat_sim.ScatSim(&spacecraft, &qscat, &windfield,
+                  NULL, NULL, &gmf, &kp, &kpmField, NULL, NULL, &(l1a.frame));
+              }
+              instrument_event_time=instrument_end_time+100;
+            }
+        }
 
-		//---------------//
-		// check if done //
-		//---------------//
+        //---------------//
+        // check if done //
+        //---------------//
 
-		if (instrument_done && spacecraft_done)
-			break;
-	}
+        if (instrument_done && spacecraft_done)
+            break;
+    }
 
-
-	return (0);
+    return (0);
 }
-
-
-
-
-
