@@ -8,7 +8,7 @@
 //		l1b_ascii
 //
 // SYNOPSIS
-//		l1b_ascii <l1b_file> <output_file>
+//		l1b_ascii <l1b_file> [ output_file ]
 //
 // DESCRIPTION
 //		Reads in a Level 1B file and writes the measurements
@@ -19,8 +19,8 @@
 //
 // OPERANDS
 //		The following operand is supported:
-//		<l1b_file>		The Level 1B input file.
-//		<output_file>	The ASCII output file.
+//		<l1b_file>			The Level 1B input file.
+//		[ output_file ]		The ASCII output file.
 //
 // EXAMPLES
 //		An example of a command line is:
@@ -113,12 +113,14 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+	if (argc < 2 || argc > 3)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* l1b_file = argv[clidx++];
-	const char* output_file = argv[clidx++];
+	const char* output_file = NULL;
+	if (argc == 3)
+		output_file = argv[clidx++];
 
 	//------------------------//
 	// open the Level 1B file //
@@ -136,12 +138,20 @@ main(
 	// open output file //
 	//------------------//
 
-	FILE* output_fp = fopen(output_file, "w");
-	if (output_fp == NULL)
+	FILE* output_fp;
+	if (output_file)
 	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			output_file);
-		exit(1);
+		output_fp = fopen(output_file, "w");
+		if (output_fp == NULL)
+		{
+			fprintf(stderr, "%s: error opening output file %s\n", command,
+				output_file);
+			exit(1);
+		}
+	}
+	else
+	{
+		output_fp = stdout;
 	}
 
 	//----------------//
@@ -153,10 +163,8 @@ main(
 		MeasSpotList* msl = &(l1b.frame.spotList);
 		for (MeasSpot* ms = msl->GetHead(); ms; ms = msl->GetNext())
 		{
-			for (Meas* m = ms->GetHead(); m; m = ms->GetNext())
-			{
-				m->WriteAscii(output_fp);
-			}
+			ms->WriteAscii(output_fp);
+			fprintf(output_fp, "\n");
 		}
 	}
 
@@ -164,7 +172,8 @@ main(
 	// close the files //
 	//-----------------//
 
-	fclose(output_fp);
+	if (output_file)
+		fclose(output_fp);
 	l1b.Close();
 
 	return (0);

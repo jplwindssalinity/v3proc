@@ -379,7 +379,7 @@ main(
 
 					double look, azimuth;
 					GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-						beam, antenna->spinRate, &look, &azimuth);
+						beam, antenna->actualSpinRate, &look, &azimuth);
 
 					rlook_antenna.SphericalSet(1.0, look, azimuth);
 					TargetInfo(&antenna_frame_to_gc, &spacecraft, &instrument,
