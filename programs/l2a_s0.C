@@ -1,0 +1,186 @@
+//==========================================================//
+// Copyright (C) 1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.				//
+//==========================================================//
+
+//----------------------------------------------------------------------
+// NAME
+//		l17_s0
+//
+// SYNOPSIS
+//		l17_s0 <l17_file> <output_file>
+//
+// DESCRIPTION
+//		Reads in a Level 1.7 file and writes out the following
+//		linear_idx  sigma-0
+//
+//		where linear_idx = ati * ctwidth + cti
+//
+// OPTIONS
+//		None.
+//
+// OPERANDS
+//		The following operand is supported:
+//		<l17_file>		The Level 1.7 input file.
+//		<output_file>	The output file.
+//
+// EXAMPLES
+//		An example of a command line is:
+//			% l17_s0 l17.dat l17.s0
+//
+// ENVIRONMENT
+//		Not environment dependent.
+//
+// EXIT STATUS
+//		The following exit values are returned:
+//		1	Program executed successfully
+//		>0	Program had an error
+//
+// NOTES
+//		None.
+//
+// AUTHOR
+//		James N. Huddleston
+//		hudd@acid.jpl.nasa.gov
+//----------------------------------------------------------------------
+
+//-----------------------//
+// Configuration Control //
+//-----------------------//
+
+static const char rcs_id[] =
+	"@(#) $Id$";
+
+//----------//
+// INCLUDES //
+//----------//
+
+#include <stdio.h>
+#include "Misc.h"
+#include "L17.h"
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
+
+//-----------//
+// TEMPLATES //
+//-----------//
+
+template class List<EarthPosition>;
+template class List<Meas>;
+template class List<MeasSpot>;
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
+template class List<long>;
+template class List<OffsetList>;
+
+//-----------//
+// CONSTANTS //
+//-----------//
+
+//--------//
+// MACROS //
+//--------//
+
+//------------------//
+// TYPE DEFINITIONS //
+//------------------//
+
+//-----------------------//
+// FUNCTION DECLARATIONS //
+//-----------------------//
+
+//------------------//
+// OPTION VARIABLES //
+//------------------//
+
+//------------------//
+// GLOBAL VARIABLES //
+//------------------//
+
+const char* usage_array[] = { "<l17_file>", "<output_file>", 0};
+
+//--------------//
+// MAIN PROGRAM //
+//--------------//
+
+int
+main(
+	int		argc,
+	char*	argv[])
+{
+	//------------------------//
+	// parse the command line //
+	//------------------------//
+
+	const char* command = no_path(argv[0]);
+	if (argc != 3)
+		usage(command, usage_array, 1);
+
+	int clidx = 1;
+	const char* l17_file = argv[clidx++];
+	const char* output_file = argv[clidx++];
+
+	//-------------------------//
+	// open the Level 1.7 file //
+	//-------------------------//
+
+	L17 l17;
+	if (! l17.OpenForReading(l17_file))
+	{
+		fprintf(stderr, "%s: error opening Level 1.7 file %s\n", command,
+			l17_file);
+		exit(1);
+	}
+
+	//------------------//
+	// open output file //
+	//------------------//
+
+	FILE* output_fp = fopen(output_file, "w");
+	if (output_fp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			output_file);
+		exit(1);
+	}
+
+	//----------------//
+	// loop and write //
+	//----------------//
+
+	while (l17.ReadDataRec())
+	{
+		MeasList* ml = &(l17.frame.measList);
+		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+		{
+fprintf(output_fp, "%s %g %g %g\n", beam_map[m->pol], m->incidenceAngle * rtd,
+	m->eastAzimuth * rtd, m->value);
+/*
+			if (m->value < 1e-5)
+			{
+				fprintf(output_fp, "%d %g %g\n", l17.frame.ati *
+					l17.header.crossTrackBins + l17.frame.cti, m->value,
+					0.0);
+			}
+			else
+			{
+				fprintf(output_fp, "%d %g %g\n", l17.frame.ati *
+					l17.header.crossTrackBins + l17.frame.cti, m->value,
+					m->EstimatedKp(m->value));
+			}
+*/
+		}
+fprintf(output_fp, "---\n");
+	}
+
+	//-----------------//
+	// close the files //
+	//-----------------//
+
+	fclose(output_fp);
+	l17.Close();
+
+	return (0);
+}
