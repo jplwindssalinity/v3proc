@@ -42,7 +42,17 @@ L17::SetFilename(
 int
 L17::ReadDataRec()
 {
-	return(0);
+	FILE* fp = file.GetFp();
+    if (fread((void *)&(frame.rev), sizeof(unsigned int), 1, fp) != 1 ||
+        fread((void *)&(frame.ati), sizeof(int), 1, fp) != 1 ||
+        fread((void *)&(frame.cti), sizeof(unsigned char), 1, fp) != 1 ||
+		frame.measList.Read(fp) != 1)
+
+    {
+        return(0);
+	}
+
+	return(1);
 }
 
 //-------------------//
@@ -52,5 +62,15 @@ L17::ReadDataRec()
 int
 L17::WriteDataRec()
 {
-	return(0);
+	FILE* fp = file.GetFp();
+    if (fwrite((void *)&(frame.rev), sizeof(unsigned int), 1, fp) != 1 ||
+        fwrite((void *)&(frame.ati), sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&(frame.cti), sizeof(unsigned char), 1, fp) != 1 ||
+		frame.measList.Write(fp) != 1)
+
+    {
+        return(0);
+	}
+
+	return(1);
 }

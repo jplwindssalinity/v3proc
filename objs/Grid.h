@@ -44,7 +44,7 @@ public:
 	double  alongtrack_res,
 	double  crosstrack_size,
 	double  alongtrack_size);
-	int OpenOutputFile(const char* filename);
+
 	int SetEphemeris(Ephemeris *ephemeris);
 	int SetStartTime(double start_time);
 
@@ -64,7 +64,7 @@ public:
 	// variables //
 	//-----------//
 
-	L17 l17;	// handles output to a level 1.7 data file.
+	L17* l17;	// handles output to a level 1.7 data file.
 
 protected:
 

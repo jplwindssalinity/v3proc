@@ -41,6 +41,9 @@ public:
 	// product variables //
 	//-------------------//
 
+	unsigned int	rev;
+	int				ati;
+	unsigned char	cti;
 	MeasList	measList;	// a list of measurements from a single frame
 };
 

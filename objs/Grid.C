@@ -30,14 +30,6 @@ Grid::~Grid()
 }
 
 int
-Grid::OpenOutputFile(const char* filename)
-{
-	int err = l17.SetFilename(filename);
-	if (err == 0) return(0);
-	return(l17.file.OpenForOutput());
-}
-
-int
 Grid::SetEphemeris(Ephemeris *ephemeris)
 {
 	_ephemeris = ephemeris;
@@ -173,8 +165,8 @@ Grid::ShiftForward()
 // Write out the earliest row of measurement lists.
 for (int i=0; i < _crosstrack_bins; i++)
 {
-l17.frame.measList = _grid[_ati_start][i];
-l17.WriteDataRec();
+l17->frame.measList = _grid[_ati_start][i];
+l17->WriteDataRec();
 _grid[_ati_start][i].FreeContents();	// prepare for new data
 }
 
