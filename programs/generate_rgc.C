@@ -312,23 +312,34 @@ main(
 				rtt[azimuth_step] = tip.roundTripTime;
 			}
 
-            //--------------------//
-            // fit rtt parameters //
-            //--------------------//
- 
-            double a, p, c;
-            azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
-            *(*(*(terms + beam_idx) + orbit_step) + 0) = a;
-            *(*(*(terms + beam_idx) + orbit_step) + 1) = p;
-            *(*(*(terms + beam_idx) + orbit_step) + 2) = c;
+			//--------------------//
+			// fit rtt parameters //
+			//--------------------//
+
+			double a, p, c;
+			azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
+			*(*(*(terms + beam_idx) + orbit_step) + 0) = a;
+			*(*(*(terms + beam_idx) + orbit_step) + 1) = p;
+			*(*(*(terms + beam_idx) + orbit_step) + 2) = c;
 		}
 	}
 
-	//---------------//
-	// set durations //
-	//---------------//
+	//-----------//
+	// set delay //
+	//-----------//
 
 	range_tracker.SetRoundTripTime(terms);
+
+	//--------------//
+	// set duration //
+	//--------------//
+
+	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
+	{
+		antenna->currentBeamIdx = beam_idx;
+		Beam* beam = antenna->GetCurrentBeam();
+		range_tracker.SetDuration(beam_idx, beam->receiverGateWidth);
+	}
 
 	//---------------------//
 	// set ticks per orbit //
