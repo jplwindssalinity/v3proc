@@ -576,6 +576,7 @@ main(
     int did_good = 0;
     int did_corrected = 0;
     int did = 0;
+    int corrected_enabled_count = 0;
     float lowest_first = 2.0;
     float highest_first = 0.0;
     float lowest_filter = 2.0;
@@ -726,7 +727,9 @@ main(
                         // doing well, don't correct
                         if (opt_correct)
                         {
-                            printf("  (Not correcting)\n");
+                            printf("  Correcting: disabled       ");
+                            fflush(stdout);
+                            printf("\r");
                             opt_correct = 0;
                             opt_jack = 0;
                             opt_random = 0;
@@ -737,7 +740,11 @@ main(
                         // doing poorly, correct
                         if (! opt_correct)
                         {
-                            printf("  (Correcting)\n");
+                            corrected_enabled_count++;
+                            printf("  Correcting: enabled (%d) ",
+                                corrected_enabled_count);
+                            fflush(stdout);
+                            printf("\r");
                             opt_correct = 1;
                             opt_jack = 1;
                             opt_random = 1;
@@ -896,10 +903,10 @@ main(
         // correct if desired //
         //--------------------//
 
-        if (opt_correct)
+        if (opt_correct &&
+            wvc->selected != original_selected[best_cti][best_ati])
         {
-            if (wvc->selected != original_selected[best_cti][best_ati])
-                did_corrected++;
+            did_corrected++;
             wvc->selected = original_selected[best_cti][best_ati];
         }
 
