@@ -8,7 +8,7 @@
 //    get_att_otf
 //
 // SYNOPSIS
-//    get_att_otf [ -it ] [ -y yaw ] [ -f type:windfield ]
+//    get_att_otf [ -bit ] [ -y yaw ] [ -f type:windfield ]
 //      [ -s start:end:step ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -17,6 +17,7 @@
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
+//    [ -b ]                 Calculate the bias instead of the attitude.
 //    [ -i ]                 Eliminate ice orbit steps.
 //    [ -t ]                 Use topography map.
 //    [ -y yaw ]             Fix yaw at given value.
@@ -99,7 +100,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "f:is:ty:"
+#define OPTSTRING    "bf:is:ty:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -151,9 +152,9 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -it ]", "[ -y yaw ]", "[ -f type:windfield ]",
-    "[ -s start:end:step ] ", "<sim_config_file>", "<output_base>",
-    "<echo_file...>", 0 };
+const char* usage_array[] = { "[ -bit ]", "[ -y yaw ]",
+    "[ -f type:windfield ]", "[ -s start:end:step ] ", "<sim_config_file>",
+    "<output_base>", "<echo_file...>", 0 };
 
 int        g_frame_count = 0;
 int        g_spots_per_frame = 0;
@@ -176,6 +177,7 @@ double     g_fixed_yaw = 0.0;
 int        g_opt_topo = 0;
 Topo       g_topo;
 Stable     g_stable;
+int        g_opt_bias = 0;
 
 extern int g_max_downhill_simplex_passes;
 
@@ -207,6 +209,9 @@ main(
     {
         switch(c)
         {
+        case 'b':
+            g_opt_bias = 1;
+            break;
         case 'i':
             g_opt_ice = 1;
             break;
@@ -743,13 +748,16 @@ evaluate(
         spacecraft->orbitState.vsat.Set(g_echo_info[frame_idx].velX,
             g_echo_info[frame_idx].velY, g_echo_info[frame_idx].velZ);
 
-// this would be used to estimate the attitude biases
-/*
-        spacecraft->attitude.SetRPY(g_echo_info[frame_idx].roll + att[0],
-            g_echo_info[frame_idx].pitch + att[1],
-            g_echo_info[frame_idx].yaw + att[2]);
-*/
-        spacecraft->attitude.SetRPY(att[0], att[1], att[2]);
+        if (g_opt_bias)
+        {
+            spacecraft->attitude.SetRPY(g_echo_info[frame_idx].roll + att[0],
+                g_echo_info[frame_idx].pitch + att[1],
+                g_echo_info[frame_idx].yaw + att[2]);
+        }
+        else
+        {
+            spacecraft->attitude.SetRPY(att[0], att[1], att[2]);
+        }
 
         for (int spot_idx = 0; spot_idx < g_spots_per_frame; spot_idx++)
         {
