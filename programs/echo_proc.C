@@ -318,6 +318,8 @@ main(
         FRAME_TIME, UNIT_CODE_A);
     Parameter* operational_mode_p = ParTabAccess::GetParameter(SOURCE_L1A,
         OPERATIONAL_MODE, UNIT_MAP);
+    Parameter* modulation_p = ParTabAccess::GetParameter(SOURCE_L1A,
+        SES_CONFIG_FLAGS_03, UNIT_MAP);
     Parameter* xpos_p = ParTabAccess::GetParameter(SOURCE_L1A, X_POS,
         UNIT_KILOMETERS);
     Parameter* ypos_p = ParTabAccess::GetParameter(SOURCE_L1A, Y_POS,
@@ -365,6 +367,7 @@ main(
 
     check_status(l1a_file.OpenParamDatasets(frame_time_p));
     check_status(l1a_file.OpenParamDatasets(operational_mode_p));
+    check_status(l1a_file.OpenParamDatasets(modulation_p));
     check_status(l1a_file.OpenParamDatasets(xpos_p));
     check_status(l1a_file.OpenParamDatasets(ypos_p));
     check_status(l1a_file.OpenParamDatasets(zpos_p));
@@ -458,14 +461,20 @@ main(
     EchoInfo echo_info;
     for (int record_idx = 0; record_idx < l1a_length; record_idx++)
     {
-        //-----------------------//
-        // only process WOM data //
-        //-----------------------//
+        //------------------------------//
+        // only process Mod on WOM data //
+        //------------------------------//
 
         unsigned char operational_mode;
         operational_mode_p->extractFunc(&l1a_file, operational_mode_p->sdsIDs,
             record_idx, 1, 1, &operational_mode, polyTable);
         if (operational_mode != WOM)
+            continue;
+
+        unsigned char modulation;
+        modulation_p->extractFunc(&l1a_file, modulation_p->sdsIDs, record_idx,
+            1, 1, &modulation, polyTable);
+        if (modulation == 0)
             continue;
 
         wom_frame++;
