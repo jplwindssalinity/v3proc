@@ -136,4 +136,11 @@ double  gmse(double* c, void* ptr);
 double  gs_deg_to_pe_rad(double gs_deg);
 double  pe_rad_to_gs_deg(double pe_rad);
 
+//--------------//
+// array output //
+//--------------//
+
+int  write_float_array(const char* filename, float** array, int x_size,
+         int y_size);
+
 #endif

@@ -22,10 +22,13 @@ gc_att_to_gd_att(
     //--------------------------//
     // geocentric to spacecraft //
     //--------------------------//
-    // spacecraft has y-axis approximately equal to the velocity vector
+    // The spacecraft y-axis is set to approximately equal to the velocity
+    // vector. Thus, a pitch about the x-axis needs a negative sign to
+    // match the ground system coordinates which have the x-axis
+    // approximately equal to the velocity vector.
 
     Transform t_sc_gc;
-    t_sc_gc.Rotate(0, gc_att[1]);   // pitch (2) about the x-axis
+    t_sc_gc.Rotate(0, -gc_att[1]);   // pitch (2) about the x-axis
     t_sc_gc.Rotate(1, gc_att[0]);   // roll  (1) about the y-axis
     t_sc_gc.Rotate(2, gc_att[2]);   // yaw   (3) about the z-axis
 
@@ -82,6 +85,7 @@ gc_att_to_gd_att(
     //----------------------//
 
     t_sc_gd.GetEuler213(gd_att);
+    gd_att[1] = -gd_att[1];
 
     return(1);
 }

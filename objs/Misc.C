@@ -1808,3 +1808,39 @@ pe_rad_to_gs_deg(
         gs_deg += 360.0;
     return(gs_deg);
 }
+
+//-------------------//
+// write_float_array //
+//-------------------//
+
+int
+write_float_array(
+    const char*  filename,
+    float**      array,
+    int          x_size,
+    int          y_size)
+{
+    FILE* ofp = fopen(filename, "w");
+    if (ofp == NULL) {
+        return(0);
+    }
+
+    if (fwrite(&x_size, sizeof(int), 1, ofp) != 1) {
+        return(0);
+    }
+
+    if (fwrite(&y_size, sizeof(int), 1, ofp) != 1) {
+        return(0);
+    }
+
+    for (int i = 0 ; i < x_size; i++) {
+        if (fwrite(*(array + i), sizeof(float), y_size, ofp)
+            != (unsigned int)y_size)
+        {
+            return(0);
+        }
+    }
+
+    fclose(ofp);
+    return(1);
+}
