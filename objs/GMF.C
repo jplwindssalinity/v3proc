@@ -330,11 +330,12 @@ GMF::GetCoefs(
 // GMF::FindSolutions //
 //--------------------//
 
+#define INITIAL_SPEED		8.0
+
 int
 GMF::FindSolutions(
 	MeasurementList*	measurement_list,
 	WVC*				wvc,
-	double				initial_spd,
 	double				spd_step,
 	double				phi_step)		// in degrees
 {
@@ -359,7 +360,7 @@ GMF::FindSolutions(
 	// for each phi... //
 	//-----------------//
 
-	int spd_idx = (int)(initial_spd / dspd + 0.5);
+	int spd_idx = (int)(INITIAL_SPEED / dspd + 0.5);
 	double spd = (double)spd_idx * dspd;
 
 	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
@@ -437,6 +438,127 @@ GMF::FindSolutions(
 	delete best_spd_idx;
 	delete best_obj;
 	return(count);
+}
+
+//----------------------//
+// GMF::RefineSolutions //
+//----------------------//
+
+enum { DOWN = 0, UP };
+
+int
+GMF::RefineSolutions(
+	MeasurementList*	measurement_list,
+	WVC*				wvc,
+	double				initial_spd_step,
+	double				initial_phi_step,
+	double				final_spd_step,
+	double				final_phi_step)
+{
+	for (WindVector* wv = wvc->ambiguities.GetHead(); wv;
+		wv = wvc->ambiguities.GetNext())
+	{
+		double spd_step = initial_spd_step;
+		double phi_step = initial_phi_step;
+
+		//-------------------//
+		// quantize to steps //
+		//-------------------//
+
+		int spd_idx = (int)(wv->spd / spd_step + 0.5);
+		int phi_idx = (int)(wv->dir / phi_step + 0.5);
+
+		wv->spd = (double)spd_idx * spd_step;
+		wv->dir = (double)phi_idx * phi_step;
+
+		while (spd_step > final_spd_step || phi_step > final_phi_step)
+		{
+			//----------------------------//
+			// nine point quadrant search //
+			//----------------------------//
+
+			double use_spd = wv->spd;
+			double use_spd_lo = wv->spd - spd_step;
+			double use_spd_hi = wv->spd + spd_step;
+			double use_phi = wv->dir;
+			double use_phi_lo = wv->dir - phi_step;
+			double use_phi_hi = wv->dir + phi_step;
+
+			double obj_a = _ObjectiveFunction(measurement_list, use_spd_lo,
+				use_phi_lo);
+			double obj_b = _ObjectiveFunction(measurement_list, use_spd,
+				use_phi_lo);
+			double obj_c = _ObjectiveFunction(measurement_list, use_spd_hi,
+				use_phi_lo);
+			double obj_d = _ObjectiveFunction(measurement_list, use_spd_lo,
+				use_phi);
+			double obj_e = _ObjectiveFunction(measurement_list, use_spd,
+				use_phi);
+			double obj_f = _ObjectiveFunction(measurement_list, use_spd_hi,
+				use_phi);
+			double obj_g = _ObjectiveFunction(measurement_list, use_spd_lo,
+				use_phi_hi);
+			double obj_h = _ObjectiveFunction(measurement_list, use_spd,
+				use_phi_hi);
+			double obj_i = _ObjectiveFunction(measurement_list, use_spd_hi,
+				use_phi_hi);
+
+			double spd_phi_obj[2][2];
+			spd_phi_obj[DOWN][DOWN] = obj_a + obj_b + obj_d;
+			spd_phi_obj[DOWN][UP] = obj_d + obj_g + obj_h;
+			spd_phi_obj[UP][DOWN] = obj_b + obj_c + obj_f;
+			spd_phi_obj[UP][UP] = obj_f + obj_h + obj_i;
+
+			//------------------------//
+			// pick the best quadrant //
+			//------------------------//
+
+			int spd_dir = 0;
+			int phi_dir = 0;
+			double max_spd_phi_obj = spd_phi_obj[DOWN][DOWN];
+			for (int i = 0; i < 2; i++)
+			{
+				for (int j = 0; j < 2; j++)
+				{
+					if (spd_phi_obj[i][j] > max_spd_phi_obj)
+					{
+						max_spd_phi_obj = spd_phi_obj[i][j];
+						spd_dir = i;
+						phi_dir = j;
+					}
+				}
+			}
+
+			//----------------------//
+			// move to new quadrant //
+			//----------------------//
+
+			if (spd_dir == 0)
+				spd_dir = -1;
+			if (phi_dir == 0)
+				phi_dir = -1;
+
+			double half_spd_step = spd_step / 2.0;
+			if (half_spd_step > final_spd_step)
+				spd_step = half_spd_step;
+
+			double half_phi_step = phi_step / 2.0;
+			if (half_phi_step > final_phi_step)
+				phi_step = half_phi_step;
+
+			//-----------------------------------------//
+			// update speed and direction for solution //
+			//-----------------------------------------//
+
+			spd_idx = (int)(wv->spd / spd_step + 0.5) + spd_dir;
+			phi_idx = (int)(wv->dir / phi_step + 0.5) + phi_dir;
+
+			wv->spd = (double)spd_idx * spd_step;
+			wv->dir = (double)phi_idx * phi_step;
+		}
+	}
+
+	return(1);
 }
 
 //----------------//

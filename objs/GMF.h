@@ -68,7 +68,10 @@ public:
 	//----------------//
 
 	int		FindSolutions(MeasurementList* measurement_list, WVC* wvc,
-				double initial_spd, double spd_step, double phi_step);
+				double spd_step, double phi_step);
+	int		RefineSolutions(MeasurementList* measurement_list, WVC* wvc,
+				double initial_spd_step, double initial_phi_step,
+				double final_spd_step, double final_phi_step);
 
 protected:
 
