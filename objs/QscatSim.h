@@ -123,24 +123,31 @@ public:
 
     char*  simVs1BCheckfile;  // output data for cross check with 1B
 
+    //----------//
+    // feedback //
+    //----------//
+
+    int    spotLandFlag;    // 0=ocean, 1=mixed, 2=land
+    float  maxSigma0;       // for the spot
+
     //-------//
     // flags //
     //-------//
 
-    int  uniformSigmaField;  // set all sigma0 values to a constant value
-    float uniformSigmaValue; // the sigma0 to use when uniformSigmaField is set
-    int  outputXToStdout;    // write X value to stdout
-    int  useKfactor;         // read and use K-factor table
-    int  createXtable;       // create an X table
-    int  computeXfactor;     // compute X-factor
-    int  useBYUXfactor;      // read and use Xfactor table
-    int  rangeGateClipping;  // simulate range gate clipping
-    int  applyDopplerError;  // simulate doppler tracking error
-    int  l1aFrameReady;      // indicates a level 0 frame is ready
-    int  simKpcFlag;         // 0 = no Kpc, 1 = Kpc
-    int  simCorrKpmFlag;     // 0 = no Kpm, 1 = correllated Kpm
-    int  simUncorrKpmFlag;   // 0 = no Kpm, 1 = uncorrellated Kpm
-    int  simKpriFlag;        // 0 = no Kpri, 1 = Kpri
+    int    uniformSigmaField;  // set all sigma0 values to a constant value
+    float  uniformSigmaValue;  // the sigma0 when uniformSigmaField is set
+    int    outputXToStdout;    // write X value to stdout
+    int    useKfactor;         // read and use K-factor table
+    int    createXtable;       // create an X table
+    int    computeXfactor;     // compute X-factor
+    int    useBYUXfactor;      // read and use Xfactor table
+    int    rangeGateClipping;  // simulate range gate clipping
+    int    applyDopplerError;  // simulate doppler tracking error
+    int    l1aFrameReady;      // indicates a level 0 frame is ready
+    int    simKpcFlag;         // 0 = no Kpc, 1 = Kpc
+    int    simCorrKpmFlag;     // 0 = no Kpm, 1 = correllated Kpm
+    int    simUncorrKpmFlag;   // 0 = no Kpm, 1 = uncorrellated Kpm
+    int    simKpriFlag;        // 0 = no Kpri, 1 = Kpri
 
 protected:
     int  _spotNumber;

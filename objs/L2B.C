@@ -232,6 +232,12 @@ L2B::ReadPureHdf(
             fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
             return(0);
         }
+        if (wvc_row != ati + 1)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: mismatched index and row\n");
+            fprintf(stderr, "    ati = %d, wvc_row = %d\n", ati, wvc_row);
+            return(0);
+        }
 
         int16 wvc_lat[ROW_WIDTH];
         if (SDreaddata(wvc_lat_sds_id, generic_start, NULL,
@@ -241,7 +247,7 @@ L2B::ReadPureHdf(
             return(0);
         }
 
-        int16 wvc_lon[ROW_WIDTH];
+        uint16 wvc_lon[ROW_WIDTH];
         if (SDreaddata(wvc_lon_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_lon) == FAIL)
         {
@@ -546,6 +552,140 @@ L2B::ReadPureHdf(
     if (SDend(sd_id) == FAIL)
     {
         fprintf(stderr, "L2B::ReadPureHdf: error with SDend\n");
+        return(0);
+    }
+
+    // success!
+    return(1);
+}
+
+//--------------------//
+// L2B::InsertPureHdf //
+//--------------------//
+// right now, this just inserts the selection
+
+int
+L2B::InsertPureHdf(
+    const char*  input_filename,
+    const char*  output_filename,
+    int          unnormalize_mle_flag)
+{
+    //----------------------------------------//
+    // copy the input file to the output file //
+    //----------------------------------------//
+
+    FILE* ifp = fopen(input_filename, "r");
+    if (ifp == NULL)
+        return(0);
+
+    FILE* ofp = fopen(output_filename, "w");
+    if (ofp == NULL)
+        return(0);
+
+    char c;
+    while (fread(&c, sizeof(char), 1, ifp) == 1)
+    {
+        fwrite(&c, sizeof(char), 1, ofp);
+    }
+    if (! feof(ifp))
+        return(0);    // error, not EOF
+
+    fclose(ifp);
+
+    //----------------------------------------//
+    // some generic HDF start and edge arrays //
+    //----------------------------------------//
+    // the HDF write routines should only access as many dimensions as needed
+    int32 generic_start[3] = { 0, 0, 0 };
+    int32 generic_edges[3] = { 1, ROW_WIDTH, AMBIGS };
+
+    //--------------------------//
+    // start access to the file //
+    //--------------------------//
+
+    int32 sd_id = SDstart(output_filename, DFACC_WRITE);
+    if (sd_id == FAIL)
+    {
+        fprintf(stderr, "L2B::InsertPureHdf: error with SDstart\n");
+        return(0);
+    }
+
+    //-------------------------------//
+    // get all the necessary SDS IDs //
+    //-------------------------------//
+
+    int32 wvc_selection_sds_id = SDnametoid(sd_id, "wvc_selection");
+
+    //--------------//
+    // for each row //
+    //--------------//
+
+    for (int ati = 0; ati < frame.swath.GetAlongTrackBins(); ati++)
+    {
+        //-----------------//
+        // prepare the row //
+        //-----------------//
+
+        generic_start[0] = ati;
+
+        //----------------------------------------//
+        // assemble wind vector cells into arrays //
+        //----------------------------------------//
+
+        int8 wvc_selection[ROW_WIDTH];
+
+        for (int cti = 0; cti < frame.swath.GetCrossTrackBins(); cti++)
+        {
+            //-------------------------------//
+            // initialize the array elements //
+            //-------------------------------//
+
+            wvc_selection[cti] = 0;
+
+            //-------------//
+            // get the WVC //
+            //-------------//
+
+            WVC* wvc = frame.swath.GetWVC(ati, cti);
+            if (wvc == NULL)
+            {
+                continue;
+            }
+
+            //----------------------------//
+            // set the selected ambiguity //
+            //----------------------------//
+
+            int index = wvc->ambiguities.GetIndexOf(wvc->selected);
+            if (index != -1)
+                wvc_selection[cti] = index;
+        }
+
+        //---------------------------//
+        // write the selection array //
+        //---------------------------//
+
+        if (SDwritedata(wvc_selection_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_selection) == FAIL)
+        {
+            fprintf(stderr, "L2B::InsertPureHdf: error with SDwritedata\n");
+            return(0);
+        }
+    }
+
+    if (SDendaccess(wvc_selection_sds_id) == FAIL)
+    {
+        fprintf(stderr, "L2B::InsertPureHdf: error with SDendaccess\n");
+        return(0);
+    }
+
+    //------------------------//
+    // end access to the file //
+    //------------------------//
+
+    if (SDend(sd_id) == FAIL)
+    {
+        fprintf(stderr, "L2B::InsertPureHdf: error with SDend\n");
         return(0);
     }
 
