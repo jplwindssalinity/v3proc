@@ -13,7 +13,8 @@ static const char rcs_id_beam_c[] =
 //======//
 
 Beam::Beam()
-:	lookAngle(0.0), azimuthAngle(0.0), polarization(NONE)
+:	polarization(NONE), timeOffset(0.0),
+	_lookAngle(0.0), _azimuthAngle(0.0)
 {
 	return;
 }
@@ -21,4 +22,33 @@ Beam::Beam()
 Beam::~Beam()
 {
 	return;
+}
+
+//-----------------------//
+// Beam::SetBeamGeometry //
+//-----------------------//
+
+int
+Beam::SetBeamGeometry(
+	double	look_angle,
+	double	azimuth_angle)
+{
+	//------------------------//
+	// copy passed parameters //
+	//------------------------//
+
+	_lookAngle = look_angle;
+	_azimuthAngle = azimuth_angle;
+
+	//----------------------------------------------------//
+	// generate forward and reverse coordinate transforms //
+	//----------------------------------------------------//
+
+	Attitude beam_frame;
+	beam_frame.Set(0.0, _lookAngle, _azimuthAngle, 3, 2, 1);
+
+	_antFrameToBeamFrame.SetRotation(beam_frame);
+	_beamFrameToAntFrame = _antFrameToBeamFrame.ReverseDirection();
+
+	return(1);
 }

@@ -19,10 +19,12 @@ static const char rcs_id_beam_h[] =
 //		Beam
 //
 // DESCRIPTION
-//		The Beam object contains beam state information.
+//		The Beam object contains beam state information and fixed
+//		coordinate transforms related to the beam "mounting" on the
+//		antenna.
 //======================================================================
 
-#include "Attitude.h"
+#include "CoordinateSwitch.h"
 
 enum PolE { NONE, V_POL, H_POL };
 
@@ -37,18 +39,35 @@ public:
 	Beam();
 	~Beam();
 
+	int		SetBeamGeometry(double look_angle, double azimuth_angle);
+
+	//---------//
+	// getting //
+	//---------//
+
+	CoordinateSwitch	GetAntFrameToBeamFrame()
+							{ return(_antFrameToBeamFrame); };
+	CoordinateSwitch	GetBeamFrameToAntFrame()
+							{ return(_beamFrameToAntFrame); };
+
 	//-----------//
 	// variables //
 	//-----------//
 
-	double	lookAngle;			// mounted look angle relative to antenna
-	double	azimuthAngle;		// mounted azimuth angle relative to antenna
 	PolE	polarization;
 	double	timeOffset;			// seconds after prf for beam index 0
 
-	// Note: the beamFrame needs to be formed using the lookAngle and
-	// azimuthAngle above.
-	Attitude beamFrame;			// beam frame relative to antenna frame
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	double	_lookAngle;
+	double	_azimuthAngle;
+
+	CoordinateSwitch	_antFrameToBeamFrame;
+	CoordinateSwitch	_beamFrameToAntFrame;
 };
 
 #endif
