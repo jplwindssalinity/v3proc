@@ -12,6 +12,13 @@ static const char rcs_id_beam_h[] =
 #include "CoordinateSwitch.h"
 #include "Tracking.h"
 
+// The following values are the latest antenna peak gain measurements
+// (see IOM-3347-98-037) with an adjustment to include the one-way loss
+// of the waveguide that connects the antenna system to the SES.
+//   G0V = 40.9 dB - 0.2 dB,  G0H = 39.5 dB - 0.2 dB
+#define G0V		40.7
+#define G0H		39.3
+
 //======================================================================
 // CLASSES
 //		Beam
@@ -50,7 +57,7 @@ public:
 
 	Beam();
 	~Beam();
-
+        
 	// Get and Set Beams separately.
 	int		GetElectricalBoresight(double* look_angle, double* azimuth_angle);
 	int		SetElectricalBoresight(double look_angle, double azimuth_angle);
@@ -93,7 +100,7 @@ public:
 	RangeTracker	rangeTracker;
 	DopplerTracker	dopplerTracker;
 
-//protected:
+
 
 	//---------//
 	// methods //
@@ -103,11 +110,12 @@ public:
 	// variables //
 	//-----------//
 
-	// coordinate swith from antenna frame to beam measurement frame
-	CoordinateSwitch	_antennaFrameToBeamFrame;
 
 	double				_elecBoresightLook;		// in the antenna frame
 	double				_elecBoresightAzim;
+
+	// coordinate swith from antenna frame to beam measurement frame
+	CoordinateSwitch	_antennaFrameToBeamFrame;
 
 	// Beam pattern info
 	double		_electrical_boresight_Em;
@@ -122,3 +130,5 @@ public:
 };
 
 #endif
+
+
