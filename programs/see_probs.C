@@ -79,6 +79,8 @@ static const char rcs_id[] =
 #define HISTO_MAX        200
 #define NUMBER_OF_PICKS  20
 
+#define HISTO_SAMPLES    100
+
 //--------//
 // MACROS //
 //--------//
@@ -776,6 +778,100 @@ main(
       prob_index.IndexToValue(m, &sprob);
       double prob = (double)good_count / (double)total_count;
       fprintf(ofp, "%g %g %ld\n", sprob, prob, total_count);
+    }
+    fclose(ofp);
+
+    //------------------------//
+    // probability histograms //
+    //------------------------//
+
+    unsigned long prob_histo[HISTO_SAMPLES+1];
+    for (int i = 0; i < HISTO_SAMPLES+1; i++)
+        prob_histo[i] = 0;
+
+    sprintf(filename, "%s.histo", prob_file);
+    ofp = fopen(filename, "w");
+    if (ofp == NULL)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            filename);
+        exit(1);
+    }
+
+    unsigned long total_count = 0;
+    for (int i = 0; i < FIRST_PROB_INDICIES; i++)
+    {
+      for (int j = 0; j < FIRST_REL_DIR_INDICIES; j++)
+      {
+        for (int k = 0; k < CTI_INDICIES; k++)
+        {
+          for (int l = 0; l < SPEED_INDICIES; l++)
+          {
+            double prob = (double)first_good_array[i][j][k][l] /
+              (double)first_count_array[i][j][k][l];
+            if (! opt_raw)
+            {
+              prob -= sqrt(0.25 / (double)first_count_array[i][j][k][l]);
+            }
+            int prob_idx = (int)(prob * HISTO_SAMPLES + 0.5);
+            if (prob_idx < 0 || prob_idx > HISTO_SAMPLES)
+              continue;
+            prob_histo[prob_idx] += first_count_array[i][j][k][l];
+            total_count += first_count_array[i][j][k][l];
+          }
+        }
+      }
+    }
+    unsigned long cum_count = 0;
+    for (int i = 0; i < HISTO_SAMPLES+1; i++)
+    {
+      double prob = (double)i / (double)HISTO_SAMPLES;
+      cum_count += prob_histo[i];
+      fprintf(ofp, "%g %g %g\n", prob, (double)prob_histo[i] /
+        (double)total_count, (double)cum_count / (double)total_count);
+    }
+
+    fprintf(ofp, "&\n");
+
+    for (int i = 0; i < HISTO_SAMPLES+1; i++)
+        prob_histo[i] = 0;
+
+    total_count = 0;
+    for (int i = 0; i < NEIGHBOR_INDICIES; i++)
+    {
+      for (int j = 0; j < DIF_RATIO_INDICIES; j++)
+      {
+        for (int k = 0; k < SPEED_INDICIES; k++)
+        {
+          for (int l = 0; l < CTI_INDICIES; l++)
+          {
+            for (int m = 0; m < PROB_INDICIES; m++)
+            {
+              double prob =
+                (double)filter_good_array[i][j][k][l][m] /
+                (double)filter_count_array[i][j][k][l][m];
+              if (! opt_raw)
+              {
+                prob -= sqrt(0.25 /
+                  (double)filter_count_array[i][j][k][l][m]);
+              }
+              int prob_idx = (int)(prob * HISTO_SAMPLES + 0.5);
+              if (prob_idx < 0 || prob_idx > HISTO_SAMPLES)
+                continue;
+              prob_histo[prob_idx] += first_count_array[i][j][k][l];
+              total_count += first_count_array[i][j][k][l];
+            }
+          }
+        }
+      }
+    }
+    cum_count = 0;
+    for (int i = 0; i < HISTO_SAMPLES+1; i++)
+    {
+      cum_count += prob_histo[i];
+      double prob = (double)i / (double)HISTO_SAMPLES;
+      fprintf(ofp, "%g %g %g\n", prob, (double)prob_histo[i] /
+        (double)total_count, (double)cum_count / (double)total_count);
     }
     fclose(ofp);
 

@@ -141,6 +141,7 @@ extern int g_number_needed;
 extern float g_too_different;
 extern float g_error_ratio_of_best;
 extern float g_error_of_best;
+extern int   g_rain_bit_flag_on;
 
 float            local_prob[AT_WIDTH][CT_WIDTH];
 WindVectorPlus*  local_best[AT_WIDTH][CT_WIDTH];
@@ -421,6 +422,19 @@ main(
                         if (other_wvc == NULL)
                             continue;
 
+                        //------------------------//
+                        // only use rainfree data //
+                        //------------------------//
+
+                        int unusable = other_wvc->rainFlagBits &
+                            RAIN_FLAG_UNUSABLE;
+                        if (unusable)
+                            continue;
+                        int rain = other_wvc->rainFlagBits &
+                            RAIN_FLAG_RAIN;
+                        if (rain)
+                            continue;
+
                         //----------------------------//
                         // find the nearest ambiguity //
                         //----------------------------//
@@ -498,6 +512,19 @@ main(
                 if (wvc->selected)
                     continue;
 
+                //------------------------//
+                // only use rainfree data //
+                //------------------------//
+
+                int unusable = wvc->rainFlagBits &
+                    RAIN_FLAG_UNUSABLE;
+                if (unusable)
+                    continue;
+                int rain = wvc->rainFlagBits & 
+                    RAIN_FLAG_RAIN;
+                if (rain)
+                    continue;
+
                 if (local_prob[ati][cti] > best_thresh)
                 {
                     wvc->selected = local_best[ati][cti];
@@ -510,6 +537,7 @@ main(
 
         for (int pass_idx = 0; pass_idx < 2; pass_idx++)
         {
+g_rain_bit_flag_on = 1;
             printf("Init %02d, Pass %d\n", init_idx, pass_idx + 1);
             g_speed_stopper = speed[pass_idx];
             g_error_ratio_of_best = best_ratio[pass_idx];

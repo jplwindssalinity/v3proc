@@ -125,13 +125,9 @@ const char* usage_array[] = { "[ -h ]", "<cfg_file>", "<first_prob_file>",
     "<l2b_input_file...>", 0 };
 
 WindVectorPlus*  original_selected[CT_WIDTH][AT_WIDTH];
-char             rain_contaminated[CT_WIDTH][AT_WIDTH];
 
-float            first_obj_prob[CT_WIDTH][AT_WIDTH];
-float            first_obj_speed[CT_WIDTH][AT_WIDTH];
-
-unsigned short  first_count_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
-unsigned short  first_good_array[FIRST_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_count_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
+unsigned short  first_good_array[FIRST_PROB_INDICIES][FIRST_REL_DIR_INDICIES][CTI_INDICIES][SPEED_INDICIES];
 
 int opt_hdf = 0;
 
@@ -198,9 +194,11 @@ main(
     // initialize some index calculators //
     //-----------------------------------//
 
-    Index first_index, cti_index, speed_index;
-    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
-        FIRST_INDICIES);
+    Index first_prob_index, first_rel_dir_index, cti_index, speed_index;
+    first_prob_index.SpecifyCenters(FIRST_PROB_MIN_VALUE, FIRST_PROB_MAX_VALUE,
+        FIRST_PROB_INDICIES);
+    first_rel_dir_index.SpecifyCenters(FIRST_REL_DIR_MIN_VALUE,
+        FIRST_REL_DIR_MAX_VALUE, FIRST_REL_DIR_INDICIES);
     cti_index.SpecifyCenters(CTI_MIN_VALUE, CTI_MAX_VALUE,
         CTI_INDICIES);
     speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
@@ -251,6 +249,23 @@ main(
                     command, l2b_input_file);
                 continue;
             }
+        }
+
+        //--------------------------------------//
+        // pre-calculate s/c velocity direction //
+        //--------------------------------------//
+
+        float sc_dir[AT_WIDTH];
+        double tani = tan(l2b.header.inclination);
+        for (int i = 0; i < AT_WIDTH; i++)
+        {
+            double u = ((double)i + 0.5) * two_pi / (double)AT_WIDTH -
+                pi_over_two;
+            double cosu = cos(u);
+            double ang = atan(1.0 / (cosu * tani));
+            if (ang > 0.0)
+                ang -= pi;
+            sc_dir[i] = CWNTOCCWE(ang);
         }
 
         //---------//
@@ -325,10 +340,11 @@ main(
                 if (wvp1 == NULL)
                     continue;
 
+                int rain_contaminated = 0;
                 if (wvc->rainFlagBits & RAIN_FLAG_UNUSABLE ||
                     wvc->rainFlagBits & RAIN_FLAG_RAIN)
                 {
-                    rain_contaminated[cti][ati] = 1;
+                    rain_contaminated = 1;
                 }
 
                 float wvc_prob_sum = 0.0;
@@ -348,54 +364,80 @@ main(
                 {
                     wvp->obj /= wvc_prob_sum;
                 }
-                first_obj_prob[cti][ati] = wvp1->obj;
-                first_obj_speed[cti][ati] = wvp1->spd;
+                float first_obj_prob = wvp1->obj;
+                float first_obj_speed = wvp1->spd;
+
+                //---------------------------------------------//
+                // calculate the swath-relative wind direction //
+                //---------------------------------------------//
+
+                // get a cross-swath direction that points away from
+                // the ground track
+                double xdir = 0.0;
+                if (cti <= CTI_MAX_VALUE)
+                    xdir = sc_dir[ati] + pi_over_two;
+                else
+                    xdir = sc_dir[ati] - pi_over_two;
+
+                // determine the wind direction
+                float first_dir = wvp1->dir;
+
+                // determine the relative wind direction (0-180) //
+                float rel_dir = first_dir - xdir;
+                while (rel_dir < 0.0)
+                    rel_dir += two_pi;
+                while (rel_dir > two_pi)
+                    rel_dir -= two_pi;
+                if (rel_dir > pi)
+                    rel_dir = two_pi - rel_dir;
+                rel_dir *= rtd;
 
                 //---------------//
                 // learn quickly //
                 //---------------//
 
-                if (first_obj_prob[cti][ati] > FIRST_MIN_VALUE &&
-                    ! rain_contaminated[cti][ati])
+                if (first_obj_prob > FIRST_PROB_MIN_VALUE &&
+                    ! rain_contaminated)
                 {
-                    int fidx, cidx, sidx;
-                    first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
+                    int fidx, ridx, cidx, sidx;
+                    first_prob_index.GetNearestIndexClipped(first_obj_prob,
                        &fidx);
+                    first_rel_dir_index.GetNearestIndexClipped(rel_dir,
+                       &ridx);
 
                     int use_cti = cti;
                     if (use_cti > CTI_FOLD_MAX)
                         use_cti = CTI_FOLDER - use_cti;
                     cti_index.GetNearestIndexClipped(use_cti, &cidx);
 
-                    speed_index.GetNearestIndexClipped(
-                       first_obj_speed[cti][ati], &sidx);
+                    speed_index.GetNearestIndexClipped(first_obj_speed, &sidx);
 
                     // scale if necessary
-                    if (first_count_array[fidx][cidx][sidx] >= MAX_SHORT)
+                    if (first_count_array[fidx][ridx][cidx][sidx] >= MAX_SHORT)
                     {
                         printf("chopping %d %d\n",
-                            first_good_array[fidx][cidx][sidx],
-                            first_count_array[fidx][cidx][sidx]);
+                            first_good_array[fidx][ridx][cidx][sidx],
+                            first_count_array[fidx][ridx][cidx][sidx]);
                         double new_count =
-                          (double)first_count_array[fidx][cidx][sidx] * 15.0 /
-                          16.0;
+                          (double)first_count_array[fidx][ridx][cidx][sidx] *
+                          15.0 / 16.0;
                         double new_good =
-                          (double)first_good_array[fidx][cidx][sidx] * 15.0 /
-                          16.0;
-                        first_count_array[fidx][cidx][sidx] =
+                          (double)first_good_array[fidx][ridx][cidx][sidx] *
+                          15.0 / 16.0;
+                        first_count_array[fidx][ridx][cidx][sidx] =
                           (unsigned short)(new_count + 0.5);
-                        first_good_array[fidx][cidx][sidx] =
+                        first_good_array[fidx][ridx][cidx][sidx] =
                           (unsigned short)(new_good + 0.5);
-                        if (first_good_array[fidx][cidx][sidx] >=
-                            first_count_array[fidx][cidx][sidx])
+                        if (first_good_array[fidx][ridx][cidx][sidx] >=
+                            first_count_array[fidx][ridx][cidx][sidx])
                         {
-                          first_good_array[fidx][cidx][sidx] =
-                            first_count_array[fidx][cidx][sidx];
+                          first_good_array[fidx][ridx][cidx][sidx] =
+                            first_count_array[fidx][ridx][cidx][sidx];
                         }
                     }
                     if (wvp1 == original_selected[cti][ati])
-                        first_good_array[fidx][cidx][sidx]++;
-                    first_count_array[fidx][cidx][sidx]++;
+                        first_good_array[fidx][ridx][cidx][sidx]++;
+                    first_count_array[fidx][ridx][cidx][sidx]++;
                 }
             }
         }
@@ -421,9 +463,11 @@ main(
     else
     {
         fwrite(first_count_array, sizeof(unsigned short),
-            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ofp);
+            FIRST_PROB_INDICIES*FIRST_REL_DIR_INDICIES*CTI_INDICIES*SPEED_INDICIES,
+            ofp);
         fwrite(first_good_array, sizeof(unsigned short),
-            FIRST_INDICIES*CTI_INDICIES*SPEED_INDICIES, ofp);
+            FIRST_PROB_INDICIES*FIRST_REL_DIR_INDICIES*CTI_INDICIES*SPEED_INDICIES,
+            ofp);
         fclose(ofp);
     }
 
