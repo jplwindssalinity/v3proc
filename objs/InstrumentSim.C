@@ -127,6 +127,8 @@ InstrumentSim::SetMeasurements(
 	int sliceno = -slice_count/2;
 	for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
 	{
+		meas->startSliceIdx = sliceno;
+
 		//----------------------------------------//
 		// get lon and lat for the earth location //
 		//----------------------------------------//
