@@ -63,7 +63,11 @@ polint(
 			double w = c[i+1] - d[i];
 			double den = ho - hp;
 			if (den == 0.0)
+			{
+				free(c);
+				free(d);
 				return(0);		// error
+			}
 			den = w / den;
 			d[i] = hp * den;
 			c[i] = ho * den;

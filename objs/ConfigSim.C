@@ -1014,7 +1014,7 @@ ConfigGrid(
 	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
 		return(0);
 
-	grid->Allocate(ct_res, at_res, 2000.0, 5000.0);
+	grid->Allocate(ct_res, at_res, 2000.0, 2000.0);
 
 	return(1);
 }

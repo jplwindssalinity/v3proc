@@ -196,7 +196,7 @@ Ephemeris::FindSouthPole()
 		return(os1);
 	}
 
-}	
+}
 
 //------------------------//
 // Ephemeris::GetPosition //
@@ -232,55 +232,54 @@ Ephemeris::GetOrbitState(
 	int				order,
 	OrbitState*		orbit_state)
 {
-
-	if (order < 0) return(0);
+	if (order < 0)
+		return(0);
 
 	if (order != _interp_order)
 	{	// need to reform the interpolating arrays.
-		if (_interp_time != NULL) free(_interp_time);
-		_interp_time = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_x != NULL) free(_interp_x);
-		_interp_x = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_y != NULL) free(_interp_y);
-		_interp_y = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_z != NULL) free(_interp_z);
-		_interp_z = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_vx != NULL) free(_interp_vx);
-		_interp_vx = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_vy != NULL) free(_interp_vy);
-		_interp_vy = (double*)malloc(sizeof(double)*(order+1));
-		if (_interp_vz != NULL) free(_interp_vz);
-		_interp_vz = (double*)malloc(sizeof(double)*(order+1));
+		_interp_time = (double*)realloc(_interp_time, sizeof(double)*(order+1));
+		_interp_x = (double*)realloc(_interp_x, sizeof(double)*(order+1));
+		_interp_y = (double*)realloc(_interp_y, sizeof(double)*(order+1));
+		_interp_z = (double*)realloc(_interp_z, sizeof(double)*(order+1));
+		_interp_vx = (double*)realloc(_interp_vx, sizeof(double)*(order+1));
+		_interp_vy = (double*)realloc(_interp_vy, sizeof(double)*(order+1));
+		_interp_vz = (double*)realloc(_interp_vz, sizeof(double)*(order+1));
 		if ((_interp_x == NULL) || (_interp_y == NULL) ||
 			(_interp_z == NULL) || (_interp_vx == NULL) ||
 			(_interp_vy == NULL) || (_interp_vz == NULL) ||
 			(_interp_time == NULL))
 		{
-		return(0);
+			return(0);
 		}
+		_interp_order = order;
 	}
 
 	OrbitState* os1;
 	OrbitState* os2;
 	if (_GetBracketingOrbitStates(time, &os1, &os2) == 0)
 	{
-	//	printf("Error: Can't find requested time %g in Ephemeris\n",time);
+		//	printf("Error: Can't find requested time %g in Ephemeris\n",time);
 		return(0);
 	}
 
 	if ((os1->time != _interp_midpoint_time) || (order != _interp_order))
-	{	// Interpolating points need to be set up.
+	{
+		// Interpolating points need to be set up.
 		_interp_midpoint_time = os1->time;
-		_interp_order = order;
+
 		for (int i=0; i < (order+1)/2; i++)
-		{	// Position list at start of the set of interpolating points.
+		{
+			// Position list at start of the set of interpolating points.
 			if (GotoPrev() == 0) break;	// Can't back up anymore.
 		}
 		OrbitState* os = GetCurrent();
 		if (os == NULL) os = GetHead();	// Backed off beginning of list.
 		for (int i=0; i < order+1; i++)
-		{	// Load the interpolating set.
-			if (os == NULL) return(0);	// Ephemeris not long enough
+		{
+			// Load the interpolating set.
+			if (os == NULL)
+				return(0);		// Ephemeris not long enough
+
 			_interp_time[i] = os->time;
 			_interp_x[i] = os->rsat.Get(0);
 			_interp_y[i] = os->rsat.Get(1);
