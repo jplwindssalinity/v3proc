@@ -61,6 +61,7 @@ OBJS = \
 	Sigma0.o \
 	Spacecraft.o \
 	SpacecraftSim.o \
+	Tracking.o \
 	Wind.o
 
 INCS = \
@@ -165,4 +166,5 @@ PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h
 Sigma0.o: Sigma0.C Sigma0.h Spacecraft.h Instrument.h Meas.h Constants.h Matrix3.h Ephemeris.h Attitude.h Antenna.h Beam.h LonLat.h List.h BufferedList.h EarthPosition.h CoordinateSwitch.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
+Tracking.o: Tracking.C Tracking.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
