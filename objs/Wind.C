@@ -2653,8 +2653,8 @@ WindSwath::DirectionDensity(
                 continue;
 
             int ati_plus = ati + 1;
-            if (ati_plus < 0)
-                ati_plus = 0;
+            if (ati_plus >= _alongTrackBins)
+                ati_plus = _alongTrackBins - 1;
 			WVC* wvc_plus = swath[cti][ati_plus];
 			if (! wvc_plus)
                 continue;
