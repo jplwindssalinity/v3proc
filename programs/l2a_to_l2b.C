@@ -183,7 +183,7 @@ main(
 	//------------//
 
 	l17.file.OpenForInput();
-	l20.file.OpenForOutput();
+	l20.OpenForWriting();
 
 	//---------------------------------//
 	// read the header to set up swath //

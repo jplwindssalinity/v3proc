@@ -58,7 +58,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "Misc.h"
-#include "Wind.h"
+#include "L20.h"
 #include "List.h"
 #include "List.C"
 
@@ -66,8 +66,8 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
-template class List<WindVectorPlus>;
 template class List<EarthPosition>;
+template class List<WindVectorPlus>;
 
 //-----------//
 // CONSTANTS //
@@ -123,12 +123,31 @@ main(
 	else
 		output_base = l20_file;
 
-	//-----------------------------------//
-	// read in level 2.0 file wind swath //
-	//-----------------------------------//
+	//------------------------//
+	// read in level 2.0 file //
+	//------------------------//
 
-	WindSwath swath;
-	swath.ReadL20(l20_file);
+	L20 l20;
+	l20.SetFilename(l20_file);
+	if (! l20.OpenForWriting())
+	{
+		fprintf(stderr, "%s: error opening L20 file %s\n", command, l20_file);
+		exit(1);
+	}
+
+	if (! l20.ReadHeader())
+	{
+		fprintf(stderr, "%s: error reading L20 header from file %s\n",
+			command, l20_file);
+		exit(1);
+	}
+
+	if (! l20.ReadDataRec())
+	{
+		fprintf(stderr, "%s: error reading L20 swath from file %s\n",
+			command, l20_file);
+		exit(1);
+	}
 
 	//----------------------------//
 	// read in "truth" wind field //
@@ -149,11 +168,13 @@ main(
 	int count[ARRAY_SIZE];
 	float ctd[ARRAY_SIZE];
 	int max_idx;
-	if (! swath.RmsSpeedError(&truth, value, count, ctd, &max_idx))
+/*
+	if (! l20.frame.swath.RmsSpeedError(&truth, value, count, ctd, &max_idx))
 	{
 		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
 		exit(1);
 	}
+*/
 
 	char filename[1024];
 	sprintf(filename, "%s.rms_spd_err", output_base);
