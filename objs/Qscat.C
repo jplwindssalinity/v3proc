@@ -998,6 +998,32 @@ Qscat::SetOtherAzimuths(
     return(1);
 }
 
+//-------------------//
+// Qscat::MakeSlices //
+//-------------------//
+
+// This method creates the measurement list (of Meas's) for a spot
+// and sets the Meas indices (with one slice per Meas).
+
+int
+Qscat::MakeSlices(MeasSpot* meas_spot)
+
+{
+  meas_spot->FreeContents();
+  int total_slices = ses.GetTotalSliceCount();
+
+  for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
+  {
+    Meas* meas = new Meas();
+    // We assume that the slices are sequential.
+    abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
+    meas->numSlices = 1;
+    meas_spot->Append(meas);
+  }
+
+  return(1);
+}
+
 //---------------------//
 // Qscat::LocateSlices //
 //---------------------//
@@ -1020,7 +1046,6 @@ Qscat::LocateSlices(
     // set up meas spot //
     //------------------//
 
-    meas_spot->FreeContents();
     meas_spot->time = cds.time;
     meas_spot->scOrbitState = *orbit_state;
     meas_spot->scAttitude = *attitude;
@@ -1045,14 +1070,9 @@ Qscat::LocateSlices(
     //-------------------//
 
     int total_slices = ses.GetTotalSliceCount();
+    Meas* meas = meas_spot->GetHead();
     for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
     {
-        //-------------------------//
-        // create a new measurment //
-        //-------------------------//
-
-        Meas* meas = new Meas();
-
         //----------------------------------------//
         // determine the baseband frequency range //
         //----------------------------------------//
@@ -1095,11 +1115,11 @@ Qscat::LocateSlices(
         meas->centroid = centroid;
         meas->bandwidth = bw;
 
-        //-----------------------------//
-        // add measurment to meas spot //
-        //-----------------------------//
+        //--------------------------//
+        // move to next measurement //
+        //--------------------------//
 
-        meas_spot->Append(meas);
+        meas = meas_spot->GetNext();
     }
     return(1);
 }
@@ -2188,7 +2208,6 @@ Qscat::LocateSliceCentroids(
     // set up meas spot //
     //------------------//
 
-    meas_spot->FreeContents();
     meas_spot->time = cds.time;
     meas_spot->scOrbitState = *orbit_state;
     meas_spot->scAttitude = *attitude;
@@ -2279,6 +2298,7 @@ Qscat::LocateSliceCentroids(
         return(0);
     }
 
+    Meas* meas = meas_spot->GetHead();
     for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
     {
         //----------------------------------//
@@ -2319,21 +2339,16 @@ Qscat::LocateSliceCentroids(
         //--------------------//
 
         if (gain_threshold && gain / peak_two_way_gain < gain_threshold)
-            continue;
+        {
+           meas = meas_spot->RemoveCurrent();  // also moves to next Meas
+           if (meas) delete meas;
+           meas = meas_spot->GetCurrent();
+           continue;
+        }
 
         gains[slice_count] = gain;
 
-        //-------------------------//
-        // create a new measurment //
-        //-------------------------//
-
-        Meas* meas = new Meas();
-        // We assume that the slices are sequential.
-        abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
-        meas->numSlices = 1;
-
-        if (Esn)
-            meas->value = Esn[slice_idx];
+        if (Esn) meas->value = Esn[slice_idx];
 
         //--------------------------------//
         // find the centroid on the earth //
@@ -2370,11 +2385,11 @@ Qscat::LocateSliceCentroids(
         meas->centroid = centroid;
         meas->bandwidth = bw;
 
-        //-----------------------------//
-        // add measurment to meas spot //
-        //-----------------------------//
+        //--------------------------//
+        // move to next measurement //
+        //--------------------------//
 
-        meas_spot->Append(meas);
+        meas = meas_spot->GetNext();
         slice_count++;
     }
 

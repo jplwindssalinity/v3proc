@@ -7,6 +7,7 @@ static const char rcs_id_pscatsim_c[] =
     "@(#) $Id$";
 
 #include "PscatSim.h"
+#include "PMeas.h"
 #include "CheckFrame.h"
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
@@ -213,6 +214,13 @@ PscatSim::ScatSim(
     SetOrbitStepDelayAndFrequency(spacecraft, pscat);
 
     //---------------------//
+    // Create measurements //
+    //---------------------//
+
+    if (! pscat->MakeSlices(&meas_spot))
+        return(0);
+
+    //---------------------//
     // locate measurements //
     //---------------------//
 
@@ -409,8 +417,8 @@ PscatSim::SetMeasTypes(
         }
         break;
     case PscatEvent::VV_VH_SCAT_EVENT:
-        for (Meas* meas = meas_spot->GetHead(); meas;
-            meas = meas_spot->GetNext())
+        for (PMeas* meas = (PMeas*)meas_spot->GetHead(); meas;
+            meas = (PMeas*)meas_spot->GetNext())
         {
             meas->measType = Meas::VV_VH_CORR_MEAS_TYPE;
 
@@ -418,24 +426,31 @@ PscatSim::SetMeasTypes(
             // add VV measurement //
             //--------------------//
 
-            Meas* new_meas = new Meas();
+            PMeas* new_meas = new PMeas();
             *new_meas = *meas;
             new_meas->measType = Meas::VV_MEAS_TYPE;
-            meas_spot->InsertAfter(new_meas);
+            meas_spot->InsertBefore(new_meas);
 
             //--------------------//
             // add VH measurement //
             //--------------------//
 
-            new_meas = new Meas();
+            new_meas = new PMeas();
             *new_meas = *meas;
             new_meas->measType = Meas::VH_MEAS_TYPE;
-            meas_spot->InsertAfter(new_meas);
+            meas_spot->InsertBefore(new_meas);
+
+            //---------------------------------------//
+            // Reposition after original measurement //
+            //---------------------------------------//
+
+            meas_spot->GotoNext();
+            meas_spot->GotoNext();
         }
         break;
     case PscatEvent::HH_HV_SCAT_EVENT:
-        for (Meas* meas = meas_spot->GetHead(); meas;
-            meas = meas_spot->GetNext())
+        for (PMeas* meas = (PMeas*)meas_spot->GetHead(); meas;
+            meas = (PMeas*)meas_spot->GetNext())
         {
             meas->measType = Meas::HH_HV_CORR_MEAS_TYPE;
 
@@ -443,19 +458,26 @@ PscatSim::SetMeasTypes(
             // add HH measurement //
             //--------------------//
 
-            Meas* new_meas = new Meas();
+            PMeas* new_meas = new PMeas();
             *new_meas = *meas;
             new_meas->measType = Meas::HH_MEAS_TYPE;
-            meas_spot->InsertAfter(new_meas);
+            meas_spot->InsertBefore(new_meas);
 
             //--------------------//
             // add HV measurement //
             //--------------------//
 
-            new_meas = new Meas();
+            new_meas = new PMeas();
             *new_meas = *meas;
             new_meas->measType = Meas::HV_MEAS_TYPE;
-            meas_spot->InsertAfter(new_meas);
+            meas_spot->InsertBefore(new_meas);
+
+            //---------------------------------------//
+            // Reposition after original measurement //
+            //---------------------------------------//
+
+            meas_spot->GotoNext();
+            meas_spot->GotoNext();
         }
         break;
     default:
@@ -487,7 +509,7 @@ PscatSim::SetMeasurements(
     int slice_count = pscat->ses.GetTotalSliceCount();
     int slice_i = 0;
     int sliceno = -slice_count / 2;
-    Meas* meas = meas_spot->GetHead();
+    PMeas* meas = (PMeas*)meas_spot->GetHead();
     while (meas)
     {
         meas->startSliceIdx = sliceno;
@@ -617,9 +639,9 @@ PscatSim::SetMeasurements(
             {
                 if (! ComputeXfactor(spacecraft, pscat, meas, &Xfactor))
                 {
-                    meas=meas_spot->RemoveCurrent();
-                    delete meas;
-                    meas=meas_spot->GetCurrent();
+                    meas=(PMeas*)meas_spot->RemoveCurrent();
+                    if (meas) delete meas;
+                    meas=(PMeas*)meas_spot->GetCurrent();
                     slice_i++;
                     sliceno++;
                     if (slice_count%2==0 && sliceno==0)
@@ -631,13 +653,35 @@ PscatSim::SetMeasurements(
             {
                 Xfactor = BYUX.GetXTotal(spacecraft, pscat, meas, NULL);
             }
-            if (! sigma0_to_Esn_slice_given_X(pscat, meas, Xfactor, sigma0,
-                simKpcFlag, &(meas->value), &Es, &En,
-                &var_esn_slice))
+
+            if (meas->measType == Meas::VV_VH_CORR_MEAS_TYPE || 
+                meas->measType == Meas::HH_HV_CORR_MEAS_TYPE)
+            {  // correlation measurements need extra info to compute Kpc
+		      PMeas* meas1 = (PMeas*)meas_spot->GetPrev();  // co-pol
+		      PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
+              if (meas1 == NULL || meas2 == NULL)
+              {
+                fprintf(stderr,"Error: PscatSim needs triplets of PMeas\n");
+                return(0);
+              }
+              meas_spot->GotoNext();  // back to the correlation meas
+              meas_spot->GotoNext();
+              if (! pscat->PMeasToEsn(meas, meas1, meas2, Xfactor, sigma0,
+                  simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
+              {
+                  return(0);
+              }
+            }
+            else if (! pscat->PMeasToEsn(meas, NULL, NULL, Xfactor, sigma0,
+                  simKpcFlag, &(meas->value), &Es, &En, &var_esn_slice))
             {
                 return(0);
             }
+
             meas->XK=Xfactor;
+            // Following are true values needed for simulation of Kpc
+            meas->Snr = Es/En;
+            meas->Sigma0 = sigma0;
 		}
         else
         {
@@ -674,7 +718,7 @@ PscatSim::SetMeasurements(
 		slice_i++;
 		if (slice_count%2==0 && sliceno==0)
             sliceno++;
-		meas=meas_spot->GetNext();
+		meas=(PMeas*)meas_spot->GetNext();
 	}
 
 	return(1);
@@ -690,16 +734,6 @@ PscatSim::SetL1AScience(
     Pscat*          pscat,
     PscatL1AFrame*  l1a_frame)
 {
-    //----------//
-    // set PtGr //
-    //----------//
-    // Only "noise it up" if simKpriFlag is set
-
-    l1a_frame->ptgr = pscat->ses.transmitPower * pscat->ses.rxGainEcho;
-
-    if (simKpriFlag)
-        l1a_frame->ptgr *= (1 + ptgrNoise.GetNumber(pscat->cds.time));
-
     //----------------------//
     // set antenna position //
     //----------------------//
@@ -718,13 +752,14 @@ PscatSim::SetL1AScience(
         // update the level 0.0 frame //
         //----------------------------//
 
-        l1a_frame->science[slice_number] = meas->value;
+        l1a_frame->science[slice_number] = (unsigned int)(meas->value);
         slice_number++;
     }
 
     // Compute the spot noise measurement.
-    sigma0_to_Esn_noise(pscat, meas_spot, simKpcFlag,
-        &(l1a_frame->spotNoise[_spotNumber]));
+    float spot_noise;
+    sigma0_to_Esn_noise(pscat, meas_spot, simKpcFlag, &spot_noise);
+    l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
 
     _spotNumber++;
 

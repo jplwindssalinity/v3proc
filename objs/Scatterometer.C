@@ -126,7 +126,6 @@ Scatterometer::LocateSpot(
     // set up meas spot //
     //------------------//
 
-    meas_spot->FreeContents();
     meas_spot->time = scatDig->time;
     meas_spot->scOrbitState = *orbit_state;
     meas_spot->scAttitude = *attitude;
@@ -186,8 +185,6 @@ Scatterometer::LocateSpot(
     // calculate the 3 dB outline //
     //----------------------------//
 
-    Meas* meas = new Meas();    // need the outline to append to
-
     // get the max gain value.
     float gp_max;
     if (beam->GetSpatialResponse(look, azim, sti.roundTripTime,
@@ -210,6 +207,7 @@ Scatterometer::LocateSpot(
     // the earth intercepts.
     //
 
+    Meas* meas = meas_spot->GetHead();    // need the outline to append to
     for (int i=0; i < POINTS_PER_SPOT_OUTLINE + 1; i++)
     {
         double phi = (two_pi * i) / POINTS_PER_SPOT_OUTLINE;
@@ -276,12 +274,6 @@ Scatterometer::LocateSpot(
 
     // set energy measurement to be consistent with slice handling
     meas->value = Esn;
-
-    //-----------------------------//
-    // add measurment to meas spot //
-    //-----------------------------//
-
-    meas_spot->Append(meas);
 
     return(1);
 }

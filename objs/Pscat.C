@@ -7,6 +7,9 @@ static const char rcs_id_pscat_c[] =
     "@(#) $Id$";
 
 #include "Pscat.h"
+#include "PMeas.h"
+#include "Misc.h"
+#include "Distributions.h"
 
 //============//
 // PscatEvent //
@@ -37,16 +40,43 @@ Pscat::~Pscat()
     return;
 }
 
-//-----------//
-// MeasToEsn //
-//-----------//
+//------------//
+// MakeSlices //
+//------------//
+
+// This method creates the measurement list (of PMeas's) for a spot
+// and sets the PMeas indices (with one slice per PMeas).
+
+int
+Pscat::MakeSlices(MeasSpot* meas_spot)
+
+{
+  meas_spot->FreeContents();
+  int total_slices = ses.GetTotalSliceCount();
+
+  for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
+  {
+    PMeas* pmeas = new PMeas();
+    // We assume that the slices are sequential.
+    abs_to_rel_idx(slice_idx,total_slices,&(pmeas->startSliceIdx));
+    pmeas->numSlices = 1;
+    meas_spot->Append(pmeas);
+  }
+
+  return(1);
+}
+
+//------------//
+// PMeasToEsn //
+//------------//
 
 // This method converts a sigma0 measurement (of a particular type)
 // to signal + noise energy measurements.
 
 int
-Pscat::MeasToEsn(Meas* meas,
-  Meas* prev_meas,
+Pscat::PMeasToEsn(PMeas* meas,
+  PMeas* meas1,
+  PMeas* meas2,
   float X,
   float sigma0,
   int sim_kpc_flag,
@@ -81,9 +111,9 @@ Pscat::MeasToEsn(Meas* meas,
   // Noise energy within one slice referenced like the signal energy.
   //------------------------------------------------------------------------//
 
-  double En1_slice = N0_echo * Bs * Tp;       // noise with signal
-  double En2_slice = N0_echo * Bs * (Tg-Tp);  // noise without signal
-  *En = En1_slice + En2_slice;
+  double En1 = N0_echo * Bs * Tp;       // noise with signal
+  double En2 = N0_echo * Bs * (Tg-Tp);  // noise without signal
+  *En = En1 + En2;
 
   //------------------------------------------------------------------------//
   // Signal + Noise Energy within one slice referenced like the signal energy.
@@ -96,9 +126,7 @@ Pscat::MeasToEsn(Meas* meas,
       *var_Esn = 0.0;
       return(1);
   }
-*var_Esn = 0.0;
 
-/*
   //------------------------------------------------------------------------//
   // Estimate the variance of the slice signal + noise energy measurements.
   // For copolarized measurements,
@@ -115,39 +143,37 @@ Pscat::MeasToEsn(Meas* meas,
   //------------------------------------------------------------------------//
 
   if (meas->measType == Meas::VV_MEAS_TYPE ||
-      meas->measType == Meas::HH_MEAS_TYPE)
-  {  // co-pol measurement
-    if (Tg != Tp)
+      meas->measType == Meas::HH_MEAS_TYPE ||
+      meas->measType == Meas::VH_MEAS_TYPE ||
+      meas->measType == Meas::HV_MEAS_TYPE)
+  {  // co-pol or cross-pol measurement
+    if (Tg > Tp)
     {
-      *var_Esn = (Es_slice + En1_slice)*(Es_slice + En1_slice) / (Bs*Tp) +
-                  En2_slice*En2_slice / (Bs*(Tg - Tp));
+      *var_Esn = (*Es + En1)*(*Es + En1) / (Bs*Tp) +
+                  En2*En2 / (Bs*(Tg - Tp));
     }
     else
-    {  // perfect gate width, so no noise only portion
-      *var_Esn = (Es_slice + En1_slice)*(Es_slice + En1_slice) / (Bs*Tp);
+    {  // receive gate is filled, so no noise only portion
+      *var_Esn = (*Es + En1)*(*Es + En1) / (Bs*Tg);
     }
   }
-  else if (prev_meas != NULL)
-  { // correlation measurement (ie., sigma0 = sigma_vvhv)
-    float sig_vv = prev_meas->sigma0;
-    float sig_hv = 0.0; // huh?  we need a more complete Meas type.
-    float snr_vv = 1.0;
-    float snr_hv = 1.0;
-    double var_sigvvhv = (sigma0*sigma0 +
-      sig_vv * sig_hv * (1.0/(1.0+snr_vv))*(1.0/(1.0+snr_hv))) / (2*Bs*Tp);
-    if (Tg != Tp)
+  else if (meas1 != NULL && meas2 != NULL)
+  { // correlation measurement (ie., sigma0 = sigma_vvhv or sigma_hhvh)
+    double var_corr = (sigma0*sigma0 + meas1->Sigma0 * meas2->Sigma0 *
+      (1.0 + 1.0/meas1->Snr)*(1.0 + 1.0/meas2->Snr)) / (2*Bs*Tp);
+    if (Tg > Tp)
     {
       // since Es=X^2*sigma0, var(Es) = X^2*var(sigma0)
-      *var_Esn = X*X*var_sigvvhv + En2_slice*En2_slice / (Bs*(Tg - Tp));
+      *var_Esn = X*X*var_corr + En2*En2 / (Bs*(Tg - Tp));
     }
     else
-    {  // perfect gate width, so no noise only portion
-      *var_Esn = X*X*var_sigvvhv;
+    {  // receive gate is filled, so no noise only portion
+      *var_Esn = X*X*var_corr;
     }
   }
   else
   {
-    fprintf(stderr,"Error, Pscat::MeasToEsn needs a valid prev_meas for correlation measurements\n");
+    fprintf(stderr,"Error, Pscat::PMeasToEsn needs valid copol and xpol measurements to process correlation measurements\n");
     exit(1);
   }
 
@@ -167,7 +193,6 @@ Pscat::MeasToEsn(Meas* meas,
   Gaussian rv(*var_Esn,0.0);
   *Esn += rv.GetNumber();
 
-*/
   return(1);
 }
 

@@ -74,7 +74,6 @@ public:
     float     velY;
     float     velZ;
     Attitude  attitude;
-    float     ptgr;
 
     //----------------------//
     // science measurements //

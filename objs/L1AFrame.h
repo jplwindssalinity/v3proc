@@ -80,7 +80,6 @@ public:
 	float			velY;
 	float			velZ;
 	Attitude		attitude;
-	float			ptgr;
     unsigned char   calPosition;
 
     //----------//

@@ -369,6 +369,7 @@ public:
     // geometry //
     //----------//
 
+    int  MakeSlices(MeasSpot* meas_spot);
     int  LocateSlices(Spacecraft* spacecraft, MeasSpot* meas_spot);
     int  FindSlice(CoordinateSwitch* antenna_frame_to_gc,
              Spacecraft* spacecraft, double look, double azim, float freq_1,

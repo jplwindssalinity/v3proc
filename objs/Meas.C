@@ -39,7 +39,7 @@ Meas::Meas()
 :   value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), txPulseWidth(0.0),
     landFlag(0), measType(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
     beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0), A(0.0),
-    B(0.0), C(0.0), offset(0)
+    B(0.0), C(0.0), EsSlice(0.0), sigma0(0.0), offset(0)
 {
     return;
 }

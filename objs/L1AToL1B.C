@@ -240,6 +240,13 @@ L1AToL1B::Convert(
 		// Fetch the noise measurement which applies to all the slices.
 		float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
+        //---------------------//
+        // Create measurements //
+        //---------------------//
+
+        if (! qscat->MakeSlices(meas_spot))
+            return(0);
+
 		//---------------------//
 		// locate measurements //
 		//---------------------//
@@ -318,7 +325,7 @@ L1AToL1B::Convert(
 			float x_factor=1.0;
             float Es_slice,En_slice;
 			float Esn_slice = meas->value;
-			float PtGr = l1a->frame.ptgr;
+//			float PtGr = l1a->frame.ptgr;
 
 			if (useKfactor)
 			{
@@ -334,6 +341,7 @@ L1AToL1B::Convert(
 				//-----------------//
 
 				// meas->value is the Esn value going in, sigma0 coming out.
+                float PtGr = 0.0;
 				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, qscat, meas,
                     k_factor, meas->value, Esn_echo, Esn_noise, PtGr))
                 {
@@ -476,7 +484,7 @@ L1AToL1B::Convert(
 			exit(-1);
 		  }
           cf.pulseCount = pulseCount;
-		  cf.ptgr = l1a->frame.ptgr;
+		  cf.ptgr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
 		  cf.time = time;
           cf.beamNumber = qscat->cds.currentBeamIdx;
 		  cf.rsat = spacecraft->orbitState.rsat;

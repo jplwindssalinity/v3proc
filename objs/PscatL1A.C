@@ -22,7 +22,7 @@ PscatL1AFrame::PscatL1AFrame()
 :   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), ptgr(0.0), antennaPosition(NULL), event(NULL), science(NULL),
+    velZ(0.0), antennaPosition(NULL), event(NULL), science(NULL),
     spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
     slicesPerSpot(0), measPerSlice(0), measPerSpot(0), measPerFrame(0)
 {
@@ -136,7 +136,6 @@ PscatL1AFrame::FrameSize()
     size += sizeof(float);          // roll
     size += sizeof(float);          // pitch
     size += sizeof(float);          // yaw
-    size += sizeof(float);          // PtGr
     size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
     size += sizeof(unsigned char) * spotsPerFrame;  // event
     size += sizeof(float) * measPerFrame;  // science data
@@ -213,9 +212,6 @@ PscatL1AFrame::Pack(
 
 	tmp_float = attitude.GetYaw();
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
-
-	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
 	idx += size;
 
 	size = sizeof(unsigned short) * spotsPerFrame;
@@ -307,9 +303,6 @@ PscatL1AFrame::Unpack(
 	attitude.SetYaw(tmp_float);
 	idx += size;
 
-	memcpy((void *)&ptgr, (void *)(buffer + idx), size);
-	idx += size;
-
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
@@ -344,9 +337,9 @@ int PscatL1AFrame::WriteAscii(
     fprintf(ofp, "GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
         gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY, gcZ);
     fprintf(ofp,
-        "VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g PtGr: %g\n",
+        "VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g\n",
         velX, velY, velZ, attitude.GetRoll()*rtd, attitude.GetPitch()*rtd,
-        attitude.GetYaw()*rtd, ptgr);
+        attitude.GetYaw()*rtd);
     int offset = 0;
     for (int c = 0; c < spotsPerFrame; c++)
     {

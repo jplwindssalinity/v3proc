@@ -347,6 +347,13 @@ QscatSim::ScatSim(
     }
 
     //---------------------//
+    // Create measurements //
+    //---------------------//
+
+    if (! qscat->MakeSlices(&meas_spot))
+        return(0);
+
+    //---------------------//
     // locate measurements //
     //---------------------//
 
@@ -507,6 +514,7 @@ QscatSim::ScatSim(
             exit(-1);
         }
         cf.pulseCount = pulseCount;
+        cf.ptgr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
         cf.time = qscat->cds.time;
         cf.beamNumber = qscat->cds.currentBeamIdx;
         cf.rsat = spacecraft->orbitState.rsat;
@@ -972,20 +980,6 @@ QscatSim::SetL1AScience(
     Qscat*       qscat,
     L1AFrame*    l1a_frame)
 {
-    //----------//
-    // set PtGr //
-    //----------//
-    // Only "noise it up" if simKpriFlag is set
-
-    l1a_frame->ptgr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
-    if (simVs1BCheckfile)
-    {
-        cf->ptgr = l1a_frame->ptgr;
-    }
-
-    if (simKpriFlag)
-        l1a_frame->ptgr *= (1 + ptgrNoise.GetNumber(qscat->cds.time));
-
     //----------------------//
     // set antenna position //
     //----------------------//
