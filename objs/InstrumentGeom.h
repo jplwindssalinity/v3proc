@@ -20,6 +20,7 @@ static const char rcs_id_instrumentgeom_h[] =
 #include "Meas.h"
 
 #define POINTS_PER_SPOT_OUTLINE		18
+#define DEFAULT_CONTOUR_LEVEL		0.5
 
 //======================================================================
 // STRUCTURE
@@ -47,7 +48,7 @@ int		LocateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot);
 
 int		LocateSpot(Spacecraft* spacecraft, Instrument* instrument,
-			MeasSpot* meas_spot);
+			MeasSpot* meas_spot, float contour_level = DEFAULT_CONTOUR_LEVEL);
 
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, double look,

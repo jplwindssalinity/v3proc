@@ -194,7 +194,8 @@ int
 LocateSpot(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-	MeasSpot*		meas_spot)
+	MeasSpot*		meas_spot,
+	float			contour_level)
 {
 	//-----------//
 	// predigest //
@@ -270,7 +271,7 @@ LocateSpot(
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
-	beam_frame.Set(0.0,look,azimuth,3,2,1);
+	beam_frame.Set(0.0, look, azimuth, 3, 2, 1);
 	CoordinateSwitch ant_to_beam(beam_frame);
 	CoordinateSwitch beam_to_ant = ant_to_beam.ReverseDirection();
 
@@ -297,15 +298,15 @@ LocateSpot(
 
 		for (int j = 1; j <= NN; j++)
 		{	// Bisection search
-			theta = (theta_max + theta_min)/2.0;
-			look_mid.SphericalSet(1.0,theta,phi);
+			theta = (theta_max + theta_min) / 2.0;
+			look_mid.SphericalSet(1.0, theta, phi);
 			look_mid_ant = beam_to_ant.Forward(look_mid);
-			double r,look,azimuth;
+			double r, look, azimuth;
 			look_mid_ant.SphericalGet(&r,&look,&azimuth);
 			float gp;
-			beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
-				instrument->antenna.spinRate,&gp);
-			if (gp > 0.5*gp_max)
+			beam->GetPowerGainProduct(look, azimuth, tip.roundTripTime,
+				instrument->antenna.spinRate, &gp);
+			if (gp > contour_level * gp_max)
 			{
 				theta_max = theta;
 			}
