@@ -237,13 +237,13 @@ int GMF::ReadPolarimetric(
         fscanf(ifp,"%s",string);
         s0hv = atof(string);
         fscanf(ifp,"%s",string);
-        s0vvhv = atof(string);
-        fscanf(ifp,"%s",string);
-        pvvhv = atof(string);
-        fscanf(ifp,"%s",string);
         s0hhvh = atof(string);
         fscanf(ifp,"%s",string);
         phhvh = atof(string);
+        fscanf(ifp,"%s",string);
+        s0vvhv = atof(string);
+        fscanf(ifp,"%s",string);
+        pvvhv = atof(string);
 
         // Compute indexes into table
         int ispd, ichi, itheta;
