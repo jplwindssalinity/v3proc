@@ -125,7 +125,7 @@ IntegrateSlices(
 		double centroid_azimuth=azimuth;
 		float dummy;
 
-		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
+		if (! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
             centroid_freq, ftol, &centroid_look, &centroid_azimuth, &dummy))
         {
             return(0);
@@ -253,8 +253,8 @@ IntegrateSlices(
                     /******************************/
 		    area=box.Area();
 		    range=tip.slantRange;
-            if (! PowerGainProduct(&antenna_frame_to_gc, spacecraft, qscat,
-                (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar))
+            if (! SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
+                (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar, 1))
             {
                 return(0);
             }
@@ -482,8 +482,8 @@ IntegrateSlice(
 	      /* Calculate two-way gain     */
 	      /******************************/
 
-            if (! PowerGainProduct(&antenna_frame_to_gc, spacecraft, qscat,
-                (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar))
+            if (! SpatialResponse(&antenna_frame_to_gc, spacecraft, qscat,
+                (look1+look2)/2.0, (azi1+azi2)/2.0, &gatgar, 1))
             {
                 fprintf(stderr, "IntegrateSlice: Cannot find box gain\n");
                 fprintf(stderr,"Probably means earth_intercept not found\n");

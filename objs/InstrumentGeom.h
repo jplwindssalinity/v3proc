@@ -72,7 +72,7 @@ int  TargetInfo(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
 int  FindPeakResponseAtFreq(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, float target_freq,
          float freq_tol, double* look, double* azim, float* response,
-			       int use_range=1);
+			       int ignore_range = 0);
 
 int  FindFreq(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          Qscat* qscat, float target_freq, float freq_tol, double* look,
@@ -86,11 +86,11 @@ int  FreqGradient(CoordinateSwitch* antenna_frame_to_gc,
 int  FindPeakResponseUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double delta_look,
          double delta_azim, double offset, double angle_tol, double* look,
-         double* azim, float* response, int use_range=1);
+         double* azim, float* response, int ignore_range = 0);
 
 int  FindPeakResponseForSlice(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look[2], double azim[2],
-         float response[2], float* peak_response, int use_range=1);
+         float response[2], float* peak_response, int ignore_range = 0);
 
 int  FindResponseBetween(double f_look[2], double f_azim[2], 
 			float f_response[2], float target_response, 
@@ -108,19 +108,19 @@ int  PeakFit(double c[3], float* peak_gain);
 
 int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
-         float* response, int use_range=1);
+         float* response, int ignore_range = 0);
 
 int  RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
 int  GetPeakSpatialResponse(Beam* beam, double round_trip_time,
          double azimuth_rate, double* look, double* azimuth,
-	 int use_range=1);
+         int ignore_range = 0);
 
 int  GetPeakSpatialResponse2(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
-         double* look, double* azimuth, int use_range=1);
+         double* look, double* azimuth, int ignore_range = 0);
 
-double	NegativeSpatialResponse(double*, void*);
+double	NegativeSpatialResponse(double* x, void* ptr);
 
 #endif
