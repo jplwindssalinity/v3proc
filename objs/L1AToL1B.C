@@ -67,7 +67,7 @@ L10ToL15::Convert(
 	int total_slice_idx = 0;
 	int spot_idx = 0;
 
-	OrbitState orbit_state;
+	OrbitState* orbit_state = &(spacecraft->orbitState);
 
 	for (int beam_cycle = 0; beam_cycle < l10->frame.antennaCyclesPerFrame;
 		beam_cycle++)
@@ -95,7 +95,7 @@ L10ToL15::Convert(
 			//-------------------//
 
 			if (! ephemeris->GetOrbitState(time, EPHEMERIS_INTERP_ORDER,
-				&orbit_state))
+				orbit_state))
 			{
 				return(0);
 			}
@@ -138,7 +138,7 @@ L10ToL15::Convert(
 			// duplicate work: forward transform already calc'd in Locate*
 
 			CoordinateSwitch antenna_frame_to_gc =
-				AntennaFrameToGC(&orbit_state, &(spacecraft->attitude),
+				AntennaFrameToGC(orbit_state, &(spacecraft->attitude),
 				antenna);
 			CoordinateSwitch gc_to_antenna =
 				antenna_frame_to_gc.ReverseDirection();
