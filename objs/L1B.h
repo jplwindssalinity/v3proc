@@ -9,54 +9,33 @@
 static const char rcs_id_l15_h[] =
 	"@(#) $Id$";
 
-#include "Product.h"
+#include "GenericFile.h"
+#include "L15Frame.h"
+
 
 //======================================================================
 // CLASSES
-//		L15File, L15FileList, L15
+//		L15
 //======================================================================
-
-#define L15_DATA_REC_SIZE	100
-
-
-//======================================================================
-// CLASS
-//		L15File
-//
-// DESCRIPTION
-//		The L15File object is used to read and write Level 1.5 data.
-//======================================================================
-
-class L15File : public ProductFile
-{
-public:
-
-	//--------------//
-	// construction //
-	//--------------//
-
-	L15File();
-	~L15File();
-};
-
 
 //======================================================================
 // CLASS
 //		L15
 //
 // DESCRIPTION
-//		The L15 object is used to manipulate Level 1.5 data.
+//		The L15 object allows for the easy writing, reading, and
+//		manipulating of Level 1.5 data.
 //======================================================================
 
-class L15 : public Product
+class L15
 {
 public:
 
-	//-------//
-	// enums //
-	//-------//
+	//------//
+	// enum //
+	//------//
 
-	enum L15BeamE { NONE, SCATTEROMETER_BEAM_A, SCATTEROMETER_BEAM_B };
+	enum StatusE { OK, ERROR_READING_FRAME, ERROR_UNKNOWN };
 
 	//--------------//
 	// construction //
@@ -65,32 +44,34 @@ public:
 	L15();
 	~L15();
 
-	//-------------------//
-	// data manipulation //
-	//-------------------//
- 
-	int		PackFrame();
-	int		UnpackFrame();
+	//---------------------//
+	// setting and getting //
+	//---------------------//
 
-	//-------------------//
-	// product variables //
-	//-------------------//
+	int			SetFilename(const char* filename);
+	StatusE		GetStatus() { return(_status); };
 
-	double		time;
+	//--------------//
+	// input/output //
+	//--------------//
 
-	double		gcAltitude;
-	double		gcLongitude;
-	double		gcLatitude;
-	double		gcX;
-	double		gcY;
-	double		gcZ;
-	double		velX;
-	double		velY;
-	double		velZ;
+	int		ReadDataRec();
+	int		WriteDataRec();
 
-	double		antennaPosition;
-	L15BeamE	beam;
-	double		sigma_0;
+	//-----------//
+	// variables //
+	//-----------//
+
+	GenericFile		file;
+	L15Frame		frame;
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	StatusE		_status;
 };
 
 #endif
