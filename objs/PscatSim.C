@@ -144,7 +144,7 @@ PscatSim::DetermineNextEvent(
                     pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
                     break;
                 case BOTH_POL:
-                    pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
+                    pscat_event->eventId = PscatEvent::VV_HV_SCAT_EVENT;
                     break;
                 default:
                     fprintf(stderr,
