@@ -165,15 +165,6 @@ main(
 	{
 		sim.SimulateNextEvent(&instrument);
 		sim.GenerateL0(&instrument, &l0);
-//		l0.WriteDataRec();
-/*
-		Orbit *os = &(instrument.orbit);
-printf("%g %g\n", sim.GetEventTime(), instrument.antenna.azimuthAngle);
-		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector.get(0),
-			os->gc_vector.get(1), os->gc_vector.get(2),
-			os->velocity_vector.get(0), os->velocity_vector.get(1),
-			os->velocity_vector.get(2));
-*/
 	}
 	l0.CloseCurrentFile();
 
