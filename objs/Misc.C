@@ -277,7 +277,8 @@ downhill_simplex(
 //        if (DEBUG_DOWNHILL && ndim == 1)
         if (DEBUG_DOWNHILL)
         {
-            printf("rtol=%g ptol=%g\nNew p values:\n", rtol, ptol);
+            printf("rtol=%g (ftol=%g) ptol=%g\nNew p values:\n", rtol, ftol,
+                ptol);
             for (i = 0; i < ndim + 1; i++)
             {
                 for (j = 0; j < totdim; j++)

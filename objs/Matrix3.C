@@ -1,10 +1,10 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_matrix3_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,51 +17,54 @@ static const char rcs_id_matrix3_c[] =
 // Matrix3 //
 //=========//
 
-//
-// Default constructor which does no initialization.
-//
-
 Matrix3::Matrix3()
 {
-	return;
+    return;
 }
 
 //
 // Initialize with a complete set of 9 user-specified elements.
 //
 
-Matrix3::Matrix3(double x11, double x12, double x13,
-                double x21, double x22, double x23,
-                double x31, double x32, double x33)
+Matrix3::Matrix3(
+    double  x11,
+    double  x12,
+    double  x13,
+    double  x21,
+    double  x22,
+    double  x23,
+    double  x31,
+    double  x32,
+    double  x33)
 {
-
-_m[0][0] = x11;
-_m[0][1] = x12;
-_m[0][2] = x13;
-_m[1][0] = x21;
-_m[1][1] = x22;
-_m[1][2] = x23;
-_m[2][0] = x31;
-_m[2][1] = x32;
-_m[2][2] = x33;
-	return;
+    _m[0][0] = x11;
+    _m[0][1] = x12;
+    _m[0][2] = x13;
+    _m[1][0] = x21;
+    _m[1][1] = x22;
+    _m[1][2] = x23;
+    _m[2][0] = x31;
+    _m[2][1] = x32;
+    _m[2][2] = x33;
+    return;
 }
 
 //
 // Initialize all 9 elements with a single value.
 //
 
-Matrix3::Matrix3(double init)
-
+Matrix3::Matrix3(
+    double  init)
 {
-
-int i,j;
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  _m[i][j] = init;
-  }
-	return;
+    int i, j;
+    for (i=0; i < 3; i++)
+    {
+        for (j=0; j < 3; j++)
+        {
+            _m[i][j] = init;
+        }
+    }
+    return;
 }
 
 //
@@ -69,38 +72,32 @@ for (j=0; j < 3; j++)
 //
 
 Matrix3::Matrix3(matrixtypeE mtype)
-
 {
-
-if (mtype == IDENTITY)
-  {	/* fill matrix with 3x3 identity matrix */
-  int i,j;
-  for (i=0; i < 3; i++)
-  for (j=0; j < 3; j++)
+    if (mtype == IDENTITY)
     {
-    _m[i][j] = 0;
-    if (i == j) _m[i][j] = 1;
+        // fill matrix with 3x3 identity matrix
+        int i,j;
+        for (i=0; i < 3; i++)
+        {
+            for (j=0; j < 3; j++)
+            {
+                _m[i][j] = 0.0;
+                if (i == j)
+                    _m[i][j] = 1.0;
+            }
+        }
     }
-  }
-else if (mtype == GENERAL)
-  {
-  return;
-  }
-else
-  {
-  printf("Error: Matrix3 object received unrecognized enum = %d\n",mtype);
-  exit(-1);
-  }
-	return;
-}
-
-//
-// Destructor
-//
-
-Matrix3::~Matrix3()
-{
-return;
+    else if (mtype == GENERAL)
+    {
+        return;
+    }
+    else
+    {
+        printf("Error: Matrix3 object received unrecognized enum = %d\n",
+            mtype);
+        exit(1);
+    }
+    return;
 }
 
 //
@@ -109,15 +106,15 @@ return;
 
 Matrix3 Matrix3::operator+(Matrix3 m2)
 {
-	Matrix3 result;
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 3; j++)
-		{
-			result._m[i][j] = _m[i][j] + m2._m[i][j];
-		}
-	}
-	return(result);
+    Matrix3 result;
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            result._m[i][j] = _m[i][j] + m2._m[i][j];
+        }
+    }
+    return(result);
 }
 
 //
@@ -125,7 +122,6 @@ Matrix3 Matrix3::operator+(Matrix3 m2)
 //
 
 Matrix3 Matrix3::operator-(Matrix3 m2)
-
 {
 int i,j;
 Matrix3 result;
@@ -144,7 +140,6 @@ return(result);
 //
 
 Matrix3 Matrix3::operator-()
-
 {
 int i,j;
 Matrix3 result;
@@ -158,24 +153,30 @@ for (j=0; j < 3; j++)
 return(result);
 }
 
-//
-// Operator * to multiply two 3x3 matrices together, giving a 3x3 matrix.
-//
+//------------//
+// operator * //
+//------------//
+// multiply two 3x3 matrices together, giving a 3x3 matrix.
 
-Matrix3 Matrix3::operator*(Matrix3 m2)
-
+Matrix3
+Matrix3::operator*(
+    Matrix3  m2)
 {
-int i,j,k;
-Matrix3 result(0.0);
+    int i, j, k;
+    Matrix3 result(0.0);
 
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-for (k=0; k < 3; k++)
-  {
-  result._m[i][j] += _m[i][k] * m2._m[k][j];
-  }
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            for (k = 0; k < 3; k++)
+            {
+                result._m[i][j] += _m[i][k] * m2._m[k][j];
+            }
+        }
+    }
 
-return(result);
+    return(result);
 }
 
 //
@@ -202,36 +203,41 @@ return(result);
 // the contents of the specified Vector3 objects.
 //
 
-void Matrix3::Rowset(Vector3 r1, Vector3 r2, Vector3 r3)
-
+void
+Matrix3::Rowset(
+    Vector3  r1,
+    Vector3  r2,
+    Vector3  r3)
 {
-
-int i;
-for (i=0; i < 3; i++)
-  {
-  _m[0][i] = r1._v[i];
-  _m[1][i] = r2._v[i];
-  _m[2][i] = r3._v[i];
-  }
-	return;
+    int i;
+    for (i=0; i < 3; i++)
+    {
+        _m[0][i] = r1._v[i];
+        _m[1][i] = r2._v[i];
+        _m[2][i] = r3._v[i];
+    }
+    return;
 }
 
-//
+//-------------------//
+// Matrix3::Identity //
+//-------------------//
 // Method identity sets the calling Matrix3 object to a 3x3 identity matrix.
-//
 
-void Matrix3::Identity()
-
+void
+Matrix3::Identity()
 {
-
-int i,j;
-for (i=0; i < 3; i++)
-for (j=0; j < 3; j++)
-  {
-  _m[i][j] = 0;
-  if (i == j) _m[i][j] = 1;
-  }
-	return;
+    int i, j;
+    for (i = 0; i < 3; i++)
+    {
+        for (j = 0; j < 3; j++)
+        {
+            _m[i][j] = 0.0;
+            if (i == j)
+                _m[i][j] = 1.0;
+        }
+    }
+    return;
 }
 
 //
@@ -347,26 +353,23 @@ else
 // Vector3 //
 //=========//
 
-//
-// Create, but don't initialize.
-//
-
 Vector3::Vector3()
 {
-	return;
+    return;
 }
 
 //
 // Initialize with a complete set of 3 user-specified elements.
 //
 
-Vector3::Vector3(double x1, double x2, double x3)
-
+Vector3::Vector3(
+    double  x1,
+    double  x2,
+    double  x3)
 {
-
-_v[0] = x1;
-_v[1] = x2;
-_v[2] = x3;
+    _v[0] = x1;
+    _v[1] = x2;
+    _v[2] = x3;
 	return;
 }
 
@@ -374,20 +377,14 @@ _v[2] = x3;
 // Initialize all 3 elements with a single value.
 //
 
-Vector3::Vector3(double init)
+Vector3::Vector3(
+    double  init)
 {
-
-int i;
-for (i=0; i < 3; i++)
-  {
-  _v[i] = init;
-  }
+    for (int i = 0; i < 3; i++)
+    {
+        _v[i] = init;
+    }
 	return;
-}
-	
-Vector3::~Vector3()
-{
-return;
 }
 
 Vector3 Vector3::operator+(Vector3 v2)
@@ -400,17 +397,20 @@ Vector3 Vector3::operator+(Vector3 v2)
 	return(result);
 }
 
-Vector3 Vector3::operator-(Vector3 v2)
+//------------//
+// operator - //
+//------------//
+
+Vector3
+Vector3::operator-(
+    Vector3  v2)
 {
-int i;
-Vector3 result;
-
-for (i=0; i < 3; i++)
-  {
-  result._v[i] = _v[i] - v2._v[i];
-  }
-
-return(result);
+    Vector3 result;
+    for (int i = 0; i < 3; i++)
+    {
+        result._v[i] = _v[i] - v2._v[i];
+    }
+    return(result);
 }
 
 Vector3 Vector3::operator-()
@@ -426,21 +426,24 @@ for (i=0; i < 3; i++)
 return(result);
 }
 
-//
+//--------------------//
+// Vector3::operator* //
+//--------------------//
 // Element by element multiplication of two vectors.
-//
 
-Vector3 Vector3::operator*(Vector3 v2)
+Vector3
+Vector3::operator*(
+    Vector3  v2)
 {
-int i;
-Vector3 result;
+    int i;
+    Vector3 result;
 
-for (i=0; i < 3; i++)
-  {
-  result._v[i] = _v[i] * v2._v[i];
-  }
+    for (i=0; i < 3; i++)
+    {
+        result._v[i] = _v[i] * v2._v[i];
+    }
 
-return(result);
+    return(result);
 }
 
 //-------------------//
@@ -587,11 +590,14 @@ Vector3::Write(FILE* fptr)
 
 }
 
-//
+//----------------//
+// Vector3::Scale //
+//----------------//
 // Scale the vector to have the specifed magnitude.
-//
 
-void Vector3::Scale(double r)
+void
+Vector3::Scale(
+    double  r)
 {
 	double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
@@ -605,28 +611,33 @@ void Vector3::Scale(double r)
 	return;
 }
 
-//
+//--------------------//
+// Vector3::Magnitude //
+//--------------------//
 // Get the magnitude of the vector.
-//
 
-double Vector3::Magnitude()
-
+double
+Vector3::Magnitude()
 {
-return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
+    return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
 }
 
-void Vector3::Show(char *name)
+//---------------//
+// Vector3::Show //
+//---------------//
 
+void
+Vector3::Show(
+    char*  name)
 {
-
-if (name == NULL)
-  {
-  printf("(%10g, %10g, %10g)\n",_v[0],_v[1],_v[2]);
-  }
-else
-  {
-  printf("%s = (%10g, %10g, %10g)\n",name,_v[0],_v[1],_v[2]);
-  }
+    if (name == NULL)
+    {
+        printf("(%10g, %10g, %10g)\n",_v[0],_v[1],_v[2]);
+    }
+    else
+    {
+        printf("%s = (%10g, %10g, %10g)\n",name,_v[0],_v[1],_v[2]);
+    }
 	return;
 }
 
@@ -661,8 +672,6 @@ Vector3::SphericalSet(
 //-----------------------//
 // Vector3::SphericalGet //
 //-----------------------//
-
-//
 // This method gets the spherical elements of the Vector3 object (which
 // is stored in rectangular form).
 // The standard definition of spherical coordinates is used:
@@ -673,21 +682,21 @@ Vector3::SphericalSet(
 
 int
 Vector3::SphericalGet(
-	double	*r,
-	double	*theta,
-	double	*phi)
+	double*  r,
+	double*  theta,
+	double*  phi)
 {
 	*r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
 	if (*r == 0.0)
 	{
-		*theta = 0;
-		*phi = 0;
+		*theta = 0.0;
+		*phi = 0.0;
 		return(1);
 	}
 
 	*theta = acos(_v[2] / *r);
-	*phi = atan2(_v[1],_v[0]);
+	*phi = atan2(_v[1], _v[0]);
 	return(1);
 }
 
@@ -779,24 +788,13 @@ _v[2] = x3;
 	return;
 }
 
-void
-Vector3::Get(double* x1, double* x2, double* x3)
-
-{
-
-*x1=_v[0];
-*x2=_v[1];
-*x3=_v[2];
-	return;
-}
-
 //--------------//
 // Vector3::Get //
 //--------------//
 
 double
 Vector3::Get(
-	int		idx)
+    int  idx)
 {
 	if (idx < 0 || idx > 2)
 		return(0.0);
@@ -812,6 +810,18 @@ Vector3::Get(
 		return(0);
 	*value = _v[idx];
 	return(1);
+}
+
+void
+Vector3::Get(
+    double*  x1,
+    double*  x2,
+    double*  x3)
+{
+    *x1 = _v[0];
+    *x2 = _v[1];
+    *x3 = _v[2];
+    return;
 }
 
 //---------------//
