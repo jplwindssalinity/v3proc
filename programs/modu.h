@@ -35,6 +35,8 @@ public:
 class ModuGrid
 {
 public:
+    ModuGrid();
+
     int      Allocate(float lon_min, float lon_max, float lon_step_size,
                  float lat_min, float lat_max, float lat_step_size);
     int      Allocate(int lon_bins, int lat_bins);
@@ -72,6 +74,17 @@ Modu::Modu()
 }
 
 //--------------------//
+// ModuGrid::ModuGrid //
+//--------------------//
+
+ModuGrid::ModuGrid()
+:   grid(NULL), lonMin(0.0), lonMax(0.0), lonStep(0.0), lonBins(0),
+    latMin(0.0), latMax(0.0), latStep(0.0), latBins(0)
+{
+    return;
+}
+
+//--------------------//
 // ModuGrid::Allocate //
 //--------------------//
 
@@ -86,8 +99,12 @@ ModuGrid::Allocate(
 {
     lonBins = (int)((lon_max - lon_min) / lon_step_size + 0.5);
     lonStep = (lon_max - lon_min) / (float)lonBins;
+    lonMin = lon_min;
+    lonMax = lon_max;
     latBins = (int)((lat_max - lat_min) / lat_step_size + 0.5);
     latStep = (lat_max - lat_min) / (float)latBins;
+    latMin = lat_min;
+    latMax = lat_max;
 
     if (! Allocate(lonBins, latBins))
         return(0);

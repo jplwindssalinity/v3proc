@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    modu <output_base> <modu_file...> <l1b_file...>
-//        
+//
 // DESCRIPTION
 //    Reads HDF L1B files and generates output files containing
 //    the magnitude and phase of sigma-0 modulation.
@@ -365,13 +365,22 @@ main(
                 if (beam_idx != TARGET_BEAM_IDX)
                     continue;
 
+                //----------------//
+                // convert sigma0 //
+                //----------------//
+
+                double use_s0 = pow(10.0, 0.1 * cell_sigma0[spot_idx]);
+                if (sigma0_qual_flag[spot_idx] & NEGATIVE)
+                {
+                    use_s0 = -use_s0;
+                }
+
                 //------------------------//
                 // accumulate in ModuGrid //
                 //------------------------//
 
                 if (! new_grid.Accumulate(cell_lon[spot_idx],
-                    cell_lat[spot_idx], cell_azimuth[spot_idx],
-                    cell_sigma0[spot_idx]))
+                    cell_lat[spot_idx], cell_azimuth[spot_idx], use_s0))
                 {
                     fprintf(stderr, "%s: error accumulating data\n", command);
                     exit(1);
@@ -394,6 +403,7 @@ main(
         // write out sigma-0 and azimuth information //
         //-------------------------------------------//
 
+/*
         char output_filename[1024];
         char* ptr = strstr(filename, "QS_S1B");
         ptr += 6;
@@ -404,6 +414,7 @@ main(
                 output_filename);
             exit(1);
         }
+*/
 
         //---------//
         // combine //
@@ -421,6 +432,7 @@ main(
     int lat_bins = modu_grid.latBins;
     Image image;
     image.Allocate(lon_bins, lat_bins);
+    image.Fill(0.0);
 
     //--------------------------------//
     // fit and write out azimuth info //
@@ -428,7 +440,8 @@ main(
 
     double azimuth[AZIMUTH_BINS];
     double sigma0[AZIMUTH_BINS];
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+//    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    for (int beam_idx = 1; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
         {
@@ -441,11 +454,11 @@ main(
                 int data_count = 0;
                 for (int az_idx = 0; az_idx < AZIMUTH_BINS; az_idx++)
                 {
-                    if (modu->count[az_idx] < 1)
+                    if (modu->count[az_idx] < 3)
                         continue;
 
-                    sigma0[data_count] = modu->sigma0[az_idx] /
-                        modu->count[az_idx];
+                    double s0 = modu->sigma0[az_idx] / modu->count[az_idx];
+                    sigma0[data_count] = 10.0 * log10(fabs(s0));
                     azimuth[data_count] = two_pi * (double)az_idx /
                         (double)AZIMUTH_BINS;
                     data_count++;
@@ -456,7 +469,7 @@ main(
                 //-----//
 
                 // need a better fit criteria here
-                if (data_count < 10)
+                if (data_count < (int)(AZIMUTH_BINS * 0.1))
                     continue;
 
                 double amp, phase, bias;
