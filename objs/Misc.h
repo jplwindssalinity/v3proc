@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -11,7 +11,7 @@
 //    Multipurpose helper functions, etc.
 //
 // AUTHORS
-//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 #ifndef MISC_H
@@ -131,5 +131,9 @@ int          golden_section_search(double min_x, double max_x, double x_tol,
 int     gaussian_fit(double* x, double* y, int points, double* center,
            double* variance);
 double  gmse(double* c, void* ptr);
+
+// angle conversions
+double  gs_deg_to_pe_rad(double gs_deg);
+double  pe_rad_to_gs_deg(double pe_rad);
 
 #endif

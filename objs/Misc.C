@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -1775,4 +1775,36 @@ gmse(
         sum_dif += ((dif * dif) / (double)points);
     }
     return(sum_dif);
+}
+
+//------------------//
+// gs_deg_to_pe_rad //
+//------------------//
+
+double
+gs_deg_to_pe_rad(
+    double  gs_deg)
+{
+    double pe_rad = (450.0 - gs_deg) * dtr;
+    while (pe_rad >= two_pi)
+        pe_rad -= two_pi;
+    while (pe_rad < 0.0)
+        pe_rad += two_pi;
+    return(pe_rad);
+}
+
+//------------------//
+// pe_rad_to_gs_deg //
+//------------------//
+
+double
+pe_rad_to_gs_deg(
+    double  pe_rad)
+{
+    double gs_deg = 450.0 - pe_rad * rtd;
+    while (gs_deg >= 360.0)
+        gs_deg -= 360.0;
+    while (gs_deg < 0.0)
+        gs_deg += 360.0;
+    return(gs_deg);
 }
