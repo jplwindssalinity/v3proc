@@ -11,6 +11,7 @@ static const char rcs_id_gmf_c[] =
 #include <malloc.h>
 #include <math.h>
 #include "GMF.h"
+#include "Meas.h"
 #include "Interpolate.h"
 #include "Constants.h"
 #include "Beam.h"
@@ -652,7 +653,14 @@ GMF::_ObjectiveFunction(
 
 //		fv += s*s / meas->estimatedKp + log(meas->estimatedKp);
 // removed the log term for speed
-		fv += s*s / meas->estimatedKp;
+
+		//-----------------------------------------------------------------//
+		// Compute the estimated Kpc using the model sigma0 instead of the
+		// measured sigma0.  This avoids problems with negative measured
+		// sigma0's.  Estimates of Kpr and Kpm are also included.
+		//-----------------------------------------------------------------//
+
+		fv += s*s / meas->EstimatedKp(gmf_value);
 	}
 	return(-fv);
 }

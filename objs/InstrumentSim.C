@@ -181,8 +181,13 @@ InstrumentSim::SetMeasurements(
 
 			if (instrument->useKpm == 1)
 			{
-				Gaussian rv(Kpm,1.0);
-				sigma0 *= rv.GetNumber();
+				Gaussian rv(Kpm*Kpm,1.0);
+				float rv1 = -1.0;
+				while (rv1 < 0.0)
+				{	// Do not permit negative sigma0's.
+					rv1 = rv.GetNumber();
+				}
+				sigma0 *= rv1;
 			}
 		}
 

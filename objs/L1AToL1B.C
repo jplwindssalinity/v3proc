@@ -188,11 +188,14 @@ L10ToL15::Convert(
 
 				float Psn = l10->frame.science[total_slice_idx];
 				float PtGr = l10->frame.ptgr;
-				float sigma0;
-				double X;
-				float Kpc;
+
+				//-----------------//
+				// set measurement //
+				//-----------------//
+
+				// should we have separate entries for Kpc,Kpr,Kpm ?
 				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Psn, sumPsn, Pn, PtGr, &sigma0, &X, &Kpc))
+					meas, k_factor, Psn, sumPsn, Pn, PtGr))
 				{
 					return(0);
 				}
@@ -202,16 +205,8 @@ L10ToL15::Convert(
 				// to stdout.						//
 				//----------------------------------//
 
-				if (outputSigma0ToStdout) printf("%g ",sigma0);
+				if (outputSigma0ToStdout) printf("%g ",meas->value);
 
-				//-----------------//
-				// set measurement //
-				//-----------------//
-
-				meas->value = sigma0;
-				meas->XK = (float)(X*k_factor);
-				// should we have separate entries for Kpc,Kpr,Kpm ?
-				meas->estimatedKp = Kpc;
 				total_slice_idx++;
 				sliceno++;
 			}

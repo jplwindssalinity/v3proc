@@ -20,8 +20,8 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 Meas::Meas()
-:	value(0.0), XK(0.0), bandwidth(0.0), pol(NONE), eastAzimuth(0.0),
-	incidenceAngle(0.0), estimatedKp(1.0), offset(0)
+:	value(0.0), XK(0.0), Pn_slice(0.0), bandwidth(0.0), pol(NONE),
+	eastAzimuth(0.0), incidenceAngle(0.0), A(0.0), B(0.0), C(0.0), offset(0)
 {
 	return;
 }
@@ -45,21 +45,19 @@ Meas::Write(
 		printf("Error: Meas::Write encountered invalid sigma0 = %g\n",value);
 		exit(-1);
 	}
-	if (estimatedKp < 0.0 || estimatedKp > 1e5) 
-	{
-		printf("Error: Meas::Write encountered invalid estimatedKp = %g\n",
-				estimatedKp);
-		exit(-1);
-	}
 
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&Pn_slice, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&estimatedKp, sizeof(float), 1, fp) != 1)
+		fwrite((void *)&A, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&B, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&C, sizeof(float), 1, fp) != 1)
 	{
 		return(0);
 	}
@@ -78,12 +76,16 @@ Meas::Read(
 	offset = ftell(fp);
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&Pn_slice, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
 		fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&estimatedKp, sizeof(float), 1, fp) != 1)
+		fread((void *)&A, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&B, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&C, sizeof(float), 1, fp) != 1)
 	{
 		return(0);
 	}
@@ -114,6 +116,27 @@ Meas::FreeContents()
 {
 	outline.FreeContents();
 	return;
+}
+
+//-------------------//
+// Meas::EstimatedKp //
+//-------------------//
+
+float
+Meas::EstimatedKp(float sigma0)
+{
+
+	float Kpr2 = 1.1482;	// 0.3 dB
+	float Kpm2 = 1.3804;	// 0.7 dB
+	float snr = sigma0 * XK/Pn_slice;
+	if (snr < 0.0)
+	{
+		printf("Error: Meas::EstimatedKp computed negative SNR = %g\n",snr);
+		exit(-1);
+	}
+	float Kpc2 = A + B/snr + C/snr/snr;
+	float Kp = sqrt(Kpr2 + Kpm2 + Kpc2);
+	return(Kp);
 }
 
 //==========//

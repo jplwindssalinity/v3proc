@@ -56,12 +56,19 @@ public:
 
 	void	FreeContents();
 
+	//--------------//
+	// sigma0 stuff //
+	//--------------//
+
+	float	EstimatedKp(float sigma0);
+
 	//-----------//
 	// variables //
 	//-----------//
 
 	float				value;
 	float				XK;
+	float				Pn_slice;
 	float				bandwidth;
 	Outline				outline;
 	EarthPosition		centroid;
@@ -69,7 +76,7 @@ public:
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
-	float		estimatedKp;
+	float		A,B,C;				// Kpc coefficients
 
 	//------------------------//
 	// not to be written out! //

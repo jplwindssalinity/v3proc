@@ -206,6 +206,12 @@ sigma0_to_Psn(
 	// to the noise, and a fading effect that applies only to the signal.
 	// However, as long as Kpc is correct, the approach implemented here
 	// will give the final sigma0's the correct variance.
+	// When the snr is low, the Kpc fuzzing can be large enough that
+	// the processing step will estimate a negative sigma0 from the
+	// fuzzed power.  This is normal, and will occur in real data also.
+	// The wind retrieval has to estimate the variance using the model
+	// sigma0 rather than the measured sigma0 to avoid problems computing
+	// Kpc for weighting purposes.
 	//------------------------------------------------------------------------//
 
 	Gaussian rv(Kpc*Kpc,1.0);
@@ -281,6 +287,7 @@ Pnoise(
 // measurements. One is the slice measurement Psn value.  The other is
 // the noise channel measurement which includes all of the slice powers.
 // See sigma0_to_Psn and Pnoise above.
+// Various outputs are put in the Meas object passed in.
 //
 // Inputs:
 //	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
@@ -292,8 +299,7 @@ Pnoise(
 //	Psn = the received slice power.
 //	sumPsn = the sum of all the slice powers for this spot.
 //	Pn = the noise bandwidth measured power.
-//	sigma0 = pointer to return variable
-//
+//	PtGr = power gain product to use (includes any Kpr fuzzing).
 //
 
 int
@@ -306,14 +312,13 @@ Pr_to_sigma0(
 	float				Psn,
 	float				sumPsn,
 	float				Pn,
-	float				PtGr,
-	float*				sigma0,
-	double*				X,
-	float*				Kpc)
+	float				PtGr)
 {
 	// Compute radar parameter using telemetry values etc that may have been
 	// fuzzed by Kpr (in the simulator, or by the actual instrument).
-	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, X);
+	double X;
+	radar_X_PtGr(gc_to_antenna, spacecraft, instrument, meas, PtGr, &X);
+	meas->XK = X*Kfactor;
 
 	// Note that the rho-factor is assumed to be 1.0. ie., we assume that
 	// all of the signal power falls in the slices.
@@ -323,33 +328,34 @@ Pr_to_sigma0(
 	double Be = instrument->GetTotalSignalBandwidth();
 
 	// Estimate the noise in the slice. (exact for simulated data)
-	double Pn_slice = Bs/Bn*Pn - Bs/Bn*(sumPsn - Be/Bn*Pn)/(1-Be/Bn);
+	meas->Pn_slice = Bs/Bn*Pn - Bs/Bn*(sumPsn - Be/Bn*Pn)/(1-Be/Bn);
 
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.
-	double Ps_slice = Psn - Pn_slice;
+	double Ps_slice = Psn - meas->Pn_slice;
 
 	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
 	// Kpc comes from Ps_slice.
 	// Kpr comes from 1/X
-	*sigma0 = (float)(Ps_slice / (*X*Kfactor));
+	meas->value = (float)(Ps_slice / meas->XK);
 
 	if (instrument->useKpc == 0)
 	{
-		*Kpc = 0.0;
+		meas->A = 0.0;
+		meas->B = 0.0;
+		meas->C = 0.0;
 	}
 	else
 	{
 		//------------------------------------------------------------------//
-		// Estimate Kpc using the estimated value of snr and the
+		// Estimate Kpc coefficients using the
 		// approximate equations in Mike Spencer's Kpc memos.
 		//------------------------------------------------------------------//
 
 		Beam* beam = instrument->antenna.GetCurrentBeam();
-		double snr = Ps_slice/Pn_slice;
-		double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
-		double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
-		double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
-		*Kpc = A + B/snr + C/snr/snr;
+		meas->A = 1.0 / (meas->bandwidth * beam->pulseWidth);
+		meas->B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
+		meas->C = meas->B/2.0 *
+			(1.0 + meas->bandwidth/instrument->noiseBandwidth);
 	}
 
 	return(1);
@@ -415,7 +421,7 @@ GetKpm(
 //
 // composite
 //
-// Combine measurments into one composite sigma0 and Kpc.
+// Combine measurments into one composite sigma0 and Kpc coefficients.
 // The input measurement list should all come from one spot, but this
 // routine does not (and can not) check for this.
 // The final composite measurement is put in a single measurement.
@@ -437,14 +443,14 @@ composite(
 	Vector3 sum_centroid(0.0,0.0,0.0);
 	float sum_inc_angle = 0.0;
 	float sum_azi_angle = 0.0;
-	float sum_X2Kpc2 = 0.0;
+	float sum_X2 = 0.0;
 	output_meas->bandwidth = 0.0;
 	int N = 0;
 
 	//
 	// Using X in place of Ps when compositing Kpc assumes that sigma0 is
 	// uniform across the composite cell area.  This assumption is used
-	// below because we sum X^2*Kpc^2 instead of Ps^2*Kpc^2.
+	// below because we sum X^2 instead of Ps^2.
 	// We actually use XK which subsumes the K-factor with X.
 	//
 
@@ -458,7 +464,7 @@ composite(
 		sum_centroid += meas->centroid;
 		sum_inc_angle += meas->incidenceAngle;
 		sum_azi_angle += meas->eastAzimuth;
-		sum_X2Kpc2 += meas->XK*meas->XK * meas->estimatedKp*meas->estimatedKp;
+		sum_X2 += meas->XK*meas->XK;
 		output_meas->bandwidth += meas->bandwidth;
 		N++;
 	}
@@ -472,6 +478,8 @@ composite(
 
 	output_meas->value = sum_Ps / sum_XK;
 	output_meas->XK = sum_XK;
+	output_meas->Pn_slice = meas->Pn_slice;		// same for all slices.
+	output_meas->bandwidth = meas->bandwidth;	// assumed same for all slices.
 
 	output_meas->outline.FreeContents();	// merged outlines not done yet.
 	output_meas->centroid = sum_centroid / N;
@@ -488,13 +496,14 @@ composite(
 	output_meas->incidenceAngle = sum_inc_angle / N;
 	output_meas->eastAzimuth = sum_azi_angle / N;
 
-	// Composite Kpc.
-	output_meas->estimatedKp = sum_X2Kpc2 / (sum_XK * sum_XK);
-	if (output_meas->estimatedKp == 0.0)
-	{	// assume that this means that Kpc is not being used in this run.
-		// Set to 1.0 so that GMF::_ObjectiveFunction works.
-		output_meas->estimatedKp = 1.0;
-	}
+	// Composite Kpc coefficients.
+	// Here we assume that all the slices in one spot have the same values
+	// of A,B,C (ie., bandwidths, and pulsewidths don't change within a spot).
+	// This will only be an issue if guard slices are composited with regular
+	// slices.
+	output_meas->A = meas->A * sum_X2 / (sum_XK * sum_XK);
+	output_meas->B = meas->B  / N;
+	output_meas->C = meas->C  / N;
 
 	return(1);
 
