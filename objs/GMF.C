@@ -323,7 +323,7 @@ GMF::RetrieveWinds(
 	if (! Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing,
 		best_obj, desired_solutions))
 	{
-		fprintf(stderr, "can't smooth solution curve\n");
+//		fprintf(stderr, "can't smooth solution curve\n");
 		return(0);
 	}
 

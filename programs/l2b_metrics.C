@@ -98,7 +98,10 @@ template class List<WindVectorPlus>;
 //-----------------------//
 
 int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
-	const char* x_label, const char* y_label);
+		const char* x_label, const char* y_label);
+
+int plot_thing(const char* extension, const char* title, const char* x_axis,
+		const char* y_axis);
 
 //------------------//
 // OPTION VARIABLES //
@@ -111,6 +114,15 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l20_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
 	"[ -o output_base ]", 0 };
+
+// not always evil...
+float*		ctd_array = NULL;
+float*		value_array = NULL;
+int*		count_array = NULL;
+int			cross_track_bins = 0;
+const char*	command = NULL;
+char*		l20_file = NULL;
+char*		output_base = NULL;
 
 //--------------//
 // MAIN PROGRAM //
@@ -127,18 +139,18 @@ main(
 
 	char* config_file = NULL;
 	ConfigList config_list;
-	char* l20_file = NULL;
+	l20_file = NULL;
 	char* truth_type = NULL;
 	char* truth_file = NULL;
 	float low_speed = DEFAULT_LOW_SPEED;
 	float high_speed = DEFAULT_HIGH_SPEED;
-	char* output_base = NULL;
+	output_base = NULL;
 
 	//------------------------//
 	// parse the command line //
 	//------------------------//
 
-	const char* command = no_path(argv[0]);
+	command = no_path(argv[0]);
 
 	if (argc == 1)
 		usage(command, usage_array, 1);
@@ -256,14 +268,12 @@ main(
 	// create arrays //
 	//---------------//
 
-	int cross_track_bins = l20.frame.swath.GetCrossTrackBins();
-	float* ctd_array = new float[cross_track_bins];
-	float* value_array = new float[cross_track_bins];
-	int* count_array = new int[cross_track_bins];
+	cross_track_bins = l20.frame.swath.GetCrossTrackBins();
+	ctd_array = new float[cross_track_bins];
+	value_array = new float[cross_track_bins];
+	count_array = new int[cross_track_bins];
 
 	char title[1024];
-	char filename[1024];
-	FILE* ofp;
 
 	//--------------------//
 	// generate ctd array //
@@ -286,29 +296,10 @@ main(
 		exit(1);
 	}
 
-	sprintf(filename, "%s.rms_spd_err", output_base);
-	ofp = fopen(filename, "w");
-	if (ofp == NULL)
-	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			filename);
-		exit(1);
-	}
-
 	sprintf(title, "RMS Speed Error vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	xmgr_control(ofp, title, l20_file, "Cross Track Distance (km)",
+	plot_thing("rms_spd_err", title, "Cross Track Distance (km)",
 		"RMS Speed Error (m/s)");
-
-	for (int i = 0; i < cross_track_bins; i++)
-	{
-		if (count_array[i] > 0)
-		{
-			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
-				count_array[i]);
-		}
-	}
-	fclose(ofp);
 
 	//-----------------------------//
 	// rms direction error vs. ctd //
@@ -322,29 +313,10 @@ main(
 		exit(1);
 	}
 
-	sprintf(filename, "%s.rms_dir_err", output_base);
-	ofp = fopen(filename, "w");
-	if (ofp == NULL)
-	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			filename);
-		exit(1);
-	}
-
 	sprintf(title, "RMS Direction Error vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
-	xmgr_control(ofp, title, l20_file, "Cross Track Distance (km)",
+	plot_thing("rms_dir_err", title, "Cross Track Distance (km)",
 		"RMS Direction Error (deg)");
-
-	for (int i = 0; i < cross_track_bins; i++)
-	{
-		if (count_array[i] > 0)
-		{
-			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i] * rtd,
-				count_array[i]);
-		}
-	}
-	fclose(ofp);
 
 	//---------------//
 	// skill vs. ctd //
@@ -357,27 +329,23 @@ main(
 		exit(1);
 	}
 
-	sprintf(filename, "%s.skill", output_base);
-	ofp = fopen(filename, "w");
-	if (ofp == NULL)
+	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
+	plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
+
+	//--------------------//
+	// speed bias vs. ctd //
+	//--------------------//
+
+	if (! l20.frame.swath.SpdBiasVsCti(&truth, value_array, count_array,
+		low_speed, high_speed))
 	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			filename);
+		fprintf(stderr, "%s: error calculating speed bias\n", command);
 		exit(1);
 	}
 
-	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	xmgr_control(ofp, title, l20_file, "Cross Track Distance (km)", "Skill");
-
-	for (int i = 0; i < cross_track_bins; i++)
-	{
-		if (count_array[i] > 0)
-		{
-			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
-				count_array[i]);
-		}
-	}
-	fclose(ofp);
+	sprintf(title, "Speed Bias vs. CTD (%g - %g m/s)", low_speed, high_speed);
+	plot_thing("spd_bias", title, "Cross Track Distance (km)",
+		"Speed Bias (m/s)");
 
 	//-------------//
 	// free arrays //
@@ -408,5 +376,41 @@ xmgr_control(
 	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
 	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
 	fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, y_label, QUOTE);
+	return(1);
+}
+
+//------------//
+// plot_thing //
+//------------//
+
+int
+plot_thing(
+	const char*		extension,
+	const char*		title,
+	const char*		x_axis,
+	const char*		y_axis)
+{
+	char filename[1024];
+	sprintf(filename, "%s.%s", output_base, extension);
+	FILE* ofp = fopen(filename, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			filename);
+		exit(1);
+	}
+
+	xmgr_control(ofp, title, l20_file, x_axis, y_axis);
+
+	for (int i = 0; i < cross_track_bins; i++)
+	{
+		if (count_array[i] > 0)
+		{
+			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
+				count_array[i]);
+		}
+	}
+	fclose(ofp);
+
 	return(1);
 }
