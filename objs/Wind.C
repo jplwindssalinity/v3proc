@@ -2349,6 +2349,30 @@ WindSwath::GetWVC(
     return( *(*(swath + cti) + ati) );
 }
 
+//-----------------------//
+// WindSwath::GetGoodWVC //
+//-----------------------//
+// this version won't bother returning a bad WVC
+// bad = rain flag doesn't indicate rain-free
+
+WVC*
+WindSwath::GetGoodWVC(
+    int  cti,
+    int  ati)
+{
+    WVC* wvc = GetWVC(cti, ati);
+    if (wvc == NULL)
+        return(NULL);
+
+    if (wvc->rainFlagBits & RAIN_FLAG_UNUSABLE ||
+        wvc->rainFlagBits & RAIN_FLAG_RAIN)
+    {
+        // inconclusive or contaminated
+        return(NULL);
+    }
+    return(wvc);
+}
+
 //-------------------------//
 // WindSwath::ReadFlagFile //
 //-------------------------//

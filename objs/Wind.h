@@ -373,7 +373,8 @@ public:
     int   GetAlongTrackBins()  { return(_alongTrackBins); };
     int   GetMaxAmbiguityCount();
     WVC*  GetWVC(int cti, int ati);
-    int  ReadFlagFile(const char* flag_file);
+    WVC*  GetGoodWVC(int cti, int ati);
+    int   ReadFlagFile(const char* flag_file);
 
     //---------//
     // freeing //
