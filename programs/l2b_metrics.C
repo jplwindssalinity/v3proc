@@ -90,9 +90,8 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING             "hndc:l:t:f:r:s:o:w:a:i:m:D:S:P:p:"
+#define OPTSTRING             "hndc:l:t:f:r:s:o:w:a:i:m:D:S:P:p:q:"
 #define ARRAY_SIZE            1024
-
 #define DEFAULT_LOW_LAT       -90.0
 #define DEFAULT_HIGH_LAT      90.0
 #define DEFAULT_LOW_SPEED     0.0
@@ -174,7 +173,7 @@ const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
     "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]",
     "[ -n (use nudge field as truth)]", "[ -d (READ HDF/DIRTH data sets)]",
-    "[-P pflag_file]", "[-p pthresh]", 0 };
+    "[-P pflag_file]", "[-p pthresh_both]", "[-q pthresh_outer]", 0 };
 
 // not always evil...
 float*         ctd_array = NULL;
@@ -194,7 +193,8 @@ char*          l2b_file = NULL;
 char*          output_base = NULL;
 char*          subtitle_str = NULL;
 char*          pflag_file = NULL;
-float          pthresh = 1.0;
+float          pthresh_both = 1.0;
+float          pthresh_outer = 1.0;
 
 PlotFlagE      plot_flag = NORMAL;
 RangeFlagE     range_flag = USE_LIMITS;
@@ -303,7 +303,10 @@ main(
             pflag_file = optarg;
             break;
         case 'p':
-            pthresh = atof(optarg);
+            pthresh_both = atof(optarg);
+            break;
+        case 'q':
+            pthresh_outer = atof(optarg);
             break;
         case 'w':
             within_angle = atof(optarg);
@@ -469,10 +472,12 @@ main(
 
     if (pflag_file != NULL)
     {
-        int pflag_erase = swath->DeleteFlaggedData(pflag_file, pthresh);
+        int pflag_erase = swath->DeleteFlaggedData(pflag_file, pthresh_both, 
+						   pthresh_outer);
         printf("Removing %d flagged vectors using flagfile %s with\n",
             pflag_erase, pflag_file);
-        printf("thresh=%g.\n", pthresh);
+        printf("thresh_both=%g thresh_outer=%g.\n", pthresh_both,
+	       pthresh_outer);
     }
 
     //----------------//
