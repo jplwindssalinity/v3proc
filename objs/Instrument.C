@@ -57,6 +57,7 @@ Instrument::SetTime(
 	time = new_time;
 	double time_since_eqx = time - _eqxTime;
 	orbitTicks = TimeToOrbitTicks(time_since_eqx);
+	instrumentTicks = (unsigned int)(new_time * INSTRUMENT_TICKS_PER_SECOND);
 	return(1);
 }
 
@@ -73,12 +74,12 @@ Instrument::SetCommandedDoppler(
 	return(1);
 }
 
-//-----------------//
-// Instrument::Eqx //
-//-----------------//
+//------------------------//
+// Instrument::SetEqxTime //
+//------------------------//
 
 int
-Instrument::Eqx(
+Instrument::SetEqxTime(
 	double	eqx_time)
 {
 	_eqxTime = eqx_time;
