@@ -31,7 +31,7 @@ public:
 	// construction //
 	//--------------//
 
-	GMF(const char* filename);
+	GMF();
 	~GMF();
 
 	//--------------//
@@ -39,6 +39,9 @@ public:
 	//--------------//
 
 	int		Read(const char* filename);
+	int		ReadOldStyle(const char* filename);
+	int		ReadHeader(int fd);
+	int		ReadTable(int fd);
 
 	//--------//
 	// access //
@@ -49,6 +52,8 @@ public:
 		double* sigma_0);
 
 protected:
+
+	int		_Allocate();
 
 	//-----------//
 	// variables //

@@ -15,10 +15,11 @@ static const char rcs_id_gmf_c[] =
 // GMF //
 //=====//
 
-GMF::GMF(
-	const char*		filename)
+GMF::GMF()
+:	_polCount(0), _incCount(0), _incMin(0.0), _incMax(0.0), _incStep(0.0),
+	_spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0), _chiCount(0),
+	_chiMin(0.0), _chiMax(0.0), _chiStep(0.0), _sigma0(0)
 {
-	filename;
 	return;
 }
 
@@ -35,56 +36,133 @@ int
 GMF::Read(
 	const char*		filename)
 {
-	//-------------------//
-	// open the GMF file //
-	//-------------------//
-
-	int ifd = open(filename, O_RDONLY);
-	if (ifd == -1)
+	int fd = open(filename, O_RDONLY);
+	if (fd == -1)
 		return(0);
 
-	//--------------------//
-	// read in the header //
-	//--------------------//
+	if (! ReadHeader(fd))
+		return(0);
 
-	read(ifd, &_polCount, sizeof(int));
+	if (! _Allocate())
+		return(0);
 
-	read(ifd, &_incCount, sizeof(int));
-	read(ifd, &_incMin, sizeof(double));
-	read(ifd, &_incMax, sizeof(double));
+	if (! ReadTable(fd))
+		return(0);
 
-	read(ifd, &_spdCount, sizeof(int));
-	read(ifd, &_spdMin, sizeof(double));
-	read(ifd, &_spdMax, sizeof(double));
+	close(fd);
+	return(1);
+}
 
-	read(ifd, &_chiCount, sizeof(int));
-	read(ifd, &_chiMin, sizeof(double));
-	read(ifd, &_chiMax, sizeof(double));
+//------------------//
+// GMF:ReadOldStyle //
+//------------------//
 
-	//--------------------//
-	// allocate the array //
-	//--------------------//
+int GMF::ReadOldStyle(
+	const char*		filename)
+{
+	int fd = open(filename, O_RDONLY);
+	if (fd == -1)
+		return(0);
 
+	int dummy;
+	read(fd, &dummy, sizeof(int));
+
+	_polCount = 2;
+
+	_incCount = 26;
+	_incMin = 16.0;
+	_incMax = 66.0;
+	_incStep = 2.0;
+
+	_spdCount = 50;
+	_spdMin = 1.0;
+	_spdMax = 50.0;
+	_spdStep = 1.0;
+
+	_chiCount = 37;
+	_chiMin = 0.0;
+	_chiMax = 360.0;
+	_chiStep = 10.0;
+
+	if (! _Allocate())
+		return(0);
+
+	float value;
+	for (int pol_idx = 0; pol_idx < _polCount; pol_idx++)
+	{
+		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+		{
+			for (int spd_idx = 0; spd_idx < _spdCount; spd_idx++)
+			{
+				for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+				{
+					if (read(fd, &value, sizeof(float)) != sizeof(float))
+					{
+						close(fd);
+						return(0);
+					}
+					*(*(*(*(_sigma0+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
+						(double)value;
+				}
+			}
+		}
+	}
+
+	close(fd);
+	return(1);
+}
+
+//-----------------//
+// GMF::ReadHeader //
+//-----------------//
+
+int
+GMF::ReadHeader(
+	int		fd)
+{
+	read(fd, &_polCount, sizeof(int));
+
+	read(fd, &_incCount, sizeof(int));
+	read(fd, &_incMin, sizeof(double));
+	read(fd, &_incMax, sizeof(double));
+
+	read(fd, &_spdCount, sizeof(int));
+	read(fd, &_spdMin, sizeof(double));
+	read(fd, &_spdMax, sizeof(double));
+
+	read(fd, &_chiCount, sizeof(int));
+	read(fd, &_chiMin, sizeof(double));
+	read(fd, &_chiMax, sizeof(double));
+
+	return(1);
+}
+
+//----------------//
+// GMF::_Allocate //
+//----------------//
+
+int
+GMF::_Allocate()
+{
 	_sigma0 = (double ****)malloc(_polCount * sizeof(double ***));
 	if (_sigma0 == NULL)
 		return(0);
 
-	int i, j, k;
-	for (i = 0; i < _polCount; i++)
+	for (int i = 0; i < _polCount; i++)
 	{
 		double*** dppp = (double ***)malloc(_incCount * sizeof(double **));
 		if (dppp == NULL)
 			return(0);
 		*(_sigma0 + i) = dppp;
 
-		for (j = 0; j < _incCount; j++)
+		for (int j = 0; j < _incCount; j++)
 		{
 			double** dpp = (double **)malloc(_spdCount * sizeof(double *));
 			if (dpp == NULL)
 				return(0);
 			*(*(_sigma0 + i) + j) = dpp;
 
-			for (k = 0; k < _spdCount; k++)
+			for (int k = 0; k < _spdCount; k++)
 			{
 				double* dp = (double *)malloc(_chiCount * sizeof(double));
 				if (dp == NULL)
@@ -93,28 +171,32 @@ GMF::Read(
 			}
 		}
 	}
+	return(1);
+}
 
+//----------------//
+// GMF::ReadTable //
+//----------------//
+
+int
+GMF::ReadTable(
+	int		fd)
+{
 	//----------------//
 	// read the array //
 	//----------------//
 
-	for (i = 0; i < _polCount; i++)
+	for (int i = 0; i < _polCount; i++)
 	{
-		for (j = 0; j < _incCount; j++)
+		for (int j = 0; j < _incCount; j++)
 		{
-			for (k = 0; k < _spdCount; k++)
+			for (int k = 0; k < _spdCount; k++)
 			{
-				read(ifd, *(*(*(_sigma0 + i) + j) + k),
+				read(fd, *(*(*(_sigma0 + i) + j) + k),
 					sizeof(double) * _chiCount);
 			}
 		}
 	}
-
-	//----------------//
-	// close the file //
-	//----------------//
-
-	close(ifd);
 
 	//----------------------//
 	// calculate step sizes //
