@@ -90,7 +90,7 @@ private:
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
-#define RANGE_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
+#define RECEIVER_GATE_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
 
 class RangeTracking
 {
@@ -111,7 +111,6 @@ public:
 
 	int		SetReceiverGateWidth(float receiver_gate_width);
 	int		SetXmitPulseWidth(float xmit_pulse_width);
-
 
 	//------------//
 	// algorithms //

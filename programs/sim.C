@@ -287,6 +287,13 @@ main(
 		exit(1);
 	}
 
+	if (! spacecraft_sim.Initialize(spacecraft_start_time))
+	{
+		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+			command);
+		exit(1);
+	}
+
 	//----------------------//
 	// cycle through events //
 	//----------------------//
@@ -340,6 +347,10 @@ main(
 					spacecraft.orbitState.Write(eph_fp);
 					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
 					break;
+				case SpacecraftEvent::EQUATOR_CROSSING:
+					instrument.Eqx(spacecraft_event.time);
+					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+					break;
 				default:
 					fprintf(stderr, "%s: unknown spacecraft event\n", command);
 					exit(1);
@@ -369,16 +380,20 @@ main(
 				switch(instrument_event.eventId)
 				{
 				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+
+					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(instrument_event.time,
 						&spacecraft);
 					spacecraft_sim.UpdateAttitude(instrument_event.time,
 						&spacecraft);
-					instrument_sim.UpdateAntennaPosition(instrument_event.time,
-						&instrument);
+
+					// process instrument stuff
+					instrument.SetTime(instrument_event.time);
+					instrument_sim.UpdateAntennaPosition(&instrument);
 					instrument.antenna.currentBeamIdx =
 						instrument_event.beamIdx;
-					instrument_sim.ScatSim(instrument_event.time, &spacecraft,
-						&instrument, &windfield, &gmf, &(l00.frame));
+					instrument_sim.ScatSim(&spacecraft, &instrument,
+						&windfield, &gmf, &(l00.frame));
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);
 					break;

@@ -32,17 +32,31 @@ static const double rm_2 = rm * rm;
 //===============//
 
 SpacecraftSim::SpacecraftSim()
+:	_epoch(0.0), _a(0.0), _e(0.0), _i(0.0), _bigOmega(0.0), _littleOmega(0.0),
+	_l(0.0), _period(0.0), _attcntl_dist(NULL), _attknow_dist(NULL),
+	_a_3(0.0), _e_2(0.0), _ascnodot(0.0), _periasdot(0.0), _ameandot(0.0),
+	_eta(0.0), _pp(0.0), _pp_2(0.0), _cosi(0.0), _cosi_2(0.0), _sini_2(0.0),
+	_gama(0.0), _G(0.0), _H(0.0), _nextUpdateTime(0.0), _nextEqxTime(0.0)
 {
-	// set attitude control/knowledge error models to default (no error)
-	_attcntl_dist=NULL;
-	_attknow_dist=NULL;
-
 	return;
 }
 
 SpacecraftSim::~SpacecraftSim()
 {
 	return;
+}
+
+//---------------------------//
+// SpacecraftSim::Initialize //
+//---------------------------//
+
+int
+SpacecraftSim::Initialize(
+	double		start_time)
+{
+	_nextUpdateTime = start_time;
+	_nextEqxTime = NextEqxTime(start_time);
+	return(1);
 }
 
 //----------------------------//
@@ -81,7 +95,7 @@ SpacecraftSim::DefineOrbit(
 	//-------------------------------------------------------------//
 	// calculate perturbations of mean anomaly, periapse, asc node //
 	//-------------------------------------------------------------//
- 
+
 	double a = sqrt(xmu / _a_3);	// two-body mean motion
 	_pp = _a * (1.0 - _e_2);	// semi-latus rectum (nearly killed 'em!)
 	_pp_2 = _pp * _pp;
@@ -91,20 +105,26 @@ SpacecraftSim::DefineOrbit(
 	_cosi_2 = _cosi * _cosi;
 	double sini = sin(_i);
 	_sini_2 = sini * sini;
- 
+
 	// perturbation of mean anomaly
 	double b1 = 1.0 - 1.5 * _sini_2;
 	double b = 1.0 + 1.5 * _gama * _eta * b1;
 	_ameandot = a * b;		// "anomalistic" mean motion
- 
+
 	// rate of precession of perigee
 	_periasdot = 1.5 * _gama * _ameandot * (2.0 - 2.5 * _sini_2);
- 
+
 	// rate of regression of ascending node
 	_ascnodot = -1.5 * _gama * _ameandot * _cosi;
 
 	_G = sqrt(xmu * _pp);
 	_H = _G * _cosi;
+
+	//----------------------//
+	// calculate the period //
+	//----------------------//
+
+	_period = two_pi / (_ameandot + _periasdot);
 
 	return(1);
 }
@@ -323,16 +343,16 @@ SpacecraftSim::UpdateAttitude(
 	double			time,
 	Spacecraft*		spacecraft)
 {
-	
-        if(_attcntl_dist != NULL){
-	  spacecraft->attitude.SetRoll(_attcntl_dist->roll->GetNumber(time));
-	  spacecraft->attitude.SetPitch(_attcntl_dist->pitch->GetNumber(time));
-	  spacecraft->attitude.SetYaw(_attcntl_dist->yaw->GetNumber(time));
+	if(_attcntl_dist != NULL)
+	{
+		spacecraft->attitude.SetRoll(_attcntl_dist->roll->GetNumber(time));
+		spacecraft->attitude.SetPitch(_attcntl_dist->pitch->GetNumber(time));
+		spacecraft->attitude.SetYaw(_attcntl_dist->yaw->GetNumber(time));
 	}
 	else{
-          spacecraft->attitude.SetRoll(0.0);
-  	  spacecraft->attitude.SetPitch(0.0);
-          spacecraft->attitude.SetYaw(0.0);
+		spacecraft->attitude.SetRoll(0.0);
+		spacecraft->attitude.SetPitch(0.0);
+		spacecraft->attitude.SetYaw(0.0);
 	}
 	return(1);
 }
@@ -340,8 +360,10 @@ SpacecraftSim::UpdateAttitude(
 //-------------------------------//
 // SpaceCraftSim::SetAttCntlModel//
 //-------------------------------//
-void 
-SpacecraftSim::SetAttCntlModel(AttDist* attdist)
+
+void
+SpacecraftSim::SetAttCntlModel(
+	AttDist*	attdist)
 {
 	_attcntl_dist=attdist;
 	return;
@@ -350,21 +372,25 @@ SpacecraftSim::SetAttCntlModel(AttDist* attdist)
 //-------------------------------//
 // SpaceCraftSim::SetAttKnowModel//
 //-------------------------------//
-void 
-SpacecraftSim::SetAttKnowModel(AttDist* attdist)
+
+void
+SpacecraftSim::SetAttKnowModel(
+	AttDist*	attdist)
 {
 	_attknow_dist=attdist;
 	return;
 }
 
-//-----------------------------------//
-// SpacecraftSim::ReportAttitude     //
-//-----------------------------------//
+//-------------------------------//
+// SpacecraftSim::ReportAttitude //
+//-------------------------------//
 
 /**** This method reports attitude + knowledge error ****/
-void 
-SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft, 
-				Attitude* attitude)
+void
+SpacecraftSim::ReportAttitude(
+	double			time,
+	Spacecraft*		spacecraft,
+	Attitude*		attitude)
 {
 	float roll,pitch,yaw;
 	unsigned char* order;
@@ -372,26 +398,16 @@ SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft,
 	pitch=spacecraft->attitude.GetPitch();
 	yaw=spacecraft->attitude.GetYaw();
 
-	if( _attknow_dist != NULL){
-	  roll+=_attknow_dist->roll->GetNumber(time);
-	  pitch+=_attknow_dist->pitch->GetNumber(time);
-	  yaw+=_attknow_dist->yaw->GetNumber(time);
+	if( _attknow_dist != NULL)
+	{
+		roll+=_attknow_dist->roll->GetNumber(time);
+		pitch+=_attknow_dist->pitch->GetNumber(time);
+		yaw+=_attknow_dist->yaw->GetNumber(time);
 	}
 
 	order=spacecraft->attitude.GetOrder();
 	attitude->Set(roll,pitch,yaw,order[0],order[1],order[2]);
 	return;
-}
-
-//--------------------------//
-// SpacecraftSim::GetPeriod //
-//--------------------------//
-
-double
-SpacecraftSim::GetPeriod()
-{
-	double period = two_pi / (_ameandot + _periasdot);
-	return(period);
 }
 
 //----------------------------//
@@ -433,21 +449,65 @@ SpacecraftSim::GetArgOfLat(
 
 int
 SpacecraftSim::DetermineNextEvent(
-	SpacecraftEvent*    spacecraft_event)
+	SpacecraftEvent*	spacecraft_event)
 {
 	//----------------------------------------//
 	// find minimum time from possible events //
 	//----------------------------------------//
-	// easy, since there is only one
 
-	spacecraft_event->eventId = SpacecraftEvent::UPDATE_STATE;
+	if (_nextEqxTime < _nextUpdateTime)
+	{
+		//------------------------//
+		// equator crossing event //
+		//------------------------//
 
-	int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod + 1.5);
-	double update_state_time = (double)sample_number * _ephemerisPeriod;
+		spacecraft_event->eventId = SpacecraftEvent::EQUATOR_CROSSING;
+		spacecraft_event->time = _nextEqxTime;
 
-	spacecraft_event->time = update_state_time;
+		//--------------------------------//
+		// set next equator crossing time //
+		//--------------------------------//
+
+		_nextEqxTime = NextEqxTime(_nextEqxTime + GetPeriod());
+	}
+	else
+	{
+		//--------------------//
+		// update state event //
+		//--------------------//
+
+		spacecraft_event->eventId = SpacecraftEvent::UPDATE_STATE;
+		spacecraft_event->time = _nextUpdateTime;
+
+		//----------------------------//
+		// set next update state time //
+		//----------------------------//
+
+		int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod
+			+ 2.5);
+		_nextUpdateTime = (double)sample_number * _ephemerisPeriod;
+	}
 
 	return(1);
+}
+
+//----------------------------//
+// SpacecraftSim::NextEqxTime //
+//----------------------------//
+
+double
+SpacecraftSim::NextEqxTime(
+	double	time)
+{
+	//-------------------//
+	// estimate next eqx //
+	//-------------------//
+
+	static Spacecraft spacecraft;		// used just for this
+	UpdateOrbit(time, &spacecraft);
+	double arg_of_lat = GetArgOfLat(&spacecraft);
+	double eqx_time = time + _period * (1.0 - arg_of_lat / two_pi);
+	return(eqx_time);
 }
 
 //----------------------//

@@ -107,6 +107,11 @@ int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
 
 int		GetTwoWayPeakGain(Beam* beam, double round_trip_time,
             double azimuth_rate, double* look, double* azimuth);
+
+int		GetTwoWayPeakGain(CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
+			double* look, double* azimuth);
+
 double	ReciprocalPowerGainProduct(double*,void*);
 
 #endif

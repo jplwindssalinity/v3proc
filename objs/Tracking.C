@@ -204,7 +204,7 @@ RangeTracking::SetReceiverGateWidth(
 	float	receiver_gate_width)
 {
 	_receiverGateWidth = (unsigned char)(receiver_gate_width /
-		RANGE_TIME_RESOLUTION + 0.5);
+		RECEIVER_GATE_TIME_RESOLUTION + 0.5);
 	return(1);
 }
 
@@ -217,7 +217,7 @@ RangeTracking::SetXmitPulseWidth(
 	float	xmit_pulse_width)
 {
 	_xmitPulseWidth = (unsigned char)(xmit_pulse_width /
-		RANGE_TIME_RESOLUTION + 0.5);
+		RECEIVER_GATE_TIME_RESOLUTION + 0.5);
 	return(1);
 }
 
@@ -238,14 +238,14 @@ RangeTracking::DelayAndDuration(
 
 	unsigned char delay_dn = *(*(_delay + beam_idx) + orbit_step);
 	delay_dn += (_receiverGateWidth - _xmitPulseWidth) / 2;
-	*delay = RANGE_TIME_RESOLUTION * (float)delay_dn;
+	*delay = RECEIVER_GATE_TIME_RESOLUTION * (float)delay_dn;
 
 	//------------------//
 	// set the duration //
 	//------------------//
 
 	unsigned char duration_dn = *(_duration + beam_idx);
-	*duration = RANGE_TIME_RESOLUTION * (float)duration_dn;
+	*duration = RECEIVER_GATE_TIME_RESOLUTION * (float)duration_dn;
 
 	return(1);
 }

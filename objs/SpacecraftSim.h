@@ -43,6 +43,8 @@ public:
 	// initialization //
 	//----------------//
 
+	int		Initialize(double start_time);
+
 	int		DefineOrbit(double epoch, double semi_major_axis,
 				double eccentricity, double inclination,
 				double longitude_of_asc_node, double argument_of_perigee,
@@ -66,7 +68,7 @@ public:
 	double		GetEphemerisPeriod() { return(_ephemerisPeriod); };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
-	double		GetPeriod();
+	double		GetPeriod() { return (_period); };
 	double		GetEpoch() { return (_epoch); };
 	double		GetArgOfLat(Spacecraft* spacecraft);
 
@@ -75,6 +77,7 @@ public:
 	//--------//
 
 	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
+	double	NextEqxTime(double time);
 
 	//----------------------------------------------//
 	// Attitude Error Model Initialization Routines //
@@ -116,9 +119,10 @@ protected:
 	double	_littleOmega;	// argument of perigee
 	double	_l;				// mean anomaly
 
+	double	_period;		// the orbit period
+
 	AttDist* _attcntl_dist;	// Attitude Control Distribution
 	AttDist* _attknow_dist;	// Attitude Knowledge Distribution
-
 
 	//-----------------------//
 	// predigested variables //
@@ -140,6 +144,13 @@ protected:
 
 	double	_G;
 	double	_H;
+
+	//-----------------//
+	// event variables //
+	//-----------------//
+
+	double		_nextUpdateTime;		// time of next orbit state update
+	double		_nextEqxTime;			// time of next equator crossing
 };
 
 #endif

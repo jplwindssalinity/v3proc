@@ -21,7 +21,6 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Misc.h"
 
 
-
 //------------------//
 // AntennaFrameToGC //
 //------------------//
@@ -77,9 +76,8 @@ LocateSlices(
 	Antenna* antenna = &(instrument->antenna);
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
-	Attitude* attitude = &(spacecraft->attitude);      
+	Attitude* attitude = &(spacecraft->attitude);
 	Attitude zero_rpy; // Constructor set rpy to zero
-
 
 	//------------------//
 	// set up meas spot //
@@ -97,9 +95,8 @@ LocateSlices(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc = 
-	  AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
-
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
 
 	//------------------------//
 	// determine slicing info //
@@ -129,7 +126,8 @@ LocateSlices(
 	}
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument, vector);
+	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+		vector);
 
 	//-------------------//
 	// for each slice... //
@@ -143,7 +141,7 @@ LocateSlices(
 
 		Meas* meas = new Meas();
 		meas->pol = beam->polarization;
-	
+
 		//----------------------------------------//
 		// determine the baseband frequency range //
 		//----------------------------------------//
@@ -295,7 +293,7 @@ LocateSpot(
 	// Convert the results to the geocentric frame and find
 	// the earth intercepts.
 	//
-	
+
 	for (int i=0; i < POINTS_PER_SPOT_OUTLINE + 1; i++)
 	{
 		double phi = (two_pi * i) / POINTS_PER_SPOT_OUTLINE;
@@ -623,7 +621,7 @@ DopplerAndDelay(
 // Compute some useful numbers for the target on the earth's surface
 // intercepted by a particular direciton in the antenna frame.
 // The vector is a directional vector specified in the antenna frame.
- 
+
 int
 TargetInfo(
 	CoordinateSwitch*	antenna_frame_to_gc,
@@ -640,7 +638,7 @@ TargetInfo(
 	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
 	EarthPosition* rspot = &(tip->rTarget);
 	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
- 
+
 	// Compute doppler shift for the earth intercept point.
 	double actual_xmit_frequency = instrument->baseTransmitFreq +
 		instrument->commandedDoppler;
@@ -648,7 +646,7 @@ TargetInfo(
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light_kps / actual_xmit_frequency;
 	tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
- 
+
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
 	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
@@ -662,8 +660,8 @@ TargetInfo(
 		(instrument->receiverGateDelay - echo_center);
 	tip->basebandFreq = tip->rangeFreq - (tip->dopplerFreq +
 		instrument->commandedDoppler);
- 
-return(1);
+
+	return(1);
 }
 
 //--------------------//
@@ -805,7 +803,7 @@ FindFreq(
 			delta_azim = (target_freq - tip.basebandFreq) /
 				(df_dlook * df_dlook / df_dazim + df_dazim);
 		}
- 
+
 		if (df_dlook == 0.0)
 			delta_look = 0.0;
 		else
@@ -813,11 +811,11 @@ FindFreq(
 			delta_look = (target_freq - tip.basebandFreq) /
 				(df_dazim * df_dazim / df_dlook + df_dlook);
 		}
- 
+
 		//------------------------------//
 		// jump to the look and azimuth //
 		//------------------------------//
- 
+
 		*look += delta_look;
 		*azim += delta_azim;
 
@@ -1136,7 +1134,7 @@ FindSliceCorners(
 	//------------------------------------//
 	// determine the iso-frequency deltas //
 	//------------------------------------//
- 
+
 	double df_dlook, df_dazim;
 	if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, look,
 		LOOK_OFFSET, azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
@@ -1150,7 +1148,7 @@ FindSliceCorners(
 	//------------------------//
 	// scale to radian deltas //
 	//------------------------//
- 
+
 	double scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
 	delta_look /= scale;
 	delta_azim /= scale;
@@ -1356,7 +1354,7 @@ QuadFit(
 	//-------------------------------//
 	// calculate projected distances //
 	//-------------------------------//
- 
+
 	s[1] = 0.0;
 	double dl, da;
 	dl = (look[1] - look[0]);
@@ -1369,7 +1367,7 @@ QuadFit(
 	//-------------------//
 	// for each point... //
 	//-------------------//
- 
+
 	TargetInfoPackage tip;
 	Vector3 vector;
 	float gain[3];
@@ -1383,11 +1381,11 @@ QuadFit(
 		}
 		dgain[i] = gain[i];		// transfer to double for quad fit
 	}
- 
+
 	//-----------------//
 	// fit a quadratic //
 	//-----------------//
- 
+
 	if (! polcoe(s, dgain, 2, c))
 		return(0);
 
@@ -1421,7 +1419,7 @@ PeakFit(
 //------------------//
 // PowerGainProduct //
 //------------------//
- 
+
 int
 PowerGainProduct(
 	CoordinateSwitch*	antenna_frame_to_gc,
@@ -1448,7 +1446,7 @@ PowerGainProduct(
 // RangeAndRoundTrip //
 //-------------------//
 // Calculates the range and round trip time
- 
+
 int
 RangeAndRoundTrip(
 	CoordinateSwitch*	antenna_frame_to_gc,
@@ -1458,13 +1456,13 @@ RangeAndRoundTrip(
 {
 	// dereference
 	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
- 
+
 	// Compute earth intercept point and range.
 	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
 	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
 	tip->slantRange = (sc_orbit_state->rsat - tip->rTarget).Magnitude();
 	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
- 
+
 	return(1);
 }
 
@@ -1479,7 +1477,7 @@ RangeAndRoundTrip(
 // the scattering geometry.
 //
 
-#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE  1e-5
+#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE	1e-5
 
 int
 GetTwoWayPeakGain(
@@ -1489,9 +1487,6 @@ GetTwoWayPeakGain(
 	double*	look,
 	double*	azimuth)
 {
-	// Start with the one-way electrical boresight.
-	beam->GetElectricalBoresight(look,azimuth);
-
 	int ndim = 2;
 	double** p = (double**)make_array(sizeof(double),2,3,4);
 	if (p == NULL)
@@ -1521,6 +1516,44 @@ GetTwoWayPeakGain(
 	*azimuth = p[0][1];
 
 	free_array(p,2,3,4);
+
+	return(1);
+}
+
+//-------------------//
+// GetTwoWayPeakGain //
+//-------------------//
+
+int
+GetTwoWayPeakGain(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Beam*				beam,
+	double				azimuth_rate,
+	double*				look,
+	double*				azimuth)
+{
+	//---------------------------------------------//
+	// start with the one-way electrical boresight //
+	//---------------------------------------------//
+
+	if (! beam->GetElectricalBoresight(look, azimuth))
+		return(0);
+
+	Vector3 rlook_antenna;
+	rlook_antenna.SphericalSet(1.0, *look, *azimuth);
+	TargetInfoPackage tip;
+	RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+
+	//---------------------------//
+	// get the two-way peak gain //
+	//---------------------------//
+
+	if (! GetTwoWayPeakGain(beam, tip.roundTripTime, azimuth_rate,
+		look, azimuth))
+	{
+		return(0);
+	}
 
 	return(1);
 }

@@ -13,8 +13,8 @@
 // DESCRIPTION
 //		Simulates the SeaWinds 1b instrument based on the parameters
 //		in the simulation configuration file. Performs a very
-//              accurate simulation by integrating over each slice to
-//              calculate X.
+//		accurate simulation by integrating over each slice to
+//		calculate X.
 //
 // OPTIONS
 //		None.
@@ -184,8 +184,8 @@ main(
 
 	if (! ConfigAttitudeKnowledgeModel(&spacecraft_sim, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring attitude knowledge error model\n",
-			command);
+		fprintf(stderr,
+			"%s: error configuring attitude knowledge error model\n", command);
 		fprintf(stderr, "    for spacecraft simulator\n");
 		exit(1);
 	}
@@ -262,7 +262,6 @@ main(
 		exit(1);
 	}
 
-
 	//---------------------//
 	// configure the times //
 	//---------------------//
@@ -281,9 +280,6 @@ main(
 	}
 	instrument_sim.startTime = instrument_start_time;
 
-
-
-
 	//------------//
 	// initialize //
 	//------------//
@@ -291,6 +287,13 @@ main(
 	if (! instrument_sim.Initialize(&(instrument.antenna)))
 	{
 		fprintf(stderr, "%s: error initializing instrument simulator\n",
+			command);
+		exit(1);
+	}
+
+	if (! spacecraft_sim.Initialize(spacecraft_start_time))
+	{
+		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
 			command);
 		exit(1);
 	}
@@ -377,16 +380,20 @@ main(
 				switch(instrument_event.eventId)
 				{
 				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+
+					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(instrument_event.time,
 						&spacecraft);
 					spacecraft_sim.UpdateAttitude(instrument_event.time,
 						&spacecraft);
-					instrument_sim.UpdateAntennaPosition(instrument_event.time,
-						&instrument);
+
+					// process instrument stuff
+					instrument.SetTime(instrument_event.time);
+					instrument_sim.UpdateAntennaPosition(&instrument);
 					instrument.antenna.currentBeamIdx =
 						instrument_event.beamIdx;
-					instrument_sim.ScatSim(instrument_event.time, &spacecraft,
-						&instrument, &windfield, &gmf, &(l00.frame));
+					instrument_sim.ScatSim(&spacecraft, &instrument,
+						&windfield, &gmf, &(l00.frame));
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);
 					break;

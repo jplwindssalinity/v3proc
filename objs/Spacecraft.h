@@ -36,7 +36,7 @@ public:
 	// enums //
 	//-------//
  
-	enum SpacecraftEventE { NONE, UNKNOWN, UPDATE_STATE };
+	enum SpacecraftEventE { NONE, UNKNOWN, UPDATE_STATE, EQUATOR_CROSSING };
  
 	//--------------//
 	// construction //
