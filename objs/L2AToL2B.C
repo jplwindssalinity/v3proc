@@ -136,9 +136,9 @@ L2AToL2B::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	float ctd, speed;
-        WindVectorPlus* wvp;
-        static num=1;
+//	float ctd, speed;
+//  WindVectorPlus* wvp;
+    static num = 1;
     switch (wrMethod)
     {
         case GS:
