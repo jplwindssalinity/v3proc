@@ -218,59 +218,66 @@ main(
 
     do
     {
-        //--------------------//
-        // read the record id //
-        //--------------------//
+        //------//
+        // read //
+        //------//
 
-        int id;
-        int size = sizeof(int);
-        int retval = read(ifd, &id, size);
-        if (retval != size)
+        EchoInfo echo_info;
+        int retval = echo_info.Read(ifd);
+        if (retval != 1)
         {
-            if (retval == 0)
-                break;    // EOF
+            if (retval == -1)    // EOF
+                break;
             else
             {
-                fprintf(stderr, "%s: error reading echo data file %s\n",
-                    command, echo_data_file);
+                fprintf(stderr, "%s: error reading echo file %s\n", command,
+                    echo_data_file);
                 exit(1);
             }
         }
 
-        //-------//
-        // parse //
-        //-------//
+        //---------------//
+        // for each spot //
+        //---------------//
 
-        switch (id)
+        for (int spot_idx = 0; spot_idx < spots_per_frame; spot_idx++)
         {
-        case SPOT_ID:
-            int beam_idx, ideal_encoder, land_flag, orbit_step, azimuth_step;
-            float tx_doppler, rx_gate_delay, tx_center_azimuth,
-                meas_spec_peak_freq, total_signal_energy, time_since_an;
-            if (! read_spot(ifd, &beam_idx, &tx_doppler, &rx_gate_delay,
-                &ideal_encoder, &tx_center_azimuth, &meas_spec_peak_freq,
-                &total_signal_energy, &land_flag))
+            //-----------------------//
+            // accumulation decision //
+            //-----------------------//
+
+            if (echo_info.flag[spot_idx] != EchoInfo::OK)
+                continue;
+
+            if (echo_info.totalSignalEnergy[spot_idx] <
+                SIGNAL_ENERGY_THRESHOLD)
             {
-                fprintf(stderr,
-                    "%s: error reading spot from echo data file %s\n",
-                    command, echo_data_file);
-                exit(1);
+                continue;
             }
+
+            //----------------------------------------------//
+            // find the original reference vector frequency //
+            //----------------------------------------------//
+
+            //------------//
+            // accumulate //
+            //------------//
 
             // calculate X azimuth step
             azimuth_step = (int)(FOFF_AZIMUTH_STEPS *
-                (double)ideal_encoder / (double)ENCODER_N + 0.5);
+                (double)echo_info.idealEncoder[spot_idx] /
+                (double)ENCODER_N + 0.5);
             azimuth_step %= FOFF_AZIMUTH_STEPS;
 
             // calculate X orbit step
-            time_since_an = (float)orbit_time /
+            time_since_an = (float)echo_info.orbitTicks /
                 (float)ORBIT_TICKS_PER_SECOND;
             orbit_step = (int)(time_since_an / SECONDS_PER_ORBIT_STEP +
                 0.5);
             orbit_step %= FOFF_ORBIT_STEPS;
 
-            accumulate(beam_idx, orbit_step, azimuth_step, meas_spec_peak_freq,
-                calc_spec_peak_freq);
+            accumulate(beam_idx, orbit_step, azimuth_step,
+                echo_info.measSpecPeakFreq[spot_idx], echo_info.);
             break;
         case EPHEMERIS_ID:
             float gcx, gcy, gcz, velx, vely, velz, roll, pitch, yaw;

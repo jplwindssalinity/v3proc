@@ -322,6 +322,7 @@ main(
         echo_info.orbitTicks = frame->orbitTicks;
         echo_info.orbitStep = frame->orbitStep;
         echo_info.priOfOrbitStepChange = frame->priOfOrbitStepChange;
+        echo_info.spinRate = omega;
 
         //--------------------//
         // step through spots //

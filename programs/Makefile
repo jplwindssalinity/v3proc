@@ -93,7 +93,7 @@ PROGRAMS = \
 	fake_s0_data \
 	gmf_plot \
 	echo_split \
-	generate_foff_table \
+	gen_foff \
 	BYUX_vs_time \
 	l2b_extract_worst
 #	sim_accurate

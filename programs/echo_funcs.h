@@ -40,6 +40,7 @@ public:
     unsigned int    orbitTicks;
     unsigned char   orbitStep;
     unsigned char   priOfOrbitStepChange;
+    float           spinRate;
     unsigned char   beamIdx[SPOTS_PER_FRAME];
     unsigned short  idealEncoder[SPOTS_PER_FRAME];
     double          txCenterAzimuthAngle[SPOTS_PER_FRAME];
@@ -105,6 +106,7 @@ EchoInfo::Write(
         write(fd, (void *)&orbitStep, char_size) != char_size ||
         write(fd, (void *)&priOfOrbitStepChange, char_size) !=
           char_size ||
+        write(fd, (void *)&spinRate, float_size) != float_size ||
         write(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         write(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
@@ -170,6 +172,7 @@ EchoInfo::Read(
         read(fd, (void *)&orbitStep, char_size) != char_size ||
         read(fd, (void *)&priOfOrbitStepChange, char_size) !=
           char_size ||
+        read(fd, (void *)&spinRate, float_size) != float_size ||
         read(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
         read(fd, (void *)idealEncoder, frame_short_size) !=
           frame_short_size ||
@@ -461,7 +464,8 @@ gaussian_fit2(
     ptr[1] = (char *)y;
     ptr[2] = (char *)&points;
 
-    downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval2, ptr);
+    if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval2, ptr))
+        return(0);
 
     //------------------------//
     // check for "bad" values //
