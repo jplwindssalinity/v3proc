@@ -221,23 +221,23 @@ ConfigBeam(
 	return(1);
 }
 
-//---------------//
-// ConfigL00File //
-//---------------//
+//-----------//
+// ConfigL00 //
+//-----------//
 
 int
-ConfigL00File(
-	L00File*		l00_file,
+ConfigL00(
+	L00*			l00,
 	ConfigList*		config_list)
 {
-	//------------------------//
-	// configure the l00 file //
-	//------------------------//
+	//---------------------------//
+	// configure the l00 product //
+	//---------------------------//
 
 	char* l00_filename = config_list->Get(L00_FILE_KEYWORD);
 	if (l00_filename == NULL)
 		return(0);
-	l00_file->SetFilename(l00_filename);
+	l00->SetFilename(l00_filename);
 
 	return(1);
 }

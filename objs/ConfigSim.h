@@ -11,7 +11,7 @@ static const char rcs_id_configsim_h[] =
 
 #include "SpacecraftSim.h"
 #include "InstrumentSim.h"
-#include "L00File.h"
+#include "L00.h"
 #include "WindField.h"
 
 //======================================================================
@@ -70,13 +70,13 @@ int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 
 int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 
-//---------//
-// L00File //
-//---------//
+//-----//
+// L00 //
+//-----//
 
 #define L00_FILE_KEYWORD					"L00_FILE"
 
-int ConfigL00File(L00File* l00_file, ConfigList* config_list);
+int ConfigL00(L00* l00, ConfigList* config_list);
 
 //-----------//
 // Ephemeris //

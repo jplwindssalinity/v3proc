@@ -15,7 +15,7 @@ static const char rcs_id_l00frame_h[] =
 //		L00Frame
 //======================================================================
 
-#define MAX_L00_BUFFER_SIZE		100
+#define MAX_L00_FRAME_SIZE		100
 #define PULSES_PER_L00_FRAME	50
 
 
