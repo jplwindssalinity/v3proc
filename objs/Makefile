@@ -86,7 +86,7 @@ $(TARGET_LIB):	$(OBJS)
 Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h
 Attitude.o: Attitude.C Attitude.h
-Beam.o: Beam.C Beam.h
+Beam.o: Beam.C Beam.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h Product.h List.h Antenna.h Constants.h Matrix3.h Attitude.h Beam.h
