@@ -96,11 +96,14 @@ template class List<OffsetList>;
 // CONSTANTS //
 //-----------//
 
-#define NUMBER_OF_AZIMUTH_BINS 100
-#define SLICES_PER_SPOT 6
+#define NUMBER_OF_AZIMUTH_BINS 50
+#define NUM_SCIENCE_SLICES 10
+#define NUM_GUARD_SLICES_EACH_SIDE 1
 #define NUMBER_OF_BEAMS 2
-#define SLICE_BANDWIDTH 8300.0
-#define MIN_NUM_SAMPLES 100
+#define SLICE_BANDWIDTH 8314.0
+#define MIN_NUM_SAMPLES 10
+#define FILTER_SIZE 3
+#define FILTER_NUM_PASSES 2
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -133,7 +136,8 @@ int main(int argc, char* argv[]){
 	// Create KprTable                     //
 	//-------------------------------------//
 
-	Kprs kpr(NUMBER_OF_BEAMS,SLICE_BANDWIDTH,SLICES_PER_SPOT,
+	Kprs kpr(NUMBER_OF_BEAMS,SLICE_BANDWIDTH,SLICE_BANDWIDTH,
+		 NUM_SCIENCE_SLICES, NUM_GUARD_SLICES_EACH_SIDE,
 		     NUMBER_OF_AZIMUTH_BINS, MIN_NUM_SAMPLES);
 
 	//------------//
@@ -196,13 +200,24 @@ int main(int argc, char* argv[]){
 			break;	// done, exit do loop
 		}
 
-		if(! kpr.Accumulate(&(noisefree.frame.spotList),&(noisy.frame.spotList)))
-		  exit(1);
-
+		if(! kpr.Accumulate(&(noisefree.frame.spotList),
+				    &(noisy.frame.spotList)))
+		  {
+		    fprintf(stderr, "%s: Accumulating of kpr values failed\n",
+			    command);
+		    exit(1);
+		  }
 	}while(1);
 	if (!kpr.Normalize()){
 	  fprintf(stderr, "%s: Normalization of kpr values failed\n",command);
 	  exit(1);
+	}
+        for(int c=0;c < FILTER_NUM_PASSES; c++){
+	  if (!kpr.Smooth(FILTER_SIZE)){
+	    fprintf(stderr, "%s: Smoothing of kpr values failed\n",command);
+	    exit(1);
+	  }
+
 	}
 	if (!kpr.Write(argv[3])){
 	  fprintf(stderr, "%s: Unable to write kpr table to file\n",command);
