@@ -38,6 +38,8 @@ public:
 	 int num_guard_slices_each_side, float science_bandwidth,
          float guard_bandwidth);
   ~XTable();
+
+  int Allocate();
   int CopyBlank(XTable* copy); // copies header info and Allocates
   int CheckEmpty();   // Check to see if there are any empty entries in the
                       // table. Returns 0 if there is an empty entry 
@@ -46,8 +48,10 @@ public:
 	 int num_guard_slices_each_side, float science_bandwidth,
          float guard_bandwidth); // Checks to see if header matches
                                  // parameters.
-  int Write(const char* filename);
-  int Read(const char* filename);
+  int Write();
+  int Read();
+  
+  int SetFilename(const char* fname);
 
   float RetrieveBySliceNumber(int beam_number, float azimuth_angle, 
 			      int slice_number);
@@ -76,13 +80,14 @@ public:
   float scienceSliceBandwidth;  // in Hz
   float guardSliceBandwidth;    // in Hz
 
+
   //---------------------------//
   // arrays                    //
   //---------------------------//
 
 protected:
 
-  int _Allocate();
+
   int _Deallocate();
   int _WriteHeader(FILE* ofp);
   int _WriteTable(FILE* ofp);
@@ -91,7 +96,13 @@ protected:
 
   float*** _value;
   int*** _empty;
+  char* _filename;
 };
 #endif
+
+
+
+
+
 
 

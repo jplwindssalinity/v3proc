@@ -9,6 +9,8 @@ static const char rcs_id_XTable_c[] =
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <malloc.h>
 #include "XTable.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -25,7 +27,7 @@ XTable::XTable()
     numAzimuthBins(0), numScienceSlices(0), numGuardSlicesEachSide(0),
     numSlices(0),
     scienceSliceBandwidth(0.0), guardSliceBandwidth(0.0), _value(NULL),
-    _empty(NULL)
+    _empty(NULL), _filename(NULL)
 {
   return;
 }
@@ -41,13 +43,39 @@ XTable::XTable(int num_beams, int num_azimuths, int num_science_slices,
   scienceSliceBandwidth=science_bandwidth;
   guardSliceBandwidth=guard_bandwidth;
   numSlices=numScienceSlices+2*numGuardSlicesEachSide;
-  _Allocate();
+  if (!Allocate()){
+   fprintf(stderr,"Error allocating Xtable object/n");
+   exit(1);
+  }
   return;
 }
 
 XTable::~XTable(){
   _Deallocate();
+  if (_filename!=NULL) free( _filename);
   return;
+}
+
+int XTable::Allocate(){
+  if(numBeams<=0 || numAzimuthBins<=0 || (numSlices)==0) return(0);
+  if(numScienceSlices<0 || numGuardSlicesEachSide<0)
+    return(0);
+  _value = (float***)make_array(sizeof(float),3, numBeams,numAzimuthBins, 
+				numScienceSlices+2*numGuardSlicesEachSide);
+
+  _empty = (int***)make_array(sizeof(int),3, numBeams,numAzimuthBins, 
+				numSlices);
+
+  if(_value==NULL) return(0);
+  if(_empty==NULL) return(0);
+  for(int b=0;b<numBeams;b++){
+    for(int a=0;a<numAzimuthBins;a++){
+      for(int s=0;s<numSlices;s++){
+	_empty[b][a][s]=1;
+      }
+    }
+  }
+  return(1);
 }
 
 int XTable::CopyBlank(XTable* copy){
@@ -59,7 +87,7 @@ int XTable::CopyBlank(XTable* copy){
   copy->numSlices=numSlices;
   copy->scienceSliceBandwidth=scienceSliceBandwidth;
   copy->guardSliceBandwidth=guardSliceBandwidth;;
-  if (!copy->_Allocate()) return(0);
+  if (!copy->Allocate()) return(0);
   return(1);
 }
 
@@ -93,12 +121,12 @@ int XTable::CheckHeader(int num_beams, int num_azimuths,
   return(1);
 }
 
-int XTable::Write(const char* filename){ 
+int XTable::Write(){ 
      
-      if (filename == NULL)
+      if (_filename == NULL)
 	return(0);
 
-      FILE* fp = fopen(filename, "w");
+      FILE* fp = fopen(_filename, "w");
       if (fp == NULL)
         return(0);
 
@@ -117,18 +145,18 @@ int XTable::Write(const char* filename){
 
 }
 
-int XTable::Read(const char* filename){
+int XTable::Read(){
 
-      if (filename == NULL)
+      if (_filename == NULL)
       return(0);
 
-      FILE* fp = fopen(filename, "r");
+      FILE* fp = fopen(_filename, "r");
       if (fp == NULL)
 	return(0);
       if (! _ReadHeader(fp))
 	return(0);
 
-      if (! _Allocate())
+      if (! Allocate())
 	return(0);
       
       if (! _ReadTable(fp))
@@ -139,6 +167,17 @@ int XTable::Read(const char* filename){
         return(0);
       }
       return(1);
+}
+
+int
+XTable::SetFilename(const char* fname){
+        if (_filename != NULL)
+                free(_filename);
+        _filename = strdup(fname);
+        if (_filename == NULL)
+                return(0);
+        return(1);
+
 }
 
 float
@@ -345,24 +384,7 @@ XTable::FindSliceNum(float freq){
 // Protected Methods          //
 //============================//
 
-int XTable::_Allocate(){
-  if(numBeams<=0 || numAzimuthBins<=0 || (numSlices)==0) return(0);
-  if(numScienceSlices<0 || numGuardSlicesEachSide<0)
-    return(0);
-  _value = (float***)make_array(sizeof(float),3, numBeams,numAzimuthBins, 
-				numScienceSlices+2*numGuardSlicesEachSide);
 
-  _empty = (int***)make_array(sizeof(int),3, numBeams,numAzimuthBins, 
-				numSlices);
-  for(int b=0;b<numBeams;b++){
-    for(int a=0;a<numAzimuthBins;a++){
-      for(int s=0;s<numSlices;s++){
-	_empty[b][a][s]=1;
-      }
-    }
-  }
-  return(1);
-}
 
 int XTable::_Deallocate(){
   if(numBeams==0) return(0);
