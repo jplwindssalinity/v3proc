@@ -455,8 +455,8 @@ process_orbit_step(
     fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
         roll * rtd, pitch * rtd, yaw * rtd, QUOTES);
 
-//    evaluate(spacecraft, qscat, roll, pitch, yaw, ofp);
-    evaluate(spacecraft, qscat, -0.1 * dtr, 0.2 * dtr, 0.0, ofp);
+    evaluate(spacecraft, qscat, roll, pitch, yaw, ofp);
+//    evaluate(spacecraft, qscat, -0.1 * dtr, 0.2 * dtr, 0.0, ofp);
 
     fclose(ofp);
 
