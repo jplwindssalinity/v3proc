@@ -281,6 +281,7 @@ main(
         // the filename is already there, just open it
         l1a.OpenForWriting();
     }
+    L1AFrame* frame = &(l1a.frame);
 
     //--------------------------//
     // create an ephemeris file //
@@ -500,7 +501,7 @@ main(
     //-------------------------//
 
     spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame, &qscat, &qscat_event);
+    qscat_sim.DetermineNextEvent(frame->spotsPerFrame, &qscat, &qscat_event);
 
     //---------------------//
     // loop through events //
@@ -540,7 +541,7 @@ main(
                     // save the true attitude
                     if (true_att_fp != NULL)
                     {
-                        fprintf(true_att_fp, "%.1f %g %g %g %d\n",
+                        fprintf(true_att_fp, "%.1f %g %g %g %ud\n",
                             spacecraft_event.time,
                             spacecraft.attitude.GetRoll() * rtd,
                             spacecraft.attitude.GetPitch() * rtd,
@@ -600,7 +601,8 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time);
+                    qscat.cds.SetTime(qscat_event.time
+                        - instrument_start_time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 
                     // antenna
@@ -609,8 +611,8 @@ main(
 
                     qscat_sim.ScatSim(&spacecraft, &qscat, &windfield,
                         inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
-                        topo_ptr, stable_ptr, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                        topo_ptr, stable_ptr, frame);
+                    qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);
                     break;
                 case QscatEvent::LOOPBACK_EVENT:
@@ -622,12 +624,13 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time);
+                    qscat.cds.SetTime(qscat_event.time
+                        - instrument_start_time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
-                    qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                    qscat_sim.LoopbackSim(&spacecraft, &qscat, frame);
+                    qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);
                     break;
                 case QscatEvent::LOAD_EVENT:
@@ -639,12 +642,13 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time);
+                    qscat.cds.SetTime(qscat_event.time
+                        - instrument_start_time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
-                    qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
-                    qscat_sim.DetermineNextEvent(l1a.frame.spotsPerFrame,
+                    qscat_sim.LoadSim(&spacecraft, &qscat, frame);
+                    qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);
                     break;
                 default:
@@ -663,9 +667,9 @@ main(
                 // Report Latest Attitude Measurement
                 // + Knowledge Error
                 spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
-                    &(l1a.frame.attitude));
+                    &(frame->attitude));
 
-                int size = l1a.frame.Pack(l1a.buffer);
+                int size = frame->Pack(l1a.buffer);
                 l1a.Write(l1a.buffer, size);
             }
         }

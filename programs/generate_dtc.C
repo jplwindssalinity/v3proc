@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -8,7 +8,7 @@
 //    generate_dtc
 //
 // SYNOPSIS
-//    generate_dtc <sim_config_file> <DTC_base>
+//    generate_dtc [ -b ] <sim_config_file> <DTC_base>
 //
 // DESCRIPTION
 //    Generates a set of Doppler Tracking Constants for each beam,
@@ -16,7 +16,9 @@
 //    and the given Receiver Gate Constants.
 //
 // OPTIONS
-//    None.
+//    [ -b ]  Bias. Use the biases in the attitude when calculating
+//              the DTC. This will simulate the effect of postlaunch
+//              echo centering.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -100,6 +102,8 @@ template class List<EarthPosition>;
 #define DOPPLER_ORBIT_STEPS    256
 #define DOPPLER_AZIMUTH_STEPS  90    // used for fitting
 
+#define OPTSTRING  "b"
+
 //--------//
 // MACROS //
 //--------//
@@ -122,6 +126,8 @@ template class List<EarthPosition>;
 
 const char* usage_array[] = { "<sim_config_file>", "<DTC_base>", 0};
 
+int opt_bias = 0;
+
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -136,13 +142,25 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'b':
+            opt_bias = 1;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
 
-    if (argc != 3)
+    if (argc != optind + 2)
         usage(command, usage_array, 1);
 
-    int arg_idx = 1;
-    const char* config_file = argv[arg_idx++];
-    const char* dtc_base = argv[arg_idx++];
+    const char* config_file = argv[optind++];
+    const char* dtc_base = argv[optind++];
 
     //--------------------------------//
     // read in simulation config file //
@@ -163,6 +181,17 @@ main(
     config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
     config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
     config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
+
+    //--------------------------------------------------------//
+    // zero out the standard deviations if biases are desired //
+    //--------------------------------------------------------//
+
+    if (opt_bias)
+    {
+        config_list.StompOrAppend(ROLL_CONTROL_STD_KEYWORD, "0.0");
+        config_list.StompOrAppend(PITCH_CONTROL_STD_KEYWORD, "0.0");
+        config_list.StompOrAppend(YAW_CONTROL_STD_KEYWORD, "0.0");
+    }
 
     //----------------------------------------------//
     // create a spacecraft and spacecraft simulator //
@@ -343,6 +372,15 @@ main(
             //-----------------------//
 
             spacecraft_sim.UpdateOrbit(time, &spacecraft);
+
+            //------------------------------------------------//
+            // if the bias is requested, set the attitude too //
+            //------------------------------------------------//
+
+            if (opt_bias)
+            {
+                spacecraft_sim.UpdateAttitude(time, &spacecraft);
+            }
 
             //----------------------//
             // step through azimuth //

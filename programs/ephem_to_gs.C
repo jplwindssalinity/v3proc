@@ -8,7 +8,7 @@
 //    ephem_to_gs
 //
 // SYNOPSIS
-//    ephem_to_gs <ephem file>
+//    ephem_to_gs [ -l leap_seconds ] <ephem file>
 //
 // DESCRIPTION
 //    Reads in a binary ephem file and writes out the data in the
@@ -16,11 +16,12 @@
 //    and written to standard output for reference.
 //
 // OPTIONS
-//    None.
+//    The following options are supported:
+//      [ -l leap_seconds ]  Add the specified number of leap seconds.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % ephem_to_gs ephem.dat
+//      % ephem_to_gs -l 5 ephem.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -46,6 +47,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ETime.h"
@@ -65,6 +67,8 @@ template class List<EarthPosition>;
 //-----------//
 // CONSTANTS //
 //-----------//
+
+#define OPTSTRING  "l:"
 
 //--------//
 // MACROS //
@@ -86,7 +90,7 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<ephem_file>", 0};
+const char* usage_array[] = { "[ -l leap_seconds ]", "<ephem_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -97,16 +101,42 @@ main(
     int    argc,
     char*  argv[])
 {
+    int leap_seconds = 0;
+
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 2)
+    extern char* optarg;
+    extern int optind;
+
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'l':
+            leap_seconds = atoi(optarg);
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 1)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* ephem_file = argv[clidx++];
+    const char* ephem_file = argv[optind++];
+
+    //-----------------------------------//
+    // determine the GS epoch in seconds //
+    //-----------------------------------//
+
+    ETime gs_epoch_etime;
+    gs_epoch_etime.FromCodeA("1993-01-01T00:00:00.000");
+    double gs_epoch = gs_epoch_etime.GetTime();
 
     //---------------------//
     // open the ephem file //
@@ -121,82 +151,80 @@ main(
     }
 
     //----------------//
-    // read the first //
-    //----------------//
-
-    int num_data_records = 0;
-
-    OrbitState os;
-    if (! os.Read(ephem_fp))
-    {
-        fprintf(stderr, "%s: error reading ephemeris file %s\n", command,
-            ephem_file);
-        exit(1);
-    }
-    num_data_records++;
-
-    //--------------------------------//
-    // determine the output file name //
-    //--------------------------------//
-
-    ETime beginning_date;
-    beginning_date.SetTime(os.time);
-    char beginning_block_b[BLOCK_B_TIME_LENGTH];
-    beginning_date.ToBlockB(beginning_block_b);
-
-    ETime production_date;
-    production_date.CurrentTime();
-    char production_block_b[BLOCK_B_TIME_LENGTH];
-    production_date.ToBlockB(production_block_b);
-
-    char output_file[1024];
-    sprintf(output_file, "SW_SEPHG%s.%s", beginning_block_b,
-        production_block_b);
-
-    //------------------//
-    // open output file //
-    //------------------//
-
-    FILE* ofp = fopen(output_file, "w");
-    if (ofp == NULL)
-    {
-        fprintf(stderr, "%s: error opening output file %s\n", command,
-            output_file);
-        exit(1);
-    }
-
-    //-----------------------//
-    // write an empty header //
-    //-----------------------//
-
-    char blank_line[80];
-    sprintf(blank_line, "%80s", ";\r\n");
-    for (int i = 0; i < 21; i++)
-    {
-        fwrite(blank_line, 80, 1, ofp);
-    }
-
-    //----------------//
     // loop and write //
     //----------------//
 
+    FILE* ofp = NULL;
+    int num_data_records = 0;
+
+    double last_time = 0.0;
+    ETime beginning_date, production_date;
+
     do
     {
+        OrbitState os;
+        if (! os.Read(ephem_fp))
+        {
+            if (feof(ephem_fp))
+                break;
+            else
+            {
+                fprintf(stderr, "%s: error reading ephemeris record from %s\n",
+                    command, ephem_file);
+                exit(1);
+            }
+        }
+
+        if (num_data_records == 0)
+        {
+            // this is the first record, name and open output file
+            beginning_date.SetTime(os.time);
+            char beginning_block_b[BLOCK_B_TIME_LENGTH];
+            beginning_date.ToBlockB(beginning_block_b);
+
+            production_date.CurrentTime();
+            char production_block_b[BLOCK_B_TIME_LENGTH];
+            production_date.ToBlockB(production_block_b);
+
+            char output_file[1024];
+            sprintf(output_file, "SW_SEPHG%s.%s", beginning_block_b,
+                production_block_b);
+
+            ofp = fopen(output_file, "w");
+            if (ofp == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    output_file);
+                exit(1);
+            }
+
+            // write an empty header
+            char blank_line[80];
+            sprintf(blank_line, "%80s", ";\r\n");
+            for (int i = 0; i < 21; i++)
+            {
+                fwrite(blank_line, 80, 1, ofp);
+            }
+        }
+
+        //-----------------------------------//
+        // determine the adjusted frame time //
+        //-----------------------------------//
+
+        last_time = os.time;
+        os.time = os.time - gs_epoch + (double)leap_seconds;
+
         if (! os.Write(ofp))
         {
             fprintf(stderr, "%s: error writing ephemeris record\n", command);
             exit(1);
         }
 
-        if (! os.Read(ephem_fp))
-        {
-            break;    // just boldly assume that this means EOF
-        }
         num_data_records++;
     } while (1);
 
     ETime ending_date;
-    ending_date.SetTime(os.time);
+    ending_date.SetTime(last_time);
 
     //----------------------//
     // close the input file //
@@ -209,6 +237,7 @@ main(
     //-------------------------------//
 
     fseek(ofp, 0, SEEK_SET);
+
     fprintf(ofp, "num_header_records            = 21                                           ;\r\n");
     fprintf(ofp, "LongName                      = SeaWinds GPS Ephemeris Data                  ;\r\n");
     fprintf(ofp, "ShortName                     = SWSEPHG                                      ;\r\n");
