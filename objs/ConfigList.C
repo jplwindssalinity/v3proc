@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -34,8 +34,10 @@ StringPair::StringPair(
 
 StringPair::~StringPair()
 {
-    free(_keyword);
-    free(_value);
+    if (_keyword != NULL)
+        free(_keyword);
+    if (_value != NULL)
+        free(_value);
     return;
 }
 
@@ -67,8 +69,10 @@ int
 StringPair::SetKeyword(
     const char*  keyword)
 {
-    free(_keyword);
-    _keyword = NULL;
+    if (_keyword != NULL) {
+        free(_keyword);
+        _keyword = NULL;
+    }
 
     if (keyword == NULL)
         return(1);
@@ -90,8 +94,10 @@ int
 StringPair::SetValue(
     const char*  value)
 {
-    free(_value);
-    _value = NULL;
+    if (_value != NULL) {
+        free(_value);
+        _value = NULL;
+    }
 
     if (value == NULL)
         return(1);
