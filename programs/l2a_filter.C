@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -83,6 +83,8 @@ template class TrackerBase<unsigned short>;
 
 #define OPTSTRING  "f:h"
 
+#define NO_COPOL_STRING  "copol0"
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
@@ -104,6 +106,7 @@ main(
     //------------//
 
     int opt_no_correlation = 0;
+    int opt_no_copol = 0;
     int opt_no_aft_look = 0;
     int opt_no_fore_look = 0;
     int opt_no_inner_beam = 0;
@@ -128,6 +131,10 @@ main(
             if (strcasecmp(optarg, "corr0") == 0)
             {
                 opt_no_correlation = 1;
+            }
+            else if (strcasecmp(optarg, NO_COPOL_STRING) == 0)
+            {
+                opt_no_copol = 1;
             }
             else if (strcasecmp(optarg, "aft0") == 0)
             {
@@ -163,6 +170,8 @@ main(
         case 'h':
             printf("Filters:\n");
             printf("  corr0  : Remove correlation measurements\n");
+            printf("%8s : Remove copolarization measurements\n",
+                NO_COPOL_STRING);
             printf("  aft0   : Remove aft look measurements\n");
             printf("  fore0  : Remove fore look measurements\n");
             printf("  inner0 : Remove inner beam measurements\n");
@@ -204,12 +213,12 @@ main(
         fprintf(stderr, "%s: error creating output file %s\n", command,
             input_file);
         exit(1);
-    }       
+    }
 
     //-------------//
     // copy header //
     //-------------//
-  
+
     l2a.ReadHeader();
     l2a.WriteHeader();
 
@@ -222,36 +231,41 @@ main(
     int remove=0;
     L2AFrame* frame = &(l2a.frame);
     while (l2a.ReadDataRec())
-    {            
-
-      for (Meas* meas = frame->measList.GetHead(); meas; )
+    {
+        for (Meas* meas = frame->measList.GetHead(); meas; )
         {
-	  wvc_in++;
-	  remove = opt_no_correlation &&
-	      (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
-	       meas->measType == Meas::HH_VH_CORR_MEAS_TYPE);
-          remove= remove || (opt_no_aft_look && meas->scanAngle>pi/2 
-		  && meas->scanAngle<3*pi/2);
-          remove= remove || (opt_no_fore_look && (meas->scanAngle<pi/2 ||
-						  meas->scanAngle>3*pi/2));
-          remove= remove || (opt_no_inner_beam && meas->beamIdx==0);
-          remove= remove || (opt_no_outer_beam && meas->beamIdx==1);
-          remove= remove || ( opt_no_HHVH &&
-              (meas->measType == Meas::HH_VH_CORR_MEAS_TYPE));
-          remove= remove || ( opt_no_VVHV &&
-              (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE));
-	  if(remove)
-	    {
-	      meas = frame->measList.RemoveCurrent();
-	      delete meas;
-	      meas = frame->measList.GetCurrent();
-	    }
-	  else
-	    {
-	      meas = frame->measList.GetNext();
-	      wvc_out++;
-	    }
-	}
+            wvc_in++;
+            remove = opt_no_correlation &&
+                (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE ||
+                meas->measType == Meas::HH_VH_CORR_MEAS_TYPE);
+
+            // no copol measurements
+            remove = remove || (opt_no_copol &&
+                (meas->measType == Meas::VV_MEAS_TYPE ||
+                meas->measType == Meas::HH_MEAS_TYPE));
+
+            remove = remove || (opt_no_aft_look && meas->scanAngle>pi/2 &&
+                meas->scanAngle < 3*pi/2);
+            remove = remove || (opt_no_fore_look && (meas->scanAngle<pi/2 ||
+                meas->scanAngle>3*pi/2));
+            remove = remove || (opt_no_inner_beam && meas->beamIdx==0);
+            remove = remove || (opt_no_outer_beam && meas->beamIdx==1);
+            remove = remove || ( opt_no_HHVH &&
+                (meas->measType == Meas::HH_VH_CORR_MEAS_TYPE));
+            remove = remove || ( opt_no_VVHV &&
+                (meas->measType == Meas::VV_HV_CORR_MEAS_TYPE));
+            if(remove)
+            {
+                meas = frame->measList.RemoveCurrent();
+                delete meas;
+                meas = frame->measList.GetCurrent();
+            }
+            else
+            {
+                meas = frame->measList.GetNext();
+                wvc_out++;
+            }
+        }
         l2a.WriteDataRec();
     }
 
