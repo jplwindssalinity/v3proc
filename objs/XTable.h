@@ -41,6 +41,7 @@ public:
 
   int Allocate();
   int CopyBlank(XTable* copy); // copies header info and Allocates
+  int Copy(XTable* copy, int num_azimuth_bins);
   int CheckEmpty();   // Check to see if there are any empty entries in the
                       // table. Returns 0 if there is an empty entry 
                       // 1 otherwise
@@ -54,6 +55,8 @@ public:
   int SetFilename(const char* fname);
 
   float RetrieveBySliceNumber(int beam_number, float azimuth_angle, 
+			      int slice_number);
+  float RetrieveByRelativeSliceNumber(int beam_number, float azimuth_angle, 
 			      int slice_number);
   float RetrieveBySliceFreq(int beam_number, float azimuth_angle, 
 			     float slice_min_freq,

@@ -91,6 +91,28 @@ int XTable::CopyBlank(XTable* copy){
   return(1);
 }
 
+int XTable::Copy(XTable* copy, int num_azimuth_bins){
+  copy->_Deallocate();
+  copy->numBeams=numBeams;
+  copy->numAzimuthBins=num_azimuth_bins;
+  copy->numScienceSlices=numScienceSlices;
+  copy->numGuardSlicesEachSide=numGuardSlicesEachSide;
+  copy->numSlices=numSlices;
+  copy->scienceSliceBandwidth=scienceSliceBandwidth;
+  copy->guardSliceBandwidth=guardSliceBandwidth;;
+  if (!copy->Allocate()) return(0);
+
+  for(int b=0;b<numBeams; b++){
+    for(int a=0; a<num_azimuth_bins; a++){
+      for(int s=0; s<numSlices; s++){
+          float azi=float(a)*2*M_PI/num_azimuth_bins;
+	  copy->_value[b][a][s]=RetrieveBySliceNumber(b,azi,s);	
+      }
+    }
+  }
+  return(1);
+}
+
 int XTable::CheckEmpty(){
   for(int b=0;b<numBeams; b++){
     for(int a=0; a<numAzimuthBins; a++){
@@ -111,8 +133,14 @@ int XTable::CheckHeader(int num_beams,
 			float science_bandwidth,
 			float guard_bandwidth){
   if(numBeams!=num_beams) return(0);
-  if(numScienceSlices!=num_science_slices) return(0);
-  if(numGuardSlicesEachSide!=num_guard_slices_each_side) return(0);
+
+  /******** If you have guard slices then the number of slices must be ***/
+  /******** the same                                                   ***/
+  if(num_guard_slices_each_side !=0){
+    if(numScienceSlices!=num_science_slices) return(0);
+    if(numGuardSlicesEachSide!=num_guard_slices_each_side) return(0);
+  }
+  else if(numScienceSlices < num_science_slices) return 0;
 
   // For Bandwidths 1 Hz is close enough.   //
 
@@ -185,8 +213,8 @@ XTable::SetFilename(const char* fname){
 
 float
 XTable::RetrieveBySliceNumber(int beam_number, float azimuth_angle, int slice_number){
-  float azi;
-  int azi_idx;
+  float azi, coeff1, coeff2,retval;
+  int azi1,azi2;
 
   if(beam_number < 0 || beam_number >= numBeams){
     fprintf(stderr,"Error XTable::RetrieveBySliceNumber: Bad Beam No.\n");
@@ -199,16 +227,39 @@ XTable::RetrieveBySliceNumber(int beam_number, float azimuth_angle, int slice_nu
   }
   azi=azimuth_angle*numAzimuthBins/(2*M_PI);
   if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi);
-  azi_idx%=numAzimuthBins;
+  azi1=(int)(floor(azi)+0.5);
+  azi2=azi1+1;
 
+
+  /**** Calculate coefficient for liner interpolation ***/
+  coeff1=azi2-azi;
+  coeff2=azi-azi1;
+
+  /**** Make sure azimuth indices are in range ***/
+  azi1%=numAzimuthBins;
+  azi2%=numAzimuthBins;
 
   if(slice_number < 0 || slice_number >= numSlices){
     fprintf(stderr,"Error XTable::RetrieveBySliceNumber: Bad Slice No.\n");
     exit(1);
   }
-  return(_value[beam_number][azi_idx][slice_number]);
+  retval=coeff1*_value[beam_number][azi1][slice_number];
+  retval+=coeff2*_value[beam_number][azi2][slice_number];
+  return(retval);
+}
 
+float
+XTable::RetrieveByRelativeSliceNumber(int beam_number, float azimuth_angle, int slice_number){
+  int slice_idx;
+  if(numSlices%2==1) slice_idx=numSlices/2+slice_number;
+  else if(slice_number < 0) slice_idx=numSlices/2+slice_number;
+  else if(slice_number > 0) slice_idx=numSlices/2-1+slice_number;
+  else{
+    fprintf(stderr,"Error in XTable::RetrieveByRelativeSliceNumber\n");
+    fprintf(stderr,"For an even number of slices, slice #0 is undefined.");
+    exit(1);
+  }
+  return(RetrieveBySliceNumber(beam_number,azimuth_angle,slice_idx));
 }
 
 
@@ -216,8 +267,7 @@ float
 XTable::RetrieveBySliceFreq(int beam_number, float azimuth_angle,
 			     float slice_min_freq,
 			    float slice_bandwidth){
-float azi, X=0;
-  int azi_idx;
+  float X=0;
 
   if(beam_number < 0 || beam_number >= numBeams){
     fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Bad Beam No.\n");
@@ -228,10 +278,6 @@ float azi, X=0;
     fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Azimuth < -2PI rads\n");
     exit(1);
   }
-  azi=azimuth_angle*numAzimuthBins/(2*M_PI);
-  if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi);
-  azi_idx%=numAzimuthBins;
 
   //====================================================================//
   // To compute X we sum all the X's in the table which fall within the //
@@ -249,7 +295,6 @@ float azi, X=0;
   if(bin_start==bin_end){
     float bandwidth=GetBandwidth(bin_start);
     float bin_min_freq=GetMinFreq(bin_start);
-    float bin_max_freq=bin_min_freq+bandwidth;
     if((int)(slice_min_freq + 0.5) == (int)(bin_min_freq + 0.5)
        && (int)(bandwidth +0.5) == (int)(slice_bandwidth+0.5)){
       return(RetrieveBySliceNumber(beam_number,azimuth_angle, bin_start));
