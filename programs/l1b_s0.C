@@ -147,6 +147,7 @@ main(
 	// loop and write //
 	//----------------//
 
+	LonLat	lon_lat;
 	while (l1b.ReadDataRec())
 	{
 		for (MeasSpot* spot = l1b.frame.spotList.GetHead();
@@ -155,9 +156,11 @@ main(
 		{
 			for (Meas* m = spot->GetHead(); m; m = spot->GetNext())
 			{
-				fprintf(output_fp, "%d %d %g %g %g\n",
+				lon_lat.Set(m->centroid);
+				fprintf(output_fp, "%d %d %g %g %g %g %g\n",
 					m->beamIdx, m->startSliceIdx,
-					m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
+					m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value,\
+					lon_lat.latitude*rtd, lon_lat.longitude*rtd);
 			}
 		}
 	}
