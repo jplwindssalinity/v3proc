@@ -211,7 +211,7 @@ WindVectorField::ReadVctr(
         return(0);
     }
 
- 
+
     while(! feof(fp))
     {
         idx++;
@@ -1877,7 +1877,12 @@ WindField::ReadType(
         return(ReadNCEP2(filename));
     }
     else
+    {
+        fprintf(stderr,
+            "WindField::ReadType: can't determine windfield type (%s)\n",
+            type);
         return(0);
+    }
 }
 
 //----------------------//
@@ -4391,13 +4396,13 @@ change:      GetMostProbableAmbiguity(&(new_selected[cti][ati]),
 }
 
 int WindSwath::GetNumCellsSelected(){
-   
+
   int retval=0;
   for (int cti = 0; cti < _crossTrackBins; cti++){
     for (int ati = 0; ati < _alongTrackBins; ati++){
       WVC* wvc = swath[cti][ati];
       if(wvc){
-	if(wvc->selected) retval++;
+    if(wvc->selected) retval++;
       }
     }
   }
@@ -4410,7 +4415,7 @@ int WindSwath::GetNumCellsWithAmbiguities(){
     for (int ati = 0; ati < _alongTrackBins; ati++){
       WVC* wvc = swath[cti][ati];
       if(wvc){
-	if(wvc->ambiguities.NodeCount()) retval++;
+    if(wvc->ambiguities.NodeCount()) retval++;
       }
     }
   }
@@ -4909,10 +4914,11 @@ WindSwath::SelectNearest(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -4937,16 +4943,18 @@ WindSwath::SelectNudge()
         for (int ati = 0; ati < _alongTrackBins; ati++)
         {
             WVC* wvc = swath[cti][ati];
-            if (! wvc )
+            if (! wvc)
                 continue;
-            if (! wvc->nudgeWV){
-          wvc->selected=NULL;
+            if (! wvc->nudgeWV)
+            {
+                wvc->selected=NULL;
                 continue;
-        }
-            if( wvc->nudgeWV->spd == 0 ){
-          wvc->selected=NULL;
-              continue;
-        }
+            }
+            if(wvc->nudgeWV->spd == 0)
+            {
+                wvc->selected=NULL;
+                continue;
+            }
             wvc->selected = wvc->nudgeWV;
             count++;
         }
@@ -5011,10 +5019,11 @@ WindSwath::RmsSpdErr(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5056,10 +5065,11 @@ WindSwath::RmsDirErr(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5084,8 +5094,8 @@ WindSwath::RmsDirErr(
 
 int
 WindSwath::WriteDirErrMap(
-    WindField*    truth,
-        FILE*           ofp)
+    WindField*  truth,
+        FILE*   ofp)
 {
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
@@ -5096,10 +5106,11 @@ WindSwath::WriteDirErrMap(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5107,10 +5118,9 @@ WindSwath::WriteDirErrMap(
                         true_wv.dir))*rtd;
             float lon=wvc->lonLat.longitude*rtd;
             float lat=wvc->lonLat.latitude*rtd;
-            fwrite((void*)&dif,sizeof(float),1,ofp);
-            fwrite((void*)&lon,sizeof(float),1,ofp);
-            fwrite((void*)&lat,sizeof(float),1,ofp);
-
+            fwrite((void*)&dif, sizeof(float), 1, ofp);
+            fwrite((void*)&lon, sizeof(float), 1, ofp);
+            fwrite((void*)&lat, sizeof(float), 1, ofp);
         }
     }
 
@@ -5137,10 +5147,11 @@ WindSwath::WriteMaxDirErrIndices(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5176,10 +5187,11 @@ WindSwath::Skill(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5193,9 +5205,9 @@ WindSwath::Skill(
 
     float skill;
     if (count == 0)
-      skill = 0;
+        skill = 0;
     else
-      skill = (float)good_count / (float)count;
+        skill = (float)good_count / (float)count;
 
     return(skill);
 }
@@ -5206,7 +5218,7 @@ WindSwath::Skill(
 
 float
 WindSwath::SpdBias(
-    WindField*    truth)
+    WindField*  truth)
 {
     //---------------------------//
     // calculate the summed bias //
@@ -5223,10 +5235,11 @@ WindSwath::SpdBias(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5251,12 +5264,12 @@ WindSwath::SpdBias(
 
 int
 WindSwath::DirectionDensity(
-    WindField*      truth,
-    unsigned int*   swath_density_array,
-    unsigned int*   field_density_array,
-    float           low_speed,
-    float           high_speed,
-    int             direction_count)
+    WindField*     truth,
+    unsigned int*  swath_density_array,
+    unsigned int*  field_density_array,
+    float          low_speed,
+    float          high_speed,
+    int            direction_count)
 {
     //-------------------------//
     // index direction density //
@@ -5284,10 +5297,11 @@ WindSwath::DirectionDensity(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5371,8 +5385,8 @@ WindSwath::DirectionDensity(
 
 int
 WindSwath::CtdArray(
-    float        cross_track_res,
-    float*        ctd_array)
+    float   cross_track_res,
+    float*  ctd_array)
 {
     for (int i = 0; i < _crossTrackBins; i++)
     {
@@ -5464,14 +5478,14 @@ WindSwath::AvgNambigVsCti(
 
 int
 WindSwath::RmsSpdErrVsCti(
-    WindField*    truth,
-    float*        rms_spd_err_array,
-    float*        std_dev_array,
-    float*        std_err_array,
-    float*        spd_bias_array,
+    WindField*  truth,
+    float*      rms_spd_err_array,
+    float*      std_dev_array,
+    float*      std_err_array,
+    float*      spd_bias_array,
     int*        count_array,
-    float        low_speed,
-    float        high_speed)
+    float       low_speed,
+    float       high_speed)
 {
     // in all of this, x is (sample - true)^2
 
@@ -5494,10 +5508,11 @@ WindSwath::RmsSpdErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5537,10 +5552,11 @@ WindSwath::RmsSpdErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -5576,14 +5592,14 @@ WindSwath::RmsSpdErrVsCti(
 
 int
 WindSwath::RmsDirErrVsCti(
-    WindField*    truth,
-    float*        rms_dir_err_array,
-    float*        std_dev_array,
-    float*        std_err_array,
-    float*        dir_bias_array,
+    WindField*  truth,
+    float*      rms_dir_err_array,
+    float*      std_dev_array,
+    float*      std_err_array,
+    float*      dir_bias_array,
     int*        count_array,
-    float        low_speed,
-    float        high_speed)
+    float       low_speed,
+    float       high_speed)
 {
     // in all of this, x is (sample - true)^2
 
@@ -5606,10 +5622,11 @@ WindSwath::RmsDirErrVsCti(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-          true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-        }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir=wvc->nudgeWV->dir;
+                true_wv.spd=wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
@@ -6291,33 +6308,36 @@ WindSwath::VectorCorrelationVsCti(
     float       low_speed,
     float       high_speed)
 {
-  //---------------------------------------------//
-  // Allocate Component Covariance  Arrays       //
-  // Nomenclature s[component_id][component_id]  //
-  // Component IDs                               //
-  // u1: u-component of true vector              //
-  // v1: v-component of true vector              //
-  // u2: u-component of selected vector          //
-  // v2: v-component of selected vector          //
-  //---------------------------------------------//
+    //---------------------------------------------//
+    // Allocate Component Covariance  Arrays       //
+    // Nomenclature s[component_id][component_id]  //
+    // Component IDs                               //
+    // u1: u-component of true vector              //
+    // v1: v-component of true vector              //
+    // u2: u-component of selected vector          //
+    // v2: v-component of selected vector          //
+    //---------------------------------------------//
 
-  float* su1u1_array= new float[_crossTrackBins];
-  float* su2u2_array= new float[_crossTrackBins];
-  float* sv1v1_array= new float[_crossTrackBins];
-  float* sv2v2_array= new float[_crossTrackBins];
-  float* su1u2_array= new float[_crossTrackBins];
-  float* sv1v2_array= new float[_crossTrackBins];
-  float* su1v1_array= new float[_crossTrackBins];
-  float* su1v2_array= new float[_crossTrackBins];
-  float* su2v1_array= new float[_crossTrackBins];
-  float* su2v2_array= new float[_crossTrackBins];
+    float* su1u1_array= new float[_crossTrackBins];
+    float* su2u2_array= new float[_crossTrackBins];
+    float* sv1v1_array= new float[_crossTrackBins];
+    float* sv2v2_array= new float[_crossTrackBins];
+    float* su1u2_array= new float[_crossTrackBins];
+    float* sv1v2_array= new float[_crossTrackBins];
+    float* su1v1_array= new float[_crossTrackBins];
+    float* su1v2_array= new float[_crossTrackBins];
+    float* su2v1_array= new float[_crossTrackBins];
+    float* su2v2_array= new float[_crossTrackBins];
 
-  //----------------------------------------------//
-  // Calculate Component Covariances              //
-  //----------------------------------------------//
-  if(! ComponentCovarianceVsCti(truth, su1u1_array, count_array, low_speed,
+    //---------------------------------//
+    // Calculate Component Covariances //
+    //---------------------------------//
+
+    if(! ComponentCovarianceVsCti(truth, su1u1_array, count_array, low_speed,
               high_speed, UTRUE, UTRUE))
-    return(0);
+    {
+        return(0);
+    }
   if(! ComponentCovarianceVsCti(truth, su2u2_array, count_array, low_speed,
               high_speed, UMEAS, UMEAS))
     return(0);
@@ -6377,22 +6397,22 @@ WindSwath::VectorCorrelationVsCti(
       (*(vc_array +cti)) /=(su1u1*sv1v1-(su1v1*su1v1))*(su2u2*sv2v2-su2v2*su2v2);
   }
 
-  //-------------------//
-  // deallocate arrays //
-  //-------------------//
+    //-------------------//
+    // deallocate arrays //
+    //-------------------//
 
-  delete(su1u1_array);
-  delete(su2u2_array);
-  delete(sv1v1_array);
-  delete(sv2v2_array);
-  delete(su1u2_array);
-  delete(sv1v2_array);
-  delete(su1v1_array);
-  delete(su1v2_array);
-  delete(su2v1_array);
-  delete(su2v2_array);
+    delete(su1u1_array);
+    delete(su2u2_array);
+    delete(sv1v1_array);
+    delete(sv2v2_array);
+    delete(su1u2_array);
+    delete(sv1v2_array);
+    delete(su1v1_array);
+    delete(su1v2_array);
+    delete(su2v1_array);
+    delete(su2v2_array);
 
-  return(1);
+    return(1);
 }
 
 //--------------------------------//
