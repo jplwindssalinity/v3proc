@@ -43,7 +43,6 @@ OBJS = \
 	Beam.o \
 	BYUXTable.o \
 	CheckFrame.o \
-	ColorMap.o \
 	ConfigList.o \
 	ConfigSim.o \
 	CoordinateSwitch.o \
@@ -61,6 +60,7 @@ OBJS = \
 	Index.o \
 	InstrumentGeom.o \
 	Interpolate.o \
+	Jpeg.o \
 	Kp.o \
 	Kpm.o \
 	Kpr.o \
@@ -186,7 +186,6 @@ Beam.o: Beam.C Beam.h Array.h Constants.h Misc.h CoordinateSwitch.h Matrix3.h At
 BufferedList.o: BufferedList.C BufferedList.h List.h
 BYUXTable.o: BYUXTable.C BYUXTable.h Qscat.h Sigma0.h InstrumentGeom.h CheckFrame.h Topo.h Spacecraft.h Meas.h Array.h Antenna.h Tracking.h Scatterometer.h CoordinateSwitch.h Distributions.h EarthPosition.h Ephemeris.h LonLat.h Matrix3.h Attitude.h Wind.h Constants.h Beam.h List.h BufferedList.h Misc.h Index.h AngleInterval.h Matrix.h
 CheckFrame.o: CheckFrame.C CheckFrame.h Constants.h Attitude.h Matrix3.h EarthPosition.h Wind.h Meas.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h Beam.h Ephemeris.h CoordinateSwitch.h BufferedList.h
-ColorMap.o: ColorMap.C ColorMap.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h SpacecraftSim.h XTable.h BYUXTable.h Misc.h L00.h L1A.h L1AToL1B.h L1B.h L1BHdf.h L2A.h L2B.h L2AToL2B.h Constants.h Distributions.h Tracking.h Kpm.h EarthField.h Kp.h Wind.h Grid.h ConfigList.h FbbTable.h Spacecraft.h Qscat.h Meas.h Array.h CheckFrame.h Topo.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Ephemeris.h LandMap.h GMF.h Index.h LonLat.h Kpr.h List.h AngleInterval.h Matrix.h Matrix3.h Attitude.h Antenna.h Scatterometer.h Beam.h EarthPosition.h BufferedList.h MiscTable.h CoordinateSwitch.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
@@ -205,6 +204,7 @@ Image.o: Image.C Image.h Array.h Misc.h Constants.h
 Index.o: Index.C Index.h
 InstrumentGeom.o: InstrumentGeom.C Ephemeris.h Attitude.h Antenna.h GenericGeom.h Spacecraft.h Meas.h InstrumentGeom.h Misc.h Qscat.h Interpolate.h Array.h BYUXTable.h Matrix3.h BufferedList.h EarthPosition.h Beam.h CoordinateSwitch.h Constants.h LonLat.h List.h Tracking.h Scatterometer.h CheckFrame.h Topo.h Wind.h Index.h AngleInterval.h Matrix.h
 Interpolate.o: Interpolate.C 
+Jpeg.o: Jpeg.C Jpeg.h Array.h List.h
 Kp.o: Kp.C Kp.h Kpm.h Kpr.h Index.h EarthField.h Distributions.h Meas.h L00Frame.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Kpm.o: Kpm.C Kpm.h Constants.h Array.h Index.h EarthField.h Distributions.h Meas.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Kpr.o: Kpr.C Kpr.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h BufferedList.h
