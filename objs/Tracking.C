@@ -1047,7 +1047,6 @@ RangeTracker::MroAssemble(
     // read in data //
     //--------------//
 
-printf("%d\n", offset);
     if (offset != expected_offset)
     {
         expected_offset = 0;    // reset
@@ -1534,7 +1533,6 @@ DopplerTracker::MroAssemble(
     // read in data //
     //--------------//
 
-printf("%d\n", offset);
     if (offset != expected_offset)
     {
         expected_offset = 0;    // reset
