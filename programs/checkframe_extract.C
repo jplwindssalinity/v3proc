@@ -102,14 +102,23 @@ match_cf_frame(
   CheckFrame* cf_target,
   CheckFrame* cf_source,
   FILE* source_fp);
-void print_slice_field(FILE* fptr, char* fieldname, CheckFrame* cf, int i);
-void print_spot_field(FILE* fptr, char* fieldname, CheckFrame* cf);
+/*
+void print_slice_field(FILE* fptr, char* fieldname, CheckFrame* cf, int i,
+                       int range_flag, double range_hi, double range_lo);
+void print_spot_field(FILE* fptr, char* fieldname, CheckFrame* cf,
+                      int range_flag, double range_hi, double range_lo);
+int inrange(double value, double hi, double lo);
+*/
+double get_parameter(
+  char* fieldname,
+  CheckFrame* cf,
+  int i);
 
 //------------------//
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING               "fhc:i:j:o:"
+#define OPTSTRING               "fhc:i:j:o:r:"
 
 //------------------//
 // GLOBAL VARIABLES //
@@ -117,7 +126,8 @@ void print_spot_field(FILE* fptr, char* fieldname, CheckFrame* cf);
 
 const char* usage_array[] = {"[ -f ]", "[ -h (shows parameter names) ]",
    "[-c config file]", "[-i primary checkfile]", "[-j secondary checkfile]",
-   "[-o output file]", "<parameter list>", 0};
+   "[-o output file]", "[-r lo:hi (parameter range for 1st parameter)]",
+   "<parameter list>", 0};
 extern int optind;
 
 //--------------//
@@ -141,6 +151,8 @@ main(
   char* output_file = NULL;
 
   int f_flag = 0;
+  double range_low,range_hi;
+  int range_flag = 0;
   while (1)
   {
     int c = getopt(argc, argv, OPTSTRING);
@@ -180,6 +192,17 @@ main(
     {
       output_file = optarg;
     }
+    else if (c == 'r')
+    {
+      if (sscanf(optarg, "%lf:%lf", &range_low, &range_hi) != 2)
+      {
+          fprintf(stderr, "%s: error determining parameter range %s\n",
+              command, optarg);
+          exit(1);
+      }
+      range_flag = 1;
+    }
+   
     else if (c == -1) break;
   }
 
@@ -341,20 +364,41 @@ main(
       if (! ret) break; // end of check1 file
     }
 
+    int k;
     if (slice_p == 0)
     {  // No slice data, so write one line per spot.
-      for (int k=0; k < N; k++)
-      {
-        print_spot_field(output,argv[clidx+k],&cf);
-      }
       if (check2)
-      {
-        for (int k=0; k < N; k++)
+      {  // Write data for two checkframes.
+        for (k=0; k < N; k++)
         {
-          print_spot_field(output,argv[clidx+k],&cf2);
+          double param = get_parameter(argv[clidx+k],&cf,0);
+          double param2 = get_parameter(argv[clidx+k],&cf2,0);
+          if (k == 0 && range_flag && (param < range_low || param > range_hi))
+          {
+            break;  // 1st parameter out of range, so skip this line.
+          }
+          else
+          {  // print the field
+            fprintf(output,"%g %g ",param,param2);
+          }
         }
       }
-      fprintf(output,"\n");
+      else
+      {  // Write data for one checkframe.
+        for (k=0; k < N; k++)
+        {
+          double param = get_parameter(argv[clidx+k],&cf,0);
+          if (k == 0 && range_flag && (param < range_low || param > range_hi))
+          {
+            break;  // 1st parameter out of range, so skip this line.
+          }
+          else
+          {  // print the field
+            fprintf(output,"%g ",param);
+          }
+        }
+      }
+      if (k > 0) fprintf(output,"\n"); // only close lines that were printed
     }
     else if (check2)
     {  // at least one slice field, so write one line per slice.
@@ -363,12 +407,20 @@ main(
       {
         if (cf2.idx[i] != cf.idx[j] || cf2.idx[i] == 0 || cf.idx[j] == 0)
           continue;
-        for (int k=0; k < N; k++)
+        for (k=0; k < N; k++)
         {
-          print_slice_field(output,argv[clidx+k],&cf,j);
-          print_slice_field(output,argv[clidx+k],&cf2,i);
+          double param = get_parameter(argv[clidx+k],&cf,j);
+          double param2 = get_parameter(argv[clidx+k],&cf2,i);
+          if (k == 0 && range_flag && (param < range_low || param > range_hi))
+          {
+            break;  // 1st parameter out of range, so skip this line.
+          }
+          else
+          {  // print the field
+            fprintf(output,"%g %g ",param,param2);
+          }
         }
-        fprintf(output,"\n");
+        if (k > 0) fprintf(output,"\n");
       }
     }
     else
@@ -376,9 +428,17 @@ main(
       for (int j=0; j < cf.slicesPerSpot; j++)
       {
         if (cf.idx[j] == 0) continue;
-        for (int k=0; k < N; k++)
+        for (k=0; k < N; k++)
         {
-          print_slice_field(output,argv[clidx+k],&cf,j);
+          double param = get_parameter(argv[clidx+k],&cf,j);
+          if (k == 0 && range_flag && (param < range_low || param > range_hi))
+          {
+            break;  // 1st parameter out of range, so skip this line.
+          }
+          else
+          {  // print the field
+            fprintf(output,"%g ",param);
+          }
         }
         fprintf(output,"\n");
       }
@@ -455,185 +515,688 @@ match_cf_frame(
 
 }
 
-void print_spot_field(FILE* fptr, char* fieldname, CheckFrame* cf)
+/*
+void print_spot_field(
+  FILE* fptr,
+  char* fieldname,
+  CheckFrame* cf,
+  int range_flag,
+  double range_low,
+  double range_hi)
 {
   if (strcmp(fieldname,"slicesPerSpot") == 0)
   {
-    fprintf(fptr,"%d ",cf->slicesPerSpot);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%d ",cf->slicesPerSpot);
+    }
+    else if (inrange((double)(cf->slicesPerSpot),range_low,range_hi))
+    {
+      fprintf(fptr,"%d ",cf->slicesPerSpot);
+    }
+
   } 
   if (strcmp(fieldname,"pulseCount") == 0)
   {
-    fprintf(fptr,"%d ",cf->pulseCount);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%d ",cf->pulseCount);
+    }
+    else if (inrange((double)(cf->pulseCount),range_low,range_hi))
+    {
+      fprintf(fptr,"%d ",cf->pulseCount);
+    }
   } 
   if (strcmp(fieldname,"time") == 0)
   {
-    fprintf(fptr,"%g ",cf->time);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->time);
+    }
+    else if (inrange((double)(cf->time),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->time);
+    }
   } 
   if (strcmp(fieldname,"rx") == 0)
   {
-    fprintf(fptr,"%g ",cf->rsat.Get(0));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(0));
+    }
+    else if (inrange((double)(cf->rsat.Get(0)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(0));
+    }
   } 
   if (strcmp(fieldname,"ry") == 0)
   {
-    fprintf(fptr,"%g ",cf->rsat.Get(1));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(1));
+    }
+    else if (inrange((double)(cf->rsat.Get(1)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(1));
+    }
   } 
   if (strcmp(fieldname,"rz") == 0)
   {
-    fprintf(fptr,"%g ",cf->rsat.Get(2));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(2));
+    }
+    else if (inrange((double)(cf->rsat.Get(2)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->rsat.Get(2));
+    }
   } 
   if (strcmp(fieldname,"vx") == 0)
   {
-    fprintf(fptr,"%g ",cf->vsat.Get(0));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(0));
+    }
+    else if (inrange((double)(cf->vsat.Get(0)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(0));
+    }
   } 
   if (strcmp(fieldname,"vy") == 0)
   {
-    fprintf(fptr,"%g ",cf->vsat.Get(1));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(1));
+    }
+    else if (inrange((double)(cf->vsat.Get(1)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(1));
+    }
   } 
   if (strcmp(fieldname,"vz") == 0)
   {
-    fprintf(fptr,"%g ",cf->vsat.Get(2));
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(2));
+    }
+    else if (inrange((double)(cf->vsat.Get(2)),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->vsat.Get(2));
+    }
   } 
   float roll,pitch,yaw;
   cf->attitude.GetRPY(&roll,&pitch,&yaw);
   if (strcmp(fieldname,"roll") == 0)
   {
-    fprintf(fptr,"%g ",roll);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",roll);
+    }
+    else if (inrange((double)(roll),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",roll);
+    }
   } 
   if (strcmp(fieldname,"pitch") == 0)
   {
-    fprintf(fptr,"%g ",pitch);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",pitch);
+    }
+    else if (inrange((double)(pitch),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",pitch);
+    }
   } 
   if (strcmp(fieldname,"yaw") == 0)
   {
-    fprintf(fptr,"%g ",yaw);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",yaw);
+    }
+    else if (inrange((double)(yaw),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",yaw);
+    }
   } 
   if (strcmp(fieldname,"beamNumber") == 0)
   {
-    fprintf(fptr,"%d ",cf->beamNumber);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%d ",cf->beamNumber);
+    }
+    else if (inrange((double)(cf->beamNumber),range_low,range_hi))
+    {
+      fprintf(fptr,"%d ",cf->beamNumber);
+    }
   } 
   if (strcmp(fieldname,"orbitFrac") == 0)
   {
-    fprintf(fptr,"%g ",cf->orbitFrac);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->orbitFrac);
+    }
+    else if (inrange((double)(cf->orbitFrac),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->orbitFrac);
+    }
   } 
   if (strcmp(fieldname,"antennaAziTx") == 0)
   {
-    fprintf(fptr,"%g ",cf->antennaAziTx);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->antennaAziTx);
+    }
+    else if (inrange((double)(cf->antennaAziTx),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->antennaAziTx);
+    }
   } 
   if (strcmp(fieldname,"antennaAziGi") == 0)
   {
-    fprintf(fptr,"%g ",cf->antennaAziGi);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->antennaAziGi);
+    }
+    else if (inrange((double)(cf->antennaAziGi),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->antennaAziGi);
+    }
   } 
   if (strcmp(fieldname,"EsCal") == 0)
   {
-    fprintf(fptr,"%g ",cf->EsCal);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->EsCal);
+    }
+    else if (inrange((double)(cf->EsCal),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->EsCal);
+    }
   } 
   if (strcmp(fieldname,"deltaFreq") == 0)
   {
-    fprintf(fptr,"%g ",cf->deltaFreq);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->deltaFreq);
+    }
+    else if (inrange((double)(cf->deltaFreq),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->deltaFreq);
+    }
   } 
   if (strcmp(fieldname,"spinRate") == 0)
   {
-    fprintf(fptr,"%g ",cf->spinRate);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->spinRate);
+    }
+    else if (inrange((double)(cf->spinRate),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->spinRate);
+    }
   } 
   if (strcmp(fieldname,"commandedDoppler") == 0)
   {
-    fprintf(fptr,"%g ",cf->txDoppler);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->txDoppler);
+    }
+    else if (inrange((double)(cf->txDoppler),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->txDoppler);
+    }
   } 
   if (strcmp(fieldname,"commandedDelay") == 0)
   {
-    fprintf(fptr,"%g ",cf->rxGateDelay);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->rxGateDelay);
+    }
+    else if (inrange((double)(cf->rxGateDelay),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->rxGateDelay);
+    }
   } 
   if (strcmp(fieldname,"Xdoppler") == 0)
   {
-    fprintf(fptr,"%g ",cf->XdopplerFreq);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->XdopplerFreq);
+    }
+    else if (inrange((double)(cf->XdopplerFreq),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->XdopplerFreq);
+    }
   } 
   if (strcmp(fieldname,"XroundTripTime") == 0)
   {
-    fprintf(fptr,"%g ",cf->XroundTripTime);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->XroundTripTime);
+    }
+    else if (inrange((double)(cf->XroundTripTime),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->XroundTripTime);
+    }
   } 
   if (strcmp(fieldname,"alpha") == 0)
   {
-    fprintf(fptr,"%g ",cf->alpha);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->alpha);
+    }
+    else if (inrange((double)(cf->alpha),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->alpha);
+    }
   } 
   if (strcmp(fieldname,"EsnEcho") == 0)
   {
-    fprintf(fptr,"%g ",cf->EsnEcho);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->EsnEcho);
+    }
+    else if (inrange((double)(cf->EsnEcho),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->EsnEcho);
+    }
   } 
   if (strcmp(fieldname,"EsnNoise") == 0)
   {
-    fprintf(fptr,"%g ",cf->EsnNoise);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->EsnNoise);
+    }
+    else if (inrange((double)(cf->EsnNoise),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->EsnNoise);
+    }
   } 
 
 }
 
-void print_slice_field(FILE* fptr, char* fieldname, CheckFrame* cf, int i)
+void print_slice_field(FILE* fptr,
+  char* fieldname,
+  CheckFrame* cf,
+  int i,
+  int range_flag,
+  double range_low,
+  double range_hi)
 {
   if (strcmp(fieldname,"idx") == 0)
   {
-    fprintf(fptr,"%d ",cf->idx[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%d ",cf->idx[i]);
+    }
+    else if (inrange((double)(cf->idx[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%d ",cf->idx[i]);
+    }
   } 
   if (strcmp(fieldname,"measType") == 0)
   {
-    fprintf(fptr,"%d ",cf->measType[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%d ",cf->measType[i]);
+    }
+    else if (inrange((double)(cf->measType[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%d ",cf->measType[i]);
+    }
   } 
   if (strcmp(fieldname,"wv_spd") == 0)
   {
-    fprintf(fptr,"%g ",cf->wv[i].spd);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->wv[i].spd);
+    }
+    else if (inrange((double)(cf->wv[i].spd),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->wv[i].spd);
+    }
   } 
   if (strcmp(fieldname,"wv_dir") == 0)
   {
-    fprintf(fptr,"%g ",cf->wv[i].dir);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->wv[i].dir);
+    }
+    else if (inrange((double)(cf->wv[i].dir),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->wv[i].dir);
+    }
   } 
   if (strcmp(fieldname,"sigma0") == 0)
   {
-    fprintf(fptr,"%g ",cf->sigma0[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->sigma0[i]);
+    }
+    else if (inrange((double)(cf->sigma0[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->sigma0[i]);
+    }
   } 
   if (strcmp(fieldname,"X") == 0)
   {
-    fprintf(fptr,"%g ",cf->XK[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->XK[i]);
+    }
+    else if (inrange((double)(cf->XK[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->XK[i]);
+    }
   } 
   if (strcmp(fieldname,"Es") == 0)
   {
-    fprintf(fptr,"%g ",cf->Es[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->Es[i]);
+    }
+    else if (inrange((double)(cf->Es[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->Es[i]);
+    }
   } 
   if (strcmp(fieldname,"En") == 0)
   {
-    fprintf(fptr,"%g ",cf->En[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->En[i]);
+    }
+    else if (inrange((double)(cf->En[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->En[i]);
+    }
   } 
   if (strcmp(fieldname,"var") == 0)
   {
-    fprintf(fptr,"%g ",cf->var_esn_slice[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->var_esn_slice[i]);
+    }
+    else if (inrange((double)(cf->var_esn_slice[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->var_esn_slice[i]);
+    }
   } 
   if (strcmp(fieldname,"azimuth") == 0)
   {
-    fprintf(fptr,"%g ",rtd*cf->azimuth[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",rtd*cf->azimuth[i]);
+    }
+    else if (inrange((double)(rtd*cf->azimuth[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",rtd*cf->azimuth[i]);
+    }
   } 
   if (strcmp(fieldname,"incidence") == 0)
   {
-    fprintf(fptr,"%g ",rtd*cf->incidence[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",rtd*cf->incidence[i]);
+    }
+    else if (inrange((double)(rtd*cf->incidence[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",rtd*cf->incidence[i]);
+    }
   } 
   double alt,lon,lat;
   cf->centroid[i].GetAltLonGDLat(&alt,&lon,&lat);
   if (strcmp(fieldname,"alt") == 0)
   {
-    fprintf(fptr,"%g ",alt);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",alt);
+    }
+    else if (inrange((double)(alt),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",alt);
+    }
   } 
   if (strcmp(fieldname,"lon") == 0)
   {
-    fprintf(fptr,"%g ",rtd*lon);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",rtd*lon);
+    }
+    else if (inrange((double)(rtd*lon),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",rtd*lon);
+    }
   } 
   if (strcmp(fieldname,"lat") == 0)
   {
-    fprintf(fptr,"%g ",rtd*lat);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",rtd*lat);
+    }
+    else if (inrange((double)(rtd*lat),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",rtd*lat);
+    }
   } 
   if (strcmp(fieldname,"range") == 0)
   {
-    fprintf(fptr,"%g ",cf->R[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->R[i]);
+    }
+    else if (inrange((double)(cf->R[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->R[i]);
+    }
   } 
   if (strcmp(fieldname,"GatGar") == 0)
   {
-    fprintf(fptr,"%g ",cf->GatGar[i]);
+    if (range_flag == 0)
+    {
+      fprintf(fptr,"%g ",cf->GatGar[i]);
+    }
+    else if (inrange((double)(cf->GatGar[i]),range_low,range_hi))
+    {
+      fprintf(fptr,"%g ",cf->GatGar[i]);
+    }
   } 
 
+}
+
+int inrange(double value, double hi, double lo)
+
+{
+
+  if (value < lo || value > hi) return(0);
+  else return(1);
+
+}
+
+*/
+
+double get_parameter(
+  char* fieldname,
+  CheckFrame* cf,
+  int i)
+{
+  if (strcmp(fieldname,"slicesPerSpot") == 0)
+  {
+    return((double)(cf->slicesPerSpot));
+  }
+  if (strcmp(fieldname,"pulseCount") == 0)
+  {
+    return((double)(cf->pulseCount));
+  }
+  if (strcmp(fieldname,"time") == 0)
+  {
+    return((double)(cf->time));
+  }
+  if (strcmp(fieldname,"rx") == 0)
+  {
+    return((double)(cf->rsat.Get(0)));
+  }
+  if (strcmp(fieldname,"ry") == 0)
+  {
+    return((double)(cf->rsat.Get(1)));
+  }
+  if (strcmp(fieldname,"rz") == 0)
+  {
+    return((double)(cf->rsat.Get(2)));
+  }
+  if (strcmp(fieldname,"vx") == 0)
+  {
+    return((double)(cf->vsat.Get(0)));
+  }
+  if (strcmp(fieldname,"vy") == 0)
+  {
+    return((double)(cf->vsat.Get(1)));
+  }
+  if (strcmp(fieldname,"vz") == 0)
+  {
+    return((double)(cf->vsat.Get(2)));
+  }
+  float roll,pitch,yaw;
+  cf->attitude.GetRPY(&roll,&pitch,&yaw);
+  if (strcmp(fieldname,"roll") == 0)
+  {
+    return((double)(roll));
+  }
+  if (strcmp(fieldname,"pitch") == 0)
+  {
+    return((double)(pitch));
+  }
+  if (strcmp(fieldname,"yaw") == 0)
+  {
+    return((double)(yaw));
+  }
+  if (strcmp(fieldname,"beamNumber") == 0)
+  {
+    return((double)(cf->beamNumber));
+  }
+  if (strcmp(fieldname,"orbitFrac") == 0)
+  {
+    return((double)(cf->orbitFrac));
+  }
+  if (strcmp(fieldname,"antennaAziTx") == 0)
+  {
+    return((double)(cf->antennaAziTx));
+  }
+  if (strcmp(fieldname,"antennaAziGi") == 0)
+  {
+    return((double)(cf->antennaAziGi));
+  }
+  if (strcmp(fieldname,"EsCal") == 0)
+  {
+    return((double)(cf->EsCal));
+  }
+  if (strcmp(fieldname,"deltaFreq") == 0)
+  {
+    return((double)(cf->deltaFreq));
+  }
+  if (strcmp(fieldname,"spinRate") == 0)
+  {
+    return((double)(cf->spinRate));
+  }
+  if (strcmp(fieldname,"commandedDoppler") == 0)
+  {
+    return((double)(cf->txDoppler));
+  }
+  if (strcmp(fieldname,"commandedDelay") == 0)
+  {
+    return((double)(cf->rxGateDelay));
+  }
+  if (strcmp(fieldname,"Xdoppler") == 0)
+  {
+    return((double)(cf->XdopplerFreq));
+  }
+  if (strcmp(fieldname,"XroundTripTime") == 0)
+  {
+    return((double)(cf->XroundTripTime));
+  }
+  if (strcmp(fieldname,"alpha") == 0)
+  {
+    return((double)(cf->alpha));
+  }
+  if (strcmp(fieldname,"EsnEcho") == 0)
+  {
+    return((double)(cf->EsnEcho));
+  }
+  if (strcmp(fieldname,"EsnNoise") == 0)
+  {
+    return((double)(cf->EsnNoise));
+  }
+
+  // Slices
+
+  if (strcmp(fieldname,"idx") == 0)
+  {
+      return((double)(cf->idx[i]));
+  } 
+  if (strcmp(fieldname,"measType") == 0)
+  {
+      return((double)(cf->measType[i]));
+  } 
+  if (strcmp(fieldname,"wv_spd") == 0)
+  {
+      return((double)(cf->wv[i].spd));
+  } 
+  if (strcmp(fieldname,"wv_dir") == 0)
+  {
+      return((double)(cf->wv[i].dir));
+  } 
+  if (strcmp(fieldname,"sigma0") == 0)
+  {
+      return((double)(cf->sigma0[i]));
+  } 
+  if (strcmp(fieldname,"X") == 0)
+  {
+      return((double)(cf->XK[i]));
+  } 
+  if (strcmp(fieldname,"Es") == 0)
+  {
+      return((double)(cf->Es[i]));
+  } 
+  if (strcmp(fieldname,"En") == 0)
+  {
+      return((double)(cf->En[i]));
+  } 
+  if (strcmp(fieldname,"var") == 0)
+  {
+      return((double)(cf->var_esn_slice[i]));
+  } 
+  if (strcmp(fieldname,"azimuth") == 0)
+  {
+      return((double)(rtd*cf->azimuth[i]));
+  } 
+  if (strcmp(fieldname,"incidence") == 0)
+  {
+      return((double)(rtd*cf->incidence[i]));
+  } 
+  double alt,lon,lat;
+  cf->centroid[i].GetAltLonGDLat(&alt,&lon,&lat);
+  if (strcmp(fieldname,"alt") == 0)
+  {
+      return(alt);
+  } 
+  if (strcmp(fieldname,"lon") == 0)
+  {
+      return(rtd*lon);
+  } 
+  if (strcmp(fieldname,"lat") == 0)
+  {
+      return(rtd*lat);
+  } 
+  if (strcmp(fieldname,"range") == 0)
+  {
+      return((double)(cf->R[i]));
+  } 
+  if (strcmp(fieldname,"GatGar") == 0)
+  {
+      return((double)(cf->GatGar[i]));
+  } 
+
+  return(-1);
 }
 
