@@ -328,18 +328,28 @@ double min_time;
 if (r1 < r2) min_time = t1; else min_time = t2;
 
 // Compute the s/c position at the start of the subtrack grid, and at
-// the minimum range position.
-EarthPosition min_position,start_position;
-if (GetPosition(min_time,&min_position) == 0) return(0);
+// the minimum range position.  Also get the s/c velocity vector at the
+// minimum range position.
+EarthPosition start_position;
+OrbitState min_state;
+if (GetOrbitState(min_time,&min_state) == 0) return(0);
 if (GetPosition(start_time,&start_position) == 0) return(0);
 
 // Compute the corresponding nadir points on the earth's surface.
-EarthPosition subtrack_min = min_position.Nadir();
+EarthPosition subtrack_min = min_state.rsat.Nadir();
 EarthPosition subtrack_start = start_position.Nadir();
 
 // Compute surface distances in the crosstrack and alongtrack directions.
 *crosstrack = subtrack_min.surface_distance(rground);
 *alongtrack = subtrack_min.surface_distance(subtrack_start);
+
+// Determine which side the surface point is on.
+Vector3 vec = subtrack_min & rground;	// cross product
+double test = vec % min_state.vsat;		// dot product
+if (test < 0.0)
+{	// vec is generally opposite to vsat, so rground is on the left.
+	*crosstrack = -(*crosstrack);	// left side is defined to be negative
+}
 
 return(1);
 }
