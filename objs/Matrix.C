@@ -312,6 +312,25 @@ Matrix::WriteAscii(
     return(1);
 }
 
+//--------------------//
+// Matrix::GetElement //
+//--------------------//
+
+int
+Matrix::GetElement(
+    int      m_index,
+    int      n_index,
+    double*  value)
+{
+    if (m_index < 0 || m_index >= _mSize ||
+        n_index < 0 || n_index >= _nSize)
+    {
+        return(0);
+    }
+    *value = _matrix[m_index][n_index];
+    return(1);
+}
+
 //--------------//
 // Matrix::Fill //
 //--------------//

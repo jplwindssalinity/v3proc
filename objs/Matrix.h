@@ -109,6 +109,8 @@ public:
 	// manipulation //
 	//--------------//
 
+    int   GetElement(int m_index, int n_index, double* value);
+
     void  Fill(double fill_value);
     void  CopyContents(Matrix* a);
     int   SetElement(int m_index, int n_index, double value);
