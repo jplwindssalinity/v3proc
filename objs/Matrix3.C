@@ -263,93 +263,99 @@ float big,dum,pivinv,temp;
 
 for (j=0;j<n;j++) ipiv[j]=0;
 for (i=0;i<n;i++) {
-	big=0.0;
-	for (j=0;j<n;j++)
-		if (ipiv[j] != 1)
-			for (k=0;k<n;k++) {
-				if (ipiv[k] == 0) {
-					if (fabs(_m[j][k]) >= big) {
-						big=fabs(_m[j][k]);
-						irow=j;
-						icol=k;
-					}
-				} else if (ipiv[k] > 1)
-				    {
+    big=0.0;
+    for (j=0;j<n;j++)
+        if (ipiv[j] != 1)
+            for (k=0;k<n;k++) {
+                if (ipiv[k] == 0) {
+                    if (fabs(_m[j][k]) >= big) {
+                        big=fabs(_m[j][k]);
+                        irow=j;
+                        icol=k;
+                    }
+                } else if (ipiv[k] > 1)
+                    {
     printf("Error: Matrix3 object tried to invert singular matrix\n");
     exit(-1);
-				    }
-			}
-	++(ipiv[icol]);
-	if (irow != icol) {
-		for (l=0;l<n;l++) SWAP(_m[irow][l],_m[icol][l])
-	}
-	indxr[i]=irow;
-	indxc[i]=icol;
-	if (_m[icol][icol] == 0.0)
-	    {
+                    }
+            }
+    ++(ipiv[icol]);
+    if (irow != icol) {
+        for (l=0;l<n;l++) SWAP(_m[irow][l],_m[icol][l])
+    }
+    indxr[i]=irow;
+    indxc[i]=icol;
+    if (_m[icol][icol] == 0.0)
+        {
     printf("Error: Matrix3 object tried to invert singular matrix\n");
     exit(-1);
-	    }
-	pivinv=1.0/_m[icol][icol];
-	_m[icol][icol]=1.0;
-	for (l=0;l<n;l++) _m[icol][l] *= pivinv;
-	for (ll=0;ll<n;ll++)
-		if (ll != icol) {
-			dum=_m[ll][icol];
-			_m[ll][icol]=0.0;
-			for (l=0;l<n;l++) _m[ll][l] -= _m[icol][l]*dum;
-		}
+        }
+    pivinv=1.0/_m[icol][icol];
+    _m[icol][icol]=1.0;
+    for (l=0;l<n;l++) _m[icol][l] *= pivinv;
+    for (ll=0;ll<n;ll++)
+        if (ll != icol) {
+            dum=_m[ll][icol];
+            _m[ll][icol]=0.0;
+            for (l=0;l<n;l++) _m[ll][l] -= _m[icol][l]*dum;
+        }
 }
 for (l=n-1;l>=0;l--) {
-	if (indxr[l] != indxc[l])
-		for (k=0;k<n;k++)
-			SWAP(_m[k][indxr[l]],_m[k][indxc[l]]);
+    if (indxr[l] != indxc[l])
+        for (k=0;k<n;k++)
+            SWAP(_m[k][indxr[l]],_m[k][indxc[l]]);
 }
 
 #undef SWAP
-	return;
+    return;
 }
 
-void Matrix3::Show(char *name)
+//---------------//
+// Matrix3::Show //
+//---------------//
 
+void
+Matrix3::Show(
+    char*  name)
 {
-
-int i;
-if (name == NULL)
-  {
-  for (i=0; i < 3; i++)
+    int i;
+    if (name == NULL)
     {
-    printf("[%10g %10g %10g]\n",_m[i][0],_m[i][1],_m[i][2]);
+        for (i = 0; i < 3; i++)
+        {
+            printf("[%10g %10g %10g]\n", _m[i][0], _m[i][1], _m[i][2]);
+        }
     }
-  }
-else
-  {
-  char *str = (char *)malloc(strlen(name)+1);
-  if (str == NULL)
-    {
-    printf("Error: couldn't allocate memory in Matrix3::show\n");
-    exit(-1);
-    }
-  // fill temporary string with spaces (equal to name string in length)
-  for (i=0; i < (int)strlen(name); i++)
-    {
-    str[i] = ' ';
-    }
-  str[i] = '\0';
-  for (i=0; i < 3; i++)
-    {
-    if (i == 0)
-      {
-      printf("%s = [%10g %10g %10g]\n",name,_m[i][0],_m[i][1],_m[i][2]);
-      }
     else
-      {
-      printf("%s   [%10g %10g %10g]\n",str,_m[i][0],_m[i][1],_m[i][2]);
-      }
+    {
+        char *str = (char *)malloc(strlen(name) + 1);
+        if (str == NULL)
+        {
+            fprintf(stderr, "Matrix3::Show: couldn't allocate memory\n");
+            exit(1);
+        }
+        // fill temporary string with spaces (equal to name string in length)
+        for (i = 0; i < (int)strlen(name); i++)
+        {
+            str[i] = ' ';
+        }
+        str[i] = '\0';
+        for (i = 0; i < 3; i++)
+        {
+            if (i == 0)
+            {
+                printf("%s = [%10g %10g %10g]\n", name, _m[i][0], _m[i][1],
+                    _m[i][2]);
+            }
+            else
+            {
+                printf("%s   [%10g %10g %10g]\n", str, _m[i][0], _m[i][1],
+                    _m[i][2]);
+            }
+       }
+       free(str);
     }
-  free(str);
-  }
-	return;
+    return;
 }
 
 //=========//
@@ -373,7 +379,7 @@ Vector3::Vector3(
     _v[0] = x1;
     _v[1] = x2;
     _v[2] = x3;
-	return;
+    return;
 }
 
 //
@@ -387,17 +393,17 @@ Vector3::Vector3(
     {
         _v[i] = init;
     }
-	return;
+    return;
 }
 
 Vector3 Vector3::operator+(Vector3 v2)
 {
-	Vector3 result;
-	for (int i = 0; i < 3; i++)
-	{
-		result._v[i] = _v[i] + v2._v[i];
-	}
-	return(result);
+    Vector3 result;
+    for (int i = 0; i < 3; i++)
+    {
+        result._v[i] = _v[i] + v2._v[i];
+    }
+    return(result);
 }
 
 //------------//
@@ -456,14 +462,14 @@ Vector3::operator*(
 
 Vector3
 Vector3::operator*(
-	double	s)
+    double    s)
 {
-	Vector3 result;
-	for (int i = 0; i < 3; i++)
-	{
-		result._v[i] = _v[i] * s;
-	}
-	return(result);
+    Vector3 result;
+    for (int i = 0; i < 3; i++)
+    {
+        result._v[i] = _v[i] * s;
+    }
+    return(result);
 }
 
 //
@@ -472,7 +478,7 @@ Vector3::operator*(
 
 void
 Vector3::operator*=(
-	double	s)
+    double    s)
 {
 
 _v[0] *= s;
@@ -487,7 +493,7 @@ _v[2] *= s;
 
 void
 Vector3::operator/=(
-	double	s)
+    double    s)
 {
 
 _v[0] /= s;
@@ -545,12 +551,12 @@ return(_v[0]*v2._v[0] + _v[1]*v2._v[1] + _v[2]*v2._v[2]);
 
 Vector3
 Vector3::operator/(
-	double	s)
+    double    s)
 {
-	Vector3 result;
-	for (int i = 0; i < 3; i++)
-		result._v[i] = _v[i] / s;
-	return(result);
+    Vector3 result;
+    for (int i = 0; i < 3; i++)
+        result._v[i] = _v[i] / s;
+    return(result);
 }
 
 //----------------//
@@ -561,7 +567,7 @@ int
 Vector3::operator==(Vector3 m2)
 {
        for(int i = 0; i < 3; i++)
-	       if(m2._v[i]!= _v[i]) return(0);
+           if(m2._v[i]!= _v[i]) return(0);
        return(1);
 }
 
@@ -602,16 +608,16 @@ void
 Vector3::Scale(
     double  r)
 {
-	double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+    double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
-	if (mag == 0.0)
-		return;
+    if (mag == 0.0)
+        return;
 
-	for (int i = 0; i < 3; i++)
-	{
-		_v[i] *= (r / mag);
-	}
-	return;
+    for (int i = 0; i < 3; i++)
+    {
+        _v[i] *= (r / mag);
+    }
+    return;
 }
 
 //--------------------//
@@ -641,7 +647,7 @@ Vector3::Show(
     {
         printf("%s = (%10g, %10g, %10g)\n",name,_v[0],_v[1],_v[2]);
     }
-	return;
+    return;
 }
 
 //-----------------------//
@@ -659,17 +665,17 @@ Vector3::Show(
 
 int
 Vector3::SphericalSet(
-	double	r,
-	double	theta,
-	double	phi)
+    double    r,
+    double    theta,
+    double    phi)
 {
-	double r_sin_theta = r * sin(theta);
+    double r_sin_theta = r * sin(theta);
 
-	_v[0] = r_sin_theta * cos(phi);
-	_v[1] = r_sin_theta * sin(phi);
-	_v[2] = r * cos(theta);
+    _v[0] = r_sin_theta * cos(phi);
+    _v[1] = r_sin_theta * sin(phi);
+    _v[2] = r * cos(theta);
 
-	return(1);
+    return(1);
 }
 
 //-----------------------//
@@ -685,22 +691,22 @@ Vector3::SphericalSet(
 
 int
 Vector3::SphericalGet(
-	double*  r,
-	double*  theta,
-	double*  phi)
+    double*  r,
+    double*  theta,
+    double*  phi)
 {
-	*r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+    *r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
-	if (*r == 0.0)
-	{
-		*theta = 0.0;
-		*phi = 0.0;
-		return(1);
-	}
+    if (*r == 0.0)
+    {
+        *theta = 0.0;
+        *phi = 0.0;
+        return(1);
+    }
 
-	*theta = acos(_v[2] / *r);
-	*phi = atan2(_v[1], _v[0]);
-	return(1);
+    *theta = acos(_v[2] / *r);
+    *phi = atan2(_v[1], _v[0]);
+    return(1);
 }
 
 //------------------------------//
@@ -720,14 +726,14 @@ Vector3::SphericalGet(
 
 int
 Vector3::AzimuthElevationSet(
-	double	r,
-	double	az,
-	double	el)
+    double    r,
+    double    az,
+    double    el)
 {
-	_v[2] = r / sqrt(tan(az)*tan(az) + tan(el)*tan(el) + 1.0);
-	_v[1] = _v[2]*tan(az);
-	_v[0] = _v[2]*tan(el);
-	return(1);
+    _v[2] = r / sqrt(tan(az)*tan(az) + tan(el)*tan(el) + 1.0);
+    _v[1] = _v[2]*tan(az);
+    _v[0] = _v[2]*tan(el);
+    return(1);
 }
 
 //------------------------------//
@@ -747,22 +753,22 @@ Vector3::AzimuthElevationSet(
 
 int
 Vector3::AzimuthElevationGet(
-	double	*r,
-	double	*az,
-	double	*el)
+    double    *r,
+    double    *az,
+    double    *el)
 {
-	*r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+    *r = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
-	if (_v[2] == 0.0)
-	{
-		*az = pi/2.0;
-		*el = pi/2.0;
-		return(1);
-	}
+    if (_v[2] == 0.0)
+    {
+        *az = pi/2.0;
+        *el = pi/2.0;
+        return(1);
+    }
 
-	*el = atan2(_v[0],_v[2]);
-	*az = atan2(_v[1],_v[2]);
-	return(1);
+    *el = atan2(_v[0],_v[2]);
+    *az = atan2(_v[1],_v[2]);
+    return(1);
 }
 
 //--------------//
@@ -771,13 +777,13 @@ Vector3::AzimuthElevationGet(
 
 int
 Vector3::Set(
-	int		index,
-	double	value)
+    int        index,
+    double    value)
 {
-	if (index < 0 || index > 2)
-		return(0);
-	_v[index] = value;
-	return(1);
+    if (index < 0 || index > 2)
+        return(0);
+    _v[index] = value;
+    return(1);
 }
 
 void
@@ -788,7 +794,7 @@ Vector3::Set(double x1, double x2, double x3)
 _v[0] = x1;
 _v[1] = x2;
 _v[2] = x3;
-	return;
+    return;
 }
 
 //--------------//
@@ -799,20 +805,20 @@ double
 Vector3::Get(
     int  idx)
 {
-	if (idx < 0 || idx > 2)
-		return(0.0);
-	return(_v[idx]);
+    if (idx < 0 || idx > 2)
+        return(0.0);
+    return(_v[idx]);
 }
 
 int
 Vector3::Get(
-	int			idx,
-	double*		value)
+    int            idx,
+    double*        value)
 {
-	if (idx < 0 || idx > 2)
-		return(0);
-	*value = _v[idx];
-	return(1);
+    if (idx < 0 || idx > 2)
+        return(0);
+    *value = _v[idx];
+    return(1);
 }
 
 void
@@ -834,8 +840,8 @@ Vector3::Get(
 void
 Vector3::Zero()
 {
-	_v[0] = 0.0;
-	_v[1] = 0.0;
-	_v[2] = 0.0;
-	return;
+    _v[0] = 0.0;
+    _v[1] = 0.0;
+    _v[2] = 0.0;
+    return;
 }
