@@ -377,7 +377,6 @@ GMF::GetObjLimits(
 	float*		min_obj,
 	float*		max_obj)
 {
-
 	*min_obj = _bestObj[0];
 	*max_obj = _bestObj[0];
 	for (int i = 0; i < _phiCount; i++)
@@ -402,12 +401,20 @@ GMF::WriteObjectiveCurve(
 	float		max_obj)
 {
 
-	if (min_obj == max_obj)
+    float scale;
+    if (min_obj == 0.0 && max_obj == 0.0)
+    {
+        scale = 1.0;
+    }
+    else if (min_obj == max_obj)
 	{
 		fprintf(stderr,"GMF::WriteObjectiveCurve: Invalid obj limits\n");
-		exit(-1);
+		exit(1);
 	}
-	float scale = 1.0 / (max_obj - min_obj);
+    else
+    {
+        scale = 1.0 / (max_obj - min_obj);
+    }
 	for (int i = 0; i < _phiCount; i++)
 	{
 		fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
@@ -431,13 +438,20 @@ GMF::WriteGSObjectiveCurve(
 	float dir_spacing =  wind_dir_intv_init;
 	int num_dir_samples = (int)(360. / dir_spacing) + 2 ;
 
-	if (min_obj == max_obj)
+    float scale;
+    if (min_obj == 0.0 && max_obj == 0.0)
+    {
+        scale = 1.0;
+    }
+	else if (min_obj == max_obj)
 	{
 		fprintf(stderr,"GMF::WriteGSObjectiveCurve: Invalid obj limits\n");
-		exit(-1);
+		exit(1);
 	}
-
-	float scale = 1.0 / (max_obj - min_obj);
+    else
+    {
+        scale = 1.0 / (max_obj - min_obj);
+    }
 
 	for (int i = 2; i <= num_dir_samples; i++)
 	{
@@ -460,14 +474,20 @@ GMF::AppendSolutions(
 	float		min_obj,
 	float		max_obj)
 {
-
-	if (min_obj == max_obj)
+    float scale;
+    if (min_obj == 0.0 && max_obj == 0.0)
+    {
+        scale = 1.0;
+    }
+	else if (min_obj == max_obj)
 	{
 		fprintf(stderr,"GMF::AppendSolutions: Invalid obj limits\n");
-		exit(-1);
+		exit(1);
 	}
-
-	float scale = 1.0 / (max_obj - min_obj);
+    else
+    {
+        scale = 1.0 / (max_obj - min_obj);
+    }
 
 	//----------------------------//
 	// write individual solutions //
@@ -476,7 +496,7 @@ GMF::AppendSolutions(
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
-		fprintf(ofp, "%g %g\n", wvp->dir * rtd, (wvp->obj-min_obj)*scale);
+		fprintf(ofp, "%g %g\n", wvp->dir * rtd, (wvp->obj - min_obj) * scale);
 	}
 
 	return(1);
@@ -1342,7 +1362,7 @@ GMF::_ObjectiveFunction(
 
 //			double var = vpc +
 //				(kpm2 + kpri2 + kprs2) * trial_value * trial_value;
-			double var = 
+			double var =
 				(trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
 				trial_value*trial_value;
 
