@@ -12,6 +12,7 @@ static const char rcs_id_qscat_h[] =
 #include "Antenna.h"
 #include "Tracking.h"
 #include "Spacecraft.h"
+class TargetInfoPackage;
 
 #define NUMBER_OF_QSCAT_BEAMS     2
 #define ENCODER_N                 32768
@@ -233,6 +234,7 @@ public:
     int             useRgc;
     int             useDtc;
     int             useBYUDop;
+    int             useBYURange;
     unsigned int    orbitTicksPerOrbit;
     CdsBeamInfo     beamInfo[NUMBER_OF_QSCAT_BEAMS];
 
@@ -290,7 +292,8 @@ public:
 // helper functions //
 //------------------//
 
-int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
+int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
+			  TargetInfoPackage* tip=NULL);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 
 #endif

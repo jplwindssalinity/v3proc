@@ -909,6 +909,64 @@ IdealRtt(
 	return(round_trip_time);
 }
 
+//----------//
+// BYURtt   //
+//----------//
+// Calculate the ideal round trip time along the BYU nominal boresight.  
+// The attitude is set to 0,0,0.
+// Used for the RGC or for calculating the commanded round trip time.
+
+double
+BYURtt(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat)
+{
+	//------------------------------//
+	// zero the spacecraft attitude //
+	//------------------------------//
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Attitude zero_rpy;
+	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
+
+
+	//-------------------------------------------//
+	// Compute the BYU nominal boresight         //
+	//-------------------------------------------//
+
+	double azimuth_rate = qscat->sas.antenna.spinRate;
+	double look, azim;
+        double rtt=IdealRtt(spacecraft,qscat);
+	azim=azimuth_rate;
+	azim=azim*0.5*rtt;
+	
+        if(qscat->cds.currentBeamIdx==0){
+	  look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+        }
+	else{
+	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+	}
+
+	//-------------------------------//
+	// calculate the round trip time //
+	//-------------------------------//
+
+	Vector3 vector;
+	vector.SphericalSet(1.0, look, azim);
+	Vector3 ulook_gc = zero_rpy_antenna_frame_to_gc.Forward(vector);
+	EarthPosition r_target;
+	if(earth_intercept(sc_orbit_state->rsat, ulook_gc,&r_target)!=1)
+	  exit(1);
+	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
+	double round_trip_time = 2.0 * slant_range / speed_light_kps;
+
+	return(round_trip_time);
+}
+
 //-------------------//
 // RttToIdealRxDelay //
 //-------------------//
@@ -939,7 +997,8 @@ RttToIdealRxDelay(
 int
 IdealCommandedDoppler(
     Spacecraft*  spacecraft,
-    Qscat*       qscat)
+    Qscat*       qscat,
+    TargetInfoPackage* tip_out=NULL)
 {
 	//------------------------------//
 	// zero the spacecraft attitude //
@@ -980,6 +1039,7 @@ IdealCommandedDoppler(
 		qscat->ses.CmdTxDopplerEu(freq);
 	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
 
+	if(tip_out) *tip_out=tip;
 	return(1);
 }
 
@@ -988,7 +1048,8 @@ IdealCommandedDoppler(
 int
 BYUCommandedDoppler(
     Spacecraft*  spacecraft,
-    Qscat*       qscat)
+    Qscat*       qscat,
+    TargetInfoPackage* tip_out)
 {
 	//------------------------------//
 	// zero the spacecraft attitude //
@@ -1001,16 +1062,11 @@ BYUCommandedDoppler(
 		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
 
 	//-------------------------------------------//
-	// find the current beam's two-way peak gain //
+	// Compute the BYU nominal boresight         //
 	//-------------------------------------------//
 
-//	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-
-	//----------------------------//
-	// calculate commanded Doppler //
-	//----------------------------//
         double rtt=IdealRtt(spacecraft,qscat);
 	azim=azimuth_rate;
 	azim=azim*0.5*rtt;
@@ -1023,7 +1079,10 @@ BYUCommandedDoppler(
 	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
 	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
 	}
-	
+
+        //---------------------------------------//
+        // Calculate the Commanded Doppler       //
+        //---------------------------------------//	
 	Vector3 vector;
 	vector.SphericalSet(1.0, look, azim);
 	TargetInfoPackage tip;
@@ -1036,6 +1095,7 @@ BYUCommandedDoppler(
 		qscat->ses.CmdTxDopplerEu(freq);
 	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
 
+	if(tip_out) *tip_out=tip;
 	return(1);
 }
 /**********************************************************************

@@ -372,9 +372,13 @@ main(
 			  for(int a=0;a<360;a+=10){
 			    azimuth=a*dtr;
 			    qscat.sas.antenna.azimuthAngle = azimuth;
-			    double rtt=IdealRtt(&spacecraft,&qscat);
-			    qscat.sas.antenna.azimuthAngle -= rtt *
-			      qscat.sas.antenna.spinRate/2.0;
+
+			    // Add offset to azimuth to account for 
+			    // difference in PE and BYU definition
+
+			    double rtt=BYURtt(&spacecraft,&qscat);
+                            double pulse_width=qscat.ses.txPulseWidth;
+			    qscat.sas.antenna.TimeRotation(-(rtt+pulse_width)/2.0);
 			    printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
 			    qscat_sim.ScatSim(&spacecraft, &qscat,
 						 &windfield, &gmf, &kp, &kpmField, &(l00.frame));			  	

@@ -372,18 +372,17 @@ main(
 			  for(int a=0;a<360;a+=10){
 			    azimuth=a*dtr;
 			    qscat.sas.antenna.azimuthAngle = azimuth;
-			    double rtt=IdealRtt(&spacecraft,&qscat);
-			    qscat.sas.antenna.azimuthAngle -= rtt *
-			      qscat.sas.antenna.spinRate/2.0;
-			    SetDelayAndFrequency(&spacecraft,&qscat);                    
-			    double pulse_width = qscat.ses.txPulseWidth;
-			    SesBeamInfo* ses_beam_info=qscat.ses.GetCurrentBeamInfo(beam_no);
-			    
-			    rtt=qscat.ses.rxGateDelay +
-			      (ses_beam_info->rxGateWidth-pulse_width)/2.0;
-			    double range=rtt/2.0*speed_light_kps;
+
+			    // Add offset to azimuth to account for 
+			    // difference in PE and BYU definition
+
+			    double rtt=BYURtt(&spacecraft,&qscat);
+                            double pulse_width=qscat.ses.txPulseWidth;
+			    qscat.sas.antenna.TimeRotation(-(rtt+pulse_width)/2.0);
+			    TargetInfoPackage tip;
+			    SetDelayAndFrequency(&spacecraft,&qscat,&tip);     
 			  
-			    printf("%d %g %g %g %g\n",beam_no,instrument_event_time,azimuth*rtd,-(qscat.ses.txDoppler),range);
+			    printf("%d %g %g %g %g\n",beam_no,instrument_event_time,azimuth*rtd,tip.dopplerFreq,tip.slantRange);
 
 
 			  

@@ -61,5 +61,6 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define USE_DTC_KEYWORD    "USE_DTC"
 
 #define USE_BYU_DOPPLER_KEYWORD  "USE_BYU_DOPPLER"
+#define USE_BYU_RANGE_KEYWORD  "USE_BYU_RANGE"
 
 #endif

@@ -237,6 +237,11 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useRgc = use_rgc;
 
+    int use_byu_range;
+    if (! config_list->GetInt(USE_BYU_RANGE_KEYWORD, &use_byu_range))
+        return(0);
+    qscat_cds->useBYURange = use_byu_range;
+
     int use_dtc;
     if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
         return(0);
@@ -249,6 +254,11 @@ ConfigQscatCds(
 
     if(use_byu_dop && use_dtc){
       fprintf(stderr,"ConfigQscatCds:: Cannot use both Tabular and BYU Commanded Dopplers\n");
+      return(0);
+    }
+
+    if(use_byu_range && use_rgc){
+      fprintf(stderr,"ConfigQscatCds:: Cannot use both Tabular and BYU Range Gate Delays\n");
       return(0);
     }
 

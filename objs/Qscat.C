@@ -432,7 +432,8 @@ CdsBeamInfo::~CdsBeamInfo()
 
 QscatCds::QscatCds()
 :   priDn(0), txPulseWidthDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
-    useBYUDop(0), orbitTicksPerOrbit(0), currentBeamIdx(0), orbitTime(0),
+    useBYUDop(0), useBYURange(0), orbitTicksPerOrbit(0), currentBeamIdx(0), 
+    orbitTime(0),
     orbitStep(0), time(0.0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
 {
     return;
@@ -797,7 +798,8 @@ Qscat::GetCurrentSesBeamInfo()
 int
 SetDelayAndFrequency(
     Spacecraft*  spacecraft,
-    Qscat*       qscat)
+    Qscat*       qscat,
+    TargetInfoPackage* tip=NULL)
 {
     //------------------------------------------------------//
     // calculate the encoder value to use for the algorithm //
@@ -850,7 +852,9 @@ SetDelayAndFrequency(
     else
     {
         // ideal delay
-        float rtt = IdealRtt(spacecraft, qscat);
+        float rtt;
+        if (qscat->cds.useBYURange) rtt=BYURtt(spacecraft,qscat);
+        else rtt = IdealRtt(spacecraft, qscat);
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
         float delay = rtt +
             (qscat->ses.txPulseWidth - ses_beam_info->rxGateWidth) / 2.0;
@@ -874,12 +878,12 @@ SetDelayAndFrequency(
     else if (qscat->cds.useBYUDop)
     {
         // ideal frequency
-        BYUCommandedDoppler(spacecraft, qscat);
+        BYUCommandedDoppler(spacecraft, qscat,tip);
     }
     else
     {
         // ideal frequency
-        IdealCommandedDoppler(spacecraft, qscat);
+        IdealCommandedDoppler(spacecraft, qscat,tip);
     }
 
     return(1);
