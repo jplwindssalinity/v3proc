@@ -43,6 +43,7 @@ class Generic_Dist
 {
 public:
 	virtual float get_number()=0;
+        virtual float get_number(double time);
 	virtual ~Generic_Dist();
 };		
 

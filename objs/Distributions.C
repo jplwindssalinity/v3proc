@@ -30,6 +30,16 @@ Generic_Dist::~Generic_Dist(){
 }
 
 //============================//
+// Generic_Dist::get_number   //
+//============================//
+
+float Generic_Dist::get_number(double time){
+	if(time<0.0) //bogus check to keep compiler quiet
+		return(0.0);
+	else return(get_number());
+}
+
+//============================//
 // Uniform                    //
 //============================//
 
