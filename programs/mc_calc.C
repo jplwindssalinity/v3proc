@@ -419,7 +419,7 @@ main(
             if (sigma0_mode_flag[j] & 0x0008)
                 new_meas->scanAngle = 0.0;    // fore
             else
-                new_meas->scanAngle = 1.0;    // aft
+                new_meas->scanAngle = 3.0;    // aft
 
             if (! meas_list_row[cti].Append(new_meas))
             {

@@ -643,6 +643,9 @@ main(
                 count[meas->beamIdx]++;
 
                 int foreaft_idx = (int)(meas->scanAngle + 0.5);
+                if (foreaft_idx != 0)
+                    foreaft_idx = 1;
+
                 x_comp_sum[meas->beamIdx][foreaft_idx] += 
                     cos(meas->eastAzimuth);
                 y_comp_sum[meas->beamIdx][foreaft_idx] += 
