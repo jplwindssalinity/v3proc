@@ -61,11 +61,13 @@ static const char rcs_id[] =
 #include "ConfigList.h"
 #include "Spacecraft.h"
 #include "ConfigSim.h"
-/*
-#include "Instrument.h"
-#include "L00File.h"
-#include "L00Frame.h"
-*/
+
+template class List<StringPair>;
+template class List<Meas>;
+template class List<LonLat>;
+template class List<MeasSpot>;
+template class List<OrbitState>;
+template class List<WindVector>;
 
 //-----------//
 // CONSTANTS //
@@ -135,11 +137,6 @@ main(
 	//----------------------------------------------//
 
 	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft\n", command);
-		exit(1);
-	}
 
 	SpacecraftSim spacecraft_sim;
 	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
@@ -290,16 +287,14 @@ main(
 				spacecraft_sim.UpdateOrbit(instrument_event.time,
 					&spacecraft);
 				instrument_sim.ScatSim(instrument_event.time, orbit_state,
-					&instrument_sim, &instrument, SCATTEROMETER_BEAM_A_INDEX,
-					&windfield, &gmf);
+					&instrument, SCATTEROMETER_BEAM_A_INDEX, &windfield, &gmf);
 				break;
 			case InstrumentEvent::SCATTEROMETER_BEAM_B_MEASUREMENT:
 				orbit_state = &(spacecraft.orbitState);
 				spacecraft_sim.UpdateOrbit(instrument_event.time,
 					&spacecraft);
 				instrument_sim.ScatSim(instrument_event.time, orbit_state,
-					&instrument_sim, &instrument, SCATTEROMETER_BEAM_A_INDEX,
-					&windfield, &gmf);
+					&instrument, SCATTEROMETER_BEAM_A_INDEX, &windfield, &gmf);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
