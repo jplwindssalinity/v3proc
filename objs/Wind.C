@@ -3,7 +3,6 @@
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
-
 static const char rcs_id_wind_c[] =
     "@(#) $Id$";
 
@@ -816,14 +815,14 @@ WVC::GetNearestRangeToDirection(
     {
         if (range->left!=range->right)
         {
-	  float dif = ANGDIF(wvp->dir, dir);
-	  if (dif < min_dif)
-	    {
+      float dif = ANGDIF(wvp->dir, dir);
+      if (dif < min_dif)
+        {
             min_dif = dif;
             nearest = wvp;
-	    }
-	}
-	range=directionRanges.GetNext();
+        }
+    }
+    range=directionRanges.GetNext();
     }
     return(nearest);
 }
@@ -1313,85 +1312,81 @@ WindField::ReadEcmwfHiRes(
 
 int
 WindField::ReadEcmwfLoRes(
-        const char*             filename)
+    const char*  filename)
 {
-        if (_field != NULL)
-          return(2);
+    if (_field != NULL)
+        return(2);
 
-        //-----------//
-        // open file //
-        //-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-        FILE* fp = fopen(filename, "r");
-        if (fp == NULL)
-                return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-        //------------//
-        // read field //
-        //------------//
+    //------------//
+    // read field //
+    //------------//
 
-        short head[ECMWF_LORES_LON_DIM];
-        short tmp_u[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
-        short tmp_v[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
+    short head[ECMWF_LORES_LON_DIM];
+    short tmp_u[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
+    short tmp_v[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
 
-        int head_size = ECMWF_LORES_LON_DIM * sizeof(short);
-        int uvsize = ECMWF_LORES_LON_DIM * ECMWF_LORES_LAT_DIM * sizeof(short);
+    int head_size = ECMWF_LORES_LON_DIM * sizeof(short);
+    int uvsize = ECMWF_LORES_LON_DIM * ECMWF_LORES_LAT_DIM * sizeof(short);
 
-        if (fread((void *)&head, head_size, 1, fp) != 1 ||
-                fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-                fread((void *)tmp_v, uvsize, 1, fp) != 1)
-        {
-                fclose(fp);
-                return(0);
-        }
-
-        //------------//
-        // close file //
-        //------------//
-
+    if (fread((void *)&head, head_size, 1, fp) != 1 ||
+        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
+        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+    {
         fclose(fp);
+        return(0);
+    }
 
-        //---------//
-        // convert //
-        //---------//
+    //------------//
+    // close file //
+    //------------//
 
-        float u[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
-        float v[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
-        float scale = float(ECMWF_LORES_SCALE_FACTOR);
+    fclose(fp);
 
-        //-------------------------------//
-        // transfer to wind field format //
-        //-------------------------------//
+    //---------//
+    // convert //
+    //---------//
 
-        _lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_LORES_LON_DIM);
-        _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_LORES_LAT_DIM);
+    float u[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
+    float v[ECMWF_LORES_LAT_DIM][ECMWF_LORES_LON_DIM];
+    float scale = float(ECMWF_LORES_SCALE_FACTOR);
 
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
 
-        if (! _Allocate())
+    _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, ECMWF_LORES_LON_DIM);
+    _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_LORES_LAT_DIM);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < ECMWF_LORES_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < ECMWF_LORES_LAT_DIM; lat_idx++)
+        {
+            u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
+            v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
+
+            WindVector* wv = new WindVector;
+            if (! wv)
                 return(0);
 
-
-        for (int lon_idx = 0; lon_idx < ECMWF_LORES_LON_DIM; lon_idx++)
-        {
-                for (int lat_idx = 0; lat_idx < ECMWF_LORES_LAT_DIM; lat_idx++)
-                {
-
-                        u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
-                        v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
-
-                        WindVector* wv = new WindVector;
-                        if (! wv)
-                                return(0);
-
-                        wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-                        *(*(_field + lon_idx) + lat_idx) = wv;
-                }
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
         }
+    }
 
-        _wrap = 1;
-        return(1);
+    _wrap = 1;
+    return(1);
 }
-
 
 //----------------------//
 // WindField::ReadNSCAT //
@@ -1399,73 +1394,71 @@ WindField::ReadEcmwfLoRes(
 
 int
 WindField::ReadNSCAT(
-        const char*             filename)
+    const char*  filename)
 {
-        //-----------//
-        // open file //
-        //-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-        FILE* fp = fopen(filename, "r");
-        if (fp == NULL)
-                return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-        //------------//
-        // read field //
-        //------------//
+    //------------//
+    // read field //
+    //------------//
 
-        float u[NSCAT_LAT_DIM][NSCAT_LON_DIM];
-        float v[NSCAT_LAT_DIM][NSCAT_LON_DIM];
+    float u[NSCAT_LAT_DIM][NSCAT_LON_DIM];
+    float v[NSCAT_LAT_DIM][NSCAT_LON_DIM];
 
-        int uv_size = NSCAT_LON_DIM * NSCAT_LAT_DIM * sizeof(float);
+    int uv_size = NSCAT_LON_DIM * NSCAT_LAT_DIM * sizeof(float);
 
-        if (fread((void *)u, uv_size, 1, fp) != 1 ||
-                fread((void *)v, uv_size, 1, fp) != 1)
-        {
-                fclose(fp);
-                return(0);
-        }
-
-        //------------//
-        // close file //
-        //------------//
-
+    if (fread((void *)u, uv_size, 1, fp) != 1 ||
+        fread((void *)v, uv_size, 1, fp) != 1)
+    {
         fclose(fp);
+        return(0);
+    }
 
-        //-------------------------------//
-        // transfer to wind field format //
-        //-------------------------------//
+    //------------//
+    // close file //
+    //------------//
 
-        _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NSCAT_LON_DIM);
-        _lat.SpecifyCenters(-75.0 * dtr, 75.0 * dtr, NSCAT_LAT_DIM);
+    fclose(fp);
 
-        if (! _Allocate())
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
+
+    _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NSCAT_LON_DIM);
+    _lat.SpecifyCenters(-75.0 * dtr, 75.0 * dtr, NSCAT_LAT_DIM);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < NSCAT_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < NSCAT_LAT_DIM; lat_idx++)
+        {
+            if (u[lat_idx][lon_idx] == NSCAT_LAND_VALUE ||
+                v[lat_idx][lon_idx] == NSCAT_LAND_VALUE)
+            {
+                u[lat_idx][lon_idx] = 0.;
+                v[lat_idx][lon_idx] = 0.;
+            }
+
+            WindVector* wv = new WindVector;
+            if (! wv)
                 return(0);
 
-        for (int lon_idx = 0; lon_idx < NSCAT_LON_DIM; lon_idx++)
-        {
-                for (int lat_idx = 0; lat_idx < NSCAT_LAT_DIM; lat_idx++)
-                {
-
-                  if (u[lat_idx][lon_idx] == NSCAT_LAND_VALUE ||
-                      v[lat_idx][lon_idx] == NSCAT_LAND_VALUE)
-                    {
-                      u[lat_idx][lon_idx] = 0.;
-                      v[lat_idx][lon_idx] = 0.;
-                    }
-
-                        WindVector* wv = new WindVector;
-                        if (! wv)
-                                return(0);
-
-                        wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-                        *(*(_field + lon_idx) + lat_idx) = wv;
-                }
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
         }
+    }
 
-        _wrap = 1;
-        return(1);
+    _wrap = 1;
+    return(1);
 }
-
 
 //----------------------//
 // WindField::ReadNCEP1 //
@@ -1473,83 +1466,80 @@ WindField::ReadNSCAT(
 
 int
 WindField::ReadNCEP1(
-        const char*             filename)
+    const char*  filename)
 {
-        if (_field != NULL)
-          return(2);
+    if (_field != NULL)
+        return(2);
 
-        //-----------//
-        // open file //
-        //-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-        FILE* fp = fopen(filename, "r");
-        if (fp == NULL)
-                return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-        //------------//
-        // read field //
-        //------------//
+    //------------//
+    // read field //
+    //------------//
 
-        short head[NCEP1_LON_DIM];
-        short tmp_u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
-        short tmp_v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    short head[NCEP1_LON_DIM];
+    short tmp_u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    short tmp_v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
 
-        int head_size = NCEP1_LON_DIM * sizeof(short);
-        int uvsize = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(short);
+    int head_size = NCEP1_LON_DIM * sizeof(short);
+    int uvsize = NCEP1_LON_DIM * NCEP1_LAT_DIM * sizeof(short);
 
-        if (fread((void *)&head, head_size, 1, fp) != 1 ||
-                fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-                fread((void *)tmp_v, uvsize, 1, fp) != 1)
-        {
-                fclose(fp);
-                return(0);
-        }
-
-        //------------//
-        // close file //
-        //------------//
-
+    if (fread((void *)&head, head_size, 1, fp) != 1 ||
+        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
+        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+    {
         fclose(fp);
+        return(0);
+    }
 
-        //---------//
-        // convert //
-        //---------//
+    //------------//
+    // close file //
+    //------------//
 
-        float u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
-        float v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
-        float scale = float(NCEP1_SCALE_FACTOR);
+    fclose(fp);
 
-        //-------------------------------//
-        // transfer to wind field format //
-        //-------------------------------//
+    //---------//
+    // convert //
+    //---------//
 
-        _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP1_LON_DIM);
-        _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP1_LAT_DIM);
+    float u[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    float v[NCEP1_LAT_DIM][NCEP1_LON_DIM];
+    float scale = float(NCEP1_SCALE_FACTOR);
 
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
 
-        if (! _Allocate())
+    _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP1_LON_DIM);
+    _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP1_LAT_DIM);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < NCEP1_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < NCEP1_LAT_DIM; lat_idx++)
+        {
+            u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
+            v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
+
+            WindVector* wv = new WindVector;
+            if (! wv)
                 return(0);
 
-
-        for (int lon_idx = 0; lon_idx < NCEP1_LON_DIM; lon_idx++)
-        {
-                for (int lat_idx = 0; lat_idx < NCEP1_LAT_DIM; lat_idx++)
-                {
-
-                        u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
-                        v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
-
-                        WindVector* wv = new WindVector;
-                        if (! wv)
-                                return(0);
-
-                        wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-                        *(*(_field + lon_idx) + lat_idx) = wv;
-                }
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
         }
+    }
 
-        _wrap = 1;
-        return(1);
+    _wrap = 1;
+    return(1);
 }
 
 //----------------------//
@@ -1558,85 +1548,81 @@ WindField::ReadNCEP1(
 
 int
 WindField::ReadNCEP2(
-        const char*             filename)
+    const char*  filename)
 {
-        if (_field != NULL)
-          return(2);
+    if (_field != NULL)
+        return(2);
 
-        //-----------//
-        // open file //
-        //-----------//
+    //-----------//
+    // open file //
+    //-----------//
 
-        FILE* fp = fopen(filename, "r");
-        if (fp == NULL)
-                return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL)
+        return(0);
 
-        //------------//
-        // read field //
-        //------------//
+    //------------//
+    // read field //
+    //------------//
 
-        short head[NCEP2_LON_DIM];
-        short tmp_u[NCEP2_LAT_DIM][NCEP2_LON_DIM];
-        short tmp_v[NCEP2_LAT_DIM][NCEP2_LON_DIM];
+    short head[NCEP2_LON_DIM];
+    short tmp_u[NCEP2_LAT_DIM][NCEP2_LON_DIM];
+    short tmp_v[NCEP2_LAT_DIM][NCEP2_LON_DIM];
 
-        int head_size = NCEP2_LON_DIM * sizeof(short);
-        int uvsize = NCEP2_LON_DIM * NCEP2_LAT_DIM * sizeof(short);
+    int head_size = NCEP2_LON_DIM * sizeof(short);
+    int uvsize = NCEP2_LON_DIM * NCEP2_LAT_DIM * sizeof(short);
 
-        if (fread((void *)&head, head_size, 1, fp) != 1 ||
-                fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
-                fread((void *)tmp_v, uvsize, 1, fp) != 1)
-        {
-                fclose(fp);
-                return(0);
-        }
-
-        //------------//
-        // close file //
-        //------------//
-
+    if (fread((void *)&head, head_size, 1, fp) != 1 ||
+        fread((void *)tmp_u, uvsize, 1, fp) != 1 ||
+        fread((void *)tmp_v, uvsize, 1, fp) != 1)
+    {
         fclose(fp);
+        return(0);
+    }
 
-        //---------//
-        // convert //
-        //---------//
+    //------------//
+    // close file //
+    //------------//
 
-        float u[NCEP2_LAT_DIM][NCEP2_LON_DIM];
-        float v[NCEP2_LAT_DIM][NCEP2_LON_DIM];
-        float scale = float(NCEP2_SCALE_FACTOR);
+    fclose(fp);
 
-        //-------------------------------//
-        // transfer to wind field format //
-        //-------------------------------//
+    //---------//
+    // convert //
+    //---------//
 
-        _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP2_LON_DIM);
-        _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP2_LAT_DIM);
+    float u[NCEP2_LAT_DIM][NCEP2_LON_DIM];
+    float v[NCEP2_LAT_DIM][NCEP2_LON_DIM];
+    float scale = float(NCEP2_SCALE_FACTOR);
 
+    //-------------------------------//
+    // transfer to wind field format //
+    //-------------------------------//
 
-        if (! _Allocate())
+    _lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, NCEP2_LON_DIM);
+    _lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, NCEP2_LAT_DIM);
+
+    if (! _Allocate())
+        return(0);
+
+    for (int lon_idx = 0; lon_idx < NCEP2_LON_DIM; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < NCEP2_LAT_DIM; lat_idx++)
+        {
+            u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
+            v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
+
+            WindVector* wv = new WindVector;
+            if (! wv)
                 return(0);
 
-
-        for (int lon_idx = 0; lon_idx < NCEP2_LON_DIM; lon_idx++)
-        {
-                for (int lat_idx = 0; lat_idx < NCEP2_LAT_DIM; lat_idx++)
-                {
-
-                        u[lat_idx][lon_idx] = float( tmp_u[lat_idx][lon_idx] ) / scale;
-                        v[lat_idx][lon_idx] = float( tmp_v[lat_idx][lon_idx] ) / scale;
-
-                        WindVector* wv = new WindVector;
-                        if (! wv)
-                                return(0);
-
-                        wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
-                        *(*(_field + lon_idx) + lat_idx) = wv;
-                }
+            wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
+            *(*(_field + lon_idx) + lat_idx) = wv;
         }
+    }
 
-        _wrap = 1;
-        return(1);
+    _wrap = 1;
+    return(1);
 }
-
 
 //----------------------------//
 // WindField::WriteEcmwfHiRes //
