@@ -76,6 +76,64 @@ ConfigSpacecraftSim(
 	return(1);
 }
 
+//----------------------------------//
+// ConfigAttitudeControlModel       //
+//----------------------------------//
+
+int 
+ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list)
+{
+	char* string;
+        Generic_Dist *roll, *pitch, *yaw;
+        AttDist* ACEM;
+        string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
+        if(! string)
+		return(0);
+	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+	   || strcmp(string,"none")==0) return(1);
+	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
+	   || strcmp(string,"gaussian")==0)
+	{
+		double variance;
+	 	if(! config_list->GetDouble(ROLL_CONTROL_VARIANCE_KEYWORD,
+		   &variance)) return(0);
+		roll=new Gaussian((float)variance,0);
+	 	if(! config_list->GetDouble(PITCH_CONTROL_VARIANCE_KEYWORD,
+		   &variance)) return(0);
+		pitch=new Gaussian((float)variance,0);
+	 	if(! config_list->GetDouble(YAW_CONTROL_VARIANCE_KEYWORD,
+		   &variance)) return(0);
+		yaw=new Gaussian((float)variance,0);
+
+	}
+	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
+	   || strcmp(string,"uniform")==0)
+	{
+		double radius;
+	 	if(! config_list->GetDouble(ROLL_CONTROL_RADIUS_KEYWORD,
+		   &radius)) return(0);
+		roll=new Uniform((float)radius,0);
+	 	if(! config_list->GetDouble(PITCH_CONTROL_RADIUS_KEYWORD,
+		   &radius)) return(0);
+		pitch=new Uniform((float)radius,0);
+	 	if(! config_list->GetDouble(YAW_CONTROL_RADIUS_KEYWORD,
+		   &radius)) return(0);
+		yaw=new Uniform((float)radius,0);
+	}
+
+	else{
+           fprintf(stderr,"No such Attitude Control Model. \n");
+	   fprintf(stderr,"Implemented models are GAUSSIAN and UNIFORM or");
+	   fprintf(stderr,"use NONE for zero control error. \n");
+	   return(0);
+	}
+        ACEM=new AttDist(roll,pitch,yaw);
+        spacecraft_sim->SetAttCntlModel(ACEM);
+	return(1);
+}
+
+
 //------------------//
 // ConfigInstrument //
 //------------------//

@@ -19,6 +19,7 @@ static const char rcs_id_configsim_h[] =
 #include "L17ToL20.h"
 #include "Wind.h"
 #include "Grid.h"
+#include "Distributions.h"
 #include "ConfigList.h"
 
 //======================================================================
@@ -43,6 +44,22 @@ static const char rcs_id_configsim_h[] =
 
 int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
+
+//--------------------------------//
+// Attitude Control Error Model   //
+//--------------------------------//
+
+#define ATTITUDE_CONTROL_MODEL_KEYWORD  "ATTITUDE_CONTROL_MODEL"
+#define ROLL_CONTROL_VARIANCE_KEYWORD 	"ROLL_CONTROL_VARIANCE"
+#define PITCH_CONTROL_VARIANCE_KEYWORD 	"PITCH_CONTROL_VARIANCE"
+#define YAW_CONTROL_VARIANCE_KEYWORD 	"YAW_CONTROL_VARIANCE"
+#define ROLL_CONTROL_RADIUS_KEYWORD 	"ROLL_CONTROL_RADIUS"
+#define PITCH_CONTROL_RADIUS_KEYWORD 	"PITCH_CONTROL_RADIUS"
+#define YAW_CONTROL_RADIUS_KEYWORD 	"YAW_CONTROL_RADIUS"
+
+int ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
+
 
 //------------//
 // Instrument //
