@@ -37,6 +37,7 @@ public:
 
 	LandMap();
 	~LandMap();
+        int  Initialize(char* filename, int use_map);
         int  Read(char* filename);
         int  IsLand(float lon, float lat);
 
@@ -54,6 +55,7 @@ protected:
         int _pixelsPerDegree; 
         int _mapLatDim;
         int _mapLonDim;
+        int _usemap;
 };
 #endif
 

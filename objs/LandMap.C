@@ -28,6 +28,17 @@ LandMap::~LandMap(){
   return;
 }
 
+//=====================//
+// LandMap::Initialize //
+//=====================//
+
+int LandMap::Initialize(char* filename, int use_map){
+  _usemap=use_map;
+  if(_usemap!=0){
+    if(!Read(filename)) return(0);
+  }
+  return(1);
+}
 //===================//
 // LandMap::Read    //
 //===================//
@@ -52,6 +63,9 @@ int LandMap::Read(char* filename){
 //=========================//
 
 int LandMap::IsLand(float lon, float lat){
+
+      if(_usemap==0) return(0);
+
       while(lon < 0) lon+=two_pi;
       int lon_idx=int(lon*rtd*_pixelsPerDegree+0.5);
       int lat_idx=int((90.0+lat*rtd)*_pixelsPerDegree+0.5);
