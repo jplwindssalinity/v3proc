@@ -638,7 +638,7 @@ Ephemeris::GetSubtrackPosition(
 	// along track distance (determined by trial and error).
 	//-------------------------------------------------------------------//
 
-	double measurement_time = start_time + atd/vground/1.0734;
+	double measurement_time = start_time + atd/vground/1.00932;
 
 	//----------------------------------------------------------------//
 	// Go out perpendicular to the ground track to estimate the
