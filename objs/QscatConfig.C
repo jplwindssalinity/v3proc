@@ -272,6 +272,22 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useDtc = use_dtc;
 
+    //-------------------------//
+    // get tracking chirp rate //
+    //-------------------------//
+
+    config_list->MemorizeLogFlag();
+    config_list->DoNothingForMissingKeywords();
+    int use_tracking_mu = 0;
+    double tracking_mu = 0.0;
+    if (use_dtc) {
+        if (config_list->GetDouble(TRACKING_CHIRP_RATE_KEYWORD, &tracking_mu))
+        {
+            use_tracking_mu = 1;
+        }
+    }
+    config_list->RestoreLogFlag();
+
     int use_byu_dop;
     if (! config_list->GetInt(USE_BYU_DOPPLER_KEYWORD, &use_byu_dop))
         return(0);
@@ -429,6 +445,12 @@ ConfigQscatCds(
                 fprintf(stderr, "ConfigQscatCds: error loading DTC file %s\n",
                     dtc_file);
                 return(0);
+            }
+
+            if (use_tracking_mu) {
+                printf("ConfigQscatCds: updating tracking chirp rate");
+                printf(" for beam %d to %g\n", beam_idx, tracking_mu);
+                qscat_cds->SetTrackingChirpRate(beam_idx, tracking_mu);
             }
         }
     }

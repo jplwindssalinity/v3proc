@@ -1287,13 +1287,25 @@ RangeTracker::SetRoundTripTime(
 //================//
 
 DopplerTracker::DopplerTracker()
-:   tableFrequency(0.0)
+:   tableFrequency(0.0), trackingChirpRate(DEFAULT_TRACKING_CHIRP_RATE)
 {
     return;
 }
 
 DopplerTracker::~DopplerTracker()
 {
+    return;
+}
+
+//--------------------------------------//
+// DopplerTracker::SetTrackingChirpRate //
+//--------------------------------------//
+
+void
+DopplerTracker::SetTrackingChirpRate(
+    double  tracking_mu)
+{
+    trackingChirpRate = tracking_mu;
     return;
 }
 
@@ -1660,7 +1672,6 @@ DopplerTracker::operator=(
 // DopplerTracker::GetCommandedDoppler //
 //-------------------------------------//
 
-#define MU          250.73
 #define HZ_PER_KHZ  1000
 
 int
@@ -1700,7 +1711,7 @@ DopplerTracker::GetCommandedDoppler(
     tableFrequency = C + A * ((ttf - (long)ttf) * (cos2 - cos1) + cos1);
 
     float rx_gate_error = (rx_gate_delay_fdn - (float)rx_gate_delay_dn) *
-        RANGE_GATE_NORMALIZER * MU * HZ_PER_KHZ;
+        RANGE_GATE_NORMALIZER * trackingChirpRate * HZ_PER_KHZ;
     float cmd_doppler_fdn = (tableFrequency + rx_gate_error) / 2000.0;
 
     short cmd_doppler_dn;

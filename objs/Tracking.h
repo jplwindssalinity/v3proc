@@ -143,6 +143,7 @@ class RangeTracker : public TrackerBase<unsigned char>
 //======================================================================
 
 #define DOPPLER_TRACKING_RESOLUTION  2000    // Hz
+#define DEFAULT_TRACKING_CHIRP_RATE  250.73  // kHz/ms
 
 class DopplerTracker : public TrackerBase<unsigned short>
 {
@@ -157,6 +158,8 @@ public:
     DopplerTracker();
     DopplerTracker(const DopplerTracker& from) { *this = from; return; }
     ~DopplerTracker();
+
+    void  SetTrackingChirpRate(double tracking_mu);
 
     //--------------//
     // input/output //
@@ -188,6 +191,8 @@ public:
     //----------//
 
     float  tableFrequency;    // for access to intermediate info
+
+    double  trackingChirpRate;
 };
 
 //==================//

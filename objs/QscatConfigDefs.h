@@ -77,6 +77,8 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define USE_RGC_KEYWORD    "USE_RGC"
 #define USE_DTC_KEYWORD    "USE_DTC"
 
+#define TRACKING_CHIRP_RATE_KEYWORD  "TRACKING_CHIRP_RATE"
+
 #define USE_BYU_DOPPLER_KEYWORD  "USE_BYU_DOPPLER"
 #define USE_BYU_RANGE_KEYWORD  "USE_BYU_RANGE"
 

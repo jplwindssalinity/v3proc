@@ -247,16 +247,17 @@ public:
                         unsigned char prev_rx_gate_width_dn = 0,
                         unsigned char prev_tx_pulse_width_dn = 0);
 
-    int  LoadRgc(int beam_idx, const char* file);
-    int  LoadDtc(int beam_idx, const char* file);
+    int   LoadRgc(int beam_idx, const char* file);
+    int   LoadDtc(int beam_idx, const char* file);
+    void  SetTrackingChirpRate(int beam_idx, double tracking_mu);
 
-    int  CmdTxPulseWidthEu(float tx_pulse_width, QscatSes* qscat_ses);
-    int  CmdPriEu(float pri, QscatSes* qscat_ses);
-    int  CmdRxGateWidthEu(int beam_idx, float rx_gate_width,
-             QscatSes* qscat_ses);
-    int  CmdSpinRate(SpinRateE spin_rate_code, QscatSas* qscat_sas);
-    int  SetCustomSpinRate(float spin_rate, QscatSas* qscat_sas);
-    int  CmdOrbitTicksPerOrbit(unsigned int orbit_ticks);
+    int   CmdTxPulseWidthEu(float tx_pulse_width, QscatSes* qscat_ses);
+    int   CmdPriEu(float pri, QscatSes* qscat_ses);
+    int   CmdRxGateWidthEu(int beam_idx, float rx_gate_width,
+              QscatSes* qscat_ses);
+    int   CmdSpinRate(SpinRateE spin_rate_code, QscatSas* qscat_sas);
+    int   SetCustomSpinRate(float spin_rate, QscatSas* qscat_sas);
+    int   CmdOrbitTicksPerOrbit(unsigned int orbit_ticks);
 
     //-----------//
     // variables //

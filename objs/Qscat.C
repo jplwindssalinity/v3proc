@@ -822,6 +822,19 @@ QscatCds::LoadDtc(
     return(1);
 }
 
+//--------------------------------//
+// QscatCds::SetTrackingChirpRate //
+//--------------------------------//
+
+void
+QscatCds::SetTrackingChirpRate(
+    int     beam_idx,
+    double  tracking_mu)
+{
+    beamInfo[beam_idx].dopplerTracker.SetTrackingChirpRate(tracking_mu);
+    return;
+}
+
 //-----------------------------//
 // QscatCds::CmdTxPulseWidthEu //
 //-----------------------------//
