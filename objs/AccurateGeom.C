@@ -12,10 +12,12 @@ static const char rcs_id_accurategeom_c[] =
 #include "AccurateGeom.h"
 #include "Qscat.h"
 #include "Misc.h"
+#include "Array.h"
 
 #define OUTPUT_DETAILED_INFO 0
 
-
+#define SPECTRAL_RESPONSE_DELTA_FREQ  50.0  //Hz
+#define SPECTRAL_RESPONSE_FREQ_TOL     2.0  //Hz
 //----------------//
 // IntegrateSlice //
 //----------------//
@@ -75,7 +77,8 @@ IntegrateSlice(
 				centroid_azimuth,
 				bw,num_look_steps_per_slice,
 				azimuth_integration_range,
-				azimuth_step_size,range_gate_clipping, X);
+				azimuth_step_size,range_gate_clipping, 
+				X);
      return(retval);
 }
 
@@ -128,29 +131,6 @@ IntegrateFrequencyInterval(
 			    (f1+f2)/2.0,ftol,&centroid_look,centroid_azimuth))
 	  return(0);
 
-	//------------------------------------------//
-	// Choose high gain side of slice	    //
-	// and direction of look angle increment    //
-	//------------------------------------------//
-
-	float high_gain_freq, low_gain_freq;
-	int look_scan_dir;
-	if (fabs(f2)>fabs(f1))
-    {
-	    high_gain_freq=f1;
-	    low_gain_freq=f2;
-	    if (f1<f2) look_scan_dir=-1;
-	    else look_scan_dir=+1;
-    }
-	else
-    {
-	    high_gain_freq=f2;
-	    low_gain_freq=f1;
-	    if (f1>f2) look_scan_dir=-1;
-	    else look_scan_dir=+1;
-    }
-
-
 	//-------------------------------------//
 	// loop through azimuths and integrate //
 	//-------------------------------------//
@@ -170,7 +150,7 @@ IntegrateFrequencyInterval(
 
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-            high_gain_freq, ftol, &start_look,azi))
+            f1, ftol, &start_look,azi))
         {
             fprintf(stderr,
                 "IntegrateSlice: Cannot find starting look angle\n");
@@ -183,7 +163,7 @@ IntegrateFrequencyInterval(
         //------------------------//
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-            low_gain_freq, ftol, &end_look,azi))
+            f2, ftol, &end_look,azi))
         {
             fprintf(stderr, "IntegrateSlice: Cannot find ending look angle\n");
             fprintf(stderr, "Probably means earth_intercept not found\n");
@@ -210,7 +190,7 @@ IntegrateFrequencyInterval(
 	      //********************************//
 
 	      float look1=lk;
-	      float look2=lk+looktol*look_scan_dir;
+	      float look2=lk+looktol;
 	      float azi1=azi;
 	      float azi2=azi+azimuth_step_size;
 
@@ -280,7 +260,7 @@ IntegrateFrequencyInterval(
               report_azim += rtt * antenna->spinRate/2.0;
               double gp2;
               int beam_number=qscat->cds.currentBeamIdx;
-	      float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
+	      double peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
               gp2=peak_gain*peak_gain;
 	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g\n",
 	          (look1+look2)/2.0*rtd,(azi1+azi2)/2.0*rtd,
@@ -297,8 +277,8 @@ IntegrateFrequencyInterval(
 	      /*********************************/
 	      /* Goto next box                  */
 	      /*********************************/
-
-	      lk+=look_scan_dir*looktol;
+              
+              lk+=looktol;
 	      look_num++;
 	    }
 	  }
@@ -512,45 +492,153 @@ FindLookAtFreq(
   return(1);
 }
 
-float      
+int      
 SpectralResponse(
      Spacecraft*          spacecraft, 
      Qscat*               qscat, 
      float                freq, 
      float                azim,
-     float                bandwidth,   
-     float                azimuth_integration_range,
-     float                azimuth_step_size, 
-     int                  range_gate_clipping)
+     float                look,
+     float*              response)
 {
-     float retval;
+     //--------------------------------//
+     // Predigest                      //
+     //--------------------------------//
+     OrbitState* orbit_state=&(spacecraft->orbitState);
+     Attitude* attitude=&(spacecraft->attitude);
+     Antenna* antenna=&(qscat->sas.antenna);
+
+     //--------------------------------//
+     // generate the coordinate switch //
+     //--------------------------------//
+
+     CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+        attitude, antenna, antenna->txCenterAzimuthAngle);
+
      float f1;
-     f1=freq-bandwidth/2; 
+     f1=freq-SPECTRAL_RESPONSE_DELTA_FREQ/2; 
      // Guess at centroid look using electrical boresight look angle.
      // Integrate FrequencyInterval refines the guess.
-     double look_doub, dummy;
-     float look;
-     int beam_idx= qscat->cds.currentBeamIdx;
-     if(!qscat->sas.antenna.beam[beam_idx].GetElectricalBoresight(&look_doub,&dummy)){
-       fprintf(stderr, "SpectralResponse: Cannot get electrical boresight\n");
-       exit(0);
-     }
-     look=(float)look_doub;
-     IntegrateFrequencyInterval(spacecraft,qscat,f1,look,azim,bandwidth,1,
-				azimuth_integration_range,
-				azimuth_step_size,range_gate_clipping,
-                                &retval);
 
-     return(retval);
+     if(!IntegrateFrequencyInterval(spacecraft,qscat,f1,look,azim,
+				SPECTRAL_RESPONSE_DELTA_FREQ,1,
+				qscat->cds.azimuthIntegrationRange,
+				qscat->cds.azimuthStepSize,0,
+                                response)) return(0);
+     
+
+     return(1);
 }
 
+
+#define SPECTRAL_RESPONSE_TOLERANCE         1e-6
 int
-GetPeakSpectralResponse2(
+GetPeakSpectralResponse(
     CoordinateSwitch* antenna_frame_to_gc,
     Spacecraft*       spacecraft,
-    Beam*             beam,
-    double            azimuth_rate,
+    Qscat*            qscat,
     double*           look,
-    double*           azimuth){
-    return(1);
+    double*           azim){
+
+  /*** Temporarily change Doppler and Range flags and initialize commanded Doppler
+       and range gate delay to BYU boresight. ****/
+
+  // save old cds values
+  QscatCds old_cds=qscat->cds;
+
+  qscat->cds.useBYUDop=1;
+  qscat->cds.useSpectralDop=0;
+  qscat->cds.useBYURange=1;
+  qscat->cds.useSpectralRange=0;
+  SetDelayAndFrequency(spacecraft,qscat);
+
+
+  /***** Initialize look and azim to BYU Boresight value **/
+  if(! GetBYUBoresight(spacecraft,qscat,look,azim)){
+	    return(0);
+  }
+
+  /***** Set up arrays to use in NegativeSpectralResponse ***/     
+  int ndim = 1;
+  double** p = (double**)make_array(sizeof(double),2,ndim+1,ndim+2);
+  if (p == NULL)
+    {
+      printf("Error allocating memory in GetPeakSpectralResponse\n");
+      return(0);
+    }  
+  float freq=0;
+  p[0][0] = freq;
+  p[1][0] = freq+10000.0;
+  p[0][1] = *azim;
+  p[1][1] = *azim;
+  p[0][2] = *look;
+  p[1][2] = *look;
+
+  NegSpecParam other_params;
+  other_params.spacecraft=spacecraft;
+  other_params.qscat=qscat;
+  void* ptr=(void*)(& other_params);
+
+  double rtol = SPECTRAL_RESPONSE_TOLERANCE;
+  double ftol = SPECTRAL_RESPONSE_FREQ_TOL;
+  downhill_simplex((double**)p, ndim, ndim+2, rtol,
+		   NegativeSpectralResponse, ptr,ftol);
+
+  freq = p[0][0];
+  double look_doub=*look, azim_doub=*azim;
+  float dummy;
+  if(!FindPeakResponseAtFreq(antenna_frame_to_gc,spacecraft,qscat,freq,
+			     ftol,&look_doub,&azim_doub,&dummy)) return(0);
+  
+  *look=float(look_doub);
+  *azim=float(azim_doub);
+  free_array(p,2,ndim+1,ndim+2);
+
+  // Reinstate old cds values
+  qscat->cds=old_cds;
+  return(1);
 }
+
+
+
+//--------------------------//
+// NegativeSpectralResponse //
+//--------------------------//
+
+//
+// NegativeSpectralResponse is the function to be minimized by
+// GetPeakSpectralResponse.
+// It computes the negative of the SpectralResponse for the inputs given
+// in the input vector.  The elements of the input vector are:
+//
+// x[0] = baseband freq (Hz)  
+// x[1] = azimuth angle (rad)
+// x[2] = look angle(rad) used to intialize search for starting and ending
+//        look angles.            
+// other_params = pointer to structure containing:
+// pointers to the spacecraft and qscat objects 
+
+
+double
+NegativeSpectralResponse(
+	double*		x,
+	void*		ptr)
+{
+        float response;
+        NegSpecParam* other_params= (NegSpecParam*)ptr;
+
+        if(!SpectralResponse(other_params->spacecraft, other_params->qscat,
+			     x[0],x[1],x[2],&response))
+        {
+            fprintf(stderr,"Error:NegativeSpectralResponse function failed\n");
+            exit(1);
+        }	
+
+	return(-(double)response);
+}
+
+
+
+
+
+

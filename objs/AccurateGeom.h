@@ -39,10 +39,8 @@ int		FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Qscat* qscat, float target_freq,
             float freq_tol, float* look, float azimuth);
 
-double      SpectralResponse(Spacecraft* spacecraft, Qscat* qscat, 
-		float target_freq, float bandwidth, int num_look_steps_per_slice, 
-		float azimuth_integration_range, float azimuth_step_size, 
-                int range_gate_clipping);
+int         SpectralResponse(Spacecraft* spacecraft, Qscat* qscat, 
+		float freq, float azim, float look, float* response);
 
 int IntegrateFrequencyInterval( Spacecraft* spacecraft, Qscat* qscat,
 				float f1, float centroid_look,
@@ -52,9 +50,18 @@ int IntegrateFrequencyInterval( Spacecraft* spacecraft, Qscat* qscat,
 				float azimuth_step_size, int range_gate_clipping,
 				float* X);
 
-int GetPeakSpectralResponse2(CoordinateSwitch* antenna_frame_to_gc,
-    Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
-    double* look, double* azimuth);
+int GetPeakSpectralResponse(CoordinateSwitch* antenna_frame_to_gc,
+			     Spacecraft* spacecraft, Qscat* qscat, 
+			     double* look, double* azim);
 
+struct NegSpecParam{
+  Spacecraft* spacecraft;
+  Qscat* qscat;
+};
+double NegativeSpectralResponse(double* x, void* ptr);
 #endif
+
+
+
+
 

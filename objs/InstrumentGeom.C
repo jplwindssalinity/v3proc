@@ -22,9 +22,9 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "BYUXTable.h"
 
 // prototype for AccurateGeom routines
-int GetPeakSpectralResponse2(CoordinateSwitch* antenna_frame_to_gc,
-    Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
-    double* look, double* azimuth);
+int GetPeakSpectralResponse(CoordinateSwitch* antenna_frame_to_gc, 
+			    Spacecraft* spacecraft, Qscat* qscat,
+			     double* look, double* azimuth);
 
 //------------------//
 // AntennaFrameToGC //
@@ -470,7 +470,7 @@ LocateSpot(
 	double look, azim;
 	if (! beam->GetElectricalBoresight(&look, &azim))
 	{
-		printf("Error determining electrical boresight\n");
+		fprintf(stderr,"Error determining electrical boresight\n");
 		return(0);
 	}
 
@@ -488,7 +488,7 @@ LocateSpot(
 	if (! GetPeakSpatialResponse(beam, tip.roundTripTime,
 		qscat->sas.antenna.spinRate, &look, &azim))
 	{
-		printf("Error determining 2 way electrical boresight\n");
+		fprintf(stderr,"Error determining 2 way electrical boresight\n");
 		return(0);
 	}
 
@@ -570,7 +570,7 @@ LocateSpot(
 		  return(0);
 		if (! meas->outline.Append(rspot))
 		{
-			printf("Error appending to spot outline\n");
+			fprintf(stderr,"Error appending to spot outline\n");
 			return(0);
 		}
 	}
@@ -823,6 +823,9 @@ IdealRtt(
 	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
         AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna),
         qscat->sas.antenna.txCenterAzimuthAngle);
+	Spacecraft sp_zero_att;
+        sp_zero_att.orbitState=*sc_orbit_state;
+        sp_zero_att.attitude=zero_rpy;
 
 	//-------------------------------------------//
 	// find the current beam's two-way peak gain //
@@ -833,19 +836,18 @@ IdealRtt(
 	double look, azim;
 	if(qscat->cds.useBYURange && use_flags)
     {
-	  if(! GetBYUBoresight(spacecraft,qscat,&look,&azim)){
+	  if(! GetBYUBoresight(&sp_zero_att,qscat,&look,&azim)){
 	    return(0);
 	  }
 	}
 	else if(qscat->cds.useSpectralRange && use_flags){
-	  if (! GetPeakSpectralResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
-					 beam, azimuth_rate, &look, &azim))
+	  if (! GetPeakSpectralResponse(&zero_rpy_antenna_frame_to_gc, &sp_zero_att, qscat, &look, &azim))
 	    {
 	      return(0);
 	    }
 	}
 	else{        
-	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, &sp_zero_att,
 					beam, azimuth_rate, &look, &azim))
 	    {
 	      exit(1);
@@ -911,6 +913,9 @@ IdealCommandedDoppler(
 	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
         AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna),
         qscat->sas.antenna.txCenterAzimuthAngle);
+	Spacecraft sp_zero_att;
+        sp_zero_att.orbitState=*sc_orbit_state;
+        sp_zero_att.attitude=zero_rpy;
 
 	//-------------------------------------------//
 	// find the current beam's two-way peak gain //
@@ -920,19 +925,20 @@ IdealCommandedDoppler(
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
 	if(qscat->cds.useBYUDop){
-	  if(! GetBYUBoresight(spacecraft,qscat,&look,&azim)){
+	  if(! GetBYUBoresight(&sp_zero_att,qscat,&look,&azim)){
 	    return(0);
 	  }
 	}
 	else if(qscat->cds.useSpectralDop){
-	  if (! GetPeakSpectralResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
-					 beam, azimuth_rate, &look, &azim))
+	  if (! GetPeakSpectralResponse(&zero_rpy_antenna_frame_to_gc,
+					&sp_zero_att,qscat,&look,&azim))
 	    {
 	      return(0);
 	    }
 	}
 	else{
-	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, 
+					&sp_zero_att,
 					 beam, azimuth_rate, &look, &azim))
 	    {
 	      return(0);
@@ -983,6 +989,8 @@ GetBYUBoresight(
 	  *look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
 	  *azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
 	}
+    while(*azim<-pi)*azim+=two_pi;
+    while(*azim> pi)*azim-=two_pi;
         return(1);
 }
 
