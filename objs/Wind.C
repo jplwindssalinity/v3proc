@@ -1419,7 +1419,9 @@ int
 WindSwath::RmsSpdErrVsCti(
 	WindField*	truth,
 	float*		rms_spd_err_array,
-	int*		count_array)
+	int*		count_array,
+	float		low_speed,
+	float		high_speed)
 {
 	//----------------------------------//
 	// calculate the sum of the squares //
@@ -1435,6 +1437,9 @@ WindSwath::RmsSpdErrVsCti(
 
 			WindVector true_wv;
 			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
 			float spd_err = wvc->selected->spd - true_wv.spd;
@@ -1464,7 +1469,9 @@ int
 WindSwath::RmsDirErrVsCti(
 	WindField*	truth,
 	float*		rms_dir_err_array,
-	int*		count_array)
+	int*		count_array,
+	float		low_speed,
+	float		high_speed)
 {
 	//----------------------------------//
 	// calculate the sum of the squares //
@@ -1480,6 +1487,9 @@ WindSwath::RmsDirErrVsCti(
 
 			WindVector true_wv;
 			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
 			float dir_err = ANGDIF(wvc->selected->dir, true_wv.dir);
@@ -1509,7 +1519,9 @@ int
 WindSwath::SkillVsCti(
 	WindField*	truth,
 	float*		skill_array,
-	int*		count_array)
+	int*		count_array,
+	float		low_speed,
+	float		high_speed)
 {
 	//---------------------//
 	// calculate the count //
@@ -1527,6 +1539,9 @@ WindSwath::SkillVsCti(
 
 			WindVector true_wv;
 			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
 			WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
@@ -1551,7 +1566,9 @@ int
 WindSwath::SpdBiasVsCti(
 	WindField*	truth,
 	float*		spd_bias_array,
-	int*		count_array)
+	int*		count_array,
+	float		low_speed,
+	float		high_speed)
 {
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
@@ -1565,6 +1582,9 @@ WindSwath::SpdBiasVsCti(
 
 			WindVector true_wv;
 			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
             double dif = wvc->selected->spd - true_wv.spd;

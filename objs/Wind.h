@@ -281,13 +281,13 @@ public:
 	float	SpdBias(WindField* truth);
 
 	int		RmsSpdErrVsCti(WindField* truth, float* rms_spd_err_array,
-				int* count_array);
+				int* count_array, float low_speed, float high_speed);
 	int		RmsDirErrVsCti(WindField* truth, float* rms_dir_err_array,
-				int* count_array);
+				int* count_array, float low_speed, float high_speed);
 	int		SkillVsCti(WindField* truth, float* skill_array,
-				int* count_array);
+				int* count_array, float low_speed, float high_speed);
 	int		SpdBiasVsCti(WindField* truth, float* spd_bias_array,
-				int* count_array);
+				int* count_array, float low_speed, float high_speed);
 
 	//-----------//
 	// variables //

@@ -128,12 +128,12 @@ Beam.o: Beam.C Beam.h Array.h Constants.h Attitude.h CoordinateSwitch.h Matrix3.
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h InstrumentSimAccurate.h SpacecraftSim.h XTable.h Misc.h L00.h L10.h L10ToL15.h L15.h L17.h L20.h Constants.h Distributions.h Tracking.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h Ephemeris.h BaseFile.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h PiscTable.h Matrix3.h BufferedList.h EarthPosition.h
+ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h InstrumentSim.h InstrumentSimAccurate.h SpacecraftSim.h XTable.h Misc.h L00.h L10.h L10ToL15.h L15.h L17.h L20.h Constants.h Distributions.h Tracking.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h Ephemeris.h BaseFile.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h PiscTable.h Matrix3.h BufferedList.h EarthPosition.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Distributions.o: Distributions.C Distributions.h
 EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Constants.h Matrix3.h BufferedList.h EarthPosition.h
-GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h Misc.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h EarthPosition.h BufferedList.h
+GMF.o: GMF.C GMF.h Meas.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Misc.h EarthPosition.h Matrix3.h BufferedList.h
 GenericFile.o: GenericFile.C GenericFile.h
 GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 Grid.o: Grid.C Grid.h Meas.h Sigma0.h Array.h L15.h L17.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Spacecraft.h Instrument.h Wind.h BaseFile.h L15Frame.h GenericFile.h L17Frame.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h Constants.h Antenna.h Tracking.h Misc.h
