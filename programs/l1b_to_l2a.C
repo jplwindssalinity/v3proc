@@ -175,8 +175,12 @@ main(
  
 	L15ToL17 l15_to_l17;
 
+	long counter = 0;
 	do
 	{
+		counter++;
+		//if (counter % 100 == 0) printf("L15 record count = %ld\n",counter);
+
 		//------------------------------//
 		// read a level 1.5 data record //
 		//------------------------------//
@@ -215,6 +219,12 @@ main(
 		}
 
 	} while (1);
+
+	//
+	// Write out data in the grid that hasn't been written yet.
+	//
+
+	grid.Flush();
 
 	l15.file.Close();
 	grid.l17.file.Close();
