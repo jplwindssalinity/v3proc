@@ -227,14 +227,27 @@ ConfigList::Write(
 	if (ofp == NULL)
 		return (0);
 
-	int num_chars = 0;
+	//--------------------------------------//
+	// determine the maximum keyword length //
+	//--------------------------------------//
+
+	int max_length = 0;
 	for (StringPair* pair = GetHead(); pair != NULL; pair = GetNext())
 	{
-		if ((num_chars = fprintf(ofp, "%s %s\n",
-				pair->GetKeyword(), pair->GetValue())) < 0)
-		{
-			return (0);
-		}
+		int length = strlen(pair->GetKeyword());
+		if (length > max_length)
+			max_length = length;
+	}
+
+	max_length += 4;	// leave a 4 character gap
+
+	for (StringPair* pair = GetHead(); pair != NULL; pair = GetNext())
+	{
+		char* keyword = pair->GetKeyword();
+		char* value = pair->GetValue();
+		if (! keyword || ! value)
+			continue;
+		fprintf(ofp, "%-*s%s\n", max_length, keyword, value);
 	}
 	fclose(ofp);
 

@@ -35,7 +35,8 @@ PROGRAMS = \
 	l15_outlines \
 	plot_solution_curves \
 	sim_accurate \
-	make_kfactor
+	make_kfactor \
+	log_cfg
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -69,9 +70,3 @@ install: $(PROGRAMS)
 
 %: %.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-
-
-
-
-
