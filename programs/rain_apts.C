@@ -8,7 +8,7 @@
 //    rain_apts
 //
 // SYNOPSIS
-//    rain_apts [ -f ] [ -m minutes ] [ -i irr_thresh ]
+//    rain_apts [ -f ] [ -m minutes ] [ -i irr_thresh ] [ -v thresh ]
 //        <rain/flag_file> <mudh_file> <output_base>
 //
 // DESCRIPTION
@@ -19,6 +19,8 @@
 //    [ -f ]             It's a flag file, not a rain file.
 //    [ -m minutes ]     Collocated within minutes.
 //    [ -i irr_thresh ]  Threshold the integrated rain rate.
+//    [ -v thresh ]      Threshold the flag file value for "rain".
+//                       (Instead of using the flag in the file.)
 //
 // OPERANDS
 //    <rain/flag_file>  The input rain or flag file.
@@ -100,7 +102,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "fm:i:"
+#define OPTSTRING    "fm:i:v:"
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -115,7 +117,7 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "[ -f ]", "[ -m minutes ]",
-    "[ -i irr_thresh ]", "<rain/flag_file>", "<mudh_file>",
+    "[ -i irr_thresh ]", "[ -v thresh ]", "<rain/flag_file>", "<mudh_file>",
     "<output_base>", 0 };
 
 //--------------//
@@ -134,6 +136,8 @@ main(
     int minutes = 60;
     int opt_flag = 0;
     float irr_thresh = 2.0;
+    int opt_flag_thresh = 0;
+    float flag_thresh = 0.0;
 
     //------------------------//
     // parse the command line //
@@ -154,6 +158,10 @@ main(
             break;
         case 'i':
             irr_thresh = atof(optarg);
+            break;
+        case 'v':
+            flag_thresh = atof(optarg);
+            opt_flag_thresh = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -363,15 +371,16 @@ main(
         // generate rain index file //
         //--------------------------//
 
-        sprintf(filename, "%s.mudhi.apts", output_base);
-        FILE* mudhi_ofp = fopen(filename, "w");
-        if (mudhi_ofp == NULL)
+        sprintf(filename, "%s.flagval.apts", output_base);
+        FILE* flagval_ofp = fopen(filename, "w");
+        if (flagval_ofp == NULL)
         {
             fprintf(stderr,
-                "%s: error opening MUDHI output file %s\n", command, filename);
+                "%s: error opening flagval output file %s\n", command,
+                filename);
             exit(1);
         }
-        fprintf(mudhi_ofp, "apts\n");
+        fprintf(flagval_ofp, "apts\n");
         for (int ati = 0; ati < AT_WIDTH; ati++)
         {
             for (int cti = 0; cti < CT_WIDTH; cti++)
@@ -385,11 +394,11 @@ main(
                 }
                 float lon = (float)lon_array[ati][cti] * 0.01;
                 float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
-                float mudhi = index_tab[ati][cti];
-                fprintf(mudhi_ofp, "%g %g %g\n", lon, lat, mudhi);
+                float flagval = index_tab[ati][cti];
+                fprintf(flagval_ofp, "%g %g %g\n", lon, lat, flagval);
             }
         }
-        fclose(mudhi_ofp);
+        fclose(flagval_ofp);
 
         //-------------------------//
         // generate rain flag file //
@@ -415,13 +424,28 @@ main(
                 }
                 float lon = (float)lon_array[ati][cti] * 0.01;
                 float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
-                int mudhflag;
+
+                // if there isn't enough info for this cell, just continue
                 if (flag_tab[ati][cti] == 2)
                     continue;
-                if (flag_tab[ati][cti] == 0)
-                    mudhflag = 1;
+
+                int mudhflag;
+                if (opt_flag_thresh)
+                {
+                    // re-threshold to get the flag
+                    if (index_tab[ati][cti] <= flag_thresh)
+                        mudhflag = 1;
+                    else
+                        mudhflag = 3;
+                }
                 else
-                    mudhflag = 3;
+                {
+                    // use the file's flag
+                    if (flag_tab[ati][cti] == 0)
+                        mudhflag = 1;
+                    else
+                        mudhflag = 3;
+                }
                 fprintf(flag_ofp, "%g %g %d\n", lon, lat, mudhflag);
             }
         }
