@@ -128,6 +128,12 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 
 float sim_time = 0.0;
 
+//------------------------------------------//
+// Debugging flag turns on print statements //
+//------------------------------------------//
+
+int debug_flag = 0;
+
 void
 report(
     int  sig_num)
