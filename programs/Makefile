@@ -245,6 +245,7 @@ install: $(PROGRAMS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 fix_knowledge: fix_knowledge.C echo_funcs.h
+echo_deltaf: echo_deltaf.C echo_funcs.h
 echo_dtc: echo_dtc.C echo_funcs.h
 sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
 new_files: new_files.C new_files.h
