@@ -782,17 +782,20 @@ WVC::Rank_Wind_Solutions()
 	}
 
     // Copy data from wr_ arrays. (convert to radians)
-    i = 0;
-    for (WindVectorPlus* wvp = ambiguities.GetHead();
-         wvp; wvp = ambiguities.GetNext())
+	WindVectorPlus* wvp = ambiguities.GetHead();
+	for (i = 0; i < wr_num_ambigs; i++)
     {
         wvp->spd = wr_wind_speed[i];
         wvp->dir = wr_wind_dir[i]*dtr;
         wvp->obj = wr_mle[i];
-        i++;
-        if (i >= wind_max_solutions) break;
+		wvp = ambiguities.GetNext();
     }
- 
+    while (wvp != NULL)
+    {
+        wvp = ambiguities.RemoveCurrent();
+        delete(wvp);
+    }
+
     return(1);
 
 }
