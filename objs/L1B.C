@@ -23,36 +23,3 @@ L15::~L15()
 {
 	return;
 }
-
-//------------------//
-// L15::SetFilename //
-//------------------//
-
-int
-L15::SetFilename(
-	const char*		filename)
-{
-	return(file.SetFilename(filename));
-}
-
-//------------------//
-// L15::ReadDataRec //
-//------------------//
-
-int
-L15::ReadDataRec()
-{
-	FILE* fp = file.GetFp();
-	return(frame.spotList.Read(fp));
-}
-
-//-------------------//
-// L15::WriteDataRec //
-//-------------------//
-
-int
-L15::WriteDataRec()
-{
-	FILE* fp = file.GetFp();
-	return(frame.spotList.Write(fp));
-}

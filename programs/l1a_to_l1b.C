@@ -196,7 +196,7 @@ main(
 	//------------//
 
 	l10.file.OpenForInput();
-	l15.file.OpenForOutput();
+	l15.OpenForWriting();
 
 	//-----------------//
 	// conversion loop //
@@ -237,7 +237,8 @@ main(
 		// convert //
 		//---------//
 
-		if (! l10_to_l15.Convert(&l10, &spacecraft, &instrument, &ephemeris, &l15))
+		if (! l10_to_l15.Convert(&l10, &spacecraft, &instrument,
+			&ephemeris, &l15))
 		{
 		       fprintf(stderr, "%s: error converting data record %d\n",
 				command, data_record_number);
@@ -257,7 +258,7 @@ main(
 	} while (1);
 
 	l10.file.Close();
-	l15.file.Close();
+	l15.Close();
 
 	return (0);
 }

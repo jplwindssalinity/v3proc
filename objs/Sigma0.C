@@ -1,3 +1,8 @@
+//==========================================================//
+// Copyright (C) 1997, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.				//
+//==========================================================//
+
 //
 // This file contains functions useful for sigma0 and power calculations
 //
@@ -33,11 +38,14 @@ static const char rcs_id_sigma0_c[] =
 //
 //
 
-int radar_X(Spacecraft* spacecraft, Instrument* instrument,
-			Meas* meas, CoordinateSwitch* gc_to_antenna, double* X)
-
+int
+radar_X(
+	CoordinateSwitch*	gc_to_antenna,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	Meas*				meas,
+	double*				X)
 {
-
 	double lambda = speed_light / instrument->baseTransmitFreq;
 	double A3db = meas->outline.Area();
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
@@ -56,7 +64,6 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 		 A3db * lambda*lambda /
 		(64*pi*pi*pi * R*R*R*R * instrument->systemLoss);
 	return(1);
-
 }
 
 
@@ -77,17 +84,20 @@ int radar_X(Spacecraft* spacecraft, Instrument* instrument,
 //
 //
 
-int sigma0_to_Pr(Spacecraft *spacecraft, Instrument *instrument,
-		 Meas *meas, float Kfactor, CoordinateSwitch* gc_to_antenna, 
-		 float sigma0, float *Pr)
-
+int
+sigma0_to_Pr(
+	CoordinateSwitch*	gc_to_antenna, 
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	Meas*				meas,
+	float				Kfactor,
+	float				sigma0,
+	float*				Pr)
 {
-
 	double X;
-	radar_X(spacecraft,instrument,meas,gc_to_antenna,&X);
+	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 	*Pr = (float)(Kfactor*X*sigma0);
 	return(1);
-
 }
 
 //
@@ -108,15 +118,18 @@ int sigma0_to_Pr(Spacecraft *spacecraft, Instrument *instrument,
 //
 //
 
-int Pr_to_sigma0(Spacecraft *spacecraft, Instrument *instrument,
-					Meas *meas, float Kfactor, CoordinateSwitch* gc_to_antenna,
-					float Pr, float *sigma0)
-
+int
+Pr_to_sigma0(
+	CoordinateSwitch*	gc_to_antenna,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	Meas*				meas,
+	float				Kfactor,
+	float				Pr,
+	float*				sigma0)
 {
-
 	double X;
-	radar_X(spacecraft,instrument,meas,gc_to_antenna,&X);
+	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 	*sigma0 = (float)(Pr / (X*Kfactor));
 	return(1);
-
 }

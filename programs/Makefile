@@ -26,7 +26,8 @@ PROGRAMS = \
 	make_pattern \
 	see_spot \
 	vap_to_bev \
-	fake_vap
+	fake_vap \
+	l15_outlines
 
 #----------------------------------------------------------------------
 # default: make all executable programs
@@ -59,31 +60,4 @@ install: $(PROGRAMS)
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
 %: %.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-reformat_pattern: reformat_pattern.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-memfilter: memfilter.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-sim: sim.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l00_to_l10: l00_to_l10.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l10_to_l15: l10_to_l15.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l15_to_l17: l15_to_l17.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l17_to_l20: l17_to_l20.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-l20_metrics: l20_metrics.C $(LIBS)
-	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
-
-make_pattern: make_pattern.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)

@@ -222,7 +222,7 @@ MeasList::FreeContents()
 //==========//
 
 MeasSpot::MeasSpot()
-:	time(0.0), scOrbitState(), scAttitude(), slices()
+:	time(0.0), scOrbitState(), scAttitude()
 {
 	return;
 }
@@ -243,7 +243,7 @@ MeasSpot::Write(
 	if (fwrite((void *)&time, sizeof(double), 1, fp) != 1 ||
 		scOrbitState.Write(fp) != 1 ||
 		scAttitude.Write(fp) != 1 ||
-		slices.Write(fp) != 1)
+		MeasList::Write(fp) != 1)
 	{
 		return(0);
 	}
@@ -263,24 +263,12 @@ MeasSpot::Read(
 	if (fread((void *)&time, sizeof(double), 1, fp) != 1 ||
 		scOrbitState.Read(fp) != 1 ||
 		scAttitude.Read(fp) != 1 ||
-		slices.Read(fp) != 1)
+		MeasList::Read(fp) != 1)
 	{
 		return(0);
 	}
 	return(1);
 }
-
-//------------------------//
-// MeasSpot::FreeContents //
-//------------------------//
-
-void
-MeasSpot::FreeContents()
-{
-	slices.FreeContents();
-	return;
-}
-
 
 //==============//
 // MeasSpotList //

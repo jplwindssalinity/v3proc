@@ -121,7 +121,7 @@ public:
 //		each slice.
 //======================================================================
 
-class MeasSpot
+class MeasSpot : public MeasList
 {
 public:
 
@@ -139,12 +139,6 @@ public:
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
 
-	//---------//
-	// freeing //
-	//---------//
-
-	void	FreeContents();
-
 	//-----------//
 	// variables //
 	//-----------//
@@ -152,7 +146,6 @@ public:
 	double		time;
 	OrbitState	scOrbitState;
 	Attitude	scAttitude;
-	MeasList	slices;
 };
 
 //======================================================================

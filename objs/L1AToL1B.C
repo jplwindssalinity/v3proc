@@ -1,6 +1,6 @@
 //==========================================================//
-// Copyright (C) 1997, California Institute of Technology.  //
-// U.S. Government sponsorship acknowledged.		    //
+// Copyright (C) 1997, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.				//
 //==========================================================//
 
 static const char rcs_id_l10tol15_c[] =
@@ -56,7 +56,6 @@ L10ToL15::Convert(
 	//-----------//
 	// predigest //
 	//-----------//
-
 
 	Antenna* antenna = &(instrument->antenna);
 	OrbitState* orbit_state = &(spacecraft->orbitState);
@@ -150,7 +149,8 @@ L10ToL15::Convert(
  
 			Vector3 vector;
 			vector.SphericalSet(1.0, look, azimuth);	//boresight
-			DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
+			DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument,
+				vector);
 
 			//-------------------------//
 			// make a measurement spot //
@@ -223,14 +223,15 @@ L10ToL15::Convert(
 				CoordinateSwitch gc_to_antenna =
 					antenna_frame_to_gc.ReverseDirection();
 
-				if(! Pr_to_sigma0(spacecraft, instrument,
-					meas, Kfactor, &gc_to_antenna,
-					Pr, &sigma0)) return(0);	
+				if(! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
+						meas, Kfactor, Pr, &sigma0))
+				{
+					return(0);	
+				}
 			
-
 				//----------------------------------//
-				// Print calculated sigma0 values   //
-				// to stdout.                       //
+				// Print calculated sigma0 values	//
+				// to stdout.						//
 				//----------------------------------//
 
 				if (XMGROUT) printf("%g ",1.0-sigma0);
@@ -238,8 +239,9 @@ L10ToL15::Convert(
 				//-----------------//
 				// add measurement //
 				//-----------------//
+
 				meas->value=sigma0;
-				meas_spot->slices.Append(meas);
+				meas_spot->Append(meas);
 				total_slice_idx++;
 			}
 			l15->frame.spotList.Append(meas_spot);

@@ -166,7 +166,7 @@ main(
 	// open files //
 	//------------//
 
-	l15.file.OpenForInput();
+	l15.OpenForWriting();
 	grid.l17.file.OpenForOutput();
 
 	//-----------------//
@@ -226,7 +226,7 @@ main(
 
 	grid.Flush();
 
-	l15.file.Close();
+	l15.Close();
 	grid.l17.file.Close();
 
 	return (0);

@@ -52,15 +52,15 @@ L15ToL17::Group(
 		//------------------------------//
 
 		// position at start of list of slices
-		Meas* meas = mspot->slices.GetHead();
+		Meas* meas = mspot->GetHead();
 		// remove slice before gridding
-		meas = mspot->slices.RemoveCurrent();
+		meas = mspot->RemoveCurrent();
 		while (meas != NULL)
 		{
 			// grid each slice in this measurement spot
 			grid->Add(meas,mspot->time);
  			// move to next slice
-			meas = mspot->slices.RemoveCurrent();
+			meas = mspot->RemoveCurrent();
 		}
 
  		// move to next spot

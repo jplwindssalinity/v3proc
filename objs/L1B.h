@@ -9,7 +9,7 @@
 static const char rcs_id_l15_h[] =
 	"@(#) $Id$";
 
-#include "GenericFile.h"
+#include "BaseFile.h"
 #include "L15Frame.h"
 
 
@@ -27,7 +27,7 @@ static const char rcs_id_l15_h[] =
 //		manipulating of Level 1.5 data.
 //======================================================================
 
-class L15
+class L15 : public BaseFile
 {
 public:
 
@@ -48,21 +48,19 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			SetFilename(const char* filename);
 	StatusE		GetStatus() { return(_status); };
 
 	//--------------//
 	// input/output //
 	//--------------//
 
-	int		ReadDataRec();
-	int		WriteDataRec();
+	int		ReadDataRec() { return(frame.spotList.Read(_fp)); };
+	int		WriteDataRec() { return(frame.spotList.Write(_fp)); };
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	GenericFile		file;
 	L15Frame		frame;
 
 protected:

@@ -304,8 +304,8 @@ main(
 
 					instrument_sim.LocateSlices(instrument_event.time,
 						&spacecraft, &instrument, &meas_spot);
-					for (Meas* meas = meas_spot.slices.GetHead(); meas;
-						meas = meas_spot.slices.GetNext())
+					for (Meas* meas = meas_spot.GetHead(); meas;
+						meas = meas_spot.GetNext())
 					{
 						double alt, lat, lon;
 						meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
@@ -324,7 +324,7 @@ main(
 
 					instrument_sim.LocateSpot(instrument_event.time,
 						&spacecraft, &instrument, &meas_spot);
-					Meas* meas = meas_spot.slices.GetHead();
+					Meas* meas = meas_spot.GetHead();
 					meas->outline.WriteBvg(output_fp);
 				}
 				instrument_sim.DetermineNextEvent(&(instrument.antenna),

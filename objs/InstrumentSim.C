@@ -225,7 +225,7 @@ InstrumentSim::LocateSlices(
 		// add measurment to meas spot //
 		//-----------------------------//
 
-		meas_spot->slices.Append(meas);
+		meas_spot->Append(meas);
 	}
 	return(1);
 }
@@ -400,7 +400,7 @@ InstrumentSim::LocateSpot(
 	// add measurment to meas spot //
 	//-----------------------------//
 
-	meas_spot->slices.Append(meas);
+	meas_spot->Append(meas);
 
 	return(1);
 }
@@ -421,8 +421,8 @@ InstrumentSim::SetMeasurements(
 	// for each measurement... //
 	//-------------------------//
 
-	for (Meas* meas = meas_spot->slices.GetHead(); meas;
-		meas = meas_spot->slices.GetNext())
+	for (Meas* meas = meas_spot->GetHead(); meas;
+		meas = meas_spot->GetNext())
 	{
 		//----------------------------------------//
 		// get lon and lat for the earth location //
@@ -447,7 +447,6 @@ InstrumentSim::SetMeasurements(
 			wv.dir = 0.0;
 		}
 
-
 		//--------------------------------//
 		// convert wind vector to sigma-0 //
 		//--------------------------------//
@@ -470,17 +469,17 @@ InstrumentSim::SetMeasurements(
 							&(instrument->antenna));
 		gc_to_antenna=gc_to_antenna.ReverseDirection();
 
-
 		//-------------------------//
 		// convert Sigma0 to Power //
 		//-------------------------//
 
 		/************* FOR NOW Kfactor=1.0 *********/
 		float Kfactor=1.0;
-		if(! sigma0_to_Pr(spacecraft, instrument, meas,
-				Kfactor, &gc_to_antenna, sigma0,
-					&(meas->value))) return(0);
-
+		if(! sigma0_to_Pr(&gc_to_antenna, spacecraft, instrument, meas,
+				Kfactor, sigma0, &(meas->value)))
+		{
+			return(0);
+		}
 	}
 	return(1);
 }
@@ -536,8 +535,8 @@ InstrumentSim::SetL00Science(
 	//-------------------------//
 
 	int slice_number = _spotNumber * l00_frame->slicesPerSpot;
-	for (Meas* meas = meas_spot->slices.GetHead(); meas;
-		meas = meas_spot->slices.GetNext())
+	for (Meas* meas = meas_spot->GetHead(); meas;
+		meas = meas_spot->GetNext())
 	{
 		//----------------------------//
 		// update the level 0.0 frame //
