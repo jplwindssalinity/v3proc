@@ -125,14 +125,15 @@ Meas::FreeContents()
 float
 Meas::EstimatedKp(float sigma0)
 {
-
 	float Kpr2 = 1.1482;	// 0.3 dB
 	float Kpm2 = 1.3804;	// 0.7 dB
 	float snr = sigma0 * XK/Pn_slice;
 	if (snr < 0.0)
 	{
-		printf("Error: Meas::EstimatedKp computed negative SNR = %g\n",snr);
-		exit(-1);
+		fprintf(stderr,
+			"Error: Meas::EstimatedKp computed negative SNR = %g\n", snr);
+        fprintf(stderr, "S0=%g XK=%g Pn_slice=%g\n", sigma0, XK, Pn_slice);
+		exit(1);
 	}
 	float Kpc2 = A + B/snr + C/snr/snr;
 	float Kp = sqrt(Kpr2 + Kpm2 + Kpc2);
