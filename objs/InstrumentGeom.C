@@ -1036,15 +1036,7 @@ Get2WayElectricalBoresight(
 	beam->GetElectricalBoresight(look,azimuth);
 
 	int ndim = 2;
-	int totdim = ndim + 2;
-
-	// Create initial simplex before running a downhill simplex search.
-	double** p = (double**)make_array(sizeof(double),2,ndim+1,totdim);
-	if (p == NULL)
-	{
-		printf("Error allocating memory in Get2WayElectricalBoresight\n");
-		return(0);
-	}
+	double p[3][4];
 
 	p[0][0] = *look;
 	p[0][1] = *azimuth;
@@ -1060,7 +1052,8 @@ Get2WayElectricalBoresight(
 	}
 
 	double ftol = 1e-3;
-	downhill_simplex(p,ndim,ndim+2,ftol,ReciprocalPowerGainProduct,beam);
+	downhill_simplex((double**)p,ndim,ndim+2,ftol,
+		ReciprocalPowerGainProduct,beam);
 
 	*look = p[0][0];
 	*azimuth = p[0][1];
