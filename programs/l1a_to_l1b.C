@@ -304,8 +304,8 @@ main(
 		data_record_number++;
 	} while (1);
 
-	l1a.CloseInputFile();
-	l1b.CloseOutputFile();
+	l1a.Close();
+	l1b.Close();
 
 	return (0);
 }

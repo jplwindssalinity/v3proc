@@ -428,7 +428,7 @@ main(
 	// close Level 0.0 file //
 	//----------------------//
 
-	l00.CloseOutputFile();
+	l00.Close();
 
 	//--------------------------//
 	// If createXtable is set	//

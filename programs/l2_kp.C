@@ -198,7 +198,7 @@ main(
 	if (strcmp(input_source,"1B") == 0)
 	{
 		l1b_file = config_list.Get(L1B_FILE_KEYWORD);
-		l1b.SetFilename(l1b_file);
+		l1b.SetInputFilename(l1b_file);
 		if (! l1b.OpenForReading())
 		{
 			fprintf(stderr, "%s: error opening L1B file %s\n",
@@ -209,7 +209,7 @@ main(
 	else if (strcmp(input_source,"2A") == 0)
 	{
 		l2a_file = config_list.Get(L2A_FILE_KEYWORD);
-		l2a.SetFilename(l2a_file);
+		l2a.SetInputFilename(l2a_file);
 		if (! l2a.OpenForReading())
 		{
 			fprintf(stderr, "%s: error opening L2A file %s\n",
@@ -225,7 +225,7 @@ main(
 	else if (strcmp(input_source,"GS2A") == 0)
 	{
 		l2a_file = config_list.Get(L2A_FILE_KEYWORD);
-		l2a.SetFilename(l2a_file);
+		l2a.SetInputFilename(l2a_file);
 		if (! l2a.OpenForReading())
 		{
 			fprintf(stderr, "%s: error opening GSL2A file %s\n",
@@ -250,7 +250,7 @@ main(
 	if (strcmp(wind_source,"retrieved") == 0)
 	{
 		l2b_file = config_list.Get(L2B_FILE_KEYWORD);
-		l2b.SetFilename(l2b_file);
+		l2b.SetInputFilename(l2b_file);
 		if (! l2b.OpenForReading())
 		{
 			fprintf(stderr, "%s: error opening L2B file %s\n",
@@ -539,11 +539,11 @@ main(
 
 	if (l1b_file)
 	{
-		l1b.RewindFile();
+		l1b.RewindInputFile();
 	}
 	else
 	{
-		l2a.RewindFile();
+		l2a.RewindInputFile();
 		if (! l2a.ReadHeader())
 		{
 			fprintf(stderr, "%s: error reading Level 2A header\n", command); 

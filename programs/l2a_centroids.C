@@ -176,7 +176,7 @@ count = 0;
 	//-----------------//
 
 	fclose(output_fp);
-	l2a.CloseInputFile();
+	l2a.Close();
 
 	return (0);
 }

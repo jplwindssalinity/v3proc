@@ -285,8 +285,8 @@ main(
 
 	l2a_to_l2b.Flush(&l2b);
 
-	l2a.CloseInputFile();
-	l2b.CloseOutputFile();
+	l2a.Close();
+	l2b.Close();
 
 	return (0);
 }
