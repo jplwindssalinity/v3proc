@@ -142,17 +142,8 @@ L10ToL15::Convert(
 			//-------------------------------------------------//
  
 			Vector3 vector;
-			TargetInfoPackage tip;
-			vector.SphericalSet(1.0, look, azimuth);		// boresight
-			if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, instrument,
-				vector, &tip))
-			{
-				return(0);
-			}
-			instrument->commandedDoppler = tip.dopplerFreq;
-			float center_delay = 2.0 * tip.slantRange / speed_light_kps;
-			instrument->receiverGateDelay = center_delay +
-				beam->pulseWidth / 2.0 - instrument->receiverGateWidth / 2.0;
+			vector.SphericalSet(1.0, look, azimuth);  //boresight
+			DopplerAndDelay(&antenna_frame_to_gc, &spacecraft, instrument, vector);
 
 			//-------------------------//
 			// make a measurement spot //
@@ -199,6 +190,7 @@ L10ToL15::Convert(
 					return(0);
 				}
 
+				meas->center=centroid;
 				//---------------------------//
 				// generate measurement data //
 				//---------------------------//
