@@ -7,6 +7,13 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.16   12 Apr 1999 11:10:02   sally
+// add new options for statistics extraction
+// 
+//    Rev 1.15   25 Mar 1999 14:02:40   daffer
+// Added UQPX directory args
+// .
+// 
 //    Rev 1.14   07 Dec 1998 15:39:08   sally
 // add "-firstOnly" option
 // 
@@ -200,6 +207,10 @@ static const char rcs_argdefs_h[] =
 #define QPA_FILE_OPTION             "-qpa"
 #define QPA_FILE_ARGUMENT           "QPA_file"
 
+#define UQPX_DIRECTORY_KEYWORD            "UQPX_DIRECTORY"
+#define UQPX_DIRECTORY_OPTION             "-uqpx"
+#define UQPX_DIRECTORY_ARGUMENT           "UQPX_Directory"
+
 #define OUTPUT_FILE_KEYWORD         "OUTPUT_FILE"
 #define OUTPUT_FILE_OPTION          "-o"
 #define OUTPUT_FILE_ARGUMENT        "output_file"
@@ -276,6 +287,10 @@ static const char rcs_argdefs_h[] =
 #define Y_PARAMETERS_OPTION         "-y"
 #define Y_PARAMETERS_ARGUMENT       "y_param..."
 
+#define STAT_NUM_FRAMES_KEYWORD     "STAT_NUM_FRAMES"
+#define STAT_NUM_FRAMES_OPTION      "-statNumFrames"
+#define STAT_NUM_FRAMES_ARGUMENT    "numFrames"
+
 //==============================
 // toggle options (no argument) 
 //==============================
@@ -290,6 +305,12 @@ static const char rcs_argdefs_h[] =
 #define NO_GR_HEADER_OPTION         "-h"               // jim H. picked this
 #define FIRST_DATA_ONLY_KEYWORD     "FIRST_DATA_ONLY"
 #define FIRST_DATA_ONLY_OPTION      "-firstOnly"
+
+#define STATISTICS_KEYWORD          "STATISTICS"
+#define STATISTICS_OPTION           "-statistics"
+ 
+#define USE_AVG_STAT_KEYWORD        "AVG_STAT"
+#define USE_AVG_STAT_OPTION         "-useAvgStat"
 
 //============
 // Structures 
@@ -349,6 +370,8 @@ static const char rcs_argdefs_h[] =
     {QPA_FILE_KEYWORD, QPA_FILE_OPTION, QPA_FILE_ARGUMENT}
 #define QPA_DIRECTORY_ARG   \
     {QPA_DIRECTORY_KEYWORD, QPA_DIRECTORY_OPTION, QPA_DIRECTORY_ARGUMENT}
+#define UQPX_DIRECTORY_ARG   \
+    {UQPX_DIRECTORY_KEYWORD, UQPX_DIRECTORY_OPTION, UQPX_DIRECTORY_ARGUMENT}
 #define QPF_FILE_ARG   \
     {QPF_FILE_KEYWORD, QPF_FILE_OPTION, QPF_FILE_ARGUMENT}
 #define QPF_DIRECTORY_ARG   \
@@ -409,5 +432,11 @@ static const char rcs_argdefs_h[] =
     {NO_GR_HEADER_KEYWORD, NO_GR_HEADER_OPTION, "0"}
 #define FIRST_DATA_ONLY_ARG   \
     {FIRST_DATA_ONLY_KEYWORD, FIRST_DATA_ONLY_OPTION, "0"}
+#define STATISTICS_ARG   \
+    {STATISTICS_KEYWORD, STATISTICS_OPTION, "0"}
+#define USE_AVG_STAT_ARG   \
+    {USE_AVG_STAT_KEYWORD, USE_AVG_STAT_OPTION, "0"}
+#define STAT_NUM_FRAMES_ARG   \
+    {STAT_NUM_FRAMES_KEYWORD, STAT_NUM_FRAMES_OPTION, STAT_NUM_FRAMES_ARGUMENT}
 
 #endif

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   15 Mar 1999 14:19:34   sally
+// add some methods for getting user's start and end indexes
+// 
 //    Rev 1.7   03 Nov 1998 15:59:44   sally
 // adapt to Vdata
 // 
@@ -46,7 +49,7 @@
 #define HDFFILE_H
 
 static const char rcs_id_HdfFile_h[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
 #include <mfhdf.h>
 
@@ -138,8 +141,8 @@ public:
         NO_MORE_DATA 
     };
 
-    HdfFile(const char*    filename,            // IN
-            StatusE&       returnStatus);       // OUT
+    HdfFile(const char*           filename,            // IN
+            HdfFile::StatusE&     returnStatus);       // OUT
 
     virtual ~HdfFile();
 
@@ -147,6 +150,7 @@ public:
     // get the info about the global attributes
     // then get the global attributes themselves
     //------------------------------------------------------
+    int32           GetNumGlobalAttrs(void) { return _numGlobAttr; }
     virtual StatusE GetGlobalAttrInfo(
                                 const char*   attrName,      // IN
                                 int32&        attrIndex,     // OUT
@@ -212,9 +216,11 @@ public:
 
 
     const char*     GetFileName(void) { return _filename; }
+    int32           GetSDfileID(void) { return _SDfileID; }
     StatusE         GetStatus(void) { return(_status); }
     void            ClearStatus(void) { _status = HdfFile::OK; }
     int             GetDataLength(void) { return _dataLength; }
+    int32           GetNumDatasets(void) { return _numDatasets; }
 
                     // return 1 if ok, else 0
     static int      HdfTypeToEaType(int32       hdfType,   // IN
@@ -229,6 +235,7 @@ protected:
 
     int32           _SDfileID;
     int32           _hFileID;
+    int32           _numDatasets;
     int32           _numGlobAttr;
     StatusE         _status;
     char*           _filename;

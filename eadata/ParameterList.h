@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   12 Apr 1999 15:50:10   sally
+// add average deviation calculation
+// 
+//    Rev 1.6   12 Apr 1999 11:10:38   sally
+// add methods for statistics extraction
+// 
 //    Rev 1.5   04 Aug 1998 16:29:44   deliver
 // pass polynomial table to ParameterList's HoldExtract
 // 
@@ -78,7 +84,8 @@ public:
         ERROR_EXTRACTING_NOTHING,
         ERROR_EXTRACTING_PARAMETER,
         ERROR_TOO_MANY_VALUES,
-        ERROR_TOO_FEW_VALUES
+        ERROR_TOO_FEW_VALUES,
+        ERROR_WRONG_TYPE_FOR_STATISTICS
     };
 
     ParameterList();
@@ -100,6 +107,19 @@ public:
                                   Itime end,
                                   char* comments);
 
+    virtual StatusE    PrintStatisticsACEgr(
+                                  FILE*            fp,
+                                  unsigned long    statFrameNo,
+                                  int              useAvgStat,
+                                  Itime            start,
+                                  Itime            end,
+                                  char*            comments,
+                                  int              noHeader);
+    virtual StatusE    PrintStatistics(
+                                  FILE*            fp,
+                                  unsigned long    statFrameNo,
+                                  int              useAvgStat);
+
     virtual StatusE    ApplyPolynomialTable(PolynomialTable* polyTable);
     virtual IotBoolean NeedPolynomial(void);
 
@@ -116,5 +136,15 @@ protected:
     char            _ReallocData(void);
 
 };
+
+template<class T>   void DoStatistics(
+                                  T*               dataStart,
+                                  unsigned long    statFrameNo,
+                                  int              useAvgStat,
+                                  float&           mean,
+                                  float&           meanPlusD,
+                                  float&           meanMinusD,
+                                  float&           max,
+                                  float&           min);
 
 #endif

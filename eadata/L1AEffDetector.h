@@ -6,6 +6,9 @@
 //
 // $Log$
 // 
+//    Rev 1.8   25 Mar 1999 14:11:16   daffer
+// Uploadable tables!
+// 
 //    Rev 1.7   01 Sep 1998 11:15:26   daffer
 // Changed 3 arg AddEffect to accomodate PBI commanding
 // 
@@ -43,23 +46,45 @@ static const char rcs_id_l1a_cmd_detector_h[] =
 #include "ParTab.h"
 #include "State.h"
 #include "TlmHdfFile.h"
-
-//===============//
+#include  "UpldTbl.h"
+#include  "UpldTblList.h"
+//================//
 // L1AEffDetector //
-//===============//
+//================//
 
 class L1AEffDetector : public EffDetector
 {
 public:
-    L1AEffDetector();
+    L1AEffDetector( const char * qpa_directory, 
+                    const char * qpf_directory,
+                    const char * uqpx_directory,
+                    Itime start_time, 
+                    Itime end_time);
     virtual ~L1AEffDetector();
 
-    int                    AddEffect(const Itime time, const EffectE effect_id);
-    int                    AddEffect(const Itime time, const EffectE effect_id, 
+    int                    AddEffect(const Itime time, 
+                                     const EffectE effect_id);
+    int                    AddEffect(const Itime time, 
+                                     const EffectE effect_id, 
                                      const unsigned short effect_value );
+
+    int                    AddEffect( Command *cmd);
+
+    Command *              CreateEffectEntry( const Itime time, 
+                                              const EffectE effect_id);
     EffDetectorStatusE    DetectEffects(TlmFileList* );
-private:
-    int    numTableElements;
+    EAUpldTbl_Table_StatusE  FindNearestQpx( UpldTbl *, UpldTbl *& );
+    char *        GetQpfDirectory(){ return (_qpf_directory);};
+    char *        GetQpaDirectory(){ return (_qpa_directory);};
+    char *        GetUqpxDirectory(){ return (_uqpx_directory);};
+
+ private: 
+
+    int                   numTableElements;
+    char                * _qpf_directory;
+    char                * _qpa_directory;
+    char                * _uqpx_directory;
+    UpldTblList         * _qpx_list;
 
 };
 

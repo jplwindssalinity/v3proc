@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   15 Mar 1999 14:19:44   sally
+// add some methods for getting user's start and end indexes
+// 
 //    Rev 1.5   01 May 1998 14:47:56   sally
 // added HK2 file
 // 
@@ -35,7 +38,7 @@
 #define TLMHDFFILE_H
 
 static const char rcs_id_TlmHdfFile_h[] =
-    "@(#) $Id$";
+    "@(#) $Header$";
 
 #include <string.h>
 
@@ -59,9 +62,9 @@ public:
     friend int operator< (const TlmHdfFile&, const TlmHdfFile&);
 
     TlmHdfFile(
-           const char*  filename,                 // IN
-           SourceIdE    sourceType,               // IN
-           StatusE&     returnStatus);            // OUT
+           const char*           filename,                 // IN
+           SourceIdE             sourceType,               // IN
+           HdfFile::StatusE&     returnStatus);            // OUT
 
 
     virtual ~TlmHdfFile();
@@ -70,6 +73,9 @@ public:
 
     virtual Itime       GetFirstDataTime(void) { return(INVALID_TIME); }
     virtual Itime       GetLastDataTime(void) { return(INVALID_TIME); }
+
+    int32               GetUserStartIndex(void) { return _userStartIndex; }
+    int32               GetUserEndIndex(void) { return _userEndIndex; }
 
                         //----------------------------------------
                         // return TRUE if more data,
