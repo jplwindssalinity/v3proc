@@ -1231,6 +1231,23 @@ WindSwath::Skill(
 	return(skill);
 }
 
+//---------------------//
+// WindSwath::CtdArray //
+//---------------------//
+
+int
+WindSwath::CtdArray(
+	float*		ctd_array)
+{
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
+			_crossTrackRes;
+		*(ctd_array + i) = ctd;
+	}
+	return(1);
+}
+
 //---------------------------//
 // WindSwath::RmsSpdErrVsCtd //
 //---------------------------//
@@ -1238,21 +1255,9 @@ WindSwath::Skill(
 int
 WindSwath::RmsSpdErrVsCtd(
 	WindField*	truth,
-	float*		ctd_array,
 	float*		rms_spd_err_array,
 	int*		count_array)
 {
-	//-----------------------//
-	// fill in the ctd array //
-	//-----------------------//
-
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
-			_crossTrackRes;
-		*(ctd_array + i) = ctd;
-	}
-
 	//----------------------------------//
 	// calculate the sum of the sqaures //
 	//----------------------------------//
@@ -1295,21 +1300,9 @@ WindSwath::RmsSpdErrVsCtd(
 int
 WindSwath::RmsDirErrVsCtd(
 	WindField*	truth,
-	float*		ctd_array,
 	float*		rms_dir_err_array,
 	int*		count_array)
 {
-	//-----------------------//
-	// fill in the ctd array //
-	//-----------------------//
-
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
-			_crossTrackRes;
-		*(ctd_array + i) = ctd;
-	}
-
 	//----------------------------------//
 	// calculate the sum of the sqaures //
 	//----------------------------------//
@@ -1352,21 +1345,9 @@ WindSwath::RmsDirErrVsCtd(
 int
 WindSwath::SkillVsCtd(
 	WindField*	truth,
-	float*		ctd_array,
 	float*		skill_array,
 	int*		count_array)
 {
-	//-----------------------//
-	// fill in the ctd array //
-	//-----------------------//
-
-	for (int i = 0; i < _crossTrackBins; i++)
-	{
-		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
-			_crossTrackRes;
-		*(ctd_array + i) = ctd;
-	}
-
 	//---------------------//
 	// calculate the count //
 	//---------------------//

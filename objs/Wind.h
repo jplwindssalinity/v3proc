@@ -232,6 +232,13 @@ public:
 
 	int		Add(int cti, int ati, WVC* wvc);
 
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	int		GetCrossTrackBins()		{ return(_crossTrackBins); };
+	int		GetCrossTrackRes()		{ return(_crossTrackRes); };
+
 	//---------//
 	// freeing //
 	//---------//
@@ -265,12 +272,13 @@ public:
 	float	RmsDirErr(WindField* truth);
 	float	Skill(WindField* truth);
 
-	int		RmsSpdErrVsCtd(WindField* truth, float* ctd_array,
-				float* rms_spd_err_array, int* count_array);
-	int		RmsDirErrVsCtd(WindField* truth, float* ctd_array,
-				float* rms_dir_err_array, int* count_array);
-	int		SkillVsCtd(WindField* truth, float* ctd_array,
-				float* skill_array, int* count_array);
+	int		CtdArray(float* ctd_array);
+	int		RmsSpdErrVsCtd(WindField* truth, float* rms_spd_err_array,
+				int* count_array);
+	int		RmsDirErrVsCtd(WindField* truth, float* rms_dir_err_array,
+				int* count_array);
+	int		SkillVsCtd(WindField* truth, float* skill_array,
+				int* count_array);
 
 	//-----------//
 	// variables //

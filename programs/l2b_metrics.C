@@ -61,6 +61,7 @@ static const char rcs_id[] =
 #include "L20.h"
 #include "List.h"
 #include "List.C"
+#include "Constants.h"
 
 //-----------//
 // TEMPLATES //
@@ -86,6 +87,9 @@ template class List<WindVectorPlus>;
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
+
+int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
+	const char* x_label, const char* y_label);
 
 //------------------//
 // OPTION VARIABLES //
@@ -156,28 +160,40 @@ main(
 	WindField truth;
 	truth.ReadVap(truth_file);
 
-	//-------------//
-	// generate... //
-	//-------------//
+	//---------------//
+	// create arrays //
+	//---------------//
+
+	int cross_track_bins = l20.frame.swath.GetCrossTrackBins();
+	float* ctd_array = new float[cross_track_bins];
+	float* value_array = new float[cross_track_bins];
+	int* count_array = new int[cross_track_bins];
+
+	char filename[1024];
+	FILE* ofp;
+
+	//--------------------//
+	// generate ctd array //
+	//--------------------//
+
+	if (! l20.frame.swath.CtdArray(ctd_array))
+	{
+		fprintf(stderr, "%s: error generating CTD array\n", command);
+		exit(1);
+	}
 
 	//-------------------------//
 	// rms speed error vs. ctd //
 	//-------------------------//
 
-	float value_array[ARRAY_SIZE];
-	int count_array[ARRAY_SIZE];
-	float ctd_array[ARRAY_SIZE];
-	int max_idx;
-	if (! l20.frame.swath.RmsSpdErrVsCtd(&truth, ctd_array, value_array,
-		count_array))
+	if (! l20.frame.swath.RmsSpdErrVsCtd(&truth, value_array, count_array))
 	{
 		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
 		exit(1);
 	}
 
-	char filename[1024];
 	sprintf(filename, "%s.rms_spd_err", output_base);
-	FILE* ofp = fopen(filename, "w");
+	ofp = fopen(filename, "w");
 	if (ofp == NULL)
 	{
 		fprintf(stderr, "%s: error opening output file %s\n", command,
@@ -185,7 +201,10 @@ main(
 		exit(1);
 	}
 
-	for (int i = 0; i < max_idx; i++)
+	xmgr_control(ofp, "RMS Speed Error vs. CTD", l20_file,
+		"Cross Track Distance (km)", "RMS Speed Error (m/s)");
+
+	for (int i = 0; i < cross_track_bins; i++)
 	{
 		if (count_array[i] > 0)
 		{
@@ -199,5 +218,63 @@ main(
 	// rms direction error vs. ctd //
 	//-----------------------------//
 
+	if (! l20.frame.swath.RmsDirErrVsCtd(&truth, value_array, count_array))
+	{
+		fprintf(stderr, "%s: error calculating RMS direction error\n",
+			command);
+		exit(1);
+	}
+
+	xmgr_control(ofp, "RMS Direction Error vs. CTD", l20_file,
+		"Cross Track Distance (km)", "RMS Direction Error (deg)");
+
+	sprintf(filename, "%s.rms_dir_err", output_base);
+	ofp = fopen(filename, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			filename);
+		exit(1);
+	}
+
+	for (int i = 0; i < cross_track_bins; i++)
+	{
+		if (count_array[i] > 0)
+		{
+			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i] * rtd,
+				count_array[i]);
+		}
+	}
+	fclose(ofp);
+
+	//-------------//
+	// free arrays //
+	//-------------//
+
+	delete[] value_array;
+	delete[] ctd_array;
+	delete[] count_array;
+
 	return (0);
+}
+
+//--------------//
+// xmgr_control //
+//--------------//
+
+#define QUOTE	'"'
+
+int
+xmgr_control(
+	FILE*			ofp,
+	const char*		title,
+	const char*		subtitle,
+	const char*		x_label,
+	const char*		y_label)
+{
+	fprintf(ofp, "@ title %c%s%c\n", QUOTE, title, QUOTE);
+	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
+	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
+	fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, y_label, QUOTE);
+	return(1);
 }
