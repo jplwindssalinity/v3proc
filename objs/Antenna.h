@@ -70,6 +70,8 @@ public:
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle
 
+	int			currentBeamIdx;	// index of current beam
+
 protected:
 
 	//-----------//

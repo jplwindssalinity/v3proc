@@ -24,7 +24,7 @@ static const char rcs_id_instrument_h[] =
 //		The InstrumentEvent object contains an instrument event time
 //		and event ID.
 //======================================================================
- 
+
 class InstrumentEvent
 {
 public:
@@ -45,7 +45,7 @@ public:
 	//-----------//
 	// variables //
 	//-----------//
- 
+
 	double				time;
 	InstrumentEventE	eventId;
 	int					beamIdx;
@@ -78,15 +78,23 @@ public:
 	double		time;
 	Antenna		antenna;
 
-/*
+	//------------------//
+	// generally varied //
+	//------------------//
+
+	float		commandedDoppler;	// kHz
+
+	//-----------------//
+	// generally fixed //
+	//-----------------//
+
 	float		chirpRate;			// kHz/ms
 	float		chirpStartM;		// kHz/ms
 	float		chirpStartB;		// kHz
-	float		carrierFrequency;	// GHz
-	float		pulseWidth;			// ms
 	float		systemDelay;		// ms
-	float		gridDelay;			// ms
-*/
+	float		receiveGateDelay;	// ms
+	float		baseTransmitFreq;	// GHz
+	float		sliceBandwidth;		// kHz
 };
 
 #endif

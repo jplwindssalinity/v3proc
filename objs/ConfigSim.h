@@ -47,6 +47,12 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 // Instrument //
 //------------//
 
+#define CHIRP_RATE_KEYWORD				"CHIRP_RATE"
+#define CHIRP_START_M_KEYWORD			"CHIRP_START_M"
+#define CHIRP_START_B_KEYWORD			"CHIRP_START_B"
+#define BASE_TRANSMIT_FREQUENCY_KEYWORD		"BASE_TRANSMIT_FREQUENCY"
+#define SYSTEM_DELAY_KEYWORD			"SYSTEM_DELAY"
+
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
 #define INSTRUMENT_START_TIME_KEYWORD	"INSTRUMENT_START_TIME"
@@ -79,6 +85,7 @@ int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 #define BEAM_x_LOOK_ANGLE_KEYWORD		"BEAM_x_LOOK_ANGLE"
 #define BEAM_x_AZIMUTH_ANGLE_KEYWORD	"BEAM_x_AZIMUTH_ANGLE"
 #define BEAM_x_POLARIZATION_KEYWORD		"BEAM_x_POLARIZATION"
+#define BEAM_x_PULSE_WIDTH_KEYWORD		"BEAM_x_PULSE_WIDTH"
 #define BEAM_x_TIME_OFFSET_KEYWORD		"BEAM_x_TIME_OFFSET"
 
 int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);

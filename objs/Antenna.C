@@ -16,7 +16,7 @@ static const char rcs_id_antenna_c[] =
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0),
+:	numberOfBeams(0), priPerBeam(0.0), azimuthAngle(0.0), currentBeamIdx(0),
 	_numberOfEncoderBits(0), _angularResolution(0.0)
 {
 	return;

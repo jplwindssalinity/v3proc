@@ -28,7 +28,7 @@ ConfigSpacecraftSim(
 	//------------------------------------//
 	// configure the spacecraft simulator //
 	//------------------------------------//
- 
+
 	double epoch;
 	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
 		return(0);
@@ -36,30 +36,30 @@ ConfigSpacecraftSim(
 	double semi_major_axis;
 	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
 		return(0);
- 
+
 	double eccentricity;
 	if (! config_list->GetDouble(ECCENTRICITY_KEYWORD, &eccentricity))
 		return(0);
- 
+
 	double inclination;
 	if (! config_list->GetDouble(INCLINATION_KEYWORD, &inclination))
 		return(0);
- 
+
 	double long_of_asc_node;
 	if (! config_list->GetDouble(LONG_OF_ASC_NODE_KEYWORD, &long_of_asc_node))
 		return(0);
- 
+
 	double arg_of_perigee;
 	if (! config_list->GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD, &arg_of_perigee))
 		return(0);
- 
+
 	double mean_anomaly_at_epoch;
 	if (! config_list->GetDouble(MEAN_ANOMALY_AT_EPOCH_KEYWORD,
 		&mean_anomaly_at_epoch))
 	{
 		return(0);
 	}
- 
+
 	spacecraft_sim->DefineOrbit(epoch, semi_major_axis, eccentricity,
 		inclination, long_of_asc_node, arg_of_perigee, mean_anomaly_at_epoch);
 
@@ -90,6 +90,38 @@ ConfigInstrument(
 
 	if (! ConfigAntenna(&(instrument->antenna), config_list))
 		return(0);
+
+	//--------------------//
+	// configure RF stuff //
+	//--------------------//
+
+	float chirp_rate;
+	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
+		return(0);
+	instrument->chirpRate = chirp_rate;
+
+	float chirp_start_m;
+	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
+		return(0);
+	instrument->chirpStartM = chirp_start_m;
+
+	float chirp_rate_b;
+	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
+		return(0);
+	instrument->chirpStartB = chirp_rate_b;
+
+	float base_transmit_freq;
+	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
+		&base_transmit_freq))
+	{
+		return(0);
+	}
+	instrument->baseTransmitFreq = base_transmit_freq;
+
+	float system_delay;
+	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
+		return(0);
+	instrument->systemDelay = system_delay;
 
 	return(1);
 }
@@ -201,7 +233,7 @@ ConfigAntennaSim(
 	//---------------------------------//
 	// configure the antenna simulator //
 	//---------------------------------//
- 
+
 	double spin_rate;
 	if (! config_list->GetDouble(SPIN_RATE_KEYWORD, &spin_rate))
 		return(0);
@@ -244,12 +276,18 @@ ConfigBeam(
 		return(0);
 	}
 
+	double pulse_width;
+	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &pulse_width))
+		return(0);
+	beam->pulseWidth = pulse_width;
+
 	double look_angle;
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &look_angle))
 		return(0);
 	look_angle *= dtr;
-	
+
 	double azimuth_angle;
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &azimuth_angle))
@@ -299,7 +337,7 @@ ConfigL00(
 
 	if (! l00->frame.Allocate(spots_per_frame, slices_per_spot))
 		return(0);
-	
+
 	return(1);
 }
 
@@ -336,7 +374,7 @@ ConfigL10(
 
 	if (! l10->frame.Allocate(spots_per_frame, slices_per_spot))
 		return(0);
-	
+
 
 	return(1);
 }
