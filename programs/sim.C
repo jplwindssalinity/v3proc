@@ -331,6 +331,10 @@ main(
         exit(1);
     }
     qscat_sim.startTime = instrument_start_time;
+    // Set spacecraft start time to an integer multiple of ephemeris period.
+    spacecraft_start_time = spacecraft_sim.GetEphemerisPeriod() *
+      ((int)(spacecraft_start_time / spacecraft_sim.GetEphemerisPeriod()));
+ 
 
     //------------//
     // initialize //
