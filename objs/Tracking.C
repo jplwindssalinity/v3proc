@@ -814,9 +814,9 @@ RangeTracker::ReadGS(
         for (unsigned int step = 0; step < _steps; step++)
         {
             *(*(_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_1[step];
+                (unsigned char)tmp_array_1[step];
             *(*(second_set->_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_2[step];
+                (unsigned char)tmp_array_2[step];
         }
     }
 
@@ -911,10 +911,11 @@ RangeTracker::WriteGS(
     {
         for (unsigned int step = 0; step < _steps; step++)
         {
-            *(*(_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_1[step];
-            *(*(second_set->_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_2[step];
+            tmp_array_1[step] =
+                (unsigned short) *(*(_termArray + step) + term[term_idx]);
+            tmp_array_2[step] =
+                (unsigned short) *(*(second_set->_termArray + step) +
+                term[term_idx]);
         }
         if (fwrite((void *)tmp_array_1, _steps * 2, 1, fp) != 1 ||
             fwrite((void *)tmp_array_2, _steps * 2, 1, fp) != 1)
@@ -1326,10 +1327,11 @@ DopplerTracker::WriteGS(
     {
         for (unsigned int step = 0; step < _steps; step++)
         {
-            *(*(_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_1[step];
-            *(*(second_set->_termArray + step) + term[term_idx]) =
-                (unsigned short)tmp_array_2[step];
+            tmp_array_1[step] =
+                (unsigned int) *(*(_termArray + step) + term[term_idx]);
+            tmp_array_2[step] =
+                (unsigned int) *(*(second_set->_termArray + step) +
+                term[term_idx]);
         }
         if (fwrite((void *)tmp_array_1, _steps * 4, 1, fp) != 1 ||
             fwrite((void *)tmp_array_2, _steps * 4, 1, fp) != 1)

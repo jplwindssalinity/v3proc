@@ -1,49 +1,56 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		rgc_format
+//    rgc_format
 //
 // SYNOPSIS
-//		rgc_format <input_format> <input_rgc_file>
-//			<output_format> <output_rgc_file>
+//    rgc_format [ -b beam ] [ -f format ] [ -i input_file ]
+//      [ -o output_file ]
 //
 // DESCRIPTION
-//		Converts RGC files among various formats.
+//    Converts RGC files among various formats.  Options can be
+//      put wherever necessary and are applied in order.
 //
 // OPTIONS
-//		None.
+//    [ -b beam ]         Specifies the beam number (1 or 2).  This
+//                          option is only needed when converting to
+//                          or from the ground system format which puts
+//                          both beams in one file.
+//    [ -f format ]       Indicates the format of the RGC file.  Can be
+//                          b (binary), g (ground system), h (hex), or
+//                          o (old binary).
+//    [ -i input_file ]   Specifies an input file name.
+//    [ -o output_file ]  Specifies an output file name.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<input_format>		Used to indicate the format of the input RGC file.
-//								Can be h (hex), b (binary)
-//		<input_rgc_file>	The RGC input file.
-//		<output_format>		Used to indicate the format of the output RGC file.
-//								Can be h (hex), b (binary), c (code)
-//		<output_rgc_file>	The RGC input file.
+//    None.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% rgc_format h rgc.1.hex b rgc.1.bin
+//    Examples of command lines are:
+//
+//      # convert a hex file to a binary file
+//      % rgc_format -f h -i rgc.1.hex -f b -o rgc.1.bin
+//
+//      # convert two binary files to a ground system file
+//      % rgc_format -f b -b 1 -i rgc.1.bin -b 2 -i rgc.2.bin -o rgc.gs
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -51,13 +58,15 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "Misc.h"
 #include "Tracking.h"
 #include "Tracking.C"
@@ -66,13 +75,12 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
-/*
-template class List<EarthPosition>;
-*/
-
 //-----------//
 // CONSTANTS //
 //-----------//
+
+#define OPTSTRING       "b:f:i:o:"
+#define MAX_BEAM_INDEX  2
 
 //--------//
 // MACROS //
@@ -86,6 +94,11 @@ template class List<EarthPosition>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
+int read_it(int beam_idx, const char format, const char* input_file,
+        int got_it[2], RangeTracker* rgc_0, RangeTracker* rgc_1);
+int write_it(int beam_idx, const char format, const char* output_file,
+        int got_it[2], RangeTracker* rgc_0, RangeTracker* rgc_1);
+
 //------------------//
 // OPTION VARIABLES //
 //------------------//
@@ -94,8 +107,8 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<input_format (h,b)>", "<input_rgc_file>",
-	"<output_format (h,b)>", "<output_rgc_file>", 0 };
+const char* usage_array[] = { "[ -b beam ]", "[ -f format ]",
+    "[ -i input_file ]", "[ -o output_file ]", "(format can be b,g,h,o)", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -103,80 +116,227 @@ const char* usage_array[] = { "<input_format (h,b)>", "<input_rgc_file>",
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------//
+    // initialize //
+    //------------//
 
-	const char* command = no_path(argv[0]);
+    int got_it[2] = {0, 0};
+    int beam_idx = 0;
+    char format = 'b';
+    const char* input_file = NULL;
+    const char* output_file = NULL;
+    RangeTracker rgc_0, rgc_1;
 
-	if (argc != 5)
-		usage(command, usage_array, 1);
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	int arg_idx = 1;
-	const char input_format = argv[arg_idx++][0];
-	const char* input_file = argv[arg_idx++];
-	const char output_format = argv[arg_idx++][0];
-	const char* output_file = argv[arg_idx++];
+    const char* command = no_path(argv[0]);
+    if (argc == 1)
+    {
+        usage(command, usage_array, 1);
+        exit(1);
+    }
 
-	//------------------//
-	// read in RGC file //
-	//------------------//
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'b':
+            beam_idx = atoi(optarg) - 1;
+            if (beam_idx < 0 || beam_idx > 1)
+            {
+                fprintf(stderr, "%s: beam must be 1 or 2\n", command);
+                exit(1);
+            }
+            break;
+        case 'f':
+            format = *optarg;
+            break;
+        case 'i':
+            input_file = optarg;
+            if (! read_it(beam_idx, format, input_file, got_it, &rgc_0,
+                &rgc_1))
+            {
+                fprintf(stderr, "%s: error reading RGC file %s\n", command,
+                    input_file);
+                exit(1);
+            }
+            break;
+        case 'o':
+            output_file = optarg;
+            if (! write_it(beam_idx, format, output_file, got_it, &rgc_0,
+                &rgc_1))
+            {
+                fprintf(stderr, "%s: error writing RGC file %s\n", command,
+                    output_file);
+                exit(1);
+            }
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
 
-	RangeTracker range_tracker;
-	switch (input_format)
-	{
-	case 'h':
-		if (! range_tracker.ReadHex(input_file))
-		{
-			fprintf(stderr, "%s: error reading hex RGC file %s\n", command,
-				input_file);
-			exit(1);
-		}
-		break;
-	case 'b':
-		if (! range_tracker.ReadBinary(input_file))
-		{
-			fprintf(stderr, "%s: error reading binary RGC file %s\n", command,
-				input_file);
-			exit(1);
-		}
-		break;
-	}
+    return(0);
+}
 
-	//--------------------//
-	// write out RGC file //
-	//--------------------//
+//---------//
+// read_it //
+//---------//
 
-	switch (output_format)
-	{
-	case 'h':
-		if (! range_tracker.WriteHex(output_file))
-		{
-			fprintf(stderr, "%s: error writing hex RGC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	case 'b':
-		if (! range_tracker.WriteBinary(output_file))
-		{
-			fprintf(stderr, "%s: error writing binary RGC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	case 'c':
-		if (! range_tracker.WriteCode(output_file))
-		{
-			fprintf(stderr, "%s: error writing code RGC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	}
+int
+read_it(
+    int            beam_idx,
+    const char     format,
+    const char*    input_file,
+    int            got_it[2],
+    RangeTracker*  rgc_0,
+    RangeTracker*  rgc_1)
+{
+    //-----------------------//
+    // select a RangeTracker //
+    //-----------------------//
 
-	return (0);
+    RangeTracker* rgc_use;
+    switch (beam_idx)
+    {
+    case 0:
+        rgc_use = rgc_0;
+        break;
+    case 1:
+        rgc_use = rgc_1;
+        break;
+    default:
+        return(0);
+        break;
+    }
+
+    //----------------------//
+    // read based on format //
+    //----------------------//
+
+    switch (format)
+    {
+    case 'b':
+        if (! rgc_use->ReadBinary(input_file))
+        {
+            fprintf(stderr, "Error reading binary RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    case 'g':
+        if (! rgc_0->ReadGS(input_file, rgc_1))
+        {
+            fprintf(stderr, "Error reading GS RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[0] = 1;
+        got_it[1] = 1;
+        break;
+    case 'h':
+        if (! rgc_use->ReadHex(input_file))
+        {
+            fprintf(stderr, "Error reading hex RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    case 'o':
+        if (! rgc_use->ReadOldBinary(input_file))
+        {
+            fprintf(stderr, "Error reading old binary RGC file %s\n",
+                input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    }
+
+    return(1);
+}
+
+//----------//
+// write_it //
+//----------//
+
+int
+write_it(
+    int            beam_idx,
+    const char     format,
+    const char*    output_file,
+    int            got_it[2],
+    RangeTracker*  rgc_0,
+    RangeTracker*  rgc_1)
+{
+    //-----------------------//
+    // select a RangeTracker //
+    //-----------------------//
+
+    RangeTracker* rgc_use;
+    switch (beam_idx)
+    {
+    case 0:
+        rgc_use = rgc_0;
+        break;
+    case 1:
+        rgc_use = rgc_1;
+        break;
+    default:
+        return(0);
+        break;
+    }
+    if (! got_it[beam_idx])
+        return(0);
+
+    //-----------------------//
+    // write based on format //
+    //-----------------------//
+
+    switch (format)
+    {
+    case 'b':
+        if (! rgc_use->WriteBinary(output_file))
+        {
+            fprintf(stderr, "Error writing binary RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'g':
+        if (! got_it[0] || ! got_it[1])
+        {
+            fprintf(stderr, "Both beams are needed to write out GS format\n");
+            return(0);
+        }
+        if (! rgc_0->WriteGS(output_file, rgc_1))
+        {
+            fprintf(stderr, "Error writing GS RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'h':
+        if (! rgc_use->WriteHex(output_file))
+        {
+            fprintf(stderr, "Error writing hex RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'o':
+        if (! rgc_use->WriteOldBinary(output_file))
+        {
+            fprintf(stderr, "Error writing old binary RGC file %s\n",
+                output_file);
+            exit(1);
+        }
+        break;
+    }
+
+    return(1);
 }

@@ -1,50 +1,56 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		dtc_format
+//    dtc_format
 //
 // SYNOPSIS
-//		dtc_format <input_format> <input_dtc_file>
-//			<output_format> <output_dtc_file>
+//    dtc_format [ -b beam ] [ -f format ] [ -i input_file ]
+//      [ -o output_file ]
 //
 // DESCRIPTION
-//		Converts DTC files among various formats.
+//    Converts RGC files among various formats.  Options can be
+//      put wherever necessary and are applied in order.
 //
 // OPTIONS
-//		None.
+//    [ -b beam ]         Specifies the beam number (1 or 2).  This
+//                          option is only needed when converting to
+//                          or from the ground system format which puts
+//                          both beams in one file.
+//    [ -f format ]       Indicates the format of the RGC file.  Can be
+//                          b (binary), g (ground system), h (hex), or
+//                          o (old binary).
+//    [ -i input_file ]   Specifies an input file name.
+//    [ -o output_file ]  Specifies an output file name.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<input_format>		Used to indicate the format of the input DTC file.
-//								Can be h (hex), b (binary), o (old binary)
-//		<input_dtc_file>	The DTC input file.
-//		<output_format>		Used to indicate the format of the output DTC file.
-//								Can be h (hex), b (binary), o (old binary),
-//                              c (code)
-//		<output_dtc_file>	The DTC input file.
+//    None.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% dtc_format h dtc.1.hex b dtc.1.bin
+//    Examples of command lines are:
+//
+//      # convert a hex file to a binary file
+//      % dtc_format -f h -i dtc.1.hex -f b -o dtc.1.bin
+//
+//      # convert two binary files to a ground system file
+//      % dtc_format -f b -b 1 -i dtc.1.bin -b 2 -i dtc.2.bin -o dtc.gs
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@casket.jpl.nasa.gov
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -52,13 +58,15 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "Misc.h"
 #include "Tracking.h"
 #include "Tracking.C"
@@ -70,6 +78,9 @@ static const char rcs_id[] =
 //-----------//
 // CONSTANTS //
 //-----------//
+
+#define OPTSTRING       "b:f:i:o:"
+#define MAX_BEAM_INDEX  2
 
 //--------//
 // MACROS //
@@ -83,6 +94,11 @@ static const char rcs_id[] =
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
+int read_it(int beam_idx, const char format, const char* input_file,
+        int got_it[2], DopplerTracker* dtc_0, DopplerTracker* dtc_1);
+int write_it(int beam_idx, const char format, const char* output_file,
+        int got_it[2], DopplerTracker* dtc_0, DopplerTracker* dtc_1);
+
 //------------------//
 // OPTION VARIABLES //
 //------------------//
@@ -91,8 +107,8 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<input_format (h,b,o)>", "<input_dtc_file>",
-	"<output_format (h,b,o,c)>", "<output_dtc_file>", 0 };
+const char* usage_array[] = { "[ -b beam ]", "[ -f format ]",
+    "[ -i input_file ]", "[ -o output_file ]", "(format can be b,g,h,o)", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -100,96 +116,227 @@ const char* usage_array[] = { "<input_format (h,b,o)>", "<input_dtc_file>",
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------//
+    // initialize //
+    //------------//
 
-	const char* command = no_path(argv[0]);
+    int got_it[2] = {0, 0};
+    int beam_idx = 0;
+    char format = 'b';
+    const char* input_file = NULL;
+    const char* output_file = NULL;
+    DopplerTracker dtc_0, dtc_1;
 
-	if (argc != 5)
-		usage(command, usage_array, 1);
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	int arg_idx = 1;
-	const char input_format = argv[arg_idx++][0];
-	const char* input_file = argv[arg_idx++];
-	const char output_format = argv[arg_idx++][0];
-	const char* output_file = argv[arg_idx++];
+    const char* command = no_path(argv[0]);
+    if (argc == 1)
+    {
+        usage(command, usage_array, 1);
+        exit(1);
+    }
 
-	//------------------//
-	// read in DTC file //
-	//------------------//
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'b':
+            beam_idx = atoi(optarg) - 1;
+            if (beam_idx < 0 || beam_idx > 1)
+            {
+                fprintf(stderr, "%s: beam must be 1 or 2\n", command);
+                exit(1);
+            }
+            break;
+        case 'f':
+            format = *optarg;
+            break;
+        case 'i':
+            input_file = optarg;
+            if (! read_it(beam_idx, format, input_file, got_it, &dtc_0,
+                &dtc_1))
+            {
+                fprintf(stderr, "%s: error reading RGC file %s\n", command,
+                    input_file);
+                exit(1);
+            }
+            break;
+        case 'o':
+            output_file = optarg;
+            if (! write_it(beam_idx, format, output_file, got_it, &dtc_0,
+                &dtc_1))
+            {
+                fprintf(stderr, "%s: error writing RGC file %s\n", command,
+                    output_file);
+                exit(1);
+            }
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
 
-	DopplerTracker doppler_tracker;
-	switch (input_format)
-	{
-	case 'h':
-		if (! doppler_tracker.ReadHex(input_file))
-		{
-			fprintf(stderr, "%s: error reading hex DTC file %s\n", command,
-				input_file);
-			exit(1);
-		}
-		break;
-	case 'b':
-		if (! doppler_tracker.ReadBinary(input_file))
-		{
-			fprintf(stderr, "%s: error reading binary DTC file %s\n", command,
-				input_file);
-			exit(1);
-		}
-		break;
-	case 'o':
-		if (! doppler_tracker.ReadOldBinary(input_file))
-		{
-			fprintf(stderr, "%s: error reading old binary DTC file %s\n",
-                command, input_file);
-			exit(1);
-		}
-		break;
-	}
+    return(0);
+}
 
-	//--------------------//
-	// write out DTC file //
-	//--------------------//
+//---------//
+// read_it //
+//---------//
 
-	switch (output_format)
-	{
-	case 'h':
-		if (! doppler_tracker.WriteHex(output_file))
-		{
-			fprintf(stderr, "%s: error writing hex DTC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	case 'b':
-		if (! doppler_tracker.WriteBinary(output_file))
-		{
-			fprintf(stderr, "%s: error writing binary DTC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	case 'o':
-		if (! doppler_tracker.WriteOldBinary(output_file))
-		{
-			fprintf(stderr, "%s: error writing old binary DTC file %s\n",
-                command, output_file);
-			exit(1);
-		}
-		break;
-	case 'c':
-		if (! doppler_tracker.WriteCode(output_file))
-		{
-			fprintf(stderr, "%s: error writing code DTC file %s\n", command,
-				output_file);
-			exit(1);
-		}
-		break;
-	}
+int
+read_it(
+    int              beam_idx,
+    const char       format,
+    const char*      input_file,
+    int              got_it[2],
+    DopplerTracker*  dtc_0,
+    DopplerTracker*  dtc_1)
+{
+    //-------------------------//
+    // select a DopplerTracker //
+    //-------------------------//
 
-	return (0);
+    DopplerTracker* dtc_use;
+    switch (beam_idx)
+    {
+    case 0:
+        dtc_use = dtc_0;
+        break;
+    case 1:
+        dtc_use = dtc_1;
+        break;
+    default:
+        return(0);
+        break;
+    }
+
+    //----------------------//
+    // read based on format //
+    //----------------------//
+
+    switch (format)
+    {
+    case 'b':
+        if (! dtc_use->ReadBinary(input_file))
+        {
+            fprintf(stderr, "Error reading binary RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    case 'g':
+        if (! dtc_0->ReadGS(input_file, dtc_1))
+        {
+            fprintf(stderr, "Error reading GS RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[0] = 1;
+        got_it[1] = 1;
+        break;
+    case 'h':
+        if (! dtc_use->ReadHex(input_file))
+        {
+            fprintf(stderr, "Error reading hex RGC file %s\n", input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    case 'o':
+        if (! dtc_use->ReadOldBinary(input_file))
+        {
+            fprintf(stderr, "Error reading old binary RGC file %s\n",
+                input_file);
+            exit(1);
+        }
+        got_it[beam_idx] = 1;
+        break;
+    }
+
+    return(1);
+}
+
+//----------//
+// write_it //
+//----------//
+
+int
+write_it(
+    int              beam_idx,
+    const char       format,
+    const char*      output_file,
+    int              got_it[2],
+    DopplerTracker*  dtc_0,
+    DopplerTracker*  dtc_1)
+{
+    //-------------------------//
+    // select a DopplerTracker //
+    //-------------------------//
+
+    DopplerTracker* dtc_use;
+    switch (beam_idx)
+    {
+    case 0:
+        dtc_use = dtc_0;
+        break;
+    case 1:
+        dtc_use = dtc_1;
+        break;
+    default:
+        return(0);
+        break;
+    }
+    if (! got_it[beam_idx])
+        return(0);
+
+    //-----------------------//
+    // write based on format //
+    //-----------------------//
+
+    switch (format)
+    {
+    case 'b':
+        if (! dtc_use->WriteBinary(output_file))
+        {
+            fprintf(stderr, "Error writing binary RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'g':
+        if (! got_it[0] || ! got_it[1])
+        {
+            fprintf(stderr, "Both beams are needed to write out GS format\n");
+            return(0);
+        }
+        if (! dtc_0->WriteGS(output_file, dtc_1))
+        {
+            fprintf(stderr, "Error writing GS RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'h':
+        if (! dtc_use->WriteHex(output_file))
+        {
+            fprintf(stderr, "Error writing hex RGC file %s\n", output_file);
+            exit(1);
+        }
+        break;
+    case 'o':
+        if (! dtc_use->WriteOldBinary(output_file))
+        {
+            fprintf(stderr, "Error writing old binary RGC file %s\n",
+                output_file);
+            exit(1);
+        }
+        break;
+    }
+
+    return(1);
 }
