@@ -352,13 +352,13 @@ main(
                 //----------------------------//
                 // even if you can't evaulte it
 
-                if (spd_array[ati][cti] != 255 &&
-                    dir_array[ati][cti] != 255 &&
-                    mle_array[ati][cti] != 255)
+                if (spd_array[ati][cti] != MAX_SHORT &&
+                    dir_array[ati][cti] != MAX_SHORT &&
+                    mle_array[ati][cti] != MAX_SHORT)
                 {
                     classifiable_count++;
 
-                    if (nbd_array[ati][cti] != 255)
+                    if (nbd_array[ati][cti] != MAX_SHORT)
                         with_nbd_count++;
                     else
                         without_nbd_count++;
@@ -369,9 +369,9 @@ main(
                 //-------------------------------------//
 
                 if (integrated_rain_rate[ati][cti] >= 1000 ||
-                    spd_array[ati][cti] == 255 ||
-                    dir_array[ati][cti] == 255 ||
-                    mle_array[ati][cti] == 255)
+                    spd_array[ati][cti] == MAX_SHORT ||
+                    dir_array[ati][cti] == MAX_SHORT ||
+                    mle_array[ati][cti] == MAX_SHORT)
                 {
                     continue;
                 }
@@ -401,7 +401,7 @@ main(
                 if (inbd > 14) inbd = 14;
 
                 // ...hack in a "missing nbd" index
-                if (nbd_array[ati][cti] == 255) inbd = 15;
+                if (nbd_array[ati][cti] == MAX_SHORT) inbd = 15;
 
                 if (ispd < 0) ispd = 0;
                 if (ispd > 15) ispd = 15;
@@ -474,7 +474,7 @@ main(
                 int mle_idx = mle_array[ati][cti];
 
                 int nbd_avail = 1;
-                if (nbd_idx == 255)
+                if (nbd_idx == MAX_SHORT)
                     nbd_avail = 0;
 
                 counts[0][0][ssmi_flag][nbd_avail][nbd_idx]++;

@@ -525,7 +525,7 @@ main(
             int imle = (int)((mle + 30.0) / 0.001 + 0.5);
             if (imle < 0) imle = 0;
             if (imle > 30000) imle = 30000;
-            mle_array[ati][cti] = (unsigned char)imle;
+            mle_array[ati][cti] = (unsigned short)imle;
 
             //------------------------//
             // set lon and lat arrays //
