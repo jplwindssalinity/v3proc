@@ -8,7 +8,7 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
 HDFINCDIR =     $(INCDIR)/hdf
-DEBUGFLAGS =    -O3
+DEBUGFLAGS =    -O2
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
 # CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall -Wshadow -Woverloaded-virtual
