@@ -81,8 +81,9 @@ public:
     //----------------------//
 
     unsigned short*  antennaPosition;
-    float*           science;
-    float*           spotNoise;
+    unsigned char*   event;
+    unsigned int*    science;
+    unsigned int*    spotNoise;
 
     //-------------------------//
     // informational variables //
@@ -91,7 +92,9 @@ public:
     int  antennaCyclesPerFrame;
     int  spotsPerFrame;
     int  slicesPerSpot;
-    int  slicesPerFrame;
+    int  measPerSlice;
+    int  measPerSpot;
+    int  measPerFrame;
 };
 
 //======================================================================

@@ -22,9 +22,9 @@ PscatL1AFrame::PscatL1AFrame()
 :   time(0), instrumentTicks(0), orbitTicks(0), orbitStep(0),
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
-    velZ(0.0), ptgr(0.0), antennaPosition(NULL), science(NULL),
+    velZ(0.0), ptgr(0.0), antennaPosition(NULL), event(NULL), science(NULL),
     spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
-    slicesPerSpot(0), slicesPerFrame(0)
+    slicesPerSpot(0), measPerSlice(0), measPerSpot(0), measPerFrame(0)
 {
     return;
 }
@@ -48,7 +48,9 @@ PscatL1AFrame::Allocate(
 	antennaCyclesPerFrame = antenna_cycles_per_frame;
 	spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
 	slicesPerSpot = slices_per_spot;
-	slicesPerFrame = spotsPerFrame * slicesPerSpot;
+    measPerSlice = 2;
+    measPerSpot = measPerSlice * slicesPerSpot;
+	measPerFrame = measPerSpot * spotsPerFrame;
 
 	//----------------------------//
 	// allocate antenna positions //
@@ -59,20 +61,25 @@ PscatL1AFrame::Allocate(
 	if (antennaPosition == NULL)
 		return(0);
 
+    //-----------------//
+    // allocate events //
+    //-----------------//
+
+    event = (unsigned char *)malloc(spotsPerFrame * sizeof(unsigned char));
+    if (event == NULL)
+        return(0);
+
 	//-------------------------------//
 	// allocate science measurements //
 	//-------------------------------//
 
-	science = (float *)malloc(slicesPerFrame * sizeof(float));
+	science = (unsigned int *)malloc(measPerFrame * sizeof(unsigned int));
 	if (science == NULL)
-	{
 		return(0);
-	}
-	spotNoise = (float *)malloc(spotsPerFrame * sizeof(float));
+
+	spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
 	if (spotNoise == NULL)
-	{
 		return(0);
-	}
 
 	return(1);
 }
@@ -86,17 +93,21 @@ PscatL1AFrame::Deallocate()
 {
 	if (antennaPosition)
 		free(antennaPosition);
+    if (event)
+        free(event);
 	if (science)
 		free(science);
 	if (spotNoise)
 		free(spotNoise);
     antennaPosition = NULL;
+    event = NULL;
     science = NULL;
     spotNoise = NULL;
 	antennaCyclesPerFrame = 0;
 	spotsPerFrame = 0;
 	slicesPerSpot = 0;
-	slicesPerFrame = 0;
+	measPerSlice = 0;
+	measPerFrame = 0;
 	return(1);
 }
 
@@ -126,21 +137,10 @@ PscatL1AFrame::FrameSize()
     size += sizeof(float);          // pitch
     size += sizeof(float);          // yaw
     size += sizeof(float);          // PtGr
-    size += sizeof(unsigned char);  // cal position
-    size += sizeof(float) * slicesPerSpot;  // loopback slices
-    size += sizeof(float);          // loopback noise
-    size += sizeof(float) * slicesPerSpot;  // load slices
-    size += sizeof(float);          // load noise
     size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
-    size += sizeof(float) * slicesPerFrame;  // science data
+    size += sizeof(unsigned char) * spotsPerFrame;  // event
+    size += sizeof(float) * measPerFrame;  // science data
     size += sizeof(float) * spotsPerFrame;   // spot noise
-
-    size += sizeof(int);    // frame_inst_status
-    size += sizeof(int);    // frame_err_status
-    size += sizeof(short);  // frame_qual_flag
-    size += 13*sizeof(char);   // pulse_qual_flag
-
-    size += 24;  // frame_time
 
     return(size);
 }
@@ -222,7 +222,11 @@ PscatL1AFrame::Pack(
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
-	size = sizeof(float) * slicesPerFrame;
+	size = sizeof(unsigned char) * spotsPerFrame;
+	memcpy((void *)(buffer + idx), (void *)event, size);
+	idx += size;
+
+	size = sizeof(unsigned int) * measPerFrame;
 	memcpy((void *)(buffer + idx), (void *)science, size);
 	idx += size;
 
@@ -310,7 +314,11 @@ PscatL1AFrame::Unpack(
 	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
 	idx += size;
 
-	size = sizeof(float) * slicesPerFrame;
+	size = sizeof(unsigned char) * spotsPerFrame;
+	memcpy((void *)event, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int) * measPerFrame;
 	memcpy((void *)science, (void *)(buffer + idx), size);
 	idx += size;
 
@@ -344,12 +352,12 @@ int PscatL1AFrame::WriteAscii(
     {
         fprintf(ofp,
             "\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
-        fprintf(ofp, "AntennaPos: %d SpotNoise: %g Beam:%d\n",
+        fprintf(ofp, "AntennaPos: %d SpotNoise: %d Beam:%d\n",
             (int)antennaPosition[c], spotNoise[c], c%2);
         fprintf(ofp, "E(S+N) Slices(1-%d): ", slicesPerSpot);
         for (int s = 0; s < slicesPerSpot; s++)
         {
-            fprintf(ofp, "%g ", science[offset]);
+            fprintf(ofp, "%d ", science[offset]);
             offset++;
         }
         fprintf(ofp,"\n");
