@@ -86,6 +86,9 @@ template class List<WindVectorPlus>;
 // CONSTANTS //
 //-----------//
 
+#define SPACECRAFT_START_TIME_KEYWORD	"SPACECRAFT_START_TIME"
+#define SPACECRAFT_END_TIME_KEYWORD		"SPACECRAFT_END_TIME"
+
 //--------//
 // MACROS //
 //--------//
@@ -138,6 +141,38 @@ main(
 	{
 		fprintf(stderr, "%s: error reading sim config file %s\n",
 			command, config_file);
+		exit(1);
+	}
+
+	//-------------------------------//
+	// determine start and end times //
+	//-------------------------------//
+
+	double instrument_start_time, instrument_end_time;
+	if (! config_list.GetDouble(INSTRUMENT_START_TIME_KEYWORD,
+		&instrument_start_time))
+	{
+		fprintf(stderr, "%s: error getting instrument start time\n", command);
+		exit(1);
+	}
+	if (! config_list.GetDouble(INSTRUMENT_END_TIME_KEYWORD,
+		&instrument_end_time))
+	{
+		fprintf(stderr, "%s: error getting instrument end time\n", command);
+		exit(1);
+	}
+
+	double spacecraft_start_time, spacecraft_end_time;
+	if (! config_list.GetDouble(SPACECRAFT_START_TIME_KEYWORD,
+		&spacecraft_start_time))
+	{
+		fprintf(stderr, "%s: error getting spacecraft start time\n", command);
+		exit(1);
+	}
+	if (! config_list.GetDouble(SPACECRAFT_END_TIME_KEYWORD,
+		&spacecraft_end_time))
+	{
+		fprintf(stderr, "%s: error getting spacecraft end time\n", command);
 		exit(1);
 	}
 
@@ -273,115 +308,127 @@ main(
 	//----------------------//
 
 	SpacecraftEvent spacecraft_event;
+	spacecraft_event.time = spacecraft_start_time;
+
 	InstrumentEvent instrument_event;
-	int need_spacecraft_event  = 1;
-	int need_instrument_event  = 1;
+	instrument_event.time = instrument_start_time;
+
+	int spacecraft_done = 0;
+	int instrument_done = 0;
+
+	//-------------------------//
+	// start with first events //
+	//-------------------------//
+
+	spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+	instrument_sim.DetermineNextEvent(&(instrument.antenna),
+		&instrument_event);
+
+	//---------------------//
+	// loop through events //
+	//---------------------//
 
 	for (;;)
 	{
-		//--------------------------------------//
-		// determine the next appropriate event //
-		//--------------------------------------//
+		//---------------------------------------//
+		// process spacecraft event if necessary //
+		//---------------------------------------//
 
-		if (need_spacecraft_event)
+		if (! spacecraft_done)
 		{
-			spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-			need_spacecraft_event = 0;
-		}
-		if (need_instrument_event)
-		{
-			instrument_sim.DetermineNextEvent(&(instrument.antenna),
-				&instrument_event);
-			need_instrument_event = 0;
-		}
-
-		//--------------------------------------//
-		// select earliest event for processing //
-		//--------------------------------------//
-
-		if (spacecraft_event.time <= instrument_event.time)
-		{
-			//------------------------------//
-			// process the spacecraft event //
-			//------------------------------//
-
-			switch(spacecraft_event.eventId)
+			if (spacecraft_event.time > spacecraft_end_time)
 			{
-			case SpacecraftEvent::UPDATE_STATE:
-				spacecraft_sim.UpdateOrbit(spacecraft_event.time,
-					&spacecraft);
-				spacecraft.orbitState.Write(eph_fp);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown spacecraft event\n", command);
-				exit(1);
-				break;
-			}
-
-			need_spacecraft_event = 1;
-
-			//-----------------------------//
-			// check for end of simulation //
-			//-----------------------------//
-
-			if (spacecraft_event.time > instrument_sim.endTime)
-				break;
-		}
-		else
-		{
-			//----------------------------------------//
-			// check for end of instrument simulation //
-			//----------------------------------------//
-
-			if (instrument_event.time > instrument_sim.endTime)
-			{
-				// force the processing of one more spacecraft event
-				instrument_event.time = spacecraft_event.time + 1.0;
+				spacecraft_done = 1;
 				continue;
 			}
-
-			//------------------------------//
-			// process the instrument event //
-			//------------------------------//
-
-			switch(instrument_event.eventId)
+			if (spacecraft_event.time <= instrument_event.time ||
+				instrument_done)
 			{
-			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
-				spacecraft_sim.UpdateOrbit(instrument_event.time,
-					&spacecraft);
-				spacecraft_sim.UpdateAttitude(instrument_event.time,
-					&spacecraft);
-				instrument_sim.UpdateAntennaPosition(instrument_event.time,
-					&instrument);
-				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
-				instrument_sim.ScatSim(instrument_event.time,
-					&spacecraft, &instrument, &windfield, &gmf, &(l00.frame));
-				break;
-			default:
-				fprintf(stderr, "%s: unknown instrument event\n", command);
-				exit(1);
-				break;
+				//------------------------------//
+				// process the spacecraft event //
+				//------------------------------//
+
+				switch(spacecraft_event.eventId)
+				{
+				case SpacecraftEvent::UPDATE_STATE:
+printf("%g S/C\n", spacecraft_event.time);
+					spacecraft_sim.UpdateOrbit(spacecraft_event.time,
+						&spacecraft);
+					spacecraft.orbitState.Write(eph_fp);
+					spacecraft_sim.DetermineNextEvent(&spacecraft_event);
+					break;
+				default:
+					fprintf(stderr, "%s: unknown spacecraft event\n", command);
+					exit(1);
+					break;
+				}
+			}
+		}
+
+		//---------------------------------------//
+		// process instrument event if necessary //
+		//---------------------------------------//
+
+		if (! instrument_done)
+		{
+			if (instrument_event.time > instrument_end_time)
+			{
+				instrument_done = 1;
+				continue;
+			}
+			if (instrument_event.time <= spacecraft_event.time ||
+				spacecraft_done)
+			{
+				//------------------------------//
+				// process the instrument event //
+				//------------------------------//
+
+				switch(instrument_event.eventId)
+				{
+				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+printf("%g Ins\n", instrument_event.time);
+					spacecraft_sim.UpdateOrbit(instrument_event.time,
+						&spacecraft);
+					spacecraft_sim.UpdateAttitude(instrument_event.time,
+						&spacecraft);
+					instrument_sim.UpdateAntennaPosition(instrument_event.time,
+						&instrument);
+					instrument.antenna.currentBeamIdx =
+						instrument_event.beamIdx;
+					instrument_sim.ScatSim(instrument_event.time, &spacecraft,
+						&instrument, &windfield, &gmf, &(l00.frame));
+					instrument_sim.DetermineNextEvent(&(instrument.antenna),
+						&instrument_event);
+					break;
+				default:
+					fprintf(stderr, "%s: unknown instrument event\n", command);
+					exit(1);
+					break;
+				}
 			}
 
-			//----------------------//
-			// write Level 0.0 data //
-			//----------------------//
+			//-----------------------------------//
+			// write Level 0.0 data if necessary //
+			//-----------------------------------//
 
 			if (instrument_sim.l00FrameReady)
 			{
-
-			       // Report Latest Attitude Measurement
-			       // + Knowledge Error
-				spacecraft_sim.ReportAttitude(
-				    instrument_event.time, &spacecraft,
-				    &(l00.frame.attitude));
+				// Report Latest Attitude Measurement
+				// + Knowledge Error
+				spacecraft_sim.ReportAttitude(instrument_event.time,
+					&spacecraft, &(l00.frame.attitude));
 
 				int size = l00.frame.Pack(l00.buffer);
 				l00.file.Write(l00.buffer, size);
 			}
-
-			need_instrument_event = 1;
 		}
+
+		//---------------//
+		// check if done //
+		//---------------//
+
+		if (instrument_done && spacecraft_done)
+			break;
 	}
 
 	//----------------------//
@@ -392,4 +439,3 @@ main(
 
 	return (0);
 }
-
