@@ -106,7 +106,7 @@ class RangeTracker : public TrackerBase<unsigned char>
     int  ReadGS(const char* filename, RangeTracker* second_set);
     int  WriteGS(const char* filename, RangeTracker* second_set);
     int  MroAssemble(unsigned char type, unsigned short offset, char* data,
-             int* beam_idx);
+             int* beam_idx, int* active_idx);
 
     //-----------//
     // operators //
@@ -164,7 +164,7 @@ public:
     int  ReadGS(const char* filename, DopplerTracker* second_set);
     int  WriteGS(const char* filename, DopplerTracker* second_set);
     int  MroAssemble(unsigned char type, unsigned short offset, char* data,
-             int* beam_idx);
+             int* beam_idx, int* active_idx);
 
     //-----------//
     // operators //

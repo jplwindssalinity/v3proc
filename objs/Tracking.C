@@ -1043,13 +1043,15 @@ RangeTracker::MroAssemble(
     unsigned char   type,
     unsigned short  offset,
     char*           data,
-    int*            beam_idx)
+    int*            beam_idx,
+    int*            active_idx)
 {
     //------------//
     // initialize //
     //------------//
 
     static int beam = 0;    // 0 = A, 1 = B
+    static int active = 0;    // 0 = inactive, 1 = active
     static unsigned short expected_offset = 0;
     static char mro[RGC_MRO_ARRAY_SIZE];
 
@@ -1060,12 +1062,24 @@ RangeTracker::MroAssemble(
     switch (type)
     {
     case 0x0D:
-        // Range Tracking Table for Beam A
+        // Active Range Tracking Table for Beam A
         beam = 0;
+        active = 1;
         break;
     case 0x0E:
-        // Range Tracking Table for Beam A
+        // Active Range Tracking Table for Beam B
         beam = 1;
+        active = 1;
+        break;
+    case 0x1D:
+        // Inactive Range Tracking Table for Beam A
+        beam = 0;
+        active = 0;
+        break;
+    case 0x1E:
+        // Inactive Range Tracking Table for Beam B
+        beam = 1;
+        active = 0;
         break;
     default:
         // some other table
@@ -1090,6 +1104,7 @@ RangeTracker::MroAssemble(
         SetFromMro(mro);
         expected_offset = 0;    // reset
         *beam_idx = beam;
+        *active_idx = active;
         return(1);
     }
     return(0);
@@ -1530,13 +1545,15 @@ DopplerTracker::MroAssemble(
     unsigned char   type,
     unsigned short  offset,
     char*           data,
-    int*            beam_idx)
+    int*            beam_idx,
+    int*            active_idx)
 {
     //------------//
     // initialize //
     //------------//
 
     static int beam = 0;    // 0 = A, 1 = B
+    static int active = 0;    // 0 = inactive, 1 = active
     static unsigned short expected_offset = 0;
     static char mro[DTC_MRO_ARRAY_SIZE];
 
@@ -1547,12 +1564,24 @@ DopplerTracker::MroAssemble(
     switch (type)
     {
     case 0x0B:
-        // Doppler Tracking Table for Beam A
+        // Active Doppler Tracking Table for Beam A
         beam = 0;
+        active = 1;
         break;
     case 0x0C:
-        // Doppler Tracking Table for Beam A
+        // Active Doppler Tracking Table for Beam B
         beam = 1;
+        active = 1;
+        break;
+    case 0x1B:
+        // Inactive Doppler Tracking Table for Beam A
+        beam = 0;
+        active = 0;
+        break;
+    case 0x1C:
+        // Inactive Doppler Tracking Table for Beam B
+        beam = 1;
+        active = 0;
         break;
     default:
         // some other table
@@ -1577,6 +1606,7 @@ DopplerTracker::MroAssemble(
         SetFromMro(mro);
         expected_offset = 0;    // reset
         *beam_idx = beam;
+        *active_idx = active;
         return(1);
     }
     return(0);
