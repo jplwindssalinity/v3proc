@@ -91,12 +91,12 @@ ConfigBeam(
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
 		return(0);
-	beam->lookAngle = tmp_double;
+	beam->lookAngle = tmp_double * dtr;
 
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
 		return(0);
-	beam->azimuthAngle = tmp_double;
+	beam->azimuthAngle = tmp_double * dtr;
 
 	return(1);
 }
