@@ -153,6 +153,7 @@ main(
 	while (l2a.ReadDataRec())
 	{
 		MeasList* ml = &(l2a.frame.measList);
+		fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
 		{
 			fprintf(output_fp, "%s %g %g %g\n", beam_map[m->pol],
