@@ -54,6 +54,13 @@ EarthPosition();
 int SetPosition(double x1, double x2, double x3, earthposition_typeE etype);
 
 //
+// I/O
+//
+
+int	ReadLonLat(FILE* fp);
+int WriteLonLat(FILE* fp);
+
+//
 // Operators
 //
 

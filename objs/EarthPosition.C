@@ -14,6 +14,7 @@ static const char rcs_id_earthposition_c[] =
 #include "EarthPosition.h"
 #include "Matrix3.h"
 #include "CoordinateSwitch.h"
+#include "LonLat.h"
 
 //
 // EarthPosition
@@ -152,6 +153,40 @@ return(1);
 
 }
 
+//
+// ReadLonLat
+//
+// Reads in a LonLat object from a file (using LonLat::Read()), and converts
+// to an EarthPosition vector. (km)
+//
+
+int
+EarthPosition::ReadLonLat(FILE* fp)
+{
+	LonLat lon_lat;
+	if (lon_lat.Read(fp) == 0) return(0);
+	SetPosition(0.0, lon_lat.latitude, lon_lat.longitude,
+		EarthPosition::GEODETIC);
+	return(1);
+}
+
+//
+// WriteLonLat
+//
+// Writes out an EarthPosition object to a file as a LonLat object
+// (using LonLat::Write()).
+//
+
+int
+EarthPosition::WriteLonLat(FILE* fp)
+{
+	LonLat lon_lat(*this);
+	if (lon_lat.Write(fp) == 0) return(0);
+	return(1);
+}
+
+//
+// operator=
 //
 // Assignment operator to allow a Vector3 object to be assigned to a
 // EarthPosition object straight across (assumes that the Vector3 object
