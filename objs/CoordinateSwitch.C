@@ -24,6 +24,7 @@ CoordinateSwitch::CoordinateSwitch(
 	Vector3		z2)
 {
 	SetAxes(x2, y2, z2);
+	_o2.Zero();
 	return;
 }
 
@@ -32,6 +33,7 @@ CoordinateSwitch::CoordinateSwitch(
 CoordinateSwitch::CoordinateSwitch(
 	Vector3		o2)
 {
+	_trans.Identity();
 	SetOrigin(o2);
 	return;
 }
@@ -66,6 +68,7 @@ CoordinateSwitch::CoordinateSwitch(
 CoordinateSwitch::CoordinateSwitch(
 	Attitude	att)
 {
+	_o2.Zero();
 	SetRotation(att);
 	return;
 }
