@@ -153,6 +153,10 @@ main(
 	while (l2a.ReadDataRec())
 	{
 		MeasList* ml = &(l2a.frame.measList);
+                Meas* mhead=ml->GetHead();
+                double lat, lon, alt;
+                mhead->centroid.GetAltLonGCLat(&alt,&lon,&lat);
+                fprintf(output_fp, "# Lon=%g Lat=%g\n",lon*rtd,lat*rtd);
 		fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
 		{
@@ -171,3 +175,9 @@ main(
 
 	return (0);
 }
+
+
+
+
+
+
