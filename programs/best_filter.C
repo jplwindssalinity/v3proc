@@ -95,19 +95,25 @@ template class TrackerBase<unsigned short>;
 
 #define OPTSTRING  "h"
 
-#define WORST_SCORE           -1000.0
+#define WORST_SCORE           -9e9
 #define HDF_NUM_AMBIGUITIES   4
 
-#define M_SPEED      (1.0/20.0)
-#define B_SPEED      0.0
-#define M_DIF_RATIO  (-1.0/1.0)
-#define B_DIF_RATIO  1.0
-#define M_NORM_DIF   (-1.0/1.0)
-#define B_NORM_DIF   1.0
-#define M_NEIGHBOR   (1.0/24.5)
-#define B_NEIGHBOR   0.0
+#define FILTER_FACTOR      13.0
 
-#define FILTER_MULT  6.0
+#define FIRST_BEST_VALUE   1.0
+#define FIRST_BEST_SCORE   2.0
+#define FIRST_BREAK_VALUE  0.8   // gives a score of 1.0
+#define FIRST_WORST_VALUE  0.0   // gives a score of 0.0
+
+#define NEIGHBOR_BEST_VALUE   25
+#define NEIGHBOR_BEST_SCORE   7.0
+#define NEIGHBOR_BREAK_VALUE  15    // gives a score of 1.0
+#define NEIGHBOR_WORST_VALUE  0     // gives a score of 0.0
+
+#define DIF_RATIO_BEST_VALUE   0.0
+#define DIF_RATIO_BEST_SCORE   2.0
+#define DIF_RATIO_BREAK_VALUE  0.5   // gives a score of 1.0
+#define DIF_RATIO_WORST_VALUE  1.0   // gives a score of 0.0
 
 /*
 #define LOCAL_PROBABILITY_WINDOW_SIZE  7
@@ -149,21 +155,18 @@ enum ChoiceE { NO_CHOICE, FIRST, FILTER };
 const char* usage_array[] = { "[ -h ]", "<cfg_file>", "<l2b_input_file>",
     "<vctr_base>", "<l2b_output_file>", 0 };
 
-float  filter_score[CT_WIDTH][AT_WIDTH];
-float  first_score[CT_WIDTH][AT_WIDTH];
-char   rain_contaminated[CT_WIDTH][AT_WIDTH];
+WindVectorPlus*  original_selected[CT_WIDTH][AT_WIDTH];
+char             rain_contaminated[CT_WIDTH][AT_WIDTH];
 
-/*
-extern float g_speed_stopper;
-extern int g_number_needed;
-extern float g_too_different;
-extern float g_error_ratio_of_best;
-extern float g_error_of_best;
-extern int   g_rain_bit_flag_on;
+float            first_score[CT_WIDTH][AT_WIDTH];
+unsigned char    neighbor_count[CT_WIDTH][AT_WIDTH];
+float            dif_ratio[CT_WIDTH][AT_WIDTH];
+float            filter_score[CT_WIDTH][AT_WIDTH];
 
-float            local_prob[CT_WIDTH][AT_WIDTH];
-WindVectorPlus*  local_best[CT_WIDTH][AT_WIDTH];
-*/
+unsigned int  first_count_array[100];    // probability percent
+unsigned int  first_match_array[100];
+unsigned int  filter_count_array[49][100];    // neighbor count, dif ratio
+unsigned int  filter_match_array[49][100];
 
 int opt_hdf = 0;
 
@@ -340,6 +343,7 @@ main(
             WVC* wvc = swath->GetWVC(cti, ati);
             if (wvc == NULL)
                 continue;
+            original_selected[cti][ati] = wvc->selected;
             wvc->selected = NULL;    // initialize
         }
     }
@@ -385,7 +389,24 @@ main(
             {
                 wvp->obj /= wvc_prob_sum;
             }
-            first_score[cti][ati] = wvp1->obj;
+//            first_score[cti][ati] = wvp1->obj;
+
+// convert to score
+float m, b;
+if (wvp1->obj > FIRST_BREAK_VALUE)
+{
+  m = ((float)FIRST_BEST_SCORE - 1.0) /
+    ((float)FIRST_BEST_VALUE -
+    (float)FIRST_BREAK_VALUE);
+  b = 1.0 - m * (float)FIRST_BREAK_VALUE;
+}
+else
+{
+  m = (1.0 - 0.0) / ((float)FIRST_BREAK_VALUE -
+    (float)FIRST_WORST_VALUE);
+  b = 1.0 - m * (float)FIRST_BREAK_VALUE;
+}
+first_score[cti][ati] = m * (float)wvp1->obj + b;
         }
     }
 
@@ -526,11 +547,13 @@ main(
 
 FILE* score_ofp = NULL;
 
-    int half_window = 3;
+    int half_window = 2;
     char filename[1024];
     int loop_idx = 0;
     int first_count = 0;
     int filter_count = 0;
+    float best_first_score = WORST_SCORE;
+    float best_filter_score = WORST_SCORE;
     do
     {
         //---------------//
@@ -547,6 +570,8 @@ FILE* score_ofp = NULL;
             {
                 if (rain_contaminated[cti][ati])
                     continue;
+                if (first_score[cti][ati] > best_first_score)
+                    best_first_score = first_score[cti][ati];
                 if (first_score[cti][ati] > best_score)
                 {
                     best_score = first_score[cti][ati];
@@ -554,9 +579,12 @@ FILE* score_ofp = NULL;
                     best_ati = ati;
                     best_cti = cti;
                 }
+                if (filter_score[cti][ati] > best_filter_score)
+                    best_filter_score = filter_score[cti][ati];
                 if (filter_score[cti][ati] > best_score)
                 {
                     best_score = filter_score[cti][ati];
+                    best_filter_score = filter_score[cti][ati];
                     best_choice = FILTER;
                     best_ati = ati;
                     best_cti = cti;
@@ -576,13 +604,23 @@ FILE* score_ofp = NULL;
             fprintf(stderr, "%s: missing WVC\n", command);
             break;
         }
+        int score_idx, neighbor_idx, dif_ratio_idx;
         switch (best_choice)
         {
         case FIRST:
             wvc->selected = wvc->ambiguities.GetByIndex(0);
+
+            score_idx = (int)(100.0 * first_score[best_cti][best_ati] + 0.5);
+            if (score_idx < 0) score_idx = 0;
+            if (score_idx >= 100) score_idx = 99;
+            if (wvc->selected == original_selected[best_cti][best_ati])
+                first_match_array[score_idx]++;
+            first_count_array[score_idx]++;
+
             first_score[best_cti][best_ati] = WORST_SCORE;    // done with it
             change[best_cti][best_ati] = 1;
             first_count++;
+
             break;
         case FILTER:
             if (filter_selection[best_cti][best_ati] == NULL)
@@ -591,6 +629,16 @@ FILE* score_ofp = NULL;
                 exit(1);
             }
             wvc->selected = filter_selection[best_cti][best_ati];
+
+            neighbor_idx = neighbor_count[best_cti][best_ati];
+            dif_ratio_idx = (int)(dif_ratio[best_cti][best_ati] * 100.0 + 0.5);
+            if (dif_ratio_idx < 0) dif_ratio_idx = 0;
+            if (dif_ratio_idx >= 100) dif_ratio_idx = 99;
+            if (wvc->selected == original_selected[best_cti][best_ati])
+                filter_match_array[neighbor_idx][dif_ratio_idx]++;
+            filter_count_array[neighbor_idx][dif_ratio_idx]++;
+
+            first_score[best_cti][best_ati] = WORST_SCORE;    // done with it
             filter_score[best_cti][best_ati] = WORST_SCORE;    // done with it
             change[best_cti][best_ati] = 1;
             filter_count++;
@@ -719,31 +767,61 @@ FILE* score_ofp = NULL;
                         new_selected->spd;
                 }
 
-                //-------------------------//
-                // calculate the new score //
-                //-------------------------//
+                //--------------------------//
+                // calculate the new scores //
+                //--------------------------//
 
-                float speed_score = new_selected->spd * M_SPEED + B_SPEED;
-                float dif_ratio_score = best_to_second_ratio * M_DIF_RATIO +
-                    B_DIF_RATIO;
-                float norm_dif_score = dif_to_speed_ratio * M_NORM_DIF +
-                    B_NORM_DIF;
-                float neighbor_score = selected_count * M_NEIGHBOR +
-                    B_NEIGHBOR;
+                neighbor_count[cti][ati] = selected_count;
+                dif_ratio[cti][ati] = best_to_second_ratio;
+                float m, b;
 
-                float new_score = neighbor_score + dif_ratio_score;
+                // neighbor
+                if (selected_count > NEIGHBOR_BREAK_VALUE)
+                {
+                    m = ((float)NEIGHBOR_BEST_SCORE - 1.0) /
+                        ((float)NEIGHBOR_BEST_VALUE -
+                        (float)NEIGHBOR_BREAK_VALUE);
+                    b = 1.0 - m * (float)NEIGHBOR_BREAK_VALUE;
+                }
+                else
+                {
+                    m = (1.0 - 0.0) / ((float)NEIGHBOR_BREAK_VALUE -
+                        (float)NEIGHBOR_WORST_VALUE);
+                    b = 1.0 - m * (float)NEIGHBOR_BREAK_VALUE;
+                }
+                float neighbor_score = m * (float)selected_count + b;
+
+                // dif ratio
+                if (best_to_second_ratio > DIF_RATIO_BREAK_VALUE)
+                {
+                    m = ((float)DIF_RATIO_BEST_SCORE - 1.0) /
+                        ((float)DIF_RATIO_BEST_VALUE -
+                        (float)DIF_RATIO_BREAK_VALUE);
+                    b = 1.0 - m * (float)DIF_RATIO_BREAK_VALUE;
+                }
+                else
+                {
+                    m = (1.0 - 0.0) / ((float)DIF_RATIO_BREAK_VALUE -
+                        (float)DIF_RATIO_WORST_VALUE);
+                    b = 1.0 - m * (float)DIF_RATIO_BREAK_VALUE;
+                }
+                float dif_ratio_score = m * (float)best_to_second_ratio + b;
+
+                float new_score = FILTER_FACTOR * neighbor_score *
+                    dif_ratio_score;
 
                 // only change the filter score if it means something new
                 if (filter_selection[cti][ati] != new_selected)
                 {
                     filter_score[cti][ati] = new_score;
 if (score_ofp)
-  fprintf(score_ofp, "%g %g %g %g %g\n", speed_score, dif_ratio_score, norm_dif_score, neighbor_score, filter_score[cti][ati]);
+  fprintf(score_ofp, "%g %g %g\n", neighbor_score, dif_ratio_score,
+    filter_score[cti][ati]);
                 }
                 filter_selection[cti][ati] = new_selected;
             }
         }
-        if (loop_idx % 1000 == 0 && loop_idx != 0)
+        if (loop_idx % 500 == 0 && loop_idx != 0)
         {
             int total_count = first_count + filter_count;
             float first_percent = 100.0 * (float)first_count /
@@ -752,13 +830,57 @@ if (score_ofp)
                 (float)total_count;
             sprintf(filename, "%s.%06d", vctr_base, loop_idx);
             l2b.WriteVctr(filename, 0);
-            printf("1st : %.1f  Fil : %.1f (%g)\n", first_percent,
-                filter_percent, best_score);
+            printf("1st:%.1f  Fil:%.1f, Best 1st:%g  Best Fil:%g\n",
+                first_percent, filter_percent, best_first_score,
+                best_filter_score);
+            best_first_score = WORST_SCORE;
+            best_filter_score = WORST_SCORE;
 
 sprintf(filename, "%s.%06d.scr", vctr_base, loop_idx);
 if (score_ofp)
   fclose(score_ofp);
 score_ofp = fopen(filename, "w");
+
+FILE* first_fp = fopen("first.dat", "w");
+for (int i = 0; i < 100; i++)
+{
+  if (first_count_array[i] > 1)
+  fprintf(first_fp, "%g %g\n", (float)i / 100.0,
+    (float)first_match_array[i] / (float)first_count_array[i]);
+}
+fclose(first_fp);
+FILE* filter_fp = fopen("filter.dat", "w");
+for (int i = 0; i < 49; i++)
+{
+  for (int j = 0; j < 100; j++)
+  {
+    if (filter_count_array[i][j] > 1)
+    fprintf(filter_fp, "%d %g %g\n", i, (float)j / 100.0,
+      (float)filter_match_array[i][j] / (float)filter_count_array[i][j]);
+  }
+}
+fclose(filter_fp);
+
+// compare to original
+unsigned long comp_total_count = 0;
+unsigned long match_count = 0;
+for (int ati = 0; ati < AT_WIDTH; ati++)
+{
+  for (int cti = 0; cti < CT_WIDTH; cti++)
+  {
+    WVC* wvc = swath->GetWVC(cti, ati);
+    if (wvc == NULL)
+        continue;
+    if (wvc->selected == NULL)
+        continue;
+    if (wvc->selected == original_selected[cti][ati])
+        match_count++;
+    comp_total_count++;
+  }
+}
+printf("Match = %.2f %%\n", 100.0 * (float)match_count /
+  (float)comp_total_count);
+
         }
         loop_idx++;
     } while (1);

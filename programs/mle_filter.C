@@ -108,6 +108,8 @@ template class TrackerBase<unsigned short>;
 
 #define CT_WIDTH  78
 
+#define MAX_ANG_DIF  45.0
+
 //--------//
 // MACROS //
 //--------//
@@ -134,6 +136,9 @@ const char* usage_array[] = { "<sim_config_file>", "<min_prob>",
 
 float prob_array[AT_WIDTH][CT_WIDTH];
 int   idx_array[AT_WIDTH][CT_WIDTH];
+
+extern float g_available_fraction;
+extern float g_speed_stopper;
 
 //--------------------//
 // Report handler     //
@@ -460,7 +465,16 @@ main(
                         // accumulate the nearest's probability //
                         //--------------------------------------//
 
-                        prob_sum += near_prob;
+                        //--------------------------//
+                        // check direction nearness //
+                        //--------------------------//
+
+                        float difference = ANGDIF(nearest->dir, target_dir);
+                        // only count it if it is aligned, otherwise it is
+                        // like having zero probability (harsh!)
+                        if (difference < MAX_ANG_DIF * dtr)
+                            prob_sum += near_prob;
+
                         wvc_count++;
                     }
                 }
@@ -489,7 +503,20 @@ main(
     // Just Ambiguity Removal //
     //------------------------//
 
-    swath->MedianFilter(7, 300, 0, 0, 0);
+    g_speed_stopper = 4.0;
+    g_available_fraction = 0.25;
+    swath->MedianFilter(5, 250, 0, 0, 0);
+
+    sprintf(filename, "%s.pass", l2b_output_file);
+    if (! l2b.WriteVctr(filename, 0))
+    {
+        fprintf(stderr, "%s: error writing vctr file %s\n", command,
+            filename);
+        exit(1);
+    }
+
+    g_speed_stopper = 0.0;
+    swath->MedianFilter(5, 100, 0, 0, 0);
 
     if (! hdf_target_flag)
     {
