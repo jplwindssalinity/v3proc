@@ -620,6 +620,7 @@ LimitChecker::_initialize(void)
         case DATA_UINT2_12:
         case DATA_UINT2_76:
         case DATA_UINT2_100:
+        case DATA_UINT2_810:
         case DATA_UINT2_3240:
         case DATA_UINT2_100_12:
         case DATA_UINT2_4:
@@ -652,6 +653,7 @@ LimitChecker::_initialize(void)
             break;
         case DATA_INT1:
         case DATA_INT1_76:
+        case DATA_INT1_810:
         case DATA_INT1_3240:
             _maxExceedValue = (void*) new char;
             _readFunc = read_int1;
@@ -689,6 +691,7 @@ LimitChecker::_initialize(void)
         case DATA_FLOAT4_76:
         case DATA_FLOAT4_76_4:
         case DATA_FLOAT4_100:
+        case DATA_FLOAT4_810:
         case DATA_FLOAT4_3240:
         case DATA_FLOAT4_100_8:
             _maxExceedValue = (void*) new float;
@@ -982,6 +985,7 @@ HK2LimitChecker::_initialize(void)
         case DATA_UINT2_12:
         case DATA_UINT2_76:
         case DATA_UINT2_100:
+        case DATA_UINT2_810:
         case DATA_UINT2_3240:
         case DATA_UINT2_100_12:
         case DATA_UINT2_4:
@@ -1002,6 +1006,7 @@ HK2LimitChecker::_initialize(void)
             break;
         case DATA_INT1:
         case DATA_INT1_76:
+        case DATA_INT1_810:
         case DATA_INT1_3240:
             _limits = (void*)new char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(char));
@@ -1021,6 +1026,7 @@ HK2LimitChecker::_initialize(void)
         case DATA_FLOAT4_76:
         case DATA_FLOAT4_76_4:
         case DATA_FLOAT4_100:
+        case DATA_FLOAT4_810:
         case DATA_FLOAT4_3240:
         case DATA_FLOAT4_100_8:
             _limits = (void*)new float [numElements];
@@ -1219,6 +1225,7 @@ L1ALimitChecker::_initialize(void)
         case DATA_UINT2_12:
         case DATA_UINT2_76:
         case DATA_UINT2_100:
+        case DATA_UINT2_810:
         case DATA_UINT2_3240:
         case DATA_UINT2_100_12:
         case DATA_UINT2_4:
@@ -1239,6 +1246,7 @@ L1ALimitChecker::_initialize(void)
             break;
         case DATA_INT1:
         case DATA_INT1_76:
+        case DATA_INT1_810:
         case DATA_INT1_3240:
             _limits = (void*)new char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(char));
@@ -1258,6 +1266,7 @@ L1ALimitChecker::_initialize(void)
         case DATA_FLOAT4_76:
         case DATA_FLOAT4_76_4:
         case DATA_FLOAT4_100:
+        case DATA_FLOAT4_810:
         case DATA_FLOAT4_3240:
         case DATA_FLOAT4_100_8:
             _limits = (void*)new float [numElements];

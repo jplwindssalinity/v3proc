@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   07 May 1999 13:10:52   sally
+// add memory check for CDS and SES
+// 
 //    Rev 1.8   01 May 1998 14:46:34   sally
 // add HK2 file
 // 
@@ -122,8 +125,12 @@ const Itime     endTime)
     if (_firstDataRecTime > _lastDataRecTime)
     {
         fprintf(stderr, "%s: first data time is later than last\n", _filename);
-        _status = returnStatus = ERROR_FILE_STARTTIME_AFTER_ENDTIME;
-        return;
+
+        //--------------------------------------
+        // Lee said: report but continue
+        // _status = returnStatus = ERROR_FILE_STARTTIME_AFTER_ENDTIME;
+        // return;
+        //--------------------------------------
     }
 
     // if data is out of range, then return "no more data"

@@ -2523,7 +2523,7 @@ WindSwath::ReadHdfL2B(
 {
     // open the L2B HDF file
     HdfFile::StatusE returnStatus = HdfFile::OK;
-    NoTimeTlmFile hdfL2BFile(filename, returnStatus);
+    NoTimeTlmFile hdfL2BFile(filename, SOURCE_L2B, returnStatus);
     if (returnStatus != HdfFile::OK)
         return(0);
 

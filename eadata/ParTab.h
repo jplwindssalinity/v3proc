@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   25 May 1999 14:05:52   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.8   13 Oct 1998 15:34:22   sally
 // added L1B file
 // 
@@ -89,6 +92,9 @@ extern const int L1BParTabSize;
  
 extern const ParTabEntry L2AParTab[];
 extern const int L2AParTabSize;
+ 
+extern const ParTabEntry L2AxParTab[];
+extern const int L2AxParTabSize;
  
 extern const ParTabEntry L2BParTab[];
 extern const int L2BParTabSize;

@@ -7,8 +7,8 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.0   26 Apr 1999 15:50:44   sally
-// Initial revision.
+//    Rev 1.1   07 May 1999 13:11:02   sally
+// add memory check for CDS and SES
 // Revision 1.2  1999/04/25 22:19:53  sally
 // *** empty log message ***
 //
@@ -22,9 +22,6 @@
 //
 //
 //=========================================================
-
-static const char MemoryFromFile_C_id[] =
-    "@(#) $Header$";
 
 #include <assert.h>
 #include <stdio.h>
@@ -200,3 +197,86 @@ for (MemoryFromFileBlock* block = GetHead(); block != 0;
     fclose(inputFP);
 
 } // CDSMemoryFromFileList::CDSMemoryFromFileList
+
+SESMemoryFromFileList::SESMemoryFromFileList(
+const char*     sesMemoryFilename)
+: MemoryFromFileList(sesMemoryFilename),
+  _status(SES_FILE_MEMORY_OK)
+{
+    FILE* inputFP = fopen(sesMemoryFilename, "r");
+    if (inputFP == NULL)
+    {
+        _status = SES_FILE_MEMORY_OPEN_FAIL;
+        return;
+    }
+    char line[BIG_4K_SIZE];
+    char* readPtr;
+    
+    while ((readPtr = fgets(line, BIG_4K_SIZE, inputFP)) != NULL)
+    {
+        if (readPtr != line)
+        {
+            if (feof(inputFP))
+                return;
+            else
+            {
+                _status = SES_FILE_MEMORY_READ_ADDR_FAIL;
+                return;
+            }
+       
+        }
+        // take out "\n"
+        line[strlen(line) - 1] = '\0';
+        // skip blank lines, and comment lines
+        if (*line == '\0' || *line == '#' || *line == '!')
+            continue;
+
+        unsigned int startAddr=0;
+        char* lasts=0;
+        
+        char* stringPtr = safe_strtok(line, " ", &lasts);
+        if (sscanf(stringPtr, "%x", &startAddr) != 1)
+        {
+            _status = SES_FILE_MEMORY_READ_ADDR_FAIL;
+            return;
+        }
+        unsigned short twoBytes;
+        unsigned char oneByte;
+        unsigned int byteLen=0;
+        char memData[BIG_4K_SIZE];
+
+        char* memPtr = memData;
+        while ((stringPtr = safe_strtok(0, " ", &lasts)) != 0)
+        {
+            if (sscanf(stringPtr, "%hX", &twoBytes) != 1)
+            {
+                _status = SES_FILE_MEMORY_READ_DATA_FAIL;
+                return;
+            }
+            oneByte = (unsigned char) twoBytes;
+            memcpy(memPtr, &oneByte, 1);
+            memPtr++;
+            byteLen++;
+        }
+        MemoryFromFileBlock* newMemory =
+                  new MemoryFromFileBlock(startAddr, memData, byteLen);
+        SortedList<MemoryFromFileBlock>::AddSorted(newMemory);
+    }
+
+#ifdef DEBUG
+for (MemoryFromFileBlock* block = GetHead(); block != 0;
+                          block = GetNext())
+{
+    printf("Start: %08X", block->GetStartAddr());
+    const char* data = block->GetData();
+    for (unsigned int i = 0; i < block->GetByteLen(); i++, data++)
+    {
+        printf(" %02X", (unsigned short) *data);
+    }
+    printf("\n");
+}
+#endif
+
+    fclose(inputFP);
+
+} // SESMemoryFromFileList::SESMemoryFromFileList

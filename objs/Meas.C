@@ -489,6 +489,7 @@ int         arrayIndex)  // 0 - 3239
     ushortP = (unsigned short*)param->data;
     unsigned short sigma0ModeFlags = *(ushortP + arrayIndex);
     beamIdx = (int) (sigma0ModeFlags & 0x0004);
+    beamIdx >>= 2;
 
     //---------------------------------------------------
     // measurement type depends on beam number
@@ -529,6 +530,7 @@ int         arrayIndex)  // 0 - 3239
     floatP = (float*)param->data;
     C = *(floatP + arrayIndex);
 
+//printf("value = %f\n", value);
     return 1;
 
 } // Meas::UnpackL2AHdf
@@ -638,7 +640,7 @@ int         cellNo)      // column number: 1-76
         assert(param != 0);
         unsigned short* sliceModeFlagsP = (unsigned short*) (param->data);
 
-        for (int j=0; j < MAX_L2AHDF_NUM_CELLS; j++)
+        for (int j=0; j < l2aHdf->numCells; j++)
         {
             // extract only if cell_index is the target one
             if (*(cellIndexP + j) != (char)cellNo)

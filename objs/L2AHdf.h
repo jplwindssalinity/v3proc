@@ -16,6 +16,10 @@ static const char rcs_id_HDF_l2a_h[] =
 #define MAX_L2AHDF_NUM_CELLS   3240
 #endif
 
+#ifndef MAX_L2AxHDF_NUM_CELLS
+#define MAX_L2AxHDF_NUM_CELLS   810
+#endif
+
 #ifndef MAX_L2AHDF_CELL_NO
 #define MIN_L2AHDF_CELL_NO     1
 #define MAX_L2AHDF_CELL_NO     76
@@ -79,8 +83,9 @@ public:
 	// construction //
 	//--------------//
 
-    L2AHdf(const char*         filename,                 // IN
-           HdfFile::StatusE&   returnStatus);            // OUT
+    L2AHdf(const char*         filename,        // IN
+           SourceIdE           sourceId,        // IN
+           HdfFile::StatusE&   returnStatus);   // OUT
 
 	virtual ~L2AHdf();
 
@@ -95,6 +100,7 @@ public:
     int    currentRowNo;
     int    currentCellNo;
 
+    int    numCells;       // 3240 or 810
 };
 
 #endif

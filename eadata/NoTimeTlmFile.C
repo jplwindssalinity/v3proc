@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.3   25 May 1999 14:05:44   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.2   01 May 1998 14:46:54   sally
 // add HK2 file
 // 
@@ -32,8 +35,9 @@ static const char rcs_id[] =
 
 NoTimeTlmFile::NoTimeTlmFile(
 const char*     filename,
+SourceIdE       sourceType,
 StatusE&        returnStatus)
-:   TlmHdfFile(filename, SOURCE_L2A, returnStatus)
+:   TlmHdfFile(filename, sourceType, returnStatus)
 {
     // check TlmHdfFile construction
     if (_status != HdfFile::OK)

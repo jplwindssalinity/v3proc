@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.16   25 May 1999 14:06:06   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.15   03 Nov 1998 16:02:06   sally
 // adapt to Vdata
 // 
@@ -285,8 +288,9 @@ const char*     filename)
         file = new L1BHdfFile(fullname, returnStatus, startTime, endTime);
         break;
     case SOURCE_L2A:
+    case SOURCE_L2Ax:
     case SOURCE_L2B:
-        file = new NoTimeTlmFile(fullname, returnStatus);
+        file = new NoTimeTlmFile(fullname, tlm_type, returnStatus);
         break;
     default:
         _status = INVALID_SOURCE_ID;

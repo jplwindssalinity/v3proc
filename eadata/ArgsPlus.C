@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.18   10 May 1999 16:51:12   sally
+// add "Append" option
+// 
 //    Rev 1.17   13 Oct 1998 15:32:50   sally
 // 
 // added L1B file
@@ -559,12 +562,17 @@ ArgsPlus::FilterSetOrNull(
 
 FILE*
 ArgsPlus::OutputFileOrStdout(
-    char*   output_filename)
+    char*   output_filename,
+    int     append)
 {
     if (! output_filename)
         return (stdout);
 
-    FILE* ofp = fopen(output_filename, "w");
+    FILE* ofp;
+    if (append)
+        ofp = fopen(output_filename, "a");
+    else
+        ofp = fopen(output_filename, "w");
     if (! ofp)
     {
       fprintf(stderr, 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.7   25 May 1999 14:05:54   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.6   20 Nov 1998 16:03:34   sally
 // change some data types and limit check arrays
 // 
@@ -56,6 +59,7 @@ const char *source_id_map[] =
     SOURCE_L1B_STRING,
     SOURCE_HK2_STRING,
     SOURCE_L2A_STRING,
+    SOURCE_L2Ax_STRING,
     SOURCE_L2B_STRING
 };
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.12   25 May 1999 14:06:04   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.11   23 Feb 1999 11:13:30   sally
 // L2A array size chaned from 810 to 3240
 // 
@@ -84,6 +87,7 @@ extern void pr_uint1_76(FILE* ofp, char* dataP);
 extern void pr_uint1_49(FILE* ofp, char* dataP);
 extern void pr_uint1_49_linesep(FILE* ofp, char* dataP);
 extern void pr_int1_76(FILE* ofp, char* dataP);
+extern void pr_int1_810(FILE* ofp, char* dataP);
 extern void pr_int1_3240(FILE* ofp, char* dataP);
 
 extern void pr_uint2_4(FILE* ofp, char* dataP);
@@ -92,6 +96,7 @@ extern void pr_uint2_12(FILE* ofp, char* dataP);
 extern void pr_uint2_25(FILE* ofp, char* dataP);
 extern void pr_uint2_76(FILE* ofp, char* dataP);
 extern void pr_uint2_100(FILE* ofp, char* dataP);
+extern void pr_uint2_810(FILE* ofp, char* dataP);
 extern void pr_uint2_3240(FILE* ofp, char* dataP);
 extern void pr_uint2_100_linesep(FILE* ofp, char* dataP);
 extern void pr_uint2_100_12(FILE* ofp, char* dataP);
@@ -114,6 +119,7 @@ extern void pr_float4_6_100_linesep(FILE* ofp, char* dataP);
 
 extern void pr_12float4_6(FILE* ofp, char* dataP);
 extern void pr_76float4_6(FILE* ofp, char* dataP);
+extern void pr_810float4_6(FILE* ofp, char* dataP);
 extern void pr_3240float4_6(FILE* ofp, char* dataP);
 extern void pr_76_4_float4_6(FILE* ofp, char* dataP);
 extern void pr_100_8_float4_6(FILE* ofp, char* dataP);

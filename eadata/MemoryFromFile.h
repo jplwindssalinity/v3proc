@@ -7,8 +7,8 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.0   26 Apr 1999 15:50:46   sally
-// Initial revision.
+//    Rev 1.1   07 May 1999 13:11:06   sally
+// add memory check for CDS and SES
 // Revision 1.2  1999/04/25 22:19:53  sally
 // *** empty log message ***
 //
@@ -136,9 +136,22 @@ protected:
 class SESMemoryFromFileList : public MemoryFromFileList
 {
 public:
-    SESMemoryFromFileList(const char*    sesMemoryFilename);
+    enum SESMemoryFromFileStatusE
+    {
+        SES_FILE_MEMORY_OK,
+        SES_FILE_MEMORY_OPEN_FAIL,
+        SES_FILE_MEMORY_READ_ADDR_FAIL,
+        SES_FILE_MEMORY_READ_DATA_FAIL
+    };
+
+    SESMemoryFromFileList(const char*    cdsMemoryFilename);
 
     virtual ~SESMemoryFromFileList() { };
+
+    SESMemoryFromFileStatusE     GetStatus(void) { return _status; }
+
+protected:
+    SESMemoryFromFileStatusE     _status;
 };
 
 #endif

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   10 May 1999 16:51:18   sally
+// add "Append" option
+// 
 //    Rev 1.7   13 Oct 1998 15:32:56   sally
 // added L1B file
 // 
@@ -97,7 +100,7 @@ public:
   FilterSet*      FilterSetOrNull(
 				  SourceIdE   tlm_type,
 				  char*       filters_string);
-  FILE*           OutputFileOrStdout(char* output_filename);
+  FILE*           OutputFileOrStdout(char* output_filename, int append=0);
   int             OutputFdOrStdout(char* output_filename);
   ToDoList*       ToDoListOrExit(const char* filename);
   char*           GetLimitFileOrExit(

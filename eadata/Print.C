@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.11   25 May 1999 14:06:00   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.10   23 Feb 1999 11:13:28   sally
 // L2A array size chaned from 810 to 3240
 // 
@@ -204,6 +207,14 @@ void pr_int1_76(FILE *ofp, char *dataP)
     return;
 }
 
+void pr_int1_810(FILE *ofp, char *dataP)
+{
+    char *ptr = (char *)dataP;
+    for (int j = 0; j < 810; j++, ptr++)
+        fprintf(ofp, "%6d ", *ptr);
+    return;
+}
+
 void pr_int1_3240(FILE *ofp, char *dataP)
 {
     char *ptr = (char *)dataP;
@@ -256,6 +267,14 @@ void pr_uint2_100(FILE *ofp, char *dataP)
 {
     unsigned short *ptr = (unsigned short *)dataP;
     for (int i = 0; i < 100; i++)
+        fprintf(ofp, "%6u ", *(ptr + i));
+    return;
+}
+
+void pr_uint2_810(FILE *ofp, char *dataP)
+{
+    unsigned short *ptr = (unsigned short *)dataP;
+    for (int i = 0; i < 810; i++)
         fprintf(ofp, "%6u ", *(ptr + i));
     return;
 }
@@ -393,6 +412,16 @@ void pr_76float4_6(FILE *ofp, char *dataP)
 {
     float *ptr = (float *)dataP;
     for (int i = 0; i < 76; i++, ptr++)
+    {
+        fprintf(ofp, "%.6g ", *ptr);
+    }
+    return;
+}
+
+void pr_810float4_6(FILE *ofp, char *dataP)
+{
+    float *ptr = (float *)dataP;
+    for (int i = 0; i < 810; i++, ptr++)
     {
         fprintf(ofp, "%.6g ", *ptr);
     }

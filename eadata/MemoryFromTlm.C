@@ -7,8 +7,8 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.0   26 Apr 1999 15:50:48   sally
-// Initial revision.
+//    Rev 1.1   07 May 1999 13:11:10   sally
+// add memory check for CDS and SES
 // Revision 1.2  1999/04/25 05:07:20  sally
 // *** empty log message ***
 //
@@ -22,9 +22,6 @@
 //
 //
 //=========================================================
-
-static const char MemoryFromTlm_C_id[] =
-    "@(#) $Header$";
 
 #include <assert.h>
 
@@ -97,7 +94,7 @@ TlmHdfFile*  tlmHdfFile)
         char memData[16];
         if ( ! _memoryDataParamP->extractFunc(tlmHdfFile,
                                           _memoryDataParamP->sdsIDs,
-                                          index, 1, 1, &memData, 0))
+                                          index, 1, 1, memData, 0))
         {
             fprintf(stderr,
                       "Extracting Memory Data (index %d) from %s failed\n",
@@ -127,3 +124,72 @@ CDSMemoryFromTlmList::~CDSMemoryFromTlmList()
     }
 
 } // CDSMemoryFromTlmList::~CDSMemoryFromTlmList
+
+SESMemoryFromTlmList::SESMemoryFromTlmList(
+TlmHdfFile*  tlmHdfFile)
+: MemoryFromTlmList(tlmHdfFile),
+  _memoryAddrParamP(0), _memoryDataParamP(0),
+  _status(SES_TLM_MEMORY_OK)
+{
+    _memoryAddrParamP = ParTabAccess::GetParameter(
+                             SOURCE_L1A, SES_MEMORY_DUMP_ADDR, UNIT_DEC_ADDR);
+    if (tlmHdfFile->OpenParamDatasets(_memoryAddrParamP) != HdfFile::OK)
+    {
+        _status = SES_TLM_MEMORY_PARAM_OPEN_FAIL;
+        return;
+    }
+
+    _memoryDataParamP = ParTabAccess::GetParameter(
+                             SOURCE_L1A, SES_MEMORY_DUMP_DATA, UNIT_DN);
+    if (tlmHdfFile->OpenParamDatasets(_memoryDataParamP) != HdfFile::OK)
+    {
+        _status = SES_TLM_MEMORY_PARAM_OPEN_FAIL;
+        return;
+    }
+
+    for (int index=0; index < tlmHdfFile->GetDataLength(); index++)
+    {
+        unsigned short startAddr=0;
+        if ( ! _memoryAddrParamP->extractFunc(tlmHdfFile,
+                                          _memoryAddrParamP->sdsIDs,
+                                          index, 1, 1, &startAddr, 0))
+        {
+            fprintf(stderr,
+                      "Extracting Memory Address (index %d) from %s failed\n",
+                      index, tlmHdfFile->GetFileName());
+            _status = SES_TLM_MEMORY_PARAM_EXTRACT_FAIL;
+            return;
+        }
+        char memData[4];
+        if ( ! _memoryDataParamP->extractFunc(tlmHdfFile,
+                                          _memoryDataParamP->sdsIDs,
+                                          index, 1, 1, &memData, 0))
+        {
+            fprintf(stderr,
+                      "Extracting Memory Data (index %d) from %s failed\n",
+                      index, tlmHdfFile->GetFileName());
+            _status = SES_TLM_MEMORY_PARAM_EXTRACT_FAIL;
+            return;
+        }
+        MemoryFromTlmBlock* newMemory =
+                new MemoryFromTlmBlock((unsigned int)startAddr, memData, 4);
+        SortedList<MemoryFromTlmBlock>::AddSorted(newMemory);
+    }
+
+}//SESMemoryFromTlmList::SESMemoryFromTlmList
+
+SESMemoryFromTlmList::~SESMemoryFromTlmList()
+{
+    if (_memoryAddrParamP)
+    {
+        (void)_tlmHdfFile->CloseParamDatasets(_memoryAddrParamP);
+        _memoryAddrParamP = 0;
+    }
+
+    if (_memoryDataParamP)
+    {
+        (void)_tlmHdfFile->CloseParamDatasets(_memoryDataParamP);
+        _memoryDataParamP = 0;
+    }
+
+} // SESMemoryFromTlmList::~SESMemoryFromTlmList

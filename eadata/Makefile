@@ -63,6 +63,7 @@ OBJS = \
 	L1BHdfFile.o \
 	L1BParTab.o \
 	L2AParTab.o \
+	L2AxParTab.o \
 	L2BParTab.o \
 	LimitChecker.o \
 	LimitList.o \
@@ -174,6 +175,7 @@ L1AFilTab.o: L1AFilTab.C Filter.h FilterFunc.h EAList.h TlmHdfFile.h ListBase.h 
 L1AParTab.o: L1AParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 L1BHdfFile.o: L1BHdfFile.C L1BHdfFile.h L1AExtract.h ParTab.h TimeTlmFile.h CommonDefs.h Itime.h TlmHdfFile.h Parameter.h HdfFile.h EAList.h SafeString.h ListBase.h
 L1BParTab.o: L1BParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
+L2AxParTab.o: L2AxParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 L2AParTab.o: L2AParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 L2BParTab.o: L2BParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 LimitChecker.o: LimitChecker.C LimitChecker.h LimitState.h L1AExtract.h ParTab.h Polynomial.h PolyTable.h Parameter.h Itime.h CommonDefs.h TlmHdfFile.h EAList.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h

@@ -7,8 +7,11 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.18   26 Apr 1999 15:46:30   sally
-// use doubles instead of floats in DoStatistics
+//    Rev 1.20   25 May 1999 14:05:58   sally
+// add L2Ax for Bryan Stiles
+// 
+//    Rev 1.19   07 May 1999 13:11:18   sally
+// add memory check for CDS and SES
 // 
 //    Rev 1.17   14 Apr 1999 13:16:16   sally
 // change pow(x,2) to x * x, Lee says it is faster, for ForTran anyways
@@ -447,8 +450,29 @@ ParameterList::_SetTimeUnits(
 
     // look up the time parameter
     SourceIdE sourceId = target_param->sourceId;
+    ParamIdE timeParamId;
+    switch (sourceId)
+    {
+        case SOURCE_L1A:
+        case SOURCE_L1AP:
+        case SOURCE_L1A_DERIVED:
+        case SOURCE_HK2:
+            timeParamId = UTC_TIME;
+            break;
+        case SOURCE_L1B:
+            timeParamId = FRAME_TIME;
+            break;
+        case SOURCE_L2A:
+            timeParamId = WVC_ROW_TIME;
+            break;
+        case SOURCE_L2Ax:
+            timeParamId = WVC_ROW_TIME;
+            break;
+        default:
+            return (ParameterList::ERROR_SELECTING_PARAMETER);
+    }
     Parameter *time_param = ParTabAccess::GetParameter(sourceId,
-        UTC_TIME, unitId);
+        timeParamId, unitId);
     assert(time_param != 0);
  
     // copy the print function, unit name, and unit id

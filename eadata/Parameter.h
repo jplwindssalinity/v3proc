@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.37   25 May 1999 14:05:56   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.36   23 Feb 1999 11:13:26   sally
 // L2A array size chaned from 810 to 3240
 // 
@@ -255,6 +258,7 @@ enum { SPARE_HEATER_ENABLED, SPARE_HEATER_DISABLED };
 #define SOURCE_L1A_DERIVED_STRING       "L1ADerived"
 #define SOURCE_L1B_STRING               "L1B"
 #define SOURCE_L2A_STRING               "L2A"
+#define SOURCE_L2Ax_STRING              "L2Ax"
 #define SOURCE_L2B_STRING               "L2B"
 #define SOURCE_HK2_STRING               "HK2"
 
@@ -1078,6 +1082,7 @@ enum SourceIdE
     SOURCE_L1B,
     SOURCE_HK2,
     SOURCE_L2A,
+    SOURCE_L2Ax,
     SOURCE_L2B
 };
 
@@ -1088,11 +1093,13 @@ enum DataTypeE
     DATA_UINT1_49,
     DATA_INT1,
     DATA_INT1_76,
+    DATA_INT1_810,
     DATA_INT1_3240,
     DATA_UINT2,
     DATA_UINT2_12,
     DATA_UINT2_76,
     DATA_UINT2_100,
+    DATA_UINT2_810,
     DATA_UINT2_3240,
     DATA_UINT2_100_12,
     DATA_UINT2_4,
@@ -1116,6 +1123,7 @@ enum DataTypeE
     DATA_FLOAT4_76,
     DATA_FLOAT4_76_4,
     DATA_FLOAT4_100,
+    DATA_FLOAT4_810,
     DATA_FLOAT4_3240,
     DATA_FLOAT4_100_8,
     DATA_ITIME,

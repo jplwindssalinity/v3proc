@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   25 May 1999 14:05:46   sally
+// add L2Ax for Bryan Stiles
+// 
 //    Rev 1.1   20 Apr 1998 10:22:18   sally
 // change for WindSwatch
 // 
@@ -31,6 +34,7 @@ class NoTimeTlmFile : public TlmHdfFile
 public:
 
     NoTimeTlmFile(const char*  filename,                 // IN
+                  SourceIdE    sourceType,               // IN
                   StatusE&     returnStatus);            // OUT
 
     virtual ~NoTimeTlmFile();

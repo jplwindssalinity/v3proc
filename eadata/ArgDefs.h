@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.19   25 May 1999 14:04:14   sally
+// add L2Ax for Bryan Stiles
+// 
+//    Rev 1.18   10 May 1999 16:50:30   sally
+// add "Append" option
+// 
+//    Rev 1.17   07 May 1999 13:10:38   sally
+// add memory check for CDS and SES
+// 
 //    Rev 1.16   12 Apr 1999 11:10:02   sally
 // add new options for statistics extraction
 // 
@@ -175,6 +184,14 @@ static const char rcs_argdefs_h[] =
 #define L2A_LIMIT_FILE_OPTION       "-l2alim"
 #define L2A_LIMIT_FILE_ARGUMENT     "L1A_limit_file"
 
+#define L2Ax_FILES_KEYWORD           "L2Ax_FILES"
+#define L2Ax_FILES_OPTION            "-l2ax"
+#define L2Ax_FILES_ARGUMENT          "L2Ax_file..."
+ 
+#define L2Ax_LIMIT_FILE_KEYWORD      "L2Ax_LIMIT_FILE"
+#define L2Ax_LIMIT_FILE_OPTION       "-l2axlim"
+#define L2Ax_LIMIT_FILE_ARGUMENT     "L1Ax_limit_file"
+
 #define L2B_FILES_KEYWORD           "L2B_FILES"
 #define L2B_FILES_OPTION            "-l2b"
 #define L2B_FILES_ARGUMENT          "L2B_file..."
@@ -187,9 +204,13 @@ static const char rcs_argdefs_h[] =
 #define LOG_FILE_OPTION             "-log"
 #define LOG_FILE_ARGUMENT           "Log_file"
 
-#define MEMORY_FILE_KEYWORD         "MEMORY_FILE"
-#define MEMORY_FILE_OPTION          "-mem"
-#define MEMORY_FILE_ARGUMENT        "memory_file"
+#define CDS_MEMORY_FILE_KEYWORD     "CDS_MEMORY_FILE"
+#define CDS_MEMORY_FILE_OPTION      "-cdsmem"
+#define CDS_MEMORY_FILE_ARGUMENT    "cds_memory_file"
+
+#define SES_MEMORY_FILE_KEYWORD     "SES_MEMORY_FILE"
+#define SES_MEMORY_FILE_OPTION      "-sesmem"
+#define SES_MEMORY_FILE_ARGUMENT    "ses_memory_file"
 
 #define QPF_DIRECTORY_KEYWORD       "QPF_DIRECTORY"
 #define QPF_DIRECTORY_OPTION        "-qpfdir"
@@ -312,6 +333,9 @@ static const char rcs_argdefs_h[] =
 #define USE_AVG_STAT_KEYWORD        "AVG_STAT"
 #define USE_AVG_STAT_OPTION         "-useAvgStat"
 
+#define APPEND_OUTPUT_KEYWORD        "APPEND_OUTPUT"
+#define APPEND_OUTPUT_OPTION         "-appendOutput"
+
 //============
 // Structures 
 //============
@@ -355,14 +379,20 @@ static const char rcs_argdefs_h[] =
     {L2A_FILES_KEYWORD, L2A_FILES_OPTION, L2A_FILES_ARGUMENT}
 #define L2A_LIMIT_FILE_ARG   \
     {L2A_LIMIT_FILE_KEYWORD, L2A_LIMIT_FILE_OPTION, L2A_LIMIT_FILE_ARGUMENT}
+#define L2Ax_FILES_ARG    \
+    {L2Ax_FILES_KEYWORD, L2Ax_FILES_OPTION, L2Ax_FILES_ARGUMENT}
+#define L2Ax_LIMIT_FILE_ARG   \
+    {L2Ax_LIMIT_FILE_KEYWORD, L2Ax_LIMIT_FILE_OPTION, L2Ax_LIMIT_FILE_ARGUMENT}
 #define L2B_FILES_ARG    \
     {L2B_FILES_KEYWORD, L2B_FILES_OPTION, L2B_FILES_ARGUMENT}
 #define L2B_LIMIT_FILE_ARG   \
     {L2B_LIMIT_FILE_KEYWORD, L2B_LIMIT_FILE_OPTION, L2B_LIMIT_FILE_ARGUMENT}
 #define LOG_FILE_ARG	\
 	{LOG_FILE_KEYWORD, LOG_FILE_OPTION, LOG_FILE_ARGUMENT}
-#define MEMORY_FILE_ARG \
-    {MEMORY_FILE_KEYWORD, MEMORY_FILE_OPTION, MEMORY_FILE_ARGUMENT}
+#define CDS_MEMORY_FILE_ARG \
+    {CDS_MEMORY_FILE_KEYWORD, CDS_MEMORY_FILE_OPTION, CDS_MEMORY_FILE_ARGUMENT}
+#define SES_MEMORY_FILE_ARG \
+    {SES_MEMORY_FILE_KEYWORD, SES_MEMORY_FILE_OPTION, SES_MEMORY_FILE_ARGUMENT}
 #define ALERT_MAIL_ADDRESS_ARG  \
     {ALERT_MAIL_ADDRESS_KEYWORD, ALERT_MAIL_ADDRESS_OPTION, \
      ALERT_MAIL_ADDRESS_ARGUMENT}
@@ -436,6 +466,8 @@ static const char rcs_argdefs_h[] =
     {STATISTICS_KEYWORD, STATISTICS_OPTION, "0"}
 #define USE_AVG_STAT_ARG   \
     {USE_AVG_STAT_KEYWORD, USE_AVG_STAT_OPTION, "0"}
+#define APPEND_OUTPUT_ARG   \
+    {APPEND_OUTPUT_KEYWORD, APPEND_OUTPUT_OPTION, "0"}
 #define STAT_NUM_FRAMES_ARG   \
     {STAT_NUM_FRAMES_KEYWORD, STAT_NUM_FRAMES_OPTION, STAT_NUM_FRAMES_ARGUMENT}
 

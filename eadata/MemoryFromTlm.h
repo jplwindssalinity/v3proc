@@ -7,8 +7,8 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.0   26 Apr 1999 15:50:50   sally
-// Initial revision.
+//    Rev 1.1   07 May 1999 13:11:14   sally
+// add memory check for CDS and SES
 // Revision 1.2  1999/04/25 05:07:20  sally
 // *** empty log message ***
 //
@@ -26,7 +26,7 @@
 #define MEMORY_FROM_TLM_H
 
 static const char rcs_id_MemoryFromTlm_h[] =
-     "@(#) $Header";
+     "@(#) $Header$";
 
 #include "EAList.h"
 
@@ -115,7 +115,23 @@ protected:
 class SESMemoryFromTlmList : public MemoryFromTlmList
 {
 public:
+    enum SESMemoryFromTlmStatusE
+    {
+        SES_TLM_MEMORY_OK,
+        SES_TLM_MEMORY_PARAM_OPEN_FAIL,
+        SES_TLM_MEMORY_PARAM_EXTRACT_FAIL
+    };
+
     SESMemoryFromTlmList(TlmHdfFile*  tlmHdfFile);
+
+    virtual ~SESMemoryFromTlmList();
+
+    SESMemoryFromTlmStatusE  GetStatus(void) { return _status; }
+
+protected:
+    Parameter*                _memoryAddrParamP;
+    Parameter*                _memoryDataParamP;
+    SESMemoryFromTlmStatusE   _status;
 };
 
 #endif

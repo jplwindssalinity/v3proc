@@ -18,9 +18,10 @@ static const char rcs_id_l2a_c[] =
 //========//
 
 L2AHdf::L2AHdf(
-const char*               filename,                 // IN
-HdfFile::StatusE&         returnStatus)             // OUT
-: NoTimeTlmFile(filename, returnStatus), L2A(),
+const char*               filename,       // IN
+SourceIdE                 sourceId,       // IN
+HdfFile::StatusE&         returnStatus)   // OUT
+: NoTimeTlmFile(filename, sourceId, returnStatus), L2A(),
   currentRowNo(1), currentCellNo(0)
 {
     // make sure all parent classes are instanciated ok
@@ -31,7 +32,7 @@ HdfFile::StatusE&         returnStatus)             // OUT
     for (int i=0; i < l2aMeasTableSize; i++)
     {
         Parameter* param = l2aMeasTable[i].param;
-        param = ParTabAccess::GetParameter(SOURCE_L2A, 
+        param = ParTabAccess::GetParameter(_sourceType, 
                           l2aMeasTable[i].paramId, l2aMeasTable[i].unitId);
         if (param == 0)
         {
@@ -84,6 +85,11 @@ HdfFile::StatusE&         returnStatus)             // OUT
         Itime rowOneTime = totalRowOneTime / numRowOne;
         header.startTime = (double) (rowOneTime.sec);
     }
+
+    if (sourceId == SOURCE_L2A)
+        numCells = MAX_L2AHDF_NUM_CELLS;
+    else
+        numCells = MAX_L2AxHDF_NUM_CELLS;
 
     returnStatus = HdfFile::_status = HdfFile::OK;
     return;

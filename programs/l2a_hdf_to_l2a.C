@@ -191,7 +191,7 @@ main(
 	// read in HDF 2A file   //
 	//-----------------------//
     HdfFile::StatusE status;
-    L2AHdf  l2aHdf(l2a_hdf_file, status);
+    L2AHdf  l2aHdf(l2a_hdf_file, SOURCE_L2A, status);
     if (status != HdfFile::OK)
     {
         fprintf(stderr, "%s: cannot open HDF %s for input\n",
