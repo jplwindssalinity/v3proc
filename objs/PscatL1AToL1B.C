@@ -41,6 +41,8 @@ PscatL1AToL1B::Convert(
     Spacecraft*  spacecraft,
     Pscat*       pscat,
     Ephemeris*   ephemeris,
+    Topo*        topo,
+    Stable*      stable,
     L1B*         l1b)
 {
     //--------------//
@@ -434,12 +436,12 @@ PscatL1AToL1B::Convert(
                 if (simVs1BCheckfile)
                 {
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
-                        &cf);
+                        topo, stable, &cf);
                 }
                 else
                 {
                     x_factor = BYUX.GetXTotal(spacecraft, pscat, meas, Es_cal,
-                        NULL);
+                        topo, stable, NULL);
                 }
                 pscat->cds.currentBeamIdx = real_beam_idx;
 
