@@ -62,10 +62,15 @@ public:
     void  FreeContents();
 
     int   AddIfSafe(Pulse* new_pulse);
+    void  AvoidNadir() { _avoidNadir = 1; };
+    void  IgnoreNadir() { _avoidNadir = 0; };
 
     int   WriteTransmitPulses(int beam_idx, FILE* fp);
     int   WriteEchoes(int beam_idx, FILE* fp);
     int   WriteNadirReturns(int beam_idx, FILE* fp);
+
+private:
+    int   _avoidNadir;
 };
 
 //======================================================================
@@ -97,6 +102,7 @@ public:
     int     SetPulseWidth(double pulse_width);
     void    SetOffsetMax(double offset_max);
     int     SetOffset(double offset);
+    void    ZeroPulseCount() { _pulseCount = 0; };
 
     void    GotoFirstCombo();
     int     GotoNextCombo();
@@ -105,9 +111,7 @@ public:
     double  DutyFactor(double pri) { return(_pulseWidth / pri); };
     void    Memorize();
     void    Recall();
-    int     WriteTransmitPulses(FILE* ofp);
-    int     WriteEchoes(FILE* ofp);
-    int     WriteNadirReturns(FILE* ofp);
+    int     WriteInfo(FILE* ofp, double pri);
 
 private:
     int     _pulserId;
@@ -163,13 +167,14 @@ public:
     int     SetPulsesInFlight(int pulses_in_flight);
     int     SetPri(double pri);
 
-    int     NeededPulseCount();
+    int     GenerateAllPulses();
     double  Optimize();
     void    GotoFirstCombo();
     int     GotoNextCombo();
     double  DutyFactor();
     void    Memorize();
     void    Recall();
+    int     WriteInfo(FILE* ofp);
     int     WritePulseTiming(const char* filename);
 
 private:
@@ -195,6 +200,8 @@ private:
     double  _angleBuffer;
     double  _timeBuffer;
 
+    int        _targetPulseCount;
+    double     _maxDutyFactor;
     PulseList  _pulseList;
 };
 

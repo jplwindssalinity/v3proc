@@ -36,6 +36,7 @@ Pulse::~Pulse()
 //===========//
 
 PulseList::PulseList()
+:   _avoidNadir(0)
 {
     return;
 }
@@ -69,6 +70,16 @@ int
 PulseList::AddIfSafe(
     Pulse*  new_pulse)
 {
+    // check if a nadir return interferes with the pulse itself
+    if (_avoidNadir)
+    {
+        if (new_pulse->startEcho < new_pulse->endNadir &&
+            new_pulse->endEcho > new_pulse->startNadir)
+        {
+            return(0);
+        }
+    }
+
     for (Pulse* pulse = GetHead(); pulse; pulse = GetNext())
     {
         // can't transmit when someone else is receiving
@@ -98,6 +109,23 @@ PulseList::AddIfSafe(
         {
             return(0);
         }
+
+        if (_avoidNadir)
+        {
+            // can't receive during someone else's nadir return
+            if (new_pulse->startEcho < pulse->endNadir &&
+                new_pulse->endEcho > pulse->startNadir)
+            {
+                return(0);
+            }
+
+            // can't put a nadir return in someone else's echo
+            if (new_pulse->startNadir < pulse->endEcho &&
+                new_pulse->endNadir > pulse->startEcho)
+            {
+                return(0);
+            }
+        }
     }
     if (! Append(new_pulse))
     {
@@ -116,6 +144,7 @@ PulseList::WriteTransmitPulses(
     int    pulser_id,
     FILE*  ofp)
 {
+    fprintf(ofp, "# Transmit pulses, Beam %d\n", pulser_id);
     fprintf(ofp, "0.0 0.0\n");
     for (Pulse* pulse = GetHead(); pulse; pulse = GetNext())
     {
@@ -139,6 +168,7 @@ PulseList::WriteEchoes(
     int    pulser_id,
     FILE*  ofp)
 {
+    fprintf(ofp, "# Echoes, Beam %d\n", pulser_id);
     fprintf(ofp, "0.0 0.0\n");
     for (Pulse* pulse = GetHead(); pulse; pulse = GetNext())
     {
@@ -162,14 +192,15 @@ PulseList::WriteNadirReturns(
     int    pulser_id,
     FILE*  ofp)
 {
+    fprintf(ofp, "# Naidr returns, Beam %d\n", pulser_id);
     fprintf(ofp, "0.0 0.0\n");
     for (Pulse* pulse = GetHead(); pulse; pulse = GetNext())
     {
         if (pulse->pulserId == pulser_id)
         {
             fprintf(ofp, "%g %g\n", pulse->startNadir, 0.0);
-            fprintf(ofp, "%g %g\n", pulse->startNadir, 1.0);
-            fprintf(ofp, "%g %g\n", pulse->endNadir, 1.0);
+            fprintf(ofp, "%g %g\n", pulse->startNadir, 0.75);
+            fprintf(ofp, "%g %g\n", pulse->endNadir, 0.75);
             fprintf(ofp, "%g %g\n", pulse->endNadir, 0.0);
         }
     }
@@ -284,6 +315,8 @@ Pulser::Config(
     //--------//
     // others //
     //--------//
+
+    config_list->ExitForMissingKeywords();
 
     substitute_string("BEAM_x_LOOK_ANGLE", "x", number, keyword);
     config_list->GetDouble(keyword, &_lookAngle);
@@ -400,7 +433,6 @@ Pulser::GotoFirstCombo()
 {
     SetPulseWidth(_pulseWidthMin);
     SetOffset(_offsetMin);
-    _pulseCount = 0;
 
     return;
 }
@@ -412,8 +444,6 @@ Pulser::GotoFirstCombo()
 int
 Pulser::GotoNextCombo()
 {
-    _pulseCount = 0;
-
     // offset
     if (SetOffset(_offset + _offsetStep))
         return(1);
@@ -449,11 +479,16 @@ Pulser::NextPulse(
     // set the pulse info //
     //--------------------//
 
+    new_pulse->pulserId = _pulserId;
     new_pulse->startTransmit = _pulseCount * pri + _offset;
     new_pulse->endTransmit = new_pulse->startTransmit + _pulseWidth;
+
+    double near_end = new_pulse->endTransmit + _rttMin;
+    double far_start = new_pulse->startTransmit + _rttMax;
+
     new_pulse->startEcho = new_pulse->startTransmit + _rttMin;
-    new_pulse->startPeakEcho = new_pulse->endTransmit + _rttMin;
-    new_pulse->endPeakEcho = new_pulse->startTransmit + _rttMax;
+    new_pulse->startPeakEcho = MIN(near_end, far_start);
+    new_pulse->endPeakEcho = MAX(near_end, far_start);
     new_pulse->endEcho = new_pulse->endTransmit + _rttMax;
 
     _pulseCount++;
@@ -485,16 +520,32 @@ Pulser::Recall()
     return;
 }
 
+//-------------------//
+// Pulser::WriteInfo //
+//-------------------//
+
+int
+Pulser::WriteInfo(
+    FILE*   ofp,
+    double  pri)
+{
+    fprintf(ofp, "# Beam %d\n", _pulserId);
+    fprintf(ofp, "#   Pulse width = %g s\n", _pulseWidth);
+    fprintf(ofp, "#        Offset = %g s\n", _offset);
+    fprintf(ofp, "#   Duty factor = %g%%\n", DutyFactor(pri) * 100.0);
+    return(1);
+}
+
 //===============//
 // PulserCluster //
 //===============//
 
 PulserCluster::PulserCluster()
-:   _altitude(0.0), _pulsesInFlight(0),  _priSet(-1.0), _priMinSet(-1.0),
+:   _altitude(0.0), _pulsesInFlight(0), _priSet(-1.0), _priMinSet(-1.0),
     _priMaxSet(-1.0), _priStep(-1.0), _pri(-1.0), _priMin(-1.0),
     _priMax(-1.0), _priMem(-1.0), _clusterRttMin(0.0), _clusterRttMax(0.0),
-    _rttMinNadir(-1.0), _rttMaxNadir(-1.0), _angleBuffer(-1.0),
-    _timeBuffer(-1.0)
+    _rttMinNadir(-1.0), _rttMaxNadir(-1.0), _angleBuffer(0.0),
+    _timeBuffer(0.0), _targetPulseCount(0), _maxDutyFactor(1.0)
 {
     return;
 }
@@ -541,8 +592,9 @@ PulserCluster::Config(
 
     double nadir_look_angle;
     config_list->GetDouble("NADIR_LOOK_ANGLE", &nadir_look_angle);
-
+    nadir_look_angle *= dtr;
     config_list->GetDouble("ALTITUDE", &_altitude);
+    config_list->GetDouble("MAX_DUTY_FACTOR", &_maxDutyFactor);
 
     //---------------------------//
     // set the nadir slant range //
@@ -583,10 +635,22 @@ PulserCluster::Config(
     // buffers //
     //---------//
 
+    config_list->ExitForMissingKeywords();
     config_list->GetDouble("ANGLE_BUFFER", &_angleBuffer);
     _angleBuffer *= dtr;
 
     config_list->GetDouble("TIME_BUFFER", &_timeBuffer);
+
+    //--------------------//
+    // avoid/ignore nadir //
+    //--------------------//
+
+    int avoid_nadir;
+    config_list->GetInt("AVOID_NADIR", &avoid_nadir);
+    if (avoid_nadir)
+        _pulseList.AvoidNadir();
+    else
+        _pulseList.IgnoreNadir();
 
     //-----------------------------------------//
     // determine the number of pulsers to make //
@@ -673,6 +737,7 @@ PulserCluster::SetPulsesInFlight(
     int  pulses_in_flight)
 {
     _pulsesInFlight = pulses_in_flight;
+    _targetPulseCount = _pulsesInFlight + 2;
 
     // need to change pri min
     _priMin = _clusterRttMax / (double)_pulsesInFlight;
@@ -768,6 +833,7 @@ PulserCluster::GotoNextCombo()
     }
 
     // pri
+printf("%g (%g)\n", _pri + _priStep, _priMax);
     if (SetPri(_pri + _priStep))
         return(1);
 
@@ -778,6 +844,54 @@ PulserCluster::GotoNextCombo()
     return(0);    // no more combos
 }
 
+//----------------------------------//
+// PulserCluster::GenerateAllPulses //
+//----------------------------------//
+
+int
+PulserCluster::GenerateAllPulses()
+{
+    //--------------------------//
+    // start with a clean slate //
+    //--------------------------//
+
+    _pulseList.FreeContents();
+    for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+    {
+        pulser->ZeroPulseCount();
+    }
+
+    //-----------------//
+    // generate pulses //
+    //-----------------//
+
+    for (int pulse_idx = 0; pulse_idx < _targetPulseCount; pulse_idx++)
+    {
+        for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+        {
+            Pulse* new_pulse = pulser->NextPulse(_pri);
+            if (new_pulse == NULL)
+            {
+                fprintf(stderr, "PulserCluster::GenerateAllPulses: ");
+                fprintf(stderr, "error allocating pulse\n");
+                return(0);
+            }
+            new_pulse->startNadir = new_pulse->startTransmit +
+                _rttMinNadir;
+            new_pulse->endNadir = new_pulse->endTransmit + _rttMaxNadir;
+
+            if (! _pulseList.AddIfSafe(new_pulse))
+            {
+                free(new_pulse);
+                _pulseList.FreeContents();    // it's no good anyhow
+                return(0);
+            }
+        }
+    }
+
+    return(1);
+}
+
 //-------------------------//
 // PulserCluster::Optimize //
 //-------------------------//
@@ -785,11 +899,7 @@ PulserCluster::GotoNextCombo()
 double
 PulserCluster::Optimize()
 {
-    //---------------------------------------------------------//
-    // determine the number of pulses needed for an evaluation //
-    //---------------------------------------------------------//
-
-    int pulse_count = _pulsesInFlight + 2;
+    SetRtts(1);
 
     //-----------------------//
     // go to the first combo //
@@ -803,65 +913,19 @@ PulserCluster::Optimize()
 
     double max_duty_factor = 0.0;
     double duty_factor = 0.0;
-    PulseList pulse_list;
     do
     {
-        //---------------------------------//
-        // for each of the required pulses //
-        //---------------------------------//
-
-        for (int pulse_idx = 0; pulse_idx < pulse_count; pulse_idx++)
+        if (GenerateAllPulses())
         {
-            //-----------------//
-            // for each pulser //
-            //-----------------//
-
-            for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+            duty_factor = DutyFactor();
+            if (duty_factor > max_duty_factor &&
+                duty_factor <= _maxDutyFactor)
             {
-                //----------------//
-                // set pulse info //
-                //----------------//
-
-                Pulse* new_pulse = pulser->NextPulse(_pri);
-                if (new_pulse == NULL)
-                {
-                    fprintf(stderr,
-                        "PulserCluster::Optimize: error allocating pulse\n");
-                    exit(1);
-                }
-
-                //----------------//
-                // set nadir info //
-                //----------------//
-
-               new_pulse->startNadir = new_pulse->startTransmit + _rttMinNadir;
-               new_pulse->endNadir = new_pulse->endTransmit + _rttMaxNadir;
-
-                if (! pulse_list.AddIfSafe(new_pulse))
-                {
-                    free(new_pulse);
-                    pulse_list.FreeContents();
-                    goto donetrying;
-                }
+                max_duty_factor = duty_factor;
+                printf("Best duty factor = %g\n", duty_factor);
+                Memorize();
             }
         }
-
-        //---------------------------------//
-        // check for optimization criteria //
-        //---------------------------------//
-
-        duty_factor = DutyFactor();
-        if (duty_factor > max_duty_factor)
-        {
-            max_duty_factor = duty_factor;
-            Memorize();
-        }
-
-        donetrying:
-
-        //------------------//
-        // go to next combo //
-        //------------------//
 
         if (! GotoNextCombo())
             break;
@@ -916,6 +980,22 @@ PulserCluster::Recall()
     return;
 }
 
+//--------------------------//
+// PulserCluster::WriteInfo //
+//--------------------------//
+
+int
+PulserCluster::WriteInfo(
+    FILE*  ofp)
+{
+    fprintf(ofp, "# Instrument\n");
+    fprintf(ofp, "#    Pulses in flight = %d\n", _pulsesInFlight);
+    fprintf(ofp, "#                 PRI = %g s\n", _pri);
+    fprintf(ofp, "#                 PRF = %g Hz\n", 1.0 / _pri);
+    fprintf(ofp, "#   Total duty factor = %g%%\n", DutyFactor() * 100.0);
+    return(1);
+}
+
 //---------------------------------//
 // PulserCluster::WritePulseTiming //
 //---------------------------------//
@@ -927,6 +1007,12 @@ PulserCluster::WritePulseTiming(
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
         return(0);
+
+    WriteInfo(ofp);
+    for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+    {
+        pulser->WriteInfo(ofp, _pri);
+    }
 
     for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
     {
