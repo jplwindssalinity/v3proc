@@ -26,6 +26,7 @@ OBJS = \
 	L0.o \
 	L0ToL1.o \
 	L1.o \
+	L15.o \
 	LookGeom.o \
 	Matrix3.o \
 	Misc.o \
@@ -95,6 +96,7 @@ Interpolate.o:	Interpolate.C Interpolate.h
 L0.o:			L0.C L0.h Product.h
 L0ToL1.o:		L0ToL1.C L0ToL1.h
 L1.o:			L1.C L1.h
+L15.o:			L15.C L15.h
 List.o:			List.C List.h
 LookGeom.o:		LookGeom.C LookGeom.h CoordinateSwitch.h \
 			Matrix3.h Constants.h
