@@ -203,7 +203,7 @@ main(
 
     for (int ati = 0; ati < 1624; ati++)
     {
-        for (int cti = 0; cti < 72; cti++)
+        for (int cti = 0; cti < 76; cti++)
         {
             if (nbd_array[ati][cti] == -128)
                 continue;
