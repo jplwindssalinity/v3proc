@@ -124,6 +124,9 @@ static const char rcs_id_configsimdefs_h[] =
 #define LAND_SIGMA0_INNER_BEAM_KEYWORD  "LAND_SIGMA0_INNER_BEAM"  // linear
 #define LAND_SIGMA0_OUTER_BEAM_KEYWORD  "LAND_SIGMA0_OUTER_BEAM"  // linear
 
+// this sort of doesn't belong here...
+#define SIMPLE_LANDMAP_FILE_KEYWORD     "SIMPLE_LANDMAP_FILE"
+
 //---------------//
 // InstrumentSim //
 //---------------//
