@@ -328,6 +328,12 @@ main(
 				instrument_sim.UpdateAntennaPosition(&instrument);
 				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
 
+				//-------------------------------------------------------//
+				// command the range delay, width, and Doppler frequency //
+				//-------------------------------------------------------//
+
+				SetRangeAndDoppler(spacecraft, instrument);
+
 				if (slice_opt)
 				{
 					//--------//

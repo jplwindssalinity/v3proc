@@ -329,6 +329,12 @@ InstrumentSim::ScatSim(
 		l00_frame->priOfOrbitTickChange = 255;		// flag value
 	}
 
+	//-------------------------------------------------------------//
+	// command the range delay, range width, and Doppler frequency //
+	//-------------------------------------------------------------//
+
+	SetRangeAndDoppler(spacecraft, instrument);
+
 	//---------------------//
 	// locate measurements //
 	//---------------------//
@@ -413,6 +419,62 @@ InstrumentSim::ScatSim(
 	else
 	{
 		l00FrameReady = 0;	// indicate frame is not ready
+	}
+
+	return(1);
+}
+
+//--------------------//
+// SetRangeAndDoppler //
+//--------------------//
+
+int
+SetRangeAndDoppler(
+	Spacecraft*		spacecraft,
+	Instrument*		instrument)
+{
+	//-----------------------------------------//
+	// command the range delay and range width //
+	//-----------------------------------------//
+ 
+	float residual_delay_error = 0.0;
+	if (instrument->useRgc)
+	{
+		if (! instrument->rangeTracker.SetInstrument(instrument,
+			&residual_delay_error))
+		{
+			fprintf(stderr, "SetRangeAndDoppler: ");
+			fprintf(stderr, "error setting instrument using range tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		Beam* beam = instrument->antenna.GetCurrentBeam();
+		instrument->commandedRxGateWidth = beam->receiverGateWidth;
+		double rtt = IdealRtt(spacecraft, instrument);
+		if (! RttToCommandedReceiverDelay(instrument, rtt))
+			return(0);
+	}
+
+	//-------------------------------//
+	// command the Doppler frequency //
+	//-------------------------------//
+ 
+	if (instrument->useDtc)
+	{
+		if (! instrument->dopplerTracker.SetInstrument(instrument,
+			residual_delay_error))
+		{
+			fprintf(stderr, "SetRangeAndDoppler: ");
+			fprintf(stderr, "error setting instrument using Doppler tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		if (! IdealCommandedDoppler(spacecraft, instrument))
+			return(0);
 	}
 
 	return(1);

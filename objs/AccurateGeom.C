@@ -20,6 +20,7 @@ static const char rcs_id_accurategeom_c[] =
 #include "Interpolate.h"
 #include "Array.h"
 #include "Misc.h"
+#include "InstrumentSim.h"
 
 //-----------------//
 // IntegrateSlices //
@@ -59,54 +60,15 @@ IntegrateSlices(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
+	//-------------------------------------------------------------//
+	// command the range delay, range width, and Doppler frequency //
+	//-------------------------------------------------------------//
+ 
+	SetRangeAndDoppler(spacecraft, instrument);
 
-
-
-	//------------------------------------------------------//
-	// calculate commanded receiver gate delay and duration //
-	//------------------------------------------------------//
-
-	float residual_delay_error=0.0;
-	if (instrument->useRgc)
-	{
-		if (! instrument->rangeTracker.SetInstrument(instrument,
-					  &residual_delay_error))
-		{
-			fprintf(stderr,
-			"IntegrateSlices: error setting instrument using range tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		instrument->commandedRxGateWidth = beam->receiverGateWidth;
-		double rtt = IdealRtt(spacecraft, instrument);
-		if (! RttToCommandedReceiverDelay(instrument, rtt))
-			return(0);
-	}
-
-	//---------------------------------------//
-	// calculate commanded Doppler frequency //
-	//---------------------------------------//
-	if (instrument->useDtc)
-	{
-		if (! instrument->dopplerTracker.SetInstrument(instrument,
-					  residual_delay_error))
-		{
-			fprintf(stderr,
-			"IntegrateSlices: error setting instrument using Doppler tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		if (! IdealCommandedDoppler(spacecraft, instrument))
-			return(0);
-	}
-
-	//-------------------------------------------------//
-	// find beam center                                //
-	//-------------------------------------------------//
+	//------------------//
+	// find beam center //
+	//------------------//
 
 	double look, azimuth;
 
@@ -167,7 +129,7 @@ IntegrateSlices(
 
 		look_vector.SphericalSet(1.0, centroid_look, centroid_azimuth);
 
-                TargetInfoPackage tip;
+		TargetInfoPackage tip;
 		if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
 			look_vector, &tip))
 		{
@@ -213,8 +175,9 @@ IntegrateSlices(
 		//-------------------------------------//
 
 
-			for(int a=0; a<numazi;a++){
-		  float azi=a*azimuth_step_size+azimin;
+		for(int a=0; a<numazi;a++)
+		{
+			float azi=a*azimuth_step_size+azimin;
 
 		  float start_look=centroid_look;
 		  float end_look=centroid_look;

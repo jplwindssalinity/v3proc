@@ -10,7 +10,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "L10ToL15.h"
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
-
+#include "InstrumentSim.h"
 
 //==========//
 // L10ToL15 //
@@ -125,6 +125,12 @@ L10ToL15::Convert(
 			//---------------------------//
 
 			MeasSpot* meas_spot = new MeasSpot();
+
+			//-------------------------------------------------------------//
+			// command the range delay, range width, and Doppler frequency //
+			//-------------------------------------------------------------//
+ 
+			SetRangeAndDoppler(spacecraft, instrument);
 
 			//---------------------//
 			// locate measurements //

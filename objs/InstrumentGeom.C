@@ -94,49 +94,6 @@ LocateSlices(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	//------------------------------------------------------//
-	// calculate commanded receiver gate delay and duration //
-	//------------------------------------------------------//
-
-	float residual_delay_error = 0.0;
-	if (instrument->useRgc)
-	{
-		if (! instrument->rangeTracker.SetInstrument(instrument,
-			&residual_delay_error))
-		{
-			fprintf(stderr,
-			"LocateSlices: error setting instrument using range tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		instrument->commandedRxGateWidth = beam->receiverGateWidth;
-		double rtt = IdealRtt(spacecraft, instrument);
-		if (! RttToCommandedReceiverDelay(instrument, rtt))
-			return(0);
-	}
-
-	//---------------------------------------//
-	// calculate commanded Doppler frequency //
-	//---------------------------------------//
-
-	if (instrument->useDtc)
-	{
-		if (! instrument->dopplerTracker.SetInstrument(instrument,
-			residual_delay_error))
-		{
-			fprintf(stderr,
-			"LocateSlices: error setting instrument using Doppler tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		if (! IdealCommandedDoppler(spacecraft, instrument))
-			return(0);
-	}
-
 	//------------------//
 	// find beam center //
 	//------------------//
@@ -243,49 +200,6 @@ LocateSliceCentroids(
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
-
-	//------------------------------------------------------//
-	// calculate commanded receiver gate delay and duration //
-	//------------------------------------------------------//
-
-	float residual_delay_error = 0.0;
-	if (instrument->useRgc)
-	{
-		if (! instrument->rangeTracker.SetInstrument(instrument,
-			&residual_delay_error))
-		{
-			fprintf(stderr,
-			"LocateSlices: error setting instrument using range tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		instrument->commandedRxGateWidth = beam->receiverGateWidth;
-		double rtt = IdealRtt(spacecraft, instrument);
-		if (! RttToCommandedReceiverDelay(instrument, rtt))
-			return(0);
-	}
-
-	//---------------------------------------//
-	// calculate commanded Doppler frequency //
-	//---------------------------------------//
-
-	if (instrument->useDtc)
-	{
-		if (! instrument->dopplerTracker.SetInstrument(instrument,
-			residual_delay_error))
-		{
-			fprintf(stderr,
-			"LocateSlices: error setting instrument using Doppler tracker\n");
-			return(0);
-		}
-	}
-	else
-	{
-		if (! IdealCommandedDoppler(spacecraft, instrument))
-			return(0);
-	}
 
 	//------------------//
 	// find beam center //

@@ -108,4 +108,10 @@ protected:
 	int			_spotNumber;
 };
 
+//------------------//
+// Helper functions //
+//------------------//
+
+int		SetRangeAndDoppler(Spacecraft* spacecraft, Instrument* instrument);
+
 #endif
