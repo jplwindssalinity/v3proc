@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -152,6 +152,14 @@ public:
 //    list of ambiguous solution WindVectorPlus.
 //======================================================================
 
+    // bit 0 1/0 = not usable/usable
+    // bit 1 1/0 = rain/no rain
+    // bit 2 1/0 = outer/inner
+
+#define RAIN_FLAG_UNUSABLE  0x01    // bit 0
+#define RAIN_FLAG_RAIN      0x02    // bit 1
+#define RAIN_FLAG_LOCATION  0x04    // bit 2
+
 class WVC
 {
 public:
@@ -207,12 +215,11 @@ public:
     int                    selected_allocated;
     List<WindVectorPlus>   ambiguities;
     AngleIntervalListPlus  directionRanges;
-    float rainProb;
-    char rainFlagBits; 
+    float                  rainProb;
+    char                   rainFlagBits; 
     // bit 0 1/0 = not usable/usable
     // bit 1 1/0 = rain/no rain
     // bit 2 1/0 = outer/inner
-    
 };
 
 //======================================================================

@@ -104,7 +104,6 @@ OBJS = \
 	Topo.o \
 	Tracking.o \
 	Wind.o \
-	WindQ.o \
 	XTable.o \
 	SeaPac.o \
 	ENOFTable.o
@@ -250,7 +249,6 @@ SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix
 Topo.o: Topo.C Topo.h Array.h Constants.h BYUXTable.h Spacecraft.h Qscat.h Meas.h CheckFrame.h Matrix3.h Ephemeris.h Attitude.h Antenna.h Tracking.h Scatterometer.h Beam.h LonLat.h List.h EarthPosition.h Wind.h BufferedList.h CoordinateSwitch.h Misc.h Index.h AngleInterval.h Matrix.h
 Tracking.o: Tracking.C Tracking.h Constants.h Array.h
 Wind.o: Wind.C Wind.h GSparameters.h Array.h hdf_support.h Distributions.h Constants.h Misc.h AngleInterval.h LonLat.h List.h Index.h Matrix.h EarthPosition.h Matrix3.h
-WindQ.o: WindQ.C WindQ.h Wind.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
 dot_prod.o: dot_prod.c 
 doub_factorial_double.o: doub_factorial_double.c function.h
