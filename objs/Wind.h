@@ -216,6 +216,13 @@ public:
     // bit 0 1/0 = not usable/usable
     // bit 1 1/0 = rain/no rain
     // bit 2 1/0 = outer/inner
+
+    // these are in the ground system L2B, so we put 'em in too
+    // they currently are only used when HDF-ing
+    unsigned char          numInFore;
+    unsigned char          numInAft;
+    unsigned char          numOutFore;
+    unsigned char          numOutAft;
 };
 
 //======================================================================
