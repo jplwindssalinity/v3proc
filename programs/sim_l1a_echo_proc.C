@@ -368,7 +368,7 @@ main(
             qscat.SetEncoderAzimuth(held_encoder, 1);
             qscat.SetOtherAzimuths(&spacecraft);
             echo_info.txCenterAzimuthAngle[spot_idx] =
-                qscat.sas.antenna.txCenterAzimuthAngle;
+                InRange(qscat.sas.antenna.txCenterAzimuthAngle);
 
             SetDelayAndFrequency(&spacecraft, &qscat);
 
