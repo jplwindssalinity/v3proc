@@ -41,13 +41,19 @@ public:
 	Measurement();
 	~Measurement();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteL17Format(int ofd);
+	int		ReadL17Format(int ifd);
+
 	//-----------//
 	// variables //
 	//-----------//
 
 	PolE		pol;
-	double		value;			// sigma-0 or temperature measurement...
-	double		valuedB;		// ...and in dB
+	double		value;			// sigma-0 or temperature measurement
 	double		incidenceAngle;
 	double		scAzimuth;		// az. angle relative to s/c
 	double		northAzimuth;	// az. angle relative to north
@@ -78,6 +84,13 @@ public:
 
 	MeasurementList();
 	~MeasurementList();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteL17Format(int ofd);
+	int		ReadL17Format(int ofd);
 };
 
 #endif
