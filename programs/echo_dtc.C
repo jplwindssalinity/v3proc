@@ -99,11 +99,12 @@ template class List<AngleInterval>;
 
 #define OPTSTRING  "f:r"
 
-#define SIGNAL_ENERGY_THRESHOLD  5000
+#define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
 #define SECTOR_COUNT             8
 #define MIN_POINTS_PER_SECTOR    10
-#define MIN_SECTORS              6
+// MIN_SECTORS should be 6
+#define MIN_SECTORS              2
 
 //--------//
 // MACROS //
@@ -313,7 +314,7 @@ main(
                 int orbit_step = echo_info.SpotOrbitStep(spot_idx);
 
 // printf("%g\n", echo_info.totalSignalEnergy[spot_idx]);
-                if (echo_info.flag[spot_idx] == EchoInfo::OK ||
+                if (echo_info.flag[spot_idx] == EchoInfo::OK &&
                     echo_info.totalSignalEnergy[spot_idx] >=
                     SIGNAL_ENERGY_THRESHOLD)
                 {

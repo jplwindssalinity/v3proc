@@ -111,7 +111,7 @@ template class TrackerBase<unsigned char>;
 
 #define OPTSTRING  "b:cg"
 
-#define WOM        0x0E
+#define WOM              0x0E
 
 //--------//
 // MACROS //
@@ -761,14 +761,28 @@ main(
             double noise = Bs / Be * (rho / beta * En - Es) /
                 (alpha * rho / beta - 1.0);
 
+            //-----------------------------//
+            // eliminate bad data by noise //
+            //-----------------------------//
+
             double total_signal_energy = 0.0;
-            for (int slice_idx = 0; slice_idx < 12; slice_idx++)
+            for (int slice_idx = 1; slice_idx < 11; slice_idx++)
             {
                 signal_energy[slice_idx] =
                     slice_powers[base_slice_idx + slice_idx] - noise;
                 total_signal_energy += signal_energy[slice_idx];
             }
             echo_info.totalSignalEnergy[spot_idx] = total_signal_energy;
+
+            //----------------------------------------//
+            // check if signal appears to be negative //
+            //----------------------------------------//
+
+            if (total_signal_energy < 10.0 * noise)
+            {
+                echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                continue;
+            }
 
             //---------------//
             // find the peak //
