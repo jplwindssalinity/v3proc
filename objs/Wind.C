@@ -3193,7 +3193,11 @@ WindSwath::Skill(
 		}
 	}
 
-	float skill = (float)good_count / (float)count;
+	float skill;
+	if (count == 0)
+	  skill = 0;
+	else
+	  skill = (float)good_count / (float)count;
 
 	return(skill);
 }
@@ -3435,7 +3439,10 @@ WindSwath::AvgNambigVsCti(
 			count++;
 		}
 
-		avg_nambig[cti] = (double)sum / (double)count;
+		if (count == 0)
+		  avg_nambig[cti] = 0;
+		else
+		  avg_nambig[cti] = (double)sum / (double)count;
 	}
 
 	return(1);
@@ -3840,7 +3847,10 @@ WindSwath::SkillVsCti(
 		}
 
 		*(count_array + cti) = count;
-		*(skill_array + cti) = (float)good_count / (float)count;
+		if (count == 0)
+		  *(skill_array + cti) = 0;
+		else
+		  *(skill_array + cti) = (float)good_count / (float)count;
 	}
 
 	return(1);
@@ -3888,7 +3898,10 @@ WindSwath::WithinVsCti(
 		}
 
 		*(count_array + cti) = count;
-		*(skill_array + cti) = (float)good_count / (float)count;
+		if (count == 0)
+		  *(skill_array + cti) = 0;
+		else
+		  *(skill_array + cti) = (float)good_count / (float)count;
 	}
 
 	return(1);
@@ -4216,7 +4229,12 @@ WindSwath::VectorCorrelationVsCti(
       2.0*(su1u1*su2v1*sv1v2*su2v2)-2.0*(su2u2*su1v1*su1v2*sv1v2)-
       2.0*(sv2v2*su1v1*su1u2*su2v1)-2.0*(sv1v1*su1u2*su1v2*su2v2);
 
-    (*(vc_array +cti)) /=(su1u1*sv1v1-(su1v1*su1v1))*(su2u2*sv2v2-su2v2*su2v2);
+    float dem = (su1u1*sv1v1-(su1v1*su1v1))*(su2u2*sv2v2-su2v2*su2v2);
+
+    if (dem == 0)
+      (*(vc_array +cti)) /= 1;
+    else
+      (*(vc_array +cti)) /=(su1u1*sv1v1-(su1v1*su1v1))*(su2u2*sv2v2-su2v2*su2v2);
   }
   //----------------------------------------------//
   // deallocate arrays                            //
