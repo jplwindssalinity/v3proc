@@ -49,6 +49,7 @@ OBJS = \
 	CoordinateSwitch.o \
 	Distributions.o \
 	EarthField.o \
+	EarthGeom.o \
 	EarthPosition.o \
 	Ephemeris.o \
 	ETime.o \
@@ -87,6 +88,7 @@ OBJS = \
 	L2B.o \
 	LonLat.o \
 	Malloc1.o \
+	Mat.o \
 	Matrix.o \
 	Matrix3.o \
 	Meas.o \
@@ -114,7 +116,10 @@ OBJS = \
 	Sfile.o \
 	Topo.o \
 	Tracking.o \
+	Transform.o \
+	Vect.o \
 	Wind.o \
+	WindSwath.o \
 	WindGrad.o \
 	XTable.o \
 	SeaPac.o \
@@ -191,37 +196,37 @@ AngleInterval.o: AngleInterval.C AngleInterval.h List.h Array.h Misc.h Wind.h Co
 Antenna.o: Antenna.C Antenna.h Constants.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Array.o: Array.C Array.h
 Attitude.o: Attitude.C Attitude.h Constants.h
+BYUXTable.o: BYUXTable.C BYUXTable.h Qscat.h Sigma0.h InstrumentGeom.h CheckFrame.h Topo.h Spacecraft.h Meas.h Array.h Antenna.h Tracking.h Scatterometer.h CoordinateSwitch.h Distributions.h EarthPosition.h Ephemeris.h LonLat.h Matrix3.h Attitude.h Wind.h Constants.h Beam.h List.h BufferedList.h Misc.h Index.h AngleInterval.h Matrix.h
 BaseFile.o: BaseFile.C BaseFile.h
 Beam.o: Beam.C Beam.h Array.h Constants.h Misc.h CoordinateSwitch.h Matrix3.h Attitude.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
-BYUXTable.o: BYUXTable.C BYUXTable.h Qscat.h Sigma0.h InstrumentGeom.h CheckFrame.h Topo.h Spacecraft.h Meas.h Array.h Antenna.h Tracking.h Scatterometer.h CoordinateSwitch.h Distributions.h EarthPosition.h Ephemeris.h LonLat.h Matrix3.h Attitude.h Wind.h Constants.h Beam.h List.h BufferedList.h Misc.h Index.h AngleInterval.h Matrix.h
 CheckFrame.o: CheckFrame.C CheckFrame.h Constants.h Attitude.h Matrix3.h EarthPosition.h Wind.h Meas.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h Beam.h Ephemeris.h CoordinateSwitch.h BufferedList.h
 ColorMap.o: ColorMap.C ColorMap.h Array.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h SpacecraftSim.h XTable.h BYUXTable.h Misc.h L00.h L1A.h L1AToL1B.h L1B.h L1BHdf.h L2A.h L2B.h L2AToL2B.h Constants.h Distributions.h Tracking.h Kpm.h EarthField.h Kp.h GenericGeom.h ETime.h Wind.h Grid.h ConfigList.h FbbTable.h Spacecraft.h Qscat.h Meas.h Array.h CheckFrame.h Topo.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Ephemeris.h LandMap.h GMF.h Index.h LonLat.h Kpr.h EarthPosition.h CoordinateSwitch.h List.h AngleInterval.h Matrix.h Matrix3.h Attitude.h Antenna.h Scatterometer.h Beam.h BufferedList.h MiscTable.h
+ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h SpacecraftSim.h XTable.h BYUXTable.h Misc.h L00.h L1A.h L1AToL1B.h L1B.h L1BHdf.h L2A.h L2B.h L2AToL2B.h Constants.h Distributions.h Tracking.h Kpm.h EarthField.h Kp.h GenericGeom.h ETime.h Wind.h Grid.h ConfigList.h FbbTable.h Spacecraft.h Qscat.h Meas.h Array.h CheckFrame.h Topo.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Ephemeris.h LandMap.h WindSwath.h GMF.h Index.h LonLat.h Kpr.h EarthPosition.h CoordinateSwitch.h List.h AngleInterval.h Matrix.h Matrix3.h Attitude.h Antenna.h Scatterometer.h Beam.h BufferedList.h MiscTable.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Distributions.o: Distributions.C Distributions.h Constants.h
-EarthField.o: EarthField.C LonLat.h Constants.h Array.h Index.h EarthField.h List.h EarthPosition.h Matrix3.h
-EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
 ENOFTable.o: ENOFTable.C Array.h ENOFTable.h Index.h
-Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Constants.h Matrix3.h BufferedList.h EarthPosition.h
 ETime.o: ETime.C ETime.h
+EarthField.o: EarthField.C LonLat.h Constants.h Array.h Index.h EarthField.h List.h EarthPosition.h Matrix3.h
+EarthGeom.o: EarthGeom.C EarthGeom.h Vect.h Transform.h Constants.h Mat.h
+EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
+Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Constants.h Matrix3.h BufferedList.h EarthPosition.h
 FbbTable.o: FbbTable.C FbbTable.h Qscat.h Sigma0.h InstrumentGeom.h CheckFrame.h BYUXTable.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h CoordinateSwitch.h Distributions.h EarthPosition.h Ephemeris.h LonLat.h Matrix3.h Attitude.h Wind.h Array.h Topo.h Beam.h Constants.h List.h BufferedList.h Misc.h Index.h AngleInterval.h Matrix.h
 Flower.o: Flower.C Flower.h GMF.h L2AH.h MiscTable.h Wind.h Meas.h Constants.h Kp.h L2A.h ETime.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h BaseFile.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
-GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 GMF.o: GMF.C GMF.h GSparameters.h Meas.h Misc.h Interpolate.h Constants.h Beam.h List.h AngleInterval.h Array.h MiscTable.h Wind.h Kp.h LonLat.h Ephemeris.h Attitude.h CoordinateSwitch.h Index.h Matrix.h Kpm.h Kpr.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
+GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 Grid.o: Grid.C Grid.h Meas.h Sigma0.h Array.h L1B.h L2A.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Spacecraft.h Distributions.h Qscat.h BaseFile.h EarthPosition.h Matrix3.h BufferedList.h Constants.h Antenna.h Tracking.h Scatterometer.h
 Hdf4File.o: Hdf4File.C Hdf4File.h
-hdf_support.o: hdf_support.C hdf_support.h
 Image.o: Image.C Image.h Array.h Misc.h Constants.h
 Index.o: Index.C Index.h
 InstrumentGeom.o: InstrumentGeom.C Ephemeris.h Attitude.h Antenna.h GenericGeom.h Spacecraft.h Meas.h InstrumentGeom.h Misc.h Qscat.h Interpolate.h Array.h BYUXTable.h Matrix3.h BufferedList.h EarthPosition.h Beam.h CoordinateSwitch.h Constants.h LonLat.h List.h Tracking.h Scatterometer.h CheckFrame.h Topo.h Wind.h Index.h AngleInterval.h Matrix.h
 Interpolate.o: Interpolate.C Interpolate.h
 Jpeg.o: Jpeg.C Jpeg.h ColorMap.h List.h
 Kp.o: Kp.C Kp.h Kpm.h Kpr.h Index.h EarthField.h Distributions.h Meas.h L00Frame.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
+KpStatistics.o: KpStatistics.C KpStatistics.h Array.h Index.h GMF.h Wind.h WindGrad.h Meas.h MiscTable.h Constants.h Kp.h Misc.h List.h LonLat.h AngleInterval.h Matrix.h WindSwath.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
 Kpm.o: Kpm.C Kpm.h Constants.h Array.h Index.h EarthField.h Distributions.h Meas.h LonLat.h Beam.h Ephemeris.h Attitude.h List.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Kpr.o: Kpr.C Kpr.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h BufferedList.h
-KpStatistics.o: KpStatistics.C KpStatistics.h Array.h Index.h GMF.h Wind.h WindGrad.h Meas.h MiscTable.h Constants.h Kp.h Misc.h List.h LonLat.h AngleInterval.h Matrix.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
 L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
 L00ToL1A.o: L00ToL1A.C L00ToL1A.h L00.h L1A.h BaseFile.h L00Frame.h L1AFrame.h L1AGSFrame.h Attitude.h
@@ -238,29 +243,30 @@ L2A.o: L2A.C L2A.h Constants.h Qscat.h Misc.h BaseFile.h Meas.h Antenna.h Tracki
 L2AH.o: L2AH.C L2AH.h Sds.h Constants.h Misc.h L2A.h ETime.h BaseFile.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L2AHdf.o: L2AHdf.C L2AHdf.h Constants.h L2A.h BaseFile.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L2AHdfSds.o: L2AHdfSds.C L2AHdfSds.h
-L2AToL2B.o: L2AToL2B.C L2AToL2B.h Constants.h Misc.h L2A.h L2B.h GMF.h BaseFile.h Meas.h Wind.h MiscTable.h Kp.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Index.h AngleInterval.h Matrix.h Kpm.h Kpr.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
-L2B.o: L2B.C L2B.h Wind.h Misc.h Sds.h BaseFile.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
+L2AToL2B.o: L2AToL2B.C L2AToL2B.h Constants.h Misc.h L2A.h L2B.h GMF.h BaseFile.h Meas.h WindSwath.h MiscTable.h Wind.h Kp.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Index.h AngleInterval.h Matrix.h Kpm.h Kpr.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
+L2B.o: L2B.C L2B.h Wind.h Misc.h Sds.h BaseFile.h WindSwath.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
 LandMap.o: LandMap.C Array.h Constants.h LandMap.h LonLat.h List.h EarthPosition.h Matrix3.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h Constants.h EarthPosition.h List.h Matrix3.h
 Malloc1.o: Malloc1.C Malloc1.h
+Mat.o: Mat.C Mat.h Vect.h
 Matrix.o: Matrix.C Matrix.h Misc.h
 Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C L1BHdf.h L2AHdf.h Meas.h Beam.h Constants.h LonLat.h GenericGeom.h L1B.h L2A.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h BaseFile.h Matrix3.h BufferedList.h
-Metrics.o: Metrics.C Metrics.h Wind.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
+Metrics.o: Metrics.C Metrics.h Wind.h WindSwath.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
 Misc.o: Misc.C Misc.h Constants.h Matrix.h Array.h
 MiscTable.o: MiscTable.C MiscTable.h Interpolate.h Constants.h Array.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 PMeas.o: PMeas.C Pscat.h Distributions.h Qscat.h PMeas.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h Beam.h Constants.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h List.h BufferedList.h
 PointList.o: PointList.C PointList.h List.h
 Pscat.o: Pscat.C Pscat.h PMeas.h Misc.h Distributions.h Qscat.h Meas.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Constants.h Matrix3.h CoordinateSwitch.h EarthPosition.h BufferedList.h
-PscatConfig.o: PscatConfig.C PscatConfig.h QscatConfig.h ConfigSimDefs.h PscatConfigDefs.h ConfigSim.h Pscat.h PscatSim.h PscatL1A.h PscatL1AToL1B.h ConfigList.h Qscat.h QscatSim.h SpacecraftSim.h XTable.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Wind.h Grid.h Tracking.h Kp.h FbbTable.h PMeas.h LandMap.h Distributions.h BYUXTable.h GMF.h Meas.h BaseFile.h Attitude.h Spacecraft.h Ephemeris.h List.h Antenna.h Scatterometer.h CheckFrame.h L1AFrame.h Sigma0Map.h L00Frame.h L1AGSFrame.h Misc.h LonLat.h Index.h AngleInterval.h Matrix.h Array.h Kpm.h Kpr.h Topo.h MiscTable.h Constants.h Beam.h Matrix3.h BufferedList.h EarthPosition.h CoordinateSwitch.h EarthField.h
+PscatConfig.o: PscatConfig.C PscatConfig.h QscatConfig.h ConfigSimDefs.h PscatConfigDefs.h ConfigSim.h Pscat.h PscatSim.h PscatL1A.h PscatL1AToL1B.h ConfigList.h Qscat.h QscatSim.h SpacecraftSim.h XTable.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Wind.h Grid.h Tracking.h Kp.h FbbTable.h PMeas.h LandMap.h Distributions.h BYUXTable.h GMF.h Meas.h BaseFile.h Attitude.h Spacecraft.h Ephemeris.h List.h Antenna.h Scatterometer.h CheckFrame.h L1AFrame.h Sigma0Map.h L00Frame.h L1AGSFrame.h WindSwath.h Misc.h LonLat.h Index.h AngleInterval.h Matrix.h Array.h Kpm.h Kpr.h Topo.h MiscTable.h Constants.h Beam.h Matrix3.h BufferedList.h EarthPosition.h CoordinateSwitch.h EarthField.h
 PscatL1A.o: PscatL1A.C Pscat.h PscatL1A.h Constants.h Misc.h Qscat.h PMeas.h BaseFile.h Attitude.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h Beam.h Matrix3.h Ephemeris.h CoordinateSwitch.h EarthPosition.h LonLat.h List.h BufferedList.h
 PscatL1AToL1B.o: PscatL1AToL1B.C PscatL1AToL1B.h CheckFrame.h InstrumentGeom.h Sigma0.h Pscat.h PscatL1A.h Spacecraft.h Ephemeris.h L1B.h XTable.h BYUXTable.h LandMap.h Attitude.h Matrix3.h EarthPosition.h Wind.h Meas.h CoordinateSwitch.h LonLat.h Qscat.h Distributions.h PMeas.h BaseFile.h Constants.h BufferedList.h Array.h Topo.h Misc.h List.h Index.h AngleInterval.h Matrix.h Beam.h Antenna.h Tracking.h Scatterometer.h
 PscatSim.o: PscatSim.C PscatSim.h PMeas.h CheckFrame.h InstrumentGeom.h Sigma0.h AccurateGeom.h Beam.h Pscat.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h Meas.h PscatL1A.h QscatSim.h Attitude.h Matrix3.h EarthPosition.h CoordinateSwitch.h Ephemeris.h Spacecraft.h LonLat.h Qscat.h Array.h Topo.h Misc.h List.h Index.h AngleInterval.h Matrix.h MiscTable.h Constants.h Kp.h BaseFile.h L1AFrame.h Sigma0Map.h BufferedList.h Antenna.h Tracking.h Scatterometer.h Kpm.h Kpr.h L1AGSFrame.h EarthField.h L00Frame.h
 Pulse.o: Pulse.C List.h
 Pulser.o: Pulser.C Pulser.h Misc.h List.h Constants.h ConfigList.h
 Qscat.o: Qscat.C Qscat.h Constants.h InstrumentGeom.h GenericGeom.h Interpolate.h Misc.h BYUXTable.h AccurateGeom.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h EarthPosition.h CoordinateSwitch.h Ephemeris.h LonLat.h Matrix3.h Array.h CheckFrame.h Topo.h Beam.h Attitude.h List.h BufferedList.h Wind.h Index.h AngleInterval.h Matrix.h
-QscatConfig.o: QscatConfig.C Qscat.h ConfigList.h QscatConfig.h QscatConfigDefs.h Misc.h QscatSim.h ConfigSimDefs.h Constants.h ConfigSim.h Interpolate.h ETime.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h List.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h CheckFrame.h L1AFrame.h Sigma0Map.h SpacecraftSim.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Grid.h Kp.h FbbTable.h Beam.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h Array.h Topo.h Index.h AngleInterval.h Matrix.h MiscTable.h L1AGSFrame.h BaseFile.h L00Frame.h Kpm.h Kpr.h BufferedList.h EarthField.h
+QscatConfig.o: QscatConfig.C Qscat.h ConfigList.h QscatConfig.h QscatConfigDefs.h Misc.h QscatSim.h ConfigSimDefs.h Constants.h ConfigSim.h Interpolate.h ETime.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h List.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h CheckFrame.h L1AFrame.h Sigma0Map.h SpacecraftSim.h L00.h L1A.h L1AToL1B.h L1B.h L2A.h L2B.h L2AToL2B.h Grid.h Kp.h FbbTable.h Beam.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h Array.h Topo.h Index.h AngleInterval.h Matrix.h MiscTable.h L1AGSFrame.h BaseFile.h L00Frame.h WindSwath.h Kpm.h Kpr.h BufferedList.h EarthField.h
 QscatSim.o: QscatSim.C QscatSim.h CheckFrame.h InstrumentGeom.h Sigma0.h AccurateGeom.h Beam.h Sigma0Map.h Qscat.h LandMap.h Distributions.h XTable.h BYUXTable.h Wind.h GMF.h Meas.h L1AFrame.h Attitude.h Matrix3.h EarthPosition.h CoordinateSwitch.h Ephemeris.h Spacecraft.h LonLat.h Antenna.h Tracking.h Scatterometer.h Array.h Topo.h Misc.h List.h Index.h AngleInterval.h Matrix.h MiscTable.h Constants.h Kp.h L1AGSFrame.h BufferedList.h Kpm.h Kpr.h EarthField.h L00Frame.h
 RainHeightTable.o: RainHeightTable.C Array.h RainHeightTable.h Constants.h Index.h
 Scatterometer.o: Scatterometer.C Scatterometer.h InstrumentGeom.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Spacecraft.h Meas.h Antenna.h Ephemeris.h LonLat.h Qscat.h Attitude.h Constants.h Beam.h List.h BufferedList.h Tracking.h
@@ -273,9 +279,15 @@ Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitu
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
 Topo.o: Topo.C Topo.h Array.h Constants.h BYUXTable.h Spacecraft.h Qscat.h Meas.h CheckFrame.h Matrix3.h Ephemeris.h Attitude.h Antenna.h Tracking.h Scatterometer.h Beam.h LonLat.h List.h EarthPosition.h Wind.h BufferedList.h CoordinateSwitch.h Misc.h Index.h AngleInterval.h Matrix.h
 Tracking.o: Tracking.C Tracking.h Constants.h Array.h
-Wind.o: Wind.C Wind.h GSparameters.h Array.h hdf_support.h Distributions.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
-WindGrad.o: WindGrad.C WindGrad.h Wind.h Array.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
+Transform.o: Transform.C Transform.h Vect.h Mat.h
+Vect.o: Vect.C Vect.h Mat.h
+Wind.o: Wind.C Wind.h GSparameters.h Array.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
+WindGrad.o: WindGrad.C WindGrad.h Wind.h WindSwath.h Array.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
+WindSwath.o: WindSwath.C WindSwath.h hdf_support.h Distributions.h Array.h Wind.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h EarthPosition.h Constants.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
+gn.o: gn.C Vect.h Transform.h Constants.h Mat.h
+hdf_support.o: hdf_support.C hdf_support.h
+Read_Land_Sea_Map.o: Read_Land_Sea_Map.c 
 dot_prod.o: dot_prod.c 
 doub_factorial_double.o: doub_factorial_double.c function.h
 doub_factorial_int.o: doub_factorial_int.c 
@@ -285,6 +297,5 @@ factorial_double.o: factorial_double.c function.h
 factorial_int.o: factorial_int.c 
 int_rn_exp.o: int_rn_exp.c function.h
 qual_flag.o: qual_flag.c 
-Read_Land_Sea_Map.o: Read_Land_Sea_Map.c 
 sphere_normal_prob.o: sphere_normal_prob.c function.h
 stirling4.o: stirling4.c function.h
