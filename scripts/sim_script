@@ -60,6 +60,14 @@ endif
 
 set cfg_file = $argv[1]
 
+#------------------#
+# log the cfg file #
+#------------------#
+
+echo "`date` : Logging configuration file"
+log_cfg $cfg_file $cfg_file.clog
+echo "`date` : Completed logging configuration file"
+
 #---------#
 # run sim #
 #---------#
@@ -103,6 +111,16 @@ echo ""
 echo "`date` : Starting l2a_to_l2b"
 l2a_to_l2b $cfg_file
 echo "`date` : Completed l2a_to_l2b"
+
+#----------------------------#
+# verifying the cfg log file #
+#----------------------------#
+
+echo "`date` : Verifying configuration file"
+log_cfg $cfg_file $cfg_file.clog2
+diff $cfg_file.clog $cfg_file.clog2
+rm $cfg_file.clog2
+echo "`date` : Completed verifying configuration file"
 
 
 exit(0)

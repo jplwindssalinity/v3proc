@@ -3,7 +3,10 @@
 # Makefile for all SIM helper scripts
 #======================================================================
 
-SCRIPTS =
+SCRIPTS = \
+	l2b_eval \
+	l2b_metrics_plot \
+	sim_script
 
 #----------------------------------------------------------------------
 # default: make sure all scripts are checked out
