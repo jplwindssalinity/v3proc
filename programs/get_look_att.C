@@ -119,7 +119,7 @@ template class List<AngleInterval>;
 
 // simplex search parameters
 #define LAMBDA      0.05
-#define XTOL        0.001
+#define XTOL        0.005
 #define PLEX_STEPS  36
 
 //--------//
