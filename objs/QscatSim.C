@@ -256,12 +256,16 @@ QscatSim::ScatSim(
 
 //          float gain=10*log10(slice->XK/XK_max);
             float lambda = speed_light_kps / qscat->ses.txFrequency;
+            Beam* beam = qscat->GetCurrentBeam();
             float kdb = qscat->ses.transmitPower * qscat->ses.rxGainEcho *
-                lambda * lambda / (64.0 * pi * pi * pi * qscat->systemLoss);
+                lambda * lambda /
+                (64.0 * pi * pi * pi * qscat->systemLoss);
+//            float kdb = qscat->ses.transmitPower * qscat->ses.rxGainEcho *
+//                lambda * lambda * beam->peakGain * beam->peakGain /
+//                (64.0 * pi * pi * pi * qscat->systemLoss);
             kdb = 10.0 * log10(kdb);
 
-            Beam* beam = qscat->GetCurrentBeam();
-            kdb+= 2 * beam->peakGain;
+            kdb += beam->peakGain * 2;
 
             float XKdb=10*log10(slice->XK);
 //          double range=(spacecraft->orbitState.rsat -
