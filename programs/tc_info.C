@@ -287,8 +287,11 @@ delay_scan(
             float dummy;
             range_tracker->GetRxGateDelay(orbit_step, azimuth_step, 0, 0,
                 &delay_dn, &dummy);
+            float table_delay = RX_GATE_DELAY_CMD_RESOLUTION *
+                range_tracker->rxRangeMem;
             float delay = RX_GATE_DELAY_CMD_RESOLUTION * delay_dn;
-            fprintf(ofp, "%g %g\n", x_value, delay * 1000.0);
+            fprintf(ofp, "%g %g %g\n", x_value, delay * 1000.0,
+                table_delay * 1000.0);
         }
     }
 
