@@ -379,6 +379,8 @@ QscatSas::AzimuthToEncoder(
     unsigned short encoder = (unsigned short)((double)ENCODER_N * angle /
         two_pi + 0.5);
 
+    encoder %= ENCODER_N;
+
     // mask in the encoder bit
     encoder |= encoder_bit;
 

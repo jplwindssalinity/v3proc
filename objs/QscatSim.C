@@ -142,6 +142,7 @@ QscatSim::DetermineNextEvent(
         (double)(cycle_idx + NUMBER_OF_QSCAT_BEAMS) * qscat->ses.pri;
 
     lastEventEncoder = encoder;
+    lastEventType = qscat_event->eventId;
 
     return(1);
 }
