@@ -123,7 +123,7 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    extern char* optarg;
+//    extern char* optarg;
     extern int optind;
 
     int c;

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -398,26 +398,27 @@ main(
                     num_ambigs[i][j] = 0;
                     continue;
                 }
-                else if (l2a_to_l2b.wrMethod == L2AToL2B::S3 )
+                else if (l2a_to_l2b.wrMethod == L2AToL2B::S3)
                 {
-		    num_ambigs[i][j]+=1;
-		    if (num_ambigs[i][j] > HDF_NUM_AMBIGUITIES)
-                    num_ambigs[i][j] = HDF_NUM_AMBIGUITIES;
+                    num_ambigs[i][j]+=1;
+                    if (num_ambigs[i][j] > HDF_NUM_AMBIGUITIES)
+                        num_ambigs[i][j] = HDF_NUM_AMBIGUITIES;
                     int k = num_ambigs[i][j] - 1;
-                    
 
                     spd[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->spd;
                     dir[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->dir;
                     sel_idx[i][j]=num_ambigs[i][j];
                 }
-		else
-		{  
-		   WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-		   for(int k=0;k< num_ambigs[i][j];k++){
-		     if(wvc->selected==wvp) sel_idx[i][j]=k+1;
-		     wvp=wvc->ambiguities.GetNext();
-		   }
-		}
+                else
+                {
+                    WindVectorPlus* wvp = wvc->ambiguities.GetHead();
+                    for (int k = 0; k < num_ambigs[i][j]; k++)
+                    {
+                        if (wvc->selected == wvp)
+                            sel_idx[i][j] = k + 1;
+                        wvp = wvc->ambiguities.GetNext();
+                    }
+                }
             }
         }
 
