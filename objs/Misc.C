@@ -149,6 +149,30 @@ substitute_string(
 // downhill_simplex //
 //------------------//
 
+// Adapted from the Numerical Recipes routine called amoeba.
+// This function searches for the minimum of a multi-dimensional function
+// by moving a "simplex" in the multidimensional space in a systematic way.
+//
+// Inputs:
+//  p = Initial guess for the simplex.  If the function to be minimized has
+//      N unknowns and M known constants, then p has N+1 rows and N+M columns.
+//      The first N columns of p are the coordinates of the initial simplex.
+//      It is recommended that a best guess in N-dimensional space be put
+//      in the first row (N columns) and a characteristic deflection away
+//      from this point be put in the following rows.  The last M columns
+//      carry any constant information needed by the function to be minimized,
+//      and should be the same in all rows.
+//  ndim = the number of unknowns.
+//  totdim = the number of unknowns plus the number of constant values needed.
+//  ftol = relative accuracy in the function value that marks termination.
+//  funk = pointer to the function to be minimized.  The function takes two
+//         arguments.  The first is a zero-offset array of doubles with N+M
+//         elements.  The first N are trial values for the unknowns, the last
+//         M are known constants.  The second argument is an arbitrary pointer
+//         which the function can use to receive and send back more complex
+//         information that is not used by this search. 
+//  xtol = another termination criteria.
+//
 // Using a nonzero atol value is not guaranteed to reach the
 // peak for "misbehaving" functions
 
