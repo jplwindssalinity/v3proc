@@ -26,6 +26,17 @@ ETime::~ETime()
 	return;
 }
 
+//--------------------//
+// ETime::CurrentTime //
+//--------------------//
+
+int
+ETime::CurrentTime()
+{
+    _sec = time(0);
+    return(1);
+}
+
 //---------------------//
 // ETime::FromStructTm //
 //---------------------//
@@ -173,6 +184,18 @@ ETime::WriteAscii(
         return(0);
     fprintf(ofp, "%s", string);
     return(1);
+}
+
+//------------------------------//
+// ETime::WriteCurrentTimeAscii //
+//------------------------------//
+
+int
+ETime::WriteCurrentTimeAscii(
+    FILE*  ofp)
+{
+    CurrentTime();
+    return(WriteAscii(ofp));
 }
 
 //------------//

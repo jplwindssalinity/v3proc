@@ -41,6 +41,12 @@ public:
 	ETime();
 	~ETime();
 
+    //--------------//
+    // current time //
+    //--------------//
+
+    int  CurrentTime();
+
     //-------------//
     // conversions //
     //-------------//
@@ -57,6 +63,7 @@ public:
     int  Write(int fd);
     int  Read(int fd);
     int  WriteAscii(FILE* ofp);
+    int  WriteCurrentTimeAscii(FILE* ofp);
 
     //-----------//
     // operators //
