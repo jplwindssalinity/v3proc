@@ -101,15 +101,16 @@ double	alongtrack_size)
 //
 
 int
-Grid::Add(Meas *meas, double meas_time)
+Grid::Add(
+	Meas	*meas,
+	double	meas_time)
 {
-
-float ctd,atd;
-if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_time,
-	meas_time,&ctd,&atd) == 0)
-{
-	return(0);	// Couldn't find a grid position, so dump this measurement.
-}
+	float ctd, atd;
+	if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_time,
+		meas_time,&ctd,&atd) == 0)
+	{
+		return(0);	// Couldn't find a grid position, so dump this measurement.
+	}
 
 //
 // Compute grid indices, noting that the cross track grid starts on the left

@@ -163,14 +163,17 @@ SpacecraftSim::UpdateOrbit(
 	double			time,
 	Spacecraft*		spacecraft)
 {
+	// convert time to time since epoch
+	double time_since_epoch = time - _epoch;
+
 	// propagate longitude of ascending node
-	double omg1r = _bigOmega + _ascnodot * time;
+	double omg1r = _bigOmega + _ascnodot * time_since_epoch;
 
 	// propagate the argument of perigee
-	double arperi = _littleOmega + _periasdot * time;
+	double arperi = _littleOmega + _periasdot * time_since_epoch;
 
 	// propagate the mean anomaly
-	double amean = _l + _ameandot * time;
+	double amean = _l + _ameandot * time_since_epoch;
 
 	// compute eccentric and true anomalies
 	double eangle = _Ecan(amean);
@@ -248,7 +251,7 @@ SpacecraftSim::UpdateOrbit(
 	double slong = atan2(a, b);
 	double hnew = omg1r + delh;
 	double slonginer = (slong + hnew);
-	double earthmove = wa * time;
+	double earthmove = wa * time_since_epoch;
 
 
 	double slatdot = Gnew * sininew * cos(unew) / (rnew * rnew * coslat);

@@ -65,6 +65,9 @@ L15ToL17::Group(
 			meas = mspot->RemoveCurrent();
 		}
 
+		// delete the measurement spot
+		delete mspot;
+
  		// move to next spot
 		mspot = l15->frame.spotList.RemoveCurrent();
 	}
