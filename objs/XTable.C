@@ -494,6 +494,27 @@ XTable::FindSliceNum(float freq){
   return(sn);
 }
 
+int XTable::WriteXmgr(const char* filename, float orbit_position){
+      if (filename == NULL)
+      return(0);
+
+      FILE* fp = fopen(filename, "w");
+      if (fp == NULL)
+        return(0);     
+      for(int a=0;a< numAzimuthBins; a++){
+	float azi=360.0*(float(a)/(float)numAzimuthBins);
+	for(int b=0; b< numBeams; b++){
+	  fprintf(fp,"%g ", azi);
+	  for(int s=0; s< numSlices; s++){
+	    float X=RetrieveBySliceNumber(b,azi*dtr,orbit_position,s);
+	    fprintf(fp,"%g ",X);
+	  }
+	}
+	fprintf(fp,"\n");
+      }
+      return(1);	
+
+}
 //============================//
 // Protected Methods          //
 //============================//

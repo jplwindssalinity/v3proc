@@ -70,6 +70,7 @@ public:
   float GetMinFreq(int slice_number);
   float GetBandwidth(int slice_number);
   int FindSliceNum(float freq);
+  int WriteXmgr(const char* filename, float orbit_position);
 
   
   //--------------------------//
