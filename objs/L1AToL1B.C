@@ -11,6 +11,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "Ephemeris.h"
 #include "InstrumentGeom.h"
 #include "GenericGeom.h"
+#include "Sigma0.h"
 
 
 //==========//
@@ -213,10 +214,23 @@ L10ToL15::Convert(
 				// get incidence angle
 				meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
 
+				// Calculate Sigma0 from the received Power
+
+				// Eventually Kfactor should be computed (read from table)
+				float Kfactor=1.0;
+                                float sigma0, Pr;
+				Pr=l10->frame.science[total_slice_idx];
+				CoordinateSwitch gc_to_antenna=
+				  antenna_frame_to_gc.ReverseDirection();
+
+				if(! Pr_to_sigma0(&spacecraft, instrument,
+					meas, Kfactor, &gc_to_antenna,
+					Pr, &sigma0)) return(0);	
+			
 				//-----------------//
 				// add measurement //
 				//-----------------//
-
+				meas->value=sigma0;
 				meas_spot->slices.Append(meas);
 				total_slice_idx++;
 			}
