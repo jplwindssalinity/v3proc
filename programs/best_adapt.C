@@ -14,13 +14,17 @@
 // DESCRIPTION
 //    This filter attempts to set the best vector, ONE WIND VECTOR
 //    CELL AT A TIME! Yes, this means it should be really slow.
-//    It also uses (and updates) probability files.
+//    It also uses (and updates) probability files. The first
+//    ranked probability is no longer updated! -- Use first_prob to
+//    create a starter file for best_adapt.
 //
 // OPTIONS
 //    The following options are supported:
 //      [ -h ]  Input and output files are HDF
 //      [ -l ]  Learn mode. Forces solutions to be correct so that
-//              the propagation works better.
+//              the propagation works better. Also, artificially
+//              inflates probabilities to prevent low probability
+//              choices from being ignored.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -106,7 +110,7 @@ template class TrackerBase<unsigned short>;
 #define HDF_NUM_AMBIGUITIES   4
 
 #define WINDOW_SIZE  5
-#define MIN_SAMPLES  10
+#define MIN_SAMPLES  1
 
 #define MEDIAN_FILTER_WINDOW_SIZE  7
 
@@ -420,22 +424,6 @@ main(
             }
             first_obj_prob[cti][ati] = wvp1->obj;
             first_speed[cti][ati] = wvp1->spd;
-
-/*
-            //---------------//
-            // learn quickly //
-            //---------------//
-
-            if (opt_learn && first_obj_prob[cti][ati] > FIRST_MIN_VALUE)
-            {
-                int idx;
-                first_index.GetNearestIndexClipped(first_obj_prob[cti][ati],
-                   &idx);
-                if (wvp1 == original_selected[cti][ati])
-                    first_good_array[idx]++;
-                first_count_array[idx]++;
-            }
-*/
         }
     }
 
@@ -525,7 +513,10 @@ main(
                 }
                 else
                 {
-                    first_prob = first_obj_prob[cti][ati];
+                    // the penalty for a bad initialization is high
+                    // don't initialize unless you have a good estimate
+                    // of its probability
+                    first_prob = 0.0;
                 }
 
                 //---------------------------------//
@@ -629,17 +620,28 @@ main(
 filter_prob = (float)filter_good_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
 factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx];
 
-                if (filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx] > MIN_SAMPLES)
+                if (filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx] >= MIN_SAMPLES)
                 {
                     filter_prob /= factor_sum;
+
+                    //---------------------------------------//
+                    // if in learning mode, tweak based on N //
+                    //---------------------------------------//
+
+                    if (opt_learn)
+                    {
+                        filter_prob += sqrt(0.25 / (double)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][cti_idx][prob_idx]);
+                    }
                 }
                 else
                 {
                     // assign a probability randomly
                     filter_prob = drand48();
+/*
                     // don't do something stupid
                     if (neighbor_count[cti][ati] < 2)
                         filter_prob *= filter_prob;
+*/
                 }
 
                 //---------------------------//
@@ -647,10 +649,13 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
                 //---------------------------//
                 // it must beat the first ranked too, otherwise
                 // it won't overturn it
+                // when learning, never overturn, just pure propagation
+                // because the vector will get flipped anyhow
 
                 if (filter_prob > best_prob &&
                     filter_prob > first_prob &&
-                    wvc->selected != filter_selection[cti][ati])
+                    wvc->selected != filter_selection[cti][ati] &&
+                    (! opt_learn || wvc->selected == NULL))
                 {
                     best_prob = filter_prob;
                     best_n_idx = neighbor_idx;
@@ -690,12 +695,11 @@ factor_sum = (float)filter_count_array[neighbor_idx][dif_ratio_idx][speed_idx][c
 
             wvc->selected = wvc->ambiguities.GetByIndex(0);
 
-            if (! opt_learn)
-            {
-                if (wvc->selected == original_selected[best_cti][best_ati])
-                    first_good_array[best_first_idx][best_fspd_idx]++;
-                first_count_array[best_first_idx][best_fspd_idx]++;
-            }
+/*
+            if (wvc->selected == original_selected[best_cti][best_ati])
+                first_good_array[best_first_idx][best_fspd_idx]++;
+            first_count_array[best_first_idx][best_fspd_idx]++;
+*/
 
             change[best_cti][best_ati] = 1;
             first_count++;
