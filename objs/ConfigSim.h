@@ -105,6 +105,8 @@ int ConfigL15(L15* l15, ConfigList* config_list);
 
 #define EPHEMERIS_FILE_KEYWORD				"EPHEMERIS_FILE"
 
+int ConfigEphemeris(Ephemeris* ephemeris, ConfigList* config_list);
+
 //-----------//
 // WindField //
 //-----------//

@@ -300,6 +300,23 @@ ConfigL15(
 }
 
 //-----------------//
+// ConfigEphemeris //
+//-----------------//
+
+int
+ConfigEphemeris(
+	Ephemeris*		ephemeris,
+	ConfigList*		config_list)
+{
+	char* ephemeris_filename = config_list->Get(EPHEMERIS_FILE_KEYWORD);
+	if (ephemeris_filename == NULL)
+		return(0);
+	ephemeris->SetFile(ephemeris_filename);
+
+	return(1);
+}
+
+//-----------------//
 // ConfigWindField //
 //-----------------//
 
