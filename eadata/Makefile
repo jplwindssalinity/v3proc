@@ -138,6 +138,7 @@ Args.o: Args.C Args.h ArgDefs.h EAConfigList.h EALog.h EAList.h TlmFileList.h Tl
 ArgsPlus.o: ArgsPlus.C Args.h ArgsPlus.h ParTab.h EAConfigList.h EALog.h TlmFileList.h LimitList.h Filter.h ToDo.h CmdList.h Eqx.h PolyTable.h ArgDefs.h Itime.h Parameter.h CommonDefs.h EAList.h TlmHdfFile.h LimitChecker.h Command.h CmdEffect.h Tpg.h Polynomial.h PolyErrNo.h ListBase.h HdfFile.h LimitState.h SafeString.h
 Backup.o: Backup.C Backup.h
 Binning.o: Binning.C Binning.h NSCAT.h
+Command.h: Command_1.h UpldTbl.h MemoryFromFile.h MemoryFromTlm.h
 Command.o: Command.C Command.h MacroCommand.h Tpg.h CommonDefs.h Itime.h
 CmdList.o: CmdList.C Reqq.h CmdList.h Command.h EAList.h CmdEffect.h Eqx.h Itime.h Parameter.h CommonDefs.h Tpg.h ListBase.h
 CmdEffect.o: CmdEffect.C CmdEffect.h Command.h Parameter.h CommonDefs.h Tpg.h Itime.h
@@ -164,7 +165,7 @@ Hk2ParTab.o: Hk2ParTab.C ParTab.h L1AExtract.h Hk2Extract.h Print.h CommonDefs.h
 Itime.o: Itime.C Itime.h CommonDefs.h
 L1ADrvExtract.o: L1ADrvExtract.C L1AExtract.h L1ADrvExtract.h Parameter.h Itime.h PolyTable.h Polynomial.h CommonDefs.h TlmHdfFile.h EAList.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 L1ADrvTab.o: L1ADrvTab.C ParTab.h L1AExtract.h L1ADrvExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h PolyTable.h HdfFile.h EAList.h Polynomial.h PolyErrNo.h SafeString.h ListBase.h
-L1AEffDetector.o: L1AEffDetector.C L1AEffDetector.h Itime.h EffDetector.h EALog.h Parameter.h ParTab.h State.h TlmHdfFile.h CommonDefs.h CmdList.h TlmFileList.h HdfFile.h EAList.h Command.h CmdEffect.h Eqx.h SafeString.h ListBase.h Tpg.h
+L1AEffDetector.o: L1AEffDetector.C L1AEffDetector.h Itime.h EffDetector.h EALog.h Parameter.h ParTab.h State.h TlmHdfFile.h CommonDefs.h CmdList.h TlmFileList.h HdfFile.h EAList.h Command.h CmdEffect.h Eqx.h SafeString.h ListBase.h Tpg.h UpldTblList.h
 L1AErrorChecker.o: L1AErrorChecker.C L1AErrorChecker.h L1AExtract.h Parameter.h ParTab.h State.h Itime.h EAList.h ErrorChecker.h CommonDefs.h TlmHdfFile.h ListBase.h HdfFile.h SafeString.h
 L1AExtract.o: L1AExtract.C L1AExtract.h Parameter.h PolyTable.h Itime.h CommonDefs.h TlmHdfFile.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 L1AFile.o: L1AFile.C L1AFile.h L1AExtract.h ParTab.h TimeTlmFile.h CommonDefs.h Itime.h TlmHdfFile.h Parameter.h HdfFile.h EAList.h SafeString.h ListBase.h
@@ -202,3 +203,4 @@ TlmHdfFile.o: TlmHdfFile.C TlmHdfFile.h CommonDefs.h HdfFile.h Itime.h Parameter
 TlmFileList.o: TlmFileList.C TlmFileList.h Hk2File.h L1AFile.h NoTimeTlmFile.h EAList.h TlmHdfFile.h Parameter.h Itime.h TimeTlmFile.h ListBase.h CommonDefs.h HdfFile.h SafeString.h
 ToDo.o: ToDo.C ToDo.h CommonDefs.h Itime.h EAList.h ListBase.h
 Tpg.o: Tpg.C Tpg.h Itime.h CommonDefs.h
+UpldTbl.h: UpldTbl_1.h
