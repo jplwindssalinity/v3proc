@@ -11,6 +11,7 @@ static const char rcs_id_metrics_c[] =
 #include <string.h>
 #include "Metrics.h"
 #include "Wind.h"
+#include "LonLatWind.h"
 
 #define METRICS_HEADER  "mets"
 
@@ -549,11 +550,11 @@ Metrics::IsCompatible(
 
 int
 Metrics::Evaluate(
-    WindSwath*  swath,
-    float       resolution,
-    int         speed_bins,
-    float       speed_resolution,
-    WindField*  truth)
+    WindSwath*   swath,
+    float        resolution,
+    int          speed_bins,
+    float        speed_resolution,
+    LonLatWind*  truth)
 {
     Clear();    // clear the metrics first
     int cross_track_bins = swath->GetCrossTrackBins();

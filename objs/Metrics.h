@@ -11,6 +11,7 @@ static const char rcs_id_metrics_h[] =
 
 #include "Wind.h"
 #include "WindSwath.h"
+#include "LonLatWind.h"
 
 //======================================================================
 // CLASSES
@@ -72,7 +73,7 @@ public:
 
     int  IsCompatible(const Metrics& m);
     int  Evaluate(WindSwath* swath, float resolution,
-		  int speed_bins, float speed_resolution, WindField* truth);
+		  int speed_bins, float speed_resolution, LonLatWind* truth);
 
     //-----------//
     // operators //
