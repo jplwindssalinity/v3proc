@@ -9,7 +9,7 @@
 
 //==================================================================//
 // CLASSES							    //
-//		Generic_Dist, Uniform, Gaussian			    //
+//		Generic_Dist, Uniform, Gaussian, GTC, AttDist	    //
 //==================================================================//
 
 //==================================================================//
@@ -30,13 +30,13 @@ Generic_Dist::~Generic_Dist(){
 }
 
 //============================//
-// Generic_Dist::get_number   //
+// Generic_Dist::GetNumber   //
 //============================//
 
-float Generic_Dist::get_number(double time){
+float Generic_Dist::GetNumber(double time){
 	if(time<0.0) //bogus check to keep compiler quiet
 		return(0.0);
-	else return(get_number());
+	else return(GetNumber());
 }
 
 //============================//
@@ -61,11 +61,11 @@ Uniform::~Uniform(){
 }
 
 //================================//
-// Uniform::get_number            //
+// Uniform::GetNumber            //
 //================================//
 
 float
-Uniform::get_number()
+Uniform::GetNumber()
 {
 	float num;
 	num=(float)(2*_radius*(drand48()-0.5)+_mean);
@@ -96,7 +96,7 @@ Gaussian::~Gaussian()
 }
 
 float
-Gaussian::get_number()
+Gaussian::GetNumber()
 {
 	float num;
 	double v1, v2, r, fac;
@@ -136,14 +136,36 @@ GTC::~GTC(){
 }
 
 //================================//
-// GTC::get_number	          //
+// GTC::GetNumber	          //
 //================================//
 
-float GTC::get_number(){
+float GTC::GetNumber(){
 
 	_prev*=(1-_tau);
-	_prev+=_tau*Gaussian::get_number();	
+	_prev+=_tau*Gaussian::GetNumber();	
 	return(_prev);
+}
+
+//==================================//
+// AttDist                          //
+//==================================//
+
+AttDist::AttDist()
+{
+	return;
+}
+
+AttDist::AttDist(Generic_Dist * r, Generic_Dist* p, Generic_Dist* y)
+{
+	roll=r;
+	pitch=p;
+	yaw=y;
+	return;
+}
+
+AttDist::~AttDist()
+{
+	return;
 }
 
 //==================================//

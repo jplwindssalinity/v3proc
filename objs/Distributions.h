@@ -42,8 +42,8 @@ static const char rcs_id_distributions_h[] =
 class Generic_Dist
 {
 public:
-	virtual float get_number()=0;
-        virtual float get_number(double time);
+	virtual float GetNumber()=0;
+        virtual float GetNumber(double time);
 	virtual ~Generic_Dist();
 };		
 
@@ -55,7 +55,7 @@ public:
 // contains parameters:						    //
 //         _radius:=  half the width of the distribution            //
 //         _mean						    //
-// contains member function, get_number() which returns a random    //
+// contains member function, GetNumber() which returns a random    //
 // number extracted from the distribution.                          //
 //==================================================================//
 
@@ -65,7 +65,7 @@ public:
 	Uniform();
         Uniform(float radius, float mean);
 	~Uniform();
-	float get_number();
+	float GetNumber();
 protected:
 	float _radius;
         float _mean;
@@ -84,7 +84,7 @@ public:
 	Gaussian();
 	Gaussian(float variance, float mean);
 	~Gaussian();
-	float get_number();
+	float GetNumber();
 protected:
 	float _variance;
 	float _mean;
@@ -108,12 +108,30 @@ public:
 	GTC();
 	GTC(float variance, float mean, float tau);
 	~GTC();
-	float get_number();
+	float GetNumber();
 protected:
 	float _tau;
         float _prev;
 };
 
+//==================================================================//
+// Class							    //
+//	AttDist							    //
+// Description: Contains three pointers to random distributions for //
+// roll, pitch and yaw.						    //
+//==================================================================//
+
+class AttDist
+{
+public:
+	AttDist();
+	AttDist(Generic_Dist* r, Generic_Dist* p, Generic_Dist* y);
+	~AttDist();
+	Generic_Dist* roll;
+	Generic_Dist* pitch;
+	Generic_Dist* yaw;
+
+};
 
 //==================================================================//
 // Function SeedFromClock					    //
