@@ -6,7 +6,8 @@
 SCRIPTS = \
 	l2b_eval \
 	l2b_metrics_plot \
-	sim_script
+	sim_script \
+	l2b_rms_plot
 
 #----------------------------------------------------------------------
 # default: make sure all scripts are checked out
