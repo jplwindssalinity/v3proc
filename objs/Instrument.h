@@ -98,7 +98,7 @@ public:
 	//------------------//
 
 	unsigned int	orbitTicks;				// 32 Hz ticks
-	float			commandedDoppler;		// Hz
+	float			commandedDoppler;		// Hz freq added to base xmit
 	float			receiverGateDelay;		// sec
 	float			receiverGateDuration;	// sec
 

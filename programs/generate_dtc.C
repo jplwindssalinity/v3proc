@@ -103,7 +103,7 @@ template class BufferedList<OrbitState>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int doppler_fit(int count, double* baseband_freq, double* a, double* p,
+int doppler_fit(int count, double* dop_com, double* a, double* p,
 	double* c);
 
 //------------------//
@@ -308,7 +308,7 @@ main(
 			// calculate baseband frequencies //
 			//--------------------------------//
 
-			double baseband_freq[DOPPLER_AZIMUTH_STEPS];
+			double dop_com[DOPPLER_AZIMUTH_STEPS];
 
 			for (int azimuth_step = 0; azimuth_step < DOPPLER_AZIMUTH_STEPS;
 				azimuth_step++)
@@ -332,8 +332,8 @@ main(
 				IdealCommandedDoppler(&antenna_frame_to_gc, &spacecraft,
 					&instrument, vector);
 
-				baseband_freq[azimuth_step] = instrument.commandedDoppler;
-printf("%d, %g\n", azimuth_step, instrument.commandedDoppler);
+				// constants store Doppler to correct for (ergo -)
+				dop_com[azimuth_step] = -instrument.commandedDoppler;
 			}
 
 			//------------------------//
@@ -341,7 +341,7 @@ printf("%d, %g\n", azimuth_step, instrument.commandedDoppler);
 			//------------------------//
 
 			double a, p, c;
-			doppler_fit(DOPPLER_AZIMUTH_STEPS, baseband_freq, &a, &p, &c);
+			doppler_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
 			*(*(*(terms + beam_idx) + orbit_step) + 0) = a;
 			*(*(*(terms + beam_idx) + orbit_step) + 1) = p;
 			*(*(*(terms + beam_idx) + orbit_step) + 2) = c;
@@ -390,7 +390,7 @@ printf("%d, %g\n", azimuth_step, instrument.commandedDoppler);
 int
 doppler_fit(
 	int			count,
-	double*		baseband_freq,
+	double*		dop_com,
 	double*		a,
 	double*		p,
 	double*		c)
@@ -407,8 +407,8 @@ doppler_fit(
 			double arg = wn * (double)i * (double)j;
 			double c = cos(arg);
 			double s = sin(arg);
-			real[i] += baseband_freq[j] * c;
-			imag[i] += baseband_freq[j] * s;
+			real[i] += dop_com[j] * c;
+			imag[i] += dop_com[j] * s;
 		}
 	}
 

@@ -107,7 +107,8 @@ DopplerTracker::GetCommandedDoppler(
 
 	int doppler_dn = (int)(raw_doppler / DOPPLER_TRACKING_RESOLUTION + 0.5);
 
-	*doppler = doppler_dn * DOPPLER_TRACKING_RESOLUTION;
+	// negative sign to convert "true" Doppler to additive xmit freq
+	*doppler = - doppler_dn * DOPPLER_TRACKING_RESOLUTION;
 
 	return(1);
 }
@@ -126,7 +127,7 @@ DopplerTracker::SetInstrument(
 
 	double antenna_fraction = instrument->antenna.GetAntennaFraction();
 	float doppler;
-    GetCommandedDoppler(beam_idx, doppler_step, antenna_fraction, &doppler);
+	GetCommandedDoppler(beam_idx, doppler_step, antenna_fraction, &doppler);
 
 	instrument->commandedDoppler = doppler;
 

@@ -642,7 +642,8 @@ IdealCommandedDoppler(
 	double echo_center = transmit_center + round_trip_time +
 		instrument->systemDelay;
 	double range_freq = instrument->chirpRate *
-		(instrument->receiverGateDelay + pulse_width / 2.0 - echo_center);
+		(instrument->receiverGateDelay +
+		instrument->receiverGateDuration / 2.0 - echo_center);
 
 	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
