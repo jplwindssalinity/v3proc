@@ -169,7 +169,7 @@ private:
     // variables //
     //-----------//
 
-    int  _maturity;
+    int  _maturity;    // in seconds
 };
 
 //==========//
