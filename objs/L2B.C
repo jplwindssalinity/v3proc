@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -14,6 +14,9 @@ static const char rcs_id_l2b_c[] =
 #include "ParTab.h"
 #include "L1AExtract.h"
 #include "Wind.h"
+#include "Sds.h"
+#include "hdf.h"
+#include "mfhdf.h"
 
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
@@ -113,6 +116,443 @@ L2B::~L2B()
     return;
 }
 
+//------------------//
+// L2B::ReadPureHdf //
+//------------------//
+
+#define ROW_WIDTH  76
+#define AMBIGS      4
+
+int
+L2B::ReadPureHdf(
+    const char*  filename,
+    int          unnormalize_mle_flag)
+{
+    //---------//
+    // prepare //
+    //---------//
+
+    frame.swath.DeleteEntireSwath();
+
+    //----------------------------------------//
+    // some generic HDF start and edge arrays //
+    //----------------------------------------//
+
+    // the HDF read routine should only access as many dimensions as needed
+    int32 generic_start[3] = { 0, 0, 0 };
+    int32 generic_edges[3] = { 1, ROW_WIDTH, AMBIGS };
+
+    //--------------------------//
+    // start access to the file //
+    //--------------------------//
+
+    int32 sd_id = SDstart(filename, DFACC_READ);
+    if (sd_id == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDstart\n");
+        return(0);
+    }
+
+    //-------------------------------------//
+    // determine the actual number of rows //
+    //-------------------------------------//
+
+    int32 attr_index_l2b_actual_wvc_rows = SDfindattr(sd_id,
+        "l2b_actual_wvc_rows");
+    if (attr_index_l2b_actual_wvc_rows == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDfindattr\n");
+        return(0);
+    }
+
+    char data[1024];
+    if (SDreadattr(sd_id, attr_index_l2b_actual_wvc_rows, data) == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDreadattr\n");
+        return(0);
+    }
+
+    int l2b_actual_wvc_rows = 0;
+    if (sscanf(data, " %*[^\n] %*[^\n] %d", &l2b_actual_wvc_rows) != 1)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error parsing header\n");
+        return(0);
+    }
+
+    //----------//
+    // allocate //
+    //----------//
+
+    if (! frame.swath.Allocate(ROW_WIDTH, l2b_actual_wvc_rows))
+        return(0);
+
+    //-------------------------------//
+    // get all the necessary SDS IDs //
+    //-------------------------------//
+
+    int32 wvc_row_sds_id = SDnametoid(sd_id, "wvc_row");
+    int32 wvc_lat_sds_id = SDnametoid(sd_id, "wvc_lat");
+    int32 wvc_lon_sds_id = SDnametoid(sd_id, "wvc_lon");
+    int32 wvc_index_sds_id = SDnametoid(sd_id, "wvc_index");
+    int32 num_in_fore_sds_id = SDnametoid(sd_id, "num_in_fore");
+    int32 num_in_aft_sds_id = SDnametoid(sd_id, "num_in_aft");
+    int32 num_out_fore_sds_id = SDnametoid(sd_id, "num_out_fore");
+    int32 num_out_aft_sds_id = SDnametoid(sd_id, "num_out_aft");
+    int32 wvc_quality_flag_sds_id = SDnametoid(sd_id, "wvc_quality_flag");
+    int32 wvc_atten_corr_sds_id = SDnametoid(sd_id, "atten_corr");
+    int32 model_speed_sds_id = SDnametoid(sd_id, "model_speed");
+    int32 model_dir_sds_id = SDnametoid(sd_id, "model_dir");
+    int32 num_ambigs_sds_id = SDnametoid(sd_id, "num_ambigs");
+    int32 wind_speed_sds_id = SDnametoid(sd_id, "wind_speed");
+    int32 wind_dir_sds_id = SDnametoid(sd_id, "wind_dir");
+    int32 max_likelihood_est_sds_id = SDnametoid(sd_id, "max_likelihood_est");
+    int32 wvc_selection_sds_id = SDnametoid(sd_id, "wvc_selection");
+    int32 wind_speed_selection_sds_id = SDnametoid(sd_id,
+        "wind_speed_selection");
+    int32 wind_dir_selection_sds_id = SDnametoid(sd_id, "wind_dir_selection");
+    int32 mp_rain_probability_sds_id = SDnametoid(sd_id,
+        "mp_rain_probability");
+
+    //--------------//
+    // for each row //
+    //--------------//
+
+    for (int ati = 0; ati < l2b_actual_wvc_rows; ati++)
+    {
+        //--------------//
+        // read the row //
+        //--------------//
+
+        generic_start[0] = ati;
+
+        int16 wvc_row;
+        if (SDreaddata(wvc_row_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)&wvc_row) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 wvc_lat[ROW_WIDTH];
+        if (SDreaddata(wvc_lat_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_lat) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 wvc_lon[ROW_WIDTH];
+        if (SDreaddata(wvc_lon_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_lon) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 wvc_index[ROW_WIDTH];
+        if (SDreaddata(wvc_index_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_index) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 num_in_fore[ROW_WIDTH];
+        if (SDreaddata(num_in_fore_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)num_in_fore) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 num_in_aft[ROW_WIDTH];
+        if (SDreaddata(num_in_aft_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)num_in_aft) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 num_out_fore[ROW_WIDTH];
+        if (SDreaddata(num_out_fore_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)num_out_fore) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 num_out_aft[ROW_WIDTH];
+        if (SDreaddata(num_out_aft_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)num_out_aft) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        uint16 wvc_quality_flag[ROW_WIDTH];
+        if (SDreaddata(wvc_quality_flag_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_quality_flag) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 wvc_atten_corr[ROW_WIDTH];
+        if (SDreaddata(wvc_atten_corr_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_atten_corr) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 model_speed[ROW_WIDTH];
+        if (SDreaddata(model_speed_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)model_speed) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        uint16 model_dir[ROW_WIDTH];
+        if (SDreaddata(model_dir_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)model_dir) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 num_ambigs[ROW_WIDTH];
+        if (SDreaddata(num_ambigs_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)num_ambigs) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 wind_speed[ROW_WIDTH][AMBIGS];
+        if (SDreaddata(wind_speed_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wind_speed) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        uint16 wind_dir[ROW_WIDTH][AMBIGS];
+        if (SDreaddata(wind_dir_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wind_dir) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 max_likelihood_est[ROW_WIDTH][AMBIGS];
+        if (SDreaddata(max_likelihood_est_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)max_likelihood_est) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int8 wvc_selection[ROW_WIDTH];
+        if (SDreaddata(wvc_selection_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wvc_selection) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 wind_speed_selection[ROW_WIDTH];
+        if (SDreaddata(wind_speed_selection_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wind_speed_selection) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        uint16 wind_dir_selection[ROW_WIDTH];
+        if (SDreaddata(wind_dir_selection_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)wind_dir_selection) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        int16 mp_rain_probability[ROW_WIDTH];
+        if (SDreaddata(mp_rain_probability_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)mp_rain_probability) == FAIL)
+        {
+            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            return(0);
+        }
+
+        //---------------------------------//
+        // assemble into wind vector cells //
+        //---------------------------------//
+
+        for (int cti = 0; cti < ROW_WIDTH; cti++)
+        {
+            // if there are no ambiguities, wind was not retrieved
+            if (num_ambigs[cti] == 0)
+                continue;
+
+            //----------------//
+            // create the WVC //
+            //----------------//
+
+            WVC* wvc = new WVC();
+
+            //--------------------------------//
+            // set the longitude and latitude //
+            //--------------------------------//
+
+            wvc->lonLat.longitude = wvc_lon[cti] * HDF_WVC_LON_SCALE * dtr;
+            wvc->lonLat.latitude = wvc_lat[cti] * HDF_WVC_LAT_SCALE * dtr;
+
+            //----------------------//
+            // set the nudge vector //
+            //----------------------//
+
+            wvc->nudgeWV = new WindVectorPlus();
+            if (wvc->nudgeWV == NULL)
+            {
+                fprintf(stderr, "L2B::ReadPureHdf: error allocating\n");
+                return(0);
+            }
+
+            float nudge_edir = (450.0 - model_dir[cti] * HDF_MODEL_DIR_SCALE)
+                * dtr;
+            while (nudge_edir > two_pi)
+                nudge_edir -= two_pi;
+            while (nudge_edir < 0)
+                nudge_edir += two_pi;
+
+            float nudge_speed = model_speed[cti] * HDF_MODEL_SPEED_SCALE;
+
+            wvc->nudgeWV->SetSpdDir(nudge_speed * NWP_SPEED_CORRECTION,
+                nudge_edir);
+
+            //---------------------------//
+            // create the ambiguity list //
+            //---------------------------//
+
+            int sigma0_count = num_in_fore[cti] + num_in_aft[cti]
+                + num_out_fore[cti] + num_out_aft[cti];
+
+            for (int ambig_idx = 0; ambig_idx < num_ambigs[cti]; ambig_idx++)
+            {
+                WindVectorPlus* wvp = new WindVectorPlus();
+                if (wvp == NULL)
+                {
+                    fprintf(stderr, "L2B::ReadPureHdf: error allocating\n");
+                    return(0);
+                }
+
+                float edir = (450.0 - wind_dir[cti][ambig_idx]
+                    * HDF_WIND_DIR_SCALE) * dtr;
+                while (edir > two_pi)
+                    edir -= two_pi;
+                while (edir < 0)
+                    edir += two_pi;
+                float spd = wind_speed[cti][ambig_idx] * HDF_WIND_SPEED_SCALE;
+                wvp->SetSpdDir(spd, edir);
+
+                wvp->obj = max_likelihood_est[cti][ambig_idx]
+                    * HDF_MAX_LIKELIHOOD_EST_SCALE;
+                if (unnormalize_mle_flag)
+                {
+                    wvp->obj *= sigma0_count;
+                }
+
+                if (! wvc->ambiguities.Append(wvp))
+                {
+                    fprintf(stderr, "L2B::ReadPureHdf: error appending\n");
+                    return(0);
+                }
+            }
+
+            //----------------------------//
+            // set the selected ambiguity //
+            //----------------------------//
+
+            wvc->selected = wvc->ambiguities.GetByIndex(wvc_selection[cti]
+                - 1);
+            wvc->selected_allocated = 0;
+
+            //------------------------//
+            // set the special vector //
+            //------------------------//
+
+            WindVector* wv = new WindVector();
+            if (wv == NULL)
+            {
+                fprintf(stderr, "L2B::ReadPureHdf: error allocating\n");
+                return(0);
+            }
+
+            float special_dir = (450.0 - wind_dir_selection[cti]
+                * HDF_WIND_DIR_SELECTION_SCALE) * dtr;
+            while (special_dir > two_pi)
+                special_dir -= two_pi;
+            while (special_dir < 0)
+                special_dir += two_pi;
+            float special_spd = wind_speed_selection[cti]
+                * HDF_WIND_SPEED_SELECTION_SCALE;
+            wv->SetSpdDir(special_spd, special_dir);
+
+            //----------------------------//
+            // set the rain "probability" //
+            //----------------------------//
+
+            wvc->rainProb = mp_rain_probability[cti]
+                * HDF_MP_RAIN_PROBABILITY_SCALE;
+            wvc->rainFlagBits = (char)((0x7000 & wvc_quality_flag[cti]) >> 12);
+
+            //------------------//
+            // add WVC to swath //
+            //------------------//
+
+            if (! frame.swath.Add(cti, ati, wvc))
+            {
+                fprintf(stderr, "L2B::ReadPureHdf: error adding WVC\n");
+                return(0);
+            }
+        }
+    }
+
+    if (SDendaccess(wvc_row_sds_id) == FAIL ||
+        SDendaccess(wvc_lat_sds_id) == FAIL ||
+        SDendaccess(wvc_lon_sds_id) == FAIL ||
+        SDendaccess(wvc_index_sds_id) == FAIL ||
+        SDendaccess(wvc_quality_flag_sds_id) == FAIL ||
+        SDendaccess(wvc_atten_corr_sds_id) == FAIL ||
+        SDendaccess(model_speed_sds_id) == FAIL ||
+        SDendaccess(model_dir_sds_id) == FAIL ||
+        SDendaccess(num_ambigs_sds_id) == FAIL ||
+        SDendaccess(wind_speed_sds_id) == FAIL ||
+        SDendaccess(wind_dir_sds_id) == FAIL ||
+        SDendaccess(max_likelihood_est_sds_id) == FAIL ||
+        SDendaccess(wvc_selection_sds_id) == FAIL ||
+        SDendaccess(wind_speed_selection_sds_id) == FAIL ||
+        SDendaccess(wind_dir_selection_sds_id) == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDendaccess\n");
+        return(0);
+    }
+
+    //------------------------//
+    // end access to the file //
+    //------------------------//
+
+    if (SDend(sd_id) == FAIL)
+    {
+        fprintf(stderr, "L2B::ReadPureHdf: error with SDend\n");
+        return(0);
+    }
+
+    // success!
+    return(1);
+}
+
 //----------------//
 // L2B::WriteVctr //
 //----------------//
@@ -124,7 +564,6 @@ L2B::WriteVctr(
 {
     return(frame.swath.WriteVctr(filename, rank));
 }
-
 
 //-----------------//
 // L2B::WriteAscii //

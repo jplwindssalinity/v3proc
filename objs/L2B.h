@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -90,6 +90,17 @@ public:
 //    manipulating of Level 2B data.
 //======================================================================
 
+#define HDF_WVC_LAT_SCALE               0.01
+#define HDF_WVC_LON_SCALE               0.01
+#define HDF_MODEL_SPEED_SCALE           0.01
+#define HDF_MODEL_DIR_SCALE             0.01
+#define HDF_WIND_SPEED_SCALE            0.01
+#define HDF_WIND_DIR_SCALE              0.01
+#define HDF_MAX_LIKELIHOOD_EST_SCALE    0.001
+#define HDF_WIND_SPEED_SELECTION_SCALE  0.01
+#define HDF_WIND_DIR_SELECTION_SCALE    0.01
+#define HDF_MP_RAIN_PROBABILITY_SCALE   0.001
+
 class L2B : public BaseFile
 {
 public:
@@ -121,6 +132,9 @@ public:
     int  WriteHeader() { return(header.Write(_outputFp)); };
 
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
+
+    int  ReadPureHdf(const char* filename, int unnormalize_mle_flag = 1);
+
     int  ReadHDF(int unnormalize_mle = 1);
     int  ReadHDF(const char* filename, int unnormalize_mle = 1);
     int  ReadHDFDIRTH(const char* filename);
