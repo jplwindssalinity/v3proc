@@ -74,16 +74,22 @@ set sdir = *$base*sel_rms_dir*
 # generate titles #
 #-----------------#
 
-set tspd = `grep '^@ title ' $nspd | sed -e s/'@ '//g -e s/'Nearest '//g`
-set tdir = `grep '^@ title ' $ndir | sed -e s/'@ '//g -e s/'Nearest '//g`
+#set spd_title = `grep '^@ title ' $nspd | sed -e s/'@ '//g -e s/'Nearest '//g`
+#set dir_title = `grep '^@ title ' $ndir | sed -e s/'@ '//g -e s/'Nearest '//g`
+set spd_title = "title "'"'"QuikSCAT RMS Speed Error"'"'
+set dir_title = "title "'"'"QuikSCAT RMS Direction Error"'"'
+set spd_subtitle = "subtitle "'"''"'
+set dir_subtitle = "subtitle "'"''"'
 
 #------#
 # plot #
 #------#
 
 xmgrp -device 2 -p $SIM_CENTRAL_TREE/xmgrp/l2b_rms_plot.p \
-  -graph 1 -xydy $nspd -pexec "$tspd" -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
-  -graph 0 -xydy $ndir -pexec "$tdir" -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
+  -graph 1 -xydy $nspd -pexec "$spd_title" -pexec "$spd_subtitle" \
+    -xy $SIM_CENTRAL_TREE/xmgrp/spd_req.dat \
+  -graph 0 -xydy $ndir -pexec "$dir_title" -pexec "$dir_subtitle" \
+     -xy $SIM_CENTRAL_TREE/xmgrp/dir_req.dat \
   -printfile $base.ps
 
 exit(0)
