@@ -20,6 +20,7 @@ PROGRAMS = \
 	l10_to_l15 \
 	l15_to_l17 \
 	l17_to_l20 \
+	l20_metrics \
 	make_pattern
 
 #----------------------------------------------------------------------
@@ -71,6 +72,9 @@ l15_to_l17: l15_to_l17.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 l17_to_l20: l17_to_l20.C $(LIBS)
+	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
+
+l20_metrics: l20_metrics.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 make_pattern: make_pattern.C $(LIBS)
