@@ -176,9 +176,12 @@ Grid::ShiftForward()
 // Write out the earliest row of measurement lists.
 for (int i=0; i < _crosstrack_bins; i++)
 {
-l17.frame.measList = _grid[_ati_start][i];
-l17.WriteDataRec();
-_grid[_ati_start][i].FreeContents();	// prepare for new data
+	l17.frame.measList = _grid[_ati_start][i];
+	if (l17.frame.measList.GetHead() != NULL)
+	{	// only write a L1.7 frame if it contains some measurements
+		l17.WriteDataRec();
+	}
+	_grid[_ati_start][i].FreeContents();	// prepare for new data
 }
 
 // Update buffer indices.
