@@ -884,6 +884,10 @@ int32        pulseIndex)   // index of the pulses (max of 100)
 
     FreeContents();
 
+    param = l1bHdf->GetParameter(NUM_PULSES, UNIT_DN);
+    assert(param != 0);
+    int Npulse = (int)(*((char*)(param->data)));
+
     // get time VD, use TAI time as base
     Itime itime;
     if (l1bHdf->GetTime(hdfIndex, &itime) != HdfFile::OK)
@@ -891,7 +895,25 @@ int32        pulseIndex)   // index of the pulses (max of 100)
         fprintf(stderr, "Fail to get time on HDF index %ld\n", hdfIndex);
         return 0;
     }
-    time = (double) itime.sec - ITIME_DEFAULT_SEC;
+    time = (double) itime.sec - ITIME_DEFAULT_SEC + (double)(itime.ms)/1000.0;
+
+    if (l1bHdf->GetTime(hdfIndex+1, &itime) == HdfFile::OK)
+    {
+      double time2 = (double) itime.sec - ITIME_DEFAULT_SEC +
+        (double)(itime.ms)/1000.0;
+      time += (time2 - time)*((float)pulseIndex)/((float)Npulse);
+    }
+    else if (l1bHdf->GetTime(hdfIndex-1, &itime) == HdfFile::OK)
+    {
+      double time1 = (double) itime.sec - ITIME_DEFAULT_SEC +
+        (double)(itime.ms)/1000.0;
+      time += (time - time1)*((float)pulseIndex)/((float)Npulse);
+    }
+    else
+    {
+        fprintf(stderr, "Fail to get time on HDF index %ld\n", hdfIndex);
+        return 0;
+    }
 
     //----------------------------
     // get orbit state
