@@ -106,6 +106,7 @@ Kpm::GetKpm(
         // this is a total guess //
         //-----------------------//
         *kpm = 0.1749;    // 0.7 dB
+        return(1);
         break;
     default:
         return(0);
