@@ -1449,7 +1449,7 @@ ConfigL2AToL2B(
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterWindowSize = tmp_int;
- 
+
 	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterMaxPasses = tmp_int;
@@ -1775,7 +1775,8 @@ ConfigControl(
 	else
 	{
 		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-		*spacecraft_start_time = *grid_start_time -
+		double first_time = MIN(*instrument_start_time, *grid_start_time);
+		*spacecraft_start_time = first_time -
 			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) - EPHEMERIS_BUFFER;
 	}
 
