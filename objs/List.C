@@ -41,6 +41,10 @@ List<T>::List()
 template <class T>
 List<T>::~List()
 {
+	if (_head != NULL)
+	{
+		fprintf(stderr, "List destroyed without being deallocated!\n");
+	}
 	return;
 }
 
