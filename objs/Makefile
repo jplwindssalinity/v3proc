@@ -53,6 +53,7 @@ OBJS = \
 	Meas.o \
 	Misc.o \
 	PiscTable.o \
+	Sigma0.o \
 	Spacecraft.o \
 	SpacecraftSim.o \
 	Wind.o
@@ -151,6 +152,7 @@ Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C Meas.h Beam.h Constants.h LonLat.h GenericGeom.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
+Sigma0.o: Sigma0.C Sigma0.h Spacecraft.h Instrument.h Meas.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
