@@ -204,8 +204,17 @@ main(
 	// open files //
 	//------------//
 
-	l2b.OpenForReading();
-	l2b.OpenForWriting();
+	if (! l2b.OpenForReading())
+    {
+        fprintf(stderr, "%s: error opening L2B file for reading\n", command);
+        exit(1);
+    }
+	if (! l2b.OpenForWriting())
+    {
+        fprintf(stderr, "%s: error opening L2B file %s for writing\n",
+            command, l2b_output_file);
+        exit(1);
+    }
 
 	//---------------------------------//
 	// read the header to set up swath //
