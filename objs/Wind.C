@@ -2396,20 +2396,24 @@ WindSwath::DeleteEntireSwath()
 int
 WindSwath::DeleteFlaggedData
 ( const char* flag_file,
-  float       threshold)
+  float       threshold_both,
+  float       threshold_outer)
 {
   FILE* ifp=fopen(flag_file,"r");
   if(ifp==NULL){
     fprintf(stderr,"Fatal Error: Flag file %s cannot be opened\n",flag_file);
     exit(1);
   }
-  float* flag_value=(float*)malloc(sizeof(float)*_alongTrackBins*_crossTrackBins);
-  if(flag_value==NULL){
+  unsigned int size = _alongTrackBins*_crossTrackBins;
+  float* flag_value=(float*)malloc(sizeof(float)*size);
+  char* flag=(char*)malloc(sizeof(char)*size);
+  if(flag_value==NULL || flag==NULL){
     fprintf(stderr,"Fatal Error: Error allocating memory for flag_value\n");
     exit(1);
   }
-  if(fread(flag_value,sizeof(float),_alongTrackBins*_crossTrackBins,ifp)!=
-     (unsigned int)(_alongTrackBins*_crossTrackBins)){
+
+  if((fread(flag_value,sizeof(float),size,ifp)!=size) ||
+     (fread(flag,sizeof(char),size,ifp)!=size)){
     fprintf(stderr,"Fatal Error: Flag file %s cannot be read\n",flag_file);
     exit(1);
   }
@@ -2425,7 +2429,12 @@ WindSwath::DeleteFlaggedData
         continue;
 
       int offset=j*_crossTrackBins+i;
-      if (flag_value[offset] > threshold || flag_value[offset]==-1)
+      int not_classified=0;
+      float threshold=threshold_both;
+      // outer beam only case
+      if (flag[offset]>=3) threshold=threshold_outer;
+      if (flag[offset]==2 || flag[offset]>=5) not_classified=1;
+      if ((flag_value[offset] > threshold) || not_classified)
             {
           delete wvc;
           *(*(swath + i) + j) = NULL;
@@ -2436,6 +2445,7 @@ WindSwath::DeleteFlaggedData
     }
 
   free(flag_value);
+  free(flag);
   return(count);
 }
 

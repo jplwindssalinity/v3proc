@@ -371,7 +371,8 @@ public:
 
     int  DeleteWVCs();
     int  DeleteEntireSwath();
-    int  DeleteFlaggedData(const char* flag_file, float threshold);
+    int  DeleteFlaggedData(const char* flag_file, float threshold_both,
+			   float threshold_outer);
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
     int  DeleteDirectionOutliers(float max_dir_err, WindField* truth);
     int  DeleteSpeedOutliers(float max_spd_err, WindField* truth);
