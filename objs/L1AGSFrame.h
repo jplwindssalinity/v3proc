@@ -33,7 +33,7 @@ static const char rcs_id_l1a_gs_frame_h[] =
 struct GSL1APcd
 {
     // methods
-    Read(char*   frameStartByte);
+    int Read(char*   frameStartByte);
 
     // member variables
     char         frame_time[24];
@@ -48,7 +48,7 @@ struct GSL1APcd
 struct GSL1AStatus
 {
     // methods
-    Read(char*   frameStartByte);
+    int Read(char*   frameStartByte);
 
     // member variables
     char            pad1[11];
@@ -75,7 +75,7 @@ struct GSL1AStatus
 struct GSL1AEngData
 {
     // methods
-    Read(char*   frameStartByte);
+    int Read(char*   frameStartByte);
 
     // member variables
     char            pad1[46];
@@ -110,7 +110,7 @@ struct GSL1AEu
 struct GSL1ASci
 {
     // methods
-    Read(char*   frameStartByte);
+    int Read(char*   frameStartByte);
 
     // member variables
     short      antenna_position[100];
