@@ -225,3 +225,24 @@ ConfigL0(
 
 	return(1);
 }
+
+//----------//
+// ConfigL1 //
+//----------//
+
+int
+ConfigL1(
+	L1*				l1,
+	ConfigList*		config_list)
+{
+	//-------------------------//
+	// configure the l1 object //
+	//-------------------------//
+
+	char* l1_file = config_list->Get(L1_FILE_KEYWORD);
+	if (l1_file == NULL)
+		return(0);
+	l1->AddFile(l1_file);
+
+	return(1);
+}
