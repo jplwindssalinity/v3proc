@@ -54,6 +54,7 @@ PROGRAMS = \
 	memfilter \
 	fake_vap \
 	l1b_hdf_to_l1b \
+    l1bhdf_sigma0_histo \
 	l1b_outlines \
 	l1b_to_kprtable \
 	make_kfactor \
