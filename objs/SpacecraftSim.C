@@ -333,22 +333,17 @@ int
 SpacecraftSim::DetermineNextEvent(
 	SpacecraftEvent*    spacecraft_event)
 {
-	//------------------------------------//
-	// initialize next time of each event //
-	//------------------------------------//
-
-	static double update_state_time = _epoch;
-
 	//----------------------------------------//
 	// find minimum time from possible events //
 	//----------------------------------------//
 	// easy, since there is only one
 
 	spacecraft_event->eventId = SpacecraftEvent::UPDATE_STATE;
-	spacecraft_event->time = update_state_time;
 
-	int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod + 1.5);
-	update_state_time = (double)sample_number * _ephemerisPeriod;
+	int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod) + 1;
+	double update_state_time = (double)sample_number * _ephemerisPeriod;
+
+	spacecraft_event->time = update_state_time;
 
 	return(1);
 }
