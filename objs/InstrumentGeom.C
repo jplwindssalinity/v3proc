@@ -665,10 +665,10 @@ return(1);
 // Finds the look, azimuth, and gain value for the peak gain at
 // a given baseband frequency
 
-#define LOOK_OFFSET			0.01
-#define AZIMUTH_OFFSET		0.01
-#define ANGLE_OFFSET		0.01
-#define ANGLE_TOL			0.001
+#define LOOK_OFFSET			0.005
+#define AZIMUTH_OFFSET		0.005
+#define ANGLE_OFFSET		0.01		// start delta for golden section
+#define ANGLE_TOL			0.0001		// within this of peak gain
 
 int
 FindPeakGainAtFreq(
