@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.4   26 Oct 1999 16:08:30   sally
+// need to reopen file when get the time parameter (GetTime())
+// 
 //    Rev 1.3   04 Aug 1999 11:07:30   sally
 // need to get around HDF's maximum of 32 files
 // 
@@ -54,7 +57,14 @@ const Itime     startTime,
 const Itime     endTime)
 :   TimeTlmFile(filename, SOURCE_L1B, returnStatus, startTime, endTime)
 {
+    _timeVdID[0] = HDF_FAIL;
+    if ((returnStatus = OpenFile()) != HdfFile::OK)
+    {
+        fprintf(stderr, "Cannot open %s as HDF file\n", filename);
+        return;
+    }
     _status = _setTimeParam();
+    _closeTimeDataset();
     _CloseFile();
 
 }//L1BHdfFile::L1BHdfFile
@@ -122,7 +132,13 @@ L1BHdfFile::_getTime(
 int32     index,    // dataset index
 Itime*    recTime)  // OUT: record time
 {
-    if (_timeVdID[0] == HDF_FAIL);
+    // open the file if it has been opened yet
+    if (_hFileID = FAIL)
+    {
+        if ((_status = OpenFile()) != HdfFile::OK)
+            return _status;
+    }
+    if (_timeVdID[0] == HDF_FAIL)
         _selectTimeDataset();
 
     if ( ! ExtractL1Time(this, _timeVdID, index, 1, 1, recTime))
