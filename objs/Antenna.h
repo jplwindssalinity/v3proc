@@ -46,6 +46,7 @@ public:
     int               TimeRotation(double time);
 	int		          SetPedestalAttitude(Attitude* attitude);
     int               UpdatePosition(double time);
+    int               Initialize(double time);
     CoordinateSwitch  GetAntPedToScBody() { return(_antPedToScBody); };
     CoordinateSwitch  GetScBodyToAntPed() { return(_scBodyToAntPed); };
 

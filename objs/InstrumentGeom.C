@@ -1004,7 +1004,7 @@ BYUCommandedDoppler(
 	// find the current beam's two-way peak gain //
 	//-------------------------------------------//
 
-	Beam* beam = qscat->GetCurrentBeam();
+//	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
 

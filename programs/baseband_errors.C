@@ -381,7 +381,7 @@ main(
 
 					// any deviation from zero Hz is undesirable
 					fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
-                        tip.basebandFreq, qscat.ses.txFrequency);
+                        tip.basebandFreq, qscat.ses.txDoppler);
 
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;

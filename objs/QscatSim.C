@@ -47,13 +47,13 @@ QscatSimBeamInfo::~QscatSimBeamInfo()
 //==========//
 
 QscatSim::QscatSim()
-:   startTime(0), numLookStepsPerSlice(0), azimuthIntegrationRange(0.0),
-    azimuthStepSize(0.0), dopplerBias(0.0), correlatedKpm(0.0),
-    simVs1BCheckfile(NULL), uniformSigmaField(0), outputXToStdout(0),
-    useKfactor(0), createXtable(0), computeXfactor(0), useBYUXfactor(0),
-    rangeGateClipping(0), applyDopplerError(0), l00FrameReady(0),
-    simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0), simKpriFlag(0),
-    _spotNumber(0)
+:   startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
+    azimuthIntegrationRange(0.0), azimuthStepSize(0.0), dopplerBias(0.0),
+    correlatedKpm(0.0), simVs1BCheckfile(NULL), uniformSigmaField(0),
+    outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
+    useBYUXfactor(0), rangeGateClipping(0), applyDopplerError(0),
+    l00FrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
+    simKpriFlag(0), _spotNumber(0)
 {
     return;
 }
@@ -82,6 +82,8 @@ QscatSim::Initialize(
 // QscatSim::DetermineNextEvent //
 //------------------------------//
 
+#define NINETY_DEGREE_ENCODER  8191
+
 int
 QscatSim::DetermineNextEvent(
     Qscat*       qscat,
@@ -107,8 +109,29 @@ QscatSim::DetermineNextEvent(
     //-----------------------//
 
     qscat_event->time = min_time;
-    qscat_event->eventId = QscatEvent::SCATTEROMETER_MEASUREMENT;
     qscat_event->beamIdx = min_idx;
+
+    unsigned short encoder = qscat->cds.EstimateEncoder();
+    switch (lastEventType)
+    {
+    case QscatEvent::SCATTEROMETER_MEASUREMENT:
+        if (encoder > NINETY_DEGREE_ENCODER &&
+            lastEventEncoder <= NINETY_DEGREE_ENCODER)
+        {
+            qscat_event->eventId = QscatEvent::LOOPBACK_MEASUREMENT;
+        }
+        else
+        {
+            qscat_event->eventId = QscatEvent::SCATTEROMETER_MEASUREMENT;
+        }
+        break;
+    case QscatEvent::LOOPBACK_MEASUREMENT:
+        qscat_event->eventId = QscatEvent::LOAD_MEASUREMENT;
+        break;
+    case QscatEvent::LOAD_MEASUREMENT: case QscatEvent::NONE:
+        qscat_event->eventId = QscatEvent::SCATTEROMETER_MEASUREMENT;
+        break;
+    }
 
     //----------------------------//
     // update next time for event //
@@ -117,6 +140,8 @@ QscatSim::DetermineNextEvent(
     int cycle_idx = (int)((min_time - startTime) / qscat->ses.pri + 0.5);
     beamInfo[min_idx].txTime = startTime +
         (double)(cycle_idx + NUMBER_OF_QSCAT_BEAMS) * qscat->ses.pri;
+
+    lastEventEncoder = encoder;
 
     return(1);
 }
@@ -352,9 +377,15 @@ QscatSim::ScatSim(
 
 int
 QscatSim::CalSim(
+    Spacecraft*  spacecraft,
     Qscat*       qscat,
     L00Frame*    l00_frame)
 {
+    //-------------------------------------------------//
+    // tracking must be done to update state variables //
+    //-------------------------------------------------//
+
+    SetDelayAndFrequency(spacecraft, qscat);
 
     //--------------------------------------//
     // Add Cal-pulse Specific Info to Frame //

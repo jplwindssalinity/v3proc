@@ -40,7 +40,8 @@ public:
     // enums //
     //-------//
 
-    enum QscatEventE { NONE, SCATTEROMETER_MEASUREMENT };
+    enum QscatEventE { NONE, SCATTEROMETER_MEASUREMENT, LOOPBACK_MEASUREMENT,
+        LOAD_MEASUREMENT };
 
     //--------------//
     // construction //
@@ -82,7 +83,7 @@ public:
     // variables //
     //-----------//
 
-    double  txTime;
+    double       txTime;
 };
 
 class QscatSim
@@ -103,7 +104,7 @@ public:
     int  DetermineNextEvent(Qscat* qscat, QscatEvent* qscat_event);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField, L00Frame* l00_frame);
-    int  CalSim(Qscat* qscat, L00Frame* l00_frame);
+    int  CalSim(Spacecraft* spacecraft, Qscat* qscat, L00Frame* l00_frame);
     int  SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
              MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
@@ -118,18 +119,20 @@ public:
     // variables //
     //-----------//
 
-    double                  startTime;
-    QscatSimBeamInfo        beamInfo[NUMBER_OF_QSCAT_BEAMS];
-    LandMap                 landMap;
-    TimeCorrelatedGaussian  ptgrNoise;
-    int                     numLookStepsPerSlice;
-    float                   azimuthIntegrationRange;
-    float                   azimuthStepSize;
-    XTable                  kfactorTable;
-    BYUXTable               BYUX;
-    XTable                  xTable;
-    float                   dopplerBias;
-    double                  correlatedKpm;
+    double                   startTime;
+    QscatSimBeamInfo         beamInfo[NUMBER_OF_QSCAT_BEAMS];
+    QscatEvent::QscatEventE  lastEventType;
+    unsigned short           lastEventEncoder;
+    LandMap                  landMap;
+    TimeCorrelatedGaussian   ptgrNoise;
+    int                      numLookStepsPerSlice;
+    float                    azimuthIntegrationRange;
+    float                    azimuthStepSize;
+    XTable                   kfactorTable;
+    BYUXTable                BYUX;
+    XTable                   xTable;
+    float                    dopplerBias;
+    double                   correlatedKpm;
 
     char*  simVs1BCheckfile;  // output data for cross check with 1B
 

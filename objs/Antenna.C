@@ -91,3 +91,15 @@ Antenna::UpdatePosition(
 
     return(1);
 }
+
+//---------------------//
+// Antenna::Initialize //
+//---------------------//
+
+int
+Antenna::Initialize(
+    double  time)
+{
+    startTime = time;
+    return(1);
+}

@@ -279,12 +279,12 @@ QscatSas::SetAzimuthWithEncoder(
     if (encoder & ENCODER_MASK)
     {
         // encoder B
-        encoder_offset = SAS_ENCODER_B_OFFSET;
+        encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
     }
     else
     {
         // encoder A
-        encoder_offset = SAS_ENCODER_A_OFFSET;
+        encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
     }
 
     // mask out the encoder bit
@@ -359,13 +359,13 @@ QscatSas::AzimuthToEncoder(
     {
         // encoder B
         encoder_bit = ENCODER_B_BIT;
-        encoder_offset = SAS_ENCODER_B_OFFSET;
+        encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
     }
     else
     {
         // encoder A
         encoder_bit = ENCODER_A_BIT;
-        encoder_offset = SAS_ENCODER_A_OFFSET;
+        encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
     }
 
     //-----------------------//
