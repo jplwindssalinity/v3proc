@@ -58,7 +58,7 @@ static const char rcs_id[] =
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <iostream.h>
+//#include <iostream.h>
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -301,7 +301,7 @@ main(
 				exit(1);
 				break;
 			default:
-				fprintf(stderr, "%s: unknown status (???)\n", command);
+				fprintf(stderr, "%s: unknown status\n", command);
 				exit(1);
 			}
 			break;		// done, exit do loop
