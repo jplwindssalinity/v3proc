@@ -22,6 +22,7 @@ PROGRAMS = \
 	l2b_to_vctr \
 	l2b_metrics \
 	see_spot \
+	eqx \
 	generate_rgc \
 	generate_dtc \
 	rgc_delay_errors \
@@ -43,10 +44,10 @@ PROGRAMS = \
 	l2a_diagnostics \
 	l2_kp \
 	l2a_s0 \
-        l2a_s0l \
-        l2ags_s0l \
-        smooth_kprtable \
-        xtable_to_xmgr \
+	l2a_s0l \
+	l2ags_s0l \
+	smooth_kprtable \
+	xtable_to_xmgr \
 	l1b_s0 \
 	kprtable_to_xmgr \
 	s0_to_noise_value \

@@ -125,6 +125,7 @@ float*			ctd_array = NULL;
 float*			value_array = NULL;
 float*			value_2_array = NULL;
 float*			err_array = NULL;
+float*			std_dev_array = NULL;
 int*			count_array = NULL;
 int				cross_track_bins = 0;
 const char*		command = NULL;
@@ -285,6 +286,7 @@ main(
 	ctd_array = new float[cross_track_bins];
 	value_array = new float[cross_track_bins];
 	value_2_array = new float[cross_track_bins];
+	std_dev_array = new float[cross_track_bins];
 	err_array = new float[cross_track_bins];
 	count_array = new int[cross_track_bins];
 
@@ -308,8 +310,8 @@ main(
 	// selected rms speed error vs. ctd //
 	//----------------------------------//
 
-	if (! swath->RmsSpdErrVsCti(&truth, value_array, err_array, value_2_array,
-		count_array, low_speed, high_speed))
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating selected RMS speed error\n",
 			command);
@@ -318,7 +320,7 @@ main(
 	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", value_array, err_array);
+		"RMS Speed Error (m/s)", value_array, std_dev_array);
 
 	//-----------------------------//
 	// selected speed bias vs. ctd //
@@ -333,19 +335,19 @@ main(
 	// selected rms direction error vs. ctd //
 	//--------------------------------------//
 
-	if (! swath->RmsDirErrVsCti(&truth, value_array, err_array, value_2_array,
-		count_array, low_speed, high_speed))
+	if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating selected RMS direction error\n",
 			command);
 		exit(1);
 	}
 	rad_to_deg(value_array);
-	rad_to_deg(err_array);
+	rad_to_deg(std_dev_array);
 	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", value_array, err_array);
+		"RMS Direction Error (deg)", value_array, std_dev_array);
 
 	//---------------------------------//
 	// selected direction bias vs. ctd //
@@ -394,8 +396,8 @@ main(
 	// nearest rms speed error vs. ctd //
 	//---------------------------------//
 
-	if (! swath->RmsSpdErrVsCti(&truth, value_array, err_array, value_2_array,
-		count_array, low_speed, high_speed))
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating nearest RMS speed error\n",
 			command);
@@ -404,7 +406,7 @@ main(
 	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", value_array, err_array);
+		"RMS Speed Error (m/s)", value_array, std_dev_array);
 
 	//----------------------------//
 	// nearest speed bias vs. ctd //
@@ -419,19 +421,19 @@ main(
 	// nearest rms direction error vs. ctd //
 	//-------------------------------------//
 
-	if (! swath->RmsDirErrVsCti(&truth, value_array, err_array, value_2_array,
-		count_array, low_speed, high_speed))
+	if (! swath->RmsDirErrVsCti(&truth, value_array, std_dev_array, err_array,
+		value_2_array, count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating nearest RMS direction error\n",
 			command);
 		exit(1);
 	}
 	rad_to_deg(value_array);
-	rad_to_deg(err_array);
+	rad_to_deg(std_dev_array);
 	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", value_array, err_array);
+		"RMS Direction Error (deg)", value_array, std_dev_array);
 
 	//--------------------------------//
 	// nearest direction bias vs. ctd //
@@ -449,6 +451,7 @@ main(
 
 	delete[] value_array;
 	delete[] value_2_array;
+	delete[] std_dev_array;
 	delete[] err_array;
 	delete[] ctd_array;
 	delete[] count_array;
