@@ -118,7 +118,6 @@ InstrumentSim::ScatSim(
 	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-	int				beam_idx,
 	WindField*		windfield,
 	GMF*			gmf)
 {
@@ -127,7 +126,6 @@ InstrumentSim::ScatSim(
 	//-----------//
 
 	Antenna* antenna = &(instrument->antenna);
-	antenna->currentBeamIdx = beam_idx;
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);

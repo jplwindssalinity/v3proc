@@ -34,7 +34,7 @@ L10ToL15::~L10ToL15()
 int
 L10ToL15::Convert(
 	L10*		l10,
-	Antenna*	antenna,
+	Instrument*	instrument,
 	Ephemeris*	ephemeris,
 	L15*		l15)
 {
@@ -50,85 +50,179 @@ L10ToL15::Convert(
 
 	l15->frame.spotList.FreeContents();
 
-	//------------------//
-	// for each spot... //
-	//------------------//
+	//-----------//
+	// predigest //
+	//-----------//
 
-	for (int i = 0; i < l10->frame.beamCyclesPerFrame * antenna->numberOfBeams;
-		i++)
+	Spacecraft spacecraft;
+
+	Antenna* antenna = &(instrument->antenna);
+	OrbitState* orbit_state = &(spacecraft.orbitState);
+	Attitude* attitude = &(spacecraft.attitude);
+
+	//---------------------------//
+	// determine slice frequency //
+	//---------------------------//
+	// these should probably go into the instrument object
+
+	int slice_count = l10->frame.slicesPerSpot;
+	float total_freq = slice_count * instrument->sliceBandwidth;
+	float min_freq = -total_freq / 2.0;
+
+	//-------------------//
+	// set up spacecraft //
+	//-------------------//
+
+	*attitude = l10->frame.attitude;
+
+	//------------------------//
+	// for each beam cycle... //
+	//------------------------//
+
+	int total_slice_idx = 0;
+	int spot_idx = 0;
+
+	for (int beam_cycle = 0; beam_cycle < l10->frame.beamCyclesPerFrame;
+		beam_cycle++)
 	{
-		//------------------------//
-		// ...generate a MeasSpot //
-		//------------------------//
+		//------------------//
+		// for each beam... //
+		//------------------//
 
-		MeasSpot* meas_spot = new MeasSpot;
-
-		//-----------------------//
-		// ...determine the beam //
-		//-----------------------//
-
-		int beam_idx = i % antenna->numberOfBeams;
-		Beam* beam = &(antenna->beam[beam_idx]);
-
-		//-----------------------//
-		// ...calculate the time //
-		//-----------------------//
-
-		meas_spot->time = l10->frame.time + (i / antenna->numberOfBeams) *
-			antenna->priPerBeam + beam->timeOffset;
-
-		//------------------------------------------------------//
-		// ...determine the spacecraft orbit state and attitude //
-		//------------------------------------------------------//
-
-		if (! ephemeris->GetOrbitState(l10->frame.time,EPHEMERIS_INTERP_ORDER,
-			&(meas_spot->scOrbitState)))
+		for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
 		{
-			return(0);
+			//--------------------//
+			// calculate the time //
+			//--------------------//
+
+			antenna->currentBeamIdx = beam_idx;
+			Beam* beam = antenna->GetCurrentBeam();
+
+			double time = l10->frame.time + beam_cycle * antenna->priPerBeam +
+				beam->timeOffset;
+
+			//-------------------//
+			// set up spacecraft //
+			//-------------------//
+
+			if (! ephemeris->GetOrbitState(time, EPHEMERIS_INTERP_ORDER,
+				orbit_state))
+			{
+				return(0);
+			}
+
+			//-------------------//
+			// set up instrument //
+			//-------------------//
+
+			instrument->time = time;
+			antenna->SetAzimuthWithEncoder(
+				l10->frame.antennaPosition[spot_idx]);
+			// commanded doppler
+			// commanded receiver gate delay
+
+			//----------------------------//
+			// generate coordinate switch //
+			//----------------------------//
+
+			CoordinateSwitch antenna_frame_to_gc =
+				AntennaFrameToGC(orbit_state, attitude, antenna);
+
+			//---------------//
+			// get boresight //
+			//---------------//
+
+			double look, azimuth;
+			if (! beam->GetElectricalBoresight(&look, &azimuth))
+				return(0);
+
+			//-------------------------------------------------//
+			// calculate ideal Doppler and range tracking info //
+			//-------------------------------------------------//
+ 
+			Vector3 vector;
+			TargetInfoPackage tip;
+			vector.SphericalSet(1.0, look, azimuth);		// boresight
+			if (! TargetInfo(vector, &antenna_frame_to_gc, &spacecraft,
+				instrument, &tip))
+			{
+				return(0);
+			}
+			instrument->commandedDoppler = tip.dopplerFreq;
+			float center_delay = 2.0 * tip.slantRange / speed_light_kps;
+			instrument->receiverGateDelay = center_delay +
+				beam->pulseWidth / 2.0 - instrument->receiverGateWidth / 2.0;
+
+			//-------------------------//
+			// make a measurement spot //
+			//-------------------------//
+
+			MeasSpot* meas_spot = new MeasSpot();
+			meas_spot->time = time;
+			meas_spot->scOrbitState = *orbit_state;
+			meas_spot->scAttitude = *attitude;
+
+			//-------------------//
+			// for each slice... //
+			//-------------------//
+
+			for (int slice_idx = 0; slice_idx < l10->frame.slicesPerSpot;
+				slice_idx++)
+			{
+				//--------------------//
+				// make a measurement //
+				//--------------------//
+
+				Meas* meas = new Meas();
+				meas->pol = beam->polarization;
+
+				//----------------------------------------//
+				// determine the baseband frequency range //
+				//----------------------------------------//
+ 
+				float f1 = min_freq + slice_idx * instrument->sliceBandwidth;
+				float f2 = f1 + instrument->sliceBandwidth;
+
+				//----------------//
+				// find the slice //
+				//----------------//
+ 
+				EarthPosition centroid;
+				Vector3 look_vector;
+				// guess at a reasonable slice frequency tolerance of 1%
+				float ftol = fabs(f1 - f2) / 100.0;
+				if (! FindSlice(&antenna_frame_to_gc, &spacecraft, instrument,
+					look, azimuth, f1, f2, ftol, &(meas->outline),
+					&look_vector, &centroid))
+				{
+					return(0);
+				}
+
+				//---------------------------//
+				// generate measurement data //
+				//---------------------------//
+ 
+				// get local measurement azimuth
+				CoordinateSwitch gc_to_surface =
+					centroid.SurfaceCoordinateSystem();
+				Vector3 rlook_surface = gc_to_surface.Forward(look_vector);
+				double r, theta, phi;
+				rlook_surface.SphericalGet(&r, &theta, &phi);
+				meas->eastAzimuth = phi;
+ 
+				// get incidence angle
+				meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
+
+				//-----------------//
+				// add measurement //
+				//-----------------//
+
+				meas_spot->slices.Append(meas);
+				total_slice_idx++;
+			}
+			l15->frame.spotList.Append(meas_spot);
+			spot_idx++;
 		}
-		meas_spot->scAttitude = l10->frame.attitude;
-
-		//-----------------------------//
-		// ...do geometry for the spot //
-		//-----------------------------//
-
-		antenna->SetAzimuthWithEncoder(l10->frame.antennaPosition[i]);
-
-		CoordinateSwitch antenna_frame_to_gc =
-			AntennaFrameToGC(&(meas_spot->scOrbitState),
-				&(meas_spot->scAttitude), antenna);
-
-		//----------------------------------//
-		// ...add measurements to spot list //
-		//----------------------------------//
-
-		double look, azimuth;
-		beam->GetElectricalBoresight(&look, &azimuth);
-		Vector3 rlook_antenna;
-		rlook_antenna.SphericalSet(1.0, look, azimuth);
-		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
-
-		EarthPosition spot_on_earth =
-			 earth_intercept(meas_spot->scOrbitState.rsat, rlook_gc);
-
-		Meas* meas = new Meas();
-		meas->value = l10->frame.science[i];
-		meas->center = spot_on_earth;
-		meas->pol = antenna->beam[beam_idx].polarization;
-
-		// get local measurement azimuth
-		CoordinateSwitch gc_to_surface =
-			spot_on_earth.SurfaceCoordinateSystem();
-		Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
-		double r, theta, phi;
-		rlook_surface.SphericalGet(&r, &theta, &phi);
-		meas->eastAzimuth = phi;
-
-		meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
-		// need to set estimated Kp
-
-		meas_spot->slices.Append(meas);
-		l15->frame.spotList.Append(meas_spot);
 	}
 
 	return(1);

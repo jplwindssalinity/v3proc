@@ -59,8 +59,7 @@ public:
 	//--------------------------//
 
 	int		ScatSim(double time, Spacecraft* sc_orbit_state,
-				Instrument* instrument, int beam_idx, WindField* windfield,
-				GMF* gmf);
+				Instrument* instrument, WindField* windfield, GMF* gmf);
 
 	//-----------//
 	// variables //

@@ -162,8 +162,8 @@ main(
 	// create and configure antenna //
 	//------------------------------//
 
-	Antenna antenna;
-	if (! ConfigAntenna(&antenna, &config_list))
+	Instrument instrument;
+	if (! ConfigAntenna(&instrument.antenna, &config_list))
 	{
 		fprintf(stderr, "%s: error configuring antenna\n", command);
 		exit(1);
@@ -226,7 +226,7 @@ main(
 		// convert //
 		//---------//
 
-		if (! l10_to_l15.Convert(&l10, &antenna, &ephemeris, &l15))
+		if (! l10_to_l15.Convert(&l10, &instrument, &ephemeris, &l15))
 		{
 			fprintf(stderr, "%s: error converting Level 1.0 to Level 1.5\n",
 				command);

@@ -11,7 +11,7 @@ static const char rcs_id_l10tol15_h[] =
 
 #include "L10.h"
 #include "L15.h"
-#include "Antenna.h"
+#include "Instrument.h"
 #include "Ephemeris.h"
 
 
@@ -45,7 +45,7 @@ public:
 	// conversion //
 	//------------//
 
-	int		Convert(L10* l10, Antenna* antenna, Ephemeris* ephemeris,
+	int		Convert(L10* l10, Instrument* instrument, Ephemeris* ephemeris,
 				L15* l15);
 };
 

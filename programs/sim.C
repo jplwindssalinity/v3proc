@@ -66,6 +66,9 @@ static const char rcs_id[] =
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 #include "Array.h"
+#include "Meas.h"
+#include "Ephemeris.h"
+#include "Wind.h"
 
 //-----------//
 // TEMPLATES //
@@ -320,9 +323,9 @@ main(
 					&spacecraft);
 				instrument_sim.UpdateAntennaPosition(instrument_event.time,
 					&instrument);
+				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
 				instrument_sim.ScatSim(instrument_event.time,
-					&spacecraft, &instrument, instrument_event.beamIdx,
-					&windfield, &gmf);
+					&spacecraft, &instrument, &windfield, &gmf);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
