@@ -182,38 +182,69 @@ main(
         exit(1);
     }
 
-
 	//----------------//
 	// loop and write //
 	//----------------//
 
 	Outline outline;
 	double ctd,atd;
+	double sum_c_diff = 0.0;
+	double sum_a_diff = 0.0;
+	long count = 0;
 	int ii[4] = {0,0,1,1};
 	int jj[4] = {0,1,1,0};
 
 	while (l17.ReadDataRec())
 	{
+		EarthPosition start_position;
+		ephemeris.GetPosition(l17.header.startTime,EPHEMERIS_INTERP_ORDER,
+			&start_position);
+		start_position = start_position.Nadir();
+
+		MeasList* ml = &(l17.frame.measList);
+		int N = ml->NodeCount();
+		float sum_sigma0 = 0.0;
+		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+		{
+			sum_sigma0 += m->value;
+		}
+		
 		//----------------------------------------------------------//
 		// The 4 corners of this grid square in ctd,atd coordinates.
 		//----------------------------------------------------------//
 
 		outline.FreeContents();
+		EarthPosition *r;
 		for (int k=0; k < 4; k++)
 		{
-			ctd = (l17.frame.cti - l17.header.zeroIndex + 0.5 + ii[k]) *
+			ctd = (l17.frame.cti - l17.header.zeroIndex - 0.5 + ii[k]) *
 				l17.header.crossTrackResolution;
 			atd = (l17.frame.ati + jj[k]) * l17.header.alongTrackResolution;
-			EarthPosition* r = new EarthPosition;
+			r = new EarthPosition;
 			ephemeris.GetSubtrackPosition(ctd,atd,l17.header.startTime,r);
 			outline.Append(r);
+/*
+			float cd,ad;
+			ephemeris.GetSubtrackCoordinates(*r,start_position,
+				l17.header.startTime,l17.header.startTime,&cd,&ad);
+			printf("%g %g %g %g\n",ctd,atd,ctd-cd,atd-ad);
+*/
 		}
 
-		outline.WriteOtln(ofp_grid);
+		float cd,ad;
+		ephemeris.GetSubtrackCoordinates(*r,start_position,
+			l17.header.startTime,l17.header.startTime+atd/6.5,&cd,&ad);
+		sum_c_diff += fabs(ctd - cd);
+		sum_a_diff += fabs(atd - ad);
+		count++;
+		printf("%g %g %g %g\n",ctd,atd,ctd-cd,atd-ad);
 
-//		MeasList* ml = &(l17.frame.measList);
-//		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+		outline.WriteOtln(ofp_grid,sum_sigma0/N);
+
 	}
+
+	printf("Average absolute position error (km): ct: %g at: %g\n",
+		sum_c_diff/count,sum_a_diff/count);
 
 	//-----------------//
 	// close the files //

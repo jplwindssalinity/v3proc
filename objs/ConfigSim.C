@@ -1500,46 +1500,21 @@ ConfigKpmField(
 
 	config_list->DoNothingForMissingKeywords();
 
-	float corr_length;
-	if (! config_list->GetFloat(KPM_CORRELATION_LENGTH_KEYWORD, &corr_length))
-	{
-		printf("Error: missing Kpm correlation length in configuration\n");
-		return(0);
-	}
-
 	char* kpm_filename = config_list->Get(KPM_FIELD_FILE_KEYWORD);
 
 	if (kpm_filename == NULL)
 	{
-		// No file specified, so build a field in memory.
-		printf("Building correlated Kpm field (corr_len = %g km) ...\n",
-			corr_length);
-		if (! kpmField->Build(corr_length))
-		{
-			printf("Error building the KpmField\n");
-			return(0);
-		}
-		printf("... Done\n");
+		// No file specified, so use an uncorrelated field.
+		// KpmField is automatically initialized with _corrLength = 0.0.
+		printf("Using uncorrelated Kpm\n");
 	}
 	else if (! kpmField->corr.Read(kpm_filename))
 	{
 		// No file present (or wrong format) so build a field and write it
 		// to the indicated file name (overwriting anything in the file).
 
-		printf("Building correlated Kpm field (corr_len = %g km) ...\n",
-			corr_length);
-		if (! kpmField->Build(corr_length))
-		{
-			printf("Error building the KpmField\n");
-			return(0);
-		}
-		printf("... Done\n");
-
-		if (! kpmField->corr.Write(kpm_filename))
-		{
-			printf("Error writing Kpm field to %s\n",kpm_filename);
-			return(0);
-		}
+		printf("Error reading KpmField from %s\n",kpm_filename);
+		return(0);
 	}
 
 	config_list->ExitForMissingKeywords();

@@ -218,7 +218,6 @@ static const char rcs_id_configsimdefs_h[] =
 // KpmField //
 //----------//
 
-#define KPM_CORRELATION_LENGTH_KEYWORD		"KPM_CORRELATION_LENGTH"
 #define KPM_FIELD_FILE_KEYWORD				"KPM_FIELD_FILE"
 
 //------//
