@@ -9,44 +9,21 @@
 static const char rcs_id_array_h[] =
 	"@(#) $Id$";
 
-//======================================================================
-// CLASSES
-//		Array
-//======================================================================
+#include <stdarg.h>
 
 //======================================================================
-// CLASS
-//		Array
+// FUNCTIONS
+//		make_array
+//		free_array
+//		dim_setup
+//		dim_free
 //
-// DESCRIPTION
-//		The Array object sets up multi-dimensional arrays that are accessed
-//		by multi-indirection.  This is the same approach used by Numerical
-//		Recipes.  It allows easy indexing with arbitrary offsets.
-//		The data pointer is public so that the caller can access the array
-//		without any function overhead.
+// See Array.C for function descriptions.
 //======================================================================
 
-template <class T>
-class Array
-{
-public:
-
-	//--------------//
-	// construction //
-	//--------------//
-
-	Array(int i1);
-	Array(int i1, int i2);
-	~Array();
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	int dims;
-	T* ptr1;
-	T** ptr2;
-
-};
+void* make_array(int type_size, int ndims, ...);
+void free_array(void* ptr, int ndims, ...);
+void* dim_setup(int level, int ndims, int dimsize[], int type_size);
+void dim_free(void* ptr, int level, int ndims, int dimsize[]);
 
 #endif

@@ -101,7 +101,6 @@ protected:
 	int _ati_start;
 	int _ati_offset;
 
-	Array<MeasList>* _gridarray;
 	MeasList** _grid;
 };
 

@@ -17,7 +17,6 @@ static const char rcs_id_grid_c[] =
 
 Grid::Grid()
 {
-	_gridarray = NULL;
 	_grid = NULL;
 	_ephemeris = NULL;
 	return;
@@ -25,7 +24,10 @@ Grid::Grid()
 
 Grid::~Grid()
 {
-	if (_gridarray != NULL) delete _gridarray;
+	if (_grid != NULL)
+	{
+		free_array(_grid,2,_alongtrack_bins,_crosstrack_bins);
+	}
 	return;
 }
 
@@ -69,9 +71,9 @@ double	alongtrack_size)
 	_ati_start = 0;
 	_ati_offset = 0;
 
-	_gridarray = new Array<MeasList>(_alongtrack_bins,_crosstrack_bins);
-	if (_gridarray == NULL) return(0);
-	_grid = _gridarray -> ptr2;
+	_grid = (MeasList**)make_array(sizeof(MeasList),2,
+		_alongtrack_bins,_crosstrack_bins);
+	if (_grid == NULL) return(0);
 
 	return(1);
 }
