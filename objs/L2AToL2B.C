@@ -288,6 +288,10 @@ L2AToL2B::ConvertAndWrite(
     //------------------------------//
     // determine if rev is complete //
     //------------------------------//
+    // this is some code that only thinks about doing rev splitting
+    // since last_rev_number doesn't get incremented (yet), this
+    // should do nothing.  the data will get filtered and flushed
+    // once the l2a file is empty.
 
     if (rev != last_rev_number && last_rev_number)
         InitFilterAndFlush(l2b);    // process and write
