@@ -42,6 +42,7 @@ PROGRAMS = \
 	windfield_to_vctr \
 	l2a_centroids \
 	l2a_diagnostics \
+	l2_kp \
 	l2a_s0
 
 #----------------------------------------------------------------------
