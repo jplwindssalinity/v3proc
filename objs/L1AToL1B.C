@@ -166,7 +166,10 @@ L1AToL1B::Convert(
         if (frame->priOfOrbitStepChange != 255 &&
             spot_idx < frame->priOfOrbitStepChange)
         {
-            orbit_step--;
+            if (orbit_step == 0)
+                orbit_step = ORBIT_STEPS - 1;
+            else
+                orbit_step--;
         }
         qscat->cds.orbitStep = orbit_step;
 
