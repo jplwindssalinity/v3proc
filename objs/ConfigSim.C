@@ -1234,7 +1234,7 @@ ConfigL2AToL2B(
 
             config_list->DoNothingForMissingKeywords();
             float scale;
-            if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
+            if (config_list->GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD,
                 &scale))
             {
                 l2a_to_l2b->nudgeField.ScaleSpeed(scale);
@@ -1382,14 +1382,14 @@ ConfigWindField(
     // configure the wind field //
     //--------------------------//
 
-    char* windfield_type = config_list->Get(WINDFIELD_TYPE_KEYWORD);
+    char* windfield_type = config_list->Get(TRUTH_WIND_TYPE_KEYWORD);
     if (windfield_type == NULL)
     {
         fprintf(stderr, "ConfigWindField: can't determine windfield type\n");
         return(0);
     }
 
-    char* windfield_filename = config_list->Get(WINDFIELD_FILE_KEYWORD);
+    char* windfield_filename = config_list->Get(TRUTH_WIND_FILE_KEYWORD);
     if (windfield_filename == NULL)
     {
         fprintf(stderr, "ConfigWindField: can't determine windfield file\n");
@@ -1410,22 +1410,22 @@ ConfigWindField(
 
     config_list->DoNothingForMissingKeywords();
     float fixed_speed;
-    if (config_list->GetFloat(WINDFIELD_FIXED_SPEED_KEYWORD, &fixed_speed))
+    if (config_list->GetFloat(TRUTH_WIND_FIXED_SPEED_KEYWORD, &fixed_speed))
     {
         windfield->FixSpeed(fixed_speed);
     }
     config_list->ExitForMissingKeywords();
 
-    //----------------------------------------//
-    // Scale Wind Speeds?                     //
-    //----------------------------------------//
+    //--------------------//
+    // Scale Wind Speeds? //
+    //--------------------//
+
     config_list->DoNothingForMissingKeywords();
     float scale;
-    if (config_list->GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
-                  &scale))
+    if (config_list->GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD, &scale))
     {
         windfield->ScaleSpeed(scale);
-        fprintf(stderr,"Warning: scaling all wind speeds by %g\n",scale);
+        fprintf(stderr, "Warning: scaling all wind speeds by %g\n", scale);
     }
     config_list->ExitForMissingKeywords();
 
