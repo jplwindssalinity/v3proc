@@ -53,16 +53,21 @@ public:
 
 	int AppendRecord(FILE* fptr);
 	int AppendSliceRecord(FILE* fptr, int slice_i, double lon, double lat);
+    int ReadDataRec(FILE* fptr);
+    int WriteDataRecAscii(FILE* fptr);
+
 
 	//-----------//
 	// spot data //
 	//-----------//
 
 	double			time;
-	EarthPosition	        rsat;
+	EarthPosition	rsat;
 	Vector3			vsat;
 	Attitude		attitude;
 	float			ptgr;
+    float           orbit_frac;
+    float           antenna_azi;
 
 	//------------//
 	// slice data //
@@ -71,9 +76,14 @@ public:
 	float*			sigma0;
 	WindVector*		wv;
 	float*			XK;
-	EarthPosition*	        centroid;
+	EarthPosition*  centroid;
 	float*			azimuth;
 	float*			incidence;
+    float*          true_Es;
+    float*          true_En;
+    float*          var_esn_slice;
+    float*          R;
+    float*          GatGar;
 
 	//-------------------------//
 	// informational variables //

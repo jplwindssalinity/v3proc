@@ -239,29 +239,23 @@ InstrumentSim::SetMeasurements(
 			}
 		}
 
-		//--------------------------------//
-		// generate the coordinate switch //
-		//--------------------------------//
-
-		CoordinateSwitch gc_to_antenna = AntennaFrameToGC(
-							&(spacecraft->orbitState),
-							&(spacecraft->attitude),
-							&(instrument->antenna));
-		gc_to_antenna=gc_to_antenna.ReverseDirection();
-
 		//-------------------------//
 		// convert Sigma0 to Power //
 		//-------------------------//
 
 		// Kfactor: either 1.0, taken from table, or X is computed
-                // directly
-                float Xfactor=0;
+        // directly
+        float Xfactor=0;
+        float Kfactor=1.0;
+        float true_Es,true_En,var_esn_slice;
+		CoordinateSwitch gc_to_antenna;
+
 		if (computeXfactor || useBYUXfactor){
                   // If you cannot calculate X it probably means the
                   // slice is partially off the earth.
                   // In this case remove it from the list and go on
                   // to next slice
-                  if(computeXfactor){
+          if(computeXfactor){
 		    if(!ComputeXfactor(spacecraft,instrument,meas,&Xfactor)){
 		      meas=meas_spot->RemoveCurrent();
 		      delete meas;
@@ -276,17 +270,15 @@ InstrumentSim::SetMeasurements(
 		      Xfactor=BYUX.GetXTotal(spacecraft,instrument,meas);
 		  }
 		  if (! sigma0_to_Esn_slice_given_X(instrument, meas,
-				Xfactor, sigma0, &(meas->value)))
+				Xfactor, sigma0, &(meas->value),
+                &true_Es, &true_En, &var_esn_slice))
 		    {
 		      return(0);
 		    }
 		  meas->XK=Xfactor;
 		}
-                else{
-
-		  float Kfactor=1.0;
-
-
+        else{
+		  Kfactor=1.0;  // default to use if no Kfactor specified.
 		  if (useKfactor)
 		    {
 		      float orbit_position = instrument->OrbitFraction();
@@ -297,8 +289,19 @@ InstrumentSim::SetMeasurements(
 				 orbit_position, sliceno);
 		    }
 
-		  if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, instrument, meas,
-				Kfactor, sigma0, &(meas->value), &(meas->XK)))
+		  //--------------------------------//
+		  // generate the coordinate switch //
+		  //--------------------------------//
+
+		  gc_to_antenna = AntennaFrameToGC(
+							  &(spacecraft->orbitState),
+							  &(spacecraft->attitude),
+							  &(instrument->antenna));
+		  gc_to_antenna=gc_to_antenna.ReverseDirection();
+
+		  if (! sigma0_to_Esn_slice(&gc_to_antenna,spacecraft,instrument,meas,
+				Kfactor, sigma0, &(meas->value), &(meas->XK),
+                &true_Es, &true_En, &var_esn_slice))
 		    {
 		      return(0);
 		    }
@@ -306,13 +309,54 @@ InstrumentSim::SetMeasurements(
 
 		if (simVs1BCheckfile)
 		{
-		        FILE* fptr = fopen(simVs1BCheckfile,"a");
-                        if (fptr == NULL)
-                        {
-	                 fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
-                         exit(-1);
-                        }
+		    FILE* fptr = fopen(simVs1BCheckfile,"a");
+            if (fptr == NULL)
+            {
+	          fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
+              exit(-1);
+            }
 
+            double lambda = speed_light_kps / instrument->transmitFreq;
+            Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
+            cf->R[slice_i] = (float)rlook.Magnitude();
+		    if (computeXfactor || useBYUXfactor)
+            {
+              // Antenna gain is not computed when using BYU X factor because
+              // the X factor already includes the normalized patterns.
+              // Thus, to see what it actually is, we need to do the geometry
+              // work here that is normally done in radar_X() when using
+              // the K-factor approach.
+		      gc_to_antenna = AntennaFrameToGC(
+							      &(spacecraft->orbitState),
+							      &(spacecraft->attitude),
+							      &(instrument->antenna));
+		      gc_to_antenna=gc_to_antenna.ReverseDirection();
+              double roundTripTime = 2.0 * cf->R[slice_i] / speed_light_kps;
+              int ib = instrument->antenna.currentBeamIdx;
+              Vector3 rlook_antenna = gc_to_antenna.Forward(rlook);
+              double r, theta, phi;
+              rlook_antenna.SphericalGet(&r,&theta,&phi);
+              if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi,
+                     roundTripTime,instrument->antenna.actualSpinRate,
+                     &(cf->GatGar[slice_i])))
+              {
+                cf->GatGar[slice_i] = 1.0;	// set a dummy value. 
+              }
+
+            }
+            else
+            {
+              cf->GatGar[slice_i] = meas->XK / Kfactor *
+                (64*pi*pi*pi * cf->R[slice_i]*
+                   cf->R[slice_i]*cf->R[slice_i]*cf->R[slice_i] *
+                   instrument->systemLoss) /
+                (instrument->transmitPower * instrument->echo_receiverGain *
+                   lambda*lambda);
+            }
+
+            cf->var_esn_slice[slice_i] = var_esn_slice;
+            cf->true_Es[slice_i] = true_Es;
+            cf->true_En[slice_i] = true_En;
 			cf->XK[slice_i] = meas->XK;
 			cf->centroid[slice_i] = meas->centroid;
 			cf->azimuth[slice_i] = meas->eastAzimuth;
@@ -626,6 +670,8 @@ InstrumentSim::ScatSim(
 		cf.rsat = spacecraft->orbitState.rsat;
 		cf.vsat = spacecraft->orbitState.vsat;
 		cf.attitude = spacecraft->attitude;
+        cf.orbit_frac = instrument->OrbitFraction();
+        cf.antenna_azi = instrument->antenna.azimuthAngle;
 		cf.AppendRecord(fptr);
         fclose(fptr);
     }

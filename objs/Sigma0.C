@@ -61,8 +61,8 @@ radar_X(
 	rlook_antenna.SphericalGet(&r,&theta,&phi);
 	float GatGar;
 
-	if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi, roundTripTime,
-		instrument->antenna.actualSpinRate, &GatGar))
+	if(! instrument->antenna.beam[ib].GetPowerGainProduct(theta, phi,
+             roundTripTime,instrument->antenna.actualSpinRate, &GatGar))
 	  return(0);
 
 	*X = instrument->transmitPower * instrument->echo_receiverGain * GatGar *
@@ -139,7 +139,11 @@ sigma0_to_Esn_slice(
 	float				Kfactor,
 	float				sigma0,
 	float*				Esn_slice,
-	float*				XK)
+	float*				XK,
+    float*              true_Es,
+    float*              true_En,
+    float*              var_esn_slice)
+
 {
 	//----------------------------------------------------------------------//
 	// Compute the radar parameter X which includes gain, loss, and geometry
@@ -150,7 +154,8 @@ sigma0_to_Esn_slice(
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 	*XK = X*Kfactor;
-        return(sigma0_to_Esn_slice_given_X(instrument,meas,*XK,sigma0,Esn_slice));
+    return(sigma0_to_Esn_slice_given_X(instrument,meas,*XK,sigma0,Esn_slice,
+           true_Es,true_En,var_esn_slice));
 }
 
 //
@@ -158,11 +163,11 @@ sigma0_to_Esn_slice(
 //
 // This function computes the energy received for a
 // given instrument state and average sigma0.
-// The received energy is the sum of the signal energy the noise energy
+// The received energy is the sum of the signal energy and the noise energy
 // that falls within the appropriate bandwidth.  This assumes that the
 // geometry related factors such as range and antenna gain can be replaced
 // by effective values (instead of integrating over the bandwidth).
-// K-factor should remove any error introduced by this assumption.
+// X-factor should remove any error introduced by this assumption.
 // The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
 // See also the sigma0_to_Esn_Enoise function which computes the total
 // signal (all slices)
@@ -185,7 +190,10 @@ sigma0_to_Esn_slice_given_X(
 	Meas*				meas,
 	float				X,
 	float				sigma0,
-	float*				Esn_slice)
+	float*				Esn_slice,
+    float*              true_Es,
+    float*              true_En,
+    float*              var_esn_slice)
 {
 	//------------------------//
 	// Sanity check on sigma0 //
@@ -197,13 +205,6 @@ sigma0_to_Esn_slice_given_X(
 			sigma0);
 		exit(-1);
 	}
-
-	//----------------------------------------------------------------------//
-	// Compute the radar parameter X which includes gain, loss, and geometry
-	// factors in the received power.  This is the true value.  Processing
-	// uses a modified value that includes fuzzing by Kpr.
-	//----------------------------------------------------------------------//
-
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double Tp = beam->txPulseWidth;
@@ -240,9 +241,12 @@ sigma0_to_Esn_slice_given_X(
 	//------------------------------------------------------------------------//
 
 	*Esn_slice = (float)(Es_slice + En_slice);
+    *true_Es = (float)Es_slice;
+    *true_En = (float)En_slice;
 
 	if (instrument->simKpcFlag == 0)
 	{
+        *var_esn_slice = 0.0;
 		return(1);
 	}
 
@@ -260,7 +264,7 @@ sigma0_to_Esn_slice_given_X(
 		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
 */
 	// the above equation reduces to the following...
-	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+	*var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
 		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
 
 	//------------------------------------------------------------------------//
@@ -276,7 +280,7 @@ sigma0_to_Esn_slice_given_X(
 	// Kpc for weighting purposes.
 	//------------------------------------------------------------------------//
 
-	Gaussian rv(var_esn_slice,0.0);
+	Gaussian rv(*var_esn_slice,0.0);
 	*Esn_slice += rv.GetNumber();
 
 	return(1);
@@ -402,8 +406,8 @@ sigma0_to_Esn_noise(
 
 int
 Er_to_sigma0(
-        CoordinateSwitch*               gc_to_antenna,
-	Spacecraft*                     spacecraft,
+    CoordinateSwitch*   gc_to_antenna,
+	Spacecraft*         spacecraft,
 	Instrument*			instrument,
 	Meas*				meas,
 	float				Kfactor,
@@ -464,7 +468,7 @@ Er_to_sigma0_given_X(
 	double alpha = Bn/Be*beta;
 	double rho = 1.0;
 
-	// Estimate the noise energy in the slice. (exact for simulated data)
+	// Estimate the noise energy in the slice. (exact when 0 variance is used)
 	meas->EnSlice = Bs/Be*(rho/beta*Esn_noise-Esn_echo)/(alpha*rho/beta-1.0);
 
 	// Subtract out slice noise, leaving the signal power fuzzed by Kpc.

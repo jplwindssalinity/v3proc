@@ -14,11 +14,6 @@ static const char rcs_id_sigma0_h[] =
 #include "Meas.h"
 #include "Wind.h"
 
-//======================================================================
-// Functions
-//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0, GetKpm
-//======================================================================
-
 //=======================================================================
 // Function
 //		radar_X
@@ -45,7 +40,8 @@ int radar_X(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 
 int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float sigma0,
-		float* Esn, float* XK);
+		float* Esn, float* XK, float* true_Es, float* true_En,
+        float* var_esn_slice);
 
 
 
@@ -58,8 +54,9 @@ int sigma0_to_Esn_slice(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 //		a slice. It uses X instead of K.
 //======================================================================
 
-int sigma0_to_Esn_slice_given_X(Instrument* instrument, Meas* meas, float X, float sigma0,
-		float* Esn);
+int sigma0_to_Esn_slice_given_X(Instrument* instrument, Meas* meas,
+  float X, float sigma0, float* Esn, float* true_Es, float* true_En,
+  float* var_esn_slice);
 
 //======================================================================
 // Function
@@ -89,12 +86,13 @@ int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 // Function
 //		Er_to_sigma0_given_X
 //
-// The Er_to_sigma0_given_X function computes sigma0 from a signal+noise and noise power
+// The Er_to_sigma0_given_X function computes sigma0 from a signal+noise
+// and noise power
 // measurement for a given instrument state using Xfactor rather than Kfactor
 //
 //=========================================================================
 
-int Er_to_sigma0_given_X(Instrument* instrument, Meas* meas, float Xfactor, float Psn,
-		float sumPsn, float Pn);
+int Er_to_sigma0_given_X(Instrument* instrument, Meas* meas,
+  float Xfactor, float Psn, float sumPsn, float Pn);
 
 #endif
