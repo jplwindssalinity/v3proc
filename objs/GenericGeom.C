@@ -278,6 +278,10 @@ elem(EarthPosition	r,
 
 	double R = r.Magnitude();
 	double V = v.Magnitude();
+	Vector3 rhat = r;
+	Vector3 vhat = v;
+	rhat.Scale(1.0);
+	vhat.Scale(1.0);
 
 	//---------------------------//
 	// Orbit plane normal vector //
@@ -308,7 +312,7 @@ elem(EarthPosition	r,
 	// Compute vector toward the ascending node //
 	//------------------------------------------//
 
-	Vector3 O = zhat & Nhat;
+	Vector3 Ohat = zhat & Nhat;
 
 	//-------------------------//
 	// Compute semi-major axis //
@@ -326,16 +330,16 @@ elem(EarthPosition	r,
 	// Compute eccentricity and true anomaly (nu) //
 	//--------------------------------------------//
 
-	double beta = pi/2 - acos(r % v);
+	double beta = pi/2 - acos(rhat % vhat);
 	double tmp = R*V*V/xmu;
-	*e = sqrt(tmp*tmp*cos(beta)*cos(beta) + sin(beta)*sin(beta));
+	*e = sqrt((tmp-1.0)*(tmp-1.0)*cos(beta)*cos(beta) + sin(beta)*sin(beta));
 	double nu = atan2(tmp*sin(beta)*cos(beta), tmp*cos(beta)*cos(beta) - 1.0);
 
 	//-----------------------------//
 	// Compute argument of perigee //
 	//-----------------------------//
 
-	*w = acos(O % r) - nu;
+	*w = acos(Ohat % rhat) - nu;
 
 	//------------------------------------------------//
 	// Compute eccentric anomaly (E) and mean anomaly //
