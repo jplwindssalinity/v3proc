@@ -323,7 +323,7 @@ main(
 				// hack in ideal delay by removing the quantization error //
 				//--------------------------------------------------------//
 
-				instrument.commandedRxGateDelay -= residual_delay_error;
+				instrument.commandedRxGateDelay += residual_delay_error;
 
 				//--------------------------------//
 				// calculate corrective frequency //
