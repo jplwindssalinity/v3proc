@@ -34,9 +34,9 @@ Attitude::~Attitude()
 
 int
 Attitude::Set(
-	double		roll,
-	double		pitch,
-	double		yaw,
+	float		roll,
+	float		pitch,
+	float		yaw,
 	int			order_1,
 	int			order_2,
 	int			order_3)
