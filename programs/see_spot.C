@@ -308,7 +308,7 @@ main(
 						meas = meas_spot.slices.GetNext())
 					{
 						double alt, lat, lon;
-						meas->center.GetAltLonGDLat(&alt, &lon, &lat);
+						meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
 						LonLat lon_lat;
 						lon_lat.longitude = lon;
 						lon_lat.latitude = lat;

@@ -441,21 +441,21 @@ for (i=0; i < 3; i++)
 return(result);
 }
 
-//
-// Multiply a vector by a scalar.
-//
+//-------------------//
+// Vector3:operator* //
+//-------------------//
+// Scalar times a vector
 
-Vector3 Vector3::operator*(double s)
+Vector3
+Vector3::operator*(
+	double	s)
 {
-int i;
-Vector3 result;
-
-for (i=0; i < 3; i++)
-  {
-  result._v[i] = _v[i] * s;
-  }
-
-return(result);
+	Vector3 result;
+	for (int i = 0; i < 3; i++)
+	{
+		result._v[i] = _v[i] * s;
+	}
+	return(result);
 }
 
 //

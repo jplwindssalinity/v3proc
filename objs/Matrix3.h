@@ -102,19 +102,19 @@ Vector3(double init);
 ~Vector3();
 
 
-//-------------------------//
-// Vector/Matrix operators //
-//-------------------------//
+	//-------------------------//
+	// Vector/Matrix operators //
+	//-------------------------//
 
 	Vector3		operator+(Vector3 m2);
 	Vector3		operator-(Vector3 m2);
 	Vector3		operator-();
-	Vector3		operator*(Vector3 m2); // element by element multiply
-	Vector3		operator*(double s);   // multiply by scalar
+	Vector3		operator*(Vector3 m2);	// element by element multiply
+	Vector3		operator*(double s);	// multiply by scalar
 	void		operator+=(Vector3 m2);
-	Vector3		operator&(Vector3 m2); // cross product
-	double		operator%(Vector3 m2); // dot product
-	Vector3		operator/(double s);		// divide by scalar
+	Vector3		operator&(Vector3 m2);	// cross product
+	double		operator%(Vector3 m2);	// dot product
+	Vector3		operator/(double s);	// divide by scalar
 
 //
 // Other access methods

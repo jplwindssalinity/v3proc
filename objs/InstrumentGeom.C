@@ -168,6 +168,7 @@ FindSlice(
 	c_azim[3] = c_azim_2[0];
 
 	EarthPosition sum;
+	float gain;
 	sum.SetPosition(0.0, 0.0, 0.0);
 	for (int i = 0; i < 4; i++)
 	{
@@ -177,9 +178,16 @@ FindSlice(
 		EarthPosition* spot_on_earth = new EarthPosition();
 		*spot_on_earth =
 			earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
+
 		if (! outline->Append(spot_on_earth))
 			return(0);
-		sum += *spot_on_earth;
+
+		if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			c_look[i], c_azim[i], &gain))
+		{
+			return(0);
+		}
+		sum += (*spot_on_earth * gain);
 	}
 
 	//------------------------//
