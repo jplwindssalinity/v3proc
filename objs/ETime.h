@@ -1,28 +1,28 @@
-//==========================================================//
-// Copyright (C) 1999, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 #ifndef ETIME_H
 #define ETIME_H
 
 static const char rcs_id_etime_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <time.h>
 
 //======================================================================
 // CLASSES
-//		ETime
+//    ETime
 //======================================================================
 
 //======================================================================
 // CLASS
-//		ETime
+//    ETime
 //
 // DESCRIPTION
-//		The ETime object handles time.
+//    The ETime object handles time.
 //======================================================================
 
 #define CODE_B_DEFAULT_TIME     "1993-001T00:00:00.000\0"
@@ -34,7 +34,7 @@ class ETime
 {
 public:
 
-	//--------------//
+    //--------------//
 	// construction //
 	//--------------//
 
@@ -60,18 +60,26 @@ public:
     // operators //
     //-----------//
 
+    friend int  operator==(const ETime& a, const ETime& b);
+    friend int  operator<(const ETime& a, const ETime& b);
+    friend int  operator<=(const ETime& a, const ETime& b);
     friend int  operator>(const ETime& a, const ETime& b);
+    friend int  operator>=(const ETime& a, const ETime& b);
 
 protected:
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
     time_t          _sec;    // seconds since epoch
     unsigned short  _ms;     // milliseconds
 };
 
+int  operator==(const ETime& a, const ETime& b);
+int  operator<(const ETime& a, const ETime& b);
+int  operator<=(const ETime& a, const ETime& b);
 int  operator>(const ETime& a, const ETime& b);
+int  operator>=(const ETime& a, const ETime& b);
 
 #endif

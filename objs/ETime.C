@@ -147,6 +147,42 @@ ETime::Read(
     return(1);
 }
 
+//------------//
+// operator== //
+//------------//
+
+int
+operator==(
+    const ETime&  a,
+    const ETime&  b)
+{
+    return(a._sec == b._sec && a._ms == b._ms);
+}
+
+//-----------//
+// operator< //
+//-----------//
+
+int
+operator<(
+    const ETime&  a,
+    const ETime&  b)
+{
+    return(a._sec < b._sec || (a._sec == b._sec && a._ms < b._ms));
+}
+
+//------------//
+// operator<= //
+//------------//
+
+int
+operator<=(
+    const ETime&  a,
+    const ETime&  b)
+{
+    return(a < b || a == b);
+}
+
 //-----------//
 // operator> //
 //-----------//
@@ -157,4 +193,16 @@ operator>(
     const ETime&  b)
 {
     return(a._sec > b._sec || (a._sec == b._sec && a._ms > b._ms));
+}
+
+//------------//
+// operator>= //
+//------------//
+
+int
+operator>=(
+    const ETime&  a,
+    const ETime&  b)
+{
+    return(a > b || a == b);
 }
