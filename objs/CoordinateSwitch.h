@@ -58,7 +58,7 @@ public:
 
 Vector3 Forward(Vector3 r);
 Vector3 Backward(Vector3 r);
-void Show(char *name = NULL);
+void Show(char *name = (char*)NULL);
 
 private:
 
