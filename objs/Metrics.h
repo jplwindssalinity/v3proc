@@ -28,7 +28,7 @@ static const char rcs_id_metrics_h[] =
 
 #define DEFAULT_METRICS_LOW_WIND_SPEED   3.0
 #define DEFAULT_METRICS_HIGH_WIND_SPEED  30.0
-
+#define DEFAULT_MAX_DIRECTION_ERROR 200.0*dtr
 class Metrics
 {
 public:
@@ -44,8 +44,10 @@ public:
     // configuration //
     //---------------//
 
-    int   Initialize(int cross_track_bins, float cross_track_resolution);
+    int   Initialize(int cross_track_bins, float cross_track_resolution,
+		     int speed_bins, float speed_resolution);
     int   SetWindSpeedRange(float low_speed, float high_speed);
+    void  SetMaxDirectionError(float val){_maxDirectionError=val;}
     void  Clear();
 
     //--------------//
@@ -53,6 +55,9 @@ public:
     //--------------//
 
     float  IndexToCtd(int cti);
+    float  IndexToSpeed(int ispd);
+    int    SpeedToIndex(float speed);
+    
     int    Read(const char* filename);
     int    Write(const char* filename);
     int    WritePlotData(const char* basename);
@@ -65,7 +70,8 @@ public:
     //------------//
 
     int  IsCompatible(const Metrics& m);
-    int  Evaluate(WindSwath* swath, float resolution, WindField* truth);
+    int  Evaluate(WindSwath* swath, float resolution, 
+		  int speed_bins, float speed_resolution, WindField* truth);
 
     //-----------//
     // operators //
@@ -75,11 +81,12 @@ public:
 
 protected:
 
-    int   _Allocate(int cross_track_bins);
+    int   _Allocate(int cross_track_bins, int speed_bins);
     void  _Deallocate();
 
-    void  _SetResolution(float cross_track_resolution)
-              { _crossTrackResolution = cross_track_resolution; };
+    void  _SetResolution(float cross_track_resolution, float speed_resolution)
+              { _crossTrackResolution = cross_track_resolution; 
+	        _speedResolution = speed_resolution; }
 
     //-----------//
     // variables //
@@ -88,8 +95,12 @@ protected:
     int             _crossTrackBins;
     float           _crossTrackResolution;
 
+    int             _speedBins;
+    float           _speedResolution;
+
     float           _lowWindSpeed;
     float           _highWindSpeed;
+    float           _maxDirectionError;
 
     double*         _nearSumSqrSpdErr;
     unsigned long*  _nearSumSqrSpdErrCount;
@@ -102,6 +113,20 @@ protected:
 
     double*         _selSumSqrDirErr;
     unsigned long*  _selSumSqrDirErrCount;
+
+    double*         _nearSumSqrSpdErrVsSpd;
+    unsigned long*  _nearSumSqrSpdErrVsSpdCount;
+
+    double*         _nearSumSqrDirErrVsSpd;
+    unsigned long*  _nearSumSqrDirErrVsSpdCount;
+
+    double*         _selSumSqrSpdErrVsSpd;
+    unsigned long*  _selSumSqrSpdErrVsSpdCount;
+
+    double*         _selSumSqrDirErrVsSpd;
+    unsigned long*  _selSumSqrDirErrVsSpdCount;
 };
 
 #endif
+
+
