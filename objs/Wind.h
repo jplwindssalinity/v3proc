@@ -177,6 +177,7 @@ public:
 
 	int		ReadVap(const char* filename);
 	int		ReadEcmwfHiRes(const char* filename);
+	int		WriteEcmwfHiRes(const char* filename);
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 
@@ -188,6 +189,12 @@ public:
 
 	int		NearestWindVector(LonLat lon_lat, WindVector* wv);
 	int		InterpolatedWindVector(LonLat lon_lat, WindVector* wv);
+
+	//----------//
+	// tweaking //
+	//----------//
+
+	int		SetAllSpeeds(float speed);
 
 protected:
 

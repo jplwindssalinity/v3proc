@@ -584,6 +584,67 @@ WindField::ReadEcmwfHiRes(
 	return(1);
 }
 
+//----------------------------//
+// WindField::WriteEcmwfHiRes //
+//----------------------------//
+
+int
+WindField::WriteEcmwfHiRes(
+	const char*		filename)
+{
+	//-----------//
+	// open file //
+	//-----------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//----------------//
+	// transfer to uv //
+	//----------------//
+
+	int ymd, hms;
+	float u[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+	float v[ECMWF_HIRES_LAT_DIM][ECMWF_HIRES_LON_DIM];
+
+	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+	{
+		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+		{
+			WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+			if (wv)
+			{
+				wv->GetUV(&u[lat_idx][lon_idx], &v[lat_idx][lon_idx]);
+			}
+		}
+	}
+
+	//-------------//
+	// write field //
+	//-------------//
+
+	int int_size = sizeof(int);
+	int uv_size = ECMWF_HIRES_LON_DIM * ECMWF_HIRES_LAT_DIM * sizeof(float);
+
+	if (fwrite((void *)&ymd, int_size, 1, fp) != 1 ||
+		fwrite((void *)&hms, int_size, 1, fp) != 1 ||
+		fwrite((void *)u, uv_size, 1, fp) != 1 ||
+		fwrite((void *)v, uv_size, 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	return(1);
+}
+
 //---------------------//
 // WindField::ReadType //
 //---------------------//
@@ -822,6 +883,32 @@ WindField::InterpolatedWindVector(
 
 	wv->SetUV(u, v);
 	return(1);
+}
+
+//-------------------------//
+// WindField::SetAllSpeeds //
+//-------------------------//
+
+int
+WindField::SetAllSpeeds(
+	float	speed)
+{
+	int count = 0;
+	int lon_count = _lon.GetBins();
+	int lat_count = _lat.GetBins();
+	for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
+	{
+		for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
+		{
+			WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+			if (wv)
+			{
+				wv->spd = speed;
+				count++;
+			}
+		}
+	}
+	return(count);
 }
 
 //----------------------//

@@ -47,7 +47,8 @@ PROGRAMS = \
 	kprtable_to_xmgr \
 	s0_to_noise_value \
 	log_cfg \
-	l2ags_s0
+	l2ags_s0 \
+	fix_ecmwf_speed
 
 #----------------------------------------------------------------------
 # default: make all executable programs
