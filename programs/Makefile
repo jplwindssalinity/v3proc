@@ -15,7 +15,7 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	reformat_pattern \
-	gen_ephem \
+	memfilter \
 	sim \
 	l00_to_l10 \
 	l10_to_l15 \
@@ -60,7 +60,7 @@ install: $(PROGRAMS)
 reformat_pattern: reformat_pattern.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
-gen_ephem: gen_ephem.C $(LIBS)
+memfilter: memfilter.C $(LIBS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 sim: sim.C $(LIBS)
