@@ -1,47 +1,46 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l1a_to_l1b
+//    l1a_to_l1b
 //
 // SYNOPSIS
-//		l1a_to_l1b <sim_config_file>
+//    l1a_to_l1b <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 1A to
-//		Level 1B data.  This program converts the received power
-//		into sigma-0.
+//    Simulates the SeaWinds 1b ground processing of Level 1A to
+//    Level 1B data.  This program converts the received power
+//    into sigma-0.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>		The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operand is supported:
+//      <sim_config_file>  The sim_config_file needed listing
+//                           all input parameters, input files, and
+//                           output files.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% l1a_to_l1b sws1b.cfg
+//    An example of a command line is:
+//      % l1a_to_l1b sws1b.cfg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -49,7 +48,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -125,60 +124,60 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 2)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc != 2)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
 
-	//---------------------//
-	// read in config file //
-	//---------------------//
+    //---------------------//
+    // read in config file //
+    //---------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// create and configure level products //
-	//-------------------------------------//
+    //-------------------------------------//
+    // create and configure level products //
+    //-------------------------------------//
 
-	L1A l1a;
-	if (! ConfigL1A(&l1a, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
-		exit(1);
-	}
+    L1A l1a;
+    if (! ConfigL1A(&l1a, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
+        exit(1);
+    }
 
-	L1B l1b;
-	if (! ConfigL1B(&l1b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 1B Product\n", command);
-		exit(1);
-	}
+    L1B l1b;
+    if (! ConfigL1B(&l1b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 1B Product\n", command);
+        exit(1);
+    }
 
-	//---------------------------------//
-	// create and configure spacecraft //
-	//---------------------------------//
+    //---------------------------------//
+    // create and configure spacecraft //
+    //---------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft\n", command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft\n", command);
+        exit(1);
+    }
 
     //----------------------------//
     // create and configure QSCAT //
@@ -191,69 +190,78 @@ main(
         exit(1);
     }
 
-	//--------------------------------//
-	// create and configure ephemeris //
-	//--------------------------------//
+    //--------------------------------//
+    // create and configure ephemeris //
+    //--------------------------------//
 
-	Ephemeris ephemeris;
-	if (! ConfigEphemeris(&ephemeris, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring ephemeris\n", command);
-		exit(1);
-	}
+    Ephemeris ephemeris;
+    if (! ConfigEphemeris(&ephemeris, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring ephemeris\n", command);
+        exit(1);
+    }
 
-	//------------//
-	// open files //
-	//------------//
+    //------------//
+    // open files //
+    //------------//
 
-	l1a.OpenForReading();
-	l1b.OpenForWriting();
+    if (! l1a.OpenForReading())
+    {
+        fprintf(stderr, "%s: error opening L1A file %s for reading\n", command,
+            l1a.GetInputFilename());
+        exit(1);
+    }
+    if (! l1b.OpenForWriting())
+    {
+        fprintf(stderr, "%s: error opening L1B file %s for writing\n", command,
+            l1b.GetOutputFilename());
+        exit(1);
+    }
 
+    //-----------------//
+    // conversion loop //
+    //-----------------//
 
-	//-----------------//
-	// conversion loop //
-	//-----------------//
-
-	int data_record_number=1;
-	L1AToL1B l1a_to_l1b;
-	if (! ConfigL1AToL1B(&l1a_to_l1b, &config_list))
-	{
-		fprintf(stderr,
-			"%s: error configuring Level 1A to Level 1B converter.\n",
-			command);
-		exit(1);
-	}
+    int data_record_number=1;
+    L1AToL1B l1a_to_l1b;
+    if (! ConfigL1AToL1B(&l1a_to_l1b, &config_list))
+    {
+        fprintf(stderr,
+            "%s: error configuring Level 1A to Level 1B converter.\n",
+            command);
+        exit(1);
+    }
 
         int top_of_file=1;
-	do
-	{
+    do
+    {
 
 
-		//-----------------------------//
-		// read a level 1A data record //
-		//-----------------------------//
+        //-----------------------------//
+        // read a level 1A data record //
+        //-----------------------------//
 
-		if (! l1a.ReadDataRec())
-		{
-			switch (l1a.GetStatus())
-			{
-			case L1A::OK:		// end of file
-				break;
-			case L1A::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1A data\n", command);
-				exit(1);
-				break;
-			case L1A::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1A data\n",
-					command);
-				exit(1);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown status (???)\n", command);
-				exit(1);
-			}
-			break;		// done, exit do loop
-		}
+        if (! l1a.ReadDataRec())
+        {
+            switch (l1a.GetStatus())
+            {
+            case L1A::OK:        // end of file
+                break;
+            case L1A::ERROR_READING_FRAME:
+                fprintf(stderr, "%s: error reading Level 1A data\n", command);
+                exit(1);
+                break;
+            case L1A::ERROR_UNKNOWN:
+                fprintf(stderr, "%s: unknown error reading Level 1A data\n",
+                    command);
+                exit(1);
+                break;
+            default:
+                fprintf(stderr, "%s: unknown status (???)\n", command);
+                exit(1);
+            }
+            break;        // done, exit do loop
+        }
 
         //=======================//
         // FOR FIRST RECORD ONLY // 
@@ -286,37 +294,37 @@ main(
             //---------------------------//
 
             l1a.frame.Unpack(l1a.buffer);
-		  
+          
             double eqx_time =
                 spacecraft_sim.FindPrevArgOfLatTime(l1a.frame.time,
                 EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-		    qscat.cds.SetEqxTime(eqx_time);
-		}
+            qscat.cds.SetEqxTime(eqx_time);
+        }
 
-		//---------//
-		// convert //
-		//---------//
+        //---------//
+        // convert //
+        //---------//
 
-		if (! l1a_to_l1b.Convert(&l1a, &spacecraft, &qscat, &ephemeris, &l1b))
-		{
+        if (! l1a_to_l1b.Convert(&l1a, &spacecraft, &qscat, &ephemeris, &l1b))
+        {
             fprintf(stderr, "%s: error converting data record %d\n", command,
                 data_record_number);
-		}
-		else if (! l1b.WriteDataRec())
-		{
+        }
+        else if (! l1b.WriteDataRec())
+        {
             //------------------------------//
             // write a level 1B data record //
             //------------------------------//
 
-			fprintf(stderr, "%s: error writing Level 1B data\n", command);
-			exit(1);
-		}
+            fprintf(stderr, "%s: error writing Level 1B data\n", command);
+            exit(1);
+        }
 
-		data_record_number++;
-	} while (1);
+        data_record_number++;
+    } while (1);
 
-	l1a.Close();
-	l1b.Close();
+    l1a.Close();
+    l1b.Close();
 
-	return (0);
+    return (0);
 }
