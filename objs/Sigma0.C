@@ -224,54 +224,6 @@ sigma0_to_Esn_slice(
 	Gaussian rv(var_esn_slice,0.0);
 	*Esn_slice += rv.GetNumber();
 
-	// Below is the old approach based on SNR
-	//------------------------------------------------------------------------//
-	// Estimate Kpc using the true value of snr (known here!) and the
-	// approximate equations in Mike Spencer's Kpc memos.
-	//------------------------------------------------------------------------//
-
-	//Beam* beam = instrument->antenna.GetCurrentBeam();
-
-	//double snr = Ps_slice/Pn_slice;
-	//double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
-	//double B = 2.0 / (meas->bandwidth * beam->rxGateWidth);
-	//double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
-	//float Kpc2 = A + B/snr + C/snr/snr;
-	//float var_psn_slice1 = A*Ps_slice*Ps_slice + B*Ps_slice*Pn_slice +
-//		C*Pn_slice*Pn_slice;
-
-	//------------------------------------------------------------------------//
-	// Fuzz the Ps value by multiplying by a random number drawn from
-	// a gaussian distribution with a variance of Kpc^2.  This includes both
-	// thermal noise effects, and fading due to the random nature of the
-	// surface target.
-	// Kpc is applied to Ps instead of Psn because sigma0 is proportional
-	// to Ps (not Psn), and Kpc is defined for sigma0.  A more correct way
-	// would be to separate Kpc into a thermal effect that applies only
-	// to the noise, and a fading effect that applies only to the signal.
-	// However, as long as Kpc is correct, the approach implemented here
-	// will give the final sigma0's the correct variance.
-	// When the snr is low, the Kpc fuzzing can be large enough that
-	// the processing step will estimate a negative sigma0 from the
-	// fuzzed power.  This is normal, and will occur in real data also.
-	// The wind retrieval has to estimate the variance using the model
-	// sigma0 rather than the measured sigma0 to avoid problems computing
-	// Kpc for weighting purposes.
-	//------------------------------------------------------------------------//
-
-	//Gaussian rv(Kpc2,1.0);
-	//Ps_slice *= rv.GetNumber();
-
-	// Assuming that rho = 1.0 for now.
-	//double Bn = instrument->noiseBandwidth;
-	//double Be = instrument->GetTotalSignalBandwidth();
-	//double N0_noise = bK * instrument->systemTemperature *
-	//	instrument->noise_receiverGain / instrument->systemLoss;
-	//float var_psn_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
-
-//	printf("%g %g %g %g %g\n",
-//		sigma0,Kpc2,var_psn_slice1,var_psn_slice,var_psn_noise);
-
 	return(1);
 }
 
@@ -457,66 +409,6 @@ Er_to_sigma0(
 }
 
 //
-// GetKpm
-//
-// Return the Kpm value appropriate for the current instrument state
-// (ie., beam) and wind vector.
-// This function uses the wind speed value (rounded to the nearest integer)
-// to look up the Kpm value in a table (one for each beam).
-//
-// Inputs:
-//	instrument = pointer to current instrument object.
-//	wv = pointer to wind vector to use.
-//
-// Return Value:
-//	The value of Kpm to use.
-//
-
-/***
-
-float
-GetKpm(
-	Instrument* instrument,
-	WindVector* wv)
-
-{
-	// V-pol is index 0, H-pol is index 1 for the 1st dim.
-	static float Kpmtable[2][36] =
-	{ {6.3824e-01, 5.6835e-01, 4.9845e-01, 4.2856e-01, 3.5867e-01, 2.8877e-01,
-	2.5092e-01, 2.1307e-01, 1.9431e-01, 1.7555e-01, 1.7072e-01, 1.6589e-01,
-	1.6072e-01, 1.5554e-01, 1.4772e-01, 1.3990e-01, 1.2843e-01, 1.1696e-01,
-	1.1656e-01, 1.1615e-01, 1.0877e-01, 1.0138e-01, 9.0447e-02, 7.9516e-02,
-	8.6400e-02, 9.3285e-02, 8.4927e-02, 7.6569e-02, 7.2302e-02, 6.8036e-02,
-	7.7333e-02, 8.6630e-02, 9.0959e-02, 9.5287e-02, 9.9616e-02, 1.0394e-01},
-	  {4.3769e-01,  4.0107e-01, 3.6446e-01, 3.2784e-01, 2.9122e-01, 2.5461e-01,
-	2.2463e-01, 1.9464e-01, 1.7066e-01, 1.4667e-01, 1.3207e-01, 1.1747e-01,
-	1.0719e-01, 9.6918e-02, 9.0944e-02, 8.4969e-02, 7.7334e-02, 6.9699e-02,
-	6.9107e-02, 6.8515e-02, 6.6772e-02, 6.5030e-02, 5.7429e-02, 4.9828e-02,
-	4.3047e-02, 3.6266e-02, 3.0961e-02, 2.5656e-02, 2.9063e-02, 3.2471e-02,
-	2.7050e-02, 2.1629e-02, 2.8697e-02, 3.5764e-02, 4.2831e-02, 4.9899e-02}};
-
-	float Kpm;
-	int ib = instrument->antenna.currentBeamIdx;
-	if (wv->spd < 0)
-	{
-		printf("Error: GetKpm received a negative wind speed\n");
-		exit(-1);
-	}
-	else if (wv->spd < 35)
-	{
-		Kpm = Kpmtable[ib][(int)(wv->spd+0.5)];
-	}
-	else
-	{
-		Kpm = Kpmtable[ib][35];
-	}
-
-	return(Kpm);
-}
-
-***/
-
-//
 // composite
 //
 // Combine measurments into one composite sigma0 and Kpc coefficients.
@@ -542,6 +434,7 @@ composite(
 	float sum_azi_angle = 0.0;
 	float sum_X2 = 0.0;
 	output_meas->bandwidth = 0.0;
+	output_meas->EnSlice = 0.0;
 	int N = 0;
 
 	//
@@ -563,6 +456,7 @@ composite(
 		sum_azi_angle += meas->eastAzimuth;
 		sum_X2 += meas->XK*meas->XK;
 		output_meas->bandwidth += meas->bandwidth;
+		output_meas->EnSlice += meas->EnSlice;
 		N++;
 	}
 
@@ -575,8 +469,6 @@ composite(
 
 	output_meas->value = sum_Ps / sum_XK;
 	output_meas->XK = sum_XK;
-	output_meas->EnSlice = meas->EnSlice;		// same for all slices.
-	output_meas->bandwidth = meas->bandwidth;	// assumed same for all slices.
 	output_meas->transmitPulseWidth = meas->transmitPulseWidth;
 
 	output_meas->outline.FreeContents();	// merged outlines not done yet.

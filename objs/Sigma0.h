@@ -71,8 +71,6 @@ int Er_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
 		float sumPsn, float Pn, float PtGr);
 
-//float GetKpm(Instrument* instrument, WindVector* wv);
-
 int composite(MeasList* input_measList, Meas* output_meas);
 
 #endif
