@@ -8,9 +8,9 @@
 //    mudh_pca_eval
 //
 // SYNOPSIS
-//    mudh_pca_eval [ -t inner:outer ] [ -r irr_threshold ]
-//        [ -s min_spd:max_spd ] [ -f flag_dir ] [ -c time ]
-//        <start_rev> <end_rev> <output_base>
+//    mudh_pca_eval [ -e ecmwf_dir ] [ -t inner:outer ]
+//        [ -r irr_threshold ] [ -s min_spd:max_spd ] [ -f flag_dir ]
+//        [ -c time ] <start_rev> <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generate an evaluation chart of misclassification and
@@ -18,6 +18,7 @@
 //    thresholds are specified, plot versus integrated rain rate.
 //
 // OPTIONS
+//    [ -e ecmwf_dir ]        Directory to get ECMWF files from.
 //    [ -t inner:outer ]      Fixed thresholds.  Plot vs. IRR
 //    [ -r irr_threshold ]    Used to define rain.  Defaults to 2.0 km*mm/hr
 //    [ -s min_spd:max_spd ]  Use the ECMWF speed range specified.
@@ -73,7 +74,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "r:s:f:c:t:"
+#define OPTSTRING  "e:r:s:f:c:t:"
 #define QUOTE      '"'
 
 #define DEFAULT_FLAG_DIR          "/export/svt11/hudd/pca"
@@ -174,6 +175,9 @@ main(
     {
         switch(c)
         {
+        case 'e':
+            ecmwf_dir = optarg;
+            break;
         case 't':
             if (sscanf(optarg, "%f:%f", &inner_threshold, &outer_threshold) !=
                 2)
