@@ -1208,14 +1208,14 @@ WindField::InterpolatedWindVector(
 	}
 	else
 	{
-		if (! _lon.GetLinearCoefsStrict(lon, lon_idx, lon_coef))
+		if (! _lon.GetLinearCoefsClipped(lon, lon_idx, lon_coef))
 			return(0);
 	}
 
 	// find latitude indicies
 	int lat_idx[2];
 	float lat_coef[2];
-	if (! _lat.GetLinearCoefsStrict(lon_lat.latitude, lat_idx, lat_coef))
+	if (! _lat.GetLinearCoefsClipped(lon_lat.latitude, lat_idx, lat_coef))
 		return(0);
 
 	WindVector* corner_wv[2][2];

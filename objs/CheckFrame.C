@@ -9,6 +9,7 @@ static const char rcs_id_checkframe_c[] =
 #include <memory.h>
 #include <malloc.h>
 #include "CheckFrame.h"
+#include "Constants.h"
 
 
 //============//
@@ -128,5 +129,8 @@ int
 CheckFrame::AppendRecord(
 	FILE*	fptr)
 {
+	fprintf(fptr,"%g %g %g %g\n",time,rtd*attitude.GetRoll(),
+		rtd*attitude.GetPitch(),
+		rtd*attitude.GetYaw());
 	return(1);
 }
