@@ -163,24 +163,6 @@ main(
 		exit(1);
 	}
 
-	//-------------------------------//
-	// determine start and end times //
-	//-------------------------------//
-
-	double instrument_start_time, instrument_end_time;
-	if (! config_list.GetDouble(INSTRUMENT_START_TIME_KEYWORD,
-		&instrument_start_time))
-	{
-		fprintf(stderr, "%s: error getting instrument start time\n", command);
-		exit(1);
-	}
-	if (! config_list.GetDouble(INSTRUMENT_END_TIME_KEYWORD,
-		&instrument_end_time))
-	{
-		fprintf(stderr, "%s: error getting instrument end time\n", command);
-		exit(1);
-	}
-
 	//------------------//
 	// open output file //
 	//------------------//
@@ -237,6 +219,24 @@ main(
 			command);
 		exit(1);
 	}
+
+	//---------------------//
+	// configure the times //
+	//---------------------//
+ 
+	double grid_start_time, grid_end_time;
+	double instrument_start_time, instrument_end_time;
+	double spacecraft_start_time, spacecraft_end_time;
+ 
+	if (! ConfigControl(&spacecraft_sim, &config_list,
+		&grid_start_time, &grid_end_time,
+		&instrument_start_time, &instrument_end_time,
+		&spacecraft_start_time, &spacecraft_end_time))
+	{
+		fprintf(stderr, "%s: error configuring simulation times\n", command);
+		exit(1);
+	}
+	instrument_sim.startTime = instrument_start_time;
 
 	//------------//
 	// initialize //
