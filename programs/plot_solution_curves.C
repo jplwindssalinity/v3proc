@@ -177,7 +177,7 @@ main(
 		meas_list.FreeContents();
 
 		sprintf(filename, "%s.%d", output_base, file_idx);
-		printf("\nEntering information for output file %s\n", filename);
+		printf("\nEnter information for output file %s\n", filename);
 		for (int meas_idx = 1; ; meas_idx++)
 		{
 			if (fgets(line, 1024, stdin) != line)
@@ -225,7 +225,7 @@ main(
 		// write solution curves //
 		//-----------------------//
 
-		gmf.WriteSolutionCurves(ofp, &meas_list, &kp);
+		gmf.WriteSolutionCurves(ofp, &meas_list, NULL);
 
 		//-------------------//
 		// close output file //

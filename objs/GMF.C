@@ -262,7 +262,7 @@ GMF::WriteSolutionCurves(
 	for (int i = 0; i < _phiCount; i++)
 	{
 		fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
-			(_bestSpd[i] - min_obj) * scale);
+			(_bestObj[i] - min_obj) * scale);
 	}
 
 	//----------------------------//
@@ -667,10 +667,14 @@ GMF::_ObjectiveFunction(
 		float s = gmf_value - meas->value;
 
 		double var;
-
-		if (! kp->GetVp(meas, gmf_value, meas->pol, spd, &var))
+		if (kp)
 		{
-			return(0);
+			if (! kp->GetVp(meas, gmf_value, meas->pol, spd, &var))
+				return(0);
+		}
+		else
+		{
+			var = 1.0;
 		}
 
 		fv += s*s / var + log(var);
