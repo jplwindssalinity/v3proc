@@ -314,8 +314,7 @@ main(
 					// slices //
 					//--------//
 
-					LocateSlices(&spacecraft, &instrument,
-						instrument_sim.slicesPerSpot, &meas_spot);
+					LocateSlices(&spacecraft, &instrument, &meas_spot);
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{
