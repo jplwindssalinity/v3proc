@@ -12,6 +12,7 @@ static const char rcs_id_qscat_h[] =
 #include "Antenna.h"
 #include "Tracking.h"
 #include "Spacecraft.h"
+#include "Scatterometer.h"
 class TargetInfoPackage;
 
 #define NUMBER_OF_QSCAT_BEAMS     2
@@ -281,7 +282,7 @@ public:
 //      The Qscat is the top level object for the QSCAT instrument.
 //======================================================================
 
-class Qscat
+class Qscat : public Scatterometer
 {
 public:
     //--------------//
