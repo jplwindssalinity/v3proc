@@ -558,9 +558,9 @@ int
 SortableList<T>::Sort()
 {
 	if (! _head)
-		return;
+		return(0);
 
-	for (Node<T>* node = _head->next; node; node->next)
+	for (Node<T>* node = _head->next; node; node = node->next)
 	{
 		T* node_data = ((Node<T>*)node)->data;
 		T* prev_data = ((Node<T>*)(node->prev))->data;
@@ -574,7 +574,6 @@ SortableList<T>::Sort()
 			if (! AddSorted(data))
 				return(0);
 		}
-		GotoNext();
 	}
 	return(1);
 }
