@@ -1,47 +1,47 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		windfield_to_vctr
+//    windfield_to_vctr
 //
 // SYNOPSIS
-//		windfield_to_vctr [ -r deg ] <type> <windfield_file>
-//			<vctr_file>
+//    windfield_to_vctr [ -r deg ] [ -s speed ] <type> <windfield_file>
+//      <vctr_file>
 //
 // DESCRIPTION
-//		Converts a windfield into a vector file for plotting in IDL.
-//		If a resolution is specified, the windfield is interpolated.
+//    Converts a windfield into a vector file for plotting in IDL.
+//    If a resolution is specified, the windfield is interpolated.
 //
 // OPTIONS
-//		[ -r deg ]		Interpolate to the specified resolution.
+//    [ -r deg ]    Interpolate to the specified resolution.
+//    [ -s speed ]  Force all vector to have the specified speed.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<type>				The type of windfield.
-//		<windfield_file>	The windfield filename.
-//		<vctr_file>			The output vector file.
+//    The following operands are supported:
+//    <type>            The type of windfield.
+//    <windfield_file>  The windfield filename.
+//    <vctr_file>       The output vector file.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% windfield_to_vctr -r 1.0 ecmwf ecmwf.dat ecmwf.1.vctr
+//    An example of a command line is:
+//      % windfield_to_vctr -r 1.0 ecmwf ecmwf.dat ecmwf.1.vctr
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
-// AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+// AUTHORS
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -49,7 +49,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -75,7 +75,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING	"r:"
+#define OPTSTRING  "r:s:"
 
 //--------//
 // MACROS //
@@ -93,15 +93,18 @@ template class List<AngleInterval>;
 // OPTION VARIABLES //
 //------------------//
 
-int res_opt = 0;
+int opt_res = 0;
 float resolution = 0.0;
+
+int opt_speed = 0;
+float fixed_speed = 0.0;
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -r deg ]", "<type>", "<windfield_file>",
-	"<vctr_file>", 0 };
+const char* usage_array[] = { "[ -r deg ]", "[ -s speed ]", "<type>",
+    "<windfield_file>", "<vctr_file>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -109,29 +112,33 @@ const char* usage_array[] = { "[ -r deg ]", "<type>", "<windfield_file>",
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
 
-	int c;
-	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
-	{
-		switch(c)
-		{
-		case 'r':
-			res_opt = 1;
-			resolution = atof(optarg) * dtr;
-			break;
-		case '?':
-			usage(command, usage_array, 1);
-			break;
-		}
-	}
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'r':
+            opt_res = 1;
+            resolution = atof(optarg) * dtr;
+            break;
+        case 's':
+            opt_speed = 1;
+            fixed_speed = atof(optarg);
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
  
 	if (argc != optind + 3)
 		usage(command, usage_array, 1);
@@ -151,11 +158,16 @@ main(
 		exit(1);
 	}
 
+    if (opt_speed)
+    {
+        windfield.FixSpeed(fixed_speed);
+    }
+
 	//---------------------//
 	// write out vctr file //
 	//---------------------//
 
-	if (res_opt)
+	if (opt_res)
 	{
 		WindField new_wf;
 		if (! new_wf.NewRes(&windfield, resolution, resolution))
