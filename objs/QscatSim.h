@@ -158,6 +158,7 @@ public:
 
 protected:
     int  _spotNumber;
+    int  _spinUpPulses;      // first two pulses just do tracking
 };
 
 #endif

@@ -53,7 +53,7 @@ QscatSim::QscatSim()
     outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
     useBYUXfactor(0), rangeGateClipping(0), applyDopplerError(0),
     l00FrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
-    simKpriFlag(0), _spotNumber(0)
+    simKpriFlag(0), _spotNumber(0), _spinUpPulses(2)
 {
     return;
 }
@@ -179,6 +179,16 @@ QscatSim::ScatSim(
 
     if (_spotNumber == 0)
     {
+        // if this is the first or second pulse, "spin up" the //
+        // Doppler and range tracking calculations //
+
+        if (_spinUpPulses)
+        {
+            SetDelayAndFrequency(spacecraft, qscat);
+            _spinUpPulses--;    // one less spinup pulse
+            return(2);    // indicate spin up
+        }
+
         //----------------------//
         // frame initialization //
         //----------------------//
@@ -260,9 +270,9 @@ QscatSim::ScatSim(
     //-------------------------------//
     // Output X to Stdout if enabled //
     //-------------------------------//
-   
+
     if (outputXToStdout)
-    {      
+    {
         float XK_max=0;
         for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
         {
@@ -306,11 +316,11 @@ QscatSim::ScatSim(
                     //printf("%g ", delta_freq);
             total_spot_power+=slice->value;
             total_spot_X+=slice->XK;
-           
+
           }
         printf("\n"); //HACK
 //      RangeTracker* rt= &(qscat->sas.antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
-           
+
 
 //      unsigned short orbit_step=rt->OrbitTicksToStep(qscat->cds.orbitTicks,
 //                 qscat->cds.orbitTicksPerOrbit);
@@ -349,10 +359,9 @@ QscatSim::ScatSim(
         l00FrameReady = 0;  // indicate frame is not ready
     }
 
-    //--------------------------------//
+    //------------------------//
     // Output data if enabled //
-    //--------------------------------//
-
+    //------------------------//
 
     if (simVs1BCheckfile)
     {
@@ -608,7 +617,7 @@ QscatSim::SetMeasurements(
 				cf->sigma0[slice_i] = sigma0;
 				cf->wv[slice_i].spd = 0.0;
 				cf->wv[slice_i].dir = 0.0;
-			}		  
+			}
 		}
 		else if (uniformSigmaField)
 		{
@@ -671,10 +680,10 @@ QscatSim::SetMeasurements(
 				Gaussian gaussianRv(1.0,0.0);
 				float rv1 = gaussianRv.GetNumber();
 				float RV = rv1*kpm_value + 1.0;
-			    if (RV < 0.0)
-    			{
-        			RV = 0.0;   // Do not allow negative sigma0's.
-    			}
+                if (RV < 0.0)
+                {
+                    RV = 0.0;   // Do not allow negative sigma0's.
+                }
 				sigma0 *= RV;
 			}
 
@@ -704,7 +713,7 @@ QscatSim::SetMeasurements(
             // to next slice
             if (computeXfactor)
             {
-		        if (! ComputeXfactor(spacecraft, qscat, meas, &Xfactor))
+                if (! ComputeXfactor(spacecraft, qscat, meas, &Xfactor))
                 {
                     meas=meas_spot->RemoveCurrent();
                     delete meas;
@@ -723,22 +732,22 @@ QscatSim::SetMeasurements(
             if (! sigma0_to_Esn_slice_given_X(qscat, meas, Xfactor, sigma0,
                 simKpcFlag, &(meas->value), &true_Es, &true_En,
                 &var_esn_slice))
-		    {
+            {
                 return(0);
-		    }
+            }
             meas->XK=Xfactor;
 		}
         else
         {
             Kfactor=1.0;  // default to use if no Kfactor specified.
             if (useKfactor)
-		    {
+            {
                 float orbit_position = qscat->cds.OrbitFraction();
 
                 Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
                     qscat->cds.currentBeamIdx,
                     qscat->sas.antenna.azimuthAngle, orbit_position, sliceno);
-		    }
+            }
 
             //--------------------------------//
             // generate the coordinate switch //
@@ -751,14 +760,14 @@ QscatSim::SetMeasurements(
             if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, qscat, meas,
                 Kfactor, sigma0, simKpcFlag, &(meas->value), &(meas->XK),
                 &true_Es, &true_En, &var_esn_slice))
-		    {
+            {
                 return(0);
-		    }
+            }
 		}
 
 		if (simVs1BCheckfile)
 		{
-		    FILE* fptr = fopen(simVs1BCheckfile,"a");
+            FILE* fptr = fopen(simVs1BCheckfile,"a");
             if (fptr == NULL)
             {
                 fprintf(stderr,"Error opening %s\n",simVs1BCheckfile);
@@ -768,7 +777,7 @@ QscatSim::SetMeasurements(
             double lambda = speed_light_kps / qscat->ses.txFrequency;
             Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
             cf->R[slice_i] = (float)rlook.Magnitude();
-		    if (computeXfactor || useBYUXfactor)
+            if (computeXfactor || useBYUXfactor)
             {
                 // Antenna gain is not computed when using BYU X factor
                 // because the X factor already includes the normalized
@@ -787,7 +796,7 @@ QscatSim::SetMeasurements(
                 if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
                     qscat->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
                 {
-                    cf->GatGar[slice_i] = 1.0;	// set a dummy value. 
+                    cf->GatGar[slice_i] = 1.0;	// set a dummy value.
                 }
             }
             else
@@ -980,7 +989,7 @@ QscatSim::SetL00Load(
     for (int i=0; i < l00_frame->slicesPerSpot; i++)
     {
         //----------------------------------------------------------------//
-        // Update the level 0.0 frame 
+        // Update the level 0.0 frame
         // Here, we set each slice to the same number so that they
         // add up to the echo channel energy computed above.
         // A higher fidelity simulation would set each with its own
