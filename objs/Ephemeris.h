@@ -80,6 +80,10 @@ public:
 	Ephemeris(char *filename, unsigned int maxstates);
 	~Ephemeris();
 
+	// Searching
+
+	OrbitState* FindSouthPole();
+
 	//
 	// Interpolation and extraction.
 	//

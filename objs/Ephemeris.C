@@ -121,6 +121,62 @@ Ephemeris::~Ephemeris()
 	return;
 }
 
+//--------------------------//
+// Ephemeris::FindSouthPole //
+//--------------------------//
+
+//
+// Search the list of OrbitState's for the closest most southern latitude
+// and return a pointer to the corresponding OrbitState.
+// The current_element in the Ephemeris marks the starting point of the search.
+//
+
+OrbitState*
+Ephemeris::FindSouthPole()
+{
+
+	OrbitState* os1 = GetCurrent();
+	OrbitState* os2 = GetNext();
+
+	if ((os1 == NULL) || (os2 == NULL))
+	{
+		printf("Error: FindSouthPole ran out of ephemeris data\n");
+		return(NULL);
+	}
+
+	if (os1->rsat.get(2) > os2->rsat.get(2))
+	{	// z-values are decreasing, so we're going south as desired.
+		while (os1->rsat.get(2) > os2->rsat.get(2))
+		{	// keep going south until the track turns north.
+			os1 = os2;
+			os2 = GetNext();
+			if (os2 == NULL)
+			{
+				printf("Error: FindSouthPole ran out of ephemeris data\n");
+				return(NULL);
+			}
+		}
+		return(os1);
+	}
+	else
+	{	// z-value are increasing, so we're going north - need to turn around.
+		os1 = GetCurrent();
+		os2 = GetPrev();
+		while (os1->rsat.get(2) > os2->rsat.get(2))
+		{	// keep going south until the track turns north.
+			os1 = os2;
+			os2 = GetPrev();
+			if (os2 == NULL)
+			{
+				printf("Error: FindSouthPole ran out of ephemeris data\n");
+				return(NULL);
+			}
+		}
+		return(os1);
+	}
+
+}	
+
 //------------------------//
 // Ephemeris::GetPosition //
 //------------------------//
