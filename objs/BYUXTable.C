@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -11,6 +11,7 @@ static const char rcs_id_byuxtable_c[] =
 #include "Sigma0.h"
 #include "InstrumentGeom.h"
 #include "CheckFrame.h"
+#include "Topo.h"
 
 //----------------------//
 // BYUXTable::BYUXTable //
@@ -137,17 +138,20 @@ BYUXTable::Read(
     const char*  ibeam_file,
     const char*  obeam_file)
 {
-  FILE* ifp[2];
-  ifp[0]=fopen(ibeam_file,"r");
-  if(ifp[0]==NULL){
-    fprintf(stderr,"Cannot open BYU X Factor file %s\n",ibeam_file);
-    return(0);
-  }
-  ifp[1]=fopen(obeam_file,"r");
-  if(ifp[1]==NULL){
-    fprintf(stderr,"Cannot open BYU X Factor file %s\n",obeam_file);
-    return(0);
-  }
+    FILE* ifp[2];
+    ifp[0] = fopen(ibeam_file, "r");
+    if (ifp[0] == NULL)
+    {
+        fprintf(stderr, "Cannot open BYU X Factor file %s\n", ibeam_file);
+        return(0);
+    }
+    ifp[1] = fopen(obeam_file, "r");
+    if (ifp[1] == NULL)
+    {
+        fprintf(stderr, "Cannot open BYU X Factor file %s\n", obeam_file);
+        return(0);
+    }
+
   //-------------------------------------------------//
   // Create  Arrays                                  //
   //-------------------------------------------------//
@@ -168,42 +172,42 @@ BYUXTable::Read(
         char string[20];
 
         // Sanity Check on Orbit and azimuth;
-	float orbit,azimuth;
+    float orbit,azimuth;
         fscanf(ifp[bm],"%s",string);
-	orbit=atof(string);
+    orbit=atof(string);
         fscanf(ifp[bm],"%s",string);
         azimuth=atof(string);
-	if(fabs(o*BYU_TIME_INTERVAL_BETWEEN_STEPS-orbit)>0.01 ||
-	   fabs(ah*_azimuthStepSize -azimuth*dtr) > 0.0001){
-	  fprintf(stderr,"BYUXTable::Read Error Sanity Check failed.\n");
-	  return(0);
-	}
+    if(fabs(o*BYU_TIME_INTERVAL_BETWEEN_STEPS-orbit)>0.01 ||
+       fabs(ah*_azimuthStepSize -azimuth*dtr) > 0.0001){
+      fprintf(stderr,"BYUXTable::Read Error Sanity Check failed.\n");
+      return(0);
+    }
 
-	// Read in slice Xnom,A,B,C,D values
+    // Read in slice Xnom,A,B,C,D values
         for(int s=0;s<_numSlices;s++){
 
           // Xnom
-	  fscanf(ifp[bm],"%s",string);
-	  xnom[bm][s][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      xnom[bm][s][o][ah]=atof(string);
 
           // G skipped for now.
           fscanf(ifp[bm],"%s",string);
 
           // A
-	  fscanf(ifp[bm],"%s",string);
-	  a[bm][s][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      a[bm][s][o][ah]=atof(string);
 
           // B
-	  fscanf(ifp[bm],"%s",string);
-	  b[bm][s][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      b[bm][s][o][ah]=atof(string);
 
           // C
-	  fscanf(ifp[bm],"%s",string);
-	  c[bm][s][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      c[bm][s][o][ah]=atof(string);
 
           // D
-	  fscanf(ifp[bm],"%s",string);
-	  d[bm][s][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      d[bm][s][o][ah]=atof(string);
 
           // Skip A_az for now
           fscanf(ifp[bm],"%s",string);
@@ -216,37 +220,37 @@ BYUXTable::Read(
 
           // Skip B_el for now
           fscanf(ifp[bm],"%s",string);
-	}
+    }
         //-----------------------------------------//
-	// Read Egg Xnom A B C, and D values       //
+    // Read Egg Xnom A B C, and D values       //
         //-----------------------------------------//
           // Xnom
-	  fscanf(ifp[bm],"%s",string);
-	  xnomEgg[bm][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      xnomEgg[bm][o][ah]=atof(string);
 
 
           // A
-	  fscanf(ifp[bm],"%s",string);
-	  aEgg[bm][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      aEgg[bm][o][ah]=atof(string);
 
           // B
-	  fscanf(ifp[bm],"%s",string);
-	  bEgg[bm][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      bEgg[bm][o][ah]=atof(string);
 
           // C
-	  fscanf(ifp[bm],"%s",string);
-	  cEgg[bm][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      cEgg[bm][o][ah]=atof(string);
 
           // D
-	  fscanf(ifp[bm],"%s",string);
-	  dEgg[bm][o][ah]=atof(string);
+      fscanf(ifp[bm],"%s",string);
+      dEgg[bm][o][ah]=atof(string);
 
           //--------------------------------------//
           // Skip over Doppler, Range, and S for now  //
           //--------------------------------------//
           fscanf(ifp[bm],"%s",string);
           fscanf(ifp[bm],"%s",string);
-	  fscanf(ifp[bm],"%s",string);
+      fscanf(ifp[bm],"%s",string);
       }
     }
   }
@@ -306,12 +310,12 @@ BYUXTable::GetX(
     Meas*        meas,
     CheckFrame*  cf)
 {
-  float delta_freq = GetDeltaFreq(spacecraft, qscat, cf);
-  float orbit_position = qscat->cds.OrbitFraction();
-  int beam_number = qscat->cds.currentBeamIdx;
-  float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
-  int sliceno = meas->startSliceIdx;
-  return(GetX(beam_number,azim,orbit_position,sliceno,delta_freq));
+    float delta_freq = GetDeltaFreq(spacecraft, qscat, cf);
+    float orbit_position = qscat->cds.OrbitFraction();
+    int beam_number = qscat->cds.currentBeamIdx;
+    float azim = qscat->sas.antenna.groundImpactAzimuthAngle;
+    int sliceno = meas->startSliceIdx;
+    return(GetX(beam_number, azim, orbit_position, sliceno, delta_freq));
 }
 
 //-------------------------//
@@ -322,19 +326,17 @@ float
 BYUXTable::GetDeltaFreq(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    CheckFrame*  cf)
+    CheckFrame*  cf,
+    Topo*        topo,
+    Stable*      stable)
 {
+    //-----------//
+    // predigest //
+    //-----------//
 
-  //-----------//
-  // predigest //
-  //-----------//
-
-  Antenna* antenna = &(qscat->sas.antenna);
-  OrbitState* orbit_state = &(spacecraft->orbitState);
-  Attitude* attitude = &(spacecraft->attitude);
-
-  double look;
-  double azim;
+    Antenna* antenna = &(qscat->sas.antenna);
+    OrbitState* orbit_state = &(spacecraft->orbitState);
+    Attitude* attitude = &(spacecraft->attitude);
 
   //-------------------------------------------------------------------------//
   // The nominal_boresight and antenna_frame_to_gc coordinate switch below
@@ -349,97 +351,130 @@ BYUXTable::GetDeltaFreq(
   // as needed in eqns (6) and (7).
   //-------------------------------------------------------------------------//
 
-  if(!GetBYUBoresight(spacecraft,qscat,&look,&azim)){
-    fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
-    fprintf(stderr,"Probably means earth_intercept not found\n");
-    exit(1);
-  }
+    double look;
+    double azim;
+    if (! GetBYUBoresight(spacecraft, qscat, &look, &azim))
+    {
+        fprintf(stderr, "BYUXTable::GetDeltaFreq failed\n");
+        fprintf(stderr, "Probably means earth_intercept not found\n");
+        exit(1);
+    }
 
-  Vector3 nominal_boresight;
-  nominal_boresight.SphericalSet(1.0,look,azim);
+    Vector3 nominal_boresight;
+    nominal_boresight.SphericalSet(1.0, look, azim);
 
-  //--------------------------------//
-  // generate the coordinate switch //
-  //--------------------------------//
+    //--------------------------------//
+    // generate the coordinate switch //
+    //--------------------------------//
 
-  CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
-		      attitude, antenna, antenna->txCenterAzimuthAngle);
+    CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+        attitude, antenna, antenna->txCenterAzimuthAngle);
 
     //---------------------------//
-    // Determine Delta Frequency //
+    // determine delta frequency //
     //---------------------------//
 
     QscatTargetInfo qti;
     if (! qscat->TargetInfo(&antenna_frame_to_gc, spacecraft,
         nominal_boresight, &qti))
     {
-        fprintf(stderr,"BYUXTable::GetDeltaFreq failed\n");
-        fprintf(stderr,"Probably means earth_intercept not found\n");
+        fprintf(stderr, "BYUXTable::GetDeltaFreq failed\n");
+        fprintf(stderr, "Probably means earth_intercept not found\n");
         exit(1);
     }
 
-    //--------------------------------//
-    // Log check data if requested    //
-    //--------------------------------//
+    //----------------------------------//
+    // apply the topographic correction //
+    //----------------------------------//
+
+    if (topo && stable)
+    {
+        int beam_idx = qscat->cds.currentBeamIdx;
+        float orbit_fraction = qscat->cds.OrbitFraction();
+        float antenna_azimuth = qscat->sas.antenna.groundImpactAzimuthAngle;
+        int mode_id = 6;   // oh!  what a hack!
+        double alt, lon_d, lat_d;
+        if (! qti.rTarget.GetAltLonGCLat(&alt, &lon_d, &lat_d))
+        {
+            fprintf(stderr, "BYUXTable::GetDeltaFreq failed\n");
+            fprintf(stderr, "    Can't determine target lat/lon\n");
+        }
+        float longitude = (float)lon_d;
+        float latitude = (float)lat_d;
+        float tdf = topo_delta_f(topo, stable, beam_idx, orbit_fraction,
+            antenna_azimuth, mode_id, longitude, latitude);
+        qti.basebandFreq += tdf;
+    }
+
+    //-----------------------------//
+    // log check data if requested //
+    //-----------------------------//
 
     if (cf)
     {
-      cf->XdopplerFreq = qti.dopplerFreq;
-      cf->XroundTripTime = qti.roundTripTime;
-      cf->deltaFreq = qti.basebandFreq;
+        cf->XdopplerFreq = qti.dopplerFreq;
+        cf->XroundTripTime = qti.roundTripTime;
+        cf->deltaFreq = qti.basebandFreq;
     }
 
     return(qti.basebandFreq);
 }
 
+//-----------------//
+// BYUXTable::GetX //
+//-----------------//
 
 float
 BYUXTable::GetX(
-		int           beam_number,
-		float         azimuth_angle,
-		float         orbit_position,
-		int           slice_number,
-		float         delta_freq)
+    int    beam_number,
+    float  azimuth_angle,
+    float  orbit_position,
+    int    slice_number,
+    float  delta_freq)
 {
-  int absolute_slice_number;
+    int absolute_slice_number;
 
-  // Convert from relative to absolute slice number
-  if(!rel_to_abs_idx(slice_number,_numSlices,&absolute_slice_number)){
-    fprintf(stderr,"BYUXTable::GetX Bad Slice Number\n");
-    exit(1);
-  }
+    // Convert from relative to absolute slice number
+    if (! rel_to_abs_idx(slice_number, _numSlices, &absolute_slice_number))
+    {
+        fprintf(stderr, "BYUXTable::GetX Bad Slice Number\n");
+        exit(1);
+    }
 
-  // Convert from orbit position to nominal orbit time
-  float orbit_time=BYU_NOMINAL_ORBIT_PERIOD*orbit_position;
+    // Convert from orbit position to nominal orbit time
+    float orbit_time = BYU_NOMINAL_ORBIT_PERIOD * orbit_position;
 
-  // Interpolate tables
-  float X=Interpolate(xnom[beam_number][absolute_slice_number],orbit_time,
-		  azimuth_angle);
-  float A=Interpolate(a[beam_number][absolute_slice_number],orbit_time,
-		  azimuth_angle);
-  float B=Interpolate(b[beam_number][absolute_slice_number],orbit_time,
-		  azimuth_angle);
-  float C=Interpolate(c[beam_number][absolute_slice_number],orbit_time,
-		  azimuth_angle);
-  float D=Interpolate(d[beam_number][absolute_slice_number],orbit_time,
-		  azimuth_angle);
+    // Interpolate tables
+    float X = Interpolate(xnom[beam_number][absolute_slice_number], orbit_time,
+        azimuth_angle);
+    float A = Interpolate(a[beam_number][absolute_slice_number], orbit_time,
+        azimuth_angle);
+    float B = Interpolate(b[beam_number][absolute_slice_number], orbit_time,
+        azimuth_angle);
+    float C = Interpolate(c[beam_number][absolute_slice_number], orbit_time,
+        azimuth_angle);
+    float D = Interpolate(d[beam_number][absolute_slice_number], orbit_time,
+        azimuth_angle);
 
-
-  // Frequency Compensate
-  float delta_bin=delta_freq/FFT_BIN_SIZE;
-  X+=A+B*delta_bin+C*delta_bin*delta_bin+D*delta_bin*delta_bin*delta_bin;
-  X=pow(10.0,0.1*X);
-  return(X);
+    // Frequency Compensate
+    float delta_bin = delta_freq / FFT_BIN_SIZE;
+    X += A + B*delta_bin + C*delta_bin*delta_bin +
+        D*delta_bin*delta_bin*delta_bin;
+    X = pow(10.0, 0.1 * X);
+    return(X);
 }
+
+//--------------------//
+// BYUXTable::GetXegg //
+//--------------------//
 
 float
 BYUXTable::GetXegg(
-		int           beam_number,
-		float         azimuth_angle,
-		float         orbit_position,
-		float         delta_freq)
+    int    beam_number,
+    float  azimuth_angle,
+    float  orbit_position,
+    float  delta_freq)
 {
-
   // Convert from orbit position to nominal orbit time
   float orbit_time=BYU_NOMINAL_ORBIT_PERIOD*orbit_position;
 
@@ -458,43 +493,47 @@ BYUXTable::GetXegg(
   return(X);
 }
 
+//------------------------//
+// BYUXTable::Interpolate //
+//------------------------//
+
 float
 BYUXTable::Interpolate(
-    float**         table,
-    float           orbit_time,
-    float           azimuth_angle)
+    float**  table,
+    float    orbit_time,
+    float    azimuth_angle)
 {
         // calculate floating point index
-	float fazi = azimuth_angle / _azimuthStepSize;
+    float fazi = azimuth_angle / _azimuthStepSize;
         float ftime = orbit_time   / BYU_TIME_INTERVAL_BETWEEN_STEPS;
 
-	// calculate indices (don't worry about range)
-	int a1 = (int)fazi;
-	int t1= (int)ftime;
+    // calculate indices (don't worry about range)
+    int a1 = (int)fazi;
+    int t1= (int)ftime;
         int a2= a1 + 1;
         int t2= t1+ 1;
 
-	// calculate coefficients
+    // calculate coefficients
         float ca1,ca2,ct1,ct2;
-	ca1 = (float)a2 - fazi;
-	ca2 = fazi - (float)a1;
-	if(t1<BYU_ORBIT_POSITION_BINS-1){
-	  ct1 = (float)t2 - ftime;
-	  ct2 = ftime - (float)t1;
-	}
-	else{
-	  float end_t=BYU_NOMINAL_ORBIT_PERIOD/BYU_TIME_INTERVAL_BETWEEN_STEPS;
-	  ct1= (end_t-ftime)/(end_t-(float)t1);
+    ca1 = (float)a2 - fazi;
+    ca2 = fazi - (float)a1;
+    if(t1<BYU_ORBIT_POSITION_BINS-1){
+      ct1 = (float)t2 - ftime;
+      ct2 = ftime - (float)t1;
+    }
+    else{
+      float end_t=BYU_NOMINAL_ORBIT_PERIOD/BYU_TIME_INTERVAL_BETWEEN_STEPS;
+      ct1= (end_t-ftime)/(end_t-(float)t1);
           ct2= (ftime-(float)t1)/(end_t-(float)t1);
-	}
+    }
 
-	// wrap indices into range
+    // wrap indices into range
         t2%=BYU_ORBIT_POSITION_BINS;
         a2%=BYU_AZIMUTH_BINS;
 
-	float retval=ct1*ca1*table[t1][a1]+ct1*ca2*table[t1][a2]
-	             +ct2*ca1*table[t2][a1]+ct2*ca2*table[t2][a2];
-	return(retval);
+    float retval=ct1*ca1*table[t1][a1]+ct1*ca2*table[t1][a2]
+                 +ct2*ca1*table[t2][a1]+ct2*ca2*table[t2][a2];
+    return(retval);
 }
 
 //-----------------//

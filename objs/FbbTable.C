@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -174,10 +174,12 @@ FbbTable::GetFbb(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     Meas*        meas,
-    CheckFrame*  cf)
+    CheckFrame*  cf,
+    Topo*        topo,
+    Stable*      stable)
 {
     BYUXTable hack;
-    float delta_freq = hack.GetDeltaFreq(spacecraft, qscat, cf);
+    float delta_freq = hack.GetDeltaFreq(spacecraft, qscat, cf, topo, stable);
     float orbit_position = qscat->cds.OrbitFraction();
     int beam_number = qscat->cds.currentBeamIdx;
     float azim = qscat->sas.antenna.groundImpactAzimuthAngle;

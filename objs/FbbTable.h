@@ -1,15 +1,15 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
-#ifndef FbbTable_H
-#define FbbTable_H
-#include"BYUXTable.h"
-
 static const char rcs_id_FbbTable_h[] =
     "@(#) $Id$";
-#endif
+
+#ifndef FbbTable_H
+#define FbbTable_H
+
+#include "BYUXTable.h"
 
 //======================================================================
 // CLASSES
@@ -36,7 +36,8 @@ public:
 
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetFbb(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-               CheckFrame* cf = NULL);
+               CheckFrame* cf = NULL, Topo* topo = NULL,
+               Stable* stable = NULL);
     float  GetFbb(int beam_number, float azimuth_angle, float orbit_position,
                float delta_freq);
     float  Interpolate(float** table, float orbit_time, float azimuth_angle);
@@ -49,3 +50,5 @@ public:
 protected:
     float  _azimuthStepSize;
 };
+
+#endif

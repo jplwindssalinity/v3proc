@@ -109,6 +109,13 @@ static const char rcs_id_configsimdefs_h[] =
 #define XFACTOR_INNER_BEAM_FILE_KEYWORD  "XFACTOR_INNER_BEAM_FILE"
 #define XFACTOR_OUTER_BEAM_FILE_KEYWORD  "XFACTOR_OUTER_BEAM_FILE"
 
+//----------------//
+// Topography map //
+//----------------//
+
+#define TOPOMAP_FILE_KEYWORD  "TOPOMAP_FILE"
+#define STABLE_FILE_KEYWORD   "STABLE_FILE"
+
 //-----------//
 // Fbb Table //
 //-----------//
