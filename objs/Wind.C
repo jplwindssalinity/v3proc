@@ -492,7 +492,7 @@ WindField::ReadVap(
 	//-------------------------------//
 
 	_lon.SpecifyWrappedCenters(0.0 * dtr, 360.0 * dtr, VAP_LON_DIM);
-	_lat.SpecifyCenters(-60.0 * dtr, 60.0 * dtr, VAP_LON_DIM);
+	_lat.SpecifyCenters(-60.0 * dtr, 60.0 * dtr, VAP_LAT_DIM);
 
 	if (! _Allocate())
 		return(0);
