@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	int line = 0;
+	int line = 1;	// already at one because of the #include line above.
 	while (1)
 	{
 		line++;
