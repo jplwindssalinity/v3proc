@@ -196,15 +196,25 @@ Ephemeris::GetPosition(
 		return(0);
 	}
 	
-	// Linearly interpolate the position components in time.
-
 	double time1 = os1->time;
 	EarthPosition rsat1 = os1->rsat;
 
 	double time2 = os2->time;
 	EarthPosition rsat2 = os2->rsat;
 
-	*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+	// Linearly interpolate the position components in time.
+	//*rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+
+	// Circular interpolation of the position vector.
+	double range = rsat1.Magnitude();
+	double theta = acos((rsat1 % rsat2)/range/range);
+	double theta1 = (time-time1)/(time2-time1) * theta;
+	Matrix3 a;
+	a.Rowset(rsat1, rsat2, rsat1 & rsat2);
+	Vector3 b(range*range*cos(theta1), range*range*cos(theta-theta1), 0);
+	a.Inverse();
+	*rsat = a * b;
+
 	return(1);
 }
 
@@ -227,8 +237,6 @@ Ephemeris::GetOrbitState(
 		return(0);
 	}
 
-	// Linearly interpolate the position components in time.
-
 	double time1 = os1->time;
 	EarthPosition rsat1 = os1->rsat;
 	Vector3 vsat1 = os1->vsat;
@@ -237,8 +245,22 @@ Ephemeris::GetOrbitState(
 	EarthPosition rsat2 = os2->rsat;
 	Vector3 vsat2 = os2->vsat;
 
-	orbit_state->rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+	// Linearly interpolate the position components in time.
+	//orbit_state->rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+
+	// Circular interpolation of the position vector.
+	double range = rsat1.Magnitude();
+	double theta = acos((rsat1 % rsat2)/range/range);
+	double theta1 = (time-time1)/(time2-time1) * theta;
+	Matrix3 a;
+	a.Rowset(rsat1, rsat2, rsat1 & rsat2);
+	Vector3 b(range*range*cos(theta1), range*range*cos(theta-theta1), 0);
+	a.Inverse();
+	orbit_state->rsat = a * b;
+
+	// Linearly interpolate the components of the velocity vector.
 	orbit_state->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
+
 	return(1);
 }
 
