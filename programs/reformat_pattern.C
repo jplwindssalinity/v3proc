@@ -96,8 +96,15 @@ template class TrackerBase<unsigned short>;
 #define POINTS	260000
 #define HPOL	0
 #define VPOL	1
-#define G0V		40.91
-#define G0H		39.27
+#define G0V_old		40.91
+#define G0H_old		39.27
+
+// The following values are the latest antenna peak gain measurements
+// (see IOM-3347-98-037) with an adjustment to include the one-way loss
+// of the waveguide that connects the antenna system to the SES.
+//   G0V = 40.9 dB - 0.2 dB,  G0H = 39.5 dB - 0.2 dB
+#define G0V		40.7
+#define G0H		39.3
 
 //--------//
 // MACROS //
