@@ -203,23 +203,24 @@ ConfigBeam(
 		return(0);
 	}
 
+	double look_angle;
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &tmp_double))
+	if (! config_list->GetDouble(keyword, &look_angle))
 		return(0);
-	beam->lookAngle = tmp_double * dtr;
-
+	look_angle *= dtr;
+	
+	double azimuth_angle;
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
-	if (! config_list->GetDouble(keyword, &tmp_double))
+	if (! config_list->GetDouble(keyword, &azimuth_angle))
 		return(0);
-	beam->azimuthAngle = tmp_double * dtr;
+	azimuth_angle *= dtr;
+
+	beam->SetBeamGeometry(look_angle, azimuth_angle);
 
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
 		return(0);
 	beam->timeOffset = tmp_double;
-
-	// The beam frame is defined by the look angle and the azimuth angle.
-	beam->beamFrame.Set(0,beam->lookAngle,beam->azimuthAngle,3,2,1);
 
 	return(1);
 }
