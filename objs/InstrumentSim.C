@@ -61,7 +61,7 @@ InstrumentSim::GetL00Frame(
 
 int
 InstrumentSim::DetermineNextEvent(
-	Event*		event)
+	InstrumentEvent*	instrument_event)
 {
 	//------------------------------------//
 	// initialize next time of each event //
@@ -76,17 +76,19 @@ InstrumentSim::DetermineNextEvent(
 
 	if (scat_a_time <= scat_b_time)
 	{
-		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
-		event->time = scat_a_time;
-		scat_a_time = (double)(int)(event->time / _priPerBeam + 1.5) *
-			_priPerBeam;
+		instrument_event->eventId =
+			InstrumentEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
+		instrument_event->time = scat_a_time;
+		scat_a_time = (double)(int)(instrument_event->time / _priPerBeam +
+			1.5) * _priPerBeam;
 	}
 	else if (scat_b_time <= scat_a_time)
 	{
-		event->eventId = Event::SCATTEROMETER_BEAM_B_MEASUREMENT;
-		event->time = scat_b_time;
-		scat_b_time = (double)((int)(event->time / _priPerBeam) + 1) *
-			_priPerBeam + _beamBTimeOffset;
+		instrument_event->eventId =
+			InstrumentEvent::SCATTEROMETER_BEAM_B_MEASUREMENT;
+		instrument_event->time = scat_b_time;
+		scat_b_time = (double)((int)(instrument_event->time / _priPerBeam) +
+			1) * _priPerBeam + _beamBTimeOffset;
 	}
 	else
 		return(0);
@@ -102,12 +104,12 @@ InstrumentSim::DetermineNextEvent(
 int
 InstrumentSim::SimulateEvent(
 	Instrument*		instrument,
-	Event*			event,
+	Event*			instrument_event,
 	WindField*		wf,
 	GMF*			gmf)
 {
-	instrument->time = event->time;
-	switch(event->eventId)
+	instrument->time = instrument_event->time;
+	switch(instrument_event->eventId)
 	{
 	case Event::UPDATE_ORBIT:
 		spacecraftSim.UpdateOrbit(instrument->time, &(instrument->spacecraft));
@@ -122,7 +124,7 @@ InstrumentSim::SimulateEvent(
 		//--------------------------//
 
 		int beam_idx;
-		switch(event->eventId)
+		switch(instrument_event->eventId)
 		{
 		case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
 			beam_idx = 0;

@@ -9,17 +9,17 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Instrument.h"
 
 
-//=======//
-// Event //
-//=======//
+//=================//
+// InstrumentEvent //
+//=================//
 
-Event::Event()
+InstrumentEvent::InstrumentEvent()
 :	eventId(NONE), time(0.0)
 {
 	return;
 }
 
-Event::~Event()
+InstrumentEvent::~InstrumentEvent()
 {
 	return;
 }
