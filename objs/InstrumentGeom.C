@@ -737,7 +737,7 @@ FindPeakGainForSlice(
 //------------------//
 
 #define PEAK_ANGLE_OFFSET		0.00875		// about 0.5 degree
-#define LOCAL_ANGLE_OFFSET		0.0004		// about 0.023 degree
+#define LOCAL_ANGLE_OFFSET		0.0005		// about 0.029 degree
 
 int
 FindSliceCorners(
@@ -857,6 +857,8 @@ FindSliceCorners(
 			(local_c[0] - target_gain);
 		if (local_qr < 0.0)
 		{
+			fprintf(stderr,
+				"FindSliceCorners: can't find target gain on local fit\n");
 			corner_look[i] = look;
 			corner_azim[i] = azim;
 			continue;
