@@ -46,7 +46,7 @@ radar_X(
 	Meas*				meas,
 	double*				X)
 {
-	double lambda = speed_light / instrument->baseTransmitFreq;
+	double lambda = speed_light_kps / instrument->baseTransmitFreq;
 	double A3db = meas->outline.Area();
 	Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
 	double R = rlook.Magnitude();
