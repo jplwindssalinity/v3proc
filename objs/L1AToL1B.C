@@ -11,13 +11,13 @@ static const char rcs_id_l10tol15_c[] =
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
 
-#define XMGROUT	0	// Output sigma0 values to stdout? 1/0=YES/NO
 
 //==========//
 // L10ToL15 //
 //==========//
 
 L10ToL15::L10ToL15()
+  : useKfactor(0), outputSigma0ToStdout(0)
 {
 	return;
 }
@@ -108,7 +108,7 @@ L10ToL15::Convert(
 			antenna->SetAzimuthWithEncoder(
 				l10->frame.antennaPosition[spot_idx]);
 
-			if(XMGROUT) printf("%g ",antenna->azimuthAngle/dtr);
+			if(outputSigma0ToStdout) printf("%g ",antenna->azimuthAngle/dtr);
 
 			//---------------------------//
 			// create a measurement spot //
@@ -155,11 +155,19 @@ L10ToL15::Convert(
 			//-------------------//
 			// for each slice... //
 			//-------------------//
-
+                        
+			int sliceno=0;
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
-				float k_factor = 1.0;
+			  /**** Kfactor: either 1.0 or taken from table ***/
+			        float k_factor=1.0;
+				if(useKfactor) 
+				  k_factor=kfactorTable.RetrieveBySliceNumber(
+				       instrument->antenna.currentBeamIdx,
+				       instrument->antenna.azimuthAngle,
+				       sliceno);
+
 				float Psn = l10->frame.science[total_slice_idx];
 				float PtGr = l10->frame.ptgr;
 				float sigma0;
@@ -174,7 +182,7 @@ L10ToL15::Convert(
 				// to stdout.						//
 				//----------------------------------//
 
-				if (XMGROUT) printf("%g ",1.0-sigma0);
+				if (outputSigma0ToStdout) printf("%g ",sigma0);
 
 				//-----------------//
 				// set measurement //
@@ -182,12 +190,13 @@ L10ToL15::Convert(
 
 				meas->value = sigma0;
 				total_slice_idx++;
+				sliceno++;
 			}
 
 			l15->frame.spotList.Append(meas_spot);
 			spot_idx++;
 		}
-		if (XMGROUT) printf("\n");
+		if (outputSigma0ToStdout) printf("\n");
 	}
 
 	return(1);
