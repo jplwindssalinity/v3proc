@@ -28,14 +28,6 @@ static const char rcs_id_l1ah_h[] =
 #define UNUSABLE         0x0001
 #define NEGATIVE         0x0004
 
-#define CELL_LON_SCALE         0.01
-#define CELL_LAT_SCALE         0.01
-#define CELL_AZIMUTH_SCALE     0.01
-#define CELL_INCIDENCE_SCALE   0.01
-#define SIGMA0_SCALE           0.01
-#define SIGMA0_ATTN_MAP_SCALE  0.01
-#define KP_ALPHA_SCALE         0.001
-
 //======================================================================
 // CLASS
 //    L2AH
@@ -92,6 +84,13 @@ protected:
     // scale factors //
     //---------------//
 
+    float64  _cellLatScale;
+    float64  _cellLonScale;
+    float64  _cellAzimuthScale;
+    float64  _cellIncidenceScale;
+    float64  _sigma0Scale;
+    float64  _sigma0AttnMapScale;
+    float64  _kpAlphaScale;
     float64  _kpBetaScale;
 
     //-------------//

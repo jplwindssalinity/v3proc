@@ -17,7 +17,15 @@ static const char rcs_id_l2ah_c[] =
 //======//
 
 L2AH::L2AH()
-:   _hdfInputFileId(FAIL), _sdId(FAIL), _currentRow(-1)
+:   _hdfInputFileId(FAIL), _sdId(FAIL), _rowNumberSdsId(-1),
+    _numSigma0SdsId(-1), _cellLatSdsId(-1), _cellLonSdsId(-1),
+    _cellAzimuthSdsId(-1), _cellIncidenceSdsId(-1), _sigma0SdsId(-1),
+    _sigma0AttnMapSdsId(-1), _kpAlphaSdsId(-1), _kpBetaSdsId(-1),
+    _kpGammaSdsId(-1), _sigma0QualFlagSdsId(-1), _sigma0ModeFlagSdsId(-1),
+    _surfaceFlagSdsId(-1), _cellIndexSdsId(-1), _cellLatScale(0.0),
+    _cellLonScale(0.0), _cellAzimuthScale(0.0), _cellIncidenceScale(0.0),
+    _sigma0Scale(0.0), _sigma0AttnMapScale(0.0), _kpAlphaScale(0.0),
+    _kpBetaScale(0.0), _currentRow(-1)
 {
     return;
 }
@@ -40,13 +48,15 @@ L2AH::OpenForReading(
 
     _rowNumberSdsId = SDnametoid(_sdId, "row_number");
     _numSigma0SdsId = SDnametoid(_sdId, "num_sigma0");
-    _cellLatSdsId = SDnametoid(_sdId, "cell_lat");
-    _cellLonSdsId = SDnametoid(_sdId, "cell_lon");
-    _cellAzimuthSdsId = SDnametoid(_sdId, "cell_azimuth");
-    _cellIncidenceSdsId = SDnametoid(_sdId, "cell_incidence");
-    _sigma0SdsId = SDnametoid(_sdId, "sigma0");
-    _sigma0AttnMapSdsId = SDnametoid(_sdId, "sigma0_attn_map");
-    _kpAlphaSdsId = SDnametoid(_sdId, "kp_alpha");
+    _cellLatSdsId = SDnametoid(_sdId, "cell_lat", &_cellLatScale);
+    _cellLonSdsId = SDnametoid(_sdId, "cell_lon", &_cellLonScale);
+    _cellAzimuthSdsId = SDnametoid(_sdId, "cell_azimuth", &_cellAzimuthScale);
+    _cellIncidenceSdsId = SDnametoid(_sdId, "cell_incidence",
+        &_cellIncidenceScale);
+    _sigma0SdsId = SDnametoid(_sdId, "sigma0", &_sigma0Scale);
+    _sigma0AttnMapSdsId = SDnametoid(_sdId, "sigma0_attn_map",
+        &_sigma0AttnMapScale);
+    _kpAlphaSdsId = SDnametoid(_sdId, "kp_alpha", &_kpAlphaScale);
     _kpBetaSdsId = SDnametoid(_sdId, "kp_beta", &_kpBetaScale);
     _kpGammaSdsId = SDnametoid(_sdId, "kp_gamma");
     _sigma0QualFlagSdsId = SDnametoid(_sdId, "sigma0_qual_flag");
@@ -297,22 +307,22 @@ L2AH::GetWVC(
 
         // set the lat and lon
         new_meas->centroid.SetAltLonGDLat(0.0,
-            _cellLon[i] * CELL_LON_SCALE * dtr,
-            _cellLat[i] * CELL_LAT_SCALE * dtr);
+            _cellLon[i] * _cellLonScale * dtr,
+            _cellLat[i] * _cellLatScale * dtr);
 
         // set the azimuth
-        new_meas->eastAzimuth = (450.0 - _cellAzimuth[i] * CELL_AZIMUTH_SCALE)
+        new_meas->eastAzimuth = (450.0 - _cellAzimuth[i] * _cellAzimuthScale)
             * dtr;
         if (new_meas->eastAzimuth >= two_pi)
             new_meas->eastAzimuth -= two_pi;
 
         // set the incidence
         new_meas->incidenceAngle =
-            _cellIncidence[i] * CELL_INCIDENCE_SCALE * dtr;
+            _cellIncidence[i] * _cellIncidenceScale * dtr;
 
         // set sigma0
-        new_meas->value = _sigma0[i] * SIGMA0_SCALE
-            + _sigma0AttnMap[i] * SIGMA0_ATTN_MAP_SCALE /
+        new_meas->value = _sigma0[i] * _sigma0Scale
+            + _sigma0AttnMap[i] * _sigma0AttnMapScale /
             cos(new_meas->incidenceAngle);
         new_meas->value = pow(10.0, 0.1 * new_meas->value);
         if (_sigma0QualFlag[i] & NEGATIVE)
@@ -330,7 +340,7 @@ L2AH::GetWVC(
         new_meas->numSlices = -1;
 
         // kp alpha, beta, and gamma
-        new_meas->A = _kpAlpha[i] * KP_ALPHA_SCALE;
+        new_meas->A = _kpAlpha[i] * _kpAlphaScale;
         new_meas->B = _kpBeta[i] * _kpBetaScale;
         new_meas->C = _kpGamma[i];
 
