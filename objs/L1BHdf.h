@@ -68,6 +68,7 @@ static L1BParamEntry l1bMeasTable[] =
     { FRAME_INST_STATUS_02, UNIT_MAP },
     { FRAME_INST_STATUS_02, UNIT_MAP },
     { SLICE_QUAL_FLAG, UNIT_DN },
+    { SIGMA0_MODE_FLAG, UNIT_DN },
 };
 
 const int l1bMeasTableSize = ElementNumber(l1bMeasTable);
