@@ -118,7 +118,7 @@ static unsigned short  integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 // ECMWF
 static float           ecmwf_spd_array[AT_WIDTH][CT_WIDTH];
 
-// Index 1: Swath index 0(both beams), 1(outer beam only), 2(unknown)
+// Index 1: Swath index 0(inner swath), 1(outer swath), 2(unknown)
 // Index 2: SSM/I class 0(irr=0), 1(0<irr<=irr_threshold), 2(irr>irr_threshold)
 // Index 3: MUDH PCA class 0(clear), 1(rain), 2(unknown)
 // Index 4: probability threshold index
@@ -194,8 +194,8 @@ main(
     //--------------------//
 
     unsigned long valid_wvc_count[2];
-    valid_wvc_count[0] = 0;    // both
-    valid_wvc_count[1] = 0;    // outer only
+    valid_wvc_count[0] = 0;    // inner swath
+    valid_wvc_count[1] = 0;    // outer swath
     unsigned long classified_wvc_count[2];
     classified_wvc_count[0] = 0;
     classified_wvc_count[1] = 0;
@@ -346,12 +346,12 @@ main(
 
                 switch (flag_tab[ati][cti])
                 {
-                case BOTH_CLEAR:
-                case BOTH_RAIN:
+                case INNER_CLEAR:
+                case INNER_RAIN:
                     classified_wvc_count[0]++;
                     valid_wvc_count[0]++;
                     break;
-                case BOTH_UNKNOWN:
+                case INNER_UNKNOWN:
                     valid_wvc_count[0]++;
                     break;
                 case OUTER_CLEAR:
@@ -362,9 +362,9 @@ main(
                 case OUTER_UNKNOWN:
                     valid_wvc_count[1]++;
                     break;
-                case CANNOT_CLASSIFY:
+                case NO_WIND:
                     break;
-                case NO_WVC:
+                case UNKNOWN:
                     break;
                 }
 
@@ -385,39 +385,36 @@ main(
                     int mudh_class = MUDH_UNKNOWN;
                     switch (flag_tab[ati][cti])
                     {
-                    case BOTH_CLEAR:
-                    case BOTH_RAIN:
-                        swath_idx = 0;    // both beams
+                    case INNER_CLEAR:
+                    case INNER_RAIN:
+                        swath_idx = 0;    // inner swath
                         if (prob_rain <= prob_thresh)
                             mudh_class = MUDH_CLEAR;
                         else
                             mudh_class = MUDH_RAIN;
                         break;
-                    case BOTH_UNKNOWN:
-                        swath_idx = 0;    // both beams
+                    case INNER_UNKNOWN:
+                        swath_idx = 0;    // inner swath
                         // it will stay unknown
                         mudh_class = MUDH_UNKNOWN;
                         break;
                     case OUTER_CLEAR:
                     case OUTER_RAIN:
-                        swath_idx = 1;    // outer beam
+                        swath_idx = 1;    // outer swath
                         if (prob_rain <= prob_thresh)
                             mudh_class = MUDH_CLEAR;
                         else
                             mudh_class = MUDH_RAIN;
                         break;
                     case OUTER_UNKNOWN:
-                        swath_idx = 1;    // outer beam
+                        swath_idx = 1;    // outer swath
                         // it will stay unknown
                         mudh_class = MUDH_UNKNOWN;
                         break;
-                    case CANNOT_CLASSIFY:
+                    case NO_WIND:
+                    case UNKNOWN:
                         swath_idx = 2;    // unknown beam
-                        mudh_class = CANNOT_CLASSIFY;
-                        break;
-                    case NO_WVC:
-                        swath_idx = 2;    // unknown beam
-                        mudh_class = NO_WVC;
+                        mudh_class = MUDH_UNKNOWN;
                         break;
                     default:
                         fprintf(stderr, "%s: unknown classification\n",
@@ -436,8 +433,8 @@ main(
     // output file //
     //-------------//
 
-    const char* swath_ext[] = { "both", "outer" };
-    const char* swath_string[] = { "Both beams", "Outer beam only" };
+    const char* swath_ext[] = { "inner", "outer" };
+    const char* swath_string[] = { "Inner swath", "Outer swath" };
     for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
         //------------------------------//
