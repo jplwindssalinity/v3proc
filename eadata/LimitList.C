@@ -2,7 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <unistd.h>
-#include <iostream.h>
+//#include <iostream.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -411,7 +411,7 @@ const int       keepDisabled)
             }
             else
             {
-                cout << "Cannot not create limit checker" << endl;
+                printf("Cannot not create limit checker\n");
                 delete limitChecker;
             }
         }
