@@ -152,6 +152,49 @@ RangeTracker::QuantizeDelay(
 	return(qdelay);
 }
 
+//-----------------------------//
+// RangeTracker::SetInstrument //
+//-----------------------------//
+
+int
+RangeTracker::SetInstrument(
+	Instrument*		instrument,
+	float*			residual_delay)
+{
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+
+	//-------//
+	// width //
+	//-------//
+ 
+	instrument->commandedRxGateWidth =
+		beam->rangeTracker.QuantizeWidth(beam->rxGateWidth);
+ 
+	//-------//
+	// delay //
+	//-------//
+ 
+	unsigned short range_step =
+		beam->rangeTracker.OrbitTicksToRangeStep(instrument->orbitTicks,
+		instrument->orbitTicksPerPeriod);
+	unsigned int encoder = antenna->GetEncoderValue();
+	unsigned int encoder_n = antenna->GetEncoderN();
+ 
+	float delay;
+ 
+	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->pulseWidth,
+		instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
+	{
+		fprintf(stderr, "RangeTracker::SetInstrument: error using RGC\n");
+		return(0);
+	}
+	instrument->commandedRxGateDelay =
+		beam->rangeTracker.QuantizeDelay(delay, residual_delay);
+
+	return(1);
+}
+
 //--------------------------------//
 // RangeTracker::SetRoundTripTime //
 //--------------------------------//

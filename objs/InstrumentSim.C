@@ -453,33 +453,7 @@ SetRangeAndDoppler(
 	float residual_delay;
 	if (beam->useRangeTracker)
 	{
-		//-------//
-		// width //
-		//-------//
-
-		instrument->commandedRxGateWidth =
-			beam->rangeTracker.QuantizeWidth(beam->rxGateWidth);
-
-		//-------//
-		// delay //
-		//-------//
-
-		unsigned short range_step =
-			beam->rangeTracker.OrbitTicksToRangeStep(instrument->orbitTicks,
-			instrument->orbitTicksPerPeriod);
-		unsigned int encoder = antenna->GetEncoderValue();
-		unsigned int encoder_n = antenna->GetEncoderN();
-
-		float delay;
-
-		if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->pulseWidth,
-			instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
-		{
-			fprintf(stderr, "SetRangeAndDoppler: error using RGC\n");
-			return(0);
-		}
-		instrument->commandedRxGateDelay =
-			beam->rangeTracker.QuantizeDelay(delay, &residual_delay);
+		beam->rangeTracker.SetInstrument(instrument, &residual_delay);
 	}
 	else
 	{

@@ -57,6 +57,8 @@ public:
 							float* delay);
 	float				QuantizeWidth(float width);
 	float				QuantizeDelay(float delay, float* residual_delay);
+	int					SetInstrument(Instrument* instrument,
+							float* residual_delay);
 	int					GetRangeSteps() { return(_rangeSteps); };
 	int					SetRoundTripTime(double** terms);
 

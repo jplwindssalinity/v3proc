@@ -8,12 +8,12 @@
 //		generate_dtc
 //
 // SYNOPSIS
-//		generate_dtc <sim_config_file> <RGC_file> <DTC_file>
+//		generate_dtc <sim_config_file> <DTC_base>
 //
 // DESCRIPTION
-//		Generates a set of Doppler Tracking Constants based upon the
-//		parameters in the simulation configuration file and the given
-//		Receiver Gate Constants.
+//		Generates a set of Doppler Tracking Constants for each beam,
+//		based upon the parameters in the simulation configuration
+//		file and the given Receiver Gate Constants.
 //
 // OPTIONS
 //		None.
@@ -24,13 +24,11 @@
 //								all input parameters, input files, and
 //								output files.
 //
-//		<RGC_file>			The RGC input file.
-//
-//		<DTC_file>			The DTC output file.
+//		<DTC_base>			The DTC output base.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% generate_constants sws1b.cfg rgc.dat dtc.dat
+//			% generate_constants sws1b.cfg dtc.dat
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -112,8 +110,7 @@ template class BufferedList<OrbitState>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<RGC_file>",
-	"<DTC_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<DTC_base>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -130,13 +127,12 @@ main(
 
 	const char* command = no_path(argv[0]);
 
-	if (argc != 4)
+	if (argc != 3)
 		usage(command, usage_array, 1);
 
 	int arg_idx = 1;
 	const char* config_file = argv[arg_idx++];
-	const char* rgc_file = argv[arg_idx++];
-	const char* dtc_file = argv[arg_idx++];
+	const char* dtc_base = argv[arg_idx++];
 
 	//--------------------------------//
 	// read in simulation config file //
@@ -150,13 +146,12 @@ main(
 		exit(1);
 	}
 
-    //-----------------------------------//
-    // force RGC to be read, but not DTC //
-    //-----------------------------------//
+	//-----------------------------------//
+	// force RGC to be read, but not DTC //
+	//-----------------------------------//
  
-    config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
-    config_list.StompOrAppend(RGC_FILE_KEYWORD, rgc_file);
-    config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+	config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
+	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
 
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
@@ -199,28 +194,15 @@ main(
 		exit(1);
 	}
 
-	//--------------------//
-	// read range tracker //
-	//--------------------//
-
-	RangeTracker range_tracker;
-	if (! range_tracker.ReadBinary(rgc_file))
-	{
-		fprintf(stderr, "%s: error reading RGC file %s\n", command,
-			rgc_file);
-		exit(1);
-	}
-
 	//--------------------------//
 	// allocate Doppler tracker //
 	//--------------------------//
 
 	DopplerTracker doppler_tracker;
-	if (! doppler_tracker.Allocate(antenna->numberOfBeams,
-		DOPPLER_ORBIT_STEPS))
+	if (! doppler_tracker.Allocate(DOPPLER_ORBIT_STEPS))
 	{
-		fprintf(stderr, "%s: error allocating Doppler tracker\n",
-			command);
+		fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
+		exit(1);
 	}
 
 	//----------------//
@@ -228,36 +210,8 @@ main(
 	//----------------//
 
 	// terms are [0] = amplitude, [1] = phase, [2] = bias
-	double*** terms;
-	terms = (double ***)make_array(sizeof(double), 3,
-		antenna->numberOfBeams, DOPPLER_ORBIT_STEPS, 3);
-
-	//------------------------------//
-	// start at an equator crossing //
-	//------------------------------//
-
-	double start_time =
-		spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
-			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(start_time);
-
-	//------------//
-	// initialize //
-	//------------//
-
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
-	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
-			command);
-		exit(1);
-	}
-
-	if (! spacecraft_sim.Initialize(start_time))
-	{
-		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+	double** terms;
+	terms = (double **)make_array(sizeof(double), 3, DOPPLER_ORBIT_STEPS, 3);
 
 	//-----------//
 	// variables //
@@ -267,45 +221,80 @@ main(
 	Attitude* attitude = &(spacecraft.attitude);
 	Vector3 vector;
 
-	//--------------------//
-	// loop through orbit //
-	//--------------------//
-
 	double orbit_period = spacecraft_sim.GetPeriod();
 	double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
 	double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
 
-	for (int orbit_step = 0; orbit_step < DOPPLER_ORBIT_STEPS; orbit_step++)
+	//-----------------//
+	// loop over beams //
+	//-----------------//
+
+	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
 	{
-		//--------------------//
-		// calculate the time //
-		//--------------------//
-
-		// addition of 0.5 centers on orbit_step
-		double time = start_time +
-			orbit_step_size * ((double)orbit_step + 0.5);
-
-		//-----------------------//
-		// locate the spacecraft //
-		//-----------------------//
-
-		spacecraft_sim.UpdateOrbit(time, &spacecraft);
-
-		//-------------------------//
-		// set the instrument time //
-		//-------------------------//
-
-		instrument.SetTime(time);
-
-		//--------------------//
-		// step through beams //
-		//--------------------//
-
-		for (int beam_idx = 0; beam_idx < antenna->numberOfBeams;
-			beam_idx++)
+		//--------------------------//
+		// allocate Doppler tracker //
+		//--------------------------//
+ 
+		antenna->currentBeamIdx = beam_idx;
+		Beam* beam = antenna->GetCurrentBeam();
+		if (! beam->dopplerTracker.Allocate(DOPPLER_ORBIT_STEPS))
 		{
-			antenna->currentBeamIdx = beam_idx;
-			Beam* beam = antenna->GetCurrentBeam();
+			fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
+			exit(1);
+		}
+
+		//------------------------------//
+		// start at an equator crossing //
+		//------------------------------//
+
+		double start_time =
+			spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
+				EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+		instrument.SetEqxTime(start_time);
+
+		//------------//
+		// initialize //
+		//------------//
+
+		if (! instrument_sim.Initialize(&(instrument.antenna)))
+		{
+			fprintf(stderr, "%s: error initializing instrument simulator\n",
+				command);
+			exit(1);
+		}
+
+		if (! spacecraft_sim.Initialize(start_time))
+		{
+			fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+				command);
+			exit(1);
+		}
+
+		//--------------------//
+		// loop through orbit //
+		//--------------------//
+
+		for (int orbit_step = 0; orbit_step < DOPPLER_ORBIT_STEPS; orbit_step++)
+		{
+			//--------------------//
+			// calculate the time //
+			//--------------------//
+
+			// addition of 0.5 centers on orbit_step
+			double time = start_time +
+				orbit_step_size * ((double)orbit_step + 0.5);
+
+			//-----------------------//
+			// locate the spacecraft //
+			//-----------------------//
+
+			spacecraft_sim.UpdateOrbit(time, &spacecraft);
+
+			//-------------------------//
+			// set the instrument time //
+			//-------------------------//
+
+			instrument.SetTime(time);
 
 			//--------------------------------//
 			// calculate baseband frequencies //
@@ -337,7 +326,7 @@ main(
 				//------------------------------//
 
 				float residual_delay_error = 0.0;
-				range_tracker.SetInstrument(&instrument,
+				beam->rangeTracker.SetInstrument(&instrument,
 					&residual_delay_error);
 
 				//--------------------------------------------------------//
@@ -362,43 +351,43 @@ main(
 
 			double a, p, c;
 			azimuth_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
-			*(*(*(terms + beam_idx) + orbit_step) + 0) = a;
-			*(*(*(terms + beam_idx) + orbit_step) + 1) = p;
-			*(*(*(terms + beam_idx) + orbit_step) + 2) = c;
+			*(*(terms + orbit_step) + 0) = a;
+			*(*(terms + orbit_step) + 1) = p;
+			*(*(terms + orbit_step) + 2) = c;
 		}
-	}
 
-	//---------------------------//
-	// set the doppler constants //
-	//---------------------------//
+		//-------------//
+		// set Doppler //
+		//-------------//
 
-	doppler_tracker.Set(terms);
-	if (dtc_file)
-	{
-		free_array((void *)terms, 3, antenna->numberOfBeams,
-			DOPPLER_ORBIT_STEPS, 3);
-	}
+		beam->dopplerTracker.Set(terms);
 
-	//----------------------//
-	// set ticks per orbits //
-	//----------------------//
-
-	unsigned int ticks_per_orbit = instrument.TimeToOrbitTicks(orbit_period);
-	doppler_tracker.SetTicksPerOrbit(ticks_per_orbit);
-
-	//------------------------------------------//
-	// write out the Doppler tracking constants //
-	//------------------------------------------//
-
-	if (dtc_file)
-	{
-		if (! doppler_tracker.WriteBinary(dtc_file))
+		//------------------------------------------//
+		// write out the doppler tracking constants //
+		//------------------------------------------//
+ 
+		char filename[1024];
+		sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
+		if (! beam->dopplerTracker.WriteBinary(filename))
 		{
 			fprintf(stderr, "%s: error writing DTC file %s\n", command,
-				dtc_file);
+				filename);
 			exit(1);
 		}
 	}
+
+	//----------------//
+	// free the array //
+	//----------------//
+ 
+	free_array((void *)terms, 2, DOPPLER_ORBIT_STEPS, 3);
+ 
+	//-----------------------------------//
+	// mention the orbit period in ticks //
+	//-----------------------------------//
+ 
+	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
+	printf("ORBIT_TICKS_PER_ORBIT   %d\n", ticks);
 
 	return (0);
 }

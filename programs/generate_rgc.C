@@ -8,11 +8,11 @@
 //		generate_rgc
 //
 // SYNOPSIS
-//		generate_rgc <sim_config_file> <RGC_file>
+//		generate_rgc <sim_config_file> <RGC_base>
 //
 // DESCRIPTION
-//		Generates a set of Receiver Gate Constants based upon the
-//		parameters in the simulation configuration file.
+//		Generates a set of Receiver Gate Constants for each beam
+//		based upon the parameters in the simulation configuration file.
 //
 // OPTIONS
 //		None.
@@ -22,7 +22,7 @@
 //		<sim_config_file>	The sim_config_file needed listing
 //								all input parameters.
 //
-//		<RGC_file>			The RGC output file.
+//		<RGC_base>			The RGC output base.
 //
 // EXAMPLES
 //		An example of a command line is:
@@ -110,7 +110,7 @@ template class BufferedList<OrbitState>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<RGC_file>", 0 };
+const char* usage_array[] = { "<sim_config_file>", "<RGC_base>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -132,7 +132,7 @@ main(
 
 	int arg_idx = 1;
 	const char* config_file = argv[arg_idx++];
-	const char* rgc_file = argv[arg_idx++];
+	const char* rgc_base = argv[arg_idx++];
 
 	//--------------------------------//
 	// read in simulation config file //
@@ -194,85 +194,86 @@ main(
 		exit(1);
 	}
 
-	//------------------------//
-	// allocate range tracker //
-	//------------------------//
-
-	RangeTracker range_tracker;
-	if (! range_tracker.Allocate(antenna->numberOfBeams, RANGE_ORBIT_STEPS))
-	{
-		fprintf(stderr, "%s: error allocating range tracker\n", command);
-		exit(1);
-	}
-
 	//----------------//
 	// allocate terms //
 	//----------------//
 
 	// terms are [0] = amplitude, [1] = phase, [2] = bias
-	double*** terms;
-	terms = (double ***)make_array(sizeof(double), 3,
-		antenna->numberOfBeams, RANGE_ORBIT_STEPS, 3);
-
-	//------------------------------//
-	// start at an equator crossing //
-	//------------------------------//
-
-	double start_time =
-		spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
-			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.SetEqxTime(start_time);
+	double** terms;
+	terms = (double **)make_array(sizeof(double), 2, RANGE_ORBIT_STEPS, 3);
 
 	//------------//
 	// initialize //
 	//------------//
 
-	if (! instrument_sim.Initialize(&(instrument.antenna)))
-	{
-		fprintf(stderr, "%s: error initializing instrument simulator\n",
-			command);
-		exit(1);
-	}
-
-	if (! spacecraft_sim.Initialize(start_time))
-	{
-		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-			command);
-		exit(1);
-	}
-
-	//--------------------//
-	// loop through orbit //
-	//--------------------//
-
 	double orbit_period = spacecraft_sim.GetPeriod();
 	double orbit_step_size = orbit_period / (double)RANGE_ORBIT_STEPS;
 	double azimuth_step_size = two_pi / (double)RANGE_AZIMUTH_STEPS;
 
-	for (int orbit_step = 0; orbit_step < RANGE_ORBIT_STEPS; orbit_step++)
+	//--------------------//
+	// step through beams //
+	//--------------------//
+
+	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
 	{
-		//--------------------//
-		// calculate the time //
-		//--------------------//
+		//------------------------//
+		// allocate range tracker //
+		//------------------------//
 
-		// addition of 0.5 centers on orbit_step
-		double time = start_time +
-			orbit_step_size * ((double)orbit_step + 0.5);
-
-		//-----------------------//
-		// locate the spacecraft //
-		//-----------------------//
-
-		spacecraft_sim.UpdateOrbit(time, &spacecraft);
-
-		//--------------------//
-		// step through beams //
-		//--------------------//
-
-		for (int beam_idx = 0; beam_idx < antenna->numberOfBeams;
-			beam_idx++)
+		antenna->currentBeamIdx = beam_idx;
+		Beam* beam = antenna->GetCurrentBeam();
+		if (! beam->rangeTracker.Allocate(RANGE_ORBIT_STEPS))
 		{
-			antenna->currentBeamIdx = beam_idx;
+			fprintf(stderr, "%s: error allocating range tracker\n", command);
+			exit(1);
+		}
+
+		//------------------------------//
+		// start at an equator crossing //
+		//------------------------------//
+
+		double start_time =
+			spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
+				EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+		instrument.SetEqxTime(start_time);
+
+		//------------//
+		// initialize //
+		//------------//
+
+		if (! instrument_sim.Initialize(&(instrument.antenna)))
+		{
+			fprintf(stderr, "%s: error initializing instrument simulator\n",
+				command);
+			exit(1);
+		}
+
+		if (! spacecraft_sim.Initialize(start_time))
+		{
+			fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+				command);
+			exit(1);
+		}
+
+		//--------------------//
+		// loop through orbit //
+		//--------------------//
+
+		for (int orbit_step = 0; orbit_step < RANGE_ORBIT_STEPS; orbit_step++)
+		{
+			//--------------------//
+			// calculate the time //
+			//--------------------//
+
+			// addition of 0.5 centers on orbit_step
+			double time = start_time +
+				orbit_step_size * ((double)orbit_step + 0.5);
+
+			//-----------------------//
+			// locate the spacecraft //
+			//-----------------------//
+
+			spacecraft_sim.UpdateOrbit(time, &spacecraft);
 
 			//----------------------//
 			// step through azimuth //
@@ -299,45 +300,43 @@ main(
 
 			double a, p, c;
 			azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
-			*(*(*(terms + beam_idx) + orbit_step) + 0) = a;
-			*(*(*(terms + beam_idx) + orbit_step) + 1) = p;
-			*(*(*(terms + beam_idx) + orbit_step) + 2) = c;
+			*(*(terms + orbit_step) + 0) = a;
+			*(*(terms + orbit_step) + 1) = p;
+			*(*(terms + orbit_step) + 2) = c;
+		}
+
+		//-----------//
+		// set delay //
+		//-----------//
+
+		beam->rangeTracker.SetRoundTripTime(terms);
+
+		//---------------------------------------//
+		// write out the receiver gate constants //
+		//---------------------------------------//
+
+		char filename[1024];
+		sprintf(filename, "%s.%d", rgc_base, beam_idx + 1);
+		if (! beam->rangeTracker.WriteBinary(filename))
+		{
+			fprintf(stderr, "%s: error writing RGC file %s\n", command,
+				filename);
+			exit(1);
 		}
 	}
 
-	//-----------//
-	// set delay //
-	//-----------//
+	//----------------//
+	// free the array //
+	//----------------//
 
-	range_tracker.SetRoundTripTime(terms);
+	free_array((void *)terms, 2, RANGE_ORBIT_STEPS, 3);
 
-	//--------------//
-	// set duration //
-	//--------------//
+	//-----------------------------------//
+	// mention the orbit period in ticks //
+	//-----------------------------------//
 
-	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
-	{
-		antenna->currentBeamIdx = beam_idx;
-		Beam* beam = antenna->GetCurrentBeam();
-		range_tracker.SetDuration(beam_idx, beam->receiverGateWidth);
-	}
-
-	//---------------------//
-	// set ticks per orbit //
-	//---------------------//
-
-	unsigned int ticks_per_orbit = instrument.TimeToOrbitTicks(orbit_period);
-	range_tracker.SetTicksPerOrbit(ticks_per_orbit);
-
-	//---------------------------------------//
-	// write out the receiver gate constants //
-	//---------------------------------------//
-
-	if (! range_tracker.WriteBinary(rgc_file))
-	{
-		fprintf(stderr, "%s: error writing RGC file %s\n", command, rgc_file);
-		exit(1);
-	}
+	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
+	printf("ORBIT_TICKS_PER_ORBIT	%d\n", ticks);
 
 	return (0);
 }
