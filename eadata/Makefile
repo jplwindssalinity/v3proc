@@ -135,7 +135,7 @@ $(LIBDIR)/libEAData.a: $(OBJS)
 
 .PRECIOUS: %.C
 
-TempInst.o: TempInst.C EAList.h EAList.C Command.h EAConfigList.h Eqx.h Filter.h LimitChecker.h L1AErrorChecker.h Parameter.h Polynomial.h ReqaqList.h TlmHdfFile.h ToDo.h ListBase.h CommonDefs.h Tpg.h Itime.h LimitState.h ErrorChecker.h Reqq.h HdfFile.h State.h CmdList.h SafeString.h CmdEffect.h
+TempInst.o: TempInst.C EAList.h EAList.C Command.h EAConfigList.h Eqx.h Filter.h LimitChecker.h L1AErrorChecker.h Parameter.h Polynomial.h ReqaqList.h TlmHdfFile.h ToDo.h ListBase.h CommonDefs.h Tpg.h Itime.h LimitState.h ErrorChecker.h Reqq.h HdfFile.h State.h CmdList.h SafeString.h CmdEffect.h LeapSecTable.h
 Args.o: Args.C Args.h ArgDefs.h EAConfigList.h EALog.h EAList.h TlmFileList.h TlmHdfFile.h ListBase.h Parameter.h Itime.h CommonDefs.h HdfFile.h SafeString.h
 ArgsPlus.o: ArgsPlus.C Args.h ArgsPlus.h ParTab.h EAConfigList.h EALog.h TlmFileList.h LimitList.h Filter.h ToDo.h CmdList.h Eqx.h PolyTable.h ArgDefs.h Itime.h Parameter.h CommonDefs.h EAList.h TlmHdfFile.h LimitChecker.h Command.h CmdEffect.h Tpg.h Polynomial.h PolyErrNo.h ListBase.h HdfFile.h LimitState.h SafeString.h
 Backup.o: Backup.C Backup.h
@@ -164,7 +164,7 @@ Hk2File.o: Hk2File.C Hk2File.h L1AExtract.h ParTab.h TimeTlmFile.h CommonDefs.h 
 Hk2FilTab.o: Hk2FilTab.C Filter.h FilterFunc.h EAList.h TlmHdfFile.h ListBase.h CommonDefs.h HdfFile.h Itime.h Parameter.h SafeString.h
 Hk2HdfMap.o: Hk2HdfMap.C Parameter.h Hk2HdfMap.h FrameRead.h CommonDefs.h
 Hk2ParTab.o: Hk2ParTab.C ParTab.h L1AExtract.h Hk2Extract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
-Itime.o: Itime.C Itime.h CommonDefs.h
+Itime.o: Itime.C Itime.h CommonDefs.h LeapSecTable.h
 L1ADrvExtract.o: L1ADrvExtract.C L1AExtract.h L1ADrvExtract.h Parameter.h Itime.h PolyTable.h Polynomial.h CommonDefs.h TlmHdfFile.h EAList.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 L1ADrvTab.o: L1ADrvTab.C ParTab.h L1AExtract.h L1ADrvExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h PolyTable.h HdfFile.h EAList.h Polynomial.h PolyErrNo.h SafeString.h ListBase.h
 L1AEffDetector.o: L1AEffDetector.C L1AEffDetector.h Itime.h EffDetector.h EALog.h Parameter.h ParTab.h State.h TlmHdfFile.h CommonDefs.h CmdList.h TlmFileList.h HdfFile.h EAList.h Command.h CmdEffect.h Eqx.h SafeString.h ListBase.h Tpg.h UpldTblList.h
