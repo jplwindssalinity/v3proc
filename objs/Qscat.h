@@ -408,8 +408,7 @@ public:
              Spacecraft* spacecraft, double look[3], double azim[3],
              double s[3], double c[3]);
     int  LocateSliceCentroids(Spacecraft* spacecraft, MeasSpot* meas_spot,
-             float* Esn = NULL, float gain_threshold = 0.0,
-             int max_slices = 0);
+             float gain_threshold = 0.0, int max_slices = 0);
     double  IdealRtt(Spacecraft* spacecraft, int use_flags = 0);
     int     IdealCommandedDoppler(Spacecraft* spacecraft,
                 QscatTargetInfo* qti_out = NULL);

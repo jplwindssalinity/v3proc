@@ -218,70 +218,67 @@ L1AToL1B::Convert(
 		MeasSpot* meas_spot = new MeasSpot();
         meas_spot->time = time;
 
-		//-------------------------------------------//
-		// Extract energy measurements for this spot //
-		//-------------------------------------------//
-
-		float* Esn = (float*)malloc(sizeof(float)*l1a->frame.slicesPerSpot);
-		if (! Esn)
-		{
-			printf("Error allocating memory in L1AToL1B\n");
-			return(0);
-		}
-
-		float Esn_echo = 0.0;
-		for (int i=0; i < l1a->frame.slicesPerSpot; i++)
-		{
-			Esn[i] = l1a->frame.science[base_slice_idx + i];
-			// Sum up the signal+noise measurements
-			Esn_echo += Esn[i];
-		}
-
-		// Fetch the noise measurement which applies to all the slices.
-		float Esn_noise = l1a->frame.spotNoise[spot_idx];
-
-        //---------------------//
-        // Create measurements //
-        //---------------------//
+        //----------------------------------------//
+        // Create slice measurements for the spot //
+        //----------------------------------------//
 
         if (! qscat->MakeSlices(meas_spot))
             return(0);
+
+		//----------------------------------------------------------//
+		// Extract and load slice energy measurements for this spot //
+		//----------------------------------------------------------//
+
+		float Esn_echo = 0.0;
+        Meas* meas = meas_spot->GetHead();
+		for (int i=0; i < l1a->frame.slicesPerSpot; i++)
+		{
+          meas->value = l1a->frame.science[base_slice_idx + i];
+          // Sum up ALL the signal+noise measurements
+          Esn_echo += meas->value;
+
+          meas = meas_spot->GetNext();
+		}
+
+        //-----------------------------------------------------------------//
+		// Extract the spot noise measurement which applies to all slices. //
+        //-----------------------------------------------------------------//
+
+		float Esn_noise = l1a->frame.spotNoise[spot_idx];
 
 		//---------------------//
 		// locate measurements //
 		//---------------------//
 
-        // correctly locate antenna first
-//        qscat->sas.SetAzimuthWithEncoder(held_encoder);
-//        qscat->SetAntennaToTxCenter(1);
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
-            if (! qscat->LocateSpot(spacecraft, meas_spot, Esn[0]))
+            if (! qscat->LocateSpot(spacecraft, meas_spot))
             {
                 return(0);
             }
 		}
 		else
         {
-            if (! qscat->LocateSliceCentroids(spacecraft, meas_spot, Esn,
+            if (! qscat->LocateSliceCentroids(spacecraft, meas_spot,
                 sliceGainThreshold, processMaxSlices))
             {
                 return(0);
             }
         }
 
-		free(Esn);
-		Esn = NULL;
+        //--------------------//
+        // Set the land flags //
+        //--------------------//
 
         for (Meas* meas = meas_spot->GetHead(); meas;
             meas = meas_spot->GetNext())
         {
-            double alt,lat,lon;
-            if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
-                return(0);
+          double alt,lat,lon;
+          if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+              return(0);
 
-            // Compute Land Flag
-            meas->landFlag = landMap.IsLand(lon, lat);
+          // Compute Land Flag
+          meas->landFlag = landMap.IsLand(lon, lat);
         }
 
 		//----------------------------------------//
@@ -324,8 +321,7 @@ L1AToL1B::Convert(
 			float k_factor=1.0;
 			float x_factor=1.0;
             float Es_slice,En_slice;
-			float Esn_slice = meas->value;
-//			float PtGr = l1a->frame.ptgr;
+            float Esn_slice = meas->value;
 
 			if (useKfactor)
 			{
@@ -350,10 +346,6 @@ L1AToL1B::Convert(
 			}
 			else if (useBYUXfactor)
             {
-                // set antenna to ground impact for calculating X
-//                qscat->sas.SetAzimuthWithEncoder(held_encoder);
-//                qscat->SetAntennaToGroundImpact(spacecraft, 1);
-
 		        if (simVs1BCheckfile)
 		        {
 			      x_factor=BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal, &cf);
@@ -375,15 +367,11 @@ L1AToL1B::Convert(
                 {
                     return(0);
                 }
-
-                // set antenna back to transmit center
-//                qscat->sas.SetAzimuthWithEncoder(held_encoder);
-//                qscat->SetAntennaToTxCenter(1);
             }
             else
             {
 			    fprintf(stderr,
-				    "L1AToL1B::Convert:No X compuation algorithm set\n");
+				    "L1AToL1B::Convert:No X computation algorithm set\n");
 			    exit(0);
             }
 			
@@ -406,10 +394,6 @@ L1AToL1B::Convert(
                     // patterns.  Thus, to see what it actually is, we need
                     // to do the geometry work here that is normally done
                     // in radar_X() when using the K-factor approach.
-//                    gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
-//                        &(spacecraft->attitude), &(qscat->sas.antenna),
-//                        qscat->sas.antenna.txCenterAzimuthAngle);
-//                    gc_to_antenna=gc_to_antenna.ReverseDirection();
                     double roundTripTime = 2.0*cf.R[slice_i]/speed_light_kps;
 
                     Beam* beam = qscat->GetCurrentBeam();

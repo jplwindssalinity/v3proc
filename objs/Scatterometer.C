@@ -110,7 +110,6 @@ int
 Scatterometer::LocateSpot(
     Spacecraft*  spacecraft,
     MeasSpot*    meas_spot,
-    float        Esn,
     float        contour_level)
 {
     //-----------//
@@ -271,9 +270,6 @@ Scatterometer::LocateSpot(
     meas->incidenceAngle = pi - theta;
 //    meas->incidenceAngle = sti.rTarget.IncidenceAngle(rlook_gc);
     meas->centroid = sti.rTarget;
-
-    // set energy measurement to be consistent with slice handling
-    meas->value = Esn;
 
     return(1);
 }

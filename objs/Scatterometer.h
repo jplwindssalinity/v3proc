@@ -151,7 +151,7 @@ public:
     //----------//
 
     int  LocateSpot(Spacecraft* spacecraft, MeasSpot* meas_spot,
-             float Esn = 0.0, float contour_level = DEFAULT_CONTOUR_LEVEL);
+             float contour_level = DEFAULT_CONTOUR_LEVEL);
 
     //-----------//
     // variables //

@@ -2190,7 +2190,6 @@ int
 Qscat::LocateSliceCentroids(
     Spacecraft*  spacecraft,
     MeasSpot*    meas_spot,
-    float*       Esn,
     float        gain_threshold,
     int          max_slices)
 {
@@ -2347,8 +2346,6 @@ Qscat::LocateSliceCentroids(
         }
 
         gains[slice_count] = gain;
-
-        if (Esn) meas->value = Esn[slice_idx];
 
         //--------------------------------//
         // find the centroid on the earth //
