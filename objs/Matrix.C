@@ -36,13 +36,13 @@ int
 Vector::Allocate(
 	int		m_size)
 {
-	Free();		// free just in case
-
-    _vector = (double *)malloc(m_size * sizeof(double));
-    if (_vector == NULL)
-        return(0);
-    _mSize = m_size;
-    return(1);
+  Free();		// free just in case
+  
+  _vector = (double *)malloc(m_size * sizeof(double));
+  if (_vector == NULL)
+    return(0);
+  _mSize = m_size;
+  return(1);
 }
 
 //--------------//
@@ -72,6 +72,22 @@ Vector::GetElement(
 	*value = _vector[index];
 	return(1);
 }
+
+//--------------------//
+// Vector::SetElement //
+//--------------------//
+
+int
+Vector::SetElement(
+	int     index,
+	double  value)
+{
+  if (index < 0 || index >= _mSize)
+    return(0);
+  _vector[index] = value;
+  return(1);
+}
+
 
 //========//
 // Matrix //
