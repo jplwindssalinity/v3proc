@@ -42,7 +42,7 @@ LonLat::Set(EarthPosition r)
 
 {
 	double alt,lat,lon;
-	r.GetAltLatLon(EarthPosition::GEODETIC,&alt,&lat,&lon);
+	r.GetAltLonGDLat(&alt, &lon, &lat);
 	longitude = (float)lon;
 	latitude = (float)lat;
 	return(1);
@@ -161,8 +161,7 @@ Outline::Read(
 	{
 		EarthPosition *new_r = new EarthPosition();
 		if (! lon_lat.Read(fp) ) return(0);
-		new_r->SetPosition(0.0, lon_lat.latitude, lon_lat.longitude,
-			EarthPosition::GEODETIC);
+		new_r->SetAltLonGDLat(0.0, lon_lat.longitude, lon_lat.latitude);
 		if (! Append(new_r)) return(0);
 	}
 	return(1);
