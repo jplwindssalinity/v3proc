@@ -26,29 +26,29 @@ static const char rcs_id_accurategeom_h[] =
 
 
 int		IntegrateSlice(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
-            int num_look_steps_per_slice, float azimuth_integration_range,
-            float azimuth_step_size, int range_gate_clipping, float *X);
+            int num_look_steps_per_slice, double azimuth_integration_range,
+            double azimuth_step_size, int range_gate_clipping, float *X);
 
-float   GetPulseFractionReceived(Qscat* qscat, float range);
+double   GetPulseFractionReceived(Qscat* qscat, double range);
 
 int		FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
-            Spacecraft* spacecraft, Qscat* qscat, float look1, float look2,
-            float azi1, float azi2, Outline* box);
+            Spacecraft* spacecraft, Qscat* qscat, double look1, double look2,
+            double azi1, double azi2, Outline* box);
 
 int		FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Qscat* qscat, float target_freq,
-            float freq_tol, float* look, float azimuth);
+			Spacecraft* spacecraft, Qscat* qscat, double target_freq,
+            double freq_tol, double* look, double azimuth);
 
 int         SpectralResponse(Spacecraft* spacecraft, Qscat* qscat, 
-		float freq, float azim, float look, float* response);
+		double freq, double azim, double look, double* response);
 
 int IntegrateFrequencyInterval( Spacecraft* spacecraft, Qscat* qscat,
-				float f1, float centroid_look,
-				float centroid_azimuth, float bw,
+				double f1, double centroid_look,
+				double centroid_azimuth, double bw,
 				int num_look_steps_per_slice,
-				float azimuth_integration_range,
-				float azimuth_step_size, int range_gate_clipping,
-				float* X);
+				double azimuth_integration_range,
+				double azimuth_step_size, int range_gate_clipping,
+				double ftol, double* X);
 
 int GetPeakSpectralResponse(CoordinateSwitch* antenna_frame_to_gc,
 			     Spacecraft* spacecraft, Qscat* qscat, 

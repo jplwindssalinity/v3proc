@@ -2000,7 +2000,7 @@ SpatialResponse(
     Qscat*             qscat,
     double             look,
     double             azim,
-    float*             response,
+    double*             response,
     int                ignore_range)
 {
 	Vector3 vector;
@@ -2026,6 +2026,25 @@ SpatialResponse(
             qscat->sas.antenna.spinRate, response);
     }
     return(retval);
+}
+
+// Same as above but returns float //
+int
+SpatialResponse(
+    CoordinateSwitch*  antenna_frame_to_gc,
+    Spacecraft*        spacecraft,
+    Qscat*             qscat,
+    double             look,
+    double             azim,
+    float*             response,
+    int                ignore_range)
+{
+  double response_doub;
+  int ret_val;
+  ret_val=SpatialResponse(antenna_frame_to_gc,spacecraft,qscat,look,azim,
+			  &response_doub,ignore_range);
+  *response=(float)response_doub;
+  return(ret_val);
 }
 
 //-------------------//

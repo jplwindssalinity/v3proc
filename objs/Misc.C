@@ -12,6 +12,7 @@ static const char rcs_id_misc_c[] =
 #include <math.h>
 #include "Misc.h"
 #include "Constants.h"
+#define  DEBUG_DOWNHILL 0
 
 //---------//
 // no_path //
@@ -150,6 +151,7 @@ substitute_string(
 
 // Using a nonzero atol value is not guaranteed to reach the
 // peak for "misbehaving" functions
+
 int
 downhill_simplex(
 	double** p,
@@ -161,6 +163,18 @@ downhill_simplex(
         double xtol=0.0)
 {
 	int i,j;
+	if(DEBUG_DOWNHILL && ndim==1){
+	  printf("\nDownhill Simplex: ndim=%d totdim=%d ftol=%g xtol=%g\n Initial p values:\n",
+		                                    ndim,totdim,ftol,xtol);
+	  for(i=0;i<ndim+1;i++){
+	    for(j=0;j<totdim;j++){
+	      printf("%g ",p[i][j]);
+	    }
+	    printf("\n");
+	  }
+	  printf("\n");
+	}
+	
 	int nfunk = 0;
 	double ysave;
 
@@ -200,6 +214,7 @@ downhill_simplex(
 	// Main Search Loop
 	//
 
+
 	while (1)
 	{
 		int inhi;
@@ -227,6 +242,18 @@ downhill_simplex(
 		   }
 		   double tmp=pmax-pmin;
 		   if (ptol <tmp) ptol=tmp;
+		}
+		if(DEBUG_DOWNHILL && ndim==1){
+		  printf("rtol=%g ptol=%g\nNew p values:\n",rtol,ptol);
+		  for(i=0;i<ndim+1;i++){
+		    for(j=0;j<totdim;j++){
+		      printf("%g ",p[i][j]);
+		    }
+		    printf("\n");
+		  }
+		  printf("New y values: ");
+		  for(i=0;i<ndim+1;i++) printf("%g ",y[i]);
+		  printf("\n\n");		  
 		}
 		if (rtol < ftol || ptol< xtol)
 		{

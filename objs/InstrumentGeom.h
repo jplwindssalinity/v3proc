@@ -115,6 +115,10 @@ int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
          float* response, int ignore_range = 0);
 
+int  SpatialResponse(CoordinateSwitch* antenna_frame_to_gc,
+         Spacecraft* spacecraft, Qscat* qscat, double look, double azim,
+         double* response, int ignore_range = 0);
+
 int  RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
          Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 

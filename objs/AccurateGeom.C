@@ -16,8 +16,11 @@ static const char rcs_id_accurategeom_c[] =
 
 #define OUTPUT_DETAILED_INFO 0
 
-#define SPECTRAL_RESPONSE_DELTA_FREQ  50.0  //Hz
-#define SPECTRAL_RESPONSE_FREQ_TOL     2.0  //Hz
+#define SPECTRAL_RESPONSE_DELTA_FREQ   8314.0  //Hz
+#define SPECTRAL_RESPONSE_FREQ_TOL     0.1     //Hz
+#define SPECTRAL_RESPONSE_TOLERANCE    3e-8    
+#define SPECTRAL_RESPONSE_NUM_LOOK_STEPS 4
+#define INTEGRATE_SLICE_FREQ_TOL       8.0     //Hz
 //----------------//
 // IntegrateSlice //
 //----------------//
@@ -28,8 +31,8 @@ IntegrateSlice(
     Qscat*       qscat,
     Meas*        meas,
     int          num_look_steps_per_slice,
-    float        azimuth_integration_range,
-    float        azimuth_step_size,
+    double        azimuth_integration_range,
+    double        azimuth_step_size,
     int          range_gate_clipping,
     float*       X)
 {
@@ -73,12 +76,15 @@ IntegrateSlice(
      double centroid_look, centroid_azimuth, dummy;
      look_vector.SphericalGet(&dummy, &centroid_look, &centroid_azimuth);
 
+     double X_doub;
      retval=IntegrateFrequencyInterval(spacecraft,qscat,f1,centroid_look,
 				centroid_azimuth,
 				bw,num_look_steps_per_slice,
 				azimuth_integration_range,
 				azimuth_step_size,range_gate_clipping, 
-				X);
+				INTEGRATE_SLICE_FREQ_TOL,
+				&X_doub);
+     *X=X_doub;
      return(retval);
 }
 
@@ -90,15 +96,16 @@ int
 IntegrateFrequencyInterval(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
-    float        f1,
-    float        centroid_look,
-    float        centroid_azimuth,
-    float        bw,
+    double       f1,
+    double       centroid_look,
+    double       centroid_azimuth,
+    double       bw,
     int          num_look_steps_per_slice,
-    float        azimuth_integration_range,
-    float        azimuth_step_size,
+    double       azimuth_integration_range,
+    double       azimuth_step_size,
     int          range_gate_clipping,
-    float*       X)
+    double        ftol,
+    double*       X)
 {
         *X=0.0;
 
@@ -122,11 +129,9 @@ IntegrateFrequencyInterval(
         // Get ending frequency          //
         //-------------------------------//
 
-        float f2 = f1 + bw;
+        double f2 = f1 + bw;
 
 
-	// guess at a reasonable slice frequency tolerance of 8 Hz
-	float ftol = 8.0;
 	if(! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
 			    (f1+f2)/2.0,ftol,&centroid_look,centroid_azimuth))
 	  return(0);
@@ -135,14 +140,14 @@ IntegrateFrequencyInterval(
 	// loop through azimuths and integrate //
 	//-------------------------------------//
 
-	float azimin=centroid_azimuth-azimuth_integration_range/2.0;
+	double azimin=centroid_azimuth-azimuth_integration_range/2.0;
 	int numazi=(int)(azimuth_integration_range/azimuth_step_size);
 	for(int a=0; a<numazi;a++)
     {
-        float azi=a*azimuth_step_size+azimin;
+        double azi=a*azimuth_step_size+azimin;
 
-	    float start_look=centroid_look;
-	    float end_look=centroid_look;
+	    double start_look=centroid_look;
+	    double end_look=centroid_look;
 
         //--------------------------//
 	// find starting look angle //
@@ -150,10 +155,10 @@ IntegrateFrequencyInterval(
 
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-            f1, ftol, &start_look,azi))
+            f1, ftol, &end_look,azi))
         {
             fprintf(stderr,
-                "IntegrateSlice: Cannot find starting look angle\n");
+                "IntegrateSlice: Cannot find ending look angle\n");
             fprintf(stderr, "Probably means earth_intercept not found\n");
             return(0);
 	    }
@@ -163,19 +168,19 @@ IntegrateFrequencyInterval(
         //------------------------//
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
-            f2, ftol, &end_look,azi))
+            f2, ftol, &start_look,azi))
         {
-            fprintf(stderr, "IntegrateSlice: Cannot find ending look angle\n");
+            fprintf(stderr, "IntegrateSlice: Cannot find starting look angle\n");
             fprintf(stderr, "Probably means earth_intercept not found\n");
             return(0);
 	    }
 
-	    float lk=start_look;
-	    float looktol=fabs(end_look-start_look)/(float)num_look_steps_per_slice;
+	    double lk=MIN(start_look,end_look);
+	    double looktol=fabs(end_look-start_look)/(double)num_look_steps_per_slice;
 	    int look_num=0;
 	    while(1){
 
-	      float range, gatgar, area, Pf;
+	      double range, gatgar, area, Pf;
 	      /******************************/
 	      /** Check to see if look angle */
 	      /** scan is finished          */
@@ -189,10 +194,10 @@ IntegrateFrequencyInterval(
 	      //* and azimuth.                 *//
 	      //********************************//
 
-	      float look1=lk;
-	      float look2=lk+looktol;
-	      float azi1=azi;
-	      float azi2=azi+azimuth_step_size;
+	      double look1=lk;
+	      double look2=lk+looktol;
+	      double azi1=azi;
+	      double azi2=azi+azimuth_step_size;
 
 
 	      //*******************************//
@@ -289,13 +294,13 @@ IntegrateFrequencyInterval(
 // GetPulseFractionReceived //
 //--------------------------//
 
-float
+double
 GetPulseFractionReceived(
     Qscat*       qscat,
-    float        range)
+    double        range)
 {
   double pulse_width = qscat->ses.txPulseWidth;
-  float retval=0.0;
+  double retval=0.0;
   double round_trip_time = 2.0 * range / speed_light_kps;
 
   double leading_edge_return_time=round_trip_time;
@@ -361,10 +366,10 @@ FindBoxCorners(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
-    float              look1,
-    float              look2,
-    float              azi1,
-    float              azi2,
+    double              look1,
+    double              look2,
+    double              azi1,
+    double              azi2,
     Outline*           box)
 {
   Vector3 vector;
@@ -436,20 +441,20 @@ FindLookAtFreq(
     CoordinateSwitch*  antenna_frame_to_gc,
     Spacecraft*        spacecraft,
     Qscat*             qscat,
-    float              target_freq,
-    float              freq_tol,
-    float*             look,
-    float              azimuth)
+    double              target_freq,
+    double              freq_tol,
+    double*             look,
+    double              azimuth)
 {
   Vector3 vector;
   TargetInfoPackage tip;
 
   /**** Choose look angles on either side of the target frequency ***/
-  float start_look=*look-2*dtr;
-  float end_look=*look+2*dtr;
-  float mid_look, actual_freq, dlookdfreq;
-  float start_freq=target_freq-1;
-  float end_freq=target_freq-1;
+  double start_look=*look-2*dtr;
+  double end_look=*look+2*dtr;
+  double mid_look, actual_freq, dlookdfreq;
+  double start_freq=target_freq-1;
+  double end_freq=target_freq-1;
     while(1)
     {
         vector.SphericalSet(1.0,start_look,azimuth);
@@ -496,10 +501,10 @@ int
 SpectralResponse(
      Spacecraft*          spacecraft, 
      Qscat*               qscat, 
-     float                freq, 
-     float                azim,
-     float                look,
-     float*              response)
+     double                freq, 
+     double                azim,
+     double                look,
+     double*              response)
 {
      //--------------------------------//
      // Predigest                      //
@@ -515,15 +520,17 @@ SpectralResponse(
      CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
         attitude, antenna, antenna->txCenterAzimuthAngle);
 
-     float f1;
-     f1=freq-SPECTRAL_RESPONSE_DELTA_FREQ/2; 
+     double f1;
+     f1=freq-SPECTRAL_RESPONSE_DELTA_FREQ/2.0; 
      // Guess at centroid look using electrical boresight look angle.
      // Integrate FrequencyInterval refines the guess.
 
      if(!IntegrateFrequencyInterval(spacecraft,qscat,f1,look,azim,
-				SPECTRAL_RESPONSE_DELTA_FREQ,1,
+				SPECTRAL_RESPONSE_DELTA_FREQ,
+				SPECTRAL_RESPONSE_NUM_LOOK_STEPS,
 				qscat->cds.azimuthIntegrationRange,
 				qscat->cds.azimuthStepSize,0,
+				SPECTRAL_RESPONSE_FREQ_TOL,
                                 response)) return(0);
      
 
@@ -531,7 +538,6 @@ SpectralResponse(
 }
 
 
-#define SPECTRAL_RESPONSE_TOLERANCE         1e-6
 int
 GetPeakSpectralResponse(
     CoordinateSwitch* antenna_frame_to_gc,
@@ -543,8 +549,8 @@ GetPeakSpectralResponse(
   /*** Temporarily change Doppler and Range flags and initialize commanded Doppler
        and range gate delay to BYU boresight. ****/
 
-  // save old cds values
-  QscatCds old_cds=qscat->cds;
+  // save old qscat values
+  Qscat old_qscat=*qscat;
 
   qscat->cds.useBYUDop=1;
   qscat->cds.useSpectralDop=0;
@@ -566,7 +572,7 @@ GetPeakSpectralResponse(
       printf("Error allocating memory in GetPeakSpectralResponse\n");
       return(0);
     }  
-  float freq=0;
+  double freq=0;
   p[0][0] = freq;
   p[1][0] = freq+10000.0;
   p[0][1] = *azim;
@@ -585,17 +591,14 @@ GetPeakSpectralResponse(
 		   NegativeSpectralResponse, ptr,ftol);
 
   freq = p[0][0];
-  double look_doub=*look, azim_doub=*azim;
   float dummy;
   if(!FindPeakResponseAtFreq(antenna_frame_to_gc,spacecraft,qscat,freq,
-			     ftol,&look_doub,&azim_doub,&dummy)) return(0);
+			     ftol,look,azim,&dummy)) return(0);
   
-  *look=float(look_doub);
-  *azim=float(azim_doub);
   free_array(p,2,ndim+1,ndim+2);
 
   // Reinstate old cds values
-  qscat->cds=old_cds;
+  *qscat=old_qscat;
   return(1);
 }
 
@@ -624,7 +627,7 @@ NegativeSpectralResponse(
 	double*		x,
 	void*		ptr)
 {
-        float response;
+        double response;
         NegSpecParam* other_params= (NegSpecParam*)ptr;
 
         if(!SpectralResponse(other_params->spacecraft, other_params->qscat,
