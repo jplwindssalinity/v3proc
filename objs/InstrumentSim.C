@@ -210,7 +210,7 @@ InstrumentSim::ScatSim(
 	LonLat lon_lat;
 	lon_lat.longitude = lon;
 	lon_lat.latitude = lat;
-	WindVector* wv = windfield->NearestWindVector(lon_lat);
+	WindVector wv = windfield->InterpolatedWindVector(lon_lat);
 
 	//---------------------------//
 	// generate measurement data //
@@ -235,9 +235,9 @@ InstrumentSim::ScatSim(
 
 	// chi is defined so that 0.0 means the wind is blowing towards
 	// the s/c (the opposite direction as the look vector)
-	float chi = wv->dir - meas.eastAzimuth + pi;
+	float chi = wv.dir - meas.eastAzimuth + pi;
 	float value;
-	gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv->spd, chi,
+	gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv.spd, chi,
 		&value);
 
 	//----------------------------//

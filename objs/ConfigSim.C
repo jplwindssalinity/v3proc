@@ -333,9 +333,9 @@ ConfigL17ToL20(
 {
 	double tmp;
 
-	if (! config_list->GetDouble(SPD_STEP_KEYWORD, &tmp))
+	if (! config_list->GetDouble(SPD_TOLERANCE_KEYWORD, &tmp))
 		return(0);
-	l17_to_l20->spdStep = (float)tmp;
+	l17_to_l20->spdTolerance = (float)tmp;
 
 	if (! config_list->GetDouble(PHI_STEP_KEYWORD, &tmp))
 		return(0);

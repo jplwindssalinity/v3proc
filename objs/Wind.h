@@ -45,6 +45,7 @@ public:
 
 	int		SetSpdDir(float speed, float direction);
 	int		SetUV(float u, float v);
+	int		GetUV(float* u, float* v);
 
 	//-----------//
 	// variables //
@@ -171,7 +172,8 @@ public:
 	// access //
 	//--------//
 
-	WindVector*		NearestWindVector(LonLat lon_lat);
+	WindVector		NearestWindVector(LonLat lon_lat);
+	WindVector		InterpolatedWindVector(LonLat lon_lat);
 
 protected:
 

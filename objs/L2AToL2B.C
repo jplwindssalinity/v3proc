@@ -15,7 +15,7 @@ static const char rcs_id_l17tol20_c[] =
 //==========//
 
 L17ToL20::L17ToL20()
-:	spdStep(0.0), phiStep(0.0)
+:	phiStep(0.0), phiBuffer(0.0), spdTolerance(0.0)
 {
 	return;
 }
@@ -42,8 +42,14 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	gmf->RetrieveWinds(&(l17->frame.measList), wvc,
-		spdStep, phiStep, phiBuffer);
+	gmf->RetrieveWinds(&(l17->frame.measList), wvc, phiStep, phiBuffer,
+		spdTolerance, DESIRED_SOLUTIONS);
+	if (wvc->ambiguities.NodeCount() < 2)
+	{
+		printf("Too few\n");
+		delete wvc;
+		return(1);
+	}
 	wvc->lonLat = l17->frame.measList.AverageLonLat();
 
 	//-------------------------//
@@ -110,16 +116,16 @@ L17ToL20::WriteSolutionCurves(
 	// write solution curves //
 	//-----------------------//
 
-	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), spdStep, phiStep,
-		phiBuffer);
+	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), phiStep, phiBuffer,
+		spdTolerance, DESIRED_SOLUTIONS);
 
 	//--------------------//
 	// indicate solutions //
 	//--------------------//
 
 	WVC* wvc = new WVC();
-	gmf->RetrieveWinds(&(l17->frame.measList), wvc, spdStep, phiStep,
-		phiBuffer);
+	gmf->RetrieveWinds(&(l17->frame.measList), wvc, phiStep, phiBuffer,
+		spdTolerance, DESIRED_SOLUTIONS);
 
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())

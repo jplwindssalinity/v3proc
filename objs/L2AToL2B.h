@@ -13,6 +13,8 @@ static const char rcs_id_l17tol20_h[] =
 #include "L20.h"
 #include "GMF.h"
 
+#define DESIRED_SOLUTIONS		4
+
 
 //======================================================================
 // CLASSES
@@ -56,9 +58,9 @@ public:
 	// variables //
 	//-----------//
 
-	float	spdStep;
 	float	phiStep;
 	float	phiBuffer;
+	float	spdTolerance;
 };
 
 #endif

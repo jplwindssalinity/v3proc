@@ -56,6 +56,20 @@ WindVector::SetUV(
 	return(1);
 }
 
+//-------------------//
+// WindVector::GetUV //
+//-------------------//
+
+int
+WindVector::GetUV(
+	float*	u,
+	float*	v)
+{
+	*u = spd * (float)cos((double)dir);
+	*v = spd * (float)sin((double)dir);
+	return(1);
+}
+
 //================//
 // WindVectorPlus //
 //================//
@@ -252,7 +266,7 @@ WVC::WriteBev(
 	if (rank == 0)
 		write_me = selected;
 	else
-		write_me = ambiguities.GetNodeWithIndex(rank);
+		write_me = ambiguities.GetNodeWithIndex(rank - 1);
 
 	if (! write_me)
 		return(1);
@@ -330,9 +344,8 @@ WVC::RemoveDuplicates()
 int
 WVC::SortByObj()
 {
-	int need_sorting = 1;
-
-	while (need_sorting)
+	int need_sorting;
+	do
 	{
 		need_sorting = 0;
 		for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
@@ -341,16 +354,15 @@ WVC::SortByObj()
 			WindVectorPlus* next_wvp = ambiguities.GetNext();
 			if (next_wvp)
 			{
-				ambiguities.GetPrev();
+				ambiguities.GotoPrev();
 				if (next_wvp->obj > wvp->obj)
 				{
 					ambiguities.SwapCurrentAndNext();
-					ambiguities.GetNext();
 					need_sorting = 1;
 				}
 			}
 		}
-	}
+	} while (need_sorting);
 	return(1);
 }
 
@@ -537,14 +549,77 @@ WindField::WriteBev(
 // WindField::NearestWindVector //
 //------------------------------//
 
-WindVector*
+WindVector
 WindField::NearestWindVector(
 	LonLat	lon_lat)
 {
 	int lon_idx = (int)((lon_lat.longitude - _lonMin) / _lonStep + 0.5);
+	if (lon_idx < 0) lon_idx = 0;
+	if (lon_idx >= _lonCount) lon_idx = _lonCount - 1;
+
 	int lat_idx = (int)((lon_lat.latitude - _latMin) / _latStep + 0.5);
+	if (lat_idx < 0) lat_idx = 0;
+	if (lat_idx >= _latCount) lat_idx = _latCount - 1;
+
 	WindVector* wv = *(*(_field + lon_idx) + lat_idx);
 
+	return(*wv);
+}
+
+//-----------------------------------//
+// WindField::InterpolatedWindVector //
+//-----------------------------------//
+
+WindVector
+WindField::InterpolatedWindVector(
+	LonLat	lon_lat)
+{
+	int lon_idx_1 = (int)((lon_lat.longitude - _lonMin) / _lonStep);
+	if (lon_idx_1 < 0) lon_idx_1 = 0;
+	if (lon_idx_1 >= _lonCount) lon_idx_1 = _lonCount - 1;
+	float lon_1 = _lonMin + lon_idx_1 * _lonStep;
+	int lon_idx_2 = lon_idx_1 + 1;
+	if (lon_idx_2 >= _lonCount) lon_idx_2 = _lonCount - 1;
+	float lon_2 = _lonMin + lon_idx_2 * _lonStep;
+
+	int lat_idx_1 = (int)((lon_lat.latitude - _latMin) / _latStep);
+	if (lat_idx_1 < 0) lat_idx_1 = 0;
+	if (lat_idx_1 >= _latCount) lat_idx_1 = _latCount - 1;
+	float lat_1 = _latMin + lat_idx_1 * _latStep;
+	int lat_idx_2 = lat_idx_1 + 1;
+	if (lat_idx_2 >= _latCount) lat_idx_2 = _latCount - 1;
+	float lat_2 = _latMin + lat_idx_2 * _latStep;
+
+	float p;
+	if (lon_idx_1 == lon_idx_2)
+		p = 1.0;
+	else
+		p = (lon_lat.longitude - lon_1) / (lon_2 - lon_1);
+	float pn = 1.0 - p;
+
+	float q;
+	if (lat_idx_1 == lat_idx_2)
+		q = 1.0;
+	else
+		q = (lon_lat.latitude - lat_1) / (lat_2 - lat_1);
+	float qn = 1.0 - q;
+
+	WindVector* wv1 = *(*(_field + lon_idx_1) + lat_idx_1);
+	WindVector* wv2 = *(*(_field + lon_idx_2) + lat_idx_1);
+	WindVector* wv3 = *(*(_field + lon_idx_1) + lat_idx_2);
+	WindVector* wv4 = *(*(_field + lon_idx_2) + lat_idx_2);
+
+	float u1, u2, u3, u4, v1, v2, v3, v4;
+	wv1->GetUV(&u1, &v1);
+	wv2->GetUV(&u2, &v2);
+	wv3->GetUV(&u3, &v3);
+	wv4->GetUV(&u4, &v4);
+
+	float u = pn * qn * u1 + p * qn * u2 + p * q * u3 + pn * q * u4;
+	float v = pn * qn * v1 + p * qn * v2 + p * q * v3 + pn * q * v4;
+
+	WindVector wv;
+	wv.SetUV(u, v);
 	return(wv);
 }
 
@@ -1029,13 +1104,12 @@ WindSwath::Skill(
 			if (! wvc || ! wvc->selected)
 				continue;
 
-			WindVector* true_wv =
-				truth->NearestWindVector(wvc->lonLat);
-			if (true_wv == NULL)
-				continue;
+			WindVector true_wv =
+				truth->InterpolatedWindVector(wvc->lonLat);
 
 			WindVectorPlus* nearest =
-				wvc->GetNearestToDirection(true_wv->dir);
+				wvc->GetNearestToDirection(true_wv.dir);
+
 			if (nearest == NULL)
 				continue;
 
