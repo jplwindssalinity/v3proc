@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -65,8 +65,8 @@ public:
              double electrical_boresight_Em, double electrical_boresight_Am,
              float** power_gain);
 
-    int  ReadBeamPattern(char* filename);
-    int  WriteBeamPattern(char* filename);
+    int  ReadBeamPattern(const char* filename);
+    int  WriteBeamPattern(const char* filename);
 
     int  GetPowerGain(double look_angle, double azimuth_angle, float* gain);
     int  GetPowerGain(double look_angle, double azimuth_angle, double* gain);

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -230,7 +230,8 @@ Beam::SetBeamPattern(
 //-----------------------//
 
 int
-Beam::ReadBeamPattern(char* filename)
+Beam::ReadBeamPattern(
+    const char*  filename)
 {
     // Check for an existing pattern, and remove if needed.
     if (_power_gain != NULL)
@@ -303,7 +304,7 @@ Beam::ReadBeamPattern(char* filename)
 
 int
 Beam::WriteBeamPattern(
-    char*  filename)
+    const char*  filename)
 {
     FILE* fp = fopen(filename, "w");
     if (fp == NULL)
