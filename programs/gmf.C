@@ -1,6 +1,6 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
@@ -66,6 +66,7 @@ static const char rcs_id[] =
 #include "List.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
+#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
@@ -79,6 +80,7 @@ template class List<OrbitState>;
 template class List<long>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //

@@ -112,7 +112,8 @@ template class List<AngleInterval>;
 
 int process_orbit_step(int beam_idx, int orbit_step);
 int accumulate(int beam_idx, double azimuth, double bb);
-void funcs(double x, double* a, double* y, double* dyda, int na);
+int sinfit(double* azimuth, double* value, int count, double* amplitude,
+        double* phase, double* bias);
 
 //------------------//
 // OPTION VARIABLES //
@@ -125,7 +126,7 @@ void funcs(double x, double* a, double* y, double* dyda, int na);
 const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>",
     "<dtc_base>", 0};
 
-int      g_count[NUMBER_OF_QSCAT_BEAMS];
+int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double    g_bb[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
@@ -346,25 +347,8 @@ process_orbit_step(
     // fit a sinusoid to the data //
     //----------------------------//
 
-    Vector coefs;
-    coefs.Allocate(3);
-    coefs.SetElement(0, 1.0);
-    coefs.SetElement(1, 1.0);
-    coefs.SetElement(2, 1.0);
-    int ia[3] = { 1, 1, 1};    // use all coefficients
-    double chisqr;
-
-    Matrix covar;
-    for (int i = 0; i < 10; i++)
-    {
-        covar.NonlinearFit(g_azimuth[beam_idx], g_bb[beam_idx],
-            (double *)NULL, g_count[beam_idx], &coefs, ia, &covar, &chisqr,
-            funcs, 10);
-    }
     double a, p, c;
-    coefs.GetElement(0, &a);
-    coefs.GetElement(1, &p);
-    coefs.GetElement(2, &c);
+    sinfit(g_azimuth[beam_idx], g_bb[beam_idx], g_count[beam_idx], &a, &p, &c);
 
     //-----------------------------//
     // estimate the standard error //
@@ -446,21 +430,114 @@ accumulate(
     return(1);
 }
 
-//-------//
-// funcs //
-//-------//
+//--------//
+// sinfit //
+//--------//
+// a brilliantly derived sinusoidal regression method by B. Stiles.
+// fits to y = A + B*cos(wt) + C*sin(wt)
+// this equates to y = A + D*cos(wt + E) where
+// B = D*cos(E) and C = -D*sin(E)
+// solved for...
+// D = sqrt(B*B + C*C) and E = atan2(-B / C)
 
-void
-funcs(
-    double   x,
-    double*  a,
-    double*  y,
-    double*  dyda,
-    int      na)
+int
+sinfit(
+    double*  azimuth,
+    double*  value,
+    int      count,
+    double*  amplitude,
+    double*  phase,
+    double*  bias)
 {
-    *y = a[0] * cos(x + a[1]) + a[2];
-    dyda[0] = cos(x + a[1]);    // amplitude
-    dyda[1] = -a[0] * sin(x + a[1]);    // phase
-    dyda[2] = 1.0;    // bias
-    return;
+    //-----------------------------------//
+    // set up matrix and solution vector //
+    //-----------------------------------//
+
+    double matrix_a[3][3];
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            matrix_a[i][j] = 0.0;
+        }
+    }
+
+    double vector_y[3];
+    for (int i = 0; i < 3; i++)
+    {
+        vector_y[i] = 0.0;
+    }
+
+    //------------//
+    // accumulate //
+    //------------//
+
+    matrix_a[0][0] = count;
+    for (int i = 0; i < count; i++)
+    {
+        double si = sin(azimuth[i]);
+        double co = cos(azimuth[i]);
+        double ss = si * si;
+        double cc = co * co;
+        double cs = co * si;
+        matrix_a[0][1] += co;
+        matrix_a[0][2] += si;
+        matrix_a[1][0] += co;
+        matrix_a[1][1] += cc;
+        matrix_a[1][2] += cs;
+        matrix_a[2][0] += si;
+        matrix_a[2][1] += cs;
+        matrix_a[2][2] += ss;
+
+        vector_y[0] += value[i];
+        vector_y[1] += value[i] * co;
+        vector_y[2] += value[i] * si;
+    }
+
+    //---------------------------------//
+    // transfer into matrix and vector //
+    //---------------------------------//
+
+    Matrix A;
+    A.Allocate(3, 3);
+    for (int i = 0; i < 3; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            A.SetElement(i, j, matrix_a[i][j]);
+        }
+    }
+
+    Vector Y;
+    Y.Allocate(3);
+    for (int i = 0; i < 3; i++)
+    {
+        Y.SetElement(i, vector_y[i]);
+    }
+
+    //-------//
+    // solve //
+    //-------//
+
+    Vector X;
+    if (! A.SolveSVD(&Y, &X))
+    {
+        fprintf(stderr, "Error solving equations!\n");
+        exit(1);
+    }
+
+    //-------------------------//
+    // return the coefficients //
+    //-------------------------//
+
+    double a, b, c;
+    X.GetElement(0, &a);
+    X.GetElement(1, &b);
+    X.GetElement(2, &c);
+
+    *amplitude = sqrt(b*b + c*c);
+    *phase = atan2(-c, b);
+    *bias = a;
+
+    return(1);
 }

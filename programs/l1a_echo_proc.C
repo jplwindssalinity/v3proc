@@ -198,8 +198,8 @@ main(
     // variables //
     //-----------//
 
-    float signal_energy[10];
-    float slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
+    double signal_energy[10];
+    double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0,
         9.0 };
     double c[3];
     Vector coefs;

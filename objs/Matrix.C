@@ -112,7 +112,7 @@ Vector::Fill(
 // Vector::CopyContents //
 //----------------------//
 
-int
+void
 Vector::CopyContents(
     Vector*  vector)
 {
@@ -121,7 +121,7 @@ Vector::CopyContents(
     {
         _vector[i] = vector->_vector[i];
     }
-    return(1);
+    return;
 }
 
 //--------------------//
@@ -349,6 +349,24 @@ Matrix::CopyContents(
         }
     }
     return;
+}
+
+//--------------------//
+// Matrix::SetElement //
+//--------------------//
+
+int
+Matrix::SetElement(
+    int     m_index,
+    int     n_index,
+    double  value)
+{
+    if (m_index < 0 || m_index >= _mSize)
+        return(0);
+    if (n_index < 0 || n_index >= _nSize)
+        return(0);
+    _matrix[m_index][n_index] = value;
+    return(1);
 }
 
 //-------------//

@@ -53,7 +53,7 @@ public:
 
     int   GetElement(int index, double* value);
     void  Fill(double fill_value);
-    int   CopyContents(Vector* vector);
+    void  CopyContents(Vector* vector);
 
     int   SetElement(int index, double value);
     int   GetSize()  { return(_mSize); };
@@ -111,6 +111,7 @@ public:
 
     void  Fill(double fill_value);
     void  CopyContents(Matrix* a);
+    int   SetElement(int m_index, int n_index, double value);
 
     int   SVD(Matrix* u, Vector* w, Matrix* v);
     int   SolveSVD(Vector* b, Vector* x);
