@@ -73,9 +73,11 @@ BeamFrameToGC(
 //	sc_orbit_state = pointer to object specifying the current s/c state.
 //	beam_frame_to_gc = pointer to currently valid coordinate switch object.
 //	chirp_rate = transmitted frequency sweep rate (Hz/sec).
-//	center_frequency = transmit center frequency (Hz).
+//	chirp_start_b,chirp_start_m = coefficients to compute chirp starting freq. 
+//		units:  1/s and 1/s^2 respectively
+//	nominal_xmit_frequency = transmit center frequency (Hz).
+//	fdopcom = commanded doppler (Hz). (to be added to nominal_xmit_freq).
 //	pulse_width = length of transmit pulse (sec).
-//	grid_delay = time between falling edge of the PRI clock and grid on (sec).
 //	receive_gate_delay = time from falling PRI to middle of receive gate (sec).
 //	system_delay = 2-way delay through SES electronics (sec).
 //
@@ -83,6 +85,7 @@ BeamFrameToGC(
 //	rspot = earth intercept point.
 //	fdop = doppler frequency shift (Hz).
 //	frange = baseband frequency shift due to range (Hz).
+//	fbase = baseband frequency shift due to range and uncorrected doppler (Hz).
 //
 
 int
@@ -91,14 +94,17 @@ PositionParams(
 	OrbitState*	sc_orbit_state,
 	CoordinateSwitch* beam_frame_to_gc,
 	double chirp_rate,
-	double center_frequency,
+	double chirp_start_b,
+	double chirp_start_m,
+	double nominal_xmit_frequency,
+	double fdopcom,
 	double pulse_width,
-	double grid_delay,
 	double receive_gate_delay,
 	double system_delay,
 	EarthPosition* rspot,
 	double* fdop,
-	double* frange) 	
+	double* frange,
+	double* fbase) 	
 
 {
 
@@ -108,16 +114,19 @@ PositionParams(
 	double range = (sc_orbit_state->rsat - *rspot).Magnitude();
 
 	// Compute doppler shift for the earth intercept point.
+	double actual_xmit_frequency = nominal_xmit_frequency + fdopcom;
 	Vector3 vspot(-w_earth*rspot->get(1),w_earth*rspot->get(0),0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
-	double lambda = speed_light / center_frequency;
+	double lambda = speed_light / actual_xmit_frequency;
 	*fdop = -2.0*(vrel % ulook_gc) / lambda;
 
 	// Compute baseband frequency shift due to range.
-	double transmit_center = pulse_width/2.0 + grid_delay;
+	double chirp_start = chirp_start_m * pulse_width + chirp_start_b;
+	double transmit_center = -chirp_start/chirp_rate;
 	double flight_time = 2*range/speed_light;
 	double echo_center = transmit_center + flight_time + system_delay;
 	*frange = chirp_rate*(receive_gate_delay - echo_center);
+	*fbase = *frange - (*fdop + fdopcom);
 
 }
 
