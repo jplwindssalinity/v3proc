@@ -23,6 +23,14 @@ static const char rcs_id_beam_h[] =
 //		coordinate transforms related to the beam "mounting" on the
 //		antenna.  The beam antenna pattern is also held by this object.
 //		The beam pattern has to be loaded from an external file.
+//
+// NAME CONVENTIONS
+//		To aid in identifying the reference frame an angle is defined in,
+//		the following conventions are followed in here and in Beam.C:
+//		look_angle and azimuth_angle pairs refer to standard spherical angles
+//		in the antenna frame.
+//		elevation or Em and azimuth pairs refer to the modifed spherical
+//		angles used to access the beam pattern in the beam reference frame.
 //======================================================================
 
 #include "CoordinateSwitch.h"
@@ -42,23 +50,26 @@ public:
 	Beam();
 	~Beam();
 
-	int		SetBeamGeometry(double look_angle, double azimuth_angle);
+	// Get and Set Beams separately.
+	int		GetElectricalBoresight(double* look_angle, double* azimuth_angle);
+	int		SetElectricalBoresight(double look_angle, double azimuth_angle);
+
+	// Set mechanical reference (beam directions determined by pattern data)
+	// Use the same inputs for each beam to have a consistent reference.
+	int		SetMechanicalBoresight(double look_angle, double azimuth_angle);
+
 	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
 				double x_spacing, double y_spacing, float **power_gain);
 
-	int		ReadBeamPattern(char* filename,
-			 double out_of_range_value);
+	int		ReadBeamPattern(char* filename);
 	int		WriteBeamPattern(char* filename);
-
-	//---------//
-	// getting //
-	//---------//
 
 	CoordinateSwitch	GetAntFrameToBeamFrame()
 							{ return(_antFrameToBeamFrame); };
 	CoordinateSwitch	GetBeamFrameToAntFrame()
 							{ return(_beamFrameToAntFrame); };
-	double	GetPowerGain(double unitx, double unity);
+
+	int	GetPowerGain(double look_angle, double azimuth_angle, float *gain);
 
 	//-----------//
 	// variables //
@@ -74,17 +85,18 @@ protected:
 	// variables //
 	//-----------//
 
-	double	_lookAngle;
-	double	_azimuthAngle;
+	double	_reference_lookAngle;
+	double	_reference_azimuthAngle;
 
 	// Beam pattern info
+	double _electrical_boresight_Em;
+	double _electrical_boresight_azimuth;
 	int		_Nx;
 	int		_Ny;
 	int		_ix_zero;
 	int		_iy_zero;
 	double	_x_spacing;
 	double	_y_spacing;
-	double	_out_of_range_value;
 	float**	_power_gain;
 
 	CoordinateSwitch	_antFrameToBeamFrame;
