@@ -235,8 +235,8 @@ InstrumentSim::ScatSim(
 
 	// chi is defined so that 0.0 means the wind is blowing towards
 	// the s/c (the opposite direction as the look vector)
-	double chi = wv->dir - meas.eastAzimuth + pi;
-	double value;
+	float chi = wv->dir - meas.eastAzimuth + pi;
+	float value;
 	gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv->spd, chi,
 		&value);
 
