@@ -432,6 +432,22 @@ main(
 		low_speed, high_speed);
 	plot_thing("within", title, "Cross Track Distance (km)", "Within",xylimits);
 
+	//--------------------//
+	// avg nambig vs. ctd //
+	//--------------------//
+
+	if (! swath->AvgNambigVsCti(value_array))
+	{
+		fprintf(stderr, "%s: error calculating average number of ambigs\n",
+			command);
+		exit(1);
+	}
+	xylimits[2] = 0;
+	xylimits[3] = 5;
+	sprintf(title, "Average Number of Ambigs vs. CTD");
+	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
+		"No. Ambigs",xylimits);
+
 	//=========//
 	// NEAREST //
 	//=========//
