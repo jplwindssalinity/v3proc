@@ -26,8 +26,8 @@ ScatTargetInfo::GetScatTargetInfo(
     Vector3            vector)
 {
     // Compute earth intercept point and range.
-    Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-    if (earth_intercept(rsat, ulook_gc, &rTarget) != 1)
+    gcLook = antenna_frame_to_gc->Forward(vector);
+    if (earth_intercept(rsat, gcLook, &rTarget) != 1)
         return(0);
     slantRange = (rsat - rTarget).Magnitude();
     roundTripTime = 2.0 * slantRange / speed_light_kps;

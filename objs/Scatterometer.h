@@ -32,6 +32,7 @@ static const char rcs_id_scatterometer_h[] =
 class ScatTargetInfo
 {
 public:
+    Vector3        gcLook;
     EarthPosition  rTarget;
     float          slantRange;       // km
     float          roundTripTime;    // ms

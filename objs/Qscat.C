@@ -2019,23 +2019,16 @@ Qscat::TargetInfo(
     Vector3            vector,
     QscatTargetInfo*   qti)
 {
-    // dereference
-    OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-
-    // Compute earth intercept point and range
-    Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-    if (earth_intercept(sc_orbit_state->rsat, ulook_gc, &(qti->rTarget)) != 1)
-        return(0);
-
-    EarthPosition* rspot = &(qti->rTarget);
-    qti->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
-    qti->roundTripTime = 2.0 * qti->slantRange / speed_light_kps;
+    // first, get the generic scatterometer target info
+    qti->GetScatTargetInfo(antenna_frame_to_gc, spacecraft->orbitState.rsat,
+        vector);
 
     // Compute doppler shift for the earth intercept point.
-    Vector3 vspot(-w_earth * rspot->Get(1), w_earth * rspot->Get(0), 0);
-    Vector3 vrel = sc_orbit_state->vsat - vspot;
+    Vector3 vspot(-w_earth * qti->rTarget.Get(1),
+        w_earth * qti->rTarget.Get(0), 0);
+    Vector3 vrel = spacecraft->orbitState.vsat - vspot;
     double lambda = speed_light_kps / ses.txFrequency;
-    qti->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
+    qti->dopplerFreq = 2.0 * (vrel % qti->gcLook) / lambda;
 
     // compute baseband frequency
     SesBeamInfo* ses_beam_info = GetCurrentSesBeamInfo();
