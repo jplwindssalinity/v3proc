@@ -55,6 +55,7 @@ public:
 	int		OpenForWriting();
 	int		OpenForWriting(const char* filename);
 
+	int		RewindFile();
 	int		Read(char* buffer, size_t bytes);
 	int		Write(char* buffer, size_t bytes);
 

@@ -122,6 +122,17 @@ BaseFile::OpenForWriting(
 	return(1);
 }
 
+//----------------------//
+// BaseFile::RewindFile //
+//----------------------//
+
+int
+BaseFile::RewindFile()
+{
+	rewind(_fp);
+	return(1);
+}
+
 //----------------//
 // BaseFile::Read //
 //----------------//
