@@ -243,6 +243,8 @@ public:
     int             useDtc;
     int             useBYUDop;
     int             useBYURange;
+    int             useSpectralDop;
+    int             useSpectralRange;
     float           azimuthIntegrationRange;
     float           azimuthStepSize;
     int             rangeGateClipping;

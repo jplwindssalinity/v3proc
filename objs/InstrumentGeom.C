@@ -21,6 +21,11 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Array.h"
 #include "BYUXTable.h"
 
+// prototype for AccurateGeom routines
+int GetPeakSpectralResponse2(CoordinateSwitch* antenna_frame_to_gc,
+    Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
+    double* look, double* azimuth);
+
 //------------------//
 // AntennaFrameToGC //
 //------------------//
@@ -795,11 +800,17 @@ FindSlice(
 //----------//
 // Calculate the ideal round trip time.  The attitude is set to 0,0,0.
 // Used for the RGC or for calculating the commanded round trip time.
+// If use_flags is nonzero then the round trip time BYU reference vector 
+// or the Spectral peak is returned if the appropriate flag in qscat.cds 
+// is set.
+// Otherwise the Spatial peak is returned regardless of the values of the
+// flags.
 
 double
 IdealRtt(
     Spacecraft*  spacecraft,
-    Qscat*       qscat)
+    Qscat*       qscat,
+    int          use_flags=0)
 {
 	//------------------------------//
 	// zero the spacecraft attitude //
@@ -818,12 +829,25 @@ IdealRtt(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
-        beam, azimuth_rate, &look, &azim))
-	{
-		exit(1);
+	if(qscat->cds.useBYURange && use_flags){
+	  if(! GetBYUBoresight(spacecraft,qscat,&look,&azim)){
+	    return(0);
+	  }
 	}
-
+	else if(qscat->cds.useSpectralRange && use_flags){
+	  if (! GetPeakSpectralResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+					 beam, azimuth_rate, &look, &azim))
+	    {
+	      return(0);
+	    }
+	}
+	else{        
+	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+					beam, azimuth_rate, &look, &azim))
+	    {
+	      exit(1);
+	    }
+	}
 	//-------------------------------//
 	// calculate the round trip time //
 	//-------------------------------//
@@ -840,63 +864,6 @@ IdealRtt(
 	return(round_trip_time);
 }
 
-//----------//
-// BYURtt   //
-//----------//
-// Calculate the ideal round trip time along the BYU nominal boresight.  
-// The attitude is set to 0,0,0.
-// Used for the RGC or for calculating the commanded round trip time.
-
-double
-BYURtt(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat)
-{
-	//------------------------------//
-	// zero the spacecraft attitude //
-	//------------------------------//
-
-	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-	Attitude zero_rpy;
-	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
-
-
-	//-------------------------------------------//
-	// Compute the BYU nominal boresight         //
-	//-------------------------------------------//
-
-	double azimuth_rate = qscat->sas.antenna.spinRate;
-	double look, azim;
-        double rtt=IdealRtt(spacecraft,qscat);
-	azim=azimuth_rate;
-	azim=azim*0.5*rtt;
-	
-        if(qscat->cds.currentBeamIdx==0){
-	  look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
-	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
-        }
-	else{
-	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
-	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
-	}
-
-	//-------------------------------//
-	// calculate the round trip time //
-	//-------------------------------//
-
-	Vector3 vector;
-	vector.SphericalSet(1.0, look, azim);
-	Vector3 ulook_gc = zero_rpy_antenna_frame_to_gc.Forward(vector);
-	EarthPosition r_target;
-	if(earth_intercept(sc_orbit_state->rsat, ulook_gc,&r_target)!=1)
-	  exit(1);
-	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
-	double round_trip_time = 2.0 * slant_range / speed_light_kps;
-
-	return(round_trip_time);
-}
 
 //-------------------//
 // RttToIdealRxDelay //
@@ -948,14 +915,27 @@ IdealCommandedDoppler(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
-        beam, azimuth_rate, &look, &azim))
-	{
-		return(0);
+	if(qscat->cds.useBYUDop){
+	  if(! GetBYUBoresight(spacecraft,qscat,&look,&azim)){
+	    return(0);
+	  }
 	}
-
+	else if(qscat->cds.useSpectralDop){
+	  if (! GetPeakSpectralResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+					 beam, azimuth_rate, &look, &azim))
+	    {
+	      return(0);
+	    }
+	}
+	else{
+	  if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+					 beam, azimuth_rate, &look, &azim))
+	    {
+	      return(0);
+	    }
+	}
 	//----------------------------//
-	// calculte commanded Doppler //
+	// calculate commanded Doppler //
 	//----------------------------//
 
 	Vector3 vector;
@@ -974,61 +954,34 @@ IdealCommandedDoppler(
 	return(1);
 }
 
-// Calculate Ideal Commanded Doppler in order to set the BYU nominal
-// boresight to 0 Hz baseband
+// Calculate the BYU nominal boresight 
 int
-BYUCommandedDoppler(
-    Spacecraft*  spacecraft,
-    Qscat*       qscat,
-    TargetInfoPackage* tip_out)
+GetBYUBoresight(
+    Spacecraft* spacecraft,
+    Qscat*      qscat,
+    double*      look,
+    double*      azim)
 {
-	//------------------------------//
-	// zero the spacecraft attitude //
-	//------------------------------//
-
-	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-	Attitude zero_rpy;
-	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(qscat->sas.antenna));
-
 	//-------------------------------------------//
 	// Compute the BYU nominal boresight         //
 	//-------------------------------------------//
 
 	double azimuth_rate = qscat->sas.antenna.spinRate;
-	double look, azim;
         double rtt=IdealRtt(spacecraft,qscat);
-	azim=azimuth_rate;
-	azim=azim*0.5*rtt;
+	*azim=azimuth_rate;
+	*azim*=0.5*rtt;
 	
         if(qscat->cds.currentBeamIdx==0){
-	  look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
-	  azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+	  *look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
+	  *azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
         }
 	else{
-	  look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
-	  azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+	  *look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
+	  *azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
 	}
-
-        //---------------------------------------//
-        // Calculate the Commanded Doppler       //
-        //---------------------------------------//	
-	Vector3 vector;
-	vector.SphericalSet(1.0, look, azim);
-	TargetInfoPackage tip;
-	qscat->ses.CmdTxDopplerEu(0.0);
-	do
-	{
-		TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, qscat, vector,
-            &tip);
-		float freq = qscat->ses.txDoppler + tip.basebandFreq;
-		qscat->ses.CmdTxDopplerEu(freq);
-	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
-
-	if(tip_out) *tip_out=tip;
-	return(1);
+        return(1);
 }
+
 /**********************************************************************
 //-------------------------------//
 // IdealCommandedDopplerForRange //

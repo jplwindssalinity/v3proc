@@ -57,16 +57,15 @@ int  FindSlice(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
          float freq_tol, Outline* outline, Vector3* look_vector,
          EarthPosition* centroid);
 
-double	IdealRtt(Spacecraft* spacecraft, Qscat* qscat);
-double	BYURtt(Spacecraft* spacecraft, Qscat* qscat);
+double	IdealRtt(Spacecraft* spacecraft, Qscat* qscat, int use_flags=0);
+int	GetBYUBoresight(Spacecraft* spacecraft, Qscat* qscat,double* look,
+			double* azim);
 
 int  RttToIdealRxDelay(Qscat* qscat, double rtt);
 
 int  IdealCommandedDoppler(Spacecraft* spacecraft, Qscat* qscat, 
 			   TargetInfoPackage* tip_out=NULL);
 
-int  BYUCommandedDoppler(Spacecraft* spacecraft, Qscat* qscat,
-			 TargetInfoPackage* tip_out=NULL);
 
 //int  IdealCommandedDopplerForRange(Spacecraft* spacecraft, float offset);
 

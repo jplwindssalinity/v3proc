@@ -54,8 +54,7 @@ int IntegrateFrequencyInterval( Spacecraft* spacecraft, Qscat* qscat,
 				float azimuth_step_size, int range_gate_clipping,
 				float* X);
 
-int
-GetPeakSpectralResponse2(CoordinateSwitch* antenna_frame_to_gc,
+int GetPeakSpectralResponse2(CoordinateSwitch* antenna_frame_to_gc,
     Spacecraft* spacecraft, Beam* beam, double azimuth_rate,
     double* look, double* azimuth);
 
