@@ -15,7 +15,7 @@ static const char rcs_id_wind_h[] =
 
 //======================================================================
 // CLASSES
-//		WindVector, WindVectorPlus, WVC, WindField, WindFieldPlus
+//		WindVector, WindVectorPlus, WVC, WindField, WindSwath
 //======================================================================
 
 //======================================================================
@@ -194,13 +194,14 @@ protected:
 
 //======================================================================
 // CLASS
-//		WindFieldPlus
+//		WindSwath
 //
 // DESCRIPTION
-//		The WindFieldPlus object hold an ambiguous wind field.
+//		The WindSwath object hold an ambiguous wind field gridded in
+//		along track and cross track.
 //======================================================================
 
-class WindFieldPlus
+class WindSwath
 {
 public:
 
@@ -208,12 +209,22 @@ public:
 	// construction //
 	//--------------//
 
-	WindFieldPlus();
-	~WindFieldPlus();
+	WindSwath();
+	~WindSwath();
 
-	//--------//
-	// access //
-	//--------//
+	int		Allocate(int cross_track_size, int along_track_size);
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteL20(FILE* fp);
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	WVC***		swath;
 
 protected:
 
@@ -228,17 +239,8 @@ protected:
 	// variables //
 	//-----------//
 
-	int			_lonCount;
-	float		_lonMin;
-	float		_lonMax;
-	float		_lonStep;
-
-	int			_latCount;
-	float		_latMin;
-	float		_latMax;
-	float		_latStep;
-
-	WVC***		_field;
+	int			_crossTrackSize;
+	int			_alongTrackSize;
 };
 
 #endif

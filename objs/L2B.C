@@ -53,5 +53,5 @@ int
 L20::WriteDataRec()
 {
 	FILE* fp = file.GetFp();
-	return(frame.wvc.WriteL20(fp));
+	return(frame.swath.WriteL20(fp));
 }

@@ -7,12 +7,6 @@ static const char rcs_id_l17tol20_c[] =
 	"@(#) $Id$";
 
 #include "L17ToL20.h"
-/*
-#include "Antenna.h"
-#include "Ephemeris.h"
-#include "InstrumentGeom.h"
-#include "GenericGeom.h"
-*/
 
 
 //==========//
@@ -39,14 +33,31 @@ L17ToL20::Convert(
 	GMF*	gmf,
 	L20*	l20)
 {
-	WVC* wvc = &(l20->frame.wvc);
-	wvc->FreeContents();
+	//---------------//
+	// retrieve wind //
+	//---------------//
 
+	WVC* wvc = new WVC();
 	gmf->FindSolutions(&(l17->frame.measList), wvc, INIT_SPD, INIT_PHI);
 	gmf->RefineSolutions(&(l17->frame.measList), wvc, INIT_SPD, INIT_PHI,
 		FINAL_SPD, FINAL_PHI);
 	wvc->RemoveDuplicates();
 	wvc->SortByObj();
+
+/*
+	//-------------------------//
+	// determine grid indicies //
+	//-------------------------//
+
+	int ati = l17->frame.ati;
+	int cti = l17->frame.cti;
+
+	//-------------------//
+	// add to wind swath //
+	//-------------------//
+
+	l20->frame.swath.Add(ati, cti, wvc);
+*/
 
 	return(1);
 }

@@ -45,7 +45,7 @@ public:
 	// product variables //
 	//-------------------//
 
-	WVC		wvc;
+	WindSwath	swath;
 };
 
 #endif

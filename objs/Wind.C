@@ -402,68 +402,89 @@ WindField::_Deallocate()
 }
 
 
-//===============//
-// WindFieldPlus //
-//===============//
+//===========//
+// WindSwath //
+//===========//
 
-WindFieldPlus::WindFieldPlus()
-:	_lonCount(0), _lonMin(0.0), _lonMax(0.0), _lonStep(0.0),
-	_latCount(0), _latMin(0.0), _latMax(0.0), _latStep(0.0),
-	_field(0)
+WindSwath::WindSwath()
+:	swath(0), _crossTrackSize(0), _alongTrackSize(0)
 {
 	return;
 }
 
-WindFieldPlus::~WindFieldPlus()
+WindSwath::~WindSwath()
 {
 	_Deallocate();
 	return;
 }
 
-//--------------------------//
-// WindFieldPlus::_Allocate //
-//--------------------------//
+//---------------------//
+// WindSwath::WriteL20 //
+//---------------------//
 
 int
-WindFieldPlus::_Allocate()
+WindSwath::WriteL20(
+	FILE*	fp)
 {
-	_field = (WVC ***)malloc(_lonCount * sizeof(WVC **));
-	if (_field == NULL)
-		return(0);
-
-	for (int i = 0; i < _lonCount; i++)
+	for (int i = 0; i < _alongTrackSize; i++)
 	{
-		WVC** ptr =
-			(WVC **)malloc(_latCount * sizeof(WVC *));
-		if (ptr == NULL)
-			return(0);
-
-		*(_field + i) = ptr;
-		for (int j = 0; j < _latCount; j++)
+		for (int j = 0; j < _crossTrackSize; j++)
 		{
-			*(*(_field + i) + j) = NULL;
+			WVC* wvc = *(*(swath + i) + j);
+			if (wvc)
+			{
+				if (! wvc->WriteL20(fp))
+					return(0);
+			}
 		}
 	}
 	return(1);
 }
 
-//----------------------------//
-// WindFieldPlus::_Deallocate //
-//----------------------------//
+//----------------------//
+// WindSwath::_Allocate //
+//----------------------//
 
 int
-WindFieldPlus::_Deallocate()
+WindSwath::_Allocate()
 {
-	for (int i = 0; i < _lonCount; i++)
+	swath = (WVC ***)malloc(_alongTrackSize * sizeof(WVC **));
+	if (swath == NULL)
+		return(0);
+
+	for (int i = 0; i < _alongTrackSize; i++)
 	{
-		for (int j = 0; j < _latCount; j++)
+		WVC** ptr =
+			(WVC **)malloc(_crossTrackSize * sizeof(WVC *));
+		if (ptr == NULL)
+			return(0);
+
+		*(swath + i) = ptr;
+		for (int j = 0; j < _crossTrackSize; j++)
 		{
-			WVC* ptr = *(*(_field + i) + j);
-			if (ptr)
-				delete *(*(_field + i) + j);
+			*(*(swath + i) + j) = NULL;
 		}
-		free(*(_field + i));
 	}
-	free(_field);
+	return(1);
+}
+
+//------------------------//
+// WindSwath::_Deallocate //
+//------------------------//
+
+int
+WindSwath::_Deallocate()
+{
+	for (int i = 0; i < _alongTrackSize; i++)
+	{
+		for (int j = 0; j < _crossTrackSize; j++)
+		{
+			WVC* ptr = *(*(swath + i) + j);
+			if (ptr)
+				delete *(*(swath + i) + j);
+		}
+		free(*(swath + i));
+	}
+	free(swath);
 	return(1);
 }
