@@ -9,6 +9,7 @@
 static const char rcs_id_l2b_h[] =
     "@(#) $Id$";
 
+#include "TlmHdfFile.h"
 #include "BaseFile.h"
 #include "Wind.h"
 
