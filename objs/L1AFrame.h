@@ -49,6 +49,7 @@ public:
 
 	int		Pack(char* buffer);
 	int		Unpack(char* buffer);
+        int             WriteAscii(FILE* ofp);
 
 	//-------------------//
 	// product variables //

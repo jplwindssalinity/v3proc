@@ -97,3 +97,14 @@ L1A::WriteDataRec()
 {
 	return(Write(buffer, bufferSize));
 }
+
+//--------------------------//
+// L1A::WriteDataRecAscii   //
+//--------------------------//
+int
+L1A::WriteDataRecAscii(){
+  if(_outputFp==NULL) return(0);
+  if(!frame.WriteAscii(_outputFp)) return(0);
+  return(1);
+}
+

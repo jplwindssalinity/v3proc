@@ -60,6 +60,7 @@ public:
 
 	int			ReadDataRec();
 	int			WriteDataRec();
+        int                     WriteDataRecAscii();
 
 	//-----------//
 	// variables //

@@ -9,7 +9,7 @@ static const char rcs_id_l1aframe_c[] =
 #include <memory.h>
 #include <malloc.h>
 #include "L1AFrame.h"
-
+#include "Constants.h"
 
 //==========//
 // L1AFrame //
@@ -262,4 +262,32 @@ L1AFrame::Unpack(
 	idx += size;
 
 	return(idx);
+}
+
+
+//--------------------------//
+// L1AFrame::WriteAscii     //
+//--------------------------//
+
+int L1AFrame::WriteAscii(FILE* ofp){
+  fprintf(ofp,"\n########################Frame Info#####################\n\n");
+  fprintf(ofp,"Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitTickChange %d\n",
+	  time,instrumentTicks,orbitTicks,(int)priOfOrbitTickChange);
+  fprintf(ofp,"GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
+	  gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY,gcZ);
+  fprintf(ofp,"VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g PtGr: %g\n",
+	  velX,velY,velZ,attitude.GetRoll()*rtd,attitude.GetPitch()*rtd,attitude.GetYaw()*rtd,ptgr);
+  int offset=0;
+  for(int c=0;c<spotsPerFrame;c++){
+    fprintf(ofp,"\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
+    fprintf(ofp, "AntennaPos: %d SpotNoise: %g Beam:%d\n",
+	    (int)antennaPosition[c],spotNoise[c],c%2);
+    fprintf(ofp,"E(S+N) Slices(1-%d): ",slicesPerSpot);
+    for(int s=0;s<slicesPerSpot;s++){
+      offset++;
+      fprintf(ofp,"%g ",science[offset]);
+    }
+    fprintf(ofp,"\n");
+  }
+  return(1);
 }
