@@ -299,14 +299,44 @@ for (l=n-1;l>=0;l--) {
 
 }
 
-void Matrix3::show()
+void Matrix3::show(char *name)
 
 {
 
 int i;
-for (i=0; i < 3; i++)
+if (name == NULL)
   {
-  printf("%10g %10g %10g\n",_m[i][0],_m[i][1],_m[i][2]);
+  for (i=0; i < 3; i++)
+    {
+    printf("[%10g %10g %10g]\n",_m[i][0],_m[i][1],_m[i][2]);
+    }
+  }
+else
+  {
+  char *str = (char *)malloc(strlen(name)+1);
+  if (str == NULL)
+    {
+    printf("Error: couldn't allocate memory in Matrix3::show\n");
+    exit(-1);
+    }
+  // fill temporary string with spaces (equal to name string in length)
+  for (i=0; i < strlen(name); i++)
+    {
+    str[i] = ' ';
+    }
+  str[i] = '\0';
+  for (i=0; i < 3; i++)
+    {
+    if (i == 0)
+      {
+      printf("%s = [%10g %10g %10g]\n",name,_m[i][0],_m[i][1],_m[i][2]);
+      }
+    else
+      {
+      printf("%s   [%10g %10g %10g]\n",str,_m[i][0],_m[i][1],_m[i][2]);
+      }
+    }
+  free(str);
   }
 
 }
@@ -421,6 +451,24 @@ return(result);
 }
 
 //
+// Multiply a vector by a scalar.
+//
+
+Vector3 Vector3::operator*(double s)
+
+{
+int i;
+Vector3 result;
+
+for (i=0; i < 3; i++)
+  {
+  result._v[i] = _v[i] * s;
+  }
+
+return(result);
+}
+
+//
 // Cross product of two vectors.
 //
 
@@ -455,6 +503,16 @@ if (mag != 0.0)
 }
 
 //
+// Get the magnitude of the vector.
+//
+
+double Vector3::magnitude()
+
+{
+return(sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]));
+}
+
+//
 // Extract one element.
 //
 
@@ -474,11 +532,18 @@ else
 
 }
 
-void Vector3::show()
+void Vector3::show(char *name)
 
 {
 
-printf("%10g %10g %10g\n",_v[0],_v[1],_v[2]);
+if (name == NULL)
+  {
+  printf("(%10g, %10g, %10g)\n",_v[0],_v[1],_v[2]);
+  }
+else
+  {
+  printf("%s = (%10g, %10g, %10g)\n",name,_v[0],_v[1],_v[2]);
+  }
 
 }
 
@@ -495,4 +560,184 @@ Vector3::Set(
 		return(0);
 	_v[index] = value;
 	return(1);
+}
+
+//
+// EarthPosition
+//
+
+//
+// Initialize with a complete set of 3 user-specified elements.
+// The meaning of the 3 elements is specified by the type argument at the end.
+// Note that altitudes must be specified in meters!
+//
+
+EarthPosition::EarthPosition(double x1, double x2, double x3,
+                             earthposition_typeE etype)
+
+{
+
+if (etype == GEODETIC)
+  {	// convert geodetic latitude to geocentric latitude
+  x2 = atan(tan(x2)*(1-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH));
+  etype = GEOCENTRIC;
+  }
+
+if (etype == RECTANGULAR)
+  {
+  // x1,x2,x3 are the rectangular coordinates (with the same units).
+  _v[0] = x1;
+  _v[1] = x2;
+  _v[2] = x3;
+  }
+else if (etype == GEOCENTRIC)
+  {
+  // x1 is the altitude above the ellipsoidal earth's surface. (meters)
+  // x2 is the geocentric latitude of the surface location (radians).
+  // x3 is the east longitude of the surface location (radians).
+
+  double sx2 = sin(x2);
+  double cx2 = cos(x2);
+  double sx3 = sin(x3);
+  double cx3 = cos(x3);
+
+  // Radius of earth at desired location.
+  double flat = 1.0 - sqrt(1.0-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH);
+  double radius = R1_EARTH*(1.0 - flat*sx2*sx2);
+
+  // Form sea-level position vector
+  _v[0] = radius*cx2*cx3;
+  _v[1] = radius*cx2*sx3;
+  _v[2] = radius*sx2;
+
+  // Form vector normal to the surface of the ellipsoidal earth at the desired
+  // location, with length equal to the desired altitude, and add it to the
+  // sealevel position vector to get the final position vector.
+  Vector3 normal(_v[0]/(R1_EARTH*R1_EARTH),
+                 _v[1]/(R1_EARTH*R1_EARTH),
+                 _v[2]/(R2_EARTH*R2_EARTH));
+  normal.scale(x1);
+
+  _v[0] += normal.get(0);
+  _v[1] += normal.get(1);
+  _v[2] += normal.get(2);
+  }
+else
+  {
+  printf("Error: Invalid type = %d received by EarthPosition object\n",etype);
+  exit(-1);
+  }
+
+}
+
+//
+// Initialize with a 2 user-specified elements.
+// The altitude is assumed to be zero (ie., a position on the surface)
+// The latitude type is specified by the type argument at the end.
+//
+
+EarthPosition::EarthPosition(double lat, double lon,
+                             earthposition_typeE etype)
+
+{
+
+// call general constructor with zero altitude
+EarthPosition::EarthPosition(0,lat,lon,etype);
+
+}
+
+//
+// Default constructor, no initialization
+//
+
+EarthPosition::EarthPosition()
+
+{
+return;
+}
+
+//
+// Default destructor, no action
+//
+
+EarthPosition::~EarthPosition()
+
+{
+return;
+}
+
+//
+// Assignment operator to allow a Vector3 object to be assigned to a
+// EarthPosition object straight across (assumes that the Vector3 object
+// is a geocentric position vector).
+//
+
+void EarthPosition::operator=(Vector3 vec)
+
+{
+
+// transfer data straight across
+_v[0] = vec.get(0);
+_v[1] = vec.get(1);
+_v[2] = vec.get(2);
+
+}
+
+//
+// Other access methods
+//
+
+//
+// Convert the rectangular vector stored in this object into the
+// corresponding altitude above the surface, latitude, and longitude.
+// Currently, only surface points (altitude = 0) are handled.
+//
+
+Vector3 EarthPosition::get_alt_lat_lon(earthposition_typeE etype)
+
+{
+double lat = 0;
+double elon = 0;
+
+double sx2 = sin(_v[1]);
+
+// Radius of earth at desired location.
+double flat = 1.0 - sqrt(1.0-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH);
+double radius = R1_EARTH*(1 - flat*sx2*sx2);
+double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+
+if (fabs(radius - mag) > 0.001)
+  {	// more than 1 mm off the surface is considered off the surface
+  printf("Error: get_alt_lat_lon\n");
+  printf("       Off surface position vectors are not handled yet\n");
+  exit(-1);
+  }
+
+if ((etype == GEOCENTRIC) || (etype == GEODETIC))
+  {
+  lat = asin(_v[2]/mag);
+  double coslat = cos(lat);
+  if (coslat == 0.0)
+    {	// at one of the poles, so longitude is not defined: just use zero.
+    elon = 0.0;
+    }
+  else
+    {
+    elon = acos(_v[0]/mag/coslat);
+    }
+  }
+else
+  {
+  printf("Error: type must be GEOCENTRIC or GEODETIC for get_alt_lat_lon\n");
+  exit(-1);
+  }
+
+if (etype == GEODETIC)
+  {	// convert geocentric latitude to geodetic latitude
+  lat = atan(tan(lat)/(1-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH));
+  }
+
+Vector3 result(0,lat,elon);
+return(result);
+
 }
