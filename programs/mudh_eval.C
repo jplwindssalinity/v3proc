@@ -9,8 +9,8 @@
 //
 // SYNOPSIS
 //    mudh_eval [ -n ] [ -s min_spd:max_spd ] [ -t t1:t2:t3 ]
-//        <mudhtab> <minutes> <irr_thresh> <start_rev> <end_rev>
-//        <output_base>
+//       [ -d mudh_dir ] <mudhtab> <minutes> <irr_thresh> <start_rev>
+//       <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generate an evaluation chart for the fixed integrated
@@ -20,6 +20,7 @@
 //    [ -n ]  Only evalulate when NBD was available.
 //    [ -s min_spd:max_spd ]  Use the ECMWF speed range specified.
 //    [ -t t1:t2:t3 ]  Three thresholds to use for the mudh thresh.
+//    [ -d mudh_dir ]    An alternate directory for MUDH files.
 //
 // OPERANDS
 //    <mudhtab>       The mudhtab.  Used for estimating the % threshold.
@@ -73,8 +74,11 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "ns:t:"
+#define OPTSTRING  "ns:t:d:"
 #define QUOTE      '"'
+
+#define DEFAULT_MUDH_DIR  "/export/svt11/hudd/allmudh"
+#define REV_DIGITS        5
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -89,8 +93,8 @@ static const char rcs_id[] =
 //------------------//
 
 const char* usage_array[] = { "[ -n ]", "[ -s min_spd:max_spd ]",
-    "[ -t t1:t2:t3 ]", "<mudhtab>", "<minutes>", "<irr_thresh>",
-    "<start_rev>", "<end_rev>", "<output_base>", 0 };
+    "[ -t t1:t2:t3 ]", "[ -d mudh_dir ]", "<mudhtab>", "<minutes>",
+    "<irr_thresh>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // MUDHtab
 static double  norain_prob[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
@@ -153,6 +157,8 @@ main(
     float t2 = 0.0;
     float t3 = 0.0;
 
+    char* mudh_dir = DEFAULT_MUDH_DIR;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -184,6 +190,9 @@ main(
             break;
         case 'n':
             opt_nbd = 1;
+            break;
+        case 'd':
+            mudh_dir = optarg;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -301,7 +310,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         //----------------//
 
         char flag_file[1024];
-        sprintf(flag_file, "%d.pflag", rev);
+        sprintf(flag_file, "%s/%0*d.pflag", mudh_dir, REV_DIGITS, rev);
         FILE* ifp = fopen(flag_file, "r");
         if (ifp == NULL)
         {
@@ -324,7 +333,8 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         //----------------//
 
         char rain_file[1024];
-        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.irain", rev);
+        sprintf(rain_file, "/export/svt11/hudd/ssmi/%0*d.irain", REV_DIGITS,
+            rev);
 
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
@@ -349,7 +359,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         //----------------//
 
         char mudh_file[1024];
-        sprintf(mudh_file, "%d.mudh", rev);
+        sprintf(mudh_file, "%s/%0*d.mudh", mudh_dir, REV_DIGITS, rev);
         ifp = fopen(mudh_file, "r");
         if (ifp == NULL)
         {
