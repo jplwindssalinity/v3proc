@@ -79,6 +79,19 @@ List<T>::Append(
 	return(1);
 }
 
+//---------------------//
+// List::RemoveCurrent //
+//---------------------//
+// Remove the current node and return its data.  The next node
+// becomes the current node.
+
+template <class T>
+T*
+List<T>::RemoveCurrent()
+{
+	
+}
+
 //---------------//
 // List::GetHead //
 //---------------//
@@ -152,6 +165,22 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
+//-----------//
+// NodeCount //
+//-----------//
+// Returns the number of nodes in the list
+
+template <class T>
+int
+List<T>::NodeCount()
+{
+	int count = 0;
+	for (Node<T>* node = _head; node; node = node->next)
+		count++;
+
+	return(count);
+}
+
 
 
 /*
@@ -197,21 +226,6 @@ ListBase::IsEmpty()
 		return(1);
 }
 
-//-----------//
-// NodeCount //
-//-----------//
-// returns the number of nodes in the list
-
-int
-ListBase::NodeCount()
-{
-	int count = 0;
-	for (NodeBase* node = _head; node; node = node->next)
-		count++;
-
-	return(count);
-}
-
 //---------------//
 // GotoNodeIndex //
 //---------------//
@@ -252,35 +266,6 @@ ListBase::_Prepend(
 		node->prev = 0;
 		_head->prev = node;
 		_head = node;
-	}
-	else
-	{
-		// list is empty
-		node->prev = NULL;
-		node->next = NULL;
-		_head = _tail = _current = node;
-	}
-	return;
-}
-
-//---------//
-// _Append //
-//---------//
-// add node to the end of the list
-// if the list is not empty, the current node remains unchanged
-// if the list is empty, the new node becomes the current node
-
-void
-ListBase::_Append(
-	NodeBase*	node)
-{
-	if (_tail)
-	{
-		// end of list exists, just append
-		node->next = NULL;
-		node->prev = _tail;
-		_tail->next = node;
-		_tail = _current = node;
 	}
 	else
 	{
@@ -405,23 +390,6 @@ ListBase::_RemoveCurrent()
 //==============//
 // List methods //
 //==============//
-
-template <class T>
-List<T>::List()
-:	ListBase()
-{
-	return;
-}
-
-template <class T>
-List<T>::~List()
-{
-	GetHead();
-	T* node;
-	while ((node=RemoveCurrent()) != NULL)
-		delete node;
-	return;
-}
 
 //--------//
 // IsHead //

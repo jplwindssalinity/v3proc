@@ -71,7 +71,12 @@ public:
 	//----------------//
 
 	int		Append(T* new_data);			// append to end of list
-	int		AppendList(List<T>* new_list);	// append list to end of list
+
+	//--------------------//
+	// removing from list //
+	//--------------------//
+
+	T*		RemoveCurrent();	// remove current, next becomes current
 
 	//----------------------//
 	// retrieving from list //
@@ -82,6 +87,12 @@ public:
 	T*		GetCurrent();		// return T* of current
 	T*		GetNext();			// current = next, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
+
+	//-------------//
+	// information //
+	//-------------//
+
+	int		NodeCount();		// returns the number of nodes
 
 protected:
 
@@ -102,7 +113,6 @@ protected:
 
 	void		AppendList(ListBase* added_list);
 	int			IsEmpty();		// 1 if the list is empty, 0 otherwise
-	int			NodeCount();	// returns the number of nodes in the list
 	int			GotoNodeIndex(int node_index);
 
 protected:
@@ -138,7 +148,6 @@ public:
 	T*		GetTail();			// current = tail, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
 	T*		GetIndex(int node_index);// current = index, return T* of current
-	T*		RemoveCurrent();	// remove current, next becomes current
 
 	// adding data
 	//------------
