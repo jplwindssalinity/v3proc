@@ -2171,7 +2171,6 @@ Qscat::SpatialResponseQuadFit(
     //-------------------//
 
     QscatTargetInfo qti;
-    Vector3 vector;
     float gain[3];
     double dgain[3];
     for (int i = 0; i < 3; i++)
