@@ -84,6 +84,8 @@ public:
 	int		Read(FILE* fp);
 	int		Write(FILE* fp);
 
+	int		ReadGS(FILE* fp);
+
 	//-----------//
 	// variables //
 	//-----------//

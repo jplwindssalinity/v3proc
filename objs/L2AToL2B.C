@@ -10,9 +10,6 @@ static const char rcs_id_l2atol2b_c[] =
 #include "Constants.h"
 #include "Misc.h"
 
-#define AZIMUTH_DIVERSITY		(5.0*dtr)
-#define INCIDENCE_DIVERSITY		(5.0*dtr)
-
 //==========//
 // L2AToL2B //
 //==========//

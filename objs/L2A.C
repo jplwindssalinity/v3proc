@@ -97,7 +97,22 @@ L2A::WriteDataRec()
 	}
 
 	if (! frame.Write(_fp))
-        return(0);
+		return(0);
+
+	return(1);
+}
+
+//--------------------//
+// L2A::ReadGSDataRec //
+//--------------------//
+
+int
+L2A::ReadGSDataRec()
+{
+	if (_fp == NULL) return(0);
+
+	if (! frame.ReadGS(_fp))
+		return(0);
 
 	return(1);
 }

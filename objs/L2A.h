@@ -56,6 +56,8 @@ public:
 	int		WriteDataRec();
 	int		ReadDataRec();
 
+	int		ReadGSDataRec();
+
 	//---------------------//
 	// setting and getting //
 	//---------------------//
