@@ -2917,15 +2917,20 @@ WindSwath::DiscardUnselectedRanges(){
 	  if (! sel)
 	    continue;
           AngleInterval* ai=wvc->directionRanges.GetHead();
-	  for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
-	      wvp=wvc->ambiguities.GetNext()){
+	  WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+
+	  while(wvp){
 	    if(wvp!=sel)
 	      {
 		ai=wvc->directionRanges.RemoveCurrent();
 		delete ai;
+		wvp=wvc->ambiguities.RemoveCurrent();
+                delete wvp;
+		wvp=wvc->ambiguities.GetCurrent();
 	      }
 	    else{
 	      ai=wvc->directionRanges.GetNext();
+	      wvp=wvc->ambiguities.GetNext();
 	    }
 	  }
 	}
