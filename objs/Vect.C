@@ -8,6 +8,8 @@ static const char rcs_id_vect_c[] =
 
 #include <malloc.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "Vect.h"
 #include "Mat.h"
 
@@ -274,6 +276,27 @@ Vect::Cross(
     return(1);
 }
 
+//-----------//
+// Vect::Dot //
+//-----------//
+// Returns the dot product of this Vect and b.
+
+double
+Vect::Dot(
+    const Vect&  b)
+{
+    if (_mSize != b._mSize) {
+        fprintf(stderr, "Vect::Dot: Vect dimension mismatch (%d != %d)\n",
+            _mSize, b._mSize);
+        exit(1);
+    }
+    double sum = 0.0;
+    for (int i = 0; i < _mSize; i++) {
+        sum += _v[i] * b._v[i];
+    }
+    return sum;
+}
+
 //---------------//
 // Vect::Product //
 //---------------//
@@ -300,6 +323,43 @@ Vect::Product(
             _v[i] += am[i][j] * bv[j];
         }
     }
+    return(1);
+}
+
+//-----------------//
+// Vect::Decompose //
+//-----------------//
+// Decomposes the given point into an s_coef and a t_coef s.t.
+//   point = A + s_coef * AB + t_coef * AC
+// For details, see...
+// http://geometryalgorithms.com/Archive/algorithm_0105/algorithm_0105.htm
+
+int
+Vect::Decompose(
+    const Vect&  a,
+    const Vect&  b,
+    const Vect&  c,
+    double*      s_coef,
+    double*      t_coef) const
+{
+    Vect u, v, w;
+    u.Difference(b, a);
+    v.Difference(c, a);
+    w.Difference(*this, a);
+
+    double uv = u.Dot(v);
+    double uu = u.Dot(u);
+    double vv = v.Dot(v);
+    double wv = w.Dot(v);
+    double wu = w.Dot(u);
+
+    double denom = uv * uv - uu * vv;
+    if (denom == 0.0) {
+        return(0);
+    }
+
+    *s_coef = (uv * wv - vv * wu) / denom;
+    *t_coef = (uv * wu - uu * wv) / denom;
     return(1);
 }
 

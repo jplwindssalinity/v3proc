@@ -27,7 +27,7 @@ static const char rcs_id_wind_swath_h[] =
 //    along track and cross track.
 //======================================================================
 
-class WindSwath
+class WindSwath : public LonLatWind
 {
 public:
 
@@ -215,6 +215,13 @@ protected:
 
     int  _Allocate();
     int  _Deallocate();
+
+    //---------------------------//
+    // LonLatWind interface help //
+    //---------------------------//
+
+    int  _Interpolate(LonLat& lon_lat, int low_cti, int low_ati,
+             WindVector* wv);
 
     //-----------//
     // variables //

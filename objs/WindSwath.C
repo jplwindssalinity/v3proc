@@ -10,6 +10,8 @@ static const char rcs_id_wind_c[] =
 #include "hdf_support.h"
 #include "Distributions.h"
 #include "Array.h"
+#include "Vect.h"
+#include "EarthGeom.h"
 
 #define HDF_NUM_AMBIGUITIES      4
 #define S3_USE_MEDIAN_FOR_RANGE  1    // otherwise uses mean filter
@@ -2314,22 +2316,20 @@ WindSwath::GetMostProbableAmbiguity(
     int               ati_min,
     int               ati_max)
 {
-  float max_prob=-HUGE_VAL;
-  int max_prob_num=-1;
+    float max_prob = -HUGE_VAL;
+    int max_prob_num = -1;
 
+    WVC* wvc = swath[cti][ati];
+    float* prob = new float[wvc->ambiguities.NodeCount()];
 
-  WVC* wvc=swath[cti][ati];
-
-  float* prob= new float[wvc->ambiguities.NodeCount()];
-
-  int amb_num=0;
-  for(WindVectorPlus* amb=wvc->ambiguities.GetHead(); amb;
-      amb=wvc->ambiguities.GetNext(),amb_num++){
-
-    float x1,y1;
-    float spd=amb->spd;
-    float likelihood=0.0;
-    amb->GetUV(&x1,&y1);
+    int amb_num = 0;
+    for (WindVectorPlus* amb = wvc->ambiguities.GetHead(); amb;
+        amb = wvc->ambiguities.GetNext(), amb_num++)
+    {
+        float spd = amb->spd;
+        float likelihood = 0.0;
+        float x1, y1;
+        amb->GetUV(&x1, &y1);
 
     for (int i = cti_min; i < cti_max; i++)
     {
@@ -4399,7 +4399,6 @@ WindSwath::NearestWindVector(
     LonLat       lon_lat,
     WindVector*  wv)
 {
-    // 2-d binary search using signed surface distance as the criteria
     return(0);
 }
 
@@ -4412,7 +4411,180 @@ WindSwath::InterpolatedWindVector(
     LonLat       lon_lat,
     WindVector*  wv)
 {
+    // For now, this is a fairly simply algorithm:
+    // First, a tiny search is performed around the last successful indicies.
+    // If that fails, a full-on brute force search is performed.
+
+    //--------------------------------//
+    // the quick tiny vicinity search //
+    //--------------------------------//
+
+    static int last_good_ati = 0;
+    static int last_good_cti = 0;
+    for (int delta_ati = -1; delta_ati < 2; delta_ati++) {
+        int ati = (last_good_ati + delta_ati) % _alongTrackBins;
+        for (int delta_cti = -1; delta_cti < 2; delta_cti++) {
+            int cti = (last_good_cti + delta_cti) % _crossTrackBins;
+            if (_Interpolate(lon_lat, cti, ati, wv)) {
+                last_good_ati = ati;
+                last_good_cti = cti;
+                return(1);
+            }
+        }
+    }
+
+    //------------------------//
+    // the brute force search //
+    //------------------------//
+
+    for (int ati = 0; ati < _alongTrackBins - 1; ati++) {
+        for (int cti = 0; cti < _crossTrackBins - 1; cti++) {
+            if (_Interpolate(lon_lat, cti, ati, wv)) {
+                last_good_ati = ati;
+                last_good_cti = cti;
+                return(1);
+            }
+        }
+    }
+
     return(0);
+}
+
+//-------------------------//
+// WindSwath::_Interpolate //
+//-------------------------//
+// Tries to interpolate this WindSwath to the given longitude and latitude
+// using only the 4-neighbors specified by low_cti and low_ati.
+// Returns 1 on success; 0 on failure.
+// Grid is:
+//     D ----- C
+//     |       |
+//     |       |
+//     A ----- B
+// where AB is the cross track axis and AD is the along track axis
+// low_cti, low_ati refers to point A
+
+int
+WindSwath::_Interpolate(
+    LonLat&      lon_lat,
+    int          low_cti,
+    int          low_ati,
+    WindVector*  wv)
+{
+    //-----------------------//
+    // check for all corners //
+    //-----------------------//
+
+    WVC* wvc_a = GetWVC(low_cti, low_ati);
+    if (wvc_a == NULL) {
+        return(0);
+    }
+    WVC* wvc_b = GetWVC(low_cti + 1, low_ati);
+    if (wvc_b == NULL) {
+        return(0);
+    }
+    WVC* wvc_c = GetWVC(low_cti + 1, low_ati + 1);
+    if (wvc_c == NULL) {
+        return(0);
+    }
+    WVC* wvc_d = GetWVC(low_cti, low_ati + 1);
+    if (wvc_d == NULL) {
+        return(0);
+    }
+
+    //-----------------------//
+    // create corner vectors //
+    //-----------------------//
+
+    Vect a, b, c, d;
+    set_alt_lon_gclat(0.0, wvc_a->lonLat.longitude, wvc_a->lonLat.latitude, &a);
+    set_alt_lon_gclat(0.0, wvc_b->lonLat.longitude, wvc_b->lonLat.latitude, &b);
+    set_alt_lon_gclat(0.0, wvc_c->lonLat.longitude, wvc_c->lonLat.latitude, &c);
+    set_alt_lon_gclat(0.0, wvc_d->lonLat.longitude, wvc_d->lonLat.latitude, &d);
+
+    //-------------------------------//
+    // make sure p is inside the box //
+    //-------------------------------//
+
+    Vect p;
+    set_alt_lon_gclat(0.0, lon_lat.longitude, lon_lat.latitude, &p);
+
+    double s1, t1;
+    if (! p.Decompose(a, b, d, &s1, &t1)) {
+        return(0);
+    }
+    if (s1 < 0.0 || t1 < 0.0) {
+        return(0);
+    }
+
+    double s2, t2;
+    if (! p.Decompose(c, d, b, &s2, &t2)) {
+        return(0);
+    }
+    if (s2 < 0.0 || t2 < 0.0) {
+        return(0);
+    }
+
+    //----------------------------//
+    // determine the coefficients //
+    //----------------------------//
+
+    double a_coef = 2.0 - s1 - t1;
+    double b_coef = s1 + t2;
+    double c_coef = 2.0 - s2 - t2;
+    double d_coef = s2 + t1;
+    double sum = a_coef + b_coef + c_coef + d_coef;
+    a_coef /= sum;
+    b_coef /= sum;
+    c_coef /= sum;
+    d_coef /= sum;
+
+    //------------------------//
+    // decompose into u and v //
+    //------------------------//
+
+    float u_sum = 0.0;
+    float v_sum = 0.0;
+    float u, v;
+    WindVectorPlus* wvp;
+    wvp = wvc_a->selected;
+    if (wvp == NULL) {
+        return(0);
+    }
+    wvp->GetUV(&u, &v);
+    u_sum += (a_coef * u);
+    v_sum += (a_coef * v);
+
+    wvp = wvc_b->selected;
+    if (wvp == NULL) {
+        return(0);
+    }
+    wvp->GetUV(&u, &v);
+    u_sum += (b_coef * u);
+    v_sum += (b_coef * v);
+
+    wvp = wvc_c->selected;
+    if (wvp == NULL) {
+        return(0);
+    }
+    wvp->GetUV(&u, &v);
+    u_sum += (c_coef * u);
+    v_sum += (c_coef * v);
+
+    wvp = wvc_d->selected;
+    if (wvp == NULL) {
+        return(0);
+    }
+    wvp->GetUV(&u, &v);
+    u_sum += (d_coef * u);
+    v_sum += (d_coef * v);
+    
+    //-----------------------------//
+    // set the interpolated vector //
+    //-----------------------------//
+
+    wv->SetUV(u_sum, v_sum);
+    return(1);
 }
 
 //----------------------//

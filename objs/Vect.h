@@ -60,12 +60,17 @@ public:
     // operations //
     //------------//
 
-    void  Multiply(double factor);
-    int   SetMagnitude(double magnitude);
-    int   Add(const Vect& a);
-    int   Difference(const Vect& a, const Vect& b);
-    int   Cross(const Vect& a, const Vect& b);
-    int   Product(const Mat& mat, const Vect& vect);
+    void    Multiply(double factor);
+    int     SetMagnitude(double magnitude);
+    int     Add(const Vect& a);
+    int     Difference(const Vect& a, const Vect& b);
+    int     Cross(const Vect& a, const Vect& b);
+    double  Dot(const Vect& b);
+
+    int     Decompose(const Vect& a, const Vect& b, const Vect& c,
+                double* s_coef, double* t_coef) const;
+
+    int     Product(const Mat& mat, const Vect& vect);
 
 protected:
 
