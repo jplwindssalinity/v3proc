@@ -101,15 +101,15 @@ Kp::GetKprs2(
 {
 	if(kprs.Empty())
 	{
-		*kprs2=0.0;
+		*kprs2=0.005;
 		return(1);
 	}
-        int beam_number = meas->beamIdx;
-        int start_slice_rel_idx = meas->startSliceIdx;
-        int num_slices_per_comp = meas->numSlices;
-        float azimuth = meas->scanAngle;
+	int beam_number = meas->beamIdx;
+	int start_slice_rel_idx = meas->startSliceIdx;
+	int num_slices_per_comp = meas->numSlices;
+	float azimuth = meas->scanAngle;
 	*kprs2 = kprs.Interpolate(beam_number,num_slices_per_comp,
-				  start_slice_rel_idx,azimuth);
+				start_slice_rel_idx,azimuth);
 	*kprs2 *= *kprs2;
 	return(1);
 }
@@ -197,10 +197,3 @@ Kp::GetVp(
 
 	return(1);
 }
-
-
-
-
-
-
-
