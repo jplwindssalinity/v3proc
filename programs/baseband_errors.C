@@ -366,12 +366,6 @@ main(
                     qscat.cds.useDtc = 1;
                     SetOrbitStepDelayAndFrequency(&spacecraft, &qscat);
 
-                    if (init_spots < 2)
-                    {
-                        init_spots++;
-                        continue;
-                    }
-
                     //----------------------------------//
                     // calculate the baseband frequency //
                     //----------------------------------//
@@ -401,8 +395,15 @@ main(
                     //------------------------------//
 
                     // any deviation from zero Hz is undesirable
-                    fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
-                        qti.basebandFreq, qscat.ses.txDoppler);
+                    if (init_spots < 2)
+                    {
+                        init_spots++;
+                    }
+                    else
+                    {
+                        fprintf(error_fp, "%.6f %.6f %.6f\n", qscat_event.time,
+                            qti.basebandFreq, qscat.ses.txDoppler);
+                    }
 
                     qscat_sim.DetermineNextEvent(spots_per_frame,
                                                  &qscat, &qscat_event);
