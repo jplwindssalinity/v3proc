@@ -5642,17 +5642,24 @@ WindSwath::operator-=(
             if (wvc1 == NULL)
                 continue;
             WVC* wvc2 = *(*(w.swath + i) + j);
-            if (wvc2 == NULL)
+            if (wvc2 == NULL){
+	        wvc1->selected=NULL;
                 continue;
+	    }
 
-            WindVectorPlus* wvp_sel=new WindVectorPlus;
-                        float u1, v1, u2, v2;
-            wvc1->selected->GetUV(&u1,&v1);
-            wvc2->selected->GetUV(&u2,&v2);
-            wvp_sel->SetUV(u1-u2,v1-v2);
-            wvc1->selected=wvp_sel;
-            wvc1->selected_allocated=1;
-                        WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
+	    if(wvc1->selected && wvc2->selected){
+	      WindVectorPlus* wvp_sel=new WindVectorPlus;
+	      float u1, v1, u2, v2;
+	      wvc1->selected->GetUV(&u1,&v1);
+	      wvc2->selected->GetUV(&u2,&v2);
+	      wvp_sel->SetUV(u1-u2,v1-v2);
+	      wvc1->selected=wvp_sel;
+	      wvc1->selected_allocated=1;
+	    }
+	    else{
+	      wvc1->selected=NULL;
+	    }
+	    WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
             WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
               while(wvp1 && wvp2){
                             wvp1->GetUV(&u1,&v1);
