@@ -229,6 +229,8 @@ main(
     gs_epoch_etime.FromCodeA("1993-01-01T00:00:00.000");
     double gs_epoch = gs_epoch_etime.GetTime();
 
+    double time_offset = gs_epoch - leap_seconds; 
+
     //----------------------------//
     // create the output HDF file //
     //----------------------------//
@@ -285,18 +287,11 @@ main(
         }
         l1a.frame.Unpack(l1a.buffer);
 
-        //------------------------//
-        // adjust the frame times //
-        //------------------------//
-
-        double time = l1a.frame.time - gs_epoch + (double)leap_seconds;
-        l1a.frame.time = time;
-
         //-----------------//
         // write HDF frame //
         //-----------------//
 
-        if (! l1a.WriteHDFFrame())
+        if (! l1a.WriteHDFFrame(time_offset))
         {
             fprintf(stderr, "%s: error writing HDF frame\n", command);
             exit(1);
@@ -312,7 +307,7 @@ main(
     if (! l1a.WriteHDFHeader(period, inclination, sma, eccentricity))
     {
         fprintf(stderr, "%s: error writing HDF header\n", command);
-//        exit(1);
+        exit(1);
     }
 
     //------------------//

@@ -8,7 +8,7 @@
 //    calp_to_gs
 //
 // SYNOPSIS
-//    calp_to_gs <calpulse_file>
+//    calp_to_gs [ -l leap_seconds ] <calpulse_file>
 //
 // DESCRIPTION
 //    Reads in a binary calpulse file and writes out the data in the
@@ -16,11 +16,12 @@
 //    and written to standard output for reference.
 //
 // OPTIONS
-//    None.
+//    The following options are supported:
+//      [ -l leap_seconds ]  Add the specified number of leap seconds.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % calp_to_gs calp.dat
+//      % calp_to_gs -l 5 calp.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -46,6 +47,7 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ETime.h"
@@ -67,6 +69,8 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "l:"
+
 //--------//
 // MACROS //
 //--------//
@@ -87,7 +91,7 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<calpulse_file>", 0};
+const char* usage_array[] = { "[ -l leap_seconds ]", "<calpulse_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -98,16 +102,42 @@ main(
     int    argc,
     char*  argv[])
 {
+    int leap_seconds = 0;
+
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 2)
+    extern char* optarg;
+    extern int optind;
+
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'l':
+            leap_seconds = atoi(optarg);
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 1)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* calp_file = argv[clidx++];
+    const char* calp_file = argv[optind++];
+
+    //-----------------------------------//
+    // determine the GS epoch in seconds //
+    //-----------------------------------//
+
+    ETime gs_epoch_etime;
+    gs_epoch_etime.FromCodeA("1993-01-01T00:00:00.000");
+    double gs_epoch = gs_epoch_etime.GetTime();
 
     //--------------------//
     // open the calp file //
@@ -177,12 +207,19 @@ main(
             }
         }
 
+        //-----------------------------------//
+        // determine the adjusted frame time //
+        //-----------------------------------//
+
+        double gs_time = cpr.frame_time_cal_secs - gs_epoch
+            + (double)leap_seconds;
+
         //--------------------//
         // transfer to buffer //
         //--------------------//
 
         char* ptr = buffer;
-        memcpy(ptr, &(cpr.frame_time_cal_secs), sizeof(double));
+        memcpy(ptr, &(gs_time), sizeof(double));
         ptr += sizeof(double);
         memcpy(ptr, &(cpr.true_cal_pulse_pos), sizeof(char));
         ptr += sizeof(char);
