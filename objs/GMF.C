@@ -445,7 +445,7 @@ GMF::_FindSolutionCurve(
 				best_obj[phi_idx] = obj;
 				break;
 			}
-			else if (obj_plus > obj && obj > obj_minus)
+			else if (obj_plus > obj_minus)
 			{
 				// move up
 				spd_idx++;
@@ -455,7 +455,7 @@ GMF::_FindSolutionCurve(
 				obj_plus = _ObjectiveFunction(meas_list, spd + dspd,
 					phi);
 			}
-			else if (obj_minus > obj && obj > obj_plus)
+			else if (obj_minus > obj_plus)
 			{
 				// move down
 				spd_idx--;
@@ -464,6 +464,12 @@ GMF::_FindSolutionCurve(
 				obj = obj_minus;
 				obj_minus = _ObjectiveFunction(meas_list, spd - dspd,
 					phi);
+			}
+			else
+			{
+				fprintf(stderr,
+					"GMF::_FindSolutionCurve: unexpected solution curve\n");
+				exit(1);
 			}
 		} while (1);
 	}
