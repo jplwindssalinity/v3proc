@@ -657,7 +657,7 @@ WindField::NearestWindVector(
 	WindVector*		wv)
 {
 	// put longitude in range (hopefully)
-	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / 360.0);
+	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
 	// convert to longitude index
@@ -685,7 +685,7 @@ WindField::InterpolatedWindVector(
 	WindVector*		wv)
 {
 	// put longitude in range (hopefully)
-	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / 360.0);
+	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
 
 	// find lower longitude index
@@ -700,7 +700,7 @@ WindField::InterpolatedWindVector(
 	{
 		// must do the long hard way
 		lon = lon_lat.longitude + _lonStep;
-		wrap_factor = (int)ceil((_lonMin - lon) / 360.0);
+		wrap_factor = (int)ceil((_lonMin - lon) / two_pi);
 		lon += (float)wrap_factor * two_pi;
 
 		lon_idx_2 = (int)((lon - _lonMin) / _lonStep);
