@@ -11,6 +11,7 @@ static const char rcs_id_matrix3_c[] =
 #include <math.h>
 #include <string.h>
 #include "Matrix3.h"
+#include "Constants.h"
 
 //
 // Matrix3
@@ -579,7 +580,7 @@ EarthPosition::EarthPosition(double x1, double x2, double x3,
 
 if (etype == GEODETIC)
   {	// convert geodetic latitude to geocentric latitude
-  x2 = atan(tan(x2)*(1-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH));
+  x2 = atan(tan(x2)*(1-eccentricity_earth*eccentricity_earth));
   etype = GEOCENTRIC;
   }
 
@@ -602,8 +603,8 @@ else if (etype == GEOCENTRIC)
   double cx3 = cos(x3);
 
   // Radius of earth at desired location.
-  double flat = 1.0 - sqrt(1.0-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH);
-  double radius = R1_EARTH*(1.0 - flat*sx2*sx2);
+  double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
+  double radius = r1_earth*(1.0 - flat*sx2*sx2);
 
   // Form sea-level position vector
   _v[0] = radius*cx2*cx3;
@@ -613,9 +614,9 @@ else if (etype == GEOCENTRIC)
   // Form vector normal to the surface of the ellipsoidal earth at the desired
   // location, with length equal to the desired altitude, and add it to the
   // sealevel position vector to get the final position vector.
-  Vector3 normal(_v[0]/(R1_EARTH*R1_EARTH),
-                 _v[1]/(R1_EARTH*R1_EARTH),
-                 _v[2]/(R2_EARTH*R2_EARTH));
+  Vector3 normal(_v[0]/(r1_earth*r1_earth),
+                 _v[1]/(r1_earth*r1_earth),
+                 _v[2]/(r2_earth*r2_earth));
   normal.scale(x1);
 
   _v[0] += normal.get(0);
@@ -702,8 +703,8 @@ double elon = 0;
 double sx2 = sin(_v[1]);
 
 // Radius of earth at desired location.
-double flat = 1.0 - sqrt(1.0-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH);
-double radius = R1_EARTH*(1 - flat*sx2*sx2);
+double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
+double radius = r1_earth*(1 - flat*sx2*sx2);
 double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
 if (fabs(radius - mag) > 0.001)
@@ -734,7 +735,7 @@ else
 
 if (etype == GEODETIC)
   {	// convert geocentric latitude to geodetic latitude
-  lat = atan(tan(lat)/(1-ECCENTRICITY_EARTH*ECCENTRICITY_EARTH));
+  lat = atan(tan(lat)/(1-eccentricity_earth*eccentricity_earth));
   }
 
 Vector3 result(0,lat,elon);

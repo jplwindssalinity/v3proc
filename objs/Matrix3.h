@@ -9,7 +9,6 @@
 static const char rcs_id_matrix3_h[] =
 	"@(#) $Id$";
 
-#include "earth_params.h"
 enum matrixtypeE {GENERAL, IDENTITY};
 enum earthposition_typeE {RECTANGULAR,
                           GEOCENTRIC,
