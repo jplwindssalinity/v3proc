@@ -421,8 +421,8 @@ WindField::ReadVap(
 	// read field //
 	//------------//
 
-	float u[VAP_LON_DIM][VAP_LAT_DIM];
-	float v[VAP_LON_DIM][VAP_LAT_DIM];
+	float u[VAP_LAT_DIM][VAP_LON_DIM];
+	float v[VAP_LAT_DIM][VAP_LON_DIM];
 
 	int size = VAP_LON_DIM * VAP_LAT_DIM * sizeof(float);
 	if (fread((void *)u, size, 1, fp) != 1 ||
@@ -444,7 +444,7 @@ WindField::ReadVap(
 
 	_lonCount = VAP_LON_DIM;
 	_lonMin = 0.0;
-	_lonMax = 350.0;
+	_lonMax = 359.0;
 	_lonStep = 1.0;
 
 	_latCount = VAP_LAT_DIM;
@@ -463,7 +463,7 @@ WindField::ReadVap(
 			if (! wv)
 				return(0);
 
-			wv->SetUV(u[lon_idx][lat_idx], v[lon_idx][lat_idx]);
+			wv->SetUV(u[lat_idx][lon_idx], v[lat_idx][lon_idx]);
 			*(*(_field + lon_idx) + lat_idx) = wv;
 		}
 	}
