@@ -42,7 +42,6 @@ IntegrateSlices(
 	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
-	Attitude zero_rpy; // Constructor set rpy to zero
 
 	//------------------//
 	// set up meas spot //
@@ -60,35 +59,57 @@ IntegrateSlices(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
-		AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
+
+
+
+	//------------------------------------------------------//
+	// calculate commanded receiver gate delay and duration //
+	//------------------------------------------------------//
+
+	if (instrument->useRgc)
+	{
+		if (! instrument->rangeTracker.SetInstrument(instrument))
+		{
+			fprintf(stderr,
+			"IntegrateSlices: error setting instrument using range tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		instrument->commandedRxGateWidth = beam->receiverGateWidth;
+		double rtt = IdealRtt(spacecraft, instrument);
+		if (! RttToCommandedReceiverDelay(instrument, rtt))
+			return(0);
+	}
+
+	//---------------------------------------//
+	// calculate commanded Doppler frequency //
+	//---------------------------------------//
+	if (instrument->useDtc)
+	{
+		if (! instrument->dopplerTracker.SetInstrument(instrument))
+		{
+			fprintf(stderr,
+			"IntegrateSlices: error setting instrument using Doppler tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		if (! IdealCommandedDoppler(spacecraft, instrument))
+			return(0);
+	}
 
 	//-------------------------------------------------//
-	// calculate Doppler shift and receiver gate delay //
+	// find beam center                                //
 	//-------------------------------------------------//
 
-	Vector3 vector;
 	double look, azimuth;
 
 	if (! beam->GetElectricalBoresight(&look, &azimuth))
 		return(0);
 
-	double looka, azimutha;
-	looka=look; azimutha=azimuth;
-
-	vector.SphericalSet(1.0, look, azimuth);
-	TargetInfoPackage tip;
-	RangeAndRoundTrip(&zero_rpy_antenna_frame_to_gc, spacecraft, vector, &tip);
-
-	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
-		instrument->antenna.spinRate,&look, &azimuth))
-	{
-		return(0);
-	}
-
-	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	DopplerAndDelay(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
-		vector);
 
 	//-------------------//
 	// for each slice... //
@@ -142,6 +163,8 @@ IntegrateSlices(
 
 
 		look_vector.SphericalSet(1.0, centroid_look, centroid_azimuth);
+
+                TargetInfoPackage tip;
 		if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
 			look_vector, &tip))
 		{
