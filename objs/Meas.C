@@ -99,20 +99,10 @@ Meas::Composite(
 		N++;
 	}
 
-	// If n != 0 meas_list->current is not changed by this routine
-	if(n==0 || !meas)
-	{
-		meas = meas_list->GetHead();
-	}
-	else
-	{
-		for(int c = 0; c < N; c++)
-		{
-			meas = meas_list->GetPrev();
-		}
-	}
+	meas = meas_list->GetHead();
 
-	//---------------------------------------------------------------------//
+
+	//---------------------------------------------------------------------        //
 	// Form the composite measurement from appropriate combinations of the
 	// elements of each slice measurement in this composite cell.
 	//---------------------------------------------------------------------//

@@ -142,8 +142,18 @@ Kprs::Accumulate(MeasSpotList* quiet, MeasSpotList* noisy)
 
       for(int n=1; n<= _numSlices - slice_number; n++){
             Meas comp_quiet, comp_noise;
+
+            Node<Meas> *quiet_node, *noisy_node;
+
+            quiet_node=quiet_spot->GetCurrentNode();
+            noisy_node=noisy_spot->GetCurrentNode();
+
             if(!comp_quiet.Composite(quiet_spot,n)) return(0);
             if(!comp_noise.Composite(noisy_spot,n)) return(0);
+
+            quiet_spot->SetCurrentNode(quiet_node);
+            noisy_spot->SetCurrentNode(noisy_node);
+
             if(!Accumulate(&comp_quiet,&comp_noise))  return(0);
       }
       noisy_slice=noisy_spot->GetNext();
@@ -311,7 +321,7 @@ float Kprs::Interpolate(
 int Kprs::Normalize(){
   for(int b=0;b<_numBeams;b++){
     for(int n=0;n<_numSlices;n++){
-      for(int s=0;s<_numSlices;s++){
+      for(int s=0;s<_numSlices-n;s++){
 	for(int a=0;a<_numAzimuths;a++){
 	  if(_numSamples[b][n][s][a] < _minNumSamples){
 	    fprintf(stderr,"Too few samples per bin.\n");
