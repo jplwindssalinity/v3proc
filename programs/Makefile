@@ -19,11 +19,13 @@ PROGRAMS = \
 	l10_to_l15 \
 	l15_to_l17 \
 	l17_to_l20 \
+	l20_to_bev \
 	l20_metrics \
 	reformat_pattern \
 	memfilter \
 	make_pattern \
-	see_spot
+	see_spot \
+	vap_to_bev
 
 #----------------------------------------------------------------------
 # default: make all executable programs

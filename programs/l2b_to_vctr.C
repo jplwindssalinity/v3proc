@@ -57,6 +57,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include "Misc.h"
 #include "Wind.h"
+#include "L20.h"
 #include "List.h"
 #include "List.C"
 
@@ -64,8 +65,8 @@ static const char rcs_id[] =
 // TEMPLATES //
 //-----------//
 
+template class List<EarthPosition>;
 template class List<WindVectorPlus>;
-template class List<LonLat>;
 
 //-----------//
 // CONSTANTS //
@@ -118,10 +119,23 @@ main(
 	// read in l20 file //
 	//------------------//
 
-	WindSwath wind_swath;
-	if (! wind_swath.ReadL20(l20_file))
+	L20 l20;
+	if (! l20.OpenForReading(l20_file))
 	{
-		fprintf(stderr, "%s: error reading l20 file %s\n", command, l20_file);
+		fprintf(stderr, "%s: error opening L20 file %s\n", command, l20_file);
+		exit(1);
+	}
+	if (! l20.ReadHeader())
+	{
+		fprintf(stderr, "%s: error reading L20 header from file %s\n",
+			command, l20_file);
+		exit(1);
+	}
+
+	if (! l20.ReadDataRec())
+	{
+		fprintf(stderr, "%s: error reading L20 data record from file  %s\n",
+			command, l20_file);
 		exit(1);
 	}
 
@@ -133,9 +147,9 @@ main(
 	{
 		char filename[1024];
 		sprintf(filename, "%s.%d", bev_base, i);
-		if (! wind_swath.WriteBev(filename, i))
+		if (! l20.WriteBev(filename, i))
 		{
-			fprintf(stderr, "%s: error writing bev file %s\n", command,
+			fprintf(stderr, "%s: error writing BEV file %s\n", command,
 				filename);
 			exit(1);
 		}
