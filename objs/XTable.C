@@ -342,7 +342,7 @@ XTable::AddEntry(float X, int beam_number, float azimuth_angle,
   }
   azi=azimuth_angle*numAzimuthBins/(2*M_PI);
   if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi);
+  azi_idx=(int)(azi+0.5);
   azi_idx%=numAzimuthBins;
 
 
