@@ -214,7 +214,7 @@ L2B::ReadHDF(
     char* ptr = strchr(inc, (int)'\n');
     ptr = strchr(ptr+1, (int)'\n');
     sscanf(ptr, " %f", &inclination);
-    header.inclination = inclination;
+    header.inclination = inclination * dtr;
 
     // continue on with whatever...
     int32 dataType = 0;
