@@ -136,7 +136,7 @@ main(
     char* output_base = NULL;
 
     float low_speed, high_speed;
-    float max_direction_error;
+    float max_direction_error = 0.0;
 
     //------------------------//
     // parse the command line //
@@ -247,7 +247,7 @@ main(
                 exit(1);
             }
 
-            char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+            char* truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
             if (truth_type == NULL)
             {
                 fprintf(stderr, "%s: must specify truth windfield type\n",
@@ -255,7 +255,7 @@ main(
                 exit(1);
             }
 
-            char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+            char* truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
             if (truth_file == NULL)
             {
                 fprintf(stderr, "%s: must specify truth windfield file\n",
@@ -284,32 +284,54 @@ main(
             // read in "truth" wind field //
             //----------------------------//
 
-            WindField truth;
+            WindField truth_windfield;
+            L2B truth_l2b;
+            LonLatWind* truth = NULL;
             if (truth_file != NULL && truth_type != NULL)
             {
-                if (! truth.ReadType(truth_file, truth_type))
-                {
-                    fprintf(stderr,
-                        "%s: error reading %s wind field from file %s\n",
-                        command, truth_type, truth_file);
-                    exit(1);
-                }
+                if (strcasecmp(truth_type, L2B_TYPE) == 0) {
 
-                //-------------------//
-                // scale wind speeds //
-                //-------------------//
+                    //-----------//
+                    // L2B truth //
+                    //-----------//
 
-                config_list.MemorizeLogFlag();
-                config_list.DoNothingForMissingKeywords();
-                float scale;
-                if (config_list.GetFloat(WINDFIELD_SPEED_MULTIPLIER_KEYWORD,
-                    &scale))
-                {
-                    truth.ScaleSpeed(scale);
-                    fprintf(stderr, "Warning: scaling all wind speeds by %g\n",
-                        scale);
+                    if (! truth_l2b.Read(truth_file)) {
+                        fprintf(stderr, "%s: error reading truth L2B file %s\n",
+                            command, truth_file);
+                        exit(1);
+                    }
+                    truth = &(truth_l2b.frame.swath);
+                } else {
+
+                    //------------------//
+                    // Windfield truth? //
+                    //------------------//
+
+                    if (! truth_windfield.ReadType(truth_file, truth_type)) {
+                        fprintf(stderr,
+                            "%s: error reading %s wind field from file %s\n",
+                            command, truth_type, truth_file);
+                        exit(1);
+                    }
+
+                    //-------------------//
+                    // scale wind speeds //
+                    //-------------------//
+
+                    config_list.MemorizeLogFlag();
+                    config_list.DoNothingForMissingKeywords();
+                    float scale;
+                    if (config_list.GetFloat(TRUTH_WIND_SPEED_MULTIPLIER_KEYWORD,
+                        &scale))
+                    {
+                        truth_windfield.ScaleSpeed(scale);
+                        fprintf(stderr, "Warning: scaling all wind speeds by %g\n",
+                            scale);
+                    }
+                    config_list.RestoreLogFlag();
+
+                    truth = &truth_windfield;
                 }
-                config_list.RestoreLogFlag();
             }
 
             //------------------//
@@ -319,7 +341,7 @@ main(
             if (swath != NULL)
             {
                 if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
-                    SPEED_BINS, SPEED_RESOLUTION, &truth))
+                    SPEED_BINS, SPEED_RESOLUTION, truth))
                 {
                     fprintf(stderr, "%s: error evaluating wind field\n",
                         command);
