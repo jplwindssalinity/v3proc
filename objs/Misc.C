@@ -137,7 +137,7 @@ substitute_string(
 		return(0);
 
 	int length = strlen(find);
-	sprintf(result, "%.*s%s%s", string, (ptr - string), replace,
-		string + length);
+	sprintf(result, "%.*s%s%s", (ptr - string), string, replace,
+		ptr + length);
 	return(1);
 }
