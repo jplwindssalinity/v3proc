@@ -70,12 +70,13 @@ OBJS = \
 	SpacecraftSim.o \
 	Tracking.o \
 	Wind.o \
-        XTable.o 
+	XTable.o 
 
 INCS = \
 	*.h \
 	List.C \
-	BufferedList.C
+	BufferedList.C \
+	Tracking.C
 
 
 #----------------------------------------------------------------------
