@@ -447,5 +447,6 @@ int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 Meas::MeasTypeE  PolToMeasType(PolE pol);
 PolE  MeasTypeToPol(Meas::MeasTypeE meas_type);
+float effective_gate_width_to_slice_bandwidth(float egw);
 
 #endif

@@ -729,3 +729,38 @@ SDreaddata_or_exit(
     }
     return;
 }
+
+//-----------//
+// SDattrint //
+//-----------//
+// read and parse an attribute to get its integer value.
+// this function is specific to the GDS implementation of
+// attributes as containing a multiline string. the real
+// purpose of this function is for getting the actual frame
+// count. it just happens to be a bit more generic than that.
+
+int
+SDattrint(
+    int32  sd_id,
+    char*  sds_name,
+    int*   value)
+{
+    int32 attr_index = SDfindattr(sd_id, sds_name);
+    char data[1024];
+    if (SDreadattr(sd_id, attr_index, data) == FAIL)
+    {
+        fprintf(stderr, "SDattrint: error reading attribute for %s\n",
+            sds_name);
+        return(0);
+    }
+    int tmp_value = 0;
+    if (sscanf(data, " %*[^\n] %*[^\n] %d", &tmp_value) != 1)
+    {
+        fprintf(stderr, "SDattrint: error parsing attribute %s\n",
+            sds_name);
+        fprintf(stderr, "%s\n", data);
+        return(0);
+    }
+    *value = tmp_value;
+    return(1);
+}

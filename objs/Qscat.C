@@ -2888,3 +2888,21 @@ MeasTypeToPol(
     }
     return(NONE);
 }
+
+//-----------------------------------------//
+// effective_gate_width_to_slice_bandwidth //
+//-----------------------------------------//
+// egw in ms
+// return bandwidth in kHz
+
+float
+effective_gate_width_to_slice_bandwidth(
+    float  egw)
+{
+    static float bandwidths[] = { 0.462, 2.310, 4.619, 6.929, 12.933, 8.314,
+        10.624, 12.933 };
+    int egw_idx = (int)(egw / 0.1 + 0.5);
+    if (egw_idx < 0 || egw_idx > 7)
+        return (0.0);
+    return bandwidths[egw_idx];
+}
