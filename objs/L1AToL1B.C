@@ -1,6 +1,6 @@
 //==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
+// Copyright (C) 1997, California Institute of Technology.  //
+// U.S. Government sponsorship acknowledged.		    //
 //==========================================================//
 
 static const char rcs_id_l10tol15_c[] =
@@ -127,6 +127,8 @@ L10ToL15::Convert(
 			// commanded doppler
 			// commanded receiver gate delay
 
+			if(XMGROUT) printf("%g ",antenna->azimuthAngle);
+
 			//----------------------------//
 			// generate coordinate switch //
 			//----------------------------//
@@ -231,7 +233,7 @@ L10ToL15::Convert(
 				// to stdout.                       //
 				//----------------------------------//
 
-				if (XMGROUT) printf("%g\n",sigma0);
+				if (XMGROUT) printf("%g ",1.0-sigma0);
 
 				//-----------------//
 				// add measurement //
@@ -242,6 +244,7 @@ L10ToL15::Convert(
 			}
 			l15->frame.spotList.Append(meas_spot);
 			spot_idx++;
+			if (XMGROUT) printf("\n");
 		}
 	}
 
