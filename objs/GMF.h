@@ -1,5 +1,5 @@
  //=============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -68,18 +68,19 @@ public:
     // analyze //
     //---------//
 
-    int  GetCoefs(Meas::MeasTypeE met, float inc, float spd, float* A0,
-             float* A1, float* A1_phase, float* A2, float* A2_phase,
-             float* A3, float* A3_phase, float* A4, float* A4_phase);
-    int  GetObjLimits(float* min_obj, float* max_obj);
-    int  WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
-    int  WritePdf(FILE* ofp, MeasList* meas_list, Kp* kp);
-    int  WriteObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
-    int  WriteGSObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
-    int  AppendSolutions(FILE* ofp, WVC* wvc, float min_obj, float max_obj);
-    int  WriteObjXmgr(char* basename, int panelcount, WVC* wvc);
+    int    GetCoefs(Meas::MeasTypeE met, float inc, float spd, float* A0,
+               float* A1, float* A1_phase, float* A2, float* A2_phase,
+               float* A3, float* A3_phase, float* A4, float* A4_phase);
+    int    GetObjLimits(float* min_obj, float* max_obj);
+    int    WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
+    int    WritePdf(FILE* ofp, MeasList* meas_list, Kp* kp);
+    int    WriteObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
+    int    WriteGSObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
+    int    AppendSolutions(FILE* ofp, WVC* wvc, float min_obj, float max_obj);
+    int    WriteObjXmgr(char* basename, int panelcount, WVC* wvc);
     float  GetVariance(Meas* meas, float spd, float chi, float trial_sigma0,
-		     Kp* kp);
+               Kp* kp);
+
     //----------------//
     // wind retrieval //
     //----------------//
@@ -99,7 +100,8 @@ public:
     //------------------------//
     // special wind retrieval //
     //------------------------//
-    int  GetHHBiasUsingVV(MeasList* meas_list, Kp* kp, float* bias);
+
+    int    GetHHBiasUsingVV(MeasList* meas_list, Kp* kp, float* bias);
     int    RetrieveWinds_H1(MeasList* meas_list, Kp* kp, WVC* wvc);
     int    RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc,
                int h3_and_s1_flag = 0);
@@ -126,10 +128,12 @@ public:
     // GS wind retrieval //
     //-------------------//
 
-    int  RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc, int polar_special=0);
-    int  Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc, int polar_special=0);
+    int  RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc,
+             int polar_special=0);
+    int  Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc,
+             int polar_special=0);
     int  FindMultiSpeedRidge(MeasList* meas_list, Kp* kp, int dir_idx,
-			     float* max_sep, float* min_sep);
+             float* max_sep, float* min_sep);
     int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
     int  CopyBuffersGSToPE();
 
@@ -179,4 +183,3 @@ public:
 };
 
 #endif
-

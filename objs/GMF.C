@@ -270,29 +270,30 @@ int GMF::ReadPolarimetric(
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
           imet=_MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
-	}
+    }
 
-	//----------------------//
-	// zero the 0 m/s model //
-	//----------------------//
+    //----------------------//
+    // zero the 0 m/s model //
+    //----------------------//
 
-	for (int spd_idx =0; spd_idx < file_min_spd_idx; spd_idx++){
-	  for (int met_idx = 0; met_idx < _metCount; met_idx++)
-	    {
-		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
-		{
-			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
-			{
-			  float tmp =
-                  *(*(*(*(_value+met_idx)+inc_idx)+file_min_spd_idx)+chi_idx);
-			  tmp*=(float)spd_idx/(float)file_min_spd_idx;
-			  *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = tmp;
-			}
-		}
-	    }
-	}
-	fclose(ifp);
-	return(1);
+    for (int spd_idx =0; spd_idx < file_min_spd_idx; spd_idx++)
+    {
+        for (int met_idx = 0; met_idx < _metCount; met_idx++)
+        {
+            for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+            {
+                for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+                {
+                    float tmp = *(*(*(*(_value+met_idx) + inc_idx) +
+                        file_min_spd_idx)+chi_idx);
+                    tmp *= (float)spd_idx/(float)file_min_spd_idx;
+                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = tmp;
+                }
+            }
+        }
+    }
+    fclose(ifp);
+    return(1);
 }
 
 //---------------//
@@ -314,40 +315,40 @@ GMF::GetCoefs(
     float*           A4,
     float*           A4_phase)
 {
-	float real[5], imag[5];
-	int n = _chiCount - 1;
-	float wn = two_pi / n;
+    float real[5], imag[5];
+    int n = _chiCount - 1;
+    float wn = two_pi / n;
 
-	for (int i = 0; i < 5; i++)
-	{
-		real[i] = 0.0;
-		imag[i] = 0.0;
+    for (int i = 0; i < 5; i++)
+    {
+        real[i] = 0.0;
+        imag[i] = 0.0;
 
-		// assumes single point overlap in chi
-		for (int chi_idx = 0; chi_idx < n; chi_idx++)
-		{
-			float arg = wn * (float)i * (float)chi_idx;
-			float c = cos(arg);
-			float s = sin(arg);
-			float chi = (float)chi_idx * _chiStep;
-			float val;
-			GetInterpolatedValue(met, inc, spd, chi, &val);
-			real[i] += val * c;
-			imag[i] += val * s;
-		}
-	}
+        // assumes single point overlap in chi
+        for (int chi_idx = 0; chi_idx < n; chi_idx++)
+        {
+            float arg = wn * (float)i * (float)chi_idx;
+            float c = cos(arg);
+            float s = sin(arg);
+            float chi = (float)chi_idx * _chiStep;
+            float val;
+            GetInterpolatedValue(met, inc, spd, chi, &val);
+            real[i] += val * c;
+            imag[i] += val * s;
+        }
+    }
 
-	*A0 = real[0] / (float)n;
-	*A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (float)n;
-	*A1_phase = -atan2(imag[1], real[1]);
-	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (float)n;
-	*A2_phase = -atan2(imag[2], real[2]);
-	*A3 = 2.0 * sqrt(real[3] * real[3] + imag[3] * imag[3]) / (float)n;
-	*A3_phase = -atan2(imag[3], real[3]);
-	*A4 = 2.0 * sqrt(real[4] * real[4] + imag[4] * imag[4]) / (float)n;
-	*A4_phase = -atan2(imag[4], real[4]);
+    *A0 = real[0] / (float)n;
+    *A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (float)n;
+    *A1_phase = -atan2(imag[1], real[1]);
+    *A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (float)n;
+    *A2_phase = -atan2(imag[2], real[2]);
+    *A3 = 2.0 * sqrt(real[3] * real[3] + imag[3] * imag[3]) / (float)n;
+    *A3_phase = -atan2(imag[3], real[3]);
+    *A4 = 2.0 * sqrt(real[4] * real[4] + imag[4] * imag[4]) / (float)n;
+    *A4_phase = -atan2(imag[4], real[4]);
 
-	return(1);
+    return(1);
 }
 
 //---------------//
@@ -4148,7 +4149,6 @@ GMF::EstimateDirMSE(
   }
   return(retval);
 }
-
 
 //-----------------------//
 // GMF::RetrieveWinds_S3 //
