@@ -155,6 +155,7 @@ public:
     // variables //
     //-----------//
 
+    double    sampledAzimuth;    // the antenna azimuth angle when sampled
     Antenna   antenna;
     EncoderE  encoderElectronics;
 };
@@ -291,8 +292,9 @@ public:
     CdsBeamInfo*  GetCurrentCdsBeamInfo();
     SesBeamInfo*  GetCurrentSesBeamInfo();
 
-    int  RotateAntennaToTxCenter(int pri_delay);
-    int  RotateAntennaToGroundImpact(Spacecraft* spacecraft, int pri_delay);
+    int  SetAntennaToTxCenter(int pri_delay = 0);
+    int  SetAntennaToGroundImpact(Spacecraft* spacecraft, int pri_delay = 0);
+    int  SetAntennaFromHeldEncoder(unsigned short encoder);
 
     //-----------//
     // variables //
