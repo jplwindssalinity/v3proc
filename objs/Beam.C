@@ -435,8 +435,8 @@ Beam::GetPowerGain(
 	}
 
 	// The actual location of the lower left point of the grid square.
-	double x1 = (ix1 - _ix_zero) * _x_spacing;
-	double y1 = (iy1 - _iy_zero) * _y_spacing;
+	double ax1 = (ix1 - _ix_zero) * _x_spacing;
+	double ay1 = (iy1 - _iy_zero) * _y_spacing;
 
 	// The power gain at the four grid square points.
 	double pg1 = _power_gain[ix1][iy1];
@@ -445,8 +445,8 @@ Beam::GetPowerGain(
 	double pg4 = _power_gain[ix1][iy1+1];
 
 	// The proportional location of the requested point in the grid square.
-	double t = (Em - x1) / _x_spacing;
-	double u = (Am - y1) / _y_spacing;
+	double t = (Em - ax1) / _x_spacing;
+	double u = (Am - ay1) / _y_spacing;
 
 	// The interpolated power gain.
 	*gain = (1-t)*(1-u)*pg1 + t*(1-u)*pg2 + t*u*pg3 + (1-t)*u*pg4;
