@@ -208,7 +208,6 @@ LocateSpot(
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
 
-
 	//------------------//
 	// set up meas spot //
 	//------------------//
@@ -266,15 +265,6 @@ LocateSpot(
 	//----------------------------//
 
 	Meas* meas = new Meas();	// need the outline to append to
-
-	// Start with the center position.
-	EarthPosition *rspot = new EarthPosition;
-	*rspot= tip.rTarget;
-	if (! meas->outline.Append(rspot))
-	{
-		printf("Error appending to spot outline\n");
-		return(0);
-	}
 
 	// get the max gain value.
 	float gp_max;
