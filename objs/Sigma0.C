@@ -108,12 +108,17 @@ sigma0_to_Psn(
 	double X;
 	radar_X(gc_to_antenna, spacecraft, instrument, meas, &X);
 
-	// Signal (ie., echo) power
+	// Signal (ie., echo) power referenced to the point just before the
+	// I-Q detection occurs (ie., including the receiver gain and system loss).
 	double Ps_slice = Kfactor*X*sigma0;
 
-	// Constant noise power within one slice
+	// Constant noise power within one slice referenced to the antenna terminal
 	double Pn_slice = bK*instrument->sliceBandwidth *
 		instrument->systemTemperature;
+
+	// Multiply by receiver gain and system loss to reference noise power
+	// at the same place as the signal power.
+	Pn_slice *= instrument->receiverGain / instrument->systemLoss;
 
 	if (instrument->useKpc == 0)
 	{
