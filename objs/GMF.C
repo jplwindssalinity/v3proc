@@ -26,7 +26,6 @@ GMF::GMF()
 
 GMF::~GMF()
 {
-	_Deallocate();
 	return;
 }
 
