@@ -38,5 +38,5 @@ install: objs/Makefile programs/Makefile scripts/Makefile
 	done
 
 # rule for subtree makefiles
-%/Makefile: $(SIM_CENTRAL_TREE)/%/RCS/Makefile,v
-	(cd $*; co $(SIM_CENTRAL_TREE)/$*/RCS/Makefile,v)
+%/Makefile: $(SIM_CENTRAL_TREE)/src/%/RCS/Makefile,v
+	(cd $*; co $(SIM_CENTRAL_TREE)/src/$*/RCS/Makefile,v)
