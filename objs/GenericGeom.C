@@ -251,6 +251,18 @@ earth_intercept(
 //------//
 
 // Compute Keplerian elements from an EarthPosition and velocity vector
+//
+// Inputs:
+// r = position of satellite (in rotating geocentric frame) (km)
+// v = velocity of satellite (instantaneous inertail reference frame) (km/s)
+//
+// Orbit Elements
+// *a = semi-major axis (km)
+// *e = eccentricity
+// *i = inclination (rad)
+// *w = argument of perigee (rad)
+// *RA = right ascension of (ie., longitude) of the ascending node
+// *M = mean anomaly (rad)
 
 int
 elem(EarthPosition	r,
@@ -280,27 +292,56 @@ elem(EarthPosition	r,
 
 	Vector3 zhat(0,0,1);
 
+	//---------------------//
+	// Compute inclination //
+	//---------------------//
+
 	*i = acos(Nhat % zhat);
+
+	//-------------------------//
+	// Compute right ascension //
+	//-------------------------//
 
 	*RA = atan2(-Nhat.Get(1),Nhat.Get(2));
 
+	//------------------------------------------//
+	// Compute vector toward the ascending node //
+	//------------------------------------------//
+
 	Vector3 O = zhat & Nhat;
+
+	//-------------------------//
+	// Compute semi-major axis //
+	//-------------------------//
 
 	*a = 1.0 / (2.0/R - V*V/xmu);
 
+	//----------------------//
+	// Compute orbit period //
+	//----------------------//
+
 	*P = sqrt(4*pi*pi*(*a)*(*a)*(*a)/xmu);
 
-	double beta = pi/2 - acos(r % v);
+	//--------------------------------------------//
+	// Compute eccentricity and true anomaly (nu) //
+	//--------------------------------------------//
 
+	double beta = pi/2 - acos(r % v);
 	double tmp = R*V*V/xmu;
 	*e = sqrt(tmp*tmp*cos(beta)*cos(beta) + sin(beta)*sin(beta));
-
 	double nu = atan2(tmp*sin(beta)*cos(beta), tmp*cos(beta)*cos(beta) - 1.0);
+
+	//-----------------------------//
+	// Compute argument of perigee //
+	//-----------------------------//
 
 	*w = acos(O % r) - nu;
 
-	double E = 2.0*atan(sqrt((1-(*e))/(1+(*e))) * tan(nu/2));
+	//------------------------------------------------//
+	// Compute eccentric anomaly (E) and mean anomaly //
+	//------------------------------------------------//
 
+	double E = 2.0*atan(sqrt((1-(*e))/(1+(*e))) * tan(nu/2));
 	*M = E - (*e)*sin(E);
 
 	return(1);
