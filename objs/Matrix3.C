@@ -118,14 +118,12 @@ Matrix3 Matrix3::operator+(Matrix3 m2)
 
 Matrix3
 Matrix3::operator-(
-    Matrix3  m2)
+    const Matrix3  m2) const
 {
     Matrix3 result;
 
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
             result._m[i][j] = _m[i][j] - m2._m[i][j];
         }
     }
@@ -137,14 +135,12 @@ Matrix3::operator-(
 //
 
 Matrix3
-Matrix3::operator-()
+Matrix3::operator-() const
 {
     Matrix3 result;
 
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
             result._m[i][j] = - _m[i][j];
         }
     }

@@ -51,8 +51,8 @@ public:
     //-------------------------//
 
     Matrix3 operator+(Matrix3 m2);
-    Matrix3 operator-(Matrix3 m2);
-    Matrix3 operator-();
+    Matrix3 operator-(const Matrix3 m2) const;
+    Matrix3 operator-() const;
     Matrix3 operator*(const Matrix3 m2) const;
     Vector3 operator*(Vector3 v2);
 
