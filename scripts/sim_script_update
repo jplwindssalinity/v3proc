@@ -1,0 +1,163 @@
+#!/bin/csh
+#-----------------------------------------------------------#
+# Copyright (C) 1998, California Institute of Technology.	#
+# U.S. Government sponsorship acknowledged.					#
+#-----------------------------------------------------------#
+
+#----------------------------------------------------------------------
+# NAME
+#		sim_script_update
+#
+# SYNOPSIS
+#		sim_script_update <cfg_file>
+#
+# DESCRIPTION
+#		Executes the primary simulation chain, i.e.:
+#			sim, l00_to_l1a, l1a_to_l1b, l1b_to_l2a, l2a_to_l2b
+#			Programs are executed only if the standard output file
+#			does not exist
+#
+# OPTIONS
+#		None.
+#
+# OPERANDS
+#		The following operand is supported:
+#		<cfg_file>		Specifies the simulation configuration file.
+#
+# EXAMPLES
+#		An example of a command line is:
+#			% sim_script_update qscat.cfg
+#
+# ENVIRONMENT
+#		Not environment dependent
+#
+# EXIT STATUS
+#		The following exit values are returned:
+#		0	Program executed successfully
+#		>0	Program had an error
+#
+# NOTES
+#		None.
+#
+# AUTHOR
+#		James N. Huddleston
+#		hudd@acid.jpl.nasa.gov
+#
+# CONFIGURATION CONTROL
+#		"@(#) $Id$"
+#----------------------------------------------------------------------
+
+#------------------------#
+# Parse the command line #
+#------------------------#
+
+set command_name = $0
+set command_name = $command_name:t
+set opt_string = ""
+
+if ($#argv != 1) then
+  goto usage
+  exit(1)
+endif
+
+set cfg_file = $argv[1]
+
+#------------------#
+# log the cfg file #
+#------------------#
+
+echo "`date` : Logging configuration file"
+log_cfg $cfg_file $cfg_file.clog
+echo "`date` : Completed logging configuration file"
+echo ""
+
+#---------#
+# run sim #
+#---------#
+
+if (-e l00.dat) then
+  ;
+else
+  echo "`date` : Starting sim"
+  sim $cfg_file
+  echo "`date` : Completed sim"
+  echo ""
+endif
+
+#----------------#
+# run l00_to_l1a #
+#----------------#
+
+if (-e l1a.dat) then
+  ;
+else
+  echo "`date` : Starting l00_to_l1a"
+  l00_to_l1a $cfg_file
+  echo "`date` : Completed l00_to_l1a"
+  echo ""
+endif
+
+#----------------#
+# run l1a_to_l1b #
+#----------------#
+
+if (-e l1b.dat) then
+  ;
+else
+  echo "`date` : Starting l1a_to_l1b"
+  l1a_to_l1b $cfg_file
+  echo "`date` : Completed l1a_to_l1b"
+  echo ""
+endif
+
+#----------------#
+# run l1b_to_l2a #
+#----------------#
+
+if (-e l2a.dat) then
+  ;
+else
+  echo "`date` : Starting l1b_to_l2a"
+  l1b_to_l2a $cfg_file
+  echo "`date` : Completed l1b_to_l2a"
+  echo ""
+endif
+
+#----------------#
+# run l2a_to_l2b #
+#----------------#
+
+if (-e l2b.dat) then
+  ;
+else
+  echo "`date` : Starting l2a_to_l2b"
+  l2a_to_l2b $cfg_file
+  echo "`date` : Completed l2a_to_l2b"
+  echo ""
+endif
+
+#----------------------------#
+# verifying the cfg log file #
+#----------------------------#
+
+echo "`date` : Verifying configuration file"
+log_cfg $cfg_file $cfg_file.clog2
+diff $cfg_file.clog $cfg_file.clog2
+rm $cfg_file.clog2
+echo "`date` : Completed verifying configuration file"
+
+
+exit(0)
+
+end
+
+
+#---------------------------#
+# LABEL: usage				#
+#	Explain command usage	#
+#---------------------------#
+
+usage:
+  echo "usage: $command_name <cfg_file>"
+  exit(1)
+end
