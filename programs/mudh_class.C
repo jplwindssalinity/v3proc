@@ -100,9 +100,6 @@ template class List<AngleInterval>;
 
 #define OPTSTRING    "ch:s:m:r:"
 
-#define REV_DOY_M    7.029760E-2
-#define REV_DOY_B    1.703545E+2
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -311,10 +308,9 @@ main(
             fread(lon_array, sizeof(short), size, ifp) != size ||
             fread(lat_array, sizeof(short), size, ifp) != size)
         {
-            fclose(ifp);
-            fprintf(stderr, "%s: error reading MUDH file %s (continuing)\n",
+            fprintf(stderr, "%s: error reading MUDH file %s\n",
                 command, mudh_file);
-            continue;
+            exit(1);
         }
         fclose(ifp);
 
@@ -332,9 +328,9 @@ main(
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
         {
-            fprintf(stderr, "%s: error opening rain file %s\n", command,
-                rain_file);
-            exit(1);
+            fprintf(stderr, "%s: error opening rain file %s (continuing)\n",
+                command, rain_file);
+            continue;
         }
         fread(rain_rate, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
         fread(time_dif, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
@@ -485,10 +481,10 @@ main(
                 // accumulate from data //
                 //----------------------//
 
-                int nbd_idx = nbd_array[ati][cti];
-                int spd_idx = spd_array[ati][cti];
-                int dir_idx = dir_array[ati][cti];
-                int mle_idx = mle_array[ati][cti];
+                int nbd_idx = (int)(nbd_array[ati][cti] / 100.0 + 0.5);
+                int spd_idx = (int)(spd_array[ati][cti] / 100.0 + 0.5);
+                int dir_idx = (int)(dir_array[ati][cti] / 100.0 + 0.5);
+                int mle_idx = (int)(mle_array[ati][cti] / 100.0 + 0.5);
 
                 int nbd_avail = 1;
                 if (nbd_idx == MAX_SHORT)

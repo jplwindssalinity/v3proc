@@ -8,14 +8,15 @@
 //    mudh_table
 //
 // SYNOPSIS
-//    mudh_table [ -h ] [ -m minutes ] [ -r irr_thresh ] <start_rev>
-//        <end_rev> <output_base>
+//    mudh_table [ -h ] [ -p ] [ -m minutes ] [ -r irr_thresh ]
+//        <start_rev> <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generates a mudh table for classification.
 //
 // OPTIONS
-//    [ -h ]            Make a sample histogram.
+//    [ -h ]            Make a sample histogram. (Number of samples)
+//    [ -p ]            Make a set of probability charts.
 //    [ -m minutes ]    Time difference maximum.
 //    [ -r irr_thresh ]  The SSM/I rain rate to threshold.
 //
@@ -97,7 +98,9 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "hm:r:"
+#define OPTSTRING    "hpm:r:"
+#define BIG_DIM      100
+#define QUOTE        '"'
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -113,8 +116,8 @@ int opt_hist = 0;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -h ]", "[ -m minutes ]", "[ -r irr_thresh ]",
-    "<start_rev>", "<end_rev>", "<output_base>", 0 };
+const char* usage_array[] = { "[ -h ]", "[ -p ]", "[ -m minutes ]",
+    "[ -r irr_thresh ]", "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // last index: SSM/I class (0=all, 1=rainfree, 2=rain)
 static unsigned long counts[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM][3];
@@ -122,6 +125,9 @@ static unsigned long counts[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM][3];
 static double norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static double rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static double all_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+
+// parameter index, scaled value, all/rain
+static unsigned long hires_counts[4][BIG_DIM][2];
 
 //--------------//
 // MAIN PROGRAM //
@@ -136,8 +142,8 @@ main(
     // initialize //
     //------------//
 
-    int minutes = 60;              // default one hour
-    float rain_threshold = 1.0;    // default one mm/hr
+    int minutes = 30;              // default 30 minutes
+    float irr_threshold = 2.0;    // default two km*mm/hr
 
     //------------------------//
     // parse the command line //
@@ -157,7 +163,7 @@ main(
             minutes = atoi(optarg);
             break;
         case 'r':
-            rain_threshold = atof(optarg);
+            irr_threshold = atof(optarg);
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -322,12 +328,43 @@ main(
                 if (imle < 0) imle = 0;
                 if (imle > max_imle) imle = max_imle;
 
+                // convert to hires indicies for histograms
+                int hr_inbd = (int)((nbd - NBD_MIN) * (float)(BIG_DIM - 1) /
+                    nbd_spread + 0.5);
+                int hr_ispd = (int)((spd - SPD_MIN) * (float)(BIG_DIM - 1) /
+                    spd_spread + 0.5);
+                int hr_idir = (int)((dir - DIR_MIN) * (float)(BIG_DIM - 1) /
+                    dir_spread + 0.5);
+                int hr_imle = (int)((mle - MLE_MIN) * (float)(BIG_DIM - 1) /
+                    mle_spread + 0.5);
+                if (hr_inbd < 0) hr_inbd = 0;
+                if (hr_inbd > (BIG_DIM - 1)) hr_inbd = (BIG_DIM - 1);
+                if (hr_ispd < 0) hr_ispd = 0;
+                if (hr_ispd > (BIG_DIM - 1)) hr_ispd = (BIG_DIM - 1);
+                if (hr_idir < 0) hr_idir = 0;
+                if (hr_idir > (BIG_DIM - 1)) hr_idir = (BIG_DIM - 1);
+                if (hr_imle < 0) hr_imle = 0;
+                if (hr_imle > (BIG_DIM - 1)) hr_imle = (BIG_DIM - 1);
+
+                // accumulate
                 float irr = (float)integrated_rain_rate[ati][cti] * 0.1;
                 if (irr == 0.0)
+                {
                     counts[inbd][ispd][idir][imle][1]++;    // rainfree
-                if (irr > rain_threshold)
+                }
+                else if (irr > irr_threshold)
+                {
                     counts[inbd][ispd][idir][imle][2]++;    // rain
+                    hires_counts[0][hr_inbd][1]++;
+                    hires_counts[1][hr_ispd][1]++;
+                    hires_counts[2][hr_idir][1]++;
+                    hires_counts[3][hr_imle][1]++;
+                }
                 counts[inbd][ispd][idir][imle][0]++;        // all
+                hires_counts[0][hr_inbd][0]++;
+                hires_counts[1][hr_ispd][0]++;
+                hires_counts[2][hr_idir][0]++;
+                hires_counts[3][hr_imle][0]++;
             }
         }
     }
@@ -445,6 +482,45 @@ main(
             fprintf(hist_ofp, "%ld %g %g\n", target, cell_PDF, data_PDF);
         }
         fclose(hist_ofp);
+    }
+
+    //----------------//
+    // write Pr files //
+    //----------------//
+
+    const char* param_label[] = { "NBD", "Speed (m/s)",
+        "Swath Relative Direction (deg)", "MLE" };
+    const char* param_ext[] = { "nbd", "spd", "dir", "mle" };
+    float param_spread[] = { nbd_spread, spd_spread, dir_spread, mle_spread };
+    float param_min[] = { NBD_MIN, SPD_MIN, DIR_MIN, MLE_MIN };
+    for (int param_idx = 0; param_idx < 4; param_idx++)
+    {
+        char filename[1024];
+        sprintf(filename, "%s.pr.%s", output_base, param_ext[param_idx]);
+        FILE* ofp = fopen(filename, "w");
+        if (ofp == NULL)
+        {
+            fprintf(stderr, "%s: error opening output Pr file %s\n", command,
+                filename);
+            exit(1);
+        }
+        fprintf(ofp, "@ title %cProbability of IRR > %g%c\n", QUOTE,
+            irr_threshold, QUOTE);
+        fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, param_label[param_idx],
+            QUOTE);
+
+        for (int idx = 0; idx < BIG_DIM; idx++)
+        {
+            if (hires_counts[param_idx][idx][0] < 100)
+                continue;
+            float value = (float)idx * param_spread[param_idx] /
+                (float)(BIG_DIM - 1) + param_min[param_idx];
+            double prob = (double)hires_counts[param_idx][idx][1] /
+                (double)hires_counts[param_idx][idx][0];
+            fprintf(ofp, "%g %g\n", value, prob);
+        }
+
+        fclose(ofp);
     }
 
     return (0);

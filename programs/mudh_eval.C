@@ -8,8 +8,9 @@
 //    mudh_eval
 //
 // SYNOPSIS
-//    mudh_eval [ -n ] <mudhtab> <minutes> <irr_thresh>
-//        <start_rev> <end_rev> <output_base>
+//    mudh_eval [ -n ] [ -s min_spd:max_spd ] [ -t t1:t2:t3 ]
+//        <mudhtab> <minutes> <irr_thresh> <start_rev> <end_rev>
+//        <output_base>
 //
 // DESCRIPTION
 //    Generate an evaluation chart for the fixed integrated
@@ -17,6 +18,8 @@
 //
 // OPTIONS
 //    [ -n ]  Only evalulate when NBD was available.
+//    [ -s min_spd:max_spd ]  Use the ECMWF speed range specified.
+//    [ -t t1:t2:t3 ]  Three thresholds to use for the mudh thresh.
 //
 // OPERANDS
 //    <mudhtab>       The mudhtab.  Used for estimating the % threshold.
@@ -70,7 +73,7 @@ static const char rcs_id[] =
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "n"
+#define OPTSTRING  "ns:t:"
 #define QUOTE      '"'
 
 //-----------------------//
@@ -85,20 +88,25 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -n ]", "<mudhtab>", "<minutes>",
-    "<irr_thresh>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
+const char* usage_array[] = { "[ -n ]", "[ -s min_spd:max_spd ]",
+    "[ -t t1:t2:t3 ]", "<mudhtab>", "<minutes>", "<irr_thresh>",
+    "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
-static double  norain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-static double  rain_tab[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+// MUDHtab
+static double  norain_prob[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double  rain_prob[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static double  sample_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 
+// flag
 static float           value_tab[AT_WIDTH][CT_WIDTH];
 static unsigned char   flag_tab[AT_WIDTH][CT_WIDTH];
 
+// irain
 static unsigned char   rain_rate[AT_WIDTH][CT_WIDTH];
 static unsigned char   time_dif[AT_WIDTH][CT_WIDTH];
 static unsigned short  integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 
+// MUDH
 static unsigned short  nbd_array[AT_WIDTH][CT_WIDTH];
 static unsigned short  spd_array[AT_WIDTH][CT_WIDTH];
 static unsigned short  dir_array[AT_WIDTH][CT_WIDTH];
@@ -106,11 +114,14 @@ static unsigned short  mle_array[AT_WIDTH][CT_WIDTH];
 static unsigned short  lon_array[AT_WIDTH][CT_WIDTH];
 static unsigned short  lat_array[AT_WIDTH][CT_WIDTH];
 
+// ECMWF
+static float           ecmwf_spd_array[AT_WIDTH][CT_WIDTH];
+
 static unsigned long   total_wvc;
 static unsigned long   classified_wvc;
 
 // Index 1: SSM/I 0=irr_zero, 1=irr>fixed_thresh, 2=otherwise
-// Index 2: mudh threshold index (threshold = index / 1000.0)
+// Index 2: mudh threshold index (threshold = index / 500.0)
 // Index 3: MUDH  0=no_rain,  1=rain
 static unsigned long   ssmi_mthresh_mudh[3][100][2];
 
@@ -134,6 +145,13 @@ main(
     //------------//
 
     int opt_nbd = 0;
+    int opt_spd = 0;
+    float min_spd = 0.0;
+    float max_spd = 0.0;
+    int opt_thresh = 0;
+    float t1 = 0.0;
+    float t2 = 0.0;
+    float t3 = 0.0;
 
     //------------------------//
     // parse the command line //
@@ -146,6 +164,24 @@ main(
     {
         switch(c)
         {
+        case 's':
+            if (sscanf(optarg, "%f:%f", &min_spd, &max_spd) != 2)
+            {
+                fprintf(stderr, "%s: error parsing speed range (%s)\n",
+                    command, optarg);
+                exit(1);
+            }
+            opt_spd = 1;
+            break;
+        case 't':
+            if (sscanf(optarg, "%f:%f:%f", &t1, &t2, &t3) != 3)
+            {
+                fprintf(stderr, "%s: error parsing thresholds (%s)\n",
+                    command, optarg);
+                exit(1);
+            }
+            opt_thresh = 1;
+            break;
         case 'n':
             opt_nbd = 1;
             break;
@@ -177,8 +213,8 @@ main(
         exit(1);
     }
     unsigned int md_size = NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM;
-    if (fread(norain_tab, sizeof(double), md_size, mudhtab_ifp) != md_size ||
-        fread(rain_tab, sizeof(double), md_size, mudhtab_ifp) != md_size ||
+    if (fread(norain_prob, sizeof(double), md_size, mudhtab_ifp) != md_size ||
+        fread(rain_prob, sizeof(double), md_size, mudhtab_ifp) != md_size ||
         fread(sample_count, sizeof(double), md_size, mudhtab_ifp) != md_size)
     {
         fprintf(stderr, "%s: error reading mudhtab file %s\n", command,
@@ -193,9 +229,9 @@ main(
 
     double min_thresh[3] = { 0.0, 0.0, 0.0 };
     double max_thresh[3] = { 1.0, 1.0, 1.0 };
+    double target_frac[3] = { 0.05, 0.075, 0.1 };
     double try_thresh[3];
     unsigned long rain_count[3];
-    double target_frac[3] = { 0.05, 0.075, 0.1 };
 
     do
     {
@@ -217,7 +253,7 @@ main(
                 (unsigned long)(sample_count[inbd][ispd][idir][imle] + 0.5);
               for (int i = 0; i < 3; i++)
               {
-                if (rain_tab[inbd][ispd][idir][imle] > try_thresh[i])
+                if (rain_prob[inbd][ispd][idir][imle] > try_thresh[i])
                 {
                   rain_count[i] +=
                     (unsigned long)(sample_count[inbd][ispd][idir][imle] + 0.5);
@@ -245,6 +281,13 @@ main(
           break;
     } while (1);
 printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
+
+    if (opt_thresh)
+    {
+        try_thresh[0] = t1;
+        try_thresh[1] = t2;
+        try_thresh[2] = t3;
+    }
 
     //--------------------//
     // process rev by rev //
@@ -341,6 +384,49 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
             }
         }
 
+        //------------------------------//
+        // read ECMWF file if necessary //
+        //------------------------------//
+
+        if (opt_spd)
+        {
+            char ecmwf_file[1024];
+            sprintf(ecmwf_file,
+                "/seapac/disk12/RAIN/ecmwf_coll_wind/E2B_%05d.dat", rev);
+            ifp = fopen(ecmwf_file, "r");
+            if (ifp == NULL)
+            {
+                fprintf(stderr,
+                    "%s: error opening ECMWF file %s (continuing)\n",
+                    command, ecmwf_file);
+                continue;
+            }
+
+            unsigned int seek_size =
+                4 + 21 * AT_WIDTH + 4 +              // time
+                4 + CT_WIDTH * AT_WIDTH * 4 + 4 +    // lat
+                4 + CT_WIDTH * AT_WIDTH * 4 + 4 +    // lon
+                4;                                   // speed (record length)
+            unsigned int size = CT_WIDTH * AT_WIDTH;
+            
+            if (fseek(ifp, seek_size, SEEK_CUR) == -1 ||
+                fread(ecmwf_spd_array, sizeof(float), size, ifp) != size)
+            {
+                fprintf(stderr, "%s: error reading ECMWF file %s\n", command,
+                    ecmwf_file);
+                exit(1);
+            }
+            fclose(ifp);
+        }
+/*
+        for (int i = 0; i < AT_WIDTH; i++)
+            for (int j = 0; j < CT_WIDTH; j++)
+                if (ecmwf_spd_array[i][j] != 0.0)
+                    printf("%g %g %g\n", lon_array[i][j] * 0.01, lat_array[i][j] * 0.01 - 90.0, ecmwf_spd_array[i][j]);
+
+        exit(1);
+*/
+
         //-------------//
         // process rev //
         //-------------//
@@ -362,6 +448,16 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
                 if (opt_nbd && nbd_array[ati][cti] == MAX_SHORT)
                 {
                     continue;
+                }
+
+                // check wind speed range if desired
+                if (opt_spd)
+                {
+                    if (ecmwf_spd_array[ati][cti] < min_spd ||
+                        ecmwf_spd_array[ati][cti] > max_spd)
+                    {
+                        continue;
+                    }
                 }
 
                 total_wvc++;
@@ -394,7 +490,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
                 for (int tidx = 0; tidx < 100; tidx++)
                 {
                     // determine mudh class
-                    float m_thresh = (float)tidx / 1000.0;
+                    float m_thresh = (float)tidx / 500.0;
                     int mudh_flag;
                     if (mudh_value > m_thresh)
                         mudh_flag = 1;
@@ -458,7 +554,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
     fprintf(ofp, "@ subtitle %c%g percent classified%c\n", QUOTE,
         classified_percent, QUOTE);
 
-    fprintf(ofp, "@ xaxis label %cPercent Flagged as Rain%c\n", QUOTE, QUOTE);
+    fprintf(ofp, "@ xaxis label %cPercent flagged as rain%c\n", QUOTE, QUOTE);
     fprintf(ofp, "@ yaxis label %cPercent%c\n", QUOTE, QUOTE);
     fprintf(ofp, "@ legend on\n");
     fprintf(ofp, "@ legend string 0 %cMisclassification (unflagged rain)%c\n",
@@ -469,7 +565,7 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
 
     for (int tidx = 0; tidx < 100; tidx++)
     {
-        float m_thresh = (float)tidx / 1000.0;
+        float m_thresh = (float)tidx / 500.0;
         double mudh_rain_count =
             (double)ssmi_mthresh_mudh[0][tidx][1] +
             (double)ssmi_mthresh_mudh[1][tidx][1] +
@@ -512,10 +608,24 @@ printf("%g %g %g\n", try_thresh[0], try_thresh[1], try_thresh[2]);
         exit(1);
     }
 
+    double percent_flagged_as_rain[3];
+    for (int fidx = 0; fidx < 3; fidx++)
+    {
+        double mudh_rain_count =
+            (double)ssmi_ithresh_mudh[fidx][0][0][1] +
+            (double)ssmi_ithresh_mudh[fidx][1][0][1] +
+            (double)ssmi_ithresh_mudh[fidx][2][0][1];
+        percent_flagged_as_rain[fidx] = 100.0 * mudh_rain_count /
+            (double)classified_wvc;
+    }
+
 /*
     fprintf(ofp, "@ title %cRain Means Integrated Rain > %g km*mm/hr%c\n",
         QUOTE, irr_thresh, QUOTE);
 */
+    fprintf(ofp, "@ title %cPercent flagged as rain = %.2f, %.2f, %.2f%c\n",
+        QUOTE, percent_flagged_as_rain[0], percent_flagged_as_rain[1],
+        percent_flagged_as_rain[2], QUOTE);
     fprintf(ofp, "@ subtitle %c%g percent classified%c\n", QUOTE,
         classified_percent, QUOTE);
 
