@@ -52,16 +52,17 @@ public:
 	// variables //
 	//-----------//
 
+	double		time;
 	PolE		pol;
-	double		value;			// sigma-0 or temperature measurement
-	double		incidenceAngle;
-	double		scAzimuth;		// az. angle ccw from s/c velocity
-	double		eastAzimuth;	// az. angle ccw from east
+	float		value;			// sigma-0 or temperature measurement
+	float		incidenceAngle;
+	float		scAzimuth;		// az. angle ccw from s/c velocity
+	float		eastAzimuth;	// az. angle ccw from east
 
-	double		centerLongitude;
-	double		centerLatitude;
+	float		centerLongitude;
+	float		centerLatitude;
 
-	double		estimatedKp;
+	float		estimatedKp;
 };
 
 //======================================================================

@@ -16,7 +16,7 @@ static const char rcs_id_measurement_c[] =
 //=============//
 
 Measurement::Measurement()
-:	pol(NONE), value(0.0), incidenceAngle(0.0), scAzimuth(0.0),
+:	time(0.0), pol(NONE), value(0.0), incidenceAngle(0.0), scAzimuth(0.0),
 	eastAzimuth(0.0), centerLongitude(0.0), centerLatitude(0.0),
 	estimatedKp(1.0)
 {
@@ -36,13 +36,14 @@ int
 Measurement::WriteL17Format(
 	int		ofd)
 {
-	if (write(ofd, &pol, sizeof(PolE)) != sizeof(PolE) ||
-		write(ofd, &value, sizeof(double)) != sizeof(double) ||
-		write(ofd, &incidenceAngle, sizeof(double)) != sizeof(double) ||
-		write(ofd, &scAzimuth, sizeof(double)) != sizeof(double) ||
-		write(ofd, &eastAzimuth, sizeof(double)) != sizeof(double) ||
-		write(ofd, &centerLongitude, sizeof(double)) != sizeof(double) ||
-		write(ofd, &centerLatitude, sizeof(double)) != sizeof(double))
+	if (write(ofd, &time, sizeof(double)) != sizeof(double) ||
+		write(ofd, &pol, sizeof(PolE)) != sizeof(PolE) ||
+		write(ofd, &value, sizeof(float)) != sizeof(float) ||
+		write(ofd, &incidenceAngle, sizeof(float)) != sizeof(float) ||
+		write(ofd, &scAzimuth, sizeof(float)) != sizeof(float) ||
+		write(ofd, &eastAzimuth, sizeof(float)) != sizeof(float) ||
+		write(ofd, &centerLongitude, sizeof(float)) != sizeof(float) ||
+		write(ofd, &centerLatitude, sizeof(float)) != sizeof(float))
 	{
 		return(0);
 	}
@@ -57,13 +58,14 @@ int
 Measurement::ReadL17Format(
 	int		ifd)
 {
-	if (read(ifd, &pol, sizeof(PolE)) != sizeof(PolE) ||
-		read(ifd, &value, sizeof(double)) != sizeof(double) ||
-		read(ifd, &incidenceAngle, sizeof(double)) != sizeof(double) ||
-		read(ifd, &scAzimuth, sizeof(double)) != sizeof(double) ||
-		read(ifd, &eastAzimuth, sizeof(double)) != sizeof(double) ||
-		read(ifd, &centerLongitude, sizeof(double)) != sizeof(double) ||
-		read(ifd, &centerLatitude, sizeof(double)) != sizeof(double))
+	if (read(ifd, &time, sizeof(double)) != sizeof(double) ||
+		read(ifd, &pol, sizeof(PolE)) != sizeof(PolE) ||
+		read(ifd, &value, sizeof(float)) != sizeof(float) ||
+		read(ifd, &incidenceAngle, sizeof(float)) != sizeof(float) ||
+		read(ifd, &scAzimuth, sizeof(float)) != sizeof(float) ||
+		read(ifd, &eastAzimuth, sizeof(float)) != sizeof(float) ||
+		read(ifd, &centerLongitude, sizeof(float)) != sizeof(float) ||
+		read(ifd, &centerLatitude, sizeof(float)) != sizeof(float))
 	{
 		return(0);
 	}
