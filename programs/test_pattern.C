@@ -94,8 +94,6 @@ template class TrackerBase<unsigned short>;
 #define POINTS	260000
 #define HPOL	0
 #define VPOL	1
-#define G0V		40.91
-#define G0H		39.27
 
 //--------//
 // MACROS //

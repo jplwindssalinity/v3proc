@@ -89,8 +89,6 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define G0V     40.91
-#define G0H     39.27
 #define AZ_WIDTH	1.6
 #define ELEV_WIDTH	1.8
 
