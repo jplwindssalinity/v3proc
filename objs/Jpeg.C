@@ -8,7 +8,7 @@ static const char rcs_id_jpeg_c[] =
 
 #include <stdio.h>
 #include <malloc.h>
-#include </opt/local/include/jpeglib.h>
+#include <jpeglib.h>
 #include "Jpeg.h"
 #include "Array.h"
 #include "List.h"
