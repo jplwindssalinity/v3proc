@@ -8,6 +8,7 @@ static const char rcs_id_l2atol2b_c[] =
 
 #include <stdio.h>
 #include <string.h>
+#include <iostream.h>
 #include "L2AToL2B.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -287,9 +288,9 @@ L2AToL2B::Flush(
 
 	if (useNudging)
 	{
-	  if (smartNudgeFlag) 
-	    l2b->frame.swath.LoResNudge(&nudgeVctrField, maxRankForNudging);
-	  else
+	  if (useNudgeThreshold) 
+	    l2b->frame.swath.ThresNudge(&nudgeField, maxRankForNudging);
+	  else 
             l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
 	}
 	else
@@ -301,8 +302,15 @@ L2AToL2B::Flush(
 	// median filter //
 	//---------------//
 
+	int bound;
+	if (useNMF) {
+	  bound = 9;
+	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
+		medianFilterMaxPasses, bound, useAmbiguityWeights);
+	}
+	bound = 0;
 	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-		medianFilterMaxPasses, useAmbiguityWeights);
+		medianFilterMaxPasses, bound, useAmbiguityWeights);
 
 	//------------//
 	// output l2b //
