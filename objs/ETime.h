@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef ETIME_H
 #define ETIME_H
@@ -50,17 +50,17 @@ class ETime
 public:
 
     //--------------//
-	// construction //
-	//--------------//
+    // construction //
+    //--------------//
 
-	ETime();
-	~ETime();
+    ETime();
+    ~ETime();
 
     //--------------//
     // current time //
     //--------------//
 
-    int  CurrentTime();
+    int   CurrentTime();
     void  Zero()    { _sec = 0; _ms = 0; return; };
 
     //-------------//
@@ -80,9 +80,11 @@ public:
     // input/output //
     //--------------//
 
-    int  Write(int fd);
-    int  Read(int fd);
-    int  WriteAscii(FILE* ofp);
+    int             Write(int fd);
+    int             Read(int fd);
+    int             WriteAscii(FILE* ofp);
+    time_t          GetSec()  { return(_sec); };
+    unsigned short  GetMs()   { return(_ms); };
 
     //-----------//
     // operators //
