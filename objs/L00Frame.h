@@ -19,7 +19,7 @@ static const char rcs_id_l00frame_h[] =
 
 #define L00_FRAME_TOP			56
 #define SPOTS_PER_L00_FRAME		10
-#define L00_FRAME_SIZE			(L00_FRAME_TOP+SPOTS_PER_L00_FRAME*8)
+#define L00_FRAME_SIZE			(L00_FRAME_TOP+SPOTS_PER_L00_FRAME*6)
 
 
 //======================================================================
@@ -70,7 +70,7 @@ public:
 
 	// antenna position
 
-	float		antennaPosition[SPOTS_PER_L00_FRAME];
+	unsigned short	antennaPosition[SPOTS_PER_L00_FRAME];
 
 	// sigma-0's
 

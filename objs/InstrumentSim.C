@@ -225,7 +225,7 @@ InstrumentSim::ScatSim(
 		l00Frame.velY = orbit_state->vsat.get(1);
 		l00Frame.velZ = orbit_state->vsat.get(2);
 	}
-	l00Frame.antennaPosition[_spotNumber] = antenna->azimuthAngle;
+	l00Frame.antennaPosition[_spotNumber] = antenna->GetEncoderValue();
 	l00Frame.sigma0[_spotNumber] = value;
 	_spotNumber++;
 

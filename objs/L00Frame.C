@@ -82,7 +82,7 @@ L00Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
-	size = sizeof(float) * SPOTS_PER_L00_FRAME;
+	size = sizeof(unsigned short) * SPOTS_PER_L00_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
 
