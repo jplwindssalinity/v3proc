@@ -8,7 +8,7 @@
 //    l1a_echo_proc
 //
 // SYNOPSIS
-//    l1a_echo_proc <sim_config_file> <freq_offset_file>
+//    l1a_echo_proc <sim_config_file> <echo_data_file>
 //
 // DESCRIPTION
 //    Reads the simulated L1A file and estimates frequency offsets
@@ -19,12 +19,12 @@
 //
 // OPERANDS
 //    The following operands are supported:
-//      <sim_config_file>   The simulation configuration file.
-//      <freq_offset_file>  The frequency offset output file.
+//      <sim_config_file>  The simulation configuration file.
+//      <echo_data_file>   The echo data output file.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % l1a_echo_proc qscat.cfg data.freqoff
+//      % l1a_echo_proc qscat.cfg echo.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -114,7 +114,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<freq_offset_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<echo_data_file>", 0};
 
 float dlon_km[4] = { KM_RANGE, 0.0, -KM_RANGE, 0.0 };
 float dlat_km[4] = { 0.0, KM_RANGE, 0.0, -KM_RANGE };
