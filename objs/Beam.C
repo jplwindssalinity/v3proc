@@ -344,11 +344,10 @@ Beam::WriteBeamPattern(char* filename)
 
 int
 Beam::GetPowerGain(
-	double	look_angle,
-	double	azimuth_angle,
-	float *gain)
+	double		look_angle,
+	double		azimuth_angle,
+	float*		gain)
 {
-
 	// Check for loaded pattern data.
 	if (_power_gain == NULL)
 	{	// show stopper
@@ -376,8 +375,8 @@ Beam::GetPowerGain(
 	}
 
 	// The actual location of the lower left point of the grid square.
-	double x1 = (ix1 - _ix_zero)*_x_spacing;
-	double y1 = (iy1 - _iy_zero)*_y_spacing;
+	double x1 = (ix1 - _ix_zero) * _x_spacing;
+	double y1 = (iy1 - _iy_zero) * _y_spacing;
 
 	// The power gain at the four grid square points.
 	double pg1 = _power_gain[ix1][iy1];

@@ -194,11 +194,10 @@ earth_intercept(
 	Vector3 v2 = rsat * rlook_geo;
 	Vector3 v3 = rsat * rsat;
 
-	double efactor = 1.0 - eccentricity_earth * eccentricity_earth;
+	double efactor = 1.0 - e2;
 	double c1 = v1.get(0) + v1.get(1) + v1.get(2) / efactor;
 	double c2 = v2.get(0) + v2.get(1) + v2.get(2) / efactor;
-	double c3 = v3.get(0) + v3.get(1) + v3.get(2) / efactor -
-				r1_earth * r1_earth;
+	double c3 = v3.get(0) + v3.get(1) + v3.get(2) / efactor - r1_earth_2;
 
 	//------------------------------//
 	// solve for the slant range, s //
@@ -212,8 +211,10 @@ earth_intercept(
 		exit(1);
 	}
 	double righthalf = sqrt(discrim) / (2.0 * c1);
-	double s1 = -c2 / c1 + righthalf;
-	double s2 = -c2 / c1 - righthalf;
+	double frac = -c2 / c1;
+	double s1 = frac + righthalf;
+	double s2 = frac - righthalf;
+
 //	printf("s1 = %g, s2 = %g\n",s1,s2);
 	double s;
 	if (s1 > 0.0 && s2 > 0.0)

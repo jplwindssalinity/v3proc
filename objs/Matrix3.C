@@ -532,16 +532,16 @@ Vector3::operator==(Vector3 m2)
 //
 
 void Vector3::Scale(double r)
-
 {
-int i;
-double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+	double mag = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
 
-if (mag != 0.0)
-  for (i=0; i < 3; i++)
-    {
-    _v[i] *= r/mag;
-    }
+	if (mag == 0.0)
+		return;
+
+	for (int i = 0; i < 3; i++)
+	{
+		_v[i] *= (r / mag);
+	}
 	return;
 }
 
