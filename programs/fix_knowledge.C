@@ -413,7 +413,7 @@ main(
             // check for end of orbit step //
             //-----------------------------//
 
-            int orbit_step = echo_info.SpotOrbitStep(spot_idx);
+            orbit_step = echo_info.SpotOrbitStep(spot_idx);
             if (orbit_step != last_orbit_step)
             {
                 if (last_orbit_step != -1 && g_step_size != 0 &&
@@ -539,29 +539,29 @@ process_orbit_step(
     //---------------------------//
 
     char filename[1024];
-    if (g_step_size)
+    char title[1024];
+    switch (g_step_size)
     {
+    case 0:
+        sprintf(filename, "%s.att.all.out", output_base);
+        sprintf(title, "Entire File");
+        break;
+    case 1:
+        sprintf(filename, "%s.att.%03d.out", output_base, start_step);
+        sprintf(title, "Orbit Step = %03d", start_step);
+        break;
+    default:
         sprintf(filename, "%s.att.%03d-%03d.out", output_base, start_step,
             end_step);
+        sprintf(title, "Orbit Step = %03d-%03d", start_step, end_step);
+        break;
     }
-    else
-    {
-        sprintf(filename, "%s.att.%03d.out", output_base, start_step);
-    }
+
     FILE* ofp = fopen(filename, "w");
     if (ofp == NULL)
         return(0);
 
-    if (g_step_size)
-    {
-        fprintf(ofp, "@ title %cOrbit Step = %03d-%03d%c\n", QUOTES,
-            start_step, end_step, QUOTES);
-    }
-    else
-    {
-        fprintf(ofp, "@ title %cOrbit Step = %03d%c\n", QUOTES, start_step,
-            QUOTES);
-    }
+    fprintf(ofp, "@ title %c%s%c\n", QUOTES, title, QUOTES);
     fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
         att[0] * rtd, att[1] * rtd, att[2] * rtd, QUOTES);
 
@@ -664,6 +664,7 @@ evaluate(
     int          or_flag)
 {
     double mse = 0.0;
+    float plot_offset_array[] = { 0.0, PLOT_OFFSET };
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
@@ -671,6 +672,7 @@ evaluate(
         Beam* beam = qscat->GetCurrentBeam();
         Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
 
+        float plot_offset = plot_offset_array[beam_idx];
         for (int idx = 0; idx < g_count[beam_idx]; idx++)
         {
             // only use data to be used
@@ -758,8 +760,7 @@ evaluate(
                     //----------------------------//
 
                     Meas* meas = meas_spot.GetByIndex(slice_idx);
-                    float sigma0 = est_sigma0(meas->beamIdx,
-                        meas->incidenceAngle);
+                    float sigma0 = est_sigma0(beam_idx, meas->incidenceAngle);
                     x[slice_idx] *= sigma0;
                 }
             }
@@ -777,14 +778,10 @@ evaluate(
                 g_meas_spec_peak_freq[beam_idx][idx];
             if (ofp)
             {
-                float plot_offset = 0;
-                if (beam_idx == 1)
-                    plot_offset = PLOT_OFFSET;
-
                 fprintf(ofp, "%g %g %g\n",
                     g_tx_center_azimuth[beam_idx][idx] * rtd,
                     g_meas_spec_peak_freq[beam_idx][idx] + plot_offset,
-                    calc_spec_peak_freq + PLOT_OFFSET);
+                    calc_spec_peak_freq + plot_offset);
             }
             dif = dif * dif;
             mse += dif;
@@ -805,9 +802,9 @@ prune()
 {
     int data_count = 0;
 
-    //----------------------------------------//
-    // calculate the mean for every X degrees //
-    //----------------------------------------//
+    //------------//
+    // initialize //
+    //------------//
 
     int count_f[NUMBER_OF_QSCAT_BEAMS][DIR_STEPS];
     double sum_f[NUMBER_OF_QSCAT_BEAMS][DIR_STEPS];
@@ -827,8 +824,16 @@ prune()
     }
     float dir_step_size = two_pi / DIR_STEPS;
 
+    //-------//
+    // prune //
+    //-------//
+
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
+        //-----------------------------------------//
+        // for each dir_step_size, calculate means //
+        //-----------------------------------------//
+
         for (int idx = 0; idx < g_count[beam_idx]; idx++)
         {
             double azim = g_tx_center_azimuth[beam_idx][idx];
@@ -856,9 +861,6 @@ prune()
             double azim = g_tx_center_azimuth[beam_idx][idx];
             int dir_idx = (int)(azim / dir_step_size);
 
-            if (count_f[beam_idx][dir_idx] < MIN_POINTS_PER_DIR_STEP)
-                continue;
-
             int idx_1, idx_2;
             if (azim < sum_az[beam_idx][dir_idx])
             {
@@ -871,6 +873,12 @@ prune()
                 idx_2 = (dir_idx + 1) % DIR_STEPS;
             }
 
+            if (count_f[beam_idx][idx_1] < MIN_POINTS_PER_DIR_STEP ||
+                count_f[beam_idx][idx_2] < MIN_POINTS_PER_DIR_STEP)
+            {
+                continue;
+            }
+
             double step_dif = sum_az[beam_idx][idx_2] -
                 sum_az[beam_idx][idx_1];
             if (step_dif < 0.0)
@@ -878,9 +886,10 @@ prune()
             double point_dif = azim - sum_az[beam_idx][idx_1];
             if (point_dif < 0.0)
                 point_dif += two_pi;
+
             double fidx = point_dif / step_dif;
-            double coef1 = (double)idx_2 - fidx;
-            double coef2 = fidx - (double)idx_1;
+            double coef1 = 1.0 - fidx;
+            double coef2 = fidx;
             double value = coef1 * sum_f[beam_idx][idx_1] +
                 coef2 * sum_f[beam_idx][idx_2];
             double dif = fabs(g_meas_spec_peak_freq[beam_idx][idx] - value);
@@ -933,7 +942,12 @@ est_sigma0(
 
     int idx[2];
     float coef[2];
-    index.GetLinearCoefsStrict(incidence_angle, idx, coef);
+    if (! index.GetLinearCoefsStrict(incidence_angle, idx, coef))
+    {
+        fprintf(stderr, "Incidence angle out of range\n");
+        return(0);
+    }
+
     float sigma0 = s0_table[beam_idx][idx[0]] * coef[0] +
         s0_table[beam_idx][idx[1]] * coef[1];
     return(sigma0);
