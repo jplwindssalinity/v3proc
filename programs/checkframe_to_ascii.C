@@ -90,11 +90,14 @@ template class TrackerBase<unsigned short>;
 // OPTION VARIABLES //
 //------------------//
 
+#define OPTSTRING               "f"
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<checkfile>", "<output_file>", 0};
+const char* usage_array[] = { "[ -f ]", "<checkfile>", "<output_file>", 0};
+extern int optind;
 
 //--------------//
 // MAIN PROGRAM //
@@ -110,10 +113,15 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+
+    int f_flag = 0;
+    int c = getopt(argc, argv, OPTSTRING);
+    if (c == 'f') f_flag = 1;
+
+	if (argc-optind != 2)
 		usage(command, usage_array, 1);
 
-	int clidx = 1;
+	int clidx = optind;
 	const char* checkfile = argv[clidx++];
 	const char* output_file = argv[clidx++];
 
@@ -141,25 +149,75 @@ main(
 		exit(1);
 	}
 
+/*
+	//----------------------------//
+	// Determine slices per frame //
+	//----------------------------//
+
+    int idx;
+    int slices_per_frame;
+    for (slices_per_frame=0; slices_per_frame < 200; slices_per_frame++)
+    {
+      if (fseek(check_fp,slices_per_frame*72,SEEK_SET) != 0)
+      {
+        fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
+          checkfile);
+	      exit(1);
+      }
+      if (fread((void *)&idx,sizeof(int),1,check_fp) != 1)
+	  {
+	  	fprintf(stderr, "%s: error reading slice idx\n", command);
+		exit(1);
+	  }
+      printf("idx=%d\n",idx);
+      if (idx == 0) break; 
+    }
+
+    if (fseek(check_fp,0,SEEK_SET) != 0)
+    {
+      fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
+        checkfile);
+	    exit(1);
+    }
+
+    if (slices_per_frame < 200)
+    {
+      printf("Found %d slices per frame\n",slices_per_frame);
+    }
+    else
+    {
+      fprintf(stderr, "%s: exceeded 200 slices per frame in %s\n", command,
+        checkfile);
+	    exit(1);
+    }
+    slices_per_frame = 10;
+*/
+ 
 	//-------------------//
 	// Setup check frame //
 	//-------------------//
 
 	CheckFrame cf;
-	if (! cf.Allocate(12))
-	{
-		fprintf(stderr, "%s: error allocating check frame\n", command);
-		exit(1);
-	}
 
 	//----------------//
 	// loop and write //
 	//----------------//
 
-	while (cf.ReadDataRec(check_fp))
-	{
-		cf.WriteDataRecAscii(output_fp);
-		fprintf(output_fp,"\n");
+    if (f_flag == 0)
+    {
+	  while (cf.ReadDataRec(check_fp))
+	  {
+		  cf.WriteDataRecAscii(output_fp);
+		  fprintf(output_fp,"\n");
+	  }
+	}
+    else
+    {
+	  while (cf.ReadDataRecFortran(check_fp))
+	  {
+		  cf.WriteDataRecAscii(output_fp);
+		  fprintf(output_fp,"\n");
+	  }
 	}
 
 	//-----------------//
@@ -171,9 +229,3 @@ main(
 
 	return (0);
 }
-
-
-
-
-
-

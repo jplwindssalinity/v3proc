@@ -83,7 +83,8 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define MAX_FRAMES 2000
+#define MAX_FRAMES 1000000000
+#define MAX_SPOTS  10000
 
 //--------//
 // MACROS //
@@ -97,19 +98,47 @@ template class TrackerBase<unsigned short>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
+int
+match_cf_frame(
+  CheckFrame* cf_target,
+  CheckFrame* cf_source,
+  FILE* source_fp);
+float identity(float* elem);
+float identitydB(float* elem);
+float dBerr(float* elem);
 float frac(float* elem);
 float derr(float* elem);
+float dif_err(float* elem);
+int
+plot4(char* filename,
+      int count,
+      int *use,
+      float (*func)(float*),
+      float** x,
+      float** y1,
+      float** y2,
+      float** y3,
+      float** y4,
+      char* xlabel,
+      char* y1label,
+      char* y2label,
+      char* y3label,
+      char* y4label);
 
 //------------------//
 // OPTION VARIABLES //
 //------------------//
 
+#define OPTSTRING               "sfo:"
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<cfg file>", "<simcheckfile>",
+const char* usage_array[] = { "[ -s ]", "[ -f ]", "[-o output_base]",
+  "<cfg file>", "<simcheckfile>",
   "<onebcheckfile>", 0};
+extern int optind;
 
 //--------------//
 // MAIN PROGRAM //
@@ -129,15 +158,30 @@ main(
     char* config_file = NULL;
 	char* simcheckfile = NULL;
 	char* onebcheckfile = NULL;
+    char* output_base = NULL;
 
-	int clidx = 1;
-	if (argc == 4)
+    int f_flag = 0;
+    int s_flag = 0;
+    while (1)
+    {
+      int c = getopt(argc, argv, OPTSTRING);
+      if (c == 'f') f_flag = 1;
+      else if (c == 's') s_flag = 1;
+      else if (c == 'o')
+      {
+        output_base = optarg;
+      }
+      else if (c == -1) break;
+    }
+
+	int clidx = optind;
+	if (argc-optind == 3)
     {
       config_file = argv[clidx++];
 	  simcheckfile = argv[clidx++];
 	  onebcheckfile = argv[clidx++];
     }
-    else if (argc == 3)
+    else if (argc-optind == 2)
     {
       config_file = argv[clidx++];
 	  simcheckfile = argv[clidx++];
@@ -170,49 +214,6 @@ main(
 		exit(1);
 	}
 
-	//------------------//
-	// Get slice counts //
-	//------------------//
-
-    int s_count;
-    if (! config_list.GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD, &s_count))
-        return(0);
-
-    int g_count;
-    if (! config_list.GetInt(GUARD_SLICES_PER_SIDE_KEYWORD, &g_count))
-        return(0);
-
-    int slices_per_spot = s_count + 2 * g_count;
-
-	//--------------------//
-	// Setup check frames //
-	//--------------------//
-
-	CheckFrame cf;
-	if (! cf.Allocate(slices_per_spot))
-	{
-		fprintf(stderr, "%s: error allocating check frame\n", command);
-		exit(1);
-	}
-
-	CheckFrame cf1b;
-	if (! cf1b.Allocate(slices_per_spot))
-	{
-		fprintf(stderr, "%s: error allocating check frame\n", command);
-		exit(1);
-	}
-
-	//--------------------------------//
-	// create and configure ephemeris //
-	//--------------------------------//
-
-	Ephemeris ephemeris;
-	if (! ConfigEphemeris(&ephemeris, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring ephemeris\n", command);
-		exit(1);
-	}
-
 	//------------//
 	// open files //
 	//------------//
@@ -241,6 +242,18 @@ main(
 	  }
     }
 
+	//--------------------//
+	// Setup check frames //
+	//--------------------//
+
+	CheckFrame cf;
+	CheckFrame cf1b;
+	if (! cf.Allocate(check_fp))
+	{
+	  fprintf(stderr, "%s: error allocating check frame\n", command);
+	  exit(1);
+	}
+
   //------------------//
   // Get record count //
   //------------------//
@@ -253,48 +266,155 @@ main(
 	}
   long file_size = ftell(check_fp);
   long total_spots = file_size/cf.Size();
-  long total_slices = slices_per_spot * total_spots;
+  long total_slices = cf.slicesPerSpot * total_spots;
   if (fseek(check_fp,0,SEEK_SET) != 0)
-	{
-	  fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
-	          simcheckfile);
+  {
+    fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
+      simcheckfile);
 	  exit(1);
+  }
+
+  // Subsample large numbers of spots to keep the number of points on
+  // a graph reasonable.
+  int subsample = (int)(total_spots/MAX_SPOTS) + 1;
+  int Nspots = total_spots/subsample;
+  int Nslices = Nspots*cf.slicesPerSpot;
+  fprintf(stderr,"subsample=%d Nspots=%d Nslices=%d\n",
+    subsample,Nspots,Nslices);
+
+  Index snr_idx;
+  Index pulse_count_idx;
+  snr_idx.SpecifyCenters(-44.0,24.0,35);
+  pulse_count_idx.SpecifyEdges(0.0,total_spots,Nspots);
+  int Nstat = snr_idx.GetBins();
+
+  float* e_sigma0_sum = NULL;
+  float* e_sigma0_sum2 = NULL;
+  float* e_sigma0_max = NULL;
+  float* e_sigma0_min = NULL;
+  float* e_X_sum = NULL;
+  float* e_X_sum2 = NULL;
+  float* e_X_max = NULL;
+  float* e_X_min = NULL;
+  float* e_Es_sum = NULL;
+  float* e_Es_sum2 = NULL;
+  float* e_Es_max = NULL;
+  float* e_Es_min = NULL;
+  float* e_En_sum = NULL;
+  float* e_En_sum2 = NULL;
+  float* e_En_max = NULL;
+  float* e_En_min = NULL;
+
+  int* c_stat = NULL;
+
+  if (s_flag == 1)
+  {
+    e_sigma0_sum = snr_idx.MakeFloatArray();
+    e_sigma0_sum2 = snr_idx.MakeFloatArray();
+    e_sigma0_min = snr_idx.MakeFloatArray();
+    e_sigma0_max = snr_idx.MakeFloatArray();
+    e_X_sum = snr_idx.MakeFloatArray();
+    e_X_sum2 = snr_idx.MakeFloatArray();
+    e_X_min = snr_idx.MakeFloatArray();
+    e_X_max = snr_idx.MakeFloatArray();
+    e_Es_sum = snr_idx.MakeFloatArray();
+    e_Es_sum2 = snr_idx.MakeFloatArray();
+    e_Es_min = snr_idx.MakeFloatArray();
+    e_Es_max = snr_idx.MakeFloatArray();
+    e_En_sum = snr_idx.MakeFloatArray();
+    e_En_sum2 = snr_idx.MakeFloatArray();
+    e_En_min = snr_idx.MakeFloatArray();
+    e_En_max = snr_idx.MakeFloatArray();
+    c_stat = snr_idx.MakeIntArray();
+    if (e_sigma0_sum == NULL ||
+        e_sigma0_sum2 == NULL ||
+        e_sigma0_max == NULL ||
+        e_sigma0_min == NULL ||
+        e_X_sum == NULL ||
+        e_X_sum2 == NULL ||
+        e_X_max == NULL ||
+        e_X_min == NULL ||
+        e_Es_sum == NULL ||
+        e_Es_sum2 == NULL ||
+        e_Es_max == NULL ||
+        e_Es_min == NULL ||
+        e_En_sum == NULL ||
+        e_En_sum2 == NULL ||
+        e_En_max == NULL ||
+        e_En_min == NULL ||
+        c_stat == NULL)
+    {
+	    fprintf(stderr, "%s: error allocating statistics arrays\n", command);
+	    exit(1);
 	}
+  }
 
   //----------------------//
   // Allocate data arrays //
   //----------------------//
 
-  int** slice_idx = (int**)make_array(sizeof(int),2,total_slices,2);
-  float** sigma0 = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** X = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** Es = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** En = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** azim = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** incang = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** range = (float**)make_array(sizeof(float),2,total_slices,2);
-  float** ant_aziGi = (float**)make_array(sizeof(float),2,total_spots,2);
+  int** slice_idx = NULL;
+  float** pulse_count = NULL;
+  float** sigma0 = NULL;
+  float** X = NULL;
+  float** Es = NULL;
+  float** En = NULL;
+  float** azim = NULL;
+  float** incang = NULL;
+  float** range = NULL;
+  float** lon = NULL;
+  float** lat = NULL;
 
-  if (sigma0 == NULL || X == NULL || Es == NULL || En == NULL ||
-      azim == NULL || incang == NULL || range == NULL || ant_aziGi == NULL)
+  float** ant_aziGi = NULL;
+  float** tx_doppler = NULL;
+  float** x_doppler = NULL;
+  float** rx_gate_delay = NULL;
+  float** delta_freq = NULL;
+
+  if (output_base != NULL)
+  {
+    slice_idx = (int**)make_array(sizeof(int),2,Nslices,2);
+    pulse_count = (float**)make_array(sizeof(float),2,Nslices,1);
+    sigma0 = (float**)make_array(sizeof(float),2,Nslices,2);
+    X = (float**)make_array(sizeof(float),2,Nslices,2);
+    Es = (float**)make_array(sizeof(float),2,Nslices,2);
+    En = (float**)make_array(sizeof(float),2,Nslices,2);
+    azim = (float**)make_array(sizeof(float),2,Nslices,2);
+    incang = (float**)make_array(sizeof(float),2,Nslices,2);
+    range = (float**)make_array(sizeof(float),2,Nslices,2);
+    lon = (float**)make_array(sizeof(float),2,Nslices,2);
+    lat = (float**)make_array(sizeof(float),2,Nslices,2);
+
+    ant_aziGi = (float**)make_array(sizeof(float),2,Nspots,2);
+    tx_doppler = (float**)make_array(sizeof(float),2,Nspots,2);
+    x_doppler = (float**)make_array(sizeof(float),2,Nspots,2);
+    rx_gate_delay = (float**)make_array(sizeof(float),2,Nspots,2);
+    delta_freq = (float**)make_array(sizeof(float),2,Nspots,2);
+
+    if (sigma0 == NULL || X == NULL || Es == NULL || En == NULL ||
+        azim == NULL || incang == NULL || range == NULL || ant_aziGi == NULL ||
+        lon == NULL || lat == NULL || tx_doppler == NULL || x_doppler == NULL ||
+        rx_gate_delay == NULL || delta_freq == NULL || pulse_count == NULL)
 	{
-	  fprintf(stderr, "%s: error allocating data arrays\n", command);
-	  exit(1);
+	    fprintf(stderr, "%s: error allocating data arrays\n", command);
+	    exit(1);
 	}
-
+  }
 
   //------------//
   // check loop //
   //------------//
 
-  int spot_count = 0;
+  int spot_count = 0;  // counts spots actually included
+  int cf_frame_count = 0; // counts all spots (cf frames).
   int count = 0;
+  int subcount = 0;
 
   if (onebcheckfile == NULL) 
   {
     while(1)
     {
-        if (spot_count >= MAX_FRAMES) break;
+        if (cf_frame_count >= MAX_FRAMES) break;
 
 		//-----------------------------//
 		// read a level 1B data record //
@@ -339,8 +459,8 @@ main(
 		    // Read in the corresponding checkframe record //
 		    //---------------------------------------------//
 
-            spot_count++;
-            if (spot_count >= MAX_FRAMES) break;
+            cf_frame_count++;
+            if (cf_frame_count >= MAX_FRAMES) break;
             int found = 0;
 	        while (cf.ReadDataRec(check_fp))
 	        {
@@ -358,7 +478,6 @@ main(
                         meas_time);
                 rewind(check_fp);
                 continue;
-//                exit(-1);
             }
 
             //------------------//
@@ -373,11 +492,11 @@ main(
               //-------------------------------------------//
 
               int j;
-              for (j=0; j < slices_per_spot; j++)
+              for (j=0; j < cf.slicesPerSpot; j++)
               {  // search for matching checkframe slice record
                 if (cf.idx[j] == meas->startSliceIdx && cf.idx[j] != 0) break;
               }
-              if (j >= slices_per_spot) continue;  // no match found
+              if (j >= cf.slicesPerSpot) continue;  // no match found
 
               double alt,lon,lat,alt1b,lon1b,lat1b;
               cf.centroid[j].GetAltLonGDLat(&alt,&lon,&lat);
@@ -385,10 +504,11 @@ main(
               double measR =
                 (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
 
-              printf("%d %g %g %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
+              printf("%d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
                 cf.idx[j],
                 cf.time, meas_spot->time,
                 cf.beamNumber, meas->beamIdx,
+                cf.measType[j], meas->measType,
                 cf.antennaAziTx, meas->scanAngle,
                 cf.antennaAziGi, 0.0,
                 cf.orbitFrac, 0.0,
@@ -402,6 +522,10 @@ main(
                 cf.deltaFreq, 0.0,
                 cf.Es[j], meas->value*meas->XK,
                 cf.En[j], meas->EnSlice,
+                cf.EsnEcho, 0.0,
+                cf.EsnNoise, 0.0,
+                cf.rxGateDelay, 0.0,
+                cf.alpha, 0.0,
                 lon,lon1b,lat,lat1b,
                 cf.azimuth[j], meas->eastAzimuth,
                 cf.incidence[j], meas->incidenceAngle,
@@ -419,63 +543,162 @@ main(
   }
   else
   {
-    while(cf1b.ReadDataRec(oneb_fp))
+    while (1)
     {  // for each 1B check frame...
-      if (spot_count >= MAX_FRAMES) break;
-      int found = 0;
-	  while (cf.ReadDataRec(check_fp))
-	  {  // look for matching sim check frame
-          if (fabs(cf.time - cf1b.time) < 0.0108/2.0)
-          {
-            found = 1;
-            break;
-          }
-	  }
-      if (found == 0)
+
+      //-----------------------//
+      // Read a 1B check frame //
+      //-----------------------//
+
+      if (cf_frame_count >= MAX_FRAMES) break;
+      cf_frame_count++;  // count all spots
+      int ret;
+      subcount++;  // step through the subsampled frames (ie., spots)
+      if (f_flag == 0)
       {
-        fprintf(stderr,"Can't match a 1B checkframe at time = %g\n",
-                cf1b.time);
-        rewind(check_fp);
-        continue;
+        ret = cf1b.ReadDataRec(oneb_fp);
+      }
+      else
+      {
+        ret = cf1b.ReadDataRecFortran(oneb_fp);
+      }
+      if (! ret) break; // end of oneb_fp file
+
+      //-------------------------------------//
+      // Accumulate statistics on all pulses //
+      //-------------------------------------//
+
+      if (s_flag == 1)
+      {
+        if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
+        for (int i=0; i < cf.slicesPerSpot; i++)
+        for (int j=0; j < cf.slicesPerSpot; j++)
+        {
+          if (cf1b.idx[i] != cf.idx[j] || cf1b.idx[i] == 0 || cf.idx[j] == 0)
+            continue;
+
+          float snr = 10.0/log(10.0)*log(cf.Es[j]/cf.En[j]);
+          int isnr;
+          if (!snr_idx.GetNearestIndex(snr,&isnr))
+          {
+            fprintf(stderr,"Warning: Snr index out of range (snr (dB) = %g)\n",
+                    snr);
+            continue;
+          }
+
+          c_stat[isnr]++;
+
+          float diff = (cf1b.sigma0[i] - cf.sigma0[j])/cf.sigma0[j];
+          e_sigma0_sum[isnr] += diff;
+          e_sigma0_sum2[isnr] += diff*diff;
+          if (e_sigma0_max[isnr] < diff) e_sigma0_max[isnr] = diff;
+          if (e_sigma0_min[isnr] > diff) e_sigma0_min[isnr] = diff;
+
+          diff = (cf1b.XK[i] - cf.XK[j])/cf.XK[j];
+          e_X_sum[isnr] += diff;
+          e_X_sum2[isnr] += diff*diff;
+          if (e_X_max[isnr] < diff) e_X_max[isnr] = diff;
+          if (e_X_min[isnr] > diff) e_X_min[isnr] = diff;
+
+          diff = (cf1b.Es[i] - cf.Es[j])/cf.Es[j];
+          e_Es_sum[isnr] += diff;
+          e_Es_sum2[isnr] += diff*diff;
+          if (e_Es_max[isnr] < diff) e_Es_max[isnr] = diff;
+          if (e_Es_min[isnr] > diff) e_Es_min[isnr] = diff;
+
+          diff = (cf1b.En[i] - cf.En[j])/cf.En[j];
+          e_En_sum[isnr] += diff;
+          e_En_sum2[isnr] += diff*diff;
+          if (e_En_max[isnr] < diff) e_En_max[isnr] = diff;
+          if (e_En_min[isnr] > diff) e_En_min[isnr] = diff;
+
+          break; // done with this slice
+        }
       }
 
-      ant_aziGi[spot_count][0] = cf.antennaAziGi;
-      ant_aziGi[spot_count][1] = cf1b.antennaAziGi;
+      //--------------------------------------------//
+      // Accumulate data for subsampled pulses only //
+      //--------------------------------------------//
+
+      if (subcount < subsample)
+      {  // skip over pulses until the next subsample
+        continue;
+      }
+      else
+      {  // process this pulse and start subsample count again
+        subcount = 0;
+      }
+
+      if (s_flag == 0)
+      {  // still need to read a matching frame
+        if (match_cf_frame(&cf1b,&cf,check_fp) == 0) continue;
+      }
+
+      if (output_base != NULL)
+      {
+        ant_aziGi[spot_count][0] = cf.antennaAziGi;
+        ant_aziGi[spot_count][1] = cf1b.antennaAziGi;
+        tx_doppler[spot_count][0] = cf.txDoppler;
+        tx_doppler[spot_count][1] = cf1b.txDoppler;
+        x_doppler[spot_count][0] = cf.XdopplerFreq;
+        x_doppler[spot_count][1] = cf1b.XdopplerFreq;
+        rx_gate_delay[spot_count][0] = cf.rxGateDelay;
+        rx_gate_delay[spot_count][1] = cf1b.rxGateDelay;
+        delta_freq[spot_count][0] = cf.deltaFreq;
+        delta_freq[spot_count][1] = cf1b.deltaFreq;
+      }
       spot_count++;
 
-      for (int i=0; i < slices_per_spot; i++)
-      for (int j=0; j < slices_per_spot; j++)
+      for (int i=0; i < cf.slicesPerSpot; i++)
+      for (int j=0; j < cf.slicesPerSpot; j++)
       {
         if (cf1b.idx[i] != cf.idx[j] || cf1b.idx[i] == 0 || cf.idx[j] == 0)
           continue;
-        double alt,lon,lat,alt1b,lon1b,lat1b;
-        cf.centroid[j].GetAltLonGDLat(&alt,&lon,&lat);
+        double alt,lon1,lat1,alt1b,lon1b,lat1b;
+        cf.centroid[j].GetAltLonGDLat(&alt,&lon1,&lat1);
         cf1b.centroid[i].GetAltLonGDLat(&alt1b,&lon1b,&lat1b);
 
-        slice_idx[count][0] = cf.idx[j];
-        sigma0[count][0] = cf.sigma0[j];
-        X[count][0] = cf.XK[j];
-        Es[count][0] = cf.Es[j];
-        En[count][0] = cf.En[j];
-        azim[count][0] = cf.azimuth[j];
-        incang[count][0] = cf.incidence[j];
-        range[count][0] = cf.R[j];
+        if (output_base != NULL)
+        {
+          int abs_idx;
+          if (! rel_to_abs_idx(cf.idx[j],cf.slicesPerSpot,&abs_idx))
+          {
+            fprintf(stderr,"Error converting to abs idx\n");
+            exit(1);
+          }
+          pulse_count[count][0] = abs_idx/(float)cf.slicesPerSpot +
+            cf_frame_count;
+          slice_idx[count][0] = cf.idx[j];
+          sigma0[count][0] = cf.sigma0[j];
+          X[count][0] = cf.XK[j];
+          Es[count][0] = cf.Es[j];
+          En[count][0] = cf.En[j];
+          // convert east azimuth to north azimuth
+          azim[count][0] = pi/2.0 - cf.azimuth[j];
+//          if (azim[count][0] < -pi) azim[count][0] += 2.0*pi;
+//          if (azim[count][0] > -pi) azim[count][0] -= 2.0*pi;
+          incang[count][0] = cf.incidence[j];
+          range[count][0] = cf.R[j];
+          lon[count][0] = lon1;
+          lat[count][0] = lat1;
 
-        slice_idx[count][1] = cf1b.idx[i];
-        sigma0[count][1] = cf1b.sigma0[i];
-        X[count][1] = cf1b.XK[i];
-        Es[count][1] = cf1b.Es[i];
-        En[count][1] = cf1b.En[i];
-        azim[count][1] = cf1b.azimuth[i];
-        incang[count][1] = cf1b.incidence[i];
-        range[count][1] = cf1b.R[i];
-        count++;
+          slice_idx[count][1] = cf1b.idx[i];
+          sigma0[count][1] = cf1b.sigma0[i];
+          X[count][1] = cf1b.XK[i];
+          Es[count][1] = cf1b.Es[i];
+          En[count][1] = cf1b.En[i];
+          azim[count][1] = cf1b.azimuth[i];
+          incang[count][1] = cf1b.incidence[i];
+          range[count][1] = cf1b.R[i];
+          lon[count][1] = lon1b;
+          lat[count][1] = lat1b;
+        }
 
-/*
-        printf("%d %g %g %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
+              printf("%d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
                cf.idx[j],
                cf.time, cf1b.time,
                cf.beamNumber, cf1b.beamNumber,
+               cf.measType[j], cf1b.measType[i],
                cf.antennaAziTx, cf1b.antennaAziTx,
                cf.antennaAziGi, cf1b.antennaAziGi,
                cf.orbitFrac, cf1b.orbitFrac,
@@ -489,7 +712,11 @@ main(
                cf.deltaFreq, cf1b.deltaFreq,
                cf.Es[j], cf1b.Es[i],
                cf.En[j], cf1b.En[i],
-               lon,lon1b,lat,lat1b,
+               cf.EsnEcho, cf1b.EsnEcho,
+               cf.EsnNoise, cf1b.EsnNoise,
+               cf.rxGateDelay,cf1b.rxGateDelay,
+               cf.alpha, cf1b.alpha,
+               lon1,lon1b,lat1,lat1b,
                cf.azimuth[j], cf1b.azimuth[i],
                cf.incidence[j], cf1b.incidence[i],
                cf.R[j], cf1b.R[i],
@@ -500,45 +727,107 @@ main(
                cf.vsat.Get(0), cf1b.vsat.Get(0),
                cf.vsat.Get(1), cf1b.vsat.Get(1),
                cf.vsat.Get(2), cf1b.vsat.Get(2));
-*/
+        count++;
+        break; // done with this slice
       }
     }
   }
 
-  if (onebcheckfile != NULL) 
+  if (onebcheckfile != NULL && output_base != NULL) 
   {
-//    printf("total_slices = %ld, total_spots = %ld, file_size = %ld\n",
-//           total_slices,
-//           total_spots,file_size);
-//    printf("count = %d, spot_count = %d, cf.Size = %d\n",count,spot_count,
-//      cf.Size());
-    FILE* c1_plot = fopen("c1_plot.xmg","w");
-    if (c1_plot == NULL)
+    fprintf(stderr,"total_slices = %ld, total_spots = %ld, file_size = %ld\n",
+           total_slices,
+           total_spots,file_size);
+    fprintf(stderr,"count = %d, spot_count = %d, cf.Size = %d\n",
+      count,spot_count, cf.Size());
+
+    float** snr = (float**)make_array(sizeof(float),2,count,1);
+    int* use = (int*)malloc(sizeof(int)*count);
+    if (use == NULL || snr == NULL)
     {
-	  fprintf(stderr, "%s: error opening c1_plot.xmg file\n", command);
-	  exit(1);
-	}
-    fprintf(c1_plot,"@with g0\n@g0 on\n");
-    for (int i=0; i < count; i++)
-    {
-      fprintf(c1_plot,"%d %g\n",i,frac(sigma0[i]));
+      fprintf(stderr,"Error allocating memory in check_l1b\n");
+      exit(1);
     }
-    fprintf(c1_plot,"&\n");
-    fprintf(c1_plot,"@with g1\n@g1 on\n");
-    for (int i=0; i < count; i++)
+
+    // Fill snr array (dB)
+    for (int i = 0; i < count; i++)
+      snr[i][0] = 10.0/log(10.0)*log(Es[i][0]/En[i][0]);
+
+    char filename[1024];
+    for (int rel_i = -4; rel_i <= 4; rel_i++)
     {
-      fprintf(c1_plot,"%d %g\n",i,frac(X[i]));
+      if (rel_i == 0) rel_i = 1;
+      for (int i = 0; i < count; i++)
+      {
+        if (slice_idx[i][0] == rel_i) use[i] = 1; else use[i] = 0;
+      }
+
+      if (rel_i < 0) sprintf(filename,"%s.sigma0.m%d",output_base,-rel_i);
+      else sprintf(filename,"%s.sigma0.%d",output_base,rel_i);
+      plot4(filename,count,use,dBerr,pulse_count,Es,En,X,sigma0,"pulse count",
+        "Es errors (dB)","En errors (dB)","X errors (dB)","sigma0 errors (dB)");
+
+      if (rel_i < 0) sprintf(filename,"%s.loc.m%d",output_base,-rel_i);
+      else sprintf(filename,"%s.loc.%d",output_base,rel_i);
+      plot4(filename,count,use,derr,pulse_count,lon,lat,incang,azim,
+        "pulse count",
+        "lon errors (deg)","lat errors (deg)",
+        "inc. ang. errors (deg)","slice azimuth errors (deg)");
     }
-    fprintf(c1_plot,"&\n");
-    fprintf(c1_plot,"@with g0\n@g0 on\n");
-    fprintf(c1_plot,"@view xmin 0.2\n@view xmax 0.8\n");
-    fprintf(c1_plot,"@view ymin 0.1\n@view ymax 0.375\n");
-    fprintf(c1_plot,"@autoscale xaxes\n@autoscale yaxes\n");
-    fprintf(c1_plot,"@with g1\n@g1 on\n");
-    fprintf(c1_plot,"@view xmin 0.2\n@view xmax 0.8\n");
-    fprintf(c1_plot,"@view ymin 0.4\n@view ymax 0.775\n");
-    fprintf(c1_plot,"@autoscale xaxes\n@autoscale yaxes\n");
-	fclose(c1_plot);
+
+    for (int i = 0; i < count; i++) use[i] = 1;
+    sprintf(filename,"%s.sigma0.snr",output_base);
+    plot4(filename,count,use,dBerr,snr,Es,En,X,sigma0,"SNR (dB)",
+      "Es errors (dB)","En errors (dB)","X errors (dB)","sigma0 errors (dB)");
+
+    sprintf(filename,"%s.X",output_base);
+    plot4(filename,spot_count,use,dif_err,pulse_count,
+          tx_doppler,x_doppler,rx_gate_delay,delta_freq,"pulse count",
+      "commanded doppler errors (Hz)","computed doppler errors (Hz)",
+      "rcv gate delay errors (sec)","delta frequency errors (Hz)");
+
+  }
+
+  if (onebcheckfile != NULL && output_base != NULL && s_flag == 1) 
+  {
+    float** snr = (float**)make_array(sizeof(float),2,Nstat,1);
+    int* use = (int*)malloc(sizeof(int)*Nstat);
+    if (use == NULL || snr == NULL)
+    {
+      fprintf(stderr,"Error allocating memory in check_l1b\n");
+      exit(1);
+    }
+
+    for (int i=0; i < Nstat; i++)
+    {
+      if (! snr_idx.IndexToValue(i,&(snr[i][0])))
+      {
+        fprintf(stderr,"Error converting snr index to value\n");
+        exit(1);
+      }
+      if (c_stat[i] == 0)
+      {
+        use[i] = 0;
+      }
+      else
+      {
+        Es[i][0] = e_Es_sum[i]/c_stat[i];
+        En[i][0] = e_En_sum[i]/c_stat[i];
+        sigma0[i][0] = e_sigma0_sum[i]/c_stat[i];
+        X[i][0] = e_X_sum[i]/c_stat[i];
+        Es[i][1] = e_Es_sum2[i]/c_stat[i];
+        En[i][1] = e_En_sum2[i]/c_stat[i];
+        sigma0[i][1] = e_sigma0_sum2[i]/c_stat[i];
+        X[i][1] = e_X_sum2[i]/c_stat[i];
+        use[i] = 1;
+      }
+    }
+
+    char filename[1024];
+    sprintf(filename,"%s.sigma0.stat",output_base);
+    plot4(filename,Nstat,use,identitydB,snr,Es,En,X,sigma0,"SNR (dB)",
+      "Average Es errors (dB)","Average En errors (dB)",
+      "Average X errors (dB)","Average sigma0 errors (dB)");
   }
 
   //-----------------//
@@ -558,6 +847,60 @@ main(
   return (0);
 }
 
+int
+match_cf_frame(
+  CheckFrame* cf_target,
+  CheckFrame* cf_source,
+  FILE* source_fp)
+
+{
+  int found = 0;
+  while (cf_source->ReadDataRec(source_fp))
+  {  // look for matching sim check frame
+    if (cf_source->pulseCount == cf_target->pulseCount)
+    {
+      found = 1;
+      break;
+    }
+  }
+
+  if (found == 0)
+  {
+    fprintf(stderr,"Can't match a target checkframe at index = %d\n",
+    cf_target->pulseCount);
+    rewind(source_fp);
+  }
+
+  return(found);
+
+}
+
+float identity(float* elem)
+{
+  return(elem[0]);
+}
+
+float identitydB(float* elem)
+{
+  return(10.0/log(10.0)*log(1.0 + elem[0]));
+}
+
+float dBerr(float* elem)
+{
+  if (elem[0] == 0.0)
+  {
+    return(0.0);
+  }
+  else if (elem[1]/elem[0] < 0)
+  {  // opposite sign so can't do dB error
+    return(0.0);
+  }
+  else
+  {
+    return(10.0/log(10.0)*log(elem[1]/elem[0]));
+  }
+}
+
 float frac(float* elem)
 {
   if (elem[0] == 0.0)
@@ -568,6 +911,108 @@ float frac(float* elem)
 
 float derr(float* elem)
 {
-  return(rtd*(elem[0]-elem[1]));
+  float err = rtd*(elem[0]-elem[1]);
+  while (err > 360.0) err -= 360.0;
+  if (err > 180.0) err -= 360.0;
+  if (err < -180.0) err += 360.0;
+  return(err);
 }
 
+float dif_err(float* elem)
+{
+  return(elem[0]-elem[1]);
+}
+
+int
+plot4(char* filename,
+      int count,
+      int *use,
+      float (*func)(float*),
+      float** x,
+      float** y1,
+      float** y2,
+      float** y3,
+      float** y4,
+      char* xlabel,
+      char* y1label,
+      char* y2label,
+      char* y3label,
+      char* y4label)
+
+{
+  FILE* fptr = fopen(filename,"w");
+  if (fptr == NULL)
+  {
+    fprintf(stderr, "check_l1b: Error opening %s\n", filename);
+    exit(1);
+  }
+
+  fprintf(fptr,"@with g0\n@g0 on\n");
+  for (int i=0; i < count; i++)
+  {
+    if (use[i] == 1)
+      fprintf(fptr,"%g %g\n",x[i][0],func(y4[i]));
+  }
+  fprintf(fptr,"&\n");
+  fprintf(fptr,"@with g1\n@g1 on\n");
+  for (int i=0; i < count; i++)
+  {
+    if (use[i] == 1)
+      fprintf(fptr,"%g %g\n",x[i][0],func(y3[i]));
+  }
+  fprintf(fptr,"&\n");
+  fprintf(fptr,"@with g2\n@g2 on\n");
+  for (int i=0; i < count; i++)
+  {
+    if (use[i] == 1)
+      fprintf(fptr,"%g %g\n",x[i][0],func(y2[i]));
+  }
+  fprintf(fptr,"&\n");
+  fprintf(fptr,"@with g3\n@g3 on\n");
+  for (int i=0; i < count; i++)
+  {
+    if (use[i] == 1)
+      fprintf(fptr,"%g %g\n",x[i][0],func(y1[i]));
+  }
+  fprintf(fptr,"&\n");
+  fprintf(fptr,"@with g0\n@g0 on\n");
+  fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
+  fprintf(fptr,"@view ymin 0.1\n@view ymax 0.22\n");
+  fprintf(fptr,"@autoscale xaxes\n");
+  fprintf(fptr,"@autoscale yaxes\n");
+  fprintf(fptr,"@s0 linestyle 0\n");
+  fprintf(fptr,"@s0 symbol 2\n");
+  fprintf(fptr,"@s0 symbol size 0.5\n");
+  fprintf(fptr,"@subtitle \"%s\"\n",y4label);
+  fprintf(fptr,"@xaxis label \"%s\"\n",xlabel);
+  fprintf(fptr,"@with g1\n@g1 on\n");
+  fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
+  fprintf(fptr,"@view ymin 0.28\n@view ymax 0.40\n");
+  fprintf(fptr,"@autoscale xaxes\n");
+  fprintf(fptr,"@autoscale yaxes\n");
+  fprintf(fptr,"@s0 linestyle 0\n");
+  fprintf(fptr,"@s0 symbol 2\n");
+  fprintf(fptr,"@s0 symbol size 0.5\n");
+  fprintf(fptr,"@subtitle \"%s\"\n",y3label);
+  fprintf(fptr,"@with g2\n@g2 on\n");
+  fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
+  fprintf(fptr,"@view ymin 0.46\n@view ymax 0.58\n");
+  fprintf(fptr,"@autoscale xaxes\n");
+  fprintf(fptr,"@autoscale yaxes\n");
+  fprintf(fptr,"@s0 linestyle 0\n");
+  fprintf(fptr,"@s0 symbol 2\n");
+  fprintf(fptr,"@s0 symbol size 0.5\n");
+  fprintf(fptr,"@subtitle \"%s\"\n",y2label);
+  fprintf(fptr,"@with g3\n@g3 on\n");
+  fprintf(fptr,"@view xmin 0.2\n@view xmax 0.8\n");
+  fprintf(fptr,"@view ymin 0.64\n@view ymax 0.76\n");
+  fprintf(fptr,"@autoscale xaxes\n");
+  fprintf(fptr,"@autoscale yaxes\n");
+  fprintf(fptr,"@s0 linestyle 0\n");
+  fprintf(fptr,"@s0 symbol 2\n");
+  fprintf(fptr,"@s0 symbol size 0.5\n");
+  fprintf(fptr,"@subtitle \"%s\"\n",y1label);
+  fclose(fptr);
+
+  return(1);
+}
