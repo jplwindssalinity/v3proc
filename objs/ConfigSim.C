@@ -1341,6 +1341,14 @@ ConfigGMF(
 		return(0);
 	gmf->retrieveUsingLogVar = tmp_int;
 
+        
+	float tmp_float;
+	if ( ! config_list->GetFloat(REQUIRED_AZIMUTH_DIVERSITY_KEYWORD, &tmp_float))
+	        return(0);
+	gmf->minimumAzimuthDiversity = tmp_float*dtr;
+
+        // Otherwise it uses the default value initialized by the constructor
+
     //------------------------//
     // configure nudging flag //
     //------------------------//

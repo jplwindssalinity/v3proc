@@ -39,7 +39,7 @@ static const char rcs_id_gmf_h[] =
 //#define S2_DEBUG_INTERVAL               17
 //#define S2_DETAILED_DEBUG               88
 #define MINIMUM_WVC_MEASUREMENTS   4
-#define MINIMUM_AZIMUTH_DIVERSITY  20.0*dtr
+
 
 class GMF : public MiscTable
 {
@@ -146,8 +146,8 @@ public:
     int  retrieveUsingKpriFlag;
     int  retrieveUsingKprsFlag;
     int  retrieveUsingLogVar;
-
     int  smartNudgeFlag;
+    float minimumAzimuthDiversity;
 
     //protected:
 
