@@ -600,51 +600,51 @@ Attribute* g_l2b_attribute_table[] =
 };
 
 // dimension sizes
-int32 dim_sizes_frame[] = { SD_UNLIMITED, 76, 4 };
+int32 l2b_dim_sizes_frame[] = { SD_UNLIMITED, 76, 4 };
 
 // dimension names
-const char* dim_names_frame[] = { "Wind_Vector_Cell_Row",
+const char* l2b_dim_names_frame[] = { "Wind_Vector_Cell_Row",
     "Wind_Vector_Cell", "Ambiguity" };
 
 // SDS's
-SdsInt16* wvc_row = new SdsInt16("wvc_row", 1, dim_sizes_frame, "counts",
-    1.0, 0.0, dim_names_frame, 1624, 1);
-SdsInt16* wvc_lat = new SdsInt16("wvc_lat", 2, dim_sizes_frame, "degrees",
-    0.01, 0.0, dim_names_frame, 9000, -9000);
-SdsUInt16* wvc_lon = new SdsUInt16("wvc_lon", 2, dim_sizes_frame, "degrees",
-    0.01, 0.0, dim_names_frame, 35999, 0);
-SdsInt8* wvc_index = new SdsInt8("wvc_index", 2, dim_sizes_frame, "counts",
-    1.0, 0.0, dim_names_frame, 76, 1);
-SdsInt8* num_in_fore = new SdsInt8("num_in_fore", 2, dim_sizes_frame, "counts",
-    1.0, 0.0, dim_names_frame, 127, 0);
-SdsInt8* num_in_aft = new SdsInt8("num_in_aft", 2, dim_sizes_frame, "counts",
-    1.0, 0.0, dim_names_frame, 127, 0);
-SdsInt8* num_out_fore = new SdsInt8("num_out_fore", 2, dim_sizes_frame,
-    "counts", 1.0, 0.0, dim_names_frame, 127, 0);
-SdsInt8* num_out_aft = new SdsInt8("num_out_aft", 2, dim_sizes_frame,
-    "counts", 1.0, 0.0, dim_names_frame, 127, 0);
+SdsInt16* wvc_row = new SdsInt16("wvc_row", 1, l2b_dim_sizes_frame, "counts",
+    1.0, 0.0, l2b_dim_names_frame, 1624, 1);
+SdsInt16* wvc_lat = new SdsInt16("wvc_lat", 2, l2b_dim_sizes_frame, "degrees",
+    0.01, 0.0, l2b_dim_names_frame, 9000, -9000);
+SdsUInt16* wvc_lon = new SdsUInt16("wvc_lon", 2, l2b_dim_sizes_frame, "degrees",
+    0.01, 0.0, l2b_dim_names_frame, 35999, 0);
+SdsInt8* wvc_index = new SdsInt8("wvc_index", 2, l2b_dim_sizes_frame, "counts",
+    1.0, 0.0, l2b_dim_names_frame, 76, 1);
+SdsInt8* num_in_fore = new SdsInt8("num_in_fore", 2, l2b_dim_sizes_frame,
+    "counts", 1.0, 0.0, l2b_dim_names_frame, 127, 0);
+SdsInt8* num_in_aft = new SdsInt8("num_in_aft", 2, l2b_dim_sizes_frame,
+    "counts", 1.0, 0.0, l2b_dim_names_frame, 127, 0);
+SdsInt8* num_out_fore = new SdsInt8("num_out_fore", 2, l2b_dim_sizes_frame,
+    "counts", 1.0, 0.0, l2b_dim_names_frame, 127, 0);
+SdsInt8* num_out_aft = new SdsInt8("num_out_aft", 2, l2b_dim_sizes_frame,
+    "counts", 1.0, 0.0, l2b_dim_names_frame, 127, 0);
 SdsUInt16* wvc_quality_flag = new SdsUInt16("wvc_quality_flag", 2,
-    dim_sizes_frame, "n/a", 1.0, 0.0, dim_names_frame, 32643, 0);
-SdsInt16* model_speed = new SdsInt16("model_speed", 2, dim_sizes_frame,
-    "m/s", 0.01, 0.0, dim_names_frame, 7000, 0);
-SdsUInt16* model_dir = new SdsUInt16("model_dir", 2, dim_sizes_frame,
-    "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
-SdsInt8* num_ambigs = new SdsInt8("num_ambigs", 2, dim_sizes_frame,
-    "counts", 1.0, 0.0, dim_names_frame, 4, 0);
-SdsInt16* wind_speed = new SdsInt16("wind_speed", 3, dim_sizes_frame,
-    "m/s", 0.01, 0.0, dim_names_frame, 5000, 0);
-SdsUInt16* wind_dir = new SdsUInt16("wind_dir", 3, dim_sizes_frame,
-    "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
+    l2b_dim_sizes_frame, "n/a", 1.0, 0.0, l2b_dim_names_frame, 32643, 0);
+SdsInt16* model_speed = new SdsInt16("model_speed", 2, l2b_dim_sizes_frame,
+    "m/s", 0.01, 0.0, l2b_dim_names_frame, 7000, 0);
+SdsUInt16* model_dir = new SdsUInt16("model_dir", 2, l2b_dim_sizes_frame,
+    "deg", 0.01, 0.0, l2b_dim_names_frame, 35999, 0);
+SdsInt8* num_ambigs = new SdsInt8("num_ambigs", 2, l2b_dim_sizes_frame,
+    "counts", 1.0, 0.0, l2b_dim_names_frame, 4, 0);
+SdsInt16* wind_speed = new SdsInt16("wind_speed", 3, l2b_dim_sizes_frame,
+    "m/s", 0.01, 0.0, l2b_dim_names_frame, 5000, 0);
+SdsUInt16* wind_dir = new SdsUInt16("wind_dir", 3, l2b_dim_sizes_frame,
+    "deg", 0.01, 0.0, l2b_dim_names_frame, 35999, 0);
 SdsInt16* max_likelihood_est = new SdsInt16("max_likelihood_est", 3,
-    dim_sizes_frame, "n/a", 0.001, 0.0, dim_names_frame, -30000, 0);
-SdsInt8* wvc_selection = new SdsInt8("wvc_selection", 2, dim_sizes_frame,
-    "n/a", 1.0, 0.0, dim_names_frame, 4, 0);
+    l2b_dim_sizes_frame, "n/a", 0.001, 0.0, l2b_dim_names_frame, -30000, 0);
+SdsInt8* wvc_selection = new SdsInt8("wvc_selection", 2, l2b_dim_sizes_frame,
+    "n/a", 1.0, 0.0, l2b_dim_names_frame, 4, 0);
 SdsInt16* wind_speed_selection = new SdsInt16("wind_speed_selection", 2,
-    dim_sizes_frame, "m/s", 0.01, 0.0, dim_names_frame, 7000, 0);
+    l2b_dim_sizes_frame, "m/s", 0.01, 0.0, l2b_dim_names_frame, 7000, 0);
 SdsUInt16* wind_dir_selection = new SdsUInt16("wind_dir_selection", 2,
-    dim_sizes_frame, "deg", 0.01, 0.0, dim_names_frame, 35999, 0);
+    l2b_dim_sizes_frame, "deg", 0.01, 0.0, l2b_dim_names_frame, 35999, 0);
 SdsInt16* mp_rain_probability = new SdsInt16("mp_rain_probability", 2,
-    dim_sizes_frame, "n/a", 0.001, 0.0, dim_names_frame, 1000, -3000);
+    l2b_dim_sizes_frame, "n/a", 0.001, 0.0, l2b_dim_names_frame, 1000, -3000);
 
 // SDS table
 Sds* g_l2b_sds_table[] =
