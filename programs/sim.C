@@ -8,24 +8,29 @@
 //    sim
 //
 // SYNOPSIS
-//    sim <sim_config_file>
+//    sim [ -p ] <config_file>
 //
 // DESCRIPTION
 //    Simulates the SeaWinds 1b instrument based on the parameters
 //    in the simulation configuration file.
 //
 // OPTIONS
-//    None.
+//    [ -p ]  Ignores the L1A_FILE specification in the configuration
+//            file and pipes the l1a file to standard output.
+//            It would be a *really* good idea to have something
+//            there to get the data.
 //
 // OPERANDS
 //    The following operand is supported:
-//      <sim_config_file>  The sim_config_file needed listing all
-//                           input parameters, input files, and
-//                           output files.
+//      <config_file>  The config_file needed listing all
+//                     input parameters, input files, and
+//                     output files.
 //
 // EXAMPLES
 //    An example of a command line is:
 //      % sim sws1b.cfg
+//    or
+//      % sim -p qscat.cfg | hdf_l1a_writer l1a.hdf
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -38,8 +43,8 @@
 // NOTES
 //    None.
 //
-// BROUGHT TO YOU BY
-//    The QSCAT Sim Team
+// AUTHOR
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -116,7 +121,9 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", 0};
+const char* usage_array[] = { "[ -p ]", "<config_file>", 0};
+
+int opt_pipe = 0;
 
 //--------------------//
 // Report handler     //
@@ -155,11 +162,24 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 2)
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'p':
+            opt_pipe = 1;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 1)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* config_file = argv[clidx++];
+    const char* config_file = argv[optind++];
 
     //-----------------------//
     // tell how far you have //
@@ -167,7 +187,7 @@ main(
     // the siguser1 signal   //
     //-----------------------//
 
-    sigset(SIGUSR1,&report);
+    sigset(SIGUSR1, &report);
 
     //--------------------------------//
     // read in simulation config file //
@@ -230,7 +250,17 @@ main(
         fprintf(stderr, "%s: error configuring Level 0\n", command);
         exit(1);
     }
-    l1a.OpenForWriting();
+    // check for pipe
+    if (opt_pipe)
+    {
+        // send the l1a file to standard output
+        l1a.SetOutputFp(stdout);
+    }
+    else
+    {
+        // the filename is already there, just open it
+        l1a.OpenForWriting();
+    }
 
     //--------------------------//
     // create an ephemeris file //
