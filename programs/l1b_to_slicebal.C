@@ -108,12 +108,11 @@ main(
 	// open the output file   //
 	//------------------------//
 
- 	if (! l1b.OpenForWriting(output_file))
-	{
-		fprintf(stderr, "%s: error creating output file %s\n", command,
-			input_file);
-		exit(1);
-	}       
+        FILE* ofp=fopen(output_file,"w");
+        if(!ofp){
+	  fprintf(stderr,"%s:Cannot create file %s\n",command,output_file);
+	  exit(1);
+	}
 
 
 
@@ -130,21 +129,21 @@ main(
 	      Meas* meas=spot->GetHead();
 	      double x,y,z;
               spot->scOrbitState.rsat.Get(&x,&y,&z);
-	      printf("%d %g %g ",meas->beamIdx,spot->time,meas->scanAngle*rtd);
+	      fprintf(ofp,"%d %g %g ",meas->beamIdx,spot->time,meas->scanAngle*rtd);
 	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
-		printf("%d ",meas->landFlag);
+		fprintf(ofp,"%d ",meas->landFlag);
 	      }     
 	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
-		printf("%g ",meas->incidenceAngle);
+		fprintf(ofp,"%g ",meas->incidenceAngle);
 	      }     
 	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
-		printf("%g ",meas->value);
+		fprintf(ofp,"%g ",meas->value);
 	      } 
 	      Meas egg;
               spot->GetHead();
               spot->GetNext();
 	      egg.Composite(spot,10);
-	      printf("%g\n",egg.value);
+	      fprintf(ofp,"%g\n",egg.value);
 	  }
         }
 
