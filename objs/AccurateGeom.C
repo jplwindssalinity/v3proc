@@ -186,11 +186,13 @@ IntegrateSlices(
 		// loop through azimuths and integrate //
 		//-------------------------------------//
 
-		float start_look=centroid_look;
-		float end_look=centroid_look;
 
                 for(int a=0; a<numazi;a++){
 		  float azi=a*azimuth_step_size+azimin;
+
+		  float start_look=centroid_look;
+		  float end_look=centroid_look;
+
 //		  if(debug) printf("For Azimuth %g ....\n",azi);
 
 		  /*******************************/
