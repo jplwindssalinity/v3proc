@@ -179,7 +179,6 @@ main(
 		fprintf(stderr, "%s: error configuring ephemeris\n", command);
 		exit(1);
 	}
-	ephemeris.SetMaxNodes(50);		// this should be calculated
 
 	//------------//
 	// open files //
