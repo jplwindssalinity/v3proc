@@ -8,7 +8,7 @@
 //    modu
 //
 // SYNOPSIS
-//    modu <output_base> <l1b_file...>
+//    modu <output_base> <modu_file...> <l1b_file...>
 //        
 // DESCRIPTION
 //    Reads HDF L1B files and generates output files containing
@@ -18,11 +18,12 @@
 //    None
 //
 // OPERANDS
-//    <output_base>  The base of the output file names.
-//    <l1b_file...>  The input L1B files.
+//    <output_base>   The base of the output file names.
+//    <modu_file...>  The input modu files.
+//    <l1b_file...>   The input L1B files.
 //
 // EXAMPLES
-//    modu modout QS_L1B*
+//    modu modu modu.* QS_L1B*
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -68,6 +69,7 @@ static const char rcs_id[] =
 #include "ParTab.h"
 #include "Array.h"
 #include "Qscat.h"
+#include "modu.h"
 #include "Image.h"
 
 
@@ -106,6 +108,8 @@ template class TrackerBase<unsigned char>;
 #define LAT_MAX        90.0
 #define LAT_STEP_SIZE  2.0
 
+#define TARGET_BEAM_IDX  1
+
 //--------//
 // MACROS //
 //--------//
@@ -113,19 +117,6 @@ template class TrackerBase<unsigned char>;
 //------------------//
 // TYPE DEFINITIONS //
 //------------------//
-
-class SigAz
-{
-public:
-    float  sigma0;
-    float  azimuth;
-};
-
-class SigAzList : public List<SigAz>
-{
-};
-
-template class List<SigAz>;
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -144,7 +135,8 @@ void  check_status(HdfFile::StatusE status);
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
 ArgInfo leap_second_table_arg = LEAP_SECOND_TABLE_ARG;
 
-const char* usage_array[] = { "<output_base>", "<l1b_file...>", 0 };
+const char* usage_array[] = { "<output_base>", "<modu_file...>",
+    "<l1b_file...>", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -165,7 +157,7 @@ main(
 
     const char* command = no_path(argv[0]);
     extern int optind;
-    extern char *optarg;
+//    extern char *optarg;
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
@@ -249,38 +241,52 @@ main(
     // create data storage //
     //---------------------//
 
-    int lon_bins = (int)((LON_MAX - LON_MIN) / LON_STEP_SIZE + 1);
-    int lat_bins = (int)((LAT_MAX - LAT_MIN) / LAT_STEP_SIZE + 1);
-
-    SigAzList**** map;
-    map = (SigAzList ****)malloc(sizeof(SigAzList ***) *
-        NUMBER_OF_QSCAT_BEAMS);
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    ModuGrid modu_grid;
+    if (! modu_grid.Allocate(LON_MIN, LON_MAX, LON_STEP_SIZE, LAT_MIN,
+        LAT_MAX, LAT_STEP_SIZE))
     {
-        *(map + beam_idx) =
-            (SigAzList ***)malloc(sizeof(SigAzList **) * lon_bins);
-        for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
-        {
-            *(*(map + beam_idx) + lon_idx) =
-                (SigAzList **)malloc(sizeof(SigAzList *) * lat_bins);
-            for (int lat_idx = 0; lat_idx < lat_bins; lat_idx++)
-            {
-                *(*(*(map + beam_idx) + lon_idx) + lat_idx) = new SigAzList;
-            }
-        }
+        fprintf(stderr, "%s: error allocating ModuGrid\n", command);
+        exit(1);
     }
 
-    //------------------------//
-    // step through l1b files //
-    //------------------------//
+    //--------------------//
+    // step through files //
+    //--------------------//
 
     for (int file_idx = start_file_idx; file_idx < end_file_idx; file_idx++)
     {
-        char* l1b_filename = argv[file_idx];
-        printf("%s\n", l1b_filename);
+        char* filename = argv[file_idx];
+
+        if (strstr(filename, "QS_S1B") == NULL)
+        {
+            //------------//
+            // Modu files //
+            //------------//
+
+            printf("%s (modu)\n", filename);
+            ModuGrid new_grid;
+            if (! new_grid.Read(filename))
+            {
+                fprintf(stderr, "%s: error reading modu file %s\n", command,
+                    filename);
+                exit(1);
+            }
+            modu_grid.Add(&new_grid);
+            new_grid.Deallocate();
+            continue;
+        }
+
+        printf("%s (L1B)\n", filename);
+        ModuGrid new_grid;
+        if (! new_grid.Allocate(LON_MIN, LON_MAX, LON_STEP_SIZE, LAT_MIN,
+            LAT_MAX, LAT_STEP_SIZE))
+        {
+            fprintf(stderr, "%s: error allocating ModuGrid\n", command);
+            exit(1);
+        }
 
         HdfFile::StatusE status;
-        L1BHdfFile l1b_file(l1b_filename, status);
+        L1BHdfFile l1b_file(filename, status);
         if (status != HdfFile::OK)
         {
             fprintf(stderr, "%s: error creating L1B file object\n", command);
@@ -301,7 +307,6 @@ main(
         int l1b_length = l1b_file.GetDataLength();
         for (int record_idx = 0; record_idx < l1b_length; record_idx++)
         {
-printf("%d\n", record_idx);
             unsigned int frame_err_status;
             frame_err_status_p->extractFunc(&l1b_file,
                 frame_err_status_p->sdsIDs, record_idx, 1, 1,
@@ -354,37 +359,21 @@ printf("%d\n", record_idx);
                 if (cell_sigma0[spot_idx] < -30.0)
                     continue;
 
+                // weird lat/lon
                 // determine beam index
                 int beam_idx = spot_idx % NUMBER_OF_QSCAT_BEAMS;
-
-                // make the SigAz object
-                SigAz* new_sigaz = new SigAz();
-                if (new_sigaz == NULL)
-                {
-                    fprintf(stderr, "%s: error allocating SigAz object\n",
-                        command);
-                    exit(1);
-                }
-                new_sigaz->sigma0 = cell_sigma0[spot_idx];
-                new_sigaz->azimuth = cell_azimuth[spot_idx];
-
-                // check lon/lat in range
-                int lon_idx = (int)((cell_lon[spot_idx] - LON_MIN) /
-                    LON_STEP_SIZE);
-                int lat_idx = (int)((cell_lat[spot_idx] - LAT_MIN) /
-                    LAT_STEP_SIZE);
-                if (lon_idx < 0 || lon_idx >= lon_bins ||
-                    lat_idx < 0 || lat_idx >= lat_bins)
-                {
+                if (beam_idx != TARGET_BEAM_IDX)
                     continue;
-                }
 
-                // put it away
-                SigAzList* sal = *(*(*(map + beam_idx) + lon_idx) + lat_idx);
-                if (! sal->Append(new_sigaz))
+                //------------------------//
+                // accumulate in ModuGrid //
+                //------------------------//
+
+                if (! new_grid.Accumulate(cell_lon[spot_idx],
+                    cell_lat[spot_idx], cell_azimuth[spot_idx],
+                    cell_sigma0[spot_idx]))
                 {
-                    fprintf(stderr, "%s: error appending SigAz object\n",
-                        command);
+                    fprintf(stderr, "%s: error accumulating data\n", command);
                     exit(1);
                 }
             }
@@ -400,12 +389,36 @@ printf("%d\n", record_idx);
         l1b_file.CloseParamDatasets(sigma0_qual_flag_p);
         l1b_file.CloseParamDatasets(cell_sigma0_p);
         l1b_file.CloseParamDatasets(cell_azimuth_p);
+
+        //-------------------------------------------//
+        // write out sigma-0 and azimuth information //
+        //-------------------------------------------//
+
+        char output_filename[1024];
+        char* ptr = strstr(filename, "QS_S1B");
+        ptr += 6;
+        sprintf(output_filename, "%s.%.5s", output_base, ptr);
+        if (! new_grid.Write(output_filename))
+        {
+            fprintf(stderr, "%s: error writing Modu file %s\n", command,
+                output_filename);
+            exit(1);
+        }
+
+        //---------//
+        // combine //
+        //---------//
+
+        modu_grid.Add(&new_grid);
+        new_grid.Deallocate();
     }
 
     //---------------------//
     // create output image //
     //---------------------//
 
+    int lon_bins = modu_grid.lonBins;
+    int lat_bins = modu_grid.latBins;
     Image image;
     image.Allocate(lon_bins, lat_bins);
 
@@ -413,50 +426,41 @@ printf("%d\n", record_idx);
     // fit and write out azimuth info //
     //--------------------------------//
 
+    double azimuth[AZIMUTH_BINS];
+    double sigma0[AZIMUTH_BINS];
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         for (int lon_idx = 0; lon_idx < lon_bins; lon_idx++)
         {
-            float lon = ((float)lon_bins + 0.5) * LON_STEP_SIZE + LON_MIN;
+//            float lon = ((float)lon_bins + 0.5) * LON_STEP_SIZE + LON_MIN;
             for (int lat_idx = 0; lat_idx < lat_bins; lat_idx++)
             {
-                float lat = ((float)lat_bins + 0.5) * LAT_STEP_SIZE + LAT_MIN;
-                SigAzList* sal = *(*(*(map + beam_idx) + lon_idx) + lat_idx);
+//                float lat = ((float)lat_bins + 0.5) * LAT_STEP_SIZE + LAT_MIN;
+                Modu* modu = *(*(modu_grid.grid + lon_idx) + lat_idx);
 
-                // allocate array
-                int count = sal->NodeCount();
-                double* azimuth = (double *)malloc(sizeof(double) * count);
-                if (azimuth == NULL)
+                int data_count = 0;
+                for (int az_idx = 0; az_idx < AZIMUTH_BINS; az_idx++)
                 {
-                    fprintf(stderr, "%s: error allocating azimuth array\n",
-                        command);
-                    exit(1);
-                }
-                double* sigma0 = (double *)malloc(sizeof(double) * count);
-                if (sigma0 == NULL)
-                {
-                    fprintf(stderr, "%s: error allocating sigma0 array\n",
-                        command);
-                    exit(1);
-                }
+                    if (modu->count[az_idx] < 1)
+                        continue;
 
-                int idx = 0;
-                SigAz* sigaz;
-                sal->GotoHead();
-                while ((sigaz = sal->RemoveCurrent()) != NULL)
-                {
-                    *(azimuth + idx) = sigaz->azimuth;
-                    *(sigma0 + idx) = sigaz->sigma0;
-                    delete sigaz;
-                    idx++;
+                    sigma0[data_count] = modu->sigma0[az_idx] /
+                        modu->count[az_idx];
+                    azimuth[data_count] = two_pi * (double)az_idx /
+                        (double)AZIMUTH_BINS;
+                    data_count++;
                 }
 
                 //-----//
                 // fit //
                 //-----//
 
+                // need a better fit criteria here
+                if (data_count < 10)
+                    continue;
+
                 double amp, phase, bias;
-                if (! sinfit(azimuth, sigma0, NULL, count, &amp, &phase,
+                if (! sinfit(azimuth, sigma0, NULL, data_count, &amp, &phase,
                     &bias))
                 {
                     fprintf(stderr, "%s: error doing the sinusoid fit\n",
@@ -473,10 +477,13 @@ printf("%d\n", record_idx);
     // write out image //
     //-----------------//
 
-    if (! image.WriteIm(output_base))
+    char output_filename[1024];
+    sprintf(output_filename, "%s.im", output_base);
+
+    if (! image.WriteIm(output_filename))
     {
         fprintf(stderr, "%s: error writing image file %s\n", command,
-            output_base);
+            output_filename);
         exit(1);
     }
 
