@@ -42,8 +42,14 @@ ConfigSpacecraft(
   // Initialize Attitude          //
   //------------------------------//
 
-  spacecraft->attitude.Set(0.0,0.0,0.0,order1,order2,order3);
-  return(1);
+	if (! spacecraft->attitude.SetOrder(order1, order2, order3))
+	{
+		fprintf(stderr, "Error setting attitude order (%d, %d, %d)\n",
+			order1, order2, order3);
+		return(0);
+	}
+
+	return(1);
 }
 
 //---------------------//

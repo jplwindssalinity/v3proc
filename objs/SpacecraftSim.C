@@ -375,7 +375,7 @@ SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft,
 	  yaw+=_attknow_dist->yaw->GetNumber(time);
 	}
 
-	order=spacecraft->attitude.GetOrderIndices();
+	order=spacecraft->attitude.GetOrder();
 	attitude->Set(roll,pitch,yaw,order[0],order[1],order[2]);
 	return;
 }

@@ -19,7 +19,7 @@ Attitude::Attitude()
 {
 	for (int i = 0; i < 3; i++)
 	{
-		_order[i] = 0;
+		_order[i] = (unsigned char)0;
 	}
 	return;
 }
@@ -29,31 +29,66 @@ Attitude::~Attitude()
 	return;
 }
 
+//--------------------//
+// Attitude::SetOrder //
+//--------------------//
+
+int
+Attitude::SetOrder(
+	int		order_1,
+	int		order_2,
+	int		order_3)
+{
+	if (order_1 < 1 || order_1 > 3 ||
+		order_2 < 1 || order_2 > 3 ||
+		order_3 < 1 || order_3 > 3 ||
+		order_1 == order_2 ||
+		order_1 == order_3 ||
+		order_2 == order_3)
+	{
+		return(0);
+	}
+	_order[0] = (unsigned char)order_1;
+	_order[1] = (unsigned char)order_2;
+	_order[2] = (unsigned char)order_3;
+	return(1);
+}
+
+//------------------//
+// Attitude::SetRPY //
+//------------------//
+
+int
+Attitude::SetRPY(
+	float	roll,
+	float	pitch,
+	float	yaw)
+{
+	_roll = roll;
+	_pitch = pitch;
+	_yaw = yaw;
+	return(1);
+}
+
 //---------------//
 // Attitude::Set //
 //---------------//
 
 int
 Attitude::Set(
-	float			roll,
-	float			pitch,
-	float			yaw,
-	unsigned char	order_1,
-	unsigned char	order_2,
-	unsigned char	order_3)
+	float	roll,
+	float	pitch,
+	float	yaw,
+	int		order_1,
+	int		order_2,
+	int		order_3)
 {
-	if (order_1 < 1 || order_1 > 3 ||
-		order_2 < 1 || order_2 > 3 ||
-		order_3 < 1 || order_3 > 3)
-	{
+	if (! SetRPY(roll, pitch, yaw))
 		return(0);
-	}
-	_roll = roll;
-	_pitch = pitch;
-	_yaw = yaw;
-	_order[0] = order_1;
-	_order[1] = order_2;
-	_order[2] = order_3;
+
+	if (! SetOrder(order_1, order_2, order_3))
+		return(0);
+
 	return(1);
 }
 

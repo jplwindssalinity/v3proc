@@ -40,8 +40,10 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int		Set(float roll, float pitch, float yaw, unsigned char order_1,
-				unsigned char order_2, unsigned char order_3);
+	int		SetOrder(int order_1, int order_2, int order_3);
+	int		SetRPY(float roll, float pitch, float yaw);
+	int		Set(float roll, float pitch, float yaw, int order_1, int order_2,
+				int order_3);
 
 	float	GetRoll() { return(_roll); };
 	void	SetRoll(float roll) { _roll = roll; };
@@ -49,7 +51,7 @@ public:
 	void	SetPitch(float pitch) { _pitch = pitch; };
 	float	GetYaw() { return(_yaw); };
 	void	SetYaw(float yaw) { _yaw = yaw; };
-	unsigned char*	GetOrderIndices() { return(_order); };
+	unsigned char*	GetOrder() { return(_order); };
 
 	//--------------//
 	// input/output //
