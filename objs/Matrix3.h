@@ -16,11 +16,9 @@ class CoordinateSwitch;
 // CLASSES
 //		Matrix3
 //		Vector3
-//		EarthPosition
 //======================================================================
 
 class Vector3;
-class EarthPosition;
 
 //======================================================================
 // CLASS
@@ -128,6 +126,8 @@ void Show(char *name = NULL);
 
 	int		SphericalSet(double r, double theta, double phi);
 	int		SphericalGet(double *r, double *theta, double *phi);
+	int		AzimuthElevationSet(double r, double az, double el);
+	int		AzimuthElevationGet(double *r, double *az, double *el);
 	int		Set(int index, double value);
 	void	Set(double x1, double x2, double x3);
 	int		Get(int index, double* value);
@@ -140,62 +140,6 @@ protected:
 //-----------//
 
 double _v[3];
-};
-
-//======================================================================
-// CLASS
-//		EarthPosition
-//
-// DESCRIPTION
-//		The EarthPosition object is derived from the Vector3 object.
-//		It contains a 3-element vector which specifies a position in
-//		a coordinate system fixed to the earth's surface
-//		(ie., rotating), with its origin at the center of the earth.
-//		In addition to the inherited vector methods, other methods
-//		for handling geodetic and geocentric latitude, longitude,
-//		and altitude are provided.
-//		The position vector is always stored as three rectangular
-//		coordinates, however, different construction and access
-//		methods allow the use of latitude, longitude, and altitude.
-//======================================================================
-
-class EarthPosition : public Vector3
-{
-public:
-
-enum earthposition_typeE {RECTANGULAR, GEOCENTRIC, GEODETIC};
-
-//
-// Additional construction methods
-//
-
-EarthPosition(double x1, double x2, double x3, earthposition_typeE etype);
-EarthPosition(double x1, double x2, earthposition_typeE etype);
-EarthPosition(Vector3 v);
-EarthPosition();
-~EarthPosition();
-
-int SetPosition(double x1, double x2, double x3, earthposition_typeE etype);
-
-//
-// Operators
-//
-
-void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
-
-//
-// Other access methods
-//
-
-double surface_distance(EarthPosition r);
-EarthPosition Nadir();
-Vector3 Normal();
-int GetAltLatLon(earthposition_typeE etype, double* alt,
-	double* lat, double* elon);
-
-CoordinateSwitch SurfaceCoordinateSystem();
-double IncidenceAngle(Vector3 rlook);
-
 };
 
 #endif
