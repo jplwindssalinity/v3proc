@@ -198,7 +198,7 @@ main(
 	//------------//
 
 	grid.l15.OpenForReading();
-	grid.l17.file.OpenForOutput();
+	grid.l17.OpenForWriting();
 
 	//-----------------//
 	// conversion loop //
@@ -258,7 +258,7 @@ main(
 	grid.Flush(use_compositing);
 
 	grid.l15.Close();
-	grid.l17.file.Close();
+	grid.l17.Close();
 
 	return (0);
 }

@@ -9,7 +9,7 @@
 static const char rcs_id_l17_h[] =
 	"@(#) $Id$";
 
-#include "GenericFile.h"
+#include "BaseFile.h"
 #include "L17Frame.h"
 
 
@@ -29,7 +29,7 @@ static const char rcs_id_l17_h[] =
 //		opposed to the time ordered measurements in level 1.5 data.
 //======================================================================
 
-class L17
+class L17 : public BaseFile
 {
 public:
 
@@ -60,14 +60,12 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			SetFilename(const char* filename);
 	StatusE		GetStatus() { return(_status); };
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	GenericFile		file;
 	L17Header		header;
 	L17Frame		frame;
 

@@ -183,7 +183,7 @@ main(
 	// open files //
 	//------------//
 
-	l17.file.OpenForInput();
+	l17.OpenForReading();
 	l20.OpenForWriting();
 
 	//---------------------------------//
@@ -270,7 +270,7 @@ main(
 
 	l17_to_l20.Flush(&l20);
 
-	l17.file.Close();
+	l17.Close();
 	l20.Close();
 
 	return (0);

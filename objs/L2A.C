@@ -26,28 +26,16 @@ L17::~L17()
 }
 
 //------------------//
-// L17::SetFilename //
-//------------------//
-
-int
-L17::SetFilename(
-	const char*		filename)
-{
-	return(file.SetFilename(filename));
-}
-
-//------------------//
 // L17::WriteHeader //
 //------------------//
 
 int
 L17::WriteHeader()
 {
-	FILE* fp = file.GetFp();
-	if (fp == NULL)
+	if (_fp == NULL)
 		return(0);
 
-	if (! header.Write(fp))
+	if (! header.Write(_fp))
 		return(0);
 
 	_headerTransferred = 1;
@@ -61,11 +49,10 @@ L17::WriteHeader()
 int
 L17::ReadHeader()
 {
-	FILE* fp = file.GetFp();
-	if (fp == NULL)
+	if (_fp == NULL)
 		return(0);
 
-	if (! header.Read(fp))
+	if (! header.Read(_fp))
 		return(0);
 
 	_headerTransferred = 1;
@@ -79,16 +66,15 @@ L17::ReadHeader()
 int
 L17::ReadDataRec()
 {
-	FILE* fp = file.GetFp();
-	if (fp == NULL) return(0);
+	if (_fp == NULL) return(0);
 
 	if (! _headerTransferred)
 	{
-		if (! header.Read(fp))
+		if (! header.Read(_fp))
 			return(0);
 		_headerTransferred = 1;
 	}
-	if (! frame.Read(fp))
+	if (! frame.Read(_fp))
 		return(0);
 
 	return(1);
@@ -101,17 +87,16 @@ L17::ReadDataRec()
 int
 L17::WriteDataRec()
 {
-	FILE* fp = file.GetFp();
-	if (fp == NULL) return(0);
+	if (_fp == NULL) return(0);
 
 	if (! _headerTransferred)
 	{
-		if (! header.Write(fp))
+		if (! header.Write(_fp))
 			return(0);
 		_headerTransferred = 1;
 	}
 
-	if (! frame.Write(fp))
+	if (! frame.Write(_fp))
         return(0);
 
 	return(1);
