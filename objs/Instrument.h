@@ -140,6 +140,7 @@ public:
 	//-------//
 
 	int				useKpc;		// 0 - no kpc, 1 - with kpc
+	int				useKpm;		// 0 - no kpm, 1 - with kpm
 	unsigned char	useRgc;		// 0 - ideal delay, 1 - use RGC
 	unsigned char	useDtc;		// 0 - ideal Doppler, 1 - use DTC
 

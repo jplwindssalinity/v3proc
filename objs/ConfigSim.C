@@ -562,6 +562,11 @@ ConfigInstrument(
 		return(0);
 	instrument->useKpc = use_kpc;
 
+	int use_kpm;
+	if (! config_list->GetInt(USE_KPM_KEYWORD, &use_kpm))
+		return(0);
+	instrument->useKpm = use_kpm;
+
 	config_list->LogErrors(0);
 
 	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);

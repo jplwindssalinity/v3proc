@@ -161,23 +161,31 @@ InstrumentSim::SetMeasurements(
 		// the s/c (the opposite direction as the look vector)
 		float chi = wv.dir - meas->eastAzimuth + pi;
 		float sigma0;
-		if (uniformSigmaField) sigma0=1;
-                else {
-		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
-			chi, &sigma0);
-		
-		  
-		  //--------------------------------------------------------------------//
-		  // Fuzz the sigma0 by Kpm to simulate the effects of model function
-		  // error.  The resulting sigma0 is the 'true' value.  It does not map
-		  // back to the correct wind speed for the current beam and geometry
-		  // because the model function is not perfect.
-		  // This Kpm application is UNCORRELATED.
-		  //--------------------------------------------------------------------//
-
-		  Gaussian rv(Kpm,1.0);
-		  sigma0 *= rv.GetNumber();
+		if (uniformSigmaField)
+		{
+			sigma0=1;
 		}
+        else
+		{
+			gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
+				chi, &sigma0);
+
+			//---------------------------------------------------------------//
+			// Fuzz the sigma0 by Kpm to simulate the effects of model function
+			// error.  The resulting sigma0 is the 'true' value.
+			// It does not map back to the correct wind speed for the
+			// current beam and geometry because the model function is
+			// not perfect.
+			// This Kpm application is UNCORRELATED.
+			//---------------------------------------------------------------//
+
+			if (instrument->useKpm == 1)
+			{
+				Gaussian rv(Kpm,1.0);
+				sigma0 *= rv.GetNumber();
+			}
+		}
+
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
