@@ -10,6 +10,7 @@ static const char rcs_id_echo_funcs_h[] =
     "@(#) $Id$";
 
 #include "Qscat.h"
+#include "Array.h"
 
 #define SPOTS_PER_FRAME  100
 
