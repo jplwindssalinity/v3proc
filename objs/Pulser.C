@@ -245,6 +245,8 @@ Pulser::Config(
     char number[8];
     sprintf(number, "%d", pulser_id);
 
+    printf("Beam %d\n", pulser_id);
+
     char keyword[1024];
     config_list->DoNothingForMissingKeywords();
 
@@ -264,6 +266,7 @@ Pulser::Config(
     substitute_string("BEAM_x_PULSE_WIDTH", "x", number, keyword);
     if (config_list->GetDouble(keyword, &_pulseWidthSet))
     {
+        printf("  Fixed pulse width = %g s\n", _pulseWidthSet);
         _pulseWidthMinSet = _pulseWidthSet;
         _pulseWidthMin = _pulseWidthMinSet;
         _pulseWidthMaxSet = _pulseWidthSet;
@@ -285,17 +288,18 @@ Pulser::Config(
     //--------//
 
     substitute_string("BEAM_x_OFFSET_MIN", "x", number, keyword);
-    config_list->GetDouble(keyword, &_offsetMin);
+    config_list->GetDouble(keyword, &_offsetMinSet);
 
     substitute_string("BEAM_x_OFFSET_MAX", "x", number, keyword);
-    config_list->GetDouble(keyword, &_offsetMax);
+    config_list->GetDouble(keyword, &_offsetMaxSet);
 
     substitute_string("BEAM_x_OFFSET_STEP", "x", number, keyword);
     config_list->GetDouble(keyword, &_offsetStep);
 
     substitute_string("BEAM_x_OFFSET", "x", number, keyword);
-    if (config_list->GetDouble(keyword, &_offset))
+    if (config_list->GetDouble(keyword, &_offsetSet))
     {
+        printf("  Fixed offset = %g s\n", _offsetSet);
         _offsetMinSet = _offsetSet;
         _offsetMin = _offsetMinSet;
         _offsetMaxSet = _offsetSet;
@@ -640,6 +644,7 @@ PulserCluster::Config(
     config_list->GetDouble("PRI_STEP", &_priStep);
     if (config_list->GetDouble("PRI", &_priSet))
     {
+        printf("Fixed PRI = %g s\n", _priSet);
         _priMinSet = _priSet;
         _priMin = _priMinSet;
         _priMaxSet = _priSet;
