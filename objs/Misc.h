@@ -102,6 +102,11 @@ double       asc2sec(char *asctime);
 int          sec2asc(double sec, char *asctime);
 int          sec2asc_month(double sec, char* asctime);
 
+// fit a line to data
+int          linear_fit(double* x, double* y, int count, double* std,
+                 double* m, double* b, double* sigm, double* sigb,
+                 double* chi2);
+
 // fit a sinusoid to data
 int          sinfit(double* azimuth, double* value, double* variance,
                  int count, double* amplitude, double* phase, double* bias);

@@ -1027,142 +1027,248 @@ return(1);
  *
  */
 
-#include <stdio.h>
-#include <math.h>
-
-int sec2asc_month(double sec, char* asctime)
-
+int
+sec2asc_month(
+    double  sec,
+    char*   asctime)
 {
-int month,day,year,doy,hour,minute,sec10;
-int j,jd0;
-int y,m,d,c,ya,jdint,isec;
-float second;
-double frac,jd,jdref,jdplus,dsec;
+    int month, day, year, doy, hour, minute, sec10;
+    int j, jd0;
+    int y, m, d, c, ya, jdint, isec;
+    float second;
+    double frac, jd, jdref, jdplus, dsec;
 
-/*
- * year,month,day: 1995,1,1
- * Julian date = 2449718.500000
- *
- * year,month,day: 1996,1,1
- * Julian date = 2450083.500000
- *
- * year,month,day: 1997,1,1
- * Julian date = 2450449.500000
- *
- * year,month,day: 1998,1,1
- * Julian date = 2450814.500000
- *
- */
+    /*
+     * year,month,day: 1995,1,1
+     * Julian date = 2449718.500000
+     *
+     * year,month,day: 1996,1,1
+     * Julian date = 2450083.500000
+     *
+     * year,month,day: 1997,1,1
+     * Julian date = 2450449.500000
+     *
+     * year,month,day: 1998,1,1
+     * Julian date = 2450814.500000
+     *
+     */
 
-if (asctime == NULL)
-  {
-  fprintf(stderr,"Error: sec2asc_month received a NULL string pointer\n");
-  exit(1);
-  }
+    if (asctime == NULL)
+    {
+        fprintf(stderr,
+            "Error: sec2asc_month received a NULL string pointer\n");
+        exit(1);
+    }
 
-/* 1996,1,1 */
-jdref = 2450083.50;
-frac = fmod( sec, 1.0 );
-if (frac < 0.0) frac = 1 + frac;
-jd = (sec - frac + 0.5) / 86400.0 + jdref;
+    /* 1996,1,1 */
+    jdref = 2450083.50;
+    frac = fmod(sec, 1.0);
+    if (frac < 0.0)
+        frac = 1 + frac;
+    jd = (sec - frac + 0.5) / 86400.0 + jdref;
 
-/*
- *  Compute JDINT, the integer Julian date at noon of the current day
- *  compute DSEC, the number of seconds elapsed since the start of the
- *  current day.
- *
- */
+    /*
+     *  Compute JDINT, the integer Julian date at noon of the current day
+     *  compute DSEC, the number of seconds elapsed since the start of the
+     *  current day.
+     *
+     */
 
-jdplus = jd + 0.5;
-jdint  = (int)jdplus;
-dsec   = 86400.0 * fmod(jdplus, 1.0 );
-if (dsec >= 86400.0)
-  {
-  jdint = jdint + 1;
-  dsec  = dsec  - 86400.0;
-  }
-isec = (int)dsec;
+    jdplus = jd + 0.5;
+    jdint  = (int)jdplus;
+    dsec   = 86400.0 * fmod(jdplus, 1.0 );
+    if (dsec >= 86400.0)
+    {
+        jdint = jdint + 1;
+        dsec  = dsec  - 86400.0;
+    }
+    isec = (int)dsec;
 
-/*
- *  compute the year, month, and day of the calendar date.
- */
-j = jdint;
+    /*
+     *  compute the year, month, and day of the calendar date.
+     */
+    j = jdint;
 
-j = j - 1721119;
-y = (4*j-1)/146097;
-j = 4*j - 1 - 146097*y;
-d = j/4;
-j = (4*d+3)/1461;
-d = 4*d + 3 - 1461*j;
-d = (d+4)/4;
-m = (5*d-3)/153;
-d = 5*d - 3 - 153*m;
-d = (d+5)/5;
-y = 100*y + j;
-if ( m < 10 )
-  {
-  m = m + 3;
-  }
-else
-  {
-  m = m - 9;
-  y = y + 1;
-  }
+    j = j - 1721119;
+    y = (4*j-1)/146097;
+    j = 4*j - 1 - 146097*y;
+    d = j/4;
+    j = (4*d+3)/1461;
+    d = 4*d + 3 - 1461*j;
+    d = (d+4)/4;
+    m = (5*d-3)/153;
+    d = 5*d - 3 - 153*m;
+    d = (d+5)/5;
+    y = 100*y + j;
+    if ( m < 10 )
+    {
+        m = m + 3;
+    }
+    else
+    {
+        m = m - 9;
+        y = y + 1;
+    }
 
-year   = y;
-month  = m;
-day    = d;
+    year   = y;
+    month  = m;
+    day    = d;
 
-/*  Compute HOUR. */
-hour   = isec/3600;
-isec   = isec - 3600*hour;
+    /*  Compute HOUR. */
+    hour   = isec/3600;
+    isec   = isec - 3600*hour;
 
-/*  Compute minute. */
-minute = isec/60;
-isec   = isec - 60*minute;
+    /*  Compute minute. */
+    minute = isec/60;
+    isec   = isec - 60*minute;
 
-/*  Compute sec10. */
-sec10  = isec/10;
-isec   = isec - 10*sec10;
+    /*  Compute sec10. */
+    sec10  = isec/10;
+    isec   = isec - 10*sec10;
 
-/*  Compute second. */
-second = isec + frac;
+    /*  Compute second. */
+    second = isec + frac;
 
-/*
- *      DAYOYR = DATE2J( YEAR, MONTH, DAY ) - DATE2J( YEAR, 1, 0 )
- */
+    /*
+     *      DAYOYR = DATE2J( YEAR, MONTH, DAY ) - DATE2J( YEAR, 1, 0 )
+     */
 
-y = year;
-m = month;
-d = day;
+    y = year;
+    m = month;
+    d = day;
 
-if ( m > 2 )
-  {
-  m = m - 3;
-  }
-else
-  {
-  m = m + 9;
-  y = y - 1;
-  }
+    if ( m > 2 )
+    {
+        m = m - 3;
+    }
+    else
+    {
+        m = m + 9;
+        y = y - 1;
+    }
 
-c  = y/100;
-ya = y - 100*c;
-jd = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + d + 1721119;
+    c  = y/100;
+    ya = y - 100*c;
+    jd = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + d + 1721119;
 
-m = 10;
-y = year - 1;
+    m = 10;
+    y = year - 1;
 
-c  = y/100;
-ya = y - 100*c;
-jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
+    c  = y/100;
+    ya = y - 100*c;
+    jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
 
-doy = (int)(jd - jd0);
+    doy = (int)(jd - jd0);
 
-sprintf(asctime,"%04d-%02d-%02dT%02d:%02d:%1d%05.3f",
-    year,month,day,hour,minute,sec10,second);
+    sprintf(asctime, "%04d-%02d-%02dT%02d:%02d:%1d%05.3f", year, month, day,
+        hour, minute, sec10, second);
 
-return(1);
+    return(1);
+}
+
+//------------//
+// linear_fit //
+//------------//
+// A linear fitting routine.  Given a set of points (x[count], y[count])
+// with standard deviations (std[count]), fit a straight line (y = mx + b)
+// to them by minimizing chi^2.  Returned are m and b and their respective
+// probable uncertainties, sigm and sigb, and the chi-square chi2.
+
+int
+linear_fit(
+    double*  x,
+    double*  y,
+    int      count,
+    double*  std,
+    double*  m,
+    double*  b,
+    double*  sigm,
+    double*  sigb,
+    double*  chi2)
+{
+    //---------------------------------------------//
+    // accumulate sums with or without std weights //
+    //---------------------------------------------//
+
+    double sx = 0.0;
+    double sy = 0.0;
+    double st2 = 0.0;
+
+    double ss;
+    if (std != NULL)
+    {
+        // with weights
+        ss = 0.0;
+        for (int i = 0; i < count; i++)
+        {
+            double wt = 1.0 / (std[i] * std[i]);
+            ss += wt;
+            sx += x[i] * wt;
+            sy += y[i] * wt;
+        }
+    }
+    else
+    {
+        // without weights
+        for (int i = 0; i < count; i++)
+        {
+            sx += x[i];
+            sy += y[i];
+        }
+        ss = (double)count;
+    }
+
+    double sxoss = sx / ss;
+    if (std != NULL)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double t = (x[i] - sxoss) / std[i];
+            st2 += (t * t);
+            *m += t * y[i] / std[i];
+        }
+    }
+    else
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double t = x[i] - sxoss;
+            st2 += (t * t);
+            *m += t * y[i];
+        }
+    }
+
+    //--------------------------------//
+    // solve for m, b, sigm, and sigb //
+    //--------------------------------//
+
+    *m /= st2;
+    *b = (sy - sx * (*m)) / ss;
+    *sigb = sqrt((1.0 + sx*sx / (ss * st2)) / ss);
+    *sigm = sqrt(1.0 / st2);
+
+    //-----------------//
+    // calculate chi-2 //
+    //-----------------//
+
+    *chi2 = 0.0;
+    if (std != NULL)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double val = (y[i] - (*b) - (*m) * x[i]) / std[i];
+            *chi2 += (val * val);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < count; i++)
+        {
+            double val = y[i] - (*b) - (*m) * x[i];
+            *chi2 += (val * val);
+        }
+    }
+    return(1);
 }
 
 //--------//
