@@ -8,7 +8,7 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -mor ] [ -f fit_base ] [ -s scale ] <config_file>
+//    echo_dtc [ -or ] [ -f fit_base ] [ -s scale ] <config_file>
 //      <dtc_base> <echo_file...>
 //
 // DESCRIPTION
@@ -20,8 +20,6 @@
 //    coefficients and fill in missing gaps.
 //
 // OPTIONS
-//    [ -m ]           Only use the fit to supply constants for orbit
-//                       steps with missing data.
 //    [ -r ]           Allow time regression.
 //    [ -o ]           Ocean only.
 //    [ -f fit_base ]  Generate fit output with the given filename base.
@@ -143,7 +141,7 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -mor ]", "[ -f fit_base ]", "[ -s scale ]",
+const char* usage_array[] = { "[ -or ]", "[ -f fit_base ]", "[ -s scale ]",
     "<config_file>", "<dtc_base>", "<echo_file...>", 0 };
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
@@ -178,7 +176,6 @@ main(
     int opt_regression = 1;    // default, check for regression
     int opt_ocean_only = 0;    // default is to include land
     int opt_fit = 0;
-    int opt_fit_for_missing_only = 0;
     const char* fit_base = NULL;
 
     //------------------------//
@@ -196,9 +193,6 @@ main(
         case 'o':
             // this flag means ocean only
             opt_ocean_only = 1;
-            break;
-        case 'm':
-            opt_fit_for_missing_only = 1;
             break;
         case 'r':
             // this flag means *don't* check for regression
