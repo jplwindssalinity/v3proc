@@ -98,6 +98,7 @@ public:
 	//-------------------//
 
 	WindField	nudgeField;
+	WindVectorField nudgeVctrField;
 };
 
 #endif
