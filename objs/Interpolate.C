@@ -56,7 +56,7 @@ polint(
 	double value = ya[ns--];
 	for (int m = 1; m < n; m++)
 	{
-		for (i = 0; i < n - m; i++)
+		for (int i = 0; i < n - m; i++)
 		{
 			double ho = xa[i] - x;
 			double hp = xa[i+m] - x;
