@@ -399,6 +399,21 @@ Pulser::SetPulseWidth(
 }
 
 //----------------------//
+// Pulser::SetOffsetMin //
+//----------------------//
+
+void
+Pulser::SetOffsetMin(
+    double  offset_min)
+{
+    if (_offsetMinSet >= 0.0)
+        _offsetMin = MAX(offset_min, _offsetMinSet);
+    else
+        _offsetMin = offset_min;
+    return;
+}
+
+//----------------------//
 // Pulser::SetOffsetMax //
 //----------------------//
 
@@ -661,6 +676,25 @@ PulserCluster::Config(
     else
         _pulseList.IgnoreNadir();
 
+    //-----------------//
+    // keep beam order //
+    //-----------------//
+
+    config_list->DoNothingForMissingKeywords();
+    config_list->GetInt("KEEP_BEAM_ORDER", &_keepPulserOrder);
+    if (_keepPulserOrder)
+        printf("Keeping pulse order.\n");
+
+    //---------------//
+    // evenly spaced //
+    //---------------//
+
+	config_list->GetInt("SPACE_PULSES_EVENLY", &_spacePulsesEvenly);
+    if (_spacePulsesEvenly)
+        printf("Spacing pulses evenly.\n");
+
+    config_list->ExitForMissingKeywords();
+
     //-----------------------------------------//
     // determine the number of pulsers to make //
     //-----------------------------------------//
@@ -792,19 +826,35 @@ PulserCluster::SetPri(
     {
         _pri = pri;
 
-        // need to change pulse width max and offset max
+        //-------------------------------------------------//
+        // need to change pulse width max and offset range //
+        //-------------------------------------------------//
+
         double pulse_width_max = _pri / 2.0;
         double offset_max = _pri;
+
+        // calculation needed to evenly space pulses
+        double even_offset_step = 0.0;
+        if (_spacePulsesEvenly)
+            even_offset_step = _pri / (double)NodeCount();
+
         for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
         {
             pulser->SetPulseWidthMax(pulse_width_max);
             pulser->SetOffsetMax(offset_max);
+
+            if (_spacePulsesEvenly)
+            {
+                pulser->SetOffsetMin(0.0);
+                pulser->SetOffsetStep(even_offset_step);
+            }
         }
 
         return(1);
     }
     else
     {
+        // reset and return 0
         _pri = _priMin;
         return(0);
     }
@@ -844,7 +894,7 @@ PulserCluster::GotoNextCombo()
     // pri
     if (SetPri(_pri + _priStep))
     {
-        printf("%.2f%%\n", 100.0 * (_pri - _priMin) / (_priMax - _priMin));
+        printf("%.1f%%\n", 100.0 * (_pri - _priMin) / (_priMax - _priMin));
         return(1);
     }
 
@@ -926,6 +976,25 @@ PulserCluster::Optimize()
     double duty_factor = 0.0;
     do
     {
+        //------------------------------//
+        // keep the order, if necessary //
+        //------------------------------//
+
+        if (_keepPulserOrder)
+        {
+            int no_more_combos = 0;
+            while(! PulsersInOrder())
+            {
+                if (! GotoNextCombo())
+                {
+                    no_more_combos = 1;
+                    break;
+                }
+            }
+            if (no_more_combos)
+                break;
+        }
+
         if (GenerateAllPulses())
         {
             duty_factor = DutyFactor();
@@ -935,16 +1004,35 @@ PulserCluster::Optimize()
             if (duty_factor > max_duty_factor)
             {
                 max_duty_factor = duty_factor;
-                printf("Best duty factor = %g\n", duty_factor);
+                printf("Best duty factor = %g%%\n", 100.0 * duty_factor);
                 Memorize();
             }
         }
 
         if (! GotoNextCombo())
             break;
+
     } while (1);
 
     return(max_duty_factor);
+}
+
+//-------------------------------//
+// PulserCluster::PulsersInOrder //
+//-------------------------------//
+
+int
+PulserCluster::PulsersInOrder()
+{
+    double last_offset = -1.0;
+    for (Pulser* pulser = GetHead(); pulser; pulser = GetNext())
+    {
+        double offset = pulser->GetOffset();
+        if (offset < last_offset)
+            return(0);    // you, my little pulser, are out of order
+        last_offset = offset;
+    }
+    return(1);
 }
 
 //---------------------------//

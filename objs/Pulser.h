@@ -93,6 +93,7 @@ public:
     int     GetId() { return(_pulserId); };
     double  GetRttMin() { return(_rttMin); };
     double  GetRttMax() { return(_rttMax); };
+    double  GetOffset() { return(_offset); };
 
     int     SetRtts(double altitude, double angle_buffer = 0.0,
                 double time_buffer = 0.0);
@@ -100,7 +101,9 @@ public:
     int     SetPri(double pri);
     void    SetPulseWidthMax(double pulse_width_max);
     int     SetPulseWidth(double pulse_width);
+    void    SetOffsetMin(double offset_min);
     void    SetOffsetMax(double offset_max);
+    void    SetOffsetStep(double offset_step) { _offsetStep = offset_step; };
     int     SetOffset(double offset);
     void    ZeroPulseCount() { _pulseCount = 0; };
 
@@ -171,6 +174,7 @@ public:
     double  Optimize();
     void    GotoFirstCombo();
     int     GotoNextCombo();
+    int     PulsersInOrder();
     double  DutyFactor();
     void    Memorize();
     void    Recall();
@@ -196,6 +200,9 @@ private:
 
     double  _rttMinNadir;
     double  _rttMaxNadir;
+
+    int     _keepPulserOrder;
+    int     _spacePulsesEvenly;
 
     double  _angleBuffer;
     double  _timeBuffer;
