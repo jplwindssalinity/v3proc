@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.25   08 Jun 1999 16:26:12   sally
+// make mWatts = 0.0, dB = -1000 when dn = 0.0
+// 
 //    Rev 1.24   25 May 1999 14:04:40   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -119,7 +122,9 @@ static const char rcs_id_l1_extract_h[] =
 #define INST_TIME_TO_DAYS       (1.0/2764800.0)     // 1 / (32 * 60 * 60 * 24)
 #define INST_TIME_TO_MS         (1000.0/32.0)
 
-#define EA_DN_TO_DB(x)  ( 10 * log10((double) x) )
+#define EA_BAD_DB               -1000.0
+
+#define EA_DN_TO_DB(x)  ( x == 0 ? EA_BAD_DB : 10 * log10((double) x) )
 
 //=====> DEFINES FOR RFS TRIP EXTRACTOR <====
 #define TRIP1MSB 0X8C18

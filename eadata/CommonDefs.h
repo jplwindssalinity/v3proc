@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   02 Jun 1999 16:20:28   sally
+// add leap second adjustment
+// 
 //    Rev 1.8   28 Oct 1998 15:00:34   sally
 // add L1B Hdf
 // Revision 1.2  1998/10/20 21:26:17  sally
@@ -78,6 +81,10 @@ static const char rcs_id_common_defs_h[] = "@(#) $Header$";
 
 #ifndef MAX_FILENAME_LEN
 #define MAX_FILENAME_LEN    1024
+#endif
+
+#ifndef L1_TIME_LEN
+#define L1_TIME_LEN         22  // inlcude the trailing NULL
 #endif
 
 #define PAGE_BREAK_CHAR     ''

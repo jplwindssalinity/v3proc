@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.22   08 Jun 1999 16:26:18   sally
+// make mWatts = 0.0, dB = -1000 when dn = 0.0
+// 
+//    Rev 1.21   02 Jun 1999 16:21:06   sally
+// add leap second adjustment
+// 
 //    Rev 1.20   25 May 1999 14:05:58   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -81,6 +87,7 @@
 
 #include "ParameterList.h"
 #include "Itime.h"
+#include "L1AExtract.h"
 #include "ParTab.h"
 #include "PolyTable.h"
 #include "TlmHdfFile.h"
@@ -262,7 +269,9 @@ ParameterList::PrePrint()
         // adjust the time 
         //-----------------
 
-        if (param_ptr->paramId == UTC_TIME)
+        if (param_ptr->paramId == UTC_TIME ||
+                           param_ptr->paramId == FRAME_TIME ||
+                           param_ptr->paramId == WVC_ROW_TIME)
             _status = _AdjustTime(param_ptr);
     }
     return (_status);
@@ -576,11 +585,39 @@ PolynomialTable*    polyTable)
             switch(param_ptr->dataType)
             {
                 case DATA_FLOAT4:
-                    polynomial->ApplyReplaceArray((float*)param_ptr->data,
+                    if (param_ptr->unitId == UNIT_DB ||
+                        param_ptr->unitId == UNIT_DBM ||
+                        param_ptr->unitId == UNIT_DB_DN)
+                    {
+                        float* numP = (float*) param_ptr->data;
+                        for (unsigned int k=0; k < _numPairs; k++, numP++)
+                        {
+                        if (*numP == 0.0)
+                            *numP = EA_BAD_DB;
+                        else
+                            polynomial->ApplyReplaceArray(numP, 1);
+                        }
+                    }
+                    else
+                        polynomial->ApplyReplaceArray((float*)param_ptr->data,
                                                    (int)_numPairs);
                     break;
                 case DATA_FLOAT8:
-                    polynomial->ApplyReplaceArray((double*)param_ptr->data,
+                    if (param_ptr->unitId == UNIT_DB ||
+                        param_ptr->unitId == UNIT_DBM ||
+                        param_ptr->unitId == UNIT_DB_DN)
+                    {
+                        double* numP = (double*) param_ptr->data;
+                        for (unsigned int k=0; k < _numPairs; k++, numP++)
+                        {
+                        if (*numP == 0.0)
+                            *numP = EA_BAD_DB;
+                        else
+                            polynomial->ApplyReplaceArray(numP, 1);
+                        }
+                    }
+                    else
+                        polynomial->ApplyReplaceArray((double*)param_ptr->data,
                                                    (int)_numPairs);
                     break;
                 default:

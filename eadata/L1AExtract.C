@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.33   08 Jun 1999 16:26:06   sally
+// make mWatts = 0.0, dB = -1000 when dn = 0.0
+// 
+//    Rev 1.32   02 Jun 1999 16:20:56   sally
+// add leap second adjustment
+// 
 //    Rev 1.31   25 May 1999 14:04:36   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -3469,7 +3475,8 @@ PolynomialTable* polyTable)
     float* floatP = (float*)buffer;
     for (int i=0; i < length; i++)
     {
-        float dBValue = (float) 10 * log10((double)tempBuffer[i]);
+        float dBValue = ((double)tempBuffer[i] == 0.0 ? EA_BAD_DB :
+                            (float) 10 * log10((double)tempBuffer[i]));
         (void)memcpy(floatP, &dBValue, sizeof(float));
         floatP++;
     }
@@ -4252,7 +4259,8 @@ PolynomialTable*)     // unused
     float* floatP = (float*)buffer;
     for (int i=0; i < length; i++)
     {
-        *floatP++ = (float) EA_DN_TO_DB(tempBuffer[i]);
+        *floatP = (float) EA_DN_TO_DB(tempBuffer[i]);
+        floatP++;
     }
 
     free((void*) tempBuffer);
@@ -4291,7 +4299,8 @@ PolynomialTable*)     // unused
     for (int i=0; i < length; i++)
         for (int j=0; j < 12; j++)
     {
-        *floatP++ = (float) EA_DN_TO_DB(*uintP++);
+        *floatP++ = (float) EA_DN_TO_DB(*uintP);
+        uintP++;
     }
 
     free((void*) tempBuffer);

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   02 Jun 1999 16:20:24   sally
+// add leap second adjustment
+// 
 //    Rev 1.8   10 May 1999 16:51:18   sally
 // add "Append" option
 // 
@@ -67,6 +70,7 @@ class LimitList;
 class CmdList;
 class EqxList;
 class PolynomialTable;
+class LeapSecTable;
 
 //==========
 // ArgsPlus 
@@ -122,12 +126,13 @@ public:
   CmdList*        CmdlpOrExit(const char* cmdlp_filename);
   EqxList*        EqxListOrExit(const char* eqx_filename);
   void            MailAlertCheck(const char* mail_alert,
-				 const char* alert_filename, 
-				 const char* mail_address);
+                                 const char* alert_filename, 
+                                 const char* mail_address);
   
   PolynomialTable*  PolynomialTableOrNull(char*   polynomialFilename);
-  EALog*            GetEALog(){ return (&Log); };
-  void              Usage();
+  void            LeapSecTableOrExit(const char* leapSecTableFilename);
+  EALog*          GetEALog(){ return (&Log); };
+  void            Usage();
 
 private:
 

@@ -895,16 +895,42 @@ int               firstOnly)
             {
                 case 4:
                 {
-                    polynomial->ApplyReplaceArray(
-                                   (float*) _parameter->data,
-                                   numExtracted);
+                    if (_parameter->unitId == UNIT_DB ||
+                        _parameter->unitId == UNIT_DBM ||
+                        _parameter->unitId == UNIT_DB_DN)
+                    {
+                        float* numP = (float*) _parameter->data;
+                        for (int k=0; k < numExtracted; k++, numP++)
+                        {
+                        if (*numP == 0.0)
+                            *numP = EA_BAD_DB;
+                        else
+                            polynomial->ApplyReplaceArray(numP, 1);
+                        }
+                    }
+                    else
+                        polynomial->ApplyReplaceArray((float*)_parameter->data,
+                                                   (int)numExtracted);
                     break;
                 }
                 case 8:
                 {
-                    polynomial->ApplyReplaceArray(
-                                   (double*) _parameter->data,
-                                   numExtracted);
+                    if (_parameter->unitId == UNIT_DB ||
+                        _parameter->unitId == UNIT_DBM ||
+                        _parameter->unitId == UNIT_DB_DN)
+                    {
+                        double* numP = (double*) _parameter->data;
+                        for (int k=0; k < numExtracted; k++, numP++)
+                        {
+                        if (*numP == 0.0)
+                            *numP = EA_BAD_DB;
+                        else
+                            polynomial->ApplyReplaceArray(numP, 1);
+                        }
+                    }
+                    else
+                        polynomial->ApplyReplaceArray((double*)_parameter->data,
+                                                   (int)numExtracted);
                     break;
                 }
                 default:
@@ -1529,26 +1555,39 @@ int               firstOnly)
             {
                 case 4:
                 {
-                    char* nextBuf=0;
+                    float* nextBuf=0;
                     for (int k=0; k < MAX_NUM_DERIVED_VALUES; k++)
                     {
                         if (extractResult.validDataMap[k])
                         {
-                            nextBuf = extractResult.dataBuf + k * _bytes;
-                            polynomial->ApplyReplaceArray( (float*) nextBuf, 1);
+                            nextBuf = (float*)extractResult.dataBuf + k*_bytes;
+                            if ((_parameter->unitId == UNIT_DB ||
+                                _parameter->unitId == UNIT_DBM ||
+                                _parameter->unitId == UNIT_DB_DN) &&
+                                                       *nextBuf == 0.0)
+                                *nextBuf = EA_BAD_DB;
+                            else
+                                polynomial->ApplyReplaceArray(nextBuf, 1);
                         }
                     }
                     break;
                 }
                 case 8:
                 {
-                    char* nextBuf=0;
+                    double* nextBuf=0;
                     for (int k=0; k < MAX_NUM_DERIVED_VALUES; k++)
                     {
                         if (extractResult.validDataMap[k])
                         {
-                            nextBuf = extractResult.dataBuf + k * _bytes;
-                            polynomial->ApplyReplaceArray( (float*) nextBuf, 1);
+                            nextBuf = (double*)extractResult.dataBuf +
+                                                k * _bytes;
+                            if ((_parameter->unitId == UNIT_DB ||
+                                _parameter->unitId == UNIT_DBM ||
+                                _parameter->unitId == UNIT_DB_DN) &&
+                                                       *nextBuf == 0.0)
+                                *nextBuf = EA_BAD_DB;
+                            else
+                                polynomial->ApplyReplaceArray(nextBuf, 1);
                         }
                     }
                     break;

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.11   03 Jun 1999 12:08:22   sally
+// fix ItimeTotm(), opposite logic
+// 
+//    Rev 1.10   02 Jun 1999 16:20:30   sally
+// add leap second adjustment
+// 
 //    Rev 1.9   02 Dec 1998 12:54:28   sally
 // use timegm() for linux
 // 
@@ -53,11 +59,30 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "Itime.h"
 #include "CommonDefs.h"
+#include "Itime.h"
 
 static const char rcs_id_Itime_C[] =
     "@(#) $Header$";
+
+//static
+LeapSecTable*    Itime::leapSecTable=0;
+
+//static
+int
+Itime::CreateLeapSecTable(
+const char*  filename)
+{
+    leapSecTable = new LeapSecTable(filename);
+    LeapSecTable::LeapSecTableStatus status = leapSecTable->GetStatus();
+    if (status == LeapSecTable::LEAP_TABLE_OK)
+        return 1;
+    else
+    {
+        fprintf(stderr, "%s\n", leapSecTable->GetStatusString());
+        return 0;
+    }
+} // Itime::CreateLeapSecTable
 
 //===============
 // Itime methods 
@@ -108,24 +133,40 @@ Itime::tmToItime(
     struct tm*  tm_time)
 {
 #ifdef INTEL86
-    sec = timegm(tm_time);
-    if (sec == (time_t)-1)
+    time_t second = timegm(tm_time);
+    if (second == (time_t)-1)
         return 0;
     else
-        return 1;
+    {
+        Itime itime = UnixSecondToItime(second);
+        if (itime == INVALID_TIME)
+            return 0;
+        else
+        {
+            sec = itime.sec;
+            return 1;
+        }
+    }
 #else
     // mktime() is affected by timezone
     // but we want UTC timezone
-    sec = mktime(tm_time);
-    if (sec == (time_t)-1)
+    time_t second = mktime(tm_time);
+    if (second == (time_t)-1)
     {
         return (0);
     }
     else
     {
-        sec -= timezone;
+        second -= timezone;
         ms = 0;
-        return (1);
+        Itime itime = UnixSecondToItime(second);
+        if (itime == INVALID_TIME)
+            return 0;
+        else
+        {
+            sec = itime.sec;
+            return 1;
+        }
     }
 #endif
 }
@@ -139,8 +180,13 @@ int
 Itime::ItimeTotm(
 struct tm*& tm_time)
 {
-    tm_time = gmtime(&sec);
-    return (1);     // assume success
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        tm_time = gmtime(&second);
+        return (1);
+    }
+    else return 0;
 }
 
 //--------------
@@ -225,22 +271,27 @@ Itime::CodeAToItime(
 int
 Itime::ItimeToCodeA(
     char*       string,
-    char*       invalid_time_string)
-const
+    char*       invalid_time_string) const
 {
     if (*this == INVALID_TIME)
     {
         sprintf(string, "%s", invalid_time_string);
+        return 0;
     }
     else
     {
-        struct tm *tm_time = gmtime(&sec);
-        (void) sprintf(string, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
+        time_t second = ItimeToUnixSecond(*this);
+        if (second != -1)
+        {
+            struct tm *tm_time = gmtime(&second);
+            (void) sprintf(string, "%04d-%02d-%02dT%02d:%02d:%02d.%03dZ",
                     tm_time->tm_year + 1900, tm_time->tm_mon + 1,
                     tm_time->tm_mday, tm_time->tm_hour, tm_time->tm_min,
                     tm_time->tm_sec, ms);
+            return 1;
+        }
+        else return 0;
     }
-    return (1);     // assume success
 }
 
 //------------------
@@ -250,12 +301,17 @@ const
 
 int
 Itime::ItimeToCodeADate(
-    char*       string)
+char*       string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%04d-%02d-%02d", tm_time->tm_year + 1900,
-        tm_time->tm_mon + 1, tm_time->tm_mday);
-    return (1);     // assume success
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%04d-%02d-%02d", tm_time->tm_year + 1900,
+            tm_time->tm_mon + 1, tm_time->tm_mday);
+        return (1);
+    }
+    else return 0;
 }
 //--------------
 // ItimeToCodeAHour
@@ -264,13 +320,18 @@ Itime::ItimeToCodeADate(
 
 int
 Itime::ItimeToCodeAHour(
-char*       string)
+char*       string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%04d-%02d-%02dT%02d",
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%04d-%02d-%02dT%02d",
                 tm_time->tm_year + 1900, tm_time->tm_mon + 1,
                 tm_time->tm_mday, tm_time->tm_hour);
-    return (1);     // assume success
+        return (1);
+    }
+    else return 0;
 
 } // Itime::ItimeToCodeAHour
 
@@ -281,14 +342,20 @@ char*       string)
 
 int
 Itime::ItimeToCodeASecond(
-char*       string)
+char*       string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%04d-%02d-%02dT%02d:%02d:%02d",
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%04d-%02d-%02dT%02d:%02d:%02d",
                 tm_time->tm_year + 1900, tm_time->tm_mon + 1,
                 tm_time->tm_mday, tm_time->tm_hour, tm_time->tm_min,
                 tm_time->tm_sec);
-    return (1);     // assume success
+        return (1);
+    }
+    else return 0;
+
 }
 
 //--------------
@@ -335,12 +402,17 @@ Itime::BDateToItime(
 
 int
 Itime::ItimeToBDate(
-    char*   string)
+char*   string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%04d%02d%02d", tm_time->tm_year + 1900,
-        tm_time->tm_mon + 1, tm_time->tm_mday);
-    return (1);     // assume success
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%04d%02d%02d", tm_time->tm_year + 1900,
+                        tm_time->tm_mon + 1, tm_time->tm_mday);
+        return (1);
+    }
+    else return 0;
 }
 
 //-----------
@@ -383,6 +455,9 @@ Itime::L1ToItime(
 
     // convert
     tmToItime(&tm_time);
+#if 0
+    printf("l1 time string: %s, L1ToItime: %ld\n", string, sec);
+#endif
     ms = millisec;
     return (1);
 }
@@ -421,13 +496,18 @@ Itime::L1ToItime2( const char *yyyyddd,
 
 int
 Itime::ItimeToL1(
-    char*   string)
+    char*   string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%04d-%03dT%02d:%02d:%02d.%03d",
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%04d-%03dT%02d:%02d:%02d.%03d",
                 tm_time->tm_year + 1900, tm_time->tm_yday + 1,
                 tm_time->tm_hour, tm_time->tm_min, tm_time->tm_sec, ms);
-    return (1);     // assume success
+        return (1);
+    }
+    else return 0;
 }
 
 //------------
@@ -478,13 +558,17 @@ Itime::BCDToItime(
 
 int
 Itime::ItimeToHMS(
-    char*       string)
-const
+char*       string) const
 {
-    struct tm *tm_time = gmtime(&sec);
-    (void) sprintf(string, "%02d:%02d:%02d",
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        (void) sprintf(string, "%02d:%02d:%02d",
                 tm_time->tm_hour, tm_time->tm_min, tm_time->tm_sec);
-    return (1);     // assume success
+        return (1);
+    }
+    else return 0;
 }
 
 //--------
@@ -594,78 +678,88 @@ int             i)
 }
 
 Itime
-Itime::StartOfMinute()
-const
+Itime::StartOfMinute(void) const
 {
-    struct tm *tm_time;
-
-    tm_time = gmtime(&sec);     // convert to tm structure
-    tm_time->tm_sec = 0;        // zero proper units
-    Itime newtime;
-    newtime.tmToItime(tm_time);
-    return (newtime);
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        tm_time->tm_sec = 0;        // zero proper units
+        Itime newtime;
+        newtime.tmToItime(tm_time);
+        return (newtime);
+    }
+    else return INVALID_TIME;
 }
 
 Itime
-Itime::StartOfHour()
-const
+Itime::StartOfHour(void) const
 {
-    struct tm *tm_time;
-
-    tm_time = gmtime(&sec);     // convert to tm structure
-    tm_time->tm_sec = 0;        // zero proper units
-    tm_time->tm_min = 0;
-    Itime newtime;
-    newtime.tmToItime(tm_time);
-    return (newtime);
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        tm_time->tm_sec = 0;        // zero proper units
+        tm_time->tm_min = 0;
+        Itime newtime;
+        newtime.tmToItime(tm_time);
+        return (newtime);
+    }
+    else return INVALID_TIME;
 }
 
 Itime
-Itime::StartOfDay()
-const
+Itime::StartOfDay(void) const
 {
-    struct tm *tm_time;
-
-    tm_time = gmtime(&sec);     // convert to tm structure
-    tm_time->tm_sec = 0;        // zero proper units
-    tm_time->tm_min = 0;
-    tm_time->tm_hour = 0;
-    Itime newtime;
-    newtime.tmToItime(tm_time);
-    return (newtime);
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        tm_time->tm_sec = 0;        // zero proper units
+        tm_time->tm_min = 0;
+        tm_time->tm_hour = 0;
+        Itime newtime;
+        newtime.tmToItime(tm_time);
+        return (newtime);
+    }
+    else return INVALID_TIME;
 }
 
 Itime
-Itime::StartOfMonth()
-const
+Itime::StartOfMonth(void) const
 {
-    struct tm *tm_time;
-
-    tm_time = gmtime(&sec);     // convert to tm structure
-    tm_time->tm_sec = 0;        // zero proper units
-    tm_time->tm_min = 0;
-    tm_time->tm_hour = 0;
-    tm_time->tm_mday = 0;
-    Itime newtime;
-    newtime.tmToItime(tm_time);
-    return (newtime);
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        tm_time->tm_sec = 0;        // zero proper units
+        tm_time->tm_min = 0;
+        tm_time->tm_hour = 0;
+        tm_time->tm_mday = 0;
+        Itime newtime;
+        newtime.tmToItime(tm_time);
+        return (newtime);
+    }
+    else return INVALID_TIME;
 }
 
 Itime
-Itime::StartOfYear()
-const
+Itime::StartOfYear(void) const
 {
-    struct tm *tm_time;
-
-    tm_time = gmtime(&sec);     // convert to tm structure
-    tm_time->tm_sec = 0;        // zero proper units
-    tm_time->tm_min = 0;
-    tm_time->tm_hour = 0;
-    tm_time->tm_mday = 0;
-    tm_time->tm_mon = 0;
-    Itime newtime;
-    newtime.tmToItime(tm_time);
-    return (newtime);
+    time_t second = ItimeToUnixSecond(*this);
+    if (second != -1)
+    {
+        struct tm *tm_time = gmtime(&second);
+        tm_time->tm_sec = 0;        // zero proper units
+        tm_time->tm_min = 0;
+        tm_time->tm_hour = 0;
+        tm_time->tm_mday = 0;
+        tm_time->tm_mon = 0;
+        Itime newtime;
+        newtime.tmToItime(tm_time);
+        return (newtime);
+    }
+    else return INVALID_TIME;
 }
 
 int
@@ -691,6 +785,71 @@ char*   string)
         return(0);
 
 }//Itime::ItimeToElapsedTime
+
+void
+Itime::TaiLeapSecondsToItime(
+double    taiLeapSeconds)
+{
+    double seconds = taiLeapSeconds + ITIME_DEFAULT_SEC;
+    sec = (time_t)seconds;
+    ms = (unsigned short)(1000*(seconds - (double)sec));
+
+} // Itime::TaiLeapSecondsToItime
+
+//static
+Itime
+Itime::UnixSecondToItime(
+time_t     unixSecond)
+{
+    if (leapSecTable == 0)
+    {
+        fprintf(stderr, "Leap Second Table must be created first\n");
+        return(INVALID_TIME);
+    }
+    // first, convert the unix seconds to l1 time format
+    Itime unixItime(unixSecond);
+    char l1TimeString[L1_TIME_LEN];
+    (void)unixItime.ItimeToL1(l1TimeString);
+
+    // then, use l1 time format to get the adjustment delta second
+    int deltaSeconds=0, isUpdateTime=0;
+    double taiTimeSecond=0.0;
+    if (leapSecTable->StringToDeltaSeconds(l1TimeString,
+                     deltaSeconds, isUpdateTime, taiTimeSecond))
+    {
+        if (isUpdateTime)
+            unixItime.sec = (int)taiTimeSecond + ITIME_DEFAULT_SEC;
+        else
+            unixItime.sec += deltaSeconds;
+        return(unixItime);
+    }
+    else return(INVALID_TIME);
+
+} // Itime::UnixSecondToItime
+
+time_t
+Itime::ItimeToUnixSecond(
+const Itime&    itime)
+{
+    if (leapSecTable == 0)
+    {
+        fprintf(stderr, "Leap Second Table must be created first\n");
+        return 0;
+    }
+
+    // use Itime to get the adjustment delta second
+    int deltaSeconds=0, isUpdateTime=0;
+    char l1TimeString[L1_TIME_LEN];
+    time_t unixSecond;
+    if (leapSecTable->ItimeToDeltaSeconds(itime, deltaSeconds, isUpdateTime,
+                           l1TimeString))
+    {
+        unixSecond = itime.sec - deltaSeconds;
+        return(unixSecond);
+    }
+    else return(-1);
+
+} // Itime::ItimeToUnixSecond
 
 //static
 const char*

@@ -5,9 +5,15 @@
 // 
 // CM Log
 // $Log$
-// Revision 1.1  1999/01/28 20:41:13  sally
-// Initial revision
-//
+// 
+//    Rev 1.3   25 May 1999 14:10:50   sally
+// add L2Ax for Bryan Stiles
+// 
+//    Rev 1.2   02 Apr 1999 09:51:44   sally
+// add L1B
+// 
+//    Rev 1.1   28 Jan 1999 10:14:30   sally
+// change signed to unsigned to pacify gcc
 // 
 //    Rev 1.0   23 Jun 1998 16:04:40   sally
 // Initial revision.
@@ -93,11 +99,14 @@ char *argv[])
 	printf("\nL1A Derived\n--------\n");
 	print_table(L1ADerivedParTab, L1ADerivedTabSize);
 
-    printf("\nL1B\n--------\n");
-    print_table(L1BParTab, L1BParTabSize);
+	printf("\nL1B\n--------\n");
+	print_table(L1BParTab, L1BParTabSize);
 
 	printf("\nL2A\n--------\n");
 	print_table(L2AParTab, L2AParTabSize);
+
+	printf("\nL2Ax\n--------\n");
+	print_table(L2AxParTab, L2AxParTabSize);
 
 	printf("\nL2B\n--------\n");
 	print_table(L2BParTab, L2BParTabSize);

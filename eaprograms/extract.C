@@ -6,6 +6,20 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.17   02 Jun 1999 16:23:20   sally
+// add leap second adjustment
+// 
+//    Rev 1.16   10 May 1999 16:51:28   sally
+// add "Append" option
+// 
+//    Rev 1.15   07 May 1999 13:14:32   sally
+// 
+//    Rev 1.14   12 Apr 1999 11:09:14   sally
+// add options for statistics extraction
+// 
+//    Rev 1.13   01 Mar 1999 11:36:34   sally
+// turn off log file report when NOPM is on
+// 
 //    Rev 1.12   02 Dec 1998 12:51:54   sally
 // add option to suppress the printing of XMGR headers
 // 
@@ -89,6 +103,7 @@ static const char rcsid[] =
 
 #include "Filter.h"
 #include "PolyTable.h"
+#include "LeapSecTable.h"
 #include "EALog.h"
 #include "SafeString.h"
 
@@ -131,6 +146,11 @@ ArgInfo filter_arg = FILTER_ARG;
 ArgInfo output_file_arg = OUTPUT_FILE_ARG;
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
 ArgInfo no_gr_header_arg = NO_GR_HEADER_ARG;
+ArgInfo statistics_arg = STATISTICS_ARG;
+ArgInfo use_avg_stat_arg = USE_AVG_STAT_ARG;
+ArgInfo stat_num_frames_arg = STAT_NUM_FRAMES_ARG;
+ArgInfo append_output_arg = APPEND_OUTPUT_ARG;
+ArgInfo leap_second_table_arg = LEAP_SECOND_TABLE_ARG;
 
 #ifndef NOPM
 ArgInfo logfile_arg = LOG_FILE_ARG;
@@ -147,10 +167,15 @@ ArgInfo* arg_info_array[] =
     &filter_arg,
     &output_file_arg,
     &poly_table_arg,
+    &statistics_arg,
+    &use_avg_stat_arg,
+    &stat_num_frames_arg,
 #ifndef NOPM
     &logfile_arg,
 #endif
     &no_gr_header_arg,
+    &append_output_arg,
+    &leap_second_table_arg,
     0
 };
 
@@ -187,16 +212,18 @@ char *argv[])
     char* l1adrv_files_string = args_plus.Get(l1adrv_files_arg);
     char* l1b_files_string = args_plus.Get(l1b_files_arg);
     char* y_parameters_string = args_plus.GetOrExit(y_parameters_arg);
-    char* x_parameter_string = args_plus.Get(x_parameter_arg);
+    char* x_parameter_string = args_plus.GetOrExit(x_parameter_arg);
     char* start_time_string = args_plus.Get(start_time_arg);
     char* end_time_string = args_plus.Get(end_time_arg);
     char* filter_string = args_plus.Get(filter_arg);
     char* output_file_string = args_plus.Get(output_file_arg);
     char* poly_table_string = args_plus.Get(poly_table_arg);
+    char* leap_second_table_string = args_plus.Get(leap_second_table_arg);
 
     //-------------------
     // convert arguments 
     //-------------------
+    args_plus.LeapSecTableOrExit(leap_second_table_string);
 
     SourceIdE tlm_type = args_plus.GetSourceIdOrExit(tlm_type_string);
     Itime start_time = args_plus.GetStartTime(start_time_string);
@@ -212,7 +239,14 @@ char *argv[])
 
     TlmFileList* tlm_file_list = args_plus.TlmFileListOrExit(tlm_type,
                                     tlm_files, start_time, end_time);
-    FILE* output_fp = args_plus.OutputFileOrStdout(output_file_string);
+
+    char* append_output_string = args_plus.Get(append_output_arg);
+    int append_output = 0;
+    if (append_output_string && strcmp(append_output_string, "0") != 0)
+        append_output = 1;
+    FILE* output_fp = args_plus.OutputFileOrStdout(
+                                         output_file_string, append_output);
+
     FilterSet* filter_set = args_plus.FilterSetOrNull(tlm_type, filter_string);
     PolynomialTable* polyTable = args_plus.PolynomialTableOrNull(
                                                       poly_table_string);
@@ -221,8 +255,24 @@ char *argv[])
     int no_gr_header = 0;
     if (no_gr_header_string && strcmp(no_gr_header_string, "0")!= 0)
         no_gr_header = 1;
+ 
+    char* statistics_string = args_plus.Get(statistics_arg);
+    int stat_extract = 0;
+    if (statistics_string && strcmp(statistics_string, "0") != 0)
+        stat_extract = 1;
+ 
+    char* use_avg_stat_string = args_plus.Get(use_avg_stat_arg);
+    int use_avg_stat = 0;
+    if (use_avg_stat_string && strcmp(use_avg_stat_string, "0") != 0)
+        use_avg_stat = 1;
+
+    char* stat_num_frames_string = args_plus.Get(stat_num_frames_arg);
+    int stat_num_frames = 1;
+    if (stat_num_frames_string)
+        stat_num_frames = atoi(stat_num_frames_string);
 
 #ifndef NOPM
+    ealog->AppendToInputFileList(leap_second_table_string);
     ealog->AppendToInputFileList(poly_table_string);
     ealog->AppendToOutputFileList(output_file_string);
 
@@ -236,24 +286,16 @@ char *argv[])
     //----------------------------------------
 
     Parameter *param=0;
-    if (x_parameter_string)
+    param = ParTabAccess::GetParameter(tlm_type, x_parameter_string);
+    if (param == NULL)
     {
-        param = ParTabAccess::GetParameter(tlm_type, x_parameter_string);
-        if (param == NULL)
-        {
-            fprintf(stderr, "%s: unknown x parameter %s\n", argv[0],
+        fprintf(stderr, "%s: unknown x parameter %s\n", argv[0],
                 x_parameter_string);
 #ifndef NOPM
-	    ealog->VWriteMsg(": unknown x parameter %s\n",
-                             x_parameter_string);
-	    ealog->SetWriteAndExit(EALog::EA_FAILURE,
-                                   "--- Aborting ---\n");
+	    ealog->VWriteMsg(": unknown x parameter %s\n", x_parameter_string);
+	    ealog->SetWriteAndExit(EALog::EA_FAILURE, "--- Aborting ---\n");
 #endif
         }
-    }
-    else
-        param = ParTabAccess::GetParameter(
-                          tlm_type, TAI_TIME, UNIT_CODE_A);
 
     ParameterList* plist;
     if (tlm_type == SOURCE_L1A_DERIVED)
@@ -265,7 +307,6 @@ char *argv[])
     //-----------------------------------------
     // look up y parameters in parameter table 
     //-----------------------------------------
-
     char parse_string[BIG_SIZE];
     (void) strncpy(parse_string, y_parameters_string, BIG_SIZE - 1);
     parse_string[BIG_SIZE - 1] = '\0';
@@ -419,10 +460,28 @@ char *argv[])
     char* comment = filter_string;
     plist->PrePrint();
 
-    if (no_gr_header)
-        plist->Print(output_fp);
+    if (stat_extract)
+    {
+        if (plist->PrintStatisticsACEgr(output_fp, stat_num_frames,
+                   use_avg_stat, start_time, end_time, comment,
+                   no_gr_header) != ParameterList::OK)
+        {
+            fprintf(stderr, "%s: print output failed\n", argv[0]);
+#ifndef NOPM
+            ealog->SetWriteAndExit(EALog::EA_FAILURE,
+                        "print output failed. --- Aborting ---\n");
+#else
+            exit(1);
+#endif
+        }
+    }
     else
-        plist->PrintACEgr(output_fp, start_time, end_time, comment);
+    {
+        if (no_gr_header)
+            plist->Print(output_fp);
+        else
+            plist->PrintACEgr(output_fp, start_time, end_time, comment);
+    }
 
     delete plist;
 

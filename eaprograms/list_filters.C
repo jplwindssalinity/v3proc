@@ -18,7 +18,7 @@
 // Configuration Control //
 //-----------------------//
 
-static const char rcsid[] = "@(#) $Id$";
+static const char rcsid[] = "@(#) $Header$";
 
 //----------//
 // INCLUDES //

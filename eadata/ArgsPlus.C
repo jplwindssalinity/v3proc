@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.19   02 Jun 1999 16:20:18   sally
+// add leap second adjustment
+// 
 //    Rev 1.18   10 May 1999 16:51:12   sally
 // add "Append" option
 // 
@@ -101,6 +104,7 @@ static const char rcs_id_argsplus_c[] =
 #include "CmdList.h"
 #include "Eqx.h"
 #include "PolyTable.h"
+#include "LeapSecTable.h"
 
 //==================
 // ArgsPlus methods 
@@ -975,6 +979,23 @@ ArgsPlus::PolynomialTableOrNull(
     return(polyTableP);
 
 }//ArgsPlus:PolynomialTableOrNull
+
+void
+ArgsPlus::LeapSecTableOrExit(
+const char*   leapSecTableFilename)
+{
+    if (Itime::CreateLeapSecTable(leapSecTableFilename) == 0)
+    {
+        fprintf(stderr, "%s: error creating Leap Second Table %s\n",
+                                   _programName, leapSecTableFilename);
+        Log.VWriteMsg( "error creating Leap Second Table %s\n",
+                                   leapSecTableFilename );
+        Log.SetWriteAndExit( EALog::EA_FAILURE," -- Aborting --\n");
+    }
+    return;
+
+} // ArgsPlus::LeapSecTableOrExit
+
 void 
 ArgsPlus::Usage() {
   Args::Usage();

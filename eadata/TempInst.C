@@ -21,6 +21,7 @@ static const char TempInstances_C_rcsid[] =
 #include "EAConfigList.h"
 #include "Eqx.h"
 #include "Filter.h"
+#include "LeapSecTable.h"
 #include "LimitChecker.h"
 #include "L1AErrorChecker.h"
 #include "MemoryFromFile.h"
@@ -76,6 +77,9 @@ template class SortedList<MemoryFromTlmBlock>;
 template class EANode<MemoryFromFileBlock>;
 template class EAList<MemoryFromFileBlock>;
 template class SortedList<MemoryFromFileBlock>;
+
+template class EANode<LeapSecEntry>;
+template class EAList<LeapSecEntry>;
 
 #endif //__SCAT_GNUCPP__
 

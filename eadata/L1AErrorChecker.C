@@ -6,6 +6,10 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   08 Jun 1999 13:55:30   sally
+// took out "Unexpected Cycle Count" - wrong parameter
+// should be "packet sequence count"
+// 
 //    Rev 1.8   23 Jul 1998 16:13:58   sally
 // pass polynomial table to extractFunc()
 // 
@@ -109,8 +113,9 @@ ErrorTabEntry L1aStateTable[] =
              { STATUS_TABLE_CHANGE_FLAGS_09, UNIT_MAP } },
 
     // ERROR_DOPPLER_ORBIT_STEP
-    { "Unexpected Cycle Count", WARNING_FORMAT, ErrorUnexpectedCycle,
-             { DOPPLER_ORBIT_STEP, UNIT_COUNTS } },
+// Lee said this is not the right parameter to check 6/6/99
+//    { "Unexpected Cycle Count", WARNING_FORMAT, ErrorUnexpectedCycle,
+//             { DOPPLER_ORBIT_STEP, UNIT_COUNTS } },
 
     // ERROR_MODE_CHANGE
     { "Mode Change", NOTIFY_FORMAT, ErrorModeChange,

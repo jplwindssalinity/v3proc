@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.20   02 Jun 1999 16:20:10   sally
+// add leap second adjustment
+// 
 //    Rev 1.19   25 May 1999 14:04:14   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -144,9 +147,17 @@ static const char rcs_argdefs_h[] =
 #define INPUT_FILE_OPTION           "-i"
 #define INPUT_FILE_ARGUMENT         "input_file"
 
+#define LEAP_SECOND_TABLE_KEYWORD   "LEAP_SECOND_TABLE"
+#define LEAP_SECOND_TABLE_OPTION    "-leapSecTable"
+#define LEAP_SECOND_TABLE_ARGUMENT  "leapSecTable"
+
 #define LIMIT_FILE_KEYWORD          "LIMIT_FILE"
 #define LIMIT_FILE_OPTION           "-l"
 #define LIMIT_FILE_ARGUMENT         "limit_file"
+
+#define LOG_FILE_KEYWORD            "LOG_FILE"
+#define LOG_FILE_OPTION             "-log"
+#define LOG_FILE_ARGUMENT           "Log_file"
 
 #define L1A_FILES_KEYWORD           "L1A_FILES"
 #define L1A_FILES_OPTION            "-l1a"
@@ -199,10 +210,6 @@ static const char rcs_argdefs_h[] =
 #define L2B_LIMIT_FILE_KEYWORD      "L2B_LIMIT_FILE"
 #define L2B_LIMIT_FILE_OPTION       "-l2blim"
 #define L2B_LIMIT_FILE_ARGUMENT     "L1A_limit_file"
-
-#define LOG_FILE_KEYWORD            "LOG_FILE"
-#define LOG_FILE_OPTION             "-log"
-#define LOG_FILE_ARGUMENT           "Log_file"
 
 #define CDS_MEMORY_FILE_KEYWORD     "CDS_MEMORY_FILE"
 #define CDS_MEMORY_FILE_OPTION      "-cdsmem"
@@ -365,6 +372,8 @@ static const char rcs_argdefs_h[] =
     {INPUT_FILE_KEYWORD, INPUT_FILE_OPTION, INPUT_FILE_ARGUMENT}
 #define LIMIT_FILE_ARG  \
     {LIMIT_FILE_KEYWORD, LIMIT_FILE_OPTION, LIMIT_FILE_ARGUMENT}
+#define LEAP_SECOND_TABLE_ARG \
+    {LEAP_SECOND_TABLE_KEYWORD, LEAP_SECOND_TABLE_OPTION, LEAP_SECOND_TABLE_ARGUMENT}
 #define L1A_FILES_ARG    \
     {L1A_FILES_KEYWORD, L1A_FILES_OPTION, L1A_FILES_ARGUMENT}
 #define L1A_LIMIT_FILE_ARG   \

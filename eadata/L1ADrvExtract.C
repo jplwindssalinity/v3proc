@@ -6,6 +6,13 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.25   09 Jun 1999 16:35:32   sally
+// need to allocate space for dataBuf for local DerivedExtractResult
+// otherwise, "bad address alignment"
+// 
+//    Rev 1.24   08 Jun 1999 16:25:26   sally
+// make mWatts = 0.0, dB = -1000 when dn = 0.0
+// 
 //    Rev 1.23   27 Apr 1999 12:56:50   sally
 // if true_cal_pulse_pos is even => Beam A, else Beam B
 // 
@@ -3303,7 +3310,13 @@ PolynomialTable*)     // unused
             }
             // just accumulate the noise when frameNo is < min
             else if (frameNo < EA_MIN_BANDWIDTH_FRAMES)
-                runningTotalNoiseDN += *(uintP + i);
+            {
+                unsigned int* thisNum = uintP;
+                thisNum += i;
+printf("%d\n", *thisNum); fflush(stdout);
+                runningTotalNoiseDN += (*thisNum);
+                //runningTotalNoiseDN += *(uintP + i);
+            }
             // get the first running average when frameNo hits the min
             else // frameNo == EA_MIN_BANDWIDTH_FRAMES
                 prevAvgNoiseDN = (runningTotalNoiseDN + *(uintP + i)) /
@@ -3546,7 +3559,7 @@ PolynomialTable*)     // unused
                                        stride, length, &noiseExRes);
     if (rc <= 0)
     {
-        (void)free(noiseExRes.dataBuf);
+        free(noiseExRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -3589,6 +3602,8 @@ PolynomialTable*)     // unused
     }
     (void)memcpy(extractResults->validDataMap, echoExRes.validDataMap,
                             MAX_NUM_DERIVED_VALUES);
+    free(noiseExRes.dataBuf);
+    free(echoExRes.dataBuf);
     return rc;
 
 } //ExtractGainRatioBeamADN
@@ -3646,6 +3661,9 @@ PolynomialTable*)     // unused
 
     // get noise load first, return if fails
     DerivedExtractResult noiseExRes;
+    noiseExRes.dataBuf =
+          (char*)malloc(MAX_NUM_DERIVED_VALUES * sizeof(unsigned int));
+    assert(noiseExRes.dataBuf != 0);
     int32 tempsdsIDs[4];
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[1];  // noise_dn
@@ -3655,12 +3673,16 @@ PolynomialTable*)     // unused
                                        stride, length, &noiseExRes);
     if (rc <= 0)
     {
+        free(noiseExRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
 
     // now get echo load, return if fails
     DerivedExtractResult echoExRes;
+    echoExRes.dataBuf =
+          (char*)malloc(MAX_NUM_DERIVED_VALUES * sizeof(unsigned int));
+    assert(echoExRes.dataBuf != 0);
     tempsdsIDs[0] = sdsIDs[0];  // mode
     tempsdsIDs[1] = sdsIDs[2];  // power_dn
     tempsdsIDs[2] = sdsIDs[3];  // true_cal_pulse_pos
@@ -3669,6 +3691,7 @@ PolynomialTable*)     // unused
                                        stride, length, &echoExRes);
     if (rc <= 0)
     {
+        free(echoExRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -3694,6 +3717,8 @@ PolynomialTable*)     // unused
     }
     (void)memcpy(extractResults->validDataMap, echoExRes.validDataMap,
                             MAX_NUM_DERIVED_VALUES);
+    free(noiseExRes.dataBuf);
+    free(echoExRes.dataBuf);
     return rc;
 
 } //ExtractGainRatioBeamBDN
@@ -4032,6 +4057,7 @@ PolynomialTable* polyTable)
     // CBM: average over all 23 pulses
     if (numNoises > 1) gainDN /= (float)numNoises;
 
+    free(extractResults.dataBuf);
     return 1;
 
 } // _extractOneReceiverGainBDN
@@ -4280,6 +4306,10 @@ PolynomialTable* polyTable)
     DerivedExtractResult* extractResults =
                            (DerivedExtractResult*) p_extractResults;
     DerivedExtractResult privExtRes;
+    privExtRes.dataBuf =
+          (char*)malloc(MAX_NUM_DERIVED_VALUES * sizeof(unsigned int));
+    assert(privExtRes.dataBuf != 0);
+
     int rc=0;
     int32 tempsdsIDs[5];
     tempsdsIDs[0] = sdsIDs[0];  // mode
@@ -4289,6 +4319,7 @@ PolynomialTable* polyTable)
     if ((rc = _extractAverageNoiseLoadDN(l1File, sdsIDs,
                            start, stride, length, &privExtRes, 0)) != 1)
     {
+        free(privExtRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -4302,6 +4333,7 @@ PolynomialTable* polyTable)
     if ((rc = ExtractReceiverGainADN(l1File, sdsIDs,
                  start, stride, length, &privExtRes, polyTable)) != 1)
     {
+        free(privExtRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -4311,6 +4343,8 @@ PolynomialTable* polyTable)
     (void)memcpy(extractResults->dataBuf, &noiseFigDN, sizeof(float));
     (void)memcpy(extractResults->validDataMap,
                            _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+
+    free(privExtRes.dataBuf);
     return 1;
 
 } // ExtractNoiseFigureADN
@@ -4365,6 +4399,10 @@ PolynomialTable* polyTable)
     DerivedExtractResult* extractResults =
                            (DerivedExtractResult*) p_extractResults;
     DerivedExtractResult privExtRes;
+    privExtRes.dataBuf =
+           (char*)malloc(MAX_NUM_DERIVED_VALUES * sizeof(unsigned int));
+    assert(privExtRes.dataBuf != 0);
+
     int rc=0;
     int32 tempsdsIDs[5];
     tempsdsIDs[0] = sdsIDs[0];  // mode
@@ -4374,6 +4412,7 @@ PolynomialTable* polyTable)
     if ((rc = _extractAverageNoiseLoadDN(l1File, sdsIDs,
                            start, stride, length, &privExtRes, 0)) != 1)
     {
+        free(privExtRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -4387,6 +4426,7 @@ PolynomialTable* polyTable)
     if ((rc = ExtractReceiverGainBDN(l1File, sdsIDs,
                  start, stride, length, &privExtRes, polyTable)) != 1)
     {
+        free(privExtRes.dataBuf);
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return(rc);
     }
@@ -4396,6 +4436,7 @@ PolynomialTable* polyTable)
     (void)memcpy(extractResults->dataBuf, &noiseFigDN, sizeof(float));
     (void)memcpy(extractResults->validDataMap,
                            _onlyOneMap, MAX_NUM_DERIVED_VALUES);
+    free(privExtRes.dataBuf);
     return 1;
 
 } // ExtractNoiseFigureBDN
@@ -4715,30 +4756,36 @@ PolynomialTable* polyTable)
     if (polyTable == 0) return -1;
 
     // alloc space to hold floats
-    float dBmValue;
+    float dnValue;
 
     DerivedExtractResult* extractResults =
                  (DerivedExtractResult*) p_extractResults;
 
     int rc = ExtractData1D_uint1_float(l1File, sdsIDs, start, stride,
-                          1, &dBmValue);
+                          1, &dnValue);
     if (rc <= 0)
     {
         (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return rc;
     }
 
-    const Polynomial* polynomial = polyTable->SelectPolynomial(
-                                       sdsName, euUnitName);
-    if (polynomial == 0)
+    float mWattsValue;
+    if (dnValue == 0.0)
+        mWattsValue = 0.0;
+    else
     {
-        fprintf(stderr, "Tranmit Power (mWatts): need polynomial for dBm\n");
-        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
-        return -1;
+        const Polynomial* polynomial = polyTable->SelectPolynomial(
+                                       sdsName, euUnitName);
+        if (polynomial == 0)
+        {
+            fprintf(stderr,"Tranmit Power (mWatts): need polynomial for dBm\n");
+            (void)memset(extractResults->validDataMap,
+                                       0, MAX_NUM_DERIVED_VALUES);
+            return -1;
+        }
+        float dBmValue = polynomial->Apply(dnValue);
+        mWattsValue = (float) pow( (double) 10.0, (double) dBmValue / 10.0 );
     }
-    dBmValue = polynomial->Apply(dBmValue);
-    float mWattsValue = (float) pow( (double) 10.0,
-                                      (double) dBmValue / 10.0 );
 
     (void)memcpy(extractResults->dataBuf, &mWattsValue, sizeof(float));
     (void)memcpy(extractResults->validDataMap,

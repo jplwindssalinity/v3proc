@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   02 Jun 1999 16:20:32   sally
+// add leap second adjustment
+// 
 //    Rev 1.8   02 Dec 1998 12:54:06   sally
 // use timegm() for linux
 // 
@@ -52,6 +55,7 @@
 #include <limits.h>
 
 #include "CommonDefs.h"
+#include "LeapSecTable.h"
 
 static const char rcs_id_itime_h[] =
     "@(#) $Header$";
@@ -65,7 +69,11 @@ static const char rcs_id_itime_h[] =
 
 #define CODEA_TIME_LEN      25  // inlcude the trailing NULL
 #define BDATE_TIME_LEN      9
+
+#ifndef L1_TIME_LEN
 #define L1_TIME_LEN         22  // inlcude the trailing NULL
+#endif
+
 #define HMS_TIME_LEN        9
 #define ELAPSED_TIME_LEN    15
 
@@ -95,6 +103,9 @@ static const char rcs_id_itime_h[] =
 
 #define SIGN(A)     ((A)<0?-1:1)
 
+//------------------------------------------
+// Itime now contains leap seconds
+//------------------------------------------
 struct Itime
 {
     enum CodeAFormatE
@@ -141,28 +152,30 @@ struct Itime
     int             ItimeToChar6(char* string);
     int             CodeAToItime(const char* string);
     int             ItimeToCodeA(char* string,
-                        char* invalid_time_string = INVALID_TIME_STRING ) const;
-    int             ItimeToCodeADate(char* string);
-    int             ItimeToCodeAHour(char* string);
-    int             ItimeToCodeASecond(char* string);
+                        char* invalid_time_string = INVALID_TIME_STRING )const;
+    int             ItimeToCodeADate(char* string) const;
+    int             ItimeToCodeAHour(char* string) const;
+    int             ItimeToCodeASecond(char* string) const;
     int             BDateToItime(const char* string);
-    int             ItimeToBDate(char* string);
+    int             ItimeToBDate(char* string) const;
     int             L1ToItime(const char* string);
     int             L1ToItime2(const char* yyyyddd, const char* hhmmssccc);
-    int             ItimeToL1(char* string);
+    int             ItimeToL1(char* string) const;
     int             BCDToItime(const char* string);
     int             ItimeToHMS(char* string) const;
 
                     // "dddddThh:mm:ss"
     int             ItimeToElapsedTime(char* string);
 
+    void            TaiLeapSecondsToItime(double taiLeapSeconds);
+
     Itime           AbsDif(Itime itime);
 
-    Itime           StartOfMinute() const;
-    Itime           StartOfHour() const;
-    Itime           StartOfDay() const;
-    Itime           StartOfMonth() const;
-    Itime           StartOfYear() const;
+    Itime           StartOfMinute(void) const;
+    Itime           StartOfHour(void) const;
+    Itime           StartOfDay(void) const;
+    Itime           StartOfMonth(void) const;
+    Itime           StartOfYear(void) const;
 
     static const char*      CurrentCodeA(void);
 
@@ -202,6 +215,12 @@ struct Itime
 
     time_t          sec;    //seconds since epoch
     unsigned short  ms;     //milli seconds
+
+                            // return 1 if OK, else 0
+    static int              CreateLeapSecTable(const char*  filename);
+    static LeapSecTable*    leapSecTable;
+    static Itime            UnixSecondToItime(time_t unixSecond);
+    static time_t           ItimeToUnixSecond(const Itime& itime);
 
 }; // struct Itime
 
