@@ -147,7 +147,7 @@ InstrumentSim::BeamFrameToGC(
 	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
 	total.Append(&ant_frame_to_beam_frame);
 
-	total.ReverseDirection();
+	total = total.ReverseDirection();
 	return(total);
 }
 
@@ -191,18 +191,21 @@ InstrumentSim::ScatSim(
 	// calculate the earth intercept //
 	//-------------------------------//
 
-	EarthPosition spot_on_earth = earth_intercept(rlook_gc,
-		sc_orbit_state->rsat);
+	EarthPosition spot_on_earth = earth_intercept(sc_orbit_state->rsat,
+		rlook_gc);
 
 	//----------------------------------------//
 	// get wind vector for the earth location //
 	//----------------------------------------//
 
-	Vector3 alt_lat_lon =
-		spot_on_earth.get_alt_lat_lon(EarthPosition::GEODETIC);
-	double lat, lon;
-	alt_lat_lon.Get(0, &lat);
-	alt_lat_lon.Get(1, &lon);
+	double alt, lat, lon;
+	if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC,
+		 &alt, &lat, &lon) == 0)
+	{
+		printf("Error: ScatSim can't convert spot_on_earth\n");
+		return(0);
+	}
+
 	WindVector* wv = windfield->NearestWindVector(lon, lat);
 
 	//---------------------------//
@@ -239,11 +242,15 @@ InstrumentSim::ScatSim(
 	{
 		l00FrameReady = 0;
 		l00Frame.time = time;
-		Vector3 sc_all;
-		sc_all = sc_orbit_state->rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
-		l00Frame.gcAltitude = sc_all.get(0);
-		l00Frame.gcLongitude = sc_all.get(1);
-		l00Frame.gcLatitude = sc_all.get(2);
+		if (sc_orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
+			 &alt, &lat, &lon) == 0)
+		{
+			printf("Error: ScatSim can't convert rsat\n");
+			return(0);
+		}
+		l00Frame.gcAltitude = alt;
+		l00Frame.gcLongitude = lon;
+		l00Frame.gcLatitude = lat;
 		l00Frame.gcX = sc_orbit_state->rsat.get(0);
 		l00Frame.gcY = sc_orbit_state->rsat.get(1);
 		l00Frame.gcZ = sc_orbit_state->rsat.get(2);

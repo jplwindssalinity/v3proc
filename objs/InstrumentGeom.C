@@ -51,6 +51,6 @@ BeamFrameToGC(
 	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
 	total.Append(&ant_frame_to_beam_frame);
 
-	total.ReverseDirection();
+	total = total.ReverseDirection();
 	return(total);
 }

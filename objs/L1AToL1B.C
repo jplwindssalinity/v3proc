@@ -105,16 +105,20 @@ L10ToL15::Convert(
 		rlook_beam.SphericalSet(1.0, 0.0, 0.0);
 		Vector3 rlook_gc = beam_frame_to_gc.Forward(rlook_beam);
 
-		EarthPosition spot_on_earth = earth_intercept(rlook_gc,
-			meas_spot->scOrbitState.rsat);
-
-		Vector3 alt_lat_lon =
-			spot_on_earth.get_alt_lat_lon(EarthPosition::GEODETIC);
+		EarthPosition spot_on_earth =
+			 earth_intercept(meas_spot->scOrbitState.rsat, rlook_gc);
 
 		Meas* meas = new Meas();
 		meas->value = l10->frame.sigma0[i];
-		meas->center.longitude = alt_lat_lon.get(2);
-		meas->center.latitude = alt_lat_lon.get(1);
+		double alt,lat,lon;
+		if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC, &alt,
+				&lat, &lon) == 0)
+		{
+			printf("Error: L10ToL15 can't convert spot_on_earth\n");
+			return(0);
+		}
+		meas->center.longitude = (float)lon;
+		meas->center.latitude = (float)lat;
 //		meas->outline = 
 		meas->pol = antenna->beam[beam_idx].polarization;
 
