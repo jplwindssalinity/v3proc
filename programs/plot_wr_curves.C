@@ -8,7 +8,7 @@
 //    plot_wr_curves
 //
 // SYNOPSIS
-//    plot_wr_curves [ -k ] <sim_config_file> <output_base>
+//    plot_wr_curves <sim_config_file> <output_base>
 //
 // DESCRIPTION
 //    Generates solution curve plots for a given set of measurements.
@@ -19,7 +19,7 @@
 //    to format.
 //
 // OPTIONS
-//    [ -k ]  Use Kp (variances) in objective function.
+//    None.
 //
 // OPERANDS
 //    The following operand is supported:
@@ -30,7 +30,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % plot_wr_curves -k pol.cfg plot.out
+//      % plot_wr_curves pol.cfg plot.out
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -95,8 +95,6 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "k"
-
 //--------//
 // MACROS //
 //--------//
@@ -113,8 +111,7 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -k ]", "<sim_config_file>", "<output_base>",
-    0};
+const char* usage_array[] = { "<sim_config_file>", "<output_base>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -125,37 +122,17 @@ main(
     int    argc,
     char*  argv[])
 {
-    //------------------//
-    // option variables //
-    //------------------//
-
-    int opt_kp = 0;
-
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    extern int optind;
-    int c;
-    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
-    {
-        switch(c)
-        {
-        case 'k':
-            opt_kp = 1;
-            break;
-        case '?':
-            usage(command, usage_array, 1);
-            break;
-        }
-    }
-
-    if (argc != optind + 2)
+    if (argc != 3)
         usage(command, usage_array, 1);
 
-    const char* config_file = argv[optind++];
-    const char* output_base = argv[optind++];
+    int cidx = 1;
+    const char* config_file = argv[cidx++];
+    const char* output_base = argv[cidx++];
 
     //---------------------//
     // read in config file //
@@ -178,22 +155,6 @@ main(
     {
         fprintf(stderr, "%s: error configuring GMF\n", command);
         exit(1);
-    }
-
-    //-------------------------//
-    // read in Kp if necessary //
-    //-------------------------//
-
-    Kp kp;
-    Kp* kp_ptr = NULL;
-    if (opt_kp)
-    {
-        if (! ConfigKp(&kp, &config_list))
-        {
-            fprintf(stderr, "%s: error configuring Kp\n", command);
-            exit(1);
-        }
-        kp_ptr = &kp;
     }
 
     //------//
@@ -286,7 +247,7 @@ main(
         // write solution curves //
         //-----------------------//
 
-        gmf.WriteSolutionCurves(ofp, &meas_list, kp_ptr);
+        gmf.WriteSolutionCurves(ofp, &meas_list, NULL);
 
         //-------------------//
         // close output file //
