@@ -17,9 +17,32 @@ static const char rcs_id_configsim_h[] =
 //		simulation and the corresponding sub-simulations.
 //======================================================================
 
-//--------------------------------//
-// Instrument Simulation Keywords //
-//--------------------------------//
+//------------//
+// Instrument //
+//------------//
+
+int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
+
+//---------//
+// Antenna //
+//---------//
+
+#define NUMBER_OF_BEAMS_KEYWORD			"NUMBER_OF_BEAMS"
+
+int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
+
+//------//
+// Beam //
+//------//
+
+#define BEAM_x_LOOK_ANGLE_KEYWORD		"BEAM_x_LOOK_ANGLE"
+#define BEAM_x_AZIMUTH_ANGLE_KEYWORD	"BEAM_x_AZIMUTH_ANGLE"
+
+int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
+
+//-----------------------//
+// Instrument Simulation //
+//-----------------------//
 
 #define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
 #define BEAM_B_TIME_OFFSET_KEYWORD		"BEAM_B_TIME_OFFSET"
@@ -27,9 +50,9 @@ static const char rcs_id_configsim_h[] =
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
 
-//---------------------------//
-// Orbit Simulation Keywords //
-//---------------------------//
+//------------------//
+// Orbit Simulation //
+//------------------//
 
 #define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
 #define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
@@ -40,17 +63,17 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 
 int ConfigOrbitSim(OrbitSim* orbit_sim, ConfigList* config_list);
 
-//-----------------------------//
-// Antenna Simulation Keywords //
-//-----------------------------//
+//--------------------//
+// Antenna Simulation //
+//--------------------//
 
-#define SPIN_RATE_KEYWORD				"SPIN_RATE"
+#define SPIN_RATE_KEYWORD				"ANTENNA_SPIN_RATE"
 
 int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 
-//-------------//
-// L0 Keywords //
-//-------------//
+//----//
+// L0 //
+//----//
 
 #define L0_FILE_KEYWORD					"L0_FILE"
 

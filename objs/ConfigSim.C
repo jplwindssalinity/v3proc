@@ -9,7 +9,97 @@ static const char rcs_id_configsim_c[] =
 #include "ConfigSim.h"
 #include "InstrumentSim.h"
 #include "OrbitSim.h"
+#include "Misc.h"
 
+
+//------------------//
+// ConfigInstrument //
+//------------------//
+
+int
+ConfigInstrument(
+	Instrument*		instrument,
+	ConfigList*		config_list)
+{
+	//--------------------------//
+	// configure the instrument //
+	//--------------------------//
+
+	// nothing to do here (yet)
+
+	//-----------------------//
+	// configure the antenna //
+	//-----------------------//
+
+	if (! ConfigAntenna(&(instrument->antenna), config_list))
+		return(0);
+
+	return(1);
+}
+
+//---------------//
+// ConfigAntenna //
+//---------------//
+
+int
+ConfigAntenna(
+	Antenna*		antenna,
+	ConfigList*		config_list)
+{
+	//-----------------------//
+	// configure the antenna //
+	//-----------------------//
+
+	int number_of_beams;
+	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
+		return(0);
+	antenna->numberOfBeams = number_of_beams;
+
+	//---------------------//
+	// configure each beam //
+	//---------------------//
+
+	for (int beam_number = 0; beam_number < antenna->numberOfBeams;
+		beam_number++)
+	{
+		if (! ConfigBeam((antenna->beam + beam_number), beam_number,
+			config_list))
+		{
+			return(0);
+		}
+	}
+
+	return(1);
+}
+
+//------------//
+// ConfigBeam //
+//------------//
+
+int
+ConfigBeam(
+	Beam*			beam,
+	int				beam_number,
+	ConfigList*		config_list)
+{
+	char keyword[1024];
+	char number[8];
+	double tmp_double;
+
+	sprintf(number, "%d", beam_number);
+
+	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &tmp_double))
+		return(0);
+	beam->lookAngle = tmp_double;
+
+	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &tmp_double))
+		return(0);
+	beam->azimuthAngle = tmp_double;
+
+	return(1);
+}
 
 //---------------------//
 // ConfigInstrumentSim //
@@ -20,9 +110,9 @@ ConfigInstrumentSim(
 	InstrumentSim*	instrument_sim,
 	ConfigList*		config_list)
 {
-	//----------------------------------------//
-	// configuration the instrument simulator //
-	//----------------------------------------//
+	//------------------------------------//
+	// configure the instrument simulator //
+	//------------------------------------//
 
 	double tmp_double;
 
