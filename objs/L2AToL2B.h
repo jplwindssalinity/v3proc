@@ -83,6 +83,11 @@ public:
     int  medianFilterMaxPasses;
     int  maxRankForNudging;
 
+    //----------------------------//
+    // Kprc noise distribution    //
+    //----------------------------//
+
+    Gaussian kprc;
     //-------//
     // flags //
     //-------//

@@ -138,6 +138,15 @@ L2AToL2B::ConvertAndWrite(
     {
         return(3);
     }
+    //----------------------
+    // Add Kprc Error
+    //-----------------------
+
+    float kprc_err=kprc.GetNumber();
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+      meas->value*=(1+kprc_err);
+    }
 
     //-----------------------------------//
     // check for wind retrieval criteria //

@@ -1296,6 +1296,19 @@ ConfigL2AToL2B(
     }
         else l2a_to_l2b->useHurricaneNudgeField=0;
     config_list->ExitForMissingKeywords();
+ 
+    // configure Kprc
+    if(! config_list->GetInt(SIM_KPRC_KEYWORD,&tmp_int)) return(0);
+    if(!tmp_int) tmp_float=0.0;
+    else if (! config_list->GetFloat(KPRC_VALUE_KEYWORD, &tmp_float)) 
+      return(0);
+
+    // convert from dB
+    float std=pow(10.0,0.1*(tmp_float))-1;
+    l2a_to_l2b->kprc.SetVariance(std*std);
+    l2a_to_l2b->kprc.SetMean(0.0);
+    l2a_to_l2b->kprc.SetSeed(get_seed(config_list,KPRC_SEED_KEYWORD, 
+				      DEFAULT_KPRC_SEED));
     return(1);
 }
 
