@@ -106,8 +106,6 @@ template class TrackerBase<unsigned char>;
 // TYPE DEFINITIONS //
 //------------------//
 
-enum MethodE { NO_METHOD, GAUSSIAN, CENTROID };
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
@@ -131,9 +129,9 @@ ArgInfo tlm_files_arg = TLM_FILES_ARG;
 ArgInfo l1a_files_arg = L1A_FILES_ARG;
 ArgInfo output_base_arg = { NULL, "-ob", "output_base" };
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
+ArgInfo leap_second_table_arg = LEAP_SECOND_TABLE_ARG;
 ArgInfo ins_config_arg = { "INSTRUMENT_CONFIG_FILE", "-ins",
     "ins_config_file" };
-ArgInfo method_arg = { "ECHO_METHOD", "-m", "gauss|cent" };
 
 ArgInfo* arg_info_array[] =
 {
@@ -142,7 +140,6 @@ ArgInfo* arg_info_array[] =
     &output_base_arg,
     &poly_table_arg,
     &ins_config_arg,
-    &method_arg,
     0
 };
 
@@ -174,8 +171,8 @@ main(
     char* l1a_files_string = args_plus.Get(l1a_files_arg);
     char* output_base_string = args_plus.Get(output_base_arg);
     char* poly_table_string = args_plus.Get(poly_table_arg);
+    char* leap_second_table_string = args_plus.Get(leap_second_table_arg);
     char* ins_config_string = args_plus.Get(ins_config_arg);
-    char* method_string = args_plus.Get(method_arg);
 
     //-------------------//
     // convert arguments //
@@ -193,24 +190,7 @@ main(
         tlm_files, INVALID_TIME, INVALID_TIME);
     PolynomialTable* polyTable =
         args_plus.PolynomialTableOrNull(poly_table_string);
-    MethodE method = GAUSSIAN;
-    if (method_string != NULL)
-    {
-        if (strcasecmp(method_string, "gauss") == 0)
-        {
-            method = GAUSSIAN;
-        }
-        else if (strcasecmp(method_string, "cent") == 0)
-        {
-            method = CENTROID;
-        }
-        else
-        {
-            fprintf(stderr, "%s: invalid center method %s\n", command,
-                method_string);
-            exit(1);
-        }
-    }
+    args_plus.LeapSecTableOrExit(leap_second_table_string);
 
     //---------------------//
     // read in config file //
@@ -383,6 +363,7 @@ main(
         for (int record_idx = 0; record_idx < tlmFile->GetDataLength();
             record_idx++)
         {
+printf("%d\n", record_idx);
             //--------------//
             // get the time //
             //--------------//
@@ -638,35 +619,14 @@ main(
                 //---------------//
 
                 float meas_spec_peak_slice, meas_spec_peak_freq, width;
-                double sum;
-                switch (method)
+                if (! gaussian_fit(&qscat, slice_number,
+                    signal_energy + 1, 10, &meas_spec_peak_slice,
+                    &meas_spec_peak_freq, &width, 1))
                 {
-                case GAUSSIAN:
-                    if (! gaussian_fit(&qscat, slice_number,
-                        signal_energy + 1, 10, &meas_spec_peak_slice,
-                        &meas_spec_peak_freq, &width, 1))
-                    {
-                        echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
-                        continue;
-                    }
-                    echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;
-                    break;
-                case CENTROID:
-                    sum = 0.0;
-                    for (int slice_idx = 0; slice_idx < 12; slice_idx++)
-                    {
-                        float f1, bw;
-                        qscat.ses.GetSliceFreqBw(slice_idx, &f1, &bw);
-                        sum += ((f1 + 0.5 * bw) * signal_energy[slice_idx]);
-                    }
-                    echo_info.measSpecPeakFreq[spot_idx] = sum /
-                        total_signal_energy;
-                    break;
-                default:
-                    fprintf(stderr, "%s: undefined method %d\n", command,
-                        method);
-                    exit(1);
+                    echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
+                    continue;
                 }
+                echo_info.measSpecPeakFreq[spot_idx] = meas_spec_peak_freq;
             }
 
             //---------------------//
