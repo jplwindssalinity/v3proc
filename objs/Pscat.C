@@ -106,7 +106,9 @@ Pscat::PMeasToEsn(
     // use measurement type to decide what to do //
     //-------------------------------------------//
 
-    double N0_echo, En1, En2;
+    double N0_echo = 0.0;
+    double En1 = 0.0;
+    double En2 = 0.0;
     switch (meas->measType)
     {
     case Meas::VV_MEAS_TYPE:

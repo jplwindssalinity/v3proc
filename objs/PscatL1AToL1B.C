@@ -434,12 +434,33 @@ PscatL1AToL1B::Convert(
                 // set measurement //
                 //-----------------//
 
-                // meas->value is the Esn value going in, sigma0 coming out.
-                if (! compute_sigma0(pscat, meas, x_factor, Esn_slice,
-                    Esn_echo, Esn_noise, En_echo_load, En_noise_load,
-                    &Es_slice, &En_slice))
+                switch(meas->measType)
                 {
+                case Meas::VV_MEAS_TYPE:
+                case Meas::HH_MEAS_TYPE:
+                  // meas->value is the Esn value going in, sigma0 coming out.
+                  if (! compute_sigma0(pscat, meas, x_factor, Esn_slice,
+                      Esn_echo, Esn_noise, En_echo_load, En_noise_load,
+                      &Es_slice, &En_slice))
+                  {
+                      return(0);
+                  }
+                  break;
+                case Meas::VV_HV_CORR_MEAS_TYPE:
+                case Meas::HH_VH_CORR_MEAS_TYPE:
+                  // meas->value is the Esn value going in, sigma0 coming out.
+                  if (! ComputeSigma0Corr(pscat, meas, x_factor, Esn_slice,
+                      &Es_slice, &En_slice))
+                  {
+                      return(0);
+                  }
+                  break;
+                default:
+                    fprintf(stderr,
+                        "PscatL1AToL1B::Convert: unknown measurement type %d\n",
+                        meas->measType);
                     return(0);
+                    break;
                 }
             }
             else
@@ -574,3 +595,75 @@ PscatL1AToL1B::Convert(
 
     return(1);
 }
+
+//----------------------------------//
+// PscatL1AToL1B::ComputeSigma0Corr //
+//----------------------------------//
+
+//
+// Compute correlation sigma0.
+//
+// This function estimates sigma0 from five energy
+// measurements and the tabulated X factor.
+// Various outputs are put in the Meas object passed in.
+// Note that the rho-factor is assumed to be 1.0. ie., we assume that
+// all of the signal power falls in the slices.
+//
+// Inputs:
+//	qscat = pointer to current Qscat object
+//	meas = pointer to current measurement (holds results)
+//	Xfactor = Total radar equation parameter for this slice.
+//	Esn_slice = the received slice energy.
+//	Esn_echo = the sum of all the slice energies for this spot.
+//	Esn_noise = the noise channel measured energy.
+//  En_echo_load = reference load echo channel measurement
+//  En_noise_load = reference load noise channel measurement
+//
+
+int
+PscatL1AToL1B::ComputeSigma0Corr(
+    Qscat*  qscat,
+    Meas*   meas,
+    float   Xfactor,
+    float   Esn_slice,
+    float*  Es_slice,
+    float*  En_slice)
+{
+
+	//-------------------------------------------------------//
+    // Mean noise energy is assumed to be zero, so Es = Esn. //
+	//-------------------------------------------------------//
+
+    *Es_slice = Esn_slice;
+    *En_slice = 0.0;
+
+	//------------------------------------------------------------------//
+    // Compute sigma0 from estimated signal energy and X factors.
+	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+	// Kpc comes from Es_slice.
+	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // Xfactor has units of energy because Xcal has units of Pt * Tp.
+	//------------------------------------------------------------------//
+
+	meas->value = *Es_slice / Xfactor;
+    meas->EnSlice = 0.0;
+
+	//------------------------------------------------------------------//
+	// Store the total X factor.
+	//------------------------------------------------------------------//
+
+    meas->XK = Xfactor;
+
+	//------------------------------------------------------------------//
+    // Correlation measurements already carry Tp and Bs in the Meas
+    // object, so no additional information is needed.
+    // See Kp.C, method Kp::GetVpc for more details.
+	//------------------------------------------------------------------//
+
+	meas->A = 0.0;
+	meas->B = 0.0;
+	meas->C = 0.0;
+
+	return(1);
+}
+
