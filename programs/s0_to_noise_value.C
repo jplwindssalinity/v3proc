@@ -120,8 +120,8 @@ main(
 		exit(1);
 	}
 
-        printf("Tables of values for each wind vector in grid\n");
-        printf("true_wind_speed, s0_bias, s0_rms_error\n");
+        //printf("Tables of values for each wind vector in grid\n");
+        //printf("true_wind_speed, s0_bias, s0_rms_error\n");
         /********** Open input and output files ***********/
         FILE* ifp= fopen(argv[2],"r");
         FILE* ofp= fopen(argv[3],"w");
@@ -129,8 +129,13 @@ main(
 	char string[100], *value;
 	char* file_still_there; 
         float lon, lat;     
-        double bias=0, ave_bias=0, var=0, ave_std=0;  
-        int num_grids=0, num_s0=0;
+        double bias=0, ave_bias[20], var=0, ave_std[20];  
+        int num_grids[20], num_s0=0;
+        for(int c=0;c<20;c++){
+	  ave_bias[c]=0.0;
+          ave_std[c]=0.0;
+          num_grids[c]=0;
+	}
   while(1){
     file_still_there=fgets(string,100,ifp);   
     if(!file_still_there) break;
@@ -152,10 +157,13 @@ main(
         var=var/num_s0;
         double std;
         std=sqrt(var);
-        printf("%g %g %g\n",wv.spd,bias,std);
-	ave_std+=fabs(std);
-        ave_bias+=fabs(bias);
-	num_grids++;
+        //printf("%g %g %g\n",wv.spd,bias,std);
+        int offset=(int)floor(wv.spd);
+	if(offset<20){
+	  ave_std[offset]+=fabs(std);
+	  ave_bias[offset]+=fabs(bias);
+	  num_grids[offset]++;
+	}
       }
       else if(num_s0>0){
 	// printf("Too few s0s to calculate grid bias\n\n");
@@ -194,7 +202,7 @@ main(
 
       // chi is defined so that 0.0 means the wind is blowing towards
       // the s/c (the opposite direction as the look vector)
-      float chi = wv.dir - eastAzimuth + pi;
+      float chi = wv.dir - eastAzimuth  + pi;
 
       gmf.GetInterpolatedValue(pol, incidenceAngle, wv.spd,
 				chi, &sigma0_true);
@@ -211,14 +219,20 @@ main(
     bias=bias/num_s0;
     var=var/num_s0;
     double std=sqrt(var);
-    ave_bias+=fabs(bias);
-    ave_std+=std;
-    num_grids++;
+    int offset=(int)floor(wv.spd);
+    if(offset<20){
+      ave_std[offset]+=fabs(std);
+      ave_bias[offset]+=fabs(bias);
+      num_grids[offset]++;
+    }
   }
-  ave_bias=ave_bias/num_grids;
-  ave_std=ave_std/num_grids;
-  printf("Average magnitude of the grid-wise noise bias is %g\n",ave_bias);
-  printf("Average grid-wise noise RMS is %g\n",ave_std);
+  for(int c=0;c<20;c++){
+    ave_bias[c]=ave_bias[c]/num_grids[c];
+    ave_bias[c]=10*log10(1.0+ave_bias[c]);
+    ave_std[c]=ave_std[c]/num_grids[c];
+    ave_std[c]=10*log10(1.0+ave_bias[c]);
+    printf("%g %g %g\n",(float)(c+c+1)/2.0,ave_bias[c],ave_std[c]);
+  }
  fclose(ifp);
  fclose(ofp);
  
