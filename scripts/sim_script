@@ -112,6 +112,7 @@ echo ""
 echo "`date` : Starting l2a_to_l2b"
 l2a_to_l2b $cfg_file
 echo "`date` : Completed l2a_to_l2b"
+echo ""
 
 #----------------------------#
 # verifying the cfg log file #
