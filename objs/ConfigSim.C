@@ -1814,6 +1814,12 @@ get_seed(
     const char*  keyword,
     long         default_seed)
 {
+    // remember the config list setting
+    config_list->MemorizeLogFlag();
+
+    // be quiet
+    config_list->DoNothingForMissingKeywords();
+
     long seed;
     int randomize_seeds;
     if (config_list->GetInt(RANDOMIZE_SEEDS_KEYWORD, &randomize_seeds) &&
@@ -1823,16 +1829,19 @@ get_seed(
         int r = rand();
         seed = time(NULL) * r;
         printf("Initializing %s to %ld\n", keyword, seed);
-        return(seed);
     }
     else if (config_list->GetLong(keyword, &seed))
     {
         // use the seed from the config file
-        return(seed);
+        ;
     }
     else
     {
         // use the default seed
-        return(default_seed);
+        seed = default_seed;
     }
+
+    // restore the config list setting
+    config_list->RestoreLogFlag();
+    return(seed);
 }
