@@ -333,9 +333,6 @@ main(
 
 				// constants store Doppler to correct for (ergo -)
 				dop_com[azimuth_step] = -instrument.commandedDoppler;
-if (azimuth_step == 49)
-	printf("h\n");
-printf("%d %g\n", azimuth_step, dop_com[azimuth_step]);
 			}
 
 			//------------------------//
