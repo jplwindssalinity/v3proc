@@ -11,31 +11,8 @@ static const char rcs_id_instrument_h[] =
 
 //======================================================================
 // CLASSES
-//		InstrumentEvent, Instrument
+//		Instrument
 //======================================================================
-
-
-//======================================================================
-// CLASS
-//		InstrumentEvent
-//
-// DESCRIPTION
-//		The InstrumentEvent object holds a time and an event.
-//======================================================================
-
-class InstrumentEvent
-{
-public:
-
-	//------//
-	// enum //
-	//------//
-
-	enum InEventE { NO_EVENT, BEAM_A_TRANSMIT, BEAM_B_TRANSMIT };
-
-	double		time;
-	InEventE	event;
-};
 
 
 //======================================================================
