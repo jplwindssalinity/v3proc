@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -2589,6 +2589,8 @@ Qscat::IdealRtt(
 // Qscat::IdealCommandedDoppler //
 //------------------------------//
 // Estimate the ideal commanded doppler frequency.
+// This method no longer zeroes the attitude. It is up to the calling
+// program to set the spacecraft attitude the desired thing.
 
 #define DOPPLER_ACCURACY    1.0     // 1 Hz
 
@@ -2602,14 +2604,19 @@ Qscat::IdealCommandedDoppler(
     //------------------------------//
 
     OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+    Attitude* sc_attitude = &(spacecraft->attitude);
+    CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(sc_orbit_state,
+        sc_attitude, &(sas.antenna), sas.antenna.txCenterAzimuthAngle);
+/*
     Attitude zero_rpy;
     zero_rpy.Set(0.0, 0.0, 0.0, 2, 1, 3);
     CoordinateSwitch zero_rpy_antenna_frame_to_gc =
         AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(sas.antenna),
         sas.antenna.txCenterAzimuthAngle);
     Spacecraft sp_zero_att;
-        sp_zero_att.orbitState=*sc_orbit_state;
-        sp_zero_att.attitude=zero_rpy;
+    sp_zero_att.orbitState = *sc_orbit_state;
+    sp_zero_att.attitude = zero_rpy;
+*/
 
     //-------------------------------------------//
     // find the current beam's two-way peak gain //
@@ -2620,23 +2627,23 @@ Qscat::IdealCommandedDoppler(
     double look, azim;
     if (cds.useBYUDop)
     {
-        if (! GetBYUBoresight(&sp_zero_att, this, &look, &azim))
+        if (! GetBYUBoresight(spacecraft, this, &look, &azim))
         {
             return(0);
         }
     }
     else if(cds.useSpectralDop)
     {
-        if (! GetPeakSpectralResponse(&zero_rpy_antenna_frame_to_gc,
-            &sp_zero_att, this, &look, &azim))
+        if (! GetPeakSpectralResponse(&antenna_frame_to_gc, spacecraft,
+            this, &look, &azim))
         {
             return(0);
         }
     }
     else
     {
-        if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc,
-            &sp_zero_att, beam, azimuth_rate, &look, &azim))
+        if (! GetPeakSpatialResponse2(&antenna_frame_to_gc, spacecraft,
+            beam, azimuth_rate, &look, &azim))
         {
             return(0);
         }
@@ -2652,8 +2659,7 @@ Qscat::IdealCommandedDoppler(
     ses.CmdTxDopplerEu(0.0);
     do
     {
-        TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, vector,
-            &qti);
+        TargetInfo(&antenna_frame_to_gc, spacecraft, vector, &qti);
         float freq = ses.txDoppler + qti.basebandFreq;
         ses.CmdTxDopplerEu(freq);
     } while (fabs(qti.basebandFreq) > DOPPLER_ACCURACY);
