@@ -40,7 +40,7 @@ public:
 	//--------------//
 
 	InstrumentEvent();
-	InstrumentEvent();
+	~InstrumentEvent();
 
 	//-----------//
 	// variables //
