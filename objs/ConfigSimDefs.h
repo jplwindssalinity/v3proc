@@ -48,6 +48,10 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_PITCH_BIAS_KEYWORD            "SIM_PITCH_BIAS"
 #define SIM_YAW_BIAS_KEYWORD              "SIM_YAW_BIAS"
 
+#define ROLL_CONTROL_SEED_KEYWORD         "ROLL_CONTROL_SEED"
+#define PITCH_CONTROL_SEED_KEYWORD        "PITCH_CONTROL_SEED"
+#define YAW_CONTROL_SEED_KEYWORD          "YAW_CONTROL_SEED"
+
 //--------------------------------//
 // Attitude Knowledge Error Model //
 //--------------------------------//
@@ -65,6 +69,18 @@ static const char rcs_id_configsimdefs_h[] =
 #define ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD   "ROLL_KNOWLEDGE_CORRLENGTH"
 #define PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD  "PITCH_KNOWLEDGE_CORRLENGTH"
 #define YAW_KNOWLEDGE_CORRLENGTH_KEYWORD    "YAW_KNOWLEDGE_CORRLENGTH"
+
+#define ROLL_KNOWLEDGE_SEED_KEYWORD         "ROLL_KNOWLEDGE_SEED"
+#define PITCH_KNOWLEDGE_SEED_KEYWORD        "PITCH_KNOWLEDGE_SEED"
+#define YAW_KNOWLEDGE_SEED_KEYWORD          "YAW_KNOWLEDGE_SEED"
+
+//-------//
+// seeds //
+//-------//
+
+// setting this non-zero causes the control and knowledge seeds to be
+// randomly set
+#define RANDOMIZE_SEEDS_KEYWORD  "RANDOMIZE_SEEDS"
 
 //------------//
 // Instrument //
@@ -347,13 +363,13 @@ static const char rcs_id_configsimdefs_h[] =
 // Random Number Generator Seeds //
 //-------------------------------//
 
-#define ROLL_CONTROL_SEED     1034
-#define PITCH_CONTROL_SEED    45299
-#define YAW_CONTROL_SEED      1999
+#define DEFAULT_ROLL_CONTROL_SEED     1034
+#define DEFAULT_PITCH_CONTROL_SEED    45299
+#define DEFAULT_YAW_CONTROL_SEED      1999
 
-#define ROLL_KNOWLEDGE_SEED   5661
-#define PITCH_KNOWLEDGE_SEED  78965
-#define YAW_KNOWLEDGE_SEED    486
+#define DEFAULT_ROLL_KNOWLEDGE_SEED   5661
+#define DEFAULT_PITCH_KNOWLEDGE_SEED  78965
+#define DEFAULT_YAW_KNOWLEDGE_SEED    486
 
 #define PTGR_SEED             944
 

@@ -6,6 +6,8 @@
 static const char rcs_id_configsim_c[] =
     "@(#) $Id$";
 
+#include <sys/types.h>
+#include <time.h>
 #include "ConfigSim.h"
 #include "ConfigSimDefs.h"
 #include "SpacecraftSim.h"
@@ -179,28 +181,19 @@ int
 ConfigAttitudeControlModel(AttDist* attcntl,
     ConfigList* config_list)
 {
-
-    char* string;
-
-    string=config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
+    char* string = config_list->Get(ATTITUDE_CONTROL_MODEL_KEYWORD);
     if (! string)
         return(0);
 
-    if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-        || strcmp(string,"none")==0)
+    if (strcasecmp(string, "NONE") == 0)
     {
         // By default mean, variance, and correlation length
         // are set to zero
         return(1);
     }
-
-    else if (strcmp(string,"Time_Correlated_Gaussian")==0 ||
-        strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
-        || strcmp(string,"time_correlated_gaussian")==0)
+    else if (strcasecmp(string, "TIME_CORRELATED_GAUSSIAN") == 0)
     {
-
         float stdv, meanx, corrlength;
-
         if (! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &stdv))
             return(0);
         if (! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &meanx))
@@ -214,7 +207,8 @@ ConfigAttitudeControlModel(AttDist* attcntl,
         attcntl->roll.SetVariance(stdv*stdv*dtr*dtr);
         attcntl->roll.SetMean(meanx*dtr);
         attcntl->roll.SetCorrelationLength(corrlength);
-        attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
+        attcntl->roll.SetSeed(get_seed(config_list, ROLL_CONTROL_SEED_KEYWORD,
+            DEFAULT_ROLL_CONTROL_SEED));
         attcntl->roll.Initialize();
 
         if (! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &stdv))
@@ -230,7 +224,8 @@ ConfigAttitudeControlModel(AttDist* attcntl,
         attcntl->pitch.SetVariance(stdv*stdv*dtr*dtr);
         attcntl->pitch.SetMean(meanx*dtr);
         attcntl->pitch.SetCorrelationLength(corrlength);
-        attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
+        attcntl->pitch.SetSeed(get_seed(config_list,
+            PITCH_CONTROL_SEED_KEYWORD, DEFAULT_PITCH_CONTROL_SEED));
         attcntl->pitch.Initialize();
 
         if (! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &stdv))
@@ -246,7 +241,8 @@ ConfigAttitudeControlModel(AttDist* attcntl,
         attcntl->yaw.SetVariance(stdv*stdv*dtr*dtr);
         attcntl->yaw.SetMean(meanx*dtr);
         attcntl->yaw.SetCorrelationLength(corrlength);
-        attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
+        attcntl->yaw.SetSeed(get_seed(config_list,
+            YAW_CONTROL_SEED_KEYWORD, DEFAULT_YAW_CONTROL_SEED));
         attcntl->yaw.Initialize();
     }
     else
@@ -303,7 +299,8 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
         attknow->roll.SetVariance(stdv*stdv*dtr*dtr);
         attknow->roll.SetMean(meanx*dtr);
         attknow->roll.SetCorrelationLength(corrlength);
-        attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
+        attknow->roll.SetSeed(get_seed(config_list,
+            ROLL_KNOWLEDGE_SEED_KEYWORD, DEFAULT_ROLL_KNOWLEDGE_SEED));
         attknow->roll.Initialize();
 
         if (! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &stdv))
@@ -319,7 +316,8 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
         attknow->pitch.SetVariance(stdv*stdv*dtr*dtr);
         attknow->pitch.SetMean(meanx*dtr);
         attknow->pitch.SetCorrelationLength(corrlength);
-        attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
+        attknow->pitch.SetSeed(get_seed(config_list,
+            PITCH_KNOWLEDGE_SEED_KEYWORD, DEFAULT_PITCH_KNOWLEDGE_SEED));
         attknow->pitch.Initialize();
 
         if (! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &stdv))
@@ -335,7 +333,8 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
         attknow->yaw.SetVariance(stdv*stdv*dtr*dtr);
         attknow->yaw.SetMean(meanx*dtr);
         attknow->yaw.SetCorrelationLength(corrlength);
-        attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
+        attknow->yaw.SetSeed(get_seed(config_list,
+            YAW_KNOWLEDGE_SEED_KEYWORD, DEFAULT_YAW_KNOWLEDGE_SEED));
         attknow->yaw.Initialize();
     }
     else
@@ -1803,4 +1802,37 @@ ConfigAttitude(
         return (1);
     }
     return (0);
+}
+
+//-----------------//
+// helper function //
+//-----------------//
+
+long
+get_seed(
+    ConfigList*  config_list,
+    const char*  keyword,
+    long         default_seed)
+{
+    long seed;
+    int randomize_seeds;
+    if (config_list->GetInt(RANDOMIZE_SEEDS_KEYWORD, &randomize_seeds) &&
+        randomize_seeds)
+    {
+        // use a crummy random number generator and the current time
+        int r = rand();
+        seed = time(NULL) * r;
+        printf("Initializing %s to %ld\n", keyword, seed);
+        return(seed);
+    }
+    else if (config_list->GetLong(keyword, &seed))
+    {
+        // use the seed from the config file
+        return(seed);
+    }
+    else
+    {
+        // use the default seed
+        return(default_seed);
+    }
 }

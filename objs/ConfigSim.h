@@ -176,4 +176,11 @@ int  ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
 
 int  ConfigAttitude(ConfigList* config_list);
 
+//-----------------//
+// helper function //
+//-----------------//
+
+long  get_seed(ConfigList* config_list, const char* keyword,
+          long default_seed);
+
 #endif
