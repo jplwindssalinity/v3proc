@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_misc_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <string.h>
@@ -14,7 +14,7 @@ static const char rcs_id_misc_c[] =
 #include "Constants.h"
 #include "Matrix.h"
 
-#define  DEBUG_DOWNHILL 0
+#define DEBUG_DOWNHILL  0
 
 //---------//
 // no_path //
@@ -22,15 +22,15 @@ static const char rcs_id_misc_c[] =
 
 const char*
 no_path(
-	const char*		string)
+    const char*  string)
 {
-	const char* last_slash = strrchr(string, '/');
-	if (! last_slash)
-		return(string);
-	return(last_slash + 1);
+    const char* last_slash = strrchr(string, '/');
+    if (! last_slash)
+        return(string);
+    return(last_slash + 1);
 }
 
-#define LINE_LENGTH		78
+#define LINE_LENGTH  78
 
 //-------//
 // usage //
@@ -38,26 +38,26 @@ no_path(
 
 void
 usage(
-	const char*		command,
-	const char*		option_array[],
-	const int		exit_value)
+    const char*  command,
+    const char*  option_array[],
+    const int    exit_value)
 {
-	fprintf(stderr, "usage: %s", command);
-	int skip = 11;
-	int position = 7 + strlen(command);
-	for (int i = 0; option_array[i]; i++)
-	{
-		int length = strlen(option_array[i]);
-		position += length;
-		if (position > LINE_LENGTH)
-		{
-			fprintf(stderr, "\n%*s", skip, " ");
-			position = skip + length;
-		}
-		fprintf(stderr, " %s", option_array[i]);
-	}
-	fprintf(stderr, "\n");
-	exit(exit_value);
+    fprintf(stderr, "usage: %s", command);
+    int skip = 11;
+    int position = 7 + strlen(command);
+    for (int i = 0; option_array[i]; i++)
+    {
+        int length = strlen(option_array[i]);
+        position += length;
+        if (position > LINE_LENGTH)
+        {
+            fprintf(stderr, "\n%*s", skip, " ");
+            position = skip + length;
+        }
+        fprintf(stderr, " %s", option_array[i]);
+    }
+    fprintf(stderr, "\n");
+    exit(exit_value);
 }
 
 //---------//
@@ -66,29 +66,29 @@ usage(
 
 int
 look_up(
-	const char*		string,
-	const char*		table[],
-	const int		count)
+    const char*  string,
+    const char*  table[],
+    const int    count)
 {
-	if (count != -1)
-	{
-		for (int i = 0; i < count; i++)
-		{
-			if (! strcasecmp(string, table[i]))
-				return(i);
-		}
-		return(-1);
-	}
-	else
-	{
-		for (int i = 0; table[i]; i++)
-		{
-			if (! strcasecmp(string, table[i]))
-				return(i);
-		}
-		return(-1);
-	}
-	return(-1);
+    if (count != -1)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            if (! strcasecmp(string, table[i]))
+                return(i);
+        }
+        return(-1);
+    }
+    else
+    {
+        for (int i = 0; table[i]; i++)
+        {
+            if (! strcasecmp(string, table[i]))
+                return(i);
+        }
+        return(-1);
+    }
+    return(-1);
 }
 
 //---------------//
@@ -97,20 +97,20 @@ look_up(
 
 FILE*
 fopen_or_exit(
-	const char*		filename,
-	const char*		type,
-	const char*		command,
-	const char*		description,
-	const int		exit_value)
+    const char*  filename,
+    const char*  type,
+    const char*  command,
+    const char*  description,
+    const int    exit_value)
 {
-	FILE* fp = fopen(filename, type);
-	if (fp == NULL)
-	{
-		fprintf(stderr, "%s: error opening %s %s\n", command, description,
-			filename);
-		exit(exit_value);
-	}
-	return(fp);
+    FILE* fp = fopen(filename, type);
+    if (fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening %s %s\n", command, description,
+            filename);
+        exit(exit_value);
+    }
+    return(fp);
 }
 
 //----------//
@@ -119,11 +119,11 @@ fopen_or_exit(
 
 char
 get_bits(
-	char	byte,
-	int		position,
-	int		bit_count)
+    char  byte,
+    int   position,
+    int   bit_count)
 {
-	return( (byte >> (position + 1 - bit_count)) & ~(~0 << bit_count) );
+    return( (byte >> (position + 1 - bit_count)) & ~(~0 << bit_count) );
 }
 
 //-------------------//
@@ -132,25 +132,24 @@ get_bits(
 
 int
 substitute_string(
-	const char*		string,
-	const char*		find,
-	const char*		replace,
-	char*			result)
+    const char*  string,
+    const char*  find,
+    const char*  replace,
+    char*        result)
 {
-	char* ptr = strstr(string, find);
-	if (ptr == 0)
-		return(0);
+    char* ptr = strstr(string, find);
+    if (ptr == 0)
+        return(0);
 
-	int length = strlen(find);
-	sprintf(result, "%.*s%s%s", (ptr - string), string, replace,
-		ptr + length);
-	return(1);
+    int length = strlen(find);
+    sprintf(result, "%.*s%s%s", (ptr - string), string, replace,
+        ptr + length);
+    return(1);
 }
 
 //------------------//
 // downhill_simplex //
 //------------------//
-
 // Adapted from the Numerical Recipes routine called amoeba.
 // This function searches for the minimum of a multi-dimensional function
 // by moving a "simplex" in the multidimensional space in a systematic way.
@@ -172,7 +171,7 @@ substitute_string(
 //         elements.  The first N are trial values for the unknowns, the last
 //         M are known constants.  The second argument is an arbitrary pointer
 //         which the function can use to receive and send back more complex
-//         information that is not used by this search. 
+//         information that is not used by this search.
 //  xtol = another termination criteria.
 //
 // Using a nonzero atol value is not guaranteed to reach the
@@ -180,172 +179,186 @@ substitute_string(
 
 int
 downhill_simplex(
-	double** p,
-	int ndim,
-	int totdim,
-	double ftol,
-	double (*funk)(double*,void*),
-	void* ptr,
-        double xtol=0.0)
+    double**  p,
+    int       ndim,
+    int       totdim,
+    double    ftol,
+    double    (*funk)(double*,void*),
+    void*     ptr,
+    double    xtol=0.0)
 {
-	int i,j;
-	if(DEBUG_DOWNHILL && ndim==1){
-	  printf("\nDownhill Simplex: ndim=%d totdim=%d ftol=%g xtol=%g\n Initial p values:\n",
-		                                    ndim,totdim,ftol,xtol);
-	  for(i=0;i<ndim+1;i++){
-	    for(j=0;j<totdim;j++){
-	      printf("%g ",p[i][j]);
-	    }
-	    printf("\n");
-	  }
-	  printf("\n");
-	}
-	
-	int nfunk = 0;
-	double ysave;
+    int i,j;
+//    if (DEBUG_DOWNHILL && ndim == 1)
+    if (DEBUG_DOWNHILL)
+    {
+        printf("\nDownhill Simplex: ndim=%d totdim=%d ftol=%g xtol=%g\n Initial p values:\n", ndim, totdim, ftol, xtol);
+        for (i = 0; i < ndim + 1; i++)
+        {
+            for (j = 0; j < totdim; j++)
+            {
+                printf("%g ",p[i][j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
 
-	double* y = (double*)malloc(sizeof(double)*(ndim+1));
-	if (y == NULL)
-	{
-		printf("Error allocating memory in downhill_simplex\n");
-		return(0);
-	}
+    int nfunk = 0;
+    double ysave;
 
-	for (i=0; i < ndim+1; i++)
-	{
-		y[i] = (*funk)(&(p[i][0]),ptr);
-	}
+    double* y = (double*)malloc(sizeof(double)*(ndim+1));
+    if (y == NULL)
+    {
+        printf("Error allocating memory in downhill_simplex\n");
+        return(0);
+    }
 
-	double* psum = (double*)malloc(sizeof(double)*totdim);
-	if (psum == NULL)
-	{
-		printf("Error allocating memory in downhill_simplex\n");
-		return(0);
-	}
+    for (i = 0; i < ndim+1; i++)
+    {
+        y[i] = (*funk)(&(p[i][0]),ptr);
+    }
 
-	for (j=0; j < ndim; j++)
-	{
-		psum[j] = 0.0;
-		for (i=0; i < ndim+1; i++)
-		{
-			psum[j] += p[i][j];
-		}
-	}
-	for (j=ndim; j < totdim; j++)
-	{	// transfer the remaining fixed parameters unchanged.
-		psum[j] = p[0][j];
-	}
+    double* psum = (double*)malloc(sizeof(double)*totdim);
+    if (psum == NULL)
+    {
+        printf("Error allocating memory in downhill_simplex\n");
+        return(0);
+    }
 
-	//
-	// Main Search Loop
-	//
+    for (j = 0; j < ndim; j++)
+    {
+        psum[j] = 0.0;
+        for (i = 0; i < ndim+1; i++)
+        {
+            psum[j] += p[i][j];
+        }
+    }
+    for (j = ndim; j < totdim; j++)
+    {    // transfer the remaining fixed parameters unchanged.
+        psum[j] = p[0][j];
+    }
 
+    //------------------//
+    // Main Search Loop //
+    //------------------//
 
-	while (1)
-	{
-		int inhi;
-		int ilo = 0;
-		int ihi = y[0]>y[1] ? (inhi=1,0) : (inhi=0,1);
-		for (i=0;i<ndim+1;i++)
-		  {
-		    if (y[i] <= y[ilo]) ilo=i;
-		    if (y[i] > y[ihi])
-		      {
-			inhi=ihi;
-			ihi=i;
-		      }
-		    else if (y[i] > y[inhi] && i != ihi) inhi=i;
-		  }
+    while (1)
+    {
+        int inhi;
+        int ilo = 0;
+        int ihi = y[0]>y[1] ? (inhi = 1,0) : (inhi = 0,1);
+        for (i = 0; i < ndim + 1; i++)
+        {
+            if (y[i] <= y[ilo])
+                ilo = i;
+            if (y[i] > y[ihi])
+            {
+                inhi = ihi;
+                ihi = i;
+            }
+            else if (y[i] > y[inhi] && i != ihi)
+                inhi = i;
+        }
 
-		double rtol=2.0*fabs(y[ihi]-y[ilo])/(fabs(y[ihi])+fabs(y[ilo]));
-		double ptol=0.0;
-		for(j=0;j<ndim;j++){
-		   double pmax=p[0][j];
-                   double pmin=p[0][j];
-		   for(i=1;i<ndim+1;i++){
-		     if(p[i][j]>pmax) pmax=p[i][j];
-		     if(p[i][j]<pmin) pmin=p[i][j];
-		   }
-		   double tmp=pmax-pmin;
-		   if (ptol <tmp) ptol=tmp;
-		}
-		if(DEBUG_DOWNHILL && ndim==1){
-		  printf("rtol=%g ptol=%g\nNew p values:\n",rtol,ptol);
-		  for(i=0;i<ndim+1;i++){
-		    for(j=0;j<totdim;j++){
-		      printf("%g ",p[i][j]);
-		    }
-		    printf("\n");
-		  }
-		  printf("New y values: ");
-		  for(i=0;i<ndim+1;i++) printf("%g ",y[i]);
-		  printf("\n\n");		  
-		}
-		if (rtol < ftol || ptol< xtol)
-		{
-			double tmp;
-			tmp = y[0];
-			y[0] = y[ilo];
-			y[ilo] = tmp;
-			for (i=0;i<ndim;i++)
-			{
-				tmp = p[0][i];
-				p[0][i] = p[ilo][i];
-				p[ilo][i] = tmp;
-			}
-			break;
-		}
+        double rtol = 2.0*fabs(y[ihi]-y[ilo])/(fabs(y[ihi])+fabs(y[ilo]));
+        double ptol = 0.0;
+        for (j = 0; j < ndim; j++)
+        {
+           double pmax = p[0][j];
+                   double pmin = p[0][j];
+           for (i = 1;i<ndim+1;i++){
+             if(p[i][j]>pmax) pmax = p[i][j];
+             if(p[i][j]<pmin) pmin = p[i][j];
+           }
+           double tmp = pmax-pmin;
+           if (ptol <tmp) ptol = tmp;
+        }
 
-		if (nfunk >= 1000)
-		{
-			printf("Error: too many function calls in downhill_simplex\n");
-			return(0);
-		}
-		nfunk += 2;
+//        if (DEBUG_DOWNHILL && ndim == 1)
+        if (DEBUG_DOWNHILL)
+        {
+            printf("rtol=%g ptol=%g\nNew p values:\n", rtol, ptol);
+            for (i = 0; i < ndim + 1; i++)
+            {
+                for (j = 0; j < totdim; j++)
+                {
+                    printf("%g ", p[i][j]);
+                }
+                printf("\n");
+            }
+            printf("New y values: ");
+            for (i = 0; i < ndim + 1; i++)
+            {
+                printf("%g ", y[i]);
+            }
+            printf("\n\n");
+        }
 
-		double ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,-1.0);
-		if (ytry <= y[ilo])
-		{
-			ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,2.0);
-		}
-		else if (ytry >= y[inhi])
-		{
-			ysave=y[ihi];
-			ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,0.5);
-			if (ytry >= ysave)
-			{
-				for (i=0;i<ndim+1;i++)
-				{
-					if (i != ilo)
-					{
-						for (j=0;j<ndim;j++)
-						{
-							p[i][j]=psum[j]=0.5*(p[i][j]+p[ilo][j]);
-						}
-						y[i]=(*funk)(psum,ptr);
-					}
-				}
-				nfunk += ndim;
-				for (j=0; j < ndim; j++)
-				{
-					psum[j] = 0.0;
-					for (i=0; i < ndim+1; i++)
-					{
-						psum[j] += p[i][j];
-					}
-				}
-			}
-		}
-		else
-		{
-			--(nfunk);
-		}
-	}
+        if (rtol < ftol || ptol< xtol)
+        {
+            double tmp;
+            tmp = y[0];
+            y[0] = y[ilo];
+            y[ilo] = tmp;
+            for (i = 0;i<ndim;i++)
+            {
+                tmp = p[0][i];
+                p[0][i] = p[ilo][i];
+                p[ilo][i] = tmp;
+            }
+            break;
+        }
 
-free(y);
-free(psum);
-return(1);
+        if (nfunk >= 1000)
+        {
+            printf("Error: too many function calls in downhill_simplex\n");
+            return(0);
+        }
+        nfunk += 2;
 
+        double ytry = amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,-1.0);
+        if (ytry <= y[ilo])
+        {
+            ytry = amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,2.0);
+        }
+        else if (ytry >= y[inhi])
+        {
+            ysave = y[ihi];
+            ytry = amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,0.5);
+            if (ytry >= ysave)
+            {
+                for (i = 0;i<ndim+1;i++)
+                {
+                    if (i != ilo)
+                    {
+                        for (j = 0;j<ndim;j++)
+                        {
+                            p[i][j] = psum[j] = 0.5*(p[i][j]+p[ilo][j]);
+                        }
+                        y[i] = (*funk)(psum,ptr);
+                    }
+                }
+                nfunk += ndim;
+                for (j = 0; j < ndim; j++)
+                {
+                    psum[j] = 0.0;
+                    for (i = 0; i < ndim+1; i++)
+                    {
+                        psum[j] += p[i][j];
+                    }
+                }
+            }
+        }
+        else
+        {
+            --(nfunk);
+        }
+    }
+
+    free(y);
+    free(psum);
+
+    return(1);
 }
 
 //--------//
@@ -354,85 +367,90 @@ return(1);
 
 double
 amotry(
-	double** p,
-	double* y,
-	double* psum,
-	int ndim,
-	int totdim,
-	double (*funk)(double*,void*),
-	void* ptr,
-	int ihi,
-	double fac)
-
+    double**  p,
+    double*   y,
+    double*   psum,
+    int       ndim,
+    int       totdim,
+    double    (*funk)(double*,void*),
+    void*     ptr,
+    int       ihi,
+    double    fac)
 {
-	int j;
-	double fac1,fac2,ytry,*ptry;
+    int j;
+    double fac1, fac2, ytry, *ptry;
 
-	ptry = (double*)malloc(sizeof(double)*totdim);
-	if (ptry == NULL)
-	{
-		printf("Error allocating memory in amotry\n");
-		exit(-1);
-	}
+    ptry = (double*)malloc(sizeof(double)*totdim);
+    if (ptry == NULL)
+    {
+        printf("Error allocating memory in amotry\n");
+        exit(-1);
+    }
 
-	for (j=ndim; j < totdim; j++)
-	{	// transfer the fixed parameters unchanged.
-		ptry[j] = p[0][j];
-	}
+    for (j = ndim; j < totdim; j++)
+    {    // transfer the fixed parameters unchanged.
+        ptry[j] = p[0][j];
+    }
 
-	fac1=(1.0-fac)/ndim;
-	fac2=fac1-fac;
-	for (j=0;j<ndim;j++)
-	{
-		ptry[j]=psum[j]*fac1-p[ihi][j]*fac2;
-	}
-	ytry=(*funk)(ptry,ptr);
-	if (ytry < y[ihi])
-	{
-		y[ihi]=ytry;
-		for (j=0;j<ndim;j++)
-		{
-			psum[j] += ptry[j]-p[ihi][j];
-			p[ihi][j]=ptry[j];
-		}
-	}
+    fac1 = (1.0-fac)/ndim;
+    fac2 = fac1-fac;
+    for (j = 0;j<ndim;j++)
+    {
+        ptry[j] = psum[j]*fac1-p[ihi][j]*fac2;
+    }
+    ytry = (*funk)(ptry,ptr);
+    if (ytry < y[ihi])
+    {
+        y[ihi] = ytry;
+        for (j = 0;j<ndim;j++)
+        {
+            psum[j] += ptry[j]-p[ihi][j];
+            p[ihi][j] = ptry[j];
+        }
+    }
 
-	free(ptry);
+    free(ptry);
 
-	return(ytry);
-
+    return(ytry);
 }
 
-float median(const float* array, int num_elements){
+//--------//
+// median //
+//--------//
+
+float median(
+    const float*  array,
+    int           num_elements)
+{
   // copy array
-  float* buf= new float[num_elements];
-  for(int c=0;c<num_elements;c++) buf[c]=array[c];
+  float* buf = new float[num_elements];
+  for (int c = 0;c<num_elements;c++) buf[c] = array[c];
 
   // sort array
   sort_increasing(buf,num_elements);
 
   // return median value;
-  float retval=buf[num_elements/2];
+  float retval = buf[num_elements/2];
   delete buf;
   return(retval);
 }
 
 float mean(const float* array, int num_elements){
-  float retval=0.0;
-  for(int c=0;c<num_elements;c++) retval+=array[c];
-  retval=retval/num_elements;
+  float retval = 0.0;
+  for (int c = 0;c<num_elements;c++) retval+= array[c];
+  retval = retval/num_elements;
   return(retval);
 }
 
 void sort_increasing(float* array, int num_elements){
-  int idx=0;
+  int idx = 0;
   while(idx<num_elements-1){
-    if(array[idx]<=array[idx+1]) idx++;
+    if(array[idx]<= array[idx+1]) idx++;
     else{
-      float tmp=array[idx+1];
-      array[idx+1]=array[idx];
-      array[idx]=tmp;
-      idx=0;
+      float tmp = array[idx+1];
+      array[idx+1] = array[idx];
+      array[idx] = tmp;
+      idx = 0;
     }
   }
 }
@@ -444,54 +462,54 @@ void sort_increasing(float* array, int num_elements){
 
 void insertion_sort(int N, float* a, int** indx)
 {
-	float aa;
-	int ii;
+    float aa;
+    int ii;
 
-	if (a == NULL)
-	{
-		printf("Error: insertion_sort passed null key array\n");
-		exit(-1);
-	}
+    if (a == NULL)
+    {
+        printf("Error: insertion_sort passed null key array\n");
+        exit(-1);
+    }
 
-	if (indx == NULL)
-	{
-		for (int j = 2; j < N; j++)
-		{
-			aa = a[j];
-			int i = j - 1;
-			while (i > 0 && a[i] > aa)
-			{
-				a[i+1] = a[i];
-				i--;
-			}
-			a[i+1] = aa;
-		}
-	}
-	else
-	{
-		*indx = (int*)malloc(N*sizeof(int));
-		if (*indx == NULL)
-		{
-			printf("Error allocating memory in insertion_sort\n");
-			exit(-1);
-		}
-		for (int i = 0; i < N; i++) (*indx)[i] = i;
+    if (indx == NULL)
+    {
+        for (int j = 2; j < N; j++)
+        {
+            aa = a[j];
+            int i = j - 1;
+            while (i > 0 && a[i] > aa)
+            {
+                a[i+1] = a[i];
+                i--;
+            }
+            a[i+1] = aa;
+        }
+    }
+    else
+    {
+        *indx = (int*)malloc(N*sizeof(int));
+        if (*indx == NULL)
+        {
+            printf("Error allocating memory in insertion_sort\n");
+            exit(-1);
+        }
+        for (int i = 0; i < N; i++) (*indx)[i] = i;
 
-		for (int j = 2; j < N; j++)
-		{
-			aa = a[j];
-			ii = (*indx)[j];
-			int i = j - 1;
-			while (i > 0 && a[i] > aa)
-			{
-				a[i+1] = a[i];
-				(*indx)[i+1] = (*indx)[i];
-				i--;
-			}
-			a[i+1] = aa;
-			(*indx)[i+1] = ii;
-		}
-	}
+        for (int j = 2; j < N; j++)
+        {
+            aa = a[j];
+            ii = (*indx)[j];
+            int i = j - 1;
+            while (i > 0 && a[i] > aa)
+            {
+                a[i+1] = a[i];
+                (*indx)[i+1] = (*indx)[i];
+                i--;
+            }
+            a[i+1] = aa;
+            (*indx)[i+1] = ii;
+        }
+    }
 }
 
 int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
@@ -499,20 +517,20 @@ int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
   //===================================================//
   // ODD ARRAY SIZE CASE                               //
   //===================================================//
-  if(array_size%2==1)
-    *abs_idx=rel_idx + array_size/2;
+  if(array_size%2 == 1)
+    *abs_idx = rel_idx + array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
   //======================================================//
   else if(rel_idx < 0)
-    *abs_idx=rel_idx + array_size/2;
+    *abs_idx = rel_idx + array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
   //======================================================//
   else if(rel_idx > 0)
-    *abs_idx=rel_idx + array_size/2 -1;
+    *abs_idx = rel_idx + array_size/2 -1;
 
   //===============//
   // ERROR         //
@@ -526,17 +544,17 @@ int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
   //===================================================//
   // ODD ARRAY SIZE CASE                               //
   //===================================================//
-  if(array_size%2==1) *rel_idx=abs_idx-array_size/2;
+  if(array_size%2 == 1) *rel_idx = abs_idx-array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
   //======================================================//
-  else if(abs_idx<array_size/2) *rel_idx=abs_idx-array_size/2;
+  else if(abs_idx<array_size/2) *rel_idx = abs_idx-array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
   //======================================================//
-  else *rel_idx=abs_idx-array_size/2 + 1;
+  else *rel_idx = abs_idx-array_size/2 + 1;
   return(1);
 }
 
@@ -547,12 +565,12 @@ int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
 
 float
 quantize(
-	float	value,
-	float	resolution)
+    float    value,
+    float    resolution)
 {
-	double idx = floor(value / resolution + 0.5);
-	float q_value = idx * resolution;
-	return (q_value);
+    double idx = floor(value / resolution + 0.5);
+    float q_value = idx * resolution;
+    return (q_value);
 }
 
 //-----------------//
@@ -563,17 +581,17 @@ quantize(
 
 float
 wrap_angle_near(
-	float		angle,
-	float		target)
+    float        angle,
+    float        target)
 {
-	// very simple and stupid algorithm
-	while (angle - target > pi)
-		angle -= two_pi;
+    // very simple and stupid algorithm
+    while (angle - target > pi)
+        angle -= two_pi;
 
-	while (angle - target < -pi)
-		angle += two_pi;
+    while (angle - target < -pi)
+        angle += two_pi;
 
-	return(angle);
+    return(angle);
 }
 
 //------------//
@@ -588,25 +606,25 @@ wrap_angle_near(
 float angle_diff(float ang1, float ang2)
 
 {
-	while (ang1 < 0) ang1 += two_pi;
-	while (ang1 > two_pi) ang1 -= two_pi;
+    while (ang1 < 0) ang1 += two_pi;
+    while (ang1 > two_pi) ang1 -= two_pi;
 
-	while (ang2 < 0) ang2 += two_pi;
-	while (ang2 > two_pi) ang2 -= two_pi;
+    while (ang2 < 0) ang2 += two_pi;
+    while (ang2 > two_pi) ang2 -= two_pi;
 
-	float result;
-	if (ang1 > ang2)
-	{
-		result = ang1 - ang2;
-	}
-	else
-	{
-		result = ang2 - ang1;
-	}
+    float result;
+    if (ang1 > ang2)
+    {
+        result = ang1 - ang2;
+    }
+    else
+    {
+        result = ang2 - ang1;
+    }
 
-	if (result > pi) result = two_pi - result;
+    if (result > pi) result = two_pi - result;
 
-	return(result);
+    return(result);
 
 }
 
@@ -666,7 +684,7 @@ int set_character_time(double time, double epoch_time, char* epoch_time_str,
  *
  *  Output
  *
- *  SEC      is the seconds past the reference epoch 
+ *  SEC      is the seconds past the reference epoch
  *
  */
 
@@ -741,7 +759,7 @@ return(sec);
  *
  *  Input
  *
- *  sec      is the seconds past the reference epoch 
+ *  sec      is the seconds past the reference epoch
  *
  *
  *  Output
@@ -892,7 +910,7 @@ jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
 doy = (int)(jd - jd0);
 
 sprintf(asctime,"%04d-%03dT%02d:%02d:%1d%05.3f",
-	year,doy,hour,minute,sec10,second);
+    year,doy,hour,minute,sec10,second);
 
 return(1);
 
@@ -909,7 +927,7 @@ return(1);
  *
  *  Input
  *
- *  sec      is the seconds past the reference epoch 
+ *  sec      is the seconds past the reference epoch
  *
  *
  *  Output
@@ -1064,7 +1082,7 @@ jd0 = (146097*c)/4 + (1461*ya)/4 + (153*m+2)/5 + 1721119;
 doy = (int)(jd - jd0);
 
 sprintf(asctime,"%04d-%02d-%02dT%02d:%02d:%1d%05.3f",
-	year,month,day,hour,minute,sec10,second);
+    year,month,day,hour,minute,sec10,second);
 
 return(1);
 }
@@ -1275,14 +1293,18 @@ heapsort(
 // before and after each element read.
 
 size_t
-fread_f77(void* dest, size_t size, size_t nitems, FILE* stream)
+fread_f77(
+    void*   dest,
+    size_t  size,
+    size_t  nitems,
+    FILE*   stream)
 {
   int f77size;
   if (fread(&f77size, sizeof(int), 1, stream) != 1)
   {
     return(0);
   }
-  if (f77size != size*nitems)
+  if ((size_t)f77size != size*nitems)
   {
     fprintf(stderr,
       "fread_f77: fortran record size doesn't match requested size\n");
@@ -1304,4 +1326,3 @@ fread_f77(void* dest, size_t size, size_t nitems, FILE* stream)
   }
   return(nitems);
 }
-    
