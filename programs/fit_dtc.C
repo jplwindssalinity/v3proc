@@ -276,8 +276,9 @@ fit_terms_plus(
     double* data = (double *)make_array(sizeof(double), 1, good_count);
 //    double* residual = (double *)make_array(sizeof(double), 1, good_count);
 
-    int max_term[3] = { 3, 2, 2 };
-    double threshold[3] = { 500.0, 0.01, 500.0 };    // amp, phase, bias
+    int max_term[3] = { 4, 3, 3 };
+//    double threshold[3] = { 500.0, 0.01, 500.0 };    // amp, phase, bias
+    double threshold[3] = { 0.0, 0.0, 0.0 };    // amp, phase, bias
     double new_coefs[ORBIT_STEPS];
 
     //----------------------//
