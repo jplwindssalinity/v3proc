@@ -147,9 +147,9 @@ L2A::ReadGroupRec(
   // CombineFrames returns the number of 50km frames (and the combined frames)
 
   //  int nFrames=frame.CombineFrames(frameGroup25,frameGroup50);
+  int nFrames=0;
   if (nFrames == 0)
     {
-      cerr << "Could not combine frames" << endl;
       nFrames=1;
       return(0);
     }
