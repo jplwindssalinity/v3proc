@@ -1434,7 +1434,10 @@ ConfigKp(
 		return(0);
 
 	if (! kp->kpm.ReadTable(kpm_filename))
+	{
+		printf("Error reading Kpm table from %s\n",kpm_filename);
 		return(0);
+	}
 
 	//----------------//
 	// configure Kpri //
@@ -1444,7 +1447,11 @@ ConfigKp(
         if(! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
 	        return(0);
 	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
-        if(! kp->kpri.SetKpPtGr(kp_ptgr)) return(0);
+    if(! kp->kpri.SetKpPtGr(kp_ptgr))
+	{
+		printf("Error setting KpPtGr\n");
+		return(0);
+	}
 
 	//----------------//
 	// configure Kprs //
@@ -1458,7 +1465,11 @@ ConfigKp(
          && strcmp(kprs_filename,"None") != 0)
 	  {
 
-	    if(! kp->kprs.Read(kprs_filename)) return(0);
+	    if(! kp->kprs.Read(kprs_filename))
+		{
+			printf("Error reading Kprs from %s\n",kprs_filename);
+			return(0);
+		}
 	  }
         
 	return(1);
