@@ -343,8 +343,11 @@ main(
 
 				// process instrument stuff
 				qscat.cds.SetTime(qscat_event.time);
-                qscat.sas.antenna.UpdatePosition(qscat_event.time);
                 qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+
+                // antenna
+                qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                qscat.SetOtherAzimuths(&spacecraft);
 
 				//-----------------------------------------------//
 				// command the range delay and Doppler frequency //
@@ -393,13 +396,13 @@ main(
 					}
 					meas->outline.WriteOtln(output_fp);
 				}
-				qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 				break;
 			default:
 //				fprintf(stderr, "%s: unknown instrument event\n", command);
 //				exit(1);
 				break;
 			}
+            qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 		}
 
 		//---------------//
