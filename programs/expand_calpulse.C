@@ -121,15 +121,21 @@ main(
       exit(1);
     }
 
-    //--------------------------//
-    // read one cal pulse frame //
-    //--------------------------//
+    //---------------------------//
+    // read all cal pulse frames //
+    //---------------------------//
 
-    if (fread(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, cal_pulse_file) != 1)
+    unsigned int frame_count = 0;
+    while (fread(calPulseBuffer,GS_CAL_PULSE_FRAME_SIZE,1,cal_pulse_file) == 1)
     {
-      fprintf(stderr,"Error reading cal pulse record\n");
+      frame_count++;
+    }
+    if (frame_count == 0)
+    {
+      fprintf(stderr,"Error reading cal pulse records\n");
       exit(1);
     }
+    printf("Read %d calpulse records in original file\n",frame_count);
     
     char* ptr = calPulseBuffer;
     double time;

@@ -504,39 +504,39 @@ main(
               double measR =
                 (meas_spot->scOrbitState.rsat - meas->centroid).Magnitude();
 
-              printf("%d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
-                cf.idx[j],    // 1
-                cf.time, meas_spot->time,    // 2, 3
-                cf.beamNumber, meas->beamIdx,    // 4, 5
-                cf.measType[j], meas->measType,    // 6, 7
-                cf.antennaAziTx, meas->scanAngle,    // 8, 9
-                cf.antennaAziGi, 0.0,    // 10, 11
-                cf.orbitFrac, 0.0,    // 12, 13
-                cf.spinRate, 0.0,    // 14, 15
-                cf.txDoppler, 0.0,    // 16, 17
-                cf.XdopplerFreq, 0.0,    // 18, 19
-                cf.XroundTripTime, 0.0,    // 20, 21
-                cf.sigma0[j], meas->value,    // 22, 23
-                cf.XK[j], meas->XK,    // 24, 25
-                cf.EsCal, 0.0,    // 26, 27
-                cf.deltaFreq, 0.0,    // 28, 29
-                cf.Es[j], meas->value*meas->XK,    // 30, 31
-                cf.En[j], meas->EnSlice,    // 32, 33
-                cf.EsnEcho, 0.0,    // 34, 35
-                cf.EsnNoise, 0.0,    // 36, 37
-                cf.rxGateDelay, 0.0,    // 38, 39
-                cf.alpha, 0.0,    // 40, 41
-                lon,lon1b,lat,lat1b,    // 42, 43, 44, 45
-                cf.azimuth[j], meas->eastAzimuth,    // 46, 47
-                cf.incidence[j], meas->incidenceAngle,    // 48, 49
-                cf.R[j], measR,    // 50, 51
-                cf.GatGar[j], 0.0,    // 52, 53
-                cf.rsat.Get(0), meas_spot->scOrbitState.rsat.Get(0),  // 54, 55
-                cf.rsat.Get(1), meas_spot->scOrbitState.rsat.Get(1),  // 56, 57
-                cf.rsat.Get(2), meas_spot->scOrbitState.rsat.Get(2),  // 58, 59
-                cf.vsat.Get(0), meas_spot->scOrbitState.vsat.Get(0),  // 60, 61
-                cf.vsat.Get(1), meas_spot->scOrbitState.vsat.Get(1),  // 62, 63
-                cf.vsat.Get(2), meas_spot->scOrbitState.vsat.Get(2));  // 64,65
+              printf("%d %d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
+                cf.pulseCount, cf.idx[j],    // 1, 2
+                cf.time, meas_spot->time,    // 3, 4
+                cf.beamNumber, meas->beamIdx,    // 5, 6
+                cf.measType[j], meas->measType,    // 7, 8
+                cf.antennaAziTx, meas->scanAngle,    // 9, 10
+                cf.antennaAziGi, 0.0,    // 11, 12
+                cf.orbitFrac, 0.0,    // 13, 14
+                cf.spinRate, 0.0,    // 15, 16
+                cf.txDoppler, 0.0,    // 17, 18
+                cf.XdopplerFreq, 0.0,    // 19, 20
+                cf.XroundTripTime, 0.0,    // 21, 22
+                cf.sigma0[j], meas->value,    // 23, 24
+                cf.XK[j], meas->XK,    // 25, 26
+                cf.EsCal, 0.0,    // 27, 28
+                cf.deltaFreq, 0.0,    // 29, 30
+                cf.Es[j], meas->value*meas->XK,    // 31, 32
+                cf.En[j], meas->EnSlice,    // 33, 34
+                cf.EsnEcho, 0.0,    // 35, 36
+                cf.EsnNoise, 0.0,    // 37, 38
+                cf.rxGateDelay, 0.0,    // 39, 40
+                cf.alpha, 0.0,    // 41, 42
+                lon,lon1b,lat,lat1b,    // 43, 44, 45, 46
+                cf.azimuth[j], meas->eastAzimuth,    // 47, 48
+                cf.incidence[j], meas->incidenceAngle,    // 49, 50
+                cf.R[j], measR,    // 51, 52
+                cf.GatGar[j], 0.0,    // 53, 54
+                cf.rsat.Get(0), meas_spot->scOrbitState.rsat.Get(0),  // 55, 56
+                cf.rsat.Get(1), meas_spot->scOrbitState.rsat.Get(1),  // 57, 58
+                cf.rsat.Get(2), meas_spot->scOrbitState.rsat.Get(2),  // 59, 60
+                cf.vsat.Get(0), meas_spot->scOrbitState.vsat.Get(0),  // 61, 62
+                cf.vsat.Get(1), meas_spot->scOrbitState.vsat.Get(1),  // 63, 64
+                cf.vsat.Get(2), meas_spot->scOrbitState.vsat.Get(2));  // 65,66
             }
         } 
     }
@@ -694,8 +694,17 @@ main(
           lat[count][1] = lat1b;
         }
 
-              printf("%d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
-               cf.idx[j],
+              float beta = 2.6915348;
+              float esn_slice1 = cf.Es[j] + cf.En[j];
+              float esn_slice2 = cf1b.Es[i] + cf1b.En[i];
+              float en_spot1 = 1.0/(1.0 - cf.alpha)*
+                (cf.EsnEcho - cf.EsnNoise)/beta;
+              float en_spot2 = 1.0/(1.0 - cf1b.alpha)*
+                (cf1b.EsnEcho - cf1b.EsnNoise)/beta;
+              float q_slice1 = cf.En[j]/en_spot1;
+              float q_slice2 = cf1b.En[i]/en_spot2;
+              printf("%d %d %.8g %.8g %d %d %d %d %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g\n",
+               cf.pulseCount, cf.idx[j],
                cf.time, cf1b.time,
                cf.beamNumber, cf1b.beamNumber,
                cf.measType[j], cf1b.measType[i],
@@ -724,9 +733,12 @@ main(
                cf.rsat.Get(0), cf1b.rsat.Get(0),
                cf.rsat.Get(1), cf1b.rsat.Get(1),
                cf.rsat.Get(2), cf1b.rsat.Get(2),
-               cf.vsat.Get(0), cf1b.vsat.Get(0),
-               cf.vsat.Get(1), cf1b.vsat.Get(1),
-               cf.vsat.Get(2), cf1b.vsat.Get(2));
+               cf.attitude.GetRoll(), cf1b.attitude.GetRoll(),
+               cf.attitude.GetPitch(), cf1b.attitude.GetPitch(),
+               cf.attitude.GetYaw(), cf1b.attitude.GetYaw(),
+               esn_slice1, esn_slice2,
+               en_spot1, en_spot2,
+               q_slice1, q_slice2);
         count++;
         break; // done with this slice
       }
