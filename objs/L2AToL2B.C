@@ -66,6 +66,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = H3;
         return(1);
     }
+    else if (strcasecmp(wr_method, "S1") == 0)
+    {
+        wrMethod = S1;
+        return(1);
+    }
     else if (strcasecmp(wr_method, "PEAK_SPLITTING") == 0)
     {
         wrMethod = PEAK_SPLITTING;
@@ -165,22 +170,29 @@ L2AToL2B::ConvertAndWrite(
                 return(8);
             }
             break;
-        case PEAK_SPLITTING:
-            if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
-                onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
+        case S1:
+            if (! gmf->RetrieveWinds_H2(meas_list, kp, wvc, 2))
             {
                 delete wvc;
                 return(9);
             }
             break;
+        case PEAK_SPLITTING:
+            if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
+                onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
+            {
+                delete wvc;
+                return(10);
+            }
+            break;
         default:
-            return(10);
+            return(11);
     }
 
 	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
-		return(11);
+		return(12);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 

@@ -810,6 +810,27 @@ Commented out old version       ********/
 // GMF::_ObjectiveToProbability         //
 //-------------------------------------//
 int
+GMF::ConvertObjToPdf()
+{
+  float sum=0;
+  float scale=_bestObj[0];
+  for(int c=1;c<_phiCount;c++){
+    if(scale<_bestObj[c]) scale=_bestObj[c];
+  }
+  for(int c=0;c<_phiCount;c++){
+    _bestObj[c]=exp((_bestObj[c]-scale)/2);
+    sum+=_bestObj[c];
+  }
+  for(int c=0;c<_phiCount;c++){
+    _bestObj[c]/=sum;
+  }
+  return(1);
+}
+
+//-------------------------------------//
+// GMF::_ObjectiveToProbability         //
+//-------------------------------------//
+int
 GMF::_ObjectiveToProbability(float scale, int radius)
 {
   float sum=0;
@@ -2860,12 +2881,16 @@ GMF::RetrieveWinds_H1(
 
 #define H3_MIN_RAD_WIDTH  0.7854    // 45 degrees
 
+// h3_and_s1_flag 
+// 0:=  H2
+// 1:=  H3
+// 2:=  S1
 int
 GMF::RetrieveWinds_H2(
     MeasList*  meas_list,
     Kp*        kp,
     WVC*       wvc,
-    int        h3_flag)
+    int        h3_and_s1_flag)
 {
     //--------------------------------//
     // generate coarse solution curve //
@@ -2874,6 +2899,7 @@ GMF::RetrieveWinds_H2(
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
     SolutionCurve_H1(meas_list, kp);
+    if(h3_and_s1_flag==2) ConvertObjToPdf();
 
     //----------------------------//
     // determine maxima threshold //
@@ -2888,6 +2914,7 @@ GMF::RetrieveWinds_H2(
         if (_bestObj[phi_idx] < min_obj)
             min_obj = _bestObj[phi_idx];
     }
+    if(h3_and_s1_flag==2) min_obj=0;
     float threshold_delta = (max_obj - min_obj) * H1_THRESH_FRACTION;
 
     //----------------//
@@ -2929,7 +2956,9 @@ GMF::RetrieveWinds_H2(
                 return(0);
             wvp->spd = _bestSpd[phi_idx];
             wvp->dir = (float)phi_idx * _phiStepSize;
-            wvp->obj = _bestObj[phi_idx];
+	    if(h3_and_s1_flag==2)
+	      wvp->obj = _ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
+	    else wvp->obj = _bestObj[phi_idx];
 
             // put in temporary wvc
             if (! tmp_wvc.ambiguities.Append(wvp))
@@ -3175,8 +3204,8 @@ GMF::RetrieveWinds_H2(
             use_width = width[range_idx] / use_ambigs;
             if (use_width > max_width)
             {
-                // if using h3, don't split narrow peaks
-                if (h3_flag && width[range_idx] < H3_MIN_RAD_WIDTH)
+                // if using h3 or s1, don't split narrow peaks
+                if (h3_and_s1_flag && width[range_idx] < H3_MIN_RAD_WIDTH)
                 {
                     continue;
                 }
@@ -3231,7 +3260,7 @@ GMF::RetrieveWinds_H2(
                 return(0);
             wvp->spd = spd;
             wvp->dir = dir;
-            if (h3_flag)
+            if (h3_and_s1_flag)
                 wvp->obj = obj;        // h3 is set up for threshold nudging
             else
                 wvp->obj = min_obj;    // h2 is set up for 12 nudging
