@@ -14,8 +14,45 @@ static const char rcs_id_l20frame_h[] =
 
 //======================================================================
 // CLASSES
+//		L20Header
 //		L20Frame
 //======================================================================
+
+//======================================================================
+// CLASS
+//		L20Header
+//
+// DESCRIPTION
+//		The L20Header object contains the contents of a Level 1.5
+//		header.
+//======================================================================
+
+class L20Header
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	L20Header();
+	~L20Header();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		Read(FILE* fp);
+	int		Write(FILE*	fp);
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	float	crossTrackResolution;
+	float	alongTrackResolution;
+	int		zeroIndex;
+};
 
 //======================================================================
 // CLASS
