@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -60,6 +60,7 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 #include "Qscat.h"
+#include "Constants.h"
 
 //-----------//
 // TEMPLATES //
@@ -272,7 +273,7 @@ delay_scan(
     if (ofp == NULL)
         return(0);
 
-    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "RGC Delay", QUOTE);
+    fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, "RGC Delay", QUOTE);
     fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
     fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Time (ms)", QUOTE);
 
@@ -314,7 +315,7 @@ ddelay_scan(
     if (ofp == NULL)
         return(0);
 
-    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "RGC Delta Delay", QUOTE);
+    fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, "RGC Delta Delay", QUOTE);
     fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
     fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Time (ms)", QUOTE);
 
@@ -363,9 +364,9 @@ freq_scan(
     if (ofp == NULL)
         return(0);
 
-    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "DTC Frequency", QUOTE);
+    fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, "DTC Frequency", QUOTE);
     fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
-    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (Hz)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (kHz)", QUOTE);
 
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
@@ -377,8 +378,8 @@ freq_scan(
             doppler_tracker->GetCommandedDoppler(orbit_step, azimuth_step,
                 0, 0.0, &dop_dn);
             // convert table freq to commanded freq
-            float cmd_freq = -doppler_tracker->tableFrequency;
-            float freq = TX_FREQUENCY_CMD_RESOLUTION * dop_dn;
+            float cmd_freq = -doppler_tracker->tableFrequency * HZ_TO_KHZ;
+            float freq = TX_FREQUENCY_CMD_RESOLUTION * dop_dn * HZ_TO_KHZ;
             fprintf(ofp, "%g %g %g\n", x_value, freq, cmd_freq);
         }
     }
@@ -399,8 +400,8 @@ dtc_coef_step(
 {
     static char* term_string[3] = { "amp", "phase", "bias" };
     static char* title_string[3] = { "Amplitude", "Phase", "Bias" };
-    static char* unit_string[3] = { "Frequency (Hz)", "Angle (radians)",
-        "Frequency (Hz)" };
+    static char* unit_string[3] = { "Frequency (kHz)", "Angle (degrees)",
+        "Frequency (kHz)" };
 
     double** terms = (double **)make_array(sizeof(double), 2, ORBIT_STEPS, 3);
     doppler_tracker->GetTerms(terms);
@@ -422,8 +423,13 @@ dtc_coef_step(
         for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS;
             orbit_step++)
         {
-            fprintf(ofp, "%d %g\n", orbit_step,
-                *(*(terms + orbit_step) + term_idx));
+            double value =  *(*(terms + orbit_step) + term_idx);
+            if (term_idx == 0 || term_idx == 2) {
+                value *= HZ_TO_KHZ;
+            } else {
+                value *= rtd;
+            }
+            fprintf(ofp, "%d %g\n", orbit_step, value);
         }
 
         fclose(ofp);
@@ -449,9 +455,10 @@ dfreq_scan(
     if (ofp == NULL)
         return(0);
 
-    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "DTC Frequency Difference", QUOTE);
+    fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, "DTC Frequency Difference",
+        QUOTE);
     fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
-    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (Hz)", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (kHz)", QUOTE);
 
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
@@ -472,8 +479,8 @@ dfreq_scan(
             float ref_cmd_freq = -ref_doppler_tracker->tableFrequency;
             float ref_freq = TX_FREQUENCY_CMD_RESOLUTION * ref_dop_dn;
 
-            fprintf(ofp, "%g %g %g\n", x_value, freq - ref_freq,
-                cmd_freq - ref_cmd_freq);
+            fprintf(ofp, "%g %g %g\n", x_value, (freq - ref_freq) * HZ_TO_KHZ,
+                (cmd_freq - ref_cmd_freq) * HZ_TO_KHZ);
         }
     }
 
