@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
+// Copyright (C) 1997-2000, California Institute of Technology.	//
 // U.S. Government sponsorship acknowledged.					//
 //==============================================================//
 
@@ -338,7 +338,7 @@ main(
 		  }
 	}
 
-	l2a_to_l2b.Flush(&l2b);
+	l2a_to_l2b.InitFilterAndFlush(&l2b);
 
 	l2a.Close();
 	l2b.Close();
