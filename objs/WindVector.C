@@ -6,6 +6,7 @@
 static const char rcs_id_windvector_c[] =
 	"@(#) $Id$";
 
+#include <math.h>
 #include "WindVector.h"
 
 
@@ -14,7 +15,7 @@ static const char rcs_id_windvector_c[] =
 //============//
 
 WindVector::WindVector()
-:	speed(0.0), direction(0.0)
+:	spd(0.0), dir(0.0)
 {
 	return;
 }
@@ -22,4 +23,32 @@ WindVector::WindVector()
 WindVector::~WindVector()
 {
 	return;
+}
+
+//-----------------------//
+// WindVector::SetSpdDir //
+//-----------------------//
+
+int
+WindVector::SetSpdDir(
+	double	speed,
+	double	direction)
+{
+	spd = speed;
+	dir = direction;
+	return(1);
+}
+
+//-------------------//
+// WindVector::SetUV //
+//-------------------//
+
+int
+WindVector::SetUV(
+	double	u,
+	double	v)
+{
+	spd = hypot(u, v);
+	dir = atan2(v, u);
+	return(1);
 }

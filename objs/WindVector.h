@@ -34,12 +34,19 @@ public:
 	WindVector();
 	~WindVector();
 
+	//---------//
+	// setting //
+	//---------//
+
+	int		SetSpdDir(double speed, double direction);
+	int		SetUV(double u, double v);
+
 	//-----------//
 	// variables //
 	//-----------//
 
-	double		speed;
-	double		direction;		// ccw/cw from ??
+	double		spd;
+	double		dir;		// ccw from east
 };
 
 #endif
