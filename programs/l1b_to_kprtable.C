@@ -101,7 +101,7 @@ template class List<OffsetList>;
 #define NUM_GUARD_SLICES_EACH_SIDE 1
 #define NUMBER_OF_BEAMS 2
 #define SLICE_BANDWIDTH 8314.0
-#define MIN_NUM_SAMPLES 10
+#define MIN_NUM_SAMPLES 1
 #define FILTER_SIZE 3
 #define FILTER_NUM_PASSES 2
 
@@ -146,8 +146,12 @@ int main(int argc, char* argv[]){
 
 	noisefree.OpenForReading();
 	noisy.OpenForReading();
+        int record_count=0;
 	
 	do{
+	        if(record_count && record_count%500==0)
+		  printf("%d Records Accumulated\n",record_count);
+                record_count++;
 		//------------------------------//
 		// read level 1.5 data records  //
 		//------------------------------//
