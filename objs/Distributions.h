@@ -9,7 +9,8 @@
 
 //==================================================================//
 // CLASSES							    //
-//		GenericDist, Uniform, Gaussian, GTC	            //
+//		GenericDist, GenericTimelessDist, Uniform,          //
+//              Gaussian, RandomVelocity, AttDist	            //
 //==================================================================//
 
 //==================================================================//
@@ -29,23 +30,37 @@ static const char rcs_id_distributions_h[] =
 #include<sys/time.h>
 #include<stdlib.h>
 
-//double drand48();  		// prototypes for random number generator
-//void srand48(long seedval);     // required due to bug in standard header files
 
 //==================================================================//
-// CLASS 							    //
-//		GenericDist					    //
-// 								    //
+// CLASS							    //
+//		GenericDist                                        //
 // Description: Base class for Probability Distributions            //
 //==================================================================//
 
 class GenericDist
 {
 public:
-	virtual float GetNumber()=0;
-        virtual float GetNumber(double time);
+	virtual float GetNumber(double time)=0;
 	virtual ~GenericDist();
-};		
+};
+
+//==================================================================//
+// CLASS 							    //
+//		GenericTimelessDist			            //
+// 								    //
+// Description: Base class for Probability Distributions which      //
+// are independent of time.					    //
+//==================================================================//
+
+class GenericTimelessDist: public GenericDist
+{
+public:
+	virtual float GetNumber()=0;
+
+// GetNumber may be called with a time parameter, but it is ignored  //
+        float GetNumber(double time); 
+	virtual ~GenericTimelessDist();
+};
 
 //==================================================================//
 // CLASS							    //
@@ -59,7 +74,7 @@ public:
 // number extracted from the distribution.                          //
 //==================================================================//
 
-class Uniform : public GenericDist
+class Uniform : public GenericTimelessDist
 {
 public:
 	Uniform();
@@ -78,7 +93,7 @@ protected:
 // Description: Gaussian Distribution                               //
 //==================================================================//
 
-class Gaussian : public GenericDist
+class Gaussian : public GenericTimelessDist
 {
 public:
 	Gaussian();
@@ -101,15 +116,15 @@ class RandomVelocity : public GenericDist
 {
 public:
 	RandomVelocity();
-	RandomVelocity(GenericDist* noise, float sample_period, float radius,
-		    float mean);
+	RandomVelocity(GenericTimelessDist* noise, float sample_period, 
+		       float radius, float mean);
 	~RandomVelocity();
 	float GetNumber(double time);
 protected:
 	float _sample_period;
         float _radius;
 	float _mean;
-        GenericDist* _noise;
+        GenericTimelessDist* _noise;
 	float _position;
 	float _time;
 	float _velocity;

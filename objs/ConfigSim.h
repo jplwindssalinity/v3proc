@@ -65,6 +65,14 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 
 int ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list);
+int ConfigAttitudeGaussian(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
+int ConfigAttitudeUniform(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
+int ConfigAttitudeGaussianRandomVelocity(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
+int ConfigAttitudeUniformRandomVelocity(SpacecraftSim* spacecraft_sim,
+	ConfigList* config_list);
 
 
 //------------//

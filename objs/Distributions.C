@@ -21,19 +21,26 @@ static const char rcs_id_distributions_c[] =
 
 #include"Distributions.h"
 
-//============================//
-// GenericDist               //
-//============================//
-
+//================================//
+// GenericDist                    //
+//================================//
 GenericDist::~GenericDist(){
 	return;
 }
 
-//============================//
-// GenericDist::GetNumber   //
-//============================//
+//===================================//
+// GenericTimelessDist               //
+//===================================//
 
-float GenericDist::GetNumber(double time){
+GenericTimelessDist::~GenericTimelessDist(){
+	return;
+}
+
+//==================================//
+// GenericTimelessDist::GetNumber   //
+//==================================//
+
+float GenericTimelessDist::GetNumber(double time){
 	if(time<0.0) //bogus check to keep compiler quiet
 		return(0.0);
 	else return(GetNumber());
@@ -128,7 +135,7 @@ RandomVelocity::RandomVelocity()
  	return;
 }
 
-RandomVelocity::RandomVelocity(GenericDist* noise, float sample_period,
+RandomVelocity::RandomVelocity(GenericTimelessDist* noise, float sample_period,
 	float radius, float mean)
 {
 	_noise=noise;
@@ -175,6 +182,7 @@ float RandomVelocity::GetNumber(double time){
 	}	
 	return(_position+(time-_time)*_velocity);
 }
+
 
 //==================================//
 // AttDist                          //
