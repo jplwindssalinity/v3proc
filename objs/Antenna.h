@@ -10,8 +10,10 @@ static const char rcs_id_antenna_h[] =
 	"@(#) $Id$";
 
 #include "Beam.h"
+#include "Attitude.h"
 
 #define MAX_NUMBER_OF_BEAMS		2
+
 
 //======================================================================
 // CLASSES
@@ -42,10 +44,10 @@ public:
 	// variables //
 	//-----------//
 
-	int		numberOfBeams;
-	Beam	beam[MAX_NUMBER_OF_BEAMS];
-
-	double	azimuthAngle;	// antenna azimuth angle
+	int			numberOfBeams;
+	Beam		beam[MAX_NUMBER_OF_BEAMS];
+	Attitude	antennaFrame;	// relative to s/c
+	double		azimuthAngle;	// antenna azimuth angle
 };
 
 #endif
