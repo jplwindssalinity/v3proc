@@ -43,8 +43,8 @@ public:
     float           measSpecPeakFreq[SPOTS_PER_FRAME];
 };
 
-int  gaussian_fit(Qscat* qscat, double* x, double* y, int points,
-         float* peak_slice, float* peak_freq);
+int     gaussian_fit(Qscat* qscat, double* x, double* y, int points,
+            float* peak_slice, float* peak_freq);
 double  gfit_eval(double* x, void* ptr);
 
 //-----------------//
@@ -196,13 +196,13 @@ gaussian_fit(
             max_idx = i;
     }
     double amp = y[max_idx];
-    double amp_lambda = amp / 50.0;
+    double amp_lambda = amp * 0.5;
     double center = (double)max_idx;
-    double center_lambda = 0.5;
-    double width = 3.0;
+    double center_lambda = 0.2;
+    double width = 3.5;
     double width_lambda = 0.5;
-    double bias = 0.0;
-    double bias_lambda = amp_lambda;
+    double bias = -1000.0;
+    double bias_lambda = 1000.0;
 
     p[0][0] = amp;
     p[0][1] = center;
@@ -236,6 +236,27 @@ gaussian_fit(
 
     downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr);
 
+    //------------------------//
+    // check for "bad" values //
+    //------------------------//
+
+    if (p[0][0] > amp * 10.0)
+    {
+/*
+        for (int i = 0; i < points; i++)
+        {
+            double ex = (x[i] - p[0][1]) / p[0][2];
+            double arg = -ex * ex;
+            double val = p[0][0] * exp(arg) + p[0][3];
+            printf("%g %g %g\n", x[i], y[i], val);
+        }
+        printf("&\n");
+*/
+        return(0);
+    }
+
+//printf("%g %g %g %g\n", p[0][0] / amp, p[0][1], p[0][2], p[0][3]);
+
     float fslice = p[0][1];
     if (fslice < 0.0 || fslice > points - 1)
         return(0);
@@ -252,6 +273,12 @@ gaussian_fit(
 //-----------//
 // gfit_eval //
 //-----------//
+// gaussian fit evaluation function (MSE)
+
+#define MIN_AMPLITUDE  0.0
+#define MIN_CENTER     -1.0
+#define MAX_CENTER     12.0
+#define MAX_WIDTH      12.0
 
 double
 gfit_eval(
@@ -262,6 +289,27 @@ gfit_eval(
     double* x = (double *)ptr2[0];
     double* y = (double *)ptr2[1];
     int points = *(int *)ptr2[2];
+
+    //----------------------------------------//
+    // this is a hack to restrict the simplex //
+    //----------------------------------------//
+
+/*
+    if (c[0] < MIN_AMPLITUDE)
+        c[0] = MIN_AMPLITUDE;
+
+    if (c[1] < MIN_CENTER)
+        c[1] = MIN_CENTER;
+    if (c[1] > MAX_CENTER)
+        c[1] = MAX_CENTER;
+
+    if (c[2] > MAX_WIDTH)
+        c[2] = MAX_WIDTH;
+*/
+
+    //---------------------//
+    // the real evaluation //
+    //---------------------//
 
     double sum_dif = 0.0;
     for (int i = 0; i < points; i++)

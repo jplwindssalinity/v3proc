@@ -113,16 +113,14 @@ Pscat::PMeasToEsn(
     {
     case Meas::VV_MEAS_TYPE:
     case Meas::HH_MEAS_TYPE:
+    case Meas::VH_MEAS_TYPE:
+    case Meas::HV_MEAS_TYPE:
         N0_echo = bK * systemTemperature * ses.rxGainEcho /
             ses.receivePathLoss;
         En1 = N0_echo * Bs * Tp;       // noise with signal
         En2 = N0_echo * Bs * (Tg-Tp);  // noise without signal
         *En = En1 + En2;
         *Esn = (float)(*Es + *En);
-        break;
-    case Meas::VH_MEAS_TYPE:
-    case Meas::HV_MEAS_TYPE:
-        // these don't get processed, so who cares?
         break;
     case Meas::VV_HV_CORR_MEAS_TYPE:
     case Meas::HH_VH_CORR_MEAS_TYPE:
