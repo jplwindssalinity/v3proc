@@ -88,7 +88,7 @@ FindSlice(
 
 	float az_1 = 0.0;
 	float el_1 = 0.0;
-	JumpToFreq(&az_1, &el_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
+//	JumpToFreq(&az_1, &el_1, FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_1, &el_1,
 		FREQ_GRADIENT_ANGLE, &angle);
 	SetPoints(az_1, el_1, FREQ_GRADIENT_ANGLE, angle, az, el);
@@ -103,7 +103,7 @@ FindSlice(
 
 	float az_2 = 0.0;
 	float el_2 = 0.0;
-	JumpToFreq(&az_2, &el_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
+//	JumpToFreq(&az_2, &el_2, FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_2, &el_2,
 		FREQ_GRADIENT_ANGLE, &angle);
 	SetPoints(az_2, el_2, FREQ_GRADIENT_ANGLE, angle, az, el);

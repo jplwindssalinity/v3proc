@@ -246,6 +246,7 @@ InstrumentSim::ScatSim(
 	}
 	else
 	{
+/*
 		//========//
 		// slices //
 		//========//
@@ -383,6 +384,7 @@ InstrumentSim::ScatSim(
 			l00_frame->science[_spotNumber] = value;
 			_spotNumber++;
 		}
+*/
 	}
 
 	//-----------------------------//
