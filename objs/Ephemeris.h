@@ -11,7 +11,7 @@ static const char rcs_id_ephemeris_h[] =
 
 #include <stdio.h>
 #include "Matrix3.h"
-#include "List.h"
+#include "BufferedList.h"
 
 //======================================================================
 // CLASSES
@@ -68,7 +68,7 @@ Vector3 vsat;
 //		This data is read in from an external file.
 //======================================================================
 
-class Ephemeris : public List<OrbitState>
+class Ephemeris : public BufferedList<OrbitState>
 {
 public:
 
@@ -77,19 +77,19 @@ public:
 //--------------//
 
 Ephemeris();
-Ephemeris(char *filename);
+Ephemeris(char *filename, long maxstates);
 ~Ephemeris();
 
 // I/O
 
 int SetFile(char *filename);
-int ReadThrough(double time);
 
 //
 // Interpolation and extraction.
 //
 
 int GetPosition(double time, EarthPosition *rsat);
+int GetOrbitState(double time, OrbitState *os);
 
 //
 // Subtrack conversion.

@@ -11,6 +11,7 @@ static const char rcs_id_ephemeris_c[] =
 #include <math.h>
 #include <string.h>
 #include "Ephemeris.h"
+#include "List.h"
 
 //
 // OrbitState
@@ -105,9 +106,19 @@ inputfile = NULL;
 return;
 }
 
-Ephemeris::Ephemeris(char *filename)
+Ephemeris::Ephemeris(char *filename, long maxstates)
 {
 Ephemeris::SetFile(filename);
+
+//
+// Set the maximum number of OrbitState's that this Ephemeris object will
+// hold in memory.  A larger number of states can still be accessed because
+// the Ephemeris object will automatically read in new data and flush old
+// data as needed.
+//
+
+max_states = maxstates;
+
 return;
 }
 
@@ -145,33 +156,6 @@ return(1);
 }
 
 //
-// Ephemeris::ReadThrough
-//
-// Read data from the external data file until at least the requested
-// time is reached.
-// The current pointer is set to the last orbit state read in.
-//
-
-int
-Ephemeris::ReadThrough(double time)
-
-{
-
-OrbitState *orbitstate;
-while (1)
-{
-	orbitstate = new OrbitState;
-	if (orbitstate->Read(inputfile) == 0) return(0); // nothing more to read.
-	Append(orbitstate);					// add new ephemeris data.
-	if (orbitstate->time > time) break;	// reached desired time.
-}
-
-GetTail();	// move current pointer to end
-return(1);
-}
-
-//
-//
 // Ephemeris::GetPosition
 //
 // Interpolate this OrbitState List (ie., Ephemeris) to the desired time
@@ -191,20 +175,8 @@ EarthPosition *rsat)
 // from the other end of the list of orbit states to be deallocated
 // (to maintain a fixed amount of memory).
 // Currently, only forward reading is implemented to maintain high performance.
+// The BufferedList object handles the reading and flushing.
 //
-
-OrbitState *head_state = GetHead();
-if (time < head_state->time)
-{
-	printf("Error: attempted to read ephemeris data before earliest time\n");
-	exit(-1);
-}
-
-OrbitState *tail_state = GetTail();
-if (time > tail_state->time)
-{
-	ReadThrough(time);	// Bring in more ephemeris data.
-}
 
 //
 // Bracket the desired time in the ephemeris.
@@ -214,7 +186,7 @@ OrbitState *current_state = GetCurrent();
 while (current_state != NULL)
 {
 if (current_state->time < time)
-	current_state = GetNext();
+	current_state = ReadNext();
 else
 	break;
 }
@@ -242,6 +214,72 @@ EarthPosition rsat2 = current_state->rsat;
 double time2 = current_state->time;
 
 *rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+return(1);
+
+}
+
+//
+// Ephemeris::GetOrbitState
+//
+// Interpolate this OrbitState List (ie., Ephemeris) to the desired time
+// and return the orbit state.
+//
+
+int
+Ephemeris::GetOrbitState(
+double time,
+OrbitState *os)
+
+{
+
+//
+// Determine if the desired time is covered by ephemeris data in memory.
+// If not, then more data needs to be read in.  This may also cause data
+// from the other end of the list of orbit states to be deallocated
+// (to maintain a fixed amount of memory).
+// Currently, only forward reading is implemented to maintain high performance.
+// The BufferedList object handles the reading and flushing.
+//
+
+//
+// Bracket the desired time in the ephemeris.
+//
+
+OrbitState *current_state = GetCurrent();
+while (current_state != NULL)
+{
+if (current_state->time < time)
+	current_state = ReadNext();
+else
+	break;
+}
+while (current_state != NULL)
+{
+if (current_state->time > time)
+	current_state = GetPrev();
+else
+	break;
+}
+
+// Check for out of range desired time.
+if (current_state == NULL)
+{
+	printf("Error: Couldn't locate ephemeris data\n");
+	exit(-1);
+}
+
+// Linearly interpolate the position components in time.
+
+EarthPosition rsat1 = current_state->rsat;
+Vector3 vsat1 = current_state->vsat;
+double time1 = current_state->time;
+current_state = GetNext();
+EarthPosition rsat2 = current_state->rsat;
+Vector3 vsat2 = current_state->vsat;
+double time2 = current_state->time;
+
+os->rsat = (rsat2-rsat1)*((time-time1)/(time2-time1)) + rsat1;
+os->vsat = (vsat2-vsat1)*((time-time1)/(time2-time1)) + vsat1;
 return(1);
 
 }
