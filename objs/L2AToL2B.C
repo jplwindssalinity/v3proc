@@ -82,9 +82,9 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = S3;
         return(1);
     }
-    else if (strcasecmp(wr_method, "PEAK_SPLITTING") == 0)
+    else if (strcasecmp(wr_method, "S4") == 0)
     {
-        wrMethod = PEAK_SPLITTING;
+        wrMethod = S4;
         return(1);
     }
     else if (strcasecmp(wr_method, "CHEAT") == 0)
@@ -223,14 +223,14 @@ L2AToL2B::ConvertAndWrite(
             }
 	    break;
 
-        case PEAK_SPLITTING:
-            if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
-                onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
+        case S4:
+            if (! gmf->RetrieveWinds_S3(meas_list, kp, wvc,1))
             {
                 delete wvc;
                 return(12);
             }
-            break;
+	    break;
+
 
         case CHEAT:
 	  if(!Cheat(meas_list,wvc)){
@@ -290,7 +290,7 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
   return(1);
 }
 
-#define ONE_STAGE_WITHOUT_RANGES 1
+#define ONE_STAGE_WITHOUT_RANGES 0
 
 //-----------------//
 // L2AToL2B::Flush //
@@ -307,13 +307,17 @@ L2AToL2B::Flush(
 	if (useNudging)
 	{
 	  if (useNudgeThreshold) 
-	    l2b->frame.swath.ThresNudge(&nudgeField, maxRankForNudging);
+	    l2b->frame.swath.ThresNudge(&nudgeField, maxRankForNudging,
+					nudgeThresholds);
 	  else 
             l2b->frame.swath.Nudge(&nudgeField, maxRankForNudging);
 	}
+        else if(useRandomInit){
+	  l2b->frame.swath.InitRandom();
+	}
 	else
 	{
-		l2b->frame.swath.InitWithRank(1);
+	   l2b->frame.swath.InitWithRank(1);
 	}
 
 	//---------------//
@@ -321,21 +325,36 @@ L2AToL2B::Flush(
 	//---------------//
 
 	int bound;
-        int ignore=0;
-        if(ONE_STAGE_WITHOUT_RANGES) ignore=1;
+	
+        int special=0;
+        switch(wrMethod){
+	case S3:
+	  special=1;
+	  break;
+        case S4:
+	  special=2;
+	  break;
+	default:
+	  special=0;
+          break;
+	}
+        int special_first_pass=special;
+        if(special==1 && ONE_STAGE_WITHOUT_RANGES) special_first_pass=0;
 	if (useNMF) {
 	  bound = 9;
 	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-		medianFilterMaxPasses, bound, useAmbiguityWeights,ignore);
+		medianFilterMaxPasses, bound, useAmbiguityWeights,
+					special_first_pass);
 	}
 	bound = 0;
 	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-	      medianFilterMaxPasses, bound, useAmbiguityWeights,ignore);
+	      medianFilterMaxPasses, bound, useAmbiguityWeights,
+				      special_first_pass);
 
-        if(ONE_STAGE_WITHOUT_RANGES){
+        if(special==1 && ONE_STAGE_WITHOUT_RANGES){
 	  l2b->frame.swath.DiscardUnselectedRanges();
 	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-	      medianFilterMaxPasses, bound, useAmbiguityWeights);
+	      medianFilterMaxPasses, bound, useAmbiguityWeights,special);
 	}
 	//------------//
 	// output l2b //

@@ -39,7 +39,7 @@ public:
     //------//
 
     enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, H3, S1, S2, S3,
-				PEAK_SPLITTING, CHEAT };
+				S4, CHEAT };
 
     //--------------//
     // construction //
@@ -94,7 +94,8 @@ public:
     WindRetrievalMethodE  wrMethod;
     int                   useNudgeThreshold;
     int                   useNMF;
-
+    int                   useRandomInit;
+    
     //-----------------------------------------//
     // Parameters for Peak Splitting Algorithm //
     //-----------------------------------------//
@@ -109,7 +110,7 @@ public:
     
     WindField	nudgeField;
     WindVectorField nudgeVctrField;
-
+    float nudgeThresholds[2];
 };
 
 #endif

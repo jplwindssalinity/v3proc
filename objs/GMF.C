@@ -3791,7 +3791,8 @@ int
 GMF::RetrieveWinds_S3(
     MeasList*  meas_list,
     Kp*        kp,
-    WVC*       wvc)
+    WVC*       wvc,
+    int        s4_flag=0)
 {
     //--------------------------------//
     // generate coarse solution curve //
@@ -3799,64 +3800,19 @@ GMF::RetrieveWinds_S3(
 
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
-    SolutionCurve_H1(meas_list, kp);
+    Calculate_Init_Wind_Solutions(meas_list,kp,wvc);
+    Optimize_Wind_Solutions(meas_list,kp,wvc);
+    if(!CopyBuffersGSToPE()) return(0);
+    wvc->Rank_Wind_Solutions();
+
+    // Copy arrays to wvc
+    wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0,two_pi,_phiCount);
+    wvc->directionRanges.bestObj=(float*)malloc(sizeof(float)*_phiCount);
+    for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestObj[c]=_bestObj[c];
+    wvc->directionRanges.bestSpd=(float*)malloc(sizeof(float)*_phiCount);
+    for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestSpd[c]=_bestSpd[c];
+
     ConvertObjToPdf();
-
-    int ambiguities=0;
-
-    //------------------------//
-    // find peaks             //
-    //------------------------//
-
-    WVC tmp_wvc;
-    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
-    {
-        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % H2_PHI_COUNT] &&
-            _bestObj[phi_idx] > _bestObj[(phi_idx + H2_PHI_COUNT - 1) %
-                H2_PHI_COUNT])
-        {
-            //-----------------------//
-            // maxima found...       //
-            //-----------------------//
-
-            //--------------//
-            // ...refine it //
-            //--------------//
-
-            WindVectorPlus* wvp = new WindVectorPlus();
-            if (! wvp)
-                return(0);
-            wvp->spd = _bestSpd[phi_idx];
-            wvp->dir = (float)phi_idx * _phiStepSize;
-	    wvp->obj=_ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
-
-
-            // put in temporary wvc
-            if (! tmp_wvc.ambiguities.Append(wvp))
-            {
-                delete wvp;
-                return(0);
-            }
-
-            // refine
-            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
-
-            // transfer to real wvc
-            tmp_wvc.ambiguities.GotoHead();
-            wvp = tmp_wvc.ambiguities.RemoveCurrent();
-            if (! wvc->ambiguities.Append(wvp))
-            {
-                delete wvp;
-                return(0);
-            }
-            while (wvp->dir < 0.0)
-                wvp->dir += two_pi;
-            while (wvp->dir > two_pi)
-                wvp->dir -= two_pi;
-
-	    ambiguities++;
-	}
-    }
 
     //------//
     // sort //
@@ -3864,36 +3820,19 @@ GMF::RetrieveWinds_S3(
 
     wvc->SortByObj();
     
-    float peak_dir[DEFAULT_MAX_SOLUTIONS];
-
-    //------------------------//
-    // copy peak_dirs         //
-    //------------------------//
-
-    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
-    for(int c=0;c<DEFAULT_MAX_SOLUTIONS;c++){
-      if(!wvp) break;
-      peak_dir[c]=wvp->dir;
-      wvp=wvc->ambiguities.GetNext();
-    }
-
-
-    float mse_est;
-    int num=MIN(DEFAULT_MAX_SOLUTIONS,ambiguities);
-    mse_est=EstimateDirMSE(peak_dir, num);
-
 
     //-------------------------------------------//
     // Determine Direction Intervals Comprising  //
     // (S3_PROB_THRESHOLD)*100% of the probability//
     //-------------------------------------------//
   
-    if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
+    if(!s4_flag){
+      if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
+    }
 
-
-    //-------------------------//
-    // limit to four solutions //
-    //-------------------------//
+    //------------------------------------------//
+    // limit to DEFAULT_MAX_SOLUTIONS solutions //
+    //------------------------------------------//
 
     int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
     if (delete_count > 0)
@@ -4049,9 +3988,6 @@ GMF::BuildDirectionRanges(
        wvc->directionRanges.Append(ai);
      }
 
-     wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0,two_pi,_phiCount);
-     wvc->directionRanges.bestSpd=(float*)malloc(sizeof(float)*_phiCount);
-     for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestSpd[c]=_bestSpd[c];
      delete[] range;
      delete[] dir_include;
      delete[] left_idx;

@@ -12,6 +12,7 @@ static const char rcs_id_wind_c[] =
 #include <iostream.h>
 #include "Wind.h"
 #include "Constants.h"
+#include "Distributions.h"
 #include "GSparameters.h"
 #include "Misc.h"
 #include "Array.h"
@@ -26,10 +27,11 @@ static const char rcs_id_wind_c[] =
 #define USE_CLOSEST_VECTOR  0   // Otherwise uses closest direction
 #define USE_MEDIAN_FOR_RANGE 1   // Otherwise uses mean filter
 
-#define FLIPPING_WITHIN_RANGE_THRESHOLD (2.0*dtr)
+#define FLIPPING_WITHIN_RANGE_THRESHOLD (5.0*dtr)
 
 #define HDF_ACROSS_BIN_NO    76
 #define HDF_NUM_AMBIGUITIES  4
+
 
 //============//
 // WindVector //
@@ -2319,6 +2321,38 @@ WindSwath::InitWithRank(
 	return(count);
 }
 
+//-------------------------//
+// WindSwath::InitRandom //
+//-------------------------//
+
+int
+WindSwath::InitRandom()
+{
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+                        // get random rank
+			int nc=wvc->ambiguities.NodeCount();
+			Uniform rand(nc/2.0,nc/2.0);
+			int idx=(int)rand.GetNumber();
+                         
+                        // account for possible floating point inaccuracies.
+			if(idx<0) idx=0;
+                        if(idx>=nc) idx=nc-1;
+
+			wvc->selected = wvc->ambiguities.GetByIndex(idx);
+			count++;
+		}
+	}
+	return(count);
+}
+
 //------------------//
 // WindSwath::Nudge //
 //------------------//
@@ -2355,7 +2389,8 @@ WindSwath::Nudge(
 int
 WindSwath::ThresNudge(
 	WindField*	nudge_field,
-	int max_rank)
+	int max_rank,
+        float thres[2])
 {
 
 	int count = 0;
@@ -2370,7 +2405,6 @@ WindSwath::ThresNudge(
 			// threshold objective function //
 
 			int rank_idx = 0;
-			float thres[2] = {0.2,0.05};
 
 			int w = 0;
 			if (cti < 9 || cti > 71) { w = 1; }
@@ -2477,14 +2511,16 @@ WindSwath::SmartNudge(
 // WindSwath::MedianFilter //
 //-------------------------//
 // Returns the number of passes.
-
+// If Special=0 Standard Median Filter (default)
+// if Special=1 Use Range Information  (S3)
+// If Special=2 Use Spatial Probability Maximization (S4)
 int
 WindSwath::MedianFilter(
 	int		window_size,
 	int		max_passes,
 	int             bound,
 	int		weight_flag,
-        int             ignore_ranges=0)
+        int             special=0)
 {
 
 	//----------------------------//
@@ -2523,7 +2559,7 @@ WindSwath::MedianFilter(
 	while (pass < max_passes)
 	{
 		int flips = MedianFilterPass(half_window, new_selected, change,
-						bound, weight_flag,ignore_ranges);
+						bound, weight_flag, special);
 		pass++;
 		if (flips == 0)
 			break;
@@ -2546,9 +2582,10 @@ WindSwath::MedianFilterPass(
 	char**			change,
 	int                     bound,
 	int			weight_flag,
-	int                     ignore_ranges=0)
+	int                     special=0)
 {
         int flips=0;
+        float energy=0.0;
 	//-------------//
 	// filter loop //
 	//-------------//
@@ -2599,8 +2636,9 @@ WindSwath::MedianFilterPass(
 			float min_vector_dif_sum = (float)HUGE_VAL;
 			//--------------------------------------------//
                         // Don't use range information if unavailable //
+                        // or special= 0                              //
                         //--------------------------------------------//
-                        if(ignore_ranges || wvc->directionRanges.NodeCount()==0){
+                        if(special==0 || (special==1 && wvc->directionRanges.NodeCount()==0)){
 
 			  for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 			       wvp = wvc->ambiguities.GetNext())
@@ -2653,12 +2691,11 @@ WindSwath::MedianFilterPass(
 			    }	// done with ambiguities
 			}
                         //-----------------------------------------------//
-                        // Do use range information if it is available   //
+                        // Special Cases: Use Range Info (S3)            //
                         //-----------------------------------------------//
-			else{
+			else if(special==1){
 			     
 			     WindVectorPlus* wvp = new WindVectorPlus;
-
                              // Determine the Median Vector
                              if(USE_MEDIAN_FOR_RANGE){
 			       if(!GetMedianBySorting(wvp, cti_min, cti_max, 
@@ -2680,14 +2717,25 @@ WindSwath::MedianFilterPass(
 			       wvp->spd=wvc->directionRanges.GetBestSpeed(tmp);			       
 			     }
 			     new_selected[cti][ati]=wvp;
-			} // Done with use range info procedure
+			}  // Done with special==1 procedure
+                        // Spatial Probability Search (special==2)
+			else if(special==2){
+			     WindVectorPlus* wvp = new WindVectorPlus;
+			     energy+=GetMostProbableDir(wvp,cti,ati,cti_min,
+						    cti_max,ati_min,ati_max);
+			     new_selected[cti][ati]=wvp;
+			}
+			else{
+			  fprintf(stderr,"MedianFilter: Bad Special Value %d\n"
+				  ,special);
+			  exit(1);
+			}
 		}	// done with ati
 	}	// done with cti
 
 	//------------------//
 	// transfer updates //
 	//------------------//
-
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		for (int ati = 0; ati < _alongTrackBins; ati++)
@@ -2696,11 +2744,11 @@ WindSwath::MedianFilterPass(
 			if (new_selected[cti][ati])
 			{
                           //-----------------------------------------------//
-			  // Special Procedure if Range Information is     //
+			  // Special Procedure if special==1 or special==2 //
 			  // used                                          //
                           //-----------------------------------------------//
 				  
-			  if(!ignore_ranges && swath[cti][ati]->directionRanges.NodeCount()!=0){
+			  if((special==1 && swath[cti][ati]->directionRanges.NodeCount()!=0) || special==2){
 			    // replace selected
 			    // but set change only if the direction
 			    // changes substantially
@@ -2734,11 +2782,12 @@ WindSwath::MedianFilterPass(
 			      flips+=change[cti][ati];
 			    }
 
-
+                          
 			}
 		}
 	}
-	printf("%d\n",flips);
+	printf("Flips %d  Energy %g\n",flips,energy);
+        fflush(stdout);
 	return(flips);
 }
 //-----------------------------------------//
@@ -2779,6 +2828,76 @@ WindSwath::GetWindowMean(
     if(y<0) wvp->dir=two_pi-wvp->dir;
     wvp->obj=-(float)HUGE_VAL;
     return(1);
+}
+
+//-----------------------------------------//
+// WindSwath::GetMostProbableDir           //
+//-----------------------------------------//
+
+#define CORRELATION_WIDTH  1.0  // Currently in units of Cross Track Index
+                                // Should be km!!!!
+#define CW_DEVIATION        1.0  //  m/s
+#define NUM_DIRECTION_STEPS    45
+float
+WindSwath::GetMostProbableDir(
+      WindVectorPlus* wvp, 
+      int             cti,
+      int             ati,
+      int             cti_min,
+      int             cti_max, 
+      int             ati_min, 
+      int             ati_max){
+  float max_prob=-HUGE_VAL;
+  float max_dir=0.0;
+  WVC* wvc=swath[cti][ati];
+  int bins=NUM_DIRECTION_STEPS;
+  float step=two_pi/bins;
+  for(int s=0;s<bins;s++){
+    float dir=step*s;
+    float likelihood=0.0;
+    float spd=wvc->directionRanges.GetBestSpeed(dir);
+    float x1=spd*cos(dir);
+    float y1=spd*sin(dir);
+    for (int i = cti_min; i < cti_max; i++)
+    {
+      for (int j = ati_min; j < ati_max; j++)
+	{
+	  WVC* other_wvc = swath[i][j];
+	  if (! other_wvc)
+	    continue;
+	  
+	  WindVectorPlus* other_wvp = other_wvc->selected;
+	  if (! other_wvp)
+	    continue;
+          if(i==cti && j==ati) continue;
+          // Add likelihood due to probability of selected being correct
+          // Commented out because it is not necessary unless other possible
+          // directions for the neighboring vectros are considered.
+          // As it is now it just adds a constant value to likelihood for
+          // all possible dir values.
+          //likelihood+=other_wvc->directionRanges.GetBestObj(other_wvp->dir);
+	  // Add likelihood due to difference between selected and trial value
+          float dist=sqrt(float((cti-i)*(cti-i))+float((ati-j)*(ati-j)));
+          float k=CW_DEVIATION/CORRELATION_WIDTH;
+          float sigma=k*dist;
+          float x2=other_wvp->spd*cos(other_wvp->dir);
+          float y2=other_wvp->spd*sin(other_wvp->dir);  
+          float dx=x1-x2;
+          float dy=y1-y2;
+	  float diff=(dx*dx+dy*dy)/(sigma*sigma);
+	  likelihood-=diff;
+	}
+    }
+    likelihood+=wvc->directionRanges.GetBestObj(dir);
+    if(likelihood>max_prob){
+      max_prob=likelihood;
+      max_dir=dir;
+    }
+  }
+  wvp->dir=max_dir;
+  wvp->spd=wvc->directionRanges.GetBestSpeed(max_dir);
+  wvp->obj=wvc->directionRanges.GetBestObj(max_dir);
+  return(max_prob);
 }
 
 //-----------------------------------------//

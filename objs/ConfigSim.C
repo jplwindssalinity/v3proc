@@ -1122,7 +1122,7 @@ ConfigL2AToL2B(
 	ConfigList*		config_list)
 {
 	int tmp_int;
-	float tmp_float;
+        float tmp_float;
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
 	l2a_to_l2b->medianFilterWindowSize = tmp_int;
@@ -1148,32 +1148,6 @@ ConfigL2AToL2B(
 	  return(0);
 	if (! l2a_to_l2b->SetWindRetrievalMethod(wr_method))
 	  return(0);
-
-	if( l2a_to_l2b->wrMethod == L2AToL2B::PEAK_SPLITTING &&
-        l2a_to_l2b->useManyAmbiguities)
-	{
-	  fprintf(stderr,
-		  "Cannot use ManyAmbiguities and PeakSplitting at the same time.\n");
-	  return(0);
-	}
-	if(l2a_to_l2b->wrMethod == L2AToL2B::PEAK_SPLITTING)
-	  {
-	    if (! config_list->GetFloat(ONE_PEAK_WIDTH_KEYWORD, &tmp_float))
-	      return(0);
-	    l2a_to_l2b->onePeakWidth = tmp_float*dtr;
-	    if (! config_list->GetFloat(TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD,
-					&tmp_float))
-	      {
-		return(0);
-	      }
-	    l2a_to_l2b->twoPeakSep = tmp_float*dtr;
-	    if (! config_list->GetFloat(SCALED_PROBABILITY_THRESHOLD_KEYWORD,
-					&tmp_float))
-	      {
-		return(0);
-	      }
-	    l2a_to_l2b->probThreshold = tmp_float;
-	}
 
 	//---------//
 	// nudging //
@@ -1221,12 +1195,24 @@ ConfigL2AToL2B(
 	  if (! config_list->GetInt(USE_NUDGING_THRESHOLD_KEYWORD, &tmp_int))
 	    return(0);
 	  l2a_to_l2b->useNudgeThreshold = tmp_int;
-
+          
+	  if(l2a_to_l2b->useNudgeThreshold){
+	    if (! config_list->GetFloat(NEAR_SWATH_NUDGE_THRESHOLD_KEYWORD, &tmp_float))
+	      return(0);
+	    l2a_to_l2b->nudgeThresholds[0]=tmp_float;
+	    if (! config_list->GetFloat(FAR_SWATH_NUDGE_THRESHOLD_KEYWORD, &tmp_float))
+	      return(0);
+	    l2a_to_l2b->nudgeThresholds[1]=tmp_float;
+	  }
 	}
 
 	if (! config_list->GetInt(USE_NARROW_MEDIAN_FILTER_KEYWORD, &tmp_int))
 	  return(0);
 	l2a_to_l2b->useNMF = tmp_int;
+
+	if (! config_list->GetInt(USE_RANDOM_RANK_INIT_KEYWORD, &tmp_int))
+	  return(0);
+	l2a_to_l2b->useRandomInit = tmp_int;
 
 
 	

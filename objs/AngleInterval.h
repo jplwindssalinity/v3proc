@@ -53,11 +53,13 @@ class AngleIntervalListPlus : public AngleIntervalList{
   int GetNearestVector(WindVectorPlus* wvp);
   int GetSampleDirection(int sample_idx, float* dir);
   float GetBestSpeed(double dir); 
-  // float EstimateMSE();
+  float GetBestObj(double dir);
+  float EstimateMSE();
   
   //  variables
   Index dirIdx;
   float* bestSpd;
+  float* bestObj;
 };
 #endif
 

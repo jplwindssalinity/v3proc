@@ -278,15 +278,21 @@ AngleIntervalList::_GetPossiblePlacings(
 // Constructor and Destructor    //
 //-------------------------------//
 AngleIntervalListPlus::AngleIntervalListPlus()
-  : bestSpd(NULL)
+  : bestSpd(NULL), bestObj(NULL)
 {
   return;
 }
 
 AngleIntervalListPlus::~AngleIntervalListPlus(){
   FreeContents();
-  if(bestSpd!=NULL) free(bestSpd);
-  bestSpd=NULL;
+  if(bestSpd!=NULL){
+    free(bestSpd);
+    bestSpd=NULL;
+  }
+  if(bestObj!=NULL) {
+    free(bestObj);
+    bestObj=NULL;
+  }
   return;
 }
 
@@ -296,10 +302,19 @@ AngleIntervalListPlus::Read(FILE* fp){
   if(value==0) return(0);
   else if(value==-1) return(-1);
   else if(!dirIdx.Read(fp)) return(0);
+  unsigned int bins=dirIdx.GetBins();
+
   bestSpd=dirIdx.MakeFloatArray();
   if(!bestSpd) return(0);
-  unsigned int bins=dirIdx.GetBins();
   if(fread(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0);
+
+#define INCLUDE_OBJ 1
+  if(INCLUDE_OBJ){
+    bestObj=dirIdx.MakeFloatArray();
+    if(!bestObj) return(0);
+    if(fread(&bestObj[0],sizeof(float),bins,fp)!=bins) return(0);
+  }
+
   return(1);
 }
 
@@ -310,6 +325,7 @@ AngleIntervalListPlus::Write(FILE* fp){
   if(!dirIdx.Write(fp)) return(0);
   unsigned int bins=dirIdx.GetBins();
   if(fwrite(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0); 
+  if(fwrite(&bestObj[0],sizeof(float),bins,fp)!=bins) return(0); 
   return(1); 
 }
 
@@ -326,6 +342,21 @@ AngleIntervalListPlus::GetBestSpeed(double dir){
     exit(1);
   }
   return(coeff[0]*bestSpd[idx[0]]+coeff[1]*bestSpd[idx[1]]);
+}
+
+float
+AngleIntervalListPlus::GetBestObj(double dir){
+  int idx[2];
+  float coeff[2];
+  if(!bestObj){
+    fprintf(stderr,"AngleIntervalListPlus::Cannot get Objective value\n");
+    exit(1);
+  }
+  if(!dirIdx.GetLinearCoefsWrapped(dir,idx,coeff)){
+    fprintf(stderr,"AngleIntervalListPlus::Cannot get Objective Value\n");
+    exit(1);
+  }
+  return(coeff[0]*bestObj[idx[0]]+coeff[1]*bestObj[idx[1]]);
 }
 
 
@@ -358,6 +389,7 @@ AngleIntervalListPlus::GetNearestVector(WindVectorPlus* wvp){
   // Assign the closest vector to wvp
   wvp->dir=dirclose;
   wvp->spd=GetBestSpeed(dirclose);
+  wvp->obj=GetBestObj(dirclose);
   return(1);
 }
 
@@ -404,7 +436,7 @@ AngleIntervalListPlus::GetSampleDirection(int samp_idx, float* dir){
   }
 }
      
-/****
+
 float
 AngleIntervalListPlus::EstimateMSE(){
   Node<AngleInterval>* old = _current;
@@ -421,5 +453,5 @@ AngleIntervalListPlus::EstimateMSE(){
   _current=old;
   return(MSE);
 }
-*****/
+
 
