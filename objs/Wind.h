@@ -207,6 +207,12 @@ public:
     int                    selected_allocated;
     List<WindVectorPlus>   ambiguities;
     AngleIntervalListPlus  directionRanges;
+    float rainProb;
+    char rainFlagBits; 
+    // bit 0 1/0 = not usable/usable
+    // bit 1 1/0 = rain/no rain
+    // bit 2 1/0 = outer/inner
+    
 };
 
 //======================================================================

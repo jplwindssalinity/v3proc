@@ -319,7 +319,7 @@ WindVectorField::InterpolateVectorField(
 //=====//
 
 WVC::WVC()
-:   nudgeWV(NULL), selected(NULL), selected_allocated(0)
+:   nudgeWV(NULL), selected(NULL), selected_allocated(0), rainProb(0.0), rainFlagBits(0)
 {
     return;
 }
@@ -3752,7 +3752,9 @@ int g_number_needed = 0;
 float g_speed_stopper = 0.0;
 float g_error_ratio_of_best = 1.0;
 float g_error_of_best = 0.0;
-
+float g_rain_flag_threshold = 1.0;
+float g_rain_bit_flag_on = 0;
+int ** g_freeze_array = NULL;
 int
 WindSwath::MedianFilterPass(
     int                half_window,
@@ -3800,7 +3802,9 @@ WindSwath::MedianFilterPass(
             // check for freeze  //
             // state             //
             //-------------------//
-
+            if (g_freeze_array != NULL){
+	      if (g_freeze_array[cti][ati]==1) continue;
+	    }
             if (freeze != 0 & cti >= freeze & cti <= _crossTrackBins - freeze)
                 continue;
 
@@ -3855,7 +3859,10 @@ WindSwath::MedianFilterPass(
                             WVC* other_wvc = swath[i][j];
                             if (! other_wvc)
                                 continue;
-
+			    if ( other_wvc->rainProb > g_rain_flag_threshold)
+			        continue;
+			    if ( g_rain_bit_flag_on && (3 & other_wvc->rainFlagBits))
+			        continue;
                             available_count++;    // other wvc exists
 
                             WindVectorPlus* other_wvp = other_wvc->selected;
@@ -3903,6 +3910,10 @@ WindSwath::MedianFilterPass(
                 // a few propagation checks
                 if (wvc->selected == NULL)
                 {
+		    if (wvc->rainProb > g_rain_flag_threshold)
+		        new_selected[cti][ati]=NULL;
+		    if (g_rain_bit_flag_on && (3 & wvc->rainFlagBits))
+		        new_selected[cti][ati]=NULL;
                     // how must does the best beat the second best?
                     if (second_vector_dif_sum > 0.0)
                     {

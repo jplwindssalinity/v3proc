@@ -233,6 +233,7 @@ L2B::ReadHDF(
 
     unsigned char*  numambigArray = new unsigned char[cross_track_bins];
     float*          lonArray = new float[cross_track_bins];
+    float*          rainArray = new float[cross_track_bins];
     float*          latArray = new float[cross_track_bins];
     float*          speedArray = (float *)new float[cross_track_bins *
                         HDF_NUM_AMBIGUITIES];
@@ -245,6 +246,7 @@ L2B::ReadHDF(
     float*          modelDirArray = (float *) new float[cross_track_bins];
     char*           tmpArray = new char[cross_track_bins];
     int*            numArray = (int *) new int[cross_track_bins];
+    unsigned short int*  qualArray = (unsigned short int *) new int[cross_track_bins];
     int32           sdsIds[1];
 
     for (int32 ati = 0; ati < along_track_bins; ati++)
@@ -311,6 +313,19 @@ L2B::ReadHDF(
         {
             return(0);
         }
+        sdsIds[0] = _mpRainProbSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, ati, 1, 1,
+            rainArray) == 0)
+        {
+            return(0);
+        }
+
+        sdsIds[0] = _qualSdsId;
+        if (ExtractData2D_76(tlmHdfFile, sdsIds, ati, 1, 1,
+            qualArray) == 0)
+        {
+            return(0);
+        }
 
         sdsIds[0] = _numInForeSdsId;
         if (ExtractData2D_76(tlmHdfFile, sdsIds, ati, 1, 1, tmpArray) == 0)
@@ -339,6 +354,8 @@ L2B::ReadHDF(
         for (int cti = 0; cti < cross_track_bins; cti++)
         {
             WVC* wvc = new WVC();
+	    wvc->rainProb=rainArray[cti];
+	    wvc->rainFlagBits=char(0x7000 & qualArray[cti]);
             wvc->lonLat.longitude = lonArray[cti] * dtr;
             wvc->lonLat.latitude = latArray[cti] * dtr;
             wvc->nudgeWV = new WindVectorPlus();
@@ -653,7 +670,15 @@ L2B::_OpenHdfDataSets(
     {
         return(0);
     }
+    if ((_mpRainProbSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile, "mp_rain_probability"))==0)
+    {
+      return(0);
+    }
 
+    if ((_qualSdsId = _OpenOneHdfDataSetCorrectly(tlmHdfFile, "wvc_quality_flag"))==0)
+    {
+      return(0);
+    }
     return(1);
 }
 
@@ -671,6 +696,22 @@ L2B::_OpenOneHdfDataSet(
     if (sdsName == 0)
         return(0);
 
+    int32 dataType = 0;
+    int32 dataStartIndex = 0;
+    int32 dataLength = 0;
+    int32 numDimensions = 0;
+    int32 sdsId = tlmHdfFile->SelectDataset(sdsName, dataType,
+              dataStartIndex, dataLength, numDimensions);
+    if (sdsId == HDF_FAIL)
+        return(0);
+    else
+        return(sdsId);
+}
+
+int
+L2B::_OpenOneHdfDataSetCorrectly(
+    TlmHdfFile*  tlmHdfFile,
+    const char* sdsName){
     int32 dataType = 0;
     int32 dataStartIndex = 0;
     int32 dataLength = 0;
@@ -703,5 +744,7 @@ L2B::_CloseHdfDataSets(void)
     (void)SDendaccess(_numOutAftSdsId); _numOutAftSdsId = HDF_FAIL;
     (void)SDendaccess(_modelSpeedSdsId); _modelSpeedSdsId = HDF_FAIL;
     (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
+    (void)SDendaccess(_mpRainProbSdsId); _mpRainProbSdsId = HDF_FAIL;    
+    (void)SDendaccess(_qualSdsId); _qualSdsId = HDF_FAIL;    
     return;
 }
