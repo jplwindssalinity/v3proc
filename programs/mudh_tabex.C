@@ -83,10 +83,11 @@ const char* usage_array[] = { "[ -n min_samples ]", "<input_mudhtab>",
 
 static double norain_tab_1[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static double rain_tab_1[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double sample_count_1[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+
 static double norain_tab_2[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 static double rain_tab_2[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
-
-static double sample_count[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
+static double sample_count_2[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM];
 
 //--------------//
 // MAIN PROGRAM //
@@ -143,7 +144,7 @@ main(
     unsigned int size = NBD_DIM * SPD_DIM * DIR_DIM * MLE_DIM;
     if (fread(norain_tab_1, sizeof(double), size, mudhtab_ifp) != size ||
         fread(rain_tab_1, sizeof(double), size, mudhtab_ifp) != size ||
-        fread(sample_count, sizeof(double), size, mudhtab_ifp) != size)
+        fread(sample_count_1, sizeof(double), size, mudhtab_ifp) != size)
     {
         fprintf(stderr, "%s: error reading mudhtab file %s\n", command,
             input_mudhtab_file);
@@ -166,7 +167,7 @@ main(
           for (int center_l = 0; center_l < MLE_DIM; center_l++)
           {
             // already have enough samples (and 2.0 flag not set)
-            if (sample_count[center_i][center_j][center_k][center_l] >=
+            if (sample_count_1[center_i][center_j][center_k][center_l] >=
                 min_samples &&
                 norain_tab_1[center_i][center_j][center_k][center_l] < 1.5 &&
                 rain_tab_1[center_i][center_j][center_k][center_l] < 1.5)
@@ -175,6 +176,8 @@ main(
                 norain_tab_1[center_i][center_j][center_k][center_l];
               rain_tab_2[center_i][center_j][center_k][center_l] =
                 rain_tab_1[center_i][center_j][center_k][center_l];
+              sample_count_2[center_i][center_j][center_k][center_l] =
+                sample_count_1[center_i][center_j][center_k][center_l];
               continue;
             }
 
@@ -217,12 +220,12 @@ main(
                       {
                         continue;
                       }
-                      nr_weighted_sum += sample_count[i][j][k][l] * 
+                      nr_weighted_sum += sample_count_1[i][j][k][l] * 
                           norain_tab_1[i][j][k][l];
-                      r_weighted_sum += sample_count[i][j][k][l] * 
+                      r_weighted_sum += sample_count_1[i][j][k][l] * 
                           rain_tab_1[i][j][k][l];
                       window_count +=
-                          (unsigned long)sample_count[i][j][k][l];
+                          (unsigned long)sample_count_1[i][j][k][l];
                     }
                   }
                 }
@@ -233,6 +236,8 @@ main(
                   nr_weighted_sum / (double)window_count;
                 rain_tab_2[center_i][center_j][center_k][center_l] =
                   r_weighted_sum / (double)window_count;
+                sample_count_2[center_i][center_j][center_k][center_l] =
+                  (double)window_count;
 //printf("%d %d %d %d = %d\n", center_i, center_j, center_k, center_l, delta);
                 break;
               }
@@ -256,7 +261,7 @@ main(
     }
     if (fwrite(norain_tab_2, sizeof(double), size, mudhtab_ofp) != size ||
         fwrite(rain_tab_2, sizeof(double), size, mudhtab_ofp) != size ||
-        fwrite(sample_count, sizeof(double), size, mudhtab_ofp) != size)
+        fwrite(sample_count_2, sizeof(double), size, mudhtab_ofp) != size)
     {
         fprintf(stderr, "%s: error writing mudhtab file %s\n", command,
             output_mudhtab_file);
