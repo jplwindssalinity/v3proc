@@ -7,7 +7,8 @@ SHELL =			/bin/csh
 INCDIR =		../../include
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
-CCC =			gcc
+PURE =
+CCC =			$(PURE) gcc
 DEBUGFLAGS =	-O3
 CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR)
 

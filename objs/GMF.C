@@ -716,7 +716,7 @@ GMF::FindMany(
 	double sum = 0.0;
 	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 	{
-		_bestObj[phi_idx] = exp(_bestObj[phi_idx]);
+		_bestObj[phi_idx] = sqrt(exp(-_bestObj[phi_idx]) / two_pi);
 		sum += _bestObj[phi_idx];
 	}
 

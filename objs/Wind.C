@@ -1332,7 +1332,7 @@ WindSwath::MedianFilterPass(
 
 		change:
 
-			float min_vector_dif_sum = 9e69;
+			float min_vector_dif_sum = (float)HUGE_VAL;
 
 			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 				wvp = wvc->ambiguities.GetNext())
@@ -1370,7 +1370,12 @@ WindSwath::MedianFilterPass(
 				//------------------------------//
 
 				if (weight_flag)
-					vector_dif_sum *= wvp->obj;
+				{
+					if (wvp->obj == 0.0)
+						vector_dif_sum = (float)HUGE_VAL;
+					else
+						vector_dif_sum /= wvp->obj;
+				}
 
 				if (vector_dif_sum < min_vector_dif_sum)
 				{
