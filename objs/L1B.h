@@ -56,6 +56,7 @@ public:
 
 	int		ReadDataRec() { return(frame.spotList.Read(_inputFp)); };
 	int		WriteDataRec() { return(frame.spotList.Write(_outputFp)); };
+	int		WriteDataRecAscii();
 
 	//-----------//
 	// variables //

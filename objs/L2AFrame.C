@@ -69,6 +69,28 @@ L2AHeader::Write(
 	return(1);
 }
 
+//------------------------//
+// L2AHeader::WriteAscii  //
+//------------------------//
+
+int
+L2AHeader::WriteAscii(
+	FILE*	fp)
+{
+        fprintf(fp,"#################################################\n");
+        fprintf(fp,"######                                     ######\n");
+        fprintf(fp,"######             L2A  Header             ######\n");
+        fprintf(fp,"######                                     ######\n");
+        fprintf(fp,"#################################################\n");
+        fprintf(fp,"\n");
+        fprintf(fp,"CrossTrackRes: %g AlongTrackRes: %g\n",
+		crossTrackResolution, alongTrackResolution);
+        fprintf(fp,"CrossTrackBins: %d AlongTrackBins: %d\n",
+                crossTrackBins,alongTrackBins);
+        fprintf(fp,"StartTime: %g ZeroIndex: %d\n",startTime,zeroIndex);
+	return(1);
+}
+
 //==========//
 // L2AFrame //
 //==========//
@@ -114,6 +136,30 @@ L2AFrame::Write(
 		fwrite((void *)&ati, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&cti, sizeof(unsigned char), 1, fp) != 1 ||
 		measList.Write(fp) != 1)
+	{
+		return(0);
+	}
+
+	return(1);
+}
+
+//----------------------//
+// L2AFrame::WriteAscii //
+//----------------------//
+
+int
+L2AFrame::WriteAscii(
+	FILE*	fp)
+{
+        fprintf(fp,"\n#################################################\n");
+        fprintf(fp,"######                                     ######\n");
+        fprintf(fp,"######         L2A  Data Record            ######\n");
+        fprintf(fp,"######                                     ######\n");
+        fprintf(fp,"#################################################\n");
+        fprintf(fp,"\n");
+        fprintf(fp,"Rev: %d AlongTrackIndex: %d CrossTrackIndex: %d\n\n",
+		rev,ati,(int)cti);
+	if ( measList.WriteAscii(fp) != 1)
 	{
 		return(0);
 	}

@@ -50,6 +50,7 @@ OrbitState();
 // I/O
 
 int Write(FILE *outputfile);
+int WriteAscii(FILE *fp);
 int Read(FILE *inputfile);
 
 //-----------//

@@ -44,6 +44,7 @@ public:
 
 	int		Read(FILE* fp);
 	int		Write(FILE* fp);
+	int		WriteAscii(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -83,6 +84,7 @@ public:
 
 	int		Read(FILE* fp);
 	int		Write(FILE* fp);
+	int		WriteAscii(FILE* fp);
 
 	int		ReadGS(FILE* fp);
 

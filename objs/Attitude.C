@@ -8,6 +8,7 @@ static const char rcs_id_attitude_c[] =
 
 #include <stdio.h>
 #include "Attitude.h"
+#include "Constants.h"
 
 
 //==========//
@@ -107,6 +108,23 @@ Attitude::Write(
 	{
 		return(0);
 	}
+	return(1);
+}
+
+//----------------------//
+// Attitude::WriteAscii //
+//----------------------//
+
+int
+Attitude::WriteAscii(
+	FILE*	fp)
+{
+  const char* rpy[] = { "roll","pitch","yaw",0};
+        fprintf(fp,"########## Spacecraft Attitude Info #############\n");
+        fprintf(fp,"Roll: %g Pitch: %g Yaw: %g\n",_roll*rtd,_pitch*rtd,
+		_yaw*rtd);
+        fprintf(fp,"Order is: %s,%s,%s\n",rpy[_order[0]-1],rpy[_order[1]-1],
+		rpy[_order[2]-1]);
 	return(1);
 }
 

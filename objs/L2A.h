@@ -52,8 +52,10 @@ public:
 	//--------------//
 
 	int		WriteHeader();
+        int             WriteHeaderAscii();
 	int		ReadHeader();
 	int		WriteDataRec();
+        int             WriteDataRecAscii();
 	int		ReadDataRec();
 
 	int		ReadGSDataRec();
@@ -78,7 +80,8 @@ protected:
 	//-----------//
 
 	StatusE		_status;
-	int			_headerTransferred;
+	int			_headerRead;
+        int                     _headerWritten;
 };
 
 #endif

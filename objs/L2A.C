@@ -15,7 +15,7 @@ static const char rcs_id_l2a_c[] =
 //=====//
 
 L2A::L2A()
-:	_status(OK), _headerTransferred(0)
+:	_status(OK), _headerRead(0),_headerWritten(0)
 {
 	return;
 }
@@ -38,7 +38,24 @@ L2A::WriteHeader()
 	if (! header.Write(_outputFp))
 		return(0);
 
-	_headerTransferred = 1;
+	_headerWritten = 1;
+	return(1);
+}
+
+//------------------//
+// L2A::WriteHeader //
+//------------------//
+
+int
+L2A::WriteHeaderAscii()
+{
+	if (_outputFp == NULL)
+		return(0);
+
+	if (! header.WriteAscii(_outputFp))
+		return(0);
+
+	_headerWritten = 1;
 	return(1);
 }
 
@@ -55,7 +72,7 @@ L2A::ReadHeader()
 	if (! header.Read(_inputFp))
 		return(0);
 
-	_headerTransferred = 1;
+	_headerRead = 1;
 	return(1);
 }
 
@@ -68,11 +85,11 @@ L2A::ReadDataRec()
 {
 	if (_inputFp == NULL) return(0);
 
-	if (! _headerTransferred)
+	if (! _headerRead)
 	{
 		if (! header.Read(_inputFp))
 			return(0);
-		_headerTransferred = 1;
+		_headerRead = 1;
 	}
 	if (! frame.Read(_inputFp))
 		return(0);
@@ -89,14 +106,36 @@ L2A::WriteDataRec()
 {
 	if (_outputFp == NULL) return(0);
 
-	if (! _headerTransferred)
+	if (! _headerWritten)
 	{
 		if (! header.Write(_outputFp))
 			return(0);
-		_headerTransferred = 1;
+		_headerWritten = 1;
 	}
 
 	if (! frame.Write(_outputFp))
+		return(0);
+
+	return(1);
+}
+
+//------------------------//
+// L2A::WriteDataRecAscii //
+//------------------------//
+
+int
+L2A::WriteDataRecAscii()
+{
+	if (_outputFp == NULL) return(0);
+
+	if (! _headerWritten)
+	{
+		if (! header.WriteAscii(_outputFp))
+			return(0);
+		_headerWritten = 1;
+	}
+
+	if (! frame.WriteAscii(_outputFp))
 		return(0);
 
 	return(1);

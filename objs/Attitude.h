@@ -58,6 +58,7 @@ public:
 	//--------------//
 
 	int		Write(FILE* fp);
+	int		WriteAscii(FILE* fp);
 	int		Read(FILE* fp);
 
 protected:

@@ -226,10 +226,29 @@ int
 Meas::WriteAscii(
 	FILE*	fp)
 {
-	fprintf(fp, "Pol: %s\n", beam_map[(int)pol]);
-	fprintf(fp, "Azi: %g\n", eastAzimuth);
-	fprintf(fp, "Inc: %g\n", incidenceAngle);
-	fprintf(fp, "Val: %g\n", value);
+        double lon=0, lat=0, alt=0; 
+        centroid.GetAltLonGCLat(&alt,&lon,&lat);
+        lon*=rtd;
+        lat*=rtd;
+        fprintf(fp,"###########  Slice/Composite  Info  ###############\n");
+        fprintf(fp, "BeamIdx: %d ", beamIdx);
+        fprintf(fp, "StartSliceIdx: %d ", startSliceIdx);
+        fprintf(fp, "NumSlices: %d ", numSlices);
+	fprintf(fp, "ScanAngle: %g ", scanAngle*rtd);
+        fprintf(fp, "XK: %g\n",XK);
+	fprintf(fp, "Pol: %s ", beam_map[(int)pol]);
+	fprintf(fp, "IncAngle: %g ", incidenceAngle*rtd);
+        fprintf(fp, "Longitude: %g ",lon);
+        fprintf(fp, "Latitude: %g ",lat);
+	fprintf(fp, "Value: %g\n", value);
+        fprintf(fp, "Bandwidth: %g ", bandwidth);
+        fprintf(fp, "txPulseWidth: %g ", txPulseWidth);
+        fprintf(fp, "A: %g ", A);
+        fprintf(fp, "B: %g ", B);
+        fprintf(fp, "C: %g ", C);
+        fprintf(fp, "EnSlice: %g\n", EnSlice);
+    
+
 	return(1);
 }
 
@@ -313,7 +332,7 @@ int
 MeasList::WriteAscii(
 	FILE*	fp)
 {
-	fprintf(fp, "Count: %d\n", NodeCount());
+	fprintf(fp, "\n### Slice/Composite Count: %d ####\n", NodeCount());
 	for (Meas* meas = GetHead(); meas; meas = GetNext())
 	{
 		if (! meas->WriteAscii(fp))
@@ -481,6 +500,28 @@ MeasSpot::Write(
 	return(1);
 }
 
+//-----------------//
+// MeasSpot::Write //
+//-----------------//
+
+int
+MeasSpot::WriteAscii(
+	FILE*	fp)
+{       
+        fprintf(fp,"\n##############################################\n");
+        fprintf(fp,"#######         Spot Info               ######\n");
+        fprintf(fp,"##############################################\n");
+        fprintf(fp,"\n");
+        fprintf(fp,"Time: %g\n", time);
+	if (scOrbitState.WriteAscii(fp) != 1 ||
+		scAttitude.WriteAscii(fp) != 1 ||
+		MeasList::WriteAscii(fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 //----------------//
 // MeasSpot::Read //
 //----------------//
@@ -540,6 +581,25 @@ MeasSpotList::Write(
 	return(1);
 }
 
+//--------------------------//
+// MeasSpotList::WriteAscii //
+//--------------------------//
+
+int
+MeasSpotList::WriteAscii(
+	FILE*	fp)
+{
+        fprintf(fp, "\n########################################\n");
+	fprintf(fp, "###          Spot Count: %4d       ####\n", NodeCount());
+        fprintf(fp, "########################################\n");
+        fprintf(fp, "\n");
+	for (MeasSpot* spot = GetHead(); spot; spot= GetNext())
+	{
+		if (! spot->WriteAscii(fp))
+			return(0);
+	}
+	return(1);
+}
 //--------------------//
 // MeasSpotList::Read //
 //--------------------//

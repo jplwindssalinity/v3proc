@@ -92,8 +92,42 @@ posvel[5] = value;
 if (fwrite(&time,sizeof(double),1,outputfile) != 1) return(0);
 if (fwrite(&posvel,sizeof(float),6,outputfile) != 6) return(0);
 return(1);
+}
+
+//
+// OrbitState::WriteAscii()
+//
+// Write one set of time,position,velocity components to the specified file.
+// The file is ASCII.
+//
+
+int
+OrbitState::WriteAscii(FILE *fp)
+{
+
+double value;
+float posvel[6];
+
+rsat.Get(0,&value);
+posvel[0] = value;
+rsat.Get(1,&value);
+posvel[1] = value;
+rsat.Get(2,&value);
+posvel[2] = value;
+vsat.Get(0,&value);
+posvel[3] = value;
+vsat.Get(1,&value);
+posvel[4] = value;
+vsat.Get(2,&value);
+posvel[5] = value;
+fprintf(fp,"#### Spacecraft position and Velocity Info ####\n");
+fprintf(fp,"Pos_x: %g Pos_y: %g Pos_z %g\n",posvel[0],posvel[1],posvel[2]);
+fprintf(fp,"Vel_x: %g Vel_y: %g Vel_z %g\n",posvel[3],posvel[4],posvel[5]);
+return(1);
 
 }
+
+
 
 //===========//
 // Ephemeris //
