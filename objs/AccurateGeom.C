@@ -313,9 +313,68 @@ IntegrateSlice(
     int          range_gate_clipping,
     float*       X)
 {
+     int retval;
+	//----------------------------------------//
+	// determine the baseband frequency range //
+	//----------------------------------------//
+
+     float f1, bw;
+
+     int slice_count = qscat->ses.GetTotalSliceCount();
+     int slice_idx;
+     if (! rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx))
+       {
+        fprintf(stderr,"IntegrateSlice: Bad slice number\n");
+        exit(1);
+       }
+     qscat->ses.GetSliceFreqBw(slice_idx, &f1, &bw);
+
+     //-----------//
+     // predigest //
+     //-----------//
+
+     Antenna* antenna = &(qscat->sas.antenna);
+     OrbitState* orbit_state = &(spacecraft->orbitState);
+     Attitude* attitude = &(spacecraft->attitude);
+
+     //--------------------------------//
+     // generate the coordinate switch //
+     //--------------------------------//
+
+     CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+				                        attitude, antenna);
+
+     //---------------------------------------------//
+     // Determine look vector to centroid of slice  //
+     //---------------------------------------------//
+
+     Vector3 look_vector=meas->centroid - spacecraft->orbitState.rsat;
+     look_vector=antenna_frame_to_gc.Backward(look_vector);
+     double centroid_look, centroid_azimuth, dummy;
+     look_vector.SphericalGet(&dummy, &centroid_look, &centroid_azimuth);
+
+     retval=IntegrateFrequencyInterval(spacecraft,qscat,f1,centroid_azimuth,
+				bw,num_look_steps_per_slice,
+				azimuth_integration_range,
+				azimuth_step_size,range_gate_clipping, X);
+     return(retval);
+}
+int
+IntegrateFrequencyInterval(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    float        f1,
+    float        centroid_azimuth,
+    float        bw,
+    int          num_look_steps_per_slice,
+    float        azimuth_integration_range,
+    float        azimuth_step_size,
+    int          range_gate_clipping,
+    float*       X)
+{
         *X=0.0;
 
-    //-----------//
+	//-----------//
 	// predigest //
 	//-----------//
 
@@ -330,25 +389,27 @@ IntegrateSlice(
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	//----------------------------------------//
-	// determine the baseband frequency range //
-	//----------------------------------------//
 
-	float f1, bw, f2;
+        //-------------------------------//
+        // Get ending frequency          //
+        //-------------------------------//
 
-	int slice_count = qscat->ses.GetTotalSliceCount();
-    int slice_idx;
-	if (! rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx))
-    {
-        fprintf(stderr,"IntegrateSlice: Bad slice number\n");
-        exit(1);
-	}
-	qscat->ses.GetSliceFreqBw(slice_idx, &f1, &bw);
-	f2 = f1 + bw;
+        float f2 = f1 + bw;
+
+	//---------------------------------------//
+        // Get centroid look                     //
+        //---------------------------------------//
+
+	// guess at a reasonable slice frequency tolerance of 8 Hz
+	float ftol = 8.0;
+        float centroid_look;
+	if(! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
+			    (f1+f2)/2.0,ftol,&centroid_look,centroid_azimuth))
+	  return(0);
 
 	//------------------------------------------//
-	// Choose high gain side of slice			//
-	// and direction of look angle increment	//
+	// Choose high gain side of slice	    //
+	// and direction of look angle increment    //
 	//------------------------------------------//
 
 	float high_gain_freq, low_gain_freq;
@@ -368,14 +429,6 @@ IntegrateSlice(
 	    else look_scan_dir=+1;
     }
 
-	//---------------------------------------------//
-	// Determine look vector to centroid of slice  //
-	//---------------------------------------------//
-
-	Vector3 look_vector=meas->centroid - spacecraft->orbitState.rsat;
-	look_vector=antenna_frame_to_gc.Backward(look_vector);
-	double centroid_look, centroid_azimuth, dummy;
-	look_vector.SphericalGet(&dummy, &centroid_look, &centroid_azimuth);
 
 	//-------------------------------------//
 	// loop through azimuths and integrate //
@@ -391,11 +444,9 @@ IntegrateSlice(
 	    float end_look=centroid_look;
 
         //--------------------------//
-	    // find starting look angle //
+	// find starting look angle //
         //--------------------------//
 
-	    // guess at a reasonable slice frequency tolerance of 8 Hz
-	    float ftol = 8.0;
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
             high_gain_freq, ftol, &start_look,azi))
@@ -407,7 +458,7 @@ IntegrateSlice(
 	    }
 
         //------------------------//
-	    // find ending look angle //
+        // find ending look angle //
         //------------------------//
 
 	    if (! FindLookAtFreq(&antenna_frame_to_gc, spacecraft, qscat,
@@ -510,10 +561,10 @@ IntegrateSlice(
               int beam_number=qscat->cds.currentBeamIdx;
 	      float peak_gain = qscat->sas.antenna.beam[beam_number].peakGain;
               gp2=peak_gain*peak_gain;
-	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g %d\n",
+	      printf("\nDetailed Info %g %g %g %g %g %g %g %g %g\n",
 	          (look1+look2)/2.0*rtd,(azi1+azi2)/2.0*rtd,
 	           lat*rtd,lon*rtd,gatgar/gp2, range, tip.dopplerFreq,
-	          tip.basebandFreq, report_azim*rtd, slice_idx+1);
+	          tip.basebandFreq, report_azim*rtd);
  
 	    }
 	      /*********************************/
@@ -738,4 +789,37 @@ FindLookAtFreq(
     } while(fabs(actual_freq-target_freq)>freq_tol);
   *look=mid_look;
   return(1);
+}
+
+float      
+SpectralResponse(
+     Spacecraft*          spacecraft, 
+     Qscat*               qscat, 
+     float                freq, 
+     float                azim,
+     float                bandwidth,   
+     float                azimuth_integration_range,
+     float                azimuth_step_size, 
+     int                  range_gate_clipping)
+{
+     float retval;
+     float f1;
+     f1=freq-bandwidth/2; 
+     IntegrateFrequencyInterval(spacecraft,qscat,f1,azim,bandwidth,1,
+				azimuth_integration_range,
+				azimuth_step_size,range_gate_clipping,
+                                &retval);
+
+     return(retval);
+}
+
+int
+GetPeakSpectralResponse2(
+    CoordinateSwitch* antenna_frame_to_gc,
+    Spacecraft*       spacecraft,
+    Beam*             beam,
+    double            azimuth_rate,
+    double*           look,
+    double*           azimuth){
+    return(1);
 }
