@@ -200,7 +200,7 @@ L2B::ReadPureHdf(
     int32 num_out_fore_sds_id = SDnametoid(sd_id, "num_out_fore");
     int32 num_out_aft_sds_id = SDnametoid(sd_id, "num_out_aft");
     int32 wvc_quality_flag_sds_id = SDnametoid(sd_id, "wvc_quality_flag");
-    int32 wvc_atten_corr_sds_id = SDnametoid(sd_id, "atten_corr");
+//    int32 atten_corr_sds_id = SDnametoid(sd_id, "atten_corr");
     int32 model_speed_sds_id = SDnametoid(sd_id, "model_speed");
     int32 model_dir_sds_id = SDnametoid(sd_id, "model_dir");
     int32 num_ambigs_sds_id = SDnametoid(sd_id, "num_ambigs");
@@ -230,7 +230,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_row_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)&wvc_row) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wvc_row)\n");
             return(0);
         }
         if (wvc_row != ati + 1)
@@ -244,7 +245,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_lat_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_lat) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wvc_lat)\n");
             return(0);
         }
 
@@ -252,7 +254,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_lon_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_lon) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wvc_lon)\n");
             return(0);
         }
 
@@ -260,7 +263,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_index_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_index) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wvc_index)\n");
             return(0);
         }
 
@@ -268,7 +272,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(num_in_fore_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_in_fore) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (num_in_fore)\n");
             return(0);
         }
 
@@ -276,7 +281,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(num_in_aft_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_in_aft) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (num_in_aft)\n");
             return(0);
         }
 
@@ -284,7 +290,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(num_out_fore_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_out_fore) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (num_out_fore)\n");
             return(0);
         }
 
@@ -292,7 +299,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(num_out_aft_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_out_aft) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (num_out_aft)\n");
             return(0);
         }
 
@@ -300,23 +308,28 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_quality_flag_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_quality_flag) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+              "L2B::ReadPureHdf: error with SDreaddata (wvc_quality_flag)\n");
             return(0);
         }
 
-        int16 wvc_atten_corr[ROW_WIDTH];
-        if (SDreaddata(wvc_atten_corr_sds_id, generic_start, NULL,
-            generic_edges, (VOIDP)wvc_atten_corr) == FAIL)
+/*
+        int16 atten_corr[ROW_WIDTH];
+        if (SDreaddata(atten_corr_sds_id, generic_start, NULL,
+            generic_edges, (VOIDP)atten_corr) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (atten_corr)\n");
             return(0);
         }
+*/
 
         int16 model_speed[ROW_WIDTH];
         if (SDreaddata(model_speed_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)model_speed) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (model_speed)\n");
             return(0);
         }
 
@@ -324,7 +337,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(model_dir_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)model_dir) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (model_dir)\n");
             return(0);
         }
 
@@ -332,7 +346,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(num_ambigs_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)num_ambigs) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (num_ambigs)\n");
             return(0);
         }
 
@@ -340,7 +355,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wind_speed_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_speed) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wind_speed)\n");
             return(0);
         }
 
@@ -348,7 +364,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wind_dir_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_dir) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wind_dir)\n");
             return(0);
         }
 
@@ -356,7 +373,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(max_likelihood_est_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)max_likelihood_est) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+            "L2B::ReadPureHdf: error with SDreaddata (max_likelihood_est)\n");
             return(0);
         }
 
@@ -364,7 +382,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wvc_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wvc_selection) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+                "L2B::ReadPureHdf: error with SDreaddata (wvc_selection)\n");
             return(0);
         }
 
@@ -372,7 +391,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wind_speed_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_speed_selection) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+          "L2B::ReadPureHdf: error with SDreaddata (wind_speed_selection)\n");
             return(0);
         }
 
@@ -380,7 +400,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(wind_dir_selection_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)wind_dir_selection) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+            "L2B::ReadPureHdf: error with SDreaddata (wind_dir_selection)\n");
             return(0);
         }
 
@@ -388,7 +409,8 @@ L2B::ReadPureHdf(
         if (SDreaddata(mp_rain_probability_sds_id, generic_start, NULL,
             generic_edges, (VOIDP)mp_rain_probability) == FAIL)
         {
-            fprintf(stderr, "L2B::ReadPureHdf: error with SDreaddata\n");
+            fprintf(stderr,
+            "L2B::ReadPureHdf: error with SDreaddata (mp_rain_probability)\n");
             return(0);
         }
 
@@ -531,7 +553,7 @@ L2B::ReadPureHdf(
         SDendaccess(num_out_fore_sds_id) == FAIL ||
         SDendaccess(num_out_aft_sds_id) == FAIL ||
         SDendaccess(wvc_quality_flag_sds_id) == FAIL ||
-        SDendaccess(wvc_atten_corr_sds_id) == FAIL ||
+//        SDendaccess(atten_corr_sds_id) == FAIL ||
         SDendaccess(model_speed_sds_id) == FAIL ||
         SDendaccess(model_dir_sds_id) == FAIL ||
         SDendaccess(num_ambigs_sds_id) == FAIL ||
