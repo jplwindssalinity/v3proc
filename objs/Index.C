@@ -92,6 +92,24 @@ Index::Read(
 	return(1);
 }
 
+//--------------//
+// Index::Write //
+//--------------//
+
+int
+Index::Write(
+	FILE*	fp)
+{
+	if (fwrite((void *)&_min, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_max, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_bins, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_step, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 //-----------------------------//
 // Index::GetLinearCoefsStrict //
 //-----------------------------//

@@ -116,6 +116,7 @@ InstrumentSim::SetMeasurements(
 	MeasSpot*		meas_spot,
 	WindField*		windfield,
 	GMF*			gmf,
+	Kp*				kp,
 	KpmField*		kpmField)
 {
 	//-------------------------//
@@ -176,7 +177,8 @@ InstrumentSim::SetMeasurements(
 
 			if (instrument->useKpm == 1)
 			{
-				sigma0 *= kpmField->GetRV(meas->pol,wv.spd,lon_lat);
+				sigma0 *= kpmField->GetRV(&(kp->kpm), meas->pol,
+					wv.spd,lon_lat);
 			}
 		}
 
@@ -307,6 +309,7 @@ InstrumentSim::ScatSim(
 	Instrument*		instrument,
 	WindField*		windfield,
 	GMF*			gmf,
+	Kp*				kp,
 	KpmField*		kpmField,
 	L00Frame*		l00_frame)
 {
@@ -359,8 +362,10 @@ InstrumentSim::ScatSim(
 	//------------------------//
 
 	if (! SetMeasurements(spacecraft, instrument, &meas_spot,
-		windfield, gmf, kpmField))
+		windfield, gmf, kp, kpmField))
+	{
 		return(0);
+	}
 
 	//--------------------------------//
 	// Output X to Stdout if enabled //

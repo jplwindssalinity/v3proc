@@ -61,14 +61,14 @@ public:
 	//--------------------------//
 
 	int		SetMeasurements(Spacecraft* spacecraft, Instrument* instrument,
-				MeasSpot* meas_spot, WindField* windfield, GMF* gmf,
+				MeasSpot* meas_spot, WindField* windfield, GMF* gmf, Kp* kp,
 				KpmField* kpmField);
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
 	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
 				L00Frame* l00_frame);
 	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
-				WindField* windfield, GMF* gmf,
-				KpmField* kpmField, L00Frame* l00_frame);
+				WindField* windfield, GMF* gmf, Kp* kp, KpmField* kpmField,
+				L00Frame* l00_frame);
 
 	//-----------//
 	// variables //

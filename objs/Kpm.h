@@ -12,9 +12,6 @@ static const char rcs_id_kpm_h[] =
 #include "Index.h"
 #include "EarthField.h"
 #include "Distributions.h"
-/*
-#include "LonLat.h"
-*/
 
 //======================================================================
 // CLASSES
@@ -45,6 +42,7 @@ public:
 	//--------------//
 
 	int		ReadTable(const char* filename);
+	int		WriteTable(const char* filename);
 
 	//---------//
 	// getting //
@@ -59,13 +57,20 @@ public:
 protected:
 
 	//--------------//
+	// construction //
+	//--------------//
+
+	int		_Allocate();
+	int		_Deallocate();
+
+	//--------------//
 	// input/output //
 	//--------------//
 
 	int		_ReadHeader(FILE* fp);
-	int		_Allocate();
-	int		_Deallocate();
+	int		_WriteHeader(FILE* fp);
 	int		_ReadTable(FILE* fp);
+	int		_WriteTable(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -106,8 +111,7 @@ public:
 	// access
 	//--------------//
 
-	float GetRV(int polarization, float wspd, LonLat lon_lat);
-	float GetKpm(int polarization, float wspd);
+	float GetRV(Kpm* kpm, int polarization, float wspd, LonLat lon_lat);
 
     //-----------//
     // variables //

@@ -17,6 +17,7 @@ static const char rcs_id_kpm_c[] =
 //=====//
 
 Kpm::Kpm()
+:	_polCount(0), _table(NULL)
 {
 	return;
 }
@@ -42,10 +43,34 @@ Kpm::ReadTable(
 	if (! _ReadHeader(fp))
 		return(0);
 
+	_polCount = 2;		// just force this for now
+
 	if (! _Allocate())
 		return(0);
 
 	if (! _ReadTable(fp))
+		return(0);
+
+	fclose(fp);
+	return(1);
+}
+
+//-----------------//
+// Kpm::WriteTable //
+//-----------------//
+
+int
+Kpm::WriteTable(
+	const char*		filename)
+{
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	if (! _WriteHeader(fp))
+		return(0);
+
+	if (! _WriteTable(fp))
 		return(0);
 
 	fclose(fp);
@@ -83,19 +108,6 @@ Kpm::GetKpm(
 	return(1);
 }
 
-//------------------//
-// Kpm::_ReadHeader //
-//------------------//
-
-int
-Kpm::_ReadHeader(
-	FILE*	fp)
-{
-	if (! _speedIdx.Read(fp))
-		return(0);
-	return(1);
-}
-
 //----------------//
 // Kpm::_Allocate //
 //----------------//
@@ -126,6 +138,32 @@ Kpm::_Deallocate()
 	return(1);
 }
 
+//------------------//
+// Kpm::_ReadHeader //
+//------------------//
+
+int
+Kpm::_ReadHeader(
+	FILE*	fp)
+{
+	if (! _speedIdx.Read(fp))
+		return(0);
+	return(1);
+}
+
+//-------------------//
+// Kpm::_WriteHeader //
+//-------------------//
+
+int
+Kpm::_WriteHeader(
+	FILE*	fp)
+{
+	if (! _speedIdx.Write(fp))
+		return(0);
+	return(1);
+}
+
 //-----------------//
 // Kpm::_ReadTable //
 //-----------------//
@@ -142,6 +180,29 @@ Kpm::_ReadTable(
 	for (int i = 0; i < _polCount; i++)
 	{
 		if (fread((void *)*(_table + i), sizeof(float), bins, fp) != bins)
+		{
+			return(0);
+		}
+	}
+	return(1);
+}
+
+//------------------//
+// Kpm::_WriteTable //
+//------------------//
+
+int
+Kpm::_WriteTable(
+	FILE*	fp)
+{
+	//-----------------//
+	// write the array //
+	//-----------------//
+
+	unsigned int bins = _speedIdx.GetBins();
+	for (int i = 0; i < _polCount; i++)
+	{
+		if (fwrite((void *)*(_table + i), sizeof(float), bins, fp) != bins)
 		{
 			return(0);
 		}
@@ -283,69 +344,22 @@ KpmField::Build(float corr_length)
 
 }
 
-//-------------------//
-// KpmField::GetKpm
-//-------------------//
-
-//
-// Return the Kpm value appropriate for the given polarization and wind speed.
-// This function uses the wind speed value (rounded to the nearest integer)
-// to look up the Kpm value in a table (one each for V and H pol).
-//
-// Inputs:
-//  pol = 0 for V-pol, = 1 for H-pol.
-//  spd = wind speed in m/s.
-//
-// Return Value:
-//	The value of Kpm to use (ie., normalized standard deviation of sigma0).
-//
-
 float
-KpmField::GetKpm(
-	int pol,
-	float spd)
-
-{
-	// V-pol is index 0, H-pol is index 1 for the 1st dim.
-	static float Kpmtable[2][36] =
-	{ {6.3824e-01, 5.6835e-01, 4.9845e-01, 4.2856e-01, 3.5867e-01, 2.8877e-01,
-	2.5092e-01, 2.1307e-01, 1.9431e-01, 1.7555e-01, 1.7072e-01, 1.6589e-01,
-	1.6072e-01, 1.5554e-01, 1.4772e-01, 1.3990e-01, 1.2843e-01, 1.1696e-01,
-	1.1656e-01, 1.1615e-01, 1.0877e-01, 1.0138e-01, 9.0447e-02, 7.9516e-02,
-	8.6400e-02, 9.3285e-02, 8.4927e-02, 7.6569e-02, 7.2302e-02, 6.8036e-02,
-	7.7333e-02, 8.6630e-02, 9.0959e-02, 9.5287e-02, 9.9616e-02, 1.0394e-01},
-	  {4.3769e-01,  4.0107e-01, 3.6446e-01, 3.2784e-01, 2.9122e-01, 2.5461e-01,
-	2.2463e-01, 1.9464e-01, 1.7066e-01, 1.4667e-01, 1.3207e-01, 1.1747e-01,
-	1.0719e-01, 9.6918e-02, 9.0944e-02, 8.4969e-02, 7.7334e-02, 6.9699e-02,
-	6.9107e-02, 6.8515e-02, 6.6772e-02, 6.5030e-02, 5.7429e-02, 4.9828e-02,
-	4.3047e-02, 3.6266e-02, 3.0961e-02, 2.5656e-02, 2.9063e-02, 3.2471e-02,
-	2.7050e-02, 2.1629e-02, 2.8697e-02, 3.5764e-02, 4.2831e-02, 4.9899e-02}};
-
-	float Kpm;
-	if (spd < 0)
-	{
-		printf("Error: KpmField::GetKpm received a negative wind speed\n");
-		exit(-1);
-	}
-	else if (spd < 35.0)
-	{
-		Kpm = Kpmtable[pol][(int)(spd+0.5)];
-	}
-	else
-	{
-		Kpm = Kpmtable[pol][35];
-	}
-
-	return(Kpm);
-}
-
-float
-KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
+KpmField::GetRV(
+	Kpm*	kpm,
+	int		polarization,
+	float	wspd,
+	LonLat	lon_lat)
 {
 	float RV;
 	float rv1;
 
-	float Kpm = GetKpm(polarization,wspd);
+	double kpm_value;
+	if (! kpm->GetKpm(polarization, wspd, &kpm_value))
+	{
+		fprintf(stderr, "KpmField::GetRV: I can't handle bad Kpm values!\n");
+		exit(1);
+	}
 
 	if (_corrLength == 0.0)
 	{	// no spatial correlation, so just draw a gaussian random number
@@ -361,7 +375,7 @@ KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
 	}
 
 	// Scale for unit mean, variance = Kpm^2.
-	RV = rv1*Kpm + 1.0;
+	RV = rv1*kpm_value + 1.0;
 
 	if (RV < 0.0)
 	{
