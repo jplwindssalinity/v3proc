@@ -71,10 +71,9 @@ PROGRAMS = \
 	l1a_to_ascii\
 	l1b_to_ascii \
 	checkframe_to_ascii \
-	l2a_to_ascii
-#	reformat_pattern
-#	make_pattern
-#	test_pattern
+	l2a_to_ascii \
+	reformat_pattern \
+	test_pattern
 #	generate_kfactor
 
 HUDD_PROGRAMS = \
