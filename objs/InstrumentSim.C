@@ -158,22 +158,21 @@ InstrumentSim::LocateSlices(
 	//-------------------------------------------------//
 
 	Vector3 vector;
-	TargetInfoPackage tip;
 
 	double look, azimuth;
 	if (! beam->GetElectricalBoresight(&look, &azimuth))
 		return(0);
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
-	if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
-		instrument, &tip))
-	{
-		return(0);
-	}
-	instrument->commandedDoppler = tip.dopplerFreq;
-	float center_delay = 2.0 * tip.slantRange / speed_light_kps;
-	instrument->receiverGateDelay = center_delay + beam->pulseWidth / 2.0 -
-		instrument->receiverGateWidth / 2.0;
+	DopplerAndDelay(vector, &antenna_frame_to_gc, spacecraft, instrument);
+
+// try it
+TargetInfoPackage tip;
+if (! TargetInfo(vector, &antenna_frame_to_gc, spacecraft,
+	instrument, &tip))
+{
+	return(0);
+}
 
 	//-------------------//
 	// for each slice... //
@@ -225,6 +224,7 @@ InstrumentSim::LocateSlices(
 
 		// get incidence angle
 		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
+		meas->center = centroid;
 
 		//-----------------------------//
 		// add measurment to meas spot //
@@ -307,6 +307,7 @@ InstrumentSim::LocateSpot(
 
 	// get incidence angle
 	meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
+	meas->center = spot_on_earth;
 
 	//-----------------------------//
 	// add measurment to meas spot //

@@ -447,13 +447,72 @@ FreqGradient(
 	return(1);
 }
 
+//-----------------//
+// DopplerAndDelay //
+//-----------------//
+// Estimate the ideal doppler frequency and receiver gate delay.
+// Later, this should be replaced with the Doppler and range tracking stuff.
+
+#define DOPPLER_ACCURACY	1.0		// 1 Hz
+
+int
+DopplerAndDelay(
+	Vector3				vector,
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument)
+{
+	//-----------------------------------------------------//
+	// calculate receiver gate delay to put echo in center //
+	//-----------------------------------------------------//
+
+	int current_beam_idx = instrument->antenna.currentBeamIdx;
+	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
+	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
+	double round_trip_time = 2.0 * slant_range / speed_light_kps;
+	instrument->receiverGateDelay = pulse_width / 2.0 + round_trip_time +
+		instrument->systemDelay;
+
+	//--------------------------------------------------//
+	// calculate baseband frequency w/o Doppler command //
+	//--------------------------------------------------//
+
+	double chirp_start = instrument->chirpStartM * pulse_width +
+		instrument->chirpStartB;
+	double transmit_center = -chirp_start / instrument->chirpRate;
+	double echo_center = transmit_center + round_trip_time +
+		instrument->systemDelay;
+	double range_freq = instrument->chirpRate *
+		(instrument->receiverGateDelay - echo_center);
+
+	Vector3 vspot(-w_earth * r_target.get(1), w_earth * r_target.get(0), 0);
+	Vector3 vrel = sc_orbit_state->vsat - vspot;
+
+	instrument->commandedDoppler = 0.0;
+	double xmit_freq, lambda, doppler_freq, new_commanded_doppler, dif;
+	do
+	{
+		xmit_freq = instrument->baseTransmitFreq +
+			instrument->commandedDoppler;
+		lambda = speed_light / xmit_freq;
+		doppler_freq = 2000.0 * (vrel % ulook_gc) / lambda;
+		new_commanded_doppler = range_freq - doppler_freq;
+		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
+		instrument->commandedDoppler = new_commanded_doppler;
+	} while (dif > DOPPLER_ACCURACY);
+
+	return(1);
+}
+
 //------------//
 // TargetInfo //
 //------------//
 // Compute some useful numbers for the target on the earth's surface
 // intercepted by a particular direciton in the antenna frame.
-//
-// Inputs:
 
 int
 TargetInfo(
@@ -478,7 +537,7 @@ TargetInfo(
 	Vector3 vspot(-w_earth * rspot->get(1), w_earth * rspot->get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light / actual_xmit_frequency;
-	tip->dopplerFreq = -2.0 * 1000.0 * (vrel % ulook_gc) / lambda;
+	tip->dopplerFreq = 2.0 * 1000.0 * (vrel % ulook_gc) / lambda;
 
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
@@ -486,14 +545,13 @@ TargetInfo(
 	double chirp_start = instrument->chirpStartM * pulse_width +
 		instrument->chirpStartB;
 	double transmit_center = -chirp_start / instrument->chirpRate;
-	double flight_time = 2 * tip->slantRange / speed_light_kps;
-	double echo_center = transmit_center + flight_time +
+	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
+	double echo_center = transmit_center + tip->roundTripTime +
 		instrument->systemDelay;
-	double rx_gate_center = instrument->receiverGateDelay +
-		instrument->receiverGateWidth / 2.0;
-	tip->rangeFreq = instrument->chirpRate * (rx_gate_center - echo_center);
-	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq +
-		instrument->commandedDoppler;
+	tip->rangeFreq = instrument->chirpRate *
+		(instrument->receiverGateDelay - echo_center);
+	tip->basebandFreq = tip->rangeFreq - (tip->dopplerFreq +
+		instrument->commandedDoppler);
 
 	return(1);
 }

@@ -26,8 +26,9 @@ static const char rcs_id_instrumentgeom_h[] =
 
 struct TargetInfoPackage {
 	EarthPosition	rTarget;
-	float			slantRange;
-	float			dopplerFreq;
+	float			slantRange;		// km
+	float			roundTripTime;	// ms
+	float			dopplerFreq;	// Hz
 	float			rangeFreq;
 	float			basebandFreq;
 };
@@ -56,7 +57,10 @@ int		FreqGradient(CoordinateSwitch* beam_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float az, float el,
 				float grad_angle, float* df_daz, float* df_del);
 
-int		TargetInfo(Vector3 ulook_beam, CoordinateSwitch* antenna_frame_to_gc,
+int		DopplerAndDelay(Vector3 vector, CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Instrument* instrument);
+
+int		TargetInfo(Vector3 vector, CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument,
 			TargetInfoPackage* tip);
 
