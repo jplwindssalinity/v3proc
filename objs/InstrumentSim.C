@@ -121,7 +121,8 @@ InstrumentSim::SetMeasurements(
 	// for each measurement... //
 	//-------------------------//
 
-	int sliceno = 0;
+	int slice_count = instrument->GetTotalSliceCount();
+	int sliceno = -slice_count/2;
 	for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
 	{
 		//----------------------------------------//
@@ -212,7 +213,7 @@ InstrumentSim::SetMeasurements(
 		float Kfactor=1.0;
 		if (useKfactor)
 		{
-			Kfactor=kfactorTable.RetrieveBySliceNumber(
+			Kfactor=kfactorTable.RetrieveByRelativeSliceNumber(
 				instrument->antenna.currentBeamIdx,
 				instrument->antenna.azimuthAngle, sliceno);
 		}
@@ -223,6 +224,7 @@ InstrumentSim::SetMeasurements(
 			return(0);
 		}
 		sliceno++;
+		if(slice_count%2==0 && sliceno==0) sliceno++;
 	}
 
 	return(1);

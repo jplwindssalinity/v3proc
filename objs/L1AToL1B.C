@@ -172,7 +172,7 @@ L10ToL15::Convert(
 			// for each slice... //
 			//-------------------//
 
-			int sliceno=0;
+			int sliceno=-(l10->frame.slicesPerSpot/2);
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
@@ -209,6 +209,8 @@ L10ToL15::Convert(
 
 				total_slice_idx++;
 				sliceno++;
+				if(l10->frame.slicesPerSpot%2==0 && sliceno==0)
+				  sliceno++;
 			}
 
 			l15->frame.spotList.Append(meas_spot);
