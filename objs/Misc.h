@@ -18,6 +18,8 @@
 #ifndef MISC_H
 #define MISC_H
 
+#include <stdio.h>
+
 static const char rcs_id_misc_h[] =
 	"@(#) $Id$";
 
