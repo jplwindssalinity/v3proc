@@ -80,7 +80,7 @@ Cosine(
 	// get bracketing values //
 	//-----------------------//
 
-	float cos_1 = _cosTable[idx];
+	float cos_1 = _cosTable[idx % _cosTableSize];
 	float cos_2 = _cosTable[(idx + 1) % _cosTableSize];
 
 	//-------------//
@@ -314,10 +314,10 @@ RangeTracker::SetRoundTripTime(
 
 	for (int term_idx = 0; term_idx < 3; term_idx++)
 	{
-		*(*(_scale + term_idx) + 0) = S_TO_MS * mins[term_idx];
+		*(*(_scale + term_idx) + 0) = mins[term_idx];
 
-		*(*(_scale + term_idx) + 1) = S_TO_MS *
-			(maxs[term_idx] - mins[term_idx]) / 255.0;
+		*(*(_scale + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
+			255.0;
 	}
 
 	//------------------------//
@@ -330,7 +330,7 @@ RangeTracker::SetRoundTripTime(
 		for (int term_idx = 0; term_idx < 3; term_idx++)
 		{
 			*(*(_delay + range_step) + term_idx) =
-				(unsigned char)((S_TO_MS * *(*(terms + range_step) +
+				(unsigned char)(( *(*(terms + range_step) +
 				term_idx) - *(*(_scale + term_idx) + 0)) /
 				*(*(_scale + term_idx) + 1) + 0.5);
 		}
