@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -12,7 +12,7 @@
 //      [ -o output_file ]
 //
 // DESCRIPTION
-//    Converts RGC files among various formats.  Options can be
+//    Converts DTC files among various formats.  Options can be
 //      put wherever necessary and are applied in order.
 //
 // OPTIONS
@@ -20,7 +20,7 @@
 //                          option is only needed when converting to
 //                          or from the ground system format which puts
 //                          both beams in one file.
-//    [ -f format ]       Indicates the format of the RGC file.  Can be
+//    [ -f format ]       Indicates the format of the DTC file.  Can be
 //                          b (binary), g (ground system), h (hex), or
 //                          o (old binary).
 //    [ -i input_file ]   Specifies an input file name.
@@ -163,7 +163,7 @@ main(
             if (! read_it(beam_idx, format, input_file, got_it, &dtc_0,
                 &dtc_1))
             {
-                fprintf(stderr, "%s: error reading RGC file %s\n", command,
+                fprintf(stderr, "%s: error reading DTC file %s\n", command,
                     input_file);
                 exit(1);
             }
@@ -173,7 +173,7 @@ main(
             if (! write_it(beam_idx, format, output_file, got_it, &dtc_0,
                 &dtc_1))
             {
-                fprintf(stderr, "%s: error writing RGC file %s\n", command,
+                fprintf(stderr, "%s: error writing DTC file %s\n", command,
                     output_file);
                 exit(1);
             }
@@ -227,7 +227,7 @@ read_it(
     case 'b':
         if (! dtc_use->ReadBinary(input_file))
         {
-            fprintf(stderr, "Error reading binary RGC file %s\n", input_file);
+            fprintf(stderr, "Error reading binary DTC file %s\n", input_file);
             exit(1);
         }
         got_it[beam_idx] = 1;
@@ -235,7 +235,7 @@ read_it(
     case 'g':
         if (! dtc_0->ReadGS(input_file, dtc_1))
         {
-            fprintf(stderr, "Error reading GS RGC file %s\n", input_file);
+            fprintf(stderr, "Error reading GS DTC file %s\n", input_file);
             exit(1);
         }
         got_it[0] = 1;
@@ -244,7 +244,7 @@ read_it(
     case 'h':
         if (! dtc_use->ReadHex(input_file))
         {
-            fprintf(stderr, "Error reading hex RGC file %s\n", input_file);
+            fprintf(stderr, "Error reading hex DTC file %s\n", input_file);
             exit(1);
         }
         got_it[beam_idx] = 1;
@@ -252,7 +252,7 @@ read_it(
     case 'o':
         if (! dtc_use->ReadOldBinary(input_file))
         {
-            fprintf(stderr, "Error reading old binary RGC file %s\n",
+            fprintf(stderr, "Error reading old binary DTC file %s\n",
                 input_file);
             exit(1);
         }
@@ -305,7 +305,7 @@ write_it(
     case 'b':
         if (! dtc_use->WriteBinary(output_file))
         {
-            fprintf(stderr, "Error writing binary RGC file %s\n", output_file);
+            fprintf(stderr, "Error writing binary DTC file %s\n", output_file);
             exit(1);
         }
         break;
@@ -317,21 +317,21 @@ write_it(
         }
         if (! dtc_0->WriteGS(output_file, dtc_1))
         {
-            fprintf(stderr, "Error writing GS RGC file %s\n", output_file);
+            fprintf(stderr, "Error writing GS DTC file %s\n", output_file);
             exit(1);
         }
         break;
     case 'h':
         if (! dtc_use->WriteHex(output_file))
         {
-            fprintf(stderr, "Error writing hex RGC file %s\n", output_file);
+            fprintf(stderr, "Error writing hex DTC file %s\n", output_file);
             exit(1);
         }
         break;
     case 'o':
         if (! dtc_use->WriteOldBinary(output_file))
         {
-            fprintf(stderr, "Error writing old binary RGC file %s\n",
+            fprintf(stderr, "Error writing old binary DTC file %s\n",
                 output_file);
             exit(1);
         }
