@@ -133,11 +133,11 @@ int plot_thing(const char* extension, const char* title, const char* x_axis,
 		const char* y_axis, float* xylimits,
 		float* data = NULL, float* secondary = NULL);
 
+int rad_to_deg(float* data);
+
 int plot_density(const char* extension, const char* title,
         const char* x_axis, const char* y_axis, float* xylimits);
 
-
-int rad_to_deg(float* data);
 
 //------------------//
 // OPTION VARIABLES //
