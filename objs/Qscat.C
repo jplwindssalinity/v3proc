@@ -52,18 +52,28 @@ QscatSes::QscatSes()
       fprintf(stderr,"Error allocating memory while constructing QscatSes\n");
       exit(1);
     }
-    Qtable[0] = 0.262445;
-    Qtable[1] = 0.0474238;
-    Qtable[2] = 0.0474936;
-    Qtable[3] = 0.0475268;
-    Qtable[4] = 0.0475150;
-    Qtable[5] = 0.0475633;
-    Qtable[6] = 0.0475408;
-    Qtable[7] = 0.0475313;
-    Qtable[8] = 0.0475262;
-    Qtable[9] = 0.0474972;
-    Qtable[10] = 0.0474421;
-    Qtable[11] = 0.262501;
+
+    //-----------------------------------------------------------------------//
+    // Nominal Q-table (0.5 ms effective gate width) converted to correction
+    // relative to the nominal slice widths.
+    //   ie., slice(i) bw = Qtable[i]*Bs where Bs is the nominal slice bw.
+    //-----------------------------------------------------------------------//
+
+    float Bs = 8314.0;   // Nominal value consistent with q-table.
+    float Bg = 46190.0;  // Nominal value consistent with q-table.
+    float Be = 10*Bs + 2*Bg;
+    Qtable[0] = 0.262445 * Be/Bg;
+    Qtable[1] = 0.0474238 * Be/Bs;
+    Qtable[2] = 0.0474936 * Be/Bs;
+    Qtable[3] = 0.0475268 * Be/Bs;
+    Qtable[4] = 0.0475150 * Be/Bs;
+    Qtable[5] = 0.0475633 * Be/Bs;
+    Qtable[6] = 0.0475408 * Be/Bs;
+    Qtable[7] = 0.0475313 * Be/Bs;
+    Qtable[8] = 0.0475262 * Be/Bs;
+    Qtable[9] = 0.0474972 * Be/Bs;
+    Qtable[10] = 0.0474421 * Be/Bs;
+    Qtable[11] = 0.262501 * Be/Bg;
 
     return;
 }

@@ -1202,7 +1202,6 @@ QscatSim::MeasToEsnX(
 	double Tp = qscat->ses.txPulseWidth;
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bs = meas->bandwidth;
-	double Be = qscat->ses.GetTotalSignalBandwidth();
     double L13 = qscat->ses.receivePathLoss;
 
 	//------------------------------------------------------------------------//
@@ -1221,11 +1220,18 @@ QscatSim::MeasToEsnX(
         qscat->ses.rxGainEcho / L13;
 
 	//-------------------------------------------------------------------//
-    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
+    // Get the noise energy ratio correction from a table.
+    // We define the noise energy ratio correction so that actual slice
+    // bandwidth B = Bs * q where Bs is the nominal slice bandwidth.
+    // This is different from IOM-3347-98-043 where B = Be * q with Be
+    // being the total echo channel bandwidth.  The table is computed
+    // from the tables in the memo so that the end effect is the same,
+    // while retaining the ability to set the nominal slice bandwidth.
 	//-------------------------------------------------------------------//
 
     float q_slice;
     if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
+
     {
       fprintf(stderr,"QscatSim::MeasToEsnX: Error getting Q value\n");
       exit(1);
@@ -1235,8 +1241,8 @@ QscatSim::MeasToEsnX(
 	// Noise energy within one slice referenced like the signal energy.
 	//------------------------------------------------------------------------//
 
-	double En1_slice = N0_echo * Be*q_slice * Tp;		// noise with signal
-	double En2_slice = N0_echo * Be*q_slice * (Tg-Tp);	// noise without signal
+	double En1_slice = N0_echo * Bs*q_slice * Tp;		// noise with signal
+	double En2_slice = N0_echo * Bs*q_slice * (Tg-Tp);	// noise without signal
 	*En = En1_slice + En2_slice;
 
 	//------------------------------------------------------------------------//

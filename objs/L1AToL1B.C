@@ -555,12 +555,18 @@ L1AToL1B::ComputeSigma0(
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bn = qscat->ses.noiseBandwidth;
 	double Bs = meas->bandwidth;
-//	double Be = qscat->ses.GetTotalSignalBandwidth();
+	double Be = qscat->ses.GetTotalSignalBandwidth();
 	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 
-	//-------------------------------------------------------------------//
-    // Get the noise energy ratio q from a table. (ref. IOM-3347-98-043) //
-	//-------------------------------------------------------------------//
+    //-------------------------------------------------------------------//
+    // Get the noise energy ratio correction from a table.
+    // We define the noise energy ratio correction so that actual slice
+    // bandwidth B = Bs * q where Bs is the nominal slice bandwidth.
+    // This is different from IOM-3347-98-043 where B = Be * q with Be
+    // being the total echo channel bandwidth.  The table is computed
+    // from the tables in the memo so that the end effect is the same,
+    // while retaining the ability to set the nominal slice bandwidth.
+    //-------------------------------------------------------------------//
 
     float q_slice;
     if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
@@ -568,6 +574,13 @@ L1AToL1B::ComputeSigma0(
       fprintf(stderr,"compute_sigma0: Error getting Q value\n");
       exit(1);
     }
+
+    //-----------------------------------------------------------------//
+    // Convert to Q as defined in IOM-3347-98-043, but consistent with
+    // the values of Bs and Be being used currently.
+    //-----------------------------------------------------------------//
+
+    q_slice *= Bs/Be;
 
 	//-------------------------------------------//
     // Estimate slice signal and noise energies.
