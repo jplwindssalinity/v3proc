@@ -1360,7 +1360,6 @@ specfit(
         X.GetElement(2*j, &cos_coef);
         X.GetElement(2*j + 1, &sin_coef);
         amplitude[j] = sqrt(cos_coef*cos_coef + sin_coef*sin_coef);
-printf("%d %g %g\n", j, cos_coef, sin_coef);
         phase[j] = atan2(-sin_coef, cos_coef);
     }
 
