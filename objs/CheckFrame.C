@@ -19,7 +19,8 @@ static const char rcs_id_checkframe_c[] =
 
 CheckFrame::CheckFrame()
 :	time(0.0), rsat(Vector3(0.0,0.0,0.0)), vsat(0.0,0.0,0.0), attitude(),
-    ptgr(0.0), orbit_frac(0.0), antenna_azi(0.0),
+    ptgr(0.0), orbitFrac(0.0), antennaAziTx(0.0), antennaAziGi(0.0),
+    EsCal(0.0), deltaFreq(0.0),
     idx(NULL), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
     Es(NULL), En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
@@ -188,8 +189,11 @@ CheckFrame::AppendRecord(
         att = rtd*attitude.GetYaw();//
         if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
-        if (fwrite((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
-        if (fwrite((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
+        if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
 	return(1);
 }
 
@@ -262,8 +266,11 @@ CheckFrame::WriteDataRec(
   att = rtd*attitude.GetYaw();//
   if (fwrite((void *)&att,sizeof(float),1,fptr) != 1) return(0);
   if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
-  if (fwrite((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
-  if (fwrite((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
+  if (fwrite((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
   return(1);
 }
 
@@ -300,8 +307,11 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&pitch,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&yaw,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
-  if (fread((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
-  if (fread((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&orbitFrac,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&antennaAziTx,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&antennaAziGi,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&EsCal,sizeof(float),1,fptr) != 1) return(0);
+  if (fread((void *)&deltaFreq,sizeof(float),1,fptr) != 1) return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -320,9 +330,13 @@ CheckFrame::WriteDataRecAscii(
   attitude.GetRPY(&roll,&pitch,&yaw);
   fprintf(fptr,"S/C roll,pitch,yaw (deg): %g %g %g\n",
     rtd*roll,rtd*pitch,rtd*yaw);
-  fprintf(fptr,"orbit fraction (from ascending node): %g\n",orbit_frac);
-  fprintf(fptr,"antenna azimuth (rel to s/c y-axis. (deg)): %g\n",
-    rtd*antenna_azi);
+  fprintf(fptr,"orbit fraction (from ascending node): %g\n",orbitFrac);
+  fprintf(fptr,"antenna azimuth Tx (rel to s/c y-axis. (deg)): %g\n",
+    rtd*antennaAziTx);
+  fprintf(fptr,"antenna azimuth ground impact (rel to s/c y-axis. (deg)): %g\n",
+    rtd*antennaAziGi);
+  fprintf(fptr,"EsCal (DN): %g\n",EsCal);
+  fprintf(fptr,"deltaFreq (Hz): %g\n",deltaFreq);
   fprintf(fptr,"**** Slices Data ****\n");
   int sliceno = -5;
   for (int i=0; i < slicesPerSpot; i++)

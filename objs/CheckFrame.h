@@ -67,8 +67,11 @@ public:
 	Vector3			vsat;
 	Attitude		attitude;
 	float			ptgr;
-    float           orbit_frac;
-    float           antenna_azi;
+    float           orbitFrac;
+    float           antennaAziTx;
+    float           antennaAziGi;
+    float           EsCal;
+    float           deltaFreq;
 
 	//------------//
 	// slice data //

@@ -445,7 +445,10 @@ L1AToL1B::Convert(
 		  cf.rsat = spacecraft->orbitState.rsat;
 		  cf.vsat = spacecraft->orbitState.vsat;
 		  cf.attitude = spacecraft->attitude;
-          cf.antenna_azi = qscat->sas.antenna.txCenterAzimuthAngle;
+          cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
+          cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
+          cf.EsCal = Es_cal;
+          cf.deltaFreq = BYUX.GetDeltaFreq(spacecraft, qscat);
 		  cf.WriteDataRec(fptr);
 		  fclose(fptr);
 		}

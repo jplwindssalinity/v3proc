@@ -415,7 +415,11 @@ QscatSim::ScatSim(
         cf.rsat = spacecraft->orbitState.rsat;
         cf.vsat = spacecraft->orbitState.vsat;
         cf.attitude = spacecraft->attitude;
-        cf.antenna_azi = qscat->sas.antenna.txCenterAzimuthAngle;
+        cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
+        cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
+        cf.EsCal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
+                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
+                 qscat->ses.txPulseWidth;
         cf.WriteDataRec(fptr);
         fclose(fptr);
     }
@@ -862,6 +866,11 @@ QscatSim::SetMeasurements(
             sliceno++;
 		meas=meas_spot->GetNext();
 	}
+
+    if (simVs1BCheckfile)
+    {
+        cf->deltaFreq = BYUX.GetDeltaFreq(spacecraft, qscat);
+    }
 
 	return(1);
 }
