@@ -116,11 +116,15 @@ template class List<AngleInterval>;
 const char* usage_array[] = { "[ -c ]", "[ -m minutes ]", "[ -r rain_rate ]",
     "<mudhtab>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
-// Index 1: parameter: nbd, spd, dir, mle
-// Index 2: ssmi rain flag: (0=total,1=rainfree,2=rain)
-// Index 3: NBD availability: 0=no nbd, 1=with nbd
-// Index 4: parameter index
-static unsigned long counts[4][3][2][256];
+// Index 1: Parameter: nbd, spd, dir, mle
+// Index 2: Source: 0=data, 1=table average
+// Index 3: Probability: 0=rainfree, 1=rain, 2=no-mans-land
+// Index 4: NBD availability: 0=no nbd, 1=with nbd
+// Index 5: parameter index
+static unsigned long counts[4][2][3][2][256];
+
+// just skip the data source
+double prob_sum[4][3][2][256];
 
 static unsigned short mudhtab[16][16][16][16];
 
@@ -190,7 +194,13 @@ main(
             mudhtab_file);
         exit(1);
     }
-    fread(mudhtab, sizeof(short), 16 * 16 * 16 * 16, mudhtab_ifp);
+    unsigned int size = 16 * 16 * 16 * 16;
+    if (fread(mudhtab, sizeof(short), size, mudhtab_ifp) != size)
+    {
+        fprintf(stderr, "%s: error reading mudhtab file %s\n", command,
+            mudhtab_file);
+        exit(1);
+    }
     fclose(mudhtab_ifp);
 
     //-------------------//
@@ -210,6 +220,7 @@ main(
 
     FILE* class_with_nbd_ofp = NULL;
     FILE* class_without_nbd_ofp = NULL;
+    FILE* param_ofp[4];
     if (opt_class)
     {
         sprintf(filename, "%s.class.withnbd", output_base);
@@ -228,6 +239,19 @@ main(
             fprintf(stderr, "%s: error opening output file %s\n", command,
                 filename);
             exit(1);
+        }
+
+        const char* param_map[] = { "NBD", "Spd", "Dir", "MLE" };
+        for (int i = 0; i < 4; i++)
+        {
+            sprintf(filename, "%s.%s", output_base, param_map[i]);
+            param_ofp[i] = fopen(filename, "w");
+            if (param_ofp[i] == NULL)
+            {
+                fprintf(stderr, "%s: error opening output file %s\n", command,
+                    filename);
+                exit(1);
+            }
         }
     }
 
@@ -372,9 +396,23 @@ main(
                 if (imle < 0) imle = 0;
                 if (imle > 15) imle = 15;
 
+                //----------------------//
+                // determine ssmi class //
+                //----------------------//
+
+                float rr = rain_rate[ati][cti] * 0.1;
+                int ssmi_flag;
+                if (rr == 0.0)
+                    ssmi_flag = 0;    // rainfree
+                else if (rr > rain_threshold)
+                    ssmi_flag = 1;    // rain
+                else
+                    ssmi_flag = 2;    // no-mans-land
+
                 //------------------------------------------//
                 // look up probabilities from the mudhtable //
                 //------------------------------------------//
+
                 if (opt_class)
                 {
                     int irain = mudhtab[inbd][ispd][idir][imle];
@@ -385,79 +423,75 @@ main(
                     irainfree &= 0x00ff;
                     float frainfree = (float)irainfree * 0.5;
 
-                    float rr = (float)rain_rate[ati][cti] * 0.1;
+                    //----------------------//
+                    // write to class files //
+                    //----------------------//
 
+                    int got_nbd;
                     if (inbd == 15)
                     {
+                        got_nbd = 0;
                         fprintf(class_without_nbd_ofp,
                             "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd, dir,
                             mle, frainfree, frain, rr, rev, ati, cti);
                     }
                     else
                     {
+                        got_nbd = 1;
                         fprintf(class_with_nbd_ofp,
                             "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd, dir,
                             mle, frainfree, frain, rr, rev, ati, cti);
                     }
+
+                    //----------------------//
+                    // accumulate from data //
+                    //----------------------//
+
+                    int nbd_idx = nbd_array[ati][cti];
+                    int spd_idx = spd_array[ati][cti];
+                    int dir_idx = dir_array[ati][cti];
+                    int mle_idx = mle_array[ati][cti];
+
+                    int nbd_avail = 1;
+                    if (nbd_idx == 255)
+                        nbd_avail = 0;
+
+                    counts[0][0][ssmi_flag][nbd_avail][nbd_idx]++;
+                    counts[1][0][ssmi_flag][nbd_avail][spd_idx]++;
+                    counts[2][0][ssmi_flag][nbd_avail][dir_idx]++;
+                    counts[3][0][ssmi_flag][nbd_avail][mle_idx]++;
+
+                    //-----------------------//
+                    // accumulate from table //
+                    //-----------------------//
+
+                    counts[0][1][0][nbd_avail][nbd_idx]++;
+                    counts[0][1][1][nbd_avail][nbd_idx]++;
+                    prob_sum[0][0][nbd_avail][nbd_idx] += frainfree;
+                    prob_sum[0][1][nbd_avail][nbd_idx] += frain;
+
+                    counts[1][1][0][nbd_avail][spd_idx]++;
+                    counts[1][1][1][nbd_avail][spd_idx]++;
+                    prob_sum[1][0][nbd_avail][spd_idx] += frainfree;
+                    prob_sum[1][1][nbd_avail][spd_idx] += frain;
+
+                    counts[2][1][0][nbd_avail][dir_idx]++;
+                    counts[2][1][1][nbd_avail][dir_idx]++;
+                    prob_sum[2][0][nbd_avail][dir_idx] += frainfree;
+                    prob_sum[2][1][nbd_avail][dir_idx] += frain;
+
+                    counts[3][1][0][nbd_avail][mle_idx]++;
+                    counts[3][1][1][nbd_avail][mle_idx]++;
+                    prob_sum[3][0][nbd_avail][mle_idx] += frainfree;
+                    prob_sum[3][1][nbd_avail][mle_idx] += frain;
                 }
-            }
-        }
-
-        //-----------------------//
-        // accumulate histograms //
-        //-----------------------//
-
-        for (int ati = 0; ati < ATI_SIZE; ati++)
-        {
-            for (int cti = 0; cti < CTI_SIZE; cti++)
-            {
-                // check data
-                if (rain_rate[ati][cti] >= 250 ||
-                    spd_array[ati][cti] == 255 ||
-                    dir_array[ati][cti] == 255 ||
-                    mle_array[ati][cti] == 255)
-                {
-                    continue;
-                }
-
-                //----------------------//
-                // determine ssmi class //
-                //----------------------//
-
-                float rr = rain_rate[ati][cti] * 0.1;
-                int ssmi_flag;
-                if (rr == 0.0)
-                    ssmi_flag = 1;    // rainfree
-                else if (rr > rain_threshold)
-                    ssmi_flag = 2;    // rain
-                else
-                    continue;         // no-mans-land
-
-                //------------//
-                // accumulate //
-                //------------//
-
-                int nbd_idx = nbd_array[ati][cti];
-                int nbd_avail = 1;
-                if (nbd_idx == 255)
-                    nbd_avail = 0;
-                counts[0][ssmi_flag][nbd_avail][nbd_idx]++;
-
-                int spd_idx = spd_array[ati][cti];
-                counts[1][ssmi_flag][nbd_avail][spd_idx]++;
-
-                int dir_idx = dir_array[ati][cti];
-                counts[2][ssmi_flag][nbd_avail][dir_idx]++;
-
-                int mle_idx = mle_array[ati][cti];
-                counts[3][ssmi_flag][nbd_avail][mle_idx]++;
             }
         }
     }
 
-    //------------------//
-    // write histograms //
-    //------------------//
+    //---------------------//
+    // write probabilities //
+    //---------------------//
 
 /*
     const char* param_map[] = { "NBD", "Speed", "Direction", "MLE" };
@@ -465,27 +499,66 @@ main(
 */
     float param_b[] = { 6.0, 0.0, 0.0, 30.0 };
     float param_m[] = { 20.0, 5.0, 2.0, 8.0 };
+
+    // from data
     for (int param_idx = 0; param_idx < 4; param_idx++)
     {
-        // ratio of rain to total and rainfree to total
         for (int nbd_avail = 0; nbd_avail < 2; nbd_avail++)
         {
-            for (int idx = 0; idx < 256; idx++)
+            for (int idx = 0; idx < 255; idx++)
             {
-                if (counts[param_idx][0][nbd_avail][idx] +
-                    counts[param_idx][1][nbd_avail][idx] < MIN_SAMPLES)
+                // determine total number of points
+                unsigned long cell_total = 0;
+                for (int cond_idx = 0; cond_idx < 3; cond_idx++)
+                {
+                    cell_total +=
+                        counts[param_idx][0][cond_idx][nbd_avail][idx];
+                }
+                if (cell_total == 0)
+                    continue;
+
+                float value = (float)idx / param_m[param_idx] -
+                    param_b[param_idx];
+                double rainfree_prob =
+                    (double)counts[param_idx][0][0][nbd_avail][idx] /
+                    (double)cell_total;
+                double rain_prob =
+                    (double)counts[param_idx][0][1][nbd_avail][idx] /
+                    (double)cell_total;
+
+                fprintf(param_ofp[param_idx], "%g %g %g\n", value,
+                    rainfree_prob, rain_prob);
+            }
+            fprintf(param_ofp[param_idx], "&\n");
+        }
+    }
+
+    // average from table
+    for (int param_idx = 0; param_idx < 4; param_idx++)
+    {
+        for (int nbd_avail = 0; nbd_avail < 2; nbd_avail++)
+        {
+            for (int idx = 0; idx < 255; idx++)
+            {
+                if (counts[param_idx][1][0][nbd_avail][idx] == 0 ||
+                    counts[param_idx][1][1][nbd_avail][idx] == 0)
                 {
                     continue;
                 }
-                unsigned long cell_total =
-                    counts[param_idx][0][nbd_avail][idx] +
-                    counts[param_idx][1][nbd_avail][idx];
+
                 float value = (float)idx / param_m[param_idx] -
                     param_b[param_idx];
-                fprintf(prob_ofp, "%g %g\n", value,
-                    (double)counts[param_idx][1][nbd_avail][idx] / cell_total);
+                double rainfree_prob = 0.01 *
+                    prob_sum[param_idx][0][nbd_avail][idx] /
+                    (double)counts[param_idx][1][0][nbd_avail][idx];
+                double rain_prob = 0.01 *
+                    prob_sum[param_idx][1][nbd_avail][idx] /
+                    (double)counts[param_idx][1][1][nbd_avail][idx];
+
+                fprintf(param_ofp[param_idx], "%g %g %g\n", value,
+                    rainfree_prob, rain_prob);
             }
-            fprintf(prob_ofp, "&\n");
+            fprintf(param_ofp[param_idx], "&\n");
         }
     }
 
