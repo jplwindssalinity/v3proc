@@ -333,6 +333,9 @@ main(
                                  argv[0], l2b_file);
           exit(1);
       }
+      l2b.header.crossTrackResolution = 25.0;
+      l2b.header.alongTrackResolution = 25.0;
+      l2b.header.zeroIndex = 38;
     }
     else
     {
