@@ -10,7 +10,7 @@
 // SYNOPSIS
 //		l2b_metrics [ -c config_file ] [ -l l2b_file ]
 //			[ -t truth_type ] [ -f truth_file ] [ -s low:high ]
-//			[ -o output_base ] [ -w within ]
+//			[ -o output_base ] [ -w within ] [-a] [-i subtitle str]
 //
 // DESCRIPTION
 //		Generates output files containing wind retrieval metrics
@@ -25,6 +25,8 @@
 //		[ -s low:high ]		The range of wind speeds.
 //		[ -o output_base ]	The base name to use for output files.
 //		[ -w within ]		The angle to use for within.
+//		[ -a ]				Autoscale plots
+//		[ -i subtitle string]
 //
 // OPERANDS
 //		None.
@@ -81,13 +83,30 @@ template class List<WindVectorPlus>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING				"c:l:t:f:s:o:w:"
+#define OPTSTRING				"c:l:t:f:s:o:w:a:i:"
 #define ARRAY_SIZE				1024
 
 #define DEFAULT_LOW_SPEED		0.0
 #define DEFAULT_HIGH_SPEED		30.0
 #define DEFAULT_WITHIN_ANGLE	45.0
 #define DEFAULT_OUTPUT_BASE		"metrics"
+#define DEFAULT_XMIN			-1000.0
+#define DEFAULT_XMAX			1000.0
+#define DEFAULT_YMIN			0.0
+#define DEFAULT_YMAX			1.0
+#define RMS_SPD_MIN				0.0
+#define RMS_SPD_MAX				5.0
+#define RMS_DIR_MIN				0.0
+#define RMS_DIR_MAX				50.0
+#define RMS_DIR_MAX2			120.0
+#define BIAS_SPD_MIN			-3.0
+#define BIAS_SPD_MAX			3.0
+#define BIAS_DIR_MIN			-10.0
+#define BIAS_DIR_MAX			10.0
+#define BIAS_DIR_MIN2			-80.0
+#define BIAS_DIR_MAX2			80.0
+#define SKILL_MIN				0.3
+#define SKILL_MAX				1.0
 
 //--------//
 // MACROS //
@@ -105,7 +124,8 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 		const char* x_label, const char* y_label);
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
-		const char* y_axis, float* data = NULL, float* secondary = NULL);
+		const char* y_axis, float* xylimits,
+		float* data = NULL, float* secondary = NULL);
 
 int rad_to_deg(float* data);
 
@@ -119,7 +139,7 @@ int rad_to_deg(float* data);
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
-	"[ -o output_base ]", "[ -w within ]", 0 };
+	"[ -o output_base ]", "[ -w within ]", "[ -a ]", "[ -i subtitle ]", 0 };
 
 // not always evil...
 float*			ctd_array = NULL;
@@ -132,6 +152,8 @@ int				cross_track_bins = 0;
 const char*		command = NULL;
 char*			l2b_file = NULL;
 char*			output_base = NULL;
+char*			subtitle_str = NULL;
+int				autoscale = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -155,6 +177,8 @@ main(
 	float high_speed = DEFAULT_HIGH_SPEED;
 	float within_angle = DEFAULT_WITHIN_ANGLE;
 	output_base = NULL;
+	float xylimits[4] = {DEFAULT_XMIN, DEFAULT_XMAX,
+						 DEFAULT_YMIN, DEFAULT_YMAX};
 
 	//------------------------//
 	// parse the command line //
@@ -201,6 +225,12 @@ main(
 			break;
 		case 'w':
 			within_angle = atof(optarg);
+			break;
+		case 'a':
+			autoscale = 1;
+			break;
+		case 'i':
+			subtitle_str = optarg;
 			break;
 		case '?':
 			usage(command, usage_array, 1);
@@ -321,19 +351,23 @@ main(
 			command);
 		exit(1);
 	}
+	xylimits[2] = RMS_SPD_MIN;
+	xylimits[3] = RMS_SPD_MAX;
 	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", value_array, std_dev_array);
+		"RMS Speed Error (m/s)", xylimits, value_array, std_dev_array);
 
 	//-----------------------------//
 	// selected speed bias vs. ctd //
 	//-----------------------------//
 
+	xylimits[2] = BIAS_SPD_MIN;
+	xylimits[3] = BIAS_SPD_MAX;
 	sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)", value_2_array);
+		"Speed Bias (m/s)", xylimits, value_2_array);
 
 	//--------------------------------------//
 	// selected rms direction error vs. ctd //
@@ -348,20 +382,24 @@ main(
 	}
 	rad_to_deg(value_array);
 	rad_to_deg(std_dev_array);
+	xylimits[2] = RMS_DIR_MIN;
+	xylimits[3] = RMS_DIR_MAX2;
 	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", value_array, std_dev_array);
+		"RMS Direction Error (deg)", xylimits, value_array, std_dev_array);
 
 	//---------------------------------//
 	// selected direction bias vs. ctd //
 	//---------------------------------//
 
 	rad_to_deg(value_2_array);
+	xylimits[2] = BIAS_DIR_MIN2;
+	xylimits[3] = BIAS_DIR_MAX2;
 	sprintf(title, "Selected Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("sel_dir_bias", title, "Cross Track Distance (km)",
-		"Direction Bias (deg)", value_2_array);
+		"Direction Bias (deg)", xylimits, value_2_array);
 
 	//---------------//
 	// skill vs. ctd //
@@ -373,8 +411,10 @@ main(
 		fprintf(stderr, "%s: error calculating skill\n", command);
 		exit(1);
 	}
+	xylimits[2] = SKILL_MIN;
+	xylimits[3] = SKILL_MAX;
 	sprintf(title, "Skill vs. CTD (%g - %g m/s)", low_speed, high_speed);
-	plot_thing("skill", title, "Cross Track Distance (km)", "Skill");
+	plot_thing("skill", title, "Cross Track Distance (km)", "Skill", xylimits);
 
 	//----------------//
 	// within vs. ctd //
@@ -386,9 +426,11 @@ main(
 		fprintf(stderr, "%s: error calculating within\n", command);
 		exit(1);
 	}
+	xylimits[2] = SKILL_MIN;
+	xylimits[3] = SKILL_MAX;
 	sprintf(title, "Within %.0f vs. CTD (%g - %g m/s)", within_angle,
 		low_speed, high_speed);
-	plot_thing("within", title, "Cross Track Distance (km)", "Within");
+	plot_thing("within", title, "Cross Track Distance (km)", "Within",xylimits);
 
 	//=========//
 	// NEAREST //
@@ -407,19 +449,23 @@ main(
 			command);
 		exit(1);
 	}
+	xylimits[2] = RMS_SPD_MIN;
+	xylimits[3] = RMS_SPD_MAX;
 	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)", value_array, std_dev_array);
+		"RMS Speed Error (m/s)", xylimits, value_array, std_dev_array);
 
 	//----------------------------//
 	// nearest speed bias vs. ctd //
 	//----------------------------//
 
+	xylimits[2] = BIAS_SPD_MIN;
+	xylimits[3] = BIAS_SPD_MAX;
 	sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)", value_2_array);
+		"Speed Bias (m/s)", xylimits, value_2_array);
 
 	//-------------------------------------//
 	// nearest rms direction error vs. ctd //
@@ -434,20 +480,24 @@ main(
 	}
 	rad_to_deg(value_array);
 	rad_to_deg(std_dev_array);
+	xylimits[2] = RMS_DIR_MIN;
+	xylimits[3] = RMS_DIR_MAX;
 	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)", value_array, std_dev_array);
+		"RMS Direction Error (deg)", xylimits, value_array, std_dev_array);
 
 	//--------------------------------//
 	// nearest direction bias vs. ctd //
 	//--------------------------------//
 
 	rad_to_deg(value_2_array);
+	xylimits[2] = BIAS_DIR_MIN;
+	xylimits[3] = BIAS_DIR_MAX;
 	sprintf(title, "Nearest Direction Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("near_dir_bias", title, "Cross Track Distance (km)",
-		"Direction Bias (deg)", value_2_array);
+		"Direction Bias (deg)", xylimits, value_2_array);
 
 	//-------------//
 	// free arrays //
@@ -475,12 +525,33 @@ xmgr_control(
 	const char*		title,
 	const char*		subtitle,
 	const char*		x_label,
-	const char*		y_label)
+	const char*		y_label,
+	float*			xylimits)
 {
+	fprintf(ofp, "@ with g0\n");
 	fprintf(ofp, "@ title %c%s%c\n", QUOTE, title, QUOTE);
 	fprintf(ofp, "@ subtitle %c%s%c\n", QUOTE, subtitle, QUOTE);
 	fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, x_label, QUOTE);
 	fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, y_label, QUOTE);
+	if (! autoscale)
+	{
+		fprintf(ofp, "@ world xmin %f\n",xylimits[0]);
+		fprintf(ofp, "@ world xmax %f\n",xylimits[1]);
+		fprintf(ofp, "@ world ymin %f\n",xylimits[2]);
+		fprintf(ofp, "@ world ymax %f\n",xylimits[3]);
+		fprintf(ofp, "@ xaxis tick major 400\n");
+		fprintf(ofp, "@ xaxis tick minor 200\n");
+		fprintf(ofp, "@ yaxis tick major %f\n",(xylimits[3]-xylimits[2])/10);
+		fprintf(ofp, "@ yaxis tick minor %f\n",(xylimits[3]-xylimits[2])/20);
+	}
+	fprintf(ofp, "@ xaxis tick major grid on\n");
+	fprintf(ofp, "@ xaxis tick minor grid on\n");
+	fprintf(ofp, "@ yaxis tick major grid on\n");
+	fprintf(ofp, "@ yaxis tick minor grid on\n");
+	fprintf(ofp, "@ xaxis tick major linestyle 2\n");
+	fprintf(ofp, "@ xaxis tick minor linestyle 2\n");
+	fprintf(ofp, "@ yaxis tick major linestyle 2\n");
+	fprintf(ofp, "@ yaxis tick minor linestyle 2\n");
 	return(1);
 }
 
@@ -494,6 +565,7 @@ plot_thing(
 	const char*		title,
 	const char*		x_axis,
 	const char*		y_axis,
+	float*			xylimits,
 	float*			data,
 	float*			secondary)
 {
@@ -507,7 +579,17 @@ plot_thing(
 		exit(1);
 	}
 
-	xmgr_control(ofp, title, l2b_file, x_axis, y_axis);
+	char sub_title[1024];
+	if (subtitle_str)
+	{
+		sprintf(sub_title,"%s %s",l2b_file,subtitle_str);
+	}
+	else
+	{
+		sprintf(sub_title,"%s",l2b_file);
+	}
+
+	xmgr_control(ofp, title, sub_title, x_axis, y_axis, xylimits);
 
 	//------//
 	// plot //
