@@ -916,23 +916,20 @@ PscatSim::SetL1AScience(
     //-------------------------//
 
     // determine the spot meas location offset
-    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+    int spot_slice_offset = _spotNumber * l1a_frame->slicesPerSpot;
 
-    unsigned int* ptr = NULL;
-    unsigned int ivalue = 0;
-    float fvalue = 0.0;
-
-    for (Meas* meas = meas_spot->GetHead(); meas;
-        meas = meas_spot->GetNext())
+    for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
     {
-        int meas_offset = 0;
+        int slice_idx;
+        rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
+            &slice_idx);
+
         switch (meas->measType)
         {
         case Meas::VV_MEAS_TYPE:
         case Meas::HH_MEAS_TYPE:
-            meas_offset = 0;    // co-pol offset
-            ivalue = (unsigned int)meas->value;    // store value as uint
-            ptr = &ivalue;
+            l1a_frame->copol[spot_slice_offset + slice_idx] =
+                (unsigned int)meas->value;
             break;
         case Meas::VH_MEAS_TYPE:
         case Meas::HV_MEAS_TYPE:
@@ -940,26 +937,19 @@ PscatSim::SetL1AScience(
             break;
         case Meas::VV_HV_CORR_MEAS_TYPE:
         case Meas::HH_VH_CORR_MEAS_TYPE:
-            meas_offset = 1;    // correlation offset
-            fvalue = (float)meas->value;    // store value as float
-            ptr = (unsigned int *)&fvalue;
+            l1a_frame->corr[spot_slice_offset + slice_idx] = meas->value;
             break;
         default:
             return(0);
             break;
         }
 
-        int slice_idx;
-        rel_to_abs_idx(meas->startSliceIdx, l1a_frame->slicesPerSpot,
-            &slice_idx);
-        int slice_meas_offset = slice_idx * l1a_frame->measPerSlice;
-
         //--------------------------//
         // update the level 1 frame //
         //--------------------------//
 
-        l1a_frame->science[spot_meas_offset + slice_meas_offset +
-            meas_offset] = *ptr;
+if (l1a_frame->copol[spot_slice_offset + slice_idx] == 17107)
+printf("x\n");
     }
 
     //----------------------------------------------------//
@@ -970,7 +960,11 @@ PscatSim::SetL1AScience(
     for (Meas* meas = meas_spot->GetHead(); meas;
         meas = meas_spot->GetNext())
     {
-        copol_only.Append(meas);
+        if (meas->measType == Meas::VV_MEAS_TYPE ||
+            meas->measType == Meas::HH_MEAS_TYPE)
+        {
+            copol_only.Append(meas);
+        }
     }
     float spot_noise;
     sigma0_to_Esn_noise(pscat, &copol_only, simKpcFlag, &spot_noise);
@@ -1017,10 +1011,10 @@ PscatSim::SetL1ALoopback(
     // for each slice... //
     //-------------------//
 
-    // determine the spot meas location offset
-    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+    // determine the spot slice location offset
+    int spot_slice_offset = _spotNumber * l1a_frame->slicesPerSpot;
 
-    for (int i = 0; i < l1a_frame->slicesPerSpot; i++)
+    for (int slice_idx = 0; slice_idx < l1a_frame->slicesPerSpot; slice_idx++)
     {
         //----------------------------------------------------------------//
         // Update the level 1A frame.
@@ -1033,17 +1027,15 @@ PscatSim::SetL1ALoopback(
         // processing system.
         //----------------------------------------------------------------//
 
-        int slice_meas_offset = i * l1a_frame->measPerSlice;
-
-        l1a_frame->loopbackSlices[i] = 0;
-        l1a_frame->science[spot_meas_offset + slice_meas_offset] = 0;
+        l1a_frame->loopbackSlices[slice_idx] = 0;
+        l1a_frame->copol[spot_slice_offset + slice_idx] = 0;
     }
 
     // Now set the single slice with loopback energy.
     // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
     int icenter = l1a_frame->slicesPerSpot / 2;
     l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
-    l1a_frame->science[spot_meas_offset + icenter * l1a_frame->measPerSlice] =
+    l1a_frame->copol[spot_slice_offset + icenter] =
       (unsigned int)(Esn_echo_cal/256.0);
 
     //----------------------------------------------//
@@ -1097,10 +1089,10 @@ PscatSim::SetL1ALoad(
     // for each slice... //
     //-------------------//
 
-    // determine the spot meas location offset
-    int spot_meas_offset = _spotNumber * l1a_frame->measPerSpot;
+    // determine the spot slices location offset
+    int spot_slice_offset = _spotNumber * l1a_frame->slicesPerSpot;
 
-    for (int i = 0; i < l1a_frame->slicesPerSpot; i++)
+    for (int slice_idx = 0; slice_idx < l1a_frame->slicesPerSpot; slice_idx++)
     {
         //----------------------------------------------------------------//
         // Update the level 0.0 frame
@@ -1112,12 +1104,10 @@ PscatSim::SetL1ALoad(
         // and into separate storage just like the ground processing system.
         //----------------------------------------------------------------//
 
-        int slice_meas_offset = i * l1a_frame->measPerSlice;
-
-        l1a_frame->loadSlices[i] =
-          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
-        l1a_frame->science[spot_meas_offset + slice_meas_offset] =
-          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
+        l1a_frame->loadSlices[slice_idx] =
+          (unsigned int)(En_echo_load / l1a_frame->slicesPerSpot);
+        l1a_frame->copol[spot_slice_offset + slice_idx] =
+          (unsigned int)(En_echo_load / l1a_frame->slicesPerSpot);
     }
 
     //----------------------------------------------//

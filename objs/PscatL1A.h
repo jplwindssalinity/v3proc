@@ -96,7 +96,8 @@ public:
     //----------------------//
 
     unsigned char*   eventId;
-    unsigned int*    science;
+    unsigned int*    copol;
+    float*           corr;
     unsigned int*    spotNoise;
 
     //----------------------------//
@@ -112,9 +113,7 @@ public:
     int  antennaCyclesPerFrame;
     int  spotsPerFrame;
     int  slicesPerSpot;
-    int  measPerSlice;
-    int  measPerSpot;
-    int  measPerFrame;
+    int  slicesPerFrame;
 };
 
 //======================================================================

@@ -117,13 +117,9 @@ template class TrackerBase<unsigned short>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int
-process_spacecraft_event(SpacecraftSim* spacecraft_sim,
-  SpacecraftEvent* spacecraft_event,
-  Spacecraft* spacecraft,
-  Qscat* qscat,
-  FILE* eph_fp,
-  FILE* att_fp);
+int  process_spacecraft_event(SpacecraftSim* spacecraft_sim,
+         SpacecraftEvent* spacecraft_event, Spacecraft* spacecraft,
+         Qscat* qscat, FILE* eph_fp, FILE* att_fp);
 
 //------------------//
 // OPTION VARIABLES //
@@ -142,12 +138,13 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 //--------------------//
 
 float sim_time = 0.0;
+
 void
 report(
     int  sig_num)
 {
     sig_num = sig_num;
-    fprintf(stderr, "sim: Current simulation time %g\n", sim_time); 
+    fprintf(stderr, "sim: Current simulation time %g\n", sim_time);
     return;
 }
 
@@ -253,6 +250,7 @@ main(
         fprintf(stderr, "%s: error getting ephemeris filename\n", command);
         exit(1);
     }
+
     FILE* eph_fp = fopen(ephemeris_filename, "w");
     if (eph_fp == NULL)
     {
@@ -305,7 +303,7 @@ main(
     //--------------//
     // configure Kp //
     //--------------//
- 
+
     Kp kp;
     if (! ConfigKp(&kp, &config_list))
     {
@@ -343,7 +341,6 @@ main(
     // Set spacecraft start time to an integer multiple of ephemeris period.
     spacecraft_start_time = spacecraft_sim.GetEphemerisPeriod() *
       ((int)(spacecraft_start_time / spacecraft_sim.GetEphemerisPeriod()));
- 
 
     //------------//
     // initialize //
@@ -423,26 +420,26 @@ main(
                 sim_time=spacecraft_event.time;
                 process_spacecraft_event(&spacecraft_sim, &spacecraft_event,
                                          &spacecraft, &qscat, eph_fp, att_fp);
-			}
-		}
+            }
+        }
 
-		//---------------------------------------//
-		// process instrument event if necessary //
-		//---------------------------------------//
+        //---------------------------------------//
+        // process instrument event if necessary //
+        //---------------------------------------//
 
-		if (! instrument_done)
-		{
-			if (qscat_event.time > instrument_end_time)
-			{
-				instrument_done = 1;
-				continue;
-			}
-			if (qscat_event.time <= spacecraft_event.time ||
-				spacecraft_done)
-			{
-				//------------------------------//
-				// process the instrument event //
-				//------------------------------//
+        if (! instrument_done)
+        {
+            if (qscat_event.time > instrument_end_time)
+            {
+                instrument_done = 1;
+                continue;
+            }
+            if (qscat_event.time <= spacecraft_event.time ||
+                spacecraft_done)
+            {
+                //------------------------------//
+                // process the instrument event //
+                //------------------------------//
 
                 sim_time=qscat_event.time;
 /*
@@ -450,113 +447,113 @@ main(
                    0.5*qscat.ses.txPulseWidth;
 */
 
-				switch(qscat_event.eventId)
-				{
-				case QscatEvent::SCAT_EVENT:
+                switch(qscat_event.eventId)
+                {
+                case QscatEvent::SCAT_EVENT:
 
-					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(qscat_event.time,
-						&spacecraft);
-					spacecraft_sim.UpdateAttitude(qscat_event.time,
-						&spacecraft);
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(qscat_event.time,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(qscat_event.time,
+                        &spacecraft);
 
-					// process instrument stuff
-					qscat.cds.SetTime(qscat_event.time);
+                    // process instrument stuff
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 
                     // antenna
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
 
-					qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
+                    qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
                         &kp, &kpmField, &(l1a.frame));
-					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
-					break;
-				case QscatEvent::LOOPBACK_EVENT:
+                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    break;
+                case QscatEvent::LOOPBACK_EVENT:
 
-					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(qscat_event.time,
-						&spacecraft);
-					spacecraft_sim.UpdateAttitude(qscat_event.time,
-						&spacecraft);
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(qscat_event.time,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(qscat_event.time,
+                        &spacecraft);
 
-					// process instrument stuff
-					qscat.cds.SetTime(qscat_event.time);
+                    // process instrument stuff
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
-					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
-					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
-					break;
-				case QscatEvent::LOAD_EVENT:
+                    qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
+                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    break;
+                case QscatEvent::LOAD_EVENT:
 
-					// process spacecraft stuff
-					spacecraft_sim.UpdateOrbit(qscat_event.time,
-						&spacecraft);
-					spacecraft_sim.UpdateAttitude(qscat_event.time,
-						&spacecraft);
+                    // process spacecraft stuff
+                    spacecraft_sim.UpdateOrbit(qscat_event.time,
+                        &spacecraft);
+                    spacecraft_sim.UpdateAttitude(qscat_event.time,
+                        &spacecraft);
 
-					// process instrument stuff
-					qscat.cds.SetTime(qscat_event.time);
+                    // process instrument stuff
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
-					qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
-					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
-					break;
-				default:
-					fprintf(stderr, "%s: unknown instrument event\n", command);
-					exit(1);
-					break;
-				}
-			}
+                    qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
+                    qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+                    break;
+                default:
+                    fprintf(stderr, "%s: unknown instrument event\n", command);
+                    exit(1);
+                    break;
+                }
+            }
 
-			//-----------------------------------//
-			// write Level 1A data if necessary //
-			//-----------------------------------//
+            //-----------------------------------//
+            // write Level 1A data if necessary //
+            //-----------------------------------//
 
-			if (qscat_sim.l1aFrameReady)
-			{
+            if (qscat_sim.l1aFrameReady)
+            {
                 if (spacecraft_event.time <= qscat_event.time)
                 {  // need this to preserve monotonic time increase.
                   process_spacecraft_event(&spacecraft_sim, &spacecraft_event,
                                            &spacecraft, &qscat, eph_fp, att_fp);
-			    }
-				// Report Latest Attitude Measurement
-				// + Knowledge Error
-				spacecraft_sim.ReportAttitude(qscat_event.time,
-					&spacecraft, &(l1a.frame.attitude));
+                }
+                // Report Latest Attitude Measurement
+                // + Knowledge Error
+                spacecraft_sim.ReportAttitude(qscat_event.time,
+                    &spacecraft, &(l1a.frame.attitude));
 
-				int size = l1a.frame.Pack(l1a.buffer);
-				l1a.Write(l1a.buffer, size);
-			}
-		}
+                int size = l1a.frame.Pack(l1a.buffer);
+                l1a.Write(l1a.buffer, size);
+            }
+        }
 
-		//---------------//
-		// check if done //
-		//---------------//
+        //---------------//
+        // check if done //
+        //---------------//
 
-		if (instrument_done && spacecraft_done)
-			break;
-	}
+        if (instrument_done && spacecraft_done)
+            break;
+    }
 
-	//----------------------//
-	// close Level 1A file //
-	//----------------------//
+    //----------------------//
+    // close Level 1A file //
+    //----------------------//
 
-	l1a.Close();
+    l1a.Close();
 
-	//--------------------------//
-	// If createXtable is set	//
-	// write XTABLE file		//
-	//--------------------------//
+    //--------------------------//
+    // If createXtable is set    //
+    // write XTABLE file        //
+    //--------------------------//
 
-	if(qscat_sim.createXtable)
-	{
-		qscat_sim.xTable.Write();
-	}
+    if(qscat_sim.createXtable)
+    {
+        qscat_sim.xTable.Write();
+    }
 
-	return (0);
+    return (0);
 }
 
 //--------------------------//
@@ -564,40 +561,38 @@ main(
 //--------------------------//
 
 int
-process_spacecraft_event(SpacecraftSim* spacecraft_sim,
-  SpacecraftEvent* spacecraft_event,
-  Spacecraft* spacecraft,
-  Qscat* qscat,
-  FILE* eph_fp,
-  FILE* att_fp)
-
+process_spacecraft_event(
+    SpacecraftSim*    spacecraft_sim,
+    SpacecraftEvent*  spacecraft_event,
+    Spacecraft*       spacecraft,
+    Qscat*            qscat,
+    FILE*             eph_fp,
+    FILE*             att_fp)
 {
+    Attitude attitude;    // for recording in att file only
 
-  Attitude attitude;  // for recording in att file only
-
-  switch(spacecraft_event->eventId)
-  {
+    switch(spacecraft_event->eventId)
+    {
     case SpacecraftEvent::UPDATE_STATE:
-      spacecraft_sim->UpdateOrbit(spacecraft_event->time,
-        spacecraft);
-      spacecraft->orbitState.Write(eph_fp);
-      spacecraft_sim->UpdateAttitude(spacecraft_event->time,
-        spacecraft);
-      spacecraft_sim->ReportAttitude(spacecraft_event->time,
-        spacecraft, &attitude);
-      attitude.GSWrite(att_fp,spacecraft_event->time);
-      spacecraft_sim->DetermineNextEvent(spacecraft_event);
-      break;
+        spacecraft_sim->UpdateOrbit(spacecraft_event->time,
+          spacecraft);
+        spacecraft->orbitState.Write(eph_fp);
+        spacecraft_sim->UpdateAttitude(spacecraft_event->time,
+          spacecraft);
+        spacecraft_sim->ReportAttitude(spacecraft_event->time,
+          spacecraft, &attitude);
+        attitude.GSWrite(att_fp,spacecraft_event->time);
+        spacecraft_sim->DetermineNextEvent(spacecraft_event);
+        break;
     case SpacecraftEvent::EQUATOR_CROSSING:
-      qscat->cds.SetEqxTime(spacecraft_event->time);
-      spacecraft_sim->DetermineNextEvent(spacecraft_event);
-      break;
+        qscat->cds.SetEqxTime(spacecraft_event->time);
+        spacecraft_sim->DetermineNextEvent(spacecraft_event);
+        break;
     default:
-      fprintf(stderr, "sim: unknown spacecraft event\n");
-      exit(1);
-      break;
-  }
+        fprintf(stderr, "sim: unknown spacecraft event\n");
+        exit(1);
+        break;
+    }
 
-  return(1);
-
+    return(1);
 }

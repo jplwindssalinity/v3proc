@@ -13,6 +13,7 @@
 // DESCRIPTION
 //    Reads in a Level 2A file and writes out the following
 //    Measurement Type  Incidence Angle  East Azimuth  Sigma-0
+//    XK  EnSlice  bandwidth  txPulseWidth  A  B  C
 //
 // OPTIONS
 //    [ -c cti ]  Restrict output to the given cross track index.
@@ -201,8 +202,10 @@ main(
         fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
         for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
         {
-            fprintf(output_fp, "%s %g %g %g\n", meas_type_map[m->measType],
-                m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
+            fprintf(output_fp, "%s %g %g %g %g %g %g %g %g %g %g\n",
+                meas_type_map[m->measType], m->incidenceAngle * rtd,
+                m->eastAzimuth * rtd, m->value, m->XK, m->EnSlice,
+                m->bandwidth, m->txPulseWidth, m->A, m->B, m->C);
         }
         fprintf(output_fp, "#####\n");
     }

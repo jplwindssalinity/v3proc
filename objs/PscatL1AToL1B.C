@@ -157,7 +157,7 @@ PscatL1AToL1B::Convert(
         }
 
         // determine the spot meas location offset
-        int spot_meas_offset = spot_idx * frame->measPerSpot;
+        int spot_slice_offset = spot_idx * frame->slicesPerSpot;
 
         // determine the spot time
         double time = frame->time + spot_idx * pscat->ses.pri;
@@ -332,21 +332,17 @@ PscatL1AToL1B::Convert(
         {
             int slice_idx;
             rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_idx);
-            int slice_meas_offset = slice_idx * frame->measPerSlice;
-            float* ptr;
             switch(meas->measType)
             {
             case Meas::VV_MEAS_TYPE:
             case Meas::HH_MEAS_TYPE:
-                meas->value = (float)(frame->science[spot_meas_offset +
-                    slice_meas_offset] + 0.5);
+                meas->value = (float)frame->copol[spot_slice_offset +
+                    slice_idx] + 0.5;
                 Esn_echo += meas->value;
                 break;
             case Meas::VV_HV_CORR_MEAS_TYPE:
             case Meas::HH_VH_CORR_MEAS_TYPE:
-                ptr = (float *)&(frame->science[spot_meas_offset +
-                    slice_meas_offset + 1]);
-                meas->value = *ptr;
+                meas->value = frame->corr[spot_slice_offset + slice_idx];
                 break;
             default:
                 fprintf(stderr,

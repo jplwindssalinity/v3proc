@@ -69,7 +69,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
-#include "echo_funcs.h"
+#include "echo_io.h"
 
 //-----------//
 // TEMPLATES //
@@ -185,7 +185,7 @@ main(
         fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
         exit(1);
     }
-    int spots_per_frame = l1a.frame.spotsPerFrame
+    int spots_per_frame = l1a.frame.spotsPerFrame;
 
     //---------------------------------//
     // open echo data file for reading //
@@ -204,7 +204,6 @@ main(
     //------------//
 
     int last_orbit_step = -1;
-    int orbit_step = -1;
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         // terms are [0] = amplitude, [1] = phase, [2] = bias
@@ -249,7 +248,19 @@ main(
             // check for end of orbit step //
             //-----------------------------//
 
-            int orbit_step = 
+            int orbit_step = echo_info.SpotOrbitStep(spot_idx);
+            if (orbit_step != last_orbit_step)
+            {
+                if (last_orbit_step != -1)
+                {
+                    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
+                        beam_idx++)
+                    {
+                        process_orbit_step(beam_idx, last_orbit_step);
+                    }
+                }
+                last_orbit_step = orbit_step;
+            }
 
             //-----------------------//
             // accumulation decision //
@@ -263,31 +274,8 @@ main(
 
             double azimuth = two_pi *
                 (double)echo_info.idealEncoder[spot_idx] / (double)ENCODER_N;
-            accumulate(beam_idx, azimuth, meas_spec_peak_freq);
-            break;
-        case ORBIT_STEP_ID:
-            read_orbit_step(ifd, &orbit_step);
-            if (orbit_step != last_orbit_step)
-            {
-                if (last_orbit_step != -1)
-                {
-                    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
-                        beam_idx++)
-                    {
-                        process_orbit_step(beam_idx, last_orbit_step);
-                    }
-                }
-                last_orbit_step = orbit_step;
-            }
-            break;
-        case ORBIT_TIME_ID:
-            unsigned int orbit_ticks;
-            read_orbit_time(ifd, &orbit_ticks);
-            break;
-        default:
-            fprintf(stderr, "%s: unknown data type in echo data file %s\n",
-                command, echo_data_file);
-            exit(1);
+            accumulate(echo_info.beamIdx[spot_idx], azimuth,
+                echo_info.measSpecPeakFreq[spot_idx]);
             break;
         }
     } while (1);

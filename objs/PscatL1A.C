@@ -25,9 +25,9 @@ PscatL1AFrame::PscatL1AFrame()
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
     velZ(0.0), calPosition(0), loopbackSlices(NULL), loopbackNoise(0),
     loadSlices(NULL), loadNoise(0), antennaPosition(NULL), eventId(NULL),
-    science(NULL), spotNoise(NULL), frame_inst_status(0),
+    copol(NULL), corr(NULL), spotNoise(NULL), frame_inst_status(0),
     antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
-    measPerSlice(0), measPerSpot(0), measPerFrame(0)
+    slicesPerFrame(0)
 {
     return;
 }
@@ -51,9 +51,7 @@ PscatL1AFrame::Allocate(
     antennaCyclesPerFrame = antenna_cycles_per_frame;
     spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
     slicesPerSpot = slices_per_spot;
-    measPerSlice = 2;
-    measPerSpot = measPerSlice * slicesPerSpot;
-    measPerFrame = measPerSpot * spotsPerFrame;
+    slicesPerFrame = spotsPerFrame * slicesPerSpot;
 
     //----------------------------//
     // allocate antenna positions //
@@ -91,8 +89,12 @@ PscatL1AFrame::Allocate(
     // allocate science measurements //
     //-------------------------------//
 
-    science = (unsigned int *)malloc(measPerFrame * sizeof(unsigned int));
-    if (science == NULL)
+    copol = (unsigned int *)malloc(slicesPerFrame * sizeof(unsigned int));
+    if (copol == NULL)
+        return(0);
+
+    corr = (float *)malloc(slicesPerFrame * sizeof(unsigned int));
+    if (corr == NULL)
         return(0);
 
     spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
@@ -129,10 +131,15 @@ PscatL1AFrame::Deallocate()
         free(eventId);
         eventId = NULL;
     }
-    if (science)
+    if (copol)
     {
-        free(science);
-        science = NULL;
+        free(copol);
+        copol = NULL;
+    }
+    if (corr)
+    {
+        free(corr);
+        corr = NULL;
     }
     if (spotNoise)
     {
@@ -142,8 +149,8 @@ PscatL1AFrame::Deallocate()
     antennaCyclesPerFrame = 0;
     spotsPerFrame = 0;
     slicesPerSpot = 0;
-    measPerSlice = 0;
-    measPerFrame = 0;
+    slicesPerFrame = 0;
+
     return(1);
 }
 
@@ -179,7 +186,8 @@ PscatL1AFrame::FrameSize()
     size += sizeof(unsigned int);                  // load noise
     size += sizeof(unsigned short) * spotsPerFrame;  // antenna position
     size += sizeof(unsigned char) * spotsPerFrame;  // event
-    size += sizeof(float) * measPerFrame;  // science data
+    size += sizeof(float) * slicesPerFrame;  // copol data
+    size += sizeof(float) * slicesPerFrame;  // corr data
     size += sizeof(float) * spotsPerFrame;   // spot noise
     size += sizeof(unsigned int);   // instrument status
 
@@ -284,8 +292,12 @@ PscatL1AFrame::Pack(
     memcpy((void *)(buffer + idx), (void *)eventId, size);
     idx += size;
 
-    size = sizeof(unsigned int) * measPerFrame;
-    memcpy((void *)(buffer + idx), (void *)science, size);
+    size = sizeof(unsigned int) * slicesPerFrame;
+    memcpy((void *)(buffer + idx), (void *)copol, size);
+    idx += size;
+
+    size = sizeof(float) * slicesPerFrame;
+    memcpy((void *)(buffer + idx), (void *)corr, size);
     idx += size;
 
     size = sizeof(float) * spotsPerFrame;
@@ -397,8 +409,12 @@ PscatL1AFrame::Unpack(
     memcpy((void *)eventId, (void *)(buffer + idx), size);
     idx += size;
 
-    size = sizeof(unsigned int) * measPerFrame;
-    memcpy((void *)science, (void *)(buffer + idx), size);
+    size = sizeof(unsigned int) * slicesPerFrame;
+    memcpy((void *)copol, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(float) * slicesPerFrame;
+    memcpy((void *)corr, (void *)(buffer + idx), size);
     idx += size;
 
     size = sizeof(float) * spotsPerFrame;
@@ -438,16 +454,13 @@ PscatL1AFrame::WriteAscii(
     fprintf(ofp, "--- Science Data ---\n");
     for (int spot_idx = 0; spot_idx < spotsPerFrame; spot_idx++)
     {
-        int spot_meas_offset = spot_idx * measPerSpot;
+        int spot_slice_offset = spot_idx * slicesPerSpot;
         fprintf(ofp, "Spot %d (%s)\n", spot_idx,
             pscat_event_map[(int)eventId[spot_idx]]);
         for (int slice_idx = 0; slice_idx < slicesPerSpot; slice_idx++)
         {
-            int slice_meas_offset = slice_idx * measPerSlice;
-            float* ptr = (float *)&(science[spot_meas_offset +
-                slice_meas_offset + 1]);
-            fprintf(ofp, "  %d %g\n", science[spot_meas_offset +
-                slice_meas_offset], *ptr);
+            fprintf(ofp, "  %d %g\n", copol[spot_slice_offset + slice_idx],
+                corr[spot_slice_offset + slice_idx]);
         }
     }
     
