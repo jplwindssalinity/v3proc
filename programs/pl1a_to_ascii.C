@@ -160,7 +160,7 @@ main(
 
     while (l1a.ReadDataRec())
     {
-        frame_number++;
+        if (argc==6) frame_number++;
         if (frame_number < start_frame)
             continue;
         if (frame_number > end_frame)
