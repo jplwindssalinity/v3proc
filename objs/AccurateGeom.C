@@ -75,15 +75,23 @@ IntegrateSlices(
 	if (! beam->GetElectricalBoresight(&look, &azimuth))
 		return(0);
 
+	double looka, azimutha;
+        looka=look; azimutha=azimuth;
+
 	vector.SphericalSet(1.0, look, azimuth);
 	TargetInfoPackage tip;
 	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+
+        double round_trip=tip.roundTripTime;
 
 	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
 		instrument->antenna.spinRate,&look, &azimuth))
 	{
 		return(0);
 	}
+
+	double lookb=look;
+        double azimuthb=azimuth;
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
 	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
@@ -100,6 +108,11 @@ IntegrateSlices(
 
 		Meas* meas = new Meas();
 		meas->pol = beam->polarization;
+
+                int debug=0, debug2=0;
+		if(slice_idx==0 && beam->polarization==H_POL) debug2=0;
+		if(debug) printf("\n\nAntennaAzimuth %g\n",
+				 antenna->azimuthAngle/dtr);
 	
 		//----------------------------------------//
 		// determine the baseband frequency range //
@@ -139,12 +152,14 @@ IntegrateSlices(
 		  return(0);
 		centroid=tip.rTarget;
 		
-                /**** for now use looktol and azitol of .01 degrees ***/
-		float looktol=0.1*dtr;
-                float azitol=0.1*dtr;
+                /**** for now use looktol .01  and azitol of .05 degrees ***/
+		float looktol=0.01*dtr;
+                float azitol=0.05*dtr;
+		float xarray[40*80];
+                for(int c=0;c<40*80;c++)xarray[c]=0.0;
 
-		/*** for now use azimuth range of 10 degrees ***/
-                float azirange=10.0*dtr;
+		/*** for now use azimuth range of 2 degrees ***/
+                float azirange=4.0*dtr;
                 float azimin=centroid_azimuth-azirange/2.0;
 		int numazi=(int)(azirange/azitol);
 
@@ -154,15 +169,17 @@ IntegrateSlices(
                 // Choose high gain side of slice         //
                 // and direction of look angle increment  //
                 //----------------------------------------//
-		float high_gain_freq;
+		float high_gain_freq, low_gain_freq;
 		int look_scan_dir;
                 if(fabs(f2)>fabs(f1)){
 		  high_gain_freq=f1;
+                  low_gain_freq=f2;
 		  if(f1<f2) look_scan_dir=-1;
 		  else look_scan_dir=+1;
 		}
                 else{
-		  high_gain_freq=f2;	
+		  high_gain_freq=f2;
+                  low_gain_freq=f1;	
 		  if(f1>f2) look_scan_dir=-1;
 		  else look_scan_dir=+1;
 		}
@@ -172,6 +189,7 @@ IntegrateSlices(
                 //----------------------------------------//
                 for(int a=0; a<numazi;a++){
 		  float azi=a*azitol+azimin;
+		  if(debug) printf("For Azimuth %g ....\n",azi);
 		  float start_look=centroid_look;
 
 		  /*******************************/
@@ -180,7 +198,9 @@ IntegrateSlices(
 		  if(! FindLookAtFreq(&antenna_frame_to_gc,spacecraft,instrument,
 				 high_gain_freq,ftol,&start_look,azi))
 		    return(0);
+
 		  float lk=start_look;
+                  int look_num=0;
 		  while(1){
                    
                     // get integration box corners
@@ -211,9 +231,13 @@ IntegrateSlices(
 				  box_center, &tip))
 		      return(0);
 
-		    if((tip.basebandFreq > f1 && tip.basebandFreq > f2) ||
-		      (tip.basebandFreq < f1 && tip.basebandFreq < f2)) break;
-		    
+		    if((look_scan_dir == 1 && tip.basebandFreq < low_gain_freq)
+		                           ||
+		      (look_scan_dir==-1 && tip.basebandFreq > low_gain_freq))
+		      break;
+
+		    if(debug) printf("Look=%g Freq=%g \n",(look1+look2)/2.0,
+				     tip.basebandFreq);
 
 		    float gatgar, range, area;
 
@@ -227,7 +251,11 @@ IntegrateSlices(
 					    (azi1+azi2)/2.0, &gatgar))
 			return(0);
 
-		      
+		    if(debug) printf("     Area %g Range %g GatGar %g \n", 
+				     area, range, gatgar); 
+		    if(debug) printf("     dX %g\n",
+				     area*gatgar/(range*range*range*range));
+
 		    /*********************************/
 		    /*** Add AG/R^4 to sum           */
                     /*********************************/
@@ -237,12 +265,26 @@ IntegrateSlices(
                     /*********************************/
 		    /* Goto next box                  */
 		    /*********************************/
+                   float gt;
+		   if(debug2){
+		     beam->GetPowerGain((look1+look2)/2.0,(azi1+azi2)/2.0,&gt);
+		   }
+    Vector3 vector;
+    vector.SphericalSet(1.0,40.785*dtr,-0.36*dtr);
+    TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
+				 vector, &tip);
+    Vector3 gc_vector=antenna_frame_to_gc.Forward(vector);	
+    EarthPosition r_target = earth_intercept(orbit_state->rsat, gc_vector);
+    double slant_range = (orbit_state->rsat - r_target).Magnitude();
 
+    
+		   xarray[a*40+look_num]=gatgar;
 		    lk+=look_scan_dir*looktol;
-		    
+		    look_num++;
 		  }
 		}
 
+		if(debug2)fwrite(&xarray[0],sizeof(float),40*20,stdout);
 		//---------------------------//
 		// generate measurement data //
 		//---------------------------//
