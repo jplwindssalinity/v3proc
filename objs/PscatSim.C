@@ -70,6 +70,11 @@ PscatSim::SetConfiguration(
         _configuration = BOTH_POL;
         return(1);
     }
+    else if (strcasecmp(string, BOTH_BEAM_HHVH_STRING) == 0)
+    {
+        _configuration = BOTH_BEAM_HHVH;
+        return(1);
+    }
     else
     {
         _configuration = NONE;
@@ -145,6 +150,9 @@ PscatSim::DetermineNextEvent(
                     break;
                 case BOTH_POL:
                     pscat_event->eventId = PscatEvent::VV_HV_SCAT_EVENT;
+                    break;
+                case BOTH_BEAM_HHVH:
+                    pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
                     break;
                 default:
                     fprintf(stderr,
