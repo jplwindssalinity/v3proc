@@ -56,7 +56,7 @@ public:
 	//-------------------//
 
 	int		UpdateOrbit(double time, Spacecraft* spacecraft);
-	int		UpdateAttitude(Spacecraft* spacecraft);
+	int		UpdateAttitude(double time, Spacecraft* spacecraft);
 
 	//---------------------//
 	// setting and getting //

@@ -337,9 +337,12 @@ SpacecraftSim::UpdateOrbit(
 
 int
 SpacecraftSim::UpdateAttitude(
+	double			time,
 	Spacecraft*		spacecraft)
 {
 	// eventually, a function should go here
+	if (time < 0.0)		// bogus check to keep compiler quiet
+		return(1);
 	spacecraft->attitude.SetRoll(0.0);
 	spacecraft->attitude.SetPitch(0.0);
 	spacecraft->attitude.SetYaw(0.0);
