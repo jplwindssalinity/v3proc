@@ -482,7 +482,10 @@ WVC::ReadL2B(
     // set selected pointer //
     //----------------------//
 
-    selected = ambiguities.GetByIndex((int)selected_idx);
+    if (selected_idx < 0)
+        selected = NULL;
+    else
+        selected = ambiguities.GetByIndex((int)selected_idx);
 
     //-------------------//
     // read nudge vector //
@@ -3745,8 +3748,10 @@ WindSwath::BestKFilter(
 //-----------------------------//
 // Returns the number of vector changes.
 
-float g_available_fraction = 0.0;
+int g_number_needed = 0;
 float g_speed_stopper = 0.0;
+float g_error_ratio_of_best = 1.0;
+float g_error_of_best = 0.0;
 
 int
 WindSwath::MedianFilterPass(
@@ -3764,6 +3769,7 @@ WindSwath::MedianFilterPass(
     //-------------//
     // filter loop //
     //-------------//
+
     for (int cti = 0; cti < _crossTrackBins; cti++)
     {
         int cti_min = cti - half_window;
@@ -3818,6 +3824,9 @@ WindSwath::MedianFilterPass(
         change:
 
             float min_vector_dif_sum = (float)HUGE_VAL;
+            float min_vector_dif_avg = (float)HUGE_VAL;
+            float second_vector_dif_sum = (float)HUGE_VAL;
+            int   selected_count = 0;
 
             //--------------------------------------------//
             // Don't use range information if unavailable //
@@ -3834,7 +3843,7 @@ WindSwath::MedianFilterPass(
                     float x1 = wvp->spd * cos(wvp->dir);
                     float y1 = wvp->spd * sin(wvp->dir);
 
-                    int selected_count = 0;
+                    selected_count = 0;
                     int available_count = 0;
                     for (int i = cti_min; i < cti_max; i++)
                     {
@@ -3853,7 +3862,11 @@ WindSwath::MedianFilterPass(
                             if (! other_wvp)
                                 continue;
 
-                            selected_count++;    // other wvc has a selection
+                            // special purpose speed threshold
+                            if (other_wvp->spd < g_speed_stopper)
+                                continue;
+
+                            selected_count++;   // wvc has a valid selection
 
                             float x2 = other_wvp->spd * cos(other_wvp->dir);
                             float y2 = other_wvp->spd * sin(other_wvp->dir);
@@ -3876,15 +3889,41 @@ WindSwath::MedianFilterPass(
                             vector_dif_sum /= wvp->obj;
                     }
 
-                    int target_count = (int)((float)available_count *
-                        g_available_fraction);
                     if (vector_dif_sum < min_vector_dif_sum &&
-                        selected_count >= target_count)
+                        selected_count >= g_number_needed)
                     {
+                        second_vector_dif_sum = min_vector_dif_sum;
                         min_vector_dif_sum = vector_dif_sum;
+                        min_vector_dif_avg = vector_dif_sum /
+                            (float)selected_count;
                         new_selected[cti][ati] = wvp;
                     }
                 }   // done with ambiguities
+
+                // a few propagation checks
+                if (wvc->selected == NULL)
+                {
+                    // how must does the best beat the second best?
+                    if (second_vector_dif_sum > 0.0)
+                    {
+                        float ratio = min_vector_dif_sum /
+                            second_vector_dif_sum;
+                        if (ratio > g_error_ratio_of_best)
+                        {
+                            new_selected[cti][ati] = NULL;
+                        }
+                    }
+                    // how absolutely good is the best?
+                    if (new_selected[cti][ati] != NULL)
+                    {
+                        float avg_vector_dif = min_vector_dif_avg /
+                            (float)selected_count;
+                        float dif_to_spd = avg_vector_dif /
+                            new_selected[cti][ati]->spd;
+                        if (dif_to_spd > g_error_of_best)
+                            new_selected[cti][ati] = NULL;
+                    }
+                }
             }
             else if (special == 1)
             {
@@ -5641,6 +5680,61 @@ WindSwath::DifferenceFromTruth(
                 wvp=wvc->ambiguities.GetNext();
               }
 
+        }
+    }
+    return(1);
+}
+
+//-----------------------------//
+// WindSwath::ExcessDifference //
+//-----------------------------//
+
+int
+WindSwath::ExcessDifference(
+    WindField*  truth)
+{
+    for (int i = 0; i < _crossTrackBins; i++)
+    {
+        for (int j = 0; j < _alongTrackBins; j++)
+        {
+            WVC* wvc = *(*(swath + i) + j);
+            if (wvc == NULL)
+                continue;
+
+            WindVector true_wv;
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
+            else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+            {
+                continue;
+            }
+            float true_u, true_v;
+            true_wv.GetUV(&true_u, &true_v);
+
+            WindVectorPlus* nearest_to_truth =
+                wvc->GetNearestToDirection(true_wv.dir);
+            float near_u, near_v;
+            nearest_to_truth->GetUV(&near_u, &near_v);
+            float near_udif = true_u - near_u;
+            float near_vdif = true_v - near_v;
+            float near_mag = sqrt(near_udif*near_udif +
+                near_vdif*near_vdif);
+
+            for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+                wvp = wvc->ambiguities.GetNext())
+            {
+                float u1, v1;
+                wvp->GetUV(&u1, &v1);
+
+                float udif = u1 - true_u;
+                float vdif = v1 - true_v;
+
+                wvp->SetUV(udif, vdif);    // set vector
+                wvp->spd -= near_mag;      // tweak magnitude
+            }
         }
     }
     return(1);
