@@ -19,7 +19,7 @@ Attitude::Attitude()
 {
 	for (int i = 0; i < 3; i++)
 	{
-		_order[i] = (unsigned char)0;
+		_order[i] = (unsigned char)(i + 1);
 	}
 	return;
 }

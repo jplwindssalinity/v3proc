@@ -10,40 +10,45 @@ static const char rcs_id_tracking_h[] =
 	"@(#) $Id$";
 
 
+#include "Constants.h"
+
+
 //======================================================================
 // CLASSES
-//		DopplerTracking, RangeTracking
+//		DopplerTracker, RangeTracker
 //======================================================================
 
 //======================================================================
 // CLASS
-//		DopplerTracking
+//		DopplerTracker
 //
 // DESCRIPTION
-//		The DopplerTracking object is used to store the Doppler
+//		The DopplerTracker object is used to store the Doppler
 //		Tracking Constants and convert them into command Doppler
 //		frequencies.
 //======================================================================
 
-/*
-class DopplerTracking
+class DopplerTracker
 {
 public:
+
+	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, CONSTANTS_INDEX };
 
 	//--------------//
 	// construction //
 	//--------------//
 
-	DopplerTracking();
-	~DopplerTracking();
+	DopplerTracker();
+	~DopplerTracker();
 
-	int		Allocate(int orbit_steps);
+	int		Allocate(int number_of_beams, int doppler_orbit_steps);
 
 	//------------//
 	// algorithms //
 	//------------//
 
-	int		Doppler(int orbit_step, int azimuth_step, float* doppler);
+//	int		Doppler(int orbit_step, int azimuth_step, float* doppler);
+	int		Set(double*** terms);
 
 	//--------------//
 	// input/output //
@@ -52,47 +57,37 @@ public:
 	int		WriteBinary(const char* filename);
 	int		ReadBinary(const char* filename);
 
-	//-----------//
-	// variables //
-	//-----------//
-
-	float				am, ab;		// scale factors
-	float				pm, pb;
-	float				cm, cb;
-
-	short*				a;			// expansion terms
-	short*				p;
-	short*				c;
-
-	float				z1, z2;		// dithering terms
-
-	unsigned short		period;		// orbit period
-
-	unsigned short		checksum;	// duh!
-
 private:
 
 	//-----------//
 	// variables //
 	//-----------//
 
-	int			_orbitSteps;
-	int			_azimuthSteps;
+	float***			_scale;		// [beam][term][coef_order]
+	unsigned short***	_term;		// [beam][step][term]
+
+	unsigned short		_ticksPerOrbit;		// orbit period
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	unsigned int	_numberOfBeams;
+	unsigned int	_dopplerSteps;
 };
-*/
 
 //======================================================================
 // CLASS
-//		RangeTracking
+//		RangeTracker
 //
 // DESCRIPTION
-//		The RangeTracking object is used to store the Range	Tracking
+//		The RangeTracker object is used to store the Range	Tracking
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
 #define RANGE_TRACKING_TIME_RESOLUTION		5E-5		// seconds (0.05 ms)
 
-class RangeTracking
+class RangeTracker
 {
 public:
 
@@ -100,10 +95,10 @@ public:
 	// construction //
 	//--------------//
 
-	RangeTracking();
-	~RangeTracking();
+	RangeTracker();
+	~RangeTracker();
 
-	int		Allocate(int number_of_beams, int orbit_steps);
+	int		Allocate(int number_of_beams, int range_steps);
 
 	//---------//
 	// setting //
@@ -114,10 +109,10 @@ public:
 	//------------//
 
 	unsigned short		OrbitTimeToRangeStep(unsigned int orbit_time);
-	int					DelayAndDuration(int beam_idx, int orbit_step,
+	int					DelayAndDuration(int beam_idx, int range_step,
 							float receiver_gate_width, float xmit_pulse_width,
 							float* delay, float* duration);
-	int					SetDelay(int beam_idx, int orbit_step,
+	int					SetDelay(int beam_idx, int range_step,
 							float receiver_gate_width, float xmit_pulse_width,
 							float delay);
 	int					SetDuration(int beam_idx, float duration);
@@ -143,8 +138,8 @@ private:
 	// variables //
 	//-----------//
 
-	int				_numberOfBeams;
-	int				_rangeSteps;
+	unsigned int	_numberOfBeams;
+	unsigned int	_rangeSteps;
 };
 
 #endif

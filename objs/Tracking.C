@@ -7,63 +7,60 @@ static const char rcs_id_tracking_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
-#include <malloc.h>
 #include "Tracking.h"
+#include "Array.h"
 
 
-/*
-//=================//
-// DopplerTracking //
-//=================//
+//================//
+// DopplerTracker //
+//================//
 
-DopplerTracking::DopplerTracking()
-:	am(0.0), ab(0.0), pm(0.0), pb(0.0), cm(0.0), cb(0.0),
-	a(NULL), p(NULL), c(NULL), z1(0.0), z2(0.0), ticksPerOrbit(0), checksum(0),
-	_orbitSteps(0), _azimuthSteps(0)
+DopplerTracker::DopplerTracker()
+:	_scale(NULL), _term(NULL), _ticksPerOrbit(0), _numberOfBeams(0),
+	_dopplerSteps(0)
 {
 	return;
 }
 
-DopplerTracking::~DopplerTracking()
+DopplerTracker::~DopplerTracker()
 {
-	free(a);
-	free(p);
-	free(c);
+	free_array(_scale, 3, _numberOfBeams, 3, 2);
+	free_array(_term, 3, _numberOfBeams, _dopplerSteps, 3);
+
 	return;
 }
 
-//---------------------------//
-// DopplerTracking::Allocate //
-//---------------------------//
+//--------------------------//
+// DopplerTracker::Allocate //
+//--------------------------//
 
 int
-DopplerTracking::Allocate(
+DopplerTracker::Allocate(
 	int		number_of_beams,
-	int		orbit_steps)
+	int		doppler_orbit_steps)
 {
-	int size = sizeof(short) * orbit_steps;
-
-	a = (short *)malloc(size);
-	if (! a)
+	_scale = (float ***)make_array(sizeof(float), 3, number_of_beams, 3, 2);
+	if (_scale == NULL)
 		return(0);
 
-	p = (short *)malloc(size);
-	if (! p)
+	_term = (unsigned short ***)make_array(sizeof(unsigned short), 3,
+		number_of_beams, doppler_orbit_steps, 3);
+	if (_term == NULL)
 		return(0);
 
-	c = (short *)malloc(size);
-	if (! c)
-		return(0);
+	_numberOfBeams = number_of_beams;
+	_dopplerSteps = doppler_orbit_steps;
 
 	return(1);
 }
 
-//--------------------------//
-// DopplerTracking::Doppler //
-//--------------------------//
+/*
+//-------------------------//
+// DopplerTracker::Doppler //
+//-------------------------//
 
 int
-DopplerTracking::Doppler(
+DopplerTracker::Doppler(
 	int		orbit_step,
 	int		azimuth_step,
 	float*	doppler)
@@ -91,13 +88,90 @@ DopplerTracking::Doppler(
 
 	return(1);
 }
+*/
 
-//-----------------------------------------//
-// DopplerTracking::OrbitTimeToDopplerStep //
-//-----------------------------------------//
+//---------------------//
+// DopplerTracker::Set //
+//---------------------//
+
+int
+DopplerTracker::Set(
+	double***	terms)
+{
+	double mins[3];
+	double maxs[3];
+
+	//---------------//
+	// for each beam //
+	//---------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		//-----------------------------------------//
+		// calculate the minimum and maximum terms //
+		//-----------------------------------------//
+
+		double** term_ptr = *(terms + beam_idx);
+
+		for (int term_idx = 0; term_idx < 3; term_idx++)
+		{
+			mins[term_idx] = *(*(term_ptr + 0) + term_idx);
+			maxs[term_idx] = mins[term_idx];
+		}
+
+		for (unsigned int orbit_step = 0; orbit_step < _dopplerSteps;
+			orbit_step++)
+		{
+			for (int term_idx = 0; term_idx < 3; term_idx++)
+			{
+				if (*(*(term_ptr + orbit_step) + term_idx) < mins[term_idx])
+					mins[term_idx] = *(*(term_ptr + orbit_step) + term_idx);
+
+				if (*(*(term_ptr + orbit_step) + term_idx) > maxs[term_idx])
+					maxs[term_idx] = *(*(term_ptr + orbit_step) + term_idx);
+			}
+		}
+
+		//------------------------//
+		// generate scale factors //
+		//------------------------//
+
+		for (int term_idx = 0; term_idx < 3; term_idx++)
+		{
+			*(*(*(_scale + beam_idx) + term_idx) + 0) = mins[term_idx];
+
+			*(*(*(_scale + beam_idx) + term_idx) + 1) =
+				(maxs[term_idx] - mins[term_idx]) / 65535.0;
+		}
+
+		//------------------------//
+		// calculate scaled terms //
+		//------------------------//
+
+		for (unsigned int orbit_step = 0; orbit_step < _dopplerSteps;
+			orbit_step++)
+		{
+			for (int term_idx = 0; term_idx < 3; term_idx++)
+			{
+				*(*(*(_term + beam_idx) + orbit_step) + term_idx) =
+					(unsigned short)(
+					(*(*(term_ptr + orbit_step) + term_idx) - 
+					*(*(*(_scale + beam_idx) + term_idx) + 0)) /
+					*(*(*(_scale + beam_idx) + term_idx) + 1) + 0.5);
+			}
+		}
+	}
+
+	return(1);
+}
+
+/*
+//----------------------------------------//
+// DopplerTracker::OrbitTimeToDopplerStep //
+//----------------------------------------//
 
 unsigned short
-DopplerTracking::OrbitTimeToDopplerStep(
+DopplerTracker::OrbitTimeToDopplerStep(
 	unsigned int	orbit_time)
 {
 	float ticks_per_doppler_step = (float)_ticksPerOrbit /
@@ -111,21 +185,45 @@ DopplerTracking::OrbitTimeToDopplerStep(
 
 */
 
-//===============//
-// RangeTracking //
-//===============//
+//-----------------------------//
+// DopplerTracker::WriteBinary //
+//-----------------------------//
 
-RangeTracking::RangeTracking()
+int
+DopplerTracker::WriteBinary(
+	const char*		filename)
+{
+	filename;
+	return(0);
+}
+
+//----------------------------//
+// DopplerTracker::ReadBinary //
+//----------------------------//
+
+int
+DopplerTracker::ReadBinary(
+	const char*		filename)
+{
+	filename;
+	return(0);
+}
+
+//==============//
+// RangeTracker //
+//==============//
+
+RangeTracker::RangeTracker()
 :	_delay(NULL), _duration(NULL), _ticksPerOrbit(0),
 	_numberOfBeams(0), _rangeSteps(0)
 {
 	return;
 }
 
-RangeTracking::~RangeTracking()
+RangeTracker::~RangeTracker()
 {
-	for (int i = 0; i < _numberOfBeams; i++)
-		free(*(_delay + i));
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+		free(*(_delay + beam_idx));
 
 	free(_delay);
 	free(_duration);
@@ -133,20 +231,18 @@ RangeTracking::~RangeTracking()
 	return;
 }
 
-//-------------------------//
-// RangeTracking::Allocate //
-//-------------------------//
+//------------------------//
+// RangeTracker::Allocate //
+//------------------------//
 
 int
-RangeTracking::Allocate(
+RangeTracker::Allocate(
 	int		number_of_beams,
-	int		orbit_steps)
+	int		range_steps)
 {
-	_numberOfBeams = number_of_beams;
-
-	//--------------------------------//
+	//---------------------------------//
 	// allocate the _delay[beam] array //
-	//--------------------------------//
+	//---------------------------------//
 
 	int size = number_of_beams * sizeof(unsigned char *);
 	_delay = (unsigned char **)malloc(size);
@@ -162,29 +258,32 @@ RangeTracking::Allocate(
 	if (_duration == NULL)
 		return(0);
 
-	//---------------------------------------//
+	//----------------------------------------//
 	// allocate each _delay[beam][step] array //
-	//---------------------------------------//
+	//----------------------------------------//
 
-	size = sizeof(unsigned char) * orbit_steps;
-	for (int i = 0; i < number_of_beams; i++)
+	size = sizeof(unsigned char) * range_steps;
+	for (int beam_idx = 0; beam_idx < number_of_beams; beam_idx++)
 	{
 		unsigned char* ptr = (unsigned char *)malloc(size);
 		if (ptr == NULL)
 			return(0);
 
-		*(_delay + i) = ptr;
+		*(_delay + beam_idx) = ptr;
 	}
+
+	_numberOfBeams = number_of_beams;
+	_rangeSteps = range_steps;
 
 	return(1);
 }
 
-//-------------------------------------//
-// RangeTracking::OrbitTimeToRangeStep //
-//-------------------------------------//
+//------------------------------------//
+// RangeTracker::OrbitTimeToRangeStep //
+//------------------------------------//
 
 unsigned short
-RangeTracking::OrbitTimeToRangeStep(
+RangeTracker::OrbitTimeToRangeStep(
 	unsigned int		orbit_time)
 {
 	float ticks_per_range_step = (float)_ticksPerOrbit / (float)_rangeSteps;
@@ -195,12 +294,12 @@ RangeTracking::OrbitTimeToRangeStep(
 	return(range_step);
 }
 
-//---------------------------------//
-// RangeTracking::DelayAndDuration //
-//---------------------------------//
+//--------------------------------//
+// RangeTracker::DelayAndDuration //
+//--------------------------------//
 
 int
-RangeTracking::DelayAndDuration(
+RangeTracker::DelayAndDuration(
 	int		beam_idx,
 	int		orbit_step,
 	float	receiver_gate_width,		// seconds
@@ -235,12 +334,12 @@ RangeTracking::DelayAndDuration(
 	return(1);
 }
 
-//-------------------------//
-// RangeTracking::SetDelay //
-//-------------------------//
+//------------------------//
+// RangeTracker::SetDelay //
+//------------------------//
 
 int
-RangeTracking::SetDelay(
+RangeTracker::SetDelay(
 	int		beam_idx,
 	int		orbit_step,
 	float	receiver_gate_width,		// seconds
@@ -268,12 +367,12 @@ RangeTracking::SetDelay(
 	return(1);
 }
 
-//----------------------------//
-// RangeTracking::SetDuration //
-//----------------------------//
+//---------------------------//
+// RangeTracker::SetDuration //
+//---------------------------//
 
 int
-RangeTracking::SetDuration(
+RangeTracker::SetDuration(
 	int		beam_idx,
 	float	duration)
 {
@@ -285,5 +384,149 @@ RangeTracking::SetDuration(
 		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
 	*(_duration + beam_idx) = duration_dn;
 
+	return(1);
+}
+
+//---------------------------//
+// RangeTracker::WriteBinary //
+//---------------------------//
+
+int
+RangeTracker::WriteBinary(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//-------------------------------------------//
+	// write the number of beams and range steps //
+	//-------------------------------------------//
+
+	if (fwrite((void *)&_numberOfBeams, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_rangeSteps, sizeof(int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//-----------------------//
+	// write the delay terms //
+	//-----------------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		if (fwrite((void *)*(_delay + beam_idx), sizeof(unsigned char),
+			_rangeSteps, fp) != _rangeSteps)
+		{
+			return(0);
+		}
+	}
+
+	//--------------------//
+	// write the duration //
+	//--------------------//
+
+	if (fwrite((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+		fp) != 1)
+	{
+		return(1);
+	}
+
+	//---------------------------//
+	// write the ticks per orbit //
+	//---------------------------//
+
+	if (fwrite((void *)&_ticksPerOrbit, sizeof(unsigned short), 1, fp) != 1)
+	{
+		return(1);
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
+	return(1);
+}
+
+//--------------------------//
+// RangeTracker::ReadBinary //
+//--------------------------//
+
+int
+RangeTracker::ReadBinary(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//------------------------------------------//
+	// read the number of beams and range steps //
+	//------------------------------------------//
+
+	if (fread((void *)&_numberOfBeams, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&_rangeSteps, sizeof(int), 1, fp) != 1)
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//----------//
+	// allocate //
+	//----------//
+
+	if (! Allocate(_numberOfBeams, _rangeSteps))
+	{
+		fclose(fp);
+		return(0);
+	}
+
+	//----------------------//
+	// read the delay terms //
+	//----------------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		if (fread((void *)*(_delay + beam_idx), sizeof(unsigned char),
+			_rangeSteps, fp) != _rangeSteps)
+		{
+			return(0);
+		}
+	}
+
+	//-------------------//
+	// read the duration //
+	//-------------------//
+
+	if (fread((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+		fp) != 1)
+	{
+		return(1);
+	}
+
+	//--------------------------//
+	// read the ticks per orbit //
+	//--------------------------//
+
+	if (fread((void *)&_ticksPerOrbit, sizeof(unsigned short), 1, fp) != 1)
+	{
+		return(1);
+	}
+
+	//----------------//
+	// close the file //
+	//----------------//
+
+	fclose(fp);
 	return(1);
 }

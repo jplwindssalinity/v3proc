@@ -20,6 +20,7 @@ static const char rcs_id_configsim_h[] =
 #include "Wind.h"
 #include "Grid.h"
 #include "ConfigList.h"
+#include "Tracking.h"
 
 //======================================================================
 // DESCRIPTION
@@ -288,5 +289,17 @@ int		ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
 			double* grid_start_time, double* grid_end_time,
 			double* instrument_start_time, double* instrument_end_time,
 			double* spacecraft_start_time, double* spacecraft_end_time);
+
+//----------//
+// Tracking //
+//----------//
+
+#define RGC_FILE_KEYWORD	"RGC_FILE"
+#define DTC_FILE_KEYWORD	"DTC_FILE"
+
+int		ConfigRangeTracker(RangeTracker* range_tracker,
+			ConfigList* config_list);
+int		ConfigDopplerTracker(DopplerTracker* doppler_tracker,
+			ConfigList* config_list);
 
 #endif

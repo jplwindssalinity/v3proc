@@ -605,6 +605,64 @@ DopplerAndDelay(
 	return(1);
 }
 
+//-----------------------//
+// IdealCommandedDoppler //
+//-----------------------//
+// Estimate the ideal commanded doppler frequency.
+
+#define DOPPLER_ACCURACY	1.0		// 1 Hz
+
+int
+IdealCommandedDoppler(
+	CoordinateSwitch*	antenna_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	Vector3				vector)
+{
+	//-----------------------------------------------------//
+	// calculate receiver gate delay to put echo in center //
+	//-----------------------------------------------------//
+
+	int current_beam_idx = instrument->antenna.currentBeamIdx;
+	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
+	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
+	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
+	double round_trip_time = 2.0 * slant_range / speed_light_kps;
+
+	//--------------------------------------------------//
+	// calculate baseband frequency w/o Doppler command //
+	//--------------------------------------------------//
+
+	double chirp_start = instrument->chirpStartM * pulse_width +
+		instrument->chirpStartB;
+	double transmit_center = -chirp_start / instrument->chirpRate;
+	double echo_center = transmit_center + round_trip_time +
+		instrument->systemDelay;
+	double range_freq = instrument->chirpRate *
+		(instrument->receiverGateDelay - echo_center);
+
+	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
+	Vector3 vrel = sc_orbit_state->vsat - vspot;
+
+	instrument->commandedDoppler = 0.0;
+	double xmit_freq, lambda, doppler_freq, new_commanded_doppler, dif;
+	do
+	{
+		xmit_freq = instrument->baseTransmitFreq +
+			instrument->commandedDoppler;
+		lambda = speed_light_kps / xmit_freq;
+		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
+		new_commanded_doppler = range_freq - doppler_freq;
+		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
+		instrument->commandedDoppler = new_commanded_doppler;
+	} while (dif > DOPPLER_ACCURACY);
+
+	return(1);
+}
+
 //------------//
 // TargetInfo //
 //------------//

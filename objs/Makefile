@@ -127,7 +127,7 @@ Beam.o: Beam.C Beam.h Array.h Constants.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Constants.h Distributions.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h BaseFile.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h PiscTable.h Matrix3.h Ephemeris.h EarthPosition.h BufferedList.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Constants.h Distributions.h Tracking.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h BaseFile.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h PiscTable.h Matrix3.h Ephemeris.h EarthPosition.h BufferedList.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Distributions.o: Distributions.C Distributions.h
 EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
@@ -167,5 +167,5 @@ PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h
 Sigma0.o: Sigma0.C Sigma0.h Spacecraft.h Instrument.h Meas.h Distributions.h Constants.h Matrix3.h Ephemeris.h Attitude.h Antenna.h Beam.h LonLat.h List.h BufferedList.h EarthPosition.h CoordinateSwitch.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h EarthPosition.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h Distributions.h BufferedList.h EarthPosition.h List.h
-Tracking.o: Tracking.C Tracking.h
+Tracking.o: Tracking.C Tracking.h Array.h Constants.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h

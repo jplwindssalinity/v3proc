@@ -17,6 +17,7 @@ static const char rcs_id_configsim_c[] =
 #include "L20.h"
 #include "Constants.h"
 #include "Distributions.h"
+#include "Tracking.h"
 
 //------------------//
 // ConfigSpacecraft //
@@ -1267,6 +1268,44 @@ ConfigControl(
 	//---------------------------//
 
 	config_list->LogErrors(1);
+
+	return(1);
+}
+
+//--------------------//
+// ConfigRangeTracker //
+//--------------------//
+
+int
+ConfigRangeTracker(
+	RangeTracker*		range_tracker,
+	ConfigList*			config_list)
+{
+	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
+	if (rgc_file == NULL)
+		return(0);
+
+	if (! range_tracker->ReadBinary(rgc_file))
+		return(0);
+
+	return(1);
+}
+
+//----------------------//
+// ConfigDopplerTracker //
+//----------------------//
+
+int
+ConfigDopplerTracker(
+	DopplerTracker*	doppler_tracker,
+	ConfigList*			config_list)
+{
+	char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
+	if (dtc_file == NULL)
+		return(0);
+
+	if (! doppler_tracker->ReadBinary(dtc_file))
+		return(0);
 
 	return(1);
 }

@@ -57,6 +57,9 @@ int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 int		DopplerAndDelay(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector);
 
+int		IdealCommandedDoppler(CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector);
+
 int		TargetInfo(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector,
 			TargetInfoPackage* tip);
