@@ -2603,7 +2603,7 @@ Qscat::IdealCommandedDoppler(
 
     OrbitState* sc_orbit_state = &(spacecraft->orbitState);
     Attitude zero_rpy;
-    zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+    zero_rpy.Set(0.0, 0.0, 0.0, 2, 1, 3);
     CoordinateSwitch zero_rpy_antenna_frame_to_gc =
         AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(sas.antenna),
         sas.antenna.txCenterAzimuthAngle);
