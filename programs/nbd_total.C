@@ -521,6 +521,24 @@ main(
             float mle = wvp->obj;
 
             //-----------------//
+            // set speed array //
+            //-----------------//
+
+            int ispd = (int)(spd * 5.0 + 0.5);
+            if (ispd < 0) ispd = 0;
+            if (ispd > 250) ispd = 250;
+            spd_array[target_idx][cell_idx] = (unsigned char)ispd;
+
+            //---------------//
+            // set MLE array //
+            //---------------//
+
+            int imle = (int)((mle + 30.0) * 8.0 + 0.5);
+            if (imle < 0) imle = 0;
+            if (imle > 240) imle = 240;
+            mle_array[target_idx][cell_idx] = (unsigned char)imle;
+
+            //-----------------//
             // accumulate info //
             //-----------------//
 
@@ -571,86 +589,65 @@ main(
             }
 //            wvc.FreeContents();
 
-            if (comp_count[0][0] == 0 || comp_count[0][1] == 0 ||
-                comp_count[1][0] == 0 || comp_count[1][1] == 0)
-            {
-                continue;
-            }
+            //---------------------//
+            // set direction array //
+            //---------------------//
 
-            //-----------------------------//
-            // calculate the target angles //
-            //-----------------------------//
-
-            float target_angle[2];
-            for (int i = 0; i < 2; i++)    // beam
+            if (comp_count[0][0] > 0 && comp_count[0][1] > 0 &&
+                comp_count[1][0] > 0 && comp_count[1][1] > 0)
             {
-                for (int j = 0; j < 2; j++)    // fore/aft
+                // calculate target angles
+                float target_angle[2];
+                for (int i = 0; i < 2; i++)    // beam
                 {
-                    x_comp_sum[i][j] /= comp_count[i][j];
-                    y_comp_sum[i][j] /= comp_count[i][j];
+                    for (int j = 0; j < 2; j++)    // fore/aft
+                    {
+                        x_comp_sum[i][j] /= comp_count[i][j];
+                        y_comp_sum[i][j] /= comp_count[i][j];
+                    }
+                    target_angle[i] =
+                        atan2(y_comp_sum[i][0] + y_comp_sum[i][1],
+                        x_comp_sum[i][0] + x_comp_sum[0][1]);
                 }
-                target_angle[i] = atan2(y_comp_sum[i][0] + y_comp_sum[i][1],
-                    x_comp_sum[i][0] + x_comp_sum[0][1]);
+
+                float dir_val = ANGDIF(target_angle[1], dir);
+
+                // make it with respect to along track angle
+                if (dir_val > pi_over_two)
+                    dir_val = dir_val - pi_over_two;
+                else
+                    dir_val = pi_over_two - dir_val;
+                dir_val *= rtd;
+
+                int idir = (int)(dir_val * 2.0 + 0.5);
+                if (idir < 0) idir = 0;
+                if (idir > 180) idir = 180;
+                dir_array[target_idx][cell_idx] = (unsigned char)idir;
             }
 
-            //-------------------------------------//
-            // calculate the mean ratio difference //
-            //-------------------------------------//
+            //---------------//
+            // set NBD array //
+            //---------------//
 
-            if (count[0] == 0 || count[1] == 0)
-                continue;
-
-            float mean_norm_dif[2];
-            for (int i = 0; i < 2; i++)
+            if (count[0] > 0 && count[1] > 0)
             {
-                mean_norm_dif[i] = norm_dif_sum[i] / count[i];
+                float mean_norm_dif[2];
+                for (int i = 0; i < 2; i++)
+                {
+                    mean_norm_dif[i] = norm_dif_sum[i] / count[i];
+                }
+                float mean_dif = mean_norm_dif[0] - mean_norm_dif[1];
+
+                // calculate the expected std of the mean ratio difference
+                double sub_std = sqrt(1.0 / (double)count[0] +
+                    1.0 / (double)count[1]);
+                double nbd = mean_dif / sub_std;
+
+                int inbd = (int)((nbd + 6.0) * 20.0 + 0.5);
+                if (inbd < 0) inbd = 0;
+                if (inbd > 240) inbd = 240;
+                nbd_array[target_idx][cell_idx] = (unsigned char)inbd;
             }
-            float mean_dif = mean_norm_dif[0] - mean_norm_dif[1];
-
-            //---------------------------------------------------------//
-            // calculate the expected std of the mean ratio difference //
-            //---------------------------------------------------------//
-
-            double sub_std = sqrt(1.0 / (double)count[0] +
-                1.0 / (double)count[1]);
-            double nbd = mean_dif / sub_std;
-
-            //----------------------------------//
-            // calculate the angular difference //
-            //----------------------------------//
-
-            float dir_val = ANGDIF(target_angle[1], dir);
-
-            // make it with respect to along track angle
-            if (dir_val > pi_over_two)
-                dir_val = dir_val - pi_over_two;
-            else
-                dir_val = pi_over_two - dir_val;
-            dir_val *= rtd;
-
-            //-------------//
-            // fill arrays //
-            //-------------//
-
-            int inbd = (int)((nbd + 6.0) * 20.0 + 0.5);
-            if (inbd < 0) inbd = 0;
-            if (inbd > 240) inbd = 240;
-            nbd_array[target_idx][cell_idx] = (unsigned char)inbd;
-
-            int ispd = (int)(spd * 5.0 + 0.5);
-            if (ispd < 0) ispd = 0;
-            if (ispd > 250) ispd = 250;
-            spd_array[target_idx][cell_idx] = (unsigned char)ispd;
-
-            int idir = (int)(dir_val * 2.0 + 0.5);
-            if (idir < 0) idir = 0;
-            if (idir > 180) idir = 180;
-            dir_array[target_idx][cell_idx] = (unsigned char)idir;
-
-            int imle = (int)((mle + 30.0) * 8.0 + 0.5);
-            if (imle < 0) imle = 0;
-            if (imle > 240) imle = 240;
-            mle_array[target_idx][cell_idx] = (unsigned char)imle;
         }
         for (int cell_idx = 0; cell_idx < MAX_CROSS_TRACK; cell_idx++)
         {
