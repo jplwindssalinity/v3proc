@@ -20,6 +20,8 @@ static const char rcs_id_wind_h[] =
 #include "Parameter.h"
 #include "TlmHdfFile.h"
 
+#define NWP_SPEED_CORRECTION  0.84
+
 //======================================================================
 // CLASSES
 //    WindVector, WindVectorPlus, WindVectorField, WVC, WindField,
@@ -382,13 +384,8 @@ public:
     int  WriteL2B(FILE* fp);
     int  ReadL2B(FILE* fp);
     int  ReadL2B(const char* filename);
-    int  ReadHdfL2B(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
-    int  ReadHdfL2B(const char* filename, int unnormalize_mle = 1);
     int  ReadHdfDIRTH(const char* filename);
-    int  ReadNudgeVectorsFromHdfL2B(const char* filename);
-    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadNscatSwv25(const char* filename);
-    int  GetArraysForUpdatingHdf(float** spd, float** dir, int** num_ambig);
     int  GetSpdDirNumSel(float** spd, float** dir, int** num_ambig,
              int** selected);
     int  UpdateHdf(const char* filename, float** spd, float** dir,
@@ -506,14 +503,6 @@ protected:
     int  _Allocate();
     int  _Deallocate();
 
-    //---------//
-    // for HDF //
-    //---------//
-
-    int   _OpenOneHdfDataSet(TlmHdfFile*, SourceIdE, ParamIdE);
-    int   _OpenHdfDataSets(TlmHdfFile*);
-    void  _CloseHdfDataSets(void);
-
     //-----------//
     // variables //
     //-----------//
@@ -521,24 +510,6 @@ protected:
     int  _crossTrackBins;
     int  _alongTrackBins;
     int  _validCells;
-
-    //---------//
-    // for HDF //
-    //---------//
-
-    int32  _lonSdsId;
-    int32  _latSdsId;
-    int32  _speedSdsId;
-    int32  _dirSdsId;
-    int32  _mleSdsId;
-    int32  _selectSdsId;
-    int32  _numambigSdsId;
-    int32  _modelSpeedSdsId;
-    int32  _modelDirSdsId;
-    int32  _numInForeSdsId;
-    int32  _numInAftSdsId;
-    int32  _numOutForeSdsId;
-    int32  _numOutAftSdsId;
 };
 
 #endif

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-2000, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -121,6 +121,14 @@ public:
 
     int  ReadDataRec() { return(frame.swath.ReadL2B(_inputFp)); };
     int  ReadHDF(int unnormalize_mle = 1);
+    int  ReadHDF(const char* filename, int unnormalize_mle = 1);
+    int  ReadHDF(TlmHdfFile* tlmHdfFile, int unnormalize_mle = 1);
+    int  ReadNudgeVectorsFromHdfL2B(const char* filename);
+    int  ReadNudgeVectorsFromHdfL2B(TlmHdfFile* tlmHdfFile);
+
+    int  GetArraysForUpdatingDirthHdf(float** spd, float** dir,
+             int** num_ambig);
+
     int  WriteDataRec() { return(frame.swath.WriteL2B(_outputFp)); };
 
     int  WriteVctr(const char* filename, const int rank);
@@ -140,6 +148,29 @@ protected:
     //-----------//
 
     StatusE  _status;
+
+    //---------//
+    // for HDF //
+    //---------//
+
+    int   _OpenHdfDataSets(TlmHdfFile* tlmHdfFile);
+    int   _OpenOneHdfDataSet(TlmHdfFile* tlmHdfFile, SourceIdE source,
+              ParamIdE param);
+    void  _CloseHdfDataSets();
+
+    int32  _lonSdsId;
+    int32  _latSdsId;
+    int32  _speedSdsId;
+    int32  _dirSdsId;
+    int32  _mleSdsId;
+    int32  _selectSdsId;
+    int32  _numambigSdsId;
+    int32  _modelSpeedSdsId;
+    int32  _modelDirSdsId;
+    int32  _numInForeSdsId;
+    int32  _numInAftSdsId;
+    int32  _numOutForeSdsId;
+    int32  _numOutAftSdsId;
 };
 
 #endif
