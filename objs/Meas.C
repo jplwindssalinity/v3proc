@@ -50,11 +50,11 @@ Meas::Composite(
 	float sum_EnSlice = 0.0;
 	float sum_bandwidth = 0.0;
 	Vector3 sum_centroid(0.0,0.0,0.0);
-	float sum_eastAzimuth_x = 0.0;
-	float sum_eastAzimuth_y = 0.0;
 	float sum_incidenceAngle = 0.0;
-	float sum_azi_angle = 0.0;
-	float sum_X2 = 0.0;
+//	float sum_X2 = 0.0;
+	float sum_xk2a = 0.0;
+	float sum_xkbwb = 0.0;
+	float sum_bw2c = 0.0;
 	int N = 0;
 
 	//
@@ -73,7 +73,10 @@ Meas::Composite(
 		sum_bandwidth += meas->bandwidth;
 		sum_centroid += meas->centroid;
 		sum_incidenceAngle += meas->incidenceAngle;
-		sum_X2 += meas->XK*meas->XK;
+		sum_xk2a += meas->XK * meas->XK * meas->A;
+		sum_xkbwb += meas->XK * meas->bandwidth * meas->B;
+		sum_bw2c += meas->bandwidth * meas->bandwidth * meas->C;
+//		sum_X2 += meas->XK*meas->XK;
 		N++;
 	}
 
@@ -106,14 +109,18 @@ Meas::Composite(
 	// composite Kpc coefficients //
 	//----------------------------//
 	// Composite Kpc coefficients.
-	// Here we assume that all the slices in one spot have the same values
-	// of A,B,C (ie., bandwidths, and pulsewidths don't change within a spot).
-	// This will only be an issue if guard slices are composited with regular
-	// slices.
+	// Derived from Mike's equations but not assuming that the A, B, C, and
+	// bandwidths for each slice are identical.
 
+	A = sum_xk2a / (sum_XK * sum_XK);
+	B = sum_xkbwb / (bandwidth * sum_XK);
+	C = sum_bw2c / (bandwidth * bandwidth);
+
+/*
 	A = meas->A * sum_X2 / (sum_XK * sum_XK);
 	B = meas->B / N;
 	C = meas->C / N;
+*/
 
 	return(1);
 }
