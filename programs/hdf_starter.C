@@ -20,8 +20,9 @@
 //    What does this sample program do? It will extract all 12
 //    slices, and create an average slice profile. Not very useful,
 //    but a decent enough example for showing how things work. Along
-//    the way I will need to avoid the calibration loopback and
-//    load measurements.
+//    the way I will be doing a lot of the "basics" such as checking
+//    frame and pulse quality flags and avoiding the calibration
+//    loopback and load measurements.
 //
 // OPTIONS
 //    The following options are supported:
@@ -64,7 +65,6 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <string.h>
-#include "Misc.h"
 #include "hdf.h"
 #include "mfhdf.h"
 
@@ -86,6 +86,9 @@ static const char rcs_id[] =
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
+const char* no_path(const char* string);
+void usage(const char* command, const char* option_array[],
+    const int exit_value);
 int32 SDnametoid(int32 sd_id, char* sds_name);
 
 //------------------//
@@ -115,6 +118,10 @@ main(
     // say "hdf_program: error doing something" rather than
     // "/home/users/dork/bin/hdf_program: error doing something".
     // I think it just looks nicer.
+    //
+    // usage is another helper function. It will format and spit out
+    // usage messages for you (and then exit with the specified exit
+    // code).
     //--------------------
 
     const char* command = no_path(argv[0]);
@@ -165,9 +172,9 @@ main(
         }
     }
 
-    //----------------//
-    // some variables //
-    //----------------//
+    //--------------------
+    // These are some variables for calculating the average slice profile.
+    //--------------------
 
     double slice_sum[12];
     for (int i = 0; i < 12; i++)
@@ -219,7 +226,9 @@ main(
             "l1a_actual_frames");
 
         //--------------------
-        // Then, we can get information about the attribute, if we want.
+        // If we want, we can get information about the attribute.
+        // This part of the code is just for show. You'll notice that I
+        // don't use any of the information I get.
         //--------------------
 
         char attr_name[MAX_NC_NAME];
@@ -228,8 +237,8 @@ main(
             &data_type, &n_values) == FAIL)
         {
             fprintf(stderr,
-             "%s: error getting attribute information for l1a_actual_frames\n",
-             command);
+                "%s: error getting attribute info for l1a_actual_frames\n",
+                command);
             exit(1);
         }
 
@@ -237,7 +246,8 @@ main(
         // ...and we can read it. To be "good" I probably should
         // use the data type and the number of values to allocate
         // the right amount of memory for the attribute. But, I'm lazy
-        // and I know that this particular attribute won't be that long.
+        // and I know that this particular attribute won't be longer
+        // than 1024 bytes.
         //--------------------
 
         char data[1024];
@@ -255,7 +265,9 @@ main(
         // the type of data, the second line contains the number of
         // elements, and the rest is the attribute value. We'll
         // use sscanf to throw out the first two lines and get the
-        // frame count from the third line.
+        // frame count from the third line. Yes, it is a strange
+        // looking use of scanf; if you are interested in the details,
+        // check out the man page.
         //--------------------
 
         int frame_count = 0;
@@ -272,7 +284,7 @@ main(
         // get an SDS ID for each parameter that we want. However,
         // HDF only allows us to look up an SDS index from the
         // name. Then we have to look up the ID using the index.
-        // It's a little cumbersome, I know, but it still is fairly
+        // It's a little tedious, I know, but it still is fairly
         // straightforward. Actually, I've made a helper function,
         // cleverly called "SDnametoid" that makes both function
         // calls for you. Let's all enjoy use happy function!
@@ -296,8 +308,8 @@ main(
         // describe the starting location, the number of elements to
         // skip after each read, and the number of elements to be
         // read, respectively, for each dimension. As Greg will
-        // certainly tell you, we don't want to skip any data; so,
-        // set stride to NULL. (If you really want to skip data
+        // undoubtedly tell you, we don't ever want to skip any data;
+        // so, set stride to NULL. (If you really want to skip data
         // I'd be happy to give you a copy of the HDF documentation.)
         // The start and edges arguments should be self-explanatory
         // based on the examples below. I have chosen to do this
@@ -310,7 +322,7 @@ main(
         //--------------------
         // Oh, one more thing. Don't worry about the following
         // start and edges variables right now. They'll make
-        // sense in a minute.
+        // sense in a minute 'cause I'll 'splain 'em.
         //--------------------
 
         int32 generic_1d_start[1] = { 0 };
@@ -327,7 +339,7 @@ main(
             //--------------------
             // The generic_1d_start array is used to indicate the
             // starting frame number for all our one-dimensional
-            // extraction needs. This should make more sense as
+            // extraction needs. This will make more sense as
             // you read more.
             //--------------------
 
@@ -344,7 +356,7 @@ main(
             // In the L1A file, the frame_err_status is stored as an
             // array of size [N] where N is the number of frames in the
             // file. The L1A SIS says that frame_err_status is of size
-            // [13000], but they really mean the number of frames.
+            // [13000], but they really mean the number of frames, N.
             // The storage type is uint32 (unsigned 32 bit integer).
             // Since we only want to read one frame at a time, the
             // edges array needs to contain a 1 indicating one frame.
@@ -352,7 +364,9 @@ main(
             // frame index (frame_idx). Notice that I set up the
             // edges arrays before this loop. That way, they only get
             // set once. The start array, however, needs to get set
-            // every time.
+            // every time. And, yes, it is kind of weird to define
+            // an array of size one. Later, when we need to extract
+            // multidimensional parameters, we'll use longer arrays.
             //--------------------
 
             uint32 frame_err_status;
@@ -364,6 +378,10 @@ main(
                     command, (int)frame_err_status_sds_id);
                 exit(1);
             }
+
+            //--------------------
+            // good frames have a frame_err_status of zero
+            //--------------------
 
             if (frame_err_status != 0)
             {
@@ -415,8 +433,10 @@ main(
             // are reading one frame at a time, we  will be
             // reading a [13] array. We want to read 1 frame, 13
             // bytes so the edges array should be { 1, 13 }. And,
-            // we want to start at the frame index and with byte 0
-            // so the start array should be { frame_idx, 0 }.
+            // we want to start reading at the current frame and
+            // with byte 0 so the start array should be { frame_idx, 0 }.
+            // The 0 has already been set, so we only need to deal with
+            // the frame_idx.
             //--------------------
 
             pulse_qual_flag_start[0] = frame_idx;
@@ -429,6 +449,10 @@ main(
                     command);
                 exit(1);
             }
+
+            //--------------------
+            // Good pulses have their bit set to 0.
+            //--------------------
 
             int bad_pulses = 0;
             for (int i = 0; i < 13; i++)
@@ -459,8 +483,8 @@ main(
             // per pulse. Since I'm reading one frame at a time,
             // I just need a [100][12] array. The power_dn_edges
             // array indicates how much data to read (1 frame, 100
-            // pulses, 12 slices). The power_dn_start array currently
-            // says to start at frame 0, pulse 0, and slice 0.
+            // pulses, 12 slices). The power_dn_start array was
+            // initialized with all zeroes { 0, 0, 0 }.
             // The only part of that we will want to change is the
             // starting frame which should increment as we go
             // throught the frames one by one. So, I'll set it to the
@@ -482,7 +506,7 @@ main(
             // You might recall that SeaWinds does this thing called
             // the calibration loopback. We want to detect and ignore
             // them. Greg will probably want to detect and keep them.
-            // The variable true_cal_pulse_pos is the key to this.
+            // The variable true_cal_pulse_pos is the key to all of this.
             //--------------------
 
             int8 true_cal_pulse_pos;
@@ -498,7 +522,7 @@ main(
             int load_index = true_cal_pulse_pos;
 
             //--------------------
-            // Here is my bogus application. Averaging the science
+            // Here is my bogus application: averaging the science
             // slices to get an average profile.
             //--------------------
 
@@ -562,6 +586,56 @@ main(
     }
 
     return (0);
+}
+
+//--------------------
+// The following are three helper functions. Normally they would be
+// put into a library, but if you leave them here you won't have to
+// worry about linking.
+//--------------------
+
+//---------//
+// no_path //
+//---------//
+
+const char*
+no_path(
+    const char*  string)
+{
+    const char* last_slash = strrchr(string, '/');
+    if (! last_slash)
+        return(string);
+    return(last_slash + 1);
+}
+
+#define LINE_LENGTH  78
+
+//-------//
+// usage //
+//-------//
+
+void
+usage(
+    const char*  command,
+    const char*  option_array[],
+    const int    exit_value)
+{
+    fprintf(stderr, "usage: %s", command);
+    int skip = 11;
+    int position = 7 + strlen(command);
+    for (int i = 0; option_array[i]; i++)
+    {
+        int length = 1 + strlen(option_array[i]);
+        position += length;
+        if (position > LINE_LENGTH)
+        {
+            fprintf(stderr, "\n%*s", skip, " ");
+            position = skip + length;
+        }
+        fprintf(stderr, " %s", option_array[i]);
+    }
+    fprintf(stderr, "\n");
+    exit(exit_value);
 }
 
 //------------//
