@@ -90,7 +90,7 @@ public:
 	// Attitude Reporting Routine //
 	//----------------------------//
 
-	void ReportAttitude(double time, Spacecraft* spacecraft,
+	void	ReportAttitude(double time, Spacecraft* spacecraft,
 				Attitude* attitude);
 
 	//------------------//
@@ -134,7 +134,6 @@ protected:
 
 	double	_period;		// the orbit period
 
-
 	//-----------------------//
 	// predigested variables //
 	//-----------------------//
@@ -165,10 +164,3 @@ protected:
 };
 
 #endif
-
-
-
-
-
-
-
