@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.5  1999/02/24 03:24:55  sally
+// add L2AHdf
+//
 // 
 //    Rev 1.30   23 Dec 1998 16:32:40   sally
 // move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
@@ -141,9 +144,10 @@ const ParTabEntry L1AParTab[] =
                                                ExtractData1D, pr_float8_10 },
     }
   },
-  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 6, {
+  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
       { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
       { UNIT_CODE_A,   "Code A", DATA_ITIME,0,ExtractL1Time,pr_itime_codea},
+      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
       { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
       { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
       { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
