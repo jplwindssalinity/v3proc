@@ -102,7 +102,7 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 3)
+    if (argc != 4)
         usage(command, usage_array, 1);
 
     int opt_idx = 1;
