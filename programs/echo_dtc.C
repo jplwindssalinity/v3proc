@@ -398,12 +398,17 @@ main(
     // read and process data orbit step by orbit step //
     //------------------------------------------------//
 
-    ETime last_time, regression_start;
-    int regression = 0;
-
     for (int target_orbit_step = 0; target_orbit_step < ORBIT_STEPS;
         target_orbit_step++)
     {
+        //---------------------------------------------//
+        // fresh regression for each target orbit step //
+        //---------------------------------------------//
+
+        ETime last_time, regression_start;
+        last_time.Zero();
+        int regression = 0;
+
         printf("Processing orbit step %d...\n", target_orbit_step);
         for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
         {
@@ -469,7 +474,7 @@ main(
 
                 if (opt_regression)
                 {
-                    if (echo_info.frameTime <= last_time)
+                    if (! regression && echo_info.frameTime <= last_time)
                     {
                         regression = 1;
                         regression_start = echo_info.frameTime;

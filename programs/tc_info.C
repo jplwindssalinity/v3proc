@@ -330,14 +330,19 @@ ddelay_scan(
             float dummy;
             range_tracker->GetRxGateDelay(orbit_step, azimuth_step, 0, 0,
                 &delay_dn, &dummy);
+            float table_delay = RX_GATE_DELAY_CMD_RESOLUTION *
+                range_tracker->rxRangeMem;
             float delay = RX_GATE_DELAY_CMD_RESOLUTION * delay_dn;
 
             unsigned char ref_delay_dn;
             ref_range_tracker->GetRxGateDelay(orbit_step, azimuth_step, 0, 0,
                 &ref_delay_dn, &dummy);
+            float ref_table_delay = RX_GATE_DELAY_CMD_RESOLUTION *
+                ref_range_tracker->rxRangeMem;
             float ref_delay = RX_GATE_DELAY_CMD_RESOLUTION * ref_delay_dn;
 
-            fprintf(ofp, "%g %g\n", x_value, (delay - ref_delay) * 1000.0);
+            fprintf(ofp, "%g %g %g\n", x_value, (delay - ref_delay) * 1000.0,
+                (table_delay - ref_table_delay) * 1000.0);
         }
     }
 
@@ -359,6 +364,10 @@ freq_scan(
     if (ofp == NULL)
         return(0);
 
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "DTC Frequency", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (Hz)", QUOTE);
+
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
         for (unsigned short azimuth_step = 0; azimuth_step < 32768;
@@ -368,8 +377,10 @@ freq_scan(
             short dop_dn;
             doppler_tracker->GetCommandedDoppler(orbit_step, azimuth_step,
                 0, 0.0, &dop_dn);
+            // convert table freq to commanded freq
+            float cmd_freq = -doppler_tracker->tableFrequency;
             float freq = TX_FREQUENCY_CMD_RESOLUTION * dop_dn;
-            fprintf(ofp, "%g %g\n", x_value, freq);
+            fprintf(ofp, "%g %g %g\n", x_value, freq, cmd_freq);
         }
     }
 
@@ -424,6 +435,10 @@ dfreq_scan(
     if (ofp == NULL)
         return(0);
 
+    fprintf(ofp, "@ title %c%s%c\n", QUOTE, "DTC Frequency Difference", QUOTE);
+    fprintf(ofp, "@ xaxis label %c%s%c\n", QUOTE, "Orbit Step", QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, "Frequency (Hz)", QUOTE);
+
     for (unsigned short orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
         for (unsigned short azimuth_step = 0; azimuth_step < 32768;
@@ -434,14 +449,17 @@ dfreq_scan(
             short dop_dn;
             doppler_tracker->GetCommandedDoppler(orbit_step, azimuth_step,
                 0, 0.0, &dop_dn);
+            float cmd_freq = -doppler_tracker->tableFrequency;
             float freq = TX_FREQUENCY_CMD_RESOLUTION * dop_dn;
 
             short ref_dop_dn;
             ref_doppler_tracker->GetCommandedDoppler(orbit_step,
                 azimuth_step, 0, 0.0, &ref_dop_dn);
+            float ref_cmd_freq = -ref_doppler_tracker->tableFrequency;
             float ref_freq = TX_FREQUENCY_CMD_RESOLUTION * ref_dop_dn;
 
-            fprintf(ofp, "%g %g\n", x_value, freq - ref_freq);
+            fprintf(ofp, "%g %g %g\n", x_value, freq - ref_freq,
+                cmd_freq - ref_cmd_freq);
         }
     }
 
