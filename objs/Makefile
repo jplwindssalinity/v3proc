@@ -179,6 +179,4 @@ SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix
 Tracking.o: Tracking.C Tracking.h Array.h Instrument.h Constants.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h
 Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h EarthPosition.h Matrix3.h
 XTable.o: XTable.C XTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h EarthPosition.h Matrix3.h Attitude.h
-
-
-
+EarthField.o: EarthField.C LonLat.h Constants.h Array.h EarthField.h List.h EarthPosition.h Matrix3.h
