@@ -429,6 +429,41 @@ Image::Step(
     return(1);
 }
 
+//------------------//
+// Image::LinearMap //
+//------------------//
+
+int
+Image::LinearMap(
+    float  old_1,
+    float  new_1,
+    float  old_2,
+    float  new_2,
+    float  new_min,
+    float  new_max)
+{
+    //----------------------------//
+    // calculate mapping function //
+    //----------------------------//
+
+    float m = (new_2 - new_1) / (old_2 - old_1);
+    float b = (old_2 * new_1 - old_1 * new_2) / (old_2 - old_1);
+
+    for (int x = 0; x < _xSize; x++)
+    {
+        for (int y = 0; y < _ySize; y++)
+        {
+            float new_value = *(*(_image + x) + y) * m + b;
+            if (new_value < new_min)
+                new_value = new_min;
+            if (new_value > new_max)
+                new_value = new_max;
+            *(*(_image + x) + y) = new_value;
+        }
+    }
+    return(1);
+}
+
 //-----------------//
 // Image::Convolve //
 //-----------------//
@@ -506,35 +541,47 @@ Image::Convolve(
 
 int
 Image::Gradient(
-    int  operator_size)
+    int     operator_size,
+    Image*  gx,
+    Image*  gy)
 {
     //------------------------------------------------//
     // construct the horizontal and verical operators //
     //------------------------------------------------//
 
-    Image hop;
-    hop.Allocate(operator_size, operator_size);
-    hop.Step(0.0);
+    Image gx_op;
+    gx_op.Allocate(operator_size, operator_size);
+    gx_op.Step(0.0);
 
-    Image vop;
-    vop.Allocate(operator_size, operator_size);
-    vop.Step(90.0);
+    Image gy_op;
+    gy_op.Allocate(operator_size, operator_size);
+    gy_op.Step(90.0);
 
     //---------------------//
     // apply the operators //
     //---------------------//
 
-    Image hgrad;
-    hgrad.Convolve(this, &hop);
+    Image* use_gx;
+    Image tmp_gx;
+    if (gx != NULL)
+        use_gx = gx;
+    else
+        use_gx = &tmp_gx;
+    use_gx->Convolve(this, &gx_op);
 
-    Image vgrad;
-    vgrad.Convolve(this, &vop);
+    Image* use_gy;
+    Image tmp_gy;
+    if (gy != NULL)
+        use_gy = gy;
+    else
+        use_gy = &tmp_gy;
+    use_gy->Convolve(this, &gy_op);
 
     //--------------------//
     // take the magnitude //
     //--------------------//
 
-    Magnitude(&hgrad, &vgrad);
+    Magnitude(use_gx, use_gy);
 
     return(1);
 }

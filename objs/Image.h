@@ -79,8 +79,10 @@ public:
     // operations //
     //------------//
 
+    int  LinearMap(float old_1, float new_1, float old_2, float new_2,
+             float new_min, float new_max);
     int  Convolve(Image* image_1, Image* image_2);
-    int  Gradient(int operator_size);
+    int  Gradient(int operator_size, Image* gx, Image* gy);
     int  Magnitude(Image* image_1, Image* image_2);
 
 protected:

@@ -1432,7 +1432,8 @@ int
 DopplerTracker::MroAssemble(
     unsigned char   type,
     unsigned short  offset,
-    char*           data)
+    char*           data,
+    int*            beam_idx)
 {
     //------------//
     // initialize //
@@ -1478,6 +1479,7 @@ DopplerTracker::MroAssemble(
         // convert array to table
         SetFromMro(mro);
         expected_offset = 0;    // reset
+        *beam_idx = beam;
         return(1);
     }
     return(0);
