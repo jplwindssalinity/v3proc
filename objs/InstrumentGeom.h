@@ -72,9 +72,11 @@ int		FindPeakGainUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
 			double* azim, float* gain);
 
 int		FindPeakGainForSlice(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, double look_1,
-			double azim_1, float gain_1, double look_2, double azim_2,
-			float gain_2, float* peak_gain);
+			Spacecraft* spacecraft, Instrument* instrument, double look[2],
+			double azim[2], float gain[2], float* peak_gain);
+
+int		FindGainBetween(double f_look[2], double f_azim[2], float f_gain[2],
+			float target_gain, double* tc_look, double* tc_azim);
 
 int		FindSliceCorners(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, double look,

@@ -79,11 +79,13 @@ FindSlice(
 	// find peak gain for frequency 1 //
 	//--------------------------------//
 
-	double look_1 = look;
-	double azim_1 = azim;
-	float gain_1;
+	double f_look[2], f_azim[2];
+	float f_gain[2];
+
+	f_look[0] = look;
+	f_azim[0] = azim;
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
-		freq_1, freq_tol, &look_1, &azim_1, &gain_1))
+		freq_1, freq_tol, &(f_look[0]), &(f_azim[0]), &(f_gain[0])))
 	{
 		fprintf(stderr,
 			"FindSlice: error finding peak gain for frequency %g\n", freq_1);
@@ -94,11 +96,10 @@ FindSlice(
 	// find peak gain for frequency 2 //
 	//--------------------------------//
 
-	double look_2 = look;
-	double azim_2 = azim;
-	float gain_2;
+	f_look[1] = look;
+	f_azim[1] = azim;
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
-		freq_2, freq_tol, &look_2, &azim_2, &gain_2))
+		freq_2, freq_tol, &(f_look[1]), &(f_azim[1]), &(f_gain[1])))
 	{
 		fprintf(stderr,
 			"FindSlice: error finding peak gain for frequency %g\n", freq_2);
@@ -111,7 +112,7 @@ FindSlice(
 
 	float peak_gain;
 	if (! FindPeakGainForSlice(antenna_frame_to_gc, spacecraft, instrument,
-		look_1, azim_1, gain_1, look_2, azim_2, gain_2, &peak_gain))
+		f_look, f_azim, f_gain, &peak_gain))
 	{
 		fprintf(stderr, "FindSlice: error finding peak gain for slice\n");
 		return(0);
@@ -123,54 +124,93 @@ FindSlice(
 
 	float target_gain = peak_gain / pow(10.0, 0.3);
 
+	int corner_idx = 0;
+	double c_look[4], c_azim[4];
+
 	//------------------------------//
 	// find corners for frequency 1 //
 	//------------------------------//
 
-	double c_look_1[2];
-	double c_azim_1[2];
-	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
-		look_1, azim_1, target_gain, c_look_1, c_azim_1))
+	double two_look[2];
+	double two_azim[2];
+	if (f_gain[0] > target_gain)
 	{
-		fprintf(stderr,
-			"FindSlice: error finding slice corners for frequency 1\n");
-		return(0);
+		if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
+			f_look[0], f_azim[0], target_gain, two_look, two_azim))
+		{
+			fprintf(stderr,
+				"FindSlice: error finding slice corners for frequency 1\n");
+			return(0);
+		}
+
+		c_look[corner_idx] = two_look[0];
+		c_azim[corner_idx] = two_azim[0];
+		corner_idx++;
+
+		c_look[corner_idx] = two_look[1];
+		c_azim[corner_idx] = two_azim[1];
+		corner_idx++;
+	}
+	else
+	{
+		// you've got a triangle
+		double tc_look, tc_azim;
+		if (! FindGainBetween(f_look, f_azim, f_gain, target_gain,
+			&tc_look, &tc_azim))
+		{
+			fprintf(stderr, "FindSlice: error finding triangle corner\n");
+			return(0);
+		}
+		c_look[corner_idx] = tc_look;
+		c_azim[corner_idx] = tc_azim;
+		corner_idx++;
 	}
 
 	//------------------------------//
 	// find corners for frequency 2 //
 	//------------------------------//
 
-	double c_look_2[2];
-	double c_azim_2[2];
-	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
-		look_2, azim_2, target_gain, c_look_2, c_azim_2))
+	if (f_gain[1] > target_gain)
 	{
-		fprintf(stderr,
-			"FindSlice: error finding slice corners for frequency 2\n");
-		return(0);
+		if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
+			f_look[1], f_azim[1], target_gain, two_look, two_azim))
+		{
+			fprintf(stderr,
+				"FindSlice: error finding slice corners for frequency 2\n");
+			return(0);
+		}
+
+		c_look[corner_idx] = two_look[1];
+		c_azim[corner_idx] = two_azim[1];
+		corner_idx++;
+
+		c_look[corner_idx] = two_look[0];
+		c_azim[corner_idx] = two_azim[0];
+		corner_idx++;
+	}
+	else
+	{
+		// you've got a triangle
+		double tc_look, tc_azim;
+		if (! FindGainBetween(f_look, f_azim, f_gain, target_gain,
+			&tc_look, &tc_azim))
+		{
+			fprintf(stderr, "FindSlice: error finding triangle corner\n");
+			return(0);
+		}
+		c_look[corner_idx] = tc_look;
+		c_azim[corner_idx] = tc_azim;
+		corner_idx++;
 	}
 
 	//----------------------//
 	// generate the outline //
 	//----------------------//
 
-	double c_look[4], c_azim[4];
-
-	c_look[0] = c_look_1[0];
-	c_look[1] = c_look_1[1];
-	c_look[2] = c_look_2[1];
-	c_look[3] = c_look_2[0];
-
-	c_azim[0] = c_azim_1[0];
-	c_azim[1] = c_azim_1[1];
-	c_azim[2] = c_azim_2[1];
-	c_azim[3] = c_azim_2[0];
-
 	EarthPosition sum;
 	float gain;
 	sum.SetPosition(0.0, 0.0, 0.0);
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i < corner_idx; i++)
 	{
 		Vector3 rlook_antenna;
 		rlook_antenna.SphericalSet(1.0, c_look[i], c_azim[i]);
@@ -696,40 +736,37 @@ FindPeakGainForSlice(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	double				look_1,
-	double				azim_1,
-	float				gain_1,
-	double				look_2,
-	double				azim_2,
-	float				gain_2,
+	double				look[2],
+	double				azim[2],
+	float				gain[2],
 	float*				peak_gain)
 {
-	double mid_look = (look_1 + look_2) / 2.0;
-	double mid_azim = (azim_1 + azim_2) / 2.0;
+	double mid_look = (look[0] + look[1]) / 2.0;
+	double mid_azim = (azim[0] + azim[1]) / 2.0;
 
 	float mid_gain;
 	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument, mid_look,
 		mid_azim, &mid_gain);
 
-	if (gain_1 > mid_gain && gain_1 > gain_2)
+	if (gain[0] > mid_gain && gain[0] > gain[1])
 	{
-		*peak_gain = gain_1;
+		*peak_gain = gain[0];
 		return(1);
 	}
-	else if (gain_2 > mid_gain && gain_2 > gain_1)
+	else if (gain[1] > mid_gain && gain[1] > gain[0])
 	{
-		*peak_gain = gain_2;
+		*peak_gain = gain[1];
 		return(1);
 	}
-	else if (mid_gain > gain_1 && mid_gain > gain_2)
+	else if (mid_gain > gain[0] && mid_gain > gain[1])
 	{
 		double look_array[3], azim_array[3];
-		look_array[0] = look_1;
+		look_array[0] = look[0];
 		look_array[1] = mid_look;
-		look_array[2] = look_2;
-		azim_array[0] = azim_1;
+		look_array[2] = look[1];
+		azim_array[0] = azim[0];
 		azim_array[1] = mid_azim;
-		azim_array[2] = azim_2;
+		azim_array[2] = azim[1];
 
 		double s[3], c[3];
 		QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
@@ -738,6 +775,31 @@ FindPeakGainForSlice(
 		return(1);
 	}
 	return(0);
+}
+
+//-----------------//
+// FindGainBetween //
+//-----------------//
+// Finds the target gain along the line connecting the provided look and
+// azimuth points
+
+int
+FindGainBetween(
+	double				f_look[2],
+	double				f_azim[2],
+	float				f_gain[2],
+	float				target_gain,
+	double*				tc_look,
+	double*				tc_azim)
+{
+	double delta_look = f_look[1] - f_look[0];
+	double delta_azim = f_azim[1] - f_azim[0];
+	float delta_gain = f_gain[1] - f_gain[0];
+
+	float gain_frac = (target_gain - f_gain[0]) / delta_gain;
+	*tc_look = f_look[0] + gain_frac * delta_look;
+	*tc_azim = f_azim[0] + gain_frac * delta_azim;
+	return(1);
 }
 
 //------------------//
