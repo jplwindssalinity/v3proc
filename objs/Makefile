@@ -104,6 +104,9 @@ $(TARGET_LIB):	$(OBJS)
 
 %.C: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.C,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v
+#	mv $@ xxx.C
+#	memfilter xxx.C $@
+#	/bin/rm -f xxx.C
  
 %.h: $(SIM_CENTRAL_TREE)/src/objs/RCS/%.h,v
 	co $(SIM_CENTRAL_TREE)/src/objs/RCS/$@,v
