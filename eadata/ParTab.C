@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   23 Feb 1999 11:13:24   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.13   07 Dec 1998 15:43:58   sally
+// add DATA_FLOAT4_12 type
+// 
+//    Rev 1.12   20 Nov 1998 16:03:32   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.11   13 Oct 1998 15:34:20   sally
 // added L1B file
 // 
@@ -377,8 +386,8 @@ Parameter
     case DATA_INT1_76:
         param->byteSize = 76;
         break;
-    case DATA_INT1_810:
-        param->byteSize = 810;
+    case DATA_INT1_3240:
+        param->byteSize = 3240;
         break;
     case DATA_CHAR2:
     case DATA_UINT2:
@@ -422,6 +431,7 @@ Parameter
         param->byteSize = 32;
         break;
     case DATA_UINT4_12:
+    case DATA_FLOAT4_12:
         param->byteSize = 48;
         break;
     case DATA_UINT1_49:
@@ -451,8 +461,8 @@ Parameter
     case DATA_FLOAT4_76_4:
         param->byteSize = 1216;
         break;
-    case DATA_UINT2_810:
-        param->byteSize = 1620;
+    case DATA_UINT2_3240:
+        param->byteSize = 6480;
         break;
     case DATA_UINT2_100_12:
         param->byteSize = 2400;
@@ -460,8 +470,8 @@ Parameter
     case DATA_FLOAT4_100_8:
         param->byteSize = 3200;
         break;
-    case DATA_FLOAT4_810:
-        param->byteSize = 3240;
+    case DATA_FLOAT4_3240:
+        param->byteSize = 12960;
         break;
     case DATA_UINT4_100_12:
         param->byteSize = 4800;

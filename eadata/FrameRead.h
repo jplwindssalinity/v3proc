@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   07 Dec 1998 15:39:56   sally
+// add FrameReadBits0_13() for "Source Sequence Count"
+// 
 //    Rev 1.5   08 Sep 1998 16:24:40   sally
 // added HK2 FSW subcoms
 // 
@@ -40,5 +43,6 @@ extern int FrameRead3Bytes(int, char*);
 extern int FrameRead4Bytes(int, char*);
 extern int FrameRead8Bytes(int, char*);
 extern int FrameReadFrameNo(int, char*);
+extern int FrameReadBits0_13(int, char*);
 
 #endif // FrameRead_H

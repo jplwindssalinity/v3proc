@@ -62,7 +62,8 @@ public:
     WorstE              GetWorst(void) { return _worst; }
     LimitStatusE        CheckFrame(PolynomialTable*  polyTable,
                                    TlmHdfFile*       tlmFile,
-                                   int32             startIndex);
+                                   int32             startIndex,
+                                   int               firstDataOnly=0);
 
     StatusE             WriteLimitText(void);
 

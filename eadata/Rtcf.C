@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.15   29 Jan 1999 15:04:42   sally
+// added LASP proc commands
+// 
+//    Rev 1.14   08 Jan 1999 16:37:30   sally
+// add LASP proc commands
+// 
 //    Rev 1.13   01 Sep 1998 10:03:58   sally
 //  separate CmdHex from CmdId
 // 
@@ -65,6 +71,7 @@ static const char rcs_id_Rtcf_C[] =
 #include <stdlib.h>
 #include <memory.h>
 #include <strings.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -73,13 +80,17 @@ static const char rcs_id_Rtcf_C[] =
 #include "Rtcf.h"
 #include "Reqq.h"   // for reading antenna sequence
 #include "Binning.h"    // for embedded command check
+#include "Qpf.h"
 
 #define STEP_NUMBER_WIDTH   11
 #define STEP_NUMBER_LABEL   "Step Number"
-#define DATE_WIDTH          11
+#define DATE_WIDTH          -11
 #define DATE_LABEL          "Date"
-#define RTCF_COMMAND_WIDTH  9
+#define RTCF_COMMAND_WIDTH  -15
 #define RTCF_COMMAND_LABEL  "Command"
+#define RTCF_ARGS_WIDTH     -17
+#define RTCF_ARGS_LABEL     "Arg_1 Arg_2 Arg_3"
+#define RTCF_ONE_ARG_WIDTH  -5
 
 const char* RtcfStatusStrings[] =
 {
@@ -184,8 +195,11 @@ Rtcf::RtcfMnemonic(
 Rtcf::RtcfStatusE
 Rtcf::_WriteHeader()
 {
-    fprintf(_ofp, "%*s %*s %*s\n", STEP_NUMBER_WIDTH, STEP_NUMBER_LABEL,
-        DATE_WIDTH, DATE_LABEL, RTCF_COMMAND_WIDTH, RTCF_COMMAND_LABEL);
+    fprintf(_ofp, "%*s %*s %*s %*s\n",
+                  STEP_NUMBER_WIDTH, STEP_NUMBER_LABEL,
+                  DATE_WIDTH, DATE_LABEL,
+                  RTCF_COMMAND_WIDTH, RTCF_COMMAND_LABEL,
+                  RTCF_ARGS_WIDTH, RTCF_ARGS_LABEL);
     return(RTCF_OK);
 }
 
@@ -202,23 +216,87 @@ Command*    cmd)
     //------------------------
     // determine the mnemonic 
     //------------------------
-
     const char* mnemonic = RtcfMnemonic(cmd);
 
     //--------------------------
     // generate the date string 
     //--------------------------
-
     char date_string[CODEA_TIME_LEN];
     cmd->plannedTpg.time.ItimeToCodeADate(date_string);
+
+    //---------------------------------------------
+    // get param words from datafile, if applicable
+    //---------------------------------------------
+    char args_string[SHORT_STRING_LEN];
+    char rtcf_args[BIG_SIZE];
+    unsigned short checksum=Qpf::Checksum(cmd->cmdHex, QPF_CHECKSUM_SEED);
+    unsigned short oldChecksum = checksum;
+    if (cmd->dataFilename != 0)
+    {
+        if (Reqq::ReadParamWords(cmd->dataFilename,
+                             cmd->GetNumWordsInParamFile(),
+                             cmd->GetDatafileFormat(),
+                             checksum, args_string, 0) != REQQ_OK)
+        {
+            fprintf(stderr, "Error reading datafile %s\n", cmd->dataFilename);
+            return(RTCF_ERROR);
+        }
+
+        //--------------------------------------------------------------
+        // returned args_string is words separated by a space,
+        // formated it to the RTCF argument's format.  No fill.
+        //--------------------------------------------------------------
+        rtcf_args[0] = '\0';
+        char* oneString=0;
+        char oneRtcfArg[BIG_SIZE];
+        for (oneString = (char*)strtok(args_string, " "); oneString;
+                    oneString = (char*)strtok(0, " "))
+        {
+            if (rtcf_args[0] != '\0') strcat(rtcf_args, " ");
+            (void)sprintf(oneRtcfArg, "%*s", RTCF_ONE_ARG_WIDTH, oneString);
+            strcat(rtcf_args, oneRtcfArg);
+        }
+
+        //--------------------------------------------------------------
+        // if checksum is changed, then this is a non LASP PROC command,
+        // need to write checksum too
+        //--------------------------------------------------------------
+        if (checksum != oldChecksum &&
+             strlen(rtcf_args) <= (size_t)((abs(RTCF_ONE_ARG_WIDTH) * 2) + 1))
+        {
+            (void)sprintf(oneRtcfArg, "%04X", checksum);
+            (void)strcat(rtcf_args, " ");
+            (void)strcat(rtcf_args, oneRtcfArg);
+        }
+    }
 
     //----------------------
     // write out the record 
     //----------------------
 
     _recordCount++;
-        fprintf(_ofp, "%*d %*s %*s\n", STEP_NUMBER_WIDTH, _recordCount,
-            DATE_WIDTH, date_string, RTCF_COMMAND_WIDTH, mnemonic);
+    if (cmd->dataFilename == 0)
+    {
+        fprintf(_ofp, "%*d %*s %*s\n",
+                      STEP_NUMBER_WIDTH, _recordCount,
+                      DATE_WIDTH, date_string,
+                      RTCF_COMMAND_WIDTH, mnemonic);
+    }
+    else
+    {
+        // convert all chars to upper case
+        char* ptr = rtcf_args;
+        for (unsigned int i=0; i < strlen(rtcf_args); i++, ptr++)
+        {
+            *ptr = toupper(*ptr);
+        }
+
+        fprintf(_ofp, "%*d %*s %*s %*s\n",
+                      STEP_NUMBER_WIDTH, _recordCount,
+                      DATE_WIDTH, date_string,
+                      RTCF_COMMAND_WIDTH, mnemonic,
+                      RTCF_ARGS_WIDTH, rtcf_args);
+    }
     return(RTCF_OK);
 }
 

@@ -6,6 +6,25 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.20   23 Dec 1998 16:30:34   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
+//    Rev 1.19   08 Dec 1998 14:11:12   sally
+// ROM is same as WOM
+// 
+//    Rev 1.18   08 Dec 1998 11:50:46   sally
+// initialize the total with the first slice values first
+// 
+//    Rev 1.17   07 Dec 1998 15:40:56   sally
+// move EA_DN_TO_DB() to CommonDefs.h
+// 
+//    Rev 1.16   04 Dec 1998 16:33:26   sally
+// ExtractDataxxxx() functions return number of data or -1 not TRUE or FALSE.
+// 
+//    Rev 1.15   20 Nov 1998 16:02:58   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.14   09 Nov 1998 11:24:36   sally
 // 
 //    Rev 1.13   11 Sep 1998 10:28:54   sally
@@ -73,11 +92,13 @@
 
 static const char rcs_id_L1ADrvExtract_C[] = "@(#) $Header$";
 
+#if 0
 unsigned short *_prevAntPos=0;   // holds address one of the following
 unsigned short _prevAntPos_dn=0;
 unsigned short _prevAntPos_deg=0;
 unsigned short _prevAntPos_deg_sec=0;
 unsigned short _prevAntPos_rot_min=0;
+#endif
 
 unsigned char _onlyOneMap[] =
 {
@@ -144,8 +165,6 @@ unsigned char _noiseLoadMap[] =
 };
 
 #define EA_MIN_BANDWIDTH_FRAMES    400
-
-#define EA_DN_TO_DB(x)  ( 10 * log10((double) x) )
 
 inline int
 _oneUint2TodB(
@@ -273,15 +292,15 @@ PolynomialTable*)     // unused
         // CBM: get all 100 pulses from noise_dn
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                          1, 1, (VOIDP)(extractResults->dataBuf)))
-            return (-1);
+        int rc = ExtractData2D_100(l1File, tempsdsIDs, start,
+                          1, 1, (VOIDP)(extractResults->dataBuf));
+        if (rc <= 0) return(rc);
 
         (void)memcpy(extractResults->validDataMap,
                            _beamAMap, MAX_NUM_DERIVED_VALUES);
         return (23);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be odd number (Beam A)
@@ -377,15 +396,15 @@ PolynomialTable*)     // unused
         // CBM: get all 100 pulses from noise_dn
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                            1, 1, (VOIDP)(extractResults->dataBuf)))
-            return (-1);
+        int rc = ExtractData2D_100(l1File, tempsdsIDs, start,
+                            1, 1, (VOIDP)(extractResults->dataBuf));
+        if (rc <= 0) return(rc);
 
         (void)memcpy(extractResults->validDataMap,
                            _beamBMap, MAX_NUM_DERIVED_VALUES);
         return (23);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be even number (Beam B)
@@ -476,9 +495,9 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
+        int rc = ExtractData3D_100_12(l1File, tempsdsIDs, start,
+                                   1, 1, (VOIDP)allBuffer);
+        if (rc <= 0) return(rc);
 
         unsigned int* uintP = dnValues;
         for (int i=0; i < 100; i++)
@@ -488,7 +507,7 @@ unsigned char*      validDataMap)
         (void)memcpy(validDataMap, _beamAMap, MAX_NUM_DERIVED_VALUES);
         return (23);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be odd number (Beam A)
@@ -510,9 +529,9 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                                      (VOIDP)allBuffer) != TRUE)
-            return (-1);
+        int rc = ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
+                                      (VOIDP)allBuffer);
+        if (rc <= 0) return(rc);
 
         unsigned int* uintP = dnValues;
         *uintP = allBuffer[sliceIndex];
@@ -1238,9 +1257,9 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
-            return (-1);
+        int rc = ExtractData3D_100_12(l1File, tempsdsIDs, start,
+                                   1, 1, (VOIDP)allBuffer);
+        if (rc <= 0) return(rc);
 
         unsigned int* uintP = dnValues;
         for (int i=0; i < 100; i++)
@@ -1250,7 +1269,7 @@ unsigned char*      validDataMap)
         (void)memcpy(validDataMap, _beamBMap, MAX_NUM_DERIVED_VALUES);
         return (23);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be even number (Beam B)
@@ -1272,9 +1291,9 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[3];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                                      (VOIDP)allBuffer) != TRUE)
-            return (-1);
+        int rc = ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
+                                      (VOIDP)allBuffer);
+        if (rc <= 0) return(rc);
 
         unsigned int* uintP = dnValues;
         *uintP = allBuffer[sliceIndex];
@@ -2022,6 +2041,15 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P = 0;
+            for (int j=0; j < MAX_NUM_DERIVED_VALUES; j++)
+            {
+                if (extractResults->validDataMap[j])
+                {
+                    tempUint4P = uint4P + j;
+                    *tempUint4P = uintBuffer[j];
+                }
+            }
             int i;
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
@@ -2030,7 +2058,7 @@ PolynomialTable*)     // unused
                                           extractResults->validDataMap);
                 if (nextrc > 1)
                 {
-                    unsigned int* tempUint4P = uint4P;
+                    tempUint4P = 0;
                     for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
@@ -2134,6 +2162,15 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P = 0;
+            for (int j=0; j < MAX_NUM_DERIVED_VALUES; j++)
+            {
+                if (extractResults->validDataMap[j])
+                {
+                    tempUint4P = uint4P + j;
+                    *tempUint4P = uintBuffer[j];
+                }
+            }
             int i;
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
@@ -2142,7 +2179,7 @@ PolynomialTable*)     // unused
                                             extractResults->validDataMap);
                 if (nextrc > 1)
                 {
-                    unsigned int* tempUint4P = uint4P;
+                    tempUint4P = 0;
                     for (i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
@@ -2228,15 +2265,15 @@ PolynomialTable*)     // unused
         // CBM: get all 100 pulses from noise_dn
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData2D_100(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)(extractResults->dataBuf)))
-            return (-1);
+        int rc = ExtractData2D_100(l1File, tempsdsIDs, start,
+                              1, 1, (VOIDP)(extractResults->dataBuf));
+        if (rc <= 0) return(rc);
 
         (void)memcpy(extractResults->validDataMap,
                            _noiseLoadMap, MAX_NUM_DERIVED_VALUES);
         return(26);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be and > 0 (Cal Frame)
@@ -2327,11 +2364,12 @@ unsigned char*      validDataMap)
         unsigned int allBuffer[100][12];
         int32 tempsdsIDs[1];
         tempsdsIDs[0] = sdsIDs[1];
-        if ( ! ExtractData3D_100_12(l1File, tempsdsIDs, start,
-                                   1, 1, (VOIDP)allBuffer))
+        int rc = ExtractData3D_100_12(l1File, tempsdsIDs, start,
+                                   1, 1, (VOIDP)allBuffer);
+        if (rc <= 0)
         {
             (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
-            return -1;
+            return rc;
         }
 
         unsigned int* uintP = dnValues;
@@ -2342,7 +2380,7 @@ unsigned char*      validDataMap)
         (void)memcpy(validDataMap, _noiseLoadMap, MAX_NUM_DERIVED_VALUES);
         return (26);
     }
-    else if (mode == L1_MODE_WOM)
+    else if (mode == L1_MODE_WOM || mode == L1_MODE_ROM)
     {
         //---------------------------------------------------------
         // WOM: true cal pulse pos must be > 0 (Cal Frame)
@@ -2370,11 +2408,12 @@ unsigned char*      validDataMap)
             tempsdsIDs[0] = sdsIDs[3];
         else
             tempsdsIDs[0] = sdsIDs[4];
-        if (ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
-                        (VOIDP)allBuffer) != TRUE)
+        int rc = ExtractData2D_12(l1File, tempsdsIDs, start, 1, 1,
+                        (VOIDP)allBuffer);
+        if (rc <= 0)
         {
             (void)memset(validDataMap, 0, MAX_NUM_DERIVED_VALUES);
-            return -1;
+            return rc;
         }
    
         unsigned int* uintP = dnValues;
@@ -3122,6 +3161,15 @@ PolynomialTable*)     // unused
         {
             // every slice contains more than 1 value
             unsigned int * uint4P = (unsigned int*)extractResults->dataBuf;
+            unsigned int* tempUint4P = 0;
+            for (int j=0; j < MAX_NUM_DERIVED_VALUES; j++)
+            {
+                if (extractResults->validDataMap[j])
+                {
+                    tempUint4P = uint4P + j;
+                    *tempUint4P = uintBuffer[j];
+                }
+            }
             for (int sliceIndex=1; sliceIndex < 12; sliceIndex++)
             {
                 int nextrc = _extractLoadPowerOneSliceDN(l1File, sdsIDs, start,
@@ -3129,7 +3177,7 @@ PolynomialTable*)     // unused
                                          extractResults->validDataMap);
                 if (nextrc > 1)
                 {
-                    unsigned int* tempUint4P = uint4P;
+                    tempUint4P = 0;
                     for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
                     {
                         if (extractResults->validDataMap[i])
@@ -3497,23 +3545,27 @@ PolynomialTable*)     // unused
         return(rc);
     }
 
-    unsigned int noiseDN=0;
-    float        echoDN=0.0;
+    unsigned int* noiseDN = (unsigned int*) (noiseExRes.dataBuf);
+    unsigned int* echoDN = (unsigned int*) (echoExRes.dataBuf);
     float        gainRatio;
     for (int i=0; i < MAX_NUM_DERIVED_VALUES; i++)
     {
         if (echoExRes.validDataMap[i])
         {
-            if (echoDN == 0.0)
+            if (*echoDN == 0)
             {
-                fprintf(stderr, "Gain Ratio: Echo Filter = 0\n");
+                fprintf(stderr, "Gain Ratio A: Echo Filter = 0\n");
                 return -1;
             }
-            gainRatio = (float)noiseDN / (float)echoDN;
+            gainRatio = (float)*noiseDN / (float)*echoDN;
             (void)memcpy(extractResults->dataBuf + i * sizeof(float),
                                &gainRatio, sizeof(float));
         }
+        noiseDN++;
+        echoDN++;
     }
+    (void)memcpy(extractResults->validDataMap, echoExRes.validDataMap,
+                            MAX_NUM_DERIVED_VALUES);
     return rc;
 
 } //ExtractGainRatioBeamADN
@@ -3607,7 +3659,7 @@ PolynomialTable*)     // unused
         {
             if (*echoDN == 0)
             {
-                fprintf(stderr, "Gain Ratio: Echo Filter = 0\n");
+                fprintf(stderr, "Gain Ratio B: Echo Filter = 0\n");
                 return -1;
             }
             gainRatio = (float)*noiseDN / (float)*echoDN;
@@ -4244,6 +4296,7 @@ PolynomialTable*  polyTable)
 
 } // ExtractNoiseFigureBdB
 
+#if 0
 //----------------------------------------------------------------------
 // Function:    ExtractOrbitPeriod
 // Extracts:    UINT4[]
@@ -4312,6 +4365,7 @@ PolynomialTable*)     // unused
     if (length != 1)
     {
         _prevAntPos = 0;
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return -1;
     }
  
@@ -4325,6 +4379,7 @@ PolynomialTable*)     // unused
     if (rc <= 0)
     {
         _prevAntPos = 0;
+        (void)memset(extractResults->validDataMap, 0, MAX_NUM_DERIVED_VALUES);
         return rc;
     }
 
@@ -4461,6 +4516,7 @@ PolynomialTable* polyTable)
     return 1;
 
 } // ExtractAntSpinRateRotMin
+#endif
 
 //----------------------------------------------------------------------
 // Function:    ExtractXmitPowerAmWatts

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   25 Nov 1998 15:20:56   sally
+// change ERROR to difference
+// 
 //    Rev 1.0   21 Sep 1998 15:06:28   sally
 // Initial revision.
 //

@@ -7,6 +7,18 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.30   23 Dec 1998 16:32:40   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
+//    Rev 1.29   07 Dec 1998 15:42:32   sally
+// add sliced power_dn for extraction
+// 
+//    Rev 1.28   02 Dec 1998 12:54:52   sally
+// 
+//    Rev 1.27   20 Nov 1998 16:03:26   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.26   10 Nov 1998 08:51:56   sally
 // add delta instrument time because the instrument seems to skip cycle
 // 
@@ -115,16 +127,6 @@ static const char rcs_id_L1AParTab_C[] = "@(#) $Header$";
 
 const ParTabEntry L1AParTab[] =
 {
-  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
-      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
-      { UNIT_CODE_A,   "Code A", DATA_ITIME, 0, ExtractL1Time, pr_itime_codea },
-      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
-      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
-      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
-      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
-      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
-    }
-  },
   { UTC_TIME, "UTC Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 6, {
       { UNIT_AUTOTIME, "(auto)",DATA_ITIME, 0, ExtractTaiTime, 0 },
       { UNIT_CODE_A, "Code A",  DATA_ITIME, 0, ExtractTaiTime, pr_itime_codea },
@@ -137,6 +139,15 @@ const ParTabEntry L1AParTab[] =
   { TAI_TIME, "TAI Time", SOURCE_L1A, MEAS_TIME, "frame_time_secs", 1, {
       { UNIT_TAI_SECONDS, "seconds after TAI", DATA_FLOAT8, 0,
                                                ExtractData1D, pr_float8_10 },
+    }
+  },
+  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 6, {
+      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A", DATA_ITIME,0,ExtractL1Time,pr_itime_codea},
+      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
+      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
     }
   },
   { INSTRUMENT_TIME, "Instrument Time", SOURCE_L1A,
@@ -154,6 +165,18 @@ const ParTabEntry L1AParTab[] =
       { UNIT_COUNTS, "counts", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
     }
   },
+#if 0
+  { FRAME_TIME, "Frame Time", SOURCE_L1B, MEAS_TIME, "v:frame_time", 7, {
+      { UNIT_AUTOTIME, "(auto)", DATA_ITIME, 0, ExtractL1Time, NULL },
+      { UNIT_CODE_A,   "Code A", DATA_ITIME, 0, ExtractL1Time, pr_itime_codea },
+      { UNIT_L1ATIME,  "L1Time", DATA_ITIME, 0, ExtractL1Time, pr_itime_L1 },
+      { UNIT_DAYS,     "days", DATA_ITIME, 0, ExtractL1Time, pr_itime_d },
+      { UNIT_HOURS,    "hours", DATA_ITIME, 0, ExtractL1Time, pr_itime_h },
+      { UNIT_MINUTES,  "minutes", DATA_ITIME, 0, ExtractL1Time, pr_itime_m },
+      { UNIT_SECONDS,  "seconds", DATA_ITIME, 0, ExtractL1Time, pr_itime_s }
+    }
+  },
+#endif
   { X_POS, "X Component of S/C Position", SOURCE_L1A, MEAS_DISTANCE,
                 "x_pos", 2, {
       { UNIT_METERS, "meters", DATA_FLOAT4, 0, ExtractData1D, pr_float4_6 },
@@ -1303,44 +1326,113 @@ const ParTabEntry L1AParTab[] =
       { UNIT_DN, "dn", DATA_UINT2_100, 0, ExtractData2D_100, pr_uint2_100 }
     }
   },
-  { LOOP_BACK_CAL_A_POWER, "Most Recent Loop Cal Pulse A Power", SOURCE_L1A,
-            MEAS_QUANTITY, "loop_back_cal_A_power", 1, {
+  { LOOP_BACK_CAL_A_POWER, "Loop Cal Pulse A Power", SOURCE_L1A,
+            MEAS_QUANTITY, "loop_back_cal_A_power", 2, {
+      { UNIT_DN, "dn", DATA_UINT4_12, 0, ExtractData2D_12, pr_uint4_12 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4_12,
+                           0, ExtractFloat4_12_dB, pr_12float4_6 }
+    }
+  },
+  { LOOP_BACK_CAL_B_POWER, "Loop Cal Pulse B Power", SOURCE_L1A,
+            MEAS_QUANTITY, "loop_back_cal_B_power", 2, {
       { UNIT_DN, "dn", DATA_UINT4_12,
-                           0, ExtractData2D_12, pr_uint4_12 }
+                           0, ExtractData2D_12, pr_uint4_12 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4_12,
+                           0, ExtractFloat4_12_dB, pr_12float4_6 }
     }
   },
-  { LOOP_BACK_CAL_B_POWER, "Most Recent Loop Cal Pulse B Power", SOURCE_L1A,
-            MEAS_QUANTITY, "loop_back_cal_B_power", 1, {
+  { LOOP_BACK_CAL_NOISE, "Loop Cal Pulse Noise", SOURCE_L1A,
+            MEAS_QUANTITY, "loop_back_cal_noise", 2, {
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4, 0, ExtractFloat4_dB, pr_float4_6 }
+    }
+  },
+  { LOAD_CAL_A_POWER, "Cold Load Cal Pulse A Power", SOURCE_L1A,
+            MEAS_QUANTITY, "load_cal_A_power", 2, {
       { UNIT_DN, "dn", DATA_UINT4_12,
-                           0, ExtractData2D_12, pr_uint4_12 }
+                           0, ExtractData2D_12, pr_uint4_12 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4_12,
+                           0, ExtractFloat4_12_dB, pr_12float4_6 }
     }
   },
-  { LOOP_BACK_CAL_NOISE, "Most Recent Loop Cal Pulse Noise", SOURCE_L1A,
-            MEAS_QUANTITY, "loop_back_cal_noise", 1, {
-      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
-    }
-  },
-  { LOAD_CAL_A_POWER, "Most Recent Cold Load Cal Pulse A Power", SOURCE_L1A,
-            MEAS_QUANTITY, "load_cal_A_power", 1, {
+  { LOAD_CAL_B_POWER, "Cold Load Cal Pulse B Power", SOURCE_L1A,
+            MEAS_QUANTITY, "load_cal_B_power", 2, {
       { UNIT_DN, "dn", DATA_UINT4_12,
-                           0, ExtractData2D_12, pr_uint4_12 }
+                           0, ExtractData2D_12, pr_uint4_12 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4_12,
+                           0, ExtractFloat4_12_dB, pr_12float4_6 }
     }
   },
-  { LOAD_CAL_B_POWER, "Most Recent Cold Load Cal Pulse B Power", SOURCE_L1A,
-            MEAS_QUANTITY, "load_cal_B_power", 1, {
-      { UNIT_DN, "dn", DATA_UINT4_12,
-                           0, ExtractData2D_12, pr_uint4_12 }
-    }
-  },
-  { LOAD_CAL_NOISE, "Most Recent Cold Load Cal Pulse Noise", SOURCE_L1A,
-            MEAS_QUANTITY, "load_cal_noise", 1, {
-      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 }
+  { LOAD_CAL_NOISE, "Cold Load Cal Pulse Noise", SOURCE_L1A,
+            MEAS_QUANTITY, "load_cal_noise", 2, {
+      { UNIT_DN, "dn", DATA_UINT4, 0, ExtractData1D, pr_uint4 },
+      { UNIT_DB_DN, "dBdn", DATA_FLOAT4, 0, ExtractFloat4_dB, pr_float4_6 }
     }
   },
   { POWER_DN, "Sliced Power Data", SOURCE_L1A,
             MEAS_QUANTITY, "power_dn", 1, {
       { UNIT_DN, "dn", DATA_UINT4_100_12,
                                 0, ExtractData3D_100_12, pr_uint4_100_12 }
+    }
+  },
+  { POWER_DN_SLICE_1, "Power Data - Slice 1", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice1, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_2, "Power Data - Slice 2", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice2, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_3, "Power Data - Slice 3", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice3, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_4, "Power Data - Slice 4", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice4, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_5, "Power Data - Slice 5", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice5, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_6, "Power Data - Slice 6", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice6, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_7, "Power Data - Slice 7", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice7, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_8, "Power Data - Slice 8", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice8, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_9, "Power Data - Slice 9", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice9, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_10, "Power Data - Slice 10", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice10, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_11, "Power Data - Slice 11", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice11, pr_uint4_100 }
+    }
+  },
+  { POWER_DN_SLICE_12, "Power Data - Slice 12", SOURCE_L1A,
+            MEAS_QUANTITY, "power_dn", 1, {
+      { UNIT_DN, "dn", DATA_UINT4_100, 0, ExtractPowerDnSlice12, pr_uint4_100 }
     }
   },
   { NOISE_DN, "Noise Measurements", SOURCE_L1A,
@@ -1682,6 +1774,23 @@ const ParTabEntry L1AParTab[] =
             MEAS_QUANTITY, "pulse_qual_flag", 1, {
       { UNIT_HEX_BYTES, "hex bytes - 0=OK, 1=unreliable",
             DATA_CHAR13, 0, ExtractData2D_13, pr_char13x }
+    }
+  },
+  { ORBIT_PERIOD, "Orbit Period", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
+               "orbit_time", 1, {
+      { UNIT_COUNTS, "ticks", DATA_UINT4, 0, ExtractOrbitPeriod, pr_uint4 }
+    }
+  },
+  { ANT_SPIN_RATE, "Antenna Spin Rate", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
+               "antenna_position,prf_cycle_time", 4, {
+      { UNIT_DN, "dn/pri", DATA_UINT2_100, 0,
+                             ExtractAntSpinRateDN, pr_uint2_100 },
+      { UNIT_DEGREES, "degrees/pri", DATA_FLOAT4_100, 0,
+                             ExtractAntSpinRateDegree, pr_float4_6_100 },
+      { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4_100, 0,
+                             ExtractAntSpinRateDegSec, pr_float4_6_100 },
+      { UNIT_ROT_MIN, "rotation/min", DATA_FLOAT4_100, 0,
+                             ExtractAntSpinRateRotMin, pr_float4_6_100 }
     }
   },
 

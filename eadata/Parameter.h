@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.36   23 Feb 1999 11:13:26   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.35   07 Dec 1998 15:44:42   sally
+// add new parameters for sliced power_dn
+// 
+//    Rev 1.34   20 Nov 1998 16:03:36   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.33   10 Nov 1998 08:52:00   sally
 // add delta instrument time because the instrument seems to skip cycle
 // 
@@ -987,7 +996,20 @@ enum ParamIdE
     SLICE_KPC_A,
     HK2_SRC_SEQ_COUNT,
     HK2_DELTA_SRC_SEQ_COUNT,
-    DELTA_INSTRUMENT_TIME
+    DELTA_INSTRUMENT_TIME,
+    POWER_DN_SLICE_1,
+    POWER_DN_SLICE_2,
+    POWER_DN_SLICE_3,
+    POWER_DN_SLICE_4,
+    POWER_DN_SLICE_5,
+    POWER_DN_SLICE_6,
+    POWER_DN_SLICE_7,
+    POWER_DN_SLICE_8,
+    POWER_DN_SLICE_9,
+    POWER_DN_SLICE_10,
+    POWER_DN_SLICE_11,
+    POWER_DN_SLICE_12,
+    WVC_ROW_TIME
 };
 
 enum UnitIdE
@@ -1039,7 +1061,8 @@ enum UnitIdE
     UNIT_KM_SEC,    // Km/sec
     UNIT_HZ,        // Hertz
     UNIT_KMPS,      // kilometers per second
-    UNIT_RADIANS
+    UNIT_RADIANS,
+    UNIT_DB_DN       // DB of DN
 };
 
 //---------------------------------
@@ -1065,36 +1088,37 @@ enum DataTypeE
     DATA_UINT1_49,
     DATA_INT1,
     DATA_INT1_76,
-    DATA_INT1_810,
+    DATA_INT1_3240,
     DATA_UINT2,
     DATA_UINT2_12,
     DATA_UINT2_76,
     DATA_UINT2_100,
-    DATA_UINT2_810,
+    DATA_UINT2_3240,
     DATA_UINT2_100_12,
-    DATA_INT2,
     DATA_UINT2_4,
     DATA_UINT2_5,
     DATA_UINT2_25,
     DATA_UINT2_2_8,
+    DATA_INT2,
+    DATA_INT2_100,
     DATA_UINT3,
     DATA_UINT4,
+    DATA_UINT4_4,
     DATA_UINT4_12,
     DATA_UINT4_25,
     DATA_UINT4_100,
     DATA_UINT4_100_12,
-    DATA_INT2_100,
     DATA_INT4,
     DATA_FLOAT4,
     DATA_FLOAT8,
+    DATA_FLOAT4_12,
     DATA_FLOAT4_25,
     DATA_FLOAT4_76,
     DATA_FLOAT4_76_4,
     DATA_FLOAT4_100,
-    DATA_FLOAT4_810,
+    DATA_FLOAT4_3240,
     DATA_FLOAT4_100_8,
     DATA_ITIME,
-    DATA_UINT4_4,
     DATA_CHAR1,
     DATA_CHAR2,
     DATA_CHAR3,

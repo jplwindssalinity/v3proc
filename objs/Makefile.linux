@@ -62,6 +62,7 @@ OBJS = \
 	L1BToL2A.o \
 	L2A.o \
 	L2AFrame.o \
+	L2AHdf.o \
 	L2AToL2B.o \
 	L2B.o \
 	L2BFrame.o \

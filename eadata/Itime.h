@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   02 Dec 1998 12:54:06   sally
+// use timegm() for linux
+// 
 //    Rev 1.7   04 Nov 1998 15:05:56   sally
 // change shadow var names such as time, remainder
 // 
@@ -44,6 +47,7 @@
 #define ITIME_H
 
 #include <stdio.h>
+#include <sys/types.h>
 #include <time.h>
 #include <limits.h>
 
@@ -59,9 +63,9 @@ static const char rcs_id_itime_h[] =
 #define L1_DEFAULT_TIME     "1993-001T00:00:00.000"
 #define L1_SEC_FORMAT       "%Y-%jT%H:%M:%S"
 
-#define CODEA_TIME_LEN      25
+#define CODEA_TIME_LEN      25  // inlcude the trailing NULL
 #define BDATE_TIME_LEN      9
-#define L1_TIME_LEN         22
+#define L1_TIME_LEN         22  // inlcude the trailing NULL
 #define HMS_TIME_LEN        9
 #define ELAPSED_TIME_LEN    15
 

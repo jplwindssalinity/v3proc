@@ -7,6 +7,13 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.19   23 Feb 1999 10:57:28   sally
+// change AddSorted to AddSortedWithArgs
+// so it won't mask SortedList<Command>::AddSorted
+// 
+//    Rev 1.18   29 Jan 1999 15:03:34   sally
+// added LASP commands
+//
 //    Rev 1.17   20 Oct 1998 10:52:02   sally
 // add static QPF commands (table macro commands)
 // 
@@ -77,18 +84,34 @@
 #ifndef CMDLIST_C_INCLUDED
 #define CMDLIST_C_INCLUDED
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
 #include "Reqq.h"
 #include "CmdList.h"
+#if 0
+#include "LaspProcCmd.h"
+#endif
 
 int errno;
  
 static const char rcs_cmd_list_id[] =
     "@(#) $Header$";
  
+struct LaspProcCmdEntry
+{
+    unsigned short    cmdHex;
+    EACommandE*       implicitCmds;
+};
+
+struct LaspCmdWithArgs
+{
+    EACommandE        cmdId;
+    char*             args;
+};
+
 
 //=================
 // CmdList methods 
@@ -280,7 +303,7 @@ CmdList::ReadReqi(
             // If there is a parameter file, read it.
             if (newCmd->dataFilename != 0) {
                 unsigned short checksum;
-                char paramString[10];
+                char paramString[STRING_LEN];
                 if ( Reqq::ReadParamWords( newCmd->dataFilename,
                                            newCmd->GetNumWordsInParamFile(),
                                            newCmd->GetDatafileFormat(),
@@ -477,63 +500,6 @@ CmdList::SetCmdExpectedTimes(
     return (_status);
 }
 
-/*  comment out Update and ApplyCmds 
-
-//--------
-// Update 
-//--------
-// uses the passed cmds and the eqxList to update the command list
-
-CmdList::StatusE
-CmdList::Update(
-    CmdList*    detectedCmds,
-    EqxList*    eqxList)
-{
-    Sort();             // sort the list
-    SetCmdEffects();        // determine command effects for matching
-    SetCmdExpectedTimes(eqxList);   // update expected times
-    ApplyCmds(detectedCmds);    // add the detected commands
-    Sort();             // sort again
-    SetCmdEffects();        // determine the effects again
-    return (_status);
-}
-
-//-----------
-// ApplyCmds 
-//-----------
-// applies the detected commands by matching/updating or inserting
-
-CmdList::StatusE
-CmdList::ApplyCmds(
-    CmdList*    detectedCmds)
-{
-    for (Command* cmd = detectedCmds->GetHead(); cmd;
-            cmd = detectedCmds->GetNext())
-    {
-        Command* matchingCmd = _MatchingCmd(cmd);
-        if (matchingCmd)
-        {
-            // set time of original command
-            if (cmd->l1aTime != INVALID_TIME)
-                matchingCmd->l1aTime = cmd->l1aTime;
-            if (cmd->hk2Time != INVALID_TIME)
-                matchingCmd->hk2Time = cmd->hk2Time;
-            if (cmd->l1apTime != INVALID_TIME)
-                matchingCmd->l1apTime = cmd->l1apTime;
-        }
-        else
-        {
-            // need to add unmatched command to command list
-            AddSorted(cmd);
-        }
-    }
-
-    return (_status);
-}
-
-*/ 
-
-
 //---------------
 // AddSortedCmds 
 //---------------
@@ -545,10 +511,695 @@ CmdList::AddSortedCmds(
 {
     Command* cmd = cmds->GetHead();
     while ((cmd = cmds->RemoveCurrent()))
-        AddSorted(cmd);
+        AddSortedWithArgs(cmd, 0);
 
     return (_status);
 }
+
+void
+CmdList::AddSortedWithArgs(
+Command*     cmd,
+const char*  args)     // arguments string
+{
+    //------------------------------------------------------------
+    // if this is LASP PROC, then change the command to unverifiable (or N/A).
+    // in any case, add this command as a regular command.
+    //------------------------------------------------------------
+    if (EA_IS_LASP_PROC(cmd->cmdHex))
+    {
+        cmd->l1aVerify = cmd->hk2Verify = cmd->l1apVerify = VER_NA;
+    }
+
+    SortedList<Command>::AddSorted(cmd);
+
+    if ( ! EA_IS_LASP_PROC(cmd->cmdHex))
+        return;
+
+    //------------------------------------------------------------
+    // for the LASP PROCs, need to tag on the implied inst commands
+    //------------------------------------------------------------
+    if ( ! Expand(cmd, args))
+    {
+        fprintf(stderr, "Error: Can't expand the LASP proc commands: %s\n",
+                        cmd->mnemonic);
+    }
+   
+    return;
+
+} // CmdList::AddSorted
+
+int 
+CmdList::Expand(
+Command*     cmd,      // LASP proc command to be expanded
+const char*  args)     // arguments string
+{
+    assert(cmd != 0);
+
+    if ( ! EA_IS_LASP_PROC(cmd->cmdHex))
+        return 0;
+
+    Command* newCmd=0;
+    switch(cmd->commandId)
+    {
+        case EA_CMD_PPS_TURN_ON:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK1SET, EA_CMD_SCK2SET,
+                                         EA_CMD_SCK3SET, EA_CMD_SCK4RST,
+                                         EA_CMD_SCK5RST, EA_CMD_SCK6RST };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc PPS_TURN_ON");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_CDS_TURN_ON:
+        {
+            char cdsString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s", cdsString) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                (void)strncpy(cdsString, args, STRING_LEN - 1);
+                cdsString[STRING_LEN - 1] = '\0';
+            }
+            *cdsString = toupper(*cdsString);
+            if (*cdsString == 'A')
+            {
+                 newCmd = new Command(EA_CMD_SCK7SET);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc CDS_TURN_ON");
+                 SortedList<Command>::AddSorted(newCmd);
+            }
+            else if (*cdsString == 'B')
+            {
+                 newCmd = new Command(EA_CMD_SCK7RST);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc CDS_TURN_ON");
+                 SortedList<Command>::AddSorted(newCmd);
+            }
+            else
+            {
+                fprintf(stderr, "Invalid CDS string (%s) for %s\n",
+                          cdsString, cmd->mnemonic);
+                return 0;
+            }
+            EACommandE trigCmdIds[] = { EA_CMD_SCK8SET,  EA_CMD_SCK13RST,
+                                        EA_CMD_SCK14SET, EA_CMD_SCK17RST,
+                                        EA_CMD_SCK18SET, EA_CMD_SCK1RST,
+                                        EA_CMD_SCK2RST,  EA_CMD_SCK3RST,
+                                        EA_CMD_SCWDTDSCL, EA_CMD_SCWDTEN };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc CDS_TURN_ON");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_CDS_TURN_OFF:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK1SET, EA_CMD_SCK2SET,
+                                         EA_CMD_SCK3SET, EA_CMD_SCK4RST,
+                                         EA_CMD_SCK5RST, EA_CMD_SCK6RST };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc CDS_TURN_OFF");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_SAS_TURN_ON:
+        {
+            char sasString[STRING_LEN], rpmString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s %s", sasString, rpmString) != 2)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                                cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                if (sscanf(args, "%s %s", sasString, rpmString) != 2)
+                {
+                    fprintf(stderr, "Error reading from args (%s)\n", args);
+                    return 0;
+                }
+            }
+            *sasString = toupper(*sasString);
+            *rpmString = toupper(*rpmString);
+            if (*sasString == 'A')
+            {
+                if (strcmp(rpmString, "R18_0") == 0)
+                {
+                    newCmd = new Command(EA_CMD_SCSSARST);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+                else if (strcmp(rpmString, "R19_8") == 0)
+                {
+                    newCmd = new Command(EA_CMD_SCSSASET);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+                else
+                {
+                    fprintf(stderr, "Invalid RPM string (%s) for %s\n",
+                          rpmString, cmd->mnemonic);
+                    return 0;
+                }
+                EACommandE trigCmdIds[] = { EA_CMD_SCK19SET, EA_CMD_SCK20SET,
+                                            EA_CMD_SCK17SET, EA_CMD_SCK18SET };
+                for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+                {
+                    newCmd = new Command(trigCmdIds[i]);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+            }
+            else if (*sasString == 'B')
+            {
+                if (strcmp(rpmString, "R18_0") == 0)
+                {
+                    newCmd = new Command(EA_CMD_SCSSBRST);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+                else
+                if (strcmp(rpmString, "R19_8") == 0)
+                {
+                    newCmd = new Command(EA_CMD_SCSSBSET);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+                else
+                {
+                    fprintf(stderr, "Invalid RPM string (%s) for %s\n",
+                          rpmString, cmd->mnemonic);
+                    return 0;
+                }
+                EACommandE trigCmdIds[] = { EA_CMD_SCK19RST, EA_CMD_SCK20SET,
+                                            EA_CMD_SCK17SET, EA_CMD_SCK18SET };
+                for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+                {
+                    newCmd = new Command(trigCmdIds[i]);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc SAS_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+            }
+            else
+            {
+                fprintf(stderr,
+                          "Invalid SAS string (%s) for %s\n",
+                          sasString, cmd->mnemonic);
+                return 0;
+            }
+            break;
+        }
+        case EA_CMD_SAS_TURN_OFF:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK17RST, EA_CMD_SCK18SET };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SAS_TURN_OFF");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_SES_TURN_ON:
+        {
+            char sesString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s", sesString) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                (void)strncpy(sesString, args, STRING_LEN - 1);
+                sesString[STRING_LEN - 1] = '\0';
+            }
+            *sesString = toupper(*sesString);
+            EACommandE trigCmdIds_1[] = { EA_CMD_SCK9RST, EA_CMD_SCK10SET };
+            for (unsigned int i=0; i < ElementNumber(trigCmdIds_1); i++)
+            {
+                newCmd = new Command(trigCmdIds_1[i]);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc SES_TURN_ON");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            if (*sesString == 'A')
+            {
+                newCmd = new Command(EA_CMD_SCK15SET);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc SES_TURN_ON");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else if (*sesString == 'B')
+            {
+                newCmd = new Command(EA_CMD_SCK15RST);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc SES_TURN_ON");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else
+            {
+                fprintf(stderr, "Invalid SES string (%s) for %s\n",
+                          sesString, cmd->mnemonic);
+                return 0;
+            }
+            EACommandE trigCmdIds_2[] = { EA_CMD_SCK16SET, EA_CMD_SCK13SET,
+                                           EA_CMD_SCK14SET };
+            for (i=0; i < ElementNumber(trigCmdIds_2); i++)
+            {
+                newCmd = new Command(trigCmdIds_2[i]);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc SES_TURN_ON");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            break;
+        }
+        case EA_CMD_TWTA_TURN_ON:
+        {
+            char twtString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s", twtString) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                (void)strncpy(twtString, args, STRING_LEN - 1);
+                twtString[STRING_LEN - 1] = '\0';
+            }
+            if (*twtString == '1')
+            {
+                EACommandE trigCmdIds[] = { EA_CMD_SCK11SET, EA_CMD_SCK12SET,
+                                            EA_CMD_SCTWT1SEL, EA_CMD_SCK9SET,
+                                            EA_CMD_SCK10SET };
+                for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+                {
+                    newCmd = new Command(trigCmdIds[i]);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc TWTA_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+            }
+            else if (*twtString == '2')
+            {
+                EACommandE trigCmdIds[] = { EA_CMD_SCK11RST, EA_CMD_SCK12SET,
+                                            EA_CMD_SCTWT2SEL, EA_CMD_SCK9SET,
+                                            EA_CMD_SCK10SET };
+                for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+                {
+                    newCmd = new Command(trigCmdIds[i]);
+                    newCmd->expectedTime = cmd->expectedTime;
+                    newCmd->SetComments("Triggered by LASP proc TWTA_TURN_ON");
+                    SortedList<Command>::AddSorted(newCmd);
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Invalid TWT string (%s) for %s\n",
+                          twtString, cmd->mnemonic);
+                return 0;
+            }
+            newCmd = new Command(EA_CMD_TWTA_VFY);
+            newCmd->expectedTime = cmd->expectedTime;
+            newCmd->SetComments("Triggered by LASP proc TWTA_TURN_ON");
+            AddSortedWithArgs(newCmd, 0);
+
+            break;
+        }
+        case EA_CMD_SES_TURN_OFF:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK13RST, EA_CMD_SCK14SET };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SES_TURN_OFF");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_TWTA_TURN_OFF:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK9RST, EA_CMD_SCK10SET };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc TWTA_TURN_OFF");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_TWTA_VFY:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCK21SET, EA_CMD_SCK22SET };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc TWTA_VFY");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_INST_MODE:
+        {
+            char modeString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s", modeString) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                (void)strncpy(modeString, args, STRING_LEN - 1);
+                modeString[STRING_LEN - 1] = '\0';
+            }
+            char* ptr = modeString;
+            for (unsigned int i=0; i < strlen(modeString); i++, ptr++)
+            {
+                *ptr = toupper(*ptr);
+            }
+            if (strcmp(modeString, "STBY") == 0)
+            {
+                newCmd = new Command(EA_CMD_SES_RESET_ENBL);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                AddSortedWithArgs(newCmd, 0);
+
+                newCmd = new Command(EA_CMD_SCMODSTB);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else if (strcmp(modeString, "RCV") == 0)
+            {
+                newCmd = new Command(EA_CMD_SES_RESET_ENBL);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                AddSortedWithArgs(newCmd, 0);
+
+                newCmd = new Command(EA_CMD_SCMODRCV);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else if (strcmp(modeString, "CAL") == 0)
+            {
+                newCmd = new Command(EA_CMD_SES_RESET_DSBL);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                AddSortedWithArgs(newCmd, 0);
+
+                newCmd = new Command(EA_CMD_SCMODCAL);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else if (strcmp(modeString, "WIND") == 0)
+            {
+                newCmd = new Command(EA_CMD_SES_RESET_ENBL);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                AddSortedWithArgs(newCmd, 0);
+
+                newCmd = new Command(EA_CMD_SCMODWOM);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_MODE");
+                SortedList<Command>::AddSorted(newCmd);
+            }
+            else
+            {
+                fprintf(stderr, "Invalid MODE string (%s) for %s\n",
+                          modeString, cmd->mnemonic);
+                return 0;
+            }
+            break;
+        }
+        case EA_CMD_SES_RESET_ENBL:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCRSRLPR45 };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SES_RESET_ENBL");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_SES_RESET_DSBL:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCRSRLPR };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SES_RESET_DSBL");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_INST_QUIK_ON:
+        {
+            char sideString[STRING_LEN];
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%s", sideString) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                (void)strncpy(sideString, args, STRING_LEN - 1);
+                sideString[STRING_LEN - 1] = '\0';
+            }
+            *sideString = toupper(*sideString);
+            if (*sideString == 'A')
+            {
+                 LaspCmdWithArgs trigCmds[] =
+                         { { EA_CMD_PLB_TURN_ON, "1" },
+                           { EA_CMD_PPS_TURN_ON, "1" },
+                           { EA_CMD_CDS_TURN_ON, "A" },
+                           { EA_CMD_SAS_TURN_ON, "A R18_0 ABRV" },
+                           { EA_CMD_SES_TURN_ON, "A" },
+                           { EA_CMD_TWTA_TURN_ON, "1" },
+                           { EA_CMD_SAS_SPIN_VFY2, "A R18_0" } };
+
+                                              
+                 for (unsigned int i=0; i < ElementNumber(trigCmds); i++)
+                 {
+                     newCmd = new Command(trigCmds[i].cmdId);
+                     newCmd->expectedTime = cmd->expectedTime;
+                     newCmd->SetComments("Triggered by LASP proc INST_QUIK_ON");
+                     AddSortedWithArgs(newCmd, trigCmds[i].args);
+                 }
+            }
+            else if (*sideString == 'B')
+            {
+                 LaspCmdWithArgs trigCmds[] =
+                         { { EA_CMD_PLB_TURN_ON, "2" },
+                           { EA_CMD_PPS_TURN_ON, "2" },
+                           { EA_CMD_CDS_TURN_ON, "B" },
+                           { EA_CMD_SAS_TURN_ON, "B R18_0 ABRV" },
+                           { EA_CMD_SES_TURN_ON, "B" },
+                           { EA_CMD_TWTA_TURN_ON, "2" },
+                           { EA_CMD_SAS_SPIN_VFY2, "B R18_0" } };
+
+                                              
+                 for (unsigned int i=0; i < ElementNumber(trigCmds); i++)
+                 {
+                     newCmd = new Command(trigCmds[i].cmdId);
+                     newCmd->expectedTime = cmd->expectedTime;
+                     newCmd->SetComments("Triggered by LASP proc INST_QUIK_ON");
+                     AddSortedWithArgs(newCmd, trigCmds[i].args);
+                 }
+            }
+            else
+            {
+                fprintf(stderr, "Invalid argument (%s) for %s\n",
+                          sideString, cmd->mnemonic);
+                return 0;
+            }
+            break;
+        }
+        case EA_CMD_SES_RESET:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCSESRST };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SES_RESET");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_INST_TURN_OFF:
+        {
+            EACommandE trigCmdIds[] = { EA_CMD_TWTA_TURN_OFF,
+                                        EA_CMD_SES_TURN_OFF,
+                                        EA_CMD_SAS_TURN_OFF,
+                                        EA_CMD_CDS_TURN_OFF };
+            for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+            {
+                newCmd = new Command(trigCmdIds[i]);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc INST_TURN_OFF");
+                AddSortedWithArgs(newCmd, 0);
+            }
+            break;
+        }
+        case EA_CMD_RAD_PAR_UPDATE:
+        {
+            int par;
+            if (args == 0)
+            {
+                FILE* ifp = _OpenDatafile(cmd);
+                if (ifp == 0) return 0;
+                if (fscanf(ifp, "%d", &par) != 1)
+                {
+                    fprintf(stderr, "Error reading datafile: %s\n",
+                                            cmd->dataFilename);
+                    return 0;
+                }
+            }
+            else
+            {
+                if (sscanf(args, "%d", &par) != 1)
+                {
+                    fprintf(stderr, "Error reading args: %s\n", args);
+                    return 0;
+                }
+            }
+            switch(par)
+            {
+            case 21:
+                newCmd = new Command(EA_CMD_SCGATEWID21);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+                SortedList<Command>::AddSorted(newCmd);
+                break;
+            case 20:
+                newCmd = new Command(EA_CMD_SCGATEWID20);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+                SortedList<Command>::AddSorted(newCmd);
+                break;
+            case 18:
+                newCmd = new Command(EA_CMD_SCGATEWID18);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+                SortedList<Command>::AddSorted(newCmd);
+                break;
+            case 17:
+                newCmd = new Command(EA_CMD_SCGATEWID17);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+                SortedList<Command>::AddSorted(newCmd);
+                break;
+            case 16:
+                newCmd = new Command(EA_CMD_SCGATEWID16);
+                newCmd->expectedTime = cmd->expectedTime;
+                newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+                SortedList<Command>::AddSorted(newCmd);
+                break;
+            default:
+                fprintf(stderr, "Invalid argument (%d) for %s\n",
+                              par, cmd->mnemonic);
+                return 0;
+            }
+            newCmd = new Command(EA_CMD_SES_RESET);
+            newCmd->expectedTime = cmd->expectedTime;
+            newCmd->SetComments("Triggered by LASP proc RAD_PAR_UPDATE");
+            AddSortedWithArgs(newCmd, 0);
+            break;
+        }
+        case EA_CMD_SCAT_MOD_ON:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCTMDONN };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SCAT_MOD_ON");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        case EA_CMD_SCAT_MOD_OFF:
+        {
+             EACommandE trigCmdIds[] = { EA_CMD_SCTMDOFF };
+             for (unsigned int i=0; i < ElementNumber(trigCmdIds); i++)
+             {
+                 newCmd = new Command(trigCmdIds[i]);
+                 newCmd->expectedTime = cmd->expectedTime;
+                 newCmd->SetComments("Triggered by LASP proc SCAT_MOD_OFF");
+                 SortedList<Command>::AddSorted(newCmd);
+             }
+             break;
+        }
+        default:
+             return 1;
+    }
+    return 1;
+
+} // CmdList::Expand
 
 //----------------------
 // FindNearestMatchable 
@@ -873,5 +1524,23 @@ CmdList::_MatchingCmd(
 }
 */
 
+FILE*
+CmdList::_OpenDatafile(
+Command*       cmd)
+{
+    if (cmd->dataFilename == 0)
+    {
+        fprintf(stderr, "cmd->mnemonic: datafile is not specified\n");
+        return 0;
+    }
+    FILE* ifp = fopen(cmd->dataFilename, "r");
+    if (ifp == 0)
+    {
+        fprintf(stderr, "Error opening datafile: %s\n", cmd->dataFilename);
+        return 0;
+    }
+    return(ifp);
+
+} //CmdList::_OpenDatafile
 
 #endif

@@ -92,12 +92,13 @@ public:
     void                SetLimits(LimitStatePair*,
                                 void* cl, void* ch, void* al, void* ah);
 
-    LimitStatusE        CheckFrame(
-                            PolynomialTable*  polyTable,
-                            TlmHdfFile*       tlmFile,
-                            int32             startIndex,
-                            FILE*             fp,    // output file pointer
-                            LimitStatePair*   limitState);
+    virtual LimitStatusE    CheckFrame(
+                                PolynomialTable*  polyTable,
+                                TlmHdfFile*       tlmFile,
+                                int32             startIndex,
+                                FILE*             fp,    // output file pointer
+                                LimitStatePair*   limitState,
+                                int               firstOnly=0);
 
     virtual char        PrintText(char* destString)=0;
 
@@ -164,8 +165,8 @@ protected:
 class L1ALimitChecker : public LimitChecker
 {
 public:
-    L1ALimitChecker(             Parameter*      parameter,
-                                char            enable=1);
+    L1ALimitChecker(   Parameter*      parameter,
+                       char            enable=1);
 
     // copy constructor
     L1ALimitChecker(const L1ALimitChecker&);
@@ -178,6 +179,27 @@ protected:
     virtual char        _initialize(void);
 
 };//L1ALimitChecker
+
+class L1ADrvLimitChecker : public L1ALimitChecker
+{
+public:
+    L1ADrvLimitChecker(    Parameter*      parameter,
+                           char            enable=1);
+
+    // copy constructor
+    L1ADrvLimitChecker(const L1ADrvLimitChecker&);
+
+    virtual ~L1ADrvLimitChecker() {};
+
+    virtual LimitStatusE   CheckFrame(
+                               PolynomialTable*  polyTable,
+                               TlmHdfFile*       tlmFile,
+                               int32             startIndex,
+                               FILE*             fp,    // output file pointer
+                               LimitStatePair*   limitState,
+                               int               firstOnly=0);
+
+}; // L1ADrvLimitChecker
 
 inline int operator==(const LimitChecker& a, const LimitChecker& b)
 {

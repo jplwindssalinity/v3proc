@@ -139,6 +139,14 @@ void*   value)
     return(rc==1 ? 1 : 0);
 }//read_float
 
+char
+read_double(
+char*   inBuf,
+void*   value)
+{
+    return(sscanf(inBuf,"%lf", (double*) value) == 1 ? 1 : 0);
+}//read_double
+
 //*********************************************************//
 // all ReadLimitLine()s read CL, CH, AL and AH             //
 //       from a line of chars                              //
@@ -312,6 +320,26 @@ void*   aAH)
     return (rc == 4 ? 1 : 0);
 }//read_float4_limits
 
+char
+read_float8_limits(
+char*   line,
+void*   aCL,
+void*   aCH,
+void*   aAL,
+void*   aAH)
+{
+    int rc = sscanf(line, " Caution:(%lf, %lf) Action:(%lf, %lf)",
+                     (double*)aCL, (double*)aCH, (double*)aAL, (double*)aAH);
+
+#ifdef DEBUG
+    fprintf(stdout, "read_float8_limits: (%g, %g, %g, %g)\n",
+                        *((double*)aCL), *((double*)aCH),
+                        *((double*)aAL), *((double*)aAH));
+    fflush(stdout);
+#endif//DEBUG
+    return (rc == 8 ? 1 : 0);
+}//read_float8_limits
+
 //*********************************************************//
 // all aEQbFunc returns (a==b) ?                           //
 //*********************************************************//
@@ -365,6 +393,11 @@ inline char aEQb_float(void* a, void* b)
     return (*aa == *bb ? 1 : 0);
 }//aEQb_float
 
+inline char aEQb_double(void* a, void* b)
+{
+    return (*((double*)a) == *((double*)b) ? 1 : 0);
+}//aEQb_float
+
 //*********************************************************//
 // all aGTbFunc returns (a>b) ?                            //
 //*********************************************************//
@@ -404,6 +437,11 @@ inline char aGTb_float(void* a, void* b)
         float* bVal = (float*) b;
         return ( *aVal > *bVal ? 1 : 0);
     }
+inline char aGTb_double(void* a, void* b)
+    {
+        return ( *((double*)a) > *((double*)b) ? 1 : 0);
+    }
+
 
 //*********************************************************//
 //  all Write function                                     //
@@ -411,7 +449,7 @@ inline char aGTb_float(void* a, void* b)
 //         inBuf: is a string where sprintf will write to  //
 //*********************************************************//
 
-char
+inline char
 write_uint1(
 char*   string,
 void*   value)
@@ -422,7 +460,7 @@ void*   value)
 
 }//write_uint1
 
-char
+inline char
 write_uint2(
 char*   string,
 void*   value)
@@ -432,7 +470,7 @@ void*   value)
     return (rc > 0 ? 1 : 0);
 }//write_uint2
 
-char
+inline char
 write_uint4(
 char*   string,
 void*   value)
@@ -442,7 +480,7 @@ void*   value)
     return (rc > 0 ? 1 : 0);
 }//write_uint4
 
-char
+inline char
 write_int1(
 char*   string,
 void*   value)
@@ -452,7 +490,7 @@ void*   value)
     return (rc > 0 ? 1 : 0);
 }//write_int1
 
-char
+inline char
 write_int2(
 char*   string,
 void*   value)
@@ -462,7 +500,7 @@ void*   value)
     return (rc > 0 ? 1 : 0);
 }//write_int2
 
-char
+inline char
 write_int4(
 char*   string,
 void*   value)
@@ -472,7 +510,7 @@ void*   value)
     return (rc > 0 ? 1 : 0);
 }//write_int4
 
-char
+inline char
 write_float(
 char*   string,
 void*   value)
@@ -481,6 +519,14 @@ void*   value)
     int rc = sprintf(string,"%g", *val);
     return (rc > 0 ? 1 : 0);
 }//write_float
+
+inline char
+write_double(
+char*   string,
+void*   value)
+{
+    return (sprintf(string,"%g", *((double*)value)) > 0 ? 1 : 0);
+}//write_double
 
 //*********************************************************//
 // all assignBtoAFunc : a = b;                             //
@@ -528,6 +574,11 @@ inline void assignBtoA_float(void* a, void* b)
         *aa = *((float*)b);
 }//assignBtoA_float
 
+inline void assignBtoA_double(void* a, void* b)
+{
+        *((double*)a) = *((double*)b);
+}//assignBtoA_float
+
 //********************************************************//
 //      LimitChecker                                      //
 //********************************************************//
@@ -550,9 +601,12 @@ char        enable) // enable
 char
 LimitChecker::_initialize(void)
 {
+    _parameter->data = (char*)malloc(_parameter->byteSize);
+    assert(_parameter->data != 0);
     switch (_parameter->dataType)
     {
         case DATA_UINT1:
+        case DATA_UINT1_49:
             _maxExceedValue = (void*) new unsigned char;
             _readFunc = read_uint1;
             _writeFunc = write_uint1;
@@ -563,6 +617,15 @@ LimitChecker::_initialize(void)
             _bytes = 1;
             break;
         case DATA_UINT2:
+        case DATA_UINT2_12:
+        case DATA_UINT2_76:
+        case DATA_UINT2_100:
+        case DATA_UINT2_3240:
+        case DATA_UINT2_100_12:
+        case DATA_UINT2_4:
+        case DATA_UINT2_5:
+        case DATA_UINT2_25:
+        case DATA_UINT2_2_8:
             _maxExceedValue = (void*) new unsigned short;
             _readFunc = read_uint2;
             _writeFunc = write_uint2;
@@ -573,6 +636,11 @@ LimitChecker::_initialize(void)
             _bytes = 2;
             break;
         case DATA_UINT4:
+        case DATA_UINT4_4:
+        case DATA_UINT4_12:
+        case DATA_UINT4_25:
+        case DATA_UINT4_100:
+        case DATA_UINT4_100_12:
             _maxExceedValue = (void*) new unsigned int;
             _readFunc = read_uint4;
             _writeFunc = write_uint4;
@@ -583,6 +651,8 @@ LimitChecker::_initialize(void)
             _bytes = 4;
             break;
         case DATA_INT1:
+        case DATA_INT1_76:
+        case DATA_INT1_3240:
             _maxExceedValue = (void*) new char;
             _readFunc = read_int1;
             _writeFunc = write_int1;
@@ -593,6 +663,7 @@ LimitChecker::_initialize(void)
             _bytes = 1;
             break;
         case DATA_INT2:
+        case DATA_INT2_100:
             _maxExceedValue = (void*) new short;
             _readFunc = read_int2;
             _writeFunc = write_int2;
@@ -613,6 +684,13 @@ LimitChecker::_initialize(void)
             _bytes = 4;
             break;
         case DATA_FLOAT4:
+        case DATA_FLOAT4_12:
+        case DATA_FLOAT4_25:
+        case DATA_FLOAT4_76:
+        case DATA_FLOAT4_76_4:
+        case DATA_FLOAT4_100:
+        case DATA_FLOAT4_3240:
+        case DATA_FLOAT4_100_8:
             _maxExceedValue = (void*) new float;
             _readFunc = read_float;
             _writeFunc = write_float;
@@ -621,6 +699,16 @@ LimitChecker::_initialize(void)
             _assignBtoA = assignBtoA_float;
             _readLimitLine = read_float4_limits;
             _bytes = 4;
+            break;
+        case DATA_FLOAT8:
+            _maxExceedValue = (void*) new double;
+            _readFunc = read_double;
+            _writeFunc = write_double;
+            _aGTb = aGTb_double;
+            _aEQb = aEQb_double;
+            _assignBtoA = assignBtoA_double;
+            _readLimitLine = read_float8_limits;
+            _bytes = 8;
             break;
         default:
             _status = INVALID_PARAMETER;
@@ -664,6 +752,11 @@ const LimitChecker& other)
 
 LimitChecker::~LimitChecker()
 {
+    if (_parameter->data != 0)
+    {
+        free(_parameter->data);
+        _parameter->data = 0;
+    }
     delete _parameter;
     delete _maxExceedValue;
     delete [] _limits;
@@ -675,39 +768,11 @@ IotBoolean
 LimitChecker::OpenParamDataSets(
 TlmHdfFile*   tlmFile)
 {
-    if (_parameter == 0 || _timeParamP == 0) return 0;
-    assert(_parameter->sdsIDs != 0 && _timeParamP->sdsIDs != 0);
-
-    char tempString[BIG_SIZE];
-    (void)strncpy(tempString, _parameter->sdsNames, BIG_SIZE);
-    int32 dataType, dataStartIndex, dataLength, numDimensions;
-    char *oneSdsName = (char*)strtok(tempString, ",");
-    if (oneSdsName)
-    {
-        _parameter->sdsIDs[0] = HDF_FAIL;
-        _parameter->sdsIDs[0] = tlmFile->SelectDataset(
-                                 oneSdsName, dataType, dataStartIndex,
-                                 dataLength, numDimensions);
-        if (_parameter->sdsIDs[0] == HDF_FAIL)
-            return(0);
-    }
-    else
-        return 0;
-
-    (void)strncpy(tempString, _timeParamP->sdsNames, BIG_SIZE);
-    oneSdsName = (char*)strtok(tempString, ",");
-    if (oneSdsName)
-    {
-        _timeParamP->sdsIDs[0] = HDF_FAIL;
-        _timeParamP->sdsIDs[0] = tlmFile->SelectDataset(
-                                 oneSdsName, dataType, dataStartIndex,
-                                 dataLength, numDimensions);
-        if (_timeParamP->sdsIDs[0] == HDF_FAIL)
-            return(0);
-    }
-    else
-        return 0;
-
+    assert(tlmFile != 0);
+    if (tlmFile->OpenParamDatasets(_timeParamP) != HdfFile::OK)
+        return(0);
+    if (tlmFile->OpenParamDatasets(_parameter) != HdfFile::OK)
+        return(0);
     return 1;
 
 } //LimitChecker::OpenParamDataSets
@@ -716,13 +781,11 @@ IotBoolean
 LimitChecker::CloseParamDataSets(
 TlmHdfFile*   tlmFile)
 {
-    if (_parameter == 0 || _timeParamP == 0) return 0;
-    assert(_parameter->sdsIDs != 0 && _timeParamP->sdsIDs != 0);
-
+    assert(tlmFile != 0);
     IotBoolean closeOK = 1;
-    if (tlmFile->CloseDataset(_parameter->sdsIDs[0]) == HDF_FAIL)
+    if (tlmFile->CloseParamDatasets(_parameter) != HdfFile::OK)
         closeOK = 0;
-    if (tlmFile->CloseDataset(_timeParamP->sdsIDs[0]) == HDF_FAIL)
+    if (tlmFile->CloseParamDatasets(_timeParamP) != HdfFile::OK)
         closeOK = 0;
 
     return(closeOK);
@@ -786,17 +849,24 @@ PolynomialTable*  polyTable,
 TlmHdfFile*       tlmFile,
 int32             startIndex,
 FILE*             fp,         // output file pointer
-LimitStatePair*   limitState)
+LimitStatePair*   limitState,
+int               firstOnly)
 {
     // if is disabled, skip this
     if (! _enable)
         return (LIMIT_OK);
 
-    // extract the value first
-    char buffer[8];
-    if (_parameter->extractFunc(tlmFile, _parameter->sdsIDs,
-                  startIndex, 1, 1, &buffer, 0) == FALSE)
-        return (LIMIT_OK);
+    int numExtracted = _parameter->extractFunc(tlmFile, _parameter->sdsIDs,
+                  startIndex, 1, 1, _parameter->data, 0);
+    switch(numExtracted)
+    {
+        case 0:
+            return(LIMIT_OK);
+        case -1:
+            return(EXTRACT_ERROR);
+        default:
+            break;
+    }
 
     // apply polynomial if this parameter requires it
     if (_parameter->needPolynomial)
@@ -818,18 +888,20 @@ LimitStatePair*   limitState)
         // it is in the polynomial table. need to apply to the data
         if (polynomial)
         {
-            switch(_parameter->dataType)
+            switch(_bytes)
             {
-                case DATA_FLOAT4:
+                case 4:
                 {
-                    float result = polynomial->Apply(*(float*)&buffer);
-                    (void)memcpy(&buffer, &result, sizeof(float));
+                    polynomial->ApplyReplaceArray(
+                                   (float*) _parameter->data,
+                                   numExtracted);
                     break;
                 }
-                case DATA_FLOAT8:
+                case 8:
                 {
-                    double result = polynomial->Apply(*(double*)&buffer);
-                    (void)memcpy(&buffer, &result, sizeof(double));
+                    polynomial->ApplyReplaceArray(
+                                   (double*) _parameter->data,
+                                   numExtracted);
                     break;
                 }
                 default:
@@ -839,9 +911,28 @@ LimitStatePair*   limitState)
         else return (LIMIT_POLYNOMIAL_NOT_IN_TABLE);
     }
 
-    LimitStatusE newStatus = _checkValue(limitState, (void*)buffer);
-    _statePair = limitState;
-    _checkStatus(tlmFile, startIndex, fp, newStatus, (void*)buffer);
+    char* nextBuf = _parameter->data;
+    LimitStatusE newStatus;
+    //----------------------------------------------------
+    // check the first value only if flag is specified,
+    // else check all the values
+    //----------------------------------------------------
+    if (firstOnly)
+    {
+        newStatus = _checkValue(limitState, (void*)nextBuf);
+        _statePair = limitState;
+        _checkStatus(tlmFile, startIndex, fp, newStatus, (void*)nextBuf);
+    }
+    else
+    {
+        for (int counter=0; counter < numExtracted; counter++)
+        {
+            newStatus = _checkValue(limitState, (void*)nextBuf);
+            _statePair = limitState;
+            _checkStatus(tlmFile, startIndex, fp, newStatus, (void*)nextBuf);
+            nextBuf += _bytes;
+        }
+    }
     return(_status = newStatus);
 
 }//LimitChecker::CheckFrame
@@ -883,22 +974,40 @@ HK2LimitChecker::_initialize(void)
     switch (_parameter->dataType)
     {
         case DATA_UINT1:
+        case DATA_UINT1_49:
             _limits = (void*)new unsigned char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned char));
             break;
         case DATA_UINT2:
+        case DATA_UINT2_12:
+        case DATA_UINT2_76:
+        case DATA_UINT2_100:
+        case DATA_UINT2_3240:
+        case DATA_UINT2_100_12:
+        case DATA_UINT2_4:
+        case DATA_UINT2_5:
+        case DATA_UINT2_25:
+        case DATA_UINT2_2_8:
             _limits = (void*)new unsigned short [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned short));
             break;
         case DATA_UINT4:
+        case DATA_UINT4_4:
+        case DATA_UINT4_12:
+        case DATA_UINT4_25:
+        case DATA_UINT4_100:
+        case DATA_UINT4_100_12:
             _limits = (void*)new unsigned int [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned int));
             break;
         case DATA_INT1:
+        case DATA_INT1_76:
+        case DATA_INT1_3240:
             _limits = (void*)new char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(char));
             break;
         case DATA_INT2:
+        case DATA_INT2_100:
             _limits = (void*)new short [numElements];
             (void)memset(_limits, 0, numElements * sizeof(short));
             break;
@@ -907,8 +1016,19 @@ HK2LimitChecker::_initialize(void)
             (void)memset(_limits, 0, numElements * sizeof(int));
             break;
         case DATA_FLOAT4:
+        case DATA_FLOAT4_12:
+        case DATA_FLOAT4_25:
+        case DATA_FLOAT4_76:
+        case DATA_FLOAT4_76_4:
+        case DATA_FLOAT4_100:
+        case DATA_FLOAT4_3240:
+        case DATA_FLOAT4_100_8:
             _limits = (void*)new float [numElements];
             (void)memset(_limits, 0, numElements * sizeof(float));
+            break;
+        case DATA_FLOAT8:
+            _limits = (void*)new double [numElements];
+            (void)memset(_limits, 0, numElements * sizeof(double));
             break;
         default:
             _status = INVALID_PARAMETER;
@@ -1091,22 +1211,40 @@ L1ALimitChecker::_initialize(void)
     switch (_parameter->dataType)
     {
         case DATA_UINT1:
+        case DATA_UINT1_49:
             _limits = (void*)new unsigned char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned char));
             break;
         case DATA_UINT2:
+        case DATA_UINT2_12:
+        case DATA_UINT2_76:
+        case DATA_UINT2_100:
+        case DATA_UINT2_3240:
+        case DATA_UINT2_100_12:
+        case DATA_UINT2_4:
+        case DATA_UINT2_5:
+        case DATA_UINT2_25:
+        case DATA_UINT2_2_8:
             _limits = (void*)new unsigned short [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned short));
             break;
         case DATA_UINT4:
+        case DATA_UINT4_4:
+        case DATA_UINT4_12:
+        case DATA_UINT4_25:
+        case DATA_UINT4_100:
+        case DATA_UINT4_100_12:
             _limits = (void*)new unsigned int [numElements];
             (void)memset(_limits, 0, numElements * sizeof(unsigned int));
             break;
         case DATA_INT1:
+        case DATA_INT1_76:
+        case DATA_INT1_3240:
             _limits = (void*)new char [numElements];
             (void)memset(_limits, 0, numElements * sizeof(char));
             break;
         case DATA_INT2:
+        case DATA_INT2_100:
             _limits = (void*)new short [numElements];
             (void)memset(_limits, 0, numElements * sizeof(short));
             break;
@@ -1115,8 +1253,19 @@ L1ALimitChecker::_initialize(void)
             (void)memset(_limits, 0, numElements * sizeof(int));
             break;
         case DATA_FLOAT4:
+        case DATA_FLOAT4_12:
+        case DATA_FLOAT4_25:
+        case DATA_FLOAT4_76:
+        case DATA_FLOAT4_76_4:
+        case DATA_FLOAT4_100:
+        case DATA_FLOAT4_3240:
+        case DATA_FLOAT4_100_8:
             _limits = (void*)new float [numElements];
             (void)memset(_limits, 0, numElements * sizeof(float));
+            break;
+        case DATA_FLOAT8:
+            _limits = (void*)new double [numElements];
+            (void)memset(_limits, 0, numElements * sizeof(double));
             break;
         default:
             _status = INVALID_PARAMETER;
@@ -1295,6 +1444,149 @@ char*       destString)
     }
     return 1;
 }//L1ALimitChecker::PrintText
+
+L1ADrvLimitChecker::L1ADrvLimitChecker(
+Parameter*      parameter,
+char            enable)
+: L1ALimitChecker(parameter, enable)
+{
+  // empty
+} // L1ADrvLimitChecker::L1ADrvLimitChecker
+
+// copy constructor
+L1ADrvLimitChecker::L1ADrvLimitChecker(
+const L1ADrvLimitChecker&       other)
+:   L1ALimitChecker(other)
+{
+  // empty
+}//L1ALimitChecker::L1ALimitChecker
+
+//return TRUE if parameter status is not changed;
+// else return FALSE, and the error msg is writen to fp (if any)
+LimitStatusE
+L1ADrvLimitChecker::CheckFrame(
+PolynomialTable*  polyTable,
+TlmHdfFile*       tlmFile,
+int32             startIndex,
+FILE*             fp,         // output file pointer
+LimitStatePair*   limitState,
+int               firstOnly)
+{
+    // if is disabled, skip this
+    if (! _enable)
+        return (LIMIT_OK);
+
+    DerivedExtractResult extractResult;
+    extractResult.dataBuf =
+                 new char [MAX_NUM_DERIVED_VALUES * (_parameter->byteSize)];
+    int numExtracted = 0;
+    if (_parameter->paramId == UTC_TIME)
+        numExtracted = _parameter->extractFunc(tlmFile, _parameter->sdsIDs,
+                   startIndex, 1, 1, (void*)extractResult.dataBuf, polyTable);
+    else
+        numExtracted = _parameter->extractFunc(tlmFile, _parameter->sdsIDs,
+                   startIndex, 1, 1, &extractResult, polyTable);
+    switch(numExtracted)
+    {
+        case 0:
+            return(LIMIT_OK);
+        case -1:
+            return(EXTRACT_ERROR);
+        default:
+            break;
+    }
+
+    // apply polynomial if this parameter requires it
+    if (_parameter->needPolynomial)
+    {
+        if (polyTable == 0) return (LIMIT_NO_POLYNOMIAL_TABLE);
+
+        char tempString[BIG_SIZE];
+        (void)strncpy(tempString, _parameter->sdsNames, BIG_SIZE);
+        char* oneSdsName=0;
+        oneSdsName = (char*)strtok(tempString, ",");
+        if (oneSdsName == 0)
+        {
+            fprintf(stderr, "Missing SDS name\n");
+            return(LIMIT_MISSING_SDS_NAME);
+        }
+        // is this parameter in the polynomial table?
+        const Polynomial* polynomial = polyTable->SelectPolynomial(
+                                 oneSdsName, _parameter->unitName);
+        // it is in the polynomial table. need to apply to the data
+        if (polynomial)
+        {
+            switch(_bytes)
+            {
+                case 4:
+                {
+                    char* nextBuf=0;
+                    for (int k=0; k < MAX_NUM_DERIVED_VALUES; k++)
+                    {
+                        if (extractResult.validDataMap[k])
+                        {
+                            nextBuf = extractResult.dataBuf + k * _bytes;
+                            polynomial->ApplyReplaceArray( (float*) nextBuf, 1);
+                        }
+                    }
+                    break;
+                }
+                case 8:
+                {
+                    char* nextBuf=0;
+                    for (int k=0; k < MAX_NUM_DERIVED_VALUES; k++)
+                    {
+                        if (extractResult.validDataMap[k])
+                        {
+                            nextBuf = extractResult.dataBuf + k * _bytes;
+                            polynomial->ApplyReplaceArray( (float*) nextBuf, 1);
+                        }
+                    }
+                    break;
+                }
+                default:
+                    return(_status = LIMIT_APPLY_POLYNOMIAL_TO_NON_FLOAT);
+            }
+        }
+        else return (LIMIT_POLYNOMIAL_NOT_IN_TABLE);
+    }
+
+    char* nextBuf = 0;
+    LimitStatusE newStatus;
+    //----------------------------------------------------
+    // check the first value only if flag is specified,
+    // else check all the values
+    //----------------------------------------------------
+    if (firstOnly)
+    {
+        for (int counter=0; counter < MAX_NUM_DERIVED_VALUES; counter++)
+        {
+            if (extractResult.validDataMap[counter])
+            {
+                nextBuf = extractResult.dataBuf + counter * _bytes;
+                newStatus = _checkValue(limitState, (void*)nextBuf);
+                _statePair = limitState;
+                _checkStatus(tlmFile, startIndex, fp,newStatus,(void*)nextBuf);
+                break;
+            }
+        }
+    }
+    else
+    {
+        for (int counter=0; counter < MAX_NUM_DERIVED_VALUES; counter++)
+        {
+            if (extractResult.validDataMap[counter])
+            {
+                nextBuf = extractResult.dataBuf + counter * _bytes;
+                newStatus = _checkValue(limitState, (void*)nextBuf);
+                _statePair = limitState;
+                _checkStatus(tlmFile, startIndex, fp,newStatus,(void*)nextBuf);
+            }
+        }
+    }
+    return(_status = newStatus);
+
+}//L1ADrvLimitChecker::CheckFrame
 
 void
 LimitChecker::SetLimits(

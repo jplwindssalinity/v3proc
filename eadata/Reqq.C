@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.31   08 Jan 1999 16:37:28   sally
+// add LASP proc commands
+// 
 //    Rev 1.30   04 Nov 1998 14:45:40   sally
 // take REQQ out of data file error message, because REQI use this method
 // 
@@ -543,8 +546,7 @@ unsigned short&     checksum,
 char*               paramString,    // IN/OUT
 FILE*               output_fp)
 {
-    assert(datafileFormat != EA_DATAFILE_NONE &&
-            (numParamWords == 1 || numParamWords == 2));
+    assert(datafileFormat != EA_DATAFILE_NONE);
 
     FILE* outputFP = (output_fp ? output_fp : stderr);
     //---------------
@@ -623,6 +625,23 @@ FILE*               output_fp)
                 return(REQQ_ERROR_WRITE_PARAMS);
             checksum = Qpf::Checksum(checksum, *first2Bytes);
             checksum = Qpf::Checksum(checksum, *last2Byte);
+            break;
+        }
+        case EA_DATAFILE_ASCII:
+        {
+            char oneString[SHORT_STRING_LEN];
+            *paramString = '\0';
+            for (int i=0; i < numParamWords; i++)
+            {
+                if (fscanf(ifp, "%s", oneString) != 1)
+                    return(REQQ_ERROR_READ_DATAFILE);
+                else
+                {
+                    strcat(paramString, oneString);
+                    strcat(paramString, " ");
+                }
+            }
+            // checksum is ignored
             break;
         }
         default:  // shouldn't happen, but guard it anyway

@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.26   29 Jan 1999 15:04:14   sally
+// added LASP proc commands
+// 
+//    Rev 1.25   08 Jan 1999 16:37:26   sally
+// add LASP proc commands
+// 
 //    Rev 1.24   20 Oct 1998 15:47:18   sally
 // change some relay commands to be realtime only
 // 
@@ -135,6 +141,8 @@ static const char rcs_id_command_h[] =
 #define MAX_STRING_SIZE     1024
 #define MAX_LINE_SIZE       1024
 
+#define EA_IS_LASP_PROC(x)  (((x) & 0x7100) == 0x7100 ? 1 : 0)
+
 //--------
 // MACROS 
 //--------
@@ -195,7 +203,7 @@ enum EACommandE
     EA_CMD_SCRCVPNR,
     EA_CMD_SCTOVRON,
     EA_CMD_SCTOVROFF,
-    EA_CMD_SCTMDON,
+    EA_CMD_SCTMDONN,
     EA_CMD_SCTMDOFF,
     EA_CMD_SCTWTSEL,
     EA_CMD_SCSESRST,
@@ -432,7 +440,37 @@ enum EACommandE
     EA_CMD_SCSWO_T,
     EA_CMD_SCSTATBLE,
     EA_CMD_SCENGTBLC,
-    EA_CMD_SCSWPATCH_T
+    EA_CMD_SCSWPATCH_T,
+    EA_CMD_VBAND_RELEASE,
+    EA_CMD_PLB_TURN_ON,
+    EA_CMD_PLB_TURN_OFF,
+    EA_CMD_PPS_TURN_ON,
+    EA_CMD_PPS_TURN_OFF,
+    EA_CMD_CDS_TURN_ON,
+    EA_CMD_CDS_TURN_OFF,
+    EA_CMD_SAS_TURN_ON,
+    EA_CMD_SAS_TURN_OFF,
+    EA_CMD_SAS_SPIN_VFY,
+    EA_CMD_SAS_SPIN_VFY2,
+    EA_CMD_SES_TURN_ON,
+    EA_CMD_SES_TURN_OFF,
+    EA_CMD_TWTA_TURN_ON,
+    EA_CMD_TWTA_TURN_OFF,
+    EA_CMD_TWTA_VFY,
+    EA_CMD_INST_MODE,
+    EA_CMD_SES_RESET_ENBL,
+    EA_CMD_SES_RESET_DSBL,
+    EA_CMD_INST_QUIK_ON,
+    EA_CMD_SES_RESET,
+    EA_CMD_INST_TURN_OFF,
+    EA_CMD_SCAT_FST_ACQ,
+    EA_CMD_RAD_PAR_UPDATE,
+    EA_CMD_SCAT_MOD_ON,
+    EA_CMD_SCAT_MOD_OFF,
+    EA_CMD_CDS_TMON_ENBL,
+    EA_CMD_SES_TMON_ENBL,
+    EA_CMD_SAS_TMON_ENBL,
+    EA_CMD_INST_TEMP_MON
 };
 
 enum EffectE
@@ -603,7 +641,8 @@ enum EADataFileFormat
     EA_DATAFILE_HEX2_ASCII,
     EA_DATAFILE_HEX4_TO_2HEX2,
     EA_DATAFILE_UDEC4_TO_2HEX2,
-    EA_DATAFILE_2UDEC2_ASCII
+    EA_DATAFILE_2UDEC2_ASCII,
+    EA_DATAFILE_ASCII
 };
 
 //-----------------------------------------------------------------
@@ -627,6 +666,7 @@ struct EACommandArgsEntry
     char*             mnemonic;
     char*             description;
     int               realtimeOnly;
+    int               isQPF;
     int               numWordsInParamFile; // 0=no datafile, -1=variable length
     EADataFileFormat  datafileFormat;
     int               numStaticParams;  // 0-3= static args, -1=non-static args
@@ -679,6 +719,7 @@ public:
     //---------
 
     Command(int lineNo, const char*  reqiCommandString);
+    Command(EACommandE  cmdID);
     Command();
     virtual ~Command();
 
@@ -700,6 +741,11 @@ public:
 
     void              SetFormat(FormatE format) { _format = format; }
     FormatE           GetFormat(void) const {return _format; }
+
+    void              SetIsQPF(int isQPF)
+                          { _isQPF = isQPF; }
+    int               GetIsQPF(void) const
+                          {return _isQPF; }
 
     void              SetNumWordsInParamFile(int numWords)
                           { _numWordsInParamFile = numWords; }
@@ -741,6 +787,7 @@ public:
     static EACommandE MnemonicToCmdId(const char* string,
                                       unsigned short& p_cmdHex);
     static EACommandE CmdHexToCmdId(unsigned short p_cmdHex);
+    static unsigned short CmdIdToCmdHex(EACommandE p_cmdId);
     static EffectE    MnemonicToEffectId(char* string); // mnemonic -> effectId
     static CmdStatusE MnemonicToStatusId(char* string); // mnemonic -> statusId
     static VerifyE    MnemonicToVerifyId(char* string); // mnemonic -> verifyId
@@ -760,6 +807,7 @@ public:
 
     static int  NeedDataFile(EACommandE commandID);
     static int  RealtimeOnly(EACommandE commandID);
+    static int  IsQPF(EACommandE commandID);
     static int  NumWordsInParamFile(EACommandE commandID);
     static EADataFileFormat  DatafileFormat(EACommandE commandID);
     static int  NumStaticParams(EACommandE commandID);
@@ -849,6 +897,7 @@ private:
     StatusE          _status;
     CommandTypeE     _commandType;
     FormatE          _format;
+    int              _isQPF;
     int              _numWordsInParamFile; // 0=no datafile, -1=variable length
     EADataFileFormat _datafileFormat;
     int              _numStaticParams; // 0-3= static args, -1=non-static args

@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.10   23 Feb 1999 11:13:28   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.9   07 Dec 1998 15:45:24   sally
+// add pr_12float4_6()
+// 
+//    Rev 1.8   20 Nov 1998 16:03:38   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.7   13 Oct 1998 15:34:28   sally
 // added L1B file
 // 
@@ -195,10 +204,10 @@ void pr_int1_76(FILE *ofp, char *dataP)
     return;
 }
 
-void pr_int1_810(FILE *ofp, char *dataP)
+void pr_int1_3240(FILE *ofp, char *dataP)
 {
     char *ptr = (char *)dataP;
-    for (int j = 0; j < 810; j++, ptr++)
+    for (int j = 0; j < 3240; j++, ptr++)
         fprintf(ofp, "%6d ", *ptr);
     return;
 }
@@ -251,10 +260,10 @@ void pr_uint2_100(FILE *ofp, char *dataP)
     return;
 }
 
-void pr_uint2_810(FILE *ofp, char *dataP)
+void pr_uint2_3240(FILE *ofp, char *dataP)
 {
     unsigned short *ptr = (unsigned short *)dataP;
-    for (int i = 0; i < 810; i++)
+    for (int i = 0; i < 3240; i++)
         fprintf(ofp, "%6u ", *(ptr + i));
     return;
 }
@@ -370,6 +379,16 @@ void pr_float4_6_100_linesep(FILE *ofp, char *dataP)
     return;
 }
 
+void pr_12float4_6(FILE *ofp, char *dataP)
+{
+    float *ptr = (float *)dataP;
+    for (int i = 0; i < 12; i++, ptr++)
+    {
+        fprintf(ofp, "%.6g ", *ptr);
+    }
+    return;
+}
+
 void pr_76float4_6(FILE *ofp, char *dataP)
 {
     float *ptr = (float *)dataP;
@@ -380,10 +399,10 @@ void pr_76float4_6(FILE *ofp, char *dataP)
     return;
 }
 
-void pr_810float4_6(FILE *ofp, char *dataP)
+void pr_3240float4_6(FILE *ofp, char *dataP)
 {
     float *ptr = (float *)dataP;
-    for (int i = 0; i < 810; i++, ptr++)
+    for (int i = 0; i < 3240; i++, ptr++)
     {
         fprintf(ofp, "%.6g ", *ptr);
     }

@@ -7,6 +7,15 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.11   23 Feb 1999 11:13:30   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.10   07 Dec 1998 15:45:16   sally
+// add pr_12float4_6()
+// 
+//    Rev 1.9   20 Nov 1998 16:03:42   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.8   13 Oct 1998 15:34:30   sally
 // added L1B file
 // 
@@ -75,7 +84,7 @@ extern void pr_uint1_76(FILE* ofp, char* dataP);
 extern void pr_uint1_49(FILE* ofp, char* dataP);
 extern void pr_uint1_49_linesep(FILE* ofp, char* dataP);
 extern void pr_int1_76(FILE* ofp, char* dataP);
-extern void pr_int1_810(FILE* ofp, char* dataP);
+extern void pr_int1_3240(FILE* ofp, char* dataP);
 
 extern void pr_uint2_4(FILE* ofp, char* dataP);
 extern void pr_uint2_5(FILE* ofp, char* dataP);
@@ -83,7 +92,7 @@ extern void pr_uint2_12(FILE* ofp, char* dataP);
 extern void pr_uint2_25(FILE* ofp, char* dataP);
 extern void pr_uint2_76(FILE* ofp, char* dataP);
 extern void pr_uint2_100(FILE* ofp, char* dataP);
-extern void pr_uint2_810(FILE* ofp, char* dataP);
+extern void pr_uint2_3240(FILE* ofp, char* dataP);
 extern void pr_uint2_100_linesep(FILE* ofp, char* dataP);
 extern void pr_uint2_100_12(FILE* ofp, char* dataP);
 extern void pr_int2_100(FILE* ofp, char* dataP);
@@ -103,8 +112,9 @@ extern void pr_float4_6_25(FILE* ofp, char* dataP);
 extern void pr_float4_6_100(FILE* ofp, char* dataP);
 extern void pr_float4_6_100_linesep(FILE* ofp, char* dataP);
 
+extern void pr_12float4_6(FILE* ofp, char* dataP);
 extern void pr_76float4_6(FILE* ofp, char* dataP);
-extern void pr_810float4_6(FILE* ofp, char* dataP);
+extern void pr_3240float4_6(FILE* ofp, char* dataP);
 extern void pr_76_4_float4_6(FILE* ofp, char* dataP);
 extern void pr_100_8_float4_6(FILE* ofp, char* dataP);
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.23   23 Feb 1999 11:14:36   sally
+// change type to satisfy GCC
+// 
 //    Rev 1.22   20 Oct 1998 10:53:20   sally
 // add static QPF commands (table macro commands)
 // 
@@ -407,7 +410,7 @@ FILE*       output_fp)
     // allocate space for array used for checking embedded commands
     // 2 bytes for command, 2 bytes for checksum
     //--------------------------------------------------------------
-    int embeddedCheckArraySize =  2 * cmd->GetNumWordsInParamFile() + 4;
+    unsigned int embeddedCheckArraySize =  2 * cmd->GetNumWordsInParamFile()+4;
     char* embeddedCheckArray = new char [embeddedCheckArraySize];
     assert(embeddedCheckArray != 0);
     int embeddedCheckOffset=0;
@@ -650,9 +653,8 @@ FILE*       output_fp)
         return(_status = Qpf::QPF_WRITE_FAIL);
     }
 
-printf("staticParamString = %s\n", staticParamString);
     // then write the static table string
-    if (fprintf(ofp, "%s", staticParamString) != strlen(staticParamString))
+    if (fprintf(ofp, "%s", staticParamString) != (int)strlen(staticParamString))
     {
         (void)fclose(ofp);
         unlink(filename);

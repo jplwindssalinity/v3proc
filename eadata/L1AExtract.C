@@ -7,6 +7,22 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.30   23 Feb 1999 11:12:46   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.29   23 Dec 1998 16:32:22   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
+//    Rev 1.28   07 Dec 1998 15:41:58   sally
+// add ExtractPowerDnSlice??() for sliced power_dn.
+// 
+//    Rev 1.27   02 Dec 1998 12:54:48   sally
+// .
+// 
+//    Rev 1.26   20 Nov 1998 16:03:22   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.25   10 Nov 1998 08:51:14   sally
 // add delta instrument time because the instrument seems to skip cycle
 // 
@@ -153,6 +169,12 @@ static const float chBandwidth[]={ 194645.28, 105719.20, 54478.76, 49192.80 };
    (((byte) >> ((leftpos)+1-(numBits))) & ~(~0<<(numBits)))
 #endif
 
+unsigned short *_prevAntPos=0;   // holds address one of the following
+unsigned short _prevAntPos_dn=0;
+unsigned short _prevAntPos_deg=0;
+unsigned short _prevAntPos_deg_sec=0;
+unsigned short _prevAntPos_rot_min=0;
+
 //----------------------------------------------------------------------
 // Function:    ExtractData1D ([])
 // Extracts:    one dimensional data
@@ -168,8 +190,27 @@ VOIDP       buffer,
 PolynomialTable*)     // unused
 {
     assert(l1File != 0);
-    return (l1File->GetDatasetData1D(sdsIDs[0], start,
-                  stride, length, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start,stride, length,
+                        buffer) == HDF_SUCCEED)
+        return length;
+    else
+        return -1;
+#if 0
+    assert(l1File != 0 && p_extractResults != 0);
+    DerivedExtractResult* extractResults =
+                 (DerivedExtractResult*) p_extractResults;
+
+    if (l1File->GetDatasetData1D(sdsIDs[0], start,stride, length,
+                        (VOIDP)(extractResults->dataBuf)) == HDF_SUCCEED)
+    {
+        (void)memcpy(extractResults->validDataMap, _onlyOneMap,
+                                     MAX_NUM_DERIVED_VALUES);
+        return length;
+    }
+    else
+        return -1;
+#endif
 
 }//ExtractData1D
 
@@ -196,12 +237,15 @@ PolynomialTable*)     // unused
     // get the array of unsigned int
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+    {
+        free((void*) tempBuffer);
+        return -1;
+    }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the integers to floats, and return
     float* floatP = (float*)buffer;
@@ -210,7 +254,7 @@ PolynomialTable*)     // unused
         *floatP = (float) (scaleFactor * tempBuffer[i]);
     }
     free((void*) tempBuffer);
-    return(TRUE);
+    return(length);
 
 }//ExtractData1D_uint4_float
 
@@ -237,12 +281,15 @@ PolynomialTable*)     // unused
     // get the array of short integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+    {
+        free((void*) tempBuffer);
+        return -1;
+    }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -251,7 +298,7 @@ PolynomialTable*)     // unused
         *floatP = (float) (scaleFactor * tempBuffer[i]);
     }
     free((void*) tempBuffer);
-    return(TRUE);
+    return(length);
 
 }//ExtractData1D_uint2_float
 
@@ -277,12 +324,15 @@ PolynomialTable*)     // unused
     // get the array of short integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+    {
+        free((void*) tempBuffer);
+        return -1;
+    }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -291,7 +341,7 @@ PolynomialTable*)     // unused
         *floatP = (float) (scaleFactor * tempBuffer[i]);
     }
     free((void*) tempBuffer);
-    return(TRUE);
+    return(length);
 
 }//ExtractData1D_int2_float
 
@@ -359,7 +409,7 @@ PolynomialTable*)     // unused
     // get the array of integers
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // convert the integers to char3, and return
     char* charP = (char*)buffer;
@@ -371,7 +421,7 @@ PolynomialTable*)     // unused
         tempP += 4;
     }
     free((void*) tempBuffer);
-    return(TRUE);
+    return(1);
 
 }//ExtractData1D_int_char3
 
@@ -399,11 +449,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 4;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(4 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(4 * length);
+        else
+            return -1;
+    }
 
 }//ExtractData2D_4
 
@@ -431,11 +491,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 5;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(5 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(5 * length);
+        else
+            return -1;
+    }
 
 }//ExtractData2D_5
 
@@ -463,12 +533,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 8;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(8 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(8 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_8
 
 //----------------------------------------------------------------------
@@ -498,12 +577,21 @@ PolynomialTable*)     // unused
     sdEdge[2] = 8;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(16 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(16 * length);
+        else
+            return -1;
+    }
 }//ExtractData3D_2_8
 
 //----------------------------------------------------------------------
@@ -530,12 +618,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 12;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(12 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(12 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_12
 
 //----------------------------------------------------------------------
@@ -562,12 +659,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 13;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(13 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(13 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_13
 
 //----------------------------------------------------------------------
@@ -594,12 +700,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 76;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(76 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(76 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_76
 
 //----------------------------------------------------------------------
@@ -626,12 +741,21 @@ PolynomialTable*)     // unused
     sdEdge[1] = 49;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(49 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(49 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_49
 
 //----------------------------------------------------------------------
@@ -658,20 +782,29 @@ PolynomialTable*)     // unused
     sdEdge[1] = 100;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(100 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(100 * length);
+        else
+            return -1;
+    }
 }//ExtractData2D_100
 
 //----------------------------------------------------------------------
-// Function:    ExtractData2D_810 ([][810])
+// Function:    ExtractData2D_3240 ([][3240])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
 int
-ExtractData2D_810(
+ExtractData2D_3240(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
@@ -687,16 +820,25 @@ PolynomialTable*)     // unused
     sdStride[0] = stride;
     sdStride[1] = 1;
     sdEdge[0] = length;
-    sdEdge[1] = 810;
+    sdEdge[1] = 3240;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(3240 * length);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
-}//ExtractData2D_810
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(3240 * length);
+        else
+            return -1;
+    }
+}//ExtractData2D_3240
 
 //----------------------------------------------------------------------
 // Function:    ExtractData2D_2_uint2_float ([][76])
@@ -730,19 +872,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -757,7 +899,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 76);
 
 }//ExtractData2D_76_uint2_float
 
@@ -792,19 +934,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -819,7 +961,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 76);
 
 }//ExtractData2D_76_int2_float
 
@@ -855,19 +997,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -882,7 +1024,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 100);
 
 }//ExtractData2D_100_uint2_float
 
@@ -918,19 +1060,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -945,16 +1087,16 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 100);
 
 }//ExtractData2D_100_int2_float
 
 //----------------------------------------------------------------------
-// Function:    ExtractData2D_810_uint2_float ([][810])
+// Function:    ExtractData2D_3240_uint2_float ([][3240])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
 int
-ExtractData2D_810_uint2_float(
+ExtractData2D_3240_uint2_float(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
@@ -966,7 +1108,7 @@ PolynomialTable*)     // unused
     assert(l1File != 0);
     // alloc space to hold unsigned short integers
     unsigned short* tempBuffer =
-             (unsigned short*) calloc(length * 810, sizeof(unsigned short));
+             (unsigned short*) calloc(length * 3240, sizeof(unsigned short));
     assert(tempBuffer != 0);
 
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -975,32 +1117,32 @@ PolynomialTable*)     // unused
     sdStride[0] = stride;
     sdStride[1] = 1;
     sdEdge[0] = length;
-    sdEdge[1] = 810;
+    sdEdge[1] = 3240;
 
     if (stride == 1 || stride == 0)
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
     unsigned short* ushortP = tempBuffer;
     for (int i=0; i < length; i++)
     {
-        for (int j=0; j < 810; j++, floatP++, ushortP++)
+        for (int j=0; j < 3240; j++, floatP++, ushortP++)
         {
             
             *floatP = (float) (scaleFactor * (*ushortP));
@@ -1008,16 +1150,16 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 3240);
 
-}//ExtractData2D_810_uint2_float
+}//ExtractData2D_3240_uint2_float
 
 //----------------------------------------------------------------------
-// Function:    ExtractData2D_810_int2_float ([][810])
+// Function:    ExtractData2D_3240_int2_float ([][3240])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
 int
-ExtractData2D_810_int2_float(
+ExtractData2D_3240_int2_float(
 TlmHdfFile* l1File,
 int32*      sdsIDs,
 int32       start,
@@ -1028,7 +1170,7 @@ PolynomialTable*)     // unused
 {
     assert(l1File != 0);
     // alloc space to hold short integers
-    short* tempBuffer = (short*) calloc(length * 810, sizeof(short));
+    short* tempBuffer = (short*) calloc(length * 3240, sizeof(short));
     assert(tempBuffer != 0);
 
     int32 sdStart[2], sdStride[2], sdEdge[2];
@@ -1037,32 +1179,32 @@ PolynomialTable*)     // unused
     sdStride[0] = stride;
     sdStride[1] = 1;
     sdEdge[0] = length;
-    sdEdge[1] = 810;
+    sdEdge[1] = 3240;
 
     if (stride == 1 || stride == 0)
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
     short* ushortP = tempBuffer;
     for (int i=0; i < length; i++)
     {
-        for (int j=0; j < 810; j++, floatP++, ushortP++)
+        for (int j=0; j < 3240; j++, floatP++, ushortP++)
         {
             
             *floatP = (float) (scaleFactor * (*ushortP));
@@ -1070,9 +1212,9 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 3240);
 
-}//ExtractData2D_810_int2_float
+}//ExtractData2D_3240_int2_float
 
 //----------------------------------------------------------------------
 // Function:    ExtractData3D_76_4_uint2_float ([][76][4])
@@ -1109,19 +1251,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -1133,7 +1275,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 304);
 
 }//ExtractData3D_76_4_uint2_float
 
@@ -1171,19 +1313,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -1195,7 +1337,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 304);
 
 }//ExtractData3D_76_4_int2_float
 
@@ -1226,12 +1368,21 @@ PolynomialTable*)     // unused
     sdEdge[2] = 12;
 
     if (stride == 1 || stride == 0)
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  NULL, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+           return(length * 1200);
+        else
+            return -1;
+    }
     else
-        return (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
-                  sdStride, sdEdge, buffer) == HDF_SUCCEED ?  TRUE : FALSE);
-
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+           return(length * 1200);
+        else
+            return -1;
+    }
 }//ExtractData3D_100_12
 
 //----------------------------------------------------------------------
@@ -1269,19 +1420,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -1293,7 +1444,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 800);
 
 }//ExtractData3D_100_8_uint2_float
 
@@ -1331,19 +1482,19 @@ PolynomialTable*)     // unused
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
     else
     {
         if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
                   sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
-            return FALSE;
+            return -1;
     }
 
     // get the scale factor
     float64  scaleFactor;
     if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
-        return FALSE;
+        return -1;
 
     // convert the short integers to floats, and return
     float* floatP = (float*)buffer;
@@ -1355,7 +1506,7 @@ PolynomialTable*)     // unused
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length * 800);
 
 }//ExtractData3D_100_8_int2_float
 
@@ -1894,7 +2045,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 0_1 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -1904,7 +2055,7 @@ PolynomialTable*)     // unused
         charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 1, 2);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract16Bit0_1
 
@@ -1930,7 +2081,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 2_3 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -1940,7 +2091,7 @@ PolynomialTable*)     // unused
         charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 3, 2);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract16Bit2_3
 
@@ -1966,7 +2117,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 0_3 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -1976,7 +2127,7 @@ PolynomialTable*)     // unused
         charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 3, 4);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract16Bit0_3
 
@@ -2002,7 +2153,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 0_14 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -2012,7 +2163,7 @@ PolynomialTable*)     // unused
         shortP[i] = EXTRACT_GET_BITS(tempBuffer[i], 13, 14);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract16Bit0_13
 
@@ -2918,7 +3069,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                               length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 0_1 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -2928,7 +3079,7 @@ PolynomialTable*)     // unused
         charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 1, 2);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract32Bit0_1
 
@@ -2954,7 +3105,7 @@ PolynomialTable*)     // unused
 
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride,
                    length, tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // extract bit 5_7 only and return the buffer
     (void)memset(buffer, 0, length);
@@ -2964,7 +3115,7 @@ PolynomialTable*)     // unused
         charP[i] = EXTRACT_GET_BITS(tempBuffer[i], 6, 3);
     }
     free((void*) tempBuffer);
-    return TRUE;
+    return(length);
 
 }//Extract32Bit4_6
 
@@ -2991,7 +3142,7 @@ PolynomialTable*)     // unused
     // get the array of double
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     //----------------------------------------------------
     // convert the doubles to Itime, add to the base,
@@ -3010,14 +3161,18 @@ int output_string[L1_TIME_LEN];
 l1TaiTime.ItimeToL1(output_string);
 fprintf(stdout, "%s\n", output_string);
 #endif
+
+        l1TaiTime.ItimeToChar6(ptr);
+#if 0
         // return Char6 in buffer
         memcpy(ptr,     (char *)&(l1TaiTime.sec), sizeof(int));
         memcpy(ptr + 4, (char *)&(l1TaiTime.ms), sizeof(short));
+#endif
         ptr += 6;
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length);
 
 }//ExtractTaiTime
 
@@ -3036,16 +3191,16 @@ VOIDP      buffer,
 PolynomialTable*)     // unused
 {
     // alloc space to hold short integers
-    char* tempBuffer =(char*) calloc(L1_TIME_LEN * length, sizeof(char));
+    char* tempBuffer =(char*) calloc((L1_TIME_LEN - 1) * length, sizeof(char));
     assert(tempBuffer != 0);
 
     if (VSseek(vdIDs[0], start) == FAIL)
-        return FALSE;
+        return -1;
 
     // get the L1 time strings
     if (VSread(vdIDs[0], (unsigned char*)tempBuffer,
                        length, FULL_INTERLACE) == FAIL)
-        return FALSE;
+        return -1;
 
     //----------------------------------------------------
     // convert the L1 time string to Itime, add to the base,
@@ -3057,15 +3212,18 @@ PolynomialTable*)     // unused
     {
         Itime itime;
         if ( ! itime.L1ToItime(l1TimeString))
-            return FALSE;
-        l1TimeString += L1_TIME_LEN;
+            return -1;
+        (void) itime.ItimeToChar6(ptr);
+#if 0
         memcpy(ptr,     (char *)&(itime.sec), sizeof(int));
         memcpy(ptr + 4, (char *)&(itime.ms), sizeof(short));
+#endif
+        l1TimeString += L1_TIME_LEN - 1;
         ptr += 6;
     }
     free((void*) tempBuffer);
 
-    return TRUE;
+    return(length);
 
 }//ExtractL1Time
 
@@ -3092,7 +3250,7 @@ PolynomialTable*)     // unused
     // get the array of unsigned int
     if (l1File->GetDatasetData1D(sdsIDs[0], start, stride, length,
                     (VOIDP)tempBuffer) != HDF_SUCCEED)
-        return FALSE;
+        return -1;
 
     // convert the meter to kilometer, and return
     float* floatP = (float*)buffer;
@@ -3101,7 +3259,7 @@ PolynomialTable*)     // unused
         *floatP = tempBuffer[i] / 1000.0;
     }
     free((void*) tempBuffer);
-    return(TRUE);
+    return(length);
 
 } //ExtractData1D_m_km
 
@@ -3299,7 +3457,7 @@ PolynomialTable*)     // unused
     for (int i=0; i < length; i++, floatP++)
         *floatP *= EA_CONST_DEGREES_TO_RADIANS;
 
-    return(TRUE);
+    return(length);
 
 } //ExtractData1D_int2_float_dtr
 
@@ -3327,7 +3485,7 @@ PolynomialTable*)     // unused
     {
         *floatP *= EA_CONST_DEGREES_TO_RADIANS;
     }
-    return(TRUE);
+    return(length);
 
 } //ExtractData1D_float_dtr
 
@@ -3354,7 +3512,7 @@ PolynomialTable*)     // unused
          for (int i=0; i < 100; i++, floatP++)
              *floatP *= EA_CONST_DEGREES_TO_RADIANS;
 
-    return TRUE;
+    return(length * 100);
 
 }//ExtractData2D_100_float_dtr
 
@@ -3380,7 +3538,7 @@ PolynomialTable*)     // unused
     for (int j=0; j < length; j++)
          for (int i=0; i < 100; i++, floatP++)
             *floatP *= EA_CONST_DEGREES_TO_RADIANS;
-    return TRUE;
+    return(length * 100);
 
 }//ExtractData2D_100_uint2_float_dtr
 
@@ -3407,9 +3565,63 @@ PolynomialTable*)     // unused
          for (int i=0; i < 100; i++, floatP++)
         *floatP *= EA_CONST_DEGREES_TO_RADIANS;
 
-    return TRUE;
+    return(length * 100);
 
 }//ExtractData2D_100_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_3240_int2_float_dtr ([][3240])
+// Extracts:    float[3240]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_3240_int2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_3240_int2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 3240; i++, floatP++)
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+
+    return(length * 3240);
+
+}//ExtractData2D_3240_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_3240_uint2_float_dtr ([][3240])
+// Extracts:    float[3240]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_3240_uint2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_3240_uint2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 3240; i++, floatP++)
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+
+    return(length * 3240);
+
+}//ExtractData2D_3240_uint2_float_dtr
 
 //----------------------------------------------------------------------
 // Function:    ExtractData3D_100_8_int2_float_dtr ([][100][8])
@@ -3437,7 +3649,7 @@ PolynomialTable*)     // unused
             *floatP *= EA_CONST_DEGREES_TO_RADIANS;
     }
 
-    return TRUE;
+    return(length * 800);
 
 }//ExtractData3D_100_8_int2_float_dtr
 
@@ -3467,7 +3679,7 @@ PolynomialTable*)     // unused
             *floatP *= EA_CONST_DEGREES_TO_RADIANS;
     }
 
-    return TRUE;
+    return(length * 800);
 
 }//ExtractData3D_100_8_uint2_float_dtr
 
@@ -3498,6 +3710,586 @@ PolynomialTable*)     // unused
     *delta = newInstTime - lastInstTime;
     lastInstTime = newInstTime;
 
-    return TRUE;
+    return 1;
 
 }//ExtractDeltaInstTime
+
+//----------------------------------------------------------------------
+// Function:    _extractOneSlicePowerDn
+//              extract just one slice of power DN
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+static int
+_extractOneSlicePowerDn(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+uint32      sliceIndex,   // slice 0 - 11
+VOIDP       buffer)
+{
+    assert(l1File != 0);
+    int32 sdStart[3], sdEdge[3];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStart[2] = 0;
+    sdEdge[0] = 1;
+    sdEdge[1] = 100;
+    sdEdge[2] = 12;
+
+    unsigned int buf12slices[100][12];
+    if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buf12slices) != HDF_SUCCEED)
+        return -1;
+
+    unsigned int* uintP = (unsigned int*)buffer;
+    for (int i=0; i < 100; i++)
+        *uintP++ = buf12slices[i][sliceIndex];
+
+   return(100);
+
+}//_extractOneSlicePowerDn
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice1
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice1(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 0, buffer));
+
+} // ExtractPowerDnSlice1
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice2
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice2(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 1, buffer));
+
+} // ExtractPowerDnSlice2
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice3
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice3(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 2, buffer));
+
+} // ExtractPowerDnSlice3
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice4
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice4(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 3, buffer));
+
+} // ExtractPowerDnSlice4
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice5
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice5(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 4, buffer));
+
+} // ExtractPowerDnSlice5
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice6
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice6(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 5, buffer));
+
+} // ExtractPowerDnSlice6
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice7
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice7(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 6, buffer));
+
+} // ExtractPowerDnSlice7
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice8
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice8(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 7, buffer));
+
+} // ExtractPowerDnSlice8
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice9
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice9(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 8, buffer));
+
+} // ExtractPowerDnSlice9
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice10
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice10(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 9, buffer));
+
+} // ExtractPowerDnSlice10
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice11
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice11(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 10, buffer));
+
+} // ExtractPowerDnSlice11
+
+//----------------------------------------------------------------------
+// Function:    ExtractPowerDnSlice12
+// Extracts:    DATA_UINT4_100
+//----------------------------------------------------------------------
+int
+ExtractPowerDnSlice12(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // extract one at a time
+    if (length != 1) return -1;
+
+    return(_extractOneSlicePowerDn(l1File, sdsIDs, start, 11, buffer));
+
+} // ExtractPowerDnSlice12
+
+//----------------------------------------------------------------------
+// Function:    ExtractFloat4_dB
+// Extracts:    unsigned int, then convert to dB
+//----------------------------------------------------------------------
+int
+ExtractFloat4_dB(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0 && length > 0);
+
+    // alloc space to hold unsigned ints
+    unsigned int* tempBuffer =
+              (unsigned int*)malloc(length * sizeof(unsigned int));
+
+    int rc = ExtractData1D(l1File, sdsIDs, start, stride, length, tempBuffer);
+    if (rc <= 0)
+        return rc;
+
+    // now convert it to dB
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        *floatP++ = (float) EA_DN_TO_DB(tempBuffer[i]);
+    }
+
+    free((void*) tempBuffer);
+    return(length);
+
+} // ExtractFloat4_dB
+
+//----------------------------------------------------------------------
+// Function:    ExtractFloat4_12_dB
+// Extracts:    unsigned int[12], then convert to dB
+//----------------------------------------------------------------------
+int
+ExtractFloat4_12_dB(
+TlmHdfFile*      l1File,
+int32*           sdsIDs,
+int32            start,
+int32            stride,
+int32            length,
+VOIDP            buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0 && length > 0);
+
+    // alloc space to hold unsigned ints
+    unsigned int* tempBuffer =
+              (unsigned int*)malloc(length * 12 * sizeof(unsigned int));
+
+    int rc = ExtractData2D_12(l1File, sdsIDs,
+                             start, stride, length, tempBuffer);
+    if (rc <= 0)
+        return rc;
+
+    // now convert it to dB
+    float* floatP = (float*)buffer;
+    unsigned int* uintP = (unsigned int*)tempBuffer;
+    for (int i=0; i < length; i++)
+        for (int j=0; j < 12; j++)
+    {
+        *floatP++ = (float) EA_DN_TO_DB(*uintP++);
+    }
+
+    free((void*) tempBuffer);
+    return(length * 12);
+
+} // ExtractFloat4_12_dB
+
+//----------------------------------------------------------------------
+// Function:    ExtractOrbitPeriod
+// Extracts:    UINT4[]
+//----------------------------------------------------------------------
+int
+ExtractOrbitPeriod(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       ,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // this holds the orbit time extracted previously
+    static unsigned long prevOrbitTime=0;
+
+    // extract one at a time
+    if (length != 1) return -1;
+ 
+    assert(l1File != 0);
+ 
+    // find out the current orbit time
+    unsigned long orbitTime;
+    if (l1File->GetDatasetData1D(sdsIDs[0], start, 1, 1, &orbitTime)
+                         != HDF_SUCCEED)
+        return(-1);
+
+    // orbit time is reset, this is the beginning of a new orbit
+    // we want the previous ticks
+    if (orbitTime <= prevOrbitTime)
+    {
+        memcpy(buffer, &prevOrbitTime, sizeof(unsigned long));
+        prevOrbitTime = orbitTime;
+        return 1;
+    }
+    else
+    {
+        prevOrbitTime = orbitTime;
+        return 0;
+    }
+
+} // ExtractOrbitPeriod
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDN
+// Extracts:    UINT2[][100]
+//----------------------------------------------------------------------
+int
+ExtractAntSpinRateDN(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       ,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    // this holds the antenna position extracted previously
+    // if _prevAntPos is not set then it is not called from one 
+    // of the EU extraction function
+    if (_prevAntPos == 0)
+        _prevAntPos = &_prevAntPos_dn;
+
+    // extract one at a time
+    if (length != 1)
+    {
+        _prevAntPos = 0;
+        return -1;
+    }
+ 
+    assert(l1File != 0);
+ 
+    // find out the raw antenna position
+    unsigned short antPos[100];;
+    int32 antposSdsIds[1];
+    antposSdsIds[0] = sdsIDs[0];
+    int rc = ExtractData2D_100(l1File, antposSdsIds, start, 0, 1, antPos);
+    if (rc <= 0)
+    {
+        _prevAntPos = 0;
+        return rc;
+    }
+
+    // spin rate is the delta antenna position
+    unsigned short * tempBuf = (unsigned short *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = antPos[i] - *_prevAntPos;
+        *_prevAntPos = antPos[i];
+        tempBuf++;
+    }
+    _prevAntPos = 0;
+    return 1;
+
+} // ExtractAntSpinRateDN
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDegree
+// Extracts:    FLOAT4[][100]
+//----------------------------------------------------------------------
+int
+ExtractAntSpinRateDegree(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    if (length != 1) return -1;
+
+    if (polyTable == 0)
+    {
+        fprintf(stderr, "Antenna Spin Rate degrees: No polynomial table\n");
+        return -1;
+    }
+
+    // get polynomial for antenna position/degrees
+    static const Polynomial* antPosPoly=0;
+    if (antPosPoly == 0)
+    {
+        antPosPoly = polyTable->SelectPolynomial(
+                                 "antenna_position", "degrees");
+    }
+    if (antPosPoly == 0)
+    {
+        fprintf(stderr, "Antenna Spin Rate deg/sec: "
+                        "No polynomial for antenna position\n");
+        return -1;
+    }
+    unsigned short spinRateDN[100];
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_deg;
+    int rc = ExtractAntSpinRateDN(l1File, sdsIDs, start, stride,
+                                  1, spinRateDN);
+    if (rc <= 0) return rc;
+
+    // apply polynomial to the float array
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf++ = antPosPoly->Apply((float)spinRateDN[i]);
+    }
+    return 1;
+
+} // ExtractAntSpinRateDegree
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateDegSec
+// Extracts:    FLOAT4[][100]
+//---------------------------------------------------------------------- 
+int
+ExtractAntSpinRateDegSec(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       ,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    // get the antenna position dn in floats
+    // polynomial has been applied
+    float spinRateFloat[100];
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_deg_sec;
+    int rc = ExtractAntSpinRateDegree(l1File, sdsIDs, start, stride,
+                                  1, spinRateFloat, polyTable);
+    if (rc <= 0) return rc;
+
+    // now, get prf cycle time
+    unsigned char prfCycleTime=0;
+    int32 prfSdsIDs[1];
+    prfSdsIDs[0] = sdsIDs[1];
+    if (l1File->GetDatasetData1D(prfSdsIDs[0], start, 1, 1, &prfCycleTime)
+                         != HDF_SUCCEED)
+        return(-1);
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = spinRateFloat[i] * 1000.0 / (float) prfCycleTime;
+        tempBuf++;
+    }
+    return 1;
+
+} // ExtractAntSpinRateDegSec
+
+//----------------------------------------------------------------------
+// Function:    ExtractAntSpinRateRotMin
+// Extracts:    FLOAT4[][100]
+//---------------------------------------------------------------------- 
+int
+ExtractAntSpinRateRotMin(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable* polyTable)
+{
+    if (_prevAntPos == 0) _prevAntPos = &_prevAntPos_rot_min;
+    int rc = ExtractAntSpinRateDegSec(l1File, sdsIDs, start, stride,
+                                  length, buffer, polyTable);
+    if (rc <= 0) return rc;
+
+    float * tempBuf = (float *) buffer;
+    for (int i=0; i < 100; i++)
+    {
+        *tempBuf = *tempBuf / 6.0;
+        tempBuf++;
+    }
+    return 1;
+
+} // ExtractAntSpinRateRotMin

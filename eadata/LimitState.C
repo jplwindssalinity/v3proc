@@ -21,6 +21,7 @@ const char* limitStatusStrings[] =
     "Action High",
     "Limit Checking OK",
     "Invalid Parameter",
+    "Extraction Error",
     "Wrong Data Type",
     "Missing SDS Name",
     "Applying Polynomial to Non Float",
@@ -32,7 +33,7 @@ const char*
 GetLimitStatusString(
 LimitStatusE   limitStatus)
 {
-    if (limitStatus < 0 || limitStatus > ElementNumber(limitStatusStrings))
+    if (limitStatus < 0 || limitStatus > (int)ElementNumber(limitStatusStrings))
         return("Unknown");
     else
         return(limitStatusStrings[(int)limitStatus]);

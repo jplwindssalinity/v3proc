@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   02 Dec 1998 12:54:28   sally
+// use timegm() for linux
+// 
 //    Rev 1.8   04 Nov 1998 15:06:26   sally
 // change shadow var names such as time, remainder
 // 
@@ -104,6 +107,13 @@ int
 Itime::tmToItime(
     struct tm*  tm_time)
 {
+#ifdef INTEL86
+    sec = timegm(tm_time);
+    if (sec == (time_t)-1)
+        return 0;
+    else
+        return 1;
+#else
     // mktime() is affected by timezone
     // but we want UTC timezone
     sec = mktime(tm_time);
@@ -117,6 +127,7 @@ Itime::tmToItime(
         ms = 0;
         return (1);
     }
+#endif
 }
 
 //-----------

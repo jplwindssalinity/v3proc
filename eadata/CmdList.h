@@ -7,6 +7,13 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.10   23 Feb 1999 11:06:00   sally
+// change AddSorted to AddSortedWithArgs
+// so it won't mask SortedList<Command>::AddSorted
+// 
+//    Rev 1.9   29 Jan 1999 15:03:38   sally
+// added LASP commands
+// 
 //    Rev 1.8   19 Aug 1998 13:14:26   daffer
 // More CMDLP/Effects work.
 // 
@@ -96,6 +103,12 @@ public:
     StatusE         SetCmdEffects();
     StatusE         SetCmdExpectedTimes(EqxList* eqxList);
     StatusE         AddSortedCmds(CmdList* cmds);
+
+                    // if args is given, use it instead of from datafile
+    virtual void    AddSortedWithArgs(Command* cmds, const char* args);
+
+                    // return 1 if OK, else 0
+    int             Expand(Command* cmd, const char* args=0);
     Command*        FindNearestMatchable(Command* effect, int* index);
     Command*        MissingL1AVerify(int* index);
     Command*        MissingHk2Verify(int* index);
@@ -111,6 +124,8 @@ public:
 
 protected:
     // Command*        _MatchingCmd(Command* cmd);
+
+    FILE*           _OpenDatafile(Command*      cmd);
 
     StatusE         _status;
 };

@@ -107,7 +107,12 @@ FILE *          ifp)
     //****************************************
     // create a L1A limit checker first
     //****************************************
-    L1ALimitChecker* checker = new L1ALimitChecker(parameter, enable);
+    L1ALimitChecker* checker=0;
+    if (obj._source == SOURCE_L1A_DERIVED)
+        checker = new L1ADrvLimitChecker(parameter, enable);
+    else
+        checker = new L1ALimitChecker(parameter, enable);
+
     if (checker == 0)
         return 0;
     else if (checker->GetStatus() != LIMIT_OK)
@@ -478,7 +483,8 @@ LimitStatusE
 LimitList::CheckFrame(
 PolynomialTable*  polyTable,
 TlmHdfFile*       tlmFile,
-int32             startIndex)
+int32             startIndex,
+int               firstDataOnly)
 {
     LimitChecker* limit;
     limit = GetHead();
@@ -487,7 +493,7 @@ int32             startIndex)
     {
         (void) _limitState->ApplyNewFrame(tlmFile, startIndex);
         LimitStatusE frameStatus = limit->CheckFrame(polyTable, tlmFile,
-                                 startIndex, _logFP, _limitState);
+                          startIndex, _logFP, _limitState, firstDataOnly);
         switch(frameStatus)
         {
             case LIMIT_OK:

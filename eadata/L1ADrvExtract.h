@@ -7,6 +7,10 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.9   23 Dec 1998 16:32:04   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
 //    Rev 1.8   11 Sep 1998 10:29:14   sally
 // add mWatts for all dBm units
 // 
@@ -264,18 +268,8 @@ int ExtractNoiseFigureBDN(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                             PolynomialTable* polyTable);
 int ExtractNoiseFigureBdB(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
                                             PolynomialTable* polyTable);
-int ExtractOrbitPeriod(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
-                                            PolynomialTable* polyTable=0);
 int ExtractAverageNoiseLoadDN(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
                                             PolynomialTable* polyTable=0);
-int ExtractAntSpinRateDN(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
-                                            PolynomialTable* polyTable=0);
-int ExtractAntSpinRateDegree(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
-                                            PolynomialTable* polyTable=0);
-int ExtractAntSpinRateDegSec(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
-                                            PolynomialTable* polyTable);
-int ExtractAntSpinRateRotMin(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
-                                            PolynomialTable* polyTable);
 int ExtractTwt1PowermWatts(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
                                             PolynomialTable* polyTable);
 int ExtractTwt2PowermWatts(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 

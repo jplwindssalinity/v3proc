@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   23 Feb 1999 11:14:28   sally
+// change NULL to 0
+// 
 //    Rev 1.0   04 Feb 1998 14:16:20   daffer
 // Initial checking
 // Revision 1.2  1998/01/30 22:29:17  daffer
@@ -31,7 +34,7 @@ static const char ListBase_C_rcsid[] =
 //==================
 
 NodeBase::NodeBase()
-:   prev(NULL), next(NULL)
+:   prev(0), next(0)
 {
     return;
 }
@@ -47,7 +50,7 @@ NodeBase::~NodeBase()
 //==================
 
 ListBase::ListBase()
-:   _head(NULL), _tail(NULL), _current(NULL)
+:   _head(0), _tail(0), _current(0)
 {
     return;
 }
@@ -80,8 +83,8 @@ ListBase::AppendList(
         _tail = added_list->_tail;
     }
     // unattach from added_list
-    added_list->_head = NULL;
-    added_list->_tail = NULL;
+    added_list->_head = 0;
+    added_list->_tail = 0;
     return;
 }
 
@@ -159,8 +162,8 @@ ListBase::_Prepend(
     else
     {
         // list is empty
-        node->prev = NULL;
-        node->next = NULL;
+        node->prev = 0;
+        node->next = 0;
         _head = _tail = _current = node;
     }
     return;
@@ -180,7 +183,7 @@ ListBase::_Append(
     if (_tail)
     {
         // end of list exists, just append
-        node->next = NULL;
+        node->next = 0;
         node->prev = _tail;
         _tail->next = node;
         _tail = _current = node;
@@ -188,8 +191,8 @@ ListBase::_Append(
     else
     {
         // list is empty
-        node->prev = NULL;
-        node->next = NULL;
+        node->prev = 0;
+        node->next = 0;
         _head = _tail = _current = node;
     }
     return;
@@ -207,16 +210,16 @@ void
 ListBase::_InsertBefore(
     NodeBase*   node)
 {
-    if (_current == NULL)
+    if (_current == 0)
         _current = _head;
 
-    if (_head == NULL)
+    if (_head == 0)
     {
         // empty list
         _head = node;
         _tail = node;
-        node->prev = NULL;
-        node->next = NULL;
+        node->prev = 0;
+        node->next = 0;
     }
     else if (_current == _head)
     {
@@ -250,21 +253,21 @@ void
 ListBase::_InsertAfter(
     NodeBase*   node)
 {
-    if (_current == NULL)
+    if (_current == 0)
         _current = _tail;
 
-    if (_head == NULL)
+    if (_head == 0)
     {
         // empty list
         _head = node;
         _tail = node;
-        node->prev = NULL;
-        node->next = NULL;
+        node->prev = 0;
+        node->next = 0;
     }
     else if (_current == _tail)
     {
         // node goes after tail
-        node->next = NULL;
+        node->next = 0;
         node->prev = _tail;
         _tail->next = node;
         _tail = node;
@@ -291,8 +294,8 @@ NodeBase*
 ListBase::_RemoveCurrent()
 {
     NodeBase* current = _current;
-    if (_current == NULL)
-        return (NULL);
+    if (_current == 0)
+        return (0);
     if (_current->prev)
         _current->prev->next = _current->next;
     if (_current->next)

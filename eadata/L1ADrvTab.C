@@ -7,6 +7,13 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.16   23 Dec 1998 16:32:14   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
+//    Rev 1.15   20 Nov 1998 16:03:18   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.14   09 Nov 1998 11:24:40   sally
 // took out duplicated entries and fixed some unit names
 // 
@@ -530,23 +537,6 @@ const ParTabEntry L1ADerivedParTab[] =
     }
   },
 
-  { ORBIT_PERIOD, "Orbit Period", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
-               "orbit_time", 1, {
-      { UNIT_COUNTS, "ticks", DATA_UINT4, 0, ExtractOrbitPeriod, pr_uint4 }
-    }
-  },
-  { ANT_SPIN_RATE, "Antenna Spin Rate", SOURCE_L1A_DERIVED, MEAS_QUANTITY,
-               "antenna_position,prf_cycle_time", 4, {
-      { UNIT_DN, "dn/pri", DATA_UINT2_100, 0,
-                             ExtractAntSpinRateDN, pr_uint2_100 },
-      { UNIT_DEGREES, "degrees/pri", DATA_FLOAT4_100, 0,
-                             ExtractAntSpinRateDegree, pr_float4_6_100 },
-      { UNIT_DEG_SEC, "degrees/sec", DATA_FLOAT4_100, 0,
-                             ExtractAntSpinRateDegSec, pr_float4_6_100 },
-      { UNIT_ROT_MIN, "rotation/min", DATA_FLOAT4_100, 0,
-                             ExtractAntSpinRateRotMin, pr_float4_6_100 }
-    }
-  },
 };
 
 const int L1ADerivedTabSize = ElementNumber(L1ADerivedParTab);

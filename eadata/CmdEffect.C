@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   29 Jan 1999 15:03:24   sally
+// added LASP commands
+// 
 //    Rev 1.1   19 Aug 1998 14:37:28   daffer
 // cmdlp work
 // 
@@ -674,7 +677,7 @@ CmdEffect::ApplyCmd(
         //-----
         // Modulation on
         //-----
-    case EA_CMD_SCTMDON:
+    case EA_CMD_SCTMDONN:
         return(EFF_MODULATION_ON);
         break;
         

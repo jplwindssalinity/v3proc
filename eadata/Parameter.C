@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.6   20 Nov 1998 16:03:34   sally
+// change some data types and limit check arrays
+// 
 //    Rev 1.5   13 Oct 1998 15:34:24   sally
 // added L1B file
 // 

@@ -7,6 +7,17 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.23   23 Feb 1999 11:13:06   sally
+// L2A array size chaned from 810 to 3240
+// 
+//    Rev 1.22   23 Dec 1998 16:32:32   sally
+// move "Orbit Period" and "Antenna Spin Rate" from derived L1A to L1A,
+// because it returns one single value only, not 100 pulses of values.
+// 
+//    Rev 1.21   07 Dec 1998 15:41:34   sally
+// add ExtractPowerDnSlice??()
+// for sliced power_dn.
+// 
 //    Rev 1.20   10 Nov 1998 08:51:52   sally
 // add delta instrument time because the instrument seems to skip cycle
 // 
@@ -105,6 +116,8 @@ static const char rcs_id_l1_extract_h[] =
 #define INST_TIME_TO_DAYS       (1.0/2764800.0)     // 1 / (32 * 60 * 60 * 24)
 #define INST_TIME_TO_MS         (1000.0/32.0)
 
+#define EA_DN_TO_DB(x)  ( 10 * log10((double) x) )
+
 //=====> DEFINES FOR RFS TRIP EXTRACTOR <====
 #define TRIP1MSB 0X8C18
 #define TRIP1LSB 0X8C19
@@ -201,7 +214,7 @@ int ExtractData2D_49     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_100    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
-int ExtractData2D_810    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+int ExtractData2D_3240   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_76_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
@@ -211,9 +224,9 @@ int ExtractData2D_100_uint2_float (TlmHdfFile*, int32*, int32, int32, int32,
                                           VOIDP, PolynomialTable* polyTable=0);
 int ExtractData2D_100_int2_float (TlmHdfFile*, int32*, int32, int32, int32,
                                           VOIDP, PolynomialTable* polyTable=0);
-int ExtractData2D_810_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+int ExtractData2D_3240_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
-int ExtractData2D_810_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+int ExtractData2D_3240_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
 
 
@@ -426,6 +439,36 @@ int Extract_uint1_eu_mWatts  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
 int ExtractDeltaInstTime  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 
+int ExtractPowerDnSlice1  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice2  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice3  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice4  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice5  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice6  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice7  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice8  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice9  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice10 (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice11 (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractPowerDnSlice12 (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
+int ExtractFloat4_dB (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractFloat4_12_dB (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+
 //--------------------------------------------
 // some general extract+converson functions
 //--------------------------------------------
@@ -442,9 +485,24 @@ int ExtractData2D_100_uint2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 int ExtractData2D_100_int2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_3240_uint2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_3240_int2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 int ExtractData3D_100_8_int2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 int ExtractData3D_100_8_uint2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+
+int ExtractOrbitPeriod(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable=0);
+int ExtractAntSpinRateDN(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable=0);
+int ExtractAntSpinRateDegree(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable=0);
+int ExtractAntSpinRateDegSec(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
+int ExtractAntSpinRateRotMin(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
 
 #endif //L1AEXTRACT_H

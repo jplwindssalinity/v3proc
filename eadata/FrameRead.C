@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   07 Dec 1998 15:40:12   sally
+// add FrameReadBits0_13() for "Source Sequence Count"
+// 
 //    Rev 1.7   09 Sep 1998 15:05:04   sally
 // fixed frame count bits
 // 
@@ -109,4 +112,20 @@ char*   data)
     else return 0;
 
 } // FrameReadFrameNo
+
+int
+FrameReadBits0_13(
+int     infd,
+char*   data)
+{
+    unsigned short uint2;
+    if (read(infd, &uint2, 2) == 2)
+    {
+        uint2 &= 0x3fff;
+        (void)memcpy(data, (void*) &uint2, 2);
+        return 1;
+    }
+    else return 0;
+
+} // FrameReadBits0_13
 
