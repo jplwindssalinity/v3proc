@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 2000-2002, California Institute of Technology. //
+// Copyright (C) 2000-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -8,7 +8,7 @@
 //    tiff
 //
 // SYNOPSIS
-//    tiff [ -bgs ] [ -c colormap ] [ -q # ] [ -x # ] [ -y # ]
+//    tiff [ -bdgs ] [ -c colormap ] [ -q # ] [ -x # ] [ -y # ]
 //        <input_array> [ output_tiff ]
 //
 // DESCRIPTION
@@ -16,6 +16,7 @@
 //
 // OPTIONS
 //    [ -b ]       Bar. Generate a color bar strip too. input_array.bar.tiff
+//    [ -d ]       Dump. Just output the raw data to stdout.
 //    [ -g ]       Guess at the dimensions and ask.
 //    [ -s ]       Scale. Linearly scale the array values to match
 //                   the range of colors in the colormap.
@@ -83,7 +84,7 @@ template class SortableList<CMNode>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING       "bgsc:q:x:y:"
+#define OPTSTRING       "bdgsc:q:x:y:"
 #define TIFF_EXTENSION  "tiff"
 #define COLORBAR_WIDTH  50
 
@@ -99,6 +100,7 @@ void  infowrite(int x_size, int y_size, const char* filename,
 //------------------//
 
 int opt_bar = 0;
+int opt_dump = 0;
 int opt_guess = 0;
 int opt_scale = 0;
 int opt_rel = 0;
@@ -107,7 +109,7 @@ int opt_rel = 0;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -bgs ]", "[ -c colormap ]", "[ -q # ]",
+const char* usage_array[] = { "[ -bdgs ]", "[ -c colormap ]", "[ -q # ]",
     "[ -x # ]", "[ -y # ]", "<input_array>", "[ output_tiff ]", 0 };
 
 int  x_size = -1;
@@ -141,6 +143,9 @@ main(
         {
         case 'b':
             opt_bar = 1;
+            break;
+        case 'd':
+            opt_dump = 1;
             break;
         case 'g':
             opt_guess = 1;
@@ -313,6 +318,18 @@ main(
         }
     }
 
+    //---------------//
+    // dump the data //
+    //---------------//
+
+    if (opt_dump) {
+        for (int x = 0; x < x_size; x++) {
+            for (int y = 0; y < y_size; y++) {
+                printf("%g\n", array[x][y]);
+            }
+        }
+    }
+
     //----------------------//
     // find the map extrema //
     //----------------------//
@@ -403,8 +420,10 @@ main(
 
     free_array(array, 2, x_size, y_size);
 
-    printf("TIFF Written...\n");
-    infowrite(x_size, y_size, tiff_file);
+    if (! opt_dump) {
+        printf("TIFF Written...\n");
+        infowrite(x_size, y_size, tiff_file);
+    }
 
     //----------------------//
     // generate a color bar //
