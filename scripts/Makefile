@@ -7,6 +7,7 @@ SCRIPTS = \
 	l2b_eval \
 	l2b_metrics_plot \
 	sim_script \
+	sim_script_update \
 	process_script \
 	grid_script \
 	l2b_rms_plot
