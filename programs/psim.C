@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -274,6 +274,42 @@ main(
         exit(1);
     }
 
+    //-----------------------------------------------------//
+    // configure topographic map and frequency shift table //
+    //-----------------------------------------------------//
+
+    Topo topo;
+    Topo* topo_ptr = NULL;
+    Stable stable;
+    Stable* stable_ptr = NULL;
+
+    int use_topomap;
+    config_list.ExitForMissingKeywords();
+    config_list.GetInt(USE_TOPOMAP_KEYWORD, &use_topomap);
+    if (use_topomap)
+    {
+        char* topomap_file = config_list.Get(TOPOMAP_FILE_KEYWORD);
+        if (! topo.Read(topomap_file))
+        {
+            fprintf(stderr, "%s: error reading topographic map %s\n",
+                command, topomap_file);
+            exit(1);
+        }
+        topo_ptr = &topo;
+
+        char* stable_file = config_list.Get(STABLE_FILE_KEYWORD);
+        if (! stable.Read(stable_file))
+        {
+            fprintf(stderr, "%s: error reading S Table %s\n", command,
+                stable_file);
+            exit(1);
+        }
+        int stable_mode_id;
+        config_list.GetInt(STABLE_MODE_ID_KEYWORD, &stable_mode_id);
+        stable.SetModeId(stable_mode_id);
+        stable_ptr = &stable;
+    }
+
     //-------------------------------------//
     // read the geophysical model function //
     //-------------------------------------//
@@ -472,7 +508,8 @@ main(
                     pscat.SetOtherAzimuths(&spacecraft);
 
                     pscat_sim.ScatSim(&spacecraft, &pscat, &pscat_event,
-                        &windfield, &gmf, &kp, &kpmField, &(l1a.frame));
+                        &windfield, &gmf, &kp, &kpmField, topo_ptr,
+                        stable_ptr, &(l1a.frame));
                     pscat_sim.DetermineNextEvent(&pscat, &pscat_event);
                     break;
                 case PscatEvent::LOOPBACK_EVENT:
