@@ -87,13 +87,21 @@ L2AToL2B::ConvertAndWrite(
 			return(5);
 		}
 	}
+    else if (useH1Flag)
+    {
+        if (! gmf->RetrieveWindsH1(meas_list, kp, wvc))
+        {
+            delete wvc;
+            return(6);
+        }
+    }
 	else if(usePeakSplitting)
 	{
 		if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
 			onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
 		{
 			delete wvc;
-			return(6);
+			return(7);
 		}
 	}
 	else 
@@ -101,14 +109,14 @@ L2AToL2B::ConvertAndWrite(
 		if (! gmf->RetrieveWinds(meas_list, kp, wvc))
 		{
 			delete wvc;
-			return(7);
+			return(8);
 		}
 	}
 
 	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
-		return(8);
+		return(9);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
