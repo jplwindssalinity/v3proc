@@ -21,20 +21,24 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	sim \
-	l00_to_l1a \
-	l1a_hdf_to_l1a \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_to_l2b \
+	l2b_medianfilter \
+	l2b_metrics \
 	l2a_filter \
+	l1b_ascii \
+	l2a_s0 \
+	l2b_to_vctr \
+	psim \
+	pl1a_to_l1b \
+	pl1a_to_ascii \
+	l1a_hdf_to_l1a \
 	plot_wr_curves \
 	l2ab_25to50 \
-	l2b_medianfilter \
-	l2b_to_vctr \
 	l2b_diff \
 	l2b_diff_from_truth \
 	test_hdf_l2b \
-	l2b_metrics \
 	l2b_manyMet \
 	see_spot \
 	eqx \
@@ -47,7 +51,6 @@ PROGRAMS = \
 	cds_tracking_check \
 	memfilter \
 	fake_vap \
-	l1b_ascii \
 	l1b_hdf_to_l1b \
 	l1b_outlines \
 	l1b_to_kprtable \
@@ -57,7 +60,6 @@ PROGRAMS = \
 	l2a_centroids \
 	l2a_maps \
 	l2_kp \
-	l2a_s0 \
 	l2a_s0l \
 	l2ags_s0l \
 	smooth_kprtable \
@@ -87,14 +89,12 @@ PROGRAMS = \
 	get_X_scan \
     expand_calpulse \
     ephem_to_ascii \
-	psim \
-	pl1a_to_l1b \
-	pl1a_to_ascii \
 	fake_s0_data \
 	gmf_plot \
 	echo_split \
 	gen_foff \
 	BYUX_vs_time \
+	l00_to_l1a \
 	l2b_extract_worst
 #	sim_accurate
 #	generate_kfactor
