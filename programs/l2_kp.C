@@ -272,8 +272,8 @@ main(
     }
     else if (strcmp(wind_source, "truth") == 0)
     {
-        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+        truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
+        truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
         if (! truth.ReadType(truth_file, truth_type))
         {
             fprintf(stderr, "%s: error accessing truth file %s\n",
