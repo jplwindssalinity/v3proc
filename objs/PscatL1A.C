@@ -31,8 +31,8 @@ PscatL1AFrame::PscatL1AFrame()
 
 PscatL1AFrame::~PscatL1AFrame()
 {
-	Deallocate();
-	return;
+    Deallocate();
+    return;
 }
 
 //--------------------//
@@ -41,25 +41,25 @@ PscatL1AFrame::~PscatL1AFrame()
 
 int
 PscatL1AFrame::Allocate(
-	int		number_of_beams,
-	int		antenna_cycles_per_frame,
-	int		slices_per_spot)
+    int  number_of_beams,
+    int  antenna_cycles_per_frame,
+    int  slices_per_spot)
 {
-	antennaCyclesPerFrame = antenna_cycles_per_frame;
-	spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
-	slicesPerSpot = slices_per_spot;
+    antennaCyclesPerFrame = antenna_cycles_per_frame;
+    spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
+    slicesPerSpot = slices_per_spot;
     measPerSlice = 2;
     measPerSpot = measPerSlice * slicesPerSpot;
-	measPerFrame = measPerSpot * spotsPerFrame;
+    measPerFrame = measPerSpot * spotsPerFrame;
 
-	//----------------------------//
-	// allocate antenna positions //
-	//----------------------------//
+    //----------------------------//
+    // allocate antenna positions //
+    //----------------------------//
 
-	antennaPosition = (unsigned short *)malloc(spotsPerFrame *
-		sizeof(unsigned short));
-	if (antennaPosition == NULL)
-		return(0);
+    antennaPosition = (unsigned short *)malloc(spotsPerFrame *
+        sizeof(unsigned short));
+    if (antennaPosition == NULL)
+        return(0);
 
     //-----------------//
     // allocate events //
@@ -69,19 +69,19 @@ PscatL1AFrame::Allocate(
     if (event == NULL)
         return(0);
 
-	//-------------------------------//
-	// allocate science measurements //
-	//-------------------------------//
+    //-------------------------------//
+    // allocate science measurements //
+    //-------------------------------//
 
-	science = (unsigned int *)malloc(measPerFrame * sizeof(unsigned int));
-	if (science == NULL)
-		return(0);
+    science = (unsigned int *)malloc(measPerFrame * sizeof(unsigned int));
+    if (science == NULL)
+        return(0);
 
-	spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
-	if (spotNoise == NULL)
-		return(0);
+    spotNoise = (unsigned int *)malloc(spotsPerFrame * sizeof(unsigned int));
+    if (spotNoise == NULL)
+        return(0);
 
-	return(1);
+    return(1);
 }
 
 //---------------------------//
@@ -91,24 +91,24 @@ PscatL1AFrame::Allocate(
 int
 PscatL1AFrame::Deallocate()
 {
-	if (antennaPosition)
-		free(antennaPosition);
+    if (antennaPosition)
+        free(antennaPosition);
     if (event)
         free(event);
-	if (science)
-		free(science);
-	if (spotNoise)
-		free(spotNoise);
+    if (science)
+        free(science);
+    if (spotNoise)
+        free(spotNoise);
     antennaPosition = NULL;
     event = NULL;
     science = NULL;
     spotNoise = NULL;
-	antennaCyclesPerFrame = 0;
-	spotsPerFrame = 0;
-	slicesPerSpot = 0;
-	measPerSlice = 0;
-	measPerFrame = 0;
-	return(1);
+    antennaCyclesPerFrame = 0;
+    spotsPerFrame = 0;
+    slicesPerSpot = 0;
+    measPerSlice = 0;
+    measPerFrame = 0;
+    return(1);
 }
 
 //--------------------------//
@@ -150,87 +150,87 @@ PscatL1AFrame::FrameSize()
 
 int
 PscatL1AFrame::Pack(
-	char*	buffer)
+    char*  buffer)
 {
-	int idx = 0;
-	int size;
+    int idx = 0;
+    int size;
 
-	size = sizeof(double);
-	memcpy((void *)(buffer + idx), (void *)&time, size);
-	idx += size;
+    size = sizeof(double);
+    memcpy((void *)(buffer + idx), (void *)&time, size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&instrumentTicks, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
+    idx += size;
 
-	size = sizeof(unsigned char);
-	memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
-	idx += size;
+    size = sizeof(unsigned char);
+    memcpy((void *)(buffer + idx), (void *)&orbitStep, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&priOfOrbitStepChange, size);
+    idx += size;
 
-	size = sizeof(float);
-	memcpy((void *)(buffer + idx), (void *)&gcAltitude, size);
-	idx += size;
+    size = sizeof(float);
+    memcpy((void *)(buffer + idx), (void *)&gcAltitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcLongitude, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcLongitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcLatitude, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcLatitude, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcX, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcX, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcY, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcY, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&gcZ, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&gcZ, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velX, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velX, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velY, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velY, size);
+    idx += size;
 
-	memcpy((void *)(buffer + idx), (void *)&velZ, size);
-	idx += size;
+    memcpy((void *)(buffer + idx), (void *)&velZ, size);
+    idx += size;
 
-	float tmp_float;
-	tmp_float = attitude.GetRoll();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    float tmp_float;
+    tmp_float = attitude.GetRoll();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
-	tmp_float = attitude.GetPitch();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    tmp_float = attitude.GetPitch();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
-	tmp_float = attitude.GetYaw();
-	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
-	idx += size;
+    tmp_float = attitude.GetYaw();
+    memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+    idx += size;
 
-	size = sizeof(unsigned short) * spotsPerFrame;
-	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
-	idx += size;
+    size = sizeof(unsigned short) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
+    idx += size;
 
-	size = sizeof(unsigned char) * spotsPerFrame;
-	memcpy((void *)(buffer + idx), (void *)event, size);
-	idx += size;
+    size = sizeof(unsigned char) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)event, size);
+    idx += size;
 
-	size = sizeof(unsigned int) * measPerFrame;
-	memcpy((void *)(buffer + idx), (void *)science, size);
-	idx += size;
+    size = sizeof(unsigned int) * measPerFrame;
+    memcpy((void *)(buffer + idx), (void *)science, size);
+    idx += size;
 
-	size = sizeof(float) * spotsPerFrame;
-	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
-	idx += size;
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+    idx += size;
 
-	return(idx);
+    return(idx);
 }
 
 //-----------------------//
@@ -239,87 +239,87 @@ PscatL1AFrame::Pack(
 
 int
 PscatL1AFrame::Unpack(
-	char*	buffer)
+    char*  buffer)
 {
-	int idx = 0;
-	int size;
+    int idx = 0;
+    int size;
 
-	size = sizeof(double);
-	memcpy((void *)&time, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(double);
+    memcpy((void *)&time, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int);
-	memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int);
+    memcpy((void *)&instrumentTicks, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned char);
-	memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned char);
+    memcpy((void *)&orbitStep, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&priOfOrbitStepChange, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(float);
-	memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(float);
+    memcpy((void *)&gcAltitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcLongitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcLatitude, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcX, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcX, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcY, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcY, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&gcZ, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&gcZ, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velX, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velX, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velY, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velY, (void *)(buffer + idx), size);
+    idx += size;
 
-	memcpy((void *)&velZ, (void *)(buffer + idx), size);
-	idx += size;
+    memcpy((void *)&velZ, (void *)(buffer + idx), size);
+    idx += size;
 
-	float tmp_float;
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetRoll(tmp_float);
-	idx += size;
+    float tmp_float;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetRoll(tmp_float);
+    idx += size;
 
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetPitch(tmp_float);
-	idx += size;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetPitch(tmp_float);
+    idx += size;
 
-	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
-	attitude.SetYaw(tmp_float);
-	idx += size;
+    memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+    attitude.SetYaw(tmp_float);
+    idx += size;
 
-	size = sizeof(unsigned short) * spotsPerFrame;
-	memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned short) * spotsPerFrame;
+    memcpy((void *)antennaPosition, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned char) * spotsPerFrame;
-	memcpy((void *)event, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned char) * spotsPerFrame;
+    memcpy((void *)event, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(unsigned int) * measPerFrame;
-	memcpy((void *)science, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(unsigned int) * measPerFrame;
+    memcpy((void *)science, (void *)(buffer + idx), size);
+    idx += size;
 
-	size = sizeof(float) * spotsPerFrame;
-	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
-	idx += size;
+    size = sizeof(float) * spotsPerFrame;
+    memcpy((void *)spotNoise, (void *)(buffer + idx), size);
+    idx += size;
 
-	return(idx);
+    return(idx);
 }
 
 //---------------------------//
@@ -398,13 +398,13 @@ PscatL1A::AllocateBuffer()
 int
 PscatL1A::DeallocateBuffer()
 {
-	if (buffer)
+    if (buffer)
     {
-		free(buffer);
+        free(buffer);
         buffer = 0;
     }
-	bufferSize = 0;
-	return(1);
+    bufferSize = 0;
+    return(1);
 }
 
 //-----------------------//
@@ -414,21 +414,21 @@ PscatL1A::DeallocateBuffer()
 int
 PscatL1A::ReadDataRec()
 {
-	if (! Read(buffer, bufferSize))
-	{
-		if (EndOfFile())
-		{
-			// end of file, leave status alone (typically status is OK)
-			return(0);
-		}
-		else
-		{
-			// an error occurred
-			_status = ERROR_READING_FRAME;
-			return(0);
-		}
-	}
-	return(1);
+    if (! Read(buffer, bufferSize))
+    {
+        if (EndOfFile())
+        {
+            // end of file, leave status alone (typically status is OK)
+            return(0);
+        }
+        else
+        {
+            // an error occurred
+            _status = ERROR_READING_FRAME;
+            return(0);
+        }
+    }
+    return(1);
 }
 
 //------------------------//
@@ -438,7 +438,7 @@ PscatL1A::ReadDataRec()
 int
 PscatL1A::WriteDataRec()
 {
-	return(Write(buffer, bufferSize));
+    return(Write(buffer, bufferSize));
 }
 
 //-----------------------------//
