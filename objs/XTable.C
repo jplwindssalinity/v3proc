@@ -105,13 +105,12 @@ int XTable::CheckEmpty(){
   return(1);
 }
 
-int XTable::CheckHeader(int num_beams, int num_azimuths, 
+int XTable::CheckHeader(int num_beams,
 			int num_science_slices,
 			int num_guard_slices_each_side, 
 			float science_bandwidth,
 			float guard_bandwidth){
   if(numBeams!=num_beams) return(0);
-  if(numAzimuthBins!=num_azimuths) return(0);
   if(numScienceSlices!=num_science_slices) return(0);
   if(numGuardSlicesEachSide!=num_guard_slices_each_side) return(0);
 

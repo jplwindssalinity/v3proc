@@ -44,7 +44,7 @@ public:
   int CheckEmpty();   // Check to see if there are any empty entries in the
                       // table. Returns 0 if there is an empty entry 
                       // 1 otherwise
-  int CheckHeader(int num_beams, int num_azimuths, int num_science_slices,
+  int CheckHeader(int num_beams, int num_science_slices,
 	 int num_guard_slices_each_side, float science_bandwidth,
          float guard_bandwidth); // Checks to see if header matches
                                  // parameters.

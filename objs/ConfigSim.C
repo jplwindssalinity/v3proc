@@ -930,7 +930,7 @@ ConfigXTable(
 
   if(read){
     if(!xTable->Read()) return(0);
-    if(!xTable->CheckHeader(num_beams,num_azimuths,num_science_slices,
+    if(!xTable->CheckHeader(num_beams, num_science_slices,
 			   num_guard_slices_each_side, science_slice_bandwidth,
 			   guard_slice_bandwidth))
       return(0);
