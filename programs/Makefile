@@ -29,6 +29,7 @@ PROGRAMS = \
 	modu \
 	l1a_to_l1b \
 	l1b_to_l2a \
+	l1b_coverage \
 	l2a_hdf_to_l2a \
 	l2ax_hdf_to_l2a \
 	l2a_to_l2b \
