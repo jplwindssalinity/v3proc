@@ -681,13 +681,13 @@ GMF::_ObjectiveFunction(
 		{
 			if (! kp->GetVp(meas, gmf_value, meas->pol, spd, &var))
 				return(0);
+
+			fv += s*s / var + log(var);
 		}
 		else
 		{
-			var = 1.0;
+			fv += s*s;
 		}
-
-		fv += s*s / var + log(var);
 	}
 	return(-fv);
 }
