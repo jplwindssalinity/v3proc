@@ -131,6 +131,10 @@ double  ds_evaluate_3(double* x, void* ptr);
 double  ds_evaluate_5(double* x, void* ptr);
 double  evaluate_35(int* good, double* coef, double* x, int count);
 
+int     fit_terms_plus(const char* fit_base, int beam_idx, double** terms);
+int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
+            double** terms, double* new_term);
+
 //------------------//
 // OPTION VARIABLES //
 //------------------//
@@ -550,14 +554,19 @@ main(
         }
     }
 
+    free_array(g_offsets, 3, file_count, ORBIT_STEPS, 2);
+    free_array(g_azimuth, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
+    free_array(g_meas_spec_peak, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
+
     //--------------//
     // fit to terms //
     //--------------//
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
-        fit_terms(fit_base, beam_idx, opt_fit_for_missing_only,
-            g_terms[beam_idx]);
+//        fit_terms_plus(fit_base, beam_idx, opt_fit_for_missing_only,
+//            g_terms[beam_idx]);
+        fit_terms_plus(fit_base, beam_idx, g_terms[beam_idx]);
     }
 
     //-------------//
@@ -581,6 +590,11 @@ main(
                 filename);
             exit(1);
         }
+    }
+
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        free_array(g_terms[beam_idx], 2, ORBIT_STEPS, 3);
     }
 
     return(0);
@@ -1041,4 +1055,173 @@ evaluate_35(
         sse += (dif * dif);
     }
     return(sse);
+}
+
+//----------------//
+// fit_terms_plus //
+//----------------//
+// uses spectral analysis
+
+#define TERM_COUNT  3
+
+int
+fit_terms_plus(
+    const char*  fit_base,
+    int          beam_idx,
+    double**     terms)
+{
+    //-------------------//
+    // set up good array //
+    //-------------------//
+
+    int good[ORBIT_STEPS];
+    int good_count = 0;
+    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+    {
+        if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
+        {
+            good[orbit_step] = 1;
+            good_count++;
+        }
+        else
+            good[orbit_step] = 0;
+    }
+
+    //-------------------//
+    // create data array //
+    //-------------------//
+
+    double* azimuth = (double *)make_array(sizeof(double), 1, good_count);
+    double* data = (double *)make_array(sizeof(double), 1, good_count);
+
+    double threshold[3] = { 500.0, 0.05, 500.0 };    // amp, phase, bias
+    double new_coefs[ORBIT_STEPS];
+
+    //----------------------//
+    // for each coefficient //
+    //----------------------//
+
+    for (int coef_idx = 0; coef_idx < 3; coef_idx++)
+    {
+        //------------------//
+        // fill in the data //
+        //------------------//
+
+        int sample_count = 0;
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            if (good[orbit_step])
+            {
+                azimuth[sample_count] = two_pi * (double)orbit_step /
+                    (double)ORBIT_STEPS;
+                data[sample_count] = *(*(terms + orbit_step) + coef_idx);
+                sample_count++;
+            }
+        }
+
+        //--------------------//
+        // solve for spectrum //
+        //--------------------//
+
+        double amplitude[TERM_COUNT], phase[TERM_COUNT];
+        specfit(azimuth, data, NULL, sample_count, TERM_COUNT, amplitude,
+            phase);
+
+        //-----------------//
+        // threshold terms //
+        //-----------------//
+
+        for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
+        {
+            if (amplitude[term_idx] < threshold[coef_idx])
+                amplitude[term_idx] = 0.0;
+        }
+
+        //---------------//
+        // calculate DTC //
+        //---------------//
+
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
+
+            new_coefs[orbit_step] = 0.0;
+            for (int i = 0; i < TERM_COUNT; i++)
+            {
+                new_coefs[orbit_step] += amplitude[i] *
+                    cos((double)i * angle + phase[i]);
+            }
+        }
+
+        //--------------------//
+        // generate fit plots //
+        //--------------------//
+
+        if (fit_base)
+        {
+            plot_fit_spec(fit_base, beam_idx, coef_idx, terms, new_coefs);
+        }
+
+        //---------------//
+        // plug in terms //
+        //---------------//
+
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            *(*(terms + orbit_step) + coef_idx) = new_coefs[orbit_step];
+        }
+
+    }
+    free_array(data, 1, good_count);
+    free_array(azimuth, 1, good_count);
+
+    return(1);
+}
+
+//---------------//
+// plot_fit_spec //
+//---------------//
+
+int
+plot_fit_spec(
+    const char*  base,
+    int          beam_idx,
+    int          term_idx,
+    double**     terms,
+    double*      new_term)
+{
+    static char* term_string[3] = { "amp", "phase", "bias" };
+    static char* title_string[3] = { "Amplitude", "Phase", "Bias" };
+    static char* unit_string[3] = { "Frequency (Hz)", "Angle (radians)",
+        "Frequency (Hz)" };
+
+    char filename[1024];
+    sprintf(filename, "%s.b%1d.%s", base, beam_idx + 1,
+        term_string[term_idx]);
+    FILE* ofp = fopen(filename, "w");
+    if (ofp == NULL)
+        return(0);
+
+    fprintf(ofp, "@ subtitle %cBeam %d, %s%c\n", QUOTE,
+        beam_idx + 1, title_string[term_idx], QUOTE);
+    fprintf(ofp, "@ xaxis label %cOrbit Step%c\n", QUOTE, QUOTE);
+    fprintf(ofp, "@ yaxis label %c%s%c\n", QUOTE, unit_string[term_idx],
+        QUOTE);
+
+    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+    {
+        if (g_sector_count[beam_idx][orbit_step] < MIN_SECTORS)
+            continue;
+
+        fprintf(ofp, "%d %g\n", orbit_step,
+            *(*(terms + orbit_step) + term_idx));
+    }
+    fprintf(ofp, "&\n");
+
+    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+    {
+        fprintf(ofp, "%d %g\n", orbit_step, new_term[orbit_step]);
+    }
+    fclose(ofp);
+    return(1);
 }

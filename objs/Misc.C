@@ -1173,7 +1173,7 @@ return(1);
 // this equates to y = A + D*cos(wt + E) where
 // B = D*cos(E) and C = -D*sin(E)
 // solved for...
-// D = sqrt(B*B + C*C) and E = atan2(-B / C)
+// D = sqrt(B*B + C*C) and E = atan2(-C / B)
 // points with variances less than 0.0 are not fitfit
 
 int
@@ -1283,6 +1283,83 @@ sinfit(
     *amplitude = sqrt(b*b + c*c);
     *phase = atan2(-c, b);
     *bias = a;
+
+    return(1);
+}
+
+//---------//
+// specfit //
+//---------//
+// fits to y = C0*cos(0*w) + S0*sin(0*w) + C1*cos(1*w) + S1*sin(1*w) + ...
+// each cos/sin pair can be decomposed so that
+// Cn*cos(n*w) + Sn*sin(n*w) = An*cos(n*w + Pn)
+// where An = sqrt(Cn*Cn + Sn*Sn) and Pn = atan2(-Sn/Cn)
+// points with variances less than 0.0 are not fitfit
+
+int
+specfit(
+    double*  azimuth,
+    double*  value,
+    double*  variance,
+    int      sample_count,
+    int      term_count,
+    double*  amplitude,
+    double*  phase)
+{
+    //-----------------------------------//
+    // set up matrix and solution vector //
+    //-----------------------------------//
+
+    Matrix A;
+    A.Allocate(sample_count, 2 * term_count - 1);
+
+    Vector Y;
+    Y.Allocate(sample_count);
+
+    double use_var = 1.0;
+    for (int i = 0; i < sample_count; i++)
+    {
+        if (variance)
+        {
+            use_var = variance[i];
+            if (use_var <= 1E-6)    // essentially zero or negative
+                continue;
+        }
+        A.SetElement(i, 0, 1.0 / use_var);
+        for (int j = 1; j < term_count; j++)
+        {
+            A.SetElement(i, 2*j - 1, cos((double)j * azimuth[i]) / use_var);
+            A.SetElement(i, 2*j, sin((double)j * azimuth[i]) / use_var);
+        }
+        Y.SetElement(i, value[i] / use_var);
+    }
+
+    //-------//
+    // solve //
+    //-------//
+
+    Vector X;
+    if (! A.SolveSVD(&Y, &X))
+    {
+        fprintf(stderr, "specfit: Error solving equations!\n");
+        exit(1);
+    }
+
+    //-------------------------//
+    // return the coefficients //
+    //-------------------------//
+
+    double cos_coef, sin_coef;
+    X.GetElement(0, &cos_coef);
+    amplitude[0] = cos_coef;
+    phase[0] = 0.0;
+    for (int j = 1; j < term_count; j++)
+    {
+        X.GetElement(2 * j - 1, &cos_coef);
+        X.GetElement(2 * j, &sin_coef);
+        amplitude[j] = sqrt(cos_coef*cos_coef + sin_coef*sin_coef);
+        phase[j] = atan2(-sin_coef, cos_coef);
+    }
 
     return(1);
 }

@@ -106,6 +106,11 @@ int          sec2asc_month(double sec, char* asctime);
 int          sinfit(double* azimuth, double* value, double* variance,
                  int count, double* amplitude, double* phase, double* bias);
 
+// full up spectral fit
+int          specfit(double* azimuth, double* value, double* variance,
+                 int sample_count, int term_count, double* amplitude,
+                 double* phase);
+
 // sort an array
 void         heapsort(int n, double* data_array, int* idx_array);
 
