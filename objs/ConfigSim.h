@@ -137,8 +137,8 @@ RandomVelocity* ConfigUniformRandomVelocity(const char*
 #define RECEIVER_GAIN_KEYWORD			"RECEIVER_GAIN"
 #define SYSTEM_LOSS_KEYWORD				"SYSTEM_LOSS"
 #define USE_KPC_KEYWORD					"USE_KPC"
-#define PTGR_VARIANCE_KEYWORD                   "PTGR_VARIANCE"
-#define PTGR_MEAN_KEYWORD                       "PTGR_MEAN"
+#define PTGR_NOISE_VARIANCE_KEYWORD                   "PTGR_NOISE_VARIANCE"
+#define PTGR_NOISE_MEAN_KEYWORD                       "PTGR_NOISE_MEAN"
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
