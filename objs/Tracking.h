@@ -65,6 +65,8 @@ public:
 
 	unsigned short	OrbitTicksToStep(unsigned int orbit_ticks,
 						unsigned int ticks_per_orbit);
+	unsigned int	OrbitStepToTicks(unsigned short orbit_step,
+						unsigned int ticks_per_orbit);
 	unsigned int	AngleOffset(Antenna* antenna, Beam* beam,
 						double spin_rate);
 

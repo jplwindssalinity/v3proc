@@ -177,6 +177,24 @@ TrackerBase<T>::OrbitTicksToStep(
 	return(step);
 }
 
+//-------------------------------//
+// TrackerBase::OrbitStepToTicks //
+//-------------------------------//
+// just a convenient way to set orbit ticks for a know orbit step
+// sets the orbit ticks to the center of the orbit step
+
+template <class T>
+unsigned int
+TrackerBase<T>::OrbitStepToTicks(
+	unsigned short	orbit_step,
+	unsigned int	ticks_per_orbit)
+{
+	float ticks_per_step = (float)ticks_per_orbit / (float)_steps;
+	float fticks = ticks_per_step * ((float)orbit_step + 0.5);
+	unsigned int ticks = (int)(fticks + 0.5);
+	return(ticks);
+}
+
 //--------------------------//
 // TrackerBase::AngleOffset //
 //--------------------------//
