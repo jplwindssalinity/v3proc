@@ -129,7 +129,7 @@ main(
 
 	L20 l20;
 	l20.SetFilename(l20_file);
-	if (! l20.OpenForWriting())
+	if (! l20.OpenForReading())
 	{
 		fprintf(stderr, "%s: error opening L20 file %s\n", command, l20_file);
 		exit(1);
