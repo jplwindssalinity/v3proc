@@ -28,12 +28,22 @@ static const char rcs_id_etime_h[] =
 #define CODE_A_DEFAULT_TIME     "1993-01-01T00:00:00.000\0"
 #define CODE_A_TIME_LENGTH      24
 #define CODE_A_STRPTIME_FORMAT  "%Y-%m-%dT%H:%M:%S"
-#define CODE_A_SCANF_FORMAT     "%04d-%02d-%02dT%02d:%02d:%02d.%03d"
+#define CODE_A_PRINTF_FORMAT    "%04d-%02d-%02dT%02d:%02d:%02d.%03d"
 
 #define CODE_B_DEFAULT_TIME     "1993-001T00:00:00.000\0"
 #define CODE_B_TIME_LENGTH      22
 #define CODE_B_STRPTIME_FORMAT  "%Y-%jT%H:%M:%S"
-#define CODE_B_SCANF_FORMAT     "%04d-%03dT%02d:%02d:%02d.%03d"
+#define CODE_B_PRINTF_FORMAT    "%04d-%03dT%02d:%02d:%02d.%03d"
+
+#define BLOCKDATE_DEFAULT_TIME     "19930101\0"
+#define BLOCKDATE_LENGTH           9
+#define BLOCKDATE_STRPTIME_FORMAT  "%Y%m%d"
+#define BLOCKDATE_PRINTF_FORMAT    "%04d%02d%02d"
+
+#define JUSTTIME_DEFAULT_TIME     "00:00:00\0"
+#define JUSTTIME_LENGTH           9
+#define JUSTTIME_STRPTIME_FORMAT  "%H:%M:%S"
+#define JUSTTIME_PRINTF_FORMAT    "%02d:%02d:%02d"
 
 class ETime
 {
@@ -63,6 +73,8 @@ public:
     int  FromCodeB(const char* code_b_string);
     int  ToCodeB(char* string);
     int  FromChar6(char* string);
+    int  ToBlockDate(char* string);
+    int  ToJustTime(char* string);
 
     //--------------//
     // input/output //

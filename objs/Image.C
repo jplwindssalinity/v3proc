@@ -346,6 +346,95 @@ Image::WritePltr(
     fclose(ofp);
 
     return(1);
+} 
+
+//------------------//
+// Image::WriteVctr //
+//------------------//
+
+int
+Image::WriteVctr(
+    const char*  filename,
+    Image*       dy_image,
+    Image*       x_image,
+    Image*       y_image)
+{
+    //-------------//
+    // check sizes //
+    //-------------//
+
+    if ( (! SizeMatch(dy_image)) || (! SizeMatch(x_image)) ||
+        (! SizeMatch(y_image)) )
+    {
+        return(0);
+    }
+
+    //------------------//
+    // open output file //
+    //------------------//
+
+    FILE* ofp = fopen(filename, "w");
+    if (ofp == NULL)
+        return(0);
+
+    //-------------------//
+    // write header info //
+    //-------------------//
+
+    char* vctr_string = VCTR_HEADER;
+    if (fwrite(vctr_string, 4, 1, ofp) != 1)
+    {
+        fclose(ofp);
+        return(0);
+    }
+
+    //------------//
+    // write data //
+    //------------//
+
+    for (int x = 0; x < _xSize; x++)
+    {
+        for (int y = 0; y < _ySize; y++)
+        {
+            // for each point...
+
+            float xvalue, yvalue, dy, dx, magnitude, direction;
+            if (! Get(x, y, &dx))
+                continue;
+            if (! dy_image->Get(x, y, &dy))
+                continue;
+            if (! x_image->Get(x, y, &xvalue))
+                continue;
+            if (! y_image->Get(x, y, &yvalue))
+                continue;
+
+            if (xvalue == 0.0 || yvalue == 0.0)
+                continue;
+
+            magnitude = sqrt(dx * dx + dy * dy);
+            direction = atan2(dy, dx);
+
+            float buffer[4];
+            buffer[0] = xvalue;
+            buffer[1] = yvalue;
+            buffer[2] = magnitude;
+            buffer[3] = direction;
+
+            if (fwrite(&buffer, sizeof(float) * 4, 1, ofp) != 1)
+            {
+                fclose(ofp);
+                return(0);
+            }
+        }
+    }
+
+    //-------------------//
+    // close output file //
+    //-------------------//
+
+    fclose(ofp);
+
+    return(1);
 }
 
 //-------------------//

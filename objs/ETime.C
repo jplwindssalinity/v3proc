@@ -1,10 +1,10 @@
-//==========================================================//
-// Copyright (C) 1999, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//=========================================================//
+// Copyright (C) 1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
 static const char rcs_id_etime_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdlib.h>
 #include <math.h>
@@ -18,12 +18,12 @@ static const char rcs_id_etime_c[] =
 ETime::ETime()
 :   _sec(0), _ms(0)
 {
-	return;
+    return;
 }
 
 ETime::~ETime()
 {
-	return;
+    return;
 }
 
 //--------------------//
@@ -118,7 +118,7 @@ ETime::ToCodeA(
     char*  string)
 {
     struct tm* tm_time = gmtime(&_sec);
-    sprintf(string, CODE_A_SCANF_FORMAT, tm_time->tm_year + 1900,
+    sprintf(string, CODE_A_PRINTF_FORMAT, tm_time->tm_year + 1900,
         tm_time->tm_mon + 1, tm_time->tm_mday, tm_time->tm_hour,
         tm_time->tm_min, tm_time->tm_sec, _ms);
     return(1);
@@ -182,7 +182,7 @@ ETime::ToCodeB(
     char*  string)
 {
     struct tm* tm_time = gmtime(&_sec);
-    sprintf(string, CODE_B_SCANF_FORMAT, tm_time->tm_year + 1900,
+    sprintf(string, CODE_B_PRINTF_FORMAT, tm_time->tm_year + 1900,
         tm_time->tm_yday + 1, tm_time->tm_hour, tm_time->tm_min,
         tm_time->tm_sec, _ms);
     return(1);
@@ -198,6 +198,34 @@ ETime::FromChar6(
 {
     memcpy(&_sec, string, 4);
     memcpy(&_ms, string + 4, 2);
+    return(1);
+}
+
+//--------------------//
+// ETime::ToBlockDate //
+//--------------------//
+
+int
+ETime::ToBlockDate(
+    char*  string)
+{
+    struct tm* tm_time = gmtime(&_sec);
+    sprintf(string, BLOCKDATE_PRINTF_FORMAT, tm_time->tm_year + 1900,
+        tm_time->tm_mon + 1, tm_time->tm_mday);
+    return(1);
+}
+
+//-------------------//
+// ETime::ToJustTime //
+//-------------------//
+
+int
+ETime::ToJustTime(
+    char*  string)
+{
+    struct tm* tm_time = gmtime(&_sec);
+    sprintf(string, JUSTTIME_PRINTF_FORMAT, tm_time->tm_hour, tm_time->tm_min,
+        tm_time->tm_sec);
     return(1);
 }
 
