@@ -21,10 +21,12 @@ PROGRAMS = \
 	l17_to_l20 \
 	l20_to_bev \
 	l20_metrics \
+	see_spot \
+	generate_rgc \
+	generate_dtc \
 	reformat_pattern \
 	memfilter \
 	make_pattern \
-	see_spot \
 	vap_to_bev \
 	fake_vap \
 	l15_outlines \
