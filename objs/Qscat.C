@@ -2656,8 +2656,8 @@ Qscat::IdealRtt(
 int
 Qscat::IdealCommandedDoppler(
     Spacecraft*       spacecraft,
-    QscatTargetInfo*  qti_out = NULL,
-    int               use_attitude = 0)
+    QscatTargetInfo*  qti_out,
+    int               use_attitude)
 {
     OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 
