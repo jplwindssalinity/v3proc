@@ -255,6 +255,34 @@ WVC::ReadL20(
 	return(1);
 }
 
+//---------------//
+// WVC::WriteBev //
+//---------------//
+
+int
+WVC::WriteBev(
+	FILE*		fp,
+	const int	rank)
+{
+	WindVectorPlus* write_me = NULL;
+	if (rank == 0)
+		write_me = selected;
+	else
+		write_me = ambiguities.GetNodeWithIndex(rank);
+
+	if (! write_me)
+		return(1);
+
+	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&(write_me->spd), sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&(write_me->dir), sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 //-----------------------//
 // WVC::RemoveDuplicates //
 //-----------------------//
@@ -479,21 +507,6 @@ int
 WindField::WriteBev(
 	const char*		filename)
 {
-	//-----------------------------//
-	// count the number of vectors //
-	//-----------------------------//
-
-	int count = 0;
-	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
-	{
-		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
-		{
-			WindVector* wv = _field[lon_idx][lat_idx];
-			if (wv)
-				count++;
-		}
-	}
-
 	//-----------//
 	// open file //
 	//-----------//
@@ -505,9 +518,6 @@ WindField::WriteBev(
 	//-------//
 	// write //
 	//-------//
-
-	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
-		return(0);
 
 	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
 	{
@@ -765,6 +775,36 @@ WindSwath::ReadL20(
 
 	if (! ReadL20(fp))
 		return(0);
+
+	fclose(fp);
+	return(1);
+}
+
+//---------------------//
+// WindSwath::WriteBev //
+//---------------------//
+
+int
+WindSwath::WriteBev(
+	const char*		filename,
+	const int		rank)		// 0 = selected
+{
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	for (int cti = 0; cti < _crossTrackSize; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackSize; ati++)
+		{
+			WVC* wvc = *(*(swath + cti) + ati);
+			if (wvc == NULL)
+				continue;
+
+			if (! wvc->WriteBev(fp, rank))
+				return(0);
+		}
+	}
 
 	fclose(fp);
 	return(1);

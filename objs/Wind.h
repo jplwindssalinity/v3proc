@@ -112,9 +112,9 @@ public:
 	// input/output //
 	//--------------//
 
-//	int		WriteAmbigsAscii(FILE* ofp);
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
+	int		WriteBev(FILE* fp, const int rank);		// 0 = selected
 
 	//--------------//
 	// manipulation //
@@ -238,6 +238,7 @@ public:
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
 	int		ReadL20(const char* filename);
+	int		WriteBev(const char* filename, const int rank);
 
 	//-----------//
 	// filtering //
