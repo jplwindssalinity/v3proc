@@ -28,6 +28,8 @@ static const char rcs_id_l1a_gs_frame_h[] =
 // frame 5972 + 4 + 4 (fortran records header and trailer paddings)
 #define GS_L1A_FRAME_SIZE    5980
 
+#define GS_CAL_PULSE_FRAME_SIZE  150
+
 struct GSL1APcd
 {
     // methods
@@ -95,7 +97,8 @@ struct GSL1AEu
     float           range_gate_width_outer;
     float           transmit_pulse_width;
     int             true_cal_pulse_pos;
-    char            pad2[8];   // transmit_power_inner & transmit_power_outer
+    float           transmit_power_inner;
+    float           transmit_power_outer;
     float           precision_coupler_temp_eu;
     float           rcv_protect_sw_temp_eu;
     float           beam_select_sw_temp_eu;
@@ -118,6 +121,31 @@ struct GSL1ASci
     float      load_cal_noise;
     int        power_dn[12][100];
     int        noise_dn[100];
+};
+
+//---------------------------------
+// struct for Cal Pulse
+// this structure is for reference only,
+// scott writes the frame member by member
+//---------------------------------
+struct GSCalPulse
+{
+    double     frame_time;
+    int        loop_back_cal_power[12];
+    int        loop_back_cal_noise;
+    int        load_cal_power[12];
+    int        load_cal_noise;
+    float      precision_coupler_temp_eu;
+    float      rcv_protect_sw_temp_eu;
+    float      beam_select_sw_temp_eu;
+    float      receiver_temp_eu;
+    float      transmit_power_inner;
+    float      transmit_power_outer;
+    int        frame_inst_status;
+    int        frame_err_status;
+    int        spare;
+    char       true_cal_pulse_position;
+    char       beam_identifier;
 };
 
 class L1AGSFrame
@@ -159,6 +187,7 @@ public:
     short         l1a_frame_qual_flag;
     char          l1a_pulse_qual_flag[13];
     char          pad3;
+
 };
 
 #endif

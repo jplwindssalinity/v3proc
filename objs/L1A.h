@@ -64,6 +64,10 @@ public:
 
     int  WriteGSDataRec(void);
 
+	int  OpenCalPulseForWriting(const char* filename);
+    int  WriteGSCalPulseRec(void);
+    int  CloseCalPulseFile(void);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -73,6 +77,7 @@ public:
 	L1AFrame	frame;
 
     L1AGSFrame  gsFrame;
+    GSCalPulse  calPulse;
 
 protected:
 
@@ -81,6 +86,8 @@ protected:
 	//-----------//
 
 	StatusE		_status;
+
+    FILE*       _calPulseFP;
 };
 
 #endif

@@ -27,7 +27,6 @@ L1AGSFrame::L1AGSFrame()
     (void)memset(&l1a_frame_qual_flag, 0, sizeof(l1a_frame_qual_flag));
     (void)memset(&l1a_pulse_qual_flag, 0, 13);
     (void)memset(&pad3, 0, 1);
-
 }
 
 #ifdef test_L1AGSFrame

@@ -77,7 +77,7 @@ template class TrackerBase<unsigned short>;
 
 
 const char* usage_array[] = { "<config_file>","<input_file>", "<output_file>",
-                  "<start_frame>(OPT)",
+                  "<cal_pulse_file>", "<start_frame>(OPT)",
                   "<end_frame>(OPT)",0};
 
 //--------------//
@@ -94,17 +94,18 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 6 && argc!=4)
+    if (argc != 7 && argc!=5)
         usage(command, usage_array, 1);
 
     int clidx = 1;
     const char* config_file = argv[clidx++];
     const char* input_file = argv[clidx++];
     const char* output_file = argv[clidx++];
-        int start_frame=-1, end_frame=2;
-        if(argc==6){
-      start_frame=atoi(argv[clidx++]);
-      end_frame=atoi(argv[clidx++]);
+    const char* cal_pulse_file = argv[clidx++];
+    int start_frame=-1, end_frame=2;
+    if(argc==6){
+        start_frame=atoi(argv[clidx++]);
+        end_frame=atoi(argv[clidx++]);
     }
 
     //---------------------//
@@ -147,9 +148,19 @@ main(
     if (! l1a.OpenForWriting(output_file))
     {
         fprintf(stderr, "%s: error creating output file %s\n", command,
-            input_file);
+            output_file);
         exit(1);
     }       
+
+    //------------------------//
+    // open the cal pulse file//
+    //------------------------//
+    if (! l1a.OpenCalPulseForWriting(cal_pulse_file))
+    {
+        fprintf(stderr, "%s: error creating Cal Pulse file %s\n", command,
+            cal_pulse_file);
+        exit(1);
+    }
 
     int frame_number=1;
 
@@ -162,7 +173,18 @@ main(
         if (frame_number >= start_frame)
         {
             l1a.frame.Unpack(l1a.buffer);
-            l1a.WriteGSDataRec();
+            if (l1a.WriteGSDataRec() == 0)
+            {
+                fprintf(stderr,
+                       "%s: error writing GS data record\n", command);
+                exit(1);
+            }
+            if (l1a.WriteGSCalPulseRec() == 0)
+            {
+                fprintf(stderr,
+                       "%s: error writing Cal Pulse record\n", command);
+                exit(1);
+            }
         }
         if (start_frame>=0) frame_number++;
     }
@@ -171,5 +193,6 @@ main(
     // close files and exit //
     //----------------------//
     l1a.Close();
+    (void) l1a.CloseCalPulseFile();
     return(0);
 }

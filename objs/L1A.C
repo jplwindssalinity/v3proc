@@ -10,12 +10,18 @@ static const char rcs_id_l1a_c[] =
 #include <malloc.h>
 #include "L1A.h"
 
+#ifndef IS_EVEN
+#define IS_EVEN(x) (x % 2 == 0 ? 1 : 0)
+#endif
+
+#define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 3)
+
 //=====//
 // L1A //
 //=====//
 
 L1A::L1A()
-:	buffer(NULL), bufferSize(0), _status(OK)
+:	buffer(NULL), bufferSize(0), _status(OK), _calPulseFP(0)
 {
 	return;
 }
@@ -229,4 +235,95 @@ L1A::WriteGSDataRec(void)
     (void)memcpy(ptr, &gsL1AFrameSize, sizeof(int)); ptr += sizeof(int);
 
     return(Write(gsFrameBuffer, GS_L1A_FRAME_SIZE));
+}
+
+
+int
+L1A::OpenCalPulseForWriting(
+const char*    filename)
+{
+    if (filename == 0) return 0;
+    _calPulseFP = fopen(filename, "w");
+    return(_calPulseFP == 0 ? 0 : 1);
+}
+
+int
+L1A::CloseCalPulseFile(void)
+{
+    if (_calPulseFP == 0)
+        return 0;
+    else
+    {
+        if (fclose(_calPulseFP) == 0)
+        {
+            _calPulseFP = 0;
+            return 1;
+        }
+        else return 0;
+    }
+}
+
+//--------------------------//
+// L1A::WriteCalPulse       //
+//--------------------------//
+int
+L1A::WriteGSCalPulseRec(void)
+{
+    int i=0;  // loop counter
+
+    if (_calPulseFP == NULL) return(0);
+
+    //------------------------------------------------------------------
+    // The record size of the cal pulse file is now 150 bytes, without
+    // any leading or trailing words (i.e. not F77-unformatted).
+    //------------------------------------------------------------------
+
+    // zero out the cal pulse buffer
+    char calPulseBuffer[GS_CAL_PULSE_FRAME_SIZE];
+    (void)memset(calPulseBuffer, 0, GS_CAL_PULSE_FRAME_SIZE);
+
+    char* ptr = calPulseBuffer;
+    (void)memcpy(ptr, &(frame.frame_time_secs), sizeof(double));
+    ptr += sizeof(double);
+
+    for (i=0; i < 12; i++)
+    {
+        (void)memcpy(ptr, &(frame.loopbackSlices[i]), sizeof(int));
+        ptr += sizeof(int);
+    }
+    (void)memcpy(ptr, &(frame.loopbackNoise), sizeof(int));
+    ptr += sizeof(int);
+
+    for (i=0; i < 12; i++)
+    {
+        (void)memcpy(ptr, &(frame.loadSlices[i]), sizeof(int));
+        ptr += sizeof(int);
+    }
+    (void)memcpy(ptr, &(frame.loadNoise), sizeof(int));
+    ptr += sizeof(int);
+    (void)memcpy(ptr, &(frame.in_eu.precision_coupler_temp_eu), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.in_eu.rcv_protect_sw_temp_eu), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.in_eu.beam_select_sw_temp_eu), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.in_eu.receiver_temp_eu), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.in_eu.transmit_power_inner), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.in_eu.transmit_power_outer), sizeof(float));
+    ptr += sizeof(float);
+    (void)memcpy(ptr, &(frame.frame_inst_status), sizeof(int));
+    ptr += sizeof(int);
+    (void)memcpy(ptr, &(frame.frame_err_status), sizeof(int));
+    ptr += sizeof(int);
+    (void)memcpy(ptr, &(frame.in_eu.true_cal_pulse_pos), sizeof(char));
+    ptr += sizeof(char);
+    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
+        *ptr ^= GET_L1A_FIRST_PULSE(frame.frame_inst_status); // different
+    else
+        *ptr = GET_L1A_FIRST_PULSE(frame.frame_inst_status); // same
+
+
+    return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
 }
