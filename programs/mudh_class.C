@@ -264,10 +264,12 @@ main(
     // process rev by rev //
     //--------------------//
 
-    unsigned char nbd_array[ATI_SIZE][CTI_SIZE];
-    unsigned char spd_array[ATI_SIZE][CTI_SIZE];
-    unsigned char dir_array[ATI_SIZE][CTI_SIZE];
-    unsigned char mle_array[ATI_SIZE][CTI_SIZE];
+    unsigned char  nbd_array[ATI_SIZE][CTI_SIZE];
+    unsigned char  spd_array[ATI_SIZE][CTI_SIZE];
+    unsigned char  dir_array[ATI_SIZE][CTI_SIZE];
+    unsigned char  mle_array[ATI_SIZE][CTI_SIZE];
+    unsigned short lon_array[ATI_SIZE][CTI_SIZE];
+    unsigned short lat_array[ATI_SIZE][CTI_SIZE];
 
     for (int rev = start_rev; rev <= end_rev; rev++)
     {
@@ -285,10 +287,12 @@ main(
             exit(1);
         }
         unsigned long size = CTI_SIZE * ATI_SIZE;
-        if (fread(nbd_array, sizeof(char), size, ifp) != size ||
-            fread(spd_array, sizeof(char), size, ifp) != size ||
-            fread(dir_array, sizeof(char), size, ifp) != size ||
-            fread(mle_array, sizeof(char), size, ifp) != size)
+        if (fread(nbd_array,  sizeof(char), size, ifp) != size ||
+            fread(spd_array,  sizeof(char), size, ifp) != size ||
+            fread(dir_array,  sizeof(char), size, ifp) != size ||
+            fread(mle_array,  sizeof(char), size, ifp) != size ||
+            fread(lon_array, sizeof(short), size, ifp) != size ||
+            fread(lat_array, sizeof(short), size, ifp) != size)
         {
             fclose(ifp);
             fprintf(stderr, "%s: error reading MUDH file %s (continuing)\n",
@@ -442,19 +446,21 @@ main(
 
                 if (opt_class)
                 {
+                    float lon = (float)lon_array[ati][cti] * 0.01;
+                    float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
                     if (inbd == 15)
                     {
                         fprintf(class_without_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
+                            "%g %g %g %g %g %g %g %d %d %d %g %g\n", nbd, spd,
                             dir, mle, norain_prob, rain_prob, irr, rev, ati,
-                            cti);
+                            cti, lon, lat);
                     }
                     else
                     {
                         fprintf(class_with_nbd_ofp,
-                            "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
+                            "%g %g %g %g %g %g %g %d %d %d %g %g\n", nbd, spd,
                             dir, mle, norain_prob, rain_prob, irr, rev, ati,
-                            cti);
+                            cti, lon, lat);
                     }
                 }
 

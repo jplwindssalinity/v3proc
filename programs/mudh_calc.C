@@ -531,9 +531,12 @@ main(
             // integer lon at 0.01 degree resolution (0 - 360 deg)
             // integer lat at 0.01 degree resolution (-90 - 90 deg)
 
-            int ilon = (int)(wvc->lonLat.longitude * 100.0 + 0.5);
+            double lon = wvc->lonLat.longitude * rtd;
+            double lat = wvc->lonLat.latitude * rtd;
+
+            int ilon = (int)(lon * 100.0 + 0.5);
             lon_array[ati][cti] = (unsigned short)ilon;
-            int ilat = (int)((wvc->lonLat.latitude + 90.0) * 100.0 + 0.5);
+            int ilat = (int)((lat + 90.0) * 100.0 + 0.5);
             lat_array[ati][cti] = (unsigned short)ilat;
 
             //--------------//
