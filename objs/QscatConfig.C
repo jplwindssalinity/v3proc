@@ -537,9 +537,9 @@ ConfigQscat(
     }
     else
     {
-        fprintf(stderr, "ConfigQscat: spin rate must be 18.0 or 19.8 (%g)\n",
+        fprintf(stderr, "ConfigQscat: setting custom spin rate (%g)\n",
             spin_rate);
-        return(0);
+        qscat->cds.SetCustomSpinRate(spin_rate, &(qscat->sas));
     }
 
     //---------------//

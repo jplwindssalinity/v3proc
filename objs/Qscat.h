@@ -15,8 +15,8 @@ static const char rcs_id_qscat_h[] =
 #include "Scatterometer.h"
 #include "Meas.h"
 
-#define NUMBER_OF_QSCAT_BEAMS     2
-#define ENCODER_N                 32768
+#define NUMBER_OF_QSCAT_BEAMS  2
+#define ENCODER_N              32768
 
 //======================================================================
 // CLASSES
@@ -33,10 +33,10 @@ static const char rcs_id_qscat_h[] =
 
 //======================================================================
 // CLASS
-//      QscatTargetInfo
+//    QscatTargetInfo
 //
 // DESCRIPTION
-//      The QscatTargetInfo class holds target information.
+//    The QscatTargetInfo class holds target information.
 //======================================================================
 
 class QscatTargetInfo : public ScatTargetInfo
@@ -50,10 +50,10 @@ public:
 
 //======================================================================
 // CLASS
-//      QscatSes
+//    QscatSes
 //
 // DESCRIPTION
-//      The QscatSes acts like the QSCAT SES.
+//    The QscatSes acts like the QSCAT SES.
 //======================================================================
 
 class SesBeamInfo
@@ -154,7 +154,7 @@ public:
 #define SAS_HIGH_SPIN_RATE  19.8
 
 enum EncoderE { ENCODER_A, ENCODER_B };
-enum SpinRateE { LOW_SPIN_RATE, HIGH_SPIN_RATE };
+enum SpinRateE { LOW_SPIN_RATE, HIGH_SPIN_RATE, CUSTOM_SPIN_RATE };
 
 class QscatSas : public ScatAnt
 {
@@ -174,7 +174,8 @@ public:
     unsigned short  GetEncoder();
     unsigned short  AzimuthToEncoder(double azimuth);
 
-    int  CmdSpinRate(SpinRateE spin_rate);
+    int  CmdSpinRate(SpinRateE spin_rate_code);
+    int  SetCustomSpinRate(float spin_rate);
 
     //-----------//
     // variables //
@@ -253,7 +254,8 @@ public:
     int  CmdPriEu(float pri, QscatSes* qscat_ses);
     int  CmdRxGateWidthEu(int beam_idx, float rx_gate_width,
              QscatSes* qscat_ses);
-    int  CmdSpinRate(SpinRateE spin_rate, QscatSas* qscat_sas);
+    int  CmdSpinRate(SpinRateE spin_rate_code, QscatSas* qscat_sas);
+    int  SetCustomSpinRate(float spin_rate, QscatSas* qscat_sas);
     int  CmdOrbitTicksPerOrbit(unsigned int orbit_ticks);
 
     //-----------//
@@ -266,11 +268,13 @@ public:
     unsigned char   txPulseWidthDn;
     unsigned char   rxGateDelayDn;
     short           txDopplerDn;
-    SpinRateE       spinRate;
+    SpinRateE       spinRateCode;
+    float           customSpinRate;    // radians per second
 
-// Flags and Parameters which are convenient to put here in order
-// to perform Ideal Doppler tracking to BYU ref Vector, Spatial Response Peak
-// and Spectral Response Peak, but which do not really belong here.
+    // Flags and Parameters which are convenient to put here
+    // in order to perform Ideal Doppler tracking to BYU ref
+    // Vector, Spatial Response Peak and Spectral Response
+    // Peak, but which do not really belong here.
     int             useRgc;
     int             useDtc;
     int             useBYUDop;

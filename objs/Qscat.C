@@ -512,9 +512,9 @@ QscatSas::AzimuthToEncoder(
 
 int
 QscatSas::CmdSpinRate(
-    SpinRateE  spin_rate)
+    SpinRateE  spin_rate_code)
 {
-    switch (spin_rate)
+    switch (spin_rate_code)
     {
         case LOW_SPIN_RATE:
             antenna.spinRate = SAS_LOW_SPIN_RATE * rpm_to_radps;
@@ -528,6 +528,18 @@ QscatSas::CmdSpinRate(
             return(0);
     }
     return(0);
+}
+
+//-----------------------------//
+// QscatSas::SetCustomSpinRate //
+//-----------------------------//
+
+int
+QscatSas::SetCustomSpinRate(
+    float  custom_spin_rate)
+{
+    antenna.spinRate = custom_spin_rate * rpm_to_radps;
+    return(1);
 }
 
 //=============//
@@ -551,10 +563,11 @@ CdsBeamInfo::~CdsBeamInfo()
 
 QscatCds::QscatCds()
 :   turnOnTime(-1.0), priDn(0), txPulseWidthDn(0), rxGateDelayDn(0),
-    txDopplerDn(0), spinRate(LOW_SPIN_RATE), useRgc(0), useDtc(0),
-    useBYUDop(0), useBYURange(0), useSpectralDop(0), useSpectralRange(0),
-    azimuthIntegrationRange(0), azimuthStepSize(0), orbitTicksPerOrbit(0),
-    orbitTime(0), orbitStep(0), eqxTime(0.0), rawEncoder(0), heldEncoder(0)
+    txDopplerDn(0), spinRateCode(LOW_SPIN_RATE), customSpinRate(0.0),
+    useRgc(0), useDtc(0), useBYUDop(0), useBYURange(0), useSpectralDop(0),
+    useSpectralRange(0), azimuthIntegrationRange(0), azimuthStepSize(0),
+    orbitTicksPerOrbit(0), orbitTime(0), orbitStep(0), eqxTime(0.0),
+    rawEncoder(0), heldEncoder(0)
 {
     return;
 }
@@ -648,13 +661,16 @@ QscatCds::GetCurrentBeamInfo()
 double
 QscatCds::GetAssumedSpinRate()
 {
-    switch(spinRate)
+    switch(spinRateCode)
     {
         case LOW_SPIN_RATE:
             return(18.0);
             break;
         case HIGH_SPIN_RATE:
             return(19.8);
+            break;
+        case CUSTOM_SPIN_RATE:
+            return(customSpinRate);
             break;
         default:
             return(0.0);
@@ -737,11 +753,9 @@ QscatCds::EstimateIdealEncoder(
     //-----------------------------------//
 
     float spin_rate = GetAssumedSpinRate();
-    // printf("priDn = %d\n", priDn);
     unsigned short ant_dn_per_pri = (unsigned short)
         ( ( ( ((float)priDn / 10.0) * 32768.0 * spin_rate) /
         (60.0 * 1000.0)) + 0.5);
-    // printf("ant_dn_per_pri = %d\n", ant_dn_per_pri);
 
     //--------------------------------------------//
     // get or calculate previous range gate delay //
@@ -871,12 +885,31 @@ QscatCds::CmdRxGateWidthEu(
 
 int
 QscatCds::CmdSpinRate(
-    SpinRateE  spin_rate,
+    SpinRateE  spin_rate_code,
     QscatSas*  qscat_sas)
 {
-    spinRate = spin_rate;
+    spinRateCode = spin_rate_code;
 
-    if (! qscat_sas->CmdSpinRate(spinRate))
+    if (! qscat_sas->CmdSpinRate(spinRateCode))
+        return(0);
+
+    return(1);
+}
+
+//-----------------------------//
+// QscatCds::SetCustomSpinRate //
+//-----------------------------//
+// This is a customization of the spin rate. Non-standard for QuikSCAT!
+
+int
+QscatCds::SetCustomSpinRate(
+    float      spin_rate,
+    QscatSas*  qscat_sas)
+{
+    spinRateCode = CUSTOM_SPIN_RATE;
+    customSpinRate = spin_rate * rpm_to_radps;    // save for assumed rate
+
+    if (! qscat_sas->SetCustomSpinRate(spin_rate))
         return(0);
 
     return(1);
