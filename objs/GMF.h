@@ -135,6 +135,7 @@ public:
              int polar_special=0);
     int  FindMultiSpeedRidge(MeasList* meas_list, Kp* kp, int dir_idx,
              float* max_sep, float* min_sep);
+    int  RemoveBadCopol(MeasList* meas_list, Kp* kp);
     int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
     int  CopyBuffersGSToPE();
 
