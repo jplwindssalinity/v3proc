@@ -10,6 +10,7 @@ static const char rcs_id_metrics_h[] =
     "@(#) $Id$";
 
 #include "Wind.h"
+#include "WindSwath.h"
 
 //======================================================================
 // CLASSES

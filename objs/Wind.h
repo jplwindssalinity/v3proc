@@ -10,64 +10,23 @@ static const char rcs_id_wind_h[] =
     "@(#) $Id$";
 
 #include <stdio.h>
+#include "Matrix.h"
+#include "AngleInterval.h"
+#include "LonLatWind.h"
+/*
 #include <mfhdf.h>
 #include "Misc.h"
 #include "List.h"
 #include "LonLat.h"
 #include "Index.h"
-#include "AngleInterval.h"
-#include "Matrix.h"
-// #include "Parameter.h"
-// #include "TlmHdfFile.h"
+*/
 
 #define NWP_SPEED_CORRECTION  0.84
 
 //======================================================================
 // CLASSES
-//    WindVector, WindVectorPlus, WindVectorField, WVC, WindField,
+//    WindVectorPlus, WindVectorField, WVC, WindField,
 //======================================================================
-
-//======================================================================
-// CLASS
-//    WindVector
-//
-// DESCRIPTION
-//    The WindVector object represents a wind vector (speed and
-//    direction).  The wind direction is counter-clockwise from East.
-//======================================================================
-
-class WindVector
-{
-public:
-
-    //--------------//
-    // construction //
-    //--------------//
-
-    WindVector();
-    ~WindVector();
-
-    //---------//
-    // setting //
-    //---------//
-
-    int  SetSpdDir(float speed, float direction);
-    int  SetUV(float u, float v);
-    int  GetUV(float* u, float* v);
-
-    //--------------//
-    // manipulation //
-    //--------------//
-
-    int  ScaleToSpeed(float scale);
-
-    //-----------//
-    // variables //
-    //-----------//
-
-    float  spd;
-    float  dir;
-};
 
 //======================================================================
 // CLASS
@@ -262,7 +221,7 @@ public:
 #define NSCAT_TYPE        "NSCAT"
 #define NSCAT_LAND_VALUE  -9999.0
 
-class WindField
+class WindField : public LonLatWind
 {
 public:
 
