@@ -49,7 +49,7 @@ public:
 	void	SetPitch(float pitch) { _pitch = pitch; };
 	float	GetYaw() { return(_yaw); };
 	void	SetYaw(float yaw) { _yaw = yaw; };
-	unsigned char*	GetOrderIndicies() { return(_order); };
+	unsigned char*	GetOrderIndices() { return(_order); };
 
 	//--------------//
 	// input/output //
