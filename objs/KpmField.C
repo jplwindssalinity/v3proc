@@ -11,7 +11,6 @@ static const char rcs_id_kpmfield_c[] =
 #include "KpmField.h"
 #include "Constants.h"
 
-
 //==========//
 // KpmField //
 //==========//
@@ -142,39 +141,6 @@ KpmField::Build(float corr_length)
 
 }
 
-float
-KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
-{
-	float RV;
-	float rv1;
-
-	float Kpm = GetKpm(polarization,wspd);
-
-	if (_corrLength == 0.0)
-	{	// no spatial correlation, so just draw a gaussian random number
-		rv1 = _gaussianRv.GetNumber();
-	}
-	else
-	{
-		if (_corr.InterpolatedElement(lon_lat,&rv1) == 0)
-		{
-			printf("Error getting correlated rv in KpmField::GetRV\n");
-			exit(-1);
-		}
-	}
-
-	// Scale for unit mean, variance = Kpm^2.
-	RV = rv1*Kpm + 1.0;
-
-	if (RV < 0.0)
-	{
-		RV = 0.0;	// Do not allow negative sigma0's.
-	}
-
-	return(RV);
-
-}
-
 //-------------------//
 // KpmField::GetKpm
 //-------------------//
@@ -193,7 +159,7 @@ KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
 //
 
 float
-GetKpm(
+KpmField::GetKpm(
 	int pol,
 	float spd)
 
@@ -230,3 +196,37 @@ GetKpm(
 
 	return(Kpm);
 }
+
+float
+KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
+{
+	float RV;
+	float rv1;
+
+	float Kpm = GetKpm(polarization,wspd);
+
+	if (_corrLength == 0.0)
+	{	// no spatial correlation, so just draw a gaussian random number
+		rv1 = _gaussianRv.GetNumber();
+	}
+	else
+	{
+		if (_corr.InterpolatedElement(lon_lat,&rv1) == 0)
+		{
+			printf("Error getting correlated rv in KpmField::GetRV\n");
+			exit(-1);
+		}
+	}
+
+	// Scale for unit mean, variance = Kpm^2.
+	RV = rv1*Kpm + 1.0;
+
+	if (RV < 0.0)
+	{
+		RV = 0.0;	// Do not allow negative sigma0's.
+	}
+
+	return(RV);
+
+}
+

@@ -209,6 +209,12 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define GMF_FILE_KEYWORD					"GMF_FILE"
 
+//----------//
+// KpmField //
+//----------//
+
+#define KPM_CORRELATION_LENGTH_KEYWORD		"KPM_CORRELATION_LENGTH"
+
 //------//
 // Grid //
 //------//

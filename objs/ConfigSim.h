@@ -154,6 +154,12 @@ int ConfigWindField(WindField* windfield, ConfigList* config_list);
 
 int ConfigGMF(GMF* gmf, ConfigList* config_file);
 
+//----------//
+// KpmField //
+//----------//
+
+int ConfigKpmField(KpmField* kpmField, ConfigList* config_file);
+
 //------//
 // Grid //
 //------//

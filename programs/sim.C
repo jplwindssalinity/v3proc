@@ -69,6 +69,7 @@ static const char rcs_id[] =
 #include "Meas.h"
 #include "Ephemeris.h"
 #include "Wind.h"
+#include "KpmField.h"
 
 //-----------//
 // TEMPLATES //
@@ -235,6 +236,17 @@ main(
 		exit(1);
 	}
 
+	//-------------------------------------//
+	// Setup a KpmField
+	//-------------------------------------//
+
+	KpmField kpmField;
+	if (! ConfigKpmField(&kpmField, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring KpmField\n", command);
+		exit(1);
+	}
+
 	//---------------------//
 	// configure the times //
 	//---------------------//
@@ -379,7 +391,7 @@ main(
 					instrument.antenna.currentBeamIdx =
 						instrument_event.beamIdx;
 					instrument_sim.ScatSim(&spacecraft, &instrument,
-						&windfield, &gmf, &(l00.frame));
+						&windfield, &gmf, &kpmField, &(l00.frame));
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);
 					break;

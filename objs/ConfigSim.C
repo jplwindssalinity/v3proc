@@ -22,6 +22,8 @@ static const char rcs_id_configsim_c[] =
 #include "Constants.h"
 #include "Distributions.h"
 #include "Tracking.h"
+#include "KpmField.h"
+#include "EarthField.h"
 
 //------------------//
 // ConfigSpacecraft //
@@ -1413,6 +1415,31 @@ ConfigGMF(
 		return(0);
 	if (! gmf->ReadOldStyle(gmf_filename))
 		return(0);
+	return(1);
+}
+
+int
+ConfigKpmField(
+	KpmField*			kpmField,
+	ConfigList*		config_list)
+{
+	//------------------------//
+	// configure the KpmField //
+	//------------------------//
+
+	float corr_length;
+	if (! config_list->GetFloat(KPM_CORRELATION_LENGTH_KEYWORD, &corr_length))
+	{
+		printf("Error: missing Kpm correlation length in configuration\n");
+		return(0);
+	}
+
+	if (! kpmField->Build(corr_length))
+	{
+		printf("Error building the KpmField\n");
+		return(0);
+	}
+
 	return(1);
 }
 

@@ -13,7 +13,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Ephemeris.h"
 #include "Sigma0.h"
 #include "Constants.h"
-
+#include "KpmField.h"
 
 //===============//
 // InstrumentSim //
@@ -115,7 +115,8 @@ InstrumentSim::SetMeasurements(
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
 	WindField*		windfield,
-	GMF*			gmf)
+	GMF*			gmf,
+	KpmField*		kpmField)
 {
 	//-------------------------//
 	// for each measurement... //
@@ -154,12 +155,6 @@ InstrumentSim::SetMeasurements(
 			    wv.dir = 0.0;
 			  }
 
-			//-------------------------------------------------------------------//
-			// Get the Kpm value appropriate for the current beam and wind speed //
-			//-------------------------------------------------------------------//
-
-			double Kpm = GetKpm(instrument,&wv);
-
 			//--------------------------------//
 			// convert wind vector to sigma-0 //
 			//--------------------------------//
@@ -177,21 +172,11 @@ InstrumentSim::SetMeasurements(
 			// It does not map back to the correct wind speed for the
 			// current beam and geometry because the model function is
 			// not perfect.
-			// This Kpm application is UNCORRELATED.
 			//---------------------------------------------------------------//
 
 			if (instrument->useKpm == 1)
 			{
-//				sigma0 *= kpmgrid->GetRV(meas->pol,wv.spd,lon,lat);
-
-				Gaussian rv(Kpm*Kpm,1.0);
-				float rv1 = -1.0;
-				while (rv1 < 0.0)
-				{
-					// Do not permit negative sigma0's.
-					rv1 = rv.GetNumber();
-				}
-				sigma0 *= rv1;
+				sigma0 *= kpmField->GetRV(meas->pol,wv.spd,lon_lat);
 			}
 		}
 
@@ -322,6 +307,7 @@ InstrumentSim::ScatSim(
 	Instrument*		instrument,
 	WindField*		windfield,
 	GMF*			gmf,
+	KpmField*		kpmField,
 	L00Frame*		l00_frame)
 {
 	MeasSpot meas_spot;
@@ -372,7 +358,8 @@ InstrumentSim::ScatSim(
 	// set measurement values //
 	//------------------------//
 
-	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, gmf))
+	if (! SetMeasurements(spacecraft, instrument, &meas_spot,
+		windfield, gmf, kpmField))
 		return(0);
 
 	//--------------------------------//

@@ -18,6 +18,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Spacecraft.h"
 #include "Distributions.h"
 #include "XTable.h"
+#include "KpmField.h"
 
 //======================================================================
 // CLASSES
@@ -60,12 +61,14 @@ public:
 	//--------------------------//
 
 	int		SetMeasurements(Spacecraft* spacecraft, Instrument* instrument,
-				MeasSpot* meas_spot, WindField* windfield, GMF* gmf);
+				MeasSpot* meas_spot, WindField* windfield, GMF* gmf,
+				KpmField* kpmField);
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
 	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
 				L00Frame* l00_frame);
 	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
-				WindField* windfield, GMF* gmf, L00Frame* l00_frame);
+				WindField* windfield, GMF* gmf,
+				KpmField* kpmField, L00Frame* l00_frame);
 
 	//-----------//
 	// variables //
