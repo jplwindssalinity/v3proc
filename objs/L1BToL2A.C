@@ -37,9 +37,10 @@ L15ToL17::Group(
 	Grid*		grid)
 {
 	// position at start of list of spots
-	MeasSpot* mspot = l15->frame.spotList.GetHead();
+	l15->frame.spotList.GotoHead();
+
 	// remove spot before gridding
-	mspot = l15->frame.spotList.RemoveCurrent();
+	MeasSpot* mspot = l15->frame.spotList.RemoveCurrent();
 
 	//------------------//
 	// for each spot... //
@@ -52,9 +53,10 @@ L15ToL17::Group(
 		//------------------------------//
 
 		// position at start of list of slices
-		Meas* meas = mspot->GetHead();
+		mspot->GotoHead();
+
 		// remove slice before gridding
-		meas = mspot->RemoveCurrent();
+		Meas* meas = mspot->RemoveCurrent();
 		while (meas != NULL)
 		{
 			// grid each slice in this measurement spot

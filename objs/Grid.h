@@ -39,19 +39,16 @@ public:
 	Grid();
 	~Grid();
 
-	int Allocate(
-	double  crosstrack_res,
-	double  alongtrack_res,
-	double  crosstrack_size,
-	double  alongtrack_size);
+	int		Allocate(double crosstrack_res, double alongtrack_res,
+			double crosstrack_size, double alongtrack_size);
 
-	int SetStartTime(double start_time);
+	int		SetStartTime(double start_time);
 
 	//---------------------//
 	// adding measurements //
 	//---------------------//
 
-	int Add(Meas *meas, double meas_time);
+	int		Add(Meas *meas, double meas_time);
 
 	//--------------//
 	// input/output //
