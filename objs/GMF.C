@@ -12,6 +12,7 @@ static const char rcs_id_gmf_c[] =
 #include <math.h>
 #include "GMF.h"
 #include "Interpolate.h"
+#include "Constants.h"
 
 //=====//
 // GMF //
@@ -20,7 +21,7 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :	_polCount(0), _incCount(0), _incMin(0.0), _incMax(0.0), _incStep(0.0),
 	_spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0), _chiCount(0),
-	_chiMin(0.0), _chiMax(0.0), _chiStep(0.0), _sigma0(0)
+	_chiMin(0.0), _chiMax(0.0), _chiStep(0.0), _value(0)
 {
 	return;
 }
@@ -42,13 +43,13 @@ GMF::Read(
 	if (fd == -1)
 		return(0);
 
-	if (! ReadHeader(fd))
+	if (! _ReadHeader(fd))
 		return(0);
 
 	if (! _Allocate())
 		return(0);
 
-	if (! ReadTable(fd))
+	if (! _ReadTable(fd))
 		return(0);
 
 	close(fd);
@@ -104,11 +105,11 @@ int GMF::ReadOldStyle(
 						close(fd);
 						return(0);
 					}
-					*(*(*(*(_sigma0+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
+					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
 						(double)value;
 
 					int chi_idx_2 = (_chiCount - 1) - chi_idx;
-					*(*(*(*(_sigma0+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(double)value;
 				}
 			}
@@ -119,12 +120,342 @@ int GMF::ReadOldStyle(
 	return(1);
 }
 
-//-----------------//
-// GMF::ReadHeader //
-//-----------------//
+//----------------------//
+// GMF::GetNearestValue //
+//----------------------//
 
 int
-GMF::ReadHeader(
+GMF::GetNearestValue(
+	PolE	pol,
+	double	inc,
+	double	spd,
+	double	chi,
+	double*	value)
+{
+	//-------------------//
+	// round to indicies //
+	//-------------------//
+
+	int pol_idx = _PolToIndex(pol);
+	int inc_idx = _IncToIndex(inc);
+	int spd_idx = _SpdToIndex(spd);
+	int chi_idx = _ChiToIndex(chi);
+
+	//------------------------//
+	// keep indicies in range //
+	//------------------------//
+
+	pol_idx = _ClipPolIndex(pol_idx);
+	inc_idx = _ClipIncIndex(inc_idx);
+	spd_idx = _ClipSpdIndex(spd_idx);
+
+	//--------------//
+	// access table //
+	//--------------//
+
+	*value = *(*(*(*(_value + pol_idx) + inc_idx) + spd_idx) + chi_idx);
+	return(1);
+}
+
+//---------------------------//
+// GMF::GetInterpolatedValue //
+//---------------------------//
+
+#define ORDER_PLUS_ONE	4
+
+int
+GMF::GetInterpolatedValue(
+	PolE	pol,
+	double	inc,
+	double	spd,
+	double	chi,
+	double*	value)
+{
+	//---------------------------------------//
+	// determine real and truncated indicies //
+	//---------------------------------------//
+
+	int pol_idx = _PolToIndex(pol);
+
+	double inc_ridx = _IncToRealIndex(inc);
+	double spd_ridx = _SpdToRealIndex(spd);
+	double chi_ridx = _ChiToRealIndex(chi);
+
+	int inc_idx = (int)inc_ridx;
+	int spd_idx = (int)spd_ridx;
+	int chi_idx = (int)chi_ridx;
+
+	//-------------------------//
+	// set up temporary arrays //
+	//-------------------------//
+
+	double val_x[ORDER_PLUS_ONE];
+	double val_y[ORDER_PLUS_ONE];
+	double val_spd_chi[ORDER_PLUS_ONE][ORDER_PLUS_ONE];
+
+	//---------------------------------//
+	// interpolate out incidence angle //
+	//---------------------------------//
+
+	int inc_offset = inc_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (inc_offset < 0)
+		inc_offset = 0;
+	if (inc_offset > _incCount - ORDER_PLUS_ONE)
+		inc_offset = _incCount - ORDER_PLUS_ONE;
+	double inc_subtable_ridx = inc_ridx - (double)inc_offset;
+
+	int spd_offset = spd_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (spd_offset < 0)
+		spd_offset = 0;
+	if (spd_offset > _spdCount - ORDER_PLUS_ONE)
+		spd_offset = _spdCount - ORDER_PLUS_ONE;
+	double spd_subtable_ridx = spd_ridx - (double)spd_offset;
+
+	int chi_offset = chi_idx - (ORDER_PLUS_ONE / 2) + 1;
+	if (chi_offset < 0)
+		chi_offset = 0;
+	if (chi_offset > _chiCount - ORDER_PLUS_ONE)
+		chi_offset = _chiCount - ORDER_PLUS_ONE;
+	double chi_subtable_ridx = chi_ridx - (double)chi_offset;
+
+	int sidx, cidx, iidx;
+	for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
+	{
+		for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+		{
+			for (iidx = 0; iidx < ORDER_PLUS_ONE; iidx++)
+			{
+				val_x[iidx] = (double)iidx;
+				val_y[iidx] = *(*(*(*(_value + pol_idx) + iidx + inc_offset) +
+					sidx + spd_offset) + cidx + chi_offset);
+			}
+			polint(val_x, val_y, ORDER_PLUS_ONE, inc_subtable_ridx,
+				&(val_spd_chi[sidx][cidx]));
+		}
+	}
+
+	//-----------------------//
+	// interpolate out speed //
+	//-----------------------//
+
+	double val_chi[ORDER_PLUS_ONE];
+	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+	{
+		for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
+		{
+			val_x[sidx] = (double)sidx;
+			val_y[sidx] = val_spd_chi[sidx][cidx];
+		}
+		polint(val_x, val_y, ORDER_PLUS_ONE, spd_subtable_ridx,
+			&(val_chi[cidx]));
+	}
+
+	//---------------------------//
+	// interpolate out direciton //
+	//---------------------------//
+
+	double val;
+	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
+	{
+		val_x[cidx] = (double)cidx;
+		val_y[cidx] = val_chi[cidx];
+	}
+	polint(val_x, val_y, ORDER_PLUS_ONE, chi_subtable_ridx, &val);
+
+	*value = val;
+
+	return(1);
+}
+
+//---------------//
+// GMF::GetCoefs //
+//---------------//
+
+int
+GMF::GetCoefs(
+	PolE		pol,
+	double		inc,
+	double		spd,
+	double*		A0,
+	double*		A1,
+	double*		A1_phase,
+	double*		A2,
+	double*		A2_phase,
+	double*		A3,
+	double*		A3_phase,
+	double*		A4,
+	double*		A4_phase)
+{
+	double real[5], imag[5];
+	int n = _chiCount - 1;
+	double wn = two_pi / n;
+
+	for (int i = 0; i < 5; i++)
+	{
+		real[i] = 0.0;
+		imag[i] = 0.0;
+
+		// assumes single point overlap in chi
+		for (int chi_idx = 0; chi_idx < n; chi_idx++)
+		{
+			double arg = wn * (double)i * (double)chi_idx;
+			double c = cos(arg);
+			double s = sin(arg);
+			double chi = ((double)chi_idx - _chiMin) * _chiStep;
+			double val;
+			GetInterpolatedValue(pol, inc, spd, chi, &val);
+			real[i] += val * c;
+			imag[i] += val * s;
+		}
+	}
+
+	*A0 = real[0] / (double)n;
+	*A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
+	*A1_phase = -atan2(imag[1], real[1]);
+	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
+	*A2_phase = -atan2(imag[2], real[2]);
+	*A3 = 2.0 * sqrt(real[3] * real[3] + imag[3] * imag[3]) / (double)n;
+	*A3_phase = -atan2(imag[3], real[3]);
+	*A4 = 2.0 * sqrt(real[4] * real[4] + imag[4] * imag[4]) / (double)n;
+	*A4_phase = -atan2(imag[4], real[4]);
+
+	return(1);
+}
+
+//--------------------//
+// GMF::FindSolutions //
+//--------------------//
+
+#define STARTING_SPEED		10.0
+
+int
+GMF::FindSolutions(
+	MeasurementList*	measurement_list,
+	WVC*				wvc)
+{
+	int* best_idx = new int[_chiCount];
+	double* best_obj = new double[_chiCount];
+
+	//--------------------------//
+	// determine starting index //
+	//--------------------------//
+
+	int u_idx = _SpdToIndex(STARTING_SPEED);
+
+	//-----------------//
+	// for each chi... //
+	//-----------------//
+
+	for (int phi_idx = 0; phi_idx < _chiCount; phi_idx++)
+	{
+		//------------------------//
+		// ...find the best speed //
+		//------------------------//
+
+		double obj = _ObjectiveFunction(measurement_list, u_idx, phi_idx);
+		double obj_minus = _ObjectiveFunction(measurement_list, u_idx - 1,
+			phi_idx);
+		double obj_plus = _ObjectiveFunction(measurement_list, u_idx + 1,
+			phi_idx);
+		do
+		{
+			if (obj > obj_minus && obj > obj_plus)
+			{
+				// peak
+				best_idx[phi_idx] = u_idx;
+				best_obj[phi_idx] = obj;
+				break;
+			}
+			else if (obj_plus > obj && obj > obj_minus)
+			{
+				// move up
+				u_idx++;
+				obj_minus = obj;
+				obj = obj_plus;
+				obj_plus = _ObjectiveFunction(measurement_list,
+					u_idx + 1, phi_idx);
+			}
+			else if (obj_minus > obj && obj > obj_plus)
+			{
+				// move down
+				u_idx--;
+				obj_plus = obj;
+				obj = obj_minus;
+				obj_minus = _ObjectiveFunction(measurement_list,
+					u_idx - 1, phi_idx);
+			}
+		} while (1);
+	}
+
+	//--------------------------------//
+	// find local maxima in phi strip //
+	//--------------------------------//
+
+	int count = 0;
+	for (phi_idx = 0; phi_idx < _chiCount; phi_idx++)
+	{
+		int phi_idx_plus = (phi_idx + 1) % _chiCount;
+		int phi_idx_minus = (phi_idx - 1 + _chiCount) % _chiCount;
+		if (best_obj[phi_idx] > best_obj[phi_idx_plus] &&
+			best_obj[phi_idx] > best_obj[phi_idx_minus])
+		{
+			// maximum found -> add to list
+			WindVector* new_wv = new WindVector();
+			if (! new_wv)
+				return(0);
+			new_wv->speed = _IndexToSpd(best_idx[phi_idx]);
+			new_wv->direction = _IndexToChi(phi_idx);
+			if (! wvc->ambiguities.Append(new_wv))
+				return(0);
+			count++;
+		}
+	}
+	return(count);
+}
+
+//----------------//
+// GMF::_Allocate //
+//----------------//
+
+int
+GMF::_Allocate()
+{
+	_value = (double ****)malloc(_polCount * sizeof(double ***));
+	if (_value == NULL)
+		return(0);
+
+	for (int i = 0; i < _polCount; i++)
+	{
+		double*** dppp = (double ***)malloc(_incCount * sizeof(double **));
+		if (dppp == NULL)
+			return(0);
+		*(_value + i) = dppp;
+
+		for (int j = 0; j < _incCount; j++)
+		{
+			double** dpp = (double **)malloc(_spdCount * sizeof(double *));
+			if (dpp == NULL)
+				return(0);
+			*(*(_value + i) + j) = dpp;
+
+			for (int k = 0; k < _spdCount; k++)
+			{
+				double* dp = (double *)malloc(_chiCount * sizeof(double));
+				if (dp == NULL)
+					return(0);
+				*(*(*(_value + i) + j) + k) = dp;
+			}
+		}
+	}
+	return(1);
+}
+
+//------------------//
+// GMF::_ReadHeader //
+//------------------//
+
+int
+GMF::_ReadHeader(
 	int		fd)
 {
 	read(fd, &_polCount, sizeof(int));
@@ -144,49 +475,12 @@ GMF::ReadHeader(
 	return(1);
 }
 
-//----------------//
-// GMF::_Allocate //
-//----------------//
+//-----------------//
+// GMF::_ReadTable //
+//-----------------//
 
 int
-GMF::_Allocate()
-{
-	_sigma0 = (double ****)malloc(_polCount * sizeof(double ***));
-	if (_sigma0 == NULL)
-		return(0);
-
-	for (int i = 0; i < _polCount; i++)
-	{
-		double*** dppp = (double ***)malloc(_incCount * sizeof(double **));
-		if (dppp == NULL)
-			return(0);
-		*(_sigma0 + i) = dppp;
-
-		for (int j = 0; j < _incCount; j++)
-		{
-			double** dpp = (double **)malloc(_spdCount * sizeof(double *));
-			if (dpp == NULL)
-				return(0);
-			*(*(_sigma0 + i) + j) = dpp;
-
-			for (int k = 0; k < _spdCount; k++)
-			{
-				double* dp = (double *)malloc(_chiCount * sizeof(double));
-				if (dp == NULL)
-					return(0);
-				*(*(*(_sigma0 + i) + j) + k) = dp;
-			}
-		}
-	}
-	return(1);
-}
-
-//----------------//
-// GMF::ReadTable //
-//----------------//
-
-int
-GMF::ReadTable(
+GMF::_ReadTable(
 	int		fd)
 {
 	//----------------//
@@ -199,7 +493,7 @@ GMF::ReadTable(
 		{
 			for (int k = 0; k < _spdCount; k++)
 			{
-				read(fd, *(*(*(_sigma0 + i) + j) + k),
+				read(fd, *(*(*(_value + i) + j) + k),
 					sizeof(double) * _chiCount);
 			}
 		}
@@ -216,213 +510,201 @@ GMF::ReadTable(
 	return(1);
 }
 
-//-----------------------//
-// GMF::GetNearestSigma0 //
-//-----------------------//
+//------------------//
+// GMF::_PolToIndex //
+//------------------//
 
 int
-GMF::GetNearestSigma0(
-	int		pol,
-	double	inc,
-	double	spd,
-	double	chi,
-	double*	sigma_0)
+GMF::_PolToIndex(
+	PolE	pol)
 {
-	// make sure that pol is within table range
-	if (pol < 0 || pol >= _polCount)
-		return(0);
-
-	// make sure that chi is positive and within table range
-	while (chi < 0.0)
-		chi += 360.0;
-	while (chi >= 360.0)
-		chi -= 360.0;
-	if (chi < _chiMin - _chiStep || chi > _chiMax + _chiStep)
-		return(0);
-
-	// take nearest value
-	// this needs to be changed to interpolation
-	double inc_didx = (inc - _incMin) / _incStep;
-	double spd_didx = (spd - _spdMin) / _spdStep;
-	double chi_didx = (chi - _chiMin) / _chiStep;
-
-	int inc_idx = (int)(inc_didx + 0.5);
-	int spd_idx = (int)(spd_didx + 0.5);
-	int chi_idx = (int)(chi_didx + 0.5);
-
-	if (inc_idx < 0) inc_idx = 0;
-	if (inc_idx >= _incCount) inc_idx = _incCount;
-	if (spd_idx < 0) spd_idx = 0;
-	if (spd_idx >= _spdCount) spd_idx = _spdCount;
-	if (chi_idx < 0) chi_idx = 0;
-	if (chi_idx >= _chiCount) chi_idx = _chiCount;
-
-	*sigma_0 = *(*(*(*(_sigma0 + pol) + inc_idx) + spd_idx) + chi_idx);
-	return(1);
+	return((int)pol);
 }
 
-//---------------------//
-// GMF::GetInterSigma0 //
-//---------------------//
-
-#define ORDER_PLUS_ONE	4
+//------------------//
+// GMF::_IncToIndex //
+//------------------//
 
 int
-GMF::GetInterSigma0(
-	int		pol,
-	double	inc,
-	double	spd,
-	double	chi,
-	double*	sigma_0)
+GMF::_IncToIndex(
+	double		inc)
 {
-	// make sure that pol is within table range
-	if (pol < 0 || pol >= _polCount)
-		return(0);
-
-	// make sure that chi is positive and within table range
-	while (chi < 0.0)
-		chi += 360.0;
-	while (chi >= 360.0)
-		chi -= 360.0;
-	if (chi < _chiMin - _chiStep || chi > _chiMax + _chiStep)
-		return(0);
-
-	// set up tmp arrays
-	double s0_x[ORDER_PLUS_ONE];
-	double s0_y[ORDER_PLUS_ONE];
-	double s0_spd_chi[ORDER_PLUS_ONE][ORDER_PLUS_ONE];
-
-	//---------------------------------//
-	// interpolate out incidence angle //
-	//---------------------------------//
-
-	double inc_didx = (inc - _incMin) / _incStep;
-	int inc_idx = (int)inc_didx;
-	int inc_offset = inc_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (inc_offset < 0)
-		inc_offset = 0;
-	if (inc_offset > _incCount - ORDER_PLUS_ONE)
-		inc_offset = _incCount - ORDER_PLUS_ONE;
-	double inc_subtable_didx = inc_didx - (double)inc_offset;
-
-	double spd_didx = (spd - _spdMin) / _spdStep;
-	int spd_idx = (int)spd_didx;
-	int spd_offset = spd_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (spd_offset < 0)
-		spd_offset = 0;
-	if (spd_offset > _spdCount - ORDER_PLUS_ONE)
-		spd_offset = _spdCount - ORDER_PLUS_ONE;
-	double spd_subtable_didx = spd_didx - (double)spd_offset;
-
-	double chi_didx = (chi - _chiMin) / _chiStep;
-	int chi_idx = (int)chi_didx;
-	int chi_offset = chi_idx - (ORDER_PLUS_ONE / 2) + 1;
-	if (chi_offset < 0)
-		chi_offset = 0;
-	if (chi_offset > _chiCount - ORDER_PLUS_ONE)
-		chi_offset = _chiCount - ORDER_PLUS_ONE;
-	double chi_subtable_didx = chi_didx - (double)chi_offset;
-
-	int sidx, cidx, iidx;
-	for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
-	{
-		for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
-		{
-			for (iidx = 0; iidx < ORDER_PLUS_ONE; iidx++)
-			{
-				s0_x[iidx] = (double)iidx;
-				s0_y[iidx] = *(*(*(*(_sigma0 + pol) + iidx + inc_offset) +
-					sidx + spd_offset) + cidx + chi_offset);
-			}
-			polint(s0_x, s0_y, ORDER_PLUS_ONE, inc_subtable_didx,
-				&(s0_spd_chi[sidx][cidx]));
-		}
-	}
-
-	//-----------------------//
-	// interpolate out speed //
-	//-----------------------//
-
-	double s0_chi[ORDER_PLUS_ONE];
-	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
-	{
-		for (sidx = 0; sidx < ORDER_PLUS_ONE; sidx++)
-		{
-			s0_x[sidx] = (double)sidx;
-			s0_y[sidx] = s0_spd_chi[sidx][cidx];
-		}
-		polint(s0_x, s0_y, ORDER_PLUS_ONE, spd_subtable_didx,
-			&(s0_chi[cidx]));
-	}
-
-	//---------------------------//
-	// interpolate out direciton //
-	//---------------------------//
-
-	double s0;
-	for (cidx = 0; cidx < ORDER_PLUS_ONE; cidx++)
-	{
-		s0_x[cidx] = (double)cidx;
-		s0_y[cidx] = s0_chi[cidx];
-	}
-	polint(s0_x, s0_y, ORDER_PLUS_ONE, chi_subtable_didx, &s0);
-
-	*sigma_0 = s0;
-
-	return(1);
+	double inc_ridx = _IncToRealIndex(inc);
+	int inc_idx = (int)(inc_ridx + 0.5);
+	return(inc_idx);
 }
 
-//---------------//
-// GMF::GetCoefs //
-//---------------//
+//------------------//
+// GMF::_SpdToIndex //
+//------------------//
 
 int
-GMF::GetCoefs(
-	int			pol,
-	double		inc,
-	double		spd,
-	double*		A0,
-	double*		A1,
-	double*		A1_phase,
-	double*		A2,
-	double*		A2_phase,
-	double*		A3,
-	double*		A3_phase,
-	double*		A4,
-	double*		A4_phase)
+GMF::_SpdToIndex(
+	double		spd)
 {
-	double real[5], imag[5];
-	int n = _chiCount - 1;
-	double wn = M_PI * 2.0 / n;
+	double spd_ridx = _SpdToRealIndex(spd);
+	int spd_idx = (int)(spd_ridx + 0.5);
+	return(spd_idx);
+}
 
-	for (int i = 0; i < 5; i++)
+//------------------//
+// GMF::_ChiToIndex //
+//------------------//
+
+int
+GMF::_ChiToIndex(
+	double		chi)
+{
+	double chi_ridx = _ChiToRealIndex(chi);
+	int chi_idx = (int)(chi_ridx + 0.5);
+	return(chi_idx);
+}
+
+//----------------------//
+// GMF::_IncToRealIndex //
+//----------------------//
+
+double
+GMF::_IncToRealIndex(
+	double		inc)
+{
+	return((inc - _incMin) / _incStep);
+}
+
+//----------------------//
+// GMF::_SpdToRealIndex //
+//----------------------//
+
+double
+GMF::_SpdToRealIndex(
+	double		spd)
+{
+	return((spd - _spdMin) / _spdStep);
+}
+
+//----------------------//
+// GMF::_ChiToRealIndex //
+//----------------------//
+
+double
+GMF::_ChiToRealIndex(
+	double		chi)
+{
+	if (chi < 0.0)
 	{
-		real[i] = 0.0;
-		imag[i] = 0.0;
-
-		// assumes single point overlap in chi
-		for (int chi_idx = 0; chi_idx < n; chi_idx++)
-		{
-			double arg = wn * (double)i * (double)chi_idx;
-			double c = cos(arg);
-			double s = sin(arg);
-			double chi = ((double)chi_idx - _chiMin) * _chiStep;
-			double s0;
-			GetInterSigma0(pol, inc, spd, chi, &s0);
-			real[i] += s0 * c;
-			imag[i] += s0 * s;
-		}
+		int chi_idx = (chi / two_pi) + 1;
+		chi += chi_idx * two_pi;
 	}
+	chi = fmod(chi, two_pi);
+	return((chi - _chiMin) / _chiStep);
+}
 
-	*A0 = real[0] / (double)n;
-	*A1 = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)n;
-	*A1_phase = -atan2(imag[1], real[1]);
-	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
-	*A2_phase = -atan2(imag[2], real[2]);
-	*A3 = 2.0 * sqrt(real[3] * real[3] + imag[3] * imag[3]) / (double)n;
-	*A3_phase = -atan2(imag[3], real[3]);
-	*A4 = 2.0 * sqrt(real[4] * real[4] + imag[4] * imag[4]) / (double)n;
-	*A4_phase = -atan2(imag[4], real[4]);
+//--------------------//
+// GMF::_ClipPolIndex //
+//--------------------//
 
-	return(1);
+int
+GMF::_ClipPolIndex(
+	int		pol_idx)
+{
+	if (pol_idx < 0)
+		return(0);
+	else if (pol_idx >= _polCount)
+		return(_polCount - 1);
+	else
+		return(pol_idx);
+}
+
+//--------------------//
+// GMF::_ClipIncIndex //
+//--------------------//
+
+int
+GMF::_ClipIncIndex(
+	int		inc_idx)
+{
+	if (inc_idx < 0)
+		return(0);
+	else if (inc_idx >= _incCount)
+		return(_incCount - 1);
+	else
+		return(inc_idx);
+}
+
+//--------------------//
+// GMF::_ClipSpdIndex //
+//--------------------//
+
+int
+GMF::_ClipSpdIndex(
+	int		spd_idx)
+{
+	if (spd_idx < 0)
+		return(0);
+	else if (spd_idx >= _spdCount)
+		return(_spdCount - 1);
+	else
+		return(spd_idx);
+}
+
+//--------------------//
+// GMF::_ClipChiIndex //
+//--------------------//
+
+int
+GMF::_ClipChiIndex(
+	int		chi_idx)
+{
+	if (chi_idx < 0)
+		return(0);
+	else if (chi_idx >= _chiCount)
+		return(_chiCount - 1);
+	else
+		return(chi_idx);
+}
+
+//------------------//
+// GMF::_IndexToSpd //
+//------------------//
+
+double
+GMF::_IndexToSpd(
+	int		spd_idx)
+{
+	return((double)spd_idx * _spdStep + _spdMin);
+}
+
+//------------------//
+// GMF::_IndexToChi //
+//------------------//
+
+double
+GMF::_IndexToChi(
+	int		chi_idx)
+{
+	return((double)chi_idx * _chiStep + _chiMin);
+}
+
+//-------------------------//
+// GMF::_ObjectiveFunction //
+//-------------------------//
+
+double
+GMF::_ObjectiveFunction(
+	MeasurementList*	measurement_list,
+	double				u,
+	double				phi)
+{
+	double fv = 0.0;
+	for (Measurement* meas = measurement_list->GetHead(); meas;
+			meas = measurement_list->GetNext())
+	{
+		double chi = meas->northAzimuth - phi;
+		double gmf_value;
+		GetInterpolatedValue(meas->pol, meas->incidenceAngle, u, chi,
+			&gmf_value);
+		double s = gmf_value - meas->value;
+		fv += s*s / meas->estimatedKp + log10(meas->estimatedKp);
+	}
+	return(-fv);
 }

@@ -9,6 +9,10 @@
 static const char rcs_id_gmf_h[] =
 	"@(#) $Id$";
 
+#include "Measurement.h"
+#include "WVC.h"
+
+
 //======================================================================
 // CLASSES
 //		GMF
@@ -20,7 +24,8 @@ static const char rcs_id_gmf_h[] =
 //
 // DESCRIPTION
 //		The GMF object contains a geophysical model function in
-//		tabular format and allows easy access.
+//		tabular format.  It contains methods to access the model
+//		function as well as methods for performing wind retrieval.
 //======================================================================
 
 class GMF
@@ -40,30 +45,72 @@ public:
 
 	int		Read(const char* filename);
 	int		ReadOldStyle(const char* filename);
-	int		ReadHeader(int fd);
-	int		ReadTable(int fd);
 
 	//--------//
 	// access //
 	//--------//
 
-	// directions dir and chi are w.r.t. north
-	int		GetNearestSigma0(int pol, double inc, double spd, double chi,
-				double* sigma_0);
-	int		GetInterSigma0(int pol, double inc, double spd, double chi,
-				double* sigma_0);
+	int		GetNearestValue(PolE pol, double inc, double spd, double chi,
+				double* value);
+	int		GetInterpolatedValue(PolE pol, double inc, double spd, double chi,
+				double* value);
 
 	//---------//
 	// analyze //
 	//---------//
 
-	int		GetCoefs(int pol, double inc, double spd, double* A0, double* A1,
+	int		GetCoefs(PolE pol, double inc, double spd, double* A0, double* A1,
 				double* A1_phase, double* A2, double* A2_phase, double* A3,
 				double* A3_phase, double* A4, double* A4_phase);
 
+	//----------------//
+	// wind retrieval //
+	//----------------//
+
+	int		FindSolutions(MeasurementList* measurement_list, WVC* wvc);
+
 protected:
 
+	//--------------//
+	// construction //
+	//--------------//
+
 	int		_Allocate();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		_ReadHeader(int fd);
+	int		_ReadTable(int fd);
+
+	//--------//
+	// access //
+	//--------//
+
+	int		_PolToIndex(PolE pol);
+	int		_IncToIndex(double inc);
+	int		_SpdToIndex(double spd);
+	int		_ChiToIndex(double chi);
+
+	double	_IncToRealIndex(double inc);
+	double	_SpdToRealIndex(double spd);
+	double	_ChiToRealIndex(double chi);
+
+	int		_ClipPolIndex(int pol_idx);
+	int		_ClipIncIndex(int inc_idx);
+	int		_ClipSpdIndex(int spd_idx);
+	int		_ClipChiIndex(int chi_idx);
+
+	double	_IndexToSpd(int spd_idx);
+	double	_IndexToChi(int chi_idx);
+
+	//----------------//
+	// wind retrieval //
+	//----------------//
+
+	double	_ObjectiveFunction(MeasurementList* measurement_list, double u,
+				double phi);
 
 	//-----------//
 	// variables //
@@ -86,7 +133,7 @@ protected:
 	double	_chiMax;		// the maximum relative azimuth angle
 	double	_chiStep;		// the relative azimuth angle step size
 
-	double**** _sigma0;		// the array of sigma-0 values
+	double****	_value;		// the array of model function values
 };
 
 #endif
