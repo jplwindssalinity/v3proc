@@ -1988,12 +1988,12 @@ WindField::NearestWindVector(
 
     // convert to longitude index
     int lon_idx;
-    if (! _lon.GetNearestIndex(lon, &lon_idx))
+    if (! _lon.GetNearestIndexStrict(lon, &lon_idx))
         return(0);
 
     // convert to latitude index
     int lat_idx;
-    if (! _lat.GetNearestIndex(lon_lat.latitude, &lat_idx))
+    if (! _lat.GetNearestIndexStrict(lon_lat.latitude, &lat_idx))
         return(0);
 
     *wv = *(*(*(_field + lon_idx) + lat_idx));
@@ -5189,8 +5189,8 @@ WindSwath::DirectionDensity(
             //---------------------//
 
             int ret_idx, true_idx;
-            if (! dir_idx.GetNearestWrappedIndex(rel_ret_dir, &ret_idx) ||
-                ! dir_idx.GetNearestWrappedIndex(rel_true_dir, &true_idx))
+            if (! dir_idx.GetNearestIndexWrapped(rel_ret_dir, &ret_idx) ||
+                ! dir_idx.GetNearestIndexWrapped(rel_true_dir, &true_idx))
             {
                 return(0);
             }
@@ -5975,8 +5975,8 @@ WindSwath::DirectionDensityVsCti(
             //---------------------//
 
             int ret_idx, true_idx;
-            dir_idx.GetNearestIndex(rel_ret_dir, &ret_idx);
-            dir_idx.GetNearestIndex(rel_true_dir, &true_idx);
+            dir_idx.GetNearestIndexStrict(rel_ret_dir, &ret_idx);
+            dir_idx.GetNearestIndexStrict(rel_true_dir, &true_idx);
 
             ( *( *(swath_density_array + cti) + ret_idx) )++;
             ( *( *(field_density_array + cti) + true_idx) )++;
