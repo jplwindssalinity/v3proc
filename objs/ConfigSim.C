@@ -546,33 +546,41 @@ ConfigInstrument(
 		return(0);
 	instrument->useKpm = use_kpm;
 
-	config_list->WarnForMissingKeywords();
-
-	char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
-	if (rgc_file)
+	int use_rgc;
+	if (! config_list->GetInt(USE_RGC_KEYWORD, &use_rgc))
+		return(0);
+	instrument->useRgc = use_rgc;
+	if (use_rgc)
 	{
+		char* rgc_file = config_list->Get(RGC_FILE_KEYWORD);
+		if (rgc_file == NULL)
+			return(0);
+
 		if (! instrument->rangeTracker.ReadBinary(rgc_file))
 		{
 			fprintf(stderr, "ConfigInstrument: error reading RGC file %s\n",
 				rgc_file);
 			return(0);
 		}
-		instrument->useRgc = 1;
 	}
 
-	char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
-	if (dtc_file)
+	int use_dtc;
+	if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
+		return(0);
+	instrument->useDtc = use_dtc;
+	if (use_dtc)
 	{
+		char* dtc_file = config_list->Get(DTC_FILE_KEYWORD);
+		if (dtc_file == NULL)
+			return(0);
+
 		if (! instrument->dopplerTracker.ReadBinary(dtc_file))
 		{
 			fprintf(stderr, "ConfigInstrument: error reading DTC file %s\n",
 				dtc_file);
 			return(0);
 		}
-		instrument->useDtc = 1;
 	}
-
-	config_list->ExitForMissingKeywords();
 
 	return(1);
 }

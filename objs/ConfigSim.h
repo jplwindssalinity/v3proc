@@ -328,6 +328,8 @@ int		ConfigControl(SpacecraftSim* spacecraft_sim, ConfigList* config_list,
 // Tracking //
 //----------//
 
+#define USE_RGC_KEYWORD		"USE_RGC"
+#define USE_DTC_KEYWORD		"USE_DTC"
 #define RGC_FILE_KEYWORD	"RGC_FILE"
 #define DTC_FILE_KEYWORD	"DTC_FILE"
 
