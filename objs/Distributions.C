@@ -64,12 +64,15 @@ RNG::~RNG(){
   return;
 }
 
-void RNG::SetSeed(long int seed){
-  _seed=seed;
+void
+RNG::SetSeed(long int seed)
+{
 	if (seed > 0)
-		_seed=-_seed;
+		_seed = -seed;
 	else if (seed == 0)
-		_seed = 1;
+		_seed = -1;
+	else
+		_seed = seed;
 	_Init();
 }
 
