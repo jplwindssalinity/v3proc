@@ -166,16 +166,20 @@ QscatSim::L1AFrameInit(
         l1a_frame->time = qscat->cds.time;
         l1a_frame->orbitTicks = qscat->cds.orbitTime;
         l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
-        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
         l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
-        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         l1a_frame->calPosition = 255;    // no cal pulses yet
-        l1a_frame->status.specified_cal_pulse_pos = 255;  // ditto.
-        l1a_frame->in_eu.true_cal_pulse_pos = 255; // ditto again.
 
-        // extra data needed by GS for first pulse
-        l1a_frame->status.operational_mode = 14;  // Set WOM always.
+        //---------------------------------//
+        // Set GS data from the simulation //
+        //---------------------------------//
+
+        // GS Status block
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
+        l1a_frame->status.specified_cal_pulse_pos = 255;  // no cal pulses yet.
+        l1a_frame->in_eu.true_cal_pulse_pos = 255; // ditto
+
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         Beam* cur_beam = qscat->GetCurrentBeam();
@@ -245,10 +249,6 @@ QscatSim::L1AFrameInit(
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
-        // The next one is hard coded, but should come from cfg file.
-        l1a_frame->status.receiver_gain = 10;  // assume 10 db attenuation
-        l1a_frame->status.ses_configuration_flags = 8; // assume mod on
-        l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
 
         // transfer instrument time in microseconds into vtcw.
         double vtcw_time = 1e6*qscat->cds.instrumentTime/32.0;
@@ -286,10 +286,106 @@ QscatSim::L1AFrameInit(
         l1a_frame->engdata.receiver_temp =
           l1a_frame->engdata.precision_coupler_temp;
 
-        // Use testdata values
+        //-------------------------------------------------//
+        // Set remaining GS data from V2B2.2 benchmark run //
+        //-------------------------------------------------//
+
+        // Status Block
+
+        short int2 = 0;
+        int int4 = 0;
+
+        int2 = 514;
+        (void)memcpy((void*)l1a_frame->status.telemetry_table_id,
+                     (void*)(&int2), 2);
+        l1a_frame->status.status_error_flags = 0;
+        // The next 3 are just sample data, with no relevance to this sim run.
+        l1a_frame->status.table_readout_type = 11;
+        int2 = 1164;
+        (void)memcpy((void*)l1a_frame->status.table_readout_offset,
+                     (void*)(&int2), 2);
+        int4 = 1498831956;
+        (void)memcpy((void*)l1a_frame->status.table_readout_data,
+                     (void*)(&int4), 4);
+        l1a_frame->status.operational_mode = 14;  // Set WOM always.
+        // prf_count set above.
+        int2 = 1888;
+        (void)memcpy((void*)l1a_frame->status.status_change_flags,
+                     (void*)(&int2), 2);
+        int2 = 0;
+        (void)memcpy((void*)l1a_frame->status.error_message,
+                     (void*)(&int2), 2);
+        // The error message history should be irrelevant to this run.
+        int2 = 110;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[0]),
+                     (void*)(&int2), 2);
+        int2 = 34052;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[2]),
+                     (void*)(&int2), 2);
+        int2 = 34062;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[4]),
+                     (void*)(&int2), 2);
+        int2 = 34071;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[6]),
+                     (void*)(&int2), 2);
+        int2 = 34084;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[8]),
+                     (void*)(&int2), 2);
+        l1a_frame->status.valid_command_count = 24;
+        l1a_frame->status.invalid_command_count = 0;
+        // specified_cal_pulse_pos set above
+        // prf_cycle_time set above
+        // range_gate_a_delay set above
+        // range_gate_a_width set above
+        // range_gate_b_delay set above
+        // range_gate_b_width set above
+        // doppler_shift_command_1,2 are set in QscatSim::ScatSim() when avail.
+        // pulse_width set above
+        // The next one is hard coded, but should come from cfg file.
+        l1a_frame->status.receiver_gain = 10;  // assume 10 db attenuation
+        l1a_frame->status.ses_configuration_flags = 8; // assume mod on
+        l1a_frame->status.ses_data_overrun_count = 0;
+        l1a_frame->status.ses_data_underrun_count = 0;
+        l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
+        int2 = 13;
+        (void)memcpy((void*)l1a_frame->status.running_error_count,
+                     (void*)(&int2), 2);
+        l1a_frame->status.ses_reset_position = -1;
+        // doppler_orbit_step set above
+        // prf_orbit_step_change set above
+        // The cmd history queue should be irrelevant to this run.
+        int2 = 61454;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[0]),
+                     (void*)(&int2), 2);
+        int2 = 43761;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[2]),
+                     (void*)(&int2), 2);
+        int2 = 43737;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[4]),
+                     (void*)(&int2), 2);
+        int2 = 43731;
+        (void)memcpy((void*)&(l1a_frame->status.error_message_history[6]),
+                     (void*)(&int2), 2);
+        l1a_frame->status.calc_ant_max_grp_count = 0;
+        // vtcw set above
+        // corres_inst_time set above
+        l1a_frame->status.fsw_mission_version_num = 65;
+        l1a_frame->status.fsw_build_number = 3;
+        l1a_frame->status.pbi_flag = 0;
+
+        // Engineering Block
         l1a_frame->engdata.transmit_power_a = 142; // 49.3 dBm
         l1a_frame->engdata.transmit_power_b = 142; // 49.3 dBm
         l1a_frame->engdata.a2d_p12v_xcpl = 188;
+        // Look at the tlm dictionary, Table 14, pg. B-33.
+        int2 = 24635;
+        (void)memcpy((void*)l1a_frame->engdata.relay_status,
+                     (void*)(&int2), 2);
+        l1a_frame->engdata.ea_a_spin_rate = 183;
+        l1a_frame->engdata.ea_b_spin_rate = 0;
+        l1a_frame->engdata.eng_status_c1 = 28;
+        l1a_frame->engdata.eng_status_c2 = 16;
+        l1a_frame->engdata.eng_status_c3 = 0;
     }
     else if (_spotNumber == 1)
     {
