@@ -114,6 +114,7 @@ main(
     int opt_no_start_frames = 0;
     int opt_no_aft_look = 0;
     int opt_no_fore_look = 0;
+    int opt_no_inner_fore = 0;
     int opt_no_inner_beam = 0;
     int opt_no_outer_beam = 0;
     int opt_no_HHVH=0;
@@ -167,6 +168,10 @@ main(
             {
                 opt_no_inner_beam = 1;
             }
+	    else if (strcasecmp(optarg, "innerfore0") == 0)
+            {
+                opt_no_inner_fore = 1;
+            }
             else if (strcasecmp(optarg, "HHVH0") == 0)
             {
                 opt_no_HHVH = 1;
@@ -197,6 +202,7 @@ main(
             printf("  aft0   : Remove aft look measurements\n");
             printf("  fore0  : Remove fore look measurements\n");
             printf("  inner0 : Remove inner beam measurements\n");
+	    printf("  innerfore0 : Remove inner beam fore look measurements\n");
             printf("  outer0 : Remove outer beam  measurements\n");
             printf("  HHVH0 : Remove HHVH  measurements\n");
             printf("  VVHV0 : Remove VVHV  measurements\n");
@@ -290,6 +296,8 @@ main(
             remove = remove || (opt_no_fore_look && (meas->scanAngle<pi/2 ||
                 meas->scanAngle>3*pi/2));
             remove = remove || (opt_no_inner_beam && meas->beamIdx==0);
+            remove = remove || (opt_no_inner_fore &&  meas->beamIdx==0 &&
+			 (meas->scanAngle<pi/2 ||meas->scanAngle>3*pi/2));
             remove = remove || (opt_no_outer_beam && meas->beamIdx==1);
             remove = remove || ( opt_no_HHVH &&
                 (meas->measType == Meas::HH_VH_CORR_MEAS_TYPE));
