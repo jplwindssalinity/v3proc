@@ -35,7 +35,8 @@ Instrument::Instrument()
 	chirpStartM(0.0), chirpStartB(0.0), systemDelay(0.0),
 	systemTemperature(0.0), xmitPulsewidth(0.0),
 	receiverGateWidth(0.0), baseTransmitFreq(0.0), sliceBandwidth(0.0),
-	noiseBandwidth(0.0), signalBandwidth(0.0), useKpc(1)
+	noiseBandwidth(0.0), signalBandwidth(0.0), useKpc(1),
+	_eqxTime(0)
 {
 	return;
 }
@@ -43,4 +44,30 @@ Instrument::Instrument()
 Instrument::~Instrument()
 {
 	return;
+}
+
+//---------------------//
+// Instrument::SetTime //
+//---------------------//
+
+int
+Instrument::SetTime(
+	double		new_time)
+{
+	time = new_time;
+	double time_since_eqx = time - _eqxTime;
+	orbitTime =  (unsigned short)(time_since_eqx * ORBIT_TICKS_PER_SECOND);
+	return(1);
+}
+
+//-----------------//
+// Instrument::Eqx //
+//-----------------//
+
+int
+Instrument::Eqx(
+	double	eqx_time)
+{
+	_eqxTime = eqx_time;
+	return(1);
 }

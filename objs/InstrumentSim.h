@@ -51,7 +51,7 @@ public:
 	int		Initialize(Antenna* antenna);
 	int		DetermineNextEvent(Antenna* antenna,
 				InstrumentEvent* instrument_event);
-	int		UpdateAntennaPosition(double time, Instrument* instrument);
+	int		UpdateAntennaPosition(Instrument* instrument);
 
 	//--------------------------//
 	// scatterometer simulation //
@@ -64,9 +64,8 @@ public:
 	int		SetL00Spacecraft(Spacecraft* spacecraft, L00Frame* l00_frame);
 	int		SetL00Science(MeasSpot* meas_spot, Instrument* instrument,
 				L00Frame* l00_frame);
-	int		ScatSim(double time, Spacecraft* spacecraft,
-				Instrument* instrument, WindField* windfield, GMF* gmf,
-				L00Frame* l00_frame);
+	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
+				WindField* windfield, GMF* gmf, L00Frame* l00_frame);
 
 	//-----------//
 	// variables //

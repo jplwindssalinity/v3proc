@@ -60,6 +60,8 @@ public:
 //		The Instrument object contains instrument state information.
 //======================================================================
 
+#define ORBIT_TICKS_PER_SECOND	32
+
 class Instrument
 {
 public:
@@ -71,9 +73,17 @@ public:
 	Instrument();
 	~Instrument();
 
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	int			SetTime(double new_time);
+	int			Eqx(double eqx_time);
+
 	//-----------//
 	// variables //
 	//-----------//
+
 
 	double		time;
 	Antenna		antenna;
@@ -82,8 +92,9 @@ public:
 	// generally varied //
 	//------------------//
 
-	float		commandedDoppler;	// Hz
-	float		receiverGateDelay;	// sec
+	unsigned short	orbitTime;			// 32 Hz ticks
+	float			commandedDoppler;	// Hz
+	float			receiverGateDelay;	// sec
 
 	//-------------------------------------//
 	// affected by noise, temperature etc. //
@@ -109,6 +120,9 @@ public:
 	float		noiseBandwidth;		// Hz
 	float		signalBandwidth;	// Hz
 	int			useKpc;				// flag, 0 - no kpc, 1 - with kpc
+
+protected:
+	double		_eqxTime;
 };
 
 #endif

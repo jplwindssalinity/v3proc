@@ -99,10 +99,9 @@ InstrumentSim::DetermineNextEvent(
 
 int
 InstrumentSim::UpdateAntennaPosition(
-	double			time,
 	Instrument*		instrument)
 {
-	antennaSim.UpdatePosition(time, &(instrument->antenna));
+	antennaSim.UpdatePosition(instrument->time, &(instrument->antenna));
 	return(1);
 }
 
@@ -262,7 +261,6 @@ InstrumentSim::SetL00Science(
 
 int
 InstrumentSim::ScatSim(
-	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	WindField*		windfield,
@@ -280,7 +278,7 @@ InstrumentSim::ScatSim(
 	{
 		if (! SetL00Spacecraft(spacecraft,l00_frame))
 			return(0);
-		l00_frame->time = time;
+		l00_frame->time = instrument->time;
 	}
 
 	//---------------------//
@@ -289,12 +287,12 @@ InstrumentSim::ScatSim(
 
 	if (slicesPerSpot <= 1)
 	{
-		if (! LocateSpot(time, spacecraft, instrument, &meas_spot))
+		if (! LocateSpot(spacecraft, instrument, &meas_spot))
 			return(0);
 	}
 	else
 	{
-		if (! LocateSlices(time, spacecraft, instrument, slicesPerSpot,
+		if (! LocateSlices(spacecraft, instrument, slicesPerSpot,
 			&meas_spot))
 		{
 			return(0);

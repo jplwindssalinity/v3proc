@@ -104,7 +104,7 @@ L10ToL15::Convert(
 			// set up instrument //
 			//-------------------//
 
-			instrument->time = time;
+			instrument->SetTime(time);
 			antenna->SetAzimuthWithEncoder(
 				l10->frame.antennaPosition[spot_idx]);
 
@@ -122,12 +122,12 @@ L10ToL15::Convert(
 
 			if (l10->frame.slicesPerSpot <= 1)
 			{
-				if (! LocateSpot(time, spacecraft, instrument, meas_spot))
+				if (! LocateSpot(spacecraft, instrument, meas_spot))
 					return(0);
 			}
 			else
 			{
-				if (! LocateSlices(time, spacecraft, instrument,
+				if (! LocateSlices(spacecraft, instrument,
 					l10->frame.slicesPerSpot, meas_spot))
 				{
 					return(0);

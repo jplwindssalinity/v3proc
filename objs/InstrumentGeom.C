@@ -65,7 +65,6 @@ AntennaFrameToGC(
 
 int
 LocateSlices(
-	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	int				slices_per_spot,
@@ -87,7 +86,7 @@ LocateSlices(
 	//------------------//
 
 	meas_spot->FreeContents();
-	meas_spot->time = time;
+	meas_spot->time = instrument->time;
 	meas_spot->scOrbitState = *orbit_state;
 	meas_spot->scAttitude = *attitude;
 
@@ -198,7 +197,6 @@ LocateSlices(
 
 int
 LocateSpot(
-	double			time,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot)
@@ -218,7 +216,7 @@ LocateSpot(
 	//------------------//
 
 	meas_spot->FreeContents();
-	meas_spot->time = time;
+	meas_spot->time = instrument->time;
 	meas_spot->scOrbitState = *orbit_state;
 	meas_spot->scAttitude = *attitude;
 

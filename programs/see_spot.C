@@ -291,21 +291,26 @@ main(
 			switch(instrument_event.eventId)
 			{
 			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
+
+				// process spacecraft stuff
 				spacecraft_sim.UpdateOrbit(instrument_event.time,
 					&spacecraft);
 				spacecraft_sim.UpdateAttitude(instrument_event.time,
 					&spacecraft);
-				instrument_sim.UpdateAntennaPosition(instrument_event.time,
-					&instrument);
+
+				// process instrument stuff
+				instrument.SetTime(instrument_event.time);
+				instrument_sim.UpdateAntennaPosition(&instrument);
 				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
+
 				if (slice_opt)
 				{
 					//--------//
 					// slices //
 					//--------//
 
-					LocateSlices(instrument_event.time, &spacecraft,
-						&instrument, instrument_sim.slicesPerSpot, &meas_spot);
+					LocateSlices(&spacecraft, &instrument,
+						instrument_sim.slicesPerSpot, &meas_spot);
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{
@@ -324,8 +329,7 @@ main(
 					// spot //
 					//------//
 
-					LocateSpot(instrument_event.time, &spacecraft,
-						&instrument, &meas_spot);
+					LocateSpot(&spacecraft, &instrument, &meas_spot);
 					Meas* meas = meas_spot.GetHead();
 					meas->outline.WriteBvg(output_fp);
 				}
