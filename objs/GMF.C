@@ -402,7 +402,7 @@ GMF::_ObjectiveFunction(
 	for (Meas* meas = meas_list->GetHead(); meas;
 			meas = meas_list->GetNext())
 	{
-		double chi = phi - (meas->eastAzimuth + pi);
+		double chi = phi - meas->eastAzimuth + pi;
 		double gmf_value;
 		GetNearestValue(meas->pol, meas->incidenceAngle, spd, chi, &gmf_value);
 //		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,

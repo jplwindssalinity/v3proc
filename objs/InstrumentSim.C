@@ -10,6 +10,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Instrument.h"
 #include "GenericGeom.h"
 #include "Ephemeris.h"
+#include "Constants.h"
 
 
 //===============//
@@ -232,8 +233,8 @@ InstrumentSim::ScatSim(
 	// convert wind vector to sigma-0 //
 	//--------------------------------//
 
-	// the plus pi handles the way the model function is stored
-	// 0.0 means wind is blowing towards the s/c (opposite to look vector)
+	// chi is defined so that 0.0 means the wind is blowing towards
+	// the s/c (the opposite direction as the look vector)
 	double chi = wv->dir - meas.eastAzimuth + pi;
 	double value;
 	gmf->GetInterpolatedValue(meas.pol, meas.incidenceAngle, wv->spd, chi,

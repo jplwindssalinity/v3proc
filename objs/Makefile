@@ -117,7 +117,7 @@ Beam.o: Beam.C Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h L17ToL20.h Wind.h Grid.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h Array.h Meas.h Antenna.h Attitude.h PiscTable.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h L17ToL20.h Wind.h Grid.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h Antenna.h Attitude.h PiscTable.h Matrix3.h BufferedList.h Constants.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h
@@ -126,7 +126,7 @@ GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h Matrix
 Grid.o: Grid.C Grid.h Array.h L17.h Meas.h GenericFile.h L17Frame.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Beam.h Attitude.h CoordinateSwitch.h Matrix3.h
 InstrumentGeom.o: InstrumentGeom.C CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h Beam.h GenericGeom.h Matrix3.h BufferedList.h List.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h Ephemeris.h ConfigList.h AntennaSim.h L00Frame.h Wind.h GMF.h CoordinateSwitch.h Antenna.h Matrix3.h BufferedList.h List.h Attitude.h PiscTable.h Meas.h Beam.h LonLat.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h Ephemeris.h Constants.h ConfigList.h AntennaSim.h L00Frame.h Wind.h GMF.h CoordinateSwitch.h Antenna.h Matrix3.h BufferedList.h List.h Attitude.h LonLat.h PiscTable.h Meas.h Beam.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 L00.o: L00.C L00.h GenericFile.h L00Frame.h Attitude.h
@@ -141,14 +141,14 @@ L15ToL17.o: L15ToL17.C L15ToL17.h Antenna.h Ephemeris.h InstrumentGeom.h Generic
 L17.o: L17.C L17.h GenericFile.h L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17Frame.o: L17Frame.C L17Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 L17ToL20.o: L17ToL20.C L17ToL20.h L17.h L20.h GMF.h GenericFile.h L17Frame.h L20Frame.h PiscTable.h Wind.h Meas.h Beam.h List.h LonLat.h Ephemeris.h Attitude.h CoordinateSwitch.h Matrix3.h BufferedList.h
-L20.o: L20.C L20.h GenericFile.h L20Frame.h Wind.h List.h
-L20Frame.o: L20Frame.C L20Frame.h Wind.h List.h
+L20.o: L20.C L20.h GenericFile.h L20Frame.h Wind.h List.h LonLat.h
+L20Frame.o: L20Frame.C L20Frame.h Wind.h List.h LonLat.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h List.h
 Matrix3.o: Matrix3.C Constants.h Matrix3.h CoordinateSwitch.h Attitude.h
-Meas.o: Meas.C Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
+Meas.o: Meas.C Meas.h Beam.h Constants.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Array.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h Attitude.h BufferedList.h List.h
-Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h
+Wind.o: Wind.C Wind.h Constants.h Misc.h Array.h List.h LonLat.h
