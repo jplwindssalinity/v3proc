@@ -57,6 +57,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include <fcntl.h>
+#include <limits.h>
 #include "Misc.h"
 #include "ConfigList.h"
 #include "L1A.h"
@@ -113,7 +114,7 @@ template class List<AngleInterval>;
 
 double  eval_rvf(int slices_per_spot, int beam_idx, float azim,
             float orbit_fraction, float rvf, float target_peak_spec_freq,
-            Qscat* qscat, BYUXTable* byux);
+            Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux);
 double  rvf_funk(double trial_rvf, char** arguments);
 
 //------------------//
@@ -311,45 +312,10 @@ main(
 
             qscat.sas.antenna.txCenterAzimuthAngle =
                 echo_info.txCenterAzimuthAngle[spot_idx];
+            qscat.TxCenterToGroundImpactAzimuth(&spacecraft);
 
             qscat.ses.CmdTxDopplerEu(echo_info.txDoppler[spot_idx]);
             qscat.ses.CmdRxGateDelayEu(echo_info.rxGateDelay[spot_idx]);
-
-            //-------------------------------------------------//
-            // determine frequency of nominal reference vector //
-            //-------------------------------------------------//
-
-            float nominal_rvf = byux.GetDeltaFreq(&spacecraft, &qscat);
-
-            //------------------------------------------//
-            // find the reference vector frequency that //
-            // gives the desired peak spectral response //
-            //------------------------------------------//
-
-            double min_freq = -80000.0;
-            double max_freq = +80000.0;
-            double freq_tol = 1.0;
-            double desired_rvf, rvf_err;
-
-            int beam_idx = qscat.cds.currentBeamIdx;
-            qscat.TxCenterToGroundImpactAzimuth(&spacecraft);
-            float azim = qscat.sas.antenna.groundImpactAzimuthAngle;
-            float target_peak_spec_freq = echo_info.measSpecPeakFreq[spot_idx];
-
-            char* arg_array[7];
-            arg_array[0] = (char *)&slices_per_spot;
-            arg_array[1] = (char *)&beam_idx;
-            arg_array[2] = (char *)&azim;
-            arg_array[3] = (char *)&orbit_fraction;
-            arg_array[4] = (char *)&target_peak_spec_freq;
-            arg_array[5] = (char *)&qscat;
-            arg_array[6] = (char *)&byux;
-
-            if (! golden_section_search(min_freq, max_freq, freq_tol,
-              rvf_funk, arg_array, &desired_rvf, &rvf_err))
-            {
-                continue;
-            }
 
             //--------------------------------------//
             // determine orbit and azimuth indicies //
@@ -365,6 +331,42 @@ main(
                 (double)echo_info.idealEncoder[spot_idx] /
                 (double)ENCODER_N + 0.5);
             azimuth_step %= FOFF_AZ_STEPS;
+
+            //-------------------------------------------------//
+            // determine frequency of nominal reference vector //
+            //-------------------------------------------------//
+
+            float nominal_rvf = byux.GetDeltaFreq(&spacecraft, &qscat);
+
+            //------------------------------------------//
+            // find the reference vector frequency that //
+            // gives the desired peak spectral response //
+            //------------------------------------------//
+
+            double min_freq = -42000.0;
+            double max_freq = 42000.0;
+            double freq_tol = 1.0;
+            double desired_rvf, rvf_err;
+
+            int beam_idx = qscat.cds.currentBeamIdx;
+            float azim = qscat.sas.antenna.groundImpactAzimuthAngle;
+            float target_peak_spec_freq = echo_info.measSpecPeakFreq[spot_idx];
+
+            char* arg_array[7];
+            arg_array[0] = (char *)&slices_per_spot;
+            arg_array[1] = (char *)&beam_idx;
+            arg_array[2] = (char *)&azim;
+            arg_array[3] = (char *)&orbit_fraction;
+            arg_array[4] = (char *)&target_peak_spec_freq;
+            arg_array[5] = (char *)&spacecraft;
+            arg_array[6] = (char *)&qscat;
+            arg_array[7] = (char *)&byux;
+
+            if (! golden_section_search(min_freq, max_freq, freq_tol,
+                rvf_funk, arg_array, &desired_rvf, &rvf_err))
+            {
+                continue;
+            }
 
             //------------//
             // accumulate //
@@ -391,7 +393,7 @@ main(
         exit(1);
     }
 
-        for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         for (int orbit_step = 0; orbit_step < FOFF_ORBIT_STEPS; orbit_step++)
         {
@@ -458,47 +460,71 @@ main(
 
 double
 eval_rvf(
-    int         slices_per_spot,
-    int         beam_idx,
-    float       azim,
-    float       orbit_fraction,
-    float       rvf,
-    float       target_peak_spec_freq,
-    Qscat*      qscat,
-    BYUXTable*  byux)
+    int          slices_per_spot,
+    int          beam_idx,
+    float        azim,
+    float        orbit_fraction,
+    float        rvf,
+    float        target_peak_spec_freq,
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    BYUXTable*   byux)
 {
-    //----------------------//
-    // get X for each slice //
-    //----------------------//
+    //-------------------------------------------------------//
+    // get X for each slice (correcting for incidence angle) //
+    //-------------------------------------------------------//
 
+    MeasSpot meas_spot;
+    if (! qscat->MakeSlices(&meas_spot))
+        return(DBL_MAX);
+    qscat->LocateSliceCentroids(spacecraft, &meas_spot);
+
+    int max_idx = 0;
     double x[10];
     for (int i = 0; i < slices_per_spot; i++)
     {
         int rel_idx;
         abs_to_rel_idx(i, slices_per_spot, &rel_idx);
         x[i] = byux->GetX(beam_idx, azim, orbit_fraction, rel_idx, rvf);
+
+        Meas* meas = meas_spot.GetByIndex(rel_idx);
+        float sigma0 = est_sigma0(beam_idx, meas->incidenceAngle);
+        x[i] *= sigma0;
+
+        if (x[i] > x[max_idx])
+            max_idx = i;
     }
 
     //-----------//
     // find peak //
     //-----------//
 
-    float peak_slice, peak_freq, width;
+    double center = (double)max_idx;
+    double variance = 3.5;
     double slice_number[10] = { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
         7.0, 8.0, 9.0 };
-    if (! gaussian_fit2(qscat, slice_number, x, slices_per_spot, &peak_slice,
-        &peak_freq, &width))
+    if (! gaussian_fit(slice_number, x, slices_per_spot, &center, &variance))
     {
-        return(0.0);
+        return(DBL_MAX);
     }
 
     //-----------------------//
     // square the difference //
     //-----------------------//
 
-    double dif = peak_freq - target_peak_spec_freq;
+    int near_slice_idx = (int)(center + 0.5);
+    float f1, bw;
+    qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
+    double center_freq = f1 + bw * (center - (float)near_slice_idx + 0.5);
+
+    double dif = center_freq - target_peak_spec_freq;
     dif *= dif;
     dif = -dif;    // negate for finding maxima
+/*
+printf("center = %g var = %g dif = %g (%g, %g)\n", center, variance, dif, target_peak_spec_freq, center_freq);
+for (int i = 0; i < 10; i++)
+printf("%d %g\n", i, x[i]);
+*/
 
     return(dif);
 }
@@ -517,9 +543,10 @@ rvf_funk(
     float azim = *(float *)arguments[2];
     float orbit_fraction = *(float *)arguments[3];
     float target_peak_spec_freq = *(float *)arguments[4];
-    Qscat* qscat = (Qscat *)arguments[5];
-    BYUXTable* byux = (BYUXTable *)arguments[6];
+    Spacecraft* spacecraft = (Spacecraft *)arguments[5];
+    Qscat* qscat = (Qscat *)arguments[6];
+    BYUXTable* byux = (BYUXTable *)arguments[7];
 
     return(eval_rvf(slices_per_spot, beam_idx, azim, orbit_fraction, trial_rvf,
-        target_peak_spec_freq, qscat, byux));
+        target_peak_spec_freq, spacecraft, qscat, byux));
 }

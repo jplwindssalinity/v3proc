@@ -8,14 +8,16 @@
 //    fix_dtc
 //
 // SYNOPSIS
-//    fix_dtc <config_file> <echo_data_file> <dtc_base>
+//    fix_dtc [ -d diagnostic_base ] <config_file> <echo_data_file>
+//        <dtc_base>
 //
 // DESCRIPTION
 //    Reads the echo data file and generates corrected Doppler
 //    tracking constants which should center the echo.
 //
 // OPTIONS
-//    None.
+//    [ -d diagnostic_base ]  Generate diagnostic output with the given
+//                              filename base.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -25,7 +27,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % fix_dtc qscat.cfg echo.dat dtc
+//      % fix_dtc -d qscat.diag qscat.cfg echo.dat dtc
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -92,8 +94,10 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
+#define OPTSTRING  "d:"
+
 #define MAXIMUM_SPOTS_PER_ORBIT_STEP  10000
-#define SIGNAL_ENERGY_THRESHOLD       1.0E-8
+#define SIGNAL_ENERGY_THRESHOLD       0
 #define ORBIT_STEPS      256
 #define LINE_SIZE        2048
 
@@ -109,7 +113,7 @@ template class List<AngleInterval>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int process_orbit_step(int beam_idx, int orbit_step);
+int process_orbit_step(int beam_idx, int orbit_step, const char* diag_base);
 int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
 
 //------------------//
@@ -120,8 +124,8 @@ int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<echo_data_file>",
-    "<dtc_base>", 0};
+const char* usage_array[] = { "[ -d diagnostic_base ]", "<config_file>",
+    "<echo_data_file>", "<dtc_base>", 0};
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double    g_azimuth[NUMBER_OF_QSCAT_BEAMS][MAXIMUM_SPOTS_PER_ORBIT_STEP];
@@ -137,18 +141,41 @@ main(
     int    argc,
     char*  argv[])
 {
+    //------------//
+    // initialize //
+    //------------//
+
+    int opt_diag = 0;
+    const char* diag_base = NULL;
+
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 4)
+    extern int optind;
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+    {
+        switch(c)
+        {
+        case 'd':
+            opt_diag = 1;
+            diag_base = optarg;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
+        }
+    }
+
+    if (argc != optind + 3)
         usage(command, usage_array, 1);
 
-    int clidx = 1;
-    const char* config_file = argv[clidx++];
-    const char* echo_data_file = argv[clidx++];
-    const char* dtc_base = argv[clidx++];
+    const char* config_file = argv[optind++];
+    const char* echo_data_file = argv[optind++];
+    const char* dtc_base = argv[optind++];
 
     //---------------------//
     // read in config file //
@@ -256,7 +283,8 @@ main(
                     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS;
                         beam_idx++)
                     {
-                        process_orbit_step(beam_idx, last_orbit_step);
+                        process_orbit_step(beam_idx, last_orbit_step,
+                            diag_base);
                     }
                 }
                 last_orbit_step = orbit_step;
@@ -267,16 +295,19 @@ main(
             //-----------------------//
 
             if (echo_info.flag[spot_idx] != EchoInfo::OK)
+            {
                 continue;
+            }
 
             if (echo_info.totalSignalEnergy[spot_idx] < SIGNAL_ENERGY_THRESHOLD)
+            {
                 continue;
+            }
 
             double azimuth = two_pi *
                 (double)echo_info.idealEncoder[spot_idx] / (double)ENCODER_N;
             accumulate(echo_info.beamIdx[spot_idx], azimuth,
                 echo_info.measSpecPeakFreq[spot_idx]);
-            break;
         }
     } while (1);
 
@@ -312,27 +343,10 @@ main(
 
 int
 process_orbit_step(
-    int  beam_idx,
-    int  orbit_step)
+    int          beam_idx,
+    int          orbit_step,
+    const char*  diag_base)
 {
-    //-----------------//
-    // report the data //
-    //-----------------//
-
-    char filename[1024];
-    sprintf(filename, "diag.beam.%1d.step.%03d", beam_idx+1, orbit_step);
-    FILE* ofp = fopen(filename, "w");
-    if (ofp == NULL)
-    {
-        return(0);
-    }
-    for (int i = 0; i < g_count[beam_idx]; i++)
-    {
-        fprintf(ofp, "%g %g\n", g_azimuth[beam_idx][i] * rtd,
-            g_meas_spec_peak[beam_idx][i]);
-    }
-    fprintf(ofp, "&\n");
-
     //----------------------------//
     // fit a sinusoid to the data //
     //----------------------------//
@@ -340,32 +354,6 @@ process_orbit_step(
     double a, p, c;
     sinfit(g_azimuth[beam_idx], g_meas_spec_peak[beam_idx], NULL,
         g_count[beam_idx], &a, &p, &c);
-
-    //-----------------------------//
-    // estimate the standard error //
-    //-----------------------------//
-
-    double sum_sqr_dif = 0.0;
-    for (int i = 0; i < g_count[beam_idx]; i++)
-    {
-        double dif = g_meas_spec_peak[beam_idx][i] -
-            (a * cos(g_azimuth[beam_idx][i] + p) + c);
-        sum_sqr_dif += dif*dif;
-    }
-    double std_dev = sqrt(sum_sqr_dif / (double)g_count[beam_idx]);
-    double std_err = std_dev / sqrt((double)g_count[beam_idx]);
-
-    fprintf(ofp, "# standard error = %g Hz\n", std_err);
-
-    //--------------------------------------------//
-    // report the fit sinusoid and standard error //
-    //--------------------------------------------//
-
-    double step = two_pi / 360.0;
-    for (double azim = 0; azim < two_pi + step / 2.0; azim += step)
-    {
-        fprintf(ofp, "%g %g\n", azim * rtd, a * cos(azim + p) + c);
-    }
 
     //------------------------------------------//
     // subtract the sinusoid from the constants //
@@ -392,13 +380,57 @@ process_orbit_step(
     *(*(terms + orbit_step) + 1) = newP;
     *(*(terms + orbit_step) + 2) = newC;
 
+    //--------------------//
+    // output diagnostics //
+    //--------------------//
+
+    if (diag_base)
+    {
+        char filename[1024];
+        sprintf(filename, "%s.b%1d.s%03d", diag_base, beam_idx + 1,
+            orbit_step);
+        FILE* ofp = fopen(filename, "w");
+        if (ofp == NULL)
+        {
+            return(0);
+        }
+        for (int i = 0; i < g_count[beam_idx]; i++)
+        {
+            fprintf(ofp, "%g %g\n", g_azimuth[beam_idx][i] * rtd,
+                g_meas_spec_peak[beam_idx][i]);
+        }
+        fprintf(ofp, "&\n");
+
+        //-----------------------------//
+        // estimate the standard error //
+        //-----------------------------//
+
+        double sum_sqr_dif = 0.0;
+        for (int i = 0; i < g_count[beam_idx]; i++)
+        {
+            double dif = g_meas_spec_peak[beam_idx][i] -
+                (a * cos(g_azimuth[beam_idx][i] + p) + c);
+            sum_sqr_dif += dif*dif;
+        }
+        double std_dev = sqrt(sum_sqr_dif / (double)g_count[beam_idx]);
+        double std_err = std_dev / sqrt((double)g_count[beam_idx]);
+
+        fprintf(ofp, "# standard error = %g Hz\n", std_err);
+
+        //--------------------------------------------//
+        // report the fit sinusoid and standard error //
+        //--------------------------------------------//
+
+        double step = two_pi / 360.0;
+        for (double azim = 0; azim < two_pi + step / 2.0; azim += step)
+        {
+            fprintf(ofp, "%g %g\n", azim * rtd, a * cos(azim + p) + c);
+        }
+
+        fclose(ofp);
+    }
+
     g_count[beam_idx] = 0;
-
-    //---------------------------//
-    // close the diagnostic file //
-    //---------------------------//
-
-    fclose(ofp);
 
     return(1);
 }

@@ -13,6 +13,7 @@ static const char rcs_id_misc_c[] =
 #include "Misc.h"
 #include "Constants.h"
 #include "Matrix.h"
+#include "Array.h"
 
 #define DEBUG_DOWNHILL  0
 
@@ -1404,8 +1405,8 @@ golden_section_search(
 
     double x0, x1, x2, x3;
     x0 = ax;
-    x1 = bx;
-    x2 = bx - golden_c * (bx - ax);
+    x1 = bx - golden_c * (bx - ax);
+    x2 = bx;
     x3 = cx;
 
     double f1 = (*funk)(x1, arguments);
@@ -1442,4 +1443,116 @@ golden_section_search(
         *final_y = f2;
     }
     return(1);
+}
+
+//--------------//
+// gaussian_fit //
+//--------------//
+// Fit a gaussian to data points.
+// Pass in rough estimate of center and variance.
+
+int
+gaussian_fit(
+    double*  x,
+    double*  y,
+    int      points,
+    double*  center,
+    double*  variance)
+{
+    //----------------//
+    // allocate array //
+    //----------------//
+
+    int ndim = 2;
+    double** p = (double**)make_array(sizeof(double), 2, ndim + 1, ndim);
+    if (p == NULL)
+        return(0);
+
+    //--------------------//
+    // initialize simplex //
+    //--------------------//
+
+    double center_lambda = *variance;
+    double variance_lambda = *variance;
+
+    p[0][0] = *center;
+    p[0][1] = *variance;
+
+    p[1][0] = *center + center_lambda;
+    p[1][1] = *variance;
+
+    p[2][0] = *center;
+    p[2][1] = *variance + variance_lambda;
+
+    char* ptr[3];
+    ptr[0] = (char *)x;
+    ptr[1] = (char *)y;
+    ptr[2] = (char *)&points;
+
+    if (! downhill_simplex(p, ndim, ndim, 1E-6, gmse, ptr))
+        return(0);
+
+    //----------------------//
+    // transfer information //
+    //----------------------//
+
+    *center = p[0][0];
+    *variance = p[0][1];
+
+    return(1);
+}
+
+//------//
+// gmse //
+//------//
+// Mean squared error gaussian fit evaluation function
+
+double
+gmse(
+    double*  c,
+    void*    ptr)
+{
+    char** ptr2 = (char**)ptr;
+    double* x = (double *)ptr2[0];
+    double* y = (double *)ptr2[1];
+    int points = *(int *)ptr2[2];
+
+    //---------------------------------//
+    // estimate the amplitude and bias //
+    //---------------------------------//
+    // store computationally intensive terms
+
+    static double hold[12];
+    double g_sum = 0.0;
+    double g_sqr_sum = 0.0;
+    double y_sum = 0.0;
+    double gy_sum = 0.0;
+
+    for (int i = 0; i < points; i++)
+    {
+        double ex = (x[i] - c[0]) / c[1];
+        double val = exp(-ex * ex);
+        hold[i] = val;
+        g_sum += val;
+        g_sqr_sum += (val * val);
+        y_sum += y[i];
+        gy_sum += (y[i] * val);
+    }
+    double n = (double)points;
+    double denom = (n * g_sqr_sum - g_sum * g_sum);
+    double amp = (n * gy_sum - y_sum * g_sum) / denom;
+    double bias = (y_sum * g_sqr_sum - g_sum * gy_sum) / denom;
+
+    //---------------------//
+    // the real evaluation //
+    //---------------------//
+
+    double sum_dif = 0.0;
+    for (int i = 0; i < points; i++)
+    {
+        double val = amp * hold[i] + bias;
+        double dif = val - y[i];
+        sum_dif += ((dif * dif) / (double)points);
+    }
+    return(sum_dif);
 }

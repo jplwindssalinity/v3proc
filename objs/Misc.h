@@ -113,4 +113,9 @@ int          golden_section_search(double min_x, double max_x, double x_tol,
                  double (*funk)(double x, char** arguments), char** arguments,
                  double* final_x, double* final_y);
 
+// gaussian_fit
+int     gaussian_fit(double* x, double* y, int points, double* center,
+           double* variance);
+double  gmse(double* c, void* ptr);
+
 #endif
