@@ -193,7 +193,7 @@ sigma0_to_Psn(
 	double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
 	double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
 	double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
-	float Kpc = A + B/snr + C/snr/snr;
+	float Kpc2 = A + B/snr + C/snr/snr;
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Ps value by multiplying by a random number drawn from
@@ -214,7 +214,7 @@ sigma0_to_Psn(
 	// Kpc for weighting purposes.
 	//------------------------------------------------------------------------//
 
-	Gaussian rv(Kpc*Kpc,1.0);
+	Gaussian rv(Kpc2,1.0);
 	Ps_slice *= rv.GetNumber();
 
 	*Psn = (float)(Ps_slice + Pn_slice);
@@ -262,7 +262,7 @@ Pnoise(
 	// into the slice signal powers.  The processing routine Pr_to_sigma0
 	// will obtain the exact constant noise power used by the simulator
 	// when processing simulated data.  The resulting slice signal powers
-	// will then have the correct variance (Kpc).  Real data is different
+	// will then have the correct variance (Kpc2).  Real data is different
 	// because some of the variance in sigma0 comes from uncertainty in
 	// estimating the noise in a slice.  The end result is the same.
 	// Sigma0 (and Ps) will have a variance equal to Kpc^2.
