@@ -172,7 +172,7 @@ public:
     int  GetCommandedDoppler(unsigned short doppler_step,
              unsigned short azimuth_step, unsigned char rx_gate_delay_dn,
              float rx_gate_delay_fdn, short* commanded_doppler_dn);
-    int  Set(double** terms);
+    int  SetTerms(double** terms);
     int  GetTerms(double** terms);
 };
 

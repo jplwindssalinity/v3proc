@@ -1416,12 +1416,12 @@ DopplerTracker::GetCommandedDoppler(
     return(1);
 }
 
-//---------------------//
-// DopplerTracker::Set //
-//---------------------//
+//--------------------------//
+// DopplerTracker::SetTerms //
+//--------------------------//
 
 int
-DopplerTracker::Set(
+DopplerTracker::SetTerms(
     double**    terms)
 {
     double mins[3];
