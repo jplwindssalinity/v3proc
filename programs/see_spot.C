@@ -8,7 +8,7 @@
 //		see_spot
 //
 // SYNOPSIS
-//		see_spot [ -s ] <sim_config_file> <output_file>
+//		see_spot [ -c ] [ -s ] <sim_config_file> <output_file>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b instrument based on the parameters
@@ -16,6 +16,7 @@
 //		vector graphics files for the spots.
 //
 // OPTIONS
+//		[ -c ]		Show the centroid
 //		[ -s ]		Show slices instead of spots
 //
 // OPERANDS
@@ -27,7 +28,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% see_spot sws1b.cfg spot.bvg
+//			% see_spot -c sws1b.cfg spot.bvg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -106,15 +107,16 @@ template class List<long>;
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING	"s"
+#define OPTSTRING	"cs"
 
+unsigned char centroid_opt = 0;
 unsigned char slice_opt = 0;
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -s ]", "<sim_config_file>",
+const char* usage_array[] = { "[ -c ]", "[ -s ]", "<sim_config_file>",
 	"<output_file>", 0};
 
 //--------------//
@@ -137,6 +139,9 @@ main(
 	{
 		switch(c)
 		{
+		case 'c':
+			centroid_opt = 1;
+			break;
 		case 's':
 			slice_opt = 1;
 			break;
@@ -314,12 +319,15 @@ main(
 					for (Meas* meas = meas_spot.GetHead(); meas;
 						meas = meas_spot.GetNext())
 					{
-						double alt, lat, lon;
-						meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
-						LonLat lon_lat;
-						lon_lat.longitude = lon;
-						lon_lat.latitude = lat;
-						lon_lat.WriteBvg(output_fp);
+						if (centroid_opt)
+						{
+							double alt, lat, lon;
+							meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
+							LonLat lon_lat;
+							lon_lat.longitude = lon;
+							lon_lat.latitude = lat;
+							lon_lat.WriteBvg(output_fp);
+						}
 						meas->outline.WriteBvg(output_fp);
 					}
 				}
@@ -331,6 +339,15 @@ main(
 
 					LocateSpot(&spacecraft, &instrument, &meas_spot);
 					Meas* meas = meas_spot.GetHead();
+					if (centroid_opt)
+					{
+						double alt, lat, lon;
+						meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
+						LonLat lon_lat;
+						lon_lat.longitude = lon;
+						lon_lat.latitude = lat;
+						lon_lat.WriteBvg(output_fp);
+					}
 					meas->outline.WriteBvg(output_fp);
 				}
 				instrument_sim.DetermineNextEvent(&(instrument.antenna),
