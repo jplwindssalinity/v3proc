@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology.    //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -124,6 +124,7 @@ public:
     int  GetChar(const char* keyword, char* value);
     int  GetInt(const char* keyword, int* value);
     int  GetUnsignedInt(const char* keyword, unsigned int* value);
+    int  GetLong(const char* keyword, long* value);
     int  GetDouble(const char* keyword, double* value);
     int  GetFloat(const char* keyword, float* value);
 

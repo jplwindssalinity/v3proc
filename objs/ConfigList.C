@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2000, California Institute of Technology. //
+// Copyright (C) 1997-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -421,6 +421,34 @@ ConfigList::GetUnsignedInt(
     return(1);
 }
 
+//---------------------//
+// ConfigList::GetLong //
+//---------------------//
+// sets the value to the retrieved long integer
+// returns 1 on success, 0 on failure
+
+int
+ConfigList::GetLong(
+    const char*  keyword,
+    long*        value)
+{
+    char* string = Get(keyword);
+    if (! string)
+        return(0);
+
+    long int tmp;
+    if (sscanf(string, "%ld", &tmp) != 1)
+    {
+        fprintf(_errorFp, "Error converting value to long\n");
+        fprintf(_errorFp, "  Keyword: %s\n", keyword);
+        fprintf(_errorFp, "    Value: %s\n", string);
+        exit(1);
+    }
+
+    *value = tmp;
+    return(1);
+}
+
 //-----------------------//
 // ConfigList::GetDouble //
 //-----------------------//
@@ -505,7 +533,7 @@ ConfigList::GetDoubles(
     {
         if (ptr == NULL)
             return(count);
-             
+
         double tmp;
         if (sscanf(ptr, "%lg", &tmp) != 1)
         {
