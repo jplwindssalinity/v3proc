@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef LANDMAP_H
 #define LANDMAP_H
@@ -14,7 +14,7 @@ static const char rcs_id_landmap_h[] =
 
 //======================================================================
 // CLASSES
-//    LandMap
+//    LandMap, SimpleLandMap
 //======================================================================
 
 
@@ -23,7 +23,7 @@ static const char rcs_id_landmap_h[] =
 //    LandMap
 //
 // DESCRIPTION
-//    The LandMap Object contains a longitude and latitude map of
+//    The LandMap object contains a longitude and latitude map of
 //    where land occurs. It has a method which takes lon and lat
 //    returning 0 for ocean or 1 for land.
 //======================================================================
@@ -59,6 +59,52 @@ protected:
     int              _mapLatDim;
     int              _mapLonDim;
     int              _usemap;
+};
+
+//======================================================================
+// CLASS
+//    SimpleLandMap
+//
+// DESCRIPTION
+//    The SimpleLandMap object contains a map of land and near-land
+//    locations.  It has a method which takes lon and lat
+//    returning 0 for ocean or 1 for land.  Generally, this is of
+//    coarser resolution than LandMap.
+//======================================================================
+
+class SimpleLandMap
+{
+public:
+
+    //--------------//
+    // construction //
+    //--------------//
+
+    SimpleLandMap();
+    ~SimpleLandMap();
+
+    int  Read(const char* filename);
+    int  Write(const char* filename);
+    int  IsLand(float lon, float lat);
+
+    int  Allocate(int lon_samples, int lat_samples);
+
+    char**  GetMap()  {return(_map); };
+
+protected:
+
+    int  _Allocate();
+    int  _Deallocate();
+
+    //-----------//
+    // variables //
+    //-----------//
+
+    char**  _map;
+    int     _lonSamples;
+    int     _latSamples;
+    float   _lonResolution;
+    float   _latResolution;
 };
 
 #endif

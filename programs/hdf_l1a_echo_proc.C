@@ -73,7 +73,7 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "QscatConfig.h"
 #include "Qscat.h"
-#include "QscatSim.h"
+#include "LandMap.h"
 #include "echo_funcs.h"
 
 //-----------//
@@ -96,9 +96,6 @@ template class TrackerBase<unsigned char>;
 //-----------//
 // CONSTANTS //
 //-----------//
-
-// if data is within KM_RANGE of land, flag it as land
-#define KM_RANGE  100.0
 
 //--------//
 // MACROS //
@@ -146,10 +143,6 @@ ArgInfo* arg_info_array[] =
     &method_arg,
     0
 };
-
-// approximate ranges used for land flag check
-float dlon_km[4] = { KM_RANGE, 0.0, -KM_RANGE, 0.0 };
-float dlat_km[4] = { 0.0, KM_RANGE, 0.0, -KM_RANGE };
 
 //--------------//
 // MAIN PROGRAM //
@@ -265,11 +258,16 @@ main(
     double Be = qscat.ses.GetTotalSignalBandwidth();
     double Bs = qscat.ses.scienceSliceBandwidth;
 
-    QscatSim qscat_sim;
-    if (! ConfigQscatSim(&qscat_sim, &config_list))
+    //--------------------//
+    // configure land map //
+    //--------------------//
+
+    char* land_map_file = config_list.Get(SIMPLE_LANDMAP_FILE_KEYWORD);
+    SimpleLandMap land_map;
+    if (! land_map.Read(land_map_file))
     {
-        fprintf(stderr, "%s: error configuring instrument simulator\n",
-            command);
+        fprintf(stderr, "%s: error reading land map %s\n", command,
+            land_map_file);
         exit(1);
     }
 
@@ -567,16 +565,10 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
                         command);
                     exit(1);
                 }
-                for (int i = 0; i < 4; i++)
+                if (land_map.IsLand(lon, lat))
                 {
-                    LonLat use_lon_lat;
-                    use_lon_lat.Set(lon, lat);
-                    use_lon_lat.ApproxApplyDelta(dlon_km[i], dlat_km[i]);
-                    if (qscat_sim.landMap.IsLand(&use_lon_lat))
-                    {
-                        echo_info.flag[spot_idx] = EchoInfo::LAND;
-                        break;
-                    }
+                    echo_info.flag[spot_idx] = EchoInfo::LAND;
+                    break;
                 }
 
                 //-------------------------------//
@@ -604,6 +596,13 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
                     total_signal_energy += signal_energy[slice_idx];
                 }
                 echo_info.totalSignalEnergy[spot_idx] = total_signal_energy;
+if (orbit_step == 192)
+{
+for(int i = 0; i < 12; i++)
+{
+  printf("%d %g\n", i, signal_energy[i]);
+}
+}
 
                 //---------------//
                 // find the peak //
