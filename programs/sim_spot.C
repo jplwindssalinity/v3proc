@@ -159,13 +159,18 @@ main(
     Vector3 rlook_ant;  // beam look direction in antenna frame
     Vector3 rlook_geo;  // beam look direction in geocentric frame
     EarthPosition rsat;
+	EarthPosition rspot_prev[2];	// holds last spot position for both beams
+	EarthPosition rspot_look1,rspot_look2;
+	EarthPosition rspot_azi1,rspot_azi2;
+	Vector3 rlook_look1,rlook_look2;
+	Vector3 rlook_azi1,rlook_azi2;
 
 	#define NPTS 15
 	#define BEAM_WIDTH_LOOK	0.008552
 	#define BEAM_WIDTH_AZIMUTH 0.007269
 
     double look_delta[NPTS+1];
-    double azimuth_delta[NPTS+1];
+    double azimuth_delta[NPTS+1][2];
 
 	//
 	// Setup for drawing an ellipse
@@ -179,18 +184,34 @@ main(
 		theta = j*two_pi/NPTS;
 		r = sqrt(a2*b2/(a2*sin(theta)*sin(theta) + b2*cos(theta)*cos(theta)));
 		look_delta[j] = r*cos(theta);
-		azimuth_delta[j] = r*sin(theta);
+		azimuth_delta[j][0] = r*sin(theta) /
+				sin(instrument.antenna.beam[0].lookAngle);
+		azimuth_delta[j][1] = r*sin(theta) /
+				sin(instrument.antenna.beam[1].lookAngle);
+	}
+
+	FILE *checkfile = fopen("sim_spot.check","w");
+	if (checkfile == NULL)
+	{
+		printf("Error opening sim_spot.check\n");
+		exit(-1);
 	}
 
 	//----------------------//
 	// cycle through events //
 	//----------------------//
 
+	WindField windfield;
+	GMF gmf;
+
 	Event event;
 	while (event.time < 12.00)
 	{
 		sim.DetermineNextEvent(&event);
-		sim.SimulateEvent(&instrument, &event);
+        sim.spacecraftSim.UpdateOrbit(event.time,
+            &(instrument.spacecraft));
+        sim.antennaSim.UpdatePosition(event.time,
+            &(instrument.antenna));
 		int beam_idx;
 		switch(event.eventId)
 		{
@@ -210,12 +231,73 @@ main(
 		if (ang > 0.3491 && ang < 5.9341)
 			continue;
         Spacecraft *sc = &(instrument.spacecraft);
+
+		// compute distance between successive spots (of same beam)
+      	rlook_ant.SphericalSet(1.0,
+           	instrument.antenna.beam[beam_idx].lookAngle,
+            instrument.antenna.beam[beam_idx].azimuthAngle +
+			instrument.antenna.azimuthAngle);
+       	rspot = earth_intercept(sc->gcVector,sc->velocityVector,
+                             	 sc_att,ant_att,rlook_ant);
+		double distance = rspot.surface_distance(rspot_prev[beam_idx]);
+
+		// update previous spot position
+		rspot_prev[beam_idx] = rspot;
+
+		// compute size of ellipse on the surface
+        rlook_ant.SphericalSet(1.0,
+           	instrument.antenna.beam[beam_idx].lookAngle + BEAM_WIDTH_LOOK,
+            instrument.antenna.beam[beam_idx].azimuthAngle +
+			instrument.antenna.azimuthAngle);
+       	rspot_look1 = earth_intercept(sc->gcVector,sc->velocityVector,
+                             	 sc_att,ant_att,rlook_ant);
+        rlook_ant.SphericalSet(1.0,
+           	instrument.antenna.beam[beam_idx].lookAngle - BEAM_WIDTH_LOOK,
+            instrument.antenna.beam[beam_idx].azimuthAngle +
+			instrument.antenna.azimuthAngle);
+       	rspot_look2 = earth_intercept(sc->gcVector,sc->velocityVector,
+                             	 sc_att,ant_att,rlook_ant);
+        rlook_ant.SphericalSet(1.0,
+           	instrument.antenna.beam[beam_idx].lookAngle,
+            instrument.antenna.beam[beam_idx].azimuthAngle +
+			BEAM_WIDTH_AZIMUTH /
+				sin(instrument.antenna.beam[beam_idx].lookAngle) +
+			instrument.antenna.azimuthAngle);
+       	rspot_azi1 = earth_intercept(sc->gcVector,sc->velocityVector,
+                             	 sc_att,ant_att,rlook_ant);
+        rlook_ant.SphericalSet(1.0,
+           	instrument.antenna.beam[beam_idx].lookAngle,
+            instrument.antenna.beam[beam_idx].azimuthAngle -
+			BEAM_WIDTH_AZIMUTH /
+				sin(instrument.antenna.beam[beam_idx].lookAngle) +
+			instrument.antenna.azimuthAngle);
+       	rspot_azi2 = earth_intercept(sc->gcVector,sc->velocityVector,
+                             	 sc_att,ant_att,rlook_ant);
+
+		double look_width = rspot_look1.surface_distance(rspot_look2);
+		double azi_width = rspot_azi1.surface_distance(rspot_azi2);
+
+		// check for consistency
+		rlook_look1 = rspot_look1 - sc->gcVector;
+		rlook_look2 = rspot_look2 - sc->gcVector;
+		rlook_azi1 = rspot_azi1 - sc->gcVector;
+		rlook_azi2 = rspot_azi2 - sc->gcVector;
+		double bw_look = acos((rlook_look1 % rlook_look2) /
+			rlook_look1.Magnitude() / rlook_look2.Magnitude());
+		double bw_azi = acos((rlook_azi1 % rlook_azi2) /
+			rlook_azi1.Magnitude() / rlook_azi2.Magnitude());
+		
+		fprintf(checkfile,"%d %g %g %g %g %g %g %g\n", beam_idx, event.time,
+			180/pi*(instrument.antenna.beam[beam_idx].azimuthAngle +
+			 	instrument.antenna.azimuthAngle),
+			distance, look_width, azi_width, bw_look, bw_azi);
+
 		for (int i=0; i <= NPTS; i++)
 		{
         	rlook_ant.SphericalSet(1.0,
             	instrument.antenna.beam[beam_idx].lookAngle + look_delta[i],
                 instrument.antenna.beam[beam_idx].azimuthAngle +
-				azimuth_delta[i] + instrument.antenna.azimuthAngle);
+				azimuth_delta[i][beam_idx] + instrument.antenna.azimuthAngle);
         	rspot = earth_intercept(sc->gcVector,sc->velocityVector,
                                 sc_att,ant_att,rlook_ant);
         	rspot_geodetic = rspot.get_alt_lat_lon(EarthPosition::GEODETIC);
@@ -224,5 +306,6 @@ main(
        	printf("\n");
 	}
 
+	fclose(checkfile);
 	return (0);
 }
