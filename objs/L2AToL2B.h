@@ -34,6 +34,12 @@ class L2AToL2B
 {
 public:
 
+    //------//
+    // enum //
+    //------//
+
+    enum WindRetrievalMethodE { GS, GS_FIXED, H1, PEAK_SPLITTING };
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -41,12 +47,17 @@ public:
 	L2AToL2B();
 	~L2AToL2B();
 
+    //---------//
+    // setting //
+    //---------//
+
+    int    SetWindRetrievalMethod(const char* wr_method);
+
 	//------------//
 	// conversion //
 	//------------//
 
 	int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
-	int		GSConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
 	int		Flush(L2B* l2b);
 
 	//-----------//
@@ -60,20 +71,19 @@ public:
 	// processing variables //
 	//----------------------//
 
-	int		medianFilterWindowSize;
-	int		medianFilterMaxPasses;
-	int             maxRankForNudging;
+    int  medianFilterWindowSize;
+    int  medianFilterMaxPasses;
+    int  maxRankForNudging;
 
 	//-------//
 	// flags //
 	//-------//
 
-    int  useManyAmbiguities;
-    int  useAmbiguityWeights;
-    int  usePeakSplitting;
-    int  useH1Flag;
-    int  useNudging;
-    int  smartNudgeFlag;
+    int                   useManyAmbiguities;
+    int                   useAmbiguityWeights;
+    int                   useNudging;
+    int                   smartNudgeFlag;
+    WindRetrievalMethodE  wrMethod;
 
 	//-----------------------------------------//
 	// Parameters for Peak Splitting Algorithm //

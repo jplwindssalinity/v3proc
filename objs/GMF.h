@@ -43,7 +43,6 @@ static const char rcs_id_gmf_h[] =
 class GMF : public PiscTable
 {
 public:
-
 	//--------------//
 	// construction //
 	//--------------//
@@ -83,7 +82,8 @@ public:
 	//----------------//
 
 	int		CheckRetrieveCriteria(MeasList* meas_list);
-	int		RetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int		RetrieveWinds_PE(MeasList* meas_list, Kp* kp, WVC* wvc);
+
 	int		RetrieveManyWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
 	int             RetrieveWindsWithPeakSplitting(MeasList* meas_list,
                            Kp* kp, WVC* wvc, float one_peak_width, float
@@ -98,8 +98,8 @@ public:
     // H1 wind retrieval //
     //-------------------//
 
-    int     RetrieveWindsH1(MeasList* meas_list, Kp* kp, WVC* wvc);
-    int     SolutionCurveH1(MeasList* meas_list, Kp* kp);
+    int     RetrieveWinds_H1(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     SolutionCurve_H1(MeasList* meas_list, Kp* kp);
     int     FindBestSpeed(MeasList* meas_list, Kp* kp, float dir,
                 float low_speed, float high_speed, float* best_speed,
                 float* best_obj);
@@ -108,7 +108,7 @@ public:
 	// GS wind retrieval //
 	//-------------------//
 
-	int		GSRetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int		RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc);
 	int		Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp,
 				WVC* wvc);
 	int		Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp,
