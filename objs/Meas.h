@@ -117,8 +117,6 @@ public:
     // not to be written out! //
     //------------------------//
 
-    float EsSlice;   // The signal energy, needed for SNR (with EnSlice)
-    float sigma0;    // The true sigma0. (needed for correlation measurements)
     long  offset;    // byte offset in file
 };
 
