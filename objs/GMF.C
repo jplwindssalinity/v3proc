@@ -28,9 +28,21 @@ GMF::GMF()
 	retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), _spdTol(DEFAULT_SPD_TOL),
 	_sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
 	_maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
-	_copyObj(NULL)
+	_copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
+	_dir_mle_maxima(NULL)
 {
 	SetPhiCount(DEFAULT_PHI_COUNT);
+
+	_speed_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
+	_objective_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
+	_dir_mle_maxima = (int*)malloc((MAX_DIR_SAMPLES+1)*sizeof(int));
+	if (_speed_buffer == NULL || _objective_buffer == NULL ||
+		_dir_mle_maxima == NULL)
+	{
+		fprintf(stderr,"GMF::GMF: Error allocating memory\n");
+		exit(-1);
+	}
+
 	return;
 }
 
@@ -39,6 +51,10 @@ GMF::~GMF()
 	free(_bestSpd);
 	free(_bestObj);
 	free(_copyObj);
+
+	if (! _speed_buffer) free(_speed_buffer);
+	if (! _objective_buffer) free(_objective_buffer);
+	if (! _dir_mle_maxima) free(_dir_mle_maxima);
 
 	return;
 }
@@ -207,9 +223,9 @@ GMF::GetCoefs(
 
 	return(1);
 }
-//--------------------------//
-// GMF::WriteSolutionCurves //
-//--------------------------//
+//---------------//
+// GMF::WritePdf //
+//---------------//
 
 int
 GMF::WritePdf(
@@ -340,29 +356,82 @@ GMF::WriteSolutionCurves(
 	return(1);
 }
 
+//-------------------//
+// GMF::GetObjLimits //
+//-------------------//
+
+int
+GMF::GetObjLimits(
+	float*		min_obj,
+	float*		max_obj)
+{
+
+	*min_obj = _bestObj[0];
+	*max_obj = _bestObj[0];
+	for (int i = 0; i < _phiCount; i++)
+	{
+		if (_bestObj[i] < *min_obj)
+			*min_obj = _bestObj[i];
+		if (_bestObj[i] > *max_obj)
+			*max_obj = _bestObj[i];
+	}
+	
+	return(1);
+}
+
 //--------------------------//
 // GMF::WriteObjectiveCurve //
 //--------------------------//
 
 int
 GMF::WriteObjectiveCurve(
-	FILE*		ofp)
+	FILE*		ofp,
+	float		min_obj,
+	float		max_obj)
 {
 
-	float min_obj = _bestObj[0];
-	float max_obj = _bestObj[0];
-	for (int i = 0; i < _phiCount; i++)
+	if (min_obj == max_obj)
 	{
-		if (_bestObj[i] < min_obj)
-			min_obj = _bestObj[i];
-		if (_bestObj[i] > max_obj)
-			max_obj = _bestObj[i];
+		fprintf(stderr,"GMF::WriteObjectiveCurve: Invalid obj limits\n");
+		exit(-1);
 	}
 	float scale = 1.0 / (max_obj - min_obj);
 	for (int i = 0; i < _phiCount; i++)
 	{
 		fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
 			(_bestObj[i] - min_obj) * scale);
+	}
+
+	return(1);
+}
+
+//----------------------------//
+// GMF::WriteGSObjectiveCurve //
+//----------------------------//
+
+int
+GMF::WriteGSObjectiveCurve(
+	FILE*		ofp,
+	float		min_obj,
+	float		max_obj)
+{
+
+	float dir_spacing =  wind_dir_intv_init;
+	int num_dir_samples = (int)(360. / dir_spacing) + 2 ;
+
+	if (min_obj == max_obj)
+	{
+		fprintf(stderr,"GMF::WriteGSObjectiveCurve: Invalid obj limits\n");
+		exit(-1);
+	}
+
+	float scale = 1.0 / (max_obj - min_obj);
+
+	for (int i = 2; i <= num_dir_samples; i++)
+	{
+		float angle = dir_spacing * (float)(i - 1) - dir_spacing; 
+		fprintf(ofp, "%g %g\n", angle,
+			(_objective_buffer[i] - min_obj) * scale);
 	}
 
 	return(1);
@@ -375,18 +444,17 @@ GMF::WriteObjectiveCurve(
 int
 GMF::AppendSolutions(
 	FILE*		ofp,
-	WVC*		wvc)
+	WVC*		wvc,
+	float		min_obj,
+	float		max_obj)
 {
 
-	float min_obj = _bestObj[0];
-	float max_obj = _bestObj[0];
-	for (int i = 0; i < _phiCount; i++)
+	if (min_obj == max_obj)
 	{
-		if (_bestObj[i] < min_obj)
-			min_obj = _bestObj[i];
-		if (_bestObj[i] > max_obj)
-			max_obj = _bestObj[i];
+		fprintf(stderr,"GMF::AppendSolutions: Invalid obj limits\n");
+		exit(-1);
 	}
+
 	float scale = 1.0 / (max_obj - min_obj);
 
 	//----------------------------//
@@ -397,9 +465,7 @@ GMF::AppendSolutions(
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
-		int phi_idx = (int)(wvp->dir/_phiStepSize);
-		fprintf(ofp, "%g %g\n", wvp->dir * rtd,
-				 (_bestObj[phi_idx]-min_obj)*scale);
+		fprintf(ofp, "%g %g\n", wvp->dir * rtd, (wvp->obj-min_obj)*scale);
 	}
 
 	return(1);
@@ -793,7 +859,7 @@ GMF::RetrieveWindsWithPeakSplitting(
 
         while(num_peaks<max_num_ambigs){
 	  float max_prob=0;
-          int max_offset;
+          int max_offset=0;
           for(int c=0;c<_phiCount;c++){
              
             // check to see if the direction is already represented by
@@ -1404,15 +1470,15 @@ GMF::Calculate_Init_Wind_Solutions(
       float      diff_objective_2;
       float      current_objective;
       int   num_mle_maxima;
-      float      speed_buffer [MAX_DIR_SAMPLES+1];
-      float      objective_buffer [MAX_DIR_SAMPLES+1] ;
-      int   dir_mle_maxima [MAX_DIR_SAMPLES+1];
+//      float      speed_buffer [MAX_DIR_SAMPLES+1];
+//      float      objective_buffer [MAX_DIR_SAMPLES+1] ;
+//      int   dir_mle_maxima [MAX_DIR_SAMPLES+1];
 
 	for (i=0; i <= MAX_DIR_SAMPLES+1; i++)
 	{
-		speed_buffer[i] = 0.0;
-		objective_buffer[i] = 0.0;
-		dir_mle_maxima[i] = 0;
+		_speed_buffer[i] = 0.0;
+		_objective_buffer[i] = 0.0;
+		_dir_mle_maxima[i] = 0;
 	}
 
       center_speed = (int)(wind_start_speed);
@@ -1484,8 +1550,8 @@ GMF::Calculate_Init_Wind_Solutions(
 
                if (minus_speed < (float)(lower_speed_bound))
 				{
-                  speed_buffer[k] = center_speed;
-                  objective_buffer [k] = center_objective;
+                  _speed_buffer[k] = center_speed;
+                  _objective_buffer [k] = center_objective;
                   center_speed = center_speed + wind_speed_intv_init;
                   good_speed = 0;
 				}
@@ -1521,8 +1587,8 @@ GMF::Calculate_Init_Wind_Solutions(
  
                if  (plus_speed > (float)(upper_speed_bound))
 				{ 
-                  speed_buffer [k] = center_speed;
-                  objective_buffer [k] = center_objective;
+                  _speed_buffer [k] = center_speed;
+                  _objective_buffer [k] = center_objective;
                   center_speed = center_speed - wind_speed_intv_init;
                   good_speed = 0;
 				}
@@ -1548,13 +1614,17 @@ GMF::Calculate_Init_Wind_Solutions(
             diff_objective_2 = (plus_objective + minus_objective)
                             - 2.0 * center_objective;
  
-            speed_buffer [k] = center_speed  - 0.5
+            _speed_buffer [k] = center_speed  - 0.5
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
  
-            objective_buffer [k] = center_objective
-                                - (diff_objective_1*diff_objective_1
-                                  /diff_objective_2) / 8.0;
+			// Re-evaluate objective function to avoid interpolation bumps
+			// that introduce artificial peaks.
+			_objective_buffer[k] = _ObjectiveFunction(meas_list,
+										_speed_buffer[k],dtr*angle,kp);
+//            _objective_buffer [k] = center_objective
+//                                - (diff_objective_1*diff_objective_1
+//                                  /diff_objective_2) / 8.0;
 		}
 	}	// end of angular k loop
 
@@ -1563,11 +1633,11 @@ GMF::Calculate_Init_Wind_Solutions(
 //   Make speed/objective buffers "circularly continuous".   
 //
 
-      speed_buffer [1] = speed_buffer [num_dir_samples - 1]; 
-      speed_buffer [num_dir_samples] = speed_buffer [2];
+      _speed_buffer [1] = _speed_buffer [num_dir_samples - 1]; 
+      _speed_buffer [num_dir_samples] = _speed_buffer [2];
 
-      objective_buffer [1]  = objective_buffer [num_dir_samples - 1];
-      objective_buffer [num_dir_samples]  = objective_buffer [2];
+      _objective_buffer [1]  = _objective_buffer [num_dir_samples - 1];
+      _objective_buffer [num_dir_samples]  = _objective_buffer [2];
       
 //
 //   Find local MLE maximas over the angular intervals.  
@@ -1577,11 +1647,11 @@ GMF::Calculate_Init_Wind_Solutions(
 
 	for (k=2; k <= num_dir_samples-1; k++)
 	{
-		if (objective_buffer[k] > objective_buffer[k-1] &&
-			objective_buffer[k] > objective_buffer[k+1])
+		if (_objective_buffer[k] > _objective_buffer[k-1] &&
+			_objective_buffer[k] > _objective_buffer[k+1])
 		{
             num_mle_maxima = num_mle_maxima + 1;
-            dir_mle_maxima [num_mle_maxima] = k;
+            _dir_mle_maxima [num_mle_maxima] = k;
 		}
 	}
 
@@ -1599,12 +1669,12 @@ GMF::Calculate_Init_Wind_Solutions(
 		for (i=1; i <= num_mle_maxima; i++)
 		{
             k = 0;
-            current_objective = objective_buffer [dir_mle_maxima[i]];
+            current_objective = _objective_buffer [_dir_mle_maxima[i]];
             ii = i + num_mle_maxima;
 			for (j=1; j <= num_mle_maxima; j++)
 			{
-               jj = dir_mle_maxima [j];
-               if (current_objective < objective_buffer [jj] )
+               jj = _dir_mle_maxima [j];
+               if (current_objective < _objective_buffer [jj] )
                   k = k + 1;
 			}
 
@@ -1614,9 +1684,9 @@ GMF::Calculate_Init_Wind_Solutions(
 //
 
             if (k >= wind_max_solutions)
-                dir_mle_maxima [ii] = -2;
+                _dir_mle_maxima [ii] = -2;
             else
-                dir_mle_maxima [ii] = -1;
+                _dir_mle_maxima [ii] = -1;
 		}
 
 //
@@ -1627,10 +1697,10 @@ GMF::Calculate_Init_Wind_Solutions(
         ii = 0;
 		for (i=1; i <= num_mle_maxima; i++)
 		{
-            if (dir_mle_maxima[i + num_mle_maxima] == -1)
+            if (_dir_mle_maxima[i + num_mle_maxima] == -1)
 			{
                ii = ii + 1;
-               dir_mle_maxima [ii + 2 * num_mle_maxima] = dir_mle_maxima [i];      
+               _dir_mle_maxima [ii + 2 * num_mle_maxima] = _dir_mle_maxima [i];      
 			}
 		}
           
@@ -1640,7 +1710,7 @@ GMF::Calculate_Init_Wind_Solutions(
 
 		for (k=1; k <= wind_max_solutions; k++)
 		{
-            dir_mle_maxima [k] = dir_mle_maxima [k + 2 * num_mle_maxima];  
+            _dir_mle_maxima [k] = _dir_mle_maxima [k + 2 * num_mle_maxima];  
 		}
         num_mle_maxima = wind_max_solutions;
 //		printf("dir_mle_maxima = %d\n",dir_mle_maxima);
@@ -1654,7 +1724,7 @@ GMF::Calculate_Init_Wind_Solutions(
     int wr_num_ambigs = num_mle_maxima;
 	for (i=1; i <= wr_num_ambigs; i++)
 	{
-        jj = dir_mle_maxima [i]; 
+        jj = _dir_mle_maxima [i]; 
 //        wr_wind_dir [i] = dir_spacing * (float)(jj - 1) - dir_spacing;
 //        wr_wind_speed [i] = speed_buffer [jj];
 //        wr_mle [i] = objective_buffer [jj];
@@ -1662,9 +1732,9 @@ GMF::Calculate_Init_Wind_Solutions(
 		WindVectorPlus* wvp = new WindVectorPlus();
 		if (! wvp)
 			return(0);
-		wvp->spd = speed_buffer [jj];
+		wvp->spd = _speed_buffer [jj];
 		wvp->dir = dtr * (dir_spacing * (float)(jj - 1) - dir_spacing);
-		wvp->obj = objective_buffer [jj];
+		wvp->obj = _objective_buffer [jj];
 //		printf("init: obj,spd,dir= %g %g %g\n",wvp->obj,wvp->spd,rtd*wvp->dir);
 		if (! wvc->ambiguities.Append(wvp))
 		{

@@ -70,10 +70,12 @@ public:
 	int		GetCoefs(PolE pol, float inc, float spd, float* A0, float* A1,
 				float* A1_phase, float* A2, float* A2_phase, float* A3,
 				float* A3_phase, float* A4, float* A4_phase);
+	int		GetObjLimits(float* min_obj, float* max_obj);
 	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
 	int		WritePdf(FILE* ofp, MeasList* meas_list, Kp* kp);
-	int		WriteObjectiveCurve(FILE* ofp);
-	int		AppendSolutions(FILE* ofp, WVC* wvc);
+	int		WriteObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
+	int		WriteGSObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
+	int		AppendSolutions(FILE* ofp, WVC* wvc, float min_obj, float max_obj);
 
 	//----------------//
 	// wind retrieval //
@@ -135,6 +137,14 @@ protected:
 	float*	_bestSpd;		// array to hold best speed for each direction
 	float*	_bestObj;		// array to hold best objective for each direction
 	float*	_copyObj;		// storage for a copy of obj
+
+	//----------------------//
+	// GS related variables //
+	//----------------------//
+
+	float*	_speed_buffer;		// array to hold best speed for each dir
+	float*	_objective_buffer;	// array to hold best objective for each dir
+	int*	_dir_mle_maxima;	// storage for a copy of obj
 };
 
 #endif
