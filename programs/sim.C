@@ -57,6 +57,8 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include "List.h"
+#include "List.C"
 #include "Misc.h"
 #include "ConfigList.h"
 #include "Spacecraft.h"
@@ -161,17 +163,17 @@ main(
 		exit(1);
 	}
 
-	//-------------------------//
-	// create a Level 0.0 file //
-	//-------------------------//
+	//----------------------------//
+	// create a Level 0.0 product //
+	//----------------------------//
 
-	L00File l00_file;
-	if (! ConfigL00File(&l00_file, &config_list))
+	L00 l00;
+	if (! ConfigL00(&l00, &config_list))
 	{
 		fprintf(stderr, "%s: error configuring Level 0.0\n", command);
 		exit(1);
 	}
-	l00_file.OpenForOutput();
+	l00.file.OpenForOutput();
 
 	//--------------------------//
 	// create an ephemeris file //
@@ -230,7 +232,7 @@ main(
 	//----------------------//
 
 	L00Frame l00_frame;
-	char l00_buffer[MAX_L00_BUFFER_SIZE];
+	char l00_buffer[L00_FRAME_SIZE];
 
 	SpacecraftEvent spacecraft_event;
 	InstrumentEvent instrument_event;
@@ -310,7 +312,7 @@ main(
 			if (instrument_sim.l00FrameReady)
 			{
 				int size = instrument_sim.l00Frame.Pack(l00_buffer);
-				l00_file.Write(l00_buffer, size);
+				l00.file.Write(l00_buffer, size);
 			}
 
 			need_instrument_event = 1;
@@ -321,7 +323,7 @@ main(
 	// close Level 0.0 file //
 	//----------------------//
 
-	l00_file.Close();
+	l00.file.Close();
 
 	return (0);
 }
