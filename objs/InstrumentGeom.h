@@ -47,6 +47,9 @@ CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
 int		LocateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot);
 
+int		LocateSliceCentroids(Spacecraft* spacecraft, Instrument* instrument,
+			MeasSpot* meas_spot);
+
 int		LocateSpot(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot, float contour_level = DEFAULT_CONTOUR_LEVEL);
 

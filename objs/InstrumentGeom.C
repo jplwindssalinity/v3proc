@@ -209,6 +209,167 @@ LocateSlices(
 	return(1);
 }
 
+//----------------------//
+// LocateSliceCentroids //
+//----------------------//
+
+int
+LocateSliceCentroids(
+	Spacecraft*		spacecraft,
+	Instrument*		instrument,
+	MeasSpot*		meas_spot)
+{
+	//-----------//
+	// predigest //
+	//-----------//
+
+	Antenna* antenna = &(instrument->antenna);
+	Beam* beam = antenna->GetCurrentBeam();
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
+
+	//------------------//
+	// set up meas spot //
+	//------------------//
+
+	meas_spot->FreeContents();
+	meas_spot->time = instrument->time;
+	meas_spot->scOrbitState = *orbit_state;
+	meas_spot->scAttitude = *attitude;
+
+	//--------------------------------//
+	// generate the coordinate switch //
+	//--------------------------------//
+
+	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
+		attitude, antenna);
+
+	//------------------------------------------------------//
+	// calculate commanded receiver gate delay and duration //
+	//------------------------------------------------------//
+
+	float residual_delay_error = 0.0;
+	if (instrument->useRgc)
+	{
+		if (! instrument->rangeTracker.SetInstrument(instrument,
+			&residual_delay_error))
+		{
+			fprintf(stderr,
+			"LocateSlices: error setting instrument using range tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		instrument->commandedRxGateWidth = beam->receiverGateWidth;
+		double rtt = IdealRtt(spacecraft, instrument);
+		if (! RttToCommandedReceiverDelay(instrument, rtt))
+			return(0);
+	}
+
+	//---------------------------------------//
+	// calculate commanded Doppler frequency //
+	//---------------------------------------//
+
+	if (instrument->useDtc)
+	{
+		if (! instrument->dopplerTracker.SetInstrument(instrument,
+			residual_delay_error))
+		{
+			fprintf(stderr,
+			"LocateSlices: error setting instrument using Doppler tracker\n");
+			return(0);
+		}
+	}
+	else
+	{
+		if (! IdealCommandedDoppler(spacecraft, instrument))
+			return(0);
+	}
+
+	//------------------//
+	// find beam center //
+	//------------------//
+
+	double center_look, center_azim;
+	if (! beam->GetElectricalBoresight(&center_look, &center_azim))
+		return(0);
+
+	//-------------------//
+	// for each slice... //
+	//-------------------//
+
+	int total_slices = instrument->GetTotalSliceCount();
+	for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
+	{
+		//-------------------------//
+		// create a new measurment //
+		//-------------------------//
+
+		Meas* meas = new Meas();
+		meas->pol = beam->polarization;
+
+		//----------------------------------//
+		// determine the centroid frequency //
+		//----------------------------------//
+
+		float f1, bw;
+		if (! instrument->GetSliceFreqBw(slice_idx, &f1, &bw))
+			return(0);
+		float centroid_freq = f1 + bw / 2.0;
+		float ftol = bw / 1000.0;
+
+		//------------------------------------------//
+		// find the slice centroid look and azimuth //
+		//------------------------------------------//
+
+		float gain;
+		double look = center_look;
+		double azim = center_azim;
+		if (! FindPeakGainAtFreq(&antenna_frame_to_gc, spacecraft, instrument,
+        	centroid_freq, ftol, &look, &azim, &gain))
+		{
+			fprintf(stderr,
+				"FindSliceCentroids: error finding peak gain for %g Hz\n",
+				centroid_freq);
+			return(0);
+		}
+
+		//--------------------------------//
+		// find the centroid on the earth //
+		//--------------------------------//
+
+		Vector3 rlook_antenna;
+		rlook_antenna.SphericalSet(1.0, look, azim);
+		Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
+		EarthPosition centroid;
+		centroid = earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
+
+		//---------------------------//
+		// generate measurement data //
+		//---------------------------//
+
+		// get local measurement azimuth
+		CoordinateSwitch gc_to_surface = centroid.SurfaceCoordinateSystem();
+		Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
+		double r, theta, phi;
+		rlook_surface.SphericalGet(&r, &theta, &phi);
+		meas->eastAzimuth = phi;
+
+		// get incidence angle
+		meas->incidenceAngle = centroid.IncidenceAngle(rlook_gc);
+		meas->centroid = centroid;
+		meas->bandwidth = bw;
+
+		//-----------------------------//
+		// add measurment to meas spot //
+		//-----------------------------//
+
+		meas_spot->Append(meas);
+	}
+	return(1);
+}
+
 //------------//
 // LocateSpot //
 //------------//

@@ -127,7 +127,7 @@ L10ToL15::Convert(
 			}
 			else
 			{
-				if (! LocateSlices(spacecraft, instrument, meas_spot))
+				if (! LocateSliceCentroids(spacecraft, instrument, meas_spot))
 					return(0);
 			}
 
