@@ -96,6 +96,61 @@ InstrumentSim::DetermineNextEvent(
 	return(1);
 }
 
+//--------------------------------------//
+// InstrumentSim::UpdateAntennaPosition //
+//--------------------------------------//
+
+int
+InstrumentSim::UpdateAntennaPosition(
+	double			time,
+	Instrument*		instrument)
+{
+	antennaSim.UpdatePosition(time, &(instrument->antenna));
+	return(1);
+}
+
+//------------------------------//
+// InstrumentSim::BeamFrameToGC //
+//------------------------------//
+
+CoordinateSwitch
+InstrumentSim::BeamFrameToGC(
+	OrbitState*		sc_orbit_state,
+	Attitude*		sc_attitude,
+	Antenna*		antenna,
+	Beam*			beam)
+{
+	CoordinateSwitch total;
+
+	// geocentric to s/c velocity
+	Vector3 sc_xv, sc_yv, sc_zv;
+	velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat,
+		&sc_xv, &sc_yv, &sc_zv);
+	CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
+	total = gc_to_scv;
+
+	// s/c velocity to s/c body
+	CoordinateSwitch scv_to_sc_body(*sc_attitude);
+	total.Append(&scv_to_sc_body);
+
+	// s/c body to antenna pedestal
+	CoordinateSwitch sc_body_to_ant_ped = antenna->GetScBodyToAntPed();
+	total.Append(&sc_body_to_ant_ped);
+
+	// antenna pedestal to antenna frame
+	Attitude att;
+	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
+	CoordinateSwitch ant_ped_to_ant_frame(att);
+	total.Append(&ant_ped_to_ant_frame);
+
+	// antenna frame to beam frame
+	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
+	total.Append(&ant_frame_to_beam_frame);
+
+	total.ReverseDirection();
+	return(total);
+}
+
 //------------------------//
 // InstrumentSim::ScatSim //
 //------------------------//
@@ -103,7 +158,8 @@ InstrumentSim::DetermineNextEvent(
 int
 InstrumentSim::ScatSim(
 	double			time,
-	OrbitState*		orbit_state,
+	OrbitState*		sc_orbit_state,
+	Attitude*		sc_attitude,
 	Instrument*		instrument,
 	int				beam_idx,
 	WindField*		windfield,
@@ -115,66 +171,27 @@ InstrumentSim::ScatSim(
 
 	Antenna* antenna = &(instrument->antenna);
 	Beam* beam = &(antenna->beam[beam_idx]);
-	double beam_look_angle = beam->lookAngle;
-	double beam_azimuth_angle = beam->azimuthAngle;
-
-	//----------------------//
-	// update antenna angle //
-	//----------------------//
-
-	antennaSim.UpdatePosition(time, antenna);
 
 	//--------------------------------//
 	// generate the coordinate switch //
 	//--------------------------------//
 
-	// desired beam boresight in antenna frame
-	CoordinateSwitch ant_frame_to_beam_frame(beam->beamFrame);
-
-	// antenna frame in antenna pedestal frame
-	Attitude att;
-	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
-	CoordinateSwitch ant_ped_to_ant_frame(att);
-
-	// antenna pedestal frame in s/c body frame (zero for now)
-	att.Set(0.0, 0.0, 0.0, 1, 2, 3);
-	CoordinateSwitch sc_body_to_ant_ped(att);
-
-	// s/c body frame in s/c velocity frame (zero for now)
-	double sc_roll = 0.0;
-	double sc_pitch = 0.0;
-	double sc_yaw = 0.0;
-	att.Set(sc_roll, sc_pitch, sc_yaw, 2, 1, 3);
-	CoordinateSwitch sc_geovel_to_sc_body(att);
-
-	// s/c velocity frame in geocentric earth frame
-	Vector3 sc_xv, sc_yv, sc_zv;
-	velocity_frame(orbit_state->rsat, orbit_state->vsat,
-		&sc_xv, &sc_yv, &sc_zv);
-	CoordinateSwitch sc_geocent_to_geovel(sc_xv, sc_yv, sc_zv);
-
-	// total transformation (forward)
-	CoordinateSwitch total;
-	total = sc_geocent_to_geovel;
-	total.Append(&sc_geovel_to_sc_body);
-	total.Append(&sc_body_to_ant_ped);
-	total.Append(&ant_ped_to_ant_frame);
-	total.Append(&ant_frame_to_beam_frame);
-	total.ReverseDirection();
+	CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(sc_orbit_state,
+		sc_attitude, antenna, beam);
 
 	//---------------------------------------------------//
 	// calculate the look vector in the geocentric frame //
 	//---------------------------------------------------//
 
 	Vector3 rlook_beam;
-	rlook_beam.SphericalSet(1.0, beam_look_angle, beam_azimuth_angle);
-	Vector3 rlook_geo = total.Forward(rlook_beam);
+	rlook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
+	Vector3 rlook_geo = beam_frame_to_gc.Forward(rlook_beam);
 
 	//-------------------------------//
 	// calculate the earth intercept //
 	//-------------------------------//
 
-	EarthPosition rspot = earth_intercept(rlook_geo, orbit_state->rsat);
+	EarthPosition rspot = earth_intercept(rlook_geo, sc_orbit_state->rsat);
 
 	//----------------------------------------//
 	// get wind vector for the earth location //
@@ -214,16 +231,16 @@ InstrumentSim::ScatSim(
 		l00FrameReady = 0;
 		l00Frame.time = time;
 		Vector3 sc_all;
-		sc_all = orbit_state->rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
+		sc_all = sc_orbit_state->rsat.get_alt_lat_lon(EarthPosition::GEODETIC);
 		l00Frame.gcAltitude = sc_all.get(0);
 		l00Frame.gcLongitude = sc_all.get(1);
 		l00Frame.gcLatitude = sc_all.get(2);
-		l00Frame.gcX = orbit_state->rsat.get(0);
-		l00Frame.gcY = orbit_state->rsat.get(1);
-		l00Frame.gcZ = orbit_state->rsat.get(2);
-		l00Frame.velX = orbit_state->vsat.get(0);
-		l00Frame.velY = orbit_state->vsat.get(1);
-		l00Frame.velZ = orbit_state->vsat.get(2);
+		l00Frame.gcX = sc_orbit_state->rsat.get(0);
+		l00Frame.gcY = sc_orbit_state->rsat.get(1);
+		l00Frame.gcZ = sc_orbit_state->rsat.get(2);
+		l00Frame.velX = sc_orbit_state->vsat.get(0);
+		l00Frame.velY = sc_orbit_state->vsat.get(1);
+		l00Frame.velZ = sc_orbit_state->vsat.get(2);
 	}
 	l00Frame.antennaPosition[_spotNumber] = antenna->GetEncoderValue();
 	l00Frame.sigma0[_spotNumber] = value;

@@ -16,6 +16,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "WindField.h"
 #include "GMF.h"
 #include "Ephemeris.h"
+#include "CoordinateSwitch.h"
 
 //======================================================================
 // CLASSES
@@ -52,14 +53,23 @@ public:
 	int		Initialize(Antenna* antenna);
 	int		DetermineNextEvent(Antenna* antenna,
 				InstrumentEvent* instrument_event);
+	int		UpdateAntennaPosition(double time, Instrument* instrument);
+
+	//-----------------//
+	// common geometry //
+	//-----------------//
+
+	CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state,
+							Attitude* attitude, Antenna* antenna,
+							Beam* beam);
 
 	//--------------------------//
 	// scatterometer simulation //
 	//--------------------------//
 
-	int		ScatSim(double time, OrbitState* orbit_state,
-				Instrument* instrument, int beam_idx, WindField* windfield,
-				GMF* gmf);
+	int		ScatSim(double time, OrbitState* sc_orbit_state,
+				Attitude* sc_attitude, Instrument* instrument, int beam_idx,
+				WindField* windfield, GMF* gmf);
 
 	//-----------//
 	// variables //
