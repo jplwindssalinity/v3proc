@@ -74,6 +74,14 @@ static const char rcs_id_configsimdefs_h[] =
 #define PITCH_KNOWLEDGE_SEED_KEYWORD        "PITCH_KNOWLEDGE_SEED"
 #define YAW_KNOWLEDGE_SEED_KEYWORD          "YAW_KNOWLEDGE_SEED"
 
+//-----------------------//
+// Kprc Noise Model      //
+//-----------------------//
+
+#define SIM_KPRC_KEYWORD      "SIM_KPRC"
+#define KPRC_VALUE_KEYWORD    "KPRC_VALUE"
+#define KPRC_SEED_KEYWORD      "KPRC_SEED"
+
 //-------//
 // seeds //
 //-------//
@@ -372,5 +380,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define DEFAULT_YAW_KNOWLEDGE_SEED    486
 
 #define PTGR_SEED             944
+
+#define DEFAULT_KPRC_SEED             11456
 
 #endif
