@@ -284,7 +284,7 @@ InstrumentSim::LocateSpot(
 
 	rlook_antenna.SphericalSet(1.0, look, azimuth);
 	TargetInfoPackage  tip;
-	RangeAndRoundTrip(rlook_antenna,&antenna_frame_to_gc,spacecraft,&tip);
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
 	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
 

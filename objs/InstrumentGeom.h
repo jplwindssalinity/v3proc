@@ -91,8 +91,8 @@ int		PowerGainProduct(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float look,
 			float azim, float* gain);
 
-int		RangeAndRoundTrip(Vector3 vector, CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, TargetInfoPackage* tip);
+int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
+			Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
 
 #endif
