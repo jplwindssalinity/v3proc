@@ -86,7 +86,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define RANGE_ORBIT_STEPS		256
-#define RANGE_AZIMUTH_STEPS		45		// used for fitting
+#define RANGE_AZIMUTH_STEPS		90		// used for fitting
 
 #define EQX_TIME_TOLERANCE		0.1
 
@@ -278,7 +278,7 @@ main(
 				azimuth_step++)
 			{
 				antenna->azimuthAngle = azimuth_step_size *
-					((double)azimuth_step + 0.5);
+					(double)azimuth_step;
 
 				//-------------------------------------//
 				// calculate the ideal round trip time //

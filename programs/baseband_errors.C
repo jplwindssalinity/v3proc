@@ -377,6 +377,8 @@ main(
 				CoordinateSwitch antenna_frame_to_gc;
 				Vector3 rlook_antenna;
 				TargetInfoPackage tip;
+				double ideal_dopcom;
+				float residual_delay_error;
 
 				switch(instrument_event.eventId)
 				{
@@ -394,12 +396,27 @@ main(
 					instrument.antenna.currentBeamIdx =
 						instrument_event.beamIdx;
 
-					//-----------------------//
-					// set up the instrument //
-					//-----------------------//
+					//---------------------------//
+					// set up the range tracking //
+					//---------------------------//
 
-					range_tracker.SetInstrument(&instrument);
-					doppler_tracker.SetInstrument(&instrument);
+					residual_delay_error = 0.0;
+					range_tracker.SetInstrument(&instrument,
+						&residual_delay_error);
+
+					//---------------------------------------//
+					// determine the ideal commanded doppler //
+					//---------------------------------------//
+
+					IdealCommandedDoppler(&spacecraft, &instrument);
+					ideal_dopcom = instrument.commandedDoppler;
+
+					//-----------------------------//
+					// set up the doppler tracking //
+					//-----------------------------//
+
+					doppler_tracker.SetInstrument(&instrument,
+						residual_delay_error);
 
 					//----------------------------------------//
 					// get the beam center baseband frequency //
@@ -426,8 +443,9 @@ main(
 					//------------------------------//
 
 					// actually, any deviation from zero Hz is undesirable
-					fprintf(error_fp, "%.6f %.6f\n", instrument_event.time,
-						tip.basebandFreq);
+					fprintf(error_fp, "%.6f %.6f %.6f %.6f\n",
+						instrument_event.time, tip.basebandFreq,
+						instrument.commandedDoppler, ideal_dopcom);
 
 					instrument_sim.DetermineNextEvent(&(instrument.antenna),
 						&instrument_event);

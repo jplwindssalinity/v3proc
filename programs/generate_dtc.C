@@ -90,7 +90,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define DOPPLER_ORBIT_STEPS		256
-#define DOPPLER_AZIMUTH_STEPS	45		// used for fitting
+#define DOPPLER_AZIMUTH_STEPS	90		// used for fitting
 
 //--------//
 // MACROS //
@@ -310,7 +310,7 @@ main(
 				azimuth_step++)
 			{
 				antenna->azimuthAngle = azimuth_step_size *
-					((double)azimuth_step);
+					(double)azimuth_step;
 
 				CoordinateSwitch antenna_frame_to_gc =
 					AntennaFrameToGC(orbit_state, attitude, antenna);
@@ -329,7 +329,15 @@ main(
 				// calculate receiver gate info //
 				//------------------------------//
 
-				range_tracker.SetInstrument(&instrument);
+				float residual_delay_error = 0.0;
+				range_tracker.SetInstrument(&instrument,
+					&residual_delay_error);
+
+				//--------------------------------------------------------//
+				// hack in ideal delay by removing the quantization error //
+				//--------------------------------------------------------//
+
+				instrument.commandedRxGateDelay -= residual_delay_error;
 
 				//--------------------------------//
 				// calculate corrective frequency //

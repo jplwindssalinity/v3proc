@@ -416,9 +416,10 @@ main(
 					float delay, duration;
 					antenna_dn = antenna->GetEncoderValue();
 					antenna_n = antenna->GetEncoderN();
+					float residual_delay_error;
 					range_tracker.GetDelayAndDuration(instrument_event.beamIdx,
 						range_step, beam->pulseWidth, antenna_dn, antenna_n,
-						&delay, &duration);
+						&delay, &duration, &residual_delay_error);
 
 					//---------------------------//
 					// calculate the delay error //
