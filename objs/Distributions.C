@@ -250,6 +250,10 @@ float TimeCorrelatedGaussian::GetNumber(double time){
     exit(1);
   }
   
+  /********** Uncorrelated case *************/
+  if(_correlationLength == 0.0){
+    return(Uncorrelated.GetNumber());
+  }
 
   /******* Normal Mode  *******************/
 
