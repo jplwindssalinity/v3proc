@@ -118,7 +118,7 @@ main(
     const char* vctr_base = l2b_file;
     char* flag_file=NULL;
     int hdf_flag = 0;
-    int rm_rain = 0;
+//    int rm_rain = 0;
     if (argc >= 3)
         vctr_base = argv[clidx++];
     if (argc >= 4)
@@ -191,7 +191,7 @@ main(
         fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
         exit(1);
     }
-      
+
     l2b.frame.swath.SelectNudge();
     sprintf(filename, "%s.nudge", vctr_base);
     if (! l2b.WriteVctr(filename, 0))
@@ -203,11 +203,11 @@ main(
       l2b.frame.swath.StreamNudge(c);
       sprintf(filename, "%s.init.%d", vctr_base,c);
       if (! l2b.WriteVctr(filename, 0))
-	{
-	  fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
-	  exit(1);
-	}
-    
+    {
+        fprintf(stderr, "%s: error writing vctr file %s\n", command, filename);
+        exit(1);
+    }
+
     return (0);
 }
 
