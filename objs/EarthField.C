@@ -165,11 +165,11 @@ EarthField::InterpolatedElement(
 	float qn = 1.0 - q;
 
 	float e1 = field[lon_idx_1][lat_idx_1];
-	float e2 = field[lon_idx_2][lat_idx_1];
+	float e2x = field[lon_idx_2][lat_idx_1];
 	float e3 = field[lon_idx_1][lat_idx_2];
 	float e4 = field[lon_idx_2][lat_idx_2];
 
-	*element = pn * qn * e1 + p * qn * e2 + p * q * e3 + pn * q * e4;
+	*element = pn * qn * e1 + p * qn * e2x + p * q * e3 + pn * q * e4;
 	return(1);
 }
 

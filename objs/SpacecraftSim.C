@@ -173,11 +173,11 @@ SpacecraftSim::LocationToOrbit(
 
 int
 SpacecraftSim::UpdateOrbit(
-	double			time,
+	double			timex,
 	Spacecraft*		spacecraft)
 {
 	// convert time to time since epoch
-	double time_since_epoch = time - _epoch;
+	double time_since_epoch = timex - _epoch;
 
 	// propagate longitude of ascending node
 	double omg1r = _bigOmega + _ascnodot * time_since_epoch;
@@ -313,12 +313,12 @@ SpacecraftSim::UpdateOrbit(
 
 	// satellite longitude
 	double xy_dist = sqrt(gc_x*gc_x + gc_y*gc_y);
-	double sinl = gc_y / xy_dist;
-	double cosl = gc_x / xy_dist;
-	double satlon = atan2(sinl, cosl);
+	double sinlx = gc_y / xy_dist;
+	double coslx = gc_x / xy_dist;
+	double satlon = atan2(sinlx, coslx);
 	satlon = fmod(satlon + two_pi, two_pi);
 
-	spacecraft->orbitState.time = time;
+	spacecraft->orbitState.time = timex;
 	Vector3 rsat(gc_x, gc_y, gc_z);
 	spacecraft->orbitState.rsat = rsat;
 	Vector3 vsat(vx, vy, vz);
@@ -333,12 +333,12 @@ SpacecraftSim::UpdateOrbit(
 
 int
 SpacecraftSim::UpdateAttitude(
-	double			time,
+	double			timex,
 	Spacecraft*		spacecraft)
 {
-  spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(time) + rollBias);
-  spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(time) + pitchBias);
-  spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(time) + yawBias);
+  spacecraft->attitude.SetRoll(attCntlDist.roll.GetNumber(timex) + rollBias);
+  spacecraft->attitude.SetPitch(attCntlDist.pitch.GetNumber(timex) + pitchBias);
+  spacecraft->attitude.SetYaw(attCntlDist.yaw.GetNumber(timex) + yawBias);
   return(1);
 }
 
@@ -350,7 +350,7 @@ SpacecraftSim::UpdateAttitude(
 
 void
 SpacecraftSim::ReportAttitude(
-	double			time,
+	double			timex,
 	Spacecraft*		spacecraft,
 	Attitude*		attitude)
 {
@@ -360,9 +360,9 @@ SpacecraftSim::ReportAttitude(
 
 	if (simKprsFlag)
 	{
-		roll += attKnowDist.roll.GetNumber(time);
-		pitch += attKnowDist.pitch.GetNumber(time);
-		yaw += attKnowDist.yaw.GetNumber(time);
+		roll += attKnowDist.roll.GetNumber(timex);
+		pitch += attKnowDist.pitch.GetNumber(timex);
+		yaw += attKnowDist.yaw.GetNumber(timex);
 	}
 
 	unsigned char* order = spacecraft->attitude.GetOrder();
@@ -385,23 +385,23 @@ SpacecraftSim::GetArgOfLat(
 	double vz = spacecraft->orbitState.vsat.Get(2);
 	int asc = (vz > 0.0 ? 1 : 0);
 
-	double gamma;
+	double gammax;
 	if (asc)
 	{
 		if (gc_lat >= 0.0)
-			gamma = asin(sin(gc_lat) / sin(_i));
+			gammax = asin(sin(gc_lat) / sin(_i));
 		else
-			gamma = two_pi - fabs(asin(sin(gc_lat) / sin(_i)));
+			gammax = two_pi - fabs(asin(sin(gc_lat) / sin(_i)));
 	}
 	else
 	{
 		if (gc_lat >= 0.0)
-			gamma = pi - asin(sin(gc_lat) / sin(_i));
+			gammax = pi - asin(sin(gc_lat) / sin(_i));
 		else
-			gamma = pi + fabs(asin(sin(gc_lat) / sin(_i)));
+			gammax = pi + fabs(asin(sin(gc_lat) / sin(_i)));
 	}
 
-	return(gamma);
+	return(gammax);
 }
 
 //-----------------------------------//
@@ -459,7 +459,7 @@ SpacecraftSim::DetermineNextEvent(
 
 double
 SpacecraftSim::FindNextArgOfLatTime(
-	double	time,
+	double	timex,
 	double	target_arg_of_lat,
 	double	time_tol)
 {
@@ -468,7 +468,7 @@ SpacecraftSim::FindNextArgOfLatTime(
 	//-------------------------------------//
 
 	static Spacecraft spacecraft;		// used just for this
-	UpdateOrbit(time, &spacecraft);
+	UpdateOrbit(timex, &spacecraft);
 	double current_arg_of_lat = GetArgOfLat(&spacecraft);
 	double dif_arg = fmod(target_arg_of_lat + two_pi - current_arg_of_lat,
 		two_pi);
@@ -477,7 +477,7 @@ SpacecraftSim::FindNextArgOfLatTime(
 	// esimate time //
 	//--------------//
 
-	double target_time = time + _period * dif_arg / two_pi;
+	double target_time = timex + _period * dif_arg / two_pi;
 
 	//------------------//
 	// bracket the root //
@@ -544,14 +544,14 @@ SpacecraftSim::FindNextArgOfLatTime(
 
 double
 SpacecraftSim::FindPrevArgOfLatTime(
-	double	time,
+	double	timex,
 	double	target_arg_of_lat,
 	double	time_tol)
 {
-	double prev_time = time - _period;
+	double prev_time = timex - _period;
 	double target_time = FindNextArgOfLatTime(prev_time, target_arg_of_lat,
 		time_tol);
-	if (target_time > time)
+	if (target_time > timex)
 	{
 		// rare, but happens
 		target_time = FindNextArgOfLatTime(prev_time - _period / 2.0,

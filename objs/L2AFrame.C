@@ -251,7 +251,7 @@ L2AFrame::ReadGS(
 	float sigma0[MAX_BINS];
 	float alpha[MAX_BINS];
 	float beta[MAX_BINS];
-	float gamma[MAX_BINS];
+	float gammax[MAX_BINS];
 	float inc[MAX_BINS];
 	float azi[MAX_BINS];
 	float atten[MAX_BINS];
@@ -278,7 +278,7 @@ L2AFrame::ReadGS(
 			sigma0_in_cell ||
 		fread((void *)&beta, sizeof(float), sigma0_in_cell, fp) !=
 			sigma0_in_cell ||
-		fread((void *)&gamma, sizeof(float), sigma0_in_cell, fp) !=
+		fread((void *)&gammax, sizeof(float), sigma0_in_cell, fp) !=
 			sigma0_in_cell ||
 		fread((void *)&inc, sizeof(float), sigma0_in_cell, fp) !=
 			sigma0_in_cell ||
@@ -332,7 +332,7 @@ L2AFrame::ReadGS(
 		m->beamIdx = beam[i] - 1;
 		m->A = alpha[i];
 		m->B = beta[i];
-		m->C = gamma[i];
+		m->C = gammax[i];
 
 		if (! measList.Append(m))
 			return(0);

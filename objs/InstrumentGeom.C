@@ -192,7 +192,7 @@ LocateSpot(
 			theta = (theta_max + theta_min) / 2.0;
 			look_mid.SphericalSet(1.0, theta, phi);
 			look_mid_ant = beam_to_ant.Forward(look_mid);
-			double r, look, azim;
+			double r;
 			look_mid_ant.SphericalGet(&r,&look,&azim);
 			float gp;
 			if (! beam->GetSpatialResponse(look, azim, sti.roundTripTime,

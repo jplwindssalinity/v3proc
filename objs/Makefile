@@ -11,6 +11,7 @@ HDFINCDIR =     $(INCDIR)/hdf
 DEBUGFLAGS =    -O3
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
+# CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall -Wshadow -Woverloaded-virtual
 CPPFLAGS =		$(DEBUGFLAGS) $(INCFLAGS) -fno-implicit-templates -Wall
 SYSLIBS =		-lm
 CCC =			gcc

@@ -40,8 +40,8 @@ GenericTimelessDist::~GenericTimelessDist(){
 // GenericTimelessDist::GetNumber   //
 //==================================//
 
-float GenericTimelessDist::GetNumber(double time){
-	if(time<0.0) //bogus check to keep compiler quiet
+float GenericTimelessDist::GetNumber(double timex){
+	if(timex<0.0) //bogus check to keep compiler quiet
 		return(0.0);
 	else return(GetNumber());
 }
@@ -256,7 +256,7 @@ RandomVelocity::RandomVelocity(GenericTimelessDist* noise, float sample_period,
 	_time=0.0;
 	_velocity=noise->GetNumber();
 	while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
-		_velocity=noise->GetNumber();	
+		_velocity=noise->GetNumber();
 	}
 	return;
 }
@@ -269,28 +269,28 @@ RandomVelocity::~RandomVelocity(){
 // RandomVelocity::GetNumber	  //
 //================================//
 
-float RandomVelocity::GetNumber(double time){
-	if (time < 0.0){
+float RandomVelocity::GetNumber(double timex){
+	if (timex < 0.0){
 	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
 	 fprintf(stderr,"Parameter time may not be negative.\n");
 	 exit(1);
-	} 
-	if (time < _time){
+	}
+	if (timex < _time){
 	 fprintf(stderr,"Fatal Error produced by RandomVelocity::GetNumber\n");
 	 fprintf(stderr,"Parameter time may not decrease between \n");
 	 fprintf(stderr,"consecutive calls to the method. \n");
 	 exit(1);
 	}
-	while (time >= _time + _sample_period){
+	while (timex >= _time + _sample_period){
 	  _position+=_velocity*_sample_period;
 	  _time+=_sample_period;
  	  _velocity=_noise->GetNumber();
 	  while(fabs(_position-_mean+_velocity*_sample_period) > _radius){
-		_velocity=_noise->GetNumber();	
+		_velocity=_noise->GetNumber();
 	  }
 
-	}	
-	return(_position+(time-_time)*_velocity);
+	}
+	return(_position+(timex-_time)*_velocity);
 }
 
 //==================================================================//
@@ -313,7 +313,7 @@ int TimeCorrelatedGaussian::Initialize(){
    return(1);
 }
 
-float TimeCorrelatedGaussian::GetNumber(double time){
+float TimeCorrelatedGaussian::GetNumber(double timex){
 
   /*******  BIAS ONLY CASE        *************/
   if(Uncorrelated.GetVariance()==0.0){
@@ -321,11 +321,11 @@ float TimeCorrelatedGaussian::GetNumber(double time){
   }
 
   /******** Error Condition ****************/
-  if(time < _previousTime){
+  if(timex < _previousTime){
     fprintf(stderr,"TimeCorrelatedGaussian requires monotonically increasing time\n");
     exit(1);
   }
-  
+
   /********** Uncorrelated case *************/
   if(_correlationLength == 0.0){
     return(Uncorrelated.GetNumber());
@@ -333,9 +333,9 @@ float TimeCorrelatedGaussian::GetNumber(double time){
 
   /******* Normal Mode  *******************/
 
-  float retval=exp(-(time-_previousTime)/_correlationLength);
+  float retval=exp(-(timex-_previousTime)/_correlationLength);
   retval=retval*_previousOutput+sqrt(1-retval*retval)*Uncorrelated.GetNumber();
-  _previousTime=time;
+  _previousTime=timex;
   _previousOutput=retval;
   return(retval);
 }
@@ -385,8 +385,3 @@ SeedFromClock()
   gettimeofday(&now,NULL);
   srand48(now.tv_sec);
 }
-
-
-
-
-
