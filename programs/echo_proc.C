@@ -410,6 +410,7 @@ main(
         if (l1b_file == NULL || status != HdfFile::OK)
         {
             fprintf(stderr, "%s: error creating L1B file object\n", command);
+            fprintf(stderr, "    %s\n", l1b_filename);
             exit(1);
         }
 
