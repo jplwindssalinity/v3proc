@@ -41,7 +41,7 @@ public:
 
     int    Read(const char* filename);
     int    Write(const char* filename);
-    float  GetSigma0(float lon, float lat);
+    float  GetSigma0(double lon, double lat);
 
     int    Allocate(int lon_samples, int lat_samples);
 

@@ -116,8 +116,8 @@ Sigma0Map::Write(
 
 float
 Sigma0Map::GetSigma0(
-    float  lon,
-    float  lat)
+    double  lon,
+    double  lat)
 {
     lon += two_pi;    // to make sure it is in range
     int lon_idx = (int)(lon / _lonResolution);
