@@ -151,6 +151,18 @@ main(
 		exit(1);
 	}
 
+	//-----------------------//
+	// create spacecraft sim //
+	//-----------------------//
+
+	SpacecraftSim spacecraft_sim;
+	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+			command);
+		exit(1);
+	}
+
 	//---------------------------//
 	// create and configure Grid //
 	//---------------------------//
@@ -169,7 +181,7 @@ main(
 	double grid_start_time, grid_end_time;
 	double instrument_start_time, instrument_end_time;
 	double spacecraft_start_time, spacecraft_end_time;
- 
+
 	if (! ConfigTimes(&spacecraft_sim, &config_list,
 		&grid_start_time, &grid_end_time,
 		&instrument_start_time, &instrument_end_time,
@@ -190,7 +202,7 @@ main(
 	//-----------------//
 	// conversion loop //
 	//-----------------//
- 
+
 	L15ToL17 l15_to_l17;
 
 	long counter = 0;
