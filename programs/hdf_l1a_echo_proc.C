@@ -8,7 +8,7 @@
 //    hdf_l1a_echo_proc
 //
 // SYNOPSIS
-//    hdf_l1a_echo_proc [ -tlm tlm_file... ] [ -o output_file ]
+//    hdf_l1a_echo_proc [ -tlm tlm_file... ] [ -o output_base ]
 //      [ -polytable polytable ] [ -ins ins_config_file ]
 //      [ -m gauss|cent ]
 //
@@ -55,6 +55,7 @@ static const char rcs_id[] =
 #include "L1AExtract.h"
 
 #include <stdio.h>
+#include <fcntl.h>
 #include "Args.h"
 #include "ArgDefs.h"
 #include "ArgsPlus.h"
@@ -128,7 +129,7 @@ int ExtractAntSpinRateDnPer99(TlmHdfFile* l1File, int32* sdsIDs,
 
 ArgInfo tlm_files_arg = TLM_FILES_ARG;
 ArgInfo l1a_files_arg = L1A_FILES_ARG;
-ArgInfo output_file_arg = OUTPUT_FILE_ARG;
+ArgInfo output_base_arg = { NULL, "-ob", "output_base" };
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
 ArgInfo ins_config_arg = { "INSTRUMENT_CONFIG_FILE", "-ins",
     "ins_config_file" };
@@ -137,7 +138,7 @@ ArgInfo method_arg = { "ECHO_METHOD", "-m", "gauss|cent" };
 ArgInfo* arg_info_array[] =
 {
     &tlm_files_arg,
-    &output_file_arg,
+    &output_base_arg,
     &poly_table_arg,
     &ins_config_arg,
     &method_arg,
@@ -170,10 +171,10 @@ main(
 
     char* tlm_files_string = args_plus.Get(tlm_files_arg);
     char* l1a_files_string = args_plus.Get(l1a_files_arg);
-    char* output_file_string = args_plus.Get(output_file_arg);
+    char* output_base_string = args_plus.Get(output_base_arg);
     char* poly_table_string = args_plus.Get(poly_table_arg);
     char* ins_config_string = args_plus.Get(ins_config_arg);
-    char* method_string = args_plus.GetOrExit(method_arg);
+    char* method_string = args_plus.Get(method_arg);
 
     //-------------------//
     // convert arguments //
@@ -187,25 +188,27 @@ main(
     // use arguments //
     //---------------//
 
-    int output_fd = args_plus.OutputFdOrStdout(output_file_string);
     TlmFileList* tlm_file_list = args_plus.TlmFileListOrExit(tlm_type,
         tlm_files, INVALID_TIME, INVALID_TIME);
     PolynomialTable* polyTable =
         args_plus.PolynomialTableOrNull(poly_table_string);
-    MethodE method = NO_METHOD;
-    if (strcasecmp(method_string, "gauss") == 0)
+    MethodE method = GAUSSIAN;
+    if (method_string != NULL)
     {
-        method = GAUSSIAN;
-    }
-    else if (strcasecmp(method_string, "cent") == 0)
-    {
-        method = CENTROID;
-    }
-    else
-    {
-        fprintf(stderr, "%s: invalid center method %s\n", command,
-            method_string);
-        exit(1);
+        if (strcasecmp(method_string, "gauss") == 0)
+        {
+            method = GAUSSIAN;
+        }
+        else if (strcasecmp(method_string, "cent") == 0)
+        {
+            method = CENTROID;
+        }
+        else
+        {
+            fprintf(stderr, "%s: invalid center method %s\n", command,
+                method_string);
+            exit(1);
+        }
     }
 
     //---------------------//
@@ -327,6 +330,22 @@ main(
     for (TlmHdfFile* tlmFile = tlm_file_list->GetHead(); tlmFile;
         tlmFile = tlm_file_list->GetNext())
     {
+        //--------------------//
+        // create output file //
+        //--------------------//
+
+        const char* input_filename = tlmFile->GetFileName();
+        const char* tail = no_path(input_filename);
+        char output_filename[2048];
+        sprintf(output_filename, "%s.%s", output_base_string, tail);
+        int ofd = creat(output_filename, 0644);
+        if (ofd == -1)
+        {
+            fprintf(stderr, "%s: error opening output file %s\n", command,
+                output_filename);
+            exit(1);
+        }
+
         //-------------------------//
         // open necessary datasets //
         //-------------------------//
@@ -406,8 +425,8 @@ main(
             //------------------------//
 
             unsigned short ant_pos[100];
-            ant_pos_p->extractFunc(tlmFile, ant_pos_p->sdsIDs, record_idx, 1, 1,
-                ant_pos, polyTable);
+            ant_pos_p->extractFunc(tlmFile, ant_pos_p->sdsIDs, record_idx, 1,
+                1, ant_pos, polyTable);
 
             unsigned int theta_max = ant_pos[99];
             unsigned int theta_min = ant_pos[0];
@@ -644,11 +663,11 @@ main(
                 continue;
             }
 
-            if (! echo_info.Write(output_fd))
+            if (! echo_info.Write(ofd))
             {
                 fprintf(stderr,
                     "%s: error writing frame to output echo file %s\n",
-                    command, output_file_string);
+                    command, output_filename);
                 exit(1);
             }
         }
@@ -673,6 +692,12 @@ main(
         tlmFile->CloseParamDatasets(slice_powers_p);
         tlmFile->CloseParamDatasets(prf_cycle_time_p);
         tlmFile->CloseParamDatasets(noise_meas_p);
+
+        //-------------------//
+        // close output file //
+        //-------------------//
+
+        close(ofd);
     }
 
     //----------------//

@@ -326,6 +326,8 @@ main(
     // read and process data //
     //-----------------------//
 
+    ETime last_time, regression_start;
+    int regression = 0;
     do
     {
         //------//
@@ -345,6 +347,32 @@ main(
                 exit(1);
             }
         }
+
+        //----------------------//
+        // check for regression //
+        //----------------------//
+
+        if (echo_info.frameTime <= last_time)
+        {
+            regression = 1;
+            regression_start = echo_info.frameTime;
+            continue;
+        }
+        else
+        {
+            // check for end of regression
+            if (regression)
+            {
+                char regression_start_code_b[CODE_B_TIME_LENGTH];
+                char regression_end_code_b[CODE_B_TIME_LENGTH];
+                regression_start.ToCodeB(regression_start_code_b);
+                last_time.ToCodeB(regression_end_code_b);
+                fprintf(stderr, "%s: regressive data omitted (%s to %s)\n",
+                    command, regression_start_code_b, regression_end_code_b);
+                regression = 0;
+            }
+        }
+        last_time = echo_info.frameTime;
 
         //---------------//
         // for each spot //
@@ -380,7 +408,8 @@ main(
                 continue;
             }
 
-            if (echo_info.totalSignalEnergy[spot_idx] < SIGNAL_ENERGY_THRESHOLD)
+            if (echo_info.totalSignalEnergy[spot_idx] <
+                SIGNAL_ENERGY_THRESHOLD)
             {
                 continue;
             }

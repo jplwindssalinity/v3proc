@@ -13,6 +13,7 @@ static const char rcs_id_echo_funcs_h[] =
 #include "Qscat.h"
 #include "Array.h"
 #include "Index.h"
+#include "ETime.h"
 
 #define SPOTS_PER_FRAME  100
 
@@ -26,10 +27,11 @@ public:
 
     enum { OK, CAL_OR_LOAD_PULSE, LAND, BAD_PEAK };
 
-    int            Write(int fd);
-    int            Read(int fd);
-    unsigned char  SpotOrbitStep(int spot_idx);
+    int             Write(int fd);
+    int             Read(int fd);
+    unsigned char   SpotOrbitStep(int spot_idx);
 
+    ETime           frameTime;
     float           gcX;
     float           gcY;
     float           gcZ;
@@ -94,7 +96,8 @@ EchoInfo::Write(
     int frame_short_size = SPOTS_PER_FRAME * sizeof(short);
     int frame_char_size = SPOTS_PER_FRAME * sizeof(char);
 
-    if ( write(fd, (void *)&gcX, float_size) != float_size ||
+    if (! frameTime.Write(fd) ||
+        write(fd, (void *)&gcX, float_size) != float_size ||
         write(fd, (void *)&gcY, float_size) != float_size ||
         write(fd, (void *)&gcZ, float_size) != float_size ||
         write(fd, (void *)&velX, float_size) != float_size ||
@@ -147,20 +150,17 @@ EchoInfo::Read(
     // use the first read to test for EOF //
     //------------------------------------//
 
-    int retval = read(fd, (void *)&gcX, float_size);
-    if (retval != float_size)
+    if (! frameTime.Read(fd))
     {
-        switch (retval)
-        {
-        case 0:    // EOF
-            return(-1);
-            break;
-        default:   // error
-            return(0);
-            break;
-        }
+        off_t current = lseek(fd, 0, SEEK_CUR);
+        off_t end_of_file = lseek(fd, 0, SEEK_END);
+        if (current == end_of_file)
+            return(-1);    // EOF
+        else
+            return(0);     // error
     }
-    if (read(fd, (void *)&gcY, float_size) != float_size ||
+    if (read(fd, (void *)&gcX, float_size) != float_size ||
+        read(fd, (void *)&gcY, float_size) != float_size ||
         read(fd, (void *)&gcZ, float_size) != float_size ||
         read(fd, (void *)&velX, float_size) != float_size ||
         read(fd, (void *)&velY, float_size) != float_size ||
@@ -321,12 +321,18 @@ gaussian_fit(
     if (use_precalc)
     {
         if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval_precalc, ptr))
+        {
+            free_array(p, 2, ndim + 1, ndim);
             return(0);
+        }
     }
     else
     {
         if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr))
+        {
+            free_array(p, 2, ndim + 1, ndim);
             return(0);
+        }
     }
 
     //------------------------//
@@ -335,11 +341,17 @@ gaussian_fit(
 
     float fslice = p[0][0];
     if (fslice < 0.0 || fslice > points - 1)
+    {
+        free_array(p, 2, ndim + 1, ndim);
         return(0);
+    }
 
     width = p[0][1];
     if (width > TOO_WIDE)
+    {
+        free_array(p, 2, ndim + 1, ndim);
         return(0);
+    }
 
     //----------------------//
     // transfer information //
@@ -351,6 +363,8 @@ gaussian_fit(
     *peak_slice = fslice;
     *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
     *width_freq = bw * width;
+
+    free_array(p, 2, ndim + 1, ndim);
 
     return(1);
 }

@@ -11,7 +11,9 @@
 //    echo_split <echo_data_file> [ output_base ]
 //
 // DESCRIPTION
-//    Splits the echo data file into orbit steps.
+//    Splits the echo data file into orbit steps.  Adds the extension:
+//        .orbit_step.codeBtime
+//        .023.1999-193T23:35:01.232
 //
 // OPTIONS
 //    None.
@@ -94,6 +96,9 @@ template class List<long>;
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
+
+int  make_file(const char* command, const char* output_base, int orbit_step,
+         ETime time, char* output_file);
 
 //------------------//
 // OPTION VARIABLES //
@@ -187,14 +192,9 @@ main(
             else
                 use_orbit_step = (echo_info.orbitStep + 256 - 1) % 256;
  
-            sprintf(output_file, "%s.%03d", output_base, use_orbit_step);
-            ofd = creat(output_file, 0644);
-            if (ofd == -1)
-            {
-                fprintf(stderr, "%s: error opening output file %s\n",
-                    command, output_file);
-                exit(1);
-            }
+            ofd = make_file(command, output_base, use_orbit_step,
+                echo_info.frameTime, output_file);
+
             last_orbit_step = use_orbit_step;
         }
 
@@ -278,14 +278,8 @@ main(
             // open new output file //
             //----------------------//
 
-            sprintf(output_file, "%s.%03d", output_base, save_orbit_step);
-            ofd = creat(output_file, 0644);
-            if (ofd == -1)
-            {
-                fprintf(stderr, "%s: error opening output file %s\n",
-                    command, output_file);
-                exit(1);
-            }
+            ofd = make_file(command, output_base, save_orbit_step,
+                echo_info.frameTime, output_file);
 
             last_orbit_step = echo_info.orbitStep;
         }
@@ -308,4 +302,39 @@ main(
     close(ifd);
 
     return (0);
+}
+
+//-----------//
+// make_file //
+//-----------//
+
+int
+make_file(
+    const char*  command,
+    const char*  output_base,
+    int          orbit_step,
+    ETime        time,
+    char*        output_file)
+{
+    char time_stamp[CODE_B_TIME_LENGTH];
+    time.ToCodeB(time_stamp);
+
+    if (output_base == NULL)
+    {
+        sprintf(output_file, "%03d.%s", orbit_step, time_stamp);
+    }
+    else
+    {
+        sprintf(output_file, "%s.%03d.%s", output_base, orbit_step,
+            time_stamp);
+    }
+    int output_fd = creat(output_file, 0644);
+    if (output_fd == -1)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n",
+            command, output_file);
+        exit(1);
+    }
+
+    return(output_fd);
 }
