@@ -292,6 +292,33 @@ L1A::WriteGSCalPulseRec(void)
     (void)memcpy(ptr, &(frame.time), sizeof(double));
     ptr += sizeof(double);
 
+    unsigned char tpos = (unsigned char)frame.in_eu.true_cal_pulse_pos;
+    (void)memcpy(ptr, &tpos, sizeof(char));
+    ptr += sizeof(char);
+
+    // Set beam identifier based on true unit offset position and first pulse
+    // identity.
+    unsigned char beam_num;
+    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
+    {
+      // different
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        beam_num = 1;
+      else
+        beam_num = 0;
+    }
+    else
+    {
+      // same
+      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+        beam_num = 0;
+      else
+        beam_num = 1;
+    }
+    (void)memcpy(ptr, &beam_num, sizeof(char));
+    ptr += sizeof(char);
+//    printf("%d %d\n",frame.in_eu.true_cal_pulse_pos,*ptr);
+
     int Esn;  // integer storage for floating point cal pulse data
     for (i=0; i < 12; i++)
     {
@@ -328,29 +355,6 @@ L1A::WriteGSCalPulseRec(void)
     ptr += sizeof(int);
     (void)memcpy(ptr, &(frame.frame_err_status), sizeof(int));
     ptr += sizeof(int);
-    unsigned char tpos = (unsigned char)frame.in_eu.true_cal_pulse_pos;
-    (void)memcpy(ptr, &tpos, sizeof(char));
-    ptr += sizeof(char);
-
-    // Set beam identifier based on true unit offset position and first pulse
-    // identity.
-    if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
-    {
-      // different
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        *ptr = 1;
-      else
-        *ptr = 0;
-    }
-    else
-    {
-      // same
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        *ptr = 0;
-      else
-        *ptr = 1;
-    }
-//    printf("%d %d\n",frame.in_eu.true_cal_pulse_pos,*ptr);
 
     return(fwrite(calPulseBuffer, GS_CAL_PULSE_FRAME_SIZE, 1, _calPulseFP));
 }
@@ -366,6 +370,11 @@ L1A::WriteGSCalPulseRecAscii(void)
     if (_calPulseFP == NULL) return(0);
 
     fprintf(_calPulseFP,"Cal Pulse Record:\n");
+    char ftime[25];
+    (void)memcpy(ftime, frame.frame_time, 24);
+    ftime[24] = '\0';
+    fprintf(_calPulseFP, "frame time string (not in actual record): %s\n",
+      ftime);
     fprintf(_calPulseFP,"frame_time_secs = %g\n",frame.time);
     for (i=0; i < 12; i++)
     {
