@@ -513,7 +513,7 @@ main(
 	// avg nambig vs. ctd //
 	//--------------------//
 
-	if (! swath->AvgNambigVsCti(value_array, low_speed, high_speed))
+	if (! swath->AvgNambigVsCti(&truth, value_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating average number of ambigs\n",
 			command);

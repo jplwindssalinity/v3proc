@@ -350,7 +350,8 @@ public:
     int     GetProbabilityArray( WindField*  truth,
 				float***  prob, int** num_samples, float** widths,
 				int true_dir_bins, int delta_dir_bins);
-	int		AvgNambigVsCti(float* avg_nambig);
+	int		AvgNambigVsCti(WindField* truth, float* avg_nambig,
+                float low_speed, float high_speed);
 	int		RmsSpdErrVsCti(WindField* truth, float* rms_spd_err_array,
 				float* std_dev_array, float* std_err_array,
 				float* spd_bias_array, int* count_array, float low_speed,

@@ -2759,7 +2759,10 @@ WindSwath::DirArray(
 
 int
 WindSwath::AvgNambigVsCti(
-	float*		avg_nambig)
+    WindField*  truth,
+    float*      avg_nambig,
+    float       low_speed,
+    float       high_speed)
 {
 	//----------------------------------------//
 	// sum number of ambiguities for each cti //
@@ -2774,6 +2777,13 @@ WindSwath::AvgNambigVsCti(
 			WVC* wvc = swath[cti][ati];
 			if (! wvc)
 				continue;
+
+            WindVector true_wv;
+            if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
+
+            if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+                continue;
 
 			sum += wvc->ambiguities.NodeCount();
 			count++;
