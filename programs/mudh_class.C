@@ -15,9 +15,9 @@
 //    Generate classification information.
 //
 // OPTIONS
-//    [ -c ]              Generate class files.
-//    [ -m minutes ]      Time difference maximum.
-//    [ -r rain_rate ]    The SSM/I rain rate to threshold.
+//    [ -c ]               Generate class files.
+//    [ -m minutes ]       Time difference maximum.
+//    [ -r rain_rate ]     The SSM/I rain rate to threshold.
 //
 // OPERANDS
 //    <mudhtab>      Use this mudhtab.
@@ -96,9 +96,12 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "cs:m:r:"
+#define OPTSTRING    "ch:s:m:r:"
 #define ATI_SIZE     1624
 #define CTI_SIZE     76
+
+#define REV_DOY_M    7.029760E-2
+#define REV_DOY_B    1.703545E+2
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -125,7 +128,8 @@ static unsigned long counts[4][2][3][2][256];
 // just skip the data source
 double prob_sum[4][3][2][256];
 
-static unsigned short mudhtab[16][16][16][16];
+static double norain_tab[16][16][16][16];
+static double rain_tab[16][16][16][16];
 
 unsigned long classifiable_count = 0;
 unsigned long with_nbd_count = 0;
@@ -195,7 +199,8 @@ main(
         exit(1);
     }
     unsigned int size = 16 * 16 * 16 * 16;
-    if (fread(mudhtab, sizeof(short), size, mudhtab_ifp) != size)
+    if (fread(norain_tab, sizeof(double), size, mudhtab_ifp) != size ||
+        fread(rain_tab, sizeof(double), size, mudhtab_ifp) != size)
     {
         fprintf(stderr, "%s: error reading mudhtab file %s\n", command,
             mudhtab_file);
@@ -297,9 +302,12 @@ main(
         //----------------//
 
         char rain_file[1024];
-        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.rain", rev);
+        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.irain", rev);
+
         unsigned char rain_rate[ATI_SIZE][CTI_SIZE];
         unsigned char time_dif[ATI_SIZE][CTI_SIZE];
+        unsigned short integrated_rain_rate[ATI_SIZE][CTI_SIZE];
+
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
         {
@@ -309,6 +317,8 @@ main(
         }
         fread(rain_rate, sizeof(char), CTI_SIZE * ATI_SIZE, ifp);
         fread(time_dif, sizeof(char), CTI_SIZE * ATI_SIZE, ifp);
+        fseek(ifp, CTI_SIZE * ATI_SIZE, SEEK_CUR);    // skip ins.
+        fread(integrated_rain_rate, sizeof(short), CTI_SIZE * ATI_SIZE, ifp);
         fclose(ifp);
 
         //---------------------------------------//
@@ -321,7 +331,7 @@ main(
             {
                 int co_time = time_dif[ati][cti] * 2 - 180;
                 if (abs(co_time) > minutes)
-                    rain_rate[ati][cti] = 255;
+                    integrated_rain_rate[ati][cti] = 2000;    // flag as bad
             }
         }
 
@@ -354,7 +364,7 @@ main(
                 // if you can't evaluate it, forget it //
                 //-------------------------------------//
 
-                if (rain_rate[ati][cti] >= 250 ||
+                if (integrated_rain_rate[ati][cti] >= 1000 ||
                     spd_array[ati][cti] == 255 ||
                     dir_array[ati][cti] == 255 ||
                     mle_array[ati][cti] == 255)
@@ -400,11 +410,11 @@ main(
                 // determine ssmi class //
                 //----------------------//
 
-                float rr = rain_rate[ati][cti] * 0.1;
+                float irr = integrated_rain_rate[ati][cti] * 0.1;
                 int ssmi_flag;
-                if (rr == 0.0)
+                if (irr == 0.0)
                     ssmi_flag = 0;    // rainfree
-                else if (rr > rain_threshold)
+                else if (irr > rain_threshold)
                     ssmi_flag = 1;    // rain
                 else
                     ssmi_flag = 2;    // no-mans-land
@@ -413,19 +423,14 @@ main(
                 // look up probabilities from the mudhtable //
                 //------------------------------------------//
 
-                int irain = mudhtab[inbd][ispd][idir][imle];
-                irain /= 256;
-                float frain = (float)irain * 0.5;
-
-                int irainfree = mudhtab[inbd][ispd][idir][imle];
-                irainfree &= 0x00ff;
-                float frainfree = (float)irainfree * 0.5;
+                double norain_prob = norain_tab[inbd][ispd][idir][imle];
+                double rain_prob = rain_tab[inbd][ispd][idir][imle];
 
                 //----------------------------------------------------//
                 // if there is insufficient probability info, skip it //
                 //----------------------------------------------------//
 
-                if (frain > 100.1 || frainfree > 100.1)
+                if (norain_prob > 1.5 || rain_prob > 1.5)
                 {
                     missing_prob_count++;
                     continue;
@@ -441,13 +446,15 @@ main(
                     {
                         fprintf(class_without_nbd_ofp,
                             "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
-                            dir, mle, frainfree, frain, rr, rev, ati, cti);
+                            dir, mle, norain_prob, rain_prob, irr, rev, ati,
+                            cti);
                     }
                     else
                     {
                         fprintf(class_with_nbd_ofp,
                             "%g %g %g %g %g %g %g %d %d %d\n", nbd, spd,
-                            dir, mle, frainfree, frain, rr, rev, ati, cti);
+                            dir, mle, norain_prob, rain_prob, irr, rev, ati,
+                            cti);
                     }
                 }
 
@@ -475,23 +482,23 @@ main(
 
                 counts[0][1][0][nbd_avail][nbd_idx]++;
                 counts[0][1][1][nbd_avail][nbd_idx]++;
-                prob_sum[0][0][nbd_avail][nbd_idx] += frainfree;
-                prob_sum[0][1][nbd_avail][nbd_idx] += frain;
+                prob_sum[0][0][nbd_avail][nbd_idx] += norain_prob;
+                prob_sum[0][1][nbd_avail][nbd_idx] += rain_prob;
 
                 counts[1][1][0][nbd_avail][spd_idx]++;
                 counts[1][1][1][nbd_avail][spd_idx]++;
-                prob_sum[1][0][nbd_avail][spd_idx] += frainfree;
-                prob_sum[1][1][nbd_avail][spd_idx] += frain;
+                prob_sum[1][0][nbd_avail][spd_idx] += norain_prob;
+                prob_sum[1][1][nbd_avail][spd_idx] += rain_prob;
 
                 counts[2][1][0][nbd_avail][dir_idx]++;
                 counts[2][1][1][nbd_avail][dir_idx]++;
-                prob_sum[2][0][nbd_avail][dir_idx] += frainfree;
-                prob_sum[2][1][nbd_avail][dir_idx] += frain;
+                prob_sum[2][0][nbd_avail][dir_idx] += norain_prob;
+                prob_sum[2][1][nbd_avail][dir_idx] += rain_prob;
 
                 counts[3][1][0][nbd_avail][mle_idx]++;
                 counts[3][1][1][nbd_avail][mle_idx]++;
-                prob_sum[3][0][nbd_avail][mle_idx] += frainfree;
-                prob_sum[3][1][nbd_avail][mle_idx] += frain;
+                prob_sum[3][0][nbd_avail][mle_idx] += norain_prob;
+                prob_sum[3][1][nbd_avail][mle_idx] += rain_prob;
             }
         }
     }
@@ -559,10 +566,10 @@ main(
 
                 float value = (float)idx / param_m[param_idx] -
                     param_b[param_idx];
-                double rainfree_prob = 0.01 *
+                double rainfree_prob =
                     prob_sum[param_idx][0][nbd_avail][idx] /
                     (double)counts[param_idx][1][0][nbd_avail][idx];
-                double rain_prob = 0.01 *
+                double rain_prob =
                     prob_sum[param_idx][1][nbd_avail][idx] /
                     (double)counts[param_idx][1][1][nbd_avail][idx];
 
