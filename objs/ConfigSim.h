@@ -283,6 +283,7 @@ int ConfigEphemeris(Ephemeris* ephemeris, ConfigList* config_list);
 // WindField //
 //-----------//
 
+#define WINDFIELD_TYPE_KEYWORD				"WINDFIELD_TYPE"
 #define WINDFIELD_FILE_KEYWORD				"WINDFIELD_FILE"
 
 int ConfigWindField(WindField* windfield, ConfigList* config_list);

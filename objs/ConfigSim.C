@@ -1239,11 +1239,17 @@ ConfigWindField(
 	// configure the wind field //
 	//--------------------------//
 
+	char* windfield_type = config_list->Get(WINDFIELD_TYPE_KEYWORD);
+	if (windfield_type == NULL)
+		return(0);
+
 	char* windfield_filename = config_list->Get(WINDFIELD_FILE_KEYWORD);
 	if (windfield_filename == NULL)
 		return(0);
-	if (! windfield->ReadVap(windfield_filename))
+
+	if (! windfield->ReadType(windfield_filename, windfield_type))
 		return(0);
+
 	return(1);
 }
 
@@ -1339,8 +1345,8 @@ ConfigControl(
 	double time_in_rev;
 	if (config_list->GetDouble(TIME_IN_REV_KEYWORD, &time_in_rev))
 	{
-		*grid_start_time = time_in_rev;
-//		*grid_start_time = spacecraft_sim->FindPrevGridStartTime(time_in_rev);
+		*grid_start_time = spacecraft_sim->FindPrevArgOfLatTime(time_in_rev,
+			SOUTH_ARG_OF_LAT, EQX_TIME_TOLERANCE);
 	}
 	else
 	{
