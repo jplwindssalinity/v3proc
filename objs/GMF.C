@@ -207,7 +207,7 @@ int GMF::ReadPolarimetric(
     const char*  filename)
 {
     FILE* ifp = fopen(filename, "r");
-    if (! ifp)
+    if (ifp == NULL)
         return(0);
 
     _metCount = 5;
@@ -229,64 +229,68 @@ int GMF::ReadPolarimetric(
     if (! _Allocate())
         return(0);
 
-    int first_line_of_file=1;
-    while(!feof(ifp))
+    int first_line_of_file = 1;
+    while(! feof(ifp))
     {
         char string[40];
-
         float spd, theta, chi, s0hh, s0vv, s0hv, s0vvhv, pvvhv, s0hhvh, phhvh;
 
         // Read ASCII line of ipnuts and outputs to model function.
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         if (feof(ifp))
             break;
         spd = atof(string);
-        fscanf(ifp,"%s",string);
-        theta = atof(string)*dtr;
-        fscanf(ifp,"%s",string);
-        chi = atof(string)*dtr;
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
+        theta = atof(string) * dtr;
+        fscanf(ifp, "%s", string);
+        chi = atof(string) * dtr;
+        fscanf(ifp, "%s", string);
         s0hh = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         s0vv = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         s0hv = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         s0hhvh = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         phhvh = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         s0vvhv = atof(string);
-        fscanf(ifp,"%s",string);
+        fscanf(ifp, "%s", string);
         pvvhv = atof(string);
 
         // Compute indexes into table
         int ispd, ichi, itheta;
-        ispd=_SpdToIndex(spd);
-        itheta=_IncToIndex(theta);
-        ichi=_ChiToIndex(chi);
+        ispd = _SpdToIndex(spd);
+        itheta = _IncToIndex(theta);
+        ichi = _ChiToIndex(chi);
 
         // Compute table values
-        s0vv=pow(10.0,0.1*s0vv);
-        s0hv=pow(10.0,0.1*s0hv);
-        s0hh=pow(10.0,0.1*s0hh);
-        if(s0vvhv==-99.0) s0vvhv=0.0;
-          else s0vvhv=pow(10.0,0.1*s0vvhv)*SGN(pvvhv);
-        if(s0hhvh==-99.0) s0hhvh=0.0;
-          else s0hhvh=pow(10.0,0.1*s0hhvh)*SGN(phhvh);
+        s0vv = pow(10.0, 0.1*s0vv);
+        s0hv = pow(10.0, 0.1*s0hv);
+        s0hh = pow(10.0, 0.1*s0hh);
+        if (s0vvhv == -99.0)
+            s0vvhv = 0.0;
+        else
+            s0vvhv = pow(10.0, 0.1*s0vvhv) * SGN(pvvhv);
 
-          // Store values in table
-          int imet;
-          imet=_MetToIndex(Meas::VV_MEAS_TYPE);
-          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vv;
-          imet=_MetToIndex(Meas::HH_MEAS_TYPE);
-          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hh;
-          imet=_MetToIndex(Meas::HV_MEAS_TYPE);
-          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hv;
-          imet=_MetToIndex(Meas::VV_HV_CORR_MEAS_TYPE);
-          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
-          imet=_MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
-          *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
+        if (s0hhvh == -99.0)
+            s0hhvh = 0.0;
+        else
+            s0hhvh = pow(10.0, 0.1*s0hhvh) * SGN(phhvh);
+
+        // Store values in table
+        int imet;
+        imet = _MetToIndex(Meas::VV_MEAS_TYPE);
+        *(*(*(*(_value + imet) + itheta) + ispd) + ichi) = s0vv;
+        imet = _MetToIndex(Meas::HH_MEAS_TYPE);
+        *(*(*(*(_value + imet) + itheta) + ispd) + ichi) = s0hh;
+        imet = _MetToIndex(Meas::HV_MEAS_TYPE);
+        *(*(*(*(_value + imet) + itheta) + ispd) + ichi) = s0hv;
+        imet = _MetToIndex(Meas::VV_HV_CORR_MEAS_TYPE);
+        *(*(*(*(_value + imet) + itheta) + ispd) + ichi) = s0vvhv;
+        imet = _MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
+        *(*(*(*(_value + imet) + itheta) + ispd) + ichi) = s0hhvh;
 
         if (first_line_of_file)
             file_min_spd_idx = ispd;
@@ -308,8 +312,9 @@ int GMF::ReadPolarimetric(
                 {
                     float tmp = *(*(*(*(_value+met_idx) + inc_idx) +
                         file_min_spd_idx)+chi_idx);
-                    tmp *= (float)spd_idx/(float)file_min_spd_idx;
-                    *(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = tmp;
+                    tmp *= (float)spd_idx / (float)file_min_spd_idx;
+                    *(*(*(*(_value + met_idx) + inc_idx) + spd_idx) + chi_idx)
+                        = tmp;
                 }
             }
         }
@@ -433,13 +438,61 @@ GMF::WriteSolutionCurves(
     MeasList*  meas_list,
     Kp*        kp)
 {
+    static Meas::MeasTypeE type_array[] = { Meas::NONE, Meas::VV_MEAS_TYPE,
+        Meas::HH_MEAS_TYPE, Meas::VH_MEAS_TYPE, Meas::HV_MEAS_TYPE,
+        Meas::VV_HV_CORR_MEAS_TYPE, Meas::HH_VH_CORR_MEAS_TYPE,
+        (Meas::MeasTypeE)-1 };
+    static int xmgr_fore_type_color[] = { 0, 1, 3, 5, 7,  9, 11 };
+    static int xmgr_aft_type_color[] =  { 0, 2, 4, 6, 8, 10, 12 };
+
     //------------------------------//
     // generate each solution curve //
     //------------------------------//
 
+    int set_number = 0;
     MeasList new_list;
     for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
     {
+        //----------------------------//
+        // write some information out //
+        //----------------------------//
+
+        fprintf(ofp, "#-----\n");
+        double alt, lon, lat;
+        meas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
+        fprintf(ofp, "# lon,lat = %g, %g\n", lon*rtd, lat*rtd);
+
+        //----------------------------------------------//
+        // determine the type of meas and set the color //
+        //----------------------------------------------//
+
+        int type_index = 0;
+        for (int i = 0; type_array[i] != -1; i++)
+        {
+            if (meas->measType == type_array[i])
+            {
+                type_index = i;
+                break;
+            }
+        }
+        fprintf(ofp, "# %s\n", meas_type_map[meas->measType]);
+
+        int color = 0;
+        if (meas->scanAngle < pi / 2 || meas->scanAngle > 3 * pi / 2)
+        {
+            fprintf(ofp, "# Fore\n");
+            color = xmgr_fore_type_color[type_index];
+        }
+        else
+        {
+            fprintf(ofp, "# Aft\n");
+            color = xmgr_aft_type_color[type_index];
+        }
+
+        fprintf(ofp, "# sigma-0 = %g\n", meas->value);
+        fprintf(ofp, "@ s%d color %d\n", set_number, color);
+        fprintf(ofp, "@TARGET S%d\n", set_number);
+
         new_list.Append(meas);
         SolutionCurve(&new_list, kp);
         for (int i = 0; i < _phiCount; i++)
@@ -450,6 +503,7 @@ GMF::WriteSolutionCurves(
         fprintf(ofp, "&\n");
         new_list.GetHead();
         new_list.RemoveCurrent();
+        set_number++;
     }
 
     //----------------------------------//
@@ -512,11 +566,70 @@ GMF::WriteSolutionCurves(
 
     WVC* wvc = new WVC();
     RetrieveWinds_PE(meas_list, kp, wvc);
+    wvc->SortByObj();
     for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
         wvp = wvc->ambiguities.GetNext())
     {
         fprintf(ofp, "&\n");
         fprintf(ofp, "%g %g\n", wvp->dir * rtd, wvp->spd);
+    }
+
+    //------------------------------------------------------//
+    // write standard deviations around the ideal sigma-0's //
+    //------------------------------------------------------//
+
+    WindVectorPlus* first_ranked = wvc->ambiguities.GetHead();
+    if (first_ranked != NULL)
+    {
+        float phi = first_ranked->dir;
+        float spd = first_ranked->spd;
+        for (Meas* meas = meas_list->GetHead(); meas;
+            meas = meas_list->GetNext())
+        {
+            // remember the original value
+            float value = meas->value;
+
+            float chi = phi - meas->eastAzimuth + pi;
+            float ideal_s0;
+            GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+                &ideal_s0);
+            float var = GetVariance(meas, spd, chi, ideal_s0, kp);
+            float std_dev = sqrt((double)var);
+
+            // once again, make a list with one measurement
+            // this time, just find the best speed for the desired direction
+            new_list.Append(meas);
+
+            float best_speed[3], best_obj;
+
+            meas->value = ideal_s0;
+            FindBestSpeed(&new_list, kp, phi, 0.0, 50.0, &(best_speed[0]),
+                &best_obj);
+
+            meas->value = ideal_s0 - std_dev;
+            if (meas->value < 0.0)
+                meas->value = 0.0;
+            FindBestSpeed(&new_list, kp, phi, 0.0, 50.0, &(best_speed[1]),
+                &best_obj);
+
+            meas->value = ideal_s0 + std_dev;
+            FindBestSpeed(&new_list, kp, phi, 0.0, 50.0, &(best_speed[2]),
+                &best_obj);
+
+            // restore the original value
+            meas->value = value;
+
+            // write the best +- 1 std dev
+            fprintf(ofp, "&\n");
+            for (int i = 0; i < 3; i++)
+            {
+                fprintf(ofp, "%g %g\n", phi * rtd, best_speed[i]);
+            }
+
+            // empty the list
+            new_list.GetHead();
+            new_list.RemoveCurrent();
+        }
     }
 
     //---------------//
@@ -1696,16 +1809,58 @@ GMF::_ObjectiveFunction(
     return(-fv);
 }
 
+//---------------------------------//
+// GMF::VarFactorObjectiveFunction //
+//---------------------------------//
+
+float
+GMF::VarFactorObjectiveFunction(
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp,
+    float      var_factor)
+{
+    float fv = 0.0;
+    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
+    {
+        float chi = phi - meas->eastAzimuth + pi;
+        float trial_value;
+        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
+            &trial_value);
+        double tmp=meas->value;
+        if (! finite(tmp))
+            continue;
+        float s = trial_value - meas->value;
+        float var = GetVariance(meas, spd, chi, trial_value, kp);
+        var *= var_factor;
+        if (var == 0.0)
+        {
+            // variances all turned off, so use uniform weighting.
+            fv += s*s;
+        }
+        else if (retrieveUsingLogVar)
+        {
+            fv += s*s / var + log(var);
+        }
+        else
+        {
+            fv += s*s / var;
+        }
+    }
+    return(-fv);
+}
+
 //-----------------------//
 // GMF::RetrieveWinds_GS //
 //-----------------------//
 
 int
 GMF::RetrieveWinds_GS(
-    MeasList*    meas_list,
-    Kp*            kp,
-    WVC*        wvc,
-    int         polar_special=0)
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc,
+    int        polar_special = 0)
 {
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
@@ -2113,68 +2268,71 @@ GMF::Calculate_Init_Wind_Solutions(
         }
     }
 
-
     return(1);
 }
-//------------------------------//
-// GMF::FindMultiSpeedRidge     //
-//------------------------------//
+
+//--------------------------//
+// GMF::FindMultiSpeedRidge //
+//--------------------------//
+
 int
 GMF::FindMultiSpeedRidge(
-    MeasList*       meas_list,
-        Kp*                    kp,
-        int               dir_idx,
-    float*            max_sep,
-    float*            min_sep){
-      float      center_speed;
-      float      minus_speed;
-      float      plus_speed;
-      int        min_speed_best=0;
-      float      max_speed_best=0;
-      int        ridge_count=0;
-      float      best_center_speed=0;
-      float      best_minus_speed;
-      float      best_plus_speed;
-      float      center_objective;
-      float      minus_objective;
-      float      plus_objective;
-      float      best_center_objective=-HUGE_VAL;
-      float      best_minus_objective=-HUGE_VAL;
-      float      best_plus_objective=-HUGE_VAL;
-      float      dir_spacing;
-      float      spd_spacing;
-      float      angle;
-      float      diff_objective_1;
-      float      diff_objective_2;
-      float      speed_peaks[30];
+    MeasList*  meas_list,
+    Kp*        kp,
+    int        dir_idx,
+    float*     max_sep,
+    float*     min_sep)
+{
+    float  center_speed;
+    float  minus_speed;
+    float  plus_speed;
+    int    min_speed_best=0;
+    float  max_speed_best=0;
+    int    ridge_count=0;
+    float  best_center_speed=0;
+    float  best_minus_speed;
+    float  best_plus_speed;
+    float  center_objective;
+    float  minus_objective;
+    float  plus_objective;
+    float  best_center_objective=-HUGE_VAL;
+    float  best_minus_objective=-HUGE_VAL;
+    float  best_plus_objective=-HUGE_VAL;
+    float  dir_spacing;
+    float  spd_spacing;
+    float  angle;
+    float  diff_objective_1;
+    float  diff_objective_2;
+    float  speed_peaks[30];
 
-      *max_sep=0;
-      *min_sep=HUGE_VAL;
-      //
-      // compute angle
-      //
-      dir_spacing =  wind_dir_intv_init;
-      angle = dir_spacing * (float)(dir_idx - 1) - dir_spacing;
-      angle=angle*dtr;
+    *max_sep = 0;
+    *min_sep=HUGE_VAL;
+    //
+    // compute angle
+    //
+    dir_spacing =  wind_dir_intv_init;
+    angle = dir_spacing * (float)(dir_idx - 1) - dir_spacing;
+    angle=angle*dtr;
 
-      //
-      // check for peak at lower speed bound
-      //
+    //
+    // check for peak at lower speed bound
+    //
 
-      minus_speed = lower_speed_bound;
-      spd_spacing = wind_speed_intv_init;
-      center_speed = lower_speed_bound + spd_spacing;
-      plus_speed=lower_speed_bound + 2*spd_spacing;
-      minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp);
-      center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp);
+    minus_speed = lower_speed_bound;
+    spd_spacing = wind_speed_intv_init;
+    center_speed = lower_speed_bound + spd_spacing;
+    plus_speed=lower_speed_bound + 2*spd_spacing;
+    minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp);
+    center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp);
 
-      if( minus_objective>center_objective ){
-    min_speed_best=1;
+    if( minus_objective>center_objective )
+    {
+        min_speed_best=1;
         speed_peaks[ridge_count]=minus_speed;
         ridge_count++;
         best_center_speed=minus_speed;
         best_center_objective=minus_objective;
-      }
+    }
       int offset=1;
       while(plus_speed <= upper_speed_bound){
     plus_objective=_ObjectiveFunction(meas_list,plus_speed,angle,kp);
@@ -2343,7 +2501,6 @@ GMF::Optimize_Wind_Solutions(
 //   points.   Find maximum location and its shift vector.
 //
 
-
         for (i=1; i <= 3; i++)
         {
             i_spd = i - 2;
@@ -2378,7 +2535,6 @@ GMF::Optimize_Wind_Solutions(
 //
 //   Continuous search until "9-points" AND "no shift" detected.
 //
-
 
         while (shift_pattern != 0  || points_in_search  != 9 )
         {
@@ -2699,9 +2855,11 @@ GMF::Optimize_Wind_Solutions(
     return(1);
 
 }
-//---------------------//
-// CopyBuffersGSToPE   //
-//---------------------//
+
+//-------------------//
+// CopyBuffersGSToPE //
+//-------------------//
+
 int
 GMF::CopyBuffersGSToPE(){
   if(wind_dir_intv_init!=360.0/_phiCount) return(0);

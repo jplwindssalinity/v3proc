@@ -85,7 +85,8 @@ public:
     // processing //
     //------------//
 
-    int    RetrieveProbabilities(GMF* gmf, MeasList* ml, Kp* kp);
+    int    RetrieveProbabilities(GMF* gmf, MeasList* ml, Kp* kp,
+               float var_factor = 1.0);
     float  KmDistance(Flower* other_op);
     void   Add(int dir_idx, float probability);
     void   Add(Flower* other_op);
