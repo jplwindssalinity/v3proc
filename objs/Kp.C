@@ -45,42 +45,42 @@ Kp::~Kp()
 
 int
 Kp::GetKpc2(
-	Meas*		meas,
-	double		sigma_0,
-	double*		kpc2)
+    Meas*        meas,
+    double        sigma_0,
+    double*        kpc2)
 {
+    //----------------------------//
+    // Constant Value case        //
+    //----------------------------//
 
-        //----------------------------//
-        // Constant Value case        //
-        //----------------------------//
-        if(useConstantValues){
-	  *kpc2=kpc2Constant;
-          return(1);
-	}
+    if (useConstantValues)
+    {
+        *kpc2 = kpc2Constant;
+        return(1);
+    }
 
-	//----------------------------//
-	// check for division by zero //
-	//----------------------------//
+    //----------------------------//
+    // check for division by zero //
+    //----------------------------//
 
-	if (meas->EnSlice == 0)
-		return(0);
+    if (meas->EnSlice == 0)
+        return(0);
 
-	//-----------------------------//
-	// calculate and check the SNR //
-	//-----------------------------//
+    //-----------------------------//
+    // calculate and check the SNR //
+    //-----------------------------//
 
-	double snr = sigma_0 * meas->XK * meas->txPulseWidth /
-		meas->EnSlice;
-	if (snr <= 0.0)
-	{
-		fprintf(stderr, "Kp::GetKpc2: SNR <= 0.0\n");
-		fprintf(stderr, "  s0 = %g, XK = %g, Tp = %g, EnSlice = %g\n",
-			sigma_0, meas->XK, meas->txPulseWidth, meas->EnSlice);
-		return(0);
-	}
+    double snr = sigma_0 * meas->XK * meas->txPulseWidth / meas->EnSlice;
+    if (snr <= 0.0)
+    {
+        fprintf(stderr, "Kp::GetKpc2: SNR <= 0.0\n");
+        fprintf(stderr, "  s0 = %g, XK = %g, Tp = %g, EnSlice = %g\n",
+            sigma_0, meas->XK, meas->txPulseWidth, meas->EnSlice);
+        return(0);
+    }
 
-	*kpc2 = meas->A + meas->B / snr + meas->C / (snr * snr);
-	return(1);
+    *kpc2 = meas->A + meas->B / snr + meas->C / (snr * snr);
+    return(1);
 }
 
 //-------------//
@@ -117,20 +117,22 @@ Kp::GetKpm2(
 
 int
 Kp::GetKpri2(
-	double*		kpri2)
+    double*  kpri2)
 {
-        //----------------------------//
-        // Constant Value case        //
-        //----------------------------//
-        if(useConstantValues){
-	  *kpri2=kpri2Constant;
-          return(1);
-	}
+    //----------------------------//
+    // Constant Value case        //
+    //----------------------------//
 
-	if (! kpri.GetKpri2(kpri2))
-		return(0);
+    if (useConstantValues)
+    {
+        *kpri2 = kpri2Constant;
+        return(1);
+    }
 
-	return(1);
+    if (! kpri.GetKpri2(kpri2))
+        return(0);
+
+    return(1);
 }
 
 //--------------//
@@ -139,30 +141,32 @@ Kp::GetKpri2(
 
 int
 Kp::GetKprs2(
-	Meas* meas,
-	double*		kprs2)
+    Meas*    meas,
+    double*  kprs2)
 {
-        //----------------------------//
-        // Constant Value case        //
-        //----------------------------//
-        if(useConstantValues){
-	  *kprs2=kprs2Constant;
-          return(1);
-	}
+    //----------------------------//
+    // Constant Value case        //
+    //----------------------------//
 
-	if(kprs.Empty())
-	{
-		*kprs2=0.005;
-		return(1);
-	}
-	int beam_number = meas->beamIdx;
-	int start_slice_rel_idx = meas->startSliceIdx;
-	int num_slices_per_comp = meas->numSlices;
-	float azimuth = meas->scanAngle;
-	*kprs2 = kprs.Interpolate(beam_number,num_slices_per_comp,
-				start_slice_rel_idx,azimuth);
-	*kprs2 *= *kprs2;
-	return(1);
+    if (useConstantValues)
+    {
+      *kprs2=kprs2Constant;
+          return(1);
+    }
+
+    if (kprs.Empty())
+    {
+        *kprs2=0.005;
+        return(1);
+    }
+    int beam_number = meas->beamIdx;
+    int start_slice_rel_idx = meas->startSliceIdx;
+    int num_slices_per_comp = meas->numSlices;
+    float azimuth = meas->scanAngle;
+    *kprs2 = kprs.Interpolate(beam_number,num_slices_per_comp,
+                start_slice_rel_idx,azimuth);
+    *kprs2 *= *kprs2;
+    return(1);
 }
 
 //------------//
@@ -197,37 +201,35 @@ Kp::GetKp2(
 
 int
 Kp::GetVpc(
-	Meas*		meas,
-	double		sigma_0,
-	double*		vpc)
+    Meas*    meas,
+    double   sigma_0,
+    double*  vpc)
 {
+    //----------------------------//
+    // Constant Value case        //
+    //----------------------------//
 
-  //----------------------------//
-  // Constant Value case        //
-  //----------------------------//
+    if (useConstantValues)
+    {
+        *vpc=kpc2Constant*sigma_0*sigma_0;
+        return(1);
+    }
 
-  if(useConstantValues)
-  {
-    *vpc=kpc2Constant*sigma_0*sigma_0;
+    //--------------------------------//
+    // calculate sigma-0 coefficients //
+    //--------------------------------//
+
+    double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
+    double aa = meas->A;
+    double bb = meas->B * sigma0_over_snr;
+    double cc = meas->C * sigma0_over_snr * sigma0_over_snr;
+
+    //--------------------//
+    // calculate variance //
+    //--------------------//
+
+    *vpc = (aa * sigma_0 + bb) * sigma_0 + cc;
     return(1);
-  }
-
-  //--------------------------------//
-  // calculate sigma-0 coefficients //
-  //--------------------------------//
-
-  double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
-  double aa = meas->A;
-  double bb = meas->B * sigma0_over_snr;
-  double cc = meas->C * sigma0_over_snr * sigma0_over_snr;
-
-  //--------------------//
-  // calculate variance //
-  //--------------------//
-
-  *vpc = (aa * sigma_0 + bb) * sigma_0 + cc;
-  return(1);
-
 }
 
 //------------//
@@ -238,13 +240,12 @@ Kp::GetVpc(
 
 int
 Kp::GetVpc(
-	Meas*		meas,
-	double		sigma0_corr,
-	double		sigma0_copol,
-	double		sigma0_xpol,
-	double*		vpc)
+    Meas*        meas,
+    double        sigma0_corr,
+    double        sigma0_copol,
+    double        sigma0_xpol,
+    double*        vpc)
 {
-
   //-------------------------------//
   // Redirect copol and xpol cases //
   //-------------------------------//
@@ -264,7 +265,7 @@ Kp::GetVpc(
   // Constant Value case        //
   //----------------------------//
 
-  if(useConstantValues)
+  if (useConstantValues)
   {
     *vpc=kpc2Constant*sigma0_corr*sigma0_corr;
     return(1);
