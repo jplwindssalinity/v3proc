@@ -389,7 +389,7 @@ main(
         }
         if (hdf_dirth_opt)
         {
-            if (l2b.frame.swath.ReadHdfDIRTH(l2b_file) == 0)
+            if (l2b.ReadHDFDIRTH(l2b_file) == 0)
             {
                 fprintf(stderr, "%s: cannot open HDF %s for DIRTH input\n",
                     command, l2b_file);

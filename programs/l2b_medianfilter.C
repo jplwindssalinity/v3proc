@@ -262,6 +262,7 @@ main(
     float** spd = NULL;
     float** dir = NULL;
     int** num_ambigs = NULL;
+    int** sel_idx = NULL;
 
     //-----------------------------//
     // read a level 2B data record //
@@ -341,6 +342,7 @@ main(
             ctibins * HDF_NUM_AMBIGUITIES);
 
         num_ambigs = (int**) make_array(sizeof(int), 2, atibins, ctibins);
+        sel_idx = (int**) make_array(sizeof(int), 2, atibins, ctibins);
         if (! l2b.GetArraysForUpdatingDirthHdf(spd, dir, num_ambigs))
         {
             fprintf(stderr,
@@ -396,12 +398,26 @@ main(
                     num_ambigs[i][j] = 0;
                     continue;
                 }
-                else
+                else if (l2a_to_l2b.wrMethod == L2AToL2B::S3 )
                 {
+		    num_ambigs[i][j]+=1;
+		    if (num_ambigs[i][j] > HDF_NUM_AMBIGUITIES)
+                    num_ambigs[i][j] = HDF_NUM_AMBIGUITIES;
                     int k = num_ambigs[i][j] - 1;
+                    
+
                     spd[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->spd;
                     dir[i][j*HDF_NUM_AMBIGUITIES+k] = wvc->selected->dir;
+                    sel_idx[i][j]=num_ambigs[i][j];
                 }
+		else
+		{  
+		   WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+		   for(int k=0;k< num_ambigs[i][j];k++){
+		     if(wvc->selected==wvp) sel_idx[i][j]=k+1;
+		     wvp=wvc->ambiguities.GetNext();
+		   }
+		}
             }
         }
 
@@ -410,7 +426,7 @@ main(
         //-----------------//
 
         if (! l2b.frame.swath.UpdateHdf(hdf_file, spd, dir, num_ambigs,
-            num_ambigs))
+            sel_idx))
         {
             fprintf(stderr, "%s: Unable to update hdf file\n", command);
             exit(1);
@@ -421,6 +437,7 @@ main(
     free_array((void*)spd, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)dir, 2, atibins, ctibins*HDF_NUM_AMBIGUITIES);
     free_array((void*)num_ambigs, 2, atibins, ctibins);
+    free_array((void*)sel_idx, 2, atibins, ctibins);
 
     return (0);
 }
