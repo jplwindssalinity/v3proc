@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -257,7 +257,7 @@ main(
     // select encoder information //
     //----------------------------//
 
-    unsigned int encoder_offset_dn;
+    unsigned int encoder_offset_dn = 0;
     switch (qscat.sas.encoderElectronics)
     {
         case ENCODER_A:
@@ -290,7 +290,7 @@ main(
         // get the beam offset angle //
         //---------------------------//
 
-        unsigned int cds_beam_offset_dn;
+        unsigned int cds_beam_offset_dn = 0;
         switch (beam_idx)
         {
             case 0:
