@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -1162,7 +1162,7 @@ RangeTracker::operator=(
 // RangeTracker::GetRxGateDelay //
 //------------------------------//
 
-#define RANGE_GATE_NORMALIZER  0.049903
+// #define RANGE_GATE_NORMALIZER  0.049903
 #define TRACKING_PI            3.141592654
 
 int
@@ -1207,6 +1207,10 @@ RangeTracker::GetRxGateDelay(
     *rx_gate_delay_fdn = rx_range_mem -
         (rx_gate_width_fdn - tx_pulse_width_fdn) / 2.0;
     *rx_gate_delay_dn = (unsigned char)(*rx_gate_delay_fdn + 0.5);
+/*
+float frac = *rx_gate_delay_fdn - *rx_gate_delay_dn;
+printf("%g\n", frac);
+*/
 
     //------------------------------//
     // remember the rx range number //
@@ -1280,6 +1284,95 @@ RangeTracker::SetRoundTripTime(
     }
 
     return(1);
+}
+
+//-----------------------------//
+// RangeTracker::ClearAmpPhase //
+//-----------------------------//
+
+void
+RangeTracker::ClearAmpPhase() {
+    for (unsigned int step = 0; step < _steps; step++) {
+        _termArray[step][AMPLITUDE_INDEX] = 0;
+        _termArray[step][PHASE_INDEX] = 0;
+    }
+    return;
+}
+
+//------------------------------//
+// RangeTracker::QuantizeCenter //
+//------------------------------//
+// Keeps the quantization of RGC away from the rounding edge
+
+#define THRESHOLD  0.48
+
+void
+RangeTracker::QuantizeCenter(float effective_gate_width) {
+
+    //---------------------------//
+    // determine new scale terms //
+    //---------------------------//
+
+    float min_C = 0.0;
+    float max_C = 0.0;
+
+    for (unsigned int step = 0; step < _steps; step++) {
+        float cb = _scaleArray[BIAS_INDEX][0];
+        float cm = _scaleArray[BIAS_INDEX][1];
+        float C = cm * (float)_termArray[step][BIAS_INDEX] + cb;
+        float kf = (C - effective_gate_width / 2.0) /
+            RANGE_GATE_NORMALIZER;
+        int k = (int)(kf + 0.5);
+        if (kf > (float)k + THRESHOLD) {
+            kf = (float)k + THRESHOLD;
+        } else if (kf < (float)k - THRESHOLD) {
+            kf = (float)k - THRESHOLD;
+        }
+        C = kf * RANGE_GATE_NORMALIZER + effective_gate_width / 2.0;
+        if (step == 0) {
+            min_C = C;
+            max_C = C;
+        }
+        if (C < min_C) min_C = C;
+        if (C > max_C) max_C = C;
+    }
+
+    float new_cb = min_C;
+    float new_cm = (max_C - min_C) / 254.0;    // 254 gives a bit of headroom
+
+    //----------------------//
+    // regenerate bias term //
+    //----------------------//
+
+    for (unsigned int step = 0; step < _steps; step++) {
+        float cb = _scaleArray[BIAS_INDEX][0];
+        float cm = _scaleArray[BIAS_INDEX][1];
+        float C = cm * (float)_termArray[step][BIAS_INDEX] + cb;
+
+        float kf = (C - effective_gate_width / 2.0) /
+            RANGE_GATE_NORMALIZER;
+        int k = (int)(kf + 0.5);
+        if (kf > (float)k + THRESHOLD) {
+            kf = (float)k + THRESHOLD;
+        } else if (kf < (float)k - THRESHOLD) {
+            kf = (float)k - THRESHOLD;
+        }
+        C = kf * RANGE_GATE_NORMALIZER + effective_gate_width / 2.0;
+
+        int new_term = (int)((C - new_cb) / new_cm + 0.5);
+        if (new_term < 0) new_term = 0;
+        if (new_term > 255) new_term = 255;
+        _termArray[step][BIAS_INDEX] = (unsigned char)(new_term);
+    }
+
+    //--------------------//
+    // update scale terms //
+    //--------------------//
+
+    _scaleArray[BIAS_INDEX][0] = new_cb;
+    _scaleArray[BIAS_INDEX][1] = new_cm;
+
+    return;
 }
 
 //================//

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -34,7 +34,6 @@ template <class T>
 class TrackerBase
 {
 public:
-
     enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, BIAS_INDEX };
 
     //--------------//
@@ -86,6 +85,8 @@ protected:
 //    Constants and convert them into receiver gate widths and delays.
 //======================================================================
 
+const float RANGE_GATE_NORMALIZER = 0.049903;
+
 class RangeTracker : public TrackerBase<unsigned char>
 {
  public:
@@ -124,6 +125,8 @@ class RangeTracker : public TrackerBase<unsigned char>
              unsigned char tx_pulse_width_dn, unsigned char* rx_gate_delay_dn,
              float* rx_gate_delay_fdn);
     int    SetRoundTripTime(double** terms);
+    void   ClearAmpPhase();
+    void   QuantizeCenter(float effective_gate_width);
 
     //-----------//
     // variables //
