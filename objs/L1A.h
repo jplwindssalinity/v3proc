@@ -31,6 +31,12 @@ class L10
 {
 public:
 
+	//------//
+	// enum //
+	//------//
+
+	enum StatusE { OK, ERROR_READING_FRAME, ERROR_UNKNOWN };
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -42,12 +48,14 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int		SetFilename(const char* filename);
+	int			SetFilename(const char* filename);
+	StatusE		GetStatus() { return(_status); };
 
 	//--------------//
 	// input/output //
 	//--------------//
 
+	int		ReadDataRec();
 	int		WriteDataRec();
 
 	//-----------//
@@ -57,6 +65,14 @@ public:
 	GenericFile		file;
 	char			buffer[L10_FRAME_SIZE];
 	L10Frame		frame;
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	StatusE		_status;
 };
 
 #endif

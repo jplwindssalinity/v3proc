@@ -35,6 +35,30 @@ L10::SetFilename(
 	return(file.SetFilename(filename));
 }
 
+//------------------//
+// L10::ReadDataRec //
+//------------------//
+
+int
+L10::ReadDataRec()
+{
+	if (! file.Read(buffer, L10_FRAME_SIZE))
+	{
+		if (file.EndOfFile())
+		{
+			// end of file, leave status alone (typically status is OK)
+			return(0);
+		}
+		else
+		{
+			// an error occurred
+			_status = ERROR_READING_FRAME;
+			return(0);
+		}
+	}
+	return(1);
+}
+
 //-------------------//
 // L10::WriteDataRec //
 //-------------------//
