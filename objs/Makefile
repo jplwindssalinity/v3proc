@@ -88,8 +88,9 @@ Beam.o: Beam.C Beam.h
 BeamSim.o: BeamSim.C BeamSim.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h \
-	Misc.h L0.h L1.h ConfigList.h Instrument.h AntennaSim.h Spacecraft.h \
-	Product.h List.h Antenna.h Constants.h Matrix3.h Attitude.h Beam.h
+	Misc.h L0.h L1.h L15.h ConfigList.h Instrument.h AntennaSim.h \
+	Spacecraft.h Product.h List.h Antenna.h Constants.h Matrix3.h \
+	Attitude.h Beam.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h Measurement.h WVC.h \
 	List.h WindVector.h
