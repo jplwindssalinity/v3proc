@@ -367,6 +367,7 @@ public:
     int  DeleteWVCs();
     int  DeleteEntireSwath();
     int  DeleteLatitudesOutside(float low_lat, float high_lat);
+    int  DeleteLongitudesOutside(float low_lon, float high_lon);
 
     //--------------//
     // input/output //
@@ -377,6 +378,7 @@ public:
     int  ReadL2B(const char* filename);
     int  ReadHdfL2B(TlmHdfFile* tlmHdfFile);
     int  ReadHdfL2B(const char* filename);
+    int  ReadNscatSwv25(const char* filename);
     int  WriteVctr(const char* filename, const int rank);
     int  WriteFlower(const char* filename);
     int  WriteAscii(const char* filename);
