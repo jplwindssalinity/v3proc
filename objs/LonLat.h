@@ -10,6 +10,7 @@ static const char rcs_id_lonlat_h[] =
 	"@(#) $Id$";
 
 #include "List.h"
+#include "List.C"
 
 
 //======================================================================
