@@ -68,6 +68,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
+#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
@@ -84,6 +85,7 @@ template class List<OrbitState>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //
@@ -257,11 +259,13 @@ main(
             // orbit step not needed
             break;
         default:
-            int beam_idx, ideal_encoder, raw_encoder;
-            float tx_doppler, rx_gate_delay, baseband_freq, expected_freq;
-            if (sscanf(line, " %d %f %f %d %d %f %f", &beam_idx, &tx_doppler,
-                &rx_gate_delay, &ideal_encoder, &raw_encoder, &baseband_freq,
-                &expected_freq) != 7)
+            int beam_idx, ideal_encoder, raw_encoder, land_flag;
+            float tx_doppler, rx_gate_delay, baseband_freq, expected_freq,
+                total_signal_energy;
+            if (sscanf(line, " %d %f %f %d %d %f %f %f %d", &beam_idx,
+                &tx_doppler, &rx_gate_delay, &ideal_encoder, &raw_encoder,
+                &baseband_freq, &expected_freq, &total_signal_energy,
+                &land_flag) != 9)
             {
                 fprintf(stderr, "%s: error parsing line\n", command);
                 fprintf(stderr, "  Line: %s\n", line);

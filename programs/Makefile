@@ -75,7 +75,8 @@ PROGRAMS = \
 	l2a_to_ascii \
 	reformat_pattern \
 	test_pattern \
-	est_freq_offset \
+	l1a_echo_proc \
+	generate_foff_table \
 	fix_dtc \
 	get_DopRan_scan \
 	get_X_scan \

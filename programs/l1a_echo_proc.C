@@ -66,6 +66,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
+#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
@@ -82,13 +83,13 @@ template class List<OrbitState>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
 #define KM_RANGE                 100.0
-#define SIGNAL_ENERGY_THRESHOLD  0.0
 
 #define EPHEMERIS_CHAR   'E'
 #define ORBIT_STEP_CHAR  'O'
@@ -377,7 +378,7 @@ main(
             qscat.SetOtherAzimuths(&spacecraft);
 
             //-----------//
-            // skip land //
+            // flag land //
             //-----------//
 
             CoordinateSwitch antenna_frame_to_gc =
@@ -402,7 +403,7 @@ main(
                 fprintf(stderr, "%s: error finding alt/lon/lat\n", command);
                 exit(1);
             }
-            int found_land = 0;
+            int land_flag = 0;
             for (int i = 0; i < 4; i++)
             {
                 LonLat use_lon_lat;
@@ -410,13 +411,9 @@ main(
                 use_lon_lat.ApproxApplyDelta(dlon_km[i], dlat_km[i]);
                 if (qscat_sim.landMap.IsLand(&use_lon_lat))
                 {
-                    found_land = 1;
+                    land_flag = 1;
                     break;
                 }
-            }
-            if (found_land)
-            {
-                continue;
             }
 
             //----------------------------------//
@@ -469,9 +466,6 @@ main(
                 total_signal_energy += signal_energy[slice_idx];
             }
 
-            if (total_signal_energy < SIGNAL_ENERGY_THRESHOLD)
-                continue;
-
             //----------------------------------//
             // fit a quadratic to find the peak //
             //----------------------------------//
@@ -517,9 +511,10 @@ zz++;
             // write //
             //-------//
 
-            fprintf(ofp, "%d %g %g %d %d %g %g\n", beam_idx,
+            fprintf(ofp, "%d %g %g %d %d %g %g %g %d\n", beam_idx,
                 qscat.ses.txDoppler, qscat.ses.rxGateDelay, ideal_encoder,
-                qscat.cds.heldEncoder, f_bb_data, expected_peak);
+                qscat.cds.heldEncoder, f_bb_data, expected_peak,
+                total_signal_energy, land_flag);
         }
     } while (1);
 

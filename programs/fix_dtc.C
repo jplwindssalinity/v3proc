@@ -67,6 +67,7 @@ static const char rcs_id[] =
 #include "Tracking.C"
 #include "BufferedList.h"
 #include "BufferedList.C"
+#include "AngleInterval.h"
 
 //-----------//
 // TEMPLATES //
@@ -83,12 +84,14 @@ template class List<OrbitState>;
 template class BufferedList<OrbitState>;
 template class List<EarthPosition>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
 #define MAXIMUM_SPOTS_PER_ORBIT_STEP  10000
+#define SIGNAL_ENERGY_THRESHOLD       0.0
 #define ORBIT_STEPS      256
 #define EPHEMERIS_CHAR   'E'
 #define ORBIT_STEP_CHAR  'O'
@@ -256,16 +259,29 @@ main(
             }
             break;
         default:
-            int beam_idx, ideal_encoder, raw_encoder;
-            float tx_doppler, rx_gate_delay, baseband_freq;
-            if (sscanf(line, " %d %f %f %d %d %f", &beam_idx, &tx_doppler,
-                &rx_gate_delay, &ideal_encoder, &raw_encoder, &baseband_freq)
-                != 6)
+            int beam_idx, ideal_encoder, raw_encoder, land_flag;
+            float tx_doppler, rx_gate_delay, baseband_freq, expected_peak,
+                total_signal_energy;
+            if (sscanf(line, " %d %f %f %d %d %f %f %f %d", &beam_idx,
+                &tx_doppler, &rx_gate_delay, &ideal_encoder, &raw_encoder,
+                &baseband_freq, &expected_peak, &total_signal_energy,
+                &land_flag) != 9)
             {
                 fprintf(stderr, "%s: error parsing line\n", command);
                 fprintf(stderr, "  Line: %s\n", line);
                 exit(1);
             }
+
+            //-----------------------//
+            // accumulation decision //
+            //-----------------------//
+
+            if (land_flag)
+                continue;
+
+            if (total_signal_energy < SIGNAL_ENERGY_THRESHOLD)
+                continue;
+
             float azimuth = two_pi * (double)ideal_encoder / (double)ENCODER_N;
             accumulate(beam_idx, azimuth, baseband_freq);
             break;
@@ -374,15 +390,20 @@ process_orbit_step(
         fprintf(ofp, "%g %g\n", azim * rtd, a * cos(azim + p) + c);
     }
 
-    //--------------------------------------//
-    // add to the sinusoid in the constants //
-    //--------------------------------------//
+    //------------------------------------------//
+    // subtract the sinusoid from the constants //
+    //------------------------------------------//
 
     double** terms = g_terms[beam_idx];
 
     float A = *(*(terms + orbit_step) + 0);
     float P = *(*(terms + orbit_step) + 1);
     float C = *(*(terms + orbit_step) + 2);
+
+    // to do this, just negate the a and the c term
+    // if f(x) = a * cos(x + p) + c, then -f(x) = -a * cos(x + p) - c
+    a *= -1.0;
+    c *= -1.0;
 
     float newA = sqrt(A*A + 2.0*A*a*cos(P-p) + a*a);
     float newC = C + c;
