@@ -185,6 +185,9 @@ sigma0_to_Esn_slice(
 	double En2_slice = N0_echo * Bs * (Tg-Tp);	// noise without signal
 	double En_slice = En1_slice + En2_slice;
 
+	//double true_snr = Es_slice / En_slice;
+	//printf("%d %g\n",meas->startSliceIdx,true_snr);
+
 	//------------------------------------------------------------------------//
 	// Signal + Noise Energy within one slice referenced like the signal energy.
 	//------------------------------------------------------------------------//
