@@ -19,6 +19,8 @@ class Instrument;
 //		RangeTracker, DopplerTracker
 //======================================================================
 
+float	Cosine(float angle);
+
 //======================================================================
 // CLASS
 //		RangeTracker

@@ -1,15 +1,14 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //		baseband_errors
 //
 // SYNOPSIS
-//		baseband_errors <sim_config_file> <RGC_file> <DTC_file>
-//			<error_file>
+//		baseband_errors <sim_config_file> <error_file>
 //
 // DESCRIPTION
 //		Generates plottable error file showing the baseband frequency
@@ -25,15 +24,11 @@
 //								all input parameters, input files, and
 //								output files.
 //
-//		<RGC_file>			The RGC input file.
-//
-//		<DTC_file>			The DTC input file.
-//
 //		<error_file>		A plottable error file.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% baseband_errors sws1b.cfg rgc.dat dtc.dat baseband.err
+//			% baseband_errors qscat.cfg baseband.err
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -114,8 +109,7 @@ template class BufferedList<OrbitState>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<RGC_file>", "<DTC_file>",
-	"<error_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<error_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -132,13 +126,11 @@ main(
 
 	const char* command = no_path(argv[0]);
 
-	if (argc != 5)
+	if (argc != 3)
 		usage(command, usage_array, 1);
 
 	int arg_idx = 1;
 	const char* config_file = argv[arg_idx++];
-	const char* rgc_file = argv[arg_idx++];
-	const char* dtc_file = argv[arg_idx++];
 	const char* error_file = argv[arg_idx++];
 
 	//--------------------------------//
@@ -237,28 +229,6 @@ main(
 		exit(1);
 	}
 
-	//--------------//
-	// read the RGC //
-	//--------------//
-
-	RangeTracker range_tracker;
-	if (! range_tracker.ReadBinary(rgc_file))
-	{
-		fprintf(stderr, "%s: error reading RGC file %s\n", command, rgc_file);
-		exit(1);
-	}
-
-	//--------------//
-	// read the DTC //
-	//--------------//
-
-	DopplerTracker doppler_tracker;
-	if (! doppler_tracker.ReadBinary(dtc_file))
-	{
-		fprintf(stderr, "%s: error reading DTC file %s\n", command, dtc_file);
-		exit(1);
-	}
-
 	//----------------------//
 	// open the output file //
 	//----------------------//
@@ -354,7 +324,7 @@ main(
 				Vector3 rlook_antenna;
 				TargetInfoPackage tip;
 				double ideal_dopcom;
-				float residual_delay_error;
+				float residual_delay;
 
 				switch(instrument_event.eventId)
 				{
@@ -376,9 +346,12 @@ main(
 					// set up the range tracking //
 					//---------------------------//
 
-					residual_delay_error = 0.0;
-					range_tracker.SetInstrument(&instrument,
-						&residual_delay_error);
+					antenna = &(instrument.antenna);
+					beam = antenna->GetCurrentBeam();
+
+					residual_delay = 0.0;
+					beam->rangeTracker.SetInstrument(&instrument,
+						&residual_delay);
 
 					//---------------------------------------//
 					// determine the ideal commanded doppler //
@@ -391,15 +364,13 @@ main(
 					// set up the doppler tracking //
 					//-----------------------------//
 
-					doppler_tracker.SetInstrument(&instrument,
-						residual_delay_error);
+					beam->dopplerTracker.SetInstrument(&instrument,
+						residual_delay);
 
 					//----------------------------------------//
 					// get the beam center baseband frequency //
 					//----------------------------------------//
 
-					antenna = &(instrument.antenna);
-					beam = antenna->GetCurrentBeam();
 					orbit_state = &(spacecraft.orbitState);
 					attitude = &(spacecraft.attitude);
 

@@ -192,7 +192,7 @@ RangeTracker::GetRxGateDelay(
 	// determine the delay //
 	//---------------------//
 
-	float table_delay = c_term + a_term * cos((two_pi/(double)antenna_n) *
+	float table_delay = c_term + a_term * Cosine((two_pi/(double)antenna_n) *
 		(double)antenna_dn + p_term);
 	table_delay *= MS_TO_S;		// convert ms to seconds
 
@@ -562,7 +562,7 @@ DopplerTracker::GetCommandedDoppler(
 	double c_term = (double)cm * (double)c_dn + (double)cb;
 
 	double raw_doppler = c_term + a_term *
-		cos(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
+		Cosine(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
 
 	double residual_range_freq = residual_delay_error * chirp_rate;
 	double xmit_freq = raw_doppler - residual_range_freq;
