@@ -163,7 +163,7 @@ int HDF_update_file::get_dataset_attributes(char *name,SD_attributes &attr)
 	int32	dataset_index;
 
 	char	attr_name[256];
-	double	temp0;
+	double	temp0=0;
 
 	int	i;
 	char	temp_char[256];
