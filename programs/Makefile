@@ -20,7 +20,7 @@ CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -DNOPM
 INSTALLDIR =	../../bin
 
 PROGRAMS = \
-	echo_dtc_otf \
+	echo_dtc \
 	sim \
 	l1a_to_l1b \
 	l1b_to_l2a \
@@ -229,6 +229,6 @@ install: $(PROGRAMS)
 	$(CCC) $(CPPFLAGS) -o $@ $@.C $(LDLIBS)
 
 fix_knowledge: fix_knowledge.C echo_funcs.h
-echo_dtc_otf: echo_dtc_otf.C echo_funcs.h
+echo_dtc: echo_dtc.C echo_funcs.h
 sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
 new_files: new_files.C new_files.h
