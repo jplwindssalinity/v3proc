@@ -212,27 +212,17 @@ main(
 		// convert //
 		//---------//
 
-		if (! l17_to_l20.Convert(&l17, &gmf, &l20))
+		if (! l17_to_l20.ConvertAndWrite(&l17, &gmf, &l20))
 		{
 			fprintf(stderr, "%s: error converting Level 1.7 to Level 2.0\n",
 				command);
 			exit(1);
 		}
 
-		//-------------------------------//
-		// write a level 2.0 data record //
-		//-------------------------------//
-
-		if (! l20.WriteDataRec())
-		{
-			fprintf(stderr, "%s: error writing Level 2.0 data\n", command);
-			exit(1);
-		}
-
 	} while (1);
 
 	l17.file.Close();
-	l20.file.Close();
+	l20.Close();
 
 	return (0);
 }

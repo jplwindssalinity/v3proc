@@ -247,7 +247,7 @@ main(
 	int need_spacecraft_event  = 1;
 	int need_instrument_event  = 1;
 
-	while (instrument_event.time < 120.0)
+	while (instrument_event.time < 600.0)
 	{
 		//--------------------------------------//
 		// determine the next appropriate event //
