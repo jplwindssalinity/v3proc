@@ -428,7 +428,6 @@ main(
 				// process the instrument event //
 				//------------------------------//
 
-                float round_trip_time;
                 sim_time=qscat_event.time;
                 double mid_tx_pulse_time = qscat_event.time +
                    0.5*qscat.ses.txPulseWidth;
@@ -449,7 +448,7 @@ main(
 
                     // antenna
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
-                    qscat.SetOtherAzimuths(&spacecraft,&round_trip_time);
+                    qscat.SetOtherAzimuths(&spacecraft);
 
 					qscat_sim.ScatSim(&spacecraft, &qscat, &windfield, &gmf,
                         &kp, &kpmField, &(l1a.frame));
@@ -467,7 +466,7 @@ main(
 					qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
-                    qscat.SetOtherAzimuths(&spacecraft,&round_trip_time);
+                    qscat.SetOtherAzimuths(&spacecraft);
 					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
@@ -483,7 +482,7 @@ main(
 					qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
-                    qscat.SetOtherAzimuths(&spacecraft,&round_trip_time);
+                    qscat.SetOtherAzimuths(&spacecraft);
 					qscat_sim.LoadSim(&spacecraft, &qscat, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
