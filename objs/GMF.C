@@ -11,6 +11,7 @@ static const char rcs_id_gmf_c[] =
 #include <unistd.h>
 #include <malloc.h>
 #include <math.h>
+#include <ieeefp.h>
 #include "GMF.h"
 #include "GSparameters.h"
 #include "Meas.h"
@@ -1568,6 +1569,10 @@ GMF::_ObjectiveFunction(
         // find the difference between the trial and measured sigma-0 //
         //------------------------------------------------------------//
 
+        // Sanity check on measurement
+	double tmp=meas->value;
+        if(!finite(tmp)) continue;
+
         float s = trial_value - meas->value;
 
         //-------------------------------------------------------//
@@ -1602,14 +1607,15 @@ int
 GMF::RetrieveWinds_GS(
 	MeasList*	meas_list,
 	Kp*			kp,
-	WVC*		wvc)
+	WVC*		wvc,
+	int             polar_special=0)
 {
 
 //
 //  Step 1:  Find an initial set of coarse wind solutions.
 //
 
-	Calculate_Init_Wind_Solutions(meas_list, kp, wvc);
+	Calculate_Init_Wind_Solutions(meas_list, kp, wvc, polar_special);
 
 	WindVectorPlus* wvp = NULL;
 
@@ -1674,7 +1680,8 @@ int
 GMF::Calculate_Init_Wind_Solutions(
     MeasList*  meas_list,
     Kp*        kp,
-    WVC*       wvc)
+    WVC*       wvc,
+    int        polar_special=0)
 {
 //
 //!Description:
@@ -1736,8 +1743,23 @@ GMF::Calculate_Init_Wind_Solutions(
 //   Loop through directional space to find local MLE maximas.
 //
 
+      int multiridge=0;
+      int tmp=0;
+      float tmp2,tmp3, max_multiridge_sep=0, ave_multiridge_sep=0;
+      float multiridge_width=0.0, min_multiridge_sep=HUGE_VAL;
 	for (k=2; k <= num_dir_samples-1; k++)
 	{
+	  if(polar_special){
+	    tmp=FindMultiSpeedRidge(meas_list, kp,k,&tmp2,&tmp3);
+	    if(tmp>multiridge) multiridge=tmp;
+            if(tmp>1){
+	      multiridge_width+=dir_spacing;
+	      ave_multiridge_sep+=tmp2;
+	      if(tmp2>max_multiridge_sep) max_multiridge_sep=tmp2;	
+              if(tmp3<min_multiridge_sep) min_multiridge_sep=tmp3;     
+	    }
+            continue;
+	  }
          angle = dir_spacing * (float)(k - 1) - dir_spacing;
 
 //
@@ -1869,7 +1891,12 @@ GMF::Calculate_Init_Wind_Solutions(
 		}
 	}	// end of angular k loop
 
-
+      if(polar_special){
+	ave_multiridge_sep/=multiridge_width/dir_spacing;
+	printf("%d %g %g %g %g ",multiridge, multiridge_width,
+			       ave_multiridge_sep, max_multiridge_sep,
+	                       min_multiridge_sep);
+      }
 //
 //   Make speed/objective buffers "circularly continuous".
 //
@@ -1986,6 +2013,133 @@ GMF::Calculate_Init_Wind_Solutions(
 
 
 	return(1);
+}
+//------------------------------//
+// GMF::FindMultiSpeedRidge     //
+//------------------------------//
+int
+GMF::FindMultiSpeedRidge(
+	MeasList*       meas_list,
+        Kp*                    kp,
+        int               dir_idx,
+	float*            max_sep,
+	float*            min_sep){
+      float      center_speed;
+      float      minus_speed;
+      float      plus_speed;
+      int        min_speed_best=0;
+      float      max_speed_best=0;
+      int        ridge_count=0;
+      float      best_center_speed=0;
+      float      best_minus_speed;
+      float      best_plus_speed;
+      float      center_objective;
+      float      minus_objective;
+      float      plus_objective;
+      float      best_center_objective=-HUGE_VAL;
+      float      best_minus_objective=-HUGE_VAL;
+      float      best_plus_objective=-HUGE_VAL;
+      float      dir_spacing;
+      float      spd_spacing;
+      float      angle;
+      float      diff_objective_1;
+      float      diff_objective_2;
+      float      speed_peaks[30];
+
+      *max_sep=0;
+      *min_sep=HUGE_VAL;
+      //
+      // compute angle
+      //
+      dir_spacing =  wind_dir_intv_init;
+      angle = dir_spacing * (float)(dir_idx - 1) - dir_spacing;
+      angle=angle*dtr;
+
+      //
+      // check for peak at lower speed bound
+      //
+
+      minus_speed = lower_speed_bound;
+      spd_spacing = wind_speed_intv_init;
+      center_speed = lower_speed_bound + spd_spacing;
+      plus_speed=lower_speed_bound + 2*spd_spacing;
+      minus_objective=_ObjectiveFunction(meas_list,minus_speed,angle,kp);
+      center_objective=_ObjectiveFunction(meas_list,center_speed,angle,kp);
+
+      if( minus_objective>center_objective ){
+	min_speed_best=1;
+        speed_peaks[ridge_count]=minus_speed;
+        ridge_count++;
+        best_center_speed=minus_speed;
+        best_center_objective=minus_objective;
+      }
+      int offset=1;
+      while(plus_speed <= upper_speed_bound){
+	plus_objective=_ObjectiveFunction(meas_list,plus_speed,angle,kp);
+	if(plus_objective <= center_objective &&
+           minus_objective <= center_objective){
+	  speed_peaks[ridge_count]=center_speed;
+	  ridge_count++;
+          if(center_objective > best_center_objective){
+
+	    best_center_objective=center_objective;
+            best_center_speed=center_speed;
+            
+            best_plus_objective=plus_objective;            
+            best_plus_speed=plus_speed;
+
+            best_minus_objective=minus_objective;
+            best_minus_speed=minus_speed;
+
+            min_speed_best=0;
+	  }	  
+	}
+	offset++;
+        center_speed = offset*spd_spacing+lower_speed_bound;
+	minus_speed = center_speed - spd_spacing;
+        plus_speed =  center_speed + spd_spacing;
+	minus_objective=center_objective;
+        center_objective=plus_objective;
+      }
+
+      //
+      // Check for peak at upper speed bound;
+      //
+      if(center_objective>minus_objective){
+	speed_peaks[ridge_count]=upper_speed_bound;
+	ridge_count++;
+        // recompute exactly at boundary
+        center_objective=_ObjectiveFunction(meas_list,upper_speed_bound,angle,kp);
+	if(center_objective >= best_center_objective){
+	  best_center_objective=center_objective;
+          best_center_speed=upper_speed_bound;
+	  max_speed_best=1;
+          min_speed_best=0;
+	}
+      }
+
+      if(max_speed_best || min_speed_best){
+          _speed_buffer[dir_idx] = best_center_speed;
+          _objective_buffer[dir_idx] = best_center_objective;
+      }
+      else{
+            diff_objective_1 = best_plus_objective - best_minus_objective;
+            diff_objective_2 = (best_plus_objective + best_minus_objective)
+                            - 2.0 * best_center_objective;
+
+            _speed_buffer [dir_idx] = best_center_speed  - 0.5
+                            * (diff_objective_1 / diff_objective_2)
+                            * spd_spacing;
+	    _objective_buffer[dir_idx] = _ObjectiveFunction(meas_list,
+					 _speed_buffer[dir_idx],angle,kp);
+      }
+
+      for(int c=0;c<ridge_count;c++){
+        float sep=fabs(best_center_speed - speed_peaks[c]);
+	if(sep>*max_sep) *max_sep=sep;
+	if(sep != 0.0 && sep<*min_sep) *min_sep=sep;
+      }
+      return(ridge_count);
 }
 
 //------------------------------//
