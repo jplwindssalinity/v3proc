@@ -13,6 +13,13 @@ static const char rcs_id_coordinateswitch_c[] =
 // CoordinateSwitch //
 //==================//
 
+CoordinateSwitch::CoordinateSwitch()
+{
+	_trans.Identity();
+	_o2.Zero();
+	return;
+}
+
 // Initialize with the unit coordinate vectors for frame 2 represented
 // in frame 1.  These are the rows of the coordinate transformation
 // matrix that changes a vector represented in frame 1 into the same
@@ -87,9 +94,9 @@ CoordinateSwitch::~CoordinateSwitch()
 	return;
 }
 
-//---------//
-// SetAxes //
-//---------//
+//---------------------------//
+// CoordinateSwitch::SetAxes //
+//---------------------------//
 
 void
 CoordinateSwitch::SetAxes(
@@ -104,9 +111,9 @@ CoordinateSwitch::SetAxes(
 	return;
 }
 
-//-----------//
-// SetOrigin //
-//-----------//
+//-----------------------------//
+// CoordinateSwitch::SetOrigin //
+//-----------------------------//
 
 void
 CoordinateSwitch::SetOrigin(
@@ -116,9 +123,9 @@ CoordinateSwitch::SetOrigin(
 	return;
 }
 
-//-------------//
-// SetRotation //
-//-------------//
+//-------------------------------//
+// CoordinateSwitch::SetRotation //
+//-------------------------------//
 
 void
 CoordinateSwitch::SetRotation(
@@ -149,6 +156,25 @@ CoordinateSwitch::SetRotation(
 		if (order[2] == i) _trans = yawmatrix * _trans;
 	}
 	return;
+}
+
+//--------------------------//
+// CoordinateSwitch::Append //
+//--------------------------//
+// This method updates the coordinate switch object so that it
+// can perform its original transformation followed by the passed
+// transformation.
+
+int
+CoordinateSwitch::Append(
+	CoordinateSwitch*	next)
+{
+	Matrix3 A = _trans;
+	Vector3 a = _o2;
+	_trans = next->_trans * A;
+	A.Inverse();
+	_o2 = a + A * next->_o2;
+	return(1);
 }
 
 //

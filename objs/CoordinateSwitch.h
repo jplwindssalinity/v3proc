@@ -36,6 +36,7 @@ public:
 // construction
 //
 
+	CoordinateSwitch();
 	CoordinateSwitch(Vector3 x2, Vector3 y2, Vector3 z2);
 	CoordinateSwitch(Vector3 o2);
 	CoordinateSwitch(Vector3 o2, Vector3 x2, Vector3 y2, Vector3 z2);
@@ -51,6 +52,7 @@ public:
 	void	SetAxes(Vector3 x2, Vector3 y2, Vector3 z2);
 	void	SetOrigin(Vector3 o2);
 	void	SetRotation(Attitude att);
+	int		Append(CoordinateSwitch* next);
 
 Vector3 Forward(Vector3 r);
 Vector3 Backward(Vector3 r);
