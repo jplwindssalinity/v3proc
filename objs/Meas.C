@@ -63,7 +63,7 @@ MeasList::FreeContents()
 //==========//
 
 MeasSpot::MeasSpot()
-:	time(0.0), scEphemeris(), scAttitude(), slices()
+:	time(0.0), scOrbitState(), scAttitude(), slices()
 {
 	return;
 }

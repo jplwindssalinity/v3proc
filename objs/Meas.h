@@ -108,7 +108,7 @@ public:
 	//-----------//
 
 	double		time;
-	OrbitState	scEphemeris;
+	OrbitState	scOrbitState;
 	Attitude	scAttitude;
 	MeasList	slices;
 };
