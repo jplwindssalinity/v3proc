@@ -2251,6 +2251,18 @@ GMF::Optimize_Wind_Solutions(
 	return(1);
 
 }
+//---------------------//
+// CopyBuffersGSToPE   //
+//---------------------//
+int
+GMF::CopyBuffersGSToPE(){
+  if(wind_dir_intv_init!=360.0/_phiCount) return(0);
+  for(int c=0;c<_phiCount;c++){
+    _bestObj[c]=_objective_buffer[c+2];
+    _bestSpd[c]=_speed_buffer[c+2];
+  }
+  return(1);
+}
 
 //-------------------//
 // GMF::WriteObjXmgr //
@@ -3337,69 +3349,22 @@ GMF::RetrieveWinds_S2(
 
     if (_phiCount != H2_PHI_COUNT)
         SetPhiCount(H2_PHI_COUNT);
-    SolutionCurve_H1(meas_list, kp);
-    
+    if(!RetrieveWinds_GS(meas_list, kp,wvc)) return(0);
+    if(!CopyBuffersGSToPE()) return(0);
     ConvertObjToPdf();
+    wvc->SortByDir();
 
     float peak_dir[DEFAULT_MAX_SOLUTIONS];
-    int ambiguities=0;
+    int ambiguities=wvc->ambiguities.NodeCount();
 
     //------------------------//
-    // find peaks             //
+    // copy peak_dirs         //
     //------------------------//
 
-    WVC tmp_wvc;
-    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
-    {
-        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % H2_PHI_COUNT] &&
-            _bestObj[phi_idx] > _bestObj[(phi_idx + H2_PHI_COUNT - 1) %
-                H2_PHI_COUNT])
-        {
-            //-----------------------//
-            // maxima found...       //
-            //-----------------------//
-
-            //--------------//
-            // ...refine it //
-            //--------------//
-
-            WindVectorPlus* wvp = new WindVectorPlus();
-            if (! wvp)
-                return(0);
-            wvp->spd = _bestSpd[phi_idx];
-            wvp->dir = (float)phi_idx * _phiStepSize;
-	    wvp->obj = _ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
-
-            // put in temporary wvc
-            if (! tmp_wvc.ambiguities.Append(wvp))
-            {
-                delete wvp;
-                return(0);
-            }
-
-            // refine
-            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
-
-            // transfer to real wvc
-            tmp_wvc.ambiguities.GotoHead();
-            wvp = tmp_wvc.ambiguities.RemoveCurrent();
-            if (! wvc->ambiguities.Append(wvp))
-            {
-                delete wvp;
-                return(0);
-            }
-            while (wvp->dir < 0.0)
-                wvp->dir += two_pi;
-            while (wvp->dir > two_pi)
-                wvp->dir -= two_pi;
-
-            //------------------------//
-            // remember the phi index //
-            //------------------------//
-
-	    peak_dir[ambiguities]=wvp->dir;
-	    ambiguities++;
-	}
+    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+    for(int c=0;c<ambiguities;c++){
+      peak_dir[c]=wvp->dir;
+      wvp=wvc->ambiguities.GetNext();
     }
 
     int final_num_peaks=ambiguities;
@@ -3473,21 +3438,6 @@ GMF::RetrieveWinds_S2(
 
     wvc->SortByObj();
 
-    //-------------------------//
-    // limit to four solutions //
-    //-------------------------//
-
-    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
-    if (delete_count > 0)
-    {
-        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
-        for (int i = 0; i < delete_count; i++)
-        {
-            wvc->ambiguities.GotoTail();
-            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
-            delete wvp;
-        }
-    }
 
     char file[50];
 #ifdef S2_DEBUG_INTERVAL
@@ -3794,6 +3744,26 @@ GMF::DeleteBadPeaks(
 //---------------------------------------------------------------------//
 float
 GMF::EstimateDirMSE(
+       AngleIntervalListPlus* alp)
+{
+ AngleInterval* old=alp->GetCurrent();
+ float MSE=0;
+ for(int c=0;c<_phiCount;c++){
+   float dir=c*_phiStepSize;
+   float dir2=alp->GetNearestValue(dir);
+   float tmp=ANGDIF(dir,dir2);
+   MSE+=tmp*tmp*_bestObj[c];
+ }
+ 
+ for(AngleInterval*ai=alp->GetHead();ai!=old;ai=alp->GetNext());
+ return(MSE);
+}
+
+//---------------------------------------------------------------------//
+// Estimated Direction MSE (only works after ConvertObjToPdf is run.)  //
+//---------------------------------------------------------------------//
+float
+GMF::EstimateDirMSE(
        float* peak_dir,
        int    num_peaks)
 
@@ -3816,6 +3786,7 @@ GMF::EstimateDirMSE(
 //-----------------------//
 
 #define S3_PROB_THRESHOLD 0.8
+#define S3_MSE_THRESHOLD 100.0*dtr*dtr
 int
 GMF::RetrieveWinds_S3(
     MeasList*  meas_list,
@@ -3892,18 +3863,33 @@ GMF::RetrieveWinds_S3(
     //------//
 
     wvc->SortByObj();
+    
+    float peak_dir[DEFAULT_MAX_SOLUTIONS];
+
+    //------------------------//
+    // copy peak_dirs         //
+    //------------------------//
+
+    WindVectorPlus* wvp=wvc->ambiguities.GetHead();
+    for(int c=0;c<DEFAULT_MAX_SOLUTIONS;c++){
+      if(!wvp) break;
+      peak_dir[c]=wvp->dir;
+      wvp=wvc->ambiguities.GetNext();
+    }
+
+
+    float mse_est;
+    int num=MIN(DEFAULT_MAX_SOLUTIONS,ambiguities);
+    mse_est=EstimateDirMSE(peak_dir, num);
+
 
     //-------------------------------------------//
     // Determine Direction Intervals Comprising  //
-    // (S3_PROB_THRESHOLD)*100% of the probability    //
+    // (S3_PROB_THRESHOLD)*100% of the probability//
     //-------------------------------------------//
-    
-    //-------------------------------------------//
-    // Determine edges each of peak              //
-    // and store them in wvc->DirectionRanges    //
-    //-------------------------------------------//
-    
+  
     if(!BuildDirectionRanges(wvc,S3_PROB_THRESHOLD)) return(0);
+
 
     //-------------------------//
     // limit to four solutions //
@@ -3927,6 +3913,59 @@ GMF::RetrieveWinds_S3(
     return(1);
 }
 
+int 
+GMF::BuildDirectionRangesByMSE(
+     WVC*   wvc,
+     float threshold){     
+
+     int num=wvc->ambiguities.NodeCount();
+     if(num==0) return(1);
+     
+     // Initialize Ranges to Width 0
+     int offset=0, minoffset=-1;
+     int right=0;
+     for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
+	 wvp=wvc->ambiguities.GetNext(), offset++){
+       AngleInterval* ai=new AngleInterval;
+       ai->SetLeftRight(wvp->dir,wvp->dir);
+       wvc->directionRanges.Append(ai);
+     }
+     wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0,two_pi,_phiCount);
+     wvc->directionRanges.bestSpd=(float*)malloc(sizeof(float)*_phiCount);
+     for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestSpd[c]=_bestSpd[c];
+
+     float minMSE=180*180*dtr*dtr;
+     while(minMSE>threshold){
+       offset=0;
+       for(AngleInterval* ai=wvc->directionRanges.GetHead();ai;
+           ai=wvc->directionRanges.GetNext()){
+	 float oldright=ai->right;
+         float oldleft=ai->left;
+         ai->SetLeftRight(oldleft-_phiStepSize,oldright);
+         float MSE=EstimateDirMSE(&(wvc->directionRanges));
+         ai->left=oldleft;
+         if(MSE<minMSE){
+	   minMSE=MSE;
+           minoffset=offset;
+           right=0;
+	 }
+         ai->SetLeftRight(oldleft,oldright+_phiStepSize);
+         MSE=EstimateDirMSE(&(wvc->directionRanges));
+         ai->right=oldright;
+         if(MSE<minMSE){
+	   minMSE=MSE;
+           minoffset=offset;
+           right=1;
+	 }
+	 offset++;
+       }
+       AngleInterval* ai=wvc->directionRanges.GetHead();
+       for(int c=0;c<minoffset;c++) ai=wvc->directionRanges.GetNext();
+       if(right) ai->SetLeftRight(ai->left,ai->right+_phiStepSize);
+       else ai->SetLeftRight(ai->left-_phiStepSize,ai->right);
+     }
+     return(1);
+}
 
 int 
 GMF::BuildDirectionRanges(
@@ -4009,6 +4048,10 @@ GMF::BuildDirectionRanges(
        *ai=range[c];
        wvc->directionRanges.Append(ai);
      }
+
+     wvc->directionRanges.dirIdx.SpecifyWrappedCenters(0,two_pi,_phiCount);
+     wvc->directionRanges.bestSpd=(float*)malloc(sizeof(float)*_phiCount);
+     for(int c=0;c<_phiCount;c++) wvc->directionRanges.bestSpd[c]=_bestSpd[c];
      delete[] range;
      delete[] dir_include;
      delete[] left_idx;

@@ -2,9 +2,11 @@
 #define ANGLEINTERVAL_H
 #include "List.h"
 #include "Misc.h"
+#include "Index.h"
 #include<math.h>
 #include"Constants.h"
 
+class WindVectorPlus;
 
 class AngleInterval{
  public:
@@ -27,6 +29,7 @@ class AngleInterval{
 class AngleIntervalList : public List<AngleInterval>{
  public:
   AngleIntervalList();
+  double GetNearestValue(double angle);
   ~AngleIntervalList();
   void FreeContents();
   int Read(FILE* fp);
@@ -39,4 +42,28 @@ class AngleIntervalList : public List<AngleInterval>{
 			   int** num_placings, int interval_idx=0,
 			   int* tmp_placings=NULL);
 };
+
+class AngleIntervalListPlus : public AngleIntervalList{
+
+ public:
+   AngleIntervalListPlus();
+   ~AngleIntervalListPlus();
+  int Read(FILE* fp);
+  int Write(FILE* fp);
+  int GetNearestVector(WindVectorPlus* wvp);
+  int GetSampleDirection(int sample_idx, float* dir);
+  float GetBestSpeed(double dir); 
+  // float EstimateMSE();
+  
+  //  variables
+  Index dirIdx;
+  float* bestSpd;
+};
 #endif
+
+
+
+
+
+
+

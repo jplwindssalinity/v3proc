@@ -290,6 +290,8 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
   return(1);
 }
 
+#define ONE_STAGE_WITHOUT_RANGES 1
+
 //-----------------//
 // L2AToL2B::Flush //
 //-----------------//
@@ -319,15 +321,22 @@ L2AToL2B::Flush(
 	//---------------//
 
 	int bound;
+        int ignore=0;
+        if(ONE_STAGE_WITHOUT_RANGES) ignore=1;
 	if (useNMF) {
 	  bound = 9;
 	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-		medianFilterMaxPasses, bound, useAmbiguityWeights);
+		medianFilterMaxPasses, bound, useAmbiguityWeights,ignore);
 	}
 	bound = 0;
 	l2b->frame.swath.MedianFilter(medianFilterWindowSize,
-	      medianFilterMaxPasses, bound, useAmbiguityWeights);
+	      medianFilterMaxPasses, bound, useAmbiguityWeights,ignore);
 
+        if(ONE_STAGE_WITHOUT_RANGES){
+	  l2b->frame.swath.DiscardUnselectedRanges();
+	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
+	      medianFilterMaxPasses, bound, useAmbiguityWeights);
+	}
 	//------------//
 	// output l2b //
 	//------------//

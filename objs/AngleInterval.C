@@ -4,10 +4,12 @@
 //==============================================================//
 
 #include<stdio.h>
+#include<stdlib.h>
 #include"AngleInterval.h"
 #include"List.h"
 #include"Array.h"
 #include"Misc.h"
+#include"Wind.h"
 #include"Constants.h"
 
 //------------------------------------//
@@ -98,6 +100,27 @@ AngleIntervalList::FreeContents(){
   return;
 }
 
+double
+AngleIntervalList::GetNearestValue(double angle){
+  double closest_dist=two_pi;
+  double closest_angle=0;
+  
+  for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
+    if(ai->InRange(angle))return(angle);
+    double tmp=ANGDIF(angle,ai->left);
+    if(tmp<closest_dist){
+      closest_dist=tmp;
+      closest_angle=ai->left;
+    }
+    tmp=ANGDIF(angle,ai->right);
+    if(tmp<closest_dist){
+      closest_dist=tmp;
+      closest_angle=ai->right;
+    }
+  }
+  return(closest_angle);
+}
+
 int 
 AngleIntervalList::Write(FILE* fp){
   int node_count=NodeCount();
@@ -110,8 +133,9 @@ AngleIntervalList::Write(FILE* fp){
     for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
       if(! ai->Write(fp)) return(0);
     }
+    return(1);
   }
-  return(1);
+  else return(-1);
 }
 
 int 
@@ -126,6 +150,9 @@ AngleIntervalList::WriteAscii(FILE* fp){
   return(1);
 }
 
+// Returns 0 on I/O Error
+// Returns -1 if No AngleIntervalList found
+// Returns 1 if successful
 int 
 AngleIntervalList::Read(FILE* fp){
   int node_count;
@@ -133,11 +160,12 @@ AngleIntervalList::Read(FILE* fp){
   fpos_t pos;
   if(fgetpos(fp,&pos)!=0)return(0);
   if(fread((void *)&magic[0], sizeof(char), 21, fp) != 21){
-    if(feof(fp)) return(1);
+    if(feof(fp)) return(-1);
     else return(0);
   }
   if(strcmp(magic,"Angle_Interval_Magic")!=0){  // for backward compatibility
     if(fsetpos(fp,&pos)!=0)return(0);
+    return(-1);
   }
   else{
     if(fread((void *)&node_count, sizeof(int),1, fp) != 1)
@@ -147,8 +175,8 @@ AngleIntervalList::Read(FILE* fp){
       if(! ai->Read(fp)) return(0);
       if(! Append(ai)) return(0);
     }
+    return(1);
   }
-  return(1);
 }
 
 //----------------------------------//
@@ -181,11 +209,11 @@ AngleIntervalList::GetPossiblePlacings(
        int***  num_placings){
   int num_intervals=NodeCount();
   // calculate upper bound on the number of permutations
-  int upper_bound= num_intervals*num_intervals*num_intervals 
-    -num_intervals*num_intervals + num_intervals;
-  int tmp_int=1;
-  for(int i=0;i<num_angles-2;i++) tmp_int*=num_intervals;
-  upper_bound+=tmp_int;
+  // (num_intervals + num_angles -1)!/(num_angles!*(num_intervals-1)!)
+  int upper_bound=1;
+  for(int c=num_intervals-1+num_angles;c>=num_intervals-1;c--) upper_bound*=c;
+  for(int c=1;c<=num_angles;c++) upper_bound/=c;
+
   int** tmp_array=(int**)make_array(sizeof(float),2, upper_bound,
 				    num_intervals);
   if(!tmp_array){
@@ -240,3 +268,158 @@ AngleIntervalList::_GetPossiblePlacings(
   if(interval_idx==0) delete tmp_placings;
   return(1);
 }
+
+
+//--------------------------------------------//
+// AngleIntervalListPlus Methods              //
+//--------------------------------------------//
+
+//-------------------------------//
+// Constructor and Destructor    //
+//-------------------------------//
+AngleIntervalListPlus::AngleIntervalListPlus()
+  : bestSpd(NULL)
+{
+  return;
+}
+
+AngleIntervalListPlus::~AngleIntervalListPlus(){
+  FreeContents();
+  if(bestSpd!=NULL) free(bestSpd);
+  bestSpd=NULL;
+  return;
+}
+
+int
+AngleIntervalListPlus::Read(FILE* fp){
+  int value=AngleIntervalList::Read(fp);
+  if(value==0) return(0);
+  else if(value==-1) return(-1);
+  else if(!dirIdx.Read(fp)) return(0);
+  bestSpd=dirIdx.MakeFloatArray();
+  if(!bestSpd) return(0);
+  unsigned int bins=dirIdx.GetBins();
+  if(fread(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0);
+  return(1);
+}
+
+int
+AngleIntervalListPlus::Write(FILE* fp){
+  int value=AngleIntervalList::Write(fp);
+  if(value!=1) return(value);
+  if(!dirIdx.Write(fp)) return(0);
+  unsigned int bins=dirIdx.GetBins();
+  if(fwrite(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0); 
+  return(1); 
+}
+
+float
+AngleIntervalListPlus::GetBestSpeed(double dir){
+  int idx[2];
+  float coeff[2];
+  if(!bestSpd){
+    fprintf(stderr,"AngleIntervalListPlus::Cannot get Best Speed\n");
+    exit(1);
+  }
+  if(!dirIdx.GetLinearCoefsWrapped(dir,idx,coeff)){
+    fprintf(stderr,"AngleIntervalListPlus::Cannot get Best Speed\n");
+    exit(1);
+  }
+  return(coeff[0]*bestSpd[idx[0]]+coeff[1]*bestSpd[idx[1]]);
+}
+
+
+int
+AngleIntervalListPlus::GetNearestVector(WindVectorPlus* wvp){
+  //--------------------------------------------------------------//
+  // Find closest sampled vector                                  //
+  //--------------------------------------------------------------//
+  float x,y, dirclose=0, trial_spd, trial_dir;
+  float dx,dy;
+  float sqrdist;
+  float min_sqrdist=1000000.0;
+  x=wvp->spd*cos(wvp->dir);
+  y=wvp->spd*sin(wvp->dir);
+  for(AngleInterval* ai=GetHead();ai;ai=GetNext()){
+    // Consider all samples vectors in each interval (and endpoints)
+    int sample_number=0;
+    while(GetSampleDirection(sample_number,&trial_dir)){
+      trial_spd=GetBestSpeed(trial_dir);
+      dx=x-trial_spd*cos(trial_dir);
+      dy=y-trial_spd*sin(trial_dir);
+      sqrdist=dx*dx+dy*dy;
+      if(sqrdist<min_sqrdist){
+	dirclose=trial_dir;
+        min_sqrdist=sqrdist;       
+      }
+      sample_number++;
+    }
+  }
+  // Assign the closest vector to wvp
+  wvp->dir=dirclose;
+  wvp->spd=GetBestSpeed(dirclose);
+  return(1);
+}
+
+int
+AngleIntervalListPlus::GetSampleDirection(int samp_idx, float* dir){
+  // Get required constants
+  AngleInterval* ai=GetCurrent();
+  float step=dirIdx.GetStep();
+
+  // Compute Width and Number of Samples
+  float width;
+  int num_samples;  
+  if(ai->left==ai->right){
+    width=0;
+    num_samples=1;
+  }
+  else{
+    width=ai->GetWidth();
+    int first_idx=(int)(ai->left/step)+1;
+    int last_idx=(int)(ceil((ai->left+width)/step)-1);
+    int num_idx_in_range=last_idx-first_idx+1;
+    num_samples=2+num_idx_in_range;
+  }
+
+  // Compute Direction for various sample index values
+  if(samp_idx<0) return(0);
+  else if(samp_idx==0){
+    *dir=ai->left;
+    return(1);
+  }
+  else if(samp_idx==num_samples-1){
+    *dir=ai->right;
+    return(1);
+  }
+  else if(samp_idx>=num_samples) return(0);
+  else{
+    int idx;
+    dirIdx.GetNearestWrappedIndex(ai->left,&idx);
+    float start=idx*step;
+    if(!ai->InRange(start)) start+=step;
+    *dir=start+samp_idx*step;
+    if(*dir>two_pi) *dir-=two_pi;
+    return(1);
+  }
+}
+     
+/****
+float
+AngleIntervalListPlus::EstimateMSE(){
+  Node<AngleInterval>* old = _current;
+  float MSE=0;
+  float step=dirIdx.GetStep();
+  int bins=dirIdx.GetBins();
+  
+  for(int c=0;c<bins;c++){
+    float dir=c*step;
+    float dir2=GetNearestValue(dir);
+    float tmp=ANGDIF(dir,dir2);
+    MSE+=tmp*tmp*bestObj[c];
+  }
+  _current=old;
+  return(MSE);
+}
+*****/
+

@@ -105,12 +105,14 @@ public:
     int     RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
     int     RetrieveWinds_S3(MeasList* meas_list, Kp* kp, WVC* wvc);
     int     BuildDirectionRanges(WVC* wvc, float threshold);
+    int     BuildDirectionRangesByMSE(WVC* wvc, float threshold);
     int     BruteForceGetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
 			      int level=0, float* tmp_peak_dir=NULL);
     int     GetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
 			      int num=0);
     int     DeleteBadPeaks(WVC* wvc, float* peak_dir, int* num_peaks, float mse);
     float   EstimateDirMSE(float* peak_dir, int num_peaks);
+    float   EstimateDirMSE(AngleIntervalListPlus* alp);
     int     ConvertObjToPdf();
 
     int     SolutionCurve_H1(MeasList* meas_list, Kp* kp);
@@ -128,6 +130,7 @@ public:
 	int		Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp,
 				WVC* wvc);
 
+        int             CopyBuffersGSToPE();
 	//-------//
 	// flags //
 	//-------//

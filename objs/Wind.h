@@ -195,7 +195,7 @@ public:
 	WindVectorPlus*			selected;
 	int                             selected_allocated;
 	List<WindVectorPlus>	ambiguities;
-	AngleIntervalList       directionRanges;
+	AngleIntervalListPlus       directionRanges;
 };
 
 //======================================================================
@@ -327,6 +327,7 @@ public:
 	//----------//
 
 	int		Add(int cti, int ati, WVC* wvc);
+        WVC*            Remove(int cti, int ati);
 
 	//---------------------//
 	// setting and getting //
@@ -368,11 +369,14 @@ public:
 	int             LoResNudge(WindVectorField* nudge_field, int min_rank);
 	int		SmartNudge(WindField* nudge_field);
 	int		MedianFilter(int window_size, int max_passes, int bound,
-				     int weight_flag = 0);
+				     int weight_flag = 0, int ignore_ranges=0);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
-					 char** change, int bound, int weight_flag = 0);
+					 char** change, int bound, int weight_flag = 0, int ignore_ranges=0);
         int             GetMedianBySorting(WindVectorPlus* wvp, int cti_min,
 					   int cti_max, int ati_min, int ati_max);
+        int             GetWindowMean(WindVectorPlus* wvp, int cti_min,
+					   int cti_max, int ati_min, int ati_max);
+        int             DiscardUnselectedRanges();
 	//------------//
 	// evaluation //
 	//------------//
@@ -384,6 +388,7 @@ public:
 
 	float	RmsSpdErr(WindField* truth);
 	float	RmsDirErr(WindField* truth);
+	int     WriteMaxDirErrIndices(WindField* truth, FILE* ofp);
 	int     WriteDirErrMap(WindField* truth, FILE* ofp);
 	float	Skill(WindField* truth);
 	float	SpdBias(WindField* truth);
