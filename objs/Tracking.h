@@ -122,6 +122,8 @@ public:
 							unsigned int range_step, float xmit_pulse_width,
 							unsigned int antenna_dn, unsigned int antenna_n,
 							float* delay, float* duration);
+	int					GetNumberOfBeams() { return(_numberOfBeams); };
+	int					GetRangeSteps() { return(_rangeSteps); };
 	int					SetInstrument(Instrument* instrument);
 	int					SetRoundTripTime(double*** terms);
 	int					SetDuration(int beam_idx, float duration);
