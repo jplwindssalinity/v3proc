@@ -219,7 +219,9 @@ Kp::GetVpc(
     // calculate sigma-0 coefficients //
     //--------------------------------//
 
-    double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
+    // Originally sigma0_over_snr=meas->EnSlice/meas->XK/meas->txPulseWidth
+    // Changed to solve error in vpc now that EnSlice is in data numbers
+    double sigma0_over_snr = meas->EnSlice / meas->XK;
     double aa = meas->A;
     double bb = meas->B * sigma0_over_snr;
     double cc = meas->C * sigma0_over_snr * sigma0_over_snr;
