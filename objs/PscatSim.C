@@ -83,7 +83,7 @@ PscatSim::DetermineNextEvent(
     pscat_event->beamIdx = min_idx;
 
     unsigned short ideal_encoder = pscat->cds.EstimateIdealEncoder();
-    pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+    pscat_event->eventId = PscatEvent::VV_VH_SCAT_EVENT;
 
     //----------------------------//
     // update next time for event //
@@ -454,19 +454,19 @@ PscatSim::SetMeasurements(
     Meas* meas = meas_spot->GetHead();
     while (meas)
     {
-		meas->startSliceIdx = sliceno;
+        meas->startSliceIdx = sliceno;
 
-		//----------------------------------------//
-		// get lon and lat for the earth location //
-		//----------------------------------------//
+        //----------------------------------------//
+        // get lon and lat for the earth location //
+        //----------------------------------------//
 
-		double alt, lat, lon;
-		if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
-			return(0);
+        double alt, lat, lon;
+        if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+            return(0);
 
-		LonLat lon_lat;
-		lon_lat.longitude = lon;
-		lon_lat.latitude = lat;
+        LonLat lon_lat;
+        lon_lat.longitude = lon;
+        lon_lat.latitude = lat;
 
         // Compute Land Flag
         meas->landFlag = landMap.IsLand(lon,lat);
