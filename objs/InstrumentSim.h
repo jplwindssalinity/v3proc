@@ -73,10 +73,10 @@ public:
 
 	Gaussian		ptgrNoise;
 	double			startTime;
-	AntennaSim		antennaSim;	       // the antenna simulator
+	AntennaSim		antennaSim;		// the antenna simulator
 
-        XTable                  kfactorTable;
-        XTable                  xTable;
+	XTable			kfactorTable;
+	XTable			xTable;
 
 	//---------------------------//
 	// level 0 frame information //
@@ -84,22 +84,14 @@ public:
 
 	int			l00FrameReady;
 
+	//-------//
+	// flags //
+	//-------//
 
-
-        
-	int uniformSigmaField;
-        // if uniformSigmaField is nonzero then all sigma0 values used in the 
-        // simulation are 1.
-
-        int outputPrToStdout;
-        // If outputPrToStdout is nonzero then a table of Pr values is written
-        // to stdout.
-
-        int useKfactor;
-        // If this is nonzero the kfactor table is read in and used.
-
-        int createXtable;
-        // If this is nonzero an  X table is created.
+	int			uniformSigmaField;	// set all sigma0 values to 1.0
+	int			outputPrToStdout;	// write Pr value to stdout
+	int			useKfactor;			// read and use K-factor table
+	int			createXtable;		// create an X table
 
 protected:
 
@@ -117,5 +109,3 @@ protected:
 };
 
 #endif
-
-

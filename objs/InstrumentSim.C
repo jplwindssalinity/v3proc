@@ -20,7 +20,8 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	startTime(0.0), l00FrameReady(0), uniformSigmaField(0), outputPrToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
+:	startTime(0.0), l00FrameReady(0), uniformSigmaField(0),
+	outputPrToStdout(0), useKfactor(0), createXtable(0), _spotNumber(0)
 {
 	return;
 }
@@ -119,10 +120,9 @@ InstrumentSim::SetMeasurements(
 	//-------------------------//
 	// for each measurement... //
 	//-------------------------//
-        
-        int  sliceno=0;
-	for (Meas* meas = meas_spot->GetHead(); meas;
-		meas = meas_spot->GetNext())
+
+	int sliceno = 0;
+	for (Meas* meas = meas_spot->GetHead(); meas; meas = meas_spot->GetNext())
 	{
 		//----------------------------------------//
 		// get lon and lat for the earth location //
@@ -147,9 +147,9 @@ InstrumentSim::SetMeasurements(
 			wv.dir = 0.0;
 		}
 
-	    //--------------------------------------------------------------------//
-		// Get the Kpm value appropriate for the current beam and wind speed.
-    	//--------------------------------------------------------------------//
+		//-------------------------------------------------------------------//
+		// Get the Kpm value appropriate for the current beam and wind speed //
+		//-------------------------------------------------------------------//
 
 		double Kpm = GetKpm(instrument,&wv);
 
@@ -165,7 +165,7 @@ InstrumentSim::SetMeasurements(
 		{
 			sigma0=1;
 		}
-        else
+		else
 		{
 			gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 				chi, &sigma0);
@@ -200,16 +200,16 @@ InstrumentSim::SetMeasurements(
 		// convert Sigma0 to Power //
 		//-------------------------//
 
-                /**** Kfactor: either 1.0 or taken from table ***/
+		// Kfactor: either 1.0 or taken from table
 		float Kfactor=1.0;
-		if(useKfactor) 
-		  Kfactor=kfactorTable.RetrieveBySliceNumber(
-				       instrument->antenna.currentBeamIdx,
-				       instrument->antenna.azimuthAngle,
-				       sliceno);
+		if (useKfactor)
+		{
+			Kfactor=kfactorTable.RetrieveBySliceNumber(
+				instrument->antenna.currentBeamIdx,
+				instrument->antenna.azimuthAngle, sliceno);
+		}
 
-
-		if(! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
+		if (! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
 				Kfactor, sigma0, &(meas->value)))
 		{
 			return(0);
@@ -317,9 +317,15 @@ InstrumentSim::ScatSim(
 
 	if (_spotNumber == 0)
 	{
+		//----------------------//
+		// frame initialization //
+		//----------------------//
+
 		if (! SetL00Spacecraft(spacecraft,l00_frame))
 			return(0);
 		l00_frame->time = instrument->time;
+		l00_frame->orbitTicks = instrument->orbitTicks;
+		l00_frame->priOfOrbitTickChange = 255;		// flag value
 	}
 
 	//---------------------//
@@ -335,7 +341,9 @@ InstrumentSim::ScatSim(
 	{
 		if (! LocateSliceCentroids(spacecraft, instrument, &meas_spot))
 			return(0);
-		if(outputPrToStdout) printf("%g ",instrument->antenna.azimuthAngle/dtr);
+
+		if (outputPrToStdout)
+			printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
 	//------------------------//
@@ -345,44 +353,52 @@ InstrumentSim::ScatSim(
 	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, gmf))
 		return(0);
 
-        //-----------------------------------------------//
-        //-------- Output Pr to Stdout if enabled--------//
-        //-----------------------------------------------//
+	//--------------------------------//
+	// Output Pr to Stdout if enabled //
+	//--------------------------------//
 
-	if(outputPrToStdout)
+	if (outputPrToStdout)
 	{
-		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
 			printf("%g ",slice->value);
 		}
-		if(instrument->antenna.currentBeamIdx==1)
+		if (instrument->antenna.currentBeamIdx==1)
 			printf("\n");
 	}
 
-        //-----------------------------------------------//
-        //  Output X values to X table if enabled        //
-        //-----------------------------------------------//
+	//---------------------------------------//
+	// Output X values to X table if enabled //
+	//---------------------------------------//
 
-	if(createXtable)
+	if (createXtable)
 	{
-	        int sliceno=0;
-		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+		int sliceno = 0;
+		for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{
-			if(!xTable.AddEntry(slice->value,
-					instrument->antenna.currentBeamIdx,
-					instrument->antenna.azimuthAngle,
-					sliceno)) return(0);
+			if (!xTable.AddEntry(slice->value,
+				instrument->antenna.currentBeamIdx,
+				instrument->antenna.azimuthAngle, sliceno))
+			{
+				return(0);
+			}
 			sliceno++;
 		}
-
 	}
 
-	//--------------------------------//
+	//---------------------------------//
 	// Add Spot Specific Info to Frame //
-	//--------------------------------//
+	//---------------------------------//
 
 	if (! SetL00Science(&meas_spot, instrument, l00_frame))
 		return(0);
+
+	//---------------------------------//
+	// set orbit tick change indicator //
+	//---------------------------------//
+
+	if (instrument->orbitTicks != l00_frame->orbitTicks)
+		l00_frame->priOfOrbitTickChange = _spotNumber;
 
 	//-----------------------------//
 	// determine if frame is ready //

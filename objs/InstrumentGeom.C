@@ -219,6 +219,7 @@ LocateSliceCentroids(
 	Instrument*		instrument,
 	MeasSpot*		meas_spot)
 {
+static int xxx = 0;
 	//-----------//
 	// predigest //
 	//-----------//
@@ -292,8 +293,11 @@ LocateSliceCentroids(
 	//------------------//
 
 	double center_look, center_azim;
-	if (! beam->GetElectricalBoresight(&center_look, &center_azim))
+	if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
+		instrument->antenna.spinRate, &center_look, &center_azim))
+	{
 		return(0);
+	}
 
 	//-------------------//
 	// for each slice... //
@@ -308,6 +312,10 @@ LocateSliceCentroids(
 
 		Meas* meas = new Meas();
 		meas->pol = beam->polarization;
+
+if (xxx == 2171)
+	printf("xxx\n");
+xxx++;
 
 		//----------------------------------//
 		// determine the centroid frequency //
@@ -965,7 +973,7 @@ TargetInfo(
 
 #define LOOK_OFFSET			0.005
 #define AZIMUTH_OFFSET		0.005
-#define ANGLE_OFFSET		0.01		// start delta for golden section
+#define ANGLE_OFFSET		0.002		// start delta for golden section
 #define ANGLE_TOL			0.00001		// within this of peak gain
 
 int

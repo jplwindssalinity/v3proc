@@ -48,36 +48,32 @@ public:
 	//-------------------//
 
 	int		Pack(char* buffer);
-	int             Unpack(char* buffer);
+	int		Unpack(char* buffer);
 
-	//-------------------//
-	// product variables //
-	//-------------------//
+	//--------------//
+	// frame header //
+	//--------------//
 
-	double		time;
+	double			time;
+	unsigned int	orbitTicks;
+	unsigned char	priOfOrbitTickChange;
+	float			gcAltitude;
+	float			gcLongitude;
+	float			gcLatitude;
+	float			gcX;
+	float			gcY;
+	float			gcZ;
+	float			velX;
+	float			velY;
+	float			velZ;
+	Attitude		attitude;
+	float			ptgr;
 
-	// S/C information
+	//------------//
+	// frame data //
+	//------------//
 
-	float		gcAltitude;
-	float		gcLongitude;
-	float		gcLatitude;
-	float		gcX;
-	float		gcY;
-	float		gcZ;
-	float		velX;
-	float		velY;
-	float		velZ;
-
-	Attitude	attitude;
-
-        // Transmitted Power and Receiver Gain Product
-        float           ptgr;
-
-	// antenna position
 	unsigned short*		antennaPosition;
-
-
-	// science measurements
 	float*				science;
 	float*				spotNoise;
 

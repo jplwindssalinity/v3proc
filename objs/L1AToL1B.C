@@ -17,7 +17,7 @@ static const char rcs_id_l10tol15_c[] =
 //==========//
 
 L10ToL15::L10ToL15()
-  : useKfactor(0), outputSigma0ToStdout(0)
+:	useKfactor(0), outputSigma0ToStdout(0)
 {
 	return;
 }
@@ -53,6 +53,12 @@ L10ToL15::Convert(
 	float pitch = l10->frame.attitude.GetPitch();
 	float yaw = l10->frame.attitude.GetYaw();
 	spacecraft->attitude.SetRPY(roll, pitch, yaw);
+
+	//-------------------//
+	// set up instrument //
+	//-------------------//
+
+	instrument->orbitTicks = l10->frame.orbitTicks;
 
 	//----------------------------//
 	// ...free residual MeasSpots //
@@ -104,11 +110,14 @@ L10ToL15::Convert(
 			// set up instrument //
 			//-------------------//
 
-			instrument->SetTime(time);
+			if (spot_idx == l10->frame.priOfOrbitTickChange)
+				instrument->orbitTicks++;
+
 			antenna->SetAzimuthWithEncoder(
 				l10->frame.antennaPosition[spot_idx]);
 
-			if(outputSigma0ToStdout) printf("%g ",antenna->azimuthAngle/dtr);
+			if (outputSigma0ToStdout)
+				printf("%g ",antenna->azimuthAngle/dtr);
 
 			//---------------------------//
 			// create a measurement spot //
@@ -155,18 +164,20 @@ L10ToL15::Convert(
 			//-------------------//
 			// for each slice... //
 			//-------------------//
-                        
+
 			int sliceno=0;
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
-			  /**** Kfactor: either 1.0 or taken from table ***/
-			        float k_factor=1.0;
-				if(useKfactor) 
-				  k_factor=kfactorTable.RetrieveBySliceNumber(
-				       instrument->antenna.currentBeamIdx,
-				       instrument->antenna.azimuthAngle,
-				       sliceno);
+				// Kfactor: either 1.0 or taken from table
+				float k_factor=1.0;
+				if (useKfactor)
+				{
+					k_factor=kfactorTable.RetrieveBySliceNumber(
+						instrument->antenna.currentBeamIdx,
+						instrument->antenna.azimuthAngle,
+						sliceno);
+				}
 
 				float Psn = l10->frame.science[total_slice_idx];
 				float PtGr = l10->frame.ptgr;
@@ -206,4 +217,3 @@ L10ToL15::Convert(
 
 	return(1);
 }
-

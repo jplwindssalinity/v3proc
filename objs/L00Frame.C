@@ -16,8 +16,9 @@ static const char rcs_id_l00frame_c[] =
 //==========//
 
 L00Frame::L00Frame()
-:	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL), 
+:	time(0), orbitTicks(0), priOfOrbitTickChange(255), gcAltitude(0.0),
+	gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0),
+	velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL),
 	science(NULL), spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0),
 	slicesPerFrame(0)
 {
@@ -32,7 +33,7 @@ L00Frame::~L00Frame()
 //---------------//
 // L00::Allocate //
 //---------------//
- 
+
 int
 L00Frame::Allocate(
 	int		number_of_beams,
@@ -47,7 +48,8 @@ L00Frame::Allocate(
 	// allocate antenna positions //
 	//----------------------------//
 
-	antennaPosition = (unsigned short *)malloc(spotsPerFrame * sizeof(unsigned short));
+	antennaPosition = (unsigned short *)malloc(spotsPerFrame *
+		sizeof(unsigned short));
 	if (antennaPosition == NULL)
 		return(0);
 
@@ -68,11 +70,11 @@ L00Frame::Allocate(
 
 	return(1);
 }
- 
+
 //----------------------//
 // L00Frame::Deallocate //
 //----------------------//
- 
+
 int
 L00Frame::Deallocate()
 {
@@ -101,6 +103,14 @@ L00Frame::Pack(
 
 	size = sizeof(double);
 	memcpy((void *)(buffer + idx), (void *)&time, size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&priOfOrbitTickChange, size);
 	idx += size;
 
 	size = sizeof(float);
@@ -144,9 +154,8 @@ L00Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
-
-        memcpy((void *)(buffer +idx),(void *)&ptgr, size);
-        idx += size;
+	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
+	idx += size;
 
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
@@ -163,11 +172,9 @@ L00Frame::Pack(
 	return(idx);
 }
 
-
-//---------------------------//
-// L00Frame::Unpack          //
-//---------------------------//
-
+//------------------//
+// L00Frame::Unpack //
+//------------------//
 
 int
 L00Frame::Unpack(
@@ -178,6 +185,14 @@ L00Frame::Unpack(
 
 	size = sizeof(double);
 	memcpy((void *)&time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&priOfOrbitTickChange, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(float);
