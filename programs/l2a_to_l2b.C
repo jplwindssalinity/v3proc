@@ -189,16 +189,18 @@ main(
 	// read the header to set up swath //
 	//---------------------------------//
 
-	if (! l17.ReadHeader())
+	FILE* fp = l17.file.GetFp();
+	if (! l17.header.Read(fp))
 	{
 		fprintf(stderr, "%s: error reading Level 1.7 header\n", command); 
 		exit(1);
 	}
 
 	int along_track_bins =
-		(int)(two_pi * r1_earth / l17.alongTrackResolution + 0.5);
+		(int)(two_pi * r1_earth / l17.header.alongTrackResolution + 0.5);
 
-	if (! l20.frame.swath.Allocate(l17.crossTrackBins, along_track_bins))
+	if (! l20.frame.swath.Allocate(l17.header.crossTrackBins,
+		along_track_bins))
 	{
 		fprintf(stderr, "%s: error allocating wind swath\n", command);
 		exit(1);
