@@ -19,6 +19,7 @@ static const char rcs_id_accurategeom_c[] =
 FbbTable::FbbTable()
 :    a(NULL), b(NULL), c(NULL), d(NULL)
 {
+printf("Fbb Table being constructed!\n");
     _azimuthStepSize = two_pi / BYU_AZIMUTH_BINS;
     return;
 }
