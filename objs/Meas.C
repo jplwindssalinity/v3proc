@@ -244,7 +244,7 @@ Meas::WriteAscii(
 	FILE*	fp)
 {
         double lon=0, lat=0, alt=0; 
-        centroid.GetAltLonGCLat(&alt,&lon,&lat);
+        centroid.GetAltLonGDLat(&alt,&lon,&lat);
         lon*=rtd;
         lat*=rtd;
         fprintf(fp,"###########  Slice/Composite  Info  ###############\n");
@@ -300,16 +300,12 @@ int32       sliceIndex)   // index in slices
     //------------------------------------------------------------------
     if (sliceQualFlags & (1 << (sliceIndex * 4)))
         return 0;
-    startSliceIdx = 0;
-    for (int i=0; i < MAX_L1BHDF_NUM_SLICES; i++)
+
+    if ((sliceQualFlags & (1 << (sliceIndex * 4))) == 0)
     {
-        if ((sliceQualFlags & (1 << (i * 4))) == 0)
-        {
-            startSliceIdx = START_SLICE_INDEX + i;
-            startSliceIdx = (startSliceIdx == 0 ?
+        startSliceIdx = START_SLICE_INDEX + sliceIndex;
+        startSliceIdx = (startSliceIdx >= 0 ?
                                  startSliceIdx + 1 : startSliceIdx);
-            break;
-        }
     }
     assert (startSliceIdx != 0);
 
