@@ -691,6 +691,7 @@ WindField::_Deallocate()
 		return(1);
 
 	free_array((void *)_field, 2, _lonCount, _latCount);
+
 	_field = NULL;
 	return(1);
 }
