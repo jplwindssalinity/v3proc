@@ -24,7 +24,7 @@ static const char rcs_id_misctable_c[] =
 MiscTable::MiscTable()
 :   _metCount(0), _incCount(0), _incMin(0.0), _incMax(0.0), _incStep(0.0),
     _spdCount(0), _spdMin(0.0), _spdMax(0.0), _spdStep(0.0), _chiCount(0),
-    _chiStep(0.0), _value(0)
+    _chiStep(0.0), _value(0), _maxValueForSpeed(NULL)
 {
     return;
 }
@@ -234,14 +234,106 @@ MiscTable::GetMaxValueForSpeed(
     float            spd,
     float*           value)
 {
-    float max_value;
-    GetInterpolatedValue(met, inc, spd, 0.0, &max_value);
+    // If _maxValueForSpeed array is NULL then allocate and compute it
+  if (_maxValueForSpeed==NULL){
+    _maxValueForSpeed=(float***)make_array(sizeof(float), 3, _metCount,
+		_incCount, _spdCount);
+   
+    for(int m=0;m<_metCount;m++){
+      for(int i=0;i<_incCount;i++){
+	for(int s=0;s<_spdCount;s++){
+	  _GetMaxValueForSpeed(m,i,s, &(_maxValueForSpeed[m][i][s]));
+	}
+      }
+    }
+  }
+  //-------------------------//
+  // determine real indicies //
+  //-------------------------//
 
-    float dir;
-    for (int dir_idx = 1; (dir = dir_idx * _chiStep) < two_pi; dir_idx++)
+  int met_idx = _MetToIndex(met);
+  float** table = *(_maxValueForSpeed + met_idx);
+
+  float inc_ridx = INC_TO_REAL_IDX(inc);
+  float spd_ridx = SPD_TO_REAL_IDX(spd);
+
+  //------------------------------------//
+  // calculate upper and lower indicies //
+  //------------------------------------//
+
+  int li = (int)inc_ridx;
+
+  if (li < 0)
+    li = 0;
+
+  int hi = li + 1;
+  if (hi >= _incCount)
     {
-        float trial_value;
-        GetInterpolatedValue(met, inc, spd, dir, &trial_value);
+      hi = _incCount - 1;
+      li = hi - 1;
+    }
+  float lo_inc = _incMin + li * _incStep;
+
+  int ls = (int)spd_ridx;
+
+  if (ls < 0)
+    ls = 0;
+
+  int hs = ls + 1;
+  if (hs >= _spdCount)
+    {
+      hs = _spdCount - 1;
+      ls = hs - 1;
+    }
+  float lo_spd = _spdMin + ls * _spdStep;
+
+   
+  //--------------------------//
+  // assign fractional values //
+  //--------------------------//
+
+  float ai = (inc - lo_inc) / _incStep;
+  float as = (spd - lo_spd) / _spdStep;
+  
+
+  float bi = 1.0 - ai;
+  float bs = 1.0 - as;
+  
+
+  //---------------//
+  // interpolation //
+  //---------------//
+
+  float val =
+        ai * as * *(*(table + hi) + hs) +
+        ai * bs * *(*(table + hi) + ls) + 
+        bi * as * *(*(table + li) + hs) + 
+        bi * bs * *(*(table + li) + ls);
+
+    //--------------//
+    // return value //
+    //--------------//
+
+    *value = val;
+  return(1);
+}
+
+//--------------------------------//
+// MiscTable::_GetMaxValueForSpeed//
+//--------------------------------//
+
+int
+MiscTable::_GetMaxValueForSpeed(
+    int            met_idx,
+    int            inc_idx,
+    int            spd_idx,
+    float*         value)
+{
+    float max_value=_value[met_idx][inc_idx][spd_idx][0];
+
+    for (int chi_idx = 1; chi_idx<_chiCount; chi_idx++)
+    {
+        float trial_value=_value[met_idx][inc_idx][spd_idx][chi_idx];
         if (trial_value > max_value)
             max_value = trial_value;
     }
@@ -276,13 +368,16 @@ MiscTable::_Allocate()
 int
 MiscTable::_Deallocate()
 {
-	if (_value == NULL)
-		return(1);
+  if (_value != NULL){
+    free_array((void *)_value, 4, _metCount, _incCount, _spdCount, _chiCount);
 
-	free_array((void *)_value, 4, _metCount, _incCount, _spdCount, _chiCount);
-
-	_value = NULL;
-	return(1);
+    _value = NULL;
+  }
+  if (_maxValueForSpeed !=NULL){
+    free_array((void *)_maxValueForSpeed, 3, _metCount, _incCount, _spdCount);
+    _maxValueForSpeed=NULL;
+  }
+  return(1);
 }
 
 //------------------------//

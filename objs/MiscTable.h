@@ -64,7 +64,8 @@ protected:
     //--------------//
     // construction //
     //--------------//
-
+    int  _GetMaxValueForSpeed(int met_idx, int inc_idx, int spd_idx,
+             float* value);
     int  _Allocate();
     int  _Deallocate();
 
@@ -114,6 +115,7 @@ protected:
     float  _chiStep;      // the relative azimuth angle step size
 
     float****  _value;    // the array of values
+    float*** _maxValueForSpeed; 
 };
 
 #endif
