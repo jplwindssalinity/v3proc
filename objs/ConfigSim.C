@@ -223,7 +223,7 @@ ConfigAttitudeUniform(SpacecraftSim* spacecraft_sim,
 	//--------------------------------------------//
 
 int 
-ConfigGaussianRandomVelocity(SpacecraftSim* spacecraft_sim,
+ConfigAttitudeGaussianRandomVelocity(SpacecraftSim* spacecraft_sim,
 	ConfigList* config_list)
 {
 	GenericDist *roll, *pitch, *yaw;
