@@ -38,13 +38,16 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	int			Set(float roll, float pitch, float yaw, int order_1,
-					int order_2, int order_3);
+	int		Set(float roll, float pitch, float yaw, int order_1,
+				int order_2, int order_3);
 
-	float		GetRoll() { return(_roll); };
-	float		GetPitch() { return(_pitch); };
-	float		GetYaw() { return(_yaw); };
-	int*		GetOrderIndicies() { return(_order); };
+	float	GetRoll() { return(_roll); };
+	void	SetRoll(float roll) { _roll = roll; };
+	float	GetPitch() { return(_pitch); };
+	void	SetPitch(float pitch) { _pitch = pitch; };
+	float	GetYaw() { return(_yaw); };
+	void	SetYaw(float yaw) { _yaw = yaw; };
+	int*	GetOrderIndicies() { return(_order); };
 
 protected:
 
