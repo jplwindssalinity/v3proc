@@ -8,7 +8,7 @@ static const char rcs_id_instrumentsim_c[] =
 
 #include "InstrumentSim.h"
 #include "Instrument.h"
-#include "LookGeom.h"
+#include "GenericGeom.h"
 #include "Ephemeris.h"
 
 

@@ -13,12 +13,12 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Beam.h"
 #include "GenericGeom.h"
 
-//------------------//
-// beam_frame_to_gc //
-//------------------//
+//---------------//
+// BeamFrameToGC //
+//---------------//
 
 CoordinateSwitch
-beam_frame_to_gc(
+BeamFrameToGC(
 	OrbitState*		sc_orbit_state,
 	Attitude*		sc_attitude,
 	Antenna*		antenna,

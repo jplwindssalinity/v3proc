@@ -9,6 +9,7 @@ static const char rcs_id_l10tol15_c[] =
 #include "L10ToL15.h"
 #include "Antenna.h"
 #include "Ephemeris.h"
+#include "InstrumentGeom.h"
 
 
 //==========//
@@ -53,21 +54,24 @@ L10ToL15::Convert(
 		//-----------------------//
 
 		int beam_idx = i % antenna->numberOfBeams;
+		Beam* beam = &(antenna->beam[beam_idx]);
 
 		//-----------------------//
 		// ...calculate the time //
 		//-----------------------//
 
 		double spot_time = l10->frame.time + (i / antenna->numberOfBeams) *
-			antenna->priPerBeam + antenna->beam[beam_idx].timeOffset;
+			antenna->priPerBeam + beam->timeOffset;
 
-		//------------------------------//
-		// ...determine the orbit state //
-		//------------------------------//
+		//------------------------------------------------------//
+		// ...determine the spacecraft orbit state and attitude //
+		//------------------------------------------------------//
 
-		OrbitState orbit_state;
-		if (! ephemeris->GetOrbitState(spot_time, &orbit_state))
+		OrbitState sc_orbit_state;
+		if (! ephemeris->GetOrbitState(spot_time, &sc_orbit_state))
 			return(0);
+		Attitude sc_attitude;
+		sc_attitude = l10->frame.attitude;
 
 		//------------------------//
 		// ...free residual spots //
@@ -81,6 +85,12 @@ L10ToL15::Convert(
 		// for now there is just one
 		// eventually a slice loop will be needed
 
+		// set antenna azimuth angle using encoder value
+		antenna->SetAzimuthWithEncoder(l10->frame.antennaPosition[i]);
+
+		CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(&sc_orbit_state,
+			&sc_attitude, antenna, beam);
+		
 		Meas* meas = new Meas();
 		meas->value = l10->frame.sigma0[i];
 //		meas->outline =
