@@ -6,6 +6,9 @@
 //
 // CM Log
 // $Log$
+// Revision 1.9  1999/09/30 23:01:39  sally
+// update 9/30/99
+//
 // 
 //    Rev 1.35   09 Apr 1999 13:57:54   sally
 // read number of words from files if the table length is variable
@@ -2855,14 +2858,14 @@ operator==(
     const Command&  b)
 {
     // convert to strings
-    char* adf = CONVERT_TO_STRING(a.dataFilename);
-    char* bdf = CONVERT_TO_STRING(b.dataFilename);
-    char* aqx = CONVERT_TO_STRING(a.qpx_filename);
-    char* bqx = CONVERT_TO_STRING(b.qpx_filename);
-    char* ao = CONVERT_TO_STRING(a.originator);
-    char* bo = CONVERT_TO_STRING(b.originator);
-    char* ac = CONVERT_TO_STRING(a.comments);
-    char* bc = CONVERT_TO_STRING(b.comments);
+    const char* adf = CONVERT_TO_STRING(a.dataFilename);
+    const char* bdf = CONVERT_TO_STRING(b.dataFilename);
+    const char* aqx = CONVERT_TO_STRING(a.qpx_filename);
+    const char* bqx = CONVERT_TO_STRING(b.qpx_filename);
+    const char* ao = CONVERT_TO_STRING(a.originator);
+    const char* bo = CONVERT_TO_STRING(b.originator);
+    const char* ac = CONVERT_TO_STRING(a.comments);
+    const char* bc = CONVERT_TO_STRING(b.comments);
     return(
         a.commandId == b.commandId &&
         a.plannedTpg == b.plannedTpg &&
