@@ -88,16 +88,11 @@ template class List<OffsetList>;
 template class List<AngleInterval>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
-
-
-
-
 
 //-----------//
 // CONSTANTS //
 //-----------//
+
 #define A_VAL      0.0803419
 #define B_VAL      0.120513
 #define C_VAL      0.0607574

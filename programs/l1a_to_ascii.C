@@ -73,13 +73,9 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-template class TrackerBase<unsigned char>;
-template class TrackerBase<unsigned short>;
-
 
 const char* usage_array[] = { "<config_file>","<input_file>", "<output_file>",
-			      "<start_frame>(OPT)",
-			      "<end_frame>(OPT)",0};
+    "<start_frame>(OPT)", "<end_frame>(OPT)",0};
 
 //--------------//
 // MAIN PROGRAM //
