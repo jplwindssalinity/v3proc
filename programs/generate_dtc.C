@@ -467,7 +467,9 @@ main(
 
 				IdealCommandedDoppler(&spacecraft, &qscat);
 
-				// constants store Doppler to correct for (ergo -)
+				// constants are used to calculate the actual Doppler
+                // frequency to correct for, but IdealCommandedDoppler
+                // sets the commanded Doppler (ergo -)
 				dop_com[azimuth_step] = -qscat.ses.txDoppler;
 			}
 
