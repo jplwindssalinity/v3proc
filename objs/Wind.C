@@ -1376,11 +1376,18 @@ WindSwath::Add(
 	if (cti < 0 || cti >= _crossTrackBins ||
 		ati < 0 || ati >= _alongTrackBins)
 	{
+        fprintf(stderr, "WindSwath::Add: out of range\n");
+        fprintf(stderr, "  cti = %d (Max = %d), ati = %d (Max = %d)\n",
+            cti, _crossTrackBins, ati, _alongTrackBins);
 		return(0);	// out of range
 	}
 
 	if (swath[cti][ati])
+    {
+        fprintf(stderr, "WindSwath::Add: attempted cell replacement\n");
+        fprintf(stderr, "  cti = %d, ati = %d\n", cti, ati);
 		return(0);	// already a cell there
+    }
 
 	swath[cti][ati] = wvc;
 	_validCells++;
