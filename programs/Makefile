@@ -36,7 +36,8 @@ PROGRAMS = \
 	sim_accurate \
 	make_kfactor \
 	log_cfg \
-	windfield_to_vctr
+	windfield_to_vctr \
+	l17_centroids
 
 #----------------------------------------------------------------------
 # default: make all executable programs
