@@ -4347,6 +4347,32 @@ change:      GetMostProbableAmbiguity(&(new_selected[cti][ati]),
    return(finished);
 }
 
+int WindSwath::GetNumCellsSelected(){
+   
+  int retval=0;
+  for (int cti = 0; cti < _crossTrackBins; cti++){
+    for (int ati = 0; ati < _alongTrackBins; ati++){
+      WVC* wvc = swath[cti][ati];
+      if(wvc){
+	if(wvc->selected) retval++;
+      }
+    }
+  }
+  return(retval);
+}
+
+int WindSwath::GetNumCellsWithAmbiguities(){
+  int retval=0;
+  for (int cti = 0; cti < _crossTrackBins; cti++){
+    for (int ati = 0; ati < _alongTrackBins; ati++){
+      WVC* wvc = swath[cti][ati];
+      if(wvc){
+	if(wvc->ambiguities.NodeCount()) retval++;
+      }
+    }
+  }
+  return(retval);
+}
 //--------------------------//
 // WindSwath::GetWindowMean //
 //--------------------------//

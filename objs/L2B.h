@@ -152,7 +152,8 @@ public:
 
     int  WriteVctr(const char* filename, const int rank);
     int  WriteAscii();
-
+    int  GetNumCellsSelected();
+    int  GetNumCellsWithAmbiguities();
     //-----------//
     // variables //
     //-----------//

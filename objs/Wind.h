@@ -378,6 +378,8 @@ public:
 
     int   GetCrossTrackBins()  { return(_crossTrackBins); };
     int   GetAlongTrackBins()  { return(_alongTrackBins); };
+    int   GetNumCellsSelected();
+    int   GetNumCellsWithAmbiguities();
     int   GetMaxAmbiguityCount();
     WVC*  GetWVC(int cti, int ati);
     WVC*  GetGoodWVC(int cti, int ati);

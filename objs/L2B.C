@@ -1751,3 +1751,11 @@ L2B::_CloseHdfDataSets(void)
     (void)SDendaccess(_qualSdsId); _qualSdsId = HDF_FAIL;
     return;
 }
+
+int L2B::GetNumCellsSelected(){
+  return(frame.swath.GetNumCellsSelected());
+}
+
+int L2B::GetNumCellsWithAmbiguities(){
+  return(frame.swath.GetNumCellsWithAmbiguities());
+}
