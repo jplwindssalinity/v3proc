@@ -178,6 +178,8 @@ lon_fix(
     return(longitude);
 }
 
+int g_max_downhill_simplex_passes = 1000;
+
 //------------------//
 // downhill_simplex //
 //------------------//
@@ -341,9 +343,9 @@ downhill_simplex(
             break;
         }
 
-        if (nfunk >= 1000)
+        if (nfunk >= g_max_downhill_simplex_passes)
         {
-//            printf("Error: too many function calls in downhill_simplex\n");
+//          printf("Error: too many function calls in downhill_simplex\n");
             return(0);
         }
         nfunk += 2;
