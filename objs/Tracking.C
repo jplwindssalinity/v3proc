@@ -1272,6 +1272,7 @@ RangeTracker::SetRoundTripTime(
 //================//
 
 DopplerTracker::DopplerTracker()
+:   tableFrequency(0.0)
 {
     return;
 }
@@ -1666,11 +1667,11 @@ DopplerTracker::GetCommandedDoppler(
     float cos1 = cos_table[COS_TABLE_SIZE_MOD(tindex)];
     float cos2 = cos_table[COS_TABLE_SIZE_MOD(tindex + 1)];
 
-    float doppler_predict = C + A * ((ttf - (long)ttf) * (cos2 - cos1) + cos1);
+    tableFrequency = C + A * ((ttf - (long)ttf) * (cos2 - cos1) + cos1);
 
     float rx_gate_error = (rx_gate_delay_fdn - (float)rx_gate_delay_dn) *
         RANGE_GATE_NORMALIZER * MU * HZ_PER_KHZ;
-    float cmd_doppler_fdn = (doppler_predict + rx_gate_error) / 2000.0;
+    float cmd_doppler_fdn = (tableFrequency + rx_gate_error) / 2000.0;
 
     short cmd_doppler_dn;
     if (cmd_doppler_fdn > 0.0)

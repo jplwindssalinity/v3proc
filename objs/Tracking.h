@@ -181,6 +181,12 @@ public:
              float rx_gate_delay_fdn, short* commanded_doppler_dn);
     int  SetTerms(double** terms);
     int  GetTerms(double** terms);
+
+    //----------//
+    // variable //
+    //----------//
+
+    float  tableFrequency;    // for access to intermediate info
 };
 
 //==================//
