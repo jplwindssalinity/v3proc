@@ -83,8 +83,6 @@ static const char rcs_id[] =
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int  basic_info(const char* filename, const char* dtc_file,
-         DopplerTracker* doppler_tracker);
 int  freq_scan(const char* filename, const char* dtc_file,
          DopplerTracker* doppler_tracker);
 int  coef_step(const char* filename, const char* dtc_file,
@@ -174,8 +172,8 @@ main(
     //--------------------------//
 
     char filename[1024];
-    sprintf(filename, "%s.basic", info_base);
-    basic_info(filename, dtc_file, &doppler_tracker);
+    sprintf(filename, "%s.ascii", info_base);
+    doppler_tracker.WriteAscii(filename);
 
     sprintf(filename, "%s.freq", info_base);
     freq_scan(filename, dtc_file, &doppler_tracker);
@@ -191,28 +189,6 @@ main(
     }
 
     return(0);
-}
-
-//------------//
-// basic_info //
-//------------//
-
-int
-basic_info(
-    const char*      filename,
-    const char*      dtc_file,
-    DopplerTracker*  doppler_tracker)
-{
-    FILE* ofp = fopen(filename, "w");
-    if (ofp == NULL)
-        return(0);
-
-    fprintf(ofp, "DTC File: %s\n", dtc_file);
-    unsigned short id = doppler_tracker->GetTableId();
-    fprintf(ofp, "Table ID: %d (%x)\n", id, id);
-
-    fclose(ofp);
-    return(1);
 }
 
 //-----------//

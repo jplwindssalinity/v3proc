@@ -55,6 +55,7 @@ public:
     int  WriteOldBinary(const char* filename);
     int  ReadHex(const char* filename);
     int  WriteHex(const char* filename);
+    int  WriteAscii(const char* filename);
 
     unsigned short  GetTableId()  { return(_tableId); };
 

@@ -647,6 +647,59 @@ TrackerBase<T>::WriteHex(
     return(1);
 }
 
+//-------------------------//
+// TrackerBase::WriteAscii //
+//-------------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteAscii(
+    const char*  filename)
+{
+    //---------------//
+    // open the file //
+    //---------------//
+
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+        return(0);
+
+    //----------//
+    // table id //
+    //----------//
+
+    fprintf(fp, "Table ID: %d\n", _tableId);
+    fprintf(fp, "Dither: %d %d\n", _dither[0], _dither[1]);
+    fprintf(fp, "Scale Factors:\n");
+    fprintf(fp, "  Amplitude: m = %g, b = %g\n",
+        *(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+        *(*(_scaleArray + AMPLITUDE_INDEX) + 0));
+    fprintf(fp, "  Phase: m = %g, b = %g\n",
+        *(*(_scaleArray + PHASE_INDEX) + 1),
+        *(*(_scaleArray + PHASE_INDEX) + 0));
+    fprintf(fp, "  Bias: m = %g, b = %g\n",
+        *(*(_scaleArray + BIAS_INDEX) + 1),
+        *(*(_scaleArray + BIAS_INDEX) + 0));
+    fprintf(fp, "Orbit Step  Terms\n");
+    for (unsigned int step = 0; step < _steps; step++)
+    {
+        fprintf(fp, "      %4d", step);
+        for (int term = 0; term < 3; term++)
+        {
+            fprintf(fp, " %6d", *(*(_termArray + step) + term));
+        }
+        fprintf(fp, "\n");
+    }
+
+    //------------//
+    // close file //
+    //------------//
+
+    fclose(fp);
+
+    return(1);
+}
+
 //==============//
 // RangeTracker //
 //==============//

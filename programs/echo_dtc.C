@@ -128,8 +128,6 @@ int     plot_fit(const char* base, int beam_idx, int term_idx, double** terms,
 double  ds_evaluate_3(double* x, void* ptr);
 double  ds_evaluate_5(double* x, void* ptr);
 double  evaluate_35(int* good, double* coef, double* x, int count);
-double**  make_p(int p_count, double* p_init, double* p_lambda);
-int       free_p(double** p, int p_count);
 
 //------------------//
 // OPTION VARIABLES //
@@ -517,10 +515,7 @@ process_orbit_step(
     double P = *(*(terms + orbit_step) + 1);
     double C = *(*(terms + orbit_step) + 2);
 
-    // to do this, just negate the a and the c term
-    // if f(x) = a * cos(x + p) + c, then -f(x) = -a * cos(x + p) - c
-
-    double newA = sqrt(A*A - 2.0*A*a*cos(P-p) + a*a);
+    double newA = sqrt(A*A*cos(2.0*P) + a*a*cos(2.0*p) - cos(P+p));
     double newC = C - c;
     double y = A*sin(P) - a*sin(p);
     double x = A*cos(P) - a*cos(p);
@@ -850,44 +845,4 @@ evaluate_35(
         sse += (dif * dif);
     }
     return(sse);
-}
-
-//--------//
-// make_p //
-//--------//
-// contruct the p array
-
-double**
-make_p(
-    int      p_count,
-    double*  p_init,
-    double*  p_lambda)
-{
-    double** p = (double**)make_array(sizeof(double), 2, p_count + 1, p_count);
-    if (p == NULL)
-        return(NULL);
-
-    for (int i = 0; i < p_count + 1; i++)
-    {
-        for (int j = 0; j < p_count; j++)
-        {
-            p[i][j] = p_init[j] + (i == j ? p_lambda[j] : 0.0);
-        }
-    }
-
-    return(p);
-}
-
-//--------//
-// free_p //
-//--------//
-// free the p array
-
-int
-free_p(
-    double** p,
-    int      p_count)
-{
-    free_array(p, 2, p_count + 1, p_count);
-    return(1);
 }
