@@ -46,9 +46,9 @@ int GMF::ReadOldStyle(
 	_polCount = 2;
 
 	_incCount = 26;
-	_incMin = 16.0;
-	_incMax = 66.0;
-	_incStep = 2.0;
+	_incMin = 16.0 * dtr;
+	_incMax = 66.0 * dtr;
+	_incStep = 2.0 * dtr;
 
 	_spdCount = 50;
 	_spdMin = 1.0;
@@ -304,7 +304,7 @@ GMF::RefineSolutions(
 			spd_idx = (int)(wvp->spd / spd_step + 0.5) + max_dspd;
 			phi_idx = (int)(wvp->dir / phi_step + 0.5) + max_dphi;
 			if (phi_idx < 0)
-				phi_idx = (int)(wvp->dir / phi_step + 360.5) + max_dphi;
+				phi_idx = (int)(wvp->dir / phi_step + pi + 0.5) + max_dphi;
 
 			wvp->spd = (double)spd_idx * spd_step;
 			wvp->dir = (double)phi_idx * phi_step;

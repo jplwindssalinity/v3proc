@@ -11,6 +11,7 @@ static const char rcs_id_wind_h[] =
 
 #include <stdio.h>
 #include "List.h"
+#include "LonLat.h"
 
 
 //======================================================================
@@ -120,9 +121,10 @@ public:
 	// manipulation //
 	//--------------//
 
-	int		RemoveDuplicates();
-	int		SortByObj();
+	int					RemoveDuplicates();
+	int					SortByObj();
 	WindVectorPlus*		GetNearestToDirection(float dir);
+	
 
 	//---------//
 	// freeing //
@@ -134,8 +136,7 @@ public:
 	// variables //
 	//-----------//
 
-	float					longitude;
-	float					latitude;
+	LonLat					lonLat;
 	WindVectorPlus*			selected;
 	List<WindVectorPlus>	ambiguities;
 };
@@ -170,7 +171,7 @@ public:
 	// access //
 	//--------//
 
-	WindVector*		NearestWindVector(float longitude, float latitude);
+	WindVector*		NearestWindVector(LonLat lon_lat);
 
 protected:
 

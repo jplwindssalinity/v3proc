@@ -206,7 +206,10 @@ InstrumentSim::ScatSim(
 		return(0);
 	}
 
-	WindVector* wv = windfield->NearestWindVector(lon, lat);
+	LonLat lon_lat;
+	lon_lat.longitude = lon;
+	lon_lat.latitude = lat;
+	WindVector* wv = windfield->NearestWindVector(lon_lat);
 
 	//---------------------------//
 	// generate measurement data //

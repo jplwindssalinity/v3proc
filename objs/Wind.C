@@ -111,7 +111,7 @@ WindVectorPlus::ReadL20(
 //=====//
 
 WVC::WVC()
-:	longitude(0.0), latitude(0.0), selected(NULL)
+:	selected(NULL)
 {
 	return;
 }
@@ -126,25 +126,6 @@ WVC::~WVC()
 	return;
 }
 
-/*
-//-----------------------//
-// WVC::WriteAmbigsAscii //
-//-----------------------//
-
-int
-WVC::WriteAmbigsAscii(
-	FILE*		ofp)
-{
-	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
-		wvp = ambiguities.GetNext())
-	{
-		fprintf(ofp, "Spd:%g Dir:%g Obj:%g\n", wvp->spd, wvp->dir * rtd,
-			wvp->obj);
-	}
-	return(1);
-}
-*/
-
 //---------------//
 // WVC::WriteL20 //
 //---------------//
@@ -157,8 +138,8 @@ WVC::WriteL20(
 	// write the longitude and latitude //
 	//----------------------------------//
 
-	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
+	if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
 	{
 		return(0);
 	}
@@ -212,8 +193,8 @@ WVC::ReadL20(
 	// read the longitude and latitude //
 	//---------------------------------//
 
-	if (fread((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&latitude, sizeof(float), 1, fp) != 1)
+	if (fread((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+		fread((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1)
 	{
 		return(0);
 	}
@@ -273,8 +254,8 @@ WVC::WriteBev(
 	if (! write_me)
 		return(1);
 
-	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
+	if (fwrite((void *)&(lonLat.longitude), sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&(lonLat.latitude), sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&(write_me->spd), sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&(write_me->dir), sizeof(float), 1, fp) != 1)
 	{
@@ -555,11 +536,10 @@ WindField::WriteBev(
 
 WindVector*
 WindField::NearestWindVector(
-	float	longitude,
-	float	latitude)
+	LonLat	lon_lat)
 {
-	int lon_idx = (int)((longitude - _lonMin) / _lonStep + 0.5);
-	int lat_idx = (int)((latitude - _latMin) / _latStep + 0.5);
+	int lon_idx = (int)((lon_lat.longitude - _lonMin) / _lonStep + 0.5);
+	int lat_idx = (int)((lon_lat.latitude - _latMin) / _latStep + 0.5);
 	WindVector* wv = *(*(_field + lon_idx) + lat_idx);
 
 	return(wv);
@@ -1036,8 +1016,8 @@ WindSwath::Skill(
 			if (! wvc || ! wvc->selected)
 				continue;
 
-			WindVector* true_wv = truth->NearestWindVector(wvc->longitude,
-				wvc->latitude);
+			WindVector* true_wv =
+				truth->NearestWindVector(wvc->lonLat);
 			if (true_wv == NULL)
 				continue;
 
