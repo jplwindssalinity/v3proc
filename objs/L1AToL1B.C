@@ -19,7 +19,8 @@ static const char rcs_id_l1atol1b_c[] =
 L1AToL1B::L1AToL1B()
 :	useKfactor(0), useBYUXfactor(0), useSpotCompositing(0), 
 	outputSigma0ToStdout(0),
-	sliceGainThreshold(0.0), processMaxSlices(0), simVs1BCheckfile(NULL)
+	sliceGainThreshold(0.0), processMaxSlices(0), simVs1BCheckfile(NULL),
+    Esn_echo_cal(0.0), Esn_noise_cal(0.0), En_echo_load(0.0), En_noise_load(0.0)
 {
 	return;
 }
@@ -81,21 +82,27 @@ L1AToL1B::Convert(
 	// Extract and prepare cal pulse data //
 	//------------------------------------//
 
-    float Esn_echo_cal = 0.0;
-    float En_echo_load = 0.0;
-	for (int i=0; i < l1a->frame.slicesPerSpot; i++)
-	{
+    if (l1a->frame.calPosition != 255)
+    {
+
+      Esn_echo_cal = 0.0;
+      En_echo_load = 0.0;
+      for (int i=0; i < l1a->frame.slicesPerSpot; i++)
+	  {
 		Esn_echo_cal += l1a->frame.loopbackSlices[i];
 		En_echo_load += l1a->frame.loadSlices[i];
-	}
-    float Esn_noise_cal = l1a->frame.loopbackNoise;
-    float En_noise_load = l1a->frame.loadNoise;
+	  }
+      Esn_noise_cal = l1a->frame.loopbackNoise;
+      En_noise_load = l1a->frame.loadNoise;
+    }
 
-	//------------------------------------------------------//
-    // Estimate cal (loopback) signal and noise energies.
-    // Kpr noise shows up in the cal signal energy.
-    // Note that these are spot quantities (not slices).
-	//------------------------------------------------------//
+	//----------------------------------------------------------//
+    // Estimate cal (loopback) signal and noise energies.       //
+    // Kpr noise shows up in the cal signal energy.             //
+    // Note that these are spot quantities (not slices).        //
+	// If there isn't any cal pulse data, the preceeding values //
+    // will be used.                                            //
+	//----------------------------------------------------------//
 
     double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
     float Es_cal,En_cal;

@@ -67,6 +67,11 @@ public:
 	float	sliceGainThreshold;		// use to decide which slices to process
 	int		processMaxSlices;		// maximum number of slices/spot to use
 	char*	simVs1BCheckfile;		// holds cross check data
+
+    float   Esn_echo_cal;    // Cal pulse data to be used.
+    float   Esn_noise_cal;
+    float   En_echo_load;
+    float   En_noise_load;
 };
 
 #endif
