@@ -206,7 +206,8 @@ main(
         {
             fprintf(stderr, "%s: error opening MUDH file %s\n", command,
                 mudh_file);
-            exit(1);
+            fprintf(stderr, "%s: continuing...\n", command);
+            continue;
         }
         fread(nbd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
         fread(spd_array, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
