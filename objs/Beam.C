@@ -75,17 +75,6 @@ Beam::SetElectricalBoresight(
 	_reference_azimuthAngle = desired_electrical_azimuth_angle -
 								 _electrical_boresight_Am;
 
-	//----------------------------------------------------//
-	// generate forward and reverse coordinate transforms //
-	//----------------------------------------------------//
-
-	Attitude reference_frame;
-	reference_frame.Set(0.0,_reference_lookAngle - pi/2.0,
-						_reference_azimuthAngle,3,2,1);
-
-	_antFrameToBeamFrame.SetRotation(reference_frame);
-	_beamFrameToAntFrame = _antFrameToBeamFrame.ReverseDirection();
-
 	return(1);
 }
 
@@ -150,17 +139,6 @@ Beam::SetMechanicalBoresight(
 	_reference_lookAngle = look_angle;
 	_reference_azimuthAngle = azimuth_angle;
 
-	//----------------------------------------------------//
-	// generate forward and reverse coordinate transforms //
-	//----------------------------------------------------//
-
-	Attitude reference_frame;
-	reference_frame.Set(0.0,_reference_lookAngle - pi/2.0,
-						_reference_azimuthAngle,3,2,1);
-
-	_antFrameToBeamFrame.SetRotation(reference_frame);
-	_beamFrameToAntFrame = _antFrameToBeamFrame.ReverseDirection();
-
 	return(1);
 }
 
@@ -201,6 +179,7 @@ Beam::SetBeamPattern(
 		(_ix_zero > _Nx-1) ||
 		(_iy_zero > _Ny-1))
     {
+		printf("Invalid beam pattern header info in SetBeamPattern\n");
         return(0);
     }
 
@@ -390,6 +369,7 @@ Beam::GetPowerGain(
     	(iy1 < 0) ||
     	(iy1 > _Ny - 2))
 	{
+		printf("Error: requested point out of range in GetPowerGain\n");
 		return(0);
 	}
 

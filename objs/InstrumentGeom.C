@@ -17,6 +17,8 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "LonLat.h"
 #include "InstrumentGeom.h"
 #include "Interpolate.h"
+#include "Array.h"
+#include "Misc.h"
 
 //------------------//
 // AntennaFrameToGC //
@@ -1009,4 +1011,91 @@ RangeAndRoundTrip(
 	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
  
 	return(1);
+}
+
+//----------------------------//
+// Get2WayElectricalBoresight //
+//----------------------------//
+
+//
+// This function locates the maximum 2-way gain of a beam in the antenna frame,
+// and returns the apparent direction. (look,azimuth (rads)).
+// NOTE: This is NOT the direction of the transmitted pulse which determines
+// the scattering geometry.
+//
+
+int
+Get2WayElectricalBoresight(
+	Beam*	beam,
+	double	round_trip_time,
+	double	azimuth_rate,
+	double*	look,
+	double*	azimuth)
+{
+	// Start with the one-way electrical boresight.
+	beam->GetElectricalBoresight(look,azimuth);
+
+	int ndim = 2;
+	int totdim = ndim + 2;
+
+	// Create initial simplex before running a downhill simplex search.
+	double** p = (double**)make_array(sizeof(double),2,ndim+1,totdim);
+	if (p == NULL)
+	{
+		printf("Error allocating memory in Get2WayElectricalBoresight\n");
+		return(0);
+	}
+
+	p[0][0] = *look;
+	p[0][1] = *azimuth;
+	p[1][0] = *look + 1.0*dtr;
+	p[1][1] = *azimuth;
+	p[2][0] = *look;
+	p[2][1] = *azimuth + 1.0*dtr;
+
+	for (int i=0; i < ndim+1; i++)
+	{
+		p[i][2] = round_trip_time;
+		p[i][3] = azimuth_rate;
+	}
+
+	double ftol = 1e-3;
+	downhill_simplex(p,ndim,ndim+2,ftol,ReciprocalPowerGainProduct,beam);
+
+	*look = p[0][0];
+	*azimuth = p[0][1];
+
+	return(1);
+}
+
+//----------------------------//
+// ReciprocalPowerGainProduct //
+//----------------------------//
+
+//
+// ReciprocalPowerGainProduct is the function to be minimized by
+// Get2WayElectricalBoresight.
+// It computes the reciprocal of the PowerGainProduct for the inputs given
+// in the input vector.  The elements of the input vector are:
+//
+// x[0] = look angle (rad)
+// x[1] = azimuth angle (rad)
+// x[2] = round trip time (sec)
+// x[3] = spin rate (rad/sec)
+// beam = pointer to a beam object containing the pattern to use.
+//
+
+double ReciprocalPowerGainProduct(double* x, void* beam)
+
+{
+
+	double gp;
+	((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp);
+	if (gp == 0.0)
+	{
+		printf("Error: ReciprocalPowerGainProduct received a 0 gain value\n");
+		exit(-1);
+	}
+	return(1.0 / gp);
+
 }

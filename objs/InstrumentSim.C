@@ -20,7 +20,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	slicesPerSpot(0),startTime(0.0), endTime(0.0), l00FrameReady(0), _spotNumber(0)
+:	slicesPerSpot(0),startTime(0.0), l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -264,10 +264,30 @@ InstrumentSim::LocateSpot(
 
 	double look, azimuth;
 	if (! beam->GetElectricalBoresight(&look, &azimuth))
+	{
+		printf("Error determining electrical boresight\n");
 		return(0);
+	}
 
 	rlook_antenna.SphericalSet(1.0, look, azimuth);
 	TargetInfoPackage  tip;
+	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
+
+	//
+	// Using the round trip time from the one way boresight, compute the
+	// direction of the 2 way boresight.  Ideally, this should be iterated,
+	// but the round trip time difference should be very small.
+	//
+
+	if (! Get2WayElectricalBoresight(beam,tip.roundTripTime,
+		instrument->antenna.spinRate,&look, &azimuth))
+	{
+		printf("Error determining 2 way electrical boresight\n");
+		return(0);
+	}
+
+	// Update with new boresight
+	rlook_antenna.SphericalSet(1.0, look, azimuth);
 	RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, rlook_antenna, &tip);
 
 	Vector3 rlook_gc = antenna_frame_to_gc.Forward(rlook_antenna);
@@ -277,6 +297,15 @@ InstrumentSim::LocateSpot(
 	//----------------------------//
 
 	Meas* meas = new Meas();	// need the outline to append to
+
+	// Start with the center position.
+	EarthPosition *rspot = new EarthPosition;
+	*rspot= tip.rTarget;
+	if (! meas->outline.Append(rspot))
+	{
+		printf("Error appending to spot outline\n");
+		return(0);
+	}
 
 	// get the max gain value.
 	float gp_max;
@@ -331,9 +360,9 @@ InstrumentSim::LocateSpot(
 		}
 
 		look_mid_gc = antenna_frame_to_gc.Forward(look_mid_ant);
-		EarthPosition *r = new EarthPosition;
-		*r = earth_intercept(orbit_state->rsat,look_mid_gc);
-		if (! meas->outline.Append(r))
+		EarthPosition *rspot = new EarthPosition;
+		*rspot = earth_intercept(orbit_state->rsat,look_mid_gc);
+		if (! meas->outline.Append(rspot))
 		{
 			printf("Error appending to spot outline\n");
 			return(0);

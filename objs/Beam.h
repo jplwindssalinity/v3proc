@@ -34,6 +34,7 @@ static const char rcs_id_beam_h[] =
 //======================================================================
 
 #include "CoordinateSwitch.h"
+#include "Misc.h"
 
 enum PolE { NONE, V_POL, H_POL };
 
@@ -66,11 +67,6 @@ public:
 	int		ReadBeamPattern(char* filename);
 	int		WriteBeamPattern(char* filename);
 
-	CoordinateSwitch	GetAntFrameToBeamFrame()
-							{ return(_antFrameToBeamFrame); };
-	CoordinateSwitch	GetBeamFrameToAntFrame()
-							{ return(_beamFrameToAntFrame); };
-
 	int	GetPowerGain(double look_angle, double azimuth_angle, float *gain);
 	int	GetPowerGain(double look_angle, double azimuth_angle, double *gain);
 	int GetPowerGainProduct(double look_angle, double azimuth_angle,
@@ -87,6 +83,10 @@ public:
 	float	timeOffset;		// seconds after prf for beam index 0
 
 protected:
+
+	//---------//
+	// methods //
+	//---------//
 
 	//-----------//
 	// variables //
@@ -105,9 +105,6 @@ protected:
 	double	_x_spacing;
 	double	_y_spacing;
 	float**	_power_gain;
-
-	CoordinateSwitch	_antFrameToBeamFrame;
-	CoordinateSwitch	_beamFrameToAntFrame;
 
 };
 

@@ -9,6 +9,7 @@ static const char rcs_id_misc_c[] =
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "Misc.h"
 
 //---------//
@@ -140,4 +141,196 @@ substitute_string(
 	sprintf(result, "%.*s%s%s", (ptr - string), string, replace,
 		ptr + length);
 	return(1);
+}
+
+//------------------//
+// downhill_simplex //
+//------------------//
+
+int
+downhill_simplex(
+	double** p,
+	int ndim,
+	int totdim,
+	double ftol,
+	double (*funk)(double*,void*),
+	void* ptr)
+{
+	int i,j;
+	int nfunk = 0;
+	double ysave;
+
+	double* y = (double*)malloc(sizeof(double)*(ndim+1));
+	if (y == NULL)
+	{
+		printf("Error allocating memory in downhill_simplex\n");
+		return(0);
+	}
+
+	for (i=0; i < ndim+1; i++)
+	{
+		y[i] = (*funk)(p[i],ptr);
+	}
+
+	double* psum = (double*)malloc(sizeof(double)*totdim);
+	if (psum == NULL)
+	{
+		printf("Error allocating memory in downhill_simplex\n");
+		return(0);
+	}
+
+	for (j=0; j < ndim; j++)
+	{
+		psum[j] = 0.0;
+		for (i=0; i < ndim+1; i++)
+		{
+			psum[j] += p[i][j];
+		}
+	}
+	for (j=ndim; j < totdim; j++)
+	{	// transfer the remaining fixed parameters unchanged.
+		psum[j] = p[0][j];
+	}
+
+	//
+	// Main Search Loop
+	//
+
+	while (1)
+	{
+		int inhi;
+		int ilo = 0;
+        int ihi = y[0]>y[1] ? (inhi=1,0) : (inhi=0,1);
+        for (i=0;i<ndim+1;i++)
+		{
+			if (y[i] <= y[ilo]) ilo=i;
+			if (y[i] > y[ihi])
+			{
+				inhi=ihi;
+				ihi=i;
+			}
+			else if (y[i] > y[inhi] && i != ihi) inhi=i;
+        }
+
+		double rtol=2.0*fabs(y[ihi]-y[ilo])/(fabs(y[ihi])+fabs(y[ilo]));
+		if (rtol < ftol)
+		{
+			double tmp;
+			tmp = y[0];
+			y[0] = y[ilo];
+			y[ilo] = tmp;
+			for (i=0;i<ndim;i++)
+			{
+				tmp = p[0][i];
+				p[0][i] = p[ilo][i];
+				p[ilo][i] = tmp;
+			}
+			break;
+		}
+
+		if (nfunk >= 1000)
+		{
+			printf("Error: too many function calls in downhill_simplex\n");
+			return(0);
+		}
+		nfunk += 2;
+
+		double ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,-1.0);
+		if (ytry <= y[ilo])
+		{
+			ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,2.0);
+		}
+		else if (ytry >= y[inhi])
+		{
+			ysave=y[ihi];
+			ytry=amotry(p,y,psum,ndim,totdim,funk,ptr,ihi,0.5);
+			if (ytry >= ysave)
+			{
+				for (i=0;i<ndim+1;i++)
+				{
+					if (i != ilo)
+					{
+						for (j=0;j<ndim;j++)
+						{
+							p[i][j]=psum[j]=0.5*(p[i][j]+p[ilo][j]);
+						}
+						y[i]=(*funk)(psum,ptr);
+					}
+				}
+				nfunk += ndim;
+				for (j=0; j < ndim; j++)
+				{
+					psum[j] = 0.0;
+					for (i=0; i < ndim+1; i++)
+					{
+						psum[j] += p[i][j];
+					}
+				}
+			}
+		}
+		else
+		{
+			--(nfunk);
+		}
+	}
+
+free(y);
+free(psum);
+return(1);
+
+}
+
+//--------//
+// amotry //
+//--------//
+
+double
+amotry(
+	double** p,
+	double* y,
+	double* psum,
+	int ndim,
+	int totdim,
+	double (*funk)(double*,void*),
+	void* ptr,
+	int ihi,
+	double fac)
+
+{
+	int j;
+	double fac1,fac2,ytry,*ptry;
+
+	ptry = (double*)malloc(sizeof(double)*totdim);
+	if (ptry == NULL)
+	{
+		printf("Error allocating memory in amotry\n");
+		exit(-1);
+	}
+
+	for (j=ndim; j < totdim; j++)
+	{	// transfer the fixed parameters unchanged.
+		ptry[j] = p[0][j];
+	}
+
+	fac1=(1.0-fac)/ndim;
+	fac2=fac1-fac;
+	for (j=0;j<ndim;j++)
+	{
+		ptry[j]=psum[j]*fac1-p[ihi][j]*fac2;
+	}
+	ytry=(*funk)(ptry,ptr);
+	if (ytry < y[ihi])
+	{
+		y[ihi]=ytry;
+		for (j=0;j<ndim;j++)
+		{
+			psum[j] += ptry[j]-p[ihi][j];
+			p[ihi][j]=ptry[j];
+		}
+	}
+
+	free(ptry);
+
+	return(ytry);
+
 }
