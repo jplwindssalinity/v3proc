@@ -11,6 +11,7 @@ static const char rcs_id_l2ah_c[] =
 #include "L2AH.h"
 #include "Sds.h"
 #include "Constants.h"
+#include "Misc.h"
 
 //======//
 // L2AH //
