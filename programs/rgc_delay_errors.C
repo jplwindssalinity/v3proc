@@ -365,7 +365,7 @@ main(
 					//---------------------------//
 
 					ideal_delay = tip.roundTripTime +
-						(beam->pulseWidth - beam->rxGateWidth) / 2.0;
+						(beam->txPulseWidth - beam->rxGateWidth) / 2.0;
 
 					//-------------------------//
 					// calculate the RGC delay //

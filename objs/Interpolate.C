@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_interpolate_c[] =
 	"@(#) $Id$";
@@ -21,17 +21,30 @@ polint(
 	double		x,
 	double*		y)
 {
-	//---------------------------//
-	// allocate temporary arrays //
-	//---------------------------//
+	//-----------------------------------//
+	// allocate work arrays if necessary //
+	//-----------------------------------//
 
-	double* c = (double *)malloc(n * sizeof(double));
-	if (c == NULL)
-		return(0);
+	static double* c = NULL;
+	static double* d = NULL;
+	static int last_n = 0;
 
-	double* d = (double *)malloc(n * sizeof(double));
-	if (d == NULL)
-		return(0);
+	if (n != last_n)
+	{
+		free(c);
+		c = (double *)malloc(n * sizeof(double));
+		if (c == NULL)
+			return(0);
+
+		free(d);
+		d = (double *)malloc(n * sizeof(double));
+		if (d == NULL)
+			return(0);
+
+		last_n = n;
+		if (n == 0)
+			return(1);
+	}
 
 	//-------------------------------------------//
 	// find the index of the closest table entry //
@@ -81,9 +94,6 @@ polint(
 		value += adj;
 	}
 
-	free(c);
-	free(d);
-
 	*y = value;
 	return(1);
 }
@@ -99,13 +109,22 @@ polcoe(
 	int			n,
 	double*		cof)
 {
-	//---------------------------//
-	// allocate temporary arrays //
-	//---------------------------//
+	//-----------------------------------//
+	// allocate work arrays if necessary //
+	//-----------------------------------//
 
-	double* s = (double *)malloc((n+1) * sizeof(double));
-	if (s == NULL)
-		return(0);
+	static double* s = NULL;
+	static int last_n = 0;
+
+	if (n != last_n)
+	{
+		free(s);
+		s = (double *)malloc((n+1) * sizeof(double));
+		if (s == NULL)
+			return(0);
+
+		last_n = n;
+	}
 
 	int i,j,k;
 	double phi,ff,b;
@@ -142,7 +161,5 @@ polcoe(
 		}
 	}
 
-	free(s);
 	return(1);
-
 }
