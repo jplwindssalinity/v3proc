@@ -182,6 +182,11 @@ ConfigQscatSes(
     // slices //
     //--------//
 
+    float bin_bw;  // KHz
+    if (! config_list->GetFloat(FFT_BIN_BANDWIDTH_KEYWORD, &bin_bw))
+        return(0);
+    qscat_ses->fftBinBandwidth = bin_bw * KHZ_TO_HZ;
+    
     float s_bw;    // KHz
     if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
         return(0);

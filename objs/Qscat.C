@@ -33,7 +33,8 @@ QscatSes::QscatSes()
 :   txPulseWidth(0.0), txDoppler(0.0), txFrequency(0.0), rxGateDelay(0.0),
     baseTxFrequency(0.0), pri(0.0), transmitPower(0.0), rxGainEcho(0.0),
     rxGainNoise(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
-    scienceSliceBandwidth(0.0), scienceSlicesPerSpot(0),
+    fftBinBandwidth(0.0),
+    scienceSliceBandwidth(0.0),  scienceSlicesPerSpot(0),
     guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0)
 {
     return;
@@ -116,11 +117,19 @@ QscatSes::GetSliceFreqBw(
     }
     else
     {
-        // guard slices
+        // science slices
         *f1 = (zidx - 0.5) * scienceSliceBandwidth;
         *bw = scienceSliceBandwidth;
     }
 
+    //----------------------------------------------------------------//
+    // Subtract one half FFT Bin Bandwidth from *f1                   //
+    // to take account for the fact that the O Hz FFT bin             //
+    // ranges from -0.5 fftBinBandwith to +0.5 fftBinBandwidth        //
+    // and falls completely within slice +1                           //
+    //----------------------------------------------------------------//
+
+    *f1-=0.5*fftBinBandwidth;
     return(1);
 }
 

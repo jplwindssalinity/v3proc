@@ -13,6 +13,8 @@ static const char rcs_id_qscatconfigdefs_h[] =
 // QscatSes //
 //----------//
 
+#define FFT_BIN_BANDWIDTH_KEYWORD  "FFT_BIN_BANDWIDTH"
+
 #define BASE_TX_FREQUENCY_KEYWORD  "BASE_TX_FREQUENCY"
 #define RX_GAIN_ECHO_KEYWORD       "RX_GAIN_ECHO"
 #define RX_GAIN_NOISE_KEYWORD      "RX_GAIN_NOISE"

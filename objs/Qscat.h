@@ -84,6 +84,7 @@ public:
     float        chirpRate;       // chirp rate (Hz/s)
     float        chirpStartM;     // chirp start slope (Hz/s)
     float        chirpStartB;     // chirp start offset (Hz)
+    float        fftBinBandwidth;        // Hz
     float        scienceSliceBandwidth;  // Hz
     int          scienceSlicesPerSpot;   // count
     float        guardSliceBandwidth;    // Hz
