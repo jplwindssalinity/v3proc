@@ -551,6 +551,12 @@ SpacecraftSim::FindPrevArgOfLatTime(
 	double prev_time = time - _period;
 	double target_time = FindNextArgOfLatTime(prev_time, target_arg_of_lat,
 		time_tol);
+	if (target_time > time)
+	{
+		// rare, but happens
+		target_time = FindNextArgOfLatTime(prev_time - _period / 2.0,
+			target_arg_of_lat, time_tol);
+	}
 	return(target_time);
 }
 
