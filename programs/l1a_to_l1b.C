@@ -205,6 +205,11 @@ main(
 
 	int data_record_number=1;
 	L10ToL15 l10_to_l15;
+	if (! ConfigL10ToL15(&l10_to_l15, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Level 1.0 to Level 1.5 converter.\n", command);
+		exit(1);
+	}
 
 	do
 	{
