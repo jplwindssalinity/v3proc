@@ -8,7 +8,6 @@ static const char rcs_id_wind_c[] =
 
 #include <stdio.h>
 #include <string.h>
-#include <iostream.h>
 #include "Wind.h"
 #include "GSparameters.h"
 #include "Array.h"
@@ -202,7 +201,6 @@ WindVectorField::ReadVctr(
         return(0);
     }
 
-    cerr << "ldir: " << llon << endl;
 
     if (fread((void *)&llon, sizeof(float), 1, fp) != 1 ||
         fread((void *)&llat, sizeof(float), 1, fp) != 1 ||
@@ -213,9 +211,7 @@ WindVectorField::ReadVctr(
         return(0);
     }
 
-    cerr << "llon: " << llon << endl;
-    cerr << "ldir: " << ldir << endl;
-
+ 
     while(! feof(fp))
     {
         idx++;
@@ -239,7 +235,6 @@ WindVectorField::ReadVctr(
         }
     }
 
-    cerr << "Units read: " << idx  << endl;
 
     fclose(fp);
 
@@ -285,7 +280,7 @@ WindVectorField::InterpolateVectorField(
 
         distance = cell50.SurfaceDistance(cell25);
         if (i == 0)
-          cerr << "Surface Distance: " << distance << endl;
+          fprintf(stderr,"Surface Distance: %g\n",distance);
 
         if (distance < bound)
         {
@@ -299,7 +294,7 @@ WindVectorField::InterpolateVectorField(
 
     if (good_idx == -1)
     {
-        cerr << "Couldn't find 50km cell" << endl;
+        fprintf(stderr,"Couldn't find 50km cell\n");
         return(0);
     }
 
