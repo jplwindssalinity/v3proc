@@ -166,12 +166,12 @@ int remove_spd_outliers_opt = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
-    "[ -m metric ]","[ -D dir_err_max]","[ -S spd_err_max]",
+    "[ -m metric ]","[ -D dir_err_max ]","[ -S spd_err_max ]",
     "[ -t truth_type ]", "[ -f truth_file ]", "[ -s low_spd:high_spd ]",
     "[ -r low_lat:high_lat ]", "[ -o output_base ]", "[ -w within ]",
     "[ -a ]", "[ -i subtitle ]", "[ -h (read HDF format) ]",
     "[ -n (use nudge field as truth)]", "[ -d (READ HDF/DIRTH data sets)]",
-    "[ -P pflag_file]", "[ -p pthresh_both]", "[ -q pthresh_outer]", 0 };
+    "[ -P pflag_file ]", "[ -p pthresh_both ]", "[ -q pthresh_outer ]", 0 };
 
 float*  ctd_array = NULL;
 float*  value_array = NULL;
