@@ -48,7 +48,6 @@ PROGRAMS = \
 	fake_vap \
 	l1b_ascii \
 	l1b_hdf_to_l1b \
-	l1b_to_slicebal \
 	l1b_outlines \
 	l1b_to_kprtable \
 	make_kfactor \
@@ -80,7 +79,7 @@ PROGRAMS = \
 	l2b_to_ascii \
 	reformat_pattern \
 	test_pattern \
-	l1a_echo_proc \
+	sim_l1a_echo_proc \
 	fix_dtc \
 	fix_knowledge \
 	get_DopRan_scan \
@@ -88,15 +87,19 @@ PROGRAMS = \
     expand_calpulse \
     ephem_to_ascii \
 	psim \
+	pl1a_to_l1b \
+	pl1a_to_ascii \
 	fake_s0_data \
 	generate_foff_table \
 	BYUX_vs_time \
-        l2b_extract_worst
+	l2b_extract_worst
 #	sim_accurate
 #	generate_kfactor
+
 STILES_PROGRAMS = \
 	l2b_25km_splice \
-        l2b_remove_extra
+	l1b_to_slicebal \
+	l2b_remove_extra
 
 HUDD_PROGRAMS = \
 	sim \
@@ -204,4 +207,4 @@ install: $(PROGRAMS)
 
 fix_dtc: fix_dtc.C echo_funcs.h
 fix_knowledge: fix_knowledge.C echo_funcs.h
-l1a_echo_proc: l1a_echo_proc.C echo_funcs.h
+sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
