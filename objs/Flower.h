@@ -99,6 +99,7 @@ public:
     int    WriteBestVector(FILE* ofp);
     int    WriteBestProb(FILE* ofp);
     int    FindBestDirIdx();
+    int    FindNextPeakDirIdx(int idx);
     void   SetSelectedDirIdx(int dir_idx) { selectedDirIdx = dir_idx; return; };
     void   ApplyPointFlower(float gamma, float alpha, Flower* point_flower);
 
@@ -154,8 +155,11 @@ public:
     //------------//
 
     Flower*  LocalFlowerProb(DistProb* dp, int window_size, int center_cti,
-                 int center_ati, float gamma, int use_rain_flag);
+                 int center_ati, float gamma, int use_rain_flag,
+                 float min_prob = 0.0);
     Flower*  LocalVectorProb(DistProb* dp, int window_size, int center_cti,
+                 int center_ati, float gamma, int use_rain_flag);
+    Flower*  LocalVectorsProb(DistProb* dp, int window_size, int center_cti,
                  int center_ati, float gamma, int use_rain_flag);
     int      SelectBestDirections();
 
@@ -203,6 +207,8 @@ public:
 
     DistProb();
     ~DistProb();
+
+    void  Fill(int number);
 
     //--------------//
     // input/output //

@@ -684,7 +684,8 @@ Flower::ApplyPointFlower(
         probabilityArray[i] = (1.0 - gamma) * uncor_op.probabilityArray[i] +
             gamma * cor_op.probabilityArray[i];
     }
-    Normalize(MIN_NORM_PROB);
+//    Normalize(MIN_NORM_PROB);
+    Normalize();
     return;
 }
 
@@ -1021,7 +1022,8 @@ FlowerArray::LocalFlowerProb(
             tmp_op.Normalize();
             cor_op.Add(&tmp_op);
             uncor_op.Multiply(&tmp_op);
-            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+//            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+            uncor_op.Normalize();
         }
     }
 
@@ -1196,7 +1198,8 @@ FlowerArray::LocalVectorProb(
             tmp_op.Normalize();
             cor_op.Add(&tmp_op);
             uncor_op.Multiply(&tmp_op);
-            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+//            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+            uncor_op.Normalize();
         }
     }
 
@@ -1375,7 +1378,8 @@ FlowerArray::LocalVectorsProb(
             tmp_op.Normalize();
             cor_op.Add(&tmp_op);
             uncor_op.Multiply(&tmp_op);
-            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+//            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+            uncor_op.Normalize();
         }
     }
 
