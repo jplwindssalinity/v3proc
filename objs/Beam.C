@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -28,13 +28,14 @@ Beam::Beam()
     return;
 }
 
-Beam::Beam(const Beam& from)
+Beam::Beam(
+    const Beam&  from)
 :   silentFlag(0), polarization(NONE), _elecBoresightLook(0.0),
     _elecBoresightAzim(0.0), _electrical_boresight_Em(0.0),
     _electrical_boresight_Am(0.0), _Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
     _x_spacing(0.0), _y_spacing(0.0), _power_gain(NULL), peakGain(0.0)
 {
-    *this=from;
+    *this = from;
     return;
 }
 
@@ -236,11 +237,16 @@ Beam::ReadBeamPattern(
     // Check for an existing pattern, and remove if needed.
     if (_power_gain != NULL)
     {
-        free_array(_power_gain,2,_Nx,_Ny);
+        free_array(_power_gain, 2, _Nx, _Ny);
     }
 
-    FILE* fp = fopen(filename,"r");
-    if (fp == NULL) return(0);
+    FILE* fp = fopen(filename, "r");
+    if (fp == NULL) {
+        fprintf(stderr,
+            "Beam::ReadBeamPattern: error opening beam pattern file %s\n",
+            filename);
+        return(0);
+    }
 
     // Read header info which specifies the pattern size and spacing.
     if (fread(&_Nx, sizeof(int), 1, fp) != 1 ||
@@ -252,8 +258,9 @@ Beam::ReadBeamPattern(
         fread(&_electrical_boresight_Em, sizeof(double), 1, fp) != 1 ||
         fread(&_electrical_boresight_Am, sizeof(double), 1, fp) != 1)
     {
-        fprintf(stderr, "Error reading beam pattern header info from %s\n",
-            filename);
+        fprintf(stderr,
+          "Beam::ReadBeamPattern: error reading beam pattern header from %s\n",
+          filename);
         fclose(fp);
         return(0);
     }
@@ -263,10 +270,12 @@ Beam::ReadBeamPattern(
         (_Ny <= 0) ||
         (_ix_zero < 0) ||
         (_iy_zero < 0) ||
-        (_ix_zero > _Nx-1) ||
-        (_iy_zero > _Ny-1))
+        (_ix_zero > _Nx - 1) ||
+        (_iy_zero > _Ny - 1))
     {
-        fprintf(stderr, "Invalid beam pattern header info in %s\n", filename);
+        fprintf(stderr,
+          "Beam::ReadBeamPattern: invalid beam pattern header info in %s\n",
+          filename);
         fclose(fp);
         return(0);
     }
@@ -275,22 +284,24 @@ Beam::ReadBeamPattern(
     _power_gain = (float**)make_array(sizeof(float), 2, _Nx, _Ny);
     if (_power_gain == NULL)
     {
-        fprintf(stderr, "Can't allocate a pattern array\n");
+        fprintf(stderr,
+            "Beam::ReadBeamPattern: error allocating pattern array\n");
         fclose(fp);
         return(0);
     }
 
     // Read in the pattern. (stored with x varying most rapidly)
-    for (int j=0; j < _Ny; j++)
-    for (int i=0; i < _Nx; i++)
-    {
-        if (fread(&(_power_gain[i][j]), sizeof(float), 1, fp) != 1)
-        {
-            free_array(_power_gain, 2, _Nx, _Ny);
-            _power_gain = NULL;
-            fprintf(stderr,"Error reading pattern data from %s\n",filename);
-            fclose(fp);
-            return(0);
+    for (int j = 0; j < _Ny; j++) {
+        for (int i = 0; i < _Nx; i++) {
+            if (fread(&(_power_gain[i][j]), sizeof(float), 1, fp) != 1) {
+                free_array(_power_gain, 2, _Nx, _Ny);
+                _power_gain = NULL;
+                fprintf(stderr,
+                 "Beam::ReadBeamPattern: error reading pattern data from %s\n",
+                 filename);
+                fclose(fp);
+                return(0);
+            }
         }
     }
 
@@ -590,7 +601,7 @@ Beam::GetSpatialResponse(
 // Operators //
 //-----------//
 
-Beam& 
+Beam&
 Beam::operator=(
      const Beam& from)
 {
