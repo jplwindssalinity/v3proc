@@ -615,7 +615,7 @@ DopplerAndDelay(
 //------------//
 // Compute some useful numbers for the target on the earth's surface
 // intercepted by a particular direciton in the antenna frame.
-// The vector is a directional vector specified in geocentric coordinates.
+// The vector is a directional vector specified in the antenna frame.
  
 int
 TargetInfo(

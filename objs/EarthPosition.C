@@ -402,5 +402,6 @@ EarthPosition::IncidenceAngle(
 	Vector3		vector)
 {
 	Vector3 normal = Normal();
+	vector.Scale(1.0);
 	return(acos(vector % -normal));
 }

@@ -27,7 +27,8 @@ PROGRAMS = \
 	see_spot \
 	vap_to_bev \
 	fake_vap \
-	l15_outlines
+	l15_outlines \
+	plot_solution_curves
 
 #----------------------------------------------------------------------
 # default: make all executable programs
