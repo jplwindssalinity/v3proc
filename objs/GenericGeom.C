@@ -37,7 +37,7 @@ static const char rcs_id_genericgeom_c[] =
 //  corresponding unit vectors.
 //
 
-void
+int
 velocity_frame_geocentric(
 	EarthPosition	rsat,
 	Vector3			vsat,
@@ -51,7 +51,8 @@ velocity_frame_geocentric(
 	*yscvel_geo = *zscvel_geo & vsat;
 	// x-axis close to, but not the same as the velocity vector
 	*xscvel_geo = *yscvel_geo & *zscvel_geo;
-	return;
+
+	return(1);
 }
 
 //
@@ -76,28 +77,32 @@ velocity_frame_geocentric(
 //  corresponding unit vectors.
 //
 
-void velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
-							 Vector3 *xscvel_geo,
-							 Vector3 *yscvel_geo,
-							 Vector3 *zscvel_geo)
-
+int
+velocity_frame_geodetic(
+	EarthPosition	rsat,
+	Vector3			vsat,
+	Vector3			*xscvel_geo,
+	Vector3			*yscvel_geo,
+	Vector3			*zscvel_geo)
 {
+	// Geodetic definition of the z-axis
+	double alt, nadir_gd_lat, nadir_lon;
+	if (! rsat.GetAltLonGDLat(&alt, &nadir_lon, &nadir_gd_lat))
+	{
+		fprintf(stderr,
+		"Error: velocity_frame_geodetic could not convert input position\n");
+		exit(1);
+	}
+	EarthPosition rnadir;
+	rnadir.SetAltLonGDLat(0.0, nadir_lon, nadir_gd_lat);
+	*zscvel_geo = rnadir - rsat;
 
-// Geodetic definition of the z-axis
-double alt,nadir_lat,nadir_lon;
-if (rsat.GetAltLatLon(EarthPosition::GEODETIC,&alt,&nadir_lat,&nadir_lon) == 0)
-{
-	printf("Error: velocity_frame_geodetic could not convert input position\n");
-	exit(-1);
-}
-EarthPosition rnadir(nadir_lat,nadir_lon,EarthPosition::GEODETIC);
-*zscvel_geo = rnadir - rsat;
+	// y-axis is perpendicular to the orbit plane
+	*yscvel_geo = *zscvel_geo & vsat;
+	// x-axis close to, but not the same as the velocity vector
+	*xscvel_geo = *yscvel_geo & *zscvel_geo;
 
-// y-axis is perpendicular to the orbit plane
-*yscvel_geo = *zscvel_geo & vsat;
-// x-axis close to, but not the same as the velocity vector
-*xscvel_geo = *yscvel_geo & *zscvel_geo;
-
+	return(1);
 }
 
 //

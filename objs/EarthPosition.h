@@ -39,19 +39,28 @@ class EarthPosition : public Vector3
 {
 public:
 
-enum earthposition_typeE {RECTANGULAR, GEOCENTRIC, GEODETIC};
-
 //
-// Additional construction methods
+// construction methods
 //
 
-EarthPosition(double x1, double x2, double x3, earthposition_typeE etype);
-EarthPosition(double x1, double x2, earthposition_typeE etype);
-EarthPosition(Vector3 v);
 EarthPosition();
+EarthPosition(Vector3 v);
 ~EarthPosition();
 
-int SetPosition(double x1, double x2, double x3, earthposition_typeE etype);
+	//---------------------//
+	// setting and getting //
+	//---------------------//
+
+	int		SetPosition(double x, double y, double z);
+	int		SetAltLonGCLat(double altitude, double longitude,
+				double gc_latitude);
+	int		SetAltLonGDLat(double altitude, double longitude,
+				double gd_latitude);
+	int		GetAltLonGCLat(double* altitude, double* longitude,
+				double* gc_latitude);
+	int		GetAltLonGDLat(double* altitude, double* longitude,
+				double* gd_latitude);
+
 
 //
 // I/O
@@ -73,8 +82,6 @@ void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
 double surface_distance(EarthPosition r);
 EarthPosition Nadir();
 Vector3 Normal();
-int GetAltLatLon(earthposition_typeE etype, double* alt,
-	double* lat, double* elon);
 
 CoordinateSwitch SurfaceCoordinateSystem();
 double IncidenceAngle(Vector3 rlook);

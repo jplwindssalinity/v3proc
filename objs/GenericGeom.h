@@ -34,7 +34,7 @@ static const char rcs_id_genericgeom_h[] =
 //		A GEOCENTRIC convention for the attitude reference is used.
 //======================================================================
 
-void	velocity_frame_geocentric(EarthPosition rsat, Vector3 vsat,
+int		velocity_frame_geocentric(EarthPosition rsat, Vector3 vsat,
 			Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo);
 
 //======================================================================
@@ -48,7 +48,7 @@ void	velocity_frame_geocentric(EarthPosition rsat, Vector3 vsat,
 //		A GEODETIC convention for the attitude reference is used.
 //======================================================================
 
-void	velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
+int		velocity_frame_geodetic(EarthPosition rsat, Vector3 vsat,
 			Vector3 *xscvel_geo, Vector3 *yscvel_geo, Vector3 *zscvel_geo);
 
 //======================================================================

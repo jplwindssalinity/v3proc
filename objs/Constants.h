@@ -39,6 +39,10 @@ static const double speed_light_kps = 2.99792458e5;
 static const double r1_earth = 6378.1363;
 static const double r2_earth = 6356.751600562937;
 static const double eccentricity_earth = 8.1819221455523210E-02;
+
+// earth flatness
+static const double flat = 1.0-sqrt(1.0-eccentricity_earth*eccentricity_earth);
+
 // sidereal rotation rate (rad/sec)
 static const double w_earth = pi/180*4.1780746e-3;
 

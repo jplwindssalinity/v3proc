@@ -9,44 +9,23 @@ static const char rcs_id_earthposition_c[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
-#include "Constants.h"
 #include "EarthPosition.h"
-#include "Matrix3.h"
-#include "CoordinateSwitch.h"
+#include "Constants.h"
 #include "LonLat.h"
+#include "CoordinateSwitch.h"
+#include "Matrix3.h"
+
+//===============//
+// EarthPosition //
+//===============//
 
 //
-// EarthPosition
+// Default constructor, no initialization
 //
 
-//
-// Initialize with a complete set of 3 user-specified elements.
-// The meaning of the 3 elements is specified by the type argument at the end.
-// Note that altitudes must be specified in km!
-//
-
-EarthPosition::EarthPosition(double x1, double x2, double x3,
-                             earthposition_typeE etype)
-
+EarthPosition::EarthPosition()
 {
-EarthPosition::SetPosition(x1,x2,x3,etype);
-return;
-}
-
-//
-// Initialize with a 2 user-specified elements.
-// The altitude is assumed to be zero (ie., a position on the surface)
-// The latitude type is specified by the type argument at the end.
-//
-
-EarthPosition::EarthPosition(double lat, double lon,
-                             earthposition_typeE etype)
-
-{
-// call SetPosition with zero altitude
-EarthPosition::SetPosition(0.0,lat,lon,etype);
-return;
+	return;
 }
 
 //
@@ -54,24 +33,13 @@ return;
 // The elements are assumed to be rectangular coordinates.
 //
 
-EarthPosition::EarthPosition(Vector3 v)
-
+EarthPosition::EarthPosition(
+	Vector3		v)
 {
-
-v.Get(0,&_v[0]);
-v.Get(1,&_v[1]);
-v.Get(2,&_v[2]);
+	v.Get(0,&_v[0]);
+	v.Get(1,&_v[1]);
+	v.Get(2,&_v[2]);
 	return;
-}
-
-//
-// Default constructor, no initialization
-//
-
-EarthPosition::EarthPosition()
-
-{
-return;
 }
 
 //
@@ -79,78 +47,195 @@ return;
 //
 
 EarthPosition::~EarthPosition()
-
 {
-return;
+	return;
 }
 
-//
-// SetPosition
-//
-// Initialize with a complete set of 3 user-specified elements.
-// The meaning of the 3 elements is specified by the type argument at the end.
-// Note that altitudes must be specified in km!
-//
+//----------------------------//
+// EarthPosition::SetPosition //
+//----------------------------//
+// Sets the earth position by rectangular coordinates
 
 int
-EarthPosition::SetPosition(double x1, double x2, double x3,
-                             earthposition_typeE etype)
-
+EarthPosition::SetPosition(
+	double		x,
+	double		y,
+	double		z)
 {
+	_v[0] = x;
+	_v[1] = y;
+	_v[2] = z;
+	return(1);
+}
 
-if (etype == GEODETIC)
-  {	// convert geodetic latitude to geocentric latitude
-  x2 = atan(tan(x2)*(1-eccentricity_earth*eccentricity_earth));
-  etype = GEOCENTRIC;
-  }
+//-------------------------------//
+// EarthPosition::SetAltLonGCLat //
+//-------------------------------//
+// Sets the earth position by altitude, longitude, and geocentric latitude
+// altitude = altitude above the ellipsoidal earth surface (km)
+// longitude = east longitude (radians)
+// gc_latitude = geocentric latitude (radians)
 
-if (etype == RECTANGULAR)
-  {
-  // x1,x2,x3 are the rectangular coordinates (with the same units).
-  _v[0] = x1;
-  _v[1] = x2;
-  _v[2] = x3;
-  }
-else if (etype == GEOCENTRIC)
-  {
-  // x1 is the altitude above the ellipsoidal earth's surface. (km)
-  // x2 is the geocentric latitude of the surface location (radians).
-  // x3 is the east longitude of the surface location (radians).
+int
+EarthPosition::SetAltLonGCLat(
+	double		altitude,
+	double		longitude,
+	double		gc_latitude)
+{
+	double slat = sin(gc_latitude);
+	double clat = cos(gc_latitude);
+	double slon = sin(longitude);
+	double clon = cos(longitude);
 
-  double sx2 = sin(x2);
-  double cx2 = cos(x2);
-  double sx3 = sin(x3);
-  double cx3 = cos(x3);
+	// Radius of earth at desired location.
+	double radius = r1_earth*(1.0 - flat*slat*slat);
 
-  // Radius of earth at desired location.
-  double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
-  double radius = r1_earth*(1.0 - flat*sx2*sx2);
+	// Form sea-level position vector
+	_v[0] = radius*clat*clon;
+	_v[1] = radius*clat*slon;
+	_v[2] = radius*slat;
 
-  // Form sea-level position vector
-  _v[0] = radius*cx2*cx3;
-  _v[1] = radius*cx2*sx3;
-  _v[2] = radius*sx2;
+	// Form vector normal to the surface of the ellipsoidal earth at the desired
+	// location, with length equal to the desired altitude, and add it to the
+	// sealevel position vector to get the final position vector.
+	Vector3 normal(_v[0]/(r1_earth*r1_earth), _v[1]/(r1_earth*r1_earth),
+		_v[2]/(r2_earth*r2_earth));
+	normal.Scale(altitude);
 
-  // Form vector normal to the surface of the ellipsoidal earth at the desired
-  // location, with length equal to the desired altitude, and add it to the
-  // sealevel position vector to get the final position vector.
-  Vector3 normal(_v[0]/(r1_earth*r1_earth),
-                 _v[1]/(r1_earth*r1_earth),
-                 _v[2]/(r2_earth*r2_earth));
-  normal.Scale(x1);
+	_v[0] += normal.get(0);
+	_v[1] += normal.get(1);
+	_v[2] += normal.get(2);
 
-  _v[0] += normal.get(0);
-  _v[1] += normal.get(1);
-  _v[2] += normal.get(2);
-  }
-else
-  {
-  printf("Error: Invalid type = %d received by EarthPosition object\n",etype);
-  exit(-1);
-  }
+	return(1);
+}
 
-return(1);
+//-------------------------------//
+// EarthPosition::SetAltLonGDLat //
+//-------------------------------//
+// Sets the earth position by altitude, longitude, and geodetic latitude
+// altitude = altitude above the ellipsoidal earth surface (km)
+// longitude = east longitude (radians)
+// gd_latitude = geodetic latitude (radians)
 
+int
+EarthPosition::SetAltLonGDLat(
+	double		altitude,
+	double		longitude,
+	double		gd_latitude)
+{
+	// convert geodetic latitude to geocentric latitude
+	double gc_latitude = atan(tan(gd_latitude) *
+		(1-eccentricity_earth*eccentricity_earth));
+
+	return(SetAltLonGCLat(altitude, longitude, gc_latitude));
+}
+
+//-------------------------------//
+// EarthPosition::GetAltLonGCLat //
+//-------------------------------//
+// Returns the earth position as altitude, longitude, and geocentric latitude
+// altitude = altitude above the ellipsoidal earth surface (km)
+// longitude = east longitude (radians)
+// gd_latitude = geocentric latitude (radians)
+
+int
+EarthPosition::GetAltLonGCLat(
+	double*		altitude,
+	double*		longitude,
+	double*		gc_latitude)
+{
+	// get the geodetic information
+	double gd_latitude;
+	if (! GetAltLonGDLat(altitude, longitude, &gd_latitude))
+		return(0);
+
+	// convert geodetic latitude to geocentric latitude
+	*gc_latitude = atan(tan(gd_latitude) *
+		(1-eccentricity_earth*eccentricity_earth));
+
+	return(1);
+}
+
+//-------------------------------//
+// EarthPosition::GetAltLonGDLat //
+//-------------------------------//
+// Returns the earth position as altitude, longitude, and geodetic latitude
+// altitude = altitude above the ellipsoidal earth surface (km)
+// longitude = east longitude (radians)
+// gc_latitude = geodetic latitude (radians)
+
+int
+EarthPosition::GetAltLonGDLat(
+	double*		altitude,
+	double*		longitude,
+	double*		gd_latitude)
+{
+	double f2 = flat*(2.0 - flat);
+	double rho = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
+	double r = sqrt(_v[0]*_v[0] + _v[1]*_v[1]);
+
+	if (rho == 0.0)
+	{
+		// center of the earth
+		*altitude = -r2_earth;
+		*longitude = 0.0;
+		*gd_latitude = 0.0;
+		return(1);
+	}
+
+	// Compute east longitude
+	if (_v[0] == 0.0)
+	{
+		// on the 90 -- 270 great circle
+		if (_v[1] > 0.0)
+			*longitude = pi/2;
+		else
+			*longitude = 3*pi/2;
+	}
+	else
+	{
+		*longitude = atan2(_v[1],_v[0]);
+		if (*longitude < 0.0)
+			*longitude += two_pi;
+	}
+
+	// Trial values to start the iteration
+	*gd_latitude = asin(_v[2]/rho);
+	double sinlat = sin(*gd_latitude);
+	double coslat = cos(*gd_latitude);
+	*altitude = rho - r1_earth*(1.0 - flat*sinlat*sinlat);
+
+	// Iterate to solution (or maximum numer of interations)
+	double g0,g1,g2;
+	double dr,dz,dalt,dlat;
+	double tol = 1.0e-14;
+	int maxiter = 10;
+	int i;
+	for (i=1; i <= maxiter; i++)
+	{
+		sinlat = sin(*gd_latitude);
+		coslat = cos(*gd_latitude);
+		g0 = r1_earth/sqrt(1.0 - f2*sinlat*sinlat);
+		g1 = g0 + *altitude;
+		g2 = g0*(1-flat)*(1-flat) + *altitude;
+		dr = r - g1*coslat;
+		dz = _v[2] - g2*sinlat;
+		dalt = dr*coslat + dz*sinlat;
+		dlat = (dz*coslat - dr*sinlat) / (r1_earth + *altitude + dalt);
+		*gd_latitude += dlat;
+		*altitude += dalt;
+		if ((dlat < tol) && (fabs(dalt)/(r1_earth + *altitude) < tol))
+			break;
+	}
+
+	if (i >= maxiter)
+	{
+		printf("Error: EarthPosition::GetAltLatLon\n");
+		printf("  Did not converge to a solution for the surface point\n");
+		return(0);
+	}
+
+	return(1);
 }
 
 //
@@ -165,8 +250,7 @@ EarthPosition::ReadLonLat(FILE* fp)
 {
 	LonLat lon_lat;
 	if (lon_lat.Read(fp) == 0) return(0);
-	SetPosition(0.0, lon_lat.latitude, lon_lat.longitude,
-		EarthPosition::GEODETIC);
+	SetAltLonGDLat(0.0, lon_lat.longitude, lon_lat.latitude);
 	return(1);
 }
 
@@ -229,92 +313,6 @@ return(mag * theta);
 }
 
 //
-// Convert the rectangular vector stored in this object into the
-// corresponding altitude above the surface, latitude, and longitude.
-// Units are km and radians.
-//
-// Inputs:
-//  etype = GEOCENTRIC or GEODETIC - the type of latitude to return
-//  alt,lat,elon = pointers to put the altitude (km), latitude (rads),
-//		and east longitude (rads) in.
-//
-
-int
-EarthPosition::GetAltLatLon(earthposition_typeE etype,
-double* alt, double* lat, double* elon)
-
-{
-
-double flat = 1.0 - sqrt(1.0-eccentricity_earth*eccentricity_earth);
-// double f1 = 1 - flat;
-double f2 = flat*(2.0 - flat);
-double rho = sqrt(_v[0]*_v[0] + _v[1]*_v[1] + _v[2]*_v[2]);
-double r = sqrt(_v[0]*_v[0] + _v[1]*_v[1]);
-
-if (rho == 0.0)
-  {	// center of the earth
-  *alt = -r2_earth;
-  *lat = 0.0;
-  *elon = 0.0;
-  return(1);
-  }
-
-// Compute east longitude
-if (_v[0] == 0.0)
-  {	// on the 90 -- 270 great circle
-  if (_v[1] > 0.0) *elon = pi/2; else *elon = 3*pi/2;
-  }
-else
-  {
-  *elon = atan2(_v[1],_v[0]);
-  if (*elon < 0.0) *elon += 2*pi;
-  }
-
-// Trial values to start the interation
-*lat = asin(_v[2]/rho);
-double sinlat = sin(*lat);
-double coslat = cos(*lat);
-*alt = rho - r1_earth*(1.0 - flat*sinlat*sinlat);
-
-// Iterate to solution (or maximum numer of interations)
-double g0,g1,g2;
-double dr,dz,dalt,dlat;
-double tol = 1.0e-14;
-int maxiter = 10;
-int i;
-for (i=1; i <= maxiter; i++)
-  {
-  sinlat = sin(*lat);
-  coslat = cos(*lat);
-  g0 = r1_earth/sqrt(1.0 - f2*sinlat*sinlat);
-  g1 = g0 + *alt;
-  g2 = g0*(1-flat)*(1-flat) + *alt;
-  dr = r - g1*coslat;
-  dz = _v[2] - g2*sinlat;
-  dalt = dr*coslat + dz*sinlat;
-  dlat = (dz*coslat - dr*sinlat) / (r1_earth + *alt + dalt);
-  *lat += dlat;
-  *alt += dalt;
-  if ((dlat < tol) && (fabs(dalt)/(r1_earth + *alt) < tol)) break;
-  }
-
-if (i >= maxiter)
-  {
-  printf("Error: EarthPosition::GetAltLatLon\n");
-  printf("  Did not converge to a solution for the surface point\n");
-  return(0);
-  }
-
-if (etype == GEOCENTRIC)
-  {	// convert geodetic latitude to geocentric latitude
-  *lat = atan(tan(*lat)*(1-eccentricity_earth*eccentricity_earth));
-  }
-
-return(1);
-
-}
-
-//
 // Nadir
 //
 // Compute the nadir position on the earth's surface directly below (above)
@@ -325,12 +323,11 @@ EarthPosition
 EarthPosition::Nadir()
 
 {
-
-double alt,lat,lon;
-GetAltLatLon(EarthPosition::GEOCENTRIC,&alt,&lat,&lon);
-EarthPosition result(lat,lon,EarthPosition::GEOCENTRIC);
-return(result);
-
+	double alt, lon, gc_lat;
+	GetAltLonGCLat(&alt, &lon, &gc_lat);
+	EarthPosition result;
+	result.SetAltLonGCLat(0.0, lon, gc_lat);
+	return(result);
 }
 
 //
@@ -367,7 +364,6 @@ return(normal);
 
 CoordinateSwitch
 EarthPosition::SurfaceCoordinateSystem()
-
 {
 
 //
