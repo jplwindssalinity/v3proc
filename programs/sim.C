@@ -447,6 +447,36 @@ main(
                         &kp, &kpmField, &(l00.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
+				case QscatEvent::LOOPBACK_MEASUREMENT:
+
+					// process spacecraft stuff
+					spacecraft_sim.UpdateOrbit(qscat_event.time,
+						&spacecraft);
+					spacecraft_sim.UpdateAttitude(qscat_event.time,
+						&spacecraft);
+
+					// process instrument stuff
+					qscat.cds.SetTime(qscat_event.time);
+                    qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l00.frame));
+					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+					break;
+				case QscatEvent::LOAD_MEASUREMENT:
+
+					// process spacecraft stuff
+					spacecraft_sim.UpdateOrbit(qscat_event.time,
+						&spacecraft);
+					spacecraft_sim.UpdateAttitude(qscat_event.time,
+						&spacecraft);
+
+					// process instrument stuff
+					qscat.cds.SetTime(qscat_event.time);
+                    qscat.sas.antenna.UpdatePosition(qscat_event.time);
+                    qscat.cds.currentBeamIdx = qscat_event.beamIdx;
+					qscat_sim.LoadSim(&spacecraft, &qscat, &(l00.frame));
+					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
+					break;
 				default:
 					fprintf(stderr, "%s: unknown instrument event\n", command);
 					exit(1);
