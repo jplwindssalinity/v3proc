@@ -17,7 +17,7 @@ static const char rcs_id_beam_c[] =
 // Beam //
 //======//
 
-const char* beam_map[] = { "None", "V", "H" };
+const char* beam_map[] = { "V", "H", "None" };
 
 Beam::Beam()
 :	polarization(NONE), txPulseWidth(0.0), rxGateWidth(0.0), timeOffset(0.0),
