@@ -360,7 +360,6 @@ int
 MiscTable::_MetToIndex(
     Meas::MeasTypeE  met)
 {
-	// this should be done better later
 	int idx = 0;
 	switch(met)
 	{
@@ -370,11 +369,24 @@ MiscTable::_MetToIndex(
 	case Meas::HH_MEAS_TYPE:
 		idx = 1;
 		break;
+    case Meas::VV_VH_CORR_MEAS_TYPE:
+        idx = 2;
+        break;
+    case Meas::HH_HV_CORR_MEAS_TYPE:
+        idx = 3;
+        break;
 	default:
 		fprintf(stderr,
 			"MiscTable::_MetToIndex: invalid measurement type %d\n", met);
 		exit(1);
 	}
+    if (idx >= _metCount)
+    {
+        fprintf(stderr,
+        "MiscTable::_MetToIndex: measurement type %d not in model function\n",
+            met);
+        exit(1);
+    }
 	return(idx);
 }
 

@@ -34,32 +34,35 @@ GMF::GMF()
     _copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
     _dir_mle_maxima(NULL)
 {
-	SetPhiCount(DEFAULT_PHI_COUNT);
+    SetPhiCount(DEFAULT_PHI_COUNT);
 
-	_speed_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
-	_objective_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
-	_dir_mle_maxima = (int*)malloc((MAX_DIR_SAMPLES+1)*sizeof(int));
-	if (_speed_buffer == NULL || _objective_buffer == NULL ||
-		_dir_mle_maxima == NULL)
-	{
-		fprintf(stderr,"GMF::GMF: Error allocating memory\n");
-		exit(-1);
-	}
+    _speed_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
+    _objective_buffer = (float*)malloc((MAX_DIR_SAMPLES+1)*sizeof(float));
+    _dir_mle_maxima = (int*)malloc((MAX_DIR_SAMPLES+1)*sizeof(int));
+    if (_speed_buffer == NULL || _objective_buffer == NULL ||
+        _dir_mle_maxima == NULL)
+    {
+        fprintf(stderr,"GMF::GMF: Error allocating memory\n");
+        exit(1);
+    }
 
-	return;
+    return;
 }
 
 GMF::~GMF()
 {
-	free(_bestSpd);
-	free(_bestObj);
-	free(_copyObj);
+    free(_bestSpd);
+    free(_bestObj);
+    free(_copyObj);
 
-	if (_speed_buffer) free(_speed_buffer);
-	if (_objective_buffer) free(_objective_buffer);
-	if (_dir_mle_maxima) free(_dir_mle_maxima);
+    if (_speed_buffer)
+        free(_speed_buffer);
+    if (_objective_buffer)
+        free(_objective_buffer);
+    if (_dir_mle_maxima)
+        free(_dir_mle_maxima);
 
-	return;
+    return;
 }
 
 //------------------//
@@ -808,9 +811,10 @@ GMF::RetrieveWindsWithPeakSplitting(
 }
 Commented out old version       ********/
 
-//-------------------------------------//
-// GMF::_ObjectiveToProbability         //
-//-------------------------------------//
+//------------------------------//
+// GMF::_ObjectiveToProbability //
+//------------------------------//
+
 int
 GMF::ConvertObjToPdf()
 {
@@ -829,11 +833,14 @@ GMF::ConvertObjToPdf()
   return(1);
 }
 
-//-------------------------------------//
-// GMF::_ObjectiveToProbability         //
-//-------------------------------------//
+//------------------------------//
+// GMF::_ObjectiveToProbability //
+//------------------------------//
+
 int
-GMF::_ObjectiveToProbability(float scale, int radius)
+GMF::_ObjectiveToProbability(
+    float  scale,
+    int    radius)
 {
   float sum=0;
   for(int c=0;c<_phiCount;c++){
@@ -863,16 +870,16 @@ GMF::_ObjectiveToProbability(float scale, int radius)
 //-------------------------------------//
 // GMF::RetrieveWindsWithPeakSplitting //
 //-------------------------------------//
+
 int
 GMF::RetrieveWindsWithPeakSplitting(
-	MeasList*         meas_list,
-        Kp*                      kp,
-        WVC*                    wvc,
-        float                 one_peak_width,
-        float                 two_peak_separation_threshold,
-	float                 threshold,
-	int                   max_num_ambigs)
-
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc,
+    float      one_peak_width,
+    float      two_peak_separation_threshold,
+    float      threshold,
+    int        max_num_ambigs)
 {
         if(! RetrieveWinds_PE(meas_list,kp,wvc)) return(0);
         int one_peak_radius=(int)(one_peak_width/(2*_phiStepSize) +0.5);
@@ -1302,10 +1309,10 @@ GMF::FindMany(
 
 float
 GMF::_ObjectiveFunction(
-	MeasList*	meas_list,
-	float		spd,
-	float		phi,
-	Kp*			kp)
+    MeasList*  meas_list,
+    float      spd,
+    float      phi,
+    Kp*        kp)
 {
 	//-----------------------------------------//
 	// initialize the objective function value //
@@ -1434,7 +1441,7 @@ GMF::RetrieveWinds_GS(
 //  Step 1:  Find an initial set of coarse wind solutions.
 //
 
-	Calculate_Init_Wind_Solutions(meas_list,kp,wvc);
+	Calculate_Init_Wind_Solutions(meas_list, kp, wvc);
 
 	WindVectorPlus* wvp = NULL;
 
@@ -1497,11 +1504,10 @@ GMF::RetrieveWinds_GS(
 
 int
 GMF::Calculate_Init_Wind_Solutions(
-	MeasList*	meas_list,
-	Kp*			kp,
-	WVC*		wvc)
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
 {
-
 //
 //!Description:
 // 	        This routine calculates an initial set of wind solutions
