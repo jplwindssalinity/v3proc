@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.16   07 Oct 1999 14:00:08   sally
+// added L2Ahr file type
+// 
 //    Rev 1.15   25 May 1999 14:05:48   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -101,6 +104,8 @@ ParTabAccess::GetSourceId(
         sourceId = SOURCE_L2A;
     else if (strcasecmp((char *)source_string, SOURCE_L2Ax_STRING) == 0)
         sourceId = SOURCE_L2Ax;
+    else if (strcasecmp((char *)source_string, SOURCE_L2Ahr_STRING) == 0)
+        sourceId = SOURCE_L2Ahr;
     else if (strcasecmp((char *)source_string, SOURCE_L2B_STRING) == 0)
         sourceId = SOURCE_L2B;
     else
@@ -394,6 +399,9 @@ Parameter
     case DATA_INT1_810:
         param->byteSize = 810;
         break;
+    case DATA_INT1_2000:
+        param->byteSize = 2000;
+        break;
     case DATA_INT1_3240:
         param->byteSize = 3240;
         break;
@@ -472,6 +480,9 @@ Parameter
     case DATA_UINT2_810:
         param->byteSize = 1620;
         break;
+    case DATA_UINT2_2000:
+        param->byteSize = 4000;
+        break;
     case DATA_UINT2_3240:
         param->byteSize = 6480;
         break;
@@ -483,6 +494,9 @@ Parameter
         break;
     case DATA_FLOAT4_810:
         param->byteSize = 3240;
+        break;
+    case DATA_FLOAT4_2000:
+        param->byteSize = 8000;
         break;
     case DATA_FLOAT4_3240:
         param->byteSize = 12960;
@@ -587,6 +601,11 @@ int&            tableSize)      // RETURN: size of parameter table
         case SOURCE_L2Ax:
             paramTable = (ParTabEntry *)L2AxParTab;
             tableSize = L2AxParTabSize;
+            return (TRUE);
+
+        case SOURCE_L2Ahr:
+            paramTable = (ParTabEntry *)L2AhrParTab;
+            tableSize = L2AhrParTabSize;
             return (TRUE);
 
         case SOURCE_L2B:

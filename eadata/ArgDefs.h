@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.21   07 Oct 1999 13:58:58   sally
+// added L2Ahr file type
+// 
 //    Rev 1.20   02 Jun 1999 16:20:10   sally
 // add leap second adjustment
 // 
@@ -203,6 +206,14 @@ static const char rcs_argdefs_h[] =
 #define L2Ax_LIMIT_FILE_OPTION       "-l2axlim"
 #define L2Ax_LIMIT_FILE_ARGUMENT     "L1Ax_limit_file"
 
+#define L2Ahr_FILES_KEYWORD          "L2Ahr_FILES"
+#define L2Ahr_FILES_OPTION           "-l2ahr"
+#define L2Ahr_FILES_ARGUMENT         "L2Ahr_file..."
+ 
+#define L2Ahr_LIMIT_FILE_KEYWORD     "L2Ahr_LIMIT_FILE"
+#define L2Ahr_LIMIT_FILE_OPTION      "-l2ahrlim"
+#define L2Ahr_LIMIT_FILE_ARGUMENT    "L1Ahr_limit_file"
+
 #define L2B_FILES_KEYWORD           "L2B_FILES"
 #define L2B_FILES_OPTION            "-l2b"
 #define L2B_FILES_ARGUMENT          "L2B_file..."
@@ -392,6 +403,10 @@ static const char rcs_argdefs_h[] =
     {L2Ax_FILES_KEYWORD, L2Ax_FILES_OPTION, L2Ax_FILES_ARGUMENT}
 #define L2Ax_LIMIT_FILE_ARG   \
     {L2Ax_LIMIT_FILE_KEYWORD, L2Ax_LIMIT_FILE_OPTION, L2Ax_LIMIT_FILE_ARGUMENT}
+#define L2Ahr_FILES_ARG    \
+    {L2Ahr_FILES_KEYWORD, L2Ahr_FILES_OPTION, L2Ahr_FILES_ARGUMENT}
+#define L2Ahr_LIMIT_FILE_ARG   \
+    {L2Ahr_LIMIT_FILE_KEYWORD, L2Ahr_LIMIT_FILE_OPTION, L2Ahr_LIMIT_FILE_ARGUMENT}
 #define L2B_FILES_ARG    \
     {L2B_FILES_KEYWORD, L2B_FILES_OPTION, L2B_FILES_ARGUMENT}
 #define L2B_LIMIT_FILE_ARG   \

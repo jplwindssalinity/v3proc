@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.32   07 Oct 1999 13:59:22   sally
+// added L2Ahr file type
+// 
 //    Rev 1.31   26 Jul 1999 15:45:06   sally
 // add new extraction function for HK2 group flag
 // 
@@ -237,6 +240,8 @@ int ExtractData2D_100    (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_810   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
+int ExtractData2D_2000   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 int ExtractData2D_3240   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_76_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
@@ -250,6 +255,10 @@ int ExtractData2D_100_int2_float (TlmHdfFile*, int32*, int32, int32, int32,
 int ExtractData2D_810_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_810_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_2000_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractData2D_2000_int2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData2D_3240_uint2_float(TlmHdfFile*, int32*,int32,int32,int32,VOIDP,
                                           PolynomialTable* polyTable=0);
@@ -521,6 +530,10 @@ int ExtractData2D_100_int2_float_dtr   (TlmHdfFile*, int32*,
 int ExtractData2D_810_uint2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 int ExtractData2D_810_int2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_2000_uint2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_2000_int2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 int ExtractData2D_3240_uint2_float_dtr   (TlmHdfFile*, int32*,
                    int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);

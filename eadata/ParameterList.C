@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.23   07 Oct 1999 14:00:20   sally
+// added L2Ahr file type
+// 
 //    Rev 1.22   08 Jun 1999 16:26:18   sally
 // make mWatts = 0.0, dB = -1000 when dn = 0.0
 // 
@@ -288,12 +291,24 @@ ParameterList::Print(
     for (unsigned long i = 0; i < _numPairs; i++)
     {
         Parameter* first_param = GetHead();
+        if (first_param->printFunc == 0)
+        {
+            fprintf(stderr, "No print function defined for [%s,%s]\n",
+                             first_param->paramName, first_param->unitName);
+            exit(1);
+        }
         first_param->printFunc(fp,
             first_param->data + i * first_param->byteSize);
         for (Parameter* param_ptr = GetNext(); param_ptr;
             param_ptr = GetNext())
         {
             fprintf(fp, "   ");
+            if (param_ptr->printFunc == 0)
+            {
+                fprintf(stderr, "No print function defined for [%s,%s]\n",
+                             param_ptr->paramName, param_ptr->unitName);
+                exit(1);
+            }
             param_ptr->printFunc(fp,
                 param_ptr->data + i * param_ptr->byteSize);
         }
@@ -475,6 +490,9 @@ ParameterList::_SetTimeUnits(
             timeParamId = WVC_ROW_TIME;
             break;
         case SOURCE_L2Ax:
+            timeParamId = WVC_ROW_TIME;
+            break;
+        case SOURCE_L2Ahr:
             timeParamId = WVC_ROW_TIME;
             break;
         default:
@@ -768,6 +786,12 @@ int              useAvgDeviation)
         // X parameter: print value of midpoint
         midPoint = index + (unsigned long) (statFrameNo / 2);
         Parameter* first_param = GetHead();
+        if (first_param->printFunc == 0)
+        {
+            fprintf(stderr, "No print function defined for [%s,%s]\n",
+                             first_param->paramName, first_param->unitName);
+            exit(1);
+        }
         first_param->printFunc(fp,
             first_param->data + midPoint * first_param->byteSize);
 

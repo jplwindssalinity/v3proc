@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.40   07 Oct 1999 13:59:18   sally
+// added L2Ahr file type
+// 
 //    Rev 1.39   26 Jul 1999 15:44:46   sally
 // add new extraction function for HK2 group flag
 // 
@@ -907,6 +910,47 @@ PolynomialTable*)     // unused
 }//ExtractData2D_810
 
 //----------------------------------------------------------------------
+// Function:    ExtractData2D_2000 ([][2000])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_2000(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 2000;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, buffer) == HDF_SUCCEED)
+            return(2000 * length);
+        else
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, buffer) == HDF_SUCCEED)
+            return(2000 * length);
+        else
+            return -1;
+    }
+}//ExtractData2D_2000
+
+//----------------------------------------------------------------------
 // Function:    ExtractData2D_3240 ([][3240])
 // Extracts:    two dimensional data
 //----------------------------------------------------------------------
@@ -1322,6 +1366,131 @@ PolynomialTable*)     // unused
     return(length * 810);
 
 }//ExtractData2D_810_int2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_2000_uint2_float ([][2000])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_2000_uint2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold unsigned short integers
+    unsigned short* tempBuffer =
+             (unsigned short*) calloc(length * 2000, sizeof(unsigned short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 2000;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    unsigned short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 2000; j++, floatP++, ushortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*ushortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return(length * 2000);
+
+}//ExtractData2D_2000_uint2_float
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_2000_int2_float ([][2000])
+// Extracts:    two dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData2D_2000_int2_float(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    assert(l1File != 0);
+    // alloc space to hold short integers
+    short* tempBuffer = (short*) calloc(length * 2000, sizeof(short));
+    assert(tempBuffer != 0);
+
+    int32 sdStart[2], sdStride[2], sdEdge[2];
+    sdStart[0] = start;
+    sdStart[1] = 0;
+    sdStride[0] = stride;
+    sdStride[1] = 1;
+    sdEdge[0] = length;
+    sdEdge[1] = 2000;
+
+    if (stride == 1 || stride == 0)
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  NULL, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+    else
+    {
+        if (l1File->GetDatasetDataMD(sdsIDs[0], sdStart,
+                  sdStride, sdEdge, tempBuffer) != HDF_SUCCEED)
+            return -1;
+    }
+
+    // get the scale factor
+    float64  scaleFactor;
+    if (l1File->GetScaleFactor(sdsIDs[0], scaleFactor) == HDF_FAIL)
+        return -1;
+
+    // convert the short integers to floats, and return
+    float* floatP = (float*)buffer;
+    short* ushortP = tempBuffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 2000; j++, floatP++, ushortP++)
+        {
+            
+            *floatP = (float) (scaleFactor * (*ushortP));
+        }
+    }
+    free((void*) tempBuffer);
+
+    return(length * 2000);
+
+}//ExtractData2D_2000_int2_float
 
 //----------------------------------------------------------------------
 // Function:    ExtractData2D_3240_uint2_float ([][3240])
@@ -3968,6 +4137,60 @@ PolynomialTable*)     // unused
     return(length * 810);
 
 }//ExtractData2D_810_uint2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_2000_int2_float_dtr ([][2000])
+// Extracts:    float[2000]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_2000_int2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_2000_int2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 2000; i++, floatP++)
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+
+    return(length * 2000);
+
+}//ExtractData2D_2000_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_2000_uint2_float_dtr ([][2000])
+// Extracts:    float[2000]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_2000_uint2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_2000_uint2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 2000; i++, floatP++)
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+
+    return(length * 2000);
+
+}//ExtractData2D_2000_uint2_float_dtr
 
 //----------------------------------------------------------------------
 // Function:    ExtractData2D_3240_int2_float_dtr ([][3240])

@@ -6,6 +6,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.16   07 Oct 1999 13:59:14   sally
+// added L2Ahr file type
+// 
 //    Rev 1.15   15 Sep 1999 15:18:52   sally
 // change some default values, fix logic
 // 
@@ -713,6 +716,7 @@ FILE*           ofp)
         fprintf(ofp, "?");
     else
     {
+        assert(_errorCounterP->printFunc != 0);
         _errorCounterP->printFunc(ofp, (char*)_errorStateElement.value);
     }
 

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.22   07 Oct 1999 14:00:22   sally
+// added L2Ahr file type
+// 
 //    Rev 1.21   27 Aug 1999 14:49:16   sally
 // need to change status to OK if the tlm file list is not empty in constructor
 // 
@@ -305,6 +308,7 @@ const char*     filename)
         break;
     case SOURCE_L2A:
     case SOURCE_L2Ax:
+    case SOURCE_L2Ahr:
     case SOURCE_L2B:
         file = new NoTimeTlmFile(fullname, tlm_type, returnStatus);
         break;

@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.8   07 Oct 1999 14:00:16   sally
+// added L2Ahr file type
+// 
 //    Rev 1.7   25 May 1999 14:05:54   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -60,6 +63,7 @@ const char *source_id_map[] =
     SOURCE_HK2_STRING,
     SOURCE_L2A_STRING,
     SOURCE_L2Ax_STRING,
+    SOURCE_L2Ahr_STRING,
     SOURCE_L2B_STRING
 };
 

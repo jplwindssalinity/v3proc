@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.10   07 Oct 1999 14:00:12   sally
+// added L2Ahr file type
+// 
 //    Rev 1.9   25 May 1999 14:05:52   sally
 // add L2Ax for Bryan Stiles
 // 
@@ -95,6 +98,9 @@ extern const int L2AParTabSize;
  
 extern const ParTabEntry L2AxParTab[];
 extern const int L2AxParTabSize;
+
+extern const ParTabEntry L2AhrParTab[];
+extern const int L2AhrParTabSize;
  
 extern const ParTabEntry L2BParTab[];
 extern const int L2BParTabSize;
