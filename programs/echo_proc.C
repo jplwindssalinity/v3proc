@@ -364,6 +364,7 @@ main(
     }
 
     check_status(l1a_file.OpenParamDatasets(frame_time_p));
+    check_status(l1a_file.OpenParamDatasets(operational_mode_p));
     check_status(l1a_file.OpenParamDatasets(xpos_p));
     check_status(l1a_file.OpenParamDatasets(ypos_p));
     check_status(l1a_file.OpenParamDatasets(zpos_p));
