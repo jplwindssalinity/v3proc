@@ -243,7 +243,7 @@ main(
 
 	int along_track_bins =
 		(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
-	along_track_bins = along_track_bins/2;
+	along_track_bins = along_track_bins;
 
 	if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins/2,
 		along_track_bins))
