@@ -399,6 +399,8 @@ main(
                 //--------//
 
                 fwrite((void *)&time, sizeof(double), 1, output_fp);
+                fwrite((void *)&orbit_step, sizeof(unsigned int), 1,
+                    output_fp);
                 spacecraft.orbitState.Write(output_fp);
                 attitude->Write(output_fp);
                 fwrite((void *)&encoder, sizeof(unsigned int), 1, output_fp);

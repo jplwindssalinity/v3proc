@@ -288,12 +288,22 @@ main(
         if (done ||
             (st->orbit_step != last_orbit_step && last_orbit_step != -1))
         {
-            Attitude attitude = estimate_attitude();
+            //-------------------//
+            // estimate attitude //
+            //-------------------//
+            // the most recently read in spot data gets wasted...oh well.
+
+            Attitude attitude = estimate_attitude(&spacecraft, &instrument,
+                spot_idx, spot_track);
             
             fprintf(output_fp, "%d %g %g %g\n", orbit_step, roll*rtd,
                 pitch*rtd, yaw*rtd);
             last_orbit_step = st->orbit_step;
             spot_idx = 0;
+        }
+        else
+        {
+            spot_idx++;
         }
 
         //---------------------------//
@@ -421,35 +431,113 @@ main(
 
 Attitude
 estimate_attitude(
-    int         spot_count,
-    SpotTrack*  spot_track)
+    Spacecraft*  spacecraft,
+    Instrument*  instrument,
+    int          spot_count,
+    SpotTrack*   spot_track)
 {
-    Instrument instrument;
-    Spacecraft spacecraft;
+    //------------//
+    // initialize //
+    //------------//
+
+    float best_roll = 0.0;
+    float best_pitch = 0.0;
+    float best_yaw = 0.0;
+
+    float prev_roll = 1.0;
+    float prev_pitch = 1.0;
+    float prev_yaw = 1.0;
+
+    while (best_roll != prev_roll &&
+           best_pitch != prev_pitch &&
+           best_yaw != prev_yaw)
+    {
+        //----------------//
+        // find best roll //
+        //----------------//
+
+        float new_best_roll = best_roll;
+        for (int roll_delta = -1; roll_delta < 2; roll_delta++)
+        {
+            float roll = best_roll + (float)roll_delta * roll_step;
+            double sum_sqr = sum_sqr_freq_error(roll, best_pitch, best_yaw);
+            if (sum_sqr < min_sum_sqr)
+            {
+                min_sum_sqr = sum_sqr;
+                new_best_roll = roll;
+            }
+        }
+        best_roll = new_best_roll;
+    }
+}
+
+
+//--------------------//
+// sum_sqr_freq_error //
+//--------------------//
+
+double
+sum_sqr_freq_error(
+    Spacecraft*  spacecraft,
+    Instrument*  instrument
+    float        roll,
+    float        pitch,
+    float        yaw)
+{
+    Attitude attitude;
+    attitude.SetRPY(roll, pitch, yaw);
+
+    Antenna* antenna = &(instrument->antenna);
+
     for (int spot_idx = 0; spot_idx < spot_count; spot_idx++)
     {
-        spacecraft.orbitState = spot_track[spot_idx].orbit_state;
-        spacecraft.attitude = spot_track[spot_idx].attitude;
+        //---------------//
+        // transfer data //
+        //---------------//
+
+        spacecraft->orbitState = spot_track[spot_idx].orbit_state;
+        spacecraft->attitude = spot_track[spot_idx].attitude;
         unsigned int encoder = spot_track[spot_idx].encoder;
-            fread((void *)&encoder, sizeof(unsigned int), 1, input_fp) != 1 ||
-            fread((void *)&beam_idx, sizeof(int), 1, input_fp) != 1 ||
-            fread((void *)&(instrument.commandedDoppler), sizeof(float), 1,
-                input_fp) != 1 ||
-            fread((void *)&(instrument.commandedRxGateDelay), sizeof(float), 1,
-                input_fp) != 1 ||
-            fread((void *)&(instrument.commandedRxGateWidth), sizeof(float), 1,
-                input_fp) != 1 ||
-            fread((void *)&f_bb_expected, sizeof(float), 1, input_fp) != 1 ||
-            fread((void *)&f_bb_data, sizeof(float), 1, input_fp) != 1)
-        {
-            break;
-        }
+        int beam_idx = spot_track[spot_idx].beam_idx;
+        instrument->commandedDoppler = spot_track[spot_idx].commanded_doppler;
+        instrument->commandedRxGateDelay =
+            spot_track[spot_idx].commanded_rx_gate_delay;
+        instrument->commandedRxGateWidth =
+            spot_track[spot_idx].commanded_rx_gate_width;
+        float f_bb_expected = spot_track[spot_idx].f_bb_expected;
+        float f_bb_data = spot_track[spot_idx].f_bb_data;
 
         //----------------//
         // set up antenna //
         //----------------//
 
         antenna->SetAzimuthWithEncoder(encoder);
-        
-    }
-}
+        antenna->currentBeamIdx = beam_idx;
+        Beam* beam = antenna->GetCurrentBeam();
+
+        //--------------------//
+        // use trial attitude //
+        //--------------------//
+
+        CoordinateSwitch antenna_frame_to_gc =
+          AntennaFrameToGC(&(spacecraft->orbitState), &attitude, antenna);
+ 
+        double center_look, center_azim;
+        if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, spacecraft, beam,
+            instrument->antenna.actualSpinRate, &center_look, &center_azim))
+        {
+            return(0);
+        }
+ 
+        Vector3 vector;
+        vector.SphericalSet(1.0, center_look, center_azim);
+        TargetInfoPackage tip;
+        if (! TargetInfo(&antenna_frame_to_gc, spacecraft,
+            instrument, vector, &tip))
+        {
+            return(0);
+        }
+        double f_bb_expected = tip.basebandFreq;
+        double dif = f_bb_expected - f_bb_peak[beam_idx][pulse_idx];
+ 
+        sum_sqr += ((dif * dif) / (double)pulse_count[beam_idx]);
