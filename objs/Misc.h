@@ -55,4 +55,7 @@ int downhill_simplex(double** p,int ndim,int totdim,double ftol,
 double amotry(double** p,double* y,double* psum,int ndim,int totdim,
 	double (*funk)(double*,void*),void* ptr,int ihi,double fac);
 
+float median(const float* array, int num_elements);
+void sort_increasing(float* array, int num_elements);
+
 #endif
