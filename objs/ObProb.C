@@ -241,6 +241,21 @@ ObProb::Add(
     return;
 }
 
+//-------------//
+// ObProb::Add //
+//-------------//
+
+void
+ObProb::Add(
+    ObProb*  other_op)
+{
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        probabilityArray[i] += other_op->probabilityArray[i];
+    }
+    return;
+}
+
 //------------------//
 // ObProb::Multiply //
 //------------------//
@@ -297,8 +312,7 @@ ObProb::WriteFlower(
         double max_probability = 0.0;
         for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
         {
-            int use_dir_idx = dir_idx % DIR_BINS;
-            double probability = GetProbability(use_dir_idx);
+            double probability = GetProbability(dir_idx);
             if (probability > max_probability)
                 max_probability = probability;
         }
@@ -481,8 +495,9 @@ ObProbArray::LocalProb(
     {
         for (int ati = min_ati; ati < max_ati; ati++)
         {
-if (cti != 23 || ati != 150)
-  continue;
+            // assume the information from this wvc will be good
+            int bad_wvc = 0;
+
             ObProb* op1 = GetObProb(cti, ati);
             if (op1 == NULL)
                 continue;
@@ -516,16 +531,28 @@ if (cti != 23 || ati != 150)
 
                     float dist_prob = dp->Probability(distance, speed0,
                         dspeed, ddirection);
+                    if (dist_prob < 0.0)
+                    {
+                        // can't estimate probs: eliminate this wvc
+                        bad_wvc = 1;
+                        break;
+                    }
 
                     tmp_op.Add(dir_idx, dist_prob * probability1);
                 }
+                if (bad_wvc)
+                    break;
             }
+
+            if (bad_wvc)
+                continue;
 
             //----------------------------------//
             // multiply it into the destination //
             //----------------------------------//
 
-            dest_op->Multiply(&tmp_op);
+            dest_op->Add(&tmp_op);
+//            dest_op->Multiply(&tmp_op);
             dest_op->Normalize();    // keep everything in range
         }
     }
@@ -659,6 +686,7 @@ DistProb::SetSum()
 //-----------------------//
 // DistProb::Probability //
 //-----------------------//
+// returns a probability of -1.0 if a real one can't be calculated
 
 float
 DistProb::Probability(
@@ -692,7 +720,7 @@ DistProb::Probability(
 {
     double probability;
     if (sum[distance_idx][speed_idx] < MINIMUM_SAMPLES)
-        probability = 0.0;
+        return(-1.0);
     else
         probability =
           (double)count[distance_idx][speed_idx][dspeed_idx][ddirection_idx] /
