@@ -205,7 +205,8 @@ L10ToL15::Convert(
 				// to stdout.						//
 				//----------------------------------//
 
-				if (outputSigma0ToStdout) printf("%g ",meas->value);
+				if (outputSigma0ToStdout)
+					printf("%g ",meas->value);
 
 				total_slice_idx++;
 				sliceno++;
