@@ -1,28 +1,106 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_l2b_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <memory.h>
 #include "L2B.h"
 
+//===========//
+// L2BHeader //
+//===========//
+
+L2BHeader::L2BHeader()
+:   crossTrackResolution(0.0), alongTrackResolution(0.0), zeroIndex(0)
+{
+    return;
+}
+
+L2BHeader::~L2BHeader()
+{
+    return;
+}
+
+//-----------------//
+// L2BHeader::Read //
+//-----------------//
+
+int
+L2BHeader::Read(
+    FILE*  fp)
+{
+    if (fread(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
+        fread(&alongTrackResolution, sizeof(float), 1, fp) != 1 ||
+        fread(&zeroIndex, sizeof(int), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
+}
+
+//------------------//
+// L2BHeader::Write //
+//------------------//
+
+int
+L2BHeader::Write(
+    FILE*  fp)
+{
+    if (fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
+        fwrite(&alongTrackResolution, sizeof(float), 1, fp) != 1 ||
+        fwrite(&zeroIndex, sizeof(int), 1, fp) != 1)
+    {
+        return(0);
+    }
+    return(1);
+}
+
+//-----------------------//
+// L2BHeader::WriteAscii //
+//-----------------------//
+
+int
+L2BHeader::WriteAscii(
+    FILE*  fp)
+{
+        fprintf(fp, "############################################\n");
+        fprintf(fp, "##                L2B DataFile            ##\n");
+        fprintf(fp, "############################################\n");
+        fprintf(fp,"\n\nCrossTrackRes %g AlongTrackRes %g ZeroIndex %d\n\n",
+        crossTrackResolution,alongTrackResolution,zeroIndex);
+    return(1);
+}
+
+//==========//
+// L2BFrame //
+//==========//
+
+L2BFrame::L2BFrame()
+{
+    return;
+}
+
+L2BFrame::~L2BFrame()
+{
+    return;
+}
 
 //=====//
 // L2B //
 //=====//
 
 L2B::L2B()
-  :_status(OK)
+:   _status(OK)
 {
-	return;
+    return;
 }
 
 L2B::~L2B()
 {
-	return;
+    return;
 }
 
 //----------------//
@@ -31,10 +109,10 @@ L2B::~L2B()
 
 int
 L2B::WriteVctr(
-	const char*		filename,
-	const int		rank)
+    const char*  filename,
+    const int    rank)
 {
-	return(frame.swath.WriteVctr(filename, rank));
+    return(frame.swath.WriteVctr(filename, rank));
 }
 
 
@@ -45,11 +123,7 @@ L2B::WriteVctr(
 int
 L2B::WriteAscii()
 {
-        if(!header.WriteAscii(_outputFp)) return(0);
-	return(frame.swath.WriteAscii(_outputFp));
+    if (! header.WriteAscii(_outputFp))
+        return(0);
+    return(frame.swath.WriteAscii(_outputFp));
 }
-
-
-
-
-
