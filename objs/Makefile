@@ -26,6 +26,7 @@ OBJS = \
 	ConfigSim.o \
 	CoordinateSwitch.o \
 	Distributions.o \
+	EarthField.o \
 	EarthPosition.o \
 	Ephemeris.o \
 	GMF.o \
@@ -36,6 +37,7 @@ OBJS = \
 	InstrumentSimAccurate.o \
 	InstrumentGeom.o \
 	Interpolate.o \
+	KpmField.o \
 	KprTable.o \
 	L00.o \
 	L00Frame.o \
@@ -130,6 +132,7 @@ ConfigList.o: ConfigList.C ConfigList.h List.h
 ConfigSim.o: ConfigSim.C ConfigSim.h ConfigSimDefs.h InstrumentSim.h InstrumentSimAccurate.h SpacecraftSim.h XTable.h Misc.h L00.h L10.h L10ToL15.h L15.h L17.h L20.h Constants.h Distributions.h Tracking.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h BaseFile.h L00Frame.h L10Frame.h Ephemeris.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h CoordinateSwitch.h Beam.h Attitude.h PiscTable.h Matrix3.h BufferedList.h EarthPosition.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Distributions.o: Distributions.C Distributions.h
+EarthField.o: EarthField.h LonLat.h Constants.h
 EarthPosition.o: EarthPosition.C EarthPosition.h Constants.h LonLat.h CoordinateSwitch.h Matrix3.h List.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Constants.h Matrix3.h BufferedList.h EarthPosition.h
 GMF.o: GMF.C GMF.h Meas.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Tracking.h Misc.h EarthPosition.h Matrix3.h BufferedList.h
@@ -141,6 +144,7 @@ InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h Inst
 InstrumentSimAccurate.o: InstrumentSimAccurate.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Sigma0.h Constants.h InstrumentSimAccurate.h AccurateGeom.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h Distributions.h XTable.h EarthPosition.h CoordinateSwitch.h LonLat.h Matrix3.h Meas.h BufferedList.h Beam.h Attitude.h Misc.h List.h PiscTable.h BaseFile.h L00Frame.h Tracking.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h CoordinateSwitch.h Tracking.h Matrix3.h Attitude.h Constants.h
+KpmField.o: KpmField.h EarthField.h LonLat.h Constants.h Distributions.h
 KprTable.o: KprTable.C KprTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h Tracking.h BufferedList.h
 L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
