@@ -29,6 +29,7 @@
 //                                      with noise added to X in some
 //                                      manner. (Attitude knowledge error, etc)
 //
+//              <slice_bandwidth>       science slice bandwidth in Hz
 //              <output_file>           Kpr output file, Binary Format:
 //                                      int number_of_beams
 //                                      float sliceBandWidth
@@ -102,19 +103,18 @@ template class TrackerBase<unsigned short>;
 
 #define NUMBER_OF_AZIMUTH_BINS 50
 #define NUM_SCIENCE_SLICES 10
-#define NUM_GUARD_SLICES_EACH_SIDE 1
+#define NUM_GUARD_SLICES_EACH_SIDE 0
 #define NUMBER_OF_BEAMS 2
-#define SLICE_BANDWIDTH 8314.0
 #define MIN_NUM_SAMPLES 1
 #define FILTER_SIZE 3
-#define FILTER_NUM_PASSES 2
+#define FILTER_NUM_PASSES 0
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
 const char* usage_array[] = { "<noisefree_l1b_file>", "<noisy_l1b_file>",
-			      "<output_file>",0};
+			      "<science_slice_bandwidth>","<output_file>",0};
 
 int main(int argc, char* argv[]){	
 
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]){
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 4)
+	if (argc != 5)
 		usage(command, usage_array, 1);
 
 	//--------------------------------------//
@@ -132,15 +132,18 @@ int main(int argc, char* argv[]){
 
 	L1B noisy, noisefree;
 
-	noisefree.SetInputFilename(argv[1]);
-	noisy.SetInputFilename(argv[2]);
-
+        int cli=1;
+	noisefree.SetInputFilename(argv[cli++]);
+	noisy.SetInputFilename(argv[cli++]);
+        float science_slice_bw=atof(argv[cli++]);
+        char* outfile = argv[cli++];
+        
 
 	//-------------------------------------//
 	// Create KprTable                     //
 	//-------------------------------------//
 
-	Kprs kpr(NUMBER_OF_BEAMS,SLICE_BANDWIDTH,SLICE_BANDWIDTH,
+	Kprs kpr(NUMBER_OF_BEAMS, science_slice_bw,
 		 NUM_SCIENCE_SLICES, NUM_GUARD_SLICES_EACH_SIDE,
 		     NUMBER_OF_AZIMUTH_BINS, MIN_NUM_SAMPLES);
 
@@ -157,7 +160,7 @@ int main(int argc, char* argv[]){
 		  printf("%d Records Accumulated\n",record_count);
                 record_count++;
 		//------------------------------//
-		// read level 1.5 data records  //
+		// read level 1B data records  //
 		//------------------------------//
 
 		if (! noisefree.ReadDataRec())
@@ -183,7 +186,7 @@ int main(int argc, char* argv[]){
 		}		
 
 		//------------------------------//
-		// read a level 1.5 data record //
+		// read a level 1B data record //
 		//------------------------------//
 
 		if (! noisy.ReadDataRec())
@@ -227,7 +230,7 @@ int main(int argc, char* argv[]){
 	  }
 
 	}
-	if (!kpr.Write(argv[3])){
+	if (!kpr.Write(outfile)){
 	  fprintf(stderr, "%s: Unable to write kpr table to file\n",command);
 	  exit(1);
 	}
