@@ -7,8 +7,8 @@
 # default: make all object and executable files
 #----------------------------------------------------------------------
 
-default: objs/Makefile programs/Makefile scripts/Makefile
-	@ for dir in objs programs scripts; \
+default: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile
+	@ for dir in eadata objs programs scripts; \
 		do (cd $$dir; \
 			echo "Making default in `pwd`"; \
 			make default); \
@@ -19,7 +19,7 @@ default: objs/Makefile programs/Makefile scripts/Makefile
 #----------------------------------------------------------------------
 
 clean:
-	@ for dir in objs programs scripts; \
+	@ for dir in eadata objs programs scripts; \
 		do (cd $$dir; \
 			echo "Making clean in `pwd`"; \
 			make clean; \
@@ -30,8 +30,8 @@ clean:
 # install: make all object and executable files and install
 #----------------------------------------------------------------------
 
-install: objs/Makefile programs/Makefile scripts/Makefile
-	@ for dir in objs programs scripts; \
+install: eadata/Makefile objs/Makefile programs/Makefile scripts/Makefile
+	@ for dir in eadata objs programs scripts; \
 		do (cd $$dir; \
 			echo "Making install in `pwd`"; \
 			make install); \
