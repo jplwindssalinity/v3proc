@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1999, California Institute of Technology. //
+// Copyright (C) 1997-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -73,26 +73,21 @@ Matrix3::Matrix3(
 
 Matrix3::Matrix3(matrixtypeE mtype)
 {
-    if (mtype == IDENTITY)
-    {
+    if (mtype == IDENTITY) {
         // fill matrix with 3x3 identity matrix
         int i,j;
-        for (i=0; i < 3; i++)
-        {
-            for (j=0; j < 3; j++)
-            {
+        for (i=0; i < 3; i++) {
+            for (j=0; j < 3; j++) {
                 _m[i][j] = 0.0;
-                if (i == j)
+                if (i == j) {
                     _m[i][j] = 1.0;
+                }
             }
         }
     }
-    else if (mtype == GENERAL)
-    {
+    else if (mtype == GENERAL) {
         return;
-    }
-    else
-    {
+    } else {
         printf("Error: Matrix3 object received unrecognized enum = %d\n",
             mtype);
         exit(1);
@@ -252,63 +247,72 @@ Matrix3::Identity()
 int
 Matrix3::Inverse()
 {
-
 #define SWAP(a,b) {temp=(a);(a)=(b);(b)=temp;}
 
-int n = 3;
-int indxc[3],indxr[3],ipiv[3];
-int i, j, k, l, ll;
-int icol = 0;
-int irow = 0;
-float big,dum,pivinv,temp;
+    int n = 3;
+    int indxc[3], indxr[3], ipiv[3];
+    int i, j, k, l, ll;
+    int icol = 0;
+    int irow = 0;
+    float big, dum, pivinv, temp;
 
-for (j=0;j<n;j++) ipiv[j]=0;
-for (i=0;i<n;i++) {
-    big=0.0;
-    for (j=0;j<n;j++)
-        if (ipiv[j] != 1)
-            for (k=0;k<n;k++) {
-                if (ipiv[k] == 0) {
-                    if (fabs(_m[j][k]) >= big) {
-                        big=fabs(_m[j][k]);
-                        irow=j;
-                        icol=k;
+    for (j = 0; j < n; j++) {
+        ipiv[j]=0;
+    }
+    for (i = 0; i < n; i++) {
+        big = 0.0;
+        for (j = 0; j < n; j++) {
+            if (ipiv[j] != 1) {
+                for (k = 0; k < n; k++) {
+                    if (ipiv[k] == 0) {
+                        if (fabs(_m[j][k]) >= big) {
+                            big = fabs(_m[j][k]);
+                            irow = j;
+                            icol = k;
+                        }
+                    } else if (ipiv[k] > 1) {
+                        fprintf(stderr,
+                        "Error: Matrix3 tried to invert singular matrix\n");
+                        return(0);
                     }
                 }
-                else if (ipiv[k] > 1)
-                {
-                    fprintf(stderr,
-                    "Error: Matrix3 object tried to invert singular matrix\n");
-                    return(0);
+            }
+        }
+        ++(ipiv[icol]);
+        if (irow != icol) {
+            for (l = 0; l < n; l++) {
+                SWAP(_m[irow][l], _m[icol][l])
+            }
+        }
+        indxr[i] = irow;
+        indxc[i] = icol;
+        if (_m[icol][icol] == 0.0) {
+            fprintf(stderr,
+                "Error: Matrix3 object tried to invert singular matrix\n");
+            return(0);
+        }
+        pivinv = 1.0 / _m[icol][icol];
+        _m[icol][icol] = 1.0;
+        for (l = 0; l < n; l++) {
+            _m[icol][l] *= pivinv;
+        }
+        for (ll = 0; ll < n; ll++) {
+            if (ll != icol) {
+                dum = _m[ll][icol];
+                _m[ll][icol] = 0.0;
+                for (l = 0; l < n; l++) {
+                    _m[ll][l] -= _m[icol][l]*dum;
                 }
             }
-    ++(ipiv[icol]);
-    if (irow != icol) {
-        for (l=0;l<n;l++) SWAP(_m[irow][l],_m[icol][l])
-    }
-    indxr[i]=irow;
-    indxc[i]=icol;
-    if (_m[icol][icol] == 0.0)
-    {
-        fprintf(stderr,
-            "Error: Matrix3 object tried to invert singular matrix\n");
-        return(0);
-    }
-    pivinv=1.0/_m[icol][icol];
-    _m[icol][icol]=1.0;
-    for (l=0;l<n;l++) _m[icol][l] *= pivinv;
-    for (ll=0;ll<n;ll++)
-        if (ll != icol) {
-            dum=_m[ll][icol];
-            _m[ll][icol]=0.0;
-            for (l=0;l<n;l++) _m[ll][l] -= _m[icol][l]*dum;
         }
-}
-for (l=n-1;l>=0;l--) {
-    if (indxr[l] != indxc[l])
-        for (k=0;k<n;k++)
-            SWAP(_m[k][indxr[l]],_m[k][indxc[l]]);
-}
+    }
+    for (l = n - 1; l >= 0; l--) {
+        if (indxr[l] != indxc[l]) {
+            for (k = 0; k < n; k++) {
+                SWAP(_m[k][indxr[l]], _m[k][indxc[l]]);
+            }
+        }
+    }
 
 #undef SWAP
     return(1);
