@@ -282,6 +282,8 @@ main(
                     command, output_file);
                 exit(1);
             }
+
+            last_orbit_step = echo_info.orbitStep;
         }
 
         //-----------------//

@@ -14,6 +14,10 @@ static const char rcs_id_echo_funcs_h[] =
 
 #define SPOTS_PER_FRAME  100
 
+//==========//
+// EchoInfo //
+//==========//
+
 class EchoInfo
 {
 public:
@@ -46,12 +50,30 @@ public:
     float           measSpecPeakFreq[SPOTS_PER_FRAME];
 };
 
+//==============//
+// EchoInfoPlus //
+//==============//
+
+class EchoInfoPlus : public EchoInfo
+{
+public:
+    int  WritePlus(int fd);
+    int  ReadPlus(int fd);
+
+    float  width[SPOTS_PER_FRAME];
+    float  slices[SPOTS_PER_FRAME][10];
+};
+
+//===========//
+// Functions //
+//===========//
+
 int     gaussian_fit(Qscat* qscat, double* x, double* y, int points,
-            float* peak_slice, float* peak_freq);
+            float* peak_slice, float* peak_freq, float* width_freq);
 double  gfit_eval(double* x, void* ptr);
 
 int     gaussian_fit2(Qscat* qscat, double* x, double* y, int points,
-            float* peak_slice, float* peak_freq);
+            float* peak_slice, float* peak_freq, float* width_freq);
 double  gfit_eval2(double* x, void* ptr);
 
 //-----------------//
@@ -168,6 +190,54 @@ EchoInfo::Read(
     return(1);
 }
 
+//-------------------------//
+// EchoInfoPlus::WritePlus //
+//-------------------------//
+
+int
+EchoInfoPlus::WritePlus(
+    int  fd)
+{
+    if (! Write(fd))
+        return(0);
+
+    int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
+    if (write(fd, (void *)width, frame_float_size) != frame_float_size)
+        return(0);
+
+    int slices_size = sizeof(float) * 10;
+    for (int i = 0; i < SPOTS_PER_FRAME; i++)
+    {
+        if (write(fd, (void *)slices[i], slices_size) != slices_size)
+            return(0);
+    }
+    return(1);
+}
+
+//------------------------//
+// EchoInfoPlus::ReadPlus //
+//------------------------//
+
+int
+EchoInfoPlus::ReadPlus(
+    int  fd)
+{
+    if (! Read(fd))
+        return(0);
+
+    int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
+    if (read(fd, (void *)width, frame_float_size) != frame_float_size)
+        return(0);
+
+    int slices_size = sizeof(float) * 10;
+    for (int i = 0; i < SPOTS_PER_FRAME; i++)
+    {
+        if (read(fd, (void *)slices[i], slices_size) != slices_size)
+            return(0);
+    }
+    return(1);
+}
+
 //--------------//
 // gaussian_fit //
 //--------------//
@@ -179,7 +249,8 @@ gaussian_fit(
     double*  y,
     int      points,
     float*   peak_slice,
-    float*   peak_freq)
+    float*   peak_freq,
+    float*   width_freq)
 {
     //----------------//
     // allocate array //
@@ -250,11 +321,14 @@ gaussian_fit(
     if (fslice < 0.0 || fslice > points - 1)
         return(0);
 
+    width = p[0][2];
+
     int near_slice_idx = (int)(fslice + 0.5);
     float f1, bw;
     qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
     *peak_slice = fslice;
     *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
+    *width_freq = bw * width;
 
     return(1);
 }
@@ -336,6 +410,8 @@ EchoInfo::SpotOrbitStep(
 // reducing a 4D problem to 2D
 // reduction equations courtesy of B. Stiles
 
+#define TOO_WIDE  11.0
+
 int
 gaussian_fit2(
     Qscat*   qscat,
@@ -343,7 +419,8 @@ gaussian_fit2(
     double*  y,
     int      points,
     float*   peak_slice,
-    float*   peak_freq)
+    float*   peak_freq,
+    float*   width_freq)
 {
     //----------------//
     // allocate array //
@@ -394,11 +471,20 @@ gaussian_fit2(
     if (fslice < 0.0 || fslice > points - 1)
         return(0);
 
+    width = p[0][1];
+    if (width > TOO_WIDE)
+        return(0);
+
+    //----------------------//
+    // transfer information //
+    //----------------------//
+
     int near_slice_idx = (int)(fslice + 0.5);
     float f1, bw;
     qscat->ses.GetSliceFreqBw(near_slice_idx, &f1, &bw);
     *peak_slice = fslice;
     *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
+    *width_freq = bw * width;
 
     return(1);
 }

@@ -464,10 +464,10 @@ main(
             // find the peak //
             //---------------//
 
-            float meas_spec_peak_slice, meas_spec_peak_freq;
-            if (! gaussian_fit(&qscat, slice_number, signal_energy,
+            float meas_spec_peak_slice, meas_spec_peak_freq, width;
+            if (! gaussian_fit2(&qscat, slice_number, signal_energy,
                 frame->slicesPerSpot, &meas_spec_peak_slice,
-                &meas_spec_peak_freq))
+                &meas_spec_peak_freq, &width))
             {
                 echo_info.flag[spot_idx] = EchoInfo::BAD_PEAK;
                 continue;

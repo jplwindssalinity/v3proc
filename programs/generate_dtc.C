@@ -5,45 +5,44 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		generate_dtc
+//    generate_dtc
 //
 // SYNOPSIS
-//		generate_dtc <sim_config_file> <DTC_base>
+//    generate_dtc <sim_config_file> <DTC_base>
 //
 // DESCRIPTION
-//		Generates a set of Doppler Tracking Constants for each beam,
-//		based upon the parameters in the simulation configuration
-//		file and the given Receiver Gate Constants.
+//    Generates a set of Doppler Tracking Constants for each beam,
+//    based upon the parameters in the simulation configuration file
+//    and the given Receiver Gate Constants.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<sim_config_file>	The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operands are supported:
+//      <sim_config_file>  The sim_config_file needed listing all
+//                           input parameters, input files, and
+//                           output files.
 //
-//		<DTC_base>			The DTC output base.
+//      <DTC_base>         The DTC output base.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% generate_constants sws1b.cfg dtc.dat
+//    An example of a command line is:
+//      % generate_constants sws1b.cfg dtc.dat
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (hudd@casket.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -51,7 +50,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -98,8 +97,8 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
-#define DOPPLER_ORBIT_STEPS		256
-#define DOPPLER_AZIMUTH_STEPS	90		// used for fitting
+#define DOPPLER_ORBIT_STEPS    256
+#define DOPPLER_AZIMUTH_STEPS  90    // used for fitting
 
 //--------//
 // MACROS //
@@ -129,62 +128,62 @@ const char* usage_array[] = { "<sim_config_file>", "<DTC_base>", 0};
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
 
-	if (argc != 3)
-		usage(command, usage_array, 1);
+    if (argc != 3)
+        usage(command, usage_array, 1);
 
-	int arg_idx = 1;
-	const char* config_file = argv[arg_idx++];
-	const char* dtc_base = argv[arg_idx++];
+    int arg_idx = 1;
+    const char* config_file = argv[arg_idx++];
+    const char* dtc_base = argv[arg_idx++];
 
-	//--------------------------------//
-	// read in simulation config file //
-	//--------------------------------//
+    //--------------------------------//
+    // read in simulation config file //
+    //--------------------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//--------------------------//
-	// force RGC and to be read //
-	//--------------------------//
+    //--------------------------------------//
+    // force RGC to be read, don't read DTC //
+    //--------------------------------------//
 
-	config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
-	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
-	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
+    config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
+    config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+    config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
 
-	//----------------------------------------------//
-	// create a spacecraft and spacecraft simulator //
-	//----------------------------------------------//
+    //----------------------------------------------//
+    // create a spacecraft and spacecraft simulator //
+    //----------------------------------------------//
 
-	Spacecraft spacecraft;
-	if (! ConfigSpacecraft(&spacecraft, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
+    Spacecraft spacecraft;
+    if (! ConfigSpacecraft(&spacecraft, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
 
-	SpacecraftSim spacecraft_sim;
-	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
-			command);
-		exit(1);
-	}
-	spacecraft_sim.LocationToOrbit(0.0, 0.0, 1);
+    SpacecraftSim spacecraft_sim;
+    if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+            command);
+        exit(1);
+    }
+    spacecraft_sim.LocationToOrbit(0.0, 0.0, 1);
 
     //--------------------------------------//
     // create a QSCAT and a QSCAT simulator //
@@ -205,24 +204,24 @@ main(
         exit(1);
     }
 
-	//----------------//
-	// allocate terms //
-	//----------------//
+    //----------------//
+    // allocate terms //
+    //----------------//
 
-	// terms are [0] = amplitude, [1] = phase, [2] = bias
-	double** terms;
-	terms = (double **)make_array(sizeof(double), 2, DOPPLER_ORBIT_STEPS, 3);
+    // terms are [0] = amplitude, [1] = phase, [2] = bias
+    double** terms;
+    terms = (double **)make_array(sizeof(double), 2, DOPPLER_ORBIT_STEPS, 3);
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	OrbitState* orbit_state = &(spacecraft.orbitState);
-	Attitude* attitude = &(spacecraft.attitude);
+    OrbitState* orbit_state = &(spacecraft.orbitState);
+    Attitude* attitude = &(spacecraft.attitude);
 
-	double orbit_period = spacecraft_sim.GetPeriod();
-	double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
-	double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
+    double orbit_period = spacecraft_sim.GetPeriod();
+    double orbit_step_size = orbit_period / (double)DOPPLER_ORBIT_STEPS;
+    double azimuth_step_size = two_pi / (double)DOPPLER_AZIMUTH_STEPS;
 
     //----------------------------//
     // select encoder information //
@@ -254,12 +253,12 @@ main(
     double assumed_spin_rate = qscat.cds.GetAssumedSpinRate();
     assumed_spin_rate *= rpm_to_radps;
 
-	//-----------------//
-	// loop over beams //
-	//-----------------//
+    //-----------------//
+    // loop over beams //
+    //-----------------//
 
-	for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
-	{
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
         //---------------------------//
         // get the beam offset angle //
         //---------------------------//
@@ -281,85 +280,86 @@ main(
         double cds_beam_offset = (double)cds_beam_offset_dn * two_pi /
             (double)ENCODER_N;
 
-		//--------------------------//
-		// allocate Doppler tracker //
-		//--------------------------//
+        //--------------------------//
+        // allocate Doppler tracker //
+        //--------------------------//
 
-		qscat.cds.currentBeamIdx = beam_idx;
-		Beam* beam = qscat.GetCurrentBeam();
+        qscat.cds.currentBeamIdx = beam_idx;
+        Beam* beam = qscat.GetCurrentBeam();
 
         CdsBeamInfo* cds_beam_info = qscat.GetCurrentCdsBeamInfo();
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
         RangeTracker* range_tracker = &(cds_beam_info->rangeTracker);
 
-		if (! doppler_tracker->Allocate(DOPPLER_ORBIT_STEPS))
-		{
-			fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
-			exit(1);
-		}
+        if (! doppler_tracker->Allocate(DOPPLER_ORBIT_STEPS))
+        {
+            fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
+            exit(1);
+        }
 
-		//------------------------------//
-		// start at an equator crossing //
-		//------------------------------//
+        //------------------------------//
+        // start at an equator crossing //
+        //------------------------------//
 
-		double start_time =
-			spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
-				EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-		qscat.cds.SetEqxTime(start_time);
+        double start_time =
+            spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
+                EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
+        qscat.cds.SetEqxTime(start_time);
 
-		//------------//
-		// initialize //
-		//------------//
+        //------------//
+        // initialize //
+        //------------//
 
-		if (! qscat_sim.Initialize(&qscat))
-		{
-			fprintf(stderr, "%s: error initializing the QSCAT simulator\n",
-				command);
-			exit(1);
-		}
+        if (! qscat_sim.Initialize(&qscat))
+        {
+            fprintf(stderr, "%s: error initializing the QSCAT simulator\n",
+                command);
+            exit(1);
+        }
 
-		if (! spacecraft_sim.Initialize(start_time))
-		{
-			fprintf(stderr, "%s: error initializing spacecraft simulator\n",
-				command);
-			exit(1);
-		}
+        if (! spacecraft_sim.Initialize(start_time))
+        {
+            fprintf(stderr, "%s: error initializing spacecraft simulator\n",
+                command);
+            exit(1);
+        }
 
-		//--------------------//
-		// loop through orbit //
-		//--------------------//
+        //--------------------//
+        // loop through orbit //
+        //--------------------//
 
-		for (int orbit_step = 0; orbit_step < DOPPLER_ORBIT_STEPS; orbit_step++)
-		{
-			//--------------------//
-			// calculate the time //
-			//--------------------//
+        for (int orbit_step = 0; orbit_step < DOPPLER_ORBIT_STEPS; orbit_step++)
+        {
+            //--------------------//
+            // calculate the time //
+            //--------------------//
 
-			// addition of 0.5 centers on orbit_step
-			double time = start_time +
-				orbit_step_size * ((double)orbit_step + 0.5);
+            // addition of 0.5 centers on orbit_step
+            double time = start_time +
+                orbit_step_size * ((double)orbit_step + 0.5);
 
-			//-----------------------//
-			// locate the spacecraft //
-			//-----------------------//
+            //-----------------------//
+            // locate the spacecraft //
+            //-----------------------//
 
-			spacecraft_sim.UpdateOrbit(time, &spacecraft);
+            spacecraft_sim.UpdateOrbit(time, &spacecraft);
 
-			//----------------------//
-			// step through azimuth //
-			//----------------------//
+            //----------------------//
+            // step through azimuth //
+            //----------------------//
 
-			double dop_com[DOPPLER_AZIMUTH_STEPS];
-			for (int azimuth_step = 0; azimuth_step < DOPPLER_AZIMUTH_STEPS;
-				azimuth_step++)
-			{
+            double dop_com[DOPPLER_AZIMUTH_STEPS];
+            for (int azimuth_step = 0; azimuth_step < DOPPLER_AZIMUTH_STEPS;
+                azimuth_step++)
+            {
                 //--------------------------------//
                 // calculate azimuth angle to use //
                 //--------------------------------//
 
                 // The table needs to be built for the CDS algorithm,
                 // but we need to determine the actual antenna azimuth
-                // angle.  The following code starts from the CDS azimuth,
+                // angle in order to do the correct calculations.  The
+                // following code starts from the CDS azimuth value,
                 // backtracks to the original sampled encoder and then
                 // calculates the actual antenna azimuth at the ground
                 // impact time.  This method of doing the calculation will
@@ -423,6 +423,12 @@ main(
                 // apply the sas encoder offset
                 azimuth += sas_encoder_offset;
 
+                //---------------------------//
+                // set the Tx center azimuth //
+                //---------------------------//
+
+                qscat.sas.antenna.SetTxCenterAzimuthAngle(azimuth);
+
                 //-------------------------//
                 // set the antenna azimuth //
                 //-------------------------//
@@ -436,9 +442,9 @@ main(
                 unsigned short encoder =
                     qscat.sas.AzimuthToEncoder(cds_azimuth);
 
-				//------------------------------//
-				// calculate receiver gate info //
-				//------------------------------//
+                //------------------------------//
+                // calculate receiver gate info //
+                //------------------------------//
 
                 CdsBeamInfo* cds_beam_info = qscat.GetCurrentCdsBeamInfo();
                 unsigned char rx_gate_delay_dn;
@@ -449,70 +455,70 @@ main(
                 // set it with the exact value to eliminate quant. effects
                 qscat.ses.CmdRxGateDelayFdn(rx_gate_delay_fdn);
 
-				//-------------------//
-				// coordinate system //
-				//-------------------//
+                //-------------------//
+                // coordinate system //
+                //-------------------//
 
-				antenna_frame_to_gc = AntennaFrameToGC(orbit_state, attitude,
+                antenna_frame_to_gc = AntennaFrameToGC(orbit_state, attitude,
                     antenna, qscat.sas.antenna.txCenterAzimuthAngle);
 
-				if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
+                if (! GetPeakSpatialResponse2(&antenna_frame_to_gc,
                     &spacecraft, beam, antenna->spinRate, &look, &azimuth))
-				{
-					fprintf(stderr,
+                {
+                    fprintf(stderr,
                         "%s: error finding peak spatial response\n", command);
-					exit(1);
-				}
-				vector.SphericalSet(1.0, look, azimuth);
+                    exit(1);
+                }
+                vector.SphericalSet(1.0, look, azimuth);
 
-				//--------------------------------//
-				// calculate corrective frequency //
-				//--------------------------------//
+                //--------------------------------//
+                // calculate corrective frequency //
+                //--------------------------------//
 
-				qscat.IdealCommandedDoppler(&spacecraft);
+                qscat.IdealCommandedDoppler(&spacecraft);
 
-				// constants are used to calculate the actual Doppler
+                // constants are used to calculate the actual Doppler
                 // frequency to correct for, but IdealCommandedDoppler
                 // sets the commanded Doppler (ergo -)
-				dop_com[azimuth_step] = -qscat.ses.txDoppler;
-			}
+                dop_com[azimuth_step] = -qscat.ses.txDoppler;
+            }
 
-			//------------------------//
-			// fit doppler parameters //
-			//------------------------//
+            //------------------------//
+            // fit doppler parameters //
+            //------------------------//
 
-			double a, p, c;
-			azimuth_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
-			*(*(terms + orbit_step) + 0) = a;
-			*(*(terms + orbit_step) + 1) = p;
-			*(*(terms + orbit_step) + 2) = c;
-		}
+            double a, p, c;
+            azimuth_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
+            *(*(terms + orbit_step) + 0) = a;
+            *(*(terms + orbit_step) + 1) = p;
+            *(*(terms + orbit_step) + 2) = c;
+        }
 
-		//-------------//
-		// set Doppler //
-		//-------------//
+        //-------------//
+        // set Doppler //
+        //-------------//
 
-		doppler_tracker->Set(terms);
+        doppler_tracker->Set(terms);
 
-		//------------------------------------------//
-		// write out the doppler tracking constants //
-		//------------------------------------------//
+        //------------------------------------------//
+        // write out the doppler tracking constants //
+        //------------------------------------------//
 
-		char filename[1024];
-		sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
-		if (! doppler_tracker->WriteBinary(filename))
-		{
-			fprintf(stderr, "%s: error writing DTC file %s\n", command,
-				filename);
-			exit(1);
-		}
-	}
+        char filename[1024];
+        sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
+        if (! doppler_tracker->WriteBinary(filename))
+        {
+            fprintf(stderr, "%s: error writing DTC file %s\n", command,
+                filename);
+            exit(1);
+        }
+    }
 
-	//----------------//
-	// free the array //
-	//----------------//
+    //----------------//
+    // free the array //
+    //----------------//
 
-	free_array((void *)terms, 2, DOPPLER_ORBIT_STEPS, 3);
+    free_array((void *)terms, 2, DOPPLER_ORBIT_STEPS, 3);
 
-	return (0);
+    return (0);
 }

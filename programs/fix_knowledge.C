@@ -8,14 +8,18 @@
 //    fix_knowledge
 //
 // SYNOPSIS
-//    fix_knowledge [ -f type:windfield ] [ -i ] [ -s step_size ]
-//      <sim_config_file> <echo_data_file> <output_base>
+//    fix_knowledge [ -a ] [ -f type:windfield ] [ -i ]
+//      [ -s step_size ] <sim_config_file> <echo_data_file>
+//      <output_base>
 //
 // DESCRIPTION
 //    Reads the echo data file and estimates the roll, pitch, and yaw
 //    of the instrument and the look angle of each antenna beam.
 //
 // OPTIONS
+//    [ -a ]                 Plot results for all points too.
+//                             Defaults to only plotting points for the
+//                             optimization subset.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
 //    [ -i ]                 Use an simple incidence angle correction.
@@ -96,7 +100,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "f:is:"
+#define OPTSTRING    "af:is:"
 
 #define PLOT_OFFSET               40000
 #define DIR_STEPS                 36    // for data reduction
@@ -107,8 +111,8 @@ template class List<AngleInterval>;
 
 #define LINE_SIZE  1024
 
-#define MAX_SPOTS  10000
-#define MAX_EPHEM  200
+#define MAX_SPOTS  1200000
+#define MAX_EPHEM  15000
 
 //#define SIGNAL_ENERGY_THRESHOLD       5E4
 #define SIGNAL_ENERGY_THRESHOLD       0E4
@@ -151,7 +155,7 @@ float   est_sigma0(int beam_idx, float incidence_angle);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -f type:windfield ]", "[ -i ]",
+const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]", "[ -i ]",
     "[ -s step_size ] ", "<sim_config_file>", "<echo_data_file>",
     "<output_base>", 0};
 
@@ -180,6 +184,7 @@ float   g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS];
 int     g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS];
 char    g_use_data[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS];
 
+int        g_all_opt = 0;
 int        g_windfield_opt = 0;
 char*      g_windfield_type = NULL;
 char*      g_windfield_file = NULL;
@@ -215,6 +220,9 @@ main(
     {
         switch(c)
         {
+        case 'a':
+            g_all_opt = 1;
+            break;
         case 'f':
             if (sscanf(optarg, "%s:%s", g_windfield_type,
                 g_windfield_file) != 2)
@@ -563,8 +571,11 @@ process_orbit_step(
     fprintf(ofp, "@ subtitle %cDelta Roll = %.4f deg., Delta Pitch = %.4f deg., Delta Yaw = %.4f deg.%c\n", QUOTES,
         att[0] * rtd, att[1] * rtd, att[2] * rtd, QUOTES);
 
-    evaluate(spacecraft, qscat, byux, att, ofp, 1);
-    fprintf(ofp, "&\n");
+    if (g_all_opt)
+    {
+        evaluate(spacecraft, qscat, byux, att, ofp, 1);
+        fprintf(ofp, "&\n");
+    }
     evaluate(spacecraft, qscat, byux, att, ofp, 0);
 
     fclose(ofp);

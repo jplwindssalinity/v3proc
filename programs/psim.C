@@ -517,16 +517,16 @@ main(
                 }
             }
 
-            //-----------------------------------//
+            //----------------------------------//
             // write Level 1A data if necessary //
-            //-----------------------------------//
+            //----------------------------------//
 
             if (pscat_sim.l1aFrameReady)
             {
                 // Report Latest Attitude Measurement
                 // + Knowledge Error
-                spacecraft_sim.ReportAttitude(pscat_event.eventTime,
-                    &spacecraft, &(l1a.frame.attitude));
+                spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
+                    &(l1a.frame.attitude));
 
                 int size = l1a.frame.Pack(l1a.buffer);
                 l1a.Write(l1a.buffer, size);
