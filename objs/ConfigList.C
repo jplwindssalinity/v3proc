@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
  
 static const char rcs_id_configlist_c[] =
 	"@(#) $Id$";
@@ -219,14 +219,38 @@ int
 ConfigList::Write(
 	const char*		filename)
 {
-	//--------------------------------------//
-	// open the file or use standard output //
-	//--------------------------------------//
+	//----------------------//
+	// open the output file //
+	//----------------------//
 
 	FILE* ofp = fopen(filename, "w");
 	if (ofp == NULL)
 		return (0);
 
+	//-------//
+	// write //
+	//-------//
+
+	if (! Write(ofp))
+		return(0);
+
+	//-----------------------//
+	// close the output file //
+	//-----------------------//
+
+	fclose(ofp);
+
+	return(1);
+}
+
+//-------------------//
+// ConfigList::Write //
+//-------------------//
+
+int
+ConfigList::Write(
+	FILE*	fp)
+{
 	//--------------------------------------//
 	// determine the maximum keyword length //
 	//--------------------------------------//
@@ -247,9 +271,8 @@ ConfigList::Write(
 		char* value = pair->GetValue();
 		if (! keyword || ! value)
 			continue;
-		fprintf(ofp, "%-*s%s\n", max_length, keyword, value);
+		fprintf(fp, "%-*s%s\n", max_length, keyword, value);
 	}
-	fclose(ofp);
 
 	return(1);
 }

@@ -48,16 +48,15 @@ public:
 	// compositing //
 	//-------------//
 
-        //-------------------------------------------------//
-        // If N is nonzero we                              //
-        // compositing N consecutive meas objects starting //
-        // at meas_list->current                           //
-        // If N is zero (Default case) whole MeasList is   //
-        // composited.                                     //
-        //-------------------------------------------------//
+	//--------------------------------------------------//
+	// If N is nonzero we								//
+	// compositing N consecutive meas objects starting	//
+	// at meas_list->current							//
+	// If N is zero (Default case) whole MeasList is	//
+	// composited.										//
+	//--------------------------------------------------//
 
 	int		Composite(MeasList* meas_list, int n=0);
-        
 
 	//--------------//
 	// input/output //
@@ -88,17 +87,17 @@ public:
 	float				XK;
 	float				EnSlice;
 	float				bandwidth;
-	float				transmitPulseWidth;
+	float				txPulseWidth;
 	Outline				outline;
 	EarthPosition		centroid;
 
 	PolE		pol;
 	float		eastAzimuth;		// azimuth angle ccw from east
 	float		incidenceAngle;
-	int         			beamIdx;
-	int         			startSliceIdx;
-	int 			        numSlices;
-	float		                scanAngle;
+	int			beamIdx;
+	int			startSliceIdx;
+	int			numSlices;
+	float		scanAngle;
 	float		A, B, C;			// Kpc coefficients
 
 	//------------------------//

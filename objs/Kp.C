@@ -44,13 +44,13 @@ Kp::GetKpc2(
 	// calculate and check the SNR //
 	//-----------------------------//
 
-	double snr = sigma_0 * meas->XK * meas->transmitPulseWidth /
+	double snr = sigma_0 * meas->XK * meas->txPulseWidth /
 		meas->EnSlice;
 	if (snr <= 0.0)
 	{
 		fprintf(stderr, "Kp::GetKpc2: SNR <= 0.0\n");
 		fprintf(stderr, "  s0 = %g, XK = %g, Tp = %g, EnSlice = %g\n",
-			sigma_0, meas->XK, meas->transmitPulseWidth, meas->EnSlice);
+			sigma_0, meas->XK, meas->txPulseWidth, meas->EnSlice);
 		return(0);
 	}
 
@@ -154,7 +154,7 @@ Kp::GetVpc(
 	// calculate sigma-0 coefficients //
 	//--------------------------------//
 
-	double xktp = meas->XK * meas->transmitPulseWidth;
+	double xktp = meas->XK * meas->txPulseWidth;
 	double aa = meas->A;
 	double bb = meas->B * meas->EnSlice / xktp;
 	double cc = meas->C * meas->EnSlice * meas->EnSlice / (xktp * xktp);

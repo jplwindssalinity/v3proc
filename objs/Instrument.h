@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef INSTRUMENT_H
 #define INSTRUMENT_H
@@ -10,6 +10,7 @@ static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
 #include "Antenna.h"
+#include "InstConsts.h"
 
 //======================================================================
 // CLASSES
@@ -59,9 +60,6 @@ public:
 // DESCRIPTION
 //		The Instrument object contains instrument state information.
 //======================================================================
-
-#define ORBIT_TICKS_PER_SECOND			32
-#define INSTRUMENT_TICKS_PER_SECOND		32
 
 class Instrument
 {
@@ -153,6 +151,3 @@ protected:
 };
 
 #endif
-
-
-

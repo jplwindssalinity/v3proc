@@ -159,7 +159,7 @@ sigma0_to_Esn_slice(
 	*XK = X*Kfactor;
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->pulseWidth;
+	double Tp = beam->txPulseWidth;
 	double Tg = beam->rxGateWidth;
 	double Bs = meas->bandwidth;
 
@@ -372,7 +372,7 @@ Er_to_sigma0(
 	// all of the signal power falls in the slices.
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->pulseWidth;
+	double Tp = beam->txPulseWidth;
 	double Tg = beam->rxGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Bs = meas->bandwidth;

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef BEAM_H
 #define BEAM_H
@@ -62,24 +62,27 @@ public:
 	int		SetBeamPattern(int Nx, int Ny, int ix_zero, int iy_zero,
 				double x_spacing, double y_spacing,
 				double electrical_boresight_Em, double electrical_boresight_Am,
-				float **power_gain);
+				float** power_gain);
 
 	int		ReadBeamPattern(char* filename);
 	int		WriteBeamPattern(char* filename);
 
-	int	GetPowerGain(double look_angle, double azimuth_angle, float *gain);
-	int	GetPowerGain(double look_angle, double azimuth_angle, double *gain);
-	int GetPowerGainProduct(double look_angle, double azimuth_angle,
-			double round_trip_time, double azimuth_rate, float *gain_product);
-	int GetPowerGainProduct(double look_angle, double azimuth_angle,
-			double round_trip_time, double azimuth_rate, double *gain_product);
+	int		GetPowerGain(double look_angle, double azimuth_angle, float* gain);
+	int		GetPowerGain(double look_angle, double azimuth_angle,
+				double* gain);
+	int		GetPowerGainProduct(double look_angle, double azimuth_angle,
+				double round_trip_time, double azimuth_rate,
+				float* gain_product);
+	int		GetPowerGainProduct(double look_angle, double azimuth_angle,
+				double round_trip_time, double azimuth_rate,
+				double* gain_product);
 
 	//-----------//
 	// variables //
 	//-----------//
 
 	PolE			polarization;
-	float			pulseWidth;			// pulse width in seconds
+	float			txPulseWidth;		// pulse width in seconds
 	float			rxGateWidth;		// receiver gate width in seconds
 	float			timeOffset;			// seconds after prf for beam index 0
 
@@ -105,15 +108,15 @@ public:
 	double				_elecBoresightAzim;
 
 	// Beam pattern info
-	double	_electrical_boresight_Em;
-	double	_electrical_boresight_Am;
-	int		_Nx;
-	int		_Ny;
-	int		_ix_zero;
-	int		_iy_zero;
-	double	_x_spacing;
-	double	_y_spacing;
-	float**	_power_gain;
+	double		_electrical_boresight_Em;
+	double		_electrical_boresight_Am;
+	int			_Nx;
+	int			_Ny;
+	int			_ix_zero;
+	int			_iy_zero;
+	double		_x_spacing;
+	double		_y_spacing;
+	float**		_power_gain;
 };
 
 #endif

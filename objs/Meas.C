@@ -21,7 +21,7 @@ static const char rcs_id_measurement_c[] =
 
 Meas::Meas()
 :	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0),
-	transmitPulseWidth(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
+	txPulseWidth(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
 	beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0),
 	A(0.0), B(0.0), C(0.0), offset(0)
 {
@@ -111,7 +111,7 @@ Meas::Composite(
 	XK = sum_XK;
 	EnSlice = sum_EnSlice;
 	bandwidth = sum_bandwidth;
-	transmitPulseWidth = meas->transmitPulseWidth;
+	txPulseWidth = meas->txPulseWidth;
 	outline.FreeContents();				// merged outlines not done yet
 	centroid = sum_centroid / N;
 	// put centroid on surface
@@ -166,7 +166,7 @@ Meas::Write(
 		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&transmitPulseWidth, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -199,7 +199,7 @@ Meas::Read(
 		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
-		fread((void *)&transmitPulseWidth, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&txPulseWidth, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -244,38 +244,6 @@ Meas::FreeContents()
 	return;
 }
 
-
-/*************
-//-------------------//
-// Meas::EstimatedKp //
-//-------------------//
-
-float
-Meas::EstimatedKp(float sigma0)
-{
-	float Tp = 0.0015;		// transmit pulse length (need to handle better!)
-	float Kpr2 = 0.00512;	// 0.3 dB
-	float Kpm2 = 0.03059;	// 0.7 dB
-
-	// if measurement is nonsense, return a Kp of 1.0
-	// Since A is set to zero by Er_to_sigma0 if useKpc is zero
-	// this should handle that case as well.
-	if (A == 0.0 || EnSlice==0)
-		return(1.0);
-
-	float snr = sigma0 * XK * Tp/EnSlice;
-	if (snr < 0.0)
-	{
-		fprintf(stderr,
-			"Error: Meas::EstimatedKp computed negative SNR = %g\n", snr);
-		fprintf(stderr, "S0=%g XK=%g EnSlice=%g\n", sigma0, XK, EnSlice);
-		exit(1);
-	}
-	float Kpc2 = A + B/snr + C/snr/snr;
-	float Kp = sqrt(Kpr2 + Kpm2 + Kpc2);
-	return(Kp);
-}
-**********/
 //==========//
 // MeasList //
 //==========//

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // OBJECTS
@@ -57,19 +57,20 @@ FILE*			fopen_or_exit(const char* filename, const char* type,
 char			get_bits(char byte, int position, int bit_count);
 int				substitute_string(const char* string, const char* find,
 					const char* replace, char* result);
-int downhill_simplex(double** p,int ndim,int totdim,double ftol,
-	double (*funk)(double*,void*),void* ptr);
-double amotry(double** p,double* y,double* psum,int ndim,int totdim,
-	double (*funk)(double*,void*),void* ptr,int ihi,double fac);
 
-float median(const float* array, int num_elements);
-float mean(const float* array, int num_elements);
-void sort_increasing(float* array, int num_elements);
+int				downhill_simplex(double** p, int ndim, int totdim, double ftol,
+					double (*funk)(double*, void*), void* ptr);
+double			amotry(double** p, double* y, double* psum, int ndim,
+					int totdim, double (*funk)(double*, void*), void* ptr,
+					int ihi, double fac);
 
-int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx);
-int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx);
+float			median(const float* array, int num_elements);
+float			mean(const float* array, int num_elements);
+void			sort_increasing(float* array, int num_elements);
+
+int				rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx);
+int				abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx);
+
+float			quantize(float value, float resolution);
+
 #endif
-
-
-
-

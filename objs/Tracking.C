@@ -220,8 +220,8 @@ RangeTracker::QuantizeWidth(
 	float		width)
 {
 	unsigned int width_dn =
-		(unsigned int)(width / RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	float qwidth = (float)width_dn * RANGE_TRACKING_TIME_RESOLUTION;
+		(unsigned int)(width / RX_GATE_WIDTH_RESOLUTION + 0.5);
+	float qwidth = (float)width_dn * RX_GATE_WIDTH_RESOLUTION;
 	return(qwidth);
 }
 
@@ -235,8 +235,8 @@ RangeTracker::QuantizeDelay(
 	float*		residual_delay)
 {
 	unsigned int delay_dn =
-		(unsigned int)(delay / RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	float qdelay = (float)delay_dn * RANGE_TRACKING_TIME_RESOLUTION;
+		(unsigned int)(delay / RX_GATE_DELAY_RESOLUTION + 0.5);
+	float qdelay = (float)delay_dn * RX_GATE_DELAY_RESOLUTION;
 	*residual_delay = delay - qdelay;
 	return(qdelay);
 }
@@ -272,7 +272,7 @@ RangeTracker::SetInstrument(
  
 	float delay;
  
-	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->pulseWidth,
+	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->txPulseWidth,
 		instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
 	{
 		fprintf(stderr, "RangeTracker::SetInstrument: error using RGC\n");

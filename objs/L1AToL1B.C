@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_l10tol15_c[] =
 	"@(#) $Id$";
@@ -207,7 +207,7 @@ L10ToL15::Convert(
 				meas->startSliceIdx = sliceno;
                                 meas->numSlices = 1;
 				meas->beamIdx = instrument->antenna.currentBeamIdx;
-				meas->transmitPulseWidth = beam->pulseWidth;
+				meas->txPulseWidth = beam->txPulseWidth;
 
 				//----------------------------------//
 				// Print calculated sigma0 values	//

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_misc_c[] =
 	"@(#) $Id$";
@@ -342,7 +342,7 @@ float median(const float* array, int num_elements){
 
   // sort array
   sort_increasing(buf,num_elements);
-  
+
   // return median value;
   float retval=buf[num_elements/2];
   delete buf;
@@ -374,18 +374,18 @@ int rel_to_abs_idx(int rel_idx, int array_size, int* abs_idx){
   //===================================================//
   // ODD ARRAY SIZE CASE                               //
   //===================================================//
-  if(array_size%2==1) 
+  if(array_size%2==1)
     *abs_idx=rel_idx + array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
-  //======================================================// 
+  //======================================================//
   else if(rel_idx < 0)
     *abs_idx=rel_idx + array_size/2;
-  
+
   //======================================================//
   // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
-  //======================================================// 
+  //======================================================//
   else if(rel_idx > 0)
     *abs_idx=rel_idx + array_size/2 -1;
 
@@ -405,16 +405,27 @@ int abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx){
 
   //======================================================//
   // EVEN ARRAY SIZE, NEGATIVE RELATIVE INDEX CASE        //
-  //======================================================// 
+  //======================================================//
   else if(abs_idx<array_size/2) *rel_idx=abs_idx-array_size/2;
 
   //======================================================//
   // EVEN ARRAY SIZE, POSITIVE RELATIVE INDEX CASE        //
-  //======================================================// 
+  //======================================================//
   else *rel_idx=abs_idx-array_size/2 + 1;
   return(1);
 }
 
+//----------//
+// quantize //
+//----------//
+// quantizes the value to the given resolution
 
-
-
+float
+quantize(
+	float	value,
+	float	resolution)
+{
+	double idx = floor(value / resolution + 0.5);
+	float q_value = idx * resolution;
+	return (q_value);
+}

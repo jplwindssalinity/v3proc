@@ -1,14 +1,13 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef TRACKING_H
 #define TRACKING_H
 
 static const char rcs_id_tracking_h[] =
 	"@(#) $Id$";
-
 
 #include "Constants.h"
 
@@ -29,8 +28,6 @@ float	Cosine(float angle);
 //		The RangeTracker object is used to store the Range	Tracking
 //		Constants and convert them into receiver gate delays.
 //======================================================================
-
-#define RANGE_TRACKING_TIME_RESOLUTION		4.9903E-5	// seconds (~0.05 ms)
 
 class RangeTracker
 {

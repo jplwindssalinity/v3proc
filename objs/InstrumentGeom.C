@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_instrumentgeom_c[] =
 	"@(#) $Id$";
@@ -664,7 +664,8 @@ DopplerAndDelay(
 	//-----------------------------------------------------//
 
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
-	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+	double pulse_width =
+		instrument->antenna.beam[current_beam_idx].txPulseWidth;
 
 	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
@@ -765,7 +766,7 @@ RttToCommandedReceiverDelay(
 	double			rtt)
 {
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double pulse_width = beam->pulseWidth;
+	double pulse_width = beam->txPulseWidth;
 
 	instrument->commandedRxGateDelay = rtt +
 		(pulse_width - instrument->commandedRxGateWidth) / 2.0;
@@ -859,7 +860,8 @@ TargetInfo(
 
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
-	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+	double pulse_width =
+		instrument->antenna.beam[current_beam_idx].txPulseWidth;
 	double chirp_start = instrument->chirpStartM * pulse_width +
 		instrument->chirpStartB;
 	double transmit_center = -chirp_start / instrument->chirpRate;

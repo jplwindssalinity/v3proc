@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_configsim_c[] =
 	"@(#) $Id$";
@@ -148,22 +148,22 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		|| strcmp(string,"none")==0){
 	  // By default mean, variance, and correlation length   //
 	  //                                    are set to zero //
-	  				   
+
 	  return(1);
 	}
 
-	else if(strcmp(string,"Time_Correlated_Gaussian")==0 || 
+	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
 		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
- 
+
 	        float std, mean, corrlength;
 
 		if(! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
 		  return(0);
 		if(! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attcntl->roll.SetVariance(std*std*dtr*dtr);
@@ -176,7 +176,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		  return(0);
 		if(! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attcntl->pitch.SetVariance(std*std*dtr*dtr);
@@ -189,7 +189,7 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		  return(0);
 		if(! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attcntl->yaw.SetVariance(std*std*dtr*dtr);
@@ -229,22 +229,22 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		|| strcmp(string,"none")==0){
 	  // By default mean, variance, and correlation length     //
 	  //                                       are set to zero //
-	  				   
+
 	  return(1);
 	}
 
-	else if(strcmp(string,"Time_Correlated_Gaussian")==0 || 
+	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
 		strcmp(string,"TIME_CORRELATED_GAUSSIAN")==0
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
- 
+
 	        float std, mean, corrlength;
 
 		if(! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
 		  return(0);
 		if(! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attknow->roll.SetVariance(std*std*dtr*dtr);
@@ -257,7 +257,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		  return(0);
 		if(! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attknow->pitch.SetVariance(std*std*dtr*dtr);
@@ -270,7 +270,7 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		  return(0);
 		if(! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
 		  return(0);
-		if(! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD, 
+		if(! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
 					   &corrlength)) return(0);
 
 		attknow->yaw.SetVariance(std*std*dtr*dtr);
@@ -612,7 +612,7 @@ ConfigInstrumentSim(
 		return(0);
 	}
 
-	if (! config_list->GetFloat(PTGR_NOISE_CORRLENGTH_KEYWORD, 
+	if (! config_list->GetFloat(PTGR_NOISE_CORRLENGTH_KEYWORD,
 				    &ptgr_corrlength))
 	{
 		fprintf(stderr,"Could not find PtGr noise correlation length in config file\n");
@@ -784,7 +784,8 @@ ConfigAntenna(
 		printf("Could not find PRI per beam in config file\n");
 		return(0);
 	}
-	antenna->priPerBeam = pri_per_beam;
+	antenna->priPerBeam = (float)number_of_beams *
+		quantize(pri_per_beam / (float)number_of_beams, PRF_CLOCK_RESOLUTION);
 
 	int encoder_bits;
 	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
@@ -885,7 +886,8 @@ ConfigBeam(
 		printf("Could not find beam pulse width in config file\n");
 		return(0);
 	}
-	beam->pulseWidth = pulse_width * MS_TO_S;
+	beam->txPulseWidth = quantize(pulse_width * MS_TO_S,
+		TX_PULSE_WIDTH_RESOLUTION);
 
 	double gate_width;		// ms
 	substitute_string(BEAM_x_RECEIVER_GATE_WIDTH_KEYWORD, "x", number, keyword);
@@ -894,7 +896,8 @@ ConfigBeam(
 		printf("Could not find beam receiver gate width in config file\n");
 		return(0);
 	}
-	beam->rxGateWidth = gate_width * MS_TO_S;
+	beam->rxGateWidth = quantize(gate_width * MS_TO_S,
+		RX_GATE_WIDTH_RESOLUTION);
 
 	substitute_string(BEAM_x_PATTERN_FILE_KEYWORD, "x", number, keyword);
 	char* pattern_file = config_list->Get(keyword);
@@ -962,7 +965,7 @@ ConfigBeam(
 		printf("Could not find beam time offset in config file\n");
 		return(0);
 	}
-	beam->timeOffset = tmp_double * MS_TO_S;
+	beam->timeOffset = quantize(tmp_double * MS_TO_S, PRF_CLOCK_RESOLUTION);
 
 	//----------------//
 	// Range Tracking //
@@ -1467,7 +1470,7 @@ ConfigKp(
 	char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
 	if (kprs_filename == NULL)
 		return(0);
-        if(strcmp(kprs_filename,"NONE") != 0  
+        if(strcmp(kprs_filename,"NONE") != 0
          && strcmp(kprs_filename,"none") != 0
          && strcmp(kprs_filename,"None") != 0)
 	  {
@@ -1478,7 +1481,7 @@ ConfigKp(
 			return(0);
 		}
 	  }
-        
+
 	return(1);
 }
 

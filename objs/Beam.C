@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_beam_c[] =
 	"@(#) $Id$";
@@ -20,12 +20,11 @@ static const char rcs_id_beam_c[] =
 const char* beam_map[] = { "None", "V", "H" };
 
 Beam::Beam()
-:	polarization(NONE), pulseWidth(0.0), rxGateWidth(0.0),
-	timeOffset(0.0), useRangeTracker(0), useDopplerTracker(0),
-	_elecBoresightLook(0.0), _elecBoresightAzim(0.0),
-	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
-	_Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
-	_power_gain(NULL)
+:	polarization(NONE), txPulseWidth(0.0), rxGateWidth(0.0), timeOffset(0.0),
+	useRangeTracker(0), useDopplerTracker(0), _elecBoresightLook(0.0),
+	_elecBoresightAzim(0.0), _electrical_boresight_Em(0.0),
+	_electrical_boresight_Am(0.0), _Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
+	_x_spacing(0.0), _y_spacing(0.0), _power_gain(NULL)
 {
 	return;
 }
