@@ -36,12 +36,14 @@ PROGRAMS = \
 	pl1a_to_ascii \
 	l1a_hdf_to_l1a \
 	plot_wr_curves \
+	new_files \
+	done_files \
 	l2ab_25to50 \
 	l2b_diff \
 	l2b_diff_from_truth \
 	test_hdf_l2b \
 	l2b_manyMet \
-        l2b_match_selected \
+	l2b_match_selected \
 	see_spot \
 	eqx \
 	generate_rgc \
@@ -76,12 +78,12 @@ PROGRAMS = \
 	gs_l1a_to_ascii \
 	l2b_to_flower \
 	l2a_dissect \
-        l2a_getcell \
-        l2b_spddif \
-        l2b_get_diffs \
-        prob_3d \
-        SNRandKpc \
-        plot_obj_curves \
+	l2a_getcell \
+	l2b_spddif \
+	l2b_get_diffs \
+	prob_3d \
+	SNRandKpc \
+	plot_obj_curves \
 	l1b_to_half_egg \
 	l1a_to_gs_l1a\
 	l1a_to_ascii\
@@ -226,3 +228,4 @@ install: $(PROGRAMS)
 fix_dtc: fix_dtc.C echo_funcs.h
 fix_knowledge: fix_knowledge.C echo_funcs.h
 sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
+new_files: new_files.C new_files.h
