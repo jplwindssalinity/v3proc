@@ -236,14 +236,23 @@ Ephemeris::GetOrbitState(
 		return(0);
 
 	if (order != _interp_order)
-	{	// need to reform the interpolating arrays.
-		_interp_time = (double*)realloc(_interp_time, sizeof(double)*(order+1));
-		_interp_x = (double*)realloc(_interp_x, sizeof(double)*(order+1));
-		_interp_y = (double*)realloc(_interp_y, sizeof(double)*(order+1));
-		_interp_z = (double*)realloc(_interp_z, sizeof(double)*(order+1));
-		_interp_vx = (double*)realloc(_interp_vx, sizeof(double)*(order+1));
-		_interp_vy = (double*)realloc(_interp_vy, sizeof(double)*(order+1));
-		_interp_vz = (double*)realloc(_interp_vz, sizeof(double)*(order+1));
+	{
+		// need to reform the interpolating arrays.
+		free(_interp_time);
+		free(_interp_x);
+		free(_interp_y);
+		free(_interp_z);
+		free(_interp_vx);
+		free(_interp_vy);
+		free(_interp_vz);
+		int size = sizeof(double) * (order + 1);
+		_interp_time = (double*)malloc(size);
+		_interp_x = (double*)malloc(size);
+		_interp_y = (double*)malloc(size);
+		_interp_z = (double*)malloc(size);
+		_interp_vx = (double*)malloc(size);
+		_interp_vy = (double*)malloc(size);
+		_interp_vz = (double*)malloc(size);
 		if ((_interp_x == NULL) || (_interp_y == NULL) ||
 			(_interp_z == NULL) || (_interp_vx == NULL) ||
 			(_interp_vy == NULL) || (_interp_vz == NULL) ||
