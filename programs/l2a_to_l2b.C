@@ -189,8 +189,7 @@ main(
 	// read the header to set up swath //
 	//---------------------------------//
 
-	FILE* fp = l17.file.GetFp();
-	if (! l17.header.Read(fp))
+	if (! l17.ReadHeader())
 	{
 		fprintf(stderr, "%s: error reading Level 1.7 header\n", command); 
 		exit(1);

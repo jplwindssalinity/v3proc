@@ -51,6 +51,8 @@ public:
 	// input/output //
 	//--------------//
 
+	int		WriteHeader();
+	int		ReadHeader();
 	int		WriteDataRec();
 	int		ReadDataRec();
 

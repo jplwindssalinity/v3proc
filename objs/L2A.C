@@ -37,6 +37,42 @@ L17::SetFilename(
 }
 
 //------------------//
+// L17::WriteHeader //
+//------------------//
+
+int
+L17::WriteHeader()
+{
+	FILE* fp = file.GetFp();
+	if (fp == NULL)
+		return(0);
+
+	if (! header.Write(fp))
+		return(0);
+
+	_headerTransferred = 1;
+	return(1);
+}
+
+//-----------------//
+// L17::ReadHeader //
+//-----------------//
+
+int
+L17::ReadHeader()
+{
+	FILE* fp = file.GetFp();
+	if (fp == NULL)
+		return(0);
+
+	if (! header.Read(fp))
+		return(0);
+
+	_headerTransferred = 1;
+	return(1);
+}
+
+//------------------//
 // L17::ReadDataRec //
 //------------------//
 
