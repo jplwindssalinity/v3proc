@@ -160,7 +160,7 @@ QscatSim::L1AFrameInit(
         l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
         l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
-        l1a_frame->calPosition = 255;	// no cal pulses yet
+        l1a_frame->calPosition = 255;    // no cal pulses yet
         l1a_frame->in_eu.true_cal_pulse_pos = 255;
 
         // extra data needed by GS for first pulse
@@ -396,18 +396,17 @@ QscatSim::ScatSim(
 
     if (createXtable)
     {
-        int sliceno = 0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        for (Meas* meas = meas_spot.GetHead(); meas;
+            meas = meas_spot.GetNext())
         {
             float orbit_position = qscat->cds.OrbitFraction();
 
-            if (! xTable.AddEntry(slice->XK, qscat->cds.currentBeamIdx,
+            if (! xTable.AddEntry(meas->XK, qscat->cds.currentBeamIdx,
                 qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                sliceno))
+                meas->startSliceIdx))
             {
                 return(0);
             }
-            sliceno++;
         }
     }
 
@@ -425,17 +424,18 @@ QscatSim::ScatSim(
     if (outputXToStdout)
     {
         float XK_max=0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        for (Meas* meas = meas_spot.GetHead(); meas;
+            meas = meas_spot.GetNext())
         {
-            if (XK_max < slice->XK) XK_max=slice->XK;
+            if (XK_max < meas->XK) XK_max=meas->XK;
         }
         float total_spot_X=0;
         float total_spot_power=0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        for (Meas* meas=meas_spot.GetHead(); meas; meas=meas_spot.GetNext())
         {
             int slice_count = qscat->ses.GetTotalSliceCount();
             int slice_idx;
-            if (!rel_to_abs_idx(slice->startSliceIdx,slice_count,&slice_idx))
+            if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx))
             {
                 fprintf(stderr,"ScatSim: Bad slice number\n");
                 exit(1);
@@ -449,13 +449,13 @@ QscatSim::ScatSim(
             Xcaldb = 10.0 * log10(Xcaldb);
             
 
-            float XKdb=10*log10(slice->XK);
+            float XKdb=10*log10(meas->XK);
 
             printf("%g ",XKdb-Xcaldb); 
 //               float delta_freq=BYUX.GetDeltaFreq(spacecraft);
 //               printf("%g ", delta_freq);
-            total_spot_power+=slice->value;
-            total_spot_X+=slice->XK;
+            total_spot_power+=meas->value;
+            total_spot_X+=meas->XK;
 
           }
         printf("\n"); //HACK
@@ -713,18 +713,14 @@ QscatSim::SetMeasurements(
     Kp*          kp,
     KpmField*    kpmField)
 {
-	//-------------------------//
-	// for each measurement... //
-	//-------------------------//
+    //-------------------------//
+    // for each measurement... //
+    //-------------------------//
 
-	int slice_count = qscat->ses.GetTotalSliceCount();
-	int slice_i = 0;
-	int sliceno = -slice_count / 2;
+    int slice_i = 0;
     Meas* meas = meas_spot->GetHead();
-	while (meas)
-	{
-		meas->startSliceIdx = sliceno;
-
+    while (meas)
+    {
 		//----------------------------------------//
 		// get lon and lat for the earth location //
 		//----------------------------------------//
@@ -856,9 +852,6 @@ QscatSim::SetMeasurements(
                     delete meas;
                     meas=meas_spot->GetCurrent();
                     slice_i++;
-                    sliceno++;
-                    if (slice_count%2==0 && sliceno==0)
-                        sliceno++;
                     continue;
                 }
             }
@@ -891,7 +884,7 @@ QscatSim::SetMeasurements(
                 Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
                     qscat->cds.currentBeamIdx,
                     qscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                    sliceno);
+                    meas->startSliceIdx);
             }
 
             //--------------------------------//
@@ -959,10 +952,7 @@ QscatSim::SetMeasurements(
 			cf->incidence[slice_i] = meas->incidenceAngle;
 		}
 
-		sliceno++;
 		slice_i++;
-		if (slice_count%2==0 && sliceno==0)
-            sliceno++;
 		meas=meas_spot->GetNext();
 	}
 

@@ -258,18 +258,17 @@ PscatSim::ScatSim(
 
     if (createXtable)
     {
-        int sliceno = 0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        for (Meas* meas = meas_spot.GetHead(); meas;
+            meas = meas_spot.GetNext())
         {
             float orbit_position = pscat->cds.OrbitFraction();
 
-            if (! xTable.AddEntry(slice->XK, pscat->cds.currentBeamIdx,
+            if (! xTable.AddEntry(meas->XK, pscat->cds.currentBeamIdx,
                 pscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                sliceno))
+                meas->startSliceIdx))
             {
                 return(0);
             }
-            sliceno++;
         }
     }
 
@@ -286,18 +285,21 @@ PscatSim::ScatSim(
 
     if (outputXToStdout)
     {
-        float XK_max=0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        float XK_max = 0;
+        for (Meas* meas = meas_spot.GetHead(); meas;
+            meas = meas_spot.GetNext())
         {
-            if (XK_max < slice->XK) XK_max=slice->XK;
+            if (XK_max < meas->XK)
+                XK_max = meas->XK;
         }
-        float total_spot_X=0;
-        float total_spot_power=0;
-        for (Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
+        float total_spot_X = 0;
+        float total_spot_power = 0;
+        for (Meas* meas = meas_spot.GetHead(); meas;
+            meas = meas_spot.GetNext())
         {
             int slice_count = pscat->ses.GetTotalSliceCount();
             int slice_idx;
-            if (!rel_to_abs_idx(slice->startSliceIdx,slice_count,&slice_idx))
+            if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx))
             {
                 fprintf(stderr,"ScatSim: Bad slice number\n");
                 exit(1);
@@ -310,20 +312,20 @@ PscatSim::ScatSim(
             radar_Xcal(pscat,Es_cal,&Xcaldb);
             Xcaldb = 10.0 * log10(Xcaldb);
 
-            float XKdb=10*log10(slice->XK);
+            float XKdb = 10*log10(meas->XK);
 
             printf("%g ",XKdb-Xcaldb);
-//               float delta_freq=BYUX.GetDeltaFreq(spacecraft);
+//               float delta_freq = BYUX.GetDeltaFreq(spacecraft);
 //               printf("%g ", delta_freq);
-            total_spot_power+=slice->value;
-            total_spot_X+=slice->XK;
+            total_spot_power += meas->value;
+            total_spot_X += meas->XK;
 
           }
         printf("\n"); //HACK
 //      RangeTracker* rt= &(pscat->sas.antenna.beam[instrument->antenna.currentBeamIdx].rangeTracker);
 
 
-//      unsigned short orbit_step=rt->OrbitTicksToStep(pscat->cds.orbitTicks,
+//      unsigned short orbit_step = rt->OrbitTicksToStep(pscat->cds.orbitTicks,
 //                 pscat->cds.orbitTicksPerOrbit);
 
         //      printf("TOTALS %d %d %g %g %g %g\n",(int)orbit_step,
@@ -506,14 +508,10 @@ PscatSim::SetMeasurements(
     // for each measurement... //
     //-------------------------//
 
-    int slice_count = pscat->ses.GetTotalSliceCount();
     int slice_i = 0;
-    int sliceno = -slice_count / 2;
     PMeas* meas = (PMeas*)meas_spot->GetHead();
     while (meas)
     {
-        meas->startSliceIdx = sliceno;
-
         //----------------------------------------//
         // get lon and lat for the earth location //
         //----------------------------------------//
@@ -572,24 +570,24 @@ PscatSim::SetMeasurements(
                 wv.dir = 0.0;
             }
 
-			//--------------------------------//
-			// convert wind vector to sigma-0 //
-			//--------------------------------//
-			// chi is defined so that 0.0 means the wind is blowing towards
-			// the s/c (the opposite direction as the look vector)
+            //--------------------------------//
+            // convert wind vector to sigma-0 //
+            //--------------------------------//
+            // chi is defined so that 0.0 means the wind is blowing towards
+            // the s/c (the opposite direction as the look vector)
 
-			float chi = wv.dir - meas->eastAzimuth + pi;
+            float chi = wv.dir - meas->eastAzimuth + pi;
 
-			gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+            gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
                 wv.spd, chi, &sigma0);
 
-			//---------------------------------------------------------------//
-			// Fuzz the sigma0 by Kpm to simulate the effects of model function
-			// error.  The resulting sigma0 is the 'true' value.
-			// It does not map back to the correct wind speed for the
-			// current beam and geometry because the model function is
-			// not perfect.
-			//---------------------------------------------------------------//
+            //-------------------------------------------------------------//
+            // Fuzz the sigma0 by Kpm to simulate the effects of model
+            // function error.  The resulting sigma0 is the 'true' value.
+            // It does not map back to the correct wind speed for the
+            // current beam and geometry because the model function is
+            // not perfect.
+            //-------------------------------------------------------------//
 
 			// Uncorrelated component.
 			if (simUncorrKpmFlag == 1)
@@ -624,8 +622,8 @@ PscatSim::SetMeasurements(
 
 		// Kfactor: either 1.0, taken from table, or X is computed
         // directly
-        float Xfactor=0;
-        float Kfactor=1.0;
+        float Xfactor = 0;
+        float Kfactor = 1.0;
         float Es,En,var_esn_slice;
 		CoordinateSwitch gc_to_antenna;
 
@@ -639,13 +637,10 @@ PscatSim::SetMeasurements(
             {
                 if (! ComputeXfactor(spacecraft, pscat, meas, &Xfactor))
                 {
-                    meas=(PMeas*)meas_spot->RemoveCurrent();
+                    meas = (PMeas*)meas_spot->RemoveCurrent();
                     if (meas) delete meas;
-                    meas=(PMeas*)meas_spot->GetCurrent();
+                    meas = (PMeas*)meas_spot->GetCurrent();
                     slice_i++;
-                    sliceno++;
-                    if (slice_count%2==0 && sliceno==0)
-                        sliceno++;
                     continue;
                 }
             }
@@ -678,14 +673,14 @@ PscatSim::SetMeasurements(
                 return(0);
             }
 
-            meas->XK=Xfactor;
+            meas->XK = Xfactor;
             // Following are true values needed for simulation of Kpc
             meas->Snr = Es/En;
             meas->Sigma0 = sigma0;
 		}
         else
         {
-            Kfactor=1.0;  // default to use if no Kfactor specified.
+            Kfactor = 1.0;  // default to use if no Kfactor specified.
             if (useKfactor)
             {
                 float orbit_position = pscat->cds.OrbitFraction();
@@ -693,7 +688,7 @@ PscatSim::SetMeasurements(
                 Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
                     pscat->cds.currentBeamIdx,
                     pscat->sas.antenna.txCenterAzimuthAngle, orbit_position,
-                    sliceno);
+                    meas->startSliceIdx);
             }
 
             //--------------------------------//
@@ -703,7 +698,7 @@ PscatSim::SetMeasurements(
             gc_to_antenna = AntennaFrameToGC(&(spacecraft->orbitState),
                 &(spacecraft->attitude), &(pscat->sas.antenna),
                 pscat->sas.antenna.txCenterAzimuthAngle);
-            gc_to_antenna=gc_to_antenna.ReverseDirection();
+            gc_to_antenna = gc_to_antenna.ReverseDirection();
             double Tp = pscat->ses.txPulseWidth;
 
             if (! sigma0_to_Esn_slice(&gc_to_antenna, spacecraft, pscat, meas,
@@ -714,11 +709,8 @@ PscatSim::SetMeasurements(
             }
 		}
 
-		sliceno++;
 		slice_i++;
-		if (slice_count%2==0 && sliceno==0)
-            sliceno++;
-		meas=(PMeas*)meas_spot->GetNext();
+		meas = (PMeas*)meas_spot->GetNext();
 	}
 
 	return(1);
@@ -786,6 +778,6 @@ PscatSim::ComputeXfactor(
     float Es_cal = true_Es_cal(pscat);
 
     radar_Xcal(pscat,Es_cal,&Xcal);
-    (*X)*=Xcal/(beam->peakGain * beam->peakGain);
+    (*X) *= Xcal/(beam->peakGain * beam->peakGain);
     return(1);
 }
