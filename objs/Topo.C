@@ -108,8 +108,16 @@ Topo::Height(
     float  latitude)
 {
     int lon_idx = (int)(TOPO_MAP_LONGITUDES * longitude / two_pi + 0.5);
+    lon_idx = lon_idx % TOPO_MAP_LONGITUDES;    // longitudes wrap
+
     int lat_idx = (int)(TOPO_MAP_LATITUDES * (latitude + pi_over_two) / pi +
         0.5);
+    // latitudes don't wrap
+    if (lat_idx < 0)
+        lat_idx = 0;
+    if (lat_idx >= TOPO_MAP_LATITUDES)
+        lat_idx = TOPO_MAP_LATITUDES - 1;
+
     int height = *(*(_map + lat_idx) + lon_idx);
     return(height);
 }
