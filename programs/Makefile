@@ -38,7 +38,8 @@ PROGRAMS = \
 	generate_kfactor \
 	log_cfg \
 	windfield_to_vctr \
-	l17_centroids
+	l17_centroids \
+	l17_s0
 
 #----------------------------------------------------------------------
 # default: make all executable programs

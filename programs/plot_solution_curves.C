@@ -1,18 +1,18 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //		plot_solution_curves
 //
 // SYNOPSIS
-//		plot_solution_curves <sim_config_file>
+//		plot_solution_curves <sim_config_file> <output_base>
 //
 // DESCRIPTION
 //		Plots the solution curves for a given set of measurements.
-//		Input values are read from standard input and are
+//		Input values are prompted from standard input and are
 //		polarization (1=V), incidence angle (deg), azimuth angle (deg),
 //			and sigma-0 (dB)
 //
@@ -25,9 +25,11 @@
 //								all input parameters, input files, and
 //								output files.
 //
+//		<output_base>			The base for the output filenames.
+//
 // EXAMPLES
 //		An example of a command line is:
-//			% plot_solution_curves sws1b.cfg < meas.dat > curves.plt
+//			% plot_solution_curves sws1b.cfg solcur
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -104,7 +106,7 @@ template class List<OffsetList>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<output_base>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -120,11 +122,12 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2)
+	if (argc != 3)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
+	const char* output_base = argv[clidx++];
 
 	//---------------------//
 	// read in config file //
@@ -149,34 +152,77 @@ main(
 		exit(1);
 	}
 
-	//----------------------------//
-	// read the values from stdin //
-	//----------------------------//
+	//------//
+	// loop //
+	//------//
 
 	MeasList meas_list;
-	for (;;)
+	char filename[1024];
+	char line[1024];
+	char polchar;
+	float inc, azi, s0;
+	for (int file_idx = 1; ; file_idx++)
 	{
-		int pol;
-		float inc, azi, s0;
-		if (scanf("%d %g %g %g", &pol, &inc, &azi, &s0) != 4)
-			break;
-		Meas* new_meas = new Meas();
-		new_meas->value = pow(10.0, 0.1 * s0);
-		if (pol == 1)
-			new_meas->pol = V_POL;
-		else
-			new_meas->pol = H_POL;
-		new_meas->eastAzimuth = (90.0 - azi) * dtr;
-		new_meas->incidenceAngle = inc * dtr;
-		meas_list.Append(new_meas);
+		meas_list.FreeContents();
+
+		sprintf(filename, "%s.%d", output_base, file_idx);
+		printf("\nEntering information for output file %s\n", filename);
+		for (int meas_idx = 1; ; meas_idx++)
+		{
+			if (fgets(line, 1024, stdin) != line)
+				break;
+
+			if (sscanf(line, " %c %f %f %f", &polchar, &inc, &azi, &s0) != 4)
+			{
+				if (meas_idx == 1)
+					return(0);
+				else
+					break;
+			}
+
+			Meas* new_meas = new Meas();
+			if (polchar == 'V' || polchar == 'v')
+				new_meas->pol = V_POL;
+			else if (polchar == 'H' || polchar == 'h')
+				new_meas->pol = H_POL;
+			new_meas->incidenceAngle = inc * dtr;
+			new_meas->eastAzimuth = azi * dtr;
+			new_meas->value = s0;
+
+			//-----------------//
+			// add measurement //
+			//-----------------//
+
+			meas_list.Append(new_meas);
+		}
+
+		printf("Writing to file %s\n", filename);
+
+		//------------------//
+		// open output file //
+		//------------------//
+
+		FILE* ofp = fopen(filename, "w");
+		if (ofp == NULL)
+		{
+			fprintf(stderr, "%s: error opening output file %s\n", command,
+				filename);
+			exit(1);
+		}
+
+		//-----------------------//
+		// write solution curves //
+		//-----------------------//
+
+		gmf.WriteSolutionCurves(ofp, &meas_list, 0.0087, 0.0873, 0.0873,
+			0.05, 4);
+
+		//-------------------//
+		// close output file //
+		//-------------------//
+
+		fclose(ofp);
 	}
-
-	//---------------------//
-	// generate mod curves //
-	//---------------------//
-
-	gmf.WriteSolutionCurves(stdout, &meas_list, 0.0087, 0.0873, 0.0873,
-		0.05, 4);
 
 	return (0);
 }
