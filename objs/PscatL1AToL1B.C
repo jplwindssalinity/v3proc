@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -365,7 +365,7 @@ PscatL1AToL1B::Convert(
         {
                 Esn_echo += (float)frame->copol[spot_slice_offset + i] + 0.5;
         }
- 
+
         //-------------------------------------------------------------------//
         // Extract the spot noise measurement which applies to copol slices. //
         //-------------------------------------------------------------------//
@@ -710,12 +710,12 @@ PscatL1AToL1B::ComputeSigma0Corr(
 // all of the signal power falls in the slices.
 //
 // Inputs:
-//	pscat = pointer to current Pscat object
-//	meas = pointer to current measurement (holds results)
-//	Xfactor = Total radar equation parameter for this slice.
-//	Esn_slice = the received slice energy.
-//	Esn_echo = the sum of all the slice energies for this spot.
-//	Esn_noise = the noise channel measured energy.
+//  pscat = pointer to current Pscat object
+//  meas = pointer to current measurement (holds results)
+//  Xfactor = Total radar equation parameter for this slice.
+//  Esn_slice = the received slice energy.
+//  Esn_echo = the sum of all the slice energies for this spot.
+//  Esn_noise = the noise channel measured energy.
 //  En_echo_load = reference load echo channel measurement
 //  En_noise_load = reference load noise channel measurement
 //
@@ -734,27 +734,27 @@ PscatL1AToL1B::ComputeSigma0(
     float*  En_slice)
 {
 
-	//--------------------------------//
+    //--------------------------------//
     // Extract some useful quantities.
-	//--------------------------------//
+    //--------------------------------//
 
-	double Tp = pscat->ses.txPulseWidth;
+    double Tp = pscat->ses.txPulseWidth;
     SesBeamInfo* ses_beam_info = pscat->GetCurrentSesBeamInfo();
-	double Tg = ses_beam_info->rxGateWidth;
-	double Bn = pscat->ses.noiseBandwidth;
-	double Bs = meas->bandwidth;
-	double Be = pscat->ses.GetTotalSignalBandwidth();
-	double beta = pscat->ses.rxGainNoise / pscat->ses.rxGainEcho;
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bn = pscat->ses.noiseBandwidth;
+    double Bs = meas->bandwidth;
+    double Be = pscat->ses.GetTotalSignalBandwidth();
+    double beta = pscat->ses.rxGainNoise / pscat->ses.rxGainEcho;
 
-	//-----------------------------------------------//
+    //-----------------------------------------------//
     // Get the noise energy ratio q from bandwidths. //
-	//-----------------------------------------------//
+    //-----------------------------------------------//
 
     float q_slice = Bs/Be;
 
-	//-------------------------------------------//
+    //-------------------------------------------//
     // Estimate slice signal and noise energies.
-	//-------------------------------------------//
+    //-------------------------------------------//
 
     if (! Er_to_Es(beta, Esn_slice, Esn_echo, Esn_noise, En_echo_load,
                    En_noise_load, q_slice, Es_slice, En_slice))
@@ -762,32 +762,31 @@ PscatL1AToL1B::ComputeSigma0(
       return(0);
     }
 
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
     // Compute sigma0 from estimated signal energy and X factors.
-	// The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
-	// Kpc comes from Es_slice.
-	// Kpr comes from 1/X (ie., from Es_cal when computing X)
+    // The resulting sigma0 should have a variance equal to Kpc^2+Kpr^2.
+    // Kpc comes from Es_slice.
+    // Kpr comes from 1/X (ie., from Es_cal when computing X)
     // Xfactor has units of energy because Xcal has units of Pt * Tp.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
 
-	meas->value = *Es_slice / Xfactor;
+    meas->value = *Es_slice / Xfactor;
     meas->EnSlice = *En_slice;
 
-	//------------------------------------------------------------------//
-	// Store the total X factor.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
+    // Store the total X factor.
+    //------------------------------------------------------------------//
 
     meas->XK = Xfactor;
 
-	//------------------------------------------------------------------//
-	// Estimate Kpc coefficients using the
-	// approximate equations in Mike Spencer's Kpc memos.
-	//------------------------------------------------------------------//
+    //------------------------------------------------------------------//
+    // Estimate Kpc coefficients using the
+    // approximate equations in Mike Spencer's Kpc memos.
+    //------------------------------------------------------------------//
 
-	meas->A = 1.0 / (Bs * Tp);
-	meas->B = 2.0 / (Bs * Tg);
-	meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
+    meas->A = 1.0 / (Bs * Tp);
+    meas->B = 2.0 / (Bs * Tg);
+    meas->C = meas->B/2.0 * (1.0 + Bs/Bn);
 
-	return(1);
+    return(1);
 }
-
