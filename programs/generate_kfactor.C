@@ -235,7 +235,7 @@ main(
 	config_list.StompOrAppend(SYSTEM_TEMPERATURE_KEYWORD, "0");
 	config_list.StompOrAppend(UNIFORM_SIGMA_FIELD_KEYWORD, "1");
 	config_list.StompOrAppend(PTGR_NOISE_MEAN_KEYWORD, "0");
-	config_list.StompOrAppend(PTGR_NOISE_VARIANCE_KEYWORD, "0");
+	config_list.StompOrAppend(PTGR_NOISE_STD_KEYWORD, "0");
 
 
 	//----------------------------------------------//
