@@ -105,6 +105,7 @@ InstrumentSim::DetermineNextEvent(
 	return(1);
 }
 
+/*
 //------------------------------//
 // InstrumentSim::SimulateEvent //
 //------------------------------//
@@ -213,3 +214,4 @@ InstrumentSim::SimulateEvent(
 
 	return(1);
 }
+*/

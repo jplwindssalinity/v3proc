@@ -10,7 +10,6 @@ static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
 #include "Antenna.h"
-#include "Spacecraft.h"
 
 //======================================================================
 // CLASSES
@@ -77,7 +76,6 @@ public:
 
 	double		time;
 
-	Spacecraft	spacecraft;
 	Antenna		antenna;
 
 	Event		event;
