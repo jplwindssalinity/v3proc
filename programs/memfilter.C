@@ -64,10 +64,34 @@ int main(int argc, char *argv[])
 	while (1)
 	{
 		line++;
-		if (fgets(str,STRLEN,infile) == NULL)
+
+/**
+		int i = 0;
+		while (1)
 		{
-			break;
+			c = getc(infile);
+			if (c == EOF)
+			{
+				break;
+			}
+			str[i] = c;
+			i++;
+			if (c == ';')
+			{
+				break;
+			}
 		}
+
+		if (c == EOF)
+		{
+			break;	// really stop now
+		}
+**/
+
+        if (fgets(str,STRLEN,infile) == NULL)
+        {
+            break;
+        }
 
 		// Strip comments first.
 		sptr = strstr(str,"//");
@@ -80,14 +104,14 @@ int main(int argc, char *argv[])
 		while (sptr != NULL)
 		{	// found a possible match
 			if (isspace(*(sptr+3)))
-			{	// definite match
-			keyword1 = 1;
-			break;
+			{
+				if (!(isalnum(*(sptr-1)) || *(sptr-1) == '_'))	
+				{	// definite match
+					keyword1 = 1;
+					break;
+				}
 			}
-			else
-			{	// look for more on this line
-		    sptr = strstr(sptr+3,"new");
-			}
+		    sptr = strstr(sptr+3,"new"); // look for more on this line
 		}
 
 		if (keyword1 == 0)
@@ -96,14 +120,14 @@ int main(int argc, char *argv[])
 			while (sptr != NULL)
 			{	// found a possible match
 				if (isspace(*(sptr+6)) || *(sptr+6) == '(')
-				{	// definite match
-				keyword1 = 1;
-				break;
+				{
+					if (!(isalnum(*(sptr-1)) || *(sptr-1) == '_'))	
+					{	// definite match
+						keyword1 = 1;
+						break;
+					}
 				}
-				else
-				{	// look for more on this line
-		    	sptr = strstr(sptr+6,"malloc");
-				}
+			    sptr = strstr(sptr+6,"malloc"); // look for more on this line
 			}
 		}
 
@@ -157,11 +181,11 @@ int main(int argc, char *argv[])
 				sptr--;
 				if (!(isalnum(*sptr) || *sptr == '_')) break;
 			}
-			if (sptr == str)
-			{
-				printf("Error backing up in line: %s\n",str); 
-				exit(-1);
-			}
+//			if (sptr == str)
+//			{
+//				printf("Error backing up in line: %s\n",str); 
+//				exit(-1);
+//			}
 			sptr++;	// move back to beginning of assigned variable
 
 			strcpy(wordstring,sptr);
@@ -187,14 +211,14 @@ int main(int argc, char *argv[])
 		while (sptr != NULL)
 		{	// found a possible match
 			if (isspace(*(sptr+6)))
-			{	// definite match
-			keyword2 = 1;
-			break;
+			{
+				if (!(isalnum(*(sptr-1)) || *(sptr-1) == '_'))	
+				{	// definite match
+					keyword2 = 1;
+					break;
+				}
 			}
-			else
-			{	// look for more on this line
-		    sptr = strstr(sptr+6,"delete");
-			}
+		    sptr = strstr(sptr+6,"delete"); // look for more on this line
 		}
 
 		if (keyword2 == 0)
@@ -203,14 +227,14 @@ int main(int argc, char *argv[])
 			while (sptr != NULL)
 			{	// found a possible match
 				if (isspace(*(sptr+4)) || *(sptr+4) == '(')
-				{	// definite match
-				keyword2 = 1;
-				break;
+				{
+					if (!(isalnum(*(sptr-1)) || *(sptr-1) == '_'))	
+					{	// definite match
+						keyword2 = 1;
+						break;
+					}
 				}
-				else
-				{	// look for more on this line
-		    	sptr = strstr(sptr+4,"free");
-				}
+		    	sptr = strstr(sptr+4,"free"); // look for more on this line
 			}
 		}
 
@@ -293,6 +317,15 @@ int main(int argc, char *argv[])
 			strcpy(newline,str);
 		}
 		
+/**
+		i = 0;
+		while (newline[i] != '\0')
+		{
+			putc(newline[i],outfile);
+			i++;
+		}
+**/
+
 		if (fputs(newline,outfile) == EOF)
 		{
 			printf("Error writing line to %s\n",argv[2]);
