@@ -168,16 +168,11 @@ main(
 		exit(1);
 	}
 
-	//------------------------------------//
-	// create and configure the converter //
-	//------------------------------------//
+	//----------------------//
+	// create the converter //
+	//----------------------//
 
 	L17ToL20 l17_to_l20;
-	if (! ConfigL17ToL20(&l17_to_l20, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring GMF\n", command);
-		exit(1);
-	}
 
 	//------------//
 	// open files //

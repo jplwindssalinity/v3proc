@@ -18,7 +18,6 @@ static const char rcs_id_l17tol20_c[] =
 //==========//
 
 L17ToL20::L17ToL20()
-:	phiStep(0.0), phiBuffer(0.0), spdTolerance(0.0)
 {
 	return;
 }
@@ -50,7 +49,6 @@ L17ToL20::ConvertAndWrite(
 	MeasList* meas_list = &(l17->frame.measList);
 	if (meas_list->NodeCount() < 2)
 	{
-//		fprintf(stderr, "too few measurements\n");
 		return(2);
 	}
 
@@ -70,7 +68,6 @@ L17ToL20::ConvertAndWrite(
 	}
 	if (any_zero)
 	{
-//		fprintf(stderr, "insuffient wind data\n");
 		return(3);
 	}
 
@@ -79,21 +76,16 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	if (! gmf->RetrieveWinds(meas_list, wvc, phiStep, phiBuffer,
-		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS))
+	if (! gmf->RetrieveWinds(meas_list, wvc))
 	{
-//		fprintf(stderr, "wind retrieval failed\n");
-//		meas_list->WriteAscii(stdout);
 		delete wvc;
-		return(5);
+		return(4);
 	}
 
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
-//		fprintf(stderr, "deleting node count %d\n",
-//			wvc->ambiguities.NodeCount());
 		delete wvc;
-		return(6);
+		return(5);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 
@@ -164,8 +156,7 @@ L17ToL20::WriteSolutionCurves(
 	// write solution curves //
 	//-----------------------//
 
-	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), phiStep, phiBuffer,
-		phiMaxSmoothing, spdTolerance, DESIRED_SOLUTIONS);
+	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList));
 
 	//-------------------//
 	// close output file //

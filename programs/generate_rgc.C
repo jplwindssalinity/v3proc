@@ -289,11 +289,12 @@ main(
 				antenna->azimuthAngle = azimuth_step_size *
 					(double)azimuth_step;
 
-				//-------------------------------------//
-				// calculate the ideal round trip time //
-				//-------------------------------------//
+				//-------------------------------------------//
+				// calculate the ideal round trip time in ms //
+				//-------------------------------------------//
 
-				rtt[azimuth_step] = IdealRtt(&spacecraft, &instrument);
+				rtt[azimuth_step] = IdealRtt(&spacecraft, &instrument) *
+					S_TO_MS;
 			}
 
 			//--------------------//
