@@ -186,6 +186,10 @@ Pnoise(
 	*Pn = bK*(instrument->noiseBandwidth - instrument->signalBandwidth) *
 		instrument->systemTemperature;
 
+	// Multiply by receiver gain and system loss to reference noise power
+	// at the same place as the signal power.
+	*Pn *= instrument->receiverGain / instrument->systemLoss;
+
 	// Sum the signal powers within the measurement spot.
 	// This procedure effectively puts all of the variance (ie., Kpc effect)
 	// into the slice signal powers.  The processing routine Pr_to_sigma0
