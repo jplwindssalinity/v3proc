@@ -40,22 +40,22 @@ int
 L2AToL2B::SetWindRetrievalMethod(
     const char*  wr_method)
 {
-    if (strcasecmp(wr_method, "GS"))
+    if (strcasecmp(wr_method, "GS") == 0)
     {
         wrMethod = GS;
         return(1);
     }
-    else if (strcasecmp(wr_method, "GS_FIXED"))
+    else if (strcasecmp(wr_method, "GS_FIXED") == 0)
     {
         wrMethod = GS_FIXED;
         return(1);
     }
-    else if (strcasecmp(wr_method, "H1"))
+    else if (strcasecmp(wr_method, "H1") == 0)
     {
         wrMethod = H1;
         return(1);
     }
-    else if (strcasecmp(wr_method, "PEAK_SPLITTING"))
+    else if (strcasecmp(wr_method, "PEAK_SPLITTING") == 0)
     {
         wrMethod = PEAK_SPLITTING;
         return(1);
