@@ -21,7 +21,7 @@
 //            there to get the data.
 //
 //    [ -a true_attitude_file ]  Writes a true attitude file containing
-//                                 time, roll, pitch, yaw, instrument_time
+//                                 time, roll, pitch, yaw, orbit_time
 //
 // OPERANDS
 //    The following operand is supported:
@@ -539,14 +539,16 @@ main(
                         &spacecraft);
 
                     // save the true attitude
-                    if (true_att_fp != NULL)
+                    if (true_att_fp != NULL &&
+                        spacecraft_event.time >= instrument_start_time &&
+                        spacecraft_event.time <= instrument_end_time)
                     {
                         fprintf(true_att_fp, "%.1f %g %g %g %u\n",
                             spacecraft_event.time,
                             spacecraft.attitude.GetRoll() * rtd,
                             spacecraft.attitude.GetPitch() * rtd,
                             spacecraft.attitude.GetYaw() * rtd,
-                            qscat.cds.instrumentTime);
+                            qscat.cds.orbitTime);
                     }
 
                     spacecraft_sim.ReportAttitude(spacecraft_event.time,
