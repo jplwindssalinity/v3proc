@@ -190,6 +190,7 @@ QscatSim::ScatSim(
         l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
         l00_frame->instrumentTicks = qscat->cds.instrumentTime;
         l00_frame->priOfOrbitStepChange = 255;      // flag value
+        l00_frame->calPosition = 255;	// no cal pulses yet
     }
 
     //-----------------------------------------------//
@@ -372,16 +373,37 @@ QscatSim::ScatSim(
     return(1);
 }
 
-//------------------//
-// QscatSim::CalSim //
-//------------------//
+//-----------------------//
+// QscatSim::LoopbackSim //
+//-----------------------//
 
 int
-QscatSim::CalSim(
+QscatSim::LoopbackSim(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     L00Frame*    l00_frame)
 {
+    //----------------------------------------//
+    // compute frame header info if necessary //
+    //----------------------------------------//
+
+    if (_spotNumber == 0)
+    {
+        //----------------------//
+        // frame initialization //
+        //----------------------//
+
+        // Cal pulses will probably never occur at the start of a frame,
+        // but just in case, we include this code...
+        if (! SetL00Spacecraft(spacecraft,l00_frame))
+            return(0);
+        l00_frame->time = qscat->cds.time;
+        l00_frame->orbitTicks = qscat->cds.orbitTime;
+        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
+        l00_frame->instrumentTicks = qscat->cds.instrumentTime;
+        l00_frame->priOfOrbitStepChange = 255;      // flag value
+    }
+
     //-------------------------------------------------//
     // tracking must be done to update state variables //
     //-------------------------------------------------//
@@ -392,8 +414,112 @@ QscatSim::CalSim(
     // Add Cal-pulse Specific Info to Frame //
     //--------------------------------------//
 
-    if (! SetL00Cal(qscat, l00_frame))
+    if (! SetL00Loopback(qscat, l00_frame))
         return(0);
+
+    //---------------------------------//
+    // set orbit step change indicator //
+    //---------------------------------//
+
+    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    if (orbit_step != l00_frame->orbitStep)
+    {
+        l00_frame->priOfOrbitStepChange = _spotNumber;
+        // remember, the CDS puts in the last orbit step (anti-documentation)
+        l00_frame->orbitStep = orbit_step;
+    }
+
+    //-----------------------------//
+    // determine if frame is ready //
+    //-----------------------------//
+
+    if (_spotNumber >= l00_frame->spotsPerFrame)
+    {
+        // Again, cal pulses will probably never end a frame, but just
+        // in case, we include this code...
+        l00FrameReady = 1;  // indicate frame is ready
+        _spotNumber = 0;    // prepare to start a new frame
+    }
+    else
+    {
+        l00FrameReady = 0;  // indicate frame is not ready
+    }
+
+    return(1);
+}
+
+//-------------------//
+// QscatSim::LoadSim //
+//-------------------//
+
+int
+QscatSim::LoadSim(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    L00Frame*    l00_frame)
+{
+    //----------------------------------------//
+    // compute frame header info if necessary //
+    //----------------------------------------//
+
+    if (_spotNumber == 0)
+    {
+        //----------------------//
+        // frame initialization //
+        //----------------------//
+
+        // Cal pulses will probably never occur at the start of a frame,
+        // but just in case, we include this code...
+        if (! SetL00Spacecraft(spacecraft,l00_frame))
+            return(0);
+        l00_frame->time = qscat->cds.time;
+        l00_frame->orbitTicks = qscat->cds.orbitTime;
+        l00_frame->orbitStep = qscat->cds.GetTrackingOrbitStep();
+        l00_frame->instrumentTicks = qscat->cds.instrumentTime;
+        l00_frame->priOfOrbitStepChange = 255;      // flag value
+        l00_frame->calPosition = 255;	// no loopback cal pulses yet
+    }
+
+    //-------------------------------------------------//
+    // tracking must be done to update state variables //
+    //-------------------------------------------------//
+
+    SetDelayAndFrequency(spacecraft, qscat);
+
+    //--------------------------------------//
+    // Add Cal-pulse Specific Info to Frame //
+    //--------------------------------------//
+
+    if (! SetL00Load(qscat, l00_frame))
+        return(0);
+
+    //---------------------------------//
+    // set orbit step change indicator //
+    //---------------------------------//
+
+    unsigned short orbit_step = qscat->cds.GetTrackingOrbitStep();
+    if (orbit_step != l00_frame->orbitStep)
+    {
+        l00_frame->priOfOrbitStepChange = _spotNumber;
+        // remember, the CDS puts in the last orbit step (anti-documentation)
+        l00_frame->orbitStep = orbit_step;
+    }
+
+    //-----------------------------//
+    // determine if frame is ready //
+    //-----------------------------//
+
+    if (_spotNumber >= l00_frame->spotsPerFrame)
+    {
+        // Again, cal pulses will probably never end a frame, but just
+        // in case, we include this code...
+        l00FrameReady = 1;  // indicate frame is ready
+        _spotNumber = 0;    // prepare to start a new frame
+    }
+    else
+    {
+        l00FrameReady = 0;  // indicate frame is not ready
+    }
 
     return(1);
 }
@@ -750,12 +876,80 @@ QscatSim::SetL00Science(
     return(1);
 }
 
-//---------------------//
-// QscatSim::SetL00Cal //
-//---------------------//
+//--------------------------//
+// QscatSim::SetL00Loopback //
+//--------------------------//
 
 int
-QscatSim::SetL00Cal(
+QscatSim::SetL00Loopback(
+    Qscat*       qscat,
+    L00Frame*    l00_frame)
+{
+
+    //-------------------------------------------//
+    // Set Es_cal using PtGr.                    //
+    // Only "noise it up" if simKpriFlag is set. //
+    //-------------------------------------------//
+
+    float PtGr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
+//    if (simVs1BCheckfile)
+//    {
+//        cf->ptgr = PtGr;
+//    }
+
+    float Esn_echo_cal,Esn_noise_cal;
+    PtGr_to_Esn(PtGr,&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
+
+    //-------------------//
+    // for each slice... //
+    //-------------------//
+
+    int base_slice_number = _spotNumber * l00_frame->slicesPerSpot;
+    for (int i=0; i < l00_frame->slicesPerSpot; i++)
+    {
+        //----------------------------------------------------------------//
+        // Update the level 0.0 frame.
+        // Here, we set each slice to the same number so that they
+        // add up to the proper echo channel energy with appropriate Kpri.
+        // A higher fidelity simulation would set each with its own
+        // variance (Kpc style).
+        // Data is set into the science data just like the instrument,
+        // and into separate storage just like the ground processing system.
+        //----------------------------------------------------------------//
+
+        l00_frame->loopbackSlices[i] = Esn_echo_cal/l00_frame->slicesPerSpot;
+        l00_frame->science[base_slice_number + i] =
+          Esn_echo_cal/l00_frame->slicesPerSpot;
+    }
+
+    //----------------------------------------------//
+    // Set corresponding noise channel measurements //
+    //----------------------------------------------//
+
+    l00_frame->loopbackNoise = Esn_noise_cal;
+    l00_frame->spotNoise[_spotNumber] = Esn_noise_cal;
+
+    //--------------------------------------------------------//
+    // Set cal position indicator so that the actual position //
+    // is one less than the unit offset position index        //
+    // (follows instrument telemetry).                        //
+    // Note that this is only done with loopbacks, and not    //
+    // for load measurements which always follow a loopback.  //
+    // Then increment the spot counter.                       //
+    //--------------------------------------------------------//
+
+    l00_frame->calPosition = _spotNumber + 2;
+    _spotNumber++;
+
+    return(1);
+}
+
+//----------------------//
+// QscatSim::SetL00Load //
+//----------------------//
+
+int
+QscatSim::SetL00Load(
     Qscat*       qscat,
     L00Frame*    l00_frame)
 {
@@ -778,44 +972,36 @@ QscatSim::SetL00Cal(
     float En_echo_load = N0_echo * Be * Tg;
     float En_noise_load = N0_noise * Bn * Tg;
 
-    //-------------------------------------------//
-    // Set Es_cal using PtGr.                    //
-    // Only "noise it up" if simKpriFlag is set. //
-    //-------------------------------------------//
-
-    float PtGr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
-//    if (simVs1BCheckfile)
-//    {
-//        cf->ptgr = PtGr;
-//    }
-
-    float Esn_echo_cal,Esn_noise_cal;
-    PtGr_to_Esn(PtGr,&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
-
     //-------------------//
     // for each slice... //
     //-------------------//
 
+    int base_slice_number = _spotNumber * l00_frame->slicesPerSpot;
     for (int i=0; i < l00_frame->slicesPerSpot; i++)
     {
         //----------------------------------------------------------------//
-        // update the level 0.0 frame 
+        // Update the level 0.0 frame 
         // Here, we set each slice to the same number so that they
-        // add up to the proper echo channel energy with appropriate Kpri.
+        // add up to the echo channel energy computed above.
         // A higher fidelity simulation would set each with its own
-        // variance (Kpc style).
+        // variance (Kpc style) which would introduce some noise into alpha.
+        // Data is set into the science data just like the instrument,
+        // and into separate storage just like the ground processing system.
         //----------------------------------------------------------------//
 
-        l00_frame->loopbackSlices[i] = Esn_echo_cal/l00_frame->slicesPerSpot;
         l00_frame->loadSlices[i] = En_echo_load/l00_frame->slicesPerSpot;
+        l00_frame->science[base_slice_number + i] =
+          En_echo_load/l00_frame->slicesPerSpot;
     }
 
     //----------------------------------------------//
     // Set corresponding noise channel measurements //
     //----------------------------------------------//
 
-    l00_frame->loopbackNoise = Esn_noise_cal;
     l00_frame->loadNoise = En_noise_load;
+    l00_frame->spotNoise[_spotNumber] = En_noise_load;
+
+    _spotNumber++;
 
     return(1);
 }
