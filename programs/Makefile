@@ -130,6 +130,7 @@ DIAGNOSTIC_PROGRAMS = \
 
 default: $(PROGRAMS)
 hudd: $(HUDD_PROGRAMS)
+diag: $(DIAGNOSTIC_PROGRAMS)
 
 #----------------------------------------------------------------------
 # clean: remove all executable programs
