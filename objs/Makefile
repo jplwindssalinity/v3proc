@@ -7,8 +7,9 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-CPPFLAGS =		-g -ptr. +w
+CPPFLAGS =		-g -Wall
 SYSLIBS =		-lm
+CCC =			gcc
 
 OBJS = \
 	List.o \
@@ -76,7 +77,7 @@ install: $(TARGET_LIB)
 
 $(TARGET_LIB):	$(OBJS)
 	- rm -f $(TARGET_LIB)
-	$(CCC) $(CPPFLAGS) -xar -o $(TARGET_LIB) $(OBJS)
+	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS)
 	(set incs = (*.h); cd $(INCDIR); rm -f $$incs)
 	cp *.h $(INCDIR)
 
@@ -90,7 +91,7 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
-Antenna.o: Antenna.C Antenna.h Beam.h Attitude.h Constants.h
+Antenna.o: Antenna.C Antenna.h Beam.h Constants.h Attitude.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h Beam.h Attitude.h
 Attitude.o: Attitude.C Attitude.h
 Beam.o: Beam.C Beam.h Attitude.h
@@ -115,7 +116,6 @@ Matrix3.o: Matrix3.C Constants.h Matrix3.h
 Meas.o: Meas.C Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
-Product.o: Product.C Product.h List.h
 Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Ephemeris.h List.h
 SpacecraftSim.o: SpacecraftSim.C Spacecraft.h SpacecraftSim.h Constants.h Matrix3.h Ephemeris.h List.h
 WVC.o: WVC.C WVC.h Constants.h List.h WindVector.h
