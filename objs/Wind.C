@@ -1763,7 +1763,9 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float dir_err = wvc->selected->dir - true_wv.dir;
+			float near_angle =
+				wrap_angle_near(wvc->selected->dir, true_wv.dir);
+			float dir_err = near_angle - true_wv.dir;
 			float err_err = dir_err - *(dir_bias_array + cti);
 			*(std_err_array + cti) += (err_err * err_err);
 		}

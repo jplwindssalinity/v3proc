@@ -433,6 +433,16 @@ main(
 	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
 		"RMS Direction Error (deg)", value_array, err_array);
 
+	//--------------------------------//
+	// nearest direction bias vs. ctd //
+	//--------------------------------//
+
+	rad_to_deg(value_2_array);
+	sprintf(title, "Nearest Direction Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	plot_thing("near_dir_bias", title, "Cross Track Distance (km)",
+		"Direction Bias (deg)", value_2_array);
+
 	//-------------//
 	// free arrays //
 	//-------------//
