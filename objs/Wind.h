@@ -315,6 +315,7 @@ public:
 	// evaluation //
 	//------------//
 
+	void            operator-=(const WindSwath& w);
 	int		CtdArray(float cross_track_res, float* ctd_array);
 
 	float	RmsSpdErr(WindField* truth);

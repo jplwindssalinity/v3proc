@@ -2586,7 +2586,41 @@ int          delta_dir_bins )
   }
   return(1);
 }
+void WindSwath::operator-=(const WindSwath& w){
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		for (int j = 0; j < _alongTrackBins; j++)
+		{
+			WVC* wvc1 = *(*(swath + i) + j);
+			if (wvc1 == NULL)
+				continue;
+			WVC* wvc2 = *(*(w.swath + i) + j);
+			if (wvc2 == NULL)
+				continue;
 
+			WindVectorPlus* wvp_sel=new WindVectorPlus;
+                        float u1, v1, u2, v2;
+			wvc1->selected->GetUV(&u1,&v1);
+			wvc2->selected->GetUV(&u2,&v2);
+			wvp_sel->SetUV(u1-u2,v1-v2);
+			wvc1->selected=wvp_sel;
+                        WindVectorPlus* wvp1=wvc1->ambiguities.GetHead();
+			WindVectorPlus* wvp2=wvc2->ambiguities.GetHead();
+			  while(wvp1 && wvp2){
+                            wvp1->GetUV(&u1,&v1);
+                            wvp2->GetUV(&u2,&v2);
+			    wvp1->SetUV(u1-u2,v1-v2);
+			    wvp1=wvc1->ambiguities.GetNext();
+			    wvp2=wvc2->ambiguities.GetNext();
+			  }
+			while(wvp1){
+			  wvc1->ambiguities.RemoveCurrent();
+			  wvp1=wvc1->ambiguities.GetCurrent();
+			}
+
+		}
+	}
+}
 //-----------------------//
 // WindSwath::SkillVsCti //
 //-----------------------//
