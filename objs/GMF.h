@@ -99,7 +99,8 @@ public:
     //-------------------//
 
     int     RetrieveWinds_H1(MeasList* meas_list, Kp* kp, WVC* wvc);
-    int     RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc,
+                int h3_flag = 0);
     int     SolutionCurve_H1(MeasList* meas_list, Kp* kp);
     int     FindBestSpeed(MeasList* meas_list, Kp* kp, float dir,
                 float low_speed, float high_speed, float* best_speed,

@@ -2858,11 +2858,14 @@ GMF::RetrieveWinds_H1(
 #define H2_PHI_COUNT	45
 #define H2_RANGES	    45			// way more than needed (unless buggy)
 
+#define H3_MIN_RAD_WIDTH  0.7854    // 45 degrees
+
 int
 GMF::RetrieveWinds_H2(
     MeasList*  meas_list,
     Kp*        kp,
-    WVC*       wvc)
+    WVC*       wvc,
+    int        h3_flag)
 {
     //--------------------------------//
     // generate coarse solution curve //
@@ -3179,6 +3182,10 @@ GMF::RetrieveWinds_H2(
 
         if (max_idx != -1)
         {
+            // if peaks are too small, don't split 'em
+            if (h3_flag && max_width < H3_MIN_RAD_WIDTH)
+                break;
+
             ambigs[max_idx]++;
             ambiguities++;
         }
@@ -3220,7 +3227,10 @@ GMF::RetrieveWinds_H2(
                 return(0);
             wvp->spd = spd;
             wvp->dir = dir;
-            wvp->obj = min_obj;    // for nudging reasons
+            if (h3_flag)
+                wvp->obj = obj;        // h3 is set up for threshold nudging
+            else
+                wvp->obj = min_obj;    // h2 is set up for 12 nudging
 
             // put in wvc
             if (! wvc->ambiguities.Append(wvp))

@@ -38,7 +38,7 @@ public:
     // enum //
     //------//
 
-    enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, PEAK_SPLITTING };
+    enum WindRetrievalMethodE { GS, GS_FIXED, H1, H2, H3, PEAK_SPLITTING };
 
 	//--------------//
 	// construction //
