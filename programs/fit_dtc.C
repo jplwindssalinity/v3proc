@@ -8,13 +8,14 @@
 //    fit_dtc
 //
 // SYNOPSIS
-//    fit_dtc [ -n ] <raw_dtc_file> <dtc_base>
+//    fit_dtc [ -fi ] <raw_dtc_file> <dtc_base>
 //
 // DESCRIPTION
 //    Reads the raw DTC file and generates a fit to the data.
 //
 // OPTIONS
-//    [ -n ]  Natural.  No fit.
+//    [ -f ]  Filter out outliers.
+//    [ -i ]  Filter out ice.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -23,7 +24,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % fit_dtc dtc.raw newdtc
+//      % fit_dtc -f dtc.raw newdtc
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -57,45 +58,16 @@ static const char rcs_id[] =
 #include "Array.h"
 #include "Tracking.h"
 #include "Tracking.C"
-/*
-#include <fcntl.h>
-#include "ConfigList.h"
-#include "L1A.h"
-#include "ConfigSim.h"
-#include "QscatConfig.h"
-#include "InstrumentGeom.h"
-#include "List.h"
-#include "List.C"
-#include "BufferedList.h"
-#include "BufferedList.C"
-#include "AngleInterval.h"
-#include "echo_funcs.h"
-*/
 
 //-----------//
 // TEMPLATES //
 //-----------//
 
-/*
-template class List<Meas>;
-template class List<long>;
-template class List<WindVectorPlus>;
-template class List<MeasSpot>;
-template class List<OffsetList>;
-template class List<StringPair>;
-template class TrackerBase<unsigned char>;
-template class List<OrbitState>;
-template class BufferedList<OrbitState>;
-template class List<EarthPosition>;
-template class TrackerBase<unsigned short>;
-template class List<AngleInterval>;
-*/
-
 //-----------//
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "n"
+#define OPTSTRING  "fi"
 #define QUOTE      '"'
 
 #define ORBIT_STEPS            256
@@ -125,17 +97,14 @@ int     plot_fit_spec(const char* base, int beam_idx, int term_idx,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -n ]", "<raw_dtc_file>", "<dtc_base>", 0 };
+const char* usage_array[] = { "[ -fi ]", "<raw_dtc_file>", "<dtc_base>", 0 };
 
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+char      g_good_too[ORBIT_STEPS];
 
-/*
-// the following are allocated dynamically
-double**  g_azimuth;
-double**  g_meas_spec_peak;
-off_t***  g_offsets;
-*/
+int       g_opt_filter = 0;
+int       g_opt_ice = 0;
 
 //--------------//
 // MAIN PROGRAM //
@@ -146,22 +115,23 @@ main(
     int    argc,
     char*  argv[])
 {
-    int opt_natural = 0;
-
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
     extern int optind;
-//    extern char *optarg;
+//  extern char *optarg;
     int c;
     while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
         switch(c)
         {
-        case 'n':
-            opt_natural = 1;
+        case 'f':
+            g_opt_filter = 1;
+            break;
+        case 'i':
+            g_opt_ice = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -217,13 +187,10 @@ main(
     // fit //
     //-----//
 
-if (! opt_natural)
-{
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         fit_terms_plus(dtc_base, beam_idx, g_terms[beam_idx]);
     }
-}
 
     //-------------//
     // set Doppler //
@@ -281,12 +248,24 @@ fit_terms_plus(
             good_count++;
     }
 
+    //---------------------------//
+    // initialize good_too array //
+    //---------------------------//
+
+    for (int i = 0; i < ORBIT_STEPS; i++)
+    {
+        g_good_too[i] = 1;
+        if (g_opt_ice)
+        {
+            if ((i > 46 && i < 82) || (i > 167 && i < 217))
+                g_good_too[i] = 0;
+        }
+    }
+
     double* azimuth = (double *)make_array(sizeof(double), 1, good_count);
     double* data = (double *)make_array(sizeof(double), 1, good_count);
-//    double* residual = (double *)make_array(sizeof(double), 1, good_count);
 
     int max_term[3] = { 4, 3, 3 };
-//    double threshold[3] = { 500.0, 0.01, 500.0 };    // amp, phase, bias
     double threshold[3] = { 0.0, 0.0, 0.0 };    // amp, phase, bias
     double new_coefs[3][ORBIT_STEPS];
 
@@ -294,11 +273,8 @@ fit_terms_plus(
     // for each coefficient //
     //----------------------//
 
-    int coef_translate[3] = { 0, 2, 1};    // want phase the last index
-    for (int coef_access_idx = 0; coef_access_idx < 3; coef_access_idx++)
+    for (int coef_idx = 0; coef_idx < 3; coef_idx++)
     {
-        int coef_idx = coef_translate[coef_access_idx];
-
         //------------------//
         // fill in the data //
         //------------------//
@@ -306,45 +282,34 @@ fit_terms_plus(
         int sample_count = 0;
         for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
         {
-            if (g_good[beam_idx][orbit_step])
-            {
-                azimuth[sample_count] = two_pi * (double)orbit_step /
-                    (double)ORBIT_STEPS;
-                data[sample_count] = *(*(terms + orbit_step) + coef_idx);
+            if (! g_good[beam_idx][orbit_step] || ! g_good_too[orbit_step])
+                continue;
 
-/*
-//-----------------------//
-// calculate phase again //
-//-----------------------//
-
-if (coef_idx == 1)    // phase
-{
-    double orig_bias = *(*(terms + orbit_step) + 2);    // original bias
-    double fit_bias = new_coefs[2][orbit_step];       // fit bias
-    double orig_amp = *(*(terms + orbit_step) + 0);    // original a
-    double fit_amp = new_coefs[0][orbit_step];       // fit a
-    double orig_phase = *(*(terms + orbit_step) + 1);    // original p
-    data[sample_count] = acos((orig_bias - fit_bias +
-        orig_amp * cos(orig_phase)) / fit_amp);
-}
-*/
-                sample_count++;
-            }
+            azimuth[sample_count] = two_pi * (double)orbit_step /
+                (double)ORBIT_STEPS;
+            data[sample_count] = *(*(terms + orbit_step) + coef_idx);
+            sample_count++;
         }
 
-        //---------------------------//
-        // solve low frequency terms //
-        //---------------------------//
+        //----------------------//
+        // start filtering loop //
+        //----------------------//
 
         double amplitude[TERM_COUNT], phase[TERM_COUNT];
-        for (int i = 0; i < TERM_COUNT; i++)
+        do
         {
-            amplitude[i] = 0.0;
-            phase[i] = 0.0;
-        }
+            //---------------------------//
+            // solve low frequency terms //
+            //---------------------------//
 
-        specfit(azimuth, data, NULL, sample_count, 0, max_term[coef_idx],
-            amplitude, phase);
+            for (int i = 0; i < TERM_COUNT; i++)
+            {
+                amplitude[i] = 0.0;
+                phase[i] = 0.0;
+            }
+
+            specfit(azimuth, data, NULL, sample_count, 0, max_term[coef_idx],
+                amplitude, phase);
 
 /*
         //--------------------------//
@@ -378,16 +343,88 @@ if (coef_idx == 1)    // phase
             amplitude[term_idx] += 
         }
 */
+            //-----------------//
+            // threshold terms //
+            //-----------------//
 
-        //-----------------//
-        // threshold terms //
-        //-----------------//
+            for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
+            {
+                if (amplitude[term_idx] < threshold[coef_idx])
+                    amplitude[term_idx] = 0.0;
+            }
 
-        for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
-        {
-            if (amplitude[term_idx] < threshold[coef_idx])
-                amplitude[term_idx] = 0.0;
-        }
+            if (! g_opt_filter)
+                break;    // one pass is enough
+
+            //-----------------------------------//
+            // calculate threshold for next pass //
+            //-----------------------------------//
+
+            int sample_count = 0;
+            double std_dev = 0.0;
+            for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+            {
+                if (! g_good[beam_idx][orbit_step] ||
+                    ! g_good_too[orbit_step])
+                {
+                    continue;
+                }
+
+                double angle = two_pi * (double)orbit_step /
+                    (double)ORBIT_STEPS;
+                double fit_value = 0.0;
+                for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
+                {
+                    fit_value += amplitude[term_idx] *
+                        cos((double)term_idx * angle + phase[term_idx]);
+                }
+                double dif = fit_value - *(*(terms + orbit_step) + coef_idx);
+                std_dev += (dif*dif);
+                sample_count++;
+            }
+            std_dev /= (double)(sample_count - 1);
+            std_dev = sqrt(std_dev);
+
+            //-------------//
+            // filter data //
+            //-------------//
+
+            int toss_count = 0;
+            double thresh = 3.0 * std_dev;
+            sample_count = 0;
+            for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+            {
+                if (! g_good[beam_idx][orbit_step] ||
+                    ! g_good_too[orbit_step])
+                {
+                    continue;
+                }
+
+                double angle = two_pi * (double)orbit_step /
+                    (double)ORBIT_STEPS;
+                double fit_value = 0.0;
+                for (int term_idx = 0; term_idx < TERM_COUNT; term_idx++)
+                {
+                    fit_value += amplitude[term_idx] *
+                        cos((double)term_idx * angle + phase[term_idx]);
+                }
+                double dif = fit_value - *(*(terms + orbit_step) + coef_idx);
+                if (fabs(dif) > thresh)
+                {
+                    g_good_too[orbit_step] = 0;
+                    toss_count++;
+                    continue;
+                }
+
+                azimuth[sample_count] = angle;
+                data[sample_count] = *(*(terms + orbit_step) + coef_idx);
+                sample_count++;
+            }
+
+            if (toss_count == 0.0)
+                break;
+
+        } while (1);
 
         //---------------//
         // calculate DTC //
@@ -478,6 +515,19 @@ plot_fit_spec(
     for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
     {
         fprintf(ofp, "%d %g\n", orbit_step, new_term[orbit_step]);
+    }
+
+    if (g_opt_filter || g_opt_ice)
+    {
+        fprintf(ofp, "&\n");
+        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+        {
+            if (! g_good[beam_idx][orbit_step] || ! g_good_too[orbit_step])
+                continue;
+
+            fprintf(ofp, "%d %g\n", orbit_step,
+                *(*(terms + orbit_step) + term_idx));
+        }
     }
     fclose(ofp);
     return(1);

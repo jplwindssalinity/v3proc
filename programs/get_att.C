@@ -8,7 +8,7 @@
 //    get_att
 //
 // SYNOPSIS
-//    get_att [ -a ] [ -f type:windfield ] [ -i ]
+//    get_att [ -a ] [ -f type:windfield ]
 //      [ -s step_size ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
@@ -22,7 +22,6 @@
 //                             optimization subset.
 //    [ -f type:windfield ]  Use windfield for energy profile
 //                             correction.
-//    [ -i ]                 Use an simple incidence angle correction.
 //    [ -s step_size ]       The number of orbit steps to combine.
 //                             Otherwise all data is combined.
 //
@@ -34,7 +33,7 @@
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % get_att -i -s 2 qscat.cfg qscat.know qscat.echo1 qscat.echo2
+//      % get_att -s 2 qscat.cfg qscat.know qscat.echo1 qscat.echo2
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -120,8 +119,7 @@ template class List<AngleInterval>;
 #define MIN_VAR_DATA_COUNT  2
 
 // simplex search parameters
-#define LAMBDA      0.1
-#define LAMBDA      1.0
+#define LAMBDA      0.2
 #define XTOL        0.001
 #define PLEX_STEPS  36
 
@@ -154,7 +152,7 @@ int     prune();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]", "[ -i ]",
+const char* usage_array[] = { "[ -a ]", "[ -f type:windfield ]",
     "[ -s step_size ] ", "<sim_config_file>", "<output_base>",
     "<echo_file...>", 0 };
 
@@ -182,7 +180,6 @@ char*      g_windfield_type = NULL;
 char*      g_windfield_file = NULL;
 WindField  g_windfield;
 GMF        g_gmf;
-int        g_incidence_opt = 0;
 int        g_step_size_opt = 0;
 int        g_step_size = 0;
 int        g_range_opt = 0;
@@ -224,9 +221,6 @@ main(
                 exit(1);
             }
             g_windfield_opt = 1;
-            break;
-        case 'i':
-            g_incidence_opt = 1;
             break;
         case 's':
             g_step_size = atoi(optarg);
@@ -880,7 +874,7 @@ evaluate(
                         meas->incidenceAngle, wv.spd, chi, &sigma0);
                     x[slice_idx] *= sigma0;
                 }
-                if (g_incidence_opt)
+                else
                 {
                     //----------------------------//
                     // incidence angle correction //
