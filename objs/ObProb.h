@@ -44,10 +44,12 @@ class DistProb;
 #define WVC_RESOLUTION  25.0    // km
 
 #define VECTOR_SPEED_SCALE  0.05
-#define VECTOR_HEAD_SCALE   0.1
+#define VECTOR_HEAD_SCALE   0.15
 #define VECTOR_HEAD_ANGLE   15.0*dtr
 
-#define PROB_DIAMOND_SCALE  2.0
+#define PROB_DIAMOND_SCALE  1.5
+
+#define MIN_NORM_PROB  1E-16
 
 class ObProb
 {
@@ -75,6 +77,7 @@ public:
     float  GetDirection(int dir_idx);
     float  GetProbability(int dir_idx);
     float  SpeedIndexToSpeed(int spd_idx);
+    int    GetSelectedDirIdx() { return(selectedDirIdx); };
 
     //------------//
     // processing //
@@ -86,9 +89,12 @@ public:
     void   Add(ObProb* other_op);
     void   Multiply(ObProb* other_op);
     void   Normalize();
+    int    Normalize(float min_prob);
     int    WriteFlower(FILE* ofp, float scale = 2.0, float max_range = 0.0);
     int    WriteBestVector(FILE* ofp);
     int    WriteBestProb(FILE* ofp);
+    int    FindBestDirIdx();
+    void   SetSelectedDirIdx(int dir_idx) { selectedDirIdx = dir_idx; return; };
 
     //-----------//
     // variables //
@@ -98,6 +104,12 @@ public:
     short ati;
     float           probabilityArray[DIR_BINS];
     unsigned short  speedArray[DIR_BINS];
+
+    //---------------------//
+    // temporary variables //
+    //---------------------//
+
+    int  selectedDirIdx;
 };
 
 //======================================================================
@@ -123,15 +135,17 @@ public:
     // input/output //
     //--------------//
 
-    int  Read(const char* filename);
-
-    ObProb* GetObProb(int cti, int ati);
+    int       Read(const char* filename);
+    ObProb*   GetObProb(int cti, int ati);
+    void      FreeContents();
 
     //------------//
     // processing //
     //------------//
 
-    ObProb*  LocalProb(DistProb* dp, int window_size, int center_cti,
+    ObProb*  LocalFlowerProb(DistProb* dp, int window_size, int center_cti,
+                 int center_ati, float gamma);
+    ObProb*  LocalVectorProb(DistProb* dp, int window_size, int center_cti,
                  int center_ati, float gamma);
 
     //-----------//

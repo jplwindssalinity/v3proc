@@ -52,6 +52,7 @@ OBJS = \
 	Ephemeris.o \
 	ETime.o \
 	FbbTable.o \
+	Flower.o \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
@@ -89,7 +90,6 @@ OBJS = \
 	Meas.o \
 	Misc.o \
 	MiscTable.o \
-	ObProb.o \
 	PMeas.o \
 	PointList.o \
 	Pscat.o \
@@ -242,7 +242,7 @@ Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C L1BHdf.h L2AHdf.h Meas.h Beam.h Constants.h LonLat.h GenericGeom.h L1B.h L2A.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h BaseFile.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h Constants.h Matrix.h Array.h
 MiscTable.o: MiscTable.C MiscTable.h Interpolate.h Constants.h Array.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
-ObProb.o: ObProb.C ObProb.h GMF.h L2AH.h MiscTable.h Wind.h Meas.h Constants.h Kp.h L2A.h ETime.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h BaseFile.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
+Flower.o: Flower.C Flower.h GMF.h L2AH.h MiscTable.h Wind.h Meas.h Constants.h Kp.h L2A.h ETime.h Misc.h List.h LonLat.h Index.h AngleInterval.h Matrix.h Beam.h Ephemeris.h Attitude.h Kpm.h Kpr.h BaseFile.h EarthPosition.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthField.h Distributions.h L00Frame.h
 PMeas.o: PMeas.C Pscat.h Distributions.h Qscat.h PMeas.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Meas.h Beam.h Constants.h Matrix3.h Ephemeris.h Attitude.h CoordinateSwitch.h EarthPosition.h LonLat.h List.h BufferedList.h
 PointList.o: PointList.C PointList.h List.h
 Pscat.o: Pscat.C Pscat.h PMeas.h Misc.h Distributions.h Qscat.h Meas.h Antenna.h Tracking.h Spacecraft.h Scatterometer.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Constants.h Matrix3.h CoordinateSwitch.h EarthPosition.h BufferedList.h

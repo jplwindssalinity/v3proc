@@ -15,7 +15,7 @@ static const char rcs_id_obprob_c[] =
 //========//
 
 ObProb::ObProb()
-:  cti(0), ati(0)
+:  cti(0), ati(0), selectedDirIdx(-1)
 {
     return;
 }
@@ -355,11 +355,38 @@ ObProb::Normalize()
     }
     if (sum == 0.0)
         return;
+
     for (int i = 0; i < DIR_BINS; i++)
     {
         probabilityArray[i] /= sum;
     }
     return;
+}
+
+//-------------------//
+// ObProb::Normalize //
+//-------------------//
+
+int
+ObProb::Normalize(
+    float  min_prob)
+{
+    Normalize();
+    int count = 0;
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        if (probabilityArray[i] < min_prob)
+        {
+            probabilityArray[i] = 0.0;
+            count++;
+        }
+    }
+
+    // renomalize if necessary
+    if (count > 0)
+        Normalize();
+
+    return(count);
 }
 
 //---------------------//
@@ -402,6 +429,7 @@ ObProb::WriteFlower(
         double dy = probability * scale * sin(direction);
         fprintf(ofp, "%g %g\n", (double)cti + dx, (double)ati + dy);
     }
+    fprintf(ofp, "%d %d\n", cti, ati);
     return(1);
 }
 
@@ -463,30 +491,24 @@ ObProb::WriteBestProb(
     FILE*  ofp)
 {
     fprintf(ofp, "#\n");
-    double max_prob = 0.0;
-    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
-    {
-        double probability = GetProbability(dir_idx);
-        if (probability > max_prob)
-        {
-            max_prob = probability;
-        }
-    }
-    if (max_prob == 0.0)
+    int best_idx = FindBestDirIdx();
+    if (best_idx == -1)
         return(0);
+
+    double probability = GetProbability(best_idx);
 
     double x[7], y[7];
     x[0] = cti;
     y[0] = ati;
-    x[1] = x[0] + PROB_DIAMOND_SCALE * max_prob;
+    x[1] = x[0] + PROB_DIAMOND_SCALE * probability;
     y[1] = y[0];
     x[2] = x[0];
-    y[2] = y[0] + PROB_DIAMOND_SCALE * max_prob;
-    x[3] = x[0] - PROB_DIAMOND_SCALE * max_prob;
+    y[2] = y[0] + PROB_DIAMOND_SCALE * probability;
+    x[3] = x[0] - PROB_DIAMOND_SCALE * probability;
     y[3] = y[0];
     x[4] = x[0];
-    y[4] = y[0] - PROB_DIAMOND_SCALE * max_prob;
-    x[5] = x[0] + PROB_DIAMOND_SCALE * max_prob;
+    y[4] = y[0] - PROB_DIAMOND_SCALE * probability;
+    x[5] = x[0] + PROB_DIAMOND_SCALE * probability;
     y[5] = y[0];
     x[6] = cti;
     y[6] = ati;
@@ -495,6 +517,27 @@ ObProb::WriteBestProb(
         fprintf(ofp, "%g %g\n", x[i], y[i]);
     }
     return(1);
+}
+
+//------------------------//
+// ObProb::FindBestDirIdx //
+//------------------------//
+
+int
+ObProb::FindBestDirIdx()
+{
+    double max_prob = 0.0;
+    int max_idx = -1;
+    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+    {
+        double probability = GetProbability(dir_idx);
+        if (probability > max_prob)
+        {
+            max_prob = probability;
+            max_idx = dir_idx;
+        }
+    }
+    return(max_idx);
 }
 
 //=============//
@@ -515,13 +558,7 @@ ObProbArray::ObProbArray()
 
 ObProbArray::~ObProbArray()
 {
-    for (int i = 0; i < CT_WIDTH; i++)
-    {
-        for (int j = 0; j < AT_WIDTH; j++)
-        {
-            free(array[i][j]);
-        }
-    }
+    FreeContents();
     return;
 }
 
@@ -592,28 +629,42 @@ ObProbArray::GetObProb(
     return(array[cti][ati]);
 }
 
-//------------------------//
-// ObProbArray::LocalProb //
-//------------------------//
+//---------------------------//
+// ObProbArray::FreeContents //
+//---------------------------//
+
+void
+ObProbArray::FreeContents()
+{
+    for (int i = 0; i < CT_WIDTH; i++)
+    {
+        for (int j = 0; j < AT_WIDTH; j++)
+        {
+            free(array[i][j]);
+            array[i][j] = NULL;
+        }
+    }
+    return;
+}
+
+//------------------------------//
+// ObProbArray::LocalFlowerProb //
+//------------------------------//
 // gamma controls the assumptions about error correlation. When
 // gamma is 0.0, the errors are assumed to be uncorrelated and the
 // probabilities are multiplied. When gamma is 1.0, the errors
 // are assumed to be completely correlated and the probabilities
 // are added. Thanks to Bryan Stiles for helping me with the
-// formalation.
+// formulation. This one uses the whole flower.
 
 ObProb*
-ObProbArray::LocalProb(
+ObProbArray::LocalFlowerProb(
     DistProb*  dp,
     int        window_size,
     int        center_cti,
     int        center_ati,
     float      gamma)
 {
-/*
-if (center_cti != 26 || center_ati != 235)
-return(NULL);
-*/
     //----------------//
     // get the center //
     //----------------//
@@ -671,6 +722,13 @@ return(NULL);
     {
         for (int ati = min_ati; ati < max_ati; ati++)
         {
+            //--------------------------//
+            // don't use the center WVC //
+            //--------------------------//
+
+            if (cti == center_cti && ati == center_ati)
+                continue;
+
             // assume the information from this wvc will be good
             int bad_wvc = 0;
 
@@ -708,9 +766,6 @@ return(NULL);
 
                     float dist_prob = dp->Probability(distance, speed0,
                         dspeed, ddirection);
-/*
-printf("# %g %g %g %g %g %g\n", distance, speed0, dspeed, ddirection, dist_prob, dist_prob * probability1);
-*/
                     if (dist_prob < 0.0)
                     {
                         // can't estimate probs: eliminate this wvc
@@ -732,15 +787,9 @@ printf("# %g %g %g %g %g %g\n", distance, speed0, dspeed, ddirection, dist_prob,
             //----------------------------------------------------//
 
             tmp_op.Normalize();
-/*
-tmp_op.WriteFlower(stdout, 0.0, 0.75);
-printf("&\n");
-fflush(stdout);
-*/
-
             cor_op.Add(&tmp_op);
             uncor_op.Multiply(&tmp_op);
-            uncor_op.Normalize();   // this should help
+            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
         }
     }
 
@@ -759,6 +808,173 @@ fflush(stdout);
     }
 
     dest_op->Normalize();
+    return(dest_op);
+}
+
+//------------------------------//
+// ObProbArray::LocalVectorProb //
+//------------------------------//
+// gamma controls the assumptions about error correlation. When
+// gamma is 0.0, the errors are assumed to be uncorrelated and the
+// probabilities are multiplied. When gamma is 1.0, the errors
+// are assumed to be completely correlated and the probabilities
+// are added. Thanks to Bryan Stiles for helping me with the
+// formulation. This one uses the neighbors vectors.
+
+ObProb*
+ObProbArray::LocalVectorProb(
+    DistProb*  dp,
+    int        window_size,
+    int        center_cti,
+    int        center_ati,
+    float      gamma)
+{
+    //----------------//
+    // get the center //
+    //----------------//
+
+    ObProb* op0 = GetObProb(center_cti, center_ati);
+    if (op0 == NULL)
+        return(NULL);
+
+    //-------------------------------//
+    // this is where the output goes //
+    //-------------------------------//
+
+    ObProb* dest_op = new ObProb();
+    if (dest_op == NULL)
+        return(NULL);
+    dest_op->cti = center_cti;
+    dest_op->ati = center_ati;
+    dest_op->CopySpeeds(op0);    // use the original speeds
+
+    //--------------------------//
+    // temporary ObProb storage //
+    //--------------------------//
+
+    ObProb cor_op;
+    cor_op.FillProbabilities(0.0);    // we'll be adding
+
+    ObProb uncor_op;
+    uncor_op.FillProbabilities(1.0);    // we'll be multiplying
+
+    //-----------------------------//
+    // determine window boundaries //
+    //-----------------------------//
+
+    int half_window = window_size / 2;
+
+    int min_cti = center_cti - half_window;
+    if (min_cti < 0)
+        min_cti = 0;
+    int max_cti = center_cti + half_window + 1;
+    if (max_cti > CT_WIDTH)
+        max_cti = CT_WIDTH;
+
+    int min_ati = center_ati - half_window;
+    if (min_ati < 0)
+        min_ati = 0;
+    int max_ati = center_ati + half_window + 1;
+    if (max_ati > AT_WIDTH)
+        max_ati = AT_WIDTH;
+
+    //----------------------------------------------//
+    // calculate the probability for each direction //
+    //----------------------------------------------//
+
+    for (int cti = min_cti; cti < max_cti; cti++)
+    {
+        for (int ati = min_ati; ati < max_ati; ati++)
+        {
+            //--------------------------//
+            // don't use the center WVC //
+            //--------------------------//
+
+            if (cti == center_cti && ati == center_ati)
+                continue;
+
+            // assume the information from this wvc will be good
+            int bad_wvc = 0;
+
+            ObProb* op1 = GetObProb(cti, ati);
+            if (op1 == NULL)
+                continue;
+
+            float distance = op0->KmDistance(op1);
+
+            //------------------------------------//
+            // first, clear the probability array //
+            //------------------------------------//
+
+            ObProb tmp_op;
+            tmp_op.FillProbabilities(0.0);
+
+            for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+            {
+                float speed0 = op0->GetSpeed(dir_idx);
+                float direction0 = op0->GetDirection(dir_idx);
+
+                //------------//
+                // accumulate //
+                //------------//
+
+                int other_dir_idx = op1->GetSelectedDirIdx();
+                if (other_dir_idx == -1)
+                {
+                    // can't estimate probs: eliminate this wvc
+                    bad_wvc = 1;
+                    break;
+                }
+
+                float speed1 = op1->GetSpeed(other_dir_idx);
+                float direction1 = op1->GetDirection(other_dir_idx);
+                float probability1 = op1->GetProbability(other_dir_idx);
+
+                float dspeed = speed1 - speed0;
+                float ddirection = ANGDIF(direction1, direction0);
+
+                float dist_prob = dp->Probability(distance, speed0,
+                    dspeed, ddirection);
+                if (dist_prob < 0.0)
+                {
+                    // can't estimate probs: eliminate this wvc
+                    bad_wvc = 1;
+                    break;
+                }
+
+                tmp_op.Add(dir_idx, dist_prob * probability1);
+            }
+
+            if (bad_wvc)
+                continue;
+
+            //----------------------------------------------------//
+            // form the correlated and uncorrelated probabilities //
+            //----------------------------------------------------//
+
+            tmp_op.Normalize();
+            cor_op.Add(&tmp_op);
+            uncor_op.Multiply(&tmp_op);
+            uncor_op.Normalize(MIN_NORM_PROB);   // this should help
+        }
+    }
+
+    //----------------------------------------//
+    // form the combination weighted by gamma //
+    //----------------------------------------//
+
+    cor_op.Normalize();
+    uncor_op.Normalize();    // just to be sure
+
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        dest_op->probabilityArray[i] =
+            (1.0 - gamma) * uncor_op.probabilityArray[i] +
+            gamma * cor_op.probabilityArray[i];
+    }
+
+    dest_op->Normalize();
+
     return(dest_op);
 }
 
@@ -897,6 +1113,13 @@ DistProb::Probability(
     float  dspeed,
     float  ddirection)
 {
+    //-----------------------------------//
+    // if you are looking at yourself... //
+    //-----------------------------------//
+
+    if (distance == 0.0)
+        return(1.0);
+
     //------------------//
     // get coefficients //
     //------------------//
@@ -906,7 +1129,7 @@ DistProb::Probability(
     if (! _distanceIndex.GetLinearCoefsStrict(distance, distance_idx,
         distance_coef))
     {
-        return(0);
+        return(-1.0);
     }
 
     int speed_idx[2];
@@ -914,7 +1137,7 @@ DistProb::Probability(
     if (! _speedIndex.GetLinearCoefsStrict(speed, speed_idx,
         speed_coef))
     {
-        return(0);
+        return(-1.0);
     }
 
     int dspeed_idx[2];
@@ -922,7 +1145,7 @@ DistProb::Probability(
     if (! _dspeedIndex.GetLinearCoefsStrict(dspeed, dspeed_idx,
         dspeed_coef))
     {
-        return(0);
+        return(-1.0);
     }
 
     int ddirection_idx[2];
@@ -930,7 +1153,7 @@ DistProb::Probability(
     if (! _ddirectionIndex.GetLinearCoefsStrict(ddirection, ddirection_idx,
         ddirection_coef))
     {
-        return(0);
+        return(-1.0);
     }
 
     //-----------------------//
