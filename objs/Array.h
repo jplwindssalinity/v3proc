@@ -44,7 +44,8 @@ public:
 	//-----------//
 
 	int dims;
-	void* ptr;
+	T* ptr1;
+	T** ptr2;
 
 };
 

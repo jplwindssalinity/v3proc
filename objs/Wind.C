@@ -545,14 +545,16 @@ WindSwath::MedianFilter(
 	//----------------------------//
 
 	Array<WindVectorPlus*> new_selected_array(_crossTrackSize, _alongTrackSize);
-	WindVectorPlus*** new_selected = (WindVectorPlus***)new_selected_array.ptr;
+//	WindVectorPlus*** new_selected = (WindVectorPlus***)new_selected_array.ptr;
+	WindVectorPlus*** new_selected = new_selected_array.ptr2;
 
 	//-------------------------//
 	// create a new change map //
 	//-------------------------//
 
 	Array<char> change_array(_crossTrackSize, _alongTrackSize);
-	char** change = (char**)change_array.ptr;
+//	char** change = (char**)change_array.ptr;
+	char** change = change_array.ptr2;
 
 	//--------------------//
 	// prep for filtering //

@@ -71,7 +71,7 @@ double	alongtrack_size)
 
 	_gridarray = new Array<MeasList>(_alongtrack_bins,_crosstrack_bins);
 	if (_gridarray == NULL) return(0);
-	_grid = (MeasList**) (_gridarray -> ptr);
+	_grid = _gridarray -> ptr2;
 
 	return(1);
 }
