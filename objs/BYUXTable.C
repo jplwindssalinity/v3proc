@@ -242,10 +242,11 @@ BYUXTable::Read(
 	  dEgg[bm][o][ah]=atof(string);
 
           //--------------------------------------//
-          // Skip over Doppler and Range for now  //
+          // Skip over Doppler, Range, and S for now  //
           //--------------------------------------//
           fscanf(ifp[bm],"%s",string);
           fscanf(ifp[bm],"%s",string);
+	  fscanf(ifp[bm],"%s",string);
       }
     }
   }
