@@ -218,6 +218,15 @@ InstrumentSim::LocateSlices(
 		meas->incidenceAngle = centroid.IncidenceAngle(look_vector);
 		meas->center = centroid;
 
+/*
+if (slice_idx == 0)
+{
+Vector3 ulook_gc = antenna_frame_to_gc.Forward(vector);
+EarthPosition* r_target = new EarthPosition();
+*r_target = earth_intercept(orbit_state->rsat, ulook_gc);
+meas->outline.Append(r_target);
+}
+*/
 		//-----------------------------//
 		// add measurment to meas spot //
 		//-----------------------------//
