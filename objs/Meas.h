@@ -45,8 +45,10 @@ public:
 	// input/output //
 	//--------------//
 
-	int		Write(FILE* ofp);
-	int		Read(FILE* ofp);
+	int		Write(FILE* fp);
+	int		Read(FILE* fp);
+
+	int		WriteAscii(FILE* fp);
 
 	//---------//
 	// freeing //
@@ -94,6 +96,7 @@ public:
 
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
+	int		WriteAscii(FILE* fp);
 
 	//------//
 	// info //

@@ -73,6 +73,21 @@ Meas::Read(
 	return(1);
 }
 
+//------------------//
+// Meas::WriteAscii //
+//------------------//
+
+int
+Meas::WriteAscii(
+	FILE*	fp)
+{
+	fprintf(fp, "Pol: %s\n", beam_map[(int)pol]);
+	fprintf(fp, "Azi: %g\n", eastAzimuth);
+	fprintf(fp, "Inc: %g\n", incidenceAngle);
+	fprintf(fp, "Val: %g\n", value);
+	return(1);
+}
+
 //--------------------//
 // Meas::FreeContents //
 //--------------------//
@@ -141,6 +156,22 @@ MeasList::Read(
 		{
 			return(0);
 		}
+	}
+	return(1);
+}
+
+//----------------------//
+// MeasList::WriteAscii //
+//----------------------//
+
+int
+MeasList::WriteAscii(
+	FILE*	fp)
+{
+	for (Meas* meas = GetHead(); meas; meas = GetNext())
+	{
+		if (! meas->WriteAscii(fp))
+			return(0);
 	}
 	return(1);
 }
