@@ -89,7 +89,28 @@ template <class T>
 T*
 List<T>::RemoveCurrent()
 {
-	
+	Node<T>* node = _current;
+	if (_current == NULL)
+		return (NULL);
+	if (_current->prev)
+		_current->prev->next = _current->next;
+	if (_current->next)
+		_current->next->prev = _current->prev;
+	if (_current == _head)
+		_head = _head->next;
+	if (_current == _tail)
+		_tail = _tail->prev;
+	_current = _current->next;
+	if (node)
+	{
+		T* data = node->data;
+		delete node;
+		return(data);
+	}
+	else
+	{
+		return(NULL);
+	}
 }
 
 //---------------//
