@@ -101,7 +101,6 @@ public:
 	int		GotoNext();
 	int		GotoPrev();
 	int		SwapCurrentAndNext();
-	int		Find(T* data);
 
 	//-------------------//
 	// hacking into list //
@@ -151,6 +150,7 @@ public:
 
 	int		AddSorted(T* new_data);
 	int		AddUniqueSorted(T* new_data);
+	int		Find(T* data);
 
 	//-----------------//
 	// organizing list //
