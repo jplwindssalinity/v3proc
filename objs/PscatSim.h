@@ -76,6 +76,7 @@ public:
     // beamInfo contains the eventTime of the next event, but the eventId
     // of the current (previous event)
     PscatEvent               beamInfo[NUMBER_OF_QSCAT_BEAMS];  // hybrid
+    PscatEvent::PscatEventE  lastEventType;    // independent of beam
     unsigned short           lastEventIdealEncoder;
     LandMap                  landMap;
     TimeCorrelatedGaussian   ptgrNoise;

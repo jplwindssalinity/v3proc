@@ -20,6 +20,7 @@ static const char rcs_id_pscatsim_c[] =
 
 PscatSim::PscatSim()
 :   epochTime(0.0), epochTimeString(NULL), startTime(0),
+    lastEventType(PscatEvent::NONE), lastEventIdealEncoder(0),
     numLookStepsPerSlice(0), azimuthIntegrationRange(0.0),
     azimuthStepSize(0.0), dopplerBias(0.0), correlatedKpm(0.0),
     uniformSigmaField(0), outputXToStdout(0), useKfactor(0), createXtable(0),
@@ -49,6 +50,8 @@ PscatSim::Initialize(
     }
     return(1);
 }
+
+#define NINETY_DEGREE_ENCODER  8191
 
 //------------------------------//
 // PscatSim::DetermineNextEvent //
@@ -83,21 +86,44 @@ PscatSim::DetermineNextEvent(
 
     unsigned short ideal_encoder = pscat->cds.EstimateIdealEncoder();
 
-    switch (pscat_event->beamIdx)
+    switch (lastEventType)
     {
-    case 0:
-        // inner beam
-        pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
+    case PscatEvent::VV_SCAT_EVENT:
+    case PscatEvent::HH_SCAT_EVENT:
+    case PscatEvent::VV_HV_SCAT_EVENT:
+    case PscatEvent::HH_VH_SCAT_EVENT:
+    case PscatEvent::LOAD_EVENT:
+        if (ideal_encoder > NINETY_DEGREE_ENCODER &&
+            lastEventIdealEncoder <= NINETY_DEGREE_ENCODER)
+        {
+            pscat_event->eventId = PscatEvent::LOOPBACK_EVENT;
+        }
+        else
+        {
+            switch (pscat_event->beamIdx)
+            {
+            case 0:
+                // inner beam
+                pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
+                break;
+            case 1:
+                // outer beam
+                pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+                break;
+            default:
+                return(0);
+                break;
+            }
+        }
         break;
-    case 1:
-        // outer beam
-        pscat_event->eventId = PscatEvent::VV_SCAT_EVENT;
+    case PscatEvent::LOOPBACK_EVENT:
+        pscat_event->eventId = PscatEvent::LOAD_EVENT;
         break;
     default:
         return(0);
         break;
     }
-
+    
     //----------------------------//
     // update next time for event //
     //----------------------------//
@@ -110,8 +136,9 @@ PscatSim::DetermineNextEvent(
     // remember last event //
     //---------------------//
 
+    beamInfo[min_idx].eventId = pscat_event->eventId;   // by beam
     lastEventIdealEncoder = ideal_encoder;
-    beamInfo[min_idx].eventId = pscat_event->eventId;
+    lastEventType = pscat_event->eventId;    // independent of beam
 
     return(1);
 }
