@@ -332,7 +332,7 @@ main(
 	// Just Ambiguity Removal //
 	//------------------------//
 
-	int retval = l2a_to_l2b.Flush(&l2b);
+	int retval = l2a_to_l2b.InitFilterAndFlush(&l2b);
 	switch (retval)
 	  {
 	  case 1:

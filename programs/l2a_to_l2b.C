@@ -350,7 +350,7 @@ main(
 #endif
 	}
 
-	l2a_to_l2b.Flush(&l2b);
+	l2a_to_l2b.InitFilterAndFlush(&l2b);
 
 	l2a.Close();
 	l2b.Close();
