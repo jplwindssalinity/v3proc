@@ -7,7 +7,7 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-CPPFLAGS =		-g -fno-implicit-templates -Wall
+CPPFLAGS =		-g -pg -fno-implicit-templates -Wall
 SYSLIBS =		-lm
 CCC =			gcc
 
