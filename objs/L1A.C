@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -108,11 +108,13 @@ L1A::WriteDataRec()
 //------------------------//
 
 int
-L1A::WriteDataRecAscii()
+L1A::WriteDataRecAscii(
+    FILE*  ofp)
 {
-  if(_outputFp==NULL) return(0);
-  if(!frame.WriteAscii(_outputFp)) return(0);
-  return(1);
+    if (ofp == NULL || ! frame.WriteAscii(ofp))
+        return(0);
+
+    return(1);
 }
 
 //--------------------//
@@ -144,12 +146,13 @@ L1A::ReadGSDataRec()
 //--------------------------//
 
 int
-L1A::WriteGSDataRecAscii()
+L1A::WriteGSDataRecAscii(
+    FILE*  ofp)
 {
-    if(_outputFp==NULL) return(0);
+    if (ofp == NULL)
+        return(0);
 
-    return(gsFrame.WriteAscii(_outputFp));
-
+    return(gsFrame.WriteAscii(ofp));
 }
 
 //---------------------//
@@ -159,11 +162,12 @@ L1A::WriteGSDataRecAscii()
 int
 L1A::WriteGSDataRec()
 {
-    if(_outputFp==NULL) return(0);
+    if (_outputFp == NULL)
+        return(0);
     FillGSFrame();
-    if (gsFrame.Pack(gsBuffer) == 0) return 0;
+    if (gsFrame.Pack(gsBuffer) == 0)
+        return(0);
     return(Write(gsBuffer, GS_L1A_FRAME_SIZE));
-
 }
 
 //------------------//
@@ -207,7 +211,7 @@ L1A::FillGSFrame()
                  frame.antennaPosition, sizeof(short)*frame.spotsPerFrame);
 
     // Cal measurements need to be converted to floats (but this isn't used!)
-    for (int i=0; i < frame.slicesPerSpot; i++)
+    for (int i = 0; i < frame.slicesPerSpot; i++)
     {  // convert floats to ints
       gsFrame.in_science.loop_back_cal_A_power[i]=(int)frame.loopbackSlices[i];
       gsFrame.in_science.loop_back_cal_B_power[i]=(int)frame.loopbackSlices[i];
@@ -238,11 +242,11 @@ L1A::FillGSFrame()
                  frame.spotNoise, sizeof(unsigned int)*frame.spotsPerFrame);
 
 /*
-    for (int i=0; i < frame.slicesPerFrame; i++)
+    for (int i = 0; i < frame.slicesPerFrame; i++)
     {  // convert floats to ints
       *(gsFrame.in_science.power_dn[0] + i) = (int)frame.science[i];
     }
-    for (int i=0; i < frame.spotsPerFrame; i++)
+    for (int i = 0; i < frame.spotsPerFrame; i++)
     {  // convert floats to ints
       gsFrame.in_science.noise_dn[i] = (int)frame.spotNoise[i];
     }
@@ -266,7 +270,6 @@ L1A::FillGSFrame()
     return(1);
 } // L1A::FillGSFrame
 
-
 //-----------------------------//
 // L1A::OpenCalPulseForWriting //
 //-----------------------------//
@@ -275,10 +278,28 @@ int
 L1A::OpenCalPulseForWriting(
     const char*  filename)
 {
-    if (filename == 0)
-        return 0;
+    if (filename == NULL)
+        return(0);
     _calPulseFP = fopen(filename, "w");
-    return(_calPulseFP == 0 ? 0 : 1);
+    if (_calPulseFP == NULL)
+        return(0);
+    return(1);
+}
+
+//-----------------------------//
+// L1A::OpenCalPulseForReading //
+//-----------------------------//
+
+int
+L1A::OpenCalPulseForReading(
+    const char*  filename)
+{
+    if (filename == NULL)
+        return(0);
+    _calPulseFP = fopen(filename, "r");
+    if (_calPulseFP == NULL)
+        return(0);
+    return(1);
 }
 
 //------------------------//
@@ -288,17 +309,14 @@ L1A::OpenCalPulseForWriting(
 int
 L1A::CloseCalPulseFile()
 {
-    if (_calPulseFP == 0)
-        return 0;
-    else
+    if (_calPulseFP == NULL)
+        return(0);
+    if (! fclose(_calPulseFP))
     {
-        if (fclose(_calPulseFP) == 0)
-        {
-            _calPulseFP = 0;
-            return 1;
-        }
-        else return 0;
+        _calPulseFP = NULL;
+        return(0);
     }
+    return(1);
 }
 
 //-------------------------//
@@ -366,6 +384,58 @@ L1A::WriteGSCalPulseRec()
     return(fwrite(&cpr, sizeof(L1A_Calibration_Pulse_Type), 1, _calPulseFP));
 }
 
+//------------------------//
+// L1A::ReadGSCalPulseRec //
+//------------------------//
+// This may actually work.
+
+int
+L1A::ReadGSCalPulseRec()
+{
+    if (_calPulseFP == NULL)
+        return(0);
+
+    L1A_Calibration_Pulse_Type cpr;
+    fread(&cpr, sizeof(L1A_Calibration_Pulse_Type), 1, _calPulseFP);
+
+    // frame time
+    frame.time = cpr.frame_time_cal_secs;
+
+    // true cal pulse position
+    frame.in_eu.true_cal_pulse_pos = cpr.true_cal_pulse_pos;
+
+    // I don't think the beam identifier is needed in our frames
+    // We just use the frame instrument status
+
+    // loop back cal slice powers
+    // load cal slice powers
+    for (int i = 0; i < SLICES_PER_PULSE; i++)
+    {
+        *(frame.loopbackSlices + i) = cpr.loop_back_cal_power[i];
+        *(frame.loadSlices + i) = cpr.load_cal_power[i];
+    }
+
+    // loop back cal noise
+    // load cal noise
+    frame.loopbackNoise = cpr.loop_back_cal_noise;
+    frame.loadNoise = cpr.load_cal_noise;
+
+    // we don't have the rotary joint temp, i'll just use the coupler
+    frame.in_eu.precision_coupler_temp_eu = cpr.rj_temp_eu;
+    frame.in_eu.precision_coupler_temp_eu = cpr.precision_coupler_temp_eu;
+    frame.in_eu.rcv_protect_sw_temp_eu = frame.in_eu.rcv_protect_sw_temp_eu;
+    frame.in_eu.beam_select_sw_temp_eu = cpr.beam_select_sw_temp_eu;
+    frame.in_eu.receiver_temp_eu = cpr.receiver_temp_eu;
+    frame.in_eu.transmit_power_inner = cpr.transmit_power_inner;
+    frame.in_eu.transmit_power_outer = cpr.transmit_power_outer;
+    frame.frame_inst_status = cpr.frame_inst_status;
+    frame.frame_err_status = cpr.frame_err_status;
+    frame.frame_qual_flag = cpr.frame_qual_flag;
+
+    return(1);
+}
+
+/*
 //------------------------//
 // L1A::ReadGSCalPulseRec //
 //------------------------//
@@ -494,76 +564,74 @@ L1A::ReadGSCalPulseRec(
 
     return(1);
 }
+*/
 
 //------------------------------//
 // L1A::WriteGSCalPulseRecAscii //
 //------------------------------//
 
 int
-L1A::WriteGSCalPulseRecAscii()
+L1A::WriteGSCalPulseRecAscii(
+    FILE*  ofp)
 {
-    int i=0;  // loop counter
+    if (ofp == NULL)
+        return(0);
 
-    if (_calPulseFP == NULL) return(0);
-
-    fprintf(_calPulseFP, "Cal Pulse Record:\n");
+    fprintf(ofp, "Cal Pulse Record:\n");
     char ftime[25];
     (void)memcpy(ftime, frame.frame_time, 24);
     ftime[24] = '\0';
-    fprintf(_calPulseFP, "frame time string (not in actual record): %s\n",
-      ftime);
-    fprintf(_calPulseFP, "frame_time_secs = %g\n",frame.time);
-    for (i=0; i < 12; i++)
+    fprintf(ofp, "frame time string (not in actual record): %s\n", ftime);
+    fprintf(ofp, "frame_time_secs = %g\n",frame.time);
+    for (int i = 0; i < 12; i++)
     {
-      fprintf(_calPulseFP, "loopbackSlices[%d] = %d\n",
-        i,frame.loopbackSlices[i]);
+        fprintf(ofp, "loopbackSlices[%d] = %d\n", i, frame.loopbackSlices[i]);
     }
-    fprintf(_calPulseFP, "loopbackNoise = %d\n",frame.loopbackNoise);
+    fprintf(ofp, "loopbackNoise = %d\n", frame.loopbackNoise);
 
-    for (i=0; i < 12; i++)
+    for (int i = 0; i < 12; i++)
     {
-      fprintf(_calPulseFP, "loadSlices[%d] = %d\n",
-        i,frame.loadSlices[i]);
+        fprintf(ofp, "loadSlices[%d] = %d\n", i, frame.loadSlices[i]);
     }
-    fprintf(_calPulseFP, "loadNoise = %d\n",frame.loadNoise);
-    fprintf(_calPulseFP, "precision_coupler_temp_eu = %g\n",
-      frame.in_eu.precision_coupler_temp_eu);
-    fprintf(_calPulseFP, "rcv_protect_sw_temp_eu = %g\n",
-      frame.in_eu.rcv_protect_sw_temp_eu);
-    fprintf(_calPulseFP, "beam_select_sw_temp_eu = %g\n",
-      frame.in_eu.beam_select_sw_temp_eu);
-    fprintf(_calPulseFP, "receiver_temp_eu = %g\n",
-      frame.in_eu.receiver_temp_eu);
-    fprintf(_calPulseFP, "transmit_power_inner = %g\n",
-      frame.in_eu.transmit_power_inner);
-    fprintf(_calPulseFP, "transmit_power_outer = %g\n",
-      frame.in_eu.transmit_power_outer);
-    fprintf(_calPulseFP, "frame_inst_status = %d\n",
-      frame.frame_inst_status);
-    fprintf(_calPulseFP, "frame_err_status = %d\n",
-      frame.frame_err_status);
-    fprintf(_calPulseFP, "true_cal_pulse_pos = %d\n",
-      frame.in_eu.true_cal_pulse_pos);
+    fprintf(ofp, "loadNoise = %d\n",frame.loadNoise);
+    fprintf(ofp, "precision_coupler_temp_eu = %g\n",
+        frame.in_eu.precision_coupler_temp_eu);
+    fprintf(ofp, "rcv_protect_sw_temp_eu = %g\n",
+        frame.in_eu.rcv_protect_sw_temp_eu);
+    fprintf(ofp, "beam_select_sw_temp_eu = %g\n",
+        frame.in_eu.beam_select_sw_temp_eu);
+    fprintf(ofp, "receiver_temp_eu = %g\n",
+        frame.in_eu.receiver_temp_eu);
+    fprintf(ofp, "transmit_power_inner = %g\n",
+        frame.in_eu.transmit_power_inner);
+    fprintf(ofp, "transmit_power_outer = %g\n",
+        frame.in_eu.transmit_power_outer);
+    fprintf(ofp, "frame_inst_status = %d\n",
+        frame.frame_inst_status);
+    fprintf(ofp, "frame_err_status = %d\n",
+        frame.frame_err_status);
+    fprintf(ofp, "true_cal_pulse_pos = %d\n",
+        frame.in_eu.true_cal_pulse_pos);
 
     // Set beam identifier based on true unit offset position and first pulse
     // identity.
     if (IS_EVEN(frame.in_eu.true_cal_pulse_pos))
     {
-      // different
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        fprintf(_calPulseFP, "beam_identifier = %d\n",1);
-      else
-        fprintf(_calPulseFP, "beam_identifier = %d\n",0);
+        // different
+        if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+            fprintf(ofp, "beam_identifier = %d\n", 1);
+        else
+            fprintf(ofp, "beam_identifier = %d\n", 0);
     }
     else
     {
-      // same
-      if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
-        fprintf(_calPulseFP, "beam_identifier = %d\n",0);
-      else
-        fprintf(_calPulseFP, "beam_identifier = %d\n",1);
+        // same
+        if (GET_L1A_FIRST_PULSE(frame.frame_inst_status) == 0)
+            fprintf(ofp, "beam_identifier = %d\n", 0);
+        else
+            fprintf(ofp, "beam_identifier = %d\n", 1);
     }
-    fprintf(_calPulseFP, "\n");
+    fprintf(ofp, "\n");
 
     return(1);
 }
