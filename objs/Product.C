@@ -288,3 +288,20 @@ Product::WriteBuffer()
 
 	return(1);
 }
+
+//---------------------//
+// Product::ReadBuffer //
+//---------------------//
+
+int
+Product::ReadBuffer()
+{
+	int ofd = _fileList.GetCurrentFd();
+	if (ofd == INVALID_FD)
+		return(0);
+
+	if (write(ofd, _frame, _size) != _size)
+		return(0);
+
+	return(1);
+}

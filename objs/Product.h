@@ -113,6 +113,10 @@ class Product
 {
 public:
 
+	//------//
+	// enum //
+	//------//
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -136,6 +140,7 @@ public:
 	//--------------//
 
 	int		WriteBuffer();
+	int		ReadBuffer();
 
 protected:
 
