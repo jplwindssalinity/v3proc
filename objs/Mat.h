@@ -31,6 +31,7 @@ public:
     Mat(const Mat& mat);
     Mat(int m_size, int n_size);
     Mat(int m_size, int n_size, double fill);
+    ~Mat();
 
     int  WriteAscii(FILE* ofp = stdout);
 

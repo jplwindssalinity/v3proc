@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 2002, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 2002-2003, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_mat_c[] =
     "@(#) $Id$";
@@ -50,6 +50,12 @@ Mat::Mat(
         return;
     }
     Fill(fill);
+    return;
+}
+
+Mat::~Mat()
+{
+    _Free();
     return;
 }
 
