@@ -11,6 +11,7 @@ static const char rcs_id_wind_c[] =
 #include <malloc.h>
 #include "Wind.h"
 #include "Constants.h"
+#include "Array.h"
 
 
 //============//
@@ -88,13 +89,30 @@ WindVectorPlus::WriteL20(
 	return(1);
 }
 
+//-------------------------//
+// WindVectorPlus::ReadL20 //
+//-------------------------//
+
+int
+WindVectorPlus::ReadL20(
+	FILE*	fp)
+{
+	if (fread((void *)&spd, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&dir, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&obj, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 
 //=====//
 // WVC //
 //=====//
 
 WVC::WVC()
-:	selectedIdx(-1)
+:	selected(NULL)
 {
 	return;
 }
@@ -117,14 +135,85 @@ int
 WVC::WriteL20(
 	FILE*	fp)
 {
-	if (fwrite((void *)&selectedIdx, sizeof(char), 1, fp) != 1)
+	//---------------------------//
+	// write the number of nodes //
+	//---------------------------//
+
+	unsigned char count = ambiguities.NodeCount();
+	if (fwrite((void *)&count, sizeof(unsigned char), 1, fp) != 1)
 		return(0);
+
+	//-------------//
+	// write nodes //
+	//-------------//
+
+	char selected_idx = -1;
+	char idx = 0;
 
 	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
 		wvp = ambiguities.GetNext())
 	{
-		wvp->WriteL20(fp);
+		if (! wvp->WriteL20(fp))
+			return(0);
+
+		if (wvp == selected)
+			selected_idx = idx;
+
+		idx++;
 	}
+
+	//----------------------//
+	// write selected index //
+	//----------------------//
+
+	if (fwrite((void *)&selected_idx, sizeof(char), 1, fp) != 1)
+		return(0);
+
+	return(1);
+}
+
+//--------------//
+// WVC::ReadL20 //
+//--------------//
+
+int
+WVC::ReadL20(
+	FILE*	fp)
+{
+	//--------------------------//
+	// read the number of nodes //
+	//--------------------------//
+
+	unsigned char count;
+	if (fread((void *)&count, sizeof(unsigned char), 1, fp) != 1)
+		return(0);
+
+	//------------//
+	// read nodes //
+	//------------//
+
+	for (int i = 0; i < count; i++)
+	{
+		WindVectorPlus* wvp = new WindVectorPlus();
+
+		if (! wvp->ReadL20(fp))
+			return(0);
+	}
+
+	//---------------------//
+	// read selected index //
+	//---------------------//
+
+	char selected_idx;
+	if (fread((void *)&selected_idx, sizeof(char), 1, fp) != 1)
+		return(0);
+
+	//----------------------//
+	// set selected pointer //
+	//----------------------//
+
+	selected = ambiguities.GetNodeWithIndex((int)selected_idx);
+
 	return(1);
 }
 
@@ -439,6 +528,176 @@ WindSwath::WriteL20(
 		}
 	}
 	return(1);
+}
+
+//-------------------------//
+// WindSwath::MedianFilter //
+//-------------------------//
+// Returns the number of passes.
+
+int
+WindSwath::MedianFilter(
+	int		window_size,
+	int		max_passes)
+{
+	//----------------------------//
+	// create a new selection map //
+	//----------------------------//
+
+	Array<WindVectorPlus*> new_selected_array(_crossTrackSize, _alongTrackSize);
+	WindVectorPlus*** new_selected = (WindVectorPlus***)new_selected_array.ptr;
+
+	//-------------------------//
+	// create a new change map //
+	//-------------------------//
+
+	Array<char> change_array(_crossTrackSize, _alongTrackSize);
+	char** change = (char**)change_array.ptr;
+
+	//--------------------//
+	// prep for filtering //
+	//--------------------//
+
+	int half_window = window_size / 2;
+
+	//--------//
+	// filter //
+	//--------//
+
+	int pass = 0;
+	do
+	{
+		int flips = MedianFilterPass(half_window, new_selected, change);
+		pass++;
+		if (flips == 0)
+			break;
+	} while (pass < max_passes);
+
+	return(pass);
+}
+
+//-----------------------------//
+// WindSwath::MedianFilterPass //
+//-----------------------------//
+// Returns the number of vector changes.
+
+int
+WindSwath::MedianFilterPass(
+	int					half_window,
+	WindVectorPlus***	new_selected,
+	char**				change)
+{
+	//-------------//
+	// filter loop //
+	//-------------//
+
+	int flips = 0;
+	for (int cti = 0; cti < _crossTrackSize; cti++)
+	{
+		int cti_min = cti - half_window;
+		int cti_max = cti + half_window + 1;
+		if (cti_min < 0)
+			cti_min = 0;
+		if (cti_max > _crossTrackSize)
+			cti_max = _crossTrackSize;
+		for (int ati = 0; ati < _alongTrackSize; ati++)
+		{
+			int ati_min = ati - half_window;
+			int ati_max = ati + half_window + 1;
+			if (ati_min < 0)
+				ati_min = 0;
+			if (ati_max > _alongTrackSize)
+				ati_max = _alongTrackSize;
+
+			//------------------------------//
+			// initialize the new selection //
+			//------------------------------//
+
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+			new_selected[cti][ati] = NULL;
+
+			//-------------------//
+			// check for changes //
+			//-------------------//
+
+			for (int i = cti_min; i < cti_max; i++)
+			{
+				for (int j = ati_min; j < ati_max; j++)
+				{
+					if (change[cti][ati])
+					{
+						goto change;
+						break;
+					}
+				}
+			}
+			continue;		// no changes
+
+		change:
+
+			float min_vector_dif_sum = 9e69;
+
+			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+				wvp = wvc->ambiguities.GetNext())
+			{
+				float vector_dif_sum = 0.0;
+				float x1 = wvp->spd * cos(wvp->dir);
+				float y1 = wvp->spd * sin(wvp->dir);
+
+				for (int i = cti_min; i < cti_max; i++)
+				{
+					for (int j = ati_min; j < ati_max; j++)
+					{
+						if (i == ati && j == cti)
+							continue;		// don't check central vector
+
+						WVC* other_wvc = swath[i][j];
+						WindVectorPlus* other_wvp = other_wvc->selected;
+						if (! other_wvp)
+							continue;
+
+						float x2 = other_wvp->spd * cos(other_wvp->dir);
+						float y2 = other_wvp->spd * sin(other_wvp->dir);
+
+						float dx = x2 - x1;
+						float dy = y2 - y1;
+						vector_dif_sum += sqrt(dx*dx + dy*dy);
+					}
+				}
+
+				if (vector_dif_sum < min_vector_dif_sum)
+				{
+					min_vector_dif_sum = vector_dif_sum;
+					new_selected[cti][ati] = wvp;
+				}
+			}	// done with ambiguities
+		}	// done with ati
+	}	// done with cti
+
+	//------------------//
+	// transfer updates //
+	//------------------//
+
+	for (int cti = 0; cti < _crossTrackSize; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackSize; ati++)
+		{
+			change[cti][ati] = 0;
+			if (new_selected[ati][cti])
+			{
+				if (new_selected[ati][cti] != swath[cti][ati]->selected)
+				{
+					swath[cti][ati]->selected = new_selected[ati][cti];
+					change[cti][ati] = 1;
+					flips++;
+				}
+			}
+		}
+	}
+
+	return(flips);
 }
 
 //-----------------------//

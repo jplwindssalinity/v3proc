@@ -79,6 +79,7 @@ public:
 	//--------------//
 
 	int		WriteL20(FILE* fp);
+	int		ReadL20(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -113,6 +114,7 @@ public:
 
 	int		WriteAmbigsAscii(FILE* ofp);
 	int		WriteL20(FILE* fp);
+	int		ReadL20(FILE* fp);
 
 	//--------------//
 	// manipulation //
@@ -131,7 +133,7 @@ public:
 	// variables //
 	//-----------//
 
-	char					selectedIdx;
+	WindVectorPlus*			selected;
 	List<WindVectorPlus>	ambiguities;
 };
 
@@ -225,6 +227,14 @@ public:
 	//--------------//
 
 	int		WriteL20(FILE* fp);
+
+	//-----------//
+	// filtering //
+	//-----------//
+
+	int		MedianFilter(int window_size, int max_passes);
+	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
+				char** change);
 
 	//-----------//
 	// variables //
