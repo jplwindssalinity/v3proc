@@ -1809,48 +1809,6 @@ GMF::_ObjectiveFunction(
     return(-fv);
 }
 
-//---------------------------------//
-// GMF::VarFactorObjectiveFunction //
-//---------------------------------//
-
-float
-GMF::VarFactorObjectiveFunction(
-    MeasList*  meas_list,
-    float      spd,
-    float      phi,
-    Kp*        kp,
-    float      var_factor)
-{
-    float fv = 0.0;
-    for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
-    {
-        float chi = phi - meas->eastAzimuth + pi;
-        float trial_value;
-        GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
-            &trial_value);
-        double tmp=meas->value;
-        if (! finite(tmp))
-            continue;
-        float s = trial_value - meas->value;
-        float var = GetVariance(meas, spd, chi, trial_value, kp);
-        var *= var_factor;
-        if (var == 0.0)
-        {
-            // variances all turned off, so use uniform weighting.
-            fv += s*s;
-        }
-        else if (retrieveUsingLogVar)
-        {
-            fv += s*s / var + log(var);
-        }
-        else
-        {
-            fv += s*s / var;
-        }
-    }
-    return(-fv);
-}
-
 //-----------------------//
 // GMF::RetrieveWinds_GS //
 //-----------------------//

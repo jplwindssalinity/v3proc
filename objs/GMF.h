@@ -158,8 +158,6 @@ public:
     //----------------//
 
     float  _ObjectiveFunction(MeasList* meas_list, float u, float phi, Kp* kp);
-    float  VarFactorObjectiveFunction(MeasList* meas_list, float spd,
-               float phi, Kp* kp, float var_factor);
     int    _ObjectiveToProbability(float scale, int radius);
 
     //-----------//

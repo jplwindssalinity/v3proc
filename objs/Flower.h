@@ -85,8 +85,7 @@ public:
     // processing //
     //------------//
 
-    int    RetrieveProbabilities(GMF* gmf, MeasList* ml, Kp* kp,
-               float var_factor = 1.0);
+    int    RetrieveProbabilities(GMF* gmf, MeasList* ml, Kp* kp);
     float  KmDistance(Flower* other_op);
     void   Add(int dir_idx, float probability);
     void   Add(Flower* other_op);
@@ -111,6 +110,7 @@ public:
     short           cti;
     short           ati;
     unsigned char   rainFlag;
+    float           delta;
     float           probabilityArray[DIR_BINS];
     unsigned short  speedArray[DIR_BINS];
 

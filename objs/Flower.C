@@ -15,7 +15,7 @@ static const char rcs_id_flower_c[] =
 //========//
 
 Flower::Flower()
-:  cti(0), ati(0), rainFlag(0), selectedDirIdx(-1)
+:  cti(0), ati(0), rainFlag(0), delta(0.0), selectedDirIdx(-1)
 {
     return;
 }
@@ -66,6 +66,7 @@ Flower::Write(
     if (fwrite(&cti, sizeof(short), 1, fp) == 1 &&
         fwrite(&ati, sizeof(short), 1, fp) == 1 &&
         fwrite(&rainFlag, sizeof(unsigned char), 1, fp) == 1 &&
+        fwrite(&delta, sizeof(float), 1, fp) == 1 &&
         fwrite(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fwrite(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
@@ -85,6 +86,7 @@ Flower::Read(
     if (fread(&cti, sizeof(short), 1, fp) == 1 &&
         fread(&ati, sizeof(short), 1, fp) == 1 &&
         fread(&rainFlag, sizeof(unsigned char), 1, fp) == 1 &&
+        fread(&delta, sizeof(float), 1, fp) == 1 &&
         fread(probabilityArray, sizeof(float), DIR_BINS, fp) == DIR_BINS &&
         fread(speedArray, sizeof(unsigned short), DIR_BINS, fp) == DIR_BINS)
     {
@@ -160,8 +162,7 @@ int
 Flower::RetrieveProbabilities(
     GMF*       gmf,
     MeasList*  ml,
-    Kp*        kp,
-    float      var_factor)
+    Kp*        kp)
 {
     //-----------------------------------//
     // find best speed at each direction //
@@ -177,13 +178,13 @@ Flower::RetrieveProbabilities(
     {
         float bx = ax + (cx - ax) * golden_r;
         float phi = (float)(two_pi * (double)dir_idx / (double)DIR_BINS);
-        if (gmf->VarFactorObjectiveFunction(ml, bx, phi, kp, var_factor) <
-            gmf->VarFactorObjectiveFunction(ml, ax, phi, kp, var_factor) )
+        if (gmf->_ObjectiveFunction(ml, bx, phi, kp) <
+            gmf->_ObjectiveFunction(ml, ax, phi, kp) )
         {
             ax = spd_min;
         }
-        if (gmf->VarFactorObjectiveFunction(ml, bx, phi, kp, var_factor) <
-            gmf->VarFactorObjectiveFunction(ml, cx, phi, kp, var_factor) )
+        if (gmf->_ObjectiveFunction(ml, bx, phi, kp) <
+            gmf->_ObjectiveFunction(ml, cx, phi, kp) )
         {
             cx = spd_max;
         }
@@ -200,10 +201,8 @@ Flower::RetrieveProbabilities(
             x2 = bx;
             x1 = bx - golden_c * (bx - ax);
         }
-        float f1 = gmf->VarFactorObjectiveFunction(ml, x1, phi, kp,
-            var_factor);
-        float f2 = gmf->VarFactorObjectiveFunction(ml, x2, phi, kp,
-            var_factor);
+        float f1 = gmf->_ObjectiveFunction(ml, x1, phi, kp);
+        float f2 = gmf->_ObjectiveFunction(ml, x2, phi, kp);
         while (x3 - x0 > SPD_SCALE)
         {
             if (f2 > f1)
@@ -212,8 +211,7 @@ Flower::RetrieveProbabilities(
                 x1 = x2;
                 x2 = x2 + golden_c * (x3 - x2);
                 f1 = f2;
-                f2 = gmf->VarFactorObjectiveFunction(ml, x2, phi, kp,
-                    var_factor);
+                f2 = gmf->_ObjectiveFunction(ml, x2, phi, kp);
                 if (f2 > max_mle)
                     max_mle = f2;
             }
@@ -223,8 +221,7 @@ Flower::RetrieveProbabilities(
                 x2 = x1;
                 x1 = x1 - golden_c * (x1 - x0);
                 f2 = f1;
-                f1 = gmf->VarFactorObjectiveFunction(ml, x1, phi, kp,
-                    var_factor);
+                f1 = gmf->_ObjectiveFunction(ml, x1, phi, kp);
                 if (f1 > max_mle)
                     max_mle = f1;
             }
@@ -253,15 +250,15 @@ Flower::RetrieveProbabilities(
     {
         float phi = (float)(two_pi * (double)dir_idx / (double)DIR_BINS);
         float spd = speedArray[dir_idx] * SPD_SCALE;
-        double sum_prob = exp((gmf->VarFactorObjectiveFunction(ml, spd, phi,
-            kp, var_factor) - max_mle) / 2.0);
+        double sum_prob = exp((gmf->_ObjectiveFunction(ml, spd, phi,
+            kp) - max_mle) / 2.0);
         for(;;)
         {
             spd -= SPD_SUM_STEP_SIZE;
             if (spd < spd_min)
                 break;
-            double prob = exp((gmf->VarFactorObjectiveFunction(ml, spd, phi,
-                kp, var_factor) - max_mle) / 2.0);
+            double prob = exp((gmf->_ObjectiveFunction(ml, spd, phi,
+                kp) - max_mle) / 2.0);
             sum_prob += prob;
             if (prob < MIN_PROB)
                 break;
@@ -272,8 +269,8 @@ Flower::RetrieveProbabilities(
             spd += SPD_SUM_STEP_SIZE;
             if (spd < spd_min)
                 break;
-            double prob = exp((gmf->VarFactorObjectiveFunction(ml, spd, phi,
-                kp, var_factor) - max_mle) / 2.0);
+            double prob = exp((gmf->_ObjectiveFunction(ml, spd, phi,
+                kp) - max_mle) / 2.0);
             sum_prob += prob;
             if (prob < MIN_PROB)
                 break;
