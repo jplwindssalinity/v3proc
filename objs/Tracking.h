@@ -12,13 +12,77 @@ static const char rcs_id_tracking_h[] =
 #include "Constants.h"
 
 class Instrument;
+class Antenna;
+class Beam;
 
 //======================================================================
 // CLASSES
-//		RangeTracker, DopplerTracker
+//		TrackerBase, RangeTracker, DopplerTracker
 //======================================================================
 
 float	Cosine(float angle);
+
+//======================================================================
+// CLASS
+//		TrackerBase
+//
+// DESCRIPTION
+//		The TrackerBase class is a base class for the RangeTracker and
+//		DopplerTracker objects.
+//======================================================================
+
+template <class T>
+class TrackerBase
+{
+public:
+
+	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, BIAS_INDEX };
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	TrackerBase();
+	~TrackerBase();
+
+	int		Allocate(unsigned int steps);
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteHex(const char* filename);
+
+	//------------//
+	// algorithms //
+	//------------//
+
+	unsigned short	OrbitTicksToStep(unsigned int orbit_ticks,
+						unsigned int ticks_per_orbit);
+	unsigned int	AngleOffset(Antenna* antenna, Beam* beam);
+
+	//--------//
+	// access //
+	//--------//
+
+	int		GetSteps() { return(_steps); };
+
+protected:
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	unsigned short	_tableId;
+	float**			_scaleArray;		// [term][coef_order]
+	T**				_termArray;			// [step][term]
+	unsigned int	_steps;
+	unsigned short	_dither[2];
+
+	float			_previousDelay;		// seconds
+};
+
+#define DEFAULT_STEPS		256
 
 //======================================================================
 // CLASS
@@ -29,11 +93,11 @@ float	Cosine(float angle);
 //		Constants and convert them into receiver gate delays.
 //======================================================================
 
-class RangeTracker
+class RangeTracker : public TrackerBase<unsigned char>
 {
 public:
 
-	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, CONSTANTS_INDEX };
+	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, BIAS_INDEX };
 
 	//--------------//
 	// construction //
@@ -42,23 +106,16 @@ public:
 	RangeTracker();
 	~RangeTracker();
 
-	int		Allocate(int range_steps);
-
 	//------------//
 	// algorithms //
 	//------------//
 
-	unsigned short		OrbitTicksToRangeStep(unsigned int orbit_ticks,
-							unsigned int ticks_per_orbit);
 	int		GetRxGateDelay(unsigned int range_step, float xmit_pulse_width,
-				float rx_gate_width, unsigned int sas_beam_offset,
-				unsigned int sas_encoder_offset, float omega_cds,
-				float encoder_delay, unsigned int antenna_dn,
+				float rx_gate_width, unsigned int antenna_dn,
 				unsigned int antenna_n, float* delay);
 	float	QuantizeWidth(float width);
 	float	QuantizeDelay(float delay, float* residual_delay);
 	int		SetInstrument(Instrument* instrument, float* residual_delay);
-	int		GetRangeSteps() { return(_rangeSteps); };
 	int		SetRoundTripTime(double** terms);
 
 	//--------------//
@@ -69,34 +126,6 @@ public:
 	int		ReadBinary(const char* filename);
 	int		WriteHex(const char* filename);
 	int		ReadHex(const char* filename);
-
-private:
-
-	//------------------//
-	// header variables //
-	//------------------//
-
-	unsigned short		_tableId;
-	unsigned short		_dither[2];
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	float**				_scale;				// [term][coef_order]
-	unsigned char**		_delay;				// [step][term]
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	unsigned int	_rangeSteps;
-
-	//-----------------//
-	// state variables //
-	//-----------------//
-
-	float			_previousDelay;
 };
 
 
@@ -112,11 +141,11 @@ private:
 
 #define DOPPLER_TRACKING_RESOLUTION		2000		// Hz
 
-class DopplerTracker
+class DopplerTracker : public TrackerBase<unsigned short>
 {
 public:
 
-	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, CONSTANTS_INDEX };
+	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, BIAS_INDEX };
 
 	//--------------//
 	// construction //
@@ -125,22 +154,17 @@ public:
 	DopplerTracker();
 	~DopplerTracker();
 
-	int				Allocate(int doppler_orbit_steps);
-
 	//------------//
 	// algorithms //
 	//------------//
 
-	unsigned int	OrbitTicksToDopplerStep(unsigned int orbit_ticks,
-						unsigned int ticks_per_orbit);
-	int				GetCommandedDoppler(unsigned int doppler_step,
-						unsigned int antenna_dn, unsigned int antenna_n,
-						float* doppler, float chirp_rate = 0.0,
-						float residual_delay = 0.0);
-	float			QuantizeFrequency(float frequency);
-	int				SetInstrument(Instrument* instrument,
-						float residual_delay);
-	int				Set(double** terms);
+	int			GetCommandedDoppler(unsigned int doppler_step,
+					float rx_gate_delay, unsigned int antenna_dn,
+					unsigned int antenna_n, float* doppler,
+					float chirp_rate = 0.0, float residual_delay = 0.0);
+	float		QuantizeFrequency(float frequency);
+	int			SetInstrument(Instrument* instrument, float residual_delay);
+	int			Set(double** terms);
 
 	//--------------//
 	// input/output //
@@ -150,31 +174,10 @@ public:
 	int		ReadBinary(const char* filename);
 	int		WriteHex(const char* filename);
 	int		ReadHex(const char* filename);
-
-private:
-
-	//------------------//
-	// header variables //
-	//------------------//
-
-	unsigned short		_tableId;
-	unsigned short		_dither[2];
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	float**				_scale;				// [term][coef_order]
-	unsigned short**	_term;				// [step][term]
-
-	//-------------------//
-	// used, not written //
-	//-------------------//
-
-	unsigned int	_dopplerSteps;
 };
 
 int		azimuth_fit(int count, double* terms, double* a, double* p, double* c);
-int		write_hex(FILE* fp, unsigned short* buffer, int words);
+int		write_hex(FILE* fp, char* buffer, int bytes);
+int		read_hex(FILE* fp, char* buffer, int bytes);
 
 #endif

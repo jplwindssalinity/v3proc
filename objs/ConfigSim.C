@@ -832,7 +832,7 @@ ConfigAntenna(
 
 	if (! config_list->GetInt(ENCODER_A_OFFSET_KEYWORD, &tmp_int))
 		return(0);
-	antenna->encoderAOffset = tmp_int;
+	antenna->encoderAOffsetDn = tmp_int;
 
 	if (! config_list->GetDouble(ENCODER_DELAY_KEYWORD, &tmp_double))
 		return(0);
@@ -844,7 +844,7 @@ ConfigAntenna(
 
 	if (! config_list->GetDouble(COMMANDED_SPIN_RATE_KEYWORD, &tmp_double))
 		return(0);
-	antenna->commandedSpinRate = tmp_double;	// dn/ms
+	antenna->commandedSpinRateDnPerMs = tmp_double;	// dn/ms
 
 	if (! config_list->GetDouble(ACTUAL_SPIN_RATE_KEYWORD, &tmp_double))
 		return(0);
@@ -1062,7 +1062,7 @@ ConfigBeam(
 		int tmp_int;
 		if (! config_list->GetInt(keyword, &tmp_int))
 			return(0);
-		beam->sasBeamOffset = (unsigned int)tmp_int;
+		beam->sasBeamOffsetDn = (unsigned int)tmp_int;
 	}
 
 	return(1);

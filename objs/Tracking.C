@@ -101,12 +101,14 @@ Cosine(
 	return(cos_3);
 }
 
-//==============//
-// RangeTracker //
-//==============//
+//=============//
+// TrackerBase //
+//=============//
 
-RangeTracker::RangeTracker()
-:	_tableId(0), _scale(NULL), _delay(NULL), _rangeSteps(0)
+template <class T>
+TrackerBase<T>::TrackerBase()
+:	_tableId(0), _scaleArray(NULL), _termArray(NULL), _steps(0),
+	_previousDelay(0.0)
 {
 	for (int i = 0; i < 2; i++)
 		_dither[i] = 0;
@@ -114,51 +116,238 @@ RangeTracker::RangeTracker()
 	return;
 }
 
-RangeTracker::~RangeTracker()
+template <class T>
+TrackerBase<T>::~TrackerBase()
 {
-	free_array((void *)_scale, 2, 3, 2);
-	free_array((void *)_delay, 2, _rangeSteps, 3);
+	free_array(_scaleArray, 2, 3, 2);
+	free_array(_termArray, 2, _steps, 3);
 
 	return;
 }
 
-//------------------------//
-// RangeTracker::Allocate //
-//------------------------//
+//-----------------------//
+// TrackerBase::Allocate //
+//-----------------------//
 
+template <class T>
 int
-RangeTracker::Allocate(
-	int		range_steps)
+TrackerBase<T>::Allocate(
+	unsigned int	steps)
 {
-	_scale = (float **)make_array(sizeof(float), 2, 3, 2);
-	if (_scale == NULL)
+	//-------------------------------//
+	// check for previous allocation //
+	//-------------------------------//
+
+	if (_scaleArray || _termArray)
 		return(0);
 
-	_delay = (unsigned char **)make_array(sizeof(unsigned char), 2,
-		range_steps, 3);
-	if (_delay == NULL)
+	//----------//
+	// allocate //
+	//----------//
+
+	_scaleArray = (float **)make_array(sizeof(float), 2, 3, 2);
+	if (_scaleArray == NULL)
 		return(0);
 
-	_rangeSteps = range_steps;
+	_termArray = (T **)make_array(sizeof(T), 2, steps, 3);
+	if (_termArray == NULL)
+		return(0);
+
+	_steps = steps;
 
 	return(1);
 }
 
-//-------------------------------------//
-// RangeTracker::OrbitTicksToRangeStep //
-//-------------------------------------//
+//-------------------------------//
+// TrackerBase::OrbitTicksToStep //
+//-------------------------------//
 
+template <class T>
 unsigned short
-RangeTracker::OrbitTicksToRangeStep(
+TrackerBase<T>::OrbitTicksToStep(
 	unsigned int	orbit_ticks,
 	unsigned int	ticks_per_orbit)
 {
-	float ticks_per_range_step = (float)ticks_per_orbit / (float)_rangeSteps;
-	float f_range_step = (float)(orbit_ticks % ticks_per_orbit) /
-		ticks_per_range_step;
-	unsigned short range_step = (unsigned short)f_range_step;
-	range_step %= _rangeSteps;
-	return(range_step);
+	float ticks_per_step = (float)ticks_per_orbit / (float)_steps;
+	float f_step = (float)(orbit_ticks % ticks_per_orbit) /
+		ticks_per_step;
+	unsigned short step = (unsigned short)f_step;
+	step %= _steps;
+	return(step);
+}
+
+//--------------------------//
+// TrackerBase::AngleOffset //
+//--------------------------//
+ 
+template <class T>
+unsigned int
+TrackerBase<T>::AngleOffset(
+	Antenna*		antenna,
+	Beam*			beam)
+{
+	//-----------------//
+	// SAS beam offset //
+	//-----------------//
+
+	unsigned int db = beam->sasBeamOffsetDn;
+
+	//------------------//
+	// centering offset //
+	//------------------//
+
+	float half_time = (_previousDelay + beam->txPulseWidth) / 2.0;
+	unsigned int dc =
+		(int)(half_time * S_TO_MS * antenna->commandedSpinRateDnPerMs + 0.5);
+
+	//--------------------//
+	// SAS encoder offset //
+	//--------------------//
+
+	unsigned int de = antenna->encoderAOffsetDn;
+
+	//---------------------------//
+	// internal (sampling) delay //
+	//---------------------------//
+
+	unsigned int di = (int)(antenna->encoderDelay * S_TO_MS *
+		antenna->commandedSpinRateDnPerMs + 0.5);
+
+	//----------------------------//
+	// total angle offset (in dn) //
+	//----------------------------//
+ 
+	unsigned int angle_offset = db + dc + de + di;
+
+	return(angle_offset);
+}
+
+//-----------------------//
+// TrackerBase::WriteHex //
+//-----------------------//
+
+template <class T>
+int
+TrackerBase<T>::WriteHex(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//----------//
+	// table id //
+	//----------//
+
+	if (! write_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+		return(0);
+
+	//-----------//
+	// file size //
+	//-----------//
+
+	unsigned short id_size = sizeof(unsigned short);
+	unsigned short size_size = sizeof(unsigned short);
+	unsigned short spare_size = SPARE_WORDS * sizeof(unsigned short);
+	unsigned short dither_size = 4 * sizeof(unsigned short);
+	unsigned short terms_size = 3 * _steps * sizeof(T);
+	unsigned short scale_size = 6 * sizeof(float);
+	unsigned short file_size = terms_size + scale_size + spare_size +
+						dither_size;
+	if (! write_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+		return(0);
+
+	//-------//
+	// spare //
+	//-------//
+
+	unsigned short spare[SPARE_WORDS];
+	for (int i = 0; i < SPARE_WORDS; i++)
+	{
+		spare[i] = 0;
+	}
+	if (! write_hex(fp, (char *)spare, SPARE_WORDS * sizeof(unsigned short)))
+		return(0);
+
+	//--------//
+	// dither //
+	//--------//
+
+	if (! write_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+		return(0);
+
+	//-------//
+	// scale //
+	//-------//
+
+	if (! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+			sizeof(float)) ||
+		! write_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+			sizeof(float)) ||
+		! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+			sizeof(float)) ||
+		! write_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+			sizeof(float)) ||
+		! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+			sizeof(float)) ||
+		! write_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+			sizeof(float)))
+	{
+		return(0);
+	}
+
+	//-------//
+	// terms //
+	//-------//
+
+	unsigned int array_size = 3 * DEFAULT_STEPS * sizeof(T);
+	unsigned char* term_array = malloc(array_size);
+	if (term_array == NULL)
+		return(0);
+
+	unsigned int bytes = 0;
+	for (int term = 0; term < 3; term++)
+	{
+		for (int step = 0; step < DEFAULT_STEPS; step++)
+		{
+			memcpy(term_array + bytes, (*(_termArray + step) + term),
+				sizeof(T));
+			bytes += sizeof(T);
+		}
+	}
+
+	if (! write_hex(fp, (char *)term_array, array_size))
+	{
+		return(0);
+	}
+
+	free(term_array);
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	return(1);
+}
+
+//==============//
+// RangeTracker //
+//==============//
+
+RangeTracker::RangeTracker()
+{
+	return;
+}
+
+RangeTracker::~RangeTracker()
+{
+	return;
 }
 
 //------------------------------//
@@ -170,10 +359,6 @@ RangeTracker::GetRxGateDelay(
 	unsigned int	range_step,
 	float			xmit_pulse_width,	// seconds
 	float			rx_gate_width,		// seconds
-	unsigned int	sas_beam_offset,	// dn
-	unsigned int	sas_encoder_offset,	// dn
-	float			omega_cds,			// dn/ms
-	float			encoder_delay,		// ms
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
 	float*			delay)
@@ -182,45 +367,37 @@ RangeTracker::GetRxGateDelay(
 	// get the dn coefficients //
 	//-------------------------//
 
-	unsigned char* char_ptr = *(_delay + range_step);
+	unsigned char* char_ptr = *(_termArray + range_step);
 	unsigned char a_dn = *(char_ptr + AMPLITUDE_INDEX);
 	unsigned char p_dn = *(char_ptr + PHASE_INDEX);
-	unsigned char c_dn = *(char_ptr + CONSTANTS_INDEX);
+	unsigned char c_dn = *(char_ptr + BIAS_INDEX);
 
 	//-------------------------------//
 	// calculate the scaling factors //
 	//-------------------------------//
 
-	float ab = *(*(_scale + AMPLITUDE_INDEX) + 0);
-	float am = *(*(_scale + AMPLITUDE_INDEX) + 1);
-	float pb = *(*(_scale + PHASE_INDEX) + 0);
-	float pm = *(*(_scale + PHASE_INDEX) + 1);
-	float cb = *(*(_scale + CONSTANTS_INDEX) + 0);
-	float cm = *(*(_scale + CONSTANTS_INDEX) + 1);
+	float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
+	float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
+	float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
+	float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
+	float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
+	float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
 
 	double a_term = (double)am * (double)a_dn + (double)ab;
 	double p_term = (double)pm * (double)p_dn + (double)pb;
 	double c_term = (double)cm * (double)c_dn + (double)cb;
 
-	//------------------------------//
-	// calculate intermediate terms //
-	//------------------------------//
-
-	float half_time = (_previousDelay + xmit_pulse_width) / 2.0;
-	unsigned int centering_offset = (int)(half_time * omega_cds + 0.5);
-	unsigned int encoder_time_offset = (int)(encoder_delay * omega_cds + 0.5);
-
-	//---------------------//
-	// determine the delay //
-	//---------------------//
-
-	unsigned int use_antenna_dn = antenna_dn + sas_beam_offset +
-		centering_offset + sas_encoder_offset + encoder_time_offset;
 	float table_delay = c_term + a_term * Cosine((two_pi/(double)antenna_n) *
-		(double)use_antenna_dn + p_term);
+		(double)antenna_dn + p_term);
 	table_delay *= MS_TO_S;		// convert ms to seconds
 
 	*delay = table_delay + (xmit_pulse_width - rx_gate_width) / 2.0;
+
+	//----------------------------------//
+	// remember the delay for next time //
+	//----------------------------------//
+
+	_previousDelay = *delay;
 
 	return(1);
 }
@@ -270,25 +447,33 @@ RangeTracker::SetInstrument(
 	//-------//
 	// width //
 	//-------//
- 
+
 	instrument->commandedRxGateWidth =
 		beam->rangeTracker.QuantizeWidth(beam->rxGateWidth);
- 
+
 	//-------//
 	// delay //
 	//-------//
- 
+
 	unsigned short range_step =
-		beam->rangeTracker.OrbitTicksToRangeStep(instrument->orbitTicks,
+		beam->rangeTracker.OrbitTicksToStep(instrument->orbitTicks,
 		instrument->orbitTicksPerOrbit);
 	unsigned int encoder = antenna->GetEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
- 
+
+	//-------------------//
+	// correct for angle //
+	//-------------------//
+
+	encoder += AngleOffset(antenna, beam);
+
+	//-----------------//
+	// calculate delay //
+	//-----------------//
+
 	float delay;
 	if (! beam->rangeTracker.GetRxGateDelay(range_step, beam->txPulseWidth,
-		instrument->commandedRxGateWidth, beam->sasBeamOffset,
-		antenna->encoderAOffset, antenna->commandedSpinRate,
-		antenna->encoderDelay, encoder, encoder_n, &delay))
+		instrument->commandedRxGateWidth, encoder, encoder_n, &delay))
 	{
 		fprintf(stderr, "RangeTracker::SetInstrument: error using RGC\n");
 		return(0);
@@ -320,7 +505,7 @@ RangeTracker::SetRoundTripTime(
 		maxs[term_idx] = mins[term_idx];
 	}
 
-	for (unsigned int range_step = 0; range_step < _rangeSteps;
+	for (unsigned int range_step = 0; range_step < _steps;
 		range_step++)
 	{
 		for (int term_idx = 0; term_idx < 3; term_idx++)
@@ -339,9 +524,9 @@ RangeTracker::SetRoundTripTime(
 
 	for (int term_idx = 0; term_idx < 3; term_idx++)
 	{
-		*(*(_scale + term_idx) + 0) = mins[term_idx];
+		*(*(_scaleArray + term_idx) + 0) = mins[term_idx];
 
-		*(*(_scale + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
+		*(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
 			255.0;
 	}
 
@@ -349,15 +534,15 @@ RangeTracker::SetRoundTripTime(
 	// calculate scaled terms //
 	//------------------------//
 
-	for (unsigned int range_step = 0; range_step < _rangeSteps;
+	for (unsigned int range_step = 0; range_step < _steps;
 		range_step++)
 	{
 		for (int term_idx = 0; term_idx < 3; term_idx++)
 		{
-			*(*(_delay + range_step) + term_idx) =
+			*(*(_termArray + range_step) + term_idx) =
 				(unsigned char)(( *(*(terms + range_step) +
-				term_idx) - *(*(_scale + term_idx) + 0)) /
-				*(*(_scale + term_idx) + 1) + 0.5);
+				term_idx) - *(*(_scaleArray + term_idx) + 0)) /
+				*(*(_scaleArray + term_idx) + 1) + 0.5);
 		}
 	}
 
@@ -384,7 +569,7 @@ RangeTracker::WriteBinary(
 	// write the number of beams and range steps //
 	//-------------------------------------------//
 
-	if (fwrite((void *)&_rangeSteps, sizeof(unsigned int), 1, fp) != 1)
+	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);
@@ -396,7 +581,7 @@ RangeTracker::WriteBinary(
 
 	for (unsigned int term = 0; term < 3; term++)
 	{
-		if (fwrite((void *) *(_scale + term), sizeof(float), 2, fp) != 2)
+		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
 		{
 			return(0);
 		}
@@ -406,9 +591,9 @@ RangeTracker::WriteBinary(
 	// write the delay //
 	//-----------------//
 
-	for (unsigned int step = 0; step < _rangeSteps; step++)
+	for (unsigned int step = 0; step < _steps; step++)
 	{
-		if (fwrite((void *) *(_delay + step), sizeof(unsigned char),
+		if (fwrite((void *) *(_termArray + step), sizeof(unsigned char),
 			3, fp) != 3)
 		{
 			return(0);
@@ -443,7 +628,7 @@ RangeTracker::ReadBinary(
 	// read the number of beams and range steps //
 	//------------------------------------------//
 
-	if (fread((void *)&_rangeSteps, sizeof(unsigned int), 1, fp) != 1)
+	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);
@@ -453,7 +638,7 @@ RangeTracker::ReadBinary(
 	// allocate //
 	//----------//
 
-	if (! Allocate(_rangeSteps))
+	if (! Allocate(_steps))
 	{
 		fclose(fp);
 		return(0);
@@ -465,7 +650,7 @@ RangeTracker::ReadBinary(
 
 	for (unsigned int term = 0; term < 3; term++)
 	{
-		if (fread((void *) *(_scale + term), sizeof(float), 2, fp) != 2)
+		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
 		{
 			return(0);
 		}
@@ -475,9 +660,9 @@ RangeTracker::ReadBinary(
 	// read the delay //
 	//----------------//
 
-	for (unsigned int step = 0; step < _rangeSteps; step++)
+	for (unsigned int step = 0; step < _steps; step++)
 	{
-		if (fread((void *) *(_delay + step), sizeof(unsigned char),
+		if (fread((void *) *(_termArray + step), sizeof(unsigned char),
 			3, fp) != 3)
 		{
 			return(0);
@@ -492,13 +677,117 @@ RangeTracker::ReadBinary(
 	return(1);
 }
 
+//-----------------------//
+// RangeTracker::ReadHex //
+//-----------------------//
+
+int
+RangeTracker::ReadHex(
+	const char*		filename)
+{
+	//---------------//
+	// open the file //
+	//---------------//
+
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	//---------------//
+	// read table id //
+	//---------------//
+
+	if (! read_hex(fp, (char *)&_tableId, sizeof(unsigned short)))
+		return(0);
+
+	//----------------//
+	// read file size //
+	//----------------//
+
+	unsigned short file_size;
+	if (! read_hex(fp, (char *)&file_size, sizeof(unsigned short)))
+		return(0);
+
+	//------------//
+	// read spare //
+	//------------//
+
+	unsigned short spare[2];
+	if (! read_hex(fp, (char *)spare, 2 * sizeof(unsigned short)))
+		return(0);
+
+	//-------------//
+	// read dither //
+	//-------------//
+
+	if (! read_hex(fp, (char *)_dither, 2 * sizeof(unsigned short)))
+		return(0);
+
+	//----------//
+	// allocate //
+	//----------//
+
+	Allocate(DEFAULT_STEPS);
+
+	//-------------------//
+	// read coefficients //
+	//-------------------//
+
+	if (! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + AMPLITUDE_INDEX) + 0),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + PHASE_INDEX) + 0),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 1),
+			sizeof(float)) ||
+		! read_hex(fp, (char *)(*(_scaleArray + BIAS_INDEX) + 0),
+			sizeof(float)))
+	{
+		return(0);
+	}
+
+	//------------//
+	// read terms //
+	//------------//
+
+	unsigned char tmp[3][DEFAULT_STEPS];
+
+	if (! read_hex(fp, (char *)tmp[0], DEFAULT_STEPS * sizeof(unsigned char)) ||
+		! read_hex(fp, (char *)tmp[1], DEFAULT_STEPS * sizeof(unsigned char)) ||
+		! read_hex(fp, (char *)tmp[2], DEFAULT_STEPS * sizeof(unsigned char)))
+	{
+		return(0);
+	}
+
+	//----------------//
+	// transfer terms //
+	//----------------//
+
+	for (int term = 0; term < 3; term++)
+	{
+		for (int step = 0; step < DEFAULT_STEPS; step++)
+		{
+			*(*(_termArray + step) + term) = tmp[term][step];
+		}
+	}
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
+
+	return(1);
+}
 
 //================//
 // DopplerTracker //
 //================//
 
 DopplerTracker::DopplerTracker()
-:	_tableId(0), _scale(NULL), _term(NULL), _dopplerSteps(0)
 {
 	for (int i = 0; i < 2; i++)
 		_dither[i] = 0;
@@ -508,50 +797,7 @@ DopplerTracker::DopplerTracker()
 
 DopplerTracker::~DopplerTracker()
 {
-	free_array(_scale, 2, 3, 2);
-	free_array(_term, 2, _dopplerSteps, 3);
-
 	return;
-}
-
-//--------------------------//
-// DopplerTracker::Allocate //
-//--------------------------//
-
-int
-DopplerTracker::Allocate(
-	int		doppler_orbit_steps)
-{
-	_scale = (float **)make_array(sizeof(float), 2, 3, 2);
-	if (_scale == NULL)
-		return(0);
-
-	_term = (unsigned short **)make_array(sizeof(unsigned short), 2,
-		doppler_orbit_steps, 3);
-	if (_term == NULL)
-		return(0);
-
-	_dopplerSteps = doppler_orbit_steps;
-
-	return(1);
-}
-
-//-----------------------------------------//
-// DopplerTracker::OrbitTicksToDopplerStep //
-//-----------------------------------------//
-
-unsigned int
-DopplerTracker::OrbitTicksToDopplerStep(
-	unsigned int	orbit_ticks,
-	unsigned int	ticks_per_orbit)
-{
-	float ticks_per_doppler_step = (float)ticks_per_orbit /
-		(float)_dopplerSteps;
-	float f_doppler_step = (float)(orbit_ticks % ticks_per_orbit) /
-		ticks_per_doppler_step;
-	unsigned int doppler_step = (int)f_doppler_step;
-	doppler_step %= _dopplerSteps;
-	return(doppler_step);
 }
 
 //-------------------------------------//
@@ -561,26 +807,39 @@ DopplerTracker::OrbitTicksToDopplerStep(
 int
 DopplerTracker::GetCommandedDoppler(
 	unsigned int	doppler_step,
+	float			rx_gate_delay,		// ms
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
 	float*			doppler,
 	float			chirp_rate,
 	float			residual_delay_error)
 {
-	if (doppler_step >= _dopplerSteps)
+	//----------------//
+	// check the step //
+	//----------------//
+
+	if (doppler_step >= _steps)
 		return(0);
 
-	unsigned short* short_ptr = *(_term + doppler_step);
+	//-------------------------//
+	// get the dn coefficients //
+	//-------------------------//
+
+	unsigned short* short_ptr = *(_termArray + doppler_step);
 	unsigned short a_dn = *(short_ptr + AMPLITUDE_INDEX);
 	unsigned short p_dn = *(short_ptr + PHASE_INDEX);
-	unsigned short c_dn = *(short_ptr + CONSTANTS_INDEX);
+	unsigned short c_dn = *(short_ptr + BIAS_INDEX);
 
-	float ab = *(*(_scale + AMPLITUDE_INDEX) + 0);
-	float am = *(*(_scale + AMPLITUDE_INDEX) + 1);
-	float pb = *(*(_scale + PHASE_INDEX) + 0);
-	float pm = *(*(_scale + PHASE_INDEX) + 1);
-	float cb = *(*(_scale + CONSTANTS_INDEX) + 0);
-	float cm = *(*(_scale + CONSTANTS_INDEX) + 1);
+	//-------------------------------//
+	// calculate the scaling factors //
+	//-------------------------------//
+
+	float ab = *(*(_scaleArray + AMPLITUDE_INDEX) + 0);
+	float am = *(*(_scaleArray + AMPLITUDE_INDEX) + 1);
+	float pb = *(*(_scaleArray + PHASE_INDEX) + 0);
+	float pm = *(*(_scaleArray + PHASE_INDEX) + 1);
+	float cb = *(*(_scaleArray + BIAS_INDEX) + 0);
+	float cm = *(*(_scaleArray + BIAS_INDEX) + 1);
 
 	double a_term = (double)am * (double)a_dn + (double)ab;
 	double p_term = (double)pm * (double)p_dn + (double)pb;
@@ -594,6 +853,13 @@ DopplerTracker::GetCommandedDoppler(
 
 	// negative sign converts doppler to additive xmit freq
 	*doppler = -xmit_freq;
+
+	//--------------------//
+	// remember the delay //
+	//--------------------//
+
+	_previousDelay = rx_gate_delay;
+
 	return(1);
 }
 
@@ -627,15 +893,16 @@ DopplerTracker::SetInstrument(
 	Beam* beam = antenna->GetCurrentBeam();
 
 	unsigned short doppler_step =
-		beam->dopplerTracker.OrbitTicksToDopplerStep(instrument->orbitTicks,
+		beam->dopplerTracker.OrbitTicksToStep(instrument->orbitTicks,
 		instrument->orbitTicksPerOrbit);
 	unsigned int encoder = antenna->GetEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
- 
+
 	float doppler;
- 
-	if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step, encoder,
-		encoder_n, &doppler, instrument->chirpRate, residual_delay))
+
+	if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step,
+		instrument->commandedRxGateDelay, encoder, encoder_n, &doppler,
+		instrument->chirpRate, residual_delay))
 	{
 		fprintf(stderr, "SetInstrument: error using DTC\n");
 		return(0);
@@ -667,7 +934,7 @@ DopplerTracker::Set(
 		maxs[term_idx] = mins[term_idx];
 	}
 
-	for (unsigned int orbit_step = 0; orbit_step < _dopplerSteps;
+	for (unsigned int orbit_step = 0; orbit_step < _steps;
 		orbit_step++)
 	{
 		for (int term_idx = 0; term_idx < 3; term_idx++)
@@ -688,9 +955,9 @@ DopplerTracker::Set(
 
 	for (int term_idx = 0; term_idx < 3; term_idx++)
 	{
-		*(*(_scale + term_idx) + 0) = mins[term_idx];
+		*(*(_scaleArray + term_idx) + 0) = mins[term_idx];
 
-		*(*(_scale + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
+		*(*(_scaleArray + term_idx) + 1) = (maxs[term_idx] - mins[term_idx]) /
 			65535.0;
 	}
 
@@ -698,14 +965,14 @@ DopplerTracker::Set(
 	// calculate scaled terms //
 	//------------------------//
 
-	for (unsigned int orbit_step = 0; orbit_step < _dopplerSteps;
+	for (unsigned int orbit_step = 0; orbit_step < _steps;
 		orbit_step++)
 	{
 		for (int term_idx = 0; term_idx < 3; term_idx++)
 		{
-			*(*(_term + orbit_step) + term_idx) =
+			*(*(_termArray + orbit_step) + term_idx) =
 				(unsigned short)( (*(*(terms + orbit_step) + term_idx) -
-				*(*(_scale + term_idx) + 0)) / *(*(_scale + term_idx) + 1) +
+				*(*(_scaleArray + term_idx) + 0)) / *(*(_scaleArray + term_idx) + 1) +
 				0.5);
 		}
 	}
@@ -733,7 +1000,7 @@ DopplerTracker::WriteBinary(
 	// write the number of beams and doppler steps //
 	//---------------------------------------------//
 
-	if (fwrite((void *)&_dopplerSteps, sizeof(unsigned int), 1, fp) != 1)
+	if (fwrite((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);
@@ -745,7 +1012,7 @@ DopplerTracker::WriteBinary(
 
 	for (unsigned int term = 0; term < 3; term++)
 	{
-		if (fwrite((void *) *(_scale + term), sizeof(float), 2, fp) != 2)
+		if (fwrite((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
 		{
 			return(0);
 		}
@@ -755,9 +1022,9 @@ DopplerTracker::WriteBinary(
 	// write the terms //
 	//-----------------//
 
-	for (unsigned int step = 0; step < _dopplerSteps; step++)
+	for (unsigned int step = 0; step < _steps; step++)
 	{
-		if (fwrite((void *) *(_term + step), sizeof(unsigned short),
+		if (fwrite((void *) *(_termArray + step), sizeof(unsigned short),
 			3, fp) != 3)
 		{
 			return(0);
@@ -792,7 +1059,7 @@ DopplerTracker::ReadBinary(
 	// read the number of beams and doppler steps //
 	//--------------------------------------------//
 
-	if (fread((void *)&_dopplerSteps, sizeof(unsigned int), 1, fp) != 1)
+	if (fread((void *)&_steps, sizeof(unsigned int), 1, fp) != 1)
 	{
 		fclose(fp);
 		return(0);
@@ -802,7 +1069,7 @@ DopplerTracker::ReadBinary(
 	// allocate //
 	//----------//
 
-	if (! Allocate(_dopplerSteps))
+	if (! Allocate(_steps))
 	{
 		fclose(fp);
 		return(0);
@@ -814,7 +1081,7 @@ DopplerTracker::ReadBinary(
 
 	for (unsigned int term = 0; term < 3; term++)
 	{
-		if (fread((void *) *(_scale + term), sizeof(float), 2, fp) != 2)
+		if (fread((void *) *(_scaleArray + term), sizeof(float), 2, fp) != 2)
 		{
 			return(0);
 		}
@@ -824,9 +1091,9 @@ DopplerTracker::ReadBinary(
 	// read the terms //
 	//----------------//
 
-	for (unsigned int step = 0; step < _dopplerSteps; step++)
+	for (unsigned int step = 0; step < _steps; step++)
 	{
-		if (fread((void *) *(_term + step), sizeof(unsigned short),
+		if (fread((void *) *(_termArray + step), sizeof(unsigned short),
 			3, fp) != 3)
 		{
 			return(0);
@@ -845,6 +1112,8 @@ DopplerTracker::ReadBinary(
 // DopplerTracker::WriteHex //
 //--------------------------//
 
+#define SPARE_WORDS		2
+
 int
 DopplerTracker::WriteHex(
 	const char*		filename)
@@ -857,67 +1126,38 @@ DopplerTracker::WriteHex(
 	if (fp == NULL)
 		return(0);
 
-/*
 	//--------------//
 	// write header //
 	//--------------//
 
-	write_hex(fp, &_tableId, sizeof(_tableId));
-	unsigned short file_size = _dopplerSteps * sizeof(unsigned short) +
-		6 * sizeof(float) + 2 * sizeof(unsigned short) + 
-
-	//---------------------------------------------//
-	// write the number of beams and doppler steps //
-	//---------------------------------------------//
-
-	if (fwrite((void *)&_numberOfBeams, sizeof(unsigned int), 1, fp) != 1 ||
-		fwrite((void *)&_dopplerSteps, sizeof(unsigned int), 1, fp) != 1)
+	write_hex(fp, (char *)&_tableId, sizeof(_tableId));
+	unsigned short file_size = 3 * _steps * sizeof(unsigned short) +
+		6 * sizeof(float) + (4 + SPARE_WORDS) * sizeof(unsigned short);
+	write_hex(fp, (char *)&file_size, sizeof(unsigned short));
+	unsigned short zero = 0;
+	for (int i = 0; i < SPARE_WORDS; i++)
 	{
-		fclose(fp);
-		return(0);
+		write_hex(fp, (char *)&zero, sizeof(unsigned short));
 	}
+	write_hex(fp, (char *)&_dither, 2 * sizeof(unsigned short));
 
 	//-----------------------//
 	// write the scale terms //
 	//-----------------------//
 
-	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	for (unsigned int term = 0; term < 3; term++)
 	{
-		for (unsigned int term = 0; term < 3; term++)
-		{
-			if (fwrite((void *) *(*(_scale + beam_idx) + term), sizeof(float),
-				2, fp) != 2)
-			{
-				return(0);
-			}
-		}
+		write_hex(fp, (char *)*(_scaleArray + term), 2 * sizeof(float));
 	}
 
 	//-----------------//
 	// write the terms //
 	//-----------------//
 
-	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	for (unsigned int step = 0; step < _steps; step++)
 	{
-		for (unsigned int step = 0; step < _dopplerSteps; step++)
-		{
-			if (fwrite((void *) *(*(_term + beam_idx) + step),
-				sizeof(unsigned short), 3, fp) != 3)
-			{
-				return(0);
-			}
-		}
+		write_hex(fp, (char *)*(_termArray + step), 3 * sizeof(unsigned short));
 	}
-
-	//---------------------------//
-	// write the ticks per orbit //
-	//---------------------------//
-
-	if (fwrite((void *)&_ticksPerOrbit, sizeof(unsigned int), 1, fp) != 1)
-	{
-		return(0);
-	}
-*/
 
 	//----------------//
 	// close the file //
@@ -969,13 +1209,35 @@ azimuth_fit(
 
 int
 write_hex(
-	FILE*				fp,
-	unsigned short*		buffer,
-	int					words)
+	FILE*	fp,
+	char*	buffer,
+	int		bytes)
 {
+	int words = bytes / 2;
+	unsigned short* ptr = (unsigned short *)buffer;
 	for (int i = 0; i < words; i++)
 	{
-		fprintf(fp, "%hx\n", *(buffer + i));
+		fprintf(fp, "%hx\n", *(ptr + i));
+	}
+	return(1);
+}
+
+//----------//
+// read_hex //
+//----------//
+
+int
+read_hex(
+	FILE*	fp,
+	char*	buffer,
+	int		bytes)
+{
+	int words = bytes / 2;
+	unsigned short* ptr = (unsigned short *)buffer;
+	for (int i = 0; i < words; i++)
+	{
+		if (fscanf(fp, " %hx", ptr + i) != 1)
+			return(0);
 	}
 	return(1);
 }

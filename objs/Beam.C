@@ -21,7 +21,7 @@ const char* beam_map[] = { "V", "H", "None" };
 
 Beam::Beam()
 :	polarization(NONE), txPulseWidth(0.0), rxGateWidth(0.0), timeOffset(0.0),
-	sasBeamOffset(0), useRangeTracker(0), useDopplerTracker(0),
+	sasBeamOffsetDn(0), useRangeTracker(0), useDopplerTracker(0),
 	_elecBoresightLook(0.0), _elecBoresightAzim(0.0),
 	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0), _Nx(0),
 	_Ny(0), _ix_zero(0), _iy_zero(0), _x_spacing(0.0), _y_spacing(0.0),
