@@ -3191,9 +3191,8 @@ PolynomialTable*)     // unused
     // convert degrees to radians, and return
     float* floatP = (float*)buffer;
     for (int i=0; i < length; i++, floatP++)
-    {
         *floatP *= EA_CONST_DEGREES_TO_RADIANS;
-    }
+
     return(TRUE);
 
 } //ExtractData1D_int2_float_dtr
@@ -3245,10 +3244,10 @@ PolynomialTable*)     // unused
         return 0;
 
     float* floatP = (float*)buffer;
-    for (int i=0; i < length; i++, floatP++)
-    {
-        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
-    }
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 100; i++, floatP++)
+             *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+
     return TRUE;
 
 }//ExtractData2D_100_float_dtr
@@ -3272,10 +3271,9 @@ PolynomialTable*)     // unused
         return 0;
 
     float* floatP = (float*)buffer;
-    for (int i=0; i < length; i++, floatP++)
-    {
-        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
-    }
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 100; i++, floatP++)
+            *floatP *= EA_CONST_DEGREES_TO_RADIANS;
     return TRUE;
 
 }//ExtractData2D_100_uint2_float_dtr
@@ -3299,10 +3297,10 @@ PolynomialTable*)     // unused
         return 0;
 
     float* floatP = (float*)buffer;
-    for (int i=0; i < length; i++, floatP++)
-    {
+    for (int j=0; j < length; j++)
+         for (int i=0; i < 100; i++, floatP++)
         *floatP *= EA_CONST_DEGREES_TO_RADIANS;
-    }
+
     return TRUE;
 
 }//ExtractData2D_100_int2_float_dtr
