@@ -15,7 +15,7 @@ static const char rcs_id_l2atol2b_c[] =
 //==========//
 
 L2AToL2B::L2AToL2B()
-:	medianFilterWindowSize(0), medianFilterMaxPasses(0)
+:	medianFilterWindowSize(0), medianFilterMaxPasses(0), useManyAmbiguities(0)
 {
 	return;
 }
@@ -84,16 +84,27 @@ L2AToL2B::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	if (! gmf->RetrieveWinds(meas_list, kp, wvc))
+	if (useManyAmbiguities)
 	{
-		delete wvc;
-		return(5);
+		if (! gmf->RetrieveManyWinds(meas_list, kp, wvc))
+		{
+			delete wvc;
+			return(5);
+		}
+	}
+	else
+	{
+		if (! gmf->RetrieveWinds(meas_list, kp, wvc))
+		{
+			delete wvc;
+			return(6);
+		}
 	}
 
 	if (wvc->ambiguities.NodeCount() < 2)
 	{
 		delete wvc;
-		return(6);
+		return(7);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 

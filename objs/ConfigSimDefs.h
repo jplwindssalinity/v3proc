@@ -202,6 +202,7 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define MEDIAN_FILTER_WINDOW_SIZE_KEYWORD	"MEDIAN_FILTER_WINDOW_SIZE"
 #define MEDIAN_FILTER_MAX_PASSES_KEYWORD	"MEDIAN_FILTER_MAX_PASSES"
+#define USE_MANY_AMBIGUITIES_KEYWORD		"USE_MANY_AMBIGUITIES"
 
 //-----------//
 // Ephemeris //

@@ -1458,6 +1458,10 @@ ConfigL2AToL2B(
 		return(0);
 	l2a_to_l2b->medianFilterMaxPasses = tmp_int;
 
+	if (! config_list->GetInt(USE_MANY_AMBIGUITIES_KEYWORD, &tmp_int))
+		return(0);
+	l2a_to_l2b->useManyAmbiguities = tmp_int;
+
 	return(1);
 }
 

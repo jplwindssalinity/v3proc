@@ -78,9 +78,11 @@ public:
 
 	int		CheckRetrieveCriteria(MeasList* meas_list);
 	int		RetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int		RetrieveManyWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
 	int		SolutionCurve(MeasList* meas_list, Kp* kp);
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
+	int		FindMany(WVC* wvc);
 
 	//-------//
 	// flags //

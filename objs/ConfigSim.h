@@ -19,6 +19,7 @@ static const char rcs_id_configsim_h[] =
 #include "L1B.h"
 #include "L2A.h"
 #include "L2B.h"
+#include "L2AToL2B.h"
 #include "Wind.h"
 #include "Grid.h"
 #include "ConfigList.h"
@@ -129,6 +130,12 @@ int ConfigL2A(L2A* l2a, ConfigList* config_list);
 //-----//
 
 int ConfigL2B(L2B* l2b, ConfigList* config_list);
+
+//----------//
+// L2AToL2B //
+//----------//
+
+int ConfigL2AToL2B(L2AToL2B* l2a_to_l2b, ConfigList* config_list);
 
 //-----------//
 // Ephemeris //

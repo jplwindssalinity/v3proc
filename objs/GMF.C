@@ -397,6 +397,49 @@ GMF::RetrieveWinds(
 	return(1);
 }
 
+//------------------------//
+// GMF::RetrieveManyWinds //
+//------------------------//
+
+int
+GMF::RetrieveManyWinds(
+	MeasList*	meas_list,
+	Kp*			kp,
+	WVC*		wvc)
+{
+	//-------------------------//
+	// find the solution curve //
+	//-------------------------//
+
+	if (! SolutionCurve(meas_list, kp))
+	{
+		fprintf(stderr, "can't find solution curve\n");
+		return(0);
+	}
+
+	//---------------------------//
+	// smooth the solution curve //
+	//---------------------------//
+
+	if (! Smooth())
+		return(0);
+
+	//--------------------------------------//
+	// find many vectors and add to the wvc //
+	//--------------------------------------//
+
+	if (! FindMany(wvc))
+		return(0);
+
+	//------------------------------------------//
+	// sort the solutions by objective function //
+	//------------------------------------------//
+
+	wvc->SortByObj();
+
+	return(1);
+}
+
 //--------------------//
 // GMF::SolutionCurve //
 //--------------------//
@@ -653,6 +696,59 @@ GMF::FindMaxima(
 				delete wvp;
 				return(0);
 			}
+		}
+	}
+	return(1);
+}
+
+//---------------//
+// GMF::FindMany //
+//---------------//
+
+int
+GMF::FindMany(
+	WVC*		wvc)
+{
+	//-----------------------------------//
+	// convert objective function to pdf //
+	//-----------------------------------//
+
+	double sum = 0.0;
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+	{
+		_bestObj[phi_idx] = exp(_bestObj[phi_idx]);
+		sum += _bestObj[phi_idx];
+	}
+
+	//---------------------------------------//
+	// "integrate" over bin width by scaling //
+	//---------------------------------------//
+
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+	{
+		_bestObj[phi_idx] /= sum;
+	}
+
+	//------------//
+	// add to wvc //
+	//------------//
+
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+	{
+		//------------//
+		// add to wvc //
+		//------------//
+
+		WindVectorPlus* wvp = new WindVectorPlus();
+		if (! wvp)
+			return(0);
+		wvp->spd = _bestSpd[phi_idx];
+		wvp->dir = (float)phi_idx * _phiStepSize;
+		wvp->obj = _bestObj[phi_idx];
+		if (! wvc->ambiguities.Append(wvp))
+		{
+			delete wvp;
+			return(0);
 		}
 	}
 	return(1);

@@ -61,6 +61,12 @@ public:
 
 	int		medianFilterWindowSize;
 	int		medianFilterMaxPasses;
+
+	//-------//
+	// flags //
+	//-------//
+
+	int		useManyAmbiguities;
 };
 
 #endif
