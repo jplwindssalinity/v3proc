@@ -161,6 +161,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define USE_DTC_KEYWORD                "USE_DTC"
 #define MECH_LOOK_ANGLE_KEYWORD        "MECH_LOOK_ANGLE"
 #define MECH_AZIMUTH_ANGLE_KEYWORD     "MECH_AZIMUTH_ANGLE"
+#define SILENT_BEAMS_KEYWORD           "SILENT_BEAMS"
 #define BEAM_x_PEAK_GAIN_KEYWORD       "BEAM_x_PEAK_GAIN"
 #define BEAM_x_WAVEGUIDE_LOSS_KEYWORD  "BEAM_x_WAVEGUIDE_LOSS"
 #define BEAM_x_LOOK_ANGLE_KEYWORD      "BEAM_x_LOOK_ANGLE"

@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology. //
+// Copyright (C) 1997-1999, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -91,6 +91,7 @@ public:
     // variables //
     //-----------//
 
+    int     silentFlag;    // don't report power gain problems
     PolE    polarization;
     double  _elecBoresightLook;    // in the antenna frame
     double  _elecBoresightAzim;

@@ -501,12 +501,28 @@ ConfigQscat(
         return(0);
     }
 
+    //---------------//
+    // silent beams? //
+    //---------------//
+
+    config_list->DoNothingForMissingKeywords();
+    int silent_beams = 0;
+    config_list->GetInt(SILENT_BEAMS_KEYWORD, &silent_beams);
+    config_list->ExitForMissingKeywords();
+
     //------------------//
     // for each beam... //
     //------------------//
 
     for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
+        //------------//
+        // ...silent? //
+        //------------//
+
+        if (silent_beams)
+            qscat->sas.antenna.beam[beam_idx].silentFlag = 1;
+
         //---------------------------------------//
         // ...set up the beam number as a string //
         //---------------------------------------//
