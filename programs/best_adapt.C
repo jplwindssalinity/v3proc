@@ -574,6 +574,7 @@ main(
     int first_count = 0;
     int filter_count = 0;
     int did_good = 0;
+    int did_corrected = 0;
     int did = 0;
     float lowest_first = 2.0;
     float highest_first = 0.0;
@@ -725,7 +726,7 @@ main(
                         // doing well, don't correct
                         if (opt_correct)
                         {
-                            printf("  (Disabling correction/jacking/random)\n");
+                            printf("  (Not correcting)\n");
                             opt_correct = 0;
                             opt_jack = 0;
                             opt_random = 0;
@@ -736,7 +737,7 @@ main(
                         // doing poorly, correct
                         if (! opt_correct)
                         {
-                            printf("  (Enabling correction/jacking/random)\n");
+                            printf("  (Correcting)\n");
                             opt_correct = 1;
                             opt_jack = 1;
                             opt_random = 1;
@@ -834,6 +835,26 @@ main(
 
             if (opt_adapt)
             {
+              if (filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= MAX_SHORT)
+              {
+                printf("chopping %d %d\n",
+                  filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx],
+                  filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]);
+                double new_count =
+                  (double)filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
+                double new_good =
+                  (double)filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] * 15.0 / 16.0;
+                filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                  (unsigned short)(new_count + 0.5);
+                filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                  (unsigned short)(new_good + 0.5);
+                if (filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] >= filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx])
+                {
+                  filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx] =
+                    filter_count_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx];
+                }
+              }
+
               if (wvc->selected == original_selected[best_cti][best_ati])
               {
                 filter_good_array[bn_idx][bdr_idx][bs_idx][bc_idx][bp_idx]++;
@@ -867,16 +888,20 @@ main(
         // evaluate //
         //----------//
 
+        did++;
         if (wvc->selected == original_selected[best_cti][best_ati])
             did_good++;
-        did++;
 
         //--------------------//
         // correct if desired //
         //--------------------//
 
         if (opt_correct)
+        {
+            if (wvc->selected != original_selected[best_cti][best_ati])
+                did_corrected++;
             wvc->selected = original_selected[best_cti][best_ati];
+        }
 
         //---------------------------------//
         // evaluate stuff that has changed //
@@ -1037,10 +1062,13 @@ main(
                 (float)total_count;
             float filter_percent = 100.0 * (float)filter_count /
                 (float)total_count;
-            printf("%d  1st:%.2f  Fil:%.2f\n", loop_idx, first_percent,
+            printf("%d  1st:%.2f%%  Fil:%.2f%%\n", loop_idx, first_percent,
                 filter_percent);
             first_count = 0;
             filter_count = 0;
+
+            printf("  Corrected percent : %.2f%%\n",
+                100.0 * (float)did_corrected / (float)did);
 
             printf("  1st: %g to %g   Fil: %g to %g\n", lowest_first,
                 highest_first, lowest_filter, highest_filter);
@@ -1079,7 +1107,7 @@ main(
                 }
             }
 
-            if (! opt_correct)
+            if (! opt_correct || opt_matic)
             {
                 // compare to original
                 unsigned long comp_total_count = 0;
@@ -1104,6 +1132,13 @@ main(
         }
         loop_idx++;
     } while (1);
+
+    //----------------//
+    // spit some info //
+    //----------------//
+
+    printf("  Corrected percent : %.2f%%\n", 100.0 * (float)did_corrected /
+        (float)did);
 
     //-------------------------//
     // write final vector file //
