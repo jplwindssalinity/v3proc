@@ -293,10 +293,37 @@ main(
         printf("  Inner swath only\n");
     }
 
+    //----------------------//
+    // determine file needs //
+    //----------------------//
+
+    int need_enof_file = 0;
+    int need_tb_file = 0;
+    for (int swath_idx = 0; swath_idx < 2; swath_idx++)
+    {
+        for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
+        {
+            if (pca_weights[swath_idx][pc_idx][QUAL_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][ENOF_IDX] != 0.0)
+            {
+                need_enof_file = 1;
+            }
+            if (pca_weights[swath_idx][pc_idx][TBH_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBH_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TBV_STD_IDX] != 0.0 ||
+                pca_weights[swath_idx][pc_idx][TRANS_IDX] != 0.0)
+            {
+                need_tb_file = 1;
+            }
+        }
+    }
+
     //-------------------//
     // read in mudh file //
     //-------------------//
 
+    unsigned int array_size = CT_WIDTH * AT_WIDTH;
     ifp = fopen(mudh_file, "r");
     if (ifp == NULL)
     {
@@ -304,7 +331,6 @@ main(
             mudh_file);
         exit(1);
     }
-    unsigned int array_size = CT_WIDTH * AT_WIDTH;
     fread(nbd_array, sizeof(short), array_size, ifp);
     fread(spd_array, sizeof(short), array_size, ifp);
     fread(dir_array, sizeof(short), array_size, ifp);
@@ -315,46 +341,60 @@ main(
     // read ENOF file //
     //----------------//
 
-    ifp = fopen(enof_file, "r");
-    if (ifp == NULL)
+    if (need_enof_file)
     {
-        fprintf(stderr, "%s: error opening ENOF file %s\n", command,
-            enof_file);
-        exit(1);
+        ifp = fopen(enof_file, "r");
+        if (ifp == NULL)
+        {
+            fprintf(stderr, "%s: error opening ENOF file %s\n", command,
+                enof_file);
+            exit(1);
+        }
+        fread(qual_array, sizeof(float), array_size, ifp);
+        fread(enof_array, sizeof(float), array_size, ifp);
+        fclose(ifp);
     }
-    fread(qual_array, sizeof(float), array_size, ifp);
-    fread(enof_array, sizeof(float), array_size, ifp);
-    fclose(ifp);
 
     //--------------//
     // read Tb file //
     //--------------//
 
-    ifp = fopen(tb_file, "r");
-    if (ifp == NULL)
+    if (need_tb_file)
     {
-        fprintf(stderr, "%s: error opening Tb file %s\n", command,
-            tb_file);
-        exit(1);
+        ifp = fopen(tb_file, "r");
+        if (ifp == NULL)
+        {
+            fprintf(stderr, "%s: error opening Tb file %s\n", command,
+                tb_file);
+            exit(1);
+        }
+        fread(tbh_array, sizeof(float), array_size, ifp);
+        fread(tbv_array, sizeof(float), array_size, ifp);
+        fread(tbh_std_array, sizeof(float), array_size, ifp);
+        fread(tbv_std_array, sizeof(float), array_size, ifp);
+        fread(tbh_cnt_array, sizeof(int), array_size, ifp);
+        fread(tbv_cnt_array, sizeof(int), array_size, ifp);
+        fclose(ifp);
     }
-    fread(tbh_array, sizeof(float), array_size, ifp);
-    fread(tbv_array, sizeof(float), array_size, ifp);
-    fread(tbh_std_array, sizeof(float), array_size, ifp);
-    fread(tbv_std_array, sizeof(float), array_size, ifp);
-    fread(tbh_cnt_array, sizeof(int), array_size, ifp);
-    fread(tbv_cnt_array, sizeof(int), array_size, ifp);
-    fclose(ifp);
 
     //----------//
     // classify //
     //----------//
 
     double param[PARAM_COUNT];
+    int got_param[PARAM_COUNT];
 
     for (int ati = 0; ati < AT_WIDTH; ati++)
     {
         for (int cti = 0; cti < CT_WIDTH; cti++)
         {
+            //------------//
+            // initialize //
+            //------------//
+
+            for (int i = 0; i < PARAM_COUNT; i++)
+                got_param[i] = 0;
+
             value_tab[ati][cti] = -1.0;
             flag_tab[ati][cti] = UNKNOWN;    // generic default
 
@@ -363,7 +403,6 @@ main(
             //-----------------------------------//
 
             if (spd_array[ati][cti] == MAX_SHORT ||
-                dir_array[ati][cti] == MAX_SHORT ||
                 mle_array[ati][cti] == MAX_SHORT)
             {
                 flag_tab[ati][cti] = NO_WIND;
@@ -398,33 +437,36 @@ main(
             //------//
 
             param[SPD_IDX] = (double)spd_array[ati][cti] * 0.01;
+            got_param[SPD_IDX] = 1;
             param[DIR_IDX] = (double)dir_array[ati][cti] * 0.01;
+            got_param[DIR_IDX] = 1;
             param[MLE_IDX] = (double)mle_array[ati][cti] * 0.001 - 30.0;
+            got_param[MLE_IDX] = 1;
 
-            int got_nbd = 0;
             if (nbd_array[ati][cti] != MAX_SHORT)
             {
                 param[NBD_IDX] = (double)nbd_array[ati][cti] * 0.001 - 10.0;
-                got_nbd = 1;
+                got_param[NBD_IDX] = 1;
             }
 
             //-----------//
             // ENOF/Qual //
             //-----------//
 
-            int got_qual = 0;
-            if (qual_array[ati][cti] != -100.0)
+            if (need_enof_file)
             {
-                param[QUAL_IDX] = qual_array[ati][cti];
-                got_qual = 1;
-            }
+                if (qual_array[ati][cti] != -100.0)
+                {
+                    param[QUAL_IDX] = qual_array[ati][cti];
+                    got_param[QUAL_IDX] = 1;
+                }
 
-            int got_enof = 0;
-            if (enof_array[ati][cti] != -100.0 &&
-                finite((double)enof_array[ati][cti]))
-            {
-                param[ENOF_IDX] = enof_array[ati][cti];
-                got_enof = 1;
+                if (enof_array[ati][cti] != -100.0 &&
+                    finite((double)enof_array[ati][cti]))
+                {
+                    param[ENOF_IDX] = enof_array[ati][cti];
+                    got_param[ENOF_IDX] = 1;
+                }
             }
 
             //----//
@@ -432,72 +474,53 @@ main(
             //----//
 
             double tbv_cnt = 0.0;
-            int got_tbv = 0;
-            if (tbv_cnt_array[ati][cti] > 0 &&
-                tbv_array[ati][cti] < 300.0)
-            {
-                param[TBV_IDX] = tbv_array[ati][cti];
-                param[TBV_STD_IDX] = tbv_std_array[ati][cti];
-                tbv_cnt = (double)tbv_cnt_array[ati][cti];
-                got_tbv = 1;
-            }
-
             double tbh_cnt = 0.0;
-            int got_tbh = 0;
-            if (tbh_cnt_array[ati][cti] > 0 &&
-                tbh_array[ati][cti] < 300.0)
+
+            if (need_tb_file)
             {
-                param[TBH_IDX] = tbh_array[ati][cti];
-                param[TBH_STD_IDX] = tbh_std_array[ati][cti];
-                tbh_cnt = (double)tbh_cnt_array[ati][cti];
-                got_tbh = 1;
+                if (tbv_cnt_array[ati][cti] > 0 &&
+                    tbv_array[ati][cti] < 300.0)
+                {
+                    param[TBV_IDX] = tbv_array[ati][cti];
+                    got_param[TBV_IDX] = 1;
+                    param[TBV_STD_IDX] = tbv_std_array[ati][cti];
+                    got_param[TBV_STD_IDX] = 1;
+                    tbv_cnt = (double)tbv_cnt_array[ati][cti];
+                }
+
+                if (tbh_cnt_array[ati][cti] > 0 &&
+                    tbh_array[ati][cti] < 300.0)
+                {
+                    param[TBH_IDX] = tbh_array[ati][cti];
+                    got_param[TBH_IDX] = 1;
+                    param[TBH_STD_IDX] = tbh_std_array[ati][cti];
+                    got_param[TBH_STD_IDX] = 1;
+                    tbh_cnt = (double)tbh_cnt_array[ati][cti];
+                }
             }
 
             //---------------//
             // transmittance //
             //---------------//
 
-            int got_tau = 0;
             double tau = 0.0;
-            if (got_tbv && got_tbh)
+            if (got_param[TBV_IDX] && got_param[TBH_IDX])
             {
                 double tbvc = param[TBV_IDX] * alpha1 + beta1;
                 double tbhc = param[TBH_IDX] * alpha2 + beta2;
                 tau = a0 + a1 * log(300.0 - tbvc) +
                     a2 * log(300.0 - tbhc) + a3 * (tbvc - tbhc);
-                got_tau = 1;
+                got_param[TRANS_IDX] = 1;
             }
-            else if (got_tbv)
+            else if (got_param[TBV_IDX])
             {
                 double tbvc = param[TBV_IDX] * alpha1 + beta1;
                 tau = a4 + a5 * log(300.0 - tbvc);
-                got_tau = 1;
+                got_param[TRANS_IDX] = 1;
             }
             if (tau > 1.0) tau = 1.0;
             if (tau < 0.0) tau = 0.0;
             param[TRANS_IDX] = tau;
-
-            //------------------//
-            // check swath info //
-            //------------------//
-
-            if (swath_idx == 0)
-            {
-                // inner swath
-                if (! got_nbd || ! got_enof || ! got_qual || ! got_tbh ||
-                    ! got_tbv || ! got_tau)
-                {
-                    continue;    // missing info
-                }
-            }
-            else
-            {
-                // outer swath
-                if (! got_qual || ! got_tbv || ! got_tau)
-                {
-                    continue;    // missing info
-                }
-            }
 
             //--------------------------------------//
             // determine principle component values //
@@ -506,11 +529,16 @@ main(
             double norm_param[PARAM_COUNT];
             for (int param_idx = 0; param_idx < PARAM_COUNT; param_idx++)
             {
-                norm_param[param_idx] =
-                    (param[param_idx] - pca_mean[swath_idx][param_idx]) /
-                    pca_std[swath_idx][param_idx];
+                // only normalize if you have the parameter
+                if (got_param[param_idx])
+                {
+                    norm_param[param_idx] = (param[param_idx] -
+                        pca_mean[swath_idx][param_idx]) /
+                        pca_std[swath_idx][param_idx];
+                }
             }
 
+            int missing_info = 0;
             double pc[PC_COUNT];
             int pci[PC_COUNT];
             for (int pc_idx = 0; pc_idx < PC_COUNT; pc_idx++)
@@ -519,10 +547,24 @@ main(
                 for (int param_idx = 0; param_idx < PARAM_COUNT;
                     param_idx++)
                 {
-                    pc[pc_idx] +=
-                        pca_weights[swath_idx][pc_idx][param_idx] *
-                        norm_param[param_idx];
+                    if (pca_weights[swath_idx][pc_idx][param_idx] != 0.0)
+                    {
+                        // the parameter is needed
+                        if (got_param[param_idx])
+                        {
+                            pc[pc_idx] +=
+                                pca_weights[swath_idx][pc_idx][param_idx] *
+                                norm_param[param_idx];
+                        }
+                        else
+                        {
+                            missing_info = 1;
+                        }
+                    }
                 }
+
+                if (missing_info)
+                    break;    // get out of this loop
 
                 // compute the index too
                 pc_index[swath_idx][pc_idx].GetNearestIndex(pc[pc_idx],
@@ -530,6 +572,9 @@ main(
                 if (pci[pc_idx] >= DIM) pci[pc_idx] = DIM - 1;
                 if (pci[pc_idx] < 0) pci[pc_idx] = 0;
             }
+
+            if (missing_info)
+                continue;    // go to the next WVC
 
             //------------------------------------------------------//
             // look up the value from the rain classification table //
