@@ -91,6 +91,9 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
+#define PLOT_OFFSET  80000
+#define SIMPLEX  1
+
 #define QUOTES    '"'
 
 #define LINE_SIZE  1024
@@ -104,11 +107,22 @@ template class List<AngleInterval>;
 #define ORBIT_STEP_CHAR  'O'
 #define ORBIT_TIME_CHAR  'T'
 
-#define ROLL_START_STEP   0.001    // about 0.057 degrees
-#define PITCH_START_STEP  0.001    // about 0.057 degrees
-#define YAW_START_STEP    0.001    // about 0.057 degrees
+// dumb search parameters
+#define ROLL_START_STEP   0.05
+#define PITCH_START_STEP  0.05
+#define YAW_START_STEP    0.05
+#define END_STEP          0.001
 
-#define END_STEP          0.00001    // about 0.00057 degrees
+#define VAR_ANGLE_RANGE     2.0    // degrees
+#define MIN_VAR_DATA_COUNT  5
+#define MIN_DATA_COUNT      100
+
+// simplex search parameters
+#define LAMBDA_1  0.1
+#define XTOL_1    0.001
+#define LAMBDA_2  0.01
+#define XTOL_2    0.001
+#define PLEX_STEPS  36
 
 //--------//
 // MACROS //
@@ -126,11 +140,15 @@ int     initialize();
 int     large_slope(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
             double c[3], double step[3], int* idx);
 int     process_orbit_step(Spacecraft* spacecraft, Qscat* qscat,
-            BYUXTable* byux, int orbit_step);
+            BYUXTable* byux, int orbit_step, FILE* att_fp);
+int     ds_optimize(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
+            double att[3], double lambda, double xtol);
 int     optimize(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
             double att[3], double step[3]);
+double  ds_evaluate(double* x, void* ptr);
 double  evaluate(Spacecraft* spacecraft, Qscat* qscat, BYUXTable* byux,
             double att[3], FILE* ofp = NULL);
+int     est_var();
 
 //------------------//
 // OPTION VARIABLES //
@@ -155,15 +173,16 @@ struct Ephem
     float  yaw;
 };
 
-int       g_ephem_count = 0;
-Ephem     g_ephem[MAX_EPHEM_PER_ORBIT_STEP];
+int     g_ephem_count = 0;
+Ephem   g_ephem[MAX_EPHEM_PER_ORBIT_STEP];
 
-int       g_count[NUMBER_OF_QSCAT_BEAMS];
-double    g_tx_center_azimuth[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+int     g_count[NUMBER_OF_QSCAT_BEAMS];
+double  g_tx_center_azimuth[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 double  g_meas_spec_peak_freq[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
-float     g_tx_doppler[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
-float     g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
-int       g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+double  g_freq_var[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+float   g_tx_doppler[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+float   g_rx_gate_delay[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
+int     g_ephem_idx[NUMBER_OF_QSCAT_BEAMS][MAX_SPOTS_PER_ORBIT_STEP];
 
 //--------------//
 // MAIN PROGRAM //
@@ -236,6 +255,18 @@ main(
     {
         fprintf(stderr, "%s: error opening echo data file %s\n", command,
             echo_data_file);
+        exit(1);
+    }
+
+    //---------------------------//
+    // open attitude output file //
+    //---------------------------//
+
+    FILE* att_fp = fopen("attitude.dat", "w");
+    if (att_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening attitude output file %s\n", command,
+            "attitude.dat");
         exit(1);
     }
 
@@ -357,7 +388,7 @@ main(
                 if (last_orbit_step != -1)
                 {
                     process_orbit_step(&spacecraft, &qscat, &byux,
-                        last_orbit_step);
+                        last_orbit_step, att_fp);
 
                     // transfer ephemeris
                     g_ephem[0] = g_ephem[g_ephem_count - 1];
@@ -379,6 +410,7 @@ main(
         }
     } while (1);
 
+    fclose(att_fp);
     close(ifd);
 
     return (0);
@@ -445,29 +477,111 @@ process_orbit_step(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     BYUXTable*   byux,
-    int          orbit_step)
+    int          orbit_step,
+    FILE*        att_fp)
 {
-    //---------------------//
-    // initialize attitude //
-    //---------------------//
+    //--------------------//
+    // estimate variances //
+    //--------------------//
 
-    double att[3] = {0.0, 0.0, 0.0};
-    double step[3] = {ROLL_START_STEP, PITCH_START_STEP, YAW_START_STEP};
-    double use_step[3] = {0.0, 0.0, 0.0};
+    int var_count = est_var();
 
-    do
+    if (var_count < MIN_DATA_COUNT)
+        return(0);
+
+    //----------------------------//
+    // fit a sinusoid to the data //
+    //----------------------------//
+
+    double a[2], p[2], c[2];
+    for (int i = 0; i < 2; i++)
     {
-        int idx;
-        large_slope(spacecraft, qscat, byux, att, step, &idx);
-        use_step[idx] = step[idx];
-        optimize(spacecraft, qscat, byux, att, use_step);
-        use_step[idx] = 0.0;
-printf("%g %g %g %g %g %g\n", att[0] * rtd, att[1] * rtd, att[2] * rtd, step[0], step[1], step[2]);
-        if (step[idx] < END_STEP)
-            break;
+        // fit each beam separately
+        sinfit(g_tx_center_azimuth[i], g_meas_spec_peak_freq[i], g_freq_var[i],
+            g_count[i], &(a[i]), &(p[i]), &(c[i]));
+    }
 
-        step[idx] /= 2.0;
-    } while (1);
+    //-----------------------------------------------------------------//
+    // first, just keep a few points near the sinusoid for a rough fit //
+    //-----------------------------------------------------------------//
+
+    int use_idx[PLEX_STEPS];
+    double min_dif[PLEX_STEPS];
+
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        for (int i = 0; i < PLEX_STEPS; i++)
+        {
+            use_idx[i] = -1;
+            min_dif[i] = 1E9;
+        }
+
+        for (int idx = 0; idx < g_count[beam_idx]; idx++)
+        {
+            int idx2 = (int)(PLEX_STEPS * g_tx_center_azimuth[beam_idx][idx] /
+                two_pi + 0.5);
+            idx2 %= PLEX_STEPS;
+
+            double fitval = a[beam_idx] *
+                cos(g_tx_center_azimuth[beam_idx][idx] + p[beam_idx]) +
+                c[beam_idx];
+
+            double dif = fabs(fitval - g_meas_spec_peak_freq[beam_idx][idx]);
+            if (dif < min_dif[idx2])
+            {
+                min_dif[idx2] = dif;
+                use_idx[idx2] = idx;
+            }
+            g_freq_var[beam_idx][idx] = -1.0;    // flag to not use point
+        }
+        for (int i = 0; i < PLEX_STEPS; i++)
+        {
+            if (use_idx[i] != -1)
+                g_freq_var[beam_idx][use_idx[i]] = 1.0;   // flag to use
+        }
+    }
+
+    //--------------------------//
+    // search for best attitude //
+    //--------------------------//
+
+    double att[3];
+    att[0] = 0.0;
+    att[1] = 0.0;
+    att[2] = 0.0;
+    ds_optimize(spacecraft, qscat, byux, att, LAMBDA_1 * dtr, XTOL_1 * dtr);
+
+    //--------------------------//
+    // search for best attitude //
+    //--------------------------//
+
+/*
+    if (SIMPLEX)
+    {
+        ds_optimize(spacecraft, qscat, byux, att, LAMBDA_2 * dtr,
+            XTOL_2 * dtr);
+    }
+    else
+    {
+        double att[3] = {0.0, 0.0, 0.0};
+        double step[3] = {ROLL_START_STEP * dtr, PITCH_START_STEP * dtr,
+            YAW_START_STEP * dtr};
+        double use_step[3] = {0.0, 0.0, 0.0};
+
+        do
+        {
+            int idx;
+            large_slope(spacecraft, qscat, byux, att, step, &idx);
+            use_step[idx] = step[idx];
+            optimize(spacecraft, qscat, byux, att, use_step);
+            use_step[idx] = 0.0;
+            if (step[idx] < END_STEP * dtr)
+                break;
+
+            step[idx] /= 2.0;
+        } while (1);
+    }
+*/
 
     //---------------------------//
     // generate a knowledge plot //
@@ -486,10 +600,71 @@ printf("%g %g %g %g %g %g\n", att[0] * rtd, att[1] * rtd, att[2] * rtd, step[0],
 
     evaluate(spacecraft, qscat, byux, att, ofp);
 
-//fprintf(ofp, "&\n");
-//evaluate(spacecraft, qscat, byux, -0.1 * dtr, 0.2 * dtr, 0.0, ofp);
+/*
+fprintf(ofp, "&\n");
+att[0] = -0.1 * dtr;
+att[1] = 0.2 * dtr;
+att[2] = 0.0 * dtr;
+evaluate(spacecraft, qscat, byux, att, ofp);
+*/
 
     fclose(ofp);
+
+    //---------------------------------------//
+    // add roll, pitch, yaw to attitude file //
+    //---------------------------------------//
+
+    fprintf(att_fp, "%d %g %g %g\n", orbit_step, att[0] * rtd, att[1] * rtd,
+        att[2] * rtd);
+
+    return(1);
+}
+
+//-------------//
+// ds_optimize //
+//-------------//
+
+int
+ds_optimize(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    BYUXTable*   byux,
+    double       att[3],
+    double       lambda,
+    double       xtol)
+{
+    int ndim = 3;
+    double** p = (double**)make_array(sizeof(double), 2, ndim + 1, ndim);
+    if (p == NULL)
+        return(0);
+
+    p[0][0] = att[0];    // roll
+    p[0][1] = att[1];    // pitch
+    p[0][2] = att[2];    // yaw
+
+    p[1][0] = p[0][0] + lambda;
+    p[1][1] = p[0][1];
+    p[1][2] = p[0][2];
+
+    p[2][0] = p[0][0];
+    p[2][1] = p[0][1] + lambda;
+    p[2][2] = p[0][2];
+
+    p[3][0] = p[0][0];
+    p[3][1] = p[0][1];
+    p[3][2] = p[0][2] + lambda;
+
+    char* ptr[3];
+    ptr[0] = (char *)spacecraft;
+    ptr[1] = (char *)qscat;
+    ptr[2] = (char *)byux;
+
+    downhill_simplex(p, ndim, ndim, 0.0, ds_evaluate, ptr, xtol);
+
+    for (int i = 0; i < 3; i++)
+        att[i] = p[0][i];
+
+    free_array(p, 2, ndim + 1, ndim);
 
     return(1);
 }
@@ -566,6 +741,23 @@ optimize(
     return(1);
 }
 
+//-------------//
+// ds_evaluate //
+//-------------//
+
+double
+ds_evaluate(
+    double*  x,
+    void*    ptr)
+{
+    char** ptr2 = (char**)ptr;
+    Spacecraft* spacecraft = (Spacecraft *)ptr2[0];
+    Qscat* qscat = (Qscat *)ptr2[1];
+    BYUXTable* byux = (BYUXTable *)ptr2[2];
+
+    return (evaluate(spacecraft, qscat, byux, x));
+}
+
 //----------//
 // evaluate //
 //----------//
@@ -586,6 +778,11 @@ evaluate(
 
         for (int idx = 0; idx < g_count[beam_idx]; idx++)
         {
+            // skip data that doesn't have a variance estimate
+            if (g_freq_var[beam_idx][idx] < 0.0 && ofp == NULL)
+//            if (g_freq_var[beam_idx][idx] < 0.0)
+                continue;
+
             // set the spacecraft
             Ephem* ephem = &(g_ephem[g_ephem_idx[beam_idx][idx]]);
             spacecraft->orbitState.rsat.Set(ephem->gcx, ephem->gcy,
@@ -637,15 +834,163 @@ evaluate(
                 g_meas_spec_peak_freq[beam_idx][idx];
             if (ofp)
             {
-                fprintf(ofp, "%g %g %g\n",
-                    g_tx_center_azimuth[beam_idx][idx] * rtd,
-                    g_meas_spec_peak_freq[beam_idx][idx], calc_spec_peak_freq);
+                if (beam_idx == 1)
+                {
+                    fprintf(ofp, "%g %g %g\n",
+                        g_tx_center_azimuth[beam_idx][idx] * rtd,
+                        g_meas_spec_peak_freq[beam_idx][idx] + PLOT_OFFSET,
+                        calc_spec_peak_freq + PLOT_OFFSET);
+                }
+                else
+                {
+                    fprintf(ofp, "%g %g %g\n",
+                        g_tx_center_azimuth[beam_idx][idx] * rtd,
+                        g_meas_spec_peak_freq[beam_idx][idx],
+                        calc_spec_peak_freq);
+                }
             }
-            dif *= dif;
+            dif = dif * dif / g_freq_var[beam_idx][idx];
             mse += dif;
         }
         if (ofp && beam_idx != NUMBER_OF_QSCAT_BEAMS - 1)
             fprintf(ofp, "&\n");
     }
+printf("%g %g %g %g\n", att[0] * rtd, att[1] * rtd, att[2] * rtd, mse);
     return(mse);
+}
+
+//---------//
+// est_var //
+//---------//
+
+int
+est_var()
+{
+    int var_count = 0;
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        //-----------------//
+        // sort by azimuth //
+        //-----------------//
+
+        int idx_array[MAX_SPOTS_PER_ORBIT_STEP];
+        heapsort(g_count[beam_idx], g_tx_center_azimuth[beam_idx], idx_array);
+
+        //-----------------------------//
+        // do the variance calculation //
+        //-----------------------------//
+
+        int start_idx = 0;
+        int end_idx = 0;
+        for (int idx = 0; idx < g_count[beam_idx]; idx++)
+        {
+            int use_idx = idx_array[idx];
+            double azim = g_tx_center_azimuth[beam_idx][use_idx];
+            double meanf = 0.0;
+            double varf = 0.0;
+            unsigned int count = 0;
+
+            //------------------//
+            // find start index //
+            //------------------//
+
+            // move forward until in range
+            do
+            {
+                start_idx = start_idx % g_count[beam_idx];
+                int use_start_idx = idx_array[start_idx];
+                if (ANGDIF(azim,
+                    g_tx_center_azimuth[beam_idx][use_start_idx]) <
+                    VAR_ANGLE_RANGE * dtr)
+                {
+                    break;
+                }
+                start_idx++;
+            } while (1);
+            // back up until out of range
+            do
+            {
+                start_idx = (start_idx + g_count[beam_idx]) % g_count[beam_idx];
+                int use_start_idx = idx_array[start_idx];
+                if (ANGDIF(azim,
+                    g_tx_center_azimuth[beam_idx][use_start_idx]) >
+                    VAR_ANGLE_RANGE * dtr)
+                {
+                    break;
+                }
+                start_idx--;
+            } while (1);
+            start_idx = (start_idx + 1) % g_count[beam_idx];
+
+            //----------------//
+            // find end index //
+            //----------------//
+
+            // back up until in range
+            do
+            {
+                end_idx = (end_idx + g_count[beam_idx]) % g_count[beam_idx];
+                int use_end_idx = idx_array[end_idx];
+                if (ANGDIF(azim,
+                    g_tx_center_azimuth[beam_idx][use_end_idx]) <
+                    VAR_ANGLE_RANGE * dtr)
+                {
+                    break;
+                }
+                end_idx--;
+            } while (1);
+
+            // move forward until out of range
+            do
+            {
+                end_idx = end_idx % g_count[beam_idx];
+                int use_end_idx = idx_array[end_idx];
+                if (ANGDIF(azim,
+                    g_tx_center_azimuth[beam_idx][use_end_idx]) >
+                    VAR_ANGLE_RANGE * dtr)
+                {
+                    break;
+                }
+                end_idx++;
+            } while (1);
+
+            //-----------//
+            // calculate //
+            //-----------//
+
+            for (int pass_flag = 0; pass_flag < 2; pass_flag++)
+            {
+                for (int oidx = start_idx; oidx < end_idx; oidx++)
+                {
+                    int use_oidx = idx_array[oidx];
+                    if (pass_flag == 0)    // mean pass
+                    {
+                        meanf += g_meas_spec_peak_freq[beam_idx][use_oidx];
+                        count++;
+                    }
+                    else if (pass_flag == 1)    // variance pass
+                    {
+                        double dif =
+                            g_meas_spec_peak_freq[beam_idx][use_oidx] - meanf;
+                        varf += (dif * dif);
+                    }
+                }
+
+                if (pass_flag == 0)
+                    meanf /= (double)count;
+                else if (pass_flag == 1)
+                {
+                    if (count > MIN_VAR_DATA_COUNT)
+                    {
+                        varf /= (double)(count - 1);
+                        var_count++;
+                    }
+                    else
+                        varf = -1.0;    // flag as don't use
+                }
+            }
+            g_freq_var[beam_idx][use_idx] = varf;
+        }
+    }
+    return(var_count);
 }

@@ -65,6 +65,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Qscat.h"
 
 //-----------//
 // TEMPLATES //
@@ -163,10 +164,11 @@ main(
                 mhead->centroid.GetAltLonGCLat(&alt,&lon,&lat);
                 fprintf(output_fp, "# Lon=%g Lat=%g\n",lon*rtd,lat*rtd);
 		fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
-		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
-		{
-		        m->centroid.GetAltLonGCLat(&alt,&lon,&lat);
-			fprintf(output_fp, "%s %g %g %g %g %g\n", beam_map[m->pol],
+        for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
+        {
+            m->centroid.GetAltLonGCLat(&alt,&lon,&lat);
+            PolE pol = MeasTypeToPol(m->measType);
+			fprintf(output_fp, "%s %g %g %g %g %g\n", beam_map[pol],
 				m->incidenceAngle * rtd, m->eastAzimuth * rtd,
 				m->value,lon*rtd,lat*rtd);
 		}

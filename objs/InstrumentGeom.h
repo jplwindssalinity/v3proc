@@ -28,9 +28,6 @@ CoordinateSwitch  AntennaFrameToGC(OrbitState* orbit_state,
                       Attitude* attitude, Antenna* antenna,
                       double azimuth_angle);
 
-int  LocateSpot(Spacecraft* spacecraft, Qscat* qscat, MeasSpot* meas_spot,
-         float Esn = 0.0, float contour_level = DEFAULT_CONTOUR_LEVEL);
-
 int  GetPeakSpatialResponse(Beam* beam, double round_trip_time,
          double azimuth_rate, double* look, double* azim,
          int ignore_range = 0);

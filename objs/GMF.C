@@ -20,6 +20,7 @@ static const char rcs_id_gmf_c[] =
 #include "List.h"
 #include "AngleInterval.h"
 #include "Array.h"
+
 //=====//
 // GMF //
 //=====//
@@ -28,10 +29,10 @@ GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), smartNudgeFlag(0),
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL),
-    _sepAngle(DEFAULT_SEP_ANGLE),
-    _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
-    _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
-    _objective_buffer(NULL), _dir_mle_maxima(NULL)
+    _sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
+    _maxSolutions(DEFAULT_MAX_SOLUTIONS), _bestSpd(NULL), _bestObj(NULL),
+    _copyObj(NULL), _speed_buffer(NULL), _objective_buffer(NULL),
+    _dir_mle_maxima(NULL)
 {
 	SetPhiCount(DEFAULT_PHI_COUNT);
 
@@ -112,7 +113,7 @@ int GMF::ReadOldStyle(
 	int dummy;
 	read(fd, &dummy, sizeof(int));
 
-	_polCount = 2;
+	_metCount = 2;
 
 	_incCount = 26;
 	_incMin = 16.0 * dtr;
@@ -132,7 +133,7 @@ int GMF::ReadOldStyle(
 		return(0);
 
 	float value;
-	for (int pol_idx = 0; pol_idx < _polCount; pol_idx++)
+	for (int met_idx = 0; met_idx < _metCount; met_idx++)
 	{
 		for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
 		{
@@ -145,11 +146,11 @@ int GMF::ReadOldStyle(
 						close(fd);
 						return(0);
 					}
-					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) =
+					*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) =
 						(float)value;
 
 					int chi_idx_2 = (_chiCount - chi_idx) % _chiCount;
-					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
+					*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(float)value;
 				}
 			}
@@ -161,13 +162,13 @@ int GMF::ReadOldStyle(
 	//----------------------//
 
 	int spd_idx = 0;
-	for (int pol_idx = 0; pol_idx < _polCount; pol_idx++)
+	for (int met_idx = 0; met_idx < _metCount; met_idx++)
 	{
 		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
 		{
 			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
 			{
-				*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
+				*(*(*(*(_value+met_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
 			}
 		}
 	}
@@ -182,18 +183,18 @@ int GMF::ReadOldStyle(
 
 int
 GMF::GetCoefs(
-	PolE		pol,
-	float		inc,
-	float		spd,
-	float*		A0,
-	float*		A1,
-	float*		A1_phase,
-	float*		A2,
-	float*		A2_phase,
-	float*		A3,
-	float*		A3_phase,
-	float*		A4,
-	float*		A4_phase)
+    Meas::MeasTypeE  met,
+    float            inc,
+    float            spd,
+    float*           A0,
+    float*           A1,
+    float*           A1_phase,
+    float*           A2,
+    float*           A2_phase,
+    float*           A3,
+    float*           A3_phase,
+    float*           A4,
+    float*           A4_phase)
 {
 	float real[5], imag[5];
 	int n = _chiCount - 1;
@@ -212,7 +213,7 @@ GMF::GetCoefs(
 			float s = sin(arg);
 			float chi = (float)chi_idx * _chiStep;
 			float val;
-			GetInterpolatedValue(pol, inc, spd, chi, &val);
+			GetInterpolatedValue(met, inc, spd, chi, &val);
 			real[i] += val * c;
 			imag[i] += val * s;
 		}
@@ -1324,7 +1325,7 @@ GMF::_ObjectiveFunction(
 
 		float chi = phi - meas->eastAzimuth + pi;
 		float trial_value;
-		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
+		GetInterpolatedValue(meas->measType, meas->incidenceAngle, spd, chi,
 			&trial_value);
 
 		//------------------------------------------------------------//
@@ -1357,7 +1358,7 @@ GMF::_ObjectiveFunction(
 			double kpm2 = 0.0;
 			if (retrieveUsingKpmFlag)
 			{
-				if (! kp->GetKpm2(meas->pol, spd, &kpm2))
+				if (! kp->GetKpm2(meas->measType, spd, &kpm2))
 					return(0);
 			}
 
@@ -3368,7 +3369,6 @@ GMF::RetrieveWinds_S2(
     }
 
     int final_num_peaks=ambiguities;
-    int initial_num_peaks=ambiguities;
 
     // For now assume that extra ambiguities implies 
     // DeleteBadPeaks is not needed but only deleting the lowest obj.
@@ -3439,8 +3439,9 @@ GMF::RetrieveWinds_S2(
     wvc->SortByObj();
 
 
-    char file[50];
 #ifdef S2_DEBUG_INTERVAL
+    char file[50];
+    int initial_num_peaks=ambiguities;
     if(num%S2_DEBUG_INTERVAL==0){
       sprintf(file,"examples/exam%d",num/S2_DEBUG_INTERVAL);
       FILE* ofpp = fopen(file,"w");
@@ -3512,12 +3513,14 @@ GMF::GetMinEstimateMSE(
        int num=0){
   int finished=0;
   int debug=0;
-  FILE* ofpp;
+    FILE* ofpp = NULL;
 #ifdef S2_DETAILED_DEBUG
- if(num%S2_DEBUG_INTERVAL==0 && num/S2_DEBUG_INTERVAL==S2_DETAILED_DEBUG){
-   ofpp=fopen("detailed_debug","w");
-   debug=1;
- }
+    if (num % S2_DEBUG_INTERVAL == 0 &&
+        num / S2_DEBUG_INTERVAL == S2_DETAILED_DEBUG)
+    {
+        ofpp = fopen("detailed_debug", "w");
+        debug = 1;
+    }
 #endif
   int num_available_ambiguities=DEFAULT_MAX_SOLUTIONS - num_peaks;
   float* tmp_peak_dir = new float[DEFAULT_MAX_SOLUTIONS];

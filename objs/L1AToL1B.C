@@ -11,6 +11,7 @@ static const char rcs_id_l1atol1b_c[] =
 #include "CheckFrame.h"
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
+#include "Qscat.h"
 
 //==========//
 // L1AToL1B //
@@ -144,7 +145,10 @@ L1AToL1B::Convert(
           cf.Initialize();
         }
 
-        // check for loopback or load pulses, and skip them if encountered.
+        //--------------------------//
+        // skip loopbacks and loads //
+        //--------------------------//
+
         if (spot_idx==frame->calPosition-2 || spot_idx==frame->calPosition-1)
           continue;
 
@@ -242,7 +246,7 @@ L1AToL1B::Convert(
 //        qscat->SetAntennaToTxCenter(1);
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
-            if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))
+            if (! qscat->LocateSpot(spacecraft, meas_spot, Esn[0]))
             {
                 return(0);
             }
@@ -283,6 +287,13 @@ L1AToL1B::Convert(
 
         int slice_count = qscat->ses.GetTotalSliceCount();
 
+        //--------------------------------------//
+        // determine measurement type from beam //
+        //--------------------------------------//
+
+        Beam* beam = qscat->GetCurrentBeam();
+        Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
+
 		//-------------------//
 		// for each slice... //
 		//-------------------//
@@ -290,6 +301,8 @@ L1AToL1B::Convert(
 		for (Meas* meas = meas_spot->GetHead(); meas;
 			meas = meas_spot->GetNext())
 		{
+            meas->measType = meas_type;
+
 		    int slice_i;
             if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_i))
             {

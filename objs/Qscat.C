@@ -1004,7 +1004,6 @@ Qscat::LocateSlices(
         //-------------------------//
 
         Meas* meas = new Meas();
-        meas->pol = beam->polarization;
 
         //----------------------------------------//
         // determine the baseband frequency range //
@@ -1040,7 +1039,7 @@ Qscat::LocateSlices(
         double r, theta, phi;
         rlook_surface.SphericalGet(&r, &theta, &phi);
         // Note that eastAzimuth is referenced to true East (not North).
-	    meas->eastAzimuth = phi;
+        meas->eastAzimuth = phi;
 
         // get incidence angle
         meas->incidenceAngle = pi - theta;
@@ -2164,31 +2163,30 @@ Qscat::LocateSliceCentroids(
         return(0);
     }
 
-        //-----------------------------------//
-        // Calculate center line of the spot //
-        // for use in determining centroids  //
-        // of outer slices.                  //
-        //-----------------------------------//
+    //-----------------------------------//
+    // Calculate center line of the spot //
+    // for use in determining centroids  //
+    // of outer slices.                  //
+    //-----------------------------------//
 
-        // Find central frequency of spot
-        Vector3 center_vector;
-        center_vector.SphericalSet(1.0, center_look, center_azim);
-        TargetInfo(&antenna_frame_to_gc, spacecraft, center_vector,
-            &qti);
-        float spot_center_freq=qti.basebandFreq;
+    // Find central frequency of spot
+    Vector3 center_vector;
+    center_vector.SphericalSet(1.0, center_look, center_azim);
+    TargetInfo(&antenna_frame_to_gc, spacecraft, center_vector, &qti);
+    float spot_center_freq=qti.basebandFreq;
 
     // Find Peak Gain Locations + and - 5 kHz from the center frequency
-        // for now just use 8 Hz as the tolerance for calculating the
-        // these locations.
+    // for now just use 8 Hz as the tolerance for calculating the
+    // these locations.
 
-        double neg_look=center_look;
-    double neg_azim=center_azim;
-        double pos_look=center_look;
-        double pos_azim=center_azim;
+    double neg_look = center_look;
+    double neg_azim = center_azim;
+    double pos_look = center_look;
+    double pos_azim = center_azim;
 
     float dummy_gain;
-        float freq_offset=5000;
-        double ftol_center_line=8;
+    float freq_offset=5000;
+    double ftol_center_line=8;
     if (! FindPeakResponseAtFreq(&antenna_frame_to_gc, spacecraft,
             spot_center_freq + freq_offset, ftol_center_line, &pos_look,
             &pos_azim, &dummy_gain) ||
@@ -2202,8 +2200,8 @@ Qscat::LocateSliceCentroids(
     }
 
     // Calculate coefficients for (look,azimuth) vs freq center lines
-        double dlookdfreq=(pos_look-neg_look)/(2*freq_offset);
-        double dazimdfreq=(pos_azim-neg_azim)/(2*freq_offset);
+    double dlookdfreq=(pos_look-neg_look)/(2*freq_offset);
+    double dazimdfreq=(pos_azim-neg_azim)/(2*freq_offset);
 
     //--------------------------//
     // find gain at beam center //
@@ -2285,8 +2283,9 @@ Qscat::LocateSliceCentroids(
         // We assume that the slices are sequential.
         abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
         meas->numSlices = 1;
-        meas->pol = beam->polarization;
-        if (Esn) meas->value = Esn[slice_idx];
+
+        if (Esn)
+            meas->value = Esn[slice_idx];
 
         //--------------------------------//
         // find the centroid on the earth //
@@ -2315,7 +2314,7 @@ Qscat::LocateSliceCentroids(
         Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);
         double r, theta, phi;
         rlook_surface.SphericalGet(&r, &theta, &phi);
-	    meas->eastAzimuth = phi;
+        meas->eastAzimuth = phi;
 
         // get incidence angle
         meas->incidenceAngle = pi - theta;
@@ -2524,6 +2523,21 @@ Qscat::IdealCommandedDoppler(
     return(1);
 }
 
+//============//
+// QscatEvent //
+//============//
+
+QscatEvent::QscatEvent()
+:   time(0.0), eventId(NONE), beamIdx(0)
+{
+    return;
+}
+
+QscatEvent::~QscatEvent()
+{
+    return;
+}
+
 //==================//
 // Helper Functions //
 //==================//
@@ -2635,3 +2649,48 @@ SetOrbitStepDelayAndFrequency(
     return(SetDelayAndFrequency(spacecraft, qscat));
 }
 
+//---------------//
+// PolToMeasType //
+//---------------//
+
+Meas::MeasTypeE
+PolToMeasType(
+    PolE  pol)
+{
+    switch(pol)
+    {
+    case V_POL:
+        return(Meas::VV_MEAS_TYPE);
+        break;
+    case H_POL:
+        return(Meas::HH_MEAS_TYPE);
+        break;
+    default:
+        return(Meas::NONE);
+        break;
+    }
+    return(Meas::NONE);
+}
+
+//---------------//
+// MeasTypeToPol //
+//---------------//
+
+PolE
+MeasTypeToPol(
+    Meas::MeasTypeE  meas_type)
+{
+    switch(meas_type)
+    {
+    case Meas::VV_MEAS_TYPE:
+        return(V_POL);
+        break;
+    case Meas::Meas::HH_MEAS_TYPE:
+        return(H_POL);
+        break;
+    default:
+        return(NONE);
+        break;
+    }
+    return(NONE);
+}

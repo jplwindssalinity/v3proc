@@ -262,8 +262,6 @@ Scatterometer::LocateSpot(
     // generate measurement data //
     //---------------------------//
 
-    meas->pol = beam->polarization;
-
     // get local measurement azimuth
     CoordinateSwitch gc_to_surface = sti.rTarget.SurfaceCoordinateSystem();
     Vector3 rlook_surface = gc_to_surface.Forward(rlook_gc);

@@ -334,9 +334,9 @@ main(
 
 				switch(qscat_event.eventId)
 				{
-				case QscatEvent::SCATTEROMETER_MEASUREMENT:
-				case QscatEvent::LOOPBACK_MEASUREMENT:
-				case QscatEvent::LOAD_MEASUREMENT:
+				case QscatEvent::SCAT_EVENT:
+				case QscatEvent::LOOPBACK_EVENT:
+				case QscatEvent::LOAD_EVENT:
 
 					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(qscat_event.time,

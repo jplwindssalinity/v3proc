@@ -333,7 +333,7 @@ main(
 
 			switch(qscat_event.eventId)
 			{
-			case QscatEvent::SCATTEROMETER_MEASUREMENT:
+			case QscatEvent::SCAT_EVENT:
 
 				// process spacecraft stuff
 				spacecraft_sim.UpdateOrbit(qscat_event.time,
@@ -380,7 +380,7 @@ main(
 					// spot //
 					//------//
 
-					LocateSpot(&spacecraft, &qscat, &meas_spot, contour_level);
+					qscat.LocateSpot(&spacecraft, &meas_spot, contour_level);
 					Meas* meas = meas_spot.GetHead();
 					if (centroid_opt)
 					{

@@ -111,8 +111,6 @@ template class List<AngleInterval>;
 
 int process_orbit_step(int beam_idx, int orbit_step);
 int accumulate(int beam_idx, double azimuth, double meas_spec_peak);
-int sinfit(double* azimuth, double* value, int count, double* amplitude,
-        double* phase, double* bias);
 
 //------------------//
 // OPTION VARIABLES //
@@ -360,8 +358,8 @@ process_orbit_step(
     //----------------------------//
 
     double a, p, c;
-    sinfit(g_azimuth[beam_idx], g_meas_spec_peak[beam_idx], g_count[beam_idx],
-        &a, &p, &c);
+    sinfit(g_azimuth[beam_idx], g_meas_spec_peak[beam_idx], NULL,
+        g_count[beam_idx], &a, &p, &c);
 
     //-----------------------------//
     // estimate the standard error //
@@ -439,118 +437,6 @@ accumulate(
     g_azimuth[beam_idx][idx] = azimuth;
     g_meas_spec_peak[beam_idx][idx] = meas_spec_peak;
     g_count[beam_idx]++;
-
-    return(1);
-}
-
-//--------//
-// sinfit //
-//--------//
-// a brilliantly derived sinusoidal regression method by B. Stiles.
-// fits to y = A + B*cos(wt) + C*sin(wt)
-// this equates to y = A + D*cos(wt + E) where
-// B = D*cos(E) and C = -D*sin(E)
-// solved for...
-// D = sqrt(B*B + C*C) and E = atan2(-B / C)
-
-int
-sinfit(
-    double*  azimuth,
-    double*  value,
-    int      count,
-    double*  amplitude,
-    double*  phase,
-    double*  bias)
-{
-    //-----------------------------------//
-    // set up matrix and solution vector //
-    //-----------------------------------//
-
-    double matrix_a[3][3];
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            matrix_a[i][j] = 0.0;
-        }
-    }
-
-    double vector_y[3];
-    for (int i = 0; i < 3; i++)
-    {
-        vector_y[i] = 0.0;
-    }
-
-    //------------//
-    // accumulate //
-    //------------//
-
-    matrix_a[0][0] = count;
-    for (int i = 0; i < count; i++)
-    {
-        double si = sin(azimuth[i]);
-        double co = cos(azimuth[i]);
-        double ss = si * si;
-        double cc = co * co;
-        double cs = co * si;
-        matrix_a[0][1] += co;
-        matrix_a[0][2] += si;
-        matrix_a[1][0] += co;
-        matrix_a[1][1] += cc;
-        matrix_a[1][2] += cs;
-        matrix_a[2][0] += si;
-        matrix_a[2][1] += cs;
-        matrix_a[2][2] += ss;
-
-        vector_y[0] += value[i];
-        vector_y[1] += value[i] * co;
-        vector_y[2] += value[i] * si;
-    }
-
-    //---------------------------------//
-    // transfer into matrix and vector //
-    //---------------------------------//
-
-    Matrix A;
-    A.Allocate(3, 3);
-    for (int i = 0; i < 3; i++)
-    {
-        for (int j = 0; j < 3; j++)
-        {
-            A.SetElement(i, j, matrix_a[i][j]);
-        }
-    }
-
-    Vector Y;
-    Y.Allocate(3);
-    for (int i = 0; i < 3; i++)
-    {
-        Y.SetElement(i, vector_y[i]);
-    }
-
-    //-------//
-    // solve //
-    //-------//
-
-    Vector X;
-    if (! A.SolveSVD(&Y, &X))
-    {
-        fprintf(stderr, "Error solving equations!\n");
-        exit(1);
-    }
-
-    //-------------------------//
-    // return the coefficients //
-    //-------------------------//
-
-    double a, b, c;
-    X.GetElement(0, &a);
-    X.GetElement(1, &b);
-    X.GetElement(2, &c);
-
-    *amplitude = sqrt(b*b + c*c);
-    *phase = atan2(-c, b);
-    *bias = a;
 
     return(1);
 }

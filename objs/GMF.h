@@ -9,7 +9,7 @@
 static const char rcs_id_gmf_h[] =
 	"@(#) $Id$";
 
-#include "PiscTable.h"
+#include "MiscTable.h"
 #include "Wind.h"
 #include "Meas.h"
 #include "Constants.h"
@@ -41,7 +41,7 @@ static const char rcs_id_gmf_h[] =
 #define MINIMUM_WVC_MEASUREMENTS	4
 #define MINIMUM_AZIMUTH_DIVERSITY	20.0*dtr
 
-class GMF : public PiscTable
+class GMF : public MiscTable
 {
 public:
 	//--------------//
@@ -67,9 +67,9 @@ public:
 	// analyze //
 	//---------//
 
-	int		GetCoefs(PolE pol, float inc, float spd, float* A0, float* A1,
-				float* A1_phase, float* A2, float* A2_phase, float* A3,
-				float* A3_phase, float* A4, float* A4_phase);
+    int  GetCoefs(Meas::MeasTypeE met, float inc, float spd, float* A0,
+             float* A1, float* A1_phase, float* A2, float* A2_phase,
+             float* A3, float* A3_phase, float* A4, float* A4_phase);
 	int		GetObjLimits(float* min_obj, float* max_obj);
 	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
 	int		WritePdf(FILE* ofp, MeasList* meas_list, Kp* kp);

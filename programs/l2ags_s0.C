@@ -65,6 +65,7 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Qscat.h"
 
 //-----------//
 // TEMPLATES //
@@ -165,7 +166,8 @@ main(
 		fprintf(output_fp, "# %d %d\n", l2a.frame.ati, l2a.frame.cti);
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
 		{
-			fprintf(output_fp, "%s %g %g %g\n", beam_map[m->pol],
+            PolE pol = MeasTypeToPol(m->measType);
+			fprintf(output_fp, "%s %g %g %g\n", beam_map[pol],
 				m->incidenceAngle * rtd, m->eastAzimuth * rtd, m->value);
 		}
 		fprintf(output_fp, "#####\n");

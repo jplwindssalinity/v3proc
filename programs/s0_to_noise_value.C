@@ -193,11 +193,13 @@ main(
     else{
       float eastAzimuth, noise_val, sigma0, sigma0_true, incidenceAngle;
       char polc;
-      PolE pol;
+      Meas::MeasTypeE met;
       value=strtok(string," \t\n");  // read polarization;
       polc=value[0];
-      if (polc=='V') pol=V_POL;
-      else pol=H_POL;
+        if (polc == 'V')
+            met = Meas::VV_MEAS_TYPE;
+        else
+            met = Meas::HH_MEAS_TYPE;
       value=strtok(NULL," \t\n");
       incidenceAngle=atof(value)*dtr;
       value=strtok(NULL," \t\n");
@@ -230,7 +232,7 @@ main(
       // the s/c (the opposite direction as the look vector)
       float chi = wvs.dir - eastAzimuth  + pi;
 
-      gmf.GetInterpolatedValue(pol, incidenceAngle, wvs.spd,
+      gmf.GetInterpolatedValue(met, incidenceAngle, wvs.spd,
 				chi, &sigma0_true);
 
       noise_val=(sigma0-sigma0_true)/sigma0_true;

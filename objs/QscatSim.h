@@ -22,43 +22,8 @@ static const char rcs_id_qscatsim_h[] =
 
 //======================================================================
 // CLASSES
-//      QscatEvent, QscatSim
+//      QscatSim
 //======================================================================
-
-//======================================================================
-// CLASS
-//      QscatEvent
-//
-// DESCRIPTION
-//      The QscatEvent object contains a QSCAT event time and ID.
-//======================================================================
-
-class QscatEvent
-{
-public:
-
-    //-------//
-    // enums //
-    //-------//
-
-    enum QscatEventE { NONE, SCATTEROMETER_MEASUREMENT, LOOPBACK_MEASUREMENT,
-        LOAD_MEASUREMENT };
-
-    //--------------//
-    // construction //
-    //--------------//
-
-    QscatEvent();
-    ~QscatEvent();
-
-    //-----------//
-    // variables //
-    //-----------//
-
-    double       time;
-    QscatEventE  eventId;
-    int          beamIdx;
-};
 
 //======================================================================
 // CLASS

@@ -291,20 +291,20 @@ main(
 		exit(-1);
 	}
 
-	//------------------//
-	// Set polarization //
-	//------------------//
+	//----------------------//
+	// Set measurement type //
+	//----------------------//
 
 	char pol_char;
-	PolE pol;
-	kpcfg_list.GetChar(POLARIZATION_KEYWORD,&pol_char);
+	Meas::MeasTypeE met;
+	kpcfg_list.GetChar(POLARIZATION_KEYWORD, &pol_char);
 	if (pol_char == 'V' || pol_char == 'v')
 	{
-		pol = V_POL;
+		met = Meas::VV_MEAS_TYPE;
 	}
 	else if (pol_char == 'H' || pol_char == 'h')
 	{
-		pol = H_POL;
+		met = Meas::HH_MEAS_TYPE;
 	}
 	else
 	{
@@ -501,7 +501,9 @@ main(
 			// indices.													  //
 			//------------------------------------------------------------//
 
-			if (pol != m->pol) continue;
+			if (met != m->measType)
+                continue;
+
 //			if (m->startSliceIdx != 6) continue;
 			if (m->incidenceAngle < (54.24 - 0.06)*dtr ||
 				m->incidenceAngle > (54.24 + 0.06)*dtr) continue; 
@@ -600,7 +602,9 @@ main(
 			// indices.													  //
 			//------------------------------------------------------------//
 
-			if (pol != m->pol) continue;
+			if (met != m->measType)
+                continue;
+
 //			if (m->startSliceIdx != 6) continue;
 			if (m->incidenceAngle < (54.24 - 0.06)*dtr ||
 				m->incidenceAngle > (54.24 + 0.06)*dtr) continue; 

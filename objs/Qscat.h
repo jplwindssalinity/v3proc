@@ -20,7 +20,7 @@ static const char rcs_id_qscat_h[] =
 
 //======================================================================
 // CLASSES
-//      QscatTargetInfo, QscatSes, QscatSas, QscatCds, Qscat
+//    QscatTargetInfo, QscatSes, QscatSas, QscatCds, QscatEvent, Qscat
 //======================================================================
 
 #define F_PROC  -1.06E3    // Hz
@@ -289,6 +289,40 @@ public:
 
 //======================================================================
 // CLASS
+//      QscatEvent
+//
+// DESCRIPTION
+//      The QscatEvent object contains a QSCAT event time and ID.
+//======================================================================
+
+class QscatEvent
+{
+public:
+
+    //-------//
+    // enums //
+    //-------//
+
+    enum QscatEventE { NONE, SCAT_EVENT, LOOPBACK_EVENT, LOAD_EVENT };
+
+    //--------------//
+    // construction //
+    //--------------//
+
+    QscatEvent();
+    ~QscatEvent();
+
+    //-----------//
+    // variables //
+    //-----------//
+
+    double       time;
+    QscatEventE  eventId;
+    int          beamIdx;
+};
+
+//======================================================================
+// CLASS
 //      Qscat
 //
 // DESCRIPTION
@@ -313,10 +347,11 @@ public:
     SesBeamInfo*  GetCurrentSesBeamInfo();
 
     int  SetEncoderAzimuth(unsigned short encoder, int pri_delay);
-    int  SetEncoderAzimuthUnquantized(double angle){ 
-      sas.antenna.SetEncoderAzimuthAngle(angle);
-      return(1);
-    }
+    int  SetEncoderAzimuthUnquantized(double angle)
+             { 
+                 sas.antenna.SetEncoderAzimuthAngle(angle);
+                 return(1);
+             }
 
     int  SetAllAzimuthsUsingGroundImpact(Spacecraft* spacecraft, double angle);
     int  GroundImpactToTxCenterAzimuth(Spacecraft* spacecraft);
@@ -399,5 +434,7 @@ public:
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
          QscatTargetInfo* qti = NULL);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
+Meas::MeasTypeE  PolToMeasType(PolE pol);
+PolE  MeasTypeToPol(Meas::MeasTypeE meas_type);
 
 #endif

@@ -13,21 +13,6 @@ static const char rcs_id_qscatsim_c[] =
 #include "AccurateGeom.h"
 #include "Beam.h"
 
-//============//
-// QscatEvent //
-//============//
-
-QscatEvent::QscatEvent()
-:   time(0.0), eventId(NONE), beamIdx(0)
-{
-    return;
-}
-
-QscatEvent::~QscatEvent()
-{
-    return;
-}
-
 //==================//
 // QscatSimBeamInfo //
 //==================//
@@ -112,26 +97,30 @@ QscatSim::DetermineNextEvent(
 
     qscat_event->time = min_time;
     qscat_event->beamIdx = min_idx;
-
+    
     unsigned short ideal_encoder = qscat->cds.EstimateIdealEncoder();
     switch (lastEventType)
     {
-    case QscatEvent::SCATTEROMETER_MEASUREMENT:
+    case QscatEvent::SCAT_EVENT:
         if (ideal_encoder > NINETY_DEGREE_ENCODER &&
             lastEventIdealEncoder <= NINETY_DEGREE_ENCODER)
         {
-            qscat_event->eventId = QscatEvent::LOOPBACK_MEASUREMENT;
+            qscat_event->eventId = QscatEvent::LOOPBACK_EVENT;
         }
         else
         {
-            qscat_event->eventId = QscatEvent::SCATTEROMETER_MEASUREMENT;
+            if (lastEventType == QscatEvent::SCAT_EVENT)
+                qscat_event->eventId = QscatEvent::SCAT_EVENT;
+            else
+                qscat_event->eventId = QscatEvent::SCAT_EVENT;
         }
         break;
-    case QscatEvent::LOOPBACK_MEASUREMENT:
-        qscat_event->eventId = QscatEvent::LOAD_MEASUREMENT;
+    case QscatEvent::LOOPBACK_EVENT:
+        qscat_event->eventId = QscatEvent::LOAD_EVENT;
         break;
-    case QscatEvent::LOAD_MEASUREMENT: case QscatEvent::NONE:
-        qscat_event->eventId = QscatEvent::SCATTEROMETER_MEASUREMENT;
+    case QscatEvent::LOAD_EVENT:
+    case QscatEvent::NONE:
+        qscat_event->eventId = QscatEvent::SCAT_EVENT;
         break;
     }
 
@@ -322,7 +311,7 @@ QscatSim::ScatSim(
     {
         if (!cf.Allocate(qscat->ses.GetTotalSliceCount()))
         {
-            fprintf(stderr,"Error allocating a CheckFrame\n");
+            fprintf(stderr, "Error allocating a CheckFrame\n");
             return(0);
         }
     }
@@ -333,7 +322,7 @@ QscatSim::ScatSim(
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    L1AFrameInit(spacecraft,qscat,l1a_frame);
+    L1AFrameInit(spacecraft, qscat, l1a_frame);
 
     if (_spotNumber == 0)
     {
@@ -366,13 +355,25 @@ QscatSim::ScatSim(
 
     if (qscat->ses.scienceSlicesPerSpot <= 1)
     {
-        if (! LocateSpot(spacecraft, qscat, &meas_spot))
+        if (! qscat->LocateSpot(spacecraft, &meas_spot))
             return(0);
     }
     else
     {
         if (! qscat->LocateSliceCentroids(spacecraft, &meas_spot))
             return(0);
+    }
+
+    //--------------------------------------//
+    // determine measurement type from beam //
+    //--------------------------------------//
+
+    Beam* beam = qscat->GetCurrentBeam();
+    Meas::MeasTypeE meas_type = PolToMeasType(beam->polarization);
+
+    for (Meas* meas = meas_spot.GetHead(); meas; meas = meas_spot.GetNext())
+    {
+        meas->measType = meas_type;
     }
 
     //------------------------//
@@ -733,7 +734,7 @@ QscatSim::SetMeasurements(
         {
             // Set sigma0 to average NSCAT land sigma0 for appropriate
             // incidence angle and polarization
-            if (meas->pol == H_POL)
+            if (meas->measType == Meas::HH_MEAS_TYPE)
                 sigma0=0.085;
 			else
                 sigma0=0.1;
@@ -775,8 +776,8 @@ QscatSim::SetMeasurements(
 			// the s/c (the opposite direction as the look vector)
 			float chi = wv.dir - meas->eastAzimuth + pi;
 
-			gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
-				chi, &sigma0);
+            gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
+                wv.spd, chi, &sigma0);
 
 			if (simVs1BCheckfile)
 			{
@@ -796,12 +797,12 @@ QscatSim::SetMeasurements(
 			// Uncorrelated component.
 			if (simUncorrKpmFlag == 1)
 			{
-				double kpm_value;
-				if (! kp->kpm.GetKpm(meas->pol,wv.spd,&kpm_value))
-				{
-					printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
-					exit(-1);
-				}
+                double kpm_value;
+                if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
+                {
+                    printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
+                    exit(-1);
+                }
 				Gaussian gaussianRv(1.0,0.0);
 				float rv1 = gaussianRv.GetNumber();
 				float RV = rv1*kpm_value + 1.0;

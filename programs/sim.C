@@ -458,12 +458,14 @@ main(
 				//------------------------------//
 
                 sim_time=qscat_event.time;
+/*
                 double mid_tx_pulse_time = qscat_event.time +
                    0.5*qscat.ses.txPulseWidth;
+*/
 
 				switch(qscat_event.eventId)
 				{
-				case QscatEvent::SCATTEROMETER_MEASUREMENT:
+				case QscatEvent::SCAT_EVENT:
 
 					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(qscat_event.time,
@@ -483,7 +485,7 @@ main(
                         &kp, &kpmField, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
-				case QscatEvent::LOOPBACK_MEASUREMENT:
+				case QscatEvent::LOOPBACK_EVENT:
 
 					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(qscat_event.time,
@@ -499,7 +501,7 @@ main(
 					qscat_sim.LoopbackSim(&spacecraft, &qscat, &(l1a.frame));
 					qscat_sim.DetermineNextEvent(&qscat, &qscat_event);
 					break;
-				case QscatEvent::LOAD_MEASUREMENT:
+				case QscatEvent::LOAD_EVENT:
 
 					// process spacecraft stuff
 					spacecraft_sim.UpdateOrbit(qscat_event.time,

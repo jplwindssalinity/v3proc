@@ -1,10 +1,10 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 static const char rcs_id_measurement_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <assert.h>
 #include <stdio.h>
@@ -32,19 +32,20 @@ static const char rcs_id_measurement_c[] =
 // Meas //
 //======//
 
+const char* meas_type_map[] = { "None", "VV", "HH", "VVVH", "HHHV" };
+
 Meas::Meas()
-:	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0),
-	txPulseWidth(0.0), landFlag(0), pol(NONE), 
-        eastAzimuth(0.0), incidenceAngle(0.0),
-	beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0),
-	A(0.0), B(0.0), C(0.0), offset(0)
+:   value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), txPulseWidth(0.0),
+    landFlag(0), measType(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
+    beamIdx(-1), startSliceIdx(-1), numSlices(0), scanAngle(0.0), A(0.0),
+    B(0.0), C(0.0), offset(0)
 {
-	return;
+    return;
 }
 
 Meas::~Meas()
 {
-	return;
+    return;
 }
 
 //-----------------//
@@ -57,37 +58,37 @@ Meas::~Meas()
 
 int
 Meas::Composite(
-	MeasList*	meas_list,
-	int			n)
+    MeasList*  meas_list,
+    int        n)
 {
-	float sum_Ps = 0.0;
-	float sum_XK = 0.0;
-	float sum_EnSlice = 0.0;
-	float sum_bandwidth = 0.0;
-	Vector3 sum_centroid(0.0,0.0,0.0);
-	float sum_incidenceAngle = 0.0;
-//	float sum_X2 = 0.0;
-	float sum_xk2a = 0.0;
-	float sum_xkbwb = 0.0;
-	float sum_bw2c = 0.0;
-	int N = 0;
+    float sum_Ps = 0.0;
+    float sum_XK = 0.0;
+    float sum_EnSlice = 0.0;
+    float sum_bandwidth = 0.0;
+    Vector3 sum_centroid(0.0,0.0,0.0);
+    float sum_incidenceAngle = 0.0;
+//    float sum_X2 = 0.0;
+    float sum_xk2a = 0.0;
+    float sum_xkbwb = 0.0;
+    float sum_bw2c = 0.0;
+    int N = 0;
 
-	//
-	// Using X in place of Ps when compositing Kpc assumes that sigma0 is
-	// uniform across the composite cell area.  This assumption is used
-	// below because we sum X^2 instead of Ps^2.
-	// We actually use XK which subsumes the K-factor with X.
-	//
+    //
+    // Using X in place of Ps when compositing Kpc assumes that sigma0 is
+    // uniform across the composite cell area.  This assumption is used
+    // below because we sum X^2 instead of Ps^2.
+    // We actually use XK which subsumes the K-factor with X.
+    //
 
-	Meas* meas;
-	Meas* meas_start;
+    Meas* meas;
+    Meas* meas_start;
 
-	if (n == 0)
-		meas_start = meas_list->GetHead();
-	else if (n > 0)
-		meas_start = meas_list->GetCurrent();
-	else
-		return(0);
+    if (n == 0)
+        meas_start = meas_list->GetHead();
+    else if (n > 0)
+        meas_start = meas_list->GetCurrent();
+    else
+        return(0);
 
 	int min_slice_idx = meas_start->startSliceIdx;
         landFlag=0;
@@ -133,7 +134,7 @@ Meas::Composite(
 	double alt, lon, lat;
 	centroid.GetAltLonGDLat(&alt, &lon, &lat);
 	centroid.SetAltLonGDLat(0.0, lon, lat);
-	pol = meas->pol;					// same for all slices
+	measType = meas->measType;    // same for all slices
 	eastAzimuth = meas->eastAzimuth;	// same for all slices
 	// Weighted average of incidence angles (weighted by XK)
 	incidenceAngle = sum_incidenceAngle / sum_XK;
@@ -185,9 +186,9 @@ Meas::Write(
 		fwrite((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
-		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
-		fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
-		fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
+        fwrite((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&numSlices, sizeof(int), 1, fp) != 1 ||
@@ -219,8 +220,8 @@ Meas::Read(
 		fread((void *)&landFlag, sizeof(int), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
-		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
-		fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&measType, sizeof(MeasTypeE), 1, fp) != 1 ||
+        fread((void *)&eastAzimuth, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&incidenceAngle, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&beamIdx, sizeof(int), 1, fp) != 1 ||
 		fread((void *)&startSliceIdx, sizeof(int), 1, fp) != 1 ||
@@ -243,7 +244,7 @@ int
 Meas::WriteAscii(
 	FILE*	fp)
 {
-    double lon=0, lat=0, alt=0; 
+    double lon=0, lat=0, alt=0;
     centroid.GetAltLonGDLat(&alt,&lon,&lat);
     lon*=rtd;
     lat*=rtd;
@@ -255,7 +256,7 @@ Meas::WriteAscii(
     fprintf(fp, "XK: %g ",XK);
 	fprintf(fp, "Value: %g ", value);
     fprintf(fp, "EnSlice: %g ", EnSlice);
-	fprintf(fp, "Pol: %s ", beam_map[(int)pol]);
+	fprintf(fp, "MeasType: %s ", meas_type_map[(int)measType]);
 	fprintf(fp, "IncAngle: %g ", incidenceAngle*rtd);
 	fprintf(fp, "eastAzimuth: %g ", eastAzimuth*rtd);
     fprintf(fp, "Longitude: %g ",lon);
@@ -266,7 +267,7 @@ Meas::WriteAscii(
     fprintf(fp, "A: %g ", A);
     fprintf(fp, "B: %g ", B);
     fprintf(fp, "C: %g \n", C);
-    
+
 	return(1);
 }
 
@@ -372,10 +373,10 @@ int32       sliceIndex)   // index in slices
     else
         beamIdx = (int) THE_OTHER_BEAM(beamNo);
     if (beamIdx == 0)  // beam A => H, B => V
-        pol = H_POL;
+        measType = HH_MEAS_TYPE;
     else
-        pol = V_POL;
- 
+        measType = VV_MEAS_TYPE;
+
 
     param = l1bHdf->GetParameter(SLICE_AZIMUTH, UNIT_RADIANS);
     assert(param != 0);
@@ -409,13 +410,13 @@ int32       sliceIndex)   // index in slices
 
 MeasList::MeasList()
 {
-	return;
+    return;
 }
 
 MeasList::~MeasList()
 {
-	FreeContents();
-	return;
+    FreeContents();
+    return;
 }
 
 //-----------------//
@@ -424,9 +425,9 @@ MeasList::~MeasList()
 
 int
 MeasList::Write(
-	FILE*	fp)
+    FILE*  fp)
 {
-	int count = NodeCount();
+    int count = NodeCount();
 	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
 
@@ -499,7 +500,7 @@ MeasList::AverageLonLat()
 	EarthPosition earth_center;
 	earth_center.SetPosition(0.0, 0.0, 0.0);
 	// Find the surface point lying along the averaged direction.
-	EarthPosition ravg; 
+	EarthPosition ravg;
 	if(earth_intercept(earth_center,sum,&ravg)!=1){
 	  fprintf(stderr,"MeasList::AveLonLat: earth_intercept error\n");
 	  exit(1);
@@ -651,7 +652,7 @@ MeasSpot::Write(
 int
 MeasSpot::WriteAscii(
 	FILE*	fp)
-{       
+{
         fprintf(fp,"\n##############################################\n");
         fprintf(fp,"#######         Spot Info               ######\n");
         fprintf(fp,"##############################################\n");

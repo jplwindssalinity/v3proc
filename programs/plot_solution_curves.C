@@ -205,9 +205,9 @@ main(
 
 			Meas* new_meas = new Meas();
 			if (polchar == 'V' || polchar == 'v')
-				new_meas->pol = V_POL;
+				new_meas->measType = Meas::VV_MEAS_TYPE;
 			else if (polchar == 'H' || polchar == 'h')
-				new_meas->pol = H_POL;
+				new_meas->measType = Meas::HH_MEAS_TYPE;
 			new_meas->incidenceAngle = inc * dtr;
 			new_meas->eastAzimuth = azi * dtr;
 			new_meas->value = s0;

@@ -11,6 +11,7 @@ static const char rcs_id_l2aframe_c[] =
 #include "L2AFrame.h"
 #include "Constants.h"
 #include "Misc.h"
+#include "Qscat.h"
 
 //===========//
 // L2AHeader //
@@ -326,7 +327,8 @@ L2AFrame::ReadGS(
 		double gd_lat = lat[i] * dtr;
 		double gd_alt = 0.0;
 		m->centroid.SetAltLonGDLat(gd_alt, gd_lon, gd_lat);
-		m->pol = (PolE)(2 - beam[i]);
+        PolE pol = (PolE)(2 - beam[i]);
+        m->measType = PolToMeasType(pol);
 		m->eastAzimuth = CWNTOCCWE(azi[i] * dtr) + pi;
 		m->incidenceAngle = inc[i] * dtr;
 		m->beamIdx = beam[i] - 1;

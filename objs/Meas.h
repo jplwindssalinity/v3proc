@@ -36,9 +36,18 @@ class L1BHdf;
 //    manipulating sigma-0 and brightness temperature measurements.
 //======================================================================
 
+extern const char* meas_type_map[];
+
 class Meas
 {
 public:
+
+    //-------//
+    // enums //
+    //-------//
+
+    enum MeasTypeE { NONE, VV_MEAS_TYPE, HH_MEAS_TYPE, VV_VH_CORR_MEAS_TYPE,
+        HH_HV_CORR_MEAS_TYPE };
 
     //--------------//
     // construction //
@@ -98,14 +107,14 @@ public:
     Outline        outline;
     EarthPosition  centroid;
 
-    PolE   pol;
-    float  eastAzimuth;    // azimuth angle ccw from east
-    float  incidenceAngle;
-    int    beamIdx;
-    int    startSliceIdx;
-    int    numSlices;
-    float  scanAngle;
-    float  A, B, C;    // Kpc coefficients
+    MeasTypeE  measType;
+    float      eastAzimuth;    // azimuth angle ccw from east
+    float      incidenceAngle;
+    int        beamIdx;
+    int        startSliceIdx;
+    int        numSlices;
+    float      scanAngle;
+    float      A, B, C;    // Kpc coefficients
 
     //------------------------//
     // not to be written out! //
