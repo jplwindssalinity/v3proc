@@ -334,7 +334,6 @@ main(
 	int graphnumber = 1;
 	FILE* ofp = NULL;
 	char filename[1024];
-	int num_mismatched = 0;
 	int total_wvc = 0;
 	int total_gs_1 = 0;
 	int total_gs_2 = 0;
@@ -446,6 +445,9 @@ main(
            		delete wvc2;
            		continue;
        		}
+
+		    wvc1->lonLat = meas_list->AverageLonLat();
+		    wvc2->lonLat = meas_list->AverageLonLat();
 		}
 		else
 		{	// use l2b ambiguities
@@ -481,8 +483,7 @@ main(
 			for (wvp1 = wvc1->ambiguities.GetHead(); wvp1;
 				 wvp1 = wvc1->ambiguities.GetNext())
 			{
-				if (fabs(wrap_angle_near(wvp1->dir - wvp2->dir, 0.0)) <
-				 	dtr*ANGTOL)
+				if (angle_diff(wvp1->dir,wvp2->dir) < dtr*ANGTOL)
 				{
 					ok = 1;
 				}
@@ -505,8 +506,7 @@ main(
 			for (wvp2 = wvc2->ambiguities.GetHead(); wvp2;
 				 wvp2 = wvc2->ambiguities.GetNext())
 			{
-				if (fabs(wrap_angle_near(wvp1->dir - wvp2->dir, 0.0)) <
-				 	dtr*ANGTOL)
+				if (angle_diff(wvp1->dir,wvp2->dir) < dtr*ANGTOL)
 				{
 					ok = 1;
 				}
@@ -541,12 +541,13 @@ main(
 			fprintf(stderr,"Error interpolating true wind field\n");
 			exit(1);
 		}
+		while (true_wv.dir < 0) true_wv.dir += two_pi;
+
 		int missed_pe = 1;
 		for (wvp1 = wvc1->ambiguities.GetHead(); wvp1;
 			 wvp1 = wvc1->ambiguities.GetNext())
 		{
-			if (fabs(wrap_angle_near(wvp1->dir - true_wv.dir, 0.0)) <
-			 	dtr*ANGTOL)
+			if (angle_diff(wvp1->dir,true_wv.dir) < dtr*ANGTOL)
 			{
 				missed_pe = 0;
 			}
@@ -556,17 +557,11 @@ main(
 			total_missed_pe++;
 		}
 
-        if (! truth.InterpolatedWindVector(wvc2->lonLat, &true_wv))
-		{
-			fprintf(stderr,"Error interpolating true wind field\n");
-			exit(1);
-		}
 		int missed_gs = 1;
 		for (wvp2 = wvc2->ambiguities.GetHead(); wvp2;
 			 wvp2 = wvc2->ambiguities.GetNext())
 		{
-			if (fabs(wrap_angle_near(wvp2->dir - true_wv.dir, 0.0)) <
-			 	dtr*ANGTOL)
+			if (angle_diff(wvp2->dir,true_wv.dir) < dtr*ANGTOL)
 			{
 				missed_gs = 0;
 			}
@@ -594,7 +589,7 @@ main(
 		}
 
 		int output = 0;
-		if (missed_gs || missed_pe)
+		if ((missed_gs) && (!missed_pe))
 		{
 			output = 1;
 		}
@@ -619,7 +614,6 @@ main(
 //			output = 1;
 //		}
 
-		output = 0;	// turn off output for now
 		if (output == 1 && use_l2a)
 		{
 			if (graphnumber == 1)
@@ -643,6 +637,9 @@ main(
 			gmf.WriteObjectiveCurve(ofp);
 			gmf.AppendSolutions(ofp,wvc1);
 			gmf.AppendSolutions(ofp,wvc2);
+		    fprintf(ofp, "&\n");
+	        fprintf(ofp, "%g %g\n", true_wv.dir * rtd, 0.5);
+//	        printf("%g %g\n", true_wv.dir * rtd, 0.0);
 
 			if (graphnumber == 10)
 			{
