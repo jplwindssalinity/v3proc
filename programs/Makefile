@@ -8,9 +8,9 @@ INCDIR =		../../include
 HDFINCDIR =		/usr/local/hdf/include
 
 EALIBS =		../../lib/libEAData.a /usr/local/lib/libtiff.a
-HDFLIBS =		-L/usr/local/hdf/lib -lmfhdf -ldf -lz -lnsl
+HDFLIBS =		-L/usr/local/hdf/lib -lmfhdf -ldf -ljpeg -lz
 LIBS =			../../lib/libSim.a
-LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lnsl -lstdc++ -lsocket -lm
 PURE =
 
 CCC =			$(PURE) gcc
@@ -61,12 +61,12 @@ PROGRAMS = \
 	rgc_delay_errors \
 	rgc_format \
 	dtc_format \
-    tc_info \
+	tc_info \
 	cds_tracking_check \
 	memfilter \
 	fake_vap \
 	l1b_hdf_to_l1b \
-    l1bhdf_sigma0_histo \
+	l1bhdf_sigma0_histo \
 	l1b_outlines \
 	l1b_to_kprtable \
 	make_kfactor \
@@ -99,20 +99,20 @@ PROGRAMS = \
 	l1a_to_ascii\
 	l1b_to_ascii \
 	checkframe_to_ascii \
-    checkframe_extract \
+	checkframe_extract \
 	l2a_to_ascii \
 	l2b_to_ascii \
 	reformat_pattern \
 	test_pattern \
 	get_DopRan_scan \
 	get_X_scan \
-    expand_calpulse \
-    ephem_to_ascii \
+	expand_calpulse \
+	ephem_to_ascii \
 	fake_s0_data \
 	gmf_plot \
 	BYUX_vs_time \
-    calpulse_to_ascii \
-    make_timetlm \
+	calpulse_to_ascii \
+	make_timetlm \
 	l2b_extract_worst \
 	get_foff \
 	make_simple_land_map
@@ -129,7 +129,7 @@ PROGRAMS = \
 #	baseband_errors
 
 SVT_PROGRAMS = \
-    l1a_hdf_energy_map
+	l1a_hdf_energy_map
 
 STILES_PROGRAMS = \
 	l2b_25km_splice \
@@ -162,7 +162,7 @@ HUDD_PROGRAMS = \
 
 DIAGNOSTIC_PROGRAMS = \
 	l2ab_obj_comp \
-    check_l1b \
+	check_l1b \
 	l2b_to_vctr \
 	l2b_metrics \
 	see_spot \
@@ -187,20 +187,20 @@ DIAGNOSTIC_PROGRAMS = \
 	l2b_to_flower \
 	l2a_dissect \
 	l1b_to_ascii \
-    ephem_to_ascii \
+	ephem_to_ascii \
 	l2a_to_ascii
 
 GS_CHECK_PROGRAMS = \
 	sim \
-    l1a_to_l1b \
-    l1a_to_gs_l1a \
-    l1b_hdf_to_l1b \
-    checkframe_extract \
-    checkframe_to_ascii \
-    gs_l1a_to_ascii \
-    l1a_to_ascii \
-    calpulse_to_ascii \
-    l1b_to_ascii
+	l1a_to_l1b \
+	l1a_to_gs_l1a \
+	l1b_hdf_to_l1b \
+	checkframe_extract \
+	checkframe_to_ascii \
+	gs_l1a_to_ascii \
+	l1a_to_ascii \
+	calpulse_to_ascii \
+	l1b_to_ascii
 #   check_l1b 
 
 #----------------------------------------------------------------------
