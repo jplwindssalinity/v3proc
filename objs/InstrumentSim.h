@@ -58,6 +58,8 @@ public:
 	int		SetPriPerBeam(double pri_per_beam);
 	int		SetBeamBTimeOffset(double beam_b_time_offset);
 
+	double	GetEventTime() { return(_eventTime); };
+
 	//--------------------//
 	// simulation control //
 	//--------------------//
