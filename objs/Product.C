@@ -78,7 +78,36 @@ ProductFile::OpenForOutput()
 	_fd = creat(_filename, 0644);
 	if (_fd == INVALID_FD)
 	{
-		_status = ERROR_CREATING_FILE;
+		_status = ERROR_OPENING_OUTPUT_FILE;
+		return(0);
+	}
+
+	return(1);
+}
+
+//---------------------------//
+// ProductFile::OpenForInput //
+//---------------------------//
+
+int
+ProductFile::OpenForInput()
+{
+	if (! _filename)
+	{
+		_status = ERROR_MISSING_FILE;
+		return(0);
+	}
+
+	if (_fd != INVALID_FD)
+	{
+		_status = ERROR_REOPENING_FILE;
+		return(0);
+	}
+
+	_fd = open(_filename, O_RDONLY);
+	if (_fd == INVALID_FD)
+	{
+		_status = ERROR_OPENING_INPUT_FILE;
 		return(0);
 	}
 
@@ -149,6 +178,9 @@ ProductFileList::AddFile(
 		return(0);
 	}
 
+	// make the head file current
+	GetHead();
+
 	return(1);
 }
 
@@ -185,7 +217,30 @@ ProductFileList::OpenCurrentForOutput()
 
 	if (! pf->OpenForOutput())
 	{
-		_status = ERROR_OPENING_PRODUCT_OUTPUT_FILE;
+		_status = ERROR_OPENING_OUTPUT_FILE;
+		return(0);
+	}
+
+	return(1);
+}
+
+//--------------------------------------//
+// ProductFileList::OpenCurrentForInput //
+//--------------------------------------//
+
+int
+ProductFileList::OpenCurrentForInput()
+{
+	ProductFile* pf = GetCurrent();
+	if (! pf)
+	{
+		_status = ERROR_NO_CURRENT_PRODUCT_FILE;
+		return(0);
+	}
+
+	if (! pf->OpenForInput())
+	{
+		_status = ERROR_OPENING_INPUT_FILE;
 		return(0);
 	}
 
@@ -307,7 +362,22 @@ Product::OpenCurrentForOutput()
 {
 	if (! _fileList.OpenCurrentForOutput())
 	{
-		_status = ERROR_OPENING_CURRENT_FILE;
+		_status = ERROR_OPENING_OUTPUT_FILE;
+		return(0);
+	}
+	return(1);
+}
+
+//------------------------------//
+// Product::OpenCurrentForInput //
+//------------------------------//
+
+int
+Product::OpenCurrentForInput()
+{
+	if (! _fileList.OpenCurrentForInput())
+	{
+		_status = ERROR_OPENING_INPUT_FILE;
 		return(0);
 	}
 	return(1);
@@ -361,13 +431,40 @@ Product::ReadBuffer()
 	int ofd = _fileList.GetCurrentFd();
 	if (ofd == INVALID_FD)
 	{
-		_status = ERROR_GETTING_CURRENT_FD;
-		return(0);
+		// file not opened
+		if (! OpenCurrentForInput())
+			return(0);
+
+		// try again
+		return(ReadBuffer());
 	}
 
-	if (read(ofd, _frame, _size) != _size)
+	int bytes_read = read(ofd, _frame, _size);
+	if (bytes_read != _size)
 	{
-		_status = ERROR_READING_BUFFER;
+		switch(bytes_read)
+		{
+		case 0:			// EOF
+			// close this file, try next file
+			if (! _fileList.CloseCurrentFile())
+			{
+				_status = ERROR_CLOSING_CURRENT_FILE;
+				break;
+			}
+			if (! _fileList.GetNext())
+			{
+				_status = ERROR_NO_MORE_DATA;
+				break;
+			}
+			return(ReadBuffer());
+			break;
+		case -1:
+			_status = ERROR_READING_BUFFER;
+			break;
+		default:
+			_status = ERROR_UNKNOWN;
+			break;
+		}
 		return(0);
 	}
 

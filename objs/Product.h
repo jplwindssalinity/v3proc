@@ -38,7 +38,8 @@ public:
 	//------//
 
 	enum StatusE { OK, ERROR_ALLOCATING_FILENAME, ERROR_MISSING_FILE,
-		ERROR_REOPENING_FILE, ERROR_CREATING_FILE, ERROR_CLOSING_FILE };
+		ERROR_REOPENING_FILE, ERROR_OPENING_INPUT_FILE,
+		ERROR_OPENING_OUTPUT_FILE, ERROR_CLOSING_FILE };
 
 	//--------------//
 	// construction //
@@ -54,6 +55,7 @@ public:
 	//--------------//
 
 	int		OpenForOutput();
+	int		OpenForInput();
 	int		Close();
 
 	//---------//
@@ -95,7 +97,8 @@ public:
 
 	enum StatusE { OK, ERROR_CREATING_PRODUCT_FILE, ERROR_ASSIGNING_FILENAME,
 		ERROR_APPENDING_PRODUCT_FILE, ERROR_NO_CURRENT_PRODUCT_FILE,
-		ERROR_OPENING_PRODUCT_OUTPUT_FILE, ERROR_CLOSING_PRODUCT_FILE };
+		ERROR_OPENING_OUTPUT_FILE, ERROR_OPENING_INPUT_FILE,
+		ERROR_CLOSING_PRODUCT_FILE };
 
 	//--------------//
 	// construction //
@@ -112,6 +115,7 @@ public:
 	//-------------------//
 
 	int		OpenCurrentForOutput();
+	int		OpenCurrentForInput();
 	int		GetCurrentFd();
 	int		CloseCurrentFile();
 
@@ -149,10 +153,10 @@ public:
 	// enum //
 	//------//
 
-	enum StatusE { OK, ERROR_ALLOCATING_BUFFER, ERROR_NO_FILES,
-		ERROR_ADDING_FILE, ERROR_OPENING_CURRENT_FILE,
+	enum StatusE { OK, ERROR_UNKNOWN, ERROR_ALLOCATING_BUFFER, ERROR_NO_FILES,
+		ERROR_ADDING_FILE, ERROR_OPENING_OUTPUT_FILE, ERROR_OPENING_INPUT_FILE,
 		ERROR_CLOSING_CURRENT_FILE, ERROR_GETTING_CURRENT_FD,
-		ERROR_WRITING_BUFFER, ERROR_READING_BUFFER };
+		ERROR_WRITING_BUFFER, ERROR_READING_BUFFER, ERROR_NO_MORE_DATA };
 
 	//--------------//
 	// construction //
@@ -170,6 +174,7 @@ public:
 
 	int		GotoFirstFile();
 	int		OpenCurrentForOutput();
+	int		OpenCurrentForInput();
 	int		CloseCurrentFile();
 
 	//--------------//
