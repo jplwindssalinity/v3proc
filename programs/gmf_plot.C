@@ -243,7 +243,7 @@ gen_plot(
         float spd = speed_table[spd_idx];
         fprintf(ofp, "@ legend string %d %c%g m/s%c\n", legend_string, QUOTES,
             spd, QUOTES);
-        fprintf(ofp, "@ s%d linewidth 2\n", legend_string);
+        fprintf(ofp, "@ s%d linewidth 3\n", legend_string);
         legend_string++;
         for (int chi_d = 0; chi_d <= 360; chi_d++)
         {
