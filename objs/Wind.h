@@ -164,6 +164,7 @@ public:
 	//--------------//
 
 	int		ReadVap(const char* filename);
+	int		WriteBev(const char* filename);
 
 	//--------//
 	// access //

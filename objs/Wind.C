@@ -6,8 +6,7 @@
 static const char rcs_id_wind_c[] =
 	"@(#) $Id$";
 
-#include <fcntl.h>
-#include <unistd.h>
+#include <stdio.h>
 #include "Wind.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -414,8 +413,8 @@ WindField::ReadVap(
 	// open file //
 	//-----------//
 
-	int ifd = open(filename, O_RDONLY);
-	if (ifd == -1)
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
 		return(0);
 
 	//------------//
@@ -426,10 +425,10 @@ WindField::ReadVap(
 	float v[VAP_LON_DIM][VAP_LAT_DIM];
 
 	int size = VAP_LON_DIM * VAP_LAT_DIM * sizeof(float);
-	if (read(ifd, u, size) != size ||
-		read(ifd, v, size) != size)
+	if (fread((void *)u, size, 1, fp) != 1 ||
+		fread((void *)v, size, 1, fp) != 1)
 	{
-		close(ifd);
+		fclose(fp);
 		return(0);
 	}
 
@@ -437,7 +436,7 @@ WindField::ReadVap(
 	// close file //
 	//------------//
 
-	close(ifd);
+	fclose(fp);
 
 	//-------------------------------//
 	// transfer to wind field format //
@@ -468,6 +467,74 @@ WindField::ReadVap(
 			*(*(_field + lon_idx) + lat_idx) = wv;
 		}
 	}
+
+	return(1);
+}
+
+//---------------------//
+// WindField::WriteBev //
+//---------------------//
+
+int
+WindField::WriteBev(
+	const char*		filename)
+{
+	//-----------------------------//
+	// count the number of vectors //
+	//-----------------------------//
+
+	int count = 0;
+	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
+	{
+		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
+		{
+			WindVector* wv = _field[lon_idx][lat_idx];
+			if (wv)
+				count++;
+		}
+	}
+
+	//-----------//
+	// open file //
+	//-----------//
+ 
+	FILE* fp = fopen(filename, "w");
+	if (fp == NULL)
+		return(0);
+
+	//-------//
+	// write //
+	//-------//
+
+	if (fwrite((void *)&count, sizeof(int), 1, fp) != 1)
+		return(0);
+
+	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
+	{
+		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
+		{
+			WindVector* wv = _field[lon_idx][lat_idx];
+			if (wv)
+			{
+				// calculate longitude and latitude
+				float longitude = _lonMin + lon_idx * _lonStep;
+				float latitude = _latMin + lat_idx * _latStep;
+				if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+					fwrite((void *)&latitude, sizeof(float), 1, fp) != 1 ||
+					fwrite((void *)&(wv->spd), sizeof(float), 1, fp) != 1 ||
+					fwrite((void *)&(wv->dir), sizeof(float), 1, fp) != 1)
+				{
+					return(0);
+				}
+			}
+		}
+	}
+
+	//------------//
+	// close file //
+	//------------//
+
+	fclose(fp);
 
 	return(1);
 }
