@@ -9,8 +9,8 @@
 //
 // SYNOPSIS
 //    mudh_pca_table [ -m mudh_dir ] [ -e enof_dir ] [ -t tb_dir ]
-//        [ -i irr_dir ] [ -c time ] <pca_file> <start_rev> <end_rev>
-//        <output_base>
+//        [ -i irr_dir ] [ -c time ] [ -I irr_threshold ] <pca_file>
+//        <start_rev> <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generates a mudh table for classification.
@@ -21,6 +21,7 @@
 //    [ -t tb]         Use the Tb files located in tb_dir.
 //    [ -i irr_dir ]   IRR files are always used, this can specify the dir.
 //    [ -c time ]      Collocation time for IRR.
+//    [ -I irr_threshold ]  The threshold definition of rain.
 //
 // OPERANDS
 //    <pca_file>     The PCA file.  If short, assumes both beam case.
@@ -102,7 +103,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING         "m:e:t:i:c:1:2:"
+#define OPTSTRING         "m:e:t:i:c:I:"
 #define BIG_DIM           100
 #define QUOTE             '"'
 #define REV_DIGITS        5
@@ -125,8 +126,8 @@ template class List<AngleInterval>;
 //------------------//
 
 const char* usage_array[] = { "[ -m mudh_dir ]", "[ -e enof_dir ]",
-    "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "<pca_file>",
-    "<start_rev>", "<end_rev>", "<output_base>", 0 };
+    "[ -t tb_dir ]", "[ -i irr_dir ]", "[ -c time ]", "[ -I irr_threshold ]",
+    "<pca_file>", "<start_rev>", "<end_rev>", "<output_base>", 0 };
 
 // first index: 0=both_beams, 1=outer_only
 // second index: SSM/I class (0=all, 1=rainfree, 2=rain)
@@ -177,6 +178,15 @@ main(
             break;
         case 't':
             tb_dir = optarg;
+            break;
+        case 'i':
+            irr_dir = optarg;
+            break;
+        case 'c':
+            collocation_time = atoi(optarg);
+            break;
+        case 'I':
+            irr_threshold = atof(optarg);
             break;
         case '?':
             usage(command, usage_array, 1);
