@@ -23,6 +23,7 @@ PROGRAMS = \
 	echo_dtc \
 	fit_dtc \
 	get_att \
+	get_look_att \
 	sim \
 	l1a_to_l1b \
 	l1b_to_l2a \
