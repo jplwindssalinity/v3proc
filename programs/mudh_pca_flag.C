@@ -15,9 +15,13 @@
 //    Performs MUDH PCA classification and writes out two arrays:
 //      A floating point probability of rain array and a byte flag
 //      array.  The byte flag array has the following meanings:
-//      0 = classified as no rain
-//      1 = classified as rain
-//      2 = unclassifiable
+//      0 = both beams, classified as no rain
+//      1 = both beams, classified as rain
+//      2 = both beams, unclassifiable
+//      3 = outer beam only, classified as no rain
+//      4 = outer beam only, classified as rain
+//      5 = outer beam only, unclassifiable
+//      6 = unknown
 //
 // OPTIONS
 //
@@ -339,7 +343,7 @@ main(
         for (int cti = 0; cti < CT_WIDTH; cti++)
         {
             value_tab[ati][cti] = -1.0;
-            flag_tab[ati][cti] = 2;
+            flag_tab[ati][cti] = UNKNOWN;
 
             // speed, direction, and mle are ALWAYS needed
             if (spd_array[ati][cti] == MAX_SHORT ||
@@ -503,13 +507,27 @@ main(
                 rain_tab[swath_idx][pci[0]][pci[1]][pci[2]][pci[3]];
             value_tab[ati][cti] = prob_value;
 
-            if (prob_value <= threshold)
+            if (prob_value < 0.0 || prob_value > 1.0)
             {
-                flag_tab[ati][cti] = 0;
+                value_tab[ati][cti] = -1.0;
+                if (swath_idx == 0)
+                    flag_tab[ati][cti] = BOTH_UNKNOWN;
+                else if (swath_idx == 1)
+                    flag_tab[ati][cti] = OUTER_UNKNOWN;
+            }
+            else if (prob_value <= threshold)
+            {
+                if (swath_idx == 0)
+                    flag_tab[ati][cti] = BOTH_CLEAR;
+                else if (swath_idx == 1)
+                    flag_tab[ati][cti] = OUTER_CLEAR;
             }
             else
             {
-                flag_tab[ati][cti] = 1;
+                if (swath_idx == 0)
+                    flag_tab[ati][cti] = BOTH_RAIN;
+                else if (swath_idx == 1)
+                    flag_tab[ati][cti] = OUTER_RAIN;
             }
         }
     }
