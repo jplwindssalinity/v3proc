@@ -54,6 +54,10 @@ public:
     // variables //
     //-----------//
 
+	// The two fields of random values, one correlated, the other not.
+	EarthField corr;
+	EarthField uncorr;
+
 protected:
 
 	// Supplies gaussian random values with unit variance and zero mean.
@@ -61,10 +65,6 @@ protected:
 
 	// Spatial correlation length (km) of this field.
 	float _corrLength;
-
-	// The two fields of random values, one correlated, the other not.
-	EarthField _corr;
-	EarthField _uncorr;
 
 };
 

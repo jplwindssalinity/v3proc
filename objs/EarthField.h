@@ -43,8 +43,15 @@ public:
 
 	int Allocate();
 	int Deallocate();
-	int Setup(float lonmin, float lonmax, float lonstep,
-		float latmin, float latmax, float latstep);
+	int Setup(double lonmin, double lonmax, double lonstep,
+		double latmin, double latmax, double latstep);
+
+	//--------------//
+	// I/O
+	//--------------//
+
+	int Read(char *filename);
+	int Write(char *filename);
 
 	//--------------//
 	// access

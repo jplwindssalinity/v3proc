@@ -205,6 +205,7 @@ static const char rcs_id_configsimdefs_h[] =
 //----------//
 
 #define KPM_CORRELATION_LENGTH_KEYWORD		"KPM_CORRELATION_LENGTH"
+#define KPM_FILE_KEYWORD					"KPM_FILE"
 
 //------//
 // Grid //

@@ -42,6 +42,12 @@ EarthField::NearestElement(
 	LonLat		lon_lat,
 	float*		element)
 {
+	if (! field)
+	{
+		printf("Error: attempted to access non-existent EarthField\n");
+		exit(-1);
+	}
+
 	// put longitude in range (hopefully)
 	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
@@ -49,12 +55,20 @@ EarthField::NearestElement(
 	// convert to longitude index
 	int lon_idx = (int)((lon - _lonMin) / _lonStep + 0.5);
 	if (lon_idx < 0 || lon_idx >= _lonCount)
+	{
+		printf("EarthField::InterpolatedElement: lon = %g out of range\n",
+				lon_lat.longitude);
 		return(0);
+	}
 
 	// convert to latitude index
 	int lat_idx = (int)((lon_lat.latitude - _latMin) / _latStep + 0.5);
 	if (lat_idx < 0 || lat_idx >= _latCount)
+	{
+		printf("EarthField::InterpolatedElement: lat = %g out of range\n",
+				lon_lat.latitude);
 		return(0);
+	}
 
 	*element = field[lon_idx][lat_idx];
 
@@ -70,6 +84,12 @@ EarthField::InterpolatedElement(
 	LonLat		lon_lat,
 	float*		element)
 {
+	if (! field)
+	{
+		printf("Error: attempted to access non-existent EarthField\n");
+		exit(-1);
+	}
+
 	// put longitude in range (hopefully)
 	int wrap_factor = (int)ceil((_lonMin - lon_lat.longitude) / two_pi);
 	float lon = lon_lat.longitude + (float)wrap_factor * two_pi;
@@ -77,7 +97,11 @@ EarthField::InterpolatedElement(
 	// find lower longitude index
 	int lon_idx_1 = (int)((lon - _lonMin) / _lonStep);
 	if (lon_idx_1 < 0 || lon_idx_1 >= _lonCount)
+	{
+		printf("EarthField::InterpolatedElement: longitude = %g out of range\n",
+				lon_lat.longitude);
 		return(0);
+	}
 	float lon_1 = _lonMin + lon_idx_1 * _lonStep;
 
 	// find upper longitude index
@@ -91,22 +115,38 @@ EarthField::InterpolatedElement(
 
 		lon_idx_2 = (int)((lon - _lonMin) / _lonStep);
 		if (lon_idx_2 >= _lonCount)
+		{
+			printf("EarthField::InterpolatedElement: lon = %g out of range\n",
+					lon_lat.longitude);
 			return(0);
+		}
 	}
 	if (lon_idx_2 < 0)
+	{
+		printf("EarthField::InterpolatedElement: lon = %g out of range\n",
+				lon_lat.longitude);
 		return(0);
+	}
 	float lon_2 = _lonMin + lon_idx_2 * _lonStep;
 
 	// find lower latitude index
 	int lat_idx_1 = (int)((lon_lat.latitude - _latMin) / _latStep);
 	if (lat_idx_1 < 0 || lat_idx_1 >= _latCount)
+	{
+		printf("EarthField::InterpolatedElement: lat = %g out of range\n",
+				lon_lat.latitude);
 		return(0);
+	}
 	float lat_1 = _latMin + lat_idx_1 * _latStep;
 
 	// find upper latitude index
 	int lat_idx_2 = lat_idx_1 + 1;
 	if (lat_idx_2 >= _latCount)
+	{
+		printf("EarthField::InterpolatedElement: lat = %g out of range\n",
+				lon_lat.latitude);
 		return(0);
+	}
 	float lat_2 = _latMin + lat_idx_2 * _latStep;
 
 	float p;
@@ -202,12 +242,12 @@ EarthField::GetDimensions(int* Nlon, int* Nlat)
 //----------------------------//
 
 int
-EarthField::Setup(float lonmin,
-	float lonmax,
-	float lonstep,
-	float latmin,
-	float latmax,
-	float latstep)
+EarthField::Setup(double lonmin,
+	double lonmax,
+	double lonstep,
+	double latmin,
+	double latmax,
+	double latstep)
 
 {
 	//---------------------------------//
@@ -229,7 +269,7 @@ EarthField::Setup(float lonmin,
 		exit(-1);
 	}
 
-	if (latmin < pi/2.0 || latmin > latmax || latmax > pi/2.0 || latstep < 0.0)
+	if (latmin < -pi/2.0 || latmin > latmax || latmax > pi/2.0 || latstep < 0.0)
 	{
 		printf("Error: Invalid latitude setup in EarthField\n");
 		exit(-1);
@@ -248,6 +288,134 @@ EarthField::Setup(float lonmin,
 	_latMin = latmin;
 	_latMax = latmin + _latCount*latstep;
 	_latStep = latstep;
+
+	return(1);
+
+}
+
+//------------------------//
+// EarthField::Read
+//------------------------//
+
+int
+EarthField::Read(char* filename)
+{
+	//---------------------------------//
+	// Replace any pre-existing field
+	//---------------------------------//
+
+	if (field)
+	{
+		Deallocate();
+	}
+
+	FILE* fp = fopen(filename,"r");
+	if (fp == NULL)
+	{
+		return(0);
+	}
+
+	//---------------------------------//
+	// Read header information
+	//---------------------------------//
+
+    if (fread((void *)&_lonCount, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&_lonMin, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&_lonMax, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&_lonStep, sizeof(float), 1, fp) != 1 ||
+    	fread((void *)&_latCount, sizeof(int), 1, fp) != 1 ||
+        fread((void *)&_latMin, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&_latMax, sizeof(float), 1, fp) != 1 ||
+        fread((void *)&_latStep, sizeof(float), 1, fp) != 1)
+    {
+        return(0);
+    }
+ 
+	//------------------------------------------------------//
+	// Make space for the field based on the header info.
+	// Don't use Allocate to avoid unneeded zeroing.
+	//------------------------------------------------------//
+
+	field = (float **)make_array(sizeof(float), 2, _lonCount, _latCount);
+	if (field == NULL)
+	{
+		printf("Error allocating space for an EarthField array\n");
+		exit(-1);
+	}
+
+	//---------------------------------//
+	// Read the field array
+	//---------------------------------//
+
+	for (int i=0; i < _lonCount; i++)
+	for (int j=0; j < _latCount; j++)
+	{
+    	if (fread((void *)&(field[i][j]), sizeof(float), 1, fp) != 1)
+		{	// Error reading.
+			return(0);
+		}
+	}
+
+	return(1);
+
+}
+
+//------------------------//
+// EarthField::Write
+//------------------------//
+
+int
+EarthField::Write(char* filename)
+{
+	if (! field)
+	{
+		printf("Error: Nothing to write in EarthField::Write\n");
+		exit(-1);
+	}
+
+	//---------------------------------//
+	// Replace any pre-existing file
+	//---------------------------------//
+
+	FILE* fp = fopen(filename,"w");
+	if (fp == NULL)
+	{
+		printf("Error opening %s for writing in EarthField::Write\n",filename);
+		exit(-1);
+	}
+
+	//---------------------------------//
+	// Write header information
+	//---------------------------------//
+
+    if (fwrite((void *)&_lonCount, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&_lonMin, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&_lonMax, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&_lonStep, sizeof(float), 1, fp) != 1 ||
+    	fwrite((void *)&_latCount, sizeof(int), 1, fp) != 1 ||
+        fwrite((void *)&_latMin, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&_latMax, sizeof(float), 1, fp) != 1 ||
+        fwrite((void *)&_latStep, sizeof(float), 1, fp) != 1)
+    {
+		printf("Error writing header data to %s in EarthField::Write\n",
+			filename);
+		exit(-1);
+    }
+ 
+	//---------------------------------//
+	// Write the field array
+	//---------------------------------//
+
+	for (int i=0; i < _lonCount; i++)
+	for (int j=0; j < _latCount; j++)
+	{
+    	if (fwrite((void *)&(field[i][j]), sizeof(float), 1, fp) != 1)
+		{	// Error writing.
+			printf("Error writing data to %s in EarthField::Write\n",
+				filename);
+			exit(-1);
+		}
+	}
 
 	return(1);
 

@@ -46,8 +46,8 @@ KpmField::Build(float corr_length)
 	}
 	else if (_corrLength == 0.0)
 	{	// With no correlation, on the fly gaussian rv's are supplied.
-		_corr.Deallocate();
-		_uncorr.Deallocate();
+		corr.Deallocate();
+		uncorr.Deallocate();
 		return(1);
 	}
 
@@ -59,14 +59,14 @@ KpmField::Build(float corr_length)
 	// Set step sizes to a fraction of a correlation length at the equator.
 	float lonlat_step = corr_length/STEPS_PER_CORRLENGTH / r1_earth;
 
-	_corr.Setup(0.0,two_pi,lonlat_step,-pi/2.0,pi/2.0,lonlat_step);
-	_uncorr.Setup(0.0,two_pi,lonlat_step,-pi/2.0,pi/2.0,lonlat_step);
+	corr.Setup(0.0,two_pi,lonlat_step,-pi/2.0,pi/2.0,lonlat_step);
+	uncorr.Setup(0.0,two_pi,lonlat_step,-pi/2.0,pi/2.0,lonlat_step);
 
 	//-----------------------------//
     // Allocate fields
 	//-----------------------------//
 
-	if (!_corr.Allocate() || !_uncorr.Allocate())
+	if (!corr.Allocate() || !uncorr.Allocate())
 	{
 		printf("Error allocating fields in KpmField::Build\n");
 		return(0);
@@ -78,12 +78,13 @@ KpmField::Build(float corr_length)
 
 	int Nlon,Nlat;
 	int i,j;
-	_uncorr.GetDimensions(&Nlon,&Nlat);
+	uncorr.GetDimensions(&Nlon,&Nlat);
+	printf("Field sizes: %d by %d\n",Nlon,Nlat);
 
 	for (i=0; i < Nlon; i++)
 	for (j=0; j < Nlat; j++)
 	{
-		_uncorr.field[i][j] = _gaussianRv.GetNumber();
+		uncorr.field[i][j] = _gaussianRv.GetNumber();
 	}
 
 	//----------------------------------//
@@ -97,30 +98,33 @@ KpmField::Build(float corr_length)
 
 	int ip,jp,ipmin,ipmax,jpmin,jpmax;
 	for (i=0; i < Nlon; i++)
-	for (j=0; j < Nlat; j++)
 	{
-		latitude = j*lonlat_step;
-		lon_rad_to_km = lat_rad_to_km * cos(latitude);
-		ipmin = i - STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
-		ipmax = i + STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
-		jpmin = j - STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
-		jpmax = j + STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
-
-		if (ipmin < 0) ipmin = 0;
-		if (ipmax > Nlon) ipmax = Nlon;
-		if (jpmin < 0) jpmin = 0;
-		if (jpmax > Nlat) jpmax = Nlat;
-
-		for (ip=0; ip < Nlon; ip++)
-		for (jp=0; jp < Nlat; jp++)
+		printf("corr field: lon = %g\n",i*lonlat_step*rtd);
+		for (j=0; j < Nlat; j++)
 		{
-			// Crude but fast distance calculation. (short distances only)
-			// This method will suffer from larger errors near the poles.
-			double lon_step = lonlat_step*(ip - i)*lon_rad_to_km;
-			double lat_step = lonlat_step*(jp - j)*lat_rad_to_km;
-			double r2 = lon_step*lon_step + lat_step*lat_step;
-			// Convolution sum.
-			_corr.field[i][j] += exp(-r2 / denom) * _uncorr.field[ip][jp];
+			latitude = j*lonlat_step;
+			lon_rad_to_km = lat_rad_to_km * cos(latitude);
+			ipmin = i - STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
+			ipmax = i + STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
+			jpmin = j - STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
+			jpmax = j + STEPS_PER_CORRLENGTH*N_CORRLENGTHS_INTEGRATE;
+
+			if (ipmin < 0) ipmin = 0;
+			if (ipmax > Nlon) ipmax = Nlon;
+			if (jpmin < 0) jpmin = 0;
+			if (jpmax > Nlat) jpmax = Nlat;
+
+			for (ip=ipmin; ip < ipmax; ip++)
+			for (jp=jpmin; jp < jpmax; jp++)
+			{
+				// Crude but fast distance calculation. (short distances only)
+				// This method will suffer from larger errors near the poles.
+				double lon_step = lonlat_step*(ip - i)*lon_rad_to_km;
+				double lat_step = lonlat_step*(jp - j)*lat_rad_to_km;
+				double r2 = lon_step*lon_step + lat_step*lat_step;
+				// Convolution sum.
+				corr.field[i][j] += exp(-r2 / denom) * uncorr.field[ip][jp];
+			}
 		}
 	}
 
@@ -128,14 +132,14 @@ KpmField::Build(float corr_length)
     // Ditch uncorrelated field to save memory.
 	//-----------------------------------------------//
 
-	_uncorr.Deallocate();
+	uncorr.Deallocate();
 
 	//-----------------------------------------------//
     // Scale correlated field to have unit variance.
 	//-----------------------------------------------//
 
-	float var = _corr.GetVariance();
-	_corr.Scale(1.0/sqrt(var));
+	float var = corr.GetVariance();
+	corr.Scale(1.0/sqrt(var));
 
 	return(1);
 
@@ -211,7 +215,7 @@ KpmField::GetRV(int polarization, float wspd, LonLat lon_lat)
 	}
 	else
 	{
-		if (_corr.InterpolatedElement(lon_lat,&rv1) == 0)
+		if (corr.InterpolatedElement(lon_lat,&rv1) == 0)
 		{
 			printf("Error getting correlated rv in KpmField::GetRV\n");
 			exit(-1);

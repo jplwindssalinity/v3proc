@@ -1404,10 +1404,39 @@ ConfigKpmField(
 		return(0);
 	}
 
-	if (! kpmField->Build(corr_length))
+	char* kpm_filename = config_list->Get(KPM_FILE_KEYWORD);
+
+	if (kpm_filename == NULL)
 	{
-		printf("Error building the KpmField\n");
-		return(0);
+		// No file specified, so build a field in memory.
+		printf("Building correlated Kpm field (corr_len = %g km) ...\n",
+			corr_length);
+		if (! kpmField->Build(corr_length))
+		{
+			printf("Error building the KpmField\n");
+			return(0);
+		}
+		printf("... Done\n");
+	}
+	else if (! kpmField->corr.Read(kpm_filename))
+	{
+		// No file present (or wrong format) so build a field and write it
+		// to the indicated file name (overwriting anything in the file).
+
+		printf("Building correlated Kpm field (corr_len = %g km) ...\n",
+			corr_length);
+		if (! kpmField->Build(corr_length))
+		{
+			printf("Error building the KpmField\n");
+			return(0);
+		}
+		printf("... Done\n");
+
+		if (! kpmField->corr.Write(kpm_filename))
+		{
+			printf("Error writing Kpm field to %s\n",kpm_filename);
+			return(0);
+		}
 	}
 
 	return(1);
