@@ -166,6 +166,7 @@ ConfigList::Read(
 			{
 				fprintf(_errorFp, "Error opening config file\n");
 				fprintf(_errorFp, "  Config File: %s\n", filename);
+				exit(1);
 			}
 			return(0);
 		}
@@ -192,6 +193,7 @@ ConfigList::Read(
 					fprintf(_errorFp, "Error reading line from config file\n");
 					fprintf(_errorFp, "  Config File: %s\n", filename);
 					fprintf(_errorFp, "  Line Number: %d\n", line_number);
+					exit(1);
 				}
 				return(0);
 			}
@@ -209,6 +211,7 @@ ConfigList::Read(
 					fprintf(_errorFp, "  Config File: %s\n", filename);
 					fprintf(_errorFp, "  Line Number: %d\n", line_number);
 					fprintf(_errorFp, "         Line: %s\n", line);
+					exit(1);
 				}
 				return(0);
 			}
@@ -225,6 +228,7 @@ ConfigList::Read(
 							fprintf(_errorFp, "Error reading inserted file\n");
 							fprintf(_errorFp, "  Config File: %s\n", filename);
 							fprintf(_errorFp, "  Insert File: %s\n", value);
+							exit(1);
 						}
 						return(0);
 					}
@@ -292,6 +296,7 @@ ConfigList::Find(
 	{
 		fprintf(_errorFp, "Missing keyword\n");
 		fprintf(_errorFp, "  Keyword: %s\n", keyword);
+		exit(1);
 	}
 	return(0);
 }
@@ -334,6 +339,7 @@ ConfigList::GetChar(
 			fprintf(_errorFp, "Error converting value to char\n");
 			fprintf(_errorFp, "  Keyword: %s\n", keyword);
 			fprintf(_errorFp, "    Value: %s\n", string);
+			exit(1);
 		}
 		return(0);
 	}
@@ -365,6 +371,7 @@ ConfigList::GetInt(
 			fprintf(_errorFp, "Error converting value to int\n");
 			fprintf(_errorFp, "  Keyword: %s\n", keyword);
 			fprintf(_errorFp, "    Value: %s\n", string);
+			exit(1);
 		}
 		return(0);
 	}
@@ -396,6 +403,7 @@ ConfigList::GetDouble(
 			fprintf(_errorFp, "Error converting value to double\n");
 			fprintf(_errorFp, "  Keyword: %s\n", keyword);
 			fprintf(_errorFp, "    Value: %s\n", string);
+			exit(1);
 		}
 		return(0);
 	}
@@ -427,6 +435,7 @@ ConfigList::GetFloat(
 			fprintf(_errorFp, "Error converting value to float\n");
 			fprintf(_errorFp, "  Keyword: %s\n", keyword);
 			fprintf(_errorFp, "    Value: %s\n", string);
+			exit(1);
 		}
 		return(0);
 	}
