@@ -52,6 +52,7 @@ public:
 
 	Beam*			GetCurrentBeam();
 	unsigned int	GetEncoderValue();
+	unsigned int	GetEncoderN() { return(_numberOfEncoderValues); };
 	double			GetAntennaFraction();
 
 	CoordinateSwitch	GetAntPedToScBody()

@@ -79,7 +79,8 @@ int
 DopplerTracker::GetCommandedDoppler(
 	int				beam_idx,
 	unsigned int	doppler_step,
-	double			antenna_fraction,
+	unsigned int	antenna_dn,
+	unsigned int	antenna_n,
 	float*			doppler)
 {
 	if (doppler_step >= _dopplerSteps)
@@ -103,7 +104,7 @@ DopplerTracker::GetCommandedDoppler(
 	double c_term = (double)cm * (double)c_dn + (double)cb;
 
 	double raw_doppler = c_term + a_term *
-		cos(two_pi * antenna_fraction + p_term);
+		cos(two_pi * (double)antenna_dn / (double)antenna_n + p_term);
 
 	int doppler_dn = (int)(raw_doppler / DOPPLER_TRACKING_RESOLUTION + 0.5);
 
@@ -125,9 +126,11 @@ DopplerTracker::SetInstrument(
 	unsigned int doppler_step =
 		OrbitTicksToDopplerStep(instrument->orbitTicks);
 
-	double antenna_fraction = instrument->antenna.GetAntennaFraction();
+	unsigned int antenna_dn = instrument->antenna.GetEncoderValue();
+	unsigned int antenna_n = instrument->antenna.GetEncoderN();
 	float doppler;
-	GetCommandedDoppler(beam_idx, doppler_step, antenna_fraction, &doppler);
+	GetCommandedDoppler(beam_idx, doppler_step, antenna_dn, antenna_n,
+		&doppler);
 
 	instrument->commandedDoppler = doppler;
 
@@ -389,15 +392,16 @@ DopplerTracker::ReadBinary(
 //==============//
 
 RangeTracker::RangeTracker()
-:	_delay(NULL), _duration(NULL), _ticksPerOrbit(0), _numberOfBeams(0),
-	_rangeSteps(0)
+:	_scale(NULL), _delay(NULL), _duration(NULL), _ticksPerOrbit(0),
+	_numberOfBeams(0), _rangeSteps(0)
 {
 	return;
 }
 
 RangeTracker::~RangeTracker()
 {
-	free_array((void *)_delay, 2, _numberOfBeams, _rangeSteps);
+	free_array((void *)_scale, 3, _numberOfBeams, 3, 2);
+	free_array((void *)_delay, 3, _numberOfBeams, _rangeSteps, 3);
 	free_array((void *)_duration, 1, _numberOfBeams);
 
 	return;
@@ -412,8 +416,12 @@ RangeTracker::Allocate(
 	int		number_of_beams,
 	int		range_steps)
 {
-	_delay = (unsigned char **)make_array(sizeof(unsigned char), 2,
-		number_of_beams, range_steps);
+	_scale = (float ***)make_array(sizeof(float), 3, number_of_beams, 3, 2);
+	if (_scale == NULL)
+		return(0);
+
+	_delay = (unsigned char ***)make_array(sizeof(unsigned char), 3,
+		number_of_beams, range_steps, 3);
 	if (_delay == NULL)
 		return(0);
 
@@ -450,33 +458,64 @@ RangeTracker::OrbitTicksToRangeStep(
 
 int
 RangeTracker::GetDelayAndDuration(
-	int		beam_idx,
-	int		range_step,
-	float	xmit_pulse_width,			// seconds
-	float*	delay,
-	float*	duration)
+	int				beam_idx,
+	unsigned int	range_step,
+	float			xmit_pulse_width,		// seconds
+	unsigned int	antenna_dn,
+	unsigned int	antenna_n,
+	float*			delay,
+	float*			duration)
 {
 	//------------------------//
 	// determine the duration //
 	//------------------------//
 
 	unsigned char duration_dn = *(_duration + beam_idx);
-	*duration = RANGE_TRACKING_TIME_RESOLUTION * (float)duration_dn;
+	float rgw = (float)duration_dn * RANGE_TRACKING_TIME_RESOLUTION;
 
-	//-----------------------//
-	// scale the pulse width //
-	//-----------------------//
+	//-------------------------//
+	// get the dn coefficients //
+	//-------------------------//
 
-	unsigned char pw_dn = (unsigned char)(xmit_pulse_width /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
+	unsigned char* char_ptr = *(*(_delay + beam_idx) + range_step);
+	unsigned char a_dn = *(char_ptr + AMPLITUDE_INDEX);
+	unsigned char p_dn = *(char_ptr + PHASE_INDEX);
+	unsigned char c_dn = *(char_ptr + CONSTANTS_INDEX);
+
+	//-------------------------------//
+	// calculate the scaling factors //
+	//-------------------------------//
+
+	float** float_ptr = *(_scale + beam_idx);
+	float ab = *(*(float_ptr + AMPLITUDE_INDEX) + 0);
+	float am = *(*(float_ptr + AMPLITUDE_INDEX) + 1);
+	float pb = *(*(float_ptr + PHASE_INDEX) + 0);
+	float pm = *(*(float_ptr + PHASE_INDEX) + 1);
+	float cb = *(*(float_ptr + CONSTANTS_INDEX) + 0);
+	float cm = *(*(float_ptr + CONSTANTS_INDEX) + 1);
+
+	double a_term = (double)am * (double)a_dn + (double)ab;
+	double p_term = (double)pm * (double)p_dn + (double)pb;
+	double c_term = (double)cm * (double)c_dn + (double)cb;
 
 	//---------------------//
 	// determine the delay //
 	//---------------------//
 
-	unsigned char delay_dn = (int) *(*(_delay + beam_idx) + range_step);
-	delay_dn -= (duration_dn - pw_dn) / 2;
-	*delay = RANGE_TRACKING_TIME_RESOLUTION * (float)delay_dn;
+	float table_delay = c_term + a_term * cos((two_pi/(double)antenna_n) *
+		(double)antenna_dn + p_term);
+	table_delay /= 1000.0;		// convert ms to seconds
+
+	float cmd_delay = table_delay - (rgw - xmit_pulse_width) / 2.0;
+
+	//----------//
+	// quantize //
+	//----------//
+
+	*duration = rgw;		// already quantized
+	unsigned int delay_dn =
+		(int)(cmd_delay / RANGE_TRACKING_TIME_RESOLUTION + 0.5);
+	*delay = delay_dn * RANGE_TRACKING_TIME_RESOLUTION;
 
 	return(1);
 }
@@ -494,8 +533,12 @@ RangeTracker::SetInstrument(
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	float xpw = beam->pulseWidth;
 
+	unsigned int antenna_dn = instrument->antenna.GetEncoderValue();
+	unsigned int antenna_n = instrument->antenna.GetEncoderN();
+
 	float delay, duration;
-	GetDelayAndDuration(beam_idx, range_step, xpw, &delay, &duration);
+	GetDelayAndDuration(beam_idx, range_step, xpw, antenna_dn, antenna_n,
+		&delay, &duration);
 
 	instrument->receiverGateDelay = delay;
 	instrument->receiverGateDuration = duration;
@@ -509,13 +552,71 @@ RangeTracker::SetInstrument(
 
 int
 RangeTracker::SetRoundTripTime(
-	int		beam_idx,
-	int		range_step,
-	float	round_trip_time)
+	double***	terms)
 {
-	unsigned char delay_dn = (unsigned char)(round_trip_time /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	*(*(_delay + beam_idx) + range_step) = delay_dn;
+	double mins[3];
+	double maxs[3];
+
+	//---------------//
+	// for each beam //
+	//---------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		//-----------------------------------------//
+		// calculate the minimum and maximum terms //
+		//-----------------------------------------//
+
+		double** term_ptr = *(terms + beam_idx);
+
+		for (int term_idx = 0; term_idx < 3; term_idx++)
+		{
+			mins[term_idx] = *(*(term_ptr + 0) + term_idx);
+			maxs[term_idx] = mins[term_idx];
+		}
+
+		for (unsigned int range_step = 0; range_step < _rangeSteps;
+			range_step++)
+		{
+			for (int term_idx = 0; term_idx < 3; term_idx++)
+			{
+				if (*(*(term_ptr + range_step) + term_idx) < mins[term_idx])
+					mins[term_idx] = *(*(term_ptr + range_step) + term_idx);
+
+				if (*(*(term_ptr + range_step) + term_idx) > maxs[term_idx])
+					maxs[term_idx] = *(*(term_ptr + range_step) + term_idx);
+			}
+		}
+
+		//------------------------//
+		// generate scale factors //
+		//------------------------//
+
+		for (int term_idx = 0; term_idx < 3; term_idx++)
+		{
+			*(*(*(_scale + beam_idx) + term_idx) + 0) = mins[term_idx];
+
+			*(*(*(_scale + beam_idx) + term_idx) + 1) =
+				(maxs[term_idx] - mins[term_idx]) / 255.0;
+		}
+
+		//------------------------//
+		// calculate scaled terms //
+		//------------------------//
+
+		for (unsigned int range_step = 0; range_step < _rangeSteps;
+			range_step++)
+		{
+			for (int term_idx = 0; term_idx < 3; term_idx++)
+			{
+				*(*(*(_delay + beam_idx) + range_step) + term_idx) =
+					(unsigned char)(
+					(*(*(term_ptr + range_step) + term_idx) -
+					*(*(*(_scale + beam_idx) + term_idx) + 0)) /
+					*(*(*(_scale + beam_idx) + term_idx) + 1) + 0.5);
+			}
+		}
+	}
 
 	return(1);
 }
@@ -580,15 +681,34 @@ RangeTracker::WriteBinary(
 	}
 
 	//-----------------------//
-	// write the delay terms //
+	// write the scale terms //
 	//-----------------------//
 
 	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
 	{
-		if (fwrite((void *)*(_delay + beam_idx), sizeof(unsigned char),
-			_rangeSteps, fp) != _rangeSteps)
+		for (unsigned int term = 0; term < 3; term++)
 		{
-			return(0);
+			if (fwrite((void *) *(*(_scale + beam_idx) + term), sizeof(float),
+				2, fp) != 2)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//-----------------//
+	// write the delay //
+	//-----------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int step = 0; step < _rangeSteps; step++)
+		{
+			if (fwrite((void *) *(*(_delay + beam_idx) + step),
+				sizeof(unsigned char), 3, fp) != 3)
+			{
+				return(0);
+			}
 		}
 	}
 
@@ -596,7 +716,7 @@ RangeTracker::WriteBinary(
 	// write the duration //
 	//--------------------//
 
-	if (fwrite((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fwrite((void *) *_duration, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);
@@ -657,15 +777,34 @@ RangeTracker::ReadBinary(
 	}
 
 	//----------------------//
-	// read the delay terms //
+	// read the scale terms //
 	//----------------------//
 
 	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
 	{
-		if (fread((void *)*(_delay + beam_idx), sizeof(unsigned char),
-			_rangeSteps, fp) != _rangeSteps)
+		for (unsigned int term = 0; term < 3; term++)
 		{
-			return(0);
+			if (fread((void *) *(*(_scale + beam_idx) + term), sizeof(float),
+				2, fp) != 2)
+			{
+				return(0);
+			}
+		}
+	}
+
+	//----------------//
+	// read the delay //
+	//----------------//
+
+	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
+	{
+		for (unsigned int step = 0; step < _rangeSteps; step++)
+		{
+			if (fread((void *) *(*(_delay + beam_idx) + step),
+				sizeof(unsigned char), 3, fp) != 3)
+			{
+				return(0);
+			}
 		}
 	}
 
@@ -673,7 +812,7 @@ RangeTracker::ReadBinary(
 	// read the duration //
 	//-------------------//
 
-	if (fread((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fread((void *) *_duration, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);
@@ -693,5 +832,41 @@ RangeTracker::ReadBinary(
 	//----------------//
 
 	fclose(fp);
+	return(1);
+}
+
+//-------------//
+// azimuth_fit //
+//-------------//
+ 
+int
+azimuth_fit(
+	int			count,
+	double*		terms,
+	double*		a,
+	double*		p,
+	double*		c)
+{
+	double wn = two_pi / (double) count;
+	double real[2], imag[2];
+ 
+	for (int i = 0; i < 2; i++)
+	{
+		real[i] = 0.0;
+		imag[i] = 0.0;
+		for (int j = 0; j < count; j++)
+		{
+			double arg = wn * (double)i * (double)j;
+			double c = cos(arg);
+			double s = sin(arg);
+			real[i] += terms[j] * c;
+			imag[i] += terms[j] * s;
+		}
+	}
+ 
+	*a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
+	*p = -atan2(imag[1], real[1]);
+	*c = real[0] / (double)count;
+ 
 	return(1);
 }

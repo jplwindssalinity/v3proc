@@ -85,7 +85,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define RANGE_ORBIT_STEPS		256
-#define RANGE_AZIMUTH_STEPS		360		// used for averaging
+#define RANGE_AZIMUTH_STEPS		360		// used for fitting
 
 #define EQX_TIME_TOLERANCE		0.1
 
@@ -198,6 +198,15 @@ main(
 		exit(1);
 	}
 
+	//----------------//
+	// allocate terms //
+	//----------------//
+
+	// terms are [0] = amplitude, [1] = phase, [2] = bias
+	double*** terms;
+	terms = (double ***)make_array(sizeof(double), 3,
+		antenna->numberOfBeams, RANGE_ORBIT_STEPS, 3);
+
 	//-----------------------//
 	// mark equator crossing //
 	//-----------------------//
@@ -268,7 +277,12 @@ main(
 			antenna->currentBeamIdx = beam_idx;
 			Beam* beam = antenna->GetCurrentBeam();
 
-			double rtt_sum = 0.0;
+			//----------------------//
+			// step through azimuth //
+			//----------------------//
+
+			double rtt[RANGE_AZIMUTH_STEPS];
+
 			for (int azimuth_step = 0; azimuth_step < RANGE_AZIMUTH_STEPS;
 				azimuth_step++)
 			{
@@ -295,21 +309,18 @@ main(
 				RangeAndRoundTrip(&antenna_frame_to_gc, &spacecraft,
 					vector, &tip);
 
-				//-----//
-				// sum //
-				//-----//
-
-				rtt_sum += tip.roundTripTime;
+				rtt[azimuth_step] = tip.roundTripTime;
 			}
 
-			double avg_rtt = rtt_sum / (double)RANGE_AZIMUTH_STEPS;
-
-			//-----------//
-			// set delay //
-			//-----------//
-
-			range_tracker.SetRoundTripTime(beam_idx, orbit_step,
-				(float)avg_rtt);
+            //--------------------//
+            // fit rtt parameters //
+            //--------------------//
+ 
+            double a, p, c;
+            azimuth_fit(RANGE_AZIMUTH_STEPS, rtt, &a, &p, &c);
+            *(*(*(terms + beam_idx) + orbit_step) + 0) = a;
+            *(*(*(terms + beam_idx) + orbit_step) + 1) = p;
+            *(*(*(terms + beam_idx) + orbit_step) + 2) = c;
 		}
 	}
 
@@ -317,12 +328,7 @@ main(
 	// set durations //
 	//---------------//
 
-	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
-	{
-		antenna->currentBeamIdx = beam_idx;
-		Beam* beam = antenna->GetCurrentBeam();
-		range_tracker.SetDuration(beam_idx, beam->receiverGateWidth);
-	}
+	range_tracker.SetRoundTripTime(terms);
 
 	//---------------------//
 	// set ticks per orbit //

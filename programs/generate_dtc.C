@@ -103,9 +103,6 @@ template class BufferedList<OrbitState>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int doppler_fit(int count, double* dop_com, double* a, double* p,
-	double* c);
-
 //------------------//
 // OPTION VARIABLES //
 //------------------//
@@ -341,7 +338,7 @@ main(
 			//------------------------//
 
 			double a, p, c;
-			doppler_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
+			azimuth_fit(DOPPLER_AZIMUTH_STEPS, dop_com, &a, &p, &c);
 			*(*(*(terms + beam_idx) + orbit_step) + 0) = a;
 			*(*(*(terms + beam_idx) + orbit_step) + 1) = p;
 			*(*(*(terms + beam_idx) + orbit_step) + 2) = c;
@@ -381,40 +378,4 @@ main(
 	}
 
 	return (0);
-}
-
-//-------------//
-// doppler_fit //
-//-------------//
-
-int
-doppler_fit(
-	int			count,
-	double*		dop_com,
-	double*		a,
-	double*		p,
-	double*		c)
-{
-	double wn = two_pi / (double) count;
-	double real[2], imag[2];
-
-	for (int i = 0; i < 2; i++)
-	{
-		real[i] = 0.0;
-		imag[i] = 0.0;
-		for (int j = 0; j < count; j++)
-		{
-			double arg = wn * (double)i * (double)j;
-			double c = cos(arg);
-			double s = sin(arg);
-			real[i] += dop_com[j] * c;
-			imag[i] += dop_com[j] * s;
-		}
-	}
-
-	*a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
-	*p = -atan2(imag[1], real[1]);
-	*c = real[0] / (double)count;
-
-	return(1);
 }

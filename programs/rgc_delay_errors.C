@@ -362,6 +362,7 @@ main(
 				CoordinateSwitch antenna_frame_to_gc;
 				Vector3 rlook_antenna;
 				TargetInfoPackage tip;
+				unsigned int antenna_dn, antenna_n;
 
 				switch(instrument_event.eventId)
 				{
@@ -414,8 +415,11 @@ main(
 					range_step = range_tracker.OrbitTicksToRangeStep(
 						instrument.orbitTicks);
 					float delay, duration;
+					antenna_dn = antenna->GetEncoderValue();
+					antenna_n = antenna->GetEncoderN();
 					range_tracker.GetDelayAndDuration(instrument_event.beamIdx,
-						range_step, beam->pulseWidth, &delay, &duration);
+						range_step, beam->pulseWidth, antenna_dn, antenna_n,
+						&delay, &duration);
 
 					//---------------------------//
 					// calculate the delay error //

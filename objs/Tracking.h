@@ -52,8 +52,8 @@ public:
 
 	unsigned int	OrbitTicksToDopplerStep(unsigned int orbit_ticks);
 	int				GetCommandedDoppler(int beam_idx,
-						unsigned int doppler_step, double antenna_fraction,
-						float* doppler);
+						unsigned int doppler_step, unsigned int antenna_dn,
+						unsigned int antenna_n, float* doppler);
 	int				SetInstrument(Instrument* instrument);
 	int				Set(double*** terms);
 	int				SetTicksPerOrbit(unsigned int period);
@@ -98,6 +98,8 @@ class RangeTracker
 {
 public:
 
+	enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, CONSTANTS_INDEX };
+
 	//--------------//
 	// construction //
 	//--------------//
@@ -116,12 +118,12 @@ public:
 	//------------//
 
 	unsigned short		OrbitTicksToRangeStep(unsigned int orbit_ticks);
-	int					GetDelayAndDuration(int beam_idx, int range_step,
-							float xmit_pulse_width, float* delay,
-							float* duration);
+	int					GetDelayAndDuration(int beam_idx,
+							unsigned int range_step, float xmit_pulse_width,
+							unsigned int antenna_dn, unsigned int antenna_n,
+							float* delay, float* duration);
 	int					SetInstrument(Instrument* instrument);
-	int					SetRoundTripTime(int beam_idx, int range_step,
-							float round_trip_time);
+	int					SetRoundTripTime(double*** terms);
 	int					SetDuration(int beam_idx, float duration);
 	int					SetTicksPerOrbit(unsigned int period);
 
@@ -138,8 +140,9 @@ private:
 	// variables //
 	//-----------//
 
-	unsigned char**		_delay;				// delay[beam][step] arrays
-	unsigned char*		_duration;			// duration[beam] terms
+	float***			_scale;				// [beam][term][coef_order]
+	unsigned char***	_delay;				// [beam][step][term]
+	unsigned char*		_duration;			// [beam]
 	unsigned int		_ticksPerOrbit;		// orbit period
 
 	//-----------//
@@ -149,5 +152,7 @@ private:
 	unsigned int	_numberOfBeams;
 	unsigned int	_rangeSteps;
 };
+
+int		azimuth_fit(int count, double* terms, double* a, double* p, double* c);
 
 #endif

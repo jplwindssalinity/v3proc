@@ -8,7 +8,7 @@
 //		see_spot
 //
 // SYNOPSIS
-//		see_spot [ -c ] [ -s ] <sim_config_file> <output_file>
+//		see_spot [ -d dB ] [ -cs ] <sim_config_file> <output_file>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b instrument based on the parameters
@@ -16,6 +16,7 @@
 //		vector graphics files for the spots.
 //
 // OPTIONS
+//		[ -d dB ]	dB level for contours (defaults to 3.0)
 //		[ -c ]		Show the centroid
 //		[ -s ]		Show slices instead of spots
 //
@@ -91,6 +92,8 @@ template class List<long>;
 // CONSTANTS //
 //-----------//
 
+#define DEFAULT_DB_LEVEL	3.0
+
 //--------//
 // MACROS //
 //--------//
@@ -107,16 +110,17 @@ template class List<long>;
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING	"cs"
+#define OPTSTRING	"cd:s"
 
 unsigned char centroid_opt = 0;
 unsigned char slice_opt = 0;
+float contour_level = pow(10.0, 0.1 * DEFAULT_DB_LEVEL);
 
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -c ]", "[ -s ]", "<sim_config_file>",
+const char* usage_array[] = { "[ -d dB ]", "[ -cs ]", "<sim_config_file>",
 	"<output_file>", 0};
 
 //--------------//
@@ -133,7 +137,10 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
+	extern char *optarg;
+	extern int optind;
 
+	float db_level;
 	int c;
 	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
 	{
@@ -141,6 +148,10 @@ main(
 		{
 		case 'c':
 			centroid_opt = 1;
+			break;
+		case 'd':
+			db_level = -fabs(atof(optarg));
+			contour_level = pow(10.0, 0.1 * db_level);
 			break;
 		case 's':
 			slice_opt = 1;
@@ -336,7 +347,8 @@ main(
 					// spot //
 					//------//
 
-					LocateSpot(&spacecraft, &instrument, &meas_spot);
+					LocateSpot(&spacecraft, &instrument, &meas_spot,
+						contour_level);
 					Meas* meas = meas_spot.GetHead();
 					if (centroid_opt)
 					{
