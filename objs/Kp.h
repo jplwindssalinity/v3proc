@@ -45,11 +45,14 @@ public:
 	int		GetKpc2(Meas* meas, double sigma_0, double* kpc2);
 	int		GetKpm2(int pol_idx, float speed, double* kpm2);
 	int		GetKpri2(double* kpri2);
-	int		GetKprs2(double* kprs2);
+	int		GetKprs2(double* kprs2, int beam_number, int slice_number, float azimuth);
 	int		GetTotalKp2(Meas* meas, double sigma_0, int pol_idx, float speed,
+				int beam_number, int slice_number, float azimuth,
 				double* kp2);
 
-	int		GetVariance();
+	int		GetVariance(Meas* meas, double sigma_0, int pol_idx, float speed,
+				int beam_number, int slice_number, float azimuth,
+				double* var);
 
 	//-----------//
 	// variables //
@@ -57,7 +60,7 @@ public:
 
 	Kpm		kpm;
 	Kpri	kpri;
-	Kprs	kprs;
+        Kprs	kprs;
 };
 
 #endif
