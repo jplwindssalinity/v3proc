@@ -182,13 +182,13 @@ InstrumentSim::SetMeasurements(
 
 			if (instrument->useKpm == 1)
 			{
-
 //				sigma0 *= kpmgrid->GetRV(meas->pol,wv.spd,lon,lat);
 
 				Gaussian rv(Kpm*Kpm,1.0);
 				float rv1 = -1.0;
 				while (rv1 < 0.0)
-				{	// Do not permit negative sigma0's.
+				{
+					// Do not permit negative sigma0's.
 					rv1 = rv.GetNumber();
 				}
 				sigma0 *= rv1;
@@ -213,7 +213,7 @@ InstrumentSim::SetMeasurements(
 		float Kfactor=1.0;
 		if (useKfactor)
 		{
-			Kfactor=kfactorTable.RetrieveByRelativeSliceNumber(
+			Kfactor = kfactorTable.RetrieveByRelativeSliceNumber(
 				instrument->antenna.currentBeamIdx,
 				instrument->antenna.azimuthAngle, sliceno);
 		}
@@ -446,7 +446,7 @@ SetRangeAndDoppler(
 	//-----------------------------------------//
 	// command the range delay and range width //
 	//-----------------------------------------//
- 
+
 	float residual_delay_error = 0.0;
 	if (instrument->useRgc)
 	{
@@ -470,7 +470,7 @@ SetRangeAndDoppler(
 	//-------------------------------//
 	// command the Doppler frequency //
 	//-------------------------------//
- 
+
 	if (instrument->useDtc)
 	{
 		if (! instrument->dopplerTracker.SetInstrument(instrument,
