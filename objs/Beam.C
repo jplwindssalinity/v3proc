@@ -370,7 +370,8 @@ Beam::GetPowerGain(
     	(iy1 < 0) ||
     	(iy1 > _Ny - 2))
 	{
-		printf("Error: requested point out of range in GetPowerGain\n");
+		printf("GetPowerGain: requested point out of range (%g, %g)\n",
+			look_angle, azimuth_angle);
 		return(0);
 	}
 
