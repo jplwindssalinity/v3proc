@@ -206,7 +206,8 @@ public:
 	// tweaking //
 	//----------//
 
-	int		SetAllSpeeds(float speed);
+    int  SetAllSpeeds(float speed);
+    int  FakeEcmwfHiRes(float speed);
 
 protected:
 
@@ -317,8 +318,8 @@ public:
 	// evaluation //
 	//------------//
 
-	void            operator-=(const WindSwath& w);
-	int             DifferenceFromTruth(WindField* truth);
+    void    operator-=(const WindSwath& w);
+    int     DifferenceFromTruth(WindField* truth);
 	int		CtdArray(float cross_track_res, float* ctd_array);
 
 	float	RmsSpdErr(WindField* truth);
@@ -328,7 +329,7 @@ public:
 	float	SpdBias(WindField* truth);
 
 	int		SelectNearest(WindField* truth);
-	int             WindSwath::GetProbabilityArray( WindField*  truth,
+    int     GetProbabilityArray( WindField*  truth,
 				float***  prob, int** num_samples, float** widths,
 				int true_dir_bins, int delta_dir_bins);
 	int		AvgNambigVsCti(float* avg_nambig);
@@ -346,10 +347,16 @@ public:
 				int* count_array, float low_speed, float high_speed,
 				float within_angle);
 
-	int		VectorCorrelationVsCti(WindField* truth, float* vc_array,
-				int* count_array, float low_speed, float high_speed);
-	int             ComponentCovarianceVsCti(WindField* truth, float* cc_array,
-				int* count_array, float low_speed, float high_speed, COMPONENT_TYPE component1, COMPONENT_TYPE component2);
+    int     DirectionDensityVsCti(WindField* truth,
+                unsigned int** swath_density_array,
+                unsigned int** field_density_array, float low_speed,
+                float high_speed, int direction_count);
+
+    int     VectorCorrelationVsCti(WindField* truth, float* vc_array,
+                int* count_array, float low_speed, float high_speed);
+    int     ComponentCovarianceVsCti(WindField* truth, float* cc_array,
+                int* count_array, float low_speed, float high_speed,
+                COMPONENT_TYPE component1, COMPONENT_TYPE component2);
 
 	//-----------//
 	// variables //

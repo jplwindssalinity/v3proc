@@ -1277,6 +1277,42 @@ WindField::SetAllSpeeds(
 	return(count);
 }
 
+//---------------------------//
+// WindField::FakeEcmwfHiRes //
+//---------------------------//
+
+int
+WindField::FakeEcmwfHiRes(
+    float  speed)
+{
+	//-------------------------------//
+	// specify ECMWF hi-res sampling //
+	//-------------------------------//
+
+	_lon.SpecifyWrappedCenters(-180.0 * dtr, 180.0 * dtr, ECMWF_HIRES_LON_DIM);
+	_lat.SpecifyCenters(-90.0 * dtr, 90.0 * dtr, ECMWF_HIRES_LAT_DIM);
+
+	if (! _Allocate())
+		return(0);
+
+	for (int lon_idx = 0; lon_idx < ECMWF_HIRES_LON_DIM; lon_idx++)
+	{
+        float dir = (float)lon_idx * two_pi / (float)ECMWF_HIRES_LON_DIM;
+		for (int lat_idx = 0; lat_idx < ECMWF_HIRES_LAT_DIM; lat_idx++)
+		{
+			WindVector* wv = new WindVector;
+			if (! wv)
+				return(0);
+
+            wv->SetSpdDir(speed, dir);
+			*(*(_field + lon_idx) + lat_idx) = wv;
+		}
+	}
+
+	_wrap = 1;
+	return(1);
+}
+
 //----------------------//
 // WindField::_Allocate //
 //----------------------//
@@ -2843,15 +2879,133 @@ WindSwath::WithinVsCti(
 
 	return(1);
 }
+
+//----------------------------------//
+// WindSwath::DirectionDensityVsCti //
+//----------------------------------//
+
+int
+WindSwath::DirectionDensityVsCti(
+    WindField*      truth,
+    unsigned int**  swath_density_array,
+    unsigned int**  field_density_array,
+    float           low_speed,
+    float           high_speed,
+    int             direction_count)
+{
+    //-------------------------//
+    // index direction density //
+    //-------------------------//
+
+    Index dir_idx;
+    dir_idx.SpecifyWrappedCenters(0.0, two_pi, direction_count);
+
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        //------------------------------//
+        // clear the count for this cti //
+        //------------------------------//
+
+        for (int dir = 0; dir < direction_count; dir++)
+        {
+            *( *(swath_density_array + cti) + dir) = 0;
+            *( *(field_density_array + cti) + dir) = 0; 
+        }
+
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+
+            //--------------------------------------//
+            // determine the S/C velocity direction //
+            //--------------------------------------//
+
+            int ati_minus = ati - 1;
+            if (ati_minus < 0)
+                ati_minus = 0;
+			WVC* wvc_minus = swath[cti][ati_minus];
+			if (! wvc_minus)
+                continue;
+
+            int ati_plus = ati + 1;
+            if (ati_plus < 0)
+                ati_plus = 0;
+			WVC* wvc_plus = swath[cti][ati_plus];
+			if (! wvc_plus)
+                continue;
+
+            double dlat = wvc_plus->lonLat.latitude -
+                wvc_minus->lonLat.latitude;
+            double dlon = wvc_plus->lonLat.longitude -
+                wvc_minus->lonLat.longitude;
+            while (dlon > pi)
+                dlon -= two_pi;
+            while (dlon < -pi)
+                dlon += two_pi;
+
+            double sc_dir = atan2(dlat, dlon);    // ccw from east
+
+            //-------------------------------//
+            // determine the wind directions //
+            //-------------------------------//
+
+            float ret_dir = wvc->selected->dir;
+            float true_dir = true_wv.dir;
+
+            //-----------------------------------------------//
+            // determine the relative wind direction (0-360) //
+            //-----------------------------------------------//
+
+            float rel_ret_dir = ret_dir - sc_dir;
+            while (rel_ret_dir < 0.0)
+                rel_ret_dir += two_pi;
+            while (rel_ret_dir > two_pi)
+                rel_ret_dir -= two_pi;
+
+            float rel_true_dir = true_dir - sc_dir;
+            while (rel_true_dir < 0.0)
+                rel_true_dir += two_pi;
+            while (rel_true_dir > two_pi)
+                rel_true_dir -= two_pi;
+
+            //---------------------//
+            // determine the index //
+            //---------------------//
+
+            int ret_idx, true_idx;
+            dir_idx.GetNearestIndex(rel_ret_dir, &ret_idx);
+            dir_idx.GetNearestIndex(rel_true_dir, &true_idx);
+
+            ( *( *(swath_density_array + cti) + ret_idx) )++;
+            ( *( *(field_density_array + cti) + true_idx) )++;
+		}
+	}
+
+	return(1);
+}
+
+//-------------------------------------//
+// WindSwath::ComponentCovarianceVsCti //
+//-------------------------------------//
+
 int
 WindSwath::ComponentCovarianceVsCti(
-        WindField* truth,
-	float* cc_array,
-	int* count_array,
-	float low_speed,
-	float high_speed, 
-	COMPONENT_TYPE component1, 
-	COMPONENT_TYPE component2)
+    WindField*      truth,
+    float*          cc_array,
+    int*            count_array,
+    float           low_speed,
+    float           high_speed, 
+    COMPONENT_TYPE  component1, 
+    COMPONENT_TYPE  component2)
 {
         // In all this:
         // c1 is the value of component1
