@@ -985,6 +985,13 @@ ConfigGrid(
 	ConfigList*		config_list)
 {
 	//---------------//
+	// configure l15 //
+	//---------------//
+
+	if (! ConfigL15(&(grid->l15), config_list))
+		return(0);
+
+	//---------------//
 	// configure l17 //
 	//---------------//
 

@@ -9,6 +9,7 @@ static const char rcs_id_grid_c[] =
 #include <stdio.h>
 #include <malloc.h>
 #include "Grid.h"
+#include "Meas.h"
 
 
 //======//
@@ -29,7 +30,7 @@ Grid::~Grid()
 {
 	if (_grid != NULL)
 	{
-		free_array(_grid,2,_crosstrack_bins,_alongtrack_bins);
+		free_array(_grid, 2, _crosstrack_bins, _alongtrack_bins);
 	}
 	return;
 }
@@ -48,10 +49,10 @@ Grid::SetStartTime(double start_time)
 
 int
 Grid::Allocate(
-double	crosstrack_res,
-double	alongtrack_res,
-double	crosstrack_size,
-double	alongtrack_size)
+	double	crosstrack_res,
+	double	alongtrack_res,
+	double	crosstrack_size,
+	double	alongtrack_size)
 {
 	_alongtrack_res = alongtrack_res;
 	_crosstrack_res = crosstrack_res;
@@ -75,39 +76,43 @@ double	alongtrack_size)
 	_ati_start = 0;
 	_ati_offset = 0;
 
-	_grid = (MeasList**)make_array(sizeof(MeasList),2,
-		_crosstrack_bins,_alongtrack_bins);
-	if (_grid == NULL) return(0);
+	_grid = (OffsetList**)make_array(sizeof(OffsetList), 2,
+		_crosstrack_bins, _alongtrack_bins);
+	if (_grid == NULL)
+		return(0);
 
-	// Make an empty MeasList object, and copy it into each grid list.
-	MeasList empty_meas_list;
-
+	// Make an empty OffsetList object, and use to initialize each grid element
+	OffsetList empty_list;
 	for (int i=0; i < _crosstrack_bins; i++)
-	for (int j=0; j < _alongtrack_bins; j++)
 	{
-		_grid[i][j] = empty_meas_list;
+		for (int j=0; j < _alongtrack_bins; j++)
+		{
+			_grid[i][j] = empty_list;
+		}
 	}
 
 	return(1);
 }
 
-//
-// Grid::Add
-//
-// Add one measurment to the grid of measurements.
-//
-// meas = pointer to the Meas object to grid.
-// meas_time = time at which the measurement was made.
-//
+//-----------//
+// Grid::Add //
+//-----------//
+// Add the measurement to the grad using an offset list.
+// meas = pointer to the Meas object to grid
+// meas_time = time at which the measurement was made
 
 int
 Grid::Add(
-	Meas	*meas,
-	double	meas_time)
+	Meas*		meas,
+	double		meas_time)
 {
+	//----------------------------------//
+	// calculate the subtrack distances //
+	//----------------------------------//
+
 	float ctd, atd;
 	if (ephemeris.GetSubtrackCoordinates(meas->centroid, _start_time,
-		meas_time,&ctd,&atd) == 0)
+		meas_time, &ctd, &atd) == 0)
 	{
 		return(0);	// Couldn't find a grid position, so dump this measurement.
 	}
@@ -136,7 +141,7 @@ Grid::Add(
 
 	if (vati < 0)
 	{
-		delete meas;
+//		delete meas;
 		return(1);
 	}
 
@@ -159,7 +164,8 @@ Grid::Add(
 	//
 
 	while (vati - _ati_offset >= _alongtrack_bins)
-	{	// vati is beyond latest row, so need to shift the grid buffer
+	{
+		// vati is beyond latest row, so need to shift the grid buffer
 		ShiftForward();
 	}
 
@@ -168,11 +174,15 @@ Grid::Add(
 	// index into the grid in memory (ati).
 	//
 
-	int ati = vati - _ati_offset + _ati_start;
-	if (ati >= _alongtrack_bins) ati -= _alongtrack_bins;
+	int ati = (vati - _ati_offset + _ati_start) % _alongtrack_bins;
 
-	// Add the measurement to the appropriate grid cell measurement list.
-	_grid[cti][ati].Append(meas);
+	// convert the measurement to an offset
+	
+	long* offset = new long;
+	*offset = meas->offset;
+
+	// Add the offset to the appropriate grid cell list.
+	_grid[cti][ati].Append(offset);
 
 	//printf("%d %d %f %f\n",cti,vati,ctd,atd);
 	return(1);
@@ -191,29 +201,56 @@ Grid::Add(
 int
 Grid::ShiftForward()
 {
-// Construct level 1.7 frames from each grid cell
+	//---------------------------//
+	// remember the l15 location //
+	//---------------------------//
 
-// Write out the earliest row of measurement lists.
-for (int i=0; i < _crosstrack_bins; i++)
-{
-	l17.frame.measList = _grid[i][_ati_start];
-	l17.frame.rev = 0;
-	l17.frame.cti = i;
-	l17.frame.ati = _ati_offset;
-	if (l17.frame.measList.GetHead() != NULL)
+	FILE* fp = l15.GetFp();
+	long offset = ftell(fp);
+	if (offset == -1)
+		return(0);
+
+	// Write out the earliest row of measurement lists.
+	for (int i=0; i < _crosstrack_bins; i++)
 	{
-		// only write a L1.7 frame if it contains some measurements
-		l17.WriteDataRec();
+		//-----------------------------------//
+		// convert offset list to a MeasList //
+		//-----------------------------------//
+
+		l17.frame.measList.FreeContents();
+		_grid[i][_ati_start].MakeMeasList(fp, &(l17.frame.measList));
+
+		//----------------------------------//
+		// complete and write the l17 frame //
+		//----------------------------------//
+
+		l17.frame.rev = 0;
+		l17.frame.cti = i;
+		l17.frame.ati = _ati_offset;
+		if (l17.frame.measList.GetHead() != NULL)
+		{
+			l17.WriteDataRec();
+		}
+
+		//----------------------//
+		// free the offset list //
+		//----------------------//
+
+		_grid[i][_ati_start].FreeContents();
 	}
-	_grid[i][_ati_start].FreeContents();	// prepare for new data
-}
 
-// Update buffer indices.
-_ati_start++;
-if (_ati_start >= _alongtrack_bins) _ati_start = 0;
-_ati_offset++;
+	// Update buffer indices.
+	_ati_start = (_ati_start + 1) % _alongtrack_bins;
+	_ati_offset++;
 
-return(1);
+	//----------------------//
+	// restore l15 location //
+	//----------------------//
+
+	if (fseek(fp, offset, SEEK_SET) == -1)
+		return(0);
+
+	return(1);
 }
 
 //

@@ -119,6 +119,35 @@ public:
 
 //======================================================================
 // CLASS
+//		OffsetList
+//
+// DESCRIPTION
+//		The OffsetList object is a list of byte offsets into a file.
+//		It is used to index Meas objects in a file.
+//======================================================================
+
+class OffsetList : public List<long>
+{
+public:
+
+	//--------------//
+	// construction //
+	//--------------//
+
+	OffsetList();
+	~OffsetList();
+
+	int		MakeMeasList(FILE* fp, MeasList* meas_list);
+
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
+};
+
+//======================================================================
+// CLASS
 //		MeasSpot
 //
 // DESCRIPTION

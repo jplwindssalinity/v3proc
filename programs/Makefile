@@ -15,7 +15,6 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	sim \
-	sim_accurate \
 	l00_to_l10 \
 	l10_to_l15 \
 	l15_to_l17 \
@@ -29,7 +28,8 @@ PROGRAMS = \
 	vap_to_bev \
 	fake_vap \
 	l15_outlines \
-	plot_solution_curves
+	plot_solution_curves \
+	sim_accurate
 
 #----------------------------------------------------------------------
 # default: make all executable programs

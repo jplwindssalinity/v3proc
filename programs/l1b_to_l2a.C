@@ -80,6 +80,7 @@ template class List<Meas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
+template class List<long>;
 
 //-----------//
 // CONSTANTS //
@@ -140,17 +141,6 @@ main(
 		exit(1);
 	}
 
-	//-------------------------------------//
-	// create and configure level products //
-	//-------------------------------------//
-
-	L15 l15;
-	if (! ConfigL15(&l15, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 1.5 Product\n", command);
-		exit(1);
-	}
-
 	//-----------------------//
 	// create spacecraft sim //
 	//-----------------------//
@@ -196,7 +186,7 @@ main(
 	// open files //
 	//------------//
 
-	l15.OpenForReading();
+	grid.l15.OpenForReading();
 	grid.l17.file.OpenForOutput();
 
 	//-----------------//
@@ -215,9 +205,9 @@ main(
 		// read a level 1.5 data record //
 		//------------------------------//
 
-		if (! l15.ReadDataRec())
+		if (! grid.l15.ReadDataRec())
 		{
-			switch (l15.GetStatus())
+			switch (grid.l15.GetStatus())
 			{
 			case L15::OK:	// end of file
 				break;
@@ -241,7 +231,7 @@ main(
 		// Group //
 		//-------//
 
-		if (! l15_to_l17.Group(&l15, &grid))
+		if (! l15_to_l17.Group(&grid))
 		{
 			fprintf(stderr, "%s: error converting Level 1.5 to Level 1.7\n",
 				command);
@@ -256,7 +246,7 @@ main(
 
 	grid.Flush();
 
-	l15.Close();
+	grid.l15.Close();
 	grid.l17.file.Close();
 
 	return (0);

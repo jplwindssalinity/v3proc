@@ -10,6 +10,7 @@ static const char rcs_id_grid_h[] =
 	"@(#) $Id$";
 
 #include "Array.h"
+#include "L15.h"
 #include "L17.h"
 #include "Meas.h"
 
@@ -40,7 +41,7 @@ public:
 	~Grid();
 
 	int		Allocate(double crosstrack_res, double alongtrack_res,
-			double crosstrack_size, double alongtrack_size);
+				double crosstrack_size, double alongtrack_size);
 
 	int		SetStartTime(double start_time);
 
@@ -61,9 +62,9 @@ public:
 	// variables //
 	//-----------//
 
-	L17			l17;	// handles output to a level 1.7 data file.
-	// The ephemeris object that defines the grid location.
-	Ephemeris	ephemeris;
+	L15			l15;		// handles input from a level 1.5 data file.
+	L17			l17;		// handles output to a level 1.7 data file.
+	Ephemeris	ephemeris;	// defines the grid location
 
 protected:
 
@@ -92,13 +93,13 @@ protected:
 	// displaced from the virtual grid specifed by the ephemeris object
 	// and the grid size parameters. Thus, _ati_offset = n means that
 	// _grid[_ati_start] is actually row n of the virtual grid
-    // (also zero offset).
+	// (also zero offset).
 	//
 
-	int _ati_start;
-	int _ati_offset;
+	int				_ati_start;
+	int				_ati_offset;
 
-	MeasList** _grid;
+	OffsetList**	_grid;			// the grid of offset lists
 };
 
 #endif

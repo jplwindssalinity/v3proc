@@ -218,6 +218,65 @@ MeasList::FreeContents()
 }
 
 
+//============//
+// OffsetList //
+//============//
+
+OffsetList::OffsetList()
+{
+	return;
+}
+
+OffsetList::~OffsetList()
+{
+	FreeContents();
+	return;
+}
+
+//--------------------------//
+// OffsetList::MakeMeasList //
+//--------------------------//
+
+int
+OffsetList::MakeMeasList(
+	FILE*		fp,
+	MeasList*	meas_list)
+{
+	for (long* offset = GetHead(); offset; offset = GetNext())
+	{
+		Meas* meas = new Meas();
+		if (fseek(fp, *offset, SEEK_SET) == -1)
+			return(0);
+
+		if (! meas->Read(fp))
+			return(0);
+
+		if (! meas_list->Append(meas))
+		{
+			delete meas;
+			return(0);
+		}
+	}
+
+	return(1);
+}
+
+//--------------------------//
+// OffsetList::FreeContents //
+//--------------------------//
+
+void
+OffsetList::FreeContents()
+{
+	long* offset;
+	GotoHead();
+	while ((offset = RemoveCurrent()) != NULL)
+		delete offset;
+	return;
+}
+
+
+
 //==========//
 // MeasSpot //
 //==========//

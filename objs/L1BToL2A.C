@@ -33,43 +33,32 @@ L15ToL17::~L15ToL17()
 
 int
 L15ToL17::Group(
-	L15*		l15,
 	Grid*		grid)
 {
-	// position at start of list of spots
-	l15->frame.spotList.GotoHead();
+	MeasSpotList* meas_spot_list = &(grid->l15.frame.spotList);
 
-	// remove spot before gridding
-	MeasSpot* mspot = l15->frame.spotList.RemoveCurrent();
+	//----------------------//
+	// for each MeasSpot... //
+	//----------------------//
 
-	//------------------//
-	// for each spot... //
-	//------------------//
-
-	while (mspot != NULL)
+	for (MeasSpot* meas_spot = meas_spot_list->GetHead(); meas_spot;
+		meas_spot = meas_spot_list->GetNext())
 	{
-		//------------------------------//
-		// ...Grid the measurement list //
-		//------------------------------//
+		double meas_time = meas_spot->time;
 
-		// position at start of list of slices
-		mspot->GotoHead();
+		//------------------//
+		// for each Meas... //
+		//------------------//
 
-		// remove slice before gridding
-		Meas* meas = mspot->RemoveCurrent();
-		while (meas != NULL)
+		for (Meas* meas = meas_spot->GetHead(); meas;
+			meas = meas_spot->GetNext())
 		{
-			// grid each slice in this measurement spot
-			grid->Add(meas,mspot->time);
- 			// move to next slice
-			meas = mspot->RemoveCurrent();
+			//---------------------//
+			// ...add Meas to Grid //
+			//---------------------//
+
+			grid->Add(meas, meas_time);
 		}
-
-		// delete the measurement spot
-		delete mspot;
-
- 		// move to next spot
-		mspot = l15->frame.spotList.RemoveCurrent();
 	}
 
 	return(1);

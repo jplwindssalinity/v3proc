@@ -80,6 +80,7 @@ template class List<Meas>;
 template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
+template class List<long>;
 
 //-----------//
 // CONSTANTS //

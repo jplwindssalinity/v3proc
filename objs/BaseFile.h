@@ -44,6 +44,7 @@ public:
 
 	int		SetFilename(const char* filename);
 	char*	GetFilename()	{ return(_filename); };
+	FILE*	GetFp() { return(_fp); };
 
 	//--------------//
 	// input/output //

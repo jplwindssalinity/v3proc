@@ -45,7 +45,7 @@ public:
 	// conversion //
 	//------------//
 
-	int		Group(L15* l15, Grid* grid);
+	int		Group(Grid* grid);
 };
 
 #endif
