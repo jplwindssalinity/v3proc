@@ -12,7 +12,6 @@ SYSLIBS =		-lm
 
 OBJS = \
 	SimControl.o \
-	Constants.o \
 	Misc.o \
 	List.o \
 	ConfigList.o \
@@ -65,7 +64,6 @@ $(TARGET_LIB):	$(OBJS)
 
 AntennaSim.o:	AntennaSim.C AntennaSim.h
 ConfigList.o:	ConfigList.C ConfigList.h
-Constants.o:	Constants.C Constants.h
 GMF.o:			GMF.C GMF.h
 Instrument.o:	Instrument.C Instrument.h
 List.o:			List.C List.h
