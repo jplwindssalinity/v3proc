@@ -7,7 +7,7 @@ SHELL =			/bin/csh
 
 INCDIR =		../../include
 TARGET_LIB =	../../lib/libSim.a
-HDFINCDIR =     /usr/local/HDF/include
+HDFINCDIR =     /usr/local/hdf/include
 DEBUGFLAGS =    -O2
 INCFLAGS =      -I$(INCDIR) -I$(HDFINCDIR) -I.
 
