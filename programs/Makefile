@@ -24,6 +24,8 @@ PROGRAMS = \
 	see_spot \
 	generate_rgc \
 	generate_dtc \
+	rgc_delay_errors \
+	baseband_errors \
 	reformat_pattern \
 	memfilter \
 	make_pattern \

@@ -227,12 +227,20 @@ main(
 	terms = (double ***)make_array(sizeof(double), 3,
 		antenna->numberOfBeams, DOPPLER_ORBIT_STEPS, 3);
 
+	//-----------------------//
+	// mark equator crossing //
+	//-----------------------//
+ 
+	double start_time = spacecraft_sim.GetEpoch();
+	double orbit_period = spacecraft_sim.GetPeriod();
+ 
+	start_time += orbit_period / 2.0;
+	start_time = spacecraft_sim.NextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	instrument.Eqx(start_time);
+
 	//------------//
 	// initialize //
 	//------------//
-
-	double start_time = spacecraft_sim.GetEpoch();
-	double orbit_period = spacecraft_sim.GetPeriod();
 
 	if (! instrument_sim.Initialize(&(instrument.antenna)))
 	{
@@ -325,6 +333,7 @@ main(
 					&instrument, vector);
 
 				baseband_freq[azimuth_step] = instrument.commandedDoppler;
+printf("%d, %g\n", azimuth_step, instrument.commandedDoppler);
 			}
 
 			//------------------------//
@@ -344,12 +353,18 @@ main(
 	//---------------------------//
 
 	doppler_tracker.Set(terms);
-
 	if (dtc_file)
 	{
 		free_array((void *)terms, 3, antenna->numberOfBeams,
 			DOPPLER_ORBIT_STEPS, 3);
 	}
+
+	//----------------------//
+	// set ticks per orbits //
+	//----------------------//
+
+	unsigned int ticks_per_orbit = instrument.TimeToOrbitTicks(orbit_period);
+	doppler_tracker.SetTicksPerOrbit(ticks_per_orbit);
 
 	//------------------------------------------//
 	// write out the Doppler tracking constants //
@@ -382,7 +397,7 @@ doppler_fit(
 {
 	double wn = two_pi / (double) count;
 	double real[2], imag[2];
- 
+
 	for (int i = 0; i < 2; i++)
 	{
 		real[i] = 0.0;
@@ -396,7 +411,7 @@ doppler_fit(
 			imag[i] += baseband_freq[j] * s;
 		}
 	}
- 
+
 	*a = 2.0 * sqrt(real[1] * real[1] + imag[1] * imag[1]) / (double)count;
 	*p = -atan2(imag[1], real[1]);
 	*c = real[0] / (double)count;

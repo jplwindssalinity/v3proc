@@ -85,7 +85,7 @@ template class BufferedList<OrbitState>;
 //-----------//
 
 #define RANGE_ORBIT_STEPS		256
-#define RANGE_AZIMUTH_STEPS		45		// used for averaging
+#define RANGE_AZIMUTH_STEPS		360		// used for averaging
 
 #define EQX_TIME_TOLERANCE		0.1
 
