@@ -448,7 +448,7 @@ ConfigGrid(
 	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
 		return(0);
 
-	grid->Allocate(ct_res, at_res, 1400.0, 5000.0);
+	grid->Allocate(ct_res, at_res, 2000.0, 5000.0);
 
 	double start_time;
 	if (! config_list->GetDouble(ALONGTRACK_START_TIME_KEYWORD, &start_time))
