@@ -347,7 +347,7 @@ GetKpm(
 {
 
 	float Kpm;
-	int ib = instrument->antenna.currentBeamIdx;
+//	int ib = instrument->antenna.currentBeamIdx;
 	if (wv->spd < 0)
 	{
 		printf("Error: GetKpm received a negative wind speed\n");
