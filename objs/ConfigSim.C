@@ -345,6 +345,10 @@ ConfigL17ToL20(
 		return(0);
 	l17_to_l20->phiBuffer = (float)tmp * dtr;
 
+	if (! config_list->GetDouble(PHI_MAX_SMOOTHING_KEYWORD, &tmp))
+		return(0);
+	l17_to_l20->phiMaxSmoothing = (float)tmp * dtr;
+
 	return(1);
 }
 

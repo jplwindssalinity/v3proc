@@ -9,6 +9,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "InstrumentSim.h"
 #include "Instrument.h"
 #include "GenericGeom.h"
+#include "InstrumentGeom.h"
 #include "Ephemeris.h"
 #include "Constants.h"
 
@@ -108,48 +109,6 @@ InstrumentSim::UpdateAntennaPosition(
 {
 	antennaSim.UpdatePosition(time, &(instrument->antenna));
 	return(1);
-}
-
-//------------------------------//
-// InstrumentSim::BeamFrameToGC //
-//------------------------------//
-
-CoordinateSwitch
-InstrumentSim::BeamFrameToGC(
-	OrbitState*		sc_orbit_state,
-	Attitude*		sc_attitude,
-	Antenna*		antenna,
-	Beam*			beam)
-{
-	CoordinateSwitch total;
-
-	// geocentric to s/c velocity
-	Vector3 sc_xv, sc_yv, sc_zv;
-	velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat,
-		&sc_xv, &sc_yv, &sc_zv);
-	CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
-	total = gc_to_scv;
-
-	// s/c velocity to s/c body
-	CoordinateSwitch scv_to_sc_body(*sc_attitude);
-	total.Append(&scv_to_sc_body);
-
-	// s/c body to antenna pedestal
-	CoordinateSwitch sc_body_to_ant_ped = antenna->GetScBodyToAntPed();
-	total.Append(&sc_body_to_ant_ped);
-
-	// antenna pedestal to antenna frame
-	Attitude att;
-	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
-	CoordinateSwitch ant_ped_to_ant_frame(att);
-	total.Append(&ant_ped_to_ant_frame);
-
-	// antenna frame to beam frame
-	CoordinateSwitch ant_frame_to_beam_frame(beam->GetAntFrameToBeamFrame());
-	total.Append(&ant_frame_to_beam_frame);
-
-	total = total.ReverseDirection();
-	return(total);
 }
 
 //------------------------//

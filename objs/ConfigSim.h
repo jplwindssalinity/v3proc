@@ -118,6 +118,7 @@ int ConfigL17(L17* l17, ConfigList* config_list);
 #define SPD_TOLERANCE_KEYWORD				"SPD_TOLERANCE"
 #define PHI_STEP_KEYWORD					"PHI_STEP"
 #define PHI_BUFFER_KEYWORD					"PHI_BUFFER"
+#define PHI_MAX_SMOOTHING_KEYWORD			"PHI_MAX_SMOOTHING"
 
 int ConfigL17ToL20(L17ToL20* l17_to_l20, ConfigList* config_list);
 

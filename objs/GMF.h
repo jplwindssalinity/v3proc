@@ -54,7 +54,8 @@ public:
 				float* A1_phase, float* A2, float* A2_phase, float* A3,
 				float* A3_phase, float* A4, float* A4_phase);
 	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list,
-				float phi_step_size, float phi_buffer, float spd_tolerance,
+				float phi_step_size, float phi_buffer,
+				float phi_max_smoothing, float spd_tolerance,
 				int desired_solutions);
 
 	//----------------//
@@ -62,12 +63,14 @@ public:
 	//----------------//
 
 	int		RetrieveWinds(MeasList* meas_list, WVC* wvc, float phi_step_size,
-				float phi_buffer, float spd_tolerance, int desired_solutions);
+				float phi_buffer, float phi_max_smoothing, float spd_tolerance,
+				int desired_solutions);
 	int		SolutionCurve(MeasList* meas_list, int phi_count,
 				float phi_step_size, float spd_tolerance, float* best_spd,
 				float* best_obj);
 	int		Smooth(int phi_count, float phi_step_size, float phi_buffer,
-				float* best_obj, int desired_solutions);
+				float phi_max_smoothing, float* best_obj,
+				int desired_solutions);
 	int		FindMaxima(WVC* wvc, int phi_count, float phi_step_size,
 				float* best_spd, float* best_obj);
 

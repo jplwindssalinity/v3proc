@@ -60,6 +60,7 @@ public:
 
 	float	phiStep;
 	float	phiBuffer;
+	float	phiMaxSmoothing;
 	float	spdTolerance;
 };
 

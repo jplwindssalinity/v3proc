@@ -156,6 +156,7 @@ GMF::WriteSolutionCurves(
 	MeasList*	meas_list,
 	float		phi_step_size,
 	float		phi_buffer,
+	float		phi_max_smoothing,
 	float		spd_tolerance,
 	int			desired_solutions)
 {
@@ -221,7 +222,8 @@ GMF::WriteSolutionCurves(
 	//--------------------------------------//
 
 	WVC* wvc = new WVC();
-	Smooth(phi_count, phi_step_size, phi_buffer, best_obj, desired_solutions);
+	Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing, best_obj,
+		desired_solutions);
 	fprintf(ofp, "&\n");
 	for (int i = 0; i < phi_count; i++)
 	{
@@ -266,6 +268,7 @@ GMF::RetrieveWinds(
 	WVC*		wvc,
 	float		phi_step_size,
 	float		phi_buffer,
+	float		phi_max_smoothing,
 	float		spd_tolerance,
 	int			desired_solutions)
 {
@@ -275,12 +278,6 @@ GMF::RetrieveWinds(
 
 	int phi_count = (int)(two_pi / phi_step_size + 0.5);
 	phi_step_size = two_pi / (float)phi_count;
-
-	//-------------------------------------//
-	// determine the buffer width in steps //
-	//-------------------------------------//
-
-	int phi_buffer_steps = (int)(phi_buffer / phi_step_size);
 
 	//-------------------------//
 	// allocate storage arrays //
@@ -303,8 +300,8 @@ GMF::RetrieveWinds(
 	// smooth the solution curve //
 	//---------------------------//
 
-	if (! Smooth(phi_count, phi_step_size, phi_buffer_steps, best_obj,
-		desired_solutions))
+	if (! Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing,
+		best_obj, desired_solutions))
 	{
 		return(0);
 	}
@@ -313,7 +310,7 @@ GMF::RetrieveWinds(
 	// find maxima and add to the wvc //
 	//--------------------------------//
 
-	if (! FindMaxima(wvc, phi_count, phi_buffer_steps, best_spd, best_obj))
+	if (! FindMaxima(wvc, phi_count, phi_step_size, best_spd, best_obj))
 		return(0);
 
 	delete best_spd;
@@ -451,6 +448,7 @@ GMF::Smooth(
 	int			phi_count,
 	float		phi_step_size,
 	float		phi_buffer,
+	float		phi_max_smoothing,
 	float*		best_obj,
 	int			desired_solutions)
 {
@@ -459,6 +457,7 @@ GMF::Smooth(
 	//---------------------------//
 
 	int max_delta_phi = (int)(phi_buffer / phi_step_size + 0.5);
+	int max_smoothing_phi = (int)(phi_max_smoothing / phi_step_size + 0.5);
 	int delta_phi = 0;		// start with no smoothing
 
 	float* copy_obj = NULL;
@@ -485,7 +484,7 @@ GMF::Smooth(
 			int idx_minus = (phi_idx - 1 + phi_count) % phi_count;
 			int idx_plus = (phi_idx + 1) % phi_count;
 			if (best_obj[phi_idx] > best_obj[idx_minus] &&
-				best_obj[phi_idx] < best_obj[idx_plus])
+				best_obj[phi_idx] > best_obj[idx_plus])
 			{
 				maxima_count++;
 
@@ -498,8 +497,8 @@ GMF::Smooth(
 				{
 					idx_minus = (phi_idx - offset + phi_count) % phi_count;
 					idx_plus = (phi_idx + offset) % phi_count;
-					if (best_obj[phi_idx] < best_obj[idx_plus] ||
-						best_obj[phi_idx] < best_obj[idx_minus])
+					if (best_obj[phi_idx] < best_obj[idx_minus] ||
+						best_obj[phi_idx] < best_obj[idx_plus])
 					{
 						// not a maxima
 						isa_max = 0;
@@ -537,7 +536,7 @@ GMF::Smooth(
 			//-----------------------------//
 
 			delta_phi++;
-			if (delta_phi > max_delta_phi)
+			if (delta_phi > max_smoothing_phi)
 				break;
 
 			//--------//

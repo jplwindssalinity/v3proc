@@ -55,14 +55,6 @@ public:
 				InstrumentEvent* instrument_event);
 	int		UpdateAntennaPosition(double time, Instrument* instrument);
 
-	//-----------------//
-	// common geometry //
-	//-----------------//
-
-	CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state,
-							Attitude* attitude, Antenna* antenna,
-							Beam* beam);
-
 	//--------------------------//
 	// scatterometer simulation //
 	//--------------------------//
