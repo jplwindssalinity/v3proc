@@ -988,31 +988,35 @@ FindSliceCorners(
 		// check out the quadratic //
 		//-------------------------//
 
-		double local_qr = local_c[1] * local_c[1] - 4.0 * local_c[2] *
-			(local_c[0] - target_gain);
-		if (local_qr < 0.0)
+		if (local_c[2] == 0.0)
 		{
-//			fprintf(stderr,
-//				"FindSliceCorners: can't find target gain on local fit\n");
-			corner_look[i] = local_look;
-			corner_azim[i] = local_azim;
-			continue;
+			// linear fit
+			target_s = (target_gain - local_c[0]) / local_c[1];
 		}
-
-		//----------------------//
-		// find the target gain //
-		//----------------------//
-
-		double local_q = sqrt(local_qr);
-		double local_twoa = 2.0 * local_c[2];
-		double target_s_1 = (-local_c[1] + local_q) / local_twoa;
-		double target_s_2 = (-local_c[1] - local_q) / local_twoa;
-		double abs_1 = fabs(target_s_1);
-		double abs_2 = fabs(target_s_2);
-		if (abs_1 < abs_2)
-			target_s = target_s_1;
 		else
-			target_s = target_s_2;
+		{
+			// quadratic fit
+
+			double local_qr = local_c[1] * local_c[1] - 4.0 * local_c[2] *
+				(local_c[0] - target_gain);
+			if (local_qr < 0.0)
+			{
+				corner_look[i] = local_look;
+				corner_azim[i] = local_azim;
+				continue;
+			}
+
+			double local_q = sqrt(local_qr);
+			double local_twoa = 2.0 * local_c[2];
+			double target_s_1 = (-local_c[1] + local_q) / local_twoa;
+			double target_s_2 = (-local_c[1] - local_q) / local_twoa;
+			double abs_1 = fabs(target_s_1);
+			double abs_2 = fabs(target_s_2);
+			if (abs_1 < abs_2)
+				target_s = target_s_1;
+			else
+				target_s = target_s_2;
+		}
 
 		corner_look[i] = local_look + target_s * delta_look;
 		corner_azim[i] = local_azim + target_s * delta_azim;
