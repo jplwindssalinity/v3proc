@@ -91,6 +91,7 @@ static const char rcs_id_configsimdefs_h[] =
 #define OUTPUT_X_TO_STDOUT_KEYWORD		"OUTPUT_X_TO_STDOUT"
 #define USE_KFACTOR_KEYWORD				"USE_KFACTOR"
 #define CREATE_XTABLE_KEYWORD			"CREATE_XTABLE"
+#define ORBIT_TICKS_PER_ORBIT_KEYWORD	"ORBIT_TICKS_PER_ORBIT"
 
 //-----------------------//
 // InstrumentSimAccurate //

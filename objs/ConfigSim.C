@@ -55,23 +55,6 @@ ConfigSpacecraft(
 		return(0);
 	}
 
-        //--------------------//
-        // Initialize Period  //
-        //--------------------//
-
-	double semi_major_axis;
-	if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
-		return(0);
-
-	double eccentricity;
-	if (! config_list->GetDouble(ECCENTRICITY_KEYWORD, &eccentricity))
-		return(0);
-
-	double inclination;
-	if (! config_list->GetDouble(INCLINATION_KEYWORD, &inclination))
-		return(0);
-
-	spacecraft->SetOrbitPeriod(semi_major_axis, eccentricity, inclination);
 	return(1);
 }
 
@@ -622,6 +605,19 @@ ConfigInstrument(
 	}
 	instrument->useKpm = use_kpm;
 
+	//--------------//
+	// orbit period //
+	//--------------//
+
+	unsigned int orbit_ticks;
+	if (! config_list->GetUnsignedInt(ORBIT_TICKS_PER_ORBIT_KEYWORD,
+		&orbit_ticks))
+	{
+		fprintf(stderr, "Missing orbit ticks\n");
+		return(0);
+	}
+	instrument->orbitTicksPerOrbit = orbit_ticks;
+
 	return(1);
 }
 
@@ -1065,10 +1061,8 @@ ConfigXTable(
   /**** Read header parameters for XTable object ****/
 
   int num_beams;
-  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))	
+  if(! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD,&num_beams))
     return(0);
-	
-
 
   int num_science_slices;
   if(! config_list->GetInt(SCIENCE_SLICES_PER_SPOT_KEYWORD,&num_science_slices))
