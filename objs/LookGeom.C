@@ -50,23 +50,31 @@ Vector3 xscvel_geo = yscvel_geo & zscvel_geo;
 
 // Coordinate transformation from geocentric to s/c velocity
 CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
+//geo_to_scvel.show("antenna_look: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
 CoordinateSwitch scvel_to_scbody(sc_att,1,2,3);
+//scvel_to_scbody.show("antenna_look: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
 CoordinateSwitch scbody_to_ant(ant_att,1,2,3);
+//scbody_to_ant.show("antenna_look: scbody_to_ant");
 
 // rlook is a vector from the s/c to the ground target (in geocentric frame)
 Vector3 rlook = rground - rsat;
+//rlook.show("antenna_look: rlook");
 
 // Apply coordinate transformations to put rlook in the antenna frame.
 
 Vector3 rlook_scvel = geo_to_scvel.forward(rlook);
 Vector3 rlook_scbody = scvel_to_scbody.forward(rlook_scvel);
 Vector3 rlook_ant = scbody_to_ant.forward(rlook_scbody);
+//rlook_scvel.show("antenna_look: rlook_scvel");
+//rlook_scbody.show("antenna_look: rlook_scbody");
+//rlook_ant.show("antenna_look: rlook_ant");
 
 rlook_ant.scale(1.0);
+//rlook_ant.show("antenna_look: rlook_ant");
 return(rlook_ant);
 
 }
@@ -114,12 +122,15 @@ Vector3 xscvel_geo = yscvel_geo & zscvel_geo;
 
 // Coordinate transformation from geocentric to s/c velocity
 CoordinateSwitch geo_to_scvel(xscvel_geo,yscvel_geo,zscvel_geo);
+//geo_to_scvel.show("earth_intercept: geo_to_scvel");
 
 // Coordinate transformation from s/c velocity to s/c body
 CoordinateSwitch scvel_to_scbody(sc_att,1,2,3);
+//scvel_to_scbody.show("earth_intercept: scvel_to_scbody");
 
 // Coordinate transformation from s/c body to antenna frame
 CoordinateSwitch scbody_to_ant(ant_att,1,2,3);
+//scbody_to_ant.show("earth_intercept: scbody_to_ant");
 
 // Apply coordinate transformations to put rlook_ant in the geocentric
 // frame.
@@ -127,9 +138,12 @@ CoordinateSwitch scbody_to_ant(ant_att,1,2,3);
 Vector3 rlook_scbody = scbody_to_ant.backward(rlook_ant);
 Vector3 rlook_scvel = scvel_to_scbody.backward(rlook_scbody);
 Vector3 rlook_geo = geo_to_scvel.backward(rlook_scvel);
+//rlook_scbody.show("earth_intercept: rlook_scbody");
+//rlook_scvel.show("earth_intercept: rlook_scvel");
+//rlook_geo.show("earth_intercept: rlook_geo");
 
 rlook_geo.scale(1.0);
-rlook_geo.show("rlook_geo");
+//rlook_geo.show("earth_intercept: rlook_geo");
 
 Vector3 v1 = rlook_geo * rlook_geo;
 Vector3 v2 = rsat * rlook_geo;
@@ -155,10 +169,18 @@ if (discriminate < 0)
 double righthalf = sqrt(discriminate)/(2*C1);
 double s1 = -C2/C1 + righthalf;
 double s2 = -C2/C1 - righthalf;
+//printf("s1 = %g, s2 = %g\n",s1,s2);
 double S;
-if (s1 > s2) S = s2; else S = s1;
-printf("slant range = %g\n",S);
+if ((s1 > 0) && (s2 > 0))
+  {	// both positive, so choose the smaller one (on this side of the earth)
+  if (s1 > s2) S = s2; else S = s1;
+  }
+else if (s1 > 0) S = s1;	// choose the positive root
+else S = s2;
+//printf("slant range = %g\n",S);
 EarthPosition rground;
+//Vector3 rlook_geo_new = rlook_geo*S;
+//rlook_geo_new.show("earth_intercept: rlook_geo_new");
 rground = rsat + rlook_geo*S;
 
 return(rground);
