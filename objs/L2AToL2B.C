@@ -43,7 +43,6 @@ L17ToL20::ConvertAndWrite(
 	WVC* wvc = new WVC();
 	int count = gmf->FindSolutions(&(l17->frame.measList), wvc,
 		initSpdStep, initPhiStep);
-printf("%d\n", count);
 	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
 		initPhiStep, finalSpdStep, finalPhiStep);
 	wvc->RemoveDuplicates();
