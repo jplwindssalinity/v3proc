@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 			strcat(newline,"; m_register((void*)");
 			strcat(newline,wordstring);
 			strcat(newline,",\"");
-			strcat(newline,argv[1]);
+			strcat(newline,argv[2]);
 			strcat(newline,":");
 			sprintf(numstring,"%d",line);
 			strcat(newline,numstring);
@@ -297,7 +297,7 @@ int main(int argc, char *argv[])
 			strcat(newline,"{m_unregister((void*)");
 			strcat(newline,wordstring);
 			strcat(newline,",\"");
-			strcat(newline,argv[1]);
+			strcat(newline,argv[2]);
 			strcat(newline,":");
 			sprintf(numstring,"%d",line);
 			strcat(newline,numstring);
