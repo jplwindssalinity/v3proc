@@ -104,9 +104,9 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 		const char* x_label, const char* y_label);
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
-		const char* y_axis);
+		const char* y_axis, float* data = NULL, float* secondary = NULL);
 
-int rad_to_deg();
+int rad_to_deg(float* data);
 
 //------------------//
 // OPTION VARIABLES //
@@ -123,6 +123,8 @@ const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 // not always evil...
 float*			ctd_array = NULL;
 float*			value_array = NULL;
+float*			value_2_array = NULL;
+float*			err_array = NULL;
 int*			count_array = NULL;
 int				cross_track_bins = 0;
 const char*		command = NULL;
@@ -282,6 +284,8 @@ main(
 	cross_track_bins = swath->GetCrossTrackBins();
 	ctd_array = new float[cross_track_bins];
 	value_array = new float[cross_track_bins];
+	value_2_array = new float[cross_track_bins];
+	err_array = new float[cross_track_bins];
 	count_array = new int[cross_track_bins];
 
 	char title[1024];
@@ -304,8 +308,8 @@ main(
 	// selected rms speed error vs. ctd //
 	//----------------------------------//
 
-	if (! swath->RmsSpdErrVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, err_array, value_2_array,
+		count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating selected RMS speed error\n",
 			command);
@@ -314,39 +318,44 @@ main(
 	sprintf(title, "Selected RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("sel_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)");
-
-	//--------------------------------------//
-	// selected rms direction error vs. ctd //
-	//--------------------------------------//
-
-	if (! swath->RmsDirErrVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
-	{
-		fprintf(stderr, "%s: error calculating selected RMS direction error\n",
-			command);
-		exit(1);
-	}
-	rad_to_deg();
-	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
-		low_speed, high_speed);
-	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)");
+		"RMS Speed Error (m/s)", value_array, err_array);
 
 	//-----------------------------//
 	// selected speed bias vs. ctd //
 	//-----------------------------//
 
-	if (! swath->SpdBiasVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
-	{
-		fprintf(stderr, "%s: error calculating selected speed bias\n", command);
-		exit(1);
-	}
 	sprintf(title, "Selected Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("sel_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)");
+		"Speed Bias (m/s)", value_2_array);
+
+	//--------------------------------------//
+	// selected rms direction error vs. ctd //
+	//--------------------------------------//
+
+	if (! swath->RmsDirErrVsCti(&truth, value_array, err_array, value_2_array,
+		count_array, low_speed, high_speed))
+	{
+		fprintf(stderr, "%s: error calculating selected RMS direction error\n",
+			command);
+		exit(1);
+	}
+	rad_to_deg(value_array);
+	rad_to_deg(err_array);
+	sprintf(title, "Selected RMS Direction Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("sel_rms_dir_err", title, "Cross Track Distance (km)",
+		"RMS Direction Error (deg)", value_array, err_array);
+
+	//---------------------------------//
+	// selected direction bias vs. ctd //
+	//---------------------------------//
+
+	rad_to_deg(value_2_array);
+	sprintf(title, "Selected Direction Bias vs. CTD (%g - %g m/s)", low_speed,
+		high_speed);
+	plot_thing("sel_dir_bias", title, "Cross Track Distance (km)",
+		"Direction Bias (deg)", value_2_array);
 
 	//---------------//
 	// skill vs. ctd //
@@ -385,8 +394,8 @@ main(
 	// nearest rms speed error vs. ctd //
 	//---------------------------------//
 
-	if (! swath->RmsSpdErrVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
+	if (! swath->RmsSpdErrVsCti(&truth, value_array, err_array, value_2_array,
+		count_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating nearest RMS speed error\n",
 			command);
@@ -395,45 +404,42 @@ main(
 	sprintf(title, "Nearest RMS Speed Error vs. CTD (%g - %g m/s)",
 		low_speed, high_speed);
 	plot_thing("near_rms_spd_err", title, "Cross Track Distance (km)",
-		"RMS Speed Error (m/s)");
-
-	//-------------------------------------//
-	// nearest rms direction error vs. ctd //
-	//-------------------------------------//
-
-	if (! swath->RmsDirErrVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
-	{
-		fprintf(stderr, "%s: error calculating nearest RMS direction error\n",
-			command);
-		exit(1);
-	}
-	rad_to_deg();
-	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
-		low_speed, high_speed);
-	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
-		"RMS Direction Error (deg)");
+		"RMS Speed Error (m/s)", value_array, err_array);
 
 	//----------------------------//
 	// nearest speed bias vs. ctd //
 	//----------------------------//
 
-	if (! swath->SpdBiasVsCti(&truth, value_array, count_array, low_speed,
-		high_speed))
-	{
-		fprintf(stderr, "%s: error calculating nearest speed bias\n", command);
-		exit(1);
-	}
 	sprintf(title, "Nearest Speed Bias vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
 	plot_thing("near_spd_bias", title, "Cross Track Distance (km)",
-		"Speed Bias (m/s)");
+		"Speed Bias (m/s)", value_2_array);
+
+	//-------------------------------------//
+	// nearest rms direction error vs. ctd //
+	//-------------------------------------//
+
+	if (! swath->RmsDirErrVsCti(&truth, value_array, err_array, value_2_array,
+		count_array, low_speed, high_speed))
+	{
+		fprintf(stderr, "%s: error calculating nearest RMS direction error\n",
+			command);
+		exit(1);
+	}
+	rad_to_deg(value_array);
+	rad_to_deg(err_array);
+	sprintf(title, "Nearest RMS Direction Error vs. CTD (%g - %g m/s)",
+		low_speed, high_speed);
+	plot_thing("near_rms_dir_err", title, "Cross Track Distance (km)",
+		"RMS Direction Error (deg)", value_array, err_array);
 
 	//-------------//
 	// free arrays //
 	//-------------//
 
 	delete[] value_array;
+	delete[] value_2_array;
+	delete[] err_array;
 	delete[] ctd_array;
 	delete[] count_array;
 
@@ -470,7 +476,9 @@ plot_thing(
 	const char*		extension,
 	const char*		title,
 	const char*		x_axis,
-	const char*		y_axis)
+	const char*		y_axis,
+	float*			data,
+	float*			secondary)
 {
 	char filename[1024];
 	sprintf(filename, "%s.%s", output_base, extension);
@@ -484,12 +492,30 @@ plot_thing(
 
 	xmgr_control(ofp, title, l2b_file, x_axis, y_axis);
 
+	//------//
+	// plot //
+	//------//
+
+	float* plot_data;
+	if (data)
+		plot_data = data;
+	else
+		plot_data = value_array;
+
 	for (int i = 0; i < cross_track_bins; i++)
 	{
 		if (count_array[i] > 0)
 		{
-			fprintf(ofp, "%g %g %d\n", ctd_array[i], value_array[i],
-				count_array[i]);
+			if (secondary)
+			{
+				fprintf(ofp, "%g %g %g\n", ctd_array[i], plot_data[i],
+					secondary[i]);
+			}
+			else
+			{
+				fprintf(ofp, "%g %g %d\n", ctd_array[i], plot_data[i],
+					count_array[i]);
+			}
 		}
 	}
 	fclose(ofp);
@@ -502,11 +528,12 @@ plot_thing(
 //------------//
 
 int
-rad_to_deg()
+rad_to_deg(
+	float*		data)
 {
 	for (int i = 0; i < cross_track_bins; i++)
 	{
-		value_array[i] *= rtd;
+		data[i] *= rtd;
 	}
 	return(1);
 }

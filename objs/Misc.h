@@ -74,4 +74,6 @@ int				abs_to_rel_idx(int abs_idx, int array_size, int* rel_idx);
 
 float			quantize(float value, float resolution);
 
+float			wrap_angle_near(float angle, float target);
+
 #endif

@@ -1608,16 +1608,23 @@ int
 WindSwath::RmsSpdErrVsCti(
 	WindField*	truth,
 	float*		rms_spd_err_array,
+	float*		std_err_array,
+	float*		spd_bias_array,
 	int*		count_array,
 	float		low_speed,
 	float		high_speed)
 {
-	//----------------------------------//
-	// calculate the sum of the squares //
-	//----------------------------------//
-
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
+		*(rms_spd_err_array + cti) = 0.0;
+		*(std_err_array + cti) = 0.0;
+		*(spd_bias_array + cti) = 0.0;
+		*(count_array + cti) = 0;
+
+		//-------------------------//
+		// first pass calculations //
+		//-------------------------//
+
 		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = swath[cti][ati];
@@ -1633,41 +1640,27 @@ WindSwath::RmsSpdErrVsCti(
 
 			float spd_err = wvc->selected->spd - true_wv.spd;
 			*(rms_spd_err_array + cti) += (spd_err * spd_err);
+			*(spd_bias_array + cti) += spd_err;
 			(*(count_array + cti))++;
 		}
-	}
 
-	//-------------------------------//
-	// take the mean and square root //
-	//-------------------------------//
+		//--------------------------//
+		// calculate the speed bias //
+		//--------------------------//
 
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
+		*(spd_bias_array + cti) /= (float)*(count_array + cti); 
+
+		//-------------------------//
+		// calculate the RMS error //
+		//-------------------------//
+
 		*(rms_spd_err_array + cti) /= (float)*(count_array + cti);
 		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
-	}
 
-	return(1);
-}
+		//--------------------------//
+		// second pass calculations //
+		//--------------------------//
 
-//---------------------------//
-// WindSwath::RmsDirErrVsCti //
-//---------------------------//
-
-int
-WindSwath::RmsDirErrVsCti(
-	WindField*	truth,
-	float*		rms_dir_err_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed)
-{
-	//----------------------------------//
-	// calculate the sum of the squares //
-	//----------------------------------//
-
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
 		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			WVC* wvc = swath[cti][ati];
@@ -1681,20 +1674,103 @@ WindSwath::RmsDirErrVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-			float dir_err = ANGDIF(wvc->selected->dir, true_wv.dir);
-			*(rms_dir_err_array + cti) += (dir_err * dir_err);
-			(*(count_array + cti))++;
+			float spd_err = wvc->selected->spd - true_wv.spd;
+			float err_err = spd_err - *(spd_bias_array + cti);
+			*(std_err_array + cti) += (err_err * err_err);
 		}
+
+		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
+		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
+		*(std_err_array + cti) /= sqrt(*(count_array + cti));
 	}
 
-	//-------------------------------//
-	// take the mean and square root //
-	//-------------------------------//
+	return(1);
+}
 
+//---------------------------//
+// WindSwath::RmsDirErrVsCti //
+//---------------------------//
+
+int
+WindSwath::RmsDirErrVsCti(
+	WindField*	truth,
+	float*		rms_dir_err_array,
+	float*		std_err_array,
+	float*		dir_bias_array,
+	int*		count_array,
+	float		low_speed,
+	float		high_speed)
+{
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
+		*(rms_dir_err_array + cti) = 0.0;
+		*(std_err_array + cti) = 0.0;
+		*(dir_bias_array + cti) = 0.0;
+		*(count_array + cti) = 0;
+
+		//-------------------------//
+		// first pass calculations //
+		//-------------------------//
+
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+
+			float near_angle =
+				wrap_angle_near(wvc->selected->dir, true_wv.dir);
+			float dir_err = near_angle - true_wv.dir;
+			*(rms_dir_err_array + cti) += (dir_err * dir_err);
+			*(dir_bias_array + cti) += dir_err;
+			(*(count_array + cti))++;
+		}
+
+		//------------------------------//
+		// calculate the direction bias //
+		//------------------------------//
+
+		*(dir_bias_array + cti) /= (float)*(count_array + cti); 
+
+		//-------------------------//
+		// calculate the RMS error //
+		//-------------------------//
+
 		*(rms_dir_err_array + cti) /= (float)*(count_array + cti);
 		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
+
+		//--------------------------//
+		// second pass calculations //
+		//--------------------------//
+
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
+				continue;
+
+			float dir_err = wvc->selected->dir - true_wv.dir;
+			float err_err = dir_err - *(dir_bias_array + cti);
+			*(std_err_array + cti) += (err_err * err_err);
+		}
+
+		*(std_err_array + cti) /= (float)(*(count_array + cti) - 1);
+		*(std_err_array + cti) = sqrt(*(std_err_array + cti));
+		*(std_err_array + cti) /= sqrt(*(count_array + cti));
 	}
 
 	return(1);
@@ -1790,47 +1866,6 @@ WindSwath::WithinVsCti(
 
 		*(count_array + cti) = count;
 		*(skill_array + cti) = (float)good_count / (float)count;
-	}
-
-	return(1);
-}
-
-//-------------------------//
-// WindSwath::SpdBiasVsCti //
-//-------------------------//
-
-int
-WindSwath::SpdBiasVsCti(
-	WindField*	truth,
-	float*		spd_bias_array,
-	int*		count_array,
-	float		low_speed,
-	float		high_speed)
-{
-	for (int cti = 0; cti < _crossTrackBins; cti++)
-	{
-		double sum = 0.0;
-		int count = 0;
-		for (int ati = 0; ati < _alongTrackBins; ati++)
-		{
-			WVC* wvc = swath[cti][ati];
-			if (! wvc || ! wvc->selected)
-				continue;
-
-			WindVector true_wv;
-			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
-
-			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
-				continue;
-
-			double dif = wvc->selected->spd - true_wv.spd;
-			sum += dif;
-			count++;
-		}
-
-		*(count_array + cti) = count;
-		*(spd_bias_array + cti) = (float)(sum / (double)count);
 	}
 
 	return(1);

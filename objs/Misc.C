@@ -11,6 +11,7 @@ static const char rcs_id_misc_c[] =
 #include <stdlib.h>
 #include <math.h>
 #include "Misc.h"
+#include "Constants.h"
 
 //---------//
 // no_path //
@@ -428,4 +429,25 @@ quantize(
 	double idx = floor(value / resolution + 0.5);
 	float q_value = idx * resolution;
 	return (q_value);
+}
+
+//-----------------//
+// wrap_angle_near //
+//-----------------//
+// returns the ambiguous value of angle closest to target
+// thus wrap_angle_near(0.01, 6.3) returns 6.2932
+
+float
+wrap_angle_near(
+	float		angle,
+	float		target)
+{
+	// very simple and stupid algorithm
+	while (angle - target > pi)
+		angle -= two_pi;
+
+	while (angle - target < -pi)
+		angle += two_pi;
+
+	return(angle);
 }
