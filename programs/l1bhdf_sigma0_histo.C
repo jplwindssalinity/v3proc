@@ -1,24 +1,26 @@
-//==========================================================//
-// Copyright (C) 1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1998-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l1bhdf_sigma0_histo
+//    l1bhdf_sigma0_histo
 //
 // SYNOPSIS
-//	      l1bhdf_sigma0_histo <input_file> <output_file> <min> <max> <step>
+//    l1bhdf_sigma0_histo <input_file> <output_file> <min> <max> <step>
 //
 // DESCRIPTION
 //    Generates a histogram of sigma0's.  The
 //    values outside of the specified range are dropped (not clipped).
 //    The program will calculate an appropriate step size based on the
 //    range and the approximate step size given.
-//      OPTIONS
-//		Last 3 arguments are optional
+//
+// OPTIONS
+//    Last 3 arguments are optional
+//
 // AUTHOR
-//		Richard West
+//    Richard West
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -26,8 +28,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
-
+  "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -65,17 +66,14 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 int debug_flag = 0;
-const char* usage_array[] = {
-  "<input_file>",
-  "<output_file>",
-  "<min>", "<max>", "<step>",
-  0 };
+const char* usage_array[] = { "<input_file>", "<output_file>", "<min>",
+    "<max>", "<step>", 0 };
 
 //------------------//
 // OPTION VARIABLES //
 //------------------//
 
-#define OPTSTRING               "p"
+#define OPTSTRING  "p"
 
 //--------------//
 // MAIN PROGRAM //
@@ -83,14 +81,14 @@ const char* usage_array[] = {
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
+    const char* command = no_path(argv[0]);
     int start_frame=-1, end_frame=2;
     char* input_file = NULL;
     char* output_file = NULL;
@@ -109,18 +107,18 @@ main(
     int clidx = optind;
     if (argc-optind == 5)
     {
-	  input_file = argv[clidx++];
-	  output_file = argv[clidx++];
-	  min = atof(argv[clidx++]);
-	  max = atof(argv[clidx++]);
-	  step = atof(argv[clidx++]);
-//	  start_frame=atoi(argv[clidx++]);
-//	  end_frame=atoi(argv[clidx++]);
-	}
+      input_file = argv[clidx++];
+      output_file = argv[clidx++];
+      min = atof(argv[clidx++]);
+      max = atof(argv[clidx++]);
+      step = atof(argv[clidx++]);
+//      start_frame=atoi(argv[clidx++]);
+//      end_frame=atoi(argv[clidx++]);
+    }
     else if (argc-optind == 2)
     {
-	  input_file = argv[clidx++];
-	  output_file = argv[clidx++];
+      input_file = argv[clidx++];
+      output_file = argv[clidx++];
     }
     else
     {
@@ -152,21 +150,21 @@ main(
     fprintf(stdout, "%s: %s has %d records\n",
                                argv[0], input_file, l1bHdf.GetDataLength());
 
-	//------------------------//
-	// open the output file   //
-	//------------------------//
+    //------------------------//
+    // open the output file   //
+    //------------------------//
 
     FILE* output = fopen(output_file,"w");
- 	if (! output)
-	{
-		fprintf(stderr, "%s: error opening output file %s\n", command,
-			output_file);
-		exit(1);
-	}       
+     if (! output)
+    {
+        fprintf(stderr, "%s: error opening output file %s\n", command,
+            output_file);
+        exit(1);
+    }
 
-	//------------------------//
-	// process desired frames //
-	//------------------------//
+    //------------------------//
+    // process desired frames //
+    //------------------------//
 
     while (1)
     {
@@ -176,7 +174,7 @@ main(
       if (! l1bHdf.ReadL1BHdfDataRec(index)) break;
       if (index < start_frame) continue; // skip until index in range
       if (start_frame > 0 && index > end_frame) break;  // done
-    
+
       Parameter* param=NULL;
       param = l1bHdf.GetParameter(NUM_PULSES, UNIT_DN);
       assert(param != 0);
@@ -201,8 +199,8 @@ main(
 
         param = l1bHdf.GetParameter(SLICE_QUAL_FLAG, UNIT_DN);
         assert(param != 0);
-        unsigned int* uintP = (unsigned int*)param->data;
-        unsigned int sliceQualFlags = *(uintP + ipulse);
+//        unsigned int* uintP = (unsigned int*)param->data;
+//        unsigned int sliceQualFlags = *(uintP + ipulse);
 
         //--------------------//
         // For each slice ... //
@@ -217,10 +215,9 @@ main(
           // do i need to put negative sign on explicitely here?
           double sigma0dB = (double)(*floatP);
           int ii = (int)((sigma0dB - min) / step + 0.5);
-          if (ii >= 0 && ii <= bins) count[ii]++;
+          if (ii >= 0 && ii <= (int)bins) count[ii]++;
         }
       }
-
     }
 
     //--------//
@@ -251,8 +248,7 @@ main(
     // close files and exit //
     //----------------------//
 
-	l1bHdf.Close();
+    l1bHdf.Close();
     fclose(output);
     return(0);
 }
-
