@@ -441,6 +441,25 @@ WindSwath::WriteL20(
 	return(1);
 }
 
+//-----------------------//
+// WindSwath::DeleteWVCs //
+//-----------------------//
+
+int
+WindSwath::DeleteWVCs()
+{
+	for (int i = 0; i < _alongTrackSize; i++)
+	{
+		for (int j = 0; j < _crossTrackSize; j++)
+		{
+			WVC* wvc = *(*(swath + i) + j);
+			delete wvc;
+			*(*(swath + i) + j) = NULL;
+		}
+	}
+	return(1);
+}
+
 //----------------------//
 // WindSwath::_Allocate //
 //----------------------//

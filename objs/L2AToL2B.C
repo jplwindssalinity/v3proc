@@ -23,16 +23,18 @@ L17ToL20::~L17ToL20()
 	return;
 }
 
-//-------------------//
-// L17ToL20::Convert //
-//-------------------//
+//---------------------------//
+// L17ToL20::ConvertAndWrite //
+//---------------------------//
 
 int
-L17ToL20::Convert(
+L17ToL20::ConvertAndWrite(
 	L17*	l17,
 	GMF*	gmf,
 	L20*	l20)
 {
+	static int last_rev = 0;
+
 	//---------------//
 	// retrieve wind //
 	//---------------//
@@ -49,8 +51,20 @@ L17ToL20::Convert(
 	// determine grid indicies //
 	//-------------------------//
 
+	int rev = l17->frame.rev;
 	int ati = l17->frame.ati;
 	int cti = l17->frame.cti;
+
+	//------------------------//
+	// write l20 if necessary //
+	//------------------------//
+
+	if (rev != last_rev && last_rev)
+	{
+		if (! l20->WriteDataRec())
+			return(0);
+		l20.frame.swath.DeleteWVCs();
+	}
 
 	//-------------------//
 	// add to wind swath //

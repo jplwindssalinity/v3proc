@@ -48,7 +48,7 @@ public:
 	// conversion //
 	//------------//
 
-	int		Convert(L17* l17, GMF* gmf, L20* l20);
+	int		ConvertAndWrite(L17* l17, GMF* gmf, L20* l20);
 };
 
 #endif

@@ -214,6 +214,12 @@ public:
 
 	int		Allocate(int cross_track_size, int along_track_size);
 
+	//---------//
+	// freeing //
+	//---------//
+
+	int		DeleteWVCs();
+
 	//--------------//
 	// input/output //
 	//--------------//
