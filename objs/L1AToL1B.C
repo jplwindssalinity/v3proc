@@ -98,8 +98,7 @@ L1AToL1B::Convert(
     else if (Esn_echo_cal == 0.0)
     {
         // Make first frame cal pulse data using true PtGr.
-        float PtGr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
-        PtGr_to_Esn(PtGr,NULL,qscat,0,&Esn_echo_cal,&Esn_noise_cal);
+        PtGr_to_Esn(NULL,qscat,0,&Esn_echo_cal,&Esn_noise_cal);
         make_load_measurements(qscat,&En_echo_load,&En_noise_load);
     }
 

@@ -281,16 +281,20 @@ QscatSim::L1AFrameInit(
         if (cur_beam->polarization == H_POL)
         {
           l1a_frame->in_eu.range_gate_delay_inner = 1e3*qscat->ses.rxGateDelay;
-          l1a_frame->in_eu.range_gate_width_inner = 1e3*ses_beam_info->rxGateWidth;
+          l1a_frame->in_eu.range_gate_width_inner =
+            1e3*ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_a_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+          l1a_frame->in_eu.transmit_power_inner = qscat->ses.transmitPower;
         }
         else
         {
           l1a_frame->in_eu.range_gate_delay_outer = 1e3*qscat->ses.rxGateDelay;
-          l1a_frame->in_eu.range_gate_width_outer = 1e3*ses_beam_info->rxGateWidth;
+          l1a_frame->in_eu.range_gate_width_outer =
+            1e3*ses_beam_info->rxGateWidth;
           l1a_frame->status.range_gate_b_delay = qscat->cds.rxGateDelayDn;
           l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+          l1a_frame->in_eu.transmit_power_outer = qscat->ses.transmitPower;
         }
 
     }
@@ -434,9 +438,7 @@ QscatSim::ScatSim(
             float dummy, freq;
             qscat->ses.GetSliceFreqBw(slice_idx, &freq, &dummy);
 
-	    float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
-                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
-                 qscat->ses.txPulseWidth;
+            float Es_cal = true_Es_cal(qscat);
             double Xcaldb; 
             radar_Xcal(qscat,Es_cal,&Xcaldb);
             Xcaldb = 10.0 * log10(Xcaldb);
@@ -516,9 +518,7 @@ QscatSim::ScatSim(
         cf.attitude = spacecraft->attitude;
         cf.antennaAziTx = qscat->sas.antenna.txCenterAzimuthAngle;
         cf.antennaAziGi = qscat->sas.antenna.groundImpactAzimuthAngle;
-        cf.EsCal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
-                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
-                 qscat->ses.txPulseWidth;
+        cf.EsCal = true_Es_cal(qscat);
         cf.WriteDataRec(fptr);
         fclose(fptr);
     }
@@ -1033,14 +1033,13 @@ QscatSim::SetL1ALoopback(
     // Only "noise it up" if simKpriFlag is set. //
     //-------------------------------------------//
 
-    float PtGr = qscat->ses.transmitPower * qscat->ses.rxGainEcho;
 //    if (simVs1BCheckfile)
 //    {
 //        cf->ptgr = PtGr;
 //    }
 
     float Esn_echo_cal,Esn_noise_cal;
-    PtGr_to_Esn(PtGr,&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
+    PtGr_to_Esn(&ptgrNoise,qscat,simKpriFlag,&Esn_echo_cal,&Esn_noise_cal);
 
     //-------------------//
     // for each slice... //
@@ -1169,9 +1168,7 @@ QscatSim::ComputeXfactor(
     }
     Beam* beam = qscat->GetCurrentBeam();
     double Xcal; 
-    float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
-                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
-                 qscat->ses.txPulseWidth;
+    float Es_cal = true_Es_cal(qscat);
 
     radar_Xcal(qscat,Es_cal,&Xcal);
     (*X)*=Xcal/(beam->peakGain * beam->peakGain);

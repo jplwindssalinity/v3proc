@@ -113,6 +113,7 @@ public:
                                   // - Not including transmitPathLoss
     float        rxGainEcho;      // dimensionless multiplicative factor
     float        rxGainNoise;     // dimensionless multiplicative factor
+    float        calibrationBias; // dimensionless multiplicative factor
     float        chirpRate;       // chirp rate (Hz/s)
     float        fftBinBandwidth;        // Hz
     float        scienceSliceBandwidth;  // Hz
@@ -276,7 +277,6 @@ public:
     unsigned int    orbitTicksPerOrbit;
     CdsBeamInfo     beamInfo[NUMBER_OF_QSCAT_BEAMS];
 
-    int             currentBeamIdx;
     unsigned int    orbitTime;
     unsigned short  orbitStep;
     unsigned int    instrumentTime;

@@ -38,7 +38,8 @@ SesBeamInfo::~SesBeamInfo()
 QscatSes::QscatSes()
 :   txPulseWidth(0.0), txDoppler(0.0), txFrequency(0.0), rxGateDelay(0.0),
     baseTxFrequency(0.0), pri(0.0), transmitPower(0.0), rxGainEcho(0.0),
-    rxGainNoise(0.0), chirpRate(0.0), fftBinBandwidth(0.0),
+    rxGainNoise(0.0), calibrationBias(0.0), chirpRate(0.0),
+    fftBinBandwidth(0.0),
     scienceSliceBandwidth(0.0),  scienceSlicesPerSpot(0),
     guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0)
 {

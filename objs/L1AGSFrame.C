@@ -172,54 +172,62 @@ FILE*   ofp)
     fprintf(ofp,"\n ============== GS Science Block ==============\n\n");
     int i=0, j=0, k=0;
     fprintf(ofp,"\n antenna_position[100]: \n");
-    for (i=0; i < 20; i++)
+    for (i=0; i < 10; i++)
     {
-        for (j=0; j < 5; j++)
-            fprintf(ofp, " %d", in_science.antenna_position[i*5+j]);
+        for (j=0; j < 10; j++)
+            fprintf(ofp, " %d", in_science.antenna_position[i*10+j]);
         fprintf(ofp, "\n");
     }
 
     fprintf(ofp,"\nloop_back_cal_A_power[12]: \n");
-    for (i=0; i < 2; i++)
+    for (i=0; i < 1; i++)
     {
-        for (j=0; j < 6; j++)
-            fprintf(ofp, " %g", in_science.loop_back_cal_A_power[i*6+j]);
+        for (j=0; j < 12; j++)
+            fprintf(ofp, " %g", in_science.loop_back_cal_A_power[i*12+j]);
         fprintf(ofp, "\n");
     }
 
     fprintf(ofp,"\nloop_back_cal_B_power[12]: \n");
-    for (i=0; i < 2; i++)
+    for (i=0; i < 1; i++)
     {
-        for (j=0; j < 6; j++)
-            fprintf(ofp, " %g", in_science.loop_back_cal_B_power[i*6+j]);
+        for (j=0; j < 12; j++)
+            fprintf(ofp, " %g", in_science.loop_back_cal_B_power[i*12+j]);
         fprintf(ofp, "\n");
     }
     fprintf(ofp,"\nloop_back_cal_noise: %g, load_cal_noise: %g\n",
                  in_science.loop_back_cal_noise, in_science.load_cal_noise);
     fprintf(ofp,"\nload_cal_A_power[12]: \n");
-    for (i=0; i < 2; i++)
+    for (i=0; i < 1; i++)
     {
-        for (j=0; j < 5; j++)
-            fprintf(ofp, " %g", in_science.load_cal_A_power[i*6+j]);
+        for (j=0; j < 12; j++)
+            fprintf(ofp, " %g", in_science.load_cal_A_power[i*12+j]);
         fprintf(ofp, "\n");
     }
     fprintf(ofp,"\nload_cal_B_power[12]: \n");
-    for (i=0; i < 2; i++)
+    for (i=0; i < 1; i++)
     {
-        for (j=0; j < 5; j++)
-            fprintf(ofp, " %g", in_science.load_cal_B_power[i*6+j]);
+        for (j=0; j < 12; j++)
+            fprintf(ofp, " %g", in_science.load_cal_B_power[i*12+j]);
         fprintf(ofp, "\n");
     }
 
     fprintf(ofp,"\npower_dn[12][100]: \n");
+    int count = 0;
     for (k=0; k < 12; k++)
     {
-        for (i=0; i < 20; i++)
+      for (j=0; j < 100; j++)
+      {
+        fprintf(ofp, " %d", in_science.power_dn[k][j]);
+        if (count >= 11)
         {
-            for (j=0; j < 5; j++)
-                fprintf(ofp, " %d", in_science.power_dn[k][i*5+j]);
-            fprintf(ofp, "\n");
+          fprintf(ofp, "\n");
+          count = 0;
         }
+        else
+        {
+          count++;
+        }
+      }
     }
     fprintf(ofp,"\nl1a_frame_inst_status: 0x%08x\n", l1a_frame_inst_status);
     fprintf(ofp,"l1a_frame_err_status: 0x%08x\n", l1a_frame_err_status);

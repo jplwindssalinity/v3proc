@@ -96,8 +96,8 @@ int  Er_to_sigma0_given_X(Qscat* qscat, Meas* meas, float Xfactor, float Psn,
          float sumPsn, float Pn);
 
 int radar_Xcal(Qscat* qscat, float Es_cal, double* Xcal);
-    
-int PtGr_to_Esn(float PtGr, TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
+double true_Es_cal(Qscat* qscat);    
+int PtGr_to_Esn(TimeCorrelatedGaussian*  ptgrNoise, Qscat* qscat,
                 int sim_kpri_flag,
                 float* Esn_echo_cal, float* Esn_noise_cal);
 int make_load_measurements(Qscat* qscat, float* En_echo_load,

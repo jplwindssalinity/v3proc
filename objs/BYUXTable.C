@@ -242,9 +242,7 @@ BYUXTable::GetXTotal(
     CheckFrame*  cf)
 {
   // true Es_cal based on true PtGr
-  float Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho /
-                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
-                 qscat->ses.txPulseWidth;
+  float Es_cal = true_Es_cal(qscat);
   float X = GetXTotal(spacecraft, qscat, meas, Es_cal, cf);
   return(X);
 }

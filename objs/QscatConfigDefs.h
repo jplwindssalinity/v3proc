@@ -24,6 +24,7 @@ static const char rcs_id_qscatconfigdefs_h[] =
 #define BASE_TRANSMIT_FREQUENCY_KEYWORD  "BASE_TX_FREQUENCY"
 #define RX_GAIN_ECHO_KEYWORD             "RX_GAIN_ECHO"
 #define RX_GAIN_NOISE_KEYWORD            "RX_GAIN_NOISE"
+#define CALIBRATION_BIAS_KEYWORD         "CALIBRATION_BIAS"
 
 #define A0_L13_KEYWORD             "A0_L13"
 #define A1_L13_KEYWORD             "A1_L13"

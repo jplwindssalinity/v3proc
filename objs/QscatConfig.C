@@ -82,6 +82,15 @@ ConfigQscatSes(
         return(0);
     qscat_ses->rxGainNoise = (float)pow(10.0, 0.1 * rx_gain_noise);
 
+    //----------------//
+    // receiver gains //
+    //----------------//
+
+    float calibration_bias;    // dB
+    if (! config_list->GetFloat(CALIBRATION_BIAS_KEYWORD, &calibration_bias))
+        return(0);
+    qscat_ses->calibrationBias = (float)pow(10.0, 0.1 * calibration_bias);
+
     //----------------------//
     // physical temperature //
     //----------------------//

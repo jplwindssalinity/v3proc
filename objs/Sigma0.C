@@ -100,6 +100,10 @@ radar_X_PtGr(
 	return(1);
 }
 
+//------------------------------------------//
+// Compute Xcal defined in IOM-3347-98-019. //
+//------------------------------------------//
+
 int
 radar_Xcal(
     Qscat*             qscat,
@@ -111,15 +115,31 @@ radar_Xcal(
     double L21 = qscat->ses.transmitPathLoss;
     double L23 = qscat->ses.loopbackLoss;
     double Lcalop = qscat->ses.loopbackLossRatio;
+    double delta = qscat->ses.calibrationBias;
 	double lambda = speed_light_kps / qscat->ses.txFrequency;
     Beam* beam = qscat->GetCurrentBeam();
 
 	*Xcal = beam->peakGain * beam->peakGain * lambda*lambda /
-        (64*pi*pi*pi) * (L23*Lcalop/L13/L21) * Es_cal;
+        (64*pi*pi*pi) * (L23*Lcalop/L13/L21) / delta * Es_cal;
 
 	return(1);
 }
 
+//------------------------------------------------------//
+// Compute true loopback signal energy using true PtGr. //
+//------------------------------------------------------//
+
+double
+true_Es_cal(Qscat* qscat)
+{
+
+    double Es_cal = qscat->ses.transmitPower * qscat->ses.rxGainEcho *
+                 qscat->ses.transmitPathLoss / qscat->ses.calibrationBias /
+                 qscat->ses.loopbackLoss / qscat->ses.loopbackLossRatio *
+                 qscat->ses.txPulseWidth;
+
+    return(Es_cal);
+}
 
 //
 // sigma0_to_Esn_slice
@@ -311,7 +331,7 @@ sigma0_to_Esn_slice_given_X(
 // PtGr_to_Esn
 //
 // This function computes the loopback cal pulse energy received for a
-// given instrument state and PtGr.
+// given instrument state and PtGr (obtained from the instrument).
 // The received energy is the sum of the looped back signal energy and
 // the noise energy that falls within the appropriate bandwidth.
 // The result could be fuzzed by Kpc which is where Kpri really comes from,
@@ -330,7 +350,6 @@ sigma0_to_Esn_slice_given_X(
 
 int
 PtGr_to_Esn(
-    float        PtGr,
     TimeCorrelatedGaussian*  ptgrNoise,
     Qscat*       qscat,
     int          sim_kpri_flag,
@@ -339,22 +358,20 @@ PtGr_to_Esn(
 {
 
     SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-	double Tp = qscat->ses.txPulseWidth;
 	double Tg = ses_beam_info->rxGateWidth;
 	double Bn = qscat->ses.noiseBandwidth;
 	double Be = qscat->ses.GetTotalSignalBandwidth();
 	double beta = qscat->ses.rxGainNoise / qscat->ses.rxGainEcho;
 	double alpha = Bn/Be;
     double L13 = qscat->ses.receivePathLoss;
-    double L23 = qscat->ses.loopbackLoss;
-    double Lcalop = qscat->ses.loopbackLossRatio;
 
 	//------------------------------------------------------------------------//
 	// Signal (ie., echo) energy referenced to the point just before the
 	// I-Q detection occurs (ie., including the receiver gain and system loss).
+    // L21 boosts Pt up to the level at which it goes through the loopback.
 	//------------------------------------------------------------------------//
 
-	double Es_cal = PtGr/L23/Lcalop * Tp;
+    double Es_cal = true_Es_cal(qscat);
 
 	//------------------------------------------------------------------------//
 	// Add Kpri noise if requested.  This should properly be Kpc style noise
