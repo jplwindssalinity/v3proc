@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1999-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_etime_c[] =
     "@(#) $Id$";
@@ -276,6 +276,19 @@ ETime::WriteAscii(
         return(0);
     fprintf(ofp, "%s", string);
     return(1);
+}
+
+//----------------//
+// ETime::SetTime //
+//----------------//
+
+void
+ETime::SetTime(
+    double  seconds)
+{
+    _sec = (time_t)seconds;
+    _ms = (unsigned short)(1E6 * (seconds - (double)_sec));
+    return;
 }
 
 //------------//

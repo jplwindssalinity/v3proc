@@ -85,6 +85,7 @@ public:
     int             WriteAscii(FILE* ofp);
     time_t          GetSec()  { return(_sec); };
     unsigned short  GetMs()   { return(_ms); };
+    void            SetTime(double seconds);
 
     //-----------//
     // operators //
