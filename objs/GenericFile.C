@@ -54,6 +54,20 @@ GenericFile::SetFilename(
 // GenericFile::OpenForInput //
 //---------------------------//
 
+int
+GenericFile::OpenForInput()
+{
+	if (_filename == NULL)
+		return(0);
+	_fd = open(_filename, O_RDONLY);
+	if (_fd == -1)
+	{
+		_fd = INVALID_FD;
+		return(0);
+	}
+	return(1);
+}
+
 //----------------------------//
 // GenericFile::OpenForOutput //
 //----------------------------//
@@ -75,6 +89,16 @@ GenericFile::OpenForOutput()
 //-------------------//
 // GenericFile::Read //
 //-------------------//
+
+int
+GenericFile::Read(
+	char*		buffer,
+	int			bytes)
+{
+	if (read(_fd, buffer, bytes) != bytes)
+		return(0);
+	return(1);
+}
 
 //--------------------//
 // GenericFile::Write //
