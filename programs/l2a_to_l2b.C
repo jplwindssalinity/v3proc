@@ -295,7 +295,7 @@ main(
                 exit(1);
                 break;
             default:
-                fprintf(stderr, "%s: unknown status (???)\n", command);
+                fprintf(stderr, "%s: unknown status\n", command);
                 exit(1);
             }
             break;        // done, exit do loop
