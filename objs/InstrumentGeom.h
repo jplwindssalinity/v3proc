@@ -41,8 +41,8 @@ CoordinateSwitch	AntennaFrameToGC(OrbitState* orbit_state,
 						Attitude* attitude, Antenna* antenna);
 
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look,
-			float azimuth, float freq_1, float freq_2, float freq_tol,
+			Spacecraft* spacecraft, Instrument* instrument, double look,
+			double azimuth, float freq_1, float freq_2, float freq_tol,
 			Outline* outline, Vector3* look_vector, EarthPosition* centroid);
 
 int		DopplerAndDelay(CoordinateSwitch* antenna_frame_to_gc,
@@ -54,42 +54,42 @@ int		TargetInfo(CoordinateSwitch* antenna_frame_to_gc,
 
 int		FindPeakGainAtFreq(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument,
-			float target_freq, float freq_tol, float* look, float* azim,
+			float target_freq, float freq_tol, double* look, double* azim,
 			float* gain);
 
 int		FindFreq(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, float target_freq,
-			float freq_tol, float* look, float* azim);
+			float freq_tol, double* look, double* azim);
 
 int		FreqGradient(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look,
-			float look_offset, float azim, float azim_offset, float* df_dlook,
-			float* df_dazim);
+			Spacecraft* spacecraft, Instrument* instrument, double look,
+			double look_offset, double azim, double azim_offset,
+			double* df_dlook, double* df_dazim);
 
 int		FindPeakGainUsingDeltas(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float delta_look,
-			float delta_azim, float offset, float angle_tol, float* look,
-			float* azim, float* gain);
+			Spacecraft* spacecraft, Instrument* instrument, double delta_look,
+			double delta_azim, double offset, double angle_tol, double* look,
+			double* azim, float* gain);
 
 int		FindPeakGainForSlice(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look_1,
-			float azim_1, float gain_1, float look_2, float azim_2,
+			Spacecraft* spacecraft, Instrument* instrument, double look_1,
+			double azim_1, float gain_1, double look_2, double azim_2,
 			float gain_2, float* peak_gain);
 
 int		FindSliceCorners(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look,
-			float azim, float target_gain, float corner_look[2],
-			float corner_azim[2]);
+			Spacecraft* spacecraft, Instrument* instrument, double look,
+			double azim, float target_gain, double corner_look[2],
+			double corner_azim[2]);
 
 int		QuadFit(CoordinateSwitch* antenna_frame_to_gc, Spacecraft* spacecraft,
-			Instrument* instrument, float look[3], float azim[3], double s[3],
-			double c[3]);
+			Instrument* instrument, double look[3], double azim[3],
+			double s[3], double c[3]);
 
 int		PeakFit(double c[3], float* peak_gain);
 
 int		PowerGainProduct(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, float look,
-			float azim, float* gain);
+			Spacecraft* spacecraft, Instrument* instrument, double look,
+			double azim, float* gain);
 
 int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);

@@ -64,8 +64,8 @@ FindSlice(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look,
-	float				azim,
+	double				look,
+	double				azim,
 	float				freq_1,
 	float				freq_2,
 	float				freq_tol,
@@ -77,8 +77,8 @@ FindSlice(
 	// find peak gain for frequency 1 //
 	//--------------------------------//
 
-	float look_1 = look;
-	float azim_1 = azim;
+	double look_1 = look;
+	double azim_1 = azim;
 	float gain_1;
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
 		freq_1, freq_tol, &look_1, &azim_1, &gain_1))
@@ -90,8 +90,8 @@ FindSlice(
 	// find peak gain for frequency 2 //
 	//--------------------------------//
 
-	float look_2 = look;
-	float azim_2 = azim;
+	double look_2 = look;
+	double azim_2 = azim;
 	float gain_2;
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
 		freq_2, freq_tol, &look_2, &azim_2, &gain_2))
@@ -120,8 +120,8 @@ FindSlice(
 	// find corners for frequency 1 //
 	//------------------------------//
 
-	float c_look_1[2];
-	float c_azim_1[2];
+	double c_look_1[2];
+	double c_azim_1[2];
 	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
 		look_1, azim_1, target_gain, c_look_1, c_azim_1))
 	{
@@ -132,8 +132,8 @@ FindSlice(
 	// find corners for frequency 2 //
 	//------------------------------//
 
-	float c_look_2[2];
-	float c_azim_2[2];
+	double c_look_2[2];
+	double c_azim_2[2];
 	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
 		look_2, azim_2, target_gain, c_look_2, c_azim_2))
 	{
@@ -144,7 +144,7 @@ FindSlice(
 	// generate the outline //
 	//----------------------//
 
-	float c_look[4], c_azim[4];
+	double c_look[4], c_azim[4];
 
 	c_look[0] = c_look_1[0];
 	c_look[1] = c_look_1[1];
@@ -276,7 +276,7 @@ TargetInfo(
  
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
-	float pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
+	double pulse_width = instrument->antenna.beam[current_beam_idx].pulseWidth;
 	double chirp_start = instrument->chirpStartM * pulse_width +
 		instrument->chirpStartB;
 	double transmit_center = -chirp_start / instrument->chirpRate;
@@ -309,8 +309,8 @@ FindPeakGainAtFreq(
 	Instrument*			instrument,
 	float				target_freq,
 	float				freq_tol,
-	float*				look,
-	float*				azim,
+	double*				look,
+	double*				azim,
 	float*				gain)
 {
 	float dif;
@@ -332,15 +332,15 @@ FindPeakGainAtFreq(
 		// determine the iso-frequency deltas //
 		//------------------------------------//
 
-		float df_dlook, df_dazim;
+		double df_dlook, df_dazim;
 		if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, *look,
 			LOOK_OFFSET, *azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
 		{
 			return(0);
 		}
 		// rotate gradient 90 degrees for iso-frequency deltas
-		float delta_look = df_dazim;
-		float delta_azim = -df_dlook;
+		double delta_look = df_dazim;
+		double delta_azim = -df_dlook;
 
 		//----------------------//
 		// locate the peak gain //
@@ -381,8 +381,8 @@ FindFreq(
 	Instrument*			instrument,
 	float				target_freq,
 	float				freq_tol,
-	float*				look,
-	float*				azim)
+	double*				look,
+	double*				azim)
 {
 	Vector3 vector;
 	TargetInfoPackage tip;
@@ -411,7 +411,7 @@ FindFreq(
 		// calculate the gradient //
 		//------------------------//
 
-		float df_dlook, df_dazim;
+		double df_dlook, df_dazim;
 		if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, *look,
 			LOOK_OFFSET, *azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
 		{
@@ -422,7 +422,7 @@ FindFreq(
 		// calculate the target look and azimuth //
 		//---------------------------------------//
 
-		float delta_look, delta_azim;
+		double delta_look, delta_azim;
 		if (df_dazim == 0.0)
 			delta_azim = 0.0;
 		else
@@ -461,12 +461,12 @@ FreqGradient(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look,
-	float				look_offset,
-	float				azim,
-	float				azim_offset,
-	float*				df_dlook,
-	float*				df_dazim)
+	double				look,
+	double				look_offset,
+	double				azim,
+	double				azim_offset,
+	double*				df_dlook,
+	double*				df_dazim)
 {
 	TargetInfoPackage tip_1, tip_2;
 
@@ -474,8 +474,8 @@ FreqGradient(
 	// calculate look vectors //
 	//------------------------//
 
-	float look_1 = look - look_offset;
-	float look_2 = look + look_offset;
+	double look_1 = look - look_offset;
+	double look_2 = look + look_offset;
 	Vector3 vector_look_1, vector_look_2;
 	vector_look_1.SphericalSet(1.0, look_1, azim);
 	vector_look_2.SphericalSet(1.0, look_2, azim);
@@ -502,8 +502,8 @@ FreqGradient(
 	// calculate azimuth vectors //
 	//---------------------------//
 
-	float azim_1 = azim - azim_offset;
-	float azim_2 = azim + azim_offset;
+	double azim_1 = azim - azim_offset;
+	double azim_2 = azim + azim_offset;
 	Vector3 vector_azim_1, vector_azim_2;
 	vector_azim_1.SphericalSet(1.0, look, azim_1);
 	vector_azim_2.SphericalSet(1.0, look, azim_2);
@@ -541,19 +541,19 @@ FindPeakGainUsingDeltas(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				delta_look,
-	float				delta_azim,
-	float				angle_offset,
-	float				angle_tol,
-	float*				look,
-	float*				azim,
+	double				delta_look,
+	double				delta_azim,
+	double				angle_offset,
+	double				angle_tol,
+	double*				look,
+	double*				azim,
 	float*				gain)
 {
 	//------------------------//
 	// scale to radian deltas //
 	//------------------------//
 
-	float scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
+	double scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
 	delta_look /= scale;
 	delta_azim /= scale;
 
@@ -561,9 +561,9 @@ FindPeakGainUsingDeltas(
 	// golden section search for peak //
 	//--------------------------------//
 
-	float ax = -angle_offset;
-	float cx = angle_offset;
-	float bx = ax + (cx - ax) * R;
+	double ax = -angle_offset;
+	double cx = angle_offset;
+	double bx = ax + (cx - ax) * R;
 
 	//--------------------//
 	// widen if necessary //
@@ -603,7 +603,7 @@ FindPeakGainUsingDeltas(
 	// do the search //
 	//---------------//
 
-	float x0, x1, x2, x3;
+	double x0, x1, x2, x3;
 	x0 = ax;
 	x3 = cx;
 	if (cx - bx > bx - ax)
@@ -671,16 +671,16 @@ FindPeakGainForSlice(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look_1,
-	float				azim_1,
+	double				look_1,
+	double				azim_1,
 	float				gain_1,
-	float				look_2,
-	float				azim_2,
+	double				look_2,
+	double				azim_2,
 	float				gain_2,
 	float*				peak_gain)
 {
-	float mid_look = (look_1 + look_2) / 2.0;
-	float mid_azim = (azim_1 + azim_2) / 2.0;
+	double mid_look = (look_1 + look_2) / 2.0;
+	double mid_azim = (azim_1 + azim_2) / 2.0;
 
 	float mid_gain;
 	PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument, mid_look,
@@ -698,7 +698,7 @@ FindPeakGainForSlice(
 	}
 	else if (mid_gain > gain_1 && mid_gain > gain_2)
 	{
-		float look_array[3], azim_array[3];
+		double look_array[3], azim_array[3];
 		look_array[0] = look_1;
 		look_array[1] = mid_look;
 		look_array[2] = look_2;
@@ -719,39 +719,39 @@ FindPeakGainForSlice(
 // FindSliceCorners //
 //------------------//
 
-#define PEAK_ANGLE_OFFSET		0.009
-#define LOCAL_ANGLE_OFFSET		0.004
+#define PEAK_ANGLE_OFFSET		0.00875		// about 0.5 degree
+#define LOCAL_ANGLE_OFFSET		0.000333	// about 0.02 degree
 
 int
 FindSliceCorners(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look,
-	float				azim,
+	double				look,
+	double				azim,
 	float				target_gain,
-	float				corner_look[2],
-	float				corner_azim[2])
+	double				corner_look[2],
+	double				corner_azim[2])
 {
 	//------------------------------------//
 	// determine the iso-frequency deltas //
 	//------------------------------------//
  
-	float df_dlook, df_dazim;
+	double df_dlook, df_dazim;
 	if (! FreqGradient(antenna_frame_to_gc, spacecraft, instrument, look,
 		LOOK_OFFSET, azim, AZIMUTH_OFFSET, &df_dlook, &df_dazim))
 	{
 		return(0);
 	}
 	// rotate gradient 90 degrees for iso-frequency deltas
-	float delta_look = df_dazim;
-	float delta_azim = -df_dlook;
+	double delta_look = df_dazim;
+	double delta_azim = -df_dlook;
 
 	//------------------------//
 	// scale to radian deltas //
 	//------------------------//
  
-	float scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
+	double scale = sqrt(delta_look * delta_look + delta_azim * delta_azim);
 	delta_look /= scale;
 	delta_azim /= scale;
 
@@ -759,12 +759,12 @@ FindSliceCorners(
 	// fit a quadratic //
 	//-----------------//
 
-	float look_array[3];
+	double look_array[3];
 	look_array[0] = look - PEAK_ANGLE_OFFSET * delta_look;
 	look_array[1] = look;
 	look_array[2] = look + PEAK_ANGLE_OFFSET * delta_look;
 
-	float azim_array[3];
+	double azim_array[3];
 	azim_array[0] = azim - PEAK_ANGLE_OFFSET * delta_azim;
 	azim_array[1] = azim;
 	azim_array[2] = azim + PEAK_ANGLE_OFFSET * delta_azim;
@@ -794,31 +794,27 @@ FindSliceCorners(
 	double q = sqrt(qr);
 	double twoa = 2.0 * c[2];
 
-	static const float coef[2] = { -1.0, 1.0 };
+	static const double coef[2] = { -1.0, 1.0 };
 	for (int i = 0; i < 2; i++)
 	{
-		//--------------------------//
-		// estimate using quadratic //
-		//--------------------------//
+		//-----------------------------------//
+		// estimate using the peak quadratic //
+		//-----------------------------------//
 
 		double target_s = (-c[1] + coef[i] * q) / twoa;
-		float local_look = look + target_s * delta_look;
-		float local_azim = azim + target_s * delta_azim;
+		double local_look = look + target_s * delta_look;
+		double local_azim = azim + target_s * delta_azim;
 
-corner_look[i] = local_look;
-corner_azim[i] = local_azim;
-
-/*
 		//-----------------------//
 		// fit a local quadratic //
 		//-----------------------//
 
-		float local_look_array[3];
+		double local_look_array[3];
 		local_look_array[0] = local_look - LOCAL_ANGLE_OFFSET * delta_look;
 		local_look_array[1] = local_look;
 		local_look_array[2] = local_look + LOCAL_ANGLE_OFFSET * delta_look;
 
-		float local_azim_array[3];
+		double local_azim_array[3];
 		local_azim_array[0] = local_azim - LOCAL_ANGLE_OFFSET * delta_azim;
 		local_azim_array[1] = local_azim;
 		local_azim_array[2] = local_azim + LOCAL_ANGLE_OFFSET * delta_azim;
@@ -831,9 +827,9 @@ corner_azim[i] = local_azim;
 		// check out the quadratic //
 		//-------------------------//
 
-		qr = local_c[1] * local_c[1] - 4.0 * local_c[2] *
+		double local_qr = local_c[1] * local_c[1] - 4.0 * local_c[2] *
 			(local_c[0] - target_gain);
-		if (qr < 0.0)
+		if (local_qr < 0.0)
 		{
 			corner_look[i] = look;
 			corner_azim[i] = azim;
@@ -844,12 +840,19 @@ corner_azim[i] = local_azim;
 		// find the target gain //
 		//----------------------//
 
-		q = sqrt(qr);
-		twoa = 2.0 * c[2];
-		s = (-c[1] + coef[i] * q) / twoa;
-		local_look = look + s * delta_look;
-		local_azim = azim + s * delta_azim;
-*/
+		double local_q = sqrt(local_qr);
+		double local_twoa = 2.0 * local_c[2];
+		double target_s_1 = (-local_c[1] + local_q) / local_twoa;
+		double target_s_2 = (-local_c[1] - local_q) / local_twoa;
+		double abs_1 = fabs(target_s_1);
+		double abs_2 = fabs(target_s_2);
+		if (abs_1 < abs_2)
+			target_s = target_s_1;
+		else
+			target_s = target_s_2;
+
+		corner_look[i] = local_look + target_s * delta_look;
+		corner_azim[i] = local_azim + target_s * delta_azim;
 	}
 
 	return(1);
@@ -865,8 +868,8 @@ QuadFit(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look[3],
-	float				azim[3],
+	double				look[3],
+	double				azim[3],
 	double				s[3],
 	double				c[3])
 {
@@ -875,7 +878,7 @@ QuadFit(
 	//-------------------------------//
  
 	s[1] = 0.0;
-	float dl, da;
+	double dl, da;
 	dl = (look[1] - look[0]);
 	da = (azim[1] - azim[0]);
 	s[0] = -sqrt(dl*dl + da*da);
@@ -889,36 +892,47 @@ QuadFit(
  
 	TargetInfoPackage tip;
 	Vector3 vector;
-	double gain[3];
-	int idx = instrument->antenna.currentBeamIdx;
+	float gain[3];
+	double dgain[3];
 	for (int i = 0; i < 3; i++)
 	{
-		vector.SphericalSet(1.0, look[i], azim[i]);
- 
-		//---------------------------//
-		// calculate round trip time //
-		//---------------------------//
- 
-		RangeAndRoundTrip(antenna_frame_to_gc, spacecraft, vector, &tip);
- 
-		//----------------//
-		// calculate gain //
-		//----------------//
- 
-		if (! instrument->antenna.beam[idx].GetPowerGainProduct(look[i],
-			azim[i], tip.roundTripTime, instrument->antenna.spinRate,
-			&(gain[i])))
+		if (! PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+			look[i], azim[i], &(gain[i])))
 		{
 			return(0);
 		}
+		dgain[i] = gain[i];		// transfer to double for quad fit
 	}
  
 	//-----------------//
 	// fit a quadratic //
 	//-----------------//
  
-	if (! polcoe(s, gain, 2, c))
+	if (! polcoe(s, dgain, 2, c))
 		return(0);
+
+/*
+static int count = 0;
+count++;
+if (count >= 1696)
+{
+dl = (look[2] - look[0]);
+da = (azim[2] - azim[0]);
+double sr = sqrt(dl*dl + da*da);
+dl /= sr;
+da /= sr;
+for (double xs = -0.03; xs < 0.03; xs += 0.001)
+{
+double xlook = look[1] + xs * dl;
+double xazim = azim[1] + xs * da;
+float xgain;
+PowerGainProduct(antenna_frame_to_gc, spacecraft, instrument,
+	xlook, xazim, &xgain);
+printf("%g %g %g\n", xs, xgain, ((c[2] * xs) + c[1]) * xs + c[0]);
+}
+printf("&\n");
+}
+*/
  
 	return(1);
 }
@@ -936,8 +950,8 @@ PeakFit(
 	if (c[2] == 0.0)
 		return(0);
 
-//	float dlook_ds = (look_array[2] - look_array[0]) / (s[2] - s[0]);
-//	float dazim_ds = (azim_array[2] - azim_array[0]) / (s[2] - s[0]);
+//	double dlook_ds = (look_array[2] - look_array[0]) / (s[2] - s[0]);
+//	double dazim_ds = (azim_array[2] - azim_array[0]) / (s[2] - s[0]);
 
 	double s_peak = -c[1] / (2.0 * c[2]);
 //	*peak_look = look_array[1] + s_peak * dlook_ds;
@@ -956,8 +970,8 @@ PowerGainProduct(
 	CoordinateSwitch*	antenna_frame_to_gc,
 	Spacecraft*			spacecraft,
 	Instrument*			instrument,
-	float				look,
-	float				azim,
+	double				look,
+	double				azim,
 	float*				gain)
 {
 	Vector3 vector;
