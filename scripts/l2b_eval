@@ -1,0 +1,103 @@
+#!/bin/csh
+#-----------------------------------------------------------#
+# Copyright (C) 1998, California Institute of Technology.	#
+# U.S. Government sponsorship acknowledged.					#
+#-----------------------------------------------------------#
+
+#----------------------------------------------------------------------
+# NAME
+#		l2b_eval_script
+#
+# SYNOPSIS
+#		l2b_eval_script <cfg_file>
+#
+# DESCRIPTION
+#		Executes programs for the display and evaluation of
+#		Level 2B data, i.e.:
+#			l2b_to_vctr, l2b_metrics
+#
+# OPTIONS
+#		None.
+#
+# OPERANDS
+#		The following operand is supported:
+#		<cfg_file>		Specifies the simulation configuration file.
+#
+# EXAMPLES
+#		An example of a command line is:
+#			% l2b_eval_script qscat.cfg
+#
+# ENVIRONMENT
+#		Not environment dependent
+#
+# EXIT STATUS
+#		The following exit values are returned:
+#		0	Program executed successfully
+#		>0	Program had an error
+#
+# NOTES
+#		None.
+#
+# AUTHOR
+#		James N. Huddleston
+#		hudd@acid.jpl.nasa.gov
+#
+# CONFIGURATION CONTROL
+#		"@(#) $Id$"
+#----------------------------------------------------------------------
+
+#------------------------#
+# Parse the command line #
+#------------------------#
+
+set command_name = $0
+set command_name = $command_name:t
+set opt_string = ""
+
+if ($#argv != 1) then
+  goto usage
+  exit(1)
+endif
+
+set cfg_file = $argv[1]
+
+#----------------------------#
+# determine the L2B filename #
+#----------------------------#
+
+set kv_pair = `log_cfg $cfg_file | grep L2B_FILE`
+set l2b_file = $kv_pair[2]
+
+#-----------------#
+# run l2b_to_vctr #
+#-----------------#
+
+echo "`date` : Starting l2b_to_vctr"
+l2b_to_vctr $l2b_file
+echo "`date` : Completed l2b_to_vctr"
+echo ""
+
+#-----------------#
+# run l2b_metrics #
+#-----------------#
+
+echo "`date` : Starting l2b_metrics"
+l2b_metrics -c $cfg_file -s  3:7  -o $l2b_file.03-07
+l2b_metrics -c $cfg_file -s  7:15 -o $l2b_file.07-15
+l2b_metrics -c $cfg_file -s 15:30 -o $l2b_file.15-30
+echo "`date` : Completed l2b_metrics"
+
+exit(0)
+
+end
+
+
+#---------------------------#
+# LABEL: usage				#
+#	Explain command usage	#
+#---------------------------#
+
+usage:
+  echo "usage: $command_name <cfg_file>"
+  exit(1)
+end
