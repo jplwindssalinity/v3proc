@@ -102,8 +102,6 @@ template class List<AngleInterval>;
 #define CT_WIDTH     76
 #define MIN_SAMPLES  100
 
-#define MAX_SHORT  65535
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//

@@ -282,10 +282,10 @@ main(
     // process rev by rev //
     //--------------------//
 
-    unsigned char  nbd_array[ATI_SIZE][CTI_SIZE];
-    unsigned char  spd_array[ATI_SIZE][CTI_SIZE];
-    unsigned char  dir_array[ATI_SIZE][CTI_SIZE];
-    unsigned char  mle_array[ATI_SIZE][CTI_SIZE];
+    unsigned short nbd_array[ATI_SIZE][CTI_SIZE];
+    unsigned short spd_array[ATI_SIZE][CTI_SIZE];
+    unsigned short dir_array[ATI_SIZE][CTI_SIZE];
+    unsigned short mle_array[ATI_SIZE][CTI_SIZE];
     unsigned short lon_array[ATI_SIZE][CTI_SIZE];
     unsigned short lat_array[ATI_SIZE][CTI_SIZE];
 
@@ -302,13 +302,14 @@ main(
         {
             fprintf(stderr, "%s: error opening MUDH file %s\n", command,
                 mudh_file);
-            exit(1);
+            fprintf(stderr, "%s: continuing...\n", command);
+            continue;
         }
         unsigned long size = CTI_SIZE * ATI_SIZE;
-        if (fread(nbd_array,  sizeof(char), size, ifp) != size ||
-            fread(spd_array,  sizeof(char), size, ifp) != size ||
-            fread(dir_array,  sizeof(char), size, ifp) != size ||
-            fread(mle_array,  sizeof(char), size, ifp) != size ||
+        if (fread(nbd_array, sizeof(short), size, ifp) != size ||
+            fread(spd_array, sizeof(short), size, ifp) != size ||
+            fread(dir_array, sizeof(short), size, ifp) != size ||
+            fread(mle_array, sizeof(short), size, ifp) != size ||
             fread(lon_array, sizeof(short), size, ifp) != size ||
             fread(lat_array, sizeof(short), size, ifp) != size)
         {

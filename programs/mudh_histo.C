@@ -67,8 +67,6 @@ static const char rcs_id[] =
 #define AT_WIDTH     1624
 #define CT_WIDTH     76
 
-#define MAX_SHORT  65535
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//
