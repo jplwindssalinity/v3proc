@@ -125,7 +125,7 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
-AccurateGeom.o: AccurateGeom.C CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h Matrix3.h GenericGeom.h Spacecraft.h Instrument.h LonLat.h InstrumentGeom.h AccurateGeom.h Interpolate.h Array.h Misc.h InstrumentSim.h BufferedList.h EarthPosition.h Beam.h Constants.h List.h Meas.h Wind.h GMF.h AntennaSim.h L00.h Distributions.h XTable.h Tracking.h PiscTable.h BaseFile.h L00Frame.h
+AccurateGeom.o: AccurateGeom.C CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h Matrix3.h GenericGeom.h Spacecraft.h Instrument.h LonLat.h InstrumentGeom.h AccurateGeom.h Interpolate.h Array.h Misc.h InstrumentSim.h BufferedList.h EarthPosition.h Beam.h Constants.h List.h Meas.h Wind.h GMF.h AntennaSim.h L00.h Distributions.h XTable.h Tracking.h PiscTable.h BaseFile.h L00Frame.h KpmField.h EarthField.h
 Antenna.o: Antenna.C Antenna.h Beam.h Constants.h CoordinateSwitch.h Attitude.h Tracking.h Matrix3.h
 AntennaSim.o: AntennaSim.C AntennaSim.h Constants.h Antenna.h CoordinateSwitch.h Beam.h Attitude.h Matrix3.h Tracking.h
 Array.o: Array.C Array.h
@@ -150,7 +150,7 @@ InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h Inst
 InstrumentSimAccurate.o: InstrumentSimAccurate.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Sigma0.h Constants.h InstrumentSimAccurate.h AccurateGeom.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h Distributions.h XTable.h EarthPosition.h CoordinateSwitch.h LonLat.h Matrix3.h Meas.h BufferedList.h Beam.h Attitude.h Misc.h List.h PiscTable.h BaseFile.h L00Frame.h Tracking.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h CoordinateSwitch.h Tracking.h Matrix3.h Attitude.h Constants.h
-KpmField.o: KpmField.h EarthField.h LonLat.h Constants.h Distributions.h
+KpmField.o: KpmField.C KpmField.h EarthField.h LonLat.h Constants.h Distributions.h
 KprTable.o: KprTable.C KprTable.h Constants.h Misc.h Array.h GenericGeom.h CoordinateSwitch.h Meas.h L00Frame.h EarthPosition.h Matrix3.h Attitude.h Beam.h LonLat.h Ephemeris.h List.h Tracking.h BufferedList.h
 L00.o: L00.C L00.h BaseFile.h L00Frame.h Attitude.h
 L00Frame.o: L00Frame.C L00Frame.h Attitude.h
