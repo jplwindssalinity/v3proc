@@ -137,6 +137,7 @@ sigma0_to_Psn(
 	float*				Psn_slice)
 {
 
+
 	//-------------------------//
 	// Sanity check on sigma0.
 	//-------------------------//
@@ -228,13 +229,15 @@ sigma0_to_Psn(
 	double Bn = instrument->noiseBandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
 	double Bs = meas->bandwidth;
+	Ps_slice = Kfactor*X*sigma0;
 	double num1 = Ps_slice + Tp*Bs*N0_echo;
 	double num2 = (Tg - Tp)*Bs*N0_echo;
 	float var_psn_slice2 = num1*num1 / (Bs * Tp) + num2*num2/(Bs*(Tg - Tp));
 	// Assuming that rho = 1.0 for now.
 	float var_psn_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
 
-//	printf("%g %g %g %g\n",Kpc2,var_psn_slice1,var_psn_slice2,var_psn_noise);
+//	printf("%g %g %g %g %g\n",
+//		sigma0,Kpc2,var_psn_slice1,var_psn_slice2,var_psn_noise);
 
 	return(1);
 }
@@ -281,20 +284,17 @@ Pnoise(
 	double Tg = beam->receiverGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
+	double beta = instrument->noise_receiverGain/instrument->echo_receiverGain;
 
 	//------------------------------------------------------------------------//
 	// Start with the noise contribution to the noise measurement.  This is
 	// simply the noise spectral density (using the noise channel gain)
-	// multiplied by the noise bandwidth.  Then subtract the echo bandwidth
-	// noise (using the echo channel gain) because we will add the slice
-	// measurements next which include this quantity, and we want them to
-	// cancel out. (Noise in the echo channel is already included in the
-	// first term.)
+	// multiplied by the noise bandwidth.
 	//------------------------------------------------------------------------//
 
-	*Psn_noise = N0_noise*Bn - N0_echo*Be;
+	*Psn_noise = N0_noise*Bn;
 
-	// Sum the signal powers within the measurement spot.
+	// Add in the signal powers within the measurement spot.
 	// This procedure effectively puts all of the variance (ie., Kpc effect)
 	// into the slice signal powers.  The processing routine Pr_to_sigma0
 	// will obtain the exact constant noise power used by the simulator
@@ -307,10 +307,13 @@ Pnoise(
 	// a thermal noise contribution, and a fading contribution (which only
 	// affects the signal power), and apply them separately.
 
+	double Pn_slice,Ps_slice;
 	Meas* meas = spot->GetHead();
 	while (meas != NULL)
 	{
-		*Psn_noise += meas->value;
+		Pn_slice = N0_echo * meas->bandwidth;
+		Ps_slice = meas->value - Pn_slice;
+		*Psn_noise += Ps_slice*beta;
 		meas = spot->GetNext();
 	}
 
