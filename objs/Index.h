@@ -11,7 +11,6 @@ static const char rcs_id_index_h[] =
 
 #include <stdio.h>
 
-
 //======================================================================
 // CLASSES
 //    Index
@@ -84,7 +83,6 @@ public:
 
     friend int operator==(const Index& a, const Index& b);
     friend int operator!=(const Index& a, const Index& b);
- 
 
 protected:
 

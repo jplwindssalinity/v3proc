@@ -405,24 +405,33 @@ Index::IndexToRange(
     return(1);
 }
 
-//-------------------------//
-// operator==              //
-//-------------------------//
+//------------//
+// operator== //
+//------------//
 
 int
-operator==( const Index& a, const Index& b){
-  if(a._min!=b._min) return(0);
-  if(a._max!=b._max) return(0);
-  if(a._bins!=b._bins) return(0);
-  if(a._step!=b._step) return(0);
-  return(1);
+operator==(
+    const Index&  a,
+    const Index&  b)
+{
+    if (a._min == b._min &&
+        a._max == b._max &&
+        a._bins == b._bins &&
+        a._step == b._step)
+    {
+        return(1);
+    }
+    return(0);
 }
 
-//-------------------------//
-// operator!=              //
-//-------------------------//
+//------------//
+// operator!= //
+//------------//
 
 int
-operator!=( const Index& a, const Index& b){
-  return(!(a==b));
+operator!=(
+    const Index&  a,
+    const Index&  b)
+{
+    return(!(a == b));
 }
