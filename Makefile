@@ -17,6 +17,13 @@ default: eadata/Makefile objs/Makefile programs/Makefile \
 			make default); \
 	done
 
+core: objs/Makefile programs/Makefile scripts/Makefile
+	@ for dir in objs programs scripts; \
+		do (cd $$dir; \
+			echo "Making default in `pwd`"; \
+			make default); \
+	done
+
 #----------------------------------------------------------------------
 # clean: remove all object, executable and make files
 #----------------------------------------------------------------------
