@@ -98,9 +98,11 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING    "hpm:r:"
-#define BIG_DIM      100
-#define QUOTE        '"'
+#define OPTSTRING   "hpm:r:"
+#define BIG_DIM     100
+#define QUOTE       '"'
+#define MUDH_DIR    "/export/svt11/hudd/allmudh"
+#define REV_DIGITS  5
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -219,12 +221,12 @@ main(
 
     for (int rev = start_rev; rev <= end_rev; rev++)
     {
-        //---------------//
-        // read nbd file //
-        //---------------//
+        //----------------//
+        // read MUDH file //
+        //----------------//
 
         char mudh_file[1024];
-        sprintf(mudh_file, "%d.mudh", rev);
+        sprintf(mudh_file, "%s/%0*d.mudh", MUDH_DIR, REV_DIGITS, rev);
         FILE* ifp = fopen(mudh_file, "r");
         if (ifp == NULL)
         {
@@ -244,7 +246,8 @@ main(
         //----------------//
 
         char rain_file[1024];
-        sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.irain", rev);
+        sprintf(rain_file, "/export/svt11/hudd/ssmi/%0*d.irain", REV_DIGITS,
+            rev);
         unsigned char rain_rate[AT_WIDTH][CT_WIDTH];
         unsigned char time_dif[AT_WIDTH][CT_WIDTH];
         unsigned short integrated_rain_rate[AT_WIDTH][CT_WIDTH];
