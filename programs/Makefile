@@ -5,10 +5,10 @@
 
 SHELL =			/bin/csh
 INCDIR =		../../include
-SIMLIB =		../../lib/libSim.a
+LDLIBS =		../../lib/libSim.a
 SYSLIBS = 		-lm
 
-CPPFLAGS =		-g -ptr. -ptr../objs +w -I$(INCDIR) $(SIMLIB) $(SYSLIBS)
+CPPFLAGS =		-g -ptr. -ptr../objs +w -I$(INCDIR)
 
 .SUFFIXES = .C
 
