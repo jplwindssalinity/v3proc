@@ -6,6 +6,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.20   06 Aug 1999 23:38:54   sally
+// catch CloseParamDataSets() error
+// 
+//    Rev 1.19   04 Aug 1999 11:05:00   sally
+// need to get around HDF's maximum of 32 files
+// 
 //    Rev 1.17   02 Jun 1999 16:23:20   sally
 // add leap second adjustment
 // 
@@ -272,7 +278,6 @@ char *argv[])
         stat_num_frames = atoi(stat_num_frames_string);
 
 #ifndef NOPM
-    ealog->AppendToInputFileList(leap_second_table_string);
     ealog->AppendToInputFileList(poly_table_string);
     ealog->AppendToOutputFileList(output_file_string);
 
@@ -337,10 +342,9 @@ char *argv[])
     // extract the parameters 
     //------------------------
 
-    TlmFileList* tlm = tlm_file_list;
 
-    for (TlmHdfFile* tlmFile=tlm->GetHead(); tlmFile;
-                         tlmFile=tlm->GetNext())
+    TlmHdfFile* tlmFile=tlm_file_list->GetHead();
+    while ((tlmFile=tlm_file_list->RemoveCurrent()))
     {
         if (plist->OpenParamDataSets(tlmFile) != ParameterList::OK)
         {
@@ -409,7 +413,10 @@ char *argv[])
         }
 
         // ignore the closing error
-        (void)plist->CloseParamDataSets(tlmFile);
+        if (plist->CloseParamDataSets(tlmFile) != ParameterList::OK)
+            fprintf(stderr, "%s: close datasets failed\n",
+                                           tlmFile->GetFileName());
+        delete(tlmFile);
     }
 
     //----------------
