@@ -201,7 +201,7 @@ Parameter.o: Parameter.C Parameter.h CommonDefs.h
 ParameterList.o: ParameterList.C ParameterList.h Itime.h ParTab.h PolyTable.h TlmHdfFile.h CommonDefs.h Parameter.h EAList.h Polynomial.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 	$(CC) -c $(CDEBUGFLAGS) -D__SCAT_GNUCPP__ -DFUNCPROTO -D$(DEBUG) \
 	-D_REENTRANT -DXTFUNCPROTO -D__EXTENSIONS__ \
-	-I. -DNOPM ParameterList.C
+	$(INCFLAGS) -DNOPM ParameterList.C
 Polynomial.o: Polynomial.C Polynomial.h CommonDefs.h
 PolyTable.o: PolyTable.C CommonDefs.h PolyTable.h EAList.h Polynomial.h PolyErrNo.h ListBase.h
 Print.o: Print.C Print.h
