@@ -96,21 +96,22 @@ Pscat::PMeasToEsn(
     // I-Q detection occurs (ie., including the receiver gain and system loss).
     // X has units of energy because Xcal has units of Pt * Tp.
     //--------------------------------------------------------------------//
- 
+
     *Es = X * sigma0;
 
     //-------------------------------------------//
     // use measurement type to decide what to do //
     //-------------------------------------------//
- 
+
+    double N0_echo, En1, En2;
     switch (meas->measType)
     {
     case Meas::VV_MEAS_TYPE:
     case Meas::HH_MEAS_TYPE:
-        double N0_echo = bK * systemTemperature * ses.rxGainEcho /
+        N0_echo = bK * systemTemperature * ses.rxGainEcho /
             ses.receivePathLoss;
-        double En1 = N0_echo * Bs * Tp;       // noise with signal
-        double En2 = N0_echo * Bs * (Tg-Tp);  // noise without signal
+        En1 = N0_echo * Bs * Tp;       // noise with signal
+        En2 = N0_echo * Bs * (Tg-Tp);  // noise without signal
         *En = En1 + En2;
         *Esn = (float)(*Es + *En);
         break;
@@ -121,6 +122,9 @@ Pscat::PMeasToEsn(
     case Meas::VV_HV_CORR_MEAS_TYPE:
     case Meas::HH_VH_CORR_MEAS_TYPE:
         *Esn = *Es;
+        break;
+    default:
+        return(0);
         break;
     }
 
