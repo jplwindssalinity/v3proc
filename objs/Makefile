@@ -109,9 +109,9 @@ Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Measurement.o: Measurement.C Measurement.h Beam.h List.h
 Misc.o: Misc.C Misc.h
 Product.o: Product.C Product.h List.h
-Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h
+Spacecraft.o: Spacecraft.C Spacecraft.h Constants.h Matrix3.h Attitude.h
 SpacecraftSim.o: SpacecraftSim.C SpacecraftSim.h Constants.h Spacecraft.h \
-	Matrix3.h
+	Matrix3.h Attitude.h
 WVC.o: WVC.C WVC.h List.h WindVector.h
 WindField.o: WindField.C WindField.h WindVector.h
 WindVector.o: WindVector.C WindVector.h
