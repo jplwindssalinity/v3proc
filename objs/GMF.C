@@ -1656,6 +1656,7 @@ GMF::Calculate_Init_Wind_Solutions(
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
 
+#define GSFIXED	   
 #ifdef GSFIXED
 			// Re-evaluate objective function to avoid interpolation bumps
 			// that introduce artificial peaks.
