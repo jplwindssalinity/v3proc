@@ -147,9 +147,9 @@ main(
 	// Get compositing flag //
 	//----------------------//
 
-    int use_compositing;
-    if (! config_list.GetInt(USE_COMPOSITING_KEYWORD, &use_compositing))
-        return(0);
+	int use_compositing;
+	if (! config_list.GetInt(USE_COMPOSITING_KEYWORD, &use_compositing))
+		return(0);
 
 	//-----------------------//
 	// create spacecraft sim //

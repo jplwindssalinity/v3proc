@@ -221,7 +221,7 @@ main(
 	double start_time =
 		spacecraft_sim.FindNextArgOfLatTime(spacecraft_sim.GetEpoch(),
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.Eqx(start_time);
+	instrument.SetEqxTime(start_time);
 
 	//------------//
 	// initialize //

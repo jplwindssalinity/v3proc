@@ -273,7 +273,7 @@ main(
 	double eqx_time =
 		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.Eqx(eqx_time);
+	instrument.SetEqxTime(eqx_time);
 
 	//----------------------//
 	// cycle through events //

@@ -236,7 +236,7 @@ main(
 	double eqx_time =
 		spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.Eqx(eqx_time);
+	instrument.SetEqxTime(eqx_time);
 
 	//------------//
 	// initialize //
@@ -327,7 +327,7 @@ main(
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::EQUATOR_CROSSING:
-					instrument.Eqx(spacecraft_event.time);
+					instrument.SetEqxTime(spacecraft_event.time);
 					break;
 				default:
 					break;

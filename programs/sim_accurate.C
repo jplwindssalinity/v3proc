@@ -288,8 +288,7 @@ main(
 	double start_time;
 	start_time = spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
 		EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
-	instrument.Eqx(start_time);
-
+	instrument.SetEqxTime(start_time);
 
 	//------------//
 	// initialize //

@@ -1325,6 +1325,8 @@ ConfigGrid(
 // ConfigControl //
 //---------------//
 
+#define EPHEMERIS_BUFFER		300			// 5 minutes
+
 int
 ConfigControl(
 	SpacecraftSim*	spacecraft_sim,
@@ -1337,6 +1339,7 @@ ConfigControl(
 	double*			spacecraft_end_time)
 {
 	config_list->WarnForMissingKeywords();
+	double orbit_period = spacecraft_sim->GetPeriod();
 
 	//-----------------//
 	// grid start time //
@@ -1361,7 +1364,6 @@ ConfigControl(
 	double grid_lat_range, grid_time_range;
 	if (config_list->GetDouble(GRID_LATITUDE_RANGE_KEYWORD, &grid_lat_range))
 	{
-		double orbit_period = spacecraft_sim->GetPeriod();
 		grid_time_range = orbit_period * grid_lat_range / 360.0;
 		*grid_end_time = *grid_start_time + grid_time_range;
 	}
@@ -1429,7 +1431,7 @@ ConfigControl(
 	{
 		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
 		*spacecraft_start_time = *grid_start_time -
-			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
+			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) - EPHEMERIS_BUFFER;
 	}
 
 	//---------------------//
@@ -1443,9 +1445,10 @@ ConfigControl(
 	}
 	else
 	{
+		double last_time = MAX(*instrument_end_time, *grid_end_time);
 		double ephemeris_period = spacecraft_sim->GetEphemerisPeriod();
-		*spacecraft_end_time = *instrument_end_time +
-			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2);
+		*spacecraft_end_time = last_time +
+			ephemeris_period * (EPHEMERIS_INTERP_ORDER + 2) + EPHEMERIS_BUFFER;
 	}
 
 	config_list->ExitForMissingKeywords();
