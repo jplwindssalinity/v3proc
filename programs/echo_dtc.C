@@ -674,6 +674,13 @@ process_orbit_step(
     *(*(terms + orbit_step) + 1) = newP;
     *(*(terms + orbit_step) + 2) = newC;
 
+    //-------------------------//
+    // check for resonableness //
+    //-------------------------//
+
+    if (newA > 600000.0)
+        g_sector_count[beam_idx][orbit_step] = 0;
+
     //--------------------//
     // output diagnostics //
     //--------------------//
