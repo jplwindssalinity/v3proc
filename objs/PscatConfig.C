@@ -318,3 +318,108 @@ ConfigPscatL1A(
 
     return(1);
 }
+
+//---------------------//
+// ConfigPscatL1AToL1B //
+//---------------------//
+
+int
+ConfigPscatL1AToL1B(
+    PscatL1AToL1B*  l1a_to_l1b,
+    ConfigList*     config_list)
+{
+    //-------------------------//
+    // output simga0 to stdout //
+    //-------------------------//
+
+    config_list->DoNothingForMissingKeywords();
+    int output_sigma0_to_stdout;
+    if (! config_list->GetInt(OUTPUT_SIGMA0_TO_STDOUT_KEYWORD,
+        &output_sigma0_to_stdout))
+    {
+        output_sigma0_to_stdout = 0;    // default value
+    }
+    l1a_to_l1b->outputSigma0ToStdout = output_sigma0_to_stdout;
+
+    l1a_to_l1b->simVs1BCheckfile = config_list->Get(ONEB_CHECKFILE_KEYWORD);
+    // Remove any pre-existing check file
+    FILE* fptr = fopen(l1a_to_l1b->simVs1BCheckfile,"w");
+    if (fptr != NULL)
+        fclose(fptr);
+
+    config_list->ExitForMissingKeywords();
+
+    //--------------------------------------//
+    // Read in the land map file            //
+    //--------------------------------------//
+
+    char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
+    int use_land;
+    config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+    if (! l1a_to_l1b->landMap.Initialize(landfile,use_land))
+    {
+        fprintf(stderr,"Cannot Initialize Land Map\n");
+        exit(0);
+    }
+
+    //-------------------//
+    // k-factor/x-factor //
+    //-------------------//
+
+    int use_kfactor;
+    if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
+        use_kfactor = 0;    // default value
+    l1a_to_l1b->useKfactor = use_kfactor;
+
+    int use_BYU_xfactor;
+    if (! config_list->GetInt(USE_BYU_XFACTOR_KEYWORD, &use_BYU_xfactor))
+        use_BYU_xfactor = 0;    // default value
+    l1a_to_l1b->useBYUXfactor = use_BYU_xfactor;
+
+    /****** Exactly one of these must be true ***/
+    if (use_kfactor + use_BYU_xfactor != 1)
+    {
+        fprintf(stderr,
+            "ConfigL1AToL1B:X computation incorrectly specified.\n");
+        return(0);
+    }
+    if (use_kfactor)
+    {
+        if (! ConfigXTable(&(l1a_to_l1b->kfactorTable),config_list,"r"))
+            return(0);
+    }
+    else if (use_BYU_xfactor)
+    {
+        if (! ConfigBYUXTable(&(l1a_to_l1b->BYUX), config_list))
+            return(0);
+    }
+
+    //------------------//
+    // spot compositing //
+    //------------------//
+
+    int spot_comp;
+    if (! config_list->GetInt(USE_SPOT_COMPOSITES_KEYWORD, &spot_comp))
+        spot_comp = 0;
+    l1a_to_l1b->useSpotCompositing = spot_comp;
+
+    //---------------------------//
+    // gain threshold for slices //
+    //---------------------------//
+
+    float gain;
+    if (! config_list->GetFloat(SLICE_GAIN_THRESHOLD_KEYWORD, &gain))
+        return(0);
+    l1a_to_l1b->sliceGainThreshold = pow(10.0, 0.1 * gain);
+
+    //-----------------------------------------------//
+    // maximum number of slices to use in processing //
+    //-----------------------------------------------//
+
+    int max_slices;
+    if (! config_list->GetInt(PROCESS_MAX_SLICES_KEYWORD, &max_slices))
+        return(0);
+    l1a_to_l1b->processMaxSlices = max_slices;
+
+    return(1);
+}
