@@ -601,8 +601,7 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time
-                        - instrument_start_time);
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
 
                     // antenna
@@ -624,8 +623,7 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time
-                        - instrument_start_time);
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);
@@ -642,8 +640,7 @@ main(
                         &spacecraft);
 
                     // process instrument stuff
-                    qscat.cds.SetTime(qscat_event.time
-                        - instrument_start_time);
+                    qscat.cds.SetTime(qscat_event.time);
                     qscat.cds.currentBeamIdx = qscat_event.beamIdx;
                     qscat.sas.antenna.UpdatePosition(qscat_event.time);
                     qscat.SetOtherAzimuths(&spacecraft);

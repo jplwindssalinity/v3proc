@@ -213,6 +213,7 @@ main(
 
         double gs_time = cpr.frame_time_cal_secs - gs_epoch
             + (double)leap_seconds;
+printf("%.2f %.2f\n", cpr.frame_time_cal_secs, gs_epoch);
 
         //--------------------//
         // transfer to buffer //
