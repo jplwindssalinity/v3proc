@@ -160,7 +160,7 @@ PscatSim::L1AFrameInit(
 
     if (_spotNumber == 0)
     {
-        if (! SetL1ASpacecraft(spacecraft,l1a_frame))
+        if (! SetL1ASpacecraft(spacecraft, l1a_frame))
             return(0);
         l1a_frame->time = pscat->cds.time;
         l1a_frame->orbitTicks = pscat->cds.orbitTime;
@@ -187,7 +187,7 @@ PscatSim::L1AFrameInit(
         unsigned int code = (int)(eff_gate_width / 0.1 + 0.5);
         if (code > 6)
         {
-          fprintf(stderr,"Error: Invalid effective gate width = %g\n",
+          fprintf(stderr, "Error: Invalid effective gate width = %g\n",
             eff_gate_width);
           exit(1);
         }
@@ -306,6 +306,7 @@ PscatSim::ScatSim(
 
     if (! SetL1AScience(&meas_spot, pscat, pscat_event, l1a_frame))
         return(0);
+    l1a_frame->eventId[_spotNumber] = (unsigned char)pscat_event->eventId;
 
     //-------------------------------//
     // Output X to Stdout if enabled //
@@ -327,9 +328,9 @@ PscatSim::ScatSim(
         {
             int slice_count = pscat->ses.GetTotalSliceCount();
             int slice_idx;
-            if (!rel_to_abs_idx(meas->startSliceIdx,slice_count,&slice_idx))
+            if (!rel_to_abs_idx(meas->startSliceIdx, slice_count, &slice_idx))
             {
-                fprintf(stderr,"ScatSim: Bad slice number\n");
+                fprintf(stderr, "ScatSim: Bad slice number\n");
                 exit(1);
             }
             float dummy, freq;
@@ -337,12 +338,12 @@ PscatSim::ScatSim(
 
             float Es_cal = true_Es_cal(pscat);
             double Xcaldb;
-            radar_Xcal(pscat,Es_cal,&Xcaldb);
+            radar_Xcal(pscat, Es_cal, &Xcaldb);
             Xcaldb = 10.0 * log10(Xcaldb);
 
             float XKdb = 10*log10(meas->XK);
 
-            printf("%g ",XKdb-Xcaldb);
+            printf("%g ", XKdb-Xcaldb);
 //               float delta_freq = BYUX.GetDeltaFreq(spacecraft);
 //               printf("%g ", delta_freq);
             total_spot_power += meas->value;
@@ -356,11 +357,11 @@ PscatSim::ScatSim(
 //      unsigned short orbit_step = rt->OrbitTicksToStep(pscat->cds.orbitTicks,
 //                 pscat->cds.orbitTicksPerOrbit);
 
-        //      printf("TOTALS %d %d %g %g %g %g\n",(int)orbit_step,
+        //      printf("TOTALS %d %d %g %g %g %g\n", (int)orbit_step,
         //       instrument->antenna.currentBeamIdx,
         //      instrument->antenna.azimuthAngle*rtd,
         //      instrument->commandedRxGateDelay,
-        //      total_spot_X,total_spot_power);
+        //      total_spot_X, total_spot_power);
         fflush(stdout);
     }
 
@@ -428,6 +429,8 @@ PscatSim::LoopbackSim(
 
     if (! SetL1ALoopback(pscat, l1a_frame))
         return(0);
+    l1a_frame->eventId[_spotNumber] =
+        (unsigned char)PscatEvent::LOOPBACK_EVENT;
 
     //---------------------------------//
     // set orbit step change indicator //
@@ -476,7 +479,7 @@ PscatSim::LoadSim(
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    L1AFrameInit(spacecraft,pscat,l1a_frame);
+    L1AFrameInit(spacecraft, pscat, l1a_frame);
 
     //-------------------------------------------------//
     // tracking must be done to update state variables //
@@ -490,6 +493,7 @@ PscatSim::LoadSim(
 
     if (! SetL1ALoad(pscat, l1a_frame))
         return(0);
+    l1a_frame->eventId[_spotNumber] = (unsigned char)PscatEvent::LOAD_EVENT;
 
     //---------------------------------//
     // set orbit step change indicator //
@@ -684,7 +688,7 @@ PscatSim::SetMeasurements(
         lon_lat.latitude = lat;
 
         // Compute Land Flag
-        meas->landFlag = landMap.IsLand(lon,lat);
+        meas->landFlag = landMap.IsLand(lon, lat);
 
         float sigma0;
         if (meas->landFlag == 1)
@@ -758,7 +762,7 @@ PscatSim::SetMeasurements(
                         "Error: Bad Kpm value in PscatSim::SetMeasurements\n");
 					exit(-1);
 				}
-				Gaussian gaussianRv(1.0,0.0);
+				Gaussian gaussianRv(1.0, 0.0);
 				float rv1 = gaussianRv.GetNumber();
 				float RV = rv1*kpm_value + 1.0;
                 if (RV < 0.0)
@@ -783,7 +787,7 @@ PscatSim::SetMeasurements(
         // directly
         float Xfactor = 0;
         float Kfactor = 1.0;
-        float Es,En,var_esn_slice;
+        float Es, En, var_esn_slice;
 		CoordinateSwitch gc_to_antenna;
 
 		if (computeXfactor || useBYUXfactor)
@@ -824,7 +828,7 @@ PscatSim::SetMeasurements(
 		      PMeas* meas2 = (PMeas*)meas_spot->GetPrev();  // cross-pol
               if (meas1 == NULL || meas2 == NULL)
               {
-                fprintf(stderr,"Error: PscatSim needs triplets of PMeas\n");
+                fprintf(stderr, "Error: PscatSim needs triplets of PMeas\n");
                 return(0);
               }
               meas_spot->GotoNext();  // back to the correlation meas
@@ -926,7 +930,7 @@ PscatSim::SetL1AScience(
     // set the event //
     //---------------//
 
-    l1a_frame->event[_spotNumber] = (unsigned char)pscat_event;
+    l1a_frame->eventId[_spotNumber] = (unsigned char)pscat_event->eventId;
 
     _spotNumber++;
 
@@ -953,7 +957,7 @@ PscatSim::SetL1ALoopback(
     // Only "noise it up" if simKpriFlag is set. //
     //-------------------------------------------//
 
-    float Esn_echo_cal,Esn_noise_cal;
+    float Esn_echo_cal, Esn_noise_cal;
     PtGr_to_Esn(&ptgrNoise, pscat, simKpriFlag, &Esn_echo_cal, &Esn_noise_cal);
 
     //-------------------//
@@ -1094,7 +1098,7 @@ PscatSim::ComputeXfactor(
     double Xcal;
     float Es_cal = true_Es_cal(pscat);
 
-    radar_Xcal(pscat,Es_cal,&Xcal);
+    radar_Xcal(pscat, Es_cal, &Xcal);
     (*X) *= Xcal/(beam->peakGain * beam->peakGain);
     return(1);
 }

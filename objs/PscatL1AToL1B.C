@@ -275,8 +275,8 @@ PscatL1AToL1B::Convert(
         // determine event type from telemetry frame //
         //-------------------------------------------//
 
-        PscatEvent::PscatEventE event =
-            (PscatEvent::PscatEventE)frame->event[spot_idx];
+        PscatEvent::PscatEventE eventId =
+            (PscatEvent::PscatEventE)frame->eventId[spot_idx];
 
         //------------------------------------------------------//
         // set measurement types, add polarimetric measurements //
@@ -290,7 +290,7 @@ PscatL1AToL1B::Convert(
             meas->beamIdx = pscat->cds.currentBeamIdx;
             meas->txPulseWidth = pscat->ses.txPulseWidth;
 
-            switch (event)
+            switch (eventId)
             {
             case PscatEvent::VV_SCAT_EVENT:
                 meas->measType = Meas::VV_MEAS_TYPE;
@@ -315,7 +315,7 @@ PscatL1AToL1B::Convert(
             default:
                 fprintf(stderr,
                     "PscatL1AToL1B::Convert: unknown event type %d\n",
-                    event);
+                    eventId);
                 return(0);
                 break;
             }

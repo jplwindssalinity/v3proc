@@ -23,10 +23,10 @@ PscatL1AFrame::PscatL1AFrame()
     priOfOrbitStepChange(255), gcAltitude(0.0), gcLongitude(0.0),
     gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0),
     velZ(0.0), calPosition(0), loopbackSlices(NULL), loopbackNoise(0),
-    loadSlices(NULL), loadNoise(0), antennaPosition(NULL), event(NULL),
-    science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0),
-    spotsPerFrame(0), slicesPerSpot(0), measPerSlice(0), measPerSpot(0),
-    measPerFrame(0)
+    loadSlices(NULL), loadNoise(0), antennaPosition(NULL), eventId(NULL),
+    science(NULL), spotNoise(NULL), frame_inst_status(0),
+    antennaCyclesPerFrame(0), spotsPerFrame(0), slicesPerSpot(0),
+    measPerSlice(0), measPerSpot(0), measPerFrame(0)
 {
     return;
 }
@@ -82,8 +82,8 @@ PscatL1AFrame::Allocate(
     // allocate events //
     //-----------------//
 
-    event = (unsigned char *)malloc(spotsPerFrame * sizeof(unsigned char));
-    if (event == NULL)
+    eventId = (unsigned char *)malloc(spotsPerFrame * sizeof(unsigned char));
+    if (eventId == NULL)
         return(0);
 
     //-------------------------------//
@@ -109,23 +109,35 @@ int
 PscatL1AFrame::Deallocate()
 {
     if (antennaPosition)
+    {
         free(antennaPosition);
+        antennaPosition = NULL;
+    }
     if (loopbackSlices)
+    {
         free(loopbackSlices);
+        loopbackSlices = NULL;
+    }
     if (loadSlices)
+    {
         free(loadSlices);
-    if (event)
-        free(event);
+        loadSlices = NULL;
+    }
+    if (eventId)
+    {
+        free(eventId);
+        eventId = NULL;
+    }
     if (science)
+    {
         free(science);
+        science = NULL;
+    }
     if (spotNoise)
+    {
         free(spotNoise);
-    antennaPosition = NULL;
-    loopbackSlices = NULL;
-    loadSlices = NULL;
-    event = NULL;
-    science = NULL;
-    spotNoise = NULL;
+        spotNoise = NULL;
+    }
     antennaCyclesPerFrame = 0;
     spotsPerFrame = 0;
     slicesPerSpot = 0;
@@ -168,6 +180,7 @@ PscatL1AFrame::FrameSize()
     size += sizeof(unsigned char) * spotsPerFrame;  // event
     size += sizeof(float) * measPerFrame;  // science data
     size += sizeof(float) * spotsPerFrame;   // spot noise
+    size += sizeof(unsigned int);   // instrument status
 
     return(size);
 }
@@ -267,7 +280,7 @@ PscatL1AFrame::Pack(
     idx += size;
 
     size = sizeof(unsigned char) * spotsPerFrame;
-    memcpy((void *)(buffer + idx), (void *)event, size);
+    memcpy((void *)(buffer + idx), (void *)eventId, size);
     idx += size;
 
     size = sizeof(unsigned int) * measPerFrame;
@@ -276,6 +289,10 @@ PscatL1AFrame::Pack(
 
     size = sizeof(float) * spotsPerFrame;
     memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)(buffer + idx), (void *)&frame_inst_status, size);
     idx += size;
 
     return(idx);
@@ -376,7 +393,7 @@ PscatL1AFrame::Unpack(
     idx += size;
 
     size = sizeof(unsigned char) * spotsPerFrame;
-    memcpy((void *)event, (void *)(buffer + idx), size);
+    memcpy((void *)eventId, (void *)(buffer + idx), size);
     idx += size;
 
     size = sizeof(unsigned int) * measPerFrame;
@@ -385,6 +402,10 @@ PscatL1AFrame::Unpack(
 
     size = sizeof(float) * spotsPerFrame;
     memcpy((void *)spotNoise, (void *)(buffer + idx), size);
+    idx += size;
+
+    size = sizeof(unsigned int);
+    memcpy((void *)&frame_inst_status, (void *)(buffer + idx), size);
     idx += size;
 
     return(idx);

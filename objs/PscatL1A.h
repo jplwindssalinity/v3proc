@@ -95,7 +95,7 @@ public:
     // science measurements //
     //----------------------//
 
-    unsigned char*   event;
+    unsigned char*   eventId;
     unsigned int*    science;
     unsigned int*    spotNoise;
 

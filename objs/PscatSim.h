@@ -60,6 +60,7 @@ public:
              PscatL1AFrame* l1a_frame);
     int  LoadSim(Spacecraft* spacecraft, Pscat* pscat,
              PscatL1AFrame* l1a_frame);
+    int  SetEvent(PscatEvent* pscat_event, PscatL1AFrame* l1a_frame);
     int  SetL1ASpacecraft(Spacecraft* spacecraft,
              PscatL1AFrame* pscat_l1a_frame);
     int  SetMeasTypes(PscatEvent* pscat_event, MeasSpot* meas_spot);
