@@ -16,10 +16,11 @@ static const char rcs_id_l10frame_c[] =
 //==========//
 
 L10Frame::L10Frame()
-:	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
-	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL),
-	science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
-	slicesPerSpot(0), slicesPerFrame(0)
+:	time(0), orbitTicks(0), priOfOrbitTickChange(255), gcAltitude(0.0),
+	gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0), gcZ(0.0),
+	velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0), antennaPosition(NULL),
+	science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0),
+	spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
 {
 	return;
 }
@@ -32,7 +33,7 @@ L10Frame::~L10Frame()
 //---------------//
 // L10::Allocate //
 //---------------//
- 
+
 int
 L10Frame::Allocate(
 	int		number_of_beams,
@@ -43,19 +44,20 @@ L10Frame::Allocate(
 	spotsPerFrame = number_of_beams * antennaCyclesPerFrame;
 	slicesPerSpot = slices_per_spot;
 	slicesPerFrame = spotsPerFrame * slicesPerSpot;
- 
+
 	//----------------------------//
 	// allocate antenna positions //
 	//----------------------------//
- 
-	antennaPosition = (unsigned short *)malloc(spotsPerFrame * sizeof(unsigned short));
+
+	antennaPosition = (unsigned short *)malloc(spotsPerFrame *
+		sizeof(unsigned short));
 	if (antennaPosition == NULL)
 		return(0);
- 
+
 	//-------------------------------//
 	// allocate science measurements //
 	//-------------------------------//
- 
+
 	science = (float *)malloc(slicesPerFrame * sizeof(float));
 	if (science == NULL)
 	{
@@ -66,14 +68,14 @@ L10Frame::Allocate(
 	{
 		return(0);
 	}
- 
+
 	return(1);
 }
 
 //----------------------//
 // L10Frame::Deallocate //
 //----------------------//
- 
+
 int
 L10Frame::Deallocate()
 {
@@ -103,6 +105,14 @@ L10Frame::Pack(
 
 	size = sizeof(double);
 	memcpy((void *)(buffer + idx), (void *)&time, size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)(buffer + idx), (void *)&orbitTicks, size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)(buffer + idx), (void *)&priOfOrbitTickChange, size);
 	idx += size;
 
 	size = sizeof(float);
@@ -146,8 +156,8 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
 	idx += size;
 
-        memcpy((void *)(buffer +idx),(void *)&ptgr, size);
-        idx += size;
+	memcpy((void *)(buffer +idx),(void *)&ptgr, size);
+	idx += size;
 
 	size = sizeof(unsigned short) * spotsPerFrame;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
@@ -177,6 +187,14 @@ L10Frame::Unpack(
 
 	size = sizeof(double);
 	memcpy((void *)&time, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned int);
+	memcpy((void *)&orbitTicks, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(unsigned char);
+	memcpy((void *)&priOfOrbitTickChange, (void *)(buffer + idx), size);
 	idx += size;
 
 	size = sizeof(float);

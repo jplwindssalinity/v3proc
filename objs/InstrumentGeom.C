@@ -219,7 +219,6 @@ LocateSliceCentroids(
 	Instrument*		instrument,
 	MeasSpot*		meas_spot)
 {
-static int xxx = 0;
 	//-----------//
 	// predigest //
 	//-----------//
@@ -312,10 +311,6 @@ static int xxx = 0;
 
 		Meas* meas = new Meas();
 		meas->pol = beam->polarization;
-
-if (xxx == 2171)
-	printf("xxx\n");
-xxx++;
 
 		//----------------------------------//
 		// determine the centroid frequency //
