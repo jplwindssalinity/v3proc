@@ -86,9 +86,9 @@ WindField::ReadVap(
 
 	_Allocate();
 
-	for (int lon_idx = 0; lon_idx < VAP_LON_DIM; lon_idx)
+	for (int lon_idx = 0; lon_idx < VAP_LON_DIM; lon_idx++)
 	{
-		for (int lat_idx = 0; lat_idx < VAP_LAT_DIM; lat_idx)
+		for (int lat_idx = 0; lat_idx < VAP_LAT_DIM; lat_idx++)
 		{
 			WindVector* wv = new WindVector;
 			if (! wv)
