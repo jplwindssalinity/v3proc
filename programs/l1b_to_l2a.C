@@ -12,7 +12,8 @@
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b ground processing of Level 1.5 to
-//		Level 1.7 data.  This program grids the sigma-0 measurments.
+//		Level 1.7 data.  This program groups the sigma0 data onto
+//		a grid.
 //
 // OPTIONS
 //		None.
@@ -53,6 +54,31 @@ static const char rcs_id[] =
 //----------//
 // INCLUDES //
 //----------//
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
+#include "Misc.h"
+#include "ConfigList.h"
+#include "ConfigSim.h"
+#include "Ephemeris.h"
+#include "L15.h"
+#include "L17.h"
+#include "L15ToL17.h"
+
+//-----------//
+// TEMPLATES //
+//-----------//
+
+template class BufferedList<OrbitState>;
+template class List<OrbitState>;
+template class List<StringPair>;
+template class List<Meas>;
+template class List<LonLat>;
+template class List<MeasSpot>;
 
 //-----------//
 // CONSTANTS //
@@ -113,80 +139,114 @@ main(
 		exit(1);
 	}
 
-	//--------------------------------------//
-	// create and configure product objects //
-	//--------------------------------------//
+    //-------------------------------------//
+    // create and configure level products //
+    //-------------------------------------//
 
-	L15 l15;
-	if (! ConfigL15(&l15, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 1 Product\n", command);
-		exit(1);
-	}
+    L15 l15;
+    if (! ConfigL15(&l15, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 1.5 Product\n", command);
+        exit(1);
+    }
+
+    L17 l17;
+    if (! ConfigL17(&l17, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 1.7 Product\n", command);
+        exit(1);
+    }
+
+    //--------------------------------//
+    // create and configure ephemeris //
+    //--------------------------------//
+
+    Ephemeris ephemeris;
+    if (! ConfigEphemeris(&ephemeris, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring ephemeris\n", command);
+        exit(1);
+    }
+    ephemeris.SetMaxNodes(50);      // this should be calculated
+
+    //---------------------------//
+    // create and configure Grid //
+    //---------------------------//
+
+	double alongtrack_res,crosstrack_res;
+	// alongtrack_size needs to be big enough to contain all the measurements
+	// that might be colocated.  (in km)
+	double alongtrack_size = 5000.0;
+	double crosstrack_size = 1400.0;
+    config_list.GetDouble("alongtrack_res",&alongtrack_res);
+    config_list.GetDouble("crosstrack_res",&crosstrack_res);
+	// start_time determines the start of the along track grid coordinates
+	double start_time;
+    config_list.GetDouble("ati_start_time",&start_time);
 
 	Grid grid;
-	if (! ConfigL17Grid(&grid, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 1.7 Grid\n", command);
-		exit(1);
-	}
+	grid.Allocate(crosstrack_res,alongtrack_res,
+				  crosstrack_size,alongtrack_size);
+	grid.l17 = &l17;
+	grid.SetEphemeris(&ephemeris);
+	grid.SetStartTime(start_time);
 
-	//-----------------//
-	// conversion loop //
-	//-----------------//
+    //------------//
+    // open files //
+    //------------//
 
-	do
-	{
-		//------------------------------//
-		// read a level 1.5 data record //
-		//------------------------------//
+    l15.file.OpenForInput();
+    l17.file.OpenForOutput();
 
-		if (! l15.ReadDataRec())
-		{
-			switch (l15.GetStatus())
-			{
-			case Product::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1.5 data\n", command);
-				exit(1);
-				break;
-			case Product::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1.5 data\n",
-					command);
-				exit(1);
-				break;
-			case Product::ERROR_NO_MORE_DATA:
-				break;
-			default:
-				fprintf(stderr, "%s: unknown status (???)\n", command);
-				exit(1);
-			}
-			break;		// done, exit do loop
-		}
+    //-----------------//
+    // conversion loop //
+    //-----------------//
+ 
+    L15ToL17 l15_to_l17;
 
-		//------//
-		// grid //
-		//------//
+    do
+    {
+        //------------------------------//
+        // read a level 1.5 data record //
+        //------------------------------//
 
-		if (! l15_to_l17.Convert(&l1, &l15))
-		{
-			fprintf(stderr, "%s: error converting Level 1 to Level 1.5\n",
-				command);
-			exit(1);
-		}
+        if (! l15.ReadDataRec())
+        {
+            switch (l15.GetStatus())
+            {
+            case L15::OK:       // end of file
+                break;
+            case L15::ERROR_READING_FRAME:
+                fprintf(stderr, "%s: error reading Level 1.5 data\n", command);
+                exit(1);
+                break;
+            case L15::ERROR_UNKNOWN:
+                fprintf(stderr, "%s: unknown error reading Level 1.5 data\n",
+                    command);
+                exit(1);
+                break;
+            default:
+                fprintf(stderr, "%s: unknown status (???)\n", command);
+                exit(1);
+            }
+            break;      // done, exit do loop
+        }
 
-		//-------------------------------//
-		// write a level 1.5 data record //
-		//-------------------------------//
+        //-------//
+        // Group //
+        //-------//
 
-		if (! l15.WriteDataRec())
-		{
-			fprintf(stderr, "%s: error writing Level 1.5 data\n", command);
-			exit(1);
-		}
+        if (! l15_to_l17.Group(&l15, &grid))
+        {
+            fprintf(stderr, "%s: error converting Level 1.0 to Level 1.5\n",
+                command);
+            exit(1);
+        }
 
-	} while (1);
+    } while (1);
 
-	l15.CloseCurrentFile();
-		
-	return (0);
+    l15.file.Close();
+    l17.file.Close();
+
+    return (0);
 }
