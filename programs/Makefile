@@ -4,20 +4,18 @@
 #======================================================================
 
 SHELL =			/bin/csh
-HDFINCDIR =		/usr/local/HDF/include
-SWSHDFINC =		/export/data/sws/HDF4.1r1/include
 INCDIR =		../../include
+HDFINCDIR =     $(INCDIR)/hdf
 
 EALIBS =		../../lib/libEAData.a
-HDFLIBS =		-L/usr/local/HDF/lib -L/export/data/sws/HDF4.1r1/lib \
-                -lmfhdf -ldf -lz -lnsl
+HDFLIBS =		-L../../lib -lmfhdf -ldf -lz -lnsl
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++
 PURE =
 
 CCC =			$(PURE) gcc
 DEBUGFLAGS =	-O3
-CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR) -I$(SWSHDFINC)
+CPPFLAGS =		$(DEBUGFLAGS) -Wall -I$(INCDIR) -I$(HDFINCDIR)
 
 INSTALLDIR =	../../bin
 
