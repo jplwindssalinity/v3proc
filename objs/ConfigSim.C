@@ -925,10 +925,12 @@ ConfigXTable(
   float science_slice_bandwidth;
   if(! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,&science_slice_bandwidth))
     return(0);
+  science_slice_bandwidth*=KHZ_TO_HZ;
 
   float guard_slice_bandwidth;
   if(! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,&guard_slice_bandwidth))
     return(0);
+  science_slice_bandwidth*=KHZ_TO_HZ;
 
 
   /**** If mode is READ, read in xTable and make sure its parameters match
