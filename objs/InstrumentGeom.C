@@ -85,6 +85,8 @@ FindSlice(
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
 		freq_1, freq_tol, &look_1, &azim_1, &gain_1))
 	{
+		fprintf(stderr,
+			"FindSlice: error finding peak gain for frequency %g\n", freq_1);
 		return(0);
 	}
 
@@ -98,6 +100,8 @@ FindSlice(
 	if (! FindPeakGainAtFreq(antenna_frame_to_gc, spacecraft, instrument,
 		freq_2, freq_tol, &look_2, &azim_2, &gain_2))
 	{
+		fprintf(stderr,
+			"FindSlice: error finding peak gain for frequency %g\n", freq_2);
 		return(0);
 	}
 
@@ -109,6 +113,7 @@ FindSlice(
 	if (! FindPeakGainForSlice(antenna_frame_to_gc, spacecraft, instrument,
 		look_1, azim_1, gain_1, look_2, azim_2, gain_2, &peak_gain))
 	{
+		fprintf(stderr, "FindSlice: error finding peak gain for slice\n");
 		return(0);
 	}
 
@@ -127,6 +132,8 @@ FindSlice(
 	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
 		look_1, azim_1, target_gain, c_look_1, c_azim_1))
 	{
+		fprintf(stderr,
+			"FindSlice: error finding slice corners for frequency 1\n");
 		return(0);
 	}
 
@@ -139,6 +146,8 @@ FindSlice(
 	if (! FindSliceCorners(antenna_frame_to_gc, spacecraft, instrument,
 		look_2, azim_2, target_gain, c_look_2, c_azim_2))
 	{
+		fprintf(stderr,
+			"FindSlice: error finding slice corners for frequency 2\n");
 		return(0);
 	}
 
@@ -728,7 +737,7 @@ FindPeakGainForSlice(
 //------------------//
 
 #define PEAK_ANGLE_OFFSET		0.00875		// about 0.5 degree
-#define LOCAL_ANGLE_OFFSET		0.000333	// about 0.02 degree
+#define LOCAL_ANGLE_OFFSET		0.0004		// about 0.023 degree
 
 int
 FindSliceCorners(
@@ -778,8 +787,12 @@ FindSliceCorners(
 	azim_array[2] = azim + PEAK_ANGLE_OFFSET * delta_azim;
 
 	double s[3], c[3];
-	QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
-		azim_array, s, c);
+	if (! QuadFit(antenna_frame_to_gc, spacecraft, instrument, look_array,
+		azim_array, s, c))
+	{
+		fprintf(stderr, "FindSliceCorners: error fitting main quadratic\n");
+		return(0);
+	}
 
 	//-------------------------//
 	// check out the quadratic //
@@ -828,8 +841,13 @@ FindSliceCorners(
 		local_azim_array[2] = local_azim + LOCAL_ANGLE_OFFSET * delta_azim;
 
 		double local_s[3], local_c[3];
-		QuadFit(antenna_frame_to_gc, spacecraft, instrument, local_look_array,
-			local_azim_array, local_s, local_c);
+		if (! QuadFit(antenna_frame_to_gc, spacecraft, instrument,
+				local_look_array, local_azim_array, local_s, local_c))
+		{
+			fprintf(stderr,
+				"FindSliceCorners: error fitting local quadratic\n");
+			return(0);
+		}
 
 		//-------------------------//
 		// check out the quadratic //
