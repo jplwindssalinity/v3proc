@@ -142,8 +142,12 @@ const char* usage_array[] = { "[ -f fit_base ]", "<config_file>",
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
 char      g_good[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
-int       g_good_count;
 int       g_sector_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+
+// coef_sum terms are amp, phase_x, phase_y, bias
+double    g_coef_sum[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS][4];
+double    g_coef_count[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
+
 double    g_min_offset[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 double    g_max_offset[NUMBER_OF_QSCAT_BEAMS][ORBIT_STEPS];
 
@@ -546,26 +550,6 @@ main(
     free_array(g_azimuth, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
     free_array(g_foff, 2, NUMBER_OF_QSCAT_BEAMS, max_count);
 
-    //-------------------//
-    // set up good array //
-    //-------------------//
-    // this indicates whether to use the coefficient for this orbit step
-
-    g_good_count = 0;
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
-    {
-        for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
-        {
-            if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
-            {
-                g_good[beam_idx][orbit_step] = 1;
-                g_good_count++;
-            }
-            else
-                g_good[beam_idx][orbit_step] = 0;
-        }
-    }
-
     //---------------------------------------------------------//
     // write out raw terms and good array for later processing //
     //---------------------------------------------------------//
@@ -626,6 +610,55 @@ main(
         fprintf(offset_fp, "&\n");
     }
     fclose(offset_fp);
+
+    //--------------------------//
+    // calculate the foff table //
+    //--------------------------//
+
+    double foff[2][32][36];
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        for (int foff_orbit_step = 0; foff_orbit_step < 32; foff_orbit_step++)
+        {
+            if (g_coef_count[beam_idx][foff_orbit_step] == 0)
+                continue;
+
+            double avg_a = g_coef_sum[beam_idx][foff_orbit_step][0] /
+                g_coef_count[beam_idx][foff_orbit_step];
+            double avg_c = g_coef_sum[beam_idx][foff_orbit_step][3] /
+                g_coef_count[beam_idx][foff_orbit_step];
+            double phase = atan2(g_coef_sum[beam_idx][foff_orbit_step][2],
+                g_coef_sum[beam_idx][foff_orbit_step][1]);
+            for (int az_step = 0; az_step < 36; az_step++)
+            {
+                double az = two_pi * az_step / 36.0;
+                foff[beam_idx][foff_orbit_step][az_step] =
+                    avg_a * cos(az + phase) + avg_c;
+            }
+        }
+    }
+
+    sprintf(filename, "%s.fofftab", foff_file);
+    FILE* foff_fp = fopen(filename, "w");
+    if (foff_fp == NULL)
+    {
+        fprintf(stderr, "%s: error opening foff file %s\n", command,
+            filename);
+        exit(1);
+    }
+    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    {
+        for (int foff_orbit_step = 0; foff_orbit_step < 32; foff_orbit_step++)
+        {
+            for (int az_step = 0; az_step < 36; az_step++)
+            {
+                fprintf(foff_fp, "%d %d %d %g\n", beam_idx, foff_orbit_step,
+                    az_step,
+                    foff[beam_idx][foff_orbit_step][az_step] / 1000.0);
+            }
+        }
+    }
+    fclose(foff_fp);
 
     return(0);
 }
@@ -692,6 +725,15 @@ process_orbit_step(
         g_sector_count[beam_idx][orbit_step] = 0;
 */
 
+    //------------------//
+    // set up good flag //
+    //------------------//
+
+    if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
+        g_good[beam_idx][orbit_step] = 1;
+    else
+        g_good[beam_idx][orbit_step] = 0;
+
     //--------------------//
     // output diagnostics //
     //--------------------//
@@ -703,10 +745,8 @@ process_orbit_step(
         //---------------------------------------------//
 
         char* used_string = "DISCARDED";
-        if (g_sector_count[beam_idx][orbit_step] >= MIN_SECTORS)
-        {
+        if (g_good[beam_idx][orbit_step])
             used_string = "USED";
-        }
 
         char filename[1024];
         sprintf(filename, "%s.b%1d.s%03d", fit_base, beam_idx + 1,
@@ -757,6 +797,20 @@ process_orbit_step(
         }
 
         fclose(ofp);
+    }
+
+    //------------------------//
+    // store the coefficients //
+    //------------------------//
+
+    if (g_good[beam_idx][orbit_step])
+    {
+        int foff_orbit_step = orbit_step / 8;
+        g_coef_sum[beam_idx][foff_orbit_step][0] += a;
+        g_coef_sum[beam_idx][foff_orbit_step][1] += cos(p);
+        g_coef_sum[beam_idx][foff_orbit_step][2] += sin(p);
+        g_coef_sum[beam_idx][foff_orbit_step][3] += c;
+        g_coef_count[beam_idx][foff_orbit_step]++;
     }
 
     //-----------------------------------------------------//
