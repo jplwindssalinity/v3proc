@@ -238,7 +238,8 @@ InstrumentSim::ScatSim(
 			l00_frame->velY = orbit_state->vsat.get(1);
 			l00_frame->velZ = orbit_state->vsat.get(2);
 		}
-		l00_frame->antennaPosition[_spotNumber] = antenna->GetEncoderValue();
+		l00_frame->antennaPosition[_spotNumber] =
+			(unsigned short)antenna->GetEncoderValue();
 		l00_frame->science[_spotNumber] = value;
 		_spotNumber++;
 	}
