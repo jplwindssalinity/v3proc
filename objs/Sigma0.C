@@ -189,18 +189,19 @@ sigma0_to_Psn(
 	}
 
 	//------------------------------------------------------------------------//
-	// Estimate the variance of the slice signal + noise measurements
-	// using a new approximation for the slices which does not
-	// fall apart at low snr. (See Mike Spencer's memo from Nov 3 1997.)
+	// Estimate the variance of the slice signal + noise measurements.
+	// The variance is simply the sum of the variance when the signal
+	// (and noise) are present together and the variance when only noise
+	// is present.  These variances come from radiometer theory, ie.,
+	// the reciprocal of the time bandwidth product is the normalized variance.
 	//------------------------------------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
 	double Tp = beam->pulseWidth;
 	double Tg = beam->receiverGateWidth;
 	double Bs = meas->bandwidth;
-	double num1 = Ps_slice + Tp*Bs*N0_echo;
-	double num2 = (Tg - Tp)*Bs*N0_echo;
-	float var_psn_slice = num1*num1 / (Bs * Tp) + num2*num2/(Bs*(Tg - Tp));
+	float var_psn_slice = (*Psn_slice)*(*Psn_slice) / (Bs * Tp) +
+		Pn_slice*Pn_slice / (Bs*(Tg - Tp));
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Psn value by adding a random number drawn from
@@ -347,7 +348,7 @@ Pnoise(
 	// measurement which falls outside of the echo bandwidth.
 	//------------------------------------------------------------------------//
 
-	float var_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
+	float var_noise = (Bn - Be)*N0_noise*N0_noise/Tg;
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Psn_noise value by adding a random number drawn from
