@@ -150,8 +150,8 @@ LocateSlices(
 
 		EarthPosition centroid;
 		Vector3 look_vector;
-		// guess at a reasonable slice frequency tolerance of 1%
-		float ftol = fabs(f1 - f2) / 100.0;
+		// guess at a reasonable slice frequency tolerance of .1%
+		float ftol = fabs(f1 - f2) / 1000.0;
 		if (! FindSlice(&antenna_frame_to_gc, spacecraft, instrument,
 			look, azimuth, f1, f2, ftol, &(meas->outline), &look_vector,
 			&centroid))
