@@ -1255,7 +1255,7 @@ ConfigEphemeris(
 		return(0);
 	ephemeris->SetInputFile(ephemeris_filename);
 
-	ephemeris->SetMaxNodes(200);		// this should be calculated
+	ephemeris->SetMaxNodes(30000);		// this should be calculated
 
 	return(1);
 }

@@ -51,17 +51,22 @@ struct GSL1AStatus
     int Read(char*   frameStartByte);
 
     // member variables
-    char            pad1[11];
+    char            pad1[10];
+    unsigned char   operational_mode;
     unsigned char   prf_count;
-    char            pad2[17];
+    char            pad2[16];
+    char            specified_cal_pulse_pos;
     unsigned char   prf_cycle_time;
     unsigned char   range_gate_a_delay;
     unsigned char   range_gate_a_width;
     unsigned char   range_gate_b_delay;
     unsigned char   range_gate_b_width;
-    char            pad5[6];  // doppler shift command 1 & 2
+    char            doppler_shift_command_1[3];
+    char            doppler_shift_command_2[3];
     unsigned char   pulse_width;
-    char            pad6[4];
+    unsigned char   receiver_gain;
+    unsigned char   ses_configuration_flags;
+    char            pad6[2];
     unsigned char   pred_antenna_pos_count;
     char            pad7[3];
     unsigned char   doppler_orbit_step;
@@ -78,15 +83,20 @@ struct GSL1AEngData
     int Read(char*   frameStartByte);
 
     // member variables
-    char            pad1[46];
+    char            pad1[34];
+    unsigned char   a2d_p12v_xcpl;
+    char            pad2[8];
+    unsigned char   transmit_power_a;
+    unsigned char   transmit_power_b;
+    char            pad3;
     unsigned char   precision_coupler_temp;
-    char            pad2[4];
+    char            pad4[4];
     unsigned char   rcv_protect_sw_temp;
-    char            pad3[2];
+    char            pad5[2];
     unsigned char   beam_select_sw_temp;
-    char            pad4;
+    char            pad6;
     unsigned char   receiver_temp;
-    char            pad5[5];
+    char            pad7[5];
 };
 
 struct GSL1AEu

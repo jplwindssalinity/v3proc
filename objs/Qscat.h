@@ -262,6 +262,7 @@ public:
     unsigned char   priDn;
     unsigned char   txPulseWidthDn;
     unsigned char   rxGateDelayDn;
+    short           txDopplerDn;
     SpinRateE       spinRate;
 
 // Flags and Parameters which are convenient to put here in order

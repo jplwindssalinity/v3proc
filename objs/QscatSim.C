@@ -171,9 +171,11 @@ QscatSim::L1AFrameInit(
         l1a_frame->priOfOrbitStepChange = 255;      // flag value
         l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
         l1a_frame->calPosition = 255;    // no cal pulses yet
-        l1a_frame->in_eu.true_cal_pulse_pos = 255;
+        l1a_frame->status.specified_cal_pulse_pos = 255;  // ditto.
+        l1a_frame->in_eu.true_cal_pulse_pos = 255; // ditto again.
 
         // extra data needed by GS for first pulse
+        l1a_frame->status.operational_mode = 14;  // Set WOM always.
         SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         Beam* cur_beam = qscat->GetCurrentBeam();
@@ -243,6 +245,9 @@ QscatSim::L1AFrameInit(
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
+        // The next one is hard coded, but should come from cfg file.
+        l1a_frame->status.receiver_gain = 10;  // assume 10 db attenuation
+        l1a_frame->status.ses_configuration_flags = 8; // assume mod on
         l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
 
         // transfer instrument time in microseconds into vtcw.
@@ -280,6 +285,11 @@ QscatSim::L1AFrameInit(
           l1a_frame->engdata.precision_coupler_temp;
         l1a_frame->engdata.receiver_temp =
           l1a_frame->engdata.precision_coupler_temp;
+
+        // Use testdata values
+        l1a_frame->engdata.transmit_power_a = 142; // 49.3 dBm
+        l1a_frame->engdata.transmit_power_b = 142; // 49.3 dBm
+        l1a_frame->engdata.a2d_p12v_xcpl = 188;
     }
     else if (_spotNumber == 1)
     {
@@ -370,6 +380,40 @@ QscatSim::ScatSim(
     {
         fprintf(stderr, "Need to implement Doppler errors\n");
         exit(1);
+    }
+
+    //---------------------------------------------//
+    // Set commanded doppler for first two pulses. //
+    // This is only needed for GS processing.      //
+    //---------------------------------------------//
+
+    if (_spotNumber == 0)
+    {
+      (void)memcpy((void*)(&(l1a_frame->status.doppler_shift_command_1[1])),
+                   (void*)(&(qscat->cds.txDopplerDn)), sizeof(short));
+      Beam* cur_beam = qscat->GetCurrentBeam();
+      if (cur_beam->polarization == H_POL)
+      {
+        l1a_frame->status.doppler_shift_command_1[0] = 0;
+      }
+      else
+      {
+        l1a_frame->status.doppler_shift_command_1[0] = 1;
+      }
+    }
+    else if (_spotNumber == 1)
+    {
+      (void)memcpy((void*)(&(l1a_frame->status.doppler_shift_command_2[1])),
+                   (void*)(&(qscat->cds.txDopplerDn)), sizeof(short));
+      Beam* cur_beam = qscat->GetCurrentBeam();
+      if (cur_beam->polarization == H_POL)
+      {
+        l1a_frame->status.doppler_shift_command_2[0] = 0;
+      }
+      else
+      {
+        l1a_frame->status.doppler_shift_command_2[0] = 1;
+      }
     }
 
     //---------------------//
@@ -517,6 +561,7 @@ QscatSim::ScatSim(
     // determine if frame is ready //
     //-----------------------------//
 
+    _spotNumber++;  // Move to next pulse
     if (_spotNumber >= l1a_frame->spotsPerFrame)
     {
         l1aFrameReady = 1;  // indicate frame is ready
@@ -617,6 +662,7 @@ QscatSim::LoopbackSim(
     // determine if frame is ready //
     //-----------------------------//
 
+    _spotNumber++;  // Move to next pulse
     if (_spotNumber >= l1a_frame->spotsPerFrame)
     {
         // Again, cal pulses will probably never end a frame, but just
@@ -680,6 +726,7 @@ QscatSim::LoadSim(
     // determine if frame is ready //
     //-----------------------------//
 
+    _spotNumber++;  // Move to next pulse
     if (_spotNumber >= l1a_frame->spotsPerFrame)
     {
         // Again, cal pulses will probably never end a frame, but just
@@ -1036,8 +1083,6 @@ QscatSim::SetL1AScience(
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)spot_noise;
     if (simVs1BCheckfile) cf->EsnNoise = spot_noise;
 
-    _spotNumber++;
-
     return(1);
 }
 
@@ -1089,7 +1134,7 @@ QscatSim::SetL1ALoopback(
 
     // Now set the single slice with loopback energy.
     // Note the scale factor of 256 (8 bit shift) applied only to echo channel.
-    int icenter = l1a_frame->slicesPerSpot/2;
+    int icenter = 4;
     l1a_frame->loopbackSlices[icenter] = (unsigned int)(Esn_echo_cal/256.0);
     l1a_frame->science[base_slice_number + icenter] =
       (unsigned int)(Esn_echo_cal/256.0);
@@ -1107,12 +1152,11 @@ QscatSim::SetL1ALoopback(
     // (follows instrument telemetry).                        //
     // Note that this is only done with loopbacks, and not    //
     // for load measurements which always follow a loopback.  //
-    // Then increment the spot counter.                       //
     //--------------------------------------------------------//
 
     l1a_frame->calPosition = _spotNumber + 2;
-    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition - 1;
-    _spotNumber++;
+    l1a_frame->in_eu.true_cal_pulse_pos = l1a_frame->calPosition;
+    l1a_frame->status.specified_cal_pulse_pos = l1a_frame->calPosition;
 
     return(1);
 }
@@ -1149,24 +1193,42 @@ QscatSim::SetL1ALoad(
     int base_slice_number = _spotNumber * l1a_frame->slicesPerSpot;
     for (int i=0; i < l1a_frame->slicesPerSpot; i++)
     {
-        //----------------------------------------------------------------//
-        // Update the level 0.0 frame
-        // Here, we set each slice to the same number so that they
-        // add up to the echo channel energy computed above.
-        // A higher fidelity simulation would set each with its own
-        // variance (Kpc style) which would introduce some noise into alpha.
-        // Data is set into the science data just like the instrument,
-        // and into separate storage just like the ground processing system.
-        // Integer truncation can cause a problem in low SNR cases because
-        // each slice contributes the same truncation error.  A Kpc style
-        // injection of variance would actually reduce this artificial
-        // noise in the current implementation, but we aren't using it!
-        //----------------------------------------------------------------//
+      //----------------------------------------------------------------//
+      // Update the level 0.0 frame
+      // Here, we set each slice to the same number so that they
+      // add up to the echo channel energy computed above.
+      // A higher fidelity simulation would set each with its own
+      // variance (Kpc style) which would introduce some noise into alpha.
+      // Data is set into the science data just like the instrument,
+      // and into separate storage just like the ground processing system.
+      // Integer truncation can cause a problem in low SNR cases because
+      // each slice contributes the same truncation error.  A Kpc style
+      // injection of variance would actually reduce this artificial
+      // noise in the current implementation, but we aren't using it!
+      //----------------------------------------------------------------//
 
+      if (l1a_frame->slicesPerSpot == 12)
+      {
+        float Bs = 8314.0;   // Nominal value consistent with q-table.
+        float Bg = 46190.0;  // Nominal value consistent with q-table.
+        float Be = 10*Bs + 2*Bg;
+        if (i == 0 || i == 11)
+        {
+          l1a_frame->loadSlices[i] =
+            (unsigned int)(En_echo_load * qscat->ses.Qtable[i]*Bg/Be);
+        }
+        else
+        {
+          l1a_frame->loadSlices[i] =
+            (unsigned int)(En_echo_load * qscat->ses.Qtable[i]*Bs/Be);
+        }
+      }
+      else
+      {  // assume slice bandwidths are all the same
         l1a_frame->loadSlices[i] =
           (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
-        l1a_frame->science[base_slice_number + i] =
-          (unsigned int)(En_echo_load/l1a_frame->slicesPerSpot);
+      }
+      l1a_frame->science[base_slice_number + i] = l1a_frame->loadSlices[i];
     }
 
     //----------------------------------------------//
@@ -1175,8 +1237,6 @@ QscatSim::SetL1ALoad(
 
     l1a_frame->loadNoise = (unsigned int)(En_noise_load);
     l1a_frame->spotNoise[_spotNumber] = (unsigned int)(En_noise_load);
-
-    _spotNumber++;
 
     return(1);
 }
@@ -1272,7 +1332,6 @@ QscatSim::MeasToEsnX(
 
     float q_slice;
     if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
-
     {
       fprintf(stderr,"QscatSim::MeasToEsnX: Error getting Q value\n");
       exit(1);

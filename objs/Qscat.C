@@ -336,7 +336,41 @@ QscatSes::tempToDn(
   double x1 = (-b + sqrt(dd))/(2*a);
   double x2 = (-b - sqrt(dd))/(2*a);
   unsigned char x;
-  if (x1 > x2) x = (unsigned char)x1; else x = (unsigned char)x2;
+  if (x1 < 0 && x2 < 0)
+  {
+    fprintf(stderr,
+      "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",temp);
+    exit(1);
+  }
+  else if (x1 < 0)
+  {
+    x = (unsigned char)x2;
+  }
+  else if (x2 < 0)
+  {
+    x = (unsigned char)x1;
+  }
+  else if (x1 < x2)
+  {
+    if (x1 > 255)
+    {
+      fprintf(stderr,
+        "Error: out of range temp = %g passed to QscatSes::tempToDn\n",temp);
+      exit(1);
+    }
+    x = (unsigned char)x1;
+  }
+  else
+  {
+    if (x2 > 255)
+    {
+      fprintf(stderr,
+        "Error: out of range temp = %g passed to QscatSes::tempToDn\n",temp);
+      exit(1);
+    }
+    x = (unsigned char)x2;
+  }
+
   return(x);
 }
 
@@ -500,7 +534,8 @@ CdsBeamInfo::~CdsBeamInfo()
 //==========//
 
 QscatCds::QscatCds()
-:   priDn(0), txPulseWidthDn(0), rxGateDelayDn(0), spinRate(LOW_SPIN_RATE),
+:   priDn(0), txPulseWidthDn(0), rxGateDelayDn(0), txDopplerDn(0),
+    spinRate(LOW_SPIN_RATE),
     useRgc(0), useDtc(0), useBYUDop(0), useBYURange(0), useSpectralDop(0),
     useSpectralRange(0), azimuthIntegrationRange(0), azimuthStepSize(0),
     orbitTicksPerOrbit(0), orbitTime(0), orbitStep(0), eqxTime(0.0),
@@ -2682,16 +2717,15 @@ SetDelayAndFrequency(
         // tracking algorithm
         CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
         DopplerTracker* doppler_tracker = &(cds_beam_info->dopplerTracker);
-        short doppler_dn;
 //        printf("rx_gate_delay_DN,fDN = %d %g\n",qscat->cds.rxGateDelayDn,
 //               rx_gate_delay_fdn);
 //        printf("orbitStep = %d, ideal_encoder = %d\n",qscat->cds.orbitStep,
 //               ideal_encoder);
         doppler_tracker->GetCommandedDoppler(qscat->cds.orbitStep,
             ideal_encoder, qscat->cds.rxGateDelayDn, rx_gate_delay_fdn,
-            &doppler_dn);
-//        printf("doppler_dn = %d\n",doppler_dn);
-        qscat->ses.CmdTxDopplerDn(doppler_dn);
+            &(qscat->cds.txDopplerDn));
+//        printf("doppler_dn = %d\n",qscat->cds.txDopplerDn);
+        qscat->ses.CmdTxDopplerDn(qscat->cds.txDopplerDn);
     }
     else
     {

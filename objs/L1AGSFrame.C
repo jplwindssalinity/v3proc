@@ -125,7 +125,10 @@ FILE*   ofp)
                      in_pcd.roll, in_pcd.pitch, in_pcd.yaw);
   
     fprintf(ofp,"\n ============== GS Status Block ==============\n\n");
+    fprintf(ofp,"operational_mode = %d\n", status.operational_mode);
     fprintf(ofp,"prf_count = %d\n", status.prf_count);
+    fprintf(ofp,"specified_cal_pulse_pos = %d\n",
+      status.specified_cal_pulse_pos);
     fprintf(ofp,"prf_cycle_time = %d\n", status.prf_cycle_time);
     fprintf(ofp,"range_gate_a_delay = %d\n", status.range_gate_a_delay);
     fprintf(ofp,"range_gate_a_width = %d\n", status.range_gate_a_width);
@@ -149,6 +152,8 @@ FILE*   ofp)
     fprintf(ofp,"corres_instr_time = %d, (frac) %d\n",corres_instr_time,frac);
   
     fprintf(ofp,"\n ============== GS Engineering Block ==============\n\n");
+    fprintf(ofp,"transmit_power_a = %d\n",engdata.transmit_power_a);
+    fprintf(ofp,"transmit_power_b = %d\n",engdata.transmit_power_b);
     fprintf(ofp,"precision_coupler_temp = %d\n",engdata.precision_coupler_temp);
     fprintf(ofp,"rcv_protect_sw_temp = %d\n", engdata.rcv_protect_sw_temp);
     fprintf(ofp,"beam_select_sw_temp = %d\n", engdata.beam_select_sw_temp);
