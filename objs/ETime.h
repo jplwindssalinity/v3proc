@@ -25,9 +25,14 @@ static const char rcs_id_etime_h[] =
 //    The ETime object handles time.
 //======================================================================
 
+#define CODE_A_DEFAULT_TIME     "1993-01-01T00:00:00.000\0"
+#define CODE_A_TIME_LENGTH      24
+#define CODE_A_STRPTIME_FORMAT  "%Y-%m-%dT%H:%M:%S"
+#define CODE_A_SCANF_FORMAT     "%04d-%02d-%02dT%02d:%02d:%02d.%03d"
+
 #define CODE_B_DEFAULT_TIME     "1993-001T00:00:00.000\0"
 #define CODE_B_TIME_LENGTH      22
-#define CODE_B_STRPTIME_FORMAT  "%Y-%m-%dT%H:%M:%S"
+#define CODE_B_STRPTIME_FORMAT  "%Y-%jT%H:%M:%S"
 #define CODE_B_SCANF_FORMAT     "%04d-%03dT%02d:%02d:%02d.%03d"
 
 class ETime
@@ -52,6 +57,8 @@ public:
     //-------------//
 
     int  FromStructTm(struct tm* tm_time);
+    int  FromCodeA(const char* code_a_string);
+    int  ToCodeA(char* string);
     int  FromCodeB(const char* code_b_string);
     int  ToCodeB(char* string);
     int  FromChar6(char* string);
@@ -63,7 +70,6 @@ public:
     int  Write(int fd);
     int  Read(int fd);
     int  WriteAscii(FILE* ofp);
-    int  WriteCurrentTimeAscii(FILE* ofp);
 
     //-----------//
     // operators //
@@ -90,5 +96,11 @@ int  operator<(const ETime& a, const ETime& b);
 int  operator<=(const ETime& a, const ETime& b);
 int  operator>(const ETime& a, const ETime& b);
 int  operator>=(const ETime& a, const ETime& b);
+
+//------------------//
+// helper functions //
+//------------------//
+
+const char* CurrentTimeString();
 
 #endif

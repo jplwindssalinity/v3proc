@@ -61,6 +61,70 @@ ETime::FromStructTm(
 }
 
 //------------------//
+// ETime::FromCodeA //
+//------------------//
+
+int
+ETime::FromCodeA(
+    const char*  code_a_string)
+{
+    //------------------------------------------------//
+    // overlay code a string onto default code a time //
+    //------------------------------------------------//
+
+    int length = strlen(code_a_string);
+    if (length >= CODE_A_TIME_LENGTH)
+        return(0);    // string too big
+
+    char time_string[CODE_A_TIME_LENGTH];
+    memcpy(time_string, CODE_A_DEFAULT_TIME, CODE_A_TIME_LENGTH);
+    memcpy(time_string, code_a_string, length);
+
+    //----------------------//
+    // get the milliseconds //
+    //----------------------//
+
+    unsigned short ms;
+    int retval = sscanf(time_string, "%*21c.%hd", &ms);
+    if (retval != 1)
+        return(0);
+
+    //-------------------------------//
+    // put the rest into a struct tm //
+    //-------------------------------//
+
+    time_string[19] = '\0';
+    struct tm tm_time;
+    if (strptime(time_string, CODE_A_STRPTIME_FORMAT, &tm_time) == NULL)
+        return(0);
+
+    //---------//
+    // convert //
+    //---------//
+
+    if (! FromStructTm(&tm_time))
+        return(0);
+
+    _ms = ms;
+    return(1);
+}
+
+//----------------//
+// ETime::ToCodeA //
+//----------------//
+
+int
+ETime::ToCodeA(
+    char*  string)
+{
+    struct tm* tm_time = gmtime(&_sec);
+    sprintf(string, CODE_A_SCANF_FORMAT, tm_time->tm_year + 1900,
+        tm_time->tm_mon + 1, tm_time->tm_mday, tm_time->tm_hour,
+        tm_time->tm_min, tm_time->tm_sec, _ms);
+    return(1);
+}
+
+//------------------//
 // ETime::FromCodeB //
 //------------------//
 
@@ -186,18 +250,6 @@ ETime::WriteAscii(
     return(1);
 }
 
-//------------------------------//
-// ETime::WriteCurrentTimeAscii //
-//------------------------------//
-
-int
-ETime::WriteCurrentTimeAscii(
-    FILE*  ofp)
-{
-    CurrentTime();
-    return(WriteAscii(ofp));
-}
-
 //------------//
 // operator== //
 //------------//
@@ -256,4 +308,21 @@ operator>=(
     const ETime&  b)
 {
     return(a > b || a == b);
+}
+
+//-------------------//
+// CurrentTimeString //
+//-------------------//
+
+const char*
+CurrentTimeString()
+{
+    static char string[CODE_A_TIME_LENGTH];
+
+    ETime current_time;
+    current_time.CurrentTime();
+    if (! current_time.ToCodeA(string))
+        return(NULL);
+
+    return(string);
 }
