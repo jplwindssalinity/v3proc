@@ -53,6 +53,7 @@ public:
   int Write(const char* filename);
   int WriteAscii(const char* filename);
   int WriteXmgr(const char* filename);
+  int WriteKpmu(const char* filename);
 
   //--------------//
   // updating     //
@@ -62,6 +63,7 @@ public:
   int Update(int ati, int cti, MeasList* meas_list, WVC* wvc, WGC* wgc,
 	     GMF* gmf, windTypeE wind_type=DIRTH);
   int ComputeKp(int beam, int iat, int ict, int ilook, int ispd, int ichi);
+  int ComputeKpmu(int beam, int ispd);
 
   //-----------//
   // variables //
@@ -91,6 +93,7 @@ public:
   float _kpiWG;
   float _kpr;
   float _kpm;
+  float _kpmu;
   float _kpc; 
   float _kpWG;
   int _n;

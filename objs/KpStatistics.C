@@ -399,6 +399,29 @@ KpStatistics::WriteXmgr(const char* filename){
   fclose(ofp);
   return(1);
 }
+
+//--------------------------//
+// KpStatistics::WriteKpmu //
+//--------------------------//
+int
+KpStatistics::WriteKpmu(const char* filename){
+  FILE* ofp=fopen(filename,"w");
+  if(ofp==NULL) return(0);
+  if (! spdIdx.Write(ofp)) return(0);
+  for (int i = 0; i < beamIdx.GetBins(); i++){
+    for (int ispd=0; ispd<spdIdx.GetBins();ispd++){
+      // Kpm Table is non-standard stored as OUTER,INNER
+      ComputeKpmu(beamIdx.GetBins()-1-i,ispd); 
+      if (fwrite((void *)&_kpmu, sizeof(float), 1, ofp) != 1)
+        {
+	  return(0);
+        }
+    }
+  }
+  fclose(ofp);
+  return(1);
+}
+
 //--------------------------//
 // KpStatistics::WriteAscii //
 //--------------------------//
@@ -680,7 +703,53 @@ KpStatistics::Update( int ati,
 
   return(1);
 }
-	     
+int
+KpStatistics::ComputeKpmu(int beam,
+ 			int ispd)
+{
+  
+  int n=0;
+  int nl=0;
+  float vpc=0.0;
+  float vp=0.0;
+  for(int iat=0;iat<aTIdx.GetBins();iat++){
+      for(int ict=0;ict<cTIdx.GetBins();ict++){
+	for(int ilook=0;ilook<scanAngleIdx.GetBins();ilook++){
+	  for(int ichi=0;ichi<chiIdx.GetBins();ichi++){
+	    n+=numMeas[beam][iat][ict][ilook][ispd][ichi];
+	    nl+=numLook[beam][iat][ict][ilook][ispd][ichi];
+            vpc+=sumVpcTheor[beam][iat][ict][ilook][ispd][ichi];
+            vp+=sumVpEst[beam][iat][ict][ilook][ispd][ichi];
+	  }
+	}
+      }
+  }
+  int degrees_of_freedom=2; // number of degrees of freedom in point-wise
+                            // wind estimation
+
+  int nWVC=nl/2; // for each beam there are two looks per WVC
+  int total_num_in_WVC=0;
+  for(int iat=0;iat<aTIdx.GetBins();iat++){
+    for(int ict=0;ict<cTIdx.GetBins();ict++){
+      for(int b=0;b<beamIdx.GetBins();b++){
+	for(int l=0;l<scanAngleIdx.GetBins();l++){
+	  for(int ichi=0;ichi<chiIdx.GetBins();ichi++){
+	    total_num_in_WVC+=numMeas[b][iat][ict][l][ispd][ichi]; 
+	  }
+	}
+      }
+    }
+  }
+
+  float fraction_meas_in_beam=(float)n/(float)total_num_in_WVC;
+  float coeff= degrees_of_freedom*fraction_meas_in_beam;
+  vp=vp/(n-coeff*nWVC); 
+  vpc=vpc/n;
+  _kpmu=(1+vp)/(1+vpc)-1;
+  _kpmu=sqrt(_kpmu);
+  return(1);
+}	
+     
 int
 KpStatistics::ComputeKp(int beam,
 			int iat,
@@ -719,6 +788,9 @@ KpStatistics::ComputeKp(int beam,
 
   _kp=sqrt(vp);
   _kp=10*log10(1+_kp);
+
+  _kpmu=(1+vp)/(1+vpc)-1;
+  _kpmu=sqrt(_kpmu);
 
   _kpm=(1+vp)/(1+vpiWG)-1;
   if(_kpm>0) {
