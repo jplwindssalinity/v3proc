@@ -33,15 +33,15 @@ QscatSimBeamInfo::~QscatSimBeamInfo()
 //==========//
 
 QscatSim::QscatSim()
-:   pulseCount(0), epochTime(0.0), epochTimeString(NULL),
-    startTime(0), lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
+:   pulseCount(0), epochTime(0.0), epochTimeString(NULL), startTime(0),
+    lastEventType(QscatEvent::NONE), numLookStepsPerSlice(0),
     azimuthIntegrationRange(0.0), azimuthStepSize(0.0), dopplerBias(0.0),
     correlatedKpm(0.0), simVs1BCheckfile(NULL), uniformSigmaField(0),
-    uniformSigmaValue(0.0),
-    outputXToStdout(0), useKfactor(0), createXtable(0), computeXfactor(0),
-    useBYUXfactor(0), rangeGateClipping(0), applyDopplerError(0),
-    l1aFrameReady(0), simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0),
-    simKpriFlag(0), _spotNumber(0), _spinUpPulses(2), _calPending(0)
+    uniformSigmaValue(0.0), outputXToStdout(0), useKfactor(0),
+    createXtable(0), computeXfactor(0), useBYUXfactor(0),
+    rangeGateClipping(0), applyDopplerError(0), l1aFrameReady(0),
+    simKpcFlag(0), simCorrKpmFlag(0), simUncorrKpmFlag(0), simKpriFlag(0),
+    _spotNumber(0), _spinUpPulses(2), _calPending(0)
 {
     return;
 }
@@ -891,89 +891,89 @@ QscatSim::SetMeasurements(
     Meas* meas = meas_spot->GetHead();
     while (meas)
     {
-		//----------------------------------------//
-		// get lon and lat for the earth location //
-		//----------------------------------------//
+        //----------------------------------------//
+        // get lon and lat for the earth location //
+        //----------------------------------------//
 
-		double alt, lat, lon;
-		if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
-			return(0);
+        double alt, lat, lon;
+        if (! meas->centroid.GetAltLonGDLat(&alt, &lon, &lat))
+            return(0);
 
-		LonLat lon_lat;
-		lon_lat.longitude = lon;
-		lon_lat.latitude = lat;
+        LonLat lon_lat;
+        lon_lat.longitude = lon;
+        lon_lat.latitude = lat;
 
         // Compute Land Flag
         meas->landFlag=landMap.IsLand(lon,lat);
 
-		float sigma0;
-		if (uniformSigmaField)
-		{
-			sigma0=uniformSigmaValue;
-			if (simVs1BCheckfile)
-			{
-				cf->sigma0[slice_i] = sigma0;
-				cf->wv[slice_i].spd = 0.0;
-				cf->wv[slice_i].dir = 0.0;
-			}
-		}
+        float sigma0;
+        if (uniformSigmaField)
+        {
+            sigma0=uniformSigmaValue;
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = sigma0;
+                cf->wv[slice_i].spd = 0.0;
+                cf->wv[slice_i].dir = 0.0;
+            }
+        }
         else if (meas->landFlag==1)
         {
             // Set sigma0 to average NSCAT land sigma0 for appropriate
             // incidence angle and polarization
             if (meas->measType == Meas::HH_MEAS_TYPE)
                 sigma0=landSigma0[0];
-			else
+            else
                 sigma0=landSigma0[1];
-			if (simVs1BCheckfile)
-			{
-				cf->sigma0[slice_i] = sigma0;
-				cf->wv[slice_i].spd = 0.0;
-				cf->wv[slice_i].dir = 0.0;
-			}
-		}
-		else
-		{
-			//-----------------//
-			// get wind vector //
-			//-----------------//
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = sigma0;
+                cf->wv[slice_i].spd = 0.0;
+                cf->wv[slice_i].dir = 0.0;
+            }
+        }
+        else
+        {
+            //-----------------//
+            // get wind vector //
+            //-----------------//
 
-			WindVector wv;
-			if (! windfield->InterpolatedWindVector(lon_lat, &wv))
-			{
-				wv.spd = 0.0;
-				wv.dir = 0.0;
-			}
+            WindVector wv;
+            if (! windfield->InterpolatedWindVector(lon_lat, &wv))
+            {
+                wv.spd = 0.0;
+                wv.dir = 0.0;
+            }
 
-			//--------------------------------//
-			// convert wind vector to sigma-0 //
-			//--------------------------------//
+            //--------------------------------//
+            // convert wind vector to sigma-0 //
+            //--------------------------------//
 
-			// chi is defined so that 0.0 means the wind is blowing towards
-			// the s/c (the opposite direction as the look vector)
-			float chi = wv.dir - meas->eastAzimuth + pi;
+            // chi is defined so that 0.0 means the wind is blowing towards
+            // the s/c (the opposite direction as the look vector)
+            float chi = wv.dir - meas->eastAzimuth + pi;
 
             gmf->GetInterpolatedValue(meas->measType, meas->incidenceAngle,
                 wv.spd, chi, &sigma0);
 
-			if (simVs1BCheckfile)
-			{
-				cf->sigma0[slice_i] = sigma0;
-				cf->wv[slice_i].spd = wv.spd;
-				cf->wv[slice_i].dir = wv.dir;
-			}
+            if (simVs1BCheckfile)
+            {
+                cf->sigma0[slice_i] = sigma0;
+                cf->wv[slice_i].spd = wv.spd;
+                cf->wv[slice_i].dir = wv.dir;
+            }
 
-			//---------------------------------------------------------------//
-			// Fuzz the sigma0 by Kpm to simulate the effects of model function
-			// error.  The resulting sigma0 is the 'true' value.
-			// It does not map back to the correct wind speed for the
-			// current beam and geometry because the model function is
-			// not perfect.
-			//---------------------------------------------------------------//
+            //---------------------------------------------------------------//
+            // Fuzz the sigma0 by Kpm to simulate the effects of model function
+            // error.  The resulting sigma0 is the 'true' value.
+            // It does not map back to the correct wind speed for the
+            // current beam and geometry because the model function is
+            // not perfect.
+            //---------------------------------------------------------------//
 
-			// Uncorrelated component.
-			if (simUncorrKpmFlag == 1)
-			{
+            // Uncorrelated component.
+            if (simUncorrKpmFlag == 1)
+            {
 /* old gaussian pdf approach
                 double kpm_value;
                 if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
@@ -981,14 +981,14 @@ QscatSim::SetMeasurements(
                     printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
                     exit(-1);
                 }
-				Gaussian gaussianRv(1.0,0.0);
-				float rv1 = gaussianRv.GetNumber();
-				float RV = rv1*kpm_value + 1.0;
+                Gaussian gaussianRv(1.0,0.0);
+                float rv1 = gaussianRv.GetNumber();
+                float RV = rv1*kpm_value + 1.0;
                 if (RV < 0.0)
                 {
                     RV = 0.0;   // Do not allow negative sigma0's.
                 }
-				sigma0 *= RV;
+                sigma0 *= RV;
 */
                 double kpm2;
                 if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
@@ -996,29 +996,29 @@ QscatSim::SetMeasurements(
                     printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
                     exit(-1);
                 }
-				Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
-				sigma0 = gammaRv.GetNumber();
-			}
+                Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
+                sigma0 = gammaRv.GetNumber();
+            }
 
-			// Correlated component.
-			if (simCorrKpmFlag == 1)
-			{
-				sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
-			}
-		}
+            // Correlated component.
+            if (simCorrKpmFlag == 1)
+            {
+                sigma0 *= kpmField->GetRV(correlatedKpm, lon_lat);
+            }
+        }
 
-		//-------------------------//
-		// convert Sigma0 to Power //
-		//-------------------------//
+        //-------------------------//
+        // convert Sigma0 to Power //
+        //-------------------------//
 
-		// Kfactor: either 1.0, taken from table, or X is computed
+        // Kfactor: either 1.0, taken from table, or X is computed
         // directly
         float Xfactor=0;
         float Kfactor=1.0;
         float Es,En,var_esn_slice;
-		CoordinateSwitch gc_to_antenna;
+        CoordinateSwitch gc_to_antenna;
 
-		if (computeXfactor || useBYUXfactor)
+        if (computeXfactor || useBYUXfactor)
         {
             // If you cannot calculate X it probably means the
             // slice is partially off the earth.
@@ -1037,12 +1037,12 @@ QscatSim::SetMeasurements(
             }
             else if (useBYUXfactor)
             {
-		        if (simVs1BCheckfile)
-		        {
+                if (simVs1BCheckfile)
+                {
                   Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, cf);
                 }
                 else
-		        {
+                {
                   Xfactor = BYUX.GetXTotal(spacecraft, qscat, meas, NULL);
                 }
             }
@@ -1052,7 +1052,7 @@ QscatSim::SetMeasurements(
                 return(0);
             }
             meas->XK=Xfactor;
-		}
+        }
         else
         {
             Kfactor=1.0;  // default to use if no Kfactor specified.
@@ -1082,10 +1082,10 @@ QscatSim::SetMeasurements(
             {
                 return(0);
             }
-		}
+        }
 
-		if (simVs1BCheckfile)
-		{
+        if (simVs1BCheckfile)
+        {
             Vector3 rlook = meas->centroid - spacecraft->orbitState.rsat;
             cf->R[slice_i] = (float)rlook.Magnitude();
             if (computeXfactor || useBYUXfactor)
@@ -1108,7 +1108,7 @@ QscatSim::SetMeasurements(
                 if (! beam->GetPowerGainProduct(theta, phi, roundTripTime,
                     qscat->sas.antenna.spinRate, &(cf->GatGar[slice_i])))
                 {
-                    cf->GatGar[slice_i] = 1.0;	// set a dummy value.
+                    cf->GatGar[slice_i] = 1.0;    // set a dummy value.
                 }
             }
             else
@@ -1126,17 +1126,17 @@ QscatSim::SetMeasurements(
             cf->var_esn_slice[slice_i] = var_esn_slice;
             cf->Es[slice_i] = Es;
             cf->En[slice_i] = En;
-			cf->XK[slice_i] = meas->XK;
-			cf->centroid[slice_i] = meas->centroid;
-			cf->azimuth[slice_i] = meas->eastAzimuth;
-			cf->incidence[slice_i] = meas->incidenceAngle;
-		}
+            cf->XK[slice_i] = meas->XK;
+            cf->centroid[slice_i] = meas->centroid;
+            cf->azimuth[slice_i] = meas->eastAzimuth;
+            cf->incidence[slice_i] = meas->incidenceAngle;
+        }
 
-		slice_i++;
-		meas=meas_spot->GetNext();
-	}
+        slice_i++;
+        meas=meas_spot->GetNext();
+    }
 
-	return(1);
+    return(1);
 }
 
 //-------------------------//
@@ -1384,40 +1384,40 @@ QscatSim::MeasToEsnX(
     float*  En,
     float*  var_esn_slice)
 {
-	//------------------------//
-	// Sanity check on sigma0 //
-	//------------------------//
+    //------------------------//
+    // Sanity check on sigma0 //
+    //------------------------//
 
-	if (fabs(sigma0) > 1.0e5)
-	{
-		fprintf(stderr,
+    if (fabs(sigma0) > 1.0e5)
+    {
+        fprintf(stderr,
           "Error: QscatSim::MeasToEsnX encountered invalid sigma0 = %g\n",
           sigma0);
-		exit(-1);
-	}
+        exit(-1);
+    }
 
     SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-	double Tp = qscat->ses.txPulseWidth;
-	double Tg = ses_beam_info->rxGateWidth;
-	double Bs = meas->bandwidth;
+    double Tp = qscat->ses.txPulseWidth;
+    double Tg = ses_beam_info->rxGateWidth;
+    double Bs = meas->bandwidth;
     double L13 = qscat->ses.receivePathLoss;
 
-	//------------------------------------------------------------------------//
-	// Signal (ie., echo) energy referenced to the point just before the
-	// I-Q detection occurs (ie., including the receiver gain and system loss).
+    //------------------------------------------------------------------------//
+    // Signal (ie., echo) energy referenced to the point just before the
+    // I-Q detection occurs (ie., including the receiver gain and system loss).
     // X has units of energy because Xcal has units of Pt * Tp.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
 
-	*Es = X*sigma0;
+    *Es = X*sigma0;
 
-	//------------------------------------------------------------------------//
-	// Noise power spectral densities referenced the same way as the signal.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Noise power spectral densities referenced the same way as the signal.
+    //------------------------------------------------------------------------//
 
-	double N0_echo = bK * qscat->systemTemperature *
+    double N0_echo = bK * qscat->systemTemperature *
         qscat->ses.rxGainEcho / L13;
 
-	//-------------------------------------------------------------------//
+    //-------------------------------------------------------------------//
     // Get the noise energy ratio correction from a table.
     // We define the noise energy ratio correction so that actual slice
     // bandwidth B = Bs * q where Bs is the nominal slice bandwidth.
@@ -1425,7 +1425,7 @@ QscatSim::MeasToEsnX(
     // being the total echo channel bandwidth.  The table is computed
     // from the tables in the memo so that the end effect is the same,
     // while retaining the ability to set the nominal slice bandwidth.
-	//-------------------------------------------------------------------//
+    //-------------------------------------------------------------------//
 
     float q_slice;
     if (! qscat->ses.GetQRel(meas->startSliceIdx, &q_slice))
@@ -1434,63 +1434,63 @@ QscatSim::MeasToEsnX(
       exit(1);
     }
 
-	//------------------------------------------------------------------------//
-	// Noise energy within one slice referenced like the signal energy.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Noise energy within one slice referenced like the signal energy.
+    //------------------------------------------------------------------------//
 
-	double En1_slice = N0_echo * Bs*q_slice * Tp;		// noise with signal
-	double En2_slice = N0_echo * Bs*q_slice * (Tg-Tp);	// noise without signal
-	*En = En1_slice + En2_slice;
+    double En1_slice = N0_echo * Bs*q_slice * Tp;        // noise with signal
+    double En2_slice = N0_echo * Bs*q_slice * (Tg-Tp);    // noise without signal
+    *En = En1_slice + En2_slice;
 
-	//------------------------------------------------------------------------//
-	// Signal + Noise Energy within one slice referenced like the signal energy.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Signal + Noise Energy within one slice referenced like the signal energy.
+    //------------------------------------------------------------------------//
 
-	*Esn = *Es + *En;
+    *Esn = *Es + *En;
 
-	if (simKpcFlag == 0)
-	{
+    if (simKpcFlag == 0)
+    {
         *var_esn_slice = 0.0;
-		return(1);
-	}
+        return(1);
+    }
 
-	//------------------------------------------------------------------------//
-	// Estimate the variance of the slice signal + noise energy measurements.
-	// The variance is simply the sum of the variance when the signal
-	// (and noise) are present together and the variance when only noise
-	// is present.  These variances come from radiometer theory, ie.,
-	// the reciprocal of the time bandwidth product is the normalized variance.
-	// The variance of the power is derived from the variance of the energy.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
+    // Estimate the variance of the slice signal + noise energy measurements.
+    // The variance is simply the sum of the variance when the signal
+    // (and noise) are present together and the variance when only noise
+    // is present.  These variances come from radiometer theory, ie.,
+    // the reciprocal of the time bandwidth product is the normalized variance.
+    // The variance of the power is derived from the variance of the energy.
+    //------------------------------------------------------------------------//
 
 /*
-	float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
-		(Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
+    float var_esn_slice = (Es_slice + En1_slice)*(Es_slice + En1_slice) /
+        (Bs * Tp) + En2_slice*En2_slice / (Bs*(Tg - Tp));
 */
-	// the above equation reduces to the following...
-	*var_esn_slice = (*Es + En1_slice)*(*Es + En1_slice) /
-		(Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
+    // the above equation reduces to the following...
+    *var_esn_slice = (*Es + En1_slice)*(*Es + En1_slice) /
+        (Bs * Tp) + N0_echo * N0_echo * Bs * (Tg - Tp);
 
-	//------------------------------------------------------------------------//
-	// Fuzz the Esn value by adding a random number drawn from
-	// a gaussian distribution with the variance just computed and zero mean.
-	// This includes both thermal noise effects, and fading due to the
-	// random nature of the surface target.
-	// When the snr is low, the Kpc fuzzing can be large enough that
-	// the processing step will estimate a negative sigma0 from the
-	// fuzzed power.  This is normal, and will occur in real data also.
-	// The wind retrieval has to estimate the variance using the model
-	// sigma0 rather than the measured sigma0 to avoid problems computing
-	// Kpc for weighting purposes.
+    //------------------------------------------------------------------------//
+    // Fuzz the Esn value by adding a random number drawn from
+    // a gaussian distribution with the variance just computed and zero mean.
+    // This includes both thermal noise effects, and fading due to the
+    // random nature of the surface target.
+    // When the snr is low, the Kpc fuzzing can be large enough that
+    // the processing step will estimate a negative sigma0 from the
+    // fuzzed power.  This is normal, and will occur in real data also.
+    // The wind retrieval has to estimate the variance using the model
+    // sigma0 rather than the measured sigma0 to avoid problems computing
+    // Kpc for weighting purposes.
     // The Esn value itself, however, can never be negative because the
     // instrument integrates a sum of squares.
-	//------------------------------------------------------------------------//
+    //------------------------------------------------------------------------//
 
-	Gamma rv(*var_esn_slice,*Esn);
+    Gamma rv(*var_esn_slice,*Esn);
     *Esn = rv.GetNumber();
 
 /* old gaussian pdf approach
-	Gaussian rv(*var_esn_slice,0.0);
+    Gaussian rv(*var_esn_slice,0.0);
     float rval;
     int i;
     for (i=0; i < 10; i++)
@@ -1510,7 +1510,7 @@ QscatSim::MeasToEsnX(
     }
 */
 
-	return(1);
+    return(1);
 }
 
 //----------------------//
@@ -1530,15 +1530,15 @@ QscatSim::MeasToEsnX(
 // The result is fuzzed by Kpc (if requested) and by Kpm (as supplied).
 //
 // Inputs:
-//	gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
-//		to the antenna frame for the prevailing geometry.
-//	spacecraft = pointer to current spacecraft object
-//	qscat = pointer to current Qscat object
-//	meas = pointer to current measurement (sigma0, cell center, area etc.)
-//	Kfactor = Radar equation correction factor for this cell.
-//	sigma0 = true sigma0 to assume.
-//	Esn_slice = pointer to signal+noise energy in a slice.
-//	X = pointer to true total X (ie., X = x*Kfactor).
+//    gc_to_antenna = pointer to a CoordinateSwitch from geocentric coordinates
+//        to the antenna frame for the prevailing geometry.
+//    spacecraft = pointer to current spacecraft object
+//    qscat = pointer to current Qscat object
+//    meas = pointer to current measurement (sigma0, cell center, area etc.)
+//    Kfactor = Radar equation correction factor for this cell.
+//    sigma0 = true sigma0 to assume.
+//    Esn_slice = pointer to signal+noise energy in a slice.
+//    X = pointer to true total X (ie., X = x*Kfactor).
 //
 
 int
