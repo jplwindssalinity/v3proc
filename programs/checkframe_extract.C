@@ -317,7 +317,7 @@ main(
   }
   long file_size = ftell(check1);
   long total_spots = file_size/cf.Size();
-  long total_slices = cf.slicesPerSpot * total_spots;
+//  long total_slices = cf.slicesPerSpot * total_spots;
   if (fseek(check1,0,SEEK_SET) != 0)
   {
     fprintf(stderr, "%s: error seeking to the beginning in %s\n", command,
