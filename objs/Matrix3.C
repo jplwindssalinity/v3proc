@@ -608,9 +608,12 @@ Vector3::SphericalSet(
 	double	theta,
 	double	phi)
 {
-	_v[0] = r*sin(theta)*cos(phi);
-	_v[1] = r*sin(theta)*sin(phi);
-	_v[2] = r*cos(theta);
+	double r_sin_theta = r * sin(theta);
+
+	_v[0] = r_sin_theta * cos(phi);
+	_v[1] = r_sin_theta * sin(phi);
+	_v[2] = r * cos(theta);
+
 	return(1);
 }
 
