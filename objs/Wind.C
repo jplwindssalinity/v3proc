@@ -1681,7 +1681,9 @@ WindField::ReadHurricane(
 	fscanf(fp,"%s",string);
         tmp_spd[c][d]=atof(string);
 	fscanf(fp,"%s",string);
-        tmp_dir[c][d]=atof(string)*dtr;
+        tmp_dir[c][d]=(450-atof(string))*dtr;
+        if(tmp_dir[c][d]<0) tmp_dir[c][d]+=two_pi;
+	if(tmp_dir[c][d]>two_pi) tmp_dir[c][d]-=two_pi;
       }
     }
     fclose(fp);
