@@ -55,3 +55,16 @@ L20::WriteDataRec()
 	FILE* fp = file.GetFp();
 	return(frame.swath.WriteL20(fp));
 }
+
+//------------//
+// L20::Close //
+//------------//
+
+int
+L20::Close()
+{
+	// flush contents here
+
+	file.Close();
+	return(1);
+}

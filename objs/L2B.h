@@ -57,6 +57,7 @@ public:
 
 	int		ReadDataRec();
 	int		WriteDataRec();
+	int		Close();
 
 	//-----------//
 	// variables //
