@@ -141,7 +141,7 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependencies
 #----------------------------------------------------------------------
 
-AccurateGeom.o: AccurateGeom.C Spacecraft.h Meas.h InstrumentGeom.h AccurateGeom.h Qscat.h Misc.h Array.h Constants.h Matrix3.h Ephemeris.h Attitude.h Beam.h LonLat.h List.h EarthPosition.h CoordinateSwitch.h Antenna.h Tracking.h Scatterometer.h BufferedList.h
+AccurateGeom.o: AccurateGeom.C Spacecraft.h Meas.h InstrumentGeom.h AccurateGeom.h Qscat.h Misc.h Array.h Constants.h Matrix3.h Ephemeris.h Attitude.h Beam.h LonLat.h List.h EarthPosition.h CoordinateSwitch.h Antenna.h Tracking.h Scatterometer.h BufferedList.h Scatterometer.h
 AngleInterval.o: AngleInterval.C AngleInterval.h List.h Array.h Misc.h Constants.h
 Antenna.o: Antenna.C Antenna.h Constants.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 Array.o: Array.C Array.h
