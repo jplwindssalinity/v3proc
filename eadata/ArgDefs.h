@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.14   07 Dec 1998 15:39:08   sally
+// add "-firstOnly" option
+// 
+//    Rev 1.13   02 Dec 1998 12:53:56   sally
+// add option to suppress the printing of XMGR headers
+// 
 //    Rev 1.12   13 Oct 1998 15:32:42   sally
 // added L1B file
 // 
@@ -280,6 +286,10 @@ static const char rcs_argdefs_h[] =
 #define CHECK_EMBEDDED_OPTION       "-ckembed"
 #define USE_CURR_REQQ_NUM_KEYWORD   "USE_CURR_REQQ_NUM"
 #define USE_CURR_REQQ_NUM_OPTION    "-useCurrReqqNum"
+#define NO_GR_HEADER_KEYWORD        "NO_GR_HEADER"
+#define NO_GR_HEADER_OPTION         "-h"               // jim H. picked this
+#define FIRST_DATA_ONLY_KEYWORD     "FIRST_DATA_ONLY"
+#define FIRST_DATA_ONLY_OPTION      "-firstOnly"
 
 //============
 // Structures 
@@ -395,5 +405,9 @@ static const char rcs_argdefs_h[] =
     {CHECK_EMBEDDED_KEYWORD, CHECK_EMBEDDED_OPTION, "0"}
 #define USE_CURR_REQQ_NUM_ARG   \
     {USE_CURR_REQQ_NUM_KEYWORD, USE_CURR_REQQ_NUM_OPTION, "0"}
+#define NO_GR_HEADER_ARG   \
+    {NO_GR_HEADER_KEYWORD, NO_GR_HEADER_OPTION, "0"}
+#define FIRST_DATA_ONLY_ARG   \
+    {FIRST_DATA_ONLY_KEYWORD, FIRST_DATA_ONLY_OPTION, "0"}
 
 #endif
