@@ -13,12 +13,13 @@ static const char rcs_id_wind_h[] =
 #include "Matrix.h"
 #include "AngleInterval.h"
 #include "LonLatWind.h"
+#include "WindVector.h"
+#include "LonLat.h"
+#include "Index.h"
+#include "List.h"
 /*
 #include <mfhdf.h>
 #include "Misc.h"
-#include "List.h"
-#include "LonLat.h"
-#include "Index.h"
 */
 
 #define NWP_SPEED_CORRECTION  0.84
