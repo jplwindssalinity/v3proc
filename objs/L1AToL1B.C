@@ -108,6 +108,8 @@ L10ToL15::Convert(
 			antenna->SetAzimuthWithEncoder(
 				l10->frame.antennaPosition[spot_idx]);
 
+			if(XMGROUT) printf("%g ",antenna->azimuthAngle*dtr);
+
 			//---------------------------// 
 			// create a measurement spot //
 			//---------------------------// 
@@ -157,7 +159,16 @@ L10ToL15::Convert(
 					meas, k_factor, Pr, &sigma0))
 				{
 					return(0);
-				}
+				}				
+
+				//----------------------------------//
+				// Print calculated sigma0 values   //
+				// to stdout.			    //
+				//----------------------------------//
+
+				if (XMGROUT) printf("%g ",1.0-sigma0);
+
+
 
 				//-----------------//
 				// set measurement //
@@ -170,6 +181,7 @@ L10ToL15::Convert(
 			l15->frame.spotList.Append(meas_spot);
 			spot_idx++;
 		}
+		if (XMGROUT) printf("\n");
 	}
 
 	return(1);
