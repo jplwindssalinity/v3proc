@@ -901,14 +901,6 @@ main(
           break;
       }
 
-      //----------//
-      // evaluate //
-      //----------//
-
-      did++;
-      if (wvc->selected == original_selected[best_cti][best_ati])
-        did_good++;
-
       //--------------------//
       // correct if desired //
       //--------------------//
@@ -919,6 +911,15 @@ main(
         did_corrected++;
         wvc->selected = original_selected[best_cti][best_ati];
       }
+
+      //----------//
+      // evaluate //
+      //----------//
+      // note: if correction is on, you always do good
+
+      did++;
+      if (wvc->selected == original_selected[best_cti][best_ati])
+        did_good++;
 
       //---------------------------------//
       // evaluate stuff that has changed //
