@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -30,6 +30,7 @@ static const double bK = 1.3806503e-23;
 #define KHZ_PER_MS_TO_HZ_PER_S    1.0E6
 #define KHZ_TO_HZ                 1.0E3
 #define GHZ_TO_HZ                 1.0E9
+#define HZ_TO_KHZ                 1.0E-3
 #define US_TO_S                   1.0E-6
 #define MS_TO_S                   1.0E-3
 #define S_TO_MS                   1000.0
