@@ -332,7 +332,7 @@ main(
 				// command the range delay, width, and Doppler frequency //
 				//-------------------------------------------------------//
 
-				SetRangeAndDoppler(spacecraft, instrument);
+				SetRangeAndDoppler(&spacecraft, &instrument);
 
 				if (slice_opt)
 				{

@@ -649,8 +649,10 @@ GMF::_ObjectiveFunction(
 		GetInterpolatedValue(meas->pol, meas->incidenceAngle, spd, chi,
 			&gmf_value);
 		float s = gmf_value - meas->value;
-		// b. stiles says "should be ln, not log"
-		fv += s*s / meas->estimatedKp + log(meas->estimatedKp);
+
+//		fv += s*s / meas->estimatedKp + log(meas->estimatedKp);
+// removed the log term for speed
+		fv += s*s / meas->estimatedKp;
 	}
 	return(-fv);
 }
