@@ -10,7 +10,7 @@ static const char rcs_id_spacecraftsim_h[] =
 	"@(#) $Id$";
 
 #include "Spacecraft.h"
-
+#include "Distributions.h"
 
 //======================================================================
 // CLASSES
@@ -63,6 +63,8 @@ public:
 	// setting and getting //
 	//---------------------//
 
+	void	SetAttCntlModel(AttDist* attdist);
+
 	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
@@ -98,6 +100,9 @@ protected:
 	double	_bigOmega;		// longitude of ascending node
 	double	_littleOmega;	// argument of perigee
 	double	_l;				// mean anomaly
+	AttDist* _attcntl_dist;	   // Attitude Control Distribution
+	AttDist* _attknow_dist;    // Attitude Knowledge Distribution
+
 
 	//-----------------------//
 	// predigested variables //

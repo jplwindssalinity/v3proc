@@ -33,6 +33,8 @@ static const double rm_2 = rm * rm;
 
 SpacecraftSim::SpacecraftSim()
 {
+	// set attitude control error model to default (no error)
+	_attcntl_dist=NULL;
 	return;
 }
 
@@ -316,13 +318,30 @@ SpacecraftSim::UpdateAttitude(
 	double			time,
 	Spacecraft*		spacecraft)
 {
-	// eventually, a function should go here
-	if (time < 0.0)		// bogus check to keep compiler quiet
-		return(1);
-	spacecraft->attitude.SetRoll(0.0);
-	spacecraft->attitude.SetPitch(0.0);
-	spacecraft->attitude.SetYaw(0.0);
+	
+	// Eventually we should take care of knowledge error.
+        // Now we do not.
+        if(_attcntl_dist != NULL){
+	  spacecraft->attitude.SetRoll(_attcntl_dist->roll->GetNumber(time));
+	  spacecraft->attitude.SetPitch(_attcntl_dist->pitch->GetNumber(time));
+	  spacecraft->attitude.SetYaw(_attcntl_dist->yaw->GetNumber(time));
+	}
+	else{
+          spacecraft->attitude.SetRoll(0.0);
+  	  spacecraft->attitude.SetPitch(0.0);
+          spacecraft->attitude.SetYaw(0.0);
+	}
 	return(1);
+}
+
+//-------------------------------//
+// SpaceCraftSim::SetAttCntlModel//
+//-------------------------------//
+void 
+SpacecraftSim::SetAttCntlModel(AttDist* attdist)
+{
+	_attcntl_dist=attdist;
+	return;
 }
 
 //-----------------------------------//
