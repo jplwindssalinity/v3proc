@@ -262,11 +262,11 @@ float azi, X=0;
   float bin_max_freq=bin_min_freq+bandwidth;
   X=Xstart*(bin_max_freq-slice_min_freq)/bandwidth;
   for(int c=bin_start+1; c< bin_end;c++){
-    X=X+RetrieveBySliceNumber(beam_number,azimuth_angle,bin_start);
+    X=X+RetrieveBySliceNumber(beam_number,azimuth_angle,c);
   }
   bandwidth=GetBandwidth(bin_end);
   float Xend=RetrieveBySliceNumber(beam_number, azimuth_angle, bin_end);
-  bin_min_freq=GetMinFreq(bin_start);
+  bin_min_freq=GetMinFreq(bin_end);
   X=X+Xend*(slice_max_freq-bin_min_freq)/bandwidth;
   return(X);
 }
