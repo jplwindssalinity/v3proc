@@ -117,6 +117,8 @@ void scale(double r);	// set magnitude
 double get(int i);	// extract one element
 void show();
 
+	int		Set(int index, double value);
+
 private:
 
 //-----------//

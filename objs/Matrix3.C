@@ -481,3 +481,18 @@ void Vector3::show()
 printf("%10g %10g %10g\n",_v[0],_v[1],_v[2]);
 
 }
+
+//--------------//
+// Vector3::Set //
+//--------------//
+
+int
+Vector3::Set(
+	int		index,
+	double	value)
+{
+	if (index < 0 || index > 2)
+		return(0);
+	_v[index] = value;
+	return(1);
+}
