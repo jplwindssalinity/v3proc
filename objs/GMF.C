@@ -2191,3 +2191,346 @@ GMF::Optimize_Wind_Solutions(
 	return(1);
 
 }
+
+#define H1_THRESH_FRACTION    0.1
+
+//----------------------//
+// GMF::RetrieveWindsH1 //
+//----------------------//
+
+int
+GMF::RetrieveWindsH1(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+    //--------------------------------//
+    // generate coarse solution curve //
+    //--------------------------------//
+
+    if (_phiCount != 45)
+        SetPhiCount(45);
+    SolutionCurveH1(meas_list, kp);
+
+    //----------------------------//
+    // determine maxima threshold //
+    //----------------------------//
+
+    float min_obj = _bestObj[0];
+    float max_obj = _bestObj[0];
+    for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > max_obj)
+            max_obj = _bestObj[phi_idx];
+        if (_bestObj[phi_idx] < min_obj)
+            min_obj = _bestObj[phi_idx];
+    }
+    float thresh_dif = (max_obj - min_obj) * H1_THRESH_FRACTION;
+
+    //-------------//
+    // find maxima //
+    //-------------//
+
+    int peak[10];
+    float left[10];
+    float right[10];
+    float width[10];
+    int number[10];
+    int peak_count = 0;
+
+    for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % _phiCount] &&
+            _bestObj[phi_idx] > _bestObj[(phi_idx + _phiCount - 1) % _phiCount])
+        {
+            //-------------------------------//
+            // maxima found, determine width //
+            //-------------------------------//
+
+            float thresh = _bestObj[phi_idx] - thresh_dif;
+            int left_idx = (phi_idx + _phiCount - 1) % _phiCount;
+            while (_bestObj[left_idx] < _bestObj[phi_idx] &&
+                   _bestObj[left_idx] > thresh)
+            {
+                left_idx = (left_idx + _phiCount - 1) % _phiCount;
+            }
+            if (_bestObj[left_idx] > _bestObj[phi_idx])
+                continue;
+
+            int right_idx = (phi_idx + 1) % _phiCount;
+            while (_bestObj[right_idx] < _bestObj[phi_idx] &&
+                   _bestObj[right_idx] > thresh)
+            {
+                right_idx = (right_idx + 1) % _phiCount;
+            }
+            if (_bestObj[right_idx] > _bestObj[phi_idx])
+                continue;
+
+            float m, b;
+
+            int left_plus_idx = (left_idx + 1) % _phiCount;
+            m = _bestObj[left_plus_idx] - _bestObj[left_idx];
+            b = _bestObj[left_idx] - m * (float)left_idx;
+            left[peak_count] = (thresh - b) / m;
+
+            int right_minus_idx = (right_idx + _phiCount - 1) % _phiCount;
+            m = _bestObj[right_idx] - _bestObj[right_minus_idx];
+            b = _bestObj[right_minus_idx] - m * (float)right_idx;
+            right[peak_count] = (thresh - b) / m;
+
+            if (left[peak_count] > right[peak_count])
+            {
+                width[peak_count] = right[peak_count] + (float)_phiCount -
+                    left[peak_count];
+            }
+            else
+            {
+                width[peak_count] = right[peak_count] - left[peak_count];
+            }
+            peak[peak_count] = phi_idx;
+            number[peak_count] = 1;
+            peak_count++;
+            if (peak_count > 10)
+            {
+                fprintf(stderr, "Too many ambiguities!\n");
+                return(0);
+            }
+        }
+    }
+
+    //--------------------------//
+    // assign extra ambiguities //
+    //--------------------------//
+
+    int ambiguities_left = DEFAULT_MAX_SOLUTIONS - peak_count;
+    if (ambiguities_left < 0)
+    {
+        fprintf(stderr, "Too many ambiguities!\n");
+        return(0);
+    }
+
+    int max_idx = -1;
+    while (ambiguities_left)
+    {
+        float max_use_width = 0.0;
+        for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+        {
+            float use_width = (float)width[peak_idx] / (float)number[peak_idx];
+            if (use_width > max_use_width)
+            {
+                max_use_width = use_width;
+                max_idx = peak_idx;
+            }
+        }
+        if (max_idx != -1)
+        {
+            number[max_idx]++;
+            ambiguities_left--;
+        }
+    }
+
+    //-------------------------------//
+    // refine single ambiguity peaks //
+    //-------------------------------//
+
+    WVC tmp_wvc;
+    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    {
+        if (number[peak_idx] == 1)
+        {
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = _bestSpd[peak[peak_idx]];
+            wvp->dir = (float)peak[peak_idx] * _phiStepSize;
+            wvp->obj = _bestObj[peak[peak_idx]];
+
+            // put in temporary wvc
+            if (! tmp_wvc.ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+
+            // refine
+            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
+
+            // transfer to real wvc
+            tmp_wvc.ambiguities.GotoHead();
+            wvp = tmp_wvc.ambiguities.RemoveCurrent();
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+        }
+    }
+
+    //-------------------------------------//
+    // peak split multiple ambiguity peaks //
+    //-------------------------------------//
+
+    for (int peak_idx = 0; peak_idx < peak_count; peak_idx++)
+    {
+        if (number[peak_idx] > 1)
+        {
+            for (int i = 0; i < number[peak_idx]; i++)
+            {
+                float dir = left[peak_idx] +
+                        width[peak_idx] / (2.0 * (float)number[peak_idx]) +
+                        (float)i * width[peak_idx] / (float)number[peak_idx];
+
+                dir *= _phiStepSize;
+
+                float spd, obj;
+                FindBestSpeed(meas_list, kp, dir, 0.0, 50.0, &spd, &obj);
+
+                WindVectorPlus* wvp = new WindVectorPlus();
+                if (! wvp)
+                    return(0);
+                wvp->spd = spd;
+                wvp->dir = dir;
+                wvp->obj = obj;
+
+                // put in wvc
+                if (! wvc->ambiguities.Append(wvp))
+                {
+                    delete wvp;
+                    return(0);
+                }
+            }
+        }
+    }
+
+	return(1);
+}
+
+//----------------------//
+// GMF::SolutionCurveH1 //
+//----------------------//
+// For each of the directions, find the speed that maximizes the
+// objective function.  Fills in the _bestSpd and _bestObj arrays
+// The H1 version uses adaptive thresholding and a sub-function
+
+#define H1_DELTA_SPEED_FRACTION    0.2
+#define H1_THRESH_FRACTION         0.1
+
+int
+GMF::SolutionCurveH1(
+    MeasList*  meas_list,
+    Kp*        kp)
+{
+    //-------------------------------//
+    // bracket maxima with certainty //
+    //-------------------------------//
+
+    float low_speed = _spdMin;
+    float high_speed = _spdMax;
+
+    //-----------------------//
+    // for each direction... //
+    //-----------------------//
+
+    for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
+    {
+        float dir = phi_idx * _phiStepSize;
+        FindBestSpeed(meas_list, kp, dir, low_speed, high_speed,
+            &(_bestSpd[phi_idx]), &(_bestObj[phi_idx]));
+
+        //----------------------------------------------------//
+        // adjust the low and high speeds for the next search //
+        //----------------------------------------------------//
+
+        low_speed = _bestSpd[phi_idx] * (1.0 - H1_DELTA_SPEED_FRACTION);
+        high_speed = _bestSpd[phi_idx] * (1.0 + H1_DELTA_SPEED_FRACTION);
+    }
+    return(1);
+}
+
+//--------------------//
+// GMF::FindBestSpeed //
+//--------------------//
+
+int
+GMF::FindBestSpeed(
+    MeasList*  meas_list,
+    Kp*        kp,
+    float      dir,
+    float      low_speed,
+    float      high_speed,
+    float*     best_speed,
+    float*     best_obj)
+{
+    float ax = low_speed;
+    float cx = high_speed;
+    float bx = ax + (cx - ax) * golden_r;
+    float phi = dir;
+
+    //-----------------------------------//
+    // make sure the maxima is bracketed //
+    //-----------------------------------//
+
+    if (_ObjectiveFunction(meas_list, bx, phi, kp) <
+        _ObjectiveFunction(meas_list, ax, phi, kp) )
+    {
+        ax = _spdMin;
+    }
+    if (_ObjectiveFunction(meas_list, bx, phi, kp) <
+        _ObjectiveFunction(meas_list, cx, phi, kp) )
+    {
+        cx = _spdMax;
+    }
+
+    //---------------------//
+    // find the best speed //
+    //---------------------//
+
+    float x0, x1, x2, x3;
+    x0 = ax;
+    x3 = cx;
+    if (cx - bx > bx - ax)
+    {
+        x1 = bx;
+        x2 = bx + golden_c * (cx - bx);
+    }
+    else
+    {
+        x2 = bx;
+        x1 = bx - golden_c * (bx - ax);
+    }
+    float f1 = _ObjectiveFunction(meas_list, x1, phi, kp);
+    float f2 = _ObjectiveFunction(meas_list, x2, phi, kp);
+
+    while (x3 - x0 > _spdTol)
+    {
+        if (f2 > f1)
+        {
+            x0 = x1;
+            x1 = x2;
+            x2 = x2 + golden_c * (x3 - x2);
+            f1 = f2;
+            f2 = _ObjectiveFunction(meas_list, x2, phi, kp);
+        }
+        else
+        {
+            x3 = x2;
+            x2 = x1;
+            x1 = x1 - golden_c * (x1 - x0);
+            f2 = f1;
+            f1 = _ObjectiveFunction(meas_list, x1, phi, kp);
+        }
+    }
+
+    if (f1 > f2)
+    {
+        *best_speed = x1;
+        *best_obj = f1;
+    }
+    else
+    {
+        *best_speed = x2;
+        *best_obj = f2;
+    }
+
+    return(1);
+}

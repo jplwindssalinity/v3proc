@@ -93,6 +93,16 @@ public:
 	int		FindMaxima(WVC* wvc);
 	int		FindMany(WVC* wvc);
 
+    //-------------------//
+    // H1 wind retrieval //
+    //-------------------//
+
+    int     RetrieveWindsH1(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     SolutionCurveH1(MeasList* meas_list, Kp* kp);
+    int     FindBestSpeed(MeasList* meas_list, Kp* kp, float dir,
+                float low_speed, float high_speed, float* best_speed,
+                float* best_obj);
+
 	//-------------------//
 	// GS wind retrieval //
 	//-------------------//
