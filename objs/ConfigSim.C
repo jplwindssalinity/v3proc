@@ -36,30 +36,30 @@ ConfigSpacecraft(
     Spacecraft*  spacecraft,
     ConfigList*  config_list)
 {
-	//--------------------------------//
-	// Read in Attitude Order Indices //
-	//--------------------------------//
+    //--------------------------------//
+    // Read in Attitude Order Indices //
+    //--------------------------------//
 
-	int order1, order2, order3;
-	if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
-		return(0);
-	if (! config_list->GetInt(ATTITUDE_ORDER_2_KEYWORD, &order2))
-		return(0);
-	if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
-		return(0);
+    int order1, order2, order3;
+    if (! config_list->GetInt(ATTITUDE_ORDER_1_KEYWORD, &order1))
+        return(0);
+    if (! config_list->GetInt(ATTITUDE_ORDER_2_KEYWORD, &order2))
+        return(0);
+    if (! config_list->GetInt(ATTITUDE_ORDER_3_KEYWORD, &order3))
+        return(0);
 
-	//---------------------//
-	// Initialize Attitude //
-	//---------------------//
+    //---------------------//
+    // Initialize Attitude //
+    //---------------------//
 
-	if (! spacecraft->attitude.SetOrder(order1, order2, order3))
-	{
-		fprintf(stderr, "Error setting attitude order (%d, %d, %d)\n",
-			order1, order2, order3);
-		return(0);
-	}
+    if (! spacecraft->attitude.SetOrder(order1, order2, order3))
+    {
+        fprintf(stderr, "Error setting attitude order (%d, %d, %d)\n",
+            order1, order2, order3);
+        return(0);
+    }
 
-	return(1);
+    return(1);
 }
 
 //---------------------//
@@ -68,8 +68,8 @@ ConfigSpacecraft(
 
 int
 ConfigSpacecraftSim(
-	SpacecraftSim*	spacecraft_sim,
-	ConfigList*		config_list)
+    SpacecraftSim*  spacecraft_sim,
+    ConfigList*     config_list)
 {
 	//------------------------------------//
 	// configure the spacecraft simulator //
@@ -778,17 +778,39 @@ ConfigXTable(
 	return(1);
 }
 
-int ConfigBYUXTable(
-         BYUXTable*             BYUX,
-	ConfigList*		config_list)
+//-----------------//
+// ConfigBYUXTable //
+//-----------------//
+
+int
+ConfigBYUXTable(
+    BYUXTable*   BYUX,
+    ConfigList*  config_list)
 {
-  char* ibeam_file=config_list->Get(XFACTOR_INNER_BEAM_FILE_KEYWORD);
-  char* obeam_file=config_list->Get(XFACTOR_OUTER_BEAM_FILE_KEYWORD);
-  if(!(BYUX->Read(ibeam_file, obeam_file))) return(0);
-  return(1);
+    char* ibeam_file = config_list->Get(XFACTOR_INNER_BEAM_FILE_KEYWORD);
+    char* obeam_file = config_list->Get(XFACTOR_OUTER_BEAM_FILE_KEYWORD);
+    if (! (BYUX->Read(ibeam_file, obeam_file)))
+        return(0);
+
+    return(1);
 }
 
+//----------------//
+// ConfigFbbTable //
+//----------------//
 
+int
+ConfigFbbTable(
+    FbbTable*    fbb_table,
+    ConfigList*  config_list)
+{
+    char* fbb_ib_file = config_list->Get(FBB_INNER_BEAM_FILE_KEYWORD);
+    char* fbb_ob_file = config_list->Get(FBB_OUTER_BEAM_FILE_KEYWORD);
+    if (! fbb_table->Read(fbb_ib_file, fbb_ob_file))
+        return(0);
+
+    return(1);
+}
 
 //-----------//
 // ConfigL00 //
