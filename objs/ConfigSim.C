@@ -115,9 +115,19 @@ ConfigSpacecraftSim(
     spacecraft_sim->pitchBias *= dtr;
     spacecraft_sim->yawBias *= dtr;
 
-    double epoch;
-    if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
-        return(0);
+    double epoch = 0.0;
+    char* epoch_string = config_list->Get(ORBIT_EPOCH_KEYWORD);
+    if (epoch_string != NULL)
+    {
+        ETime tmp_time;
+        if (! tmp_time.FromCodeA(epoch_string))
+        {
+            fprintf(stderr, "ConfigSim: error parsing CodeA for %s (%s)\n",
+                ORBIT_EPOCH_KEYWORD, epoch_string);
+            return(0);
+        }
+        epoch = tmp_time.GetTime();
+    }
 
     double semi_major_axis;
     if (! config_list->GetDouble(SEMI_MAJOR_AXIS_KEYWORD, &semi_major_axis))
