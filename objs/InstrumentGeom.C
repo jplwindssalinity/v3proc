@@ -4,7 +4,7 @@
 //==============================================================//
 
 static const char rcs_id_instrumentgeom_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,12 +20,6 @@ static const char rcs_id_instrumentgeom_c[] =
 #include "Interpolate.h"
 #include "Array.h"
 #include "BYUXTable.h"
-/*
-#include "CoordinateSwitch.h"
-#include "Matrix3.h"
-#include "LonLat.h"
-#include "Constants.h"
-*/
 
 //------------------//
 // AntennaFrameToGC //
@@ -33,35 +27,35 @@ static const char rcs_id_instrumentgeom_c[] =
 
 CoordinateSwitch
 AntennaFrameToGC(
-	OrbitState*		sc_orbit_state,
-	Attitude*		sc_attitude,
-	Antenna*		antenna)
+    OrbitState*  sc_orbit_state,
+    Attitude*    sc_attitude,
+    Antenna*     antenna)
 {
-	CoordinateSwitch total;
+    CoordinateSwitch total;
 
-	// geocentric to s/c velocity
-	Vector3 sc_xv, sc_yv, sc_zv;
-	velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat,
-		&sc_xv, &sc_yv, &sc_zv);
-	CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
-	total = gc_to_scv;
+    // geocentric to s/c velocity
+    Vector3 sc_xv, sc_yv, sc_zv;
+    velocity_frame(sc_orbit_state->rsat, sc_orbit_state->vsat, &sc_xv,
+        &sc_yv, &sc_zv);
+    CoordinateSwitch gc_to_scv(sc_xv, sc_yv, sc_zv);
+    total = gc_to_scv;
 
-	// s/c velocity to s/c body
-	CoordinateSwitch scv_to_sc_body(*sc_attitude);
-	total.Append(&scv_to_sc_body);
+    // s/c velocity to s/c body
+    CoordinateSwitch scv_to_sc_body(*sc_attitude);
+    total.Append(&scv_to_sc_body);
 
-	// s/c body to antenna pedestal
-	CoordinateSwitch sc_body_to_ant_ped = antenna->GetScBodyToAntPed();
-	total.Append(&sc_body_to_ant_ped);
+    // s/c body to antenna pedestal
+    CoordinateSwitch sc_body_to_ant_ped = antenna->GetScBodyToAntPed();
+    total.Append(&sc_body_to_ant_ped);
 
-	// antenna pedestal to antenna frame
-	Attitude att;
-	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
-	CoordinateSwitch ant_ped_to_ant_frame(att);
-	total.Append(&ant_ped_to_ant_frame);
+    // antenna pedestal to antenna frame
+    Attitude att;
+    att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
+    CoordinateSwitch ant_ped_to_ant_frame(att);
+    total.Append(&ant_ped_to_ant_frame);
 
-	total = total.ReverseDirection();
-	return(total);
+    total = total.ReverseDirection();
+    return(total);
 }
 
 //--------------//
@@ -796,69 +790,6 @@ FindSlice(
 	return(1);
 }
 
-/*
-//-----------------//
-// DopplerAndDelay //
-//-----------------//
-// Estimate the ideal doppler frequency and receiver gate delay.
-// Later, this should be replaced with the Doppler and range tracking stuff.
-
-#define DOPPLER_ACCURACY	1.0		// 1 Hz
-
-int
-DopplerAndDelay(
-	CoordinateSwitch*	antenna_frame_to_gc,
-	Spacecraft*			spacecraft,
-	Vector3				vector)
-{
-	//-----------------------------------------------------//
-	// calculate receiver gate delay to put echo in center //
-	//-----------------------------------------------------//
-
-	int current_beam_idx = qscat->sas.antenna.currentBeamIdx;
-	double pulse_width =
-		qscat->ses.antenna.beam[current_beam_idx].txPulseWidth;
-
-	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
-	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
-	EarthPosition r_target = earth_intercept(sc_orbit_state->rsat, ulook_gc);
-	double slant_range = (sc_orbit_state->rsat - r_target).Magnitude();
-	double round_trip_time = 2.0 * slant_range / speed_light_kps;
-	qscat->ses.commandedRxGateDelay = pulse_width / 2.0 + round_trip_time +
-		instrument->systemDelay;
-
-	//--------------------------------------------------//
-	// calculate baseband frequency w/o Doppler command //
-	//--------------------------------------------------//
-
-	double chirp_start = instrument->chirpStartM * pulse_width +
-		instrument->chirpStartB;
-	double transmit_center = -chirp_start / instrument->chirpRate;
-	double echo_center = transmit_center + round_trip_time +
-		instrument->systemDelay;
-	double range_freq = instrument->chirpRate *
-		(instrument->commandedRxGateDelay - echo_center);
-
-	Vector3 vspot(-w_earth * r_target.Get(1), w_earth * r_target.Get(0), 0);
-	Vector3 vrel = sc_orbit_state->vsat - vspot;
-
-	instrument->commandedDoppler = 0.0;
-	double lambda, doppler_freq, new_commanded_doppler, dif;
-	do
-	{
-		instrument->transmitFreq = instrument->baseTransmitFreq +
-			instrument->commandedDoppler;
-		lambda = speed_light_kps / instrument->transmitFreq;
-		doppler_freq = 2.0 * (vrel % ulook_gc) / lambda;
-		new_commanded_doppler = range_freq - doppler_freq;
-		dif = fabs(instrument->commandedDoppler - new_commanded_doppler);
-		instrument->commandedDoppler = new_commanded_doppler;
-	} while (dif > DOPPLER_ACCURACY);
-
-	return(1);
-}
-*/
-
 //----------//
 // IdealRtt //
 //----------//
@@ -887,8 +818,8 @@ IdealRtt(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
-		azimuth_rate, &look, &azim))
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+        beam, azimuth_rate, &look, &azim))
 	{
 		exit(1);
 	}
@@ -1017,8 +948,8 @@ IdealCommandedDoppler(
 	Beam* beam = qscat->GetCurrentBeam();
 	double azimuth_rate = qscat->sas.antenna.spinRate;
 	double look, azim;
-	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
-		azimuth_rate, &look, &azim))
+	if (! GetPeakSpatialResponse2(&zero_rpy_antenna_frame_to_gc, spacecraft,
+        beam, azimuth_rate, &look, &azim))
 	{
 		return(0);
 	}
@@ -1223,6 +1154,7 @@ IdealCommandedDopplerForRange(
 	return(1);
 }
 ************************************************************/
+
 //------------//
 // TargetInfo //
 //------------//
@@ -1232,43 +1164,46 @@ IdealCommandedDopplerForRange(
 
 int
 TargetInfo(
-	CoordinateSwitch*	antenna_frame_to_gc,
-	Spacecraft*			spacecraft,
+    CoordinateSwitch*   antenna_frame_to_gc,
+    Spacecraft*         spacecraft,
     Qscat*              qscat,
-	Vector3				vector,
-	TargetInfoPackage*	tip)
+    Vector3             vector,
+    TargetInfoPackage*  tip)
 {
-	// dereference
-	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+    // dereference
+    OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 
-	// Compute earth intercept point and range
-	Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
+    // Compute earth intercept point and range
+    Vector3 ulook_gc = antenna_frame_to_gc->Forward(vector);
     if (earth_intercept(sc_orbit_state->rsat, ulook_gc, &(tip->rTarget)) != 1)
         return(0);
 
-	EarthPosition* rspot = &(tip->rTarget);
-	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
+    EarthPosition* rspot = &(tip->rTarget);
+    tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
+    tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
 
-	// Compute doppler shift for the earth intercept point.
-	Vector3 vspot(-w_earth * rspot->Get(1), w_earth * rspot->Get(0), 0);
-	Vector3 vrel = sc_orbit_state->vsat - vspot;
-	double lambda = speed_light_kps / qscat->ses.txFrequency;
-	tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
+    // Compute doppler shift for the earth intercept point.
+    Vector3 vspot(-w_earth * rspot->Get(1), w_earth * rspot->Get(0), 0);
+    Vector3 vrel = sc_orbit_state->vsat - vspot;
+    double lambda = speed_light_kps / qscat->ses.txFrequency;
+    tip->dopplerFreq = 2.0 * (vrel % ulook_gc) / lambda;
 
-	// Compute baseband frequency shift due to range
-	double pulse_width = qscat->ses.txPulseWidth;
-	double chirp_start = qscat->ses.chirpStartM * pulse_width +
-        qscat->ses.chirpStartB;
-	double transmit_center = -chirp_start / qscat->ses.chirpRate;
-	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
-	double echo_center = transmit_center + tip->roundTripTime;
+    // compute baseband frequency
     SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-	tip->rangeFreq = qscat->ses.chirpRate * (qscat->ses.rxGateDelay +
-		ses_beam_info->rxGateWidth / 2.0 - echo_center);
-	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq -
-		qscat->ses.txDoppler;
+    double pulse_width = qscat->ses.txPulseWidth;
+    double gate_width = ses_beam_info->rxGateWidth;
+    double mu = qscat->ses.chirpRate;
 
-	return(1);
+    double chirp_start = mu *
+        ( (pulse_width + RX_GATE_DELAY_CMD_RESOLUTION) / 2.0 + T_GRID);
+    double dechirp_start = mu * (gate_width / 2.0);
+
+    tip->basebandFreq = -qscat->ses.txDoppler - tip->dopplerFreq -
+        chirp_start + dechirp_start + F_PROC -
+        mu * (tip->roundTripTime - qscat->ses.rxGateDelay);
+
+
+    return(1);
 }
 
 //------------------------//

@@ -32,8 +32,7 @@ SesBeamInfo::~SesBeamInfo()
 QscatSes::QscatSes()
 :   txPulseWidth(0.0), txDoppler(0.0), txFrequency(0.0), rxGateDelay(0.0),
     baseTxFrequency(0.0), pri(0.0), transmitPower(0.0), rxGainEcho(0.0),
-    rxGainNoise(0.0), chirpRate(0.0), chirpStartM(0.0), chirpStartB(0.0),
-    fftBinBandwidth(0.0),
+    rxGainNoise(0.0), chirpRate(0.0), fftBinBandwidth(0.0),
     scienceSliceBandwidth(0.0),  scienceSlicesPerSpot(0),
     guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0)
 {
@@ -884,12 +883,6 @@ SetOrbitStepDelayAndFrequency(
 //--------------------------------//
 // Qscat::RotateAntennaToTxCenter //
 //--------------------------------//
-
-// most of these should be moved into the SES config
-#define T_ENC   9E-9
-#define T_GRID  19.87E-6
-#define T_RC    9.968E-6
-#define T_EXC   1E-6
 
 int
 Qscat::RotateAntennaToTxCenter(

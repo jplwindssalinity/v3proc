@@ -22,6 +22,14 @@ class TargetInfoPackage;
 //      QscatSes, QscatSas, QscatCds, Qscat
 //======================================================================
 
+#define F_PROC  -1.06E3    // Hz
+
+// most of these should be moved into the SES config
+#define T_ENC   9E-9
+#define T_GRID  19.87E-6
+#define T_RC    9.968E-6
+#define T_EXC   1E-6
+
 //======================================================================
 // CLASS
 //      QscatSes
@@ -84,8 +92,6 @@ public:
     float        rxGainEcho;      // dimensionless multiplicative factor
     float        rxGainNoise;     // dimensionless multiplicative factor
     float        chirpRate;       // chirp rate (Hz/s)
-    float        chirpStartM;     // chirp start slope (Hz/s)
-    float        chirpStartB;     // chirp start offset (Hz)
     float        fftBinBandwidth;        // Hz
     float        scienceSliceBandwidth;  // Hz
     int          scienceSlicesPerSpot;   // count

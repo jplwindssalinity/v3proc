@@ -168,16 +168,6 @@ ConfigQscatSes(
         return(0);
     qscat_ses->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
 
-    float chirp_start_m;    // kHz/ms
-    if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
-        return(0);
-    qscat_ses->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
-
-    float chirp_rate_b;     // kHz
-    if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
-        return(0);
-    qscat_ses->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
-
     //--------//
     // slices //
     //--------//

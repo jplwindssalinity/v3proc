@@ -32,7 +32,6 @@ struct TargetInfoPackage {
 	float			slantRange;		// km
 	float			roundTripTime;	// ms
 	float			dopplerFreq;	// Hz
-	float			rangeFreq;		// Hz
 	float			basebandFreq;	// Hz
 };
 
