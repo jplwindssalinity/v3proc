@@ -63,28 +63,45 @@ int
 InstrumentSim::DetermineNextEvent(
 	Event*		event)
 {
-	int pri_cycle;
+	//------------------------------------//
+	// initialize next time of each event //
+	//------------------------------------//
 
-	switch(event->eventId)
+	static double scat_a_time = 0.0;
+	static double scat_b_time = _beamBTimeOffset;
+	static double orb_time = 0.0;
+
+	//----------------------------------------//
+	// find minimum time from possible events //
+	//----------------------------------------//
+
+	if (scat_a_time <= scat_b_time &&
+		scat_a_time <= orb_time)
 	{
-	case NONE:
 		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
-		break;
-	case Event::SCATTEROMETER_BEAM_A_MEASUREMENT:
-		event->eventId = Event::SCATTEROMETER_BEAM_B_MEASUREMENT;
-		pri_cycle = (int)((event->time + _beamBTimeOffset) / _priPerBeam);
-		event->time = _priPerBeam * (double)pri_cycle + _beamBTimeOffset;
-		break;
-	case Event::SCATTEROMETER_BEAM_B_MEASUREMENT:
-		event->eventId = Event::SCATTEROMETER_BEAM_A_MEASUREMENT;
-		pri_cycle = (int)(event->time / _priPerBeam);
-		event->time = _priPerBeam * (double)(pri_cycle + 1);
-		break;
-	default:
-		event->eventId = Event::UNKNOWN;
-		return(0);
-		break;
+		event->time = scat_a_time;
+		scat_a_time = (double)(int)(event->time / _priPerBeam + 1.5) *
+			_priPerBeam;
 	}
+	else if (scat_b_time <= scat_a_time &&
+			scat_b_time <= orb_time)
+	{
+		event->eventId = Event::SCATTEROMETER_BEAM_B_MEASUREMENT;
+		event->time = scat_b_time;
+		scat_b_time = (double)((int)(event->time / _priPerBeam) + 1) *
+			_priPerBeam + _beamBTimeOffset;
+	}
+	else if (orb_time <= scat_a_time &&
+			orb_time <= scat_b_time)
+	{
+		event->eventId = Event::UPDATE_ORBIT;
+		event->time = orb_time;
+		orb_time = (int)(event->time / ORBIT_UPDATE_PERIOD + 1.5) *
+			ORBIT_UPDATE_PERIOD;
+	}
+	else
+		return(0);
+
 	return(1);
 }
 
@@ -183,7 +200,7 @@ InstrumentSim::SimulateEvent(
 		double lat, lon;
 		alt_lat_lon.Get(0, &lat);
 		alt_lat_lon.Get(1, &lon);
-		WindVector* wv = wf->NearestWindVector(lon, lat);
+//		WindVector* wv = wf->NearestWindVector(lon, lat);
 		Measurement meas;
 		meas.pol = beam->polarization;
 		meas.incidenceAngle = 0.0;		// how to calculate?
