@@ -30,9 +30,9 @@ IntegrateSlices(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
-	int                     num_look_steps_per_slice,
-	float                   azimuth_integration_range,
-	float                   azimuth_step_size)
+	int				num_look_steps_per_slice,
+	float			azimuth_integration_range,
+	float			azimuth_step_size)
 {
 	//-----------//
 	// predigest //
@@ -54,13 +54,13 @@ IntegrateSlices(
 	meas_spot->scAttitude = *attitude;
 
 	//--------------------------------//
-	// generate the coordinate switch // 
+	// generate the coordinate switch //
 	//--------------------------------//
 
 	CoordinateSwitch antenna_frame_to_gc = AntennaFrameToGC(orbit_state,
 		attitude, antenna);
 
-	CoordinateSwitch zero_rpy_antenna_frame_to_gc = 
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
 		AntennaFrameToGC(orbit_state, &zero_rpy, antenna);
 
 	//-------------------------------------------------//
@@ -108,7 +108,7 @@ IntegrateSlices(
 //		if(slice_idx==0 && beam->polarization==H_POL) debug2=0;
 //		if(debug) printf("\n\nAntennaAzimuth %g\n",
 //		 antenna->azimuthAngle/dtr);
-	
+
 		//----------------------------------------//
 		// determine the baseband frequency range //
 		//----------------------------------------//
@@ -140,7 +140,7 @@ IntegrateSlices(
 					 &dummy))
 		return(0);
 
-		
+
 		look_vector.SphericalSet(1.0, centroid_look, centroid_azimuth);
 		if(!TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
 			look_vector, &tip))
@@ -148,7 +148,7 @@ IntegrateSlices(
 			return(0);
 		}
 		centroid=tip.rTarget;
-		
+
 
 		float looktol;
 //		float xarray[40*80];
@@ -177,7 +177,7 @@ IntegrateSlices(
 		else
 		{
 			high_gain_freq=f2;
-			low_gain_freq=f1;	
+			low_gain_freq=f1;
 			if(f1>f2) look_scan_dir=-1;
 			else look_scan_dir=+1;
 		}
@@ -187,7 +187,7 @@ IntegrateSlices(
 		//-------------------------------------//
 
 
-                for(int a=0; a<numazi;a++){
+			for(int a=0; a<numazi;a++){
 		  float azi=a*azimuth_step_size+azimin;
 
 		  float start_look=centroid_look;
@@ -213,7 +213,7 @@ IntegrateSlices(
                   looktol=fabs(end_look-start_look)/(float)num_look_steps_per_slice;
                   int look_num=0;
 		  while(1){
-                   
+
                     // get integration box corners
 		    Outline box;
                     float look1=lk;
@@ -224,15 +224,15 @@ IntegrateSlices(
 				 look1,look2,azi1,azi2, &box))
 		      return(0);
 
-		    
-		  
+
+
 		    //**************************//
 		    //**** Determine Center of box ****//
 		    //**************************//
 		    Vector3 box_center;
                     box_center.SphericalSet(1.0, (look1+look2)/2.0,
 					    (azi1+azi2)/2.0);
-		                   
+
 		    /******************************/
                     /** Check to see if look angle */
                     /** scan is finished          */
@@ -262,8 +262,8 @@ IntegrateSlices(
 					    (azi1+azi2)/2.0, &gatgar))
 			return(0);
 
-//		    if(debug) printf("     Area %g Range %g GatGar %g \n", 
-//				     area, range, gatgar); 
+//		    if(debug) printf("     Area %g Range %g GatGar %g \n",
+//				     area, range, gatgar);
 //		    if(debug) printf("     dX %g\n",
 //				     area*gatgar/(range*range*range*range));
 
@@ -276,7 +276,7 @@ IntegrateSlices(
                     /*********************************/
 		    /* Goto next box                  */
 		    /*********************************/
-                   float gt;
+//                   float gt;
 //		   if(debug2){
 //		     beam->GetPowerGain((look1+look2)/2.0,(azi1+azi2)/2.0,&gt);
 //		   }
@@ -284,9 +284,9 @@ IntegrateSlices(
 //    vector.SphericalSet(1.0,40.785*dtr,-0.36*dtr);
 //    TargetInfo(&antenna_frame_to_gc, spacecraft, instrument,
 //				 vector, &tip);
-//    Vector3 gc_vector=antenna_frame_to_gc.Forward(vector);	
+//    Vector3 gc_vector=antenna_frame_to_gc.Forward(vector);
 //    EarthPosition r_target = earth_intercept(orbit_state->rsat, gc_vector);
-    
+
 //		   xarray[a*40+look_num]=gatgar;
 		    lk+=look_scan_dir*looktol;
 		    look_num++;
@@ -319,8 +319,8 @@ IntegrateSlices(
 	return(1);
 }
 
-int            
-FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc, 
+int
+FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
 	       Spacecraft* spacecraft, Instrument* instrument,
 	       float look1, float look2, float azi1, float azi2,
 	       Outline* box)
@@ -382,7 +382,7 @@ FindBoxCorners(CoordinateSwitch* antenna_frame_to_gc,
   return(1);
 }
 
-int             
+int
 FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
 	       Spacecraft* spacecraft, Instrument* instrument,
 	       float target_freq, float freq_tol, float* look,
@@ -433,7 +433,3 @@ FindLookAtFreq(CoordinateSwitch* antenna_frame_to_gc,
   *look=mid_look;
   return(1);
 }
-
-
-
-
