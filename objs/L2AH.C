@@ -47,7 +47,7 @@ L2AH::OpenForReading(
     _sigma0SdsId = SDnametoid(_sdId, "sigma0");
     _sigma0AttnMapSdsId = SDnametoid(_sdId, "sigma0_attn_map");
     _kpAlphaSdsId = SDnametoid(_sdId, "kp_alpha");
-    _kpBetaSdsId = SDnametoid(_sdId, "kp_beta");
+    _kpBetaSdsId = SDnametoid(_sdId, "kp_beta", &_kpBetaScale);
     _kpGammaSdsId = SDnametoid(_sdId, "kp_gamma");
     _sigma0QualFlagSdsId = SDnametoid(_sdId, "sigma0_qual_flag");
     _sigma0ModeFlagSdsId = SDnametoid(_sdId, "sigma0_mode_flag");
@@ -286,7 +286,7 @@ L2AH::GetWVC(
             continue;
 
         // ignore land sigma0's, maybe?
-        if (land_flag == OCEAN_ONLY && _surfaceFlag[i] & 0x00000001)
+        if (land_flag == OCEAN_ONLY && _surfaceFlag[i]) // & 0x00000001)
             continue;
 
         // create a measurement
@@ -331,7 +331,7 @@ L2AH::GetWVC(
 
         // kp alpha, beta, and gamma
         new_meas->A = _kpAlpha[i] * KP_ALPHA_SCALE;
-        new_meas->B = _kpBeta[i] * KP_BETA_SCALE;
+        new_meas->B = _kpBeta[i] * _kpBetaScale;
         new_meas->C = _kpGamma[i];
 
         // hack fore/aft info into scanAngle

@@ -35,7 +35,6 @@ static const char rcs_id_l1ah_h[] =
 #define SIGMA0_SCALE           0.01
 #define SIGMA0_ATTN_MAP_SCALE  0.01
 #define KP_ALPHA_SCALE         0.001
-#define KP_BETA_SCALE          1.0E-6
 
 //======================================================================
 // CLASS
@@ -88,6 +87,12 @@ protected:
     int32  _sigma0ModeFlagSdsId;
     int32  _surfaceFlagSdsId;
     int32  _cellIndexSdsId;
+
+    //---------------//
+    // scale factors //
+    //---------------//
+
+    float64  _kpBetaScale;
 
     //-------------//
     // row storage //

@@ -254,6 +254,6 @@ protected:
 // helper functions //
 //------------------//
 
-int32 SDnametoid(int32 sd_id, char* sds_name);
+int32 SDnametoid(int32 sd_id, char* sds_name, float64* scale_factor = NULL);
 
 #endif

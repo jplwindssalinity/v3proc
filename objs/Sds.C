@@ -208,7 +208,7 @@ fprintf(stderr, "\n");
         return(0);
     }
 
-    // set the calibration 
+    // set the calibration
     if (SDsetcal(_sdsId, _cal, CAL_ERROR, _offset, OFFSET_ERROR,
         DATA_TYPE) != SUCCEED)
     {
@@ -657,12 +657,23 @@ SdsFloat64::SetFromUnsignedInt(unsigned int* value)
 
 int32
 SDnametoid(
-    int32  sd_id,
-    char*  sds_name)
+    int32     sd_id,
+    char*     sds_name,
+    float64*  scale_factor)
 {
     int32 sds_index = SDnametoindex(sd_id, sds_name);
     if (sds_index == FAIL)
         return(FAIL);
     int32 sds_id = SDselect(sd_id, sds_index);
+    if (scale_factor != NULL)
+    {
+        float64 cal_error, offset, offset_error;
+        int32 data_type;
+        if (SDgetcal(sds_id, scale_factor, &cal_error, &offset,
+            &offset_error, &data_type) == FAIL)
+        {
+            *scale_factor = 0.0;
+        }
+    }
     return (sds_id);
 }
