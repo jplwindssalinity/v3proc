@@ -20,6 +20,7 @@ static const char rcs_id_distributions_c[] =
         "@(#) $Id$";
 
 #include"Distributions.h"
+#include "Constants.h"
 
 //================================//
 // GenericDist                    //
@@ -167,7 +168,7 @@ void Uniform::SetSeed(long int seed){
 }
 
 //============================//
-// Gaussian                    //
+// Gaussian                   //
 //============================//
 
 Gaussian::Gaussian()
@@ -225,6 +226,96 @@ int Gaussian::SetMean(float m){
 }
 
 void Gaussian::SetSeed(long int seed){
+  _rng.SetSeed(seed);
+}
+
+//============================//
+// Gamma                      //
+//============================//
+
+Gamma::Gamma()
+:	_variance(0.0), _mean(0.0)
+{
+	return;
+}
+
+Gamma::Gamma(float variance, float mean)
+{
+	_variance=variance;
+	_mean=mean;
+	return;
+}
+
+
+Gamma::~Gamma()
+{
+	return;
+}
+
+float
+Gamma::GetNumber()
+{
+
+  double v1, v2, r, mag, fac, lambda, x;
+
+  // Convert mean and variance to alternate r,lambda representation.
+  lambda = _mean / _variance;
+  r = _mean * lambda;
+
+  // Set coefficients of comparison function to ensure that it is always
+  // greater than the gamma pdf, but as close as possible.
+  double a0 = 2.0*sqrt(_variance);
+  double x0 = (r-1.0)/lambda;
+  double c0 = exp(log(lambda) - gammln(r) + (r-1.0)*log(r-1.0) - (r-1.0));
+
+  do
+  {  // This loop generates a gamma distributed deviate.
+    do
+    {  // This loop generates an x uniformly distributed under the comparison
+       // function.  Integral of comparison function is:
+       // a0*tan(pi*u) + x0 (u is uniform deviate).
+      do
+      {  // This loop generates the tangent of a random angle
+        v1=2.0*_rng.GetDouble()-1.0;
+        v2=2.0*_rng.GetDouble()-1.0;
+        mag = v1*v1+v2*v2;
+      } while (mag > 1.0 || mag == 0.0);
+      double y = v2/v1; // y = tan(pi * uniform random deviate)
+
+      // Compute x-coordinate of uniformly distributed point under the
+      // comparison pdf.
+      x = a0*y + x0;
+    } while (x <= 0.0);
+
+    // fac is the ratio of the gamma pdf to the comparison pdf.
+    fac = exp(r*log(lambda) - gammln(r) + (r-1.0)*log(x) -lambda*x) *
+          (1.0 + (x - x0)*(x - x0)/a0/a0) / c0;
+  } while (_rng.GetDouble() > fac);
+
+  return((float)x);
+}
+
+float Gamma::GetVariance(){
+  return(_variance);
+}
+
+int Gamma::SetVariance(float v)
+{
+  if(v < 0.0) return(0);
+  _variance=v;
+  return(1);
+}
+
+float Gamma::GetMean(){
+  return(_mean);
+}
+
+int Gamma::SetMean(float m){
+  _mean=m;
+  return(1);
+}
+
+void Gamma::SetSeed(long int seed){
   _rng.SetSeed(seed);
 }
 
@@ -384,4 +475,25 @@ SeedFromClock()
   struct timeval now;
   gettimeofday(&now,NULL);
   srand48(now.tv_sec);
+}
+
+//======================================================================//
+// gammln                                                               //
+// Returns the natural logarithm of the gamma function of the argument. //
+//======================================================================//
+
+double gammln(double xx)
+{
+	double x,y,tmp,ser;
+	static double cof[6]={76.18009172947146,-86.50532032941677,
+		24.01409824083091,-1.231739572450155,
+		0.1208650973866179e-2,-0.5395239384953e-5};
+	int j;
+
+	y=x=xx;
+	tmp=x+5.5;
+	tmp -= (x+0.5)*log(tmp);
+	ser=1.000000000190015;
+	for (j=0;j<=5;j++) ser += cof[j]/++y;
+	return -tmp+log(2.5066282746310005*ser/x);
 }

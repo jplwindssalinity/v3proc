@@ -8,13 +8,13 @@
 //==================================================================//
 
 //==================================================================//
-// CLASSES							    //
-//		GenericDist, GenericTimelessDist, Uniform,          //
-//              Gaussian, RandomVelocity, AttDist	            //
+// CLASSES							                                //
+//		GenericDist, GenericTimelessDist, Uniform,                  //
+//              Gaussian, Gamma, RandomVelocity, AttDist	        //
 //==================================================================//
 
 //==================================================================//
-// Functions: 					SeedFromClock	    //
+// Functions: 					SeedFromClock, gammln	            //
 //==================================================================//
 
 
@@ -162,6 +162,32 @@ protected:
 };
 
 //==================================================================//
+// Class                                                            //
+//         Gamma                                                    //
+// Description: Gamma Distribution                                  //
+//==================================================================//
+
+class Gamma : public GenericTimelessDist
+{
+public:
+	Gamma();
+	Gamma(float variance, float mean);
+	~Gamma();
+
+	float GetNumber();	
+	float GetVariance();
+	float GetMean();
+	int SetVariance(float v);
+    int SetMean(float m);
+    void SetSeed(long int seed);
+
+protected:
+	float _variance;
+	float _mean;
+    RNG   _rng;
+};
+
+//==================================================================//
 // Class 							    //
 //	 RandomVelocity						    //
 // Description:		Velocity varies in a random manner          //
@@ -240,5 +266,6 @@ public:
 //==================================================================//
 
 void SeedFromClock();
+double gammln(double xx);
 #endif
 

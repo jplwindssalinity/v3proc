@@ -923,6 +923,7 @@ PscatSim::SetMeasurements(
                 }
                 else
                 {
+                    /* old gaussian pdf approach
                     Gaussian gaussianRv(1.0, 0.0);
                     float rv1 = gaussianRv.GetNumber();
                     float RV = rv1*kpm_value + 1.0;
@@ -931,6 +932,10 @@ PscatSim::SetMeasurements(
                         RV = 0.0;   // Do not allow negative sigma0's.
                     }
                     sigma0 *= RV;
+                    */
+
+                    Gamma gammaRv(sigma0*sigma0*kpm_value*kpm_value,sigma0);
+                    sigma0 = gammaRv.GetNumber();
                 }
             }
 
@@ -1541,34 +1546,19 @@ PscatSim::MeasToEsnX(
     // to use the true distribution (not a gaussian) to avoid this problem!
     //--------------------------------------------------------------------//
 
-    Gaussian rv(*var_Esn,0.0);
-    float rval;
     if (meas->measType == Meas::VV_MEAS_TYPE ||
         meas->measType == Meas::HH_MEAS_TYPE ||
         meas->measType == Meas::VH_MEAS_TYPE ||
         meas->measType == Meas::HV_MEAS_TYPE)
     {
-      // co-pol or cross-pol measurement
-      int i;
-      for (i=0; i < 10; i++)
-      {
-        rval = rv.GetNumber();
-        if (rval >= -(*Esn))  break;
-      }
-      if (i >= 10)
-      {
-        fprintf(stderr,
-          "Warning: Esn distribution artificially inflated at zero\n");
-        *Esn = 0.0;
-      }
-      else
-      {
-        *Esn += rval;
-      }
+      // co-pol or cross-pol measurement (Gamma PDF)
+      Gamma rv(*var_Esn,*Esn);
+      *Esn = rv.GetNumber();
     }
     else
     {
-      // correlation measurement
+      // correlation measurement (Gaussian PDF)
+      Gaussian rv(*var_Esn,0.0);
       *Esn += rv.GetNumber();
     }
 

@@ -428,6 +428,7 @@ L1AToL1B::Convert(
                 }
 
                 cf.idx[slice_i] = meas->startSliceIdx;
+                cf.measType[slice_i] = meas->measType;
                 cf.var_esn_slice[slice_i] = 0;
                 cf.Es[slice_i] = Es_slice;
                 cf.En[slice_i] = En_slice;

@@ -804,6 +804,7 @@ QscatSim::SetMeasurements(
 			// Uncorrelated component.
 			if (simUncorrKpmFlag == 1)
 			{
+/* old gaussian pdf approach
                 double kpm_value;
                 if (! kp->kpm.GetKpm(meas->measType, wv.spd, &kpm_value))
                 {
@@ -818,6 +819,15 @@ QscatSim::SetMeasurements(
                     RV = 0.0;   // Do not allow negative sigma0's.
                 }
 				sigma0 *= RV;
+*/
+                double kpm2;
+                if (! kp->GetKpm2(meas->measType, wv.spd, &kpm2))
+                {
+                    printf("Error: Bad Kpm value in QscatSim::SetMeas\n");
+                    exit(-1);
+                }
+				Gamma gammaRv(sigma0*sigma0*kpm2,sigma0);
+				sigma0 = gammaRv.GetNumber();
 			}
 
 			// Correlated component.
@@ -942,6 +952,7 @@ QscatSim::SetMeasurements(
             }
 
             cf->idx[slice_i] = meas->startSliceIdx;
+            cf->measType[slice_i] = meas->measType;
             cf->var_esn_slice[slice_i] = var_esn_slice;
             cf->Es[slice_i] = Es;
             cf->En[slice_i] = En;
@@ -1120,6 +1131,10 @@ QscatSim::SetL1ALoad(
         // variance (Kpc style) which would introduce some noise into alpha.
         // Data is set into the science data just like the instrument,
         // and into separate storage just like the ground processing system.
+        // Integer truncation can cause a problem in low SNR cases because
+        // each slice contributes the same truncation error.  A Kpc style
+        // injection of variance would actually reduce this artificial
+        // noise in the current implementation, but we aren't using it!
         //----------------------------------------------------------------//
 
         l1a_frame->loadSlices[i] =
@@ -1289,6 +1304,10 @@ QscatSim::MeasToEsnX(
     // instrument integrates a sum of squares.
 	//------------------------------------------------------------------------//
 
+	Gamma rv(*var_esn_slice,*Esn);
+    *Esn = rv.GetNumber();
+
+/* old gaussian pdf approach
 	Gaussian rv(*var_esn_slice,0.0);
     float rval;
     int i;
@@ -1307,6 +1326,7 @@ QscatSim::MeasToEsnX(
     {
       *Esn += rval;
     }
+*/
 
 	return(1);
 }
