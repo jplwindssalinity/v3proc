@@ -236,7 +236,7 @@ QscatSim::L1AFrameInit(
         l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
         l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
         l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
-        l1a_frame->status.pred_antenna_pos_count = 0; // needs to be filled
+        l1a_frame->status.pred_antenna_pos_count = 0; // assume none for now
         l1a_frame->status.vtcw[0] = 0; // needs to be filled
         l1a_frame->status.vtcw[1] = 0; // needs to be filled
         l1a_frame->engdata.precision_coupler_temp =
@@ -295,7 +295,7 @@ QscatSim::ScatSim(
     CheckFrame cf;
     if (simVs1BCheckfile)
     {
-        if (!cf.Allocate(qscat->ses.scienceSlicesPerSpot))
+        if (!cf.Allocate(qscat->ses.GetTotalSliceCount()))
         {
             fprintf(stderr,"Error allocating a CheckFrame\n");
             return(0);

@@ -228,11 +228,12 @@ static const char rcs_id_configsimdefs_h[] =
 #define TWO_PEAK_SEPARATION_THRESHOLD_KEYWORD	"TWO_PEAK_SEPARATION_THRESHOLD"
 #define SCALED_PROBABILITY_THRESHOLD_KEYWORD	"SCALED_PROBABILITY_THRESHOLD"
 
-//-----------//
-// Ephemeris //
-//-----------//
+//------------------//
+// Spacecraft State //
+//------------------//
 
 #define EPHEMERIS_FILE_KEYWORD				"EPHEMERIS_FILE"
+#define ATTITUDE_FILE_KEYWORD				"ATTITUDE_FILE"
 
 //-----------//
 // WindField //

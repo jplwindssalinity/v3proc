@@ -111,6 +111,8 @@ Vector3(double init);
 	Vector3		operator-();
 	Vector3		operator*(Vector3 m2);	// element by element multiply
 	Vector3		operator*(double s);	// multiply by scalar
+	void		operator*=(double s);
+	void		operator/=(double s);
 	void		operator+=(Vector3 m2);
 	Vector3		operator&(Vector3 m2);	// cross product
 	double		operator%(Vector3 m2);	// dot product

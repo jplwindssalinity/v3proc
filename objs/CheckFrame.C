@@ -73,6 +73,9 @@ CheckFrame::Allocate(
 	{
 		return(0);
 	}
+    // idx is guaranteed to be zeroed
+    (void)memset(idx, 0, slicesPerSpot*sizeof(int));
+
 	sigma0 = (float *)malloc(slicesPerSpot * sizeof(float));
 	if (sigma0 == NULL)
 	{
@@ -252,7 +255,7 @@ CheckFrame::WriteDataRec(
     if (fwrite((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fwrite((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fwrite((void *)&incidence[slice_i],sizeof(float),1,fptr)!=1) return(0);
-    if (! centroid[slice_i].WriteLonLat(fptr)) return(0);
+    if (! centroid[slice_i].Write(fptr)) return(0);
     if (fwrite((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
 	  return(0);
     if (fwrite((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)
@@ -304,7 +307,7 @@ CheckFrame::ReadDataRec(
     if (fread((void *)&XK[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&azimuth[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&incidence[slice_i],sizeof(float),1,fptr) != 1) return(0);
-    if (! centroid[slice_i].ReadLonLat(fptr)) return(0);
+    if (! centroid[slice_i].Read(fptr)) return(0);
     if (fread((void *)&var_esn_slice[slice_i],sizeof(float),1,fptr) != 1)
       return(0);
     if (fread((void *)&Es[slice_i],sizeof(float),1,fptr) != 1)

@@ -59,6 +59,7 @@ public:
 	//--------------//
 
 	int		Write(FILE* fp);
+	int		GSWrite(FILE* fp, double time);
 	int		WriteAscii(FILE* fp);
 	int		Read(FILE* fp);
 

@@ -49,9 +49,11 @@ OrbitState();
 
 // I/O
 
-int Write(FILE *outputfile);
 int WriteAscii(FILE *fp);
 int Read(FILE *inputfile);
+int Write(FILE *outputfile);
+int ReadFloat(FILE *inputfile);
+int WriteFloat(FILE *outputfile);
 
 //-----------//
 // variables //

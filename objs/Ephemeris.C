@@ -43,11 +43,71 @@ return;
 //
 // Read one set of time,position,velocity components from the specified file.
 // The file is assumed to be binary with time stored in double precision,
-// and position and velocity components stored in single precision (float).
+// followed by position and velocity components also stored in double precision.
+// Position and velocity components are assumed to be stored in meters
+// and are immediately converted to km.
 //
 
 int
 OrbitState::Read(FILE *inputfile)
+
+{
+
+  if (fread(&time,sizeof(double),1,inputfile) != 1) return(0);
+  if (! rsat.Read(inputfile)) return(0);
+  if (! vsat.Read(inputfile)) return(0);
+  rsat /= 1000.0;  // convert to km.
+  vsat /= 1000.0;  // convert to km/s.
+  return(1);
+
+}
+
+//
+// OrbitState::Write()
+//
+// Write one set of time,position,velocity components to the specified file.
+// The file is assumed to be binary with time stored in double precision,
+// and position and velocity components also stored in double precision.
+// Position and velocities are assumed to be stored in memory with km units
+// and are converted to meters for file storage.
+//
+
+int
+OrbitState::Write(FILE *outputfile)
+
+{
+
+  if (fwrite(&time,sizeof(double),1,outputfile) != 1) return(0);
+  rsat *= 1000.0;  // convert to m.
+  vsat *= 1000.0;  // convert to m/s.
+  if (! rsat.Write(outputfile))
+  {
+    rsat /= 1000.0;  // convert back to km
+    vsat /= 1000.0;  // convert back to km/s
+    return(0);
+  }
+  if (! vsat.Write(outputfile))
+  {
+    rsat /= 1000.0;  // convert back to km
+    vsat /= 1000.0;  // convert back to km/s
+    return(0);
+  }
+
+  rsat /= 1000.0;  // convert back to km
+  vsat /= 1000.0;  // convert back to km/s
+  return(1);
+}
+
+//
+// OrbitState::ReadFloat()
+//
+// Read one set of time,position,velocity components from the specified file.
+// The file is assumed to be binary with time stored in double precision,
+// and position and velocity components stored in single precision (float).
+//
+
+int
+OrbitState::ReadFloat(FILE *inputfile)
 
 {
 
@@ -62,7 +122,7 @@ return(1);
 }
 
 //
-// OrbitState::Write()
+// OrbitState::WriteFloat()
 //
 // Write one set of time,position,velocity components to the specified file.
 // The file is assumed to be binary with time stored in double precision,
@@ -70,7 +130,7 @@ return(1);
 //
 
 int
-OrbitState::Write(FILE *outputfile)
+OrbitState::WriteFloat(FILE *outputfile)
 
 {
 

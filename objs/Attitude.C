@@ -109,6 +109,31 @@ Attitude::Set(
 	return(1);
 }
 
+//-------------------//
+// Attitude::GSWrite //
+//-------------------//
+
+int
+Attitude::GSWrite(
+	FILE*	fp,
+    double  time)
+{
+    float zero = 0.0;
+
+    // Write out a GS compatible attitude record. (rates are set to zero)
+	if (fwrite((void *)&time, sizeof(double), 1, fp) != 1 ||
+	    fwrite((void *)&_roll, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_pitch, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&_yaw, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&zero, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&zero, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&zero, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
 //-----------------//
 // Attitude::Write //
 //-----------------//

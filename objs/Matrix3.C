@@ -461,6 +461,36 @@ Vector3::operator*(
 }
 
 //
+// Scalar multiply and assign to one vector.
+//
+
+void
+Vector3::operator*=(
+	double	s)
+{
+
+_v[0] *= s;
+_v[1] *= s;
+_v[2] *= s;
+
+}
+
+//
+// Scalar divide and assign to one vector.
+//
+
+void
+Vector3::operator/=(
+	double	s)
+{
+
+_v[0] /= s;
+_v[1] /= s;
+_v[2] /= s;
+
+}
+
+//
 // Add and assign one vector to another.
 //
 
