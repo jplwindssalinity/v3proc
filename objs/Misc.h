@@ -64,7 +64,7 @@ int				substitute_string(const char* string, const char* find,
 					const char* replace, char* result);
 
 int				downhill_simplex(double** p, int ndim, int totdim, double ftol,
-					double (*funk)(double*, void*), void* ptr);
+					double (*funk)(double*, void*), void* ptr, double xtol=0.0);
 double			amotry(double** p, double* y, double* psum, int ndim,
 					int totdim, double (*funk)(double*, void*), void* ptr,
 					int ihi, double fac);

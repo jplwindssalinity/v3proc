@@ -232,6 +232,11 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useBYURange = use_byu_range;
 
+    int use_spec_range;
+    if (! config_list->GetInt(USE_SPECTRAL_RANGE_KEYWORD, &use_spec_range))
+        return(0);
+    qscat_cds->useSpectralRange = use_spec_range;
+
     int use_dtc;
     if (! config_list->GetInt(USE_DTC_KEYWORD, &use_dtc))
         return(0);
@@ -242,14 +247,37 @@ ConfigQscatCds(
         return(0);
     qscat_cds->useBYUDop = use_byu_dop;
 
-    if(use_byu_dop && use_dtc){
-      fprintf(stderr,"ConfigQscatCds:: Cannot use both Tabular and BYU Commanded Dopplers\n");
+    int use_spec_dop;
+    if (! config_list->GetInt(USE_SPECTRAL_DOPPLER_KEYWORD, &use_spec_dop))
+        return(0);
+    qscat_cds->useSpectralDop = use_spec_dop;
+
+    if((use_byu_dop + use_dtc + use_spec_dop) > 1){
+      fprintf(stderr,"ConfigQscatCds:: Doppler Tracking Technique Misspecified\n");
       return(0);
     }
 
-    if(use_byu_range && use_rgc){
-      fprintf(stderr,"ConfigQscatCds:: Cannot use both Tabular and BYU Range Gate Delays\n");
+    if((use_byu_range + use_rgc + use_spec_range) > 1){
+      fprintf(stderr,"ConfigQscatCds:: Range Tracking Technique Misspecified\n");
       return(0);
+    }
+
+    if(use_spec_range || use_spec_dop){
+        float azimuth_integration_range;
+        if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
+            &azimuth_integration_range))
+        {
+            return(0);
+        }
+        qscat_cds->azimuthIntegrationRange=azimuth_integration_range*dtr;
+
+        float azimuth_step_size;
+        if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
+            &azimuth_step_size))
+        {
+            return(0);
+        }
+        qscat_cds->azimuthStepSize=azimuth_step_size*dtr;      
     }
 
     //--------------//

@@ -148,6 +148,8 @@ substitute_string(
 // downhill_simplex //
 //------------------//
 
+// Using a nonzero atol value is not guaranteed to reach the
+// peak for "misbehaving" functions
 int
 downhill_simplex(
 	double** p,
@@ -155,7 +157,8 @@ downhill_simplex(
 	int totdim,
 	double ftol,
 	double (*funk)(double*,void*),
-	void* ptr)
+	void* ptr,
+        double xtol=0.0)
 {
 	int i,j;
 	int nfunk = 0;
@@ -201,20 +204,31 @@ downhill_simplex(
 	{
 		int inhi;
 		int ilo = 0;
-        int ihi = y[0]>y[1] ? (inhi=1,0) : (inhi=0,1);
-        for (i=0;i<ndim+1;i++)
-		{
-			if (y[i] <= y[ilo]) ilo=i;
-			if (y[i] > y[ihi])
-			{
-				inhi=ihi;
-				ihi=i;
-			}
-			else if (y[i] > y[inhi] && i != ihi) inhi=i;
-        }
+		int ihi = y[0]>y[1] ? (inhi=1,0) : (inhi=0,1);
+		for (i=0;i<ndim+1;i++)
+		  {
+		    if (y[i] <= y[ilo]) ilo=i;
+		    if (y[i] > y[ihi])
+		      {
+			inhi=ihi;
+			ihi=i;
+		      }
+		    else if (y[i] > y[inhi] && i != ihi) inhi=i;
+		  }
 
 		double rtol=2.0*fabs(y[ihi]-y[ilo])/(fabs(y[ihi])+fabs(y[ilo]));
-		if (rtol < ftol)
+		double ptol=0.0;
+		for(j=0;j<ndim;j++){
+		   double pmax=p[0][j];
+                   double pmin=p[0][j];
+		   for(i=1;i<ndim+1;i++){
+		     if(p[i][j]>pmax) pmax=p[i][j];
+		     if(p[i][j]<pmin) pmin=p[i][j];
+		   }
+		   double tmp=pmax-pmin;
+		   if (ptol <tmp) ptol=tmp;
+		}
+		if (rtol < ftol || ptol< xtol)
 		{
 			double tmp;
 			tmp = y[0];

@@ -255,7 +255,7 @@ public:
     int             useSpectralRange;
     float           azimuthIntegrationRange;
     float           azimuthStepSize;
-    int             rangeGateClipping;
+
 
 
     unsigned int    orbitTicksPerOrbit;
