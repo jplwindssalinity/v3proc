@@ -589,7 +589,7 @@ main(
 
         float32 cell_lat[100];
         float32 cell_lon[100];
-        int32 frequency_shift[100];
+        int16 frequency_shift[100];
         SDreaddata_or_exit("cell_lat", cell_lat_sds_id, start, edges,
             (VOIDP)cell_lat);
         SDreaddata_or_exit("cell_lon", cell_lon_sds_id, start, edges,
