@@ -54,9 +54,9 @@ GMF::~GMF()
 	free(_bestObj);
 	free(_copyObj);
 
-	if (! _speed_buffer) free(_speed_buffer);
-	if (! _objective_buffer) free(_objective_buffer);
-	if (! _dir_mle_maxima) free(_dir_mle_maxima);
+	if (_speed_buffer) free(_speed_buffer);
+	if (_objective_buffer) free(_objective_buffer);
+	if (_dir_mle_maxima) free(_dir_mle_maxima);
 
 	return;
 }
@@ -4004,7 +4004,12 @@ GMF::BuildDirectionRanges(
 	 if(left_idx[max_idx]<0) left_idx[max_idx]+=_phiCount;
        }
      }
-     for(int c=0;c<num;c++) wvc->directionRanges.Append(&range[c]);
+     for(int c=0;c<num;c++){
+       AngleInterval* ai=new AngleInterval;
+       *ai=range[c];
+       wvc->directionRanges.Append(ai);
+     }
+     delete[] range;
      delete[] dir_include;
      delete[] left_idx;
      delete[] right_idx;

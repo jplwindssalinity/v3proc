@@ -2645,6 +2645,7 @@ WindSwath::MedianFilterPass(
 				 if(range->InRange(wvp->dir)){
 				   new_selected[cti][ati]=wvp;
 				 } 
+				 else delete wvp;
 			       }
                              // Otherwise select the closest ambiguity
 			     else delete wvp;
@@ -2681,7 +2682,7 @@ WindSwath::MedianFilterPass(
 				    // ambiguities?
                                     int found=0;
 				    for(WindVectorPlus* wvp=swath[cti][ati]->ambiguities.GetHead();
-					wvp;swath[cti][ati]->ambiguities.GetNext()){
+					wvp;wvp=swath[cti][ati]->ambiguities.GetNext()){
 				      if(wvp==new_selected[cti][ati]){
 					found=1;
 					break;
@@ -2742,8 +2743,8 @@ WindSwath::GetMedianBySorting(
   wvp->dir=acos(x_med/wvp->spd);
   if(y_med<0) wvp->dir=two_pi-wvp->dir;
   wvp->obj=-(float)HUGE_VAL;
-  delete x;
-  delete y;
+  delete[] x;
+  delete[] y;
   return(1);
 }
 
