@@ -349,14 +349,18 @@ process_orbit_step(
     Vector coefs;
     coefs.Allocate(3);
     coefs.SetElement(0, 1.0);
-    coefs.SetElement(1, 0.0);
-    coefs.SetElement(2, 0.0);
+    coefs.SetElement(1, 1.0);
+    coefs.SetElement(2, 1.0);
     int ia[3] = { 1, 1, 1};    // use all coefficients
     double chisqr;
 
     Matrix covar;
-    covar.NonlinearFit(g_azimuth[beam_idx], g_bb[beam_idx], (double *)NULL,
-        g_count[beam_idx], &coefs, ia, &covar, &chisqr, funcs);
+    for (int i = 0; i < 10; i++)
+    {
+        covar.NonlinearFit(g_azimuth[beam_idx], g_bb[beam_idx],
+            (double *)NULL, g_count[beam_idx], &coefs, ia, &covar, &chisqr,
+            funcs, 10);
+    }
     double a, p, c;
     coefs.GetElement(0, &a);
     coefs.GetElement(1, &p);

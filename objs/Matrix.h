@@ -122,7 +122,8 @@ public:
     int      NonlinearFit(double* x, double* y, double* std_dev,
                  int number_of_points, Vector* coefficients,
                  int* ia, Matrix* covar, double* chisq,
-                 void (*funcs)(double, double *, double *, double *, int));
+                 void (*funcs)(double, double *, double *, double *, int),
+                 int passes);
     int      CovarianceSort(Matrix* covar, int ma, int* ia, int mfit);
 
     int      Marquardt(double* x, double* y, double* std_dev,

@@ -36,8 +36,10 @@ int
 Vector::Allocate(
     int  m_size)
 {
-    Free();    // free just in case
-  
+    if (_mSize == m_size)
+        return(1);
+
+    Free();
     _vector = (double *)malloc(m_size * sizeof(double));
     if (_vector == NULL)
         return(0);
@@ -207,9 +209,8 @@ Matrix::Allocate(
     int  m_size,
     int  n_size)
 {
-    //-------------------//
-    // free just in case //
-    //-------------------//
+    if (_mSize == m_size && _nSize == n_size)
+        return(1);
 
     Free();
 
@@ -807,7 +808,7 @@ Matrix::BackSubSVD(
 		double s = 0.0;
 		if (w->_vector[j])
 		{
-			for (int i = 0; i < _mSize; i++)
+			for (int i = 0; i < b->_mSize; i++)
 			{
 				s += u->_matrix[i][j] * b->_vector[i];
 			}
@@ -926,6 +927,7 @@ Matrix::SVDFit(
 //----------------------//
 
 #define THRESHOLD_FRACTION  1E-3
+#define LAMBDA_FACTOR		2.0
 
 int
 Matrix::NonlinearFit(
@@ -937,7 +939,8 @@ Matrix::NonlinearFit(
     int*     ia,
     Matrix*  covar,
     double*  chi_2,
-    void     (*funcs)(double, double *, double *, double *, int))
+    void     (*funcs)(double, double *, double *, double *, int),
+    int      passes)
 {
     //-------------------------------------//
     // create needed matricies and vectors //
@@ -945,7 +948,8 @@ Matrix::NonlinearFit(
 
     int ma = coefficients->GetSize();
     int mfit = 0;
-    for (int j = 0; j < ma; j++)
+    int j;
+    for (j = 0; j < ma; j++)
     {
         if (ia[j])
             mfit++;
@@ -999,11 +1003,9 @@ Matrix::NonlinearFit(
     // convergance loop //
     //------------------//
 
-    double loop_old_chi_2 = 0.0;
-    int small_decrease_count = 0;
-    do
+    for (int pass = 0; pass < passes; pass++)
     {
-        int j = 0;
+        j = 0;
         for (int l = 0; l < ma; l++)
         {
             if (ia[l])
@@ -1028,7 +1030,7 @@ Matrix::NonlinearFit(
         oneda.CopyContents(&new_oneda);
         covar->Inverse(covar);
 
-        for (int j = 0; j < mfit; j++)
+        for (j = 0; j < mfit; j++)
         {
             dav[j] = onedav[j];
         }
@@ -1054,7 +1056,7 @@ Matrix::NonlinearFit(
 
         if (*chi_2 < old_chi_2)
         {
-            lambda *= 0.1;
+            lambda /= LAMBDA_FACTOR;
             old_chi_2 = *chi_2;
             int j = 0;
             for (int l = 0; l < ma; l++)
@@ -1078,34 +1080,10 @@ Matrix::NonlinearFit(
         }
         else
         {
-            lambda *= 10.0;
+            lambda *= LAMBDA_FACTOR;
             *chi_2 = old_chi_2;
         }
-static int count = 0;
-count++;
-printf("count = %d\n", count);
-printf("%g %g %g\n", coefv[0], coefv[1], coefv[2]);
-if (count == 483)
-  printf("here\n");
-
-        //---------------------//
-        // check exit criteria //
-        //---------------------//
-
-        double dif_chi_2 = loop_old_chi_2 - *chi_2;
-        if (dif_chi_2 > 0.0 && dif_chi_2 < THRESHOLD_FRACTION * *chi_2)
-        {
-            small_decrease_count++;
-            if (small_decrease_count >= 3)
-                break;
-        }
-        else
-        {
-            small_decrease_count = 0;
-        }
-
-        loop_old_chi_2 = *chi_2;
-    } while (1);
+    }
 
     return(1);
 }
