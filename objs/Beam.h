@@ -90,8 +90,16 @@ protected:
 	// variables //
 	//-----------//
 
-	double	_reference_lookAngle;
-	double	_reference_azimuthAngle;
+	// coordinate swith from antenna frame to beam measurement frame
+	CoordinateSwitch	_antennaFrameToBeamFrame;
+
+	double				_elecBoresightLook;		// in the antenna frame
+	double				_elecBoresightAzim;
+
+/*
+	double				_reference_lookAngle;
+	double				_reference_azimuthAngle;
+*/
 
 	// Beam pattern info
 	double	_electrical_boresight_Em;
@@ -103,7 +111,6 @@ protected:
 	double	_x_spacing;
 	double	_y_spacing;
 	float**	_power_gain;
-
 };
 
 #endif

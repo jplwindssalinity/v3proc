@@ -20,7 +20,7 @@ const char* beam_map[] = { "None", "V", "H" };
 
 Beam::Beam()
 :	polarization(NONE), pulseWidth(0.0), receiverGateWidth(0.0),
-	timeOffset(0.0), _reference_lookAngle(0.0), _reference_azimuthAngle(0.0),
+	timeOffset(0.0), _elecBoresightLook(0.0), _elecBoresightAzim(0.0),
 	_electrical_boresight_Em(0.0), _electrical_boresight_Am(0.0),
 	_Nx(0), _Ny(0), _ix_zero(0), _iy_zero(0),
 	_x_spacing(0.0), _y_spacing(0.0),
@@ -31,7 +31,6 @@ Beam::Beam()
 
 Beam::~Beam()
 {
-
 	if (_power_gain != NULL)
 	{
 		free_array(_power_gain,2,_Nx,_Ny);
@@ -56,23 +55,36 @@ Beam::SetElectricalBoresight(
 	double	desired_electrical_look_angle,
 	double	desired_electrical_azimuth_angle)
 {
-	// Check to see if a beam pattern has been loaded.
+	//------------------------------------------------//
+	// check to see if a beam pattern has been loaded //
+	//------------------------------------------------//
+
 	if (_power_gain == NULL)
 	{
 		printf("Error: SetElectricalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
 
-	//-----------------------//
-	// Setup Reference frame //
-	//-----------------------//
+	//--------------------------//
+	// create coordinate switch //
+	//--------------------------//
 
+	_elecBoresightLook = desired_electrical_look_angle;
+	_elecBoresightAzim = desired_electrical_azimuth_angle;
+
+	Attitude attitude;
+	attitude.Set(0.0, _elecBoresightLook - pi / 2.0, _elecBoresightAzim,
+		1, 2, 3);
+	_antennaFrameToBeamFrame.SetRotation(attitude);
+
+/*
 	// The X-axis of the beam reference frame is defined by the following
 	// two variables. (These are spherical angles in the antenna frame.)
 	_reference_lookAngle = desired_electrical_look_angle +
 							_electrical_boresight_Em;
 	_reference_azimuthAngle = desired_electrical_azimuth_angle -
 								 _electrical_boresight_Am;
+*/
 
 	return(1);
 }
@@ -88,8 +100,8 @@ Beam::SetElectricalBoresight(
 
 int
 Beam::GetElectricalBoresight(
-	double*	look_angle,
-	double*	azimuth_angle)
+	double*		look_angle,
+	double*		azimuth_angle)
 {
 	// Check to see if a beam pattern has been loaded.
 	if (_power_gain == NULL)
@@ -98,10 +110,9 @@ Beam::GetElectricalBoresight(
  		return(0);
 	}
 
-	*look_angle = _reference_lookAngle - _electrical_boresight_Em;
-	*azimuth_angle = _reference_azimuthAngle + _electrical_boresight_Am;
+	*look_angle = _elecBoresightLook;
+	*azimuth_angle = _elecBoresightAzim;
 	return(1);
-
 }
 
 //------------------------------//
@@ -129,14 +140,8 @@ Beam::SetMechanicalBoresight(
  		return(0);
 	}
 
-	//-----------------------//
-	// Setup Reference frame //
-	//-----------------------//
-
-	// The X-axis of the beam reference frame is defined by the following
-	// two variables. (These are spherical angles in the antenna frame.)
-	_reference_lookAngle = look_angle;
-	_reference_azimuthAngle = azimuth_angle;
+	fprintf(stderr, "Beam::SetMechanicalBoresight is not available yet!\n");
+	exit(1);
 
 	return(1);
 }
@@ -186,7 +191,6 @@ Beam::SetBeamPattern(
 	_power_gain = power_gain;
 
 	return(1);
-
 }
 
 //-----------------------//
@@ -354,9 +358,14 @@ Beam::GetPowerGain(
 	}
 
 	// Transform antenna frame angles to beam reference frame.
-	double Em = _reference_lookAngle - look_angle;
-	double Am = azimuth_angle - _reference_azimuthAngle;
-	
+	Vector3 vector;
+	vector.SetSpherical(1.0, look_angle, azimuth_angle);
+	vector = _antennaFrameToBeamFrame(&vector);
+	double r, theta, phi;
+	vector.GetSpherical(&r, &theta, &phi);
+	double Em = pi / 2.0 - theta;
+	double Am = phi;
+
 	// Compute 2-D indices for the lower left point in the grid square around
 	// the desired point.
 	int ix1 = (int)(floor(Em/_x_spacing) + 0.5) + _ix_zero;
