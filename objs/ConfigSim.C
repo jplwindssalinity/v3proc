@@ -8,6 +8,7 @@ static const char rcs_id_configsim_c[] =
 
 #include "ConfigSim.h"
 #include "InstrumentSim.h"
+#include "InstrumentSimAccurate.h"
 #include "SpacecraftSim.h"
 #include "Misc.h"
 #include "L00.h"
@@ -593,7 +594,47 @@ ConfigInstrumentSim(
         instrument_sim->ptgrNoise.SetMean(ptgr_mean);
 	return(1);
 }
+//-------------------------------//
+// ConfigInstrumentSimAccurate   //
+//-------------------------------//
+int
+ConfigInstrumentSimAccurate(
+	 InstrumentSimAccurate* instrument_sim,
+	 ConfigList* config_list){
+  
+        if (! ConfigInstrumentSim(instrument_sim, config_list))
+	        return(0);
+        
+        int num_look_steps;
+	if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
+		return(0);
+	instrument_sim->numLookStepsPerSlice=num_look_steps;
 
+        float azimuth_integration_range;
+	if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD, 
+				  &azimuth_integration_range))
+		return(0);
+	instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
+
+        float azimuth_step_size;
+	if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD, 
+				  &azimuth_step_size))
+		return(0);
+	instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
+
+
+        int uniform_sigma_field;
+	if (! config_list->GetInt(UNIFORM_SIGMA_FIELD_KEYWORD, &uniform_sigma_field))
+	        uniform_sigma_field=0;  // default value
+	instrument_sim->uniformSigmaField=uniform_sigma_field;
+
+        int output_Pr_to_stdout;
+	if (! config_list->GetInt(OUTPUT_PR_TO_STDOUT_KEYWORD, &output_Pr_to_stdout))
+	        output_Pr_to_stdout=0; // default value
+	instrument_sim->outputPrToStdout=output_Pr_to_stdout;
+
+        return(1);
+}
 //------------------//
 // ConfigAntennaSim //
 //------------------//

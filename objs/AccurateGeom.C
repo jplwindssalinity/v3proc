@@ -29,7 +29,10 @@ int
 IntegrateSlices(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
-	MeasSpot*		meas_spot)
+	MeasSpot*		meas_spot,
+	int                     num_look_steps_per_slice,
+	float                   azimuth_integration_range,
+	float                   azimuth_step_size)
 {
 	//-----------//
 	// predigest //
@@ -148,15 +151,12 @@ IntegrateSlices(
 		
 		/**** for now use looktol .1cellwidth and azitol of .1 degrees ***/
 		float looktol;
-		int numlooks=10;
-		float azitol=0.1*dtr;
 		float xarray[40*80];
 		for(int c=0;c<40*80;c++)xarray[c]=0.0;
 
 		/*** for now use azimuth range of 2 degrees ***/
-		float azirange=4.0*dtr;
-		float azimin=centroid_azimuth-azirange/2.0;
-		int numazi=(int)(azirange/azitol);
+		float azimin=centroid_azimuth-azimuth_integration_range/2.0;
+		int numazi=(int)(azimuth_integration_range/azimuth_step_size);
 
 		meas->value=0.0;
 
@@ -187,7 +187,7 @@ IntegrateSlices(
 		//-------------------------------------//
 
                 for(int a=0; a<numazi;a++){
-		  float azi=a*azitol+azimin;
+		  float azi=a*azimuth_step_size+azimin;
 		  if(debug) printf("For Azimuth %g ....\n",azi);
 		  float start_look=centroid_look;
 		  float end_look=centroid_look;
@@ -207,7 +207,7 @@ IntegrateSlices(
 		    return(0);
 
 		  float lk=start_look;
-                  looktol=fabs(end_look-start_look)/(float)numlooks;
+                  looktol=fabs(end_look-start_look)/(float)num_look_steps_per_slice;
                   int look_num=0;
 		  while(1){
                    
@@ -216,7 +216,7 @@ IntegrateSlices(
                     float look1=lk;
 		    float look2=lk+looktol*look_scan_dir;
 		    float azi1=azi;
-		    float azi2=azi+azitol;
+		    float azi2=azi+azimuth_step_size;
 		    if (! FindBoxCorners(&antenna_frame_to_gc,spacecraft,instrument,
 				 look1,look2,azi1,azi2, &box))
 		      return(0);

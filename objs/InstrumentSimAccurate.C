@@ -16,14 +16,14 @@ static const char rcs_id_instrumentsimaccurate_c[] =
 #include "InstrumentSimAccurate.h"
 #include "AccurateGeom.h"
 
-#define UNIFORM_SIGMA 0 // (If 1 then all sigma0s=1)
-#define XMGROUT 0 // (If 1 azimuth vs. Pr is output to an xmgr compatible file)
 
 //=======================//
 // InstrumentSimAccurate //
 //=======================//
 
 InstrumentSimAccurate::InstrumentSimAccurate()
+  : numLookStepsPerSlice(0), azimuthIntegrationRange(0.0), azimuthStepSize(0.0),
+    uniformSigmaField(0), outputPrToStdout(0)
 {
 	return;
 }
@@ -82,10 +82,13 @@ InstrumentSimAccurate::SetMeasurements(
 		// the s/c (the opposite direction as the look vector)
 		float chi = wv.dir - meas->eastAzimuth + pi;
 		float sigma0;
-		gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
+		if (uniformSigmaField) sigma0=1;
+                else{
+		  gmf->GetInterpolatedValue(meas->pol, meas->incidenceAngle, wv.spd,
 			chi, &sigma0);
+		}
 
-		if (UNIFORM_SIGMA) sigma0=1;
+
 
 		//--------------------------//
 		// convert sigma-0 to power //
@@ -136,11 +139,13 @@ InstrumentSimAccurate::ScatSim(
 	}
 	else
 	{
-		if (! IntegrateSlices(spacecraft, instrument, &meas_spot))
+		if (! IntegrateSlices(spacecraft, instrument, &meas_spot,
+				      numLookStepsPerSlice,azimuthIntegrationRange,
+				      azimuthStepSize))
 		{
 			return(0);
 		}
-		if(XMGROUT) printf("%g ",instrument->antenna.azimuthAngle/dtr);
+		if(outputPrToStdout) printf("%g ",instrument->antenna.azimuthAngle/dtr);
 	}
 
 	//------------------------//
@@ -150,7 +155,7 @@ InstrumentSimAccurate::ScatSim(
 	if (! SetMeasurements(instrument, &meas_spot, windfield, gmf))
 		return(0);
 
-	if(XMGROUT)
+	if(outputPrToStdout)
 	{
 		for(Meas* slice=meas_spot.GetHead(); slice; slice=meas_spot.GetNext())
 		{

@@ -1,3 +1,14 @@
+//==========================================================//
+// Copyright (C) 1997, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.				//
+//==========================================================//
+
+#ifndef INSTRUMENTSIMACCURATE_H
+#define INSTRUMENTSIMACCURATE_H
+
+static const char rcs_id_instrumentsimaccurate_h[] =
+	"@(#) $Id$";
+
 //======================================================================
 // CLASSES
 //		InstrumentSimAccurate
@@ -14,12 +25,13 @@
 
 
 #include"InstrumentSim.h"
+
 class InstrumentSimAccurate: public InstrumentSim
 {
 public:
 
 	//-------------//
-	// contruction //
+	// construction //
 	//-------------//
 
 	InstrumentSimAccurate();
@@ -36,4 +48,25 @@ public:
 	int		ScatSim(Spacecraft* spacecraft, Instrument* instrument,
 				WindField* windfield, GMF* gmf, L00Frame* l00_frame);
 
+	// integration parameters and other constants
+
+	int numLookStepsPerSlice;
+
+	float azimuthIntegrationRange; 
+	// Width in azimuth angle (radians) of area used in
+	// integration.
+
+	float azimuthStepSize;
+
+	int uniformSigmaField;
+        // if uniformSigmaField is nonzero then all sigma0 values used in the 
+        // simulation are 1.
+
+        int outputPrToStdout;
+        // If outputPrToStdout is nonzero then a table of Pr values is written
+        // to stdout.
+	
 };
+
+
+#endif

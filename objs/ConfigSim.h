@@ -11,6 +11,7 @@ static const char rcs_id_configsim_h[] =
 
 #include "SpacecraftSim.h"
 #include "InstrumentSim.h"
+#include "InstrumentSimAccurate.h"
 #include "L00.h"
 #include "L10.h"
 #include "L15.h"
@@ -146,6 +147,19 @@ RandomVelocity* ConfigUniformRandomVelocity(const char*
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
+	ConfigList* config_list);
+
+//-----------------------------//
+// InstrumentSimAccurate       //
+//-----------------------------//
+
+#define NUM_LOOK_STEPS_KEYWORD           "NUM_INTEGRATION_LOOK_STEPS_PER_SLICE"
+#define AZIMUTH_INTEGRATION_RANGE_KEYWORD "AZIMUTH_INTEGRATION_RANGE"
+#define AZIMUTH_STEP_SIZE_KEYWORD        "AZIMUTH_INTEGRATION_STEP_SIZE"
+#define UNIFORM_SIGMA_FIELD_KEYWORD      "UNIFORM_SIGMA_FIELD"
+#define OUTPUT_PR_TO_STDOUT_KEYWORD      "OUTPUT_PR_TO_STDOUT"
+
+int ConfigInstrumentSimAccurate(InstrumentSimAccurate* instrument_sim,
 	ConfigList* config_list);
 
 //------------//
