@@ -1116,6 +1116,37 @@ WindSwath::MedianFilterPass(
 	return(flips);
 }
 
+//--------------------------//
+// WindSwath::RmsSpeedError //
+//--------------------------//
+
+int
+WindSwath::RmsSpeedError(
+	WindField*	truth,
+	float*		rms_speed_error,
+	int*		count,
+	float*		ctd,
+	int*		max_idx)
+{
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			float spd_err = wvc->selected->spd - true_wv.spd;
+			float spd_err_2 = spd_err * spd_err;
+		}
+	}
+	return(1);
+}
+
 //------------------//
 // WindSwath::Skill //
 //------------------//

@@ -258,6 +258,8 @@ public:
 	// evaluation //
 	//------------//
 
+	int		RmsSpeedError(WindField* truth, float* rms_speed_error,
+				int* count, float* ctd, int* max_idx);
 	int		Skill(WindField* truth, int* skill_sum_array,
 				int* total_sum_array);
 

@@ -38,7 +38,7 @@ int
 Grid::SetStartTime(double start_time)
 {
 	_start_time = start_time;
-	l17.startTime = _start_time;
+	l17.header.startTime = _start_time;
 	return(1);
 }
 
@@ -61,11 +61,11 @@ double	alongtrack_size)
     _crosstrack_bins = (int) (_crosstrack_size / _crosstrack_res);
 
 	// Put data into L17 object for use in header.
-	l17.crossTrackResolution = _crosstrack_res;
-	l17.alongTrackResolution = _alongtrack_res;
-	l17.crossTrackBins = _crosstrack_bins;
-	l17.alongTrackBins = _alongtrack_bins;
-	l17.zeroIndex = (int) (_crosstrack_size/2.0/_crosstrack_res + 0.5);
+	l17.header.crossTrackResolution = _crosstrack_res;
+	l17.header.alongTrackResolution = _alongtrack_res;
+	l17.header.crossTrackBins = _crosstrack_bins;
+	l17.header.alongTrackBins = _alongtrack_bins;
+	l17.header.zeroIndex = (int) (_crosstrack_size/2.0/_crosstrack_res + 0.5);
 
 	//
 	// Set circular buffer tracking parameters to the beginning of the

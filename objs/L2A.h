@@ -37,7 +37,8 @@ public:
 	// enum //
 	//------//
 
-	enum StatusE { OK, ERROR_READING_FRAME, ERROR_UNKNOWN };
+	enum StatusE { OK, ERROR_READING_HEADER, ERROR_READING_FRAME,
+		ERROR_UNKNOWN };
 
 	//--------------//
 	// construction //
@@ -46,6 +47,13 @@ public:
 	L17();
 	~L17();
 
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteDataRec();
+	int		ReadDataRec();
+
 	//---------------------//
 	// setting and getting //
 	//---------------------//
@@ -53,29 +61,13 @@ public:
 	int			SetFilename(const char* filename);
 	StatusE		GetStatus() { return(_status); };
 
-	//--------------//
-	// input/output //
-	//--------------//
-
-	int		ReadHeader();
-	int		ReadDataRec();
-	int		WriteHeader();
-	int		WriteDataRec();
-
 	//-----------//
 	// variables //
 	//-----------//
 
 	GenericFile		file;
+	L17Header		header;
 	L17Frame		frame;
-
-	double			crossTrackResolution;		// km
-	double			alongTrackResolution;		// km
-	int				crossTrackBins;
-	int				alongTrackBins;
-
-	int				zeroIndex;	// cti of 0 km ctd bin
-	double			startTime;	// zero point of along track axis
 
 protected:
 

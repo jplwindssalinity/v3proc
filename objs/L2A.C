@@ -15,9 +15,7 @@ static const char rcs_id_l17_c[] =
 //=====//
 
 L17::L17()
-:	crossTrackResolution(0.0), alongTrackResolution(0.0), crossTrackBins(0),
-	alongTrackBins(0), zeroIndex(0), startTime(0.0), _status(OK),
-	_headerTransferred(0)
+:	_status(OK), _headerTransferred(0)
 {
 	return;
 }
@@ -38,29 +36,6 @@ L17::SetFilename(
 	return(file.SetFilename(filename));
 }
 
-//-----------------//
-// L17::ReadHeader //
-//-----------------//
-
-int
-L17::ReadHeader()
-{
-	FILE* fp = file.GetFp();
-	if (fp == NULL) return(0);
-
-	if (fread(&crossTrackResolution, sizeof(double), 1, fp) != 1 ||
-		fread(&alongTrackResolution, sizeof(double), 1, fp) != 1 ||
-		fread(&crossTrackBins, sizeof(int), 1, fp) != 1 ||
-		fread(&alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fread(&zeroIndex, sizeof(int), 1, fp) != 1 ||
-		fread(&startTime, sizeof(double), 1, fp) != 1)
-	{
-		return(0);
-	}
-	_headerTransferred = 1;
-	return(1);
-}
-
 //------------------//
 // L17::ReadDataRec //
 //------------------//
@@ -73,42 +48,13 @@ L17::ReadDataRec()
 
 	if (! _headerTransferred)
 	{
-		if (! ReadHeader())
+		if (! header.Read(fp))
 			return(0);
+		_headerTransferred = 1;
 	}
-
-    if (fread((void *)&(frame.rev), sizeof(unsigned int), 1, fp) != 1 ||
-        fread((void *)&(frame.ati), sizeof(int), 1, fp) != 1 ||
-        fread((void *)&(frame.cti), sizeof(unsigned char), 1, fp) != 1 ||
-		frame.measList.Read(fp) != 1)
-
-    {
-        return(0);
-	}
-
-	return(1);
-}
-
-//------------------//
-// L17::WriteHeader //
-//------------------//
-
-int
-L17::WriteHeader()
-{
-	FILE* fp = file.GetFp();
-	if (fp == NULL) return(0);
-
-	if (fwrite(&crossTrackResolution, sizeof(double), 1, fp) != 1 ||
-		fwrite(&alongTrackResolution, sizeof(double), 1, fp) != 1 ||
-		fwrite(&crossTrackBins, sizeof(int), 1, fp) != 1 ||
-		fwrite(&alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fwrite(&zeroIndex, sizeof(int), 1, fp) != 1 ||
-		fwrite(&startTime, sizeof(double), 1, fp) != 1)
-	{
+	if (! frame.Read(fp))
 		return(0);
-	}
-	_headerTransferred = 1;
+
 	return(1);
 }
 
@@ -124,18 +70,13 @@ L17::WriteDataRec()
 
 	if (! _headerTransferred)
 	{
-		if (! WriteHeader())
+		if (! header.Write(fp))
 			return(0);
+		_headerTransferred = 1;
 	}
 
-    if (fwrite((void *)&(frame.rev), sizeof(unsigned int), 1, fp) != 1 ||
-        fwrite((void *)&(frame.ati), sizeof(int), 1, fp) != 1 ||
-        fwrite((void *)&(frame.cti), sizeof(unsigned char), 1, fp) != 1 ||
-		frame.measList.Write(fp) != 1)
-
-    {
+	if (! frame.Write(fp))
         return(0);
-	}
 
 	return(1);
 }

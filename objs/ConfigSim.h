@@ -90,6 +90,7 @@ int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 #define BEAM_x_POLARIZATION_KEYWORD		"BEAM_x_POLARIZATION"
 #define BEAM_x_PULSE_WIDTH_KEYWORD		"BEAM_x_PULSE_WIDTH"
 #define BEAM_x_TIME_OFFSET_KEYWORD		"BEAM_x_TIME_OFFSET"
+#define BEAM_x_PATTERN_FILE_KEYWORD		"BEAM_x_PATTERN_FILE"
 
 int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 
