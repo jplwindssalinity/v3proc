@@ -101,15 +101,15 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
 	   || strcmp(string,"gaussian")==0)
 	{
-	        if(! ConfigGaussian(roll,ROLL_CONTROL_VARIANCE_KEYWORD,
-			ROLL_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigGaussian(pitch,PITCH_CONTROL_VARIANCE_KEYWORD,
-			PITCH_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigGaussian(yaw,YAW_CONTROL_VARIANCE_KEYWORD,
-			YAW_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
+	        roll=ConfigGaussian(ROLL_CONTROL_VARIANCE_KEYWORD,
+			ROLL_CONTROL_MEAN_KEYWORD, config_list);
+		if(roll==NULL)  return(0);
+	        pitch=ConfigGaussian(PITCH_CONTROL_VARIANCE_KEYWORD,
+			PITCH_CONTROL_MEAN_KEYWORD, config_list);
+		if(pitch==NULL)   return(0);
+	        yaw=ConfigGaussian(YAW_CONTROL_VARIANCE_KEYWORD,
+			YAW_CONTROL_MEAN_KEYWORD, config_list);
+		if(yaw==NULL)  return(0);
 
 	}
 
@@ -117,15 +117,15 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
 	   || strcmp(string,"uniform")==0)
 	{
-	        if(! ConfigUniform(roll,ROLL_CONTROL_RADIUS_KEYWORD,
-			ROLL_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigUniform(pitch,PITCH_CONTROL_RADIUS_KEYWORD,
-			PITCH_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigUniform(yaw,YAW_CONTROL_RADIUS_KEYWORD,
-			YAW_CONTROL_MEAN_KEYWORD, config_list))
-		   return(0);
+	        roll=ConfigUniform(ROLL_CONTROL_RADIUS_KEYWORD,
+			ROLL_CONTROL_MEAN_KEYWORD, config_list);
+		   if(roll==NULL) return(0);
+	        pitch=ConfigUniform(PITCH_CONTROL_RADIUS_KEYWORD,
+			PITCH_CONTROL_MEAN_KEYWORD, config_list);
+		   if(pitch==NULL) return(0);
+	        yaw=ConfigUniform(YAW_CONTROL_RADIUS_KEYWORD,
+			YAW_CONTROL_MEAN_KEYWORD, config_list);
+		   if(yaw==NULL)return(0);
 	}
 
 	
@@ -133,18 +133,21 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
 	{
-	        if(! ConfigGaussianRandomVelocity(roll,
+	        roll=ConfigGaussianRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
 		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_VARIANCE_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigGaussianRandomVelocity(pitch,
+			config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigGaussianRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
 		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_VARIANCE_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigGaussianRandomVelocity(yaw,
+			config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigGaussianRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
 		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_VARIANCE_KEYWORD,
-			config_list)) return(0);
+			config_list);
+		if(yaw==NULL) return(0);
 
 	}
 
@@ -152,18 +155,21 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
            || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
 	   || strcmp(string,"uniform_random_velocity")==0)
 	{
-	        if(! ConfigUniformRandomVelocity(roll,
+	        roll=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, ROLL_CONTROL_BOUND_KEYWORD,
 		ROLL_CONTROL_MEAN_KEYWORD, ROLL_CONTROL_RADIUS_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigUniformRandomVelocity(pitch,
+			config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, PITCH_CONTROL_BOUND_KEYWORD,
 		PITCH_CONTROL_MEAN_KEYWORD, PITCH_CONTROL_RADIUS_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigUniformRandomVelocity(yaw,
+			config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigUniformRandomVelocity(
 		CONTROL_SAMPLE_RATE_KEYWORD, YAW_CONTROL_BOUND_KEYWORD,
 		YAW_CONTROL_MEAN_KEYWORD, YAW_CONTROL_RADIUS_KEYWORD,
-			config_list)) return(0);
+			config_list);
+		if(yaw==NULL) return(0);
 
 	}
 
@@ -207,15 +213,15 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
 	   || strcmp(string,"gaussian")==0)
 	{
-	        if(! ConfigGaussian(roll,ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
-			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigGaussian(pitch,PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
-			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigGaussian(yaw,YAW_KNOWLEDGE_VARIANCE_KEYWORD,
-			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
+	        roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
+			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigGaussian(PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
+			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigGaussian(YAW_KNOWLEDGE_VARIANCE_KEYWORD,
+			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(yaw==NULL) return(0);
 
 	}
 
@@ -223,15 +229,15 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
 	   || strcmp(string,"uniform")==0)
 	{
-	        if(! ConfigUniform(roll,ROLL_KNOWLEDGE_RADIUS_KEYWORD,
-			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigUniform(pitch,PITCH_KNOWLEDGE_RADIUS_KEYWORD,
-			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
-	        if(! ConfigUniform(yaw,YAW_KNOWLEDGE_RADIUS_KEYWORD,
-			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list))
-		   return(0);
+	        roll=ConfigUniform(ROLL_KNOWLEDGE_RADIUS_KEYWORD,
+			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigUniform(PITCH_KNOWLEDGE_RADIUS_KEYWORD,
+			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigUniform(YAW_KNOWLEDGE_RADIUS_KEYWORD,
+			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
+		if(yaw==NULL) return(0);
 	}
 
 	
@@ -239,18 +245,21 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
 	{
-	        if(! ConfigGaussianRandomVelocity(roll,
+	        roll=ConfigGaussianRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
 		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigGaussianRandomVelocity(pitch,
+			config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigGaussianRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
 		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigGaussianRandomVelocity(yaw,
+			config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigGaussianRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
 		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_VARIANCE_KEYWORD,
-			config_list)) return(0);
+			config_list);
+		if(yaw==NULL) return(0);
 
 	}
 
@@ -258,18 +267,21 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
            || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
 	   || strcmp(string,"uniform_random_velocity")==0)
 	{
-	        if(! ConfigUniformRandomVelocity(roll,
+	        roll=ConfigUniformRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
 		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigUniformRandomVelocity(pitch,
+			config_list);
+		if(roll==NULL) return(0);
+	        pitch=ConfigUniformRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
 		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list)) return(0);
-	        if(! ConfigUniformRandomVelocity(yaw,
+			config_list);
+		if(pitch==NULL) return(0);
+	        yaw=ConfigUniformRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
 		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_RADIUS_KEYWORD,
-			config_list)) return(0);
+			config_list);
+		if(yaw==NULL) return(0);
 
 	}
 
@@ -299,48 +311,46 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 	// ConfigGaussian                   //
 	//----------------------------------//
 
-int 
-ConfigGaussian(GenericDist* dist, const char* variance_keyword,
+Gaussian* 
+ConfigGaussian(const char* variance_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list)
 {
 	double variance, mean;
 
  	if(! config_list->GetDouble(variance_keyword,
-	   &variance)) return(0);
+	   &variance)) return(NULL);
  	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(0);
-	dist=new Gaussian((float)variance,(float)mean);
+	   &mean)) return(NULL);
+	return(new Gaussian((float)variance,(float)mean));
 
-        return(1);
 }
 
 	//----------------------------------//
 	// ConfigUniform                    //
 	//----------------------------------//
 
-int 
-ConfigUniform(GenericDist* dist, const char* radius_keyword,
+Uniform* 
+ConfigUniform(const char* radius_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list)
 {
 	double radius, mean;
 
 	if(! config_list->GetDouble(radius_keyword,
-	  &radius)) return(0);
+	  &radius)) return(NULL);
 	if(! config_list->GetDouble(mean_keyword,
-	  &mean)) return(0);
-	dist=new Uniform((float)radius,float(mean));
+	  &mean)) return(NULL);
+	return(new Uniform((float)radius,float(mean)));
 
-        return(1);
 }
 
 	//--------------------------------------------//
 	// ConfigGaussianRandomVelocity               //
 	//--------------------------------------------//
 
-int 
-ConfigGaussianRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+RandomVelocity* 
+ConfigGaussianRandomVelocity(const char* samprate_keyword,
 	const char* bound_keyword, const char* mean_keyword, 
 	const char* variance_keyword,
 	ConfigList* config_list)
@@ -349,20 +359,19 @@ ConfigGaussianRandomVelocity(GenericDist* dist, const char* samprate_keyword,
 	GenericTimelessDist *velocity;
 
 	if(! config_list->GetDouble(samprate_keyword,
-	   &sample_rate)) return(0);
+	   &sample_rate)) return(NULL);
 
 
  	if(! config_list->GetDouble(variance_keyword,
-	   &variance)) return(0);
+	   &variance)) return(NULL);
  	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(0);
+	   &mean)) return(NULL);
  	if(! config_list->GetDouble(bound_keyword,
-	   &bound)) return(0);
+	   &bound)) return(NULL);
 	velocity=new Gaussian((float)variance,0.0);
-	dist=new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)mean);
+	return(new RandomVelocity(velocity, (float)sample_rate,
+		(float)bound, (float)mean));
 
-        return(1);
 }
 
 
@@ -370,8 +379,8 @@ ConfigGaussianRandomVelocity(GenericDist* dist, const char* samprate_keyword,
 	// ConfigUniformRandomVelocity              //
 	//------------------------------------------//
 
-int 
-ConfigUniformRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+RandomVelocity* 
+ConfigUniformRandomVelocity(const char* samprate_keyword,
 	const char* bound_keyword, const char* mean_keyword, 
 	const char* radius_keyword,
 	ConfigList* config_list)
@@ -380,23 +389,20 @@ ConfigUniformRandomVelocity(GenericDist* dist, const char* samprate_keyword,
 	GenericTimelessDist *velocity;
 
 	if(! config_list->GetDouble(samprate_keyword,
-	   &sample_rate)) return(0);
+	   &sample_rate)) return(NULL);
 
 
  	if(! config_list->GetDouble(radius_keyword,
-	   &radius)) return(0);
+	   &radius)) return(NULL);
  	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(0);
+	   &mean)) return(NULL);
  	if(! config_list->GetDouble(bound_keyword,
-	   &bound)) return(0);
+	   &bound)) return(NULL);
 	velocity=new Uniform((float)radius,0.0);
-	dist=new RandomVelocity(velocity, (float)sample_rate,
-		(float)bound, (float)mean);
+	return(new RandomVelocity(velocity, (float)sample_rate,
+		(float)bound, (float)mean));
 
-        return(1);
 }
-
-
 
 
 //------------------//

@@ -93,21 +93,22 @@ int ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 // 	Routines                   //
 //---------------------------------//
 
-int  ConfigGaussian(GenericDist* dist, const char* variance_keyword,
+Gaussian*  ConfigGaussian(const char* variance_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list);
 
-int ConfigUniform(GenericDist* dist, const char* radius_keyword,
+Uniform* ConfigUniform(const char* radius_keyword,
 	const char* mean_keyword,
 	ConfigList* config_list);
 
-int ConfigGaussianRandomVelocity(GenericDist* dist, const char* 	
+RandomVelocity* ConfigGaussianRandomVelocity(const char* 	
 	samprate_keyword,
 	const char* bound_keyword, const char* mean_keyword, 
 	const char* variance_keyword,
 	ConfigList* config_list);
 
-int ConfigUniformRandomVelocity(GenericDist* dist, const char* samprate_keyword,
+RandomVelocity* ConfigUniformRandomVelocity(const char* 	
+	samprate_keyword,
 	const char* bound_keyword, const char* mean_keyword, 
 	const char* radius_keyword,
 	ConfigList* config_list);
