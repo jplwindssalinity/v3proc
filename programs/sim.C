@@ -146,6 +146,12 @@ main(
 	//----------------------------------------------//
 
 	Spacecraft spacecraft;
+	if (! ConfigSpacecraft(&spacecraft, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
+			command);
+		exit(1);
+	}
 
 	SpacecraftSim spacecraft_sim;
 	if (! ConfigSpacecraftSim(&spacecraft_sim, &config_list))
@@ -349,7 +355,7 @@ main(
 					&instrument);
 				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
 				instrument_sim.ScatSim(instrument_event.time,
-					&spacecraft, &instrument, &windfield, &gmf);
+					&spacecraft, &instrument, &windfield, &gmf, &(l00.frame));
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
@@ -368,9 +374,9 @@ main(
 			       // + Knowledge Error
 				spacecraft_sim.ReportAttitude(
 				    instrument_event.time, &spacecraft,
-				    &(instrument_sim.l00.frame.attitude));
+				    &(l00.frame.attitude));
 
-				int size = instrument_sim.l00.frame.Pack(l00.buffer);
+				int size = l00.frame.Pack(l00.buffer);
 				l00.file.Write(l00.buffer, size);
 			}
 
@@ -386,3 +392,4 @@ main(
 
 	return (0);
 }
+
