@@ -9,6 +9,7 @@
 static const char rcs_id_wvc_h[] =
 	"@(#) $Id$";
 
+#include <stdio.h>
 #include "List.h"
 #include "WindVector.h"
 
@@ -37,6 +38,12 @@ public:
 
 	WVC();
 	~WVC();
+
+	//--------------//
+	// input/output //
+	//--------------//
+
+	int		WriteAmbigsAscii(FILE* ofp);
 
 	//-----------//
 	// variables //
