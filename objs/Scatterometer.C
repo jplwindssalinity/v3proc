@@ -207,6 +207,13 @@ Scatterometer::LocateSpot(
     //
 
     Meas* meas = meas_spot->GetHead();    // need the outline to append to
+    if (meas == NULL)
+    {  // This is a new spot which needs one measurement.
+      Meas* new_meas = new(Meas);
+      meas_spot->Append(new_meas);
+    }
+    meas = meas_spot->GetHead();
+
     for (int i=0; i < POINTS_PER_SPOT_OUTLINE + 1; i++)
     {
         double phi = (two_pi * i) / POINTS_PER_SPOT_OUTLINE;
