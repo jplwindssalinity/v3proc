@@ -8,7 +8,7 @@
 //    sws_echo_proc
 //
 // SYNOPSIS
-//    sws_echo_proc [ -gop ] <config_file> <l1a_file> <l1b_file>
+//    sws_echo_proc [ -gopv ] <config_file> <l1a_file> <l1b_file>
 //        <echo_file>
 //
 // DESCRIPTION
@@ -21,6 +21,7 @@
 //    [ -g ]           Use a (g)aussian fit instead of power centroid.
 //    [ -o ]           Process modulation (o)ff data instead of mod on.
 //    [ -p ]           Use the signal (p)lus noise instead of signal only.
+//    [ -v ]           Verbose. Report on dropped data.
 //
 // OPERANDS
 //    <config_file>  The configuration file.
@@ -97,7 +98,7 @@ template class List<MeasSpot>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING      "gop"
+#define OPTSTRING      "gopv"
 
 #define WOM            0x0E
 #define MODULATION_ON  0x08
@@ -118,11 +119,13 @@ template class List<MeasSpot>;
 // OPTION VARIABLES //
 //------------------//
 
+int opt_verbose = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -gop ]", "<config_file>", "<l1a_file>",
+const char* usage_array[] = { "[ -gopv ]", "<config_file>", "<l1a_file>",
     "<l1b_file>", "<echo_file>", 0 };
 
 //--------------//
@@ -162,6 +165,9 @@ main(
             break;
         case 'p':
             opt_signal_plus_noise = 1;
+            break;
+        case 'v':
+            opt_verbose = 1;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -372,6 +378,9 @@ main(
         SDreaddata_or_exit("operational_mode", operational_mode_sds_id, start,
             edges, (VOIDP)&operational_mode);
         if (operational_mode != WOM) {
+            if (opt_verbose) {
+                printf("  Non-WOM frame %d\n", record_idx);
+            }
             wom_frame = 0;
             continue;
         }
@@ -393,9 +402,13 @@ main(
         for (int i = 0; i < 13; i++) {
             if (pulse_qual_flag[i] != 0) {
                 bad_pulses = 1;
+                break;
             }
         }
         if (frame_err_status != 0 || frame_qual_flag != 0 || bad_pulses) {
+            if (opt_verbose) {
+                printf("  Bad frame %d\n", record_idx);
+            }
             wom_frame = 0;   // spin up again
             continue;
         }
@@ -410,6 +423,9 @@ main(
             (VOIDP)&ses_configuration_flags);
         unsigned char modulation = ses_configuration_flags & MODULATION_ON;
         if (! modulation) {
+            if (opt_verbose) {
+                printf("  Mod-off frame %d\n", record_idx);
+            }
             wom_frame = 0;
             continue;
         }
@@ -628,6 +644,9 @@ main(
 
             if (x_pos == 0.0 && y_pos == 0.0 && z_pos == 0.0)
             {
+                if (opt_verbose) {
+                    printf("  Bad ephemeris frame %d\n", record_idx);
+                }
                 echo_info.quality_flag[spot_idx] = EchoInfo::BAD_EPHEMERIS;
                 wom_frame = 0;   // spin up again
                 continue;
@@ -647,12 +666,13 @@ main(
             echo_info.txDoppler[spot_idx] = qscat.ses.txDoppler;
             echo_info.rxGateDelay[spot_idx] = qscat.ses.rxGateDelay;
 
-            //---------------------------------------//
-            // skip pulses from first two WOM frames //
-            //---------------------------------------//
+            //-----------------------------------//
+            // skip pulses from first WOM frames //
+            //-----------------------------------//
 
-            if (wom_frame < 3)
+            if (wom_frame < 2) {
                 continue;
+            }
 
             //-------------------------//
             // skip calibration pulses //
@@ -751,8 +771,14 @@ main(
             }
         }
 
-        if (record_idx == 0)
+        //----------------------------------------------------------//
+        // don't generate output for the first frames after badness //
+        //----------------------------------------------------------//
+
+        if (wom_frame < 2) {
+            printf("  Drop frame %d\n", record_idx);
             continue;
+        }
 
         if (! echo_info.Write(ofd))
         {

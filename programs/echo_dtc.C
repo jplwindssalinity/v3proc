@@ -638,7 +638,9 @@ main(
                     g_max_offset[beam_idx][orbit_step] / 1000.0);
             }
         }
-        fprintf(offset_fp, "&\n");
+        if (beam_idx != NUMBER_OF_QSCAT_BEAMS - 1) {
+            fprintf(offset_fp, "&\n");
+        }
     }
     fclose(offset_fp);
 
