@@ -55,14 +55,21 @@ static const char rcs_id[] =
 //----------//
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "Misc.h"
 #include "ConfigList.h"
+#include "OrbitSim.h"
 
 //-----------//
 // CONSTANTS //
 //-----------//
 
+#define SEMI_MAJOR_AXIS_KEYWORD			"SEMI_MAJOR_AXIS"
+#define ECCENTRICITY_KEYWORD			"ECCENTRICITY"
+#define INCLINATION_KEYWORD				"INCLINATION"
+#define ARGUMENT_OF_PERIGEE_KEYWORD		"ARGUMENT_OF_PERIGEE"
+ 
 //--------//
 // MACROS //
 //--------//
@@ -99,16 +106,54 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != optind + 1)
+	if (argc != 2)
 		usage(command, usage_array, 1);
 
-	const char* sim_control_file = argv[optind++];
+	int clidx = 1;
+	const char* sim_control_file = argv[clidx++];
 
 	//---------------------------------//
 	// read in simulation control file //
 	//---------------------------------//
 
-	ConfigList sim_control_list(sim_control_file);
+	ConfigList sim_control_list;
+	if (! sim_control_list.Read(sim_control_file))
+	{
+		fprintf(stderr, "%s: error reading sim control file %s\n",
+			command, sim_control_file);
+		exit(1);
+	}
+
+	//-------------------------//
+	// set up orbit parameters //
+	//-------------------------//
+
+	double semi_major_axis;
+	sim_control_list.GetDouble(SEMI_MAJOR_AXIS_KEYWORD,
+		&semi_major_axis);
+
+	double eccentricity;
+	sim_control_list.GetDouble(ECCENTRICITY_KEYWORD,
+		&eccentricity);
+
+	double inclination;
+	sim_control_list.GetDouble(INCLINATION_KEYWORD,
+		&inclination);
+
+	double argument_of_perigee;
+	sim_control_list.GetDouble(ARGUMENT_OF_PERIGEE_KEYWORD,
+		&argument_of_perigee);
+
+	OrbitSim orbit_sim(semi_major_axis, eccentricity, inclination,
+		argument_of_perigee);
+
+	orbit_sim.Initialize(0.0, 0.0, 0);
+
+	for (int itime = 0; itime < 30300; itime += 10)
+	{
+		OrbitState os = orbit_sim.GetOrbitState((double)itime);
+		printf("%d %g %g\n", itime, os.gc_longitude * RTD, os.gc_latitude * RTD);
+	}
 
 	return (0);
 }
