@@ -70,6 +70,7 @@ public:
     FileList();
     ~FileList();
 
+    int  FreeContents();
     int  Add(const char* file);
 
     //--------------//
@@ -144,6 +145,8 @@ public:
     PatternList();
     ~PatternList();
 
+    int  FreeContents();
+
     //--------------//
     // input/output //
     //--------------//
@@ -210,11 +213,22 @@ FileList::FileList()
 
 FileList::~FileList()
 {
+    FreeContents();
+    return;
+}
+
+//------------------------//
+// FileList::FreeContents //
+//------------------------//
+
+int
+FileList::FreeContents()
+{
     FileInfo* fileinfo;
     GotoHead();
     while ((fileinfo = RemoveCurrent()) != NULL)
         delete fileinfo;
-    return;
+    return(1);
 }
 
 //---------------//
@@ -378,7 +392,7 @@ Pattern::NewStableFiles(
 
         // get file info
         struct stat statbuf;
-        if (! stat(fullpath, &statbuf) != 0)
+        if (stat(fullpath, &statbuf) != 0)
             continue;    // failure to stat
 
         // check maturity
@@ -411,7 +425,22 @@ PatternList::PatternList()
 
 PatternList::~PatternList()
 {
+    FreeContents();
     return;
+}
+
+//---------------------------//
+// PatternList::FreeContents //
+//---------------------------//
+
+int
+PatternList::FreeContents()
+{
+    Pattern* pattern;
+    GotoHead();
+    while ((pattern = RemoveCurrent()) != NULL)
+        delete pattern;
+    return(1);
 }
 
 //-------------------//
