@@ -37,7 +37,8 @@ OBJS = \
 	EarthField.o \
 	EarthPosition.o \
 	Ephemeris.o \
-        FbbTable.o \
+	ETime.o \
+	FbbTable.o \
 	GMF.o \
 	GenericGeom.o \
 	Grid.o \
