@@ -120,6 +120,17 @@ main(
 		exit(1);
 	}
 
+	//-------------------------------------//
+	// create an instrument and initialize //
+	//-------------------------------------//
+
+	Instrument instrument;
+	if (! ConfigInstrument(&instrument, &config_list))
+	{
+		fprintf(stderr, "%s: error configuration instrument\n", command);
+		exit(1);
+	}
+
 	//-----------------------------------------------//
 	// create an instrument simulator and initialize //
 	//-----------------------------------------------//
@@ -136,13 +147,12 @@ main(
 	// cycle through events //
 	//----------------------//
 
-	Instrument instrument;
 	double time = 0.0;
 	while (time < 120.0)
 	{
 		sim.SimulateNextEvent(&instrument);
 		Orbit *os = &(instrument.orbit);
-printf("%g %g\n", time, instrument.antenna.azimuthAngle);
+printf("%g %g\n", time, instrument.antenna.beam[0].azimuthAngle);
 /*
 		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector.get(0),
 			os->gc_vector.get(1), os->gc_vector.get(2),
