@@ -42,7 +42,8 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Tracking.h"
 #include "Tracking.C"
-
+#define  TOTAL_NUM_SLICES 12
+#define  DATA_UNAVAILABLE -999
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -117,34 +118,109 @@ main(
 
 
         int frame_number=1;
-
+      
 	//---------------------//
 	// copy desired frames //
 	//---------------------//
 
 	while (l1b.ReadDataRec() && frame_number <= end_frame)
 	{
+	  if(frame_number < start_frame){
+	    frame_number++;
+	    continue;
+	  }
+
 	  for(MeasSpot*spot=l1b.frame.spotList.GetHead();spot;
 	      spot=l1b.frame.spotList.GetNext()){
 	      Meas* meas=spot->GetHead();
 	      double x,y,z;
               spot->scOrbitState.rsat.Get(&x,&y,&z);
 	      fprintf(ofp,"%d %g %g ",meas->beamIdx,spot->time,meas->scanAngle*rtd);
+	      
+
+	      //   Output  Land flags for each slice
+
+	      int count=0;
 	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
+		int idx=0;
+                rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&idx);
+		while(count< idx){
+		  fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		  count++;
+		}
 		fprintf(ofp,"%d ",meas->landFlag);
-	      }     
-	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
-		fprintf(ofp,"%g ",meas->incidenceAngle);
-	      }     
-	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
-		fprintf(ofp,"%g ",meas->value);
+		count++;
 	      } 
+	      while(count< TOTAL_NUM_SLICES){
+		fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		count++;
+	      }
+
+	      //   Output Incidence Angles for each slice
+	      count=0;    
+	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
+		int idx=0;
+                rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&idx);
+		while(count< idx){
+		  fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		  count++;
+		}
+		fprintf(ofp,"%g ",meas->incidenceAngle*rtd);
+		count++;
+	      }   
+	      while(count< TOTAL_NUM_SLICES){
+		fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		count++;
+	      }
+
+              //   Output Sigma0 Values for each slice
+	      count=0;  
+	      for(meas=spot->GetHead();meas;meas=spot->GetNext()){
+		int idx=0;
+                rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&idx);
+		while(count< idx){
+		  fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		  count++;
+		}
+		fprintf(ofp,"%g ",meas->value);    
+		count++;
+	      } 
+	      while(count< TOTAL_NUM_SLICES){
+		fprintf(ofp,"%d ", DATA_UNAVAILABLE);
+		count++;
+	      }
+              //---------------------------------------//
+              // Output Egg Sigma0                     //
+              //---------------------------------------//
 	      Meas egg;
-              spot->GetHead();
-              spot->GetNext();
-	      egg.Composite(spot,10);
-	      fprintf(ofp,"%g\n",egg.value);
+	      count=spot->NodeCount();
+
+	      int first_idx, last_idx;
+	      meas=spot->GetHead();              
+              rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&first_idx);
+	      meas=spot->GetTail();              
+              rel_to_abs_idx(meas->startSliceIdx,TOTAL_NUM_SLICES,&first_idx);
+
+	      int num_missing_guards=0;
+              if(first_idx>0) num_missing_guards++;
+              if(last_idx<TOTAL_NUM_SLICES-1) num_missing_guards++;
+	      if(count == TOTAL_NUM_SLICES){
+		spot->GetHead();
+		spot->GetNext();
+		egg.Composite(spot,TOTAL_NUM_SLICES-2);
+		fprintf(ofp,"%g\n",egg.value);
+	      }
+	      else if(count+num_missing_guards==TOTAL_NUM_SLICES){
+		spot->GetHead();
+		if(first_idx==0)  spot->GetNext();
+		egg.Composite(spot,TOTAL_NUM_SLICES-2);
+		fprintf(ofp,"%g\n",egg.value);		
+	      }
+	      else{
+		fprintf(ofp,"%d\n",DATA_UNAVAILABLE);
+	      }
 	  }
+	  if(start_frame>=0) frame_number++;
         }
 
         //----------------------//
