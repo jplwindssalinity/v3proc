@@ -112,7 +112,7 @@ template class List<WindVectorPlus>;
 #define SKILL_MIN				0.3
 #define SKILL_MAX				1.0
 
-#define DIRECTION_BINS			90
+#define DIRECTION_BINS			72		// 5 degree bins
 
 //--------//
 // MACROS //
@@ -513,7 +513,7 @@ main(
 	// avg nambig vs. ctd //
 	//--------------------//
 
-	if (! swath->AvgNambigVsCti(value_array))
+	if (! swath->AvgNambigVsCti(value_array, low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating average number of ambigs\n",
 			command);
@@ -521,7 +521,8 @@ main(
 	}
 	xylimits[2] = 0;
 	xylimits[3] = 5;
-	sprintf(title, "Average Number of Ambigs vs. CTD");
+	sprintf(title, "Average Number of Ambigs vs. CTD (%g - %g m/s)",
+        low_speed, high_speed);
 	plot_thing("avg_nambig", title, "Cross Track Distance (km)",
 		"No. Ambigs",xylimits);
 
@@ -791,7 +792,7 @@ plot_density(
 
 	for (int i = 0; i < DIRECTION_BINS; i++)
 	{
-        fprintf(ofp, "%g %g %g\n", dir_array[i],
+        fprintf(ofp, "%g %g %g\n", dir_array[i] * rtd,
             scale * (double)uint_array[i],
             scale_2 * (double)uint_2_array[i]);
 	}
