@@ -637,12 +637,17 @@ ConfigInstrumentSim(
 		use_kfactor=0; // default value
 	instrument_sim->useKfactor=use_kfactor;
 
+
 	int create_xtable;
 	if (! config_list->GetInt(CREATE_XTABLE_KEYWORD, &create_xtable))
 		create_xtable=0; // default value
 	instrument_sim->createXtable=create_xtable;
 
 	config_list->ExitForMissingKeywords();
+
+	float system_temperature;
+	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
+		return(0);        
 
 	/****** You cannot use and create the XTable simultaneously. ***/
 	if(create_xtable && use_kfactor)
@@ -657,6 +662,16 @@ ConfigInstrumentSim(
 	{
 		fprintf(stderr,
 			"ConfigInstrumentSim: Cannot create an Xtable without a uniform sigma0 field\n");
+		return(0);
+	} 
+
+	/*** To create an X table SYSTEM_TEMPERATURE MUST be zero so that **/
+        /*** Pn_slice will be zero and will NOT corrupt the X table      **/
+	if(create_xtable && system_temperature!=0.0)
+	{
+		fprintf(stderr,
+			"ConfigInstrumentSim: Cannot create an Xtable with a
+nonzero system temperature! \n");
 		return(0);
 	} 
 
