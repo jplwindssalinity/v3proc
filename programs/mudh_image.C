@@ -8,8 +8,8 @@
 //    mudh_image
 //
 // SYNOPSIS
-//    mudh_image [ -m thresh ] [ -r thresh ] <start_rev> <end_rev>
-//        <output_file>
+//    mudh_image [ -n ] [ -m thresh ] [ -r thresh ] <start_rev>
+//        <end_rev> <output_file>
 //
 // DESCRIPTION
 //    Reads in a set of MUDH files and generates an image file.
@@ -130,8 +130,9 @@ main(
     //------------//
 
     float mudh_thresh = 0.0;
+    int opt_mudh_thresh = 0;
     float irr_thresh = 0.0;
-    int opt_rain = -1;
+    int opt_rain = 0;
 
     //------------------------//
     // parse the command line //
@@ -146,7 +147,7 @@ main(
         {
         case 'm':
             mudh_thresh = atof(optarg);
-            opt_rain = 0;
+            opt_mudh_thresh = 1;
             break;
         case 'r':
             irr_thresh = atof(optarg);
@@ -165,7 +166,7 @@ main(
     int end_rev = atoi(argv[optind++]);
     const char* output_file = argv[optind++];
 
-    if (opt_rain == -1)
+    if (opt_rain == opt_mudh_thresh)
     {
         fprintf(stderr, "%s: must specify -r or -m\n", command);
         exit(1);
@@ -281,7 +282,7 @@ main(
                 }
             }
         }
-        else
+        else if (opt_mudh_thresh)
         {
             sprintf(filename, "%d.pflag", rev);
             ifp = fopen(filename, "r");
@@ -324,13 +325,13 @@ main(
                     float lat = (float)lat_array[ati][cti] * 0.01 - 90.0;
                     lat_index.GetNearestIndex(lat, &lat_idx);
 
-                    if (flag_tab[ati][cti] == 0)
+                    if (value_tab[ati][cti] <= mudh_thresh)
                     {
                         // clear
                         if (image[lon_idx][lat_idx] < 1)
                             image[lon_idx][lat_idx] = 1;
                     }
-                    else if (flag_tab[ati][cti] == 1)
+                    else
                     {
                         // rain
                         image[lon_idx][lat_idx] = 3;
