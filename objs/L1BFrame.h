@@ -45,7 +45,7 @@ public:
 	// product variables //
 	//-------------------//
 
-	MeasSpot	spot;
+	MeasSpotList	spotList;	// a list of spots from a single frame
 };
 
 #endif

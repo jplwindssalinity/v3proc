@@ -7,6 +7,8 @@ static const char rcs_id_l10tol15_c[] =
 	"@(#) $Id$";
 
 #include "L10ToL15.h"
+#include "Antenna.h"
+#include "Ephemeris.h"
 
 
 //==========//
@@ -29,8 +31,68 @@ L10ToL15::~L10ToL15()
 
 int
 L10ToL15::Convert(
-	L10*	l10,
-	L15*	l15)
+	L10*		l10,
+	Antenna*	antenna,
+	Ephemeris*	ephemeris,
+	L15*		l15)
 {
+	//--------------//
+	// unpack frame //
+	//--------------//
+
+	l10->frame.Unpack(l10->buffer);
+
+	//------------------//
+	// for each spot... //
+	//------------------//
+
+	for (int i = 0; i < SPOTS_PER_L10_FRAME; i++)
+	{
+		//-----------------------//
+		// ...determine the beam //
+		//-----------------------//
+
+		int beam_idx = i % antenna->numberOfBeams;
+
+		//-----------------------//
+		// ...calculate the time //
+		//-----------------------//
+
+		double spot_time = l10->frame.time + (i / antenna->numberOfBeams) *
+			antenna->priPerBeam + antenna->beam[beam_idx].timeOffset;
+
+		//------------------------------//
+		// ...determine the orbit state //
+		//------------------------------//
+
+		OrbitState orbit_state;
+		if (! ephemeris->GetOrbitState(spot_time, &orbit_state))
+			return(0);
+
+		//------------------------//
+		// ...free residual spots //
+		//------------------------//
+
+		l15->frame.spotList.FreeContents();
+
+		//--------------------------//
+		// ...add spot measurements //
+		//--------------------------//
+		// for now there is just one
+		// eventually a slice loop will be needed
+
+		Meas* meas = new Meas();
+		meas->value = l10->frame.sigma0[i];
+//		meas->outline =
+//		meas->center = 
+		meas->pol = antenna->beam[beam_idx].polarization;
+//		meas->eastAzimuth =
+//		meas->scAzimuth =
+//		meas->incidenceAngle =
+		meas->estimatedKp = 0.0;
+
+//		l15->frame.spotList.Append(meas);
+	}
+
 	return(1);
 }
