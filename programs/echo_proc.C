@@ -744,10 +744,7 @@ main(
 
             int type = land_map.GetType(lon, lat);
             if (type != 0)    // not ocean
-            {
                 echo_info.flag[spot_idx] = EchoInfo::NOT_OCEAN;
-                continue;
-            }
 
             //-------------------------------//
             // determine total signal energy //
