@@ -1533,6 +1533,37 @@ ConfigGMF(
 		return(0);
 	if (! gmf->ReadOldStyle(gmf_filename))
 		return(0);
+
+	//--------------------------------//
+	// configure the number of angles //
+	//--------------------------------//
+
+	int tmp_int;
+    if (! config_list->GetInt(GMF_PHI_COUNT_KEYWORD, &tmp_int))
+        return(0);
+    if (! gmf->SetPhiCount(tmp_int))
+		return(0);
+
+	//---------------------------//
+	// configure retrieval flags //
+	//---------------------------//
+
+	if (! config_list->GetInt(RETRIEVE_USING_KPC_FLAG_KEYWORD, &tmp_int))
+		return(0);
+	gmf->retrieveUsingKpcFlag = tmp_int;
+
+	if (! config_list->GetInt(RETRIEVE_USING_KPM_FLAG_KEYWORD, &tmp_int))
+		return(0);
+	gmf->retrieveUsingKpmFlag = tmp_int;
+
+	if (! config_list->GetInt(RETRIEVE_USING_KPRI_FLAG_KEYWORD, &tmp_int))
+		return(0);
+	gmf->retrieveUsingKpriFlag = tmp_int;
+
+	if (! config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD, &tmp_int))
+		return(0);
+	gmf->retrieveUsingKprsFlag = tmp_int;
+
 	return(1);
 }
 
