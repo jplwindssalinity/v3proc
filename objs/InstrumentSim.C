@@ -151,10 +151,19 @@ InstrumentSim::LocateSlices(
 	//-------------------------------------------------//
 
 	Vector3 vector;
-
 	double look, azimuth;
-	if (! beam->GetElectricalBoresight(&look, &azimuth))
-		return(0);
+
+    if (! beam->GetElectricalBoresight(&look, &azimuth))
+        return(0);
+    vector.SphericalSet(1.0, look, azimuth);
+    TargetInfoPackage  tip;
+    RangeAndRoundTrip(&antenna_frame_to_gc, spacecraft, vector, &tip);
+
+    if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
+        instrument->antenna.spinRate,&look, &azimuth))
+	{
+        return(0);
+    }
 
 	vector.SphericalSet(1.0, look, azimuth);		// boresight
 	DopplerAndDelay(&antenna_frame_to_gc, spacecraft, instrument, vector);
