@@ -16,7 +16,7 @@ static const char rcs_id_landmap_c[] =
 //=========//
 
 LandMap::LandMap()
-:   _map(NULL), _pixelsPerDegree(12)
+:   _map(NULL), _pixelsPerDegree(12), _usemap(0)
 {
     _mapLatDim = 180 * _pixelsPerDegree;
     _mapLonDim = 45 * _pixelsPerDegree;

@@ -27,7 +27,9 @@ static const char rcs_id_landmap_h[] =
 //    where land occurs. It has a method which takes lon and lat
 //    returning 0 for ocean or 1 for land.
 //======================================================================
-
+//*********************************************************************//
+// YOU NEED TO CALL THE Initialize METHOD BEFORE USING THE LANDMAP     //
+//*********************************************************************//
 class LandMap
 {
 public:
@@ -40,13 +42,13 @@ public:
     ~LandMap();
 
     int  Initialize(char* filename, int use_map);
-    int  Read(char* filename);
 
     int  IsLand(float lon, float lat);
     int  IsLand(LonLat* lon_lat);
 
 protected:
 
+    int  Read(char* filename);
     int  _Allocate();
     int  _Deallocate();
 
