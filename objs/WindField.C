@@ -26,7 +26,7 @@ WindField::WindField()
 
 WindField::~WindField()
 {
-	free(_field);
+	_Deallocate();
 	return;
 }
 
