@@ -26,7 +26,8 @@ static const char rcs_id_gmf_c[] =
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
     retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), smartNudgeFlag(0),
-    _spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
+    _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL),
+    _sepAngle(DEFAULT_SEP_ANGLE),
     _smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
     _bestSpd(NULL), _bestObj(NULL), _copyObj(NULL), _speed_buffer(NULL),
     _objective_buffer(NULL), _dir_mle_maxima(NULL)

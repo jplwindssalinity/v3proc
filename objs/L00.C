@@ -43,8 +43,9 @@ L00::AllocateBuffer(
 	int noise_bytes = sizeof(float) * number_of_beams *
 		antenna_cycles_per_frame;
 	int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
+    int cal_bytes = 2*(slices_per_spot + 1);
 	int buffer_size = L00_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
-		noise_bytes;
+		noise_bytes + cal_bytes;
 	buffer = (char *)malloc(buffer_size);
 	if (buffer == NULL)
 		return(0);

@@ -45,6 +45,8 @@ public:
 
 	EarthPosition();
 	EarthPosition(Vector3 v);
+	EarthPosition(double x, double y, double z);
+	EarthPosition(double init);
 	~EarthPosition();
 
 	//---------------------//

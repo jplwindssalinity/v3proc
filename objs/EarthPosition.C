@@ -43,6 +43,36 @@ EarthPosition::EarthPosition(
 }
 
 //
+// Initialize with a complete set of 3 user-specified elements.
+//
+
+EarthPosition::EarthPosition(double x1, double x2, double x3)
+
+{
+
+_v[0] = x1;
+_v[1] = x2;
+_v[2] = x3;
+	return;
+}
+
+//
+// Initialize all 3 elements with a single value.
+//
+
+EarthPosition::EarthPosition(double init)
+{
+
+int i;
+for (i=0; i < 3; i++)
+  {
+  _v[i] = init;
+  }
+	return;
+}
+	
+
+//
 // Default destructor, no action
 //
 

@@ -17,7 +17,7 @@ static const char rcs_id_l1aframe_h[] =
 //    L1AFrame
 //======================================================================
 
-#define L1A_FRAME_HEADER_SIZE	69
+#define L1A_FRAME_HEADER_SIZE	72
 
 //======================================================================
 // CLASS

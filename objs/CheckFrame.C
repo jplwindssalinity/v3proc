@@ -18,7 +18,9 @@ static const char rcs_id_checkframe_c[] =
 //============//
 
 CheckFrame::CheckFrame()
-:	time(0.0), ptgr(0.0), orbit_frac(0.0), antenna_azi(0.0), sigma0(NULL),
+:	time(0.0), rsat(Vector3(0.0,0.0,0.0)), vsat(0.0,0.0,0.0), attitude(),
+    ptgr(0.0), orbit_frac(0.0), antenna_azi(0.0),
+    boresight_position(0.0,0.0,0.0), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
     true_Es(NULL), true_En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
     slicesPerSpot(0)
