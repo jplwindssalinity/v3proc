@@ -44,6 +44,7 @@ public:
 	double	lookAngle;			// mounted look angle relative to antenna
 	double	azimuthAngle;		// mounted azimuth angle relative to antenna
 	PolE	polarization;
+	double	timeOffset;			// seconds after prf for beam index 0
 
 	// Note: the beamFrame needs to be formed using the lookAngle and
 	// azimuthAngle above.

@@ -14,7 +14,7 @@ static const char rcs_id_instrumentsim_c[] =
 //=================//
 
 InstrumentEvent::InstrumentEvent()
-:	eventId(NONE), time(0.0)
+:	time(0.0), eventId(NONE), beamIdx(0)
 {
 	return;
 }

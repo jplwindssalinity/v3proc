@@ -12,7 +12,7 @@ static const char rcs_id_antenna_h[] =
 #include "Beam.h"
 #include "Attitude.h"
 
-#define MAX_NUMBER_OF_BEAMS		2
+#define MAX_NUMBER_OF_BEAMS		10
 
 
 //======================================================================
@@ -58,6 +58,7 @@ public:
 	//-----------//
 
 	int			numberOfBeams;
+	double		priPerBeam;
 	Beam		beam[MAX_NUMBER_OF_BEAMS];
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle

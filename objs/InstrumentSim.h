@@ -45,18 +45,13 @@ public:
 	InstrumentSim();
 	~InstrumentSim();
 
-	//---------------------//
-	// setting and getting //
-	//---------------------//
-
-	int		SetPriPerBeam(double pri_per_beam);
-	int		SetBeamBTimeOffset(double beam_b_time_offset);
-
 	//--------------------//
 	// simulation control //
 	//--------------------//
 
-	int		DetermineNextEvent(InstrumentEvent* instrument_event);
+	int		Initialize(Antenna* antenna);
+	int		DetermineNextEvent(Antenna* antenna,
+				InstrumentEvent* instrument_event);
 
 	//--------------------------//
 	// scatterometer simulation //
@@ -84,9 +79,6 @@ protected:
 	//-----------//
 	// variables //
 	//-----------//
-
-	double		_priPerBeam;			// seconds
-	double		_beamBTimeOffset;		// seconds
 
 	//---------------------------//
 	// level 0 frame information //

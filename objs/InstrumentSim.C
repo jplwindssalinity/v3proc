@@ -17,7 +17,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	l00FrameReady(0), _priPerBeam(0.0), _beamBTimeOffset(0.0), _pulseNumber(0)
+:	l00FrameReady(0), _pulseNumber(0)
 {
 	return;
 }
@@ -27,19 +27,20 @@ InstrumentSim::~InstrumentSim()
 	return;
 }
 
-//-----------------------//
-// InstrumentSim::SetXxx //
-//-----------------------//
+double g_scat_beam_time[MAX_NUMBER_OF_BEAMS];
 
-int InstrumentSim::SetPriPerBeam(double pri_per_beam)
-{
-	_priPerBeam = pri_per_beam;
-	return(1);
-}
+//---------------------------//
+// InstrumentSim::Initialize //
+//---------------------------//
 
-int InstrumentSim::SetBeamBTimeOffset(double beam_b_time_offset)
+int
+InstrumentSim::Initialize(
+	Antenna*	antenna)
 {
-	_beamBTimeOffset = beam_b_time_offset;
+	for (int i = 0; i < antenna->numberOfBeams; i++)
+	{
+		g_scat_beam_time[i] = antenna->beam[i].timeOffset;
+	}
 	return(1);
 }
 
@@ -49,37 +50,48 @@ int InstrumentSim::SetBeamBTimeOffset(double beam_b_time_offset)
 
 int
 InstrumentSim::DetermineNextEvent(
+	Antenna*			antenna,
 	InstrumentEvent*	instrument_event)
 {
-	//------------------------------------//
-	// initialize next time of each event //
-	//------------------------------------//
-
-	static double scat_a_time = 0.0;
-	static double scat_b_time = _beamBTimeOffset;
-
 	//----------------------------------------//
 	// find minimum time from possible events //
 	//----------------------------------------//
 
-	if (scat_a_time <= scat_b_time)
+	int min_idx = 0;
+	double min_time = g_scat_beam_time[0];
+	for (int i = 1; i < antenna->numberOfBeams; i++)
 	{
-		instrument_event->eventId =
-			InstrumentEvent::SCATTEROMETER_BEAM_A_MEASUREMENT;
-		instrument_event->time = scat_a_time;
-		scat_a_time = (double)(int)(instrument_event->time / _priPerBeam +
-			1.5) * _priPerBeam;
+		if (g_scat_beam_time[i] < min_time)
+		{
+			min_idx = i;
+			min_time = g_scat_beam_time[i];
+		}
 	}
-	else if (scat_b_time <= scat_a_time)
+
+	//-----------------------//
+	// set event information //
+	//-----------------------//
+
+	instrument_event->time = min_time;
+	instrument_event->eventId =
+		InstrumentEvent::SCATTEROMETER_MEASUREMENT;
+	instrument_event->beamIdx = min_idx;
+
+	//----------------------------//
+	// update next time for event //
+	//----------------------------//
+
+	if (min_idx == 0)
 	{
-		instrument_event->eventId =
-			InstrumentEvent::SCATTEROMETER_BEAM_B_MEASUREMENT;
-		instrument_event->time = scat_b_time;
-		scat_b_time = (double)((int)(instrument_event->time / _priPerBeam) +
-			1) * _priPerBeam + _beamBTimeOffset;
+		g_scat_beam_time[min_idx] = (double)(int)(min_time /
+			antenna->priPerBeam + 1.5) * antenna->priPerBeam;
 	}
 	else
-		return(0);
+	{
+		g_scat_beam_time[min_idx] = (double)(int)(min_time /
+			antenna->priPerBeam + 1.0) * antenna->priPerBeam +
+			antenna->beam[min_idx].timeOffset;
+	}
 
 	return(1);
 }
@@ -117,11 +129,10 @@ InstrumentSim::ScatSim(
 	//--------------------------------//
 
 	// desired beam boresight in antenna frame
-	Attitude att;
-	att.Set(0.0, beam_look_angle, beam_azimuth_angle, 1, 2, 3);
-	CoordinateSwitch ant_frame_to_beam_frame(att);
+	CoordinateSwitch ant_frame_to_beam_frame(beam->beamFrame);
 
 	// antenna frame in antenna pedestal frame
+	Attitude att;
 	att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
 	CoordinateSwitch ant_ped_to_ant_frame(att);
 

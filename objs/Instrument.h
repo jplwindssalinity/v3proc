@@ -33,8 +33,7 @@ public:
 	// enums //
 	//-------//
 
-    enum InstrumentEventE { NONE, UNKNOWN, SCATTEROMETER_BEAM_A_MEASUREMENT,
-		SCATTEROMETER_BEAM_B_MEASUREMENT };
+    enum InstrumentEventE { NONE, SCATTEROMETER_MEASUREMENT };
 
 	//--------------//
 	// construction //
@@ -47,8 +46,9 @@ public:
 	// variables //
 	//-----------//
  
-    InstrumentEventE	eventId;
     double      		time;
+    InstrumentEventE	eventId;
+	int					beamIdx;
 };
 
 

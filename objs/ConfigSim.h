@@ -42,9 +42,6 @@ int ConfigSpacecraftSim(SpacecraftSim* spacecraft_sim,
 
 int ConfigInstrument(Instrument* instrument, ConfigList* config_list);
 
-#define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
-#define BEAM_B_TIME_OFFSET_KEYWORD		"BEAM_B_TIME_OFFSET"
-
 int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 	ConfigList* config_list);
 
@@ -53,6 +50,7 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 //---------//
 
 #define NUMBER_OF_BEAMS_KEYWORD			"NUMBER_OF_BEAMS"
+#define PRI_PER_BEAM_KEYWORD			"PRI_PER_BEAM"
 #define NUMBER_OF_ENCODER_BITS_KEYWORD	"NUMBER_OF_ENCODER_BITS"
 
 int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
@@ -67,6 +65,8 @@ int ConfigAntennaSim(AntennaSim* antenna_sim, ConfigList* config_list);
 
 #define BEAM_x_LOOK_ANGLE_KEYWORD		"BEAM_x_LOOK_ANGLE"
 #define BEAM_x_AZIMUTH_ANGLE_KEYWORD	"BEAM_x_AZIMUTH_ANGLE"
+#define BEAM_x_POLARIZATION_KEYWORD		"BEAM_x_POLARIZATION"
+#define BEAM_x_TIME_OFFSET_KEYWORD		"BEAM_x_TIME_OFFSET"
 
 int ConfigBeam(Beam* beam, int beam_number, ConfigList* config_list);
 

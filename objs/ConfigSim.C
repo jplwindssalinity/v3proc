@@ -91,20 +91,6 @@ ConfigInstrumentSim(
 	InstrumentSim*	instrument_sim,
 	ConfigList*		config_list)
 {
-	//------------------------------------//
-	// configure the instrument simulator //
-	//------------------------------------//
-
-	double tmp_double;
-
-	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &tmp_double))
-		return(0);
-	instrument_sim->SetPriPerBeam(tmp_double);
-	
-	if (! config_list->GetDouble(BEAM_B_TIME_OFFSET_KEYWORD, &tmp_double))
-		return(0);
-	instrument_sim->SetBeamBTimeOffset(tmp_double);
-
 	//---------------------------------//
 	// configure the antenna simulator //
 	//---------------------------------//
@@ -132,6 +118,11 @@ ConfigAntenna(
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
 		return(0);
 	antenna->numberOfBeams = number_of_beams;
+
+	double pri_per_beam;
+	if (! config_list->GetDouble(PRI_PER_BEAM_KEYWORD, &pri_per_beam))
+		return(0);
+	antenna->priPerBeam = pri_per_beam;
 
 	int encoder_bits;
 	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
@@ -189,6 +180,7 @@ ConfigBeam(
 	char keyword[1024];
 	char number[8];
 	double tmp_double;
+	char tmp_char;
 
 	sprintf(number, "%d", beam_number);
 
@@ -201,6 +193,28 @@ ConfigBeam(
 	if (! config_list->GetDouble(keyword, &tmp_double))
 		return(0);
 	beam->azimuthAngle = tmp_double * dtr;
+
+	substitute_string(BEAM_x_POLARIZATION_KEYWORD, "x", number, keyword);
+	if (! config_list->GetChar(keyword, &tmp_char))
+		return(0);
+	switch (tmp_char)
+	{
+	case 'V':
+	case 'v':
+		beam->polarization = V_POL;
+		break;
+	case 'H':
+	case 'h':
+		beam->polarization = H_POL;
+		break;
+	default:
+		return(0);
+	}
+
+	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
+	if (! config_list->GetDouble(keyword, &tmp_double))
+		return(0);
+	beam->timeOffset = tmp_double;
 
 	// The beam frame is defined by the look angle and the azimuth angle.
 	beam->beamFrame.Set(0,beam->lookAngle,beam->azimuthAngle,3,2,1);
