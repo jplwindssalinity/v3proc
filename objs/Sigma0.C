@@ -170,8 +170,6 @@ sigma0_to_Psn(
 
 	double N0_echo = bK * instrument->systemTemperature *
 		instrument->echo_receiverGain / instrument->systemLoss;
-	double N0_noise = bK * instrument->systemTemperature *
-		instrument->noise_receiverGain / instrument->systemLoss;
 
 	//------------------------------------------------------------------------//
 	// Noise power within one slice referenced like the signal power.
@@ -179,26 +177,62 @@ sigma0_to_Psn(
 
 	double Pn_slice = N0_echo * meas->bandwidth;
 
+	//------------------------------------------------------------------------//
+	// Signal + Noise power within one slice referenced like the signal power.
+	//------------------------------------------------------------------------//
+
+	*Psn_slice = (float)(Ps_slice + Pn_slice);
+
 	if (instrument->useKpc == 0)
 	{
-		*Psn_slice = (float)(Ps_slice + Pn_slice);
 		return(1);
 	}
 
+	//------------------------------------------------------------------------//
+	// Estimate the variance of the slice signal + noise measurements
+	// using a new approximation for the slices which does not
+	// fall apart at low snr. (See Mike Spencer's memo from Nov 3 1997.)
+	//------------------------------------------------------------------------//
+
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double Tp = beam->pulseWidth;
+	double Tg = beam->receiverGateWidth;
+	double Bs = meas->bandwidth;
+	double num1 = Ps_slice + Tp*Bs*N0_echo;
+	double num2 = (Tg - Tp)*Bs*N0_echo;
+	float var_psn_slice = num1*num1 / (Bs * Tp) + num2*num2/(Bs*(Tg - Tp));
+
+	//------------------------------------------------------------------------//
+	// Fuzz the Psn value by adding a random number drawn from
+	// a gaussian distribution with the variance just computed and zero mean.
+	// This includes both thermal noise effects, and fading due to the
+	// random nature of the surface target.
+	// When the snr is low, the Kpc fuzzing can be large enough that
+	// the processing step will estimate a negative sigma0 from the
+	// fuzzed power.  This is normal, and will occur in real data also.
+	// The wind retrieval has to estimate the variance using the model
+	// sigma0 rather than the measured sigma0 to avoid problems computing
+	// Kpc for weighting purposes.
+	//------------------------------------------------------------------------//
+
+	Gaussian rv(var_psn_slice,0.0);
+	*Psn_slice += rv.GetNumber();
+
+	// Below is the old approach based on SNR
 	//------------------------------------------------------------------------//
 	// Estimate Kpc using the true value of snr (known here!) and the
 	// approximate equations in Mike Spencer's Kpc memos.
 	//------------------------------------------------------------------------//
 
-	Beam* beam = instrument->antenna.GetCurrentBeam();
+	//Beam* beam = instrument->antenna.GetCurrentBeam();
 
-	double snr = Ps_slice/Pn_slice;
-	double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
-	double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
-	double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
-	float Kpc2 = A + B/snr + C/snr/snr;
-	float var_psn_slice1 = A*Ps_slice*Ps_slice + B*Ps_slice*Pn_slice +
-		C*Pn_slice*Pn_slice;
+	//double snr = Ps_slice/Pn_slice;
+	//double A = 1.0 / (meas->bandwidth * beam->pulseWidth);
+	//double B = 2.0 / (meas->bandwidth * beam->receiverGateWidth);
+	//double C = B/2.0 * (1.0 + meas->bandwidth/instrument->noiseBandwidth);
+	//float Kpc2 = A + B/snr + C/snr/snr;
+	//float var_psn_slice1 = A*Ps_slice*Ps_slice + B*Ps_slice*Pn_slice +
+//		C*Pn_slice*Pn_slice;
 
 	//------------------------------------------------------------------------//
 	// Fuzz the Ps value by multiplying by a random number drawn from
@@ -219,25 +253,18 @@ sigma0_to_Psn(
 	// Kpc for weighting purposes.
 	//------------------------------------------------------------------------//
 
-	Gaussian rv(Kpc2,1.0);
-	Ps_slice *= rv.GetNumber();
+	//Gaussian rv(Kpc2,1.0);
+	//Ps_slice *= rv.GetNumber();
 
-	*Psn_slice = (float)(Ps_slice + Pn_slice);
-
-	double Tp = beam->pulseWidth;
-	double Tg = beam->receiverGateWidth;
-	double Bn = instrument->noiseBandwidth;
-	double Be = instrument->GetTotalSignalBandwidth();
-	double Bs = meas->bandwidth;
-	Ps_slice = Kfactor*X*sigma0;
-	double num1 = Ps_slice + Tp*Bs*N0_echo;
-	double num2 = (Tg - Tp)*Bs*N0_echo;
-	float var_psn_slice2 = num1*num1 / (Bs * Tp) + num2*num2/(Bs*(Tg - Tp));
 	// Assuming that rho = 1.0 for now.
-	float var_psn_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
+	//double Bn = instrument->noiseBandwidth;
+	//double Be = instrument->GetTotalSignalBandwidth();
+	//double N0_noise = bK * instrument->systemTemperature *
+	//	instrument->noise_receiverGain / instrument->systemLoss;
+	//float var_psn_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
 
 //	printf("%g %g %g %g %g\n",
-//		sigma0,Kpc2,var_psn_slice1,var_psn_slice2,var_psn_noise);
+//		sigma0,Kpc2,var_psn_slice1,var_psn_slice,var_psn_noise);
 
 	return(1);
 }
@@ -280,7 +307,6 @@ Pnoise(
 	//------------------------------------------------------------------------//
 
 	Beam* beam = instrument->antenna.GetCurrentBeam();
-	double Tp = beam->pulseWidth;
 	double Tg = beam->receiverGateWidth;
 	double Bn = instrument->noiseBandwidth;
 	double Be = instrument->GetTotalSignalBandwidth();
@@ -294,18 +320,12 @@ Pnoise(
 
 	*Psn_noise = N0_noise*Bn;
 
+	//------------------------------------------------------------------------//
 	// Add in the signal powers within the measurement spot.
-	// This procedure effectively puts all of the variance (ie., Kpc effect)
-	// into the slice signal powers.  The processing routine Pr_to_sigma0
-	// will obtain the exact constant noise power used by the simulator
-	// when processing simulated data.  The resulting slice signal powers
-	// will then have the correct variance (Kpc2).  Real data is different
-	// because some of the variance in sigma0 comes from uncertainty in
-	// estimating the noise in a slice.  The end result is the same.
-	// Sigma0 (and Ps) will have a variance equal to Kpc^2.
-	// To be strictly correct, the simulator should separate Kpc into
-	// a thermal noise contribution, and a fading contribution (which only
-	// affects the signal power), and apply them separately.
+	// These signal powers will include Kpc variance (if selected) that
+	// incorporates both signal variation due to fading, and thermal noise
+	// variation from the receiver front end.
+	//------------------------------------------------------------------------//
 
 	double Pn_slice,Ps_slice;
 	Meas* meas = spot->GetHead();
@@ -316,6 +336,32 @@ Pnoise(
 		*Psn_noise += Ps_slice*beta;
 		meas = spot->GetNext();
 	}
+
+	if (instrument->useKpc == 0)
+	{
+		return(1);
+	}
+
+	//------------------------------------------------------------------------//
+	// Compute the variance of the portion of the noise channel
+	// measurement which falls outside of the echo bandwidth.
+	//------------------------------------------------------------------------//
+
+	float var_noise = (Bn - Be)*Tg*N0_noise*N0_noise;
+
+	//------------------------------------------------------------------------//
+	// Fuzz the Psn_noise value by adding a random number drawn from
+	// a gaussian distribution with the variance just computed and zero mean.
+	// This adds a small amount of additional variance on top of the variance
+	// already present in the slice measurements.  The extra variance is due
+	// to random variation of the thermal noise power in the noise
+	// bandwidth outside of the echo bandwidth.
+	// Because the noise bandwidth is much larger than the echo bandwidth,
+	// this extra variance should be much smaller than the echo variance.
+	//------------------------------------------------------------------------//
+
+	Gaussian rv(var_noise,0.0);
+	*Psn_noise += rv.GetNumber();
 
 	return(1);
 }
