@@ -57,8 +57,8 @@ double	alongtrack_size)
 	_crosstrack_res = crosstrack_res;
 	_alongtrack_size = alongtrack_size;
 	_crosstrack_size = crosstrack_size;
-    _alongtrack_bins = (int) (_alongtrack_size / _alongtrack_res);
-    _crosstrack_bins = (int) (_crosstrack_size / _crosstrack_res);
+	_alongtrack_bins = (int) (_alongtrack_size / _alongtrack_res);
+	_crosstrack_bins = (int) (_crosstrack_size / _crosstrack_res);
 
 	// Put data into L17 object for use in header.
 	l17.header.crossTrackResolution = _crosstrack_res;
@@ -176,7 +176,6 @@ Grid::Add(
 
 	//printf("%d %d %f %f\n",cti,vati,ctd,atd);
 	return(1);
-
 }
 
 //
@@ -192,7 +191,6 @@ Grid::Add(
 int
 Grid::ShiftForward()
 {
-
 // Construct level 1.7 frames from each grid cell
 
 // Write out the earliest row of measurement lists.
@@ -203,7 +201,8 @@ for (int i=0; i < _crosstrack_bins; i++)
 	l17.frame.cti = i;
 	l17.frame.ati = _ati_offset;
 	if (l17.frame.measList.GetHead() != NULL)
-	{	// only write a L1.7 frame if it contains some measurements
+	{
+		// only write a L1.7 frame if it contains some measurements
 		l17.WriteDataRec();
 	}
 	_grid[i][_ati_start].FreeContents();	// prepare for new data
@@ -215,7 +214,6 @@ if (_ati_start >= _alongtrack_bins) _ati_start = 0;
 _ati_offset++;
 
 return(1);
-
 }
 
 //
@@ -227,12 +225,10 @@ return(1);
 int
 Grid::Flush()
 {
+	for (int i = 0; i < _alongtrack_bins; i++)
+	{
+		ShiftForward();
+	}
 
-for (int i=0; i < _alongtrack_bins; i++)
-{
-	ShiftForward();
-}
-
-return(1);
-
+	return(1);
 }

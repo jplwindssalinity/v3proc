@@ -207,26 +207,24 @@ ConfigAttitudeControlModel(SpacecraftSim* spacecraft_sim,
 		if(yaw==NULL) return(0);
 
 	}
-
-
-	else{
-           fprintf(stderr,"No such Attitude Control Model. \n");
-	   fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
-	   fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
-	   fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
-	   return(0);
+	else
+	{
+		fprintf(stderr,"No such Attitude Control Model. \n");
+		fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
+		fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
+		fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
+		return(0);
 	}
 
-        ACEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttCntlModel(ACEM);
-
+	ACEM=new AttDist(roll,pitch,yaw);
+	spacecraft_sim->SetAttCntlModel(ACEM);
 
 	return(1);
 }
 
-//----------------------------------//
-// ConfigAttitudeKnowledgeModel     //
-//----------------------------------//
+//------------------------------//
+// ConfigAttitudeKnowledgeModel //
+//------------------------------//
 
 int
 ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
@@ -237,45 +235,46 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 
 	char* string;
 
-        string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
-        if(! string)
+	string=config_list->Get(ATTITUDE_KNOWLEDGE_MODEL_KEYWORD);
+	if(! string)
 		return(0);
 
-	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-	   || strcmp(string,"none")==0) return(1);
-
-
-	else if(strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
+	if (strcmp(string,"NONE")==0 || strcmp(string,"None")==0
+		|| strcmp(string,"none")==0)
+	{
+		return(1);
+	}
+	else if (strcmp(string,"Gaussian")==0 || strcmp(string,"GAUSSIAN")==0
 	   || strcmp(string,"gaussian")==0)
 	{
 	        roll=ConfigGaussian(ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
 			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(roll==NULL) return(0);
+		if (roll==NULL) return(0);
 	        pitch=ConfigGaussian(PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
 			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(pitch==NULL) return(0);
+		if (pitch==NULL) return(0);
 	        yaw=ConfigGaussian(YAW_KNOWLEDGE_VARIANCE_KEYWORD,
 			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(yaw==NULL) return(0);
+		if (yaw==NULL) return(0);
 
 	}
 
 
-	else if(strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
+	else if (strcmp(string,"Uniform")==0 || strcmp(string,"UNIFORM")==0
 	   || strcmp(string,"uniform")==0)
 	{
 	        roll=ConfigUniform(ROLL_KNOWLEDGE_RADIUS_KEYWORD,
 			ROLL_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(roll==NULL) return(0);
+		if (roll==NULL) return(0);
 	        pitch=ConfigUniform(PITCH_KNOWLEDGE_RADIUS_KEYWORD,
 			PITCH_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(pitch==NULL) return(0);
+		if (pitch==NULL) return(0);
 	        yaw=ConfigUniform(YAW_KNOWLEDGE_RADIUS_KEYWORD,
 			YAW_KNOWLEDGE_MEAN_KEYWORD, config_list);
-		if(yaw==NULL) return(0);
+		if (yaw==NULL) return(0);
 	}
 
-	else if(strcmp(string,"Gaussian_Random_Velocity")==0
+	else if (strcmp(string,"Gaussian_Random_Velocity")==0
            || strcmp(string,"GAUSSIAN_RANDOM_VELOCITY")==0
 	   || strcmp(string,"gaussian_random_velocity")==0)
 	{
@@ -283,21 +282,21 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
 		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_VARIANCE_KEYWORD,
 			config_list);
-		if(roll==NULL) return(0);
+		if (roll==NULL) return(0);
 	        pitch=ConfigGaussianRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
 		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_VARIANCE_KEYWORD,
 			config_list);
-		if(pitch==NULL) return(0);
+		if (pitch==NULL) return(0);
 	        yaw=ConfigGaussianRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
 		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_VARIANCE_KEYWORD,
 			config_list);
-		if(yaw==NULL) return(0);
+		if (yaw==NULL) return(0);
 
 	}
 
-	else if(strcmp(string,"Uniform_Random_Velocity")==0
+	else if (strcmp(string,"Uniform_Random_Velocity")==0
            || strcmp(string,"UNIFORM_RANDOM_VELOCITY")==0
 	   || strcmp(string,"uniform_random_velocity")==0)
 	{
@@ -305,45 +304,42 @@ ConfigAttitudeKnowledgeModel(SpacecraftSim* spacecraft_sim,
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, ROLL_KNOWLEDGE_BOUND_KEYWORD,
 		ROLL_KNOWLEDGE_MEAN_KEYWORD, ROLL_KNOWLEDGE_RADIUS_KEYWORD,
 			config_list);
-		if(roll==NULL) return(0);
+		if (roll==NULL) return(0);
 	        pitch=ConfigUniformRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, PITCH_KNOWLEDGE_BOUND_KEYWORD,
 		PITCH_KNOWLEDGE_MEAN_KEYWORD, PITCH_KNOWLEDGE_RADIUS_KEYWORD,
 			config_list);
-		if(pitch==NULL) return(0);
+		if (pitch==NULL) return(0);
 	        yaw=ConfigUniformRandomVelocity(
 		KNOWLEDGE_SAMPLE_RATE_KEYWORD, YAW_KNOWLEDGE_BOUND_KEYWORD,
 		YAW_KNOWLEDGE_MEAN_KEYWORD, YAW_KNOWLEDGE_RADIUS_KEYWORD,
 			config_list);
-		if(yaw==NULL) return(0);
+		if (yaw==NULL) return(0);
 
 	}
-
-
-	else{
-           fprintf(stderr,"No such Attitude Control Model. \n");
-	   fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
-	   fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
-	   fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
-	   return(0);
+	else
+	{
+		fprintf(stderr,"No such Attitude Control Model. \n");
+		fprintf(stderr,"Implemented models are GAUSSIAN, UNIFORM, \n");
+		fprintf(stderr,"GAUSSIAN_RANDOM_VELOCITY,\n");
+		fprintf(stderr,"UNIFORM_RANDOM_VELOCITY, and NONE. \n");
+		return(0);
 	}
-
-        AKEM=new AttDist(roll,pitch,yaw);
-        spacecraft_sim->SetAttKnowModel(AKEM);
-
+	AKEM=new AttDist(roll,pitch,yaw);
+	spacecraft_sim->SetAttKnowModel(AKEM);
 
 	return(1);
 }
 
 
-//------------------------------------------//
-// Configuration Routines for Specific      //
-// Noise Distributions                      //
-//------------------------------------------//
+//-------------------------------------//
+// Configuration Routines for Specific //
+// Noise Distributions                 //
+//-------------------------------------//
 
-	//----------------------------------//
-	// ConfigGaussian                   //
-	//----------------------------------//
+//----------------//
+// ConfigGaussian //
+//----------------//
 
 Gaussian*
 ConfigGaussian(const char* variance_keyword,
@@ -1014,7 +1010,7 @@ ConfigGrid(
 	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
 		return(0);
 
-	grid->Allocate(ct_res, at_res, 2000.0, 2100.0);
+	grid->Allocate(ct_res, at_res, 2000.0, 3000.0);
 
 	return(1);
 }
