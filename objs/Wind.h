@@ -10,9 +10,9 @@ static const char rcs_id_wind_h[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include "Misc.h"
 #include "List.h"
 #include "LonLat.h"
-
 
 //======================================================================
 // CLASSES
@@ -261,11 +261,16 @@ public:
 	// evaluation //
 	//------------//
 
+	float	RmsSpdErr(WindField* truth);
+	float	RmsDirErr(WindField* truth);
+	float	Skill(WindField* truth);
+
 	int		RmsSpdErrVsCtd(WindField* truth, float* ctd_array,
 				float* rms_spd_err_array, int* count_array);
-
-	int		Skill(WindField* truth, int* skill_sum_array,
-				int* total_sum_array);
+	int		RmsDirErrVsCtd(WindField* truth, float* ctd_array,
+				float* rms_dir_err_array, int* count_array);
+	int		SkillVsCtd(WindField* truth, float* ctd_array,
+				float* skill_array, int* count_array);
 
 	//-----------//
 	// variables //
@@ -288,6 +293,8 @@ protected:
 
 	int		_crossTrackBins;
 	int		_alongTrackBins;
+	int		_crossTrackRes;
+	int		_alongTrackRes;
 	int		_validCells;
 };
 

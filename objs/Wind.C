@@ -1114,6 +1114,123 @@ WindSwath::MedianFilterPass(
 	return(flips);
 }
 
+//----------------------//
+// WindSwath::RmsSpdErr //
+//----------------------//
+
+float
+WindSwath::RmsSpdErr(
+	WindField*	truth)
+{
+	//----------------------------------//
+	// calculate the sum of the sqaures //
+	//----------------------------------//
+
+	double sum = 0.0;
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			double dif = wvc->selected->spd - true_wv.spd;
+			sum += (dif * dif);
+			count++;
+		}
+	}
+
+	//-------------------------------//
+	// take the mean and sqaure root //
+	//-------------------------------//
+
+	float rms_spd_err = (float)sqrt(sum/(double)count);
+
+	return(rms_spd_err);
+}
+
+//----------------------//
+// WindSwath::RmsDirErr //
+//----------------------//
+
+float
+WindSwath::RmsDirErr(
+	WindField*	truth)
+{
+	//----------------------------------//
+	// calculate the sum of the sqaures //
+	//----------------------------------//
+
+	double sum = 0.0;
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			double dif = ANGDIF(wvc->selected->dir, true_wv.dir);
+			sum += (dif * dif);
+			count++;
+		}
+	}
+
+	//-------------------------------//
+	// take the mean and sqaure root //
+	//-------------------------------//
+
+	float rms_dir_err = (float)sqrt(sum/(double)count);
+
+	return(rms_dir_err);
+}
+
+//------------------//
+// WindSwath::Skill //
+//------------------//
+
+float
+WindSwath::Skill(
+	WindField*	truth)
+{
+	int good_count = 0;
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
+			if (nearest == wvc->selected)
+				good_count++;
+
+			count++;
+		}
+	}
+
+	float skill = (float)good_count / (float)count;
+
+	return(skill);
+}
+
 //---------------------------//
 // WindSwath::RmsSpdErrVsCtd //
 //---------------------------//
@@ -1125,6 +1242,21 @@ WindSwath::RmsSpdErrVsCtd(
 	float*		rms_spd_err_array,
 	int*		count_array)
 {
+	//-----------------------//
+	// fill in the ctd array //
+	//-----------------------//
+
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
+			_crossTrackRes;
+		*(ctd_array + i) = ctd;
+	}
+
+	//----------------------------------//
+	// calculate the sum of the sqaures //
+	//----------------------------------//
+
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		for (int ati = 0; ati < _alongTrackBins; ati++)
@@ -1138,22 +1270,50 @@ WindSwath::RmsSpdErrVsCtd(
 				continue;
 
 			float spd_err = wvc->selected->spd - true_wv.spd;
-			float spd_err_2 = spd_err * spd_err;
+			*(rms_spd_err_array + cti) += (spd_err * spd_err);
+			(*(count_array + cti))++;
 		}
 	}
+
+	//-------------------------------//
+	// take the mean and sqaure root //
+	//-------------------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		*(rms_spd_err_array + cti) /= (float)*(count_array + cti);
+		*(rms_spd_err_array + cti) = sqrt(*(rms_spd_err_array + cti));
+	}
+
 	return(1);
 }
 
-//------------------//
-// WindSwath::Skill //
-//------------------//
+//---------------------------//
+// WindSwath::RmsDirErrVsCtd //
+//---------------------------//
 
 int
-WindSwath::Skill(
+WindSwath::RmsDirErrVsCtd(
 	WindField*	truth,
-	int*		skill_sum_array,
-	int*		total_sum_array)
+	float*		ctd_array,
+	float*		rms_dir_err_array,
+	int*		count_array)
 {
+	//-----------------------//
+	// fill in the ctd array //
+	//-----------------------//
+
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
+			_crossTrackRes;
+		*(ctd_array + i) = ctd;
+	}
+
+	//----------------------------------//
+	// calculate the sum of the sqaures //
+	//----------------------------------//
+
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
 		for (int ati = 0; ati < _alongTrackBins; ati++)
@@ -1166,18 +1326,76 @@ WindSwath::Skill(
 			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
 				continue;
 
-			WindVectorPlus* nearest =
-				wvc->GetNearestToDirection(true_wv.dir);
-
-			if (nearest == NULL)
-				continue;
-
-			if (nearest == wvc->selected)
-				(*(skill_sum_array + cti))++;
-
-			(*(total_sum_array + cti))++;
+			float dir_err = ANGDIF(wvc->selected->dir, true_wv.dir);
+			*(rms_dir_err_array + cti) += (dir_err * dir_err);
+			(*(count_array + cti))++;
 		}
 	}
+
+	//-------------------------------//
+	// take the mean and sqaure root //
+	//-------------------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		*(rms_dir_err_array + cti) /= (float)*(count_array + cti);
+		*(rms_dir_err_array + cti) = sqrt(*(rms_dir_err_array + cti));
+	}
+
+	return(1);
+}
+
+//-----------------------//
+// WindSwath::SkillVsCtd //
+//-----------------------//
+
+int
+WindSwath::SkillVsCtd(
+	WindField*	truth,
+	float*		ctd_array,
+	float*		skill_array,
+	int*		count_array)
+{
+	//-----------------------//
+	// fill in the ctd array //
+	//-----------------------//
+
+	for (int i = 0; i < _crossTrackBins; i++)
+	{
+		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
+			_crossTrackRes;
+		*(ctd_array + i) = ctd;
+	}
+
+	//---------------------//
+	// calculate the count //
+	//---------------------//
+
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		int good_count = 0;
+		int count = 0;
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector true_wv;
+			if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
+				continue;
+
+			WindVectorPlus* nearest = wvc->GetNearestToDirection(true_wv.dir);
+			if (nearest == wvc->selected)
+				good_count++;
+
+			count++;
+		}
+
+		*(count_array + cti) = count;
+		*(skill_array + cti) = (float)good_count / (float)count;
+	}
+
 	return(1);
 }
 
