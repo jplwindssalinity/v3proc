@@ -49,6 +49,7 @@ OBJS = \
 	L20.o \
 	L20Frame.o \
 	LonLat.o \
+	Malloc1.o \
 	Matrix3.o \
 	Meas.o \
 	Misc.o \
@@ -148,6 +149,7 @@ L20.o: L20.C L20.h GenericFile.h L20Frame.h Wind.h List.h LonLat.h EarthPosition
 L20Frame.o: L20Frame.C L20Frame.h Wind.h List.h LonLat.h EarthPosition.h Matrix3.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h Constants.h List.h EarthPosition.h Matrix3.h
+Malloc1.o: Malloc1.C Malloc1.h
 Matrix3.o: Matrix3.C Matrix3.h Constants.h
 Meas.o: Meas.C Meas.h Beam.h Constants.h LonLat.h GenericGeom.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
