@@ -67,6 +67,7 @@ static const char rcs_id[] =
 #include "Beam.h"
 #include "Array.h"
 #include "ConfigList.h"
+#include "QscatConfig.h"
 #include "ConfigSim.h"
 #include "Antenna.h"
 #include "Tracking.h"
@@ -95,8 +96,6 @@ template class TrackerBase<unsigned short>;
 #define POINTS	260000
 #define HPOL	0
 #define VPOL	1
-#define G0V_old		40.91
-#define G0H_old		39.27
 
 
 //--------//
@@ -216,8 +215,8 @@ main(
 	int Nym = 401;
 	double xm_spacing = 0.031 * dtr;
 	double ym_spacing = 0.05 * dtr;
-	int ixm_zero = 324;
-	int iym_zero = 201;
+	int ixm_zero = 323;
+	int iym_zero = 200;
 
 	//
 	// Setup the parameters and arrays needed for the beam patterns.
@@ -258,8 +257,8 @@ main(
     for (int i=0; i < Nx; i++)
     for (int j=0; j < Ny; j++)
     {
-		power_gainv[i][j] = pow(10.0, (v_gain[i*Ny + j]+G0V)/10.0);
-		power_gainh[i][j] = pow(10.0, (h_gain[i*Ny + j]+G0H)/10.0);
+		power_gainv[i][j] = pow(10.0, (v_gain[i*Ny + j])/10.0);
+		power_gainh[i][j] = pow(10.0, (h_gain[i*Ny + j])/10.0);
 	}
 
 	//
@@ -280,16 +279,16 @@ main(
 	// create an instrument and instrument simulator //
 	//-----------------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
+	Qscat qscat;
+	if (! ConfigQscat(&qscat, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
+		fprintf(stderr, "%s: error configuring QSCAT\n", command);
 		exit(1);
 	}
 
 	double look,azimuth;
 	float gain;
-	Beam beam = instrument.antenna.beam[0];
+	Beam beam = qscat.sas.antenna.beam[0];
 	beam.GetElectricalBoresight(&look,&azimuth);
 	printf("Electrical Boresight H: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);
@@ -311,7 +310,7 @@ main(
 //		printf("%g %g %g %g\n",azi,10.0*log(gain)/log(10.0),Em,Am);
 //	}
 
-	beam = instrument.antenna.beam[1];
+	beam = qscat.sas.antenna.beam[1];
 	beam.GetElectricalBoresight(&look,&azimuth);
 	printf("Electrical Boresight V: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);

@@ -66,10 +66,11 @@ static const char rcs_id[] =
 #include "Array.h"
 #include "ConfigList.h"
 #include "ConfigSim.h"
-#include "Instrument.h"
+#include "QscatConfig.h"
 #include "Antenna.h"
 #include "Tracking.h"
 #include "Tracking.C"
+#include "Qscat.h"
 
 //-----------//
 // TEMPLATES //
@@ -153,21 +154,24 @@ main(
 	}
 
 	//-----------------------------------------------//
-	// create an instrument and instrument simulator //
+	// create QSCAT                                  //
 	//-----------------------------------------------//
 
-	Instrument instrument;
-	if (! ConfigInstrument(&instrument, &config_list))
+	Qscat qscat;
+	if (! ConfigQscat(&qscat, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring instrument\n", command);
+		fprintf(stderr, "%s: error configuring QSCAT\n", command);
 		exit(1);
 	}
 
+	float G0H,G0V;
+	G0H=10*log10(qscat.sas.antenna.beam[0].peakGain);
+	G0V=10*log10(qscat.sas.antenna.beam[1].peakGain);
 	printf("Max Gain values (dB H,V) = %g %g\n",G0H,G0V);
 	double look,azimuth;
 	float gain;
 
-	Beam beam = instrument.antenna.beam[1];
+	Beam beam = qscat.sas.antenna.beam[1];
 	beam.GetElectricalBoresight(&look,&azimuth);
 	printf("Electrical Boresight V: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);
@@ -184,7 +188,7 @@ main(
 //		printf("%g %g\n",azi,10.0*log(gain)/log(10.0));
 //	}
 
-	beam = instrument.antenna.beam[0];
+	beam = qscat.sas.antenna.beam[0];
 	beam.GetElectricalBoresight(&look,&azimuth);
 	printf("Electrical Boresight H: (look,azi) %g %g\n",look*rtd,azimuth*rtd);
 	beam.GetPowerGain(look,azimuth,&gain);
