@@ -538,6 +538,8 @@ ConfigQscatSim(
             fprintf(stderr, "Cannot Initialize Land Map\n");
             return(0);
         }
+        config_list->GetFloat(LAND_SIGMA0_INNER_BEAM_KEYWORD,&(qscat_sim->landSigma0[0]));
+        config_list->GetFloat(LAND_SIGMA0_OUTER_BEAM_KEYWORD,&(qscat_sim->landSigma0[1]));
     }
     else
     {

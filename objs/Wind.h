@@ -433,6 +433,7 @@ public:
                float high_speed, int direction_count);
 
     int    SelectNearest(WindField* truth);
+    int    MatchSelected(WindSwath* source);
     int    GetProbabilityArray( WindField* truth, float*** prob,
                int** num_samples, float** widths, int true_dir_bins,
                int delta_dir_bins);

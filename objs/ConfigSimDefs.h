@@ -114,6 +114,8 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define LANDMAP_FILE_KEYWORD                           "LANDMAP_FILE"
 #define USE_LANDMAP_KEYWORD                            "USE_LANDMAP"
+#define LAND_SIGMA0_INNER_BEAM_KEYWORD   "LAND_SIGMA0_INNER_BEAM" // linear scale
+#define LAND_SIGMA0_OUTER_BEAM_KEYWORD   "LAND_SIGMA0_OUTER_BEAM" // linear scale
 
 //---------------//
 // InstrumentSim //

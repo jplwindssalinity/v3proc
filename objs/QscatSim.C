@@ -742,9 +742,9 @@ QscatSim::SetMeasurements(
             // Set sigma0 to average NSCAT land sigma0 for appropriate
             // incidence angle and polarization
             if (meas->measType == Meas::HH_MEAS_TYPE)
-                sigma0=0.085;
+                sigma0=landSigma0[0];
 			else
-                sigma0=0.1;
+                sigma0=landSigma0[1];
 			if (simVs1BCheckfile)
 			{
 				cf->sigma0[slice_i] = sigma0;

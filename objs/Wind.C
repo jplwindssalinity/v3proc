@@ -3698,6 +3698,37 @@ WindSwath::SelectNearest(
     return(count);
 }
 
+//--------------------------//
+// WindSwath::MatchSelected //
+//--------------------------//
+
+int
+WindSwath::MatchSelected(
+    WindSwath*    source)
+{
+    int count = 0;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            WindVectorPlus* wvp;
+            if (! source->swath[cti][ati]) wvc->selected=NULL;
+            else if (source->swath[cti][ati]->selected) wvc->selected=NULL;
+            else {
+              wvp=source->swath[cti][ati]->selected;
+              wvc->selected= wvc->GetNearestToDirection(wvp->dir);
+              count++;
+	    }
+        }
+    }
+
+    return(count);
+}
+
 //----------------------//
 // WindSwath::RmsSpdErr //
 //----------------------//

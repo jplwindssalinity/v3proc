@@ -111,6 +111,7 @@ public:
     XTable                   xTable;
     float                    dopplerBias;
     double                   correlatedKpm;
+    float                    landSigma0[2];
 
     char*  simVs1BCheckfile;  // output data for cross check with 1B
 
