@@ -491,6 +491,7 @@ InstrumentSim::SetL00Science(
 	MeasSpot*		meas_spot,
 	Instrument*		instrument)
 {
+        int total_sliceNumber=_spotNumber*l00.frame.slicesPerSpot;
 	L00Frame* l00_frame = &(l00.frame);
 	Antenna* antenna = &(instrument->antenna);
 
@@ -512,9 +513,10 @@ InstrumentSim::SetL00Science(
 		// update the level 0.0 frame //
 		//----------------------------//
 
-		l00_frame->science[_spotNumber] = meas->value;
-		_spotNumber++;
+		l00_frame->science[total_sliceNumber] = meas->value;
+		total_sliceNumber++;
 	}
+	_spotNumber++;
 
 	return(1);
 }
@@ -584,3 +586,9 @@ InstrumentSim::ScatSim(
 
 	return(1);
 }
+
+
+
+
+
+
