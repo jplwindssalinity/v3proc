@@ -15,36 +15,27 @@ static const char rcs_id_bufferedlist_c[] =
 
 template <class T>
 BufferedList<T>::BufferedList()
+:	_nodeFile(NULL), _maxNodes(0), _numNodes(0)
 {
-	_nodefile = NULL;
-	_max_nodes = 0;
-	_num_nodes = 0;
-	_head = NULL;
-	_tail = NULL;
-	_current = NULL;
 	return;
 }
 
 template <class T>
 BufferedList<T>::BufferedList(FILE *nodefile, long max_nodes)
+:	_nodeFile(nodefile), _maxNodes(max_nodes), _numNodes(0)
 {
-	_nodefile = nodefile;
-	_max_nodes = max_nodes;
-	_num_nodes = 0;
-	_head = NULL;
-	_tail = NULL;
-	_current = NULL;
 	return;
 }
 
 template <class T>
 BufferedList<T>::~BufferedList()
 {
-	if (_head != NULL)
-	{
-		fprintf(stderr, "BufferedList destroyed without being deallocated!\n");
-	}
-	return;
+    T* data;
+    GetHead();
+    while ((data=RemoveCurrent()) != NULL)
+        delete data;
+
+    return;
 }
 
 //------------------------//
@@ -59,40 +50,44 @@ BufferedList<T>::~BufferedList()
 template <class T>
 T*
 BufferedList<T>::ReadNext()
-
 {
+	// make sure there is a current node
+	if (! _current)
+		_current = _head;
 
-if (_current)
-{
 	if (_current->next)
-	{	// There is a next node in memory, so just point to it.
-		_current = _current->next;
-		return (GetCurrent());
+	{
+		// There is a next node in memory, so just return it.
+		return(GetNext());
 	}
 	else
-	{	// At the tail, so try to read in another node.
+	{
+		// At the tail, so try to read in another node.
 		T* new_data = new T;		// make a new data space
-		if (new_data->Read(_nodefile))
-		{	// successful read, so Append the new data.
+		if (new_data->Read(_nodeFile))
+		{
+			// successful read, so Append the new data.
 			Append(new_data);
-			_num_nodes++;
-			if (_num_nodes > _max_nodes)
-			{	// flush the oldest node (ie., the head).
-				_current = _head;
+			_numNodes++;
+			if (_numNodes > _maxNodes)
+			{
+				// flush the oldest node (ie., the head).
+				GotoHead();
 				T* old_data = RemoveCurrent();
 				delete old_data;
-				_num_nodes--;
-				_current = _tail;
+				_numNodes--;
+
+				// go back to the tail
+				GotoTail();
 				return(new_data);
 			}
 		}
 		else
-		{	// unsuccessful read, so get rid of the newly allocated data space
-		delete new_data;
-		return(NULL);
+		{
+			// unsuccessful read, so get rid of the newly allocated data space
+			delete new_data;
+			return(NULL);
 		}
 	}
-
-}
-return(NULL);
+	return(NULL);
 }

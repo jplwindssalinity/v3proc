@@ -92,8 +92,8 @@ public:
 	// moving //
 	//--------//
 
-	void	GotoHead() { _current = _head };
-	void	GotoTail() { _current = _tail };
+	void	GotoHead() { _current = _head; };
+	void	GotoTail() { _current = _tail; };
 
 	//-------------//
 	// information //
