@@ -82,7 +82,9 @@ InstrumentSim::DetermineNextEvent(
 int
 InstrumentSim::SimulateEvent(
 	Instrument*		instrument,
-	Event*			event)
+	Event*			event,
+	WindField*		wf,
+	GMF*			gmf)
 {
 	instrument->time = event->time;
 	switch(event->eventId)
@@ -111,15 +113,42 @@ InstrumentSim::SimulateEvent(
 		}
 
 		//--------------------------------//
-		// calculate the beam orientation //
+		// generate the coordinate switch //
 		//--------------------------------//
 
+		Spacecraft* sc = &(instrument->spacecraft);
 		Antenna* antenna = &(instrument->antenna);
+
+		Attitude att;
+		att.Set(0.0, 0.0, antenna->azimuthAngle, 1, 2, 3);
+		CoordinateSwitch ant_ped_to_ant_frame(att);
+
+		att.Set(0.0, 0.0, 0.0, 1, 2, 3);
+		CoordinateSwitch sc_body_to_ant_ped(att);
+
+		double sc_roll = 0.0;
+		double sc_pitch = 0.0;
+		double sc_yaw = 0.0;
+		att.Set(sc_roll, sc_pitch, sc_yaw, 2, 1, 3);
+		CoordinateSwitch sc_geovel_to_sc_body(att);
+
+		Vector3 sc_xv, sc_yv, sc_zv;
+		velocity_frame(sc->gcVector, sc->velocityVector, &sc_xv, &sc_yv,
+			&sc_zv);
+		CoordinateSwitch sc_geocent_to_geovel(sc_xv, sc_yv, sc_zv);
+
+		CoordinateSwitch total;
+
+		//------------------------------------------------//
+		// calculate the beam vector in the antenna frame //
+		//------------------------------------------------//
+
 		Beam* beam = &(antenna->beam[beam_idx]);
 
+		double total_beam_azimuth = antenna->azimuthAngle + beam->azimuthAngle;
 		Vector3 beam_orientation;
-		beam_orientation.SphericalSet(1.0, pi/2.0 - beam->lookAngle,
-			antenna->azimuthAngle + beam->azimuthAngle);
+		beam_orientation.SphericalSet(1.0, beam->lookAngle,
+			total_beam_azimuth);
 
 		//--------------------------------------//
 		// calculate the earth intercept vector //
@@ -136,6 +165,16 @@ InstrumentSim::SimulateEvent(
 		//------------------------------------//
 
 		Vector3 alt_lat_lon = rspot.get_alt_lat_lon(EarthPosition::GEODETIC);
+		double lat, lon;
+		alt_lat_lon.Get(0, &lat);
+		alt_lat_lon.Get(1, &lon);
+		WindVector* wv = wf->NearestWindVector(lon, lat);
+		Measurement meas;
+		meas.pol = beam->polarization;
+		meas.incidenceAngle = 0.0;		// how to calculate?
+		meas.scAzimuth = total_beam_azimuth;
+
+		gmf;
 
 		break;
 	}

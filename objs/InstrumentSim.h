@@ -14,6 +14,8 @@ static const char rcs_id_instrumentsim_h[] =
 #include "AntennaSim.h"
 #include "SpacecraftSim.h"
 #include "L0.h"
+#include "WindField.h"
+#include "GMF.h"
 
 //======================================================================
 // CLASSES
@@ -55,7 +57,8 @@ public:
 	//--------------------//
 
 	int		DetermineNextEvent(Event* event);
-	int		SimulateEvent(Instrument* instrument, Event* event);
+	int		SimulateEvent(Instrument* instrument, Event* event, WindField* wf,
+				GMF* gmf);
 	int		GenerateL0(Instrument* instrument, L0* l0);
 
 	//-----------//
