@@ -3894,6 +3894,10 @@ WindSwath::MedianFilterPass(
                             (float)selected_count;
                         new_selected[cti][ati] = wvp;
                     }
+                    else if (vector_dif_sum < second_vector_dif_sum)
+                    {
+                        second_vector_dif_sum = vector_dif_sum;
+                    }
                 }   // done with ambiguities
 
                 // a few propagation checks
