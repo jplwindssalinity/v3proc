@@ -1652,13 +1652,17 @@ GMF::Calculate_Init_Wind_Solutions(
                             * (diff_objective_1 / diff_objective_2)
                             * wind_speed_intv_init;
 
+#ifdef GSFIXED
 			// Re-evaluate objective function to avoid interpolation bumps
 			// that introduce artificial peaks.
-//			_objective_buffer[k] = _ObjectiveFunction(meas_list,
-//										_speed_buffer[k],dtr*angle,kp);
+			_objective_buffer[k] = _ObjectiveFunction(meas_list,
+										_speed_buffer[k],dtr*angle,kp);
+#else
             _objective_buffer [k] = center_objective
                                 - (diff_objective_1*diff_objective_1
                                   /diff_objective_2) / 8.0;
+#endif
+
 		}
 	}	// end of angular k loop
 
