@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef GRID_H
 #define GRID_H
@@ -10,8 +10,8 @@ static const char rcs_id_grid_h[] =
 	"@(#) $Id$";
 
 #include "Array.h"
-#include "L15.h"
-#include "L17.h"
+#include "L1B.h"
+#include "L2A.h"
 #include "Meas.h"
 
 
@@ -63,8 +63,8 @@ public:
 	// variables //
 	//-----------//
 
-	L15			l15;		// handles input from a level 1.5 data file.
-	L17			l17;		// handles output to a level 1.7 data file.
+	L1B			l1b;		// handles input from a level 1B data file.
+	L2A			l2a;		// handles output to a level 2A data file.
 	Ephemeris	ephemeris;	// defines the grid location
 
 protected:

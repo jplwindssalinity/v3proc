@@ -1,17 +1,17 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l20_to_vctr
+//		l2b_to_vctr
 //
 // SYNOPSIS
-//		l20_to_vctr <l20_file> <Vctr_base>
+//		l2b_to_vctr <l2b_file> <Vctr_base>
 //
 // DESCRIPTION
-//		Converts a l20 file into multiple Vctr (vector)
+//		Converts a Level 2B file into multiple Vctr (vector)
 //		files for plotting in IDL.  Output filenames are created by
 //		adding the rank number (0 for selected) to the base name.
 //
@@ -20,12 +20,12 @@
 //
 // OPERANDS
 //		The following operands are supported:
-//		<l20_file>		The input l20 wind field
+//		<l2b_file>		The input Level 2B wind field
 //		<vctr_base>		The output vctr file basename
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l20_to_vctr 96interp.bin output.vctr
+//			% l2b_to_vctr 96interp.bin output.vctr
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -57,7 +57,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include "Misc.h"
 #include "Wind.h"
-#include "L20.h"
+#include "L2B.h"
 #include "List.h"
 #include "List.C"
 
@@ -92,7 +92,7 @@ template class List<WindVectorPlus>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l20_file>", "<Vctr_base>", 0};
+const char* usage_array[] = { "<l2b_file>", "<Vctr_base>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -112,30 +112,30 @@ main(
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
-	const char* l20_file = argv[clidx++];
+	const char* l2b_file = argv[clidx++];
 	const char* vctr_base = argv[clidx++];
 
 	//------------------//
-	// read in l20 file //
+	// read in l2b file //
 	//------------------//
 
-	L20 l20;
-	if (! l20.OpenForReading(l20_file))
+	L2B l2b;
+	if (! l2b.OpenForReading(l2b_file))
 	{
-		fprintf(stderr, "%s: error opening L20 file %s\n", command, l20_file);
+		fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
 		exit(1);
 	}
-	if (! l20.ReadHeader())
+	if (! l2b.ReadHeader())
 	{
-		fprintf(stderr, "%s: error reading L20 header from file %s\n",
-			command, l20_file);
+		fprintf(stderr, "%s: error reading L2B header from file %s\n",
+			command, l2b_file);
 		exit(1);
 	}
 
-	if (! l20.ReadDataRec())
+	if (! l2b.ReadDataRec())
 	{
-		fprintf(stderr, "%s: error reading L20 data record from file  %s\n",
-			command, l20_file);
+		fprintf(stderr, "%s: error reading L2B data record from file  %s\n",
+			command, l2b_file);
 		exit(1);
 	}
 
@@ -147,7 +147,7 @@ main(
 	{
 		char filename[1024];
 		sprintf(filename, "%s.%d", vctr_base, i);
-		if (! l20.WriteVctr(filename, i))
+		if (! l2b.WriteVctr(filename, i))
 		{
 			fprintf(stderr, "%s: error writing Vctr file %s\n", command,
 				filename);

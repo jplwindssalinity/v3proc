@@ -1,36 +1,36 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l20_c[] =
+static const char rcs_id_l2b_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
-#include "L20.h"
+#include "L2B.h"
 
 
 //=====//
-// L20 //
+// L2B //
 //=====//
 
-L20::L20()
+L2B::L2B()
 :	medianFilterWindowSize(0), medianFilterMaxPasses(0)
 {
 	return;
 }
 
-L20::~L20()
+L2B::~L2B()
 {
 	return;
 }
 
 //----------------//
-// L20::WriteVctr //
+// L2B::WriteVctr //
 //----------------//
 
 int
-L20::WriteVctr(
+L2B::WriteVctr(
 	const char*		filename,
 	const int		rank)
 {

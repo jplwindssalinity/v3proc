@@ -81,9 +81,9 @@ public:
 	// input/output //
 	//--------------//
 
-	int		WriteL20(FILE* fp);
+	int		WriteL2B(FILE* fp);
 	int		WriteAscii(FILE* fp);
-	int		ReadL20(FILE* fp);
+	int		ReadL2B(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -116,8 +116,8 @@ public:
 	// input/output //
 	//--------------//
 
-	int		WriteL20(FILE* fp);
-	int		ReadL20(FILE* fp);
+	int		WriteL2B(FILE* fp);
+	int		ReadL2B(FILE* fp);
 	int		WriteVctr(FILE* fp, const int rank);		// 0 = selected
 	int		WriteAscii(FILE* fp);
 
@@ -255,9 +255,9 @@ public:
 	// input/output //
 	//--------------//
 
-	int		WriteL20(FILE* fp);
-	int		ReadL20(FILE* fp);
-	int		ReadL20(const char* filename);
+	int		WriteL2B(FILE* fp);
+	int		ReadL2B(FILE* fp);
+	int		ReadL2B(const char* filename);
 	int		WriteVctr(const char* filename, const int rank);
 
 	//-----------//

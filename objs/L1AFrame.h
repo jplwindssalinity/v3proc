@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L10FRAME_H
-#define L10FRAME_H
+#ifndef L1AFRAME_H
+#define L1AFRAME_H
 
-static const char rcs_id_l10frame_h[] =
+static const char rcs_id_l1aframe_h[] =
 	"@(#) $Id$";
 
 #include "Attitude.h"
@@ -14,21 +14,21 @@ static const char rcs_id_l10frame_h[] =
 
 //======================================================================
 // CLASSES
-//		L10Frame
+//		L1AFrame
 //======================================================================
 
-#define L10_FRAME_HEADER_SIZE	69
+#define L1A_FRAME_HEADER_SIZE	69
 
 //======================================================================
 // CLASS
-//		L10Frame
+//		L1AFrame
 //
 // DESCRIPTION
-//		The L10Frame object contains the contents of a Level 0.0 frame
+//		The L1AFrame object contains the contents of a Level 1A frame
 //		as a structure.
 //======================================================================
 
-class L10Frame
+class L1AFrame
 {
 public:
 
@@ -36,8 +36,8 @@ public:
 	// construction //
 	//--------------//
 
-	L10Frame();
-	~L10Frame();
+	L1AFrame();
+	~L1AFrame();
 
 	int		Allocate(int number_of_beams, int antenna_cycles_per_frame,
 				int slices_per_spot);

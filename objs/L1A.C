@@ -1,75 +1,75 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l10_c[] =
+static const char rcs_id_l1a_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
 #include <malloc.h>
-#include "L10.h"
+#include "L1A.h"
 
 //=====//
-// L10 //
+// L1A //
 //=====//
 
-L10::L10()
+L1A::L1A()
 :	buffer(NULL), bufferSize(0), _status(OK)
 {
 	return;
 }
 
-L10::~L10()
+L1A::~L1A()
 {
 	DeallocateBuffer();
 	return;
 }
 
 //---------------------//
-// L10::AllocateBuffer //
+// L1A::AllocateBuffer //
 //---------------------//
- 
+
 int
-L10::AllocateBuffer(
+L1A::AllocateBuffer(
 	int		number_of_beams,
 	int		antenna_cycles_per_frame,
 	int		slices_per_spot)
 {
-    // antenna position and sigma-0
-    int power_bytes = sizeof(float) * number_of_beams *
-        antenna_cycles_per_frame * slices_per_spot;
+	// antenna position and sigma-0
+	int power_bytes = sizeof(float) * number_of_beams *
+			antenna_cycles_per_frame * slices_per_spot;
 	int noise_bytes = sizeof(float) * number_of_beams *
 		antenna_cycles_per_frame;
-    int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
-    int buffer_size = L10_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
+	int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
+	int buffer_size = L1A_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
 		noise_bytes;
-    buffer = (char *)malloc(buffer_size);
-    if (buffer == NULL)
-        return(0);
-    bufferSize = buffer_size;
-    return(1);
+	buffer = (char *)malloc(buffer_size);
+	if (buffer == NULL)
+		return(0);
+	bufferSize = buffer_size;
+	return(1);
 }
- 
+
 //-----------------------//
-// L10::DeallocateBuffer //
+// L1A::DeallocateBuffer //
 //-----------------------//
- 
+
 int
-L10::DeallocateBuffer()
+L1A::DeallocateBuffer()
 {
-    if (buffer)
-        free(buffer);
-    bufferSize = 0;
-    return(1);
+	if (buffer)
+		free(buffer);
+	bufferSize = 0;
+	return(1);
 }
 
 //------------------//
-// L10::ReadDataRec //
+// L1A::ReadDataRec //
 //------------------//
 
 int
-L10::ReadDataRec()
+L1A::ReadDataRec()
 {
 	if (! Read(buffer, bufferSize))
 	{
@@ -89,11 +89,11 @@ L10::ReadDataRec()
 }
 
 //-------------------//
-// L10::WriteDataRec //
+// L1A::WriteDataRec //
 //-------------------//
 
 int
-L10::WriteDataRec()
+L1A::WriteDataRec()
 {
 	return(Write(buffer, bufferSize));
 }

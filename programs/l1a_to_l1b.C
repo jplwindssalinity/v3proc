@@ -1,18 +1,18 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l10_to_l15
+//		l1a_to_l1b
 //
 // SYNOPSIS
-//		l10_to_l15 <sim_config_file>
+//		l1a_to_l1b <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 1.0 to
-//		Level 1.5 data.  This program converts the received power
+//		Simulates the SeaWinds 1b ground processing of Level 1A to
+//		Level 1B data.  This program converts the received power
 //		into sigma-0.
 //
 // OPTIONS
@@ -26,7 +26,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l10_to_l15 sws1b.cfg
+//			% l1a_to_l1b sws1b.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -64,10 +64,10 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "Ephemeris.h"
 #include "ConfigList.h"
-#include "L10.h"
+#include "L1A.h"
 #include "ConfigSim.h"
-#include "L15.h"
-#include "L10ToL15.h"
+#include "L1B.h"
+#include "L1AToL1B.h"
 
 //-----------//
 // TEMPLATES //
@@ -145,17 +145,17 @@ main(
 	// create and configure level products //
 	//-------------------------------------//
 
-	L10 l10;
-	if (! ConfigL10(&l10, &config_list))
+	L1A l1a;
+	if (! ConfigL1A(&l1a, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 1.0 Product\n", command);
+		fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
 		exit(1);
 	}
 
-	L15 l15;
-	if (! ConfigL15(&l15, &config_list))
+	L1B l1b;
+	if (! ConfigL1B(&l1b, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 1.5 Product\n", command);
+		fprintf(stderr, "%s: error configuring Level 1B Product\n", command);
 		exit(1);
 	}
 
@@ -196,8 +196,8 @@ main(
 	// open files //
 	//------------//
 
-	l10.OpenForReading();
-	l15.OpenForWriting();
+	l1a.OpenForReading();
+	l1b.OpenForWriting();
 
 
 	//-----------------//
@@ -205,11 +205,11 @@ main(
 	//-----------------//
 
 	int data_record_number=1;
-	L10ToL15 l10_to_l15;
-	if (! ConfigL10ToL15(&l10_to_l15, &config_list))
+	L1AToL1B l1a_to_l1b;
+	if (! ConfigL1AToL1B(&l1a_to_l1b, &config_list))
 	{
 		fprintf(stderr,
-			"%s: error configuring Level 1.0 to Level 1.5 converter.\n",
+			"%s: error configuring Level 1A to Level 1B converter.\n",
 			command);
 		exit(1);
 	}
@@ -219,22 +219,22 @@ main(
 	{
 
 
-		//------------------------------//
-		// read a level 1.0 data record //
-		//------------------------------//
+		//-----------------------------//
+		// read a level 1A data record //
+		//-----------------------------//
 
-		if (! l10.ReadDataRec())
+		if (! l1a.ReadDataRec())
 		{
-			switch (l10.GetStatus())
+			switch (l1a.GetStatus())
 			{
-			case L10::OK:		// end of file
+			case L1A::OK:		// end of file
 				break;
-			case L10::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1.0 data\n", command);
+			case L1A::ERROR_READING_FRAME:
+				fprintf(stderr, "%s: error reading Level 1A data\n", command);
 				exit(1);
 				break;
-			case L10::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1.0 data\n",
+			case L1A::ERROR_UNKNOWN:
+				fprintf(stderr, "%s: unknown error reading Level 1A data\n",
 					command);
 				exit(1);
 				break;
@@ -250,7 +250,7 @@ main(
 		//=======================//
                 //===========================================================//
 		// This part may be omitted if the prev_eqx_time is included //
-                // in the l10 file                                           //
+                // in the l1a file                                           //
 		//===========================================================//
 	        if(top_of_file==1){
 		  top_of_file=0;
@@ -268,10 +268,10 @@ main(
 		  //---------------------------//
 		  // set the previous Eqx time //
 		  //---------------------------//
-                  l10.frame.Unpack(l10.buffer);
+                  l1a.frame.Unpack(l1a.buffer);
 		  
 		  double eqx_time =
-		    spacecraft_sim.FindPrevArgOfLatTime(l10.frame.time,
+		    spacecraft_sim.FindPrevArgOfLatTime(l1a.frame.time,
 				      EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
 		    instrument.SetEqxTime(eqx_time);
 		}
@@ -280,28 +280,28 @@ main(
 		// convert //
 		//---------//
 
-		if (! l10_to_l15.Convert(&l10, &spacecraft, &instrument,
-			&ephemeris, &l15))
+		if (! l1a_to_l1b.Convert(&l1a, &spacecraft, &instrument,
+			&ephemeris, &l1b))
 		{
 		       fprintf(stderr, "%s: error converting data record %d\n",
 				command, data_record_number);
 		}
 
-		//-------------------------------//
-		// write a level 1.5 data record //
-		//-------------------------------//
+		//------------------------------//
+		// write a level 1B data record //
+		//------------------------------//
 
-		else if (! l15.WriteDataRec())
+		else if (! l1b.WriteDataRec())
 		{
-			fprintf(stderr, "%s: error writing Level 1.5 data\n", command);
+			fprintf(stderr, "%s: error writing Level 1B data\n", command);
 			exit(1);
 		}
 
 		data_record_number++;
 	} while (1);
 
-	l10.Close();
-	l15.Close();
+	l1a.Close();
+	l1b.Close();
 
 	return (0);
 }

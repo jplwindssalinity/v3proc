@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l17tol20_c[] =
+static const char rcs_id_l2atol2b_c[] =
 	"@(#) $Id$";
 
-#include "L17ToL20.h"
+#include "L2AToL2B.h"
 #include "Constants.h"
 #include "Misc.h"
 
@@ -14,32 +14,32 @@ static const char rcs_id_l17tol20_c[] =
 #define INCIDENCE_DIVERSITY		(5.0*dtr)
 
 //==========//
-// L17ToL20 //
+// L2AToL2B //
 //==========//
 
-L17ToL20::L17ToL20()
+L2AToL2B::L2AToL2B()
 {
 	return;
 }
 
-L17ToL20::~L17ToL20()
+L2AToL2B::~L2AToL2B()
 {
 	return;
 }
 
 //---------------------------//
-// L17ToL20::ConvertAndWrite //
+// L2AToL2B::ConvertAndWrite //
 //---------------------------//
 // returns 0 on failure for bad reason (memory, etc.)
 // returns 1 on success
 // returns higher numbers for other reasons
 
 int
-L17ToL20::ConvertAndWrite(
-	L17*	l17,
+L2AToL2B::ConvertAndWrite(
+	L2A*	l2a,
 	GMF*	gmf,
 	Kp*		kp,
-	L20*	l20)
+	L2B*	l2b)
 {
 	static int last_rev_number = 0;
 
@@ -47,7 +47,7 @@ L17ToL20::ConvertAndWrite(
 	// check number of measurements //
 	//------------------------------//
 
-	MeasList* meas_list = &(l17->frame.measList);
+	MeasList* meas_list = &(l2a->frame.measList);
 	if (meas_list->NodeCount() < 2)
 	{
 		return(2);
@@ -103,54 +103,54 @@ L17ToL20::ConvertAndWrite(
 	// determine grid indicies //
 	//-------------------------//
 
-	int rev = (int)l17->frame.rev;
-	int cti = (int)l17->frame.cti;
-	int ati = (int)l17->frame.ati;
+	int rev = (int)l2a->frame.rev;
+	int cti = (int)l2a->frame.cti;
+	int ati = (int)l2a->frame.ati;
 
 	//------------------------------//
 	// determine if rev is complete //
 	//------------------------------//
 
 	if (rev != last_rev_number && last_rev_number)
-		Flush(l20);	// process and write
+		Flush(l2b);	// process and write
 
 	//-------------------//
 	// add to wind swath //
 	//-------------------//
 
-	if (! l20->frame.swath.Add(cti, ati, wvc))
+	if (! l2b->frame.swath.Add(cti, ati, wvc))
 		return(0);
 
 	return(1);
 }
 
 //-----------------//
-// L17ToL20::Flush //
+// L2AToL2B::Flush //
 //-----------------//
 
 int
-L17ToL20::Flush(
-	L20*	l20)
+L2AToL2B::Flush(
+	L2B*	l2b)
 {
 	// median filter
-	l20->frame.swath.InitWithRank(1);
-	l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
-		l20->medianFilterMaxPasses);
-	if (! l20->WriteHeader())
+	l2b->frame.swath.InitWithRank(1);
+	l2b->frame.swath.MedianFilter(l2b->medianFilterWindowSize,
+		l2b->medianFilterMaxPasses);
+	if (! l2b->WriteHeader())
 		return(0);
-	if (! l20->WriteDataRec())
+	if (! l2b->WriteDataRec())
 		return(0);
-	l20->frame.swath.DeleteWVCs();
+	l2b->frame.swath.DeleteWVCs();
 	return(1);
 }
 
 //-------------------------------//
-// L17ToL20::WriteSolutionCurves //
+// L2AToL2B::WriteSolutionCurves //
 //-------------------------------//
 
 int
-L17ToL20::WriteSolutionCurves(
-	L17*			l17,
+L2AToL2B::WriteSolutionCurves(
+	L2A*			l2a,
 	GMF*			gmf,
 	Kp*				kp,
 	const char*		output_file)
@@ -167,7 +167,7 @@ L17ToL20::WriteSolutionCurves(
 	// write solution curves //
 	//-----------------------//
 
-	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), kp);
+	gmf->WriteSolutionCurves(ofp, &(l2a->frame.measList), kp);
 
 	//-------------------//
 	// close output file //

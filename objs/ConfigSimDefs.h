@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef CONFIGSIMDEFS_H
 #define CONFIGSIMDEFS_H
@@ -37,13 +37,13 @@ static const char rcs_id_configsimdefs_h[] =
 #define PITCH_CONTROL_MEAN_KEYWORD		"PITCH_CONTROL_MEAN"
 #define YAW_CONTROL_MEAN_KEYWORD		"YAW_CONTROL_MEAN"
 
-#define ROLL_CONTROL_STD_KEYWORD	        "ROLL_CONTROL_STD"
-#define PITCH_CONTROL_STD_KEYWORD	        "PITCH_CONTROL_STD"
-#define YAW_CONTROL_STD_KEYWORD	                "YAW_CONTROL_STD"
+#define ROLL_CONTROL_STD_KEYWORD		"ROLL_CONTROL_STD"
+#define PITCH_CONTROL_STD_KEYWORD		"PITCH_CONTROL_STD"
+#define YAW_CONTROL_STD_KEYWORD			"YAW_CONTROL_STD"
 
-#define ROLL_CONTROL_CORRLENGTH_KEYWORD         "ROLL_CONTROL_CORRLENGTH"
-#define PITCH_CONTROL_CORRLENGTH_KEYWORD        "PITCH_CONTROL_CORRLENGTH"
-#define YAW_CONTROL_CORRLENGTH_KEYWORD          "YAW_CONTROL_CORRLENGTH"
+#define ROLL_CONTROL_CORRLENGTH_KEYWORD		"ROLL_CONTROL_CORRLENGTH"
+#define PITCH_CONTROL_CORRLENGTH_KEYWORD	"PITCH_CONTROL_CORRLENGTH"
+#define YAW_CONTROL_CORRLENGTH_KEYWORD		"YAW_CONTROL_CORRLENGTH"
 
 //--------------------------------//
 // Attitude Knowledge Error Model //
@@ -56,12 +56,12 @@ static const char rcs_id_configsimdefs_h[] =
 #define YAW_KNOWLEDGE_MEAN_KEYWORD		"YAW_KNOWLEDGE_MEAN"
 
 #define ROLL_KNOWLEDGE_STD_KEYWORD		"ROLL_KNOWLEDGE_STD"
-#define PITCH_KNOWLEDGE_STD_KEYWORD	        "PITCH_KNOWLEDGE_STD"
+#define PITCH_KNOWLEDGE_STD_KEYWORD		"PITCH_KNOWLEDGE_STD"
 #define YAW_KNOWLEDGE_STD_KEYWORD		"YAW_KNOWLEDGE_STD"
 
-#define ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD         "ROLL_KNOWLEDGE_CORRLENGTH"
-#define PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD        "PITCH_KNOWLEDGE_CORRLENGTH"
-#define YAW_KNOWLEDGE_CORRLENGTH_KEYWORD          "YAW_KNOWLEDGE_CORRLENGTH"
+#define ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD	"ROLL_KNOWLEDGE_CORRLENGTH"
+#define PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD	"PITCH_KNOWLEDGE_CORRLENGTH"
+#define YAW_KNOWLEDGE_CORRLENGTH_KEYWORD	"YAW_KNOWLEDGE_CORRLENGTH"
 
 //------------//
 // Instrument //
@@ -83,9 +83,9 @@ static const char rcs_id_configsimdefs_h[] =
 #define SYSTEM_LOSS_KEYWORD				"SYSTEM_LOSS"
 #define USE_KPC_KEYWORD					"USE_KPC"
 #define USE_KPM_KEYWORD					"USE_KPM"
-#define PTGR_NOISE_KP_KEYWORD		        "PTGR_NOISE_KP"
+#define PTGR_NOISE_KP_KEYWORD			"PTGR_NOISE_KP"
 #define PTGR_NOISE_BIAS_KEYWORD			"PTGR_BIAS"
-#define PTGR_NOISE_CORRLENGTH_KEYWORD		"PTGR_NOISE_CORRLENGTH"
+#define PTGR_NOISE_CORRLENGTH_KEYWORD	"PTGR_NOISE_CORRLENGTH"
 #define UNIFORM_SIGMA_FIELD_KEYWORD		"UNIFORM_SIGMA_FIELD"
 #define OUTPUT_X_TO_STDOUT_KEYWORD		"OUTPUT_X_TO_STDOUT"
 #define USE_KFACTOR_KEYWORD				"USE_KFACTOR"
@@ -142,8 +142,8 @@ static const char rcs_id_configsimdefs_h[] =
 //--------//
 
 #define XTABLE_FILENAME_KEYWORD				"XTABLE_FILENAME"
-#define XTABLE_NUM_AZIMUTHS_KEYWORD                     "XTABLE_NUM_AZIMUTHS"
-#define XTABLE_NUM_ORBIT_STEPS_KEYWORD                 "XTABLE_NUM_ORBIT_STEPS"
+#define XTABLE_NUM_AZIMUTHS_KEYWORD			"XTABLE_NUM_AZIMUTHS"
+#define XTABLE_NUM_ORBIT_STEPS_KEYWORD		"XTABLE_NUM_ORBIT_STEPS"
 //-----//
 // L00 //
 //-----//
@@ -152,34 +152,34 @@ static const char rcs_id_configsimdefs_h[] =
 #define L00_ANTENNA_CYCLES_PER_FRAME_KEYWORD	"L00_ANTENNA_CYCLES_PER_FRAME"
 
 //-----//
-// L10 //
+// L1A //
 //-----//
 
-#define L10_FILE_KEYWORD					"L10_FILE"
+#define L1A_FILE_KEYWORD					"L1A_FILE"
 
 //-----//
-// L15 //
+// L1B //
 //-----//
 
-#define L15_FILE_KEYWORD					"L15_FILE"
+#define L1B_FILE_KEYWORD					"L1B_FILE"
 
 //----------//
-// L10ToL15 //
+// L1AToL1B //
 //----------//
 
 #define OUTPUT_SIGMA0_TO_STDOUT_KEYWORD		"OUTPUT_SIGMA0_TO_STDOUT"
 
 //-----//
-// L17 //
+// L2A //
 //-----//
 
-#define L17_FILE_KEYWORD					"L17_FILE"
+#define L2A_FILE_KEYWORD					"L2A_FILE"
 
 //-----//
-// L20 //
+// L2B //
 //-----//
 
-#define L20_FILE_KEYWORD					"L20_FILE"
+#define L2B_FILE_KEYWORD					"L2B_FILE"
 #define MEDIAN_FILTER_WINDOW_SIZE_KEYWORD	"MEDIAN_FILTER_WINDOW_SIZE"
 #define MEDIAN_FILTER_MAX_PASSES_KEYWORD	"MEDIAN_FILTER_MAX_PASSES"
 
@@ -258,6 +258,3 @@ static const char rcs_id_configsimdefs_h[] =
 #define PTGR_SEED 944
 
 #endif
-
-
-

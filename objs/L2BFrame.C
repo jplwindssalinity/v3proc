@@ -1,36 +1,36 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l20frame_c[] =
+static const char rcs_id_l2bframe_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
-#include "L20Frame.h"
+#include "L2BFrame.h"
 
 
 //===========//
-// L20Header //
+// L2BHeader //
 //===========//
 
-L20Header::L20Header()
+L2BHeader::L2BHeader()
 :	crossTrackResolution(0.0), alongTrackResolution(0.0), zeroIndex(0)
 {
 	return;
 }
 
-L20Header::~L20Header()
+L2BHeader::~L2BHeader()
 {
 	return;
 }
 
 //-----------------//
-// L20Header::Read //
+// L2BHeader::Read //
 //-----------------//
- 
+
 int
-L20Header::Read(
+L2BHeader::Read(
 	FILE*	fp)
 {
 	if (fread(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
@@ -43,11 +43,11 @@ L20Header::Read(
 }
 
 //------------------//
-// L20Header::Write //
+// L2BHeader::Write //
 //------------------//
- 
+
 int
-L20Header::Write(
+L2BHeader::Write(
 	FILE*	fp)
 {
 	if (fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
@@ -60,15 +60,15 @@ L20Header::Write(
 }
 
 //==========//
-// L20Frame //
+// L2BFrame //
 //==========//
 
-L20Frame::L20Frame()
+L2BFrame::L2BFrame()
 {
 	return;
 }
 
-L20Frame::~L20Frame()
+L2BFrame::~L2BFrame()
 {
 	return;
 }

@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l15tol17_c[] =
+static const char rcs_id_l1btol2a_c[] =
 	"@(#) $Id$";
 
-#include "L15ToL17.h"
+#include "L1BToL2A.h"
 #include "Antenna.h"
 #include "Ephemeris.h"
 #include "InstrumentGeom.h"
@@ -14,31 +14,31 @@ static const char rcs_id_l15tol17_c[] =
 
 
 //==========//
-// L15ToL17 //
+// L1BToL2A //
 //==========//
 
-L15ToL17::L15ToL17()
+L1BToL2A::L1BToL2A()
 {
 	return;
 }
 
-L15ToL17::~L15ToL17()
+L1BToL2A::~L1BToL2A()
 {
 	return;
 }
 
 //-----------------//
-// L15ToL17::Group //
+// L1BToL2A::Group //
 //-----------------//
 
 int
-L15ToL17::Group(
+L1BToL2A::Group(
 	Grid*		grid,
 	int			do_composite)
 {
 	static long spot_id = 0;
 
-	MeasSpotList* meas_spot_list = &(grid->l15.frame.spotList);
+	MeasSpotList* meas_spot_list = &(grid->l1b.frame.spotList);
 
 	//----------------------//
 	// for each MeasSpot... //

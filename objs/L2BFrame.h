@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//===============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//===============================================================//
 
-#ifndef L20FRAME_H
-#define L20FRAME_H
+#ifndef L2BFRAME_H
+#define L2BFRAME_H
 
-static const char rcs_id_l20frame_h[] =
+static const char rcs_id_l2bframe_h[] =
 	"@(#) $Id$";
 
 #include "Wind.h"
@@ -14,20 +14,20 @@ static const char rcs_id_l20frame_h[] =
 
 //======================================================================
 // CLASSES
-//		L20Header
-//		L20Frame
+//		L2BHeader
+//		L2BFrame
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L20Header
+//		L2BHeader
 //
 // DESCRIPTION
-//		The L20Header object contains the contents of a Level 1.5
+//		The L2BHeader object contains the contents of a Level 2B
 //		header.
 //======================================================================
 
-class L20Header
+class L2BHeader
 {
 public:
 
@@ -35,8 +35,8 @@ public:
 	// construction //
 	//--------------//
 
-	L20Header();
-	~L20Header();
+	L2BHeader();
+	~L2BHeader();
 
 	//--------------//
 	// input/output //
@@ -56,14 +56,14 @@ public:
 
 //======================================================================
 // CLASS
-//		L20Frame
+//		L2BFrame
 //
 // DESCRIPTION
-//		The L20Frame object contains the contents of a Level 1.5 frame
+//		The L2BFrame object contains the contents of a Level 2B frame
 //		as a structure.
 //======================================================================
 
-class L20Frame
+class L2BFrame
 {
 public:
 
@@ -71,8 +71,8 @@ public:
 	// construction //
 	//--------------//
 
-	L20Frame();
-	~L20Frame();
+	L2BFrame();
+	~L2BFrame();
 
 	//-------------------//
 	// data manipulation //

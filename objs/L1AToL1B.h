@@ -1,16 +1,16 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L10TOL15_H
-#define L10TOL15_H
+#ifndef L1ATOL1B_H
+#define L1ATOL1B_H
 
-static const char rcs_id_l10tol15_h[] =
+static const char rcs_id_l1atol1b_h[] =
 	"@(#) $Id$";
 
-#include "L10.h"
-#include "L15.h"
+#include "L1A.h"
+#include "L1B.h"
 #include "Spacecraft.h"
 #include "Instrument.h"
 #include "Ephemeris.h"
@@ -19,20 +19,20 @@ static const char rcs_id_l10tol15_h[] =
 
 //======================================================================
 // CLASSES
-//		L10ToL15
+//		L1AToL1B
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L10ToL15
+//		L1AToL1B
 //
 // DESCRIPTION
-//		The L10ToL15 object is used to convert between Level 0.0 data
-//		and Level 1.0 data.  It performs all of the engineering unit
+//		The L1AToL1B object is used to convert between Level 1A data
+//		and Level 1B data.  It performs all of the engineering unit
 //		conversions.
 //======================================================================
 
-class L10ToL15
+class L1AToL1B
 {
 public:
 
@@ -40,28 +40,27 @@ public:
 	// construction //
 	//--------------//
 
-	L10ToL15();
-	~L10ToL15();
+	L1AToL1B();
+	~L1AToL1B();
 
 	//------------//
 	// conversion //
 	//------------//
 
-	int		Convert(L10* l10, Spacecraft* spacecraft, Instrument* instrument, Ephemeris* ephemeris,
-				L15* l15);
+	int		Convert(L1A* l1a, Spacecraft* spacecraft, Instrument* instrument,
+				Ephemeris* ephemeris, L1B* l1b);
 
-	XTable          kfactorTable;
-        int useKfactor;
-        // If this is nonzero the kfactor table is read in and used.
-        int outputSigma0ToStdout;
-        // Output sigma0 values to stdout? 1/0=YES/NO (format readable by xmgr)
-        
+	//-----------//
+	// variables //
+	//-----------//
+
+	XTable	kfactorTable;
+
+	// If this is nonzero the kfactor table is read in and used.
+	int		useKfactor;
+
+	// Output sigma0 values to stdout? 1/0=YES/NO (format readable by xmgr)
+	int		outputSigma0ToStdout;
 };
 
 #endif
-
-
-
-
-
-

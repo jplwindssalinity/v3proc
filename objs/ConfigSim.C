@@ -14,11 +14,11 @@ static const char rcs_id_configsim_c[] =
 #include "XTable.h"
 #include "Misc.h"
 #include "L00.h"
-#include "L10.h"
-#include "L10ToL15.h"
-#include "L15.h"
-#include "L17.h"
-#include "L20.h"
+#include "L1A.h"
+#include "L1AToL1B.h"
+#include "L1B.h"
+#include "L2A.h"
+#include "L2B.h"
 #include "Constants.h"
 #include "Distributions.h"
 #include "Tracking.h"
@@ -75,14 +75,21 @@ ConfigSpacecraftSim(
 	//------------------------------------//
 
 
-        //------------------------------------//
-        // configure the attitude models      //
-        //------------------------------------//
-        if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
-					 config_list))  return(0);
+	//-------------------------------//
+	// configure the attitude models //
+	//-------------------------------//
 
-        if (! ConfigAttitudeKnowledgeModel(&(spacecraft_sim->attKnowDist),
-					 config_list))  return(0);
+	if (! ConfigAttitudeControlModel(&(spacecraft_sim->attCntlDist),
+			config_list))
+	{
+		return(0);
+	}
+
+	if (! ConfigAttitudeKnowledgeModel(&(spacecraft_sim->attKnowDist),
+			config_list))
+	{
+		return(0);
+	}
 	double epoch;
 	if (! config_list->GetDouble(ORBIT_EPOCH_KEYWORD, &epoch))
 		return(0);
@@ -145,11 +152,11 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		return(0);
 
 	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0){
-	  // By default mean, variance, and correlation length   //
-	  //                                    are set to zero //
-
-	  return(1);
+		|| strcmp(string,"none")==0)
+	{
+		// By default mean, variance, and correlation length
+		// are set to zero
+		return(1);
 	}
 
 	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
@@ -157,46 +164,55 @@ ConfigAttitudeControlModel(AttDist* attcntl,
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
-	        float std, mean, corrlength;
+		float std, mean, corrlength;
 
 		if(! config_list->GetFloat(ROLL_CONTROL_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(ROLL_CONTROL_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(ROLL_CONTROL_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+				&corrlength))
+		{
+			return(0);
+		}
 
 		attcntl->roll.SetVariance(std*std*dtr*dtr);
 		attcntl->roll.SetMean(mean*dtr);
 		attcntl->roll.SetCorrelationLength(corrlength);
 		attcntl->roll.SetSeed(ROLL_CONTROL_SEED);
-                attcntl->roll.Initialize();
+		attcntl->roll.Initialize();
 
 		if(! config_list->GetFloat(PITCH_CONTROL_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(PITCH_CONTROL_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(PITCH_CONTROL_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+				&corrlength))
+		{
+			return(0);
+		}
 
 		attcntl->pitch.SetVariance(std*std*dtr*dtr);
 		attcntl->pitch.SetMean(mean*dtr);
 		attcntl->pitch.SetCorrelationLength(corrlength);
 		attcntl->pitch.SetSeed(PITCH_CONTROL_SEED);
-                attcntl->pitch.Initialize();
+		attcntl->pitch.Initialize();
 
 		if(! config_list->GetFloat(YAW_CONTROL_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(YAW_CONTROL_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(YAW_CONTROL_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+			&corrlength))
+		{
+			return(0);
+		}
 
 		attcntl->yaw.SetVariance(std*std*dtr*dtr);
 		attcntl->yaw.SetMean(mean*dtr);
 		attcntl->yaw.SetCorrelationLength(corrlength);
 		attcntl->yaw.SetSeed(YAW_CONTROL_SEED);
-                attcntl->yaw.Initialize();
+		attcntl->yaw.Initialize();
 	}
 	else
 	{
@@ -226,11 +242,11 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		return(0);
 
 	if(strcmp(string,"NONE")==0 || strcmp(string,"None")==0
-		|| strcmp(string,"none")==0){
-	  // By default mean, variance, and correlation length     //
-	  //                                       are set to zero //
-
-	  return(1);
+		|| strcmp(string,"none")==0)
+	{
+		// By default mean, variance, and correlation length
+		// are set to zero
+		return(1);
 	}
 
 	else if(strcmp(string,"Time_Correlated_Gaussian")==0 ||
@@ -238,46 +254,55 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 		|| strcmp(string,"time_correlated_gaussian")==0)
 	{
 
-	        float std, mean, corrlength;
+		float std, mean, corrlength;
 
 		if(! config_list->GetFloat(ROLL_KNOWLEDGE_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(ROLL_KNOWLEDGE_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(ROLL_KNOWLEDGE_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+			&corrlength))
+		{
+			return(0);
+		}
 
 		attknow->roll.SetVariance(std*std*dtr*dtr);
 		attknow->roll.SetMean(mean*dtr);
 		attknow->roll.SetCorrelationLength(corrlength);
 		attknow->roll.SetSeed(ROLL_KNOWLEDGE_SEED);
-                attknow->roll.Initialize();
+		attknow->roll.Initialize();
 
 		if(! config_list->GetFloat(PITCH_KNOWLEDGE_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(PITCH_KNOWLEDGE_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(PITCH_KNOWLEDGE_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+				&corrlength))
+		{
+			return(0);
+		}
 
 		attknow->pitch.SetVariance(std*std*dtr*dtr);
 		attknow->pitch.SetMean(mean*dtr);
 		attknow->pitch.SetCorrelationLength(corrlength);
 		attknow->pitch.SetSeed(PITCH_KNOWLEDGE_SEED);
-                attknow->pitch.Initialize();
+		attknow->pitch.Initialize();
 
 		if(! config_list->GetFloat(YAW_KNOWLEDGE_STD_KEYWORD, &std))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(YAW_KNOWLEDGE_MEAN_KEYWORD, &mean))
-		  return(0);
+			return(0);
 		if(! config_list->GetFloat(YAW_KNOWLEDGE_CORRLENGTH_KEYWORD,
-					   &corrlength)) return(0);
+				&corrlength))
+		{
+			return(0);
+		}
 
 		attknow->yaw.SetVariance(std*std*dtr*dtr);
 		attknow->yaw.SetMean(mean*dtr);
 		attknow->yaw.SetCorrelationLength(corrlength);
 		attknow->yaw.SetSeed(YAW_KNOWLEDGE_SEED);
-                attknow->yaw.Initialize();
+		attknow->yaw.Initialize();
 	}
 	else
 	{
@@ -292,10 +317,10 @@ ConfigAttitudeKnowledgeModel(AttDist* attknow,
 }
 
 /****************************************
-//-------------------------------------//
-// Configuration Routines for Specific //
-// Noise Distributions                 //
-//-------------------------------------//
+//--------------------------------------//
+// Configuration Routines for Specific	//
+// Noise Distributions					//
+//--------------------------------------//
 
 //----------------//
 // ConfigGaussian //
@@ -308,93 +333,94 @@ ConfigGaussian(const char* variance_keyword,
 {
 	double variance, mean;
 
-	if(! config_list->GetDouble(variance_keyword,
-	   &variance)) return(NULL);
-        variance*=dtr*dtr;
-	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(NULL);
+	if(! config_list->GetDouble(variance_keyword, &variance))
+		return(NULL);
+	variance*=dtr*dtr;
+	if(! config_list->GetDouble(mean_keyword, &mean))
+		return(NULL);
 	mean*=dtr;
 	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
 	return(new_g);
-
 }
 
-	//----------------------------------//
-	// ConfigUniform                    //
-	//----------------------------------//
+	//---------------//
+	// ConfigUniform //
+	//---------------//
 
 Uniform*
-ConfigUniform(const char* radius_keyword,
-	const char* mean_keyword,
-	ConfigList* config_list)
+ConfigUniform(
+	const char*		radius_keyword,
+	const char*		mean_keyword,
+	ConfigList*		config_list)
 {
 	double radius, mean;
 
-	if(! config_list->GetDouble(radius_keyword,
-	  &radius)) return(NULL);
+	if(! config_list->GetDouble(radius_keyword, &radius))
+		return(NULL);
 	radius*=dtr;
-	if(! config_list->GetDouble(mean_keyword,
-	  &mean)) return(NULL);
-        mean*=dtr;
+	if(! config_list->GetDouble(mean_keyword, &mean))
+		return(NULL);
+	mean*=dtr;
 	Uniform* new_u = new Uniform((float)radius,float(mean));
 	return(new_u);
-
 }
 
-	//--------------------------------------------//
-	// ConfigGaussianRandomVelocity               //
-	//--------------------------------------------//
+	//------------------------------//
+	// ConfigGaussianRandomVelocity //
+	//------------------------------//
 
 RandomVelocity*
-ConfigGaussianRandomVelocity(const char* samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword,
-	const char* variance_keyword,
-	ConfigList* config_list)
+ConfigGaussianRandomVelocity(
+	const char*		samprate_keyword,
+	const char*		bound_keyword,
+	const char*		mean_keyword,
+	const char*		variance_keyword,
+	ConfigList*		config_list)
 {
 	double variance, mean, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
-	if(! config_list->GetDouble(samprate_keyword,
-	   &sample_rate)) return(NULL);
+	if(! config_list->GetDouble(samprate_keyword, &sample_rate))
+		return(NULL);
 
-
-	if(! config_list->GetDouble(variance_keyword,
-	   &variance)) return(NULL);
-        variance*=dtr*dtr;
-	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(NULL);
+	if(! config_list->GetDouble(variance_keyword, &variance))
+		return(NULL);
+	variance*=dtr*dtr;
+	if(! config_list->GetDouble(mean_keyword, &mean))
+		return(NULL);
 	mean*=dtr;
-	if(! config_list->GetDouble(bound_keyword,
-	   &bound)) return(NULL);
-        bound*=dtr;
+	if(! config_list->GetDouble(bound_keyword, &bound))
+		return(NULL);
+	bound*=dtr;
 	velocity = new Gaussian((float)variance,0.0);
 	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
 	return(new_rv);
 }
 
 
-	//------------------------------------------//
-	// ConfigUniformRandomVelocity              //
-	//------------------------------------------//
+	//-----------------------------//
+	// ConfigUniformRandomVelocity //
+	//-----------------------------//
 
 RandomVelocity*
-ConfigUniformRandomVelocity(const char* samprate_keyword,
-	const char* bound_keyword, const char* mean_keyword,
-	const char* radius_keyword,
-	ConfigList* config_list)
+ConfigUniformRandomVelocity(
+	const char*		samprate_keyword,
+	const char*		bound_keyword,
+	const char*		mean_keyword,
+	const char*		radius_keyword,
+	ConfigList*		config_list)
 {
 	double radius, mean, sample_rate, bound;
 	GenericTimelessDist *velocity;
 
-	if(! config_list->GetDouble(samprate_keyword,
-	   &sample_rate)) return(NULL);
+	if(! config_list->GetDouble(samprate_keyword, &sample_rate))
+		return(NULL);
 
-
-	if(! config_list->GetDouble(radius_keyword,
-	   &radius)) return(NULL);
+	if(! config_list->GetDouble(radius_keyword, &radius))
+		return(NULL);
 	radius*=dtr;
-	if(! config_list->GetDouble(mean_keyword,
-	   &mean)) return(NULL);
+	if(! config_list->GetDouble(mean_keyword, &mean))
+		return(NULL);
 	mean*=dtr;
 	if(! config_list->GetDouble(bound_keyword, &bound))
 		return(NULL);
@@ -613,18 +639,19 @@ ConfigInstrumentSim(
 	}
 
 	if (! config_list->GetFloat(PTGR_NOISE_CORRLENGTH_KEYWORD,
-				    &ptgr_corrlength))
+		&ptgr_corrlength))
 	{
-		fprintf(stderr,"Could not find PtGr noise correlation length in config file\n");
+		fprintf(stderr,
+			"Could not find PtGr noise correlation length in config file\n");
 		return(0);
 	}
 	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
 	instrument_sim->ptgrNoise.SetVariance(kp_ptgr*kp_ptgr);
 	ptgr_bias=pow(10,0.1*ptgr_bias)-1.0;
 	instrument_sim->ptgrNoise.SetMean(ptgr_bias);
-        instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
-        instrument_sim->ptgrNoise.SetSeed(PTGR_SEED);
-        instrument_sim->ptgrNoise.Initialize();
+	instrument_sim->ptgrNoise.SetCorrelationLength(ptgr_corrlength);
+	instrument_sim->ptgrNoise.SetSeed(PTGR_SEED);
+	instrument_sim->ptgrNoise.Initialize();
 
 	int uniform_sigma_field;
 
@@ -681,7 +708,7 @@ ConfigInstrumentSim(
 	}
 
 	/*** To create an X table SYSTEM_TEMPERATURE MUST be zero so that **/
-        /*** Pn_slice will be zero and will NOT corrupt the X table      **/
+	/*** Pn_slice will be zero and will NOT corrupt the X table **/
 	if(create_xtable && system_temperature!=0.0)
 	{
 		fprintf(stderr,
@@ -713,28 +740,31 @@ ConfigInstrumentSimAccurate(
 	InstrumentSimAccurate*	instrument_sim,
 	ConfigList*				config_list)
 {
-        if (! ConfigInstrumentSim(instrument_sim, config_list))
-	        return(0);
+	if (! ConfigInstrumentSim(instrument_sim, config_list))
+		return(0);
 
 	int num_look_steps;
 	if (! config_list->GetInt(NUM_LOOK_STEPS_KEYWORD, &num_look_steps))
 		return(0);
 	instrument_sim->numLookStepsPerSlice=num_look_steps;
 
-        float azimuth_integration_range;
+	float azimuth_integration_range;
 	if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
-				  &azimuth_integration_range))
+			&azimuth_integration_range))
+	{
 		return(0);
+	}
 	instrument_sim->azimuthIntegrationRange=azimuth_integration_range*dtr;
 
-        float azimuth_step_size;
+	float azimuth_step_size;
 	if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
-				  &azimuth_step_size))
+			&azimuth_step_size))
+	{
 		return(0);
+	}
 	instrument_sim->azimuthStepSize=azimuth_step_size*dtr;
 
-
-        return(1);
+	return(1);
 }
 
 //------------------//
@@ -1034,11 +1064,10 @@ ConfigBeam(
 
 int
 ConfigXTable(
-	     XTable*      xTable,
-	     ConfigList*  config_list,
-	     char* read_write)
+	XTable*			xTable,
+	ConfigList*		config_list,
+	char*			read_write)
 {
-
   /**** Find out if XTable is to be configured READ or WRITE ***/
   int read=0;
   if(strcmp(read_write,"r") == 0)  read=1;
@@ -1136,8 +1165,9 @@ ConfigXTable(
 
   }
 
-  return(1);
+	return(1);
 }
+
 //-----------//
 // ConfigL00 //
 //-----------//
@@ -1197,22 +1227,22 @@ ConfigL00(
 }
 
 //-----------//
-// ConfigL10 //
+// ConfigL1A //
 //-----------//
 
 int
-ConfigL10(
-	L10*			l10,
+ConfigL1A(
+	L1A*			l1a,
 	ConfigList*		config_list)
 {
 	//---------------------------//
-	// configure the l10 product //
+	// configure the l1a product //
 	//---------------------------//
 
-	char* l10_filename = config_list->Get(L10_FILE_KEYWORD);
-	if (l10_filename == NULL)
+	char* l1a_filename = config_list->Get(L1A_FILE_KEYWORD);
+	if (l1a_filename == NULL)
 		return(0);
-	l10->SetFilename(l10_filename);
+	l1a->SetFilename(l1a_filename);
 
 	int number_of_beams;
 	if (! config_list->GetInt(NUMBER_OF_BEAMS_KEYWORD, &number_of_beams))
@@ -1235,17 +1265,17 @@ ConfigL10(
 
 	int total_slices = s_count + 2 * g_count;
 
-	if (! l10->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
+	if (! l1a->AllocateBuffer(number_of_beams, antenna_cycles_per_frame,
 		total_slices))
 	{
 		return(0);
 	}
 
 	//-------------------------//
-	// configure the l10 frame //
+	// configure the l1a frame //
 	//-------------------------//
 
-	if (! l10->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
+	if (! l1a->frame.Allocate(number_of_beams, antenna_cycles_per_frame,
 		total_slices))
 	{
 		return(0);
@@ -1255,33 +1285,33 @@ ConfigL10(
 }
 
 //-----------//
-// ConfigL15 //
+// ConfigL1B //
 //-----------//
 
 int
-ConfigL15(
-	L15*			l15,
+ConfigL1B(
+	L1B*			l1b,
 	ConfigList*		config_list)
 {
 	//---------------------------//
-	// configure the l15 product //
+	// configure the l1b product //
 	//---------------------------//
 
-	char* l15_filename = config_list->Get(L15_FILE_KEYWORD);
-	if (l15_filename == NULL)
+	char* l1b_filename = config_list->Get(L1B_FILE_KEYWORD);
+	if (l1b_filename == NULL)
 		return(0);
-	l15->SetFilename(l15_filename);
+	l1b->SetFilename(l1b_filename);
 
 	return(1);
 }
 
 //----------------//
-// ConfigL10ToL15 //
+// ConfigL1AToL1B //
 //----------------//
 
 int
-ConfigL10ToL15(
-	L10ToL15*			l10tol15,
+ConfigL1AToL1B(
+	L1AToL1B*		l1atol1b,
 	ConfigList*		config_list)
 {
 	config_list->WarnForMissingKeywords();
@@ -1291,16 +1321,16 @@ ConfigL10ToL15(
 	{
 		output_sigma0_to_stdout=0; // default value
 	}
-	l10tol15->outputSigma0ToStdout=output_sigma0_to_stdout;
+	l1atol1b->outputSigma0ToStdout=output_sigma0_to_stdout;
 
 	int use_kfactor;
 	if (! config_list->GetInt(USE_KFACTOR_KEYWORD, &use_kfactor))
 		use_kfactor=0; // default value
-	l10tol15->useKfactor=use_kfactor;
+	l1atol1b->useKfactor=use_kfactor;
 
 	if(use_kfactor)
 	{
-		if(!ConfigXTable(&(l10tol15->kfactorTable),config_list,"r"))
+		if(!ConfigXTable(&(l1atol1b->kfactorTable),config_list,"r"))
 			return(0);
 	}
 
@@ -1309,52 +1339,52 @@ ConfigL10ToL15(
 	return(1);
 }
 //-----------//
-// ConfigL17 //
+// ConfigL2A //
 //-----------//
 
 int
-ConfigL17(
-	L17*			l17,
+ConfigL2A(
+	L2A*			l2a,
 	ConfigList*		config_list)
 {
 	//---------------------------//
-	// configure the l17 product //
+	// configure the L2A product //
 	//---------------------------//
 
-	char* l17_filename = config_list->Get(L17_FILE_KEYWORD);
-	if (l17_filename == NULL)
+	char* l2a_filename = config_list->Get(L2A_FILE_KEYWORD);
+	if (l2a_filename == NULL)
 		return(0);
-	l17->SetFilename(l17_filename);
+	l2a->SetFilename(l2a_filename);
 
 	return(1);
 }
 
 //-----------//
-// ConfigL20 //
+// ConfigL2B //
 //-----------//
 
 int
-ConfigL20(
-	L20*			l20,
+ConfigL2B(
+	L2B*			l2b,
 	ConfigList*		config_list)
 {
 	//---------------------------//
-	// configure the l20 product //
+	// configure the l2b product //
 	//---------------------------//
 
-	char* l20_filename = config_list->Get(L20_FILE_KEYWORD);
-	if (l20_filename == NULL)
+	char* l2b_filename = config_list->Get(L2B_FILE_KEYWORD);
+	if (l2b_filename == NULL)
 		return(0);
-	l20->SetFilename(l20_filename);
+	l2b->SetFilename(l2b_filename);
 
 	int tmp_int;
 	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
 		return(0);
-	l20->medianFilterWindowSize = tmp_int;
+	l2b->medianFilterWindowSize = tmp_int;
 
 	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
 		return(0);
-	l20->medianFilterMaxPasses = tmp_int;
+	l2b->medianFilterMaxPasses = tmp_int;
 
 	return(1);
 }
@@ -1454,10 +1484,10 @@ ConfigKp(
 	//----------------//
 
 	double kp_ptgr;
-        if(! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
-	        return(0);
+	if(! config_list->GetDouble(PTGR_NOISE_KP_KEYWORD,&kp_ptgr))
+		return(0);
 	kp_ptgr=pow(10,0.1*kp_ptgr)-1.0;
-    if(! kp->kpri.SetKpPtGr(kp_ptgr))
+	if(! kp->kpri.SetKpPtGr(kp_ptgr))
 	{
 		printf("Error setting KpPtGr\n");
 		return(0);
@@ -1470,17 +1500,16 @@ ConfigKp(
 	char* kprs_filename=config_list->Get(KPRS_FILE_KEYWORD);
 	if (kprs_filename == NULL)
 		return(0);
-        if(strcmp(kprs_filename,"NONE") != 0
-         && strcmp(kprs_filename,"none") != 0
-         && strcmp(kprs_filename,"None") != 0)
-	  {
-
-	    if(! kp->kprs.Read(kprs_filename))
+	if(strcmp(kprs_filename,"NONE") != 0
+		&& strcmp(kprs_filename,"none") != 0
+		&& strcmp(kprs_filename,"None") != 0)
+	{
+		if(! kp->kprs.Read(kprs_filename))
 		{
 			printf("Error reading Kprs from %s\n",kprs_filename);
 			return(0);
 		}
-	  }
+	}
 
 	return(1);
 }
@@ -1532,17 +1561,17 @@ ConfigGrid(
 	ConfigList*		config_list)
 {
 	//---------------//
-	// configure l15 //
+	// configure L1B //
 	//---------------//
 
-	if (! ConfigL15(&(grid->l15), config_list))
+	if (! ConfigL1B(&(grid->l1b), config_list))
 		return(0);
 
 	//---------------//
-	// configure l17 //
+	// configure L2A //
 	//---------------//
 
-	if (! ConfigL17(&(grid->l17), config_list))
+	if (! ConfigL2A(&(grid->l2a), config_list))
 		return(0);
 
 	//---------------------//
@@ -1621,8 +1650,8 @@ ConfigControl(
 	}
 	else
 	{
-        fprintf(stderr, "ConfigControl: can't determine grid end time\n");
-        exit(1);
+		fprintf(stderr, "ConfigControl: can't determine grid end time\n");
+		exit(1);
 	}
 
 	//-----------------------//

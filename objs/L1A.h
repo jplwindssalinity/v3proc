@@ -1,33 +1,33 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L10_H
-#define L10_H
+#ifndef L1A_H
+#define L1A_H
 
-static const char rcs_id_l10_h[] =
+static const char rcs_id_l1a_h[] =
 	"@(#) $Id$";
 
 #include "BaseFile.h"
-#include "L10Frame.h"
+#include "L1AFrame.h"
 
 
 //======================================================================
 // CLASSES
-//		L10
+//		L1A
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L10
+//		L1A
 //
 // DESCRIPTION
-//		The L10 object allows for the easy writing, reading, and
-//		manipulating of Level 0.0 data.
+//		The L1A object allows for the easy writing, reading, and
+//		manipulating of Level 1A data.
 //======================================================================
 
-class L10 : public BaseFile
+class L1A : public BaseFile
 {
 public:
 
@@ -41,8 +41,8 @@ public:
 	// construction //
 	//--------------//
 
-	L10();
-	~L10();
+	L1A();
+	~L1A();
 
 	int		AllocateBuffer(int number_of_beams, int antenna_cycles_per_frame,
 				int slices_per_spot);
@@ -67,7 +67,7 @@ public:
 
 	char*		buffer;
 	int			bufferSize;
-	L10Frame	frame;
+	L1AFrame	frame;
 
 protected:
 

@@ -1,15 +1,15 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L15TOL17_H
-#define L15TOL17_H
+#ifndef L1BTOL2A_H
+#define L1BTOL2A_H
 
-static const char rcs_id_l15tol17_h[] =
+static const char rcs_id_l1btol2a_h[] =
 	"@(#) $Id$";
 
-#include "L15.h"
+#include "L1B.h"
 #include "Grid.h"
 #include "Antenna.h"
 #include "Ephemeris.h"
@@ -17,20 +17,20 @@ static const char rcs_id_l15tol17_h[] =
 
 //======================================================================
 // CLASSES
-//		L15ToL17
+//		L1BToL2A
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L15ToL17
+//		L1BToL2A
 //
 // DESCRIPTION
-//		The L15ToL17 object is used to convert between Level 1.5 data
-//		and Level 1.7 data.  It performs co-location or grouping of the
+//		The L1BToL2A object is used to convert between Level 1B data
+//		and Level 2A data.  It performs co-location or grouping of the
 //		measurements.
 //======================================================================
 
-class L15ToL17
+class L1BToL2A
 {
 public:
 
@@ -38,8 +38,8 @@ public:
 	// construction //
 	//--------------//
 
-	L15ToL17();
-	~L15ToL17();
+	L1BToL2A();
+	~L1BToL2A();
 
 	//------------//
 	// conversion //

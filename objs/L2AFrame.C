@@ -1,38 +1,38 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l17frame_c[] =
+static const char rcs_id_l2aframe_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
-#include "L17Frame.h"
+#include "L2AFrame.h"
 #include "Meas.h"
 
 
 //===========//
-// L17Header //
+// L2AHeader //
 //===========//
 
-L17Header::L17Header()
+L2AHeader::L2AHeader()
 :	crossTrackResolution(0.0), alongTrackResolution(0.0), crossTrackBins(0),
 	alongTrackBins(0), zeroIndex(0), startTime(0.0)
 {
 	return;
 }
 
-L17Header::~L17Header()
+L2AHeader::~L2AHeader()
 {
 	return;
 }
 
 //-----------------//
-// L17Header::Read //
+// L2AHeader::Read //
 //-----------------//
 
 int
-L17Header::Read(
+L2AHeader::Read(
 	FILE*	fp)
 {
 	if (fread(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
@@ -48,11 +48,11 @@ L17Header::Read(
 }
 
 //------------------//
-// L17Header::Write //
+// L2AHeader::Write //
 //------------------//
 
 int
-L17Header::Write(
+L2AHeader::Write(
 	FILE*	fp)
 {
 	if (fwrite(&crossTrackResolution, sizeof(float), 1, fp) != 1 ||
@@ -68,25 +68,25 @@ L17Header::Write(
 }
 
 //==========//
-// L17Frame //
+// L2AFrame //
 //==========//
 
-L17Frame::L17Frame()
+L2AFrame::L2AFrame()
 {
 	return;
 }
 
-L17Frame::~L17Frame()
+L2AFrame::~L2AFrame()
 {
 	return;
 }
 
 //----------------//
-// L17Frame::Read //
+// L2AFrame::Read //
 //----------------//
 
 int
-L17Frame::Read(
+L2AFrame::Read(
 	FILE*	fp)
 {
 	if (fread((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||
@@ -101,11 +101,11 @@ L17Frame::Read(
 }
 
 //-----------------//
-// L17Frame::Write //
+// L2AFrame::Write //
 //-----------------//
 
 int
-L17Frame::Write(
+L2AFrame::Write(
 	FILE*	fp)
 {
 	if (fwrite((void *)&rev, sizeof(unsigned int), 1, fp) != 1 ||

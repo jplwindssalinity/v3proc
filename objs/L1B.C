@@ -1,26 +1,26 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l15_c[] =
+static const char rcs_id_l1b_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
-#include "L15.h"
+#include "L1B.h"
 
 
 //=====//
-// L15 //
+// L1B //
 //=====//
 
-L15::L15()
+L1B::L1B()
 :	_status(OK)
 {
 	return;
 }
 
-L15::~L15()
+L1B::~L1B()
 {
 	return;
 }

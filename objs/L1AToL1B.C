@@ -3,69 +3,69 @@
 // U.S. Government sponsorship acknowledged.					//
 //==============================================================//
 
-static const char rcs_id_l10tol15_c[] =
+static const char rcs_id_l1atol1b_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
-#include "L10ToL15.h"
+#include "L1AToL1B.h"
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
 #include "InstrumentSim.h"
 
 //==========//
-// L10ToL15 //
+// L1AToL1B //
 //==========//
 
-L10ToL15::L10ToL15()
+L1AToL1B::L1AToL1B()
 :	useKfactor(0), outputSigma0ToStdout(0)
 {
 	return;
 }
 
-L10ToL15::~L10ToL15()
+L1AToL1B::~L1AToL1B()
 {
 	return;
 }
 
 //-------------------//
-// L10ToL15::Convert //
+// L1AToL1B::Convert //
 //-------------------//
 
 int
-L10ToL15::Convert(
-	L10*			l10,
+L1AToL1B::Convert(
+	L1A*			l1a,
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	Ephemeris*		ephemeris,
-	L15*			l15)
+	L1B*			l1b)
 {
 	//--------------//
 	// unpack frame //
 	//--------------//
 
-	l10->frame.Unpack(l10->buffer);
+	l1a->frame.Unpack(l1a->buffer);
 
 	//-------------------//
 	// set up spacecraft //
 	//-------------------//
 
-	float roll = l10->frame.attitude.GetRoll();
-	float pitch = l10->frame.attitude.GetPitch();
-	float yaw = l10->frame.attitude.GetYaw();
+	float roll = l1a->frame.attitude.GetRoll();
+	float pitch = l1a->frame.attitude.GetPitch();
+	float yaw = l1a->frame.attitude.GetYaw();
 	spacecraft->attitude.SetRPY(roll, pitch, yaw);
 
 	//-------------------//
 	// set up instrument //
 	//-------------------//
 
-	instrument->SetTimeWithInstrumentTicks(l10->frame.instrumentTicks);
-	instrument->orbitTicks = l10->frame.orbitTicks;
+	instrument->SetTimeWithInstrumentTicks(l1a->frame.instrumentTicks);
+	instrument->orbitTicks = l1a->frame.orbitTicks;
 
 	//----------------------------//
 	// ...free residual MeasSpots //
 	//----------------------------//
 
-	l15->frame.spotList.FreeContents();
+	l1b->frame.spotList.FreeContents();
 
 	//------------------------//
 	// for each beam cycle... //
@@ -76,7 +76,7 @@ L10ToL15::Convert(
 
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 
-	for (int beam_cycle = 0; beam_cycle < l10->frame.antennaCyclesPerFrame;
+	for (int beam_cycle = 0; beam_cycle < l1a->frame.antennaCyclesPerFrame;
 		beam_cycle++)
 	{
 		//------------------//
@@ -94,7 +94,7 @@ L10ToL15::Convert(
 
 			antenna->currentBeamIdx = beam_idx;
 			Beam* beam = antenna->GetCurrentBeam();
-			double time = l10->frame.time + beam_cycle * antenna->priPerBeam +
+			double time = l1a->frame.time + beam_cycle * antenna->priPerBeam +
 				beam->timeOffset;
 
 			//-------------------//
@@ -111,11 +111,11 @@ L10ToL15::Convert(
 			// set up instrument //
 			//-------------------//
 
-			if (spot_idx == l10->frame.priOfOrbitTickChange)
+			if (spot_idx == l1a->frame.priOfOrbitTickChange)
 				instrument->orbitTicks++;
 
 			antenna->SetAzimuthWithEncoder(
-				l10->frame.antennaPosition[spot_idx]);
+				l1a->frame.antennaPosition[spot_idx]);
 
 			if (outputSigma0ToStdout)
 				printf("%g ",antenna->azimuthAngle/dtr);
@@ -136,7 +136,7 @@ L10ToL15::Convert(
 			// locate measurements //
 			//---------------------//
 
-			if (l10->frame.slicesPerSpot <= 1)
+			if (l1a->frame.slicesPerSpot <= 1)
 			{
 				if (! LocateSpot(spacecraft, instrument, meas_spot))
 					return(0);
@@ -160,19 +160,19 @@ L10ToL15::Convert(
 
 			// Sum up the signal+noise measurements
 			float sumEsn = 0.0;
-			for (int i=0; i < l10->frame.slicesPerSpot; i++)
+			for (int i=0; i < l1a->frame.slicesPerSpot; i++)
 			{
-				sumEsn += l10->frame.science[total_slice_idx + i];
+				sumEsn += l1a->frame.science[total_slice_idx + i];
 			}
 
 			// Fetch the noise measurement which applies to all the slices.
-			float En = l10->frame.spotNoise[spot_idx];
+			float En = l1a->frame.spotNoise[spot_idx];
 
 			//-------------------//
 			// for each slice... //
 			//-------------------//
 
-			int sliceno=-(l10->frame.slicesPerSpot/2);
+			int sliceno=-(l1a->frame.slicesPerSpot/2);
 			for (Meas* meas = meas_spot->GetHead(); meas;
 				meas = meas_spot->GetNext())
 			{
@@ -189,8 +189,8 @@ L10ToL15::Convert(
 						orbit_position, sliceno);
 				}
 
-				float Esn = l10->frame.science[total_slice_idx];
-				float PtGr = l10->frame.ptgr;
+				float Esn = l1a->frame.science[total_slice_idx];
+				float PtGr = l1a->frame.ptgr;
 
 				//-----------------//
 				// set measurement //
@@ -219,11 +219,11 @@ L10ToL15::Convert(
 
 				total_slice_idx++;
 				sliceno++;
-				if (l10->frame.slicesPerSpot % 2 == 0 && sliceno == 0)
+				if (l1a->frame.slicesPerSpot % 2 == 0 && sliceno == 0)
 					sliceno++;
 			}
 
-			l15->frame.spotList.Append(meas_spot);
+			l1b->frame.spotList.Append(meas_spot);
 			spot_idx++;
 		}
 		if (outputSigma0ToStdout) printf("\n");

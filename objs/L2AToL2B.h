@@ -1,16 +1,16 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L17TOL20_H
-#define L17TOL20_H
+#ifndef L2ATOL2B_H
+#define L2ATOL2B_H
 
-static const char rcs_id_l17tol20_h[] =
+static const char rcs_id_l2atol2b_h[] =
 	"@(#) $Id$";
 
-#include "L17.h"
-#include "L20.h"
+#include "L2A.h"
+#include "L2B.h"
 #include "GMF.h"
 
 #define DESIRED_SOLUTIONS		4
@@ -18,19 +18,19 @@ static const char rcs_id_l17tol20_h[] =
 
 //======================================================================
 // CLASSES
-//		L17ToL20
+//		L2AToL2B
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L17ToL20
+//		L2AToL2B
 //
 // DESCRIPTION
-//		The L17ToL20 object is used to convert between Level 1.7 data
-//		and Level 2.0 data.  It performs wind retrieval.
+//		The L2AToL2B object is used to convert between Level 2A data
+//		and Level 2B data.  It performs wind retrieval.
 //======================================================================
 
-class L17ToL20
+class L2AToL2B
 {
 public:
 
@@ -38,21 +38,21 @@ public:
 	// construction //
 	//--------------//
 
-	L17ToL20();
-	~L17ToL20();
+	L2AToL2B();
+	~L2AToL2B();
 
 	//------------//
 	// conversion //
 	//------------//
 
-	int		ConvertAndWrite(L17* l17, GMF* gmf, Kp* kp, L20* l20);
-	int		Flush(L20* l20);
+	int		ConvertAndWrite(L2A* l2a, GMF* gmf, Kp* kp, L2B* l2b);
+	int		Flush(L2B* l2b);
 
 	//-----------//
 	// debugging //
 	//-----------//
 
-	int		WriteSolutionCurves(L17* l17, GMF* gmf, Kp* kp,
+	int		WriteSolutionCurves(L2A* l2a, GMF* gmf, Kp* kp,
 				const char* output_file);
 };
 

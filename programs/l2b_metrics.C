@@ -5,10 +5,10 @@
 
 //----------------------------------------------------------------------
 // NAME
-//		l20_metrics
+//		l2b_metrics
 //
 // SYNOPSIS
-//		l20_metrics [ -c config_file ] [ -l l20_file ]
+//		l2b_metrics [ -c config_file ] [ -l l2b_file ]
 //			[ -t truth_type ] [ -f truth_file ] [ -s low:high ]
 //			[ -o output_base ]
 //
@@ -19,7 +19,7 @@
 //
 // OPTIONS
 //		[ -c config_file ]	Use the specified config file.
-//		[ -l l20_file ]		Use this l20 file.
+//		[ -l l2b_file ]		Use this l2b file.
 //		[ -t truth_type ]	This is the truth file type.
 //		[ -f truth_file ]	This is the truth file.
 //		[ -s low:high ]		The range of wind speeds.
@@ -30,7 +30,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l20_metrics -c qscat.cfg -s 5.0:6.0
+//			% l2b_metrics -c qscat.cfg -s 5.0:6.0
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -63,7 +63,7 @@ static const char rcs_id[] =
 #include "ConfigList.h"
 #include "Misc.h"
 #include "ConfigSimDefs.h"
-#include "L20.h"
+#include "L2B.h"
 #include "Constants.h"
 #include "List.h"
 #include "List.C"
@@ -113,7 +113,7 @@ int rad_to_deg();
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -c config_file ]", "[ -l l20_file ]",
+const char* usage_array[] = { "[ -c config_file ]", "[ -l l2b_file ]",
 	"[ -t truth_type ]", "[ -f truth_file ]", "[ -s low:high ]",
 	"[ -o output_base ]", 0 };
 
@@ -123,7 +123,7 @@ float*		value_array = NULL;
 int*		count_array = NULL;
 int			cross_track_bins = 0;
 const char*	command = NULL;
-char*		l20_file = NULL;
+char*		l2b_file = NULL;
 char*		output_base = NULL;
 
 //--------------//
@@ -141,7 +141,7 @@ main(
 
 	char* config_file = NULL;
 	ConfigList config_list;
-	l20_file = NULL;
+	l2b_file = NULL;
 	char* truth_type = NULL;
 	char* truth_file = NULL;
 	float low_speed = DEFAULT_LOW_SPEED;
@@ -172,7 +172,7 @@ main(
 			}
 			break;
 		case 'l':
-			l20_file = optarg;
+			l2b_file = optarg;
 			break;
 		case 't':
 			truth_type = optarg;
@@ -201,12 +201,12 @@ main(
 	// check for arguments //
 	//---------------------//
 
-	if (! l20_file)
+	if (! l2b_file)
 	{
-		l20_file = config_list.Get(L20_FILE_KEYWORD);
-		if (l20_file == NULL)
+		l2b_file = config_list.Get(L2B_FILE_KEYWORD);
+		if (l2b_file == NULL)
 		{
-			fprintf(stderr, "%s: must specify L20 file\n", command);
+			fprintf(stderr, "%s: must specify L2B file\n", command);
 			exit(1);
 		}
 	}
@@ -233,29 +233,29 @@ main(
 		}
 	}
 
-	//------------------------//
-	// read in level 2.0 file //
-	//------------------------//
+	//-----------------------//
+	// read in level 2B file //
+	//-----------------------//
 
-	L20 l20;
-	l20.SetFilename(l20_file);
-	if (! l20.OpenForReading())
+	L2B l2b;
+	l2b.SetFilename(l2b_file);
+	if (! l2b.OpenForReading())
 	{
-		fprintf(stderr, "%s: error opening L20 file %s\n", command, l20_file);
+		fprintf(stderr, "%s: error opening L2B file %s\n", command, l2b_file);
 		exit(1);
 	}
 
-	if (! l20.ReadHeader())
+	if (! l2b.ReadHeader())
 	{
-		fprintf(stderr, "%s: error reading L20 header from file %s\n",
-			command, l20_file);
+		fprintf(stderr, "%s: error reading L2B header from file %s\n",
+			command, l2b_file);
 		exit(1);
 	}
 
-	if (! l20.ReadDataRec())
+	if (! l2b.ReadDataRec())
 	{
-		fprintf(stderr, "%s: error reading L20 swath from file %s\n",
-			command, l20_file);
+		fprintf(stderr, "%s: error reading L2B swath from file %s\n",
+			command, l2b_file);
 		exit(1);
 	}
 
@@ -270,7 +270,7 @@ main(
 	// create arrays //
 	//---------------//
 
-	cross_track_bins = l20.frame.swath.GetCrossTrackBins();
+	cross_track_bins = l2b.frame.swath.GetCrossTrackBins();
 	ctd_array = new float[cross_track_bins];
 	value_array = new float[cross_track_bins];
 	count_array = new int[cross_track_bins];
@@ -281,7 +281,7 @@ main(
 	// generate ctd array //
 	//--------------------//
 
-	if (! l20.frame.swath.CtdArray(l20.header.crossTrackResolution, ctd_array))
+	if (! l2b.frame.swath.CtdArray(l2b.header.crossTrackResolution, ctd_array))
 	{
 		fprintf(stderr, "%s: error generating CTD array\n", command);
 		exit(1);
@@ -291,7 +291,7 @@ main(
 	// rms speed error vs. ctd //
 	//-------------------------//
 
-	if (! l20.frame.swath.RmsSpdErrVsCti(&truth, value_array, count_array,
+	if (! l2b.frame.swath.RmsSpdErrVsCti(&truth, value_array, count_array,
 		low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
@@ -307,7 +307,7 @@ main(
 	// rms direction error vs. ctd //
 	//-----------------------------//
 
-	if (! l20.frame.swath.RmsDirErrVsCti(&truth, value_array, count_array,
+	if (! l2b.frame.swath.RmsDirErrVsCti(&truth, value_array, count_array,
 		low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating RMS direction error\n",
@@ -325,7 +325,7 @@ main(
 	// skill vs. ctd //
 	//---------------//
 
-	if (! l20.frame.swath.SkillVsCti(&truth, value_array, count_array,
+	if (! l2b.frame.swath.SkillVsCti(&truth, value_array, count_array,
 		low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating skil\n", command);
@@ -339,7 +339,7 @@ main(
 	// speed bias vs. ctd //
 	//--------------------//
 
-	if (! l20.frame.swath.SpdBiasVsCti(&truth, value_array, count_array,
+	if (! l2b.frame.swath.SpdBiasVsCti(&truth, value_array, count_array,
 		low_speed, high_speed))
 	{
 		fprintf(stderr, "%s: error calculating speed bias\n", command);
@@ -403,7 +403,7 @@ plot_thing(
 		exit(1);
 	}
 
-	xmgr_control(ofp, title, l20_file, x_axis, y_axis);
+	xmgr_control(ofp, title, l2b_file, x_axis, y_axis);
 
 	for (int i = 0; i < cross_track_bins; i++)
 	{

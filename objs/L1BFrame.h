@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L15FRAME_H
-#define L15FRAME_H
+#ifndef L1BFRAME_H
+#define L1BFRAME_H
 
-static const char rcs_id_l15frame_h[] =
+static const char rcs_id_l1bframe_h[] =
 	"@(#) $Id$";
 
 #include "Meas.h"
@@ -14,19 +14,19 @@ static const char rcs_id_l15frame_h[] =
 
 //======================================================================
 // CLASSES
-//		L15Frame
+//		L1BFrame
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L15Frame
+//		L1BFrame
 //
 // DESCRIPTION
-//		The L15Frame object contains the contents of a Level 1.5 frame
+//		The L1BFrame object contains the contents of a Level 1B frame
 //		as a structure.
 //======================================================================
 
-class L15Frame
+class L1BFrame
 {
 public:
 
@@ -34,8 +34,8 @@ public:
 	// construction //
 	//--------------//
 
-	L15Frame();
-	~L15Frame();
+	L1BFrame();
+	~L1BFrame();
 
 	//-------------------//
 	// data manipulation //

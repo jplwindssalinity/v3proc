@@ -1,20 +1,20 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l00_to_l10
+//		l00_to_l1a
 //
 // SYNOPSIS
-//		l00_to_l10 <sim_config_file>
+//		l00_to_l1a <sim_config_file>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b ground processing of Level 0.0 to
-//		Level 1.0 data.  This program converts the raw telemetry
+//		Level 1A data.  This program converts the raw telemetry
 //		(typically in dn) of the Level 0.0 product to engineering
-//		units of the Level 1.0 product.
+//		units of the Level 1A product.
 //
 // OPTIONS
 //		None.
@@ -27,7 +27,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l00_to_l10 sws1b.cfg
+//			% l00_to_l1a sws1b.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -67,8 +67,8 @@ static const char rcs_id[] =
 #include "ConfigList.h"
 #include "L00.h"
 #include "ConfigSim.h"
-#include "L10.h"
-#include "L00ToL10.h"
+#include "L1A.h"
+#include "L00ToL1A.h"
 #include "Array.h"
 
 //-----------//
@@ -154,10 +154,10 @@ main(
 		exit(1);
 	}
 
-	L10 l10;
-	if (! ConfigL10(&l10, &config_list))
+	L1A l1a;
+	if (! ConfigL1A(&l1a, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 1.0 Product\n", command);
+		fprintf(stderr, "%s: error configuring Level 1A Product\n", command);
 		exit(1);
 	}
 
@@ -166,13 +166,13 @@ main(
 	//------------//
 
 	l00.OpenForReading();
-	l10.OpenForWriting();
+	l1a.OpenForWriting();
 
 	//-----------------//
 	// conversion loop //
 	//-----------------//
 
-	L00ToL10 l00_to_l10;
+	L00ToL1A l00_to_l1a;
 
 	do
 	{
@@ -206,18 +206,18 @@ main(
 		// convert //
 		//---------//
 
-		if (! l00_to_l10.Convert(&l00, &l10))
+		if (! l00_to_l1a.Convert(&l00, &l1a))
 		{
-			fprintf(stderr, "%s: error converting Level 0.0 to Level 1.0\n",
+			fprintf(stderr, "%s: error converting Level 0.0 to Level 1A\n",
 				command);
 			exit(1);
 		}
 
-		//-------------------------------//
-		// write a level 1.0 data record //
-		//-------------------------------//
+		//------------------------------//
+		// write a level 1A data record //
+		//------------------------------//
 
-		if (! l10.WriteDataRec())
+		if (! l1a.WriteDataRec())
 		{
 			fprintf(stderr, "%s: error writing Level 1 data\n", command);
 			exit(1);
@@ -226,7 +226,7 @@ main(
 	} while (1);
 
 	l00.Close();
-	l10.Close();
+	l1a.Close();
 
 	return (0);
 }

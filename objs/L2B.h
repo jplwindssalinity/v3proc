@@ -1,33 +1,33 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L20_H
-#define L20_H
+#ifndef L2B_H
+#define L2B_H
 
-static const char rcs_id_l20_h[] =
+static const char rcs_id_l2b_h[] =
 	"@(#) $Id$";
 
 #include "BaseFile.h"
-#include "L20Frame.h"
+#include "L2BFrame.h"
 
 
 //======================================================================
 // CLASSES
-//		L20
+//		L2B
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L20
+//		L2B
 //
 // DESCRIPTION
-//		The L20 object allows for the easy writing, reading, and
-//		manipulating of Level 2.0 data.
+//		The L2B object allows for the easy writing, reading, and
+//		manipulating of Level 2B data.
 //======================================================================
 
-class L20 : public BaseFile
+class L2B : public BaseFile
 {
 public:
 
@@ -41,8 +41,8 @@ public:
 	// construction //
 	//--------------//
 
-	L20();
-	~L20();
+	L2B();
+	~L2B();
 
 	//---------------------//
 	// setting and getting //
@@ -57,8 +57,8 @@ public:
 	int		ReadHeader() { return(header.Read(_fp)); };
 	int		WriteHeader() { return(header.Write(_fp)); };
 
-	int		ReadDataRec() { return(frame.swath.ReadL20(_fp)); };
-	int		WriteDataRec() { return(frame.swath.WriteL20(_fp)); };
+	int		ReadDataRec() { return(frame.swath.ReadL2B(_fp)); };
+	int		WriteDataRec() { return(frame.swath.WriteL2B(_fp)); };
 
 	int		WriteVctr(const char* filename, const int rank);
 
@@ -66,8 +66,8 @@ public:
 	// variables //
 	//-----------//
 
-	L20Header		header;
-	L20Frame		frame;
+	L2BHeader		header;
+	L2BFrame		frame;
 
 	//----------------------//
 	// processing variables //

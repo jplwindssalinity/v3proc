@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_grid_c[] =
 	"@(#) $Id$";
@@ -41,7 +41,7 @@ int
 Grid::SetStartTime(double start_time)
 {
 	_start_time = start_time;
-	l17.header.startTime = _start_time;
+	l2a.header.startTime = _start_time;
 
 	if (ephemeris.GetPosition(_start_time,EPHEMERIS_INTERP_ORDER,
 		&_start_position) == 0)
@@ -58,7 +58,7 @@ int
 Grid::SetEndTime(double end_time)
 {
 	_end_time = end_time;
-//	l17.header.endTime = _end_time;
+//	l2a.header.endTime = _end_time;
 
 	//--------------------------------------------------------------//
 	// Determine corresponding along track index (in virtual grid).
@@ -107,12 +107,12 @@ Grid::Allocate(
 	_alongtrack_bins = (int) (_alongtrack_size / _alongtrack_res);
 	_crosstrack_bins = (int) (_crosstrack_size / _crosstrack_res);
 
-	// Put data into L17 object for use in header.
-	l17.header.crossTrackResolution = _crosstrack_res;
-	l17.header.alongTrackResolution = _alongtrack_res;
-	l17.header.crossTrackBins = _crosstrack_bins;
-	l17.header.alongTrackBins = _alongtrack_bins;
-	l17.header.zeroIndex = (int) (_crosstrack_size/2.0/_crosstrack_res + 0.5);
+	// Put data into L2A object for use in header.
+	l2a.header.crossTrackResolution = _crosstrack_res;
+	l2a.header.alongTrackResolution = _alongtrack_res;
+	l2a.header.crossTrackBins = _crosstrack_bins;
+	l2a.header.alongTrackBins = _alongtrack_bins;
+	l2a.header.zeroIndex = (int) (_crosstrack_size/2.0/_crosstrack_res + 0.5);
 
 	//
 	// Set circular buffer tracking parameters to the beginning of the
@@ -232,33 +232,33 @@ Grid::Add(
 	int ati = (vati - _ati_offset + _ati_start) % _alongtrack_bins;
 
 	// convert the measurement to an offset
-	
+
 	long* offset = new long;
 	*offset = meas->offset;
 
-    OffsetList* offsetlist = _grid[cti][ati].GetHead();
+	OffsetList* offsetlist = _grid[cti][ati].GetHead();
 
 	if (do_composite == 1)
 	{	// Composite slices that fall in the same grid location and spot.
 
-	    // Scan for an offset list with the same spot id.
-    	while (offsetlist != NULL)
-    	{
-        	if (offsetlist->spotId == spot_id)
-        	{
-            	break;
-        	}
-        	offsetlist = _grid[cti][ati].GetNext();
-    	}
+		// Scan for an offset list with the same spot id.
+		while (offsetlist != NULL)
+		{
+			if (offsetlist->spotId == spot_id)
+			{
+				break;
+			}
+			offsetlist = _grid[cti][ati].GetNext();
+		}
 
-    	if (offsetlist == NULL)
-    	{
-        	// Append a new offsetlist (with the new offset) for the new spot
+		if (offsetlist == NULL)
+		{
+			// Append a new offsetlist (with the new offset) for the new spot
 			offsetlist = new OffsetList;
 			offsetlist->Append(offset);
 			offsetlist->spotId = spot_id;
 			_grid[cti][ati].Append(offsetlist);
-    	}
+		}
 		else
 		{
 			// Append the offset in the list with the matching spot id.
@@ -266,9 +266,11 @@ Grid::Add(
 		}
 	}
 	else
-	{	// Put all slices in the first (and only) offset list at this grid loc.
-    	if (offsetlist == NULL)
-    	{	// Need to create a sublist and attach to the grid square
+	{
+		// Put all slices in the first (and only) offset list at this grid loc.
+		if (offsetlist == NULL)
+		{
+			// Need to create a sublist and attach to the grid square
 			offsetlist = new OffsetList;
 			if (offsetlist == NULL)
 			{
@@ -276,7 +278,7 @@ Grid::Add(
 				exit(-1);
 			}
 			_grid[cti][ati].Append(offsetlist);
-    	}
+		}
 		offsetlist->Append(offset);
 	}
 
@@ -303,10 +305,10 @@ int
 Grid::ShiftForward(int do_composite)
 {
 	//---------------------------//
-	// remember the l15 location //
+	// remember the L1B location //
 	//---------------------------//
 
-	FILE* fp = l15.GetFp();
+	FILE* fp = l1b.GetFp();
 	long offset = ftell(fp);
 	if (offset == -1)
 		return(0);
@@ -320,15 +322,15 @@ Grid::ShiftForward(int do_composite)
 		// convert each offset list to a MeasList //
 		//----------------------------------------//
 
-		l17.frame.measList.FreeContents();
+		l2a.frame.measList.FreeContents();
 
 		if (do_composite == 1)
 		{
-        	for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
-             	offsetlist;
-             	offsetlist = _grid[i][_ati_start].GetNext())
-        	{   // each sublist is composited before output
-            	offsetlist->MakeMeasList(fp, &spot_measList);
+			for (OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
+				offsetlist; offsetlist = _grid[i][_ati_start].GetNext())
+			{
+				// each sublist is composited before output
+				offsetlist->MakeMeasList(fp, &spot_measList);
 				Meas* meas = new Meas;
 				if (! meas->Composite(&spot_measList))
 				{
@@ -337,33 +339,33 @@ Grid::ShiftForward(int do_composite)
 					return(0);
 				}
 				spot_measList.FreeContents();
-				if (! l17.frame.measList.Append(meas))
+				if (! l2a.frame.measList.Append(meas))
 				{
 					printf("Error forming list for output in Grid::ShiftForward\n");
 					delete meas;
 					return(0);
 				}
-        	}
+			}
 		}
 		else
 		{
-        	OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
+			OffsetList* offsetlist = _grid[i][_ati_start].GetHead();
 			if (offsetlist != NULL)
 			{
-            	offsetlist->MakeMeasList(fp, &(l17.frame.measList));
+				offsetlist->MakeMeasList(fp, &(l2a.frame.measList));
 			}
 		}
 
 		//----------------------------------//
-		// complete and write the l17 frame //
+		// complete and write the L2A frame //
 		//----------------------------------//
 
-		l17.frame.rev = 0;
-		l17.frame.cti = i;
-		l17.frame.ati = _ati_offset;
-		if (l17.frame.measList.GetHead() != NULL)
+		l2a.frame.rev = 0;
+		l2a.frame.cti = i;
+		l2a.frame.ati = _ati_offset;
+		if (l2a.frame.measList.GetHead() != NULL)
 		{
-			l17.WriteDataRec();
+			l2a.WriteDataRec();
 		}
 
 		//----------------------//
@@ -378,7 +380,7 @@ Grid::ShiftForward(int do_composite)
 	_ati_offset++;
 
 	//----------------------//
-	// restore l15 location //
+	// restore L1B location //
 	//----------------------//
 
 	if (fseek(fp, offset, SEEK_SET) == -1)

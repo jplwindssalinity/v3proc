@@ -1,33 +1,33 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L15_H
-#define L15_H
+#ifndef L1B_H
+#define L1B_H
 
-static const char rcs_id_l15_h[] =
+static const char rcs_id_l1b_h[] =
 	"@(#) $Id$";
 
 #include "BaseFile.h"
-#include "L15Frame.h"
+#include "L1BFrame.h"
 
 
 //======================================================================
 // CLASSES
-//		L15
+//		L1B
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L15
+//		L1B
 //
 // DESCRIPTION
-//		The L15 object allows for the easy writing, reading, and
-//		manipulating of Level 1.5 data.
+//		The L1B object allows for the easy writing, reading, and
+//		manipulating of Level 1B data.
 //======================================================================
 
-class L15 : public BaseFile
+class L1B : public BaseFile
 {
 public:
 
@@ -41,8 +41,8 @@ public:
 	// construction //
 	//--------------//
 
-	L15();
-	~L15();
+	L1B();
+	~L1B();
 
 	//---------------------//
 	// setting and getting //
@@ -61,7 +61,7 @@ public:
 	// variables //
 	//-----------//
 
-	L15Frame		frame;
+	L1BFrame		frame;
 
 protected:
 

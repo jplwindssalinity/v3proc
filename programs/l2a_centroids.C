@@ -1,17 +1,17 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l17_centroids
+//		l2a_centroids
 //
 // SYNOPSIS
-//		l17_centroids <l17_file> <output_file>
+//		l2a_centroids <l2a_file> <output_file>
 //
 // DESCRIPTION
-//		Reads in a Level 1.7 file and writes out a list of
+//		Reads in a Level 2A file and writes out a list of
 //		lon/lat pairs for the measurement centroids.
 //
 // OPTIONS
@@ -19,12 +19,12 @@
 //
 // OPERANDS
 //		The following operand is supported:
-//		<l17_file>		The Level 1.7 input file.
+//		<l2a_file>		The Level 2A input file.
 //		<output_file>	The output file.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l17_centroids l17.dat l17.cent
+//			% l2a_centroids l2a.dat l2a.cent
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -55,7 +55,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "Misc.h"
-#include "L17.h"
+#include "L2A.h"
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -97,7 +97,7 @@ template class List<OffsetList>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l17_file>", "<output_file>", 0};
+const char* usage_array[] = { "<l2a_file>", "<output_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -117,18 +117,18 @@ main(
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
-	const char* l17_file = argv[clidx++];
+	const char* l2a_file = argv[clidx++];
 	const char* output_file = argv[clidx++];
 
-	//-------------------------//
-	// open the Level 1.7 file //
-	//-------------------------//
+	//------------------------//
+	// open the Level 2A file //
+	//------------------------//
 
-	L17 l17;
-	if (! l17.OpenForReading(l17_file))
+	L2A l2a;
+	if (! l2a.OpenForReading(l2a_file))
 	{
-		fprintf(stderr, "%s: error opening Level 1.7 file %s\n", command,
-			l17_file);
+		fprintf(stderr, "%s: error opening Level 2A file %s\n", command,
+			l2a_file);
 		exit(1);
 	}
 
@@ -149,10 +149,10 @@ main(
 	//----------------//
 
 int count = 0;
-	while (l17.ReadDataRec())
+	while (l2a.ReadDataRec())
 	{
-		MeasList* ml = &(l17.frame.measList);
-//printf("%d %d\n", l17.frame.ati, l17.frame.cti);
+		MeasList* ml = &(l2a.frame.measList);
+//printf("%d %d\n", l2a.frame.ati, l2a.frame.cti);
 		for (Meas* m = ml->GetHead(); m; m = ml->GetNext())
 		{
 			double alt, lon, lat;
@@ -172,7 +172,7 @@ count = 0;
 	//-----------------//
 
 	fclose(output_fp);
-	l17.Close();
+	l2a.Close();
 
 	return (0);
 }

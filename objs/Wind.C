@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_wind_c[] =
 	"@(#) $Id$";
@@ -87,11 +87,11 @@ WindVectorPlus::~WindVectorPlus()
 }
 
 //--------------------------//
-// WindVectorPlus::WriteL20 //
+// WindVectorPlus::WriteL2B //
 //--------------------------//
 
 int
-WindVectorPlus::WriteL20(
+WindVectorPlus::WriteL2B(
 	FILE*	fp)
 {
 	if (fwrite((void *)&spd, sizeof(float), 1, fp) != 1 ||
@@ -116,11 +116,11 @@ WindVectorPlus::WriteAscii(
 }
 
 //-------------------------//
-// WindVectorPlus::ReadL20 //
+// WindVectorPlus::ReadL2B //
 //-------------------------//
 
 int
-WindVectorPlus::ReadL20(
+WindVectorPlus::ReadL2B(
 	FILE*	fp)
 {
 	if (fread((void *)&spd, sizeof(float), 1, fp) != 1 ||
@@ -154,11 +154,11 @@ WVC::~WVC()
 }
 
 //---------------//
-// WVC::WriteL20 //
+// WVC::WriteL2B //
 //---------------//
 
 int
-WVC::WriteL20(
+WVC::WriteL2B(
 	FILE*	fp)
 {
 	//----------------------------------//
@@ -189,7 +189,7 @@ WVC::WriteL20(
 	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
 		wvp = ambiguities.GetNext())
 	{
-		if (! wvp->WriteL20(fp))
+		if (! wvp->WriteL2B(fp))
 			return(0);
 
 		if (wvp == selected)
@@ -209,11 +209,11 @@ WVC::WriteL20(
 }
 
 //--------------//
-// WVC::ReadL20 //
+// WVC::ReadL2B //
 //--------------//
 
 int
-WVC::ReadL20(
+WVC::ReadL2B(
 	FILE*	fp)
 {
 	//---------------------------------//
@@ -242,7 +242,7 @@ WVC::ReadL20(
 	{
 		WindVectorPlus* wvp = new WindVectorPlus();
 
-		if (! wvp->ReadL20(fp))
+		if (! wvp->ReadL2B(fp))
 			return(0);
 
 		if (! ambiguities.Append(wvp))
@@ -966,11 +966,11 @@ WindSwath::DeleteEntireSwath()
 }
 
 //---------------------//
-// WindSwath::WriteL20 //
+// WindSwath::WriteL2B //
 //---------------------//
 
 int
-WindSwath::WriteL20(
+WindSwath::WriteL2B(
 	FILE*	fp)
 {
 	if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
@@ -994,7 +994,7 @@ WindSwath::WriteL20(
 				return(0);
 			}
 
-			if (! wvc->WriteL20(fp))
+			if (! wvc->WriteL2B(fp))
 				return(0);
 		}
 	}
@@ -1002,11 +1002,11 @@ WindSwath::WriteL20(
 }
 
 //--------------------//
-// WindSwath::ReadL20 //
+// WindSwath::ReadL2B //
 //--------------------//
 
 int
-WindSwath::ReadL20(
+WindSwath::ReadL2B(
 	FILE*	fp)
 {
 	DeleteEntireSwath();		// in case
@@ -1031,7 +1031,7 @@ WindSwath::ReadL20(
 
 		WVC* wvc = new WVC();
 
-		if (! wvc->ReadL20(fp))
+		if (! wvc->ReadL2B(fp))
 			return(0);
 
 		*(*(swath + cti) + ati) = wvc;
@@ -1040,18 +1040,18 @@ WindSwath::ReadL20(
 }
 
 //--------------------//
-// WindSwath::ReadL20 //
+// WindSwath::ReadL2B //
 //--------------------//
 
 int
-WindSwath::ReadL20(
+WindSwath::ReadL2B(
 	const char*		filename)
 {
 	FILE* fp = fopen(filename, "r");
 	if (fp == NULL)
 		return(0);
 
-	if (! ReadL20(fp))
+	if (! ReadL2B(fp))
 		return(0);
 
 	fclose(fp);

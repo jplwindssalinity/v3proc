@@ -1,35 +1,35 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L17_H
-#define L17_H
+#ifndef L2A_H
+#define L2A_H
 
-static const char rcs_id_l17_h[] =
+static const char rcs_id_l2a_h[] =
 	"@(#) $Id$";
 
 #include "BaseFile.h"
-#include "L17Frame.h"
+#include "L2AFrame.h"
 
 
 //======================================================================
 // CLASSES
-//		L17
+//		L2A
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L17
+//		L2A
 //
 // DESCRIPTION
-//		The L17 object allows for the easy writing, reading, and
-//		manipulating of Level 1.7 data.
-//		Level 1.7 data consists of spatially co-located measurements as
-//		opposed to the time ordered measurements in level 1.5 data.
+//		The L2A object allows for the easy writing, reading, and
+//		manipulating of Level 2A data.
+//		Level 2A data consists of spatially co-located measurements as
+//		opposed to the time ordered measurements in Level 1B data.
 //======================================================================
 
-class L17 : public BaseFile
+class L2A : public BaseFile
 {
 public:
 
@@ -44,8 +44,8 @@ public:
 	// construction //
 	//--------------//
 
-	L17();
-	~L17();
+	L2A();
+	~L2A();
 
 	//--------------//
 	// input/output //
@@ -66,8 +66,8 @@ public:
 	// variables //
 	//-----------//
 
-	L17Header		header;
-	L17Frame		frame;
+	L2AHeader		header;
+	L2AFrame		frame;
 
 protected:
 

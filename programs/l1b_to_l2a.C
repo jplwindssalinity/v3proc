@@ -1,18 +1,18 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l15_to_l17
+//		l1b_to_l2a
 //
 // SYNOPSIS
-//		l15_to_l17 <sim_config_file>
+//		l1b_to_l2a <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 1.5 to
-//		Level 1.7 data.  This program groups the sigma0 data onto
+//		Simulates the SeaWinds 1b ground processing of Level 1B to
+//		Level 2A data.  This program groups the sigma0 data onto
 //		a grid.
 //
 // OPTIONS
@@ -26,7 +26,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l15_to_l17 sws1b.cfg
+//			% l1b_to_l2a sws1b.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -65,9 +65,9 @@ static const char rcs_id[] =
 #include "ConfigList.h"
 #include "ConfigSim.h"
 #include "Ephemeris.h"
-#include "L15.h"
-#include "L17.h"
-#include "L15ToL17.h"
+#include "L1B.h"
+#include "L2A.h"
+#include "L1BToL2A.h"
 
 //-----------//
 // TEMPLATES //
@@ -197,37 +197,37 @@ main(
 	// open files //
 	//------------//
 
-	grid.l15.OpenForReading();
-	grid.l17.OpenForWriting();
+	grid.l1b.OpenForReading();
+	grid.l2a.OpenForWriting();
 
 	//-----------------//
 	// conversion loop //
 	//-----------------//
 
-	L15ToL17 l15_to_l17;
+	L1BToL2A l1b_to_l2a;
 
 	long counter = 0;
 	do
 	{
 		counter++;
-		//if (counter % 100 == 0) printf("L15 record count = %ld\n",counter);
+		//if (counter % 100 == 0) printf("L1B record count = %ld\n",counter);
 
-		//------------------------------//
-		// read a level 1.5 data record //
-		//------------------------------//
+		//-----------------------------//
+		// read a level 1B data record //
+		//-----------------------------//
 
-		if (! grid.l15.ReadDataRec())
+		if (! grid.l1b.ReadDataRec())
 		{
-			switch (grid.l15.GetStatus())
+			switch (grid.l1b.GetStatus())
 			{
-			case L15::OK:	// end of file
+			case L1B::OK:	// end of file
 				break;
-			case L15::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1.5 data\n", command);
+			case L1B::ERROR_READING_FRAME:
+				fprintf(stderr, "%s: error reading Level 1B data\n", command);
 				exit(1);
 				break;
-			case L15::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1.5 data\n",
+			case L1B::ERROR_UNKNOWN:
+				fprintf(stderr, "%s: unknown error reading Level 1B data\n",
 					command);
 				exit(1);
 				break;
@@ -242,9 +242,9 @@ main(
 		// Group //
 		//-------//
 
-		if (! l15_to_l17.Group(&grid, use_compositing))
+		if (! l1b_to_l2a.Group(&grid, use_compositing))
 		{
-			fprintf(stderr, "%s: error converting Level 1.5 to Level 1.7\n",
+			fprintf(stderr, "%s: error converting Level 1B to Level 2A\n",
 				command);
 			exit(1);
 		}
@@ -257,8 +257,8 @@ main(
 
 	grid.Flush(use_compositing);
 
-	grid.l15.Close();
-	grid.l17.Close();
+	grid.l1b.Close();
+	grid.l2a.Close();
 
 	return (0);
 }

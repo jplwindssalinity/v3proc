@@ -1,21 +1,21 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l10frame_c[] =
+static const char rcs_id_l1aframe_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
 #include <malloc.h>
-#include "L10Frame.h"
+#include "L1AFrame.h"
 
 
 //==========//
-// L10Frame //
+// L1AFrame //
 //==========//
 
-L10Frame::L10Frame()
+L1AFrame::L1AFrame()
 :	time(0), instrumentTicks(0), orbitTicks(0), priOfOrbitTickChange(255),
 	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0), gcY(0.0),
 	gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), ptgr(0.0),
@@ -26,17 +26,17 @@ L10Frame::L10Frame()
 	return;
 }
 
-L10Frame::~L10Frame()
+L1AFrame::~L1AFrame()
 {
 	return;
 }
 
 //---------------//
-// L10::Allocate //
+// L1A::Allocate //
 //---------------//
 
 int
-L10Frame::Allocate(
+L1AFrame::Allocate(
 	int		number_of_beams,
 	int		antenna_cycles_per_frame,
 	int		slices_per_spot)
@@ -74,11 +74,11 @@ L10Frame::Allocate(
 }
 
 //----------------------//
-// L10Frame::Deallocate //
+// L1AFrame::Deallocate //
 //----------------------//
 
 int
-L10Frame::Deallocate()
+L1AFrame::Deallocate()
 {
 	if (antennaPosition)
 		free(antennaPosition);
@@ -94,11 +94,11 @@ L10Frame::Deallocate()
 }
 
 //----------------//
-// L10Frame::Pack //
+// L1AFrame::Pack //
 //----------------//
 
 int
-L10Frame::Pack(
+L1AFrame::Pack(
 	char*	buffer)
 {
 	int idx = 0;
@@ -179,11 +179,11 @@ L10Frame::Pack(
 }
 
 //------------------//
-// L10Frame::Unpack //
+// L1AFrame::Unpack //
 //------------------//
 
 int
-L10Frame::Unpack(
+L1AFrame::Unpack(
 	char*	buffer)
 {
 	int idx = 0;

@@ -1,17 +1,17 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l15_outlines
+//		l1b_outlines
 //
 // SYNOPSIS
-//		l15_outlines <l15_file> <Otln_file>
+//		l1b_outlines <l1b_file> <Otln_file>
 //
 // DESCRIPTION
-//		Reads in a Level 1.5 file and writes out a Binary Vector
+//		Reads in a Level 1B file and writes out a Binary Vector
 //		Graphics (Otln) file containing the cell outlines
 //
 // OPTIONS
@@ -19,12 +19,12 @@
 //
 // OPERANDS
 //		The following operand is supported:
-//		<l15_file>		The Level 1.5 input file.
+//		<l1b_file>		The Level 1B input file.
 //		<Otln_file>		The Otln output file.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l15_outlines l15.dat l15.otln
+//			% l1b_outlines l1b.dat l1b.otln
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -55,7 +55,7 @@ static const char rcs_id[] =
 
 #include <stdio.h>
 #include "Misc.h"
-#include "L15.h"
+#include "L1B.h"
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -97,7 +97,7 @@ template class List<OffsetList>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l15_file>", "<Otln_file>", 0};
+const char* usage_array[] = { "<l1b_file>", "<Otln_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -117,18 +117,18 @@ main(
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
-	const char* l15_file = argv[clidx++];
+	const char* l1b_file = argv[clidx++];
 	const char* otln_file = argv[clidx++];
 
-	//-------------------------//
-	// open the Level 1.5 file //
-	//-------------------------//
+	//------------------------//
+	// open the Level 1B file //
+	//------------------------//
 
-	L15 l15;
-	if (! l15.OpenForReading(l15_file))
+	L1B l1b;
+	if (! l1b.OpenForReading(l1b_file))
 	{
-		fprintf(stderr, "%s: error opening Level 1.5 file %s\n", command,
-			l15_file);
+		fprintf(stderr, "%s: error opening Level 1B file %s\n", command,
+			l1b_file);
 		exit(1);
 	}
 
@@ -155,9 +155,9 @@ main(
 	// loop and write //
 	//----------------//
 
-	while (l15.ReadDataRec())
+	while (l1b.ReadDataRec())
 	{
-		MeasSpotList* msl = &(l15.frame.spotList);
+		MeasSpotList* msl = &(l1b.frame.spotList);
 		for (MeasSpot* ms = msl->GetHead(); ms; ms = msl->GetNext())
 		{
 			for (Meas* m = ms->GetHead(); m; m = ms->GetNext())
@@ -180,7 +180,7 @@ printf("%g %g\n", lon, lat);
 	//-----------------//
 
 	fclose(output_fp);
-	l15.Close();
+	l1b.Close();
 
 	return (0);
 }

@@ -1,36 +1,36 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-static const char rcs_id_l17_c[] =
+static const char rcs_id_l2a_c[] =
 	"@(#) $Id$";
 
 #include <memory.h>
-#include "L17.h"
+#include "L2A.h"
 
 
 //=====//
-// L17 //
+// L2A //
 //=====//
 
-L17::L17()
+L2A::L2A()
 :	_status(OK), _headerTransferred(0)
 {
 	return;
 }
 
-L17::~L17()
+L2A::~L2A()
 {
 	return;
 }
 
 //------------------//
-// L17::WriteHeader //
+// L2A::WriteHeader //
 //------------------//
 
 int
-L17::WriteHeader()
+L2A::WriteHeader()
 {
 	if (_fp == NULL)
 		return(0);
@@ -43,11 +43,11 @@ L17::WriteHeader()
 }
 
 //-----------------//
-// L17::ReadHeader //
+// L2A::ReadHeader //
 //-----------------//
 
 int
-L17::ReadHeader()
+L2A::ReadHeader()
 {
 	if (_fp == NULL)
 		return(0);
@@ -60,11 +60,11 @@ L17::ReadHeader()
 }
 
 //------------------//
-// L17::ReadDataRec //
+// L2A::ReadDataRec //
 //------------------//
 
 int
-L17::ReadDataRec()
+L2A::ReadDataRec()
 {
 	if (_fp == NULL) return(0);
 
@@ -81,11 +81,11 @@ L17::ReadDataRec()
 }
 
 //-------------------//
-// L17::WriteDataRec //
+// L2A::WriteDataRec //
 //-------------------//
 
 int
-L17::WriteDataRec()
+L2A::WriteDataRec()
 {
 	if (_fp == NULL) return(0);
 

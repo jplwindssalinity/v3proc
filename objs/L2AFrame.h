@@ -1,12 +1,12 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
-#ifndef L17FRAME_H
-#define L17FRAME_H
+#ifndef L2AFRAME_H
+#define L2AFRAME_H
 
-static const char rcs_id_l17frame_h[] =
+static const char rcs_id_l2aframe_h[] =
 	"@(#) $Id$";
 
 #include "Meas.h"
@@ -14,20 +14,20 @@ static const char rcs_id_l17frame_h[] =
 
 //======================================================================
 // CLASSES
-//		L17Header
-//		L17Frame
+//		L2AHeader
+//		L2AFrame
 //======================================================================
 
 //======================================================================
 // CLASS
-//		L17Header
+//		L2AHeader
 //
 // DESCRIPTION
-//		The L17Header object contains the contents of a Level 1.7
+//		The L2AHeader object contains the contents of a Level 2A
 //		header.
 //======================================================================
 
-class L17Header
+class L2AHeader
 {
 public:
 
@@ -35,8 +35,8 @@ public:
 	// construction //
 	//--------------//
 
-	L17Header();
-	~L17Header();
+	L2AHeader();
+	~L2AHeader();
 
 	//--------------//
 	// input/output //
@@ -59,14 +59,14 @@ public:
 
 //======================================================================
 // CLASS
-//		L17Frame
+//		L2AFrame
 //
 // DESCRIPTION
-//		The L17Frame object contains the contents of a Level 1.7 frame
+//		The L2AFrame object contains the contents of a Level 2A frame
 //		as a structure.
 //======================================================================
 
-class L17Frame
+class L2AFrame
 {
 public:
 
@@ -74,8 +74,8 @@ public:
 	// construction //
 	//--------------//
 
-	L17Frame();
-	~L17Frame();
+	L2AFrame();
+	~L2AFrame();
 
 	//--------------//
 	// input/output //

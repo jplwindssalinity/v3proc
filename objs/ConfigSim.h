@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef CONFIGSIM_H
 #define CONFIGSIM_H
@@ -14,11 +14,11 @@ static const char rcs_id_configsim_h[] =
 #include "InstrumentSimAccurate.h"
 #include "XTable.h"
 #include "L00.h"
-#include "L10.h"
-#include "L10ToL15.h"
-#include "L15.h"
-#include "L17.h"
-#include "L20.h"
+#include "L1A.h"
+#include "L1AToL1B.h"
+#include "L1B.h"
+#include "L2A.h"
+#include "L2B.h"
 #include "Wind.h"
 #include "Grid.h"
 #include "ConfigList.h"
@@ -101,34 +101,34 @@ int ConfigXTable(XTable* xTable, ConfigList* config_list, char* read_write);
 int ConfigL00(L00* l00, ConfigList* config_list);
 
 //-----//
-// L10 //
+// L1A //
 //-----//
 
-int ConfigL10(L10* l10, ConfigList* config_list);
+int ConfigL1A(L1A* l1a, ConfigList* config_list);
 
 //-----//
-// L15 //
+// L1B //
 //-----//
 
-int ConfigL15(L15* l15, ConfigList* config_list);
+int ConfigL1B(L1B* l1b, ConfigList* config_list);
 
 //----------//
-// L10ToL15 //
+// L1AToL1B //
 //----------//
 
-int ConfigL10ToL15(L10ToL15* l10tol15, ConfigList* config_list);
+int ConfigL1AToL1B(L1AToL1B* l1atol1b, ConfigList* config_list);
 
 //-----//
-// L17 //
+// L2A //
 //-----//
 
-int ConfigL17(L17* l17, ConfigList* config_list);
+int ConfigL2A(L2A* l2a, ConfigList* config_list);
 
 //-----//
-// L20 //
+// L2B //
 //-----//
 
-int ConfigL20(L20* l20, ConfigList* config_list);
+int ConfigL2B(L2B* l2b, ConfigList* config_list);
 
 //-----------//
 // Ephemeris //

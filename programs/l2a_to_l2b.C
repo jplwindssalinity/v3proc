@@ -1,18 +1,18 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l17_to_l20
+//		l2a_to_l2b
 //
 // SYNOPSIS
-//		l17_to_l20 <sim_config_file>
+//		l2a_to_l2b <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 1.7 to
-//		Level 2.0 data.  This program retrieves wind from measurements.
+//		Simulates the SeaWinds 1b ground processing of Level 2A to
+//		Level 2B data.  This program retrieves wind from measurements.
 //
 // OPTIONS
 //		None.
@@ -25,7 +25,7 @@
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l17_to_l20 sws1b.cfg
+//			% l2a_to_l2b sws1b.cfg
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -62,10 +62,10 @@ static const char rcs_id[] =
 #include "BufferedList.C"
 #include "Misc.h"
 #include "ConfigList.h"
-#include "L17.h"
+#include "L2A.h"
 #include "ConfigSim.h"
-#include "L20.h"
-#include "L17ToL20.h"
+#include "L2B.h"
+#include "L2AToL2B.h"
 
 //-----------//
 // TEMPLATES //
@@ -143,17 +143,17 @@ main(
 	// create and configure level products //
 	//-------------------------------------//
 
-	L17 l17;
-	if (! ConfigL17(&l17, &config_list))
+	L2A l2a;
+	if (! ConfigL2A(&l2a, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 1.7 Product\n", command);
+		fprintf(stderr, "%s: error configuring Level 2A Product\n", command);
 		exit(1);
 	}
 
-	L20 l20;
-	if (! ConfigL20(&l20, &config_list))
+	L2B l2b;
+	if (! ConfigL2B(&l2b, &config_list))
 	{
-		fprintf(stderr, "%s: error configuring Level 2.0 Product\n", command);
+		fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
 		exit(1);
 	}
 
@@ -183,42 +183,42 @@ main(
 	// create the converter //
 	//----------------------//
 
-	L17ToL20 l17_to_l20;
+	L2AToL2B l2a_to_l2b;
 
 	//------------//
 	// open files //
 	//------------//
 
-	l17.OpenForReading();
-	l20.OpenForWriting();
+	l2a.OpenForReading();
+	l2b.OpenForWriting();
 
 	//---------------------------------//
 	// read the header to set up swath //
 	//---------------------------------//
 
-	if (! l17.ReadHeader())
+	if (! l2a.ReadHeader())
 	{
-		fprintf(stderr, "%s: error reading Level 1.7 header\n", command); 
+		fprintf(stderr, "%s: error reading Level 2A header\n", command); 
 		exit(1);
 	}
 
 	int along_track_bins =
-		(int)(two_pi * r1_earth / l17.header.alongTrackResolution + 0.5);
+		(int)(two_pi * r1_earth / l2a.header.alongTrackResolution + 0.5);
 
-	if (! l20.frame.swath.Allocate(l17.header.crossTrackBins,
+	if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
 		along_track_bins))
 	{
 		fprintf(stderr, "%s: error allocating wind swath\n", command);
 		exit(1);
 	}
 
-	//------------------------------------------//
-	// transfer information to level 2.0 header //
-	//------------------------------------------//
+	//-----------------------------------------//
+	// transfer information to level 2B header //
+	//-----------------------------------------//
 
-	l20.header.crossTrackResolution = l17.header.crossTrackResolution;
-	l20.header.alongTrackResolution = l17.header.alongTrackResolution;
-	l20.header.zeroIndex = l17.header.zeroIndex;
+	l2b.header.crossTrackResolution = l2a.header.crossTrackResolution;
+	l2b.header.alongTrackResolution = l2a.header.alongTrackResolution;
+	l2b.header.zeroIndex = l2a.header.zeroIndex;
 
 	//-----------------//
 	// conversion loop //
@@ -226,22 +226,22 @@ main(
 
 	for (;;)
 	{
-		//------------------------------//
-		// read a level 1.7 data record //
-		//------------------------------//
+		//-----------------------------//
+		// read a level 2A data record //
+		//-----------------------------//
 
-		if (! l17.ReadDataRec())
+		if (! l2a.ReadDataRec())
 		{
-			switch (l17.GetStatus())
+			switch (l2a.GetStatus())
 			{
-			case L17::OK:		// end of file
+			case L2A::OK:		// end of file
 				break;
-			case L17::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 1.7 data\n", command);
+			case L2A::ERROR_READING_FRAME:
+				fprintf(stderr, "%s: error reading Level 2A data\n", command);
 				exit(1);
 				break;
-			case L17::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 1.7 data\n",
+			case L2A::ERROR_UNKNOWN:
+				fprintf(stderr, "%s: unknown error reading Level 2A data\n",
 					command);
 				exit(1);
 				break;
@@ -256,7 +256,7 @@ main(
 		// convert //
 		//---------//
 
-		int retval = l17_to_l20.ConvertAndWrite(&l17, &gmf, &kp, &l20);
+		int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
 		switch (retval)
 		{
 		case 1:
@@ -267,17 +267,17 @@ main(
 		case 5:
 			break;
 		case 0:
-			fprintf(stderr, "%s: error converting Level 1.7 to Level 2.0\n",
+			fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
 				command);
 			exit(1);
 			break;
 		}
 	}
 
-	l17_to_l20.Flush(&l20);
+	l2a_to_l2b.Flush(&l2b);
 
-	l17.Close();
-	l20.Close();
+	l2a.Close();
+	l2b.Close();
 
 	return (0);
 }
