@@ -174,13 +174,13 @@ L1AToL1B::Convert(
         // range and Doppler tracking //
         //----------------------------//
 
-        // set antenna to transmit pulse center for response calculations
-        qscat.sas.SetAzimuthWithEncoder(held_encoder);
-        qscat.RotateAntennaToTxCenter(1);
-
-        // determine the CDS tracking azimuth angle
         unsigned short held_encoder = *(frame->antennaPosition + spot_idx);
-        qscat->cds.heldEncoder = held_encoder;    // for tracking
+        qscat->cds.heldEncoder = held_encoder;
+
+        // set antenna to transmit pulse center for response calculations
+        qscat->sas.SetAzimuthWithEncoder(held_encoder);
+        qscat->RotateAntennaToTxCenter(1);
+
         SetDelayAndFrequency(spacecraft, qscat);
 
         if (outputSigma0ToStdout)
@@ -300,8 +300,8 @@ L1AToL1B::Convert(
 			else if (useBYUXfactor)
             {
                 // set antenna to ground impact for calculating X
-                qscat.sas.SetAzimuthWithEncoder(held_encoder);
-                qscat.RotateAntennaToGroundImpact(&spacecraft, 1);
+                qscat->sas.SetAzimuthWithEncoder(held_encoder);
+                qscat->RotateAntennaToGroundImpact(spacecraft, 1);
 
 			    x_factor = BYUX.GetXTotal(spacecraft, qscat, meas, Es_cal);
 
