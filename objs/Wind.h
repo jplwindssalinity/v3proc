@@ -116,7 +116,7 @@ public:
 
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
-	int		WriteBev(FILE* fp, const int rank);		// 0 = selected
+	int		WriteVctr(FILE* fp, const int rank);		// 0 = selected
 
 	//--------------//
 	// manipulation //
@@ -130,7 +130,7 @@ public:
 	// freeing //
 	//---------//
 
-	void	FreeContents();
+	void				FreeContents();
 
 	//-----------//
 	// variables //
@@ -175,7 +175,7 @@ public:
 	int		ReadVap(const char* filename);
 	int		ReadEcmwfHiRes(const char* filename);
 	int		ReadType(const char* filename, const char* type);
-	int		WriteBev(const char* filename);
+	int		WriteVctr(const char* filename);
 
 	//--------//
 	// access //
@@ -258,7 +258,7 @@ public:
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
 	int		ReadL20(const char* filename);
-	int		WriteBev(const char* filename, const int rank);
+	int		WriteVctr(const char* filename, const int rank);
 
 	//-----------//
 	// filtering //

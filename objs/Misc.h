@@ -27,6 +27,12 @@ static const char rcs_id_misc_h[] =
 
 #include <stdio.h>
 
+//-----------//
+// CONSTANTS //
+//-----------//
+
+#define VCTR_HEADER		"vctr"
+
 //--------//
 // MACROS //
 //--------//

@@ -7,6 +7,7 @@ static const char rcs_id_wind_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include <string.h>
 #include "Wind.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -253,12 +254,12 @@ WVC::ReadL20(
 	return(1);
 }
 
-//---------------//
-// WVC::WriteBev //
-//---------------//
+//----------------//
+// WVC::WriteVctr //
+//----------------//
 
 int
-WVC::WriteBev(
+WVC::WriteVctr(
 	FILE*		fp,
 	const int	rank)
 {
@@ -588,12 +589,12 @@ WindField::ReadType(
 		return(0);
 }
 
-//---------------------//
-// WindField::WriteBev //
-//---------------------//
+//----------------------//
+// WindField::WriteVctr //
+//----------------------//
 
 int
-WindField::WriteBev(
+WindField::WriteVctr(
 	const char*		filename)
 {
 	//-----------//
@@ -602,6 +603,14 @@ WindField::WriteBev(
 
 	FILE* fp = fopen(filename, "w");
 	if (fp == NULL)
+		return(0);
+
+	//--------------//
+	// write header //
+	//--------------//
+
+	char* hdr = VCTR_HEADER;
+	if (fwrite((void *)hdr, 4, 1, fp) != 1)
 		return(0);
 
 	//-------//
@@ -976,18 +985,34 @@ WindSwath::ReadL20(
 	return(1);
 }
 
-//---------------------//
-// WindSwath::WriteBev //
-//---------------------//
+//----------------------//
+// WindSwath::WriteVctr //
+//----------------------//
 
 int
-WindSwath::WriteBev(
+WindSwath::WriteVctr(
 	const char*		filename,
 	const int		rank)		// 0 = selected
 {
+	//-----------//
+	// open file //
+	//-----------//
+
 	FILE* fp = fopen(filename, "w");
 	if (fp == NULL)
 		return(0);
+
+	//--------------//
+	// write header //
+	//--------------//
+
+	char* hdr = VCTR_HEADER;
+	if (fwrite((void *)hdr, 4, 1, fp) != 1)
+		return(0);
+
+	//---------------//
+	// write vectors //
+	//---------------//
 
 	for (int cti = 0; cti < _crossTrackBins; cti++)
 	{
@@ -997,7 +1022,7 @@ WindSwath::WriteBev(
 			if (wvc == NULL)
 				continue;
 
-			if (! wvc->WriteBev(fp, rank))
+			if (! wvc->WriteVctr(fp, rank))
 				return(0);
 		}
 	}

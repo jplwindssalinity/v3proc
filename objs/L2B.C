@@ -25,14 +25,14 @@ L20::~L20()
 	return;
 }
 
-//---------------//
-// L20::WriteBev //
-//---------------//
+//----------------//
+// L20::WriteVctr //
+//----------------//
 
 int
-L20::WriteBev(
+L20::WriteVctr(
 	const char*		filename,
 	const int		rank)
 {
-	return(frame.swath.WriteBev(filename, rank));
+	return(frame.swath.WriteVctr(filename, rank));
 }
