@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -49,7 +49,7 @@ public:
     ~BYUXTable();
 
     int  Deallocate();
-    int  Allocate();
+    int  Allocate(int order);
 
     int    Read(const char* ibeam_file, const char* obeam_file);
     float  GetXTotal(Spacecraft* spacecraft, Qscat* qscat, Meas* meas,
@@ -66,17 +66,31 @@ public:
                float delta_freq);
     float  Interpolate(float** table, float orbit_time, float azimuth_angle);
 
+    //------------//
+    // for slices //
+    //------------//
+
     float****  xnom;
     float****  a;
     float****  b;
     float****  c;
     float****  d;
 
+    float****  e;
+    float****  f;
+
+    //----------//
+    // for eggs //
+    //----------//
+
     float***  xnomEgg;
     float***  aEgg;
     float***  bEgg;
     float***  cEgg;
     float***  dEgg;
+
+    float***  eEgg;
+    float***  fEgg;
 
 protected:
     float  _azimuthStepSize;
