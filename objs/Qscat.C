@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-1999, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_qscat_c[] =
     "@(#) $Id$";
@@ -21,7 +21,7 @@ static const char rcs_id_qscat_c[] =
 //=============//
 
 SesBeamInfo::SesBeamInfo()
-:    rxGateWidth(0.0)
+:   rxGateWidth(0.0)
 {
     return;
 }
@@ -39,18 +39,17 @@ QscatSes::QscatSes()
 :   txPulseWidth(0.0), txDoppler(0.0), txFrequency(0.0), rxGateDelay(0.0),
     baseTxFrequency(0.0), pri(0.0), transmitPower(0.0), rxGainEcho(0.0),
     rxGainNoise(0.0), calibrationBias(0.0), chirpRate(0.0),
-    fftBinBandwidth(0.0),
-    scienceSliceBandwidth(0.0),  scienceSlicesPerSpot(0),
-    guardSliceBandwidth(0.0), guardSlicesPerSide(0), noiseBandwidth(0.0),
-    receivePathLoss(0.0), transmitPathLoss(0.0), loopbackLoss(0.0),
-    loopbackLossRatio(0.0), physicalTemperature(0.0)
+    fftBinBandwidth(0.0), scienceSliceBandwidth(0.0),
+    scienceSlicesPerSpot(0), guardSliceBandwidth(0.0), guardSlicesPerSide(0),
+    noiseBandwidth(0.0), receivePathLoss(0.0), transmitPathLoss(0.0),
+    loopbackLoss(0.0), loopbackLossRatio(0.0), physicalTemperature(0.0)
 {
-
     Qtable = (float*)malloc(12*sizeof(float));
     if (Qtable == NULL)
     {
-      fprintf(stderr,"Error allocating memory while constructing QscatSes\n");
-      exit(1);
+        fprintf(stderr,
+            "Error allocating memory while constructing QscatSes\n");
+        exit(1);
     }
 
     //-----------------------------------------------------------------------//
@@ -80,8 +79,9 @@ QscatSes::QscatSes()
 
 QscatSes::~QscatSes()
 {
+    if (Qtable)
+        free(Qtable);
 
-    if (Qtable) free(Qtable);
     return;
 }
 
@@ -320,58 +320,61 @@ unsigned char
 QscatSes::tempToDn(
     float  temp)
 {
-  // DN to EU conversion coefficients
-  double a = 0.000328789;
-  double b = -0.476764097;
-  double c = 83.137271991;
+    // DN to EU conversion coefficients
+    double a = 0.000328789;
+    double b = -0.476764097;
+    double c = 83.137271991;
 
-  // invert with quadratic formula
-  double dd = b*b - 4*a*(c-temp);
-  if (dd < 0.0)
-  {
-    fprintf(stderr,
-      "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",temp);
-    exit(1);
-  }
-  double x1 = (-b + sqrt(dd))/(2*a);
-  double x2 = (-b - sqrt(dd))/(2*a);
-  unsigned char x;
-  if (x1 < 0 && x2 < 0)
-  {
-    fprintf(stderr,
-      "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",temp);
-    exit(1);
-  }
-  else if (x1 < 0)
-  {
-    x = (unsigned char)x2;
-  }
-  else if (x2 < 0)
-  {
-    x = (unsigned char)x1;
-  }
-  else if (x1 < x2)
-  {
-    if (x1 > 255)
+    // invert with quadratic formula
+    double dd = b*b - 4*a*(c-temp);
+    if (dd < 0.0)
     {
-      fprintf(stderr,
-        "Error: out of range temp = %g passed to QscatSes::tempToDn\n",temp);
-      exit(1);
+        fprintf(stderr,
+            "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",
+            temp);
+        exit(1);
     }
-    x = (unsigned char)x1;
-  }
-  else
-  {
-    if (x2 > 255)
+    double x1 = (-b + sqrt(dd)) / (2*a);
+    double x2 = (-b - sqrt(dd)) / (2*a);
+    unsigned char x;
+    if (x1 < 0 && x2 < 0)
     {
-      fprintf(stderr,
-        "Error: out of range temp = %g passed to QscatSes::tempToDn\n",temp);
-      exit(1);
+        fprintf(stderr,
+            "Error: invalid temperature = %g passed to QscatSes::tempToDn\n",
+            temp);
+        exit(1);
     }
-    x = (unsigned char)x2;
-  }
-
-  return(x);
+    else if (x1 < 0)
+    {
+        x = (unsigned char)x2;
+    }
+    else if (x2 < 0)
+    {
+        x = (unsigned char)x1;
+    }
+    else if (x1 < x2)
+    {
+        if (x1 > 255)
+        {
+            fprintf(stderr,
+                "Error: out of range temp = %g passed to QscatSes::tempToDn\n",
+                temp);
+            exit(1);
+        }
+        x = (unsigned char)x1;
+    }
+    else
+    {
+        if (x2 > 255)
+        {
+            fprintf(stderr,
+                "Error: out of range temp = %g passed to QscatSes::tempToDn\n",
+                temp);
+            exit(1);
+        }
+        x = (unsigned char)x2;
+    }
+    return(x);
 }
 
 //==========//
@@ -379,7 +382,7 @@ QscatSes::tempToDn(
 //==========//
 
 QscatSas::QscatSas()
-:    encoderElectronics(ENCODER_A)
+:   encoderElectronics(ENCODER_A)
 {
     return;
 }
@@ -393,7 +396,7 @@ QscatSas::~QscatSas()
 // QscatSas::SetAzimuthWithEncoder //
 //---------------------------------//
 
-#define ENCODER_MASK         0x8000
+#define ENCODER_MASK  0x8000
 
 int
 QscatSas::SetAzimuthWithEncoder(
@@ -2687,12 +2690,15 @@ QscatEvent::~QscatEvent()
 // SetDelayAndFrequency //
 //----------------------//
 // the orbit step must be set prior to calling this function
+// estimate_encoder_method = 0 : use stored delay
+// estimate_encoder_method = 1 : estimate delay (in case a pulse was missed)
 
 int
 SetDelayAndFrequency(
     Spacecraft*       spacecraft,
     Qscat*            qscat,
-    QscatTargetInfo*  qti)
+    QscatTargetInfo*  qti,
+    int               estimate_encoder_method)
 {
     //------------------------------------------------------//
     // calculate the encoder value to use for the algorithm //
@@ -2701,8 +2707,23 @@ SetDelayAndFrequency(
     // remember the raw encoder for putting it in telemetry
     qscat->cds.rawEncoder = qscat->cds.heldEncoder;
 
-    // estimate current encoder from the held encoder
-    unsigned short ideal_encoder = qscat->cds.EstimateIdealEncoder();
+    unsigned short ideal_encoder;
+    CdsBeamInfo* cds_beam_info = NULL;
+    switch (estimate_encoder_method)
+    {
+    case 0:    // used stored delay
+        ideal_encoder = qscat->cds.EstimateIdealEncoder();
+        break;
+    case 1:    // use estimated delay
+        cds_beam_info = qscat->GetCurrentCdsBeamInfo();
+        ideal_encoder = qscat->cds.EstimateIdealEncoder(1,
+            qscat->cds.orbitStep, qscat->cds.heldEncoder,
+            cds_beam_info->rxGateWidthDn, qscat->cds.txPulseWidthDn);
+        break;
+    default:
+        return(0);
+        break;
+    }
 
     //---------------------------------------------//
     // sample the encoder for the next calculation //

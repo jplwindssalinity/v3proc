@@ -441,7 +441,7 @@ public:
 //------------------//
 
 int  SetDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat,
-         QscatTargetInfo* qti = NULL);
+         QscatTargetInfo* qti = NULL, int estimate_encoder_method = 0);
 int  SetOrbitStepDelayAndFrequency(Spacecraft* spacecraft, Qscat* qscat);
 Meas::MeasTypeE  PolToMeasType(PolE pol);
 PolE  MeasTypeToPol(Meas::MeasTypeE meas_type);
