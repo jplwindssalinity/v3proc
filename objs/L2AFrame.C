@@ -281,8 +281,8 @@ L2AFrame::ReadGS(
 		double gd_lat = lat[i] * dtr;
 		double gd_alt = 0.0;
 		m->centroid.SetAltLonGDLat(gd_alt, gd_lon, gd_lat);
-		m->pol = (PolE)(beam[i] - 1);
-		m->eastAzimuth = CWNTOCCWE(azi[i] * dtr);
+		m->pol = (PolE)(2 - beam[i]);
+		m->eastAzimuth = CWNTOCCWE(azi[i] * dtr) + pi;
 		m->incidenceAngle = inc[i] * dtr;
 		m->beamIdx = beam[i] - 1;
 		m->A = alpha[i];
