@@ -99,7 +99,7 @@ template class List<AngleInterval>;
 #define NEGATIVE         0x0004
 #define ANTENNA_BEAM     0x0004
 #define MIN_RAIN_DN      0
-#define NBD_SCALE        16.0
+#define NBD_SCALE        10.0
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
