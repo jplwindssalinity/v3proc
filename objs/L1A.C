@@ -9,6 +9,7 @@ static const char rcs_id_l1a_c[] =
 #include <memory.h>
 #include <malloc.h>
 #include "L1A.h"
+#include "Misc.h"
 
 #define GET_L1A_FIRST_PULSE(x) ((x & 0x00000004) >> 2)
 
