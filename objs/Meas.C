@@ -26,3 +26,59 @@ Meas::~Meas()
 {
 	return;
 }
+
+
+//==========//
+// MeasList //
+//==========//
+
+MeasList::MeasList()
+{
+	return;
+}
+
+MeasList::~MeasList()
+{
+	Meas* meas;
+	GetHead();
+	while ((meas=RemoveCurrent()) != NULL)
+		delete meas;
+
+	return;
+}
+
+
+//==========//
+// MeasSpot //
+//==========//
+
+MeasSpot::MeasSpot()
+:	time(0.0), scEphemeris(), scAttitude(), slices()
+{
+	return;
+}
+
+MeasSpot::~MeasSpot()
+{
+	return;
+}
+
+
+//==============//
+// MeasSpotList //
+//==============//
+
+MeasSpotList::MeasSpotList()
+{
+	return;
+}
+
+MeasSpotList::~MeasSpotList()
+{
+	MeasSpot* meas_spot;
+	GetHead();
+	while ((meas_spot=RemoveCurrent()) != NULL)
+		delete meas_spot;
+
+	return;
+}
