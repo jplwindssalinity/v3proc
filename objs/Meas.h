@@ -48,6 +48,12 @@ public:
 	int		Write(FILE* ofp);
 	int		Read(FILE* ofp);
 
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -93,7 +99,7 @@ public:
 	// freeing //
 	//---------//
 
-	int		FreeContents();
+	void	FreeContents();
 };
 
 //======================================================================
@@ -123,6 +129,12 @@ public:
 
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
+
+	//---------//
+	// freeing //
+	//---------//
+
+	void	FreeContents();
 
 	//-----------//
 	// variables //
@@ -165,7 +177,7 @@ public:
 	// freeing //
 	//---------//
 
-	int		FreeContents();
+	void	FreeContents();
 };
 
 #endif

@@ -57,6 +57,7 @@ int
 Meas::Read(
 	FILE*	fp)
 {
+	FreeContents();
 	if (fread((void *)&value, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		center.Read(fp) != 1 ||
@@ -68,6 +69,17 @@ Meas::Read(
 		return(0);
 	}
 	return(1);
+}
+
+//--------------------//
+// Meas::FreeContents //
+//--------------------//
+
+void
+Meas::FreeContents()
+{
+	outline.FreeContents();
+	return;
 }
 
 //==========//
@@ -113,6 +125,8 @@ int
 MeasList::Read(
 	FILE*	fp)
 {
+	FreeContents();
+
 	int count;
 	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
@@ -133,14 +147,14 @@ MeasList::Read(
 // MeasList::FreeContents //
 //------------------------//
 
-int
+void
 MeasList::FreeContents()
 {
 	Meas* meas;
-	GetHead();
+	GotoHead();
 	while ((meas = RemoveCurrent()) != NULL)
 		delete meas;
-	return(1);
+	return;
 }
 
 
@@ -185,6 +199,8 @@ int
 MeasSpot::Read(
 	FILE*	fp)
 {
+	FreeContents();
+
 	if (fread((void *)&time, sizeof(double), 1, fp) != 1 ||
 		scOrbitState.Read(fp) != 1 ||
 		scAttitude.Read(fp) != 1 ||
@@ -193,6 +209,17 @@ MeasSpot::Read(
 		return(0);
 	}
 	return(1);
+}
+
+//------------------------//
+// MeasSpot::FreeContents //
+//------------------------//
+
+void
+MeasSpot::FreeContents()
+{
+	slices.FreeContents();
+	return;
 }
 
 
@@ -208,7 +235,7 @@ MeasSpotList::MeasSpotList()
 MeasSpotList::~MeasSpotList()
 {
 	MeasSpot* meas_spot;
-	GetHead();
+	GotoHead();
 	while ((meas_spot=RemoveCurrent()) != NULL)
 		delete meas_spot;
 
@@ -243,6 +270,8 @@ int
 MeasSpotList::Read(
 	FILE*	fp)
 {
+	FreeContents();
+
 	int count;
 	if (fread((void *)&count, sizeof(int), 1, fp) != 1)
 		return(0);
@@ -263,12 +292,12 @@ MeasSpotList::Read(
 // MeasSpotList::FreeContents //
 //----------------------------//
 
-int
+void
 MeasSpotList::FreeContents()
 {
 	MeasSpot* meas_spot;
-	GetHead();
+	GotoHead();
 	while ((meas_spot = RemoveCurrent()) != NULL)
 		delete meas_spot;
-	return(1);
+	return;
 }
