@@ -11,15 +11,18 @@ CPPFLAGS =		-g -ptr. +w
 SYSLIBS =		-lm
 
 OBJS = \
-	SimControl.o \
-	Misc.o \
 	List.o \
+	Antenna.o \
+	AntennaSim.o \
+	Beam.o \
+	BeamSim.o \
 	ConfigList.o \
 	GMF.o \
-	OrbitSim.o \
-	SimConfig.o \
 	Instrument.o \
-	AntennaSim.o
+	InstrumentSim.o \
+	Misc.o \
+	Orbit.o \
+	OrbitSim.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -62,13 +65,18 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
+Antenna.o:		Antenna.C Antenna.h Beam.h
 AntennaSim.o:	AntennaSim.C AntennaSim.h
-ConfigList.o:	ConfigList.C ConfigList.h
+Beam.o:			Beam.C Beam.h
+BeamSim.o:		BeamSim.C BeamSim.h
+ConfigList.o:	ConfigList.C ConfigList.h List.h
 GMF.o:			GMF.C GMF.h
-Instrument.o:	Instrument.C Instrument.h
+Instrument.o:	Instrument.C Instrument.h Antenna.h Orbit.h Beam.h \
+				Constants.h
+InstrumentSim.o:	InstrumentSim.C InstrumentSim.h ConfigList.h \
+				Instrument.h OrbitSim.h List.h Antenna.h Orbit.h \
+				Beam.h Constants.h
 List.o:			List.C List.h
 Misc.o:			Misc.C Misc.h
-OrbitSim.o:		OrbitSim.C OrbitSim.h
-SimConfig.o:	SimConfig.C SimConfig.h SimControl.h ConfigList.h
-SimControl.o:	SimControl.C SimControl.h ConfigList.h Instrument.h \
-				OrbitSim.h Constants.h List.h
+Orbit.o:		Orbit.C Orbit.h Constants.h
+OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h

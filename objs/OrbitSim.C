@@ -26,20 +26,6 @@ static const double wa = wa_deg * dtr;	// rot. rate in radians
 
 static const double rm_2 = rm * rm;
 
-//============//
-// OrbitState //
-//============//
-
-OrbitState::OrbitState()
-{
-	return;
-}
-
-OrbitState::~OrbitState()
-{
-	return;
-}
-
 //==========//
 // OrbitSim //
 //==========//
@@ -161,13 +147,14 @@ OrbitSim::LocationToOrbit(
 	return(1);
 }
 
-//-------------------------//
-// OrbitSim::GetOrbitState //
-//-------------------------//
+//-----------------------//
+// OrbitSim::UpdateOrbit //
+//-----------------------//
 
-OrbitState
-OrbitSim::GetOrbitState(
-	double	time)
+int
+OrbitSim::UpdateOrbit(
+	double	time,
+	Orbit*	orbit)
 {
 	// propagate longitude of ascending node
 	double omg1r = _bigOmega + _ascnodot * time;
@@ -282,16 +269,16 @@ OrbitSim::GetOrbitState(
 	double s2 = sin(slonginer);
 
 	// x, y, z to center of earth
-	_orbitState.gc_vector[0] = rnew * c1 * c2;
-	_orbitState.gc_vector[1] = rnew * c1 * s2;
-	_orbitState.gc_vector[2] = rnew * s1;
+	orbit->gc_vector[0] = rnew * c1 * c2;
+	orbit->gc_vector[1] = rnew * c1 * s2;
+	orbit->gc_vector[2] = rnew * s1;
 
 	// S/C velocity vector
-	_orbitState.velocity_vector[0] = rdotnew*c1*c2 - rnew*s1*c2*slatdot -
+	orbit->velocity_vector[0] = rdotnew*c1*c2 - rnew*s1*c2*slatdot -
 		rnew*c1*s2*slongdot;
-	_orbitState.velocity_vector[1] = rdotnew*c1*s2 - rnew*s1*s2*slatdot +
+	orbit->velocity_vector[1] = rdotnew*c1*s2 - rnew*s1*s2*slatdot +
 		rnew*c1*c2*slongdot;
-	_orbitState.velocity_vector[2] = rdotnew*s1 + rnew*c1*slatdot;
+	orbit->velocity_vector[2] = rdotnew*s1 + rnew*c1*slatdot;
 
 	// rotate the x-y axis by the earth's motion to get final
 	// inertial state vector {x, y, z, xdot, ydot, zdot}
@@ -300,43 +287,43 @@ OrbitSim::GetOrbitState(
 	b = sin(earthmove);
 
 	double rss[2];
-	rss[0] = _orbitState.gc_vector[0] * a + _orbitState.gc_vector[1] * b;
-	rss[1] = -_orbitState.gc_vector[0] * b + _orbitState.gc_vector[1] * a;
+	rss[0] = orbit->gc_vector[0] * a + orbit->gc_vector[1] * b;
+	rss[1] = -orbit->gc_vector[0] * b + orbit->gc_vector[1] * a;
 
 	double vss[2];
-	vss[0] = _orbitState.velocity_vector[0] * a +
-		_orbitState.velocity_vector[1] * b;
-	vss[1] = -_orbitState.velocity_vector[0] * b +
-		_orbitState.velocity_vector[1] * a;
+	vss[0] = orbit->velocity_vector[0] * a +
+		orbit->velocity_vector[1] * b;
+	vss[1] = -orbit->velocity_vector[0] * b +
+		orbit->velocity_vector[1] * a;
 
-	_orbitState.gc_vector[0] = rss[0];
-	_orbitState.gc_vector[1] = rss[1];
-	_orbitState.velocity_vector[0] = vss[0];
-	_orbitState.velocity_vector[1] = vss[1];
+	orbit->gc_vector[0] = rss[0];
+	orbit->gc_vector[1] = rss[1];
+	orbit->velocity_vector[0] = vss[0];
+	orbit->velocity_vector[1] = vss[1];
 
 	// satellite radial distance from center of earth
-	double rsmag = sqrt(_orbitState.gc_vector[0]*_orbitState.gc_vector[0] +
-		_orbitState.gc_vector[1]*_orbitState.gc_vector[1] +
-		_orbitState.gc_vector[2]*_orbitState.gc_vector[2]);
+	double rsmag = sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
+		orbit->gc_vector[1]*orbit->gc_vector[1] +
+		orbit->gc_vector[2]*orbit->gc_vector[2]);
 
 	// satellite latitude
-	satlat = asin(_orbitState.gc_vector[2] / rsmag);
+	satlat = asin(orbit->gc_vector[2] / rsmag);
 
 	// satellite longitude
-	double sinl = _orbitState.gc_vector[1] /
-		sqrt(_orbitState.gc_vector[0]*_orbitState.gc_vector[0] +
-		_orbitState.gc_vector[1]*_orbitState.gc_vector[1]);
-	double cosl = _orbitState.gc_vector[0] /
-		sqrt(_orbitState.gc_vector[0]*_orbitState.gc_vector[0] +
-		_orbitState.gc_vector[1]*_orbitState.gc_vector[1]);
+	double sinl = orbit->gc_vector[1] /
+		sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
+		orbit->gc_vector[1]*orbit->gc_vector[1]);
+	double cosl = orbit->gc_vector[0] /
+		sqrt(orbit->gc_vector[0]*orbit->gc_vector[0] +
+		orbit->gc_vector[1]*orbit->gc_vector[1]);
 	double satlon = atan2(sinl, cosl);
 	satlon = fmod(satlon + two_pi, two_pi);
 
-	_orbitState.gc_altitude = rsmag;
-	_orbitState.gc_longitude = satlon;
-	_orbitState.gc_latitude = satlat;
+	orbit->gc_altitude = rsmag;
+	orbit->gc_longitude = satlon;
+	orbit->gc_latitude = satlat;
 
-	return(_orbitState);
+	return(1);
 }
 
 //-----------------//

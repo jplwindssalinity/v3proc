@@ -9,51 +9,23 @@
 static const char rcs_id_orbitsim_h[] =
 	"@(#) $Id$";
 
-#include "Constants.h"
+#include "Orbit.h"
+
 
 //======================================================================
 // CLASSES
-//		OrbitState
 //		OrbitSim
 //======================================================================
-
-//======================================================================
-// CLASS
-//		OrbitState
-//
-// DESCRIPTION
-//		The OrbitState object contains the orbit state.
-//======================================================================
-
-class OrbitState
-{
-public:
-
-	//--------------//
-	// construction //
-	//--------------//
-
-	OrbitState();
-	~OrbitState();
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	double	gc_altitude;
-	double	gc_longitude;
-	double	gc_latitude;
-	double	gc_vector[3];
-    double  velocity_vector[3];
-};
 
 //======================================================================
 // CLASS
 //		OrbitSim
 //
 // DESCRIPTION
-//		The OrbitSim object contains orbital parameters and an orbital
-//		simulator.
+//		The OrbitSim object contains the information necessary to
+//		simulate an orbit by operating on an Orbit object.  It is
+//		used to set members of the Orbit object as if the instrument
+//		were orbiting.
 //======================================================================
 
 class OrbitSim
@@ -81,7 +53,7 @@ public:
 	// orbit propagation //
 	//-------------------//
 
-	OrbitState	GetOrbitState(double time);
+	int		UpdateOrbit(double time, Orbit* orbit);
 
 	//---------------------//
 	// setting and getting //
@@ -129,12 +101,6 @@ protected:
 
 	double	_G;
 	double	_H;
-
-	//-----------------//
-	// the orbit state //
-	//-----------------//
-
-	OrbitState	_orbitState;
 };
 
 #endif

@@ -9,6 +9,9 @@
 static const char rcs_id_instrument_h[] =
 	"@(#) $Id$";
 
+#include "Antenna.h"
+#include "Orbit.h"
+
 //======================================================================
 // CLASSES
 //		Instrument
@@ -20,8 +23,7 @@ static const char rcs_id_instrument_h[] =
 //		Instrument
 //
 // DESCRIPTION
-//		The Instrument object holds all of the instrument parameters.
-//		It simulates the operation of the instrument.
+//		The Instrument object contains instrument state information.
 //======================================================================
 
 class Instrument
@@ -35,31 +37,12 @@ public:
 	Instrument();
 	~Instrument();
 
-	//-------------------//
-	// setting variables //
-	//-------------------//
-
-	void	SetPriPerBeam(double value);
-	void	SetBeamBTimeOffset(double value);
-
-	//-------------------//
-	// getting variables //
-	//-------------------//
-
-	int		GetPriPerBeam(double *value);
-	int		GetBeamBTimeOffset(double *value);
-
-protected:
-
 	//-----------//
 	// variables //
 	//-----------//
 
-	double		_pri_per_beam;			// seconds
-	double		_beam_b_time_offset;	// seconds
-
-	unsigned char	_pri_per_beam_set;
-	unsigned char	_beam_b_time_offset_set;
+	Orbit		orbit;
+	Antenna		antenna;
 };
 
 #endif
