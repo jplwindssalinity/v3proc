@@ -69,6 +69,19 @@ L00Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&velZ, size);
 	idx += size;
 
+	float tmp_float;
+	tmp_float = attitude.GetRoll();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
+	tmp_float = attitude.GetPitch();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
+	tmp_float = attitude.GetYaw();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
 	size = sizeof(float) * SPOTS_PER_L00_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;

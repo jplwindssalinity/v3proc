@@ -39,12 +39,22 @@ MeasList::MeasList()
 
 MeasList::~MeasList()
 {
+	FreeContents();
+	return;
+}
+
+//------------------------//
+// MeasList::FreeContents //
+//------------------------//
+
+int
+MeasList::FreeContents()
+{
 	Meas* meas;
 	GetHead();
-	while ((meas=RemoveCurrent()) != NULL)
+	while ((meas = RemoveCurrent()) != NULL)
 		delete meas;
-
-	return;
+	return(1);
 }
 
 

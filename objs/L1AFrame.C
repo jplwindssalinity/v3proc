@@ -69,6 +69,19 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)&velZ, size);
 	idx += size;
 
+	float tmp_float;
+	tmp_float = attitude.GetRoll();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
+	tmp_float = attitude.GetPitch();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
+	tmp_float = attitude.GetYaw();
+	memcpy((void *)(buffer + idx), (void *)&tmp_float, size);
+	idx += size;
+
 	size = sizeof(float) * SPOTS_PER_L10_FRAME;
 	memcpy((void *)(buffer + idx), (void *)antennaPosition, size);
 	idx += size;
@@ -121,6 +134,19 @@ L10Frame::Unpack(
 	idx += size;
 
 	memcpy((void *)&velZ, (void *)(buffer + idx), size);
+	idx += size;
+
+	float tmp_float;
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetRoll(tmp_float);
+	idx += size;
+
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetPitch(tmp_float);
+	idx += size;
+
+	memcpy((void *)&tmp_float, (void *)(buffer + idx), size);
+	attitude.SetYaw(tmp_float);
 	idx += size;
 
 	size = sizeof(float) * SPOTS_PER_L10_FRAME;

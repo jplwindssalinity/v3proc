@@ -9,13 +9,15 @@
 static const char rcs_id_l00frame_h[] =
 	"@(#) $Id$";
 
+#include "Attitude.h"
+
 
 //======================================================================
 // CLASSES
 //		L00Frame
 //======================================================================
 
-#define L00_FRAME_TOP			44
+#define L00_FRAME_TOP			56
 #define SPOTS_PER_L00_FRAME		10
 #define L00_FRAME_SIZE			(L00_FRAME_TOP+SPOTS_PER_L00_FRAME*8)
 
@@ -63,6 +65,8 @@ public:
 	float		velX;
 	float		velY;
 	float		velZ;
+
+	Attitude	attitude;
 
 	// antenna position
 
