@@ -3322,7 +3322,7 @@ GMF::RetrieveWinds_H2(
 #define S2_INIT_BISECT  2
 #define S2_USE_BRUTE_FORCE 0
 #define S2_REPLACE_BAD_PEAKS 0
-#define S2_DIR_MSE_THRESHOLD 25.0     // degrees squared
+#define S2_DIR_MSE_THRESHOLD 100.0     // degrees squared
 int
 GMF::RetrieveWinds_S2(
     MeasList*  meas_list,
