@@ -6,6 +6,7 @@
 #ifndef GENERICGEOM_H
 #define GENERICGEOM_H
 
+#include "EarthPosition.h"
 #include "CoordinateSwitch.h"
 
 static const char rcs_id_genericgeom_h[] =

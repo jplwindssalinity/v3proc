@@ -12,6 +12,7 @@ static const char rcs_id_ephemeris_h[] =
 #include <stdio.h>
 #include "Matrix3.h"
 #include "BufferedList.h"
+#include "EarthPosition.h"
 
 #define EPHEMERIS_INTERP_ORDER	8
 
