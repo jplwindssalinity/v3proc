@@ -272,16 +272,13 @@ ConfigAttitudeKnowledgeModel(
     if (! string)
         return(0);
 
-    if (strcmp(string, "NONE") == 0 || strcmp(string, "None") == 0
-        || strcmp(string, "none") == 0)
+    if (strcasecmp(string, "NONE") == 0)
     {
         // By default mean, variance, and correlation length
         // are set to zero
         return(1);
     }
-    else if (strcmp(string, "Time_Correlated_Gaussian")==0 ||
-        strcmp(string, "TIME_CORRELATED_GAUSSIAN")==0
-        || strcmp(string, "time_correlated_gaussian")==0)
+    else if (strcasecmp(string, "TIME_CORRELATED_GAUSSIAN") == 0)
     {
 
         float stdv, meanx, corrlength;
@@ -470,8 +467,8 @@ ConfigUniformRandomVelocity(
 
 int
 ConfigAntenna(
-    Antenna*        antenna,
-    ConfigList*        config_list)
+    Antenna*     antenna,
+    ConfigList*  config_list)
 {
     //-----------------------//
     // configure the antenna //
@@ -507,9 +504,10 @@ ConfigAntenna(
     //---------------------------------//
     // Convert from degrees to radians //
     //---------------------------------//
-        roll*=dtr;
-        pitch*=dtr;
-        yaw*=dtr;
+
+    roll *= dtr;
+    pitch *= dtr;
+    yaw *= dtr;
     Attitude att;
     att.Set(roll, pitch, yaw, 1, 2, 3);
     antenna->SetPedestalAttitude(&att);
@@ -550,9 +548,9 @@ ConfigAntenna(
 
 int
 ConfigBeam(
-    Beam*            beam,
-    int                beam_number,
-    ConfigList*        config_list)
+    Beam*        beam,
+    int          beam_number,
+    ConfigList*  config_list)
 {
     char keyword[1024];
     char number[8];
@@ -673,9 +671,9 @@ ConfigBeam(
 
 int
 ConfigXTable(
-    XTable*            xTable,
-    ConfigList*        config_list,
-    char*            read_write)
+    XTable*      xTable,
+    ConfigList*  config_list,
+    char*        read_write)
 {
     /**** Find out if XTable is to be configured READ or WRITE ***/
     int read_flag =0;
@@ -696,7 +694,6 @@ ConfigXTable(
         return(0);
 
     xTable->SetFilename(xtable_filename);
-
 
     /**** Read header parameters for XTable object ****/
 
@@ -742,7 +739,8 @@ ConfigXTable(
     if (! config_list->GetFloat(GUARD_SLICE_BANDWIDTH_KEYWORD,
         &guard_slice_bandwidth))
     {
-        fprintf(stderr, "Could not find guard slice bandwidth in config file\n");
+        fprintf(stderr,
+            "Could not find guard slice bandwidth in config file\n");
         return(0);
     }
     guard_slice_bandwidth*=KHZ_TO_HZ;
@@ -830,8 +828,8 @@ ConfigFbbTable(
 
 int
 ConfigL00(
-    L00*            l00,
-    ConfigList*        config_list)
+    L00*         l00,
+    ConfigList*  config_list)
 {
     //---------------------------//
     // configure the l00 product //
@@ -892,8 +890,8 @@ ConfigL00(
 
 int
 ConfigL1A(
-    L1A*            l1a,
-    ConfigList*        config_list)
+    L1A*         l1a,
+    ConfigList*  config_list)
 {
     //---------------------------//
     // configure the l1a product //
@@ -954,8 +952,8 @@ ConfigL1A(
 
 int
 ConfigL1B(
-    L1B*            l1b,
-    ConfigList*        config_list)
+    L1B*         l1b,
+    ConfigList*  config_list)
 {
     //---------------------------//
     // configure the l1b product //
@@ -976,8 +974,8 @@ ConfigL1B(
 
 int
 ConfigL1BHdf(
-    L1BHdf*            l1bHdf,
-    ConfigList*        config_list)
+    L1BHdf*      l1bHdf,
+    ConfigList*  config_list)
 {
     //-------------------------------//
     // configure the l1b HDF product //
@@ -1009,8 +1007,8 @@ ConfigL1BHdf(
 
 int
 ConfigL1AToL1B(
-    L1AToL1B*        l1a_to_l1b,
-    ConfigList*        config_list)
+    L1AToL1B*    l1a_to_l1b,
+    ConfigList*  config_list)
 {
     //-------------------------//
     // output simga0 to stdout //
@@ -1545,20 +1543,49 @@ ConfigKp(
     //----------------//
     // configure Kprs //
     //----------------//
+    // Try to read the Kprs file. If it can't be read, check to see
+    // if it is needed. If yes, bail; if not, warn and continue.
 
+    config_list->MemorizeLogFlag();
+    config_list->DoNothingForMissingKeywords();
+
+    // gather information
     char* kprs_filename = config_list->Get(KPRS_FILE_KEYWORD);
-    if (kprs_filename == NULL)
-        return(0);
-    if (strcmp(kprs_filename, "NONE") != 0
-        && strcmp(kprs_filename, "none") != 0
-        && strcmp(kprs_filename, "None") != 0)
+    int retrieve_using_kprs = 0;   // assume it is not needed
+    config_list->GetInt(RETRIEVE_USING_KPRS_FLAG_KEYWORD,
+        &retrieve_using_kprs);
+
+    if (kprs_filename == NULL || strcasecmp(kprs_filename, "NONE") != 0)
     {
-        if (! kp->kprs.Read(kprs_filename))
+        // No file specified (keyword missing or set to "none")
+        // See if we care. No, really. See!
+        if (retrieve_using_kprs == 1)
         {
-            fprintf(stderr, "Error reading Kprs from %s\n",kprs_filename);
-            return(0);
+            // we care!
+            fprintf(stderr, "ConfigKp: missing Kprs file\n");
+            exit(1);
         }
     }
+    else
+    {
+        // file specified. read it.
+        if (! kp->kprs.Read(kprs_filename))
+        {
+            fprintf(stderr, "ConfigKp: error reading Kprs file %s\n",
+                kprs_filename);
+            if (retrieve_using_kprs == 1)
+            {
+                // we need that file. bail.
+                exit(1);
+            }
+            else
+            {
+                fprintf(stderr,
+                    "  It doesn't appear to be needed. Continuing.\n");
+            }
+        }
+    }
+    config_list->RestoreLogFlag();
 
     return(1);
 }
