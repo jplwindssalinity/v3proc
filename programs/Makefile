@@ -33,6 +33,7 @@ PROGRAMS = \
 	make_pattern \
 	test_pattern \
 	fake_vap \
+	l1b_ascii \
 	l1b_outlines \
 	l1b_to_kprtable \
 	plot_solution_curves \
@@ -64,6 +65,7 @@ HUDD_PROGRAMS = \
 	l2a_to_l2b \
 	l2b_to_vctr \
 	l2b_metrics \
+	l1b_ascii \
 	see_spot \
 	eqx \
 	generate_rgc \
