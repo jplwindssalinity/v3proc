@@ -282,10 +282,6 @@ InstrumentSim::SetMeasurements(
 		    }
 		  meas->XK=Xfactor;
 		}
-                else if(useBYUXfactor){
-		  
-		}
-
                 else{
 
 		  float Kfactor=1.0;
