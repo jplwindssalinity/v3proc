@@ -114,6 +114,8 @@ int ConfigL17(L17* l17, ConfigList* config_list);
 //-----//
 
 #define L20_FILE_KEYWORD					"L20_FILE"
+#define MEDIAN_FILTER_WINDOW_SIZE_KEYWORD	"MEDIAN_FILTER_WINDOW_SIZE"
+#define MEDIAN_FILTER_MAX_PASSES_KEYWORD	"MEDIAN_FILTER_MAX_PASSES"
 
 int ConfigL20(L20* l20, ConfigList* config_list);
 

@@ -340,6 +340,15 @@ ConfigL20(
 		return(0);
 	l20->SetFilename(l20_filename);
 
+	int tmp_int;
+	if (! config_list->GetInt(MEDIAN_FILTER_WINDOW_SIZE_KEYWORD, &tmp_int))
+		return(0);
+	l20->medianFilterWindowSize = tmp_int;
+
+	if (! config_list->GetInt(MEDIAN_FILTER_MAX_PASSES_KEYWORD, &tmp_int))
+		return(0);
+	l20->medianFilterMaxPasses = tmp_int;
+
 	return(1);
 }
 
