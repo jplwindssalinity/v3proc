@@ -91,9 +91,10 @@ public:
 	// generally varied //
 	//------------------//
 
-	unsigned short	orbitTime;			// 32 Hz ticks
-	float			commandedDoppler;	// Hz
-	float			receiverGateDelay;	// sec
+	unsigned short	orbitTime;				// 32 Hz ticks
+	float			commandedDoppler;		// Hz
+	float			receiverGateDelay;		// sec
+	float			receiverGateDuration;	// sec
 
 	//-------------------------------------//
 	// affected by noise, temperature etc. //
@@ -113,7 +114,6 @@ public:
 	float		systemDelay;		// sec
 	float		systemTemperature;	// K
 //	float		xmitPulsewidth;		// sec
-//	float		receiverGateWidth;	// sec
 	float		baseTransmitFreq;	// Hz
 	float		sliceBandwidth;		// Hz
 	float		noiseBandwidth;		// Hz

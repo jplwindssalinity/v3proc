@@ -28,6 +28,8 @@ static const char rcs_id_spacecraftsim_h[] =
 //		spacecraft were orbiting.
 //======================================================================
 
+#define EQX_TIME_TOLERANCE		0.1		// seconds
+
 class SpacecraftSim
 {
 public:
@@ -77,7 +79,7 @@ public:
 	//--------//
 
 	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
-	double	NextEqxTime(double time);
+	double	NextEqxTime(double time, double time_tol);
 
 	//----------------------------------------------//
 	// Attitude Error Model Initialization Routines //

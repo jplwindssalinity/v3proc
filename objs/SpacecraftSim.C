@@ -55,7 +55,7 @@ SpacecraftSim::Initialize(
 	double		start_time)
 {
 	_nextUpdateTime = start_time;
-	_nextEqxTime = NextEqxTime(start_time);
+	_nextEqxTime = NextEqxTime(start_time, EQX_TIME_TOLERANCE);
 	return(1);
 }
 
@@ -357,9 +357,9 @@ SpacecraftSim::UpdateAttitude(
 	return(1);
 }
 
-//-------------------------------//
-// SpaceCraftSim::SetAttCntlModel//
-//-------------------------------//
+//--------------------------------//
+// SpaceCraftSim::SetAttCntlModel //
+//--------------------------------//
 
 void
 SpacecraftSim::SetAttCntlModel(
@@ -369,9 +369,9 @@ SpacecraftSim::SetAttCntlModel(
 	return;
 }
 
-//-------------------------------//
-// SpaceCraftSim::SetAttKnowModel//
-//-------------------------------//
+//--------------------------------//
+// SpaceCraftSim::SetAttKnowModel //
+//--------------------------------//
 
 void
 SpacecraftSim::SetAttKnowModel(
@@ -468,7 +468,8 @@ SpacecraftSim::DetermineNextEvent(
 		// set next equator crossing time //
 		//--------------------------------//
 
-		_nextEqxTime = NextEqxTime(_nextEqxTime + GetPeriod());
+		_nextEqxTime = NextEqxTime(_nextEqxTime + GetPeriod(),
+			EQX_TIME_TOLERANCE);
 	}
 	else
 	{
@@ -497,16 +498,72 @@ SpacecraftSim::DetermineNextEvent(
 
 double
 SpacecraftSim::NextEqxTime(
-	double	time)
+	double	time,
+	double	time_tol)
 {
-	//-------------------//
-	// estimate next eqx //
-	//-------------------//
+	//------------------------//
+	// estimate next eqx time //
+	//------------------------//
 
 	static Spacecraft spacecraft;		// used just for this
 	UpdateOrbit(time, &spacecraft);
 	double arg_of_lat = GetArgOfLat(&spacecraft);
 	double eqx_time = time + _period * (1.0 - arg_of_lat / two_pi);
+
+	//------------------//
+	// bracket the root //
+	//------------------//
+
+	double delta_time = _period / 1000.0;
+	double time_1 = eqx_time - delta_time;
+	double time_2 = eqx_time + delta_time;
+
+	UpdateOrbit(time_1, &spacecraft);
+	double lat_1 = GetArgOfLat(&spacecraft);
+	lat_1 = fmod(lat_1 + pi, two_pi) - pi;
+	while (lat_1 > 0.0)
+	{
+		time_1 -= delta_time;
+		UpdateOrbit(time_1, &spacecraft);
+		lat_1 = GetArgOfLat(&spacecraft);
+		lat_1 = fmod(lat_1 + pi, two_pi) - pi;
+	}
+
+	UpdateOrbit(time_2, &spacecraft);
+	double lat_2 = GetArgOfLat(&spacecraft);
+	lat_2 = fmod(lat_2 + pi, two_pi) - pi;
+	while (lat_2 < 0.0)
+	{
+		time_2 += delta_time;
+		UpdateOrbit(time_2, &spacecraft);
+		lat_2 = GetArgOfLat(&spacecraft);
+		lat_2 = fmod(lat_2 + pi, two_pi) - pi;
+	}
+
+	//------------------//
+	// bisection search //
+	//------------------//
+
+	double time_mid, lat_mid;
+	while (time_2 - time_1 > time_tol)
+	{
+		time_mid  = (time_1 + time_2) / 2.0;
+		UpdateOrbit(time_mid, &spacecraft);
+		lat_mid = GetArgOfLat(&spacecraft);
+		lat_mid = fmod(lat_mid + pi, two_pi) - pi;
+
+		if (lat_mid < 0.0)
+			time_1 = time_mid;
+		else
+			time_2 = time_mid;
+	}
+
+	//--------------------//
+	// simple calculation //
+	//--------------------//
+
+	eqx_time = (time_1 + time_2) / 2.0;
+
 	return(eqx_time);
 }
 

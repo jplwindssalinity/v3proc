@@ -83,8 +83,12 @@ DopplerTracker::Doppler(
 	double p_term = (double)pm * (double)p[azimuth_step] + (double)pb;
 	double c_term = (double)cm * (double)c[azimuth_step] + (double)cb;
 
-	*doppler = c_term + a_term *
+	double raw_doppler = c_term + a_term *
 		cos(two_pi * ((double)azimuth_step / (double)_azimuthSteps) - p_term);
+
+	int doppler_dn = (int)(raw_doppler / DOPPLER_TRACKING_RESOLUTION + 0.5);
+
+	*doppler = doppler_dn * DOPPLER_TRACKING_RESOLUTION;
 
 	return(1);
 }
@@ -214,19 +218,16 @@ DopplerTracker::ReadBinary(
 //==============//
 
 RangeTracker::RangeTracker()
-:	_delay(NULL), _duration(NULL), _ticksPerOrbit(0),
-	_numberOfBeams(0), _rangeSteps(0)
+:	_delay(NULL), _duration(NULL), _ticksPerOrbit(0), _numberOfBeams(0),
+	_rangeSteps(0)
 {
 	return;
 }
 
 RangeTracker::~RangeTracker()
 {
-	for (unsigned int beam_idx = 0; beam_idx < _numberOfBeams; beam_idx++)
-		free(*(_delay + beam_idx));
-
-	free(_delay);
-	free(_duration);
+	free_array((void *)_delay, 2, _numberOfBeams, _rangeSteps);
+	free_array((void *)_duration, 1, _numberOfBeams);
 
 	return;
 }
@@ -240,37 +241,15 @@ RangeTracker::Allocate(
 	int		number_of_beams,
 	int		range_steps)
 {
-	//---------------------------------//
-	// allocate the _delay[beam] array //
-	//---------------------------------//
-
-	int size = number_of_beams * sizeof(unsigned char *);
-	_delay = (unsigned char **)malloc(size);
+	_delay = (unsigned char **)make_array(sizeof(unsigned char), 2,
+		number_of_beams, range_steps);
 	if (_delay == NULL)
 		return(0);
 
-	//------------------------------------//
-	// allocate the duraction[beam] array //
-	//------------------------------------//
-
-	size = number_of_beams * sizeof(unsigned char);
-	_duration = (unsigned char *)malloc(size);
+	_duration = (unsigned char *)make_array(sizeof(unsigned char), 1,
+		number_of_beams);
 	if (_duration == NULL)
 		return(0);
-
-	//----------------------------------------//
-	// allocate each _delay[beam][step] array //
-	//----------------------------------------//
-
-	size = sizeof(unsigned char) * range_steps;
-	for (int beam_idx = 0; beam_idx < number_of_beams; beam_idx++)
-	{
-		unsigned char* ptr = (unsigned char *)malloc(size);
-		if (ptr == NULL)
-			return(0);
-
-		*(_delay + beam_idx) = ptr;
-	}
 
 	_numberOfBeams = number_of_beams;
 	_rangeSteps = range_steps;
@@ -294,42 +273,61 @@ RangeTracker::OrbitTimeToRangeStep(
 	return(range_step);
 }
 
-//--------------------------------//
-// RangeTracker::DelayAndDuration //
-//--------------------------------//
+//-----------------------------------//
+// RangeTracker::GetDelayAndDuration //
+//-----------------------------------//
 
 int
-RangeTracker::DelayAndDuration(
+RangeTracker::GetDelayAndDuration(
 	int		beam_idx,
-	int		orbit_step,
-	float	receiver_gate_width,		// seconds
+	int		range_step,
 	float	xmit_pulse_width,			// seconds
 	float*	delay,
 	float*	duration)
 {
 	//------------------------//
-	// scale input parameters //
+	// determine the duration //
 	//------------------------//
-
-	unsigned char rgw = (unsigned char)(receiver_gate_width /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	unsigned char pw = (unsigned char)(xmit_pulse_width /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-
-	//---------------//
-	// set the delay //
-	//---------------//
-
-	unsigned char delay_dn = (int) *(*(_delay + beam_idx) + orbit_step);
-	delay_dn -= (rgw - pw) / 2;
-	*delay = RANGE_TRACKING_TIME_RESOLUTION * (float)delay_dn;
-
-	//------------------//
-	// set the duration //
-	//------------------//
 
 	unsigned char duration_dn = *(_duration + beam_idx);
 	*duration = RANGE_TRACKING_TIME_RESOLUTION * (float)duration_dn;
+
+	//-----------------------//
+	// scale the pulse width //
+	//-----------------------//
+
+	unsigned char pw_dn = (unsigned char)(xmit_pulse_width /
+		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
+
+	//---------------------//
+	// determine the delay //
+	//---------------------//
+
+	unsigned char delay_dn = (int) *(*(_delay + beam_idx) + range_step);
+	delay_dn -= (duration_dn - pw_dn) / 2;
+	*delay = RANGE_TRACKING_TIME_RESOLUTION * (float)delay_dn;
+
+	return(1);
+}
+
+//-----------------------------//
+// RangeTracker::SetInstrument //
+//-----------------------------//
+
+int
+RangeTracker::SetInstrument(
+	Instrument*		instrument)
+{
+	int beam_idx = instrument->antenna.currentBeamIdx;
+	int orbit_step = OrbitTimeToRangeStep(instrument->orbitTime);
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	float xpw = beam->pulseWidth;
+
+	float delay, duration;
+	GetDelayAndDuration(beam_idx, orbit_step, xpw, &delay, &duration);
+
+	instrument->receiverGateDelay = delay;
+	instrument->receiverGateDuration = duration;
 
 	return(1);
 }
@@ -342,24 +340,12 @@ int
 RangeTracker::SetDelay(
 	int		beam_idx,
 	int		orbit_step,
-	float	receiver_gate_width,		// seconds
+	float	receiver_gate_duration,		// seconds
 	float	xmit_pulse_width,			// seconds
 	float	delay)
 {
-	//------------------------//
-	// scale input parameters //
-	//------------------------//
-
-	unsigned char rgw = (unsigned char)(receiver_gate_width /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	unsigned char pw = (unsigned char)(xmit_pulse_width /
-		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-
-	//---------------//
-	// set the delay //
-	//---------------//
-
-	float table_delay = delay + (float)((rgw - pw) / 2.0);
+	float table_delay = delay +
+		(receiver_gate_duration - xmit_pulse_width) / 2.0;
 	unsigned char delay_dn = (unsigned char)(table_delay /
 		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
 	*(*(_delay + beam_idx) + orbit_step) = delay_dn;

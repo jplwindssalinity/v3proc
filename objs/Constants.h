@@ -51,4 +51,11 @@ static const double flat = 1.0 - sqrt(1.0 - e2);
 // sidereal rotation rate (rad/sec)
 static const double w_earth = M_PI / 180 * 4.1780746e-3;
 
+//---------------------------------//
+// golden section search constants //
+//---------------------------------//
+
+static const double golden_c = (3.0 - sqrt(5.0)) / 2.0;
+static const double golden_r = 1.0 - golden_c;
+
 #endif

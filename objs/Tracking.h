@@ -11,12 +11,15 @@ static const char rcs_id_tracking_h[] =
 
 
 #include "Constants.h"
+#include "Instrument.h"
 
 
 //======================================================================
 // CLASSES
 //		DopplerTracker, RangeTracker
 //======================================================================
+
+#define DOPPLER_TRACKING_RESOLUTION		2000		// Hz
 
 //======================================================================
 // CLASS
@@ -109,9 +112,10 @@ public:
 	//------------//
 
 	unsigned short		OrbitTimeToRangeStep(unsigned int orbit_time);
-	int					DelayAndDuration(int beam_idx, int range_step,
-							float receiver_gate_width, float xmit_pulse_width,
-							float* delay, float* duration);
+	int					GetDelayAndDuration(int beam_idx, int range_step,
+							float xmit_pulse_width, float* delay,
+							float* duration);
+	int					SetInstrument(Instrument* instrument);
 	int					SetDelay(int beam_idx, int range_step,
 							float receiver_gate_width, float xmit_pulse_width,
 							float delay);
