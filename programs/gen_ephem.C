@@ -71,7 +71,7 @@ static const char rcs_id[] =
 
 template class List<StringPair>;
 template class List<Meas>;
-template class List<LonLat>;
+template class List<EarthPosition>;
 template class List<WindVectorPlus>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;

@@ -75,7 +75,7 @@ static const char rcs_id[] =
 
 template class List<StringPair>;
 template class List<Meas>;
-template class List<LonLat>;
+template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class BufferedList<OrbitState>;
 template class List<OrbitState>;
@@ -211,7 +211,7 @@ main(
 		power_gain[i][j] = Fn*max_gain;
 	}
 
-	cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,
+	cur_beam.SetBeamPattern(Nx,Ny,ix_zero,iy_zero,x_spacing,y_spacing,0.0,0.0,
 								power_gain);
 	cur_beam.WriteBeamPattern("beampattern.dat");
 

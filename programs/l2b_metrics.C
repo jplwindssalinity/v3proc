@@ -67,7 +67,7 @@ static const char rcs_id[] =
 //-----------//
 
 template class List<WindVectorPlus>;
-template class List<LonLat>;
+template class List<EarthPosition>;
 
 //-----------//
 // CONSTANTS //

@@ -77,7 +77,7 @@ template class BufferedList<OrbitState>;
 template class List<OrbitState>;
 template class List<StringPair>;
 template class List<Meas>;
-template class List<LonLat>;
+template class List<EarthPosition>;
 template class List<MeasSpot>;
 template class List<WindVectorPlus>;
 
