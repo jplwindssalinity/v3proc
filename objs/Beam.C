@@ -11,6 +11,7 @@ static const char rcs_id_beam_c[] =
 #include "Beam.h"
 #include "Array.h"
 #include "Constants.h"
+#include "Attitude.h"
 
 //======//
 // Beam //
@@ -77,15 +78,6 @@ Beam::SetElectricalBoresight(
 		1, 2, 3);
 	_antennaFrameToBeamFrame.SetRotation(attitude);
 
-/*
-	// The X-axis of the beam reference frame is defined by the following
-	// two variables. (These are spherical angles in the antenna frame.)
-	_reference_lookAngle = desired_electrical_look_angle +
-							_electrical_boresight_Em;
-	_reference_azimuthAngle = desired_electrical_azimuth_angle -
-								 _electrical_boresight_Am;
-*/
-
 	return(1);
 }
 
@@ -139,6 +131,9 @@ Beam::SetMechanicalBoresight(
 		printf("Error: SetMechanicalBoresight found no loaded beam pattern\n");
  		return(0);
 	}
+
+	// dummy line
+	look_angle = azimuth_angle;
 
 	fprintf(stderr, "Beam::SetMechanicalBoresight is not available yet!\n");
 	exit(1);
@@ -359,10 +354,10 @@ Beam::GetPowerGain(
 
 	// Transform antenna frame angles to beam reference frame.
 	Vector3 vector;
-	vector.SetSpherical(1.0, look_angle, azimuth_angle);
-	vector = _antennaFrameToBeamFrame(&vector);
+	vector.SphericalSet(1.0, look_angle, azimuth_angle);
+	vector = _antennaFrameToBeamFrame.Forward(vector);
 	double r, theta, phi;
-	vector.GetSpherical(&r, &theta, &phi);
+	vector.SphericalGet(&r, &theta, &phi);
 	double Em = pi / 2.0 - theta;
 	double Am = phi;
 

@@ -247,8 +247,8 @@ LocateSpot(
 	// but the round trip time difference should be very small.
 	//
 
-	if (! GetTwoWayPeakGain(beam,tip.roundTripTime,
-		instrument->antenna.spinRate,&look, &azimuth))
+	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
+		instrument->antenna.spinRate, &look, &azimuth))
 	{
 		printf("Error determining 2 way electrical boresight\n");
 		return(0);
@@ -268,8 +268,8 @@ LocateSpot(
 
 	// get the max gain value.
 	float gp_max;
-	beam->GetPowerGainProduct(look,azimuth,tip.roundTripTime,
-			instrument->antenna.spinRate,&gp_max);
+	beam->GetPowerGainProduct(look, azimuth,tip.roundTripTime,
+			instrument->antenna.spinRate, &gp_max);
 
 	// Align beam frame z-axis with the electrical boresight.
 	Attitude beam_frame;
@@ -1627,7 +1627,6 @@ GetTwoWayPeakGain2(
 double ReciprocalPowerGainProduct(double* x, void* beam)
 
 {
-
 	double gp;
 	((Beam*)beam)->GetPowerGainProduct(x[0],x[1],x[2],x[3],&gp);
 	if (gp == 0.0)
@@ -1636,5 +1635,4 @@ double ReciprocalPowerGainProduct(double* x, void* beam)
 		exit(-1);
 	}
 	return(1.0 / gp);
-
 }

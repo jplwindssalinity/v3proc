@@ -9,6 +9,8 @@
 static const char rcs_id_beam_h[] =
 	"@(#) $Id$";
 
+#include "CoordinateSwitch.h"
+
 //======================================================================
 // CLASSES
 //		Beam
@@ -95,11 +97,6 @@ protected:
 
 	double				_elecBoresightLook;		// in the antenna frame
 	double				_elecBoresightAzim;
-
-/*
-	double				_reference_lookAngle;
-	double				_reference_azimuthAngle;
-*/
 
 	// Beam pattern info
 	double	_electrical_boresight_Em;
