@@ -201,7 +201,7 @@ KprTable::Accumulate(L00Frame* quiet , L00Frame* noisy){
 	fprintf(stderr,"KprTable::Accumulate-- Frame Sizes don't match.\n");
 	return(0);
   }
-  if(slice_number != quiet->slicesPerSpot){   
+  if(_slicesPerSpot != quiet->slicesPerSpot){   
 	fprintf(stderr,"KprTable::Accumulate-- Wrong number of slices.\n");
 	return(0);
   }
@@ -335,7 +335,7 @@ int KprTable::Normalize(){
       }
     }
   }
-  return(0);
+  return(1);
 }
 
 //--------------------------------//
@@ -357,7 +357,7 @@ int KprTable::NormalizeFrom3Sigma(){
       }
     }
   }
-  return(0);
+  return(1);
 }
 
 //--------------------------------//

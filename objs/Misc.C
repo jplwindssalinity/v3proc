@@ -337,7 +337,7 @@ amotry(
 
 float median(const float* array, int num_elements){
   // copy array
-  float* buf= new float(num_elements);
+  float* buf= new float[num_elements];
   for(int c=0;c<num_elements;c++) buf[c]=array[c];
 
   // sort array
