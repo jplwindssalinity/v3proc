@@ -1,176 +1,40 @@
-//==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.                    //
-//==============================================================//
+//=========================================================//
+// Copyright (C) 2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
-static const char rcs_id_landmap_c[] =
+static const char rcs_id_sigma0map_c[] =
     "@(#) $Id$";
 
 #include <math.h>
 #include "Array.h"
 #include "Constants.h"
-#include "LandMap.h"
+#include "Sigma0Map.h"
 
-//=========//
-// LandMap //
-//=========//
+//===========//
+// Sigma0Map //
+//===========//
 
-LandMap::LandMap()
-:   _map(NULL), _pixelsPerDegree(12), _usemap(0)
-{
-    _mapLatDim = 180 * _pixelsPerDegree;
-    _mapLonDim = 45 * _pixelsPerDegree;
-    return;
-}
-
-LandMap::~LandMap()
-{
-    if (_map)
-        _Deallocate();
-    _map=NULL;
-    return;
-}
-
-//---------------------//
-// LandMap::Initialize //
-//---------------------//
-
-int
-LandMap::Initialize(
-    char*  filename,
-    int    use_map)
-{
-    _usemap = use_map;
-    if (_usemap != 0)
-    {
-        if (! Read(filename))
-            return(0);
-    }
-    return(1);
-}
-
-//---------------//
-// LandMap::Read //
-//---------------//
-
-int
-LandMap::Read(
-    char*  filename)
-{
-    FILE* ifp = fopen(filename, "r");
-    if (ifp == NULL)
-    {
-        fprintf(stderr, "LandMap File Read Failed for file %s.\n", filename);
-        exit(1);
-    }
-    if (! _Allocate())
-        return(0);
-    for (int c = 0; c < _mapLatDim; c++)
-    {
-        if (fread((void*)&_map[c][0], sizeof(unsigned char), _mapLonDim,
-            ifp) != (unsigned)_mapLonDim)
-        {
-            return(0);
-        }
-    }
-    fclose(ifp);
-    return(1);
-}
-
-//-----------------//
-// LandMap::IsLand //
-//-----------------//
-
-int
-LandMap::IsLand(
-    float  lon,
-    float  lat)
-{
-    if (_usemap == 0)
-        return(0);
-
-    while (lon < 0)
-        lon+=two_pi;
-
-    int lon_idx = int(lon * rtd * _pixelsPerDegree + 0.5);
-    int lat_idx = int((90.0 + lat * rtd) * _pixelsPerDegree + 0.5);
-    int lon_byte_idx = lon_idx / 8;
-    int lon_bit_idx = lon_idx % 8;
-
-    lon_bit_idx = 7 - lon_bit_idx;
-    if (lat_idx == _mapLatDim)
-        return(0);
-
-    if (lon_byte_idx == _mapLonDim)
-        lon_byte_idx = 0;
-
-    unsigned char byte = _map[lat_idx][lon_byte_idx];
-    int bit = (int)(byte&(0x1 << lon_bit_idx));
-    if (bit != 0)
-        bit = 1;
-    return(bit);
-}
-
-//-----------------//
-// LandMap::IsLand //
-//-----------------//
-
-int
-LandMap::IsLand(
-    LonLat*  lon_lat)
-{
-    return(IsLand(lon_lat->longitude, lon_lat->latitude));
-}
-
-//--------------------//
-// LandMap::_Allocate //
-//--------------------//
-
-int
-LandMap::_Allocate()
-{
-    _map = (unsigned char**)make_array(sizeof(char), 2, _mapLatDim,
-        _mapLonDim);
-    if (! _map)
-        return(0);
-    return(1);
-}
-
-//----------------------//
-// LandMap::_Deallocate //
-//----------------------//
-
-int
-LandMap::_Deallocate()
-{
-    free_array((void*)_map, 2, _mapLatDim, _mapLonDim);
-    return(1);
-}
-
-//===============//
-// SimpleLandMap //
-//===============//
-
-SimpleLandMap::SimpleLandMap()
+Sigma0Map::Sigma0Map()
 :   _map(NULL), _lonSamples(0), _latSamples(0), _lonResolution(0.0),
     _latResolution(0.0)
 {
     return;
 }
 
-SimpleLandMap::~SimpleLandMap()
+Sigma0Map::~Sigma0Map()
 {
     if (_map)
         _Deallocate();
     return;
 }
 
-//---------------------//
-// SimpleLandMap::Read //
-//---------------------//
+//-----------------//
+// Sigma0Map::Read //
+//-----------------//
 
 int
-SimpleLandMap::Read(
+Sigma0Map::Read(
     const char*  filename)
 {
     FILE* ifp = fopen(filename, "r");
@@ -194,7 +58,7 @@ SimpleLandMap::Read(
         return(0);
     }
 
-    int size = sizeof(char) * _latSamples;
+    int size = sizeof(float) * _latSamples;
     for (int lon_idx = 0; lon_idx < _lonSamples; lon_idx++)
     {
         if (fread((void *)*(_map + lon_idx), size, 1, ifp) != 1)
@@ -211,12 +75,12 @@ SimpleLandMap::Read(
     return(1);
 }
 
-//----------------------//
-// SimpleLandMap::Write //
-//----------------------//
+//------------------//
+// Sigma0Map::Write //
+//------------------//
 
 int
-SimpleLandMap::Write(
+Sigma0Map::Write(
     const char*  filename)
 {
     FILE* ofp = fopen(filename, "w");
@@ -230,7 +94,7 @@ SimpleLandMap::Write(
         return(0);
     }
 
-    int size = sizeof(char) * _latSamples;
+    int size = sizeof(float) * _latSamples;
     for (int lon_idx = 0; lon_idx < _lonSamples; lon_idx++)
     {
         if (fwrite((void *)*(_map + lon_idx), size, 1, ofp) != 1)
@@ -244,17 +108,14 @@ SimpleLandMap::Write(
     return(1);
 }
 
-//------------------------//
-// SimpleLandMap::GetType //
-//------------------------//
+//----------------------//
+// Sigma0Map::GetSigma0 //
+//----------------------//
 // lon must be between 0 and +two_pi radians
 // lat must be between -pi/2 and +pi/2 radians
-// 0 is ocean
-// 1 is land
-// 2 is mixed
 
-int
-SimpleLandMap::GetType(
+float
+Sigma0Map::GetSigma0(
     float  lon,
     float  lat)
 {
@@ -267,32 +128,16 @@ SimpleLandMap::GetType(
     if (lat_idx >= _latSamples)
         lat_idx = _latSamples;
 
-    int flag = *(*(_map + lon_idx) + lat_idx);
-    return(flag);
+    float sigma0 = *(*(_map + lon_idx) + lat_idx);
+    return(sigma0);
 }
 
-//-----------------------//
-// SimpleLandMap::IsLand //
-//-----------------------//
+//---------------------//
+// Sigma0Map::Allocate //
+//---------------------//
 
 int
-SimpleLandMap::IsLand(
-    float  lon,
-    float  lat)
-{
-    int flag = GetType(lon, lat);
-    if (flag == 1)
-        return(1);
-    else
-        return(0);
-}
-
-//-------------------------//
-// SimpleLandMap::Allocate //
-//-------------------------//
-
-int
-SimpleLandMap::Allocate(
+Sigma0Map::Allocate(
     int  lon_samples,
     int  lat_samples)
 {
@@ -305,44 +150,26 @@ SimpleLandMap::Allocate(
     return(_Allocate());
 }
 
-//---------------------//
-// SimpleLandMap::Fill //
-//---------------------//
+//----------------------//
+// Sigma0Map::_Allocate //
+//----------------------//
 
 int
-SimpleLandMap::Fill(
-    char  value)
+Sigma0Map::_Allocate()
 {
-    for (int i = 0; i < _lonSamples; i++)
-    {
-        for (int j = 0; j < _latSamples; j++)
-        {
-            *(*(_map + i) + j) = value;
-        }
-    }
-    return(1);
-}
-
-//--------------------------//
-// SimpleLandMap::_Allocate //
-//--------------------------//
-
-int
-SimpleLandMap::_Allocate()
-{
-    _map = (char**)make_array(sizeof(char), 2, _lonSamples,
+    _map = (char**)make_array(sizeof(float), 2, _lonSamples,
         _latSamples);
     if (_map == NULL)
         return(0);
     return(1);
 }
 
-//----------------------------//
-// SimpleLandMap::_Deallocate //
-//----------------------------//
+//------------------------//
+// Sigma0Map::_Deallocate //
+//------------------------//
 
 int
-SimpleLandMap::_Deallocate()
+Sigma0Map::_Deallocate()
 {
     free_array((void*)_map, 2, _lonSamples, _latSamples);
     return(1);

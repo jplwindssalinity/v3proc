@@ -44,7 +44,6 @@ public:
     float  GetSigma0(float lon, float lat);
 
     int    Allocate(int lon_samples, int lat_samples);
-    int    Fill(char value);
 
 protected:
 
