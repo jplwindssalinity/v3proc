@@ -613,8 +613,8 @@ ConfigInstrumentSim(
         //--------------------------------------//
 	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
         int use_land;
-        config_list->GetInt(USE_LANDMAP_KEYWORD, use_land);
-        if(! instrument_sim->landMap.Initialize(landfile)){
+        config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+        if(! instrument_sim->landMap.Initialize(landfile, use_land)){
 	  fprintf(stderr,"Cannot Initialize Land Map\n");
           exit(0);
 	} 
@@ -1435,8 +1435,8 @@ ConfigL1AToL1B(
         //--------------------------------------//
 	char* landfile=config_list->Get(LANDMAP_FILE_KEYWORD);
         int use_land;
-        config_list->GetInt(USE_LANDMAP_KEYWORD, use_land);
-        if(! l1a_to_l1b->landMap.Initialize(landfile)){
+        config_list->GetInt(USE_LANDMAP_KEYWORD, &use_land);
+        if(! l1a_to_l1b->landMap.Initialize(landfile,use_land)){
 	  fprintf(stderr,"Cannot Initialize Land Map\n");
           exit(0);
 	} 
