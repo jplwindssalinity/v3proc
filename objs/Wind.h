@@ -228,12 +228,15 @@ public:
 	//---------//
 
 	int		DeleteWVCs();
+	int		DeleteEntireSwath();
 
 	//--------------//
 	// input/output //
 	//--------------//
 
 	int		WriteL20(FILE* fp);
+	int		ReadL20(FILE* fp);
+	int		ReadL20(const char* filename);
 
 	//-----------//
 	// filtering //
@@ -269,8 +272,9 @@ protected:
 	// variables //
 	//-----------//
 
-	int			_crossTrackSize;
-	int			_alongTrackSize;
+	int		_crossTrackSize;
+	int		_alongTrackSize;
+	int		_validCells;
 };
 
 #endif

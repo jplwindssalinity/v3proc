@@ -681,6 +681,25 @@ WindSwath::ReadL20(
 	return(1);
 }
 
+//--------------------//
+// WindSwath::ReadL20 //
+//--------------------//
+
+int
+WindSwath::ReadL20(
+	const char*		filename)
+{
+	FILE* fp = fopen(filename, "r");
+	if (fp == NULL)
+		return(0);
+
+	if (! ReadL20(fp))
+		return(0);
+
+	fclose(fp);
+	return(1);
+}
+
 //-------------------------//
 // WindSwath::MedianFilter //
 //-------------------------//

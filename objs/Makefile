@@ -117,7 +117,7 @@ Beam.o: Beam.C Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Wind.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h Antenna.h Attitude.h PiscTable.h Meas.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Wind.h Grid.h ConfigList.h Instrument.h AntennaSim.h L00Frame.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h Array.h Meas.h Antenna.h Attitude.h PiscTable.h Matrix3.h BufferedList.h Constants.h Beam.h LonLat.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Matrix3.h BufferedList.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h
