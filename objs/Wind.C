@@ -12,6 +12,7 @@ static const char rcs_id_wind_c[] =
 #include "Wind.h"
 #include "Constants.h"
 #include "Array.h"
+#include "Misc.h"
 
 
 //============//
@@ -112,7 +113,7 @@ WindVectorPlus::ReadL20(
 //=====//
 
 WVC::WVC()
-:	selected(NULL)
+:	longitude(0.0), latitude(0.0), selected(NULL)
 {
 	return;
 }
@@ -127,6 +128,7 @@ WVC::~WVC()
 	return;
 }
 
+/*
 //-----------------------//
 // WVC::WriteAmbigsAscii //
 //-----------------------//
@@ -143,6 +145,7 @@ WVC::WriteAmbigsAscii(
 	}
 	return(1);
 }
+*/
 
 //---------------//
 // WVC::WriteL20 //
@@ -152,6 +155,16 @@ int
 WVC::WriteL20(
 	FILE*	fp)
 {
+	//----------------------------------//
+	// write the longitude and latitude //
+	//----------------------------------//
+
+	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+
 	//---------------------------//
 	// write the number of nodes //
 	//---------------------------//
@@ -197,6 +210,16 @@ int
 WVC::ReadL20(
 	FILE*	fp)
 {
+	//---------------------------------//
+	// read the longitude and latitude //
+	//---------------------------------//
+
+	if (fread((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&latitude, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+
 	//--------------------------//
 	// read the number of nodes //
 	//--------------------------//
@@ -319,6 +342,29 @@ WVC::SortByObj()
 		}
 	}
 	return(1);
+}
+
+//----------------------------//
+// WVC::GetNearestToDirection //
+//----------------------------//
+
+WindVectorPlus*
+WVC::GetNearestToDirection(
+	float	dir)
+{
+	WindVectorPlus* nearest = NULL;
+	float min_dif = two_pi;
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		float dif = ANGDIF(wvp->dir, dir);
+		if (dif < min_dif)
+		{
+			min_dif = dif;
+			nearest = wvp;
+		}
+	}
+	return(nearest);
 }
 
 //-------------------//
@@ -739,6 +785,43 @@ WindSwath::MedianFilterPass(
 	}
 
 	return(flips);
+}
+
+//------------------//
+// WindSwath::Skill //
+//------------------//
+
+int
+WindSwath::Skill(
+	WindField*	truth,
+	int*		skill_sum_array,
+	int*		total_sum_array)
+{
+	for (int cti = 0; cti < _crossTrackSize; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackSize; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc || ! wvc->selected)
+				continue;
+
+			WindVector* true_wv = truth->NearestWindVector(wvc->longitude,
+				wvc->latitude);
+			if (true_wv == NULL)
+				continue;
+
+			WindVectorPlus* nearest =
+				wvc->GetNearestToDirection(true_wv->dir);
+			if (nearest == NULL)
+				continue;
+
+			if (nearest == wvc->selected)
+				(*(skill_sum_array + cti))++;
+
+			(*(total_sum_array + cti))++;
+		}
+	}
+	return(1);
 }
 
 //----------------------//

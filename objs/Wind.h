@@ -112,7 +112,7 @@ public:
 	// input/output //
 	//--------------//
 
-	int		WriteAmbigsAscii(FILE* ofp);
+//	int		WriteAmbigsAscii(FILE* ofp);
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
 
@@ -122,6 +122,7 @@ public:
 
 	int		RemoveDuplicates();
 	int		SortByObj();
+	WindVectorPlus*		GetNearestToDirection(float dir);
 
 	//---------//
 	// freeing //
@@ -133,6 +134,8 @@ public:
 	// variables //
 	//-----------//
 
+	float					longitude;
+	float					latitude;
 	WindVectorPlus*			selected;
 	List<WindVectorPlus>	ambiguities;
 };
@@ -214,8 +217,6 @@ public:
 	WindSwath();
 	~WindSwath();
 
-//	int		Allocate(int cross_track_size, int along_track_size);
-
 	//----------//
 	// building //
 	//----------//
@@ -241,6 +242,13 @@ public:
 	int		MedianFilter(int window_size, int max_passes);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 				char** change);
+
+	//------------//
+	// evaluation //
+	//------------//
+
+	int		Skill(WindField* truth, int* skill_sum_array,
+				int* total_sum_array);
 
 	//-----------//
 	// variables //
