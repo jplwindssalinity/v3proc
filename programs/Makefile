@@ -86,9 +86,13 @@ PROGRAMS = \
     expand_calpulse \
     ephem_to_ascii \
 	generate_foff_table \
-	BYUX_vs_time
+	BYUX_vs_time \
+        l2b_extract_worst
 #	sim_accurate
 #	generate_kfactor
+STILES_PROGRAMS = \
+	l2b_25km_splice
+        l2b_remove_extra
 
 HUDD_PROGRAMS = \
 	sim \
