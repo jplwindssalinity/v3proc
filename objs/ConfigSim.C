@@ -132,6 +132,17 @@ ConfigAntenna(
 		return(0);
 	antenna->SetNumberOfEncoderBits(encoder_bits);
 
+	double roll, pitch, yaw;
+	if (! config_list->GetDouble(ANTENNA_PEDESTAL_ROLL_KEYWORD, &roll))
+		return(0);
+	if (! config_list->GetDouble(ANTENNA_PEDESTAL_PITCH_KEYWORD, &pitch))
+		return(0);
+	if (! config_list->GetDouble(ANTENNA_PEDESTAL_YAW_KEYWORD, &yaw))
+		return(0);
+	Attitude att;
+	att.Set(roll, pitch, yaw, 1, 2, 3);
+	antenna->SetPedestalAttitude(&att);
+
 	//---------------------//
 	// configure each beam //
 	//---------------------//
