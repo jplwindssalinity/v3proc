@@ -47,11 +47,8 @@ Beam::~Beam()
 //
 // This method orients a beam (already loaded with ReadBeamPattern) so that
 // the electrical boresight points at the indicated look angle and azimuth
-// angle in the antenna frame.  Since the beam pattern is stored in the
-// beam reference frame (defined by the mechanical boresight) the Beam object
-// sets up a coordinate switch between the antenna frame and the beam
-// reference frame, placing the reference X-axis so that the beam electrical
-// boresight has the desired look and azimuth angles.
+// angle in the antenna frame.  The beam pattern is stored in the beam
+// reference frame (defined by the mechanical boresight).
 //
 
 int
@@ -66,9 +63,9 @@ Beam::SetElectricalBoresight(
  		return(0);
 	}
 
-	//------------------------//
-	// Setup Reference frame  //
-	//------------------------//
+	//-----------------------//
+	// Setup Reference frame //
+	//-----------------------//
 
 	// The X-axis of the beam reference frame is defined by the following
 	// two variables. (These are spherical angles in the antenna frame.)
@@ -132,9 +129,9 @@ Beam::SetMechanicalBoresight(
  		return(0);
 	}
 
-	//------------------------//
-	// Setup Reference frame  //
-	//------------------------//
+	//-----------------------//
+	// Setup Reference frame //
+	//-----------------------//
 
 	// The X-axis of the beam reference frame is defined by the following
 	// two variables. (These are spherical angles in the antenna frame.)
@@ -433,7 +430,7 @@ Beam::GetPowerGainProduct(
 	float xmit_gain;
 	if (! GetPowerGain(look_angle, azimuth_angle, &xmit_gain))
 		return(0);
-	azimuth_angle += azimuth_rate * round_trip_time;
+	azimuth_angle -= azimuth_rate * round_trip_time;
 	float recv_gain;
 	if (! GetPowerGain(look_angle, azimuth_angle, &recv_gain))
 		return(0);
