@@ -9,6 +9,8 @@
 static const char rcs_id_tracking_h[] =
     "@(#) $Id$";
 
+#include <stdio.h>
+
 //======================================================================
 // CLASSES
 //    TrackerBase, RangeTracker, DopplerTracker
