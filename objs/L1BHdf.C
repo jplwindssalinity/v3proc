@@ -84,7 +84,7 @@ L1BHdf::~L1BHdf()
         param = l1bMeasTable[i].param;
         if (param != 0)
         {
-            (void) CloseDataset(param->sdsIDs[0]);
+            (void) CloseParamDatasets(param);
             if (param->data != 0)
             {
                 free((void*) param->data);
