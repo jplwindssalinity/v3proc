@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -60,7 +60,25 @@ static const char rcs_id[] =
 #include <fcntl.h>
 #include <unistd.h>
 #include "Misc.h"
+#include "Beam.h"
 #include "GMF.h"
+#include "List.h"
+#include "List.C"
+#include "BufferedList.h"
+#include "BufferedList.C"
+
+//-----------//
+// TEMPLATES //
+//-----------//
+ 
+template class List<Meas>;
+template class List<WindVectorPlus>;
+template class List<MeasSpot>;
+template class List<OffsetList>;
+template class List<OrbitState>;
+template class List<long>;
+template class BufferedList<OrbitState>;
+template class List<EarthPosition>;
 
 //-----------//
 // CONSTANTS //
@@ -158,7 +176,7 @@ main(
 		exit(1);
 	}
 
-	char* base;
+	char* base = NULL;
 	if (read_gmf)
 		base = read_gmf;
 	if (read_coef)
@@ -192,17 +210,17 @@ main(
 		// transform into A0, a1, a2, a3, and a4 //
 		//---------------------------------------//
 
-		for (int pol = 0; pol < POLS; pol++)
+		for (int pol_idx = 0; pol_idx < POLS; pol_idx++)
 		{
+			PolE pol = (PolE) pol_idx;
 			for (int inc = 16; inc < INCS; inc += INC_STEP)
 			{
-				double dinc = (double)inc;
 				for (int spd = 1; spd < SPDS; spd += 1)
 				{
 					double dspd = (double)spd;
-					double xa0, xa1, xa1p, xa2, xa2p, xa3, xa3p, xa4, xa4p;
-					gmf.GetCoefs(pol, dinc, dspd, &xa0, &xa1, &xa1p, &xa2,
-						&xa2p, &xa3, &xa3p, &xa4, &xa4p);
+					float xa0, xa1, xa1p, xa2, xa2p, xa3, xa3p, xa4, xa4p;
+					gmf.GetCoefs(pol, (float)inc * dtr, dspd, &xa0, &xa1,
+						&xa1p, &xa2, &xa2p, &xa3, &xa3p, &xa4, &xa4p);
 					a0[pol][inc][spd] = xa0;
 					a1[pol][inc][spd] = xa1 / xa0;
 					a1_phase[pol][inc][spd] = fmod(xa1p * RTD + 360.0, 360.0);
@@ -323,7 +341,7 @@ term_vs_inc(
 	unsigned char	flag)
 {
 	char filename[1024];
-	FILE* ofp;
+	FILE* ofp = NULL;
 
 	for (int pol = 0; pol < POLS; pol++)
 	{
@@ -383,7 +401,7 @@ term_vs_spd(
 	unsigned char	flag)
 {
 	char filename[1024];
-	FILE* ofp;
+	FILE* ofp = NULL;
 
 	for (int pol = 0; pol < POLS; pol++)
 	{

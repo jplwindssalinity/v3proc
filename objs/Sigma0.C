@@ -577,6 +577,7 @@ composite(
 	output_meas->XK = sum_XK;
 	output_meas->EnSlice = meas->EnSlice;		// same for all slices.
 	output_meas->bandwidth = meas->bandwidth;	// assumed same for all slices.
+	output_meas->transmitPulseWidth = meas->transmitPulseWidth;
 
 	output_meas->outline.FreeContents();	// merged outlines not done yet.
 	output_meas->centroid = sum_centroid / N;
@@ -590,8 +591,9 @@ composite(
 	// Approx incidence and azimuth angles.
 	// These should really be done using the satellite
 	// position, but that would mean putting the sat. position in Meas.
-	output_meas->incidenceAngle = sum_inc_angle / N;
 	output_meas->eastAzimuth = sum_azi_angle / N;
+	output_meas->incidenceAngle = sum_inc_angle / N;
+	output_meas->beamIdx = meas->beamIdx;		// assumed
 
 	// Composite Kpc coefficients.
 	// Here we assume that all the slices in one spot have the same values
