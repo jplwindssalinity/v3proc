@@ -22,6 +22,14 @@ Mat::Mat()
 }
 
 Mat::Mat(
+    const Mat&  mat)
+:   _mSize(0), _nSize(0), _m(NULL)
+{
+    Set(mat);
+    return;
+}
+
+Mat::Mat(
     int     m_size,
     int     n_size)
 :   _mSize(0), _nSize(0), _m(NULL)
@@ -43,6 +51,23 @@ Mat::Mat(
     }
     Fill(fill);
     return;
+}
+
+//-----------------//
+// Mat::WriteAscii //
+//-----------------//
+
+int
+Mat::WriteAscii(
+    FILE*  ofp)
+{
+    if (_mSize == 3 && _nSize == 3) {
+        for (int midx = 0; midx < 3; midx++) {
+            fprintf(ofp, "%15g  %15g  %15g\n", _m[midx][0], _m[midx][1],
+                _m[midx][2]);
+        }
+    }
+    return(1);
 }
 
 //----------//
@@ -272,6 +297,8 @@ Mat::Premultiply(
 // The diagonal matrix of singular values is placed in W.
 // NOTE: Rows >= columns
 
+#define MAX_SVD_ITERATIONS  50
+
 // computes sqrt(a*a + b*b) without destructive overflow or underflow
 static double at, bt, ct;
 #define pythag(A, B) ((at=fabs(A)) > (bt=fabs(B)) ? \
@@ -293,6 +320,8 @@ Mat::SVD(
     //----------------//
 
     if (_mSize < _nSize) {
+        fprintf(stderr, "Mat::SVD: more rows than columns\n");
+        fprintf(stderr, "    mSize = %d, nSize = %d\n", _mSize, _nSize);
         return(0);
     }
 
@@ -308,15 +337,24 @@ Mat::SVD(
     //----------------------------------------------------------//
 
     if (! w->_Allocate(_nSize)) {
+        fprintf(stderr, "Mat::SVD: error allocating w vector\n");
+        fprintf(stderr, "    mSize = %d\n", _nSize);
         return(0);
     }
     double* wva = w->_v;
 
-    u->Set(*this);
+    if (! u->Set(*this)) {
+        fprintf(stderr, "Mat::SVD: error allocating u matrix\n");
+        fprintf(stderr, "    mSize = %d, nSize = %d\n", _mSize, _nSize);
+        return(0);
+    }
     double** uma = u->_m;
 
-    if (! v->_Allocate(_nSize, _nSize))
+    if (! v->_Allocate(_nSize, _nSize)) {
+        fprintf(stderr, "Mat::SVD: error allocating v matrix\n");
+        fprintf(stderr, "    mSize = %d, nSize = %d\n", _nSize, _nSize);
         return(0);
+    }
     double** vma = v->_m;
 
     //---------------------------------------------//
@@ -359,277 +397,284 @@ Mat::SVD(
                         {
                             s += uma[k][i] * uma[k][j];
                         }
-						f = s / h;
-						for (k = i; k < _mSize; k++)
-						{
-							uma[k][j] += f * uma[k][i];
-						}
-					}
-				}
-				for (k = i; k < _mSize; k++)
-				{
-					uma[k][i] *= scale;
-				}
-			}
-		}
-		wva[i] = scale * g;
-		g = s = scale = 0.0;
-		if (i < _mSize && i != _nSize - 1)
-		{
-			for (k = l; k < _nSize; k++)
-			{
-				scale += fabs(uma[i][k]);
-			}
-			if (scale)
-			{
-				for (k = l; k < _nSize; k++)
-				{
-					uma[i][k] /= scale;
-					s += uma[i][k] * uma[i][k];
-				}
-				f = uma[i][l];
-				g = -sign(sqrt(s), f);
-				h = f * g - s;
-				uma[i][l] = f - g;
-				for (k = l; k < _nSize; k++)
-				{
-					rva[k] = uma[i][k] / h;
-				}
-				if (i != _mSize - 1)
-				{
-					for (j = l; j < _mSize; j++)
-					{
-						for (s = 0.0, k = l; k < _nSize; k++)
-						{
-							s += uma[j][k] * uma[i][k];
-						}
-						for (k = l; k < _nSize; k++)
-						{
-							uma[j][k] += s * rva[k];
-						}
-					}
-				}
-				for (k = l; k < _nSize; k++)
-				{
-					uma[i][k] *= scale;
-				}
-			}
-		}
-		anorm = MAX(anorm, (fabs(wva[i]) + fabs(rva[i])));
-	}
+                        f = s / h;
+                        for (k = i; k < _mSize; k++)
+                        {
+                            uma[k][j] += f * uma[k][i];
+                        }
+                    }
+                }
+                for (k = i; k < _mSize; k++)
+                {
+                    uma[k][i] *= scale;
+                }
+            }
+        }
+        wva[i] = scale * g;
+        g = s = scale = 0.0;
+        if (i < _mSize && i != _nSize - 1)
+        {
+            for (k = l; k < _nSize; k++)
+            {
+                scale += fabs(uma[i][k]);
+            }
+            if (scale)
+            {
+                for (k = l; k < _nSize; k++)
+                {
+                    uma[i][k] /= scale;
+                    s += uma[i][k] * uma[i][k];
+                }
+                f = uma[i][l];
+                g = -sign(sqrt(s), f);
+                h = f * g - s;
+                uma[i][l] = f - g;
+                for (k = l; k < _nSize; k++)
+                {
+                    rva[k] = uma[i][k] / h;
+                }
+                if (i != _mSize - 1)
+                {
+                    for (j = l; j < _mSize; j++)
+                    {
+                        for (s = 0.0, k = l; k < _nSize; k++)
+                        {
+                            s += uma[j][k] * uma[i][k];
+                        }
+                        for (k = l; k < _nSize; k++)
+                        {
+                            uma[j][k] += s * rva[k];
+                        }
+                    }
+                }
+                for (k = l; k < _nSize; k++)
+                {
+                    uma[i][k] *= scale;
+                }
+            }
+        }
+        anorm = MAX(anorm, (fabs(wva[i]) + fabs(rva[i])));
+    }
 
-	//--------------------------------------------//
-	// accumulation of right-hand transformations //
-	//--------------------------------------------//
+    //--------------------------------------------//
+    // accumulation of right-hand transformations //
+    //--------------------------------------------//
 
-	for (i = _nSize - 1; i >= 0; i--)
-	{
-		if (i < _nSize - 1)
-		{
-			if (g)
-			{
-				for (j = l; j < _nSize; j++)
-				{
-					vma[j][i] = (uma[i][j] / uma[i][l]) / g;
-				}
-				for (j = l; j < _nSize; j++)
-				{
-					for (s = 0.0, k = l; k < _nSize; k++)
-					{
-						s += uma[i][k] * vma[k][j];
-					}
-					for (k = l; k < _nSize; k++)
-					{
-						vma[k][j] += s * vma[k][i];
-					}
-				}
-			}
-			for (j = l; j < _nSize; j++)
-			{
-				vma[i][j] = vma[j][i] = 0.0;
-			}
-		}
-		vma[i][i] = 1.0;
-		g = rva[i];
-		l = i;
-	}
+    for (i = _nSize - 1; i >= 0; i--)
+    {
+        if (i < _nSize - 1)
+        {
+            if (g)
+            {
+                for (j = l; j < _nSize; j++)
+                {
+                    vma[j][i] = (uma[i][j] / uma[i][l]) / g;
+                }
+                for (j = l; j < _nSize; j++)
+                {
+                    for (s = 0.0, k = l; k < _nSize; k++)
+                    {
+                        s += uma[i][k] * vma[k][j];
+                    }
+                    for (k = l; k < _nSize; k++)
+                    {
+                        vma[k][j] += s * vma[k][i];
+                    }
+                }
+            }
+            for (j = l; j < _nSize; j++)
+            {
+                vma[i][j] = vma[j][i] = 0.0;
+            }
+        }
+        vma[i][i] = 1.0;
+        g = rva[i];
+        l = i;
+    }
 
-	//-------------------------------------------//
-	// accumulation of left-hand transformations //
-	//-------------------------------------------//
+    //-------------------------------------------//
+    // accumulation of left-hand transformations //
+    //-------------------------------------------//
 
-	for (i = _nSize - 1; i >= 0; i--)
-	{
-		l = i + 1;
-		g = wva[i];
-		if (i < _nSize - 1)
-		{
-			for (j = l; j < _nSize; j++)
-			{
-				uma[i][j] = 0.0;
-			}
-		}
-		if (g)
-		{
-			g = 1.0 / g;
-			if (i != _nSize - 1)
-			{
-				for (j = l; j < _nSize; j++)
-				{
-					for (s = 0.0, k = l; k < _mSize; k++)
-					{
-						s += uma[k][i] * uma[k][j];
-					}
-					f = (s / uma[i][i]) * g;
-					for (k = i; k < _mSize; k++)
-					{
-						uma[k][j] += f * uma[k][i];
-					}
-				}
-			}
-			for (j = i; j < _mSize; j++)
-			{
-				uma[j][i] *= g;
-			}
-		}
-		else
-		{
-			for (j = i; j < _mSize; j++)
-			{
-				uma[j][i] = 0.0;
-			}
-		}
-		++uma[i][i];
-	}
+    for (i = _nSize - 1; i >= 0; i--)
+    {
+        l = i + 1;
+        g = wva[i];
+        if (i < _nSize - 1)
+        {
+            for (j = l; j < _nSize; j++)
+            {
+                uma[i][j] = 0.0;
+            }
+        }
+        if (g)
+        {
+            g = 1.0 / g;
+            if (i != _nSize - 1)
+            {
+                for (j = l; j < _nSize; j++)
+                {
+                    for (s = 0.0, k = l; k < _mSize; k++)
+                    {
+                        s += uma[k][i] * uma[k][j];
+                    }
+                    f = (s / uma[i][i]) * g;
+                    for (k = i; k < _mSize; k++)
+                    {
+                        uma[k][j] += f * uma[k][i];
+                    }
+                }
+            }
+            for (j = i; j < _mSize; j++)
+            {
+                uma[j][i] *= g;
+            }
+        }
+        else
+        {
+            for (j = i; j < _mSize; j++)
+            {
+                uma[j][i] = 0.0;
+            }
+        }
+        ++uma[i][i];
+    }
 
-	//----------------------------------------//
-	// diagonalization of the bidiagonal form //
-	//----------------------------------------//
+    //----------------------------------------//
+    // diagonalization of the bidiagonal form //
+    //----------------------------------------//
 
-	int nm = 0;
-	double c, x, y, z;
-	for (k = _nSize - 1; k >= 0; k--)
-	{
-		for (int its = 0; its < 30; its++)
-		{
-			int flag = 1;
-			for (l = k; l >= 0; l--)
-			{
-				nm = l - 1;
-				if ((double) (fabs(rva[l]) + anorm) == anorm)
-				{
-					flag = 0;
-					break;
-				}
-				if ((double) (fabs(wva[nm]) + anorm) == anorm)
-				{
-					break;
-				}
-			}
-			if (flag)
-			{
-				c = 0.0;
-				s = 1.0;
-				for (i = l; i <= k; i++)
-				{
-					f = s * rva[i];
-					rva[i] = c * rva[i];
-					if ((double) (fabs(f) + anorm) == anorm)
-					{
-						break;
-					}
-					g = wva[i];
-					h = pythag(f, g);
-					wva[i] = h;
-					h = 1.0 / h;
-					c = g * h;
-					s = (-f * h);
-					for (j = 0; j < _mSize; j++)
-					{
-						y = uma[j][nm];
-						z = uma[j][i];
-						uma[j][nm] = y * c + z * s;
-						uma[j][i] = z * c - y * s;
-					}
-				}
-			}
-			z = wva[k];
-			if (l == k)
-			{
-				if (z < 0.0)
-				{
-					wva[k] = -z;
-					for (j = 0; j < _nSize; j++)
-					{
-						vma[j][k] = (-vma[j][k]);
-					}
-				}
-				break;
-			}
-			if (its == 29)
-			{
-				return(0);
-			}
-			x = wva[l];
-			nm = k - 1;
-			y = wva[nm];
-			g = rva[nm];
-			h = rva[k];
-			f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
-			g = pythag(f, 1.0);
-			f = ((x - z) * (x + z) + h * ((y / (f + sign(g, f))) - h)) / x;
+    int nm = 0;
+    double c, x, y, z;
+    for (k = _nSize - 1; k >= 0; k--)
+    {
+        for (int its = 0; its < MAX_SVD_ITERATIONS; its++)
+        {
+            int flag = 1;
+            for (l = k; l >= 0; l--)
+            {
+                nm = l - 1;
+                // I think that doubles have too much precision for this
+                // if ((double) (fabs(rva[l]) + anorm) == anorm)
+                if ((float)(fabs(rva[l]) + anorm) == (float)anorm)
+                {
+                    flag = 0;
+                    break;
+                }
+                // Same comment here
+                // if ((double) (fabs(wva[nm]) + anorm) == anorm)
+                if ((float)(fabs(wva[nm]) + anorm) == (float)anorm)
+                {
+                    break;
+                }
+            }
+            if (flag)
+            {
+                c = 0.0;
+                s = 1.0;
+                for (i = l; i <= k; i++)
+                {
+                    f = s * rva[i];
+                    rva[i] = c * rva[i];
+                    // And here
+                    // if ((double) (fabs(f) + anorm) == anorm)
+                    if ((float)(fabs(f) + anorm) == (float)anorm)
+                    {
+                        break;
+                    }
+                    g = wva[i];
+                    h = pythag(f, g);
+                    wva[i] = h;
+                    h = 1.0 / h;
+                    c = g * h;
+                    s = (-f * h);
+                    for (j = 0; j < _mSize; j++)
+                    {
+                        y = uma[j][nm];
+                        z = uma[j][i];
+                        uma[j][nm] = y * c + z * s;
+                        uma[j][i] = z * c - y * s;
+                    }
+                }
+            }
+            z = wva[k];
+            if (l == k)
+            {
+                if (z < 0.0)
+                {
+                    wva[k] = -z;
+                    for (j = 0; j < _nSize; j++)
+                    {
+                        vma[j][k] = (-vma[j][k]);
+                    }
+                }
+                break;
+            }
+            if (its == MAX_SVD_ITERATIONS - 1)
+            {
+                fprintf(stderr, "Mat::SVD: too many iterations\n");
+                return(0);
+            }
+            x = wva[l];
+            nm = k - 1;
+            y = wva[nm];
+            g = rva[nm];
+            h = rva[k];
+            f = ((y - z) * (y + z) + (g - h) * (g + h)) / (2.0 * h * y);
+            g = pythag(f, 1.0);
+            f = ((x - z) * (x + z) + h * ((y / (f + sign(g, f))) - h)) / x;
 
-			//------------------------//
-			// next QR transformation //
-			//------------------------//
+            //------------------------//
+            // next QR transformation //
+            //------------------------//
 
-			c = s = 1.0;
-			for (j = l; j <= nm; j++)
-			{
-				i = j + 1;
-				g = rva[i];
-				y = wva[i];
-				h = s * g;
-				g = c * g;
-				z = pythag(f, h);
-				rva[j] = z;
-				c = f / z;
-				s = h / z;
-				f = x * c + g * s;
-				g = g * c - x * s;
-				h = y * s;
-				y = y * c;
-				for (int jj = 0; jj < _nSize; jj++)
-				{
-					x = vma[jj][j];
-					z = vma[jj][i];
-					vma[jj][j] = x * c + z * s;
-					vma[jj][i] = z * c - x * s;
-				}
-				z = pythag(f, h);
-				wva[j] = z;
-				if (z)
-				{
-					z = 1.0 / z;
-					c = f * z;
-					s = h * z;
-				}
-				f = (c * g) + (s * y);
-				x = (c * y) - (s * g);
-				for (int jj = 0; jj < _mSize; jj++)
-				{
-					y = uma[jj][j];
-					z = uma[jj][i];
-					uma[jj][j] = y * c + z * s;
-					uma[jj][i] = z * c - y * s;
-				}
-			}
-			rva[l] = 0.0;
-			rva[k] = f;
-			wva[k] = x;
-		}
-	}
-	return(1);
+            c = s = 1.0;
+            for (j = l; j <= nm; j++)
+            {
+                i = j + 1;
+                g = rva[i];
+                y = wva[i];
+                h = s * g;
+                g = c * g;
+                z = pythag(f, h);
+                rva[j] = z;
+                c = f / z;
+                s = h / z;
+                f = x * c + g * s;
+                g = g * c - x * s;
+                h = y * s;
+                y = y * c;
+                for (int jj = 0; jj < _nSize; jj++)
+                {
+                    x = vma[jj][j];
+                    z = vma[jj][i];
+                    vma[jj][j] = x * c + z * s;
+                    vma[jj][i] = z * c - x * s;
+                }
+                z = pythag(f, h);
+                wva[j] = z;
+                if (z)
+                {
+                    z = 1.0 / z;
+                    c = f * z;
+                    s = h * z;
+                }
+                f = (c * g) + (s * y);
+                x = (c * y) - (s * g);
+                for (int jj = 0; jj < _mSize; jj++)
+                {
+                    y = uma[jj][j];
+                    z = uma[jj][i];
+                    uma[jj][j] = y * c + z * s;
+                    uma[jj][i] = z * c - y * s;
+                }
+            }
+            rva[l] = 0.0;
+            rva[k] = f;
+            wva[k] = x;
+        }
+    }
+    return(1);
 }
 
 //----------------//
@@ -992,48 +1037,48 @@ Matrix::SolveSVD(
 
 int
 Matrix::BackSubSVD(
-	Matrix*		u,
-	Vector*		w,
-	Matrix*		v,
-	Vector*		b,
-	Vector*		x)
+    Matrix*        u,
+    Vector*        w,
+    Matrix*        v,
+    Vector*        b,
+    Vector*        x)
 {
-	Vector tmp;
-	if (! tmp.Allocate(_nSize))
+    Vector tmp;
+    if (! tmp.Allocate(_nSize))
         return(0);
 
-	for (int j = 0; j < _nSize; j++)
-	{
-		double s = 0.0;
-		if (w->_vector[j])
-		{
-			for (int i = 0; i < b->_mSize; i++)
-			{
-				s += u->_matrix[i][j] * b->_vector[i];
-			}
-			s /= w->_vector[j];
-		}
-		tmp._vector[j] = s;
-	}
+    for (int j = 0; j < _nSize; j++)
+    {
+        double s = 0.0;
+        if (w->_vector[j])
+        {
+            for (int i = 0; i < b->_mSize; i++)
+            {
+                s += u->_matrix[i][j] * b->_vector[i];
+            }
+            s /= w->_vector[j];
+        }
+        tmp._vector[j] = s;
+    }
 
-	for (int j = 0; j < _nSize; j++)
-	{
-		double s = 0.0;
-		for (int jj = 0; jj < _nSize; jj++)
-		{
-			s += v->_matrix[j][jj] * tmp._vector[jj];
-			x->_vector[j] = s;
-		}
-	}
+    for (int j = 0; j < _nSize; j++)
+    {
+        double s = 0.0;
+        for (int jj = 0; jj < _nSize; jj++)
+        {
+            s += v->_matrix[j][jj] * tmp._vector[jj];
+            x->_vector[j] = s;
+        }
+    }
 
-	return(1);
+    return(1);
 }
 
 //----------------//
 // Matrix::SVDFit //
 //----------------//
 
-#define TOL		1.0E-5
+#define TOL        1.0E-5
 
 int
 Matrix::SVDFit(
@@ -1047,78 +1092,78 @@ Matrix::SVDFit(
     Matrix*  v,
     Vector*  w)
 {
-	//--------------------------//
-	// create temporary vectors //
-	//--------------------------//
+    //--------------------------//
+    // create temporary vectors //
+    //--------------------------//
 
-	Vector b;
-	if (! b.Allocate(number_of_points))
+    Vector b;
+    if (! b.Allocate(number_of_points))
         return(0);
 
-	Vector afunc;
-	if (! afunc.Allocate(number_of_coef))
+    Vector afunc;
+    if (! afunc.Allocate(number_of_coef))
         return(0);
 
-	//-----------------------------------------------//
-	// accumulate coefficients of the fitting matrix //
-	//-----------------------------------------------//
+    //-----------------------------------------------//
+    // accumulate coefficients of the fitting matrix //
+    //-----------------------------------------------//
 
-	Matrix a;
-	if (! a.Allocate(number_of_points, number_of_coef))
+    Matrix a;
+    if (! a.Allocate(number_of_points, number_of_coef))
         return(0);
-	for (int i = 0; i < number_of_points; i++)
-	{
-		//---------------------//
-		// polynomial function //
-		//---------------------//
+    for (int i = 0; i < number_of_points; i++)
+    {
+        //---------------------//
+        // polynomial function //
+        //---------------------//
 
-		afunc._vector[0] = 1.0;
-		for (int j = 1; j < number_of_coef; j++)
-			afunc._vector[j] = afunc._vector[j-1] * x[i];
+        afunc._vector[0] = 1.0;
+        for (int j = 1; j < number_of_coef; j++)
+            afunc._vector[j] = afunc._vector[j-1] * x[i];
 
-		double tmp;
-		if (std_dev)
-			tmp = 1.0 / std_dev[i];
-		else
-			tmp = 1.0;
+        double tmp;
+        if (std_dev)
+            tmp = 1.0 / std_dev[i];
+        else
+            tmp = 1.0;
 
-		for (int j = 0; j < number_of_coef; j++)
-		{
-			a._matrix[i][j] = afunc._vector[j] * tmp;
-		}
-		b._vector[i] = y[i] * tmp;
-	}
+        for (int j = 0; j < number_of_coef; j++)
+        {
+            a._matrix[i][j] = afunc._vector[j] * tmp;
+        }
+        b._vector[i] = y[i] * tmp;
+    }
 
-	//------------------------------//
-	// singular value decomposition //
-	//------------------------------//
+    //------------------------------//
+    // singular value decomposition //
+    //------------------------------//
 
-	a.SVD(u, w, v);
+    a.SVD(u, w, v);
 
-	//--------------------------//
-	// zero the singular values //
-	//--------------------------//
+    //--------------------------//
+    // zero the singular values //
+    //--------------------------//
 
-	double wmax = 0.0;
-	for (int j = 0; j < number_of_coef; j++)
-	{
-		if (w->_vector[j] > wmax)
-			wmax = w->_vector[j];
-	}
-	double thresh = TOL * wmax;
-	for (int j = 0; j < number_of_coef; j++)
-	{
-		if (w->_vector[j] < thresh)
-			w->_vector[j] = 0.0;
-	}
+    double wmax = 0.0;
+    for (int j = 0; j < number_of_coef; j++)
+    {
+        if (w->_vector[j] > wmax)
+            wmax = w->_vector[j];
+    }
+    double thresh = TOL * wmax;
+    for (int j = 0; j < number_of_coef; j++)
+    {
+        if (w->_vector[j] < thresh)
+            w->_vector[j] = 0.0;
+    }
 
-	//----------------//
-	// backsubstitute //
-	//----------------//
+    //----------------//
+    // backsubstitute //
+    //----------------//
 
-	u->BackSubSVD(u, w, v, &b, coefficients);
+    u->BackSubSVD(u, w, v, &b, coefficients);
 
-	return(1);
+    return(1);
 }
 
 //----------------------//
@@ -1126,7 +1171,7 @@ Matrix::SVDFit(
 //----------------------//
 
 #define THRESHOLD_FRACTION  1E-3
-#define LAMBDA_FACTOR		2.0
+#define LAMBDA_FACTOR        2.0
 
 int
 Matrix::NonlinearFit(

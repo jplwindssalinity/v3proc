@@ -79,6 +79,28 @@ Vect::~Vect()
     return;
 }
 
+//------------------//
+// Vect::WriteAscii //
+//------------------//
+
+int
+Vect::WriteAscii(
+    FILE*  ofp)
+const
+{
+    if (_mSize == 3) {
+        fprintf(ofp, "%g %g %g\n", _v[0], _v[1], _v[2]);
+    } else {
+        fprintf(ofp, "Size = %d\n", _mSize);
+        for (int i = 0; i < _mSize; i++)
+        {
+            fprintf(ofp, " %9g", _v[i]);
+        }
+        fprintf(ofp, "\n");
+    }
+    return(1);
+}
+
 //-----------//
 // Vect::Set //
 //-----------//
@@ -187,6 +209,23 @@ Vect::SetMagnitude(
     }
     double scale_factor = magnitude / current_magnitude;
     Multiply(scale_factor);
+    return(1);
+}
+
+//-----------//
+// Vect::Add //
+//-----------//
+
+int
+Vect::Add(
+    const Vect&  a)
+{
+    if (a._mSize != _mSize) {
+        return(0);
+    }
+    for (int i = 0; i < _mSize; i++) {
+        _v[i] += a._v[i];
+    }
     return(1);
 }
 

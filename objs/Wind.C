@@ -11,6 +11,7 @@ static const char rcs_id_wind_c[] =
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "WindVector.h"
 #include "Wind.h"
 #include "GSparameters.h"
 #include "Array.h"

@@ -6,6 +6,8 @@
 static const char rcs_id_earth_geom_c[] =
     "@(#) $Id$";
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "EarthGeom.h"
 #include "Vect.h"
 #include "Transform.h"
@@ -17,35 +19,33 @@ gc_att_to_gd_att(
     double       gc_att[3],
     double       gd_att[3])
 {
-    //-------------------------------------//
-    // inertial to s/c geocentric velocity //
-    //-------------------------------------//
+    //--------------------------//
+    // geocentric to spacecraft //
+    //--------------------------//
+    // spacecraft has y-axis approximately equal to the velocity vector
+
+    Transform t_sc_gc;
+    t_sc_gc.Rotate(0, gc_att[1]);   // pitch (2) about the x-axis
+    t_sc_gc.Rotate(1, gc_att[0]);   // roll  (1) about the y-axis
+    t_sc_gc.Rotate(2, gc_att[2]);   // yaw   (3) about the z-axis
+
+    //------------------------//
+    // inertial to geocentric //
+    //------------------------//
 
     Vect v_center(0.0, 0.0, 0.0);
-
     Vect x_gc, y_gc, z_gc;
     z_gc.Difference(v_center, sc_pos);
-    y_gc.Cross(z_gc, sc_vel);
-    x_gc.Cross(y_gc, z_gc);
-
+    x_gc.Cross(sc_vel, z_gc);
+    y_gc.Cross(z_gc, x_gc);
     Transform t_gc_irf(x_gc, y_gc, z_gc, sc_pos);
 
-    //-------------------------------------//
-    // s/c geocentric velocity to s/c body //
-    //-------------------------------------//
-
-    Transform t_body_gc;
-    t_body_gc.Rotate(0, -gc_att[1] * dtr);   // pitch (2)
-    t_body_gc.Rotate(1, gc_att[0] * dtr);    // roll  (1)
-    t_body_gc.Rotate(2, gc_att[2] * dtr);    // yaw   (3)
-
-    //-----------------------------------//
-    // s/c geodetic velocity to inertial //
-    //-----------------------------------//
+    //----------------------//
+    // geodetic to inertial //
+    //----------------------//
     // v_surface is the point on the earth s.t. the vector
     // sc_pos - v_surface is normal to the surface
 
-    Vect x_gd, y_gd, z_gd;
     Vect v_surface;
     double alt, lon, gd_lat;
     if (! get_alt_lon_gdlat(sc_pos, &alt, &lon, &gd_lat)) {
@@ -54,26 +54,34 @@ gc_att_to_gd_att(
     if (! set_alt_lon_gdlat(0.0, lon, gd_lat, &v_surface)) {
         return(0);
     }
+    Vect x_gd, y_gd, z_gd;
     z_gd.Difference(v_surface, sc_pos);
     x_gd.Cross(sc_vel, z_gd);
     y_gd.Cross(z_gd, x_gd);
     Transform t_gd_irf(x_gd, y_gd, z_gd, sc_pos);
     Transform t_irf_gd;
-    t_irf_gd.Inverse(t_gd_irf);
+    if (! t_irf_gd.Inverse(t_gd_irf)) {
+        return(0);
+    }
 
-    //----------------------------------------------//
-    // solve for the geodetic to s/c body transform //
-    //----------------------------------------------//
+    //----------------------------------//
+    // calculate spacecraft to geodetic //
+    //----------------------------------//
 
-    Transform t_body_gd(t_irf_gd);
-    t_body_gd.Apply(t_gc_irf);
-    t_body_gd.Apply(t_body_gc);
+    Transform t_sc_gd(t_irf_gd);
+    t_sc_gd.Apply(t_gc_irf);
+    t_sc_gd.Apply(t_sc_gc);
+
+/*
+    Transform t_gd_sc;
+    t_gd_sc.Inverse(t_sc_gd);
+*/
 
     //----------------------//
     // get the euler angles //
     //----------------------//
 
-    t_body_gd.GetEuler213(gd_att);
+    t_sc_gd.GetEuler213(gd_att);
 
     return(1);
 }

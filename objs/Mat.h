@@ -27,8 +27,11 @@ class Mat
 public:
 
     Mat();
+    Mat(const Mat& mat);
     Mat(int m_size, int n_size);
     Mat(int m_size, int n_size, double fill);
+
+    int  WriteAscii(FILE* ofp = stdout);
 
     //------------//
     // initialize //

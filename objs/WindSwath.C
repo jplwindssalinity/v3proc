@@ -4390,6 +4390,31 @@ WindSwath::NudgeOverrideVsCti(
     return(1);
 }
 
+//------------------------------//
+// WindSwath::NearestWindVector //
+//------------------------------//
+
+int
+WindSwath::NearestWindVector(
+    LonLat       lon_lat,
+    WindVector*  wv)
+{
+    // 2-d binary search using signed surface distance as the criteria
+    return(0);
+}
+
+//-----------------------------------//
+// WindSwath::InterpolatedWindVector //
+//-----------------------------------//
+
+int
+WindSwath::InterpolatedWindVector(
+    LonLat       lon_lat,
+    WindVector*  wv)
+{
+    return(0);
+}
+
 //----------------------//
 // WindSwath::_Allocate //
 //----------------------//

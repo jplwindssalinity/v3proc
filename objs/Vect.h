@@ -32,6 +32,8 @@ public:
 
     ~Vect();
 
+    int   WriteAscii(FILE* ofp = stdout) const;
+
     //----------------//
     // initialization //
     //----------------//
@@ -60,6 +62,7 @@ public:
 
     void  Multiply(double factor);
     int   SetMagnitude(double magnitude);
+    int   Add(const Vect& a);
     int   Difference(const Vect& a, const Vect& b);
     int   Cross(const Vect& a, const Vect& b);
     int   Product(const Mat& mat, const Vect& vect);

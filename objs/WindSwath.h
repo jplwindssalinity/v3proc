@@ -192,6 +192,13 @@ public:
                float* bad_nudge_rate_array, float low_speed,
                float high_speed);
 
+    //----------------------//
+    // LonLatWind interface //
+    //----------------------//
+
+    int  NearestWindVector(LonLat lon_lat, WindVector* wv);
+    int  InterpolatedWindVector(LonLat lon_lat, WindVector* wv);
+
     //-----------//
     // variables //
     //-----------//

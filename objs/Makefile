@@ -120,6 +120,7 @@ OBJS = \
 	Vect.o \
 	Wind.o \
 	WindSwath.o \
+	WindVector.o \
 	WindGrad.o \
 	XTable.o \
 	SeaPac.o \
@@ -244,7 +245,7 @@ L2AH.o: L2AH.C L2AH.h Sds.h Constants.h Misc.h L2A.h ETime.h BaseFile.h Meas.h B
 L2AHdf.o: L2AHdf.C L2AHdf.h Constants.h L2A.h BaseFile.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h
 L2AHdfSds.o: L2AHdfSds.C L2AHdfSds.h
 L2AToL2B.o: L2AToL2B.C L2AToL2B.h Constants.h Misc.h L2A.h L2B.h GMF.h BaseFile.h Meas.h WindSwath.h MiscTable.h Wind.h Kp.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix.h AngleInterval.h LonLatWind.h Index.h Kpm.h Kpr.h CoordinateSwitch.h EarthPosition.h Matrix3.h BufferedList.h WindVector.h EarthField.h Distributions.h L00Frame.h
-L2B.o: L2B.C L2B.h Wind.h Misc.h Sds.h BaseFile.h WindSwath.h Matrix.h AngleInterval.h LonLatWind.h List.h LonLat.h Index.h Constants.h WindVector.h EarthPosition.h Matrix3.h
+L2B.o: L2B.C L2B.h WindVector.h Wind.h Misc.h Sds.h BaseFile.h WindSwath.h Matrix.h AngleInterval.h LonLatWind.h List.h LonLat.h Index.h Constants.h EarthPosition.h Matrix3.h
 LandMap.o: LandMap.C Array.h Constants.h LandMap.h LonLat.h List.h EarthPosition.h Matrix3.h
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h Constants.h EarthPosition.h List.h Matrix3.h
@@ -282,7 +283,7 @@ Topo.o: Topo.C Topo.h Array.h Constants.h BYUXTable.h Spacecraft.h Qscat.h Meas.
 Tracking.o: Tracking.C Tracking.h Constants.h Array.h
 Transform.o: Transform.C Transform.h Vect.h Mat.h
 Vect.o: Vect.C Vect.h Mat.h
-Wind.o: Wind.C Wind.h GSparameters.h Array.h Matrix.h AngleInterval.h LonLatWind.h Misc.h List.h LonLat.h Index.h Constants.h WindVector.h EarthPosition.h Matrix3.h
+Wind.o: Wind.C WindVector.h Wind.h GSparameters.h Array.h Matrix.h AngleInterval.h LonLatWind.h Misc.h List.h LonLat.h Index.h Constants.h EarthPosition.h Matrix3.h
 WindGrad.o: WindGrad.C WindGrad.h Wind.h WindSwath.h Array.h Matrix.h AngleInterval.h LonLatWind.h Misc.h List.h LonLat.h Index.h Constants.h WindVector.h EarthPosition.h Matrix3.h
 WindSwath.o: WindSwath.C WindSwath.h hdf_support.h Distributions.h Array.h Wind.h Matrix.h AngleInterval.h LonLatWind.h Misc.h List.h LonLat.h Index.h Constants.h WindVector.h EarthPosition.h Matrix3.h
 WindVector.o: WindVector.C WindVector.h

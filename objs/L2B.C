@@ -13,6 +13,7 @@ static const char rcs_id_l2b_c[] =
 #include "NoTimeTlmFile.h"
 #include "ParTab.h"
 #include "L1AExtract.h"
+#include "WindVector.h"
 #include "Wind.h"
 #include "Misc.h"
 #include "Sds.h"
