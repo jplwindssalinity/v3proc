@@ -102,6 +102,8 @@ template class List<AngleInterval>;
 #define ANTENNA_BEAM     0x0004
 #define MIN_RAIN_DN      0
 #define NBD_SCALE        10.0
+#define MIN_VALUE        -8.0
+#define MAX_VALUE        8.0
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -196,6 +198,8 @@ main(
         exit(1);
     }
     fprintf(ofp, "apts\n");
+    fprintf(ofp, "%g %g %g\n", 241.77, 34.05, -8.0);
+    fprintf(ofp, "%g %g %g\n", 241.77, 34.05, 8.0);
 
     //---------------//
     // for each cell //
@@ -212,9 +216,13 @@ main(
             if (l2b_wvc == NULL)
                 continue;
 
+            float nbd = nbd_array[ati][cti] / NBD_SCALE;
+            if (nbd < MIN_VALUE)
+                nbd = MIN_VALUE;
+            if (nbd > MAX_VALUE)
+                nbd = MAX_VALUE;
             fprintf(ofp, "%g %g %g\n", l2b_wvc->lonLat.longitude * rtd,
-                l2b_wvc->lonLat.latitude * rtd,
-                (float)nbd_array[ati][cti] / NBD_SCALE);
+                l2b_wvc->lonLat.latitude * rtd, nbd);
         }
     }
 
