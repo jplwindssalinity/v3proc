@@ -87,12 +87,12 @@ LonLat::WriteAscii(
 	return(1);
 }
 
-//------------------//
-// LonLat::WriteBvg //
-//------------------//
+//-------------------//
+// LonLat::WriteOtln //
+//-------------------//
 
 int
-LonLat::WriteBvg(
+LonLat::WriteOtln(
 	FILE*	fp)
 {
 	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
@@ -195,12 +195,12 @@ Outline::WriteAscii(
 	return(1);
 }
 
-//-------------------//
-// Outline::WriteBvg //
-//-------------------//
+//--------------------//
+// Outline::WriteOtln //
+//--------------------//
 
 int
-Outline::WriteBvg(
+Outline::WriteOtln(
 	FILE*	fp)
 {
 	int count = NodeCount();
@@ -214,21 +214,21 @@ Outline::WriteBvg(
 	for (r = GetHead(); r; r = GetNext())
 	{
 		lon_lat.Set(*r);
-		if (! lon_lat.WriteBvg(fp))
+		if (! lon_lat.WriteOtln(fp))
 			return(0);
 	}
 
 	// close the figure
 	r = GetHead();
 	lon_lat.Set(*r);
-	if (! lon_lat.WriteBvg(fp))
+	if (! lon_lat.WriteOtln(fp))
 		return(0);
 
 	// indicate done
 	LonLat inf;
 	inf.longitude = (float)HUGE_VAL;
 	inf.latitude = (float)HUGE_VAL;
-	if (! inf.WriteBvg(fp))
+	if (! inf.WriteOtln(fp))
 		return(0);
 
 	return(1);

@@ -191,6 +191,13 @@ main(
 			output_file);
 		exit(1);
 	}
+	char* hdr = OTLN_HEADER;
+	if (fwrite((void *)hdr, 4, 1, output_fp) != 1)
+	{
+		fprintf(stderr, "%s: error writing header to output file %s\n",
+			command, output_file);
+		exit(1);
+	}
 
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
@@ -351,9 +358,9 @@ main(
 							LonLat lon_lat;
 							lon_lat.longitude = lon;
 							lon_lat.latitude = lat;
-							lon_lat.WriteBvg(output_fp);
+							lon_lat.WriteOtln(output_fp);
 						}
-						meas->outline.WriteBvg(output_fp);
+						meas->outline.WriteOtln(output_fp);
 					}
 				}
 				else
@@ -372,9 +379,9 @@ main(
 						LonLat lon_lat;
 						lon_lat.longitude = lon;
 						lon_lat.latitude = lat;
-						lon_lat.WriteBvg(output_fp);
+						lon_lat.WriteOtln(output_fp);
 					}
-					meas->outline.WriteBvg(output_fp);
+					meas->outline.WriteOtln(output_fp);
 				}
 				instrument_sim.DetermineNextEvent(&(instrument.antenna),
 					&instrument_event);

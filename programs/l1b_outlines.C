@@ -8,11 +8,11 @@
 //		l15_outlines
 //
 // SYNOPSIS
-//		l15_outlines <l15_file> <BVG_file>
+//		l15_outlines <l15_file> <Otln_file>
 //
 // DESCRIPTION
 //		Reads in a Level 1.5 file and writes out a Binary Vector
-//		Graphics (BVG) file containing the cell outlines
+//		Graphics (Otln) file containing the cell outlines
 //
 // OPTIONS
 //		None.
@@ -20,11 +20,11 @@
 // OPERANDS
 //		The following operand is supported:
 //		<l15_file>		The Level 1.5 input file.
-//		<BVG_file>		The BVG output file.
+//		<Otln_file>		The Otln output file.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% l15_outlines l15.dat l15.bvg
+//			% l15_outlines l15.dat l15.otln
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -97,7 +97,7 @@ template class List<OffsetList>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<l15_file>", "<BVG_file>", 0};
+const char* usage_array[] = { "<l15_file>", "<Otln_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -118,7 +118,7 @@ main(
 
 	int clidx = 1;
 	const char* l15_file = argv[clidx++];
-	const char* bvg_file = argv[clidx++];
+	const char* otln_file = argv[clidx++];
 
 	//-------------------------//
 	// open the Level 1.5 file //
@@ -132,14 +132,22 @@ main(
 		exit(1);
 	}
 
-	//---------------//
-	// open BVG file //
-	//---------------//
+	//----------------//
+	// open Otln file //
+	//----------------//
 
-	FILE* bvg_fp = fopen(bvg_file, "w");
-	if (bvg_fp == NULL)
+	FILE* output_fp = fopen(otln_file, "w");
+	if (output_fp == NULL)
 	{
-		fprintf(stderr, "%s: error opening BVG file %s\n", command, bvg_file);
+		fprintf(stderr, "%s: error opening Otln file %s\n", command, otln_file);
+		exit(1);
+	}
+
+	char* hdr = OTLN_HEADER;
+	if (fwrite((void *)hdr, 4, 1, output_fp) != 1)
+	{
+		fprintf(stderr, "%s: error writing header to output file %s\n",
+			command, otln_file);
 		exit(1);
 	}
 
@@ -154,10 +162,10 @@ main(
 		{
 			for (Meas* m = ms->GetHead(); m; m = ms->GetNext())
 			{
-				if (! m->outline.WriteBvg(bvg_fp))
+				if (! m->outline.WriteOtln(output_fp))
 				{
-					fprintf(stderr, "%s: error writing BVG data to file %s\n",
-						command, bvg_file);
+					fprintf(stderr, "%s: error writing Otln data to file %s\n",
+						command, otln_file);
 					exit(1);
 				}
 			}
@@ -168,7 +176,7 @@ main(
 	// close the files //
 	//-----------------//
 
-	fclose(bvg_fp);
+	fclose(output_fp);
 	l15.Close();
 
 	return (0);

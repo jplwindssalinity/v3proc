@@ -32,6 +32,7 @@ static const char rcs_id_misc_h[] =
 //-----------//
 
 #define VCTR_HEADER		"vctr"
+#define OTLN_HEADER		"otln"
 
 //--------//
 // MACROS //

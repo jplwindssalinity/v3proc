@@ -48,7 +48,7 @@ public:
 	int		Read(FILE* fp);
 
 	int		WriteAscii(FILE* fp);
-	int		WriteBvg(FILE* fp);
+	int		WriteOtln(FILE* fp);
 
 	//-----------//
 	// variables //
@@ -86,7 +86,7 @@ public:
 	int		Read(FILE* fp);
 
 	int		WriteAscii(FILE* fp);
-	int		WriteBvg(FILE* fp);
+	int		WriteOtln(FILE* fp);
 
 	double	Area();
 	double	Area1()		{ return(1.0); };
