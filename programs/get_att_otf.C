@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    get_att_otf [ -bit ] [ -y yaw ] [ -f type:windfield ]
-//      [ -s start:end:step ] <sim_config_file> <output_base>
+//      [ -s step ] <sim_config_file> <output_base>
 //      <echo_file...>
 //
 // DESCRIPTION
@@ -153,7 +153,7 @@ int     prune();
 //------------------//
 
 const char* usage_array[] = { "[ -bit ]", "[ -y yaw ]",
-    "[ -f type:windfield ]", "[ -s start:end:step ] ", "<sim_config_file>",
+    "[ -f type:windfield ]", "[ -s step ] ", "<sim_config_file>",
     "<output_base>", "<echo_file...>", 0 };
 
 int        g_frame_count = 0;
@@ -335,6 +335,12 @@ main(
     {
         char* topomap_file = config_list.Get(TOPOMAP_FILE_KEYWORD);
         char* stable_file = config_list.Get(STABLE_FILE_KEYWORD);
+        int stable_mode_id;
+        if (! config_list.GetInt(STABLE_MODE_ID_KEYWORD, &stable_mode_id))
+        {
+            fprintf(stderr, "%s: missing S-Table mode id\n", command);
+            exit(1);
+        }
         if (topomap_file && stable_file)
         {
             if (! g_topo.Read(topomap_file))
@@ -349,6 +355,7 @@ main(
                     stable_file);
                 exit(1);
             }
+            g_stable.SetModeId(stable_mode_id);
         }
     }
 
@@ -621,8 +628,9 @@ process_orbit_step(
     // add roll, pitch, yaw to attitude file //
     //---------------------------------------//
 
-    double delta_time = (g_time - g_first_time) / 60.0;
-    fprintf(att_fp, "%g %g %g %g\n", delta_time, att[0] * rtd,
+//    minutes
+//    double delta_time = (g_time - g_first_time) / 60.0;
+    fprintf(att_fp, "%g %g %g %g\n", g_time, att[0] * rtd,
         att[1] * rtd, att[2] * rtd);
     fflush(att_fp);
 
