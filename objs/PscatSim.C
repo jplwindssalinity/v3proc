@@ -143,21 +143,22 @@ PscatSim::DetermineNextEvent(
             switch (pscat_event->beamIdx)
             {
             case 0: // inner beam
-	        switch(_configuration){
-		case INNER_POL_OUTER_COPOL:
+                switch (_configuration)
+                {
+                case INNER_POL_OUTER_COPOL:
                 case BOTH_POL:
                 case BOTH_BEAM_HHVH:
-		  pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
-		  break;
-	        case BOTH_BEAM_VVHV:
-		  pscat_event->eventId = PscatEvent::VV_HV_SCAT_EVENT;
-		  break;
+                    pscat_event->eventId = PscatEvent::HH_VH_SCAT_EVENT;
+                    break;
+                case BOTH_BEAM_VVHV:
+                    pscat_event->eventId = PscatEvent::VV_HV_SCAT_EVENT;
+                    break;
                 default:
                     fprintf(stderr,
                       "PscatSim::DetermineNextEvent: unknown configuration\n");
                     exit(1);
                     break;
-		}
+                }
                 break;
             case 1:
                 // outer beam
