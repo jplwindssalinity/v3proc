@@ -1,44 +1,43 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1998-2002, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l2b_extract_worst
+//    l2b_extract_worst
 //
 // SYNOPSIS
-//		l2b_diff_from_truth <config_file> 
+//    l2b_diff_from_truth <config_file>
 //
 // DESCRIPTION
-//              Locates worst wind vectors in the file 
-//              for each cross_track_index.
+//    Locates worst wind vectors in the file
+//    for each cross_track_index.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operands are supported:
-//		<config_file>	Simulation Configuration file
+//    The following operands are supported:
+//      <config_file>  Simulation Configuration file
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% l2b_extract_worst quikscat.cfg
+//    An example of a command line is:
+//      % l2b_extract_worst quikscat.cfg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
 // AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+//    James N. Huddleston (hudd@acid.jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -46,7 +45,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -70,7 +69,6 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 
-
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -91,8 +89,6 @@ template class List<long>;
 template class List<OffsetList>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
-
-
 
 //-----------//
 // CONSTANTS //
@@ -118,7 +114,8 @@ template class TrackerBase<unsigned short>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)","<compare_nudge_flag (1=compare to nudge, 0=default)>",  0};
+const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)",
+    "<compare_nudge_flag (1=compare to nudge, 0=default)>",  0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -126,131 +123,129 @@ const char* usage_array[] = { "<config_file>", "<hdf_flag (1=use HDF, default=0)
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 2 && argc !=3 && argc!=4)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc != 2 && argc !=3 && argc!=4)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
         int use_hdf=0;
         int compare_nudge=0;
         if(argc>=3){
-	  use_hdf=atoi(argv[clidx++]);
-	  if(argc==4){
-	    compare_nudge=atoi(argv[clidx++]);
-	  }
-	}
+      use_hdf=atoi(argv[clidx++]);
+      if(argc==4){
+        compare_nudge=atoi(argv[clidx++]);
+      }
+    }
 
-	//---------------------//
-	// read in config file //
-	//---------------------//
+    //---------------------//
+    // read in config file //
+    //---------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// create and configure level products //
-	//-------------------------------------//
+    //-------------------------------------//
+    // create and configure level products //
+    //-------------------------------------//
 
-	L2B l2b;
-	if (! ConfigL2B(&l2b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
-		exit(1);
-	}
+    L2B l2b;
+    if (! ConfigL2B(&l2b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
+        exit(1);
+    }
 
-	//--------------------------------------//
-	// read in  truth windfield             //
-	//--------------------------------------//
-	WindField truth;
-        if(!compare_nudge){
-	  char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
-	  if (truth_type == NULL)
-	    {
-	      fprintf(stderr, "%s: must specify truth windfield type\n",
-				command);
-	      exit(1);
-	    }
-	
-	  char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-	  if (truth_file == NULL)
-	    {
-	      fprintf(stderr, "%s: must specify truth windfield file\n",
-		      command);
-	      exit(1);
-	    }
-	
-	  truth.ReadType(truth_file, truth_type);
-	}
+    //-------------------------//
+    // read in truth windfield //
+    //-------------------------//
 
-	//------------------//
-	// read in l2b file //
-	//------------------//
-        if (use_hdf){      
-	  if (l2b.ReadHDF()== 0)
-	    {
-	      fprintf(stderr, "%s: cannot open HDF file for input\n",
+    WindField truth;
+    if (! compare_nudge) {
+        char* truth_type = config_list.Get(TRUTH_WIND_TYPE_KEYWORD);
+        if (truth_type == NULL) {
+            fprintf(stderr, "%s: must specify truth windfield type\n", command);
+            exit(1);
+        }
+
+        char* truth_file = config_list.Get(TRUTH_WIND_FILE_KEYWORD);
+        if (truth_file == NULL) {
+            fprintf(stderr, "%s: must specify truth windfield file\n", command);
+            exit(1);
+        }
+
+        truth.ReadType(truth_file, truth_type);
+    }
+
+    //------------------//
+    // read in l2b file //
+    //------------------//
+
+        if (use_hdf){
+      if (l2b.ReadHDF()== 0)
+        {
+          fprintf(stderr, "%s: cannot open HDF file for input\n",
                                  argv[0]);
-	      exit(1);
-	    }
-	}
+          exit(1);
+        }
+    }
         else{
-	  if (! l2b.OpenForReading())
-	    {
-	      fprintf(stderr, "%s: error opening L2B file\n",command);
-	      exit(1);
-	    }
-	  if (! l2b.ReadHeader())
-	    {
-	      fprintf(stderr, "%s: error reading L2B header from file \n",
-		      command);
-	      exit(1);
-	    }
+      if (! l2b.OpenForReading())
+        {
+          fprintf(stderr, "%s: error opening L2B file\n",command);
+          exit(1);
+        }
+      if (! l2b.ReadHeader())
+        {
+          fprintf(stderr, "%s: error reading L2B header from file \n",
+              command);
+          exit(1);
+        }
 
-	  if (! l2b.ReadDataRec())
-	    {
-	      fprintf(stderr, "%s: error reading L2B data record from file \n",
-		      command);
-	      exit(1);
-	    }
-	}
+      if (! l2b.ReadDataRec())
+        {
+          fprintf(stderr, "%s: error reading L2B data record from file \n",
+              command);
+          exit(1);
+        }
+    }
 
-	//----------------------//
+    //----------------------//
         // compute difference & //
-	// write out vctr files //
-	//----------------------//
+    // write out vctr files //
+    //----------------------//
         int ctbins=l2b.frame.swath.GetCrossTrackBins();
         int atbins=l2b.frame.swath.GetAlongTrackBins();
-	for(int cti=0;cti<ctbins;cti++){
-	  WindVector true_wv;
-	  for(int ati=0;ati<atbins;ati++){
-	    WVC* wvc=l2b.frame.swath.swath[cti][ati];
-	    if(!wvc) continue;
+    for(int cti=0;cti<ctbins;cti++){
+      WindVector true_wv;
+      for(int ati=0;ati<atbins;ati++){
+        WVC* wvc=l2b.frame.swath.swath[cti][ati];
+        if(!wvc) continue;
             if (compare_nudge){
-	      if(! wvc->nudgeWV) continue;
+          if(! wvc->nudgeWV) continue;
               true_wv.dir=wvc->nudgeWV->dir;
               true_wv.spd=wvc->nudgeWV->spd;
-	    }
-	    else if (! truth.InterpolatedWindVector(wvc->lonLat, &true_wv))
-				continue;
+        }
+        else if (! truth.InterpolatedWindVector(wvc->lonLat, &true_wv))
+                continue;
             while(true_wv.dir>two_pi) true_wv.dir=true_wv.dir-two_pi;
             while(true_wv.dir<0) true_wv.dir=true_wv.dir+two_pi;
 
-	    WindVectorPlus* wvp=wvc->selected;
+        WindVectorPlus* wvp=wvc->selected;
             WindVectorPlus* nearest=wvc->GetNearestToDirection(true_wv.dir);
-	    if(!wvp) continue;
+        if(!wvp) continue;
             while(wvp->dir>two_pi) wvp->dir=wvp->dir-two_pi;
             while(wvp->dir<0) wvp->dir=wvp->dir+two_pi;
             while(nearest->dir>two_pi) nearest->dir=nearest->dir-two_pi;
@@ -260,13 +255,13 @@ main(
             float neardif=ANGDIF(nearest->dir,true_wv.dir);
             int nambig=wvc->ambiguities.NodeCount();
             float lat = wvc->lonLat.latitude*rtd;
-	    float lon = wvc->lonLat.longitude*rtd;
-	    printf("%d %d  LONLAT %g %g SPEED %g %g %g TRUE DIR %g SELECTED DIR %g %g  NEAREST DIR %g %g NAMBIG %d\n", cti+1,ati+1,lon,lat,
-		   true_wv.spd,wvp->spd,
-		   fabs(true_wv.spd - wvp->spd), true_wv.dir*rtd, wvp->dir*rtd,
-		   dirdif*rtd, nearest->dir*rtd, neardif*rtd, nambig);
-	  }
-	}
-	return (0);
+        float lon = wvc->lonLat.longitude*rtd;
+        printf("%d %d  LONLAT %g %g SPEED %g %g %g TRUE DIR %g SELECTED DIR %g %g  NEAREST DIR %g %g NAMBIG %d\n", cti+1,ati+1,lon,lat,
+           true_wv.spd,wvp->spd,
+           fabs(true_wv.spd - wvp->spd), true_wv.dir*rtd, wvp->dir*rtd,
+           dirdif*rtd, nearest->dir*rtd, neardif*rtd, nambig);
+      }
+    }
+    return (0);
 }
 
