@@ -109,7 +109,7 @@ QscatSim::DetermineNextEvent(
              lastEventIdealEncoder <= NINETY_DEGREE_ENCODER) ||
             _calPending == 1)
         {
-            if (_spotNumber < 5 || _spotNumber > spots_per_frame - 5)
+            if (_spotNumber < 5 || _spotNumber > spots_per_frame - 6)
             {
               _calPending = 1;
             }
