@@ -57,6 +57,7 @@ static const char rcs_id[] =
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -116,7 +117,20 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "<sim_config_file>", 0};
+//--------------------//
+// Report handler     //
+// runs if SIGUSR1 is //
+// recieved.          //
+//--------------------//
 
+float sim_time=0.0;
+
+void report(int sig_num){
+  sig_num=sig_num;
+  fprintf(stderr,"sim:  Current simulation time %g\n",
+	  sim_time); 
+  return;
+}
 //--------------//
 // MAIN PROGRAM //
 //--------------//
@@ -136,6 +150,14 @@ main(
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
+
+        //------------------------//
+        // tell how far you have  //
+        // gotten if you recieve  //
+        // the siguser1 signal    //
+        //------------------------//
+
+        sigset(SIGUSR1,&report);
 
 	//--------------------------------//
 	// read in simulation config file //
@@ -353,7 +375,7 @@ main(
 				//------------------------------//
 				// process the spacecraft event //
 				//------------------------------//
-
+                                sim_time=spacecraft_event.time;
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::UPDATE_STATE:
@@ -391,7 +413,7 @@ main(
 				//------------------------------//
 				// process the instrument event //
 				//------------------------------//
-
+                                sim_time=instrument_event.time;
 				switch(instrument_event.eventId)
 				{
 				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
