@@ -29,10 +29,13 @@ OBJS = \
 	L15.o \
 	LookGeom.o \
 	Matrix3.o \
+	Measurement.o \
 	Misc.o \
 	Orbit.o \
 	OrbitSim.o \
-	Product.o
+	Product.o \
+	WindVector.o \
+	WVC.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -101,7 +104,10 @@ List.o:			List.C List.h
 LookGeom.o:		LookGeom.C LookGeom.h CoordinateSwitch.h \
 			Matrix3.h Constants.h
 Matrix3.o:		Matrix3.C Matrix3.h Constants.h
+Measurement.o:	Measurement.C Measurement.h
 Misc.o:			Misc.C Misc.h
 Orbit.o:		Orbit.C Orbit.h Constants.h Matrix3.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h Matrix3.h
 Product.o:		Product.C Product.h
+WindVector.o:	WindVector.C WindVector.h
+WVC.o:			WVC.C WVC.h
