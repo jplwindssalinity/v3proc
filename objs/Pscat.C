@@ -15,6 +15,9 @@ static const char rcs_id_pscat_c[] =
 // PscatEvent //
 //============//
 
+const char* pscat_event_map[] = { "None", "VV", "HH", "VVHV", "HHVH",
+    "LOOP", "LOAD" };
+
 PscatEvent::PscatEvent()
 :   eventTime(0.0), eventId(NONE), beamIdx(0)
 {

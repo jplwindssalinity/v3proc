@@ -8,6 +8,7 @@ static const char rcs_id_pscatl1a_c[] =
 
 #include <memory.h>
 #include <malloc.h>
+#include "Pscat.h"
 #include "PscatL1A.h"
 #include "Constants.h"
 #include "Misc.h"
@@ -415,35 +416,42 @@ PscatL1AFrame::Unpack(
 // PscatL1AFrame::WriteAscii //
 //---------------------------//
 
-int PscatL1AFrame::WriteAscii(
+int
+PscatL1AFrame::WriteAscii(
     FILE*  ofp)
 {
-    fprintf(ofp,
-        "\n########################Frame Info#####################\n\n");
-    fprintf(ofp,
-        "Time: %g InstrumentTicks: %d OrbitTicks %d PriOfOrbitStepChange %d\n",
-        time, instrumentTicks, orbitTicks, (int)priOfOrbitStepChange);
-    fprintf(ofp, "GCAlt: %g GCLon: %g GCLat: %g GCX: %g GCY: %g GCZ: %g\n",
-        gcAltitude, gcLongitude*rtd, gcLatitude*rtd, gcX, gcY, gcZ);
-    fprintf(ofp,
-        "VelX: %g VelY: %g VelZ: %g Roll: %g Pitch: %g Yaw: %g\n",
-        velX, velY, velZ, attitude.GetRoll()*rtd, attitude.GetPitch()*rtd,
-        attitude.GetYaw()*rtd);
-    int offset = 0;
-    for (int c = 0; c < spotsPerFrame; c++)
+    fprintf(ofp, "\n");
+    fprintf(ofp, "*** Frame ***\n\n");
+    fprintf(ofp, "Time: %g   Instrument Ticks: %d   Orbit Ticks: %d\n",
+        time, instrumentTicks, orbitTicks);
+    fprintf(ofp, "Orbit Step: %d   Pri Of Orbit Step Change: %d\n",
+        orbitStep, priOfOrbitStepChange);
+    fprintf(ofp, "GC Altitude: %g   GC Longitude: %g   GC Latitude: %g\n",
+        gcAltitude, gcLongitude, gcLatitude);
+    fprintf(ofp, "X: %g   Y: %g   Z: %g\n", gcX, gcY, gcZ);
+    fprintf(ofp, "VelX: %g   VelY: %g   VelZ: %g\n", velX, velY, velZ);
+    fprintf(ofp, "Roll: %g   Pitch: %g   Yaw: %g\n", attitude.GetRoll() * dtr,
+        attitude.GetPitch() * dtr, attitude.GetYaw() * dtr);
+    fprintf(ofp, "Cal Position: %d\n", calPosition);
+
+    fprintf(ofp, "--- Calibration Data ---\n");
+    fprintf(ofp, "--- Science Data ---\n");
+    for (int spot_idx = 0; spot_idx < spotsPerFrame; spot_idx++)
     {
-        fprintf(ofp,
-            "\n    :::::::::::::::: Spot Info :::::::::::::::::::  \n\n");
-        fprintf(ofp, "AntennaPos: %d SpotNoise: %d Beam:%d\n",
-            (int)antennaPosition[c], spotNoise[c], c%2);
-        fprintf(ofp, "E(S+N) Slices(1-%d): ", slicesPerSpot);
-        for (int s = 0; s < slicesPerSpot; s++)
+        int spot_meas_offset = spot_idx * measPerSpot;
+        fprintf(ofp, "Spot %d (%s)\n", spot_idx,
+            pscat_event_map[(int)eventId[spot_idx]]);
+        for (int slice_idx = 0; slice_idx < slicesPerSpot; slice_idx++)
         {
-            fprintf(ofp, "%d ", science[offset]);
-            offset++;
+            int slice_meas_offset = slice_idx * measPerSlice;
+            float* ptr = (float *)&(science[spot_meas_offset +
+                slice_meas_offset + 1]);
+            fprintf(ofp, "  %d %g\n", science[spot_meas_offset +
+                slice_meas_offset], *ptr);
         }
-        fprintf(ofp,"\n");
     }
+    
+    fprintf(ofp, "\n");
     return(1);
 }
 
@@ -535,11 +543,19 @@ PscatL1A::WriteDataRec()
 //-----------------------------//
 
 int
-PscatL1A::WriteDataRecAscii()
+PscatL1A::WriteDataRecAscii(
+    FILE*  fp)
 {
-    if (_outputFp == NULL)
+    FILE* use_fp;
+    if (fp)
+        use_fp = fp;
+    else if (_outputFp)
+        use_fp = _outputFp;
+    else
         return(0);
-    if (! frame.WriteAscii(_outputFp))
+
+    if (! frame.WriteAscii(use_fp))
         return(0);
+
     return(1);
 }

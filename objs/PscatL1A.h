@@ -158,7 +158,7 @@ public:
 
     int  ReadDataRec();
     int  WriteDataRec();
-    int  WriteDataRecAscii();
+    int  WriteDataRecAscii(FILE* fp);
 
     //-----------//
     // variables //

@@ -25,6 +25,8 @@ static const char rcs_id_pscat_h[] =
 //      The PscatEvent object contains a PSCAT event time and ID.
 //======================================================================
 
+extern const char* pscat_event_map[];
+
 class PscatEvent
 {
 public:
