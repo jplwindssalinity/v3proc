@@ -55,6 +55,7 @@ int ConfigInstrumentSim(InstrumentSim* instrument_sim,
 //---------//
 
 #define NUMBER_OF_BEAMS_KEYWORD			"NUMBER_OF_BEAMS"
+#define NUMBER_OF_ENCODER_BITS_KEYWORD	"NUMBER_OF_ENCODER_BITS"
 
 int ConfigAntenna(Antenna* antenna, ConfigList* config_list);
 

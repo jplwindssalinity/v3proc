@@ -151,6 +151,11 @@ ConfigAntenna(
 		return(0);
 	antenna->numberOfBeams = number_of_beams;
 
+	int encoder_bits;
+	if (! config_list->GetInt(NUMBER_OF_ENCODER_BITS_KEYWORD, &encoder_bits))
+		return(0);
+	antenna->SetNumberOfEncoderBits(encoder_bits);
+
 	//---------------------//
 	// configure each beam //
 	//---------------------//
