@@ -1,0 +1,74 @@
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
+
+#ifndef PSCAT_H
+#define PSCAT_H
+
+static const char rcs_id_pscat_h[] =
+    "@(#) $Id$";
+
+#include "Qscat.h"
+
+//======================================================================
+// CLASSES
+//    PscatEvent, Pscat
+//======================================================================
+
+//======================================================================
+// CLASS
+//      PscatEvent
+//
+// DESCRIPTION
+//      The PscatEvent object contains a PSCAT event time and ID.
+//======================================================================
+
+class PscatEvent
+{
+public:
+
+    //-------//
+    // enums //
+    //-------//
+
+    enum PscatEventE { NONE, VV_SCAT_EVENT, HH_SCAT_EVENT, VV_VH_SCAT_EVENT,
+        HH_HV_SCAT_EVENT };
+
+    //--------------//
+    // construction //
+    //--------------//
+
+    PscatEvent();
+    ~PscatEvent();
+
+    //-----------//
+    // variables //
+    //-----------//
+
+    double       eventTime;
+    PscatEventE  eventId;
+    int          beamIdx;
+};
+
+//======================================================================
+// CLASS
+//    Pscat
+//
+// DESCRIPTION
+//    Pscat is the top level object for the PSCAT polarimetric
+//    scatterometer.
+//======================================================================
+
+class Pscat : public Qscat
+{
+public:
+    //--------------//
+    // construction //
+    //--------------//
+
+    Pscat();
+    ~Pscat();
+};
+
+#endif
