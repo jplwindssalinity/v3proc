@@ -130,8 +130,11 @@ ArgInfo end_time_arg = END_TIME_ARG;
 ArgInfo filter_arg = FILTER_ARG;
 ArgInfo output_file_arg = OUTPUT_FILE_ARG;
 ArgInfo poly_table_arg = POLY_TABLE_ARG;
-ArgInfo logfile_arg = LOG_FILE_ARG;
 ArgInfo no_gr_header_arg = NO_GR_HEADER_ARG;
+
+#ifndef NOPM
+ArgInfo logfile_arg = LOG_FILE_ARG;
+#endif
 
 ArgInfo* arg_info_array[] =
 {
@@ -144,7 +147,9 @@ ArgInfo* arg_info_array[] =
     &filter_arg,
     &output_file_arg,
     &poly_table_arg,
+#ifndef NOPM
     &logfile_arg,
+#endif
     &no_gr_header_arg,
     0
 };
@@ -164,7 +169,9 @@ char *argv[])
     char* config_filename = getenv(ENV_CONFIG_FILENAME);
     static ArgsPlus args_plus = ArgsPlus(
 			       argc, argv, config_filename, arg_info_array);
+#ifndef NOPM
     EALog *ealog=args_plus.GetEALog();
+#endif
 
     if (argc == 1)
     {
@@ -215,12 +222,14 @@ char *argv[])
     if (no_gr_header_string && strcmp(no_gr_header_string, "0")!= 0)
         no_gr_header = 1;
 
+#ifndef NOPM
     ealog->AppendToInputFileList(poly_table_string);
     ealog->AppendToOutputFileList(output_file_string);
 
     if (ealog->Init_PM() == EALog::EA_FAILURE)
         ealog->SetWriteAndExit(EALog::EA_FAILURE,
                  "Error connecting to PM --- Aborting ---\n");
+#endif
 
     //----------------------------------------
     // look up x parameter in parameter table 
@@ -234,10 +243,12 @@ char *argv[])
         {
             fprintf(stderr, "%s: unknown x parameter %s\n", argv[0],
                 x_parameter_string);
+#ifndef NOPM
 	    ealog->VWriteMsg(": unknown x parameter %s\n",
                              x_parameter_string);
 	    ealog->SetWriteAndExit(EALog::EA_FAILURE,
                                    "--- Aborting ---\n");
+#endif
         }
     }
     else
@@ -270,11 +281,13 @@ char *argv[])
                                                    argv[0], ystring);
             fprintf(stderr, " in the %s parameter table\n",
                                              source_id_map[tlm_type]);
+#ifndef NOPM
             ealog->VWriteMsg(
                "Error looking up parameter %s\n   in the %s parameter table\n",
                 ystring, source_id_map[tlm_type]);
             ealog->SetWriteAndExit(EALog::EA_FAILURE,
                                    "---Aborting---\n");
+#endif
         }
         plist->Append(param);
     }
@@ -292,8 +305,10 @@ char *argv[])
         {
             fprintf(stderr, "%s: parameter list: open datasets failed\n",
                                   argv[0]);
+#ifndef NOPM
             ealog->SetWriteAndExit(EALog::EA_FAILURE,
             "parameter list: open datasets failed -- Aborting -- \n");
+#endif
         }
 
         if (filter_set)
@@ -303,8 +318,10 @@ char *argv[])
             {
                 fprintf(stderr, "%s: filter set: open datasets failed\n",
                                       argv[0]);
+#ifndef NOPM
                 ealog->SetWriteAndExit(EALog::EA_FAILURE,
                                 "parameter list: open datasets failed\n");
+#endif
             }
 
             int32 nextIndex=HDF_FAIL;
@@ -319,8 +336,10 @@ char *argv[])
                     {
                         fprintf(stderr,
                             "%s: extracting parameter list failed\n", argv[0]);
+#ifndef NOPM
                         ealog->SetWriteAndExit(EALog::EA_FAILURE,
                              "extracting parameter list failed\n");
+#endif
                     }
                 }
             }
@@ -340,8 +359,10 @@ char *argv[])
                 {
                     fprintf(stderr,
                         "%s: extracting parameter list failed\n", argv[0]);
+#ifndef NOPM
                     ealog->SetWriteAndExit(EALog::EA_FAILURE,
                          "extracting parameter list failed\n");
+#endif
                 }
             }
         }
@@ -368,8 +389,10 @@ char *argv[])
             fprintf(stderr, 
              "%s: Polynomial Table is required, aborting...\n",
                                      argv[0]);
+#ifndef NOPM
 	    ealog->SetWriteAndExit(EALog::EA_FAILURE,
              " Polynomial Table is required --- Aborting --- \n");
+#endif
         }
     }
     else
@@ -381,8 +404,10 @@ char *argv[])
             fprintf(stderr,
               "%s: Applying Polynomial Table failed, aborting...\n", 
                  argv[0]);
+#ifndef NOPM
 	    ealog->SetWriteAndExit(EALog::EA_FAILURE,
                     "Applying Polynomial Table failed. --- Aborting ---\n");
+#endif
         }
         delete polyTable;
     }
