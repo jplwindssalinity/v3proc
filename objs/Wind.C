@@ -5646,10 +5646,9 @@ WindSwath::operator-=(
 	        wvc1->selected=NULL;
                 continue;
 	    }
-
+	    float u1, v1, u2, v2;
 	    if(wvc1->selected && wvc2->selected){
 	      WindVectorPlus* wvp_sel=new WindVectorPlus;
-	      float u1, v1, u2, v2;
 	      wvc1->selected->GetUV(&u1,&v1);
 	      wvc2->selected->GetUV(&u2,&v2);
 	      wvp_sel->SetUV(u1-u2,v1-v2);
