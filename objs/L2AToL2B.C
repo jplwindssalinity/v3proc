@@ -71,6 +71,11 @@ L2AToL2B::SetWindRetrievalMethod(
         wrMethod = S1;
         return(1);
     }
+    else if (strcasecmp(wr_method, "S2") == 0)
+    {
+        wrMethod = S2;
+        return(1);
+    }
     else if (strcasecmp(wr_method, "PEAK_SPLITTING") == 0)
     {
         wrMethod = PEAK_SPLITTING;
@@ -131,6 +136,9 @@ L2AToL2B::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
+	float ctd, speed;
+        WindVectorPlus* wvp;
+        static num=1;
     switch (wrMethod)
     {
         case GS:
@@ -177,22 +185,40 @@ L2AToL2B::ConvertAndWrite(
                 return(9);
             }
             break;
+        case S2:
+            if (! gmf->RetrieveWinds_S2(meas_list, kp, wvc))
+            {
+                delete wvc;
+                return(10);
+            }
+#ifdef S2_DEBUG_INTERVAL
+            if(num%S2_DEBUG_INTERVAL==0){
+	      ctd=(l2a->frame.cti - l2a->header.zeroIndex)
+		*l2a->header.crossTrackResolution;
+	      wvp=wvc->ambiguities.GetHead();
+	      speed=wvp->spd;
+	      printf("CTD %g Speed First Rank %g\n",ctd,speed);
+	      fflush(stdout);
+	    }
+#endif
+	    num++;
+            break;
         case PEAK_SPLITTING:
             if (! gmf->RetrieveWindsWithPeakSplitting(meas_list, kp, wvc,
                 onePeakWidth, twoPeakSep, probThreshold, DESIRED_SOLUTIONS))
             {
                 delete wvc;
-                return(10);
+                return(11);
             }
             break;
         default:
-            return(11);
+            return(12);
     }
 
 	if (wvc->ambiguities.NodeCount() == 0)
 	{
 		delete wvc;
-		return(12);
+		return(13);
 	}
 	wvc->lonLat = meas_list->AverageLonLat();
 

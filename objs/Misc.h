@@ -43,6 +43,10 @@ static const char rcs_id_misc_h[] =
 #define MAX(A,B)		((A)>(B)?(A):(B))
 #define CWNTOCCWE(A)	(M_PI_2 - (A))
 
+// Macro returns 1 if Angle A is between Start and End 0 otherwise
+// Only works if all three angles are between 0 and two_pi
+#define BETWEENANG(A,START,END) ((((A)>(START)) && ((A)<(END))) || (((A)>(START)) && ((END)<(START))) || (((A)<(END)) &&  ((END)<(START)))) 
+
 //-----------//
 // FUNCTIONS //
 //-----------//

@@ -1,4 +1,4 @@
-//==============================================================//
+ //==============================================================//
 // Copyright (C) 1997-1998, California Institute of Technology.	//
 // U.S. Government sponsorship acknowledged.					//
 //==============================================================//
@@ -36,7 +36,8 @@ static const char rcs_id_gmf_h[] =
 #define DEFAULT_SMOOTH_ANGLE	10.0*dtr
 #define DEFAULT_MAX_SOLUTIONS	4
 #define DEFAULT_PHI_COUNT		360
-
+//#define S2_DEBUG_INTERVAL               17
+//#define S2_DETAILED_DEBUG               88
 #define MINIMUM_WVC_MEASUREMENTS	4
 #define MINIMUM_AZIMUTH_DIVERSITY	20.0*dtr
 
@@ -101,7 +102,14 @@ public:
     int     RetrieveWinds_H1(MeasList* meas_list, Kp* kp, WVC* wvc);
     int     RetrieveWinds_H2(MeasList* meas_list, Kp* kp, WVC* wvc,
                 int h3_and_s1_flag = 0);
+    int     RetrieveWinds_S2(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int     BruteForceGetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
+			      int level=0, float* tmp_peak_dir=NULL);
+    int     GetMinEstimateMSE(float* peak_dir, int num_peaks, float* mse,
+			      int num=0);
+    float   EstimateDirMSE(float* peak_dir, int num_peaks);
     int     ConvertObjToPdf();
+
     int     SolutionCurve_H1(MeasList* meas_list, Kp* kp);
     int     FindBestSpeed(MeasList* meas_list, Kp* kp, float dir,
                 float low_speed, float high_speed, float* best_speed,

@@ -18,7 +18,8 @@ static const char rcs_id_gmf_c[] =
 #include "Constants.h"
 #include "Beam.h"
 #include "List.h"
-
+#include "AngleInterval.h"
+#include "Array.h"
 //=====//
 // GMF //
 //=====//
@@ -2303,7 +2304,6 @@ GMF::WriteObjXmgr(
 
 }
 
-#define H1_THRESH_FRACTION    0.1
 
 //-----------------------//
 // GMF::SolutionCurve_H1 //
@@ -2313,7 +2313,7 @@ GMF::WriteObjXmgr(
 // The H1 version uses adaptive thresholding and a sub-function
 
 #define H1_DELTA_SPEED_FRACTION    0.2
-#define H1_THRESH_FRACTION         0.1
+#define H1_THRESH_FRACTION         0.9
 
 int
 GMF::SolutionCurve_H1(
@@ -2434,6 +2434,7 @@ GMF::FindBestSpeed(
 
     return(1);
 }
+
 
 //-----------------------//
 // GMF::RetrieveWinds_H1 //
@@ -3090,7 +3091,9 @@ GMF::RetrieveWinds_H2(
                 float b = _bestObj[phi_idx] - m * (float)phi_idx;
 
                 // try extent
-                float thresh = refined_peak_obj[next_idx] - threshold_delta;
+                float thresh; // S1 uses a threshold relative to peak height
+                if(h3_and_s1_flag==2) thresh=refined_peak_obj[next_idx]*threshold_delta;
+		else thresh=refined_peak_obj[next_idx] - threshold_delta;
                 left_edge[range_idx] = _phiStepSize * (thresh - b) / m;
                 if (left_edge[range_idx] < phi_idx * _phiStepSize ||
                     left_edge[range_idx] > (phi_idx + 1) * _phiStepSize)
@@ -3125,7 +3128,9 @@ GMF::RetrieveWinds_H2(
 
                 float m = _bestObj[next_idx] - _bestObj[phi_idx];
                 float b = _bestObj[phi_idx] - m * (float)phi_idx;
-                float thresh = refined_peak_obj[phi_idx] - threshold_delta;
+                float thresh;
+		if(h3_and_s1_flag==2) thresh=refined_peak_obj[phi_idx]*threshold_delta;
+		else thresh=refined_peak_obj[phi_idx]-threshold_delta;
                 // try extent
                 right_edge[range_idx] = _phiStepSize * (thresh - b) / m;
                 if (right_edge[range_idx] < phi_idx * _phiStepSize ||
@@ -3310,3 +3315,585 @@ GMF::RetrieveWinds_H2(
 
 	return(1);
 }
+
+//-----------------------//
+// GMF::RetrieveWinds_S2 //
+//-----------------------//
+#define S2_INIT_BISECT  2
+#define S2_USE_BRUTE_FORCE 0
+#define S2_DIR_MSE_THRESHOLD 100.0     // degrees squared
+int
+GMF::RetrieveWinds_S2(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+
+    static int num=1;
+    //--------------------------------//
+    // generate coarse solution curve //
+    //--------------------------------//
+
+    if (_phiCount != H2_PHI_COUNT)
+        SetPhiCount(H2_PHI_COUNT);
+    SolutionCurve_H1(meas_list, kp);
+    ConvertObjToPdf();
+
+    float peak_dir[DEFAULT_MAX_SOLUTIONS];
+    int ambiguities=0;
+
+    //------------------------//
+    // find peaks             //
+    //------------------------//
+
+    WVC tmp_wvc;
+    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % H2_PHI_COUNT] &&
+            _bestObj[phi_idx] > _bestObj[(phi_idx + H2_PHI_COUNT - 1) %
+                H2_PHI_COUNT])
+        {
+            //-----------------------//
+            // maxima found...       //
+            //-----------------------//
+
+            //--------------//
+            // ...refine it //
+            //--------------//
+
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = _bestSpd[phi_idx];
+            wvp->dir = (float)phi_idx * _phiStepSize;
+	    wvp->obj = _ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
+
+            // put in temporary wvc
+            if (! tmp_wvc.ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+
+            // refine
+            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
+
+            // transfer to real wvc
+            tmp_wvc.ambiguities.GotoHead();
+            wvp = tmp_wvc.ambiguities.RemoveCurrent();
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+            while (wvp->dir < 0.0)
+                wvp->dir += two_pi;
+            while (wvp->dir > two_pi)
+                wvp->dir -= two_pi;
+
+            //------------------------//
+            // remember the phi index //
+            //------------------------//
+
+	    peak_dir[ambiguities]=wvp->dir;
+	    ambiguities++;
+	}
+    }
+
+    int final_num_peaks=ambiguities;
+    if (ambiguities >= DEFAULT_MAX_SOLUTIONS)
+        goto wrap_it_up_S2;
+
+    float mse_est;
+    mse_est=EstimateDirMSE(peak_dir, ambiguities);
+    if(mse_est<S2_DIR_MSE_THRESHOLD*dtr*dtr)
+        goto wrap_it_up_S2;
+    if(ambiguities==0) return(0);
+    //-----------------------------------------//
+    // Select extra ambiguities to minimize    //
+    // Estimated Direction Mean Square Error   //
+    //-----------------------------------------//
+    if(S2_USE_BRUTE_FORCE){
+      if(!BruteForceGetMinEstimateMSE(peak_dir, ambiguities,&mse_est)) 
+                  return(0);
+    }
+    else{
+      if(!GetMinEstimateMSE(peak_dir, ambiguities,&mse_est,num)) return(0);
+    }
+    for(int c=ambiguities;c<DEFAULT_MAX_SOLUTIONS;c++){
+
+      WindVectorPlus* wvp = new WindVectorPlus();
+      if (! wvp)
+	return(0);
+      int peak_idx = int(0.5+peak_dir[c]/_phiStepSize);
+      wvp->spd = _bestSpd[peak_idx];
+      wvp->dir = peak_dir[c];
+      wvp->obj = _ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
+      if (! wvc->ambiguities.Append(wvp))
+	{
+	  delete wvp;
+	  return(0);
+	}
+    }
+    final_num_peaks=DEFAULT_MAX_SOLUTIONS;
+    //------------//
+    // goto label //
+    //------------//
+
+    wrap_it_up_S2:
+
+    //------//
+    // sort //
+    //------//
+    float mse_est_new;
+    mse_est=EstimateDirMSE(peak_dir, ambiguities);
+    mse_est_new=EstimateDirMSE(peak_dir, final_num_peaks);
+
+    wvc->SortByObj();
+
+    //-------------------------//
+    // limit to four solutions //
+    //-------------------------//
+
+    int delete_count = wvc->ambiguities.NodeCount() - DEFAULT_MAX_SOLUTIONS;
+    if (delete_count > 0)
+    {
+        fprintf(stderr, "Too many solutions: deleting %d\n", delete_count);
+        for (int i = 0; i < delete_count; i++)
+        {
+            wvc->ambiguities.GotoTail();
+            WindVectorPlus* wvp = wvc->ambiguities.RemoveCurrent();
+            delete wvp;
+        }
+    }
+
+    char file[50];
+#ifdef S2_DEBUG_INTERVAL
+    if(num%S2_DEBUG_INTERVAL==0){
+      sprintf(file,"examples/exam%d",num/S2_DEBUG_INTERVAL);
+      FILE* ofpp = fopen(file,"w");
+      for(int c=0;c<_phiCount;c++){
+	fprintf(ofpp,"%g %g\n",c*_phiStepSize*rtd,_bestObj[c]);
+      }
+      fprintf(ofpp,"&\n");
+      for(WindVectorPlus* wvp=wvc->ambiguities.GetHead(); wvp;
+	  wvp=wvc->ambiguities.GetNext()){
+	fprintf(ofpp,"%g %g\n",wvp->dir*rtd,_bestObj[int((wvp->dir)/_phiStepSize)]);
+      }
+      fprintf(ofpp,"&\n"); 
+      fprintf(ofpp,"%g 0\n&\n%g 0\n&\n%d\n&\n",sqrt(mse_est*rtd*rtd),
+	      sqrt(mse_est_new*rtd*rtd),ambiguities);   
+      fclose(ofpp);
+      printf("%s ",file);
+    }
+#endif
+    num++;
+    return(1);
+}
+
+
+// Method for determining the directions of extra ambiguities required
+// to minimize the estimated MSE
+// ConvertObjToPdf must have been previously run for this to work.
+int   
+GMF::BruteForceGetMinEstimateMSE(
+       float* peak_dir, 
+       int    num_peaks, 
+       float* mse,
+       int    level=0,
+       float* tmp_peak_dir=NULL){
+  // Check to see if we are at the bottom level 
+  if(level+num_peaks == DEFAULT_MAX_SOLUTIONS){
+    // if so compute MSE and compare to input value
+    float tmp=EstimateDirMSE(tmp_peak_dir,DEFAULT_MAX_SOLUTIONS);
+    if(tmp<*mse){
+      *mse=tmp; 
+      for(int c=num_peaks;c<DEFAULT_MAX_SOLUTIONS;c++){
+	peak_dir[c]=tmp_peak_dir[c];
+      }
+    }
+  }
+  
+  else{
+    // special case for top level
+    if(level==0){
+      tmp_peak_dir=new float[DEFAULT_MAX_SOLUTIONS];
+      for(int c=0;c<num_peaks;c++) tmp_peak_dir[c]=peak_dir[c];
+    }
+    for(int c=0;c<_phiCount;c++){
+      tmp_peak_dir[num_peaks+level]=c*_phiStepSize;
+      BruteForceGetMinEstimateMSE(peak_dir,num_peaks,mse,level+1,tmp_peak_dir);
+    }
+    // special case for top level
+    if(level==0) delete tmp_peak_dir;
+  }
+  return(1);
+}
+// Method for determining the directions of extra ambiguities required
+// to minimize the estimated MSE
+// ConvertObjToPdf must have been previously run for this to work.
+int   
+GMF::GetMinEstimateMSE(
+       float* peak_dir, 
+       int    num_peaks, 
+       float* mse,
+       int num=0){
+  int finished=0;
+  int debug=0;
+  FILE* ofpp;
+#ifdef S2_DETAILED_DEBUG
+ if(num%S2_DEBUG_INTERVAL==0 && num/S2_DEBUG_INTERVAL==S2_DETAILED_DEBUG){
+   ofpp=fopen("detailed_debug","w");
+   debug=1;
+ }
+#endif
+  int num_available_ambiguities=DEFAULT_MAX_SOLUTIONS - num_peaks;
+  float* tmp_peak_dir = new float[DEFAULT_MAX_SOLUTIONS];
+
+  if (debug){
+    fprintf(ofpp,"Initial Peaks: %d Ambiguities Remaining: %d\n",num_peaks,
+	    num_available_ambiguities);
+    fprintf(ofpp,"Peak Directions: ");
+    for(int c=0;c<num_peaks;c++) fprintf(ofpp,"%g ",peak_dir[c]*rtd);
+    fprintf(ofpp,"Original Estimated RSS: %g\n\n\n",sqrt(*mse*rtd*rtd));
+  }
+
+  //------------------------------------//
+  // Calculate Initial Search Intervals //
+  //------------------------------------//
+  AngleIntervalList intervals;
+  if(num_peaks==1){
+    AngleInterval* interval = new AngleInterval;
+    float left=peak_dir[0]+_phiStepSize;
+    float right=peak_dir[0]-_phiStepSize;
+    interval->SetLeftRight(left,right);
+    if(!intervals.Append(interval)) return(0);
+  }
+  else{
+    // Sort Peaks 
+    sort_increasing(peak_dir,num_peaks);
+    for(int p=0;p<num_peaks;p++){
+      AngleInterval* interval = new AngleInterval;
+      float left=peak_dir[p];
+      float right=peak_dir[(p+1)%num_peaks];
+      interval->SetLeftRight(left,right);
+      if(!intervals.Append(interval))return(0);
+    }
+  }
+  if(debug){
+    fprintf(ofpp,"Initial Intervals Before Bisection: %d\n", intervals.NodeCount());
+    for(AngleInterval* interval=intervals.GetHead();interval;
+	interval=intervals.GetNext()){
+      fprintf(ofpp,"[%g,%g],",(interval->left)*rtd,(interval->right)*rtd);
+    }
+    fprintf(ofpp,"\n");
+  }
+  for(int c=0;c<S2_INIT_BISECT;c++){
+    if(!intervals.Bisect()) return(0);
+  }
+  if(debug){
+    fprintf(ofpp,"Initial Intervals After %d Bisections: %d\n",S2_INIT_BISECT,
+	    intervals.NodeCount());
+    for(AngleInterval* interval=intervals.GetHead();interval;
+	interval=intervals.GetNext()){
+      fprintf(ofpp,"[%g,%g]\n",(interval->left)*rtd,(interval->right)*rtd);
+    }
+    fprintf(ofpp,"\n\n\n");
+  }  
+  
+  while(!finished){ 
+    //------------------------------------//
+    // Compute trial ambiguity sets       //
+    //------------------------------------//
+    int num_intervals=intervals.NodeCount();
+    int num_trials;
+    int** num_trial_ambigs;
+    if (debug){
+      fprintf(ofpp,"\n\n###########Level %d Calculations############\n\n\n",debug);
+      debug++;
+    }
+    if(! intervals.GetPossiblePlacings(num_available_ambiguities,&num_trials,
+				  &num_trial_ambigs)) return(0);
+    if(debug){
+      for(int t=0; t< num_trials; t++){
+	fprintf(ofpp,"Trial #%d  Spacing ",t);
+        for(int i=0;i<intervals.NodeCount();i++)
+	  fprintf(ofpp,"%d ",num_trial_ambigs[t][i]);
+	fprintf(ofpp,"\n");
+      }
+      fprintf(ofpp,"\n\n");
+    }
+    // Choose best among trial ambiguity sets 
+    int min_idx=-1;
+    *mse=two_pi*two_pi;
+    for(int t=0;t<num_trials;t++){
+      if(debug) fprintf(ofpp,"Trial #%d Peaks: ",t);
+      for(int p=0;p<num_peaks;p++){
+	tmp_peak_dir[p]=peak_dir[p];
+      }
+      int offset=num_peaks;
+      int i=0;
+      for(AngleInterval* interval=intervals.GetHead();interval;
+            interval=intervals.GetNext()){
+	interval->GetEquallySpacedAngles(num_trial_ambigs[t][i], 
+					 &tmp_peak_dir[offset]);
+        offset+=num_trial_ambigs[t][i];
+	i++;
+      }
+
+      float tmp=EstimateDirMSE(tmp_peak_dir,DEFAULT_MAX_SOLUTIONS);
+
+      if(debug){
+        for(int p=0;p<DEFAULT_MAX_SOLUTIONS;p++){
+	  fprintf(ofpp,"%g ", tmp_peak_dir[p]*rtd);
+	}
+        fprintf(ofpp, "RSS=%g\n",sqrt(tmp*rtd*rtd));
+      }
+      if(tmp<*mse){
+	*mse=tmp;
+	min_idx=t;
+        for(int p=num_peaks;p<DEFAULT_MAX_SOLUTIONS;p++){
+	  peak_dir[p]=tmp_peak_dir[p];
+	}
+      }
+    }
+    if(debug) fprintf(ofpp,"Best trial is %d, RSS=%g\n\n\n", min_idx,
+		      sqrt((*mse)*rtd*rtd));
+
+    //----------------------------------------// 
+    // Compute new Search Intervals           //
+    //----------------------------------------//
+  
+    // Delete Unpromising Search Intervals
+    AngleInterval* interval=intervals.GetHead();
+    int i=0;
+    while(interval){
+      if(num_trial_ambigs[min_idx][i]==0){
+	interval=intervals.RemoveCurrent();
+	delete interval;
+        interval=intervals.GetCurrent();
+      }
+      else interval=intervals.GetNext();
+      i++;
+    }
+
+    if(debug){
+      fprintf(ofpp,"Intervals After Deletion: %d\n", intervals.NodeCount());
+      for(interval=intervals.GetHead();interval;
+	  interval=intervals.GetNext()){
+	fprintf(ofpp,"[%g,%g],",(interval->left)*rtd,(interval->right)*rtd);
+      }
+    }
+    // Check If Done
+    float max_interval_width=0.0;
+    interval=intervals.GetHead();
+    while(interval){
+      float tmp=interval->GetWidth();
+      if(tmp>max_interval_width) max_interval_width=tmp;
+      interval=intervals.GetNext();
+    }
+    if(max_interval_width<_phiStepSize/2) finished=1;
+    // If Not Bisect Promising Search Intervals
+    if(!finished){
+      if(!intervals.Bisect()) return(0);
+      if(debug){
+	fprintf(ofpp,"Intervals After Bisection: %d\n", intervals.NodeCount());
+	for(interval=intervals.GetHead();interval;
+	    interval=intervals.GetNext()){
+	  fprintf(ofpp,"[%g,%g],",(interval->left)*rtd,(interval->right)*rtd);
+	}
+      }
+    }
+
+    free_array((void*)num_trial_ambigs, 2, num_trials, num_intervals);
+  }
+  if(debug) fclose(ofpp);
+  delete tmp_peak_dir;
+  num++;
+  return(1);
+}
+
+
+//---------------------------------------------------------------------//
+// Estimated Direction MSE (only works after ConvertObjToPdf is run.)  //
+//---------------------------------------------------------------------//
+float
+GMF::EstimateDirMSE(
+       float* peak_dir,
+       int    num_peaks)
+
+{
+  float retval=0;
+  for(int c=0;c<_phiCount;c++){
+    float min_dist=pi;
+    for(int p=0;p<num_peaks;p++){
+      float tmp=ANGDIF(c*_phiStepSize,peak_dir[p]);
+      if(tmp<min_dist) min_dist=tmp;
+    }
+    retval+=min_dist*min_dist*_bestObj[c];
+  }
+  return(retval);
+}
+
+/****
+
+//-----------------------//
+// GMF::RetrieveWinds_S3 //
+//-----------------------//
+
+#define S3_PROB_THRESHOLD 0.1
+int
+GMF::RetrieveWinds_S3(
+    MeasList*  meas_list,
+    Kp*        kp,
+    WVC*       wvc)
+{
+    //--------------------------------//
+    // generate coarse solution curve //
+    //--------------------------------//
+
+    if (_phiCount != H2_PHI_COUNT)
+        SetPhiCount(H2_PHI_COUNT);
+    SolutionCurve_H1(meas_list, kp);
+    ConvertObjToPdf();
+
+    int ambiguities=0;
+
+    //------------------------//
+    // find peaks             //
+    //------------------------//
+
+    WVC tmp_wvc;
+    for (int phi_idx = 0; phi_idx < H2_PHI_COUNT; phi_idx++)
+    {
+        if (_bestObj[phi_idx] > _bestObj[(phi_idx + 1) % H2_PHI_COUNT] &&
+            _bestObj[phi_idx] > _bestObj[(phi_idx + H2_PHI_COUNT - 1) %
+                H2_PHI_COUNT])
+        {
+            //-----------------------//
+            // maxima found...       //
+            //-----------------------//
+
+            //--------------//
+            // ...refine it //
+            //--------------//
+
+            WindVectorPlus* wvp = new WindVectorPlus();
+            if (! wvp)
+                return(0);
+            wvp->spd = _bestSpd[phi_idx];
+            wvp->dir = (float)phi_idx * _phiStepSize;
+	    wvp->obj=_ObjectiveFunction(meas_list,wvp->spd,wvp->dir,kp);
+
+
+            // put in temporary wvc
+            if (! tmp_wvc.ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+
+            // refine
+            Optimize_Wind_Solutions(meas_list, kp, &tmp_wvc);
+
+            // transfer to real wvc
+            tmp_wvc.ambiguities.GotoHead();
+            wvp = tmp_wvc.ambiguities.RemoveCurrent();
+            if (! wvc->ambiguities.Append(wvp))
+            {
+                delete wvp;
+                return(0);
+            }
+            while (wvp->dir < 0.0)
+                wvp->dir += two_pi;
+            while (wvp->dir > two_pi)
+                wvp->dir -= two_pi;
+
+	    ambiguities++;
+	}
+    }
+
+    //------//
+    // sort //
+    //------//
+
+    wvc->SortByObj();
+
+
+    
+    //-------------------------------------------//
+    // Determine edges each of peak              //
+    // and store them as additional ambiguities  //
+    //-------------------------------------------//
+
+    float* left_edges=new float[ambiguities];
+    float* right_edges=new float[ambiguities];
+    int num_intervals;
+    if(!S3GetPeakEdges(S3_PROB_THRESHOLD, &num_intervals, left_edges, right_edges)) 
+      {
+	delete left_edges;
+        delete right_edges;
+        return(0);
+      }
+    
+    int* peak_to_interval_map = new int[ambiguities];
+
+    int p=0;
+    for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;p++){
+      peak_to_interval_map[p] = -1;
+      for(int c=0;c<num_intervals;c++){
+	if(BETWEENANG(wvp->dir,left_edges[c],right_edges[c]))
+	  peak_to_interval_map[p] = c;
+      }
+      // Delete Peaks outside of probability intervals
+      if(peak_to_interval_map[p]==-1){
+	wvp=wvc->ambiguities.RemoveCurrent();
+	delete wvp;
+        wvp=wvc->ambiguities.GetCurrent();
+        ambiguities--;
+	if(wvp) peak_to_interval_map[p]=peak_to_interval_map[p+1];
+      }
+      else wvp=wvc->ambiguities.GetNext();
+    }
+
+    
+    for(int p=0;p<ambiguities;p++){
+      WindVectorPlus* wvp=new WindVectorPlus;
+      wvp->dir=left_edges[peak_to_interval_map[p]];
+      float dummy;
+      FindBestSpeed(meas_list, kp, wvp->dir, 0, 50,
+            &(wvp->spd), &dummy);
+      wvp->obj = -99.e99; // These ambiguities should never be used for
+                          // nudging.
+      wvc->ambiguities.Append(wvp);
+    }
+
+    for(int p=0;p<ambiguities;p++){
+      WindVectorPlus* wvp=new WindVectorPlus;
+      wvp->dir=right_edges[peak_to_interval_map[p]];
+      float dummy;
+      FindBestSpeed(meas_list, kp, wvp->dir, 0, 50,
+            &(wvp->spd), &dummy);
+      wvp->obj = -99.e99; // These ambiguities should never be used for
+                          // nudging.
+      wvc->ambiguities.Append(wvp);
+    }
+    delete peak_to_interval_map;
+    delete left_edges;
+    delete right_edges;
+    return(1);
+}
+
+// This function incomplete 
+int 
+GMF::S3GetPeakEdges(
+     float threshold, 
+     int*  num_intervals, 
+     int*  left_edges, 
+     int*  right_edges){
+     return(0);
+} 
+
+******/
+
+
