@@ -1477,7 +1477,15 @@ ConfigGrid(
 	if (! config_list->GetDouble(ALONGTRACK_RESOLUTION_KEYWORD, &at_res))
 		return(0);
 
-	grid->Allocate(ct_res, at_res, 2000.0, 3000.0);
+	double ct_size;
+	if (! config_list->GetDouble(GRID_WINDOW_CROSSTRACK_SIZE_KEYWORD, &ct_size))
+		return(0);
+
+	double at_size;
+	if (! config_list->GetDouble(GRID_WINDOW_ALONGTRACK_SIZE_KEYWORD, &at_size))
+		return(0);
+
+	grid->Allocate(ct_res, at_res, ct_size, at_size);
 
 	return(1);
 }

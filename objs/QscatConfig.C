@@ -274,19 +274,43 @@ ConfigQscatCds(
     float azimuth_integration_range;
     if (! config_list->GetFloat(AZIMUTH_INTEGRATION_RANGE_KEYWORD,
 				&azimuth_integration_range))
-      {
-	return(0);
-      }
+    {
+      return(0);
+    }
     qscat_cds->azimuthIntegrationRange=azimuth_integration_range*dtr;
 
     float azimuth_step_size;
     if (! config_list->GetFloat(AZIMUTH_STEP_SIZE_KEYWORD,
 				&azimuth_step_size))
-      {
-	return(0);
-      }
+    {
+      return(0);
+    }
     qscat_cds->azimuthStepSize=azimuth_step_size*dtr;      
 
+    float angle;
+    if (! config_list->GetFloat(BYU_INNER_BEAM_LOOK_ANGLE_KEYWORD, &angle))
+    {
+      return(0);
+    }
+    qscat_cds->xRefLook[0]=angle*dtr;      
+
+    if (! config_list->GetFloat(BYU_OUTER_BEAM_LOOK_ANGLE_KEYWORD, &angle))
+    {
+      return(0);
+    }
+    qscat_cds->xRefLook[1]=angle*dtr;      
+
+    if (! config_list->GetFloat(BYU_INNER_BEAM_AZIMUTH_ANGLE_KEYWORD, &angle))
+    {
+      return(0);
+    }
+    qscat_cds->xRefAzim[0]=angle*dtr;      
+
+    if (! config_list->GetFloat(BYU_OUTER_BEAM_AZIMUTH_ANGLE_KEYWORD, &angle))
+    {
+      return(0);
+    }
+    qscat_cds->xRefAzim[1]=angle*dtr;      
 
     //--------------//
     // orbit period //

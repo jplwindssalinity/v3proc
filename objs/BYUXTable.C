@@ -455,15 +455,15 @@ GetBYUBoresight(
 
     if(qscat->cds.currentBeamIdx==0)
     {
-      *look=BYU_INNER_BEAM_LOOK_ANGLE*dtr;
-      *azim+=BYU_INNER_BEAM_AZIMUTH_ANGLE*dtr;
+      *look=qscat->cds.xRefLook[0];
+      *azim+=qscat->cds.xRefAzim[0];
     }
     else
     {
-      *look=BYU_OUTER_BEAM_LOOK_ANGLE*dtr;
-      *azim+=BYU_OUTER_BEAM_AZIMUTH_ANGLE*dtr;
+      *look=qscat->cds.xRefLook[1];
+      *azim+=qscat->cds.xRefAzim[1];
     }
     while(*azim<-pi)*azim+=two_pi;
     while(*azim> pi)*azim-=two_pi;
-        return(1);
+    return(1);
 }

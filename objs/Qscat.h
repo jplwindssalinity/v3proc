@@ -275,8 +275,8 @@ public:
     int             useSpectralRange;
     float           azimuthIntegrationRange;
     float           azimuthStepSize;
-
-
+    float           xRefLook[NUMBER_OF_QSCAT_BEAMS];
+    float           xRefAzim[NUMBER_OF_QSCAT_BEAMS];
 
     unsigned int    orbitTicksPerOrbit;
     CdsBeamInfo     beamInfo[NUMBER_OF_QSCAT_BEAMS];
