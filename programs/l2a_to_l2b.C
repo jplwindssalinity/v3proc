@@ -206,11 +206,18 @@ main(
 		exit(1);
 	}
 
+	//------------------------------------------//
+	// transfer information to level 2.0 header //
+	//------------------------------------------//
+
+	l20.header.crossTrackResolution = l17.header.crossTrackResolution;
+	l20.header.alongTrackResolution = l17.header.alongTrackResolution;
+	l20.header.zeroIndex = l17.header.zeroIndex;
+
 	//-----------------//
 	// conversion loop //
 	//-----------------//
 
-int count = 0;
 	for (;;)
 	{
 		//------------------------------//
@@ -243,19 +250,6 @@ int count = 0;
 		// convert //
 		//---------//
 
-count++;
-
-/*
- printf("%d %d\n", l17.frame.cti, l17.frame.ati);
-continue;
-
-if (count < 3796)
-continue;
-if (count == 3796)
-printf("x\n");
-*/
-printf("%d\n", count);
-
 		int retval = l17_to_l20.ConvertAndWrite(&l17, &gmf, &l20);
 		switch (retval)
 		{
@@ -265,11 +259,6 @@ printf("%d\n", count);
 			break;
 		case 4:
 		case 5:
-/*
-			char filename[256];
-			sprintf(filename, "mod.%04d", count);
-			l17_to_l20.WriteSolutionCurves(&l17, &gmf, filename);
-*/
 			break;
 		case 0:
 			fprintf(stderr, "%s: error converting Level 1.7 to Level 2.0\n",

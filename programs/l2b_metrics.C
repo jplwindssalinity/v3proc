@@ -67,10 +67,13 @@ static const char rcs_id[] =
 //-----------//
 
 template class List<WindVectorPlus>;
+template class List<LonLat>;
 
 //-----------//
 // CONSTANTS //
 //-----------//
+
+#define ARRAY_SIZE		1024
 
 //--------//
 // MACROS //
@@ -141,6 +144,37 @@ main(
 	//-------------------------//
 	// rms speed error vs. ctd //
 	//-------------------------//
+
+	float value[ARRAY_SIZE];
+	int count[ARRAY_SIZE];
+	float ctd[ARRAY_SIZE];
+	int max_idx;
+	if (! swath.RmsSpeedError(&truth, value, count, ctd, &max_idx))
+	{
+		fprintf(stderr, "%s: error calculating RMS speed error\n", command);
+		exit(1);
+	}
+
+	char filename[1024];
+	sprintf(filename, "%s.rms_spd_err", output_base);
+	FILE* ofp = fopen(filename, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			filename);
+		exit(1);
+	}
+
+	for (int i = 0; i < max_idx; i++)
+	{
+		if (count[i] > 0)
+			fprintf(ofp, "%g %g %d\n", ctd[i], value[i], count[i]);
+	}
+	fclose(ofp);
+
+	//-----------------------------//
+	// rms direction error vs. ctd //
+	//-----------------------------//
 
 	return (0);
 }

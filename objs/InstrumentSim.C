@@ -127,15 +127,10 @@ InstrumentSim::ScatSim(
 	//-----------//
 
 	Antenna* antenna = &(instrument->antenna);
-	Beam* beam = &(antenna->beam[beam_idx]);
+	antenna->currentBeamIdx = beam_idx;
+	Beam* beam = antenna->GetCurrentBeam();
 	OrbitState* orbit_state = &(spacecraft->orbitState);
 	Attitude* attitude = &(spacecraft->attitude);
-
-	//----------------------//
-	// set the current beam //
-	//----------------------//
-
-	antenna->currentBeamIdx = beam_idx;
 
 	//--------------------------------//
 	// generate the coordinate switch //
@@ -266,9 +261,9 @@ InstrumentSim::ScatSim(
 		Meas meas;
 		meas.pol = beam->polarization;
 
-		//--------------------------------//
-		// assume perfect Doppler command //
-		//--------------------------------//
+		//-------------------------------------------------//
+		// calculate ideal Doppler and range tracking info //
+		//-------------------------------------------------//
 
 		Vector3 ulook_beam;
 		TargetInfoPackage tip;
@@ -280,7 +275,7 @@ InstrumentSim::ScatSim(
 		}
 		instrument->commandedDoppler = tip.dopplerFreq;
 		float center_delay = 2.0 * tip.slantRange / speed_light_kps;
-		instrument->receiverGateDelay = center_delay -
+		instrument->receiverGateDelay = center_delay + beam->pulseWidth / 2.0 -
 			instrument->receiverGateWidth / 2.0;
 
 		//-------------------//

@@ -484,8 +484,8 @@ GainSlice(
 	// calculate center point //
 	//------------------------//
 
-	az[1] = (az[0] + az[3]) / 2.0;
-	el[1] = (el[0] + el[3]) / 2.0;
+	az[1] = (az[0] + az[2]) / 2.0;
+	el[1] = (el[0] + el[2]) / 2.0;
 
 	//-------------------------------//
 	// calculate projected distances //
