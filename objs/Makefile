@@ -28,7 +28,8 @@ OBJS = \
 	Matrix3.o \
 	Misc.o \
 	Orbit.o \
-	OrbitSim.o
+	OrbitSim.o \
+	Product.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -96,3 +97,4 @@ Matrix3.o:		Matrix3.C Matrix3.h Constants.h
 Misc.o:			Misc.C Misc.h
 Orbit.o:		Orbit.C Orbit.h Constants.h Matrix3.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h Matrix3.h
+Product.o:		Product.C Product.h
