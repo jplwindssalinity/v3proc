@@ -155,7 +155,7 @@ main(
     // do the expansion thing //
     //------------------------//
 
-    int max_delta = 4;
+    int max_delta = 5;
 
     for (int center_i = 0; center_i < NBD_DIM - 1; center_i++)
     {
