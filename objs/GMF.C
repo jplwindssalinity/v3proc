@@ -651,16 +651,8 @@ GMF::_ObjectiveFunction(
 			&gmf_value);
 		float s = gmf_value - meas->value;
 
-//		fv += s*s / meas->estimatedKp + log(meas->estimatedKp);
-// removed the log term for speed
-
-		//-----------------------------------------------------------------//
-		// Compute the estimated Kpc using the model sigma0 instead of the
-		// measured sigma0.  This avoids problems with negative measured
-		// sigma0's.  Estimates of Kpr and Kpm are also included.
-		//-----------------------------------------------------------------//
-
-		fv += s*s / meas->EstimatedKp(gmf_value);
+		float ekp = meas->EstimatedKp(gmf_value);
+		fv += s*s / ekp + log(ekp);
 	}
 	return(-fv);
 }
