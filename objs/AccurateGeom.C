@@ -17,7 +17,7 @@ static const char rcs_id_accurategeom_c[] =
 #define OUTPUT_DETAILED_INFO 0
 
 #define SPECTRAL_RESPONSE_DELTA_FREQ   8314.0  //Hz
-#define SPECTRAL_RESPONSE_FREQ_TOL     0.1     //Hz
+#define SPECTRAL_RESPONSE_FREQ_TOL     0.5     //Hz
 #define SPECTRAL_RESPONSE_TOLERANCE    3e-8    
 #define SPECTRAL_RESPONSE_NUM_LOOK_STEPS 4
 #define INTEGRATE_SLICE_FREQ_TOL       8.0     //Hz
