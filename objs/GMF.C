@@ -50,8 +50,8 @@ int GMF::ReadOldStyle(
 	_incMax = 66.0 * dtr;
 	_incStep = 2.0 * dtr;
 
-	_spdCount = 50;
-	_spdMin = 1.0;
+	_spdCount = 51;
+	_spdMin = 0.0;
 	_spdMax = 50.0;
 	_spdStep = 1.0;
 
@@ -67,7 +67,7 @@ int GMF::ReadOldStyle(
 	{
 		for (int chi_idx = 0; chi_idx < file_chi_count; chi_idx++)
 		{
-			for (int spd_idx = 0; spd_idx < _spdCount; spd_idx++)
+			for (int spd_idx = 1; spd_idx < _spdCount; spd_idx++)
 			{
 				for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
 				{
@@ -83,6 +83,22 @@ int GMF::ReadOldStyle(
 					*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx_2) =
 						(float)value;
 				}
+			}
+		}
+	}
+
+	//----------------------//
+	// zero the 0 m/s model //
+	//----------------------//
+
+	int spd_idx = 0;
+	for (int pol_idx = 0; pol_idx < _polCount; pol_idx++)
+	{
+		for (int chi_idx = 0; chi_idx < _chiCount; chi_idx++)
+		{
+			for (int inc_idx = 0; inc_idx < _incCount; inc_idx++)
+			{
+				*(*(*(*(_value+pol_idx)+inc_idx)+spd_idx)+chi_idx) = 0.0;
 			}
 		}
 	}
@@ -585,7 +601,7 @@ GMF::FindMaxima(
 		int idx_minus = (phi_idx - 1 + phi_count) % phi_count;
 		int idx_plus = (phi_idx + 1) % phi_count;
 		if (best_obj[phi_idx] > best_obj[idx_minus] &&
-			best_obj[phi_idx] < best_obj[idx_plus])
+			best_obj[phi_idx] > best_obj[idx_plus])
 		{
 			//------------//
 			// add to wvc //
