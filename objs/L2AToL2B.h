@@ -47,6 +47,12 @@ public:
 	int		Flush(L20* l20);
 
 	//-----------//
+	// debugging //
+	//-----------//
+
+	int		GenerateModCurves(L17* l17, GMF* gmf, const char* output_file);
+
+	//-----------//
 	// variables //
 	//-----------//
 

@@ -7,6 +7,7 @@ static const char rcs_id_l17tol20_c[] =
 	"@(#) $Id$";
 
 #include "L17ToL20.h"
+#include "Constants.h"
 
 
 //==========//
@@ -73,9 +74,9 @@ L17ToL20::ConvertAndWrite(
 	return(1);
 }
 
-//-------//
-// Flush //
-//-------//
+//-----------------//
+// L17ToL20::Flush //
+//-----------------//
 
 int
 L17ToL20::Flush(
@@ -88,5 +89,45 @@ L17ToL20::Flush(
 	if (! l20->WriteDataRec())
 		return(0);
 	l20->frame.swath.DeleteWVCs();
+	return(1);
+}
+
+//-----------------------------//
+// L17ToL20::GenerateModCurves //
+//-----------------------------//
+
+int
+L17ToL20::GenerateModCurves(
+	L17*			l17,
+	GMF*			gmf,
+	const char*		output_file)
+{
+	FILE* ofp = fopen(output_file, "w");
+	if (ofp == NULL)
+		return(0);
+
+	gmf->ModCurves(ofp, &(l17->frame.measList), finalSpdStep, finalPhiStep);
+
+	// show selected vectors
+	WVC* wvc = new WVC();
+	gmf->FindSolutions(&(l17->frame.measList), wvc,
+		initSpdStep, initPhiStep);
+
+	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
+		initPhiStep, finalSpdStep, finalPhiStep);
+	wvc->RemoveDuplicates();
+	wvc->SortByObj();
+
+	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
+		wvp = wvc->ambiguities.GetNext())
+	{
+		fprintf(ofp, "&\n");
+		fprintf(ofp, "%g %g %g\n", wvp->dir * rtd, wvp->spd,
+			wvp->obj * 500.0 + 5.0);
+	}
+
+	delete wvc;
+
+	fclose(ofp);
 	return(1);
 }
