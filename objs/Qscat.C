@@ -1138,27 +1138,25 @@ Qscat::SetOtherAzimuths(
 //-------------------//
 // Qscat::MakeSlices //
 //-------------------//
-
 // This method creates the measurement list (of Meas's) for a spot
 // and sets the Meas indices (with one slice per Meas).
 
 int
-Qscat::MakeSlices(MeasSpot* meas_spot)
-
+Qscat::MakeSlices(
+    MeasSpot*  meas_spot)
 {
-  meas_spot->FreeContents();
-  int total_slices = ses.GetTotalSliceCount();
+    meas_spot->FreeContents();
+    int total_slices = ses.GetTotalSliceCount();
 
-  for (int slice_idx = 0; slice_idx < total_slices; slice_idx++)
-  {
-    Meas* meas = new Meas();
-    // We assume that the slices are sequential.
-    abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
-    meas->numSlices = 1;
-    meas_spot->Append(meas);
-  }
+    for (int slice_idx = 0; slice_idx < total_slices; slice_idx++) {
+        Meas* meas = new Meas();
+        // We assume that the slices are sequential.
+        abs_to_rel_idx(slice_idx, total_slices, &(meas->startSliceIdx));
+        meas->numSlices = 1;
+        meas_spot->Append(meas);
+    }
 
-  return(1);
+    return(1);
 }
 
 //---------------------//
