@@ -102,9 +102,6 @@ template class List<AngleInterval>;
 #define UNUSABLE         0x0001
 #define NEGATIVE         0x0004
 
-#define AT_WIDTH  1624
-#define CT_WIDTH  76
-
 //-----------------------//
 // FUNCTION DECLARATIONS //
 //-----------------------//

@@ -23,4 +23,7 @@
 #define MLE_MIN   -8.0
 #define MLE_MAX    0.0
 
+#define AT_WIDTH  1624
+#define CT_WIDTH  76
+
 #endif

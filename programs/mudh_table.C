@@ -98,8 +98,6 @@ template class List<AngleInterval>;
 //-----------//
 
 #define OPTSTRING    "hm:r:"
-#define AT_WIDTH     1624
-#define CT_WIDTH     76
 #define MIN_SAMPLES  100
 
 //-----------------------//

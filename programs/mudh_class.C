@@ -99,8 +99,6 @@ template class List<AngleInterval>;
 //-----------//
 
 #define OPTSTRING    "ch:s:m:r:"
-#define ATI_SIZE     1624
-#define CTI_SIZE     76
 
 #define REV_DOY_M    7.029760E-2
 #define REV_DOY_B    1.703545E+2
@@ -282,12 +280,12 @@ main(
     // process rev by rev //
     //--------------------//
 
-    unsigned short nbd_array[ATI_SIZE][CTI_SIZE];
-    unsigned short spd_array[ATI_SIZE][CTI_SIZE];
-    unsigned short dir_array[ATI_SIZE][CTI_SIZE];
-    unsigned short mle_array[ATI_SIZE][CTI_SIZE];
-    unsigned short lon_array[ATI_SIZE][CTI_SIZE];
-    unsigned short lat_array[ATI_SIZE][CTI_SIZE];
+    unsigned short nbd_array[AT_WIDTH][CT_WIDTH];
+    unsigned short spd_array[AT_WIDTH][CT_WIDTH];
+    unsigned short dir_array[AT_WIDTH][CT_WIDTH];
+    unsigned short mle_array[AT_WIDTH][CT_WIDTH];
+    unsigned short lon_array[AT_WIDTH][CT_WIDTH];
+    unsigned short lat_array[AT_WIDTH][CT_WIDTH];
 
     for (int rev = start_rev; rev <= end_rev; rev++)
     {
@@ -305,7 +303,7 @@ main(
             fprintf(stderr, "%s: continuing...\n", command);
             continue;
         }
-        unsigned long size = CTI_SIZE * ATI_SIZE;
+        unsigned long size = CT_WIDTH * AT_WIDTH;
         if (fread(nbd_array, sizeof(short), size, ifp) != size ||
             fread(spd_array, sizeof(short), size, ifp) != size ||
             fread(dir_array, sizeof(short), size, ifp) != size ||
@@ -327,9 +325,9 @@ main(
         char rain_file[1024];
         sprintf(rain_file, "/export/svt11/hudd/ssmi/%d.irain", rev);
 
-        unsigned char rain_rate[ATI_SIZE][CTI_SIZE];
-        unsigned char time_dif[ATI_SIZE][CTI_SIZE];
-        unsigned short integrated_rain_rate[ATI_SIZE][CTI_SIZE];
+        unsigned char rain_rate[AT_WIDTH][CT_WIDTH];
+        unsigned char time_dif[AT_WIDTH][CT_WIDTH];
+        unsigned short integrated_rain_rate[AT_WIDTH][CT_WIDTH];
 
         ifp = fopen(rain_file, "r");
         if (ifp == NULL)
@@ -338,19 +336,19 @@ main(
                 rain_file);
             exit(1);
         }
-        fread(rain_rate, sizeof(char), CTI_SIZE * ATI_SIZE, ifp);
-        fread(time_dif, sizeof(char), CTI_SIZE * ATI_SIZE, ifp);
-        fseek(ifp, CTI_SIZE * ATI_SIZE, SEEK_CUR);    // skip ins.
-        fread(integrated_rain_rate, sizeof(short), CTI_SIZE * ATI_SIZE, ifp);
+        fread(rain_rate, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
+        fread(time_dif, sizeof(char), CT_WIDTH * AT_WIDTH, ifp);
+        fseek(ifp, CT_WIDTH * AT_WIDTH, SEEK_CUR);    // skip ins.
+        fread(integrated_rain_rate, sizeof(short), CT_WIDTH * AT_WIDTH, ifp);
         fclose(ifp);
 
         //---------------------------------------//
         // eliminate rain data out of time range //
         //---------------------------------------//
 
-        for (int ati = 0; ati < ATI_SIZE; ati++)
+        for (int ati = 0; ati < AT_WIDTH; ati++)
         {
-            for (int cti = 0; cti < CTI_SIZE; cti++)
+            for (int cti = 0; cti < CT_WIDTH; cti++)
             {
                 int co_time = time_dif[ati][cti] * 2 - 180;
                 if (abs(co_time) > minutes)
@@ -362,9 +360,9 @@ main(
         // process rev //
         //-------------//
 
-        for (int ati = 0; ati < ATI_SIZE; ati++)
+        for (int ati = 0; ati < AT_WIDTH; ati++)
         {
-            for (int cti = 0; cti < CTI_SIZE; cti++)
+            for (int cti = 0; cti < CT_WIDTH; cti++)
             {
                 //----------------------------//
                 // accumulate some count info //

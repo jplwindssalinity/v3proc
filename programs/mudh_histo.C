@@ -64,8 +64,6 @@ static const char rcs_id[] =
 //-----------//
 
 #define OPTSTRING    ""
-#define AT_WIDTH     1624
-#define CT_WIDTH     76
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
