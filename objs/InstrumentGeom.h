@@ -48,11 +48,12 @@ int		LocateSlices(Spacecraft* spacecraft, Instrument* instrument,
 			MeasSpot* meas_spot);
 
 int		LocateSliceCentroids(Spacecraft* spacecraft, Instrument* instrument,
-			MeasSpot* meas_spot, float gain_threshold = 0.0,
-			int max_slices = 0);
+			MeasSpot* meas_spot, float* Esn = NULL,
+			float gain_threshold = 0.0, int max_slices = 0);
 
 int		LocateSpot(Spacecraft* spacecraft, Instrument* instrument,
-			MeasSpot* meas_spot, float contour_level = DEFAULT_CONTOUR_LEVEL);
+			MeasSpot* meas_spot, float Esn = 0.0,
+			float contour_level = DEFAULT_CONTOUR_LEVEL);
 
 int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, double look,

@@ -72,7 +72,7 @@ L1AToL1B::Convert(
 	// for each beam cycle... //
 	//------------------------//
 
-	int total_slice_idx = 0;
+	int base_slice_idx = 0;
 	int spot_idx = 0;
 
 	OrbitState* orbit_state = &(spacecraft->orbitState);
@@ -133,19 +133,41 @@ L1AToL1B::Convert(
 
 			SetRangeAndDoppler(spacecraft, instrument);
 
+			//-------------------------------------------//
+			// Extract energy measurements for this spot //
+			//-------------------------------------------//
+
+			float* Esn = (float*)malloc(sizeof(float)*l1a->frame.slicesPerSpot);
+			if (! Esn)
+			{
+				printf("Error allocating memory in L1AToL1B\n");
+				return(0);
+			}
+
+			float sumEsn = 0.0;
+			for (int i=0; i < l1a->frame.slicesPerSpot; i++)
+			{
+				Esn[i] = l1a->frame.science[base_slice_idx + i];
+				// Sum up the signal+noise measurements
+				sumEsn += Esn[i];
+			}
+
+			// Fetch the noise measurement which applies to all the slices.
+			float En = l1a->frame.spotNoise[spot_idx];
+
 			//---------------------//
 			// locate measurements //
 			//---------------------//
 
 			if (l1a->frame.slicesPerSpot <= 1)
 			{
-				if (! LocateSpot(spacecraft, instrument, meas_spot))
+				if (! LocateSpot(spacecraft, instrument, meas_spot, Esn[0]))
 					return(0);
 			}
 			else
 			{
 				if (! LocateSliceCentroids(spacecraft, instrument, meas_spot,
-					sliceGainThreshold,processMaxSlices))
+					Esn, sliceGainThreshold, processMaxSlices))
 				{
 					return(0);
 				}
@@ -161,16 +183,6 @@ L1AToL1B::Convert(
 				antenna);
 			CoordinateSwitch gc_to_antenna =
 				antenna_frame_to_gc.ReverseDirection();
-
-			// Sum up the signal+noise measurements
-			float sumEsn = 0.0;
-			for (int i=0; i < l1a->frame.slicesPerSpot; i++)
-			{
-				sumEsn += l1a->frame.science[total_slice_idx + i];
-			}
-
-			// Fetch the noise measurement which applies to all the slices.
-			float En = l1a->frame.spotNoise[spot_idx];
 
 			//-------------------//
 			// for each slice... //
@@ -191,16 +203,15 @@ L1AToL1B::Convert(
 						meas->startSliceIdx);
 				}
 
-				float Esn = l1a->frame.science[total_slice_idx];
 				float PtGr = l1a->frame.ptgr;
 
 				//-----------------//
 				// set measurement //
 				//-----------------//
 
-				// should we have separate entries for Kpc,Kpr,Kpm ?
+				// meas->value is the Esn value going in, sigma0 coming out.
 				if (! Er_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Esn, sumEsn, En, PtGr))
+					meas, k_factor, meas->value, sumEsn, En, PtGr))
 				{
 					return(0);
 				}
@@ -217,7 +228,6 @@ L1AToL1B::Convert(
 				if (outputSigma0ToStdout)
 					printf("%g ",meas->value);
 
-				total_slice_idx++;
 			}
 
 			//-----------------------------------------------------//
@@ -244,6 +254,7 @@ L1AToL1B::Convert(
 
 			l1b->frame.spotList.Append(meas_spot);
 			spot_idx++;
+			base_slice_idx += l1a->frame.slicesPerSpot;
 		}
 		if (outputSigma0ToStdout) printf("\n");
 	}

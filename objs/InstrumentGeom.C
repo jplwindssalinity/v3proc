@@ -177,6 +177,7 @@ LocateSliceCentroids(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
+	float*			Esn,
 	float			gain_threshold,
 	int				max_slices)
 {
@@ -290,6 +291,7 @@ LocateSliceCentroids(
 		abs_to_rel_idx(slice_idx,total_slices,&(meas->startSliceIdx));
 		meas->numSlices = 1;
 		meas->pol = beam->polarization;
+		meas->value = Esn[slice_idx];
 
 		//--------------------------------//
 		// find the centroid on the earth //
@@ -366,6 +368,7 @@ LocateSpot(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
+	float			Esn,
 	float			contour_level)
 {
 	//-----------//
@@ -513,6 +516,9 @@ LocateSpot(
 	// get incidence angle
 	meas->incidenceAngle = tip.rTarget.IncidenceAngle(rlook_gc);
 	meas->centroid = tip.rTarget;
+
+	// set energy measurement to be consistent with slice handling
+	meas->value = Esn;
 
 	//-----------------------------//
 	// add measurment to meas spot //
