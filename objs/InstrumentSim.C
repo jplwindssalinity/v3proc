@@ -17,7 +17,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	_priPerBeam(0.0), _beamBTimeOffset(0.0), l00FrameReady(0), _pulseNumber(0)
+:	l00FrameReady(0), _priPerBeam(0.0), _beamBTimeOffset(0.0), _pulseNumber(0)
 {
 	return;
 }
