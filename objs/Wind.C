@@ -817,7 +817,6 @@ WVC::FreeContents()
 int
 WVC::Rank_Wind_Solutions()
 {
-//
 // Translated from GS module: Rank_Wind_Solutions2.F
 // - Final sorting omitted.
 //!File Name:    Rank_Wind_Solutions.F
@@ -843,9 +842,9 @@ WVC::Rank_Wind_Solutions()
 //    wr_wind_dir_err        - errors associated with wind direction.
 //
 
-    float    wr_wind_speed[wind_max_solutions];
-    float    wr_wind_dir[wind_max_solutions];
-    float    wr_mle[wind_max_solutions];
+    float  wr_wind_speed[wind_max_solutions];
+    float  wr_wind_dir[wind_max_solutions];
+    float  wr_mle[wind_max_solutions];
 
     // Copy data into wr_ arrays. (convert radians to degrees)
     int i = 0;
@@ -861,57 +860,57 @@ WVC::Rank_Wind_Solutions()
     }
     int wr_num_ambigs = i;
 
-// Local Declarations
-    int        j;
-    int        start_j;
-    int        ambig;
-    int        speed_50_flag[wind_max_solutions];
-    int        speed_50_counter;
-    int        i_speed_processed;
-    int        i_twin_processed;
-    int        twin_flag[wind_max_solutions];
-    int        twin_counter;
-    int        num_ambigs;
-    float    diff_speed;
-    float    diff_dir;
-    float    diff_mle;
+    // Local Declarations
+    int    j;
+    int    start_j;
+    int    ambig;
+    int    speed_50_flag[wind_max_solutions];
+    int    speed_50_counter;
+    int    i_speed_processed;
+    int    i_twin_processed;
+    int    twin_flag[wind_max_solutions];
+    int    twin_counter;
+    int    num_ambigs;
+    float  diff_speed;
+    float  diff_dir;
+    float  diff_mle;
 
-    int        num_sorted;
-//    int        max_index;
-//    float    max_mle;
+    int    num_sorted;
+//  int    max_index;
+//  float  max_mle;
 
 //    Initialize.
 
-    speed_50_counter    = 0;
-    twin_counter        = 0;
-    num_sorted            = 0;
+    speed_50_counter = 0;
+    twin_counter = 0;
+    num_sorted = 0;
 
-    for (j=0; j < wind_max_solutions; j++)
+    for (j = 0; j < wind_max_solutions; j++)
     {
-        speed_50_flag[j]    = 0;
-        twin_flag[j]        = 0;
+        speed_50_flag[j] = 0;
+        twin_flag[j] = 0;
     }
 
-    for (ambig=0; ambig < wr_num_ambigs; ambig++)
+    for (ambig = 0; ambig < wr_num_ambigs; ambig++)
     {
-
 //    Wind direction:
 //        1. Constrain values between 0 and 360 degrees.
 //        2. Conform to SEAWIND's oceanographic convention.
 
         if (wr_wind_dir[ambig] < 0.0)
         {
-            wr_wind_dir[ambig] += 360.;
+            wr_wind_dir[ambig] += 360.0;
         }
 
-        if (wr_wind_dir[ambig] > 360.)
+        if (wr_wind_dir[ambig] > 360.0)
         {
-            wr_wind_dir[ambig] -= 360.; // change made here for the sign: Kyung
+            // change made here for the sign: Kyung
+            wr_wind_dir[ambig] -= 360.0;
         }
 
 // Set high wind speed flag and count up if larger than 50 m/s.
 
-        if (wr_wind_speed[ambig] > 50.)
+        if (wr_wind_speed[ambig] > 50.0)
         {
             speed_50_flag[ambig] = 1;
             speed_50_counter++;
@@ -925,21 +924,19 @@ WVC::Rank_Wind_Solutions()
         num_ambigs = wr_num_ambigs - speed_50_counter;
         start_j = 0;
 
-        for (i=0; i < num_ambigs; i++)
+        for (i = 0; i < num_ambigs; i++)
         {
             i_speed_processed = 0;
-
-            for (j=start_j; j < wr_num_ambigs; j++)
+            for (j = start_j; j < wr_num_ambigs; j++)
             {
-               if (!  i_speed_processed && speed_50_flag[j] == 0)
+                if (! i_speed_processed && speed_50_flag[j] == 0)
                 {
-                   wr_wind_speed[i]    = wr_wind_speed[j];
-                   wr_wind_dir[i]      = wr_wind_dir[j];
-                   wr_mle[i]           = wr_mle[j];
-                   start_j = j + 1;
-                   i_speed_processed = 1;
+                    wr_wind_speed[i] = wr_wind_speed[j];
+                    wr_wind_dir[i] = wr_wind_dir[j];
+                    wr_mle[i] = wr_mle[j];
+                    start_j = j + 1;
+                    i_speed_processed = 1;
                 }
-
             }
         }
         wr_num_ambigs = num_ambigs;
@@ -948,71 +945,71 @@ WVC::Rank_Wind_Solutions()
 // Identify and eliminate possible "twin" solutions. Search
 // the entire solution space, tag twin solutions with smaller MLE value.
 
-//        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
-    for (i=0; i < wr_num_ambigs; i++)
+// write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
+    for (i = 0; i < wr_num_ambigs; i++)
     {
-          twin_flag[i] = 0;
+        twin_flag[i] = 0;
     }
-      twin_counter = 0;
+    twin_counter = 0;
 
-    for (i=0; i < wr_num_ambigs-1; i++)
-    for (j=i+1; j < wr_num_ambigs; j++)
+    for (i = 0; i < wr_num_ambigs - 1; i++)
     {
-
+        for (j = i + 1; j < wr_num_ambigs; j++)
+        {
             diff_speed = fabs (wr_wind_speed[i] - wr_wind_speed[j]);
-            diff_dir   = fabs (wr_wind_dir[i] - wr_wind_dir[j]);
-            diff_mle   = fabs (wr_mle[i] - wr_mle[j]);
+            diff_dir = fabs (wr_wind_dir[i] - wr_wind_dir[j]);
+            diff_mle = fabs (wr_mle[i] - wr_mle[j]);
 
-            if (diff_dir>180.0) diff_dir=360.-diff_dir;
+            if (diff_dir > 180.0)
+                diff_dir = 360.0 - diff_dir;
 
-            if (diff_speed <= wind_speed_delta    &&
-               diff_dir   < wind_dir_delta      &&
-               diff_mle   < wind_likelihood_delta )
+            if (diff_speed <= wind_speed_delta &&
+                diff_dir < wind_dir_delta &&
+                diff_mle < wind_likelihood_delta)
             {
                 if (twin_flag[j] == 0)
                 {
-                   twin_flag[j] = 1;
-                   twin_counter = twin_counter + 1;
+                    twin_flag[j] = 1;
+                    twin_counter = twin_counter + 1;
 
-                   if (wr_mle[j]>wr_mle[i])
+                    if (wr_mle[j] > wr_mle[i])
                     {
-                    wr_wind_speed[i] = wr_wind_speed[j];
-                    wr_wind_dir[i] = wr_wind_dir[j];
-                    wr_mle[i] = wr_mle[j];
+                        wr_wind_speed[i] = wr_wind_speed[j];
+                        wr_wind_dir[i] = wr_wind_dir[j];
+                        wr_mle[i] = wr_mle[j];
                     }
                 }
             }
+        }
     }
 
 // Eliminate tagged twin solutions.
 
-    if  (twin_counter > 0)
+    if (twin_counter > 0)
     {
-//        write(97,*) 'number of twins found ',twin_counter
-         num_ambigs =  wr_num_ambigs  -  twin_counter;
-         start_j  = 0;
-        for (i=0; i < num_ambigs; i++)
+//      write(97,*) 'number of twins found ',twin_counter
+        num_ambigs = wr_num_ambigs - twin_counter;
+        start_j = 0;
+        for (i = 0; i < num_ambigs; i++)
         {
             i_twin_processed = 0;
-
-            for (j=start_j; j < wr_num_ambigs; j++)
+            for (j = start_j; j < wr_num_ambigs; j++)
             {
                 if (! i_twin_processed)
                 {
-                    if  (twin_flag[j] == 0)
+                    if (twin_flag[j] == 0)
                     {
-                     wr_wind_speed[i] = wr_wind_speed[j];
-                     wr_wind_dir[i] = wr_wind_dir[j];
-                     wr_mle[i] = wr_mle[j];
-                     start_j = j + 1;
-                     i_twin_processed  = 1;
+                        wr_wind_speed[i] = wr_wind_speed[j];
+                        wr_wind_dir[i] = wr_wind_dir[j];
+                        wr_mle[i] = wr_mle[j];
+                        start_j = j + 1;
+                        i_twin_processed  = 1;
                     }
                 }
-
             }
         }
-//        write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
-         wr_num_ambigs = num_ambigs;
+//      write(97,*) wr_wind_speed,wr_wind_dir,wr_mle
+        wr_num_ambigs = num_ambigs;
     }
 
     // Copy data from wr_ arrays. (convert to radians)
@@ -1031,78 +1028,101 @@ WVC::Rank_Wind_Solutions()
     }
 
     return(1);
-
 }
+
+
+//------------------------------//
+// WVC::GetEstimatedSquareError //
+//------------------------------//
 
 float
-WVC::GetEstimatedSquareError(){
-  float* prob=new float[ambiguities.NodeCount()];
-  WindVectorPlus* wvp=ambiguities.GetHead();
-  float scale=wvp->obj;
-  int idx=0;
-  float sum=0;
-  while(wvp){
-    prob[idx]=exp((wvp->obj-scale)/2);
-    sum+=prob[idx];
-    idx++;
-    wvp=ambiguities.GetNext();
-  }
-  for(int c=0;c<ambiguities.NodeCount();c++) prob[c]/=sum;
-  wvp=ambiguities.GetHead();
-  idx=0;
-  float SE=0;
-  while(wvp){
-    if(selected!=wvp) {
-      float x1,x2,y1,y2;
-      selected->GetUV(&x1,&y1);
-      wvp->GetUV(&x2,&y2);
-      float dx=x1-x2;
-      float dy=y1-y2;
-      SE+=(dx*dx+dy*dy)*prob[idx];
+WVC::GetEstimatedSquareError()
+{
+    float* prob = new float[ambiguities.NodeCount()];
+    WindVectorPlus* wvp = ambiguities.GetHead();
+    float scale = wvp->obj;
+    int idx = 0;
+    float sum = 0;
+    while (wvp)
+    {
+        prob[idx] = exp((wvp->obj - scale) / 2.0);
+        sum += prob[idx];
+        idx++;
+        wvp = ambiguities.GetNext();
     }
-    idx++;
-    wvp=ambiguities.GetNext();
-  }
-  delete[] prob;
-  return(SE);
+    for (int c = 0; c < ambiguities.NodeCount(); c++)
+        prob[c] /= sum;
+
+    wvp = ambiguities.GetHead();
+    idx = 0;
+    float SE = 0;
+    while (wvp)
+    {
+        if (selected != wvp)
+        {
+            float x1, x2, y1, y2;
+            selected->GetUV(&x1, &y1);
+            wvp->GetUV(&x2, &y2);
+            float dx = x1 - x2;
+            float dy = y1 - y2;
+            SE += (dx*dx + dy*dy) * prob[idx];
+        }
+        idx++;
+        wvp = ambiguities.GetNext();
+    }
+    delete[] prob;
+    return(SE);
 }
+
+//-----------------------//
+// WVC::RedistributeObjs //
+//-----------------------//
+
 int
-WVC::RedistributeObjs(){
-  if(directionRanges.bestObj==NULL) return(0);
-  int nd=directionRanges.dirIdx.GetBins();
-  float step=directionRanges.dirIdx.GetStep();
-  int nc=ambiguities.NodeCount();
-  float* new_obj= new float[nc];
-  for(int c=0;c<nc;c++){
-    new_obj[c]=0.0;
-  }
-  for(int c=0;c<nd;c++){
-    float dir=c*step;
-    // Find Closest Ambiguity
-    WindVectorPlus* closest=GetNearestToDirection(dir);
-    WindVectorPlus* wvp=ambiguities.GetHead();
-    int idx=0;
-    while(wvp!=closest){
-      wvp=ambiguities.GetNext();
-      idx++;
+WVC::RedistributeObjs()
+{
+    if (directionRanges.bestObj == NULL)
+        return(0);
+
+    int nd = directionRanges.dirIdx.GetBins();
+    float step = directionRanges.dirIdx.GetStep();
+    int nc = ambiguities.NodeCount();
+    float* new_obj = new float[nc];
+    for (int c = 0; c < nc; c++)
+    {
+        new_obj[c] = 0.0;
     }
-    float tmp=directionRanges.bestObj[c]-closest->obj;
-    tmp/=2;
-    tmp=exp(tmp);
-    new_obj[idx]+=tmp;
-  }
-  WindVectorPlus* wvp=ambiguities.GetHead();
-  float old_sum=0, new_sum=0;
-  for(int c=0;c<nc;c++,wvp=ambiguities.GetNext()){
-    old_sum+=wvp->obj;
-    wvp->obj+=2*log(new_obj[c]);
-    new_sum+=wvp->obj;
-  }
-  float scale=old_sum/new_sum;
-  for(wvp=ambiguities.GetHead();wvp;wvp=ambiguities.GetNext()) wvp->obj*=scale;
-  delete[] new_obj;
-  SortByObj();
-  return(1);
+    for (int c = 0; c < nd; c++)
+    {
+        float dir = c * step;
+        // Find Closest Ambiguity
+        WindVectorPlus* closest = GetNearestToDirection(dir);
+        WindVectorPlus* wvp = ambiguities.GetHead();
+        int idx = 0;
+        while (wvp != closest)
+        {
+            wvp = ambiguities.GetNext();
+            idx++;
+        }
+        float tmp = directionRanges.bestObj[c] - closest->obj;
+        tmp /= 2;
+        tmp = exp(tmp);
+        new_obj[idx] += tmp;
+    }
+    WindVectorPlus* wvp = ambiguities.GetHead();
+    float old_sum = 0, new_sum = 0;
+    for (int c = 0; c < nc; c++, wvp = ambiguities.GetNext())
+    {
+        old_sum += wvp->obj;
+        wvp->obj += 2.0 * log(new_obj[c]);
+        new_sum += wvp->obj;
+    }
+    float scale = old_sum / new_sum;
+    for (wvp = ambiguities.GetHead(); wvp; wvp = ambiguities.GetNext())
+        wvp->obj *= scale;
+    delete[] new_obj;
+    SortByObj();
+    return(1);
 }
 
 //===========//
@@ -1110,7 +1130,7 @@ WVC::RedistributeObjs(){
 //===========//
 
 WindField::WindField()
-:    _wrap(0), _useFixedSpeed(0), _fixedSpeed(0.0), _field(0)
+:   _wrap(0), _useFixedSpeed(0), _fixedSpeed(0.0), _field(0)
 {
     return;
 }
@@ -1127,7 +1147,7 @@ WindField::~WindField()
 
 int
 WindField::ReadVap(
-    const char*        filename)
+    const char*  filename)
 {
     //-----------//
     // open file //
@@ -1192,7 +1212,7 @@ WindField::ReadVap(
 
 int
 WindField::ReadEcmwfHiRes(
-    const char*        filename)
+    const char*  filename)
 {
     //-----------//
     // open file //
@@ -2070,7 +2090,7 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:    swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
+:   swath(0),  _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
     return;
 }
@@ -2087,8 +2107,8 @@ WindSwath::~WindSwath()
 
 int
 WindSwath::Allocate(
-    int        cross_track_bins,
-    int        along_track_bins)
+    int  cross_track_bins,
+    int  along_track_bins)
 {
     _crossTrackBins = cross_track_bins;
     _alongTrackBins = along_track_bins;
@@ -2136,10 +2156,10 @@ WindSwath::Add(
 
 WVC*
 WindSwath::Remove(
-    int        cti,
-    int        ati)
+    int  cti,
+    int  ati)
 {
-        WVC* wvc=NULL;
+    WVC* wvc = NULL;
     if (cti < 0 || cti >= _crossTrackBins ||
         ati < 0 || ati >= _alongTrackBins)
     {
@@ -2751,9 +2771,9 @@ WindSwath::WriteFlower(
     return(1);
 }
 
-//------------------------//
-// WindSwath::WriteAscii  //
-//------------------------//
+//-----------------------//
+// WindSwath::WriteAscii //
+//-----------------------//
 
 int
 WindSwath::WriteAscii(
@@ -2773,9 +2793,9 @@ WindSwath::WriteAscii(
 
 } // WriteAscii
 
-//------------------------//
-// WindSwath::WriteAscii  //
-//------------------------//
+//-----------------------//
+// WindSwath::WriteAscii //
+//-----------------------//
 
 int
 WindSwath::WriteAscii(
@@ -2828,9 +2848,9 @@ WindSwath::InitWithRank(
     return(count);
 }
 
-//-------------------------//
+//-----------------------//
 // WindSwath::InitRandom //
-//-------------------------//
+//-----------------------//
 
 int
 WindSwath::InitRandom()
@@ -2860,10 +2880,15 @@ WindSwath::InitRandom()
     return(count);
 }
 
+//----------------------------//
+// WindSwath::GetNudgeVectors //
+//----------------------------//
+
 int
 WindSwath::GetNudgeVectors(
-     WindField* nudge_field){
-        for (int cti = 0; cti < _crossTrackBins; cti++)
+    WindField*  nudge_field)
+{
+    for (int cti = 0; cti < _crossTrackBins; cti++)
       {
         for (int ati = 0; ati < _alongTrackBins; ati++)
         {
@@ -2880,13 +2905,14 @@ WindSwath::GetNudgeVectors(
       }
     return(1);
 }
+
 //------------------//
 // WindSwath::Nudge //
 //------------------//
 
 int
 WindSwath::Nudge(
-    int max_rank)
+    int  max_rank)
 {
     int count = 0;
     for (int cti = 0; cti < _crossTrackBins; cti++)
@@ -3038,15 +3064,15 @@ WindSwath::SmartNudge(
 // If Special=0 Standard Median Filter (default)
 // if Special=1 Use Range Information  (S3)
 // If Special=2 Use Spatial Probability Maximization (S4)
+
 int
 WindSwath::MedianFilter(
-    int        window_size,
-    int        max_passes,
-    int             bound,
-    int        weight_flag,
-        int             special=0)
+    int  window_size,
+    int  max_passes,
+    int  bound,
+    int  weight_flag,
+    int  special = 0)
 {
-
     //----------------------------//
     // create a new selection map //
     //----------------------------//
@@ -3100,14 +3126,16 @@ WindSwath::MedianFilter(
 //-------------------------//
 // WindSwath::BestKFilter  //
 //-------------------------//
+
 int
 WindSwath::BestKFilter(
-
-     int            window_size,
-     int            k){
-        //----------------------------//
+    int  window_size,
+    int  k)
+{
+    //----------------------------//
     // create a new selection map //
     //----------------------------//
+
     WindVectorPlus*** new_selected =
         (WindVectorPlus***)make_array(sizeof(WindVectorPlus*), 2,
             _crossTrackBins, _alongTrackBins);
@@ -3182,15 +3210,16 @@ WindSwath::BestKFilter(
 
 int
 WindSwath::MedianFilterPass(
-    int            half_window,
-    WindVectorPlus***    new_selected,
-    char**            change,
-    int                     bound,
-    int            weight_flag,
-    int                     special=0)
+    int                half_window,
+    WindVectorPlus***  new_selected,
+    char**             change,
+    int                bound,
+    int                weight_flag,
+    int                special = 0)
 {
-        int flips=0;
-        float energy=0.0;
+    int flips = 0;
+    float energy = 0.0;
+
     //-------------//
     // filter loop //
     //-------------//
@@ -3240,11 +3269,13 @@ WindSwath::MedianFilterPass(
         change:
             float min_vector_dif_sum = (float)HUGE_VAL;
             //--------------------------------------------//
-                        // Don't use range information if unavailable //
-                        // or special= 0                              //
-                        //--------------------------------------------//
-                        if(special==0 || (special==1 && wvc->directionRanges.NodeCount()==0)){
+            // Don't use range information if unavailable //
+            // or special= 0                              //
+            //--------------------------------------------//
 
+            if (special == 0 || (special == 1 &&
+                wvc->directionRanges.NodeCount() == 0))
+            {
               for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
                    wvp = wvc->ambiguities.GetNext())
                 {
