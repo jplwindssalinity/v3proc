@@ -56,6 +56,8 @@ public:
     int  ReadHex(const char* filename);
     int  WriteHex(const char* filename);
 
+    unsigned short  GetTableId()  { return(_tableId); };
+
 protected:
 
     //-----------//
