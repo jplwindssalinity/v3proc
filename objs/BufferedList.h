@@ -37,15 +37,13 @@ public:
 
 	BufferedList();
 	BufferedList(FILE *nodefile, long max_nodes);
-	virtual		~BufferedList();
+	~BufferedList();
 
 	//--------------------//
 	// Buffered retrieval //
 	//--------------------//
 
 	T*		ReadNext();			// current = next, return T* of current
-
-	virtual int		Read(FILE* fp) = 0;		// pure virtual read
 
 protected:
 
