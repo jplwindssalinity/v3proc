@@ -12,13 +12,15 @@ SYSLIBS =		-lm
 
 OBJS = \
 	SimControl.o \
+	Constants.o \
 	Misc.o \
 	List.o \
 	ConfigList.o \
 	GMF.o \
 	OrbitSim.o \
 	SimConfig.o \
-	Instrument.o
+	Instrument.o \
+	AntennaSim.o
 
 #----------------------------------------------------------------------
 # default: make library
@@ -61,7 +63,9 @@ $(TARGET_LIB):	$(OBJS)
 # Object file dependancies
 #----------------------------------------------------------------------
 
+AntennaSim.o:	AntennaSim.C AntennaSim.h
 ConfigList.o:	ConfigList.C ConfigList.h
+Constants.o:	Constants.C Constants.h
 GMF.o:			GMF.C GMF.h
 Instrument.o:	Instrument.C Instrument.h
 List.o:			List.C List.h

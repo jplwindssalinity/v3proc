@@ -113,6 +113,7 @@ main(
 	//---------------------------------//
 
 	ConfigList sim_control_list;
+	sim_control_list.LogErrors();
 	if (! sim_control_list.Read(sim_control_file))
 	{
 		fprintf(stderr, "%s: error reading sim control file %s\n",
@@ -136,10 +137,12 @@ main(
 	// cycle through events //
 	//----------------------//
 
-	for (int itime = 0; itime < 12120; itime += 60)
+	SimEvent sim_event;
+	while (sim_event.time < 12120.0)
 	{
-		OrbitState os = sim_control.orbit.GetOrbitState((double)itime);
-		printf("%d %g %g %g %g %g %g\n", itime, os.gc_vector[0],
+		sim_event = sim_control.NextEvent(sim_event.time);
+		OrbitState os = sim_control.orbit.GetOrbitState((double)sim_event.time);
+		printf("%g %g %g %g %g %g %g\n", sim_event.time, os.gc_vector[0],
 			os.gc_vector[1], os.gc_vector[2], os.velocity_vector[0],
 			os.velocity_vector[1], os.velocity_vector[2]);
 	}
