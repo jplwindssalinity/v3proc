@@ -26,6 +26,7 @@ static const char rcs_id_meas_h[] =
 
 class MeasList;
 class L1BHdf;
+class L2AHdf;
 
 //======================================================================
 // CLASS
@@ -41,6 +42,10 @@ extern const char* meas_type_map[];
 class Meas
 {
 public:
+
+    friend int operator==(const Meas&, const Meas&);
+    friend int operator>=(const Meas&, const Meas&);
+    friend int operator< (const Meas&, const Meas&);
 
     //-------//
     // enums //
@@ -78,6 +83,7 @@ public:
     int  Read(FILE* fp);
     int  WriteAscii(FILE* fp);
     int  UnpackL1BHdf(L1BHdf* l1bHdf, int32 pulseIndex, int32 sliceIndex);
+    int  ReadL2AHdfCell(L2AHdf* l2aHdf, int dataIndex, int arrayIndex);
 
     //---------//
     // freeing //
@@ -147,6 +153,10 @@ public:
     int  Write(FILE* fp);
     int  Read(FILE* fp);
     int  WriteAscii(FILE* fp);
+
+    int  ReadL2AHdfCell(L2AHdf* l2aHdf, int rowNo, int cellNo);
+    //int  AppendL2AHdf(Meas* newMeas);
+    //Meas*  lastL2AHdfMeas;
 
     //------//
     // info //
