@@ -57,7 +57,8 @@ PROGRAMS = \
 	s0_to_noise_value \
 	log_cfg \
 	l2ags_s0 \
-	fix_ecmwf_speed
+	fix_ecmwf_speed \
+	l2b_to_flower
 
 HUDD_PROGRAMS = \
 	sim \
@@ -80,7 +81,8 @@ HUDD_PROGRAMS = \
 	plot_solution_curves \
 	windfield_to_vctr \
 	log_cfg \
-	fix_ecmwf_speed
+	fix_ecmwf_speed \
+	l2b_to_flower
 
 #----------------------------------------------------------------------
 # default: make all executable programs
