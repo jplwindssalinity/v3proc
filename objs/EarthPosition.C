@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_earthposition_c[] =
 	"@(#) $Id$";
@@ -272,45 +272,26 @@ EarthPosition::WriteLonLat(FILE* fp)
 }
 
 //
-// operator=
-//
-// Assignment operator to allow a Vector3 object to be assigned to a
-// EarthPosition object straight across (assumes that the Vector3 object
-// is a geocentric position vector).
-//
-
-void EarthPosition::operator=(Vector3 vec)
-
-{
-
-// transfer data straight across
-_v[0] = vec.Get(0);
-_v[1] = vec.Get(1);
-_v[2] = vec.Get(2);
-	return;
-}
-
-//
 // Other access methods
 //
 
-//
+//--------------------------------//
+// EarthPosition::SurfaceDistance //
+//--------------------------------//
 // Compute the distance along the surface of the earth between the position
 // specified in the calling object and the position specified by the argument.
 // This function assumes that both positions are actually on the surface
 // (ie., altitude = 0), but does not check.  If one is not on the surface,
 // then the result is nonsense.
 // Right now, this routine uses a simple spherical approximation of the earth.
-//
 
-double EarthPosition::surface_distance(EarthPosition r)
-
+double
+EarthPosition::SurfaceDistance(
+	EarthPosition	r)
 {
-
-double mag2 = Magnitude()*r.Magnitude();
-double theta = acos((*this % r) / mag2);
-return(sqrt(mag2) * theta);
-
+	double mag2 = Magnitude()*r.Magnitude();
+	double theta = acos((*this % r) / mag2);
+	return(sqrt(mag2) * theta);
 }
 
 //
@@ -344,8 +325,8 @@ EarthPosition::Normal()
 {
 
 Vector3 normal(_v[0]/(r1_earth*r1_earth),
-               _v[1]/(r1_earth*r1_earth),
-               _v[2]/(r2_earth*r2_earth));
+				_v[1]/(r1_earth*r1_earth),
+				_v[2]/(r2_earth*r2_earth));
 normal.Scale(1.0);
 return(normal);
 
@@ -358,9 +339,9 @@ return(normal);
 // system at the location specified by this EarthPosition.  The local
 // frame is defined with respect to the geocentric frame.
 // The local frame axes are:
-//    x - perpendicular to the local normal and directed to true north
-//    y - perpendicular to the local normal and directed to true east
-//    z - the local normal
+//	x - perpendicular to the local normal and directed to true north
+//	y - perpendicular to the local normal and directed to true east
+//	z - the local normal
 //
 
 CoordinateSwitch
@@ -403,4 +384,23 @@ EarthPosition::IncidenceAngle(
 	Vector3 normal = Normal();
 	vector.Scale(1.0);
 	return(acos(vector % -normal));
+}
+
+//
+// operator=
+//
+// Assignment operator to allow a Vector3 object to be assigned to a
+// EarthPosition object straight across (assumes that the Vector3 object
+// is a geocentric position vector).
+//
+
+void EarthPosition::operator=(Vector3 vec)
+
+{
+
+// transfer data straight across
+_v[0] = vec.Get(0);
+_v[1] = vec.Get(1);
+_v[2] = vec.Get(2);
+	return;
 }

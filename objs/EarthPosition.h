@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef EARTHPOSITION_H
 #define EARTHPOSITION_H
@@ -39,13 +39,13 @@ class EarthPosition : public Vector3
 {
 public:
 
-//
-// construction methods
-//
+	//--------------//
+	// construction //
+	//--------------//
 
-EarthPosition();
-EarthPosition(Vector3 v);
-~EarthPosition();
+	EarthPosition();
+	EarthPosition(Vector3 v);
+	~EarthPosition();
 
 	//---------------------//
 	// setting and getting //
@@ -61,31 +61,28 @@ EarthPosition(Vector3 v);
 	int		GetAltLonGDLat(double* altitude, double* longitude,
 				double* gd_latitude);
 
+	//--------------//
+	// input/output //
+	//--------------//
 
-//
-// I/O
-//
+	int		ReadLonLat(FILE* fp);
+	int		WriteLonLat(FILE* fp);
 
-int	ReadLonLat(FILE* fp);
-int WriteLonLat(FILE* fp);
+	//--------------//
+	// manipulation //
+	//--------------//
 
-//
-// Operators
-//
+	double				SurfaceDistance(EarthPosition r);
+	EarthPosition		Nadir();
+	Vector3				Normal();
+	CoordinateSwitch	SurfaceCoordinateSystem();
+	double				IncidenceAngle(Vector3 rlook);
 
-void operator=(Vector3 vec);	// assign Vector3 to EarthPosition
+	//-----------//
+	// operators //
+	//-----------//
 
-//
-// Other access methods
-//
-
-double surface_distance(EarthPosition r);
-EarthPosition Nadir();
-Vector3 Normal();
-
-CoordinateSwitch SurfaceCoordinateSystem();
-double IncidenceAngle(Vector3 rlook);
-
+	void	operator=(Vector3 vec);		// assign Vector3 to EarthPosition
 };
 
 #endif

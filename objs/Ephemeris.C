@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_ephemeris_c[] =
 	"@(#) $Id$";
@@ -543,7 +543,7 @@ Ephemeris::GetSubtrackCoordinates(
 	EarthPosition subtrack_min = min_state.rsat.Nadir();
 
 	// Compute surface distance in the crosstrack direction (simple arclength).
-	*crosstrack = subtrack_min.surface_distance(rground);
+	*crosstrack = subtrack_min.SurfaceDistance(rground);
 
 	// Determine which side the surface point is on.
 	Vector3 vec = subtrack_min & rground;	// cross product
@@ -584,13 +584,13 @@ Ephemeris::GetSubtrackCoordinates(
 			break;
 		}
 		rstep = rsat.Nadir();
-		float arclen = rprev.surface_distance(rstep);
+		float arclen = rprev.SurfaceDistance(rstep);
 		*alongtrack += arclen;
 		rprev = rstep;
 	}
 
 	// Add in the last small piece (less than a stepsize).
-	*alongtrack += rprev.surface_distance(subtrack_min);
+	*alongtrack += rprev.SurfaceDistance(subtrack_min);
 
 	// Apply sign to result.
 	*alongtrack *= sign;
