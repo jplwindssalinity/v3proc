@@ -28,6 +28,8 @@ static const char rcs_id_spacecraftsim_h[] =
 //		spacecraft were orbiting.
 //======================================================================
 
+#define		ORBIT_UPDATE_PERIOD		60.0
+
 class SpacecraftSim
 {
 public:
