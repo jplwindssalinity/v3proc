@@ -132,8 +132,8 @@ int main(int argc, char* argv[]){
 
 	L1B noisy, noisefree;
 
-	noisefree.SetFilename(argv[1]);
-	noisy.SetFilename(argv[2]);
+	noisefree.SetInputFilename(argv[1]);
+	noisy.SetInputFilename(argv[2]);
 
 
 	//-------------------------------------//

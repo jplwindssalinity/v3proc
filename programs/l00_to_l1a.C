@@ -229,8 +229,8 @@ main(
 
 	} while (1);
 
-	l00.CloseInputFile();
-	l1a.CloseOutputFile();
+	l00.Close();
+	l1a.Close();
 
 	return (0);
 }

@@ -184,7 +184,7 @@ printf("%g %g\n", lon, lat);
 	//-----------------//
 
 	fclose(output_fp);
-	l1b.Close();
+	l1b.CloseInputFile();
 
 	return (0);
 }

@@ -176,7 +176,7 @@ main(
 
 	if (output_fp != stdout)
 		fclose(output_fp);
-	l1b.Close();
+	l1b.CloseInputFile();
 
 	return (0);
 }
