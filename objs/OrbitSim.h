@@ -9,6 +9,8 @@
 static const char rcs_id_orbitsim_h[] =
 	"@(#) $Id$";
 
+#include "Constants.h"
+
 //======================================================================
 // CLASSES
 //		OrbitState
@@ -54,9 +56,6 @@ public:
 //		simulator.
 //======================================================================
 
-#define DTR		1.745329252e-2
-#define RTD		5.729577951e1
-
 class OrbitSim
 {
 public:
@@ -88,8 +87,8 @@ public:
 	// setting and getting //
 	//---------------------//
 
-	double		GetLongitudeOfAscendingNode() { return (_bigOmega * RTD); };
-	double		GetMeanAnomaly() { return (_l * RTD); };
+	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
+	double		GetMeanAnomaly() { return (_l * rtd); };
 
 protected:
 
