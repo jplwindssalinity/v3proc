@@ -2300,6 +2300,53 @@ WindSwath::Nudge(
 }
 
 //-----------------------//
+// WindSwath::ThresNudge //
+//-----------------------//
+
+int
+WindSwath::ThresNudge(
+	WindField*	nudge_field,
+	int max_rank)
+{
+
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+
+			// threshold objective function //
+
+			int rank_idx = 0;
+			float thres[2] = {0.1,0.05};
+
+			int w = 0;
+			if (cti < 9 || cti > 71) { w = 1; }
+			 else { w = 0; }
+			
+			WindVectorPlus* head = wvc->ambiguities.GetHead();
+			
+			for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp; 
+			     wvp = wvc->ambiguities.GetNext()) {
+			  if ( exp(0.5*(wvp->obj - head->obj)) > thres[w] )
+			    rank_idx++;
+			}
+
+			WindVector nudge_wv;
+			if (! nudge_field->InterpolatedWindVector(wvc->lonLat, &nudge_wv))
+			  continue;
+			
+			wvc->selected = wvc->GetNearestToDirection(nudge_wv.dir, rank_idx);
+			count++;
+		}
+	}
+	return(count);
+}
+
+//-----------------------//
 // WindSwath::LoResNudge //
 //-----------------------//
 
@@ -2386,6 +2433,7 @@ int
 WindSwath::MedianFilter(
 	int		window_size,
 	int		max_passes,
+	int             bound,
 	int		weight_flag)
 {
 	//----------------------------//
@@ -2424,7 +2472,7 @@ WindSwath::MedianFilter(
 	while (pass < max_passes)
 	{
 		int flips = MedianFilterPass(half_window, new_selected, change,
-						weight_flag);
+						weight_flag, bound);
 		pass++;
 		if (flips == 0)
 			break;
@@ -2442,10 +2490,11 @@ WindSwath::MedianFilter(
 
 int
 WindSwath::MedianFilterPass(
-	int					half_window,
+	int			half_window,
 	WindVectorPlus***	new_selected,
-	char**				change,
-	int					weight_flag)
+	char**			change,
+	int                     bound,
+	int			weight_flag)
 {
 	//-------------//
 	// filter loop //
@@ -2456,10 +2505,10 @@ WindSwath::MedianFilterPass(
 	{
 		int cti_min = cti - half_window;
 		int cti_max = cti + half_window + 1;
-		if (cti_min < 0)
-			cti_min = 0;
-		if (cti_max > _crossTrackBins)
-			cti_max = _crossTrackBins;
+		if (cti_min < bound)
+			cti_min = bound;
+		if (cti_max > _crossTrackBins-bound)
+			cti_max = _crossTrackBins-bound;
 		for (int ati = 0; ati < _alongTrackBins; ati++)
 		{
 			int ati_min = ati - half_window;
