@@ -7,6 +7,9 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.1   07 Jul 1999 13:23:24   sally
+// add a few more extraction functions
+// 
 //    Rev 1.0   08 Sep 1998 16:25:56   sally
 // Initial revision.
 // 
@@ -49,6 +52,8 @@ int ExtractData1D_Even (TlmHdfFile*, int32*, int32, int32, int32,
 int ExtractData1D_int2_float_Odd (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 int ExtractData1D_int2_float_Even (TlmHdfFile*, int32*, int32, int32, int32,
+                                      VOIDP, PolynomialTable* polyTable=0);
+int ExtractData1D_int1_float_Even (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 int ExtractData1D_uint1_float_Odd (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
@@ -94,6 +99,8 @@ int Extract8Bit5_6_Odd (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 int Extract8Bit0_1_Odd (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
+int Extract8Bit2_3_Odd (TlmHdfFile*, int32*, int32, int32, int32,
+                                      VOIDP, PolynomialTable* polyTable=0);
 int Extract8Bit6_7_Odd (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 int Extract8Bit4_5_Odd (TlmHdfFile*, int32*, int32, int32, int32,
@@ -107,6 +114,8 @@ int Extract8Bit4_5_Even (TlmHdfFile*, int32*, int32, int32, int32,
 int Extract8Bit3_7_Even (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 int Extract8Bit0_3_Even (TlmHdfFile*, int32*, int32, int32, int32,
+                                      VOIDP, PolynomialTable* polyTable=0);
+int Extract8Bit1_3_Even (TlmHdfFile*, int32*, int32, int32, int32,
                                       VOIDP, PolynomialTable* polyTable=0);
 
 

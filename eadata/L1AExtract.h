@@ -7,8 +7,19 @@
 // CM Log
 // $Log$
 // 
-//    Rev 1.25   08 Jun 1999 16:26:12   sally
-// make mWatts = 0.0, dB = -1000 when dn = 0.0
+//    Rev 1.31   26 Jul 1999 15:45:06   sally
+// add new extraction function for HK2 group flag
+// 
+//    Rev 1.30   07 Jul 1999 16:17:50   sally
+// add some new function for primary header
+// 
+//    Rev 1.29   07 Jul 1999 13:22:14   sally
+// add ExtractData1D_int1_float()
+// 
+//    Rev 1.28   23 Jun 1999 11:55:50   sally
+// Barry changed some entries
+// 
+//    Rev 1.27   14 Jun 1999 13:45:06   sally
 // 
 //    Rev 1.24   25 May 1999 14:04:40   sally
 // add L2Ax for Bryan Stiles
@@ -191,6 +202,8 @@ char    L1A_BC_Accumulate(char* binning_constants, char* flag,
 int ExtractData1D        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 
+int ExtractData1D_int1_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
 int ExtractData1D_uint1_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int ExtractData1D_int2_float(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
@@ -358,7 +371,11 @@ int Extract16Bit0_3      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int Extract16Bit0_13      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
-int ExtractDeltaSrcSeqCnt (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+int Extract16Bit14_15     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractHk2DeltaSrcSeqCnt (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int ExtractL1ASrcSeqCnt     (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 
 int Extract32Bit0        (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
@@ -418,6 +435,8 @@ int Extract32Bit26       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
 int Extract32Bit27       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 int Extract32Bit28       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
+                                          PolynomialTable* polyTable=0);
+int Extract32Bit29       (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
 
 int Extract32Bit0_1      (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
@@ -522,5 +541,15 @@ int ExtractAntSpinRateDegSec(TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                             PolynomialTable* polyTable);
 int ExtractAntSpinRateRotMin(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
                                             PolynomialTable* polyTable);
+
+int ExtractHdrPcktID(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
+int ExtractHdrGroupFlag(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
+int ExtractHdrPcktLen(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
+int ExtractL1ADeltaSrcSeqCnt(TlmHdfFile*, int32*, int32, int32, int32, VOIDP, 
+                                            PolynomialTable* polyTable);
+
 
 #endif //L1AEXTRACT_H

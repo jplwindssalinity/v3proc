@@ -44,6 +44,7 @@ OBJS = \
 	Filter.o \
 	HdfFile.o \
 	Headers.o \
+	Hk2EffDetector.o \
 	Hk2ErrorChecker.o \
 	Hk2Extract.o \
 	Hk2File.o \
@@ -71,6 +72,8 @@ OBJS = \
 	LimitState.o \
 	ListBase.o \
 	Mail.o \
+	MemoryFromFile.o \
+	MemoryFromTlm.o \
 	Qpa.o \
 	Qpf.o \
 	ParTab.o \
