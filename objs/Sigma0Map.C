@@ -49,10 +49,7 @@ Sigma0Map::Read(
         return(0);
     }
 
-    _lonSamples = lon_samples;
-    _latSamples = lat_samples;
-
-    if (! _Allocate())
+    if (! Allocate(lon_samples, lat_samples))
     {
         fclose(ifp);
         return(0);
@@ -67,9 +64,6 @@ Sigma0Map::Read(
             return(0);
         }
     }
-
-    _lonResolution = two_pi / _lonSamples;
-    _latResolution = pi / _latSamples;
 
     fclose(ifp);
     return(1);
@@ -157,7 +151,7 @@ Sigma0Map::Allocate(
 int
 Sigma0Map::_Allocate()
 {
-    _map = (char**)make_array(sizeof(float), 2, _lonSamples,
+    _map = (float**)make_array(sizeof(float), 2, _lonSamples,
         _latSamples);
     if (_map == NULL)
         return(0);

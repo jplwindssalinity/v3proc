@@ -54,11 +54,11 @@ protected:
     // variables //
     //-----------//
 
-    char**  _map;
-    int     _lonSamples;
-    int     _latSamples;
-    float   _lonResolution;
-    float   _latResolution;
+    float**  _map;
+    int      _lonSamples;
+    int      _latSamples;
+    float    _lonResolution;
+    float    _latResolution;
 };
 
 #endif
