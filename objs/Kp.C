@@ -180,13 +180,9 @@ Kp::GetVp(
 	double*		vp)
 {
 	double vpc;
-	if (! GetVpc(meas, sigma_0, &vpc))
-	{
-		return(0);
-	}
-
 	double kpm2, kpri2, kprs2;
-	if (! GetKpm2(pol_idx, speed, &kpm2) ||
+	if (! GetVpc(meas, sigma_0, &vpc) ||
+		! GetKpm2(pol_idx, speed, &kpm2) ||
 		! GetKpri2(&kpri2) ||
 		! GetKprs2(meas, &kprs2))
 	{
