@@ -181,6 +181,12 @@ FindSlice(
 	earth_center.SetPosition(0.0, 0.0, 0.0);
 	*centroid = earth_intercept(earth_center, sum);
 
+	//---------------------------//
+	// determine the look vector //
+	//---------------------------//
+
+	*look_vector = *centroid - spacecraft->orbitState.rsat;
+
 	return(1);
 }
 
