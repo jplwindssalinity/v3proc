@@ -428,3 +428,67 @@ compute_orbit_elements(
 
     return(1);
 }
+
+//-------------------//
+// read_land_sea_map //
+//-------------------//
+
+int
+read_land_sea_map(
+    const char*    filename,
+    unsigned char  land_sea_map[LAND_SEA_LATITUDES][LAND_SEA_LONGITUDES])
+{
+    FILE* ifp = fopen(filename, "r");
+    if (ifp == NULL)
+        return(0);
+
+    int in_char;
+    for (int i = 0; i < 4; i++)
+    {
+        in_char = fgetc(ifp); 
+        if (in_char == EOF)
+        {
+            fclose(ifp);
+            return(0);
+        }
+    }
+
+    for (int i = 0; i < LAND_SEA_LATITUDES; i++)
+    {
+        for (int j = 0; j < LAND_SEA_LONGITUDES; j++)
+        {
+            in_char = fgetc(ifp);
+ 
+            if (in_char == EOF)
+            {
+                fclose(ifp);
+                return(0);
+            }
+            land_sea_map[i][j] = (unsigned char)in_char;
+        }
+    }
+    fclose(ifp);
+    return(1);
+}
+
+//-----------//
+// map_value //
+//-----------//
+
+#define LAND_SEA_MAP_DEG_RES  12.0
+
+int
+map_value(
+    float          longitude,
+    float          latitude,
+    unsigned char  land_sea_map[LAND_SEA_LATITUDES][LAND_SEA_LONGITUDES])
+{
+    int lon_idx = (int)(longitude * LAND_SEA_MAP_DEG_RES);
+    if (lon_idx < 0 || lon_idx >= LAND_SEA_LONGITUDES)
+        return(0);
+    int lat_idx = (int)((latitude + 90.0) * LAND_SEA_MAP_DEG_RES);
+    if (lat_idx < 0 || lat_idx >= LAND_SEA_LATITUDES)
+        return(0);
+
+    return((int)land_sea_map[lat_idx][lon_idx]);
+}

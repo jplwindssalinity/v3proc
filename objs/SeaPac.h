@@ -18,4 +18,13 @@ int  compute_orbit_elements(double x_pos, double y_pos, double z_pos,
          double* arg_lat, double* long_asc_node, double* orb_inclination,
          double* orb_smaj_axis, double* orb_eccen);
 
+#define LAND_SEA_LATITUDES   2160
+#define LAND_SEA_LONGITUDES  4320
+
+int  read_land_sea_map(const char* filename,
+         unsigned char land_sea_map[LAND_SEA_LATITUDES][LAND_SEA_LONGITUDES]);
+
+int  map_value(float longitude, float latitude,
+         unsigned char land_sea_map[LAND_SEA_LATITUDES][LAND_SEA_LONGITUDES]);
+
 #endif
