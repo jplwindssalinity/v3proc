@@ -102,7 +102,7 @@ protected:
 
 class RangeTracker : public TrackerBase<unsigned char>
 {
-public:
+ public:
 
     enum { AMPLITUDE_INDEX = 0, PHASE_INDEX, BIAS_INDEX };
 
@@ -112,6 +112,12 @@ public:
 
     RangeTracker();
     ~RangeTracker();
+
+    //--------------//
+    // operators    //
+    //--------------//
+
+    RangeTracker& operator=(const RangeTracker& from);
 
     //------------//
     // algorithms //
@@ -164,6 +170,11 @@ public:
     DopplerTracker();
     ~DopplerTracker();
 
+    //------------//
+    // operators  //
+    //------------//
+ 
+    DopplerTracker& operator=(const DopplerTracker& from);
     //------------//
     // algorithms //
     //------------//

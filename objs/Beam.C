@@ -567,4 +567,38 @@ Beam::GetSpatialResponse(
 }
 
 
+        //------------------//
+        // Operators        //
+        //------------------//
+Beam& 
+Beam::operator=(
+     const Beam& from)
+{
+        polarization=from.polarization;
+	_elecBoresightLook=from._elecBoresightLook;
+	_elecBoresightAzim=from._elecBoresightAzim;
+	_antennaFrameToBeamFrame=from._antennaFrameToBeamFrame;
+	if(_power_gain!=NULL) free_array((void*)_power_gain,2,_Nx,_Ny);
+	_Nx=from._Nx;
+	_Ny=from._Ny;
+        _ix_zero=from._ix_zero;
+        _iy_zero=from._iy_zero;
+        _x_spacing=from._x_spacing;
+        peakGain=from.peakGain;
+        if(from._power_gain==NULL) _power_gain=from._power_gain;
+	else{
+	  _power_gain = (float**)make_array(sizeof(float),2,_Nx,_Ny);
+	  if (_power_gain == NULL)
+	    {
+	      fprintf(stderr,"Beam::operator=:Can't allocate a pattern array\n");
+	      exit(1);
+	    }
+	  for(int i=0;i<_Nx;i++){
+	    for(int j=0;j<_Ny;j++){
+	      _power_gain[i][j]=from._power_gain[i][j];
+	    }
+	  }
+	}
+	return(*this);
+}
 

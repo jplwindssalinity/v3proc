@@ -83,12 +83,18 @@ public:
 				double round_trip_time, double azimuth_rate,
 				double* response);
 
+        //------------------//
+        // Operators        //
+        //------------------//
+        Beam& operator=(const Beam& from);
+
 	//-----------//
 	// variables //
 	//-----------//
 
 	PolE			polarization;
-	double				_elecBoresightLook;		// in the antenna frame
+	double				
+_elecBoresightLook;		// in the antenna frame
 	double				_elecBoresightAzim;
 
 	// coordinate swith from antenna frame to beam measurement frame
@@ -108,3 +114,6 @@ public:
 };
 
 #endif
+
+
+

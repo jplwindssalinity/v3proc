@@ -650,6 +650,42 @@ RangeTracker::~RangeTracker()
     return;
 }
 
+//-----------------//
+// operators       //
+//-----------------//
+
+RangeTracker&
+RangeTracker::operator=(
+       const RangeTracker& from)
+{
+  rxRangeMem=from.rxRangeMem;
+  if(_scaleArray!=NULL) free_array((void*)_scaleArray,2,3,2);
+  if(_termArray!=NULL) free_array((void*)_termArray,2,_steps,3);
+  _tableId=from._tableId;
+  _steps=from._steps;
+  _dither[0]=from._dither[0];
+  _dither[1]=from._dither[1];
+  if(from._scaleArray==NULL) _scaleArray=NULL;
+  else{
+    _scaleArray=(float**)make_array(sizeof(float),2,3,2);
+    for(int i=0;i<3;i++){
+      for(int j=0;j<2;j++){
+	_scaleArray[i][j]=from._scaleArray[i][j];
+      }
+    }
+  }
+  if(from._termArray==NULL) _termArray=NULL;
+  else{
+    _termArray=(unsigned char**)make_array(sizeof(unsigned char),2,_steps,3);
+    for(unsigned int i=0;i<_steps;i++){
+      for(int j=0;j<3;j++){
+	_termArray[i][j]=from._termArray[i][j];
+      }
+    }
+  }
+  return(*this);
+}
+
 //------------------------------//
 // RangeTracker::GetRxGateDelay //
 //------------------------------//
@@ -786,7 +822,40 @@ DopplerTracker::~DopplerTracker()
 {
     return;
 }
+//-----------------//
+// operators       //
+//-----------------//
 
+DopplerTracker&
+DopplerTracker::operator=(
+       const DopplerTracker& from)
+{
+  if(_scaleArray!=NULL) free_array((void*)_scaleArray,2,3,2);
+  if(_termArray!=NULL) free_array((void*)_termArray,2,_steps,3);
+  _tableId=from._tableId;
+  _steps=from._steps;
+  _dither[0]=from._dither[0];
+  _dither[1]=from._dither[1];
+  if(from._scaleArray==NULL) _scaleArray=NULL;
+  else{
+    _scaleArray=(float**)make_array(sizeof(float),2,3,2);
+    for(int i=0;i<3;i++){
+      for(int j=0;j<2;j++){
+	_scaleArray[i][j]=from._scaleArray[i][j];
+      }
+    }
+  }
+  if(from._termArray==NULL) _termArray=NULL;
+  else{
+    _termArray=(unsigned short**)make_array(sizeof(unsigned short),2,_steps,3);
+    for(unsigned int i=0;i<_steps;i++){
+      for(int j=0;j<3;j++){
+	_termArray[i][j]=from._termArray[i][j];
+      }
+    }
+  }
+  return(*this);
+}
 //-------------------------------------//
 // DopplerTracker::GetCommandedDoppler //
 //-------------------------------------//
