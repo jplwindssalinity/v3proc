@@ -8,9 +8,9 @@
 //    l2b_super_metrics
 //
 // SYNOPSIS
-//    l2b_super_metrics [ -c config_file ] [ -o output_base ]
-//        [ -m output_metric_file ] [ -s low_speed:high_speed ]
-//        [ input_metric_files... ]
+//    l2b_super_metrics [ -o output_base ] [ -m output_metric_file ]
+//        [ -s low_speed:high_speed ] [ config_file... ]
+//        [ metric_file... ]
 //
 // DESCRIPTION
 //    Reads in any input metric files, calculates wind retrieval
@@ -19,22 +19,21 @@
 //    combined metric file.
 //
 // OPTIONS
-//   [ -c config_file ]           Use this config_file to determine the
-//                                  l2b file and truth file.
 //   [ -o output_base ]           The base name to use for the plottable
 //                                  output files. The default output base
 //                                  is "metric".
 //   [ -m output_metric_file ]    Generate an output metric file.
-//   [ -m low_speed:high_speed ]  Only produce output for this range
+//   [ -s low_speed:high_speed ]  Only produce output for this range
 //                                  of speeds.
-//   [ input_metric_files... ]    Combine these metric files.
+//   [ config_file... ]           Evaluate based on these configs.
+//   [ metric_file... ]           Combine these metric files.
 //
 // OPERANDS
 //    None.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % l2b_super_metrics -c qscat.cfg -o plot -m combo.met 1.met 2.met
+//      % l2b_super_metrics -o plot -m combo.met 1.met 2.met 3/3.cfg 4/4.cfg
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -85,9 +84,7 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
-#define DEFAULT_OUTPUT_BASE  "metrics"
-
-#define OPTSTRING            "c:o:m:s:"
+#define OPTSTRING            "o:m:s:"
 
 //--------//
 // MACROS //
@@ -111,9 +108,9 @@ int opt_speed = 0;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -c config_file ]", "[ -o output_base ]",
+const char* usage_array[] = { "[ -o output_base ]",
     "[ -m output_metric_file ]", "[ -s low_speed:high_speed ]",
-    "[ input_metric_files... ]", NULL };
+    "[ config_file... ]", "[ metric_file... ]", NULL };
 
 //--------------//
 // MAIN PROGRAM //
@@ -128,9 +125,8 @@ main(
     // variables //
     //-----------//
 
-    char* config_file = NULL;
     char* output_metric_file = NULL;
-    char* output_base = DEFAULT_OUTPUT_BASE;
+    char* output_base = NULL;
 
     float low_speed, high_speed;
 
@@ -144,9 +140,6 @@ main(
     {
         switch(c)
         {
-        case 'c':
-            config_file = optarg;
-            break;
         case 'm':
             output_metric_file = optarg;
             break;
@@ -175,126 +168,138 @@ main(
     // check for appropriate arguments //
     //---------------------------------//
 
-    if (config_file == NULL && end_idx == start_idx)
+    if (end_idx == start_idx)
     {
-        fprintf(stderr, "%s: insufficient input\n", command);
         usage(command, usage_array, 1);
     }
-
-    //---------------------------------------//
-    // read and parse the configuration file //
-    //---------------------------------------//
-
-    ConfigList config_list;
-    char* l2b_file = NULL;
-    char* truth_type = NULL;
-    char* truth_file = NULL;
-    if (config_file != NULL)
+    if (output_base == NULL && output_metric_file == NULL)
     {
-        if (! config_list.Read(config_file))
-        {
-            fprintf(stderr, "%s: error reading config file %s\n",
-                command, config_file);
-            exit(1);
-        }
-
-        l2b_file = config_list.Get(L2B_FILE_KEYWORD);
-        if (l2b_file == NULL)
-        {
-            fprintf(stderr, "%s: missing L2B file in config file %s\n",
-                command, config_file);
-            exit(1);
-        }
-
-        truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
-        if (truth_type == NULL)
-        {
-            fprintf(stderr, "%s: must specify truth windfield type\n", command);
-            exit(1);
-        }
-
-        truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
-        if (truth_file == NULL)
-        {
-            fprintf(stderr, "%s: must specify truth windfield file\n", command);
-            exit(1);
-        }
+        fprintf(stderr, "%s: where do you want the output to go?\n", command);
+        exit(1);
     }
 
-    //--------------------------------------//
-    // read in and combine the metric files //
-    //--------------------------------------//
+    //-------------------------------------//
+    // read in and combine the input files //
+    //-------------------------------------//
 
+    ConfigList config_list;
+    Metrics total_metrics;
     Metrics metrics;
     for (int file_idx = start_idx; file_idx < end_idx; file_idx++)
     {
-        char* metric_file = argv[file_idx];
-        if (! metrics.Read(metric_file))
+        //-----------------------------------//
+        // determine what kind of file it is //
+        //-----------------------------------//
+
+        char* input_file = argv[file_idx];
+printf("%s\n", input_file);
+        if (metrics.Read(input_file))
         {
-            fprintf(stderr, "%s: error reading metrics file %s\n", command,
-                metric_file);
-            exit(1);
+            //---------------------------------//
+            // it is a metric file, accumulate //
+            //---------------------------------//
+
+            total_metrics += metrics;
         }
-    }
-
-    //-----------------------//
-    // read in level 2B file //
-    //-----------------------//
-
-    L2B l2b;
-    WindSwath* swath = NULL;
-    if (l2b_file != NULL)
-    {
-        if (! l2b.Read(l2b_file))
+        else if (config_list.Read(input_file))
         {
-            fprintf(stderr, "%s: error reading L2B file %s\n", command,
-                l2b_file);
-            exit(1);
-        }
-        swath = &(l2b.frame.swath);
-    }
+            //--------------------------------------//
+            // it is a configuration file, evaluate //
+            //--------------------------------------//
 
-    //----------------------------//
-    // read in "truth" wind field //
-    //----------------------------//
+            char* l2b_file = config_list.Get(L2B_FILE_KEYWORD);
+            if (l2b_file == NULL)
+            {
+                fprintf(stderr, "%s: missing L2B file in config file %s\n",
+                    command, input_file);
+                exit(1);
+            }
 
-    WindField truth;
-    if (truth_file != NULL && truth_type != NULL)
-    {
-        if (! truth.ReadType(truth_file, truth_type))
-        {
-            fprintf(stderr,
-                "%s: error reading truth wind field of type %s from file %s\n",
-                command, truth_type, truth_file);
-            exit(1);
-        }
-    }
+            char* truth_type = config_list.Get(WINDFIELD_TYPE_KEYWORD);
+            if (truth_type == NULL)
+            {
+                fprintf(stderr, "%s: must specify truth windfield type\n",
+                    command);
+                exit(1);
+            }
 
-    //-------------------//
-    // configure metrics //
-    //-------------------//
+            char* truth_file = config_list.Get(WINDFIELD_FILE_KEYWORD);
+            if (truth_file == NULL)
+            {
+                fprintf(stderr, "%s: must specify truth windfield file\n",
+                    command);
+                exit(1);
+            }
 
-    if (opt_speed)
-    {
-        if (! metrics.SetWindSpeedRange(low_speed, high_speed))
-        {
-            fprintf(stderr,
-                "%s: error setting metric wind speed range (%g - %g)\n",
-                command, low_speed, high_speed);
-            exit(1);
-        }
-    }
+            //-----------------------//
+            // read in level 2B file //
+            //-----------------------//
 
-    //------------------//
-    // generate metrics //
-    //------------------//
+            L2B l2b;
+            WindSwath* swath = NULL;
+            if (l2b_file != NULL)
+            {
+                if (! l2b.Read(l2b_file))
+                {
+                    fprintf(stderr, "%s: error reading L2B file %s\n", command,
+                        l2b_file);
+                    exit(1);
+                }
+                swath = &(l2b.frame.swath);
+            }
 
-    if (swath != NULL)
-    {
-        if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution, &truth))
-        {
-            fprintf(stderr, "%s: error evaluating wind field\n", command);
-            exit(1);
+            //----------------------------//
+            // read in "truth" wind field //
+            //----------------------------//
+
+            WindField truth;
+            if (truth_file != NULL && truth_type != NULL)
+            {
+                if (! truth.ReadType(truth_file, truth_type))
+                {
+                    fprintf(stderr,
+                        "%s: error reading %s wind field from file %s\n",
+                        command, truth_type, truth_file);
+                    exit(1);
+                }
+            }
+
+            //-------------------//
+            // configure metrics //
+            //-------------------//
+
+            if (opt_speed)
+            {
+                if (! metrics.SetWindSpeedRange(low_speed, high_speed))
+                {
+                    fprintf(stderr,
+                        "%s: error setting wind speed range (%g - %g)\n",
+                        command, low_speed, high_speed);
+                    exit(1);
+                }
+            }
+
+            //------------------//
+            // generate metrics //
+            //------------------//
+
+            if (swath != NULL)
+            {
+                if (! metrics.Evaluate(swath, l2b.header.crossTrackResolution,
+                    &truth))
+                {
+                    fprintf(stderr, "%s: error evaluating wind field\n",
+                        command);
+                    exit(1);
+                }
+                total_metrics += metrics;
+            }
+
+            //------------------------------//
+            // clear the configuration list //
+            //------------------------------//
+
+            config_list.FreeContents();
         }
     }
 
@@ -304,7 +309,7 @@ main(
 
     if (output_metric_file != NULL)
     {
-        if (! metrics.Write(output_metric_file))
+        if (! total_metrics.Write(output_metric_file))
         {
             fprintf(stderr, "%s: error writing metric file %s\n", command,
                 output_metric_file);
@@ -318,7 +323,7 @@ main(
 
     if (output_base != NULL)
     {
-        if (! metrics.WritePlotData(output_base))
+        if (! total_metrics.WritePlotData(output_base))
         {
             fprintf(stderr, "%s: error writing plot data files\n", command);
             exit(1);

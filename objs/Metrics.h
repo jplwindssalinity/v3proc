@@ -91,11 +91,17 @@ protected:
     float           _lowWindSpeed;
     float           _highWindSpeed;
 
-    double*         _selectedSumSqrSpdErr;
-    unsigned long*  _selectedSumSqrSpdErrCount;
+    double*         _nearSumSqrSpdErr;
+    unsigned long*  _nearSumSqrSpdErrCount;
 
-    double*         _selectedSumSqrDirErr;
-    unsigned long*  _selectedSumSqrDirErrCount;
+    double*         _nearSumSqrDirErr;
+    unsigned long*  _nearSumSqrDirErrCount;
+
+    double*         _selSumSqrSpdErr;
+    unsigned long*  _selSumSqrSpdErrCount;
+
+    double*         _selSumSqrDirErr;
+    unsigned long*  _selSumSqrDirErrCount;
 };
 
 #endif
