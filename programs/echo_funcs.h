@@ -361,7 +361,7 @@ gaussian_fit(
     //------------------------//
 
     float fslice = p[0][0];
-    if (fslice < 0.0 || fslice > points - 1)
+    if (fslice < 0.0 || fslice > points)
     {
         free_p(p, ndim);
         return(0);
