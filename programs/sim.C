@@ -143,23 +143,39 @@ main(
 		exit(1);
 	}
 
+	//----------------------------------------//
+	// create a Level 0 object and initialize //
+	//----------------------------------------//
+
+	L0 l0;
+	if (! ConfigL0(&l0, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Level 0 telemetry\n",
+			command);
+		exit(1);
+	}
+	l0.GotoFirstFile();
+	l0.OpenCurrentForOutput();
+
 	//----------------------//
 	// cycle through events //
 	//----------------------//
 
-	double time = 0.0;
-	while (time < 120.0)
+	while (sim.GetEventTime() < 120.0)
 	{
 		sim.SimulateNextEvent(&instrument);
-		Orbit *os = &(instrument.orbit);
-printf("%g %g\n", time, instrument.antenna.beam[0].azimuthAngle);
+		sim.GenerateL0(&instrument, &l0);
+//		l0.WriteDataRec();
 /*
+		Orbit *os = &(instrument.orbit);
+printf("%g %g\n", sim.GetEventTime(), instrument.antenna.azimuthAngle);
 		printf("%g %g %g %g %g %g %g\n", time, os->gc_vector.get(0),
 			os->gc_vector.get(1), os->gc_vector.get(2),
 			os->velocity_vector.get(0), os->velocity_vector.get(1),
 			os->velocity_vector.get(2));
 */
 	}
+	l0.CloseCurrentFile();
 
 	return (0);
 }
