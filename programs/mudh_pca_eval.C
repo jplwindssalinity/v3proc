@@ -535,20 +535,22 @@ main(
     const char* swath_ext[] = { "inner", "outer" };
     const char* swath_string[] = { "Inner swath", "Outer swath" };
 
-    double total_precol[2];
+    unsigned long total_precol[2];
     for (int swath_idx = 0; swath_idx < 2; swath_idx++)
     {
         printf("%s\n", swath_string[swath_idx]);
         total_precol[swath_idx] =
-            (double)(precollocated_count[swath_idx][MUDH_CLEAR] +
+            precollocated_count[swath_idx][MUDH_CLEAR] +
             precollocated_count[swath_idx][MUDH_RAIN] +
-            precollocated_count[swath_idx][MUDH_UNKNOWN]);
+            precollocated_count[swath_idx][MUDH_UNKNOWN];
         printf("Rain flagged %g %%\n", 100.0 *
             (double)precollocated_count[swath_idx][MUDH_RAIN] /
+            (double)total_precol[swath_idx]);
+        printf("(%ld of %ld)\n", precollocated_count[swath_idx][MUDH_RAIN],
             total_precol[swath_idx]);
         printf("Unknown %g %%\n", 100.0 *
             (double)precollocated_count[swath_idx][MUDH_UNKNOWN] /
-            total_precol[swath_idx]);
+            (double)total_precol[swath_idx]);
         printf("Missed Rain = %g\n", 100.0 *
             (double)flag_bad_count[swath_idx][MISSED_RAIN] /
             (double)flag_ssmi_count[swath_idx][SSMI_RAIN]);
