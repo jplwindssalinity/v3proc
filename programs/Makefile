@@ -8,8 +8,8 @@ INCDIR =		../../include
 LIBS =			../../lib/libSim.a
 LDLIBS =		$(LIBS) -lm
 CCC =			gcc
-
-CPPFLAGS =		-g -Wall -I$(INCDIR)
+DEBUGFLAGS=              -O3
+CPPFLAGS =		$(DEBUGFLAG) -Wall -I$(INCDIR)
 
 INSTALLDIR =	../../bin
 
