@@ -32,6 +32,7 @@ PROGRAMS = \
 	l2b_diff_from_truth \
 	test_hdf_l2b \
 	l2b_metrics \
+	l2b_manyMet \
 	see_spot \
 	eqx \
 	generate_rgc \
