@@ -258,6 +258,16 @@ GMF::WriteSolutionCurves(
 	//--------------------------------------//
 
 	Smooth();
+	min_obj = _bestObj[0];
+	max_obj = _bestObj[0];
+	for (int i = 0; i < _phiCount; i++)
+	{
+		if (_bestObj[i] < min_obj)
+			min_obj = _bestObj[i];
+		if (_bestObj[i] > max_obj)
+			max_obj = _bestObj[i];
+	}
+	scale = 1.0 / (max_obj - min_obj);
 	fprintf(ofp, "&\n");
 	for (int i = 0; i < _phiCount; i++)
 	{
