@@ -330,7 +330,7 @@ L2AHdf::ConvertRow(){
     int ati = currentRowNo - 1;
     int rev=0;
     for(int cti=1;cti<=MAX_L2AHDF_CELL_NO;cti++){
-      char ctichar=(unsigned char) cti;
+      char ctichar=(unsigned char) cti-1;
       if(meas_list_row[cti-1].NodeCount()==0) continue;
       if (fwrite((void *)&rev, sizeof(unsigned int), 1, _outputFp) != 1 ||
         fwrite((void *)&ati, sizeof(int), 1, _outputFp) != 1 ||

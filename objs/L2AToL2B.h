@@ -111,6 +111,14 @@ public:
     WindField	nudgeField;
     WindVectorField nudgeVctrField;
     float nudgeThresholds[2];
+
+    //------------------------------------------------//
+    // Auxiliary Variables For Hurricane Processing   //
+    //------------------------------------------------//
+    int        useHurricaneNudgeField;
+    WindField  hurricaneField;
+    float hurricaneRadius;  // km 
+    EarthPosition hurricaneCenter; 
 };
 
 #endif

@@ -29,4 +29,7 @@ int  find_target(double x[2], double y[2], float z[2], double target_z,
 
 int  get_quad_peak(double c[3], double* peak_location, double* peak_value);
 
+int cubic_spline(double* x, double* y, int n, double yp1, double ypn, double* y2);
+int interpolate_cubic_spline(double* xa, double* ya, double* y2a, int n,
+			     double x, double* y);
 #endif

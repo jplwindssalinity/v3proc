@@ -21,7 +21,7 @@ L2AToL2B::L2AToL2B()
 :   medianFilterWindowSize(0), medianFilterMaxPasses(0), maxRankForNudging(0),
     useManyAmbiguities(0), useAmbiguityWeights(0), useNudging(0),
     smartNudgeFlag(0), wrMethod(GS), onePeakWidth(0.0), twoPeakSep(181.0),
-    probThreshold(0.0)
+    probThreshold(0.0),useHurricaneNudgeField(0),hurricaneRadius(0)
 {
 	return;
 }
@@ -314,7 +314,7 @@ L2AToL2B::Cheat(MeasList* meas_list, WVC* wvc)
 }
 
 #define ONE_STAGE_WITHOUT_RANGES 1
-#define S3_WINDOW_SIZE  7
+#define S3_WINDOW_SIZE  medianFilterWindowSize
 #define S3_NUDGE 0
 //-----------------//
 // L2AToL2B::Flush //
@@ -328,7 +328,8 @@ L2AToL2B::Flush(
         // Copy Interpolated NudgeVectors to Wind Vector Cells //
         //-----------------------------------------------------//
         if(useNudging && !l2b->frame.swath.nudgeVectorsRead) l2b->frame.swath.GetNudgeVectors(&nudgeField);
-
+        if(useHurricaneNudgeField) l2b->frame.swath.GetHurricaneNudgeVectors(&hurricaneField,&hurricaneCenter,hurricaneRadius);
+       
 	//------------//
 	// initialize //
 	//------------//
@@ -362,7 +363,9 @@ L2AToL2B::Flush(
 	{
 	   l2b->frame.swath.InitWithRank(1);
 	}
-
+  
+#define HURRICANE_MAX_RANK 4
+	if(useHurricaneNudgeField) l2b->frame.swath.HurricaneNudge(HURRICANE_MAX_RANK,&hurricaneCenter,hurricaneRadius);
 	//---------------//
 	// median filter //
 	//---------------//

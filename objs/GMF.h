@@ -148,6 +148,7 @@ public:
     int  retrieveUsingKpriFlag;
     int  retrieveUsingKprsFlag;
     int  retrieveUsingLogVar;
+    int  retrieveOverIce;
     int  smartNudgeFlag;
     float minimumAzimuthDiversity;
 

@@ -1236,8 +1236,28 @@ ConfigL2AToL2B(
 	  return(0);
 	l2a_to_l2b->useRandomInit = tmp_int;
 
-
-	
+	config_list->DoNothingForMissingKeywords();
+        if ( config_list->GetInt(USE_HURRICANE_NUDGE_KEYWORD, &tmp_int) && tmp_int){
+	  config_list->ExitForMissingKeywords();
+          l2a_to_l2b->useHurricaneNudgeField=tmp_int;
+	  char* hurricane_file=config_list->Get(HURRICANE_WINDFIELD_FILE_KEYWORD);
+	  if(hurricane_file==NULL) return(0);
+          if(! l2a_to_l2b->hurricaneField.ReadHurricane(hurricane_file))
+	    return(0);
+	  if(! config_list->GetFloat(HURRICANE_RADIUS_KEYWORD,&tmp_float))
+	    return(0);
+          l2a_to_l2b->hurricaneRadius=tmp_float; // km
+          float lat, lon;
+	  if(! config_list->GetFloat(HURRICANE_CENTER_LATITUDE_KEYWORD,&tmp_float))
+	    return(0);
+          lat=tmp_float*dtr;
+	  if(! config_list->GetFloat(HURRICANE_CENTER_LONGITUDE_KEYWORD,&tmp_float))
+	    return(0);
+          lon=tmp_float*dtr;
+          l2a_to_l2b->hurricaneCenter.SetAltLonGDLat(0.0,lon,lat);
+	}	
+        else l2a_to_l2b->useHurricaneNudgeField=0;
+	config_list->ExitForMissingKeywords();
 	return(1);
 }
 
@@ -1363,7 +1383,15 @@ ConfigGMF(
 		return(0);
 	gmf->retrieveUsingLogVar = tmp_int;
 
+        config_list->DoNothingForMissingKeywords();
+
+	if ( config_list->GetInt(RETRIEVE_OVER_ICE_KEYWORD, &tmp_int))
+	  gmf->retrieveOverIce = tmp_int;
+        else
+	  gmf->retrieveOverIce = 0;
         
+        config_list->ExitForMissingKeywords();
+
 	float tmp_float;
 	if ( ! config_list->GetFloat(REQUIRED_AZIMUTH_DIVERSITY_KEYWORD, &tmp_float))
 	        return(0);

@@ -233,3 +233,81 @@ get_quad_peak(
     *peak_value = ((c[2] * (*peak_location)) + c[1]) * (*peak_location) + c[0];
     return(1);
 }
+
+//-------------------------------------------//
+// Function cubic_spline                     //
+// calculate 2nd derivatives                 //
+// for use in cubic spline interpolation     //
+//-------------------------------------------//
+
+int cubic_spline(double* x, double* y, int n, double yp1, double ypn, 
+		 double* y2){
+  // CUBIC SPLINE INTERPOLATION FOR FUNCTION Y(X) GIVEN VALUES FOR THE
+  //  DERIVATIVES YP1,YPN AT POINTS X1, XN.  RETURNS ARRAY Y2 OF VALUES FOR THE
+  //  SECOND DERIVATIVE AT POINTS X_I.  "NATURAL CUBIC SPLINE" IS WHEN
+  //  Y2(1)=Y2(N)=0, WHICH IS ACCOMPLISHED BY INPUTTING YP1,YPN > 1.d30.
+  //  [CAN HAVE DIFFERENT BOUNDARY CONDITIONS ON DIFFERENT ENDS]
+
+      double* u=new double[n];
+      if(yp1 > 0.99e+30){
+        y2[0]=0;
+        u[0]=0;
+      }
+      else{
+        y2[0]=-0.5;
+        u[0]=(3./(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
+      }
+      for(int i=1;i< n-1; i++){
+        double sig=(x[i]-x[i-1])/(x[i+1]-x[i-1]);
+        double p=sig*y2[i-1]+2.0;
+        y2[i]=(sig-1.0)/p;
+        u[i]=(6.0*((y[i+1]-y[i])/(x[i+1]-x[i])-(y[i]-y[i-1])
+		  /(x[i]-x[i-1]))/(x[i+1]-x[i-1])-sig*u[i-1])/p;
+      }
+      double qn;
+      if(ypn > 0.99e+30){
+        qn=0.0;
+        u[n-1]=0.0;
+      }
+      else{
+        qn=0.5;
+        u[n-1]=(3./(x[n-1]-x[n-2]))*(ypn-(y[n-1]-y[n-2])/(x[n-1]-x[n-2]));
+      }
+      y2[n-1]=(u[n-1]-qn*u[n-2])/(qn*y2[n-2]+1.0);
+      for(int k=n-2; k >= 0 ; k--){
+        y2[k]=y2[k]*y2[k+1]+u[k];
+      }
+
+      delete[] u;
+      return(1);
+}
+//---------------------------------------------//
+// Function interpolate_cubic_spline           //
+// Interpolate using a cubic spline            //
+//---------------------------------------------//
+int interpolate_cubic_spline(double* xa, double* ya, double* y2a, int n,
+			     double x, double* y){
+  //     DOES THE INTERPOLATION.
+  //     XA AND YA TABULATE THE FUNCTION, Y2A IS THE OUTPUT OF SPLINE (AN
+  //     ARRAY OF SECOND DERIVATIVE VALUES, X IS VALUE AT WHICH Y IS SOUGHT.
+     
+  int    klo=0;
+  int    khi=n-1;
+  while(khi-klo > 1){
+    int k=(khi+klo)/2;
+    if(xa[k]>x)
+      khi=k;
+    else
+      klo=k;
+  }
+  double h=xa[khi]-xa[klo];
+  if(h==0.0){
+     fprintf(stderr,"interpolate_cubic_spline:  the xas must be distinct\n");
+     exit(0);
+  }
+  double a=(xa[khi]-x)/h;
+  double b=(x-xa[klo])/h;
+  *y=a*ya[klo]+b*ya[khi]+((a*a*a-a)*y2a[klo]+(b*b*b-b)*y2a[khi])*(h*h)/6;
+  return(1);
+}
+

@@ -33,7 +33,8 @@ static const char rcs_id_gmf_c[] =
 
 GMF::GMF()
 :   retrieveUsingKpcFlag(1), retrieveUsingKpmFlag(1), retrieveUsingKpriFlag(1),
-    retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), smartNudgeFlag(0),
+    retrieveUsingKprsFlag(1), retrieveUsingLogVar(0), 
+    retrieveOverIce(0), smartNudgeFlag(0),
     minimumAzimuthDiversity(20.0*dtr),
     _phiCount(0), _phiStepSize(0.0), _spdTol(DEFAULT_SPD_TOL),
     _sepAngle(DEFAULT_SEP_ANGLE), _smoothAngle(DEFAULT_SMOOTH_ANGLE),
@@ -668,7 +669,9 @@ GMF::CheckRetrieveCriteria(
 	//-------------------------------------//
         for (Meas* meas=meas_list->GetHead(); meas;
              meas=meas_list->GetNext()){
-	  if(meas->landFlag!=0) return(0);
+	  if(!retrieveOverIce && meas->landFlag!=0) return(0);
+          else if(meas->landFlag==1 || meas->landFlag==3) return(0);
+          // For SeaIce landFlag=2 
 	}
 
 	Node<Meas>* current;
@@ -4316,10 +4319,90 @@ GMF::BuildDirectionRangesByMSE(
      return(1);
 }
 
+
+#define INTERP_RATIO 8
+#define MERGE_BORDERS 0
 int
 GMF::BuildDirectionRanges(
      WVC*   wvc,
      float threshold){
+     //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
+     static int wvcno=0;
+     static FILE* dbg=fopen("debugfile","w");
+     wvcno++;
+     //---------------->>>>>>>>>>>>>>>>>>>>>>>> debugging tools
+     int pdfarraysize=_phiCount;
+     float pdfstepsize=_phiStepSize;
+     float* pdf = _bestObj;
+
+     // Method reduce size of probability bins by a factor of INTERP_RATIO
+     // in order to eliminate quantization effects.
+     // Cubic Spline Interpolation is used.
+
+     if(INTERP_RATIO>1){
+
+       pdfarraysize*=INTERP_RATIO;
+       pdfstepsize/=INTERP_RATIO;
+       pdf=new float[pdfarraysize];
+       float sum=0.0;
+
+       // Set up arrays for wraparound cubic spline
+       // By including four extra wrapped points on each end
+       double* xarray = new double[_phiCount+8];
+       double* yarray = new double[_phiCount+8];
+       for(int i = 0; i<4;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i+_phiCount-4];
+       } 
+       for(int i=4;i<_phiCount+4;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i-4];
+       }
+       for(int i=_phiCount+4;i<_phiCount+8;i++){
+	 xarray[i]=_phiStepSize*(i-4);
+	 yarray[i]=_bestObj[i-_phiCount-4];
+       }
+       
+       // Compute second derivates for cubic spline
+       double* y2array = new double[_phiCount+8];
+       cubic_spline(xarray,yarray,_phiCount+8,1e+40,1e+40,y2array);
+
+       double xvalue, yvalue;
+       for(int c=0;c<pdfarraysize;c++){
+
+         // compute interpolation direction
+	 xvalue=c*pdfstepsize;
+
+         //Interpolate
+         interpolate_cubic_spline(xarray,yarray,y2array,_phiCount+8,xvalue,
+				  &yvalue);
+
+         // To eliminate gross errors from spline
+         // bound below by 0.5*min two neighboring original samples
+         // and above by 2.0* max two neighboring original samples
+
+         int idxleft=int(xvalue/_phiStepSize)%_phiCount;
+         int idxright=(idxleft+1)%_phiCount;
+         float lower_bound=_bestObj[idxleft];
+         float upper_bound=_bestObj[idxright];
+         if(lower_bound > upper_bound){
+	   lower_bound=_bestObj[idxright];
+	   upper_bound=_bestObj[idxleft];
+	 }
+         lower_bound*=0.5;
+         upper_bound*=2;
+         if(yvalue<lower_bound) yvalue=lower_bound;
+         if(yvalue>upper_bound) yvalue=upper_bound;
+         pdf[c]=yvalue;
+         sum+=pdf[c];
+       }
+
+       for(int c=0;c<pdfarraysize;c++) pdf[c]/=sum;
+       
+       delete[] xarray;
+       delete[] yarray;
+       delete[] y2array;
+     } // END If( INTERP_RATIO > 1)
 
      int num=wvc->ambiguities.NodeCount();
      if(num==0) return(1);
@@ -4334,31 +4417,32 @@ GMF::BuildDirectionRanges(
 
      // Initialize intermediate variables
      float prob_sum=0;
-     int* dir_include=new int[_phiCount];
-     for(int c=0;c<_phiCount;c++) dir_include[c]=0;
+     int* dir_include=new int[pdfarraysize];
+     for(int c=0;c<pdfarraysize;c++) dir_include[c]=0;
      int* left_idx= new int[num];
      int* right_idx=new int[num];
      for(int c=0;c<num;c++){
-        left_idx[c]=int(floor(range[c].left/_phiStepSize));
-        right_idx[c]=(left_idx[c]+1)%_phiCount;
+        left_idx[c]=int(floor(range[c].left/pdfstepsize));
+        right_idx[c]=(left_idx[c]+1)%pdfarraysize;
      }
      //Add the maximal probability among directions not included in range
      //to prob_sum, and expand ranges accordingly.
+     float max=0.0;
      while(1){
 
        // Determine maximum available directions by sliding down the
        // peaks on both sides
-       float max=0.0;
+       max=0.0;
        int max_idx=-1;
        int right=0;
        for(int c=0;c<num;c++){
-	 if(_bestObj[left_idx[c]]>max && !dir_include[left_idx[c]]){
-	   max=_bestObj[left_idx[c]];
+	 if(pdf[left_idx[c]]>max && !dir_include[left_idx[c]]){
+	   max=pdf[left_idx[c]];
 	   right=0;
 	   max_idx=c;
 	 }
-	 if(_bestObj[right_idx[c]]>max && !dir_include[right_idx[c]]){
-	   max=_bestObj[right_idx[c]];
+	 if(pdf[right_idx[c]]>max && !dir_include[right_idx[c]]){
+	   max=pdf[right_idx[c]];
 	   right=1;
 	   max_idx=c;
 	 }
@@ -4381,27 +4465,85 @@ GMF::BuildDirectionRanges(
        //  and update intermediate variables
        if(right){
 	 float tmp_left=range[max_idx].left;
-         float tmp_right=right_idx[max_idx]*_phiStepSize+0.5*_phiStepSize;
+         float tmp_right=right_idx[max_idx]*pdfstepsize+0.5*pdfstepsize;
          dir_include[right_idx[max_idx]]=1;
 	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
 	 right_idx[max_idx]++;
-	 right_idx[max_idx]%=_phiCount;
+	 right_idx[max_idx]%=pdfarraysize;
        }
        else{
 	 float tmp_right=range[max_idx].right;
-         float tmp_left=left_idx[max_idx]*_phiStepSize-0.5*_phiStepSize;
+         float tmp_left=left_idx[max_idx]*pdfstepsize-0.5*pdfstepsize;
          dir_include[left_idx[max_idx]]=1;
 	 range[max_idx].SetLeftRight(tmp_left,tmp_right);
 	 left_idx[max_idx]--;
-	 if(left_idx[max_idx]<0) left_idx[max_idx]+=_phiCount;
+	 if(left_idx[max_idx]<0) left_idx[max_idx]+=pdfarraysize;
        }
      }
+     
+
+     //  2) Merge bordering intervals (for now but if this causes problems then
+     //   eliminate this step and replace with trough finding.
+ 
+
+     if(MERGE_BORDERS){
+
+       // Merge bordering intervals.
+       for(int c=0;c<num-1;c++){
+	 for(int d=c+1; d< num; d++){
+	   if(range[c].left == range[d].right){
+	     // incorporate range d into range c
+              range[c].left = range[d].left;
+	      // eliminate range[d]
+              for(int e=d;e<num-1;e++){
+		range[e]=range[e+1];
+              }
+              num--;
+              // eliminate ambiguity d
+              wvc->ambiguities.GetByIndex(d);
+              WindVectorPlus* wvp=wvc->ambiguities.RemoveCurrent();
+              delete wvp;
+	   }
+	   else if(range[c].right == range[d].left){
+	      // incorporate range d into range c
+              range[c].right = range[d].right;
+	      // eliminate range[d]
+              for(int e=d;e<num-1;e++){
+		range[e]=range[e+1];
+              }
+              num--;
+              // eliminate ambiguity d
+              wvc->ambiguities.GetByIndex(d);
+              WindVectorPlus* wvp=wvc->ambiguities.RemoveCurrent();
+              delete wvp;
+	   }
+	 }
+       }
+
+     }
+
      for(int c=0;c<num;c++){
        AngleInterval* ai=new AngleInterval;
        *ai=range[c];
        wvc->directionRanges.Append(ai);
      }
 
+     //------------------------------------------>>>> debugging tools 
+     for(int c=0;c<pdfarraysize;c++)
+	   fprintf(dbg,"%g %g PDF:WVC#%d\n",c*pdfstepsize*rtd,pdf[c],wvcno);
+     fprintf(dbg,"& PDF:WVC#%d\n",wvcno);
+     for(int c=0;c<_phiCount;c++)
+	   fprintf(dbg,"%g %g BestObj:WVC#%d\n",c*_phiStepSize*rtd,_bestObj[c],wvcno);
+     fprintf(dbg,"& BestObj:WVC#%d\n",wvcno);
+     for(int c=0;c<num;c++)
+           fprintf(dbg,"%d %g Left:WVC#%d\n",c,rtd*range[c].left,wvcno);
+     fprintf(dbg,"& Left:WVC#%d\n",wvcno);
+     for(int c=0;c<num;c++)
+           fprintf(dbg,"%d %g Right:WVC#%d\n",c,rtd*range[c].right,wvcno);
+     fprintf(dbg,"& Right:WVC#%d\n",wvcno);
+     //------------------------------------------>>>> debugging tools 
+
+     if (INTERP_RATIO > 1) delete[] pdf;
      delete[] range;
      delete[] dir_include;
      delete[] left_idx;
