@@ -13,9 +13,38 @@ static const char rcs_id_lookgeom_h[] =
 
 //======================================================================
 // Functions
+//		velocity_frame
 //		antenna_look
 //		earth_intercept
 //======================================================================
+
+//
+// enum attitude_referenceE is used to specify how the spacecraft attitude
+// is defined with respect to the geocentric frame.  There are two
+// possibilities:
+//   GEOCENTRIC - s/c velocity frame z-axis points toward the center of the
+//                earth.
+//   GEODETIC - s/c velocity frame z-axis points straight down to the surface,
+//              intercepting perpendicular to the surface (local normal).
+//
+
+enum attitude_referenceE {GEOCENTRIC, GEODETIC};
+
+//======================================================================
+// Function
+//		velocity_frame
+//
+// DESCRIPTION
+//		The velocity_frame function computes the axial unit vectors that
+//		define the s/c velocity frame (or local coordinate system) from
+//		the s/c position and velocity.
+//======================================================================
+
+void velocity_frame(EarthPosition rsat, Vector3 vsat,
+                    attitude_referenceE attref,
+					Vector3 *xscvel_geo,
+					Vector3 *yscvel_geo,
+					Vector3 *zscvel_geo);
 
 //======================================================================
 // Function
@@ -27,7 +56,7 @@ static const char rcs_id_lookgeom_h[] =
 //======================================================================
 
 Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
-		     Vector3 sc_att, Vector3 ant_att);
+		     Vector3 sc_att, Vector3 ant_att, attitude_referenceE attref);
 
 //======================================================================
 // Function
@@ -40,6 +69,6 @@ Vector3 antenna_look(EarthPosition rsat, Vector3 vsat, EarthPosition rground,
 //======================================================================
 
 EarthPosition earth_intercept(EarthPosition rsat, Vector3 vsat,
-		              Vector3 sc_att, Vector3 ant_att,
-			      Vector3 rlook_ant);
+	              Vector3 sc_att, Vector3 ant_att,
+			      Vector3 rlook_ant, attitude_referenceE attref);
 #endif
