@@ -28,8 +28,6 @@ static const char rcs_id_spacecraftsim_h[] =
 //		spacecraft were orbiting.
 //======================================================================
 
-#define		ORBIT_UPDATE_PERIOD		60.0
-
 class SpacecraftSim
 {
 public:
@@ -67,23 +65,24 @@ public:
 	void	SetEphemerisPeriod(double period) { _ephemerisPeriod = period; };
 	double		GetLongitudeOfAscendingNode() { return (_bigOmega * rtd); };
 	double		GetMeanAnomaly() { return (_l * rtd); };
+	double	GetPeriod();
 
 	//--------//
 	// events //
 	//--------//
 
-	int			DetermineNextEvent(SpacecraftEvent* 
-spacecraft_event);
+	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
 
 	//----------------------------------------------//
-        // Attitude Error Model Initialization Routines //
+	// Attitude Error Model Initialization Routines //
 	//----------------------------------------------//
+
 	void	SetAttCntlModel(AttDist* attdist);
-        void	SetAttKnowModel(AttDist* attdist);
+	void	SetAttKnowModel(AttDist* attdist);
 
-        //----------------------------------------------//
-	// Attitude Reporting Routine                   //
-	//----------------------------------------------//
+	//----------------------------//
+	// Attitude Reporting Routine //
+	//----------------------------//
 
 	void ReportAttitude(double time, Spacecraft* spacecraft, 
 				Attitude* attitude);
@@ -113,8 +112,9 @@ protected:
 	double	_bigOmega;		// longitude of ascending node
 	double	_littleOmega;	// argument of perigee
 	double	_l;				// mean anomaly
-	AttDist* _attcntl_dist;	   // Attitude Control Distribution
-	AttDist* _attknow_dist;    // Attitude Knowledge Distribution
+
+	AttDist* _attcntl_dist;	// Attitude Control Distribution
+	AttDist* _attknow_dist;	// Attitude Knowledge Distribution
 
 
 	//-----------------------//

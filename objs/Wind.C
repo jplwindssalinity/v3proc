@@ -1278,23 +1278,24 @@ WindSwath::SpdBias(
 
 int
 WindSwath::CtdArray(
+	float		cross_track_res,
 	float*		ctd_array)
 {
 	for (int i = 0; i < _crossTrackBins; i++)
 	{
 		float ctd = ((float)i - ((float)_crossTrackBins - 1.0) / 2.0) *
-			_crossTrackRes;
+			cross_track_res;
 		*(ctd_array + i) = ctd;
 	}
 	return(1);
 }
 
 //---------------------------//
-// WindSwath::RmsSpdErrVsCtd //
+// WindSwath::RmsSpdErrVsCti //
 //---------------------------//
 
 int
-WindSwath::RmsSpdErrVsCtd(
+WindSwath::RmsSpdErrVsCti(
 	WindField*	truth,
 	float*		rms_spd_err_array,
 	int*		count_array)
@@ -1335,11 +1336,11 @@ WindSwath::RmsSpdErrVsCtd(
 }
 
 //---------------------------//
-// WindSwath::RmsDirErrVsCtd //
+// WindSwath::RmsDirErrVsCti //
 //---------------------------//
 
 int
-WindSwath::RmsDirErrVsCtd(
+WindSwath::RmsDirErrVsCti(
 	WindField*	truth,
 	float*		rms_dir_err_array,
 	int*		count_array)
@@ -1380,11 +1381,11 @@ WindSwath::RmsDirErrVsCtd(
 }
 
 //-----------------------//
-// WindSwath::SkillVsCtd //
+// WindSwath::SkillVsCti //
 //-----------------------//
 
 int
-WindSwath::SkillVsCtd(
+WindSwath::SkillVsCti(
 	WindField*	truth,
 	float*		skill_array,
 	int*		count_array)
@@ -1422,11 +1423,11 @@ WindSwath::SkillVsCtd(
 }
 
 //-------------------------//
-// WindSwath::SpdBiasVsCtd //
+// WindSwath::SpdBiasVsCti //
 //-------------------------//
 
 int
-WindSwath::SpdBiasVsCtd(
+WindSwath::SpdBiasVsCti(
 	WindField*	truth,
 	float*		spd_bias_array,
 	int*		count_array)

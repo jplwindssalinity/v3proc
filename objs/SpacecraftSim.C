@@ -380,6 +380,17 @@ SpacecraftSim::ReportAttitude(double time, Spacecraft* spacecraft,
 	return;
 }
 
+//--------------------------//
+// SpacecraftSim::GetPeriod //
+//--------------------------//
+
+double
+SpacecraftSim::GetPeriod()
+{
+	double period = two_pi / (_ameandot + _periasdot);
+	return(period);
+}
+
 //-----------------------------------//
 // SpacecraftSim::DetermineNextEvent //
 //-----------------------------------//

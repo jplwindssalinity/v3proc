@@ -237,7 +237,6 @@ public:
 	//---------------------//
 
 	int		GetCrossTrackBins()		{ return(_crossTrackBins); };
-	int		GetCrossTrackRes()		{ return(_crossTrackRes); };
 
 	//---------//
 	// freeing //
@@ -268,19 +267,20 @@ public:
 	// evaluation //
 	//------------//
 
+	int		CtdArray(float cross_track_res, float* ctd_array);
+
 	float	RmsSpdErr(WindField* truth);
 	float	RmsDirErr(WindField* truth);
 	float	Skill(WindField* truth);
 	float	SpdBias(WindField* truth);
 
-	int		CtdArray(float* ctd_array);
-	int		RmsSpdErrVsCtd(WindField* truth, float* rms_spd_err_array,
+	int		RmsSpdErrVsCti(WindField* truth, float* rms_spd_err_array,
 				int* count_array);
-	int		RmsDirErrVsCtd(WindField* truth, float* rms_dir_err_array,
+	int		RmsDirErrVsCti(WindField* truth, float* rms_dir_err_array,
 				int* count_array);
-	int		SkillVsCtd(WindField* truth, float* skill_array,
+	int		SkillVsCti(WindField* truth, float* skill_array,
 				int* count_array);
-	int		SpdBiasVsCtd(WindField* truth, float* spd_bias_array,
+	int		SpdBiasVsCti(WindField* truth, float* spd_bias_array,
 				int* count_array);
 
 	//-----------//
@@ -304,8 +304,6 @@ protected:
 
 	int		_crossTrackBins;
 	int		_alongTrackBins;
-	int		_crossTrackRes;
-	int		_alongTrackRes;
 	int		_validCells;
 };
 
