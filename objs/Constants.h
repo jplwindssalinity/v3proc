@@ -18,6 +18,7 @@ static const char rcs_id_constants_h[] =
 
 static const double pi = M_PI;
 static const double two_pi = 2.0 * M_PI;
+static const double pi_over_two = M_PI / 2.0;
 static const double dtr = 1.745329252e-2;
 static const double rtd = 5.729577951e1;
 static const double rpm_to_radps = M_PI / 30.0;
