@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 static const char rcs_id_qscatsim_c[] =
     "@(#) $Id$";
@@ -12,6 +12,7 @@ static const char rcs_id_qscatsim_c[] =
 #include "Sigma0.h"
 #include "AccurateGeom.h"
 #include "Beam.h"
+#include "Sigma0Map.h"
 
 //==================//
 // QscatSimBeamInfo //
@@ -99,7 +100,7 @@ QscatSim::DetermineNextEvent(
 
     qscat_event->time = min_time;
     qscat_event->beamIdx = min_idx;
-    
+
     unsigned short ideal_encoder = qscat->cds.EstimateIdealEncoder();
     switch (lastEventType)
     {
@@ -431,6 +432,8 @@ QscatSim::ScatSim(
     Spacecraft*  spacecraft,
     Qscat*       qscat,
     WindField*   windfield,
+    Sigma0Map*   inner_map,
+    Sigma0Map*   outer_map,
     GMF*         gmf,
     Kp*          kp,
     KpmField*    kpmField,
@@ -552,7 +555,7 @@ QscatSim::ScatSim(
     //------------------------//
 
     if (! SetMeasurements(spacecraft, qscat, &meas_spot, &cf,
-        windfield, gmf, kp, kpmField))
+        windfield, inner_map, outer_map, gmf, kp, kpmField))
     {
         return(0);
     }
@@ -611,14 +614,13 @@ QscatSim::ScatSim(
             qscat->ses.GetSliceFreqBw(slice_idx, &freq, &dummy);
 
             float Es_cal = true_Es_cal(qscat);
-            double Xcaldb; 
+            double Xcaldb;
             radar_Xcal(qscat,Es_cal,&Xcaldb);
             Xcaldb = 10.0 * log10(Xcaldb);
-            
 
             float XKdb=10*log10(meas->XK);
 
-            printf("%g ",XKdb-Xcaldb); 
+            printf("%g ",XKdb-Xcaldb);
 //               float delta_freq=BYUX.GetDeltaFreq(spacecraft);
 //               printf("%g ", delta_freq);
             total_spot_power+=meas->value;
@@ -879,6 +881,8 @@ QscatSim::SetMeasurements(
     MeasSpot*    meas_spot,
     CheckFrame*  cf,
     WindField*   windfield,
+    Sigma0Map*   inner_map,
+    Sigma0Map*   outer_map,
     GMF*         gmf,
     Kp*          kp,
     KpmField*    kpmField)
@@ -904,7 +908,7 @@ QscatSim::SetMeasurements(
         lon_lat.latitude = lat;
 
         // Compute Land Flag
-        meas->landFlag=landMap.IsLand(lon,lat);
+        meas->landFlag=landMap.IsLand(lon, lat);
 
         float sigma0;
         if (uniformSigmaField)
@@ -919,12 +923,27 @@ QscatSim::SetMeasurements(
         }
         else if (meas->landFlag==1)
         {
-            // Set sigma0 to average NSCAT land sigma0 for appropriate
-            // incidence angle and polarization
+            //-------------------------------------------//
+            // LAND! Try to use the inner and outer maps //
+            //-------------------------------------------//
+
             if (meas->measType == Meas::HH_MEAS_TYPE)
-                sigma0=landSigma0[0];
+            {
+                // inner beam, use inner_map
+                if (inner_map != NULL)
+                    sigma0 = inner_map->GetSigma0(lon, lat);
+                else
+                    sigma0 = landSigma0[0];
+            }
             else
-                sigma0=landSigma0[1];
+            {
+                // outer beam, use outer_map
+                if (outer_map != NULL)
+                    sigma0 = outer_map->GetSigma0(lon, lat);
+                else
+                    sigma0 = landSigma0[1];
+            }
+
             if (simVs1BCheckfile)
             {
                 cf->sigma0[slice_i] = sigma0;
@@ -1354,7 +1373,7 @@ QscatSim::ComputeXfactor(
         return(0);
     }
     Beam* beam = qscat->GetCurrentBeam();
-    double Xcal; 
+    double Xcal;
     float Es_cal = true_Es_cal(qscat);
 
     radar_Xcal(qscat,Es_cal,&Xcal);

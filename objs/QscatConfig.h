@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef QSCATCONFIG_H
 #define QSCATCONFIG_H
@@ -41,6 +41,13 @@ int ConfigQscatCds(QscatCds* qscat_cds, ConfigList* config_list);
 //-------//
 
 int ConfigQscat(Qscat* qscat, ConfigList* config_list);
+
+//------------//
+// Sigma0Maps //
+//------------//
+
+int ConfigSigma0Maps(Sigma0Map* inner_map, Sigma0Map* outer_map,
+    ConfigList* config_list);
 
 //----------//
 // QscatSim //

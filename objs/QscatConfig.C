@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2001, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -185,7 +185,7 @@ ConfigQscatSes(
     if (! config_list->GetFloat(FFT_BIN_BANDWIDTH_KEYWORD, &bin_bw))
         return(0);
     qscat_ses->fftBinBandwidth = bin_bw * KHZ_TO_HZ;
-    
+
     float s_bw;    // KHz
     if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD, &s_bw))
         return(0);
@@ -289,32 +289,32 @@ ConfigQscatCds(
     {
       return(0);
     }
-    qscat_cds->azimuthStepSize=azimuth_step_size*dtr;      
+    qscat_cds->azimuthStepSize=azimuth_step_size*dtr;
 
     float angle;
     if (! config_list->GetFloat(BYU_INNER_BEAM_LOOK_ANGLE_KEYWORD, &angle))
     {
       return(0);
     }
-    qscat_cds->xRefLook[0]=angle*dtr;      
+    qscat_cds->xRefLook[0]=angle*dtr;
 
     if (! config_list->GetFloat(BYU_OUTER_BEAM_LOOK_ANGLE_KEYWORD, &angle))
     {
       return(0);
     }
-    qscat_cds->xRefLook[1]=angle*dtr;      
+    qscat_cds->xRefLook[1]=angle*dtr;
 
     if (! config_list->GetFloat(BYU_INNER_BEAM_AZIMUTH_ANGLE_KEYWORD, &angle))
     {
       return(0);
     }
-    qscat_cds->xRefAzim[0]=angle*dtr;      
+    qscat_cds->xRefAzim[0]=angle*dtr;
 
     if (! config_list->GetFloat(BYU_OUTER_BEAM_AZIMUTH_ANGLE_KEYWORD, &angle))
     {
       return(0);
     }
-    qscat_cds->xRefAzim[1]=angle*dtr;      
+    qscat_cds->xRefAzim[1]=angle*dtr;
 
     //--------------//
     // orbit period //
@@ -542,6 +542,43 @@ ConfigQscat(
             return(0);
         rx_gate_width *= MS_TO_S;
         qscat->cds.CmdRxGateWidthEu(beam_idx, rx_gate_width, &(qscat->ses));
+    }
+
+    return(1);
+}
+
+//------------------//
+// ConfigSigma0Maps //
+//------------------//
+
+int
+ConfigSigma0Maps(
+    Sigma0Map*   inner_map,
+    Sigma0Map*   outer_map,
+    ConfigList*  config_list)
+{
+	//----------------//
+    // the inner beam //
+	//----------------//
+
+    char* inner_file = config_list->Get(INNER_BEAM_SIGMA0_MAP_KEYWORD);
+    if (! inner_map->Read(inner_file))
+    {
+        fprintf(stderr, "ConfigSigma0Maps: error reading map file %s\n",
+            inner_file);
+        return(0);
+    }
+
+	//----------------//
+    // the outer beam //
+	//----------------//
+
+    char* outer_file = config_list->Get(OUTER_BEAM_SIGMA0_MAP_KEYWORD);
+    if (! outer_map->Read(outer_file))
+    {
+        fprintf(stderr, "ConfigSigma0Maps: error reading map file %s\n",
+            outer_file);
+        return(0);
     }
 
     return(1);

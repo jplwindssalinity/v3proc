@@ -1,7 +1,7 @@
-//=========================================================//
-// Copyright (C) 1998, California Institute of Technology. //
-// U.S. Government sponsorship acknowledged.               //
-//=========================================================//
+//==============================================================//
+// Copyright (C) 1998-2001, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
+//==============================================================//
 
 #ifndef QSCATSIM_H
 #define QSCATSIM_H
@@ -19,6 +19,7 @@ static const char rcs_id_qscatsim_h[] =
 #include "Meas.h"
 #include "CheckFrame.h"
 #include "L1AFrame.h"
+#include "Sigma0Map.h"
 
 //======================================================================
 // CLASSES
@@ -49,7 +50,7 @@ public:
     // variables //
     //-----------//
 
-    double       txTime;
+    double  txTime;
 };
 
 class QscatSim
@@ -71,13 +72,15 @@ public:
                             Qscat* qscat, QscatEvent* qscat_event);
     int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
-             GMF* gmf, Kp* kp, KpmField* kpmField, L1AFrame* l1a_frame);
+             Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
+             KpmField* kpmField, L1AFrame* l1a_frame);
     int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
     int  LoadSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);
     int  SetL1ASpacecraft(Spacecraft* spacecraft, L1AFrame* l1a_frame);
     int  SetMeasurements(Spacecraft* spacecraft, Qscat* qscat,
              MeasSpot* meas_spot, CheckFrame* cf, WindField* windfield,
-             GMF* gmf, Kp* kp, KpmField* kpmField);
+             Sigma0Map* inner_map, Sigma0Map* outer_map, GMF* gmf, Kp* kp,
+             KpmField* kpmField);
     int  SetL1AScience(MeasSpot* meas_spot, CheckFrame* cf, Qscat* qscat,
              L1AFrame* l1a_frame);
     int  SetL1ALoopback(Qscat* qscat, L1AFrame* l1a_frame);
