@@ -352,7 +352,9 @@ L2AToL2B::Flush(
 				      special_first_pass);
 
         if(special==1 && ONE_STAGE_WITHOUT_RANGES){
-	  l2b->frame.swath.DiscardUnselectedRanges();
+	  if(medianFilterMaxPasses>0){
+	    l2b->frame.swath.DiscardUnselectedRanges();
+	  }
 	  l2b->frame.swath.MedianFilter(medianFilterWindowSize,
 	      medianFilterMaxPasses, bound, useAmbiguityWeights,special);
 	}
