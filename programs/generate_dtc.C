@@ -270,12 +270,12 @@ main(
     switch (qscat.sas.encoderElectronics)
     {
         case ENCODER_A:
-            cds_encoder_offset_dn = CDS_ENCODER_A_OFFSET;
-            sas_encoder_offset = SAS_ENCODER_A_OFFSET * dtr;
+            cds_encoder_offset_dn = qscat.cds.encoderAOffset;
+            sas_encoder_offset = qscat.sas.encoderAOffset * dtr;
             break;
         case ENCODER_B:
-            cds_encoder_offset_dn = CDS_ENCODER_B_OFFSET;
-            sas_encoder_offset = SAS_ENCODER_B_OFFSET * dtr;
+            cds_encoder_offset_dn = qscat.cds.encoderBOffset;
+            sas_encoder_offset = qscat.sas.encoderBOffset * dtr;
             break;
         default:
             fprintf(stderr, "%s: unknown encoder electronics\n", command);
