@@ -201,29 +201,88 @@ Kp::GetVpc(
 	double		sigma_0,
 	double*		vpc)
 {
-        //----------------------------//
-        // Constant Value case        //
-        //----------------------------//
-        if(useConstantValues){
-	  *vpc=kpc2Constant*sigma_0*sigma_0;
-          return(1);
-	}
 
-	//--------------------------------//
-	// calculate sigma-0 coefficients //
-	//--------------------------------//
+  //----------------------------//
+  // Constant Value case        //
+  //----------------------------//
 
-	double xktp = meas->XK * meas->txPulseWidth;
-	double aa = meas->A;
-	double bb = meas->B * meas->EnSlice / xktp;
-	double cc = meas->C * meas->EnSlice * meas->EnSlice / (xktp * xktp);
+  if(useConstantValues)
+  {
+    *vpc=kpc2Constant*sigma_0*sigma_0;
+    return(1);
+  }
 
-	//--------------------//
-	// calculate variance //
-	//--------------------//
+  //--------------------------------//
+  // calculate sigma-0 coefficients //
+  //--------------------------------//
 
-	*vpc = (aa * sigma_0 + bb) * sigma_0 + cc;
-	return(1);
+  double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
+  double aa = meas->A;
+  double bb = meas->B * sigma0_over_snr;
+  double cc = meas->C * sigma0_over_snr * sigma0_over_snr;
+
+  //--------------------//
+  // calculate variance //
+  //--------------------//
+
+  *vpc = (aa * sigma_0 + bb) * sigma_0 + cc;
+  return(1);
+
+}
+
+//------------//
+// Kp::GetVpc //
+//------------//
+
+// This is the polarimetric version overloaded onto the same name.
+
+int
+Kp::GetVpc(
+	Meas*		meas,
+	double		sigma0_corr,
+	double		sigma0_copol,
+	double		sigma0_xpol,
+	double*		vpc)
+{
+
+  //-------------------------------//
+  // Redirect copol and xpol cases //
+  //-------------------------------//
+
+  if (meas->measType == Meas::VV_MEAS_TYPE ||
+      meas->measType == Meas::HH_MEAS_TYPE)
+  {
+    return(GetVpc(meas,sigma0_copol,vpc));
+  }
+  else if (meas->measType == Meas::VH_MEAS_TYPE ||
+      meas->measType == Meas::HV_MEAS_TYPE)
+  {
+    return(GetVpc(meas,sigma0_xpol,vpc));
+  }
+  
+  //----------------------------//
+  // Constant Value case        //
+  //----------------------------//
+
+  if(useConstantValues)
+  {
+    *vpc=kpc2Constant*sigma0_corr*sigma0_corr;
+    return(1);
+  }
+
+  //--------------------//
+  // calculate variance //
+  //--------------------//
+
+  double sigma0_over_snr = meas->EnSlice / meas->XK / meas->txPulseWidth;
+  *vpc = 0.5 / meas->txPulseWidth / meas->bandwidth *
+         (sigma0_corr*sigma0_corr + sigma0_copol*sigma0_xpol +
+           (sigma0_copol + sigma0_xpol) * sigma0_over_snr +
+           sigma0_over_snr*sigma0_over_snr
+         );
+
+  return(1);
+
 }
 
 //-----------//

@@ -55,6 +55,8 @@ public:
 	//---------------------//
 
 	int		GetVpc(Meas* meas, double sigma_0, double* vpc);
+	int		GetVpc(Meas* meas, double sigma0_corr, double sigma0_copol,
+                   double sigma0_xpol, double* vpc);
 	int		GetVp(Meas* meas, double sigma_0, Meas::MeasTypeE meas_type, 
 			      float speed, double* vp);
 
