@@ -48,10 +48,10 @@ public:
 
 	int		SetNumberOfEncoderBits(int number);
 
-	CoordinateSwitch	GetAntPedToAntFrame()
-							{ return(_antPedToAntFrame); };
-	CoordinateSwitch	GetAntFrameToAntPed()
-							{ return(_antFrameToAntPed); };
+	CoordinateSwitch	GetAntPedToScBody()
+							{ return(_antPedToScBody); };
+	CoordinateSwitch	GetScBodyToAntPed()
+							{ return(_scBodyToAntPed); };
 
 	//-------------//
 	// conversions //
@@ -78,8 +78,8 @@ protected:
 
 	int					_numberOfEncoderBits;
 	double				_angularResolution;
-	CoordinateSwitch	_antPedToAntFrame;
-	CoordinateSwitch	_antFrameToAntPed;
+	CoordinateSwitch	_antPedToScBody;
+	CoordinateSwitch	_scBodyToAntPed;
 };
 
 #endif

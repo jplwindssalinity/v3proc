@@ -36,8 +36,8 @@ int
 Antenna::SetPedestalAttitude(
 	Attitude*	attitude)
 {
-	_antPedToAntFrame.SetRotation(*attitude);
-	_antFrameToAntPed = _antPedToAntFrame.ReverseDirection();
+	_antPedToScBody.SetRotation(*attitude);
+	_scBodyToAntPed = _antPedToScBody.ReverseDirection();
 
 	return(1);
 }
