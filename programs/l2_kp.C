@@ -87,6 +87,7 @@ template class List<OffsetList>;
 template class List<WindVectorPlus>;
 template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
+template class List<AngleInterval>;
 
 //-----------//
 // CONSTANTS //

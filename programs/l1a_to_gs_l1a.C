@@ -52,6 +52,8 @@ static const char rcs_id[] =
 #include "Tracking.h"
 #include "Tracking.C"
 
+#define OPTSTRING               "a"
+
 //-----------//
 // TEMPLATES //
 //-----------//
@@ -76,7 +78,8 @@ template class TrackerBase<unsigned char>;
 template class TrackerBase<unsigned short>;
 
 
-const char* usage_array[] = { "<config_file>","<input_file>", "<output_file>",
+const char* usage_array[] = { "[ -a ]", "<config_file>","<input_file>",
+                  "<output_file>",
                   "<cal_pulse_file>", "<start_frame>(OPT)",
                   "<end_frame>(OPT)",0};
 
@@ -93,17 +96,27 @@ main(
     // parse the command line //
     //------------------------//
 
+    int ascii_flag = 0;
     const char* command = no_path(argv[0]);
-    if (argc != 7 && argc!=5)
-        usage(command, usage_array, 1);
-
     int clidx = 1;
+
+    if (argc == 8 || argc == 6)
+    {
+      int c = getopt(argc, argv, OPTSTRING);
+      if (c == 'a') ascii_flag = 1;
+      clidx++;
+    }
+    else if (argc != 7 && argc!=5)
+    {
+        usage(command, usage_array, 1);
+    }
+
     const char* config_file = argv[clidx++];
     const char* input_file = argv[clidx++];
     const char* output_file = argv[clidx++];
     const char* cal_pulse_file = argv[clidx++];
     int start_frame=-1, end_frame=2;
-    if(argc==6){
+    if(argc==8){
         start_frame=atoi(argv[clidx++]);
         end_frame=atoi(argv[clidx++]);
     }
@@ -173,19 +186,40 @@ main(
         if (frame_number >= start_frame)
         {
             l1a.frame.Unpack(l1a.buffer);
-            if (l1a.WriteGSDataRec() == 0)
+            if (ascii_flag == 0)
             {
-                fprintf(stderr,
-                       "%s: error writing GS data record\n", command);
-                exit(1);
-            }
-            if (l1a.frame.calPosition != 255)
-            {
-              if (l1a.WriteGSCalPulseRec() == 0)
+              if (l1a.WriteGSDataRec() == 0)
               {
                   fprintf(stderr,
-                         "%s: error writing Cal Pulse record\n", command);
+                         "%s: error writing GS data record\n", command);
                   exit(1);
+              }
+              if (l1a.frame.calPosition != 255)
+              {
+                if (l1a.WriteGSCalPulseRec() == 0)
+                {
+                    fprintf(stderr,
+                           "%s: error writing Cal Pulse record\n", command);
+                    exit(1);
+                }
+              }
+            }
+            else
+            {
+              if (l1a.WriteGSDataRecAscii() == 0)
+              {
+                  fprintf(stderr,
+                         "%s: error writing GS data record\n", command);
+                  exit(1);
+              }
+              if (l1a.frame.calPosition != 255)
+              {
+                if (l1a.WriteGSCalPulseRecAscii() == 0)
+                {
+                    fprintf(stderr,
+                           "%s: error writing Cal Pulse record\n", command);
+                    exit(1);
+                }
               }
             }
         }
