@@ -19,7 +19,6 @@ static const char rcs_id_configsim_h[] =
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
-#include "L17ToL20.h"
 #include "Wind.h"
 #include "Grid.h"
 #include "ConfigList.h"
@@ -123,12 +122,6 @@ int ConfigL10ToL15(L10ToL15* l10tol15, ConfigList* config_list);
 //-----//
 
 int ConfigL17(L17* l17, ConfigList* config_list);
-
-//----------//
-// L17ToL20 //
-//----------//
-
-int ConfigL17ToL20(L17ToL20* l17_to_l20, ConfigList* config_list);
 
 //-----//
 // L20 //

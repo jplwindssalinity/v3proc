@@ -81,6 +81,7 @@ public:
 	//--------------//
 
 	int		WriteL20(FILE* fp);
+	int		WriteAscii(FILE* fp);
 	int		ReadL20(FILE* fp);
 
 	//-----------//
@@ -117,6 +118,7 @@ public:
 	int		WriteL20(FILE* fp);
 	int		ReadL20(FILE* fp);
 	int		WriteVctr(FILE* fp, const int rank);		// 0 = selected
+	int		WriteAscii(FILE* fp);
 
 	//--------------//
 	// manipulation //

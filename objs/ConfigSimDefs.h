@@ -173,15 +173,6 @@ static const char rcs_id_configsimdefs_h[] =
 
 #define L17_FILE_KEYWORD					"L17_FILE"
 
-//----------//
-// L17ToL20 //
-//----------//
-
-#define SPD_TOLERANCE_KEYWORD				"SPD_TOLERANCE"
-#define PHI_STEP_KEYWORD					"PHI_STEP"
-#define PHI_BUFFER_KEYWORD					"PHI_BUFFER"
-#define PHI_MAX_SMOOTHING_KEYWORD			"PHI_MAX_SMOOTHING"
-
 //-----//
 // L20 //
 //-----//

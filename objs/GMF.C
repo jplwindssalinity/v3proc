@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_gmf_c[] =
 	"@(#) $Id$";
@@ -21,13 +21,53 @@ static const char rcs_id_gmf_c[] =
 //=====//
 
 GMF::GMF()
+:	_spdTol(DEFAULT_SPD_TOL), _sepAngle(DEFAULT_SEP_ANGLE),
+	_smoothAngle(DEFAULT_SMOOTH_ANGLE), _maxSolutions(DEFAULT_MAX_SOLUTIONS),
+	_bestSpd(NULL), _bestObj(NULL), _copyObj(NULL)
 {
+	SetPhiCount(DEFAULT_PHI_COUNT);
 	return;
 }
 
 GMF::~GMF()
 {
+	free(_bestSpd);
+	free(_bestObj);
+	free(_copyObj);
+
 	return;
+}
+
+//------------------//
+// GMF::SetPhiCount //
+//------------------//
+
+int
+GMF::SetPhiCount(
+	int		phi_count)
+{
+	_phiCount = phi_count;
+	_phiStepSize = two_pi / _phiCount;
+
+	if (_bestSpd)
+		free(_bestSpd);
+	_bestSpd = (float *)malloc(_phiCount * sizeof(float));
+	if (_bestSpd == NULL)
+		return(0);
+
+	if (_bestObj)
+		free(_bestObj);
+	_bestObj = (float *)malloc(_phiCount * sizeof(float));
+	if (_bestObj == NULL)
+		return(0);
+
+	if (_copyObj)
+		free(_copyObj);
+	_copyObj = (float *)malloc(_phiCount * sizeof(float));
+	if (_copyObj == NULL)
+		return(0);
+
+	return(1);
 }
 
 //------------------//
@@ -170,42 +210,21 @@ GMF::GetCoefs(
 int
 GMF::WriteSolutionCurves(
 	FILE*		ofp,
-	MeasList*	meas_list,
-	float		phi_step_size,
-	float		phi_buffer,
-	float		phi_max_smoothing,
-	float		spd_tol,
-	int			desired_solutions)
+	MeasList*	meas_list)
 {
-	//--------------------------//
-	// refine the phi step size //
-	//--------------------------//
-
-	int phi_count = (int)(two_pi / phi_step_size + 0.5);
-	phi_step_size = two_pi / (float)phi_count;
-
-	//-------------------------//
-	// allocate storage arrays //
-	//-------------------------//
-
-	float* best_spd = new float[phi_count];
-	float* best_obj = new float[phi_count];
-
 	//------------------------------//
 	// generate each solution curve //
 	//------------------------------//
 
 	MeasList new_list;
-	for (Meas* meas = meas_list->GetHead(); meas;
-			meas = meas_list->GetNext())
+	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
 	{
 		new_list.Append(meas);
-		SolutionCurve(&new_list, phi_count, phi_step_size, spd_tol,
-			best_spd, best_obj);
-		for (int i = 0; i < phi_count; i++)
+		SolutionCurve(&new_list);
+		for (int i = 0; i < _phiCount; i++)
 		{
-			fprintf(ofp, "%g %g\n", (float)i * phi_step_size * rtd,
-				best_spd[i]);
+			fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
+				_bestSpd[i]);
 		}
 		fprintf(ofp, "&\n");
 		new_list.GetHead();
@@ -216,35 +235,33 @@ GMF::WriteSolutionCurves(
 	// generate combined solution curve //
 	//----------------------------------//
 
-	SolutionCurve(meas_list, phi_count, phi_step_size, spd_tol,
-		best_spd, best_obj);
-	float min_obj = best_obj[0];
-	float max_obj = best_obj[0];
-	for (int i = 0; i < phi_count; i++)
+	SolutionCurve(meas_list);
+	float min_obj = _bestObj[0];
+	float max_obj = _bestObj[0];
+	for (int i = 0; i < _phiCount; i++)
 	{
-		if (best_obj[i] < min_obj)
-			min_obj = best_obj[i];
-		if (best_obj[i] > max_obj)
-			max_obj = best_obj[i];
+		if (_bestObj[i] < min_obj)
+			min_obj = _bestObj[i];
+		if (_bestObj[i] > max_obj)
+			max_obj = _bestObj[i];
 	}
 	float scale = 1.0 / (max_obj - min_obj);
-	for (int i = 0; i < phi_count; i++)
+	for (int i = 0; i < _phiCount; i++)
 	{
-		fprintf(ofp, "%g %g %g\n", (float)i * phi_step_size * rtd,
-			best_spd[i], (best_obj[i] - min_obj) * scale);
+		fprintf(ofp, "%g %g %g\n", (float)i * _phiStepSize * rtd,
+			_bestSpd[i], (_bestObj[i] - min_obj) * scale);
 	}
 
 	//--------------------------------------//
 	// generate smoothed objective function //
 	//--------------------------------------//
 
-	Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing, best_obj,
-		desired_solutions);
+	Smooth();
 	fprintf(ofp, "&\n");
-	for (int i = 0; i < phi_count; i++)
+	for (int i = 0; i < _phiCount; i++)
 	{
-		fprintf(ofp, "%g %g\n", (float)i * phi_step_size * rtd,
-			(best_obj[i] - min_obj) * scale);
+		fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
+			(_bestSpd[i] - min_obj) * scale);
 	}
 
 	//----------------------------//
@@ -252,8 +269,7 @@ GMF::WriteSolutionCurves(
 	//----------------------------//
 
 	WVC* wvc = new WVC();
-	RetrieveWinds(meas_list, wvc, phi_step_size, phi_buffer,
-		phi_max_smoothing, spd_tol, 4);
+	RetrieveWinds(meas_list, wvc);
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
@@ -266,8 +282,6 @@ GMF::WriteSolutionCurves(
 	//---------------//
 
 	delete wvc;
-	delete[] best_spd;
-	delete[] best_obj;
 
 	return(1);
 }
@@ -275,42 +289,17 @@ GMF::WriteSolutionCurves(
 //--------------------//
 // GMF::RetrieveWinds //
 //--------------------//
-// phi_step_size is the step size for slices in the phi/spd space
-// phi_buffer is the minimum angle between maxima and the widest
-//  the smooth operation will average
-// spd_tol is the tolerance for the speed maxima for each phi step
-// desired_solutions is the maximum number of desired solutions
 
 int
 GMF::RetrieveWinds(
 	MeasList*	meas_list,
-	WVC*		wvc,
-	float		phi_step_size,
-	float		phi_buffer,
-	float		phi_max_smoothing,
-	float		spd_tol,
-	int			desired_solutions)
+	WVC*		wvc)
 {
-	//--------------------------//
-	// refine the phi step size //
-	//--------------------------//
-
-	int phi_count = (int)(two_pi / phi_step_size + 0.5);
-	phi_step_size = two_pi / (float)phi_count;
-
-	//-------------------------//
-	// allocate storage arrays //
-	//-------------------------//
-
-	float* best_spd = new float[phi_count];
-	float* best_obj = new float[phi_count];
-
 	//-------------------------//
 	// find the solution curve //
 	//-------------------------//
 
-	if (! SolutionCurve(meas_list, phi_count, phi_step_size, spd_tol,
-		best_spd, best_obj))
+	if (! SolutionCurve(meas_list))
 	{
 		fprintf(stderr, "can't find solution curve\n");
 		return(0);
@@ -320,8 +309,7 @@ GMF::RetrieveWinds(
 	// smooth the solution curve //
 	//---------------------------//
 
-	if (! Smooth(phi_count, phi_step_size, phi_buffer, phi_max_smoothing,
-		best_obj, desired_solutions))
+	if (! Smooth())
 	{
 //		fprintf(stderr, "can't smooth solution curve\n");
 		return(0);
@@ -331,14 +319,11 @@ GMF::RetrieveWinds(
 	// find maxima and add to the wvc //
 	//--------------------------------//
 
-	if (! FindMaxima(wvc, phi_count, phi_step_size, best_spd, best_obj))
+	if (! FindMaxima(wvc))
 	{
 		fprintf(stderr, "can't find maxima\n");
 		return(0);
 	}
-
-	delete best_spd;
-	delete best_obj;
 
 	//------------------------------------------//
 	// sort the solutions by objective function //
@@ -352,22 +337,12 @@ GMF::RetrieveWinds(
 //--------------------//
 // GMF::SolutionCurve //
 //--------------------//
-// For each of phi_count directions, find the speed (in steps of
-// spd_step) that maximizes the objective function.  Fills in the best_spd
-// and best_obj arrays
-
-
-#define R	0.61803399
-#define C	(1.0-R)
+// For each of phi_count directions, find the speed that maximizes the
+// objective function.  Fills in the _bestSpd and _bestObj arrays
 
 int
 GMF::SolutionCurve(
-	MeasList*	meas_list,
-	int			phi_count,
-	float		phi_step_size,
-	float		spd_tol,
-	float*		best_spd,
-	float*		best_obj)
+	MeasList*	meas_list)
 {
 	//-------------------------------//
 	// bracket maxima with certainty //
@@ -380,10 +355,10 @@ GMF::SolutionCurve(
 	// for each direction... //
 	//-----------------------//
 
-	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 	{
-		float bx = ax + (cx - ax) * R;
-		float phi = (float)phi_idx * phi_step_size;
+		float bx = ax + (cx - ax) * golden_r;
+		float phi = (float)phi_idx * _phiStepSize;
 
 		//------------------------------------------//
 		// ...widen so that the maxima is bracketed //
@@ -410,23 +385,23 @@ GMF::SolutionCurve(
 		if (cx - bx > bx - ax)
 		{
 			x1 = bx;
-			x2 = bx + C * (cx - bx);
+			x2 = bx + golden_c * (cx - bx);
 		}
 		else
 		{
 			x2 = bx;
-			x1 = bx - C * (bx - ax);
+			x1 = bx - golden_c * (bx - ax);
 		}
 		float f1 = _ObjectiveFunction(meas_list, x1, phi);
 		float f2 = _ObjectiveFunction(meas_list, x2, phi);
 
-		while (x3 - x0 > spd_tol)
+		while (x3 - x0 > _spdTol)
 		{
 			if (f2 > f1)
 			{
 				x0 = x1;
 				x1 = x2;
-				x2 = x2 + C * (x3 - x2);
+				x2 = x2 + golden_c * (x3 - x2);
 				f1 = f2;
 				f2 = _ObjectiveFunction(meas_list, x2, phi);
 			}
@@ -434,21 +409,21 @@ GMF::SolutionCurve(
 			{
 				x3 = x2;
 				x2 = x1;
-				x1 = x1 - C * (x1 - x0);
+				x1 = x1 - golden_c * (x1 - x0);
 				f2 = f1;
 				f1 = _ObjectiveFunction(meas_list, x1, phi);
 			}
-		} 
+		}
 
 		if (f1 > f2)
 		{
-			best_spd[phi_idx] = x1;
-			best_obj[phi_idx] = f1;
+			_bestSpd[phi_idx] = x1;
+			_bestObj[phi_idx] = f1;
 		}
 		else
 		{
-			best_spd[phi_idx] = x2;
-			best_obj[phi_idx] = f2;
+			_bestSpd[phi_idx] = x2;
+			_bestObj[phi_idx] = f2;
 		}
 		ax = x1 - (x1 * 0.05);
 		if (ax < _spdMin)
@@ -468,23 +443,17 @@ GMF::SolutionCurve(
 // phi_buffer is one sided (i.e. 5 degrees means 5 degrees to either side)
 
 int
-GMF::Smooth(
-	int			phi_count,
-	float		phi_step_size,
-	float		phi_buffer,
-	float		phi_max_smoothing,
-	float*		best_obj,
-	int			desired_solutions)
+GMF::Smooth()
 {
 	//---------------------------//
 	// calculate some parameters //
 	//---------------------------//
 
-	int max_delta_phi = (int)(phi_buffer / phi_step_size + 0.5);
-	int max_smoothing_phi = (int)(phi_max_smoothing / phi_step_size + 0.5);
+	int max_delta_phi = (int)(_sepAngle / _phiStepSize + 0.5);
+	int max_smoothing_phi = (int)(_smoothAngle / _phiStepSize + 0.5);
 	int delta_phi = 0;		// start with no smoothing
 
-	float* copy_obj = NULL;
+	int flag = 0;
 	int return_value = 0;
 
 	//----------------------------------------------------//
@@ -499,16 +468,16 @@ GMF::Smooth(
 
 		int maxima_count = 0;
 		int local_maxima_count = 0;
-		for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+		for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 		{
 			//--------------------------//
 			// check for 3 point maxima //
 			//--------------------------//
 
-			int idx_minus = (phi_idx - 1 + phi_count) % phi_count;
-			int idx_plus = (phi_idx + 1) % phi_count;
-			if (best_obj[phi_idx] > best_obj[idx_minus] &&
-				best_obj[phi_idx] > best_obj[idx_plus])
+			int idx_minus = (phi_idx - 1 + _phiCount) % _phiCount;
+			int idx_plus = (phi_idx + 1) % _phiCount;
+			if (_bestObj[phi_idx] > _bestObj[idx_minus] &&
+				_bestObj[phi_idx] > _bestObj[idx_plus])
 			{
 				maxima_count++;
 
@@ -519,10 +488,10 @@ GMF::Smooth(
 				int isa_max = 1;
 				for (int offset = 2; offset <= max_delta_phi; offset++)
 				{
-					idx_minus = (phi_idx - offset + phi_count) % phi_count;
-					idx_plus = (phi_idx + offset) % phi_count;
-					if (best_obj[phi_idx] < best_obj[idx_minus] ||
-						best_obj[phi_idx] < best_obj[idx_plus])
+					idx_minus = (phi_idx - offset + _phiCount) % _phiCount;
+					idx_plus = (phi_idx + offset) % _phiCount;
+					if (_bestObj[phi_idx] < _bestObj[idx_minus] ||
+						_bestObj[phi_idx] < _bestObj[idx_plus])
 					{
 						// not a maxima
 						isa_max = 0;
@@ -535,19 +504,19 @@ GMF::Smooth(
 		}
 
 		if (maxima_count == local_maxima_count &&
-			maxima_count <= desired_solutions)
+			maxima_count <= _maxSolutions)
 		{
 			//----------------------------------//
 			// done -- scale objective function //
 			//----------------------------------//
 
-			if (copy_obj)
+			if (flag)
 			{
 				// scaling was performed
 				float scale = (float)(1 + delta_phi * 2);
-				for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+				for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 				{
-					best_obj[phi_idx] /= scale;
+					_bestObj[phi_idx] /= scale;
 				}
 			}
 			return_value = 1;
@@ -567,24 +536,22 @@ GMF::Smooth(
 			// smooth //
 			//--------//
 
-			if (copy_obj == NULL)
+			if (! flag)
 			{
-				copy_obj = new float[phi_count];
-				memcpy(copy_obj, best_obj, sizeof(float) * phi_count);
+				memcpy(_copyObj, _bestObj, _phiCount * sizeof(float));
+				flag = 1;
 			}
 
-			for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+			for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 			{
-				int phi_idx_plus = (phi_idx + delta_phi) % phi_count;
-				int phi_idx_minus = (phi_idx - delta_phi + phi_count) %
-					phi_count;
-				best_obj[phi_idx] += copy_obj[phi_idx_minus];
-				best_obj[phi_idx] += copy_obj[phi_idx_plus];
+				int phi_idx_plus = (phi_idx + delta_phi) % _phiCount;
+				int phi_idx_minus = (phi_idx - delta_phi + _phiCount) %
+					_phiCount;
+				_bestObj[phi_idx] += _copyObj[phi_idx_minus];
+				_bestObj[phi_idx] += _copyObj[phi_idx_plus];
 			}
 		}
 	}
-	if (copy_obj)
-		delete copy_obj;
 	return(return_value);
 }
 
@@ -594,22 +561,18 @@ GMF::Smooth(
 
 int
 GMF::FindMaxima(
-	WVC*		wvc,
-	int			phi_count,
-	float		phi_step_size,
-	float*		best_spd,
-	float*		best_obj)
+	WVC*		wvc)
 {
-	for (int phi_idx = 0; phi_idx < phi_count; phi_idx++)
+	for (int phi_idx = 0; phi_idx < _phiCount; phi_idx++)
 	{
 		//--------------------------//
 		// check for 3 point maxima //
 		//--------------------------//
 
-		int idx_minus = (phi_idx - 1 + phi_count) % phi_count;
-		int idx_plus = (phi_idx + 1) % phi_count;
-		if (best_obj[phi_idx] > best_obj[idx_minus] &&
-			best_obj[phi_idx] > best_obj[idx_plus])
+		int idx_minus = (phi_idx - 1 + _phiCount) % _phiCount;
+		int idx_plus = (phi_idx + 1) % _phiCount;
+		if (_bestObj[phi_idx] > _bestObj[idx_minus] &&
+			_bestObj[phi_idx] > _bestObj[idx_plus])
 		{
 			//------------//
 			// add to wvc //
@@ -618,9 +581,9 @@ GMF::FindMaxima(
 			WindVectorPlus* wvp = new WindVectorPlus();
 			if (! wvp)
 				return(0);
-			wvp->spd = best_spd[phi_idx];
-			wvp->dir = (float)phi_idx * phi_step_size;
-			wvp->obj = best_obj[phi_idx];
+			wvp->spd = _bestSpd[phi_idx];
+			wvp->dir = (float)phi_idx * _phiStepSize;
+			wvp->obj = _bestObj[phi_idx];
 			if (! wvc->ambiguities.Append(wvp))
 			{
 				delete wvp;
@@ -656,4 +619,3 @@ GMF::_ObjectiveFunction(
 	}
 	return(-fv);
 }
-

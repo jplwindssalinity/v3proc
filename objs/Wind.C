@@ -103,6 +103,18 @@ WindVectorPlus::WriteL20(
 	return(1);
 }
 
+//----------------------------//
+// WindVectorPlus::WriteAscii //
+//----------------------------//
+
+int
+WindVectorPlus::WriteAscii(
+	FILE*	fp)
+{
+	fprintf(fp, "Spd=%g Dir=%g Obj=%g\n", spd, dir * rtd, obj);
+	return(1);
+}
+
 //-------------------------//
 // WindVectorPlus::ReadL20 //
 //-------------------------//
@@ -278,6 +290,23 @@ WVC::WriteVctr(
 		fwrite((void *)&(write_me->dir), sizeof(float), 1, fp) != 1)
 	{
 		return(0);
+	}
+	return(1);
+}
+
+//-----------------//
+// WVC::WriteAscii //
+//-----------------//
+
+int
+WVC::WriteAscii(
+	FILE*	fp)
+{
+	for (WindVectorPlus* wvp = ambiguities.GetHead(); wvp;
+		wvp = ambiguities.GetNext())
+	{
+		if (! wvp->WriteAscii(fp))
+			return(0);
 	}
 	return(1);
 }

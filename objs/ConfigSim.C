@@ -1291,36 +1291,6 @@ ConfigL17(
 	return(1);
 }
 
-//----------------//
-// ConfigL17ToL20 //
-//----------------//
-
-int
-ConfigL17ToL20(
-	L17ToL20*		l17_to_l20,
-	ConfigList*		config_list)
-{
-	double tmp;
-
-	if (! config_list->GetDouble(SPD_TOLERANCE_KEYWORD, &tmp))
-		return(0);
-	l17_to_l20->spdTolerance = (float)tmp;
-
-	if (! config_list->GetDouble(PHI_STEP_KEYWORD, &tmp))
-		return(0);
-	l17_to_l20->phiStep = (float)tmp * dtr;
-
-	if (! config_list->GetDouble(PHI_BUFFER_KEYWORD, &tmp))
-		return(0);
-	l17_to_l20->phiBuffer = (float)tmp * dtr;
-
-	if (! config_list->GetDouble(PHI_MAX_SMOOTHING_KEYWORD, &tmp))
-		return(0);
-	l17_to_l20->phiMaxSmoothing = (float)tmp * dtr;
-
-	return(1);
-}
-
 //-----------//
 // ConfigL20 //
 //-----------//

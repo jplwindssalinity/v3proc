@@ -53,15 +53,6 @@ public:
 	//-----------//
 
 	int		WriteSolutionCurves(L17* l17, GMF* gmf, const char* output_file);
-
-	//-----------//
-	// variables //
-	//-----------//
-
-	float	phiStep;
-	float	phiBuffer;
-	float	phiMaxSmoothing;
-	float	spdTolerance;
 };
 
 #endif
