@@ -29,6 +29,8 @@ static const char rcs_id_spacecraftsim_h[] =
 //======================================================================
 
 #define EQX_TIME_TOLERANCE		0.1		// seconds
+#define EQX_ARG_OF_LAT			0.0
+#define SOUTH_ARG_OF_LAT		(1.5*pi)
 
 class SpacecraftSim
 {
@@ -79,8 +81,10 @@ public:
 	//--------//
 
 	int		DetermineNextEvent(SpacecraftEvent* spacecraft_event);
-	double	FindPrevEqxTime(double time, double time_tol);
-	double	FindNextEqxTime(double time, double time_tol);
+	double	FindNextArgOfLatTime(double time, double target_arg_of_lat,
+				double time_tol);
+	double	FindPrevArgOfLatTime(double time, double target_arg_of_lat,
+				double time_tol);
 
 	//----------------------------------------------//
 	// Attitude Error Model Initialization Routines //

@@ -286,8 +286,8 @@ main(
 	//------------------//
 
 	double start_time;
-	start_time = spacecraft_sim.FindPrevEqxTime(instrument_start_time, 
-						    EQX_TIME_TOLERANCE);
+	start_time = spacecraft_sim.FindPrevArgOfLatTime(instrument_start_time,
+		EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
 	instrument.Eqx(start_time);
 
 
@@ -445,15 +445,15 @@ main(
 
 	l00.file.Close();
 
-	//----------------------------//
-        // If createXtable is set     //
-        // write XTABLE file          //
-        //----------------------------//
+	//--------------------------//
+	// If createXtable is set	//
+	// write XTABLE file		//
+	//--------------------------//
 
-	if(instrument_sim.createXtable){
-	  instrument_sim.xTable.Write();
+	if(instrument_sim.createXtable)
+	{
+		instrument_sim.xTable.Write();
 	}
-
 
 	return (0);
 }

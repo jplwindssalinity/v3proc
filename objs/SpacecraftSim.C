@@ -55,7 +55,8 @@ SpacecraftSim::Initialize(
 	double		start_time)
 {
 	_nextUpdateTime = start_time;
-	_nextEqxTime = FindNextEqxTime(start_time, EQX_TIME_TOLERANCE);
+	_nextEqxTime = FindNextArgOfLatTime(start_time, EQX_ARG_OF_LAT,
+		EQX_TIME_TOLERANCE);
 	return(1);
 }
 
@@ -468,8 +469,8 @@ SpacecraftSim::DetermineNextEvent(
 		// set next equator crossing time //
 		//--------------------------------//
 
-		_nextEqxTime = FindNextEqxTime(_nextEqxTime + GetPeriod(),
-			EQX_TIME_TOLERANCE);
+		_nextEqxTime = FindNextArgOfLatTime(_nextEqxTime + _period,
+			EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
 	}
 	else
 	{
@@ -492,66 +493,62 @@ SpacecraftSim::DetermineNextEvent(
 	return(1);
 }
 
-//--------------------------------//
-// SpacecraftSim::FindPrevEqxTime //
-//--------------------------------//
+//-------------------------------------//
+// SpacecraftSim::FindNextArgOfLatTime //
+//-------------------------------------//
 
 double
-SpacecraftSim::FindPrevEqxTime(
+SpacecraftSim::FindNextArgOfLatTime(
 	double	time,
+	double	target_arg_of_lat,
 	double	time_tol)
 {
-	double prev_time = time - GetPeriod();
-	double eqx_time = FindNextEqxTime(prev_time, time_tol);
-	return(eqx_time);
-}
-
-//--------------------------------//
-// SpacecraftSim::FindNextEqxTime //
-//--------------------------------//
-
-double
-SpacecraftSim::FindNextEqxTime(
-	double	time,
-	double	time_tol)
-{
-	//------------------------//
-	// estimate next eqx time //
-	//------------------------//
+	//-------------------------------------//
+	// estimate delta argument of latitude //
+	//-------------------------------------//
 
 	static Spacecraft spacecraft;		// used just for this
 	UpdateOrbit(time, &spacecraft);
-	double arg_of_lat = GetArgOfLat(&spacecraft);
-	double eqx_time = time + _period * (1.0 - arg_of_lat / two_pi);
+	double current_arg_of_lat = GetArgOfLat(&spacecraft);
+	double dif_arg = fmod(target_arg_of_lat + two_pi - current_arg_of_lat,
+		two_pi);
+
+	//--------------//
+	// esimate time //
+	//--------------//
+
+	double target_time = time + _period * dif_arg / two_pi;
 
 	//------------------//
 	// bracket the root //
 	//------------------//
 
 	double delta_time = _period / 1000.0;
-	double time_1 = eqx_time - delta_time;
-	double time_2 = eqx_time + delta_time;
+	double time_1 = target_time - delta_time;
+	double time_2 = target_time + delta_time;
+
+	double add_me = two_pi + pi - target_arg_of_lat;
 
 	UpdateOrbit(time_1, &spacecraft);
 	double lat_1 = GetArgOfLat(&spacecraft);
-	lat_1 = fmod(lat_1 + pi, two_pi) - pi;
+	lat_1 = fmod(lat_1 + add_me, two_pi) - pi;
 	while (lat_1 > 0.0)
 	{
 		time_1 -= delta_time;
 		UpdateOrbit(time_1, &spacecraft);
 		lat_1 = GetArgOfLat(&spacecraft);
-		lat_1 = fmod(lat_1 + pi, two_pi) - pi;
+		lat_1 = fmod(lat_1 + add_me, two_pi) - pi;
 	}
 
 	UpdateOrbit(time_2, &spacecraft);
 	double lat_2 = GetArgOfLat(&spacecraft);
-	lat_2 = fmod(lat_2 + pi, two_pi) - pi;
+    lat_2 = fmod(lat_2 + add_me, two_pi) - pi;
 	while (lat_2 < 0.0)
 	{
 		time_2 += delta_time;
 		UpdateOrbit(time_2, &spacecraft);
 		lat_2 = GetArgOfLat(&spacecraft);
-		lat_2 = fmod(lat_2 + pi, two_pi) - pi;
+		lat_2 = fmod(lat_2 + add_me, two_pi) - pi;
 	}
 
 	//------------------//
@@ -564,7 +561,7 @@ SpacecraftSim::FindNextEqxTime(
 		time_mid  = (time_1 + time_2) / 2.0;
 		UpdateOrbit(time_mid, &spacecraft);
 		lat_mid = GetArgOfLat(&spacecraft);
-		lat_mid = fmod(lat_mid + pi, two_pi) - pi;
+		lat_mid = fmod(lat_mid + add_me, two_pi) - pi;
 
 		if (lat_mid < 0.0)
 			time_1 = time_mid;
@@ -576,9 +573,25 @@ SpacecraftSim::FindNextEqxTime(
 	// simple calculation //
 	//--------------------//
 
-	eqx_time = (time_1 + time_2) / 2.0;
+	target_time = (time_1 + time_2) / 2.0;
 
-	return(eqx_time);
+	return(target_time);
+}
+
+//-------------------------------------//
+// SpacecraftSim::FindPrevArgOfLatTime //
+//-------------------------------------//
+
+double
+SpacecraftSim::FindPrevArgOfLatTime(
+	double	time,
+	double	target_arg_of_lat,
+	double	time_tol)
+{
+	double prev_time = time - _period;
+	double target_time = FindNextArgOfLatTime(prev_time, target_arg_of_lat,
+		time_tol);
+	return(target_time);
 }
 
 //----------------------//
