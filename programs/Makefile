@@ -69,6 +69,7 @@ PROGRAMS = \
 	l2b_to_flower \
 	l2a_dissect \
 	l1b_to_half_egg \
+	l1a_to_gs_l1a\
 	l1a_to_ascii\
 	l1b_to_ascii \
 	checkframe_to_ascii \
