@@ -217,7 +217,7 @@ L1AToL1B::Convert(
 
         // correctly locate antenna first
         qscat->sas.SetAzimuthWithEncoder(held_encoder);
-        qscat->sas.RotateToTxCenter(1, &(qscat->ses));
+        qscat->RotateAntennaToTxCenter(1);
 		if (l1a->frame.slicesPerSpot <= 1)
 		{
             if (! LocateSpot(spacecraft, qscat, meas_spot, Esn[0]))

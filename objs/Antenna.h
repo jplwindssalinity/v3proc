@@ -7,68 +7,68 @@
 #define ANTENNA_H
 
 static const char rcs_id_antenna_h[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include "Beam.h"
 
-#define MAX_NUMBER_OF_BEAMS		10
+#define MAX_NUMBER_OF_BEAMS  10
 
 //======================================================================
 // CLASSES
-//		Antenna
+//    Antenna
 //======================================================================
 
 //======================================================================
 // CLASS
-//		Antenna
+//    Antenna
 //
 // DESCRIPTION
-//		The Antenna object contains antenna information.  It represents
-//		the actual state of the antenna.
+//    The Antenna object contains antenna information.  It represents
+//    the actual state of the antenna.
 //======================================================================
 
 class Antenna
 {
 public:
 
-	//--------------//
-	// construction //
-	//--------------//
+    //--------------//
+    // construction //
+    //--------------//
 
-	Antenna();
-	~Antenna();
+    Antenna();
+    ~Antenna();
 
-	//-----------------//
-	// setting/getting //
-	//-----------------//
+    //-----------------//
+    // setting/getting //
+    //-----------------//
 
     int               SetAzimuthAngle(double angle);
     int               TimeRotation(double time);
-	int		          SetPedestalAttitude(Attitude* attitude);
+    int               SetPedestalAttitude(Attitude* attitude);
     int               UpdatePosition(double time);
     int               Initialize(double time);
     CoordinateSwitch  GetAntPedToScBody() { return(_antPedToScBody); };
     CoordinateSwitch  GetScBodyToAntPed() { return(_scBodyToAntPed); };
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	int				numberOfBeams;
-	Beam			beam[MAX_NUMBER_OF_BEAMS];
-    double          startTime;      // the time of the starting azimuth
-    double          startAzimuth;   // the initial azimuth angle
-	double			spinRate;		// rad/second
-	double			azimuthAngle;	// antenna azimuth angle (0..two_pi)
+    int     numberOfBeams;
+    Beam    beam[MAX_NUMBER_OF_BEAMS];
+    double  startTime;      // the time of the starting azimuth
+    double  startAzimuth;   // the initial azimuth angle
+    double  spinRate;       // rad/second
+    double  azimuthAngle;   // antenna azimuth angle (0..two_pi)
 
 protected:
 
-	//-----------//
-	// variables //
-	//-----------//
+    //-----------//
+    // variables //
+    //-----------//
 
-	CoordinateSwitch	_antPedToScBody;
-	CoordinateSwitch	_scBodyToAntPed;
+    CoordinateSwitch  _antPedToScBody;
+    CoordinateSwitch  _scBodyToAntPed;
 };
 
 #endif

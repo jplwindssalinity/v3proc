@@ -4,7 +4,7 @@
 //==============================================================//
 
 static const char rcs_id_antenna_c[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 #include <stdio.h>
 #include "Antenna.h"
@@ -15,15 +15,15 @@ static const char rcs_id_antenna_c[] =
 //=========//
 
 Antenna::Antenna()
-:	numberOfBeams(0), startTime(0.0), startAzimuth(0.0), spinRate(0.0),
+:   numberOfBeams(0), startTime(0.0), startAzimuth(0.0), spinRate(0.0),
     azimuthAngle(0.0)
 {
-	return;
+    return;
 }
 
 Antenna::~Antenna()
 {
-	return;
+    return;
 }
 
 //--------------------------//
@@ -67,12 +67,12 @@ Antenna::TimeRotation(
 
 int
 Antenna::SetPedestalAttitude(
-	Attitude*	attitude)
+    Attitude*  attitude)
 {
-	_antPedToScBody.SetRotation(*attitude);
-	_scBodyToAntPed = _antPedToScBody.ReverseDirection();
+    _antPedToScBody.SetRotation(*attitude);
+    _scBodyToAntPed = _antPedToScBody.ReverseDirection();
 
-	return(1);
+    return(1);
 }
 
 //-------------------------//

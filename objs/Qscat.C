@@ -302,31 +302,6 @@ QscatSas::SetAzimuthWithEncoder(
     return(1);
 }
 
-//-----------------------------//
-// QscatSas::ApplyAzimuthShift //
-//-----------------------------//
-// This function compensates for the fact the the previous pulse's encoder
-// value is stored in telemetry.
-
-int
-QscatSas::ApplyAzimuthShift(
-    double  sample_delay)
-{
-    //-----------------------------------------------//
-    // determine the angle covered in the delay time //
-    //-----------------------------------------------//
-
-    double delta_angle = antenna.spinRate * sample_delay;
-
-    //---------------//
-    // set the angle //
-    //---------------//
-
-    antenna.SetAzimuthAngle(antenna.azimuthAngle + delta_angle);
-
-    return(1);
-}
-
 //----------------------//
 // QscatSas::GetEncoder //
 //----------------------//
@@ -385,27 +360,6 @@ QscatSas::AzimuthToEncoder(
     encoder |= encoder_bit;
 
     return(encoder);
-}
-
-//----------------------------//
-// QscatSas::RotateToTxCenter //
-//----------------------------//
-
-// most of these should be moved into the SES config
-#define T_ENC   9E-9
-#define T_GRID  19.87E-6
-#define T_RC    9.968E-6
-#define T_EXC   1E-6
-
-int
-QscatSas::RotateToTxCenter(
-    int             pri_delay,
-    QscatSes*       qscat_ses)
-{
-    double delta_t = (double)pri_delay * qscat_ses->pri +
-        qscat_ses->txPulseWidth / 2.0 - T_ENC + T_GRID + T_RC + T_EXC;
-    ApplyAzimuthShift(delta_t); 
-    return(1);
 }
 
 //-----------------------//
@@ -843,7 +797,7 @@ SetDelayAndFrequency(
     // shift the antenna to the center of the tx pulse //
     //-------------------------------------------------//
 
-    qscat->sas.RotateToTxCenter(0, &(qscat->ses));
+    qscat->RotateAntennaToTxCenter(0);
 
     //-----------------------------//
     // calculate the rx gate delay //
@@ -925,4 +879,57 @@ SetOrbitStepDelayAndFrequency(
     //-------------------------------//
 
     return(SetDelayAndFrequency(spacecraft, qscat));
+}
+
+//--------------------------------//
+// Qscat::RotateAntennaToTxCenter //
+//--------------------------------//
+
+// most of these should be moved into the SES config
+#define T_ENC   9E-9
+#define T_GRID  19.87E-6
+#define T_RC    9.968E-6
+#define T_EXC   1E-6
+
+int
+Qscat::RotateAntennaToTxCenter(
+    int  pri_delay)
+{
+    double delta_t = (double)pri_delay * ses.pri + ses.txPulseWidth / 2.0 -
+        T_ENC + T_GRID + T_RC + T_EXC;
+    sas.antenna.TimeRotation(delta_t); 
+    return(1);
+}
+
+//------------------------------------//
+// Qscat::RotateAntennaToGroundImpact //
+//------------------------------------//
+
+int
+Qscat::RotateAntennaToGroundImpact(
+    Spacecraft*  spacecraft,
+    int          pri_delay)
+{
+    // first rotate to transmit pulse center
+    RotateAntennaToTxCenter(pri_delay);
+
+    // then estimate the range to the surface
+    CoordinateSwitch antenna_frame_to_gc =
+        AntennaFrameToGC(&(spacecraft->orbitState), &(spacecraft->attitude),
+        &(sas.antenna));
+    double look, azim;
+    Beam* beam = GetCurrentBeam();
+    if (! beam->GetElectricalBoresight(&look, &azim))
+        return(0);
+    Vector3 vector;
+    vector.SphericalSet(1.0, look, azim);
+    TargetInfoPackage tip;
+    if (! TargetInfo(&antenna_frame_to_gc, spacecraft, this, vector, &tip))
+        return(0);
+
+    // rotate to the antenna to the ground impact azimuth
+    double delta_t = tip.roundTripTime / 2.0;
+    sas.antenna.TimeRotation(delta_t); 
+
+    return(1);
 }

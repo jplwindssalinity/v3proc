@@ -140,10 +140,8 @@ public:
     //-----------------//
 
     int             SetAzimuthWithEncoder(unsigned short encoder_value);
-    int             ApplyAzimuthShift(double sample_delay);
     unsigned short  GetEncoder();
     unsigned short  AzimuthToEncoder(double azimuth);
-    int             RotateToTxCenter(int pri_delay, QscatSes* qscat_ses);
 
     int  CmdSpinRate(SpinRateE spin_rate);
 
@@ -275,6 +273,9 @@ public:
     Beam*         GetCurrentBeam();
     CdsBeamInfo*  GetCurrentCdsBeamInfo();
     SesBeamInfo*  GetCurrentSesBeamInfo();
+
+    int  RotateAntennaToTxCenter(int pri_delay);
+    int  RotateAntennaToGroundImpact(Spacecraft* spacecraft, int pri_delay);
 
     //-----------//
     // variables //
