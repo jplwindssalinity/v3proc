@@ -68,12 +68,12 @@ public:
 	float			ptgr;
     float           orbit_frac;
     float           antenna_azi;
-	EarthPosition   boresight_position;
 
 	//------------//
 	// slice data //
 	//------------//
 
+    int*            idx;
 	float*			sigma0;
 	WindVector*		wv;
 	float*			XK;

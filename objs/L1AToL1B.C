@@ -352,6 +352,7 @@ L1AToL1B::Convert(
                     fprintf(stderr,"Error computing lon/lat for centroid\n");
                     exit(1);
                 }
+                cf.idx[slice_i] = meas->startSliceIdx;
                 cf.var_esn_slice[slice_i] = 0;
                 cf.Es[slice_i] = Es_slice;
                 cf.En[slice_i] = En_slice;

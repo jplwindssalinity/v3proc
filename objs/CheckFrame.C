@@ -20,7 +20,7 @@ static const char rcs_id_checkframe_c[] =
 CheckFrame::CheckFrame()
 :	time(0.0), rsat(Vector3(0.0,0.0,0.0)), vsat(0.0,0.0,0.0), attitude(),
     ptgr(0.0), orbit_frac(0.0), antenna_azi(0.0),
-    boresight_position(0.0,0.0,0.0), sigma0(NULL),
+    idx(NULL), sigma0(NULL),
     wv(NULL), XK(NULL), centroid(NULL), azimuth(NULL), incidence(NULL),
     Es(NULL), En(NULL), var_esn_slice(NULL), R(NULL), GatGar(NULL),
     slicesPerSpot(0)
@@ -65,6 +65,11 @@ CheckFrame::Allocate(
 	// allocate slice measurements //
 	//-----------------------------//
 
+	idx = (int *)malloc(slicesPerSpot * sizeof(int));
+	if (idx == NULL)
+	{
+		return(0);
+	}
 	sigma0 = (float *)malloc(slicesPerSpot * sizeof(float));
 	if (sigma0 == NULL)
 	{
@@ -133,6 +138,7 @@ CheckFrame::Deallocate()
 {
 	if (slicesPerSpot > 0)
 	{
+		if (idx) free(idx);
 		if (sigma0) free(sigma0);
 		if (wv) free(wv);
 		if (XK) free(XK);
@@ -147,6 +153,7 @@ CheckFrame::Deallocate()
 	}
 
 	slicesPerSpot = 0;
+	idx = NULL;
 	sigma0 = NULL;
 	wv = NULL;
 	XK = NULL;
@@ -183,7 +190,6 @@ CheckFrame::AppendRecord(
         if (fwrite((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
-        if (! boresight_position.Write(fptr)) return(0);
 	return(1);
 }
 
@@ -193,6 +199,7 @@ CheckFrame::AppendSliceRecord(
 	int     slice_i,     
         double  lon, double lat )
 {
+        if (fwrite((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
         if (fwrite((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&wv[slice_i].spd,sizeof(float),1,fptr) != 1) return(0);
         if (fwrite((void *)&wv[slice_i].dir,sizeof(float),1,fptr) != 1) return(0);
@@ -222,6 +229,7 @@ CheckFrame::ReadDataRec(
   double lon,lat;
   for (int slice_i=0; slice_i < 10; slice_i++)
   {
+    if (fread((void *)&idx[slice_i],sizeof(int),1,fptr) != 1) return(0);
     if (fread((void *)&sigma0[slice_i],sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&(wv[slice_i].spd),sizeof(float),1,fptr) != 1) return(0);
     if (fread((void *)&(wv[slice_i].dir),sizeof(float),1,fptr) != 1) return(0);
@@ -251,7 +259,6 @@ CheckFrame::ReadDataRec(
   if (fread((void *)&ptgr,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&orbit_frac,sizeof(float),1,fptr) != 1) return(0);
   if (fread((void *)&antenna_azi,sizeof(float),1,fptr) != 1) return(0);
-  if (! boresight_position.Read(fptr)) return(0);
   attitude.Set(dtr*roll,dtr*pitch,dtr*yaw,1,2,3);
 
 return(1);
@@ -273,13 +280,12 @@ CheckFrame::WriteDataRecAscii(
   fprintf(fptr,"orbit fraction (from ascending node): %g\n",orbit_frac);
   fprintf(fptr,"antenna azimuth (rel to s/c y-axis. (deg)): %g\n",
     rtd*antenna_azi);
-  boresight_position.GetAltLonGDLat(&alt,&lon,&lat);
-  fprintf(fptr,"lon,lat of boresight position (deg): %g %g\n",rtd*lon,rtd*lat); 
   fprintf(fptr,"**** Slices Data ****\n");
   int sliceno = -5;
   for (int i=0; i < 10; i++)
   {
-    fprintf(fptr,"  Slice %d\n",sliceno);
+    if (idx[i] < -6 || idx[i] > 6 || idx[i] == 0) continue;  // invalid data
+    fprintf(fptr,"  Slice %d\n",idx[i]);
     fprintf(fptr,"    wind spd (m/s), dir (deg): %g %g\n",wv[i].spd,
       rtd*wv[i].dir);
     fprintf(fptr,"    sigma0: %g\n",sigma0[i]); 

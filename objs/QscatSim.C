@@ -809,6 +809,7 @@ QscatSim::SetMeasurements(
                     lambda * lambda);
             }
 
+            cf->idx[slice_i] = meas->startSliceIdx;
             cf->var_esn_slice[slice_i] = var_esn_slice;
             cf->Es[slice_i] = Es;
             cf->En[slice_i] = En;
