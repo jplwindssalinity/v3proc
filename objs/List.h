@@ -87,7 +87,6 @@ public:
 	T*		GetCurrent();		// return T* of current
 	T*		GetNext();			// current = next, return T* of current
 	T*		GetPrev();			// current = prev, return T* of current
-	T*		Find(T* data);		// return T* or NULL (current is set)
 
 	//-------------//
 	// information //

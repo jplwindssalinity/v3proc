@@ -190,23 +190,6 @@ List<T>::GetPrev()
 	return (GetCurrent());
 }
 
-//------//
-// Find //
-//------//
-
-template <class T>
-T*
-List<T>::Find(
-	T*	data)
-{
-	for (T* contents = GetHead(); contents; contents = GetNext())
-	{
-		if (*contents == *data)
-			return(contents);
-	}
-	return(NULL);
-}
-
 //-----------//
 // NodeCount //
 //-----------//
