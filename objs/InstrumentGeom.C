@@ -192,8 +192,8 @@ FindSlice(
 		gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
 	}
 
-	float outline_look[2][2];
-	float outline_azimuth[2][2];
+	float outline_look[4];
+	float outline_azimuth[4];
 	double qr;
 	float q, twoa, s1, s2;
 
@@ -208,10 +208,10 @@ FindSlice(
 	if (qr < 0.0)
 	{
 		// desired gain not on pattern, use best point
-		outline_look[0][0] = look_array[0];
-		outline_azimuth[0][0] = azimuth_array[0];
-		outline_look[0][1] = look_array[0];
-		outline_azimuth[0][1] = azimuth_array[0];
+		outline_look[0] = look_array[0];
+		outline_azimuth[0] = azimuth_array[0];
+		outline_look[1] = look_array[0];
+		outline_azimuth[1] = azimuth_array[0];
 	}
 	else
 	{
@@ -220,10 +220,10 @@ FindSlice(
 		s1 = (-c_f1[1] + q) / twoa;
 		s2 = (-c_f1[1] - q) / twoa;
 
-		outline_look[0][0] = look_array[0] + s1 * sin(angle_f1);
-		outline_azimuth[0][0] = azimuth_array[0] + s1 * cos(angle_f1);
-		outline_look[0][1] = look_array[0] + s2 * sin(angle_f1);
-		outline_azimuth[0][1] = azimuth_array[0] + s2 * cos(angle_f1);
+		outline_look[0] = look_array[0] + s1 * sin(angle_f1);
+		outline_azimuth[0] = azimuth_array[0] + s1 * cos(angle_f1);
+		outline_look[1] = look_array[0] + s2 * sin(angle_f1);
+		outline_azimuth[1] = azimuth_array[0] + s2 * cos(angle_f1);
 	}
 
 	//------------------------------------------------------//
@@ -236,10 +236,10 @@ FindSlice(
 	if (qr < 0.0)
 	{
 		// desired gain not on pattern, use best point
-		outline_look[1][0] = look_array[2];
-		outline_azimuth[1][0] = azimuth_array[2];
-		outline_look[1][1] = look_array[2];
-		outline_azimuth[1][1] = azimuth_array[2];
+		outline_look[3] = look_array[2];
+		outline_azimuth[3] = azimuth_array[2];
+		outline_look[2] = look_array[2];
+		outline_azimuth[2] = azimuth_array[2];
 	}
 	else
 	{
@@ -248,10 +248,10 @@ FindSlice(
 		s1 = (-c_f2[1] + q) / twoa;
 		s2 = (-c_f2[1] - q) / twoa;
 
-		outline_look[1][0] = look_array[2] + s1 * sin(angle_f2);
-		outline_azimuth[1][0] = azimuth_array[2] + s1 * cos(angle_f2);
-		outline_look[1][1] = look_array[2] + s2 * sin(angle_f2);
-		outline_azimuth[1][1] = azimuth_array[2] + s2 * cos(angle_f2);
+		outline_look[3] = look_array[2] + s1 * sin(angle_f2);
+		outline_azimuth[3] = azimuth_array[2] + s1 * cos(angle_f2);
+		outline_look[2] = look_array[2] + s2 * sin(angle_f2);
+		outline_azimuth[2] = azimuth_array[2] + s2 * cos(angle_f2);
 	}
 
 	//--------------------//
@@ -260,21 +260,17 @@ FindSlice(
 
 	EarthPosition sum;
 	sum.SetPosition(0.0, 0.0, 0.0);
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 4; i++)
 	{
-		for (int j = 0; j < 2; j++)
-		{
-			Vector3 rlook_antenna;
-			rlook_antenna.SphericalSet(1.0, outline_look[i][j],
-				outline_azimuth[i][j]);
-			Vector3 rlook_gc = antenna_frame_to_gc->Forward(rlook_antenna);
-			EarthPosition* spot_on_earth = new EarthPosition();
-			*spot_on_earth =
-				earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
-			if (! outline->Append(spot_on_earth))
-				return(0);
-			sum = sum + *spot_on_earth;
-		}
+		Vector3 rlook_antenna;
+		rlook_antenna.SphericalSet(1.0, outline_look[i], outline_azimuth[i]);
+		Vector3 rlook_gc = antenna_frame_to_gc->Forward(rlook_antenna);
+		EarthPosition* spot_on_earth = new EarthPosition();
+		*spot_on_earth =
+			earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
+		if (! outline->Append(spot_on_earth))
+			return(0);
+		sum = sum + *spot_on_earth;
 	}
 
 	//-------------------//
