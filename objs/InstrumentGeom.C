@@ -913,6 +913,119 @@ IdealCommandedDoppler(
 	return(1);
 }
 
+//-------------------------------//
+// IdealCommandedDopplerForRange //
+//-------------------------------//
+// Estimate the ideal commanded doppler frequency.
+// for the point on the same azimuth as the peak 2-way gain
+// point and a look angle corresponding to the range at the center
+// of the range gate.
+
+#define DOPPLER_ACCURACY	1.0		// 1 Hz
+
+int
+IdealCommandedDopplerForRange(
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
+	float                           offset)
+{
+	//------------------------------//
+	// zero the spacecraft attitude //
+	//------------------------------//
+
+	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
+	Attitude zero_rpy;
+	zero_rpy.Set(0.0, 0.0, 0.0, 1, 2, 3);
+	CoordinateSwitch zero_rpy_antenna_frame_to_gc =
+		AntennaFrameToGC(sc_orbit_state, &zero_rpy, &(instrument->antenna));
+
+	//-------------------------------------------//
+	// find the current beam's two-way peak gain //
+	//-------------------------------------------//
+
+	Beam* beam = instrument->antenna.GetCurrentBeam();
+	double azimuth_rate = instrument->antenna.actualSpinRate;
+	double look, azim;
+	if (! GetTwoWayPeakGain2(&zero_rpy_antenna_frame_to_gc, spacecraft, beam,
+		azimuth_rate, &look, &azim))
+	{
+		return(0);
+	}
+
+        //-----------------------------------------------------//
+        // compute look angle corresponding to the given range //
+        //-----------------------------------------------------//	
+	double pulse_width = beam->txPulseWidth;
+        double cmd_rtt=instrument->commandedRxGateDelay -
+	  (pulse_width - instrument->commandedRxGateWidth) / 2.0;
+        double cmd_range=cmd_rtt*speed_light_kps/2.0;
+
+        double bracket=5;
+        
+        double start_look=0;
+        double end_look=0;
+        double start_range=0;
+        double end_range=0;
+	Vector3 vector;
+	TargetInfoPackage tip;
+
+        //--------------------------------------------//
+        // make sure desired look_angle is bracketted //
+        //--------------------------------------------//
+        while(cmd_range<=start_range || cmd_range>=end_range){
+	  start_look=look-bracket*dtr;
+	  end_look=look+bracket*dtr;
+	  vector.SphericalSet(1.0, start_look, azim);
+	  TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+			vector, &tip);
+          start_range=tip.slantRange;
+	  vector.SphericalSet(1.0, end_look, azim);
+	  TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+			vector, &tip);
+          end_range=tip.slantRange;
+          bracket+=5;
+	}
+
+        //--------------------------------------------//
+        // Perform Binary Search for Desired Look     //
+        // to 100m tolerance in range                 //
+        //--------------------------------------------//
+
+        double new_look=0, new_range=0;
+        while(fabs(cmd_range-new_range)>0.1){
+	  new_look=(start_look+end_look)/2;
+          vector.SphericalSet(1.0, new_look, azim);
+	  TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+			vector, &tip);
+          new_range=tip.slantRange;
+          if(new_range< cmd_range) start_look=new_look;
+          else end_look=new_look;
+	}
+
+        look=new_look;
+	//----------------------------//
+	// calculate commanded Doppler //
+	//----------------------------//
+
+	vector.SphericalSet(1.0, look, azim);
+	instrument->SetCommandedDoppler(0.0);
+	do
+	{
+		TargetInfo(&zero_rpy_antenna_frame_to_gc, spacecraft, instrument,
+			vector, &tip);
+		float freq = instrument->commandedDoppler + tip.basebandFreq;
+		instrument->SetCommandedDoppler(freq);
+	} while (fabs(tip.basebandFreq) > DOPPLER_ACCURACY);
+
+
+	//---------------------------------------//
+        // Add Offset to Commanded Doppler       //
+        //---------------------------------------//
+        float freq = instrument->commandedDoppler + offset;
+        instrument->SetCommandedDoppler(freq);
+	return(1);
+}
+
 //------------//
 // TargetInfo //
 //------------//

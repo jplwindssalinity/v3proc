@@ -66,6 +66,8 @@ int		RttToCommandedReceiverDelay(Instrument* instrument, double rtt);
 
 int		IdealCommandedDoppler(Spacecraft* spacecraft, Instrument* instrument);
 
+int		IdealCommandedDopplerForRange(Spacecraft* spacecraft, Instrument* instrument, float offset);
+
 int		TargetInfo(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector,
 			TargetInfoPackage* tip);
