@@ -34,6 +34,7 @@ OBJS = \
 	Orbit.o \
 	OrbitSim.o \
 	Product.o \
+	WindField.o \
 	WindVector.o \
 	WVC.o
 
@@ -109,5 +110,6 @@ Misc.o:			Misc.C Misc.h
 Orbit.o:		Orbit.C Orbit.h Constants.h Matrix3.h
 OrbitSim.o:		OrbitSim.C OrbitSim.h Constants.h Orbit.h Matrix3.h
 Product.o:		Product.C Product.h
+WindField.o:	WindField.C WindField.h
 WindVector.o:	WindVector.C WindVector.h
 WVC.o:			WVC.C WVC.h
