@@ -43,7 +43,8 @@ PROGRAMS = \
 	l2a_centroids \
 	l2a_diagnostics \
 	l2_kp \
-	l2a_s0
+	l2a_s0 \
+        kprtable_to_xmgr
 
 #----------------------------------------------------------------------
 # default: make all executable programs
