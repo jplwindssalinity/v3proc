@@ -68,10 +68,10 @@ PROGRAMS = \
 	l2ags_s0 \
 	fix_ecmwf_speed \
 	l2b_to_flower \
-        l2a_dissect \
-        l1b_to_half_egg \
-        l1b_to_ascii \
-        l2a_to_ascii
+    l2a_dissect \
+    l1b_to_half_egg \
+    l1b_to_ascii \
+    l2a_to_ascii
 
 HUDD_PROGRAMS = \
 	sim \
@@ -96,6 +96,33 @@ HUDD_PROGRAMS = \
 	log_cfg \
 	fix_ecmwf_speed \
 	l2b_to_flower
+
+DIAGNOSTIC_PROGRAMS = \
+	l2ab_obj_comp \
+	l2b_to_vctr \
+	l2b_metrics \
+	see_spot \
+	test_pattern \
+	l1b_ascii \
+	l1b_outlines \
+	plot_solution_curves \
+	windfield_to_vctr \
+	l2a_centroids \
+	l2a_maps \
+	l2_kp \
+	l2a_s0 \
+	l2a_s0l \
+	l2ags_s0l \
+	xtable_to_xmgr \
+	l1b_s0 \
+	kprtable_to_xmgr \
+	s0_to_noise_value \
+	log_cfg \
+	l2ags_s0 \
+	l2b_to_flower \
+    l2a_dissect \
+    l1b_to_ascii \
+    l2a_to_ascii
 
 #----------------------------------------------------------------------
 # default: make all executable programs
