@@ -12,6 +12,7 @@ static const char rcs_id_matrix3_c[] =
 #include <string.h>
 #include "Constants.h"
 #include "Matrix3.h"
+#include "CoordinateSwitch.h"
 
 //
 // Matrix3
@@ -937,5 +938,80 @@ Vector3 alt_lat_lon = this->get_alt_lat_lon(EarthPosition::GEOCENTRIC);
 EarthPosition result(alt_lat_lon.get(1),alt_lat_lon.get(2),
 	EarthPosition::GEOCENTRIC);
 return(result);
+
+}
+
+//
+// Normal
+//
+// Form a unit vector normal to the earth's surface at the location of
+// this EarthPosition.
+//
+
+Vector3
+EarthPosition::Normal()
+
+{
+
+Vector3 normal(_v[0]/(r1_earth*r1_earth),
+               _v[1]/(r1_earth*r1_earth),
+               _v[2]/(r2_earth*r2_earth));
+normal.Scale(1.0);
+return(normal);
+
+}
+
+//
+// SurfaceCoordinateSystem
+//
+// Form a CoordinateSwitch object that defines a local surface coordinate
+// system at the location specified by this EarthPosition.  The local
+// frame is defined with respect to the geocentric frame.
+// The local frame axes are:
+//    x - perpendicular to the local normal and directed to true north
+//    y - perpendicular to the local normal and directed to true east
+//    z - the local normal
+//
+
+CoordinateSwitch
+EarthPosition::SurfaceCoordinateSystem()
+
+{
+
+//
+// Form a vector pointing east by crossing a vector pointing
+// along the earth's rotation axis with the vector pointing from
+// the earths center to the surface position.
+// The resulting vector is eastward from
+// the location on the surface.  The local normal could be used
+// in place of the position vector because it lies in the
+// same plane defined by the earth's rotation axis and the position
+// vector.
+//
+
+Vector3 urot(0,0,1);
+Vector3 xlocal = urot & (*this);
+xlocal.Scale(1.0);
+Vector3 zlocal = (*this).Normal();
+Vector3 ylocal = zlocal & ylocal;
+CoordinateSwitch cs(xlocal,ylocal,zlocal);
+return(cs);
+
+}
+
+//
+// IncidenceAngle
+//
+// Compute the angle between a local normal at this EarthPosition and
+// a vector (in the geocentric frame).
+// The angle is returned in radians.
+//
+
+double
+EarthPosition::IncidenceAngle(Vector3 rlook)
+
+{
+
+return(acos(rlook % this->Normal()));
 
 }
