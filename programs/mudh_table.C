@@ -9,16 +9,17 @@
 //
 // SYNOPSIS
 //    mudh_table [ -h ] [ -p ] [ -m minutes ] [ -r irr_thresh ]
-//        <start_rev> <end_rev> <output_base>
+//        [ -d mudh_dir ] <start_rev> <end_rev> <output_base>
 //
 // DESCRIPTION
 //    Generates a mudh table for classification.
 //
 // OPTIONS
-//    [ -h ]            Make a sample histogram. (Number of samples)
-//    [ -p ]            Make a set of probability charts.
-//    [ -m minutes ]    Time difference maximum.
+//    [ -h ]             Make a sample histogram. (Number of samples)
+//    [ -p ]             Make a set of probability charts.
+//    [ -m minutes ]     Time difference maximum.
 //    [ -r irr_thresh ]  The SSM/I rain rate to threshold.
+//    [ -d mudh_dir ]    An alternate directory for MUDH files.
 //
 // OPERANDS
 //    <start_rev>    Duh.
@@ -98,11 +99,11 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING   "hpm:r:"
-#define BIG_DIM     100
-#define QUOTE       '"'
-#define MUDH_DIR    "/export/svt11/hudd/allmudh"
-#define REV_DIGITS  5
+#define OPTSTRING         "hpd:m:r:"
+#define BIG_DIM           100
+#define QUOTE             '"'
+#define DEFAULT_MUDH_DIR  "/export/svt11/hudd/allmudh"
+#define REV_DIGITS        5
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -119,7 +120,8 @@ int opt_hist = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -h ]", "[ -p ]", "[ -m minutes ]",
-    "[ -r irr_thresh ]", "<start_rev>", "<end_rev>", "<output_base>", 0 };
+    "[ -r irr_thresh ]", "[ -d mudh_dir ]", "<start_rev>", "<end_rev>",
+    "<output_base>", 0 };
 
 // last index: SSM/I class (0=all, 1=rainfree, 2=rain)
 static unsigned long counts[NBD_DIM][SPD_DIM][DIR_DIM][MLE_DIM][3];
@@ -147,6 +149,8 @@ main(
     int minutes = 30;              // default 30 minutes
     float irr_threshold = 2.0;    // default two km*mm/hr
 
+    char* mudh_dir = DEFAULT_MUDH_DIR;
+
     //------------------------//
     // parse the command line //
     //------------------------//
@@ -166,6 +170,9 @@ main(
             break;
         case 'r':
             irr_threshold = atof(optarg);
+            break;
+        case 'd':
+            mudh_dir = optarg;
             break;
         case '?':
             usage(command, usage_array, 1);
@@ -226,7 +233,7 @@ main(
         //----------------//
 
         char mudh_file[1024];
-        sprintf(mudh_file, "%s/%0*d.mudh", MUDH_DIR, REV_DIGITS, rev);
+        sprintf(mudh_file, "%s/%0*d.mudh", mudh_dir, REV_DIGITS, rev);
         FILE* ifp = fopen(mudh_file, "r");
         if (ifp == NULL)
         {
