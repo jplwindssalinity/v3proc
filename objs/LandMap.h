@@ -53,9 +53,9 @@ protected:
     //-----------//
     // variables //
     //-----------//
-	
+
     unsigned char**  _map;
-    int              _pixelsPerDegree; 
+    int              _pixelsPerDegree;
     int              _mapLatDim;
     int              _mapLonDim;
     int              _usemap;
