@@ -131,7 +131,7 @@ L10ToL15::Convert(
 		meas->eastAzimuth = phi;
 
 		meas->incidenceAngle = spot_on_earth.IncidenceAngle(rlook_gc);
-		meas->estimatedKp = 0.0;
+		// need to set estimated Kp
 
 		meas_spot->slices.Append(meas);
 		l15->frame.spotList.Append(meas_spot);
