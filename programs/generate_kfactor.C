@@ -115,7 +115,7 @@ template class BufferedList<OrbitState>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[-terT]" "<sim_config_file>", 
+const char* usage_array[] = { "[-cterT]" "<sim_config_file>", 
 "<output_file>", 0};
 
 //--------------//
@@ -140,6 +140,7 @@ main(
 
 
         int trueX_only=0;
+        int no_stomp=0;
         
 	if (argc < 2)
 		usage(command, usage_array, 1);
@@ -184,6 +185,9 @@ main(
 	      read_trueX_file=argv[arg_idx];
 	      break;
 
+            case 'c':
+              no_stomp=1;
+              break;
 
 	    default:
 	      fprintf(stderr,"%s: Bad option %s\n",command,argv[arg_idx]);
@@ -225,19 +229,20 @@ main(
 	// forcefeed several config parameters //
 	//-------------------------------------//
  
-	config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
-	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
-	config_list.StompOrAppend(SIM_KPC_FLAG_KEYWORD, "0");
-	config_list.StompOrAppend(SIM_CORR_KPM_FLAG_KEYWORD, "0");
-	config_list.StompOrAppend(SIM_UNCORR_KPM_FLAG_KEYWORD, "0");
-	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
-        config_list.StompOrAppend(ATTITUDE_CONTROL_MODEL_KEYWORD,"NONE");
-	config_list.StompOrAppend(CREATE_XTABLE_KEYWORD, "1");
-	config_list.StompOrAppend(SYSTEM_TEMPERATURE_KEYWORD, "0");
-	config_list.StompOrAppend(UNIFORM_SIGMA_FIELD_KEYWORD, "1");
-	config_list.StompOrAppend(PTGR_NOISE_BIAS_KEYWORD, "0");
-	config_list.StompOrAppend(PTGR_NOISE_KP_KEYWORD, "0");
-
+        if(! no_stomp){
+	  config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
+	  config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+	  config_list.StompOrAppend(SIM_KPC_FLAG_KEYWORD, "0");
+	  config_list.StompOrAppend(SIM_CORR_KPM_FLAG_KEYWORD, "0");
+	  config_list.StompOrAppend(SIM_UNCORR_KPM_FLAG_KEYWORD, "0");
+	  config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
+	  config_list.StompOrAppend(ATTITUDE_CONTROL_MODEL_KEYWORD,"NONE");
+	  config_list.StompOrAppend(CREATE_XTABLE_KEYWORD, "1");
+	  config_list.StompOrAppend(SYSTEM_TEMPERATURE_KEYWORD, "0");
+	  config_list.StompOrAppend(UNIFORM_SIGMA_FIELD_KEYWORD, "1");
+	  config_list.StompOrAppend(PTGR_NOISE_BIAS_KEYWORD, "0");
+	  config_list.StompOrAppend(PTGR_NOISE_KP_KEYWORD, "0");
+        }
 
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
@@ -401,6 +406,7 @@ main(
 		//-----------------------//
 
 		spacecraft_sim.UpdateOrbit(time, &spacecraft);
+                spacecraft_sim.UpdateAttitude(time, &spacecraft);
 
 		//-------------------------//
 		// set the instrument time //
@@ -425,6 +431,7 @@ main(
 			for (int azimuth_step = 0; azimuth_step < num_azimuths;
 				azimuth_step++)
 			{
+                                printf("%d\n",azimuth_step);
 				antenna->azimuthAngle = azimuth_step_size *
 					(double)azimuth_step;
 
