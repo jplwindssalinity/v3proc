@@ -325,6 +325,7 @@ InstrumentSim::ScatSim(
 			return(0);
 		l00_frame->time = instrument->time;
 		l00_frame->orbitTicks = instrument->orbitTicks;
+		l00_frame->instrumentTicks = instrument->instrumentTicks;
 		l00_frame->priOfOrbitTickChange = 255;		// flag value
 	}
 
