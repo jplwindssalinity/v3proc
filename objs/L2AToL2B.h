@@ -45,14 +45,15 @@ public:
 	// conversion //
 	//------------//
 
-	int		ConvertAndWrite(L17* l17, GMF* gmf, L20* l20);
+	int		ConvertAndWrite(L17* l17, GMF* gmf, Kp* kp, L20* l20);
 	int		Flush(L20* l20);
 
 	//-----------//
 	// debugging //
 	//-----------//
 
-	int		WriteSolutionCurves(L17* l17, GMF* gmf, const char* output_file);
+	int		WriteSolutionCurves(L17* l17, GMF* gmf, Kp* kp,
+				const char* output_file);
 };
 
 #endif

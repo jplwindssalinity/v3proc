@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 static const char rcs_id_measurement_c[] =
 	"@(#) $Id$";
@@ -20,8 +20,9 @@ static const char rcs_id_measurement_c[] =
 //======//
 
 Meas::Meas()
-:	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0), pol(NONE),
-	eastAzimuth(0.0), incidenceAngle(0.0), A(0.0), B(0.0), C(0.0), offset(0)
+:	value(0.0), XK(0.0), EnSlice(0.0), bandwidth(0.0),
+	transmitPulseWidth(0.0), pol(NONE), eastAzimuth(0.0), incidenceAngle(0.0),
+	A(0.0), B(0.0), C(0.0), offset(0)
 {
 	return;
 }
@@ -50,6 +51,7 @@ Meas::Write(
 		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&transmitPulseWidth, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||
 		centroid.WriteLonLat(fp) != 1 ||
 		fwrite((void *)&pol, sizeof(PolE), 1, fp) != 1 ||
@@ -78,6 +80,7 @@ Meas::Read(
 		fread((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&EnSlice, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&bandwidth, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&transmitPulseWidth, sizeof(float), 1, fp) != 1 ||
 		outline.Read(fp) != 1 ||
 		centroid.ReadLonLat(fp) != 1 ||
 		fread((void *)&pol, sizeof(PolE), 1, fp) != 1 ||

@@ -168,6 +168,17 @@ main(
 		exit(1);
 	}
 
+	//--------------//
+	// configure Kp //
+	//--------------//
+
+	Kp kp;
+	if (! ConfigKp(&kp, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Kp\n", command);
+		exit(1);
+	}
+
 	//----------------------//
 	// create the converter //
 	//----------------------//
@@ -245,7 +256,7 @@ main(
 		// convert //
 		//---------//
 
-		int retval = l17_to_l20.ConvertAndWrite(&l17, &gmf, &l20);
+		int retval = l17_to_l20.ConvertAndWrite(&l17, &gmf, &kp, &l20);
 		switch (retval)
 		{
 		case 1:

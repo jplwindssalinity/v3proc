@@ -48,9 +48,10 @@ int main(int argc, char *argv[])
 	char wordstring[STRLEN];
 	char newline[STRLEN];
 	char *start,*end;
-	char *sptr,*wordend;
+	char *sptr;
+	char* wordend = NULL;
 	char *comment_start;
-	char c;
+	char c = '\0';
 
 	// Write out the #include "Malloc1.h" directive at the start of the output.
 	strcpy(str,"#include \"Malloc1.h\"\n");

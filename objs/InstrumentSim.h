@@ -18,7 +18,7 @@ static const char rcs_id_instrumentsim_h[] =
 #include "Spacecraft.h"
 #include "Distributions.h"
 #include "XTable.h"
-#include "KpmField.h"
+#include "Kpm.h"
 
 //======================================================================
 // CLASSES

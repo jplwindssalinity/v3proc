@@ -38,6 +38,7 @@ int
 L17ToL20::ConvertAndWrite(
 	L17*	l17,
 	GMF*	gmf,
+	Kp*		kp,
 	L20*	l20)
 {
 	static int last_rev_number = 0;
@@ -76,7 +77,7 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	if (! gmf->RetrieveWinds(meas_list, wvc))
+	if (! gmf->RetrieveWinds(meas_list, kp, wvc))
 	{
 		delete wvc;
 		return(4);
@@ -142,6 +143,7 @@ int
 L17ToL20::WriteSolutionCurves(
 	L17*			l17,
 	GMF*			gmf,
+	Kp*				kp,
 	const char*		output_file)
 {
 	//------------------//
@@ -156,7 +158,7 @@ L17ToL20::WriteSolutionCurves(
 	// write solution curves //
 	//-----------------------//
 
-	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList));
+	gmf->WriteSolutionCurves(ofp, &(l17->frame.measList), kp);
 
 	//-------------------//
 	// close output file //

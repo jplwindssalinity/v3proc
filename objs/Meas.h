@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef MEAS_H
 #define MEAS_H
@@ -18,7 +18,8 @@ static const char rcs_id_meas_h[] =
 
 //======================================================================
 // CLASSES
-//		Meas, MeasList, MeasSpot, MeasSpotList, OffsetList, OffsetListList
+//		Meas, MeasList, OffsetList, OffsetListList, MeasSpot,
+//		MeasSpotList
 //======================================================================
 
 //======================================================================
@@ -70,6 +71,7 @@ public:
 	float				XK;
 	float				EnSlice;
 	float				bandwidth;
+	float				transmitPulseWidth;
 	Outline				outline;
 	EarthPosition		centroid;
 

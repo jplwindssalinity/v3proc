@@ -13,7 +13,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Ephemeris.h"
 #include "Sigma0.h"
 #include "Constants.h"
-#include "KpmField.h"
+#include "Kpm.h"
 
 //===============//
 // InstrumentSim //

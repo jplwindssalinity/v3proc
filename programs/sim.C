@@ -69,7 +69,7 @@ static const char rcs_id[] =
 #include "Meas.h"
 #include "Ephemeris.h"
 #include "Wind.h"
-#include "KpmField.h"
+#include "Kpm.h"
 
 //-----------//
 // TEMPLATES //

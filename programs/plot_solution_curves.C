@@ -152,6 +152,17 @@ main(
 		exit(1);
 	}
 
+	//--------------//
+	// configure Kp //
+	//--------------//
+
+	Kp kp;
+	if (! ConfigKp(&kp, &config_list))
+	{
+		fprintf(stderr, "%s: error configuring Kp\n", command);
+		exit(1);
+	}
+
 	//------//
 	// loop //
 	//------//
@@ -214,7 +225,7 @@ main(
 		// write solution curves //
 		//-----------------------//
 
-		gmf.WriteSolutionCurves(ofp, &meas_list);
+		gmf.WriteSolutionCurves(ofp, &meas_list, &kp);
 
 		//-------------------//
 		// close output file //

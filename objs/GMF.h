@@ -13,6 +13,7 @@ static const char rcs_id_gmf_h[] =
 #include "Wind.h"
 #include "Meas.h"
 #include "Constants.h"
+#include "Kp.h"
 
 
 //======================================================================
@@ -66,14 +67,14 @@ public:
 	int		GetCoefs(PolE pol, float inc, float spd, float* A0, float* A1,
 				float* A1_phase, float* A2, float* A2_phase, float* A3,
 				float* A3_phase, float* A4, float* A4_phase);
-	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list);
+	int		WriteSolutionCurves(FILE* ofp, MeasList* meas_list, Kp* kp);
 
 	//----------------//
 	// wind retrieval //
 	//----------------//
 
-	int		RetrieveWinds(MeasList* meas_list, WVC* wvc);
-	int		SolutionCurve(MeasList* meas_list);
+	int		RetrieveWinds(MeasList* meas_list, Kp* kp, WVC* wvc);
+	int		SolutionCurve(MeasList* meas_list, Kp* kp);
 	int		Smooth();
 	int		FindMaxima(WVC* wvc);
 
@@ -83,8 +84,8 @@ protected:
 	// wind retrieval //
 	//----------------//
 
-	float	_ObjectiveFunction(MeasList* meas_list, float u,
-				float phi);
+	float	_ObjectiveFunction(MeasList* meas_list, float u, float phi,
+				Kp* kp);
 
 	//-----------//
 	// variables //

@@ -22,8 +22,9 @@ static const char rcs_id_configsim_c[] =
 #include "Constants.h"
 #include "Distributions.h"
 #include "Tracking.h"
-#include "KpmField.h"
+#include "Kpm.h"
 #include "EarthField.h"
+#include "Kp.h"
 
 //------------------//
 // ConfigSpacecraft //
@@ -1388,6 +1389,45 @@ ConfigGMF(
 	return(1);
 }
 
+//----------//
+// ConfigKp //
+//----------//
+
+int
+ConfigKp(
+	Kp*				kp,
+	ConfigList*		config_list)
+{
+	//---------------//
+	// configure Kpm //
+	//---------------//
+
+	char* kpm_filename = config_list->Get(KPM_FILE_KEYWORD);
+	if (kpm_filename == NULL)
+		return(0);
+
+	if (! kp->kpm.ReadTable(kpm_filename))
+		return(0);
+
+	//----------------//
+	// configure Kpri //
+	//----------------//
+
+	// put code here
+
+	//----------------//
+	// configure Kprs //
+	//----------------//
+
+	// put code here
+
+	return(1);
+}
+
+//----------------//
+// ConfigKpmField //
+//----------------//
+
 int
 ConfigKpmField(
 	KpmField*			kpmField,
@@ -1406,7 +1446,7 @@ ConfigKpmField(
 		return(0);
 	}
 
-	char* kpm_filename = config_list->Get(KPM_FILE_KEYWORD);
+	char* kpm_filename = config_list->Get(KPM_FIELD_FILE_KEYWORD);
 
 	if (kpm_filename == NULL)
 	{

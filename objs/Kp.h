@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 #ifndef KP_H
 #define KP_H
@@ -9,7 +9,8 @@
 static const char rcs_id_kp_h[] =
 	"@(#) $Id$";
 
-#include "PiscTable.h"
+#include "Kpm.h"
+#include "Kpr.h"
 
 
 //======================================================================
@@ -22,12 +23,11 @@ static const char rcs_id_kp_h[] =
 //		Kp
 //
 // DESCRIPTION
-//		The Kp object holds estimates of total Kp as a function of
-//		polarization, incidence angle, wind speed, and relative wind
-//		direction (chi).
+//		The Kp object holds estimates of Kpc, Kpm, instrument Kpr,
+//		and spacecraft Kpr.
 //======================================================================
 
-class Kp : public PiscTable
+class Kp
 {
 public:
 
@@ -37,6 +37,27 @@ public:
 
 	Kp();
 	~Kp();
+
+	//--------------//
+	// accessing Kp //
+	//--------------//
+
+	int		GetKpc2(Meas* meas, double sigma_0, double* kpc2);
+	int		GetKpm2(int pol_idx, float speed, double* kpm2);
+	int		GetKpri2(double* kpri2);
+	int		GetKprs2(double* kprs2);
+	int		GetTotalKp2(Meas* meas, double sigma_0, int pol_idx, float speed,
+				double* kp2);
+
+	int		GetVariance();
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	Kpm		kpm;
+	Kpri	kpri;
+	Kprs	kprs;
 };
 
 #endif

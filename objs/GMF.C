@@ -210,7 +210,8 @@ GMF::GetCoefs(
 int
 GMF::WriteSolutionCurves(
 	FILE*		ofp,
-	MeasList*	meas_list)
+	MeasList*	meas_list,
+	Kp*			kp)
 {
 	//------------------------------//
 	// generate each solution curve //
@@ -220,7 +221,7 @@ GMF::WriteSolutionCurves(
 	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
 	{
 		new_list.Append(meas);
-		SolutionCurve(&new_list);
+		SolutionCurve(&new_list, kp);
 		for (int i = 0; i < _phiCount; i++)
 		{
 			fprintf(ofp, "%g %g\n", (float)i * _phiStepSize * rtd,
@@ -235,7 +236,7 @@ GMF::WriteSolutionCurves(
 	// generate combined solution curve //
 	//----------------------------------//
 
-	SolutionCurve(meas_list);
+	SolutionCurve(meas_list, kp);
 	float min_obj = _bestObj[0];
 	float max_obj = _bestObj[0];
 	for (int i = 0; i < _phiCount; i++)
@@ -269,7 +270,7 @@ GMF::WriteSolutionCurves(
 	//----------------------------//
 
 	WVC* wvc = new WVC();
-	RetrieveWinds(meas_list, wvc);
+	RetrieveWinds(meas_list, kp, wvc);
 	for (WindVectorPlus* wvp = wvc->ambiguities.GetHead(); wvp;
 		wvp = wvc->ambiguities.GetNext())
 	{
@@ -293,13 +294,14 @@ GMF::WriteSolutionCurves(
 int
 GMF::RetrieveWinds(
 	MeasList*	meas_list,
+	Kp*			kp,
 	WVC*		wvc)
 {
 	//-------------------------//
 	// find the solution curve //
 	//-------------------------//
 
-	if (! SolutionCurve(meas_list))
+	if (! SolutionCurve(meas_list, kp))
 	{
 		fprintf(stderr, "can't find solution curve\n");
 		return(0);
@@ -342,7 +344,8 @@ GMF::RetrieveWinds(
 
 int
 GMF::SolutionCurve(
-	MeasList*	meas_list)
+	MeasList*	meas_list,
+	Kp*			kp)
 {
 	//-------------------------------//
 	// bracket maxima with certainty //
@@ -364,13 +367,13 @@ GMF::SolutionCurve(
 		// ...widen so that the maxima is bracketed //
 		//------------------------------------------//
 
-		if (_ObjectiveFunction(meas_list, bx, phi) <
-			_ObjectiveFunction(meas_list, ax, phi) )
+		if (_ObjectiveFunction(meas_list, bx, phi, kp) <
+			_ObjectiveFunction(meas_list, ax, phi, kp) )
 		{
 			ax = _spdMin;
 		}
-		if (_ObjectiveFunction(meas_list, bx, phi) <
-			_ObjectiveFunction(meas_list, cx, phi) )
+		if (_ObjectiveFunction(meas_list, bx, phi, kp) <
+			_ObjectiveFunction(meas_list, cx, phi, kp) )
 		{
 			cx = _spdMax;
 		}
@@ -392,8 +395,8 @@ GMF::SolutionCurve(
 			x2 = bx;
 			x1 = bx - golden_c * (bx - ax);
 		}
-		float f1 = _ObjectiveFunction(meas_list, x1, phi);
-		float f2 = _ObjectiveFunction(meas_list, x2, phi);
+		float f1 = _ObjectiveFunction(meas_list, x1, phi, kp);
+		float f2 = _ObjectiveFunction(meas_list, x2, phi, kp);
 
 		while (x3 - x0 > _spdTol)
 		{
@@ -403,7 +406,7 @@ GMF::SolutionCurve(
 				x1 = x2;
 				x2 = x2 + golden_c * (x3 - x2);
 				f1 = f2;
-				f2 = _ObjectiveFunction(meas_list, x2, phi);
+				f2 = _ObjectiveFunction(meas_list, x2, phi, kp);
 			}
 			else
 			{
@@ -411,7 +414,7 @@ GMF::SolutionCurve(
 				x2 = x1;
 				x1 = x1 - golden_c * (x1 - x0);
 				f2 = f1;
-				f1 = _ObjectiveFunction(meas_list, x1, phi);
+				f1 = _ObjectiveFunction(meas_list, x1, phi, kp);
 			}
 		}
 
@@ -602,11 +605,11 @@ float
 GMF::_ObjectiveFunction(
 	MeasList*	meas_list,
 	float		spd,
-	float		phi)
+	float		phi,
+	Kp*			kp)
 {
 	float fv = 0.0;
-	for (Meas* meas = meas_list->GetHead(); meas;
-			meas = meas_list->GetNext())
+	for (Meas* meas = meas_list->GetHead(); meas; meas = meas_list->GetNext())
 	{
 		float chi = phi - meas->eastAzimuth + pi;
 		float gmf_value;
@@ -614,8 +617,13 @@ GMF::_ObjectiveFunction(
 			&gmf_value);
 		float s = gmf_value - meas->value;
 
-		float ekp = meas->EstimatedKp(gmf_value);
-                float var = ekp*ekp*gmf_value*gmf_value;
+		double ekp2, var;
+
+		if (! kp->GetTotalKp2(meas, gmf_value, meas->pol, spd, &ekp2))
+			var = 1.0;
+		else
+			var = ekp2 * gmf_value*gmf_value;
+
 		fv += s*s / var + log(var);
 	}
 	return(-fv);

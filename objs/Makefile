@@ -42,6 +42,7 @@ OBJS = \
 	InstrumentSimAccurate.o \
 	InstrumentGeom.o \
 	Interpolate.o \
+	Kp.o \
 	Kpm.o \
 	Kpr.o \
 	L00.o \

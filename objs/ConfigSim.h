@@ -24,6 +24,7 @@ static const char rcs_id_configsim_h[] =
 #include "ConfigList.h"
 #include "Tracking.h"
 #include "ConfigSimDefs.h"
+#include "Kp.h"
 
 //======================================================================
 // DESCRIPTION
@@ -146,6 +147,12 @@ int ConfigWindField(WindField* windfield, ConfigList* config_list);
 //-----//
 
 int ConfigGMF(GMF* gmf, ConfigList* config_file);
+
+//----//
+// Kp //
+//----//
+
+int ConfigKp(Kp* kp, ConfigList* config_list);
 
 //----------//
 // KpmField //
