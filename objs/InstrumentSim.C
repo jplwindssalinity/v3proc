@@ -556,7 +556,7 @@ InstrumentSim::ScatSim(
 	if (! SetL00Spacecraft(spacecraft))
 		return(0);
 
-	if (! SetL00Science(spacecraft))
+	if (! SetL00Science(&meas_spot, instrument))
 		return(0);
 
 	if (_spotNumber >= l00.frame.beamCyclesPerFrame * antenna->numberOfBeams)
