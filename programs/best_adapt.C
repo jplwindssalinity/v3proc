@@ -69,6 +69,7 @@ static const char rcs_id[] =
 #include "Misc.h"
 #include "Wind.h"
 #include "L2B.h"
+#include "Index.h"
 #include "List.h"
 #include "List.C"
 #include "BufferedList.h"
@@ -442,25 +443,19 @@ main(
     // initialize some index calculators //
     //-----------------------------------//
 
-    float first_idx_m = (float)(FIRST_INDICIES - 1) /
-        (FIRST_MAX_VALUE - FIRST_MIN_VALUE);
-    float first_idx_b = -first_idx_m * FIRST_MIN_VALUE;
+    Index first_index, neighbor_index, dif_ratio_index, balance_index,
+        speed_index;
 
-    float neighbor_idx_m = (float)(NEIGHBOR_INDICIES - 1) /
-        (NEIGHBOR_MAX_VALUE - NEIGHBOR_MIN_VALUE);
-    float neighbor_idx_b = -neighbor_idx_m * NEIGHBOR_MIN_VALUE;
-
-    float dif_ratio_idx_m = (float)(DIF_RATIO_INDICIES - 1) /
-        (DIF_RATIO_MAX_VALUE - DIF_RATIO_MIN_VALUE);
-    float dif_ratio_idx_b = -dif_ratio_idx_m * DIF_RATIO_MIN_VALUE;
-
-    float balance_idx_m = (float)(BALANCE_INDICIES - 1) /
-        (BALANCE_MAX_VALUE - BALANCE_MIN_VALUE);
-    float balance_idx_b = -balance_idx_m * BALANCE_MIN_VALUE;
-
-    float speed_idx_m = (float)(SPEED_INDICIES - 1) /
-        (SPEED_MAX_VALUE - SPEED_MIN_VALUE);
-    float speed_idx_b = -speed_idx_m * SPEED_MIN_VALUE;
+    first_index.SpecifyCenters(FIRST_MIN_VALUE, FIRST_MAX_VALUE,
+        FIRST_INDICIES);
+    neighbor_index.SpecifyCenters(NEIGHBOR_MIN_VALUE, NEIGHBOR_MAX_VALUE,
+        NEIGHBOR_INDICIES);
+    dif_ratio_index.SpecifyCenters(DIF_RATIO_MIN_VALUE, DIF_RATIO_MAX_VALUE,
+        DIF_RATIO_INDICIES);
+    balance_index.SpecifyCenters(BALANCE_MIN_VALUE, BALANCE_MAX_VALUE,
+        BALANCE_INDICIES);
+    speed_index.SpecifyCenters(SPEED_MIN_VALUE, SPEED_MAX_VALUE,
+        SPEED_INDICIES);
 
     //----------------//
     // loop till done //
@@ -503,15 +498,19 @@ main(
                 //----------------------------------------//
 
                 float first_prob;
-                int first_idx = (int)(first_idx_m * first_obj_prob[cti][ati] +
-                    first_idx_b + 0.5);
-                if (first_idx < 0) first_idx = 0;
-                if (first_idx >= FIRST_INDICIES)
-                    first_idx = FIRST_INDICIES - 1;
-                if (first_count_array[first_idx] >= MIN_SAMPLES)
+                int tmp_idx[2];
+                float first_coef[2];
+                first_index.GetLinearCoefsClipped(first_obj_prob[cti][ati],
+                    tmp_idx, first_coef);
+                if (first_count_array[tmp_idx[0]] >= MIN_SAMPLES &&
+                    first_count_array[tmp_idx[1]] >= MIN_SAMPLES)
                 {
-                    first_prob = (float)first_good_array[first_idx] /
-                        (float)first_count_array[first_idx];
+                    first_prob = first_coef[0] *
+                        (float)first_good_array[tmp_idx[0]] /
+                        (float)first_count_array[tmp_idx[0]] +
+                        first_coef[1] *
+                        (float)first_good_array[tmp_idx[1]] /
+                        (float)first_count_array[tmp_idx[1]];
                 }
                 else
                 {
@@ -521,7 +520,8 @@ main(
                 if (first_prob > best_prob)
                 {
                     best_prob = first_prob;
-                    best_first_idx = first_idx;
+                    first_index.GetNearestIndex(first_obj_prob[cti][ati],
+                        &best_first_idx);
                     best_choice = FIRST;
                     best_ati = ati;
                     best_cti = cti;
@@ -532,29 +532,16 @@ main(
                 //----------------------------------//
 
                 float filter_prob;
-                int neighbor_idx = (int)(neighbor_idx_m *
-                    neighbor_count[cti][ati] + neighbor_idx_b + 0.5);
-                if (neighbor_idx < 0) neighbor_idx = 0;
-                if (neighbor_idx >= NEIGHBOR_INDICIES)
-                    neighbor_idx = NEIGHBOR_INDICIES - 1;
-
-                int dif_ratio_idx = (int)(dif_ratio_idx_m *
-                    dif_ratio[cti][ati] + dif_ratio_idx_b + 0.5);
-                if (dif_ratio_idx < 0) dif_ratio_idx = 0;
-                if (dif_ratio_idx >= DIF_RATIO_INDICIES)
-                    dif_ratio_idx = DIF_RATIO_INDICIES - 1;
-
-                int balance_idx = (int)(balance_idx_m * balance[cti][ati] +
-                    balance_idx_b + 0.5);
-                if (balance_idx < 0) balance_idx = 0;
-                if (balance_idx >= BALANCE_INDICIES)
-                    balance_idx = BALANCE_INDICIES - 1;
-
-                int speed_idx = (int)(speed_idx_m * speed[cti][ati] +
-                    speed_idx_b + 0.5);
-                if (speed_idx < 0) speed_idx = 0;
-                if (speed_idx >= SPEED_INDICIES)
-                    speed_idx = SPEED_INDICIES - 1;
+           
+                int neighbor_idx, dif_ratio_idx, balance_idx, speed_idx;
+                neighbor_index.GetNearestIndex(neighbor_count[cti][ati],
+                        &neighbor_idx);
+                dif_ratio_index.GetNearestIndex(dif_ratio[cti][ati],
+                        &dif_ratio_idx);
+                balance_index.GetNearestIndex(balance[cti][ati],
+                        &balance_idx);
+                speed_index.GetNearestIndex(speed[cti][ati],
+                        &speed_idx);
 
                 if (filter_count_array[neighbor_idx][dif_ratio_idx][balance_idx][speed_idx] >= MIN_SAMPLES)
                 {
