@@ -144,7 +144,7 @@ CoordinateSwitch::SetRotation(
 
 	Matrix3 rollmatrix(1,0,0,0,cr,sr,0,-sr,cr);
 	Matrix3 pitchmatrix(cp,0,-sp,0,1,0,sp,0,cp);
-	Matrix3 yawmatrix(1,0,0,0,cr,sr,0,-sr,cr);
+	Matrix3 yawmatrix(cy,sy,0,-sy,cy,0,0,0,1);
 	int *order = att.GetOrderIndicies();
 
 	_trans.Identity();
