@@ -10,7 +10,7 @@ HDFINCDIR =		$(INCDIR)/hdf
 EALIBS =		../../lib/libEAData.a
 HDFLIBS =		-L../../lib -lmfhdf -ldf -lz -lnsl
 LIBS =			../../lib/libSim.a
-LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++
+LDLIBS =		$(LIBS) $(EALIBS) $(HDFLIBS) -lm -lstdc++ -lsocket
 PURE =
 
 CCC =			$(PURE) gcc
