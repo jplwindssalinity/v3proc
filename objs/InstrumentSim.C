@@ -13,6 +13,7 @@ static const char rcs_id_instrumentsim_c[] =
 #include "Ephemeris.h"
 #include "Sigma0.h"
 #include "Constants.h"
+
 #define UNIFORM_SIGMA 0 // (If 1 then all sigma0s=1)
 
 //===============//
@@ -20,7 +21,7 @@ static const char rcs_id_instrumentsim_c[] =
 //===============//
 
 InstrumentSim::InstrumentSim()
-:	slicesPerSpot(0),startTime(0.0), l00FrameReady(0), _spotNumber(0)
+:	slicesPerSpot(0), startTime(0.0), l00FrameReady(0), _spotNumber(0)
 {
 	return;
 }
@@ -83,7 +84,8 @@ InstrumentSim::DetermineNextEvent(
 	//----------------------------//
 
 	double cycle_start_time = min_time - antenna->beam[min_idx].timeOffset;
-	int cycle_idx = (int)(cycle_start_time / antenna->priPerBeam + 0.5);
+	int cycle_idx = (int)((cycle_start_time - startTime) /
+			antenna->priPerBeam + 0.5);
 	_scatBeamTime[min_idx] = (double)(cycle_idx + 1) * antenna->priPerBeam +
 		antenna->beam[min_idx].timeOffset;
 
@@ -108,7 +110,7 @@ InstrumentSim::UpdateAntennaPosition(
 //--------------------------------//
 
 int
-InstrumentSim::SetMeasurements(	
+InstrumentSim::SetMeasurements(
 	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	MeasSpot*		meas_spot,
@@ -160,10 +162,10 @@ InstrumentSim::SetMeasurements(
 		//--------------------------------//
 		// generate the coordinate switch //
 		//--------------------------------//
-		
+	
 		CoordinateSwitch gc_to_antenna = AntennaFrameToGC(
 							&(spacecraft->orbitState),
-							&(spacecraft->attitude), 
+							&(spacecraft->attitude),
 							&(instrument->antenna));
 		gc_to_antenna=gc_to_antenna.ReverseDirection();
 
@@ -269,7 +271,7 @@ InstrumentSim::ScatSim(
 	//-----------------------------//
 
 	if (_spotNumber == 0)
-	{	
+	{
 		if (! SetL00Spacecraft(spacecraft,l00_frame))
 			return(0);
 		l00_frame->time = time;
@@ -299,7 +301,6 @@ InstrumentSim::ScatSim(
 
 	if (! SetMeasurements(spacecraft, instrument, &meas_spot, windfield, gmf))
 		return(0);
-
 
 	//--------------------------------//
 	// Add Spot Specific Info to Frame //
