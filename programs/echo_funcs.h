@@ -1,407 +1,174 @@
-//----------//
-// INCLUDES //
-//----------//
+//=========================================================//
+// Copyright (C) 1998, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.               //
+//=========================================================//
 
-#include "Qscat.h"
+#ifndef ECHO_FUNCS_H
+#define ECHO_FUNCS_H
 
-//------------------//
-// TYPE DEFINITIONS //
-//------------------//
+static const char rcs_id_echo_funcs_h[] =
+    "@(#) $Id$";
 
-enum DataId { SPOT_ID, EPHEMERIS_ID, ORBIT_STEP_ID, ORBIT_TIME_ID };
+#define SPOTS_PER_FRAME  100
 
-//-----------------------//
-// FUNCTION DECLARATIONS //
-//-----------------------//
+class EchoInfo
+{
+public:
 
-int  write_spot(int fd, int beam_idx, float tx_doppler, float rx_gate_delay,
-         int ideal_encoder, float tx_center_azimuth,
-         float meas_spec_peak_freq, float total_signal_energy, int land_flag);
-int  read_spot(int fd, int* beam_idx, float* tx_doppler, float* rx_gate_delay,
-         int* ideal_encoder, float* tx_center_azimuth,
-         float* meas_spec_peak_freq, float* total_signal_energy,
-         int* land_flag);
+    enum { OK, CAL_OR_LOAD_PULSE, LAND, BAD_PEAK };
 
-int  write_ephemeris(int fd, float gcx, float gcy, float gcz, float velx,
-         float vely, float velz, float roll, float pitch, float yaw);
-int  read_ephemeris(int fd, float* gcx, float* gcy, float* gcz, float* velx,
-         float* vely, float* velz, float* roll, float* pitch, float* yaw);
+    int            Write(int fd);
+    int            Read(int fd);
+    unsigned char  SpotOrbitStep(int spot_idx);
 
-int  write_orbit_step(int fd, int orbit_step);
-int  read_orbit_step(int fd, int* orbit_step);
+    float           gcX;
+    float           gcY;
+    float           gcZ;
+    float           velX;
+    float           velY;
+    float           velZ;
+    float           roll;
+    float           pitch;
+    float           yaw;
+    unsigned int    orbitTicks;
+    unsigned char   orbitStep;
+    unsigned char   priOfOrbitStepChange;
+    unsigned char   beamIdx[SPOTS_PER_FRAME];
+    unsigned short  idealEncoder[SPOTS_PER_FRAME];
+    double          txCenterAzimuthAngle[SPOTS_PER_FRAME];
+    float           txDoppler[SPOTS_PER_FRAME];
+    float           rxGateDelay[SPOTS_PER_FRAME];
+    unsigned char   flag[SPOTS_PER_FRAME];
+    double          totalSignalEnergy[SPOTS_PER_FRAME];
+    float           measSpecPeakFreq[SPOTS_PER_FRAME];
+};
 
-int  write_orbit_time(int fd, unsigned int orbit_ticks);
-int  read_orbit_time(int fd, unsigned int* orbit_ticks);
-
-int  find_peak(Qscat* qscat, double* x, double* y, int points,
+int  gaussian_fit(Qscat* qscat, double* x, double* y, int points,
          float* peak_slice, float* peak_freq);
-int  large_slope(double* x, double* y, double c[4], double step[4],
-         int points, int* idx);
-int  optimize(double* x, double* y, double c[4], double step[4],
-         int points, double* sse);
-double  evaluate(double* x, double* y, double c[4], int points);
-
-//------------//
-// write_spot //
-//------------//
-
-#define SPOT_RECORD_SIZE  32
-
-int
-write_spot(
-    int    fd,
-    int    beam_idx,
-    float  tx_doppler,
-    float  rx_gate_delay,
-    int    ideal_encoder,
-    float  tx_center_azimuth,
-    float  meas_spec_peak_freq,
-    float  total_signal_energy,
-    int    land_flag)
-{
-    // form the buffer
-    char buffer[SPOT_RECORD_SIZE + 4];
-    int id = SPOT_ID;
-    int count = 0;
-
-    int size = sizeof(int);
-    memcpy(buffer + count, &id, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(buffer + count, &beam_idx, size);
-    count += size;
-
-    size = sizeof(float);
-    memcpy(buffer + count, &tx_doppler, size);
-    count += size;
-
-    memcpy(buffer + count, &rx_gate_delay, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(buffer + count, &ideal_encoder, size);
-    count += size;
-
-    size = sizeof(float);
-    memcpy(buffer + count, &tx_center_azimuth, size);
-    count += size;
-
-    memcpy(buffer + count, &meas_spec_peak_freq, size);
-    count += size;
-
-    memcpy(buffer + count, &total_signal_energy, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(buffer + count, &land_flag, size);
-    count += size;
-
-    if (write(fd, (void *)buffer, count) != count)
-        return(0);
-
-    return(1);
-}
-
-//-----------//
-// read_spot //
-//-----------//
-
-int
-read_spot(
-    int     fd,
-    int*    beam_idx,
-    float*  tx_doppler,
-    float*  rx_gate_delay,
-    int*    ideal_encoder,
-    float*  tx_center_azimuth,
-    float*  meas_spec_peak_freq,
-    float*  total_signal_energy,
-    int*    land_flag)
-{
-    // form the buffer
-    char buffer[SPOT_RECORD_SIZE];
-
-    if (read(fd, (void *)buffer, SPOT_RECORD_SIZE) != SPOT_RECORD_SIZE)
-        return(0);
-
-    int count = 0;
-
-    int size = sizeof(int);
-    memcpy(beam_idx, buffer + count, size);
-    count += size;
-
-    size = sizeof(float);
-    memcpy(tx_doppler, buffer + count, size);
-    count += size;
-
-    memcpy(rx_gate_delay, buffer + count, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(ideal_encoder, buffer + count, size);
-    count += size;
-
-    size = sizeof(float);
-    memcpy(tx_center_azimuth, buffer + count, size);
-    count += size;
-
-    memcpy(meas_spec_peak_freq, buffer + count, size);
-    count += size;
-
-    memcpy(total_signal_energy, buffer + count, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(land_flag, buffer + count, size);
-    count += size;
-
-    return(1);
-}
+double  gfit_eval(double* x, void* ptr);
 
 //-----------------//
-// write_ephemeris //
+// EchoInfo::Write //
 //-----------------//
 
-#define EPHEMERIS_RECORD_SIZE  36
-
 int
-write_ephemeris(
-    int    fd,
-    float  gcx,
-    float  gcy,
-    float  gcz,
-    float  velx,
-    float  vely,
-    float  velz,
-    float  roll,
-    float  pitch,
-    float  yaw)
+EchoInfo::Write(
+    int  fd)
 {
-    // form the buffer
-    char buffer[EPHEMERIS_RECORD_SIZE + 4];
-    int id = EPHEMERIS_ID;
-    int count = 0;
+    int float_size = sizeof(float);
+    int int_size = sizeof(int);
+    int char_size = sizeof(char);
+    int frame_double_size = SPOTS_PER_FRAME * sizeof(double);
+    int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
+    int frame_short_size = SPOTS_PER_FRAME * sizeof(short);
+    int frame_char_size = SPOTS_PER_FRAME * sizeof(char);
 
-    int size = sizeof(int);
-    memcpy(buffer + count, &id, size);
-    count += size;
-
-    size = sizeof(float);
-    memcpy(buffer + count, &gcx, size);
-    count += size;
-
-    memcpy(buffer + count, &gcy, size);
-    count += size;
-
-    memcpy(buffer + count, &gcz, size);
-    count += size;
-
-    memcpy(buffer + count, &velx, size);
-    count += size;
-
-    memcpy(buffer + count, &vely, size);
-    count += size;
-
-    memcpy(buffer + count, &velz, size);
-    count += size;
-
-    memcpy(buffer + count, &roll, size);
-    count += size;
-
-    memcpy(buffer + count, &pitch, size);
-    count += size;
-
-    memcpy(buffer + count, &yaw, size);
-    count += size;
-
-    if (write(fd, (void *)buffer, count) != count)
+    if ( write(fd, (void *)&gcX, float_size) != float_size ||
+        write(fd, (void *)&gcY, float_size) != float_size ||
+        write(fd, (void *)&gcZ, float_size) != float_size ||
+        write(fd, (void *)&velX, float_size) != float_size ||
+        write(fd, (void *)&velY, float_size) != float_size ||
+        write(fd, (void *)&velZ, float_size) != float_size ||
+        write(fd, (void *)&roll, float_size) != float_size ||
+        write(fd, (void *)&pitch, float_size) != float_size ||
+        write(fd, (void *)&yaw, float_size) != float_size ||
+        write(fd, (void *)&orbitTicks, int_size) != int_size ||
+        write(fd, (void *)&orbitStep, char_size) != char_size ||
+        write(fd, (void *)&priOfOrbitStepChange, char_size) !=
+          char_size ||
+        write(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
+        write(fd, (void *)idealEncoder, frame_short_size) !=
+          frame_short_size ||
+        write(fd, (void *)txCenterAzimuthAngle, frame_double_size) !=
+          frame_double_size ||
+        write(fd, (void *)txDoppler, frame_float_size) !=
+          frame_float_size ||
+        write(fd, (void *)rxGateDelay, frame_float_size) !=
+          frame_float_size ||
+        write(fd, (void *)flag, frame_char_size) != frame_char_size ||
+        write(fd, (void *)totalSignalEnergy, frame_double_size) !=
+          frame_double_size ||
+        write(fd, (void *)measSpecPeakFreq, frame_float_size) !=
+          frame_float_size)
+    {
         return(0);
-
+    }
     return(1);
 }
 
 //----------------//
-// read_ephemeris //
+// EchoInfo::Read //
 //----------------//
 
 int
-read_ephemeris(
-    int     fd,
-    float*  gcx,
-    float*  gcy,
-    float*  gcz,
-    float*  velx,
-    float*  vely,
-    float*  velz,
-    float*  roll,
-    float*  pitch,
-    float*  yaw)
+EchoInfo::Read(
+    int  fd)
 {
-    // form the buffer
-    char buffer[EPHEMERIS_RECORD_SIZE];
+    int float_size = sizeof(float);
+    int int_size = sizeof(int);
+    int char_size = sizeof(char);
+    int frame_double_size = SPOTS_PER_FRAME * sizeof(double);
+    int frame_float_size = SPOTS_PER_FRAME * sizeof(float);
+    int frame_short_size = SPOTS_PER_FRAME * sizeof(short);
+    int frame_char_size = SPOTS_PER_FRAME * sizeof(char);
 
-    if (read(fd, (void *)buffer, EPHEMERIS_RECORD_SIZE) !=
-        EPHEMERIS_RECORD_SIZE)
+    //------------------------------------//
+    // use the first read to test for EOF //
+    //------------------------------------//
+
+    int retval = read(fd, (void *)&gcX, float_size);
+    if (retval != float_size)
+    {
+        switch (retval)
+        {
+        case 0:    // EOF
+            return(-1);
+            break;
+        default:   // error
+            return(0);
+            break;
+        }
+    }
+    if (read(fd, (void *)&gcY, float_size) != float_size ||
+        read(fd, (void *)&gcZ, float_size) != float_size ||
+        read(fd, (void *)&velX, float_size) != float_size ||
+        read(fd, (void *)&velY, float_size) != float_size ||
+        read(fd, (void *)&velZ, float_size) != float_size ||
+        read(fd, (void *)&roll, float_size) != float_size ||
+        read(fd, (void *)&pitch, float_size) != float_size ||
+        read(fd, (void *)&yaw, float_size) != float_size ||
+        read(fd, (void *)&orbitTicks, int_size) != int_size ||
+        read(fd, (void *)&orbitStep, char_size) != char_size ||
+        read(fd, (void *)&priOfOrbitStepChange, char_size) !=
+          char_size ||
+        read(fd, (void *)beamIdx, frame_char_size) != frame_char_size ||
+        read(fd, (void *)idealEncoder, frame_short_size) !=
+          frame_short_size ||
+        read(fd, (void *)txCenterAzimuthAngle, frame_double_size) !=
+          frame_double_size ||
+        read(fd, (void *)txDoppler, frame_float_size) !=
+          frame_float_size ||
+        read(fd, (void *)rxGateDelay, frame_float_size) !=
+          frame_float_size ||
+        read(fd, (void *)flag, frame_char_size) != frame_char_size ||
+        read(fd, (void *)totalSignalEnergy, frame_double_size) !=
+          frame_double_size ||
+        read(fd, (void *)measSpecPeakFreq, frame_float_size) !=
+          frame_float_size)
     {
         return(0);
     }
-
-    int count = 0;
-
-    int size = sizeof(float);
-    memcpy(gcx, buffer + count, size);
-    count += size;
-
-    memcpy(gcy, buffer + count, size);
-    count += size;
-
-    memcpy(gcz, buffer + count, size);
-    count += size;
-
-    memcpy(velx, buffer + count, size);
-    count += size;
-
-    memcpy(vely, buffer + count, size);
-    count += size;
-
-    memcpy(velz, buffer + count, size);
-    count += size;
-
-    memcpy(roll, buffer + count, size);
-    count += size;
-
-    memcpy(pitch, buffer + count, size);
-    count += size;
-
-    memcpy(yaw, buffer + count, size);
-    count += size;
-
     return(1);
 }
 
-//------------------//
-// write_orbit_step //
-//------------------//
-
-#define ORBIT_STEP_RECORD_SIZE  4
-
-int
-write_orbit_step(
-    int  fd,
-    int  orbit_step)
-{
-    // form the buffer
-    char buffer[ORBIT_STEP_RECORD_SIZE + 4];
-    int id = ORBIT_STEP_ID;
-    int count = 0;
-
-    int size = sizeof(int);
-    memcpy(buffer + count, &id, size);
-    count += size;
-
-    size = sizeof(int);
-    memcpy(buffer + count, &orbit_step, size);
-    count += size;
-
-    if (write(fd, (void *)buffer, count) != count)
-        return(0);
-
-    return(1);
-}
-
-//-----------------//
-// read_orbit_step //
-//-----------------//
-
-int
-read_orbit_step(
-    int   fd,
-    int*  orbit_step)
-{
-    // form the buffer
-    char buffer[ORBIT_STEP_RECORD_SIZE];
-
-    if (read(fd, (void *)buffer, ORBIT_STEP_RECORD_SIZE) !=
-        ORBIT_STEP_RECORD_SIZE)
-    {
-        return(0);
-    }
-
-    int count = 0;
-
-    int size = sizeof(int);
-    memcpy(orbit_step, buffer + count, size);
-    count += size;
-
-    return(1);
-}
-
-//------------------//
-// write_orbit_time //
-//------------------//
-
-#define ORBIT_TIME_RECORD_SIZE  4
-
-int
-write_orbit_time(
-    int           fd,
-    unsigned int  orbit_ticks)
-{
-    // form the buffer
-    char buffer[ORBIT_TIME_RECORD_SIZE + 4];
-    int id = ORBIT_TIME_ID;
-    int count = 0;
-
-    int size = sizeof(int);
-    memcpy(buffer + count, &id, size);
-    count += size;
-
-    size = sizeof(unsigned int);
-    memcpy(buffer + count, &orbit_ticks, size);
-    count += size;
-
-    if (write(fd, (void *)buffer, count) != count)
-        return(0);
-
-    return(1);
-}
-
-//-----------------//
-// read_orbit_time //
-//-----------------//
-
-int
-read_orbit_time(
-    int            fd,
-    unsigned int*  orbit_ticks)
-{
-    // form the buffer
-    char buffer[ORBIT_TIME_RECORD_SIZE];
-
-    if (read(fd, (void *)buffer, ORBIT_TIME_RECORD_SIZE) !=
-        ORBIT_TIME_RECORD_SIZE)
-    {
-        return(0);
-    }
-
-    int count = 0;
-
-    int size = sizeof(unsigned int);
-    memcpy(orbit_ticks, buffer + count, size);
-    count += size;
-
-    return(1);
-}
-
-//-----------//
-// find_peak //
-//-----------//
+//--------------//
+// gaussian_fit //
+//--------------//
 
 #define CENTER_ACCY 0.0001
 
 int
-find_peak(
+gaussian_fit(
     Qscat*   qscat,
     double*  x,
     double*  y,
@@ -409,45 +176,67 @@ find_peak(
     float*   peak_slice,
     float*   peak_freq)
 {
+    //----------------//
+    // allocate array //
+    //----------------//
+
+    int ndim = 4;
+    double** p = (double**)make_array(sizeof(double), 2, ndim + 1, ndim);
+    if (p == NULL)
+        return(0);
+
+    //--------------------//
+    // initialize simplex //
+    //--------------------//
+
     int max_idx = 0;
     for (int i = 0; i < points; i++)
     {
         if (y[i] > y[max_idx])
             max_idx = i;
     }
+    double amp = y[max_idx];
+    double amp_lambda = amp / 50.0;
+    double center = (double)max_idx;
+    double center_lambda = 0.5;
+    double width = 3.0;
+    double width_lambda = 0.5;
+    double bias = 0.0;
+    double bias_lambda = amp_lambda;
 
-    double c[4];
-    c[0] = y[max_idx];
-    c[1] = max_idx;
-    c[2] = 5.0;
-    c[3] = 0.0;
+    p[0][0] = amp;
+    p[0][1] = center;
+    p[0][2] = width;
+    p[0][3] = bias;
 
-    double step[4];
-    step[0] = c[0] / 10.0;
-    step[1] = 1.0;
-    step[2] = 1.0;
-    step[3] = 0.0;
+    p[1][0] = amp - amp_lambda;
+    p[1][1] = center;
+    p[1][2] = width;
+    p[1][3] = bias;
 
-    double use_step[4] = { 0.0, 0.0, 0.0, 0.0 };
+    p[2][0] = amp;
+    p[2][1] = center + center_lambda;
+    p[2][2] = width;
+    p[2][3] = bias;
 
-    do
-    {
-        int idx;
-        large_slope(x, y, c, step, points, &idx);
+    p[3][0] = amp;
+    p[3][1] = center;
+    p[3][2] = width + width_lambda;
+    p[3][3] = bias;
 
-        use_step[idx] = step[idx];
-        double sse;
-        if (! optimize(x, y, c, use_step, points, &sse))
-            return(0);
-        use_step[idx] = 0.0;
+    p[4][0] = amp;
+    p[4][1] = center;
+    p[4][2] = width;
+    p[4][3] = bias + bias_lambda;
 
-        if (idx == 1 && step[idx] < CENTER_ACCY)
-            break;
+    char* ptr[3];
+    ptr[0] = (char *)x;
+    ptr[1] = (char *)y;
+    ptr[2] = (char *)&points;
 
-        step[idx] /= 2.0;
-    } while (1);
+    downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr);
 
-    float fslice = c[1];
+    float fslice = p[0][1];
     if (fslice < 0.0 || fslice > points - 1)
         return(0);
 
@@ -460,138 +249,20 @@ find_peak(
     return(1);
 }
 
-//-------------//
-// large_slope //
-//-------------//
-
-int
-large_slope(
-    double*  x,
-    double*  y,
-    double   c[4],
-    double   step[4],
-    int      points,
-    int*     idx)
-{
-    double try_c_low[4];
-    double try_c_high[4];
-
-    double max_dif = 0.0;
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            try_c_low[j] = c[j];
-            try_c_high[j] = c[j];
-        }
-        try_c_low[i] -= step[i] / 2.0;
-        try_c_high[i] += step[i] / 2.0;
-        double low_sse = evaluate(x, y, try_c_low, points);
-        double high_sse = evaluate(x, y, try_c_high, points);
-        double dif = fabs(low_sse - high_sse);
-        if (dif > max_dif)
-        {
-            max_dif = dif;
-            *idx = i;
-        }
-    }
-    return(1);
-}
-
-//----------//
-// optimize //
-//----------//
-
-#define SWAP(a,b)  { swap = (a); (a) = (b); (b) = swap; }
-
-int
-optimize(
-    double*  x,
-    double*  y,
-    double   c[4],
-    double   step[4],
-    int      points,
-    double*  sse)
-{
-    //---------------------//
-    // determine direction //
-    //---------------------//
-
-    // assume going forward
-    double old_c[4];
-    for (int i = 0; i < 4; i++)
-    {
-        old_c[i] = c[i] - step[i] / 2.0;
-    }
-    double old_sse = evaluate(x, y, old_c, points);
-
-    double new_c[4];
-    for (int i = 0; i < 4; i++)
-    {
-        new_c[i] = c[i] + step[i] / 2.0;
-    }
-    double new_sse = evaluate(x, y, new_c, points);
-
-    float delta_sign = 1.0;
-
-    double swap;
-    if (old_sse < new_sse)
-    {
-        // reverse direction
-        delta_sign = -1.0;
-        for (int i = 0; i < 4; i++)
-        {
-            SWAP(new_c[i], old_c[i]);
-        }
-        SWAP(new_sse, old_sse);
-    }
-
-    //------------------------------//
-    // search until minima is found //
-    //------------------------------//
-
-    for (;;)
-    {
-        if (new_sse < old_sse)
-        {
-            // continue moving forward
-            for (int i = 0; i < 4; i++)
-            {
-                old_c[i] = new_c[i];
-                new_c[i] += delta_sign * step[i];
-            }
-            if (new_c[2] > 10.0)    // too wide
-                return(0);
-            if (new_c[1] < 0.0 || new_c[1] > 9.0)    // off center
-                return(0);
-            old_sse = new_sse;
-            new_sse = evaluate(x, y, new_c, points);
-        }
-        else
-        {
-            // stop (new value is worse than the old)
-            for (int i = 0; i < 4; i++)
-            {
-                c[i] = old_c[i];
-            }
-            break;
-        }
-    }
-    *sse = old_sse;
-    return(1);
-}
-
-//----------//
-// evaluate //
-//----------//
+//-----------//
+// gfit_eval //
+//-----------//
 
 double
-evaluate(
-    double*  x,
-    double*  y,
-    double   c[4],
-    int      points)
+gfit_eval(
+    double*  c,
+    void*    ptr)
 {
+    char** ptr2 = (char**)ptr;
+    double* x = (double *)ptr2[0];
+    double* y = (double *)ptr2[1];
+    int points = *(int *)ptr2[2];
+
     double sum_dif = 0.0;
     for (int i = 0; i < points; i++)
     {
@@ -603,3 +274,24 @@ evaluate(
     }
     return(sum_dif);
 }
+
+//-------------------------//
+// EchoInfo::SpotOrbitStep //
+//-------------------------//
+
+unsigned char
+EchoInfo::SpotOrbitStep(
+    int  spot_idx)
+{
+    if (priOfOrbitStepChange != 255 && spot_idx < priOfOrbitStepChange)
+    {
+        if (orbitStep == 0)
+            return(ORBIT_STEPS - 1);
+        else
+            return(orbitStep - 1);
+    }
+    else
+        return(orbitStep);
+}
+
+#endif

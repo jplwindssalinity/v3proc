@@ -69,7 +69,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "AngleInterval.h"
-#include "echo_io.h"
+#include "echo_funcs.h"
 
 //-----------//
 // TEMPLATES //
