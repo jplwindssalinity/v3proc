@@ -2683,7 +2683,8 @@ WindSwath::ReadNscatSwv25(
                 goto close_and_fail;
             }
             wvp->spd = wvc_spd[wvc_idx] * 0.01;
-            wvp->dir = wvc_dir[wvc_idx] * 0.01 * dtr;
+            float angle = wvc_dir[wvc_idx] * 0.01 * dtr;
+            wvp->dir = CWNTOCCWE(angle);
 
             wvc->ambiguities.Append(wvp);
             wvc->selected = wvp;
