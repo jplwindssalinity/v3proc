@@ -668,6 +668,16 @@ main(
                 spacecraft_sim.ReportAttitude(sim_time, &spacecraft,
                     &(frame->attitude));
 
+                // save the true attitude
+                if (true_att_fp != NULL)
+                {
+                    fprintf(true_att_fp, "%u %g %g %g\n",
+                        frame->orbitTicks,
+                        spacecraft.attitude.GetRoll() * rtd,
+                        spacecraft.attitude.GetPitch() * rtd,
+                        spacecraft.attitude.GetYaw() * rtd);
+                }
+
                 int size = frame->Pack(l1a.buffer);
                 l1a.Write(l1a.buffer, size);
             }
