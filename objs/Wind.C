@@ -2165,6 +2165,32 @@ WindField::SetAllSpeeds(
     return(count);
 }
 
+//-------------------------//
+// WindField::ScaleSpeed   //
+//-------------------------//
+
+int
+WindField::ScaleSpeed(
+    float  scale)
+{
+    int count = 0;
+    int lon_count = _lon.GetBins();
+    int lat_count = _lat.GetBins();
+    for (int lon_idx = 0; lon_idx < lon_count; lon_idx++)
+    {
+        for (int lat_idx = 0; lat_idx < lat_count; lat_idx++)
+        {
+            WindVector* wv = *(*(_field + lon_idx) + lat_idx);
+            if (wv)
+            {
+                wv->spd *= scale;
+                count++;
+            }
+        }
+    }
+    return(count);
+}
+
 //---------------------------//
 // WindField::FakeEcmwfHiRes //
 //---------------------------//

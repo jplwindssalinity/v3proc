@@ -60,7 +60,7 @@ public:
     // manipulation //
     //--------------//
 
-    int  ScaleToSpeed(float speed);
+    int  ScaleToSpeed(float scale);
 
     //-----------//
     // variables //
@@ -303,6 +303,7 @@ public:
 
     int  FixSpeed(float speed);
     int  SetAllSpeeds(float speed);
+    int  ScaleSpeed(float scale);
     int  FakeEcmwfHiRes(float speed);
 
 protected:
