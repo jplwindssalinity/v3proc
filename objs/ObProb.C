@@ -102,6 +102,20 @@ ObProb::GetSpeed(
     return(speedArray[dir_idx] * SPD_SCALE);
 }
 
+//-------------------------//
+// ObProb::GetAverageSpeed //
+//-------------------------//
+
+float
+ObProb::GetAverageSpeed()
+{
+    double spd_sum = 0.0;
+    for (int i = 0; i < DIR_BINS; i++)
+        spd_sum += speedArray[i] * SPD_SCALE;
+    float avg_spd = spd_sum / (double)DIR_BINS;
+    return(avg_spd);
+}
+
 //----------------------//
 // ObProb::GetDirection //
 //----------------------//
@@ -146,67 +160,123 @@ ObProb::RetrieveProbabilities(
     MeasList*  ml,
     Kp*        kp)
 {
-    //----------------//
-    // get MLE values //
-    //----------------//
+    //-----------------------------------//
+    // find best speed at each direction //
+    //-----------------------------------//
 
-    float tmp_array[DIR_BINS][SPD_BINS];
+    float spd_min = gmf->GetMinSpd();
+    float spd_max = gmf->GetMaxSpd();
+
     float max_mle = -9e9;
+    float ax = spd_min;
+    float cx = spd_max;
     for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
     {
-        float dir = GetDirection(dir_idx);
-        for (int spd_idx = 0; spd_idx < SPD_BINS; spd_idx++)
+        float bx = ax + (cx - ax) * golden_r;
+        float phi = (float)(two_pi * (double)dir_idx / (double)DIR_BINS);
+        if (gmf->_ObjectiveFunction(ml, bx, phi, kp) <
+            gmf->_ObjectiveFunction(ml, ax, phi, kp) )
         {
-            float spd = SpeedIndexToSpeed(spd_idx);
-            float mle = gmf->_ObjectiveFunction(ml, spd, dir, kp);
-            tmp_array[dir_idx][spd_idx] = mle;
-            if (mle > max_mle)
-                max_mle = mle;
+            ax = spd_min;
         }
-    }
-
-    //--------------------------//
-    // convert to probabilities //
-    //--------------------------//
-
-    double total_prob_sum = 0.0;
-    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
-    {
-        for (int spd_idx = 0; spd_idx < SPD_BINS; spd_idx++)
+        if (gmf->_ObjectiveFunction(ml, bx, phi, kp) <
+            gmf->_ObjectiveFunction(ml, cx, phi, kp) )
         {
-            tmp_array[dir_idx][spd_idx] =
-                exp((tmp_array[dir_idx][spd_idx] - max_mle) / 2.0);
-            total_prob_sum += tmp_array[dir_idx][spd_idx];
+            cx = spd_max;
         }
-    }
-
-    //-----------------------//
-    // collapse in direction //
-    //-----------------------//
-    // and find the best speed //
-
-    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
-    {
-        double dir_prob_sum = 0.0;
-        int best_spd_idx = 0;
-        for (int spd_idx = 0; spd_idx < SPD_BINS; spd_idx++)
+        float x0, x1, x2, x3;
+        x0 = ax;
+        x3 = cx;
+        if (cx - bx > bx - ax)
         {
-            dir_prob_sum += tmp_array[dir_idx][spd_idx];
-            if (tmp_array[dir_idx][spd_idx]
-                > tmp_array[dir_idx][best_spd_idx])
+            x1 = bx;
+            x2 = bx + golden_c * (cx - bx);
+        }
+        else
+        {
+            x2 = bx;
+            x1 = bx - golden_c * (bx - ax);
+        }
+        float f1 = gmf->_ObjectiveFunction(ml, x1, phi, kp);
+        float f2 = gmf->_ObjectiveFunction(ml, x2, phi, kp);
+        while (x3 - x0 > SPD_SCALE)
+        {
+            if (f2 > f1)
             {
-                best_spd_idx = spd_idx;
+                x0 = x1;
+                x1 = x2;
+                x2 = x2 + golden_c * (x3 - x2);
+                f1 = f2;
+                f2 = gmf->_ObjectiveFunction(ml, x2, phi, kp);
+                if (f2 > max_mle)
+                    max_mle = f2;
+            }
+            else
+            {
+                x3 = x2;
+                x2 = x1;
+                x1 = x1 - golden_c * (x1 - x0);
+                f2 = f1;
+                f1 = gmf->_ObjectiveFunction(ml, x1, phi, kp);
+                if (f1 > max_mle)
+                    max_mle = f1;
             }
         }
-        dir_prob_sum /= total_prob_sum;    // normalize total prob to 1.0
-        probabilityArray[dir_idx] = dir_prob_sum;
-        float spd = MAX_SPD * (float)best_spd_idx / (float)SPD_BINS;
-        speedArray[dir_idx] = (int)(spd / SPD_SCALE + 0.5);
+        if (f1 > f2)
+        {
+            speedArray[dir_idx] = (unsigned short)(x1 / SPD_SCALE + 0.5);
+        }
+        else
+        {
+            speedArray[dir_idx] = (unsigned short)(x2 / SPD_SCALE + 0.5);
+        }
+        ax = x1 - (x1 * 0.05) - 0.5;
+        if (ax < spd_min)
+            ax = spd_min;
+        cx = x1 + (x2 * 0.05) + 0.5;
+        if (cx > spd_max)
+            cx = spd_max;
     }
 
-    //-----------//
-    // normalize //
-    //-----------//
+    //-----------------//
+    // sum up in speed //
+    //-----------------//
+
+    for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
+    {
+        float phi = (float)(two_pi * (double)dir_idx / (double)DIR_BINS);
+        float spd = speedArray[dir_idx] * SPD_SCALE;
+        double sum_prob = exp((gmf->_ObjectiveFunction(ml, spd, phi, kp)
+            - max_mle) / 2.0);
+        for(;;)
+        {
+            spd -= SPD_SUM_STEP_SIZE;
+            if (spd < spd_min)
+                break;
+            double prob = exp((gmf->_ObjectiveFunction(ml, spd, phi, kp)
+                - max_mle) / 2.0);
+            sum_prob += prob;
+            if (prob < MIN_PROB)
+                break;
+        }
+        spd = speedArray[dir_idx] * SPD_SCALE;
+        for(;;)
+        {
+            spd += SPD_SUM_STEP_SIZE;
+            if (spd < spd_min)
+                break;
+            double prob = exp((gmf->_ObjectiveFunction(ml, spd, phi, kp)
+                - max_mle) / 2.0);
+            sum_prob += prob;
+            if (prob < MIN_PROB)
+                break;
+        }
+        probabilityArray[dir_idx] = sum_prob;
+    }
+
+    //-----------------------//
+    // normalize probability //
+    //-----------------------//
 
     Normalize();
 
@@ -433,14 +503,25 @@ ObProbArray::GetObProb(
 //------------------------//
 // ObProbArray::LocalProb //
 //------------------------//
+// gamma controls the assumptions about error correlation. When
+// gamma is 0.0, the errors are assumed to be uncorrelated and the
+// probabilities are multiplied. When gamma is 1.0, the errors
+// are assumed to be completely correlated and the probabilities
+// are added. Thanks to Bryan Stiles for helping me with the
+// formalation.
 
 ObProb*
 ObProbArray::LocalProb(
     DistProb*  dp,
     int        window_size,
     int        center_cti,
-    int        center_ati)
+    int        center_ati,
+    float      gamma)
 {
+/*
+if (center_cti != 26 || center_ati != 235)
+return(NULL);
+*/
     //----------------//
     // get the center //
     //----------------//
@@ -458,14 +539,17 @@ ObProbArray::LocalProb(
         return(NULL);
     dest_op->cti = center_cti;
     dest_op->ati = center_ati;
-    dest_op->FillProbabilities(1.0);    // we'll be multiplying
     dest_op->CopySpeeds(op0);    // use the original speeds
 
     //--------------------------//
     // temporary ObProb storage //
     //--------------------------//
 
-    ObProb tmp_op;
+    ObProb cor_op;
+    cor_op.FillProbabilities(0.0);    // we'll be adding
+
+    ObProb uncor_op;
+    uncor_op.FillProbabilities(1.0);    // we'll be multiplying
 
     //-----------------------------//
     // determine window boundaries //
@@ -504,10 +588,11 @@ ObProbArray::LocalProb(
 
             float distance = op0->KmDistance(op1);
 
-            //----------------------------------------//
-            // first, clear the tmp probability array //
-            //----------------------------------------//
+            //------------------------------------//
+            // first, clear the probability array //
+            //------------------------------------//
 
+            ObProb tmp_op;
             tmp_op.FillProbabilities(0.0);
 
             for (int dir_idx = 0; dir_idx < DIR_BINS; dir_idx++)
@@ -531,6 +616,9 @@ ObProbArray::LocalProb(
 
                     float dist_prob = dp->Probability(distance, speed0,
                         dspeed, ddirection);
+/*
+printf("# %g %g %g %g %g %g\n", distance, speed0, dspeed, ddirection, dist_prob, dist_prob * probability1);
+*/
                     if (dist_prob < 0.0)
                     {
                         // can't estimate probs: eliminate this wvc
@@ -547,16 +635,38 @@ ObProbArray::LocalProb(
             if (bad_wvc)
                 continue;
 
-            //----------------------------------//
-            // multiply it into the destination //
-            //----------------------------------//
+            //----------------------------------------------------//
+            // form the correlated and uncorrelated probabilities //
+            //----------------------------------------------------//
 
-            dest_op->Add(&tmp_op);
-//            dest_op->Multiply(&tmp_op);
-            dest_op->Normalize();    // keep everything in range
+            tmp_op.Normalize();
+/*
+tmp_op.WriteFlower(stdout, 0.0, 0.75);
+printf("&\n");
+fflush(stdout);
+*/
+
+            cor_op.Add(&tmp_op);
+            uncor_op.Multiply(&tmp_op);
+            uncor_op.Normalize();   // this should help
         }
     }
-    dest_op->Normalize();    // keep everything in range
+
+    //----------------------------------------//
+    // form the combination weighted by gamma //
+    //----------------------------------------//
+
+    cor_op.Normalize();
+    uncor_op.Normalize();    // just to be sure
+
+    for (int i = 0; i < DIR_BINS; i++)
+    {
+        dest_op->probabilityArray[i] =
+            (1.0 - gamma) * uncor_op.probabilityArray[i] +
+            gamma * cor_op.probabilityArray[i];
+    }
+
+    dest_op->Normalize();
     return(dest_op);
 }
 
@@ -695,16 +805,74 @@ DistProb::Probability(
     float  dspeed,
     float  ddirection)
 {
-    //-------------------------------//
-    // convert everything to indices //
-    //-------------------------------//
+    //------------------//
+    // get coefficients //
+    //------------------//
 
-    int distance_idx = DistanceToIndex(distance);
-    int speed_idx = SpeedToIndex(speed);
-    int dspeed_idx = DeltaSpeedToIndex(dspeed);
-    int ddirection_idx = DeltaDirectionToIndex(ddirection);
+    int distance_idx[2];
+    float distance_coef[2];
+    if (! _distanceIndex.GetLinearCoefsStrict(distance, distance_idx,
+        distance_coef))
+    {
+        return(0);
+    }
 
-    return(Probability(distance_idx, speed_idx, dspeed_idx, ddirection_idx));
+    int speed_idx[2];
+    float speed_coef[2];
+    if (! _speedIndex.GetLinearCoefsStrict(speed, speed_idx,
+        speed_coef))
+    {
+        return(0);
+    }
+
+    int dspeed_idx[2];
+    float dspeed_coef[2];
+    if (! _dspeedIndex.GetLinearCoefsStrict(dspeed, dspeed_idx,
+        dspeed_coef))
+    {
+        return(0);
+    }
+
+    int ddirection_idx[2];
+    float ddirection_coef[2];
+    if (! _ddirectionIndex.GetLinearCoefsStrict(ddirection, ddirection_idx,
+        ddirection_coef))
+    {
+        return(0);
+    }
+
+    //-----------------------//
+    // get the probabilities //
+    //-----------------------//
+
+    double prob_sum = 0.0;
+    for (int di = 0; di < 2; di++)
+    {
+        int di_idx = distance_idx[di];
+        double di_coef = distance_coef[di];
+        for (int sp = 0; sp < 2; sp++)
+        {
+            int sp_idx = speed_idx[sp];
+            double sp_coef = speed_coef[sp];
+            for (int ds = 0; ds < 2; ds++)
+            {
+                int ds_idx = dspeed_idx[ds];
+                double ds_coef = dspeed_coef[ds];
+                for (int dd = 0; dd < 2; dd++)
+                {
+                    int dd_idx = ddirection_idx[dd];
+                    double dd_coef = ddirection_coef[dd];
+
+                    double prob = Probability(di_idx, sp_idx, ds_idx, dd_idx);
+                    if (prob < 0.0)
+                        return(-1.0);
+                    prob_sum += di_coef * sp_coef * ds_coef * dd_coef * prob;
+                }
+            }
+        }
+    }
+
+    return(prob_sum);
 }
 
 //-----------------------//

@@ -8,7 +8,7 @@
 //    op_filter
 //
 // SYNOPSIS
-//    op_filter <distprob_file> <obprob_file> <output_base>
+//    op_filter <distprob_file> <obprob_file> <gamma> <output_base>
 //
 // DESCRIPTION
 //    Performs ambiguity removal using probabilities.
@@ -18,6 +18,7 @@
 // OPERANDS
 //    <distprob_file>   A file containing delta speed and direction probs.
 //    <obprob_file>     The input probability file.
+//    <gamma>           0.0=treat errors as uncorrelated. 1.0=correlate
 //    <output_base>     The usual.
 //
 // EXAMPLES
@@ -107,9 +108,9 @@ template class TrackerBase<unsigned short>;
 #define IDX_DDIR  37
 
 #define MAX_LOOPS    1
-#define WINDOW_SIZE  7
+#define WINDOW_SIZE  5
 
-#define START_ATI  120
+#define START_ATI  200
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -124,7 +125,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "<distprob_file>", "<obprob_file>",
-    "<output_base>", 0 };
+    "<gamma>", "<output_base>", 0 };
 
 unsigned long count[IDX_SPEED][IDX_DIST][IDX_DSPEED][IDX_DDIR];
 
@@ -158,11 +159,12 @@ main(
         }
     }
 
-    if (argc < optind + 3)
+    if (argc < optind + 4)
         usage(command, usage_array, 1);
 
     const char* distprob_file = argv[optind++];
     const char* obprob_file = argv[optind++];
+    float gamma = atof(argv[optind++]);
     const char* output_base = argv[optind++];
 
     //------------------------//
@@ -189,12 +191,18 @@ main(
         exit(1);
     }
 
-    //----------------------//
-    // open the output file //
-    //----------------------//
+    //-----------------------//
+    // open the output files //
+    //-----------------------//
 
-    FILE* ofp = fopen_or_exit(output_base, "w", command, "flower output file",
-        1);
+    char filename[2048];
+    sprintf(filename, "%s.%03d", output_base, (int)(gamma * 100.0 + 0.5));
+    FILE* add_ofp = fopen_or_exit(filename, "w", command,
+        "flower output file", 1);
+
+    sprintf(filename, "%s.mle", output_base);
+    FILE* mle_ofp = fopen_or_exit(filename, "w", command,
+        "flower mle output file", 1);
 
     //--------//
     // filter //
@@ -226,18 +234,21 @@ main(
                     if (ns == NULL)
                         continue;
 
-if (cti == 23 && ati == 150)
-                    ns->WriteFlower(ofp, 3.0);
-                    fprintf(ofp, "%d %d\n", cti, ati);
+                    ns->WriteFlower(mle_ofp, 3.0);
+                    fprintf(mle_ofp, "%d %d\n", cti, ati);
 
 /*
-                    ns->WriteFlower(ofp, 3.0);
-                    fprintf(ofp, "%d %d\n", cti, ati);
+                    float avg_spd = ns->GetAverageSpeed();
+                    if (avg_spd < 6.5 || avg_spd > 7.5)
+                        continue;
 */
 
-                    ns = opa.LocalProb(&dp, WINDOW_SIZE, cti, ati);
-                    ns->WriteFlower(ofp, 0.0, 0.75);
-                    fprintf(ofp, "%d %d\n", cti, ati);
+                    ns = opa.LocalProb(&dp, WINDOW_SIZE, cti, ati, gamma);
+                    if (ns == NULL)
+                        continue;
+
+                    ns->WriteFlower(add_ofp, 0.0, 0.75);
+                    fprintf(add_ofp, "%d %d\n", cti, ati);
                     delete ns;
 
 
@@ -247,7 +258,8 @@ if (cti == 23 && ati == 150)
         }
     }
 
-    fclose(ofp);
+    fclose(mle_ofp);
+    fclose(add_ofp);
 
     //------------------------//
     // generate a flower plot //
