@@ -308,12 +308,9 @@ AngleIntervalListPlus::Read(FILE* fp){
   if(!bestSpd) return(0);
   if(fread(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0);
 
-#define INCLUDE_OBJ 1
-  if(INCLUDE_OBJ){
-    bestObj=dirIdx.MakeFloatArray();
-    if(!bestObj) return(0);
-    if(fread(&bestObj[0],sizeof(float),bins,fp)!=bins) return(0);
-  }
+  bestObj=dirIdx.MakeFloatArray();
+  if(!bestObj) return(0);
+  if(fread(&bestObj[0],sizeof(float),bins,fp)!=bins) return(0);
 
   return(1);
 }
@@ -321,7 +318,17 @@ AngleIntervalListPlus::Read(FILE* fp){
 int
 AngleIntervalListPlus::Write(FILE* fp){
   int value=AngleIntervalList::Write(fp);
-  if(value!=1) return(value);
+  if(value!=1){
+    if(bestSpd==NULL) return(value);
+    else{
+      char magic[21]="Angle_Interval_Magic";
+      if(fwrite((void *)&magic[0], sizeof(char), 21, fp) != 21)
+		return(0);
+      int node_count=0;
+      if(fwrite((void *)&node_count, sizeof(int),1, fp) != 1)
+		return(0);
+    }
+  }
   if(!dirIdx.Write(fp)) return(0);
   unsigned int bins=dirIdx.GetBins();
   if(fwrite(&bestSpd[0],sizeof(float),bins,fp)!=bins) return(0); 
