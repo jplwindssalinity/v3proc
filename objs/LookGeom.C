@@ -12,7 +12,7 @@ static const char rcs_id_lookgeom_c[] =
 #include <math.h>
 #include "LookGeom.h"
 #include "CoordinateSwitch.h"
-#include "earth_params.h"
+#include "Constants.h"
 
 
 //
@@ -135,11 +135,11 @@ Vector3 v1 = rlook_geo * rlook_geo;
 Vector3 v2 = rsat * rlook_geo;
 Vector3 v3 = rsat * rsat;
 
-double efactor = 1.0 - ECCENTRICITY_EARTH*ECCENTRICITY_EARTH;
+double efactor = 1.0 - eccentricity_earth*eccentricity_earth;
 double C1 = v1.get(0) + v1.get(1) + v1.get(2)/efactor;
 double C2 = v2.get(0) + v2.get(1) + v2.get(2)/efactor;
 double C3 = v3.get(0) + v3.get(1) + v3.get(2)/efactor -
-            R1_EARTH*R1_EARTH;
+            r1_earth*r1_earth;
 
 // Quadratic solution for the slant range S.
 
