@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    jpeg [ -gn ] [ -c colormap ] [ -q # ] [ -x # ] [ -y # ]
-//        <input_array> <output_jpeg>
+//        <input_array> [ output_jpeg ]
 //
 // DESCRIPTION
 //    Converts a 2-D array into a JPEG.
@@ -24,14 +24,15 @@
 //    [ -q # ]     Quality. A number from 0 to 100. Default is 100.
 //    [ -x # ]     Specify the X dimension.
 //    [ -y # ]     Specify the Y dimension.
+//    [ output_jpeg ]  The output JPEG file. If not specified, output
+//                     file is input_array.jpeg
 //
 // OPERANDS
 //    <input_array>  The input array file.
-//    <output_jpeg>  The output JPEG file.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % jpeg -q 100 -c fire.cmap -x 500 array.dat array.jpeg
+//      % jpeg -q 100 -c fire.cmap -x 500 array.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -81,7 +82,8 @@ template class SortableList<CMNode>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "gnc:q:x:y:"
+#define OPTSTRING       "gnc:q:x:y:"
+#define JPEG_EXTENSION  "jpeg"
 
 //-----------------------//
 // FUNCTION DECLARATIONS //
@@ -100,7 +102,7 @@ int opt_rel = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -gn ]", "[ -c colormap ]", "[ -q # ]",
-    "[ -x # ]", "[ -y # ]", "<input_array>", "<output_jpeg>", 0 };
+    "[ -x # ]", "[ -y # ]", "<input_array>", "[ output_jpeg ]", 0 };
 
 int  x_size = -1;
 int  y_size = -1;
@@ -156,11 +158,24 @@ main(
         }
     }
 
-    if (argc < optind + 2)
+    if (argc < optind + 1)
         usage(command, usage_array, 1);
 
     const char* array_file = argv[optind++];
-    const char* jpeg_file = argv[optind++];
+    const char* jpeg_file = NULL;
+    if (optind < argc)
+        jpeg_file = argv[optind++];
+
+    //------------------------------//
+    // generate an output file name //
+    //------------------------------//
+
+    char filename[1024];
+    if (jpeg_file == NULL)
+    {
+        sprintf(filename, "%s.%s", array_file, JPEG_EXTENSION);
+        jpeg_file = filename;
+    }
 
     //-------------------------------//
     // determine the array file size //
