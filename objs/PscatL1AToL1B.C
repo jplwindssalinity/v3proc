@@ -410,10 +410,10 @@ PscatL1AToL1B::Convert(
 	      // HACK ALERT ----- HACK ALERT ---- HACK ALERT
               // HACK to use Qscat BYU X Tables for PSCAT
               // X for all measurement types is the same
-              // Outer Beam X is used for incidence angle greater than 43  deg
+              // Outer Beam X is used for incidence angle greater than 51 deg
               // Otherwise Inner Beam X is used
                 int real_beam_idx=pscat->cds.currentBeamIdx;
-                double thres=43.0*dtr;
+                double thres=51.0*dtr;
                 if(meas->incidenceAngle<thres) pscat->cds.currentBeamIdx=0;
                 else pscat->cds.currentBeamIdx=1;
                 if (simVs1BCheckfile)
