@@ -93,7 +93,7 @@ template class List<OffsetList>;
 // CONSTANTS //
 //-----------//
 
-#define DEFAULT_DB_LEVEL	3.0
+#define DEFAULT_DB_LEVEL	-3.0
 
 //--------//
 // MACROS //
