@@ -680,6 +680,26 @@ fit_terms(
         plot_fit(diag_base, beam_idx, 2, terms, bias_p, 5);
     }
 
+    //---------------//
+    // plug in terms //
+    //---------------//
+
+    for (int orbit_step = 0; orbit_step < ORBIT_STEPS; orbit_step++)
+    {
+        double angle = two_pi * (double)orbit_step / (double)ORBIT_STEPS;
+
+        *(*(terms + orbit_step) + 0) = amp_p[0][0] +
+            amp_p[0][1] * cos(angle + amp_p[0][2]) +
+            amp_p[0][3] * cos(2.0 * angle + amp_p[0][4]);
+
+        *(*(terms + orbit_step) + 1) = phase_p[0][0] +
+            phase_p[0][1] * cos(angle + phase_p[0][2]);
+
+        *(*(terms + orbit_step) + 2) = bias_p[0][0] +
+            bias_p[0][1] * cos(angle + bias_p[0][2]) +
+            bias_p[0][3] * cos(2.0 * angle + bias_p[0][4]);
+    }
+
     free_p(amp_p, amp_count);
     free_p(phase_p, phase_count);
     free_p(bias_p, bias_count);
