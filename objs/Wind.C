@@ -2655,6 +2655,10 @@ WindSwath::ReadNscatSwv25(
             if (wvc_flag[wvc_idx] > 3)
                 continue;
 
+            // this is a hack and should not be here
+            if (wvc_lat[wvc_idx] == 0 && wvc_lon[wvc_idx] == 0)
+                continue;
+
             int cti = wvc_idx;
             WVC* wvc = new WVC();
             if (wvc == NULL)
@@ -2816,19 +2820,20 @@ WindSwath::WriteAscii(
 
 int
 WindSwath::WriteAscii(
-    FILE*     fp)
+    FILE*  fp)
 {
-    //---------------//
-    // write ASCII   //
-    //---------------//
+    //-------------//
+    // write ASCII //
+    //-------------//
 
     fprintf(fp, "Total Along Track Bins: %d\nTotal Cross Track Bins: %d\n",
-                             _alongTrackBins, _crossTrackBins);
+        _alongTrackBins, _crossTrackBins);
     for (int ati = 0; ati < _alongTrackBins; ati++)
     {
         for (int cti = 0; cti < _crossTrackBins; cti++)
         {
-            fprintf(fp, "Along Track Bin: %d, Cross Track Bin: %d\n", ati, cti);
+            fprintf(fp, "Along Track Bin: %d, Cross Track Bin: %d\n", ati,
+                cti);
             WVC* wvc = *(*(swath + cti) + ati);
             if (wvc == NULL)
                 continue;
@@ -2839,7 +2844,6 @@ WindSwath::WriteAscii(
     }
 
     return(1);
-
 } // WriteAscii
 
 //-------------------------//
