@@ -30,14 +30,13 @@ PROGRAMS = \
 	memfilter \
 	make_pattern \
 	test_pattern \
-	vap_to_vctr \
 	fake_vap \
 	l15_outlines \
 	plot_solution_curves \
 	sim_accurate \
 	make_kfactor \
 	log_cfg \
-	ecmwf_hires_to_vctr
+	windfield_to_vctr
 
 #----------------------------------------------------------------------
 # default: make all executable programs

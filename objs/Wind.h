@@ -177,6 +177,8 @@ public:
 	int		ReadType(const char* filename, const char* type);
 	int		WriteVctr(const char* filename);
 
+	int		NewRes(WindField* windfield, float lon_res, float lat_res);
+
 	//--------//
 	// access //
 	//--------//

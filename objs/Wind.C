@@ -647,6 +647,59 @@ WindField::WriteVctr(
 	return(1);
 }
 
+//-------------------//
+// WindField::NewRes //
+//-------------------//
+
+int
+WindField::NewRes(
+	WindField*	windfield,
+	float		lon_res,
+	float		lat_res)
+{
+	//----------------//
+	// determine size //
+	//----------------//
+
+	float lon_range = windfield->_lonCount * windfield->_lonStep;
+	_lonCount = (int)(lon_range / lon_res + 0.5);
+	_lonMin = windfield->_lonMin;
+	_lonStep = lon_range / _lonCount;
+	_lonMax = _lonMin + (_lonCount - 1) * _lonStep;
+
+	float lat_range = windfield->_latCount * windfield->_latStep;
+	_latCount = (int)(lat_range / lat_res + 0.5);
+	_latMin = windfield->_latMin;
+	_latStep = lat_range / _latCount;
+	_latMax = _latMin + (_latCount - 1) * _latStep;
+
+	if (! _Allocate())
+		return(0);
+
+	//--------------------//
+	// generate windfield //
+	//--------------------//
+
+	LonLat lon_lat;
+	for (int lon_idx = 0; lon_idx < _lonCount; lon_idx++)
+	{
+		lon_lat.longitude = _lonMin + lon_idx * _lonStep;
+		for (int lat_idx = 0; lat_idx < _latCount; lat_idx++)
+		{
+			lon_lat.latitude = _latMin + lat_idx * _latStep;
+			WindVector* wv = new WindVector;
+			if (! wv)
+				return(0);
+
+			if (! windfield->InterpolatedWindVector(lon_lat, wv))
+				return(0);
+
+			*(*(_field + lon_idx) + lat_idx) = wv;
+		}
+	}
+	return(1);
+}
+
 //------------------------------//
 // WindField::NearestWindVector //
 //------------------------------//
@@ -727,7 +780,7 @@ WindField::InterpolatedWindVector(
 	if (lon_idx_1 == lon_idx_2)
 		p = 1.0;
 	else
-		p = (lon_lat.longitude - lon_1) / (lon_2 - lon_1);
+		p = (lon - lon_1) / (lon_2 - lon_1);
 	float pn = 1.0 - p;
 
 	float q;
@@ -1587,9 +1640,9 @@ WindSwath::SpdBiasVsCti(
 			if (true_wv.spd < low_speed || true_wv.spd > high_speed)
 				continue;
 
-            double dif = wvc->selected->spd - true_wv.spd;
-            sum += dif;
-            count++;
+			double dif = wvc->selected->spd - true_wv.spd;
+			sum += dif;
+			count++;
 		}
 
 		*(count_array + cti) = count;
