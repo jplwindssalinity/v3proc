@@ -299,7 +299,7 @@ float RandomVelocity::GetNumber(double timex){
 //==================================================================//
 
 TimeCorrelatedGaussian::TimeCorrelatedGaussian()
-  : _previousTime(0.0), _previousOutput(0.0), _correlationLength(0.0)
+  : _previousTime(0.0), _previousOutput(0.0), _correlationLength(0.0), _mean(0.0)
 {
   return;
 }
@@ -317,7 +317,7 @@ float TimeCorrelatedGaussian::GetNumber(double timex){
 
   /*******  BIAS ONLY CASE        *************/
   if(Uncorrelated.GetVariance()==0.0){
-    return(Uncorrelated.GetMean());
+    return(_mean);
   }
 
   /******** Error Condition ****************/
@@ -328,7 +328,7 @@ float TimeCorrelatedGaussian::GetNumber(double timex){
 
   /********** Uncorrelated case *************/
   if(_correlationLength == 0.0){
-    return(Uncorrelated.GetNumber());
+    return(Uncorrelated.GetNumber()+_mean);
   }
 
   /******* Normal Mode  *******************/
@@ -337,7 +337,7 @@ float TimeCorrelatedGaussian::GetNumber(double timex){
   retval=retval*_previousOutput+sqrt(1-retval*retval)*Uncorrelated.GetNumber();
   _previousTime=timex;
   _previousOutput=retval;
-  return(retval);
+  return(retval+_mean);
 }
 
 int TimeCorrelatedGaussian::SetVariance(float variance){
@@ -346,7 +346,7 @@ int TimeCorrelatedGaussian::SetVariance(float variance){
 }
 
 int TimeCorrelatedGaussian::SetMean(float mean){
-  if(! Uncorrelated.SetMean(mean)) return(0);
+  _mean=mean;
   return(1);
 }
 

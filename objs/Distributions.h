@@ -204,12 +204,14 @@ int SetMean(float mean);
 void SetSeed(long int seed);
 int SetCorrelationLength(float corrlength);
 
-Gaussian Uncorrelated;
+
 
 protected:
+Gaussian Uncorrelated;
 double _previousTime;
 float _previousOutput;
 float _correlationLength;
+float _mean;
 };
 
 //==================================================================//
