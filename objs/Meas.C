@@ -39,6 +39,19 @@ int
 Meas::Write(
 	FILE*	fp)
 {
+	// Sanity check on sigma0 and estimated Kp
+	if (fabs(value) > 1.0e5)
+	{
+		printf("Error: Meas::Write encountered invalid sigma0 = %g\n",value);
+		exit(-1);
+	}
+	if (estimatedKp < 0.0 || estimatedKp > 1e5) 
+	{
+		printf("Error: Meas::Write encountered invalid estimatedKp = %g\n",
+				estimatedKp);
+		exit(-1);
+	}
+
 	if (fwrite((void *)&value, sizeof(float), 1, fp) != 1 ||
 		fwrite((void *)&XK, sizeof(float), 1, fp) != 1 ||
 		outline.Write(fp) != 1 ||

@@ -137,6 +137,16 @@ sigma0_to_Psn(
 	float*				Psn)
 {
 
+	//-------------------------//
+	// Sanity check on sigma0.
+	//-------------------------//
+
+	if (fabs(sigma0) > 1.0e5)
+	{
+		printf("Error: sigma0_to_Psn encountered invalid sigma0 = %g\n",sigma0);
+		exit(-1);
+	}
+
 	//----------------------------------------------------------------------//
 	// Compute the radar parameter X which includes gain, loss, and geometry
 	// factors in the received power.  This is the true value.  Processing
