@@ -351,7 +351,6 @@ main(
 				switch(spacecraft_event.eventId)
 				{
 				case SpacecraftEvent::UPDATE_STATE:
-printf("%g S/C\n", spacecraft_event.time);
 					spacecraft_sim.UpdateOrbit(spacecraft_event.time,
 						&spacecraft);
 					spacecraft.orbitState.Write(eph_fp);
@@ -386,7 +385,6 @@ printf("%g S/C\n", spacecraft_event.time);
 				switch(instrument_event.eventId)
 				{
 				case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
-printf("%g Ins\n", instrument_event.time);
 					spacecraft_sim.UpdateOrbit(instrument_event.time,
 						&spacecraft);
 					spacecraft_sim.UpdateAttitude(instrument_event.time,
