@@ -111,6 +111,8 @@ install: $(TARGET_LIB)
 # rules
 #----------------------------------------------------------------------
 
+.PRECIOUS: %.C
+
 $(TARGET_LIB):	$(OBJS)
 	- /bin/rm -f $(TARGET_LIB)
 	/usr/xpg4/bin/ar -r $(TARGET_LIB) $(OBJS)

@@ -73,6 +73,8 @@ install: $(PROGRAMS)
 # rules
 #----------------------------------------------------------------------
 
+.PRECIOUS: %.C
+
 %.C: $(SIM_CENTRAL_TREE)/src/programs/RCS/%.C,v
 	co $(SIM_CENTRAL_TREE)/src/programs/RCS/$@,v
 
