@@ -61,6 +61,8 @@ public:
                CheckFrame* cf = NULL);
     float  GetX(int beam_number, float azimuth_angle, float orbit_position,
                int slice_number, float delta_freq);
+    float  GetXegg(int beam_number, float azimuth_angle, float orbit_position,
+               float delta_freq);
     float  Interpolate(float** table, float orbit_time, float azimuth_angle);
 
     float****  xnom;

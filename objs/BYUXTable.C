@@ -432,6 +432,32 @@ BYUXTable::GetX(
 }
 
 float
+BYUXTable::GetXegg(
+		int           beam_number,
+		float         azimuth_angle,
+		float         orbit_position,
+		float         delta_freq)
+{
+
+  // Convert from orbit position to nominal orbit time
+  float orbit_time=BYU_NOMINAL_ORBIT_PERIOD*orbit_position;
+
+  // Interpolate tables
+  float X=Interpolate(xnomEgg[beam_number],orbit_time, azimuth_angle);
+  float A=Interpolate(aEgg[beam_number],orbit_time,azimuth_angle);
+  float B=Interpolate(bEgg[beam_number],orbit_time,azimuth_angle);
+  float C=Interpolate(cEgg[beam_number],orbit_time,azimuth_angle);
+  float D=Interpolate(dEgg[beam_number],orbit_time,azimuth_angle);
+
+
+  // Frequency Compensate
+  float delta_bin=delta_freq/FFT_BIN_SIZE;
+  X+=A+B*delta_bin+C*delta_bin*delta_bin+D*delta_bin*delta_bin*delta_bin;
+  X=pow(10.0,0.1*X);
+  return(X);
+}
+
+float
 BYUXTable::Interpolate(
     float**         table,
     float           orbit_time,
