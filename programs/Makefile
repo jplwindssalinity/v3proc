@@ -25,6 +25,7 @@ PROGRAMS = \
 	get_att \
 	get_look_att \
 	sim \
+	modu \
 	l1a_to_l1b \
 	l1b_to_l2a \
 	l2a_hdf_to_l2a \
@@ -237,3 +238,4 @@ fix_knowledge: fix_knowledge.C echo_funcs.h
 echo_dtc: echo_dtc.C echo_funcs.h
 sim_l1a_echo_proc: sim_l1a_echo_proc.C echo_funcs.h
 new_files: new_files.C new_files.h
+modu: modu.C modu.h
