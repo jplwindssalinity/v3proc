@@ -135,8 +135,11 @@ FILE*   ofp)
     fprintf(ofp,"pred_antenna_pos_count = %d\n", status.pred_antenna_pos_count);
     fprintf(ofp,"doppler_orbit_step = %d\n", status.doppler_orbit_step);
     fprintf(ofp,"prf_orbit_step_change = %d\n", status.prf_orbit_step_change);
-    double vtcw = 0.0;
-    (void)memcpy(&vtcw, status.vtcw, sizeof(double));
+    unsigned int vtcw_hi4 = 0;
+    unsigned short vtcw_lo2 = 0;
+    (void)memcpy(&vtcw_hi4, status.vtcw, sizeof(unsigned int));
+    (void)memcpy(&vtcw_lo2, status.vtcw+4, sizeof(unsigned short));
+    double vtcw = vtcw_hi4*65536 + vtcw_lo2;
     fprintf(ofp,"vtcw = %g\n",vtcw);
     double corres_instr_time = 0.0;
     (void)memcpy(&corres_instr_time, status.corres_instr_time, sizeof(double));

@@ -446,7 +446,7 @@ SpacecraftSim::DetermineNextEvent(
 		//----------------------------//
 
 		int sample_number = (int)(spacecraft_event->time / _ephemerisPeriod
-			+ 2.5);
+			+ 1.5);
 		_nextUpdateTime = (double)sample_number * _ephemerisPeriod;
 	}
 

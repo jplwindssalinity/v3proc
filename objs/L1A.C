@@ -162,12 +162,12 @@ L1A::WriteGSDataRec(void)
     in_pcdP->time = frame.frame_time_secs;
     in_pcdP->instrument_time = frame.frame_time_secs;
     in_pcdP->orbit_time = (int)frame.orbitTicks;
-    in_pcdP->x_pos = frame.gcX;
-    in_pcdP->y_pos = frame.gcY;
-    in_pcdP->z_pos = frame.gcZ;
-    in_pcdP->x_vel = frame.velX;
-    in_pcdP->y_vel = frame.velY;
-    in_pcdP->z_vel = frame.velZ;
+    in_pcdP->x_pos = frame.gcX*1000;
+    in_pcdP->y_pos = frame.gcY*1000;
+    in_pcdP->z_pos = frame.gcZ*1000;
+    in_pcdP->x_vel = frame.velX*1000;
+    in_pcdP->y_vel = frame.velY*1000;
+    in_pcdP->z_vel = frame.velZ*1000;
     in_pcdP->roll = frame.attitude.GetRoll();
     in_pcdP->pitch = frame.attitude.GetPitch();
     in_pcdP->yaw = frame.attitude.GetYaw();
@@ -181,6 +181,31 @@ L1A::WriteGSDataRec(void)
     (void)memset(&(gsFrame.pcd), 0, 32);
 
     (void)memcpy(&(gsFrame.in_eu), &(frame.in_eu), sizeof(GSL1AEu));
+
+    (void)memcpy(gsFrame.in_science.antenna_position,
+                 frame.antennaPosition, sizeof(short)*frame.spotsPerFrame);
+    (void)memcpy(gsFrame.in_science.loop_back_cal_A_power,
+                 frame.loopbackSlices, sizeof(float)*frame.slicesPerSpot);
+    (void)memcpy(gsFrame.in_science.loop_back_cal_B_power,
+                 frame.loopbackSlices, sizeof(float)*frame.slicesPerSpot);
+    (void)memcpy(&gsFrame.in_science.loop_back_cal_noise,
+                 &frame.loopbackNoise, sizeof(float));
+    (void)memcpy(gsFrame.in_science.load_cal_A_power,
+                 frame.loadSlices, sizeof(float)*frame.slicesPerSpot);
+    (void)memcpy(gsFrame.in_science.load_cal_B_power,
+                 frame.loadSlices, sizeof(float)*frame.slicesPerSpot);
+    (void)memcpy(&gsFrame.in_science.load_cal_noise,
+                 &frame.loadNoise, sizeof(float));
+
+    // transpose??
+    for (int i=0; i < frame.slicesPerFrame; i++)
+    {  // convert floats to ints
+      *(gsFrame.in_science.power_dn[0] + i) = (int)frame.science[i];
+    }
+    for (int i=0; i < frame.spotsPerFrame; i++)
+    {  // convert floats to ints
+      gsFrame.in_science.noise_dn[i] = (int)frame.spotNoise[i];
+    }
 
     // la1_frame_inst_status
     (void)memcpy(&(gsFrame.l1a_frame_inst_status),

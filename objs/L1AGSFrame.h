@@ -59,7 +59,7 @@ struct GSL1AStatus
     unsigned char   range_gate_a_width;
     unsigned char   range_gate_b_delay;
     unsigned char   range_gate_b_width;
-    char            pad5[8];  // doppler shift command 1 & 2
+    char            pad5[6];  // doppler shift command 1 & 2
     unsigned char   pulse_width;
     char            pad6[4];
     unsigned char   pred_antenna_pos_count;
@@ -67,9 +67,9 @@ struct GSL1AStatus
     unsigned char   doppler_orbit_step;
     unsigned char   prf_orbit_step_change;
     char            pad8[9];
-    char            vtcw[8];
-    char            corres_instr_time[8];
-    char            pad9[2];
+    char            vtcw[6];
+    char            corres_instr_time[5];
+    char            pad9[9];
 };
 
 struct GSL1AEngData
