@@ -22,6 +22,8 @@ static const char rcs_id_beam_h[] =
 //		The Beam object contains beam state information.
 //======================================================================
 
+enum PolE { NONE, V_POL, H_POL };
+
 class Beam
 {
 public:
@@ -37,8 +39,9 @@ public:
 	// variables //
 	//-----------//
 
-	double	lookAngle;			// mounted look angle
-	double	azimuthAngle;		// mounted azimuth angle
+	double	lookAngle;			// mounted look angle relative to antenna
+	double	azimuthAngle;		// mounted azimuth angle relative to antenna
+	PolE	polarization;
 };
 
 #endif

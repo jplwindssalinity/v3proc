@@ -13,7 +13,7 @@ static const char rcs_id_beam_c[] =
 //======//
 
 Beam::Beam()
-:	lookAngle(0.0), azimuthAngle(0.0)
+:	lookAngle(0.0), azimuthAngle(0.0), polarization(NONE)
 {
 	return;
 }

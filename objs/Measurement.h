@@ -10,6 +10,7 @@ static const char rcs_id_measurement_h[] =
 	"@(#) $Id$";
 
 #include "List.h"
+#include "Beam.h"
 
 
 //======================================================================
@@ -27,7 +28,7 @@ static const char rcs_id_measurement_h[] =
 //		data.
 //======================================================================
 
-enum PolE { SCATTEROMETER_V_POL, SCATTEROMETER_H_POL };
+enum BeamE { SCATTEROMETER_BEAM_A, SCATTEROMETER_BEAM_B };
 
 class Measurement
 {
