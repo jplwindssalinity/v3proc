@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.2   28 Oct 1998 15:03:18   sally
+// add GetTime()
+// Revision 1.1  1998/10/20 21:26:17  sally
+// Initial revision
+//
+// 
 //    Rev 1.0   16 Oct 1998 09:06:06   sally
 // Initial revision.
 // 
@@ -39,6 +45,8 @@ public:
 
     virtual ~L1BHdfFile();
 
+    StatusE  GetTime(int32 index, Itime* recTime)
+             { return(_getTime(index, recTime)); }
 protected:
 
     virtual StatusE     _getTime(int32 index, Itime* recTime);

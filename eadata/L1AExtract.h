@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.18   28 Oct 1998 15:02:32   sally
+// add functions for L1B Hdf
+// Revision 1.2  1998/10/20 21:26:17  sally
+// add L1B
+//
+// 
 //    Rev 1.17   16 Oct 1998 09:04:46   sally
 // added ExtractL1Time
 // 
@@ -410,5 +416,20 @@ int Extract_uint1_eu_mWatts  (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
 //--------------------------------------------
 int ExtractData1D_m_km   (TlmHdfFile*, int32*, int32, int32, int32, VOIDP,
                                           PolynomialTable* polyTable=0);
+
+int ExtractData1D_int2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData1D_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_100_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_100_uint2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData2D_100_int2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData3D_100_8_int2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
+int ExtractData3D_100_8_uint2_float_dtr   (TlmHdfFile*, int32*,
+                   int32, int32, int32, VOIDP, PolynomialTable* polyTable=0);
 
 #endif //L1AEXTRACT_H

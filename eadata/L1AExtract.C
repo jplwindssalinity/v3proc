@@ -7,6 +7,12 @@
 // CM Log
 // $Log$
 // 
+//    Rev 1.22   28 Oct 1998 15:01:58   sally
+// add function for L1B Hdf
+// Revision 1.2  1998/10/20 21:26:17  sally
+// add L1B
+//
+// 
 //    Rev 1.21   16 Oct 1998 09:04:36   sally
 // added ExtractL1Time
 // 
@@ -2940,7 +2946,6 @@ PolynomialTable*)     // unused
         Itime itime;
         if ( ! itime.L1ToItime(l1TimeString))
             return FALSE;
-//printf("l1TimeString = %s\n", l1TimeString);
         l1TimeString += L1_TIME_LEN;
         memcpy(ptr,     (char *)&(itime.sec), sizeof(int));
         memcpy(ptr + 4, (char *)&(itime.ms), sizeof(short));
@@ -3159,3 +3164,199 @@ PolynomialTable* polyTable)
 
 } // Extract_uint1_eu_mWatts
 #endif
+
+//----------------------------------------------------------------------
+// Function:    ExtractData1D_int2_float_dtr
+// Extracts:    float: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData1D_int2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData1D_int2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+    // convert degrees to radians, and return
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+    return(TRUE);
+
+} //ExtractData1D_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData1D_float_dtr
+// Extracts:    float: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData1D_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData1D(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    // convert degrees to radians, and return
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+    return(TRUE);
+
+} //ExtractData1D_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_100_float_dtr ([][100])
+// Extracts:    float[100]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_100_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_100(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+    return TRUE;
+
+}//ExtractData2D_100_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_100_uint2_float_dtr ([][100])
+// Extracts:    float[100]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_100_uint2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_100_uint2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+    return TRUE;
+
+}//ExtractData2D_100_uint2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData2D_100_int2_float_dtr ([][100])
+// Extracts:    float[100]: degrees => radians
+//----------------------------------------------------------------------
+int
+ExtractData2D_100_int2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData2D_100_int2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++, floatP++)
+    {
+        *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+    return TRUE;
+
+}//ExtractData2D_100_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_100_8_int2_float_dtr ([][100][8])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_100_8_int2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData3D_100_8_int2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    // convert the degree to radians
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 800; j++, floatP++)
+            *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+
+    return TRUE;
+
+}//ExtractData3D_100_8_int2_float_dtr
+
+//----------------------------------------------------------------------
+// Function:    ExtractData3D_100_8_uint2_float_dtr ([][100][8])
+// Extracts:    3 dimensional data
+//----------------------------------------------------------------------
+int
+ExtractData3D_100_8_uint2_float_dtr(
+TlmHdfFile* l1File,
+int32*      sdsIDs,
+int32       start,
+int32       stride,
+int32       length,
+VOIDP       buffer,
+PolynomialTable*)     // unused
+{
+    if (ExtractData3D_100_8_uint2_float(l1File, sdsIDs, start, stride,
+              length, buffer) == 0)
+        return 0;
+
+    // convert the degree to radians
+    float* floatP = (float*)buffer;
+    for (int i=0; i < length; i++)
+    {
+        for (int j=0; j < 800; j++, floatP++)
+            *floatP *= EA_CONST_DEGREES_TO_RADIANS;
+    }
+
+    return TRUE;
+
+}//ExtractData3D_100_8_uint2_float_dtr
