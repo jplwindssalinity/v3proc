@@ -95,7 +95,10 @@ int XTable::CheckEmpty(){
   for(int b=0;b<numBeams; b++){
     for(int a=0; a<numAzimuthBins; a++){
       for(int s=0; s<numSlices; s++){
-	if (_empty[b][a][s]==1) return(0);
+	if (_empty[b][a][s]==1){
+	  fprintf(stderr,"Bin b=%d a=%d s=%d is empty\n",b,a,s);
+	  return(0);
+	}
       }
     }
   }
@@ -196,7 +199,8 @@ XTable::RetrieveBySliceNumber(int beam_number, float azimuth_angle, int slice_nu
   }
   azi=azimuth_angle*numAzimuthBins/(2*M_PI);
   if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi+0.5);
+  azi_idx=(int)(azi);
+  azi_idx%=numAzimuthBins;
   
 
   if(slice_number < 0 || slice_number >= numSlices){
@@ -226,7 +230,8 @@ float azi, X=0;
   }
   azi=azimuth_angle*numAzimuthBins/(2*M_PI);
   if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi+0.5);
+  azi_idx=(int)(azi);
+  azi_idx%=numAzimuthBins;
 
   //====================================================================//
   // To compute X we sum all the X's in the table which fall within the //
@@ -283,7 +288,8 @@ XTable::AddEntry(float X, int beam_number, float azimuth_angle,
   }
   azi=azimuth_angle*numAzimuthBins/(2*M_PI);
   if(azi<0) azi+=2*numAzimuthBins;
-  azi_idx=(int)(azi+0.5);
+  azi_idx=(int)(azi);
+  azi_idx%=numAzimuthBins;
   
 
   if(slice_number < 0 || slice_number >= numSlices){
@@ -315,11 +321,12 @@ XTable::GetMinFreq(int slice_number){
     exit(1);
   }
   
+  min_freq=abs_min_freq;
   if(sn < numGuardSlicesEachSide){
-    return(sn*guardSliceBandwidth);
+    return(min_freq+sn*guardSliceBandwidth);
   }
 
-  min_freq=numGuardSlicesEachSide*guardSliceBandwidth;
+  min_freq+=numGuardSlicesEachSide*guardSliceBandwidth;
   sn-=numGuardSlicesEachSide;
 
   if(sn< numScienceSlices){
