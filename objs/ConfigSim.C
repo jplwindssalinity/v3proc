@@ -354,8 +354,10 @@ ConfigGaussian(const char* variance_keyword,
 
  	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(NULL);
+        variance*=dtr*dtr;
  	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
+	mean*=dtr;
 	Gaussian* new_g = new Gaussian((float)variance,(float)mean);
 	return(new_g);
 
@@ -374,8 +376,10 @@ ConfigUniform(const char* radius_keyword,
 
 	if(! config_list->GetDouble(radius_keyword,
 	  &radius)) return(NULL);
+	radius*=dtr;
 	if(! config_list->GetDouble(mean_keyword,
 	  &mean)) return(NULL);
+        mean*=dtr;
 	Uniform* new_u = new Uniform((float)radius,float(mean));
 	return(new_u);
 
@@ -400,10 +404,13 @@ ConfigGaussianRandomVelocity(const char* samprate_keyword,
 
  	if(! config_list->GetDouble(variance_keyword,
 	   &variance)) return(NULL);
+        variance*=dtr*dtr;
  	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
+	mean*=dtr;
  	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(NULL);
+        bound*=dtr;
 	velocity = new Gaussian((float)variance,0.0);
 	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
 	return(new_rv);
@@ -429,10 +436,13 @@ ConfigUniformRandomVelocity(const char* samprate_keyword,
 
  	if(! config_list->GetDouble(radius_keyword,
 	   &radius)) return(NULL);
+	radius*=dtr;
  	if(! config_list->GetDouble(mean_keyword,
 	   &mean)) return(NULL);
+	mean*=dtr;
  	if(! config_list->GetDouble(bound_keyword,
 	   &bound)) return(NULL);
+	bound*=dtr;
 	velocity=new Uniform((float)radius,0.0);
 	RandomVelocity* new_rv = new RandomVelocity(velocity, (float)sample_rate, (float)bound, (float)mean);
 	return(new_rv);
