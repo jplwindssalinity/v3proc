@@ -1,0 +1,67 @@
+#!/bin/csh
+
+if ($#argv != 2) then
+  echo "usage: generate_kprtable <config_file> <kprtable_file>"
+  exit(1)
+endif
+
+set cfgfile = $1
+set kprfile = $2
+
+#################################
+# Calculate "Quiet sigma_0 values"
+#################################
+
+# create "quiet" config file and "noisy" config file
+
+echo "L1B_FILE                     noisy_l1b.dat" > tmp1
+echo "USE_RGC                                  0" > tmp2
+echo "USE_DTC                                  0" > tmp3
+echo "USE_KPM                                  0" > tmp4
+echo "USE_KPC                                  0" > tmp5
+echo "UNIFORM_SIGMA_FIELD                      1" > tmp6
+echo "ROLL_CONTROL_CORRLENGTH                  0" >tmp6a
+echo "PITCH_CONTROL_CORRLENGTH                 0" >tmp6b
+echo "YAW_CONTROL_CORRLENGTH                   0" >tmp6c
+echo "ROLL_KNOWLEDGE_CORRLENGTH                0" >tmp6d
+echo "PITCH_KNOWLEDGE_CORRLENGTH               0" >tmp6e
+echo "YAW_KNOWLEDGE_CORRLENGTH                 0" >tmp6f
+
+cat ${cfgfile} tmp1 tmp2 tmp3 tmp4 tmp5 tmp6 tmp6a tmp6b tmp6c tmp6d tmp6e tmp6f> noisy.cfg
+log_cfg noisy.cfg noisy.log
+
+echo "PTGR_BIAS                                0" > tmp7
+echo "PTGR_NOISE_KP                            0" > tmp8
+echo "ATTITUDE_KNOWLEDGE_MODEL              NONE" > tmp10
+echo "L1B_FILE                     quiet_l1b.dat" > tmp11
+cat ${cfgfile} noisy.cfg tmp7 tmp8 tmp10 tmp11 > quiet.cfg
+log_cfg quiet.cfg quiet.log
+
+date
+echo "sim NOISEFREE CASE"
+sim quiet.cfg 
+date
+echo "100_l1a NOISEFREE CASE"
+l00_to_l1a quiet.cfg
+date
+echo "l1a_to_l1b NOISEFREE CASE"
+l1a_to_l1b quiet.cfg
+date
+
+date
+echo "sim NOISY CASE"
+sim noisy.cfg
+date
+echo "100_l1a NOISY CASE"
+l00_to_l1a noisy.cfg
+date
+echo "l1a_to_l1b NOISY CASE"
+l1a_to_l1b noisy.cfg
+date
+
+echo "l1b_to_kprtable"
+l1b_to_kprtable quiet_l1b.dat noisy_l1b.dat ${kprfile}
+date
+
+
+
