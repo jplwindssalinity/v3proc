@@ -101,9 +101,14 @@ public:
 	float		chirpStartM;		// Hz/sec
 	float		chirpStartB;		// Hz
 	float		systemDelay;		// sec
+	float		systemTemperature;	// K
+	float		xmitPulsewidth;		// sec
 	float		receiverGateWidth;	// sec
 	float		baseTransmitFreq;	// Hz
 	float		sliceBandwidth;		// Hz
+	float		noiseBandwidth;		// Hz
+	float		signalBandwidth;	// Hz
+	int			useKpc;				// flag, 0 - no kpc, 1 - with kpc
 };
 
 #endif

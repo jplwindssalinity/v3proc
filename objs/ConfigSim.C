@@ -485,6 +485,17 @@ ConfigInstrument(
 		return(0);
 	instrument->systemDelay = system_delay * US_TO_S;
 
+	float system_temperature;		// K
+	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
+		return(0);
+	instrument->systemTemperature = system_temperature;
+
+	float xmit_pulse_width;	// ms
+	if (! config_list->GetFloat(XMIT_PULSE_WIDTH_KEYWORD,
+		&xmit_pulse_width))
+		return(0);
+	instrument->xmitPulsewidth = xmit_pulse_width * MS_TO_S;
+
 	float receiver_gate_width;	// ms
 	if (! config_list->GetFloat(RECEIVER_GATE_WIDTH_KEYWORD,
 		&receiver_gate_width))
@@ -501,6 +512,16 @@ ConfigInstrument(
 	if (! config_list->GetFloat(SLICE_BANDWIDTH_KEYWORD, &slice_bandwidth))
 		return(0);
 	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
+
+	float noise_bandwidth;
+	if (! config_list->GetFloat(NOISE_BANDWIDTH_KEYWORD, &noise_bandwidth))
+		return(0);
+	instrument->noiseBandwidth = noise_bandwidth * KHZ_TO_HZ;
+
+	int slices_per_spot;
+	if (! config_list->GetInt(L00_SLICES_PER_SPOT_KEYWORD, &slices_per_spot))
+		return(0);
+	instrument->signalBandwidth = slice_bandwidth * KHZ_TO_HZ * slices_per_spot;
 
 	float transmit_power;
 	/**** parameter in config file should be in Watts ***/
@@ -521,6 +542,11 @@ ConfigInstrument(
 		return(0);
 	system_loss=(float)pow(10.0,0.1*system_loss);
 	instrument->systemLoss = system_loss;
+
+	int use_kpc;
+	if (! config_list->GetInt(USE_KPC_KEYWORD, &use_kpc))
+		return(0);
+	instrument->useKpc = use_kpc;
 
 	return(1);
 }

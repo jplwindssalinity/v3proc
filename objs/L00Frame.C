@@ -18,7 +18,8 @@ static const char rcs_id_l00frame_c[] =
 L00Frame::L00Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
-	science(NULL), spotsPerFrame(0), slicesPerSpot(0), slicesPerFrame(0)
+	science(NULL), spotNoise(NULL), spotsPerFrame(0), slicesPerSpot(0),
+	slicesPerFrame(0)
 {
 	return;
 }
@@ -56,7 +57,14 @@ L00Frame::Allocate(
 
 	science = (float *)malloc(slicesPerFrame * sizeof(float));
 	if (science == NULL)
+	{
 		return(0);
+	}
+	spotNoise = (float *)malloc(spotsPerFrame * sizeof(float));
+	if (spotNoise == NULL)
+	{
+		return(0);
+	}
 
 	return(1);
 }
@@ -72,6 +80,8 @@ L00Frame::Deallocate()
 		free(antennaPosition);
 	if (science)
 		free(science);
+	if (spotNoise)
+		free(spotNoise);
 	spotsPerFrame = 0;
 	slicesPerSpot = 0;
 	slicesPerFrame = 0;
@@ -140,6 +150,10 @@ L00Frame::Pack(
 
 	size = sizeof(float) * slicesPerFrame;
 	memcpy((void *)(buffer + idx), (void *)science, size);
+	idx += size;
+
+	size = sizeof(float) * spotsPerFrame;
+	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
 	idx += size;
 
 	return(idx);

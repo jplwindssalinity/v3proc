@@ -18,7 +18,7 @@ static const char rcs_id_l10frame_c[] =
 L10Frame::L10Frame()
 :	time(0), gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0), gcX(0.0),
 	gcY(0.0), gcZ(0.0), velX(0.0), velY(0.0), velZ(0.0), antennaPosition(NULL),
-	science(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
+	science(NULL), spotNoise(NULL), antennaCyclesPerFrame(0), spotsPerFrame(0),
 	slicesPerSpot(0), slicesPerFrame(0)
 {
 	return;
@@ -58,7 +58,14 @@ L10Frame::Allocate(
  
 	science = (float *)malloc(slicesPerFrame * sizeof(float));
 	if (science == NULL)
+	{
 		return(0);
+	}
+	spotNoise = (float *)malloc(spotsPerFrame * sizeof(float));
+	if (spotNoise == NULL)
+	{
+		return(0);
+	}
  
 	return(1);
 }
@@ -74,6 +81,8 @@ L10Frame::Deallocate()
 		free(antennaPosition);
 	if (science)
 		free(science);
+	if (spotNoise)
+		free(spotNoise);
 	antennaCyclesPerFrame = 0;
 	spotsPerFrame = 0;
 	slicesPerSpot = 0;
@@ -145,6 +154,10 @@ L10Frame::Pack(
 	memcpy((void *)(buffer + idx), (void *)science, size);
 	idx += size;
 
+	size = sizeof(float) * spotsPerFrame;
+	memcpy((void *)(buffer + idx), (void *)spotNoise, size);
+	idx += size;
+
 	return(idx);
 }
 
@@ -210,6 +223,10 @@ L10Frame::Unpack(
 
 	size = sizeof(float) * slicesPerFrame;
 	memcpy((void *)science, (void *)(buffer + idx), size);
+	idx += size;
+
+	size = sizeof(float) * spotsPerFrame;
+	memcpy((void *)spotNoise, (void *)(buffer + idx), size);
 	idx += size;
 
 	return(idx);

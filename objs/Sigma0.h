@@ -15,7 +15,7 @@ static const char rcs_id_sigma0_h[] =
 
 //======================================================================
 // Functions
-//		radar_X sigma0_to_Pr Pr_to_sigma0
+//		radar_X, sigma0_to_Psn, Pnoise, Pr_to_sigma0
 //======================================================================
 
 //=======================================================================
@@ -35,17 +35,27 @@ int radar_X(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 
 //======================================================================
 // Function
-//		sigma0_to_Pr
+//		sigma0_to_Psn
 //
 // DESCRIPTION
-//		The receive_power function computes the power received for a
-//		given instrument state and average sigma0.
+//		This function computes the signal + noise power received in
+//		a slice.
 //======================================================================
 
-int sigma0_to_Pr(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
+int sigma0_to_Psn(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 		Instrument* instrument, Meas* meas, float Kfactor, float sigma0,
 		float* Pr);
 
+//======================================================================
+// Function
+//		Pnoise
+//
+// DESCRIPTION
+//		This function computes the signal + noise power received in
+//		the noise measurement.
+//======================================================================
+
+int Pnoise(Instrument* instrument, MeasSpot* spot, float* Pn);
 
 //=========================================================================
 // Function
@@ -57,8 +67,8 @@ int sigma0_to_Pr(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
 //=========================================================================
 
 int Pr_to_sigma0(CoordinateSwitch* gc_to_antenna, Spacecraft* spacecraft,
-		Instrument* instrument, Meas* meas, float Kfactor, float Pr,
-		float* sigma0);
+		Instrument* instrument, Meas* meas, float Kfactor, float Psn,
+		float sumPsn, float Pn, float* sigma0);
 
 
 #endif

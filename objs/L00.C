@@ -37,11 +37,14 @@ L00::AllocateBuffer(
 	int		antenna_cycles_per_frame,
 	int		slices_per_spot)
 {
-	// antenna position and sigma-0
+	// antenna position and sigma-0 and noise powers
 	int power_bytes = sizeof(float) * number_of_beams *
 		antenna_cycles_per_frame * slices_per_spot;
+	int noise_bytes = sizeof(float) * number_of_beams *
+		antenna_cycles_per_frame;
 	int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
-	int buffer_size = L00_FRAME_HEADER_SIZE + power_bytes + ant_bytes;
+	int buffer_size = L00_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
+		noise_bytes;
 	buffer = (char *)malloc(buffer_size);
 	if (buffer == NULL)
 		return(0);

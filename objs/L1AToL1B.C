@@ -145,6 +145,16 @@ L10ToL15::Convert(
 			CoordinateSwitch gc_to_antenna =
 				antenna_frame_to_gc.ReverseDirection();
 
+			// Sum up the signal+noise measurements
+			float sumPsn = 0.0;
+			for (int i=0; i < l10->frame.slicesPerSpot; i++)
+			{
+				sumPsn += l10->frame.science[total_slice_idx + i];
+			}
+
+			// Fetch the noise measurement which applies to all the slices.
+			float Pn = l10->frame.spotNoise[spot_idx];
+
 			//-------------------//
 			// for each slice... //
 			//-------------------//
@@ -153,10 +163,10 @@ L10ToL15::Convert(
 				meas = meas_spot->GetNext())
 			{
 				float k_factor = 1.0;
-				float Pr = l10->frame.science[total_slice_idx];
+				float Psn = l10->frame.science[total_slice_idx];
 				float sigma0;
 				if (! Pr_to_sigma0(&gc_to_antenna, spacecraft, instrument,
-					meas, k_factor, Pr, &sigma0))
+					meas, k_factor, Psn, sumPsn, Pn, &sigma0))
 				{
 					return(0);
 				}				
@@ -167,8 +177,6 @@ L10ToL15::Convert(
 				//----------------------------------//
 
 				if (XMGROUT) printf("%g ",1.0-sigma0);
-
-
 
 				//-----------------//
 				// set measurement //

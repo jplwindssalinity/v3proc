@@ -39,8 +39,11 @@ L10::AllocateBuffer(
     // antenna position and sigma-0
     int power_bytes = sizeof(float) * number_of_beams *
         antenna_cycles_per_frame * slices_per_spot;
+	int noise_bytes = sizeof(float) * number_of_beams *
+		antenna_cycles_per_frame;
     int ant_bytes = sizeof(short) * number_of_beams * antenna_cycles_per_frame;
-    int buffer_size = L10_FRAME_HEADER_SIZE + power_bytes + ant_bytes;
+    int buffer_size = L10_FRAME_HEADER_SIZE + power_bytes + ant_bytes +
+		noise_bytes;
     buffer = (char *)malloc(buffer_size);
     if (buffer == NULL)
         return(0);

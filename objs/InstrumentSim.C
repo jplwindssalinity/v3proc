@@ -176,12 +176,13 @@ InstrumentSim::SetMeasurements(
 
 		/************* FOR NOW Kfactor=1.0 *********/
 		float Kfactor=1.0;
-		if(! sigma0_to_Pr(&gc_to_antenna, spacecraft, instrument, meas,
+		if(! sigma0_to_Psn(&gc_to_antenna, spacecraft, instrument, meas,
 				Kfactor, sigma0, &(meas->value)))
 		{
 			return(0);
 		}
 	}
+
 	return(1);
 }
 
@@ -246,6 +247,10 @@ InstrumentSim::SetL00Science(
 		l00_frame->science[slice_number] = meas->value;
 		slice_number++;
 	}
+
+	// Compute the spot noise measurement.
+	Pnoise(instrument,meas_spot,&(l00_frame->spotNoise[_spotNumber]));
+
 	_spotNumber++;
 
 	return(1);

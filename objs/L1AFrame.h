@@ -75,6 +75,7 @@ public:
 
 	// science measurements
 	float*				science;
+	float*				spotNoise;
 
 	//-------------------------//
 	// informational variables //
