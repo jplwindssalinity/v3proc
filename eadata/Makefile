@@ -65,6 +65,7 @@ OBJS = \
 	L2AParTab.o \
 	L2AxParTab.o \
 	L2BParTab.o \
+	LeapSecTable.o \
 	LimitChecker.o \
 	LimitList.o \
 	LimitState.o \
@@ -178,6 +179,7 @@ L1BParTab.o: L1BParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h 
 L2AxParTab.o: L2AxParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 L2AParTab.o: L2AParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
 L2BParTab.o: L2BParTab.C ParTab.h L1AExtract.h Print.h CommonDefs.h Parameter.h Itime.h TlmHdfFile.h HdfFile.h EAList.h SafeString.h ListBase.h
+LeapSecTable.o: EAList.h CommonDefs.h Itime.h LeapSecTable.h LeapSecTable.C
 LimitChecker.o: LimitChecker.C LimitChecker.h LimitState.h L1AExtract.h ParTab.h Polynomial.h PolyTable.h Parameter.h Itime.h CommonDefs.h TlmHdfFile.h EAList.h PolyErrNo.h HdfFile.h ListBase.h SafeString.h
 LimitList.o: LimitList.C CommonDefs.h LimitList.h ParTab.h PolyTable.h LimitChecker.h LimitState.h L1AExtract.h Parameter.h EAList.h Polynomial.h PolyErrNo.h Itime.h TlmHdfFile.h ListBase.h HdfFile.h SafeString.h
 LimitState.o: LimitState.C LimitState.h L1AExtract.h ParTab.h TlmHdfFile.h Parameter.h CommonDefs.h Itime.h HdfFile.h EAList.h SafeString.h ListBase.h
