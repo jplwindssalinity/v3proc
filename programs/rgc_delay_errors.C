@@ -1,14 +1,14 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
 //		rgc_delay_errors
 //
 // SYNOPSIS
-//		rgc_delay_errors <sim_config_file> <RGC_file> <RGC_errs>
+//		rgc_delay_errors <sim_config_file> <RGC_errs>
 //
 // DESCRIPTION
 //		Generates plottable error files between the actual delay and
@@ -22,8 +22,6 @@
 //		<sim_config_file>	The sim_config_file needed listing
 //								all input parameters, input files, and
 //								output files.
-//
-//		<RGC_file>			The RGC input file.
 //
 //		<RGC_errs>			A plottable error file for the RGC.
 //
@@ -110,8 +108,7 @@ template class BufferedList<OrbitState>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<RGC_file>",
-	"<RGC_errs>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<RGC_errs>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -128,12 +125,11 @@ main(
 
 	const char* command = no_path(argv[0]);
 
-	if (argc != 4)
+	if (argc != 3)
 		usage(command, usage_array, 1);
 
 	int arg_idx = 1;
 	const char* config_file = argv[arg_idx++];
-	const char* rgc_file = argv[arg_idx++];
 	const char* rgc_err_file = argv[arg_idx++];
 
 	//--------------------------------//
@@ -165,30 +161,6 @@ main(
 	{
 		fprintf(stderr, "%s: error configuring spacecraft simulator\n",
 			command);
-		exit(1);
-	}
-
-	//----------------------------------------//
-	// create an attitude control error model //
-	//----------------------------------------//
-
-	if (! ConfigAttitudeControlModel(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring attitude control error model\n",
-			command);
-		fprintf(stderr, "    for spacecraft simulator\n");
-		exit(1);
-	}
-
-	//------------------------------------------//
-	// create an attitude knowledge error model //
-	//------------------------------------------//
-
-	if (! ConfigAttitudeKnowledgeModel(&spacecraft_sim, &config_list))
-	{
-		fprintf(stderr,
-			"%s: error configuring attitude knowledge error model\n", command);
-		fprintf(stderr, "    for spacecraft simulator\n");
 		exit(1);
 	}
 
@@ -253,17 +225,6 @@ main(
 	{
 		fprintf(stderr, "%s: error initializing spacecraft simulator\n",
 			command);
-		exit(1);
-	}
-
-	//--------------//
-	// read the RGC //
-	//--------------//
-
-	RangeTracker range_tracker;
-	if (! range_tracker.ReadBinary(rgc_file))
-	{
-		fprintf(stderr, "%s: error reading RGC file %s\n", command, rgc_file);
 		exit(1);
 	}
 
@@ -358,12 +319,11 @@ main(
 				Beam* beam;
 				OrbitState* orbit_state;
 				Attitude* attitude;
-				int range_step;
 				double ideal_delay, delay_error;
 				CoordinateSwitch antenna_frame_to_gc;
 				TargetInfoPackage tip;
 				Vector3 vector;
-				unsigned int antenna_dn, antenna_n;
+				float delay, residual_delay_error;
 
 				switch(instrument_event.eventId)
 				{
@@ -405,21 +365,15 @@ main(
 					//---------------------------//
 
 					ideal_delay = tip.roundTripTime +
-						(beam->pulseWidth - beam->receiverGateWidth) / 2.0;
+						(beam->pulseWidth - beam->rxGateWidth) / 2.0;
 
 					//-------------------------//
 					// calculate the RGC delay //
 					//-------------------------//
 
-					range_step = range_tracker.OrbitTicksToRangeStep(
-						instrument.orbitTicks);
-					float delay, duration;
-					antenna_dn = antenna->GetEncoderValue();
-					antenna_n = antenna->GetEncoderN();
-					float residual_delay_error;
-					range_tracker.GetDelayAndDuration(instrument_event.beamIdx,
-						range_step, beam->pulseWidth, antenna_dn, antenna_n,
-						&delay, &duration, &residual_delay_error);
+					beam->rangeTracker.SetInstrument(&instrument,
+						&residual_delay_error);
+					delay = instrument.commandedRxGateDelay;
 
 					//---------------------------//
 					// calculate the delay error //

@@ -152,6 +152,8 @@ main(
 
 	config_list.StompOrAppend(USE_RGC_KEYWORD, "0");
 	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+	config_list.StompOrAppend(ORBIT_TICKS_PER_ORBIT_KEYWORD, "0");
+	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
 
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
@@ -336,7 +338,7 @@ main(
 	//-----------------------------------//
 
 	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
-	printf("ORBIT_TICKS_PER_ORBIT	%d\n", ticks);
+	printf("%s	%d\n", ORBIT_TICKS_PER_ORBIT_KEYWORD, ticks);
 
 	return (0);
 }

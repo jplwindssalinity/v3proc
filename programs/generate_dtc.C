@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -149,9 +149,10 @@ main(
 	//-----------------------------------//
 	// force RGC to be read, but not DTC //
 	//-----------------------------------//
- 
+
 	config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
 	config_list.StompOrAppend(USE_DTC_KEYWORD, "0");
+	config_list.StompOrAppend(USE_KFACTOR_KEYWORD, "0");
 
 	//----------------------------------------------//
 	// create a spacecraft and spacecraft simulator //
@@ -194,24 +195,13 @@ main(
 		exit(1);
 	}
 
-	//--------------------------//
-	// allocate Doppler tracker //
-	//--------------------------//
-
-	DopplerTracker doppler_tracker;
-	if (! doppler_tracker.Allocate(DOPPLER_ORBIT_STEPS))
-	{
-		fprintf(stderr, "%s: error allocating Doppler tracker\n", command);
-		exit(1);
-	}
-
 	//----------------//
 	// allocate terms //
 	//----------------//
 
 	// terms are [0] = amplitude, [1] = phase, [2] = bias
 	double** terms;
-	terms = (double **)make_array(sizeof(double), 3, DOPPLER_ORBIT_STEPS, 3);
+	terms = (double **)make_array(sizeof(double), 2, DOPPLER_ORBIT_STEPS, 3);
 
 	//-----------//
 	// variables //
@@ -234,7 +224,7 @@ main(
 		//--------------------------//
 		// allocate Doppler tracker //
 		//--------------------------//
- 
+
 		antenna->currentBeamIdx = beam_idx;
 		Beam* beam = antenna->GetCurrentBeam();
 		if (! beam->dopplerTracker.Allocate(DOPPLER_ORBIT_STEPS))
@@ -365,7 +355,7 @@ main(
 		//------------------------------------------//
 		// write out the doppler tracking constants //
 		//------------------------------------------//
- 
+
 		char filename[1024];
 		sprintf(filename, "%s.%d", dtc_base, beam_idx + 1);
 		if (! beam->dopplerTracker.WriteBinary(filename))
@@ -379,13 +369,13 @@ main(
 	//----------------//
 	// free the array //
 	//----------------//
- 
+
 	free_array((void *)terms, 2, DOPPLER_ORBIT_STEPS, 3);
- 
+
 	//-----------------------------------//
 	// mention the orbit period in ticks //
 	//-----------------------------------//
- 
+
 	unsigned int ticks = instrument.TimeToOrbitTicks(orbit_period);
 	printf("ORBIT_TICKS_PER_ORBIT   %d\n", ticks);
 

@@ -162,6 +162,9 @@ main(
 		{
 			for (Meas* m = ms->GetHead(); m; m = ms->GetNext())
 			{
+double alt, lon, lat;
+m->centroid.GetAltLonGCLat(&alt, &lon, &lat);
+printf("%g %g\n", lon, lat);
 				if (! m->outline.WriteOtln(output_fp))
 				{
 					fprintf(stderr, "%s: error writing Otln data to file %s\n",

@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -102,6 +102,8 @@ int xmgr_control(FILE* ofp, const char* title, const char* subtitle,
 
 int plot_thing(const char* extension, const char* title, const char* x_axis,
 		const char* y_axis);
+
+int rad_to_deg();
 
 //------------------//
 // OPTION VARIABLES //
@@ -312,6 +314,7 @@ main(
 			command);
 		exit(1);
 	}
+	rad_to_deg();
 
 	sprintf(title, "RMS Direction Error vs. CTD (%g - %g m/s)", low_speed,
 		high_speed);
@@ -412,5 +415,19 @@ plot_thing(
 	}
 	fclose(ofp);
 
+	return(1);
+}
+
+//------------//
+// rad_to_deg //
+//------------//
+
+int
+rad_to_deg()
+{
+	for (int i = 0; i < cross_track_bins; i++)
+	{
+		value_array[i] *= rtd;
+	}
 	return(1);
 }
