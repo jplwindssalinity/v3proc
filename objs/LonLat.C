@@ -72,6 +72,17 @@ LonLat::ApproxApplyDelta(
     float dlat = dlat_km / r1_earth;
     longitude += dlon;
     latitude += dlat;
+    if (latitude > pi / 2.0)
+    {
+        latitude = pi - latitude;
+        longitude += pi;
+    }
+    else if (latitude < -pi / 2.0)
+    {
+        latitude = -pi -latitude;
+        longitude += pi;
+    }
+    longitude = fmod(longitude, two_pi);
     return(1);
 }
 
