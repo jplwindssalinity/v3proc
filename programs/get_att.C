@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -289,27 +289,16 @@ main(
     }
     g_spots_per_frame = l1a.frame.spotsPerFrame;
 
-/*
-    //----------------------------------//
-    // create and configure BYU X Table //
-    //----------------------------------//
-
-    if (! ConfigFbbTable(&fbb_table, &config_list))
-    {
-        fprintf(stderr, "%s: error configuring FbbTable\n", command);
-        exit(1);
-    }
-*/
-
     //--------------------------------//
     // create and configure Fbb table //
     //--------------------------------//
 
     FbbTable fbb_table;
-    if (! fbb_table.Read("/home/svt/data/BYUX/CN61",
-        "/home/svt/data/BYUX/CN62"))
-    {
-        fprintf(stderr, "%s: error reading Fbb tables\n", command);
+    char* fbb_in_file = config_list.Get(FBB_INNER_BEAM_FILE_KEYWORD);
+    char* fbb_out_file = config_list.Get(FBB_OUTER_BEAM_FILE_KEYWORD);
+    if (! fbb_table.Read(fbb_in_file, fbb_out_file)) {
+        fprintf(stderr, "%s: error reading Fbb tables (%s, %s)\n", command,
+            fbb_in_file, fbb_out_file);
         exit(1);
     }
 
