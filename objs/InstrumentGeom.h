@@ -105,7 +105,7 @@ int		PowerGainProduct(CoordinateSwitch* antenna_frame_to_gc,
 int		RangeAndRoundTrip(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Vector3 vector, TargetInfoPackage* tip);
 
-int		Get2WayElectricalBoresight(Beam* beam, double round_trip_time,
+int		GetTwoWayPeakGain(Beam* beam, double round_trip_time,
             double azimuth_rate, double* look, double* azimuth);
 double	ReciprocalPowerGainProduct(double*,void*);
 

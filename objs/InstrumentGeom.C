@@ -122,7 +122,7 @@ LocateSlices(
 	TargetInfoPackage tip;
 	RangeAndRoundTrip(&zero_rpy_antenna_frame_to_gc, spacecraft, vector, &tip);
 
-	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
+	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
 		instrument->antenna.spinRate,&look, &azimuth))
 	{
 		return(0);
@@ -250,7 +250,7 @@ LocateSpot(
 	// but the round trip time difference should be very small.
 	//
 
-	if (! Get2WayElectricalBoresight(beam,tip.roundTripTime,
+	if (! GetTwoWayPeakGain(beam,tip.roundTripTime,
 		instrument->antenna.spinRate,&look, &azimuth))
 	{
 		printf("Error determining 2 way electrical boresight\n");
@@ -1468,9 +1468,9 @@ RangeAndRoundTrip(
 	return(1);
 }
 
-//----------------------------//
-// Get2WayElectricalBoresight //
-//----------------------------//
+//-------------------//
+// GetTwoWayPeakGain //
+//-------------------//
 
 //
 // This function locates the maximum 2-way gain of a beam in the antenna frame,
@@ -1479,10 +1479,10 @@ RangeAndRoundTrip(
 // the scattering geometry.
 //
 
-#define TWO_WAY_BORESIGHT_ANGLE_TOLERANCE  1e-5
+#define TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE  1e-5
 
 int
-Get2WayElectricalBoresight(
+GetTwoWayPeakGain(
 	Beam*	beam,
 	double	round_trip_time,
 	double	azimuth_rate,
@@ -1496,7 +1496,7 @@ Get2WayElectricalBoresight(
 	double** p = (double**)make_array(sizeof(double),2,3,4);
 	if (p == NULL)
 	{
-		printf("Error allocating memory in Get2WayElectricalBoresight\n");
+		printf("Error allocating memory in GetTwoWayPeakGain\n");
 		return(0);
 	}
 
@@ -1513,7 +1513,7 @@ Get2WayElectricalBoresight(
 		p[i][3] = azimuth_rate;
 	}
 
-	double ftol = TWO_WAY_BORESIGHT_ANGLE_TOLERANCE;
+	double ftol = TWO_WAY_PEAK_GAIN_ANGLE_TOLERANCE;
 	downhill_simplex((double**)p,ndim,ndim+2,ftol,
 		ReciprocalPowerGainProduct,beam);
 
@@ -1531,7 +1531,7 @@ Get2WayElectricalBoresight(
 
 //
 // ReciprocalPowerGainProduct is the function to be minimized by
-// Get2WayElectricalBoresight.
+// GetTwoWayPeakGain.
 // It computes the reciprocal of the PowerGainProduct for the inputs given
 // in the input vector.  The elements of the input vector are:
 //

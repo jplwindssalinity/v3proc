@@ -87,7 +87,7 @@ IntegrateSlices(
 
         double round_trip=tip.roundTripTime;
 
-	if (! Get2WayElectricalBoresight(beam, tip.roundTripTime,
+	if (! GetTwoWayPeakGain(beam, tip.roundTripTime,
 		instrument->antenna.spinRate,&look, &azimuth))
 	{
 		return(0);
