@@ -43,6 +43,8 @@ public:
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
 
+	int		WriteBvg(FILE* fp);
+
 	//-----------//
 	// variables //
 	//-----------//
@@ -77,6 +79,8 @@ public:
 
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
+
+	int		WriteBvg(FILE* fp);
 
 	//---------//
 	// freeing //

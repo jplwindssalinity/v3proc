@@ -9,14 +9,13 @@
 static const char rcs_id_instrumentsim_h[] =
 	"@(#) $Id$";
 
-#include "ConfigList.h"
+#include "Antenna.h"
 #include "Instrument.h"
-#include "AntennaSim.h"
-#include "L00.h"
 #include "Wind.h"
 #include "GMF.h"
-#include "Ephemeris.h"
-#include "CoordinateSwitch.h"
+#include "AntennaSim.h"
+#include "L00.h"
+#include "Spacecraft.h"
 
 //======================================================================
 // CLASSES
@@ -59,9 +58,9 @@ public:
 	// scatterometer simulation //
 	//--------------------------//
 
-	int		ScatSim(double time, OrbitState* sc_orbit_state,
-				Attitude* sc_attitude, Instrument* instrument, int beam_idx,
-				WindField* windfield, GMF* gmf);
+	int		ScatSim(double time, Spacecraft* sc_orbit_state,
+				Instrument* instrument, int beam_idx, WindField* windfield,
+				GMF* gmf);
 
 	//-----------//
 	// variables //

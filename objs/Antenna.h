@@ -65,7 +65,7 @@ public:
 	//-----------//
 
 	int			numberOfBeams;
-	double		priPerBeam;
+	double		priPerBeam;		// seconds
 	Beam		beam[MAX_NUMBER_OF_BEAMS];
 	Attitude	antennaFrame;	// relative to s/c
 	double		azimuthAngle;	// antenna azimuth angle
@@ -79,7 +79,7 @@ protected:
 	//-----------//
 
 	int					_numberOfEncoderBits;
-	double				_angularResolution;
+	double				_angularResolution;		// radians
 	CoordinateSwitch	_antPedToScBody;
 	CoordinateSwitch	_scBodyToAntPed;
 };

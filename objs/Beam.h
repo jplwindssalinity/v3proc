@@ -65,8 +65,8 @@ public:
 	//-----------//
 
 	PolE	polarization;
-	float	pulseWidth;		// pulse width in ms
-	float	timeOffset;		// ms after prf for beam index 0
+	float	pulseWidth;		// pulse width in seconds
+	float	timeOffset;		// seconds after prf for beam index 0
 
 protected:
 

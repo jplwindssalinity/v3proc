@@ -40,7 +40,8 @@ struct TargetInfoPackage {
 CoordinateSwitch	BeamFrameToGC(OrbitState* orbit_state, Attitude* attitude,
 						Antenna* antenna, Beam* beam);
 
-int		FindSlice(float freq_1, float freq_2, float freq_tol,
+int		FindSlice(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
+			Instrument* instrument, float freq_1, float freq_2, float freq_tol,
 			Outline* outline, Vector3* centroid_beam_look);
 
 int		JumpToFreq(CoordinateSwitch* beam_frame_to_gc, Spacecraft* spacecraft,
@@ -63,6 +64,6 @@ int		SetPoints(float az_0, float el_0, float distance, float angle,
 			float az[3], float el[3]);
 
 int		GainSlice(Instrument* instrument, float az[3], float el[3],
-			float s[3], float c[3]);
+			double s[3], double c[3]);
 
 #endif

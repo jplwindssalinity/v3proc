@@ -64,9 +64,9 @@ protected:
 	// variables //
 	//-----------//
 
-	float			_roll;
-	float			_pitch;
-	float			_yaw;
+	float			_roll;		// radians
+	float			_pitch;		// radians
+	float			_yaw;		// radians
 	unsigned char	_order[3];
 };
 

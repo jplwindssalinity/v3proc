@@ -82,19 +82,19 @@ public:
 	// generally varied //
 	//------------------//
 
-	float		commandedDoppler;	// kHz
+	float		commandedDoppler;	// Hz
 
 	//-----------------//
 	// generally fixed //
 	//-----------------//
 
-	float		chirpRate;			// kHz/ms
-	float		chirpStartM;		// kHz/ms
-	float		chirpStartB;		// kHz
-	float		systemDelay;		// ms
-	float		receiveGateDelay;	// ms
-	float		baseTransmitFreq;	// GHz
-	float		sliceBandwidth;		// kHz
+	float		chirpRate;			// Hz/sec
+	float		chirpStartM;		// Hz/sec
+	float		chirpStartB;		// Hz
+	float		systemDelay;		// sec
+	float		receiveGateDelay;	// sec
+	float		baseTransmitFreq;	// Hz
+	float		sliceBandwidth;		// Hz
 };
 
 #endif
