@@ -234,7 +234,10 @@ InstrumentSim::ScatSim(
 	//-----------------------------//
 
 	if (_pulseNumber >= PULSES_PER_L00_FRAME)
-		l00FrameReady = 1;
+	{
+		l00FrameReady = 1;	// indicate frame is ready
+		_pulseNumber = 0;	// prepare to start a new frame
+	}
 
 	return(1);
 }
