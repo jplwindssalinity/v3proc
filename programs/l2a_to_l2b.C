@@ -1,46 +1,45 @@
 //==============================================================//
-// Copyright (C) 1997-1998, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.					//
+// Copyright (C) 1997-2000, California Institute of Technology. //
+// U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
-//		l2a_to_l2b
+//    l2a_to_l2b
 //
 // SYNOPSIS
-//		l2a_to_l2b <sim_config_file>
+//    l2a_to_l2b <sim_config_file>
 //
 // DESCRIPTION
-//		Simulates the SeaWinds 1b ground processing of Level 2A to
-//		Level 2B data.  This program retrieves wind from measurements.
+//    Simulates the SeaWinds 1b ground processing of Level 2A to
+//    Level 2B data.  This program retrieves wind from measurements.
 //
 // OPTIONS
-//		None.
+//    None.
 //
 // OPERANDS
-//		The following operand is supported:
-//		<sim_config_file>		The sim_config_file needed listing
-//								all input parameters, input files, and
-//								output files.
+//    The following operand is supported:
+//      <sim_config_file>  The sim_config_file needed listing
+//                         all input parameters, input files, and
+//                         output files.
 //
 // EXAMPLES
-//		An example of a command line is:
-//			% l2a_to_l2b sws1b.cfg
+//    An example of a command line is:
+//      % l2a_to_l2b sws1b.cfg
 //
 // ENVIRONMENT
-//		Not environment dependent.
+//    Not environment dependent.
 //
 // EXIT STATUS
-//		The following exit values are returned:
-//		0	Program executed successfully
-//		>0	Program had an error
+//    The following exit values are returned:
+//       0  Program executed successfully
+//      >0  Program had an error
 //
 // NOTES
-//		None.
+//    None.
 //
-// AUTHOR
-//		James N. Huddleston
-//		hudd@acid.jpl.nasa.gov
+// AUTHORS
+//    James N. Huddleston (James.N.Huddleston@jpl.nasa.gov)
 //----------------------------------------------------------------------
 
 //-----------------------//
@@ -48,7 +47,7 @@
 //-----------------------//
 
 static const char rcs_id[] =
-	"@(#) $Id$";
+    "@(#) $Id$";
 
 //----------//
 // INCLUDES //
@@ -96,11 +95,11 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define MAX_ALONG_TRACK_BINS 1624
+#define MAX_ALONG_TRACK_BINS  1624
 
-//----------------//
-// HACKS          //
-//----------------//
+//-------//
+// HACKS //
+//-------//
 
 //#define LATLON_LIMIT_HACK
 
@@ -129,15 +128,17 @@ const char* usage_array[] = { "<sim_config_file>", 0};
 //--------------------//
 // Report handler     //
 // runs if SIGUSR1 is //
-// recieved.          //
+// received.          //
 //--------------------//
 
-int global_frame_number=0;
-
-void report(int sig_num){
-  fprintf(stderr,"l2a_to_l2b: Starting frame number %d\n",
-	  global_frame_number);
-  return;
+int global_frame_number = 0;
+void
+report(
+    int  sig_num)
+{
+    fprintf(stderr,"l2a_to_l2b: Starting frame number %d\n",
+        global_frame_number);
+    return;
 }
 
 //--------------//
@@ -146,214 +147,221 @@ void report(int sig_num){
 
 int
 main(
-	int		argc,
-	char*	argv[])
+    int    argc,
+    char*  argv[])
 {
-	//------------------------//
-	// parse the command line //
-	//------------------------//
+    //------------------------//
+    // parse the command line //
+    //------------------------//
 
-	const char* command = no_path(argv[0]);
-	if (argc != 2)
-		usage(command, usage_array, 1);
+    const char* command = no_path(argv[0]);
+    if (argc != 2)
+        usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
+    int clidx = 1;
+    const char* config_file = argv[clidx++];
 
-        //------------------------//
-        // tell how far you have  //
-        // gotten if you recieve  //
-        // the siguser1 signal    //
-        //------------------------//
+    //------------------------//
+    // tell how far you have  //
+    // gotten if you recieve  //
+    // the siguser1 signal    //
+    //------------------------//
 
-        sigset(SIGUSR1,&report);
+    sigset(SIGUSR1, &report);
 
-	//---------------------//
-	// read in config file //
-	//---------------------//
+    //---------------------//
+    // read in config file //
+    //---------------------//
 
-	ConfigList config_list;
-	if (! config_list.Read(config_file))
-	{
-		fprintf(stderr, "%s: error reading sim config file %s\n",
-			command, config_file);
-		exit(1);
-	}
+    ConfigList config_list;
+    if (! config_list.Read(config_file))
+    {
+        fprintf(stderr, "%s: error reading sim config file %s\n",
+            command, config_file);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// create and configure level products //
-	//-------------------------------------//
+    //-------------------------------------//
+    // create and configure level products //
+    //-------------------------------------//
 
-	L2A l2a;
-	if (! ConfigL2A(&l2a, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 2A Product\n", command);
-		exit(1);
-	}
+    L2A l2a;
+    if (! ConfigL2A(&l2a, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 2A Product\n", command);
+        exit(1);
+    }
 
-	L2B l2b;
-	if (! ConfigL2B(&l2b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
-		exit(1);
-	}
+    L2B l2b;
+    if (! ConfigL2B(&l2b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Level 2B Product\n", command);
+        exit(1);
+    }
 
-	//-------------------------------------//
-	// read the geophysical model function //
-	//-------------------------------------//
- 
-	GMF gmf;
-	if (! ConfigGMF(&gmf, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring GMF\n", command);
-		exit(1);
-	}
+    //-------------------------------------//
+    // read the geophysical model function //
+    //-------------------------------------//
 
-	//--------------//
-	// configure Kp //
-	//--------------//
+    GMF gmf;
+    if (! ConfigGMF(&gmf, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring GMF\n", command);
+        exit(1);
+    }
 
-	Kp kp;
-	if (! ConfigKp(&kp, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring Kp\n", command);
-		exit(1);
-	}
+    //--------------//
+    // configure Kp //
+    //--------------//
 
-	//------------------------------------//
-	// create and configure the converter //
-	//------------------------------------//
+    Kp kp;
+    if (! ConfigKp(&kp, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring Kp\n", command);
+        exit(1);
+    }
 
-	L2AToL2B l2a_to_l2b;
-	if (! ConfigL2AToL2B(&l2a_to_l2b, &config_list))
-	{
-		fprintf(stderr, "%s: error configuring L2AToL2B\n", command);
-		exit(1);
-	}
+    //------------------------------------//
+    // create and configure the converter //
+    //------------------------------------//
 
-	//------------//
-	// open files //
-	//------------//
+    L2AToL2B l2a_to_l2b;
+    if (! ConfigL2AToL2B(&l2a_to_l2b, &config_list))
+    {
+        fprintf(stderr, "%s: error configuring L2AToL2B\n", command);
+        exit(1);
+    }
 
-	l2a.OpenForReading();
-	l2b.OpenForWriting();
+    //------------//
+    // open files //
+    //------------//
 
-	//---------------------------------//
-	// read the header to set up swath //
-	//---------------------------------//
+    l2a.OpenForReading();
+    l2b.OpenForWriting();
 
-	if (! l2a.ReadHeader())
-	{
-		fprintf(stderr, "%s: error reading Level 2A header\n", command); 
-		exit(1);
-	}
+    //---------------------------------//
+    // read the header to set up swath //
+    //---------------------------------//
+
+    if (! l2a.ReadHeader())
+    {
+        fprintf(stderr, "%s: error reading Level 2A header\n", command);
+        exit(1);
+    }
 
 
-	if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
-		l2a.header.alongTrackBins))
-	{
-		fprintf(stderr, "%s: error allocating wind swath\n", command);
-		exit(1);
-	}
+    if (! l2b.frame.swath.Allocate(l2a.header.crossTrackBins,
+        l2a.header.alongTrackBins))
+    {
+        fprintf(stderr, "%s: error allocating wind swath\n", command);
+        exit(1);
+    }
 
-	//-----------------------------------------//
-	// transfer information to level 2B header //
-	//-----------------------------------------//
+    //-----------------------------------------//
+    // transfer information to level 2B header //
+    //-----------------------------------------//
 
-	l2b.header.crossTrackResolution = l2a.header.crossTrackResolution;
-	l2b.header.alongTrackResolution = l2a.header.alongTrackResolution;
-	l2b.header.zeroIndex = l2a.header.zeroIndex;
+    l2b.header.crossTrackResolution = l2a.header.crossTrackResolution;
+    l2b.header.alongTrackResolution = l2a.header.alongTrackResolution;
+    l2b.header.zeroIndex = l2a.header.zeroIndex;
 
-	//-----------------//
-	// conversion loop //
-	//-----------------//
+    //-----------------//
+    // conversion loop //
+    //-----------------//
 
-	for (;;)
-	{
-	        global_frame_number++;
+    for (;;)
+    {
+        global_frame_number++;
 
-		//-----------------------------//
-		// read a level 2A data record //
-		//-----------------------------//
+        //-----------------------------//
+        // read a level 2A data record //
+        //-----------------------------//
 
-		if (! l2a.ReadDataRec())
-		{
-			switch (l2a.GetStatus())
-			{
-			case L2A::OK:		// end of file
-				break;
-			case L2A::ERROR_READING_FRAME:
-				fprintf(stderr, "%s: error reading Level 2A data\n", command);
-				exit(1);
-				break;
-			case L2A::ERROR_UNKNOWN:
-				fprintf(stderr, "%s: unknown error reading Level 2A data\n",
-					command);
-				exit(1);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown status (???)\n", command);
-				exit(1);
-			}
-			break;		// done, exit do loop
-		}
+        if (! l2a.ReadDataRec())
+        {
+            switch (l2a.GetStatus())
+            {
+            case L2A::OK:        // end of file
+                break;
+            case L2A::ERROR_READING_FRAME:
+                fprintf(stderr, "%s: error reading Level 2A data\n", command);
+                exit(1);
+                break;
+            case L2A::ERROR_UNKNOWN:
+                fprintf(stderr, "%s: unknown error reading Level 2A data\n",
+                    command);
+                exit(1);
+                break;
+            default:
+                fprintf(stderr, "%s: unknown status (???)\n", command);
+                exit(1);
+            }
+            break;        // done, exit do loop
+        }
 
-		//---------//
-		// convert //
-		//---------//
-
-#ifdef LATLON_LIMIT_HACK
-                ////////// START HAAAAAAAAAAAAAACK
-		Meas* tstmeas = l2a.frame.measList.GetHead();
-		double alt, lat, lon;
-		if (! tstmeas) {
-		  printf("NULL MeasList \n");
-		  continue;
-		}
-                else{ 		  
-		  tstmeas->centroid.GetAltLonGDLat(&alt,&lon,&lat);
-		  lon*=rtd;
-		  lat*=rtd;
-                }
-                if(lat<23.80 && lat>23.78 && lon<296.06 && lon>296.04){
-
-                ////////// END  HAAAAAAAAAAAAAACK
-#endif
-		  int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
+        //---------//
+        // convert //
+        //---------//
 
 #ifdef LATLON_LIMIT_HACK
-                ////////// START HAAAAAAAAAAAAAACK
-		  if (retval!=1){
-		    printf("%g lat %g lon   retval=%d\n",lat,lon,retval);
-                  }
-	        ////////// END   HAAAAAAAAAAAAAACK
+        // start hack
+        Meas* tstmeas = l2a.frame.measList.GetHead();
+        double alt, lat, lon;
+        if (! tstmeas)
+        {
+            printf("NULL MeasList \n");
+            continue;
+        }
+        else
+        {
+            tstmeas->centroid.GetAltLonGDLat(&alt, &lon, &lat);
+            lon*=rtd;
+            lat*=rtd;
+        }
+        if (lat < 23.80 && lat > 23.78 && lon < 296.06 && lon > 296.04)
+        {
+        // end hack
 #endif
-		  switch (retval)
-		    {
-		    case 1:
-		      break;
-		    case 2:
-		      break;
-		    case 4:
-		    case 5:
-		      break;
-		    case 0:
-		      fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
-			      command);
-		      exit(1);
-		      break;
-		    }
+
+        int retval = l2a_to_l2b.ConvertAndWrite(&l2a, &gmf, &kp, &l2b);
+
 #ifdef LATLON_LIMIT_HACK
-                ////////// START HAAAAAAAAAAAAAACK
-		}
-                ////////// END HAAAAAAAAAAAAAACK
+        // start hack
+        if (retval != 1)
+        {
+            printf("%g lat %g lon   retval=%d\n", lat, lon, retval);
+        }
+        // end hack
 #endif
-	}
 
-	l2a_to_l2b.InitFilterAndFlush(&l2b);
+        switch (retval)
+        {
+        case 1:
+            break;
+        case 2:
+            break;
+        case 4:
+        case 5:
+            break;
+        case 0:
+            fprintf(stderr, "%s: error converting Level 2A to Level 2B\n",
+                command);
+            exit(1);
+            break;
+        }
 
-	l2a.Close();
-	l2b.Close();
+#ifdef LATLON_LIMIT_HACK
+        // start hack
+        }
+        // end hack
+#endif
 
-	return (0);
+    }
+
+    l2a_to_l2b.InitFilterAndFlush(&l2b);
+
+    l2a.Close();
+    l2b.Close();
+
+    return (0);
 }
