@@ -206,13 +206,14 @@ int GMF::ReadPolarimetric(
     _spdMax = 50.0;
     _spdStep = 1.0;
 
-    int file_min_spd_idx = 4;
+    int file_min_spd_idx;
     _chiCount = 72;
     _chiStep = two_pi / _chiCount;    // 5 degrees
 
     if (! _Allocate())
         return(0);
 
+    int first_line_of_file=1;
     while(!feof(ifp))
     {
         char string[40];
@@ -270,6 +271,9 @@ int GMF::ReadPolarimetric(
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0vvhv;
           imet=_MetToIndex(Meas::HH_VH_CORR_MEAS_TYPE);
           *(*(*(*(_value + imet) + itheta) + ispd) + ichi)=s0hhvh;
+
+	  if(first_line_of_file) file_min_spd_idx=ispd;
+	  first_line_of_file=0;
     }
 
     //----------------------//
