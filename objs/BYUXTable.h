@@ -6,10 +6,10 @@
 #ifndef BYUXTable_H
 #define BYUXTable_H
 
-#define BYU_INNER_BEAM_LOOK_ANGLE       40.0
-#define BYU_OUTER_BEAM_LOOK_ANGLE       46.1
-#define BYU_INNER_BEAM_AZIMUTH_ANGLE     0.0
-#define BYU_OUTER_BEAM_AZIMUTH_ANGLE     0.0
+#define BYU_INNER_BEAM_LOOK_ANGLE       39.85
+#define BYU_OUTER_BEAM_LOOK_ANGLE       45.95
+#define BYU_INNER_BEAM_AZIMUTH_ANGLE     0.15
+#define BYU_OUTER_BEAM_AZIMUTH_ANGLE     0.15
 #define FFT_BIN_SIZE   462.0
 
 #include"XTable.h"
