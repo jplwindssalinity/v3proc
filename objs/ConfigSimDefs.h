@@ -100,6 +100,8 @@ static const char rcs_id_configsimdefs_h[] =
 #define SIM_UNCORR_KPM_FLAG_KEYWORD		"SIM_UNCORR_KPM_FLAG"
 #define SIM_KPRI_FLAG_KEYWORD			"SIM_KPRI_FLAG"
 
+#define TX_PULSE_WIDTH_KEYWORD			"TX_PULSE_WIDTH"
+
 //-------------------------//
 // BYU X factor            //
 //-------------------------//

@@ -90,6 +90,12 @@ int ConfigL1A(L1A* l1a, ConfigList* config_list);
 
 int ConfigL1B(L1B* l1b, ConfigList* config_list);
 
+//--------//
+// L1BHdf //
+//--------//
+
+int ConfigL1BHdf(L1BHdf* l1bHdf, ConfigList* config_list);
+
 //----------//
 // L1AToL1B //
 //----------//

@@ -16,6 +16,7 @@ static const char rcs_id_configsim_c[] =
 #include "L1A.h"
 #include "L1AToL1B.h"
 #include "L1B.h"
+#include "L1BHdf.h"
 #include "L2A.h"
 #include "L2B.h"
 #include "L2AToL2B.h"
@@ -934,6 +935,39 @@ ConfigL1B(
 
 	return(1);
 }
+
+//--------------//
+// ConfigL1BHdf //
+//--------------//
+
+int
+ConfigL1BHdf(
+	L1BHdf*			l1bHdf,
+	ConfigList*		config_list)
+{
+	//-------------------------------//
+	// configure the l1b HDF product //
+	//-------------------------------//
+    float science_slice_bandwidth;
+    if (! config_list->GetFloat(SCIENCE_SLICE_BANDWIDTH_KEYWORD,
+        &science_slice_bandwidth))
+    {
+        fprintf(stderr,"Could not find slice bandwidth in config file\n");
+        return(0);
+    }
+    l1bHdf->configBandwidth = science_slice_bandwidth * KHZ_TO_HZ;
+
+    float txPulseWidth;
+    if (! config_list->GetFloat(TX_PULSE_WIDTH_KEYWORD, &txPulseWidth))
+    {
+        fprintf(stderr,"Could not find txPulseWidth in config file\n");
+        return(0);
+    }
+    l1bHdf->configTxPulseWidth = txPulseWidth * MS_TO_S;
+
+	return(1);
+
+} // ConfigL1BHdf
 
 //----------------//
 // ConfigL1AToL1B //
