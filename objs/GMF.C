@@ -385,13 +385,17 @@ GMF::GetCoefs(
 	double*		A1,
 	double*		A1_phase,
 	double*		A2,
-	double*		A2_phase)
+	double*		A2_phase,
+	double*		A3,
+	double*		A3_phase,
+	double*		A4,
+	double*		A4_phase)
 {
-	double real[3], imag[3];
+	double real[5], imag[5];
 	int n = _chiCount - 1;
 	double wn = M_PI * 2.0 / n;
 
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		real[i] = 0.0;
 		imag[i] = 0.0;
@@ -415,6 +419,10 @@ GMF::GetCoefs(
 	*A1_phase = -atan2(imag[1], real[1]);
 	*A2 = 2.0 * sqrt(real[2] * real[2] + imag[2] * imag[2]) / (double)n;
 	*A2_phase = -atan2(imag[2], real[2]);
+	*A3 = 2.0 * sqrt(real[3] * real[3] + imag[3] * imag[3]) / (double)n;
+	*A3_phase = -atan2(imag[3], real[3]);
+	*A4 = 2.0 * sqrt(real[4] * real[4] + imag[4] * imag[4]) / (double)n;
+	*A4_phase = -atan2(imag[4], real[4]);
 
 	return(1);
 }
