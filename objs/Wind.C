@@ -30,6 +30,7 @@ static const char rcs_id_wind_c[] =
 #define HDF_ACROSS_BIN_NO                76
 #define HDF_NUM_AMBIGUITIES              4
 #define NWP_SPEED_CORRECTION             0.84
+
 //============//
 // WindVector //
 //============//
@@ -796,13 +797,13 @@ WVC::GetNearestToDirection(
     return(nearest);
 }
 
-
 //---------------------------------//
 // WVC::GetNearestRangeToDirection //
 //---------------------------------//
 // Returns the nearest ambiguity which is included in the S3 probability
 // threshold, other ambiguities those which sum to less than 1-threshold, and
 // thus have 0 width are excluded
+
 WindVectorPlus*
 WVC::GetNearestRangeToDirection(
     float  dir)
@@ -816,14 +817,14 @@ WVC::GetNearestRangeToDirection(
     {
         if (range->left!=range->right)
         {
-      float dif = ANGDIF(wvp->dir, dir);
-      if (dif < min_dif)
-        {
-            min_dif = dif;
-            nearest = wvp;
+            float dif = ANGDIF(wvp->dir, dir);
+            if (dif < min_dif)
+            {
+                min_dif = dif;
+                nearest = wvp;
+            }
         }
-    }
-    range=directionRanges.GetNext();
+        range=directionRanges.GetNext();
     }
     return(nearest);
 }
@@ -1061,7 +1062,6 @@ WVC::Rank_Wind_Solutions()
 
     return(1);
 }
-
 
 //------------------------------//
 // WVC::GetEstimatedSquareError //
@@ -2109,7 +2109,8 @@ WindField::_Deallocate()
 //===========//
 
 WindSwath::WindSwath()
-:   swath(0), useNudgeVectorsAsTruth(0), nudgeVectorsRead(0), _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
+:   swath(0), useNudgeVectorsAsTruth(0), nudgeVectorsRead(0),
+    _crossTrackBins(0), _alongTrackBins(0), _validCells(0)
 {
     return;
 }
@@ -2341,8 +2342,8 @@ WindSwath::DeleteLongitudesOutside(
 
 int
 WindSwath::DeleteDirectionOutliers(
-    float  max_dir_err,
-    WindField* truth)
+    float       max_dir_err,
+    WindField*  truth)
 {
     int count = 0;
     for (int i = 0; i < _crossTrackBins; i++)
@@ -2354,15 +2355,15 @@ WindSwath::DeleteDirectionOutliers(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-	      true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-	    }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             double dir_err = ANGDIF(wvc->selected->dir, true_wv.dir);
-            
             if (dir_err > max_dir_err)
             {
                 delete wvc;
@@ -2375,14 +2376,14 @@ WindSwath::DeleteDirectionOutliers(
     return(count);
 }
 
-//------------------------------------//
-// WindSwath::DeleteSpeedOutliers     //
-//------------------------------------//
+//--------------------------------//
+// WindSwath::DeleteSpeedOutliers //
+//--------------------------------//
 
 int
 WindSwath::DeleteSpeedOutliers(
-    float  max_spd_err,
-    WindField* truth)
+    float       max_spd_err,
+    WindField*  truth)
 {
     int count = 0;
     for (int i = 0; i < _crossTrackBins; i++)
@@ -2394,15 +2395,15 @@ WindSwath::DeleteSpeedOutliers(
                 continue;
 
             WindVector true_wv;
-            if (useNudgeVectorsAsTruth && wvc->nudgeWV){
-	      true_wv.dir=wvc->nudgeWV->dir;
-              true_wv.spd=wvc->nudgeWV->spd;
-	    }
+            if (useNudgeVectorsAsTruth && wvc->nudgeWV)
+            {
+                true_wv.dir = wvc->nudgeWV->dir;
+                true_wv.spd = wvc->nudgeWV->spd;
+            }
             else if (! truth->InterpolatedWindVector(wvc->lonLat, &true_wv))
                 continue;
 
             double spd_err = fabs(wvc->selected->spd - true_wv.spd);
-            
             if (spd_err > max_spd_err)
             {
                 delete wvc;
@@ -2421,7 +2422,7 @@ WindSwath::DeleteSpeedOutliers(
 
 int
 WindSwath::WriteL2B(
-    FILE*    fp)
+    FILE*  fp)
 {
     if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
         fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
@@ -2457,9 +2458,9 @@ WindSwath::WriteL2B(
 
 int
 WindSwath::ReadL2B(
-    FILE*    fp)
+    FILE*  fp)
 {
-    DeleteEntireSwath();        // in case
+    DeleteEntireSwath();    // in case
 
     if (fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
         fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
@@ -2494,7 +2495,7 @@ WindSwath::ReadL2B(
 
 int
 WindSwath::ReadL2B(
-    const char*        filename)
+    const char*  filename)
 {
     FILE* fp = fopen(filename, "r");
     if (fp == NULL)
@@ -2513,9 +2514,9 @@ WindSwath::ReadL2B(
 
 int
 WindSwath::ReadHdfL2B(
-    TlmHdfFile*    tlmHdfFile)
+    TlmHdfFile*  tlmHdfFile)
 {
-    DeleteEntireSwath();        // in case
+    DeleteEntireSwath();    // in case
 
     // cross bin number is fixed
     _crossTrackBins = HDF_ACROSS_BIN_NO;
@@ -2587,14 +2588,20 @@ WindSwath::ReadHdfL2B(
         sdsIds[0] = _numambigSdsId;
         if (ExtractData2D_76(tlmHdfFile, sdsIds, i, 1, 1, numambigArray) == 0)
             return(0);
-        
-	sdsIds[0] = _modelSpeedSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, modelSpeedArray) == 0)
-	    return(0);
 
-	sdsIds[0] = _modelDirSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, modelDirArray) == 0)
-	    return(0);
+        sdsIds[0] = _modelSpeedSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1,
+            modelSpeedArray) == 0)
+        {
+            return(0);
+        }
+
+        sdsIds[0] = _modelDirSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1,
+            modelDirArray) == 0)
+        {
+            return(0);
+        }
 
         for (int j = 0; j < _crossTrackBins; j++)
         {
@@ -2603,29 +2610,41 @@ WindSwath::ReadHdfL2B(
             wvc->lonLat.latitude = latArray[j]*dtr;
             wvc->nudgeWV = new WindVectorPlus();
             float nudge_edir=(450.0-modelDirArray[j])*dtr;
-	    while(nudge_edir>two_pi) nudge_edir-=two_pi;
-	    while(nudge_edir<0) nudge_edir+=two_pi;
-            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j]*NWP_SPEED_CORRECTION,nudge_edir);
+            while (nudge_edir > two_pi)
+                nudge_edir -= two_pi;
+
+            while (nudge_edir < 0)
+                nudge_edir += two_pi;
+
+            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j] * NWP_SPEED_CORRECTION,
+                nudge_edir);
 
             for (int k=0; k < numambigArray[j]; k++)
             {
                 WindVectorPlus* wvp = new WindVectorPlus();
-                float edir=(450.0-dirArray[j * HDF_NUM_AMBIGUITIES + k])*dtr;
-		while(edir>two_pi) edir-=two_pi;
-		while(edir<0) edir+=two_pi;
-                wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k],edir);
+                float edir = (450.0 -
+                    dirArray[j * HDF_NUM_AMBIGUITIES + k])*dtr;
+                while (edir > two_pi)
+                    edir -= two_pi;
+
+                while (edir < 0)
+                    edir += two_pi;
+
+                wvp->SetSpdDir(speedArray[j * HDF_NUM_AMBIGUITIES + k], edir);
                 wvp->obj = mleArray[j * HDF_NUM_AMBIGUITIES + k];
                 wvc->ambiguities.Append(wvp);
             }
-            if (selectArray[j] > 0 && numambigArray[j] > 0){
-                wvc->selected = wvc->ambiguities.GetByIndex(selectArray[j]-1);
-		*(*(swath + j) + i) = wvc;
-	    }
-            else{
-	      delete wvc;
-              *(*(swath + j) + i) = NULL;
-              _validCells--;
-	    }
+            if (selectArray[j] > 0 && numambigArray[j] > 0)
+            {
+                wvc->selected = wvc->ambiguities.GetByIndex(selectArray[j] - 1);
+                *(*(swath + j) + i) = wvc;
+            }
+            else
+            {
+                delete wvc;
+                *(*(swath + j) + i) = NULL;
+                _validCells--;
+            }
         }
     }
     delete [] modelDirArray;
@@ -2640,7 +2659,7 @@ WindSwath::ReadHdfL2B(
 
     // close all needed datasets
     _CloseHdfDataSets();
-    nudgeVectorsRead=1;
+    nudgeVectorsRead = 1;
     return(1);
 }
 
@@ -2650,7 +2669,7 @@ WindSwath::ReadHdfL2B(
 
 int
 WindSwath::ReadHdfL2B(
-    const char*        filename)
+    const char*  filename)
 {
     // open the L2B HDF file
     HdfFile::StatusE returnStatus = HdfFile::OK;
@@ -2662,9 +2681,7 @@ WindSwath::ReadHdfL2B(
         return(0);
 
     return(1);
-
 }//WindSwath::ReadHdfL2B
-
 
 //---------------------------------------//
 // WindSwath::ReadNudgeVectorsFromHdfL2B //
@@ -2672,7 +2689,7 @@ WindSwath::ReadHdfL2B(
 
 int
 WindSwath::ReadNudgeVectorsFromHdfL2B(
-    const char*        filename)
+    const char*  filename)
 {
     // open the L2B HDF file
     HdfFile::StatusE returnStatus = HdfFile::OK;
@@ -2682,25 +2699,25 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
 
     if (! ReadNudgeVectorsFromHdfL2B(&hdfL2BFile))
         return(0);
-    
+
     return(1);
-
 }//WindSwath::ReadNudgeVectorsFromHdfL2B
-
 
 //---------------------------------------//
 // WindSwath::ReadNudgeVectorsFromHdfL2B //
 //---------------------------------------//
+
 int
 WindSwath::ReadNudgeVectorsFromHdfL2B(
-    TlmHdfFile*    tlmHdfFile)
+    TlmHdfFile*  tlmHdfFile)
 {
     // cross bin number is fixed
     int crossTrackBins = HDF_ACROSS_BIN_NO;
 
-    if(crossTrackBins!=_crossTrackBins){
-      fprintf(stderr,"Bad number of cross track bins!\n");
-      return(0);
+    if(crossTrackBins!=_crossTrackBins)
+    {
+        fprintf(stderr, "Bad number of cross track bins!\n");
+        return(0);
     }
 
     // along bin number comes from WVC_ROW
@@ -2717,18 +2734,23 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
     int alongTrackBins = dataLength;
 
     // For now do not handle case in which WVC rows are missing
-    if (alongTrackBins!=_alongTrackBins){
-          fprintf(stderr,"Unable to process missing WVC rows in HDF file\n");
-          return(0);
+    if (alongTrackBins != _alongTrackBins)
+    {
+        fprintf(stderr, "Unable to process missing WVC rows in HDF file\n");
+        return(0);
     }
 
     /**** Open Nudge Vector Data Sets ***/
     if ((_modelSpeedSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
-                                                     MODEL_SPEED)) == 0)
-      return(0);
-    if ((_modelDirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B, 
-					     MODEL_DIR)) == 0)
-      return(0);
+        MODEL_SPEED)) == 0)
+    {
+        return(0);
+    }
+    if ((_modelDirSdsId = _OpenOneHdfDataSet(tlmHdfFile, SOURCE_L2B,
+        MODEL_DIR)) == 0)
+    {
+        return(0);
+    }
 
     float* modelSpeedArray=(float*) new float [crossTrackBins];
     float* modelDirArray=(float*) new float [crossTrackBins];
@@ -2736,26 +2758,35 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
     int32 sdsIds[1];
     for (int32 i = 0; i < _alongTrackBins; i++)
     {
-	sdsIds[0] = _modelSpeedSdsId;
+        sdsIds[0] = _modelSpeedSdsId;
         if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1,
-					modelSpeedArray) == 0)
-	    return(0);
-
-	sdsIds[0] = _modelDirSdsId;
-        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1, 
-					modelDirArray) == 0)
-	    return(0);
-	for (int j = 0; j < crossTrackBins; j++)
+            modelSpeedArray) == 0)
         {
-	  WVC* wvc = swath[j][i];
-          if(!wvc) continue;
-          wvc->nudgeWV = new WindVectorPlus();
-	  float nudge_edir=(450.0-modelDirArray[j])*dtr;
-	  while(nudge_edir>two_pi) nudge_edir-=two_pi;
-	  while(nudge_edir<0) nudge_edir+=two_pi;
-	  wvc->nudgeWV->SetSpdDir(modelSpeedArray[j]*NWP_SPEED_CORRECTION,nudge_edir);
-	}
-    }        
+            return(0);
+        }
+
+        sdsIds[0] = _modelDirSdsId;
+        if (ExtractData2D_76_int2_float(tlmHdfFile, sdsIds, i, 1, 1,
+            modelDirArray) == 0)
+        {
+             return(0);
+        }
+        for (int j = 0; j < crossTrackBins; j++)
+        {
+            WVC* wvc = swath[j][i];
+            if (! wvc)
+                continue;
+            wvc->nudgeWV = new WindVectorPlus();
+            float nudge_edir = (450.0 - modelDirArray[j]) * dtr;
+            while (nudge_edir > two_pi)
+                nudge_edir -= two_pi;
+
+            while (nudge_edir < 0)
+                nudge_edir += two_pi;
+            wvc->nudgeWV->SetSpdDir(modelSpeedArray[j] * NWP_SPEED_CORRECTION,
+                nudge_edir);
+        }
+    }
     delete [] modelDirArray;
     delete [] modelSpeedArray;
 
@@ -2764,16 +2795,18 @@ WindSwath::ReadNudgeVectorsFromHdfL2B(
     (void)SDendaccess(_modelDirSdsId); _modelDirSdsId = HDF_FAIL;
     nudgeVectorsRead=1;
     return(1);
-
 }//WindSwath::ReadNudgeVectorsFromHdfL2B
 
-//-------------------------------------//
-// WindSwath::GetArraysForUpdating Hdf //
-//-------------------------------------//
-int WindSwath::GetArraysForUpdatingHdf(
-      float** spd,
-      float** dir,
-      int**    num_ambig){
+//------------------------------------//
+// WindSwath::GetArraysForUpdatingHdf //
+//------------------------------------//
+
+int
+WindSwath::GetArraysForUpdatingHdf(
+    float**  spd,
+    float**  dir,
+    int**    num_ambig)
+{
   for(int j=0;j<_crossTrackBins;j++){
     for(int i=0;i<_alongTrackBins;i++){
       WVC* wvc=swath[j][i];
@@ -2783,7 +2816,7 @@ int WindSwath::GetArraysForUpdatingHdf(
       else{
 	int k=0;
         num_ambig[i][j]=wvc->ambiguities.NodeCount()+1;
-        if(num_ambig[i][j]>HDF_NUM_AMBIGUITIES) 
+        if(num_ambig[i][j]>HDF_NUM_AMBIGUITIES)
 	  num_ambig[i][j]=HDF_NUM_AMBIGUITIES;
 	for(WindVectorPlus* wvp=wvc->ambiguities.GetHead();wvp;
 	    wvp=wvc->ambiguities.GetNext()){
@@ -2797,32 +2830,41 @@ int WindSwath::GetArraysForUpdatingHdf(
   return(1);
 } //WindSwath::GetArraysForUpdatingHDF
 
-//------------------------------------//
-// WindSwath::UpdateHdf               //
-//------------------------------------//
+//----------------------//
+// WindSwath::UpdateHdf //
+//----------------------//
+
 int WindSwath::UpdateHdf(
-   const char* filename,
-   float **    spd,
-   float **    dir,
-   int **      num_ambigs,
-   int **      selected)
+   const char*  filename,
+   float **     spd,
+   float **     dir,
+   int **       num_ambigs,
+   int **       selected)
 {
-  //  Fix Directions 
-  for(int i=0;i<_alongTrackBins;i++){
-    for(int j=0;j<_crossTrackBins*HDF_NUM_AMBIGUITIES;j++){
-      dir[i][j]=(450-rtd*dir[i][j]);
-      if(dir[i][j]>360) dir[i][j]-=360;
+    //  Fix Directions
+    for (int i = 0; i < _alongTrackBins; i++)
+    {
+        for (int j = 0; j < _crossTrackBins * HDF_NUM_AMBIGUITIES; j++)
+        {
+            dir[i][j] = (450.0 - rtd * dir[i][j]);
+            if (dir[i][j] > 360.0)
+                dir[i][j] -= 360.0;
+        }
     }
-  }
-  
-  // Update DataSets
-  for(int32 i=0;i<_alongTrackBins;i++){
-    if(! UpdateDataSet(filename,"wind_speed",i,&spd[i][0])) return(0);
-    if(! UpdateDataSet(filename,"wind_dir",i,&dir[i][0])) return(0);
-    if(! UpdateDataSet(filename,"num_ambigs",i,&(num_ambigs[i][0]))) return(0);
-    if(! UpdateDataSet(filename,"wvc_selection",i,&(selected[i][0]))) return(0);
-  }
-  return(1);
+
+    // Update DataSets
+    for (int32 i = 0; i < _alongTrackBins; i++)
+    {
+        if (! UpdateDataSet(filename, "wind_speed", i, &spd[i][0]))
+            return(0);
+        if (! UpdateDataSet(filename, "wind_dir", i, &dir[i][0]))
+            return(0);
+        if (! UpdateDataSet(filename, "num_ambigs", i, &(num_ambigs[i][0])))
+            return(0);
+        if (! UpdateDataSet(filename, "wvc_selection", i, &(selected[i][0])))
+            return(0);
+    }
+    return(1);
 }
 
 //---------------------------//
@@ -4220,6 +4262,180 @@ WindSwath::DiscardUnselectedRanges()
     }
     }
    return(1);
+}
+
+//--------------------//
+// WindSwath::Shotgun //
+//--------------------//
+
+#define SECTOR_COUNT             4
+#define MIN_TARGET_SECTOR_COUNT  6
+
+int
+WindSwath::Shotgun(
+    int  angle_window_size,
+    int  blast_window_size)
+{
+    //---------------------//
+    // create a target map //
+    //---------------------//
+
+    char** target = (char**)make_array(sizeof(char), 2,
+        _crossTrackBins, _alongTrackBins);
+
+    //--------------------//
+    // prep for filtering //
+    //--------------------//
+
+    int half_angle_window = angle_window_size / 2;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            target[cti][ati] = 0;
+        }
+    }
+
+    //--------------//
+    // find targets //
+    //--------------//
+
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        int cti_min = cti - half_angle_window;
+        int cti_max = cti + half_angle_window + 1;
+        if (cti_min < 0)
+            cti_min = 0;
+        if (cti_max > _crossTrackBins)
+            cti_max = _crossTrackBins;
+
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            int ati_min = ati - half_angle_window;
+            int ati_max = ati + half_angle_window + 1;
+            if (ati_min < 0)
+                ati_min = 0;
+            if (ati_max > _alongTrackBins)
+                ati_max = _alongTrackBins;
+
+            WVC* wvc = swath[cti][ati];
+            if (! wvc)
+                continue;
+
+            //--------------------//
+            // clear accumulators //
+            //--------------------//
+
+            int align[SECTOR_COUNT], offset[SECTOR_COUNT];
+            for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
+            {
+                align[sector_idx] = 0;
+                offset[sector_idx] = 0;
+            }
+
+            //-----------//
+            // in window //
+            //-----------//
+
+            for (int i = cti_min; i < cti_max; i++)
+            {
+                for (int j = ati_min; j < ati_max; j++)
+                {
+                    if (i == cti && j == ati)
+                        continue;  // don't check central vector
+
+                    WVC* other_wvc = swath[i][j];
+                    if (! other_wvc)
+                        continue;
+
+                    WindVectorPlus* other_wvp = other_wvc->selected;
+                    if (! other_wvp)
+                        continue;
+
+                    int align_idx = (int)(SECTOR_COUNT * other_wvp->dir /
+                        two_pi);
+                    align[align_idx]++;
+
+                    int offset_idx = (int)(SECTOR_COUNT * other_wvp->dir /
+                        two_pi + 0.5) % SECTOR_COUNT;
+                    offset[offset_idx]++;
+                }
+            }
+
+            //-----------------------//
+            // check sector coverage //
+            //-----------------------//
+
+            int sector_count = 0;
+            for (int sector_idx = 0; sector_idx < SECTOR_COUNT; sector_idx++)
+            {
+                if (align[sector_idx] > 0)
+                    sector_count++;
+                if (offset[sector_idx] > 0)
+                    sector_count++;
+            }
+
+            //-----------------------------//
+            // determine if it is a target //
+            //-----------------------------//
+ 
+            if (sector_count > MIN_TARGET_SECTOR_COUNT)
+                target[cti][ati] = 1;
+        }
+    }
+
+    //--------//
+    // SHOOT! //
+    //--------//
+
+    int half_blast_window = blast_window_size / 2;
+    for (int cti = 0; cti < _crossTrackBins; cti++)
+    {
+        for (int ati = 0; ati < _alongTrackBins; ati++)
+        {
+            //---------//
+            // target? //
+            //---------//
+
+            if (! target[cti][ati])
+                continue;
+
+            int cti_min = cti - half_blast_window;
+            int cti_max = cti + half_blast_window + 1;
+            if (cti_min < 0)
+                cti_min = 0;
+            if (cti_max > _crossTrackBins)
+                cti_max = _crossTrackBins;
+
+            int ati_min = ati - half_blast_window;
+            int ati_max = ati + half_blast_window + 1;
+            if (ati_min < 0)
+                ati_min = 0;
+            if (ati_max > _alongTrackBins)
+                ati_max = _alongTrackBins;
+
+            for (int i = cti_min; i < cti_max; i++)
+            {
+                for (int j = ati_min; j < ati_max; j++)
+                {
+                    WVC* other_wvc = swath[i][j];
+                    if (! other_wvc)
+                        continue;
+
+                    WindVectorPlus* other_wvp = other_wvc->selected;
+                    if (! other_wvp)
+                        continue;
+
+                    // init with first ranked
+                    other_wvc->selected = NULL;
+//                    other_wvc->selected =
+//                        other_wvc->ambiguities.GetByIndex(0);
+                }
+            }
+        }
+    }
+
+    return(1);
 }
 
 //-------------------------------//

@@ -387,7 +387,7 @@ public:
     int  ReadNscatSwv25(const char* filename);
     int  GetArraysForUpdatingHdf(float** spd, float** dir, int** num_ambig);
     int  UpdateHdf(const char* filename, float** spd, float** dir, 
-		   int** num_ambig, int** selected);
+             int** num_ambig, int** selected);
     int  WriteVctr(const char* filename, const int rank);
     int  WriteFlower(const char* filename);
     int  WriteAscii(const char* filename);
@@ -423,6 +423,7 @@ public:
     int    GetWindowMean(WindVectorPlus* wvp, int cti_min, int cti_max,
                int ati_min, int ati_max);
     int    DiscardUnselectedRanges();
+    int    Shotgun(int angle_window_size, int blast_window_size);
 
     //------------//
     // evaluation //
