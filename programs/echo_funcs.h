@@ -52,6 +52,7 @@ public:
     float           rxGateDelay[SPOTS_PER_FRAME];
     unsigned char   flag[SPOTS_PER_FRAME];
     float           totalSignalEnergy[SPOTS_PER_FRAME];
+    float           deltaF[SPOTS_PER_FRAME];
     float           measSpecPeakFreq[SPOTS_PER_FRAME];
 };
 
@@ -124,6 +125,8 @@ EchoInfo::Write(
         write(fd, (void *)flag, frame_char_size) != frame_char_size ||
         write(fd, (void *)totalSignalEnergy, frame_float_size) !=
           frame_float_size ||
+        write(fd, (void *)deltaF, frame_float_size) !=
+          frame_float_size ||
         write(fd, (void *)measSpecPeakFreq, frame_float_size) !=
           frame_float_size)
     {
@@ -184,6 +187,8 @@ EchoInfo::Read(
           frame_float_size ||
         read(fd, (void *)flag, frame_char_size) != frame_char_size ||
         read(fd, (void *)totalSignalEnergy, frame_float_size) !=
+          frame_float_size ||
+        read(fd, (void *)deltaF, frame_float_size) !=
           frame_float_size ||
         read(fd, (void *)measSpecPeakFreq, frame_float_size) !=
           frame_float_size)

@@ -113,7 +113,8 @@ PROGRAMS = \
     check_l1b \
     calpulse_to_ascii \
     make_timetlm \
-	l2b_extract_worst
+	l2b_extract_worst \
+	make_simple_land_map
 #	sim_accurate
 #	generate_kfactor
 

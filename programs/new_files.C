@@ -8,14 +8,16 @@
 //    new_files
 //
 // SYNOPSIS
-//    new_files <pattern_file> <type> <done_log>
+//    new_files <pattern_file> <type> [ done_log ]
 //
 // DESCRIPTION
 //    Prints out a list of new files of the specified type.
+//    If the done log is not specified, new_files prints out all
+//    files.
 //
 // OPTIONS
 //    The following options are supported:
-//      None
+//      [ done_log ]  Log of files user is done with.
 //
 // OPERANDS
 //    The following operands are supported:
@@ -23,7 +25,6 @@
 //                        type  mature_age          (for each type)
 //                        type  directory  pattern  (repeated)
 //      <type>          The target type.
-//      <done_log>      Log of files user is done with.
 //
 // EXAMPLES
 //    An example of a command line is:
@@ -86,7 +87,7 @@ static const char rcs_id[] =
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<pattern_file>", "<type>", "<done_log>", 0 };
+const char* usage_array[] = { "<pattern_file>", "<type>", "[ done_log ]", 0 };
 
 //--------------//
 // MAIN PROGRAM //
@@ -102,13 +103,15 @@ main(
     //------------------------//
 
     const char* command = no_path(argv[0]);
-    if (argc != 4)
+    if (argc != 3 && argc != 4)
         usage(command, usage_array, 1);
 
     int opt_idx = 1;
     const char* pattern_file = argv[opt_idx++];
     const char* type = argv[opt_idx++];
-    const char* done_log = argv[opt_idx++];
+    const char* done_log = NULL;
+    if (argc == 4)
+        done_log = argv[opt_idx++];
 
     //----------------------------//
     // read pattern list for type //
@@ -127,11 +130,14 @@ main(
     //---------------//
 
     FileList done_log_list;
-    if (! done_log_list.Read(done_log))
+    if (done_log != NULL)
     {
-        fprintf(stderr, "%s: error reading done log %s\n", command,
-            done_log);
-        exit(1);
+        if (! done_log_list.Read(done_log))
+        {
+            fprintf(stderr, "%s: error reading done log %s\n", command,
+                done_log);
+            exit(1);
+        }
     }
 
     //--------------------------//
