@@ -75,6 +75,18 @@ LonLat::Read(
 	return(1);
 }
 
+//--------------------//
+// LonLat::WriteAscii //
+//--------------------//
+
+int
+LonLat::WriteAscii(
+	FILE*	fp)
+{
+	fprintf(fp, "%g %g\n", longitude * rtd, latitude * rtd);
+	return(1);
+}
+
 //------------------//
 // LonLat::WriteBvg //
 //------------------//
@@ -159,6 +171,27 @@ Outline::Read(
 		new_r->SetAltLonGDLat(0.0, lon_lat.longitude, lon_lat.latitude);
 		if (! Append(new_r)) return(0);
 	}
+	return(1);
+}
+
+//---------------------//
+// Outline::WriteAscii //
+//---------------------//
+
+int
+Outline::WriteAscii(
+	FILE*	fp)
+{
+	// write the points
+	EarthPosition* r;
+	LonLat lon_lat;
+    for (r = GetHead(); r; r = GetNext())
+	{
+		lon_lat.Set(*r);
+        if (! lon_lat.WriteAscii(fp))
+			return(0);
+	}
+
 	return(1);
 }
 

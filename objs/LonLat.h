@@ -47,6 +47,7 @@ public:
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
 
+	int		WriteAscii(FILE* fp);
 	int		WriteBvg(FILE* fp);
 
 	//-----------//
@@ -84,6 +85,7 @@ public:
 	int		Write(FILE* fp);
 	int		Read(FILE* fp);
 
+	int		WriteAscii(FILE* fp);
 	int		WriteBvg(FILE* fp);
 
 	double	Area();
