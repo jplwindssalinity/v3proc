@@ -48,6 +48,7 @@ public:
     int  FromStructTm(struct tm* tm_time);
     int  FromCodeB(const char* code_b_string);
     int  ToCodeB(char* string);
+    int  FromChar6(char* string);
 
     //--------------//
     // input/output //
@@ -55,6 +56,7 @@ public:
 
     int  Write(int fd);
     int  Read(int fd);
+    int  WriteAscii(FILE* ofp);
 
     //-----------//
     // operators //

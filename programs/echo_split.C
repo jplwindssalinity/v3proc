@@ -8,24 +8,23 @@
 //    echo_split
 //
 // SYNOPSIS
-//    echo_split <echo_data_file> [ output_base ]
+//    echo_split [ -o output_base ] <echo_data_file...>
 //
 // DESCRIPTION
-//    Splits the echo data file into orbit steps.  Adds the extension:
-//        .orbit_step.codeBtime
-//        .023.1999-193T23:35:01.232
+//    Splits the echo data files into orbit step files named:
+//        output_base.orbitstep or echo.orbitstep
 //
 // OPTIONS
-//    None.
+//    The following options are supported:
+//      [ -o output_base ]  Use output_base to create output filesnames.
 //
 // OPERANDS
 //    The following operands are supported:
-//      <echo_data_file>   The echo data input file.
-//      [ output_base ]    The output file base name.
+//      <echo_data_file..>   The echo data input files.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % echo_split qscat.echo qe
+//      % echo_split -o day1.echo echo.*
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -82,8 +81,12 @@ template class List<long>;
 // CONSTANTS //
 //-----------//
 
-#define MAX_SPOTS  10000
-#define MAX_EPHEM  200
+#define OPTSTRING            "o:"
+
+#define ORBIT_STEPS          256
+#define MAX_SPOTS            10000
+#define MAX_EPHEM            200
+#define DEFAULT_OUTPUT_BASE  "echo"
 
 //--------//
 // MACROS //
@@ -97,8 +100,7 @@ template class List<long>;
 // FUNCTION DECLARATIONS //
 //-----------------------//
 
-int  make_file(const char* command, const char* output_base, int orbit_step,
-         ETime time, char* output_file);
+int  put_in_file(const char* output_base, EchoInfo* echo_info);
 
 //------------------//
 // OPTION VARIABLES //
@@ -108,7 +110,11 @@ int  make_file(const char* command, const char* output_base, int orbit_step,
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<echo_data_file>", "[ output_base ]", 0};
+const char* usage_array[] = { "[ -o output_base ]", "<echo_data_file..>", 0 };
+
+int g_created[ORBIT_STEPS];
+int g_fd = -1;
+int g_fd_orbit_step = -1;
 
 //--------------//
 // MAIN PROGRAM //
@@ -119,222 +125,242 @@ main(
     int    argc,
     char*  argv[])
 {
+    //------------//
+    // initialize //
+    //------------//
+
+    char* output_base = DEFAULT_OUTPUT_BASE;
+
     //------------------------//
     // parse the command line //
     //------------------------//
 
     const char* command = no_path(argv[0]);
 
-    if (argc != 2 && argc != 3)
-        usage(command, usage_array, 1);
-
-    int argidx = 1;
-    const char* echo_data_file = argv[argidx++];
-    const char* output_base;
-    if (argc == 3)
-        output_base = argv[argidx++];
-    else
-        output_base = echo_data_file;
-
-    //---------------------------------//
-    // open echo data file for reading //
-    //---------------------------------//
-
-    int ifd = open(echo_data_file, O_RDONLY);
-    if (ifd == -1)
+    if (argc == 1)
     {
-        fprintf(stderr, "%s: error opening echo data file %s\n", command,
-            echo_data_file);
+        usage(command, usage_array, 1);
         exit(1);
     }
 
-    //------------//
-    // initialize //
-    //------------//
-
-    int last_orbit_step = -1;
-    char output_file[1024];
-    int ofd = -1;
-
-    //-----------------------//
-    // read and process data //
-    //-----------------------//
-
-    do
+    extern char *optarg;
+    int c;
+    while ((c = getopt(argc, argv, OPTSTRING)) != -1)
     {
-        //------//
-        // read //
-        //------//
-
-        EchoInfo echo_info;
-        int retval = echo_info.Read(ifd);
-        if (retval != 1)
+        switch(c)
         {
-            if (retval == -1)    // EOF
-                break;
-            else
-            {
-                fprintf(stderr, "%s: error reading echo file %s\n", command,
-                    echo_data_file);
-                exit(1);
-            }
+        case 'o':
+            output_base = optarg;
+            break;
+        case '?':
+            usage(command, usage_array, 1);
+            break;
         }
+    }
 
-        //--------------------//
-        // deal with start-up //
-        //--------------------//
+    char** echo_data_files = (argv + optind);
+    int file_count = argc - optind;
 
-        if (last_orbit_step == -1)
+    //----------------------------//
+    // for each echo data file... //
+    //----------------------------//
+
+	for (int file_idx = 0; file_idx < file_count; file_idx++)
+    {
+        char* echo_data_file = echo_data_files[file_idx];
+
+        //---------------------------------//
+        // open echo data file for reading //
+        //---------------------------------//
+
+printf("%s\n", echo_data_file);
+        int ifd = open(echo_data_file, O_RDONLY);
+        if (ifd == -1)
         {
-            int use_orbit_step;
-            if (echo_info.priOfOrbitStepChange == 255)
-                use_orbit_step = echo_info.orbitStep;
-            else
-                use_orbit_step = (echo_info.orbitStep + 256 - 1) % 256;
- 
-            ofd = make_file(command, output_base, use_orbit_step,
-                echo_info.frameTime, output_file);
-
-            last_orbit_step = use_orbit_step;
-        }
-
-        //--------------------------------//
-        // deal with changing orbit steps //
-        //--------------------------------//
-
-        if (echo_info.orbitStep != last_orbit_step)
-        {
-            unsigned char save_orbit_step = echo_info.orbitStep;
-            unsigned char save_pri_of_orbit_step_change =
-                echo_info.priOfOrbitStepChange;
-
-            //---------------------//
-            // save original flags //
-            //---------------------//
-
-            unsigned char save_flags[SPOTS_PER_FRAME];
-            for (int i = 0; i < SPOTS_PER_FRAME; i++)
-                save_flags[i] = echo_info.flag[i];
-
-            //---------------------------------//
-            // mark new orbit step data as bad //
-            //---------------------------------//
-
-            for (int i = save_pri_of_orbit_step_change;
-                i < SPOTS_PER_FRAME; i++)
-            {
-                echo_info.flag[i] = EchoInfo::BAD_PEAK;
-            }
-
-            //------------------------------------//
-            // "correct" the orbit step variables //
-            //------------------------------------//
-            // this makes it look like the orbit step didn't change
-
-            echo_info.orbitStep = (save_orbit_step + 256 - 1) % 256;
-            echo_info.priOfOrbitStepChange = 255;
-
-            //------------------------------------------------//
-            // write out the last frame of the old orbit step //
-            //------------------------------------------------//
-
-            if (! echo_info.Write(ofd))
-            {
-                fprintf(stderr,
-                    "%s: error writing frame to output echo file %s\n",
-                    command, output_file);
-                exit(1);
-            }
-
-            //----------------//
-            // close old file //
-            //----------------//
-
-            close(ofd);
-
-            //------------------------//
-            // restore original flags //
-            //------------------------//
-
-            for (int i = 0; i < SPOTS_PER_FRAME; i++)
-                echo_info.flag[i] = save_flags[i];
-    
-            //---------------------------------//
-            // mark old orbit step data as bad //
-            //---------------------------------//
-
-            for (int i = 0; i < save_pri_of_orbit_step_change; i++)
-                echo_info.flag[i] = EchoInfo::BAD_PEAK;
-
-            //------------------------------------//
-            // "correct" the orbit step variables //
-            //------------------------------------//
-            // this makes it look like the orbit step didn't change
-
-            echo_info.orbitStep = save_orbit_step;
-            echo_info.priOfOrbitStepChange = 255;
-
-            //----------------------//
-            // open new output file //
-            //----------------------//
-
-            ofd = make_file(command, output_base, save_orbit_step,
-                echo_info.frameTime, output_file);
-
-            last_orbit_step = echo_info.orbitStep;
-        }
-
-        //-----------------//
-        // write echo info //
-        //-----------------//
-
-        if (! echo_info.Write(ofd))
-        {
-            fprintf(stderr,
-                "%s: error writing frame to output echo file %s\n",
-                command, output_file);
+            fprintf(stderr, "%s: error opening echo data file %s\n", command,
+                echo_data_file);
             exit(1);
         }
 
-    } while (1);
+        //-----------------------//
+        // read and process data //
+        //-----------------------//
 
-    close(ofd);
-    close(ifd);
+        do
+        {
+            //------//
+            // read //
+            //------//
+
+            EchoInfo echo_info;
+            int retval = echo_info.Read(ifd);
+            if (retval != 1)
+            {
+                if (retval == -1)    // EOF
+                    break;
+                else
+                {
+                    fprintf(stderr, "%s: error reading echo file %s\n",
+                        command, echo_data_file);
+                    exit(1);
+                }
+            }
+
+            //----------------------------------------//
+            // if entire frame is from one orbit step //
+            // than simply put it in the right file   //
+            //----------------------------------------//
+
+            if (echo_info.priOfOrbitStepChange == 255)
+            {
+                if (! put_in_file(output_base, &echo_info))
+                {
+                    fprintf(stderr, "%s: error writing echo info\n", command);
+                    exit(1);
+                }
+            }
+            else
+            {
+                //--------------------------------//
+                // deal with changing orbit steps //
+                //--------------------------------//
+
+                unsigned char save_orbit_step = echo_info.orbitStep;
+                unsigned char save_pri_of_orbit_step_change =
+                    echo_info.priOfOrbitStepChange;
+
+                //---------------------//
+                // save original flags //
+                //---------------------//
+
+                unsigned char save_flags[SPOTS_PER_FRAME];
+                for (int i = 0; i < SPOTS_PER_FRAME; i++)
+                    save_flags[i] = echo_info.flag[i];
+
+                //---------------------------------//
+                // mark new orbit step data as bad //
+                //---------------------------------//
+
+                for (int i = save_pri_of_orbit_step_change;
+                    i < SPOTS_PER_FRAME; i++)
+                {
+                    echo_info.flag[i] = EchoInfo::BAD_PEAK;
+                }
+
+                //------------------------------------//
+                // "correct" the orbit step variables //
+                //------------------------------------//
+                // this makes it look like the orbit step didn't change
+
+                echo_info.orbitStep = (save_orbit_step + 256 - 1) % 256;
+                echo_info.priOfOrbitStepChange = 255;
+
+                //-----------------//
+                // write echo info //
+                //-----------------//
+
+                if (! put_in_file(output_base, &echo_info))
+                {
+                    fprintf(stderr, "%s: error writing echo info\n", command);
+                    exit(1);
+                }
+
+                //------------------------//
+                // restore original flags //
+                //------------------------//
+
+                for (int i = 0; i < SPOTS_PER_FRAME; i++)
+                    echo_info.flag[i] = save_flags[i];
+
+                //---------------------------------//
+                // mark old orbit step data as bad //
+                //---------------------------------//
+
+                for (int i = 0; i < save_pri_of_orbit_step_change; i++)
+                    echo_info.flag[i] = EchoInfo::BAD_PEAK;
+
+                //------------------------------------//
+                // "correct" the orbit step variables //
+                //------------------------------------//
+                // this makes it look like the orbit step didn't change
+
+                echo_info.orbitStep = save_orbit_step;
+                echo_info.priOfOrbitStepChange = 255;
+
+                //-----------------//
+                // write echo info //
+                //-----------------//
+
+                if (! put_in_file(output_base, &echo_info))
+                {
+                    fprintf(stderr, "%s: error writing echo info\n", command);
+                    exit(1);
+                }
+            }
+        } while (1);
+
+        close(ifd);
+    }
+
+    close(g_fd);
 
     return (0);
 }
 
-//-----------//
-// make_file //
-//-----------//
+//-------------//
+// put_in_file //
+//-------------//
 
 int
-make_file(
-    const char*  command,
+put_in_file(
     const char*  output_base,
-    int          orbit_step,
-    ETime        time,
-    char*        output_file)
+    EchoInfo*    echo_info)
 {
-    char time_stamp[CODE_B_TIME_LENGTH];
-    time.ToCodeB(time_stamp);
+    //----------------//
+    // determine file //
+    //----------------//
 
-    if (output_base == NULL)
+    int orbit_step = echo_info->orbitStep;
+    if (g_fd != -1 && g_fd_orbit_step != orbit_step)
     {
-        sprintf(output_file, "%03d.%s", orbit_step, time_stamp);
-    }
-    else
-    {
-        sprintf(output_file, "%s.%03d.%s", output_base, orbit_step,
-            time_stamp);
-    }
-    int output_fd = creat(output_file, 0644);
-    if (output_fd == -1)
-    {
-        fprintf(stderr, "%s: error opening output file %s\n",
-            command, output_file);
-        exit(1);
+        // file is open, but is the wrong orbit step
+        close(g_fd);
+        g_fd = -1;
+        g_fd_orbit_step = -1;
     }
 
-    return(output_fd);
+    if (g_fd == -1)
+    {
+        // file is closed, open it
+        char filename[2048];
+        sprintf(filename, "%s.%03d", output_base, orbit_step);
+        int oflag;
+        if (g_created[orbit_step])
+        {
+            // file already created, just append
+            oflag = O_APPEND | O_WRONLY;
+        }
+        else
+        {
+            // need to create file
+            oflag = O_CREAT | O_WRONLY;
+        }
+        g_fd = open(filename, oflag, 0644);
+        if (g_fd == -1)
+        {
+            fprintf(stderr, "Error opening file %s\n", filename);
+            return(0);
+        }
+        g_fd_orbit_step = orbit_step;
+        g_created[orbit_step] = 1;
+    }
+
+    //---------------------//
+    // write the echo info //
+    //---------------------//
+
+    if (! echo_info->Write(g_fd))
+        return(0);
+
+    return(1);
 }

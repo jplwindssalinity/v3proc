@@ -79,7 +79,9 @@ int     gaussian_fit(Qscat* qscat, double* x, double* y, int points,
 double  gfit_eval(double* x, void* ptr);
 double  gfit_eval_precalc(double* x, void* ptr);
 
-float   est_sigma0(int beam_idx, float incidence_angle);
+float     est_sigma0(int beam_idx, float incidence_angle);
+double**  make_p(int p_count, double* p_init, double* p_lambda);
+int       free_p(double** p, int p_count);
 
 //-----------------//
 // EchoInfo::Write //
@@ -279,39 +281,44 @@ gaussian_fit(
     float*   width_freq,
     int      use_precalc)
 {
-    //----------------//
-    // allocate array //
-    //----------------//
+    //------------------------------//
+    // estimate gaussian parameters //
+    //------------------------------//
+
+    int window_width = 4;
+    double window_sum = 0.0;
+    for (int i = 0; i < window_width; i++)
+    {
+        window_sum += y[i];
+    }
+    int max_window_idx = 0;
+    double max_window_sum = window_sum;
+
+    for (int i = 0; i < points - window_width; i++)
+    {
+        window_sum -= y[i];
+        window_sum += y[i + window_width];
+        if (window_sum > max_window_sum)
+        {
+            max_window_sum = window_sum;
+            max_window_idx = i + 1;    // starting index of window
+        }
+    }
+    double est_center = (double)max_window_idx + (double)window_width / 2.0;
+    double est_width = 3.5;
+    double lambda_center = 0.2;
+    double lambda_width = 0.5;
+
+    //--------------//
+    // make p array //
+    //--------------//
 
     int ndim = 2;
-    double** p = (double**)make_array(sizeof(double), 2, ndim + 1, ndim);
+    double gauss_init[] = { est_center, est_width };
+    double gauss_lambda[] = { lambda_center, lambda_width };
+    double** p = make_p(ndim, gauss_init, gauss_lambda);
     if (p == NULL)
         return(0);
-
-    //--------------------//
-    // initialize simplex //
-    //--------------------//
-
-    int max_idx = 0;
-    for (int i = 0; i < points; i++)
-    {
-        if (y[i] > y[max_idx])
-            max_idx = i;
-    }
-
-    double center = (double)max_idx;
-    double center_lambda = 0.2;
-    double width = 3.5;
-    double width_lambda = 0.5;
-
-    p[0][0] = center;
-    p[0][1] = width;
-
-    p[1][0] = center + center_lambda;
-    p[1][1] = width;
-
-    p[2][0] = center;
-    p[2][1] = width + width_lambda;
 
     char* ptr[3];
     ptr[0] = (char *)x;
@@ -322,7 +329,7 @@ gaussian_fit(
     {
         if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval_precalc, ptr))
         {
-            free_array(p, 2, ndim + 1, ndim);
+            free_p(p, ndim);
             return(0);
         }
     }
@@ -330,7 +337,7 @@ gaussian_fit(
     {
         if (! downhill_simplex(p, ndim, ndim, 1E-6, gfit_eval, ptr))
         {
-            free_array(p, 2, ndim + 1, ndim);
+            free_p(p, ndim);
             return(0);
         }
     }
@@ -342,14 +349,14 @@ gaussian_fit(
     float fslice = p[0][0];
     if (fslice < 0.0 || fslice > points - 1)
     {
-        free_array(p, 2, ndim + 1, ndim);
+        free_p(p, ndim);
         return(0);
     }
 
-    width = p[0][1];
+    float width = p[0][1];
     if (width > TOO_WIDE)
     {
-        free_array(p, 2, ndim + 1, ndim);
+        free_p(p, ndim);
         return(0);
     }
 
@@ -364,7 +371,7 @@ gaussian_fit(
     *peak_freq = f1 + bw * (fslice - (float)near_slice_idx + 0.5);
     *width_freq = bw * width;
 
-    free_array(p, 2, ndim + 1, ndim);
+    free_p(p, ndim);
 
     return(1);
 }
@@ -565,6 +572,46 @@ est_sigma0(
     float sigma0 = s0_table[beam_idx][idx[0]] * coef[0] +
         s0_table[beam_idx][idx[1]] * coef[1];
     return(sigma0);
+}
+
+//--------//
+// make_p //
+//--------//
+// contruct the p array
+
+double**
+make_p(
+    int      p_count,
+    double*  p_init,
+    double*  p_lambda)
+{
+    double** p = (double**)make_array(sizeof(double), 2, p_count + 1, p_count);
+    if (p == NULL)
+        return(NULL);
+
+    for (int i = 0; i < p_count + 1; i++)
+    {
+        for (int j = 0; j < p_count; j++)
+        {
+            p[i][j] = p_init[j] + (i == j ? p_lambda[j] : 0.0);
+        }
+    }
+
+    return(p);
+}
+
+//--------//
+// free_p //
+//--------//
+// free the p array
+
+int
+free_p(
+    double** p,
+    int      p_count)
+{
+    free_array(p, 2, p_count + 1, p_count);
+    return(1);
 }
 
 #endif

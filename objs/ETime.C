@@ -113,6 +113,19 @@ ETime::ToCodeB(
     return(1);
 }
 
+//------------------//
+// ETime::FromChar6 //
+//------------------//
+
+int
+ETime::FromChar6(
+    char*  string)
+{
+    memcpy(&_sec, string, 4);
+    memcpy(&_ms, string + 4, 2);
+    return(1);
+}
+
 //--------------//
 // ETime::Write //
 //--------------//
@@ -144,6 +157,21 @@ ETime::Read(
     {
         return(0);
     }
+    return(1);
+}
+
+//-------------------//
+// ETime::WriteAscii //
+//-------------------//
+
+int
+ETime::WriteAscii(
+    FILE*  ofp)
+{
+    char string[CODE_B_TIME_LENGTH];
+    if (! ToCodeB(string))
+        return(0);
+    fprintf(ofp, "%s", string);
     return(1);
 }
 

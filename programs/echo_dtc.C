@@ -8,8 +8,8 @@
 //    echo_dtc
 //
 // SYNOPSIS
-//    echo_dtc [ -d diagnostic_base ] <config_file> <echo_data_file>
-//      <dtc_base>
+//    echo_dtc [ -r ] [ -d diagnostic_base ] <config_file>
+//      <echo_data_file> <dtc_base>
 //
 // DESCRIPTION
 //    Reads the echo data file and generates corrected Doppler
@@ -20,6 +20,7 @@
 //    coefficients and fill in missing gaps.
 //
 // OPTIONS
+//    [ -r ]                  Allow time regression.
 //    [ -d diagnostic_base ]  Generate diagnostic output with the given
 //                              filename base.
 //
@@ -98,7 +99,7 @@ template class List<AngleInterval>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "d:"
+#define OPTSTRING  "rd:"
 
 #define SIGNAL_ENERGY_THRESHOLD  0
 #define ORBIT_STEPS              256
@@ -138,8 +139,8 @@ int       free_p(double** p, int p_count);
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "[ -d diagnostic_base ]", "<config_file>",
-    "<echo_data_file>", "<dtc_base>", 0};
+const char* usage_array[] = { "[ -r ]", "[ -d diagnostic_base ]",
+    "<config_file>", "<echo_data_file>", "<dtc_base>", 0};
 
 int       g_count[NUMBER_OF_QSCAT_BEAMS];
 double**  g_terms[NUMBER_OF_QSCAT_BEAMS];
@@ -161,6 +162,7 @@ main(
     // initialize //
     //------------//
 
+    int opt_regression = 1;    // default, check for regression
     int opt_diag = 0;
     const char* diag_base = NULL;
 
@@ -176,6 +178,10 @@ main(
     {
         switch(c)
         {
+        case 'r':
+            // this flag means *don't* check for regression
+            opt_regression = 0;
+            break;
         case 'd':
             opt_diag = 1;
             diag_base = optarg;
@@ -352,27 +358,31 @@ main(
         // check for regression //
         //----------------------//
 
-        if (echo_info.frameTime <= last_time)
+        if (opt_regression)
         {
-            regression = 1;
-            regression_start = echo_info.frameTime;
-            continue;
-        }
-        else
-        {
-            // check for end of regression
-            if (regression)
+            if (echo_info.frameTime <= last_time)
             {
-                char regression_start_code_b[CODE_B_TIME_LENGTH];
-                char regression_end_code_b[CODE_B_TIME_LENGTH];
-                regression_start.ToCodeB(regression_start_code_b);
-                last_time.ToCodeB(regression_end_code_b);
-                fprintf(stderr, "%s: regressive data omitted (%s to %s)\n",
-                    command, regression_start_code_b, regression_end_code_b);
-                regression = 0;
+                regression = 1;
+                regression_start = echo_info.frameTime;
+                continue;
             }
+            else
+            {
+                // check for end of regression
+                if (regression)
+                {
+                    char regression_start_code_b[CODE_B_TIME_LENGTH];
+                    char regression_end_code_b[CODE_B_TIME_LENGTH];
+                    regression_start.ToCodeB(regression_start_code_b);
+                    last_time.ToCodeB(regression_end_code_b);
+                    fprintf(stderr, "%s: regressive data omitted (%s to %s)\n",
+                        command, regression_start_code_b,
+                        regression_end_code_b);
+                    regression = 0;
+                }
+            }
+            last_time = echo_info.frameTime;
         }
-        last_time = echo_info.frameTime;
 
         //---------------//
         // for each spot //
