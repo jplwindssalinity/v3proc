@@ -563,6 +563,21 @@ Vector3::Set(
 	return(1);
 }
 
+//--------------//
+// Vector3::Get //
+//--------------//
+
+int
+Vector3::Get(
+	int			index,
+	double*		value)
+{
+	if (index < 0 || index > 2)
+		return(0);
+	*value = _v[index];
+	return(1);
+}
+
 //
 // EarthPosition
 //

@@ -125,6 +125,7 @@ double get(int i);		// extract one element
 void show(char *name = NULL);
 
 	int		Set(int index, double value);
+	int		Get(int index, double* value);
 
 protected:
 
