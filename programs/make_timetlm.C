@@ -194,7 +194,6 @@ main(
     char utc1[25];
     utc1[24] = '\0';
     (void)memcpy(utc1, l1a.gsFrame.in_pcd.frame_time, 24);
-    double frame_time1 = l1a.gsFrame.in_pcd.instrument_time;
     unsigned int i_vtcw1;
     (void)memcpy((void*)&i_vtcw1,
                  (void*)(l1a.gsFrame.status.corres_instr_time+1),
@@ -216,7 +215,6 @@ main(
     char utc2[25];
     utc2[24] = '\0';
     (void)memcpy(utc2, l1a.gsFrame.in_pcd.frame_time, 24);
-    double frame_time2 = l1a.gsFrame.in_pcd.instrument_time;
     unsigned int i_vtcw2;
     (void)memcpy((void*)&i_vtcw2,
                  (void*)(l1a.gsFrame.status.corres_instr_time+1),
@@ -233,11 +231,9 @@ main(
 
 /*
     printf("utc1 = %24s\n",utc1);
-    printf("frame_time1 = %g\n",frame_time1);
     printf("i_vtcw1 = %d\n",i_vtcw1);
     printf("vtcw1 = %16.2f\n",vtcw1);
     printf("utc2 = %24s\n",utc2);
-    printf("frame_time2 = %g\n",frame_time2);
     printf("i_vtcw2 = %d\n",i_vtcw2);
     printf("vtcw2 = %16.2f\n",vtcw2);
     printf("slope, intercept = %g, %g\n",slope,intercept);
