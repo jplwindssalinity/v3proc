@@ -11,10 +11,10 @@ static const char rcs_id_FbbTable_h[] =
     "@(#) $Id$";
 #endif
 
-//=====================================================
+//======================================================================
 // CLASSES
-//             FbbTable
-//=====================================================
+//    FbbTable
+//======================================================================
 
 //======================================================================
 // CLASS
@@ -22,15 +22,13 @@ static const char rcs_id_FbbTable_h[] =
 //
 // DESCRIPTION
 //    A class for manipulating a tables of spectral peak frequency
-//    vs BYU reference vector frequency 
-//
-//
+//    vs BYU reference vector frequency
 //======================================================================
 
-class FbbTable{
-
- public:
-     FbbTable();
+class FbbTable
+{
+public:
+    FbbTable();
     ~FbbTable();
 
     int  Deallocate();
@@ -48,10 +46,6 @@ class FbbTable{
     float***  c;
     float***  d;
 
-
 protected:
     float  _azimuthStepSize;
 };
-
-
-
