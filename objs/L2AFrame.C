@@ -340,3 +340,128 @@ L2AFrame::ReadGS(
 
 	return(1);
 }
+
+int
+L2AFrame::CombineFrames(
+     L2AFrame* frameGroup25,
+     L2AFrame* frameGroup50)
+{
+
+  // startIdx gives the first crossTrackBin for the 50km data,
+  // ctiMod is the modulo of cti - if 1 then on first pass only
+  //  use one 25km group
+  
+  int startIdx = (int)frameGroup25[0].cti / 2;
+  int ctiMod = (int)frameGroup25[0].cti % 2;
+  
+  // loop over each 50km point, and append 2 25km points
+      
+  int off = 0;
+  while (frameGroup25[2*off].ati < frameGroup25[0].ati+1)
+    {
+      
+      frameGroup50[off].cti = (unsigned char) startIdx + off;
+      frameGroup50[off].ati = frameGroup25[0].ati;
+      frameGroup50[off].rev = frameGroup25[2*off].rev;
+      
+      frameGroup50[off].measList.FreeContents();
+	  
+      MeasList* meas_list = &(frameGroup25[2*off].measList);
+      frameGroup50[off].measList.AppendList(meas_list);
+      
+      if (ctiMod == 0 && frameGroup25[2*off+1].ati == frameGroup25[2*off].ati)
+	{
+	  meas_list = &(frameGroup25[2*off+1].measList);
+	  frameGroup50[off].measList.AppendList(meas_list);
+	}
+      
+      ctiMod = 0;
+      off++;
+    }
+
+  // setup indicies for next row
+
+  if (frameGroup25[2*off].ati != frameGroup25[0].ati + 1)
+    return(0);
+
+  int off25;
+  int off50 = 0;
+
+  if (frameGroup25[2*off-1].ati == frameGroup25[2*off].ati) 
+    off25 = 2*off-1; 
+  else 
+    off25 = 2*off;
+
+  // is ctb same, or do we increment?
+  //  (if current 25km cti is less than start, drop current cases until = start.cti)
+  //  (if current 25km cti is greater than start, increment 50km offset)
+
+  if ( (int)frameGroup25[off25].cti <= (int)frameGroup25[0].cti )
+    while( (int)frameGroup25[off25].cti != (int)frameGroup25[0].cti)
+      off25++;
+  else
+    while( (int)frameGroup25[off25].cti/2 != (int)frameGroup50[off50].cti)
+      off50++;
+
+  // what about modulo case?
+
+  if ( ( (int)frameGroup25[off25].cti ) % 2 == 1)
+    ctiMod = 1;
+  else 
+    ctiMod = 0;
+
+  // now next ati row - same as before, except don't free contents
+
+  while ( frameGroup25[off25].ati < frameGroup25[0].ati+2)
+    {
+      MeasList* meas_list = &(frameGroup25[off25].measList);
+      frameGroup50[off50].measList.AppendList(meas_list);
+
+      if (ctiMod == 0 && frameGroup25[off25+1].ati == frameGroup25[off25].ati)
+      	{
+	  off25++;
+      	  meas_list = &(frameGroup25[off25].measList);
+	  frameGroup50[off50].measList.AppendList(meas_list);
+      	}
+      
+      ctiMod = 0;
+      off25++;
+      off50++;
+    }
+
+  if (off < off50)
+    off = off50;
+
+  return(off);
+}
+
+int
+L2AFrame::CopyFrame(
+     L2AFrame* nframe0,
+     L2AFrame* nframe1)
+{
+
+  // copy top level contents
+
+  nframe0->ati = nframe1->ati;
+  nframe0->cti = nframe1->cti;
+  nframe0->rev = nframe1->rev;
+  
+
+  // free old MeasList contents
+
+  nframe0->measList.FreeContents();
+
+  // loop, remove each "from" meas, and append to "to"
+
+  Meas* meas1 = nframe1->measList.GetHead();
+
+  for (meas1 = nframe1->measList.RemoveCurrent(); meas1; 
+       meas1 = nframe1->measList.RemoveCurrent()) 
+    {
+      //      cout << "old value : " << meas1->value << endl;
+      nframe0->measList.Append(meas1);
+    }
+
+  return(1);
+}

@@ -87,6 +87,9 @@ public:
 	int		WriteAscii(FILE* fp);
 
 	int		ReadGS(FILE* fp);
+	int             CombineFrames(L2AFrame* frameGroup25, L2AFrame* frameGroup50);
+	int             CopyFrame(L2AFrame* nframe0, L2AFrame* nframe1);
+
 
 	//-----------//
 	// variables //
