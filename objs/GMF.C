@@ -3153,7 +3153,7 @@ GMF::RetrieveWinds_H2(
     //--------------------------//
 
     int ambigs[H2_RANGES];
-    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    for (range_idx = 0; range_idx < range_count; range_idx++)
     {
         ambigs[range_idx] = 0;
     }
@@ -3190,7 +3190,7 @@ GMF::RetrieveWinds_H2(
     // put ambiguities in ranges //
     //---------------------------//
 
-    for (int range_idx = 0; range_idx < range_count; range_idx++)
+    for (range_idx = 0; range_idx < range_count; range_idx++)
     {
         if (! ambigs[range_idx])
             continue;
