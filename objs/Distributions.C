@@ -51,14 +51,13 @@ float GenericTimelessDist::GetNumber(double time){
 //=============================//
 
 RNG::RNG(long int seed){
-  _seed=seed;
-  if(seed >= 0) _seed=-_seed;
-  _Init();
+	SetSeed(seed);
+	return;
 }
 
 RNG::RNG(){
-  _seed=-lrand48()*lrand48();
-  _Init();
+	SetRandomSeed();
+	return;
 }
 
 RNG::~RNG(){
@@ -67,13 +66,16 @@ RNG::~RNG(){
 
 void RNG::SetSeed(long int seed){
   _seed=seed;
-  if(seed >= 0) _seed=-_seed;
-  _Init();
+	if (seed > 0)
+		_seed=-_seed;
+	else if (seed == 0)
+		_seed = 1;
+	_Init();
 }
 
 void RNG::SetRandomSeed(){
-  _seed=-lrand48()*lrand48();
-  _Init();
+	SetSeed(lrand48() * lrand48());
+	return;
 }
 
 double RNG::GetDouble(){
