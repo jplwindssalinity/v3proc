@@ -2700,11 +2700,12 @@ WindSwath::MedianFilterPass(
                                     else{				  
 				      if(swath[cti][ati]->selected_allocated){
 					double dif=ANGDIF(swath[cti][ati]->selected->dir, 
-							  new_selected[ati][cti]->dir);
+							  new_selected[cti][ati]->dir);
 					if(dif>FLIPPING_WITHIN_RANGE_THRESHOLD)
 					  change[cti][ati]=1;
 
-					else change[cti][ati]=0;
+					else{
+					  change[cti][ati]=0;		       					       }
 
 					delete swath[cti][ati]->selected;
 				      }
@@ -2716,7 +2717,9 @@ WindSwath::MedianFilterPass(
 				  }
 
 				  // IF RANGE INFO NOT USED
-				  else change[cti][ati]=1;
+				  else{
+				    change[cti][ati]=1;
+				  }
 
 				  swath[cti][ati]->selected = new_selected[cti][ati];
 				  flips+=change[cti][ati];
