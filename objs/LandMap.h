@@ -88,8 +88,11 @@ public:
     int  IsLand(float lon, float lat);
 
     int  Allocate(int lon_samples, int lat_samples);
+    int  Zero();
 
-    char**  GetMap()  {return(_map); };
+    char**  GetMap()         { return(_map); };
+    int     GetLonSamples()  { return(_lonSamples); };
+    int     GetLatSamples()  { return(_latSamples); };
 
 protected:
 

@@ -418,7 +418,7 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
             }
             unsigned int dn_per_99 = theta_max - theta_min;
             double rad_per_99 = two_pi * (double)dn_per_99 / (double)ENCODER_N;
-            double sec_per_99 = PRI_CMD_RESOLUTION * qscat.ses.pri * 99.0;
+            double sec_per_99 = qscat.ses.pri * 99.0;
             double omega = rad_per_99 / sec_per_99;
 
             //-----------------------//
@@ -568,7 +568,7 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
                 if (land_map.IsLand(lon, lat))
                 {
                     echo_info.flag[spot_idx] = EchoInfo::LAND;
-                    break;
+                    continue;
                 }
 
                 //-------------------------------//
@@ -596,13 +596,6 @@ printf("%d of %d\n", record_idx, tlmFile->GetDataLength());
                     total_signal_energy += signal_energy[slice_idx];
                 }
                 echo_info.totalSignalEnergy[spot_idx] = total_signal_energy;
-if (orbit_step == 192)
-{
-for(int i = 0; i < 12; i++)
-{
-  printf("%d %g\n", i, signal_energy[i]);
-}
-}
 
                 //---------------//
                 // find the peak //

@@ -286,6 +286,23 @@ SimpleLandMap::Allocate(
     return(_Allocate());
 }
 
+//---------------------//
+// SimpleLandMap::Zero //
+//---------------------//
+
+int
+SimpleLandMap::Zero()
+{
+    for (int i = 0; i < _lonSamples; i++)
+    {
+        for (int j = 0; j < _latSamples; j++)
+        {
+            *(*(_map + i) + j) = 0;
+        }
+    }
+    return(1);
+}
+
 //--------------------------//
 // SimpleLandMap::_Allocate //
 //--------------------------//
