@@ -585,6 +585,8 @@ PatternList::Read(
     char line[LINE_SIZE];
     while (fgets(line, LINE_SIZE, ifp) == line)
     {
+        if (line[0] == '#' || line[0] == ':')
+            continue;
         char type[TYPE_SIZE];
         char directory[DIR_SIZE];
         char pattern[PATTERN_SIZE];
