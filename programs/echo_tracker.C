@@ -8,7 +8,7 @@
 //		echo_tracker
 //
 // SYNOPSIS
-//		echo_tracker <sim_config_file>
+//		echo_tracker <sim_config_file> <et_tab_file>
 //
 // DESCRIPTION
 //
@@ -20,10 +20,11 @@
 //		<sim_config_file>		The sim_config_file needed listing
 //								all input parameters, input files, and
 //								output files.
+//		<et_tab_file>			The output table file.
 //
 // EXAMPLES
 //		An example of a command line is:
-//			% echo_tracker sws1b.cfg
+//			% echo_tracker sws1b.cfg et.tab
 //
 // ENVIRONMENT
 //		Not environment dependent.
@@ -66,6 +67,7 @@ static const char rcs_id[] =
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "Matrix.h"
+#include "InstrumentGeom.h"
 
 //-----------//
 // TEMPLATES //
@@ -87,6 +89,8 @@ template class List<EarthPosition>;
 // CONSTANTS //
 //-----------//
 
+#define AZIMUTH_STEP_SIZE	5.0
+
 //--------//
 // MACROS //
 //--------//
@@ -107,7 +111,11 @@ template class List<EarthPosition>;
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", 0};
+const char* usage_array[] = { "<sim_config_file>", "<et_tab_file>", 0};
+
+// beam, orbit step, azimuth angle
+float			accum_freq[2][256][72];
+unsigned int	accum_count[2][256][72];
 
 //--------------//
 // MAIN PROGRAM //
@@ -123,11 +131,12 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 2)
+	if (argc != 3)
 		usage(command, usage_array, 1);
 
 	int clidx = 1;
 	const char* config_file = argv[clidx++];
+	const char* tab_file = argv[clidx++];
 
 	//---------------------//
 	// read in config file //
@@ -208,6 +217,19 @@ main(
 	double Be = instrument.GetTotalSignalBandwidth();
 	double Bs = instrument.scienceSliceBandwidth;
 
+	//-------------------//
+	// set up conversion //
+	//-------------------//
+
+	L1AToL1B l1a_to_l1b;
+	if (! ConfigL1AToL1B(&l1a_to_l1b, &config_list))
+	{
+		fprintf(stderr,
+			"%s: error configuring Level 1A to Level 1B converter.\n",
+			command);
+		exit(1);
+	}
+
 	//------------//
 	// open files //
 	//------------//
@@ -262,29 +284,129 @@ main(
 				exit(1);
 			}
 			l1a.frame.Unpack(l1a.buffer);
-		  
+
 			double eqx_time =
 				spacecraft_sim.FindPrevArgOfLatTime(l1a.frame.time,
 				EQX_ARG_OF_LAT, EQX_TIME_TOLERANCE);
 			instrument.SetEqxTime(eqx_time);
 		}
 
-		//---------------//
-		// find the peak //
-		//---------------//
+		//----------------------------------//
+		// set up spacecraft and instrument //
+		//----------------------------------//
+		// probably need to hack apart L1AToL1B::Convert to get routines
+		// spacecraft is the same for the frame
+		// instrument changes pulse to pulse
+		// some probably goes outside loop, the rest goes in
 
 		l1a.frame.Unpack(l1a.buffer);
+		float roll = l1a.frame.attitude.GetRoll();
+		float pitch = l1a.frame.attitude.GetPitch();
+		float yaw = l1a.frame.attitude.GetYaw();
+		spacecraft.attitude.SetRPY(roll, pitch, yaw);
+
+		instrument.SetTimeWithInstrumentTicks(l1a.frame.instrumentTicks);
+		instrument.orbitTicks = l1a.frame.orbitTicks;
+
+		//--------------------------//
+		// loop for each beam cycle //
+		//--------------------------//
+
 		int base_slice_idx = 0;
 		int spot_idx = 0;
 		for (int beam_cycle = 0; beam_cycle < frame->antennaCyclesPerFrame;
 			beam_cycle++)
 		{
+			//--------------------//
+			// loop for each beam //
+			//--------------------//
+
 			for (int beam_idx = 0; beam_idx < antenna->numberOfBeams;
 				beam_idx++)
 			{
-				//-----------------------//
-				// calculate some things //
-				//-----------------------//
+				//--------------------//
+				// calculate the time //
+				//--------------------//
+ 
+				antenna->currentBeamIdx = beam_idx;
+				Beam* beam = antenna->GetCurrentBeam();
+				double time = l1a.frame.time +
+					beam_cycle * antenna->priPerBeam + beam->timeOffset;
+
+				//-------------------//
+				// set up spacecraft //
+				//-------------------//
+ 
+				OrbitState* orbit_state = &(spacecraft.orbitState);
+				if (! ephemeris.GetOrbitState(time, EPHEMERIS_INTERP_ORDER,
+					orbit_state))
+				{
+					return(0);
+				}
+
+				//-------------------//
+				// set up instrument //
+				//-------------------//
+ 
+				if (spot_idx == l1a.frame.priOfOrbitTickChange)
+					instrument.orbitTicks++;
+ 
+				antenna->SetAzimuthWithEncoder(
+					l1a.frame.antennaPosition[spot_idx]);
+
+				//-------------------//
+				// tracking commands //
+				//-------------------//
+ 
+				SetRangeAndDoppler(&spacecraft, &instrument);
+
+/*
+				//-------------------------------------------//
+				// calculate the expected baseband frequency //
+				//-------------------------------------------//
+				// baseband frequency using tracking constants and attitude
+
+				Attitude* attitude = &(spacecraft.attitude);
+				CoordinateSwitch antenna_frame_to_gc =
+					AntennaFrameToGC(orbit_state, attitude, antenna);
+
+				double center_look, center_azim;
+				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
+					beam, instrument.antenna.actualSpinRate, &center_look,
+					&center_azim))
+				{
+					return(0);
+				}
+
+				Vector3 vector;
+				vector.SphericalSet(1.0, center_look, center_azim);
+				TargetInfoPackage tip;
+				if (! TargetInfo(&antenna_frame_to_gc, &spacecraft,
+					&instrument, vector, &tip))
+				{
+					return(0);
+				}
+				double f_bb_expected = tip.basebandFreq;
+
+				//----------------------------------------//
+				// calculate the ideal baseband frequency //
+				//----------------------------------------//
+				// baseband frequency assuming perfect tracking but
+				// actual attitude
+
+				IdealCommandedDoppler(&spacecraft, &instrument);
+				if (! TargetInfo(&antenna_frame_to_gc, &spacecraft,
+					&instrument, vector, &tip))
+				{
+					return(0);
+				}
+				double f_bb_ideal = tip.basebandFreq;
+*/
+
+				//-------------------------------------------//
+				// calculate the measured baseband frequency //
+				//-------------------------------------------//
+				// baseband frequency estimated from data
 
 				double En = frame->spotNoise[spot_idx];
 				double Es = 0.0;
@@ -293,10 +415,6 @@ main(
 				{
 					Es += frame->science[base_slice_idx + slice_idx];
 				}
-
-				//--------------------------------------------//
-				// determine the noise power spectral density //
-				//--------------------------------------------//
 
 				double npsd = ((En / (Gn * Bn)) - (Es / (Ge * Bn))) /
 					(1.0 - Be / Bn);
@@ -321,6 +439,12 @@ main(
 				if (peak_slice < 0.0 || peak_slice > frame->slicesPerSpot)
 					continue;
 
+				int near_slice_idx = (int)(peak_slice + 0.5);
+				float f1, bw;
+				instrument.GetSliceFreqBw(near_slice_idx, &f1, &bw);
+				float f_bb_data = f1 + bw * (peak_slice -
+					(float)near_slice_idx + 0.5);
+
 				//------------//
 				// accumulate //
 				//------------//
@@ -329,14 +453,62 @@ main(
 					frame->antennaPosition[spot_idx]);
 				double angle = antenna->azimuthAngle;
 
-				printf("%g %g\n", angle, peak_slice);
+				unsigned short step = beam->dopplerTracker.OrbitTicksToStep(
+					instrument.orbitTicks, instrument.orbitTicksPerOrbit);
+				int az_idx = (int)(angle / (AZIMUTH_STEP_SIZE * dtr) + 0.5);
+				az_idx %= 72;
+
+				accum_freq[beam_idx][step][az_idx] += f_bb_data;
+				accum_count[beam_idx][step][az_idx]++;
+
 				base_slice_idx += frame->slicesPerSpot;
+				spot_idx++;
 			}
-			spot_idx++;
 		}
 	} while (1);
 
 	l1a.Close();
+
+	//------------------//
+	// open output file //
+	//------------------//
+
+	FILE* ofp = fopen(tab_file, "w");
+	if (ofp == NULL)
+	{
+		fprintf(stderr, "%s: error opening table file %s\n", command,
+			tab_file);
+		exit(1);
+	}
+
+	//--------------------//
+	// write out the data //
+	//--------------------//
+
+	for (int beam_idx = 0; beam_idx < antenna->numberOfBeams; beam_idx++)
+	{
+		for (int step = 0; step < 256; step++)
+		{
+			for (int az_idx = 0; az_idx < 72; az_idx++)
+			{
+				if (accum_count[beam_idx][step][az_idx])
+				{
+					float avg_f = accum_freq[beam_idx][step][az_idx] /
+						(float)accum_count[beam_idx][step][az_idx];
+					fprintf(ofp, "%d %d %d %g\n", beam_idx, step, az_idx,
+						avg_f);
+if (beam_idx == 0)
+	printf("%g %g\n", (float)step + (float)az_idx / 72.0, avg_f);
+				}
+			}
+		}
+	}
+
+	//-------------------//
+	// close output file //
+	//-------------------//
+
+	fclose(ofp);
 
 	return (0);
 }
