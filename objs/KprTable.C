@@ -279,7 +279,7 @@ float KprTable::Interpolate(int beam_number, int slice_number, float azimuth){
   int az1, az2;
   int slice_idx;
 
-  if(azi< -(2*M_PI)){
+  if(azimuth< -(2*M_PI)){
     fprintf(stderr,"Error KprTable::Interpolate: Azimuth < -2PI rads\n");
     exit(1);
   }
