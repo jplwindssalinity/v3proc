@@ -55,11 +55,11 @@ int		FindSlice(CoordinateSwitch* antenna_frame_to_gc,
 			double azimuth, float freq_1, float freq_2, float freq_tol,
 			Outline* outline, Vector3* look_vector, EarthPosition* centroid);
 
-int		DopplerAndDelay(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector);
+double	IdealRtt(Spacecraft* spacecraft, Instrument* instrument);
 
-int		IdealCommandedDoppler(CoordinateSwitch* antenna_frame_to_gc,
-			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector);
+int		RttToCommandedReceiverDelay(Instrument* instrument, double rtt);
+
+int		IdealCommandedDoppler(Spacecraft* spacecraft, Instrument* instrument);
 
 int		TargetInfo(CoordinateSwitch* antenna_frame_to_gc,
 			Spacecraft* spacecraft, Instrument* instrument, Vector3 vector,

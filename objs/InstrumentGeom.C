@@ -782,8 +782,7 @@ TargetInfo(
 		instrument->chirpStartB;
 	double transmit_center = -chirp_start / instrument->chirpRate;
 	tip->roundTripTime = 2.0 * tip->slantRange / speed_light_kps;
-	double echo_center = transmit_center + tip->roundTripTime +
-		instrument->systemDelay;
+	double echo_center = transmit_center + tip->roundTripTime;
 	tip->rangeFreq = instrument->chirpRate *
 		(instrument->receiverGateDelay - echo_center);
 	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq -

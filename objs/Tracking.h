@@ -11,8 +11,8 @@ static const char rcs_id_tracking_h[] =
 
 
 #include "Constants.h"
-#include "Instrument.h"
 
+class Instrument;
 
 //======================================================================
 // CLASSES
@@ -121,12 +121,12 @@ public:
 	int					GetDelayAndDuration(int beam_idx,
 							unsigned int range_step, float xmit_pulse_width,
 							unsigned int antenna_dn, unsigned int antenna_n,
-							float* delay, float* duration);
+							float* delay, float* width);
 	int					GetNumberOfBeams() { return(_numberOfBeams); };
 	int					GetRangeSteps() { return(_rangeSteps); };
 	int					SetInstrument(Instrument* instrument);
 	int					SetRoundTripTime(double*** terms);
-	int					SetDuration(int beam_idx, float duration);
+	int					SetDuration(int beam_idx, float width);
 	int					SetTicksPerOrbit(unsigned int period);
 
 	//--------------//
@@ -144,7 +144,7 @@ private:
 
 	float***			_scale;				// [beam][term][coef_order]
 	unsigned char***	_delay;				// [beam][step][term]
-	unsigned char*		_duration;			// [beam]
+	unsigned char*		_width;				// [beam]
 	unsigned int		_ticksPerOrbit;		// orbit period
 
 	//-----------//

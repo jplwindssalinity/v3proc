@@ -9,6 +9,7 @@ static const char rcs_id_tracking_c[] =
 #include <stdio.h>
 #include "Tracking.h"
 #include "Array.h"
+#include "Instrument.h"
 
 
 //================//
@@ -392,7 +393,7 @@ DopplerTracker::ReadBinary(
 //==============//
 
 RangeTracker::RangeTracker()
-:	_scale(NULL), _delay(NULL), _duration(NULL), _ticksPerOrbit(0),
+:	_scale(NULL), _delay(NULL), _width(NULL), _ticksPerOrbit(0),
 	_numberOfBeams(0), _rangeSteps(0)
 {
 	return;
@@ -402,7 +403,7 @@ RangeTracker::~RangeTracker()
 {
 	free_array((void *)_scale, 3, _numberOfBeams, 3, 2);
 	free_array((void *)_delay, 3, _numberOfBeams, _rangeSteps, 3);
-	free_array((void *)_duration, 1, _numberOfBeams);
+	free_array((void *)_width, 1, _numberOfBeams);
 
 	return;
 }
@@ -425,9 +426,9 @@ RangeTracker::Allocate(
 	if (_delay == NULL)
 		return(0);
 
-	_duration = (unsigned char *)make_array(sizeof(unsigned char), 1,
+	_width = (unsigned char *)make_array(sizeof(unsigned char), 1,
 		number_of_beams);
-	if (_duration == NULL)
+	if (_width == NULL)
 		return(0);
 
 	_numberOfBeams = number_of_beams;
@@ -464,14 +465,14 @@ RangeTracker::GetDelayAndDuration(
 	unsigned int	antenna_dn,
 	unsigned int	antenna_n,
 	float*			delay,
-	float*			duration)
+	float*			width)
 {
-	//------------------------//
-	// determine the duration //
-	//------------------------//
+	//---------------------//
+	// determine the width //
+	//---------------------//
 
-	unsigned char duration_dn = *(_duration + beam_idx);
-	float rgw = (float)duration_dn * RANGE_TRACKING_TIME_RESOLUTION;
+	unsigned char width_dn = *(_width + beam_idx);
+	float rgw = (float)width_dn * RANGE_TRACKING_TIME_RESOLUTION;
 
 	//-------------------------//
 	// get the dn coefficients //
@@ -512,7 +513,7 @@ RangeTracker::GetDelayAndDuration(
 	// quantize //
 	//----------//
 
-	*duration = rgw;		// already quantized
+	*width = rgw;		// already quantized
 	unsigned int delay_dn =
 		(int)(cmd_delay / RANGE_TRACKING_TIME_RESOLUTION + 0.5);
 	*delay = delay_dn * RANGE_TRACKING_TIME_RESOLUTION;
@@ -536,12 +537,12 @@ RangeTracker::SetInstrument(
 	unsigned int antenna_dn = instrument->antenna.GetEncoderValue();
 	unsigned int antenna_n = instrument->antenna.GetEncoderN();
 
-	float delay, duration;
+	float delay, width;
 	GetDelayAndDuration(beam_idx, range_step, xpw, antenna_dn, antenna_n,
-		&delay, &duration);
+		&delay, &width);
 
 	instrument->receiverGateDelay = delay;
-	instrument->receiverGateDuration = duration;
+	instrument->receiverGateWidth = width;
 
 	return(1);
 }
@@ -629,15 +630,15 @@ RangeTracker::SetRoundTripTime(
 int
 RangeTracker::SetDuration(
 	int		beam_idx,
-	float	duration)
+	float	width)
 {
-	//------------------//
-	// set the duration //
-	//------------------//
+	//---------------//
+	// set the width //
+	//---------------//
 
-	unsigned char duration_dn = (unsigned char)(duration /
+	unsigned char width_dn = (unsigned char)(width /
 		RANGE_TRACKING_TIME_RESOLUTION + 0.5);
-	*(_duration + beam_idx) = duration_dn;
+	*(_width + beam_idx) = width_dn;
 
 	return(1);
 }
@@ -713,11 +714,11 @@ RangeTracker::WriteBinary(
 		}
 	}
 
-	//--------------------//
-	// write the duration //
-	//--------------------//
+	//-----------------//
+	// write the width //
+	//-----------------//
 
-	if (fwrite((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fwrite((void *)_width, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);
@@ -809,11 +810,11 @@ RangeTracker::ReadBinary(
 		}
 	}
 
-	//-------------------//
-	// read the duration //
-	//-------------------//
+	//----------------//
+	// read the width //
+	//----------------//
 
-	if (fread((void *)_duration, sizeof(unsigned char), _numberOfBeams,
+	if (fread((void *)_width, sizeof(unsigned char), _numberOfBeams,
 		fp) != _numberOfBeams)
 	{
 		return(0);

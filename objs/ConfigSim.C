@@ -484,10 +484,12 @@ ConfigInstrument(
 		return(0);
 	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
+/*
 	float system_delay;		// us
 	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
 		return(0);
 	instrument->systemDelay = system_delay * US_TO_S;
+*/
 
 	float system_temperature;		// K
 	if (! config_list->GetFloat(SYSTEM_TEMPERATURE_KEYWORD,&system_temperature))
