@@ -192,6 +192,9 @@ main(
         if (g_cti_opt && l2a.frame.cti != cti)
             continue;
 
+        if (g_ati_opt && l2a.frame.ati > ati) 
+	  break;
+
         MeasList* ml = &(l2a.frame.measList);
         LonLat lonlat = ml->AverageLonLat();
 //      Meas* mhead=ml->GetHead();
