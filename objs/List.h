@@ -115,6 +115,9 @@ public:
 	//-------------//
 
 	int		NodeCount();		// returns the number of nodes
+	int		IsHead(T* data);	// return 1 if data is in head node
+	int		IsTail(T* data);	// return 1 if data is in tail node
+	int		IsEmpty();			// return 1 if list is empty
 
 protected:
 
@@ -138,7 +141,7 @@ protected:
 //======================================================================
 
 template <class T>
-class SortableList : public List
+class SortableList : public List<T>
 {
 public:
 

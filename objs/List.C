@@ -417,6 +417,50 @@ List<T>::NodeCount()
 	return(count);
 }
 
+//--------------//
+// List::IsHead //
+//--------------//
+
+template <class T>
+int
+List<T>::IsHead(
+	T*	data)
+{
+	if (_head && data == _head->data)
+		return(1);
+	else
+		return(0);
+}
+
+//--------------//
+// List::IsTail //
+//--------------//
+
+template <class T>
+int
+List<T>::IsTail(
+	T*	data)
+{
+	if (_tail && data == _tail->data)
+		return(1);
+	else
+		return(0);
+}
+
+//---------------//
+// List::IsEmpty //
+//---------------//
+
+template <class T>
+int
+List<T>::IsEmpty()
+{
+	if (_head)
+		return(0);
+	else
+		return(1);
+}
+
 
 //==============//
 // SortableList //
