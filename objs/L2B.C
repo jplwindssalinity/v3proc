@@ -632,6 +632,10 @@ L2B::ReadHDF(
     TlmHdfFile*  tlmHdfFile,
     int          unnormalize_mle)
 {
+    printf("NOTICE: If you would like to try a cleaner Level 2B HDF\n");
+    printf("        reader (i.e. not based on Sally's EA code), then\n");
+    printf("        change L2B::ReadHDF to L2B::ReadPureHdf in your code\n");
+
     WindSwath* swath = &(frame.swath);
     swath->DeleteEntireSwath();    // just in case
 
