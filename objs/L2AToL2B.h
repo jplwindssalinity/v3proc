@@ -28,11 +28,6 @@ static const char rcs_id_l17tol20_h[] =
 //		and Level 2.0 data.  It performs wind retrieval.
 //======================================================================
 
-#define INIT_SPD	0.05
-#define INIT_PHI	0.02
-#define FINAL_SPD	0.01
-#define FINAL_PHI	0.002
-
 class L17ToL20
 {
 public:
@@ -49,6 +44,15 @@ public:
 	//------------//
 
 	int		ConvertAndWrite(L17* l17, GMF* gmf, L20* l20);
+
+	//-----------//
+	// variables //
+	//-----------//
+
+	float	initSpdStep;
+	float	initPhiStep;
+	float	finalSpdStep;
+	float	finalPhiStep;
 };
 
 #endif

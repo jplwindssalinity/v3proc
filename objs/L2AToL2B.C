@@ -14,6 +14,7 @@ static const char rcs_id_l17tol20_c[] =
 //==========//
 
 L17ToL20::L17ToL20()
+:	initSpdStep(0.0), initPhiStep(0.0), finalSpdStep(0.0), finalPhiStep(0.0)
 {
 	return;
 }
@@ -40,9 +41,9 @@ L17ToL20::ConvertAndWrite(
 	//---------------//
 
 	WVC* wvc = new WVC();
-	gmf->FindSolutions(&(l17->frame.measList), wvc, INIT_SPD, INIT_PHI);
-	gmf->RefineSolutions(&(l17->frame.measList), wvc, INIT_SPD, INIT_PHI,
-		FINAL_SPD, FINAL_PHI);
+	gmf->FindSolutions(&(l17->frame.measList), wvc, initSpdStep, initPhiStep);
+	gmf->RefineSolutions(&(l17->frame.measList), wvc, initSpdStep,
+		initPhiStep, finalSpdStep, finalPhiStep);
 	wvc->RemoveDuplicates();
 	wvc->SortByObj();
 
