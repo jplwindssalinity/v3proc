@@ -370,12 +370,13 @@ main(
             // do range and Doppler tracking //
             //-------------------------------//
 
-            qscat.cds.useRgc = 1;
-            qscat.cds.useDtc = 1;
-            SetDelayAndFrequency(NULL, &qscat);
+//            qscat.cds.useRgc = 1;
+//            qscat.cds.useDtc = 1;
 
             qscat.SetEncoderAzimuth(held_encoder, 1);
             qscat.SetOtherAzimuths(&spacecraft);
+
+            SetDelayAndFrequency(&spacecraft, &qscat);
 
             //-----------//
             // flag land //
@@ -420,13 +421,24 @@ main(
             // calculate expected peak response //
             //----------------------------------//
 
+            antenna_frame_to_gc = AntennaFrameToGC(&(spacecraft.orbitState),
+                attitude, antenna, antenna->txCenterAzimuthAngle);
+            if (! beam->GetElectricalBoresight(&look, &azim))
+                return(0);
+            vector.SphericalSet(1.0, look, azim);
+            if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
+                vector, &tip))
+            {
+                fprintf(stderr, "%s: error finding target information\n",
+                    command);
+                exit(1);
+            }
             if (! GetPeakSpatialResponse(beam, tip.roundTripTime,
                 qscat.sas.antenna.spinRate, &look, &azim))
             {
                 printf("%s: error determining peak response\n", command);
                 exit(1);
             }
-
             vector.SphericalSet(1.0, look, azim);
             if (! TargetInfo(&antenna_frame_to_gc, &spacecraft, &qscat,
                 vector, &tip))
@@ -478,9 +490,10 @@ main(
             coefs.GetElement(1, &(c[1]));
             coefs.GetElement(2, &(c[2]));
             float peak_slice = -c[1] / (2.0 * c[2]);
-/*
 static int zz = 0;
 char fn[1024];
+if (ideal_encoder < 0.005 || ideal_encoder > 6.278)
+{
 sprintf(fn, "xxx.%05d", zz);
 FILE* fp = fopen(fn, "w");
 for (int i = 0; i < 10; i++)
@@ -492,7 +505,7 @@ fprintf(fp, "&\n");
 fprintf(fp, "%g 0.0\n", peak_slice);
 fclose(fp);
 zz++;
-*/
+}
             // make sure peak is in range
             if (peak_slice < 0.0 || peak_slice > frame->slicesPerSpot - 1)
                 continue;

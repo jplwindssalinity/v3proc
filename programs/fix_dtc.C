@@ -164,6 +164,8 @@ main(
             command, config_file);
         exit(1);
     }
+    config_list.StompOrAppend(USE_RGC_KEYWORD, "1");
+    config_list.StompOrAppend(USE_DTC_KEYWORD, "1");
 
     //----------------//
     // create a QSCAT //

@@ -9,7 +9,7 @@
 //
 // SYNOPSIS
 //    generate_foff_table [ -d diagfile ] <sim_config_file>
-//        <echo_data_file> <foff_file>
+//        <echo_data_file> <spec_ref_file> <foff_file>
 //
 // DESCRIPTION
 //    Reads the frequency offset file and generates a correction table
@@ -22,11 +22,12 @@
 //    The following operands are supported:
 //      <sim_config_file>  The simulation configuration file.
 //      <echo_proc_file>   The echo processing file.
+//      <spec_ref_file>    The spectral/reference correction table.
 //      <foff_file>        The frequency offset file.
 //
 // EXAMPLES
 //    An example of a command line is:
-//      % generate_foff_table qscat.cfg echo.dat foff.dat
+//      % generate_foff_table qscat.cfg echo.dat specref.dat foff.dat
 //
 // ENVIRONMENT
 //    Not environment dependent.
@@ -92,8 +93,8 @@ template class List<AngleInterval>;
 //-----------//
 
 #define SECONDS_PER_ORBIT_STEP  190.0
-#define FOFF_ORBIT_STEPS             32
-#define FOFF_AZIMUTH_STEPS           36
+#define FOFF_ORBIT_STEPS        32
+#define FOFF_AZIMUTH_STEPS      36
 #define EPHEMERIS_CHAR          'E'
 #define ORBIT_STEP_CHAR         'O'
 #define ORBIT_TIME_CHAR         'T'
@@ -127,7 +128,7 @@ unsigned char diagfile_opt = 0;
 //------------------//
 
 const char* usage_array[] = { "[ -d diagfile ]", "<sim_config_file>",
-    "<echo_data_file>", "<foff_file>", 0};
+    "<echo_data_file>", "<spec_ref_file>", "<foff_file>", 0};
 
 double g_foff_sum[NUMBER_OF_QSCAT_BEAMS][FOFF_ORBIT_STEPS][FOFF_AZIMUTH_STEPS];
 double g_meas_sum[NUMBER_OF_QSCAT_BEAMS][FOFF_ORBIT_STEPS][FOFF_AZIMUTH_STEPS];
@@ -166,11 +167,12 @@ main(
         }
     }
 
-    if (argc != optind + 3)
+    if (argc != optind + 4)
         usage(command, usage_array, 1);
 
     const char* config_file = argv[optind++];
     const char* echo_data_file = argv[optind++];
+    const char* spec_ref_file = argv[optind++];
     const char* foff_file = argv[optind++];
 
     //---------------------//
@@ -195,6 +197,10 @@ main(
         fprintf(stderr, "%s: error configuring QSCAT\n", command);
         exit(1);
     }
+
+    //---------------------------------//
+    // read in spectral reference file //
+    //---------------------------------//
 
     //---------------------------------//
     // open echo data file for reading //
@@ -357,7 +363,8 @@ main(
                     }
                 }
             }
-            fprintf(ofp, "&\n");
+            if (beam_idx != NUMBER_OF_QSCAT_BEAMS - 1)
+                fprintf(ofp, "&\n");
         }
         fclose(ofp);
     }
