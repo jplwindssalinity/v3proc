@@ -65,6 +65,7 @@ static const char rcs_id[] =
 #include "ConfigSim.h"
 #include "Tracking.h"
 #include "InstrumentGeom.h"
+#include "AccurateGeom.h"
 #include "BufferedList.h"
 #include "BufferedList.C"
 #include "Tracking.h"
@@ -379,13 +380,69 @@ main(
                             // Use ground impact azimuth to match BYU
 			    qscat.SetAllAzimuthsUsingGroundImpact(&spacecraft,
 								  azimuth);
+
+			    printf("%d %g %g ",beam_no,instrument_event_time,azimuth*rtd);
 			    TargetInfoPackage tip;
+                            
 			    SetDelayAndFrequency(&spacecraft,&qscat,&tip);     
 			  
-			    printf("%d %g %g %g %g\n",beam_no,instrument_event_time,azimuth*rtd,tip.dopplerFreq,tip.slantRange);
+
+			    CoordinateSwitch antenna_frame_to_gc =
+			    AntennaFrameToGC(&(spacecraft.orbitState), 
+					     &(spacecraft.attitude), &(qscat.sas.antenna),
+					     qscat.sas.antenna.txCenterAzimuthAngle);	
+			    Beam* beam = qscat.GetCurrentBeam();
+			    double azimuth_rate = qscat.sas.antenna.spinRate;
+                            Vector3 vector;
+                            double look,azim;
+
+                            // Report Spatial Peak Info
+			    if (! GetPeakSpatialResponse2(
+					&antenna_frame_to_gc, 
+					&spacecraft,
+					beam, azimuth_rate, &look, &azim))
+			      {
+				exit(1);
+			      }
+                            vector.SphericalSet(1.0,look,azim);
+			    if(!TargetInfo(&antenna_frame_to_gc,
+					   &spacecraft,&qscat,vector,&tip))
+			      exit(1);
+			    printf("SpatialPeak %g %g %g ",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);
+
+                            // Report Spectral Peak Info
+			    if (! GetPeakSpectralResponse(&antenna_frame_to_gc,
+					&spacecraft,&qscat,&look,&azim))
+				exit(1);
+                            vector.SphericalSet(1.0,look,azim);
+			    if(!TargetInfo(&antenna_frame_to_gc,
+					   &spacecraft,&qscat,vector,&tip))
+			    exit(1);
+
+			    printf("SpectralPeak %g %g %g ",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);	 
 
 
-			  
+                            //printf("\n");
+                            //for(int c=-20000;c<20000;c+=100){
+			    //  double response;
+                            //  SpectralResponse(&spacecraft,&qscat,float(c),
+			    //		       azim,look,&response);
+                            //  printf("%d %g\n",c,response);
+                            //  fflush(stdout);
+			    //}
+
+			    // Report BYU Peak Info;
+			    if(! GetBYUBoresight(&spacecraft,&qscat,&look,&azim))
+			      exit(1);
+                            vector.SphericalSet(1.0,look,azim);
+			    if(!TargetInfo(&antenna_frame_to_gc,
+					   &spacecraft,&qscat,vector,&tip))
+			    exit(1);
+			    printf("BYUPeak %g %g %g\n",tip.dopplerFreq,tip.slantRange,tip.basebandFreq);
+
+                            fflush(stdout);
+
+		  
 			  }					
 			  instrument_event_time=instrument_end_time+100;
 					
