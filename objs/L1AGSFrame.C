@@ -164,7 +164,7 @@ FILE*   ofp)
     fprintf(ofp,"beam_select_sw_temp_eu = %g\n", in_eu.beam_select_sw_temp_eu);
     fprintf(ofp,"receiver_temp_eu = %g\n", in_eu.receiver_temp_eu);
     fprintf(ofp,"\n ============== GS Science Block ==============\n\n");
-    int i=0, j=0;
+    int i=0, j=0, k=0;
     fprintf(ofp,"\n antenna_position[100]: \n");
     for (i=0; i < 20; i++)
     {
@@ -173,14 +173,48 @@ FILE*   ofp)
         fprintf(ofp, "\n");
     }
 
-    fprintf(ofp,"\n loop_back_cal_A_power[12]: \n");
+    fprintf(ofp,"\nloop_back_cal_A_power[12]: \n");
     for (i=0; i < 2; i++)
     {
         for (j=0; j < 6; j++)
-            fprintf(ofp, " %g", in_science.loop_back_cal_A_power[i*5+j]);
+            fprintf(ofp, " %g", in_science.loop_back_cal_A_power[i*6+j]);
         fprintf(ofp, "\n");
     }
 
+    fprintf(ofp,"\nloop_back_cal_B_power[12]: \n");
+    for (i=0; i < 2; i++)
+    {
+        for (j=0; j < 6; j++)
+            fprintf(ofp, " %g", in_science.loop_back_cal_B_power[i*6+j]);
+        fprintf(ofp, "\n");
+    }
+    fprintf(ofp,"\nloop_back_cal_noise: %g, load_cal_noise: %g\n",
+                 in_science.loop_back_cal_noise, in_science.load_cal_noise);
+    fprintf(ofp,"\nload_cal_A_power[12]: \n");
+    for (i=0; i < 2; i++)
+    {
+        for (j=0; j < 6; j++)
+            fprintf(ofp, " %g", in_science.load_cal_A_power[i*6+j]);
+        fprintf(ofp, "\n");
+    }
+    fprintf(ofp,"\nload_cal_B_power[12]: \n");
+    for (i=0; i < 2; i++)
+    {
+        for (j=0; j < 6; j++)
+            fprintf(ofp, " %g", in_science.load_cal_B_power[i*6+j]);
+        fprintf(ofp, "\n");
+    }
+
+    fprintf(ofp,"\npower_dn[12][100]: \n");
+    for (k=0; k < 12; k++)
+    {
+        for (i=0; i < 20; i++)
+        {
+            for (j=0; j < 5; j++)
+                fprintf(ofp, " %d", in_science.power_dn[k][i*5+j]);
+            fprintf(ofp, "\n");
+        }
+    }
     return 1;
 
 } // L1AGSFrame::WriteAscii
