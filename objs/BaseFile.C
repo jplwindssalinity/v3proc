@@ -61,6 +61,19 @@ BaseFile::OpenForReading()
 	return(1);
 }
 
+int
+BaseFile::OpenForReading(
+	const char*		filename)
+{
+	if (! SetFilename(filename))
+		return(0);
+
+	if (! OpenForReading())
+		return(0);
+
+	return(1);
+}
+
 //--------------------------//
 // BaseFile::OpenForWriting //
 //--------------------------//
@@ -73,6 +86,19 @@ BaseFile::OpenForWriting()
 
 	_fp = fopen(_filename, "w");
 	if (_fp == NULL)
+		return(0);
+
+	return(1);
+}
+
+int
+BaseFile::OpenForWriting(
+	const char*		filename)
+{
+	if (! SetFilename(filename))
+		return(0);
+
+	if (! OpenForWriting())
 		return(0);
 
 	return(1);

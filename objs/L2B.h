@@ -60,6 +60,8 @@ public:
 	int		ReadDataRec() { return(frame.swath.ReadL20(_fp)); };
 	int		WriteDataRec() { return(frame.swath.WriteL20(_fp)); };
 
+	int		WriteBev(const char* filename, const int rank);
+
 	//-----------//
 	// variables //
 	//-----------//

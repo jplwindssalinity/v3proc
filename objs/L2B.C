@@ -24,3 +24,15 @@ L20::~L20()
 {
 	return;
 }
+
+//---------------//
+// L20::WriteBev //
+//---------------//
+
+int
+L20::WriteBev(
+	const char*		filename,
+	const int		rank)
+{
+	return(frame.swath.WriteBev(filename, rank));
+}

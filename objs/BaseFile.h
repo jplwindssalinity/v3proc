@@ -50,7 +50,9 @@ public:
 	//--------------//
 
 	int		OpenForReading();
+	int		OpenForReading(const char* filename);
 	int		OpenForWriting();
+	int		OpenForWriting(const char* filename);
 
 	int		Read(char* buffer, size_t bytes);
 	int		Write(char* buffer, size_t bytes);
