@@ -717,6 +717,12 @@ main(
 
     l1a.Close();
 
+    if (true_att_fp != NULL)
+        fclose(true_att_fp);
+
+    if (true_delta_f_fp != NULL)
+        fclose(true_delta_f_fp);
+
     //--------------------------//
     // If createXtable is set    //
     // write XTABLE file        //
