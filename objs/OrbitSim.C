@@ -310,15 +310,15 @@ OrbitSim::UpdateOrbit(
 	double satlon = atan2(sinl, cosl);
 	satlon = fmod(satlon + two_pi, two_pi);
 
-	orbit->gc_altitude = rsmag;
-	orbit->gc_longitude = satlon;
-	orbit->gc_latitude = satlat;
-	orbit->gc_vector.Set(0, gc_x);
-	orbit->gc_vector.Set(1, gc_y);
-	orbit->gc_vector.Set(2, gc_z);
-	orbit->velocity_vector.Set(0, vx);
-	orbit->velocity_vector.Set(1, vy);
-	orbit->velocity_vector.Set(2, vz);
+	orbit->gcAltitude = rsmag;
+	orbit->gcLongitude = satlon;
+	orbit->gcLatitude = satlat;
+	orbit->gcVector.Set(0, gc_x);
+	orbit->gcVector.Set(1, gc_y);
+	orbit->gcVector.Set(2, gc_z);
+	orbit->velocityVector.Set(0, vx);
+	orbit->velocityVector.Set(1, vy);
+	orbit->velocityVector.Set(2, vz);
 
 	return(1);
 }

@@ -41,11 +41,11 @@ public:
 	// variables //
 	//-----------//
 
-	double		gc_altitude;
-	double		gc_longitude;
-	double		gc_latitude;
-	Vector3		gc_vector;
-    Vector3		velocity_vector;
+	double		gcAltitude;
+	double		gcLongitude;
+	double		gcLatitude;
+	Vector3		gcVector;
+    Vector3		velocityVector;
 };
 
 #endif

@@ -14,12 +14,12 @@ static const char rcs_id_orbit_c[] =
 //=======//
 
 Orbit::Orbit()
-:	gc_altitude(0.0), gc_longitude(0.0), gc_latitude(0.0)
+:	gcAltitude(0.0), gcLongitude(0.0), gcLatitude(0.0)
 {
 	for (int i = 0; i < 3; i++)
 	{
-		gc_vector.Set(i, 0.0);
-		velocity_vector.Set(i, 0.0);
+		gcVector.Set(i, 0.0);
+		velocityVector.Set(i, 0.0);
 	}
 	return;
 }
