@@ -130,7 +130,7 @@ L15Frame.o: L15Frame.C L15Frame.h Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h 
 List.o: List.C List.h
 LonLat.o: LonLat.C LonLat.h List.h
 LookGeom.o: LookGeom.C LookGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
-Matrix3.o: Matrix3.C Constants.h Matrix3.h
+Matrix3.o: Matrix3.C Constants.h Matrix3.h CoordinateSwitch.h
 Meas.o: Meas.C Meas.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h Matrix3.h BufferedList.h
 Misc.o: Misc.C Misc.h
 PiscTable.o: PiscTable.C PiscTable.h Interpolate.h Constants.h Beam.h Attitude.h
