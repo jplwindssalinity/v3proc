@@ -60,10 +60,10 @@ int XTable::Allocate(){
   if(numBeams<=0 || numAzimuthBins<=0 || (numSlices)==0) return(0);
   if(numScienceSlices<0 || numGuardSlicesEachSide<0)
     return(0);
-  _value = (float***)make_array(sizeof(float),3, numBeams,numAzimuthBins, 
+  _value = (float***)make_array(sizeof(float),3, numBeams,numAzimuthBins,
 				numScienceSlices+2*numGuardSlicesEachSide);
 
-  _empty = (int***)make_array(sizeof(int),3, numBeams,numAzimuthBins, 
+  _empty = (int***)make_array(sizeof(int),3, numBeams,numAzimuthBins,
 				numSlices);
 
   if(_value==NULL) return(0);
@@ -107,7 +107,7 @@ int XTable::CheckEmpty(){
 
 int XTable::CheckHeader(int num_beams,
 			int num_science_slices,
-			int num_guard_slices_each_side, 
+			int num_guard_slices_each_side,
 			float science_bandwidth,
 			float guard_bandwidth){
   if(numBeams!=num_beams) return(0);
@@ -123,8 +123,8 @@ int XTable::CheckHeader(int num_beams,
   return(1);
 }
 
-int XTable::Write(){ 
-     
+int XTable::Write(){
+
       if (_filename == NULL)
 	return(0);
 
@@ -160,7 +160,7 @@ int XTable::Read(){
 
       if (! Allocate())
 	return(0);
-      
+
       if (! _ReadTable(fp))
 	return(0);
 
@@ -200,19 +200,19 @@ XTable::RetrieveBySliceNumber(int beam_number, float azimuth_angle, int slice_nu
   if(azi<0) azi+=2*numAzimuthBins;
   azi_idx=(int)(azi);
   azi_idx%=numAzimuthBins;
-  
+
 
   if(slice_number < 0 || slice_number >= numSlices){
     fprintf(stderr,"Error XTable::RetrieveBySliceNumber: Bad Slice No.\n");
     exit(1);
   }
   return(_value[beam_number][azi_idx][slice_number]);
-  
+
 }
 
 
 float
-XTable::RetrieveBySliceFreq(int beam_number, float azimuth_angle, 
+XTable::RetrieveBySliceFreq(int beam_number, float azimuth_angle,
 			     float slice_min_freq,
 			    float slice_bandwidth){
 float azi, X=0;
@@ -244,7 +244,7 @@ float azi, X=0;
 
   int bin_start=FindSliceNum(slice_min_freq);
   int bin_end=FindSliceNum(slice_max_freq);
-  
+
   if(bin_start==bin_end){
     fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Cannot resolve slice\n");
     exit(1);
@@ -254,7 +254,7 @@ float azi, X=0;
     fprintf(stderr,"Error XTable::RetrieveBySliceFreq: Slice out of range\n");
     exit(1);
   }
-    
+
   float bandwidth=GetBandwidth(bin_start);
   float Xstart=RetrieveBySliceNumber(beam_number, azimuth_angle, bin_start);
   float bin_min_freq=GetMinFreq(bin_start);
@@ -271,7 +271,7 @@ float azi, X=0;
 }
 
 int
-XTable::AddEntry(float X, int beam_number, float azimuth_angle, 
+XTable::AddEntry(float X, int beam_number, float azimuth_angle,
 		 int slice_number){
   float azi;
   int azi_idx;
@@ -289,13 +289,13 @@ XTable::AddEntry(float X, int beam_number, float azimuth_angle,
   if(azi<0) azi+=2*numAzimuthBins;
   azi_idx=(int)(azi);
   azi_idx%=numAzimuthBins;
-  
+
 
   if(slice_number < 0 || slice_number >= numSlices){
     fprintf(stderr,"Error XTable::AddEntry: Bad Slice No.\n");
     return(0);
   }
-  
+
   //=======================//
   // Nonempty case         //
   // entry already written //
@@ -314,12 +314,12 @@ XTable::GetMinFreq(int slice_number){
   abs_min_freq=-(float)numScienceSlices/2.0*scienceSliceBandwidth;
   abs_min_freq-=numGuardSlicesEachSide*guardSliceBandwidth;
   int sn=slice_number;
-  
+
   if(slice_number < 0 || slice_number >= numSlices){
     fprintf(stderr,"Error XTable::GetMinFreq: Bad Slice No.\n");
     exit(1);
   }
-  
+
   min_freq=abs_min_freq;
   if(sn < numGuardSlicesEachSide){
     return(min_freq+sn*guardSliceBandwidth);
@@ -331,13 +331,13 @@ XTable::GetMinFreq(int slice_number){
   if(sn< numScienceSlices){
     return(min_freq+sn*scienceSliceBandwidth);
   }
-  
+
   min_freq+=numScienceSlices*scienceSliceBandwidth;
   sn-=numScienceSlices;
   return(min_freq+sn*guardSliceBandwidth);
 }
 
-float 
+float
 XTable::GetBandwidth(int slice_number){
 
   if(slice_number < 0 || slice_number >= numSlices){
@@ -358,12 +358,12 @@ XTable::FindSliceNum(float freq){
   abs_min_freq-=numGuardSlicesEachSide*guardSliceBandwidth;
   int sn;
   float fr=freq;
-  
+
   if(fr<abs_min_freq) return(-1);
- 
+
   fr-=abs_min_freq;
   sn=0;
-  
+
   if(freq < numGuardSlicesEachSide*guardSliceBandwidth){
     return((int)(fr/guardSliceBandwidth));
   }
@@ -374,16 +374,16 @@ XTable::FindSliceNum(float freq){
   if(fr < numScienceSlices*scienceSliceBandwidth){
     return(sn+(int)(fr/scienceSliceBandwidth));
   }
-  
+
   fr-=numScienceSlices*scienceSliceBandwidth;
   sn+=numScienceSlices;
   sn+=(int)(fr/guardSliceBandwidth);
 
   /*** If less than 1 Hz past top ignore discrepancy ***/
-  if (sn==numSlices && 
+  if (sn==numSlices &&
       (int)(fr-numGuardSlicesEachSide*guardSliceBandwidth)==0 )
     sn=numSlices-1;
-  return(sn); 
+  return(sn);
 }
 
 //============================//
@@ -401,54 +401,54 @@ int XTable::_Deallocate(){
   _value = NULL;
   _empty = NULL;
   numBeams=0;
-  return(1);  
+  return(1);
 }
 
 //----------------------------------//
 // XTable::_WriteHeader           //
 //----------------------------------//
 
-int 
+int
 XTable::_WriteHeader(FILE* ofp)
 {
   if (fwrite((void*)&numBeams, sizeof(int),1,ofp)!=1) return(0);
-  if (fwrite((void*)&numAzimuthBins, sizeof(int),1,ofp)!=1) return(0);  
-  if (fwrite((void*)&numScienceSlices, sizeof(int),1,ofp)!=1) return(0); 
-  if (fwrite((void*)&numGuardSlicesEachSide, sizeof(int),1,ofp)!=1) 
-    return(0); 
+  if (fwrite((void*)&numAzimuthBins, sizeof(int),1,ofp)!=1) return(0);
+  if (fwrite((void*)&numScienceSlices, sizeof(int),1,ofp)!=1) return(0);
+  if (fwrite((void*)&numGuardSlicesEachSide, sizeof(int),1,ofp)!=1)
+    return(0);
   if (fwrite((void*)&scienceSliceBandwidth, sizeof(float),1,ofp)!=1)
-    return(0); 
+    return(0);
   if (fwrite((void*)&guardSliceBandwidth, sizeof(float),1,ofp)!=1)
-    return(0); 
-  return(1);   
+    return(0);
+  return(1);
 }
 
 //----------------------------------//
 // XTable::_ReadHeader           //
 //----------------------------------//
 
-int 
+int
 XTable::_ReadHeader(FILE* ifp)
 {
   if (fread((void*)&numBeams, sizeof(int),1,ifp)!=1) return(0);
-  if (fread((void*)&numAzimuthBins, sizeof(int),1,ifp)!=1) return(0);  
-  if (fread((void*)&numScienceSlices, sizeof(int),1,ifp)!=1) return(0); 
-  if (fread((void*)&numGuardSlicesEachSide, sizeof(int),1,ifp)!=1) 
-    return(0); 
+  if (fread((void*)&numAzimuthBins, sizeof(int),1,ifp)!=1) return(0);
+  if (fread((void*)&numScienceSlices, sizeof(int),1,ifp)!=1) return(0);
+  if (fread((void*)&numGuardSlicesEachSide, sizeof(int),1,ifp)!=1)
+    return(0);
   if (fread((void*)&scienceSliceBandwidth, sizeof(float),1,ifp)!=1)
-    return(0); 
+    return(0);
   if (fread((void*)&guardSliceBandwidth, sizeof(float),1,ifp)!=1)
-    return(0); 
+    return(0);
 
   numSlices=numScienceSlices+numGuardSlicesEachSide;
-  return(1);     
+  return(1);
 }
 
 //----------------------------------//
 // XTable::_WriteTable           //
 //----------------------------------//
 
-int 
+int
 XTable::_WriteTable(FILE* ofp)
 {
   for(int b=0;b<numBeams;b++){
@@ -464,7 +464,7 @@ XTable::_WriteTable(FILE* ofp)
 // XTable::_ReadTable               //
 //----------------------------------//
 
-int 
+int
 XTable::_ReadTable(FILE* ifp)
 {
   for(int b=0;b<numBeams;b++){
@@ -486,11 +486,11 @@ XTable::_ReadTable(FILE* ifp)
 int
 MakeKfactorTable(XTable* trueX, XTable* estX, XTable* Kfactor){
   estX->CopyBlank(Kfactor);
-  if(estX->numBeams != trueX->numBeams ||
-     estX->numAzimuthBins != trueX->numAzimuthBins){
-    fprintf(stderr,"MakeKfactorTable: XTable mismatch. /n");
-    return(0);
-  }
+	if(estX->numBeams != trueX->numBeams)
+	{
+		fprintf(stderr,"MakeKfactorTable: XTable mismatch. /n");
+		return(0);
+	}
   for(int b=0; b<Kfactor->numBeams; b++){
     for(int a=0; a<Kfactor->numAzimuthBins; a++){
       for(int s=0; s<Kfactor->numSlices; s++){
@@ -505,4 +505,3 @@ MakeKfactorTable(XTable* trueX, XTable* estX, XTable* Kfactor){
   }
   return(1);
 }
-
