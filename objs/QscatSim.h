@@ -103,6 +103,7 @@ public:
 
     int  Initialize(Qscat* qscat);
     int  DetermineNextEvent(Qscat* qscat, QscatEvent* qscat_event);
+    int  L1AFrameInit(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1aframe);
     int  ScatSim(Spacecraft* spacecraft, Qscat* qscat, WindField* windfield,
              GMF* gmf, Kp* kp, KpmField* kpmField, L1AFrame* l1a_frame);
     int  LoopbackSim(Spacecraft* spacecraft, Qscat* qscat, L1AFrame* l1a_frame);

@@ -11,6 +11,7 @@ static const char rcs_id_qscatsim_c[] =
 #include "InstrumentGeom.h"
 #include "Sigma0.h"
 #include "AccurateGeom.h"
+#include "Beam.h"
 
 //============//
 // QscatEvent //
@@ -95,7 +96,7 @@ QscatSim::DetermineNextEvent(
 
     int min_idx = 0;
     double min_time = beamInfo[0].txTime;
-    for (int beam_idx = 0; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
+    for (int beam_idx = 1; beam_idx < NUMBER_OF_QSCAT_BEAMS; beam_idx++)
     {
         if (beamInfo[beam_idx].txTime < min_time)
         {
@@ -147,6 +148,117 @@ QscatSim::DetermineNextEvent(
     return(1);
 }
 
+//------------------------//
+// QscatSim::L1AFrameInit //
+//------------------------//
+
+int
+QscatSim::L1AFrameInit(
+    Spacecraft*  spacecraft,
+    Qscat*       qscat,
+    L1AFrame*    l1a_frame)
+{
+    //----------------------//
+    // frame initialization //
+    //----------------------//
+
+    if (_spotNumber == 0)
+    {
+        if (! SetL1ASpacecraft(spacecraft,l1a_frame))
+            return(0);
+        l1a_frame->time = qscat->cds.time;
+        l1a_frame->orbitTicks = qscat->cds.orbitTime;
+        l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
+        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
+        l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
+        l1a_frame->priOfOrbitStepChange = 255;      // flag value
+        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
+        l1a_frame->calPosition = 255;	// no cal pulses yet
+
+        // extra data needed by GS for first pulse
+        l1a_frame->in_eu.prf_cycle_time_eu = qscat->ses.pri;
+        l1a_frame->range_gate_delay_inner =
+          (unsigned short)(qscat->ses.rxGateDelay * 1e6);
+        SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+        l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
+        l1a_frame->in_eu.transmit_pulse_width = qscat->ses.txPulseWidth;
+        l1a_frame->in_eu.precision_coupler_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.rcv_protect_sw_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.beam_select_sw_temp_eu =
+          qscat->ses.physicalTemperature;
+        l1a_frame->in_eu.receiver_temp_eu =
+          qscat->ses.physicalTemperature;
+
+        // Set Frame Inst. Status Flag bits.
+        Beam* cur_beam = qscat->GetCurrentBeam();
+        int inst_flag = 0;
+        if (cur_beam->polarization == H_POL)
+        {
+          inst_flag = inst_flag & 0xFFFFFFFB; // turn off bit 2
+        }
+        else
+        {
+          inst_flag = inst_flag | 0x00000004; // turn on bit 2
+        }
+        float eff_gate_width = ses_beam_info->rxGateWidth -
+          qscat->ses.txPulseWidth;
+        unsigned int code = (int)(eff_gate_width / 0.1 + 0.5);
+        if (code > 6)
+        {
+          fprintf(stderr,"Error: Invalid effective gate width = %g\n",
+            eff_gate_width);
+          exit(1);
+        }
+        code = code << 4;
+        inst_flag = inst_flag | code; // set eff. gate width code
+        inst_flag = inst_flag | 0x00000100;  // start with no cal pulse
+        l1a_frame->frame_inst_status=inst_flag;
+        l1a_frame->frame_err_status=0x00000000;
+        l1a_frame->frame_qual_flag=0x0000;
+        for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
+
+        l1a_frame->frame_time_secs = qscat->cds.time;
+        l1a_frame->instrument_time = qscat->cds.instrumentTime;
+        l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
+        l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
+        l1a_frame->range_gate_a_delay = qscat->cds.rxGateDelayDn;
+        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
+        l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
+        l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
+        l1a_frame->status.pred_antenna_pos_count = 0; // needs to be filled
+        l1a_frame->status.vtcw[0] = 0; // needs to be filled
+        l1a_frame->status.vtcw[1] = 0; // needs to be filled
+        l1a_frame->engdata.precision_coupler_temp =
+          qscat->ses.tempToDn(qscat->ses.physicalTemperature);
+        l1a_frame->engdata.rcv_protect_sw_temp =
+          l1a_frame->engdata.precision_coupler_temp;
+        l1a_frame->engdata.beam_select_sw_temp =
+          l1a_frame->engdata.precision_coupler_temp;
+        l1a_frame->engdata.receiver_temp =
+          l1a_frame->engdata.precision_coupler_temp;
+    }
+    else if (_spotNumber == 1)
+    {
+        //----------------------------------//
+        // Store data needed from 2nd pulse //
+        //----------------------------------//
+
+        l1a_frame->range_gate_delay_outer =
+          qscat->ses.rxGateDelay;
+        SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
+        l1a_frame->in_eu.range_gate_width_outer = ses_beam_info->rxGateWidth;
+
+        l1a_frame->range_gate_b_delay = qscat->cds.rxGateDelayDn;
+        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
+        l1a_frame->status.range_gate_b_width = cds_beam_info->rxGateWidthDn;
+    }
+
+    return(1);
+
+}
+
 //-------------------//
 // QscatSim::ScatSim //
 //-------------------//
@@ -177,6 +289,8 @@ QscatSim::ScatSim(
     // compute frame header info if necessary //
     //----------------------------------------//
 
+    L1AFrameInit(spacecraft,qscat,l1a_frame);
+
     if (_spotNumber == 0)
     {
         // if this is the first or second pulse, "spin up" the //
@@ -188,61 +302,6 @@ QscatSim::ScatSim(
             _spinUpPulses--;    // one less spinup pulse
             return(2);    // indicate spin up
         }
-
-        //----------------------//
-        // frame initialization //
-        //----------------------//
-
-        if (! SetL1ASpacecraft(spacecraft,l1a_frame))
-            return(0);
-        l1a_frame->time = qscat->cds.time;
-        l1a_frame->orbitTicks = qscat->cds.orbitTime;
-        l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
-        l1a_frame->status.doppler_orbit_step = l1a_frame->orbitStep;
-        l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
-        l1a_frame->priOfOrbitStepChange = 255;      // flag value
-        l1a_frame->status.prf_orbit_step_change=l1a_frame->priOfOrbitStepChange;
-        l1a_frame->calPosition = 255;	// no cal pulses yet
-
-        // extra data needed by GS for first pulse (scaled appropriately)
-        l1a_frame->in_eu.prf_cycle_time_eu = qscat->ses.pri;
-        l1a_frame->range_gate_delay_inner =
-          (unsigned short)(qscat->ses.rxGateDelay * 1e6);
-        SesBeamInfo* ses_beam_info = qscat->GetCurrentSesBeamInfo();
-        l1a_frame->in_eu.range_gate_width_inner = ses_beam_info->rxGateWidth;
-        l1a_frame->in_eu.transmit_pulse_width = qscat->ses.txPulseWidth;
-        l1a_frame->in_eu.precision_coupler_temp_eu =
-          qscat->ses.physicalTemperature;
-        l1a_frame->in_eu.rcv_protect_sw_temp_eu =
-          qscat->ses.physicalTemperature;
-        l1a_frame->in_eu.beam_select_sw_temp_eu =
-          qscat->ses.physicalTemperature;
-        l1a_frame->in_eu.receiver_temp_eu =
-          qscat->ses.physicalTemperature;
-        l1a_frame->frame_inst_status=0x00000050;  // set cal pulse flag later
-        l1a_frame->frame_err_status=0x00000000;
-        l1a_frame->frame_qual_flag=0x0000;
-        for (int i=0; i < 13; i++) l1a_frame->pulse_qual_flag[i]=0x00;
-
-        l1a_frame->frame_time_secs = qscat->cds.time;
-        l1a_frame->instrument_time = qscat->cds.instrumentTime;
-        l1a_frame->status.prf_count = l1a_frame->spotsPerFrame;
-        l1a_frame->status.prf_cycle_time = qscat->cds.priDn;
-        l1a_frame->range_gate_a_delay = qscat->cds.rxGateDelayDn;
-        CdsBeamInfo* cds_beam_info = qscat->GetCurrentCdsBeamInfo();
-        l1a_frame->status.range_gate_a_width = cds_beam_info->rxGateWidthDn;
-        l1a_frame->status.pulse_width = qscat->cds.txPulseWidthDn;
-        l1a_frame->status.pred_antenna_pos_count = 0; // needs to be filled
-        l1a_frame->status.vtcw[0] = 0; // needs to be filled
-        l1a_frame->status.vtcw[1] = 0; // needs to be filled
-        l1a_frame->engdata.precision_coupler_temp =
-          qscat->ses.tempToDn(qscat->ses.physicalTemperature);
-        l1a_frame->engdata.rcv_protect_sw_temp =
-          l1a_frame->engdata.precision_coupler_temp;
-        l1a_frame->engdata.beam_select_sw_temp =
-          l1a_frame->engdata.precision_coupler_temp;
-        l1a_frame->engdata.receiver_temp =
-          l1a_frame->engdata.precision_coupler_temp;
     }
 
     //-----------------------------------------------//
@@ -450,22 +509,14 @@ QscatSim::LoopbackSim(
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    if (_spotNumber == 0)
-    {
-        //----------------------//
-        // frame initialization //
-        //----------------------//
+    L1AFrameInit(spacecraft,qscat,l1a_frame);
 
-        // Cal pulses will probably never occur at the start of a frame,
-        // but just in case, we include this code...
-        if (! SetL1ASpacecraft(spacecraft,l1a_frame))
-            return(0);
-        l1a_frame->time = qscat->cds.time;
-        l1a_frame->orbitTicks = qscat->cds.orbitTime;
-        l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
-        l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
-        l1a_frame->priOfOrbitStepChange = 255;      // flag value
-    }
+    //-----------------------------//
+    // Set cal pulse sequence flag //
+    // (turn off Bit position 8)   //
+    //-----------------------------//
+
+    l1a_frame->frame_inst_status = l1a_frame->frame_inst_status & 0xFFFFFEFF;
 
     //-------------------------------------------------//
     // tracking must be done to update state variables //
@@ -527,23 +578,7 @@ QscatSim::LoadSim(
     // compute frame header info if necessary //
     //----------------------------------------//
 
-    if (_spotNumber == 0)
-    {
-        //----------------------//
-        // frame initialization //
-        //----------------------//
-
-        // Cal pulses will probably never occur at the start of a frame,
-        // but just in case, we include this code...
-        if (! SetL1ASpacecraft(spacecraft,l1a_frame))
-            return(0);
-        l1a_frame->time = qscat->cds.time;
-        l1a_frame->orbitTicks = qscat->cds.orbitTime;
-        l1a_frame->orbitStep = qscat->cds.SetAndGetOrbitStep();
-        l1a_frame->instrumentTicks = qscat->cds.instrumentTime;
-        l1a_frame->priOfOrbitStepChange = 255;      // flag value
-        l1a_frame->calPosition = 255;	// no loopback cal pulses yet
-    }
+    L1AFrameInit(spacecraft,qscat,l1a_frame);
 
     //-------------------------------------------------//
     // tracking must be done to update state variables //
@@ -666,7 +701,7 @@ QscatSim::SetMeasurements(
         {
             // Set sigma0 to average NSCAT land sigma0 for appropriate
             // incidence angle and polarization
-            if (meas->pol==H_POL)
+            if (meas->pol == H_POL)
                 sigma0=0.085;
 			else
                 sigma0=0.1;

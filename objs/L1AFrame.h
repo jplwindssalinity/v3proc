@@ -104,8 +104,8 @@ public:
     GSL1AEngData   engdata;
     GSL1AEu        in_eu;
 
-    unsigned short  range_gate_delay_inner;
-    unsigned short  range_gate_delay_outer;
+    float  range_gate_delay_inner;
+    float  range_gate_delay_outer;
 
 	//----------------------------//
 	// L1A Status and Error Flags //
