@@ -21,6 +21,7 @@ INSTALLDIR =	../../bin
 
 PROGRAMS = \
 	qs_ea_extract \
+	qs_ea_list_filters \
 	qs_ea_list_parameters
 
 #----------------------------------------------------------------------
@@ -63,3 +64,6 @@ qs_ea_extract: extract.C Application.h
 
 qs_ea_list_parameters: list_parameters.C
 	$(CCC) $(CPPFLAGS) -o $@ list_parameters.C $(LDLIBS)
+
+qs_ea_list_filters: list_filters.C
+	$(CCC) $(CPPFLAGS) -o $@ list_filters.C $(LDLIBS)
