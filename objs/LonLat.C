@@ -7,6 +7,7 @@ static const char rcs_id_lonlat_c[] =
 	"@(#) $Id$";
 
 #include <stdio.h>
+#include <math.h>
 #include "LonLat.h"
 
 
@@ -51,6 +52,22 @@ LonLat::Read(
 {
 	if (fread((void *)&longitude, sizeof(float), 1, fp) != 1 ||
 		fread((void *)&latitude, sizeof(float), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
+
+//------------------//
+// LonLat::WriteBvg //
+//------------------//
+
+int
+LonLat::WriteBvg(
+	FILE*	fp)
+{
+	if (fwrite((void *)&longitude, sizeof(float), 1, fp) != 1 ||
+		fwrite((void *)&latitude, sizeof(float), 1, fp) != 1)
 	{
 		return(0);
 	}
@@ -119,6 +136,37 @@ Outline::Read(
 			return(0);
 		}
 	}
+	return(1);
+}
+
+//-------------------//
+// Outline::WriteBvg //
+//-------------------//
+
+int
+Outline::WriteBvg(
+	FILE*	fp)
+{
+	// write the points
+	LonLat* lon_lat;
+    for (lon_lat = GetHead(); lon_lat; lon_lat = GetNext())
+	{
+        if (! lon_lat->WriteBvg(fp))
+			return(0);
+	}
+
+	// close the figure
+	lon_lat = GetHead();
+	if (! lon_lat->WriteBvg(fp))
+		return(0);
+
+	// indicate done
+	LonLat inf;
+	inf.longitude = (float)HUGE_VAL;
+	inf.latitude = (float)HUGE_VAL;
+	if (! inf.WriteBvg(fp))
+		return(0);
+
 	return(1);
 }
 

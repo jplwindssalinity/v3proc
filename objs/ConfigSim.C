@@ -15,6 +15,7 @@ static const char rcs_id_configsim_c[] =
 #include "L15.h"
 #include "L17.h"
 #include "L20.h"
+#include "Constants.h"
 
 //---------------------//
 // ConfigSpacecraftSim //
@@ -95,33 +96,46 @@ ConfigInstrument(
 	// configure RF stuff //
 	//--------------------//
 
-	float chirp_rate;
+	float chirp_rate;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_RATE_KEYWORD, &chirp_rate))
 		return(0);
-	instrument->chirpRate = chirp_rate;
+	instrument->chirpRate = chirp_rate * KHZ_PER_MS_TO_HZ_PER_S;
 
-	float chirp_start_m;
+	float chirp_start_m;	// kHz/ms
 	if (! config_list->GetFloat(CHIRP_START_M_KEYWORD, &chirp_start_m))
 		return(0);
-	instrument->chirpStartM = chirp_start_m;
+	instrument->chirpStartM = chirp_start_m * KHZ_PER_MS_TO_HZ_PER_S;
 
-	float chirp_rate_b;
+	float chirp_rate_b;		// kHz
 	if (! config_list->GetFloat(CHIRP_START_B_KEYWORD, &chirp_rate_b))
 		return(0);
-	instrument->chirpStartB = chirp_rate_b;
+	instrument->chirpStartB = chirp_rate_b * KHZ_TO_HZ;
 
-	float base_transmit_freq;
+	float system_delay;		// us
+	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
+		return(0);
+	instrument->systemDelay = system_delay * US_TO_S;
+
+	float receiver_gate_width;	// ms
+	if (! config_list->GetFloat(RECEIVER_GATE_WIDTH_KEYWORD,
+		&receiver_gate_width))
+	{
+		return(0);
+	}
+	instrument->receiverGateWidth = receiver_gate_width * MS_TO_S;
+
+	float base_transmit_freq;	// GHz
 	if (! config_list->GetFloat(BASE_TRANSMIT_FREQUENCY_KEYWORD,
 		&base_transmit_freq))
 	{
 		return(0);
 	}
-	instrument->baseTransmitFreq = base_transmit_freq;
+	instrument->baseTransmitFreq = base_transmit_freq * GHZ_TO_HZ;
 
-	float system_delay;
-	if (! config_list->GetFloat(SYSTEM_DELAY_KEYWORD, &system_delay))
+	float slice_bandwidth;
+	if (! config_list->GetFloat(SLICE_BANDWIDTH_KEYWORD, &slice_bandwidth))
 		return(0);
-	instrument->systemDelay = system_delay;
+	instrument->sliceBandwidth = slice_bandwidth * KHZ_TO_HZ;
 
 	return(1);
 }
@@ -276,19 +290,19 @@ ConfigBeam(
 		return(0);
 	}
 
-	double pulse_width;
+	double pulse_width;		// ms
 	substitute_string(BEAM_x_PULSE_WIDTH_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &pulse_width))
 		return(0);
-	beam->pulseWidth = pulse_width;
+	beam->pulseWidth = pulse_width * MS_TO_S;
 
-	double look_angle;
+	double look_angle;		// deg
 	substitute_string(BEAM_x_LOOK_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &look_angle))
 		return(0);
 	look_angle *= dtr;
 
-	double azimuth_angle;
+	double azimuth_angle;	// deg
 	substitute_string(BEAM_x_AZIMUTH_ANGLE_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &azimuth_angle))
 		return(0);
@@ -296,10 +310,11 @@ ConfigBeam(
 
 	beam->SetBeamGeometry(look_angle, azimuth_angle);
 
+	// ms
 	substitute_string(BEAM_x_TIME_OFFSET_KEYWORD, "x", number, keyword);
 	if (! config_list->GetDouble(keyword, &tmp_double))
 		return(0);
-	beam->timeOffset = tmp_double;
+	beam->timeOffset = tmp_double * MS_TO_S;
 
 	return(1);
 }

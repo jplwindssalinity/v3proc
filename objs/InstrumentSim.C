@@ -116,8 +116,7 @@ InstrumentSim::UpdateAntennaPosition(
 int
 InstrumentSim::ScatSim(
 	double			time,
-	OrbitState*		sc_orbit_state,
-	Attitude*		sc_attitude,
+	Spacecraft*		spacecraft,
 	Instrument*		instrument,
 	int				beam_idx,
 	WindField*		windfield,
@@ -129,6 +128,8 @@ InstrumentSim::ScatSim(
 
 	Antenna* antenna = &(instrument->antenna);
 	Beam* beam = &(antenna->beam[beam_idx]);
+	OrbitState* orbit_state = &(spacecraft->orbitState);
+	Attitude* attitude = &(spacecraft->attitude);
 
 	//----------------------//
 	// set the current beam //
@@ -140,8 +141,8 @@ InstrumentSim::ScatSim(
 	// generate the coordinate switch //
 	//--------------------------------//
 
-	CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(sc_orbit_state,
-		sc_attitude, antenna, beam);
+	CoordinateSwitch beam_frame_to_gc = BeamFrameToGC(orbit_state, attitude,
+		antenna, beam);
 
 	if (l00.frame.slicesPerSpot <= 1)
 	{
@@ -161,7 +162,7 @@ InstrumentSim::ScatSim(
 		// calculate the earth intercept //
 		//-------------------------------//
 
-		EarthPosition spot_on_earth = earth_intercept(sc_orbit_state->rsat,
+		EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
 			rlook_gc);
 
 		//----------------------------------------//
@@ -224,7 +225,7 @@ InstrumentSim::ScatSim(
 		{
 			l00FrameReady = 0;
 			l00_frame->time = time;
-			if (sc_orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
+			if (orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
 				 &alt, &lat, &lon) == 0)
 			{
 				printf("Error: ScatSim can't convert rsat\n");
@@ -233,12 +234,12 @@ InstrumentSim::ScatSim(
 			l00_frame->gcAltitude = alt;
 			l00_frame->gcLongitude = lon;
 			l00_frame->gcLatitude = lat;
-			l00_frame->gcX = sc_orbit_state->rsat.get(0);
-			l00_frame->gcY = sc_orbit_state->rsat.get(1);
-			l00_frame->gcZ = sc_orbit_state->rsat.get(2);
-			l00_frame->velX = sc_orbit_state->vsat.get(0);
-			l00_frame->velY = sc_orbit_state->vsat.get(1);
-			l00_frame->velZ = sc_orbit_state->vsat.get(2);
+			l00_frame->gcX = orbit_state->rsat.get(0);
+			l00_frame->gcY = orbit_state->rsat.get(1);
+			l00_frame->gcZ = orbit_state->rsat.get(2);
+			l00_frame->velX = orbit_state->vsat.get(0);
+			l00_frame->velY = orbit_state->vsat.get(1);
+			l00_frame->velZ = orbit_state->vsat.get(2);
 		}
 		l00_frame->antennaPosition[_spotNumber] = antenna->GetEncoderValue();
 		l00_frame->science[_spotNumber] = value;
@@ -246,7 +247,6 @@ InstrumentSim::ScatSim(
 	}
 	else
 	{
-/*
 		//========//
 		// slices //
 		//========//
@@ -265,6 +265,23 @@ InstrumentSim::ScatSim(
 
 		Meas meas;
 		meas.pol = beam->polarization;
+
+		//--------------------------------//
+		// assume perfect Doppler command //
+		//--------------------------------//
+
+		Vector3 ulook_beam;
+		TargetInfoPackage tip;
+		ulook_beam.SphericalSet(1.0, 0.0, 0.0);		// boresight
+		if (! TargetInfo(ulook_beam, &beam_frame_to_gc, spacecraft, instrument,
+            &tip))
+		{
+			return(0);
+		}
+		instrument->commandedDoppler = tip.dopplerFreq;
+		float center_delay = 2.0 * tip.slantRange / speed_light_kps;
+		instrument->receiverGateDelay = center_delay -
+			instrument->receiverGateWidth / 2.0;
 
 		//-------------------//
 		// for each slice... //
@@ -287,8 +304,8 @@ InstrumentSim::ScatSim(
 			Vector3 centroid_beam_look;
 			// guess at a reasonable slice frequency tolerance of 1%
 			float ftol = fabs(f1 - f2) / 100.0;
-			if (! FindSlice(f1, f2, ftol, &(meas.outline),
-				&centroid_beam_look))
+			if (! FindSlice(&beam_frame_to_gc, spacecraft, instrument, f1, f2,
+				ftol, &(meas.outline), &centroid_beam_look))
 			{
 				return(0);
 			}
@@ -303,7 +320,7 @@ InstrumentSim::ScatSim(
 			// calculate the earth intercept //
 			//-------------------------------//
 
-			EarthPosition spot_on_earth = earth_intercept(sc_orbit_state->rsat,
+			EarthPosition spot_on_earth = earth_intercept(orbit_state->rsat,
 				rlook_gc);
 
 			//----------------------------------------//
@@ -363,7 +380,7 @@ InstrumentSim::ScatSim(
 			{
 				l00FrameReady = 0;
 				l00_frame->time = time;
-				if (sc_orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
+				if (orbit_state->rsat.GetAltLatLon(EarthPosition::GEODETIC,
 					 &alt, &lat, &lon) == 0)
 				{
 					printf("Error: ScatSim can't convert rsat\n");
@@ -372,19 +389,18 @@ InstrumentSim::ScatSim(
 				l00_frame->gcAltitude = alt;
 				l00_frame->gcLongitude = lon;
 				l00_frame->gcLatitude = lat;
-				l00_frame->gcX = sc_orbit_state->rsat.get(0);
-				l00_frame->gcY = sc_orbit_state->rsat.get(1);
-				l00_frame->gcZ = sc_orbit_state->rsat.get(2);
-				l00_frame->velX = sc_orbit_state->vsat.get(0);
-				l00_frame->velY = sc_orbit_state->vsat.get(1);
-				l00_frame->velZ = sc_orbit_state->vsat.get(2);
+				l00_frame->gcX = orbit_state->rsat.get(0);
+				l00_frame->gcY = orbit_state->rsat.get(1);
+				l00_frame->gcZ = orbit_state->rsat.get(2);
+				l00_frame->velX = orbit_state->vsat.get(0);
+				l00_frame->velY = orbit_state->vsat.get(1);
+				l00_frame->velZ = orbit_state->vsat.get(2);
 			}
 			l00_frame->antennaPosition[_spotNumber] =
 				antenna->GetEncoderValue();
 			l00_frame->science[_spotNumber] = value;
 			_spotNumber++;
 		}
-*/
 	}
 
 	//-----------------------------//

@@ -22,6 +22,14 @@ static const double dtr = 1.745329252e-2;
 static const double rtd = 5.729577951e1;
 static const double rpm_to_radps = M_PI / 30.0;
 static const double speed_light = 2.99792458e8;
+static const double speed_light_kps = 2.99792458e5;
+
+// conversion factors
+#define KHZ_PER_MS_TO_HZ_PER_S	1.0E6
+#define KHZ_TO_HZ				1.0E3
+#define GHZ_TO_HZ				1.0E9
+#define US_TO_S					1.0E-6
+#define MS_TO_S					1.0E-3
 
 //
 // Some fixed constants describing the Earth.

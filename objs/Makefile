@@ -118,17 +118,17 @@ Beam.o: Beam.C Beam.h Array.h CoordinateSwitch.h Matrix3.h Attitude.h
 BeamSim.o: BeamSim.C BeamSim.h
 BufferedList.o: BufferedList.C BufferedList.h List.h
 ConfigList.o: ConfigList.C ConfigList.h List.h
-ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h L17ToL20.h Wind.h Grid.h ConfigList.h Instrument.h AntennaSim.h GMF.h Ephemeris.h CoordinateSwitch.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h Antenna.h PiscTable.h Matrix3.h BufferedList.h EarthPosition.h Attitude.h Constants.h Beam.h
+ConfigSim.o: ConfigSim.C ConfigSim.h InstrumentSim.h SpacecraftSim.h Misc.h L00.h L10.h L15.h L17.h L20.h Constants.h L17ToL20.h Wind.h Grid.h ConfigList.h Antenna.h Instrument.h GMF.h AntennaSim.h Spacecraft.h GenericFile.h L00Frame.h L10Frame.h L15Frame.h L17Frame.h L20Frame.h List.h LonLat.h Array.h Meas.h Beam.h Attitude.h PiscTable.h Matrix3.h Ephemeris.h CoordinateSwitch.h BufferedList.h EarthPosition.h
 CoordinateSwitch.o: CoordinateSwitch.C CoordinateSwitch.h Matrix3.h Attitude.h
 EarthPosition.o: EarthPosition.C Constants.h EarthPosition.h Matrix3.h CoordinateSwitch.h Attitude.h
 Ephemeris.o: Ephemeris.C Ephemeris.h List.h List.C Interpolate.h Matrix3.h BufferedList.h EarthPosition.h
 GMF.o: GMF.C GMF.h Interpolate.h Constants.h Beam.h PiscTable.h Wind.h Meas.h CoordinateSwitch.h List.h LonLat.h Ephemeris.h Attitude.h Matrix3.h BufferedList.h EarthPosition.h
 GenericFile.o: GenericFile.C GenericFile.h
-GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h Matrix3.h Attitude.h
+GenericGeom.o: GenericGeom.C GenericGeom.h CoordinateSwitch.h Constants.h EarthPosition.h Matrix3.h Attitude.h
 Grid.o: Grid.C Grid.h Array.h L17.h Meas.h GenericFile.h L17Frame.h Beam.h LonLat.h Ephemeris.h Attitude.h List.h CoordinateSwitch.h Matrix3.h BufferedList.h EarthPosition.h
 Instrument.o: Instrument.C Instrument.h Antenna.h Beam.h Attitude.h CoordinateSwitch.h Matrix3.h
-InstrumentGeom.o: InstrumentGeom.C InstrumentGeom.h CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h GenericGeom.h Constants.h LonLat.h Beam.h Matrix3.h Spacecraft.h Instrument.h BufferedList.h EarthPosition.h List.h
-InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Constants.h ConfigList.h AntennaSim.h L00.h Wind.h GMF.h CoordinateSwitch.h Antenna.h Attitude.h Beam.h LonLat.h Matrix3.h Spacecraft.h BufferedList.h EarthPosition.h List.h GenericFile.h L00Frame.h PiscTable.h Meas.h
+InstrumentGeom.o: InstrumentGeom.C InstrumentGeom.h CoordinateSwitch.h Ephemeris.h Attitude.h Antenna.h GenericGeom.h Constants.h LonLat.h Beam.h Matrix3.h Interpolate.h Spacecraft.h Instrument.h BufferedList.h EarthPosition.h List.h
+InstrumentSim.o: InstrumentSim.C InstrumentSim.h Instrument.h GenericGeom.h InstrumentGeom.h Ephemeris.h Constants.h Antenna.h Wind.h GMF.h AntennaSim.h L00.h Spacecraft.h EarthPosition.h CoordinateSwitch.h Attitude.h Beam.h LonLat.h Matrix3.h BufferedList.h List.h PiscTable.h Meas.h GenericFile.h L00Frame.h
 Interpolate.o: Interpolate.C 
 Kp.o: Kp.C Kp.h PiscTable.h Beam.h CoordinateSwitch.h Matrix3.h Attitude.h
 L00.o: L00.C L00.h GenericFile.h L00Frame.h Attitude.h

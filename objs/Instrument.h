@@ -83,6 +83,7 @@ public:
 	//------------------//
 
 	float		commandedDoppler;	// Hz
+	float		receiverGateDelay;	// sec
 
 	//-----------------//
 	// generally fixed //
@@ -92,7 +93,7 @@ public:
 	float		chirpStartM;		// Hz/sec
 	float		chirpStartB;		// Hz
 	float		systemDelay;		// sec
-	float		receiveGateDelay;	// sec
+	float		receiverGateWidth;	// sec
 	float		baseTransmitFreq;	// Hz
 	float		sliceBandwidth;		// Hz
 };

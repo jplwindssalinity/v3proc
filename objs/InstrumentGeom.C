@@ -65,7 +65,7 @@ BeamFrameToGC(
 //-----------//
 
 // step size for evaluating gradient
-#define FREQ_GRADIENT_ANGLE		0.1
+#define FREQ_GRADIENT_ANGLE		0.008		// about 0.5 degree
 
 int
 FindSlice(
@@ -78,42 +78,45 @@ FindSlice(
 	Outline*			outline,
 	Vector3*			centroid_beam_look)
 {
-	float angle;
-	float c[3];
 	float s_peak;
-	float az[3], el[3], s[3];
+	float az[3], el[3];
+	double s[3];
 
-	//--------------------------------//
-	// find peak gain for frequency 1 //
-	//--------------------------------//
+	//-----------------------//
+	// get frequency 1 slice //
+	//-----------------------//
 
+	float angle_f1;
+	double c_f1[3];
 	float az_1 = 0.0;
 	float el_1 = 0.0;
 	JumpToFreq(beam_frame_to_gc, spacecraft, instrument, &az_1, &el_1,
 		FREQ_GRADIENT_ANGLE, freq_1, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_1, &el_1,
-		FREQ_GRADIENT_ANGLE, &angle);
-	SetPoints(az_1, el_1, FREQ_GRADIENT_ANGLE, angle, az, el);
-	GainSlice(instrument, az, el, s, c);
-	s_peak = -c[1] / 2.0 * c[2];
-	az_1 = az[0] + s_peak * cos(angle);
-	el_1 = el[0] + s_peak * sin(angle);
+		FREQ_GRADIENT_ANGLE, &angle_f1);
+	SetPoints(az_1, el_1, FREQ_GRADIENT_ANGLE, angle_f1, az, el);
+	GainSlice(instrument, az, el, s, c_f1);
+	s_peak = -c_f1[1] / 2.0 * c_f1[2];
+	az_1 = az[0] + s_peak * cos(angle_f1);
+	el_1 = el[0] + s_peak * sin(angle_f1);
 
-	//--------------------------------//
-	// find peak gain for frequency 2 //
-	//--------------------------------//
+	//-----------------------//
+	// get frequency 2 slice //
+	//-----------------------//
 
+	float angle_f2;
+	double c_f2[3];
 	float az_2 = 0.0;
 	float el_2 = 0.0;
 	JumpToFreq(beam_frame_to_gc, spacecraft, instrument, &az_2, &el_2,
 		FREQ_GRADIENT_ANGLE, freq_2, freq_tol);
 	IsoFreqAngle(beam_frame_to_gc, spacecraft, instrument, &az_2, &el_2,
-		FREQ_GRADIENT_ANGLE, &angle);
-	SetPoints(az_2, el_2, FREQ_GRADIENT_ANGLE, angle, az, el);
-	GainSlice(instrument, az, el, s, c);
-	s_peak = -c[1] / 2.0 * c[2];
-	az_2 = az[0] + s_peak * cos(angle);
-	el_2 = el[0] + s_peak * sin(angle);
+		FREQ_GRADIENT_ANGLE, &angle_f2);
+	SetPoints(az_2, el_2, FREQ_GRADIENT_ANGLE, angle_f2, az, el);
+	GainSlice(instrument, az, el, s, c_f2);
+	s_peak = -c_f2[1] / 2.0 * c_f2[2];
+	az_2 = az[0] + s_peak * cos(angle_f2);
+	el_2 = el[0] + s_peak * sin(angle_f2);
 
 	//----------------------------------------//
 	// determine absolute peak gain for slice //
@@ -123,30 +126,75 @@ FindSlice(
 	el[0] = el_1;
 	az[2] = az_2;
 	el[2] = el_2;
-	angle = atan2(el_2 - el_1, az_2 - az_1);
+	double angle = atan2(el_2 - el_1, az_2 - az_1);
+	double c[3];
 	GainSlice(instrument, az, el, s, c);
 	s_peak = -c[1] / 2.0 * c[2];
-//	float peak_az = az[0] + s_peak * cos(angle);
-//	float peak_el = el[0] + s_peak * sin(angle);
-
-	//-----------------------------//
-	// determine target -3 db gain //
-	//-----------------------------//
-
+	float peak_az = az[0] + s_peak * cos(angle);
+	float peak_el = el[0] + s_peak * sin(angle);
 	float gain = ((c[2] * s_peak) + c[1]) * s_peak + c[0];
-	gain -= 3.0;
 
-	//-----------------------------------//
-	// find -3 db points for frequency 1 //
-	//-----------------------------------//
+	float outline_az[2][2];
+	float outline_el[2][2];
 
-	//-----------------------------------//
-	// find -3 db points for frequency 2 //
-	//-----------------------------------//
+	//------------------------------------------------------//
+	// determine target -3 db gain location for frequency 1 //
+	//------------------------------------------------------//
+
+	// just solve the quadratic for the desired gain
+	float target_gain = gain - 3.0;
+	float q = sqrt(c_f1[1]*c_f1[1] - 4.0 * c_f1[2] * (c_f1[0] - target_gain));
+	float twoa = 2.0 * c_f1[2];
+	float s1 = (-c_f1[1] + q) / twoa;
+	float s2 = (-c_f1[1] - q) / twoa;
+
+	outline_az[0][0] = az[0] + s1 * cos(angle_f1);
+	outline_el[0][0] = el[0] + s1 * sin(angle_f1);
+	outline_az[0][1] = az[0] + s2 * cos(angle_f1);
+	outline_el[0][1] = el[0] + s2 * sin(angle_f1);
+
+	//------------------------------------------------------//
+	// determine target -3 db gain location for frequency 2 //
+	//------------------------------------------------------//
+
+	// just solve the quadratic for the desired gain
+	q = sqrt(c_f2[1]*c_f2[1] - 4.0 * c_f2[2] * (c_f2[0] - target_gain));
+	twoa = 2.0 * c_f2[2];
+	s1 = (-c_f2[1] + q) / twoa;
+	s2 = (-c_f2[1] - q) / twoa;
+
+	outline_az[1][0] = az[2] + s1 * cos(angle_f2);
+	outline_el[1][0] = el[2] + s1 * sin(angle_f2);
+	outline_az[1][1] = az[2] + s2 * cos(angle_f2);
+	outline_el[1][1] = el[2] + s2 * sin(angle_f2);
 
 	//--------------------//
 	// create the outline //
 	//--------------------//
+
+	for (int i = 0; i < 2; i++)
+	{
+		for (int j = 0; j < 2; j++)
+		{
+			Vector3 rlook_beam;
+			rlook_beam.AzimuthElevationSet(1.0, outline_az[i][j],
+				outline_el[i][j]);
+			Vector3 rlook_gc = beam_frame_to_gc->Forward(rlook_beam);
+			EarthPosition spot_on_earth =
+				earth_intercept(spacecraft->orbitState.rsat, rlook_gc);
+			double alt, lat, lon;
+			if (spot_on_earth.GetAltLatLon(EarthPosition::GEODETIC,
+				&alt, &lat, &lon) == 0)
+			{
+				printf("Error: FindSlice can't convert spot_on_earth\n");
+				return(0);
+			}
+			LonLat* ll = new LonLat;
+			ll->longitude = lon;
+			ll->latitude = lat;
+			outline->Append(ll);
+		}
+	}
 
 	return(1);
 }
@@ -166,13 +214,14 @@ JumpToFreq(
 	float				target_freq,
 	float				freq_tol)
 {
+	Vector3 ulook_beam;
 	do	
 	{
 		//-------------------------//
 		// evalulate the frequency //
 		//-------------------------//
 
-		Vector3 ulook_beam;
+		ulook_beam.AzimuthElevationSet(1.0, *az, *el);
 		TargetInfoPackage tip;
 		if (! TargetInfo(ulook_beam, beam_frame_to_gc, spacecraft, instrument,
 			&tip))
@@ -262,7 +311,10 @@ FreqGradient(
 
 	// convert to look angles
 	Vector3 ulook_beam_az1;
+	ulook_beam_az1.AzimuthElevationSet(1.0, az1, el);
+
 	Vector3 ulook_beam_az2;
+	ulook_beam_az2.AzimuthElevationSet(1.0, az2, el);
 
 	// calculate baseband frequency
 	if (! TargetInfo(ulook_beam_az1, beam_frame_to_gc, spacecraft, instrument,
@@ -282,7 +334,10 @@ FreqGradient(
 
 	// convert to look angles
 	Vector3 ulook_beam_el1;
+	ulook_beam_el1.AzimuthElevationSet(1.0, az, el1);
+
 	Vector3 ulook_beam_el2;
+	ulook_beam_el2.AzimuthElevationSet(1.0, az, el2);
 
 	// calculate baseband frequency
 	if (! TargetInfo(ulook_beam_el1, beam_frame_to_gc, spacecraft, instrument,
@@ -319,7 +374,7 @@ TargetInfo(
 	OrbitState* sc_orbit_state = &(spacecraft->orbitState);
 
 	// Compute earth intercept point and range.
-    Vector3 ulook_gc = beam_frame_to_gc->Forward(ulook_beam);
+	Vector3 ulook_gc = beam_frame_to_gc->Forward(ulook_beam);
 	tip->rTarget = earth_intercept(sc_orbit_state->rsat, ulook_gc);
 	EarthPosition* rspot = &(tip->rTarget);
 	tip->slantRange = (sc_orbit_state->rsat - *rspot).Magnitude();
@@ -330,7 +385,7 @@ TargetInfo(
 	Vector3 vspot(-w_earth * rspot->get(1), w_earth * rspot->get(0), 0);
 	Vector3 vrel = sc_orbit_state->vsat - vspot;
 	double lambda = speed_light / actual_xmit_frequency;
-	tip->dopplerFreq = -2.0*(vrel % ulook_gc) / lambda;
+	tip->dopplerFreq = -2.0 * 1000.0 * (vrel % ulook_gc) / lambda;
 
 	// Compute baseband frequency shift due to range
 	int current_beam_idx = instrument->antenna.currentBeamIdx;
@@ -338,13 +393,14 @@ TargetInfo(
 	double chirp_start = instrument->chirpStartM * pulse_width +
 		instrument->chirpStartB;
 	double transmit_center = -chirp_start / instrument->chirpRate;
-	double flight_time = 2 * tip->slantRange / speed_light;
+	double flight_time = 2 * tip->slantRange / speed_light_kps;
 	double echo_center = transmit_center + flight_time +
 		instrument->systemDelay;
-	tip->rangeFreq = instrument->chirpRate *
-		(instrument->receiveGateDelay - echo_center);
-	tip->basebandFreq = tip->rangeFreq - (tip->dopplerFreq +
-		instrument->commandedDoppler);
+	double rx_gate_center = instrument->receiverGateDelay +
+		instrument->receiverGateWidth / 2.0;
+	tip->rangeFreq = instrument->chirpRate * (rx_gate_center - echo_center);
+	tip->basebandFreq = tip->rangeFreq - tip->dopplerFreq +
+		instrument->commandedDoppler;
 
 	return(1);
 }
@@ -355,9 +411,9 @@ TargetInfo(
 
 int
 IsoFreqAngle(
-    CoordinateSwitch*   beam_frame_to_gc,
-    Spacecraft*         spacecraft,
-    Instrument*         instrument,
+	CoordinateSwitch*	beam_frame_to_gc,
+	Spacecraft*			spacecraft,
+	Instrument*			instrument,
 	float*				az,
 	float*				el,
 	float				grad_angle,
@@ -418,7 +474,7 @@ SetPoints(
 
 int
 GainSlice(
-    Instrument*         instrument,
+	Instrument*			instrument,
 	float				az[3],
 	float				el[3],
 	double				s[3],
@@ -460,10 +516,6 @@ GainSlice(
 
 	if (! polcoe(s, gain, 2, c))
 		return(0);
-
-	c[0] = 0.0;
-	c[1] = 0.0;
-	c[2] = 0.0;
 
 	return(1);
 }
