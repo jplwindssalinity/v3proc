@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1998-1999, California Institute of Technology. //
+// Copyright (C) 1998-2003, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -29,6 +29,7 @@ public:
     enum { OCEAN, NOT_OCEAN };
 
     int             Write(int fd);
+    void            WriteAscii(FILE* ofp = stdout);
     int             Read(int fd);
     unsigned char   SpotOrbitStep(int spot_idx);
     int             SpotBeamIdx(int spot_idx);
@@ -136,6 +137,24 @@ EchoInfo::Write(
         return(0);
     }
     return(1);
+}
+
+//----------------------//
+// EchoInfo::WriteAscii //
+//----------------------//
+
+void
+EchoInfo::WriteAscii(
+    FILE*  ofp)
+{
+    frameTime.WriteAscii(ofp);
+    fprintf(ofp, "\n");
+    fprintf(ofp, "<index> <txDoppler> <rxGateDelay> <deltaF>\n");
+    for (int i = 0; i < SPOTS_PER_FRAME; i++) {
+        fprintf(ofp, "%d %g %g %g\n", i, txDoppler[i], rxGateDelay[i],
+            deltaF[i]);
+    }
+    return;
 }
 
 //----------------//
