@@ -8,7 +8,7 @@
 //		see_spot
 //
 // SYNOPSIS
-//		see_spot <sim_config_file> <spot_file>
+//		see_spot [ -s ] <sim_config_file> <output_file>
 //
 // DESCRIPTION
 //		Simulates the SeaWinds 1b instrument based on the parameters
@@ -16,14 +16,14 @@
 //		vector graphics files for the spots.
 //
 // OPTIONS
-//		None.
+//		[ -s ]		Show slices instead of spots
 //
 // OPERANDS
 //		The following operand is supported:
 //		<sim_config_file>		The sim_config_file needed listing
 //								all input parameters, input files, and
 //								output files.
-//		<spot_file>			The binary vector graphics file for spots.
+//		<output_file>			The binary vector graphics output file.
 //
 // EXAMPLES
 //		An example of a command line is:
@@ -104,11 +104,16 @@ template class List<WindVectorPlus>;
 // OPTION VARIABLES //
 //------------------//
 
+#define OPTSTRING	"s"
+
+unsigned char slice_opt = 0;
+
 //------------------//
 // GLOBAL VARIABLES //
 //------------------//
 
-const char* usage_array[] = { "<sim_config_file>", "<spot_file>", 0};
+const char* usage_array[] = { "[ -s ]", "<sim_config_file>",
+	"<output_file>", 0};
 
 //--------------//
 // MAIN PROGRAM //
@@ -124,12 +129,25 @@ main(
 	//------------------------//
 
 	const char* command = no_path(argv[0]);
-	if (argc != 3)
+
+	int c;
+	while ((c = getopt(argc, argv, OPTSTRING)) != -1)
+	{
+		switch(c)
+		{
+		case 's':
+			slice_opt = 1;
+			break;
+		case '?':
+			usage(command, usage_array, 1);
+			break;
+		}
+	}
+	if (argc != optind + 2)
 		usage(command, usage_array, 1);
 
-	int clidx = 1;
-	const char* config_file = argv[clidx++];
-	const char* spot_file = argv[clidx++];
+	const char* config_file = argv[optind++];
+	const char* output_file = argv[optind++];
 
 	//--------------------------------//
 	// read in simulation config file //
@@ -144,15 +162,33 @@ main(
 		exit(1);
 	}
 
-	//-----------------//
-	// open spot file //
-	//-----------------//
+	//-------------------------------//
+	// determine start and end times //
+	//-------------------------------//
 
-	FILE* spot_fp = fopen(spot_file, "w");
-	if (spot_fp == NULL)
+	double instrument_start_time, instrument_end_time;
+	if (! config_list.GetDouble(INSTRUMENT_START_TIME_KEYWORD,
+		&instrument_start_time))
 	{
-		fprintf(stderr, "%s: error opening spot file %s\n", command,
-			spot_file);
+		fprintf(stderr, "%s: error getting instrument start time\n", command);
+		exit(1);
+	}
+	if (! config_list.GetDouble(INSTRUMENT_END_TIME_KEYWORD,
+		&instrument_end_time))
+	{
+		fprintf(stderr, "%s: error getting instrument end time\n", command);
+		exit(1);
+	}
+
+	//------------------//
+	// open output file //
+	//------------------//
+
+	FILE* output_fp = fopen(output_file, "w");
+	if (output_fp == NULL)
+	{
+		fprintf(stderr, "%s: error opening output file %s\n", command,
+			output_file);
 		exit(1);
 	}
 
@@ -218,70 +254,31 @@ main(
 
 	MeasSpot meas_spot;
 
-	SpacecraftEvent spacecraft_event;
 	InstrumentEvent instrument_event;
-	int need_spacecraft_event  = 1;
-	int need_instrument_event  = 1;
+	int instrument_done = 0;
+
+	//-------------------------//
+	// start with first events //
+	//-------------------------//
+
+	instrument_sim.DetermineNextEvent(&(instrument.antenna),
+		&instrument_event);
+
+	//---------------------//
+	// loop through events //
+	//---------------------//
 
 	for (;;)
 	{
-		//--------------------------------------//
-		// determine the next appropriate event //
-		//--------------------------------------//
+		//---------------------------------------//
+		// process instrument event if necessary //
+		//---------------------------------------//
 
-		if (need_spacecraft_event)
+		if (! instrument_done)
 		{
-			spacecraft_sim.DetermineNextEvent(&spacecraft_event);
-			need_spacecraft_event = 0;
-		}
-		if (need_instrument_event)
-		{
-			instrument_sim.DetermineNextEvent(&(instrument.antenna),
-				&instrument_event);
-			need_instrument_event = 0;
-		}
-
-		//--------------------------------------//
-		// select earliest event for processing //
-		//--------------------------------------//
-
-		if (spacecraft_event.time <= instrument_event.time)
-		{
-			//------------------------------//
-			// process the spacecraft event //
-			//------------------------------//
-
-			switch(spacecraft_event.eventId)
+			if (instrument_event.time > instrument_end_time)
 			{
-			case SpacecraftEvent::UPDATE_STATE:
-				spacecraft_sim.UpdateOrbit(spacecraft_event.time,
-					&spacecraft);
-				break;
-			default:
-				fprintf(stderr, "%s: unknown spacecraft event\n", command);
-				exit(1);
-				break;
-			}
-
-			need_spacecraft_event = 1;
-
-			//-----------------------------//
-			// check for end of simulation //
-			//-----------------------------//
-
-			if (spacecraft_event.time > instrument_sim.endTime)
-				break;
-		}
-		else
-		{
-			//----------------------------------------//
-			// check for end of instrument simulation //
-			//----------------------------------------//
-
-			if (instrument_event.time > instrument_sim.endTime)
-			{
-				// force the processing of one more spacecraft event
-				instrument_event.time = spacecraft_event.time + 1.0;
+				instrument_done = 1;
 				continue;
 			}
 
@@ -289,7 +286,6 @@ main(
 			// process the instrument event //
 			//------------------------------//
 
-			Meas* meas;
 			switch(instrument_event.eventId)
 			{
 			case InstrumentEvent::SCATTEROMETER_MEASUREMENT:
@@ -300,22 +296,50 @@ main(
 				instrument_sim.UpdateAntennaPosition(instrument_event.time,
 					&instrument);
 				instrument.antenna.currentBeamIdx = instrument_event.beamIdx;
-				instrument_sim.LocateSpot(instrument_event.time,
-					&spacecraft, &instrument, &meas_spot);
-				meas = meas_spot.slices.GetHead();
-				meas->outline.WriteBvg(spot_fp);
+				if (slice_opt)
+				{
+					//--------//
+					// slices //
+					//--------//
+
+					instrument_sim.LocateSlices(instrument_event.time,
+						&spacecraft, &instrument, &meas_spot);
+					for (Meas* meas = meas_spot.slices.GetHead(); meas;
+						meas = meas_spot.slices.GetNext())
+					{
+						meas->outline.WriteBvg(output_fp);
+					}
+				}
+				else
+				{
+					//------//
+					// spot //
+					//------//
+
+					instrument_sim.LocateSpot(instrument_event.time,
+						&spacecraft, &instrument, &meas_spot);
+					Meas* meas = meas_spot.slices.GetHead();
+					meas->outline.WriteBvg(output_fp);
+				}
+				instrument_sim.DetermineNextEvent(&(instrument.antenna),
+					&instrument_event);
 				break;
 			default:
 				fprintf(stderr, "%s: unknown instrument event\n", command);
 				exit(1);
 				break;
 			}
-
-			need_instrument_event = 1;
 		}
+
+		//---------------//
+		// check if done //
+		//---------------//
+
+		if (instrument_done)
+			break;
 	}
 
-	fclose(spot_fp);
+	fclose(output_fp);
 
 	return (0);
 }
