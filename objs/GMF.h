@@ -126,8 +126,10 @@ public:
     // GS wind retrieval //
     //-------------------//
 
-    int  RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc);
-    int  Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
+    int  RetrieveWinds_GS(MeasList* meas_list, Kp* kp, WVC* wvc, int polar_special=0);
+    int  Calculate_Init_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc, int polar_special=0);
+    int  FindMultiSpeedRidge(MeasList* meas_list, Kp* kp, int dir_idx,
+			     float* max_sep, float* min_sep);
     int  Optimize_Wind_Solutions(MeasList* meas_list, Kp* kp, WVC* wvc);
     int  CopyBuffersGSToPE();
 
@@ -143,7 +145,7 @@ public:
 
     int  smartNudgeFlag;
 
-protected:
+    //protected:
 
     //----------------//
     // wind retrieval //
