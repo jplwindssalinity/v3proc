@@ -1,7 +1,7 @@
-//==========================================================//
-// Copyright (C) 1997, California Institute of Technology.	//
-// U.S. Government sponsorship acknowledged.				//
-//==========================================================//
+//==============================================================//
+// Copyright (C) 1997-1998, California Institute of Technology.	//
+// U.S. Government sponsorship acknowledged.					//
+//==============================================================//
 
 //----------------------------------------------------------------------
 // NAME
@@ -63,6 +63,7 @@ static const char rcs_id[] =
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 #include "Tracking.h"
+#include "Tracking.C"
 #include "InstrumentGeom.h"
 #include "BufferedList.h"
 #include "BufferedList.C"
@@ -80,6 +81,8 @@ template class List<long>;
 template class List<OffsetList>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //
@@ -286,8 +289,25 @@ main(
 			for (int azimuth_step = 0; azimuth_step < RANGE_AZIMUTH_STEPS;
 				azimuth_step++)
 			{
-				antenna->azimuthAngle = azimuth_step_size *
+				//--------------------------------//
+				// calculate azimuth angle to use //
+				//--------------------------------//
+
+				// starting azimuth angle
+				double starting_azimuth = azimuth_step_size *
 					(double)azimuth_step;
+
+				// determine sampling delay azimuth offset
+				double azimuth_offset = antenna->GetEarlyDeltaAzimuth();
+
+				// determine encoder offset applied by CDS
+				unsigned int encoder_offset =
+					beam->rangeTracker.AngleOffset(antenna, beam,
+					antenna->actualSpinRate);
+
+				// calculate azimuth angle
+				antenna->azimuthAngle = starting_azimuth -
+					antenna->EncoderToAngle(encoder_offset) + azimuth_offset;
 
 				//-------------------------------------------//
 				// calculate the ideal round trip time in ms //

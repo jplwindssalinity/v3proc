@@ -57,6 +57,7 @@ public:
 	unsigned int	GetEarlyEncoderValue();
 	unsigned int	GetEncoderValue();
 	unsigned int	GetEncoderN() { return(_numberOfEncoderValues); };
+	double			GetEarlyDeltaAzimuth();
 	double			GetAntennaFraction();
 
 	CoordinateSwitch	GetAntPedToScBody()

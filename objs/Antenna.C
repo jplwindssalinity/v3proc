@@ -114,8 +114,8 @@ Antenna::GetCurrentBeam()
 unsigned int
 Antenna::GetEarlyEncoderValue()
 {
-	double time_delay = priPerBeam / (double)numberOfBeams - encoderDelay;
-	double azimuth_angle = azimuthAngle - actualSpinRate * time_delay + two_pi;
+	double delta_azimuth = GetEarlyDeltaAzimuth();
+	double azimuth_angle = azimuthAngle - delta_azimuth + two_pi;
 	unsigned int encoder = AngleToEncoder(azimuth_angle);
 	return(encoder);
 }
@@ -129,6 +129,18 @@ Antenna::GetEncoderValue()
 {
 	unsigned int encoder = AngleToEncoder(azimuthAngle);
 	return(encoder);
+}
+
+//-------------------------------//
+// Antenna::GetEarlyDeltaAzimuth //
+//-------------------------------//
+
+double
+Antenna::GetEarlyDeltaAzimuth()
+{
+	double time_delay = priPerBeam / (double)numberOfBeams - encoderDelay;
+	double delta_azimuth = actualSpinRate * time_delay;
+	return(delta_azimuth);
 }
 
 //-----------------------------//

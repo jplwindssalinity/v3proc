@@ -84,6 +84,8 @@ template class List<long>;
 template class List<OffsetList>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //
@@ -297,21 +299,13 @@ main(
 			for (int azimuth_step = 0; azimuth_step < DOPPLER_AZIMUTH_STEPS;
 				azimuth_step++)
 			{
+				//--------------------------------//
+				// calculate azimuth angle to use //
+				//--------------------------------//
+
+				// starting azimuth angle
 				antenna->azimuthAngle = azimuth_step_size *
 					(double)azimuth_step;
-
-				CoordinateSwitch antenna_frame_to_gc =
-					AntennaFrameToGC(orbit_state, attitude, antenna);
-
-				double look, azimuth;
-				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
-					beam, antenna->actualSpinRate, &look, &azimuth))
-				{
-					fprintf(stderr, "%s: error finding two-way peak gain\n",
-						command);
-					exit(1);
-				}
-				vector.SphericalSet(1.0, look, azimuth);
 
 				//------------------------------//
 				// calculate receiver gate info //
@@ -326,6 +320,39 @@ main(
 				//--------------------------------------------------------//
 
 				instrument.commandedRxGateDelay += residual_delay_error;
+
+				//----------------------------------------------//
+				// modify azimuth angle for Doppler calculation //
+				//----------------------------------------------//
+
+				// determine sampling delay azimuth offset
+				double azimuth_offset = antenna->GetEarlyDeltaAzimuth();
+ 
+				// determine encoder offset applied by CDS
+				unsigned int encoder_offset =
+					beam->rangeTracker.AngleOffset(antenna, beam,
+					antenna->actualSpinRate);
+ 
+				// calculate new azimuth angle
+				antenna->azimuthAngle = antenna->azimuthAngle -
+					antenna->EncoderToAngle(encoder_offset) + azimuth_offset;
+
+				//-------------------//
+				// coordinate system //
+				//-------------------//
+
+				CoordinateSwitch antenna_frame_to_gc =
+					AntennaFrameToGC(orbit_state, attitude, antenna);
+
+				double look, azimuth;
+				if (! GetTwoWayPeakGain2(&antenna_frame_to_gc, &spacecraft,
+					beam, antenna->actualSpinRate, &look, &azimuth))
+				{
+					fprintf(stderr, "%s: error finding two-way peak gain\n",
+						command);
+					exit(1);
+				}
+				vector.SphericalSet(1.0, look, azimuth);
 
 				//--------------------------------//
 				// calculate corrective frequency //

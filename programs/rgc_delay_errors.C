@@ -64,6 +64,7 @@ static const char rcs_id[] =
 #include "Spacecraft.h"
 #include "ConfigSim.h"
 #include "Tracking.h"
+#include "Tracking.C"
 #include "InstrumentGeom.h"
 #include "BufferedList.h"
 #include "BufferedList.C"
@@ -81,6 +82,8 @@ template class List<long>;
 template class List<OffsetList>;
 template class List<OrbitState>;
 template class BufferedList<OrbitState>;
+template class TrackerBase<unsigned char>;
+template class TrackerBase<unsigned short>;
 
 //-----------//
 // CONSTANTS //

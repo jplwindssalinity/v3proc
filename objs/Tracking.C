@@ -933,6 +933,13 @@ DopplerTracker::SetInstrument(
 	unsigned int encoder = antenna->GetEarlyEncoderValue();
 	unsigned int encoder_n = antenna->GetEncoderN();
 
+	//-------------------//
+	// correct for angle //
+	//-------------------//
+
+	// CDS uses the commanded spin rate to calculate offsets
+	encoder += AngleOffset(antenna, beam, antenna->commandedSpinRate);
+
 	float doppler;
 
 	if (! beam->dopplerTracker.GetCommandedDoppler(doppler_step,
