@@ -74,3 +74,21 @@ Attitude::Write(
 	}
 	return(1);
 }
+
+//----------------//
+// Attitude::Read //
+//----------------//
+
+int
+Attitude::Read(
+	FILE*	fp)
+{
+	if (fread((void *)&_roll, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&_pitch, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&_yaw, sizeof(float), 1, fp) != 1 ||
+		fread((void *)&_order, 3 * sizeof(unsigned char), 1, fp) != 1)
+	{
+		return(0);
+	}
+	return(1);
+}
