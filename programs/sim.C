@@ -8,7 +8,8 @@
 //    sim
 //
 // SYNOPSIS
-//    sim [ -p ] [ -a true_attitude_file ] <config_file>
+//    sim [ -p ] [ -a true_attitude_file ] [ -d true_delta_f_file ]
+//        <config_file>
 //
 // DESCRIPTION
 //    Simulates the SeaWinds 1b instrument based on the parameters
@@ -22,6 +23,9 @@
 //
 //    [ -a true_attitude_file ]  Writes a true attitude file containing
 //                                 time, roll, pitch, yaw, orbit_time
+//
+//    [ -d true_delta_f_file ]   Writes a true delta f file containing
+//                                 orbit_step, az_ang, delta_f
 //
 // OPERANDS
 //    The following operand is supported:
@@ -104,7 +108,7 @@ template class TrackerBase<unsigned short>;
 // CONSTANTS //
 //-----------//
 
-#define OPTSTRING  "pa:"
+#define OPTSTRING  "pa:d:"
 
 //--------//
 // MACROS //
@@ -127,7 +131,7 @@ template class TrackerBase<unsigned short>;
 //------------------//
 
 const char* usage_array[] = { "[ -p ]", "[ -a true_attitude_file ]",
-    "<config_file>", 0};
+    "[ -d true_delta_f_file ]", "<config_file>", 0};
 
 int opt_pipe = 0;
 
@@ -164,6 +168,7 @@ main(
     char*  argv[])
 {
     char* true_att_filename = NULL;
+    char* true_delta_f_filename = NULL;
 
     //------------------------//
     // parse the command line //
@@ -177,6 +182,9 @@ main(
         {
         case 'a':
             true_att_filename = optarg;
+            break;
+        case 'd':
+            true_delta_f_filename = optarg;
             break;
         case 'p':
             opt_pipe = 1;
@@ -334,6 +342,22 @@ main(
         {
             fprintf(stderr, "%s: error opening true attitude file %s\n",
                 command, true_att_filename);
+            exit(1);
+        }
+    }
+
+    //----------------------------//
+    // create a true delta f file //
+    //----------------------------//
+
+    FILE* true_delta_f_fp = NULL;
+    if (true_delta_f_filename != NULL)
+    {
+        true_delta_f_fp = fopen(true_delta_f_filename, "w");
+        if (true_delta_f_fp == NULL)
+        {
+            fprintf(stderr, "%s: error opening true delta f file %s\n",
+                command, true_delta_f_filename);
             exit(1);
         }
     }
@@ -537,22 +561,6 @@ main(
                     spacecraft.orbitState.Write(eph_fp);
                     spacecraft_sim.UpdateAttitude(spacecraft_event.time,
                         &spacecraft);
-
-                    // save the true attitude
-/*
-                    if (true_att_fp != NULL &&
-                        spacecraft_event.time >= instrument_start_time &&
-                        spacecraft_event.time <= instrument_end_time)
-                    {
-                        fprintf(true_att_fp, "%.1f %g %g %g %u\n",
-                            spacecraft_event.time,
-                            spacecraft.attitude.GetRoll() * rtd,
-                            spacecraft.attitude.GetPitch() * rtd,
-                            spacecraft.attitude.GetYaw() * rtd,
-                            qscat.cds.orbitTime);
-                    }
-*/
-
                     spacecraft_sim.ReportAttitude(spacecraft_event.time,
                       &spacecraft, &attitude);
                     spacecraft_sim.DetermineNextEvent(&spacecraft_event);
@@ -615,6 +623,16 @@ main(
                     qscat_sim.ScatSim(&spacecraft, &qscat, &windfield,
                         inner_map_ptr, outer_map_ptr, &gmf, &kp, &kpmField,
                         topo_ptr, stable_ptr, frame);
+
+                    // save the delta f
+                    if (true_delta_f_fp != NULL)
+                    {
+                        float df = qscat_sim.BYUX.GetDeltaFreq(&spacecraft,
+                            &qscat, topo_ptr, stable_ptr);
+                        fprintf(true_delta_f_fp, "%u %g %g\n",
+                            frame->orbitTicks,
+                            qscat.sas.antenna.encoderAzimuthAngle, df);
+                    }
                     qscat_sim.DetermineNextEvent(frame->spotsPerFrame,
                                                  &qscat, &qscat_event);
                     break;
