@@ -246,6 +246,7 @@ public:
 	// filtering //
 	//-----------//
 
+	int		InitWithRank(int rank);
 	int		MedianFilter(int window_size, int max_passes);
 	int		MedianFilterPass(int half_window, WindVectorPlus*** selected,
 				char** change);

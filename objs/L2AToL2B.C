@@ -81,6 +81,7 @@ L17ToL20::Flush(
 	L20*	l20)
 {
 	// median filter
+	l20->frame.swath.InitWithRank(1);
 	l20->frame.swath.MedianFilter(l20->medianFilterWindowSize,
 		l20->medianFilterMaxPasses);
 	if (! l20->WriteDataRec())

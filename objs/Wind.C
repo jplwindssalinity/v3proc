@@ -669,9 +669,9 @@ WindSwath::Add(
 int
 WindSwath::DeleteWVCs()
 {
-	for (int i = 0; i < _alongTrackBins; i++)
+	for (int i = 0; i < _crossTrackBins; i++)
 	{
-		for (int j = 0; j < _crossTrackBins; j++)
+		for (int j = 0; j < _alongTrackBins; j++)
 		{
 			WVC* wvc = *(*(swath + i) + j);
 			if (wvc == NULL)
@@ -709,8 +709,8 @@ int
 WindSwath::WriteL20(
 	FILE*	fp)
 {
-	if (fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+	if (fwrite((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+		fwrite((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
 		fwrite((void *)&_validCells, sizeof(int), 1, fp) != 1)
 	{
 		return(0);
@@ -747,8 +747,8 @@ WindSwath::ReadL20(
 {
 	DeleteEntireSwath();		// in case
 
-	if (fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
-		fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+	if (fread((void *)&_crossTrackBins, sizeof(int), 1, fp) != 1 ||
+		fread((void *)&_alongTrackBins, sizeof(int), 1, fp) != 1 ||
 		fread((void *)&_validCells, sizeof(int), 1, fp) != 1)
 	{
 		return(0);
@@ -822,6 +822,29 @@ WindSwath::WriteBev(
 
 	fclose(fp);
 	return(1);
+}
+
+//-------------------------//
+// WindSwath::InitWithRank //
+//-------------------------//
+
+int
+WindSwath::InitWithRank(
+	int		rank)
+{
+	int count = 0;
+	for (int cti = 0; cti < _crossTrackBins; cti++)
+	{
+		for (int ati = 0; ati < _alongTrackBins; ati++)
+		{
+			WVC* wvc = swath[cti][ati];
+			if (! wvc)
+				continue;
+			wvc->selected = wvc->ambiguities.GetNodeWithIndex(rank-1);
+			count++;
+		}
+	}
+	return(count);
 }
 
 //-------------------------//
@@ -908,10 +931,10 @@ WindSwath::MedianFilterPass(
 			// initialize the new selection //
 			//------------------------------//
 
+			new_selected[cti][ati] = NULL;
 			WVC* wvc = swath[cti][ati];
 			if (! wvc)
 				continue;
-			new_selected[cti][ati] = NULL;
 
 			//-------------------//
 			// check for changes //
