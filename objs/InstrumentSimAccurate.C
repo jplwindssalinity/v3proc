@@ -138,6 +138,7 @@ InstrumentSimAccurate::ScatSim(
 	}
 	else
 	{
+
 		if (! IntegrateSlices(spacecraft, instrument, &meas_spot,
 				      numLookStepsPerSlice,azimuthIntegrationRange,
 				      azimuthStepSize))
@@ -150,6 +151,8 @@ InstrumentSimAccurate::ScatSim(
 	//------------------------//
 	// set measurement values //
 	//------------------------//
+
+
 
 	if (! SetMeasurements(instrument, &meas_spot, windfield, gmf))
 		return(0);
@@ -182,6 +185,7 @@ InstrumentSimAccurate::ScatSim(
 					instrument->antenna.currentBeamIdx,
 					instrument->antenna.azimuthAngle,
 					sliceno)) return(0);
+
 			sliceno++;
 		}
 
@@ -209,3 +213,9 @@ InstrumentSimAccurate::ScatSim(
 
 	return(1);
 }
+
+
+
+
+
+
