@@ -1,5 +1,5 @@
 //==============================================================//
-// Copyright (C) 1997-2001, California Institute of Technology. //
+// Copyright (C) 1997-2002, California Institute of Technology. //
 // U.S. Government sponsorship acknowledged.                    //
 //==============================================================//
 
@@ -1308,7 +1308,7 @@ ConfigL2AToL2B(
     l2a_to_l2b->kprc.SetVariance(std*std);
     l2a_to_l2b->kprc.SetMean(0.0);
     l2a_to_l2b->kprc.SetSeed(get_seed(config_list,KPRC_SEED_KEYWORD, 
-				      DEFAULT_KPRC_SEED));
+        DEFAULT_KPRC_SEED));
     return(1);
 }
 
@@ -1346,14 +1346,25 @@ ConfigWindField(
 
     char* windfield_type = config_list->Get(WINDFIELD_TYPE_KEYWORD);
     if (windfield_type == NULL)
+    {
+        fprintf(stderr, "ConfigWindField: can't determine windfield type\n");
         return(0);
+    }
 
     char* windfield_filename = config_list->Get(WINDFIELD_FILE_KEYWORD);
     if (windfield_filename == NULL)
+    {
+        fprintf(stderr, "ConfigWindField: can't determine windfield file\n");
         return(0);
+    }
 
     if (! windfield->ReadType(windfield_filename, windfield_type))
+    {
+        fprintf(stderr, "ConfigWindField: can't read windfield\n");
+        fprintf(stderr, "  (%s of type %s)\n", windfield_filename,
+            windfield_type);
         return(0);
+    }
 
     //--------------------------//
     // use as fixed wind speed? //
