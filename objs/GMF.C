@@ -304,7 +304,7 @@ GMF::RefineSolutions(
 			spd_idx = (int)(wvp->spd / spd_step + 0.5) + max_dspd;
 			phi_idx = (int)(wvp->dir / phi_step + 0.5) + max_dphi;
 			if (phi_idx < 0)
-				phi_idx = (int)(wvp->dir / phi_step + pi + 0.5) + max_dphi;
+				phi_idx = (int)((wvp->dir + pi) / phi_step + 0.5) + max_dphi;
 
 			wvp->spd = (double)spd_idx * spd_step;
 			wvp->dir = (double)phi_idx * phi_step;
@@ -472,7 +472,10 @@ GMF::_FindSolutionCurve(
 			{
 				fprintf(stderr,
 					"GMF::_FindSolutionCurve: unexpected solution curve\n");
-				exit(1);
+				// treat like a peak
+				best_spd_idx[phi_idx] = spd_idx;
+				best_obj[phi_idx] = obj;
+				break;
 			}
 		} while (1);
 	}
