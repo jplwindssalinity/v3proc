@@ -78,7 +78,8 @@ public:
     int  WriteGSObjectiveCurve(FILE* ofp, float min_obj, float max_obj);
     int  AppendSolutions(FILE* ofp, WVC* wvc, float min_obj, float max_obj);
     int  WriteObjXmgr(char* basename, int panelcount, WVC* wvc);
-
+    float  GetVariance(Meas* meas, float spd, float chi, float trial_sigma0,
+		     Kp* kp);
     //----------------//
     // wind retrieval //
     //----------------//

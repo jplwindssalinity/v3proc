@@ -1415,11 +1415,126 @@ GMF::FindMany(
 	}
 	return(1);
 }
+//-------------------------------//
+// GMF::GetVariance              //
+//-------------------------------//
+int global_debug=0;  // GLOBAL DEBUG FLAG
+float
+GMF::GetVariance(
+    Meas* meas,
+    float spd,
+    float chi,
+    float trial_sigma0,
+    Kp* kp){
+
+  //-------------------------------------------------------//
+  // calculate the expected variance for the trial sigma-0 //
+  //-------------------------------------------------------//
+
+  if (!kp) return(0.0); // If kp is NULL returns 0.0
+  //--------------//
+  // Kpc variance //
+  //--------------//
+
+  double vpc = 0.0;
+  float s0_co, s0_x;
+  if (retrieveUsingKpcFlag)
+    {
+      switch (meas->measType)
+	{
+	case Meas::VV_MEAS_TYPE:
+	case Meas::HH_MEAS_TYPE:
+	case Meas::VH_MEAS_TYPE:
+	case Meas::HV_MEAS_TYPE:
+	  if (! kp->GetVpc(meas, trial_sigma0, &vpc)){
+	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
+            vpc=0.0;
+          }
+          break;
+	case Meas::VV_HV_CORR_MEAS_TYPE:
+	  GetInterpolatedValue(Meas::VV_MEAS_TYPE,
+			       meas->incidenceAngle, spd, chi, &s0_co);
+	  GetInterpolatedValue(Meas::HV_MEAS_TYPE,
+			       meas->incidenceAngle, spd, chi, &s0_x);
+	  if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc)){
+	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
+	    vpc=0.0;
+	  }
+	  break;
+	case Meas::HH_VH_CORR_MEAS_TYPE:
+	  GetInterpolatedValue(Meas::HH_MEAS_TYPE,
+			       meas->incidenceAngle, spd, chi, &s0_co);
+	  GetInterpolatedValue(Meas::VH_MEAS_TYPE,
+			       meas->incidenceAngle, spd, chi, &s0_x);
+	  if (! kp->GetVpc(meas, trial_sigma0, s0_co, s0_x, &vpc)){
+	    fprintf(stderr,"GMF::GetVariance: Error computing Vpc\n");
+	    vpc=0.0;
+	  }
+          break;
+	default:
+	  fprintf(stderr,"GMF::GetVariance: Bad Measurement Type\n");
+	  exit(1);
+	  break;
+	}
+    }
+
+  //-----//
+  // Kpm //
+  //-----//
+
+  double kpm2 = 0.0;
+  if (retrieveUsingKpmFlag)
+    {
+      if (! kp->GetKpm2(meas->measType, spd, &kpm2)){
+	fprintf(stderr,"GMF::GetVariance: Error computing Kpm\n");
+	kpm2=0.0;
+      } 
+    }
+
+  //------//
+  // Kpri //
+  //------//
+
+  double kpri2 = 0.0;
+  if (retrieveUsingKpriFlag)
+    {
+      if (! kp->GetKpri2(&kpri2)){
+	fprintf(stderr,"GMF::GetVariance: Error computing Kpri2\n");
+	kpri2=0.0;
+      }
+    }
+  
+  //------//
+  // Kprs //
+  //------//
+
+  double kprs2 = 0.0;
+  if (retrieveUsingKprsFlag)
+    {
+      if (! kp->GetKprs2(meas, &kprs2)){
+	fprintf(stderr,"GMF::GetVariance: Error computing Kprs2\n");
+	kprs2=0.0;
+      }
+    }
+
+  //------------------------//
+  // calculate the variance //
+  //------------------------//
+
+  //            double var = vpc +
+  //                (kpm2 + kpri2 + kprs2) * trial_sigma0 * trial_sigma0;
+  double var =
+    (trial_sigma0*trial_sigma0+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
+    trial_sigma0*trial_sigma0;
+  if(global_debug) printf("%g %g %g %g %g %g ",trial_sigma0,vpc,kpri2,
+			  kprs2,kpm2,var);
+  return(var);
+}
 
 //-------------------------//
 // GMF::_ObjectiveFunction //
 //-------------------------//
-int global_debug=0;  // GLOBAL DEBUG FLAG
+
 
 float
 GMF::_ObjectiveFunction(
@@ -1458,113 +1573,23 @@ GMF::_ObjectiveFunction(
         //-------------------------------------------------------//
         // calculate the expected variance for the trial sigma-0 //
         //-------------------------------------------------------//
+        float var=GetVariance(meas,spd,chi,trial_value,kp); 
+	// returns 0 if kp is NULL
+	
 
-        if (kp)
-        {
-            //--------------//
-            // Kpc variance //
-            //--------------//
-
-            double vpc = 0.0;
-            float s0_co, s0_x;
-            if (retrieveUsingKpcFlag)
-            {
-                switch (meas->measType)
-                {
-                case Meas::VV_MEAS_TYPE:
-                case Meas::HH_MEAS_TYPE:
-                case Meas::VH_MEAS_TYPE:
-                case Meas::HV_MEAS_TYPE:
-                    if (! kp->GetVpc(meas, trial_value, &vpc))
-                        return(0);
-                    break;
-                case Meas::VV_HV_CORR_MEAS_TYPE:
-                    GetInterpolatedValue(Meas::VV_MEAS_TYPE,
-                        meas->incidenceAngle, spd, chi, &s0_co);
-                    GetInterpolatedValue(Meas::HV_MEAS_TYPE,
-                        meas->incidenceAngle, spd, chi, &s0_x);
-                    if (! kp->GetVpc(meas, trial_value, s0_co, s0_x, &vpc))
-                        return(0);
-                    break;
-                case Meas::HH_VH_CORR_MEAS_TYPE:
-                    GetInterpolatedValue(Meas::HH_MEAS_TYPE,
-                        meas->incidenceAngle, spd, chi, &s0_co);
-                    GetInterpolatedValue(Meas::VH_MEAS_TYPE,
-                        meas->incidenceAngle, spd, chi, &s0_x);
-                    if (! kp->GetVpc(meas, trial_value, s0_co, s0_x, &vpc))
-                        return(0);
-                    break;
-                default:
-                    return(0);
-                    break;
-                }
-            }
-
-            //-----//
-            // Kpm //
-            //-----//
-
-            double kpm2 = 0.0;
-            if (retrieveUsingKpmFlag)
-            {
-                if (! kp->GetKpm2(meas->measType, spd, &kpm2))
-                    return(0);
-            }
-
-            //------//
-            // Kpri //
-            //------//
-
-            double kpri2 = 0.0;
-            if (retrieveUsingKpriFlag)
-            {
-                if (! kp->GetKpri2(&kpri2))
-                    return(0);
-            }
-
-            //------//
-            // Kprs //
-            //------//
-
-            double kprs2 = 0.0;
-            if (retrieveUsingKprsFlag)
-            {
-                if (! kp->GetKprs2(meas, &kprs2))
-                    return(0);
-            }
-
-            //------------------------//
-            // calculate the variance //
-            //------------------------//
-
-//            double var = vpc +
-//                (kpm2 + kpri2 + kprs2) * trial_value * trial_value;
-            double var =
-                (trial_value*trial_value+vpc)*(1+kpri2)*(1+kprs2)*(1+kpm2) -
-                trial_value*trial_value;
-
-	    if(global_debug) printf("%g %g %g %g %g %g ",trial_value,vpc,kpri2,kprs2,kpm2,var);
-            if (var == 0.0)
-            {    // variances all turned off, so use uniform weighting.
-                fv += s*s;
-            }
-            else if (retrieveUsingLogVar)
-            {
-                fv += s*s / var + log(var);
-            }
-            else
-            {
-                fv += s*s / var;
-            }
-        }
-        else
-        {
-            //--------------//
-            // no kp at all //
-            //--------------//
-
-            fv += s*s;
-        }
+	if (var == 0.0)
+	  {    // variances all turned off, so use uniform weighting.
+	    fv += s*s;
+	  }
+	else if (retrieveUsingLogVar)
+	  {
+	    fv += s*s / var + log(var);
+	  }
+	else
+	  {
+	    fv += s*s / var;
+	  }
+    
     }
     return(-fv);
 }
